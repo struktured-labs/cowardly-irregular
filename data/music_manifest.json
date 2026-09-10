@@ -200,7 +200,7 @@
       "prompt": "Gray concrete ceiling stretching forever, recycled air, fluorescent clinical light, factory drone in the distance, soul-draining efficiency, sparse cold synths over mechanical rhythms, oppressive and numbing",
       "style": "minimalist drone, industrial ambience, brutalist, sparse percussion, cold synth",
       "model": "suno-v4",
-      "duration": 134.8,
+      "duration": 134.5,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -251,7 +251,7 @@
       "prompt": "Wireframe geometry stretching to infinity, green-on-black terminal text scrolling, cold blue monitor glow, boot sequence initializing, grid floor beneath digital sky, glitchy arpeggios over steady synthwave pulse",
       "style": "chiptune, glitch, synthwave, terminal beeps, data corruption, retro computing",
       "model": "suno-v4",
-      "duration": 142.64,
+      "duration": 142.6,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -277,7 +277,7 @@
       "prompt": "Boss battle against a rogue AI, massive data corruption, heavy glitch bass, distorted chiptune melody, system error tones, digital reality breaking apart",
       "style": "digital boss, heavy glitch, distorted chiptune, bass drops, system error tones",
       "model": "suno-v4",
-      "duration": 157.2,
+      "duration": 157.0,
       "loop": true,
       "generated_at": "2026-03-21"
     },
@@ -509,7 +509,7 @@
       "prompt": "Creepy slow battle theme for fighting mushroom monsters, psychedelic detuned synths, spore-cloud atmosphere, hypnotic and unsettling, like the music itself is poisoned, droning bass underneath warbling melodic fragments",
       "style": "JRPG battle, creepy, E minor, slow drone, psychedelic, detuned, eerie, 90 BPM",
       "model": "suno-v4",
-      "duration": 124.9,
+      "duration": 119.4,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -589,7 +589,7 @@
       "prompt": "Sinuous slithering battle theme for fighting snakes, coiling bass line that winds and tightens, rattling shaker percussion like a rattlesnake warning, tense melodic line that strikes suddenly, the anxiety of facing something fast and venomous",
       "style": "JRPG battle, slithering, C minor, sinuous melody, rattling percussion, tense coiling bass, 135 BPM",
       "model": "suno-v4",
-      "duration": 162.56,
+      "duration": 162.2,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -758,7 +758,7 @@
       "prompt": "INTENSE boss battle theme, an auditor whose circular authority becomes a WEAPON. Heavy bass loop that tightens like a noose, oppressive circular rhythm that traps you in bureaucratic hell. Filing sounds as aggressive percussion, each audit finding hits like a hammer. The warm smile is the scariest part — she is genuinely enjoying draining everything you have. The loop gets tighter, the bass gets heavier, there is no way out of the audit.",
       "style": "Industrial boss battle, aggressive looping, heavy bass, oppressive circular rhythm, mechanical fury, 130 BPM",
       "model": "suno-v4",
-      "duration": 192.24,
+      "duration": 192.0,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -818,7 +818,7 @@
       "prompt": "INTENSE boss battle theme for the concept of OBSTACLE — not quiet presence but CRUSHING immovable force. Massive overwhelming drone that physically pressures, deep bass that shakes reality itself. The wall doesn't threaten — it CRUSHES by existing. Oppressive sustained tones building in layers until the weight is unbearable. Slow but DEVASTATING at 80 BPM — every beat lands like a continent. You cannot move this. You can only survive it.",
       "style": "Abstract boss battle, overwhelming drone, crushing sustained tone, oppressive presence, massive bass, 80 BPM",
       "model": "suno-v4",
-      "duration": 135.64,
+      "duration": 135.1,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -1070,7 +1070,7 @@
       "prompt": "A music box melody is silenced. Silence. Then it returns, slightly stronger. Silenced again. Returns with strings underneath. Each time the melody is suppressed it comes back with more instruments, more conviction. The sound of memories refusing to be erased. Builds from a single fragile melody to a full emotional orchestral statement. Not angry defiance — tender defiance. The gentlest act of resistance. 100 seconds.",
       "style": "music box, orchestral swell, defiant tenderness, themes returning, emotional",
       "model": "suno-v4",
-      "duration": 107.68,
+      "duration": 107.6,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1094,7 +1094,7 @@
       "prompt": "A live jam session where the musicians are clearly having fun. Imperfect, energetic, full of happy accidents. The sound of people playing together for the joy of playing — no recording, no audience, just presence. Guitar, drums, bass, with spontaneous energy. Builds to a triumphant peak then dissolves into laughter and breathing. The best fight in the game. 85 seconds.",
       "style": "live jam session, exuberant, imperfect, joyful, organic",
       "model": "suno-v4",
-      "duration": 189.28,
+      "duration": 189.2,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1214,7 +1214,7 @@
       "prompt": "Steampunk machinery ambient loop. Rhythmic gear turning, steam valve hiss, distant clockwork ticking, pneumatic piston cycling, brass resonance. The constant mechanical breath of a clockwork city. Seamless loop, 60 seconds.",
       "style": "ambient, steampunk, gears, steam hiss, clockwork, industrial, looping",
       "model": "suno-v4",
-      "duration": 127.0,
+      "duration": 126.3,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1404,7 +1404,7 @@
       "prompt": "Suburban sewer/basement dungeon theme. Muffled bass through concrete walls, distorted fragments of cheerful muzak leaking down from above, water dripping from pipes. The wrongness of being underneath normalcy. Something is humming down here that shouldn't be. EarthBound underground atmosphere, uncanny and unsettling. Looping.",
       "style": "EarthBound dungeon, suburban underground, muffled bass, wrong muzak, pipes dripping, unsettling, 90 BPM",
       "model": "suno-v4",
-      "duration": 146.32,
+      "duration": 145.7,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1452,7 +1452,7 @@
       "prompt": "Abstract void dungeon theme. The space between concepts — reverse reverb tails, vast empty drone, sounds that seem to come from impossible distances. Near-silence that is somehow louder than noise. Liminal space music, the dungeon of ideas where nothing is solid. Existential exploration at the edge of meaning. Looping.",
       "style": "Abstract dungeon, liminal, reverse reverb, near-silence, vast empty drone, existential, 60 BPM",
       "model": "suno-v4",
-      "duration": 181.6,
+      "duration": 181.4,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1646,7 +1646,7 @@
       "prompt": "Volcanic dragon cave dungeon theme. Deep rumbling bass like magma flowing beneath stone, smoldering string tremolo, oppressive heat in every note. Flickering fire crackle percussion, ominous brass swells. The deeper you go the hotter it gets. SNES-era dungeon atmosphere, tense and foreboding. Looping.",
       "style": "SNES dungeon, volcanic, deep rumbling bass, smoldering strings, oppressive heat, minor key, 95 BPM",
       "model": "suno-v4",
-      "duration": 180.6,
+      "duration": 180.0,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1682,7 +1682,7 @@
       "prompt": "The capital city of Scriptura. Home to the Scriptweaver's Guild — scholars in long robes, towering bookcases, stained glass casting colored light on marble floors. Harpsichord leads a dignified melody, pipe organ adds gravity on the low end, soft choral pads give it cathedral reverb, orchestral strings soar on the chorus. Regal, intellectual, ancient authority. Loopable.",
       "style": "16-bit SNES regal court music, harpsichord, pipe organ swell, choral pads, orchestral strings, stately, 90 BPM",
       "model": "suno-v4",
-      "duration": 75.72,
+      "duration": 75.1,
       "loop": true,
       "generated_at": "2026-04-18"
     },
@@ -1754,7 +1754,7 @@
       "prompt": "End credits for the medieval world. The Realm Awakens motif returns — but slower, fuller, richer. Swelling strings take the melody once carried by a lone harp. French horn enters halfway through like a comrade stepping forward. The hopeful adventure-start theme reimagined as a quiet homecoming, remembering everything that happened between the first step and here. Bittersweet, warm, earned. 90-120 seconds.",
       "style": "16-bit SNES orchestral credits theme, Nobuo Uematsu, Final Fantasy VI ending, swelling strings, French horn, harp, emotional, major key with minor color, 75 BPM",
       "model": "suno-v4",
-      "duration": 73.88,
+      "duration": 73.4,
       "loop": true,
       "generated_at": "2026-04-18"
     },
@@ -1814,7 +1814,7 @@
       "prompt": "End credits for the abstract world. The Answered Absence returns but fuller — still mostly silence, still mostly nothing, but now with emotional weight. A cello drone holds underneath a single sustained piano chord. Choral pads whisper. Long silences between phrases that feel like recognition rather than absence. The game's final statement: there was never anything to solve, only to witness. Eno and Arvo Pärt writing the end of everything. 90-120 seconds.",
       "style": "ambient orchestral credits, sustained piano, cello drone, choral pad whisper, near-silence punctuating swells, Eno meets Arvo Pärt, 60 BPM",
       "model": "suno-v4",
-      "duration": 156.84,
+      "duration": 156.2,
       "loop": true,
       "generated_at": "2026-04-18"
     },
@@ -1826,7 +1826,7 @@
       "prompt": "Phase 2 of the Warden boss fight — HP below 50%, all pretense of weariness gone. The Warden stops holding back. POUNDING timpani, full brass section assault, aggressive string runs, pipe organ throwing its full weight into every note. The tired old boss theme reimagined at 160 BPM with zero restraint. Revo-level intensity. Linked Horizon's Guren no Yumiya energy. The fight gets real. Looping.",
       "style": "intense orchestral boss phase 2, pounding timpani, full brass assault, aggressive strings, pipe organ menace, 160 BPM, crushing",
       "model": "suno-v4",
-      "duration": 131.56,
+      "duration": 131.1,
       "loop": true,
       "generated_at": "2026-04-18"
     },
@@ -1990,7 +1990,7 @@
       "prompt": "Storm dragon cave dungeon theme. Static crackle in the silences, tremolo strings that climb without ever arriving, distant thunder felt more than heard. A held charge that keeps building and never discharges — the air before lightning, not the strike. Metallic shimmer on the high end, restless low pulse. Every descent adds pressure. SNES-era dungeon atmosphere, tense and expectant. Looping.",
       "style": "SNES dungeon, electrical, static crackle, tremolo strings rising, distant thunder, restless, minor key, 108 BPM",
       "model": "suno-v4",
-      "duration": 101.4,
+      "duration": 100.9,
       "loop": true,
       "generated_at": "2026-08-27"
     },

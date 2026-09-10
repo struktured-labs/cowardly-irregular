@@ -26,8 +26,24 @@ WHY THIS REPLACES audit_loop_seams.py's TAIL TEST
 
 WHAT A JUMP MEANS
     Positive = the music STEPS UP when it wraps: dies away, snaps back to full.
-    Near zero = it loops. Negative = it ends louder than it begins, which is
-    audible too but far rarer and usually deliberate.
+    Near zero = it loops. Negative = it ends louder than it begins.
+
+    ⚠️ THE STEP IS A SIGNED DIFFERENCE AND ONLY ONE SIGN WAS THRESHOLDED, which
+    is how this tool ranked its worst tracks best in corpus for weeks. The line
+    above used to end "...which is audible too but far rarer and usually
+    deliberate", and that clause is what did the damage: a SILENT HEAD drives
+    the score toward -inf, so a bed with 0.6s of dead air at every loop reads
+    as maximally clean and the docstring supplies the excuse for the sign.
+
+        credits_abstract      0.619s silent head    -66.5 dB   "clean"
+        dungeon_dragon_fire   0.596s                -78.5 dB   "clean"
+        battle_mushroom       0.450s                -60.8 dB   "clean"
+
+    battle_mushroom is the one that settles it: under its pad sat a REAL +21.0
+    dB fade, revealed the moment the silence came off. The pad was not merely
+    invisible to the metric, it was CONCEALING a defect the metric exists to
+    find. So the pad check below is not a second opinion, it is the arm that
+    makes the level reading mean anything at all.
 
 THIS DOES NOT MODIFY ANYTHING. tools/crossfade_loop.py fixes what it finds.
 """
@@ -39,14 +55,27 @@ SR = 48000
 SEAM_S = 0.3
 JUMP_DB = 12.0
 
-# Beds crossfade_loop cannot fix, verified 2026-09-10. Kept as a PINNED
-# population, not an exemption: a new entry here means someone decided, and a
-# name dropping off means the tool can now fix it and this list is stale.
-KNOWN_UNFIXABLE = {
-    "overworld_industrial": "no cut point yields a flat wrap",
-    "ambient_steampunk": "unreachable anyway — play_ambient reads the SFX manifest",
-    "boss_warden_abstract": "no cut point yields a flat wrap",
-}
+## -60 dBFS peak: below this a sample is inaudible under any playback chain.
+FLOOR_DB = -60.0
+## Under 40ms a wrap gap is too short to read as a stutter. Derived from the
+## corpus (the two beds beneath it measured 31ms and 21ms), not chosen.
+MIN_PAD_S = 0.040
+
+# Beds no tool can fix. EMPTY as of 2026-09-10, and the emptying is the point:
+# all three former entries were MISDIAGNOSES of mine, pinned on a refusal
+# message I did not read carefully. crossfade_loop declined them saying "the
+# SEAM is fine, the master is hot" -- a statement about CLIPPING HEADROOM for a
+# gain change -- and I recorded that as "no cut point yields a flat wrap", which
+# is a statement about the seam and is not what it said.
+#
+#     overworld_industrial   +75.7 dB   0.31s of trailing SILENCE   -> trimmed
+#     ambient_steampunk      +74.4 dB   0.74s of trailing SILENCE   -> trimmed
+#     boss_warden_abstract   +15.0 dB   a 1.0s fade the 1.5s window averaged away
+#
+# None needed a crossfade; two needed no gain change whatsoever. A pin is a
+# claim that something is impossible, so it earns more scepticism than a bug
+# report, not less -- it is the entry that stops anyone looking again.
+KNOWN_UNFIXABLE = {}
 
 
 def decode(path):
@@ -69,6 +98,7 @@ def main():
     tracks = json.load(open(MANIFEST, encoding="utf-8"))["tracks"]
     w = int(SEAM_S * SR)
     rows = []
+    padded = []
     for key, meta in sorted(tracks.items()):
         if not meta.get("loop") or meta.get("stinger"):
             continue
@@ -79,7 +109,13 @@ def main():
         if len(y) < 3 * SR:
             continue
         rows.append((db(y[:w]) - db(y[-w:]), key))
+        loud = np.flatnonzero(np.abs(y) > 10.0 ** (FLOOR_DB / 20.0))
+        if loud.size:
+            head_pad, tail_pad = loud[0] / SR, (len(y) - 1 - loud[-1]) / SR
+            if head_pad + tail_pad >= MIN_PAD_S:
+                padded.append((head_pad + tail_pad, key, head_pad, tail_pad))
     rows.sort(reverse=True)
+    padded.sort(reverse=True)
 
     jumps = [r for r in rows if r[0] > JUMP_DB]
     print("%-34s %s" % ("track", "wrap step (tail -> head)"))
@@ -88,6 +124,17 @@ def main():
         print("  %-32s %+7.1f dB   %s" % (key, step, "PINNED: " + note if note else "*** NEW ***"))
     print("\n  %d looping beds measured, %d jump more than %.0f dB" % (len(rows), len(jumps), JUMP_DB))
 
+    ## Reported separately because a pad is a different defect with a different
+    ## fix, and because the level reading above cannot see it -- silence at the
+    ## head flatters the score instead of hurting it.
+    if padded:
+        print("\n%-34s %s" % ("track", "digital silence at the wrap"))
+        for total, key, h, t in padded:
+            print("  %-32s head %.3fs + tail %.3fs = %.3fs" % (key, h, t, total))
+        print("  -> run: uv run tools/trim_wrap_padding.py --apply")
+    else:
+        print("  0 beds carry silence padding at the wrap")
+
     new = [k for _, k in jumps if k not in KNOWN_UNFIXABLE]
     stale = [k for k in KNOWN_UNFIXABLE if k not in {kk for _, kk in jumps}]
     if stale:
@@ -95,7 +142,7 @@ def main():
     if new:
         print("  NEW jumps not pinned: %s" % ", ".join(new))
         print("  -> run: uv run tools/crossfade_loop.py --only <track> --apply")
-    return 1 if (new or stale) else 0
+    return 1 if (new or stale or padded) else 0
 
 
 if __name__ == "__main__":
