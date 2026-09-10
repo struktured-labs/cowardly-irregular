@@ -55,6 +55,8 @@ const GATE_COLORS = {
 
 var _player_in_zone: bool = false
 var _indicator_label: Label
+## Mode 7 warps every world-space pixel; the prompt moves to a layer the shader never samples.
+var _prompt_layer: CanvasLayer
 var _arrow_blink: float = 0.0
 var _redraw_timer: float = 0.0
 ## True after _trigger_transition fires once. Prevents double-emit of
@@ -73,6 +75,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if _indicator_label:
+		if InteractGeometry.is_mode7():
+			_drive_screen_prompt()
+		elif _prompt_layer != null:
+			_return_prompt_to_the_world()
+
 	if show_gate_visual:
 		_arrow_blink += delta * 2.0
 		_redraw_timer += delta
@@ -188,6 +196,50 @@ func _get_default_indicator_text() -> String:
 	elif "overworld" in target_map.to_lower():
 		return "Exit"
 	return "Enter"
+
+
+## Screen-space prompt sized for reading, not for lying on the ground at whatever the perspective gives it.
+const MODE7_PROMPT_FONT: int = 18
+const MODE7_PROMPT_OUTLINE: int = 5
+## Player is drawn at 0.75 of the viewport height; the prompt sits clear of their head.
+const MODE7_PROMPT_ABOVE_PLAYER: float = 132.0
+
+
+## In Mode 7 the label only speaks for the zone the player is standing in — a warped signpost read from across the map was noise.
+func _drive_screen_prompt() -> void:
+	if _prompt_layer == null:
+		_lift_prompt_out_of_the_world()
+	var show := _player_in_zone and not _a_nearer_transition_has(_get_player_in_zone())
+	_indicator_label.visible = show
+	if not show:
+		return
+	var vp := get_viewport_rect().size
+	_indicator_label.size.x = vp.x
+	_indicator_label.position = Vector2(0.0, vp.y * 0.75 - MODE7_PROMPT_ABOVE_PLAYER)
+
+
+## Layer 3 clears Mode7Overlay's own 1 (ground) and 2 (player), so nothing warps it and nothing covers it.
+func _lift_prompt_out_of_the_world() -> void:
+	_prompt_layer = CanvasLayer.new()
+	_prompt_layer.name = "TransitionPrompt"
+	_prompt_layer.layer = 3
+	add_child(_prompt_layer)
+	_indicator_label.reparent(_prompt_layer)
+	_indicator_label.add_theme_font_size_override("font_size", MODE7_PROMPT_FONT)
+	_indicator_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
+	_indicator_label.add_theme_constant_override("outline_size", MODE7_PROMPT_OUTLINE)
+
+
+## A scene can drop out of Mode 7 under a live transition; put the label back where flat maps expect it.
+func _return_prompt_to_the_world() -> void:
+	_indicator_label.reparent(self)
+	_indicator_label.size.x = 0.0
+	_indicator_label.position = Vector2(-40, -72)
+	_indicator_label.add_theme_font_size_override("font_size", 12)
+	_indicator_label.add_theme_constant_override("outline_size", 0)
+	_indicator_label.visible = show_gate_visual
+	_prompt_layer.queue_free()
+	_prompt_layer = null
 
 
 func _on_body_entered(body: Node2D) -> void:
