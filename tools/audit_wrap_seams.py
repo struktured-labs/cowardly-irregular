@@ -118,7 +118,90 @@ def db(x):
     return 20.0 * np.log10(r) if r > 0 else float("-inf")
 
 
+def wrap_step(y):
+    """Worst POSITIVE step across the stable windows, or None if none fits."""
+    worst = None
+    for ws in SEAM_WINDOWS_S:
+        n = int(ws * SR)
+        if len(y) < 3 * n:
+            continue
+        step = db(y[:n]) - db(y[-n:])
+        if worst is None or step > worst[0]:
+            worst = (step, ws)
+    return worst
+
+
+def pad_seconds(y):
+    """(head, tail) seconds of sub-floor audio by 10ms windowed RMS, or None.
+
+    Windowed RMS, not per-sample peak: one stray sample in the first millisecond
+    defeated the peak form and hid 30 padded beds.
+    """
+    w = int(0.010 * SR)
+    nw = len(y) // w
+    if nw < 1:
+        return None
+    rms = np.sqrt(np.mean(np.square(y[:nw * w].reshape(nw, w)), axis=1))
+    loud = np.flatnonzero(rms > 10.0 ** (FLOOR_DB / 20.0))
+    if not loud.size:
+        return None
+    return loud[0] * 0.010, (nw - 1 - loud[-1]) * 0.010
+
+
+def controls():
+    """⛔ THE GATE HAD NO ARM PROVING ITS DETECTOR STILL DETECTS.
+
+    A corpus floor was added here after "0 beds measured, 0 jumping, EC=0" proved
+    publishable from an empty walk. That floor answers "did I measure anything".
+    It cannot answer "does the measurement still work" — and this tool's EC=0 is
+    what this lane reports hourly as `corpus healthy`. If the seam maths broke,
+    every number it prints would look exactly the same.
+
+    cowir-deploy's fifth axis: a guard's arms must run WHERE THE GUARD IS USED.
+    These run on every invocation and refuse before any corpus number is printed
+    — the shape measure_victory_downbeats already had and this file did not.
+
+    CONSTRUCTED, not sampled: a control drawn from the corpus decays with it.
+    Each feeds the REAL function above rather than a reimplementation.
+
+    ⚠️ The extraction that made these possible is behaviour-preserving, VERIFIED
+    against origin/main's copy of this tool rather than asserted: both print
+    "146 looping beds measured, 0 jump more than 12 dB / 0 beds carry silence
+    padding at the wrap", and the outputs are identical apart from the CONTROL
+    lines. The commit that landed this claimed that comparison and the command
+    had not run -- uv refused to spawn the snapshot because it lacked a .py
+    extension, and "Failed to spawn" scrolled past as though it were a diff.
+    The claim was true; the evidence for it did not exist when I made it. Being
+    correct is not the same as having checked (cowir-deploy, 2026-09-11).
+    """
+    t = np.linspace(0.0, 4.0, int(4.0 * SR), endpoint=False)
+    tone = 0.5 * np.sin(2.0 * np.pi * 220.0 * t)
+
+    faded = tone.copy()
+    faded[-int(0.5 * SR):] *= 0.02
+    padded_sig = tone.copy()
+    padded_sig[:int(0.30 * SR)] = 0.0
+
+    flat, step, pads, clean = wrap_step(tone), wrap_step(faded), pad_seconds(padded_sig), pad_seconds(tone)
+    checks = [
+        ("flat tone -> no wrap jump", flat is not None and flat[0] < 1.0),
+        ("faded tail -> jump detected", step is not None and step[0] > JUMP_DB),
+        ("300ms silent head -> pad found", pads is not None and pads[0] >= 0.25),
+        ("flat tone -> no pad", clean is not None and clean[0] + clean[1] < MIN_PAD_S),
+    ]
+    ok = True
+    for name, passed in checks:
+        print("  CONTROL  %-38s %s" % (name, "PASS" if passed else "FAIL"))
+        ok = ok and passed
+    return ok
+
+
 def main():
+    if not controls():
+        print("\n  REFUSED: the detector's own controls FAILED. Every corpus number below"
+              " is produced by the code those controls just exercised, so a health report"
+              " from here would be unfounded. Fix the measurement, not the manifest.")
+        return 2
     if not os.path.exists(MANIFEST):
         sys.exit("run from the repo root: %s not found" % MANIFEST)
     tracks = json.load(open(MANIFEST, encoding="utf-8"))["tracks"]
@@ -165,25 +248,18 @@ def main():
             _skip_wrap = True
         else:
             _skip_wrap = False
-        for ws in SEAM_WINDOWS_S:
-            n = int(ws * SR)
-            if len(y) < 3 * n:
-                continue
-            step = db(y[:n]) - db(y[-n:])
-            if worst is None or step > worst[0]:
-                worst = (step, ws)
+        _w2 = wrap_step(y)
+        if worst is None:
+            worst = _w2
         if not _skip_wrap:
             if worst is None:
                 continue
             rows.append((worst[0], key, worst[1]))
         ## Windowed RMS, not per-sample peak: one stray sample in the first
         ## millisecond defeated the peak form and hid 30 padded beds.
-        _w = int(0.010 * SR)
-        _nw = len(y) // _w
-        _rms = np.sqrt(np.mean(np.square(y[:_nw * _w].reshape(_nw, _w)), axis=1))
-        loud = np.flatnonzero(_rms > 10.0 ** (FLOOR_DB / 20.0))
-        if loud.size:
-            head_pad, tail_pad = loud[0] * 0.010, (_nw - 1 - loud[-1]) * 0.010
+        _pads = pad_seconds(y)
+        if _pads is not None:
+            head_pad, tail_pad = _pads
             if head_pad + tail_pad >= MIN_PAD_S:
                 padded.append((head_pad + tail_pad, key, head_pad, tail_pad))
     rows.sort(reverse=True)
