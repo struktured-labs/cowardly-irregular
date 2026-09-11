@@ -53,6 +53,25 @@ func test_full_signal_chain_resolves() -> void:
 	assert_eq(AudioServer.get_bus_send(duck_idx), "Master",
 		"MusicDuck must send to Master — else the whole music path is orphaned and the game plays silent")
 
+	## ⚠️ THE FOURTH PLAYER. This test is named "full signal chain" and pinned
+	## three hops for two players; _ambient_player is the fourth and was absent,
+	## so the ONE routing in the chain that diverges was the one nothing asserted.
+	## Ambient goes straight to Master: it skips the night filter (it IS the
+	## night) and it also skips the DIALOGUE DUCK, so while music steps back 6 dB
+	## for a dialogue panel, rain and wind do not. That is a mix decision, it is
+	## UNREVIEWED, and it is invisible from the assignment itself — which is why
+	## the rule here (CLAUDE.md, divergent + invisible at authoring) is to demand
+	## the ANNOTATION, not a particular bus. Change the routing freely; say why.
+	assert_eq(sm._ambient_player.bus, "Master",
+		"_ambient_player moved off Master to %s — that is allowed, but it now inherits the night filter and/or the dialogue duck, and the annotation beside the assignment must say so" % sm._ambient_player.bus)
+	var src: String = FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
+	assert_gt(src.length(), 5000, "SCOPE control: SoundManager.gd read back %d chars" % src.length())
+	var at: int = src.find("_ambient_player.bus =")
+	assert_gt(at, 0, "SCOPE control: the ambient bus assignment is gone; this arm is anchored on nothing")
+	var preceding: String = src.substr(max(0, at - 200), 200)
+	assert_true(preceding.contains("MusicDuck") or preceding.contains("duck"),
+		"the ambient bus assignment carries no annotation explaining what it diverges FROM — the next reader spends an hour deriving that it skips the duck, as I did. State it in one line.")
+
 
 func test_compound_night_plus_duck_active_together() -> void:
 	## Enable both, verify neither clobbers the other. Real gameplay case:
