@@ -137,6 +137,17 @@ const EXPECTED_GATED_BOSSES: Array[String] = [
 ## Growth is fine — a sixth dungeon gate is caught by the ownership ratchet below,
 ## which is the arm that should judge a new one.
 func test_premise_every_dungeon_boss_still_has_its_aftermath_gate() -> void:
+	# THE CONTROL MUST NOT BE DRAINABLE EITHER. Measured 2026-09-11: emptying EXPECTED_GATED_BOSSES
+	# gave Failed 0, Risky 0 — the loop below runs zero times and the corpus floor is a
+	# literal that still passes, so the named-member fix I added an hour ago introduced
+	# a new silent control. @cowir-sfx's cell: every `for x in LIST` and every
+	# `size() >= LIST.size()` is silent at LIST == []. Pinned to a LITERAL — and gte,
+# not eq: @cowir-overworld's PLUS-ONE magnitude showed the eq form REDS when a lane
+# correctly adds an anchor. Their two questions: may this set grow on correct work
+# (yes — another anchor is ordinary), and is growth itself the signal (no). A guard
+# that reds on correct work is how suppression entries get written in the first place.
+	assert_gte(EXPECTED_GATED_BOSSES.size(), 5,
+		"EXPECTED_GATED_BOSSES holds %d, fewer than the 5 this guard defends — the named-member check below is going vacuous. ADDING an anchor is free; losing one is not." % EXPECTED_GATED_BOSSES.size())
 	var gates := _gates()
 	var found: Array[String] = []
 	for gate in gates:
