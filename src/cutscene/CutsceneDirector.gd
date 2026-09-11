@@ -18,6 +18,8 @@ var _cutscene_id: String = ""
 var _skipping: bool = false
 var _fast_forward: bool = false
 var _skip_hold_time: float = 0.0
+## True while a `battle` step owns the screen: the Director is hidden, so a held B in the duel menu must not count toward a skip it cannot show.
+var _battle_in_flight: bool = false
 
 ## Letterbox bars
 var _letterbox_top: ColorRect
@@ -228,8 +230,8 @@ func _process(delta: float) -> void:
 	if ilm_hb:
 		ilm_hb.push_lock("cutscene")
 
-	# Handle skip input (hold B/X/Escape)
-	var skip_pressed = Input.is_action_pressed("ui_cancel")
+	# Handle skip input (hold B/X/Escape) — inert while a duel owns the screen, and the hold resets at that boundary
+	var skip_pressed = Input.is_action_pressed("ui_cancel") and not _battle_in_flight
 	if skip_pressed and not _skipping:
 		_skip_hold_time += delta
 		_skip_indicator.visible = true
@@ -2059,6 +2061,7 @@ func _end_cutscene() -> void:
 		visible = false
 	_cutscene_id = ""
 	_skipping = false
+	_battle_in_flight = false
 	_aborted = false
 	cutscene_finished.emit(finished_id)
 	# The fade-in runs AFTER the emit, and only if no listener chained a new scene into this layer.
@@ -2144,7 +2147,9 @@ func _step_battle(step: Dictionary) -> void:
 		visible = false
 		if _dialogue != null and is_instance_valid(_dialogue):
 			_dialogue.visible = false
+		_battle_in_flight = true
 		var result: String = await game_loop.start_solo_battle(str(combatants[0]), str(enemies[0]), opts)
+		_battle_in_flight = false
 		visible = true
 		if _dialogue != null and is_instance_valid(_dialogue):
 			_dialogue.visible = true
