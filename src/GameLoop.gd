@@ -1766,6 +1766,13 @@ func _demo_mode() -> bool:
 	return false
 
 
+## A between-worlds transition waits for its world's epilogue only once that epilogue is WIRED (in the completion map) — nothing writes an unwired scene's flag, and waiting on it would hold the transition forever.
+func _epilogue_done_or_unwired(epilogue_id: String, flags: Dictionary) -> bool:
+	if not _CUTSCENE_COMPLETION_FLAGS.has(epilogue_id):
+		return true
+	return bool(flags.get(_CUTSCENE_COMPLETION_FLAGS[epilogue_id], false))
+
+
 func _get_pending_story_cutscene() -> String:
 	"""Check if a story cutscene should play based on flags.
 	Returns cutscene ID or empty string."""
@@ -1982,6 +1989,9 @@ func _get_pending_story_cutscene() -> String:
 	# couldn't progress past W2 even after finishing chapter11.
 	if flags.get("cutscene_flag_chapter11_complete", false) and not flags.get("cutscene_flag_world2_complete", false):
 		_set_cutscene_flag_and_mirror("cutscene_flag_world2_complete")
+	# W2→W3 transition (the party's reflection between worlds; authored trigger world2_epilogue_complete). Orphaned with 0 callers until 2026-09-11.
+	if flags.get("cutscene_flag_world2_complete", false) and _epilogue_done_or_unwired("world2_epilogue", flags) and not flags.get("cutscene_flag_world2_transition_complete", false):
+		return "world2_transition"
 
 	# ===== WORLD 3: STEAMPUNK =====
 	if flags.get("cutscene_flag_world2_complete", false) and not flags.get("cutscene_flag_world3_prologue_complete", false):
@@ -2015,6 +2025,9 @@ func _get_pending_story_cutscene() -> String:
 	# as W2. Unblocks the W4 prologue gate which reads world3_complete.
 	if flags.get("cutscene_flag_world3_chapter5_complete", false) and not flags.get("cutscene_flag_world3_complete", false):
 		_set_cutscene_flag_and_mirror("cutscene_flag_world3_complete")
+	# W3→W4 transition (authored trigger world3_to_world4_transition; the Calibrant-revealed beat). Orphaned with 0 callers until 2026-09-11.
+	if flags.get("cutscene_flag_world3_complete", false) and _epilogue_done_or_unwired("world3_epilogue", flags) and not flags.get("cutscene_flag_world3_transition_complete", false):
+		return "world3_transition"
 
 	# ===== WORLD 4: INDUSTRIAL / DIGITAL =====
 	# Tick 102: W4 Warden of Industrial defeat cutscene — plays IN
@@ -2205,6 +2218,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world2_chapter7_infrastructure":   "cutscene_flag_chapter7_infrastructure_complete",
 	"world2_chapter8_memos":            "cutscene_flag_chapter8_memos_found",
 	"world2_chapter11":                 "cutscene_flag_chapter11_complete",
+	"world2_transition":                "cutscene_flag_world2_transition_complete",
 	# Tick 102: W2 Warden of Routine post-defeat dialogue
 	"world2_warden_defeat":             "cutscene_flag_world2_warden_defeat_complete",
 	# World 3 (steampunk)
@@ -2216,6 +2230,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world3_chapter5":                  "cutscene_flag_world3_chapter5_complete",
 	# Tick 102: W3 Tempo of the Shift post-defeat dialogue
 	"world3_tempo_defeat":              "cutscene_flag_world3_tempo_defeat_complete",
+	"world3_transition":                "cutscene_flag_world3_transition_complete",
 	# World 4 (industrial)
 	"world4_prologue":                  "cutscene_flag_world4_prologue_complete",
 	"world4_chapter1":                  "cutscene_flag_world4_chapter1_complete",
