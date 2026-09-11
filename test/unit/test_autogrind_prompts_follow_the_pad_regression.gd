@@ -294,8 +294,12 @@ func test_the_census_reads_a_real_corpus() -> void:
 	## "res://src/ui/autobattle" from the array scored EC=0 Passing 7 Risky — GRADE A, because the
 	## loop below iterates the list and a removed entry takes its own check with it.
 	## Widening the lane's corpus is welcome; doing it silently is not.
-	assert_eq(LANE_DIRS.size(), 2,
-		"LANE_DIRS holds %d, not the 2 this guard was written against — if the lane gained or lost a prompt directory, update this pin AND check REACHABILITY still classifies every deriving surface" % LANE_DIRS.size())
+	## FLOOR, not equality. @cowir-sfx: the discriminator is whether the set MAY GROW on correct work,
+	## not who authored it — and a lane adding a prompt directory is ordinary work, not an event.
+	## Measured: a real third dir with a classified surface reds under `== 2` and passes under `>= 2`,
+	## while the same dir with its surface UNclassified still reds by name through the arm below.
+	assert_gte(LANE_DIRS.size(), 2,
+		"LANE_DIRS holds %d, below the 2 prompt directories this lane has — a directory was dropped from the census, which silently un-guards every caption in it" % LANE_DIRS.size())
 
 	## Every declared directory must CONTRIBUTE, and the failure names the one that went quiet.
 	for d in LANE_DIRS:
