@@ -20,6 +20,19 @@ extends GutTest
 ##
 ## This test is the sweep. It is a POSITIVE list: a class that appears here has been classified.
 ## A new class turns up as a failure that says "classify this", never as one that says "suppress it".
+##
+## ⚠️ AND THE SWEEP WALKS A COLD SCENE, SO IT CANNOT SEE A LABEL THAT IS BUILT ON DEMAND. Measured
+## 2026-09-11 by listing which function each Label.new() sits in: every class builds its text in a
+## _setup_* called at construction EXCEPT SavePoint, whose "Game Saved!" confirmation is created
+## inside _show_save_confirmation() when a save actually happens. The sweep has never seen it, and I
+## lifted that one by reading the code rather than by measuring it.
+## 🔑 I PUBLISHED THIS EXACT INSTRUMENT LIMITATION THE DAY BEFORE, about the village content census —
+## "a census over a cold instance reports conditional content as absent" — and did not apply it here.
+## The fourth pass over this file today; found by deliberately looking again AFTER three fixes,
+## which is the only reason it turned up (@cowir-sfx, 2026-09-11: five of eight lanes found a second
+## defect in a file that had just survived the first check, because believing you now understand the
+## problem is what suppresses the second look).
+## The gap is closed below by DRIVING the on-demand label rather than by widening the walk.
 
 const WORLDS := {
 	"medieval": "res://src/exploration/OverworldScene.gd",
@@ -181,3 +194,41 @@ func test_a_flat_map_leaves_every_prompt_in_the_world_where_it_was_authored() ->
 	assert_false(_under_canvas_layer(post._label), "a flat map moved the sign text to a layer")
 	assert_gt(chest.name_label.z_index, 0, "the chest prompt would draw under the player who opened it")
 	assert_gt(post._label.z_index, 0, "the sign text would draw under the player who read it")
+
+
+## The one label in the overworld that does not exist until the player does something. The sweep
+## above structurally cannot reach it, so it is driven here instead of trusted.
+func test_the_save_confirmation_is_lifted_even_though_the_sweep_cannot_see_it() -> void:
+	Mode7Overlay.is_active = true
+	var sp = load("res://src/exploration/SavePoint.gd").new()
+	add_child_autofree(sp)
+	await get_tree().process_frame
+
+	var before: Array = []
+	_collect(sp, before)
+	var cold_texts: Array = []
+	for l in before:
+		cold_texts.append(str(l.text))
+	assert_false("Game Saved!" in cold_texts,
+		"CONTROL: the confirmation must NOT exist before a save — if it does, this test is measuring the wrong thing")
+
+	sp._show_save_confirmation()
+	await get_tree().process_frame
+
+	var confirm: Label = null
+	for c in sp.get_children():
+		if c is Label and str((c as Label).text) == "Game Saved!":
+			confirm = c
+	# In Mode 7 it is reparented onto a prompt layer, so look there too.
+	if confirm == null:
+		for c in sp.get_children():
+			if c is CanvasLayer:
+				for g in c.get_children():
+					if g is Label and str((g as Label).text) == "Game Saved!":
+						confirm = g
+	assert_not_null(confirm, "CONTROL: the save confirmation must be built by _show_save_confirmation")
+	if confirm == null:
+		return
+	assert_true(_under_canvas_layer(confirm),
+		"the only feedback that a save happened is on the ground plane, where the shader smears it")
+
