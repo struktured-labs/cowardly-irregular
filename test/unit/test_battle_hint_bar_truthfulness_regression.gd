@@ -265,3 +265,57 @@ func _advertises_plus_minus_speed(line: String) -> bool:
 	if not line.to_lower().contains("speed"):
 		return false
 	return line.contains("+/-") or line.contains("+/\u2212") or line.contains("+ / -")
+
+
+## THE CONST IS NOW ONLY THE FALLBACK. cowir-controller 2026-09-11 derived the live bar per device
+## ("[Select]" is a button no Xbox, PlayStation or Switch pad has), so the hand list above and
+## test_every_bracketed_hint_in_the_bar_is_accounted_for now scan a string players rarely see.
+## That is this file's own defect class — the corpus drifting off the surface — so pin the three
+## authored bars to the same set of CONTROLS. The buttons legitimately differ; the controls cannot.
+func _controls_named_in(line_fragment: String) -> Array[String]:
+	var out: Array[String] = []
+	for seg in line_fragment.split("·"):
+		var words := seg.strip_edges().split(" ", false)
+		if words.size() > 0:
+			out.append(words[words.size() - 1].replace("\"", "").strip_edges())
+	out.sort()
+	return out
+
+
+func _authored_bar(marker: String) -> String:
+	for line in _read(WIN98_PATH).split("\n"):
+		if line.strip_edges().begins_with("#"):
+			continue
+		if not line.contains(marker):
+			continue
+		var first := line.find("\"")
+		var last := line.rfind("\"")
+		if first != -1 and last > first:
+			return line.substr(first + 1, last - first - 1)
+	return ""
+
+
+func test_every_authored_bar_names_the_same_controls() -> void:
+	var fallback := _authored_bar("HINT_DEFAULT_TEXT :=")
+	var keyboard := _authored_bar("HINT_KEYBOARD_TEXT :=")
+	var derived := _authored_bar("Speed  ·  %s Auto")
+	assert_ne(fallback, "", "PRECONDITION: could not read HINT_DEFAULT_TEXT")
+	assert_ne(keyboard, "", "PRECONDITION: could not read HINT_KEYBOARD_TEXT")
+	assert_ne(derived, "", "PRECONDITION: could not read the DERIVED bar — if hint_text() was " +
+		"reformatted this marker is stale, and a stale marker silently stops checking the live bar")
+	var want := _controls_named_in(fallback)
+	assert_eq(_controls_named_in(derived), want,
+		"the DERIVED bar (what a pad player sees) and the fallback advertise different controls: %s vs %s"
+			% [str(_controls_named_in(derived)), str(want)])
+	assert_eq(_controls_named_in(keyboard), want,
+		"the KEYBOARD bar advertises different controls: %s vs %s"
+			% [str(_controls_named_in(keyboard)), str(want)])
+
+
+## The derived bar must not reintroduce a frozen pad name — the defect the derivation removed.
+func test_the_derived_bar_names_no_button_literally() -> void:
+	var derived := _authored_bar("Speed  ·  %s Auto")
+	assert_ne(derived, "", "PRECONDITION: could not read the derived bar")
+	for frozen in ["[L]", "[R]", "[X]", "[Y]", "[Select]", "[Start]", "[A]", "[B]"]:
+		assert_false(derived.contains(frozen),
+			"the derived bar froze %s again — every button in it must come from InputProfileManager" % frozen)

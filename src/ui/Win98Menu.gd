@@ -1459,7 +1459,14 @@ static func hint_text() -> String:
 	var speed: String = InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y)
 	if speed == "?":
 		return HINT_DEFAULT_TEXT
-	return "[L] Defer  ·  [R] Advance  ·  %s Speed  ·  [Select] Auto" % speed
+	# The other three are ACTIONS, so they follow the active profile: L/LB/L1, R/RB/R1,
+	# Minus/Back/Share. "[Select]" is a button no Xbox, PlayStation or Switch pad has.
+	var defer: String = InputProfileManager.hint_for_action("battle_defer")
+	var adv: String = InputProfileManager.hint_for_action("battle_advance")
+	var auto: String = InputProfileManager.hint_for_action("battle_toggle_auto")
+	if defer == "" or adv == "" or auto == "":
+		return HINT_DEFAULT_TEXT
+	return "%s Defer  ·  %s Advance  ·  %s Speed  ·  %s Auto" % [defer, adv, speed, auto]
 
 var _hint_label_cache: Label = null
 var _hint_showing_reason: bool = false

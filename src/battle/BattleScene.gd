@@ -2867,8 +2867,13 @@ func _on_battle_started() -> void:
 	if GameState and "game_constants" in GameState and GameState.game_constants.has("pending_battle_flavor_line"):
 		log_message("[color=orange]%s[/color]" % str(GameState.game_constants["pending_battle_flavor_line"]))
 		GameState.game_constants.erase("pending_battle_flavor_line")
-	_show_hint("autobattle", "Press Select or F6 to enable Autobattle for all characters!")
-	_show_hint("controls", "L = Defer (skip, +1 AP) | R = Advance (queue extra actions)")
+	# Derived: "Select" / "L" / "R" are Nintendo names for buttons Xbox and PlayStation call
+	# Back/LB/RB and Share/L1/R1. Same defect as the hint bar these two sit beneath.
+	_show_hint("autobattle", "Press %s or F6 to enable Autobattle for all characters!"
+		% InputProfileManager.hint_for_action("battle_toggle_auto"))
+	_show_hint("controls", "%s = Defer (skip, +1 AP) | %s = Advance (queue extra actions)"
+		% [InputProfileManager.hint_for_action("battle_defer"),
+			InputProfileManager.hint_for_action("battle_advance")])
 
 	# Tutorial popups (fire once per save)
 	TutorialHints.show(self, "first_battle")
