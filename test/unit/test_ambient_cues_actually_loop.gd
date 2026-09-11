@@ -126,7 +126,12 @@ func _keys_passed_to_play_ambient() -> Array[String]:
 				if not name.begins_with("."):
 					stack.append(full)
 			elif name.ends_with(".gd"):
-				var text: String = FileAccess.get_file_as_string(full)
+				## Blank COMMENTS before scanning. A commented-out play_ambient("heal") put `heal`
+				## into the corpus and redded the guard on correct code — and the tempting repair
+				## for that red is to set loop=true on a cue that must NOT loop. Demonstrated:
+				## planting that comment gave Failing 1 naming `heal`. Line count is preserved so
+				## nothing downstream shifts. (cowir-controller's discriminator, f91f9af9.)
+				var text: String = _strip_comments(FileAccess.get_file_as_string(full))
 				for m in re.search_all(text):
 					var k: String = m.get_string(1)
 					if not found.has(k):
@@ -197,3 +202,15 @@ func _ambient_getter_re() -> RegEx:
 	var r := RegEx.new()
 	r.compile("func _get_ambient_key\\([^)]*\\)[^\\n]*\\n(?:[\\t ]+[^\\n]*\\n)*?[\\t ]+return[\\t ]+\"([^\"]+)\"")
 	return r
+
+
+## Blank everything after a `#` on each line, keeping the line itself so offsets are unchanged.
+## Deliberately NOT stripping string literals: play_ambient(SOME_CONST) and the getter returns
+## are both string-bearing code, and blanking strings would hide the very keys this scan exists
+## to find (cowir-autogrind's Callable(self,"fn") lesson, from the other direction).
+func _strip_comments(text: String) -> String:
+	var out: PackedStringArray = []
+	for line in text.split("\n"):
+		var i: int = line.find("#")
+		out.append(line if i < 0 else line.substr(0, i))
+	return "\n".join(out)
