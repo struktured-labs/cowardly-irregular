@@ -11,15 +11,17 @@ extends GutTest
 ## the same way: derive from InputProfileManager.hint_for_action(), which returns the live family's
 ## glyph when a pad is present and the keyboard key when it is not.
 ##
-## ⚠️ SCOPE: the three legends that use FACE buttons only. MenuScene's "[Select] Toggle autobattle"
-## is NOT converted — Select is button 4, outside FACE_GLYPHS, so glyph_for_action returns "?" and
-## the helper would silently print the keyboard key to a pad player. That needs a button-name table,
-## which is a different change; it is named here so the gap is recorded rather than implied closed.
+## ⚠️ SCOPE, UPDATED 2026-09-11: that gap is now CLOSED. BUTTON_NAMES gives the five non-face
+## indices the profiles bind a per-family printed name (Minus/Back/Share · Plus/Start/Options ·
+## L/LB/L1 · R/RB/R1), so hint_for_action names the button instead of dropping to a keyboard key a
+## pad player cannot press. MenuScene's Select legend is converted. Still NOT covered: legends
+## elsewhere in the game that were never surveyed — this file pins four files, not every legend.
 
 const CONVERTED := [
 	"res://src/ui/ItemsMenu.gd",
 	"res://src/ui/LensMenu.gd",
 	"res://src/ui/RadialPicker.gd",
+	"res://src/ui/MenuScene.gd",
 ]
 
 
@@ -64,3 +66,46 @@ func test_the_converted_legends_are_derived() -> void:
 	assert_eq(offenders, [] as Array[String],
 		"a legend hardcodes A/B again — that is inverted for Xbox and PlayStation players and " +
 		"meaningless on a keyboard: %s" % [", ".join(offenders)])
+
+## NON-FACE BUTTONS MUST BE NAMED, NOT SILENTLY DOWNGRADED. Select/Start/L3/shoulders have no entry
+## in FACE_GLYPHS, so before BUTTON_NAMES the helper fell through to the keyboard key — printing
+## "Tab" to someone holding a pad. Each family names them differently, which is the whole point.
+func test_non_face_buttons_are_named_per_family() -> void:
+	var nin: String = InputProfileManager.button_name_for_action("battle_toggle_auto", "Nintendo Switch Pro Controller")
+	var xb: String = InputProfileManager.button_name_for_action("battle_toggle_auto", "Xbox Wireless Controller")
+	var ps: String = InputProfileManager.button_name_for_action("battle_toggle_auto", "DualSense Wireless Controller")
+	assert_eq(nin, "Minus", "Nintendo calls button 4 Minus")
+	assert_eq(xb, "Back", "Xbox calls it Back")
+	assert_eq(ps, "Share", "PlayStation calls it Share")
+	assert_ne(nin, xb, "CONTROL: the accessor must vary by family, not return one constant")
+	assert_eq(InputProfileManager.button_name_for_action("ui_accept"), "",
+		"a FACE button must return empty here — it has a glyph and should use it")
+	assert_eq(InputProfileManager.button_name_for_action("zzq_not_an_action"), "",
+		"CONTROL: an unbound action returns empty")
+
+
+## The shoulders differ too, and they are the bindings struktured actually reported confusion about.
+func test_the_shoulders_are_named_per_family() -> void:
+	assert_eq(InputProfileManager.button_name_for_action("battle_defer", "Nintendo Switch Pro Controller"), "L")
+	assert_eq(InputProfileManager.button_name_for_action("battle_defer", "Xbox Wireless Controller"), "LB")
+	assert_eq(InputProfileManager.button_name_for_action("battle_defer", "DualSense Wireless Controller"), "L1")
+	assert_eq(InputProfileManager.button_name_for_action("battle_advance", "DualSense Wireless Controller"), "R1")
+
+## THE INTEGRATION, and it exists because a mutation proved the gap. Deleting the non-face lookup
+## from hint_for_action left this whole file GREEN: the box has no pad, so that branch never ran and
+## every arm was testing the accessor in isolation. The device_name seam makes the pad path
+## reachable headless.
+func test_hint_for_action_uses_the_name_table_on_a_pad() -> void:
+	assert_eq(InputProfileManager.hint_for_action("battle_toggle_auto", "Xbox Wireless Controller"), "Back",
+		"with an Xbox pad the Select legend must say Back, not a keyboard key")
+	assert_eq(InputProfileManager.hint_for_action("battle_toggle_auto", "DualSense Wireless Controller"), "Share",
+		"and Share on PlayStation")
+	assert_eq(InputProfileManager.hint_for_action("battle_defer", "DualSense Wireless Controller"), "L1",
+		"the shoulders route through the same lookup")
+	# FACE buttons must still take the glyph path, not the name table.
+	assert_eq(InputProfileManager.hint_for_action("ui_accept", "Xbox Wireless Controller"),
+		InputProfileManager.glyph_for_action("ui_accept", "Xbox Wireless Controller"),
+		"a face button must still resolve to its GLYPH")
+	# CONTROL: no device name = keyboard, so the seam is genuinely switching behaviour.
+	assert_eq(InputProfileManager.hint_for_action("battle_toggle_auto"), "Tab",
+		"CONTROL: with no pad and no override it must fall back to the keyboard key")
