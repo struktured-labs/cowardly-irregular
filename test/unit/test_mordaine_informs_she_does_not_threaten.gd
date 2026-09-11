@@ -140,10 +140,30 @@ func test_everything_else_the_ruling_left_alone_is_intact() -> void:
 	assert_eq((e.get("jailbreak_vulnerabilities", []) as Array).size(), 3, "every jailbreak entry stands")
 
 
+## Comment lines blanked, line count preserved. A bare contains() on source text
+## matches the comment a person leaves BEHIND when they remove what you defend —
+## which is the way removals actually look (cowir-controller, msg-9663).
+func _code_only(src: String) -> String:
+	var out: PackedStringArray = PackedStringArray()
+	for line in src.split("\n"):
+		out.append("" if line.strip_edges().begins_with("#") else line)
+	return "\n".join(out)
+
+
 func test_the_persona_still_reaches_the_model() -> void:
 	## EXECUTION IS NOT SELECTION: editing the persona is worthless if nothing reads
 	## it. BattleManager lifts it off this entry into the boss-intent context.
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	assert_false(src.is_empty(), "CONTROL: source must load")
-	assert_true(src.contains("ctx.persona = str(entry.get(\"persona\", \"\"))"),
+	assert_true(_code_only(src).contains("ctx.persona = str(entry.get(\"persona\", \"\"))"),
 		"the authored persona must still be the one handed to the prompt builder")
+
+
+func test_the_reaches_the_model_check_cannot_be_satisfied_by_a_comment() -> void:
+	## The control for the line above, because a source-text pin that a comment can
+	## satisfy defends nothing. Verified by mutation: before this, commenting the
+	## real line out and assigning a placeholder scored 9/9 green.
+	assert_false(_code_only("\t\t# ctx.persona = str(entry.get(\"persona\", \"\"))").contains("ctx.persona"),
+		"a commented-out assignment must not satisfy the check")
+	assert_true(_code_only("\t\tctx.persona = str(entry.get(\"persona\", \"\"))").contains("ctx.persona"),
+		"CONTROL: and real code must still satisfy it, or the discriminator refuses everything")
