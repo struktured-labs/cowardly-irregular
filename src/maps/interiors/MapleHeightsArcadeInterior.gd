@@ -102,9 +102,9 @@ func _setup_decorations() -> void:
 
 
 func _draw_cabinets(_marker: String, anchor: Vector2, hue: Color, label_text: String) -> void:
-	# Each cabinet pair is a tall body + bright screen + glow. The
-	# label hint is drawn as a small colored bar — the player sees
-	# 'four neon machines' visually, the dialogue says the names.
+	# Each cabinet pair is a tall body + bright screen + glow; the brand shows as a colored bar, not text.
+	# The names live in Pete's dialogue, which is the only place they can be read — pinned by a test,
+	# because three of the four reached nothing at all until 2026-09-11 and the comment claimed otherwise.
 	for i in range(2):
 		var pos: Vector2 = anchor * TILE_SIZE + Vector2(i * TILE_SIZE * 2, 0)
 		var body = ColorRect.new()
@@ -166,6 +166,7 @@ func _setup_npcs() -> void:
 	pete.position = Vector2(6 * TILE_SIZE, 7 * TILE_SIZE)
 	pete.dialogue_lines = [
 		"Welcome to Glitch City. Quarters in the jar. Token machine's busted, just shake it.",
+		"Four machines, and I know every one: BUG ZERO, DRAGON, PAC-MOM, SPACE 2. Names are on the marquees if the marquees are on.",
 		"Cabinets been acting weird lately. Bug Zero 2 turns into Bug Zero 5 if you blink at it.",
 		"Saw a guy yesterday — the screen ate him. Whole thing. Just his hat left on the chair.",
 		"I keep the place running because some things shouldn't be turned off.",
