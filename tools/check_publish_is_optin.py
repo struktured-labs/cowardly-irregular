@@ -428,6 +428,33 @@ def run(tools_dir):
         raise Unusable(f"[optin] BLOCKED: no *.sh in {tools_dir}. An empty target set "
                        f"is not a clean result.")
 
+    # ⛔ CONTROL FIRST, WITHHOLDING THE RESULT. This ran AFTER the reporting loop, so an
+    # UNUSABLE run still printed "N script(s) contain a push site · 0 finding(s)" — a clean
+    # verdict beside the block saying the verdict is vacuous. (@cowir-adhoc, 2026-09-11.)
+    channels = _channels_from_publish_all(tools_dir)
+    if channels is None:
+        raise Unusable(
+            "[optin] BLOCKED: could not read the channel list from publish_all.sh in this\n"
+            "        directory. This guard derives what it expects from that loop; without it\n"
+            "        there is no way to tell 'nothing publishes here' from 'the detector broke'.")
+    unbacked = []
+    for ch in channels:
+        cand = f"deploy_{ch}.sh"
+        path = os.path.join(tools_dir, cand)
+        if not os.path.isfile(path):
+            unbacked.append(f"{ch} (no {cand})")
+            continue
+        p_, f_, deleg, st_, orch_ = audit(path)
+        if not p_ and not deleg:
+            unbacked.append(f"{ch} ({cand} neither pushes nor delegates)")
+    if unbacked:
+        raise Unusable(
+            f"[optin] BLOCKED: publish_all iterates channel(s) with no publishable script:\n"
+            f"        {'; '.join(unbacked)}\n"
+            f"        Either a channel was added without its deploy script, or the push-site\n"
+            f"        detector stopped matching. 'All gated' over a channel nothing can ship\n"
+            f"        is vacuous.")
+
     pushers = 0
     bad = 0
     print(f"[optin] scanned {len(targets)} shell script(s) in {tools_dir} — corpus derived from\n[optin] the call site (`butler push`), not from filenames")
@@ -440,11 +467,16 @@ def run(tools_dir):
             continue          # neither pushes nor claims to be a deploy entry point
         if not pushes and not findings:
             if orch == "conditional":
-                print(f"[optin]   ok    {t}  delegates at line(s) {delegations}; names --publish "
-                      f"only inside a conditional — a DECISION, not an unconditional injection")
+                # `delegations` can be empty here — a hand-off this regex cannot see. Printing
+                # "delegates at line(s) []" asserts a location from an empty set, which is the
+                # label-broader-than-predicate shape in its smallest form.
+                _where = f"at line(s) {delegations}" if delegations else "(hand-off not located)"
+                print(f"[optin]   ok    {t}  delegates {_where}; names --publish only inside a "
+                      f"conditional — a DECISION, not an unconditional injection")
             elif orch == "never":
-                print(f"[optin]   ok    {t}  delegates at line(s) {delegations}; never names "
-                      f"--publish — forwards the caller's arguments untouched")
+                _where = f"at line(s) {delegations}" if delegations else "(hand-off not located)"
+                print(f"[optin]   ok    {t}  delegates {_where}; never names --publish — "
+                      f"forwards the caller's arguments untouched")
             elif not delegations:
                 # "delegates at line(s) []" claimed a hand-off from an empty set — a label
                 # asserting the thing its own data says did not happen. Seen on a fixture whose
@@ -486,30 +518,6 @@ def run(tools_dir):
             print(f"[optin]                                {why}", file=sys.stderr)
 
     print(f"[optin] {pushers} script(s) contain a push site · {bad} finding(s)")
-
-    channels = _channels_from_publish_all(tools_dir)
-    if channels is None:
-        raise Unusable(
-            "[optin] BLOCKED: could not read the channel list from publish_all.sh in this\n"
-            "        directory. This guard derives what it expects from that loop; without it\n"
-            "        there is no way to tell 'nothing publishes here' from 'the detector broke'.")
-    unbacked = []
-    for ch in channels:
-        cand = f"deploy_{ch}.sh"
-        path = os.path.join(tools_dir, cand)
-        if not os.path.isfile(path):
-            unbacked.append(f"{ch} (no {cand})")
-            continue
-        p_, f_, deleg, st_, orch_ = audit(path)
-        if not p_ and not deleg:
-            unbacked.append(f"{ch} ({cand} neither pushes nor delegates)")
-    if unbacked:
-        raise Unusable(
-            f"[optin] BLOCKED: publish_all iterates channel(s) with no publishable script:\n"
-            f"        {'; '.join(unbacked)}\n"
-            f"        Either a channel was added without its deploy script, or the push-site\n"
-            f"        detector stopped matching. 'All gated' over a channel nothing can ship\n"
-            f"        is vacuous.")
 
     if bad:
         print(f"[optin] publish_all --dry-run and --rollback both rehearse by WITHHOLDING "
