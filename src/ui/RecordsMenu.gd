@@ -39,6 +39,9 @@ func _collect_records() -> Array:
 	var sessions := 0
 	if AutogrindSystem and "session_history" in AutogrindSystem:
 		sessions = AutogrindSystem.session_history.size()
+	var banks := 0
+	if GameState and "full_banks_unleashed" in GameState:
+		banks = int(GameState.full_banks_unleashed)
 	return [
 		["Playtime", _fmt_playtime(), "The Meltwater Clock agrees."],
 		["Battles Won", str(GameState.battles_won if GameState else 0), "Filed, in advance, under 'survivable'."],
@@ -47,6 +50,7 @@ func _collect_records() -> Array:
 		["Crystals Attuned", str(GameState.activated_crystals.size() if GameState else 0), "Each one remembers you saving."],
 		["Fool Card Marks", "%d / 5" % marks, "The card is counting." if marks > 0 else "The card is patient."],
 		["Autogrind Sessions", str(sessions), "Enlightenment, quantified."],
+		["Full Banks", str(banks), "The fifth one was never paid for." if banks > 0 else "Bank four. Spend five. Not yet."],
 		["Gold", "%d G" % (GameState.party_gold if GameState else 0), "The economy notices."],
 		["Corruption", "%.1f" % (GameState.corruption_level if GameState else 0.0), "Within acceptable variance." if (GameState and GameState.corruption_level < 2.0) else "The variance is no longer acceptable."],
 		["Calibration", "COMPLETE" if _game_complete() else "IN PROGRESS", "You saw the credits and came back anyway." if _game_complete() else "The system remains uncalibrated."],
