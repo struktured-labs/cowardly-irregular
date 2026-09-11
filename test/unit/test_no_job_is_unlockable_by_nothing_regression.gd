@@ -32,9 +32,11 @@ extends GutTest
 ## the answer, and no consumer.
 ##
 ## ⚠️ NOT THE SAME DEFECT AS THE NINJA, deliberately excluded from the list below. The
-## Ninja's condition EXISTS and is well-formed (`achievement: speed_demon`); nothing in
-## the game awards that flag. Satisfy it by hand and the Ninja unlocks — which is why
-## the arm below passes for it and why test_the_ninja_cannot_be_unlocked owns that half.
+## Ninja's condition EXISTS and is well-formed (`achievement: speed_demon`). As of
+## 2026-09-11 a sub-5-minute dungeon clear awards that flag (DragonCave), so the Ninja is
+## reachable — test_the_ninja_is_obtainable owns that half, replacing the retired
+## test_the_ninja_cannot_be_unlocked. The arm below still passes for it either way: this
+## file is about jobs with NO condition, which the Ninja has never been.
 ## A job with no condition and a job with an unproducible one fail in different places
 ## and are one fix apart in different directions; merging them would hide both.
 
@@ -122,7 +124,7 @@ func test_the_detector_distinguishes_a_job_that_has_a_condition() -> void:
 	assert_false(conditionless.has("guardian"),
 		"guardian authors {type: story, chapter: 2} — flagging it as conditionless means this file's reader is broken, not the data")
 	assert_false(conditionless.has("ninja"),
-		"ninja authors {type: achievement, id: speed_demon} — its condition EXISTS and has no producer, which is a different defect and a different file")
+		"ninja authors {type: achievement, id: speed_demon} — its condition EXISTS, and since 2026-09-11 a sub-5-minute dungeon clear produces it; this file is about jobs with NO condition")
 
 
 ## THE RATCHET, bidirectional.
