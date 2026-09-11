@@ -2369,7 +2369,7 @@ func _setup_transitions() -> void:
 		var locked = LockedDoorScript.new()
 		locked.name = "LockedStairs"
 		locked.flavor_line = "The stairs to the private quarters. Locked to guests — 'staff only, and only on weekdays,' by which she means never."
-		locked.indicator_text = "[A] Locked"
+		locked.indicator_text = "%s Locked" % InputProfileManager.hint_for_action("ui_accept")
 		# UU tiles at cols 25-26, rows 14-15 → center pixel (26, 15) * TILE_SIZE.
 		locked.position = Vector2(26 * TILE_SIZE, 15 * TILE_SIZE)
 		transitions.add_child(locked)

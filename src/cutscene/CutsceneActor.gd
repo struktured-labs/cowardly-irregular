@@ -157,8 +157,9 @@ func set_facing_name(dir_name: String) -> void:
 	_apply_frame()
 
 
+## `world_pos` is GLOBAL (authored [x,y] marks and other puppets' global_position both are) — subtracting the local `position` faced the wrong way on any offset stage.
 func face_toward(world_pos: Vector2) -> void:
-	face_vector(world_pos - position)
+	face_vector(world_pos - global_position)
 
 
 ## Classic above-head emote glyph (quest-marker Label pattern: wide + centered).

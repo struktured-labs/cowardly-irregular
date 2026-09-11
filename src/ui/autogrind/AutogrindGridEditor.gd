@@ -191,7 +191,17 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help1 = Label.new()
-	help1.text = "D-Pad:Navigate  A:Edit  B/Esc:Back  Del/X:Delete  L:+AND  R:+Action  RClick:Close"
+	## Face letters derived; Esc/Del/D-Pad stay literal (keyboard keys and a control every pad
+	## has). Guarded for the pre-autoload window, matching this lane's other prompt surfaces.
+	var g_del: String = "X"
+	if InputProfileManager:
+		g_del = InputProfileManager.face_glyph_for_index(JOY_BUTTON_X)
+	var g_ok: String = "A"
+	var g_no: String = "B"
+	if InputProfileManager:
+		g_ok = InputProfileManager.glyph_for_action("ui_accept")
+		g_no = InputProfileManager.glyph_for_action("ui_cancel")
+	help1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  Del/%s:Delete  L:+AND  R:+Action  RClick:Close" % [g_ok, g_no, g_del]
 	help1.position = Vector2(16, size.y - 44)
 	help1.add_theme_font_size_override("font_size", 10)
 	help1.add_theme_color_override("font_color", style.text.darkened(0.2))

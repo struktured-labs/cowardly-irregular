@@ -36,16 +36,16 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "This has never happened before.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         },
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "I'm going to need to file a correction.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         }
       ]
     },
@@ -61,16 +61,16 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "I've been filing corrections for a long time. I don't know where they go. I've never received a response.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         },
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "I've filled a lot of folders.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         }
       ]
     },
@@ -82,16 +82,16 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "Your itemized deductions are unlike anything in the system. And my system is comprehensive.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         },
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "My records here cover every resident since the neighborhood was established. I have records for residents who do not remember living here. I have records for people who don't exist in any other database.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         }
       ]
     },
@@ -103,10 +103,10 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "That should bother me more than it does.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         }
       ]
     },
@@ -124,16 +124,16 @@
           "portrait": "cleric"
         },
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "Yes.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         },
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "A little. More today than yesterday.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         }
       ]
     },
@@ -149,16 +149,16 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "The numbers don't balance. They never balanced.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         },
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "I kept auditing because auditing was all I had.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         }
       ]
     },
@@ -170,10 +170,10 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "That's new.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         }
       ]
     },
@@ -193,10 +193,10 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Curator",
+          "speaker": "Curator of the Budget",
           "text": "I don't know what comes after the final receipt.",
           "theme": "enemy",
-          "portrait": "masterite_curator_medieval"
+          "portrait": "masterite_curator_suburban"
         }
       ]
     },

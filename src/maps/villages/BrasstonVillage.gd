@@ -316,12 +316,12 @@ func _setup_npcs() -> void:
 	npcs.add_child(repairman)
 
 	_add_quest_examine_point("world3_delay_in_everything",
-		"quest_world3_delay_in_everything_gear_examined", "[A] Examine the gear cluster",
+		"quest_world3_delay_in_everything_gear_examined", "Examine the gear cluster",
 		"The replacement gear is one unit too large. Exactly one gear-tooth of lag per cycle — seven seconds, every cycle, for six months. Too precise to be an accident.",
 		"A maintenance panel stands open at Sprocket's shoulder. The cluster inside turns a half-beat behind the rest.",
 		Vector2(11 * TILE_SIZE,7 * TILE_SIZE))
 	_add_quest_examine_point("world3_delay_in_everything",
-		"quest_world3_delay_in_everything_record_found", "[A] Read the depot record",
+		"quest_world3_delay_in_everything_record_found", "Read the depot record",
 		"The entry is there, in the margin, in a clerk's hand: 'substituted — standard gauge unavailable. Approved: Calibrant Logistics.' The order date precedes the maintenance incident.",
 		"The supply depot's ledger, open to a page of part numbers nobody has needed to read in six months.",
 		Vector2(13 * TILE_SIZE,14 * TILE_SIZE))
@@ -331,23 +331,23 @@ func _setup_npcs() -> void:
 	# local oddity; only Brigadier Flux at step 3 names the shape they make.
 	var _lamp_idle := "A gas lamp on Clem's route, unlit at this hour. Its base is grated at the foot."
 	_add_quest_route_point("world3_lamplighters_logic",
-		"quest_world3_lamplighters_logic_route_documented", 1, 5, "[A] Document the mill lamp",
+		"quest_world3_lamplighters_logic_route_documented", 1, 5, "Document the mill lamp",
 		"The mill lamp. Its base is warm — warmer than burning gas explains, and warmest on the side facing AWAY from the flame.",
 		_lamp_idle, Vector2(5 * TILE_SIZE,3 * TILE_SIZE))
 	_add_quest_route_point("world3_lamplighters_logic",
-		"quest_world3_lamplighters_logic_route_documented", 2, 5, "[A] Document the Copper Street lamp",
+		"quest_world3_lamplighters_logic_route_documented", 2, 5, "Document the Copper Street lamp",
 		"Copper Street, east side. The grate at the lamp's foot exhales on a slow count, like something upstream of it is breathing.",
 		_lamp_idle, Vector2(20 * TILE_SIZE,4 * TILE_SIZE))
 	_add_quest_route_point("world3_lamplighters_logic",
-		"quest_world3_lamplighters_logic_route_documented", 3, 5, "[A] Document the second Copper Street lamp",
+		"quest_world3_lamplighters_logic_route_documented", 3, 5, "Document the second Copper Street lamp",
 		"Copper Street again, further down, on the side you started from. The same slow count — offset by exactly the walk between the two.",
 		_lamp_idle, Vector2(20 * TILE_SIZE,17 * TILE_SIZE))
 	_add_quest_route_point("world3_lamplighters_logic",
-		"quest_world3_lamplighters_logic_route_documented", 4, 5, "[A] Document the bridge lamp",
+		"quest_world3_lamplighters_logic_route_documented", 4, 5, "Document the bridge lamp",
 		"The bridge lamp, reached after the arcade is skipped entirely. This base is cold. Cold enough to bead water out of dry air.",
 		_lamp_idle, Vector2(5 * TILE_SIZE,8 * TILE_SIZE))
 	_add_quest_route_point("world3_lamplighters_logic",
-		"quest_world3_lamplighters_logic_route_documented", 5, 5, "[A] Document the arcade lamp",
+		"quest_world3_lamplighters_logic_route_documented", 5, 5, "Document the arcade lamp",
 		"The arcade lamp, come back to last, exactly as Clem said. Warm again — the same warmth as the mill, at the opposite end of town.",
 		_lamp_idle, Vector2(5 * TILE_SIZE,18 * TILE_SIZE))
 

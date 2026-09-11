@@ -596,7 +596,8 @@ func _setup_npcs() -> void:
 
 	# === Mall Rat Mike - near arcade store ===
 	var mike = _create_npc("Mall Rat Mike", "villager", Vector2(12 * MAP_SCALE * TILE_SIZE, 15 * MAP_SCALE * TILE_SIZE), [
-		"Yo, you know about autobattle? Press F5 — or squeeze both triggers, dude.",
+		# F5 is GameLoop:912; on a pad it is the overworld menu's "Auto Rules" row -> GameLoop:1563.
+		"Yo, you know about autobattle? F5 on a keyboard. On a pad it's the menu — Auto Rules. Dude.",
 		"I set up my scripts to farm crows all day.",
 		"The XP isn't great but the drops are SICK.",
 		"Pro tip: condition 'Enemy HP < 25%' \u2192 Steal. Trust me."

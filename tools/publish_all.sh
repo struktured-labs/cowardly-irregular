@@ -37,9 +37,77 @@
 set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
+# ── the store read-back's ABSENCE is announced, on every exit path ───────────────────────
+# tools/verify_store_artifact.sh is the only check in this lane that crosses the CDN: every
+# gate tests the LOCAL artifact and stops at the moment of upload, and `butler status` reports
+# what butler was ASKED to push, not the bytes a player downloads. It is deliberately NOT wired
+# into every publish — its own header says so, "real bandwidth for a check whose expected answer
+# is identical. Run it after a publish that mattered."
+#
+# ⛔ THE PROBLEM IS THAT SKIPPING IT IS SILENT. On 2026-09-11 I published v3.33.295-alpha — 39
+# branches, 1634 scripts, a publish that mattered by that tool's own criterion — did not run the
+# read-back, and then removed the worktree as tidy-up, DELETING the local builds it compares
+# against. Nothing said so. "Never ran" and "passed" produce identical output, which is the
+# quiet failure direction: a loud wrong answer gets investigated, a quiet one ends the inquiry.
+#
+# I recorded a sequencing rule for myself afterwards. A rule I have to remember is a reminder
+# wearing a rule's clothes — it fails exactly when I am tired, which is when publishes happen.
+#
+# ⚠ WHY A TRAP AND NOT A LINE AT THE END: this script has 21 exit paths and 19 of them are
+# BEFORE section 6. The one that matters most is the mid-batch RED — some channels already
+# shipped, the run stopped — and a notice at the bottom is structurally unreachable exactly
+# there. An early return would skip the warning about the thing the early return skipped.
+# (@cowir-controller, 2026-09-11, whose run_tests.sh vacuity check sits after the tee and so
+# cannot fire on a killed run.)
+READBACK_DONE=0
+_readback_notice() {
+    # Nothing shipped -> nothing to read back. --check, --dry-run and every pre-publish BLOCK
+    # land here and stay silent, so the notice cannot become background noise.
+    [ -n "${PUBLISHED:-}" ] || return 0
+    if [ "${READBACK_DONE:-0}" = "1" ]; then
+        echo "[pub] store read-back: performed."
+        return 0
+    fi
+    echo "[pub] ⚠ STORE READ-BACK NOT PERFORMED — published: ${PUBLISHED}" >&2
+    echo "[pub]   Every gate above tested the LOCAL artifact and stopped at the upload." >&2
+    echo "[pub]   Nothing here has looked at what the store SERVES." >&2
+    # Only the channels that actually SHIPPED. Listing build/windows after a linux-and-web
+    # publish names a directory irrelevant to this run — a label broader than its predicate,
+    # which is the defect I have spent the day removing from this lane's guards.
+    local any=0 _d
+    for _c in ${PUBLISHED}; do
+        case "$_c" in
+            web) _d="builds/web" ;;
+            *)   _d="build/${_c}" ;;
+        esac
+        if [ -d "$_d" ]; then
+            echo "[pub]   ${_c}: local build still on disk at ${_d}" >&2
+            any=1
+        else
+            echo "[pub]   ${_c}: local build ${_d} is GONE" >&2
+        fi
+    done
+    if [ "$any" = "1" ]; then
+        echo "[pub]   RUN IT NOW, for the channels whose build survives:" >&2
+        for _c in ${PUBLISHED}; do
+            case "$_c" in
+                web) [ -d builds/web ] && echo "[pub]     tools/verify_store_artifact.sh web builds/web" >&2 ;;
+                *)   [ -d "build/${_c}" ] && echo "[pub]     tools/verify_store_artifact.sh ${_c} build/${_c}" >&2 ;;
+            esac
+        done
+        echo "[pub]   Do not remove the worktree until it has run or you have decided to skip it." >&2
+    else
+        echo "[pub]   ⛔ THE LOCAL BUILDS ARE ALREADY GONE. The read-back compares the store to" >&2
+        echo "[pub]      what we built; that half no longer exists and a rebuild is not the same" >&2
+        echo "[pub]      bytes. This publish can no longer be verified against the store." >&2
+    fi
+}
+trap _readback_notice EXIT
+
 CHECK_ONLY=0
 ROLLBACK=0
 DRY_RUN=0
+READ_BACK=0
 while [ $# -gt 0 ]; do
     case "${1:-}" in
         --check)    CHECK_ONLY=1; shift ;;
@@ -81,6 +149,12 @@ while [ $# -gt 0 ]; do
         # was clean, and the web chain still died at gate 2 three days running. There was no
         # way to learn that except by attempting a publish.
         --dry-run)  DRY_RUN=1; shift ;;
+        # Opt-in, because the read-back costs real bandwidth for a check whose expected answer
+        # is "identical" — verify_store_artifact.sh's own stance, kept. What changed is that
+        # SKIPPING it is now announced rather than silent, so the choice is made rather than
+        # defaulted into. Without this flag READBACK_DONE stays 0 and the exit trap says so;
+        # with it, the branch that reports "performed" is reachable instead of dead.
+        --read-back) READ_BACK=1; shift ;;
         # An unknown option must NEVER become the tag. `*) break` accepted anything, so
         # `--rollback` on tooling that predates it, or a plain typo like `--dry-runn`, became
         # TAG — and the run then failed several guards later with a message about whatever
@@ -88,7 +162,7 @@ while [ $# -gt 0 ]; do
         # cause, and a recovery path is the worst place to hand someone a misleading error.
         --)         shift; break ;;   # explicit escape hatch for a tag that starts with -
         -*)         echo "publish_all: unknown option: $1" >&2
-                    echo "usage: tools/publish_all.sh [--check|--dry-run|--rollback] <tag>" >&2
+                    echo "usage: tools/publish_all.sh [--check|--dry-run|--rollback|--read-back] <tag>" >&2
                     echo "       (use -- before a tag that begins with a dash)" >&2
                     exit 2 ;;
         *)          break ;;
@@ -96,8 +170,64 @@ while [ $# -gt 0 ]; do
 done
 TAG="${1:-}"
 if [ -z "$TAG" ]; then
-    echo "usage: tools/publish_all.sh [--check|--dry-run|--rollback] <tag>" >&2
+    echo "usage: tools/publish_all.sh [--check|--dry-run|--rollback|--read-back] <tag>" >&2
     exit 2
+fi
+
+# ── --rollback refuses HERE, with the reason, not three guards deep ──────────────────────
+# MEASURED 2026-09-11, both horns. --rollback cannot be used for its purpose from ANY tree:
+#
+#   worktree AT the old tag    §3 REQUIRES it (HEAD must equal TAG), and that tree carries its
+#                              OWN tooling, which predates the flag. --rollback exists only in
+#                              v3.33.294-alpha and newer; v3.33.293-alpha and older have zero
+#                              occurrences of ROLLBACK=1. The `*)` arm took the flag AS THE TAG.
+#   worktree at HEAD           §2 blocks: this tree calls itself <SEMVER> and you asked to
+#                              publish an older label. Correct, and fatal to the attempt.
+#
+# So the flag is reachable only for tags that already carry it — tags new enough that you would
+# never roll back TO them.
+#
+# ⛔ THE REASON THIS IS A REFUSAL AND NOT A COMMENT. I recorded that finding at the flag's case
+# arm this morning and left it there. My own memory entry says a hazard you have documented
+# reads as one you have handled — and a comment above a case arm is read by whoever is ALREADY
+# three guards deep in a confusing failure, which is the one moment it is no use. The tripwire
+# beats the note because it arrives when it applies. (@cowir-overworld shipped a tripwire where
+# I shipped a comment; the difference is not visible in a diff.)
+# ✅ EXERCISED VIA THE REAL COMMAND LINE 2026-09-11, not by sourcing this block with ROLLBACK=1
+# preset. @cowir-overworld: "I checked the direction my change flowed OUT and not the direction
+# control flows IN — only the second is about the player." My block tests set the variable
+# directly, which never shows that `--rollback` on argv REACHES here.
+#
+#   ./tools/publish_all.sh --rollback v3.33.293-alpha   EC 2, tripwire fired
+#   ./tools/publish_all.sh --rollback <this tree's own>  EC 2, tripwire did NOT fire
+#   ./tools/publish_all.sh --check    v3.33.293-alpha    EC 2, tripwire did NOT fire
+#
+# ⚠ All three exit 2 and only one is this guard — the other two are downstream. A bare exit
+# code names one cause and accepts three, so the discriminator is the MESSAGE. (And my first
+# run of this reported EC 141: I piped it to `head`, and read SIGPIPE as the script's code.)
+if [ "$ROLLBACK" -eq 1 ]; then
+    _rb_semver="$(sed -n 's/^[[:space:]]*const[[:space:]]\+SEMVER[[:space:]]*:=[[:space:]]*"\([^"]*\)".*/\1/p' \
+                  src/meta/Version.gd 2>/dev/null | head -1)"
+    if [ -n "$_rb_semver" ] && [ "v${_rb_semver}" != "$TAG" ]; then
+        echo "[pub] BLOCKED: --rollback ${TAG} cannot work from this tree, and cannot work from" >&2
+        echo "      the tag's own tree either. Measured, both horns:" >&2
+        echo "        here      this worktree is v${_rb_semver}; §2 refuses to publish it as ${TAG}" >&2
+        echo "        there     a worktree at ${TAG} carries ${TAG}'s tooling, which predates" >&2
+        echo "                  --rollback (it exists only in v3.33.294-alpha and newer), so the" >&2
+        echo "                  flag is parsed AS THE TAG NAME" >&2
+        echo "      The flag is therefore reachable only for tags new enough that you would never" >&2
+        echo "      roll back TO them." >&2
+        echo "" >&2
+        echo "      ✅ THE ROLLBACK THAT WORKS TODAY needs no new code. From a worktree at ${TAG}," >&2
+        echo "         drive that tree's per-channel scripts directly — the supersession gate is" >&2
+        echo "         this script's, not theirs:" >&2
+        echo "           git worktree add --detach <dir> ${TAG}" >&2
+        echo "           cd <dir> && tools/deploy_linux.sh   --publish ${TAG}" >&2
+        echo "                       tools/deploy_windows.sh --publish ${TAG}" >&2
+        echo "                       tools/deploy_web.sh     --publish ${TAG}" >&2
+        echo "         Verified by reaching the butler push with a stubbed binary, 2026-09-11." >&2
+        exit 2
+    fi
 fi
 
 _newest_tag_on_origin() {
@@ -327,6 +457,24 @@ for CH in linux windows web; do
     if [ "$EC" -ne 0 ]; then
         echo "[pub] RED on ${CH} (exit ${EC}) — STOPPING. Published so far: ${PUBLISHED:-none}" >&2
         echo "      Log: tmp/publish_all_${CH}.log" >&2
+        # A KILLED chain is not a FAILED chain, and this lane kills chains routinely — the
+        # header above records the web chain being memory-killed six times in one day. A killed
+        # process emits no Totals block and no verdict, so the grep below returns NOTHING, and
+        # "RED, no explanation" reads as a gate failure nobody can find. That sends you editing
+        # correct code to chase a stopwatch or a memory ceiling. (@cowir-controller, 2026-09-11:
+        # their sweep collapsed EC 1, 3 and 124 into one blank field for exactly this reason.)
+        case "$EC" in
+            124) echo "      ⚠ EXIT 124 = TIMED OUT. The chain was killed by a ceiling, not" >&2
+                 echo "        failed by a gate. Nothing below is a verdict; the grep is empty" >&2
+                 echo "        because no gate got to report. Re-run on a quieter box before" >&2
+                 echo "        touching any code — check: pgrep -c godot" >&2 ;;
+            137) echo "      ⚠ EXIT 137 = KILLED, signal 9 — almost certainly the OOM killer." >&2
+                 echo "        Not a gate failure. This lane's web chain was memory-killed six" >&2
+                 echo "        times in one day; that is why the caches are prebuilt in §4." >&2
+                 echo "        Re-run; §4 is idempotent and skips what is already current." >&2 ;;
+            143) echo "      ⚠ EXIT 143 = TERMINATED, signal 15. Something asked it to stop." >&2
+                 echo "        Not a gate failure." >&2 ;;
+        esac
         grep -a 'BLOCKED\|VERDICT\|FAIL' "tmp/publish_all_${CH}.log" | tail -5 >&2
         echo "[pub] his saves after: $(_saves_cksum)  (before: ${SAVES_BEFORE})" >&2
         exit 1
@@ -388,5 +536,45 @@ else
     echo "      Not necessarily a fault — he may have been playing. Diff against"
     echo "      tmp/userdata_snapshot/ before concluding anything."
 fi
+# ── 7. the store read-back, opt-in ───────────────────────────────────────────────────────
+# The ONLY check in this lane that crosses the CDN. Everything above tested the local artifact
+# or asked butler what it was asked to push.
+#
+# ✅ EXERCISED 2026-09-11, three directions, with verify_store_artifact.sh stubbed so no network
+# or credentials were needed — block extracted byte-exact from this file and verified to occur
+# verbatim once:
+#     store matches, linux+web            exit 0, READBACK_DONE=1
+#     store DIFFERS on one channel        exit 5
+#     a published channel's build gone    exit 5
+# Recorded because until then this block had been WIRED and never RUN. @cowir-autogrind,
+# 2026-09-11: "a dense verification suite around an unreachable edit produces maximum confidence
+# and zero information." I had verified the flag parsing, the exit trap, the message text and
+# five trap states — all of it about the wiring, none of it executing the thing wired.
+if [ "${READ_BACK:-0}" = "1" ] && [ -n "${PUBLISHED:-}" ]; then
+    echo "[pub] ─── store read-back ───"
+    _rb_fail=0
+    for _c in ${PUBLISHED}; do
+        case "$_c" in
+            web) _rbdir="builds/web" ;;
+            *)   _rbdir="build/${_c}" ;;
+        esac
+        if [ ! -d "$_rbdir" ]; then
+            echo "[pub] BLOCKED: ${_c}'s local build ${_rbdir} is gone; nothing to compare." >&2
+            _rb_fail=1; continue
+        fi
+        if ./tools/verify_store_artifact.sh "$_c" "$_rbdir"; then
+            echo "[pub]   ${_c}: store matches what we built"
+        else
+            echo "[pub]   ${_c}: STORE DIFFERS from what we built — see above" >&2
+            _rb_fail=1
+        fi
+    done
+    READBACK_DONE=1
+    if [ "$_rb_fail" -ne 0 ]; then
+        echo "[pub] read-back FAILED for at least one channel." >&2
+        exit 5
+    fi
+fi
+
 echo "[pub] done: ${PUBLISHED}"
 exit 0

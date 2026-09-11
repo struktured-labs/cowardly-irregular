@@ -17,8 +17,8 @@ Playable end-to-end through World 1:
   - Opt-in dynamic NPC dialogue (Theron / Milo / Boris in Harmonia) + jailbreakable boss dialogue. Interact routing: quest > dynamic > scripted.
   - **Boss Strategic Intent** for all 5 W1 bosses (Settings → LLM Boss Strategy). LLM picks intent/posture per phase, deterministic ladder still owns ability choice.
   - **Party Combat Dialogue** for all 5 starter jobs, rendered as speech bubbles anchored to the speaker (suppressed only at ≥4x speed); `voice_<job>_<trigger>` audio-handle convention ready for the voice pack. Scripted `trigger_voices` fallback per job when LLM off.
-  - Rebalance daemon (opt-in), LLM Rule Composer, Learning Monsters. Ollama / OpenAI-compat backends via HTTPBackend; BYOK desktop-only (settings.json) pending field-input UI.
-- **Data**: 14 jobs, 288 abilities, 98 monsters (artist art for slime/bat/goblin + 5 duel minibosses T2), 172 items, 34 encounter pools, 193 cutscenes (44 party/event chats, guarded: every registry chat needs its JSON + a live emitter), 153 music tracks, 259 SFX
+  - Rebalance daemon (opt-in), LLM Rule Composer, Learning Monsters. Ollama / OpenAI-compat backends via HTTPBackend; BYOK desktop-only (settings.json), configured in-game at Settings → "Configure BYOK" (base_url / format / model / api_key fields + Test Connection); web builds never hold keys.
+- **Data**: 14 jobs, 289 abilities, 98 monsters (artist art for slime/bat/goblin + 5 duel minibosses T2), 172 items, 34 encounter pools, 193 cutscenes (44 party/event chats, guarded: every registry chat needs its JSON + a live emitter), music: **161 distinct OGGs** (165 manifest entries — `battle_brute.ogg` is named by five keys under the monster-family ruling; 161 files in `assets/audio/music/`), SFX: **338 manifest keys** (336 distinct files). Three true music numbers and two true SFX numbers exist — say which you mean; bare counts here drifted for months.
 - **Tests**: ~7390 passing / 0 failing in GUT. **Full suite takes ~5-10 MINUTES headless (measured 268-689s across 14 runs / 6 lanes, 2026-07-30 — one run cleared the 600s ceiling by 89s), NOT the "~40s" this line claimed for months — BACKGROUND the gate.** A foreground run can cross a 10-minute harness ceiling, and the SIGTERM skips the export restore; that stale number is the first link in the chain that produced four orphaned snapshots and three "the export dir is clean" reports that each undid the last. The error was invisible because it is intermittent: on a quiet box the suite finishes ~380s and confirms the doc to you, at load it reaches 689s and dies. The 268s low end is as much of the cause as the 689s high end: a lane on a quiet box measures 4.5 minutes, stays inside every ceiling, and concludes the doc is roughly right. Gate on the [Failed] count. Campaign-scale integration: the story spine walks New Game → world6_ending under test (incl. a mid-campaign save/load), battle mini-fuzz every run, live/headless group-attack parity-by-construction.
 - **Sharing (pillar complete)**: autobattle scripts AND autogrind rule sets travel as `COWIR1:` clipboard codes (Shift+E copy / Shift+I paste in grid editor + autogrind console), grammar-validated at decode; file-based E/I flows unchanged
 - **Meta jobs (all five REAL)**: Scriptweaver turns a bounded game-constant dial (⚠️ "+ reveals execution order" was listed here as SHIPPED and is NOT — `formula_sight`'s `show_formulas` key and `autobattle_verbs`' `autobattle_advanced` key each occur exactly ONCE in `src/`, in their own declaration inside PassiveSystem's hardcoded fallback copy of passives.json, and the ids appear only in JobSystem's `passive_abilities` roster. Both are equippable today and do nothing. Confirmed by 4 independent methods 2026-07-30 after a count that moved 13→0→1→3→2 as five lanes each hit a different consumption shape); Necromancer permakill EXTERMINATES species from all three spawn paths (encounter pools, autogrind roster, roaming — save-persisted, New-Game-reset, live roamers dissolve); Time Mage full (quicksave/restore/temporal shield/undo_death); Skiptrotter Bypass Puzzle concedes the chicken roundup; Bossbinder controlled/mind-swapped enemies fight their own side
@@ -104,7 +104,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 - Visual: Screen flash, enhanced hit sound, damage number shake
 
 ### Battle UX
-- **Permanent input hint bar** at bottom-center of battle screen: `[L] Defer · [R] Advance · [+/-] Speed · [Select] Auto`
+- **Permanent input hint bar** at bottom-center of battle screen. It advertises four controls — **Defer · Advance · Speed · Auto** — and every button in it is **DERIVED per connected pad**, never written out. Do not "restore" a sample rendering here: this line used to read ``[L] Defer · [R] Advance · [+/-] Speed · [Select] Auto``, which was wrong twice over. `+/-` was bound to nothing (dead instruction, removed from the bar 2026-07-28, still documented here until 2026-09-11), and the other three are Nintendo names for buttons the other families call `LB/RB/Back` and `L1/R1/Share` — **`Select` exists on no Xbox, PlayStation or Switch pad.** Defer/Advance/Auto resolve through `InputProfileManager.hint_for_action()`; Speed is raw `JOY_BUTTON_Y`, so it uses `face_glyph_for_index`. Keyboard (no pad connected) gets its own bar: `` [L] Defer · [R] Advance · [`] Speed · [Tab] Auto ``.
 - Hidden during autogrind console mode
 - Inter-action delays scale with `Engine.time_scale` so 2x/4x speed actually plays faster (regression-tested)
 - Tutorial hints (TutorialHints catalog) fire once per session — the hint bar covers the long-term reference need
@@ -137,9 +137,11 @@ Each starter job has a free 0-cost AP action available in the command menu:
 - Cycle display for repeated actions (Attack ×3)
 
 ### Autobattle Editor Controls
+⚠️ The **Gamepad** column below uses **Nintendo/SNES names**, which is the layout this game targets — it is NOT what other families print on the plastic (`Select` = Xbox `Back` = PS `Share`; `L`/`R` = `LB`/`RB` = `L1`/`R1`; Confirm sits on the **EAST** face, so Nintendo `A` is Xbox `B` is PS `○`). Anything the PLAYER sees must be derived through `InputProfileManager.hint_for_action()`, never copied from this table.
+
 | Action | Gamepad | Keyboard |
 |--------|---------|----------|
-| Open editor | L+R together | F5 |
+| Open editor | **In battle:** Start — and only when NO character has autobattle on (if any is on, Start disables all instead). **In exploration:** menu → Autobattle row. Start does NOT open it outside battle; there it opens Settings | F5 (any state) |
 | Toggle ALL autobattle | Select | F6 |
 | Navigate grid | D-pad | Arrow keys |
 | Edit cell | A | Z |
@@ -154,15 +156,33 @@ Each starter job has a free 0-cost AP action available in the command menu:
 - Share/export scripts between players
 - Hall of Fame for novel strategies
 
-## Autogrind System (Future)
+## Autogrind System (SHIPPED — this said "(Future)" until 2026-09-11)
+
+⚠️ **All six bullets below are wired and reachable. The heading said "(Future)" while the lane was
+fixing shipped bugs in these same mechanisms all day** — a doc that UNDER-claims produces no bug
+report, it produces duplicated work by whoever trusts it next (@cowir-ai's BYOK finding, same day,
+opposite sign to @cowir-overworld's `L+R opens the editor`, which promised a binding that does not
+exist). Each line below names a consumer so the claim is checkable rather than re-blessed by hand.
 
 Risk/reward automation with escalating stakes:
-- Longer automation = higher EXP multipliers BUT increased danger
-- Monster adaptation: enemies learn and counter repeated strategies
-- System fatigue spawns unpredictable meta-bosses
-- Configurable interrupt rules (HP threshold, party death, corruption level)
-- Optional permadeath staking for extreme rewards
-- "System collapse" events punish perfect optimization
+- **EXP multiplier climbs with session length** — `efficiency_multiplier`, grown per battle by
+  `efficiency_growth_rate`; read by `AutogrindMonitor:584` and the controller's stats block
+- **Monster adaptation** — `monster_adaptation_level`, consumed at `GameLoop:5852`; crossing
+  `ROTATION_SUGGEST_THRESHOLD` fires the region-rotation suggestion
+- **System fatigue → meta-bosses** — `fatigue_events_triggered` gates
+  `check_fatigue_collapse()` (`AutogrindController:248`, needs >= 5 events AND >= 50 battles this
+  session); `meta_boss_spawn_chance` and the `meta_bosses_spawned` / `meta_bosses_defeated` tallies
+  reach the Summary
+- **Interrupt rules** — `_check_interrupt_conditions()` enforces hp_threshold, party_death,
+  item_depleted, corruption_limit and max_battles via `pre_battle_check()`
+  (`AutogrindController:237`). ⚠️ Configurable through the **config dict passed to
+  `start_autogrind`, NOT from the console** — no `src/ui/` file sets them, so "configurable" is
+  true of the API and not yet of the player
+- **Permadeath staking** — `permadeath_staking_enabled`, with a UI state:
+  `AutogrindDashboard:754` and the DANGER_COLOR panel at `AutogrindUI:698`. Routed through
+  `enable_permadeath_staking()` so the flag and its growth rate cannot disagree (fixed 2026-09-11)
+- **System collapse** — `system_collapse` signal, connected at `AutogrindUI:272` with a symmetric
+  disconnect; `collapse_count` reaches the Summary, the Dashboard win-rate and session history
 
 ## Job System
 
@@ -414,7 +434,8 @@ cowardly-irregular/
 │   ├── save/            # SaveSystem, ChapterTitles
 │   ├── cutscene/        # CutsceneDirector, CutsceneDialogue, NPCDialogue, PartyChatSystem
 │   ├── encounters/      # EncounterSystem
-│   ├── audio/           # SoundManager, InputProfileManager
+│   ├── audio/           # SoundManager
+│   ├── input/           # InputProfileManager, ControllerMappings
 │   ├── transitions/     # SceneTransition, BattleTransition
 │   ├── character/       # CharacterCustomization
 │   ├── bestiary/        # BestiarySystem

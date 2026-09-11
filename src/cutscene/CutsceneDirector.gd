@@ -56,6 +56,8 @@ var _original_camera_position: Vector2 = Vector2.ZERO
 
 ## A gallery replay: the scene plays, the world does not change — no items, flags, choices, duels; staged scenes fall back to overlay.
 var _replay: bool = false
+## True once THIS scene authored a stop_music: a later cue that is absent from the build then stays silent (authored intent), instead of bringing the world's bed back.
+var _music_stopped_by_step: bool = false
 
 ## Configuration
 const LETTERBOX_HEIGHT: int = 40
@@ -281,6 +283,7 @@ func play_cutscene(cutscene_id: String, replay: bool = false) -> void:
 		return
 
 	_replay = replay
+	_music_stopped_by_step = false
 	_cutscene_id = cutscene_id
 	_active = true
 	_skipping = false
@@ -344,6 +347,7 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary, replay: bool
 		push_warning("CutsceneDirector: refused '%s' — '%s' is already playing" % [cutscene_id, _cutscene_id])
 		return
 	_replay = replay
+	_music_stopped_by_step = false
 	_cutscene_id = cutscene_id
 	_active = true
 	_skipping = false
@@ -815,10 +819,26 @@ func _step_play_music(step: Dictionary) -> void:
 	if SoundManager.has_method("has_music_track") and not SoundManager.has_music_track(track):
 		push_warning("[cutscene] unknown music track '%s' — keeping current music" % track)
 		return
+	# Web: the manifest lists the id but the preset dropped the OGG (21 authored cues, 2026-09-11). play_music would crossfade the bed out and then play nothing.
+	if not _cue_is_available(track):
+		if not _music_stopped_by_step and not _pre_cutscene_music.is_empty() and SoundManager.has_method("restore_music_state"):
+			push_warning("[cutscene] music '%s' is not in this build — restoring the world's bed the entry fade took" % track)
+			SoundManager.restore_music_state(_pre_cutscene_music)
+		else:
+			push_warning("[cutscene] music '%s' is not in this build — the scene stays as it is" % track)
+		return
 	SoundManager.play_music(track)
 
 
+## Seam: will play_music(track) make sound in THIS build? Overridable so a test can stand in for a web export.
+func _cue_is_available(track: String) -> bool:
+	if SoundManager and SoundManager.has_method("music_is_available"):
+		return SoundManager.music_is_available(track)
+	return true
+
+
 func _step_stop_music(_step: Dictionary) -> void:
+	_music_stopped_by_step = true
 	if SoundManager:
 		SoundManager.stop_music()
 
@@ -879,6 +899,7 @@ func _step_grant_item(step: Dictionary) -> void:
 	if _skipping:
 		return
 	var popup_data = {
+		"item_id": item_id,  # the emblem fallback keys on the item's category
 		"name": str(step.get("name", item_id)),
 		"description": str(step.get("description", "")),
 		"sprite_path": str(step.get("sprite_path", "")),
@@ -1308,11 +1329,14 @@ func _step_face_actor(step: Dictionary) -> void:
 	var a := _get_actor(str(step.get("id", "")))
 	if a == null:
 		return
-	var toward: String = str(step.get("toward", ""))
-	if toward != "":
-		var other := _get_actor(toward)
-		if other:
-			a.face_toward(other.position)
+	# `toward` is an actor id OR an [x,y] mark — the same shapes camera_focus takes; an unresolvable target warns instead of silently facing nowhere.
+	var toward = step.get("toward", null)
+	if toward != null and str(toward) != "":
+		var pos := _resolve_point_or_actor(toward)
+		if pos == Vector2.INF:
+			push_warning("CutsceneDirector face_actor: '%s' cannot face toward %s — not an actor in this scene nor an [x,y]" % [step.get("id", ""), str(toward)])
+			return
+		a.face_toward(pos)
 		return
 	a.set_facing_name(str(step.get("dir", "down")))
 

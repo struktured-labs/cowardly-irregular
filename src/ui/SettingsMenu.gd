@@ -953,7 +953,7 @@ func _create_action_button_neutral(label_text: String, description: String, inde
 	container.add_child(desc)
 
 	var hint = Label.new()
-	hint.text = "[Press A]"
+	hint.text = "[%s]" % InputProfileManager.hint_for_action("ui_accept")
 	hint.position = Vector2(310, 16)
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hint.add_theme_color_override("font_color", Color.YELLOW)
@@ -993,7 +993,7 @@ func _create_action_button(label_text: String, description: String, index: int) 
 
 	# Action hint — right-aligned with the title row, no vertical overlap
 	var hint = Label.new()
-	hint.text = "[Press A]"
+	hint.text = "[%s]" % InputProfileManager.hint_for_action("ui_accept")
 	hint.position = Vector2(310, 16)
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hint.add_theme_color_override("font_color", Color.YELLOW)
