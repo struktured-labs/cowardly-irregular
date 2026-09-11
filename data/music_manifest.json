@@ -57,7 +57,7 @@
       "file": "assets/audio/music/boss_medieval.ogg",
       "tier": "T1",
       "provider": "suno",
-      "title": "The Usurper's Shadow",
+      "title": "The High Seat",
       "prompt": "Epic boss confrontation, towering enemy, high stakes battle, intense pipe organ and aggressive percussion, dramatic key changes, sense of overwhelming power and desperate resistance",
       "style": "SNES boss battle, intense, dramatic, pipe organ, aggressive drums, minor key",
       "model": "suno-v4",

@@ -117,7 +117,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 | Glacius, the Frozen Sovereign | Ice Dragon Cave | 15 | Ice-element dragon |
 | Voltharion, the Storm's Edge | Lightning Dragon Cave | 16 | Lightning-element dragon |
 | Umbraxis, the Void Render | Shadow Dragon Cave | 18 | Dark dragon, philosophical boss |
-| **Chancellor Mordaine** | **Castle Harmonia** | **20** | **W1 final boss; defeat unlocks W2. Theme: "The Usurper's Shadow" (boss_medieval). One face of the Calibrant.** |
+| **Chancellor Mordaine** | **Castle Harmonia** | **20** | **W1 final boss; defeat unlocks W2. Theme: "A Sound Like a Verdict" (boss_mordaine — NOT boss_medieval, which is the generic W1 boss bed). One face of the Calibrant.** |
 
 - Mordaine's intro plays `world1_mordaine_intro` cutscene before battle (CastleHarmonia extends DragonCave)
 - Defeat sets BOTH `dungeon_flags["world1_mordaine_defeated"]` AND `game_constants["cutscene_flag_world1_mordaine_defeated"]` via the `defeat_cutscene_flags` bridge declared in the subclass
