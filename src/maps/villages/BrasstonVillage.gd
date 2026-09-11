@@ -224,6 +224,10 @@ func _setup_buildings() -> void:
 
 	# === GAS LAMPS === the map legend calls 'f' "gas lamp bases" and TWELVE of them were bare.
 	# Brasston employs a lamplighter and shipped one lamp, on the deck, nowhere near a base.
+	# 🔑 FIVE OF THESE ARE LOAD-BEARING: world3_lamplighters_logic's route points sit on (5,3),
+	# (20,4), (20,17), (5,8) and (5,18), and their idle text already read "a gas lamp on Clem's
+	# route, unlit at this hour" — the quest described lamps the map did not have. Each keeps 3-4
+	# standable neighbours, so the examine probe still reaches them; do not drop one as decoration.
 	for base in [Vector2i(5, 3), Vector2i(19, 3), Vector2i(20, 4), Vector2i(20, 6), Vector2i(5, 8),
 			Vector2i(11, 11), Vector2i(20, 12), Vector2i(4, 13), Vector2i(20, 14), Vector2i(5, 16),
 			Vector2i(20, 17), Vector2i(5, 18)]:
