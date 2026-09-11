@@ -97,23 +97,25 @@ func test_control_both_sides_are_non_empty() -> void:
 	assert_gt(appliers, 5, "must find abilities applying a consumed-on-use effect, else this file guards nothing")
 
 
-## PREMISE BEHIND guardian_wall's WORDING. "Nullifies one incoming hit outright" is
-## a claim about magnitude, which the guard below cannot see — it only reads for the
-## single-use admission. If absorb_amount ever gains a live read, the ward becomes a
-## capped pool and the word "outright" is wrong. Scoped to the two damage-path files,
-## which is where a consumer would have to live.
-func test_premise_absorb_amount_is_still_dead_data() -> void:
-	var live: Array = []
-	for path in [BATTLE_MGR, "res://src/battle/Combatant.gd"]:
-		for l in FileAccess.get_file_as_string(path).split("\n"):
-			var s: String = l.strip_edges()
-			if s.begins_with("#") or s.begins_with("##"):
-				continue
-			if s.contains("absorb_amount"):
-				live.append("%s: %s" % [path.get_file(), s])
-	assert_eq(live, [], "absorb_amount now has a live read, so barrier no longer nullifies a hit "
-		+ "of any magnitude. guardian_wall's description says the ward nullifies one hit "
-		+ "\"outright\" — that word is now wrong. Fix the description and this note together: %s" % [live])
+## PREMISE BEHIND guardian_wall's WORDING, INVERTED 2026-09-11. absorb_amount was dead data
+## (measured 2026-07-29) and the ward "nullified one hit outright". cowir-battle made it a BUDGET
+## (lane/absorb-amount-is-a-budget): the ward soaks up to absorb_amount, overflow lands in the same
+## hit, the status breaks. So the description must name the cap and must NOT say "outright".
+func test_premise_absorb_amount_is_a_live_budget() -> void:
+	var live := 0
+	for l in FileAccess.get_file_as_string(BATTLE_MGR).split("\n"):
+		var s: String = l.strip_edges()
+		if s.begins_with("#") or s.begins_with("##"):
+			continue
+		if s.contains("absorb_amount"):
+			live += 1
+	assert_gt(live, 0, "absorb_amount must have a live read in BattleManager — if it went dead again, the ward is uncapped and the description below is wrong the other way")
+	var f := FileAccess.open(ABILITIES, FileAccess.READ)
+	var data: Dictionary = JSON.parse_string(f.get_as_text())
+	f.close()
+	var desc: String = str(data["guardian_wall"].get("description", ""))
+	assert_false(desc.to_lower().contains("outright"), "guardian_wall soaks a CAPPED amount now; 'outright' claims a magnitude it no longer has: %s" % desc)
+	assert_true(desc.contains(str(int(data["guardian_wall"].get("absorb_amount", 0)))), "guardian_wall's description must name its cap so the data and the prose agree: %s" % desc)
 
 
 ## THE GUARD. Claim persistence only if you also admit the charge.
