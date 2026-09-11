@@ -13,6 +13,11 @@ const DUNGEON_FRAMED_CARDS := {
 	"world6_null_chamber_boss": "Curator of the Null Chamber",
 }
 
+## Scripts under the dungeon dir that declare a boss_id but are NOT a dungeon instance.
+const NOT_A_DUNGEON_INSTANCE := {
+	"DragonCave.gd": "base class — the four dragon caves extend it and set their own boss_id",
+}
+
 var _monsters: Dictionary
 
 
@@ -86,6 +91,30 @@ func test_the_dungeon_scan_finds_real_dungeons() -> void:
 	for f in d:
 		assert_true(_scene(d[f]["cutscene"]).has("steps"),
 			"%s dispatches '%s' but that scene did not parse" % [f, d[f]["cutscene"]])
+
+
+func test_the_scraper_covers_every_script_that_declares_a_boss() -> void:
+	var scraped := _dungeons()
+	var unscraped: Array = []
+	var dir := DirAccess.open(DUNGEON_DIR)
+	assert_not_null(dir, "the dungeon dir must open")
+	if dir == null:
+		return
+	for f in dir.get_files():
+		if not f.ends_with(".gd") or scraped.has(f):
+			continue
+		if FileAccess.get_file_as_string("%s/%s" % [DUNGEON_DIR, f]).contains("boss_id"):
+			unscraped.append(f)
+	unscraped.sort()
+	var excused: Array = NOT_A_DUNGEON_INSTANCE.keys()
+	excused.sort()
+	assert_eq(unscraped, excused,
+		("a script under %s declares a boss_id but the scrape below did not capture it, so it is "
+		+ "SILENTLY OUTSIDE every other assert in this file. The scrape reads the literal form "
+		+ "`boss_id = \"...\"`; it does not see `var boss_id: String = \"...\"`, a constant, or a "
+		+ "computed id — and a miss drops coverage without failing anything. That is the shape that "
+		+ "made cowir-battle's ninja guard score 5/5 green against the commit falsifying it. Either "
+		+ "teach _quoted_after the new form or excuse the file here with a reason. Unscraped: %s") % [DUNGEON_DIR, str(unscraped)])
 
 
 func test_every_masterite_dungeon_intro_shows_the_boss_it_spawns() -> void:
