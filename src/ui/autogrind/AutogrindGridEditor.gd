@@ -218,7 +218,7 @@ func _build_ui() -> void:
 	## "Start" is the XBOX name for ui_menu's button; Nintendo calls it Plus, PlayStation Options.
 	## @cowir-battle's resolution, matched so the two editors do not disagree: a pad-only affordance
 	## GOES with no pad rather than borrowing someone else's key. help1 already names Esc for Back,
-	## and ui_cancel is what saves here (:1055), so a keyboard player loses no way to save.
+	## and ui_cancel's arm is what saves here (it calls _save_rules), so no way to save is lost.
 	help2.text = "C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose%s" % _pad_only_token("ui_menu", "Save")
 	help2.position = Vector2(16, size.y - 28)
 	help2.add_theme_font_size_override("font_size", 10)
@@ -1818,8 +1818,8 @@ func _on_rename_cancelled() -> void:
 ## SAVE
 ## ═══════════════════════════════════════════════════════════════════════
 
-## ui_menu saves+closes on a pad, but BOTH its keyboard keys are eaten earlier (ui_accept:1049 takes
-## Enter, ui_cancel:1055 takes Escape), so the token GOES with no pad rather than borrowing a key.
+## ui_menu saves+closes on a pad, but BOTH its keyboard keys are eaten earlier in the same elif
+## chain -- ui_accept's arm takes Enter, ui_cancel's takes Escape -- so the token GOES with no pad.
 ## Same helper name and shape as the autobattle editor's, so the two legends cannot drift apart.
 func _pad_only_token(action: String, label: String) -> String:
 	if Input.get_connected_joypads().is_empty():
