@@ -107,6 +107,63 @@ func test_no_new_named_npc_has_grown_a_second_face() -> void:
 		"a named NPC is bound to an archetype key whose face differs from its name key — reconcile, never add a sibling: %s" % [found])
 
 
+## Registered keys whose art has never been made. They render a BLANK PANEL -- the key resolves,
+## the file does not exist, and nothing reports it. Measured 2026-09-11: 16 of 105 keys, every one
+## a masterite per-world variant. Only medieval was ever produced; steampunk was made in this
+## commit. So every masterite cutscene outside World 1 shows an empty portrait, and World 2 is
+## reachable today.
+##
+## Listed rather than omitted so the debt is visible, and EARNED by the arm below -- make the art
+## and the entry must go, or it starts excusing something that is no longer true.
+const KNOWN_MISSING_PORTRAITS := [
+	"masterite_warden_suburban", "masterite_warden_industrial",
+	"masterite_warden_futuristic", "masterite_warden_abstract",
+	"masterite_tempo_suburban", "masterite_tempo_industrial",
+	"masterite_tempo_futuristic", "masterite_tempo_abstract",
+	"masterite_arbiter_suburban", "masterite_arbiter_industrial",
+	"masterite_arbiter_futuristic", "masterite_arbiter_abstract",
+	"masterite_curator_suburban", "masterite_curator_industrial",
+	"masterite_curator_futuristic", "masterite_curator_abstract",
+]
+
+
+## The sweep was scoped to KNOWN_PAIRS -- 6 keys of 105 -- so 16 dead paths sat outside it. I found
+## them by measuring the disk AFTER measuring the register and getting different answers, which is
+## the reader defect this file already carries a fix for one function above.
+func test_no_registered_portrait_points_at_a_missing_file() -> void:
+	var map := _portrait_map()
+	var known := {}
+	for k in KNOWN_MISSING_PORTRAITS:
+		known[k] = true
+	var undeclared: Array = []
+	for key in map:
+		if FileAccess.file_exists(map[key]):
+			continue
+		if not known.has(key):
+			undeclared.append("%s -> %s" % [key, map[key]])
+	undeclared.sort()
+	assert_eq(undeclared, [],
+		("a registered portrait key points at a file that does not exist -- the panel renders EMPTY " +
+		 "and nothing reports it: %s") % [undeclared])
+
+
+func test_every_known_missing_portrait_is_still_missing() -> void:
+	# EARNED. Make the art and this entry must be deleted, or it excuses something already fixed.
+	var map := _portrait_map()
+	assert_gt(KNOWN_MISSING_PORTRAITS.size(), 10,
+		"CONTROL: the declared-missing list holds %d entries (16 at time of writing) -- if it drains, the sweep above has nothing to compare and its clean result is free" % KNOWN_MISSING_PORTRAITS.size())
+	var now_present: Array = []
+	var not_a_key: Array = []
+	for k in KNOWN_MISSING_PORTRAITS:
+		if not map.has(k):
+			not_a_key.append(k)
+		elif FileAccess.file_exists(map[k]):
+			now_present.append(k)
+	assert_eq(not_a_key, [], "declared-missing entry is not a registered key at all: %s" % [not_a_key])
+	assert_eq(now_present, [],
+		"the art for these EXISTS now -- delete them from KNOWN_MISSING_PORTRAITS: %s" % [now_present])
+
+
 func test_every_resolved_portrait_file_exists() -> void:
 	# A repoint that typos the path is the same bug as a split: a generic face where hers should be.
 	var map := _portrait_map()
