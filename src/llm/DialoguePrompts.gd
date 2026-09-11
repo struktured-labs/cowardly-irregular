@@ -384,6 +384,8 @@ static func build_npc_opening(
 	var context: String = _context_blocks(
 		recent_events, quest_state_lines, time_of_day, party_state, memory_lines)
 
+	var pronoun_note: String = _pronoun_note(" ".join(PackedStringArray(recent_events)))
+
 	return (
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
 		+ "Generate exactly ONE opening line spoken by the NPC when the player approaches.\n"
@@ -398,6 +400,7 @@ static func build_npc_opening(
 		+ "- Maximum %d characters.\n" % MAX_LINE_CHARS
 		+ "- Do NOT include the NPC name or speaker label in the line.\n"
 		+ "- Respond with ONLY valid JSON: {\"line\": \"<text>\"}\n"
+		+ pronoun_note
 	)
 
 
@@ -524,6 +527,10 @@ static func build_npc_reply(
 	if player_line.strip_edges() != "":
 		history_block += "The player just responded:\n  \"%s\"\n" % player_line.strip_edges()
 
+	# The model guesses a pronoun from a title when the prompt gives it none:
+	# 9 of 21 replies mentioning Chancellor Mordaine called her "he".
+	var pronoun_note: String = _pronoun_note(last_npc_line + " " + player_line)
+
 	return (
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
 		+ "Generate exactly ONE follow-up line spoken by the NPC, responding directly to what the player just said.\n"
@@ -540,6 +547,7 @@ static func build_npc_reply(
 		+ "- Maximum %d characters.\n" % MAX_LINE_CHARS
 		+ "- Do NOT include the NPC name or speaker label in the line.\n"
 		+ "- Respond with ONLY valid JSON: {\"line\": \"<text>\"}\n"
+		+ pronoun_note
 	)
 
 
@@ -580,6 +588,10 @@ static func build_combined_reply(
 	if player_line.strip_edges() != "":
 		history_block += "The player just responded:\n  \"%s\"\n" % player_line.strip_edges()
 
+	# The model guesses a pronoun from a title when the prompt gives it none:
+	# 9 of 21 replies mentioning Chancellor Mordaine called her "he".
+	var pronoun_note: String = _pronoun_note(last_npc_line + " " + player_line)
+
 	return (
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
 		+ "Produce BOTH the NPC's follow-up line AND %d short player dialogue choices in one JSON object.\n" % count
@@ -596,6 +608,7 @@ static func build_combined_reply(
 		+ "- Choices should cover a range of tones: curious, cautious, friendly, direct.\n"
 		+ "- Do NOT number the choices or add bullet points.\n"
 		+ "- Respond with ONLY valid JSON: {\"reply\": \"<text>\", \"choices\": [\"...\", \"...\"]}\n"
+		+ pronoun_note
 	)
 
 
@@ -989,6 +1002,46 @@ static func _example_ability_ids() -> Array[String]:
 		if not (aid in out):
 			out.append(aid)
 	return out
+
+
+## Pronouns for named figures the player can ask an NPC about.
+##
+## Measured against live llama3: of 21 NPC replies that mentioned Chancellor
+## Mordaine, NINE called her "he". Nothing in the conversation prompt said
+## otherwise, so the model guessed from the title — and her throne-room prose,
+## every scripted line and her own boss dialogue use she/her.
+##
+## DECLARED, not inferred. A pronoun is a fact about a character, and deriving it
+## from prose statistics would propagate a future misgendering bug straight into
+## the prompt. test_the_npc_prompt_knows_her_pronoun derives the same answer from
+## authored cutscene prose and asserts THIS table matches it.
+##
+## Keyed by the name the NOTE should use; `refs` are the ways a player actually
+## says it. Measured: the misgendering samples say "the Chancellor", not
+## "Mordaine" — a name-only match fires on none of them.
+const CHARACTER_PRONOUNS: Dictionary = {
+	"Chancellor Mordaine": {
+		"pronoun": "she/her",
+		"refs": ["mordaine", "chancellor"],
+	},
+}
+
+
+## A one-line pronoun reminder for any figure in CHARACTER_PRONOUNS named in the
+## conversation so far. Empty when none is mentioned — the prompt does not carry
+## a roster the model has to read past on every turn.
+static func _pronoun_note(context_text: String) -> String:
+	var low: String = context_text.to_lower()
+	var out: PackedStringArray = PackedStringArray()
+	for who in CHARACTER_PRONOUNS:
+		var entry: Dictionary = CHARACTER_PRONOUNS[who]
+		for r in entry.get("refs", []):
+			if low.find(str(r)) != -1:
+				out.append("%s uses %s." % [str(who), str(entry.get("pronoun", ""))])
+				break
+	if out.is_empty():
+		return ""
+	return "\n" + " ".join(out) + "\n"
 
 
 ## Flatten a model-authored line so it cannot escape the block that quotes it.
