@@ -6166,7 +6166,11 @@ func _on_full_bank_unleashed(combatant: Combatant, action_count: int) -> void:
 ## The flourish is the first caller of the quip palette that a MONSTER can reach — every combat-quip
 ## site is guarded by `in player_party`, and `_get_job_quip_color` defaults a jobless combatant to
 ## "fighter", so an enemy Advance came out in the Fighter's red. Enemies get a neutral threat tint.
-const ADVANCE_FLOURISH_ENEMY_COLOR: Color = Color(0.86, 0.46, 0.40)
+## Bone/ash, deliberately near-grey: a monster has no class, so it gets no class colour. Chosen by
+## maximising distance from every job under a desaturation constraint — 0.525 from its nearest
+## (cleric/bard/ninja), where the palette's own closest two jobs sit 0.350 apart. The first tint I
+## picked here was 0.280 from the Fighter's orange, CLOSER than any two jobs are to each other.
+const ADVANCE_FLOURISH_ENEMY_COLOR: Color = Color(0.75, 0.725, 0.65)
 
 
 static func advance_flourish_color(combatant: Combatant, party_color: Color) -> Color:
