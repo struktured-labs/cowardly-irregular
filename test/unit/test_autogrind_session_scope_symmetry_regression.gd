@@ -82,13 +82,26 @@ func _body(lines: PackedStringArray, fname: String) -> PackedStringArray:
 	return out
 
 
+## Every member var the file declares. The census intersects against this, so an identifier that
+## is not a field of this class -- a constructor like int(), a local, a builtin -- can never enter
+## the corpus under its own name, and can never be silenced by classifying it.
+func _declared_vars(lines: PackedStringArray) -> Dictionary:
+	var re := RegEx.create_from_string("^var\\s+(_?[a-z][a-z0-9_]*)")
+	var out := {}
+	for l in lines:
+		var m := re.search(l)
+		if m:
+			out[m.get_string(1)] = true
+	return out
+
+
 ## Fields assigned (or cleared) at any indent inside a body.
-func _assigned(body: PackedStringArray) -> Dictionary:
-	var re := RegEx.create_from_string("^\\t+(_?[a-z][a-z0-9_]*)\\s*(=[^=]|\\.clear\\(\\))")
+func _assigned(body: PackedStringArray, declared: Dictionary) -> Dictionary:
+	var re := RegEx.create_from_string("^\\t+(_?[a-z][a-z0-9_]*)\\s*([-+*/]?=[^=]|\\.clear\\(\\))")
 	var out := {}
 	for l in body:
 		var m := re.search(l)
-		if m:
+		if m and declared.has(m.get_string(1)):
 			out[m.get_string(1)] = true
 	return out
 
@@ -105,21 +118,39 @@ func _called_helpers(body: PackedStringArray) -> PackedStringArray:
 
 
 func _resolve(lines: PackedStringArray, fname: String) -> Dictionary:
-	var fields := _assigned(_body(lines, fname))
+	var declared := _declared_vars(lines)
+	var fields := _assigned(_body(lines, fname), declared)
 	for h in _called_helpers(_body(lines, fname)):
-		for k in _assigned(_body(lines, h)):
+		for k in _assigned(_body(lines, h), declared):
 			fields[k] = true
 	return fields
 
 
-func _snapshot_fields(lines: PackedStringArray) -> Dictionary:
-	var re := RegEx.create_from_string("^\\t\\t\"[a-z_]+\":\\s*(_?[a-z][a-z0-9_]*)")
-	var out := {}
+## Every `"key": <expr>` line in the writer, resolved to the member fields its expression reads.
+## Returns {fields: {...}, unparsed: [keys]} -- the second half is the point. Matching only a
+## leading identifier made `"probe": int(_probe)` resolve to `int`, which is not a field: the real
+## field vanished from the corpus and the ratchet complained about a name nobody could act on.
+## The tempting fix is to classify `int`, which would blind the census to EVERY wrapped value.
+func _snapshot_scan(lines: PackedStringArray) -> Dictionary:
+	var keyre := RegEx.create_from_string("^\\t\\t\"([a-z_]+)\":\\s*(.+?),?\\s*$")
+	var identre := RegEx.create_from_string("(_?[a-zA-Z][a-zA-Z0-9_]*)")
+	var declared := _declared_vars(lines)
+	var fields := {}
+	var unparsed := []
 	for l in _body(lines, "build_snapshot_system_block"):
-		var m := re.search(l)
-		if m and m.get_string(1) != "elapsed":
-			out[m.get_string(1)] = true
-	return out
+		var m := keyre.search(l)
+		if m == null:
+			continue
+		var hit := false
+		for im in identre.search_all(m.get_string(2)):
+			if declared.has(im.get_string(1)):
+				fields[im.get_string(1)] = true
+				hit = true
+		# A value built only from a parameter or a literal reads no field; `elapsed` is the one
+		# such entry today, so anything else unparsed is a corpus hole and must say so by KEY.
+		if not hit and m.get_string(1) != "elapsed_seconds":
+			unparsed.append("%s -> %s" % [m.get_string(1), m.get_string(2)])
+	return {"fields": fields, "unparsed": unparsed}
 
 
 func test_every_session_field_is_reset_snapshotted_and_restored() -> void:
@@ -127,7 +158,8 @@ func test_every_session_field_is_reset_snapshotted_and_restored() -> void:
 	assert_gt(lines.size(), 100, "census must read a real file, not an empty one")
 
 	var reset := _resolve(lines, "start_autogrind")
-	var snap := _snapshot_fields(lines)
+	var scan := _snapshot_scan(lines)
+	var snap: Dictionary = scan["fields"]
 	var restore := _resolve(lines, "restore_system_from_snapshot")
 
 	# The census must actually find things, or every assert below is vacuously green.
@@ -136,6 +168,12 @@ func test_every_session_field_is_reset_snapshotted_and_restored() -> void:
 	assert_gt(restore.size(), 10, "restore_system_from_snapshot must yield a non-trivial field set")
 	assert_true(reset.has("battles_completed"), "control: a known session tally must appear in the reset set")
 	assert_true(snap.has("battles_completed"), "control: a known session tally must appear in the snapshot set")
+
+	## CORPUS control, which the three asserts above are NOT: they prove the instrument can see a
+	## field it was pointed at, never that the corpus holds every field it should. A writer entry
+	## whose value reads no member var means the census silently dropped it, so it fails BY KEY.
+	assert_eq(scan["unparsed"], [],
+		"the census could not resolve these snapshot entries to a field -- it is not scanning them")
 
 	var unclassified := []
 	for f in reset.keys():
@@ -154,12 +192,19 @@ func test_every_session_field_is_reset_snapshotted_and_restored() -> void:
 func test_no_stale_classified_entries() -> void:
 	var lines := _lines()
 	var reset := _resolve(lines, "start_autogrind")
-	var snap := _snapshot_fields(lines)
+	var snap: Dictionary = _snapshot_scan(lines)["fields"]
 	var restore := _resolve(lines, "restore_system_from_snapshot")
+	var declared := _declared_vars(lines)
 
 	var stale := []
 	var reasonless := []
+	var not_a_field := []
 	for f in CLASSIFIED.keys():
+		## An entry that is not a declared member var cannot be a deliberate exemption -- it is
+		## someone silencing a census artifact, which would blind the scan for every field of
+		## that shape. The only way out is to fix the census.
+		if not declared.has(f):
+			not_a_field.append(f)
 		if str(CLASSIFIED[f]).strip_edges().is_empty():
 			reasonless.append(f)
 		var symmetric: bool = reset.has(f) and snap.has(f) and restore.has(f)
@@ -167,6 +212,7 @@ func test_no_stale_classified_entries() -> void:
 			stale.append(f)
 		if not reset.has(f) and not snap.has(f) and not restore.has(f):
 			stale.append("%s (absent from all three -- renamed or deleted?)" % f)
+	assert_eq(not_a_field, [], "CLASSIFIED names something that is not a member var of AutogrindSystem")
 	assert_eq(reasonless, [], "a CLASSIFIED entry with an empty reason is a suppression, not an explanation")
 	assert_eq(stale, [], "CLASSIFIED entry is no longer asymmetric -- remove it so the ratchet keeps its teeth")
 
