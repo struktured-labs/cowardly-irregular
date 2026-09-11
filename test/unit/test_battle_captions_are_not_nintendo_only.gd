@@ -268,9 +268,20 @@ func test_no_help_label_spells_a_non_face_button() -> void:
 	## scores a clean green over zero work — a loop over nothing asserts nothing, and GUT cannot
 	## flag it because one assert anywhere in the call graph clears [Risky]. If the label-assignment
 	## shape ever changes, this arm must FAIL rather than quietly scan an empty set.
+	## ⛔ THE CORPUS LIST IS ITSELF DRAINABLE, and this arm had that hole after two prior fixes.
+	## @cowir-sfx 2026-09-11: `for x in LIST:` over `[]` runs no body and asserts nothing — and GUT
+	## does not even flag Risky, because sibling asserts in the same function clear it. Measured:
+	## emptying this list gave EC=0, Passing 8/8, Risky 0, SILENT.
+	## A floor derived from the list it defends compares the list against itself. Pinned to a
+	## LITERAL count and both members NAMED, so draining the corpus is itself the violation.
+	var paths: Array[String] = [GRID_EDITOR, AUTOGRIND_EDITOR]
+	assert_eq(paths.size(), 2,
+		"PRECONDITION: the corpus is TWO editors; a shortened list scans less and says nothing")
+	assert_true(paths.has(GRID_EDITOR), "PRECONDITION: the autobattle editor must be in the corpus")
+	assert_true(paths.has(AUTOGRIND_EDITOR), "PRECONDITION: the autogrind editor must be in the corpus")
 	var per_file: Dictionary = {}
 	var offenders: Array[String] = []
-	for path in [GRID_EDITOR, "res://src/ui/autogrind/AutogrindGridEditor.gd"]:
+	for path in paths:
 		per_file[path] = 0
 		for raw in _src(path).split("\n"):
 			var line: String = raw.strip_edges()
