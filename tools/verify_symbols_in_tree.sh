@@ -41,6 +41,20 @@ if ! git cat-file -e "${COMMIT}:${PATH_IN_TREE}" 2>/dev/null; then
 	exit 2
 fi
 
+# EXISTS IS NOT THE SAME AS IS-A-FILE, and this one fails GREEN. `cat-file -e` succeeds on a TREE,
+# and `git show` then returns a directory LISTING, so the tool grepped filenames and answered
+# "present". In GDScript the class name IS the filename, so `<dir>` + `HeadlessBattleResolver`
+# false-positives almost by construction — and `src/autogrind/AutogrindSystem.gd` is one keystroke
+# from `src/autogrind`. A gitlink (this repo has mcp/godot-mcp) is the same family.
+# Assert the TYPE rather than enumerating the shapes that are not content: blob or refuse.
+OBJ_TYPE=$(git cat-file -t "${COMMIT}:${PATH_IN_TREE}" 2>/dev/null || echo "unknown")
+if [ "$OBJ_TYPE" != "blob" ]; then
+	echo "NOT A FILE: ${PATH_IN_TREE} @ ${REF} is a '${OBJ_TYPE}', not a blob"
+	echo "  -> git show would return a directory listing or a commit, and grepping that answers"
+	echo "     a question about NAMES, not about content — it fails GREEN, which is why this refuses"
+	exit 2
+fi
+
 # A real file, never a pipe or a process substitution: this box's grep skips FIFOs and treats a
 # NUL-bearing file as binary. -a on every read for the same reason.
 WORK=$(mktemp "${TMPDIR:-/tmp}/verify_symbols.XXXXXX")
