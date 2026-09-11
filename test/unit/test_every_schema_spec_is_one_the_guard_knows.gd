@@ -182,6 +182,15 @@ func test_the_known_list_matches_what_the_validator_accepts() -> void:
 	var svc = _svc()
 	var known: Array[String] = _validator_types()
 	assert_gte(known.size(), 6, "CONTROL: the arm parser found %d types — it is broken" % known.size())
+	## Draining CORE_TYPES is itself the violation. The per-member checks below live
+	## INSIDE the loop, so deleting an entry deletes its own check — measured: removing
+	## "String" left EC=0 and 5 passing, with only the assert count moving 23 -> 22,
+	## which nobody reads on a green run. cowir-sprites found the identical shape in
+	## KNOWN_PAIRS after I had publicly called mine safe by comparing it to theirs.
+	assert_eq(CORE_TYPES.size(), 6,
+		"CORE_TYPES holds %d entries, not 6 — a drained control removes coverage silently. "
+		% CORE_TYPES.size()
+		+ "If a type was genuinely retired from _type_matches, change this count deliberately.")
 	for t in CORE_TYPES:
 		assert_true(t in known, "%s must be parsed out of _type_matches — the parser missed an arm" % t)
 	assert_true("Variant" in known, "and the declared escape hatch must be found the same way")
