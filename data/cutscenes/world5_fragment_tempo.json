@@ -3,7 +3,7 @@
   "title": "Fragment: The Paused Tick",
   "world": 5,
   "trigger": "tempo_clock_cycle_defeated",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "location": "digital_timing_layer_stratum_three",
   "description": "Found in Stratum Three of the digital timing layer after defeating the Tempo of the Clock Cycle. A single clock cycle, stopped mid-tick. The kind of pause the system was never designed to permit.",
   "steps": [
@@ -13,7 +13,7 @@
     },
     {
       "type": "play_music",
-      "track": "cutscene_w4_foreman_confession"
+      "track": "cutscene_w5_cached_memory"
     },
     {
       "type": "wait",

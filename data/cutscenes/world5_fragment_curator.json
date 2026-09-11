@@ -3,7 +3,7 @@
   "title": "Fragment: The Warm Address",
   "world": 5,
   "trigger": "curator_memory_pool_defeated",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "location": "digital_memory_pool_sector_null",
   "description": "Found in Sector Null of the digital memory pool after defeating the Curator. A memory address, still active, pointing to a location that has been marked as freed. The data is gone. The warmth at the address is not.",
   "steps": [
@@ -13,7 +13,7 @@
     },
     {
       "type": "play_music",
-      "track": "cutscene_w4_foreman_confession"
+      "track": "cutscene_w5_cached_memory"
     },
     {
       "type": "wait",
