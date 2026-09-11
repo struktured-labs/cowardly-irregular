@@ -6085,7 +6085,7 @@ func _spawn_advance_flourish(combatant: Combatant, sprite: Node2D, count: int, f
 	if _tier() == BattleJuice.Tier.MINIMAL:
 		return
 	var n: int = clampi(count, 2, ADVANCE_FLOURISH_RINGS.size() - 1)
-	var color: Color = _get_job_quip_color(combatant)
+	var color: Color = advance_flourish_color(combatant, _get_job_quip_color(combatant))
 	var job_id: String = str(combatant.job.get("id", "")) if combatant.job else ""
 	var shape: String = str(ADVANCE_FLOURISH_SHAPES.get(job_id, "sparks"))
 	var origin: Vector2 = sprite.global_position
@@ -6153,7 +6153,7 @@ func _spawn_advance_shape(shape: String, origin: Vector2, color: Color, n: int) 
 func _on_full_bank_unleashed(combatant: Combatant, action_count: int) -> void:
 	if _tier() == BattleJuice.Tier.MINIMAL:
 		return
-	var color: Color = _get_job_quip_color(combatant)
+	var color: Color = advance_flourish_color(combatant, _get_job_quip_color(combatant))
 	_spawn_screen_flash(Color(color.r, color.g, color.b, 0.42), 0.30)
 	BattleJuice.add_trauma(0.30, Vector2.ZERO, 0.28)
 	var sprite: Node2D = _get_combatant_sprite(combatant)
@@ -6161,6 +6161,18 @@ func _on_full_bank_unleashed(combatant: Combatant, action_count: int) -> void:
 		BattleJuice.punch_zoom(sprite.global_position, 0.05, 0.18)
 	SoundManager.play_battle("full_bank_unleash")
 	log_message("[color=gold]★ FULL BANK — %d actions ★[/color]" % action_count)
+
+
+## The flourish is the first caller of the quip palette that a MONSTER can reach — every combat-quip
+## site is guarded by `in player_party`, and `_get_job_quip_color` defaults a jobless combatant to
+## "fighter", so an enemy Advance came out in the Fighter's red. Enemies get a neutral threat tint.
+const ADVANCE_FLOURISH_ENEMY_COLOR: Color = Color(0.86, 0.46, 0.40)
+
+
+static func advance_flourish_color(combatant: Combatant, party_color: Color) -> Color:
+	if combatant == null or not combatant.job:
+		return ADVANCE_FLOURISH_ENEMY_COLOR
+	return party_color
 
 
 func _get_job_quip_color(combatant: Combatant) -> Color:
