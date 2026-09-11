@@ -663,7 +663,7 @@ func _build_ui() -> void:
 	# Footer — pinned at the very bottom of the panel, outside the scroll area
 	# so it is always visible regardless of scroll position.
 	var footer = Label.new()
-	footer.text = "←→: Adjust  A/Click: Select  B/RClick: Back"
+	footer.text = "←→: Adjust  %s/Click: Select  %s/RClick: Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	footer.position = Vector2(16, panel.size.y - FOOTER_H + 18)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
