@@ -223,7 +223,8 @@ func _build_ui() -> void:
 
 	# Footer
 	var footer = Label.new()
-	footer.text = "↑↓ / Wheel: Scroll    B / RClick: Close"
+	# "B" was right on Nintendo only, and a keyboard player was offered only a mouse.
+	footer.text = "↑↓/D-pad / Wheel: Scroll    %s / RClick: Close" % InputProfileManager.hint_for_action("ui_cancel")
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.position = Vector2(0, vp_size.y - 28)
 	footer.size = Vector2(vp_size.x, 20)

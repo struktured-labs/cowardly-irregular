@@ -228,16 +228,16 @@ func _build_ui() -> void:
 
 	Layout overview (overflow-safe):
 	  panel
-	  ├── panel_bg       (ColorRect, full-rect)
-	  ├── border         (RetroPanel beveled edge)
-	  ├── title          (Label, pinned at y=8, outside scroll)
-	  ├── scroll         (ScrollContainer, fills panel between title and footer)
-	  │   └── vbox       (VBoxContainer — all rows grow downward freely)
-	  │       ├── encounter_item
-	  │       ├── debug_item
-	  │       ├── … (all setting rows)
-	  │       └── actions_box (VBoxContainer for action buttons)
-	  └── footer         (Label, pinned at bottom, outside scroll)
+	  +-- panel_bg       (ColorRect, full-rect)
+	  +-- border         (RetroPanel beveled edge)
+	  +-- title          (Label, pinned at y=8, outside scroll)
+	  +-- scroll         (ScrollContainer, fills panel between title and footer)
+	  |   `-- vbox       (VBoxContainer — all rows grow downward freely)
+	  |       +-- encounter_item
+	  |       +-- debug_item
+	  |       +-- … (all setting rows)
+	  |       `-- actions_box (VBoxContainer for action buttons)
+	  `-- footer         (Label, pinned at bottom, outside scroll)
 
 	The ScrollContainer clips and scrolls only the inner VBox, so no
 	matter how many debug action buttons are added the panel never overflows.
@@ -663,7 +663,7 @@ func _build_ui() -> void:
 	# Footer — pinned at the very bottom of the panel, outside the scroll area
 	# so it is always visible regardless of scroll position.
 	var footer = Label.new()
-	footer.text = "←→: Adjust  A/Click: Select  B/RClick: Back"
+	footer.text = "←→: Adjust  %s/Click: Select  %s/RClick: Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	footer.position = Vector2(16, panel.size.y - FOOTER_H + 18)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)

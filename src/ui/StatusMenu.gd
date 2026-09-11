@@ -73,7 +73,7 @@ func _build_ui() -> void:
 
 	# Footer
 	var footer = Label.new()
-	footer.text = "B/RClick: Back"
+	footer.text = "%s/RClick: Back" % InputProfileManager.hint_for_action("ui_cancel")
 	footer.position = Vector2(16, viewport_size.y - 32)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)

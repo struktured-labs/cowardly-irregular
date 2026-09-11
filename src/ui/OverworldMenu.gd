@@ -186,7 +186,7 @@ func _build_ui() -> void:
 
 	# Footer help text
 	var footer = Label.new()
-	footer.text = "↑↓: Select  A/Click: Confirm  B/RClick: Close  ←→: Character  L/R: Leader"
+	footer.text = "↑↓: Select  %s/Click: Confirm  %s/RClick: Close  ←→: Character  L/R: Leader" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	footer.position = Vector2(16, viewport_size.y - 32)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)

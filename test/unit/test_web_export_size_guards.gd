@@ -9,13 +9,21 @@ extends GutTest
 ##    fallback when missing) is web-excluded; desktop keeps it all.
 ## The deploy pipeline additionally hard-fails on pck ≥ 190 MB.
 
+## ⚠️ cutscene_w6* was here until 2026-09-11 and was REMOVED DELIBERATELY.
+## Its nine beds ship now: world6_ending stopped its music, requested
+## cutscene_w6_epilogue, and got silence for the rest of the campaign's
+## closer on web. +7.02 MiB at the shipped 48k tier, 6.3 MiB inside the warn
+## band (cowir-deploy, measured on the real pack), and reversible to the byte
+## by putting the glob back. cowir-main ruled 2026-09-11.
+##
+## Anything still listed here must stay out. Removing an entry is a budget
+## decision with a measurement behind it, not a cleanup.
 const REQUIRED_WEB_EXCLUDES := [
 	"*.pre_normalize.png",
 	"*.pre_palette.png",
 	"assets/audio/music/*futuristic*",
 	"assets/audio/music/cutscene_w4*",
 	"assets/audio/music/cutscene_w5*",
-	"assets/audio/music/cutscene_w6*",
 ]
 
 

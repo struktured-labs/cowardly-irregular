@@ -229,7 +229,7 @@ func _build_ui() -> void:
 
 	# Footer
 	var footer = Label.new()
-	footer.text = "Up/Down: Navigate   A: Play   B: Stop & Back"
+	footer.text = "↑↓/D-pad: Navigate   %s: Play   %s: Stop & Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	footer.position = Vector2(16, _panel.size.y - 28)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
