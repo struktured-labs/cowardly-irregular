@@ -34,9 +34,9 @@ const SRC := "res://src/autogrind/AutogrindSystem.gd"
 ## a field that later becomes symmetric must be removed from here.
 const CLASSIFIED := {
 	"is_grinding": "lifecycle flag, not a tally; a snapshot only exists while it is true",
-	"grind_party": "restored by the resume path from the live party, not from the system block",
-	"grind_enemy_template": "restored by the resume path alongside grind_party",
-	"_automation_paused": "resuming a grind means you want it running; a paused resume is a wedge",
+	"grind_party": "rebuilt from the LIVE party every start -- AutogrindController:122-127 types _party and passes it in, and resume goes through that same start",
+	"grind_enemy_template": "passed in by the same start_autogrind call that rebuilds grind_party",
+	"_automation_paused": "transient controller state (AutogrindController:465/557/569), cleared by BOTH start_autogrind and stop_autogrind; the controller's own restore_from_snapshot carries no pause key either",
 	"injuries_this_session": "DERIVED from _injury_baseline by check_new_injuries; the baseline is the persisted half",
 	"current_region_id": "a place, not a tally; you grind the same region across sessions by design",
 	"efficiency_growth_rate": "DERIVED from permadeath_staking_enabled, which IS snapshotted; restoring the flag through enable_permadeath_staking re-derives the rate",
