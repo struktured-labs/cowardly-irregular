@@ -854,6 +854,7 @@ func _step_grant_item(step: Dictionary) -> void:
 	if _skipping:
 		return
 	var popup_data = {
+		"item_id": item_id,  # the emblem fallback keys on the item's category
 		"name": str(step.get("name", item_id)),
 		"description": str(step.get("description", "")),
 		"sprite_path": str(step.get("sprite_path", "")),
