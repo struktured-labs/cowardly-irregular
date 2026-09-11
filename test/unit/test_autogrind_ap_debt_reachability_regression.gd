@@ -64,7 +64,8 @@ func _attack() -> Dictionary:
 
 
 func test_ap_debt_is_reachable_with_an_advance_rule() -> void:
-	## Four actions cost 3 AP. Sustained over rounds the natural +1 cannot keep up, so AP descends
+	## Four actions cost 4 AP (billed_ap, since 2026-09-11 — this said 3 while the resolver underpriced
+	## every Advance by one). Sustained over rounds the natural +1 cannot keep up, so AP descends
 	## past zero — the state the condition is written for.
 	var hero := _hero("Advance Hero")
 	_install(hero, [
