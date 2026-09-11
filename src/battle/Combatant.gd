@@ -338,11 +338,23 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 	## healing 1:1 while active. Applied by the fill_the_void ability
 	## (effect=damage_absorb, duration=2). Pre-fix the effect fell
 	## through to push_warning — the ability burned 12 MP for nothing.
-	## Duration controls when absorb wears off. Lethal-tick guard
-	## doesn't apply since absorb returns 0 — caller sees "no damage
-	## taken" and skips the die() branch downstream.
+	## Duration and absorb_amount both wear it off. A fully absorbed hit
+	## returns 0 and the caller skips the die() branch; an OVERFLOWING
+	## hit falls through to the normal damage path, death included.
 	if has_status("damage_absorb") and actual_damage > 0:
-		var absorbed: int = actual_damage
+		## 2026-09-10: the ward has a BUDGET (the ability's absorb_amount, parked here as meta by
+		## BattleManager). Damage beyond it lands normally in the SAME hit and the status breaks,
+		## so a big swing overwhelms the ward instead of being erased by it. No meta = unlimited,
+		## the pre-budget rule, kept for any ability authored without the key.
+		var budget: int = int(get_meta("_damage_absorb_budget", -1))
+		var absorbed: int = actual_damage if budget < 0 else mini(actual_damage, budget)
+		var overflow: int = actual_damage - absorbed
+		if budget >= 0:
+			budget -= absorbed
+			set_meta("_damage_absorb_budget", budget)
+			if budget <= 0:
+				remove_status("damage_absorb")
+				remove_meta("_damage_absorb_budget")
 		var old_hp_absorb: int = current_hp
 		current_hp = min(max_hp, current_hp + absorbed)
 		var healed: int = current_hp - old_hp_absorb
@@ -353,7 +365,9 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 		if status_tick_heal != null and healed > 0:
 			status_tick_heal.emit(healed, "damage_absorb")
 		print("%s absorbed %d damage (healed %d)" % [combatant_name, absorbed, healed])
-		return 0  # no damage taken
+		if overflow <= 0:
+			return 0  # no damage taken
+		actual_damage = overflow
 
 	var old_hp = current_hp
 	current_hp = max(0, current_hp - actual_damage)

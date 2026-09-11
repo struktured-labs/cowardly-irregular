@@ -5771,18 +5771,26 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					ap_granted.emit(target, ap_grant)
 					battle_log_message.emit("[color=%s]%s braves the moment![/color] (+%d AP)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, ap_grant])
 		## Tick 386: damage_absorb handler. Pre-fix fill_the_void
-		## (effect=damage_absorb, duration=2, absorb_amount=100) fell
-		## through to `_:` push_warning default — the 12 MP cast was
-		## pure flavor. Now applies the "damage_absorb" status; the
-		## sister Combatant.take_damage block intercepts incoming
-		## damage and converts it 1:1 to healing while the status
-		## holds. Duration handles wear-off; absorb_amount is
-		## documented in the data but not enforced (duration is the
-		## limiter).
+		## (effect=damage_absorb, duration=2) fell through to `_:`
+		## push_warning — the 12 MP cast was pure flavor. Now applies
+		## the "damage_absorb" status; the sister Combatant.take_damage
+		## block converts incoming damage to healing 1:1 while it holds.
+		## 2026-09-10: absorb_amount is now a BUDGET, not documentation.
+		## It is authored at 1000 on fill_the_void, which belongs to
+		## the_absence — a COMMON W6 enemy that also carries a passive
+		## 30% damage→heal. With duration as the only limiter, a cast
+		## made it immune AND self-healing against a whole party for two
+		## full rounds, which stalls the fight rather than complicating
+		## it. An OMITTED absorb_amount still means unlimited, so any
+		## future ability authored without the key keeps the old rule.
 		"damage_absorb":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("damage_absorb", duration)
+					if ability.has("absorb_amount"):
+						target.set_meta("_damage_absorb_budget", maxi(0, int(ability["absorb_amount"])))
+					elif target.has_meta("_damage_absorb_budget"):
+						target.remove_meta("_damage_absorb_budget")
 					battle_log_message.emit("[color=%s]%s will absorb damage as healing![/color] (%d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])
 		## Tick 385: dispel_and_self_buff handler. Pre-fix
 		## reduce_overhead (effect=dispel_and_self_buff,
