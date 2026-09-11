@@ -163,7 +163,7 @@ func _place_village_markers() -> void:
 		add_child(marker)
 
 
-## No hidden passage existed here. Walls are 'N' neon_wall, not server_tower — measured on the frame, both are dim against circuit floor but neon carries more contrast (lum stdev 23.8 vs 19.0, p99 116 vs 101).
+## No hidden passage existed here. Walls are 'N' neon_wall, not server_tower. ⛔ MY ORIGINAL JUSTIFICATION USED THE WRONG METRIC: I cited luminance stdev (23.8 vs 19.0), and the enclosure that actually reads — industrial's brick — has the LOWEST stdev of the three at 6.5. What tracks legibility is HUE SEPARATION from the floor: industrial 12.2 deg, this 2.9, steampunk 1.8. The swap was real but marginal (2.0 -> 2.9); W3 and W5 enclosures are correct in data and physics and near-invisible in frame. Fixing that is an art call, not a character swap.
 func _place_hidden_passages() -> void:
 	const HiddenPassageScript = preload("res://src/exploration/HiddenPassage.gd")
 	var passage = HiddenPassageScript.new()
