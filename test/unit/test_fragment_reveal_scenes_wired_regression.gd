@@ -109,8 +109,10 @@ func test_the_gate_table_is_the_data_every_fragment_scene_maps_to_its_masterites
 					"%s: the gate flag must be the one its masterite's defeat actually writes" % cid)
 				var aftermath: String = str(aftermath_by_trigger.get("boss_%s_%s_defeated" % [arch, theme], ""))
 				assert_ne(aftermath, "", "%s: its masterite (%s %s) has an authored aftermath scene" % [cid, arch, theme])
-				assert_eq(str(_loop._FRAGMENT_GATES[cid]["after"]), aftermath,
-					"%s: `after` must be the aftermath whose trigger names the SAME masterite — not the theme's world number" % cid)
+				# A mapped aftermath that no gate returns would hold the reveal forever (world3_tempo_defeat, .299) — then `after` must be empty until someone dispatches it.
+				var mapped_undispatched: bool = _loop._CUTSCENE_COMPLETION_FLAGS.has(aftermath) and not _dispatcher_returns(aftermath)
+				assert_eq(str(_loop._FRAGMENT_GATES[cid]["after"]), "" if mapped_undispatched else aftermath,
+					"%s: `after` must be the aftermath whose trigger names the SAME masterite (%s), or empty while that aftermath is mapped but never dispatched" % [cid, aftermath])
 			assert_eq(str(_loop._CUTSCENE_COMPLETION_FLAGS.get(cid, "")), "cutscene_flag_%s_complete" % cid, "%s is in the completion map" % cid)
 		f = dir.get_next()
 	dir.list_dir_end()
@@ -172,3 +174,23 @@ func test_at_least_the_dungeons_that_exist_today_can_reach_a_reveal() -> void:
 		if declared.contains("\"%s\"" % flag) or (w1_contract and flag.begins_with("w1_") and flag.ends_with("_defeated")):
 			reachable.append(fid)
 	assert_gte(reachable.size(), 8, "four W1 encounters + four masterite dungeons exist today, so at least eight reveals are reachable now: %s" % [reachable])
+
+
+## Does _get_pending_story_cutscene ever `return "<id>"`? A source scan of that one function body — the same corpus the completion-map audit reads.
+func _dispatcher_returns(id: String) -> bool:
+	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var start := src.find("func _get_pending_story_cutscene")
+	var end := src.find("\nfunc ", start + 1)
+	return src.substr(start, end - start).contains("return \"%s\"" % id)
+
+
+func test_no_after_is_mapped_but_never_dispatched() -> void:
+	# The loop's hatch covers an UNMAPPED `after` (nothing to wait for) and a DISPATCHED one (it will complete). Mapped-and-never-returned is the one state that blocks a reveal forever.
+	assert_true(_dispatcher_returns("world2_warden_defeat"), "control: a known dispatched aftermath is seen by the scan")
+	assert_false(_dispatcher_returns("zzz_no_such_scene"), "control: a fabricated id is not")
+	var blocked: Array[String] = []
+	for fid in _loop._FRAGMENT_GATES:
+		var after := str(_loop._FRAGMENT_GATES[fid]["after"])
+		if after != "" and _loop._CUTSCENE_COMPLETION_FLAGS.has(after) and not _dispatcher_returns(after):
+			blocked.append("%s → %s" % [fid, after])
+	assert_eq(blocked, [], "these reveals would wait forever on an aftermath nobody dispatches — set `after` to \"\" until it is wired")
