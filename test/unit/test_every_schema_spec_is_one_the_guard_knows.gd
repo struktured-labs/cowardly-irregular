@@ -187,10 +187,15 @@ func test_the_known_list_matches_what_the_validator_accepts() -> void:
 	## "String" left EC=0 and 5 passing, with only the assert count moving 23 -> 22,
 	## which nobody reads on a green run. cowir-sprites found the identical shape in
 	## KNOWN_PAIRS after I had publicly called mine safe by comparing it to theirs.
-	assert_eq(CORE_TYPES.size(), 6,
-		"CORE_TYPES holds %d entries, not 6 — a drained control removes coverage silently. "
+	## gte, not eq: this set may legitimately GROW (a new arm in _type_matches earns a
+	## row here) and an == pin would red on that correct work. A LITERAL floor still
+	## catches both drain magnitudes — 0 >= 6 and 5 >= 6 are both false — while
+	## permitting growth. cowir-sfx: the discriminator is "may it grow", not "who owns it".
+	assert_gte(CORE_TYPES.size(), 6,
+		"CORE_TYPES holds %d entries, fewer than the 6 core types this control must check. "
 		% CORE_TYPES.size()
-		+ "If a type was genuinely retired from _type_matches, change this count deliberately.")
+		+ "A drained control removes coverage silently. If a type was genuinely retired from "
+		+ "_type_matches, lower this floor deliberately.")
 	for t in CORE_TYPES:
 		assert_true(t in known, "%s must be parsed out of _type_matches — the parser missed an arm" % t)
 	assert_true("Variant" in known, "and the declared escape hatch must be found the same way")

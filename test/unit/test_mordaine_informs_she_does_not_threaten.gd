@@ -305,10 +305,13 @@ func test_the_comment_stripper_itself_is_pinned() -> void:
 	## Failing line. A gate reading the exit code or the Failing count passes that.
 	## (cowir-sfx's two-magnitude drain; the Risky-not-Failing half is cowir-story's
 	## Tests-minus-Passing arithmetic, which I got wrong reading this very run.)
-	assert_eq(cases.size(), 8,
-		"the stripper case table holds %d rows, not 8 — a drained table asserts NOTHING and "
+	## gte, not eq: a SEVENTH costume is correct work and must not red. A literal floor
+	## catches both drain magnitudes and permits growth (cowir-sfx).
+	assert_gte(cases.size(), 8,
+		"the stripper case table holds %d rows, fewer than the 8 costumes measured across the "
 		% cases.size()
-		+ "scores [Risky] with EC=0, not a failure. Add the row back, or change this count deliberately.")
+		+ "fleet today. A drained table asserts NOTHING and scores [Risky] with EC=0, not a "
+		+ "failure. Add the row back, or lower this floor deliberately.")
 	for c in cases:
 		assert_eq(_strip_comment(str(c[0])), str(c[1]), str(c[2]))
 
