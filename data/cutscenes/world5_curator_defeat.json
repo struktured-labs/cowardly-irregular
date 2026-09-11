@@ -1,9 +1,9 @@
 {
   "id": "world5_curator_defeat",
   "title": "Curator of Entropy — Aftermath",
-  "world": 5,
+  "world": 6,
   "trigger": "boss_curator_abstract_defeated",
-  "background": "node_prime",
+  "background": "vertex_village",
   "description": "Everything ends. The Curator accelerates the inevitable. But these ones made the ending interesting. For the first time, entropy finds it is choosing to remember.",
   "steps": [
     {

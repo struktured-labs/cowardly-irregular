@@ -1,9 +1,9 @@
 {
   "id": "world3_warden_intro",
   "title": "Warden of the Assembly Line",
-  "world": 3,
+  "world": 4,
   "trigger": "boss_warden_industrial",
-  "background": "steampunk_workshop",
+  "background": "industrial_factory",
   "description": "The Warden stands at the entrance to the great manufactory floor. A figure of brass and steam, announcing a stress test.",
   "steps": [
     {

@@ -1,9 +1,9 @@
 {
   "id": "world5_tempo_intro",
   "title": "Tempo of Sequence",
-  "world": 5,
+  "world": 6,
   "trigger": "boss_tempo_abstract",
-  "background": "node_prime",
+  "background": "vertex_village",
   "description": "The Tempo of Sequence exists as the law of order itself. First. Then. After. The order cannot be violated.",
   "steps": [
     {

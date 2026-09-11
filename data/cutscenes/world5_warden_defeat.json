@@ -1,9 +1,9 @@
 {
   "id": "world5_warden_defeat",
   "title": "Warden of Form — Aftermath",
-  "world": 5,
+  "world": 6,
   "trigger": "boss_warden_abstract_defeated",
-  "background": "node_prime",
+  "background": "vertex_village",
   "description": "Form deformed. The shape of immovability, passed. In the abstract world, defeat is conceptual. What is the geometry of something that has been moved through?",
   "steps": [
     {

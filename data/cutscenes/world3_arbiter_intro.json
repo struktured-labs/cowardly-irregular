@@ -1,9 +1,9 @@
 {
   "id": "world3_arbiter_intro",
   "title": "Arbiter of Efficiency",
-  "world": 3,
+  "world": 4,
   "trigger": "boss_arbiter_industrial",
-  "background": "steampunk_workshop",
+  "background": "industrial_factory",
   "description": "The Arbiter reviews the party's file in the foreman's office above the manufactory floor. Output is below standard. Demonstrate value.",
   "steps": [
     {

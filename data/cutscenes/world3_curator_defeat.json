@@ -1,9 +1,9 @@
 {
   "id": "world3_curator_defeat",
   "title": "Curator of the Pipeline — Aftermath",
-  "world": 3,
+  "world": 4,
   "trigger": "boss_curator_industrial_defeated",
-  "background": "steampunk_workshop",
+  "background": "industrial_factory",
   "description": "The flow has stopped. For the first time since the Curator can measure, nothing is moving through the pipeline. It tracked everything. It discovers it tracked everything except the one thing worth tracking.",
   "steps": [
     {
