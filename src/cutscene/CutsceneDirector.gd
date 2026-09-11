@@ -33,6 +33,8 @@ var _skip_pill_bg: ColorRect
 
 ## Dialogue reference (created on demand)
 var _dialogue: Node = null
+## The choice menu in flight, so a hold-B skip can dismiss it — a story choice swallows B itself, so the skip is the only way out without a pick.
+var _choice_menu: Node = null
 
 ## Background layer (captured screenshot or solid color behind dialogue)
 var _background_texture: TextureRect
@@ -560,7 +562,12 @@ func _step_choice(step: Dictionary) -> void:
 	get_tree().root.add_child(layer)
 	layer.add_child(menu)
 
+	# A story choice cannot be backed out of: B used to cancel the menu and this fell through to option 1 with a cancel sound, silently answering for the player.
+	if "cancellable" in menu:
+		menu.cancellable = false
+	_choice_menu = menu
 	var result: String = await menu.present(choice_texts)
+	_choice_menu = null
 	layer.queue_free()
 
 	# Find the matched option. Empty (cancel) falls back to first.
@@ -1908,6 +1915,9 @@ func _trigger_skip() -> void:
 	# Dismiss any active dialogue
 	if _dialogue and is_instance_valid(_dialogue) and _dialogue.visible:
 		_dialogue.skip_all()
+	# A choice in flight resolves as cancelled, which _step_choice maps to option 1 — the same answer the skip path gives.
+	if _choice_menu and is_instance_valid(_choice_menu) and _choice_menu.has_method("dismiss"):
+		_choice_menu.dismiss()
 
 	cutscene_skipped.emit(_cutscene_id)
 

@@ -37,6 +37,10 @@ signal choice_made(text: String)
 signal choice_cancelled()
 
 
+## False for a story choice the player must answer: B / Esc / right-click are swallowed, the hint drops Cancel, and only a caller's dismiss() resolves without a pick.
+var cancellable: bool = true
+
+
 # ── Layout constants ──────────────────────────────────────────────────────────
 
 ## Target width; clamped at present()-time to `viewport_width - 40` so the
@@ -227,7 +231,7 @@ func _build_ui() -> void:
 
 	# Hint row.
 	_hint_label = Label.new()
-	_hint_label.text = "[A/Enter/Click] Confirm    [B/Esc/RClick] Cancel    (↑↓/D-pad)"
+	_hint_label.text = "[A/Enter/Click] Confirm    [B/Esc/RClick] Cancel    (↑↓/D-pad)" if cancellable else "[A/Enter/Click] Confirm    (↑↓/D-pad)"
 	_hint_label.position = Vector2(PADDING_SIDE, PADDING_TOP + _choices.size() * ROW_H + 8)
 	_hint_label.size     = Vector2(_panel_w - PADDING_SIDE * 2, 24)
 	_hint_label.add_theme_font_size_override("font_size", HINT_FONT_SIZE)
@@ -248,7 +252,8 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_RIGHT:
-			_cancel()
+			if cancellable:
+				_cancel()
 			get_viewport().set_input_as_handled()
 			return
 		# Mouse wheel = navigate.
@@ -271,7 +276,8 @@ func _input(event: InputEvent) -> void:
 		_confirm()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
-		_cancel()
+		if cancellable:
+			_cancel()
 		get_viewport().set_input_as_handled()
 
 
