@@ -364,17 +364,19 @@ func check_jailbreak(boss_id: String, directive_text: String) -> Variant:
 			var kw_s: String = str(kw).to_lower().strip_edges()
 			if kw_s.is_empty():
 				continue
-			if lower.find(kw_s) != -1:
+			if _keyword_present(lower, kw_s):
 				hit = true
 				break
 		if not hit:
 			continue
-		# Allowlist enforcement: NO consequence outside the safe set.
+		# Allowlist enforcement: NO consequence outside the safe set. Skipping to the
+		# next vulnerability rather than returning: one unsupported entry must not
+		# make every LATER vulnerability for this boss unreachable.
 		var consequence: Dictionary = v.get("consequence", {})
 		var ctype: String = str(consequence.get("type", ""))
 		if not CONSEQUENCE_ALLOWLIST.has(ctype):
 			push_warning("[BossDialogue] vulnerability '%s' has unsupported consequence type '%s' — rejected." % [v.get("id", "?"), ctype])
-			return null
+			continue
 		return {
 			"vulnerability_id": str(v.get("id", "")),
 			"consequence": consequence,
@@ -392,3 +394,42 @@ func try_apply_jailbreak(boss_id: String, directive_text: String) -> bool:
 	var consequence: Dictionary = result.get("consequence", {})
 	jailbreak_succeeded.emit(boss_id, vuln_id, consequence)
 	return true
+
+
+## Whole-word keyword match; multi-word keywords match as phrases.
+##
+## The bare `find()` this replaces matched inside longer words, and the trigger
+## lists are full of short words that hide in common ones: 'king' fires on
+## asking / thinking / making / working / looking, so almost any sentence made
+## the W1 final boss skip her turn. Measured on 12 ordinary directives before the
+## fix: 11 triggered a jailbreak.
+##
+## The data was already authored for these semantics — it lists 'loyal' AND
+## 'loyalty', 'thaw' AND 'thawing', 'ground' AND 'grounded', 'bored' AND
+## 'boring'. Every one of those pairs is redundant under substring matching and
+## necessary under whole-word matching.
+##
+## An apostrophe is deliberately NOT a word character, so "the king's guard"
+## still matches 'king'.
+static func _keyword_present(haystack: String, needle: String) -> bool:
+	if needle.is_empty():
+		return false
+	if needle.find(" ") != -1:
+		return haystack.find(needle) != -1
+	var from: int = 0
+	while from <= haystack.length():
+		var at: int = haystack.find(needle, from)
+		if at == -1:
+			return false
+		var before_ok: bool = at == 0 or not _is_word_char(haystack[at - 1])
+		var after_idx: int = at + needle.length()
+		var after_ok: bool = after_idx >= haystack.length() or not _is_word_char(haystack[after_idx])
+		if before_ok and after_ok:
+			return true
+		from = at + 1
+	return false
+
+
+## Word characters for boundary purposes. The haystack is already lowercased.
+static func _is_word_char(c: String) -> bool:
+	return c.length() == 1 and "abcdefghijklmnopqrstuvwxyz0123456789".find(c) != -1
