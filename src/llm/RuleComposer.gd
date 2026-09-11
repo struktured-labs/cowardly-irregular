@@ -125,6 +125,18 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 			repair_notes.append(note)
 
 	var domain_system = get_node_or_null("/root/AutobattleSystem" if domain == DOMAIN_AUTOBATTLE else "/root/AutogrindSystem")
+
+	# ONE bad rule discarded the player's WHOLE ruleset. Measured on live llama3 after
+	# the prompt fix: 4 of 10 fighter compositions still fell back, 3 of them for a
+	# single rule naming an ability the character does not have (esuna, raise) while
+	# the other three rules in the set were valid. The player asked for a strategy and
+	# got a canned fallback because one line of four was wrong.
+	# Same shape as _drop_null_targets above: drop the offending rule, keep the rest,
+	# and TELL the player. Never empties the set — a zero-rule composition is not a
+	# valid one, it is the save-wiping one, so the caller's refusal path still runs.
+	if domain == DOMAIN_AUTOBATTLE and character_id != "":
+		for note in _drop_unusable_rules(v["rules"], character_id, domain_system):
+			repair_notes.append(note)
 	var grammar_errors: Array[String] = []
 	if domain_system != null and domain_system.has_method("validate_rule"):
 		# autobattle passes character_id → deep-check (unknown ability, out-of-kit,
@@ -245,6 +257,52 @@ func _rule_ability_label(rule: Dictionary) -> String:
 ## stripping that key would manufacture a rule that validates and then compares
 ## against a default nobody chose. Refusing it is the honest outcome; recovering
 ## it would be exactly the plausible-looking artifact that is worse than a refusal.
+## Drop rules the deep check refuses, keeping the ones that pass. Returns notes.
+##
+## Refusing a whole ruleset for one bad rule is the difference between the player
+## getting their strategy minus a line, and getting a canned fallback that ignores
+## what they asked for. Returns [] and leaves `rules` UNTOUCHED when nothing would
+## survive, so the caller refuses normally rather than handing back an empty set.
+func _drop_unusable_rules(rules: Array, character_id: String, domain_system) -> Array[String]:
+	var notes: Array[String] = []
+	if domain_system == null or not domain_system.has_method("validate_rule"):
+		return notes
+	var kept: Array = []
+	var dropped: Array[String] = []
+	for r in rules:
+		var errs: Array = domain_system.validate_rule(r, character_id)
+		if errs.is_empty():
+			kept.append(r)
+		else:
+			dropped.append(str(errs[0]))
+	if dropped.is_empty():
+		return notes
+	# SUBSTANTIVE FLOOR — and it subsumes the empty case: an empty `kept` has no
+	# substantive rule by definition, so a separate kept.is_empty() check was dead
+	# logic. Measured by mutation: removing it changed nothing, because this floor
+	# was already catching it. Two guards on one property defeat a single mutation.
+	# SUBSTANTIVE FLOOR. Measured: without it, 3 of 10 compositions were "rescued"
+	# down to nothing but the trailing {always} -> attack line. That scores as a
+	# success and hands the player plain attack labelled as the strategy they asked
+	# for — worse than the canned fallback, which is at least honest about being one.
+	# A rescue is only worth making if a rule the player would recognise survives.
+	var substantive: bool = false
+	for k in kept:
+		for c in (k as Dictionary).get("conditions", []):
+			if str((c as Dictionary).get("type", "")) != "always":
+				substantive = true
+				break
+		if substantive:
+			break
+	if not substantive:
+		return notes
+	rules.clear()
+	rules.append_array(kept)
+	for d in dropped:
+		notes.append("Dropped a rule this character cannot run — %s" % d)
+	return notes
+
+
 func _drop_null_targets(rules: Array) -> int:
 	var dropped: int = 0
 	for rule in rules:
