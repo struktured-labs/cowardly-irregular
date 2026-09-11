@@ -60,6 +60,47 @@ const FLAT_LAYOUT_SECTIONS := {
 ## proves both. This arm checks the property that actually decides whether a player sees the art:
 ## the FILENAME must match a monster id, because that is the whole contract. 85 of 85 reachable at
 ## authoring; the direction it defends is dead art accumulating unnoticed, which no other arm sees.
+## ⚠️ THE RULE BELOW IS THE CODE'S, NOT THIS FILE'S. The reachability arm depends on the sheet's
+## FILENAME being exactly the monster id, and that is true only because two consumers compose the
+## path that way -- inline, in both, with no shared helper (NPCs have HybridSpriteLoader
+## .npc_overworld_path; monsters have nothing). A guard that restates the convention is a THIRD copy:
+## change the template and the game loses every roaming monster's art while the guard stays green.
+## So the template is read OUT of the consumers and the arm below is checked against what it finds.
+const MONSTER_PATH_CONSUMERS: Array[String] = [
+	"res://src/exploration/RoamingMonster.gd",
+	"res://src/exploration/MasteriteEncounter.gd",
+]
+
+
+func _composed_monster_templates() -> Dictionary:
+	var re := RegEx.new()
+	re.compile("\"(res://assets/sprites/monsters/overworld/[^\"]*)\"")
+	var found := {}
+	for path in MONSTER_PATH_CONSUMERS:
+		var src := FileAccess.get_file_as_string(path)
+		if src == "":
+			continue
+		var m := re.search(src)
+		if m != null:
+			found[path] = m.get_string(1)
+	return found
+
+
+func test_the_overworld_monster_template_is_what_this_file_assumes() -> void:
+	var found := _composed_monster_templates()
+	assert_eq(found.size(), MONSTER_PATH_CONSUMERS.size(),
+		"a consumer stopped composing an overworld monster path — the reachability arm's premise is gone, not merely unmet: %s" % [found])
+	var values := []
+	for k in found:
+		values.append(found[k])
+		# The arm below matches STEM to monster id. That holds only for <root>/%s.png exactly.
+		assert_eq(found[k], "res://assets/sprites/monsters/overworld/%s.png",
+			"%s composes a path this file's reachability arm cannot model; update BOTH or the arm lies" % k)
+	# Two inline copies with no shared helper: they can drift apart silently.
+	for v in values:
+		assert_eq(v, values[0], "the two consumers compose DIFFERENT paths — one family of monsters is loading from somewhere this file never checks: %s" % [found])
+
+
 func test_every_flat_sheet_is_reachable_by_some_monster_id() -> void:
 	var raw := FileAccess.get_file_as_string("res://data/monsters.json")
 	var parsed: Variant = JSON.parse_string(raw)
