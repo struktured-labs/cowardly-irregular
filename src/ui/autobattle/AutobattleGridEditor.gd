@@ -210,6 +210,14 @@ func setup(char_id: String, char_name: String, char_combatant: Combatant = null,
 
 ## "Del" plus the pad button when one is connected; "Del" alone otherwise. Keeps the keyboard
 ## reading honest instead of leaving a dangling separator.
+## Auto (:1877) and Save (:1885) are PAD-ONLY arms, so with no pad the token goes rather than render
+## a key the chain gives to something else — Tab toggles the ROW (:1841), Enter edits a cell (:1765).
+func _pad_only_token(action: String, label: String) -> String:
+	if Input.get_connected_joypads().is_empty():
+		return ""
+	return "  %s:%s" % [InputProfileManager.hint_for_action(action), label]
+
+
 func _delete_token() -> String:
 	var pad := InputProfileManager.button_name_for_index(JOY_BUTTON_Y)
 	return "Del/%s" % pad if pad != "" else "Del"
@@ -297,10 +305,10 @@ func _build_ui() -> void:
 
 	var help_label2 = Label.new()
 	## That "Y" is JOY_BUTTON_Y (north face) — the keyboard key for CycleOp is C; a raw index has no action, so it derives via face_glyph_for_index.
-	help_label2.text = "%s/C:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  %s:Auto  %s:Save" % [
+	help_label2.text = "%s/C:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose%s%s" % [
 		InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y),
-		InputProfileManager.hint_for_action("battle_toggle_auto"),
-		InputProfileManager.hint_for_action("ui_menu"),
+		_pad_only_token("battle_toggle_auto", "Auto"),
+		_pad_only_token("ui_menu", "Save"),
 	]
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)

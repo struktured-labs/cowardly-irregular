@@ -318,3 +318,153 @@ func test_no_help_label_spells_a_non_face_button() -> void:
 	assert_eq(offenders, [] as Array[String],
 		"a help label spells a NON-FACE button by one family's name — derive it through " +
 		"hint_for_action so Nintendo reads Plus and PlayStation reads Options: %s" % [", ".join(offenders)])
+
+
+## ── does the named input actually REACH the handler ───────────────────────────────────────────
+## cowir-autogrind 2026-09-11, on their own console: "The Start token was wrong a SECOND way, and
+## deriving it from the action would have kept it wrong." Deriving a caption from an InputMap action
+## is only correct if that action's binding is what reaches the handler. It found the defect in MY
+## shipped caption: Del/%s:Delete derived from `ui_menu`, whose pad half is Start/L3 (save-and-close)
+## and whose keyboard half is Enter/Escape, both eaten earlier in the same elif chain. Three tokens
+## in one legend were wrong this way. These two arms quantify over the chain, not over the answer.
+
+const DELETER := "_delete_current_cell()"
+
+func test_the_delete_caption_names_the_button_that_actually_deletes() -> void:
+	## BOTH sides derived from source. A literal expectation here would have agreed with whatever I
+	## happened to write in the caption, which is how the wrong one shipped green.
+	var ge := _src(GRID_EDITOR)
+	var arm_re := RegEx.new()
+	arm_re.compile("event\\.button_index == (JOY_BUTTON_[A-Z_]+):\\n(?:.|\\n)*?" + DELETER.replace("(", "\\(").replace(")", "\\)"))
+	var m := arm_re.search(ge)
+	assert_not_null(m, "CONTROL: located the pad arm that reaches %s" % DELETER)
+	if m == null:
+		return
+	var btn: String = m.get_string(1)
+	assert_eq(btn, "JOY_BUTTON_Y", "CONTROL: the pad delete is the north face button")
+	## ⚠️ SCOPED TO THE LABEL, not to the file. My first version asserted `ge.contains(...)` — and the
+	## CycleOp token six lines below satisfies that string, so restoring the exact shipped defect left
+	## this arm GREEN (measured: Failing 1, and it was the other arm). A file-wide containment check
+	## for a value the file uses twice cannot speak about either use.
+	var a: int = ge.find("var help_label1 = Label.new()")
+	var b: int = ge.find("add_child(help_label1)")
+	assert_gt(a, -1, "CONTROL: located the delete legend")
+	assert_gt(b, a, "CONTROL: the window closes after it opens")
+	var label: String = ge.substr(a, b - a)
+	assert_true(label.contains(":Delete"), "CONTROL: this window really is the one carrying the token")
+	## ⚠️ FOLLOW ONE HELPER LEVEL. My first version searched the window alone, and cowir-controller's
+	## fix — which builds the whole token in `_delete_token()` so "Del/" cannot dangle with no pad —
+	## is BETTER than mine and this arm RED IT. A guard that fails the superior implementation of the
+	## thing it defends is taxing correct work; measured on their tree before it was widened.
+	var derivation: String = label
+	var call_re := RegEx.new()
+	call_re.compile("\\b(_[a-z_]+)\\(\\)")
+	for c in call_re.search_all(label):
+		var fn: String = "func %s(" % c.get_string(1)
+		var fi: int = ge.find(fn)
+		if fi > -1:
+			var fj: int = ge.find("\nfunc ", fi + 10)
+			derivation += ge.substr(fi, (fj - fi) if fj > -1 else 400)
+	## Either family renderer is fine — what must not vary is WHICH raw index it renders.
+	assert_true(derivation.contains("_for_index(%s)" % btn),
+		"the delete caption must render the button the delete handler tests (%s)" % btn)
+	assert_false(label.contains("hint_for_action(\"ui_menu\")"),
+		"ui_menu is save-and-close — a delete caption deriving from it names the button that EXITS")
+
+func test_no_caption_derives_from_an_action_its_own_chain_eats_first() -> void:
+	## The CLASS. For every action a caption in this file names: if every one of its keyboard bindings
+	## is claimed by an EARLIER arm of the same _input chain, its keyboard render is a key that does
+	## something else — so that token must be pad-gated or it is a false caption. Pre-fix this reds
+	## twice: `ui_menu` (Enter eaten by ui_accept, Escape by ui_cancel) and `battle_toggle_auto`
+	## (Tab eaten by the row-toggle arm). Neither was reachable by a bracketed-token scan.
+	var ge := _src(GRID_EDITOR)
+	var i: int = ge.find("func _input(event: InputEvent)")
+	assert_gt(i, -1, "CONTROL: located the input chain")
+	var j: int = ge.find("\nfunc ", i + 10)
+	var chain: String = ge.substr(i, (j - i) if j > -1 else ge.length() - i)
+	assert_true(chain.contains(DELETER), "CONTROL: the sliced chain is the real one")
+
+	## ⚠️ THE CORPUS MUST FOLLOW INDIRECTION, because MY OWN FIX INTRODUCED IT. I routed the two
+	## offending tokens through `_pad_only_token(action, label)` — so the action name became a
+	## PARAMETER, a literal `hint_for_action("x")` scan stopped finding them, and this arm went blind
+	## to exactly the two defects it was written to catch. The fix silently emptied the guard's
+	## corpus. So: actions come from direct calls AND from string literals handed to any local helper
+	## that itself calls hint_for_action. `gated` is decided the same way — a token counts as pad-safe
+	## if its own line checks, or if the helper it routes through checks.
+	var actions: Dictionary = {}   # action -> true if its caption is behind a pad-presence check
+	var named_re := RegEx.new()
+	named_re.compile("hint_for_action\\(\"([a-z_]+)\"\\)")
+	for line in ge.split("\n"):
+		for m in named_re.search_all(line):
+			var a: String = m.get_string(1)
+			actions[a] = actions.get(a, false) or line.contains("_has_pad()")
+
+	## Helpers that render an action passed in as a parameter.
+	var helper_re := RegEx.new()
+	helper_re.compile("func (_[a-z_]+)\\(action: String")
+	for hm in helper_re.search_all(ge):
+		var hname: String = hm.get_string(1)
+		var hj: int = ge.find("\nfunc ", hm.get_start() + 10)
+		var hbody: String = ge.substr(hm.get_start(), (hj - hm.get_start()) if hj > -1 else 400)
+		if not hbody.contains("hint_for_action("):
+			continue
+		var checks: bool = hbody.contains("get_connected_joypads().is_empty()") or hbody.contains("_has_pad()")
+		var call_re := RegEx.new()
+		call_re.compile("%s\\(\"([a-z_]+)\"" % hname)
+		for cm in call_re.search_all(ge):
+			var a2: String = cm.get_string(1)
+			actions[a2] = actions.get(a2, false) or checks
+	assert_gt(actions.size(), 3, "CONTROL: captions name actions at all (%d)" % actions.size())
+	for want in ["ui_accept", "ui_cancel", "battle_toggle_auto", "ui_menu"]:
+		assert_true(actions.has(want),
+			"CONTROL: the corpus still reaches %s — if a refactor hid it, this arm stopped speaking about it" % want)
+
+	var ungated: Array = []
+	var undecided: Array = []
+	for act in actions:
+		var own: int = chain.find("is_action_pressed(\"%s\")" % act)
+		if own < 0:
+			## cowir-music 2026-09-11: a guard that prints a tick for a question it could not answer is
+			## worse than one that abstains loudly. This arm can only speak about actions handled in
+			## THIS chain; anything else is recorded as undecided, never skipped into the clean column.
+			undecided.append(act)
+			continue
+		var keys: Array = []
+		for ev in InputMap.action_get_events(act):
+			if ev is InputEventKey:
+				keys.append(OS.get_keycode_string((ev as InputEventKey).keycode).to_upper())
+		if keys.is_empty():
+			continue  # pad-only binding: nothing to shadow
+		var shadowed: int = 0
+		for k in keys:
+			var kre := RegEx.new()
+			kre.compile("KEY_%s\\b" % k)
+			var first: int = -1
+			var km := kre.search(chain)
+			if km != null:
+				first = km.get_start()
+			for other in actions:
+				if other == act:
+					continue
+				var o: int = chain.find("is_action_pressed(\"%s\")" % other)
+				if o > -1 and o < own and _binds_key(other, k):
+					first = o if first < 0 else mini(first, o)
+			if first > -1 and first < own:
+				shadowed += 1
+		if shadowed == keys.size():
+			## Every keyboard route to this action is consumed before its own arm. Legal ONLY if the
+			## caption never renders that keyboard half — i.e. the token is behind a pad check.
+			if not bool(actions[act]):
+				ungated.append("%s (keys %s all eaten earlier)" % [act, str(keys)])
+	assert_eq(ungated.size(), 0,
+		"a caption renders a keyboard key the chain hands to something else: " + str(ungated))
+	## Reported, not asserted to zero: these are captions this arm is NOT competent about, and saying
+	## so is the point. If the list grows, the arm is covering less than its name claims.
+	assert_lte(undecided.size(), 1,
+		"this arm cannot see where these actions are handled, so it is not vouching for them: " + str(undecided))
+
+func _binds_key(action: String, key_upper: String) -> bool:
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventKey and OS.get_keycode_string((ev as InputEventKey).keycode).to_upper() == key_upper:
+			return true
+	return false
