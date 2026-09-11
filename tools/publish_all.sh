@@ -59,6 +59,54 @@ cd "$(cd "$(dirname "$0")/.." && pwd)"
 # there. An early return would skip the warning about the thing the early return skipped.
 # (@cowir-controller, 2026-09-11, whose run_tests.sh vacuity check sits after the tee and so
 # cannot fire on a killed run.)
+# ── the evidence outlives the worktree ──────────────────────────────────────────────────
+# Every per-channel log this script writes lands in `tmp/` INSIDE the publish worktree, and a
+# publish worktree is removed minutes later — it is 3.5 GB and there is no reason to keep it
+# once the read-back is done. So the logs die with it.
+#
+# ⛔ MEASURED 2026-09-11, after publishing .297, .298 and .299 in one session:
+#
+#     archived log directories from pub* worktrees:  0
+#     surviving rel-262/publish_all_web.log:         "[deploy] index.pck: 164 MB"
+#
+# That line is the web pack size at gate 3/4 — the number two lanes needed this afternoon to
+# size an audio-tier decision, measured three times today and discarded three times. The lane's
+# own reaper archives logs for exactly this reason ("the evidence trail behind published
+# claims") but only under `tmp/rel-`, and the publish flow creates `tmp/pub<N>`. The tool and
+# its subject drifted apart by a path prefix.
+#
+# 🔑 The repair is NOT to widen that prefix, and not to remember to reap instead of remove.
+# Archiving was coupled to REMOVAL, and removal is the one step whose whole purpose is to
+# destroy the directory. It belongs to the thing that PRODUCES the logs, at the moment it is
+# finished with them — which is here, on every exit path, including the blocked ones. A publish
+# that was REFUSED leaves evidence worth more than one that succeeded.
+#
+# ⛔ AND THE DESTINATION IS NOT `git rev-parse --git-common-dir`. That was the first version and
+# it resolved to the PRIMARY checkout — a tree this lane does not own and must not write into
+# (measured: it pointed at /home/.../cowardly-irregular, another agent's working directory).
+# A publish worktree is created as `<lane worktree>/tmp/<name>`, so the lane root is the path
+# before `/tmp/`. That is derived from this worktree's own location, checkable, and refuses
+# out loud rather than guessing when the shape does not match.
+_archive_evidence() {
+    local here dest n=0
+    here="$(pwd -P)"
+    case "$here" in
+        */tmp/*) dest="${here%%/tmp/*}/tmp/_archive/logs/${TAG:-untagged}" ;;
+        *)  # Not a publish worktree under a lane tmp/ — say so rather than invent a path.
+            echo "[pub] note: logs not archived — ${here} is not a <lane>/tmp/<worktree> path;" >&2
+            echo "[pub]       set the archive by hand if this run's evidence matters." >&2
+            return 0 ;;
+    esac
+    [ -d tmp ] || return 0
+    mkdir -p "$dest" 2>/dev/null || return 0
+    for f in tmp/*.log; do
+        [ -f "$f" ] || continue
+        cp -p "$f" "$dest/" 2>/dev/null && n=$((n + 1))
+    done
+    [ "$n" -gt 0 ] && echo "[pub] evidence archived: ${n} log(s) -> ${dest}"
+    return 0
+}
+
 READBACK_DONE=0
 _readback_notice() {
     # Nothing shipped -> nothing to read back. --check, --dry-run and every pre-publish BLOCK
@@ -102,7 +150,13 @@ _readback_notice() {
         echo "[pub]      bytes. This publish can no longer be verified against the store." >&2
     fi
 }
-trap _readback_notice EXIT
+_on_exit() {
+    # Archive FIRST: the read-back notice is advisory, the logs are the record. If anything
+    # in the notice ever fails, the evidence is already written.
+    _archive_evidence
+    _readback_notice
+}
+trap _on_exit EXIT
 
 CHECK_ONLY=0
 ROLLBACK=0
