@@ -49,8 +49,11 @@ func test_the_prompt_states_the_party_are_the_bosss_enemies() -> void:
 
 func test_the_prompt_forbids_commanding_or_healing_them() -> void:
 	var p: String = _prompt()
-	assert_true(p.find("do not command, protect or heal them") != -1,
-		"the inverted samples specifically proposed protecting and healing the party, so the refusal names those verbs")
+	for verb in ["command", "protect", "heal"]:
+		assert_true(p.find(verb) != -1,
+			"the inverted samples proposed protecting and healing the party, so the refusal must name '%s'" % verb)
+	assert_true(p.find("THEM") != -1 or p.find("them") != -1,
+		"and the refusal must be SCOPED to the party — an unscoped ban on protective verbs reads as a ban on defending itself, which collapsed every board to aggress")
 
 
 func test_the_party_block_is_labelled_as_the_enemy_side() -> void:
