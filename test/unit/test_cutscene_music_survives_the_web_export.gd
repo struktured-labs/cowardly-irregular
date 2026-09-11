@@ -37,18 +37,31 @@ const CUTSCENE_DIR := "res://data/cutscenes"
 const KNOWN_SILENT_ON_WEB := 21
 
 
+## ⛔ SELECT THE PRESET BY NAME. The first version of this took the LONGEST
+## exclude_filter, having rejected taking the FIRST as "a proxy that follows a
+## preset reorder" -- and then used a different proxy. Length is not identity.
+## cowir-overworld scored six tracks against the FIRST filter (Linux, 134 chars,
+## zero audio patterns) and got six-for-six "ships", which was the only answer
+## that list could produce; one of the six is excluded. Mine is right today only
+## because Web happens to be the longest, and a second preset gaining a long
+## filter would silently redirect it.
 func _web_exclude_patterns() -> PackedStringArray:
 	var cfg: String = FileAccess.get_file_as_string(PRESETS)
 	assert_gt(cfg.length(), 500, "SCOPE control: export_presets.cfg read back %d chars" % cfg.length())
-	## The Web preset is the only one excluding music; take the LONGEST filter
-	## rather than an index, which would silently follow a preset reorder.
-	var best: String = ""
+	var in_web: bool = false
+	var raw: String = ""
+	var found: bool = false
 	for line in cfg.split("\n"):
-		var l: String = str(line)
-		if l.begins_with("exclude_filter=") and l.length() > best.length():
-			best = l
-	var raw: String = best.substr(best.find("\"") + 1)
-	raw = raw.substr(0, raw.rfind("\""))
+		var l: String = str(line).strip_edges()
+		if l.begins_with("name="):
+			in_web = (l == "name=\"Web\"")
+		elif in_web and l.begins_with("exclude_filter="):
+			raw = l.substr(l.find("\"") + 1)
+			raw = raw.substr(0, raw.rfind("\""))
+			found = true
+			break
+	assert_true(found,
+		"SCOPE control: no preset named \"Web\" carries an exclude_filter — the config shape changed and every result below would describe the wrong build")
 	var out: PackedStringArray = []
 	for p in raw.split(","):
 		var s: String = str(p).strip_edges()
@@ -117,6 +130,15 @@ func test_control_the_filter_and_the_walk_both_fire() -> void:
 	## passes meaning "nothing measured" rather than "nothing broken".
 	var pats: PackedStringArray = _web_exclude_patterns()
 	assert_gt(pats.size(), 15, "SCOPE control: parsed %d exclude patterns" % pats.size())
+	## A filter with no audio patterns at all is the Linux/macOS/Android shape,
+	## and scoring audio against it returns "ships" for everything. Assert the
+	## list can answer the question being asked of it.
+	var audio_pats: int = 0
+	for p in pats:
+		if str(p).contains("assets/audio"):
+			audio_pats += 1
+	assert_gt(audio_pats, 3,
+		"SCOPE control: the selected filter has %d audio patterns — that is a DESKTOP preset, and every track would score as shipping" % audio_pats)
 	assert_true(_is_web_excluded("assets/audio/music/overworld_industrial.ogg", pats),
 		"CONTROL FAILED: a known-excluded bed tests as included — the glob match has drifted")
 	assert_false(_is_web_excluded("assets/audio/music/overworld_medieval.ogg", pats),
