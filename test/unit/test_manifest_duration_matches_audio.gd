@@ -78,6 +78,52 @@ const UNRENDERED := 0.0
 ## split in a test literally named "exists_on_disk".
 ##
 ## FileAccess.file_exists reads the filesystem. That is the whole fix.
+## ⛔ THE OTHER DIRECTION, which the arm below does not cover. It quantifies over
+## MANIFEST ENTRIES and asks whether each file exists. Nothing quantified over
+## FILES ON DISK asking whether the manifest names them — cowir-deploy's
+## directionality point, which they flagged on their pck gate ("1517 owed of
+## 3326 stored; an orphan lives in that 1809 and is invisible by construction").
+##
+## Not hypothetical here: measured by hand 2026-09-11, the music directory held
+## 163 .ogg against 161 named, and the two extras were real dead files —
+## sfx_ability_fire.ogg and sfx_ability_ice.ogg, 619 KB of 30-second Suno output
+## that shipped in the desktop builds for five months because only the WEB
+## preset excluded them. They were found by a manual count, not by any guard.
+## This is that count, kept.
+func test_every_music_file_on_disk_is_named_by_the_manifest() -> void:
+	var raw: String = FileAccess.get_file_as_string(MANIFEST)
+	var tracks: Dictionary = (JSON.parse_string(raw) as Dictionary).get("tracks", {})
+	var named: Dictionary = {}
+	for key in tracks.keys():
+		var e: Variant = tracks[key]
+		if e is Dictionary:
+			var f: String = str((e as Dictionary).get("file", ""))
+			if f != "":
+				named[f.trim_prefix("res://")] = true
+	assert_gt(named.size(), 100, "SCOPE control: the manifest names %d files" % named.size())
+
+	var d := DirAccess.open("res://assets/audio/music")
+	assert_true(d != null, "SCOPE control: the music directory will not open")
+	if d == null:
+		return
+	var on_disk: int = 0
+	var orphans: Array[String] = []
+	d.list_dir_begin()
+	var n: String = d.get_next()
+	while n != "":
+		if n.ends_with(".ogg"):
+			on_disk += 1
+			if not named.has("assets/audio/music/" + n):
+				orphans.append(n)
+		n = d.get_next()
+	d.list_dir_end()
+
+	assert_gt(on_disk, 100,
+		"SCOPE control: only %d .ogg found on disk — DirAccess is not reaching the directory and an empty orphan list would be vacuous" % on_disk)
+	assert_eq(orphans.size(), 0,
+		"audio shipping in the build that NO manifest entry names (%d of %d): %s — nothing can play it and nothing reports it missing. It rides in every desktop export; only the Web preset's exclude_filter would drop it, and only if the name happens to match a pattern." % [orphans.size(), on_disk, orphans])
+
+
 func test_every_manifest_file_is_actually_on_disk() -> void:
 	var raw: String = FileAccess.get_file_as_string(MANIFEST)
 	var tracks: Dictionary = (JSON.parse_string(raw) as Dictionary).get("tracks", {})
