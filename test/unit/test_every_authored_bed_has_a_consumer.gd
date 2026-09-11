@@ -46,7 +46,6 @@ const KNOWN_UNREACHED := {
 	"ambient_steampunk": "same decision",
 	"cutscene_alt_breaker_speed": "briefed in tools/music_prompts.json shared_tracks (\"Whoever Moves First\"); its scene is the alt_the_breaker novella, which has no cutscene JSON",
 	"cutscene_alt_witness_lament": "briefed (\"For the Guardian Who Did Not Choose the Gate\"); same novella, no scene authored",
-	"cutscene_w1_conscription": "briefed (\"Nobody Special\", celtic folk, dawn, five ordinary people answering a call) — world1_prologue is that beat and currently plays village_medieval; wiring it is a story call, not a music one",
 	"cutscene_w5_deprecated_goblin": "briefed (\"The Loop Completed\"); no W5 scene cues it",
 }
 
