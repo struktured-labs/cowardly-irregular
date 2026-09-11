@@ -188,7 +188,7 @@ func build_prompt(trigger_type: String, context: Dictionary, recent_events: Arra
 			if ev is Dictionary:
 				lines.append("  [%s] %s" % [str(ev.get("type", "?")), str(ev.get("summary", "?"))])
 	lines.append("")
-	lines.append("Propose at most ONE small adjustment to game constants. Stay subtle (±15%% max). If the curve looks fine, choose 'no_change'.")
+	lines.append("Propose at most ONE small adjustment to game constants. Stay subtle (±15% max). If the curve looks fine, choose 'no_change'.")
 	lines.append("")
 	lines.append("Allowed constants:")
 	lines.append("  exp_multiplier   (XP gain rate)")
