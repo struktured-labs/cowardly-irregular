@@ -18,10 +18,18 @@ const BATTLE_SCENE := "res://src/battle/BattleScene.gd"
 const GRID_EDITOR := "res://src/ui/autobattle/AutobattleGridEditor.gd"
 const WIN98 := "res://src/ui/Win98Menu.gd"
 
+## ⚠️ COMMENTS BLANKED. cowir-controller 2026-09-11: a source pin is satisfied by the COMMENT, so it
+## catches the tidy removal and misses the realistic one — nobody deletes a line without leaving the
+## note explaining it. Measured on THIS file: swapping the derivation back for a literal "X" with
+## `## was: Win98MenuClass.speed_hint()` beside it left all five arms GREEN. Line count preserved.
 func _src(p: String) -> String:
-	var s := FileAccess.get_file_as_string(p)
-	assert_gt(s.length(), 1000, "CONTROL: read %s" % p)
-	return s
+	var raw := FileAccess.get_file_as_string(p)
+	assert_gt(raw.length(), 1000, "CONTROL: read %s" % p)
+	var out: Array = []
+	for line in raw.split("\n"):
+		var h: int = line.find("#")
+		out.append(line.substr(0, h) if h > -1 else line)
+	return "\n".join(out)
 
 func test_no_battle_caption_hardcodes_a_nintendo_button() -> void:
 	## The literals as they shipped. Each names a button that is wrong or absent on two of the three
