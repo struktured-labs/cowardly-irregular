@@ -18,6 +18,12 @@ const BATTLE_SCENE := "res://src/battle/BattleScene.gd"
 const GRID_EDITOR := "res://src/ui/autobattle/AutobattleGridEditor.gd"
 const WIN98 := "res://src/ui/Win98Menu.gd"
 
+## ONE list. The premise arm and the scan filter each had their own copy — two literal lists for
+## one corpus, free to drift, which is the defect I spent the morning routing out of the AP economy
+## (billed_ap) and the afternoon out of the headless resolver. A premise that does not narrow the
+## SAME set the scan narrows is not a premise about that scan.
+const CAPTION_LABELS: Array[String] = ["help_label1.text", "help_label2.text", "help.text"]
+
 ## ⚠️ COMMENTS BLANKED. cowir-controller 2026-09-11: a source pin is satisfied by the COMMENT, so it
 ## catches the tidy removal and misses the realistic one — nobody deletes a line without leaving the
 ## note explaining it. Measured on THIS file: swapping the derivation back for a literal "X" with
@@ -114,7 +120,7 @@ func test_the_captions_derive_instead() -> void:
 	## A floor (`> 0`) is the other trap: cowir-controller measured that it catches a TOTAL drain and
 	## misses a PARTIAL one, and partial is likelier — a rename touches one label, not all of them.
 	## Each label must contribute at least once; adding statements is free, losing one is not.
-	for label in ["help_label1.text", "help_label2.text", "help.text"]:
+	for label in CAPTION_LABELS:
 		var seen: int = 0
 		for line in lines:
 			if line.contains(label):
@@ -124,7 +130,12 @@ func test_the_captions_derive_instead() -> void:
 
 	for i in lines.size():
 		var line: String = lines[i]
-		if not (line.contains("help_label1.text") or line.contains("help_label2.text") or line.contains("help.text")):
+		var is_caption: bool = false
+		for label in CAPTION_LABELS:
+			if line.contains(label):
+				is_caption = true
+				break
+		if not is_caption:
 			continue
 		var slots: int = line.count("%s")
 		if slots == 0:
