@@ -102,7 +102,19 @@ func test_the_captions_derive_instead() -> void:
 	## Per STATEMENT, not per line: help_label1 puts its format args on continuation lines, so a
 	## line-by-line scan sees the string without its `% [...]` and reports a correct file as frozen.
 	## My first version did exactly that and failed on the merged tree.
+	## ⚠️ SUBJECT PREMISE (cowir-adhoc 2026-09-11): the exemption axis and the subject axis are
+	## orthogonal, and I had only pinned the first. Renaming help_label1/2 makes this loop examine
+	## ZERO statements and the whole file passes — measured, 7/7 green with the scan matching
+	## nothing. A corpus-size control on the LITERAL list cannot see that; only counting what the
+	## scan actually examined can.
 	var lines: PackedStringArray = ge.split("\n")
+	var captions_seen: int = 0
+	for line in lines:
+		if line.contains("help_label1.text") or line.contains("help_label2.text") or line.contains("help.text"):
+			captions_seen += 1
+	assert_eq(captions_seen, 4,
+		"CONTROL: found %d caption statements in the grid editor, expected 4 — if these were renamed, every assertion below is scanning nothing" % captions_seen)
+
 	for i in lines.size():
 		var line: String = lines[i]
 		if not (line.contains("help_label1.text") or line.contains("help_label2.text") or line.contains("help.text")):
