@@ -219,6 +219,30 @@ rehearse() {
     # It does its real comparison against the real origin on the day.
     git -C "$WORK/repo" remote set-url origin "$WORK/repo"
 
+    # ⛔ AND REMOVE TAGS THAT SORT ABOVE THE CANDIDATE'S. Repointing origin models "this tag was
+    # just cut and pushed" only if the sandbox does not still contain a NEWER one. Measured:
+    # rehearsing an unmerged lane stack whose Version.gd reads 3.33.294-alpha, while the sandbox
+    # carried v3.33.295-alpha, exited 3 SUPERSEDED — a false block from the rig, and the mirror
+    # of the false block I fixed this morning when the candidate was AHEAD of the newest tag.
+    # Rehearsing my own unmerged branches is this tool's main use case, so the rig blocked
+    # exactly what it exists to check.
+    #
+    # ⚠ This is a real loss of fidelity and it is the second one: §3b supersession is now
+    # REHEARSED TWICE OVER — against a sandbox origin, with newer tags removed. It does its real
+    # comparison against the real origin on the day. Anything a rehearsal tells you about
+    # supersession is worth nothing; everything else in the chain is still faithful.
+    local _newer
+    _newer="$(git -C "$WORK/repo" for-each-ref --format='%(refname:short)' 'refs/tags/v3.33.*' \
+              | sort -V | awk -v t="$tag" 'index($0, t) == 1 {seen=1; next} seen')"
+    if [ -n "$_newer" ]; then
+        # `wc -l` on a list with no trailing newline reports 0 — it counts newlines, not items.
+        # The first version printed "removing 0 tag(s)" while removing one. Count words, and
+        # NAME them, so the line reports what happened rather than a number that can be wrong.
+        echo "[rehearse] removing $(printf '%s' "$_newer" | wc -w | tr -d ' ') tag(s) newer than" \
+             "$tag from the sandbox so §3b sees this tag as the newest: $(printf '%s' "$_newer" | tr '\n' ' ')"
+        for _t in $_newer; do git -C "$WORK/repo" tag -d "$_t" >/dev/null 2>&1; done
+    fi
+
     # The clone carries COMMITTED state only. A rehearsal of a dirty worktree is a rehearsal of
     # something other than what you are looking at — the same trap publish_all §3 guards with
     # its own clean-tree rule, one level out.
