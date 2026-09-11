@@ -105,7 +105,24 @@ func test_no_village_npc_is_sealed_in_shares_a_tile_or_was_quietly_moved() -> vo
 	## file, not both). `villages > 11` would stay green with TWO villages silently gone — including
 	## Grimhollow or Sandrift, whose prop moves this guard exists to hold. Named membership instead:
 	## every village this test made a claim about must have actually been built.
+	## ⛔ A DERIVED CORPUS DOES NOT LOSE MEMBERS — IT NEVER HAD THEM (@cowir-sprites, measured on their
+	## own branch: 43 of 145 sheets hidden, guard green, because the filter simply stopped nominating
+	## them and no quantity inside the guard moved). MapScripts derives villages by extends-chain, so
+	## one `extends` line rewritten and a village is not skipped — it is never a candidate, and only
+	## the floor below is watching. So the SIZE is pinned against an INDEPENDENT REGISTER that cannot
+	## shrink with the corpus it checks: GameLoop's own map-id router, which is how the game reaches
+	## these villages at all. Both sides derived, no hand-list to go stale when a village is added.
 	assert_gt(villages, 11, "CONTROL: only %d villages built — the sweep is broken" % villages)
+	var routed := _router_village_arms()
+	assert_gt(routed, 8, "CONTROL: only %d '<name>_village' arms found in GameLoop — the register read is broken" % routed)
+	var walked_named := 0
+	for f in built:
+		if str(f).ends_with("Village.gd"):
+			walked_named += 1
+	assert_eq(walked_named, routed,
+		("the game routes to %d villages and this sweep walked %d of them.\n" +
+		"A village whose `extends` line changed is not SKIPPED by MapScripts — it is never nominated,\n" +
+		"so nothing here counts it missing. Walked: %s") % [routed, walked_named, str(built)])
 	for must in ["MapleHeightsVillage.gd", "GrimhollowVillage.gd", "SandriftVillage.gd"]:
 		assert_true(must in built,
 			("CONTROL: %s did not build, so its NPCs were never examined and the empty lists below " +
@@ -151,3 +168,15 @@ func _lines_of(npc) -> String:
 		return ""
 	var lines = npc.get("dialogue_lines")
 	return "" if lines == null else " | ".join(PackedStringArray(lines))
+
+
+## How many villages GameLoop can actually route to — an independent register for the corpus size.
+## Read from the match arms in _start_exploration, so adding a village updates it for free.
+func _router_village_arms() -> int:
+	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var at := src.find("func _start_exploration")
+	if at < 0:
+		return 0
+	var re := RegEx.new()
+	re.compile('(?m)^\t\t"([a-z0-9_]+_village)":')
+	return re.search_all(src.substr(at, 9000)).size()
