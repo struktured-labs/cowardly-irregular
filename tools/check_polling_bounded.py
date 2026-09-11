@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Every polling loop in the deploy scripts must be bounded. Assert it, don't assume it.
+"""Every polling loop in tools/ must be bounded. Assert it, don't assume it.
 
 WHY THIS EXISTS
 ---------------
@@ -52,6 +52,8 @@ Exit:   0 every polling loop is bounded
         2 unusable — no target files, no pushers, or a pusher with no polling loop
 """
 import importlib.util
+import contextlib
+import io
 import os
 import re
 import sys
@@ -60,7 +62,6 @@ import tempfile
 # Targets are GLOB-DERIVED, not a hand-list. deploy_linux.sh and deploy_windows.sh already
 # exist as thin wrappers; the next channel's script must be covered on the day it is written,
 # not on the day someone remembers to add it here.
-TARGET_GLOBS = ("deploy_", "publish_")
 
 # ── the floor is DERIVED, not declared ───────────────────────────────────────────────────
 # This was `EXPECT_MIN_LOOPS = 2`, a number measured off the tree. Two objections retired it:
@@ -144,12 +145,46 @@ class Unusable(Exception):
     """Cannot evaluate — distinct from 'evaluated and found a defect'."""
 
 
+def _strip_comment(line):
+    """Cut at the first `#` OUTSIDE a string literal, with SHELL's escaping rules.
+
+    ⚠ Escapes differ by quote type and getting this wrong truncates real code. Measured on my
+    own previous version, which tracked quotes but not escapes:
+
+        echo "a \\" # b"        ->  cut at the `#`   WRONG: \" is an escaped quote, the
+                                                       string continues and `# b"` is inside it
+
+    Inside DOUBLE quotes a backslash escapes the next character; inside SINGLE quotes there is
+    no escaping at all and the string ends at the next `'`. @cowir-controller's version is
+    escape-aware for `\"`; @cowir-ai found it still mis-reads `\\"` (an escaped BACKSLASH,
+    where the string really does end). Both cases are handled here by tracking the escape state
+    rather than peeking at the previous character.
+
+    Over-stripping is the catastrophic direction for this lane: `"${BUTLER_BIN}" push` is the
+    detection target, so eating quoted text reports zero push sites and passes everything.
+    """
+    out, quote, esc = [], None, False
+    for ch in line:
+        if quote == '"' and esc:
+            out.append(ch); esc = False; continue
+        if quote == '"' and ch == '\\':
+            out.append(ch); esc = True; continue
+        if quote:
+            out.append(ch)
+            if ch == quote:
+                quote = None
+            continue
+        if ch in ("'", '"'):
+            quote = ch; out.append(ch); continue
+        if ch == '#':
+            break
+        out.append(ch)
+    return ''.join(out)
+
+
 def strip_comments(lines):
     """Blank out full-line comments, preserving indices so line numbers stay true."""
-    out = []
-    for l in lines:
-        out.append('' if l.lstrip().startswith('#') else l)
-    return out
+    return [_strip_comment(l) for l in lines]
 
 
 def strip_heredocs(lines):
@@ -429,12 +464,30 @@ def selftest():
     passed = failed = 0
     saw = set()
 
+    last = {"msg": ""}
+
+    def _said(fragment):
+        """Did the arm's own failure SAY this? An exit code is not a cause.
+
+        Each of these files raises Unusable from four or five different places, so an arm
+        asserting bare `exit 2` is satisfied by any of them — including a broken fixture. The
+        name would then describe one cause while the predicate accepted all of them.
+        (@cowir-overworld, 2026-09-11: "I wrote the name from what I wanted to be true and the
+        predicate from what was cheap to check.")
+        """
+        return fragment in last["msg"]
+
     def arm(name, want, fn, extra=None):
         nonlocal passed, failed
+        last["msg"] = ""
         try:
-            got = fn()
-        except Unusable:
+            _b = io.StringIO()
+            with contextlib.redirect_stdout(_b), contextlib.redirect_stderr(_b):
+                got = fn()
+            last["msg"] = _b.getvalue()
+        except Unusable as _e:
             got = 2
+            last["msg"] = str(_e)
         saw.add(got)
         detail = ""
         if got == want and extra is not None:
@@ -449,6 +502,32 @@ def selftest():
         else:
             failed += 1
             print(f"  FAIL  {name:52} exit {got} (wanted {want})")
+
+
+    # ── the stripper, pinned DIRECTLY ────────────────────────────────────────────────
+    # Six costumes of one hollowness across four lanes in an afternoon, every one found by
+    # mutating THROUGH the corpus, each fix blind to the next. @cowir-sfx's exit is a case
+    # table on the helper itself: a seventh costume reds here instead of passing silently.
+    # Both polarities, because a stripper has two ways to be wrong and arms tend to cover one
+    # (@cowir-music). NOTE the cut is AT the `#`, not a trim — trailing whitespace survives.
+    STRIP_CASES = [
+        ('exit 0   # gate',                 'exit 0   ',              'trailing comment cut'),
+        ('echo "tag #1"',                   'echo "tag #1"',          '# inside "double" survives'),
+        ("echo 'tag #1'",                   "echo 'tag #1'",          "# inside 'single' survives"),
+        ('echo "a \\" # b"',                'echo "a \\" # b"',       'escaped quote: line survives'),
+        ('echo "a\\\\"  # real',            'echo "a\\\\"  ',         'escaped BACKSLASH: cut anyway'),
+        ("echo 'a\\' # b",                  "echo 'a\\' ",           'no escaping in single quotes'),
+        ('"${BUTLER_BIN}" push out/ "$T"', '"${BUTLER_BIN}" push out/ "$T"', 'detection target untouched'),
+        ('plain line',                      'plain line',             'no comment: untouched'),
+    ]
+    for src, want, label in STRIP_CASES:
+        got = _strip_comment(src)
+        if got == want:
+            passed += 1
+            print(f"  ok    {('strip: ' + label):52} ")
+        else:
+            failed += 1
+            print(f"  FAIL  {('strip: ' + label):52} {got!r} != {want!r}")
 
     with tempfile.TemporaryDirectory() as d:
         # Each probe gets its OWN tools dir, padded with a known-bounded PUSHER so the
@@ -491,7 +570,8 @@ def selftest():
             'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
             '"${BUTLER_BIN}" push out/ "$T"\n'
             'until "${BUTLER_BIN}" status "$T" | grep -q "$V"; do sleep 8; done\n')
-        arm("unbounded wait in a file no PREFIX would walk", 1, lambda: run(odd))
+        arm("unbounded wait in a file no PREFIX would walk", 1, lambda: run(odd),
+            lambda: (_said("ship_it.sh"), "names ship_it.sh"))
 
         # ── instrument-died arms: absence of input must NOT read as clean ──
         empty = os.path.join(d, "empty")
@@ -508,7 +588,32 @@ def selftest():
             '[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }\n'
             'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
             '"${BUTLER_BIN}" push out/ "$T"\n')          # pushes, never waits
-        arm("a PUSHER with no polling loop — wait was removed", 2, lambda: run(noloop))
+        arm("a PUSHER with no polling loop — wait was removed", 2, lambda: run(noloop),
+            lambda: (_said("NO polling loop"), "says NO polling loop"))
+
+        # THE REALISTIC REGRESSION, not the tidy one. @cowir-controller, 2026-09-11: their
+        # escape guard caught "delete the keycode" and was hollow against "remove the branch and
+        # leave the comment that explained it" — and nobody deletes a branch without leaving a
+        # trace, so the arm they had was for the mutation that rarely happens and the one they
+        # lacked was what actually occurs. Ask of any source-text pin: what does this file look
+        # like after a REAL person removes the thing you are defending?
+        #
+        # Here that is a pusher whose bounded wait was deleted with a comment left behind.
+        # Measured on a real deploy_web.sh: tidy deletion EC 2, comment-left-behind EC 2 — both
+        # caught, because comments are stripped AND a pusher must carry a loop. The second half
+        # is this hour's derived relationship; without it the deletion would only have made the
+        # census smaller.
+        wascomment = os.path.join(d, "wascomment")
+        os.makedirs(wascomment)
+        open(os.path.join(wascomment, "deploy_pusher.sh"), "w").write(
+            '#!/usr/bin/env bash\nPUBLISH=0\n'
+            '[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }\n'
+            'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
+            '"${BUTLER_BIN}" push out/ "$T"\n'
+            '# removed the bounded wait; itch confirms fast enough now\n'
+            '# was: while [ "$_waited" -lt "$CONFIRM_BUDGET" ]; do sleep 8; done\n')
+        arm("wait deleted, COMMENT left behind", 2, lambda: run(wascomment),
+            lambda: (_said("NO polling loop"), "says NO polling loop"))
 
         nopoll = os.path.join(d, "nopoll")
         os.makedirs(nopoll)

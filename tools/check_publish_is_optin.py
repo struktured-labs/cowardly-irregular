@@ -41,6 +41,28 @@ deploy_desktop.sh) is reported as delegating and is not a finding. That is a vac
 construction, so EXPECT_MIN_PUSHERS below refuses to call the corpus clean if too few scripts
 actually contain a push.
 
+WHAT "DOMINATED" MEANS HERE, AND WHERE IT IS OVER-STRICT
+--------------------------------------------------------
+Dominance is by LINE NUMBER, not call order. Asked whether that is narrower than the claim
+"no butler push is reachable without --publish" — @cowir-controller's question, after finding
+their own ratchet covered only BRACKETED button captions while its name said otherwise — the
+answer measured out the right way round:
+
+  push inside a function, defined AND called BEFORE the gate    CAUGHT (ship_it.sh:4, exit 1)
+  helper defined before the gate, CALLED after it               FLAGGED — false positive
+
+There is no quiet miss, and the reason is bash's own semantics rather than anything clever
+here: a function must be DEFINED before it is CALLED, so a pre-gate call implies a pre-gate
+definition, and the push site's line always precedes the call's. (My first probe put the call
+above the definition and I nearly filed it as a hole — that shape does not publish, it dies
+with "command not found".)
+
+The cost is the second row: a helper defined early and invoked after the gate reds although it
+is safe and idiomatic. That is the LOUD direction — it invites "look at this", not "move on" —
+and for a guard standing in front of a publish that is the side to be wrong on. Stated rather
+than silently tolerated; if it ever bites a real script, the fix is to move the definition
+below the gate, not to weaken the check.
+
 Usage:  check_publish_is_optin.py [tools-dir]
         check_publish_is_optin.py --selftest
 Exit:   0 every push site is gated · 1 at least one is not · 2 unusable
@@ -61,7 +83,6 @@ import tempfile
 #
 # Files named deploy_*/publish_* are ALSO examined when they contain no push, because a
 # delegating wrapper is a publish entry point — see the no-push branch in audit().
-SCAN_GLOB = "*.sh"
 WRAPPER_PREFIXES = ("deploy_", "publish_")
 
 # ── the floor is DERIVED from publish_all's own channel list, not declared ───────────────
@@ -126,10 +147,47 @@ class Unusable(Exception):
     """Cannot evaluate — distinct from 'evaluated and found a defect'."""
 
 
+def _strip_comment(line):
+    """Cut at the first `#` OUTSIDE a string literal, with SHELL's escaping rules.
+
+    ⚠ Escapes differ by quote type and getting this wrong truncates real code. Measured on my
+    own previous version, which tracked quotes but not escapes:
+
+        echo "a \\" # b"        ->  cut at the `#`   WRONG: \" is an escaped quote, the
+                                                       string continues and `# b"` is inside it
+
+    Inside DOUBLE quotes a backslash escapes the next character; inside SINGLE quotes there is
+    no escaping at all and the string ends at the next `'`. @cowir-controller's version is
+    escape-aware for `\"`; @cowir-ai found it still mis-reads `\\"` (an escaped BACKSLASH,
+    where the string really does end). Both cases are handled here by tracking the escape state
+    rather than peeking at the previous character.
+
+    Over-stripping is the catastrophic direction for this lane: `"${BUTLER_BIN}" push` is the
+    detection target, so eating quoted text reports zero push sites and passes everything.
+    """
+    out, quote, esc = [], None, False
+    for ch in line:
+        if quote == '"' and esc:
+            out.append(ch); esc = False; continue
+        if quote == '"' and ch == '\\':
+            out.append(ch); esc = True; continue
+        if quote:
+            out.append(ch)
+            if ch == quote:
+                quote = None
+            continue
+        if ch in ("'", '"'):
+            quote = ch; out.append(ch); continue
+        if ch == '#':
+            break
+        out.append(ch)
+    return ''.join(out)
+
+
 def strip_comments(lines):
     """Blank full-line comments, preserving indices. Both real scripts discuss pushing at
     length in prose; the word `push` in a comment is not a push site."""
-    return ['' if l.lstrip().startswith('#') else l for l in lines]
+    return [_strip_comment(l) for l in lines]
 
 
 def join_continuations(lines):
@@ -387,6 +445,11 @@ def run(tools_dir):
             elif orch == "never":
                 print(f"[optin]   ok    {t}  delegates at line(s) {delegations}; never names "
                       f"--publish — forwards the caller's arguments untouched")
+            elif not delegations:
+                # "delegates at line(s) []" claimed a hand-off from an empty set — a label
+                # asserting the thing its own data says did not happen. Seen on a fixture whose
+                # `deploy_${CH}.sh` does not match DELEGATE_RE.
+                print(f"[optin]   --    {t}  no push site and no delegation detected")
             elif delegations:
                 # EMIT THE SET. @cowir-story's rule: a probe that prints what it LOCATED cannot
                 # have a missing positive control. Measured before this change — a wrapper that
@@ -574,6 +637,30 @@ echo "pushing now" && "${BUTLER_BIN}" push out/ "$T"
 printf "go\\n"; "${BUTLER_BIN}" push out/ "$T"
 """, 1, "nothing here parses --publish"),
 
+    # UNDER-strip: a trailing comment must not fake a gate. Measured EC 0 before the
+    # quote-aware stripper — an ungated push reported as "gated on --publish".
+    "trailing `# exit` must not fake a gate": ("""#!/usr/bin/env bash
+PUBLISH=0
+[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }
+if [ "$PUBLISH" != "1" ]; then
+    echo "not publishing"   # exit here one day
+fi
+"${BUTLER_BIN}" push out/ "$T"
+""", 1, "no gate"),
+
+    # OVER-strip: @cowir-music's ARM2. A stripper has TWO ways to be wrong and arms tend to
+    # cover one. Here the quoted text IS the detection target — `"${BUTLER_BIN}" push` — so a
+    # stripper that ate string literals would report zero push sites and pass everything.
+    "a `#` INSIDE a string must not truncate": ("""#!/usr/bin/env bash
+PUBLISH=0
+[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }
+echo "channel tag is #1"
+if [ "$PUBLISH" != "1" ]; then
+    exit 0
+fi
+"${BUTLER_BIN}" push out/ "$T"
+""", 0, ""),
+
     "push appears only in a comment": ("""#!/usr/bin/env bash
 # "${BUTLER_BIN}" push out/ "$T"   <- this is prose about the push, not a push
 # butler push would go here without the gate
@@ -609,12 +696,30 @@ def selftest():
     passed = failed = 0
     saw = set()
 
+    last = {"msg": ""}
+
+    def _said(fragment):
+        """Did the arm's own failure SAY this? An exit code is not a cause.
+
+        Each of these files raises Unusable from four or five different places, so an arm
+        asserting bare `exit 2` is satisfied by any of them — including a broken fixture. The
+        name would then describe one cause while the predicate accepted all of them.
+        (@cowir-overworld, 2026-09-11: "I wrote the name from what I wanted to be true and the
+        predicate from what was cheap to check.")
+        """
+        return fragment in last["msg"]
+
     def arm(name, want, fn, extra=None):
         nonlocal passed, failed
+        last["msg"] = ""
         try:
-            got = fn()
-        except Unusable:
+            _b = io.StringIO()
+            with contextlib.redirect_stdout(_b), contextlib.redirect_stderr(_b):
+                got = fn()
+            last["msg"] = _b.getvalue()
+        except Unusable as _e:
             got = 2
+            last["msg"] = str(_e)
         saw.add(got)
         detail = ""
         if extra is not None:
@@ -629,6 +734,32 @@ def selftest():
         else:
             failed += 1
             print(f"  FAIL  {name:48} exit {got} (wanted {want})")
+
+
+    # ── the stripper, pinned DIRECTLY ────────────────────────────────────────────────
+    # Six costumes of one hollowness across four lanes in an afternoon, every one found by
+    # mutating THROUGH the corpus, each fix blind to the next. @cowir-sfx's exit is a case
+    # table on the helper itself: a seventh costume reds here instead of passing silently.
+    # Both polarities, because a stripper has two ways to be wrong and arms tend to cover one
+    # (@cowir-music). NOTE the cut is AT the `#`, not a trim — trailing whitespace survives.
+    STRIP_CASES = [
+        ('exit 0   # gate',                 'exit 0   ',              'trailing comment cut'),
+        ('echo "tag #1"',                   'echo "tag #1"',          '# inside "double" survives'),
+        ("echo 'tag #1'",                   "echo 'tag #1'",          "# inside 'single' survives"),
+        ('echo "a \\" # b"',                'echo "a \\" # b"',       'escaped quote: line survives'),
+        ('echo "a\\\\"  # real',            'echo "a\\\\"  ',         'escaped BACKSLASH: cut anyway'),
+        ("echo 'a\\' # b",                  "echo 'a\\' ",           'no escaping in single quotes'),
+        ('"${BUTLER_BIN}" push out/ "$T"', '"${BUTLER_BIN}" push out/ "$T"', 'detection target untouched'),
+        ('plain line',                      'plain line',             'no comment: untouched'),
+    ]
+    for src, want, label in STRIP_CASES:
+        got = _strip_comment(src)
+        if got == want:
+            passed += 1
+            print(f"  ok    {('strip: ' + label):52} ")
+        else:
+            failed += 1
+            print(f"  FAIL  {('strip: ' + label):52} {got!r} != {want!r}")
 
     with tempfile.TemporaryDirectory() as d:
         for i, (name, (src, want, frag)) in enumerate(PROBES.items()):
@@ -647,6 +778,17 @@ def selftest():
 
             def check(td=td, frag=frag):
                 _p, f, _d, _s, _o = audit(os.path.join(td, "deploy_probe.sh"))
+                # ⛔ A want=0 ARM CANNOT TELL "examined and clean" FROM "tested nothing".
+                # With no finding expected, an empty or malformed fixture passes vacuously —
+                # and I produced exactly that today by writing a probe with `printf '%s'`,
+                # which does not interpret \n, so the whole file became ONE line starting with
+                # `#` and stripped to nothing. It read as a clean result.
+                # (@cowir-ai, 2026-09-11: "a mutation that fails to land is indistinguishable
+                # from a guard that fails to catch" — this is the constructed-fixture form of
+                # the same thing, and the check is the same: assert the subject is THERE.)
+                if not (_p or _d or _s):
+                    return False, ("the fixture yielded NO push site, delegation or stub push — "
+                                   "there was nothing to examine, so a clean verdict is vacuous")
                 if frag == "":
                     return (not f), (f"falsely found {f[0][1][:40]!r}" if f else "no finding")
                 if not f:
@@ -701,7 +843,8 @@ def selftest():
         os.makedirs(ghost)
         open(os.path.join(ghost, "deploy_filler.sh"), "w").write(GOOD)
         _write_publish_all(ghost, ["filler", "macos"])      # macos has no deploy_macos.sh
-        arm("a channel publish_all ships with no deploy script", 2, lambda: run(ghost))
+        arm("a channel publish_all ships with no deploy script", 2, lambda: run(ghost),
+            lambda: (_said("no publishable script"), "says no publishable script"))
 
         # ── instrument-died arms ──
         empty = os.path.join(d, "empty")

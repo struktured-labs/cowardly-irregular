@@ -37,9 +37,77 @@
 set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
+# ── the store read-back's ABSENCE is announced, on every exit path ───────────────────────
+# tools/verify_store_artifact.sh is the only check in this lane that crosses the CDN: every
+# gate tests the LOCAL artifact and stops at the moment of upload, and `butler status` reports
+# what butler was ASKED to push, not the bytes a player downloads. It is deliberately NOT wired
+# into every publish — its own header says so, "real bandwidth for a check whose expected answer
+# is identical. Run it after a publish that mattered."
+#
+# ⛔ THE PROBLEM IS THAT SKIPPING IT IS SILENT. On 2026-09-11 I published v3.33.295-alpha — 39
+# branches, 1634 scripts, a publish that mattered by that tool's own criterion — did not run the
+# read-back, and then removed the worktree as tidy-up, DELETING the local builds it compares
+# against. Nothing said so. "Never ran" and "passed" produce identical output, which is the
+# quiet failure direction: a loud wrong answer gets investigated, a quiet one ends the inquiry.
+#
+# I recorded a sequencing rule for myself afterwards. A rule I have to remember is a reminder
+# wearing a rule's clothes — it fails exactly when I am tired, which is when publishes happen.
+#
+# ⚠ WHY A TRAP AND NOT A LINE AT THE END: this script has 21 exit paths and 19 of them are
+# BEFORE section 6. The one that matters most is the mid-batch RED — some channels already
+# shipped, the run stopped — and a notice at the bottom is structurally unreachable exactly
+# there. An early return would skip the warning about the thing the early return skipped.
+# (@cowir-controller, 2026-09-11, whose run_tests.sh vacuity check sits after the tee and so
+# cannot fire on a killed run.)
+READBACK_DONE=0
+_readback_notice() {
+    # Nothing shipped -> nothing to read back. --check, --dry-run and every pre-publish BLOCK
+    # land here and stay silent, so the notice cannot become background noise.
+    [ -n "${PUBLISHED:-}" ] || return 0
+    if [ "${READBACK_DONE:-0}" = "1" ]; then
+        echo "[pub] store read-back: performed."
+        return 0
+    fi
+    echo "[pub] ⚠ STORE READ-BACK NOT PERFORMED — published: ${PUBLISHED}" >&2
+    echo "[pub]   Every gate above tested the LOCAL artifact and stopped at the upload." >&2
+    echo "[pub]   Nothing here has looked at what the store SERVES." >&2
+    # Only the channels that actually SHIPPED. Listing build/windows after a linux-and-web
+    # publish names a directory irrelevant to this run — a label broader than its predicate,
+    # which is the defect I have spent the day removing from this lane's guards.
+    local any=0 _d
+    for _c in ${PUBLISHED}; do
+        case "$_c" in
+            web) _d="builds/web" ;;
+            *)   _d="build/${_c}" ;;
+        esac
+        if [ -d "$_d" ]; then
+            echo "[pub]   ${_c}: local build still on disk at ${_d}" >&2
+            any=1
+        else
+            echo "[pub]   ${_c}: local build ${_d} is GONE" >&2
+        fi
+    done
+    if [ "$any" = "1" ]; then
+        echo "[pub]   RUN IT NOW, for the channels whose build survives:" >&2
+        for _c in ${PUBLISHED}; do
+            case "$_c" in
+                web) [ -d builds/web ] && echo "[pub]     tools/verify_store_artifact.sh web builds/web" >&2 ;;
+                *)   [ -d "build/${_c}" ] && echo "[pub]     tools/verify_store_artifact.sh ${_c} build/${_c}" >&2 ;;
+            esac
+        done
+        echo "[pub]   Do not remove the worktree until it has run or you have decided to skip it." >&2
+    else
+        echo "[pub]   ⛔ THE LOCAL BUILDS ARE ALREADY GONE. The read-back compares the store to" >&2
+        echo "[pub]      what we built; that half no longer exists and a rebuild is not the same" >&2
+        echo "[pub]      bytes. This publish can no longer be verified against the store." >&2
+    fi
+}
+trap _readback_notice EXIT
+
 CHECK_ONLY=0
 ROLLBACK=0
 DRY_RUN=0
+READ_BACK=0
 while [ $# -gt 0 ]; do
     case "${1:-}" in
         --check)    CHECK_ONLY=1; shift ;;
@@ -81,6 +149,12 @@ while [ $# -gt 0 ]; do
         # was clean, and the web chain still died at gate 2 three days running. There was no
         # way to learn that except by attempting a publish.
         --dry-run)  DRY_RUN=1; shift ;;
+        # Opt-in, because the read-back costs real bandwidth for a check whose expected answer
+        # is "identical" — verify_store_artifact.sh's own stance, kept. What changed is that
+        # SKIPPING it is now announced rather than silent, so the choice is made rather than
+        # defaulted into. Without this flag READBACK_DONE stays 0 and the exit trap says so;
+        # with it, the branch that reports "performed" is reachable instead of dead.
+        --read-back) READ_BACK=1; shift ;;
         # An unknown option must NEVER become the tag. `*) break` accepted anything, so
         # `--rollback` on tooling that predates it, or a plain typo like `--dry-runn`, became
         # TAG — and the run then failed several guards later with a message about whatever
@@ -88,7 +162,7 @@ while [ $# -gt 0 ]; do
         # cause, and a recovery path is the worst place to hand someone a misleading error.
         --)         shift; break ;;   # explicit escape hatch for a tag that starts with -
         -*)         echo "publish_all: unknown option: $1" >&2
-                    echo "usage: tools/publish_all.sh [--check|--dry-run|--rollback] <tag>" >&2
+                    echo "usage: tools/publish_all.sh [--check|--dry-run|--rollback|--read-back] <tag>" >&2
                     echo "       (use -- before a tag that begins with a dash)" >&2
                     exit 2 ;;
         *)          break ;;
@@ -96,7 +170,7 @@ while [ $# -gt 0 ]; do
 done
 TAG="${1:-}"
 if [ -z "$TAG" ]; then
-    echo "usage: tools/publish_all.sh [--check|--dry-run|--rollback] <tag>" >&2
+    echo "usage: tools/publish_all.sh [--check|--dry-run|--rollback|--read-back] <tag>" >&2
     exit 2
 fi
 
@@ -406,5 +480,34 @@ else
     echo "      Not necessarily a fault — he may have been playing. Diff against"
     echo "      tmp/userdata_snapshot/ before concluding anything."
 fi
+# ── 7. the store read-back, opt-in ───────────────────────────────────────────────────────
+# The ONLY check in this lane that crosses the CDN. Everything above tested the local artifact
+# or asked butler what it was asked to push.
+if [ "${READ_BACK:-0}" = "1" ] && [ -n "${PUBLISHED:-}" ]; then
+    echo "[pub] ─── store read-back ───"
+    _rb_fail=0
+    for _c in ${PUBLISHED}; do
+        case "$_c" in
+            web) _rbdir="builds/web" ;;
+            *)   _rbdir="build/${_c}" ;;
+        esac
+        if [ ! -d "$_rbdir" ]; then
+            echo "[pub] BLOCKED: ${_c}'s local build ${_rbdir} is gone; nothing to compare." >&2
+            _rb_fail=1; continue
+        fi
+        if ./tools/verify_store_artifact.sh "$_c" "$_rbdir"; then
+            echo "[pub]   ${_c}: store matches what we built"
+        else
+            echo "[pub]   ${_c}: STORE DIFFERS from what we built — see above" >&2
+            _rb_fail=1
+        fi
+    done
+    READBACK_DONE=1
+    if [ "$_rb_fail" -ne 0 ]; then
+        echo "[pub] read-back FAILED for at least one channel." >&2
+        exit 5
+    fi
+fi
+
 echo "[pub] done: ${PUBLISHED}"
 exit 0
