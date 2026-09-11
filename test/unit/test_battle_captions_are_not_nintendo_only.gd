@@ -275,8 +275,13 @@ func test_no_help_label_spells_a_non_face_button() -> void:
 	## A floor derived from the list it defends compares the list against itself. Pinned to a
 	## LITERAL count and both members NAMED, so draining the corpus is itself the violation.
 	var paths: Array[String] = [GRID_EDITOR, AUTOGRIND_EDITOR]
-	assert_eq(paths.size(), 2,
-		"PRECONDITION: the corpus is TWO editors; a shortened list scans less and says nothing")
+	## GTE, not EQ. @cowir-overworld 2026-09-11 ran the magnitude nobody was testing — PLUS-ONE —
+	## and an `== 2` REDS ON A CORRECT ADDITION: a third caption-bearing file is work this guard
+	## should welcome, not tax. Their two questions: may this set grow on correct work? YES.
+	## Is growth itself the signal? NO. -> gte with a LITERAL floor (never `>= OTHER.size()`,
+	## which is `0 >= 0` when both drain), and the named members below catch minus-one.
+	assert_gte(paths.size(), 2,
+		"PRECONDITION: the corpus lost an editor; a shortened list scans less and says nothing")
 	assert_true(paths.has(GRID_EDITOR), "PRECONDITION: the autobattle editor must be in the corpus")
 	assert_true(paths.has(AUTOGRIND_EDITOR), "PRECONDITION: the autogrind editor must be in the corpus")
 	var per_file: Dictionary = {}
