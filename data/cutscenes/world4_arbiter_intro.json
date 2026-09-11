@@ -1,9 +1,9 @@
 {
   "id": "world4_arbiter_intro",
   "title": "Arbiter of the Benchmark",
-  "world": 4,
+  "world": 5,
   "trigger": "boss_arbiter_futuristic",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "description": "The Arbiter runs a live diagnostic on the party's performance history. All six worlds of data. The numbers are anomalous.",
   "steps": [
     {

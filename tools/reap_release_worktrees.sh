@@ -41,6 +41,10 @@ set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 PREFIX="${REAP_PREFIX:-tmp/rel-}"
+# What we LOOK at. Detached worktrees must still sit under PREFIX; SCAN only widens the scan so
+# branch worktrees can be CONSIDERED under --merged-branches. Never widen SCAN past tmp/.
+SCAN="${REAP_SCAN:-tmp/}"
+MERGED_BRANCHES=0
 ARCHIVE="${REAP_ARCHIVE:-tmp/_archive}"
 KEEP=2
 APPLY=0
@@ -50,7 +54,8 @@ while [ $# -gt 0 ]; do
         --apply)    APPLY=1; shift ;;
         --keep)     KEEP="${2:-2}"; shift 2 ;;
         --selftest) selftest_requested=1; shift ;;
-        *)          echo "usage: $0 [--apply] [--keep N] [--selftest]" >&2; exit 2 ;;
+        --merged-branches) MERGED_BRANCHES=1; shift ;;
+        *)          echo "usage: $0 [--apply] [--keep N] [--merged-branches] [--selftest]" >&2; exit 2 ;;
     esac
 done
 
@@ -66,7 +71,7 @@ _candidates() {
         | awk '/^worktree /{w=$2} /^detached/{print w" DETACHED"} /^branch /{print w" "$2}' \
         | while read -r p state; do
               case "$p" in
-                  "$PWD/$PREFIX"*) printf '%s\t%s\n' "$p" "$state" ;;
+                  "$PWD/$SCAN"*) printf '%s\t%s\n' "$p" "$state" ;;
               esac
           done | sort -V
 }
@@ -83,14 +88,33 @@ reap() {
     total="$(printf '%s\n' "$rows" | wc -l)"
 
     # The newest KEEP entries are protected by position alone.
-    local protected; protected="$(printf '%s\n' "$rows" | tail -n "$KEEP" | cut -f1)"
+    # ⛔ Computed over DETACHED worktrees under PREFIX only. SCAN widening must not let a
+    # branch worktree occupy one of the protected slots and push a release tree out of them —
+    # that would silently weaken the rule this line exists to enforce.
+    local protected
+    protected="$(printf '%s\n' "$rows" | awk -F'\t' -v pfx="$PWD/$PREFIX" \
+        '$2=="DETACHED" && index($1,pfx)==1 {print $1}' | tail -n "$KEEP")"
 
     printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r p state; do
         local n; n="$(basename "$p")"
         local reason=""
 
         case "$protected" in *"$p"*) reason="among the ${KEEP} newest" ;; esac
-        [ -z "$reason" ] && [ "$state" != "DETACHED" ] && reason="on a branch (${state#refs/heads/}) — may hold unpushed work"
+        # A branch worktree is refused unless --merged-branches AND every one of three
+        # affirmative checks passes. Absence of a reason to keep is never a reason to delete:
+        # the branch must be FULLY MERGED into origin/main (its content survives in main) and
+        # PUSHED (its ref survives on origin), so removing the worktree loses nothing that is
+        # not regenerable. Removing a worktree never deletes the branch.
+        if [ -z "$reason" ] && [ "$state" != "DETACHED" ]; then
+            local br="${state#refs/heads/}"
+            if [ "$MERGED_BRANCHES" -ne 1 ]; then
+                reason="on a branch (${br}) — may hold unpushed work; --merged-branches to consider it"
+            elif ! git merge-base --is-ancestor "$br" origin/main 2>/dev/null; then
+                reason="branch ${br} is NOT merged into origin/main"
+            elif ! git ls-remote --exit-code --heads origin "$br" >/dev/null 2>&1; then
+                reason="branch ${br} is not on origin — its ref would be local-only"
+            fi
+        fi
         if [ -z "$reason" ]; then
             local d; d="$(cd "$p" 2>/dev/null && git status --porcelain 2>/dev/null | wc -l)"
             [ "$d" -ne 0 ] && reason="${d} tracked modification(s)"
@@ -102,9 +126,15 @@ reap() {
         fi
         # Belt and braces: never act on a path outside the expected prefix, whatever git said.
         case "$p" in
-            "$PWD/$PREFIX"*) : ;;
-            *) reason="path outside ${PREFIX} — refusing on principle" ;;
+            "$PWD/$SCAN"*) : ;;
+            *) reason="path outside ${SCAN} — refusing on principle" ;;
         esac
+        if [ "$state" = "DETACHED" ]; then
+            case "$p" in
+                "$PWD/$PREFIX"*) : ;;
+                *) reason="detached outside ${PREFIX} — its commit may be referenced by nothing else" ;;
+            esac
+        fi
 
         if [ -n "$reason" ]; then
             printf '  KEEP    %-24s %s\n' "$n" "$reason"
@@ -123,7 +153,7 @@ reap() {
     done
 
     [ "$APPLY" -eq 1 ] && git worktree prune
-    echo "[reap] ${total} candidate(s) under ${PREFIX}; keep=${KEEP}; apply=${APPLY}"
+    echo "[reap] ${total} candidate(s) under ${SCAN} (release prefix ${PREFIX}); keep=${KEEP}; apply=${APPLY}"
     [ "$APPLY" -eq 0 ] && echo "[reap] DRY RUN — nothing removed. Re-run with --apply."
     return 0
 }
@@ -180,6 +210,42 @@ selftest() {
                      || { fail=$((fail+1)); printf '  FAIL  dirty worktree was destroyed\n'; }
     [ -d "${pfx}0" ] && { pass=$((pass+1)); printf '  ok    branch worktree survived --apply\n'; } \
                      || { fail=$((fail+1)); printf '  FAIL  branch worktree was destroyed\n'; }
+
+    # ── --merged-branches: the affirmative path, and the two refusals that guard it ──────
+    # Fixtures for the three branch states. The reapable one is DERIVED — any local branch
+    # already merged into origin/main, present on origin, and not checked out anywhere — so
+    # this arm cannot quietly become a skip if one hardcoded branch is ever deleted.
+    git worktree add -b reaptest/unmerged "${pfx}1" HEAD >/dev/null 2>&1 || true
+    ( cd "${pfx}1" && git commit --allow-empty -qm "reaptest: not in origin/main" >/dev/null 2>&1 )
+
+    local mb="" b
+    for b in $(git for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null); do
+        case "$b" in reaptest/*) continue ;; esac
+        git merge-base --is-ancestor "$b" origin/main 2>/dev/null || continue
+        git ls-remote --exit-code --heads origin "$b" >/dev/null 2>&1 || continue
+        git worktree list --porcelain 2>/dev/null | grep -qx "branch refs/heads/$b" && continue
+        mb="$b"; break
+    done
+    if [ -n "$mb" ]; then
+        git worktree add "${pfx}8" "$mb" >/dev/null 2>&1 || true
+    fi
+
+    out="$(REAP_PREFIX="$pfx" "$self" --keep 1 --merged-branches 2>&1)"
+    chk "unmerged branch refused EVEN WITH the flag"  "KEEP.*reaptest-rel-1.*NOT merged"        0
+    chk "unpushed branch refused EVEN WITH the flag"  "KEEP.*reaptest-rel-0.*not on origin"     0
+    if [ -n "$mb" ]; then
+        chk "merged+pushed+clean branch IS reapable"  "would remove reaptest-rel-8"             0
+    else
+        fail=$((fail+1)); printf '  FAIL  no merged+pushed branch available to build the positive fixture\n'
+    fi
+    # ⛔ Without the flag the same tree must be refused — otherwise the flag is decorative and
+    # these arms would pass against a build that reaps branch worktrees unconditionally.
+    out="$(REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
+    chk "…and refused again with the flag absent"     "would remove reaptest-rel-8"             1
+
+    for d in "${pfx}1" "${pfx}8"; do [ -d "$d" ] && git worktree remove --force "$d" >/dev/null 2>&1; done
+    git branch -D reaptest/unmerged >/dev/null 2>&1
+    [ -n "$mb" ] && { git rev-parse --verify -q "$mb" >/dev/null && pass=$((pass+1)) && printf '  ok    the derived branch itself survived removal of its worktree\n'; }
 
     # cleanup fixtures
     ( cd "${pfx}2" 2>/dev/null && git reset -q HEAD REAPTEST_DIRTY.md 2>/dev/null; rm -f REAPTEST_DIRTY.md )

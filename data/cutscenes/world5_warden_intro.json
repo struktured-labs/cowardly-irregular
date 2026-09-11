@@ -1,9 +1,9 @@
 {
   "id": "world5_warden_intro",
   "title": "Warden of Form",
-  "world": 5,
+  "world": 6,
   "trigger": "boss_warden_abstract",
-  "background": "node_prime",
+  "background": "vertex_village",
   "description": "The final Warden holds the boundary between everything that can be represented and everything that cannot. To pass, break what cannot be broken.",
   "steps": [
     {

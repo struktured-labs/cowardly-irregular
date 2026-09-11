@@ -673,11 +673,14 @@ func _setup_npcs() -> void:
 	# Dr. Temporal (near suburban portal) — uses dedicated sprite_archetype
 	# rather than the generic "mysterious" NPC type so other mysterious NPCs
 	# (if any) keep their procedural fallback.
+	# ui_accept is joypad button 1 — the EAST face — so the old frozen "press A" was right on Nintendo
+	# pads only. Derived at spawn; the village re-instances on entry, so it refreshes per visit.
+	var _portal_confirm: String = InputProfileManager.hint_for_action("ui_accept")
 	var temporal = _create_npc("Dr. Temporal", "mysterious", Vector2(21 * TILE_SIZE,13 * TILE_SIZE), [
 		"This device materialized overnight... it hums with a '16-bit' frequency.",
 		"My instruments detect suburban housing developments on the other side.",
 		"Strip malls. Parking lots. The horror.",
-		"Step on the pad and press A to activate. If you dare."
+		"Step on the pad and press %s to activate. If you dare." % _portal_confirm
 	])
 	temporal.sprite_archetype = "dr_temporal"
 	npcs.add_child(temporal)
