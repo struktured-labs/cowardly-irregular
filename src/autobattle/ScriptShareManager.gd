@@ -214,14 +214,21 @@ static func validate_imported_script(script: Dictionary) -> Array:
 ## shared code arrive with a warning and teach players to dismiss them.
 static func _deep_advisories(script: Dictionary, character_id: String) -> Array:
 	var out: Array = []
+	var unchecked: bool = false
 	var rules: Array = script.get("rules", [])
 	for i in range(rules.size()):
 		for e in AutobattleSystem.deep_check_reachability(rules[i], character_id):
 			var msg: String = str(e)
-			## A job the deep check cannot resolve is a tooling limit, not a defect in the rule.
+			## "cannot resolve job" means the check could not RUN. Skipping it silently made an
+			## empty advisory list mean two different things — "every rule is reachable" and "I
+			## never looked" — and the player cannot tell those apart, which is the whole reason
+			## the advisory exists. Not-checked gets its own line.
 			if msg.begins_with("cannot resolve job"):
+				unchecked = true
 				continue
 			out.append("rule %d: %s" % [i, msg])
+	if unchecked and out.is_empty():
+		out.append("could not check this code against '%s' — the character's job did not resolve, so there is no compatibility advice either way" % character_id)
 	return out
 
 

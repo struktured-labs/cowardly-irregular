@@ -119,3 +119,30 @@ func test_the_MP_GUARD_heuristic_is_NOT_surfaced_on_imports() -> void:
 		"control: and it is the MP-guard arm doing it: %s" % str(full))
 	assert_eq(reach.size(), 0,
 		"the reachability slice must stay silent on a rule that CAN fire: %s" % str(reach))
+
+
+func test_an_UNCHECKABLE_code_is_not_reported_as_clean() -> void:
+	## Applying @cowir-sprites' fallback rule and @cowir-sfx's discriminator to my own code from
+	## yesterday. deep_check_reachability returns "cannot resolve job" when it cannot run at all,
+	## and I skipped that message as "a tooling limit, not a defect in the rule" — true, and the
+	## reason I discarded it. With every rule skipped the advisory list came back EMPTY, which is
+	## the same output as "every rule is reachable".
+	##
+	## The discriminator: can the fallback's output be mistaken for the real thing? Silence can.
+	## So three states must be distinguishable — checked-and-clean, checked-and-problems, and
+	## NOT CHECKED.
+	var applied: bool = SSM.apply_character_script("no_such_character_at_all", _code("cure"))
+	assert_true(applied, "precondition: the import itself still succeeds — this is advisory, not a refusal")
+	var adv: String = SSM.last_import_advisory_text()
+	assert_ne(adv, "",
+		"an unresolvable character must NOT read as a clean bill of health — empty meant 'all reachable' one line earlier")
+	assert_true(adv.contains("could not check"),
+		"and it must say it did not look, rather than implying it looked and found nothing: %s" % adv)
+
+
+func test_a_checkable_clean_code_is_still_silent() -> void:
+	## The control that stops the fix becoming noise: a real character with an in-kit ability must
+	## still produce NO advisory. Without this, "always say something" would pass the test above.
+	SSM.apply_character_script("cleric", _code("cure"))
+	assert_eq(SSM.last_import_advisory_text(), "",
+		"a genuinely clean import must stay silent: %s" % SSM.last_import_advisory_text())
