@@ -2110,6 +2110,15 @@ func _get_pending_story_cutscene() -> String:
 		if _current_map_id == "vertex_village":
 			return "world6_ending"
 
+	# ===== MASTERITE FRAGMENT REVEALS — 20 scenes, 0 callers until 2026-09-11 =====
+	# Each keys on the flag its masterite's dungeon writes (cutscene_flag_<arch>_<theme>_defeated) and, once that
+	# world's aftermath scene is wired, chains behind it. 16 of the 20 wait on dungeons that do not exist yet.
+	for fid in _FRAGMENT_GATES:
+		var g: Dictionary = _FRAGMENT_GATES[fid]
+		if flags.get(str(g["flag"]), false) and _epilogue_done_or_unwired(str(g["after"]), flags) \
+				and not flags.get("cutscene_flag_%s_complete" % fid, false):
+			return fid
+
 	# ===== GUIDANCE HINTS — disabled (now opt-in via party chat) =====
 	# These were auto-triggering too aggressively. Guidance hints are now
 	# available via NPC dialogue hints instead of forced cutscenes.
@@ -2172,6 +2181,30 @@ func _set_cutscene_flag_and_mirror(flag: String) -> void:
 		GameState.set_story_flag(bare)
 
 
+## Fragment reveal → the masterite defeat flag its dungeon writes, and the aftermath scene it chains behind (required only once that scene is in the completion map). Derived from each scene's authored trigger resolved against monsters.json (tmp/gen_fragment_table.py); the trigger is the authority, not the filename.
+const _FRAGMENT_GATES := {
+	"world1_fragment_arbiter": {"flag": "cutscene_flag_arbiter_medieval_defeated", "after": "world1_arbiter_defeat"},
+	"world1_fragment_curator": {"flag": "cutscene_flag_curator_medieval_defeated", "after": "world1_curator_defeat"},
+	"world1_fragment_tempo": {"flag": "cutscene_flag_tempo_medieval_defeated", "after": "world1_tempo_defeat"},
+	"world1_fragment_warden": {"flag": "cutscene_flag_warden_medieval_defeated", "after": "world1_warden_defeat"},
+	"world2_fragment_arbiter": {"flag": "cutscene_flag_arbiter_suburban_defeated", "after": "world2_arbiter_defeat"},
+	"world2_fragment_curator": {"flag": "cutscene_flag_curator_suburban_defeated", "after": "world2_curator_defeat"},
+	"world2_fragment_tempo": {"flag": "cutscene_flag_tempo_suburban_defeated", "after": "world2_tempo_defeat"},
+	"world2_fragment_warden": {"flag": "cutscene_flag_warden_suburban_defeated", "after": "world2_warden_defeat"},
+	"world3_fragment_arbiter": {"flag": "cutscene_flag_arbiter_industrial_defeated", "after": "world4_arbiter_defeat"},
+	"world3_fragment_curator": {"flag": "cutscene_flag_curator_industrial_defeated", "after": "world4_curator_defeat"},
+	"world3_fragment_tempo": {"flag": "cutscene_flag_tempo_industrial_defeated", "after": "world4_tempo_defeat"},
+	"world3_fragment_warden": {"flag": "cutscene_flag_warden_industrial_defeated", "after": "world4_warden_defeat"},
+	"world5_fragment_arbiter": {"flag": "cutscene_flag_arbiter_futuristic_defeated", "after": "world5_arbiter_defeat"},
+	"world5_fragment_curator": {"flag": "cutscene_flag_curator_futuristic_defeated", "after": "world5_curator_defeat"},
+	"world5_fragment_tempo": {"flag": "cutscene_flag_tempo_futuristic_defeated", "after": "world5_tempo_defeat"},
+	"world5_fragment_warden": {"flag": "cutscene_flag_warden_futuristic_defeated", "after": "world5_warden_defeat"},
+	"world6_fragment_arbiter": {"flag": "cutscene_flag_arbiter_abstract_defeated", "after": "world6_arbiter_defeat"},
+	"world6_fragment_curator": {"flag": "cutscene_flag_curator_abstract_defeated", "after": "world6_curator_defeat"},
+	"world6_fragment_tempo": {"flag": "cutscene_flag_tempo_abstract_defeated", "after": "world6_tempo_defeat"},
+	"world6_fragment_warden": {"flag": "cutscene_flag_warden_abstract_defeated", "after": "world6_warden_defeat"},
+}
+
 const _CUTSCENE_COMPLETION_FLAGS := {
 	## Demo-build end card. Without this entry it re-fires on every gate check (the Elder Theron loop).
 	"demo_end":                         "cutscene_flag_demo_end_complete",
@@ -2231,6 +2264,27 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	# Tick 102: W3 Tempo of the Shift post-defeat dialogue
 	"world3_tempo_defeat":              "cutscene_flag_world3_tempo_defeat_complete",
 	"world3_transition":                "cutscene_flag_world3_transition_complete",
+	# Masterite fragment reveals (gated by _FRAGMENT_GATES; the loop returns the id, so the static audit does not see these)
+	"world1_fragment_arbiter":         "cutscene_flag_world1_fragment_arbiter_complete",
+	"world1_fragment_curator":         "cutscene_flag_world1_fragment_curator_complete",
+	"world1_fragment_tempo":           "cutscene_flag_world1_fragment_tempo_complete",
+	"world1_fragment_warden":          "cutscene_flag_world1_fragment_warden_complete",
+	"world2_fragment_arbiter":         "cutscene_flag_world2_fragment_arbiter_complete",
+	"world2_fragment_curator":         "cutscene_flag_world2_fragment_curator_complete",
+	"world2_fragment_tempo":           "cutscene_flag_world2_fragment_tempo_complete",
+	"world2_fragment_warden":          "cutscene_flag_world2_fragment_warden_complete",
+	"world3_fragment_arbiter":         "cutscene_flag_world3_fragment_arbiter_complete",
+	"world3_fragment_curator":         "cutscene_flag_world3_fragment_curator_complete",
+	"world3_fragment_tempo":           "cutscene_flag_world3_fragment_tempo_complete",
+	"world3_fragment_warden":          "cutscene_flag_world3_fragment_warden_complete",
+	"world5_fragment_arbiter":         "cutscene_flag_world5_fragment_arbiter_complete",
+	"world5_fragment_curator":         "cutscene_flag_world5_fragment_curator_complete",
+	"world5_fragment_tempo":           "cutscene_flag_world5_fragment_tempo_complete",
+	"world5_fragment_warden":          "cutscene_flag_world5_fragment_warden_complete",
+	"world6_fragment_arbiter":         "cutscene_flag_world6_fragment_arbiter_complete",
+	"world6_fragment_curator":         "cutscene_flag_world6_fragment_curator_complete",
+	"world6_fragment_tempo":           "cutscene_flag_world6_fragment_tempo_complete",
+	"world6_fragment_warden":          "cutscene_flag_world6_fragment_warden_complete",
 	# World 4 (industrial)
 	"world4_prologue":                  "cutscene_flag_world4_prologue_complete",
 	"world4_chapter1":                  "cutscene_flag_world4_chapter1_complete",
