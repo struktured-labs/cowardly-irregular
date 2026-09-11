@@ -458,11 +458,12 @@ func _build_footer(vp_size: Vector2) -> void:
 	_footer_panel.add_child(footer_bg)
 
 	# Four action buttons spaced across footer
+	# Derived from AutogrindInputHelper, which owns the bindings these rows describe.
 	var btn_data = [
-		{"text": "Select: Pause", "action": "pause", "x": 0},
-		{"text": "Start: Adjust Rules", "action": "adjust", "x": 1},
-		{"text": "L+R: Tier", "action": "tier", "x": 2},
-		{"text": "B: Exit", "action": "exit", "x": 3},
+		{"text": "%s: Pause" % AutogrindInputHelper.hint_for("pause"), "action": "pause", "x": 0},
+		{"text": "%s: Adjust Rules" % AutogrindInputHelper.hint_for("adjust_rules"), "action": "adjust", "x": 1},
+		{"text": "%s: Tier" % AutogrindInputHelper.hint_for("tier_cycle"), "action": "tier", "x": 2},
+		{"text": "%s: Exit" % AutogrindInputHelper.hint_for("exit"), "action": "exit", "x": 3},
 	]
 
 	var btn_w = (_footer_panel.size.x - 16) / 4.0
