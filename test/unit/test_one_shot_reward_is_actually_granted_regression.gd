@@ -29,6 +29,7 @@ extends GutTest
 const MONSTERS := "res://data/monsters.json"
 const ITEMS := "res://data/items.json"
 const BATTLE_MANAGER_SRC := "res://src/battle/BattleManager.gd"
+const BESTIARY_SRC := "res://src/bestiary/BestiarySystem.gd"
 
 ## Keys authored inside `one_shot` that NOTHING reads, each with the reason it is
 ## debt rather than a defect. Both are one edit from being a finding, so they are
@@ -48,16 +49,17 @@ const BATTLE_MANAGER_SRC := "res://src/battle/BattleManager.gd"
 ##   phase is a one-shot under tempo and fails a 2500 threshold if no single hit
 ##   reached it. WHICHEVER IS CHOSEN, SOME OF THE 41 TROPHIES CHANGE HANDS — so the
 ##   right resting place is this pin, not a fix.
-## setup_hint — 50 lines of authored tactical advice ("Stack attack buffs, defer for
-##   max AP, then unleash all at once") with no surface that shows them. The
-##   bestiary would be the obvious home. Content that exists and is never displayed.
+## setup_hint — RETIRED 2026-09-11. 50 lines of authored tactical advice ("Stack
+##   attack buffs, defer for max AP, then unleash all at once") that no surface had
+##   ever shown. This entry said "the bestiary would be the obvious home" and the
+##   home was one field away: BestiarySystem now carries it out with the entry and
+##   the detail panel shows it under the drops, on defeated monsters only.
 ## Monsters that MUST appear in the one_shot walk. A count floor passes while members
 ## quietly leave it; these do not.
 const PREMISE_MONSTERS: Array[String] = ["ice_dragon", "fire_dragon"]
 
 const UNREAD_ONE_SHOT_KEYS := {
 	"hp_threshold": "an unresolved design question, not debt: authored = damage MAGNITUDE, shipped = TEMPO. Struktured's call; see the note above",
-	"setup_hint": "authored tactical advice with no display surface (bestiary would be the home)",
 }
 
 
@@ -133,8 +135,15 @@ func test_premise_the_one_shot_corpus_is_present() -> void:
 ##   grows   -> someone authored a new one_shot field nothing consumes
 ##   shrinks -> someone wired hp_threshold or setup_hint; delete its line
 func test_every_one_shot_key_is_either_read_or_named_as_debt() -> void:
-	var src: String = FileAccess.get_file_as_string(BATTLE_MANAGER_SRC)
-	assert_ne(src, "", "BattleManager.gd must be readable — the consumer this asks about")
+	# TWO consumers now, and the corpus must hold both or a live key reads as dead:
+	# BattleManager grants the reward, the bestiary shows the hint. A BattleManager-only
+	# corpus was correct until the bestiary landed and is a partial one after — the
+	# "consumer moved house" case, which turns a real wiring into a false debt entry.
+	var src: String = FileAccess.get_file_as_string(BATTLE_MANAGER_SRC) + FileAccess.get_file_as_string(BESTIARY_SRC)
+	assert_true(src.contains("func _check_one_shot"),
+		"the BattleManager half of the consumer corpus is missing — every key below would read as unconsumed for that reason")
+	assert_true(src.contains("_one_shot_hint_of"),
+		"the bestiary half of the consumer corpus is missing — setup_hint would read as unconsumed and this file would claim a debt that was paid")
 
 	var keys: Dictionary = {}
 	for mid in _one_shot_blocks().keys():
@@ -152,7 +161,7 @@ func test_every_one_shot_key_is_either_read_or_named_as_debt() -> void:
 			unread.append("%s (authored on %d monsters)" % [key, int(keys[k])])
 
 	assert_eq(unread.size(), 0,
-		"a one_shot field is authored and never read: %s — either consume it in BattleManager or add it to UNREAD_ONE_SHOT_KEYS with the reason it is debt" % ", ".join(unread))
+		"a one_shot field is authored and never read: %s — either consume it (BattleManager grants, the bestiary displays) or add it to UNREAD_ONE_SHOT_KEYS with the reason it is debt" % ", ".join(unread))
 	# STALE-BY-DELETION. The ratchet above only compares keys the corpus still AUTHORS,
 	# so a key that disappears entirely leaves its debt entry behind with nothing to
 	# notice — an inert suppression created by deletion rather than by being written
