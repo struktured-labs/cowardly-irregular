@@ -223,8 +223,17 @@ func test_no_help_label_spells_a_non_face_button() -> void:
 				continue
 			per_file[path] += 1
 			for n in banned:
-				# "Start:Save" / "Start Save" — a caption naming the button, not a word inside prose
-				if line.contains("\"%s:" % n) or line.contains(" %s:" % n):
+				## TWO IDIOMS, because a bare word-match cannot work here: "Start", "Back", "Options"
+				## and "Share" are ordinary English verbs ("Start a new grind", "Back to menu"), so
+				## matching the word alone floods on correct prose.
+				##   "Start:Save"        the terse caption form
+				##   "Press Start to…"   the prose form — @cowir-music's shape, found by mutation:
+				##                       my banned SET named Start while my PATTERN could not emit
+				##                       it, so "Press Start to save" scored GREEN.
+				## ⚠️ STILL A PATTERN, NOT A PROPERTY. A third idiom escapes. Recorded as the known
+				## reach of this arm rather than claimed as coverage of the class.
+				if line.contains("\"%s:" % n) or line.contains(" %s:" % n) \
+						or line.contains("Press %s " % n) or line.contains("Press %s." % n):
 					offenders.append("%s :: %s" % [path.get_file(), n])
 	## ⛔ WAS A FLOOR (`examined > 4` across both files). @cowir-adhoc 2026-09-11: a floor is armed
 	## against TOTAL vacuity and BLIND TO PARTIAL LOSS. Measured — breaking `.text = ` in ONE editor
