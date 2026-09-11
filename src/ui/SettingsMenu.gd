@@ -228,16 +228,16 @@ func _build_ui() -> void:
 
 	Layout overview (overflow-safe):
 	  panel
-	  ├── panel_bg       (ColorRect, full-rect)
-	  ├── border         (RetroPanel beveled edge)
-	  ├── title          (Label, pinned at y=8, outside scroll)
-	  ├── scroll         (ScrollContainer, fills panel between title and footer)
-	  │   └── vbox       (VBoxContainer — all rows grow downward freely)
-	  │       ├── encounter_item
-	  │       ├── debug_item
-	  │       ├── … (all setting rows)
-	  │       └── actions_box (VBoxContainer for action buttons)
-	  └── footer         (Label, pinned at bottom, outside scroll)
+	  +-- panel_bg       (ColorRect, full-rect)
+	  +-- border         (RetroPanel beveled edge)
+	  +-- title          (Label, pinned at y=8, outside scroll)
+	  +-- scroll         (ScrollContainer, fills panel between title and footer)
+	  |   `-- vbox       (VBoxContainer — all rows grow downward freely)
+	  |       +-- encounter_item
+	  |       +-- debug_item
+	  |       +-- … (all setting rows)
+	  |       `-- actions_box (VBoxContainer for action buttons)
+	  `-- footer         (Label, pinned at bottom, outside scroll)
 
 	The ScrollContainer clips and scrolls only the inner VBox, so no
 	matter how many debug action buttons are added the panel never overflows.
