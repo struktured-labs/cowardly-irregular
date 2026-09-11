@@ -34,10 +34,8 @@ const SRC_ROOT := "res://src/"
 ##      dorrit_w4 -> dorrit             · firewall_attendant_w5 -> firewall_alpha
 ## C) NO CANDIDATE NPC ANYWHERE -- a location/prop/pair not yet placed.
 const UNWIRED_BY_DESIGN := [
-	# A -- deliberate, documented at RivetRowVillage:302
-	"madame_orrery_w4",
-	# B -- character present under a different id (see above); resolve by naming, not by authoring
-	"foreman_w4", "union_rep_w4", "dorrit_w4", "firewall_attendant_w5",
+	# A and B wired 2026-09-11: explicit .npc_id now matches the quest ids; the get_npc_id()
+	# name-slug fallback had been resolving them to shift_foreman_grix etc. instead.
 	# C -- no candidate NPC exists yet
 	"rat_patrol_junction", "memory_leak_district", "race_condition_pair",
 	"madame_orrery_w5", "traveler_w6", "madame_orrery_w6", "last_shopkeeper_w6",
