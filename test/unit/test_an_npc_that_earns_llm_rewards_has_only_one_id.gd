@@ -128,9 +128,14 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 		"         first; that is the precondition this whole file exists to watch. Then add them here.\n" +
 		"  SHRANK — an NPC stopped being LLM-capable. Say so here deliberately; a quiet removal drops\n" +
 		"         its own membership check with it.") % KNOWN_LLM_NPCS.size())
-	assert_eq(MUST_BUILD.size(), 6,
-		"MUST_BUILD holds %d maps, not the 6 this guard makes claims about (5 holding the divergent " % MUST_BUILD.size() +
-		"NPCs + Harmonia holding all three LLM-capable ones)")
+	## `gte`, not `eq` — @cowir-sfx's discriminator is MAY IT GROW, not who wrote it. A seventh map
+	## holding a divergent NPC is correct work and must not red; losing one is the failure. A literal
+	## floor catches minus-one (5 >= 6 fails) and permits growth, where `== 6` taxes the correct edit.
+	## Contrast KNOWN_LLM_NPCS above, which stays `eq` BECAUSE growth there is the regression signal.
+	assert_gte(MUST_BUILD.size(), 6,
+		"MUST_BUILD holds %d maps, fewer than the 6 this guard makes claims about (5 holding the " % MUST_BUILD.size() +
+		"divergent NPCs + Harmonia holding all three LLM-capable ones). A map removed takes its own " +
+		"membership check with it; adding one is free.")
 	for who in KNOWN_LLM_NPCS:
 		assert_true(who in llm_names,
 			"CONTROL: %s is an LLM showcase NPC and the walk did not reach them; found %s" % [who, str(llm_names)])
