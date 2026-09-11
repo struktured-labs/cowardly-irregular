@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "The Grand Schedule",
-      "title": "Masterite \u2014 Steampunk"
+      "title": "Masterite — Steampunk"
     },
     {
       "type": "wait",
@@ -24,11 +24,11 @@
     },
     {
       "type": "narration",
-      "text": "The gear-train did not stop when they entered. Nothing in the room acknowledged them at all \u2014 and then, seven seconds later, everything did at once, as though the acknowledgement had been scheduled for exactly then."
+      "text": "The gear-train did not stop when they entered. Nothing in the room acknowledged them at all — and then, seven seconds later, everything did at once, as though the acknowledgement had been scheduled for exactly then."
     },
     {
       "type": "play_sfx",
-      "sfx": "gear_engage"
+      "sfx": "speed_change"
     },
     {
       "type": "dialogue",
@@ -42,7 +42,7 @@
         {
           "speaker": "Bard",
           "text": "Seven seconds late for what?",
-          "theme": "party"
+          "theme": "bard"
         },
         {
           "speaker": "The Grand Schedule",
@@ -52,8 +52,8 @@
         },
         {
           "speaker": "Cleric",
-          "text": "Who wrote it? The schedule \u2014 who made the first rule?",
-          "theme": "party"
+          "text": "Who wrote it? The schedule — who made the first rule?",
+          "theme": "cleric"
         },
         {
           "speaker": "The Grand Schedule",
@@ -64,7 +64,7 @@
         {
           "speaker": "Mage",
           "text": "That isn't an answer.",
-          "theme": "party"
+          "theme": "mage"
         },
         {
           "speaker": "The Grand Schedule",
@@ -75,7 +75,7 @@
         {
           "speaker": "Rogue",
           "text": "So nobody's in charge of any of this.",
-          "theme": "party"
+          "theme": "rogue"
         },
         {
           "speaker": "The Grand Schedule",
@@ -86,7 +86,7 @@
         {
           "speaker": "Fighter",
           "text": "Then there's nothing to beat.",
-          "theme": "party"
+          "theme": "fighter"
         },
         {
           "speaker": "The Grand Schedule",

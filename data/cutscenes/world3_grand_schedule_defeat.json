@@ -1,6 +1,6 @@
 {
   "id": "world3_grand_schedule_defeat",
-  "title": "The Grand Schedule \u2014 Aftermath",
+  "title": "The Grand Schedule — Aftermath",
   "world": 3,
   "trigger": "boss_tempo_steampunk_defeated",
   "background": "steampunk_workshop",
@@ -23,7 +23,7 @@
     },
     {
       "type": "narration",
-      "text": "It did not fall. The gear-train simply began to disagree with itself \u2014 a tooth here, a tooth there, each one arriving where it had always arrived and finding nothing waiting for it."
+      "text": "It did not fall. The gear-train simply began to disagree with itself — a tooth here, a tooth there, each one arriving where it had always arrived and finding nothing waiting for it."
     },
     {
       "type": "dialogue",
@@ -37,7 +37,7 @@
         {
           "speaker": "Fighter",
           "text": "It's still counting.",
-          "theme": "party"
+          "theme": "fighter"
         },
         {
           "speaker": "The Grand Schedule",
@@ -48,7 +48,7 @@
         {
           "speaker": "Bard",
           "text": "...Does that hurt?",
-          "theme": "party"
+          "theme": "bard"
         },
         {
           "speaker": "The Grand Schedule",
@@ -59,7 +59,7 @@
         {
           "speaker": "Cleric",
           "text": "I'm sorry. I don't know if that means anything to you.",
-          "theme": "party"
+          "theme": "cleric"
         },
         {
           "speaker": "The Grand Schedule",
@@ -83,17 +83,17 @@
         {
           "speaker": "Mage",
           "text": "Seven seconds. That's what it said when we came in.",
-          "theme": "party"
+          "theme": "mage"
         },
         {
           "speaker": "Rogue",
           "text": "Somebody in the village told us the same number. Said the Mechanism made it up somehow and he never worked out how.",
-          "theme": "party"
+          "theme": "rogue"
         },
         {
           "speaker": "Bard",
           "text": "It was taking them out of somewhere. It just never wrote down where.",
-          "theme": "party"
+          "theme": "bard"
         }
       ]
     },

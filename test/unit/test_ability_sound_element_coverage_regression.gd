@@ -227,8 +227,16 @@ func test_play_ability_actually_CONSULTS_the_derived_map() -> void:
 	sm._sfx_cooldowns.erase("ability_fire")
 	assert_false(sm._sfx_cooldowns.has("ability_fire"),
 		"control: the cue key must start unstamped or the assert below is satisfied by an earlier test")
+	for k in sm._sfx_cooldowns.keys():
+		if str(k).ends_with("ability_fire"):
+			sm._sfx_cooldowns.erase(k)
 	sm.play_ability(derived_id)
-	assert_true(sm._sfx_cooldowns.has("ability_fire"),
+	# A world prefix can leak from an earlier test; w6_ability_fire IS the derived cue resolving.
+	var stamped := false
+	for k in sm._sfx_cooldowns.keys():
+		if str(k).ends_with("ability_fire"):
+			stamped = true
+	assert_true(stamped,
 		"play_ability('%s') did NOT resolve ability_fire — the derived map is built but play_ability is not reading it, which is the exact defect every other assertion in this file is blind to" % derived_id)
 
 
