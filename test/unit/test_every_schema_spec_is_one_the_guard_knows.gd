@@ -32,8 +32,29 @@ extends GutTest
 
 const LS := preload("res://src/llm/LLMService.gd")
 
-## Kept in sync with _type_matches by the round-trip test below, not by hand.
-const KNOWN: Array[String] = ["String", "int", "float", "bool", "Array", "Dictionary", "Variant"]
+## The six core types, used ONLY as a control on the parser below — never as the
+## ratchet's banned set. A hand-listed set goes stale the moment someone adds a
+## legitimate arm to _type_matches, and the ratchet then reds on a correct change
+## (measured: adding "PackedStringArray" + a schema using it reported it
+## unresolvable). cowir-controller's class — derive the corpus, do not list it.
+const CORE_TYPES: Array[String] = ["String", "int", "float", "bool", "Array", "Dictionary"]
+
+
+## The specs _type_matches actually accepts, parsed from its own match arms.
+func _validator_types() -> Array[String]:
+	var src: String = FileAccess.get_file_as_string("res://src/llm/LLMService.gd")
+	var at: int = src.find("func _type_matches")
+	if at == -1:
+		return []
+	var body_end: int = src.find("\nfunc ", at + 1)
+	var body: String = src.substr(at, (body_end - at) if body_end != -1 else 900)
+	var re := RegEx.new()
+	re.compile("\"([A-Za-z_][A-Za-z_0-9]*)\"\\s*:")
+	var out: Array[String] = []
+	for m in re.search_all(body):
+		if not (m.get_string(1) in out):
+			out.append(m.get_string(1))
+	return out
 
 
 func _svc():
@@ -90,6 +111,7 @@ func _collect_gd(dir_path: String, out: PackedStringArray) -> void:
 
 func test_every_authored_schema_spec_resolves_in_the_validator() -> void:
 	var schemas: Dictionary = _all_schemas()
+	var known: Array[String] = _validator_types()
 	var svc = _svc()
 	var offenders: Array[String] = []
 	var checked: int = 0
@@ -97,7 +119,7 @@ func test_every_authored_schema_spec_resolves_in_the_validator() -> void:
 		for key in (schemas[cname] as Dictionary):
 			var spec: String = str((schemas[cname] as Dictionary)[key])
 			checked += 1
-			if not (spec in KNOWN):
+			if not (spec in known):
 				offenders.append("%s[%s] = \"%s\"" % [cname, key, spec])
 			# and the validator must actually agree, not just the list
 			elif spec != "Variant" and svc._type_matches(42, spec) and svc._type_matches("x", spec):
@@ -158,8 +180,11 @@ func test_the_known_list_matches_what_the_validator_accepts() -> void:
 	## validator it claims to mirror. A stale KNOWN would let a removed type pass
 	## the ratchet while the guard rejected it at runtime.
 	var svc = _svc()
-	for t in ["String", "int", "float", "bool", "Array", "Dictionary"]:
-		assert_true(t in KNOWN, "%s must be in KNOWN" % t)
+	var known: Array[String] = _validator_types()
+	assert_gte(known.size(), 6, "CONTROL: the arm parser found %d types — it is broken" % known.size())
+	for t in CORE_TYPES:
+		assert_true(t in known, "%s must be parsed out of _type_matches — the parser missed an arm" % t)
+	assert_true("Variant" in known, "and the declared escape hatch must be found the same way")
 	assert_true(svc._type_matches("s", "String"), "String accepts a String")
 	assert_false(svc._type_matches(1, "String"), "String rejects an int — the arm is real")
 	assert_true(svc._type_matches([], "Array"), "Array accepts an Array")
