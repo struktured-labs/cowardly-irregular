@@ -94,6 +94,34 @@ func _gd_files() -> Array:
 	return out
 
 
+## THE INSTRUMENT ITSELF, pinned directly rather than only through mutation arms — @cowir-overworld's
+## move after four fixes in one file, each blind to the next. Mutation arms prove the stripper works
+## on the one file I mutated; these prove the FUNCTION does, permanently, and a future reader does
+## not have to re-run six arms to trust it.
+##
+## ⚠️ POLARITY, per @cowir-controller's correction of the table now circulating: it follows what the
+## scan is asking to FIND, not which lane you are in — and THIS FILE NEEDS BOTH.
+##   authority arm  hunts CODE (`glyph_for_action(`)  -> strips comments, ignores strings
+##   census arm     hunts a STRING ("Press A")        -> uses NO stripper; the caption IS the defect
+## Running _code_only over the census would report every frozen prompt clean. That is the silent,
+## total false-clean @cowir-music warned about, one function away in the same file.
+func test_the_comment_stripper_cuts_only_what_it_should() -> void:
+	var cases := [
+		# [input, expected, why]
+		["\tg = f(\"ui_accept\")  # was derived", "\tg = f(\"ui_accept\")  ", "trailing comment cut"],
+		## Cut-at-# leaves the leading whitespace, so this is "\t" and not "". Inert either way -- no
+		## code survives -- but I wrote "" from my own earlier BLANK-the-line description, and the
+		## direct pin caught the doc/behaviour drift in seconds where six mutation arms never would.
+		["\t## whole line", "\t", "full-line comment: only the indent survives"],
+		["\tvar c := \"#ff0000\"", "\tvar c := \"#ff0000\"", "a # INSIDE a string is not a comment"],
+		["\tvar c := \"#ff0000\"  # note", "\tvar c := \"#ff0000\"  ", "quoted # then a real comment: cut at the comment only"],
+		["\tvar s := \"odd \\\" quote\"  # note", "\tvar s := \"odd \\\" quote\"  ", "an ESCAPED quote must not flip the parser into a string"],
+		["\tvar plain := 1", "\tvar plain := 1", "no # at all: untouched"],
+	]
+	for c in cases:
+		assert_eq(_code_only(c[0]), c[1], c[2])
+
+
 func test_the_census_reads_a_real_corpus() -> void:
 	var files := _gd_files()
 	assert_gt(files.size(), 5, "CONTROL: the lane dirs must yield real files, or every assert below is vacuous")
