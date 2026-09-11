@@ -956,12 +956,39 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 			cheapest_cost = cost
 	lines.append("Anything not on that list — including abilities from other jobs —")
 	lines.append("is rejected and DISCARDS THE WHOLE RULE SET. Prefer 'attack' when unsure.")
+	# The grammar's worked examples above carry real ability ids, and the model COPIES
+	# them: 'esuna' occurs once in the whole prompt, inside a complete rule, and turned
+	# up in 5 of 10 fighter compositions. Examples teach harder than prohibitions.
+	var strays: Array[String] = _example_ability_ids()
+	for aid in kit:
+		strays.erase(str(aid))
+	if not strays.is_empty():
+		lines.append("⚠️ The worked examples earlier use ids (%s) to demonstrate SHAPE ONLY."
+			% ", ".join(strays))
+		lines.append("They are other jobs' abilities and are INVALID for this character.")
+		lines.append("Copying an ability id out of an example is the single most common failure.")
+		lines.append("Every \"id\" you write must appear in the list directly above this warning.")
 	if cheapest_id != "" and max_mp > 0:
 		var pct: int = ceili(float(cheapest_cost) / float(max_mp) * 100.0)
 		lines.append("Worked example with THESE numbers: a rule casting %s (%d MP of %d)"
 			% [cheapest_id, cheapest_cost, max_mp])
 		lines.append("needs the condition {\"type\":\"mp_percent\",\"op\":\">=\",\"value\":%d}." % pct)
 	return "\n".join(lines)
+
+
+## Ability ids the grammar's own worked examples spend, PARSED rather than listed.
+## A hand-written list goes stale the moment someone rewords an example, leaving a
+## warning that names absent ids while the new ones get copied freely.
+static func _example_ability_ids() -> Array[String]:
+	var re := RegEx.new()
+	if re.compile('"id"\\s*:\\s*"([a-z_]+)"') != OK:
+		return []
+	var out: Array[String] = []
+	for m in re.search_all(AUTOBATTLE_GRAMMAR_DESCRIPTION):
+		var aid: String = m.get_string(1)
+		if not (aid in out):
+			out.append(aid)
+	return out
 
 
 ## Flatten a model-authored line so it cannot escape the block that quotes it.

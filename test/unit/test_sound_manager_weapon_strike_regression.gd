@@ -134,3 +134,17 @@ func test_manifest_load_is_not_vacuous() -> void:
 	## the count only needs to prove the load happened.
 	var sm: Node = get_node_or_null("/root/SoundManager")
 	assert_true(sm._sfx_manifest.size() > 0, "manifest loaded and is non-empty")
+
+
+func test_the_strike_element_list_has_not_drained() -> void:
+	## Drain-tested 2026-09-11: STRIKE_ELEMENTS emptied -> a whole test left Passing with NO
+	## Failing line (grade C). GUT flags that [Risky]; an exit-code gate does not, and the grade
+	## is an accident of test composition — add one unrelated assert to that test and the flag
+	## disappears while the hole stays. So this pins the list rather than relying on Risky.
+	##
+	## ⛔ NOT derived from the manifest: the file asserts the manifest HAS each strike key, so a
+	## manifest-derived list would assert only that the manifest contains what it contains.
+	assert_gte(STRIKE_ELEMENTS.size(), 5,
+		"STRIKE_ELEMENTS has %d elements, was 5 — SoundManager builds \"strike_\" + element, and an element leaving this list stops being checked rather than failing" % STRIKE_ELEMENTS.size())
+	assert_true(STRIKE_ELEMENTS.has("dark"),
+		"CONTROL: dark must stay named — strike_dark is the cue EffectSystem routes elemental weapon strikes to")

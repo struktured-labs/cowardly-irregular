@@ -10,7 +10,7 @@ extends GutTest
 
 const DUNGEONS_WITH_CUTSCENES: Array[Array] = [
 	["res://src/maps/dungeons/SuburbanUnderground.gd",  "world2_warden_routine"],
-	["res://src/maps/dungeons/SteampunkMechanism.gd",   "world3_tempo_intro"],
+	["res://src/maps/dungeons/SteampunkMechanism.gd",   "world3_grand_schedule_intro"],  # 2026-09-11: W3's boss is The Grand Schedule (masterite_tempo_steampunk); the world3_tempo_* pair belongs to W4's industrial Tempo by trigger
 	["res://src/maps/dungeons/AssemblyCore.gd",         "world4_assembly_boss"],
 	["res://src/maps/dungeons/RootProcess.gd",          "world5_root_process_boss"],
 	["res://src/maps/dungeons/NullChamber.gd",          "world6_null_chamber_boss"],

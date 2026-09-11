@@ -46,15 +46,19 @@ func _read(path: String) -> String:
 
 # ── Source pins ───────────────────────────────────────────────────────────────
 
-func test_close_menu_reads_current_music_from_sound_manager() -> void:
+func test_close_menu_reads_the_live_music_state() -> void:
 	var text := _read(JUKEBOX_MENU_PATH)
 	var idx := text.find("func _close_menu")
 	assert_gt(idx, -1, "_close_menu must exist")
 	var rest := text.substr(idx)
 	var next_fn := rest.find("\nfunc ", 1)
 	var body := rest.substr(0, next_fn) if next_fn > -1 else rest
-	assert_true(body.contains("SoundManager._current_music"),
-		"_close_menu must read SoundManager._current_music to compare against the live playing track")
+	## Was `SoundManager._current_music`. That read is the SILENCE bug
+	## (2026-09-11): play_area_music clears the field, so in every map the
+	## comparison saw "" and the close fell through to fade-to-silence.
+	## capture_music_state() carries the area as well as the track.
+	assert_true(body.contains("capture_music_state()"),
+		"_close_menu must read the live music STATE — a bare _current_music read is empty in every map, which is the bug this file's sibling guards")
 
 
 func test_resume_compare_is_against_live_current_track() -> void:
@@ -66,8 +70,10 @@ func test_resume_compare_is_against_live_current_track() -> void:
 	# The if-branch that calls play_music must compare _resume_track
 	# against a local `current_track` (the live read) — not against
 	# _currently_playing (the stale field).
-	assert_true(body.contains("_resume_track != current_track"),
-		"_close_menu's resume branch must check `_resume_track != current_track` (live music) — not `!= _currently_playing`")
+	assert_true(body.contains("live.get(\"track\""),
+		"_close_menu must compare the snapshot against the LIVE track — not against _currently_playing, which is only set when the player clicks Play")
+	assert_true(body.contains("live.get(\"area\""),
+		"the comparison must include the AREA: a map's bed leaves `track` empty, so a track-only compare reads every browse as a change and restarts the bed")
 
 
 func test_legacy_compare_against_currently_playing_is_gone() -> void:
@@ -87,8 +93,10 @@ func test_legacy_compare_against_currently_playing_is_gone() -> void:
 			continue
 		code_only.append(ln)
 	var code := "\n".join(code_only)
-	assert_false(code.contains("_resume_track != _currently_playing"),
-		"_close_menu must NOT compare _resume_track against _currently_playing in code — use the live SoundManager._current_music read")
+	assert_false(code.contains("_currently_playing"),
+		"_close_menu must NOT compare the snapshot against _currently_playing in code — it is only set when the player clicks Play, so a browse-and-back-out reads as a change")
+	assert_false(code.contains("SoundManager._current_music"),
+		"_close_menu must NOT read _current_music directly — play_area_music clears it, so in every map it is \"\" and the close fades the world out")
 
 
 # ── Behavioural ──────────────────────────────────────────────────────────────
@@ -115,7 +123,7 @@ func test_close_does_not_restart_track_already_playing() -> void:
 	SoundManager._current_music = "the_song_under_test"
 	var menu: JukeboxMenu = JukeboxMenuScript.new()
 	add_child_autofree(menu)
-	menu._resume_track = "the_song_under_test"
+	menu._resume_state = SoundManager.capture_music_state()
 	menu._currently_playing = ""  # The bug-trigger condition (player
 	                              # never clicked Play in the jukebox).
 	# Stand up the dialogue label / panel children minimally so the

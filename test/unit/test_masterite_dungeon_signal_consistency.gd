@@ -31,7 +31,15 @@ func _field(src: String, field: String) -> String:
 
 
 func _intro_role(cutscene_id: String) -> String:
-	# world3_tempo_intro -> tempo. Non-masterite intros (mordaine, null_chamber_boss) return "".
+	# The scene's TRIGGER is the authority for which masterite it belongs to (fleet ruling 2026-09-11);
+	# world3_grand_schedule_intro is named for the boss, not the role. Filename is the fallback.
+	var path := "res://data/cutscenes/%s.json" % cutscene_id
+	if FileAccess.file_exists(path):
+		var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if data is Dictionary:
+			var tm := RegEx.create_from_string("^boss_(\\w+?)_").search(str(data.get("trigger", "")))
+			if tm != null and tm.get_string(1) in ROLES:
+				return tm.get_string(1)
 	var re := RegEx.create_from_string("^world\\d+_(\\w+)_intro$")
 	var m := re.search(cutscene_id)
 	if m == null:

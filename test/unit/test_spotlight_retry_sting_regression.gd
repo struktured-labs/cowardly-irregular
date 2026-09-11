@@ -29,8 +29,14 @@ func test_sting_helper_wires_all_three_channels() -> void:
 	var next: int = src.find("\nfunc ", i + 1)
 	var body := src.substr(i, (next - i) if next > -1 else 1200)
 	# SFX + shake + red flash on the shared effects rect.
-	assert_true("SoundManager.play_battle(\"defeat\")" in body,
-		"sting must play the defeat SFX")
+	## WHICH cue, not WHICH ROUTE. This pinned `play_battle("defeat")` and went red on
+	## 2026-09-11 when the sting moved to play_flourish — a correct fix, because round_ap_gain
+	## on the shared battle player was cutting this 3.00s cue ~0.7s in, which is the silent-retry
+	## bug this test defends, restored one layer down. Pinning the helper taxed its own repair.
+	assert_true("play_flourish(\"defeat\")" in body or "play_battle(\"defeat\")" in body,
+		"sting must play the defeat SFX through some route")
+	assert_false("play_battle(\"defeat\")" in body,
+		"the sting is on the shared battle player again — the retry battle's round cue cuts it, which is this test's own bug one layer down")
 	assert_true("EffectSystem._trigger_screen_shake" in body,
 		"sting must shake the screen (the physical 'you lost' beat)")
 	assert_true("_effects_rect" in body and "tween" in body,

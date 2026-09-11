@@ -40,6 +40,12 @@ const DIRS := [
 ]
 ## Named, not counted: a total can stay green with the walk half dead.
 const KNOWN_LLM_NPCS := ["Elder Theron", "Scholar Milo", "Guard Boris"]
+## The maps this guard makes claims ABOUT: the eight divergent NPCs live in these five, plus
+## Harmonia which holds all three LLM-capable NPCs. Losing any one hides the very thing being pinned.
+const MUST_BUILD := [
+	"NodePrimeVillage.gd", "NodePrimeDaemonLoungeInterior.gd", "EldertreeGraftingHouseInterior.gd",
+	"FuturisticOverworld.gd", "IndustrialOverworld.gd", "HarmoniaVillage.gd",
+]
 
 
 func _walk(n: Node, acc: Array) -> void:
@@ -61,6 +67,7 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 	var llm_names: Array = []
 	var npcs_seen := 0
 	var maps_built := 0
+	var built: Array = []
 
 	for dir_path in DIRS:
 		for path in MapScripts.maps_in(dir_path):
@@ -73,6 +80,7 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 			await get_tree().physics_frame
 			await get_tree().process_frame
 			maps_built += 1
+			built.append(path.get_file())
 
 			var npcs: Array = []
 			_walk(map_node, npcs)
@@ -91,8 +99,43 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 					two_ids.append("%s: '%s' is '%s' to quests and '%s' to the reward ledger" % [
 						path.get_file(), str(npc.get("npc_name")), quest_id, reward_id])
 
+	## ⛔ A FLOOR IS BLIND TO PARTIAL LOSS, and this file shipped with one. `maps_built > 50` over a
+	## 66-map corpus stays green with SIXTEEN maps gone — and a missing map contributes no divergent
+	## NPCs, so `two_ids == []` passes for exactly the content that was not examined. @cowir-adhoc
+	## named the shape, @cowir-controller measured a one-file loss sailing past their own floor, and
+	## @cowir-sprites' head-lock gate passed with ALL 145 sheets deleted. The floor stays as a coarse
+	## signal; NAMED MEMBERSHIP is what makes a partial loss loud.
 	assert_gt(maps_built, 50, "CONTROL: only %d maps built — the walk is broken" % maps_built)
+	for must in MUST_BUILD:
+		assert_true(must in built,
+			("CONTROL: %s did not build, so its NPCs were never examined — and a map that produces no " +
+			"NPCs produces no divergences either, so the empty verdict below would be half a result " +
+			"reported as a whole one. Built %d: %s") % [must, built.size(), str(built)])
 	assert_gt(npcs_seen, 150, "CONTROL: only %d NPCs found — the zero below would be free" % npcs_seen)
+	## ⚠️ BOTH LISTS BELOW ARE POSITIVE CONTROL SETS, AND THOSE DRAIN QUIETLY: removing a member
+	## removes its own check and the survivors still pass. @cowir-sprites measured exactly this on a
+	## set they had reasoned was safe, losing coverage of the one character their file exists for.
+	## Sizes stated so a drain reds instead of shrinking the claim in silence.
+	## ⚠️ `== 3` IS DELIBERATE AND IT IS NOT A CENSUS. @cowir-ai's split: an `== literal` belongs to a
+	## set the guard OWNS and is WRONG for a corpus that legitimately grows — it forbids another
+	## lane's correct addition. Here forbidding it is the POINT. This list is a PRECONDITION PIN:
+	## the whole guard rests on "no divergent NPC reaches the reward path", and a FOURTH LLM-capable
+	## NPC is exactly the event that could make the latent bug live. So growth must red, loudly,
+	## and the message has to say so — the old one named only the shrink direction.
+	assert_eq(KNOWN_LLM_NPCS.size(), 3,
+		("KNOWN_LLM_NPCS holds %d names, not 3. BOTH directions are real and they mean opposite things:\n" +
+		"  GREW — someone made another NPC dynamic+persona. CHECK THEIR NAME FOR A HYPHEN OR APOSTROPHE\n" +
+		"         first; that is the precondition this whole file exists to watch. Then add them here.\n" +
+		"  SHRANK — an NPC stopped being LLM-capable. Say so here deliberately; a quiet removal drops\n" +
+		"         its own membership check with it.") % KNOWN_LLM_NPCS.size())
+	## `gte`, not `eq` — @cowir-sfx's discriminator is MAY IT GROW, not who wrote it. A seventh map
+	## holding a divergent NPC is correct work and must not red; losing one is the failure. A literal
+	## floor catches minus-one (5 >= 6 fails) and permits growth, where `== 6` taxes the correct edit.
+	## Contrast KNOWN_LLM_NPCS above, which stays `eq` BECAUSE growth there is the regression signal.
+	assert_gte(MUST_BUILD.size(), 6,
+		"MUST_BUILD holds %d maps, fewer than the 6 this guard makes claims about (5 holding the " % MUST_BUILD.size() +
+		"divergent NPCs + Harmonia holding all three LLM-capable ones). A map removed takes its own " +
+		"membership check with it; adding one is free.")
 	for who in KNOWN_LLM_NPCS:
 		assert_true(who in llm_names,
 			"CONTROL: %s is an LLM showcase NPC and the walk did not reach them; found %s" % [who, str(llm_names)])

@@ -29,6 +29,7 @@ extends GutTest
 const MONSTERS := "res://data/monsters.json"
 const ITEMS := "res://data/items.json"
 const BATTLE_MANAGER_SRC := "res://src/battle/BattleManager.gd"
+const BESTIARY_SRC := "res://src/bestiary/BestiarySystem.gd"
 
 ## Keys authored inside `one_shot` that NOTHING reads, each with the reason it is
 ## debt rather than a defect. Both are one edit from being a finding, so they are
@@ -48,12 +49,17 @@ const BATTLE_MANAGER_SRC := "res://src/battle/BattleManager.gd"
 ##   phase is a one-shot under tempo and fails a 2500 threshold if no single hit
 ##   reached it. WHICHEVER IS CHOSEN, SOME OF THE 41 TROPHIES CHANGE HANDS — so the
 ##   right resting place is this pin, not a fix.
-## setup_hint — 50 lines of authored tactical advice ("Stack attack buffs, defer for
-##   max AP, then unleash all at once") with no surface that shows them. The
-##   bestiary would be the obvious home. Content that exists and is never displayed.
+## setup_hint — RETIRED 2026-09-11. 50 lines of authored tactical advice ("Stack
+##   attack buffs, defer for max AP, then unleash all at once") that no surface had
+##   ever shown. This entry said "the bestiary would be the obvious home" and the
+##   home was one field away: BestiarySystem now carries it out with the entry and
+##   the detail panel shows it under the drops, on defeated monsters only.
+## Monsters that MUST appear in the one_shot walk. A count floor passes while members
+## quietly leave it; these do not.
+const PREMISE_MONSTERS: Array[String] = ["ice_dragon", "fire_dragon"]
+
 const UNREAD_ONE_SHOT_KEYS := {
 	"hp_threshold": "an unresolved design question, not debt: authored = damage MAGNITUDE, shipped = TEMPO. Struktured's call; see the note above",
-	"setup_hint": "authored tactical advice with no display surface (bestiary would be the home)",
 }
 
 
@@ -101,7 +107,25 @@ func _one_shot_blocks() -> Dictionary:
 ## the file moves, the walk finds nothing and the assertions pass having measured
 ## an empty set. The cheap repair for a red here is to follow the rename.
 func test_premise_the_one_shot_corpus_is_present() -> void:
+	# THE CONTROL MUST NOT BE DRAINABLE EITHER. Measured 2026-09-11: emptying PREMISE_MONSTERS
+	# gave Failed 0, Risky 0 — the loop below runs zero times and the corpus floor is a
+	# literal that still passes, so the named-member fix I added an hour ago introduced
+	# a new silent control. @cowir-sfx's cell: every `for x in LIST` and every
+	# `size() >= LIST.size()` is silent at LIST == []. Pinned to a LITERAL — and gte,
+# not eq: @cowir-overworld's PLUS-ONE magnitude showed the eq form REDS when a lane
+# correctly adds an anchor. Their two questions: may this set grow on correct work
+# (yes — another anchor is ordinary), and is growth itself the signal (no). A guard
+# that reds on correct work is how suppression entries get written in the first place.
+	assert_gte(PREMISE_MONSTERS.size(), 2,
+		"PREMISE_MONSTERS holds %d, fewer than the 2 this guard defends — the named-member check below is going vacuous. ADDING an anchor is free; losing one is not." % PREMISE_MONSTERS.size())
 	var blocks := _one_shot_blocks()
+	# NAMED MEMBERS, not just a count — see the note on this arm.
+	var absent: Array[String] = []
+	for mid in PREMISE_MONSTERS:
+		if not blocks.has(mid):
+			absent.append(mid)
+	assert_eq(absent.size(), 0,
+		"a monster that carries a one_shot block has stopped contributing: %s — the walk is covering less than it did and a count floor cannot see that" % ", ".join(absent))
 	assert_gt(blocks.size(), 40,
 		"only %d monsters carry a one_shot block; there were 50 on 2026-09-11, so either the block was renamed or this walk is not reading monsters.json" % blocks.size())
 
@@ -111,8 +135,15 @@ func test_premise_the_one_shot_corpus_is_present() -> void:
 ##   grows   -> someone authored a new one_shot field nothing consumes
 ##   shrinks -> someone wired hp_threshold or setup_hint; delete its line
 func test_every_one_shot_key_is_either_read_or_named_as_debt() -> void:
-	var src: String = FileAccess.get_file_as_string(BATTLE_MANAGER_SRC)
-	assert_ne(src, "", "BattleManager.gd must be readable — the consumer this asks about")
+	# TWO consumers now, and the corpus must hold both or a live key reads as dead:
+	# BattleManager grants the reward, the bestiary shows the hint. A BattleManager-only
+	# corpus was correct until the bestiary landed and is a partial one after — the
+	# "consumer moved house" case, which turns a real wiring into a false debt entry.
+	var src: String = FileAccess.get_file_as_string(BATTLE_MANAGER_SRC) + FileAccess.get_file_as_string(BESTIARY_SRC)
+	assert_true(src.contains("func _check_one_shot"),
+		"the BattleManager half of the consumer corpus is missing — every key below would read as unconsumed for that reason")
+	assert_true(src.contains("_one_shot_hint_of"),
+		"the bestiary half of the consumer corpus is missing — setup_hint would read as unconsumed and this file would claim a debt that was paid")
 
 	var keys: Dictionary = {}
 	for mid in _one_shot_blocks().keys():
@@ -130,7 +161,19 @@ func test_every_one_shot_key_is_either_read_or_named_as_debt() -> void:
 			unread.append("%s (authored on %d monsters)" % [key, int(keys[k])])
 
 	assert_eq(unread.size(), 0,
-		"a one_shot field is authored and never read: %s — either consume it in BattleManager or add it to UNREAD_ONE_SHOT_KEYS with the reason it is debt" % ", ".join(unread))
+		"a one_shot field is authored and never read: %s — either consume it (BattleManager grants, the bestiary displays) or add it to UNREAD_ONE_SHOT_KEYS with the reason it is debt" % ", ".join(unread))
+	# STALE-BY-DELETION. The ratchet above only compares keys the corpus still AUTHORS,
+	# so a key that disappears entirely leaves its debt entry behind with nothing to
+	# notice — an inert suppression created by deletion rather than by being written
+	# wrong. Same cell I closed on the ability guard; left open here until measured.
+	var orphaned: Array[String] = []
+	for k in UNREAD_ONE_SHOT_KEYS.keys():
+		if not keys.has(str(k)):
+			orphaned.append(str(k))
+	orphaned.sort()
+	assert_eq(orphaned.size(), 0,
+		"UNREAD_ONE_SHOT_KEYS names a field no monster authors any more: %s — the entry is a claim about a corpus that has moved on. Delete the line." % ", ".join(orphaned))
+
 	assert_eq(newly_read.size(), 0,
 		"GOOD NEWS, STALE LIST: %s is now read by BattleManager. Delete its key from UNREAD_ONE_SHOT_KEYS at the top of this file so it stops claiming the data is dead." % ", ".join(newly_read))
 

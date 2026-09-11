@@ -196,7 +196,8 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(11, 4))
 	_add_prop(VillagePropScript.Kind.CART, Vector2i(15, 12))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(7, 11))
-	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(8, 11))
+	# NOT (8,11): Creepy Child Wednesday is authored there and a prop on her cell relocates her.
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(9, 11))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(4, 16))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(5, 16))
 

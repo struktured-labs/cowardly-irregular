@@ -33,10 +33,10 @@ from openai import OpenAI
 from PIL import Image
 
 PROJECT = Path(__file__).resolve().parent.parent
-GAME_REPO = Path(os.environ.get(
-    "GAME_REPO",
-    "/home/struktured/projects/cowardly-irregular-artist-ship"
-))
+# Defaults to the checkout this script runs from. It used to hardcode a SIBLING worktree --
+# another agent's tree -- which OUT_DIR then WROTE into. Same defect fixed in two other tools
+# on 2026-09-11; this one had it too and it is the one that writes portraits.
+GAME_REPO = Path(os.environ.get("GAME_REPO", str(PROJECT)))
 OUT_DIR = GAME_REPO / "assets" / "sprites" / "portraits"
 RAW_DIR = PROJECT / "tmp" / "masterite_portrait_regen"
 RAW_DIR.mkdir(parents=True, exist_ok=True)
@@ -50,7 +50,11 @@ STYLE_ANCHOR = GAME_REPO / "assets" / "sprites" / "portraits" / "cleric.png"
 # battle-strip identity ref per (role, world). Cowir-cutscenes confirmed
 # per-world IDs (msg 2665) — 4 medieval first, W2-W5 as struktured reaches.
 ROLES = ("warden", "tempo", "arbiter", "curator")
-WORLDS = ("medieval", "suburban", "industrial", "futuristic", "abstract")
+# STEAMPUNK WAS MISSING HERE and that is the whole reason W3 had no masterite portraits while
+# every other world had four. The game has SIX worlds (CLAUDE.md: medieval / suburban / steampunk
+# / industrial / futuristic / abstract); this tuple had five. A W3 cutscene then borrowed the
+# INDUSTRIAL portraits, which is how the wrong-world costume shipped.
+WORLDS = ("medieval", "suburban", "steampunk", "industrial", "futuristic", "abstract")
 
 def _identity_ref(role: str, world: str) -> Path:
     return GAME_REPO / "assets" / "sprites" / "monsters" / f"masterite_{role}_{world}.png"
@@ -113,6 +117,63 @@ PERSONAS = {
         "cataloging your every move as they burn."
     ),
 }
+
+
+## Per-WORLD personas, because a masterite is NOT the same character across worlds -- the shipped
+## names and descriptions differ completely. PERSONAS above describes the medieval set; generating
+## steampunk from it would have produced four medieval knights in the wrong world, which is the
+## failure this whole gap came from. Written from data/monsters.json + data/bestiary.json, never
+## from the generator's own earlier copy.
+WORLD_PERSONAS = {
+    ("tempo", "steampunk"): (
+        "Character: THE GRAND SCHEDULE — not a figure so much as a cadence given a body. "
+        "A tall brass-and-iron station-master silhouette: peaked conductor's cap, a face that is "
+        "a clock dial with no hands, high stiff collar over a long dark coat with brass buttons "
+        "and pressure-gauge fittings at the shoulders. Steam curls from vents at the collar. "
+        "Utterly still and utterly punctual — the trains arrive on time because it is standing "
+        "here. Not menacing by posture; menacing by INEVITABILITY. Brass, soot-black and signal-"
+        "lamp amber palette matching the steampunk Tempo battle strip."
+    ),
+    ("arbiter", "steampunk"): (
+        "Character: THE TOLERANCE LIMIT — machining tolerance expressed as violence. A precise "
+        "machinist-judge: polished steel half-mask with a caliper-jaw across the lower face, one "
+        "eye replaced by a brass micrometer lens with etched graduations, close-cropped hair, "
+        "high-collared grey workshop coat with steel pauldrons. Expression measured, not cruel — "
+        "a caliper is not cruel. Cold steel, oiled grey and thin red-line palette matching the "
+        "steampunk Arbiter battle strip."
+    ),
+    ("curator", "steampunk"): (
+        "Character: THE REQUISITION — it does not damage you, it BILLS you. A ledger-clerk of a "
+        "creature: brass pince-nez over narrow accounting eyes, green accountant's visor, a high "
+        "starched collar, dark waistcoat hung with seals, stamps and a chained brass tally-counter "
+        "at the shoulder. Ink-stained fingers implied at the frame edge. Bureaucratic patience, "
+        "faintly pleased. Ledger-green, tarnished brass and ink-black palette matching the "
+        "steampunk Curator battle strip."
+    ),
+    ("warden", "suburban"): (
+        "Character: THE WARDEN OF ROUTINE, the Hall Monitor Eternal — a suburban school hall "
+        "monitor who, through forty years of unbroken routine, became the thing he enforced. "
+        "Late-middle-aged man, thinning grey hair combed flat, thick square glasses, utterly "
+        "level expression. A laminated ID badge on a lanyard at the collar, a plain windbreaker "
+        "over a polo with a small crest, a whistle resting against the chest, a hall-pass clip "
+        "at the shoulder. HE DOES NOT RAISE HIS VOICE — the read is bureaucratic patience that "
+        "has outlasted everyone who ever argued with it. Faded suburban palette: beige, muted "
+        "navy windbreaker, fluorescent-lit skin tones, matching the suburban Warden battle strip. "
+        "16-bit EarthBound-adjacent, not fantasy."
+    ),
+    ("warden", "steampunk"): (
+        "Character: THE STANDING ORDER — a pressure gauge that has never once moved off the red. "
+        "A vast riveted boiler-knight: domed iron helm with a single round gauge-face set into "
+        "the brow, needle pinned hard right in the red, heavy riveted shoulder plates venting "
+        "thin steam, no visible eyes. It does not attack so much as OUTLAST. Immovable, patient, "
+        "industrial. Riveted iron, hot-red gauge glow and soot palette matching the steampunk "
+        "Warden battle strip."
+    ),
+}
+
+
+def persona_for(role: str, world: str) -> str:
+    return WORLD_PERSONAS.get((role, world), PERSONAS[role])
 
 
 def load_ref_bytes(path: Path, is_battle_strip: bool = False) -> bytes:
@@ -191,6 +252,10 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
+    unknown = [w for w in args.worlds if w not in WORLDS]
+    if unknown:
+        print(f"ERROR: unknown world(s) {unknown}; known: {list(WORLDS)}", file=sys.stderr)
+        return 2
     pairs = [(r, w) for r in args.roles for w in args.worlds if r in PERSONAS]
     if args.dry_run:
         total = COST[args.quality] * len(pairs)
@@ -216,7 +281,7 @@ def main() -> int:
             print(f"SKIP {role}/{world}: battle ref missing at {ref_battle}")
             continue
 
-        prompt = STYLE_PROMPT_PREFIX + PERSONAS[role]
+        prompt = STYLE_PROMPT_PREFIX + persona_for(role, world)
         style_bytes = load_ref_bytes(STYLE_ANCHOR, is_battle_strip=False)
         identity_bytes = load_ref_bytes(ref_battle, is_battle_strip=True)
         refs = [

@@ -197,7 +197,8 @@ func _setup_buildings() -> void:
 	# Trade road: stalls at the inn, a caravan cart, a well that matters in a desert.
 	_add_prop(VillagePropScript.Kind.STALL, Vector2i(10, 4))
 	_add_prop(VillagePropScript.Kind.STALL, Vector2i(19, 6))
-	_add_prop(VillagePropScript.Kind.CART, Vector2i(8, 16))
+	# NOT (8,16): Sand Sage Mirage is authored there and a prop on his cell relocates him.
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(9, 16))
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(10, 7))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(23, 7))
 	_add_prop(VillagePropScript.Kind.WELL, Vector2i(23, 13))

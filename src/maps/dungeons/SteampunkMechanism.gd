@@ -16,7 +16,8 @@ func _init() -> void:
 	# meta_knight remains a steampunk pool enemy + Castle Harmonia F3 — nothing orphaned.
 	boss_id = "masterite_tempo_steampunk"
 	boss_flag_key = "steampunk_mechanism_cleared"
-	boss_cutscene_id = "world3_tempo_intro"
+	# W3 fights The Grand Schedule; world3_tempo_intro is the INDUSTRIAL Tempo's scene (trigger boss_tempo_industrial).
+	boss_cutscene_id = "world3_grand_schedule_intro"
 	# (Tick 105: defeat_cutscene removed — see DragonCave for rationale.
 	# The W3 tempo defeat plays via the GameLoop gate on
 	# cutscene_flag_tempo_steampunk_defeated in steampunk_mechanism.)

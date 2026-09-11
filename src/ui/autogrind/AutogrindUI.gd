@@ -674,7 +674,7 @@ func _build_footer(vp_size: Vector2) -> void:
 	_add_pixel_border(ls_btn, ls_btn.size)
 
 	_ludicrous_toggle_label = Label.new()
-	_ludicrous_toggle_label.text = "%s / [H] LUDICROUS: %s" % [InputProfileManager.get_button_label(JOY_BUTTON_X), "ON" if _ludicrous_speed_enabled else "OFF"]
+	_ludicrous_toggle_label.text = "%s LUDICROUS: %s" % [_pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_X), "H"), "ON" if _ludicrous_speed_enabled else "OFF"]
 	_ludicrous_toggle_label.position = Vector2(8, 6)
 	_ludicrous_toggle_label.add_theme_font_size_override("font_size", 11)
 	_ludicrous_toggle_label.add_theme_color_override(
@@ -1367,6 +1367,14 @@ func _input(event: InputEvent) -> void:
 		_toggle_ludicrous_speed()
 		get_viewport().set_input_as_handled()
 
+	## Shift+R is the grid editors' RENAME chord; not excluding it would leave this depending on the
+	## editor being a CHILD node, which is tree ordering, not an asserted property.
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and not event.shift_pressed and not event.is_echo():
+		if not _is_grinding and AutogrindSystem.is_snapshot_loadable():
+			grind_resume_requested.emit()
+			visible = false
+			get_viewport().set_input_as_handled()
+
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_H and not event.is_echo():
 		_toggle_ludicrous_speed()
 		get_viewport().set_input_as_handled()
@@ -1530,15 +1538,33 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 
 ## The strip a pad player actually reads. Glyphs come from the live profile, so Nintendo-mode
 ## swaps here too rather than hardcoding a face letter that is wrong on half the pads.
-func _hint_strip_text() -> String:
-	var confirm: String = InputProfileManager.glyph_for_action("ui_accept")
-	var cancel: String = InputProfileManager.glyph_for_action("ui_cancel")
-	var start: String = InputProfileManager.get_button_label(JOY_BUTTON_START)
-	var resume: String = InputProfileManager.get_button_label(JOY_BUTTON_Y)
-	var ludi: String = InputProfileManager.get_button_label(JOY_BUTTON_X)
-	return "%s Edit   %s Close   %s Start/Stop   %s Resume   %s Ludicrous   L/R or [O] OPTIONS: Permadeath - Presets - Files" % [
-		confirm, cancel, start, resume, ludi,
+## `device_name` is a TEST SEAM: without it the pad branch is unreachable headless (no joypads), so
+## a mutation deleting every derivation would render the keyboard strip and stay green.
+func _hint_strip_text(device_name: String = "") -> String:
+	var confirm: String = InputProfileManager.hint_for_action("ui_accept", device_name)
+	var cancel: String = InputProfileManager.hint_for_action("ui_cancel", device_name)
+	## Keyboard half is "+" (:1355), NOT ui_menu's own Enter/Escape -- ui_accept and ui_cancel
+	## consume both earlier in the same elif chain, so naming them would name keys that edit a cell.
+	var start: String = _pad_or_key(_pad_name_for_action("ui_menu", device_name), "+")
+	var resume: String = _pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_Y, device_name), "R")
+	var ludi: String = _pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_X, device_name), "H")
+	var l_sh: String = InputProfileManager.button_name_for_index(JOY_BUTTON_LEFT_SHOULDER, device_name)
+	var r_sh: String = InputProfileManager.button_name_for_index(JOY_BUTTON_RIGHT_SHOULDER, device_name)
+	var opts: String = "[O]" if l_sh == "" else "%s/%s or [O]" % [l_sh, r_sh]
+	return "%s Edit   %s Close   %s Start/Stop   %s Resume   %s Ludicrous   %s OPTIONS: Permadeath - Presets - Files" % [
+		confirm, cancel, start, resume, ludi, opts,
 	]
+
+
+## Pad name AND keyboard key when a pad is present; the key alone when it is not.
+func _pad_or_key(pad_name: String, key_name: String) -> String:
+	return "%s / [%s]" % [pad_name, key_name] if pad_name != "" else "[%s]" % key_name
+
+
+## Names the button the action is CURRENTLY bound to, so a remap moves the caption with it.
+func _pad_name_for_action(action: String, device_name: String = "") -> String:
+	var indices: Array = InputProfileManager.get_current_button_indices(action)
+	return "" if indices.is_empty() else InputProfileManager.button_name_for_index(int(indices[0]), device_name)
 
 
 func _edit_current_cell() -> void:

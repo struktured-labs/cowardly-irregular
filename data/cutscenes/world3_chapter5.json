@@ -165,6 +165,11 @@
     {
       "type": "letterbox_out",
       "duration": 0.5
+    },
+    {
+      "type": "roll_credits",
+      "world": 3,
+      "music": "credits_steampunk"
     }
   ]
 }
