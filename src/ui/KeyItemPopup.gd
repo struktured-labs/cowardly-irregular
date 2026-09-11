@@ -24,7 +24,16 @@ const HINT_COLOR := Color(0.6, 0.6, 0.7)
 
 var _bg: ColorRect = null
 var _panel: Control = null
+var _hint: Label = null
 var _dismissable: bool = false
+
+
+## "Press A" named the wrong cap on every Nintendo-family pad (8BitDo confirm sits under Ⓑ); resolve the physical cap like the dialogue boxes do.
+static func continue_hint_text(device_name: String = "") -> String:
+	var cap := "A"
+	if InputProfileManager:
+		cap = InputProfileManager.glyph_for_action("ui_accept", device_name)
+	return "Press %s / Z to continue" % cap
 
 
 static func show_item(parent: Node, item: Dictionary) -> KeyItemPopup:
@@ -112,13 +121,14 @@ func _present(item: Dictionary) -> void:
 
 	# Hint
 	var hint := Label.new()
-	hint.text = "Press A / Z to continue"
+	hint.text = continue_hint_text()
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.position = Vector2(0, PANEL_H - 22)
 	hint.size = Vector2(PANEL_W, 18)
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.add_theme_color_override("font_color", HINT_COLOR)
 	_panel.add_child(hint)
+	_hint = hint
 
 	# Entrance tween
 	_panel.scale = Vector2(0.85, 0.85)

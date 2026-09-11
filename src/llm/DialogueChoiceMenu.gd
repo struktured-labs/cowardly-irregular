@@ -37,6 +37,24 @@ signal choice_made(text: String)
 signal choice_cancelled()
 
 
+## False for a story choice the player must answer: B / Esc / right-click are swallowed, the hint drops Cancel, and only a caller's dismiss() resolves without a pick.
+var cancellable: bool = true
+
+
+## The cap printed on the pad button an action fires from; "A"/"B" were wrong on every Nintendo-family pad (8BitDo confirm sits under Ⓑ).
+static func pad_glyph(action: String, fallback: String, device_name: String = "") -> String:
+	if InputProfileManager:
+		return InputProfileManager.glyph_for_action(action, device_name)
+	return fallback
+
+
+static func hint_text(can_cancel: bool, device_name: String = "") -> String:
+	var confirm := "[%s/Enter/Click] Confirm" % pad_glyph("ui_accept", "A", device_name)
+	if not can_cancel:
+		return "%s    (↑↓/D-pad)" % confirm
+	return "%s    [%s/Esc/RClick] Cancel    (↑↓/D-pad)" % [confirm, pad_glyph("ui_cancel", "B", device_name)]
+
+
 # ── Layout constants ──────────────────────────────────────────────────────────
 
 ## Target width; clamped at present()-time to `viewport_width - 40` so the
@@ -227,7 +245,7 @@ func _build_ui() -> void:
 
 	# Hint row.
 	_hint_label = Label.new()
-	_hint_label.text = "[A/Enter/Click] Confirm    [B/Esc/RClick] Cancel    (↑↓/D-pad)"
+	_hint_label.text = hint_text(cancellable)  # resolved per present(): a pad plugged in mid-scene changes the cap
 	_hint_label.position = Vector2(PADDING_SIDE, PADDING_TOP + _choices.size() * ROW_H + 8)
 	_hint_label.size     = Vector2(_panel_w - PADDING_SIDE * 2, 24)
 	_hint_label.add_theme_font_size_override("font_size", HINT_FONT_SIZE)
@@ -248,7 +266,8 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_RIGHT:
-			_cancel()
+			if cancellable:
+				_cancel()
 			get_viewport().set_input_as_handled()
 			return
 		# Mouse wheel = navigate.
@@ -271,7 +290,8 @@ func _input(event: InputEvent) -> void:
 		_confirm()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
-		_cancel()
+		if cancellable:
+			_cancel()
 		get_viewport().set_input_as_handled()
 
 
