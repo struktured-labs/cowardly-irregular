@@ -197,3 +197,66 @@ func test_a_hardcoded_glyph_is_caught_too() -> void:
 		"CONTROL: a derived line must still not fire")
 	assert_eq(_frozen_code_lines("## the old \"%s\" named the wrong cap" % nin).size(), 0,
 		"CONTROL: a glyph inside a COMMENT must not fire — the same exclusion the letters get")
+
+## ⛔ THE DIRECTORY WAS THE WRONG CORPUS, and deriving the DEFAULT did not protect the OVERRIDES.
+## LockedDoorFlavor and QuestExaminePoint declare `indicator_text` with a derived default — but a
+## caller can set it explicitly, and two did, in a directory this file never scanned:
+##
+##     src/maps/interiors/TavernInterior.gd     locked.indicator_text   = "[A] Locked"
+##     src/maps/dungeons/SteampunkMechanism.gd  junction.indicator_text = "[A] Trace the junction"
+##
+## Both shipped in .295 still saying [A] on every controller, while every other instance of the
+## SAME CLASS derived correctly. The corpus has to follow the PROPERTY, not the folder — the
+## consumer-derived rule, arriving via a fix of mine that created its own blind spot.
+const SRC_ROOT := "res://src"
+
+
+func _all_src_scripts() -> Array[String]:
+	var out: Array[String] = []
+	var stack: Array[String] = [SRC_ROOT]
+	while not stack.is_empty():
+		var dir_path: String = stack.pop_back()
+		var d := DirAccess.open(dir_path)
+		if d == null:
+			continue
+		d.list_dir_begin()
+		var fname := d.get_next()
+		while fname != "":
+			var full := dir_path + "/" + fname
+			if d.current_is_dir():
+				if not fname.begins_with("."):
+					stack.append(full)
+			elif fname.ends_with(".gd"):
+				out.append(full)
+			fname = d.get_next()
+		d.list_dir_end()
+	out.sort()
+	return out
+
+
+## CONTROL: the recursive walk must reach BEYOND src/exploration, or it cannot see the defect it
+## was written for.
+func test_the_src_walk_reaches_other_directories() -> void:
+	var all := _all_src_scripts()
+	assert_gt(all.size(), 200, "PRECONDITION: the walk must reach the whole tree")
+	assert_true(all.has("res://src/maps/interiors/TavernInterior.gd"),
+		"CONTROL: it must reach src/maps — the directory the override defect lived in")
+	assert_true(all.has("res://src/exploration/SavePoint.gd"), "CONTROL: and still src/exploration")
+
+
+## NOBODY may set indicator_text to a frozen cap, in ANY directory. This is the arm the two
+## overrides would have tripped.
+func test_no_indicator_text_override_freezes_a_cap() -> void:
+	var offenders: Array[String] = []
+	for path in _all_src_scripts():
+		for raw in FileAccess.get_file_as_string(path).split("\n"):
+			var line: String = raw.strip_edges()
+			if line.begins_with("#"):
+				continue
+			if not line.contains("indicator_text"):
+				continue
+			if not _frozen_code_lines(line).is_empty():
+				offenders.append("%s :: %s" % [path.get_file(), line.substr(0, 60)])
+	assert_eq(offenders, [] as Array[String],
+		"a caller overrides indicator_text with a frozen cap — deriving the class DEFAULT does not " +
+		"protect explicit assignments: %s" % [", ".join(offenders)])
