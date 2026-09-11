@@ -242,3 +242,79 @@ func test_the_stripper_preserves_line_count() -> void:
 	var raw := "a\n# b\nc  # d\n"
 	assert_eq(_strip_comments(raw).split("\n").size(), raw.split("\n").size(),
 		"blanking must not remove lines")
+
+
+## ⛔ THE GAP THIS FILE HAD: "Start:Save" re-froze and BOTH guards stayed green (measured
+## 2026-09-11 by mutation). The frozen list above holds FACE letters, and cowir-autogrind's scan
+## looks for face-button letters — "Start" is neither. So the non-face names were unguarded on
+## every side, which is how "Start" survived the batch that derived "Select" beside it.
+##
+## Banned set DERIVED from BUTTON_NAMES, not listed: every family's spelling of a non-face button
+## (Start/Plus/Options, Select/Back/Share, L/LB/L1, R/RB/R1, L3/L-Stick). A new family or a
+## renamed button cannot open a hole here.
+##
+## Scans LABEL ASSIGNMENTS only. `print("[AUTOBATTLE] Start pressed via ui_menu")` at :1885 is a
+## debug line, not player-facing, and a whole-file scan would report it as a defect.
+func test_no_help_label_spells_a_non_face_button() -> void:
+	var banned: Array[String] = []
+	for family in InputProfileManager.BUTTON_NAMES:
+		for idx in InputProfileManager.BUTTON_NAMES[family]:
+			var n: String = InputProfileManager.BUTTON_NAMES[family][idx]
+			if not banned.has(n):
+				banned.append(n)
+	assert_gt(banned.size(), 8, "PRECONDITION: the banned set must come from BUTTON_NAMES, got %s" % [banned])
+
+	## EMIT THE CORPUS, ASSERT ITS SIZE. @cowir-sprites 2026-09-11: a guard whose SUBJECT drains
+	## scores a clean green over zero work — a loop over nothing asserts nothing, and GUT cannot
+	## flag it because one assert anywhere in the call graph clears [Risky]. If the label-assignment
+	## shape ever changes, this arm must FAIL rather than quietly scan an empty set.
+	## ⛔ THE CORPUS LIST IS ITSELF DRAINABLE, and this arm had that hole after two prior fixes.
+	## @cowir-sfx 2026-09-11: `for x in LIST:` over `[]` runs no body and asserts nothing — and GUT
+	## does not even flag Risky, because sibling asserts in the same function clear it. Measured:
+	## emptying this list gave EC=0, Passing 8/8, Risky 0, SILENT.
+	## A floor derived from the list it defends compares the list against itself. Pinned to a
+	## LITERAL count and both members NAMED, so draining the corpus is itself the violation.
+	var paths: Array[String] = [GRID_EDITOR, AUTOGRIND_EDITOR]
+	## GTE, not EQ. @cowir-overworld 2026-09-11 ran the magnitude nobody was testing — PLUS-ONE —
+	## and an `== 2` REDS ON A CORRECT ADDITION: a third caption-bearing file is work this guard
+	## should welcome, not tax. Their two questions: may this set grow on correct work? YES.
+	## Is growth itself the signal? NO. -> gte with a LITERAL floor (never `>= OTHER.size()`,
+	## which is `0 >= 0` when both drain), and the named members below catch minus-one.
+	assert_gte(paths.size(), 2,
+		"PRECONDITION: the corpus lost an editor; a shortened list scans less and says nothing")
+	assert_true(paths.has(GRID_EDITOR), "PRECONDITION: the autobattle editor must be in the corpus")
+	assert_true(paths.has(AUTOGRIND_EDITOR), "PRECONDITION: the autogrind editor must be in the corpus")
+	var per_file: Dictionary = {}
+	var offenders: Array[String] = []
+	for path in paths:
+		per_file[path] = 0
+		for raw in _src(path).split("\n"):
+			var line: String = raw.strip_edges()
+			if line.begins_with("#") or not line.contains(".text = "):
+				continue
+			per_file[path] += 1
+			for n in banned:
+				## TWO IDIOMS, because a bare word-match cannot work here: "Start", "Back", "Options"
+				## and "Share" are ordinary English verbs ("Start a new grind", "Back to menu"), so
+				## matching the word alone floods on correct prose.
+				##   "Start:Save"        the terse caption form
+				##   "Press Start to…"   the prose form — @cowir-music's shape, found by mutation:
+				##                       my banned SET named Start while my PATTERN could not emit
+				##                       it, so "Press Start to save" scored GREEN.
+				## ⚠️ STILL A PATTERN, NOT A PROPERTY. A third idiom escapes. Recorded as the known
+				## reach of this arm rather than claimed as coverage of the class.
+				if line.contains("\"%s:" % n) or line.contains(" %s:" % n) \
+						or line.contains("Press %s " % n) or line.contains("Press %s." % n):
+					offenders.append("%s :: %s" % [path.get_file(), n])
+	## ⛔ WAS A FLOOR (`examined > 4` across both files). @cowir-adhoc 2026-09-11: a floor is armed
+	## against TOTAL vacuity and BLIND TO PARTIAL LOSS. Measured — breaking `.text = ` in ONE editor
+	## left the other above the floor and the file scored EC=0, Asserts 39, unchanged. The free
+	## assert-count detector missed it too, because these asserts are not per-row.
+	## Named membership instead: EVERY file in the corpus must contribute, so losing half is a red.
+	for path in per_file:
+		assert_gt(int(per_file[path]), 0,
+			"PRECONDITION: %s contributed ZERO label assignments — the scan silently covered only " % path.get_file() +
+			"the other editor, and a green below would be half a result reported as a whole one")
+	assert_eq(offenders, [] as Array[String],
+		"a help label spells a NON-FACE button by one family's name — derive it through " +
+		"hint_for_action so Nintendo reads Plus and PlayStation reads Options: %s" % [", ".join(offenders)])
