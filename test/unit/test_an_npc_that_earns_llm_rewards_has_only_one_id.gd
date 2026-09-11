@@ -40,6 +40,12 @@ const DIRS := [
 ]
 ## Named, not counted: a total can stay green with the walk half dead.
 const KNOWN_LLM_NPCS := ["Elder Theron", "Scholar Milo", "Guard Boris"]
+## The maps this guard makes claims ABOUT: the eight divergent NPCs live in these five, plus
+## Harmonia which holds all three LLM-capable NPCs. Losing any one hides the very thing being pinned.
+const MUST_BUILD := [
+	"NodePrimeVillage.gd", "NodePrimeDaemonLoungeInterior.gd", "EldertreeGraftingHouseInterior.gd",
+	"FuturisticOverworld.gd", "IndustrialOverworld.gd", "HarmoniaVillage.gd",
+]
 
 
 func _walk(n: Node, acc: Array) -> void:
@@ -61,6 +67,7 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 	var llm_names: Array = []
 	var npcs_seen := 0
 	var maps_built := 0
+	var built: Array = []
 
 	for dir_path in DIRS:
 		for path in MapScripts.maps_in(dir_path):
@@ -73,6 +80,7 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 			await get_tree().physics_frame
 			await get_tree().process_frame
 			maps_built += 1
+			built.append(path.get_file())
 
 			var npcs: Array = []
 			_walk(map_node, npcs)
@@ -91,7 +99,18 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 					two_ids.append("%s: '%s' is '%s' to quests and '%s' to the reward ledger" % [
 						path.get_file(), str(npc.get("npc_name")), quest_id, reward_id])
 
+	## ⛔ A FLOOR IS BLIND TO PARTIAL LOSS, and this file shipped with one. `maps_built > 50` over a
+	## 66-map corpus stays green with SIXTEEN maps gone — and a missing map contributes no divergent
+	## NPCs, so `two_ids == []` passes for exactly the content that was not examined. @cowir-adhoc
+	## named the shape, @cowir-controller measured a one-file loss sailing past their own floor, and
+	## @cowir-sprites' head-lock gate passed with ALL 145 sheets deleted. The floor stays as a coarse
+	## signal; NAMED MEMBERSHIP is what makes a partial loss loud.
 	assert_gt(maps_built, 50, "CONTROL: only %d maps built — the walk is broken" % maps_built)
+	for must in MUST_BUILD:
+		assert_true(must in built,
+			("CONTROL: %s did not build, so its NPCs were never examined — and a map that produces no " +
+			"NPCs produces no divergences either, so the empty verdict below would be half a result " +
+			"reported as a whole one. Built %d: %s") % [must, built.size(), str(built)])
 	assert_gt(npcs_seen, 150, "CONTROL: only %d NPCs found — the zero below would be free" % npcs_seen)
 	for who in KNOWN_LLM_NPCS:
 		assert_true(who in llm_names,
