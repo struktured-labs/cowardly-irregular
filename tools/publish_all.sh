@@ -327,6 +327,24 @@ for CH in linux windows web; do
     if [ "$EC" -ne 0 ]; then
         echo "[pub] RED on ${CH} (exit ${EC}) — STOPPING. Published so far: ${PUBLISHED:-none}" >&2
         echo "      Log: tmp/publish_all_${CH}.log" >&2
+        # A KILLED chain is not a FAILED chain, and this lane kills chains routinely — the
+        # header above records the web chain being memory-killed six times in one day. A killed
+        # process emits no Totals block and no verdict, so the grep below returns NOTHING, and
+        # "RED, no explanation" reads as a gate failure nobody can find. That sends you editing
+        # correct code to chase a stopwatch or a memory ceiling. (@cowir-controller, 2026-09-11:
+        # their sweep collapsed EC 1, 3 and 124 into one blank field for exactly this reason.)
+        case "$EC" in
+            124) echo "      ⚠ EXIT 124 = TIMED OUT. The chain was killed by a ceiling, not" >&2
+                 echo "        failed by a gate. Nothing below is a verdict; the grep is empty" >&2
+                 echo "        because no gate got to report. Re-run on a quieter box before" >&2
+                 echo "        touching any code — check: pgrep -c godot" >&2 ;;
+            137) echo "      ⚠ EXIT 137 = KILLED, signal 9 — almost certainly the OOM killer." >&2
+                 echo "        Not a gate failure. This lane's web chain was memory-killed six" >&2
+                 echo "        times in one day; that is why the caches are prebuilt in §4." >&2
+                 echo "        Re-run; §4 is idempotent and skips what is already current." >&2 ;;
+            143) echo "      ⚠ EXIT 143 = TERMINATED, signal 15. Something asked it to stop." >&2
+                 echo "        Not a gate failure." >&2 ;;
+        esac
         grep -a 'BLOCKED\|VERDICT\|FAIL' "tmp/publish_all_${CH}.log" | tail -5 >&2
         echo "[pub] his saves after: $(_saves_cksum)  (before: ${SAVES_BEFORE})" >&2
         exit 1
