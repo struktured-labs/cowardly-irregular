@@ -1778,6 +1778,13 @@ func _demo_mode() -> bool:
 
 
 ## A between-worlds transition waits for its world's epilogue only once that epilogue is WIRED (in the completion map) — nothing writes an unwired scene's flag, and waiting on it would hold the transition forever.
+## A defeat flag in whichever namespace its writer used: cutscene_flag_* names live in game_constants; bare names (w1_<arch>_defeated, a MasteriteEncounter story flag) go through GameState's four-namespace reader.
+func _defeat_flag_set(flag: String, flags: Dictionary) -> bool:
+	if flag.begins_with("cutscene_flag_"):
+		return bool(flags.get(flag, false))
+	return GameState != null and GameState.is_story_flag_set(flag)
+
+
 func _epilogue_done_or_unwired(epilogue_id: String, flags: Dictionary) -> bool:
 	if not _CUTSCENE_COMPLETION_FLAGS.has(epilogue_id):
 		return true
@@ -2142,11 +2149,12 @@ func _get_pending_story_cutscene() -> String:
 			return "world6_ending"
 
 	# ===== MASTERITE FRAGMENT REVEALS — 20 scenes, 0 callers until 2026-09-11 =====
-	# Each keys on the flag its masterite's dungeon writes (cutscene_flag_<arch>_<theme>_defeated) and, once that
-	# world's aftermath scene is wired, chains behind it. 16 of the 20 wait on dungeons that do not exist yet.
+	# Each keys on the flag its masterite's defeat writes — a DragonCave subclass writes cutscene_flag_<arch>_<theme>_defeated
+	# into game_constants, a W1 MasteriteEncounter writes w1_<arch>_defeated into story_flags — and, once that world's
+	# aftermath scene is wired, chains behind it. 12 of the 20 wait on dungeons that do not exist yet.
 	for fid in _FRAGMENT_GATES:
 		var g: Dictionary = _FRAGMENT_GATES[fid]
-		if flags.get(str(g["flag"]), false) and _epilogue_done_or_unwired(str(g["after"]), flags) \
+		if _defeat_flag_set(str(g["flag"]), flags) and _epilogue_done_or_unwired(str(g["after"]), flags) \
 				and not flags.get("cutscene_flag_%s_complete" % fid, false):
 			return fid
 
@@ -2214,10 +2222,10 @@ func _set_cutscene_flag_and_mirror(flag: String) -> void:
 
 ## Fragment reveal → the masterite defeat flag its dungeon writes, and the aftermath scene it chains behind (required only once that scene is in the completion map). Derived from each scene's authored trigger resolved against monsters.json (tmp/gen_fragment_table.py); the trigger is the authority, not the filename.
 const _FRAGMENT_GATES := {
-	"world1_fragment_arbiter": {"flag": "cutscene_flag_arbiter_medieval_defeated", "after": "world1_arbiter_defeat"},
-	"world1_fragment_curator": {"flag": "cutscene_flag_curator_medieval_defeated", "after": "world1_curator_defeat"},
-	"world1_fragment_tempo": {"flag": "cutscene_flag_tempo_medieval_defeated", "after": "world1_tempo_defeat"},
-	"world1_fragment_warden": {"flag": "cutscene_flag_warden_medieval_defeated", "after": "world1_warden_defeat"},
+	"world1_fragment_arbiter": {"flag": "w1_arbiter_defeated", "after": "world1_arbiter_defeat"},
+	"world1_fragment_curator": {"flag": "w1_curator_defeated", "after": "world1_curator_defeat"},
+	"world1_fragment_tempo": {"flag": "w1_tempo_defeated", "after": "world1_tempo_defeat"},
+	"world1_fragment_warden": {"flag": "w1_warden_defeated", "after": "world1_warden_defeat"},
 	"world2_fragment_arbiter": {"flag": "cutscene_flag_arbiter_suburban_defeated", "after": "world2_arbiter_defeat"},
 	"world2_fragment_curator": {"flag": "cutscene_flag_curator_suburban_defeated", "after": "world2_curator_defeat"},
 	"world2_fragment_tempo": {"flag": "cutscene_flag_tempo_suburban_defeated", "after": "world2_tempo_defeat"},

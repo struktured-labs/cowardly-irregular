@@ -11,13 +11,13 @@ extends GutTest
 
 var _loop: Node
 var _saved: Dictionary = {}
+var _saved_story: Dictionary = {}
 
 
 func before_each() -> void:
 	_saved = GameState.game_constants.duplicate(true)
-	for k in GameState.game_constants.keys():
-		if str(k).begins_with("cutscene_flag_"):
-			GameState.game_constants.erase(k)
+	_saved_story = GameState.story_flags.duplicate(true)
+	_clear_flags()
 	_loop = load("res://src/GameLoop.gd").new()
 
 
@@ -25,6 +25,14 @@ func after_each() -> void:
 	if is_instance_valid(_loop):
 		_loop.free()
 	GameState.game_constants = _saved
+	GameState.story_flags = _saved_story
+
+
+func _clear_flags() -> void:
+	for k in GameState.game_constants.keys():
+		if str(k).begins_with("cutscene_flag_"):
+			GameState.game_constants.erase(k)
+	GameState.story_flags.clear()
 
 
 func _pending() -> String:
@@ -32,8 +40,12 @@ func _pending() -> String:
 	return _loop._get_pending_story_cutscene()
 
 
+## Sets a flag the way its writer does: cutscene_flag_* into game_constants (DragonCave), a bare name into story_flags (MasteriteEncounter's w1_<arch>_defeated).
 func _flag(k: String) -> void:
-	GameState.game_constants[k] = true
+	if k.begins_with("cutscene_flag_"):
+		GameState.game_constants[k] = true
+	else:
+		GameState.set_story_flag(k, true)
 
 
 func _slug(s: String) -> String:
@@ -79,8 +91,10 @@ func test_the_gate_table_is_the_data_every_fragment_scene_maps_to_its_masterites
 			if _loop._FRAGMENT_GATES.has(cid):
 				var theme := _theme_for_trigger(str(d.get("trigger", "")), masterites)
 				var arch := str(d.get("trigger", "")).split("_")[0]
-				assert_eq(str(_loop._FRAGMENT_GATES[cid]["flag"]), "cutscene_flag_%s_%s_defeated" % [arch, theme],
-					"%s: the gate flag must be the one its masterite's dungeon writes" % cid)
+				# W1 masterites are village MasteriteEncounters and write "w1_<arch>_defeated" as a STORY flag; every other theme is a DragonCave writing cutscene_flag_<arch>_<theme>_defeated.
+				var expected: String = ("w1_%s_defeated" % arch) if theme == "medieval" else ("cutscene_flag_%s_%s_defeated" % [arch, theme])
+				assert_eq(str(_loop._FRAGMENT_GATES[cid]["flag"]), expected,
+					"%s: the gate flag must be the one its masterite's defeat actually writes" % cid)
 			assert_eq(str(_loop._CUTSCENE_COMPLETION_FLAGS.get(cid, "")), "cutscene_flag_%s_complete" % cid, "%s is in the completion map" % cid)
 		f = dir.get_next()
 	dir.list_dir_end()
@@ -90,9 +104,7 @@ func test_the_gate_table_is_the_data_every_fragment_scene_maps_to_its_masterites
 
 func test_each_fragment_plays_once_its_masterite_falls_and_then_never_again() -> void:
 	for fid in _loop._FRAGMENT_GATES:
-		for k in GameState.game_constants.keys():
-			if str(k).begins_with("cutscene_flag_"):
-				GameState.game_constants.erase(k)
+		_clear_flags()
 		var g: Dictionary = _loop._FRAGMENT_GATES[fid]
 		assert_eq(_pending(), "", "%s: nothing pending before its masterite falls" % fid)
 		_flag(str(g["flag"]))
@@ -114,8 +126,8 @@ func test_each_fragment_plays_once_its_masterite_falls_and_then_never_again() ->
 
 
 func test_one_reveal_completing_does_not_block_another() -> void:
-	_flag("cutscene_flag_arbiter_medieval_defeated")
-	_flag("cutscene_flag_tempo_medieval_defeated")
+	_flag("w1_arbiter_defeated")  # the W1 encounter's story flag — the namespace the gate must read through
+	_flag("w1_tempo_defeated")
 	var first := _pending()
 	assert_true(first in ["world1_fragment_arbiter", "world1_fragment_tempo"], "one of the two is pending: %s" % first)
 	_flag("cutscene_flag_%s_complete" % first)
@@ -134,8 +146,13 @@ func test_at_least_the_dungeons_that_exist_today_can_reach_a_reveal() -> void:
 			declared += FileAccess.get_file_as_string("res://src/maps/dungeons/" + f)
 		f = dir.get_next()
 	dir.list_dir_end()
+	# The W1 masterites are village encounters, not dungeons: MasteriteEncounter composes "w1_%s_defeated" for all four.
+	var encounter := FileAccess.get_file_as_string("res://src/exploration/MasteriteEncounter.gd")
+	var w1_contract := encounter.contains("\"w1_%s_defeated\" % archetype")
+	assert_true(w1_contract, "control: MasteriteEncounter still composes w1_<archetype>_defeated")
 	var reachable: Array[String] = []
 	for fid in _loop._FRAGMENT_GATES:
-		if declared.contains("\"%s\"" % str(_loop._FRAGMENT_GATES[fid]["flag"])):
+		var flag := str(_loop._FRAGMENT_GATES[fid]["flag"])
+		if declared.contains("\"%s\"" % flag) or (w1_contract and flag.begins_with("w1_") and flag.ends_with("_defeated")):
 			reachable.append(fid)
-	assert_gte(reachable.size(), 4, "four masterite dungeons exist today, so at least four reveals are reachable now: %s" % [reachable])
+	assert_gte(reachable.size(), 8, "four W1 encounters + four masterite dungeons exist today, so at least eight reveals are reachable now: %s" % [reachable])
