@@ -196,19 +196,64 @@ func _median_n(cells: Array) -> float:
 ##  does in the monster corpus: there, no other instrument sees that case; here the row check reds
 ##  on it too. What it catches alone is a SINGLE frame at or near zero inside an otherwise healthy
 ##  row, where the relative arm's median is fine and the row's disjunction is satisfied.
+## NAMED MEMBERSHIP, because a size floor is blind to PARTIAL loss — and both sweeps below used to
+## carry only a floor. Measured 2026-09-11: hiding 43 of the 145 sheets left this file Passing 8 /
+## EC 0, because 102 still cleared `> 100` and the 43 absent sheets were simply not in the corpus,
+## so nothing reported them. The head-lock gate, which names every sheet it expects, said "43 of 145
+## npc sheets were NOT measured" on the identical tree.
+##
+## The manifest is the independent register of what must be on disk — a sheet that vanishes leaves
+## its entry behind, so the register cannot shrink with the corpus it is used to check.
+const MANIFEST := "res://data/sprite_manifest.json"
+
+
+func _registered_archetypes() -> Array:
+	var raw := FileAccess.get_file_as_string(MANIFEST)
+	var data = JSON.parse_string(raw)
+	if typeof(data) != TYPE_DICTIONARY or not data.has("overworld_npc_sheets"):
+		return []
+	var prefix := "res://assets/sprites/npcs/"
+	var out: Array = []
+	for key in data["overworld_npc_sheets"]:
+		var path: String = str(data["overworld_npc_sheets"][key].get("path", ""))
+		if path.begins_with(prefix) and path.ends_with("/overworld.png"):
+			out.append(path.substr(prefix.length(), path.length() - prefix.length() - 14))
+	out.sort()
+	return out
+
+
+## The premise both sweeps below stand on: every sheet the manifest registers must be one this
+## file actually measures. Asserted once, naming the extent and the members, so partial loss is
+## as loud as total loss.
+func _assert_corpus_covers_the_register(measured: Array, sweep: String) -> void:
+	var registered := _registered_archetypes()
+	assert_gt(registered.size(), 100,
+		"CONTROL: the manifest registered only %d npc sheets — the register is the thing being trusted here, so a short read makes every coverage claim below free" % registered.size())
+	var seen := {}
+	for m in measured:
+		seen[m] = true
+	var unmeasured: Array = []
+	for r in registered:
+		if not seen.has(r):
+			unmeasured.append(r)
+	assert_eq(unmeasured, [],
+		"%d of %d registered npc sheets were NOT measured by %s — a sheet absent from the corpus is indistinguishable from one that passed: %s" % [
+			unmeasured.size(), registered.size(), sweep, str(unmeasured)])
+
+
 func test_no_npc_frame_is_empty() -> void:
 	var names := _list_archetypes()
 	assert_gt(names.size(), 100,
 		"CONTROL: only %d archetype sheets found — the scan is broken and any clean result below is free" % names.size())
 
 	var blank: Array = []
-	var measured := 0
+	var measured: Array = []
 	var thinnest := 1 << 30
 	for n in names:
 		var img := Image.load_from_file("%s/%s/overworld.png" % [NPCS_DIR, n])
 		if img == null:
 			continue
-		measured += 1
+		measured.append(n)
 		var cells := _frame_occupancy(img)
 		var med := _median_n(cells)
 		for c in cells:
@@ -220,7 +265,8 @@ func test_no_npc_frame_is_empty() -> void:
 				blank.append("%s frame (col %d,row %d) holds %d px, %.0f%% of this sheet's median %d" % [
 					n, c["at"].x, c["at"].y, px, 100.0 * float(px) / med, int(med)])
 
-	assert_eq(measured, names.size(), "read %d of %d sheets" % [measured, names.size()])
+	assert_eq(measured.size(), names.size(), "read %d of %d sheets" % [measured.size(), names.size()])
+	_assert_corpus_covers_the_register(measured, "the occupancy sweep")
 	assert_gt(thinnest, 0,
 		"CONTROL: the emptiest frame measured 0 px across every sheet — the alpha probe is reading nothing")
 	assert_eq(blank, [],
@@ -237,11 +283,13 @@ func test_no_npc_frame_is_fully_opaque() -> void:
 
 	var solid: Array = []
 	var fullest := 0.0
+	var measured: Array = []
 	var cap := int(float(FRAME * FRAME) * MAX_OPAQUE_FRACTION_PER_FRAME)
 	for n in names:
 		var img := Image.load_from_file("%s/%s/overworld.png" % [NPCS_DIR, n])
 		if img == null:
 			continue
+		measured.append(n)
 		for c in _frame_occupancy(img):
 			var px: int = int(c["n"])
 			fullest = max(fullest, float(px) / float(FRAME * FRAME))
@@ -249,6 +297,7 @@ func test_no_npc_frame_is_fully_opaque() -> void:
 				solid.append("%s frame (col %d,row %d) is %d/%d opaque — background not keyed out" % [
 					n, c["at"].x, c["at"].y, px, FRAME * FRAME])
 
+	_assert_corpus_covers_the_register(measured, "the opacity-ceiling sweep")
 	assert_lt(fullest, 1.0,
 		"CONTROL: the fullest frame in the corpus measured 100% opaque — either a real defect or the alpha probe is stuck")
 	assert_eq(solid, [],
