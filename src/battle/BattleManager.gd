@@ -7777,6 +7777,7 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 	var llm_node = get_node_or_null("/root/LLMService")
 	if llm_node and llm_node.has_method("is_available"):
 		llm_available = llm_node.is_available()
+	## pick_intent IGNORES this 4th arg (its param is `_llm_available`); the LLM arrives via the async refine below.
 	var pick: Dictionary = boss_dlg.pick_intent(persona_id, new_phase, null, llm_available)
 	var intent_id: String = pick.get("intent_id", "")
 	if intent_id != "":
