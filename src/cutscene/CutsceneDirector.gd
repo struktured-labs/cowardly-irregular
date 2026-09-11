@@ -461,6 +461,8 @@ func _execute_step(step: Dictionary) -> void:
 			await _step_camera_focus(step)
 		"camera_restore":
 			await _step_camera_restore(step)
+		"shake":
+			await _step_shake(step)
 		_:
 			push_warning("CutsceneDirector: Unknown step type '%s'" % step_type)
 
@@ -1341,6 +1343,19 @@ func _step_say(step: Dictionary) -> void:
 	a.say(str(step.get("text", "")), duration)
 	if bool(step.get("wait", true)) and duration > 0.0:
 		await _sleep(duration)
+
+
+## {"type":"shake","id":"milo","duration":0.4,"intensity":2,"wait":true} — a shudder; `wait:false` lets the scene move under it, a skip ends it the same frame.
+func _step_shake(step: Dictionary) -> void:
+	var a := _get_actor(str(step.get("id", "")))
+	if a == null or _skipping:
+		return
+	var duration: float = float(step.get("duration", 0.4))
+	a.shake(duration, float(step.get("intensity", 2.0)))
+	if bool(step.get("wait", true)) and duration > 0.0:
+		await _sleep(duration)
+		if is_instance_valid(a):
+			a.stop_shake()  # a cut or a fast-forward ends early — put the sprite back now, not at the tween's own time
 
 
 ## Pan the live camera to frame an actor or point; offset-tween holds because
