@@ -110,6 +110,16 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# discarded the player's WHOLE ruleset. Supplying it is arithmetic from the same
 	# kit the validator uses; it can only turn a rejection into a valid rule, and it
 	# never loosens a guard the model did emit.
+	# A model writing "target": null means "no target", which this grammar expresses
+	# by OMITTING the key — and the validator rejects the null form, discarding the
+	# whole ruleset. Measured across 33 parseable local-llama3 compositions: 2 died
+	# this way. Dropping the key is a normalisation, NOT a loosening of the
+	# validator, which is right to refuse it: action.get("target", "lowest_hp_enemy")
+	# returns null rather than the default when the key is present, and assigning
+	# Nil to a typed String aborts the enclosing function in the grid editor.
+	if domain == DOMAIN_AUTOBATTLE:
+		_drop_null_targets(v["rules"])
+
 	if domain == DOMAIN_AUTOBATTLE and bool(kit_context.get("resolved", false)):
 		for note in _supply_missing_mp_guards(v["rules"], kit_context):
 			repair_notes.append(note)
@@ -222,3 +232,28 @@ func _rule_ability_label(rule: Dictionary) -> String:
 			if aid != "":
 				return "'%s'" % aid
 	return "costed"
+
+
+## Remove `"target": null` from actions, in place. Returns how many were dropped.
+##
+## ONLY target, deliberately. Absent is a documented, defined state for it — the
+## action falls back to its own default — so dropping the key changes nothing
+## about what the rule DOES, which is why this emits no player-facing note.
+##
+## Every OTHER null is left for the validator to reject. A condition carrying
+## "value": null is genuinely broken: the model failed to state a threshold, and
+## stripping that key would manufacture a rule that validates and then compares
+## against a default nobody chose. Refusing it is the honest outcome; recovering
+## it would be exactly the plausible-looking artifact that is worse than a refusal.
+func _drop_null_targets(rules: Array) -> int:
+	var dropped: int = 0
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for a in rule.get("actions", []):
+			if typeof(a) != TYPE_DICTIONARY:
+				continue
+			if a.has("target") and a["target"] == null:
+				a.erase("target")
+				dropped += 1
+	return dropped

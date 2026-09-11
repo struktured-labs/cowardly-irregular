@@ -89,6 +89,24 @@ func test_deep_check_rejects_out_of_kit_ability() -> void:
 	assert_true("not in fighter's level-1 kit" in _error_blob(result),
 				"deep-check error must name the kit-mismatch; got: %s" % _error_blob(result))
 
+## ── a null target is normalised on the way through ──────────────────────
+
+func test_a_null_target_does_not_cost_the_player_the_composition() -> void:
+	## WIRING. _drop_null_targets works when called; this proves compose_async calls
+	## it. Without the call this reply becomes a fallback, because one rejected rule
+	## discards the whole ruleset.
+	watch_signals(rc)
+	fake_backend.prime_next(_payload(
+		"[{\"conditions\":[{\"type\":\"always\"}],\"actions\":[{\"type\":\"attack\",\"target\":null}],\"enabled\":true}]"))
+	var result: Dictionary = await rc.compose_async(rc.DOMAIN_AUTOBATTLE, "just attack", "hero", [])
+	assert_eq(result.get("source", ""), "llm",
+				"a null target means 'no target' and must not discard the ruleset")
+	var rules: Array = result.get("rules", [])
+	assert_eq(rules.size(), 1, "the rule must survive")
+	assert_false((rules[0]["actions"] as Array)[0].has("target"),
+				"and reach the profile with the key erased, not set to null")
+
+
 ## ── the player is told what was changed ─────────────────────────────────
 
 func test_a_supplied_guard_reaches_the_result_the_ui_reads() -> void:
