@@ -136,6 +136,18 @@ func test_every_non_starter_job_has_some_route_or_is_named_as_stranded() -> void
 	assert_eq(newly_stranded.size(), 0,
 		"a non-starter job shipped with no unlock_condition, so is_job_unlocked returns false for it in every game state: %s — give it a condition, or add it to UNREACHABLE_JOBS with the reason" % ", ".join(newly_stranded))
 
+	# STALE-BY-DELETION, same cell. `conditionless` is built from jobs that EXIST, so a
+	# deleted job simply stops appearing and its UNREACHABLE_JOBS line survives as a
+	# standing claim about a class the game no longer has.
+	var jobs := _jobs()
+	var vanished: Array[String] = []
+	for jid in UNREACHABLE_JOBS.keys():
+		if not jobs.has(str(jid)):
+			vanished.append(str(jid))
+	vanished.sort()
+	assert_eq(vanished.size(), 0,
+		"UNREACHABLE_JOBS names a job that is no longer in jobs.json: %s — if the class was retired, delete the line with it; the entry currently claims a stranded class that does not exist." % ", ".join(vanished))
+
 	var freed: Array[String] = []
 	for jid in UNREACHABLE_JOBS.keys():
 		if not conditionless.has(str(jid)):

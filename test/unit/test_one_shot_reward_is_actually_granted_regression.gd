@@ -142,6 +142,18 @@ func test_every_one_shot_key_is_either_read_or_named_as_debt() -> void:
 
 	assert_eq(unread.size(), 0,
 		"a one_shot field is authored and never read: %s — either consume it in BattleManager or add it to UNREAD_ONE_SHOT_KEYS with the reason it is debt" % ", ".join(unread))
+	# STALE-BY-DELETION. The ratchet above only compares keys the corpus still AUTHORS,
+	# so a key that disappears entirely leaves its debt entry behind with nothing to
+	# notice — an inert suppression created by deletion rather than by being written
+	# wrong. Same cell I closed on the ability guard; left open here until measured.
+	var orphaned: Array[String] = []
+	for k in UNREAD_ONE_SHOT_KEYS.keys():
+		if not keys.has(str(k)):
+			orphaned.append(str(k))
+	orphaned.sort()
+	assert_eq(orphaned.size(), 0,
+		"UNREAD_ONE_SHOT_KEYS names a field no monster authors any more: %s — the entry is a claim about a corpus that has moved on. Delete the line." % ", ".join(orphaned))
+
 	assert_eq(newly_read.size(), 0,
 		"GOOD NEWS, STALE LIST: %s is now read by BattleManager. Delete its key from UNREAD_ONE_SHOT_KEYS at the top of this file so it stops claiming the data is dead." % ", ".join(newly_read))
 
