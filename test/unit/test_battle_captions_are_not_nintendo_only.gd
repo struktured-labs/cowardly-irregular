@@ -290,7 +290,14 @@ func test_no_help_label_spells_a_non_face_button() -> void:
 		per_file[path] = 0
 		for raw in _src(path).split("\n"):
 			var line: String = raw.strip_edges()
-			if line.begins_with("#") or not line.contains(".text = "):
+			## ⛔ THE CORPUS MUST FOLLOW LITERALS INTO LOCAL HELPERS. I refactored three captions into
+			## _delete_token()/_case_hint()/_done_hint() this hour, which moved their strings OFF
+			## `.text = ` lines — and a frozen name planted inside a helper scored GREEN. My own fix
+			## emptied my own guard's corpus, which is @cowir-battle's finding arriving by my hand in
+			## the same hour I read it. A `return "..."` renders a caption too.
+			if line.begins_with("#"):
+				continue
+			if not (line.contains(".text = ") or line.begins_with("return \"") or line.contains("return \"")):
 				continue
 			per_file[path] += 1
 			for n in banned:
@@ -303,8 +310,20 @@ func test_no_help_label_spells_a_non_face_button() -> void:
 				##                       it, so "Press Start to save" scored GREEN.
 				## ⚠️ STILL A PATTERN, NOT A PROPERTY. A third idiom escapes. Recorded as the known
 				## reach of this arm rather than claimed as coverage of the class.
-				if line.contains("\"%s:" % n) or line.contains(" %s:" % n) \
-						or line.contains("Press %s " % n) or line.contains("Press %s." % n):
+				## ⛔ AND THE PATTERN NEEDED WIDENING TOO, not just the corpus. My first repair made the
+				## helper line VISIBLE and it still scored green: `return "Del/Start"` has the name
+				## between a slash and a quote, while every pattern above needs `Name:` ADJACENCY —
+				## and the refactor split the name from its colon across helper and format string.
+				## A caption assembled from two places has no single line where the old shape appears.
+				var bounded := false
+				for pre in ["\"", "/", " "]:
+					for post in ["\"", ":", "/", " "]:
+						if line.contains("%s%s%s" % [pre, n, post]):
+							bounded = true
+							break
+					if bounded:
+						break
+				if bounded or line.contains("Press %s " % n) or line.contains("Press %s." % n):
 					offenders.append("%s :: %s" % [path.get_file(), n])
 	## ⛔ WAS A FLOOR (`examined > 4` across both files). @cowir-adhoc 2026-09-11: a floor is armed
 	## against TOTAL vacuity and BLIND TO PARTIAL LOSS. Measured — breaking `.text = ` in ONE editor
