@@ -30,9 +30,17 @@ const WORLDS := {
 }
 
 ## Classified as POSITIONAL — see the header. Every other class must lift its text.
-const MAY_KEEP_WORLD_SPACE := ["VillageMarker", "RoamingMonster", "OverworldNPC"]
-## OverworldNPC is on that list for its "!" quest marker only; its NAME label is a prompt and lifts.
+## ⛔ THIS WAS A CLASS-LEVEL LIST FOR ONE DAY AND THAT WAS THE HOLE. OverworldNPC was on it "for its
+## quest marker only" — my own comment said so — while the code exempted EVERY label the class owns.
+## The narrow rule was sitting right there as an unused const. A third label on that class, a real
+## prompt, would have been waved through by a guard whose comment already said it should not be.
+## Found 2026-09-11 from @cowir-sfx's framing: when an instrument treats two members of its own
+## subject differently, that asymmetry is a finding about the INSTRUMENT until proven otherwise, and
+## explaining the mechanism does not discharge it. I had explained it, in writing, and shipped it.
+const CLASS_POSITIONAL := ["VillageMarker", "RoamingMonster"]
+## OverworldNPC's exemption is per-LABEL: the marker glyph is positional, its name label is a prompt.
 const NPC_PROMPT_TEXTS := ["!", "?"]
+const NPC_SOURCE := "res://src/exploration/OverworldNPC.gd"
 
 
 func after_each() -> void:
@@ -65,6 +73,29 @@ func _collect(n: Node, found: Array) -> void:
 		_collect(c, found)
 
 
+## Two kinds of OverworldNPC label survive in world space, and only one of them is a decision.
+##   "!" / "?"  the quest marker — POSITIONAL, it tells you WHICH npc has the quest
+##   ""         the label inside dialogue_box, which is NEVER SHOWN: `dialogue_box.visible = true`
+##              appears nowhere in OverworldNPC.gd and :1235 says the production path is
+##              NPCDialogue/CutsceneDialogue. Dead, not positional.
+## ⚠️ THE SECOND EXEMPTION IS A DEBT AND IT EXPIRES BY ITSELF. It holds only while that box stays
+## unshown; the assert below re-checks that every run, so wiring the box up reds this test and makes
+## whoever did it lift the label rather than inherit a permission.
+func _npc_label_is_exempt(lbl: Label) -> bool:
+	if str(lbl.text) in NPC_PROMPT_TEXTS:
+		return true
+	var src := _read_source(NPC_SOURCE)
+	var dead_box := not src.contains("dialogue_box.visible = true")
+	assert_true(dead_box,
+		"OverworldNPC's dialogue_box is shown now, so its label is a live prompt and must lift — the exemption below expired")
+	return dead_box and str(lbl.text) == ""
+
+
+func _read_source(path: String) -> String:
+	var f := FileAccess.open(path, FileAccess.READ)
+	return "" if f == null else f.get_as_text()
+
+
 func test_only_classified_positional_text_is_left_where_the_shader_can_reach_it() -> void:
 	Mode7Overlay.is_active = true
 	var offenders := {}
@@ -88,8 +119,12 @@ func test_only_classified_positional_text_is_left_where_the_shader_can_reach_it(
 		for lbl in found:
 			labels_seen += 1
 			var owner_name := _owner_class(lbl)
-			if not (owner_name in MAY_KEEP_WORLD_SPACE):
-				offenders[owner_name] = int(offenders.get(owner_name, 0)) + 1
+			if owner_name in CLASS_POSITIONAL:
+				continue
+			if owner_name == "OverworldNPC" and _npc_label_is_exempt(lbl):
+				continue
+			offenders["%s:'%s'" % [owner_name, str(lbl.text).substr(0, 12)]] = \
+				int(offenders.get("%s:'%s'" % [owner_name, str(lbl.text).substr(0, 12)], 0)) + 1
 
 	assert_eq(worlds_built, WORLDS.size(), "CONTROL: every Mode 7 world must have been built")
 	assert_gt(labels_seen, 40,
