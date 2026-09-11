@@ -735,6 +735,32 @@ def selftest():
             failed += 1
             print(f"  FAIL  {name:48} exit {got} (wanted {want})")
 
+
+    # ── the stripper, pinned DIRECTLY ────────────────────────────────────────────────
+    # Six costumes of one hollowness across four lanes in an afternoon, every one found by
+    # mutating THROUGH the corpus, each fix blind to the next. @cowir-sfx's exit is a case
+    # table on the helper itself: a seventh costume reds here instead of passing silently.
+    # Both polarities, because a stripper has two ways to be wrong and arms tend to cover one
+    # (@cowir-music). NOTE the cut is AT the `#`, not a trim — trailing whitespace survives.
+    STRIP_CASES = [
+        ('exit 0   # gate',                 'exit 0   ',              'trailing comment cut'),
+        ('echo "tag #1"',                   'echo "tag #1"',          '# inside "double" survives'),
+        ("echo 'tag #1'",                   "echo 'tag #1'",          "# inside 'single' survives"),
+        ('echo "a \\" # b"',                'echo "a \\" # b"',       'escaped quote: line survives'),
+        ('echo "a\\\\"  # real',            'echo "a\\\\"  ',         'escaped BACKSLASH: cut anyway'),
+        ("echo 'a\\' # b",                  "echo 'a\\' ",           'no escaping in single quotes'),
+        ('"${BUTLER_BIN}" push out/ "$T"', '"${BUTLER_BIN}" push out/ "$T"', 'detection target untouched'),
+        ('plain line',                      'plain line',             'no comment: untouched'),
+    ]
+    for src, want, label in STRIP_CASES:
+        got = _strip_comment(src)
+        if got == want:
+            passed += 1
+            print(f"  ok    {('strip: ' + label):52} ")
+        else:
+            failed += 1
+            print(f"  FAIL  {('strip: ' + label):52} {got!r} != {want!r}")
+
     with tempfile.TemporaryDirectory() as d:
         for i, (name, (src, want, frag)) in enumerate(PROBES.items()):
             td = os.path.join(d, f"t{i}")
