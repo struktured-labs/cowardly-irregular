@@ -68,7 +68,7 @@ func _resolves(src: String, tok: String) -> bool:
 	## to be backed by a real derivation in the same file, so "%s" cannot become a way to silence
 	## this ratchet by templating a legend without wiring one.
 	if tok.contains("%s"):
-		return src.contains("glyph_for_action(")
+		return src.contains("glyph_for_action(") or src.contains("hint_for_action(")
 	if BINDING.has(tok):
 		for sym in BINDING[tok]:
 			if src.contains(sym):

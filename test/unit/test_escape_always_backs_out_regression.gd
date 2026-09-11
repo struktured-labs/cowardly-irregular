@@ -88,7 +88,7 @@ func test_the_legend_tells_her_escape_goes_back() -> void:
 	## The face glyph is DERIVED now (InputProfileManager.glyph_for_action), so pinning the
 	## literal "B/Esc:Back" pinned a spelling no PlayStation player ever sees. The intent --
 	## Escape is named as the way back -- survives derivation; the letter never should have.
-	assert_true(src.contains("glyph_for_action("),
+	assert_true(src.contains("glyph_for_action(") or src.contains("hint_for_action("),
 		"and the face letter beside it must be derived, not frozen back in")
 	assert_false(src.contains("B:Delete"),
 		"and must no longer advertise B as delete — that is the mapping that trapped him")

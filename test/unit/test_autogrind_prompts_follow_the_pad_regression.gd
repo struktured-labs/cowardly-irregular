@@ -54,8 +54,7 @@ const LANE_DIRS := ["res://src/ui/autogrind", "res://src/ui/autobattle"]
 ## Frozen captions that are NOT fixed, each with the reason -- the value is required non-empty, so
 ## an entry can be explained green but never silenced green.
 const DEFERRED := {
-	"Sel:Auto": "Select is not a FACE button, so neither glyph_for_action nor face_glyph_for_index names it; @cowir-controller's non-face derivation is on an unfolded branch and duplicating it would create a second authority.",
-	"Start:Save": "Start is not a face button; same reason as Sel:Auto.",
+	"Start:Save": "Start is not a face button; AutobattleGridEditor derives the Select half via hint_for_action (folded 2026-09-11) and Start is still owed the same treatment.",
 }
 
 
@@ -271,7 +270,7 @@ func test_the_four_repaired_surfaces_actually_ask_the_authority() -> void:
 		var raw := FileAccess.get_file_as_string(f)
 		assert_gt(raw.length(), 500, "CONTROL: %s was read" % f.get_file())
 		var src := _code_only(raw)
-		assert_true(src.contains("InputProfileManager.glyph_for_action(") or src.contains("InputProfileManager.face_glyph_for_index("),
+		assert_true(src.contains("InputProfileManager.glyph_for_action(") or src.contains("InputProfileManager.face_glyph_for_index(") or src.contains("InputProfileManager.hint_for_action("),
 			"%s must ask the authority for its button glyph -- a COMMENT naming it does not count" % f.get_file())
 
 
