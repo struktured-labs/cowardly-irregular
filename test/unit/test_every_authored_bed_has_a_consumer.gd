@@ -549,14 +549,11 @@ func test_no_briefed_battle_track_is_shadowed_by_a_declaration() -> void:
 ## is a pacing decision about where a campaign's credits roll, so it is theirs
 ## or struktured's, not mine.
 const KNOWN_WIRED_TO_DEAD_SCENES := {
-	## 2026-09-11: the four credits entries DRAINED — every campaign credits roll now has a live route.
-	## credits_suburban/steampunk left with .297 (world2_chapter11, world3_chapter5); industrial/digital here.
-	## This entry is NOT stale for the same reason: the bed IS reached, and the DETECTOR cannot see it.
-	## world5_fragment_* are dispatched by GameLoop's _FRAGMENT_GATES loop, which ends `return fid` — a
-	## loop variable, not a literal. _dispatcher_text() scans for the scene id and a composed return has none.
-	## GameLoop says so itself above the table: "the loop returns the id, so the static audit does not see these".
-	## So this line documents an INSTRUMENT limit, not a dead bed. Fixing the scan retires it.
-	"cutscene_w5_cached_memory": "world5_fragment_* (4 scenes) — reached via the _FRAGMENT_GATES loop, invisible to a literal-id scan",
+	## 2026-09-11: DRAINED COMPLETELY. Four credits entries retired when their scenes
+	## were wired (.297 + .298). The fifth — cutscene_w5_cached_memory — was never a
+	## dead bed at all: world5_fragment_* are dispatched by GameLoop's _FRAGMENT_GATES
+	## loop, which ends `return fid`. The entry documented an INSTRUMENT limit, and
+	## _scene_is_dispatched can see a table loop now, so it is gone too.
 }
 
 
@@ -649,11 +646,87 @@ func test_no_cutscene_step_type_can_dispatch_another_cutscene() -> void:
 ## a correct ad-hoc measurement); the guard's own predicate was looser than the
 ## claim the list makes, so two entries excused a verdict it could never reach.
 ## Loose: 3 stranded. Tight: 5, which is the list.
+## Third dispatch shape: a TABLE LOOP. `for fid in _FRAGMENT_GATES: ... return fid`
+## returns a LOOP VARIABLE, so the scene id never appears beside `return` as a
+## literal. GameLoop states it above that very table — "the loop returns the id,
+## so the static audit does not see these" — and this predicate could not see
+## them for months. 20 fragment scenes read as dead, and one bed sat in
+## KNOWN_WIRED_TO_DEAD_SCENES documenting the instrument rather than a defect.
+## Bounded by INDENTATION and by brace matching, not by char windows: a window
+## that is too small truncates and one that is too large swallows the next
+## function's returns, and over-reporting dispatch is the silent direction.
+func _loop_dispatched_ids(disp: String) -> Dictionary:
+	var out: Dictionary = {}
+	var lines: PackedStringArray = disp.split("\n")
+	var head := RegEx.new()
+	head.compile("^(\\s*)for\\s+(\\w+)\\s+in\\s+(\\w+)\\s*:")
+	for i in lines.size():
+		var m: RegExMatch = head.search(lines[i])
+		if m == null:
+			continue
+		var indent: int = m.get_string(1).length()
+		var loop_var: String = m.get_string(2)
+		var table: String = m.get_string(3)
+		var returns_itself: bool = false
+		for j in range(i + 1, lines.size()):
+			var ln: String = lines[j]
+			if ln.strip_edges() == "":
+				continue
+			if ln.length() - ln.lstrip(" \t").length() <= indent:
+				break
+			if ln.strip_edges() == "return %s" % loop_var:
+				returns_itself = true
+				break
+		if not returns_itself:
+			continue
+		for key in _const_dict_keys(disp, table):
+			out[key] = table
+	return out
+
+
+## Top-level string keys of `const <name> := { ... }`, by brace matching.
+func _const_dict_keys(src: String, name: String) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	var at: int = src.find("%s := {" % name)
+	if at < 0:
+		at = src.find("%s = {" % name)
+	if at < 0:
+		return out
+	var open_brace: int = src.find("{", at)
+	var depth: int = 0
+	var end: int = open_brace
+	while end < src.length():
+		var c: String = src[end]
+		if c == "{":
+			depth += 1
+		elif c == "}":
+			depth -= 1
+			if depth == 0:
+				break
+		end += 1
+	var block: String = src.substr(open_brace, end - open_brace + 1)
+	var kre := RegEx.new()
+	kre.compile("\"([A-Za-z0-9_]+)\"\\s*:")
+	var inner: int = 0
+	for line in block.split("\n"):
+		var ln: String = str(line)
+		var km: RegExMatch = kre.search(ln)
+		## Only TOP-level keys: a nested value dict's keys are not scene ids.
+		if km != null and inner <= 1:
+			out.append(km.get_string(1))
+		inner += ln.count("{") - ln.count("}")
+	return out
+
+
 func _scene_is_dispatched(scene: String, disp: String) -> bool:
-	## The two real shapes: _get_pending_story_cutscene returns the id, or a
-	## caller plays it by name. Anything else is a mention.
-	return disp.find("return \"%s\"" % scene) >= 0 \
-		or disp.find("play_cutscene(\"%s\")" % scene) >= 0
+	## Three real shapes: _get_pending_story_cutscene returns the id literally, a
+	## caller plays it by name, or a table loop returns its own loop variable.
+	## Anything else is a mention.
+	if disp.find("return \"%s\"" % scene) >= 0:
+		return true
+	if disp.find("play_cutscene(\"%s\")" % scene) >= 0:
+		return true
+	return _loop_dispatched_ids(disp).has(scene)
 
 
 func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
@@ -699,6 +772,13 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 				naming.append(str(s))
 				if _scene_is_dispatched(str(s), disp):
 					live = true
+		if live and KNOWN_WIRED_TO_DEAD_SCENES.has(id):
+			## The revival check above only sees ids reached through the DISPATCHER
+			## text. This one is reached through a dispatched naming SCENE, and an
+			## entry that goes stale on this route reported nothing at all —
+			## measured 2026-09-11, when the loop-dispatch fix made this bed live
+			## and its pin sat there inert in every arm.
+			revived.append(id)
 		if naming.is_empty() or live:
 			continue
 		if not KNOWN_WIRED_TO_DEAD_SCENES.has(id):
