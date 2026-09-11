@@ -317,6 +317,38 @@ else
     exit 4
 fi
 
+# ── gate 0c: the raw bytes must be the bytes the tag pins ────────────────────────────
+# ⛔ MUST RUN BEFORE ANY --import. Audio is git-lfs; the tracked blob is a pointer and the bytes
+# live in the LFS store. Every other gate in this chain reads a RE-DERIVED artifact — the suite
+# and check_pck_complete read the .oggstr, the export packs it, and `--import` rebuilds it
+# faithfully from whatever bytes are on disk. So a tree with a stale LFS blob produces a
+# perfectly coherent build of LAST WEEK'S AUDIO and every downstream gate reports green: the
+# instrument and the defect share a cause. Measured 2026-09-11: nothing in tools/ compared a
+# pointer's oid to a file's sha256, and the one LFS reference that existed only refused to
+# MEASURE a pointer.
+#
+# 2.29s for 500 files, no network, no godot — against a ~45min publish.
+if [ -x tools/check_lfs_blobs_current.py ]; then
+    if ! _ST=$(./tools/check_lfs_blobs_current.py --selftest 2>&1); then
+        printf '%s\n' "$_ST" | tail -25 >&2
+        echo "[pub] BLOCKED: tools/check_lfs_blobs_current.py FAILED ITS OWN SELFTEST — the byte" >&2
+        echo "      comparator is not answering correctly, so its verdict on this tree means" >&2
+        echo "      nothing. A present guard is not a working one." >&2
+        exit 4
+    fi
+    if ! ./tools/check_lfs_blobs_current.py; then
+        echo "[pub] BLOCKED: an LFS blob on disk is not the blob this commit pins — see above." >&2
+        echo "      Publishing now would ship audio the tag does not name. Fix the BYTES first;" >&2
+        echo "      re-importing makes the layer unknowable and the green never arrives." >&2
+        exit 4
+    fi
+else
+    echo "[pub] BLOCKED: tools/check_lfs_blobs_current.py missing — nothing has checked that the" >&2
+    echo "      audio on disk is the audio this commit pins. Every other gate reads the" >&2
+    echo "      re-derived artifact and cannot tell. A missing guard is not a passing one." >&2
+    exit 4
+fi
+
 # ── 1. tag evidence ──────────────────────────────────────────────────────────
 # The token is required. Absence of a SKIP is NOT a failure here — it means the chains will
 # run the suite sandboxed, which is correct and merely slower. Only report it.
