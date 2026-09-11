@@ -2046,11 +2046,21 @@ func _get_pending_story_cutscene() -> String:
 		return "world3_transition"
 
 	# ===== WORLD 4: INDUSTRIAL / DIGITAL =====
-	# Tick 102: W4 Warden of Industrial defeat cutscene — plays IN
-	# Assembly Core on return from boss victory.
+	# W4 Warden of the Assembly Line defeat cutscene — plays IN Assembly Core
+	# on return from boss victory.
+	#
+	# 2026-09-11: was `world4_warden_defeat`, which is the FUTURISTIC Warden's
+	# aftermath — "ACCESS: GRANTED", green scrolling text, a firewall opening.
+	# AssemblyCore's boss is masterite_warden_industrial (Warden of the Assembly
+	# Line), so beating it played the aftermath of a boss from the next world.
+	# The masterite aftermath scenes are filed one world BELOW the boss they
+	# belong to; each one names its true owner in its own `trigger` field and in
+	# its closing set_flag, and nothing read either. world3_warden_defeat says
+	# `boss_warden_industrial_defeated` twice and is titled "Warden of the
+	# Assembly Line — Aftermath" — it is this gate's scene and had no caller.
 	if flags.get("cutscene_flag_warden_industrial_defeated", false) and not flags.get("cutscene_flag_world4_warden_defeat_complete", false):
 		if _current_map_id == "assembly_core":
-			return "world4_warden_defeat"
+			return "world3_warden_defeat"
 	if flags.get("cutscene_flag_world3_complete", false) and not flags.get("cutscene_flag_world4_prologue_complete", false):
 		if _current_map_id == "industrial_overworld":
 			return "world4_prologue"
@@ -2074,9 +2084,14 @@ func _get_pending_story_cutscene() -> String:
 	# Tick 103: W5 Arbiter of Futuristic defeat cutscene — plays IN
 	# Root Process on return from boss victory. Same pattern as W2-W4
 	# defeat gates (tick 102).
+	# 2026-09-11, same class as the W4 gate above: `world5_arbiter_defeat` is the
+	# ABSTRACT Arbiter's aftermath (Arbiter of Function, W6). RootProcess's boss is
+	# masterite_arbiter_futuristic. world4_arbiter_defeat is titled "Arbiter of the
+	# Benchmark — Aftermath", triggers on boss_arbiter_futuristic_defeated, sets that
+	# same flag on its way out, and had no caller.
 	if flags.get("cutscene_flag_arbiter_futuristic_defeated", false) and not flags.get("cutscene_flag_world5_arbiter_defeat_complete", false):
 		if _current_map_id == "root_process":
-			return "world5_arbiter_defeat"
+			return "world4_arbiter_defeat"
 	# Same shape as its three sibling masterite dungeons; NullChamber declared no defeat flag, so this scene could never play.
 	if flags.get("cutscene_flag_curator_abstract_defeated", false) and not flags.get("cutscene_flag_world5_curator_defeat_complete", false):
 		if _current_map_id == "null_chamber":
@@ -2255,8 +2270,10 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world4_chapter3":                  "cutscene_flag_world4_chapter3_complete",
 	"world4_chapter4":                  "cutscene_flag_world4_chapter4_complete",
 	"world4_chapter5":                  "cutscene_flag_world4_chapter5_complete",
-	# Tick 102: W4 Warden of Industrial post-defeat dialogue
-	"world4_warden_defeat":             "cutscene_flag_world4_warden_defeat_complete",
+	# W4 Warden of the Assembly Line post-defeat dialogue. Key follows the scene the
+	# gate returns (world3_warden_defeat); the FLAG name is deliberately unchanged so
+	# a save that already saw the old scene does not replay this one.
+	"world3_warden_defeat":             "cutscene_flag_world4_warden_defeat_complete",
 	# World 5 (digital/abstract)
 	"world5_prologue":                  "cutscene_flag_world5_prologue_complete",
 	"world5_chapter1":                  "cutscene_flag_world5_chapter1_complete",
@@ -2264,8 +2281,9 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world5_chapter3":                  "cutscene_flag_world5_chapter3_complete",
 	"world5_chapter4":                  "cutscene_flag_world5_chapter4_complete",
 	"world5_chapter5":                  "cutscene_flag_world5_chapter5_complete",
-	# Tick 103: W5 Arbiter of Futuristic post-defeat dialogue
-	"world5_arbiter_defeat":            "cutscene_flag_world5_arbiter_defeat_complete",
+	# W5 Arbiter of the Benchmark post-defeat dialogue — key follows the scene the gate
+	# returns (world4_arbiter_defeat); flag name unchanged for the same reason as W4.
+	"world4_arbiter_defeat":            "cutscene_flag_world5_arbiter_defeat_complete",
 	"world5_curator_defeat":            "cutscene_flag_world5_curator_defeat_complete",
 	# World 6 (vertex/final)
 	"world6_prologue":                  "cutscene_flag_world6_prologue_complete",
