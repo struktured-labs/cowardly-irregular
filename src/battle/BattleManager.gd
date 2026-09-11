@@ -882,26 +882,26 @@ func end_battle(victory: bool) -> void:
 							if PartyChatSystem:
 								PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")
 							rare_drop_found.emit(item_id, drop.get("chance", 0.0))
-						# Equipment IDs route to GameLoop.equipment_pool so they
-						# end up in the shared equipment inventory (where the
-						# Equipment menu reads from); consumables stay on the
-						# party leader's inventory dict. Pre-fix EVERY drop went
-						# into add_item, leaving equipment as unusable lore items.
-						var routed_as_equipment = _route_drop_to_equipment_pool(item_id)
-						if not routed_as_equipment:
-							if player_party.size() > 0 and player_party[0].is_alive:
-								player_party[0].add_item(item_id)
-						# Track for display via shared resolver (tick 135).
-						var item_name = ItemNameResolver.resolve(item_id)
-						# Merge duplicates
-						var found = false
-						for existing in item_drops:
-							if existing["item"] == item_id:
-								existing["qty"] += 1
-								found = true
-								break
-						if not found:
-							item_drops.append({"item": item_id, "name": item_name, "qty": 1})
+						_deliver_item(item_id, item_drops)
+
+				# ONE-SHOT REWARD. 2026-09-11: 41 bosses author
+				# one_shot.reward_item ("boss_trophy") and nothing had ever read
+				# the monster's `one_shot` block — _check_one_shot derives the
+				# achievement entirely from battle state (_first_damage_phase,
+				# _execution_phase_count), so the rank, the EXP bonus and the
+				# gold bonus all worked while the declared ITEM was never granted.
+				# boss_trophy exists in items.json ("Proof you beat something that
+				# was designed to be hard") and appeared in no drop table, shop or
+				# quest, so it was unobtainable by any path in the game.
+				# Category 4, no effects, cost 0 — a collectible, so granting it
+				# cannot move balance. Goes through the same delivery as a drop so
+				# it shows on the victory screen and reaches the EventLog.
+				if _one_shot_achieved:
+					var one_shot_data: Variant = monsters_data[mt].get("one_shot", {})
+					if one_shot_data is Dictionary:
+						var trophy: String = str((one_shot_data as Dictionary).get("reward_item", ""))
+						if trophy != "":
+							_deliver_item(trophy, item_drops)
 		if item_drops.size() > 0:
 			print("Items dropped: %s" % [item_drops])
 			# Tick 253: record obtained items in EventLog for the LLM
@@ -8738,6 +8738,31 @@ func _on_status_tick_damage_for_party_dialogue(amount: int, source: String, targ
 ## Public seam for battle paths that bypass BattleManager (headless autogrind drop routing).
 func route_drop_to_equipment_pool(item_id: String) -> bool:
 	return _route_drop_to_equipment_pool(item_id)
+
+
+## Deliver one item id to the party and record it for the victory screen.
+## Extracted 2026-09-11 so the one-shot reward uses the SAME delivery as a drop
+## rather than a second copy of it — equipment still routes to the shared pool,
+## consumables still land on the party leader, and duplicates still merge by qty.
+func _deliver_item(item_id: String, item_drops: Array) -> void:
+	if item_id == "":
+		return
+	# Equipment IDs route to GameLoop.equipment_pool so they end up in the shared
+	# equipment inventory (where the Equipment menu reads from); consumables stay
+	# on the party leader's inventory dict. Pre-fix EVERY drop went into add_item,
+	# leaving equipment as unusable lore items.
+	var routed_as_equipment = _route_drop_to_equipment_pool(item_id)
+	if not routed_as_equipment:
+		if player_party.size() > 0 and player_party[0].is_alive:
+			player_party[0].add_item(item_id)
+	# Track for display via shared resolver (tick 135).
+	var item_name = ItemNameResolver.resolve(item_id)
+	# Merge duplicates
+	for existing in item_drops:
+		if existing["item"] == item_id:
+			existing["qty"] += 1
+			return
+	item_drops.append({"item": item_id, "name": item_name, "qty": 1})
 
 
 func _route_drop_to_equipment_pool(item_id: String) -> bool:
