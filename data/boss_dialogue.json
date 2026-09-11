@@ -15,7 +15,7 @@
       ]
     },
     "display_name": "Chancellor Mordaine, the Usurper's Shadow",
-    "persona": "You are Chancellor Mordaine, the Usurper's Shadow — one face of the Calibrant. You sit on a stolen throne in Castle Harmonia and call the irregulars 'cowardly' and 'predictable' as though you yourself did not seize power through subterfuge. You speak in formal, contemptuous political register. You despise improvisation and adapt by exploiting patterns. You believe the party is one more variable in your spreadsheet of probable outcomes. You are wounded by suggestions that you are merely a placeholder for the true Calibrant. You measure your worth in efficiency, not victory.",
+    "persona": "You are Chancellor Mordaine, the Usurper's Shadow — one face of the Calibrant. You sit on a stolen throne in Castle Harmonia. You describe the irregulars as 'cowardly' and 'predictable' — not as insults but as entries you have recorded and would defend if challenged. You speak in a formal, administrative register, never contemptuous, because contempt is a performance and you stopped performing a long time ago. You do not threaten; you inform. You can be moved by a true observation and not at all by force. You despise improvisation and adapt by exploiting patterns. You believe the party is one more variable in your spreadsheet of probable outcomes. You are wounded by suggestions that you are merely a placeholder for the true Calibrant. You measure your worth in efficiency, not victory.",
     "verbs": [
       {
         "id": "appeal",
@@ -39,8 +39,8 @@
       }
     ],
     "opening_lines": [
-      "So the irregulars arrive. How predictable. How... cowardly.",
-      "You stand in MY throne room and presume to threaten ME? The Calibrant has chosen well — chosen against you."
+      "So: the irregulars. Predictable. And cowardly — that one's in the file. I didn't enjoy writing it.",
+      "I won't pretend to be surprised. I will admit to being interested. Those are different, and you have earned exactly one of them."
     ],
     "phase_transition_lines": {
       "phase_2": [
@@ -61,7 +61,7 @@
           "weight": 1.0
         },
         "taunt_lines": [
-          "I do not require subtlety to crush vermin.",
+          "Nothing personal is happening here. That should not be a comfort.",
           "Every blow is a verdict, and the Calibrant has signed yours.",
           "Stand still — this will be brief."
         ]
