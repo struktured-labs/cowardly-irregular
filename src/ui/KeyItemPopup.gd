@@ -25,6 +25,14 @@ const HINT_COLOR := Color(0.6, 0.6, 0.7)
 var _bg: ColorRect = null
 var _panel: Control = null
 var _dismissable: bool = false
+var _dismissing: bool = false
+
+
+## Programmatic dismiss (a cutscene skip): the same fade as a press, safe before the reveal is dismissable and safe to call twice.
+func dismiss() -> void:
+	if _dismissing or _panel == null or not is_instance_valid(_panel):
+		return
+	_dismiss()
 
 
 static func show_item(parent: Node, item: Dictionary) -> KeyItemPopup:
@@ -155,6 +163,7 @@ func _input(event: InputEvent) -> void:
 
 func _dismiss() -> void:
 	_dismissable = false
+	_dismissing = true
 	var tween := create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(_bg, "modulate:a", 0.0, 0.2)
