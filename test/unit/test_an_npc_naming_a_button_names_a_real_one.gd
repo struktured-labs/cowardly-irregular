@@ -125,8 +125,13 @@ func test_the_pad_route_to_the_editor_is_the_menu_not_start() -> void:
 	assert_gt(om.length(), 1000, "CONTROL: OverworldMenu source did not load")
 	assert_true(om.contains('"id": "autobattle"'),
 		"the overworld menu no longer offers the Auto Rules row — two NPCs now send pad players nowhere")
+	## Reds on a LEGITIMATE rename too, and that is the design: two NPCs say this literal out loud,
+	## so the rename is not finished until they say the new one. The message names them so the cheap
+	## repair is the correct one rather than deleting this assert.
 	assert_true(om.contains('"label": "Auto Rules"'),
-		"the row is no longer LABELLED 'Auto Rules', which is the text both NPCs tell the player to look for")
+		"the Auto Rules row was renamed. Two NPCs tell the player to look for that exact text — " +
+		"update SuburbanOverworld.gd (Mall Rat Mike) and FrostholdVillage.gd (the hermit) to the " +
+		"new label, then this line. Renaming the row alone leaves them pointing at a row nobody sees.")
 	assert_true(src.contains("_open_autobattle_for_character("),
 		"GameLoop's menu_action arm no longer opens the editor, so the Auto Rules row leads nowhere")
 
