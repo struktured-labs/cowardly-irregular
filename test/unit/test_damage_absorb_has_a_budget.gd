@@ -119,3 +119,51 @@ func test_the_ability_still_authors_a_finite_budget() -> void:
 	assert_eq(str(a.get("effect", "")), "damage_absorb", "CONTROL: still the absorb ability")
 	assert_gt(int(a.get("absorb_amount", 0)), 0,
 		"fill_the_void must author a finite ward — without it the_absence is immune for two rounds")
+
+## ── The ward must survive a snapshot with its bound intact ────────────────────────────────────
+## Found by asking cowir-sfx's closing question of my own fix: what did fixing this file stop me
+## looking at? `status_effects` round-trips through to_dict/from_dict and the Time Mage's
+## `create_save` explicitly quicksaves DURING battle. The budget lived only in Object meta, so a
+## snapshot restored the ward WITHOUT it — and "no budget" legitimately means unlimited, so the
+## round trip silently restored the exact defect the budget exists to prevent.
+##
+## Not reachable today: `fill_the_void` is self-target and monster-only, and enemies are not
+## persisted. It is pinned anyway because the consequence is the original bug and there is no
+## natural discovery path — the same reasoning tick 151 used one family member earlier, when
+## status_durations was lost on rewind and every active poison became permanent.
+
+func test_the_budget_survives_a_round_trip() -> void:
+	var c := _make("Snapshot")
+	c.add_status("damage_absorb", 5)
+	c.set_meta("_damage_absorb_budget", 137)
+	var restored := _make("Restored")
+	restored.from_dict(c.to_dict())
+	assert_true(restored.has_status("damage_absorb"), "CONTROL: the status itself round-trips")
+	assert_eq(int(restored.get_meta("_damage_absorb_budget", -1)), 137,
+		"the ward must come back worth what was left of it, not unlimited")
+
+func test_a_restored_ward_still_spends_and_breaks() -> void:
+	## Behavioural, because carrying the number across is not the same as the restored combatant
+	## USING it — a restored ward that absorbs without decrementing is the original bug again.
+	var d := _plain_hit(30)
+	var c := _make("Snapshot")
+	c.current_hp = 200
+	c.add_status("damage_absorb", 5)
+	c.set_meta("_damage_absorb_budget", 4)
+	var restored := _make("Restored")
+	restored.from_dict(c.to_dict())
+	restored.current_hp = 200
+	assert_eq(restored.take_damage(30, false), d - 4, "the restored ward pays what it has, then the overflow lands")
+	assert_false(restored.has_status("damage_absorb"), "and it breaks, exactly as it would have before the snapshot")
+
+func test_a_save_written_before_this_shipped_keeps_the_unbudgeted_rule() -> void:
+	## Old saves have no such key, and an unbudgeted ward is what they recorded. Reading absence as
+	## a ZERO budget would retroactively delete a mechanic from every existing save.
+	var c := _make("Legacy")
+	var data: Dictionary = c.to_dict()
+	data.erase("damage_absorb_budget")
+	data["status_effects"] = ["damage_absorb"]
+	var restored := _make("Restored")
+	restored.from_dict(data)
+	restored.current_hp = 100
+	assert_eq(restored.take_damage(30, false), 0, "an absent key must still mean unlimited, not spent")
