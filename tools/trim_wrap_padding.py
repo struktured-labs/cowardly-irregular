@@ -32,9 +32,13 @@ WHAT IT DOES NOT DO
     It changes no levels, applies no fade, and resamples nothing -- the output
     keeps the source rate and channel count, and that is now ASSERTED after the
     encode rather than merely intended (see the verification block below).
-    ⚠️ "2 of the 19 beds are 44.1 kHz" stood here and was a count of the trim
-    population, not the corpus: 19 of 165 tracks are 44.1 kHz. The understated
-    number is the one that made the guarantee look like a corner case.
+    ⚠️ "2 of the 19 beds are 44.1 kHz" stood here and counted the trim
+    population, not the corpus. I then replaced it with "19 of 165 tracks",
+    which counted manifest ENTRIES -- battle_brute.ogg is named by five keys
+    (the monster-family ruling), so the alias was counted five times. The
+    denominator is 161 DISTINCT files, of which 19 are 44.1 kHz; the directory
+    holds 163 .ogg because two sfx_ability_* files sit there unreferenced by
+    either manifest. Three denominators, one corpus -- say which you mean.
     The cut lands where |x| crosses -60 dBFS, so the discontinuity it creates
     is by construction at most a -60 dBFS step: inaudible, and no click.
 """
