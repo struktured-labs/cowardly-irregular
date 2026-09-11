@@ -443,6 +443,100 @@ func test_no_briefed_battle_track_is_shadowed_by_a_declaration() -> void:
 		"briefed battle tracks that a monsters.json declaration would outrank (%d): %s — generating these produces audio nothing can reach; move the declaration in the SAME commit that generates the track" % [unpinned.size(), unpinned])
 
 
+## Beds whose ONLY namer is a cutscene that no dispatcher can play. They are not
+## forgotten like the pinned orphans — they are WIRED, to a scene that does not
+## run. cowir-story is wiring the epilogues (world1's landed 2026-09-11), so this
+## set should shrink; when it does the arm says so.
+const KNOWN_WIRED_TO_DEAD_SCENES := {
+	"credits_digital": "world5_epilogue — unplayable; cowir-story has it queued",
+	"credits_industrial": "world4_epilogue — unplayable; queued",
+	"credits_steampunk": "world3_epilogue — cowir-story ruled it SUPERSEDED by world3_chapter5, so this may never wire",
+	"credits_suburban": "world2_epilogue — ruled SUPERSEDED by world2_chapter11, same",
+	"cutscene_w5_cached_memory": "all four world6_fragment_* scenes, none dispatched",
+}
+
+
+## Everything that could DISPATCH a cutscene — source, scenes, and non-cutscene
+## data. Deliberately excludes data/cutscenes/: a scene names its own id, so
+## including them would make every scene look dispatched by itself.
+func _dispatcher_text() -> String:
+	var paths: Array[String] = []
+	_files("res://src", ".gd", paths)
+	_files("res://src", ".tscn", paths)
+	var parts: PackedStringArray = []
+	for p in paths:
+		parts.append(_strip_comments(FileAccess.get_file_as_string(p)) if p.ends_with(".gd") else FileAccess.get_file_as_string(p))
+	var d := DirAccess.open("res://data")
+	if d != null:
+		d.list_dir_begin()
+		var n: String = d.get_next()
+		while n != "":
+			if n.ends_with(".json") and n != "music_manifest.json" and n != "sfx_manifest.json":
+				parts.append(FileAccess.get_file_as_string("res://data/" + n))
+			n = d.get_next()
+		d.list_dir_end()
+	return "\n".join(parts)
+
+
+## ⚠️ ONE-LEVEL, AND SAFE BY THE CORPUS RATHER THAN BY THE CODE. "The scene id
+## appears in src/" does not ask whether the file naming it can itself run —
+## cowir-adhoc's transitive hole. A scene dispatched only from MenuScene.gd (a
+## 1,500-line hub nothing references, found dead 2026-09-11) would score
+## playable here. They measured it: 0 of 124 called cutscenes have a dead file
+## as their only caller, so the shortcut costs nothing TODAY. It is recorded
+## rather than defended because the day that changes, nothing here will say so.
+func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
+	var disp: String = _dispatcher_text()
+	assert_gt(disp.length(), 500000,
+		"SCOPE control: dispatcher corpus is %d chars — too small" % disp.length())
+	assert_gt(disp.find("world1_prologue"), 0,
+		"CONTROL FAILED: world1_prologue is dispatched by GameLoop but was not found — the corpus is wrong")
+	assert_eq(disp.find("\"tracks\": {"), -1,
+		"CONTROL FAILED: music_manifest.json is in the dispatcher corpus — every id would match itself")
+
+	## scene id -> its raw text
+	var scenes: Dictionary = {}
+	var cd := DirAccess.open("res://data/cutscenes")
+	if cd != null:
+		cd.list_dir_begin()
+		var n: String = cd.get_next()
+		while n != "":
+			if n.ends_with(".json"):
+				scenes[n.substr(0, n.length() - 5)] = FileAccess.get_file_as_string("res://data/cutscenes/" + n)
+			n = cd.get_next()
+		cd.list_dir_end()
+	assert_gt(scenes.size(), 150, "SCOPE control: read %d cutscenes" % scenes.size())
+
+	var stranded: Array[String] = []
+	var revived: Array[String] = []
+	for id in _manifest_ids():
+		## Only ids with no consumer outside the cutscene corpus are candidates.
+		var composed: bool = false
+		for prefix in COMPOSED_FAMILIES.keys():
+			if id.begins_with(str(prefix)):
+				composed = true
+		if composed or disp.find(id) >= 0:
+			if KNOWN_WIRED_TO_DEAD_SCENES.has(id) and not composed:
+				revived.append(id)
+			continue
+		var naming: Array[String] = []
+		var live: bool = false
+		for s in scenes.keys():
+			if str(scenes[s]).find(id) >= 0:
+				naming.append(str(s))
+				if disp.find(str(s)) >= 0:
+					live = true
+		if naming.is_empty() or live:
+			continue
+		if not KNOWN_WIRED_TO_DEAD_SCENES.has(id):
+			stranded.append("%s <- %s" % [id, naming])
+
+	assert_eq(stranded.size(), 0,
+		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds" % [stranded.size(), stranded])
+	assert_eq(revived.size(), 0,
+		"pinned beds whose scene is now dispatched (%s) — the epilogue landed; delete the entries" % [revived])
+
+
 func test_the_set_of_unreached_beds_has_not_changed() -> void:
 	var text: String = _consumer_text()
 	var mraw: String = FileAccess.get_file_as_string("res://data/monsters.json")
