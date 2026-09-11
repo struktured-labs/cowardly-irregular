@@ -491,6 +491,24 @@ test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: export failed — see tmp/${PLAT}_e
 [ -s "$BIN" ] || { echo "[${PLAT}] BLOCKED: export reported success but produced no binary" >&2; exit 2; }
 echo "[${PLAT}] binary: $(( $(stat -c%s "$BIN") / 1048576 )) MiB"
 
+# ── does the binary CONTAIN what the export owed? ───────────────────────────
+# Until now this gate checked the exit code and that the binary is non-empty. Neither can see
+# content silently dropped: a desktop build that lost every sprite still exits 0 and still has
+# a non-empty binary, and there is deliberately no pck size gate here (that limit is itch's
+# HTML5 embed cap, irrelevant to a download) — so nothing looked at the payload at all.
+# check_exclude_patterns.sh above guards the opposite direction, an exclusion that silently
+# stopped matching. This one guards the dropout direction, and the two second each other.
+if [ -f tools/check_pck_complete.py ]; then
+    if ! python3 tools/check_pck_complete.py . "tmp/${PLAT}_export.log" "$PRESET"; then
+        echo "[${PLAT}] BLOCKED: the export is missing content it owed — see above." >&2
+        exit 2
+    fi
+else
+    echo "[${PLAT}] BLOCKED: tools/check_pck_complete.py missing. Refusing to ship a binary" >&2
+    echo "        whose payload nothing has checked." >&2
+    exit 2
+fi
+
 # ── gate 3: does it actually boot? ───────────────────────────────────────────
 # The gate web cannot have. An export can succeed and still produce something
 # that dies on startup — a missing autoload, an unresolved class_name, a broken
