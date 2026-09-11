@@ -92,7 +92,9 @@ func _build_ui() -> void:
 	)
 
 	# Footer
-	var footer_text = "up/dn: Select Slot  A/Click: Change  B/RClick: Back" if mode == Mode.SLOT_SELECT else "up/dn: Select  A/Click: Assign  B/RClick: Cancel"
+	var _ok: String = InputProfileManager.hint_for_action("ui_accept")
+	var _no: String = InputProfileManager.hint_for_action("ui_cancel")
+	var footer_text = ("↑↓/D-pad: Select Slot  %s/Click: Change  %s/RClick: Back" % [_ok, _no]) if mode == Mode.SLOT_SELECT else ("↑↓/D-pad: Select  %s/Click: Assign  %s/RClick: Cancel" % [_ok, _no])
 	var footer = Label.new()
 	footer.text = footer_text
 	footer.position = Vector2(16, viewport_size.y - 32)

@@ -125,7 +125,13 @@ func _build_ui() -> void:
 	)
 
 	# Footer
-	var footer_text = "↑↓: Select Slot  A/Click: Change  B/RClick: Back" if mode == Mode.SLOT_SELECT else "↑↓: Select  A/Click: Equip  B/RClick: Cancel  X: Unequip"
+	var _ok: String = InputProfileManager.hint_for_action("ui_accept")
+	var _no: String = InputProfileManager.hint_for_action("ui_cancel")
+	# The west face with a pad, the X KEY without — "X: Unequip" read as a face button to a pad
+	# player, and named the one route they did not have.
+	var _pad_un: String = InputProfileManager.button_name_for_index(JOY_BUTTON_X)
+	var _un: String = "%s/X" % _pad_un if _pad_un != "" else "X"
+	var footer_text = ("↑↓: Select Slot  %s/Click: Change  %s/RClick: Back" % [_ok, _no]) if mode == Mode.SLOT_SELECT else ("↑↓: Select  %s/Click: Equip  %s/RClick: Cancel  %s: Unequip" % [_ok, _no, _un])
 	var footer = Label.new()
 	footer.text = footer_text
 	footer.position = Vector2(16, viewport_size.y - 32)
@@ -712,8 +718,14 @@ func _handle_item_input(event: InputEvent) -> void:
 		SoundManager.play_ui("menu_close")
 		get_viewport().set_input_as_handled()
 
-	# X to unequip
+	# Unequip. KEY_X was the ONLY route — a pad player could not unequip at all, on a screen in a
+	# game whose first design principle is that everything works on gamepad. The west face is free
+	# here (ui_accept/ui_cancel take east/south, both shoulders are taken) and is what
+	# AutogrindGridEditor already uses for its remove action.
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_X:
+		_unequip_slot()
+		get_viewport().set_input_as_handled()
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
 		_unequip_slot()
 		get_viewport().set_input_as_handled()
 
