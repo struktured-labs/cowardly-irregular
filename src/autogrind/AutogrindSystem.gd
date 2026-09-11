@@ -835,6 +835,11 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	## rule edit, so a second grind with unchanged rules carried the first one's numbers into the
 	## Summary's "Your Rules" row — last session's answer, presented as this session's.
 	reset_rule_fire_counts()
+	## Same class as the rule counts above, found by censusing all three sets at once. Both are
+	## SESSION tallies by every consumer: the Summary rows, _record_session, and the dashboard's
+	## win_rate, whose numerator battles_completed resets here while its denominator did not.
+	consecutive_wins = 0
+	collapse_count = 0
 	meta_bosses_spawned = 0
 	meta_bosses_defeated = 0
 	meta_corruption_level = 0.0
@@ -866,11 +871,11 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 		for key in config["interrupt_rules"]:
 			interrupt_rules[key] = config["interrupt_rules"][key]
 
-	if config.has("permadeath_staking"):
-		var pd_enabled: bool = config["permadeath_staking"]
-		permadeath_staking_enabled = pd_enabled
-		if pd_enabled:
-			efficiency_growth_rate = 0.15  # 50% boost for permadeath staking
+	## Through the setter, which moves the flag and its growth rate together. Assigning the flag
+	## alone never lowered the rate again, so a staking grind followed by a NON-staking one kept
+	## 0.15 — the permadeath yield bonus without the permadeath risk, the inverse of the design.
+	## Absent key keeps the current value, so the configless callers behave exactly as before.
+	enable_permadeath_staking(bool(config.get("permadeath_staking", permadeath_staking_enabled)))
 
 	grind_started.emit()
 	print("=== AUTOGRIND STARTED ===")
@@ -2561,6 +2566,14 @@ func build_snapshot_system_block(elapsed: float = 0.0) -> Dictionary:
 		"rule_fire_counts": _rule_fire_counts.duplicate(),
 		"meta_bosses_spawned": meta_bosses_spawned,
 		"meta_bosses_defeated": meta_bosses_defeated,
+		## The BASELINE, not injuries_this_session: check_new_injuries recomputes the count from
+		## this on the next battle, so a restored count would be silently overwritten one battle later.
+		"injury_baseline": _injury_baseline,
+		## ability_learned and rare_item_found are live rule conditions. Reset by
+		## _wire_smart_interrupt_signals on every start, so a pause cleared what the player's
+		## rule was waiting for and the rule went quiet for the rest of the session.
+		"ability_learned_this_session": _ability_learned_this_session,
+		"rare_drop_this_session": _rare_drop_this_session,
 		"fatigue_events_triggered": fatigue_events_triggered,
 		"current_region_id": current_region_id,
 		"permadeath_staking_enabled": permadeath_staking_enabled,
@@ -2688,7 +2701,15 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	meta_bosses_defeated = system_data.get("meta_bosses_defeated", 0)
 	fatigue_events_triggered = system_data.get("fatigue_events_triggered", 0)
 	current_region_id = system_data.get("current_region_id", "")
-	permadeath_staking_enabled = system_data.get("permadeath_staking_enabled", false)
+	## start_autogrind re-baselines against the ALREADY-injured party, absorbing every pre-pause
+	## injury, so the session count restarts at 0 and the member_injured rule condition goes false.
+	_injury_baseline = int(system_data.get("injury_baseline", _injury_baseline))
+	injuries_this_session = 0
+	_ability_learned_this_session = bool(system_data.get("ability_learned_this_session", false))
+	_rare_drop_this_session = bool(system_data.get("rare_drop_this_session", false))
+	## Via the setter so the flag->growth-rate mapping has ONE definition; a bare assignment
+	## restored "staking on" beside the non-staking 0.1 rate, and nothing reads as wrong.
+	enable_permadeath_staking(system_data.get("permadeath_staking_enabled", false))
 
 	# Session-scoped dedup/streak state. restore runs AFTER start_autogrind cleared
 	# these, so restored values win. Old (pre-field) snapshots lack the keys and
