@@ -206,6 +206,11 @@ func _selection_phase() -> Array[Dictionary]:
 			a["speed"] = _speed_for(a, combatant)
 			actions.append(a)
 		elif raw.size() > 1:
+			## Full-bank parity with the live game: a fifth action only at +4 AP (the round's +1 is
+			## already applied above), otherwise truncated to four. Charged size-1, so five at +4
+			## costs four — the fifth is free by construction here, as it is live.
+			if raw.size() > 4 and combatant.current_ap < 4:
+				raw = raw.slice(0, 4)
 			var ap_cost = raw.size() - 1
 			if combatant.can_brave(ap_cost):
 				combatant.spend_ap(ap_cost)

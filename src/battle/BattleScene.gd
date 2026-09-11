@@ -386,6 +386,8 @@ func _ready() -> void:
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.mp_restored.connect(_on_mp_restored)
 	BattleManager.ap_granted.connect(_on_ap_granted)
+	if BattleManager.has_signal("full_bank_unleashed"):
+		BattleManager.full_bank_unleashed.connect(_on_full_bank_unleashed)
 	if BattleManager.has_signal("trust_interrupt_window_opened"):
 		BattleManager.trust_interrupt_window_opened.connect(_on_trust_interrupt_window_opened)
 	if BattleManager.has_signal("trust_interrupt_window_closed"):
@@ -3692,6 +3694,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			## actually carrying it, so jobs without the art are unchanged.
 			if animator and animator.has_named_animation("advance"):
 				animator.play_named_animation("advance")
+			_spawn_advance_flourish(combatant, attacker_sprite, (action.get("actions", []) as Array).size(), bool(action.get("full_bank", false)))
 		"item":
 			SoundManager.play_item(str(action.get("item_id", "")))
 			animator.play_item()
@@ -6055,6 +6058,107 @@ const JOB_QUIP_COLORS: Dictionary = {
 	"bossbinder": Color(0.95, 0.25, 0.35),  # Boss-red — they BECOME the boss
 	"skiptrotter": Color(0.95, 0.85, 0.35), # Glitchy yellow — frame-skip
 }
+
+
+## Per-job flourish shapes. The AURA is the identity; intensity is carried by the action COUNT, so
+## a Mage at 2 and a Mage at 5 are the same idea at different volumes — struktured 2026-09-10,
+## "the more you advance the crazier it gets, and it's stylized per char class".
+const ADVANCE_FLOURISH_SHAPES: Dictionary = {
+	"fighter": "sparks", "guardian": "sparks",
+	"mage": "runes", "scriptweaver": "runes", "necromancer": "runes",
+	"cleric": "motes", "summoner": "motes", "time_mage": "motes",
+	"rogue": "slashes", "ninja": "slashes",
+	"bard": "notes", "speculator": "notes", "bossbinder": "notes", "skiptrotter": "notes",
+}
+
+## Ring escalation by action count: 2 is a flicker, 5 is a storm. Index 0 is unused (a 1-action
+## queue is not an Advance), so the table is read at [count] and clamped.
+const ADVANCE_FLOURISH_RINGS: Array[int] = [0, 0, 6, 10, 16, 26]
+
+
+## Escalating per-class aura around the acting character while an Advance resolves.
+func _spawn_advance_flourish(combatant: Combatant, sprite: Node2D, count: int, full_bank: bool) -> void:
+	if combatant == null or sprite == null or not is_instance_valid(sprite):
+		return
+	if _tier() == BattleJuice.Tier.MINIMAL:
+		return
+	var n: int = clampi(count, 2, ADVANCE_FLOURISH_RINGS.size() - 1)
+	var color: Color = _get_job_quip_color(combatant)
+	var job_id: String = str(combatant.job.get("id", "")) if combatant.job else ""
+	var shape: String = str(ADVANCE_FLOURISH_SHAPES.get(job_id, "sparks"))
+	var origin: Vector2 = sprite.global_position
+	var particles: int = ADVANCE_FLOURISH_RINGS[n]
+
+	## Intensity rides the count on every channel at once — that is what "crazier" means here.
+	BattleJuice.add_trauma(0.04 * float(n), Vector2.ZERO, 0.05 * float(n))
+	BattleJuice.spawn_burst(origin, Vector2.UP, particles, color, 90.0 + 45.0 * float(n))
+	if n >= 4 and sprite is AnimatedSprite2D:
+		BattleJuice.spawn_ghost(sprite as AnimatedSprite2D, 0.35, 0.22)
+	if n >= 3:
+		BattleJuice.squash(sprite, 1.0 + 0.03 * float(n), 1.0 - 0.02 * float(n), 0.04, 0.12)
+	_spawn_advance_shape(shape, origin, color, n)
+	## cowir-sfx: five escalating cues, advance_flourish_2..5. The full-bank beat has its own
+	## (full_bank_unleash) rather than a louder fifth — it is a different moment, not a bigger one.
+	SoundManager.play_battle("advance_flourish_%d" % n)
+	## The full-bank beat rides BattleManager.full_bank_unleashed, NOT a call from here — the signal
+	## already reaches _on_full_bank_unleashed and calling it too would double the flash and the cue.
+
+
+## The per-class glyph ring. Deliberately geometric rather than sprite art so every job — including
+## the meta jobs with no bespoke sheets — gets an identity without blocking on the art lane.
+func _spawn_advance_shape(shape: String, origin: Vector2, color: Color, n: int) -> void:
+	var arms: int = 3 + n
+	for i in arms:
+		var line := Line2D.new()
+		line.width = 2.0 + float(n) * 0.5
+		line.default_color = Color(color.r, color.g, color.b, 0.85)
+		line.z_index = 60
+		var ang: float = TAU * float(i) / float(arms) - PI * 0.5
+		var reach: float = 26.0 + 9.0 * float(n)
+		match shape:
+			"runes":
+				for k in 4:
+					var a2: float = ang + float(k) * TAU / 4.0
+					line.add_point(Vector2(cos(a2), sin(a2)) * reach * (0.45 + 0.18 * float(k)))
+			"slashes":
+				line.add_point(Vector2(cos(ang), sin(ang)) * reach * 0.35)
+				line.add_point(Vector2(cos(ang + 0.5), sin(ang + 0.5)) * reach)
+			"motes":
+				for k in 6:
+					var t: float = float(k) / 5.0
+					line.add_point(Vector2(cos(ang + t * 1.2), sin(ang + t * 1.2)) * reach * t)
+			"notes":
+				line.add_point(Vector2(cos(ang), sin(ang)) * reach * 0.3)
+				line.add_point(Vector2(cos(ang), sin(ang)) * reach)
+				line.add_point(Vector2(cos(ang) * reach + 7.0, sin(ang) * reach))
+			_:
+				line.add_point(Vector2(cos(ang), sin(ang)) * reach * 0.4)
+				line.add_point(Vector2(cos(ang), sin(ang)) * reach)
+		line.position = origin
+		add_child(line)
+		var tw := create_tween()
+		tw.set_parallel(true)
+		tw.tween_property(line, "scale", Vector2.ONE * (1.25 + 0.12 * float(n)), 0.26 + 0.03 * float(n))
+		tw.tween_property(line, "rotation", (0.5 + 0.22 * float(n)) * (1.0 if n % 2 == 0 else -1.0), 0.3)
+		tw.tween_property(line, "modulate:a", 0.0, 0.3 + 0.04 * float(n))
+		tw.chain().tween_callback(func():
+			if is_instance_valid(line):
+				line.queue_free())
+
+
+## The full-bank beat: the fifth action is the one the whole AP economy builds toward, so it gets a
+## flash and its own cue rather than a louder version of the fourth.
+func _on_full_bank_unleashed(combatant: Combatant, action_count: int) -> void:
+	if _tier() == BattleJuice.Tier.MINIMAL:
+		return
+	var color: Color = _get_job_quip_color(combatant)
+	_spawn_screen_flash(Color(color.r, color.g, color.b, 0.42), 0.30)
+	BattleJuice.add_trauma(0.30, Vector2.ZERO, 0.28)
+	var sprite: Node2D = _get_combatant_sprite(combatant)
+	if sprite and is_instance_valid(sprite):
+		BattleJuice.punch_zoom(sprite.global_position, 0.05, 0.18)
+	SoundManager.play_battle("full_bank_unleash")
+	log_message("[color=gold]★ FULL BANK — %d actions ★[/color]" % action_count)
 
 
 func _get_job_quip_color(combatant: Combatant) -> Color:

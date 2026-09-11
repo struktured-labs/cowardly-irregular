@@ -536,6 +536,11 @@ func _play_expand_sound() -> void:
 
 func _play_advance_sound(depth: int = 1) -> void:
 	"""Play sound when queueing an action (Advance mode)"""
+	## cowir-sfx's WALK-DOWN, taken over my own escalation branch (2026-09-10). Mine sent presses
+	## above rung 3 to the non-job flourish cues, which fixed the flat top and LOST the per-job voice
+	## at exactly the depths that matter most. Theirs walks down to the highest rung each job
+	## actually has: a 3-rung job behaves exactly as before, a 5-rung job gets all five, and no job
+	## ever falls through to the arcade credit for want of a key it was never going to have.
 	# Per-job escalation ladder (struktured-approved, all 5 starters: fighter/cleric/rogue/mage/bard); jobs without a ladder key fall back to the arcade credit.
 	# Walk DOWN to the highest rung this job actually has, rather than clamping to a fixed 3.
 	# The cap was 4 and the clamp was 3, so press 4 always replayed the press-3 "full ham" cue;
@@ -1535,15 +1540,33 @@ func _update_ap_label() -> void:
 	var root = _get_root_menu()
 	var queued_count = root._queued_actions.size()
 
+	## Full Bank (struktured 2026-09-10): at +4 the fifth queued action is FREE, so the preview has
+	## to know that or it tells the player a lie — it read "+4→-1 [5]" for a turn that actually ends
+	## at 0. A cost readout that overstates the cost suppresses the exact move the mechanic exists
+	## to reward, and the player has no way to discover it is wrong.
+	var full_bank: bool = _current_ap >= BattleManager.FULL_BANK_AP
+	var billed: int = BattleManager.billed_ap(_current_ap, queued_count)
+
 	if queued_count == 0:
-		# No actions queued, just show current AP
-		_ap_label.text = "%+d AP" % _current_ap
-		_ap_label.add_theme_color_override("font_color", Color.WHITE)
+		if full_bank:
+			## Telegraph it BEFORE the first press — otherwise the fifth slot is a secret, and a
+			## mechanic nobody knows about is worth as much as one that does not work.
+			_ap_label.text = "%+d AP ★ FULL BANK" % _current_ap
+			_ap_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
+		else:
+			# No actions queued, just show current AP
+			_ap_label.text = "%+d AP" % _current_ap
+			_ap_label.add_theme_color_override("font_color", Color.WHITE)
 	else:
 		# Show AP change preview: "+1→-2" (compact)
-		var new_ap = _current_ap - queued_count
+		var new_ap = _current_ap - billed
 		var color = Color.YELLOW if new_ap >= 0 else Color.ORANGE_RED
-		_ap_label.text = "%+d→%+d [%d]" % [_current_ap, new_ap, queued_count]
+		if billed < queued_count:
+			## The free action is the payoff — name it rather than just quietly costing less.
+			color = Color(1.0, 0.85, 0.3)
+			_ap_label.text = "%+d→%+d [%d] ★ 5th FREE" % [_current_ap, new_ap, queued_count]
+		else:
+			_ap_label.text = "%+d→%+d [%d]" % [_current_ap, new_ap, queued_count]
 		_ap_label.add_theme_color_override("font_color", color)
 
 
