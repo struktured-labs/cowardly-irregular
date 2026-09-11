@@ -125,6 +125,85 @@ func _gd_files() -> Array:
 ##   census arm     hunts a STRING ("Press A")        -> uses NO stripper; the caption IS the defect
 ## Running _code_only over the census would report every frozen prompt clean. That is the silent,
 ## total false-clean @cowir-music warned about, one function away in the same file.
+## REACHABILITY AS A TRIPWIRE, not a paragraph. I wrote the live/dead split into this file's header
+## and was about to leave it there -- the third time today I would have documented a limitation
+## instead of encoding one, after being shown twice what that is worth. A comment does not notice
+## when MenuScene is revived, replaced, or deleted, and it does not notice when a LIVE surface
+## quietly loses its last caller.
+##
+## Pins today's split so a change in EITHER direction is deliberate. @cowir-battle's point is why
+## the dead half matters as much as the live: an unreachable screen whose captions are already
+## correct is BETTER bait than a frozen one, because it reads as a file someone maintains.
+const REACHABILITY := {
+	"AutogrindSummary.gd": true,
+	"AutogrindGridEditor.gd": true,
+	"AutobattleGridEditor.gd": true,
+	"AutogrindHistoryScreen.gd": false,
+	"AutogrindTemplatePicker.gd": false,
+}
+
+func test_the_live_dead_split_is_still_what_the_header_claims() -> void:
+	var src_files := {}
+	for d in ["res://src", "res://src/ui", "res://src/battle", "res://src/autogrind", "res://src/autobattle", "res://src/ui/autogrind", "res://src/ui/autobattle"]:
+		var dir := DirAccess.open(d)
+		if dir == null:
+			continue
+		for f in dir.get_files():
+			if f.ends_with(".gd"):
+				src_files[d + "/" + f] = true
+	assert_gt(src_files.size(), 40, "CONTROL: the reachability sweep must read a real corpus")
+
+	var drifted: Array = []
+	for target in REACHABILITY.keys():
+		## ⚠️ Match the bare STEM, not the ".gd" path, and strip comments first. This arm failed on its
+		## first run claiming AutogrindGridEditor had one caller -- because MenuScene reaches it by
+		## PATH, `load("res://.../AutogrindGridEditor.gd")`, while AutogrindUI reaches it by
+		## CLASS_NAME, `AutogrindGridEditor.new()`. A path-only search sees the dead hub and misses
+		## the live caller, i.e. declares a LIVE surface dead. My published measurement used the bare
+		## name and was right; the tripwire I wrote to defend it used the path and was not.
+		##
+		## Comments stripped because the hunt is for a CODE reference: AutogrindUI's docstring names
+		## this class twice without calling it, and for REACHABILITY an over-count is the dangerous
+		## direction -- it makes a dead surface look live. (Opposite polarity to the census below,
+		## which hunts a string literal and must not strip. Same file, both settings, per
+		## @cowir-controller: the polarity follows what the scan is asking to FIND.)
+		var stem: String = str(target).replace(".gd", "")
+		var callers := 0
+		for f in src_files.keys():
+			if f.ends_with("/" + target):
+				continue
+			if _code_only(FileAccess.get_file_as_string(f)).contains(stem):
+				callers += 1
+		var reachable: bool = callers > 0 and not (callers == 1 and _only_caller_is_dead_hub(src_files, target))
+		if reachable != REACHABILITY[target]:
+			drifted.append("%s: pinned reachable=%s, measured %d caller(s)" % [target, REACHABILITY[target], callers])
+	assert_eq(drifted, [],
+		"a prompt surface changed reachability -- if MenuScene was revived or a live screen lost its last caller, update REACHABILITY and say which")
+
+	## ⚠️ WHAT THIS ARM IS AND IS NOT. It pins TODAY'S SPLIT and reds when a surface drifts across
+	## it. It is NOT a reachability engine: it counts referrers and knows one dead hub by name,
+	## which is @cowir-controller's weaker standard -- "two levels is still edge-counting; only
+	## reaching an ANCHOR terminates the recursion". If a DIFFERENT hub dies tomorrow this arm will
+	## not notice, and it should not be cited as proof a surface is reachable.
+	##
+	## The SPLIT it pins was derived by anchoring, read rather than assumed:
+	##   project.godot  run/main_scene = "res://src/GameLoop.tscn"   the anchor · 31 autoloads
+	##   MenuScene      appears in NEITHER -> not the main scene, not an autoload
+	##   MenuScene.tscn referenced by nothing -> the chain terminates in an orphan
+	##   the three live ones chain to GameLoop.gd, which IS the main scene's script
+	## So the values are anchor-grade; the DETECTOR is drift-grade. Those are different claims and
+	## conflating them is how a referrer count gets published as a reachability proof.
+
+
+func _only_caller_is_dead_hub(src_files: Dictionary, target: String) -> bool:
+	for f in src_files.keys():
+		if f.ends_with("/" + target):
+			continue
+		if _code_only(FileAccess.get_file_as_string(f)).contains(target.replace(".gd", "")):
+			return f.ends_with("/MenuScene.gd")
+	return false
+
+
 func test_the_comment_stripper_cuts_only_what_it_should() -> void:
 	var cases := [
 		# [input, expected, why]
