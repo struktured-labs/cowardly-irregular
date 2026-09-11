@@ -108,12 +108,19 @@ func test_the_captions_derive_instead() -> void:
 	## nothing. A corpus-size control on the LITERAL list cannot see that; only counting what the
 	## scan actually examined can.
 	var lines: PackedStringArray = ge.split("\n")
-	var captions_seen: int = 0
-	for line in lines:
-		if line.contains("help_label1.text") or line.contains("help_label2.text") or line.contains("help.text"):
-			captions_seen += 1
-	assert_eq(captions_seen, 4,
-		"CONTROL: found %d caption statements in the grid editor, expected 4 — if these were renamed, every assertion below is scanning nothing" % captions_seen)
+	## ⚠️ NAMED MEMBERSHIP, NOT A COUNT. My first version pinned `captions_seen == 4` — an exact
+	## count of SUBJECTS, written an hour after I retracted an exact count of HELPERS for going
+	## stale on someone's correct change. Adding a fifth help line would have redded it the same way.
+	## A floor (`> 0`) is the other trap: cowir-controller measured that it catches a TOTAL drain and
+	## misses a PARTIAL one, and partial is likelier — a rename touches one label, not all of them.
+	## Each label must contribute at least once; adding statements is free, losing one is not.
+	for label in ["help_label1.text", "help_label2.text", "help.text"]:
+		var seen: int = 0
+		for line in lines:
+			if line.contains(label):
+				seen += 1
+		assert_gt(seen, 0,
+			"CONTROL: `%s` contributed ZERO caption statements — it was renamed or removed, so every assertion below scanned less than it claims" % label)
 
 	for i in lines.size():
 		var line: String = lines[i]
