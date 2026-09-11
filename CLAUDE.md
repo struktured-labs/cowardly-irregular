@@ -389,6 +389,8 @@ All UI must be fully navigable via gamepad or keyboard.
 | Queue action (Advance) | R shoulder | R key |
 | Defer | L shoulder | L key |
 | Change battle speed | X (top face button) | ` (backtick) |
+| Repeat last turn's actions | Y (west face button) | Y key |
+| Cycle party formation | command menu row | F key |
 
 ### Menu Navigation
 - All menus expand LEFT (tree-style, like classic JRPGs)
