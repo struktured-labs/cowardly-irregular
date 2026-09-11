@@ -784,6 +784,12 @@ def _detect_chibi_x_ranges(row_band: Image.Image, min_blob_width: int = 40) -> l
     return out if len(out) >= 2 else [full]
 
 
+class RowCountMismatch(RuntimeError):
+    """The raw has a row count the assembler cannot use. Recoverable by RE-ROLLING the
+    generation, so batch callers catch this and retry; SystemExit would abort the batch on the
+    first bad roll, which is worse than the defect it refuses."""
+
+
 def _raw_row_runs(raw: Image.Image, min_band_h: int = 20) -> list[tuple[int, int]]:
     """Contiguous vertical runs of content. The single source both the band detector and the
     wrong-row-count refusal read, so they can never disagree about how many rows there are."""
@@ -946,7 +952,7 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32, *, head_lock: bo
         # side rows. The detector SAW the count was wrong and the fallback threw that away.
         found = _count_row_bands(raw_1024)
         if found >= 1 and found != NUM_ROWS:
-            raise SystemExit(
+            raise RowCountMismatch(
                 f"REFUSING to assemble: the raw has {found} content row(s), not {NUM_ROWS}. "
                 f"Splitting it {NUM_ROWS} ways lands a band on the gap between rows and yields "
                 f"heads without bodies. Re-roll the generation; do not widen this check."
