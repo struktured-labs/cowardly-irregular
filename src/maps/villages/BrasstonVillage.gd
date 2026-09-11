@@ -222,6 +222,23 @@ func _setup_buildings() -> void:
 	_add_lamp_post(Vector2i(5, 2))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(20, 2))
 
+	# === GAS LAMPS === the map legend calls 'f' "gas lamp bases" and TWELVE of them were bare.
+	# Brasston employs a lamplighter and shipped one lamp, on the deck, nowhere near a base.
+	for base in [Vector2i(5, 3), Vector2i(19, 3), Vector2i(20, 4), Vector2i(20, 6), Vector2i(5, 8),
+			Vector2i(11, 11), Vector2i(20, 12), Vector2i(4, 13), Vector2i(20, 14), Vector2i(5, 16),
+			Vector2i(20, 17), Vector2i(5, 18)]:
+		_add_lamp_post(base)
+
+	# === STREET DRESSING === a market city with one crate reads as evacuated, not scheduled.
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(15, 3))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(16, 3))
+	# ONE barrel, not two: (18,4) stacked with (18,5) seals two cells against the forge wall and the
+	# gas lamp at (20,4). Found by test_village_props_never_block_the_village, bisected prop by prop.
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(18, 5))
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(9, 4))
+	_add_prop(VillagePropScript.Kind.STALL, Vector2i(7, 12))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(14, 16))
+
 
 func _setup_treasures() -> void:
 	# Locked gear-box behind the inn — clockwork trinket
@@ -279,6 +296,8 @@ func _setup_npcs() -> void:
 	# Lamplighter (night-shift, shadows in the pipes)
 	var lamplighter = _create_npc("Clem the Lamplighter", "guard", Vector2(19 * TILE_SIZE,12 * TILE_SIZE), [
 		"I work the night shift. Keeps the gas lamps burning.",
+		"Twelve on the west run. I light them in the same order every night.",
+		"That order is not written in any schedule. I checked.",
 		"Most folk don't notice me. That's fine.",
 		"But I notice THINGS. Things in the pipes.",
 		"Movements. Echoes. Shadows that go the wrong way.",
