@@ -64,9 +64,41 @@ import sys
 import numpy as np
 
 MANIFEST = "data/music_manifest.json"
+# ⛔ "MEASURED RATHER THAN ASSUMED" MEASURED THIS TOOL'S OWN OUTPUT. `SR = 48000`
+# stood here under that comment. It is a true description of most of the corpus
+# TODAY and it is not a fact about the music -- it is the residue of these tools.
+# Traced by smudging the LFS blobs at each commit:
+#
+#   2026-03-30  74a52bdf  web compression         -> corpus is 44.1 kHz mono
+#   2026-07-02  663308fa  47 tracks re-encoded    -> 48k STEREO folded to mono
+#   2026-08-22  e26a38d9  trim_loop_seams added   -> 55 of 87 beds RESAMPLED to 48k
+#   2026-09-09  0eabe0c9  first crossfade_loop run->  5 of  5 beds RESAMPLED
+#   2026-09-10  94000af3  wrap-jump pass          -> 22 of 38 beds RESAMPLED
+#   2026-09-11  52e6715e  fixed tools             ->  0 of 28
+#
+# 83 beds upsampled from 44.1 kHz masters, all shipped, none intended. The
+# constant was then written on 2026-09-09 by measuring what was left: a majority
+# at 48k BECAUSE these tools had converted it. A provenance claim that samples
+# the corpus AFTER your own writes is not evidence, it is an echo -- and the
+# word "measured" is what stops the next reader checking.
+#
+# The 19 beds still at 44.1 kHz are simply the ones no 48k encoder ever touched.
+#
+# Why nothing caught it: this tool decoded at 48k, encoded at 48k, and re-read
+# the result at 48k to verify -- every arm asked ffmpeg for the rate it expected
+# instead of the rate on disk, so the file was normalised back into agreement
+# before any check looked. audit_wrap_seams prints "-> run: crossfade_loop.py"
+# under whatever it flags, so the corpus gate advertised it.
+#
+# NOT retroactively fixed: re-encoding 83 shipped beds back down would be a
+# second lossy pass to undo the first. They stay; the tools stop.
+#
+# So the format is now read PER FILE and asserted after the encode. These are
+# set by process() before anything else runs; the module is single-threaded by
+# construction (it rewrites files in place, one at a time).
 SR = 48000
-# Encoding of the existing corpus, measured rather than assumed: vorbis 48k mono 96k.
-ENCODE = ["-ac", "1", "-ar", str(SR), "-c:a", "libvorbis", "-b:a", "96k"]
+CH = 1
+ENCODE = ["-c:a", "libvorbis", "-b:a", "96k"]
 # Seconds of overlap. Long enough to hide a splice in a sustained bed, short
 # enough that the head is not smothered by the tail on entry.
 DEFAULT_XFADE_S = 4.0
@@ -102,11 +134,21 @@ WRAP_OK_DB = 6.0
 FADE_THRESHOLD_DB = -12.0
 
 
+def probe(path):
+    """(sample_rate, channels) as they are ON DISK."""
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
+         "stream=sample_rate,channels", "-of", "csv=p=0", path],
+        capture_output=True, text=True).stdout.strip()
+    sr, ch = out.split(",")
+    return int(sr), int(ch)
+
+
 def decode(path):
-    """Whole file as float32 mono at SR."""
+    """Whole file as float32 at the format process() read off this file."""
     raw = subprocess.run(
         ["ffmpeg", "-nostdin", "-v", "error", "-i", path,
-         "-f", "f32le", "-ac", "1", "-ar", str(SR), "-"],
+         "-f", "f32le", "-ac", str(CH), "-ar", str(SR), "-"],
         capture_output=True).stdout
     return np.frombuffer(raw, dtype="<f4").astype(np.float64)
 
@@ -114,7 +156,8 @@ def decode(path):
 def encode(samples, out_path):
     proc = subprocess.run(
         ["ffmpeg", "-nostdin", "-v", "error", "-y",
-         "-f", "f32le", "-ac", "1", "-ar", str(SR), "-i", "-"] + ENCODE + [out_path],
+         "-f", "f32le", "-ac", str(CH), "-ar", str(SR), "-i", "-",
+         "-ac", str(CH), "-ar", str(SR)] + ENCODE + [out_path],
         input=samples.astype("<f4").tobytes(), capture_output=True)
     return proc.returncode == 0
 
@@ -200,6 +243,11 @@ def wrap_sample(y, seconds=3.0):
 
 
 def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
+    ## Adopt this file's own format before any analysis: every window size below
+    ## is derived from SR, so reading it wrong mis-sizes the seam as well as the
+    ## output.
+    global SR, CH
+    SR, CH = probe(path)
     y = decode(path)
     if len(y) < SR * 10:
         return key, "unreadable or too short", None
@@ -328,6 +376,16 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
         # verified upstream, destroyed downstream, nothing errors. Sibling
         # trim_loop_seams already re-reads its temp file before replacing;
         # this one shipped without it.
+        ## The format assertion must come FIRST, because decode() below asks
+        ## ffmpeg for SR/CH and would resample a respecced file back into
+        ## agreement before any arm beneath it looks. Every one of them would
+        ## then pass on a file that had been silently converted.
+        enc_sr, enc_ch = probe(tmp)
+        if (enc_sr, enc_ch) != (SR, CH):
+            os.remove(tmp)
+            return key, ("encoder changed the format: %d Hz/%dch in, %d Hz/%dch out"
+                         " - source untouched" % (SR, CH, enc_sr, enc_ch)), info
+
         back = decode(tmp)
         why_enc = None
         if len(back) < SR:

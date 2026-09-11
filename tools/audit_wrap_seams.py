@@ -79,6 +79,9 @@ FLOOR_DB = -60.0
 ## Under 40ms a wrap gap is too short to read as a stutter. Derived from the
 ## corpus (the two beds beneath it measured 31ms and 21ms), not chosen.
 MIN_PAD_S = 0.040
+## Below this the tool refuses to report health at all. See the note at the
+## summary print: EC=0 on an empty walk is a false clean, not a pass.
+MIN_CORPUS = 50
 
 # Beds no tool can fix. EMPTY as of 2026-09-10, and the emptying is the point:
 # all three former entries were MISDIAGNOSES of mine, pinned on a refusal
@@ -123,17 +126,45 @@ def main():
     rows = []
     padded = []
     for key, meta in sorted(tracks.items()):
-        if not meta.get("loop") or meta.get("stinger"):
+        ## ⛔ TWO QUESTIONS, TWO CORPORA — and I fixed the FIXER first and left
+        ## this behind, which is the exact shape @cowir-sfx measured across the
+        ## fleet: five of eight lanes found a SECOND defect in a file that had
+        ## just survived the first check, because editing a guard while
+        ## believing you now understand the problem is what suppresses the
+        ## second look.
+        ##
+        ##   WRAP  — a join only exists if the track loops. Stingers: skip.
+        ##   PAD   — silence at an edge is audible in anything that plays. A
+        ##           stinger's head pad is latency between the button and the
+        ##           sound (job_cleric_special was 510ms). Stingers: INCLUDE.
+        ##
+        ## Before this, trim_wrap_padding walked 165 tracks and this walked 146,
+        ## so the tool fixed a population its own detector could not report.
+        is_stinger = bool(meta.get("stinger"))
+        if not meta.get("loop") and not is_stinger:
             continue
         path = meta.get("file", "")
         if not path or not os.path.exists(path):
             continue
         y = decode(path)
-        if len(y) < 3 * SR:
+        ## ⛔ THIS WAS `len(y) < 3 * SR` — a blanket 3-SECOND floor, when the
+        ## measurement only needs 3x the WINDOW (0.9s for the widest). It
+        ## silently dropped job_guardian_special (2.5s) and job_time_mage_special
+        ## (1.9s) from the pad scan the moment stingers were brought into it, so
+        ## "165 tracks, 0 padded" was really 163. The per-window guard below
+        ## already refuses a window that does not fit; this one only ever
+        ## excluded material it could have measured.
+        if len(y) < 3 * int(min(SEAM_WINDOWS_S) * SR):
             continue
         ## Worst across every window — a fade hides from any window longer
         ## than itself, so one number cannot speak for all fade durations.
-        worst = None
+        ## Stingers reach here for the PAD scan below but take no wrap step.
+        worst = None if not is_stinger else "skip"
+        if worst == "skip":
+            worst = None
+            _skip_wrap = True
+        else:
+            _skip_wrap = False
         for ws in SEAM_WINDOWS_S:
             n = int(ws * SR)
             if len(y) < 3 * n:
@@ -141,9 +172,10 @@ def main():
             step = db(y[:n]) - db(y[-n:])
             if worst is None or step > worst[0]:
                 worst = (step, ws)
-        if worst is None:
-            continue
-        rows.append((worst[0], key, worst[1]))
+        if not _skip_wrap:
+            if worst is None:
+                continue
+            rows.append((worst[0], key, worst[1]))
         ## Windowed RMS, not per-sample peak: one stray sample in the first
         ## millisecond defeated the peak form and hid 30 padded beds.
         _w = int(0.010 * SR)
@@ -163,6 +195,23 @@ def main():
         note = KNOWN_UNFIXABLE.get(key)
         print("  %-32s %+7.1f dB @%4.0fms   %s" % (key, step, ws * 1000, "PINNED: " + note if note else "*** NEW ***"))
     print("\n  %d looping beds measured, %d jump more than %.0f dB" % (len(rows), len(jumps), JUMP_DB))
+
+    ## 🛑 A HEALTH REPORT FROM AN EMPTY WALK IS THE WORST OUTPUT THIS TOOL CAN
+    ## PRODUCE, and until now it was also its quietest. With no corpus floor,
+    ## an empty manifest, a broken walk or a tree with no audio printed
+    ## "0 looping beds measured, 0 jump more than 12 dB" and exited 0 — and
+    ## every "corpus healthy, EC=0" this lane has published for a day rested on
+    ## a number nothing checked. The GUT guards carry SCOPE controls; the TOOL
+    ## did not, and the tool is what gets run by hand before a fold.
+    ##
+    ## The floor is deliberately far below the real corpus (146 looping beds,
+    ## 165 with a file) — it is not a ratchet on corpus size, it is the
+    ## difference between a measurement and an empty room.
+    if len(rows) + len(padded) < MIN_CORPUS:
+        print("\n  REFUSED: only %d tracks were measured. That is not a healthy corpus,"
+              " it is an absent one — check you are in the repo root and that the OGGs"
+              " are present (LFS smudged), then re-run." % (len(rows) + len(padded)))
+        return 2
 
     ## Reported separately because a pad is a different defect with a different
     ## fix, and because the level reading above cannot see it -- silence at the

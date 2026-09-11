@@ -2189,37 +2189,44 @@
       "file": "assets/audio/sfx/weather_glitch.ogg",
       "prompt": "Digital void ambience, low electronic hum with occasional data crackle, quiet circuit board buzz, sparse glitchy artifacts in a vast empty digital space",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true
     },
     "weather_rain": {
       "file": "assets/audio/sfx/weather_rain.ogg",
       "prompt": "Gentle steady rain falling on stone and leaves, soft patter of raindrops on a medieval village, calming natural rainfall ambience, no thunder",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true
     },
     "weather_smog": {
       "file": "assets/audio/sfx/weather_smog.ogg",
       "prompt": "Heavy industrial ambience, deep machinery rumble, distant factory clanking, low droning ventilation, oppressive smog atmosphere with metallic echoes",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true
     },
     "weather_steam": {
       "file": "assets/audio/sfx/weather_steam.ogg",
-      "prompt": "Steampunk city ambience, distant steam vents hissing, brass gears turning slowly, occasional pipe whistle, Victorian industrial backdrop with amber fog atmosphere",
+      "prompt": "Steampunk city ambience, distant steam vents hissing, brass gears turning slowly, occasional pipe whistle, Victorian industrial backdrop with amber fog atmosphere REBUILT 2026-09-11 by tools/gen_steam_bed.py: the ElevenLabs asset was 3.0s of fade in a 5.0s file (60%), +53 dB wrap step. Synthesised instead because steam is broadband noise — built in the frequency domain and inverse-FFT'd, so the buffer is PERIODIC and the wrap is seamless by construction rather than by crossfade. Band ratios matched to the original's first 2.0s. Regenerate with that tool, not the one-shot generator that caused this.",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true,
+      "source": "sox_synth"
     },
     "weather_storm_bed": {
       "file": "assets/audio/sfx/weather_storm_bed.ogg",
       "prompt": "Steady heavy rainstorm ambience, dense rain hiss on ground and leaves, gusting wind, occasional far-off thunder rumble underneath, continuous and seamless with no melody",
       "duration_seconds": 10.0,
-      "prompt_influence": 0.75
+      "prompt_influence": 0.75,
+      "loop": true
     },
     "weather_sunny": {
       "file": "assets/audio/sfx/weather_sunny.ogg",
       "prompt": "Peaceful suburban afternoon ambience, gentle breeze through trees, distant birds chirping softly, warm sunny day in a quiet neighborhood, crickets and light wind",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true
     },
     "weather_thunder_distant": {
       "file": "assets/audio/sfx/weather_thunder_distant.ogg",

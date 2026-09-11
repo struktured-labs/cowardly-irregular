@@ -9,7 +9,13 @@ extends GutTest
 ## list must be edited deliberately. A "these legitimately fall through" comment would never expire.
 
 const QUEST_DIR := "res://data/quests/"
-const SRC_DIRS := ["res://src/maps/villages/", "res://src/maps/interiors/", "res://src/exploration/"]
+## ⚠️ WAS a hand-written 3-directory list, which is the same defect as scoping a loop guard by an
+## "ambient_" name prefix while the keys that break the contract are named "weather_*" (cowir-sfx,
+## 2026-09-11): a guard whose CORPUS is authored by hand is blind wherever the author did not look.
+## src/cutscene/ also calls _create_npc and was outside the list. It contributed 0 ids, so this was a
+## LATENT gap and not a live one — recorded as such, not claimed as a finding.
+## Now walks ALL of src/ recursively, so a giver placed in a new directory cannot hide.
+const SRC_ROOT := "res://src/"
 
 ## Unresolvable givers, WITH THE REASON EACH IS ACTUALLY UNRESOLVABLE.
 ## ⛔ My first version said "W4-W6 have no authored maps". That was FALSE -- RivetRow, NodePrime and
@@ -28,10 +34,8 @@ const SRC_DIRS := ["res://src/maps/villages/", "res://src/maps/interiors/", "res
 ##      dorrit_w4 -> dorrit             · firewall_attendant_w5 -> firewall_alpha
 ## C) NO CANDIDATE NPC ANYWHERE -- a location/prop/pair not yet placed.
 const UNWIRED_BY_DESIGN := [
-	# A -- deliberate, documented at RivetRowVillage:302
-	"madame_orrery_w4",
-	# B -- character present under a different id (see above); resolve by naming, not by authoring
-	"foreman_w4", "union_rep_w4", "dorrit_w4", "firewall_attendant_w5",
+	# A and B wired 2026-09-11: explicit .npc_id now matches the quest ids; the get_npc_id()
+	# name-slug fallback had been resolving them to shift_foreman_grix etc. instead.
 	# C -- no candidate NPC exists yet
 	"rat_patrol_junction", "memory_leak_district", "race_condition_pair",
 	"madame_orrery_w5", "traveler_w6", "madame_orrery_w6", "last_shopkeeper_w6",
@@ -40,6 +44,32 @@ const UNWIRED_BY_DESIGN := [
 
 func _snake(n: String) -> String:
 	return n.to_lower().replace(" ", "_").replace("'", "").replace("-", "_")
+
+
+## Blank GDScript comments, preserving line count. A commented-out `.npc_id = "x"` must NOT
+## count as wiring -- that is what a real removal looks like, unlike an outright delete.
+func _decomment(src: String) -> String:
+	var out: PackedStringArray = []
+	for line in src.split("\n"):
+		# Cut at the first # OUTSIDE a string: `_create_npc("Worker #4471")` is code, not a comment.
+		# LOOKAHEAD, not lookbehind: consume the escape PAIR so `"a\\"` closes correctly.
+		# "was the previous char an escape?" has no local answer — a backslash may itself be escaped.
+		var in_str := false
+		var cut := -1
+		var i := 0
+		while i < line.length():
+			var ch: String = line[i]
+			if ch == "\\":
+				i += 2
+				continue
+			if ch == "\"":
+				in_str = not in_str
+			elif ch == "#" and not in_str:
+				cut = i
+				break
+			i += 1
+		out.append(line.substr(0, cut) if cut >= 0 else line)
+	return "\n".join(out)
 
 
 func _read_all(dir_path: String) -> String:
@@ -53,7 +83,7 @@ func _read_all(dir_path: String) -> String:
 		if f.ends_with(".gd"):
 			var fh := FileAccess.open(dir_path + f, FileAccess.READ)
 			if fh != null:
-				blob += fh.get_as_text() + "\n"
+				blob += _decomment(fh.get_as_text()) + "\n"
 				fh.close()
 		f = dir.get_next()
 	dir.list_dir_end()
@@ -61,10 +91,30 @@ func _read_all(dir_path: String) -> String:
 
 
 ## Every id a giver lookup could resolve to, by the three shapes get_npc_id()/props actually use.
-func _giver_capable_ids() -> Dictionary:
+## Walks the whole tree: the corpus is "everywhere a giver could be declared", not a list I maintain.
+func _read_all_recursive(dir_path: String) -> String:
 	var blob := ""
-	for d in SRC_DIRS:
-		blob += _read_all(d)
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return blob
+	dir.list_dir_begin()
+	var f := dir.get_next()
+	while f != "":
+		var full := dir_path + f
+		if dir.current_is_dir():
+			blob += _read_all_recursive(full + "/")
+		elif f.ends_with(".gd"):
+			var fh := FileAccess.open(full, FileAccess.READ)
+			if fh != null:
+				blob += _decomment(fh.get_as_text()) + "\n"
+				fh.close()
+		f = dir.get_next()
+	dir.list_dir_end()
+	return blob
+
+
+func _giver_capable_ids() -> Dictionary:
+	var blob := _read_all_recursive(SRC_ROOT)
 	var ids := {}
 	for m in RegEx.create_from_string('_create_npc\\(\\s*"([^"]+)"').search_all(blob):
 		ids[_snake(m.get_string(1))] = true
@@ -109,6 +159,11 @@ func test_both_corpora_actually_loaded() -> void:
 		"control: 'Scholar Milo' must resolve via the snake_case fallback (he has no explicit npc_id)")
 	assert_true(ids.has("community_bulletin_board"),
 		"control: a PROP giver must resolve (BulletinBoard declares its own npc_id)")
+	## ONE CONTROL PER AUTHORING FORM (cowir-overworld, 2026-09-11). Three regexes resolve three ways
+	## to declare a giver and this one had NO arm — if its pattern broke, every explicitly-assigned
+	## npc_id would vanish from the corpus and nothing here would fire.
+	assert_true(ids.has("elder_vesper"),
+		"control: an EXPLICIT `.npc_id = \"...\"` assignment must resolve (Elder Vesper, EldertreeVillage)")
 	assert_false(ids.has("zzq_not_an_npc"), "control: a fabricated id must not resolve")
 
 
@@ -141,3 +196,42 @@ func test_the_unwired_debt_list_is_exact() -> void:
 	assert_eq(unresolved, expected,
 		"the set of unresolvable givers CHANGED. If a world was wired, delete its entries from " +
 		"UNWIRED_BY_DESIGN. If a new quest appeared with an unresolvable giver, that is the bug.")
+
+
+## A guard armed only against an OUTRIGHT DELETE is defenceless against what actually happens:
+## someone comments the line out and leaves a note. This pins the messy removal, not the tidy one.
+func test_a_commented_out_npc_id_does_not_count_as_wiring() -> void:
+	var live := "\tforeman.npc_id = \"foreman_w4\"\n"
+	var removed := "\t# foreman.npc_id = \"foreman_w4\"  -- removed, see ticket\n"
+	var re := RegEx.create_from_string('\\.npc_id\\s*=\\s*"([a-z0-9_]+)"')
+	assert_ne(re.search(_decomment(live)), null,
+		"control: a real assignment must still be seen after decommenting")
+	assert_eq(re.search(_decomment(removed)), null,
+		"a commented-out .npc_id must NOT register as wiring — that is how removals actually look")
+
+
+## A `#` inside a string literal is CODE. Blanking from the first `#` truncated
+## `_create_npc("Worker #4471", ...)` and silently dropped that NPC from the id set.
+func test_decomment_does_not_truncate_a_hash_inside_a_string() -> void:
+	var code := "\tvar w = _create_npc(\"Worker #4471\", \"villager\", Vector2(1,2), [])"
+	assert_true(_decomment(code).contains("Worker #4471"),
+		"a # inside a string is code — decommenting must not cut the line there")
+	var commented := "\tvar w = _create_npc(\"Worker\", \"villager\")  # dropped for now"
+	assert_false(_decomment(commented).contains("dropped for now"),
+		"control: a real trailing comment must still be blanked")
+
+
+## Retired by CONSTRUCTION: lookbehind asks "was the previous char an escape?" — a question with
+## no local answer, since a backslash may itself be escaped. Lookahead consumes the pair instead.
+## ⚠️ These cases DISCRIMINATE: each yields a different result under the old simple-toggle form.
+## Two earlier cases I wrote (escaped quote, trailing backslash) passed under BOTH and proved nothing.
+func test_decomment_handles_escapes_by_construction() -> void:
+	# Old toggle: the escaped quote flips in_str to false, so the # reads as a comment and cuts.
+	# Lookahead: the escape pair is consumed, in_str stays true, the # is code and survives.
+	var hash_after_escaped_quote := "\tvar s = \"a\\\"#b\""
+	assert_true(_decomment(hash_after_escaped_quote).contains("#b"),
+		"a # inside a string, after an escaped quote, is CODE — the old toggle cut here")
+	assert_true(_decomment("\tvar c = \"[color=#88ccff]\"").contains("#88ccff"),
+		"control: a plain # inside a string must survive")
+	assert_false(_decomment("\tnpcs.add_child(foreman)  # gone").contains("gone"),
+		"control: a real trailing comment must still be cut — the stripper is not inert")

@@ -1401,11 +1401,14 @@ func _rest_prompt_for(origin_map_id: String, purse: int) -> String:
 	var ask: String = InnDialogue.cost_line(origin_map_id, REST_COST)
 	if ask == "":
 		ask = "Rest until morning? (%d G)" % REST_COST
+	# Derived per device: "[A]/[B]" is right on Nintendo pads only, and names no key at all on keyboard.
+	var yes := "%s confirm" % InputProfileManager.hint_for_action("ui_accept")
+	var no := "%s leave it" % InputProfileManager.hint_for_action("ui_cancel")
 	if purse < 0:
-		return ask + "\n[A] confirm   ·   [B] leave it"
+		return ask + "\n%s   ·   %s" % [yes, no]
 	if purse < REST_COST:
-		return ask + "\nYou have %d G — %d short.\n[B] leave it" % [purse, REST_COST - purse]
-	return ask + "\nYou have %d G.\n[A] confirm   ·   [B] leave it" % purse
+		return ask + "\nYou have %d G — %d short.\n%s" % [purse, REST_COST - purse, no]
+	return ask + "\nYou have %d G.\n%s   ·   %s" % [purse, yes, no]
 
 
 ## struktured 2026-09-06 "when u agree with A it retriggers the dialogue w/ inn keeper": the [A] confirm used to reach OverworldPlayer._unhandled_input → keeper interact → a second one-line dialogue → rest. _input runs BEFORE every _unhandled_input, so the prompt eats its own confirm here.

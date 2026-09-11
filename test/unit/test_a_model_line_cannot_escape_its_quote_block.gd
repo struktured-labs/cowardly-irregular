@@ -48,6 +48,23 @@ func _quoted_player_block(prompt: String) -> String:
 	return prompt.substr(start, end - start) if end != -1 else prompt.substr(start)
 
 
+# ── the defect is real ────────────────────────────────────────────────────────
+
+func test_an_UNFLATTENED_line_really_does_escape_its_block() -> void:
+	## The file asserts flatten_line flattens, and that a flattened line stays in
+	## its quotes. Neither shows the DEFECT: that an unflattened line reaches
+	## column 0. Without this the guard proves the fix behaves, not that it was
+	## needed — and a future reader cannot tell the difference.
+	##
+	## Feeds the builder the raw line, bypassing validation, and reads the block
+	## back out.
+	var quoted: String = _quoted_player_block(_reply_prompt(DIRTY))
+	assert_ne(quoted, "", "CONTROL: the player block must be found")
+	assert_true(quoted.find("\n") != -1,
+		("an unflattened line must break its quote block — if this passes, the defect " +
+		"this file defends against no longer exists and the asserts below are vacuous"))
+
+
 # ── the contract, asserted structurally ───────────────────────────────────────
 
 func test_a_dirty_choice_cannot_reach_column_zero_in_the_next_prompt() -> void:

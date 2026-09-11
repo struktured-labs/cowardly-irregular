@@ -97,7 +97,12 @@ func _build_ui() -> void:
 		_build_split_view(panel, Vector2(16, 70), Vector2(panel_w - 32, panel_h - 110))
 
 	var dismiss_lbl = Label.new()
-	dismiss_lbl.text = "Press B or Esc to return"
+	## Derived: _input accepts ui_cancel only. Esc stays literal — a keyboard key does not change
+	## with the pad. Guarded for the pre-autoload window, as the other prompt surfaces are.
+	var g_no: String = "B"
+	if InputProfileManager:
+		g_no = InputProfileManager.glyph_for_action("ui_cancel")
+	dismiss_lbl.text = "Press %s or Esc to return" % g_no
 	dismiss_lbl.position = Vector2(0, panel_h - 26)
 	dismiss_lbl.size = Vector2(panel_w, 20)
 	dismiss_lbl.add_theme_font_size_override("font_size", 11)

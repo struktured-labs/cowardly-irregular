@@ -80,8 +80,12 @@ func test_defeat_cutscene_gates_in_game_loop_still_present() -> void:
 		"world1_mordaine_defeat",
 		"world2_warden_defeat",
 		"world3_tempo_defeat",
-		"world4_warden_defeat",
-		"world5_arbiter_defeat",
+		# 2026-09-11: these two ids moved. The gate is unchanged; the SCENE it plays
+		# is now the one belonging to the boss whose flag opens it — AssemblyCore's
+		# Warden of the Assembly Line and RootProcess's Arbiter of the Benchmark.
+		# world4_warden_defeat / world5_arbiter_defeat are the next world's masterites.
+		"world3_warden_defeat",
+		"world4_arbiter_defeat",
 	]:
 		assert_true(src.contains("return \"" + cutscene_id + "\""),
 			"GameLoop must still gate %s — the live mechanism replacing the removed defeat_cutscene field" % cutscene_id)

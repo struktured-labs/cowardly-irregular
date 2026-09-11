@@ -438,6 +438,10 @@ func interact(player: Node2D) -> void:
 	if use_interior:
 		if SoundManager:
 			SoundManager.play_ui("menu_open")
+		# The interior is shared by map_id, so the shop's identity has to cross the door itself.
+		var gl := get_node_or_null("/root/GameLoop")
+		if gl != null and gl.has_method("set_pending_shop_identity"):
+			gl.set_pending_shop_identity(shop_name, keeper_name)
 		transition_triggered.emit(_interior_target(), "entrance")
 		return
 	# Legacy outdoor shop UI.

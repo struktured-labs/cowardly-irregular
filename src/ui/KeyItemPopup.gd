@@ -27,6 +27,7 @@ var _panel: Control = null
 var _hint: Label = null
 var _dismissable: bool = false
 var _dismissing: bool = false
+var _icon: Control = null  # the TextureRect, or the emblem Label when the reveal has no sprite
 
 
 ## Programmatic dismiss (a cutscene skip): the same fade as a press, safe before the reveal is dismissable and safe to call twice.
@@ -42,6 +43,17 @@ static func continue_hint_text(device_name: String = "") -> String:
 	if InputProfileManager:
 		cap = InputProfileManager.glyph_for_action("ui_accept", device_name)
 	return "Press %s / Z to continue" % cap
+
+
+## Emblem for a reveal with no sprite (all 21 authored grant_item steps): a glyph the font chain already proves, keyed on the item's ItemSystem category so the slot is never a blank band.
+const EMBLEM_BY_CATEGORY := {0: "♦", 1: "▲", 2: "♥", 3: "⚔", 4: "✦"}
+const EMBLEM_DEFAULT := "★"
+static func emblem_glyph(item_id: String) -> String:
+	if ItemSystem and ItemSystem.has_method("get_item"):
+		var item: Dictionary = ItemSystem.get_item(item_id)
+		if not item.is_empty() and item.has("category"):
+			return EMBLEM_BY_CATEGORY.get(int(item["category"]), EMBLEM_DEFAULT)
+	return EMBLEM_DEFAULT
 
 
 static func show_item(parent: Node, item: Dictionary) -> KeyItemPopup:
@@ -105,6 +117,19 @@ func _present(item: Dictionary) -> void:
 			sprite_rect.size = Vector2(96, 96)
 			sprite_rect.position = Vector2((PANEL_W - 96) / 2.0, sprite_y)
 			_panel.add_child(sprite_rect)
+			_icon = sprite_rect
+	if _icon == null:
+		# No sprite (every authored reveal today): an emblem in the slot instead of a blank band under the title.
+		var emblem := Label.new()
+		emblem.text = emblem_glyph(str(item.get("item_id", "")))
+		emblem.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		emblem.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		emblem.position = Vector2((PANEL_W - 96) / 2.0, sprite_y)
+		emblem.size = Vector2(96, 96)
+		emblem.add_theme_font_size_override("font_size", 64)
+		emblem.add_theme_color_override("font_color", BORDER_LIGHT)
+		_panel.add_child(emblem)
+		_icon = emblem
 
 	# Name
 	var name_label := Label.new()

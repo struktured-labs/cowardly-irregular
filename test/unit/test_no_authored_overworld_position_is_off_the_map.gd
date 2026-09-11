@@ -43,9 +43,22 @@ func test_every_authored_pos_lands_inside_its_own_world() -> void:
 	var offenders: Array = []
 	var worlds_read := 0
 	var positions_checked := 0
+	var dict_form := 0
+	var direct_form := 0
 
+	## TWO authored forms, and for one day this guard could only see the first.
+	##   dict   {"pos": Vector2(17, 65), ...}      -> the loop feeds it to the formula
+	##   direct passage.position = Vector2(60 * MAP_SCALE * TILE_SIZE + ..., ...)
+	## W6's hidden passage used the direct form, so when this guard first ran it reported the chest
+	## at (60,3) and stayed silent about the passage at (60,5) sitting beside it, equally off-map.
+	## I read that asymmetry, explained it to myself, and did not fix it. @cowir-sfx hit the same
+	## shape on 2026-09-11 — a loop guard scoped `begins_with("ambient_")` while the keys breaking
+	## the contract were named `weather_*` — which is what sent me back here.
+	## 🔑 SELECT BY THE THING THAT MAKES A COORDINATE A COORDINATE: the cell -> pixel formula.
 	var pos_re := RegEx.new()
 	pos_re.compile('"pos":\\s*Vector2\\((\\d+),\\s*(\\d+)\\)')
+	var direct_re := RegEx.new()
+	direct_re.compile('(\\d+)\\s*\\*\\s*MAP_SCALE\\s*\\*\\s*TILE_SIZE')
 
 	for path in WORLDS:
 		var src := _read(path)
@@ -65,12 +78,24 @@ func test_every_authored_pos_lands_inside_its_own_world() -> void:
 		var cells_y := int(h / scale)
 		for m in pos_re.search_all(src):
 			positions_checked += 1
+			dict_form += 1
 			var px := int(m.get_string(1))
 			var py := int(m.get_string(2))
 			if px >= cells_x or py >= cells_y:
 				offenders.append("%s (%d,%d) outside %dx%d" % [path.get_file(), px, py, cells_x, cells_y])
+		## A directly-authored literal is only ever an X or a Y, so it is checked against the larger
+		## bound: this catches the gross misses (a tile index used where a cell was meant) without
+		## guessing which axis a lone number belongs to.
+		var widest: int = maxi(cells_x, cells_y)
+		for m in direct_re.search_all(src):
+			positions_checked += 1
+			direct_form += 1
+			var v := int(m.get_string(1))
+			if v >= widest:
+				offenders.append("%s literal %d * MAP_SCALE * TILE_SIZE, off a %dx%d grid" % [path.get_file(), v, cells_x, cells_y])
 
 	assert_eq(worlds_read, WORLDS.size(), "CONTROL: every overworld must declare its own dimensions")
-	assert_gt(positions_checked, 60,
-		"CONTROL: only %d authored positions found across six worlds — the scan is broken and the zero below is free" % positions_checked)
+	## One control per FORM: a single total would stay green with either scan dead.
+	assert_gt(dict_form, 30, "CONTROL: only %d dict-form positions found — that scan is broken" % dict_form)
+	assert_gt(direct_form, 30, "CONTROL: only %d direct-form positions found — that scan is broken" % direct_form)
 	assert_eq(offenders, [], "authored content placed outside its own map: %s" % str(offenders))

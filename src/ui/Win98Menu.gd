@@ -1447,6 +1447,17 @@ const HINT_KEYBOARD_TEXT := "[L] Defer  ·  [R] Advance  ·  [`] Speed  ·  [Tab
 ## The bar is on screen for the whole game and named Nintendo face letters unconditionally. Speed
 ## is raw JOY_BUTTON_Y (index 3) — Ⓧ on Nintendo, Ⓨ on Xbox, △ on PlayStation — so a PlayStation
 ## player reading "[X] Speed" presses ✕, which is Cancel. Derived per family; const is the fallback.
+## The Speed token alone, for callers that need it outside the bar. Speed is raw JOY_BUTTON_Y with
+## no InputMap action, so hint_for_action cannot reach it — this is the one place that knows.
+static func speed_hint() -> String:
+	if Input.get_connected_joypads().is_empty():
+		return "the ` key"
+	if not InputProfileManager:
+		return "X"
+	var g: String = InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y)
+	return "X" if g == "?" else g
+
+
 static func hint_text() -> String:
 	# NO PAD = KEYBOARD VOCABULARY. Measured 2026-09-11: with zero pads this returned
 	# "Ⓨ Speed · [Select] Auto" — a pad glyph and a pad button, neither of which exists on a
@@ -1459,7 +1470,14 @@ static func hint_text() -> String:
 	var speed: String = InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y)
 	if speed == "?":
 		return HINT_DEFAULT_TEXT
-	return "[L] Defer  ·  [R] Advance  ·  %s Speed  ·  [Select] Auto" % speed
+	# The other three are ACTIONS, so they follow the active profile: L/LB/L1, R/RB/R1,
+	# Minus/Back/Share. "[Select]" is a button no Xbox, PlayStation or Switch pad has.
+	var defer: String = InputProfileManager.hint_for_action("battle_defer")
+	var adv: String = InputProfileManager.hint_for_action("battle_advance")
+	var auto: String = InputProfileManager.hint_for_action("battle_toggle_auto")
+	if defer == "" or adv == "" or auto == "":
+		return HINT_DEFAULT_TEXT
+	return "%s Defer  ·  %s Advance  ·  %s Speed  ·  %s Auto" % [defer, adv, speed, auto]
 
 var _hint_label_cache: Label = null
 var _hint_showing_reason: bool = false

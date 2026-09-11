@@ -364,7 +364,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(sella)
 
 	_add_quest_examine_point("w1_ironhaven_flame_speaks_wrong",
-		"quest_w1_ironhaven_flame_speaks_wrong_accepted", "[A] Listen to the flame",
+		"quest_w1_ironhaven_flame_speaks_wrong_accepted", "Listen to the flame",
 		"It leans east, and it SPEAKS — fragments, in a measured beat. Not a flame's cadence. A court's.",
 		"Six hundred years it burned straight up. Now it leans, and the lean has a direction.",
 		Vector2(16 * TILE_SIZE,4 * TILE_SIZE))

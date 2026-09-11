@@ -35,6 +35,28 @@ func _obj(rules_json: String) -> String:
 	return '{"name":"n","description":"d","rules_json":%s}' % rules_json
 
 
+# ── the fixtures are genuinely broken ─────────────────────────────────────────
+
+func test_the_fixtures_do_not_parse_without_the_repair() -> void:
+	## Every other test here calls _extract_json_from_raw, which ALWAYS applies the
+	## repair — so on its own this file cannot distinguish "the repair works" from
+	## "these fixtures were never malformed". A normaliser that runs before the
+	## check can hide whether the input needed normalising, and then the whole file
+	## is vacuous while reading as thorough.
+	##
+	## This asserts the raw text is unparseable by Godot's own parser. It is a
+	## CONTROL, so it holds with or without the repair; what it catches is someone
+	## "tidying" a fixture into valid JSON, which would silently retire every
+	## assertion below it.
+	for raw in [
+		_obj('[{"conditions":[{"type":"mp_percent","op">=,"value":20}],"actions":[]}]'),
+		_obj('[{"conditions":[{"type":"mp_percent","op">=","value":15}],"actions":[]}]'),
+		_obj('[{"conditions":[{"type":"enemy_hp_percent","op">,"value":50}],"actions":[]}]'),
+	]:
+		assert_null(JSON.parse_string(raw),
+			"fixture must be UNPARSEABLE as written, or the repair it exercises is not being tested")
+
+
 # ── the three shapes actually observed ────────────────────────────────────────
 
 func test_bare_operator_with_no_colon_or_quotes() -> void:

@@ -16,6 +16,10 @@ enum ShopType { ITEM = 0, BLACK_MAGIC = 1, WHITE_MAGIC = 2, BLACKSMITH = 3 }
 @export var shop_name: String = "Shop"
 
 const TILE_SIZE: int = 32
+
+## Sign text shrinks between these to fit the 4-tile board; below the floor it would be unreadable.
+const SIGN_FONT_MAX: int = 11
+const SIGN_FONT_MIN: int = 6
 const MAP_WIDTH: int  = 16
 const MAP_HEIGHT: int = 12
 
@@ -420,13 +424,28 @@ func _create_hanging_sign() -> void:
 	sign.position = Vector2(6.0 * TILE_SIZE, 0.5 * TILE_SIZE)
 	decorations.add_child(sign)
 
-	# Shop name label on sign
+	# Anchored AT the board's centre-line and drawn rightwards, every sign overran the wood by 25px.
 	var label = Label.new()
 	label.text = shop_name
-	label.position = Vector2(6.0 * TILE_SIZE, 0.6 * TILE_SIZE)
-	label.add_theme_font_size_override("font_size", 11)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", _pal_accent.lightened(0.3))
 	decorations.add_child(label)
+	# Sized after adoption: the theme font only resolves inside the tree.
+	label.add_theme_font_size_override("font_size", fit_font_size(shop_name, label.get_theme_font("font"), sw))
+	# clip_text drops text from the minimum size, which otherwise clamps the box 2px past the board.
+	label.clip_text = true
+	label.size = Vector2(sw, sh)
+	label.position = Vector2(6.0 * TILE_SIZE - sw / 2.0, 0.6 * TILE_SIZE)
+
+
+## Largest size keeping `name` inside `max_px` -- measured, since two 22-char names differ by 7px.
+static func fit_font_size(name: String, font: Font, max_px: float) -> int:
+	if font == null:
+		return SIGN_FONT_MIN
+	for size in range(SIGN_FONT_MAX, SIGN_FONT_MIN - 1, -1):
+		if font.get_string_size(name, HORIZONTAL_ALIGNMENT_CENTER, -1, size).x <= max_px:
+			return size
+	return SIGN_FONT_MIN
 
 
 func _create_shelf_goods() -> void:

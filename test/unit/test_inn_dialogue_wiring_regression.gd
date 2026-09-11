@@ -126,10 +126,16 @@ func test_the_rest_prompt_keeps_the_purse_line_whichever_source_wins() -> void:
 	# EVERY purse branch, both text sources. The first version of this test asserted against
 	# _rest_prompt_text() alone, which reads live gold and so only ever exercised ONE branch —
 	# deleting the [B] from another branch left it green. Mutation found that; this is the fix.
+	# The CANCEL AFFORDANCE, not the letter B. cowir-controller 2026-09-11: the cap is now derived
+	# per device ("[B]" is correct on Nintendo pads only), so pinning the literal would fail on a
+	# correct change and pass on a keyboard that names no button. The purpose is unchanged.
+	var no_hint: String = InputProfileManager.hint_for_action("ui_cancel")
+	# Without this, an empty hint makes contains() vacuously true and the guard silences itself.
+	assert_ne(no_hint, "", "PRECONDITION: ui_cancel must resolve to a hint, or the check below is hollow")
 	for origin in ["harmonia_village", ""]:
 		for purse in [-1, 0, inn.REST_COST - 1, inn.REST_COST, inn.REST_COST * 10]:
 			var text: String = inn._rest_prompt_for(origin, purse)
-			assert_true(text.contains("[B]"),
+			assert_true(text.contains(no_hint) and text.contains("leave it"),
 				"no way to say no at purse=%d origin='%s': %s" % [purse, origin, text])
 			# The PRICE, not the letter "G": harmonia's authored line spells it "50 gold".
 			assert_true(text.contains(str(inn.REST_COST)),
