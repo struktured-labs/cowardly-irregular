@@ -62,17 +62,34 @@ import tempfile
 SCAN_GLOB = "*.sh"
 WRAPPER_PREFIXES = ("deploy_", "publish_")
 
-# PARTLY contract-derived, and the comment used to claim it fully was. The CONTRACT is three
-# channels across two scripts — web has its own, linux and windows share deploy_desktop.sh — so
-# "at least 2 scripts push" does follow from the channel structure. But the exact 2 is still an
-# OBSERVATION of origin/main @ 5aef5287 (2026-09-11), of a tree this lane writes.
-# ⚠ Its job is to notice the push-site REGEX breaking, not to prove a fact about an independent
-# corpus. Measured: deploy_desktop.sh
-# and deploy_web.sh each contain exactly one push site; the linux/windows wrappers contain
-# none. If FEWER than two scripts carry a push, the likely explanation is that the push-site
-# regex stopped matching — not that the lane stopped publishing. "0 push sites, all gated" is
-# this tool reporting its own blindness as success.
-EXPECT_MIN_PUSHERS = 2
+# ── the floor is DERIVED from publish_all's own channel list, not declared ───────────────
+# This was `EXPECT_MIN_PUSHERS = 2`. Same two objections as the loops floor: when it fired the
+# tool printed "lower EXPECT_MIN_PUSHERS" — the repair that removes the check — and the 2 was
+# an observation of one era's tree.
+#
+# The authority already exists in the repo. publish_all.sh says which channels ship:
+#
+#     for CH in linux windows web; do
+#         web) SCRIPT=./tools/deploy_web.sh ;;  *) SCRIPT=./tools/deploy_${CH}.sh ;;
+#
+# So the expectation is: EVERY CHANNEL publish_all ITERATES MUST RESOLVE TO A SCRIPT THAT
+# PUSHES, or that delegates to one. No number, and it tracks the lane automatically — add a
+# channel to that loop and this guard expects its script the same minute.
+#
+# ⛔ The repair when this fires is "the channel has no publishable script" or "the detector
+# stopped matching". Neither is an integer anyone can edit downward.
+def _channels_from_publish_all(tools_dir):
+    """Channel names from publish_all.sh's publish loop. None if it cannot be read — the
+    caller then refuses rather than inventing an expectation."""
+    p = os.path.join(tools_dir, "publish_all.sh")
+    if not os.path.isfile(p):
+        return None
+    src = open(p, encoding="utf-8", errors="replace").read()
+    m = re.search(r'^\s*for\s+CH\s+in\s+([^;]+?);\s*do', src, re.M)
+    if not m:
+        return None
+    chans = [c for c in m.group(1).split() if re.fullmatch(r'[a-z0-9_]+', c)]
+    return chans or None
 
 # `"${BUTLER_BIN}" push …`, `butler push …`, `$BUTLER push …`, `$(command -v butler) push …`
 #
@@ -387,14 +404,29 @@ def run(tools_dir):
 
     print(f"[optin] {pushers} script(s) contain a push site · {bad} finding(s)")
 
-    if pushers < EXPECT_MIN_PUSHERS:
+    channels = _channels_from_publish_all(tools_dir)
+    if channels is None:
         raise Unusable(
-            f"[optin] BLOCKED: only {pushers} script(s) contain a push site, expected at least "
-            f"{EXPECT_MIN_PUSHERS}.\n"
-            f"        Far likelier that the push-site regex stopped matching than that the lane\n"
-            f"        stopped publishing. '0 push sites, all gated' is this tool reporting its\n"
-            f"        own blindness as success. If a channel was genuinely retired, lower\n"
-            f"        EXPECT_MIN_PUSHERS deliberately in the same commit.")
+            "[optin] BLOCKED: could not read the channel list from publish_all.sh in this\n"
+            "        directory. This guard derives what it expects from that loop; without it\n"
+            "        there is no way to tell 'nothing publishes here' from 'the detector broke'.")
+    unbacked = []
+    for ch in channels:
+        cand = f"deploy_{ch}.sh"
+        path = os.path.join(tools_dir, cand)
+        if not os.path.isfile(path):
+            unbacked.append(f"{ch} (no {cand})")
+            continue
+        p_, f_, deleg, st_, orch_ = audit(path)
+        if not p_ and not deleg:
+            unbacked.append(f"{ch} ({cand} neither pushes nor delegates)")
+    if unbacked:
+        raise Unusable(
+            f"[optin] BLOCKED: publish_all iterates channel(s) with no publishable script:\n"
+            f"        {'; '.join(unbacked)}\n"
+            f"        Either a channel was added without its deploy script, or the push-site\n"
+            f"        detector stopped matching. 'All gated' over a channel nothing can ship\n"
+            f"        is vacuous.")
 
     if bad:
         print(f"[optin] publish_all --dry-run and --rollback both rehearse by WITHHOLDING "
@@ -536,6 +568,24 @@ def scan_all(tools_dir):
     return out
 
 
+def _write_publish_all(d, channels):
+    """Minimal publish_all.sh declaring the channels a probe dir is supposed to ship.
+
+    The expectation is DERIVED from this loop, so a fixture without it is Unusable — which is
+    correct behaviour and was the first thing the change surfaced: 18 arms went to exit 2 at
+    once, because every probe dir lacked the authority the guard now reads.
+    """
+    open(os.path.join(d, "publish_all.sh"), "w").write(
+        "#!/usr/bin/env bash\nfor CH in " + " ".join(channels) + "; do\n"
+        "    case \"$CH\" in\n        *) SCRIPT=./tools/deploy_${CH}.sh ;;\n    esac\n"
+        # --publish INSIDE a conditional, as the real publish_all has it. My first fixture
+        # named it unconditionally and the guard flagged it — correctly. Five clean arms went
+        # red and the fixture was the broken party, not the code. A fixture that does not
+        # resemble the real subject tests something else.
+        "    if [ \"$DRY_RUN\" -eq 1 ]; then\n        \"$SCRIPT\" \"$TAG\"\n"
+        "    else\n        \"$SCRIPT\" --publish \"$TAG\"\n    fi\ndone\n")
+
+
 def selftest():
     passed = failed = 0
     saw = set()
@@ -574,6 +624,7 @@ def selftest():
             # control can mask as well as reveal, and that a fixture has to clear it explicitly.
             open(os.path.join(td, "deploy_filler.sh"), "w").write(GOOD)
             open(os.path.join(td, "deploy_filler2.sh"), "w").write(GOOD)
+            _write_publish_all(td, ["probe", "filler", "filler2"])
 
             def check(td=td, frag=frag):
                 _p, f, _d, _s, _o = audit(os.path.join(td, "deploy_probe.sh"))
@@ -597,6 +648,7 @@ def selftest():
         os.makedirs(odd)
         open(os.path.join(odd, "deploy_filler.sh"), "w").write(GOOD)
         open(os.path.join(odd, "deploy_filler2.sh"), "w").write(GOOD)
+        _write_publish_all(odd, ["filler", "filler2"])
         open(os.path.join(odd, "ship_it.sh"), "w").write(
             '#!/usr/bin/env bash\n# an emergency pusher nobody named deploy_*\n'
             '"${BUTLER_BIN}" push out/ "$T"\n')
@@ -608,6 +660,15 @@ def selftest():
             return True, "ship_it.sh examined despite its name"
 
         arm("a push in a file no PREFIX would scan is examined", 1, lambda: run(odd), named)
+
+        # THE DERIVED EXPECTATION, armed: publish_all iterates a channel with no deploy script.
+        # This replaces EXPECT_MIN_PUSHERS, and note the repair a red here invites — "add the
+        # script" or "fix the detector", never "lower a number".
+        ghost = os.path.join(d, "ghost")
+        os.makedirs(ghost)
+        open(os.path.join(ghost, "deploy_filler.sh"), "w").write(GOOD)
+        _write_publish_all(ghost, ["filler", "macos"])      # macos has no deploy_macos.sh
+        arm("a channel publish_all ships with no deploy script", 2, lambda: run(ghost))
 
         # ── instrument-died arms ──
         empty = os.path.join(d, "empty")

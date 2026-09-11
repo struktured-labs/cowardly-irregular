@@ -49,8 +49,9 @@ Usage:  check_polling_bounded.py [tools-dir]      default: the repo's tools/ bes
         check_polling_bounded.py --selftest
 Exit:   0 every polling loop is bounded
         1 at least one is UNBOUNDED (named, with the reason)
-        2 unusable — no target files, or fewer loops found than EXPECT_MIN_LOOPS
+        2 unusable — no target files, no pushers, or a pusher with no polling loop
 """
+import importlib.util
 import os
 import re
 import sys
@@ -61,57 +62,49 @@ import tempfile
 # not on the day someone remembers to add it here.
 TARGET_GLOBS = ("deploy_", "publish_")
 
-# CORPUS-derived floor — NOT contract-derived, which is what this comment used to claim.
-# Nothing in this lane's contract says a deploy script must poll; the 2 is an OBSERVATION of the
-# tree on origin/main @ 5aef5287 (2026-09-11), and the tree is written by this same lane. So it
-# is a snapshot of output this lane writes.
+# ── the floor is DERIVED, not declared ───────────────────────────────────────────────────
+# This was `EXPECT_MIN_LOOPS = 2`, a number measured off the tree. Two objections retired it:
 #
-# ⚠ It is NOT an echo, and I first wrote that it was — over-correcting, which is the direction
-# that passes review because it reads as rigour. @cowir-sprites' discriminator is sharper than
-# authorship: does the pipeline DETERMINE the answer being reported? Nothing here forces a
-# deploy script to poll — these two could have had one polling loop, or three, or none, and the
-# count would have been different.
+#   1. @cowir-autogrind: THE TRAP WAS THE FIX. When that floor fired, this tool PRINTED the
+#      one-line edit that disables it — "lower EXPECT_MIN_LOOPS deliberately". A guard is only
+#      as good as the repair it invites at 2am, and mine invited its own removal.
+#   2. It was corpus-dated. Measured across the repo's own tags, the count was 1 at
+#      v3.33.29-alpha and 2 from .291 — so the number was right for one era and a false
+#      positive on every earlier tree.
 #
-# ✅ AND THAT IS MEASURED, NOT REASONED — @cowir-ai's point that the SURVIVES side is an arm you
-# run, and @cowir-sprites' that the arm is often already in your history. Ran this file against
-# the repo's own tags:
+# The replacement is a RELATIONSHIP, and there is no number in it:
 #
-#     v3.33.29-alpha     1 polling loop   0 bounded · 1 UNBOUNDED
-#     v3.33.291-alpha    2 polling loops  1 bounded · 1 UNBOUNDED
-#     v3.33.293-alpha    2               1 bounded · 1 UNBOUNDED
-#     v3.33.294-alpha    2               1 bounded · 1 UNBOUNDED
-#     v3.33.295-alpha    2               2 bounded · 0 UNBOUNDED
+#     a script that PUSHES must be able to TIME OUT waiting for confirmation,
+#     therefore every real push site's file carries at least one polling loop.
 #
-# The count DID come out otherwise — 1, at v3.33.29-alpha. So this is a real observation about
-# output that happens to be mine, not an echo of a pipeline that forces the answer.
+# Push sites are themselves derived from the call site by check_publish_is_optin.py, which is
+# IMPORTED rather than re-implemented — two parses of the same thing is how they drift, and I
+# spent a morning on exactly that. A stub push (a *STUB* binary, a test double) is exempt: it
+# is not waiting on itch and has nothing to time out.
 #
-# ⚠ CAVEAT CHECKED, because that table was produced by TODAY'S finder run over OLD trees, and
-# this finder has three blind spots patched into it in the last two hours. A `1` could have been
-# the instrument failing to see an older form rather than the tree having one loop. Cross-checked
-# at v3.33.29-alpha by raw census, independent of find_loops(): ONE deploy script existed
-# (deploy_web.sh), with 1 `sleep`, 1 loop head and 0 heredocs. The 1 is the tree, not the tool.
-# (The tags are immutable, so the subject cannot have drifted — only the instrument could, and
-# that is the half worth checking. @cowir-overworld / @cowir-sprites, 2026-09-11.)
-#
-# ⚠ The same table proves the staleness weakness concretely: EXPECT_MIN_LOOPS=2 would FAIL on
-# v3.33.29-alpha, a tree that was correct for its day. The floor is dated to this era, and its
-# failure on an older tree would be a false positive — not a reason to lower it. (An echo would be "the tool
-# emits X, therefore the corpus is X" — e.g. citing squareness from a generator that only emits
-# squares.)
-#
-# Its weakness is STALENESS, not circularity: the number is right until the corpus legitimately
-# changes, and then it is a false positive. Its job is to notice the FINDER breaking.
-# ⚠ A corpus-derived bound goes stale the moment the corpus legitimately changes, and its
-# failure is then a FALSE POSITIVE. A contract-derived one survives a refactor. Do not read this
-# number as the second kind. Measured: deploy_desktop.sh
-# has one polling loop and deploy_web.sh has one — two. If this file finds FEWER than that,
-# the far likelier explanation is that the loop-finder broke (a refactor, a spelling this
-# regex does not know) than that polling genuinely vanished from the deploy chain. A guard
-# that reports "0 loops examined, all bounded" is the reassuring output of its own failure.
-#
-# ⛔ If polling really was removed everywhere — butler grows a --wait flag, say — LOWER THIS
-# DELIBERATELY in the same commit that removes the loops. Do not delete the check.
-EXPECT_MIN_LOOPS = 2
+# ⛔ The repair when this fires is "restore the confirmation loop" or "fix the loop finder".
+# Both are correct actions. Neither is a number you can lower.
+def _pushers(tools_dir):
+    """Files with a REAL push site, via the sibling guard's detector. Raises if it is absent —
+    a missing guard is not a passing one, and silently falling back to a local copy of the
+    regex would recreate the drift this import exists to prevent."""
+    sib = os.path.join(os.path.dirname(os.path.abspath(__file__)), "check_publish_is_optin.py")
+    if not os.path.isfile(sib):
+        raise Unusable(f"[waits] BLOCKED: {sib} not found. This tool derives its expectation "
+                       f"from that guard's push-site detector; without it there is nothing to "
+                       f"check the loops against, and 'no pushers, all bounded' would be "
+                       f"vacuous.")
+    spec = importlib.util.spec_from_file_location("_optin", sib)
+    optin = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(optin)
+    out = {}
+    for f in sorted(os.listdir(tools_dir)):
+        if not f.endswith(".sh"):
+            continue
+        pushes, _find, _deleg, _stubs, _orch = optin.audit(os.path.join(tools_dir, f))
+        if pushes:
+            out[f] = pushes
+    return out
 
 LOOP_HEAD_RE = re.compile(r'^\s*(while|until|for)\b')
 # ⚠ `<` and `>` are COMPARISONS ONLY INSIDE (( )). Everywhere else in shell they are
@@ -180,7 +173,7 @@ def strip_heredocs(lines):
     contained the `sleep`, so it was not a polling loop, so **the unbounded loop vanished from
     the census entirely**. Not misclassified — ABSENT. The report read "0 UNBOUNDED".
 
-    It was caught only because EXPECT_MIN_LOOPS then failed the run (1 found, 2 required). That
+    It was caught only because the vacuity check then failed the run. That
     is the vacuity floor doing exactly its job, and the first evidence I have that it earns its
     keep — but it only fires when the drop crosses the floor. A corpus with five polling loops
     losing one would have reported a clean census.
@@ -301,14 +294,22 @@ def run(tools_dir):
 
     print(f"[waits] {total} polling loop(s) examined · {total - bad} bounded · {bad} UNBOUNDED")
 
-    if total < EXPECT_MIN_LOOPS:
+    # DERIVED EXPECTATION: every real pusher must carry a polling loop to time out on.
+    pushers = _pushers(tools_dir)
+    if not pushers:
         raise Unusable(
-            f"[waits] BLOCKED: found {total} polling loop(s), expected at least "
-            f"{EXPECT_MIN_LOOPS}.\n"
-            f"        This is far more likely to mean the loop-finder broke than that polling\n"
-            f"        was removed from the deploy chain. A guard reporting '0 examined, all\n"
-            f"        bounded' is the reassuring output of its own failure.\n"
-            f"        If the loops really are gone, lower EXPECT_MIN_LOOPS deliberately.")
+            "[waits] BLOCKED: no script in this directory contains a real push site, so there\n"
+            "        is nothing whose post-push wait could be checked. Either the push-site\n"
+            "        detector broke, or this is not a deploy tools directory. 'All bounded'\n"
+            "        over an empty subject is vacuous.")
+    missing = [f for f in pushers if not scan_file(os.path.join(tools_dir, f))]
+    if missing:
+        raise Unusable(
+            f"[waits] BLOCKED: {', '.join(missing)} contains a butler push but NO polling loop.\n"
+            f"        A script that pushes must be able to TIME OUT waiting for confirmation.\n"
+            f"        Either the post-push wait was removed — a real regression, restore it —\n"
+            f"        or this file's loop finder stopped matching. Both are worth stopping for,\n"
+            f"        and neither is a number you can lower.")
 
     if bad:
         print(f"[waits] a hang is the quietest way for the publish cadence to stop — it produces "
@@ -441,10 +442,15 @@ def selftest():
             print(f"  FAIL  {name:52} exit {got} (wanted {want})")
 
     with tempfile.TemporaryDirectory() as d:
-        # Each probe gets its OWN tools dir, padded to EXPECT_MIN_LOOPS with a known-bounded
+        # Each probe gets its OWN tools dir, padded with a known-bounded PUSHER so the
         # filler so the floor check never masks the arm under test.
-        FILLER = ("#!/usr/bin/env bash\nk=0\nwhile [ \"$k\" -lt 9 ]; do sleep 1; "
-                  "k=$((k+1)); done\n")
+        # The filler must PUSH as well as poll: the expectation is now derived from push
+        # sites, so a dir with no pusher is Unusable and would mask every arm.
+        FILLER = ("#!/usr/bin/env bash\nPUBLISH=0\n"
+                  "[ \"${1:-}\" = \"--publish\" ] && { PUBLISH=1; shift; }\n"
+                  "if [ \"$PUBLISH\" != \"1\" ]; then exit 0; fi\n"
+                  "k=0\nwhile [ \"$k\" -lt 9 ]; do sleep 1; k=$((k+1)); done\n"
+                  "\"${BUTLER_BIN}\" push out/ \"$T\"\n")
         for i, (name, (src, want, frag)) in enumerate(PROBES.items()):
             td = os.path.join(d, f"t{i}")
             os.makedirs(td)
@@ -469,6 +475,18 @@ def selftest():
         empty = os.path.join(d, "empty")
         os.makedirs(empty)
         arm("no deploy scripts at all — must not pass", 2, lambda: run(empty))
+
+        # THE DERIVED RELATIONSHIP, armed directly: a pusher whose post-push wait was removed.
+        # This is the arm that replaces EXPECT_MIN_LOOPS, and note what a red here tells you —
+        # "restore the confirmation" or "fix the finder", never "lower a number".
+        noloop = os.path.join(d, "noloop")
+        os.makedirs(noloop)
+        open(os.path.join(noloop, "deploy_pusher.sh"), "w").write(
+            '#!/usr/bin/env bash\nPUBLISH=0\n'
+            '[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }\n'
+            'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
+            '"${BUTLER_BIN}" push out/ "$T"\n')          # pushes, never waits
+        arm("a PUSHER with no polling loop — wait was removed", 2, lambda: run(noloop))
 
         nopoll = os.path.join(d, "nopoll")
         os.makedirs(nopoll)
