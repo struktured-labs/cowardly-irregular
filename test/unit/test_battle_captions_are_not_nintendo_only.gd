@@ -101,12 +101,20 @@ func test_the_captions_derive_instead() -> void:
 			continue
 		## Statement window: this line plus continuations, stopping at the first line that closes it.
 		var stmt: String = line
+		var closed: bool = line.strip_edges().ends_with("]") or line.strip_edges().ends_with(")")
 		var k: int = i + 1
-		while k < lines.size() and k <= i + 8 and not line.strip_edges().ends_with("]"):
+		while k < lines.size() and k <= i + 24 and not closed:
 			stmt += lines[k]
 			if lines[k].strip_edges().begins_with("]"):
+				closed = true
 				break
 			k += 1
+		## cowir-controller 2026-09-11: the window was i+8 and a longer continuation fell out the
+		## BOTTOM — silently passing rather than failing, because an unterminated window still gets
+		## scanned and `InputProfileManager.` happens to be in it. A bound that is reached is a
+		## measurement that did not finish, so it must fail rather than answer.
+		assert_true(closed,
+			"could not find the end of this caption statement within 24 lines — widen the bound rather than trusting the result: %s" % line.strip_edges().substr(0, 70))
 		assert_true(stmt.contains("InputProfileManager."),
 			"a help caption with %d format slots must feed them from InputProfileManager: %s" % [slots, line.strip_edges().substr(0, 80)])
 
