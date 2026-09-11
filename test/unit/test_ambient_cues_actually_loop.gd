@@ -102,8 +102,12 @@ func test_every_ambient_cue_loops() -> void:
 		"ambient cues that will NOT loop (%d): %s — play_ambient's contract is a LOOP, and a one-shot leaves the area silent for the rest of the visit. The manifest/import AGREEMENT guard cannot see this: false in both AGREES." % [broken.size(), broken])
 
 
-## Every literal handed to play_ambient anywhere in src/. WeatherSystem spells each one out
-## (its own comment says "literal keys per branch so the sfx-orphan audit can see every ambient").
+## Every key handed to play_ambient anywhere in src/ — string literals AND const identifiers.
+## ⚠️ CONSTS ARE NOT OPTIONAL: SoundManager:869 calls play_ambient(NIGHT_AMBIENCE_KEY), whose value
+## is "night_crickets_wind" — no ambient_ prefix, so the prefix half misses it too. A literal-only
+## scan left it invisible to BOTH halves of this corpus; it happens to be loop=true, so the gap was
+## latent, not live. The remaining unresolvable shapes (a local var or a method result) are pinned
+## below rather than ignored, so a new one REDS instead of silently leaving the corpus.
 func _keys_passed_to_play_ambient() -> Array[String]:
 	var found: Array[String] = []
 	var re := RegEx.new()
@@ -122,10 +126,143 @@ func _keys_passed_to_play_ambient() -> Array[String]:
 				if not name.begins_with("."):
 					stack.append(full)
 			elif name.ends_with(".gd"):
-				for m in re.search_all(FileAccess.get_file_as_string(full)):
+				## Blank COMMENTS before scanning. A commented-out play_ambient("heal") put `heal`
+				## into the corpus and redded the guard on correct code — and the tempting repair
+				## for that red is to set loop=true on a cue that must NOT loop. Demonstrated:
+				## planting that comment gave Failing 1 naming `heal`. Line count is preserved so
+				## nothing downstream shifts. (cowir-controller's discriminator, f91f9af9.)
+				var text: String = _strip_comments(FileAccess.get_file_as_string(full))
+				for m in re.search_all(text):
 					var k: String = m.get_string(1)
 					if not found.has(k):
 						found.append(k)
+				## The key can also arrive ONE FRAME UP, as a method RESULT: BaseInterior calls
+				## play_ambient(_get_ambient_key()), and each interior overrides that to return a
+				## literal. A scan of call sites cannot see those. Demonstrated before fixing:
+				## an override returning a non-ambient_-prefixed key with loop=false passed GREEN.
+				for rm in _ambient_getter_re().search_all(text):
+					var rk: String = rm.get_string(1)
+					if not found.has(rk):
+						found.append(rk)
+				## play_ambient(SOME_CONST) — resolve the const's value in the same file.
+				for cm in _const_re().search_all(text):
+					var cname: String = cm.get_string(1)
+					if text.contains("play_ambient(" + cname):
+						var cval: String = cm.get_string(2)
+						if not found.has(cval):
+							found.append(cval)
 			name = d.get_next()
 		d.list_dir_end()
 	return found
+
+
+func _const_re() -> RegEx:
+	var r := RegEx.new()
+	r.compile("const\\s+([A-Z_][A-Z0-9_]*)\\s*:\\s*String\\s*=\\s*\"([^\"]+)\"")
+	return r
+
+
+## The call sites this scan CANNOT resolve — a local var or a method result. Every key they can
+## reach today is ambient_*-prefixed and therefore in the corpus by the other half; this pins the
+## SITES so a new unresolvable one fails here instead of quietly shrinking what the guard defends.
+func test_unresolvable_play_ambient_sites_are_known() -> void:
+	var known := ["src/exploration/OverworldScene.gd", "src/maps/interiors/BaseInterior.gd"]
+	var found: Array[String] = []
+	var re := RegEx.new()
+	re.compile("play_ambient\\(\\s*([a-z_][a-zA-Z0-9_]*)\\s*\\)")
+	var stack: Array[String] = ["res://src"]
+	while not stack.is_empty():
+		var dir_path: String = stack.pop_back()
+		var d := DirAccess.open(dir_path)
+		if d == null:
+			continue
+		d.list_dir_begin()
+		var name := d.get_next()
+		while name != "":
+			var full: String = dir_path + "/" + name
+			if d.current_is_dir():
+				if not name.begins_with("."):
+					stack.append(full)
+			elif name.ends_with(".gd"):
+				if re.search(FileAccess.get_file_as_string(full)) != null:
+					found.append(full.trim_prefix("res://"))
+			name = d.get_next()
+		d.list_dir_end()
+	found.sort()
+	assert_gt(found.size(), 0, "SCOPE control: found no variable-routed play_ambient sites at all — the scan is dead")
+	for f in found:
+		assert_true(known.has(f),
+			"%s routes play_ambient through a variable this guard cannot resolve. Either pass a literal/const, or add the file here AND confirm its keys are covered." % f)
+
+
+## Literals returned by an _get_ambient_key() override. Bounded by the `return` inside the
+## function rather than by a line window — a fixed window overruns into the next func, which is
+## how an earlier pass here pulled two _get_music_track() values in as ambient keys.
+func _ambient_getter_re() -> RegEx:
+	var r := RegEx.new()
+	r.compile("func _get_ambient_key\\([^)]*\\)[^\\n]*\\n(?:[\\t ]+[^\\n]*\\n)*?[\\t ]+return[\\t ]+\"([^\"]+)\"")
+	return r
+
+
+## Blank everything after the first `#` OUTSIDE a string literal, keeping the line so offsets hold.
+## ⚠️ A naive first-`#` cut truncates real code: 84 lines in src/ carry a `#` inside a string
+## (`[color=#44ff44]`, `"BATTLE #%d"`). Today none of them also carries an ambient key — measured,
+## corpus identical stripped vs not, 11 keys both ways — so this is latent, and it fails SILENT:
+## a truncated line drops its key from the corpus and the guard quietly stops defending it.
+## I introduced that hole in the commit that fixed a loud false positive (cowir-controller, 8e91aaa5).
+## Deliberately NOT stripping string literals: play_ambient(SOME_CONST) and the getter returns
+## are both string-bearing code, and blanking strings would hide the very keys this scan exists
+## to find (cowir-autogrind's Callable(self,"fn") lesson, from the other direction).
+func _strip_comments(text: String) -> String:
+	var out: PackedStringArray = []
+	for line in text.split("\n"):
+		## Track WHICH quote opened, and honour escapes. A bool toggled on `"` alone mis-cut
+		## 'BATTLE #%d' mid-string (0 such lines in src/ today, so latent) and mis-toggled on \".
+		## Shape taken from cowir-controller's _strip_comment after reading it on their branch —
+		## I had characterised their stripper wrongly in a broadcast, so I read it and it was better.
+		## FORWARD scan: a backslash escapes the NEXT character, so skip it. Looking BACKWARDS at
+		## line[i-1] != "\\" mishandles an escaped backslash -- "a\\\\" really does end the string, and
+		## cowir-controller found that as the sixth costume of this bug. Pinned directly below by
+		## test_the_comment_stripper_itself rather than only through the corpus, because each fix
+		## here has been blind to the next and a case table terminates that.
+		var quote := ""
+		var cut := -1
+		var i := 0
+		while i < line.length():
+			var c := line[i]
+			if quote != "":
+				if c == "\\":
+					i += 2
+					continue
+				if c == quote:
+					quote = ""
+			elif c == "\"" or c == "'":
+				quote = c
+			elif c == "#":
+				cut = i
+				break
+			i += 1
+		out.append(line if cut < 0 else line.substr(0, cut))
+	return "\n".join(out)
+
+
+## The helper pinned DIRECTLY, both polarities, rather than only through the corpus. Six costumes
+## of this bug were found across four lanes in one afternoon, each fix blind to the next; a case
+## table is what stops the seventh from being silent.
+func test_the_comment_stripper_itself() -> void:
+	var cases: Array = [
+		## expected keeps the two spaces BEFORE the #: the cut is at the #, not a trim.
+		["sm.play_ambient(\"weather_rain\")  # note", "sm.play_ambient(\"weather_rain\")  ", "trailing comment cut"],
+		["# sm.play_ambient(\"heal\")", "", "whole-line comment blanked"],
+		["var c := \"[color=#44ff44]\"", "var c := \"[color=#44ff44]\"", "# inside a double-quoted string SURVIVES"],
+		["var s := 'BATTLE #%d'", "var s := 'BATTLE #%d'", "# inside a single-quoted string SURVIVES"],
+		["var q := \"a\\\\\"  # x", "var q := \"a\\\\\"  ", "escaped BACKSLASH ends the string, comment still cut"],
+		["sm.play_ambient(\"a\")", "sm.play_ambient(\"a\")", "no comment, untouched"],
+	]
+	var bad: Array = []
+	for c in cases:
+		var got: String = _strip_comments(str(c[0]))
+		if got != str(c[1]):
+			bad.append("%s: got %s want %s" % [c[2], got, c[1]])
+	assert_eq(cases.size(), 6, "SCOPE control: the case table shrank — a removed row is a removed guarantee")
+	assert_eq(bad, [], "comment stripper wrong on: %s" % [bad])
