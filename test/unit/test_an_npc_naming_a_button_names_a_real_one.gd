@@ -43,13 +43,38 @@ func _read(path: String) -> String:
 	return "" if f == null else f.get_as_text()
 
 
+## ⛔ COMMENTS ARE BLANKED BEFORE EVERY SCAN. @cowir-controller, 2026-09-11: a source-text pin is
+## defeated by the realistic removal, not the tidy one — nobody deletes a branch without leaving the
+## comment that explained it, so `contains("_open_settings_menu()")` stays true of a file where the
+## CALL is gone and only its epitaph remains. Their guard caught "delete the keycode" and missed
+## "delete it, leave a comment", which is the version that actually happens.
+## Line count is preserved so the offset arithmetic below still lines up.
+func _strip_comments(src: String) -> String:
+	var out: PackedStringArray = []
+	for line in src.split("\n"):
+		var text: String = str(line)
+		if text.strip_edges().begins_with("#"):
+			out.append("")
+			continue
+		var hash_at := text.find("#")
+		# Only outside a string: an odd quote count before the # means we are inside one.
+		if hash_at > -1 and text.substr(0, hash_at).count("\"") % 2 == 0:
+			text = text.substr(0, hash_at)
+		out.append(text)
+	return "\n".join(out)
+
+
+func _read_code(path: String) -> String:
+	return _strip_comments(_read(path))
+
+
 ## ⛔ THIS ARM REPLACES ONE THAT WAS HOLLOW. It asserted `src.contains("ui_menu")` and called that
 ## "Start opens the editor" -- true that the string is present, silent on what the branch DOES.
 ## In EXPLORATION, where these NPCs stand, ui_menu opens SETTINGS. The pad route to the editor is
 ## the overworld menu. Both halves are pinned below, and the settings one is pinned deliberately:
 ## it is the claim I got wrong, so it is the one that must red if it ever changes.
 func test_the_pad_route_to_the_editor_is_the_menu_not_start() -> void:
-	var src := _read(GAMELOOP_SRC)
+	var src := _read_code(GAMELOOP_SRC)
 	assert_gt(src.length(), 1000, "CONTROL: GameLoop source did not load")
 	assert_true(src.contains("_toggle_autobattle_editor()"),
 		"CONTROL: the editor opener is gone entirely, so the arms below mean nothing")
@@ -64,7 +89,7 @@ func test_the_pad_route_to_the_editor_is_the_menu_not_start() -> void:
 	assert_false(branch.contains("_toggle_autobattle_editor"),
 		"CONTROL: the exploration arm must NOT be the editor path, or this test is measuring the battle one")
 
-	var menu := _read(MENU_SCENE_SRC)
+	var menu := _read_code(MENU_SCENE_SRC)
 	assert_gt(menu.length(), 1000, "CONTROL: MenuScene source did not load")
 	assert_true(menu.contains("_open_autobattle_editor("),
 		"the overworld menu no longer opens the editor — two NPCs now send pad players nowhere")
@@ -87,7 +112,7 @@ func test_select_really_toggles_autobattle_for_everyone() -> void:
 ## The false claim itself, pinned: if L+R ever DOES open the editor, this reds and whoever wired it
 ## updates CLAUDE.md and Mike's line together instead of leaving a fifth stale citation.
 func test_l_plus_r_together_still_means_the_autogrind_tier() -> void:
-	var src := _read(GAMELOOP_SRC)
+	var src := _read_code(GAMELOOP_SRC)
 	var idx := src.find("JOY_BUTTON_LEFT_SHOULDER")
 	assert_gt(idx, -1, "CONTROL: no L+R handler found at all — this test is measuring nothing")
 	if idx < 0:
