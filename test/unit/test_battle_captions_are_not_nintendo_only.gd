@@ -569,3 +569,62 @@ func _binds_key(action: String, key_upper: String) -> bool:
 		if ev is InputEventKey and OS.get_keycode_string((ev as InputEventKey).keycode).to_upper() == key_upper:
 			return true
 	return false
+
+
+## ── navigation names every route a player has ────────────────────────────────────────────────
+## cowir-controller's ruling 2026-09-11, measured from project.godot: ui_up/down/left/right each
+## bind an arrow KEY, a d-pad BUTTON and a stick AXIS *simultaneously*. Unlike Confirm — where the
+## label genuinely differs per family and must be derived — navigation is one concept on every
+## device and all three routes are always live. So the fix is not a helper or a pad-presence
+## branch: it is naming more than one route. "D-Pad:Navigate" named only the pad, so a keyboard
+## player was pointed at hardware they do not own while their arrow keys worked the whole time.
+## The existing form is DialogueChoiceMenu's "(↑↓/D-pad)"; adopted rather than coined, after three
+## lanes reported "0 arrow vocabulary" from patterns that could not see it.
+
+func test_navigation_captions_name_a_keyboard_route_too() -> void:
+	var bad: Array = []
+	for path in [GRID_EDITOR, AUTOGRIND_EDITOR]:
+		for line in _src(path).split("\n"):
+			var i: int = line.find("D-pad:")
+			if i < 0:
+				i = line.find("D-Pad:")
+			if i < 0:
+				continue
+			## A bare pad word with no arrow glyph in front of it names one route only.
+			## ⚠️ _src returns SOURCE, where the glyph is the six-character escape \u2191, not ↑.
+			## My first version tested for the character and redded every line I had just converted.
+			var before: String = line.substr(0, i)
+			if not (before.contains("\\u2191") or before.contains("\u2191")):
+				bad.append("%s: %s" % [path.get_file(), line.strip_edges().substr(0, 60)])
+	assert_eq(bad.size(), 0,
+		"a navigation caption names the D-pad and nothing a keyboard player has: " + str(bad))
+
+func test_the_glyphs_match_the_axes_that_surface_actually_uses() -> void:
+	## ⚠️ NOT a uniform token. The pickers are VERTICAL lists (ui_up/ui_down only) so they take the
+	## canonical two-glyph form; the grid navigates in 2D, and "↑↓" alone there would under-report
+	## the way "D-Pad" did. Accuracy per surface beats one spelling everywhere.
+	var ge := _src(GRID_EDITOR)
+	var grid_i: int = ge.find("D-pad:Navigate")
+	assert_gt(grid_i, -1, "CONTROL: located the grid legend")
+	var grid_pre: String = ge.substr(maxi(0, grid_i - 30), 30)
+	assert_true(grid_pre.contains("\\u2190") or grid_pre.contains("\u2190"),
+		"the grid navigates on all four axes, so its caption must show them")
+	var sel_i: int = ge.find("D-pad:Select")
+	assert_gt(sel_i, -1, "CONTROL: located a picker legend")
+	var sel_pre: String = ge.substr(maxi(0, sel_i - 30), 30)
+	assert_false(sel_pre.contains("\\u2190") or sel_pre.contains("\u2190"),
+		"the pickers are vertical lists; horizontal glyphs there would name motion that does nothing")
+
+func test_all_four_directions_really_do_bind_key_button_and_axis() -> void:
+	## The premise behind "no branch needed". If a future remap splits these — arrows on one action,
+	## d-pad on another — a combined token becomes a lie and this reds first.
+	for action in ["ui_up", "ui_down", "ui_left", "ui_right"]:
+		var has_key: bool = false
+		var has_pad: bool = false
+		for e in InputMap.action_get_events(action):
+			if e is InputEventKey:
+				has_key = true
+			elif e is InputEventJoypadButton or e is InputEventJoypadMotion:
+				has_pad = true
+		assert_true(has_key, "%s must still bind a keyboard key" % action)
+		assert_true(has_pad, "%s must still bind a pad route" % action)
