@@ -107,6 +107,11 @@ func test_premise_the_job_corpus_has_starters_and_advanced() -> void:
 			advanced += 1
 	assert_gt(starters, 3, "expected several starter jobs, found %d" % starters)
 	assert_gt(advanced, 5, "expected several non-starter jobs, found %d" % advanced)
+	# NAMED MEMBERS. A floor is blind to partial loss: drop half the jobs and both
+	# counts above still clear. These four must be here by name, one per side.
+	for jid in ["fighter", "rogue", "guardian", "time_mage"]:
+		assert_true(jobs.has(jid),
+			"%s is missing from the parsed jobs — the walk is covering less than it did, which a count floor cannot see" % jid)
 
 
 ## POSITIVE CONTROL, harvested: guardian authors a well-formed condition. If the

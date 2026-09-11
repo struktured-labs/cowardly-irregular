@@ -121,6 +121,11 @@ func _src_blob() -> String:
 func test_premise_both_corpora_loaded() -> void:
 	assert_gt(_abilities().size(), 200,
 		"only %d abilities parsed — the walk is not reading abilities.json" % _abilities().size())
+	# NAMED MEMBER. The blob is every .gd under src/; a floor of 1M chars still passes
+	# if a whole directory stops being walked. BattleManager is the consumer this file
+	# is actually about, so its absence must be loud rather than arithmetic.
+	assert_true(_src_blob().contains("func _check_one_shot"),
+		"the consumer corpus no longer contains BattleManager (its _check_one_shot is absent) — the walk is covering less than it did, and a key would read as unconsumed for that reason")
 	assert_gt(_src_blob().length(), 1000000,
 		"the src/ walk collected only %d chars — a key would read as unconsumed because the corpus is missing, not because the engine ignores it" % _src_blob().length())
 

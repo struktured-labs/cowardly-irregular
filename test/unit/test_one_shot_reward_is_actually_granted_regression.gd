@@ -51,6 +51,10 @@ const BATTLE_MANAGER_SRC := "res://src/battle/BattleManager.gd"
 ## setup_hint — 50 lines of authored tactical advice ("Stack attack buffs, defer for
 ##   max AP, then unleash all at once") with no surface that shows them. The
 ##   bestiary would be the obvious home. Content that exists and is never displayed.
+## Monsters that MUST appear in the one_shot walk. A count floor passes while members
+## quietly leave it; these do not.
+const PREMISE_MONSTERS: Array[String] = ["ice_dragon", "fire_dragon"]
+
 const UNREAD_ONE_SHOT_KEYS := {
 	"hp_threshold": "an unresolved design question, not debt: authored = damage MAGNITUDE, shipped = TEMPO. Struktured's call; see the note above",
 	"setup_hint": "authored tactical advice with no display surface (bestiary would be the home)",
@@ -102,6 +106,13 @@ func _one_shot_blocks() -> Dictionary:
 ## an empty set. The cheap repair for a red here is to follow the rename.
 func test_premise_the_one_shot_corpus_is_present() -> void:
 	var blocks := _one_shot_blocks()
+	# NAMED MEMBERS, not just a count — see the note on this arm.
+	var absent: Array[String] = []
+	for mid in PREMISE_MONSTERS:
+		if not blocks.has(mid):
+			absent.append(mid)
+	assert_eq(absent.size(), 0,
+		"a monster that carries a one_shot block has stopped contributing: %s — the walk is covering less than it did and a count floor cannot see that" % ", ".join(absent))
 	assert_gt(blocks.size(), 40,
 		"only %d monsters carry a one_shot block; there were 50 on 2026-09-11, so either the block was renamed or this walk is not reading monsters.json" % blocks.size())
 
