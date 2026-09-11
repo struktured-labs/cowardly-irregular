@@ -38,7 +38,14 @@ extends GutTest
 ## cannot see it and nothing here quantifies over "assertions still asserting".
 ## This block is that evidence moved into the file. Fire an arm, add its row; do not add a row you
 ## have not watched go red.
-##   shared == []          ✅ planter back onto Gerald's cell -> names both NPCs and the tile
+##   shared == []          ✅ two NPCs authored on ONE WALKABLE cell -> names both and the tile
+##                        ⛔ MY FIRST PROOF OF THIS ROW WAS MASKED. "planter back onto Gerald's
+##                           cell" reds with `shared` GUTTED — Gerald is RELOCATED by that defect,
+##                           so the OFF-GRID arm reports it and `shared` never had to fire. A
+##                           neighbouring control standing in for the arm under test
+##                           (@cowir-sprites, 2026-09-11). Re-proved by removing the relocation:
+##                           Surplus Ray placed on Neighborhood Dad's WALKABLE cell, nothing moves,
+##                           and only this arm can speak.
 ##   off_grid == []        ✅ MAY_STAND_OFF_GRID drained      -> names Madame Orrery and (752,224)
 ##   must_build membership ✅ one village dropped from the walk -> names SandriftVillage.gd
 ##   router equality       ✅ Ironhaven un-nominated by MapScripts -> "routes to 11, walked 10"
