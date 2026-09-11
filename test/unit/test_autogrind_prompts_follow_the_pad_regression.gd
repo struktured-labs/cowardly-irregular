@@ -55,6 +55,28 @@ extends GutTest
 ## the next sweep from looking. The reason field is the deliverable, so a wrong one is the one
 ## defect this design cannot absorb.
 
+## ONE source of truth for the census pattern. It lived as two copies — the live one and the scope
+## arm's — and I widened only the live one, so the tripwire whose whole job is "if someone widens
+## the pattern, red and restate the claims" went on watching a string that could no longer change.
+## A tripwire holding its own copy of the thing it watches cannot fire.
+## ⚠️ IT WILL MATCH IN-WORLD PROSE, AND THAT IS THE DELIBERATE CHOICE. @cowir-story found
+## "Form 1-A: the incident" in Rivet Row — correct prose that `[ABXY]:` adjacency matches — and
+## @cowir-controller's conclusion for THEIR arm was to key on caption context instead, because an
+## arm that reds on prose gets suppressed. Measured here before copying it: "Plan B: retreat",
+## "Tier A: fast" and "Exhibit A: the ledger" all match; live instances in LANE_DIRS today: 0.
+##
+## Not narrowing, because the risk profiles differ and the symptom is shared while the cause is not.
+## Their corpus is 197 prose JSON files; mine is two control-panel directories — 208 `.text`
+## assignments, 15 `"text":` dict keys, no prose. A context key (`.text` / `"text":`) would cover
+## both historical offenders AND lose a caption built into a local before assignment, i.e. it trades
+## a LOUD false positive for a SILENT false negative. A red on "Tier A: fast" costs one
+## conversation; the miss shipped "B: Exit" to players in .297.
+##
+## So if this ever reds on real prose: derive the caption or restructure the string. Do NOT add a
+## DEFERRED entry — the key is the regex MATCH, so exempting "B: E" would exempt every B:E… caption
+## in the lane, an exemption broader than its subject.
+const CENSUS_PATTERN := "(Press [ABXY]\\b|\\b[ABXY]:\\s*[A-Za-z]|\\b[ABXY] or [ABXY]\\b|\\[[ABXY]\\])"
+
 const LANE_DIRS := ["res://src/ui/autogrind", "res://src/ui/autobattle"]
 
 ## Frozen captions that are NOT fixed, each with the reason -- the value is required non-empty, so
@@ -326,7 +348,7 @@ func test_no_face_button_letter_is_frozen_into_a_caption() -> void:
 	## @cowir-controller found it by writing their own footer guard; mine was sitting on it.
 	## Fifth time in this file that the pattern was narrower than the defect, and the header already
 	## records their words for the fourth. `\s*` closes it.
-	var re := RegEx.create_from_string("(Press [ABXY]\\b|\\b[ABXY]:\\s*[A-Za-z]|\\b[ABXY] or [ABXY]\\b|\\[[ABXY]\\])")
+	var re := RegEx.create_from_string(CENSUS_PATTERN)
 	var frozen: Array = []
 	for f in _gd_files():
 		var lines := FileAccess.get_file_as_string(f).split("\n")
@@ -376,9 +398,11 @@ func test_the_four_repaired_surfaces_actually_ask_the_authority() -> void:
 ## So this arm lives OUTSIDE any loop and holds whatever the table's size: it pins the SCOPE of the
 ## detector, so widening the pattern forces the claim to be restated.
 func test_the_census_scope_is_what_this_file_claims() -> void:
-	var re := RegEx.create_from_string("(Press [ABXY]\\b|\\b[ABXY]:[A-Za-z]|\\b[ABXY] or [ABXY]\\b|\\[[ABXY]\\])")
+	var re := RegEx.create_from_string(CENSUS_PATTERN)
 	assert_not_null(re, "CONTROL: the census pattern must compile")
-	for face in ["Press A", "B:Cancel", "A or B", "[X]"]:
+	## "B: Exit" is in this list because it is the variant that shipped in .297 while the pattern
+	## required the letter to follow the colon immediately. It documents the widened scope.
+	for face in ["Press A", "B:Cancel", "B: Exit", "A or B", "[X]"]:
 		assert_not_null(re.search(face), "the census MUST emit a face-button caption: %s" % face)
 	## The limitation, encoded. @cowir-controller derives the banned set from BUTTON_NAMES, which
 	## covers every family's spelling of every NON-face button; this census does not, and a reader
