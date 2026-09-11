@@ -1427,6 +1427,260 @@
           "enabled": true
         }
       ]
+    },
+    {
+      "id": "guardian_defensive",
+      "job_id": "guardian",
+      "stance": "defensive",
+      "name": "Defensive",
+      "description": "Ward the party when anyone drops, patch yourself with a potion, recover AP from debt, then hold the line.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "ally_hp_percent",
+              "op": "<",
+              "value": 65
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 25
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "guardian_wall",
+              "target": "all_allies"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 40
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ap",
+              "op": "<",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "defer"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "highest_atk_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "guardian_balanced",
+      "job_id": "guardian",
+      "stance": "balanced",
+      "name": "Balanced",
+      "description": "Open with the ward, stun whoever hits hardest, keep AP above water, otherwise swing at the biggest threat.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 25
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "guardian_wall",
+              "target": "all_allies"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "shield_bash",
+              "target": "highest_atk_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ap",
+              "op": "<",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "defer"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "guardian_aggressive",
+      "job_id": "guardian",
+      "stance": "aggressive",
+      "name": "Aggressive",
+      "description": "Ward once when the party is hurt, then lead with Last Stand and Shield Bash; only defer in real AP debt.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "ally_hp_percent",
+              "op": "<",
+              "value": 40
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 25
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "guardian_wall",
+              "target": "all_allies"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 40
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "last_stand_ability",
+              "target": "highest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "shield_bash",
+              "target": "highest_atk_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ap",
+              "op": "<",
+              "value": -1
+            }
+          ],
+          "actions": [
+            {
+              "type": "defer"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
     }
   ]
 }
