@@ -61,7 +61,7 @@ while [ $# -gt 0 ]; do
 done
 TAG="${1:-}"
 if [ -z "$TAG" ]; then
-    echo "usage: tools/publish_all.sh [--check] <tag>" >&2
+    echo "usage: tools/publish_all.sh [--check|--dry-run|--rollback] <tag>" >&2
     exit 2
 fi
 
@@ -98,6 +98,28 @@ if [ -x tools/check_polling_bounded.py ]; then
 else
     echo "[pub] BLOCKED: tools/check_polling_bounded.py missing — nothing has checked that the" >&2
     echo "      deploy chain can still time out. A missing guard is not a passing one." >&2
+    exit 4
+fi
+
+# ── 0b. publishing is opt-in in every deploy script ──────────────────────────
+# --dry-run and --rollback both rehearse a publish by WITHHOLDING --publish. That makes the
+# whole containment rest on one sentence in the --dry-run comment below: "publishing is opt-in
+# by construction in every deploy_*.sh". It was FALSE until 2026-08-22 — deploy_web.sh had a
+# gate and published by DEFAULT — so the invariant this depends on has already been broken
+# once, silently, in the script the comment names.
+#
+# A rollback rehearsal that publishes ships a SUPERSEDED build over a newer live one. That is
+# the worst thing this lane can do, and the flag that prevents it was never checked.
+if [ -x tools/check_publish_is_optin.py ]; then
+    if ! ./tools/check_publish_is_optin.py; then
+        echo "[pub] BLOCKED: a butler push is reachable without --publish — see above." >&2
+        echo "      --dry-run and --rollback are not safe while that is true." >&2
+        exit 4
+    fi
+else
+    echo "[pub] BLOCKED: tools/check_publish_is_optin.py missing — nothing has checked that" >&2
+    echo "      withholding --publish actually withholds the push. A missing guard is not a" >&2
+    echo "      passing one." >&2
     exit 4
 fi
 
