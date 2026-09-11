@@ -14,7 +14,12 @@ const WORLD_THEMES := {
 	5: {"ring": Color(0.25, 0.88, 0.84), "face": Color(0.05, 0.08, 0.14, 0.88)},
 	6: {"ring": Color(0.86, 0.86, 0.86), "face": Color(0.05, 0.05, 0.05, 0.88)},
 }
-const BAND_GLYPH := {"dawn": "🌅", "day": "☀", "dusk": "🌇", "night": "🌙"}
+## 🌅🌇🌙 rendered as TOFU BOXES: NotoEmoji-Regular.ttf is an 8.5 KB subset carrying twelve glyphs
+## and none of these is among them. ☀ never came from it either — it resolves from NotoSansSymbols,
+## which is why the day band alone looked right. These four are covered by the symbol fonts, and the
+## band NAME is drawn underneath regardless, so the glyph is supplementary. Restore the emoji the day
+## the subset is regenerated from the derived glyph corpus.
+const BAND_GLYPH := {"dawn": "◑", "day": "☀", "dusk": "◐", "night": "☾"}
 
 var _outdoor: bool = false
 var _menu_open: bool = false
