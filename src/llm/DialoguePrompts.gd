@@ -844,7 +844,10 @@ static func build_party_line(
 		+ "Trigger: %s. %s\n" % [event_kind, event_hint]
 		+ "\n"
 		+ "Rules:\n"
-		+ "- line: ONE in-character utterance (≤ %d chars). No quote marks. No NPC names other than party/enemy listed above.\n" % MAX_PARTY_LINE_CHARS
+		+ "- line: ONE in-character utterance (≤ %d chars). No quote marks. No NPC names other than party/enemy listed above.
+- Stay inside the persona's OWN vocabulary. Do not invoke a deity, order, relic
+  or place it never names — if it venerates something, use that, not a generic
+  stand-in.\n" % MAX_PARTY_LINE_CHARS
 		+ "- mood: ONE of %s.\n" % moods
 		+ "- Respond with ONLY valid JSON: {\"line\": \"...\", \"mood\": \"...\"}\n"
 	)
