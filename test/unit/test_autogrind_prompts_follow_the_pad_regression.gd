@@ -130,6 +130,22 @@ func _gd_files() -> Array:
 ## when MenuScene is revived, replaced, or deleted, and it does not notice when a LIVE surface
 ## quietly loses its last caller.
 ##
+## ⚓ WHY THOSE TWO ARE DEAD, named rather than left as an absence. "Unreachable" invites the next
+## reader to wonder whether it was ever reachable and whether that was intended; the cause answers
+## both, and @cowir-controller asked for the SHA to outlive their message:
+##
+##   78209230  2026-03-22  "chore: remove dead code from GameLoop — sync battle, menu, unused vars"
+##             -const MenuSceneRes = preload("res://src/ui/MenuScene.tscn")
+##             -	var menu_scene = MenuSceneRes.instantiate()
+##             2 files, 76 deletions, and it touched NEITHER of the two screens it stranded.
+##
+## So the hub was orphaned by a deliberate dead-code cleanup that removed its only preload from the
+## main scene's script, and nothing measured the blast radius at the time. Not rot — a decision with
+## an unmeasured consequence, which is a different thing to hand whoever rules on these two screens.
+## (Corroboration that this is a CLASS: @cowir-battle's `_rule_to_action` was orphaned the same way
+## by `c9b57d6f "remove dead code, batch 4"`, which deleted the CALL and left the FUNCTION. A
+## cleanup that removes one end of an edge manufactures the dead code the next cleanup finds.)
+##
 ## Pins today's split so a change in EITHER direction is deliberate. @cowir-battle's point is why
 ## the dead half matters as much as the live: an unreachable screen whose captions are already
 ## correct is BETTER bait than a frozen one, because it reads as a file someone maintains.
