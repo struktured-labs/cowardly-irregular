@@ -18,8 +18,20 @@ extends GutTest
 const XBOX := "Xbox Wireless Controller"
 const NINTENDO := "8BitDo SN30 Pro"
 
-## Every face glyph InputProfileManager can emit, across all four families.
-const FACE_GLYPHS: Array[String] = ["Ⓐ", "Ⓑ", "Ⓧ", "Ⓨ", "✕", "○", "□", "△"]
+
+## Every face glyph InputProfileManager can emit, DERIVED from its own table.
+## A hand-typed list pins the glyphs somebody remembered — a fourth pad family
+## would be invisible to it, and the corpus would silently stop covering what
+## ships. That is provenance, not derivation, and it is the shape this fleet
+## found in AUTHORED_GLYPHS the same afternoon.
+func _face_glyphs() -> Array[String]:
+	var out: Array[String] = []
+	for family in InputProfileManager.FACE_GLYPHS:
+		for idx in (InputProfileManager.FACE_GLYPHS[family] as Dictionary):
+			var g: String = str(InputProfileManager.FACE_GLYPHS[family][idx])
+			if g != "" and not (g in out):
+				out.append(g)
+	return out
 
 
 # ── the premise ───────────────────────────────────────────────────────────────
@@ -32,11 +44,22 @@ func test_the_no_pad_case_is_actually_reachable_here() -> void:
 		"this suite asserts the NO-PAD render — with a pad attached the rest measures nothing")
 
 
+
+func test_the_glyph_corpus_is_derived_and_populated() -> void:
+	## CONTROL: every assert below loops the derived set, so an empty or shrunken
+	## one makes them all vacuous — the failure direction that reads as clean.
+	var g: Array[String] = _face_glyphs()
+	assert_gte(g.size(), 8,
+		"expected at least the three shipped families' four faces each — a small set means the derivation broke, not that the pads changed")
+	for must in ["Ⓐ", "✕"]:
+		assert_true(must in g, "'%s' must be in the derived corpus — it is emitted by a shipped family" % must)
+
+
 # ── the defect ────────────────────────────────────────────────────────────────
 
 func test_a_keyboard_player_is_never_shown_a_pad_glyph() -> void:
 	var hint: String = DialogueChoiceMenu.hint_text(true, "")
-	for g in FACE_GLYPHS:
+	for g in _face_glyphs():
 		assert_eq(hint.find(g), -1,
 			"no pad attached, yet the hint prints '%s' — a button this player does not have: %s" % [g, hint])
 
@@ -44,7 +67,7 @@ func test_a_keyboard_player_is_never_shown_a_pad_glyph() -> void:
 func test_the_story_choice_variant_is_clean_too() -> void:
 	## `can_cancel = false` is its own return and had its own copy of the glyph.
 	var hint: String = DialogueChoiceMenu.hint_text(false, "")
-	for g in FACE_GLYPHS:
+	for g in _face_glyphs():
 		assert_eq(hint.find(g), -1,
 			"the story-choice hint prints '%s' with no pad attached: %s" % [g, hint])
 
@@ -67,7 +90,7 @@ func test_a_pad_player_still_sees_their_own_cap() -> void:
 	for pad in [XBOX, NINTENDO]:
 		var hint: String = DialogueChoiceMenu.hint_text(true, pad)
 		var found: bool = false
-		for g in FACE_GLYPHS:
+		for g in _face_glyphs():
 			if hint.find(g) != -1:
 				found = true
 				break
