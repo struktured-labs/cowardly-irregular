@@ -154,10 +154,18 @@ func test_all_catalog_presets_pass_deep_check_or_have_refill_cover() -> void:
 	## every catalog rule must either pass the deep check outright, or fail
 	## ONLY on the mp-guard class (never on unknown/out-of-kit abilities).
 	AutobattleRuleTemplates._reset_cache_for_test()
+	## ⚠️ WAS a closed map of the five starters, so the first non-starter job to gain presets redded
+	## here (guardian, 2026-09-11). Non-starters have no named party character — but
+	## _resolve_job_for_character falls back to the character_id ITSELF, which is how "bard" already
+	## worked. So the job id IS a valid deep-check handle, and the map is now only the named-starter
+	## override. The assert below checks the job actually RESOLVES, which is what the old one meant.
 	var char_for_job := {"fighter": "hero", "cleric": "mira", "mage": "vex", "rogue": "zack", "bard": "bard"}
 	for t in AutobattleRuleTemplates.catalog():
-		var cid: String = char_for_job.get(t.get("job_id", ""), "")
-		assert_ne(cid, "", "job '%s' must map to a starter character" % t.get("job_id", ""))
+		var jid: String = str(t.get("job_id", ""))
+		var cid: String = str(char_for_job.get(jid, jid))
+		assert_ne(cid, "", "template '%s' has no job_id at all" % t.get("id", "?"))
+		assert_eq(_ab._resolve_job_for_character(cid), jid,
+			"deep check would run against the wrong job: '%s' resolves to '%s'" % [cid, _ab._resolve_job_for_character(cid)])
 		for rule in t.get("rules", []):
 			for err in _ab.validate_rule(rule, cid):
 				assert_string_contains(str(err), "fizzle",
