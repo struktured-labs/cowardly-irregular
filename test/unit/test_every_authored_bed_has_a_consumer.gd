@@ -673,7 +673,17 @@ func test_no_cutscene_step_type_can_dispatch_another_cutscene() -> void:
 ## Named beside every verdict so the claim carries its own scope. A stranded-bed
 ## report is only as strong as this list is complete, and nothing in the test can
 ## know about a form nobody has thought of (cowir-adhoc, 2026-09-11).
+## ATTRIBUTABLE forms — these name a scene id this predicate can tie to a bed.
 const DISPATCH_FORMS := ["return \"<id>\"", "play_cutscene(\"<id>\")", "for <v> in <TABLE>: return <v>"]
+## UNATTRIBUTABLE forms — these dispatch a scene whose id is a VARIABLE or a
+## composed path, so no static read can say WHICH scene. Deliberately not
+## recognised: guessing would mark scenes live that are not, and that is the
+## silent direction. Named because the failure they cause is a FALSE ALARM —
+## a live scene reads as dead, a bed strands, and the report is a CANDIDATE
+## rather than a verdict. cutscene_w5_cached_memory sat in the allowlist for
+## exactly that reason until 2026-09-11. (cowir-adhoc found 5 forms where I
+## had printed 3; these are the two I do not detect.)
+const UNATTRIBUTABLE_FORMS := ["play_cutscene(<var>) — 6 sites incl. QuestSystem, PartyChatMenu, CutsceneGallery, CastleHarmonia(const)", "boss_cutscene_id composed into res://data/cutscenes/%s.json — DragonCave"]
 ## The ROOTS beside the forms. cowir-battle caught a sibling guard reading only
 ## src/ — two hours after its author had corrected that very scope — and caught it
 ## BECAUSE the guard printed its roots. A verdict that names neither what it read
@@ -822,7 +832,7 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 			stranded.append("%s <- %s" % [id, naming])
 
 	assert_eq(stranded.size(), 0,
-		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds. DISPATCH CORPUS: %s. FORMS KNOWN: %s. A bed is dead only if no FOURTH form exists — the loop form was invisible here until 2026-09-11 and 20 scenes read as dead the whole time" % [stranded.size(), stranded, DISPATCH_ROOTS, DISPATCH_FORMS])
+		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds. DISPATCH CORPUS: %s. FORMS ATTRIBUTED: %s. FORMS THAT EXIST AND CANNOT BE ATTRIBUTED: %s — a bed reached only through one of those strands here as a FALSE ALARM, so treat this list as candidates, not a verdict. A bed is dead only if no FOURTH form exists — the loop form was invisible here until 2026-09-11 and 20 scenes read as dead the whole time" % [stranded.size(), stranded, DISPATCH_ROOTS, DISPATCH_FORMS, UNATTRIBUTABLE_FORMS])
 	assert_eq(revived.size(), 0,
 		"pinned beds whose scene is now dispatched (%s) — the epilogue landed; delete the entries" % [revived])
 
