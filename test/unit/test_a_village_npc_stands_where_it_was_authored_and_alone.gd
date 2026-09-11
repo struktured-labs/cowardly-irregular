@@ -38,7 +38,13 @@ const TILE := 32
 ## Off-grid positions are USUALLY the relocation signature. This one is not — and an entry costs a
 ## reason, so nobody can quiet a real relocation by appending a name.
 const MAY_STAND_OFF_GRID := {
-	"Madame Orrery": "authored at a deliberate half-tile X (23 * TILE_SIZE + TILE_SIZE / 2) so the booth sits between two mall units",
+	## ⚠️ THE REASON WAS WRONG AND THE ENTRY WAS RIGHT. It said "so the booth sits between two mall
+	## units" — inferred, never checked. Measured: MapleStripMall's row 6 is `...YYYYYpOOp...`, so
+	## cols 23-24 are her OWN two-tile booth (`"S", "O"` both map to HOUSE_WALL, :95), and the
+	## half-tile centres her under it on the row-7 walkway. @cowir-sfx, 2026-09-11: the delete-the-
+	## entry test proves an entry is LOAD-BEARING and says nothing about whether its stated reason is
+	## TRUE — and a load-bearing entry's explanation is the one thing nothing can ever contradict.
+	"Madame Orrery": "half-tile X (23 * TILE_SIZE + TILE_SIZE / 2) centres her under her own two-tile booth at cols 23-24, standing on the row-7 walkway",
 }
 
 
