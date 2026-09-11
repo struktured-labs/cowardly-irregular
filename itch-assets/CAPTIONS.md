@@ -242,3 +242,66 @@ its masterite was never inside the captured region — a bare-instantiated villa
 screen, not the whole map. I had told cowir-overworld that Grimhollow, Ironhaven and Sandrift
 were "shipping right now with a smeared mini-boss". Two of those three were not. The bug was
 real and in all four scenes; it was only *visible* in two of these frames.
+
+
+## 2026-09-11 — STALENESS AUDIT (no re-shoot; this is the work list for one)
+
+Shots in this set were last re-taken at **`v3.33.267-alpha`**. The store now serves
+**`v3.33.299-alpha`** — 32 tags later. Rather than re-shoot blind at a moment when the box was
+under load average 20.9 with 19 gate processes, this is the measurement a re-shoot needs:
+*which shots depict something that has actually changed.*
+
+**Method.** For each shot, map to its scene file by exact basename (`frosthold_village` →
+`FrostholdVillage.gd`), excluding `test/`, then ask whether that file changed in
+`v3.33.267-alpha..v3.33.299-alpha`. 899 files changed in that range.
+
+### ⛔ Depicts a scene file that CHANGED — re-shoot these first (9)
+
+| shot | scene file |
+|---|---|
+| `eldertree_village` | `EldertreeVillage.gd` |
+| `frosthold_village` | `FrostholdVillage.gd` |
+| `grimhollow_village` | `GrimhollowVillage.gd` |
+| `harmonia_village` | `HarmoniaVillage.gd` |
+| `inn_interior` | `InnInterior.gd` |
+| `ironhaven_village` | `IronhavenVillage.gd` |
+| `sandrift_village` | `SandriftVillage.gd` |
+| `shop_interior` | `ShopInterior.gd` |
+| `tavern_interior` | `TavernInterior.gd` |
+
+Two of these have named, announced content changes that a screenshot would show: Frosthold
+gained its pines and Harmonia gained the hedge border and nook Elixir, both in the `.299` batch.
+The other seven are "the file moved", which is a candidate, not proof the *frame* differs.
+
+### ✅ Scene file unchanged since the shot (2)
+
+`title_screen` (`TitleScreen.gd`) · `whispering_cave` (`WhisperingCave.gd`)
+
+⚠️ Unchanged scene file does **not** mean the frame is current — a shot can go stale through a
+sprite, a font, a HUD overlay or a caption rendered on top of it. `title_screen` in particular
+renders a controls table that several lanes edited this session. **This column means "the scene
+script did not move", nothing wider.**
+
+### ? Not mapped — needs a hand check (9)
+
+`battle` · `battle_storm` · `field_elite_medieval` · `field_elite_prompt_medieval` ·
+`field_elite_steampunk` · `grimhollow_spiral` · `infernal_grotto_f3` · `warren_lever_portals` ·
+`warren_wrap_field`
+
+These are battle surfaces, overworld encounters and dungeon floors — **not single scene scripts**,
+so the exact-name mapping does not reach them. `Infernal`, `Grotto`, `Warren` and `Elite` match
+no `.gd`/`.tscn` basename at all; the dungeons are data-driven. Nobody should read their absence
+from the first table as "these are current".
+
+### The number is a FLOOR
+
+**At least 9 of 20 shots depict changed scenes.** It cannot be a total: the 9 unmapped are
+unexamined, and the 2 "unchanged" are unchanged only in the one dimension measured. Stated this
+way deliberately — an exhaustive claim here would drift on the next fold, and a floor only ever
+gets more true.
+
+⚠️ **Two instruments were thrown away getting here, both reported rather than hidden.** The first
+matched any file containing the shot's first word: `battle` "found" 165 sources and
+`title_screen` resolved to a *test* file — over-broad, and its output looked like a result. The
+second (used above) is exact-basename, which is too narrow: it leaves 9 unmapped. Neither is
+wrong about the 9 it names; the first would have inflated the list and the second under-reports.
