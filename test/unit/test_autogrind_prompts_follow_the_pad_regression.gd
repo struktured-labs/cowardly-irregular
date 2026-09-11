@@ -116,6 +116,13 @@ func test_the_comment_stripper_cuts_only_what_it_should() -> void:
 		["\tvar c := \"#ff0000\"", "\tvar c := \"#ff0000\"", "a # INSIDE a string is not a comment"],
 		["\tvar c := \"#ff0000\"  # note", "\tvar c := \"#ff0000\"  ", "quoted # then a real comment: cut at the comment only"],
 		["\tvar s := \"odd \\\" quote\"  # note", "\tvar s := \"odd \\\" quote\"  ", "an ESCAPED quote must not flip the parser into a string"],
+		## @cowir-controller's SIXTH costume: an escaped BACKSLASH at a string's end. A look-behind
+		## check (`c == quote and line[i-1] != "\\\\"`) reads the preceding backslash and decides the
+		## quote is escaped -- but that backslash was itself escaped, so the string really ends, and a
+		## comment survives into the scan. This stripper is immune BY CONSTRUCTION rather than by
+		## corpus: it SKIPS the char after a backslash instead of looking behind at one, so `\\\\` is
+		## consumed as a pair and the closing quote is seen. Verified against both shapes side by side.
+		["\tvar q := \"a\\\\\"  # note", "\tvar q := \"a\\\\\"  ", "escaped BACKSLASH at string end still closes the string"],
 		["\tvar plain := 1", "\tvar plain := 1", "no # at all: untouched"],
 	]
 	for c in cases:
