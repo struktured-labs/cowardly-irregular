@@ -166,22 +166,23 @@ exist). Each line below names a consumer so the claim is checkable rather than r
 
 Risk/reward automation with escalating stakes:
 - **EXP multiplier climbs with session length** — `efficiency_multiplier`, grown per battle by
-  `efficiency_growth_rate`; read by `AutogrindMonitor:584` and the controller's stats block
-- **Monster adaptation** — `monster_adaptation_level`, consumed at `GameLoop:5852`; crossing
+  `efficiency_growth_rate`; read by `AutogrindMonitor._compute_stability` and the controller's stats block
+- **Monster adaptation** — `monster_adaptation_level`, consumed at `GameLoop._on_autogrind_battle_ended`; crossing
   `ROTATION_SUGGEST_THRESHOLD` fires the region-rotation suggestion
 - **System fatigue → meta-bosses** — `fatigue_events_triggered` gates
-  `check_fatigue_collapse()` (`AutogrindController:248`, needs >= 5 events AND >= 50 battles this
+  `check_fatigue_collapse()` (`AutogrindSystem.check_fatigue_collapse`, called from `AutogrindController._request_next_battle`;
+  needs >= 5 events AND >= 50 battles this
   session); `meta_boss_spawn_chance` and the `meta_bosses_spawned` / `meta_bosses_defeated` tallies
   reach the Summary
 - **Interrupt rules** — `_check_interrupt_conditions()` enforces hp_threshold, party_death,
   item_depleted, corruption_limit and max_battles via `pre_battle_check()`
-  (`AutogrindController:237`). ⚠️ Configurable through the **config dict passed to
+  (`AutogrindSystem.pre_battle_check`, called from `AutogrindController._request_next_battle`). ⚠️ Configurable through the **config dict passed to
   `start_autogrind`, NOT from the console** — no `src/ui/` file sets them, so "configurable" is
   true of the API and not yet of the player
 - **Permadeath staking** — `permadeath_staking_enabled`, with a UI state:
-  `AutogrindDashboard:754` and the DANGER_COLOR panel at `AutogrindUI:698`. Routed through
+  `AutogrindDashboard.refresh` and the DANGER_COLOR panel built in `AutogrindUI._build_footer`. Routed through
   `enable_permadeath_staking()` so the flag and its growth rate cannot disagree (fixed 2026-09-11)
-- **System collapse** — `system_collapse` signal, connected at `AutogrindUI:272` with a symmetric
+- **System collapse** — `system_collapse` signal, connected in `AutogrindUI._connect_autogrind_signals` with a symmetric
   disconnect; `collapse_count` reaches the Summary, the Dashboard win-rate and session history
 
 ## Job System
