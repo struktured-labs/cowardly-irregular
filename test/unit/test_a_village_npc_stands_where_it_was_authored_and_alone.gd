@@ -52,6 +52,9 @@ extends GutTest
 ##   examined == built     ✅ one village built then skipped  -> the two-cause message
 ##   must_build.size()     ✅ an entry removed                -> "holds 2 villages, not the 3"
 ##   reason length > 30    ✅ implicitly, by the drain above (the loop runs zero times: 9 -> 8)
+##   MAY_STAND_OFF_GRID     ✅ backward arm: Orrery removed from the corpus -> "excuses '%s', who is
+##     is not orphaned          not in any village this sweep walked" (inert-by-deletion, the shape
+##                              @cowir-sprites found in a table they shipped 20 minutes earlier)
 ##   sealed == []          ⛔ NEVER FIRED, and subsumed — see the note at the assert itself
 ##
 const MapScripts := preload("res://test/unit/helpers/map_scripts.gd")
@@ -192,6 +195,16 @@ func test_no_village_npc_is_sealed_in_shares_a_tile_or_was_quietly_moved() -> vo
 	## Coordinator. If that line goes, the recovery is undone and only the placement survives.
 	assert_true(_lines_of(names_to_node.get("Surplus Ray")).contains("Coordinator"),
 		"Surplus Ray no longer names the Coordinator — the W2 setup he was authored to deliver is gone")
+	## ⛔ BACKWARD ARM — @cowir-sprites / @cowir-adhoc's INERT-BY-DELETION shape, found in a table they
+	## had shipped 20 minutes earlier. If Madame Orrery is ever removed from the game, she stops
+	## appearing in `off_grid`, her exemption excuses nothing, and nothing says so — a standing claim
+	## about an NPC who no longer exists. @cowir-sfx: an exemption that suppresses nothing cannot be
+	## observed to be WRONG, which is exactly how their `night_` entry stayed false for months.
+	for who in MAY_STAND_OFF_GRID:
+		assert_true(who in names,
+			("MAY_STAND_OFF_GRID excuses '%s', who is not in any village this sweep walked. " +
+			"Either the NPC was removed — delete the entry — or the walk stopped reaching them, " +
+			"which is the more interesting of the two.") % who)
 	for who in MAY_STAND_OFF_GRID:
 		assert_gt(str(MAY_STAND_OFF_GRID[who]).length(), 30,
 			"MAY_STAND_OFF_GRID['%s'] needs a reason naming the deliberate offset, not a placeholder" % who)
