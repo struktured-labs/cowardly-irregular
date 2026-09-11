@@ -99,11 +99,52 @@ WRAPPER_PREFIXES = ("deploy_", "publish_")
 # PUSHES, or that delegates to one. No number, and it tracks the lane automatically — add a
 # channel to that loop and this guard expects its script the same minute.
 #
+# ⚠ That sentence was TRUE and INCOMPLETE, and the incompleteness is what hid the defect
+# below for a day: it holds for a channel spelled LITERALLY, and the derivation used to drop
+# any other spelling without a word. "Tracks the lane automatically" is a claim about the
+# tokens it can read; it was never a claim about the ones it can't.
+#
 # ⛔ The repair when this fires is "the channel has no publishable script" or "the detector
 # stopped matching". Neither is an integer anyone can edit downward.
+# ⛔ A TOTAL DRAIN REFUSED; A PARTIAL ONE WENT SILENT. The line below used to be
+#
+#     chans = [c for c in m.group(1).split() if re.fullmatch(r'[a-z0-9_]+', c)]
+#     return chans or None
+#
+# — a comprehension whose `if` DROPS what it cannot read. `or None` refuses only when the
+# list drains to EMPTY. Measured against this exact file, 2026-09-11:
+#
+#     for CH in $CHANNELS            -> None   REFUSES      (total loss: loud)
+#     for CH in "${CHANNELS[@]}"     -> None   REFUSES      (total loss: loud)
+#     for CH in linux windows $EXTRA -> [linux, windows]    ⛔ PARTIAL: silent
+#     for CH in linux windows web-v2 -> [linux, windows]    ⛔ PARTIAL: silent
+#
+# End to end, two fixtures differing by ONE CHARACTER: `webv2` with no deploy script BLOCKS
+# (EC 2, correct); `web-v2` with no deploy script passes GREEN (EC 0). The detector is alive
+# in the first, so the green in the second is this filter, not a dead check.
+#
+# ⚠ And `web-v2` is not a synthetic spelling — `butler status struktured/cowardly-irregular`
+# serves a channel called `html5-v2` TODAY. Hyphens are this store's own convention, so the
+# old character class excluded a real, in-use naming form.
+#
+# 🔑 The general shape (@cowir-controller / @cowir-adhoc, same day, three other lanes): A
+# FLOOR — or any `or None` on an aggregate — IS A VACUITY CONTROL, NOT A COMPLETENESS ONE.
+# It catches "the scan died" and is blind to "half the scan is missing", which is the far
+# likelier failure, because a rename or a new channel touches ONE token, not all of them.
+# The repair is NAMED MEMBERSHIP: every token in the list must be accounted for, and one
+# this guard cannot read is a refusal that NAMES IT — never a quiet subtraction.
+#
+# itch.io channels are lowercase alphanumerics with hyphens/underscores.
+CHANNEL_NAME_RE = re.compile(r'[a-z0-9][a-z0-9_-]*')
+
+
 def _channels_from_publish_all(tools_dir):
-    """Channel names from publish_all.sh's publish loop. None if it cannot be read — the
-    caller then refuses rather than inventing an expectation."""
+    """Channel names from publish_all.sh's publish loop. None if the loop cannot be found —
+    the caller then refuses rather than inventing an expectation.
+
+    EVERY TOKEN in the list is classified. A token that is not a literal channel name raises
+    Unusable NAMING IT; it is never silently dropped, because a shortened list still produces
+    a confident 'all gated' over the channels that survived."""
     p = os.path.join(tools_dir, "publish_all.sh")
     if not os.path.isfile(p):
         return None
@@ -111,7 +152,18 @@ def _channels_from_publish_all(tools_dir):
     m = re.search(r'^\s*for\s+CH\s+in\s+([^;]+?);\s*do', src, re.M)
     if not m:
         return None
-    chans = [c for c in m.group(1).split() if re.fullmatch(r'[a-z0-9_]+', c)]
+    chans, opaque = [], []
+    for tok in m.group(1).split():
+        (chans if CHANNEL_NAME_RE.fullmatch(tok) else opaque).append(tok)
+    if opaque:
+        raise Unusable(
+            "[optin] BLOCKED: publish_all's channel list contains token(s) this guard cannot\n"
+            "        resolve to a literal channel name: " + " ".join(opaque) + "\n"
+            "        That list is this guard's ONLY statement of what ships. A token it cannot\n"
+            "        read is a channel it cannot demand a script for — and dropping it would\n"
+            "        narrow the expectation SILENTLY, leaving the surviving channels to report\n"
+            "        'all gated': a partial result presented as a whole one.\n"
+            "        Spell the channel literally in the loop, or teach this guard the expansion.")
     return chans or None
 
 # `"${BUTLER_BIN}" push …`, `butler push …`, `$BUTLER push …`, `$(command -v butler) push …`
@@ -853,6 +905,40 @@ def selftest():
         _write_publish_all(ghost, ["filler", "macos"])      # macos has no deploy_macos.sh
         arm("a channel publish_all ships with no deploy script", 2, lambda: run(ghost),
             lambda: (_said("no publishable script"), "says no publishable script"))
+
+        # ── named membership: EVERY token in the channel list is accounted for ─────────────
+        # Pre-fix the derivation FILTERED that list — a token it could not read was dropped,
+        # and the channels that survived still reported "all gated". `or None` refused only on
+        # a TOTAL drain. So: total loss loud, partial loss silent, and partial loss is the one
+        # a real edit produces (adding a channel touches ONE token). These arms pin both
+        # halves, and the last one is the control that must NOT fire.
+        hyph = os.path.join(d, "hyph")
+        os.makedirs(hyph)
+        open(os.path.join(hyph, "deploy_filler.sh"), "w").write(GOOD)
+        _write_publish_all(hyph, ["filler", "web-v2"])   # the store serves html5-v2 today
+        arm("hyphenated channel is a CHANNEL, not a dropped token", 2, lambda: run(hyph),
+            # ⛔ `_said("web-v2")` ALONE is satisfied by BOTH messages — "unbacked channel"
+            # and "token I cannot read" — so it could not tell an ACCEPTED hyphen from a
+            # REJECTED one, which is the entire point of the arm. Assert the reason too.
+            lambda: (_said("web-v2") and _said("no publishable script"),
+                     "names web-v2 as an unbacked CHANNEL, not as an unreadable token"))
+
+        opaque = os.path.join(d, "opaque")
+        os.makedirs(opaque)
+        open(os.path.join(opaque, "deploy_filler.sh"), "w").write(GOOD)
+        _write_publish_all(opaque, ["filler", "$EXTRA_CHANNEL"])
+        arm("unreadable token refuses and NAMES it", 2, lambda: run(opaque),
+            lambda: (_said("$EXTRA_CHANNEL"), "names the token it could not read"))
+
+        # ⛔ THE CONTROL, firing the other way. Without it, "refuses on a token it cannot read"
+        # is equally satisfied by a guard that refuses on EVERY list — which would pass both
+        # arms above and be useless. Same fixture shape, every token literal AND backed.
+        litok = os.path.join(d, "litok")
+        os.makedirs(litok)
+        for _ch in ("filler", "web-v2"):
+            open(os.path.join(litok, "deploy_%s.sh" % _ch), "w").write(GOOD)
+        _write_publish_all(litok, ["filler", "web-v2"])
+        arm("every token literal and backed — no refusal", 0, lambda: run(litok))
 
         # ── instrument-died arms ──
         empty = os.path.join(d, "empty")
