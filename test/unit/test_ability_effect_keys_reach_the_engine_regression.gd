@@ -166,6 +166,18 @@ func test_every_authored_ability_key_is_consumed_or_named() -> void:
 
 	assert_eq(unconsumed.size(), 0,
 		"an ability authors an effect key the engine never reads: %s — wire it, or add it to UNREAD_EFFECT_KEYS saying whether it is REDUNDANT, DEFERRED or MISSING" % ", ".join(unconsumed))
+	# STALE-EXEMPTION arm. The ratchet above only compares keys the corpus still
+	# AUTHORS, so a key that disappears entirely leaves its debt entry behind with
+	# nothing to notice — an inert suppression created by deletion rather than by
+	# being written wrong. @cowir-autogrind's class, arriving from the other end.
+	var orphaned: Array[String] = []
+	for k in UNREAD_EFFECT_KEYS.keys():
+		if not counts.has(str(k)):
+			orphaned.append(str(k))
+	orphaned.sort()
+	assert_eq(orphaned.size(), 0,
+		"UNREAD_EFFECT_KEYS names a key no ability authors any more: %s — the entry is describing a corpus that has moved on. Delete the line." % ", ".join(orphaned))
+
 	assert_eq(newly_consumed.size(), 0,
 		"GOOD NEWS, STALE LIST: %s is now read in src/. Delete the key(s) from UNREAD_EFFECT_KEYS so this file stops claiming the engine ignores them." % ", ".join(newly_consumed))
 
@@ -176,8 +188,14 @@ func test_every_authored_ability_key_is_consumed_or_named() -> void:
 ## UNREAD_EFFECT_KEYS entry has to go with it.
 func test_frost_armor_still_promises_a_reflection_it_does_not_perform() -> void:
 	var a: Variant = _abilities().get("frost_armor", null)
+	# NOT pending(). Measured 2026-09-11 under @cowir-sprites' READER axis: removing
+	# frost_armor from abilities.json made this arm go PENDING and the suite stayed
+	# GREEN — a skipped arm is indistinguishable from a passing one, and the ability
+	# vanishing is exactly the event that makes the debt entry below a lie. If it is
+	# genuinely retired, delete this arm AND its UNREAD_EFFECT_KEYS line together.
+	assert_true(a is Dictionary,
+		"frost_armor is gone from abilities.json — this arm and the reflect_damage_element entry in UNREAD_EFFECT_KEYS are both now claims about an ability that does not exist. Delete them together, or restore the fixture.")
 	if not (a is Dictionary):
-		pending("frost_armor is not in abilities.json")
 		return
 	var ability: Dictionary = a as Dictionary
 
