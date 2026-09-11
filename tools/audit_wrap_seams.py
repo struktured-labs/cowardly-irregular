@@ -94,12 +94,11 @@ MIN_PAD_S = 0.040
 # None needed a crossfade; two needed no gain change whatsoever. A pin is a
 # claim that something is impossible, so it earns more scepticism than a bug
 # report, not less -- it is the entry that stops anyone looking again.
-KNOWN_UNFIXABLE = {
-    "boss_tempo_digital": "quiet intro AND quiet tail — +32.9 dB at 50ms but -5.7 at 300ms, "
-                          "opposite signs. No TAIL cut reconciles them; last 40s are at full level",
-    "overworld_industrial": "structure, not a fade — -9.4 at 50ms vs +30.6 at 100ms uncut, and the "
-                            "sign keeps flipping at every cut depth out to 2s",
-}
+KNOWN_UNFIXABLE = {}   ## emptied AGAIN 2026-09-11: both entries were artifacts of an
+## abs() acceptance criterion that penalised a normal soft attack, not real
+## unfixability. Both fix with cuts under 0.2s once acceptance is directional.
+## Second time a pin here was wrong. A pin claims IMPOSSIBLE and earns more
+## scepticism than a bug report, not less.
 
 
 def decode(path):
@@ -145,9 +144,14 @@ def main():
         if worst is None:
             continue
         rows.append((worst[0], key, worst[1]))
-        loud = np.flatnonzero(np.abs(y) > 10.0 ** (FLOOR_DB / 20.0))
+        ## Windowed RMS, not per-sample peak: one stray sample in the first
+        ## millisecond defeated the peak form and hid 30 padded beds.
+        _w = int(0.010 * SR)
+        _nw = len(y) // _w
+        _rms = np.sqrt(np.mean(np.square(y[:_nw * _w].reshape(_nw, _w)), axis=1))
+        loud = np.flatnonzero(_rms > 10.0 ** (FLOOR_DB / 20.0))
         if loud.size:
-            head_pad, tail_pad = loud[0] / SR, (len(y) - 1 - loud[-1]) / SR
+            head_pad, tail_pad = loud[0] * 0.010, (_nw - 1 - loud[-1]) * 0.010
             if head_pad + tail_pad >= MIN_PAD_S:
                 padded.append((head_pad + tail_pad, key, head_pad, tail_pad))
     rows.sort(reverse=True)
