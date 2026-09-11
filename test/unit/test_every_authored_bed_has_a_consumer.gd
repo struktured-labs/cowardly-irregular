@@ -135,6 +135,172 @@ func _is_reached(id: String, text: String, monsters: Dictionary) -> bool:
 	return false
 
 
+## Keys briefed in tools/music_prompts.json that no consumer would ask for if
+## they were generated tomorrow. Each is Suno credits spent on silence.
+const KNOWN_UNREACHABLE_BRIEFS := {
+	"battle_blood_wolf_alpha": "reachable by key, but SHADOWED: blood_wolf_alpha declares music_track=battle_wolf in monsters.json, and BattleScene._declared_music_track says a declaration outranks every derived key. The declaration must change in the same commit that generates this track — changing it now would drop the alpha to generic battle music.",
+}
+
+
+## ⛔ A BARE-WORD SEARCH IS NOT SAFE HERE and the loose matcher above would have
+## MISSED the defect this arm exists for. The brief used to key the shop theme
+## as "shop"; `_is_reached` called it reached because `GameLoop:522` contains
+## `_smoke_shot("shop")` — a screenshot test. The music consumer asks for
+## `interior_shop` (ShopInterior.gd:99 -> play_area_music), so a track generated
+## as "shop" would have been played by nothing. Short generic keys collide with
+## ordinary prose; a pending key must be matched in a MUSIC context or not at all.
+func _asked_for_by_a_music_call(id: String, text: String) -> bool:
+	for shape in ["play_music(\"%s\")", "play_area_music(\"%s\")",
+			"_try_play_from_manifest(\"%s\")", "\"track\": \"%s\"",
+			"\"music_track\": \"%s\"", "\"music\": \"%s\""]:
+		if text.find(shape % id) >= 0:
+			return true
+	## interior_ keys are resolved per-world before the base key is tried.
+	if id.begins_with("interior_") and text.find("play_area_music(\"%s\")" % id) >= 0:
+		return true
+	return false
+
+
+func test_every_briefed_but_ungenerated_track_has_somewhere_to_land() -> void:
+	var braw: String = FileAccess.get_file_as_string("res://tools/music_prompts.json")
+	assert_gt(braw.length(), 5000, "SCOPE control: music_prompts.json read back %d chars" % braw.length())
+	var shared: Dictionary = (JSON.parse_string(braw) as Dictionary).get("shared_tracks", {})
+	assert_gt(shared.size(), 100, "SCOPE control: shared_tracks holds %d entries" % shared.size())
+
+	var raw: String = FileAccess.get_file_as_string(MANIFEST)
+	var tracks: Dictionary = (JSON.parse_string(raw) as Dictionary).get("tracks", {})
+	var text: String = _consumer_text()
+
+	## Control: a key we KNOW is asked for by a music call must test true, and a
+	## word that appears only as prose must test false.
+	assert_true(_asked_for_by_a_music_call("interior_shop", text),
+		"CONTROL FAILED: interior_shop is passed to play_area_music at ShopInterior.gd:99 but the matcher cannot see it")
+	assert_false(_asked_for_by_a_music_call("shop", text),
+		"CONTROL FAILED: the bare word 'shop' tests as a music call — the matcher is matching prose, which is the exact false positive this arm exists to avoid")
+
+	var pending: Array[String] = []
+	for k in shared.keys():
+		if not tracks.has(str(k)):
+			pending.append(str(k))
+	pending.sort()
+	assert_gt(pending.size(), 5,
+		"SCOPE control: only %d briefed tracks are ungenerated — if the queue emptied, this arm is measuring nothing" % pending.size())
+
+	var homeless: Array[String] = []
+	for id in pending:
+		if KNOWN_UNREACHABLE_BRIEFS.has(id):
+			continue
+		if _asked_for_by_a_music_call(id, text):
+			continue
+		## Composed families still count: nothing names boss_dragon_fire, but
+		## "dungeon_"/"boss_" composition will ask for it once it exists.
+		var comp: bool = false
+		for prefix in COMPOSED_FAMILIES.keys():
+			if id.begins_with(str(prefix)):
+				comp = true
+		if id.begins_with("battle_") or id.begins_with("village_"):
+			comp = true
+		if not comp:
+			homeless.append(id)
+	assert_eq(homeless.size(), 0,
+		"briefed tracks that no consumer would ask for if generated (%d): %s — generating these spends credits on silence; fix the brief KEY to match what the runtime requests, before the queue is unblocked" % [homeless.size(), homeless])
+
+
+func test_no_brief_entry_duplicates_an_already_shipped_track() -> void:
+	## ⛔ THE "BLOCKED ON SUNO" COUNT WAS WRONG BY ONE FOR MONTHS, AND I REPORTED
+	## IT EVERY HOUR. The brief keyed the shop theme "shop"; it was generated on
+	## 2026-04-18 and registered as `interior_shop` (file shop.ogg), which is the
+	## key ShopInterior actually asks for. Comparing brief keys against manifest
+	## KEYS therefore listed a shipped, playing track as pending work.
+	##
+	## 🔑 THE TITLE IS THE STABLE IDENTITY, THE KEY IS NOT. A track can be
+	## re-keyed to match its consumer — which is correct and should happen — and
+	## a key-only comparison reads that correction as a regression to redo. So
+	## this arm matches on `title_template`, and a hit means the brief entry is
+	## stale bookkeeping, not a queued generation.
+	var braw: String = FileAccess.get_file_as_string("res://tools/music_prompts.json")
+	var shared: Dictionary = (JSON.parse_string(braw) as Dictionary).get("shared_tracks", {})
+	var raw: String = FileAccess.get_file_as_string(MANIFEST)
+	var tracks: Dictionary = (JSON.parse_string(raw) as Dictionary).get("tracks", {})
+
+	var by_title: Dictionary = {}
+	for k in tracks.keys():
+		var e: Variant = tracks[k]
+		if e is Dictionary:
+			var t: String = str((e as Dictionary).get("title", ""))
+			if t != "":
+				by_title[t] = str(k)
+	assert_gt(by_title.size(), 100,
+		"SCOPE control: indexed only %d manifest titles" % by_title.size())
+
+	var stale: Array[String] = []
+	var pending: int = 0
+	for key in shared.keys():
+		var k: String = str(key)
+		if tracks.has(k):
+			continue
+		pending += 1
+		var t: String = str((shared[k] as Dictionary).get("title_template", ""))
+		if t != "" and by_title.has(t):
+			stale.append("brief '%s' is already shipped as manifest '%s' (\"%s\")" % [k, by_title[t], t])
+	assert_gt(pending, 5,
+		"SCOPE control: only %d brief entries are unmatched by key — nothing to check" % pending)
+	assert_eq(stale.size(), 0,
+		"brief entries listed as pending that ALREADY SHIPPED under another key (%d): %s — this inflates the generation queue and spends a scarce unblock on work that is done" % [stale.size(), stale])
+
+
+func test_no_briefed_battle_track_is_shadowed_by_a_declaration() -> void:
+	## ⛔ THE PIN FOR THIS WAS INERT UNTIL THIS ARM EXISTED. A briefed
+	## `battle_<monster>` key passes the reachability check above on its prefix
+	## alone, so listing it in KNOWN_UNREACHABLE_BRIEFS suppressed nothing — the
+	## detector could not emit it either way. An allowlist entry for something
+	## your detector cannot produce is not a suppression, it is a comment that
+	## looks like one.
+	##
+	## The real hazard is precedence, not naming: BattleScene._declared_music_track
+	## states that a monsters.json `music_track` "outranks every derived key", so
+	## generating battle_blood_wolf_alpha while blood_wolf_alpha declares
+	## battle_wolf produces a track that can never play. The declaration has to
+	## move in the same commit that generates the track — and not before, because
+	## pointing it at a track that does not exist yet drops the alpha to generic
+	## battle music today.
+	var braw: String = FileAccess.get_file_as_string("res://tools/music_prompts.json")
+	var shared: Dictionary = (JSON.parse_string(braw) as Dictionary).get("shared_tracks", {})
+	var raw: String = FileAccess.get_file_as_string(MANIFEST)
+	var tracks: Dictionary = (JSON.parse_string(raw) as Dictionary).get("tracks", {})
+	var mraw: String = FileAccess.get_file_as_string("res://data/monsters.json")
+	var mdoc: Dictionary = JSON.parse_string(mraw) as Dictionary
+	var monsters: Dictionary = mdoc.get("monsters", mdoc)
+	assert_gt(monsters.size(), 50, "SCOPE control: parsed %d monsters" % monsters.size())
+
+	var shadowed: Array[String] = []
+	var checked: int = 0
+	for key in shared.keys():
+		var k: String = str(key)
+		if tracks.has(k) or not k.begins_with("battle_"):
+			continue
+		var mid: String = k.substr(7)
+		if not monsters.has(mid):
+			continue
+		checked += 1
+		var declared: String = str((monsters[mid] as Dictionary).get("music_track", ""))
+		if declared != "" and declared != k:
+			shadowed.append("%s (but %s declares music_track=%s)" % [k, mid, declared])
+
+	## CONTROL: the arm must be looking at something. If no briefed battle track
+	## names a real monster, a green here means "nothing measured".
+	assert_gt(checked, 0,
+		"SCOPE control: no briefed-but-ungenerated battle_<monster> key names a monster in monsters.json — this arm measured nothing")
+
+	var unpinned: Array[String] = []
+	for s in shadowed:
+		var id: String = s.split(" ")[0]
+		if not KNOWN_UNREACHABLE_BRIEFS.has(id):
+			unpinned.append(s)
+	assert_eq(unpinned.size(), 0,
+		"briefed battle tracks that a monsters.json declaration would outrank (%d): %s — generating these produces audio nothing can reach; move the declaration in the SAME commit that generates the track" % [unpinned.size(), unpinned])
+
+
 func test_the_set_of_unreached_beds_has_not_changed() -> void:
 	var text: String = _consumer_text()
 	var mraw: String = FileAccess.get_file_as_string("res://data/monsters.json")
