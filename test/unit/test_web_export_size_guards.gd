@@ -18,6 +18,12 @@ extends GutTest
 ##
 ## Anything still listed here must stay out. Removing an entry is a budget
 ## decision with a measurement behind it, not a cleanup.
+## ⚠️ SCOPE, added 2026-09-11: these classes govern the WEB_STAGE=0 DIRECT export
+## only. The published path (make_web_stage.sh, WEB_STAGE=1, the default) swaps in
+## a 48 kbps tier and drops every music exclusion, shipping 161 of 161 masters. So
+## the *.png and doc classes below are load-bearing for both paths, and the music
+## ones are load-bearing for the fallback alone. Do not read a music entry here as
+## a statement about what a player hears.
 const REQUIRED_WEB_EXCLUDES := [
 	"*.pre_normalize.png",
 	"*.pre_palette.png",
