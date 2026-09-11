@@ -141,3 +141,67 @@ func test_the_corpus_reaches_the_menus_that_had_it() -> void:
 	assert_gt(_scanned, 40, "the footer corpus collapsed; it should hold dozens of strings")
 	for f in ["EquipmentMenu.gd", "ItemsMenu.gd", "QuestLog.gd", "OverworldMenu.gd"]:
 		assert_true(seen.has(f), "the corpus must reach %s — it carried one of the thirteen" % f)
+
+
+## ⛔ THE ARM THIS FILE SHIPPED WITHOUT. "a pad player can unequip" went out in .302 verified by
+## `code.contains("button_index == JOY_BUTTON_X")` — a fact about SOURCE TEXT. That survives the
+## branch existing and never being reached: an `_input` that returns early, a mode that never routes
+## there, a handler consumed upstream. @cowir-music's day cost the fleet this sentence — "I measured
+## the REGISTER and reported it as the ARTIFACT" — and @cowir-battle turned their blind guard from a
+## has_status() source assert into a miss-rate count on the same principle.
+##
+## So: build the event, feed it to the real handler, and assert the equipment actually came off.
+func test_pressing_the_pad_button_really_unequips() -> void:
+	var weapon_id: String = ""
+	for id in EquipmentSystem.weapons.keys():
+		weapon_id = str(id)
+		break
+	assert_ne(weapon_id, "", "PRECONDITION: EquipmentSystem must know at least one weapon")
+
+	var c := Combatant.new()
+	c.combatant_name = "PadTester"
+	assert_true(EquipmentSystem.equip_weapon(c, weapon_id),
+		"PRECONDITION: equipping must succeed, or the unequip below proves nothing")
+	assert_eq(c.equipped_weapon, weapon_id, "PRECONDITION: the weapon is ON before the press")
+
+	var menu = load("res://src/ui/EquipmentMenu.gd").new()
+	add_child_autofree(menu)
+	menu.character = c
+	menu.selected_slot = 0
+	menu.mode = menu.Mode.ITEM_SELECT   # the mode whose footer carries "Unequip"
+	menu.visible = true
+
+	var ev := InputEventJoypadButton.new()
+	ev.button_index = JOY_BUTTON_X
+	ev.pressed = true
+	menu._input(ev)
+
+	assert_eq(c.equipped_weapon, "",
+		"pressing the west face in ITEM_SELECT must actually take the weapon OFF. The source " +
+		"branch existing is not the same as the event reaching it")
+
+
+## CONTROL: the probe must be able to observe a NON-event, or "it unequipped" is unfalsifiable.
+func test_a_different_face_button_does_not_unequip() -> void:
+	var weapon_id: String = ""
+	for id in EquipmentSystem.weapons.keys():
+		weapon_id = str(id)
+		break
+	var c := Combatant.new()
+	c.combatant_name = "PadTester2"
+	EquipmentSystem.equip_weapon(c, weapon_id)
+
+	var menu = load("res://src/ui/EquipmentMenu.gd").new()
+	add_child_autofree(menu)
+	menu.character = c
+	menu.selected_slot = 0
+	menu.mode = menu.Mode.ITEM_SELECT
+	menu.visible = true
+
+	var ev := InputEventJoypadButton.new()
+	ev.button_index = JOY_BUTTON_START   # not the unequip face
+	ev.pressed = true
+	menu._input(ev)
+
+	assert_eq(c.equipped_weapon, weapon_id,
+		"CONTROL: an unrelated pad button must NOT unequip — otherwise the arm above proves nothing")
