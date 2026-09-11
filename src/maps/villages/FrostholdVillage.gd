@@ -330,7 +330,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(yara)
 
 	_add_quest_examine_point("w1_frosthold_meltwater_clock",
-		"quest_w1_frosthold_meltwater_clock_accepted", "[A] Examine the source pool",
+		"quest_w1_frosthold_meltwater_clock_accepted", "Examine the source pool",
 		"A rune cut into the pool's lip, melting the ice on a schedule. An expert hand cut it. Whoever paid never came here.",
 		"Meltwater runs from the pool above the village. Steady. Too steady.",
 		Vector2(12 * TILE_SIZE,2 * TILE_SIZE))

@@ -260,3 +260,71 @@ func test_no_indicator_text_override_freezes_a_cap() -> void:
 	assert_eq(offenders, [] as Array[String],
 		"a caller overrides indicator_text with a frozen cap — deriving the class DEFAULT does not " +
 		"protect explicit assignments: %s" % [", ".join(offenders)])
+
+
+## THE THIRD CORPUS ERROR IN THIS FILE, AND THE SAME SHAPE AS THE FIRST TWO: list -> walk,
+## folder -> property, and now PROPERTY -> THE PARAMETERS THAT FEED IT. A helper that forwards an
+## argument into indicator_text moves the frozen cap one frame UP the stack, where a scan of
+## assignment lines cannot see it — the assignment is `point.indicator_text = indicator`, which is
+## correct, and the literal sits at the call site in another file. Eleven village quest prompts
+## shipped that way while the arm above was green at 10/10.
+func _indicator_forwarders() -> Array[String]:
+	var out: Array[String] = []
+	for path in _all_src_scripts():
+		var fn := ""
+		for raw in FileAccess.get_file_as_string(path).split("\n"):
+			var line: String = raw.strip_edges()
+			if line.begins_with("func "):
+				fn = line.substr(5, line.find("(") - 5)
+			if line.begins_with("#") or fn == "":
+				continue
+			# assigns indicator_text from something that is NOT a string literal == forwards a param
+			var eq := line.find("indicator_text =")
+			if eq == -1 or line.contains("indicator_text =="):
+				continue
+			var rhs: String = line.substr(eq + 16).strip_edges()
+			if rhs.begins_with("\"") or rhs == "":
+				continue
+			if not out.has(fn):
+				out.append(fn)
+	out.sort()
+	return out
+
+
+## CONTROL: the derivation must actually find the helpers, or the arm below scans nothing.
+func test_the_forwarder_derivation_finds_the_helpers() -> void:
+	var fwd := _indicator_forwarders()
+	assert_gt(fwd.size(), 0, "PRECONDITION: no forwarders derived — the arm below would be vacuous")
+	assert_true(fwd.has("_add_quest_examine_point"),
+		"CONTROL: must find the helper the 11 frozen village prompts went through, got %s" % [fwd])
+	assert_true(fwd.has("_add_quest_route_point"), "CONTROL: and its route sibling, got %s" % [fwd])
+
+
+## NOBODY may hand a forwarder a frozen cap. The caller owns the WORDS; the helper owns the BUTTON.
+func test_no_caller_hands_a_forwarder_a_frozen_cap() -> void:
+	var fwd := _indicator_forwarders()
+	assert_gt(fwd.size(), 0, "PRECONDITION: forwarder derivation returned nothing")
+	var offenders: Array[String] = []
+	for path in _all_src_scripts():
+		var lines := FileAccess.get_file_as_string(path).split("\n")
+		for i in range(lines.size()):
+			var line: String = lines[i].strip_edges()
+			if line.begins_with("#"):
+				continue
+			var calls := false
+			for f in fwd:
+				if line.contains(f + "("):
+					calls = true
+					break
+			if not calls:
+				continue
+			# the argument list can wrap; a call's literals may sit on the next few lines
+			for j in range(i, mini(i + 6, lines.size())):
+				var arg: String = lines[j].strip_edges()
+				if arg.begins_with("#"):
+					continue
+				if not _frozen_code_lines(arg).is_empty():
+					offenders.append("%s:%d :: %s" % [path.get_file(), j + 1, arg.substr(0, 52)])
+	assert_eq(offenders, [] as Array[String],
+		"a frozen cap is passed INTO a helper that sets indicator_text — the helper derives the " +
+		"button, so the caller must pass the words only: %s" % [", ".join(offenders)])

@@ -512,7 +512,14 @@ func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Arr
 
 ## A "custom" objective advances ONLY via QuestSystem.notify_flag — notify_talk skips the type
 ## entirely — so a step with no emitter strands the quest with no in-game way to progress it.
-func _add_quest_examine_point(qid: String, flag: String, indicator: String, examined: String,
+## The interact button for a prompt, derived per device. "[A]" is correct on Nintendo pads ONLY.
+func _interact_label(verb: String) -> String:
+	var hint := InputProfileManager.hint_for_action("ui_accept")
+	return "%s %s" % [hint, verb] if hint != "" else verb
+
+
+## `verb` is the WORDS ONLY — the button is derived here, so no caller can freeze one.
+func _add_quest_examine_point(qid: String, flag: String, verb: String, examined: String,
 		idle: String, pos: Vector2) -> void:
 	var ExamineScript = load("res://src/exploration/QuestExaminePoint.gd")
 	if ExamineScript == null:
@@ -520,7 +527,7 @@ func _add_quest_examine_point(qid: String, flag: String, indicator: String, exam
 	var point = ExamineScript.new()
 	point.quest_id = qid
 	point.flag = flag
-	point.indicator_text = indicator
+	point.indicator_text = _interact_label(verb)
 	point.examine_text = examined
 	point.idle_text = idle
 	point.position = pos
@@ -529,7 +536,7 @@ func _add_quest_examine_point(qid: String, flag: String, indicator: String, exam
 
 ## One stop on a multi-point objective — `flag` fires only once ALL group_size members are examined.
 func _add_quest_route_point(qid: String, flag: String, index: int, group_size: int,
-		indicator: String, examined: String, idle: String, pos: Vector2) -> void:
+		verb: String, examined: String, idle: String, pos: Vector2) -> void:
 	var ExamineScript = load("res://src/exploration/QuestExaminePoint.gd")
 	if ExamineScript == null:
 		return
@@ -538,7 +545,7 @@ func _add_quest_route_point(qid: String, flag: String, index: int, group_size: i
 	point.flag = flag
 	point.member_index = index
 	point.group_size = group_size
-	point.indicator_text = indicator
+	point.indicator_text = _interact_label(verb)
 	point.examine_text = examined
 	point.idle_text = idle
 	point.position = pos
