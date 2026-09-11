@@ -220,17 +220,49 @@ func _strip_comments(text: String) -> String:
 		## 'BATTLE #%d' mid-string (0 such lines in src/ today, so latent) and mis-toggled on \".
 		## Shape taken from cowir-controller's _strip_comment after reading it on their branch —
 		## I had characterised their stripper wrongly in a broadcast, so I read it and it was better.
+		## FORWARD scan: a backslash escapes the NEXT character, so skip it. Looking BACKWARDS at
+		## line[i-1] != "\\" mishandles an escaped backslash -- "a\\\\" really does end the string, and
+		## cowir-controller found that as the sixth costume of this bug. Pinned directly below by
+		## test_the_comment_stripper_itself rather than only through the corpus, because each fix
+		## here has been blind to the next and a case table terminates that.
 		var quote := ""
 		var cut := -1
-		for i in range(line.length()):
+		var i := 0
+		while i < line.length():
 			var c := line[i]
 			if quote != "":
-				if c == quote and (i == 0 or line[i - 1] != "\\"):
+				if c == "\\":
+					i += 2
+					continue
+				if c == quote:
 					quote = ""
 			elif c == "\"" or c == "'":
 				quote = c
 			elif c == "#":
 				cut = i
 				break
+			i += 1
 		out.append(line if cut < 0 else line.substr(0, cut))
 	return "\n".join(out)
+
+
+## The helper pinned DIRECTLY, both polarities, rather than only through the corpus. Six costumes
+## of this bug were found across four lanes in one afternoon, each fix blind to the next; a case
+## table is what stops the seventh from being silent.
+func test_the_comment_stripper_itself() -> void:
+	var cases: Array = [
+		## expected keeps the two spaces BEFORE the #: the cut is at the #, not a trim.
+		["sm.play_ambient(\"weather_rain\")  # note", "sm.play_ambient(\"weather_rain\")  ", "trailing comment cut"],
+		["# sm.play_ambient(\"heal\")", "", "whole-line comment blanked"],
+		["var c := \"[color=#44ff44]\"", "var c := \"[color=#44ff44]\"", "# inside a double-quoted string SURVIVES"],
+		["var s := 'BATTLE #%d'", "var s := 'BATTLE #%d'", "# inside a single-quoted string SURVIVES"],
+		["var q := \"a\\\\\"  # x", "var q := \"a\\\\\"  ", "escaped BACKSLASH ends the string, comment still cut"],
+		["sm.play_ambient(\"a\")", "sm.play_ambient(\"a\")", "no comment, untouched"],
+	]
+	var bad: Array = []
+	for c in cases:
+		var got: String = _strip_comments(str(c[0]))
+		if got != str(c[1]):
+			bad.append("%s: got %s want %s" % [c[2], got, c[1]])
+	assert_eq(cases.size(), 6, "SCOPE control: the case table shrank — a removed row is a removed guarantee")
+	assert_eq(bad, [], "comment stripper wrong on: %s" % [bad])
