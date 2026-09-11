@@ -120,6 +120,18 @@ func test_every_manifest_duration_matches_the_shipped_audio() -> void:
 	## on a shipped tag, indistinguishable from a real defect by the old wording.
 	## Re-importing made it pass.
 	##
+	## ⚠️ AND A THIRD CAUSE, added 2026-09-11 after the same false red hit three
+	## lanes at once on d4f0900c: cause (1)'s instruction can FAIL. cowir-sfx
+	## measured a tree whose OGG BYTES differ from main\'s LFS pointer, so
+	## --import re-derived the artifact faithfully from last week\'s blob and the
+	## red persisted. A reader following the old message would then land on "A
+	## REAL DRIFT" and go hunting a manifest bug that does not exist.
+	##
+	## The counts are the tell and they are free: cowir-adhoc saw 2 offenders,
+	## cowir-autogrind saw 15, cowir-main saw 0 — same SHA, three trees. A defect
+	## in the tree gives everyone the same number; a number that varies by
+	## checkout is measuring how stale each reader is.
+	##
 	## The discriminator is one command, so the message now carries it.
 	assert_eq(drifted.size(), 0,
-		"manifest duration disagrees with the audio Godot LOADED (%d): %s\n  TWO CAUSES, check the cheap one first:\n  (1) STALE IMPORT CACHE — you changed branches and did not re-import. load() returns the IMPORTED audio, not the file on disk. Run: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import --quit  and re-run. If it passes, there was no defect.\n  (2) A REAL DRIFT — something rewrote the OGG without rewriting the number. Confirm with ffprobe against the file on disk before believing it. This is SILENT at runtime; the Jukebox just prints the wrong time." % [drifted.size(), drifted])
+		"manifest duration disagrees with the audio Godot LOADED (%d): %s\n  TWO CAUSES, check the cheap one first:\n  (1) STALE IMPORT CACHE — you changed branches and did not re-import. load() returns the IMPORTED audio, not the file on disk. Run: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import --quit  and re-run. If it passes, there was no defect.\n  (2) A STALE LFS BLOB, one layer UNDER the cache — the bytes on disk are not the bytes main points at, so --import faithfully re-derives the WRONG audio and the red survives cause (1). Check: git show origin/main:<file> | grep -o \'sha256:[a-f0-9]*\'  against  sha256sum <file>. DIFFER means run git lfs pull, THEN --import.\n  (3) A REAL DRIFT — something rewrote the OGG without rewriting the number. Confirm with ffprobe against the file on disk before believing it. This is SILENT at runtime; the Jukebox just prints the wrong time." % [drifted.size(), drifted])
