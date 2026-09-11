@@ -52,7 +52,26 @@ import numpy as np
 
 MANIFEST = "data/music_manifest.json"
 SR = 48000
-SEAM_S = 0.3
+## ⚠️ ONE WINDOW IS NOT ENOUGH, and this tool already knew why about a DIFFERENT
+## number. Its docstring says a 1.5s window "AVERAGES AWAY A SHORT STEEP FADE" —
+## correct, and it never asked whether 0.3s was short enough. It is not.
+## @cowir-sfx swept window length on their weather beds 2026-09-11 and the same
+## sweep on this corpus found EIGHT beds reading clean at 300ms and jumping past
+## 12 dB at 10ms, worst +31.8 (ambient_steampunk). Verified as real 50-100ms
+## fades, not phase noise: monotonic decline over the final 100ms, final-10ms
+## peak 0.0013 against a track peak of 1.515.
+##
+## So measure at SEVERAL windows and take the worst. A fade is caught by any
+## window shorter than itself; a single window is only ever right for one
+## duration of defect.
+## 10ms is NOT in the shipped set, and the reason is the finding: it is what
+## revealed the 50-100ms fades that 0.3s averaged away, and it is too
+## phase-sensitive to ship. It produced 2 false positives of 10 —
+## cutscene_w2_coordinator_memo (negative at every stable window: a soft intro)
+## and boss_arbiter_abstract (+12.5 at 10ms, +10.0/+8.2/+1.9 at the rest). A
+## window good at FINDING a defect can still be wrong to JUDGE by.
+SEAM_WINDOWS_S = [0.050, 0.100, 0.300]
+SEAM_S = 0.3  # kept: the reporting window, and what the pinned history was measured at
 JUMP_DB = 12.0
 
 ## -60 dBFS peak: below this a sample is inaudible under any playback chain.
@@ -75,7 +94,12 @@ MIN_PAD_S = 0.040
 # None needed a crossfade; two needed no gain change whatsoever. A pin is a
 # claim that something is impossible, so it earns more scepticism than a bug
 # report, not less -- it is the entry that stops anyone looking again.
-KNOWN_UNFIXABLE = {}
+KNOWN_UNFIXABLE = {
+    "boss_tempo_digital": "quiet intro AND quiet tail — +32.9 dB at 50ms but -5.7 at 300ms, "
+                          "opposite signs. No TAIL cut reconciles them; last 40s are at full level",
+    "overworld_industrial": "structure, not a fade — -9.4 at 50ms vs +30.6 at 100ms uncut, and the "
+                            "sign keeps flipping at every cut depth out to 2s",
+}
 
 
 def decode(path):
@@ -108,7 +132,19 @@ def main():
         y = decode(path)
         if len(y) < 3 * SR:
             continue
-        rows.append((db(y[:w]) - db(y[-w:]), key))
+        ## Worst across every window — a fade hides from any window longer
+        ## than itself, so one number cannot speak for all fade durations.
+        worst = None
+        for ws in SEAM_WINDOWS_S:
+            n = int(ws * SR)
+            if len(y) < 3 * n:
+                continue
+            step = db(y[:n]) - db(y[-n:])
+            if worst is None or step > worst[0]:
+                worst = (step, ws)
+        if worst is None:
+            continue
+        rows.append((worst[0], key, worst[1]))
         loud = np.flatnonzero(np.abs(y) > 10.0 ** (FLOOR_DB / 20.0))
         if loud.size:
             head_pad, tail_pad = loud[0] / SR, (len(y) - 1 - loud[-1]) / SR
@@ -119,9 +155,9 @@ def main():
 
     jumps = [r for r in rows if r[0] > JUMP_DB]
     print("%-34s %s" % ("track", "wrap step (tail -> head)"))
-    for step, key in jumps:
+    for step, key, ws in jumps:
         note = KNOWN_UNFIXABLE.get(key)
-        print("  %-32s %+7.1f dB   %s" % (key, step, "PINNED: " + note if note else "*** NEW ***"))
+        print("  %-32s %+7.1f dB @%4.0fms   %s" % (key, step, ws * 1000, "PINNED: " + note if note else "*** NEW ***"))
     print("\n  %d looping beds measured, %d jump more than %.0f dB" % (len(rows), len(jumps), JUMP_DB))
 
     ## Reported separately because a pad is a different defect with a different
@@ -135,8 +171,8 @@ def main():
     else:
         print("  0 beds carry silence padding at the wrap")
 
-    new = [k for _, k in jumps if k not in KNOWN_UNFIXABLE]
-    stale = [k for k in KNOWN_UNFIXABLE if k not in {kk for _, kk in jumps}]
+    new = [k for _, k, _w in jumps if k not in KNOWN_UNFIXABLE]
+    stale = [k for k in KNOWN_UNFIXABLE if k not in {kk for _, kk, _w in jumps}]
     if stale:
         print("  PINNED entries that now loop cleanly (remove them): %s" % ", ".join(stale))
     if new:

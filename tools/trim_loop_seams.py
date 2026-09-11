@@ -70,6 +70,8 @@ WRAP_JUMP_DB = 12.0
 WRAP_OK_DB = 6.0
 ## The ritardando bound: past this we are eating music, not a fade.
 MAX_TRIM_S = 30.0
+## A fade invisible at 300ms is short by construction; its repair must be too.
+SHORT_FADE_MAX_TRIM_S = 2.0
 DECLICK_S = 0.008
 CUT_STEP_S = 0.05
 
@@ -97,9 +99,45 @@ def db(x):
     return 20.0 * np.log10(r) if r > 0 else float("-inf")
 
 
+## ⚠️ ONE WINDOW IS ONLY RIGHT FOR ONE DURATION OF FADE. This selected on a
+## single 0.3s window and called ten beds clean that jump 12-52 dB at shorter
+## ones — the same averaging failure the 1.5s window had, one level down.
+## @cowir-sfx's window sweep, 2026-09-11. No single window catches all ten:
+## 10ms finds 3, 50ms finds 6, 100ms finds 1.
+SEAM_WINDOWS_S = [0.050, 0.100, 0.300]
+
+
+## Windows stable enough to ACCEPT a fix on. 10ms is excellent at FINDING a
+## short fade and too phase-sensitive to gate one: verifying against it pushed
+## battle_abstract from a 0.15s cut to 5.15s, chasing agreement that noise kept
+## breaking. Detect wide, accept narrow.
+ACCEPT_WINDOWS_S = [0.050, 0.100, 0.300]
+
+
+def wrap_step_accept(y, sr):
+    """Worst step across the STABLE windows — what a fix must satisfy."""
+    worst = None
+    for ws in ACCEPT_WINDOWS_S:
+        n = int(ws * sr)
+        if len(y) < 3 * n:
+            continue
+        step = db(y[:n]) - db(y[-n:])
+        if worst is None or abs(step) > abs(worst):
+            worst = step
+    return worst if worst is not None else 0.0
+
+
 def wrap_step(y, sr):
-    w = int(SEAM_S * sr)
-    return db(y[:w]) - db(y[-w:])
+    """Worst step across every window — a fade hides from any window longer than itself."""
+    worst = None
+    for ws in SEAM_WINDOWS_S:
+        n = int(ws * sr)
+        if len(y) < 3 * n:
+            continue
+        step = db(y[:n]) - db(y[-n:])
+        if worst is None or step > worst:
+            worst = step
+    return worst if worst is not None else 0.0
 
 
 def classify(y, sr):
@@ -123,6 +161,19 @@ def classify(y, sr):
     which is exactly where those 29s came from. Named and refused.
     """
     step_now = wrap_step(y, sr)
+
+    ## ⛔ THE CUT MUST BE BOUNDED BY THE DEFECT'S OWN SHAPE. A 10ms RMS window is
+    ## phase-sensitive, so a search that must satisfy ALL windows at once will
+    ## walk until they coincide — it proposed cutting 22.85s off
+    ## boss_tempo_digital, whose last 40 SECONDS sit at full level (+0.6 to +2.8
+    ## dB vs body). No outro; the search was chasing noise. A fade only visible
+    ## below 300ms is by definition SHORT, so its repair is short: cap the
+    ## search at SHORT_FADE_MAX_TRIM_S. A genuine ritardando still shows at
+    ## 300ms and keeps the full MAX_TRIM_S budget.
+    w300 = int(0.300 * sr)
+    long_fade = (db(y[:w300]) - db(y[-w300:])) > WRAP_JUMP_DB
+    budget = MAX_TRIM_S if long_fade else SHORT_FADE_MAX_TRIM_S
+
     if step_now < -WRAP_JUMP_DB:
         return "SOFT INTRO (head far quieter than tail; a tail cut cannot fix it)", step_now, 0.0, step_now
     if step_now <= WRAP_JUMP_DB:
@@ -130,11 +181,11 @@ def classify(y, sr):
     w = int(SEAM_S * sr)
     head = db(y[:w])
     n = int(CUT_STEP_S * sr)
-    for i in range(1, int(MAX_TRIM_S / CUT_STEP_S) + 1):
+    for i in range(1, int(budget / CUT_STEP_S) + 1):
         t = y[:len(y) - i * n]
         if len(t) < 3 * sr:
             break
-        s = head - db(t[-w:])
+        s = wrap_step_accept(t, sr)
         if abs(s) <= WRAP_OK_DB:
             return "TRIM-SAFE", step_now, i * CUT_STEP_S, s
     return "NO CUT HELPS", step_now, 0.0, step_now
@@ -184,14 +235,16 @@ def main():
                       "laid over playing music." % (key, verdict, step_now))
                 return 2
             continue
-        rows.append((key, path, sr, ch, len(y) / sr, cut_s, step_now, step_after))
+        w300 = int(0.300 * sr)
+        cut_budget = MAX_TRIM_S if (db(y[:w300]) - db(y[-w300:])) > WRAP_JUMP_DB else SHORT_FADE_MAX_TRIM_S
+        rows.append((key, path, sr, ch, len(y) / sr, cut_s, step_now, step_after, cut_budget))
     if args.limit:
         rows = rows[:args.limit]
 
     print("%-32s %8s %8s  %s" % ("track", "dur", "cut", "wrap before -> after"))
     ok = failed = 0
     updated = []
-    for key, path, sr, ch, dur, cut_s, step_now, step_after in rows:
+    for key, path, sr, ch, dur, cut_s, step_now, step_after, cut_budget in rows:
         if not args.apply:
             print("%-32s %7.1fs %7.2fs  %+.1f -> %+.1f dB  (dry run)"
                   % (key, dur, cut_s, step_now, step_after))
@@ -205,7 +258,9 @@ def main():
         why = None
         accepted = None
         keep = dur - cut_s
-        while keep > 1.0 and (dur - keep) <= MAX_TRIM_S:
+        ## The retry must honour the SAME budget as the search, or a track
+        ## selected at 0.15s gets trimmed to 5.15s by the deeper-cut loop.
+        while keep > 1.0 and (dur - keep) <= cut_budget:
             if not trim_one(path, keep, sr, ch, tmp):
                 why = "ffmpeg failed"
                 break
@@ -217,7 +272,7 @@ def main():
             if abs(new_dur - keep) > 0.5:
                 why = "duration %.2fs != cut point %.2fs" % (new_dur, keep)
                 break
-            s = wrap_step(vy, sr)
+            s = wrap_step_accept(vy, sr)
             if abs(s) <= WRAP_OK_DB:
                 accepted = (keep, new_dur, s)
                 why = None
