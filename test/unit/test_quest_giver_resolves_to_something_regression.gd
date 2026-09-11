@@ -11,11 +11,30 @@ extends GutTest
 const QUEST_DIR := "res://data/quests/"
 const SRC_DIRS := ["res://src/maps/villages/", "res://src/maps/interiors/", "res://src/exploration/"]
 
-## Known-inert givers: W4-W6 have no authored maps. Remove an entry when its world ships.
+## Unresolvable givers, WITH THE REASON EACH IS ACTUALLY UNRESOLVABLE.
+## ⛔ My first version said "W4-W6 have no authored maps". That was FALSE -- RivetRow, NodePrime and
+## Vertex are all authored villages with interiors. The entries were right and the stated reason was
+## never true, which is the worst kind: it reads as a decision and can never expire, because the
+## condition it names never held. Audited 2026-09-09 against the fleet's three-shape taxonomy
+## (INERT / EXPIRED / FALSE); this list was FALSE.
+##
+## A) DELIBERATELY UNSET, documented at the site -- RivetRowVillage:302 says wiring madame_orrery_w4
+##    makes world4_deviation_report offerable while its step 2 talks to union_rep_w4, which nothing
+##    answers to. Gating a quest whose second step is unreachable is the correct call.
+## B) THE CHARACTER EXISTS UNDER A DIFFERENT ID -- the quest names <role>_w4, the village creates a
+##    NAMED person who snake_cases to something else. Not missing content; a naming mismatch, and
+##    the likeliest of these to be a real defect rather than a decision.
+##      foreman_w4 -> shift_foreman_grix · union_rep_w4 -> union_rep_voss
+##      dorrit_w4 -> dorrit             · firewall_attendant_w5 -> firewall_alpha
+## C) NO CANDIDATE NPC ANYWHERE -- a location/prop/pair not yet placed.
 const UNWIRED_BY_DESIGN := [
-	"rat_patrol_junction", "madame_orrery_w4", "dorrit_w4", "foreman_w4", "union_rep_w4",
-	"memory_leak_district", "madame_orrery_w5", "race_condition_pair", "firewall_attendant_w5",
-	"traveler_w6", "madame_orrery_w6", "last_shopkeeper_w6",
+	# A -- deliberate, documented at RivetRowVillage:302
+	"madame_orrery_w4",
+	# B -- character present under a different id (see above); resolve by naming, not by authoring
+	"foreman_w4", "union_rep_w4", "dorrit_w4", "firewall_attendant_w5",
+	# C -- no candidate NPC exists yet
+	"rat_patrol_junction", "memory_leak_district", "race_condition_pair",
+	"madame_orrery_w5", "traveler_w6", "madame_orrery_w6", "last_shopkeeper_w6",
 ]
 
 
