@@ -78,6 +78,42 @@ func _files(root: String, ext: String, out: Array[String]) -> void:
 	d.list_dir_end()
 
 
+## ⛔ STRIP COMMENTS, NEVER STRINGS. A track id named only in a comment would
+## otherwise read as reached — this file's own SoundManager comments discuss
+## battle_goblin being recast, and CLAUDE.md-style prose names beds constantly.
+## That failure is QUIET: it removes an orphan from the report, so nobody
+## investigates. (Measured 2026-09-11: exactly one id, boss_tempo_steampunk, is
+## mentioned only in a comment, and it is composed-reachable anyway — so no
+## verdict moves today. The guard is hardened for the next one.)
+##
+## ⚠️ AND NOT STRINGS, which is where the sibling rule inverts for this lane.
+## cowir-autogrind's sweep strips string literals because a method name inside
+## a push_warning is not a call. Here a string literal IS the consumer:
+## play_music("boss_mordaine") is the reference. Stripping strings would report
+## every literally-named bed as an orphan.
+func _strip_comments(src: String) -> String:
+	var out: PackedStringArray = []
+	for line in src.split("\n"):
+		var l: String = str(line)
+		var quote: String = ""
+		var kept: String = ""
+		for i in l.length():
+			var ch: String = l[i]
+			if quote != "":
+				kept += ch
+				if ch == quote:
+					quote = ""
+			elif ch == "\"" or ch == "'":
+				quote = ch
+				kept += ch
+			elif ch == "#":
+				break
+			else:
+				kept += ch
+		out.append(kept)
+	return "\n".join(out)
+
+
 ## Everything that could NAME a track, minus the manifest itself — which would
 ## match every id and make the whole sweep vacuous.
 func _consumer_text() -> String:
@@ -88,7 +124,9 @@ func _consumer_text() -> String:
 	for p in paths:
 		if p.ends_with("music_manifest.json"):
 			continue
-		parts.append(FileAccess.get_file_as_string(p))
+		var body: String = FileAccess.get_file_as_string(p)
+		## JSON carries no comments; only .gd needs stripping.
+		parts.append(_strip_comments(body) if p.ends_with(".gd") else body)
 	return "\n".join(parts)
 
 
@@ -102,6 +140,10 @@ func test_control_the_consumer_corpus_is_real_and_excludes_the_manifest() -> voi
 	## Negative: the manifest must be EXCLUDED, or every id matches itself.
 	assert_eq(text.find("\"tracks\": {"), -1,
 		"CONTROL FAILED: music_manifest.json is inside the corpus — every id would match its own manifest entry and the sweep would report zero orphans forever")
+	## Comment stripping must not eat the consumers. A real call is a string
+	## literal, and over-stripping would report every named bed as an orphan.
+	assert_gt(text.find("play_music(\"boss_mordaine\")"), 0,
+		"CONTROL FAILED: comment stripping removed a real play_music call — strings are consumers in this lane, only '#' comments may go")
 
 
 func test_every_cited_composition_expression_still_exists() -> void:
