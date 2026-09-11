@@ -23,8 +23,16 @@ extends GutTest
 const EXPLORATION := "res://src/exploration"
 
 
-## Files whose prompt must derive. Listed rather than globbed so a new file is not silently
-## exempted by a directory scan that happens to miss it.
+## Files whose prompt must derive. This list is the POSITIVE half only — "these known files still
+## derive". It is NOT the corpus: a list cannot see a file that does not exist yet, and the negative
+## arm below walks the directory instead.
+##
+## ⚠️ MY ORIGINAL JUSTIFICATION HERE WAS BACKWARDS. It read "listed rather than globbed so a new file
+## is not silently exempted by a directory scan that happens to miss it" — but a LIST exempts every
+## new file unconditionally. Measured 2026-09-11: a fresh Area2D in src/exploration with
+## `_label.text = "[A] Examine probe"` passed this file GREEN at 4/4. Same shape as cowir-sfx's
+## ambient guard, which scoped its corpus `begins_with("ambient_")` and was therefore blind to the
+## six `weather_*` keys that were actually breaking the contract it defended.
 const CONVERTED := [
 	"BulletinBoard.gd", "MissingPackage.gd", "TallyWall.gd", "QuestExaminePoint.gd",
 	"FireplaceSecret.gd", "AnnexLiberation.gd", "SwordInscription.gd", "CivicFrontDesk.gd",
@@ -84,3 +92,70 @@ func test_the_warp_prompt_varies_by_device() -> void:
 		"the Warp half of the save prompt must derive as well")
 	assert_eq(InputProfileManager.hint_for_action("battle_advance", "DualSense Wireless Controller"), "R1",
 		"PlayStation calls the right shoulder R1, not R")
+
+## THE DERIVED ARM. Walks src/exploration rather than trusting CONVERTED, so a file added next week
+## is in the corpus the moment it exists.
+func _exploration_scripts() -> Array[String]:
+	var out: Array[String] = []
+	var d := DirAccess.open(EXPLORATION)
+	assert_not_null(d, "PRECONDITION: %s must be walkable" % EXPLORATION)
+	d.list_dir_begin()
+	var name := d.get_next()
+	while name != "":
+		if not d.current_is_dir() and name.ends_with(".gd"):
+			out.append(name)
+		name = d.get_next()
+	d.list_dir_end()
+	out.sort()
+	return out
+
+
+## A frozen literal anywhere in CODE. The discriminator is "is this line a comment", which is what
+## actually separates a defect from ReadableProp's note about the bug it already fixed — NOT
+## "does it follow an equals sign", which was a PROXY for that and blind to every other authoring
+## form. Measured: `_label.set_text("[A] ...")` passed the old pattern. Zero files in src/ use
+## set_text today, so that gap was latent rather than live — recorded as a gap, not a discovery.
+func _frozen_code_lines(src: String) -> Array[String]:
+	var hits: Array[String] = []
+	for raw in src.split("\n"):
+		var line: String = raw.strip_edges()
+		if line.begins_with("#"):
+			continue
+		if line.contains("\"[A]") or line.contains("\"[B]"):
+			hits.append(line)
+	return hits
+
+
+## CONTROL: the walker must actually be walking, and must reach files the LIST does not name.
+func test_the_walker_sees_more_than_the_list() -> void:
+	var found := _exploration_scripts()
+	assert_gt(found.size(), CONVERTED.size(),
+		"the walker must reach MORE files than the hardcoded list, or it is the list with extra steps")
+	assert_true(found.has("SavePoint.gd"), "CONTROL: a known member must appear")
+	assert_false(found.has("ZzqNotAFile.gd"), "CONTROL: the walker can report a name absent")
+
+
+## ANY file in the directory — listed or not — may not freeze a face letter in an assignment or
+## return. This is the arm that catches the file nobody has written yet.
+func test_no_exploration_file_freezes_a_face_letter() -> void:
+	var offenders: Array[String] = []
+	for fname in _exploration_scripts():
+		var src := FileAccess.get_file_as_string("%s/%s" % [EXPLORATION, fname])
+		if not _frozen_code_lines(src).is_empty():
+			offenders.append(fname)
+	assert_eq(offenders, [] as Array[String],
+		"a file in src/exploration freezes a face letter in an assignment or return — right on " +
+		"Nintendo, wrong on every other pad: %s" % [", ".join(offenders)])
+
+## CONTROL for the line-level discriminator: it must catch EVERY authoring form and still exclude a
+## comment. The old pattern matched only the first of these three.
+func test_the_line_scanner_catches_every_authoring_form() -> void:
+	assert_eq(_frozen_code_lines("\t_label.text = \"[A] Examine\"").size(), 1,
+		"assignment form must be caught")
+	assert_eq(_frozen_code_lines("\t_label.set_text(\"[A] Examine\")").size(), 1,
+		"SETTER form must be caught — the old =/return pattern was blind to it")
+	assert_eq(_frozen_code_lines("\treturn \"[B] Close\"").size(), 1, "return form must be caught")
+	assert_eq(_frozen_code_lines("## the old \"[B]\" named the wrong cap on Nintendo pads").size(), 0,
+		"CONTROL: a COMMENT must NOT be flagged — ReadableProp documents its own fix that way")
+	assert_eq(_frozen_code_lines("\t_label.text = hint + \" Examine\"").size(), 0,
+		"CONTROL: a derived line must not be flagged")
