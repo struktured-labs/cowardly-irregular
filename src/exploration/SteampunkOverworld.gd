@@ -169,12 +169,15 @@ func _place_treasure_chests() -> void:
 		# Industrial district (NE/SE) — machinery caches
 		{"id": "w3_industrial_hipotion", "pos": Vector2(48, 10), "type": "item", "item": "hi_potion", "amount": 4},
 		{"id": "w3_industrial_elixir", "pos": Vector2(52, 18), "type": "item", "item": "elixir", "amount": 1},
-		{"id": "w3_industrial_gold", "pos": Vector2(45, 30), "type": "gold", "gold": 500},
+		# One-cell nudges, each verified by a PHYSICS QUERY rather than by reading the map: these sat
+		# inside terrain collision and could never be opened. The Mode 7 collider clone is displaced
+		# 4.4 tiles, so no map-space check can tell you where a body actually fits.
+		{"id": "w3_industrial_gold", "pos": Vector2(43, 28), "type": "gold", "gold": 500},
 		# Rail station approach — commuter lost-and-found
 		{"id": "w3_station_remedy", "pos": Vector2(22, 40), "type": "item", "item": "remedy", "amount": 3},
 		{"id": "w3_station_phoenix", "pos": Vector2(30, 40), "type": "item", "item": "phoenix_down", "amount": 2},
 		# Residential blocks — tenement backyards
-		{"id": "w3_tenement_antidote", "pos": Vector2(8, 22), "type": "item", "item": "antidote", "amount": 4},
+		{"id": "w3_tenement_antidote", "pos": Vector2(6, 20), "type": "item", "item": "antidote", "amount": 4},
 		{"id": "w3_tenement_gold", "pos": Vector2(5, 10), "type": "gold", "gold": 250},
 		# Park / steam pipes
 		{"id": "w3_park_ether", "pos": Vector2(15, 33), "type": "item", "item": "ether", "amount": 3},
@@ -354,9 +357,10 @@ func _setup_scene() -> void:
 	# Background behind tilemap (dark industrial void)
 	var bg = ColorRect.new()
 	bg.name = "Background"
-	bg.color = Color(0.10, 0.10, 0.12)  # Dark industrial gray
-	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + 400, MAP_HEIGHT * TILE_SIZE + 400)
-	bg.position = Vector2(-200, -200)
+	# Off-map used to be near-black: a hard slab of void wherever the view cleared the map edge.
+	bg.color = Mode7Overlay.void_color("steampunk")
+	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2, MAP_HEIGHT * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2)
+	bg.position = Vector2(-Mode7Overlay.VOID_MARGIN, -Mode7Overlay.VOID_MARGIN)
 	bg.z_index = -10
 	add_child(bg)
 

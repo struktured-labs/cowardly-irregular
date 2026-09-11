@@ -167,15 +167,18 @@ func _place_treasure_chests() -> void:
 		# Factory complex — maintenance caches
 		{"id": "w4_factory_ether", "pos": Vector2(22, 16), "type": "item", "item": "ether", "amount": 5},
 		{"id": "w4_factory_elixir", "pos": Vector2(28, 20), "type": "item", "item": "elixir", "amount": 1},
-		{"id": "w4_factory_gold", "pos": Vector2(42, 22), "type": "gold", "gold": 700},
+		# One-cell nudges, each verified by a PHYSICS QUERY rather than by reading the map: these sat
+		# inside terrain collision and could never be opened. The Mode 7 collider clone is displaced
+		# 4.4 tiles, so no map-space check can tell you where a body actually fits.
+		{"id": "w4_factory_gold", "pos": Vector2(40, 20), "type": "gold", "gold": 700},
 		# Chemical zone (west) — dangerous area reward
 		{"id": "w4_chem_remedy", "pos": Vector2(5, 20), "type": "item", "item": "remedy", "amount": 4},
 		{"id": "w4_chem_phoenix", "pos": Vector2(10, 25), "type": "item", "item": "phoenix_down", "amount": 2},
 		# Worker housing (east) — stashed supplies
-		{"id": "w4_housing_antidote", "pos": Vector2(50, 20), "type": "item", "item": "antidote", "amount": 5},
-		{"id": "w4_housing_gold", "pos": Vector2(54, 28), "type": "gold", "gold": 400},
+		{"id": "w4_housing_antidote", "pos": Vector2(48, 18), "type": "item", "item": "antidote", "amount": 5},
+		{"id": "w4_housing_gold", "pos": Vector2(52, 26), "type": "gold", "gold": 400},
 		# Break room / south — last stop before portal
-		{"id": "w4_break_ether", "pos": Vector2(36, 22), "type": "item", "item": "ether", "amount": 4},
+		{"id": "w4_break_ether", "pos": Vector2(34, 20), "type": "item", "item": "ether", "amount": 4},
 	]
 	for c in chests:
 		var chest = TreasureChestScript.new()
@@ -345,9 +348,10 @@ func _setup_scene() -> void:
 	# Background behind tilemap (dark smoggy industrial sky)
 	var bg = ColorRect.new()
 	bg.name = "Background"
-	bg.color = Color(0.14, 0.12, 0.10)  # Dark soot-brown
-	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + 400, MAP_HEIGHT * TILE_SIZE + 400)
-	bg.position = Vector2(-200, -200)
+	# Off-map used to be near-black: a hard slab of void wherever the view cleared the map edge.
+	bg.color = Mode7Overlay.void_color("industrial")
+	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2, MAP_HEIGHT * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2)
+	bg.position = Vector2(-Mode7Overlay.VOID_MARGIN, -Mode7Overlay.VOID_MARGIN)
 	bg.z_index = -10
 	add_child(bg)
 

@@ -89,7 +89,27 @@ func get_patrol() -> Array[Vector2]:
 	return _patrol_points.duplicate()
 
 
+## Mode 7 warps world-space text; a passing remark is read standing next to the speaker.
+const FLAT_LABEL_OFFSET := Vector2(-100, -60)
+const FLAT_LABEL_FONT: int = 12
+var _prompt_layer: CanvasLayer
+
+
+func _drive_line_prompt() -> void:
+	if _label == null:
+		return
+	if InteractGeometry.is_mode7():
+		if _prompt_layer == null:
+			_prompt_layer = Mode7Prompt.lift(self, _label)
+		if _label.visible:
+			Mode7Prompt.place(_label, get_viewport_rect().size, Mode7Prompt.ROW_INFO)
+	elif _prompt_layer != null:
+		Mode7Prompt.drop(self, _prompt_layer, _label, FLAT_LABEL_OFFSET, FLAT_LABEL_FONT)
+		_prompt_layer = null
+
+
 func _process(delta: float) -> void:
+	_drive_line_prompt()
 	if _patrol_points.size() < 2:
 		return
 	# Freeze while dialogue/cutscenes hold the input lock — a patroller strolling through the staged party mid-cutscene reads as a bug (struktured playtest 2026-07-11).
@@ -295,7 +315,7 @@ func _setup_label() -> void:
 	_label = Label.new()
 	_label.text = "%s: \"%s\"" % [npc_name, dialogue]
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.position = Vector2(-100, -60)
+	_label.position = FLAT_LABEL_OFFSET
 	_label.size = Vector2(200, 40)
 	_label.add_theme_font_size_override("font_size", 12)
 	_label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))

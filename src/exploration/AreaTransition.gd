@@ -55,6 +55,8 @@ const GATE_COLORS = {
 
 var _player_in_zone: bool = false
 var _indicator_label: Label
+## Mode 7 warps every world-space pixel; the prompt moves to a layer the shader never samples.
+var _prompt_layer: CanvasLayer
 var _arrow_blink: float = 0.0
 var _redraw_timer: float = 0.0
 ## True after _trigger_transition fires once. Prevents double-emit of
@@ -73,6 +75,12 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	if _indicator_label:
+		if InteractGeometry.is_mode7():
+			_drive_screen_prompt()
+		elif _prompt_layer != null:
+			_return_prompt_to_the_world()
+
 	if show_gate_visual:
 		_arrow_blink += delta * 2.0
 		_redraw_timer += delta
@@ -166,13 +174,16 @@ func _setup_indicator() -> void:
 	_indicator_label.name = "Indicator"
 	_indicator_label.text = indicator_text if indicator_text != "" else _get_default_indicator_text()
 	_indicator_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_indicator_label.position = Vector2(-40, -72)
+	_indicator_label.position = FLAT_OFFSET
 	_indicator_label.visible = show_gate_visual  # Always visible when gate is drawn
 	_indicator_label.add_theme_font_size_override("font_size", 12)
 	_indicator_label.add_theme_color_override("font_color", Color.WHITE)
 	_indicator_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	_indicator_label.add_theme_constant_override("shadow_offset_x", 1)
 	_indicator_label.add_theme_constant_override("shadow_offset_y", 1)
+	# The prompt is an affordance, not scenery: you arrive standing IN the exit zone, so without this
+	# the player sprite is drawn over the middle of "Enter Village" in every interior in the game.
+	Mode7Prompt.pin_above_sprites(_indicator_label)
 	add_child(_indicator_label)
 
 
@@ -184,6 +195,28 @@ func _get_default_indicator_text() -> String:
 	elif "overworld" in target_map.to_lower():
 		return "Exit"
 	return "Enter"
+
+
+## Authored world-space presentation, restored whenever a map is not running Mode 7.
+const FLAT_OFFSET := Vector2(-40, -72)
+const FLAT_FONT: int = 12
+
+
+## In Mode 7 the label only speaks for the zone the player is standing in — a warped signpost read from across the map was noise.
+func _drive_screen_prompt() -> void:
+	if _prompt_layer == null:
+		_prompt_layer = Mode7Prompt.lift(self, _indicator_label)
+	var showing := _player_in_zone and not _a_nearer_transition_has(_get_player_in_zone())
+	_indicator_label.visible = showing
+	if showing:
+		Mode7Prompt.place(_indicator_label, get_viewport_rect().size, Mode7Prompt.ROW_ACTION)
+
+
+## A scene can drop out of Mode 7 under a live transition; put the label back where flat maps expect it.
+func _return_prompt_to_the_world() -> void:
+	Mode7Prompt.drop(self, _prompt_layer, _indicator_label, FLAT_OFFSET, FLAT_FONT)
+	_indicator_label.visible = show_gate_visual
+	_prompt_layer = null
 
 
 func _on_body_entered(body: Node2D) -> void:
