@@ -94,7 +94,14 @@ func _body(lines: PackedStringArray, fname: String) -> PackedStringArray:
 ## is not a field of this class -- a constructor like int(), a local, a builtin -- can never enter
 ## the corpus under its own name, and can never be silenced by classifying it.
 func _declared_vars(lines: PackedStringArray) -> Dictionary:
-	var re := RegEx.create_from_string("^var\\s+(_?[a-z][a-z0-9_]*)")
+	## ⛔ ACCEPTS THE ANNOTATED FORMS. `^var` alone silently narrowed the corpus: an `@export var`
+	## session field never entered `declared`, so _assigned skipped it, so it never reached the
+	## three-set comparison. Measured — an @export field reset on start and ABSENT from the snapshot
+	## (the exact zeroes-on-resume defect this file exists for) scored Passing 7, SILENT.
+	## @cowir-deploy's shape: a filtering step whose condition narrows a corpus, with no number to
+	## grep for. Zero such declarations in AutogrindSystem today; the regex is the hazard, not the
+	## corpus, and I predicted this would fail toward ALARM before measuring that it does not.
+	var re := RegEx.create_from_string("^(?:@export\\s+|@onready\\s+|static\\s+)*var\\s+(_?[a-z][a-z0-9_]*)")
 	var out := {}
 	for l in lines:
 		var m := re.search(l)
