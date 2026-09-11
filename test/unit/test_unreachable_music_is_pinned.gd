@@ -61,7 +61,6 @@ const CUTSCENE_DIR := "res://data/cutscenes/"
 const KNOWN_UNREACHABLE_CUTSCENE_TRACKS: Array[String] = [
 	"cutscene_alt_breaker_speed",
 	"cutscene_alt_witness_lament",
-	"cutscene_w1_conscription",
 	"cutscene_w5_deprecated_goblin",
 ]
 
