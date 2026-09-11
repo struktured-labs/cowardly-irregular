@@ -23,11 +23,14 @@ const PANEL_H: float = 240.0
 const LOCK_NAME: String = "readable_prop"
 
 
-## Same physical-cap rule as CutsceneDirector.skip_prompt_text: "[B]" named the wrong cap on Nintendo-family pads.
+## ⛔ `if InputProfileManager:` guards the AUTOLOAD, not a pad — so the "B" fallback never fired in a
+## real game and `glyph_for_action` handed a KEYBOARD player an xbox glyph. Measured with no pad:
+## close_glyph() -> Ⓐ, while ui_cancel binds X/Escape. `hint_for_action` is the pair's safe half —
+## pad glyph when a pad is connected, the KEY when not.
 static func close_glyph(device_name: String = "") -> String:
 	if InputProfileManager:
-		return InputProfileManager.glyph_for_action("ui_cancel", device_name)
-	return "B"
+		return InputProfileManager.hint_for_action("ui_cancel", device_name)
+	return "X"  # autoload absent (isolated tests only); ui_cancel's first keyboard binding
 
 @export var display_name: String = "Notebook"
 

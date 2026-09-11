@@ -441,9 +441,9 @@ cowardly-irregular/
 │   ├── bestiary/        # BestiarySystem
 │   ├── exploration/     # OverworldController, OverworldPlayer, OverworldNPC, WanderingNPC, AreaTransition, ShopScene, VillageShop, OverworldScene + per-world variants
 │   ├── maps/            # MapSystem
-│   │   ├── villages/    # BaseVillage + 10 named villages
-│   │   ├── interiors/   # TavernInterior + others
-│   │   └── dungeons/    # DragonCave base + 4 dragon caves + CastleHarmonia + WhisperingCave + NullChamber + RootProcess + AssemblyCore + SteampunkMechanism + SuburbanUnderground
+│   │   ├── villages/    # BaseVillage + one script per named village
+│   │   ├── interiors/   # one script per interior room
+│   │   └── dungeons/    # DragonCave base + the dragon caves + per-world dungeons + BossTrigger
 │   └── ui/              # OverworldMenu, MenuScene, Win98Menu, TitleScreen, TeleportMenu, JukeboxMenu, BestiaryMenu, WorldMapMenu, etc.
 │       └── autobattle/  # Grid editor (AutobattleGridEditor + AutobattleToggleUI)
 ├── assets/
