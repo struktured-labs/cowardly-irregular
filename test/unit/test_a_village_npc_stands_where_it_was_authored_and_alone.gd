@@ -51,6 +51,7 @@ func test_no_village_npc_is_sealed_in_shares_a_tile_or_was_quietly_moved() -> vo
 	var names: Array = []
 	var names_to_node := {}
 	var villages := 0
+	var built: Array = []
 	var npcs_seen := 0
 	var oracle_said_no := 0
 
@@ -64,6 +65,7 @@ func test_no_village_npc_is_sealed_in_shares_a_tile_or_was_quietly_moved() -> vo
 		await get_tree().physics_frame
 		await get_tree().process_frame
 		villages += 1
+		built.append(path.get_file())
 		if not village.has_method("_is_cell_walkable"):
 			continue
 		## The oracle must be able to say NO, or "0 sealed" is free. (0,0) is perimeter wall in every
@@ -98,7 +100,16 @@ func test_no_village_npc_is_sealed_in_shares_a_tile_or_was_quietly_moved() -> vo
 			if (int(pos.x) % TILE != 0 or int(pos.y) % TILE != 0) and not MAY_STAND_OFF_GRID.has(who):
 				off_grid.append("%s: %s at %s" % [path.get_file(), who, str(pos)])
 
+	## ⛔ A FLOOR IS BLIND TO PARTIAL LOSS (@cowir-adhoc, confirmed by @cowir-controller the same hour:
+	## their `examined > 4` caught a two-file drain and MISSED a one-file one, and a rename touches one
+	## file, not both). `villages > 11` would stay green with TWO villages silently gone — including
+	## Grimhollow or Sandrift, whose prop moves this guard exists to hold. Named membership instead:
+	## every village this test made a claim about must have actually been built.
 	assert_gt(villages, 11, "CONTROL: only %d villages built — the sweep is broken" % villages)
+	for must in ["MapleHeightsVillage.gd", "GrimhollowVillage.gd", "SandriftVillage.gd"]:
+		assert_true(must in built,
+			("CONTROL: %s did not build, so its NPCs were never examined and the empty lists below " +
+			"are half a result reported as a whole one. Built: %s") % [must, str(built)])
 	assert_gt(npcs_seen, 80, "CONTROL: only %d NPCs found, so the empty lists below are free" % npcs_seen)
 	assert_eq(oracle_said_no, villages,
 		"CONTROL: _is_cell_walkable called cell (0,0) walkable in %d village(s) — it is perimeter wall, so the oracle is broken and every 'sealed' check below is vacuous" % (villages - oracle_said_no))
