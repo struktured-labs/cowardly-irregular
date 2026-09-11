@@ -12,21 +12,15 @@ extends GutTest
 ## of the way, because moving it just relocates the collision — the player can approach a door from
 ## any side.
 
+const MapScripts := preload("res://test/unit/helpers/map_scripts.gd")
 const DIRS := ["res://src/maps/interiors", "res://src/maps/villages"]
-const NOT_MAPS := ["BaseInterior.gd", "BaseVillage.gd", "InteriorPlacementSweep.gd"]
 
 
+## Derived by shape rather than by a hand-kept NOT_MAPS array. That array happened to be correct
+## and complete for these two directories when checked on 2026-09-11 — the dungeons one was not, and
+## a list cannot tell you which of the three has stopped being true.
 func _scripts() -> Array:
-	var out: Array = []
-	for d in DIRS:
-		var dir := DirAccess.open(d)
-		if dir == null:
-			continue
-		for f in dir.get_files():
-			if f.ends_with(".gd") and not (f in NOT_MAPS):
-				out.append(d + "/" + f)
-	out.sort()
-	return out
+	return MapScripts.maps_in_all(DIRS)
 
 
 func _indicators(n: Node, acc: Array) -> void:

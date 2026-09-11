@@ -3,6 +3,7 @@ extends BaseVillage
 class_name MapleStripMall
 
 const SuburbanTileGeneratorScript = preload("res://src/exploration/SuburbanTileGenerator.gd")
+const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
 ## MapleStripMall — the rearranging strip mall on the edge of Maple Heights
 ## (world2_configuration_pending's stage; Madame Orrery's W2 booth for
@@ -113,6 +114,28 @@ func _setup_transitions() -> void:
 
 func _setup_buildings() -> void:
 	_paint_storefront_signs()
+	# A live census of all 13 villages found this one at 0 props and 0 chests against 10 and 2 for
+	# every W1 village of comparable walkable area. The clutter here is retail, not municipal.
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(6, 10))
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(12, 11))
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(20, 10))
+	_add_lamp_post(Vector2i(4, 9))
+	_add_lamp_post(Vector2i(25, 9))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(18, 7))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(22, 7))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(4, 13))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(25, 13))
+
+
+func _setup_treasures() -> void:
+	# Left in the vacancy itself — the yogurt shop's last delivery, never collected.
+	var chest = TreasureChestScript.new()
+	chest.chest_id = "maple_strip_mall_vacancy"
+	chest.contents_type = "item"
+	chest.contents_id = "ether"
+	chest.contents_amount = 2
+	chest.position = Vector2(19.5 * TILE_SIZE, 5 * TILE_SIZE)
+	treasures.add_child(chest)
 
 
 ## Painted store signage + parking stripes + the gap's outline — flat sprites.
@@ -122,20 +145,25 @@ func _paint_storefront_signs() -> void:
 	var img := Image.create(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE, false, Image.FORMAT_RGBA8)
 	img.fill(Color.TRANSPARENT)
 	var stripe := Color(0.85, 0.82, 0.35, 0.85)
-	# Parking stall stripes (rows 7-10): verticals every 3 tiles
-	for sx in range(3, 21, 3):
-		for y in range(7 * TILE_SIZE + 4, 11 * TILE_SIZE - 4):
+	# Parking stall stripes. The lot is map_data rows 9-12, cols 4-25 — this drew rows 7-10 from
+	# cols 3-20, so half the stripes were painted on the SIDEWALK and the lot's bottom two rows had
+	# none. Nothing errors when dressing misses its own terrain; it just reads as a different place.
+	for sx in range(6, 25, 3):
+		for y in range(9 * TILE_SIZE + 4, 13 * TILE_SIZE - 4):
 			img.set_pixel(sx * TILE_SIZE, y, stripe)
 	# The yogurt gap: a dashed outline where the shop USED to be
 	var ghost := Color(0.55, 0.6, 0.68, 0.6)
-	for x in range(14 * TILE_SIZE, 19 * TILE_SIZE):
+	# The gap is map_data rows 4-6, cols 17-21. This outlined rows 2-5 / cols 14-19 — two rows above
+	# the slab and three columns left of it, so the "where the shop used to be" marker sat mostly on
+	# the sidewalk beside the vacancy it was describing.
+	for x in range(17 * TILE_SIZE, 22 * TILE_SIZE):
 		if (x / 6) % 2 == 0:
-			img.set_pixel(x, 2 * TILE_SIZE, ghost)
-			img.set_pixel(x, 5 * TILE_SIZE - 1, ghost)
-	for y in range(2 * TILE_SIZE, 5 * TILE_SIZE):
+			img.set_pixel(x, 4 * TILE_SIZE, ghost)
+			img.set_pixel(x, 7 * TILE_SIZE - 1, ghost)
+	for y in range(4 * TILE_SIZE, 7 * TILE_SIZE):
 		if (y / 6) % 2 == 0:
-			img.set_pixel(14 * TILE_SIZE, y, ghost)
-			img.set_pixel(19 * TILE_SIZE - 1, y, ghost)
+			img.set_pixel(17 * TILE_SIZE, y, ghost)
+			img.set_pixel(22 * TILE_SIZE - 1, y, ghost)
 	canvas.texture = ImageTexture.create_from_image(img)
 	canvas.centered = false
 	canvas.position = Vector2.ZERO

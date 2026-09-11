@@ -13,8 +13,8 @@ extends GutTest
 ## Signposts take the upper screen row: directions are information, an entrance prompt is an action,
 ## and a sign standing on a village gate would otherwise print both lines on top of each other.
 
+const MapScripts := preload("res://test/unit/helpers/map_scripts.gd")
 const DUNGEON_DIR := "res://src/maps/dungeons"
-const NOT_MAPS := ["DragonCave.gd"]
 const OVERWORLD := "res://src/exploration/OverworldScene.gd"
 
 
@@ -23,16 +23,11 @@ func after_each() -> void:
 	Mode7Overlay.is_active = false
 
 
+## Map set derived by SHAPE, not by a skip list — see the helper. This file read
+## `NOT_MAPS := ["DragonCave.gd"]`, which was true and incomplete: BossTrigger.gd is an Area2D
+## component in the same directory and was being built as a map and counted by the CONTROL below.
 func _dungeon_scripts() -> Array:
-	var out: Array = []
-	var dir := DirAccess.open(DUNGEON_DIR)
-	if dir == null:
-		return out
-	for f in dir.get_files():
-		if f.ends_with(".gd") and not (f in NOT_MAPS):
-			out.append(DUNGEON_DIR + "/" + f)
-	out.sort()
-	return out
+	return MapScripts.maps_in(DUNGEON_DIR)
 
 
 func _signposts(n: Node, acc: Array) -> void:

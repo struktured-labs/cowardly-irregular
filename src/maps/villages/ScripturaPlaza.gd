@@ -125,6 +125,26 @@ func _setup_buildings() -> void:
 	_add_interior_door("BookshopDoor", "scriptura_bookshop", "Aldrin's Books",
 		Vector2(22 * TILE_SIZE,10 * TILE_SIZE))
 	_build_palace_gate()
+	_dress_the_plaza()
+
+
+## A live census of all 13 villages put this plaza at ZERO props against 10 for every comparable
+## village. Placed symmetrically on purpose: the district's whole character is clean stone and
+## oppressive politeness, so the clutter is municipal and paired, never scattered.
+func _dress_the_plaza() -> void:
+	# Lamp posts at the four corners of the open plaza.
+	_add_lamp_post(Vector2i(5, 6))
+	_add_lamp_post(Vector2i(24, 6))
+	_add_lamp_post(Vector2i(5, 16))
+	_add_lamp_post(Vector2i(24, 16))
+	# Planters flanking the palace gate and the fountain — the capital's idea of warmth.
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(11, 6))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(18, 6))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(12, 14))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(17, 14))
+	# Banners hang on a facade and block nothing — one per institution, not on the doors themselves.
+	_add_prop(VillagePropScript.Kind.BANNER, Vector2i(8, 11))
+	_add_prop(VillagePropScript.Kind.BANNER, Vector2i(21, 11))
 
 
 ## The Palace-district gate — grand, guarded, NOT enterable. The joke: the
