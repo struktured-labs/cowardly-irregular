@@ -2249,7 +2249,11 @@ func _step_battle(step: Dictionary) -> void:
 ## Spotlight-duel defeat sting: replace the silent 0.9s wait so the retry doesn't feel like a bug. Red flash → black on the director's own _effects_rect (auto-hides when the director hides at loop top), plus defeat SFX + screen shake. Reset after the tween so the aftermath (visible=true after next battle) isn't covered by leftover opaque.
 func _play_spotlight_retry_sting() -> void:
 	if SoundManager:
-		SoundManager.play_battle("defeat")
+		## MEASURED 2026-09-11: on the battle player, round_ap_gain replaced this 3.0s sting — the
+		## retry battle starts ~0.7s in, so the cue meant to stop a retry feeling like a bug was
+		## itself cut a third of the way through. Same class as the group flourish and the voice
+		## lines; play_flourish owns a player the battle channel cannot reach.
+		SoundManager.play_flourish("defeat")
 	if EffectSystem:
 		EffectSystem._trigger_screen_shake(8.0, 0.35)
 	if _effects_rect == null or not is_instance_valid(_effects_rect):

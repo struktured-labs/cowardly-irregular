@@ -13,6 +13,10 @@ extends GutTest
 
 const GROUP_CUES := ["group_all_out", "group_combo_magic", "group_formation", "group_limit_break"]
 
+## The spotlight-duel retry sting. Not a group cue, same defect: 3.00s on the battle player, and
+## the retry battle's round_ap_gain landed ~0.7s in. Measured the same way.
+const DEFEAT_CUE := "defeat"
+
 
 func _sm() -> Node:
 	return get_node_or_null("/root/SoundManager")
@@ -71,6 +75,35 @@ func test_every_group_cue_resolves_through_the_flourish_path() -> void:
 			unresolved.append(key)
 	assert_eq(unresolved, [],
 		"group cues that did not reach the flourish player (%d): %s" % [unresolved.size(), unresolved])
+
+
+func test_the_defeat_sting_is_not_cut_by_the_retry_battle() -> void:
+	## The sting exists so a spotlight-duel retry does not feel like a bug (CutsceneDirector).
+	## Being cut a third of the way through is that bug, restored.
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	assert_true(sm._sfx_manifest.has(DEFEAT_CUE), "CONTROL: the sting must exist to be cut")
+	sm._sfx_cooldowns.erase(DEFEAT_CUE)
+	sm.play_flourish(DEFEAT_CUE)
+	var cue = sm._flourish_player.stream
+	assert_not_null(cue, "CONTROL: the sting must have loaded, or 'not replaced' is vacuous")
+	if cue == null:
+		return
+	sm._sfx_cooldowns.clear()
+	sm.play_battle("round_ap_gain")
+	assert_eq(sm._flourish_player.stream, cue,
+		"the retry battle's round cue replaced the defeat sting — it is back on the battle player")
+
+
+func test_the_cutscene_director_calls_the_flourish_path() -> void:
+	## EXECUTION is not SELECTION, for the sting as for the group cues.
+	var src: String = FileAccess.get_file_as_string("res://src/cutscene/CutsceneDirector.gd")
+	assert_gt(src.length(), 10000, "CONTROL: CutsceneDirector source read back %d chars" % src.length())
+	assert_true(src.contains('play_flourish("%s")' % DEFEAT_CUE),
+		"the defeat sting is not played through play_flourish")
+	assert_false(src.contains('play_battle("%s")' % DEFEAT_CUE),
+		"the defeat sting is still routed through play_battle, where the retry battle's round cue cuts it")
 
 
 func test_the_battle_scene_calls_the_flourish_path() -> void:
