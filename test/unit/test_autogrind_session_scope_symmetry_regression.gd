@@ -44,6 +44,14 @@ const CLASSIFIED := {
 	"_rare_drop_conn": "signal bookkeeping rebuilt from the live BattleManager; a Callable, not state",
 }
 
+## Writer entries whose value legitimately reads NO member var. The reason is required here for
+## the same reason CLASSIFIED requires one: a test whose thesis is that exemptions must be explained
+## cannot itself carry a bare one. Ratcheted in both directions below — an entry that starts
+## resolving is stale and must be removed, or the corpus check quietly shrinks by one.
+const PARAMETER_BACKED := {
+	"elapsed_seconds": "the caller's `elapsed` argument, not state — there is no member to carry it",
+}
+
 var _ags: Node = null
 
 
@@ -183,9 +191,7 @@ func _snapshot_scan(lines: PackedStringArray) -> Dictionary:
 			if declared.has(im.get_string(1)):
 				fields[im.get_string(1)] = true
 				hit = true
-		# A value built only from a parameter or a literal reads no field; `elapsed` is the one
-		# such entry today, so anything else unparsed is a corpus hole and must say so by KEY.
-		if not hit and m.get_string(1) != "elapsed_seconds":
+		if not hit and not PARAMETER_BACKED.has(m.get_string(1)):
 			unparsed.append("%s -> %s" % [m.get_string(1), m.get_string(2)])
 	return {"fields": fields, "unparsed": unparsed}
 
@@ -253,6 +259,23 @@ func test_no_stale_classified_entries() -> void:
 			stale.append(f)
 		if not reset.has(f) and not snap.has(f) and not restore.has(f):
 			stale.append("%s (absent from all three -- renamed or deleted?)" % f)
+	## Same ratchet for the scanner's own exemption list.
+	var stale_params := []
+	for k in PARAMETER_BACKED.keys():
+		if str(PARAMETER_BACKED[k]).strip_edges().is_empty():
+			stale_params.append("%s has an empty reason" % k)
+	## Scoped to the WRITER BODY, not the file. `"elapsed_seconds"` appears 10 times in
+	## AutogrindSystem.gd, so a whole-file search made this arm inert: renaming the writer's key
+	## left it green while the exemption sat exempting nothing. Measured -- the corpus check caught
+	## that rename anyway, which is exactly how an inert ratchet stays unnoticed.
+	var scan2: Dictionary = _snapshot_scan(lines)
+	var writer := "\n".join(Array(_body(lines, "build_snapshot_system_block")))
+	for k in PARAMETER_BACKED.keys():
+		if not writer.contains("\"%s\":" % k):
+			stale_params.append("%s is no longer a writer key" % k)
+	assert_eq(stale_params, [], "PARAMETER_BACKED entry is stale or unexplained")
+	assert_eq(scan2["unparsed"], [], "control: the scan still resolves everything else")
+
 	assert_eq(not_a_field, [], "CLASSIFIED names something that is not a member var of AutogrindSystem")
 	assert_eq(reasonless, [], "a CLASSIFIED entry with an empty reason is a suppression, not an explanation")
 	assert_eq(stale, [], "CLASSIFIED entry is no longer asymmetric -- remove it so the ratchet keeps its teeth")
