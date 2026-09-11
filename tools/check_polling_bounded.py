@@ -531,6 +531,30 @@ def selftest():
         arm("a PUSHER with no polling loop — wait was removed", 2, lambda: run(noloop),
             lambda: (_said("NO polling loop"), "says NO polling loop"))
 
+        # THE REALISTIC REGRESSION, not the tidy one. @cowir-controller, 2026-09-11: their
+        # escape guard caught "delete the keycode" and was hollow against "remove the branch and
+        # leave the comment that explained it" — and nobody deletes a branch without leaving a
+        # trace, so the arm they had was for the mutation that rarely happens and the one they
+        # lacked was what actually occurs. Ask of any source-text pin: what does this file look
+        # like after a REAL person removes the thing you are defending?
+        #
+        # Here that is a pusher whose bounded wait was deleted with a comment left behind.
+        # Measured on a real deploy_web.sh: tidy deletion EC 2, comment-left-behind EC 2 — both
+        # caught, because comments are stripped AND a pusher must carry a loop. The second half
+        # is this hour's derived relationship; without it the deletion would only have made the
+        # census smaller.
+        wascomment = os.path.join(d, "wascomment")
+        os.makedirs(wascomment)
+        open(os.path.join(wascomment, "deploy_pusher.sh"), "w").write(
+            '#!/usr/bin/env bash\nPUBLISH=0\n'
+            '[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }\n'
+            'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
+            '"${BUTLER_BIN}" push out/ "$T"\n'
+            '# removed the bounded wait; itch confirms fast enough now\n'
+            '# was: while [ "$_waited" -lt "$CONFIRM_BUDGET" ]; do sleep 8; done\n')
+        arm("wait deleted, COMMENT left behind", 2, lambda: run(wascomment),
+            lambda: (_said("NO polling loop"), "says NO polling loop"))
+
         nopoll = os.path.join(d, "nopoll")
         os.makedirs(nopoll)
         open(os.path.join(nopoll, "deploy_x.sh"), "w").write(
