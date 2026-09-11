@@ -306,6 +306,7 @@ func _setup_audio_players() -> void:
 	_ambient_player.name = "AmbientPlayer"
 	# tracks the music slider a fixed amount below it — hardcoded -20.0 ignored the slider and could exceed music at low volume (cowir-sfx audit msg 2218)
 	_ambient_player.volume_db = _music_base_db + AMBIENT_OFFSET_DB
+	## Master, NOT MusicNight->MusicDuck: ambient skips the night filter (it IS the night) AND the dialogue duck. Mix consequence unreviewed.
 	_ambient_player.bus = "Master"
 	add_child(_ambient_player)
 	_ambient_player.finished.connect(_on_ambient_finished)
