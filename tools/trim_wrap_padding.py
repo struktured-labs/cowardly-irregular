@@ -30,8 +30,15 @@ WHY THIS EXISTS, AND WHY audit_wrap_seams.py COULD NOT FIND IT
 
 WHAT IT DOES NOT DO
     It changes no levels, applies no fade, and resamples nothing -- the output
-    keeps the source rate and channel count, because 2 of the 19 beds are
-    44.1 kHz and crossfade_loop's hardcoded 48k would silently respec them.
+    keeps the source rate and channel count, and that is now ASSERTED after the
+    encode rather than merely intended (see the verification block below).
+    ⚠️ "2 of the 19 beds are 44.1 kHz" stood here and counted the trim
+    population, not the corpus. I then replaced it with "19 of 165 tracks",
+    which counted manifest ENTRIES -- battle_brute.ogg is named by five keys
+    (the monster-family ruling), so the alias was counted five times. The
+    denominator is 161 DISTINCT files, of which 19 are 44.1 kHz; the directory
+    holds 163 .ogg because two sfx_ability_* files sit there unreferenced by
+    either manifest. Three denominators, one corpus -- say which you mean.
     The cut lands where |x| crosses -60 dBFS, so the discontinuity it creates
     is by construction at most a -60 dBFS step: inaudible, and no click.
 """
@@ -190,6 +197,23 @@ def main():
 
         ## Verify the ENCODED file, not the array that went into it -- the
         ## encoder is the step that can silently repad or reframe.
+        ## ⛔ THE RATE GUARANTEE WAS DOCUMENTED AND UNVERIFIABLE. The docstring
+        ## promises "resamples nothing -- the output keeps the source rate and
+        ## channel count", written because crossfade_loop's hardcoded 48k had
+        ## silently respecced 44.1k tracks. Nothing here checked it, and the
+        ## check that looks like it would is the one that HIDES it: decode()
+        ## below asks ffmpeg for `sr`, so a temp file written at the wrong rate
+        ## is resampled back before the length and level comparisons ever see
+        ## it. Both would pass. Knowing a property and ENCODING it are different
+        ## things, and a verification that cannot fail on the property is the
+        ## more confident of the two.
+        enc_sr, enc_ch = probe(tmp)
+        if (enc_sr, enc_ch) != (sr, ch):
+            os.remove(tmp)
+            refused.append((key, "encoder changed the format: %d Hz/%dch in, %d Hz/%dch out"
+                                 % (sr, ch, enc_sr, enc_ch)))
+            continue
+
         vy = decode(tmp, sr, ch)
         vpad = pads(vy, sr)
         why = None
