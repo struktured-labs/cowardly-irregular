@@ -87,6 +87,10 @@ func _build_ui() -> void:
 		## A meta boss was reported ONLY by the console, so one spawned during a headless grind with
 		## the console closed was invisible at the moment AND at session end. The Summary is the
 		## surface that always runs.
+		## The console shows which rules fired, and the console is exactly what is NOT open during a
+		## grind — the same gap that hid a dead stop rule, an unseen collapse and an unseen meta
+		## boss. The Summary always runs, so a player whose rules did nothing learns it here.
+		{"label": "Your Rules", "value": _rules_summary(), "color": BAD_COLOR if _rules_did_nothing() else VALUE_COLOR},
 		{"label": "Meta-Bosses", "value": "%d beaten / %d met" % [_stats.get("meta_bosses_defeated", 0), _stats.get("meta_bosses_spawned", 0)], "color": VALUE_COLOR},
 	]
 
@@ -240,6 +244,30 @@ func _build_ui() -> void:
 	# Right-click dismisses, matching the convention on 29 other screens.
 	MenuMouseHelper.add_right_click_cancel(self, func() -> void:
 		dismissed.emit())
+
+
+## Authored rules vs how many ever won a check. "0 of 4" after hundreds of checks is a player
+## whose grind ran on the built-in interrupts alone, which is worth knowing and is invisible
+## anywhere else once the console is closed.
+func _rules_summary() -> String:
+	var authored: int = int(_stats.get("rules_authored", 0))
+	var fired: int = int(_stats.get("rules_that_fired", 0))
+	var checks: int = int(_stats.get("rule_checks", 0))
+	if authored <= 0:
+		return "none authored"
+	if checks <= 0:
+		return "%d authored, never evaluated" % authored
+	return "%d of %d fired (%d checks)" % [fired, authored, checks]
+
+
+## Only flag the case that is actually a problem: rules exist, they were evaluated many times, and
+## not one of them ever won. Zero checks is "not measured", not "broken" — the same denominator
+## rule the console readout uses.
+func _rules_did_nothing() -> bool:
+	return int(_stats.get("rules_authored", 0)) > 0 \
+		and int(_stats.get("rule_checks", 0)) > 0 \
+		and int(_stats.get("rules_that_fired", 0)) == 0
+
 
 func _resolve_item_display_name(item_id: String) -> String:
 	return ItemNameResolver.resolve(item_id)
