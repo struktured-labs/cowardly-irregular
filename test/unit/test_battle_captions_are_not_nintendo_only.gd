@@ -22,14 +22,32 @@ const WIN98 := "res://src/ui/Win98Menu.gd"
 ## catches the tidy removal and misses the realistic one — nobody deletes a line without leaving the
 ## note explaining it. Measured on THIS file: swapping the derivation back for a literal "X" with
 ## `## was: Win98MenuClass.speed_hint()` beside it left all five arms GREEN. Line count preserved.
+## Quote-aware: cut at the first `#` OUTSIDE a string literal. A plain find("#") truncates real code
+## on any line holding a `#` in quoted text — 17 such lines in BattleScene, 3 in BattleManager — and
+## the dangerous direction is an ABSENCE assert whose token sits after one (cowir-controller,
+## cowir-overworld 2026-09-11). Line count preserved so substr windows stay valid.
+func _strip_comments(raw: String) -> String:
+	var out: Array = []
+	for line in raw.split("\n"):
+		var in_d := false
+		var in_s := false
+		var cut := -1
+		for k in line.length():
+			var c := line[k]
+			if c == '"' and not in_s:
+				in_d = not in_d
+			elif c == "'" and not in_d:
+				in_s = not in_s
+			elif c == "#" and not in_d and not in_s:
+				cut = k
+				break
+		out.append(line.substr(0, cut) if cut > -1 else line)
+	return "\n".join(out)
+
 func _src(p: String) -> String:
 	var raw := FileAccess.get_file_as_string(p)
 	assert_gt(raw.length(), 1000, "CONTROL: read %s" % p)
-	var out: Array = []
-	for line in raw.split("\n"):
-		var h: int = line.find("#")
-		out.append(line.substr(0, h) if h > -1 else line)
-	return "\n".join(out)
+	return _strip_comments(raw)
 
 func test_no_battle_caption_hardcodes_a_nintendo_button() -> void:
 	## The literals as they shipped. Each names a button that is wrong or absent on two of the three
