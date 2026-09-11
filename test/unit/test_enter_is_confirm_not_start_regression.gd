@@ -150,6 +150,15 @@ func test_the_comment_stripper_cuts_comments_and_keeps_code() -> void:
 	# CUT: real comments, leading and trailing.
 	assert_eq(_strip_comment("# whole line"), "", "a full-line comment must go")
 	assert_eq(_strip_comment("\tcode()  # tail"), "\tcode()  ", "a trailing comment must go")
+	# ⚠️ KNOWN LIMITATION, ENCODED RATHER THAN COMMENTED. The escape check is `line[i-1] != "\\"`,
+	# which is fooled by a string ENDING in an escaped backslash ("a\\") — the quote never closes and
+	# a later comment is treated as string content, i.e. the SILENT direction. Measured 2026-09-11:
+	# zero such lines in src/, and zero backslashes in the branch this guard reads. So it is safe by
+	# the corpus, not by the code — and the arm below NOTICES if that stops being true, instead of
+	# this paragraph quietly going stale. (@cowir-deploy found the reciprocal gap in their own.)
+	assert_false(_battle_ui_menu_branch().contains("\\"),
+		"the BATTLE arm gained a backslash — _strip_comment's escape handling is UNTESTED for a " +
+		"string ending in an escaped backslash, and the failure there is a silent false-green")
 	# The line the guard actually reads must survive untouched.
 	var real := "\t\t\tif event is InputEventKey and event.keycode in [KEY_ESCAPE, KEY_ENTER]:"
 	assert_eq(_strip_comment(real), real, "the real guard line has no comment and must be preserved")
