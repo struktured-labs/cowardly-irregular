@@ -15,6 +15,8 @@ var _active: bool = false
 var _aborted: bool = false
 var _last_finished_aborted: bool = false
 var _cutscene_id: String = ""
+## The key-item reveal in flight, so a hold-B skip can dismiss it — a held B raises no new press event, and the popup only listens for presses.
+var _key_item_popup: Node = null
 var _skipping: bool = false
 var _fast_forward: bool = false
 var _skip_hold_time: float = 0.0
@@ -858,7 +860,17 @@ func _step_grant_item(step: Dictionary) -> void:
 	}
 	var popup = KeyItemPopup.show_item(self, popup_data)
 	if popup:
-		await popup.dismissed
+		_key_item_popup = popup
+		await _await_popup_dismissed(popup)
+		_key_item_popup = null
+
+
+## Polled, not `await popup.dismissed`: a skip dismisses the reveal (see _trigger_skip) and a freed popup must release the step, never hang it.
+func _await_popup_dismissed(popup: Node) -> void:
+	var done := [false]
+	popup.dismissed.connect(func() -> void: done[0] = true, CONNECT_ONE_SHOT)
+	while not done[0] and is_instance_valid(popup):
+		await get_tree().process_frame
 
 
 func _step_give_item(step: Dictionary) -> void:
@@ -1911,6 +1923,9 @@ func _get_or_create_dialogue() -> Node:
 func _trigger_skip() -> void:
 	_skipping = true
 	_skip_indicator.visible = false
+	# A key-item reveal in flight fades out now — the player asked to skip, and the item is already granted.
+	if _key_item_popup and is_instance_valid(_key_item_popup) and _key_item_popup.has_method("dismiss"):
+		_key_item_popup.dismiss()
 
 	# Dismiss any active dialogue
 	if _dialogue and is_instance_valid(_dialogue) and _dialogue.visible:
