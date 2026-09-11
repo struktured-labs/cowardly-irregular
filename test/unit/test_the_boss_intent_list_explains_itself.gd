@@ -78,9 +78,24 @@ func test_every_described_intent_reaches_a_bias_arm() -> void:
 	var body: String = src.substr(at, (next_func if next_func != -1 else src.length()) - at)
 	assert_true(body.find("exploit_pattern") != -1,
 		"CONTROL: the extracted body must reach the LAST arm, or the scan is measuring a truncation")
+	# Match-ARM lines only. The body quotes intent names in its comments too —
+	# `aggress` appears quoted twice, once on an arm and once in prose — so a bare
+	# find() would pass for an intent that is merely DISCUSSED and has no arm.
+	var arm_lines: PackedStringArray = PackedStringArray()
+	for line in body.split("\n"):
+		var t: String = line.strip_edges()
+		if t.ends_with(":") and t.begins_with("\""):
+			arm_lines.append(t)
+	assert_gt(arm_lines.size(), 0,
+		"CONTROL: no match arms extracted — the scan found nothing to check against")
 	for id in DP.INTENT_DESCRIPTIONS.keys():
-		assert_true(body.find('"%s"' % str(id)) != -1,
-			"'%s' is described to the model but never appears in _bias_by_intent" % str(id))
+		var on_arm: bool = false
+		for t in arm_lines:
+			if t.find('"%s"' % str(id)) != -1:
+				on_arm = true
+		assert_true(on_arm,
+			("'%s' is described to the model but sits on no match arm in _bias_by_intent " +
+			"(a mention in a comment does not count)") % str(id))
 
 
 func test_the_inert_intents_are_excluded_by_EVIDENCE_not_by_punctuation() -> void:
