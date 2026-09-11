@@ -209,16 +209,25 @@ func test_no_help_label_spells_a_non_face_button() -> void:
 				banned.append(n)
 	assert_gt(banned.size(), 8, "PRECONDITION: the banned set must come from BUTTON_NAMES, got %s" % [banned])
 
+	## EMIT THE CORPUS, ASSERT ITS SIZE. @cowir-sprites 2026-09-11: a guard whose SUBJECT drains
+	## scores a clean green over zero work — a loop over nothing asserts nothing, and GUT cannot
+	## flag it because one assert anywhere in the call graph clears [Risky]. If the label-assignment
+	## shape ever changes, this arm must FAIL rather than quietly scan an empty set.
+	var examined: int = 0
 	var offenders: Array[String] = []
 	for path in [GRID_EDITOR, "res://src/ui/autogrind/AutogrindGridEditor.gd"]:
 		for raw in _src(path).split("\n"):
 			var line: String = raw.strip_edges()
 			if line.begins_with("#") or not line.contains(".text = "):
 				continue
+			examined += 1
 			for n in banned:
 				# "Start:Save" / "Start Save" — a caption naming the button, not a word inside prose
 				if line.contains("\"%s:" % n) or line.contains(" %s:" % n):
 					offenders.append("%s :: %s" % [path.get_file(), n])
+	assert_gt(examined, 4,
+		"PRECONDITION: only %d label assignments examined across two editors — the scan found " % examined +
+		"almost nothing, so a green below would be vacuous rather than clean")
 	assert_eq(offenders, [] as Array[String],
 		"a help label spells a NON-FACE button by one family's name — derive it through " +
 		"hint_for_action so Nintendo reads Plus and PlayStation reads Options: %s" % [", ".join(offenders)])
