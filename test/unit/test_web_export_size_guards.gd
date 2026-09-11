@@ -24,7 +24,14 @@ func _web_exclude_filter() -> String:
 	var web: int = cfg.find("platform=\"Web\"")
 	assert_gt(web, -1, "Web preset must exist")
 	## Line-scoped, not a char window: at 1283 chars the filter overran the old substr(web, 600), find("\n") returned -1, and the read truncated mid-list — reporting still-present classes as LOST.
-	var seg: String = cfg.substr(web)
+	## Bounded by the PRESET, not by a char count and not unbounded. It was
+	## substr(web, 600) — too short, and the filter line outgrew it. Unbounded
+	## replaced that with a worse failure: with no exclude_filter in the Web
+	## preset, find() returns the NEXT preset's line instead of -1, so the guard
+	## would vouch for Android's exclusions while reporting on Web.
+	var tail: String = cfg.substr(web)
+	var nxt: int = tail.find("platform=", 1)
+	var seg: String = tail.substr(0, nxt) if nxt > -1 else tail
 	var f: int = seg.find("exclude_filter=")
 	assert_gt(f, -1)
 	return seg.substr(f, seg.find("\n", f) - f)
