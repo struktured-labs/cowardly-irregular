@@ -317,5 +317,9 @@ func test_the_stripper_preserves_line_count() -> void:
 	## substr/ordering windows elsewhere depend on it, and a stripper that drops
 	## lines would shift every later assertion without failing anything here.
 	var src: String = "a\n# b\nc  # d\n"
-	assert_eq(_code_only(src).split("\n").size(), src.split("\n").size(),
+	## Both sides of a size-vs-size compare shrink together, so an emptied input reads
+	## 1 == 1 and passes trivially — cowir-sfx's self-referential floor, in the one
+	## place my guards had it. Pin the input to a LITERAL count first.
+	assert_eq(src.split("\n").size(), 4, "PREMISE: the fixture is 3 lines plus a trailing empty")
+	assert_eq(_code_only(src).split("\n").size(), 4,
 		"blanking must not remove lines")
