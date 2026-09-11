@@ -58,7 +58,13 @@ const PRESETS := "res://export_presets.cfg"
 const FALLBACK_ANCHORS: Array[String] = [
 	"dungeon_medieval",    # _start_dungeon_music, when world_id != "medieval"
 	"village_medieval",    # _start_village_music, the generic fallback
-	"overworld_medieval",  # _start_overworld_music, the generic fallback
+	## ⚠️ This entry's reason was WRONG until 2026-09-10. It named
+	## _start_overworld_music, where overworld_medieval is that world's OWN
+	## first-tier bed, not a fallback for anyone — so the message below ("worlds
+	## 3-6 fall back to these") was true of the two above and false of this one.
+	## Nothing fell back to it; the excluded worlds went straight to a 19.9s
+	## main-thread generation. It is a real cross-world fallback now:
+	"overworld_medieval",  # _start_abstract_music / _futuristic / _industrial
 ]
 
 
