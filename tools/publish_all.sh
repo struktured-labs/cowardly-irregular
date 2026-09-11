@@ -274,6 +274,32 @@ fi
 echo "[pub] ─── verification ───"
 butler status struktured/cowardly-irregular 2>&1 | grep -aE 'CHANNEL|linux|windows|^\| web'
 
+# THIS IS NOW THE AUTHORITATIVE CHECK, and it has to ASSERT rather than print.
+#
+# The per-channel post-push confirmation in deploy_desktop.sh was fatal: on .294 it exited 4
+# after ~5 minutes because itch was still processing a push that had in fact succeeded, and
+# this batch stopped with the store SPLIT across two versions. That confirmation is now
+# advisory — which is only defensible if something store-wide is authoritative, and printing a
+# table is not that. A human reads a table; a gate reads an exit code.
+#
+# store_status.sh checks ALL THREE channels against the newest tag on origin and exits 1 when
+# any is behind. That is exactly the question "did this batch land", and it is immune to one
+# channel's processing lag because it runs after the last push.
+if [ -x tools/store_status.sh ]; then
+    if ! ./tools/store_status.sh; then
+        echo "[pub] BLOCKED: the store is NOT current after publishing ${PUBLISHED}." >&2
+        echo "      One or more channels did not register. If a channel was still processing," >&2
+        echo "      re-run tools/store_status.sh in a few minutes before concluding it failed;" >&2
+        echo "      if it stays behind, that channel did not ship." >&2
+        echo "[pub] his saves after: $(_saves_cksum)  (before: ${SAVES_BEFORE})" >&2
+        exit 1
+    fi
+else
+    echo "[pub] BLOCKED: tools/store_status.sh missing — nothing authoritative checked that" >&2
+    echo "      this batch actually landed. Refusing to report success." >&2
+    exit 2
+fi
+
 SAVES_AFTER="$(_saves_cksum)"
 if [ "$SAVES_AFTER" = "$SAVES_BEFORE" ]; then
     echo "[pub] his saves: ${SAVES_AFTER} unchanged"

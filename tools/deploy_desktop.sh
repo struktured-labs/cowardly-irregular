@@ -115,7 +115,8 @@ USERVERSION="${VERSION}+${BUILD_SHA}"
 
 ITCH_TARGET="struktured/cowardly-irregular:${CHANNEL}"
 BIN="${OUT_DIR}/${ARTIFACT}"
-BUTLER_BIN="$(command -v butler || echo ./butler-bin/butler)"
+# Overridable so the post-push confirmation path is testable without touching itch.
+BUTLER_BIN="${BUTLER_BIN:-$(command -v butler || echo ./butler-bin/butler)}"
 
 mkdir -p tmp "$OUT_DIR"
 echo "[${PLAT}] target ${VERSION}  publish=${PUBLISH}"
@@ -639,9 +640,14 @@ echo "[${PLAT}]   tag ${VERSION} is a LABEL; ${BUILD_SHA} is the tree that was e
 "${BUTLER_BIN}" push "$OUT_DIR" "$ITCH_TARGET" --userversion "$USERVERSION"
 # Bounded wait. deploy_web.sh's equivalent loop has no timeout, so a version that
 # never registers hangs the deploy forever instead of reporting anything.
-for _ in $(seq 1 40); do
-    "${BUTLER_BIN}" status "$ITCH_TARGET" 2>/dev/null | grep -q "$VERSION" && break
-    sleep 8
+CONFIRM_BUDGET="${CONFIRM_BUDGET:-900}"   # seconds; itch's processing queue is not ours
+CONFIRMED=0
+_waited=0
+while [ "$_waited" -lt "$CONFIRM_BUDGET" ]; do
+    if "${BUTLER_BIN}" status "$ITCH_TARGET" 2>/dev/null | grep -q "$VERSION"; then
+        CONFIRMED=1; break
+    fi
+    sleep 8; _waited=$((_waited+8))
 done
 # Assert the OUTCOME (this version registered), not a precondition (the word
 # "linux" appears somewhere in a table). Two bugs in the original one-liner:
@@ -650,10 +656,30 @@ done
 #   * even on Linux it proved the wrong thing. The channel name is in the table
 #     whether or not the new build landed, so it could pass on a push that never
 #     registered. The loop above already waits for VERSION; this must check it.
-"${BUTLER_BIN}" status "$ITCH_TARGET" | grep -q "$VERSION" || {
-    echo "[${PLAT}] WARNING: pushed, but ${VERSION} has not appeared in butler status after ~5 min." >&2
-    echo "        Check https://itch.io/dashboard before assuming it shipped." >&2
+# THE CONFIRMATION IS NOT THE PUSH, AND IT USED TO FAIL THE BATCH AS THOUGH IT WERE.
+#
+# On v3.33.294-alpha this exited 4 after ~5 minutes because itch was still processing. The
+# push had SUCCEEDED — the status table printed by this very block already showed
+# `#1966981 v3.33.294-alpha+5aef5287` — and publish_all stopped the batch, leaving web
+# unattempted and the STORE SPLIT across two versions for half an hour. A split store is a
+# worse state than an unconfirmed channel, and the stop produced it.
+#
+# The severities were inverted. `butler push` failing IS fatal and is already covered: this
+# script runs under `set -euo pipefail`, so a non-zero push aborts before reaching here. What
+# follows is a CONFIRMATION that the push registered — advisory, because the authoritative
+# check is store-wide and happens after every channel (publish_all asserts store_status.sh).
+#
+# A fixed wall-clock budget is also a guess about someone else's queue, which is the same
+# shape as the flat sleeps replaced with polling in the web smoke. Budget raised to 15 min and
+# made overridable; exceeding it is REPORTED, not fatal.
+if [ "$CONFIRMED" -eq 1 ]; then
+    echo "[${PLAT}] LIVE: ${VERSION} — https://struktured.itch.io/cowardly-irregular"
+else
+    echo "[${PLAT}] PUSHED, NOT YET CONFIRMED: ${VERSION} has not appeared in butler status" >&2
+    echo "        after ${CONFIRM_BUDGET}s. butler reported the push succeeded; itch may still" >&2
+    echo "        be processing. NOT failing the batch — the authoritative check is" >&2
+    echo "        tools/store_status.sh across all three channels, which publish_all asserts" >&2
+    echo "        after the last one. Verify before assuming it shipped:" >&2
+    echo "        https://itch.io/dashboard" >&2
     "${BUTLER_BIN}" status "$ITCH_TARGET" >&2 || true
-    exit 4
-}
-echo "[${PLAT}] LIVE: ${VERSION} — https://struktured.itch.io/cowardly-irregular"
+fi
