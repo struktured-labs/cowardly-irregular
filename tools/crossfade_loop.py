@@ -76,7 +76,23 @@ FULL_LEVEL_TOLERANCE_DB = 4.0
 MAX_SCAN_S = 60.0
 # The seam is only fixed if BOTH sides of the wrap sit this close to the body.
 SEAM_TOLERANCE_DB = 4.0
-# ENTRY GATE. A tail this far under the track's own mean is a fade; anything
+# THE SEAM WINDOW. 0.3s, not 1.5s, and measured HEAD-vs-TAIL rather than
+# tail-vs-body. Both of the old choices were wrong and in opposite directions:
+#   1.5s AVERAGES AWAY a short steep fade. Measured on boss_tempo_industrial —
+#     last 2.0s -19.9 · 1.5s -22.7 · 1.0s -47.1 · 0.5s -51.8 · 0.2s -54.5.
+#     The gate read -9.2 vs body and said "not a fade, leave it alone" while the
+#     final 0.2s sat 44 dB below the head.
+#   tail-vs-BODY mis-reads SPARSE material, where the head is quiet too and the
+#     wrap is therefore flat (the W6 procedural bed: tail 26.7 dB under body and
+#     NO audible jump, because the head is 18 dB under body as well).
+# The wrap is tail -> head. That is the quantity, and it is immune to both.
+SEAM_S = 0.3
+# A wrap that steps up more than this is audible as a snap back to full.
+WRAP_JUMP_DB = 12.0
+# After the fold the wrap must be flatter than this.
+WRAP_OK_DB = 6.0
+# (retained for the ritardando scan below, which is a different question)
+# A tail this far under the track's own mean is a fade; anything
 # shallower is a mix choice and must be left alone. Without this the tool
 # happily rebuilt tracks that already loop fine — battle_skate_punk's tail is
 # -2.8 dB and it was offered a 0.5s cut. trim_loop_seams has the equivalent
@@ -190,9 +206,10 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
     dur = len(y) / SR
     body_db = db(y[: max(SR, len(y) - int(30 * SR))])
 
-    tail_db = db(y[-int(1.5 * SR):])
-    if tail_db - body_db > FADE_THRESHOLD_DB:
-        return key, "SKIP tail is only %.1f dB under body - not a fade, leave it alone" % (tail_db - body_db), None
+    seam_n = int(SEAM_S * SR)
+    wrap_step = db(y[:seam_n]) - db(y[-seam_n:])
+    if wrap_step <= WRAP_JUMP_DB:
+        return key, "SKIP wrap steps only %+.1f dB at a %.1fs seam - it already loops" % (wrap_step, SEAM_S), None
 
     xfade_n = int(xfade_s * SR)
     attempts = 0
@@ -224,7 +241,12 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
         level_ok = (db(scaled[-SR:]) > body_db - SEAM_TOLERANCE_DB
                     and db(scaled[:SR]) > body_db - SEAM_TOLERANCE_DB)
         click_ok, _ = wrap_step_ok(scaled)
-        if level_ok and click_ok:
+        ## The criterion the ENTRY gate uses, applied to the result: the wrap
+        ## itself must be flat. level_ok is body-relative and mis-reads sparse
+        ## material; this one cannot, because it compares the two moments the
+        ## player actually hears back to back.
+        seam_flat = abs(db(scaled[:seam_n]) - db(scaled[-seam_n:])) <= WRAP_OK_DB
+        if level_ok and click_ok and seam_flat:
             chosen = (end, cand)
             break
     if chosen is None:
