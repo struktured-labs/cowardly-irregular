@@ -34,15 +34,25 @@ const BATTLE_MANAGER_SRC := "res://src/battle/BattleManager.gd"
 ## debt rather than a defect. Both are one edit from being a finding, so they are
 ## named here instead of being silently tolerated by a key-count assertion.
 ##
-## hp_threshold — a leftover from a DIFFERENT one-shot design. The shipped rule is
-##   "every enemy died in the same execution phase as the first damage"; no HP
-##   number participates. 50 monsters carry a threshold (2500, 5000, …) that has
-##   never gated anything.
+## hp_threshold — TWO DIFFERENT ACHIEVEMENTS, and which one the game means is an
+##   open question for struktured, not a gap to close. I first wrote "a leftover
+##   from a different design"; @cowir-battle, who owns this code, pushed back and
+##   they are right — I asserted a cause I had not checked, and there is no recorded
+##   ruling anywhere near _check_one_shot to support it.
+##     shipped   TEMPO      every enemy died in the same execution phase as the
+##                          first damage. Rewards a full-party alpha strike inside
+##                          one turn; composes with Full Bank.
+##     authored  MAGNITUDE  one blow removed >= hp_threshold (2500, 5000, …) HP.
+##                          A different build entirely. 50 monsters carry a number.
+##   They disagree about the same fight: a five-member Advance that kills in one
+##   phase is a one-shot under tempo and fails a 2500 threshold if no single hit
+##   reached it. WHICHEVER IS CHOSEN, SOME OF THE 41 TROPHIES CHANGE HANDS — so the
+##   right resting place is this pin, not a fix.
 ## setup_hint — 50 lines of authored tactical advice ("Stack attack buffs, defer for
 ##   max AP, then unleash all at once") with no surface that shows them. The
 ##   bestiary would be the obvious home. Content that exists and is never displayed.
 const UNREAD_ONE_SHOT_KEYS := {
-	"hp_threshold": "leftover from a different one-shot rule; the shipped check uses execution phase, not HP",
+	"hp_threshold": "an unresolved design question, not debt: authored = damage MAGNITUDE, shipped = TEMPO. Struktured's call; see the note above",
 	"setup_hint": "authored tactical advice with no display surface (bestiary would be the home)",
 }
 
