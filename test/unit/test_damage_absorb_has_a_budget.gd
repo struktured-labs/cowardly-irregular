@@ -167,3 +167,51 @@ func test_a_save_written_before_this_shipped_keeps_the_unbudgeted_rule() -> void
 	restored.from_dict(data)
 	restored.current_hp = 100
 	assert_eq(restored.take_damage(30, false), 0, "an absent key must still mean unlimited, not spent")
+
+## ── The ward must not out-absorb the thing it protects ────────────────────────────────────────
+## Probed the half I had hardened LESS (cowir-autogrind's heuristic, 2026-09-11): four mutation arms
+## sat on the consumer side and one on the producer. The producer question is whether the authored
+## cap BINDS at all — a budget larger than the damage a party can deliver is the unbounded ward
+## wearing a number, and every test above would still pass.
+##
+## Measured rather than reasoned: 60 MP / 12 MP = at most 5 casts, x 1000 = 5000 absorbable across a
+## whole fight, against its own 8000 HP. Against a five-member party at ~184 magic damage each
+## (250 raw vs magic_defense 90), one ward faces ~1840 over its two turns and breaks partway through
+## the second. Before the fix it covered both turns entirely and healed every point.
+##
+## So the pin is the RELATIONSHIP, not any of those numbers: whatever a self-absorb ability can soak
+## over a fight must stay under the caster's own HP. Cross that line and damage can never accumulate
+## — which is the defect this whole file exists to stop, reachable again by editing data alone.
+
+func test_a_self_absorb_ward_cannot_outlast_its_own_caster() -> void:
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	assert_not_null(parsed, "CONTROL: abilities.json parses")
+	var abilities: Dictionary = (parsed as Dictionary).get("abilities", parsed)
+	var mparsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	assert_not_null(mparsed, "CONTROL: monsters.json parses")
+	var monsters: Dictionary = (mparsed as Dictionary).get("monsters", mparsed)
+
+	var checked: int = 0
+	var unbounded: Array = []
+	for aid in abilities:
+		var a: Dictionary = abilities[aid]
+		if str(a.get("effect", "")) != "damage_absorb" or not a.has("absorb_amount"):
+			continue
+		var cap: int = int(a["absorb_amount"])
+		var cost: int = maxi(1, int(a.get("mp_cost", 1)))
+		for mid in monsters:
+			var mon: Dictionary = monsters[mid]
+			if not (aid in (mon.get("abilities", []) as Array)):
+				continue
+			var st: Dictionary = mon.get("stats", {})
+			var hp: int = int(st.get("max_hp", 0))
+			var mp: int = int(st.get("max_mp", 0))
+			if hp <= 0 or mp <= 0:
+				continue
+			checked += 1
+			var ceiling: int = (mp / cost) * cap
+			if ceiling >= hp:
+				unbounded.append("%s/%s: soaks %d over a fight vs %d HP" % [mid, aid, ceiling, hp])
+	assert_gt(checked, 0, "CONTROL: at least one monster actually authors a self-absorb ward")
+	assert_eq(unbounded.size(), 0,
+		"this ward can absorb more than its caster's whole health bar, so damage can never accumulate and the fight cannot be won by hitting it: " + str(unbounded))
