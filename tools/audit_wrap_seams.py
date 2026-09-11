@@ -51,6 +51,13 @@ import json, os, subprocess, sys
 import numpy as np
 
 MANIFEST = "data/music_manifest.json"
+## The corpus ROOT. The manifest names master paths, and for months this tool
+## only ever read those — while every web build ships a 48 kbps mono transcode
+## (make_web_audio.sh, invoked by make_web_stage.sh and pinned to 48 by
+## deploy_web.sh). So "146 beds, 0 jump more than 12 dB" certified audio no web
+## player has ever heard. `--from <dir>` resolves each manifest entry against
+## another directory so the gate can be pointed at the artifact that ships.
+CORPUS_DIR = None
 SR = 48000
 ## ⚠️ ONE WINDOW IS NOT ENOUGH, and this tool already knew why about a DIFFERENT
 ## number. Its docstring says a 1.5s window "AVERAGES AWAY A SHORT STEEP FADE" —
@@ -197,6 +204,15 @@ def controls():
 
 
 def main():
+    global CORPUS_DIR
+    argv = sys.argv[1:]
+    if "--from" in argv:
+        i = argv.index("--from")
+        if i + 1 >= len(argv):
+            sys.exit("--from needs a directory")
+        CORPUS_DIR = argv[i + 1]
+        if not os.path.isdir(CORPUS_DIR):
+            sys.exit("--from: %s is not a directory" % CORPUS_DIR)
     if not controls():
         print("\n  REFUSED: the detector's own controls FAILED. Every corpus number below"
               " is produced by the code those controls just exercised, so a health report"
@@ -227,6 +243,8 @@ def main():
         if not meta.get("loop") and not is_stinger:
             continue
         path = meta.get("file", "")
+        if path and CORPUS_DIR:
+            path = os.path.join(CORPUS_DIR, os.path.basename(path))
         if not path or not os.path.exists(path):
             continue
         y = decode(path)
@@ -270,7 +288,11 @@ def main():
     for step, key, ws in jumps:
         note = KNOWN_UNFIXABLE.get(key)
         print("  %-32s %+7.1f dB @%4.0fms   %s" % (key, step, ws * 1000, "PINNED: " + note if note else "*** NEW ***"))
-    print("\n  %d looping beds measured, %d jump more than %.0f dB" % (len(rows), len(jumps), JUMP_DB))
+    ## Name the corpus. A health number that does not say WHICH audio it read is
+    ## the defect this option exists for: the masters and the shipped web tier are
+    ## different audio, and both print the same sentence.
+    print("\n  corpus: %s" % (CORPUS_DIR if CORPUS_DIR else "assets/audio/music (MASTERS — not what the web build ships)"))
+    print("  %d looping beds measured, %d jump more than %.0f dB" % (len(rows), len(jumps), JUMP_DB))
 
     ## 🛑 A HEALTH REPORT FROM AN EMPTY WALK IS THE WORST OUTPUT THIS TOOL CAN
     ## PRODUCE, and until now it was also its quietest. With no corpus floor,
