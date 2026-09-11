@@ -1,9 +1,9 @@
 {
   "id": "world4_warden_defeat",
   "title": "Warden of the Firewall — Aftermath",
-  "world": 4,
+  "world": 5,
   "trigger": "boss_warden_futuristic_defeated",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "description": "ACCESS GRANTED. The first authorization in memory overflow. The Firewall's rules have been its entire identity. With the rules broken, it does not know what it is protecting, or what it is.",
   "steps": [
     {

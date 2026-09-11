@@ -609,9 +609,22 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 					SoundManager.play_death("injury_sting"))
 
 
+## The prompt a player reads after EVERY battle. `ui_accept` advances it (GameLoop's
+## _wait_for_confirm_victory), and this game puts Confirm on the EAST face — Ⓐ on a Switch pad, Ⓑ on
+## Xbox, ○ on PlayStation, and Z/Enter/Space on a keyboard. The frozen "A" was right on exactly one
+## family and named a button keyboard players do not have.
+func _confirm_token() -> String:
+	var ipm = Engine.get_main_loop().root.get_node_or_null("InputProfileManager")
+	if ipm == null:
+		return "Z"
+	var hint: String = ipm.hint_for_action("ui_accept")
+	return hint if hint != "" else "Z"
+
+
 func _build_prompt() -> void:
 	var prompt := Label.new()
-	prompt.text = "A: finish · A: continue"
+	var tok: String = _confirm_token()
+	prompt.text = "%s: finish · %s: continue" % [tok, tok]
 	prompt.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	prompt.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -620,7 +633,7 @@ func _build_prompt() -> void:
 	prompt.position = Vector2(vp.x - 220.0, vp.y - 26.0)
 	_snaps.append(func() -> void:
 		if is_instance_valid(prompt):
-			prompt.text = "A: continue"
+			prompt.text = "%s: continue" % _confirm_token()
 			prompt.modulate.a = 1.0)
 	var blink := _track(create_tween())
 	blink.set_loops()

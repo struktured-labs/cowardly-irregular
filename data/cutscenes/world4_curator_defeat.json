@@ -1,9 +1,9 @@
 {
   "id": "world4_curator_defeat",
   "title": "Curator of the Memory Pool — Aftermath",
-  "world": 4,
+  "world": 5,
   "trigger": "boss_curator_futuristic_defeated",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "description": "Garbage collection: suspended. Memory pool: full. But the memories are not the Curator's own. It has been collecting and discarding other beings' memories to make room. It does not know what it deleted. It does not know what was important.",
   "steps": [
     {

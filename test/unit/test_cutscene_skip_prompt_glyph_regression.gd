@@ -51,3 +51,22 @@ func test_no_hardcoded_b_prompt_survives_in_either_file() -> void:
 		assert_false(src.is_empty(), "%s must be readable" % path)
 		assert_eq(src.find("Hold B "), -1, "%s: literal 'Hold B' prompt came back" % path)
 		assert_eq(src.find("\"[B] Close\""), -1, "%s: literal '[B] Close' came back" % path)
+
+
+## 2026-09-11: the pad half was shown to players with NO pad. glyph_for_action falls through
+## face_family_for_device("") to "xbox", so a keyboard player read "Hold Ⓑ / Esc to skip...".
+func test_skip_prompt_drops_the_pad_cap_when_no_pad_is_connected() -> void:
+	if not Input.get_connected_joypads().is_empty():
+		pass_test("a pad is connected on this machine — the no-pad path is not exercisable here")
+		return
+	var text := CutsceneDirector.skip_prompt_text()
+	assert_eq(text, "Hold Esc to skip...",
+		"with no pad the prompt must name only the key. glyph_for_action answers the UNKNOWN-pad question ('xbox'), not the no-pad one, so the cap it returns is a button the player does not have")
+	for cap in ["Ⓐ", "Ⓑ", "Ⓧ", "Ⓨ", "✕", "△"]:
+		assert_false(text.contains(cap), "no-pad prompt must not print the pad cap %s" % cap)
+
+
+func test_an_explicit_pad_still_prints_its_cap() -> void:
+	var caps := _expected_cancel_caps()
+	assert_eq(CutsceneDirector.skip_prompt_text(XBOX), "Hold %s / Esc to skip..." % caps[XBOX],
+		"CONTROL: naming a device must be unchanged by the no-pad branch")
