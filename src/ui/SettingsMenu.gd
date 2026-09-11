@@ -70,6 +70,8 @@ const BATTLE_FX_FLAGS := [
 	["menu_motion", "Menu Motion", "Command menus arrive instead of appearing"],
 	["ctb_motion", "Turn Order Motion", "The timeline breathes when your turn comes up"],
 	["target_pulse", "Target Pulse", "The cursor insists on the thing you picked"],
+	["audio_crit_thud", "Crit Thud", "Critical hits get a low body under the cue"],
+	["audio_kill_duck", "Death Duck", "The music steps back when something dies"],
 ]
 var dash_always_on: bool = false  # Item 9: dash without holding the button
 var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)
