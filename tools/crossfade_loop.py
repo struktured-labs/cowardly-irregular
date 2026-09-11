@@ -64,20 +64,34 @@ import sys
 import numpy as np
 
 MANIFEST = "data/music_manifest.json"
-# ⛔ "MEASURED RATHER THAN ASSUMED" WAS THE SENTENCE THAT STOPPED ANYONE
-# RE-MEASURING. This read `SR = 48000` with that comment on it, and it is wrong
-# for 19 of the 165 tracks in the corpus -- they are 44.1 kHz. Somebody measured
-# a majority and wrote it down as a universal, and the word "measured" then did
-# the work of making it un-recheckable: a stated constant with a provenance
-# claim reads as settled.
+# ⛔ "MEASURED RATHER THAN ASSUMED" MEASURED THIS TOOL'S OWN OUTPUT. `SR = 48000`
+# stood here under that comment. It is a true description of most of the corpus
+# TODAY and it is not a fact about the music -- it is the residue of these tools.
+# Traced by smudging the LFS blobs at each commit:
 #
-# What it cost: this tool decoded at 48k, encoded at 48k, and re-read the result
-# at 48k to verify it -- so a resampled output passed every check, because each
-# check asked ffmpeg for the rate it expected instead of the rate on disk.
-# audit_wrap_seams prints "-> run: crossfade_loop.py --only <track> --apply"
-# under whatever it flags, and four of the thirteen it flagged this session
-# (battle_snake, battle_bat, boss_tempo_medieval, danger) are 44.1 kHz beds.
-# The corpus gate was advertising the tool that would respec them.
+#   2026-03-30  74a52bdf  web compression         -> corpus is 44.1 kHz mono
+#   2026-07-02  663308fa  47 tracks re-encoded    -> 48k STEREO folded to mono
+#   2026-08-22  e26a38d9  trim_loop_seams added   -> 55 of 87 beds RESAMPLED to 48k
+#   2026-09-09  0eabe0c9  first crossfade_loop run->  5 of  5 beds RESAMPLED
+#   2026-09-10  94000af3  wrap-jump pass          -> 22 of 38 beds RESAMPLED
+#   2026-09-11  52e6715e  fixed tools             ->  0 of 28
+#
+# 83 beds upsampled from 44.1 kHz masters, all shipped, none intended. The
+# constant was then written on 2026-09-09 by measuring what was left: a majority
+# at 48k BECAUSE these tools had converted it. A provenance claim that samples
+# the corpus AFTER your own writes is not evidence, it is an echo -- and the
+# word "measured" is what stops the next reader checking.
+#
+# The 19 beds still at 44.1 kHz are simply the ones no 48k encoder ever touched.
+#
+# Why nothing caught it: this tool decoded at 48k, encoded at 48k, and re-read
+# the result at 48k to verify -- every arm asked ffmpeg for the rate it expected
+# instead of the rate on disk, so the file was normalised back into agreement
+# before any check looked. audit_wrap_seams prints "-> run: crossfade_loop.py"
+# under whatever it flags, so the corpus gate advertised it.
+#
+# NOT retroactively fixed: re-encoding 83 shipped beds back down would be a
+# second lossy pass to undo the first. They stay; the tools stop.
 #
 # So the format is now read PER FILE and asserted after the encode. These are
 # set by process() before anything else runs; the module is single-threaded by
