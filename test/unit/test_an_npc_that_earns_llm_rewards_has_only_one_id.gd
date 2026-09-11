@@ -116,9 +116,18 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 	## removes its own check and the survivors still pass. @cowir-sprites measured exactly this on a
 	## set they had reasoned was safe, losing coverage of the one character their file exists for.
 	## Sizes stated so a drain reds instead of shrinking the claim in silence.
+	## ⚠️ `== 3` IS DELIBERATE AND IT IS NOT A CENSUS. @cowir-ai's split: an `== literal` belongs to a
+	## set the guard OWNS and is WRONG for a corpus that legitimately grows — it forbids another
+	## lane's correct addition. Here forbidding it is the POINT. This list is a PRECONDITION PIN:
+	## the whole guard rests on "no divergent NPC reaches the reward path", and a FOURTH LLM-capable
+	## NPC is exactly the event that could make the latent bug live. So growth must red, loudly,
+	## and the message has to say so — the old one named only the shrink direction.
 	assert_eq(KNOWN_LLM_NPCS.size(), 3,
-		"KNOWN_LLM_NPCS holds %d names, not the 3 NPCs that pass the dynamic+persona gate — " % KNOWN_LLM_NPCS.size() +
-		"if one stopped being LLM-capable, say so here deliberately; a quiet removal drops its check")
+		("KNOWN_LLM_NPCS holds %d names, not 3. BOTH directions are real and they mean opposite things:\n" +
+		"  GREW — someone made another NPC dynamic+persona. CHECK THEIR NAME FOR A HYPHEN OR APOSTROPHE\n" +
+		"         first; that is the precondition this whole file exists to watch. Then add them here.\n" +
+		"  SHRANK — an NPC stopped being LLM-capable. Say so here deliberately; a quiet removal drops\n" +
+		"         its own membership check with it.") % KNOWN_LLM_NPCS.size())
 	assert_eq(MUST_BUILD.size(), 6,
 		"MUST_BUILD holds %d maps, not the 6 this guard makes claims about (5 holding the divergent " % MUST_BUILD.size() +
 		"NPCs + Harmonia holding all three LLM-capable ones)")
