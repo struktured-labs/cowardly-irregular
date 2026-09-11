@@ -47,7 +47,6 @@ WORK=$(mktemp "${TMPDIR:-/tmp}/verify_symbols.XXXXXX")
 trap 'rm -f "$WORK"' EXIT
 git show "${COMMIT}:${PATH_IN_TREE}" > "$WORK"
 
-echo "tree ${REF} (${COMMIT:0:8})  path ${PATH_IN_TREE}  $(wc -c < "$WORK") bytes"
 
 # NEGATIVE CONTROL, built in so it cannot be skipped. If a fabricated symbol matches, the reader is
 # answering something other than the question and every count below is worthless.
@@ -69,6 +68,10 @@ if [ -s "$WORK" ]; then
 		exit 3
 	fi
 fi
+
+# Emit for the reader, assert for the machine. The line above only FIRES on failure; a reader
+# looking at a VERDICT with no evidence has to take the control on faith, so print what it found.
+echo "tree ${REF} (${COMMIT:0:8})  path ${PATH_IN_TREE}  $(wc -c < "$WORK") bytes, ${ALL:-0} lines readable"
 
 MISSING=0
 for sym in "$@"; do
