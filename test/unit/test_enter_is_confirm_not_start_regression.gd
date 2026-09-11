@@ -33,7 +33,24 @@ func _battle_ui_menu_branch() -> String:
 	assert_gt(start, handler, "the BATTLE arm must sit inside the ui_menu handler")
 	var stop := src.find("elif current_state == LoopState.EXPLORATION:", start)
 	assert_gt(stop, start, "the EXPLORATION arm must follow it — that is this branch's end")
-	return src.substr(start, stop - start)
+	return _code_only(src.substr(start, stop - start))
+
+
+## COMMENTS ARE NOT CODE, and this guard was HOLLOW without the distinction. Measured 2026-09-11:
+## delete the real `keycode in [KEY_ESCAPE, KEY_ENTER]` arm but leave a comment saying KEY_ENTER,
+## and find() returns the COMMENT — the ordering assert still holds and the file scores GREEN with
+## Enter opening the editor again. Arm 1 (drop KEY_ENTER outright) was caught; only the commented
+## form survived, which is the realistic shape, because that is what a person leaves behind when
+## they remove a branch. Same discriminator as _frozen_code_lines in the interact-prompt ratchet;
+## I fixed it there and left it here — @cowir-autogrind hit the identical bare-find() class today.
+func _code_only(text: String) -> String:
+	var out := ""
+	for raw in text.split("\n"):
+		if raw.strip_edges().begins_with("#"):
+			out += "\n"          # keep line count so offsets stay comparable
+		else:
+			out += raw + "\n"
+	return out
 
 
 func _keys_for(action: String) -> Array[String]:
