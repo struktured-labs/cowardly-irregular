@@ -9,7 +9,13 @@ extends GutTest
 ## list must be edited deliberately. A "these legitimately fall through" comment would never expire.
 
 const QUEST_DIR := "res://data/quests/"
-const SRC_DIRS := ["res://src/maps/villages/", "res://src/maps/interiors/", "res://src/exploration/"]
+## ⚠️ WAS a hand-written 3-directory list, which is the same defect as scoping a loop guard by an
+## "ambient_" name prefix while the keys that break the contract are named "weather_*" (cowir-sfx,
+## 2026-09-11): a guard whose CORPUS is authored by hand is blind wherever the author did not look.
+## src/cutscene/ also calls _create_npc and was outside the list. It contributed 0 ids, so this was a
+## LATENT gap and not a live one — recorded as such, not claimed as a finding.
+## Now walks ALL of src/ recursively, so a giver placed in a new directory cannot hide.
+const SRC_ROOT := "res://src/"
 
 ## Unresolvable givers, WITH THE REASON EACH IS ACTUALLY UNRESOLVABLE.
 ## ⛔ My first version said "W4-W6 have no authored maps". That was FALSE -- RivetRow, NodePrime and
@@ -61,10 +67,30 @@ func _read_all(dir_path: String) -> String:
 
 
 ## Every id a giver lookup could resolve to, by the three shapes get_npc_id()/props actually use.
-func _giver_capable_ids() -> Dictionary:
+## Walks the whole tree: the corpus is "everywhere a giver could be declared", not a list I maintain.
+func _read_all_recursive(dir_path: String) -> String:
 	var blob := ""
-	for d in SRC_DIRS:
-		blob += _read_all(d)
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return blob
+	dir.list_dir_begin()
+	var f := dir.get_next()
+	while f != "":
+		var full := dir_path + f
+		if dir.current_is_dir():
+			blob += _read_all_recursive(full + "/")
+		elif f.ends_with(".gd"):
+			var fh := FileAccess.open(full, FileAccess.READ)
+			if fh != null:
+				blob += fh.get_as_text() + "\n"
+				fh.close()
+		f = dir.get_next()
+	dir.list_dir_end()
+	return blob
+
+
+func _giver_capable_ids() -> Dictionary:
+	var blob := _read_all_recursive(SRC_ROOT)
 	var ids := {}
 	for m in RegEx.create_from_string('_create_npc\\(\\s*"([^"]+)"').search_all(blob):
 		ids[_snake(m.get_string(1))] = true
@@ -109,6 +135,11 @@ func test_both_corpora_actually_loaded() -> void:
 		"control: 'Scholar Milo' must resolve via the snake_case fallback (he has no explicit npc_id)")
 	assert_true(ids.has("community_bulletin_board"),
 		"control: a PROP giver must resolve (BulletinBoard declares its own npc_id)")
+	## ONE CONTROL PER AUTHORING FORM (cowir-overworld, 2026-09-11). Three regexes resolve three ways
+	## to declare a giver and this one had NO arm — if its pattern broke, every explicitly-assigned
+	## npc_id would vanish from the corpus and nothing here would fire.
+	assert_true(ids.has("elder_vesper"),
+		"control: an EXPLICIT `.npc_id = \"...\"` assignment must resolve (Elder Vesper, EldertreeVillage)")
 	assert_false(ids.has("zzq_not_an_npc"), "control: a fabricated id must not resolve")
 
 
