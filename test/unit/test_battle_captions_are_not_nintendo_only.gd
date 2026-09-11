@@ -22,28 +22,34 @@ const WIN98 := "res://src/ui/Win98Menu.gd"
 ## catches the tidy removal and misses the realistic one — nobody deletes a line without leaving the
 ## note explaining it. Measured on THIS file: swapping the derivation back for a literal "X" with
 ## `## was: Win98MenuClass.speed_hint()` beside it left all five arms GREEN. Line count preserved.
-## Quote-aware: cut at the first `#` OUTSIDE a string literal. A plain find("#") truncates real code
-## on any line holding a `#` in quoted text — 17 such lines in BattleScene, 3 in BattleManager — and
-## the dangerous direction is an ABSENCE assert whose token sits after one (cowir-controller,
-## cowir-overworld 2026-09-11). Line count preserved so substr windows stay valid.
+## Cut at the first `#` OUTSIDE a string. LOOKAHEAD, not lookbehind (cowir-overworld 2026-09-11):
+## a backslash consumes the NEXT char atomically, so `"a\\"` correctly reads as a closed string.
+## Lookbehind asks "was the previous char an escape?" — a question with no local answer, since the
+## backslash may itself be escaped, and that is the sixth costume this class produced today.
+## Latent here (10 lines carry \" across the two files I scan, none beside a later #) — retired by
+## construction rather than by an arm someone has to remember. Line count preserved for substr.
 func _strip_comments(raw: String) -> String:
 	var out: Array = []
 	for line in raw.split("\n"):
+		var i := 0
 		var in_d := false
 		var in_s := false
 		var cut := -1
-		for k in line.length():
-			var c := line[k]
+		while i < line.length():
+			var c := line[i]
+			if c == "\\":
+				i += 2
+				continue
 			if c == '"' and not in_s:
 				in_d = not in_d
 			elif c == "'" and not in_d:
 				in_s = not in_s
 			elif c == "#" and not in_d and not in_s:
-				cut = k
+				cut = i
 				break
+			i += 1
 		out.append(line.substr(0, cut) if cut > -1 else line)
 	return "\n".join(out)
-
 func _src(p: String) -> String:
 	var raw := FileAccess.get_file_as_string(p)
 	assert_gt(raw.length(), 1000, "CONTROL: read %s" % p)
