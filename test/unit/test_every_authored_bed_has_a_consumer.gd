@@ -199,6 +199,64 @@ func test_the_comment_stripper_itself() -> void:
 		"the comment stripper is wrong on %d case(s):\n   %s" % [bad.size(), "\n   ".join(bad)])
 
 
+## ⛔ A SIZE FLOOR IS BLIND TO PARTIAL LOSS, and this file had only a floor plus
+## one named member. `_files()` returns silently when a directory will not open,
+## so a subtree can vanish from the walk with no quantity moving. Measured by
+## dropping each top-level src/ directory in turn:
+##
+##     battle · exploration · maps · quests   CAUGHT (a uniquely-named bed orphans)
+##     ui · cutscene                          SILENT — they name no bed uniquely
+##
+## Those two fail toward ALARM rather than false-clean (a bed consumed only from
+## a dropped subtree reads as an orphan), which is the safe direction — but the
+## guard's claim is "nothing in src/ reaches this", and a claim should cover what
+## it says. cowir-sprites' register point applies: check membership against
+## something that CANNOT shrink with the corpus it audits, so the filesystem's
+## own directory list is the register here rather than a list in this file.
+func test_the_consumer_walk_reaches_every_source_subtree() -> void:
+	var paths: Array[String] = []
+	_files("res://src", ".gd", paths)
+	assert_gt(paths.size(), 200,
+		"SCOPE control: the walk collected %d .gd files — too few for any membership claim below to mean anything" % paths.size())
+
+	## The register: every immediate subdirectory of res://src, read from disk.
+	var expected: Array[String] = []
+	var d := DirAccess.open("res://src")
+	assert_true(d != null, "SCOPE control: res://src will not open")
+	if d == null:
+		return
+	d.list_dir_begin()
+	var n: String = d.get_next()
+	while n != "":
+		if d.current_is_dir() and not n.begins_with("."):
+			expected.append(n)
+		n = d.get_next()
+	d.list_dir_end()
+	expected.sort()
+	assert_gt(expected.size(), 8,
+		"SCOPE control: res://src lists %d subdirectories — the register is the thing being trusted here, so a short read makes every claim below free" % expected.size())
+
+	## A subtree with no .gd at all is not a walk failure — src/shaders holds only
+	## .gdshader, and demanding a hit there would be the guard over-claiming. Ask
+	## the filesystem whether the subtree HAS any GDScript, then require it.
+	var missing: Array[String] = []
+	for sub in expected:
+		var owned: Array[String] = []
+		_files("res://src/" + sub, ".gd", owned)
+		if owned.is_empty():
+			continue
+		var prefix: String = "res://src/" + sub + "/"
+		var found: bool = false
+		for p in paths:
+			if p.begins_with(prefix):
+				found = true
+				break
+		if not found:
+			missing.append(sub)
+	assert_eq(missing.size(), 0,
+		"the consumer walk collected NOTHING from %d of %d src subtrees (%s) — every 'no consumer' verdict in this file is scoped to whatever it did reach, which is not what the guard claims" % [missing.size(), expected.size(), missing])
+
+
 func test_control_the_consumer_corpus_is_real_and_excludes_the_manifest() -> void:
 	var text: String = _consumer_text()
 	assert_gt(text.length(), 1000000,
@@ -459,11 +517,36 @@ func test_no_briefed_battle_track_is_shadowed_by_a_declaration() -> void:
 ## forgotten like the pinned orphans — they are WIRED, to a scene that does not
 ## run. cowir-story is wiring the epilogues (world1's landed 2026-09-11), so this
 ## set should shrink; when it does the arm says so.
+## ⛔ "QUEUED" WAS MY INVENTION AND IT SHIPPED IN .296. Two of these said
+## cowir-story had the epilogue queued. They do not — they ruled on 2026-09-11
+## that they will not wire the remaining nine, and told me so when they read
+## this pin. I inferred a plan from the fact that they had wired world1's and
+## wrote it into a guard as fact. A claim about another lane's intent is a
+## measurement I never took.
+##
+## 🔑 AND THE CORRECTED PICTURE IS WORSE, WHICH IS WHY IT MATTERS. Every credits
+## bed is named by EXACTLY ONE cutscene — its own epilogue — so there is no
+## second route to any of them:
+##
+##     credits_medieval  <- world1_epilogue    LIVE (wired 2026-09-11)
+##     credits_abstract  <- world6_ending      LIVE
+##     credits_suburban  <- world2_epilogue    dead, and the "supersessor" does
+##     credits_steampunk <- world3_epilogue    NOT carry a roll_credits step
+##     credits_industrial<- world4_epilogue    dead, no supersessor at all
+##     credits_digital   <- world5_epilogue    dead, no supersessor at all
+##
+## cowir-story ruled W2/W3's epilogues superseded by world2_chapter11 and
+## world3_chapter5 — true of the PROSE. Measured here: both supersessors have
+## roll_credits = 0. The chapters inherited the beat and not the credits roll,
+## so calling the epilogue superseded whole leaves these two beds with no route
+## at all. Their revised proposal is to MOVE the step into the supersessor; that
+## is a pacing decision about where a campaign's credits roll, so it is theirs
+## or struktured's, not mine.
 const KNOWN_WIRED_TO_DEAD_SCENES := {
-	"credits_digital": "world5_epilogue — unplayable; cowir-story has it queued",
-	"credits_industrial": "world4_epilogue — unplayable; queued",
-	"credits_steampunk": "world3_epilogue — cowir-story ruled it SUPERSEDED by world3_chapter5, so this may never wire",
-	"credits_suburban": "world2_epilogue — ruled SUPERSEDED by world2_chapter11, same",
+	"credits_digital": "world5_epilogue — not dispatched, and W5 has no supersessor carrying its beat",
+	"credits_industrial": "world4_epilogue — not dispatched, no supersessor. Also web-excluded, so silent there even if wired",
+	"credits_steampunk": "world3_epilogue — prose superseded by world3_chapter5, but that scene has roll_credits=0, so this bed has no other route",
+	"credits_suburban": "world2_epilogue — same shape: world2_chapter11 carries the prose and not the credits roll",
 	"cutscene_w5_cached_memory": "all four world6_fragment_* scenes, none dispatched",
 }
 
@@ -538,12 +621,40 @@ func test_no_cutscene_step_type_can_dispatch_another_cutscene() -> void:
 ## playable here. They measured it: 0 of 124 called cutscenes have a dead file
 ## as their only caller, so the shortcut costs nothing TODAY. It is recorded
 ## rather than defended because the day that changes, nothing here will say so.
+## ⛔ A MENTION IS NOT A DISPATCH, and the looser test made two of this file's
+## own pins INERT. The first version asked whether the scene id appears anywhere
+## in the dispatcher corpus. It appears for world2_epilogue and world3_epilogue:
+##
+##     GameLoop:2009  _epilogue_done_or_unwired("world2_epilogue", flags)
+##     GameLoop:2045  _epilogue_done_or_unwired("world3_epilogue", flags)
+##
+## That helper returns TRUE when the scene has no completion flag — it is a gate
+## that TOLERATES the epilogue being unwired, and the function name says so. So
+## the one reference each of those scenes has is code handling their ABSENCE,
+## and I read it as evidence of their presence. Same shape as a reachability
+## grep counting the documentation of a scene's death as proof of its life.
+##
+## 🔑 FOUND BY DELETION, NOT BY READING. cowir-autogrind's check — remove each
+## pinned entry and confirm the guard reds — reported credits_steampunk and
+## credits_suburban as suppressing nothing. The pin list was right (it came from
+## a correct ad-hoc measurement); the guard's own predicate was looser than the
+## claim the list makes, so two entries excused a verdict it could never reach.
+## Loose: 3 stranded. Tight: 5, which is the list.
+func _scene_is_dispatched(scene: String, disp: String) -> bool:
+	## The two real shapes: _get_pending_story_cutscene returns the id, or a
+	## caller plays it by name. Anything else is a mention.
+	return disp.find("return \"%s\"" % scene) >= 0 \
+		or disp.find("play_cutscene(\"%s\")" % scene) >= 0
+
+
 func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 	var disp: String = _dispatcher_text()
 	assert_gt(disp.length(), 500000,
 		"SCOPE control: dispatcher corpus is %d chars — too small" % disp.length())
-	assert_gt(disp.find("world1_prologue"), 0,
-		"CONTROL FAILED: world1_prologue is dispatched by GameLoop but was not found — the corpus is wrong")
+	assert_true(_scene_is_dispatched("world1_prologue", disp),
+		"CONTROL FAILED: world1_prologue IS dispatched (GameLoop returns it from _get_pending_story_cutscene) but the predicate cannot see it — a green below would mean every scene reads as dead")
+	assert_false(_scene_is_dispatched("world2_epilogue", disp),
+		"CONTROL FAILED: world2_epilogue is only named by _epilogue_done_or_unwired, a gate that TOLERATES it being unwired. If the predicate counts that as dispatch it is the loose one this helper replaced")
 	assert_eq(disp.find("\"tracks\": {"), -1,
 		"CONTROL FAILED: music_manifest.json is in the dispatcher corpus — every id would match itself")
 
@@ -577,7 +688,7 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 		for s in scenes.keys():
 			if str(scenes[s]).find(id) >= 0:
 				naming.append(str(s))
-				if disp.find(str(s)) >= 0:
+				if _scene_is_dispatched(str(s), disp):
 					live = true
 		if naming.is_empty() or live:
 			continue
@@ -588,6 +699,77 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds" % [stranded.size(), stranded])
 	assert_eq(revived.size(), 0,
 		"pinned beds whose scene is now dispatched (%s) — the epilogue landed; delete the entries" % [revived])
+
+
+## ⛔ THIS FILE IS THE SECOND CENSUS OF THE SAME SET, AND I WROTE IT WITHOUT
+## KNOWING THE FIRST EXISTED. test_unreachable_music_is_pinned (2026-09-09)
+## already pinned all ten — the seven ambient beds AND the three cutscene ones —
+## with the git provenance proving them stillborn rather than superseded, and
+## with the two-manifest mechanism spelled out. Its header even records the
+## mistake I then made twice today: "my first pass called those three REACHABLE
+## because the literal appears in OverworldScene — conflating 'this key appears
+## in code' with 'this manifest entry is reachable'."
+##
+## 🔑 SO THE LISTS ARE TIED TOGETHER RATHER THAN ONE BEING DELETED. That file is
+## the AUTHORITY for which beds are unreachable: it carries the evidence and the
+## decision framing for struktured. This file carries the reachability MODEL —
+## composed families, the brief pre-flight, shadowing, stranded cues — which is
+## a different job on a wider corpus. Deleting either loses something.
+##
+## What must never happen again is the two drifting: my own guard reported 4,
+## then 5, against a file that had said 7 since September, and nothing compared
+## them. Now nothing CAN: this arm fails the moment they disagree, in either
+## direction, so a future wrong count reds instead of being published.
+const PEER_GUARD := "res://test/unit/test_unreachable_music_is_pinned.gd"
+
+
+func _peer_pins() -> Array[String]:
+	var src: String = FileAccess.get_file_as_string(PEER_GUARD)
+	assert_gt(src.length(), 2000,
+		"SCOPE control: %s read back %d chars — if it was renamed or retired, this agreement arm is measuring nothing and must be re-pointed, not deleted" % [PEER_GUARD, src.length()])
+	var out: Array[String] = []
+	for name in ["KNOWN_UNREACHABLE_CUTSCENE_TRACKS", "KNOWN_UNREACHABLE_AMBIENT_TRACKS"]:
+		var at: int = src.find(name)
+		assert_gt(at, 0, "SCOPE control: %s no longer declares %s" % [PEER_GUARD, name])
+		if at < 0:
+			continue
+		## The declaration is `const NAME: Array[String] = [` — the type carries
+		## its own brackets, so anchor on the assignment, not the first "[".
+		var open_b: int = src.find("= [", at)
+		var close_b: int = src.find("\n]", open_b)
+		var block: String = src.substr(open_b, close_b - open_b)
+		var re := RegEx.new()
+		re.compile("\"([a-z0-9_]+)\"")
+		for m in re.search_all(block):
+			if not out.has(m.get_string(1)):
+				out.append(m.get_string(1))
+	out.sort()
+	return out
+
+
+func test_this_pin_agrees_with_the_older_census() -> void:
+	var peer: Array[String] = _peer_pins()
+	assert_gt(peer.size(), 5,
+		"SCOPE control: parsed only %d pins from the peer guard — the `Array[String]` type annotation contains a bracket and broke an earlier parse of mine, yielding a silent zero" % peer.size())
+
+	var mine: Array[String] = []
+	for k in KNOWN_UNREACHED.keys():
+		mine.append(str(k))
+	mine.sort()
+
+	var only_mine: Array[String] = []
+	for k in mine:
+		if not peer.has(k):
+			only_mine.append(k)
+	var only_peer: Array[String] = []
+	for k in peer:
+		if not mine.has(k):
+			only_peer.append(k)
+
+	assert_eq(only_mine.size(), 0,
+		"this file pins beds the older census does not (%s) — one of the two is wrong about the same question; reconcile them rather than letting a reader find both" % [only_mine])
+	assert_eq(only_peer.size(), 0,
+		"the older census pins beds this file calls reached (%s) — that is the direction that cost two wrong counts today, because a smaller number looks like progress" % [only_peer])
 
 
 func test_the_set_of_unreached_beds_has_not_changed() -> void:
@@ -607,12 +789,30 @@ func test_the_set_of_unreached_beds_has_not_changed() -> void:
 	for id in unreached:
 		if not KNOWN_UNREACHED.has(id):
 			added.append(id)
-	var gone: Array[String] = []
+	## ⛔ TWO CAUSES LOOK IDENTICAL HERE and the message used to name only one. A
+	## pin drops out of `unreached` because the bed got WIRED — or because the
+	## track was DELETED from the manifest entirely, which cowir-adhoc calls
+	## inert-by-deletion. Measured 2026-09-11 by removing ambient_ocean: caught,
+	## but told to "delete the entries so they are covered like the rest", which
+	## is the right action for the wrong reason and sends the reader looking for
+	## a consumer that was never added.
+	var ids_now: Dictionary = {}
+	for id in _manifest_ids():
+		ids_now[id] = true
+	var wired: Array[String] = []
+	var deleted: Array[String] = []
 	for id in KNOWN_UNREACHED.keys():
-		if not unreached.has(str(id)):
-			gone.append(str(id))
+		var k: String = str(id)
+		if unreached.has(k):
+			continue
+		if ids_now.has(k):
+			wired.append(k)
+		else:
+			deleted.append(k)
 
 	assert_eq(added.size(), 0,
 		"authored beds that NOTHING reaches and that are not pinned (%d): %s — a track was added to the manifest with no consumer, which is silence nobody will notice" % [added.size(), added])
-	assert_eq(gone.size(), 0,
-		"pinned beds that ARE now reached (%s) — they were wired; delete the entries so they are covered like the rest" % [gone])
+	assert_eq(wired.size(), 0,
+		"pinned beds that ARE now reached (%s) — they were wired; delete the entries so they are covered like the rest" % [wired])
+	assert_eq(deleted.size(), 0,
+		"pinned beds that are no longer IN THE MANIFEST (%s) — the track was deleted, not wired. Delete the pin here AND check the peer census, the brief in tools/music_prompts.json, and whether the OGG went with it" % [deleted])
