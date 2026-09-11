@@ -759,6 +759,13 @@ func is_job_unlocked(job_id: String) -> bool:
 	var ctype: String = str((cond as Dictionary).get("type", ""))
 	match ctype:
 		"story":
+			## ⚠️ The `quest` key here is READ BY NOTHING, and that is currently load-bearing.
+			## protectors_oath / market_crash / pact_of_eidolons each occur exactly ONCE in the repo —
+			## in the gate naming them. No quest file defines any of them. Honouring the field would
+			## make guardian, speculator and summoner unreachable in the same commit, so the repair
+			## must author the quests first. test_the_quest_field_is_ignored_on_purpose pins both
+			## halves. Same authoring mistake as speed_demon; that one landed in the "achievement"
+			## arm, which reads its id, and cost a player the Ninja.
 			var chapter: int = int((cond as Dictionary).get("chapter", 0))
 			if chapter <= 0:
 				return false
