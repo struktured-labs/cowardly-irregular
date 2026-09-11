@@ -88,11 +88,17 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		composition_ready.emit(res_fb)
 		return res_fb
 
+	# What the composer CHANGED, for the player to read. Separate from errors:
+	# errors mean the ruleset was refused, notes mean it was silently edited.
+	# Filled after the repair below, which mutates v["rules"] in place.
+	var repair_notes: Array[String] = []
+
 	var result := {
 		"name": v["name"],
 		"description": v["description"],
 		"rules": v["rules"],
 		"errors": [] as Array[String],
+		"notes": repair_notes,
 		"source": "llm",
 		"domain": domain,
 		"character_id": character_id,
@@ -104,8 +110,19 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# discarded the player's WHOLE ruleset. Supplying it is arithmetic from the same
 	# kit the validator uses; it can only turn a rejection into a valid rule, and it
 	# never loosens a guard the model did emit.
+	# A model writing "target": null means "no target", which this grammar expresses
+	# by OMITTING the key — and the validator rejects the null form, discarding the
+	# whole ruleset. Measured across 33 parseable local-llama3 compositions: 2 died
+	# this way. Dropping the key is a normalisation, NOT a loosening of the
+	# validator, which is right to refuse it: action.get("target", "lowest_hp_enemy")
+	# returns null rather than the default when the key is present, and assigning
+	# Nil to a typed String aborts the enclosing function in the grid editor.
+	if domain == DOMAIN_AUTOBATTLE:
+		_drop_null_targets(v["rules"])
+
 	if domain == DOMAIN_AUTOBATTLE and bool(kit_context.get("resolved", false)):
-		_supply_missing_mp_guards(v["rules"], kit_context)
+		for note in _supply_missing_mp_guards(v["rules"], kit_context):
+			repair_notes.append(note)
 
 	var domain_system = get_node_or_null("/root/AutobattleSystem" if domain == DOMAIN_AUTOBATTLE else "/root/AutogrindSystem")
 	var grammar_errors: Array[String] = []
@@ -132,6 +149,7 @@ func _empty_result(domain: String, character_id: String, source: String) -> Dict
 		"description": "",
 		"rules": [],
 		"errors": [] as Array[String],
+		"notes": [] as Array[String],
 		"source": source,
 		"domain": domain,
 		"character_id": character_id,
@@ -143,6 +161,7 @@ func _fallback_result(domain: String, character_id: String) -> Dictionary:
 		"description": DialoguePromptsScript.FALLBACK_RULE_COMPOSITION["description"],
 		"rules": [],
 		"errors": [] as Array[String],
+		"notes": [] as Array[String],
 		"source": "fallback",
 		"domain": domain,
 		"character_id": character_id,
@@ -156,13 +175,15 @@ func _fallback_result(domain: String, character_id: String) -> Dictionary:
 ## validator accepts by construction rather than by coincidence. Rules whose
 ## abilities are unknown or out-of-kit are left alone: those are the model's
 ## errors to fail on, not arithmetic this can fix.
-func _supply_missing_mp_guards(rules: Array, kit_context: Dictionary) -> void:
+func _supply_missing_mp_guards(rules: Array, kit_context: Dictionary) -> Array[String]:
 	var costs: Dictionary = kit_context.get("costs", {})
 	var kit: Array = kit_context.get("kit", [])
 	var max_mp: int = int(kit_context.get("max_mp", 0))
+	var notes: Array[String] = []
 	if max_mp <= 0:
-		return
-	for rule in rules:
+		return notes
+	for idx in range(rules.size()):
+		var rule = rules[idx]
 		if typeof(rule) != TYPE_DICTIONARY:
 			continue
 		var total: int = 0
@@ -180,13 +201,59 @@ func _supply_missing_mp_guards(rules: Array, kit_context: Dictionary) -> void:
 		var need: int = ceili(float(total) / float(max_mp) * 100.0)
 		var conditions: Array = rule.get("conditions", [])
 		var raised: bool = false
+		var changed: bool = false
 		for c in conditions:
 			if typeof(c) != TYPE_DICTIONARY:
 				continue
 			if str(c.get("type", "")) == "mp_percent" and str(c.get("op", "")) == ">=":
 				if int(c.get("value", 0)) < need:
 					c["value"] = need
+					changed = true
 				raised = true
 		if not raised:
 			conditions.append({"type": "mp_percent", "op": ">=", "value": need})
 			rule["conditions"] = conditions
+			notes.append("Rule %d (%s): added an MP check of at least %d%% so it cannot fizzle."
+				% [idx + 1, _rule_ability_label(rule), need])
+		elif changed:
+			notes.append("Rule %d (%s): raised the MP check to %d%%, the minimum it needs."
+				% [idx + 1, _rule_ability_label(rule), need])
+	return notes
+
+
+## Name a rule by the ability it casts, for a player-facing note. The note also
+## carries the rule's 1-based position, because two rules casting the SAME ability
+## produced identical notes and the player could not tell which one was edited —
+## measured on real llama3 output, where duplicate 'cure' rules are common.
+func _rule_ability_label(rule: Dictionary) -> String:
+	for a in rule.get("actions", []):
+		if typeof(a) == TYPE_DICTIONARY and str(a.get("type", "")) == "ability":
+			var aid: String = str(a.get("id", ""))
+			if aid != "":
+				return "'%s'" % aid
+	return "costed"
+
+
+## Remove `"target": null` from actions, in place. Returns how many were dropped.
+##
+## ONLY target, deliberately. Absent is a documented, defined state for it — the
+## action falls back to its own default — so dropping the key changes nothing
+## about what the rule DOES, which is why this emits no player-facing note.
+##
+## Every OTHER null is left for the validator to reject. A condition carrying
+## "value": null is genuinely broken: the model failed to state a threshold, and
+## stripping that key would manufacture a rule that validates and then compares
+## against a default nobody chose. Refusing it is the honest outcome; recovering
+## it would be exactly the plausible-looking artifact that is worse than a refusal.
+func _drop_null_targets(rules: Array) -> int:
+	var dropped: int = 0
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for a in rule.get("actions", []):
+			if typeof(a) != TYPE_DICTIONARY:
+				continue
+			if a.has("target") and a["target"] == null:
+				a.erase("target")
+				dropped += 1
+	return dropped
