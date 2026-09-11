@@ -140,6 +140,54 @@ func test_a_lone_catch_all_is_not_disturbed() -> void:
 	assert_eq(rules.size(), 1, "and must survive")
 
 
+# ── a rule with NO conditions is a catch-all too ──────────────────────────────
+#
+# Found by measuring the AUTOGRIND domain, which I had never sampled: llama3
+# emitted {} -> stop_grinding + flee_battle. Both engines treat an absent or empty
+# condition list as a match, so that rule fires every turn — and the first version
+# of this repair read it as "not a catch-all" and left it shadowing.
+
+func test_a_rule_with_no_conditions_is_sunk() -> void:
+	var no_conds: Dictionary = {"conditions": [], "actions": [{"type": "stop_grinding"}], "enabled": true}
+	var rules: Array = [no_conds, _rule(_hp("<", 30), "cure")]
+	var notes: Array = _rc()._sink_unconditional_rules(rules)
+	assert_eq(str((rules[0]["actions"][0] as Dictionary).get("id", "")), "cure",
+		"an empty condition list matches every turn, so it must not run first")
+	assert_eq(notes.size(), 1, "and the player must be told a rule was unreachable")
+
+
+func test_a_rule_MISSING_its_conditions_key_is_sunk_too() -> void:
+	## `rule.get("conditions", [])` yields [] for an absent key, and
+	## AutobattleSystem checks `not rule.has("conditions")` explicitly.
+	var absent: Dictionary = {"actions": [{"type": "attack"}], "enabled": true}
+	var rules: Array = [absent, _rule(_hp("<", 30), "cure")]
+	_rc()._sink_unconditional_rules(rules)
+	assert_true(rules[0].has("conditions"),
+		"the conditioned rule must rise above the unconditioned one")
+
+
+func test_an_empty_conditions_rule_already_last_stays_silent() -> void:
+	## CORRECT-WORK, same as the always-form: last is where it belongs.
+	var no_conds: Dictionary = {"conditions": [], "actions": [{"type": "stop_grinding"}], "enabled": true}
+	var rules: Array = [_rule(_hp("<", 30), "cure"), no_conds]
+	var before: Array = rules.duplicate(true)
+	assert_eq(_rc()._sink_unconditional_rules(rules).size(), 0, "nothing shadowed, nothing reported")
+	assert_eq(rules, before, "and nothing moved")
+
+
+func test_both_engines_really_treat_no_conditions_as_always() -> void:
+	## THE PREMISE. This repair is only correct because the evaluators match an
+	## empty condition list. If either engine ever gates it instead, sinking
+	## becomes wrong and this must be revisited rather than worked around.
+	var ab: String = FileAccess.get_file_as_string("res://src/autobattle/AutobattleSystem.gd")
+	var ag: String = FileAccess.get_file_as_string("res://src/autogrind/AutogrindSystem.gd")
+	assert_false(ab.is_empty() or ag.is_empty(), "CONTROL: both sources must load")
+	assert_true(ab.contains("rule[\"conditions\"].size() == 0"),
+		"AutobattleSystem must still branch on an empty condition list")
+	assert_true(ag.contains("conditions.size() == 0"),
+		"AutogrindSystem must still branch on an empty condition list")
+
+
 # ── the repair must be REACHED, not merely correct ────────────────────────────
 
 ## Strip `#` comments so the check cannot be satisfied by prose. This file's own
