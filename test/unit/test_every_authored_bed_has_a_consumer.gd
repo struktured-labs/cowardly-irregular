@@ -199,6 +199,64 @@ func test_the_comment_stripper_itself() -> void:
 		"the comment stripper is wrong on %d case(s):\n   %s" % [bad.size(), "\n   ".join(bad)])
 
 
+## ⛔ A SIZE FLOOR IS BLIND TO PARTIAL LOSS, and this file had only a floor plus
+## one named member. `_files()` returns silently when a directory will not open,
+## so a subtree can vanish from the walk with no quantity moving. Measured by
+## dropping each top-level src/ directory in turn:
+##
+##     battle · exploration · maps · quests   CAUGHT (a uniquely-named bed orphans)
+##     ui · cutscene                          SILENT — they name no bed uniquely
+##
+## Those two fail toward ALARM rather than false-clean (a bed consumed only from
+## a dropped subtree reads as an orphan), which is the safe direction — but the
+## guard's claim is "nothing in src/ reaches this", and a claim should cover what
+## it says. cowir-sprites' register point applies: check membership against
+## something that CANNOT shrink with the corpus it audits, so the filesystem's
+## own directory list is the register here rather than a list in this file.
+func test_the_consumer_walk_reaches_every_source_subtree() -> void:
+	var paths: Array[String] = []
+	_files("res://src", ".gd", paths)
+	assert_gt(paths.size(), 200,
+		"SCOPE control: the walk collected %d .gd files — too few for any membership claim below to mean anything" % paths.size())
+
+	## The register: every immediate subdirectory of res://src, read from disk.
+	var expected: Array[String] = []
+	var d := DirAccess.open("res://src")
+	assert_true(d != null, "SCOPE control: res://src will not open")
+	if d == null:
+		return
+	d.list_dir_begin()
+	var n: String = d.get_next()
+	while n != "":
+		if d.current_is_dir() and not n.begins_with("."):
+			expected.append(n)
+		n = d.get_next()
+	d.list_dir_end()
+	expected.sort()
+	assert_gt(expected.size(), 8,
+		"SCOPE control: res://src lists %d subdirectories — the register is the thing being trusted here, so a short read makes every claim below free" % expected.size())
+
+	## A subtree with no .gd at all is not a walk failure — src/shaders holds only
+	## .gdshader, and demanding a hit there would be the guard over-claiming. Ask
+	## the filesystem whether the subtree HAS any GDScript, then require it.
+	var missing: Array[String] = []
+	for sub in expected:
+		var owned: Array[String] = []
+		_files("res://src/" + sub, ".gd", owned)
+		if owned.is_empty():
+			continue
+		var prefix: String = "res://src/" + sub + "/"
+		var found: bool = false
+		for p in paths:
+			if p.begins_with(prefix):
+				found = true
+				break
+		if not found:
+			missing.append(sub)
+	assert_eq(missing.size(), 0,
+		"the consumer walk collected NOTHING from %d of %d src subtrees (%s) — every 'no consumer' verdict in this file is scoped to whatever it did reach, which is not what the guard claims" % [missing.size(), expected.size(), missing])
+
+
 func test_control_the_consumer_corpus_is_real_and_excludes_the_manifest() -> void:
 	var text: String = _consumer_text()
 	assert_gt(text.length(), 1000000,
