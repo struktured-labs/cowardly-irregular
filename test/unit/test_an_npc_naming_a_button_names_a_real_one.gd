@@ -213,6 +213,18 @@ func test_the_comment_stripper_cuts_comments_and_nothing_else() -> void:
 			wrong.append("%s\n  in:  '%s'\n  got: '%s'\n  want:'%s'" % [str(c[2]), str(c[0]), got, str(c[1])])
 	assert_eq(wrong, [], "the comment stripper is wrong on:\n%s" % "\n".join(PackedStringArray(wrong)))
 
+	## @cowir-deploy / @cowir-ai's sixth costume, 2026-09-11: an ESCAPED BACKSLASH ending a string.
+	## A lookbehind check (`c == quote and line[i-1] != "\\"`) sees the backslash and decides the
+	## quote is escaped -- but that backslash was itself escaped, so the string really ended, and the
+	## comment after it stays scannable. Built with concatenation rather than escape soup so the
+	## intent survives reading: the line is   var q := "a\\"  # gone
+	var bs := "\\"
+	var esc_line: String = "var q := \"a" + bs + bs + "\"  # gone"
+	var esc_want: String = "var q := \"a" + bs + bs + "\"  "
+	assert_eq(_code_before_comment(esc_line), esc_want,
+		"an escaped backslash closed the string but the cutter thought the quote was escaped, " +
+		"so the comment after it survived into the scan")
+
 	## Full-line comments are blanked by _strip_comments, not by the cutter, so check that separately
 	## -- and check the line COUNT survives, because the substr windows above depend on it.
 	var src := "a = 1\n\t# dead\nb = 2  # tail\n"
