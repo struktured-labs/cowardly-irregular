@@ -131,7 +131,26 @@ else:
         future_src = src + 69 * mib
         future_out = future_src * (out / src)
         ftot = (future_out + other) / mib
+        # ⛔ THE REMEDY IS DERIVED, NOT FROZEN. This read "OVER at this bitrate — 48k
+        # needed" — a hardcoded string, so a run AT 48k was told to use 48k. Measured on
+        # v3.33.301-alpha's archived log, which is exactly that case:
+        #
+        #   with the ~48 queued monster themes: ~201 MiB (OVER at this bitrate — 48k needed)
+        #
+        # The one line that warns this lane the web build is heading over the limit handed
+        # back a no-op. It is the same defect as the hardcoded 68 MiB payload the comment
+        # above describes — a constant driving a verdict — and it survived that fix because
+        # it sits in the REMEDY rather than in the arithmetic.
+        def _remedy(cur_br, music_mib, other_mib, cap):
+            budget = cap - other_mib
+            if budget <= 0:
+                return f"OVER — the non-music payload alone is {other_mib:.0f} MiB"
+            need = int(cur_br) * budget / music_mib
+            if need < 24:
+                return (f"OVER at {cur_br}k — even ~{need:.0f}k would not fit; "
+                        f"the CONTENT has to shrink, not the bitrate")
+            return f"OVER at {cur_br}k — needs ~{need:.0f}k, or fewer tracks"
         print(f"[web-audio] with the ~48 queued monster themes: ~{ftot:.0f} MiB "
-              f"({'FITS' if ftot < limit else 'OVER at this bitrate — 48k needed'})")
+              f"({'FITS' if ftot < limit else _remedy(br, future_out/mib, other/mib, limit)})")
         print("[web-audio] projections only. deploy_web.sh gate 3 measures the real pck.")
 PY
