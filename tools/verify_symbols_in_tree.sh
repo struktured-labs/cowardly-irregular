@@ -57,6 +57,19 @@ if command grep -c -aF "$CONTROL" "$WORK" 2>/dev/null | command grep -qv '^0$'; 
 	exit 3
 fi
 
+# POSITIVE CONTROL, and it is NOT redundant with the one above. A fabricated symbol coming back 0
+# proves the reader can say NO; it cannot prove the reader can say YES. A matcher that returned 0
+# for everything would satisfy the negative control and report every symbol ABSENT — "your work is
+# missing" with a control line agreeing. `grep -c ''` matches every line, so on a non-empty blob it
+# must be > 0, and it is derived from this very file rather than from anything I assumed about it.
+if [ -s "$WORK" ]; then
+	ALL=$(command grep -ac '' "$WORK" || true)
+	if [ -z "$ALL" ] || [ "$ALL" -eq 0 ]; then
+		echo "READER BROKEN: matched nothing in a non-empty blob — every ABSENT below would be false" >&2
+		exit 3
+	fi
+fi
+
 MISSING=0
 for sym in "$@"; do
 	n=$(command grep -c -aF -- "$sym" "$WORK" || true)
