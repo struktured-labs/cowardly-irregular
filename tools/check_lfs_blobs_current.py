@@ -122,10 +122,32 @@ def _independent_corpus(repo, patterns):
         (simple if re.fullmatch(r'\*\.[A-Za-z0-9_]+', pat) else skipped).append(pat)
     exts = {pat[1:] for pat in simple}
     ec, out = _git(repo, "ls-files", "-z")
+
+    # ⛔ THE CONTROL'S OWN DRAIN MUST BE LOUD. @cowir-sfx, 2026-09-11: deriving the corpus
+    # MOVES the silence to the control. Measured on this function immediately after writing it
+    # — with the real minus-one defect present in the tree:
+    #
+    #     git ls-files fails here, return set()   -> EC 0, the defect walks past   ⛔
+    #     exts comes back empty, found == set()   -> EC 0, the defect walks past   ⛔
+    #
+    # An empty independent set makes `indep - corpus` empty, so the cross-check can only ever
+    # AGREE. It is then a control that cannot fail, sitting in front of the defect it exists
+    # for. Both paths raise instead of returning a set that proves nothing.
     if ec != 0:
-        return set(), simple, skipped
+        raise Unusable(
+            f"{TAG} BLOCKED: `git ls-files` failed while building the INDEPENDENT corpus. The\n"
+            f"        cross-check that catches partial corpus loss would pass vacuously — it "
+            f"can\n        only ever agree with an empty set. Refusing rather than cross-"
+            f"checking nothing.")
     found = {n for n in out.split("\0")
              if n and os.path.splitext(n)[1] in exts}
+    if simple and not found:
+        raise Unusable(
+            f"{TAG} BLOCKED: the independent match on {' '.join(simple)} found NO files, while "
+            f"git\n        reports LFS content in this repo. The cross-check is inert in that "
+            f"state and\n        would agree with any corpus, however short. Either this "
+            f"guard's own matcher\n        broke, or the patterns no longer describe anything "
+            f"on disk.")
     return found, simple, skipped
 
 
@@ -443,7 +465,24 @@ def selftest():
             lambda: (_said("did NOT list") and _said("a/x.ogg"),
                      "names the lost file; a shortened corpus is not a clean result"))
 
-        # 9. not a git repo
+        # 9. ⛔ THE CONTROL'S OWN DRAIN. The cross-check above is itself a derivation, and
+        #    @cowir-sfx's rule says deriving MOVES the silence into the control. Measured: with
+        #    the real minus-one defect present, an empty independent set let it through at
+        #    EC 0 — `indep - corpus` is empty, so the check could only ever agree. This arm
+        #    calls the control directly with patterns that match nothing.
+        def _inert_control():
+            try:
+                _independent_corpus(ghost, ["*.ogg"])
+            except Unusable as e:
+                print(str(e))
+                return 2
+            return 0
+
+        arm("the cross-check's OWN corpus going empty is loud", 2, _inert_control,
+            lambda: (_said("inert in that state") or _said("found NO files"),
+                     "refuses rather than cross-checking against nothing"))
+
+        # 10. not a git repo
         nogit = os.path.join(td, "nogit")
         os.makedirs(nogit)
         arm("not a git repository", 2, lambda: run(nogit),
