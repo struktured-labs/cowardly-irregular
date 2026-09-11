@@ -78,6 +78,29 @@ _saves_cksum() {
 
 echo "═══ publish_all: $TAG ═══"
 
+# ── 0. every polling wait in the deploy chain is bounded ─────────────────────
+# FIRST, because it costs milliseconds and the thing it prevents costs the whole batch.
+# This script runs the channels in series and web LAST; an unbounded post-push wait in any
+# chain does not fail it, it HANGS it — no RED, no exit code, no log line, and the hourly
+# publish cadence simply stops. deploy_web.sh carried exactly that for months while
+# deploy_desktop.sh's comment described it, which is how a documented hazard reads as a
+# handled one.
+#
+# Delegated so the decision is exercised by ITS OWN selftest as a subprocess — same reason
+# as check_import_ok.sh below, and the same reason a re-implemented copy in a probe proves
+# nothing about the shipped code.
+if [ -x tools/check_polling_bounded.py ]; then
+    if ! ./tools/check_polling_bounded.py; then
+        echo "[pub] BLOCKED: a polling wait in the deploy chain is unbounded — see above." >&2
+        echo "      Refusing to start a batch that can hang instead of failing." >&2
+        exit 4
+    fi
+else
+    echo "[pub] BLOCKED: tools/check_polling_bounded.py missing — nothing has checked that the" >&2
+    echo "      deploy chain can still time out. A missing guard is not a passing one." >&2
+    exit 4
+fi
+
 # ── 1. tag evidence ──────────────────────────────────────────────────────────
 # The token is required. Absence of a SKIP is NOT a failure here — it means the chains will
 # run the suite sandboxed, which is correct and merely slower. Only report it.
