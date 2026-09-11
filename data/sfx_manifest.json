@@ -1973,8 +1973,8 @@
       "prompt_influence": 0.7
     },
     "w2_ability_heal": {
-      "file": "assets/audio/sfx/w2_ability_heal.ogg",
-      "prompt": "Garden hose spraying gently onto grass, warm suburban afternoon air, soft sprinkler hiss settling into calm — smooth and continuous with no birdsong and no chirping and no tinkling.",
+      "file": "assets/audio/sfx/ability_heal.ogg",
+      "prompt": "Garden hose spraying gently onto grass, warm suburban afternoon air, soft sprinkler hiss settling into calm — smooth and continuous with no birdsong and no chirping and no tinkling. REPOINTED BACK 2026-09-10: the 09-10 regen was validated on spectral FLATNESS (hiss-vs-chime) and never on BRIGHTNESS, the property struktured actually rejected. Re-measured by this file's own criterion: w2 9735 Hz / 97.6%% >4kHz, w3 9404 Hz / 94.8%% — SHRILLER than the assets they replaced (8826/86.9%%, 9875/82.9%%). ability_heal.ogg is 437 Hz / 0.1%%. The dedicated assets stay on disk; re-land them only when they measure warm.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "note": "repointed 2026-08-30: generated asset was a literal bird chirp (>8.8kHz mean peak, >82% energy above 4kHz). struktured: no animal noises on ability SFX unless the ability is animal-themed."
@@ -2016,8 +2016,8 @@
       "prompt_influence": 0.7
     },
     "w3_ability_heal": {
-      "file": "assets/audio/sfx/w3_ability_heal.ogg",
-      "prompt": "Gentle steam release with ticking clockwork music box, warm brass pipes humming, steampunk healing apparatus — smooth and sustained with no birdsong and no chirping and no tinkling.",
+      "file": "assets/audio/sfx/ability_heal.ogg",
+      "prompt": "Gentle steam release with ticking clockwork music box, warm brass pipes humming, steampunk healing apparatus — smooth and sustained with no birdsong and no chirping and no tinkling. REPOINTED BACK 2026-09-10: the 09-10 regen was validated on spectral FLATNESS (hiss-vs-chime) and never on BRIGHTNESS, the property struktured actually rejected. Re-measured by this file's own criterion: w2 9735 Hz / 97.6%% >4kHz, w3 9404 Hz / 94.8%% — SHRILLER than the assets they replaced (8826/86.9%%, 9875/82.9%%). ability_heal.ogg is 437 Hz / 0.1%%. The dedicated assets stay on disk; re-land them only when they measure warm.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "note": "repointed 2026-08-30: generated asset was a literal bird chirp (>8.8kHz mean peak, >82% energy above 4kHz). struktured: no animal noises on ability SFX unless the ability is animal-themed."
