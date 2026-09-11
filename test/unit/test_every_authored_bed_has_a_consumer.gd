@@ -530,10 +530,16 @@ func test_no_briefed_battle_track_is_shadowed_by_a_declaration() -> void:
 ##
 ##     credits_medieval  <- world1_epilogue    LIVE (wired 2026-09-11)
 ##     credits_abstract  <- world6_ending      LIVE
-##     credits_suburban  <- world2_epilogue    dead, and the "supersessor" does
-##     credits_steampunk <- world3_epilogue    NOT carry a roll_credits step
-##     credits_industrial<- world4_epilogue    dead, no supersessor at all
-##     credits_digital   <- world5_epilogue    dead, no supersessor at all
+##     credits_suburban  <- world2_chapter11   LIVE (step moved .297)
+##     credits_steampunk <- world3_chapter5    LIVE (step moved .297)
+##     credits_industrial<- world4_chapter5    LIVE (step moved .299)
+##     credits_digital   <- world5_chapter5    LIVE (step moved .299)
+##
+## RESOLVED 2026-09-11. All six campaign credits rolls now have a live route and
+## the allowlist's four credits entries are drained. The paragraph below is kept
+## as the record of how it read before, and one clause of it is now FALSE: the
+## supersessors DO carry the roll_credits step, because moving it there was the
+## fix. cowir-story took the pacing call this file deferred to them.
 ##
 ## cowir-story ruled W2/W3's epilogues superseded by world2_chapter11 and
 ## world3_chapter5 — true of the PROSE. Measured here: both supersessors have
@@ -543,11 +549,14 @@ func test_no_briefed_battle_track_is_shadowed_by_a_declaration() -> void:
 ## is a pacing decision about where a campaign's credits roll, so it is theirs
 ## or struktured's, not mine.
 const KNOWN_WIRED_TO_DEAD_SCENES := {
-	"credits_digital": "world5_epilogue — not dispatched, and W5 has no supersessor carrying its beat",
-	"credits_industrial": "world4_epilogue — not dispatched, no supersessor. Also web-excluded, so silent there even if wired",
-	"credits_steampunk": "world3_epilogue — prose superseded by world3_chapter5, but that scene has roll_credits=0, so this bed has no other route",
-	"credits_suburban": "world2_epilogue — same shape: world2_chapter11 carries the prose and not the credits roll",
-	"cutscene_w5_cached_memory": "all four world6_fragment_* scenes, none dispatched",
+	## 2026-09-11: the four credits entries DRAINED — every campaign credits roll now has a live route.
+	## credits_suburban/steampunk left with .297 (world2_chapter11, world3_chapter5); industrial/digital here.
+	## This entry is NOT stale for the same reason: the bed IS reached, and the DETECTOR cannot see it.
+	## world5_fragment_* are dispatched by GameLoop's _FRAGMENT_GATES loop, which ends `return fid` — a
+	## loop variable, not a literal. _dispatcher_text() scans for the scene id and a composed return has none.
+	## GameLoop says so itself above the table: "the loop returns the id, so the static audit does not see these".
+	## So this line documents an INSTRUMENT limit, not a dead bed. Fixing the scan retires it.
+	"cutscene_w5_cached_memory": "world5_fragment_* (4 scenes) — reached via the _FRAGMENT_GATES loop, invisible to a literal-id scan",
 }
 
 
