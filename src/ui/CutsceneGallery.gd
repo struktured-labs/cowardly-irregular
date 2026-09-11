@@ -71,6 +71,7 @@ func _scan_cutscenes() -> void:
 	dir.list_dir_end()
 	files.sort()
 
+	var parsed: Array = []
 	for filename in files:
 		var path := "res://data/cutscenes/" + filename
 		# Tick 274: 4-stage loud-fail (matches BestiarySystem._load_json
@@ -102,24 +103,46 @@ func _scan_cutscenes() -> void:
 		if "guidance" in id or "encounter" in id or "npcs" in id:
 			continue
 
-		var unlocked := false
+		var flags: Array[String] = []
 		for step in data.get("steps", []):
-			if step.get("type") == "set_flag":
-				var flag: String = step.get("flag", "")
-				if flag != "" and GameState.game_constants.get("cutscene_flag_" + flag, false):
-					unlocked = true
-					break
+			if step is Dictionary and step.get("type") == "set_flag" and str(step.get("flag", "")) != "":
+				flags.append(str(step["flag"]))
+		parsed.append({"id": id, "title": title, "world": world, "flags": flags})
 
+	# Which set_flag flags belong to exactly one scene: a shared flag (fool_card_marks is set by all five orreries) unlocked scenes the player had never seen.
+	var owners: Dictionary = {}
+	for entry in parsed:
+		for flag in entry["flags"]:
+			owners[flag] = owners.get(flag, 0) + 1
+
+	for entry in parsed:
+		var world: int = entry["world"]
 		if not _items_by_world.has(world):
 			_items_by_world[world] = []
 		_items_by_world[world].append({
-			"id": id,
-			"title": title,
-			"unlocked": unlocked,
+			"id": entry["id"],
+			"title": entry["title"],
+			"unlocked": is_scene_seen(entry["id"], entry["flags"], owners),
 		})
 
 	_world_order = _items_by_world.keys()
 	_world_order.sort()
+
+
+## Has the player seen this scene? The Director's seen ledger is the truth; the completion-flag map covers saves from before the ledger; a set_flag flag counts only if no other scene sets it.
+static func is_scene_seen(id: String, flags: Array, owners: Dictionary, constants: Dictionary = {}) -> bool:
+	var gc: Dictionary = constants
+	if gc.is_empty() and GameState and "game_constants" in GameState:
+		gc = GameState.game_constants
+	if gc.get(CutsceneDirector.SEEN_KEY_PREFIX + id, false):
+		return true
+	var completion: Dictionary = load("res://src/GameLoop.gd").get_script_constant_map().get("_CUTSCENE_COMPLETION_FLAGS", {})
+	if completion.has(id) and gc.get(str(completion[id]), false):  # map values carry the cutscene_flag_ prefix already
+		return true
+	for flag in flags:
+		if owners.get(flag, 0) == 1 and gc.get("cutscene_flag_" + str(flag), false):
+			return true
+	return false
 
 
 func _build_ui() -> void:
@@ -431,7 +454,7 @@ func _try_replay_selected() -> void:
 			visible = true,
 		CONNECT_ONE_SHOT,
 	)
-	_cutscene_director.play_cutscene(entry.id)
+	_cutscene_director.play_cutscene(entry.id, true)  # replay: the scene plays, the world does not change
 
 
 func _close() -> void:

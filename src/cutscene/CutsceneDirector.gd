@@ -54,12 +54,17 @@ var _effects_rect: ColorRect
 var _original_camera_zoom: Vector2 = Vector2.ONE
 var _original_camera_position: Vector2 = Vector2.ZERO
 
+## A gallery replay: the scene plays, the world does not change — no items, flags, choices, duels; staged scenes fall back to overlay.
+var _replay: bool = false
+
 ## Configuration
 const LETTERBOX_HEIGHT: int = 40
 const LETTERBOX_ANIM_DURATION: float = 0.4
 const SKIP_THRESHOLD: float = 1.5
 const SKIP_BAR_WIDTH: float = 220.0
 const SKIP_BAR_HEIGHT: float = 10.0
+## game_constants key prefix for the seen ledger (persists with the save): SEEN_KEY_PREFIX + cutscene_id = true.
+const SEEN_KEY_PREFIX := "cutscene_seen_"
 const SKIP_PILL_PAD: float = 12.0
 const SKIP_PILL_HEIGHT: float = 48.0
 
@@ -264,7 +269,7 @@ func is_active() -> bool:
 	return _active
 
 
-func play_cutscene(cutscene_id: String) -> void:
+func play_cutscene(cutscene_id: String, replay: bool = false) -> void:
 	"""Load and play a cutscene from data/cutscenes/<cutscene_id>.json"""
 	# Re-entry guard: a second play mid-scene stacked a second step-runner over the first — hidden dialogue typing (phantom blips), repeats, desync (struktured 2026-07-11).
 	if _active:
@@ -275,6 +280,7 @@ func play_cutscene(cutscene_id: String) -> void:
 		push_error("CutsceneDirector: Failed to load cutscene '%s'" % cutscene_id)
 		return
 
+	_replay = replay
 	_cutscene_id = cutscene_id
 	_active = true
 	_skipping = false
@@ -286,7 +292,7 @@ func play_cutscene(cutscene_id: String) -> void:
 	visible = true
 
 	# Staged mode: live world stays visible — no backdrop, no dim, puppets act in-scene.
-	_staged = str(data.get("presentation", "")) == "staged"
+	_staged = str(data.get("presentation", "")) == "staged" and not _replay  # a replay has no authored stage under it — overlay
 	if _staged:
 		var cn = data.get("conscript_nearby", null)
 		_conscript_spec = cn if cn is Dictionary else ({} if cn == null else {"radius": CONSCRIPT_RADIUS_DEFAULT})
@@ -332,11 +338,12 @@ func play_cutscene(cutscene_id: String) -> void:
 	await _end_cutscene()
 
 
-func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
+func play_cutscene_from_data(cutscene_id: String, data: Dictionary, replay: bool = false) -> void:
 	"""Play a cutscene from an in-memory dictionary (no file load)."""
 	if _active:
 		push_warning("CutsceneDirector: refused '%s' — '%s' is already playing" % [cutscene_id, _cutscene_id])
 		return
+	_replay = replay
 	_cutscene_id = cutscene_id
 	_active = true
 	_skipping = false
@@ -348,7 +355,7 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	visible = true
 
 	# Same staged-mode gate as play_cutscene — keep the two entry points in sync.
-	_staged = str(data.get("presentation", "")) == "staged"
+	_staged = str(data.get("presentation", "")) == "staged" and not _replay  # a replay has no authored stage under it — overlay
 	if _staged:
 		var cn = data.get("conscript_nearby", null)
 		_conscript_spec = cn if cn is Dictionary else ({} if cn == null else {"radius": CONSCRIPT_RADIUS_DEFAULT})
@@ -598,7 +605,7 @@ func _set_choice_flag(option: Variant) -> void:
 	if not (option is Dictionary):
 		return
 	var flag_name: String = str((option as Dictionary).get("flag", ""))
-	if flag_name == "":
+	if flag_name == "" or _replay:  # a replayed choice must not overwrite the answer the player actually gave
 		return
 	var gs: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
 	if gs == null or not ("game_constants" in gs):
@@ -823,6 +830,8 @@ func _step_play_sfx(step: Dictionary) -> void:
 func _step_set_flag(step: Dictionary) -> void:
 	var flag = step.get("flag", "")
 	var value = step.get("value", true)
+	if _replay:
+		return
 	if flag != "":
 		# Store cutscene flags in game_constants for now
 		if GameState:
@@ -863,7 +872,8 @@ func _step_grant_item(step: Dictionary) -> void:
 		push_warning("CutsceneDirector grant_item: missing 'item' field")
 		return
 	var quantity: int = int(step.get("quantity", 1))
-	_add_item_to_party_leader(item_id, quantity)
+	if not _replay:  # a replay shows the reveal, it does not grant the item again
+		_add_item_to_party_leader(item_id, quantity)
 	if _skipping:
 		return
 	var popup_data = {
@@ -898,6 +908,8 @@ func _step_give_item(step: Dictionary) -> void:
 		push_warning("CutsceneDirector give_item: missing 'item' field")
 		return
 	var quantity: int = int(step.get("quantity", 1))
+	if _replay:
+		return
 	_add_item_to_party_leader(item_id, quantity)
 
 
@@ -984,6 +996,8 @@ func _step_update_item(step: Dictionary) -> void:
 	## Pre-fix, like grant_item/give_item, this step was silently dropped.
 	var old_id: String = str(step.get("item", ""))
 	var new_id: String = str(step.get("new_id", ""))
+	if _replay:
+		return
 	if old_id == "" or new_id == "":
 		push_warning("CutsceneDirector update_item: missing 'item' or 'new_id' field")
 		return
@@ -2061,6 +2075,10 @@ func _end_cutscene() -> void:
 	# Staged-mode teardown: puppets, hidden nodes, camera. Idempotent no-op for overlay scenes.
 	_end_staging()
 
+	# Seen ledger: a real, unaborted play (skipped counts — the player chose to pass it) marks the scene replayable in the gallery, which no flag heuristic could do for the 21 scenes that set none.
+	if not _aborted and not _replay and _cutscene_id != "" and GameState and "game_constants" in GameState:
+		GameState.game_constants[SEEN_KEY_PREFIX + _cutscene_id] = true
+
 	# Snapshot then clear BEFORE the emit. Otherwise: a listener that
 	# synchronously chains into the next cutscene (e.g. prologue → chapter1
 	# via GameLoop._on_prologue_finished) sets _cutscene_id to the new id
@@ -2071,6 +2089,7 @@ func _end_cutscene() -> void:
 	# cutscenes" state and any new play_cutscene gets to fully own them.
 	var finished_id: String = _cutscene_id
 	_last_finished_aborted = _aborted
+	_replay = false
 	_active = false
 	if not dip:
 		visible = false
@@ -2135,6 +2154,8 @@ func _load_cutscene_data(cutscene_id: String) -> Dictionary:
 ## the cutscene stays paused across attempts and the intro cutscene
 ## never replays (matches cowir-story's UX requirement, msg 1931 #4).
 func _step_battle(step: Dictionary) -> void:
+	if _replay:  # a duel is not replayable from the gallery — the scene continues as it did after the win
+		return
 	var combatants: Array = step.get("combatants", [])
 	var enemies: Array = step.get("enemies", [])
 	var on_defeat: String = str(step.get("on_defeat", "retry"))
