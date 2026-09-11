@@ -655,6 +655,12 @@ func test_no_cutscene_step_type_can_dispatch_another_cutscene() -> void:
 ## Bounded by INDENTATION and by brace matching, not by char windows: a window
 ## that is too small truncates and one that is too large swallows the next
 ## function's returns, and over-reporting dispatch is the silent direction.
+## Named beside every verdict so the claim carries its own scope. A stranded-bed
+## report is only as strong as this list is complete, and nothing in the test can
+## know about a form nobody has thought of (cowir-adhoc, 2026-09-11).
+const DISPATCH_FORMS := ["return \"<id>\"", "play_cutscene(\"<id>\")", "for <v> in <TABLE>: return <v>"]
+
+
 func _loop_dispatched_ids(disp: String) -> Dictionary:
 	var out: Dictionary = {}
 	var lines: PackedStringArray = disp.split("\n")
@@ -796,7 +802,7 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 			stranded.append("%s <- %s" % [id, naming])
 
 	assert_eq(stranded.size(), 0,
-		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds" % [stranded.size(), stranded])
+		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds. DISPATCH FORMS THIS PREDICATE KNOWS: %s. A bed is dead only if no FOURTH form exists — the loop form was invisible here until 2026-09-11 and 20 scenes read as dead the whole time" % [stranded.size(), stranded, DISPATCH_FORMS])
 	assert_eq(revived.size(), 0,
 		"pinned beds whose scene is now dispatched (%s) — the epilogue landed; delete the entries" % [revived])
 
