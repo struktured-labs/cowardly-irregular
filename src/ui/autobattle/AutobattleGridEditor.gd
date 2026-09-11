@@ -285,9 +285,10 @@ func _build_ui() -> void:
 
 	var help_label2 = Label.new()
 	## That "Y" is JOY_BUTTON_Y (north face) — the keyboard key for CycleOp is C; a raw index has no action, so it derives via face_glyph_for_index.
-	help_label2.text = "%s/C:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  %s:Auto  Start:Save" % [
+	help_label2.text = "%s/C:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  %s:Auto  %s:Save" % [
 		InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y),
 		InputProfileManager.hint_for_action("battle_toggle_auto"),
+		InputProfileManager.hint_for_action("ui_menu"),
 	]
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)

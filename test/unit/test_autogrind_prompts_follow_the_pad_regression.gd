@@ -53,9 +53,10 @@ const LANE_DIRS := ["res://src/ui/autogrind", "res://src/ui/autobattle"]
 
 ## Frozen captions that are NOT fixed, each with the reason -- the value is required non-empty, so
 ## an entry can be explained green but never silenced green.
-const DEFERRED := {
-	"Start:Save": "Start is not a face button; AutobattleGridEditor derives the Select half via hint_for_action (folded 2026-09-11) and Start is still owed the same treatment.",
-}
+## EMPTY, and that is the goal state. "Start:Save" was retired 2026-09-11 by cowir-controller —
+## ui_menu now resolves through hint_for_action in BOTH grid editors (Plus / Start / Options).
+## @cowir-autogrind pre-authorised the removal when they declared this pin.
+const DEFERRED := {}
 
 
 ## Comments stripped QUOTE-AWARE, line count preserved so any positional reasoning stays valid.

@@ -80,8 +80,18 @@ func test_the_captions_derive_instead() -> void:
 	assert_true(bs.contains("hint_for_action(\"battle_advance\")"),
 		"the Advance hint must derive from its InputMap action")
 	var ge := _src(GRID_EDITOR)
-	assert_eq(ge.count("InputProfileManager.hint_for_action("), 9,
-		"the grid editor has NINE pad tokens across FOUR help lines — the sweep that found it reported two lines, its own scan found three, the file has four")
+	## WAS `assert_eq(count, 9)`. cowir-controller 2026-09-11: deriving "Start:Save" through
+	## hint_for_action("ui_menu") made it 10 and this arm reds on a CORRECT change — a census of the
+	## file at a moment, not a property of it. @cowir-main flagged the same class at the .296 fold
+	## ("a lane's ratchet pinning a helper NAME goes stale on another lane's better helper").
+	## Pinned two ways instead: every action the help lines advertise must be DERIVED by name, and
+	## the count may only GROW. Adding a derivation is good news; removing one still reds.
+	for action in ["ui_accept", "ui_cancel", "ui_menu", "battle_toggle_auto", "battle_defer"]:
+		assert_true(ge.contains("hint_for_action(\"%s\")" % action),
+			"the grid editor must derive %s rather than spell its button — deleting the help line " % action +
+			"would satisfy the absence arm above, which is why this half exists")
+	assert_gte(ge.count("InputProfileManager.hint_for_action("), 9,
+		"a pad token was REMOVED from the grid editor's help lines; the absence arm cannot see a deletion")
 
 func test_speed_has_no_inputmap_action_so_the_helper_is_the_only_route() -> void:
 	## The premise, measured rather than asserted. If someone later ADDS a battle_speed action, this
@@ -160,3 +170,38 @@ func test_the_stripper_preserves_line_count() -> void:
 	var raw := "a\n# b\nc  # d\n"
 	assert_eq(_strip_comments(raw).split("\n").size(), raw.split("\n").size(),
 		"blanking must not remove lines")
+
+
+## ⛔ THE GAP THIS FILE HAD: "Start:Save" re-froze and BOTH guards stayed green (measured
+## 2026-09-11 by mutation). The frozen list above holds FACE letters, and cowir-autogrind's scan
+## looks for face-button letters — "Start" is neither. So the non-face names were unguarded on
+## every side, which is how "Start" survived the batch that derived "Select" beside it.
+##
+## Banned set DERIVED from BUTTON_NAMES, not listed: every family's spelling of a non-face button
+## (Start/Plus/Options, Select/Back/Share, L/LB/L1, R/RB/R1, L3/L-Stick). A new family or a
+## renamed button cannot open a hole here.
+##
+## Scans LABEL ASSIGNMENTS only. `print("[AUTOBATTLE] Start pressed via ui_menu")` at :1885 is a
+## debug line, not player-facing, and a whole-file scan would report it as a defect.
+func test_no_help_label_spells_a_non_face_button() -> void:
+	var banned: Array[String] = []
+	for family in InputProfileManager.BUTTON_NAMES:
+		for idx in InputProfileManager.BUTTON_NAMES[family]:
+			var n: String = InputProfileManager.BUTTON_NAMES[family][idx]
+			if not banned.has(n):
+				banned.append(n)
+	assert_gt(banned.size(), 8, "PRECONDITION: the banned set must come from BUTTON_NAMES, got %s" % [banned])
+
+	var offenders: Array[String] = []
+	for path in [GRID_EDITOR, "res://src/ui/autogrind/AutogrindGridEditor.gd"]:
+		for raw in _src(path).split("\n"):
+			var line: String = raw.strip_edges()
+			if line.begins_with("#") or not line.contains(".text = "):
+				continue
+			for n in banned:
+				# "Start:Save" / "Start Save" — a caption naming the button, not a word inside prose
+				if line.contains("\"%s:" % n) or line.contains(" %s:" % n):
+					offenders.append("%s :: %s" % [path.get_file(), n])
+	assert_eq(offenders, [] as Array[String],
+		"a help label spells a NON-FACE button by one family's name — derive it through " +
+		"hint_for_action so Nintendo reads Plus and PlayStation reads Options: %s" % [", ".join(offenders)])
