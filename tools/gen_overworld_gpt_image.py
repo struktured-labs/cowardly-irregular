@@ -484,9 +484,12 @@ def get_proc_gen_chibi(job: str, out_png: Path) -> bool:
     return _git_show_png(f"assets/sprites/jobs/{job}/overworld.png", out_png)
 
 
-def _manifest_frame_width(rel: str) -> int | None:
-    """Declared frame_width for a sheet path, from the game's own manifest. None when the sheet
-    is unregistered — then the caller infers and the divisibility check is the only guard."""
+def _manifest_frame_size(rel: str) -> tuple[int, int] | None:
+    """Declared (frame_width, frame_height) for a sheet path, from the game's own manifest. None
+    when the sheet is unregistered — then the caller infers and divisibility is the only guard.
+    Returns BOTH dimensions deliberately: reading width and then reusing it as height is the same
+    majority-as-universal mistake one level down, and is how a second wrong constant hides behind
+    a corrected first one (cowir-story on cowir-music's 48k/mono, 2026-09-11)."""
     try:
         man = json.loads((GAME_REPO / "data" / "sprite_manifest.json").read_text())
     except Exception:
@@ -497,8 +500,8 @@ def _manifest_frame_width(rel: str) -> int | None:
             continue
         for entry in section.values():
             if isinstance(entry, dict) and entry.get("path") == want:
-                fw = entry.get("frame_width")
-                return int(fw) if fw else None
+                fw, fh = entry.get("frame_width"), entry.get("frame_height")
+                return (int(fw), int(fh)) if fw and fh else None
     return None
 
 
@@ -514,15 +517,19 @@ def export_battle_frame(rel: str, frame: int, out_png: Path) -> bool:
     # 2026-09-11 — a corpus fact, not a law, and cowir-music lost 19 of 165 audio beds to exactly
     # this shape: a majority measured, written down as universal, and the word "measured" is what
     # stopped anyone re-checking it. The manifest states the answer, so do not guess it.
-    fw = _manifest_frame_width(rel) or strip.height
+    declared = _manifest_frame_size(rel)
+    fw, fh = declared if declared else (strip.height, strip.height)
     if strip.width % fw != 0:
-        print(f"ERROR: {rel} is {strip.size} — not a whole number of {fw}px square frames")
+        print(f"ERROR: {rel} is {strip.size} — not a whole number of {fw}px-wide frames")
+        return False
+    if strip.height != fh:
+        print(f"ERROR: {rel} is {strip.height}px tall but the manifest declares {fh}px frames")
         return False
     n = strip.width // fw
     if not 0 <= frame < n:
         print(f"ERROR: {rel} has {n} frames; asked for index {frame}")
         return False
-    strip.crop((frame * fw, 0, (frame + 1) * fw, fw)).save(out_png)
+    strip.crop((frame * fw, 0, (frame + 1) * fw, fh)).save(out_png)
     return True
 
 
