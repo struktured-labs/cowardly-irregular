@@ -46,6 +46,19 @@ func _snake(n: String) -> String:
 	return n.to_lower().replace(" ", "_").replace("'", "").replace("-", "_")
 
 
+## Blank GDScript comments, preserving line count. A commented-out `.npc_id = "x"` must NOT
+## count as wiring -- that is what a real removal looks like, unlike an outright delete.
+func _decomment(src: String) -> String:
+	var out: PackedStringArray = []
+	for line in src.split("\n"):
+		var hash_at: int = line.find("#")
+		if hash_at >= 0:
+			out.append(line.substr(0, hash_at))
+		else:
+			out.append(line)
+	return "\n".join(out)
+
+
 func _read_all(dir_path: String) -> String:
 	var blob := ""
 	var dir := DirAccess.open(dir_path)
@@ -57,7 +70,7 @@ func _read_all(dir_path: String) -> String:
 		if f.ends_with(".gd"):
 			var fh := FileAccess.open(dir_path + f, FileAccess.READ)
 			if fh != null:
-				blob += fh.get_as_text() + "\n"
+				blob += _decomment(fh.get_as_text()) + "\n"
 				fh.close()
 		f = dir.get_next()
 	dir.list_dir_end()
@@ -80,7 +93,7 @@ func _read_all_recursive(dir_path: String) -> String:
 		elif f.ends_with(".gd"):
 			var fh := FileAccess.open(full, FileAccess.READ)
 			if fh != null:
-				blob += fh.get_as_text() + "\n"
+				blob += _decomment(fh.get_as_text()) + "\n"
 				fh.close()
 		f = dir.get_next()
 	dir.list_dir_end()
@@ -170,3 +183,15 @@ func test_the_unwired_debt_list_is_exact() -> void:
 	assert_eq(unresolved, expected,
 		"the set of unresolvable givers CHANGED. If a world was wired, delete its entries from " +
 		"UNWIRED_BY_DESIGN. If a new quest appeared with an unresolvable giver, that is the bug.")
+
+
+## A guard armed only against an OUTRIGHT DELETE is defenceless against what actually happens:
+## someone comments the line out and leaves a note. This pins the messy removal, not the tidy one.
+func test_a_commented_out_npc_id_does_not_count_as_wiring() -> void:
+	var live := "\tforeman.npc_id = \"foreman_w4\"\n"
+	var removed := "\t# foreman.npc_id = \"foreman_w4\"  -- removed, see ticket\n"
+	var re := RegEx.create_from_string('\\.npc_id\\s*=\\s*"([a-z0-9_]+)"')
+	assert_ne(re.search(_decomment(live)), null,
+		"control: a real assignment must still be seen after decommenting")
+	assert_eq(re.search(_decomment(removed)), null,
+		"a commented-out .npc_id must NOT register as wiring — that is how removals actually look")
