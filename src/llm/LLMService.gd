@@ -195,9 +195,10 @@ func apply_byok_config() -> bool:
 		http.api_format = "ollama"
 		http.model = "llama3"
 		http.api_key = ""
-	# Reset the readiness flag if the backend caches it — next probe
-	# decides whether the new endpoint is reachable.
-	if "_ready_flag" in http:
+	# Probe the new endpoint NOW — the interval gate would otherwise block it for 30s.
+	if http.has_method("invalidate_and_reprobe"):
+		http.invalidate_and_reprobe()
+	elif "_ready_flag" in http:
 		http._ready_flag = false
 	# Reset the "no backend" warning gate so a successful BYOK swap
 	# can re-warn cleanly if the new endpoint also fails.

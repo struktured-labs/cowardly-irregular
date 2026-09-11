@@ -65,8 +65,9 @@ func test_byok_apply_resets_readiness_flag() -> void:
 	# stale — next call needs to re-probe the new endpoint, not trust
 	# the old endpoint's ready=true.
 	var body := _body_of("apply_byok_config")
-	assert_true(body.contains("_ready_flag = false"),
-		"apply_byok_config must reset the backend's readiness flag so the new endpoint is probed fresh")
+	# HTTPBackend takes invalidate_and_reprobe; the bare `_ready_flag = false` is an unreachable fallback.
+	assert_true(body.contains("invalidate_and_reprobe()"),
+		"apply_byok_config must invalidate readiness through the LIVE path — asserting the fallback string scans a branch HTTPBackend never takes")
 
 
 func test_web_build_short_circuits() -> void:
