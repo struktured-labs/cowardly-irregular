@@ -117,6 +117,18 @@ import sys, glob, os
 stage = sys.argv[1]
 p = os.path.join(stage, "export_presets.cfg"); s = open(p).read()
 i = s.find('name="Web"'); j = s.find('exclude_filter="', i); k = s.find('"', j+16)
+# ⛔ AND THE FILTER MUST BE INSIDE WEB'S OWN BLOCK. `find(..., i)` takes the NEXT
+# exclude_filter after name="Web", which is only Web's because Web currently HAS one.
+# Measured 2026-09-11: delete Web's exclude_filter and this parser silently picks up
+# ANDROID's -- and Android's carries no assets/audio patterns, so every excluded track
+# reads as shipping. That is the same false-green that gave @cowir-overworld six-for-six
+# from the Linux filter. Correct today because of a fact about the DATA, not a bound in
+# the code; the section boundary is the bound.
+_nxt = s.find('[preset.', i)
+if 0 <= _nxt < j:
+    sys.exit(f"[stage] BLOCKED: the Web preset has no exclude_filter of its own -- the next "
+             f"one at {j} belongs to a LATER preset (section boundary at {_nxt}). Refusing to "
+             f"diet the pck with another platform's filter.")
 # ASSERT THE PARSE FOUND ITS TARGET. str.find returns -1 on a miss and Python happily
 # slices with it: i=-1 makes the next find start at the LAST character, j=-1 makes the
 # slice s[15:k] read the file HEADER, and the write at the bottom then emits

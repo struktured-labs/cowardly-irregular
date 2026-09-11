@@ -90,8 +90,12 @@ _containment_control() {
         echo "[rehearse] CONTAINMENT FAILED: butler resolves to '$resolved', not the stub." >&2
         return 1
     fi
-    PATH="$STUB:$PATH" BUTLER_STUB_LOG="$CALLS" butler status probe >/dev/null 2>&1; s=$?
-    PATH="$STUB:$PATH" BUTLER_STUB_LOG="$CALLS" butler push probe target >/dev/null 2>&1; p=$?
+    # Invoke the stub BY PATH, not through $PATH resolution. Two separate assertions:
+    # the check above proves `butler` RESOLVES to the stub; these prove the stub BEHAVES.
+    # Routing them through $PATH conflated the two, and it also made this line read to a static
+    # scanner as a bare `butler push` — which is exactly what it must not look like.
+    BUTLER_STUB_LOG="$CALLS" "$STUB/butler" status probe >/dev/null 2>&1; s=$?
+    BUTLER_STUB_LOG="$CALLS" "$STUB/butler" push probe target >/dev/null 2>&1; p=$?
     after="$(wc -l < "$CALLS")"
     if [ "$s" -ne 0 ]; then
         echo "[rehearse] CONTAINMENT FAILED: stub status returned $s, expected 0." >&2

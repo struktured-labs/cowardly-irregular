@@ -50,7 +50,17 @@ import re
 import sys
 import tempfile
 
-TARGET_PREFIXES = ("deploy_",)
+# ⛔ THE CORPUS IS DERIVED FROM THE CALL SITE, NOT FROM FILENAMES.
+# This used to be TARGET_PREFIXES = ("deploy_",). The contract is about `butler push`; the
+# corpus was about what a file is CALLED. Correct today only by coincidence of naming — and
+# the moment I widened it, it found a fourth push site the prefix had never examined:
+# tools/rehearse_publish.sh:94, the rehearsal rig's containment control.
+# (@cowir-sfx's ambient_*/play_ambient finding, applied to this lane.)
+#
+# Files named deploy_*/publish_* are ALSO examined when they contain no push, because a
+# delegating wrapper is a publish entry point — see the no-push branch in audit().
+SCAN_GLOB = "*.sh"
+WRAPPER_PREFIXES = ("deploy_", "publish_")
 
 # PARTLY contract-derived, and the comment used to claim it fully was. The CONTRACT is three
 # channels across two scripts — web has its own, linux and windows share deploy_desktop.sh — so
@@ -162,7 +172,30 @@ def audit(path):
     raw = open(path, encoding="utf-8", errors="replace").read().splitlines()
     lines = join_continuations(strip_comments(raw))
 
-    pushes = [i for i, l in enumerate(lines) if PUSH_RE.search(l)]
+    # ⚠ A line whose command is echo/printf is PROSE, not an invocation. Comment stripping does
+    # not cover it, and the very first thing the widened corpus flagged was publish_all.sh:150 —
+    #     echo "[pub] BLOCKED: a butler push is reachable without --publish — see above."
+    # the text of this guard's OWN error message. The file documenting the defect is
+    # indistinguishable from the defect; that is why scanners need this and comments are not
+    # enough. (Limit, stated: a push inside a longer quoted string on a non-echo line still
+    # reads as code. Narrower than stripping shell strings properly, which needs a parser.)
+    def _is_prose(l):
+        return re.match(r'\s*(echo|printf)\b', l) is not None
+
+    pushes = [i for i, l in enumerate(lines) if PUSH_RE.search(l) and not _is_prose(l)]
+
+    # A push whose binary comes from a variable named *STUB* is a TEST DOUBLE, not the store.
+    # rehearse_publish.sh:94 pushes deliberately, at a stub it has just proven is a stub, to
+    # verify the stub refuses. Narrow and greppable on purpose: bypassing it means naming the
+    # real butler binary `$STUB`, which is self-documenting nonsense. A filename exemption —
+    # "rehearse_publish.sh is allowed" — would have been the easy version and is exactly the
+    # kind that rots (@cowir-autogrind: design the red so the cheap repair is the correct one).
+        # NOTE the leading class is [A-Za-z0-9_]* and not [A-Za-z_][A-Za-z0-9_]* — the first
+    # version required at least one character BEFORE "STUB", so it matched $BUTLER_STUB but
+    # NOT a variable literally named $STUB, which is the one the rehearsal rig uses.
+    STUB_PUSH_RE = re.compile(r'\$\{?[A-Za-z0-9_]*STUB[A-Za-z0-9_]*\}?[^\s]*["\']?\s+push\b')
+    stub_pushes = [i for i in pushes if STUB_PUSH_RE.search(lines[i])]
+    pushes = [i for i in pushes if i not in stub_pushes]
     if not pushes:
         # ⛔ A SCRIPT WITH NO PUSH SITE IS NOT AUTOMATICALLY SAFE. deploy_linux.sh and
         # deploy_windows.sh contain no push of their own — they exec deploy_desktop.sh — so
@@ -184,6 +217,45 @@ def audit(path):
         findings = []
         delegations = [i + 1 for i, l in enumerate(lines) if DELEGATE_RE.search(l)]
 
+        # ⛔ A WRAPPER AND AN ORCHESTRATOR ARE NOT THE SAME SUBJECT, and my first widening
+        # treated them as one. publish_all.sh delegates to deploy_*.sh and NAMES --publish three
+        # times — because deciding whether to pass it is its entire job (`--dry-run` withholds
+        # it). Flagging that is not a finding, it is the guard misreading the orchestrator as a
+        # thin front.
+        #
+        # ⛔ TWO DISCRIMINATORS FAILED BEFORE THIS ONE, both caught by my own selftest:
+        #   `exec`            — a wrapper written without exec read as an orchestrator, EXEMPTING
+        #                       the injection hole fixed two commits earlier.
+        #   "the script IS the hand-off" — a wrapper using `set -- --publish "$@"` has a line that
+        #                       is neither assignment nor delegation, so it too read as one.
+        #
+        # The wrapper/orchestrator CATEGORY was the wrong abstraction. What actually matters is
+        # not what kind of script this is, it is whether the flag is INTRODUCED UNCONDITIONALLY.
+        #
+        #   publish_all.sh   names --publish inside `if [ "$DRY_RUN" -eq 1 ] … else` — a DECISION
+        #   a thin wrapper   names it at top level — "always publish", whatever the caller asked
+        #
+        # So: --publish named at nesting depth 0 in a delegating script is a finding; named only
+        # inside a conditional it is a decision the script is entitled to make. One property,
+        # derived from the contract, instead of a taxonomy of script shapes.
+        # (Limit, stated: depth counts if/fi and case/esac only. A `[ x ] && exec … --publish`
+        # one-liner reads as depth 0 — which is the right answer anyway, it IS near-unconditional.)
+        depth, at_depth0 = 0, []
+        for i, l in enumerate(lines):
+            opens = len(re.findall(r'(^|[\s;])(if|case)\b', l))
+            closes = len(re.findall(r'(^|[\s;])(fi|esac)\b', l))
+            names_flag = re.search(r'(^|[\s="\'(])--publish(\s|$|["\')])', l)
+            if names_flag and depth + opens - closes <= 0 and depth <= 0:
+                at_depth0.append(i)
+            depth += opens - closes
+        # ⚠ "names it conditionally" and "never names it at all" are DIFFERENT, and returning one
+        # flag for both made deploy_linux.sh — which never mentions --publish — print
+        # "ORCHESTRATOR … passing --publish is its job". Label broader than its predicate, in
+        # code three minutes old. Report which is actually true.
+        names_anywhere = any(re.search(r'(^|[\s="\'(])--publish(\s|$|["\')])', l) for l in lines)
+        if not at_depth0:
+            return [], [], delegations, stub_pushes, ("conditional" if names_anywhere else "never")
+
         # ⚠ The first version of this checked for --publish ONLY ON THE DELEGATION LINE. That
         # reads half the script and infers the rest, in the check whose whole subject is "a
         # wrapper must not introduce the flag". Measured — both of these injected it invisibly:
@@ -198,15 +270,14 @@ def audit(path):
         # and a missed injection is silent. (Comments are already stripped, so a usage comment
         # mentioning --publish does not trip it.)
         if delegations:
-            for i, l in enumerate(lines):
-                if re.search(r'(^|[\s="\'(])--publish(\s|$|["\')])', l):
+            for i in at_depth0:
                     findings.append((i + 1,
                                      "a delegating wrapper NAMES --publish in its own code. A "
                                      "wrapper must forward the caller's arguments and add no "
                                      "publish flag of its own; calling it without the flag may "
                                      "still publish. A wrapper is a publish entry point, not "
                                      "an exemption"))
-        return [], findings, delegations
+        return [], findings, delegations, stub_pushes, None
 
     findings = []
     delegations = []
@@ -222,7 +293,7 @@ def audit(path):
         findings.append((pushes[0] + 1,
                          "this script pushes, but nothing here parses --publish into a flag — "
                          "there is no opt-in to verify"))
-        return pushes, findings, delegations
+        return pushes, findings, delegations, stub_pushes, None
 
     # 2. default must be the NOT-publishing value, set before the argument is parsed.
     init = None
@@ -251,25 +322,35 @@ def audit(path):
                                  f"push site is NOT dominated by the `{flag}` gate "
                                  f"(gate closes at line {gate + 1}) — reachable without "
                                  f"--publish"))
-    return pushes, findings, delegations
+    return pushes, findings, delegations, stub_pushes, None
 
 
 def run(tools_dir):
     if not os.path.isdir(tools_dir):
         raise Unusable(f"[optin] BLOCKED: {tools_dir} is not a directory.")
-    targets = sorted(f for f in os.listdir(tools_dir)
-                     if f.endswith('.sh') and f.startswith(TARGET_PREFIXES))
+    targets = sorted(f for f in os.listdir(tools_dir) if f.endswith('.sh'))
     if not targets:
-        raise Unusable(f"[optin] BLOCKED: no deploy_*.sh in {tools_dir}. An empty target set "
+        raise Unusable(f"[optin] BLOCKED: no *.sh in {tools_dir}. An empty target set "
                        f"is not a clean result.")
 
     pushers = 0
     bad = 0
-    print(f"[optin] {len(targets)} deploy script(s): {', '.join(targets)}")
+    print(f"[optin] scanned {len(targets)} shell script(s) in {tools_dir} — corpus derived from\n[optin] the call site (`butler push`), not from filenames")
     for t in targets:
-        pushes, findings, delegations = audit(os.path.join(tools_dir, t))
+        pushes, findings, delegations, stubs, orch = audit(os.path.join(tools_dir, t))
+        if stubs:
+            print(f"[optin]   ok    {t}  push at line(s) {stubs} goes to a *STUB* binary "
+                  f"(test double, not the store)")
+        if not pushes and not t.startswith(WRAPPER_PREFIXES):
+            continue          # neither pushes nor claims to be a deploy entry point
         if not pushes and not findings:
-            if delegations:
+            if orch == "conditional":
+                print(f"[optin]   ok    {t}  delegates at line(s) {delegations}; names --publish "
+                      f"only inside a conditional — a DECISION, not an unconditional injection")
+            elif orch == "never":
+                print(f"[optin]   ok    {t}  delegates at line(s) {delegations}; never names "
+                      f"--publish — forwards the caller's arguments untouched")
+            elif delegations:
                 # EMIT THE SET. @cowir-story's rule: a probe that prints what it LOCATED cannot
                 # have a missing positive control. Measured before this change — a wrapper that
                 # delegates AND injects --publish through a form the regex missed printed the
@@ -443,6 +524,18 @@ fi
 }
 
 
+def scan_all(tools_dir):
+    """(name, pushes) for every shell script in the dir — used by the corpus-independence arm."""
+    out = []
+    for f in sorted(os.listdir(tools_dir)):
+        if not f.endswith('.sh'):
+            continue
+        pushes, _f, _d, _s, _o = audit(os.path.join(tools_dir, f))
+        if pushes:
+            out.append((f, pushes))
+    return out
+
+
 def selftest():
     passed = failed = 0
     saw = set()
@@ -483,7 +576,7 @@ def selftest():
             open(os.path.join(td, "deploy_filler2.sh"), "w").write(GOOD)
 
             def check(td=td, frag=frag):
-                _p, f, _d = audit(os.path.join(td, "deploy_probe.sh"))
+                _p, f, _d, _s, _o = audit(os.path.join(td, "deploy_probe.sh"))
                 if frag == "":
                     return (not f), (f"falsely found {f[0][1][:40]!r}" if f else "no finding")
                 if not f:
@@ -494,6 +587,27 @@ def selftest():
                 return True, frag
 
             arm(name, want, lambda td=td: run(td), check)
+
+        # ── THE CORPUS-INDEPENDENCE ARM ──────────────────────────────────────────────
+        # The whole point of deriving the corpus from the call site: a push in a file that no
+        # filename prefix would have scanned must still be examined. Without this arm, the
+        # widening is untested and the guard could silently revert to prefix behaviour.
+        # (@cowir-sfx's control: assert the scan finds something no prefix would.)
+        odd = os.path.join(d, "oddname")
+        os.makedirs(odd)
+        open(os.path.join(odd, "deploy_filler.sh"), "w").write(GOOD)
+        open(os.path.join(odd, "deploy_filler2.sh"), "w").write(GOOD)
+        open(os.path.join(odd, "ship_it.sh"), "w").write(
+            '#!/usr/bin/env bash\n# an emergency pusher nobody named deploy_*\n'
+            '"${BUTLER_BIN}" push out/ "$T"\n')
+
+        def named(odd=odd):
+            hits = [h for h in scan_all(odd) if h[0] == "ship_it.sh"]
+            if not hits:
+                return False, "ship_it.sh was NOT examined — corpus is still name-scoped"
+            return True, "ship_it.sh examined despite its name"
+
+        arm("a push in a file no PREFIX would scan is examined", 1, lambda: run(odd), named)
 
         # ── instrument-died arms ──
         empty = os.path.join(d, "empty")
