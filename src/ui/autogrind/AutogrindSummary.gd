@@ -84,6 +84,10 @@ func _build_ui() -> void:
 		{"label": "Save Corruption", "value": _format_save_corruption(_stats), "color": _save_corruption_color(_stats)},
 		{"label": "Adaptation", "value": "%.2f" % _stats.get("adaptation", 0.0), "color": LABEL_COLOR},
 		{"label": "Collapses", "value": str(_stats.get("collapse_count", 0)), "color": BAD_COLOR if _stats.get("collapse_count", 0) > 0 else VALUE_COLOR},
+		## A meta boss was reported ONLY by the console, so one spawned during a headless grind with
+		## the console closed was invisible at the moment AND at session end. The Summary is the
+		## surface that always runs.
+		{"label": "Meta-Bosses", "value": "%d beaten / %d met" % [_stats.get("meta_bosses_defeated", 0), _stats.get("meta_bosses_spawned", 0)], "color": VALUE_COLOR},
 	]
 
 	# Per-character EXP breakdown
