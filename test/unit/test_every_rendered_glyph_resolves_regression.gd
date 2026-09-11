@@ -18,7 +18,19 @@ extends GutTest
 ## no exemptions by design; the two glyphs that would have needed one (│ ├, in a docstring diagram)
 ## were converted to ASCII rather than allowlisted, because an exemption is how the loop re-forms.
 
+## DECLARED, not merely printed (@cowir-adhoc). A printed scope is contradictable by a reader who
+## happens to read that field; a declared one makes a root DROPPED by a refactor fail loudly. It
+## buys nothing against a root never added — that one still has to arrive from outside, as this
+## file's own data/ root did, from @cowir-battle, two hours after I said I would add it.
+const ROOTS := ["res://src", "res://data"]
 const SRC_ROOT := "res://src"
+## data/ is the SECOND root and shipping without it was the defect this guard exists to prevent,
+## one boundary over: 518 em dashes in cutscene prose, 59 in abilities.json rendered every fight.
+## A glyph used only in data/ would have been invisible to a src/-only corpus — green on a tofu
+## character, exactly the day clock. @cowir-battle caught it by reading the scope line this file
+## prints, which is the whole argument for printing it. JSON carries no comments, so the raw text
+## is scanned; \uXXXX escapes resolve through the same helper.
+const DATA_ROOT := "res://data"
 
 var _file_count: int = 0
 
@@ -46,7 +58,7 @@ func _strip_comment(line: String) -> String:
 	return line
 
 
-func _gd_files(root: String, out: Array) -> void:
+func _files_under(root: String, ext: String, out: Array) -> void:
 	var d := DirAccess.open(root)
 	if d == null:
 		return
@@ -56,8 +68,8 @@ func _gd_files(root: String, out: Array) -> void:
 		var path := root + "/" + name
 		if d.current_is_dir():
 			if not name.begins_with("."):
-				_gd_files(path, out)
-		elif name.ends_with(".gd"):
+				_files_under(path, ext, out)
+		elif name.ends_with(ext):
 			out.append(path)
 		name = d.get_next()
 	d.list_dir_end()
@@ -83,18 +95,59 @@ func _resolve_escapes(line: String) -> String:
 
 ## Every non-ASCII character that survives comment-stripping, with one example path each.
 func _rendered_glyphs() -> Dictionary:
-	var files: Array = []
-	_gd_files(SRC_ROOT, files)
-	_file_count = files.size()
-	assert_gt(files.size(), 200, "PRECONDITION: the walk must reach src/ — a short list scans nothing")
+	var gd: Array = []
+	_files_under(SRC_ROOT, ".gd", gd)
+	var js: Array = []
+	_files_under(DATA_ROOT, ".json", js)
+	_file_count = gd.size() + js.size()
+	assert_gt(gd.size(), 200, "PRECONDITION: the src/ walk must reach it — a short list scans nothing")
+	assert_gt(js.size(), 100, "PRECONDITION: the data/ walk must reach it — the second root is the " +
+		"one this guard shipped without, and its absence looks exactly like health")
+	for root in ROOTS:
+		assert_true(DirAccess.dir_exists_absolute(root),
+			"DECLARED root %s is missing — a dropped root reads exactly like a clean corpus" % root)
 	var glyphs := {}
-	for path in files:
-		var text := FileAccess.get_file_as_string(path)
-		for raw in text.split("\n"):
+	for path in gd:
+		for raw in FileAccess.get_file_as_string(path).split("\n"):
 			for ch in _resolve_escapes(_strip_comment(raw)):
 				if ch.unicode_at(0) > 127 and not glyphs.has(ch):
 					glyphs[ch] = path
+	# JSON is PARSED rather than scanned: walking values skips keys and punctuation, and the parser
+	# decodes \\uXXXX for free (@cowir-overworld). DOC_FIELDS are the JSON analogue of a code
+	# comment — provenance prose that no surface renders — and are excluded for the same reason .gd
+	# comments are. This is a field scoping, not a glyph allowlist: it cannot hide a character, only
+	# a place, and the place is named in the scope line so a reader can dispute it.
+	for path in js:
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
+		if parsed != null:
+			_walk_json(parsed, "", glyphs, path)
 	return glyphs
+
+
+## Provenance prose, not player text. Named so the exclusion is visible and arguable.
+## ⛔ EXACTLY ONE FIELD, and it stays that way until another is DEMONSTRATED to need it. I first
+## wrote six — source/note/notes/comment/_comment/provenance — having verified only "source", which
+## is an exemption broader than its subject: the thing I had spent the afternoon telling other lanes
+## not to do. Measured: narrowing to one leaves the corpus at 79 distinct and the guard green, so the
+## other five were hiding NOTHING and were pure speculation about fields that might exist.
+## @cowir-overworld found the live risk in the widest one: "note" is a real key in 20 quest JSONs,
+## benign today (authoring prose, zero consumers in src/) — but "note" is a word an author could
+## reasonably attach to rendered text, and excluding it would hide that silently. "source" is inert
+## by nature; "note" is not. Adding a field here requires showing nothing renders it.
+const DOC_FIELDS := ["source"]
+
+
+func _walk_json(node, key: String, glyphs: Dictionary, path: String) -> void:
+	if node is Dictionary:
+		for k in node:
+			_walk_json(node[k], str(k), glyphs, path)
+	elif node is Array:
+		for v in node:
+			_walk_json(v, key, glyphs, path)
+	elif node is String and not DOC_FIELDS.has(key):
+		for ch in node:
+			if ch.unicode_at(0) > 127 and not glyphs.has(ch):
+				glyphs[ch] = path
 
 
 func _chain() -> Array:
@@ -123,8 +176,8 @@ func test_no_glyph_the_game_renders_is_tofu() -> void:
 	# for the unknown-unknown — nothing is — but it makes "I know of two spellings" a sentence a
 	# reader can look at and say "there is a third". Every blind spot found in this fleet today
 	# arrived from outside; a printed count is what an outsider needs in order to hand you one.
-	gut.p("glyph corpus: %d distinct, from %d files | spellings recognised: 2 (literal, \\uXXXX) | comments excluded"
-		% [glyphs.size(), _file_count])
+	gut.p("glyph corpus: %d distinct | roots %s | files %d | spellings recognised: 2 (literal, \\uXXXX) | excluded: .gd comments, JSON %s"
+		% [glyphs.size(), str(ROOTS), _file_count, str(DOC_FIELDS)])
 	assert_eq(tofu, [] as Array[String],
 		"glyphs with no coverage anywhere in the font chain render as BOXES to the player: %s" %
 		", ".join(tofu))
