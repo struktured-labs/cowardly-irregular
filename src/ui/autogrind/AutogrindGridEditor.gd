@@ -193,17 +193,18 @@ func _build_ui() -> void:
 	var help1 = Label.new()
 	## Face letters derived; Esc/Del/D-Pad stay literal (keyboard keys and a control every pad
 	## has). Guarded for the pre-autoload window, matching this lane's other prompt surfaces.
-	var g_del: String = "X"
+	## ⚠️ hint_for_action, NOT glyph_for_action: with no pad the latter falls back to the xbox
+	## family and prints Ⓐ/Ⓑ at a player holding a keyboard. hint_for_action names the key.
+	var g_del: String = "Del"
+	var g_ok: String = "Z"
+	var g_no: String = "X"
 	if InputProfileManager:
-		g_del = InputProfileManager.face_glyph_for_index(JOY_BUTTON_X)
-	var g_ok: String = "A"
-	var g_no: String = "B"
-	if InputProfileManager:
-		g_ok = InputProfileManager.glyph_for_action("ui_accept")
-		g_no = InputProfileManager.glyph_for_action("ui_cancel")
+		g_del = _delete_token()
+		g_ok = InputProfileManager.hint_for_action("ui_accept")
+		g_no = InputProfileManager.hint_for_action("ui_cancel")
 	## L/R are Nintendo's names for the shoulders — Xbox LB/RB, PlayStation L1/R1. Both are real
 	## InputMap actions here (battle_defer :1066, battle_advance :1079), so both derive.
-	help1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  Del/%s:Delete  %s:+AND  %s:+Action  RClick:Close" % [
+	help1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  %s:Delete  %s:+AND  %s:+Action  RClick:Close" % [
 		g_ok, g_no, g_del,
 		InputProfileManager.hint_for_action("battle_defer"),
 		InputProfileManager.hint_for_action("battle_advance"),
@@ -215,7 +216,10 @@ func _build_ui() -> void:
 
 	var help2 = Label.new()
 	## "Start" is the XBOX name for ui_menu's button; Nintendo calls it Plus, PlayStation Options.
-	help2.text = "C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose  %s:Save" % _save_token()
+	## @cowir-battle's resolution, matched so the two editors do not disagree: a pad-only affordance
+	## GOES with no pad rather than borrowing someone else's key. help1 already names Esc for Back,
+	## and ui_cancel is what saves here (:1055), so a keyboard player loses no way to save.
+	help2.text = ("C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose  %s" % _save_token()).strip_edges()
 	help2.position = Vector2(16, size.y - 28)
 	help2.add_theme_font_size_override("font_size", 10)
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1819,7 +1823,13 @@ func _on_rename_cancelled() -> void:
 func _save_token() -> String:
 	var indices: Array = InputProfileManager.get_current_button_indices("ui_menu")
 	var pad: String = "" if indices.is_empty() else InputProfileManager.button_name_for_index(int(indices[0]))
-	return pad if pad != "" else InputProfileManager.hint_for_action("ui_cancel")
+	return "" if pad == "" else "%s:Save" % pad
+
+
+## Whole token, not a slash-plus-slot: with no pad the pad name is empty and "Del/" would dangle.
+func _delete_token() -> String:
+	var pad: String = InputProfileManager.button_name_for_index(JOY_BUTTON_X)
+	return "Del" if pad == "" else "Del/%s" % pad
 
 
 func _save_rules() -> void:
