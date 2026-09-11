@@ -22,6 +22,8 @@ var _fast_forward: bool = false
 var _skip_hold_time: float = 0.0
 ## True while a `battle` step owns the screen: the Director is hidden, so a held B in the duel menu must not count toward a skip it cannot show.
 var _battle_in_flight: bool = false
+## Seconds of courtesy skip hint still to show at scene start (0 once the player holds B, or once it has faded).
+var _skip_hint_left: float = 0.0
 
 ## Letterbox bars
 var _letterbox_top: ColorRect
@@ -63,6 +65,10 @@ var _music_stopped_by_step: bool = false
 const LETTERBOX_HEIGHT: int = 40
 const LETTERBOX_ANIM_DURATION: float = 0.4
 const SKIP_THRESHOLD: float = 1.5
+## Courtesy skip hint at scene start: shown faintly for SKIP_HINT_SEC, fading over its last SKIP_HINT_FADE_SEC; a real hold takes over at full alpha.
+const SKIP_HINT_SEC: float = 3.0
+const SKIP_HINT_FADE_SEC: float = 0.6
+const SKIP_HINT_ALPHA: float = 0.65
 const SKIP_BAR_WIDTH: float = 220.0
 const SKIP_BAR_HEIGHT: float = 10.0
 ## game_constants key prefix for the seen ledger (persists with the save): SEEN_KEY_PREFIX + cutscene_id = true.
@@ -242,15 +248,25 @@ func _process(delta: float) -> void:
 	# Handle skip input (hold B/X/Escape) — inert while a duel owns the screen, and the hold resets at that boundary
 	var skip_pressed = Input.is_action_pressed("ui_cancel") and not _battle_in_flight
 	if skip_pressed and not _skipping:
+		_skip_hint_left = 0.0  # the player found it; the courtesy hint is done
 		_skip_hold_time += delta
 		_skip_indicator.visible = true
+		_skip_indicator.modulate.a = 1.0
 		_skip_bar.size.x = minf((_skip_hold_time / SKIP_THRESHOLD) * SKIP_BAR_WIDTH, SKIP_BAR_WIDTH)
 		if _skip_hold_time >= SKIP_THRESHOLD:
 			_trigger_skip()
+	elif _skip_hint_left > 0.0 and not _skipping:
+		# Courtesy hint: the prompt used to appear only while B was ALREADY held, so a new player never learned it existed. Show it faintly for the first seconds, fading out.
+		_skip_hint_left -= delta
+		_skip_hold_time = 0.0
+		_skip_bar.size.x = 0
+		_skip_indicator.visible = _skip_hint_left > 0.0
+		_skip_indicator.modulate.a = clampf(_skip_hint_left / SKIP_HINT_FADE_SEC, 0.0, 1.0) * SKIP_HINT_ALPHA
 	else:
 		if not skip_pressed:
 			_skip_hold_time = 0.0
 			_skip_indicator.visible = false
+			_skip_indicator.modulate.a = 1.0
 			_skip_bar.size.x = 0
 
 	# Tick the cutscene HUD timer (atmospheric only — never a fail state).
@@ -284,6 +300,7 @@ func play_cutscene(cutscene_id: String, replay: bool = false) -> void:
 
 	_replay = replay
 	_music_stopped_by_step = false
+	_skip_hint_left = SKIP_HINT_SEC
 	_cutscene_id = cutscene_id
 	_active = true
 	_skipping = false
@@ -348,6 +365,7 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary, replay: bool
 		return
 	_replay = replay
 	_music_stopped_by_step = false
+	_skip_hint_left = SKIP_HINT_SEC
 	_cutscene_id = cutscene_id
 	_active = true
 	_skipping = false
