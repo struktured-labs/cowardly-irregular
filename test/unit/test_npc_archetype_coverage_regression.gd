@@ -3,6 +3,21 @@ extends GutTest
 ## NPC archetype sheets are 4x4 grids of 32x32 frames; row 0=down, 1=left, 2=right, 3=up.
 ## If a row is fully transparent the WanderingNPC silently stays on its prior frame when
 ## it tries to face that direction — looks like the NPC disappears.
+##
+## ⚠️ THIS FILE USES TWO READERS ON PURPOSE. Do not unify them.
+##   load() -> get_image()      the row test below. Reads the IMPORTED .ctex — which is what the
+##                              game actually renders, so it is the right authority for "will this
+##                              NPC disappear on screen".
+##   Image.load_from_file()     the frame sweeps further down. Reads the PNG on disk — the right
+##                              authority for "did the generator write valid art", which is a
+##                              question about the artifact a tool produced, not about rendering.
+##
+## They disagree for exactly one import cycle, and that is the correct behaviour, not a bug.
+## Measured 2026-09-11 by wiping row 1 on disk without re-importing: the disk sweeps failed and the
+## row test passed; after --import both failed. A reader is not right or wrong in general — it is
+## right or wrong for the question being asked, which is why the one place this file DID have a
+## wrong reader was an existence claim (see the manifest audit, fixed in c7ab6f06: a test named
+## "exists on disk" that asked ResourceLoader, i.e. the cache).
 
 const NPCS_DIR := "res://assets/sprites/npcs"
 const FRAME := 32
