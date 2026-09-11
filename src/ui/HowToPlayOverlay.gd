@@ -47,7 +47,7 @@ R3 Stick Click    F1                —                [color=lime]This screen �
 
 [b][color=yellow]WHILE AUTOGRINDING[/color][/b]
 [color=gray]Gamepad          Keyboard          Description[/color]
-Select (Minus)    P                 [color=lime]Pause / resume the grind[/color]
+Back (Minus)      P                 [color=lime]Pause / resume the grind[/color]
 Start (Plus)      R                 Adjust rules mid-grind
 L + R together    T                 Cycle monster tier
 Y (west face)     Y                 Turbo — run it faster
