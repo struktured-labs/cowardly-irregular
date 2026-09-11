@@ -1542,16 +1542,18 @@ func _update_hint_bar() -> void:
 		# The button exists and is HOLD L. It was advertised nowhere, and the row that WAS advertised
 		# — [A] Confirm — submits the queue PLUS the highlighted item, so reaching for it adds the
 		# extra action he was trying not to take. Both are named now, and named for what they DO.
-		var g_ok: String = "A"
-		var g_no: String = "B"
-		if InputProfileManager:
-			var a := InputProfileManager.glyph_for_action("ui_accept")
-			var b := InputProfileManager.glyph_for_action("ui_cancel")
-			if a != "?":
-				g_ok = a
-			if b != "?":
-				g_no = b
-		label.text = "%s Add+Commit  ·  HOLD L Commit  ·  tap L/%s Undo  ·  queued %d/%d" % [g_ok, g_no, n, root._max_queue_size]
+		# ⛔ WAS glyph_for_action + `if InputProfileManager:`. That guard tests whether the AUTOLOAD is
+		# up, NOT whether a pad is connected — and the autoload is always up, so the "A"/"B" literals
+		# never fired. With no pad, glyph_for_action falls back to the XBOX family, so a keyboard
+		# player read "Ⓑ Add+Commit … tap L/Ⓐ Undo": two glyphs for a device they do not have, and
+		# inverted besides, since ui_accept is the EAST face which xbox calls B.
+		# hint_for_action names the pad's own button when there IS one and the KEY when there is not.
+		var g_ok: String = InputProfileManager.hint_for_action("ui_accept")
+		var g_no: String = InputProfileManager.hint_for_action("ui_cancel")
+		# HOLD/tap use battle_defer — "L" is the keyboard key AND Nintendo's shoulder; Xbox calls it
+		# LB and PlayStation L1, so the bare letter was right on one family only.
+		var g_l: String = InputProfileManager.hint_for_action("battle_defer")
+		label.text = "%s Add+Commit  ·  HOLD %s Commit  ·  tap %s/%s Undo  ·  queued %d/%d" % [g_ok, g_l, g_l, g_no, n, root._max_queue_size]
 	else:
 		label.text = hint_text()
 
