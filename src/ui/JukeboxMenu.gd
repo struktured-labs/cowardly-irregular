@@ -422,12 +422,9 @@ func _close_menu() -> void:
 		# inside the jukebox). Pre-fix: if the player opened the jukebox
 		# while music was playing and closed without clicking anything,
 		# the branch below saw _currently_playing == "" and re-fired the
-		# resume — restarting the SAME track that was already playing
-		# seamlessly. Audible hitch on every "just browsed and backed
-		# out" close. Comparing against the live state keeps that a
-		# true no-op, and it must compare the AREA too: a map's bed
-		# leaves `track` empty, so track-only reads every browse as a
-		# change and reintroduces the hitch.
+		# resume, restarting a track already playing seamlessly. The AREA
+		# must be compared too: a map's bed leaves `track` empty, so a
+		# track-only compare reads every browse as a change.
 		var live: Dictionary = {}
 		if SoundManager.has_method("capture_music_state"):
 			live = SoundManager.capture_music_state()
