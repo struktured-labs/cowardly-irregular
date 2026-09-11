@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Every polling loop in the deploy scripts must be bounded. Assert it, don't assume it.
+"""Every polling loop in tools/ must be bounded. Assert it, don't assume it.
 
 WHY THIS EXISTS
 ---------------
@@ -60,7 +60,6 @@ import tempfile
 # Targets are GLOB-DERIVED, not a hand-list. deploy_linux.sh and deploy_windows.sh already
 # exist as thin wrappers; the next channel's script must be covered on the day it is written,
 # not on the day someone remembers to add it here.
-TARGET_GLOBS = ("deploy_", "publish_")
 
 # ── the floor is DERIVED, not declared ───────────────────────────────────────────────────
 # This was `EXPECT_MIN_LOOPS = 2`, a number measured off the tree. Two objections retired it:

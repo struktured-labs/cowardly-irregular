@@ -83,7 +83,6 @@ import tempfile
 #
 # Files named deploy_*/publish_* are ALSO examined when they contain no push, because a
 # delegating wrapper is a publish entry point — see the no-push branch in audit().
-SCAN_GLOB = "*.sh"
 WRAPPER_PREFIXES = ("deploy_", "publish_")
 
 # ── the floor is DERIVED from publish_all's own channel list, not declared ───────────────
