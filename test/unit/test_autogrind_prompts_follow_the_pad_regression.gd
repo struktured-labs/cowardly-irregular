@@ -17,6 +17,26 @@ extends GutTest
 ## Esc and D-Pad stay literal on purpose: a keyboard key does not change with the pad, and every
 ## pad has a d-pad. The thing that varies is the FACE letter, and only that is derived.
 ##
+## ⚠️ REACHABILITY, checked AFTER the fix and not before — @cowir-controller found a caption they
+## had fixed that morning on a screen no player can open, and @cowir-story shipped 58 lines into a
+## dead branch the same afternoon. Their shared diagnosis: every verification was about their own
+## change and none asked WHO CALLS THIS. Mine were the same — labels vs accepted actions, glyph
+## derivation, neighbours, six mutation arms — and not one asked whether a player can reach the
+## screen. Measured only once they published it:
+##
+##   AutogrindSummary         GameLoop:6016 loads it                      LIVE
+##   AutogrindGridEditor      AutogrindUI.gd                              LIVE
+##   AutobattleGridEditor     GameLoop + BattleScene                      LIVE
+##   AutogrindHistoryScreen   MenuScene.gd ONLY                           ⛔ DEAD HUB
+##   AutogrindTemplatePicker  MenuScene.gd ONLY                           ⛔ DEAD HUB
+##
+## MenuScene.tscn is referenced by NOTHING and MenuScene.gd is instantiated nowhere in src/
+## (verified independently of @cowir-controller's report). So two of these captions are correct on
+## screens that cannot currently be opened. NOT reverted: unreachable is not the same as worth
+## removing (@cowir-story's rule), the captions are right whenever that hub is revived or replaced,
+## and the census would otherwise re-flag them forever. But this guard is NOT evidence that five
+## player-visible surfaces were repaired — it is three, plus two held correct against a revival.
+##
 ## ⛔ I FIRST EXEMPTED THREE OF THESE ON REASONS THAT WERE FALSE, and @cowir-controller measured
 ## them rather than reading them. I wrote that "Y:CycleOp" was the keyboard row — KEY_Y is bound to
 ## NOTHING in that file and the keyboard key is C (:1836); that Y is JOY_BUTTON_Y, Ⓧ on Nintendo and
