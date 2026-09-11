@@ -1185,7 +1185,7 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 		"narrator":
 			_draw_narrator_portrait(img, size)
 		_:
-			# Masterite portraits (masterite_<role>_<world>) fall through to mysterious until cowir-sprites' per-world PNGs land; PORTRAIT_SPRITES lookup wins once they exist.
+			# Masterite portraits: 5 of 20 have art (medieval x4, steampunk x4, warden_suburban). The other 15 land here as the mysterious bust and are listed in test_portrait_identity_class_regression.KNOWN_MISSING_PORTRAITS.
 			if portrait_type.begins_with("masterite_"):
 				_draw_mysterious_portrait(img, size)
 			else:
