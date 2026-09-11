@@ -39,19 +39,34 @@ const DEFERRED := {
 }
 
 
-## Comment lines blanked, line count preserved so any positional reasoning stays valid.
+## Comments stripped QUOTE-AWARE, line count preserved so any positional reasoning stays valid.
 ## @cowir-controller's question, which found this: what does the file look like after a REAL person
 ## removes the thing you are defending? They do not delete the branch and leave no trace -- they
-## leave the comment that explained it. Measured here: reverting the derivation while leaving
-## `## was InputProfileManager.glyph_for_action(...)` above it, and keeping the "%s" template with
-## g_ok = "A" hardcoded, scored Passing 4 -- GREEN with the prompt frozen back to A/B for every
-## player. The tidy mutation (restore the literal "Press A") was caught; the realistic one was not.
-## ⚠️ BOUNDARY: this blanks WHOLE comment lines, not a trailing `code()  # note`. The realistic
-## removal leaves a full line, which is what this defends; a trailing note would still fool it.
+## leave the comment that explained it. Measured: reverting the derivation while leaving
+## `## was InputProfileManager.glyph_for_action(...)` and hardcoding g_ok = "A" scored Passing 4 --
+## GREEN with the prompt frozen back to A/B for every player.
+##
+## ⚠️ I FIRST BLANKED WHOLE COMMENT LINES ONLY, wrote the trailing-comment hole into my own commit
+## as a known boundary, and shipped it. @cowir-controller then measured that hole in their file --
+## `keycode in [KEY_ESCAPE]:  # KEY_ENTER dropped for now` walks straight through -- and made the
+## strip quote-aware. Naming a boundary is not closing it: the note reads as diligence and defends
+## nothing. Third costume of one hollowness in this lane today (bare find() -> full-line comment ->
+## trailing comment), each fix blind to the next.
+##
+## Cuts at the first `#` OUTSIDE a string literal, so a `#` in quoted text cannot truncate real code.
 func _code_only(src: String) -> String:
 	var out := PackedStringArray()
 	for l in src.split("\n"):
-		out.append("" if l.strip_edges().begins_with("#") else l)
+		var in_str := false
+		var cut := -1
+		for i in l.length():
+			var c := l[i]
+			if c == "\"":
+				in_str = not in_str
+			elif c == "#" and not in_str:
+				cut = i
+				break
+		out.append(l if cut == -1 else l.substr(0, cut))
 	return "\n".join(out)
 
 
