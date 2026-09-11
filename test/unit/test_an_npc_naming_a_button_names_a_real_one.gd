@@ -111,6 +111,12 @@ func test_the_pad_route_to_the_editor_is_the_menu_not_start() -> void:
 	if at < 0:
 		return
 	var branch := src.substr(at, 900)
+	## ⚠️ THIS READS THE REFERENCE, NOT WHETHER IT RUNS. @cowir-music, 2026-09-11: their reachability
+	## guard scored a bed as reached because a source file NAMED it — inside a dead `else` that a
+	## live `if` always takes. Same shape here: an early `return` added above this call would leave
+	## the text in place and this assert green. Driving it would mean standing up GameLoop, the main
+	## scene, for one branch. Stated rather than built — and the arm below is the compensating half,
+	## because it asserts the exploration arm is NOT the editor path, which a dead branch cannot fake.
 	assert_true(branch.contains("_open_settings_menu()"),
 		"Start in exploration no longer opens Settings — if it now opens the editor, the NPC lines can say so")
 	assert_false(branch.contains("_toggle_autobattle_editor"),
@@ -152,6 +158,54 @@ func test_select_really_toggles_autobattle_for_everyone() -> void:
 
 ## The false claim itself, pinned: if L+R ever DOES open the editor, this reds and whoever wired it
 ## updates CLAUDE.md and Mike's line together instead of leaving a fifth stale citation.
+## Harmonia's elder is the one NPC in the game that names a non-face button, and she solves the
+## family problem the way prose can and a caption cannot: she lists every spelling.
+##   "Press F6 — or whatever your pad calls Select. Back. Share. Minus. In MY day it was ONE button!"
+## ⛔ @cowir-controller measured 2026-09-11 that non-face names (Start/Plus/Options, Select/Back/
+## Share/Minus, L/LB/L1) were unguarded on EVERY side — the frozen-caption lists hold FACE letters,
+## so "Start" is neither a face letter nor derived and survived a batch that fixed "Select" three
+## tokens away on the same line. Her line is in that class and their new arm cannot see it: it scans
+## label assignments, and a dialogue array is an argument.
+## 🔑 DERIVED FROM BUTTON_NAMES, NOT LISTED. Add a fourth pad family and this reds, naming the
+## spelling she is missing — which is the only way a line like hers stays true.
+func test_the_elder_names_every_familys_word_for_the_button_she_means() -> void:
+	var cfg := _read(PROJECT_CFG)
+	var idx := cfg.find("battle_toggle_auto={")
+	assert_gt(idx, -1, "CONTROL: battle_toggle_auto is gone, so there is no button to name")
+	if idx < 0:
+		return
+	var re := RegEx.new()
+	re.compile('InputEventJoypadButton[^)]*?"button_index":\\s*(\\d+)')
+	var m := re.search(cfg.substr(idx, 700))
+	assert_not_null(m, "CONTROL: battle_toggle_auto has no joypad binding to derive names from")
+	if m == null:
+		return
+	var button := int(m.get_string(1))
+
+	## ⛔ THE LINE, NOT THE FILE. A whole-file scan passed with "Share" deleted from her line, because
+	## the word also appears in a Scriptweaver's dialogue 100 lines away — measured by mutation, which
+	## is the only thing that would have shown it: the assert looked right and the green looked earned.
+	var elder := _speaker_line(_read("res://src/maps/villages/HarmoniaVillage.gd"), "whatever your pad calls")
+	assert_gt(elder.length(), 20,
+		"CONTROL: the elder's pad line is gone from HarmoniaVillage.gd, so the names below match nothing")
+	var missing: Array = []
+	var families := 0
+	for family in InputProfileManager.BUTTON_NAMES:
+		var table: Dictionary = InputProfileManager.BUTTON_NAMES[family]
+		if not table.has(button):
+			continue
+		families += 1
+		var word := str(table[button])
+		if not elder.contains(word):
+			missing.append("%s calls button %d '%s'" % [family, button, word])
+
+	assert_gt(families, 2, "CONTROL: only %d pad families name button %d — BUTTON_NAMES is not being read" % [families, button])
+	assert_eq(missing, [],
+		("Harmonia's elder tells the player to press a button whose name on some pads she never says: %s\n" +
+		"Her line is HarmoniaVillage.gd's \"whatever your pad calls ...\" — add the missing word to it.\n" +
+		"She enumerates on purpose: prose cannot ask the device, so it names every answer.") % str(missing))
+
+
 func test_l_plus_r_together_still_means_the_autogrind_tier() -> void:
 	var src := _read_code(GAMELOOP_SRC)
 	var idx := src.find("JOY_BUTTON_LEFT_SHOULDER")
@@ -165,7 +219,14 @@ func test_l_plus_r_together_still_means_the_autogrind_tier() -> void:
 		"L+R now opens the editor — CLAUDE.md's table and the NPC lines say it does not; update all three")
 
 
+## ⚠️ COLLECT-THEN-ASSERT OVER A HAND-LISTED CORPUS, which is the shape my own assert-count detector
+## is BLIND to (@cowir-sfx, 2026-09-11): drain SPEAKING_LINES and `missing` is empty, the single
+## assert still runs, the count does not move, and the guard does zero work in green. The corpus here
+## IS the list, so it needs the size stated explicitly — there is no detector output to fall back on.
 func test_every_npc_that_names_a_button_still_names_that_button() -> void:
+	assert_eq(SPEAKING_LINES.size(), 3,
+		"SPEAKING_LINES holds %d lines, not the 3 authored NPC lines this guard exists to defend — " % SPEAKING_LINES.size() +
+		"if a line was retired, retire its entry AND this number together; a shrunken list defends nobody in silence")
 	var missing: Array = []
 	for path in SPEAKING_LINES:
 		var src := _read(path)
@@ -248,3 +309,12 @@ func test_the_comment_stripper_cuts_comments_and_nothing_else() -> void:
 	assert_false(stripped.contains("dead"), "a full-line comment survived")
 	assert_false(stripped.contains("tail"), "a trailing comment survived")
 	assert_true(stripped.contains("a = 1") and stripped.contains("b = 2"), "real code was eaten")
+
+
+## The single authored line containing `needle`, or "" — so a name check cannot be satisfied by the
+## same word appearing anywhere else in a 36 KB file.
+func _speaker_line(src: String, needle: String) -> String:
+	for line in src.split("\n"):
+		if str(line).contains(needle):
+			return str(line)
+	return ""
