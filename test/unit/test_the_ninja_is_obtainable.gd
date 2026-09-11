@@ -217,3 +217,45 @@ func test_the_PASSIVE_of_the_same_name_cannot_unlock_the_job() -> void:
 		"a meta_effect could write a flag store; a stat passive cannot")
 	assert_false(_gs.is_story_flag_set(FLAG),
 		"declaring the passive must not by itself satisfy the achievement")
+
+
+func test_the_tutorial_cave_is_excluded_BY_DECISION_not_by_inheritance() -> void:
+	## WhisperingCave (the Rat King, W1's first dungeon) extends Node2D and carries its OWN
+	## _trigger_boss_battle, so it does not inherit the award. That is the outcome I want — reaching
+	## the tutorial boss inside 5 minutes is trivial, and the Ninja would unlock almost immediately —
+	## but as shipped it was an INHERITANCE ACCIDENT, true for no stated reason. cowir-story named
+	## this shape ("correct today for the wrong reason") twenty minutes before I found it in my own
+	## change. Pinned both ways: if WhisperingCave ever extends DragonCave it silently GAINS the
+	## award, and this reds so the decision gets made rather than inherited.
+	var wc := FileAccess.get_file_as_string("res://src/maps/dungeons/WhisperingCave.gd")
+	assert_gt(wc.length(), 500, "CONTROL: read WhisperingCave")
+	assert_false(wc.contains("extends DragonCave"),
+		"the tutorial cave now inherits the speedrun award — decide whether the Ninja should unlock there")
+	assert_true(wc.contains("func _trigger_boss_battle"),
+		"CONTROL: it really does own its boss trigger, which is why it is excluded")
+	assert_false(_code_only(wc).contains(FLAG),
+		"if the tutorial cave ever awards it, that is a second route and the one-site arm must be revisited")
+
+func test_every_OTHER_dungeon_inherits_the_award() -> void:
+	## The complement: 12 of 13 run through DragonCave, so the award is not a one-dungeon special
+	## case. A new dungeon that extends Node2D instead would be silently excluded the same way.
+	var dir := DirAccess.open("res://src/maps/dungeons")
+	assert_not_null(dir, "CONTROL: opened the dungeon dir")
+	var inheriting: Array = []
+	var standalone: Array = []
+	dir.list_dir_begin()
+	var e: String = dir.get_next()
+	while e != "":
+		if e.ends_with(".gd"):
+			var t := FileAccess.get_file_as_string("res://src/maps/dungeons/" + e)
+			if t.contains("extends DragonCave"):
+				inheriting.append(e)
+			elif t.contains("func _trigger_boss_battle"):
+				standalone.append(e)
+		e = dir.get_next()
+	dir.list_dir_end()
+	inheriting.sort()
+	standalone.sort()
+	assert_gt(inheriting.size(), 10, "CONTROL: the award reaches the dungeon roster (%d)" % inheriting.size())
+	assert_eq(standalone, ["DragonCave.gd", "WhisperingCave.gd"],
+		"a dungeon owning its own boss trigger does not get the award; if a new one appears, decide: " + str(standalone))
