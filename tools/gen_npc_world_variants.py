@@ -120,9 +120,13 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--worlds", default="suburban")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--only", default="", help="comma-separated <arch>_<world> keys; regenerate exactly these")
     ap.add_argument("--quality", default="medium")
     a = ap.parse_args()
     worlds = list(WORLDS) if a.worlds == "all" else a.worlds.split(",")
+    # a repair run targets known-bad keys; iterating every archetype and relying on skip-if-exists
+    # regenerates whatever else happens to be missing, which is not what a repair is
+    only = {k.strip() for k in a.only.split(",") if k.strip()}
     client = OpenAI()
     done = fail = 0
     for world in worlds:
@@ -130,6 +134,8 @@ def main() -> int:
             if a.limit and done >= a.limit:
                 print(f"limit {a.limit} reached")
                 return 0
+            if only and f"{arch}_{world}" not in only:
+                continue
             try:
                 out = gen_one(client, arch, world, a.quality)
                 if out:
