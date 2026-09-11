@@ -145,3 +145,24 @@ func test_the_row_reader_surfaces_the_gamepad_column() -> void:
 	var cells := row.split("|", false)
 	assert_eq(cells.size(), 3, "CONTROL: label, gamepad and keyboard cells must all be present: %s" % row)
 	assert_gt(cells[1].strip_edges().length(), 0, "CONTROL: the gamepad cell must be non-empty")
+
+
+## @cowir-overworld 2026-09-11: my first repair of this row was CORRECT AND INCOMPLETE. It named
+## Start (battle-only) and F5, and omitted what a pad player does in EXPLORATION — where Start opens
+## SETTINGS, not the editor. They shipped "Start on a pad" into NPC dialogue on the strength of the
+## row I had just fixed, and a pad player following it landed in Settings. A row can be true of the
+## state it describes and wrong for the state the reader is in.
+func test_the_open_editor_row_covers_exploration_too() -> void:
+	var row := _table_row("Open editor")
+	var loop := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var exp_at := loop.find("elif current_state == LoopState.EXPLORATION:")
+	assert_gt(exp_at, -1, "PRECONDITION: the exploration arm of the ui_menu block must exist")
+	# In exploration, ui_menu opens SETTINGS. If that ever becomes the editor, this row must change.
+	assert_gt(loop.find("_open_settings_menu()", exp_at), -1,
+		"ui_menu in EXPLORATION must still reach _open_settings_menu — the row warns readers it " +
+		"does NOT open the editor there, and that warning is only true while this holds")
+	assert_true(row.contains("exploration") or row.contains("Exploration"),
+		"the row must say what a PAD player does outside battle, or it is true only in battle: %s" % row)
+	assert_true(row.contains("Settings"),
+		"the row must warn that Start opens Settings in exploration — the trap that put an NPC " +
+		"line wrong: %s" % row)
