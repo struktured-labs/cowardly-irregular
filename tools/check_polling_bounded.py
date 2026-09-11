@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Every polling loop in the deploy scripts must be bounded. Assert it, don't assume it.
+"""Every polling loop in tools/ must be bounded. Assert it, don't assume it.
 
 WHY THIS EXISTS
 ---------------
@@ -49,8 +49,11 @@ Usage:  check_polling_bounded.py [tools-dir]      default: the repo's tools/ bes
         check_polling_bounded.py --selftest
 Exit:   0 every polling loop is bounded
         1 at least one is UNBOUNDED (named, with the reason)
-        2 unusable — no target files, or fewer loops found than EXPECT_MIN_LOOPS
+        2 unusable — no target files, no pushers, or a pusher with no polling loop
 """
+import importlib.util
+import contextlib
+import io
 import os
 import re
 import sys
@@ -59,17 +62,50 @@ import tempfile
 # Targets are GLOB-DERIVED, not a hand-list. deploy_linux.sh and deploy_windows.sh already
 # exist as thin wrappers; the next channel's script must be covered on the day it is written,
 # not on the day someone remembers to add it here.
-TARGET_GLOBS = ("deploy_", "publish_")
 
-# Contract-derived floor, measured on origin/main @ 5aef5287 (2026-09-11): deploy_desktop.sh
-# has one polling loop and deploy_web.sh has one — two. If this file finds FEWER than that,
-# the far likelier explanation is that the loop-finder broke (a refactor, a spelling this
-# regex does not know) than that polling genuinely vanished from the deploy chain. A guard
-# that reports "0 loops examined, all bounded" is the reassuring output of its own failure.
+# ── the floor is DERIVED, not declared ───────────────────────────────────────────────────
+# This was `EXPECT_MIN_LOOPS = 2`, a number measured off the tree. Two objections retired it:
 #
-# ⛔ If polling really was removed everywhere — butler grows a --wait flag, say — LOWER THIS
-# DELIBERATELY in the same commit that removes the loops. Do not delete the check.
-EXPECT_MIN_LOOPS = 2
+#   1. @cowir-autogrind: THE TRAP WAS THE FIX. When that floor fired, this tool PRINTED the
+#      one-line edit that disables it — "lower EXPECT_MIN_LOOPS deliberately". A guard is only
+#      as good as the repair it invites at 2am, and mine invited its own removal.
+#   2. It was corpus-dated. Measured across the repo's own tags, the count was 1 at
+#      v3.33.29-alpha and 2 from .291 — so the number was right for one era and a false
+#      positive on every earlier tree.
+#
+# The replacement is a RELATIONSHIP, and there is no number in it:
+#
+#     a script that PUSHES must be able to TIME OUT waiting for confirmation,
+#     therefore every real push site's file carries at least one polling loop.
+#
+# Push sites are themselves derived from the call site by check_publish_is_optin.py, which is
+# IMPORTED rather than re-implemented — two parses of the same thing is how they drift, and I
+# spent a morning on exactly that. A stub push (a *STUB* binary, a test double) is exempt: it
+# is not waiting on itch and has nothing to time out.
+#
+# ⛔ The repair when this fires is "restore the confirmation loop" or "fix the loop finder".
+# Both are correct actions. Neither is a number you can lower.
+def _pushers(tools_dir):
+    """Files with a REAL push site, via the sibling guard's detector. Raises if it is absent —
+    a missing guard is not a passing one, and silently falling back to a local copy of the
+    regex would recreate the drift this import exists to prevent."""
+    sib = os.path.join(os.path.dirname(os.path.abspath(__file__)), "check_publish_is_optin.py")
+    if not os.path.isfile(sib):
+        raise Unusable(f"[waits] BLOCKED: {sib} not found. This tool derives its expectation "
+                       f"from that guard's push-site detector; without it there is nothing to "
+                       f"check the loops against, and 'no pushers, all bounded' would be "
+                       f"vacuous.")
+    spec = importlib.util.spec_from_file_location("_optin", sib)
+    optin = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(optin)
+    out = {}
+    for f in sorted(os.listdir(tools_dir)):
+        if not f.endswith(".sh"):
+            continue
+        pushes, _find, _deleg, _stubs, _orch = optin.audit(os.path.join(tools_dir, f))
+        if pushes:
+            out[f] = pushes
+    return out
 
 LOOP_HEAD_RE = re.compile(r'^\s*(while|until|for)\b')
 # ⚠ `<` and `>` are COMPARISONS ONLY INSIDE (( )). Everywhere else in shell they are
@@ -109,11 +145,91 @@ class Unusable(Exception):
     """Cannot evaluate — distinct from 'evaluated and found a defect'."""
 
 
+def _strip_comment(line):
+    """Cut at the first `#` OUTSIDE a string literal, with SHELL's escaping rules.
+
+    ⚠ Escapes differ by quote type and getting this wrong truncates real code. Measured on my
+    own previous version, which tracked quotes but not escapes:
+
+        echo "a \\" # b"        ->  cut at the `#`   WRONG: \" is an escaped quote, the
+                                                       string continues and `# b"` is inside it
+
+    Inside DOUBLE quotes a backslash escapes the next character; inside SINGLE quotes there is
+    no escaping at all and the string ends at the next `'`. @cowir-controller's version is
+    escape-aware for `\"`; @cowir-ai found it still mis-reads `\\"` (an escaped BACKSLASH,
+    where the string really does end). Both cases are handled here by tracking the escape state
+    rather than peeking at the previous character.
+
+    Over-stripping is the catastrophic direction for this lane: `"${BUTLER_BIN}" push` is the
+    detection target, so eating quoted text reports zero push sites and passes everything.
+    """
+    out, quote, esc = [], None, False
+    for ch in line:
+        if quote == '"' and esc:
+            out.append(ch); esc = False; continue
+        if quote == '"' and ch == '\\':
+            out.append(ch); esc = True; continue
+        if quote:
+            out.append(ch)
+            if ch == quote:
+                quote = None
+            continue
+        if ch in ("'", '"'):
+            quote = ch; out.append(ch); continue
+        if ch == '#':
+            break
+        out.append(ch)
+    return ''.join(out)
+
+
 def strip_comments(lines):
     """Blank out full-line comments, preserving indices so line numbers stay true."""
-    out = []
-    for l in lines:
-        out.append('' if l.lstrip().startswith('#') else l)
+    return [_strip_comment(l) for l in lines]
+
+
+def strip_heredocs(lines):
+    """Blank heredoc BODY lines, preserving indices so line numbers stay true.
+
+    ⚠ MEASURED 2026-09-11. The docstring used to STATE this limit and nothing enforced it —
+    "do/done are counted as words, so those keywords inside a quoted string or heredoc would
+    miscount nesting". Knowing a limitation and encoding it are different things, and the gap
+    between them is invisible in the output.
+
+    Constructed the trigger rather than reasoning about it:
+
+        until butler status "$X" | grep -q "$V"; do
+            cat <<'MSG'
+            not done yet          <- \bdone\b matches HERE
+        MSG
+            sleep 8
+        done
+
+    `\bdone\b` on the prose line closed the loop range early, so the scanned body no longer
+    contained the `sleep`, so it was not a polling loop, so **the unbounded loop vanished from
+    the census entirely**. Not misclassified — ABSENT. The report read "0 UNBOUNDED".
+
+    It was caught only because the vacuity check then failed the run. That
+    is the vacuity floor doing exactly its job, and the first evidence I have that it earns its
+    keep — but it only fires when the drop crosses the floor. A corpus with five polling loops
+    losing one would have reported a clean census.
+
+    Zero current exposure: the real deploy scripts contain 0 heredocs. Latent, not live.
+    """
+    out = list(lines)
+    i = 0
+    while i < len(out):
+        m = re.search(r'<<-?\s*[\'"]?([A-Za-z_][A-Za-z0-9_]*)[\'"]?\s*$', out[i])
+        if m:
+            delim = m.group(1)
+            j = i + 1
+            while j < len(out) and out[j].strip() != delim:
+                out[j] = ''
+                j += 1
+            if j < len(out):
+                out[j] = ''      # the closing delimiter line
+            i = j + 1
+        else:
+            i += 1
     return out
 
 
@@ -178,7 +294,7 @@ def classify(head, body):
 
 def scan_file(path):
     raw = open(path, encoding="utf-8", errors="replace").read().splitlines()
-    lines = strip_comments(raw)
+    lines = strip_heredocs(strip_comments(raw))
     found = []
     for (a, b) in find_loops(lines):
         body = lines[a:b + 1]
@@ -192,11 +308,44 @@ def scan_file(path):
 def run(tools_dir):
     if not os.path.isdir(tools_dir):
         raise Unusable(f"[waits] BLOCKED: {tools_dir} is not a directory.")
-    targets = sorted(f for f in os.listdir(tools_dir)
-                     if f.endswith('.sh') and f.startswith(TARGET_GLOBS))
+    # ⛔ CORPUS FROM THE CALL SITE, not from filenames — the same fix its sibling got two hours
+    # ago, which I did not carry across. MEASURED before changing it: a file named ship_it.sh
+    # that pushes AND carries an unbounded post-push wait was INVISIBLE here. EC 0,
+    # "0 UNBOUNDED". A correctly-gated pusher outside the deploy_* prefix could hang the batch
+    # forever and this guard would report clean — the precise defect it exists to prevent,
+    # surviving in the corpus rather than in the classifier.
+    #
+    # Fixing one guard and leaving its sibling is the shape I have hit three times today
+    # (deploy_desktop's bounded wait vs deploy_web's; the wrapper exemption; this). The
+    # incident names one file; the directory enumerates all of them.
+    targets = sorted(f for f in os.listdir(tools_dir) if f.endswith('.sh'))
     if not targets:
-        raise Unusable(f"[waits] BLOCKED: no deploy_*.sh / publish_*.sh in {tools_dir}. "
+        raise Unusable(f"[waits] BLOCKED: no *.sh in {tools_dir}. "
                        f"An empty target set is not a clean result.")
+
+    # ⛔ CONTROLS FIRST, AND THEY WITHHOLD THE RESULT. These used to run AFTER the reporting
+    # loop, so an UNUSABLE run still printed "N polling loop(s) examined · N bounded · 0
+    # UNBOUNDED" — a clean census, beside the block that says the census cannot be trusted.
+    # Measured: a pusher with its wait removed produced exactly that. The exit code was 2 and
+    # the summary line said everything was fine.
+    # (@cowir-adhoc, 2026-09-11: controls run before the verdict and withhold it on failure —
+    # "a reader that cannot find Combatant has nothing to say about anything else.")
+    # DERIVED EXPECTATION: every real pusher must carry a polling loop to time out on.
+    pushers = _pushers(tools_dir)
+    if not pushers:
+        raise Unusable(
+            "[waits] BLOCKED: no script in this directory contains a real push site, so there\n"
+            "        is nothing whose post-push wait could be checked. Either the push-site\n"
+            "        detector broke, or this is not a deploy tools directory. 'All bounded'\n"
+            "        over an empty subject is vacuous.")
+    missing = [f for f in pushers if not scan_file(os.path.join(tools_dir, f))]
+    if missing:
+        raise Unusable(
+            f"[waits] BLOCKED: {', '.join(missing)} contains a butler push but NO polling loop.\n"
+            f"        A script that pushes must be able to TIME OUT waiting for confirmation.\n"
+            f"        Either the post-push wait was removed — a real regression, restore it —\n"
+            f"        or this file's loop finder stopped matching. Both are worth stopping for,\n"
+            f"        and neither is a number you can lower.")
 
     total = bad = 0
     print(f"[waits] {len(targets)} deploy script(s): {', '.join(targets)}")
@@ -212,15 +361,6 @@ def run(tools_dir):
                 print(f"[waits]              {why}", file=sys.stderr)
 
     print(f"[waits] {total} polling loop(s) examined · {total - bad} bounded · {bad} UNBOUNDED")
-
-    if total < EXPECT_MIN_LOOPS:
-        raise Unusable(
-            f"[waits] BLOCKED: found {total} polling loop(s), expected at least "
-            f"{EXPECT_MIN_LOOPS}.\n"
-            f"        This is far more likely to mean the loop-finder broke than that polling\n"
-            f"        was removed from the deploy chain. A guard reporting '0 examined, all\n"
-            f"        bounded' is the reassuring output of its own failure.\n"
-            f"        If the loops really are gone, lower EXPECT_MIN_LOOPS deliberately.")
 
     if bad:
         print(f"[waits] a hang is the quietest way for the publish cadence to stop — it produces "
@@ -287,6 +427,27 @@ while [ "$_waited" -lt 900 ]; do
 done
 """, 1, "NEVER assigns"),
 
+    # A heredoc body is prose, not code. Before strip_heredocs these two were indistinguishable
+    # from each other AND from a clean file: the unbounded one VANISHED from the census.
+    "UNBOUNDED loop, heredoc body says 'done'": ("""#!/usr/bin/env bash
+until butler status "$X" | grep -q "$V"; do
+    cat <<'MSG'
+    not done yet
+MSG
+    sleep 8
+done
+""", 1, "makes no numeric comparison"),
+
+    "bounded loop, heredoc body says 'done'": ("""#!/usr/bin/env bash
+n=0
+while [ "$n" -lt 40 ]; do
+    cat <<'MSG'
+    not done yet
+MSG
+    sleep 8; n=$((n+1))
+done
+""", 0, "compares `n`"),
+
     "defect appears ONLY in a comment": ("""#!/usr/bin/env bash
 # This was `until butler status | grep -q "$V"; do sleep 8; done` — an UNBOUNDED wait.
 # while true; do sleep 8; done
@@ -310,12 +471,30 @@ def selftest():
     passed = failed = 0
     saw = set()
 
+    last = {"msg": ""}
+
+    def _said(fragment):
+        """Did the arm's own failure SAY this? An exit code is not a cause.
+
+        Each of these files raises Unusable from four or five different places, so an arm
+        asserting bare `exit 2` is satisfied by any of them — including a broken fixture. The
+        name would then describe one cause while the predicate accepted all of them.
+        (@cowir-overworld, 2026-09-11: "I wrote the name from what I wanted to be true and the
+        predicate from what was cheap to check.")
+        """
+        return fragment in last["msg"]
+
     def arm(name, want, fn, extra=None):
         nonlocal passed, failed
+        last["msg"] = ""
         try:
-            got = fn()
-        except Unusable:
+            _b = io.StringIO()
+            with contextlib.redirect_stdout(_b), contextlib.redirect_stderr(_b):
+                got = fn()
+            last["msg"] = _b.getvalue()
+        except Unusable as _e:
             got = 2
+            last["msg"] = str(_e)
         saw.add(got)
         detail = ""
         if got == want and extra is not None:
@@ -331,11 +510,42 @@ def selftest():
             failed += 1
             print(f"  FAIL  {name:52} exit {got} (wanted {want})")
 
+
+    # ── the stripper, pinned DIRECTLY ────────────────────────────────────────────────
+    # Six costumes of one hollowness across four lanes in an afternoon, every one found by
+    # mutating THROUGH the corpus, each fix blind to the next. @cowir-sfx's exit is a case
+    # table on the helper itself: a seventh costume reds here instead of passing silently.
+    # Both polarities, because a stripper has two ways to be wrong and arms tend to cover one
+    # (@cowir-music). NOTE the cut is AT the `#`, not a trim — trailing whitespace survives.
+    STRIP_CASES = [
+        ('exit 0   # gate',                 'exit 0   ',              'trailing comment cut'),
+        ('echo "tag #1"',                   'echo "tag #1"',          '# inside "double" survives'),
+        ("echo 'tag #1'",                   "echo 'tag #1'",          "# inside 'single' survives"),
+        ('echo "a \\" # b"',                'echo "a \\" # b"',       'escaped quote: line survives'),
+        ('echo "a\\\\"  # real',            'echo "a\\\\"  ',         'escaped BACKSLASH: cut anyway'),
+        ("echo 'a\\' # b",                  "echo 'a\\' ",           'no escaping in single quotes'),
+        ('"${BUTLER_BIN}" push out/ "$T"', '"${BUTLER_BIN}" push out/ "$T"', 'detection target untouched'),
+        ('plain line',                      'plain line',             'no comment: untouched'),
+    ]
+    for src, want, label in STRIP_CASES:
+        got = _strip_comment(src)
+        if got == want:
+            passed += 1
+            print(f"  ok    {('strip: ' + label):52} ")
+        else:
+            failed += 1
+            print(f"  FAIL  {('strip: ' + label):52} {got!r} != {want!r}")
+
     with tempfile.TemporaryDirectory() as d:
-        # Each probe gets its OWN tools dir, padded to EXPECT_MIN_LOOPS with a known-bounded
+        # Each probe gets its OWN tools dir, padded with a known-bounded PUSHER so the
         # filler so the floor check never masks the arm under test.
-        FILLER = ("#!/usr/bin/env bash\nk=0\nwhile [ \"$k\" -lt 9 ]; do sleep 1; "
-                  "k=$((k+1)); done\n")
+        # The filler must PUSH as well as poll: the expectation is now derived from push
+        # sites, so a dir with no pusher is Unusable and would mask every arm.
+        FILLER = ("#!/usr/bin/env bash\nPUBLISH=0\n"
+                  "[ \"${1:-}\" = \"--publish\" ] && { PUBLISH=1; shift; }\n"
+                  "if [ \"$PUBLISH\" != \"1\" ]; then exit 0; fi\n"
+                  "k=0\nwhile [ \"$k\" -lt 9 ]; do sleep 1; k=$((k+1)); done\n"
+                  "\"${BUTLER_BIN}\" push out/ \"$T\"\n")
         for i, (name, (src, want, frag)) in enumerate(PROBES.items()):
             td = os.path.join(d, f"t{i}")
             os.makedirs(td)
@@ -356,10 +566,61 @@ def selftest():
 
             arm(name, want, lambda td=td: run(td), check)
 
+        # CORPUS INDEPENDENCE: an unbounded post-push wait in a file no PREFIX would walk.
+        # Measured invisible before the corpus widened — EC 0, "0 UNBOUNDED".
+        odd = os.path.join(d, "oddname")
+        os.makedirs(odd)
+        open(os.path.join(odd, "deploy_filler.sh"), "w").write(FILLER)
+        open(os.path.join(odd, "ship_it.sh"), "w").write(
+            '#!/usr/bin/env bash\nPUBLISH=0\n'
+            '[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }\n'
+            'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
+            '"${BUTLER_BIN}" push out/ "$T"\n'
+            'until "${BUTLER_BIN}" status "$T" | grep -q "$V"; do sleep 8; done\n')
+        arm("unbounded wait in a file no PREFIX would walk", 1, lambda: run(odd),
+            lambda: (_said("ship_it.sh"), "names ship_it.sh"))
+
         # ── instrument-died arms: absence of input must NOT read as clean ──
         empty = os.path.join(d, "empty")
         os.makedirs(empty)
         arm("no deploy scripts at all — must not pass", 2, lambda: run(empty))
+
+        # THE DERIVED RELATIONSHIP, armed directly: a pusher whose post-push wait was removed.
+        # This is the arm that replaces EXPECT_MIN_LOOPS, and note what a red here tells you —
+        # "restore the confirmation" or "fix the finder", never "lower a number".
+        noloop = os.path.join(d, "noloop")
+        os.makedirs(noloop)
+        open(os.path.join(noloop, "deploy_pusher.sh"), "w").write(
+            '#!/usr/bin/env bash\nPUBLISH=0\n'
+            '[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }\n'
+            'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
+            '"${BUTLER_BIN}" push out/ "$T"\n')          # pushes, never waits
+        arm("a PUSHER with no polling loop — wait was removed", 2, lambda: run(noloop),
+            lambda: (_said("NO polling loop"), "says NO polling loop"))
+
+        # THE REALISTIC REGRESSION, not the tidy one. @cowir-controller, 2026-09-11: their
+        # escape guard caught "delete the keycode" and was hollow against "remove the branch and
+        # leave the comment that explained it" — and nobody deletes a branch without leaving a
+        # trace, so the arm they had was for the mutation that rarely happens and the one they
+        # lacked was what actually occurs. Ask of any source-text pin: what does this file look
+        # like after a REAL person removes the thing you are defending?
+        #
+        # Here that is a pusher whose bounded wait was deleted with a comment left behind.
+        # Measured on a real deploy_web.sh: tidy deletion EC 2, comment-left-behind EC 2 — both
+        # caught, because comments are stripped AND a pusher must carry a loop. The second half
+        # is this hour's derived relationship; without it the deletion would only have made the
+        # census smaller.
+        wascomment = os.path.join(d, "wascomment")
+        os.makedirs(wascomment)
+        open(os.path.join(wascomment, "deploy_pusher.sh"), "w").write(
+            '#!/usr/bin/env bash\nPUBLISH=0\n'
+            '[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }\n'
+            'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
+            '"${BUTLER_BIN}" push out/ "$T"\n'
+            '# removed the bounded wait; itch confirms fast enough now\n'
+            '# was: while [ "$_waited" -lt "$CONFIRM_BUDGET" ]; do sleep 8; done\n')
+        arm("wait deleted, COMMENT left behind", 2, lambda: run(wascomment),
+            lambda: (_said("NO polling loop"), "says NO polling loop"))
 
         nopoll = os.path.join(d, "nopoll")
         os.makedirs(nopoll)

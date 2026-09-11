@@ -39,13 +39,13 @@ func test_w5_arbiter_defeat_gate_present() -> void:
 	)
 	assert_true(body.contains(pattern),
 		"_get_pending_story_cutscene must check W5 arbiter defeat flag + completion guard")
-	assert_true(body.contains("return \"world5_arbiter_defeat\""),
-		"_get_pending_story_cutscene must return world5_arbiter_defeat")
+	assert_true(body.contains("return \"world4_arbiter_defeat\""),
+		"_get_pending_story_cutscene must return world4_arbiter_defeat — the Arbiter of the Benchmark's aftermath, which is RootProcess's boss; world5_arbiter_defeat is the ABSTRACT Arbiter's")
 
 
 func test_w5_gate_scoped_to_root_process_map() -> void:
 	var body := _pending_cutscene_body()
-	var idx: int = body.find("return \"world5_arbiter_defeat\"")
+	var idx: int = body.find("return \"world4_arbiter_defeat\"")
 	assert_gt(idx, -1, "W5 arbiter defeat return must exist")
 	var window_start: int = max(0, idx - 200)
 	var window: String = body.substr(window_start, idx - window_start)
@@ -55,19 +55,19 @@ func test_w5_gate_scoped_to_root_process_map() -> void:
 
 func test_w5_arbiter_defeat_in_completion_flag_map() -> void:
 	var src := _read(GAME_LOOP)
-	var key_quote: String = "\"world5_arbiter_defeat\":"
+	var key_quote: String = "\"world4_arbiter_defeat\":"
 	var key_idx: int = src.find(key_quote)
 	assert_gt(key_idx, -1,
-		"_CUTSCENE_COMPLETION_FLAGS must contain key 'world5_arbiter_defeat'")
+		"_CUTSCENE_COMPLETION_FLAGS must contain key 'world4_arbiter_defeat'")
 	var line_end: int = src.find("\n", key_idx)
 	var line: String = src.substr(key_idx, line_end - key_idx) if line_end > -1 else src.substr(key_idx)
 	assert_true(line.contains("\"cutscene_flag_world5_arbiter_defeat_complete\""),
-		"world5_arbiter_defeat must map to cutscene_flag_world5_arbiter_defeat_complete")
+		"world4_arbiter_defeat must map to cutscene_flag_world5_arbiter_defeat_complete — the FLAG name is deliberately unchanged so a save that already saw the old scene does not replay this one")
 
 
-func test_world5_arbiter_defeat_file_exists() -> void:
-	assert_true(FileAccess.file_exists("res://data/cutscenes/world5_arbiter_defeat.json"),
-		"world5_arbiter_defeat.json must exist on disk")
+func test_w5_arbiter_defeat_scene_file_exists() -> void:
+	assert_true(FileAccess.file_exists("res://data/cutscenes/world4_arbiter_defeat.json"),
+		"world4_arbiter_defeat.json must exist on disk")
 
 
 func test_w6_null_chamber_curator_defeat_not_authored() -> void:
@@ -88,8 +88,8 @@ func test_full_defeat_cutscene_series_complete_for_w1_w5() -> void:
 		"world1_rat_king_defeat",
 		"world2_warden_defeat",
 		"world3_tempo_defeat",
-		"world4_warden_defeat",
-		"world5_arbiter_defeat",
+		"world3_warden_defeat",
+		"world4_arbiter_defeat",
 	]:
 		assert_true(body.contains("return \"" + cutscene_id + "\""),
 			"%s must have a return path — completing the W1-W5 defeat-cutscene series" % cutscene_id)

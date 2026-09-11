@@ -10,16 +10,12 @@ const NPC_SRC := "res://src/exploration/OverworldNPC.gd"
 ## each would start the quests, but every custom step needs a designed mechanic (multi-path
 ## counter-signature, a compression puzzle, an archive in maintenance tunnels that has no map).
 ## Placing them would ship startable-but-unfinishable quests — the W1 trap, on purpose.
+## 2026-09-11 (cowir-story 239ba029): foreman/union_rep/dorrit/madame_orrery_w4 + firewall_attendant_w5 now have ids and left this list.
 const AUTHORED_AHEAD := {
-	"foreman_w4": "W4 — NPC 'Shift Foreman Grix' exists; watercolors step3 needs the maintenance-tunnels map",
-	"union_rep_w4": "W4 — NPC 'Union Rep Voss' exists; words_per_conversation step2 is the compression puzzle",
-	"dorrit_w4": "W4 — NPC 'Dorrit' exists; form_exception step2 is the multi-path counter-signature",
-	"madame_orrery_w4": "W4 — NPC 'Madame Orrery' IS placed in rivet_row; the id is withheld because deviation_report step2 talks to union_rep_w4. Placing it shipped an acceptable-unfinishable quest",
 	"rat_patrol_junction": "W4 — sited in rivet_row_tunnels, which exists as no map",
 	"memory_leak_district": "W5 — no village placement yet",
 	"madame_orrery_w5": "W5 — no village placement yet",
 	"race_condition_pair": "W5 — no village placement yet",
-	"firewall_attendant_w5": "W5 — no village placement yet",
 	"traveler_w6": "W6 — no village placement yet",
 	"madame_orrery_w6": "W6 — no village placement yet",
 	"last_shopkeeper_w6": "W6 — no village placement yet",

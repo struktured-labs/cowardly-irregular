@@ -36,16 +36,16 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "Heck of a chase.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         },
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "I've been doing this route my whole life.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         }
       ]
     },
@@ -61,22 +61,22 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "Except… I don't remember starting.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         },
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "I've been delivering to this neighborhood my whole life, and I remember every house, every regular order, every dog that runs at the car. But I don't remember the first delivery.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         },
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "That's weird, right? That should be weird.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         }
       ]
     },
@@ -94,16 +94,16 @@
           "portrait": "cleric"
         },
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "It's not okay.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         },
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "A person remembers their first job. A person remembers the beginning.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         }
       ]
     },
@@ -115,10 +115,10 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "How long have you been doing yours?",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         },
         {
           "speaker": "Bard",
@@ -127,16 +127,16 @@
           "portrait": "bard"
         },
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "That's specific.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         },
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "That's a beginning. That's a real one.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         }
       ]
     },
@@ -152,10 +152,10 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "I don't know what's in this. I've never opened it. I've delivered it every night of my life and I don't know who I'm delivering it to.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         }
       ]
     },
@@ -167,16 +167,16 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "Thirty minutes or less.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         },
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "It's not a slogan. It was supposed to be something. I just don't know what anymore.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         }
       ]
     },
@@ -196,10 +196,10 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Tempo",
+          "speaker": "Tempo of the Rush Hour",
           "text": "I'm… not late anymore.",
           "theme": "enemy",
-          "portrait": "masterite_tempo_medieval"
+          "portrait": "masterite_tempo_suburban"
         }
       ]
     },

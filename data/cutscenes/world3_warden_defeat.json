@@ -1,9 +1,9 @@
 {
   "id": "world3_warden_defeat",
   "title": "Warden of the Assembly Line — Aftermath",
-  "world": 3,
+  "world": 4,
   "trigger": "boss_warden_industrial_defeated",
-  "background": "steampunk_workshop",
+  "background": "industrial_factory",
   "description": "The Warden's hydraulics hiss and settle. The stress test exceeded its own parameters. A machine built to measure breaking points discovers the party has no category.",
   "steps": [
     {

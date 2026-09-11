@@ -57,27 +57,71 @@ func test_the_description_says_WHEN_not_only_what() -> void:
 
 # ── the guard that matters: never advertise a posture the engine won't adopt ───
 
-func test_intent_descriptions_only_describe_what_the_engine_does() -> void:
-	## THE LOAD-BEARING ONE. Five of the six widened counter tags reach no bias arm
-	## that produces an action — pinned inverted in BattleManager, awaiting
-	## struktured's call on whether to wake them. Describing one as though it works
-	## would make the prompt lie about the boss's behaviour. This fails if anyone
-	## adds a description for an intent outside the working set.
+func test_every_described_intent_reaches_a_bias_arm() -> void:
+	## Weaker than the check this replaces, and honestly so. The previous version
+	## searched BattleManager for `"<id>":` and called that "has a real bias arm".
+	## That is not what it tested: the six counter tags SHARE one match arm written
+	## `"fire_resist", "ice_resist", ...:`, which the pattern cannot see. It got the
+	## right answer for five of them BY COINCIDENCE OF PUNCTUATION and the wrong
+	## answer for rotate_aggro, which sits in that same arm and DOES fire.
+	##
+	## This asserts what source can actually establish: the id appears in
+	## _bias_by_intent's match, in either arm form.
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	assert_false(src.is_empty(), "CONTROL: BattleManager must be readable")
+	var at: int = src.find("func _bias_by_intent")
+	assert_gt(at, -1, "CONTROL: _bias_by_intent must exist, or this measures nothing")
+	# Extract by BOUNDARY, not by a byte count. A fixed window is a coincidental
+	# magnitude: this first used substr(at, 1800) and cut the function off before
+	# exploit_pattern and the shared arm, failing two intents that were present.
+	var next_func: int = src.find("\nfunc ", at + 1)
+	var body: String = src.substr(at, (next_func if next_func != -1 else src.length()) - at)
+	assert_true(body.find("exploit_pattern") != -1,
+		"CONTROL: the extracted body must reach the LAST arm, or the scan is measuring a truncation")
+	# Match-ARM lines only. The body quotes intent names in its comments too —
+	# `aggress` appears quoted twice, once on an arm and once in prose — so a bare
+	# find() would pass for an intent that is merely DISCUSSED and has no arm.
+	var arm_lines: PackedStringArray = PackedStringArray()
+	for line in body.split("\n"):
+		var t: String = line.strip_edges()
+		if t.ends_with(":") and t.begins_with("\""):
+			arm_lines.append(t)
+	assert_gt(arm_lines.size(), 0,
+		"CONTROL: no match arms extracted — the scan found nothing to check against")
 	for id in DP.INTENT_DESCRIPTIONS.keys():
-		assert_true(src.find('"%s":' % str(id)) != -1,
-			("'%s' is described to the model but has no dedicated arm in _bias_by_intent. " +
-			"Either it does nothing, or the description is guessing at what it does.") % str(id))
+		var on_arm: bool = false
+		for t in arm_lines:
+			if t.find('"%s"' % str(id)) != -1:
+				on_arm = true
+		assert_true(on_arm,
+			("'%s' is described to the model but sits on no match arm in _bias_by_intent " +
+			"(a mention in a comment does not count)") % str(id))
 
 
-func test_the_inert_counter_tags_are_left_undescribed() -> void:
-	## The other half, stated so a later "let's document them all" edit has to
-	## confront the reason. These render bare and keep their entry in the widened
-	## vocabulary; they are simply not explained as working postures.
-	for id in ["fire_resist", "ice_resist", "lightning_resist", "focus_healer", "defense_boost"]:
-		assert_false(DP.INTENT_DESCRIPTIONS.has(id),
-			"'%s' reaches no action-producing arm — it must not be described as a working posture" % id)
+func test_the_inert_intents_are_excluded_by_EVIDENCE_not_by_punctuation() -> void:
+	## THE CORRECTION. Nothing structural separates the inert five from
+	## rotate_aggro — they share a match arm and all six return a non-empty bias.
+	## The separation is measured downstream behaviour (_get_counter_action builds
+	## nothing for five of them: 0.000 over 400 rolls each, against rotate_aggro's
+	## 0.600), so the exclusion is an authored list carrying that evidence.
+	##
+	## Fails if anyone describes one of the five, and equally if the list is
+	## quietly emptied to make the test above pass.
+	assert_eq(DP.BOSS_INTENT_INERT.size(), 5,
+		"five intents are measured inert; changing that count needs a new measurement, not an edit")
+	for id in DP.BOSS_INTENT_INERT:
+		assert_false(DP.INTENT_DESCRIPTIONS.has(str(id)),
+			"'%s' produces no action — it must not be described as a working posture" % str(id))
+
+
+func test_rotate_aggro_is_described_because_it_actually_fires() -> void:
+	## The member the old criterion got WRONG. It shares the inert five's match arm,
+	## so a punctuation-based rule withheld it; it fires 0.600 of the time, so
+	## withholding it was never justified.
+	assert_true(DP.INTENT_DESCRIPTIONS.has("rotate_aggro"),
+		"rotate_aggro fires and must be explained like any other working posture")
+	assert_false(DP.BOSS_INTENT_INERT.has("rotate_aggro"),
+		"and must not be listed among the inert, which is the error being corrected")
 
 
 func test_an_undescribed_intent_is_still_offered() -> void:

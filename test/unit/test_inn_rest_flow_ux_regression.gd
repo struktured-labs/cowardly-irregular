@@ -81,7 +81,11 @@ func test_prompt_offers_a_cancel_affordance() -> void:
 	var txt := _prompt_with_gold(500)
 	# Must name a BUTTON. The pre-fix text said "Walk away to cancel", which contains the word
 	# "cancel" and offers no button — an arm accepting that word could never fail.
-	assert_string_contains(txt.to_lower(), "[b]",
+	# The cancel cap is DERIVED now (InputProfileManager.hint_for_action("ui_cancel")): "[B]" on a pad,
+	# "X" on a keyboard. Pin the derivation, not one device's spelling.
+	var cancel_cap := InputProfileManager.hint_for_action("ui_cancel").to_lower()
+	assert_true(cancel_cap != "", "CONTROL: the cancel helper must name something")
+	assert_string_contains(txt.to_lower(), cancel_cap + " leave it",
 		"the prompt must name a BUTTON to back out, not instruct the player to walk away — got: %s" % txt)
 	assert_false(txt.to_lower().contains("walk away"),
 		"walking the character away must not be the documented cancel any more")

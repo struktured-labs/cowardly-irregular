@@ -86,6 +86,53 @@ func _mismatches() -> Dictionary:
 			out[jid] = bad
 	return out
 
+## Added 2026-09-11 after cowir-sfx found a loop guard whose corpus was `begins_with("ambient_")`
+## while the six keys breaking the contract were named `weather_*` — the guard could not see exactly
+## the members that were broken, and passed green throughout. My scan picks its corpus the same
+## way: by the NAME `_create_<x>_default_script`. That is true today and nothing enforces it, so a
+## builder reached through any other name would be silently exempt from every assertion in this file.
+## This pins the two corpora together — defined-by-name and dispatched-by-reference must be the same
+## set — so the name-derived scan cannot quietly stop covering the thing it claims to cover.
+## The reference corpus is EVERY callable the dispatch returns, matched with no name pattern at all
+## — `return (_[a-z_]+)\(` inside create_default_character_script's body. That is the whole point:
+## a corpus derived with the same pattern the scan uses would agree with it by construction and
+## prove nothing. A builder named `_build_bard_script` shows up here and fails the pattern check.
+func test_the_scan_covers_every_builder_the_dispatch_ACTUALLY_REACHES() -> void:
+	var s := FileAccess.get_file_as_string(SRC)
+	var i: int = s.find("func create_default_character_script(")
+	assert_gt(i, -1, "CONTROL: located the dispatch")
+	var j: int = s.find("\nfunc ", i + 10)
+	var body: String = s.substr(i, (j - i) if j > -1 else s.length() - i)
+	assert_true(body.contains("_create_fighter_default_script"),
+		"CONTROL: the sliced body really is the dispatch, not a window past it")
+
+	var any_re := RegEx.new()
+	any_re.compile("return (_[a-z_]+)\\(")
+	var reached: Dictionary = {}
+	for m in any_re.search_all(body):
+		reached[m.get_string(1)] = true
+	assert_gt(reached.size(), 5, "CONTROL: the dispatch returns builders at all (%d)" % reached.size())
+
+	var pat_re := RegEx.new()
+	pat_re.compile("^_create_[a-z_]+_default_script$")
+	var invisible: Array = []
+	for f in reached:
+		if pat_re.search(f) == null:
+			invisible.append(f)
+	assert_eq(invisible.size(), 0,
+		"the dispatch reaches a builder whose name this file's scan cannot match, so its rules are exempt from every kit check here: " + str(invisible))
+
+	## The other direction: a builder defined under the pattern that nothing dispatches is dead
+	## authoring, and a kit check that passes on it is passing on code no player can reach.
+	var def_re := RegEx.new()
+	def_re.compile("func (_create_[a-z_]+_default_script)\\(")
+	var orphans: Array = []
+	for m in def_re.search_all(s):
+		if not reached.has(m.get_string(1)):
+			orphans.append(m.get_string(1))
+	assert_eq(orphans.size(), 0,
+		"a default-script builder the dispatch never returns is unreachable: " + str(orphans))
+
 func test_the_scan_is_not_vacuous() -> void:
 	## The whole file rests on the action regex matching. If it stops matching, every assertion
 	## below passes trivially — which is how my first version of this scan reported zero.

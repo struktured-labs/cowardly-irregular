@@ -145,6 +145,9 @@ func _on_probe_completed(result: int, response_code: int, _headers: PackedString
 
 func _cleanup_probe() -> void:
 	if _probe_request != null and is_instance_valid(_probe_request):
+		# queue_free is deferred; disconnect so a late reply cannot report on a new endpoint.
+		if _probe_request.request_completed.is_connected(_on_probe_completed):
+			_probe_request.request_completed.disconnect(_on_probe_completed)
 		_probe_request.queue_free()
 	_probe_request = null
 
@@ -172,6 +175,17 @@ func _maybe_refresh_probe() -> void:
 		return
 	if Time.get_ticks_msec() - _last_probe_msec < int(PROBE_INTERVAL_SEC * 1000.0):
 		return
+	_start_probe()
+
+
+## The endpoint CHANGED: drop the cached verdict and any in-flight probe aimed at
+## the old one, and probe the new one now. Zeroing _ready_flag alone left
+## _last_probe_msec stale, so _maybe_refresh_probe blocked the revival probe for
+## up to PROBE_INTERVAL_SEC and every LLM call fell back meanwhile.
+func invalidate_and_reprobe() -> void:
+	_ready_flag = false
+	_first_probe_done = false
+	_cleanup_probe()
 	_start_probe()
 
 

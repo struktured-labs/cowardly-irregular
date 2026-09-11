@@ -714,7 +714,9 @@ func _toggle_battle_speed() -> void:
 	_animate_speed_change()
 	SoundManager.play_ui("speed_change")
 	log_message("[color=gray]Battle speed: %s[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
-	_show_hint("speed_toggle", "Press X (or the ` key) to change battle speed. Higher speeds skip animations for faster grinding.")
+	## ASK Win98Menu, do not restate: speed is raw JOY_BUTTON_Y with no InputMap action, and that file
+	## is where the pad/keyboard decision already lives — "X" is Nintendo-only and ✕ is Cancel on a DualSense.
+	_show_hint("speed_toggle", "Press %s to change battle speed. Higher speeds skip animations for faster grinding." % Win98MenuClass.speed_hint())
 
 
 func _animate_speed_change() -> void:
@@ -2867,8 +2869,13 @@ func _on_battle_started() -> void:
 	if GameState and "game_constants" in GameState and GameState.game_constants.has("pending_battle_flavor_line"):
 		log_message("[color=orange]%s[/color]" % str(GameState.game_constants["pending_battle_flavor_line"]))
 		GameState.game_constants.erase("pending_battle_flavor_line")
-	_show_hint("autobattle", "Press Select or F6 to enable Autobattle for all characters!")
-	_show_hint("controls", "L = Defer (skip, +1 AP) | R = Advance (queue extra actions)")
+	# Derived: "Select" / "L" / "R" are Nintendo names for buttons Xbox and PlayStation call
+	# Back/LB/RB and Share/L1/R1. Same defect as the hint bar these two sit beneath.
+	_show_hint("autobattle", "Press %s or F6 to enable Autobattle for all characters!"
+		% InputProfileManager.hint_for_action("battle_toggle_auto"))
+	_show_hint("controls", "%s = Defer (skip, +1 AP) | %s = Advance (queue extra actions)"
+		% [InputProfileManager.hint_for_action("battle_defer"),
+			InputProfileManager.hint_for_action("battle_advance")])
 
 	# Tutorial popups (fire once per save)
 	TutorialHints.show(self, "first_battle")
@@ -3584,7 +3591,7 @@ func _on_selection_turn_started(combatant: Combatant) -> void:
 		# Play da-ding sound for player turn
 		SoundManager.play_ui("player_turn")
 		if combatant.current_ap > 0:
-			_show_hint("advance", "You have %d AP! Press R to queue extra actions." % combatant.current_ap)
+			_show_hint("advance", "You have %d AP! Press %s to queue extra actions." % [combatant.current_ap, InputProfileManager.hint_for_action("battle_advance")])
 			TutorialHints.show(self, "advance_defer")
 		# BDFFHD signature step-out toward the enemies — clear who's-up cue.
 		_step_active_pc(combatant, true)
@@ -6166,7 +6173,11 @@ func _on_full_bank_unleashed(combatant: Combatant, action_count: int) -> void:
 ## The flourish is the first caller of the quip palette that a MONSTER can reach — every combat-quip
 ## site is guarded by `in player_party`, and `_get_job_quip_color` defaults a jobless combatant to
 ## "fighter", so an enemy Advance came out in the Fighter's red. Enemies get a neutral threat tint.
-const ADVANCE_FLOURISH_ENEMY_COLOR: Color = Color(0.86, 0.46, 0.40)
+## Bone/ash, deliberately near-grey: a monster has no class, so it gets no class colour. Chosen by
+## maximising distance from every job under a desaturation constraint — 0.525 from its nearest
+## (cleric/bard/ninja), where the palette's own closest two jobs sit 0.350 apart. The first tint I
+## picked here was 0.280 from the Fighter's orange, CLOSER than any two jobs are to each other.
+const ADVANCE_FLOURISH_ENEMY_COLOR: Color = Color(0.75, 0.725, 0.65)
 
 
 static func advance_flourish_color(combatant: Combatant, party_color: Color) -> Color:

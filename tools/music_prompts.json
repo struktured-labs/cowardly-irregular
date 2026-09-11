@@ -794,7 +794,7 @@
       "style": "JRPG special attack, dimensional warp, VHS fast-forward, reality skip, instant teleport, short, 5 seconds",
       "prompt": "Skiptrotter special attack stinger. VHS fast-forward sound — reality skips ahead, frames drop, the space between here and there just disappears. Instant warp. The shortest stinger in the game because the Skiptrotter doesn't waste time. 5 seconds."
     },
-    "shop": {
+    "interior_shop": {
       "title_template": "The Merchant's Welcome",
       "style": "16-bit SNES shop theme, cozy, gentle piano and harp, light woodwinds, pizzicato strings, warm, welcoming, medium tempo, loopable",
       "prompt": "Cozy JRPG merchant's shop, warm interior with hanging lanterns, shelves of potions and gear, welcoming shopkeeper behind a wooden counter. Gentle piano arpeggios over soft harp, light flute melody drifting above, pizzicato strings underneath. Calm and inviting, lets the player browse without pressure, classic FF/Dragon Quest shop-music feel. Loops cleanly."

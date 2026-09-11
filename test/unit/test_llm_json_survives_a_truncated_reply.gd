@@ -54,6 +54,24 @@ func before_each() -> void:
 	add_child_autofree(_svc)
 
 
+# ── the fixtures are genuinely broken ─────────────────────────────────────────
+
+func test_the_truncated_fixtures_do_not_parse_as_written() -> void:
+	## Every test below goes through _extract_json_from_raw, which ALWAYS applies
+	## the repair — so without this the file cannot tell "the repair works" from
+	## "these captures were never truncated". The normaliser sits between the
+	## fixture and every assertion about it.
+	##
+	## A CONTROL: it holds with or without the repair. What it catches is a fixture
+	## being "tidied" into valid JSON, which would retire every test below it
+	## silently.
+	for raw in [REAL_TRUNCATED_ARRAY, REAL_TRUNCATED_STRING]:
+		assert_null(JSON.parse_string(raw),
+			"fixture must be UNPARSEABLE as captured, or the repair it exercises is untested")
+	assert_true(JSON.parse_string(COMPLETE_REPLY) is Dictionary,
+		"CONTROL on the control: the complete reply MUST parse, or the assert above is trivially true")
+
+
 # ── 1. truncation is repaired ─────────────────────────────────────────────────
 
 func test_a_real_truncated_reply_is_recovered() -> void:

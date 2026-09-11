@@ -142,3 +142,46 @@ func test_character_creation_legend_is_derived() -> void:
 		"the old label claimed A for Select; on Xbox and PlayStation Select is the EAST face")
 	assert_true(src.contains("hint_for_action(\"ui_menu\")"),
 		"Done is ui_menu, whose printed name varies per family (Plus / Start / Options)")
+
+## THE DERIVED ARM, added after the SAME list-blindness was measured here (2026-09-11). A probe
+## Control in src/ui with `_hint.text = "[A] Confirm  [B] Cancel"` passed this file GREEN at 8/8,
+## because CONVERTED is a list and a list cannot see a file that does not exist yet. cowir-sfx hit
+## the identical shape from the other direction — an ambient guard scoped `begins_with("ambient_")`
+## that was blind to the `weather_*` keys actually breaking its contract.
+const UI_DIR := "res://src/ui"
+
+
+func _ui_scripts() -> Array[String]:
+	var out: Array[String] = []
+	var d := DirAccess.open(UI_DIR)
+	assert_not_null(d, "PRECONDITION: %s must be walkable" % UI_DIR)
+	d.list_dir_begin()
+	var name := d.get_next()
+	while name != "":
+		if not d.current_is_dir() and name.ends_with(".gd"):
+			out.append(name)
+		name = d.get_next()
+	d.list_dir_end()
+	out.sort()
+	return out
+
+
+## CONTROL: the walker must reach beyond the list, or it is the list wearing a loop.
+func test_the_ui_walker_sees_more_than_the_list() -> void:
+	var found := _ui_scripts()
+	assert_gt(found.size(), CONVERTED.size(), "the walker must reach more files than CONVERTED names")
+	assert_true(found.has("ItemsMenu.gd"), "CONTROL: a known member must appear")
+	assert_false(found.has("ZzqNotAFile.gd"), "CONTROL: the walker can report a name absent")
+
+
+## ANY file in src/ui may not freeze a Confirm/Cancel legend — including one written next week.
+func test_no_ui_file_freezes_a_confirm_cancel_legend() -> void:
+	var frozen := RegEx.create_from_string("(?:=|return)\\s*\"\\[(A|B)\\][^\"]*(Confirm|Cancel|Back|Craft|Apply|Select|Delete)")
+	var offenders: Array[String] = []
+	for fname in _ui_scripts():
+		var src := FileAccess.get_file_as_string("%s/%s" % [UI_DIR, fname])
+		if frozen.search(src) != null:
+			offenders.append(fname)
+	assert_eq(offenders, [] as Array[String],
+		"a src/ui file freezes a face letter in a Confirm/Cancel legend — inverted on Xbox and " +
+		"PlayStation, meaningless on a keyboard: %s" % [", ".join(offenders)])

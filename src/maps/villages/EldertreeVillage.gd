@@ -351,7 +351,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(vesper)
 
 	_add_quest_examine_point("w1_eldertree_rangers_empty_house",
-		"quest_w1_eldertree_rangers_empty_house_accepted", "[A] Search the rangers' house",
+		"quest_w1_eldertree_rangers_empty_house_accepted", "Search the rangers' house",
 		"Every arrow in the quiver sits at the same rotation. Rangers never store arrows that way. Someone who has never held a bow TIDIED this.",
 		"The rangers' house, at the top of the path. Empty, and in perfect order.",
 		Vector2(22 * TILE_SIZE,5 * TILE_SIZE))

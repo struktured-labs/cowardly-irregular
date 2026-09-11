@@ -119,3 +119,99 @@ func test_the_ability_still_authors_a_finite_budget() -> void:
 	assert_eq(str(a.get("effect", "")), "damage_absorb", "CONTROL: still the absorb ability")
 	assert_gt(int(a.get("absorb_amount", 0)), 0,
 		"fill_the_void must author a finite ward — without it the_absence is immune for two rounds")
+
+## ── The ward must survive a snapshot with its bound intact ────────────────────────────────────
+## Found by asking cowir-sfx's closing question of my own fix: what did fixing this file stop me
+## looking at? `status_effects` round-trips through to_dict/from_dict and the Time Mage's
+## `create_save` explicitly quicksaves DURING battle. The budget lived only in Object meta, so a
+## snapshot restored the ward WITHOUT it — and "no budget" legitimately means unlimited, so the
+## round trip silently restored the exact defect the budget exists to prevent.
+##
+## Not reachable today: `fill_the_void` is self-target and monster-only, and enemies are not
+## persisted. It is pinned anyway because the consequence is the original bug and there is no
+## natural discovery path — the same reasoning tick 151 used one family member earlier, when
+## status_durations was lost on rewind and every active poison became permanent.
+
+func test_the_budget_survives_a_round_trip() -> void:
+	var c := _make("Snapshot")
+	c.add_status("damage_absorb", 5)
+	c.set_meta("_damage_absorb_budget", 137)
+	var restored := _make("Restored")
+	restored.from_dict(c.to_dict())
+	assert_true(restored.has_status("damage_absorb"), "CONTROL: the status itself round-trips")
+	assert_eq(int(restored.get_meta("_damage_absorb_budget", -1)), 137,
+		"the ward must come back worth what was left of it, not unlimited")
+
+func test_a_restored_ward_still_spends_and_breaks() -> void:
+	## Behavioural, because carrying the number across is not the same as the restored combatant
+	## USING it — a restored ward that absorbs without decrementing is the original bug again.
+	var d := _plain_hit(30)
+	var c := _make("Snapshot")
+	c.current_hp = 200
+	c.add_status("damage_absorb", 5)
+	c.set_meta("_damage_absorb_budget", 4)
+	var restored := _make("Restored")
+	restored.from_dict(c.to_dict())
+	restored.current_hp = 200
+	assert_eq(restored.take_damage(30, false), d - 4, "the restored ward pays what it has, then the overflow lands")
+	assert_false(restored.has_status("damage_absorb"), "and it breaks, exactly as it would have before the snapshot")
+
+func test_a_save_written_before_this_shipped_keeps_the_unbudgeted_rule() -> void:
+	## Old saves have no such key, and an unbudgeted ward is what they recorded. Reading absence as
+	## a ZERO budget would retroactively delete a mechanic from every existing save.
+	var c := _make("Legacy")
+	var data: Dictionary = c.to_dict()
+	data.erase("damage_absorb_budget")
+	data["status_effects"] = ["damage_absorb"]
+	var restored := _make("Restored")
+	restored.from_dict(data)
+	restored.current_hp = 100
+	assert_eq(restored.take_damage(30, false), 0, "an absent key must still mean unlimited, not spent")
+
+## ── The ward must not out-absorb the thing it protects ────────────────────────────────────────
+## Probed the half I had hardened LESS (cowir-autogrind's heuristic, 2026-09-11): four mutation arms
+## sat on the consumer side and one on the producer. The producer question is whether the authored
+## cap BINDS at all — a budget larger than the damage a party can deliver is the unbounded ward
+## wearing a number, and every test above would still pass.
+##
+## Measured rather than reasoned: 60 MP / 12 MP = at most 5 casts, x 1000 = 5000 absorbable across a
+## whole fight, against its own 8000 HP. Against a five-member party at ~184 magic damage each
+## (250 raw vs magic_defense 90), one ward faces ~1840 over its two turns and breaks partway through
+## the second. Before the fix it covered both turns entirely and healed every point.
+##
+## So the pin is the RELATIONSHIP, not any of those numbers: whatever a self-absorb ability can soak
+## over a fight must stay under the caster's own HP. Cross that line and damage can never accumulate
+## — which is the defect this whole file exists to stop, reachable again by editing data alone.
+
+func test_a_self_absorb_ward_cannot_outlast_its_own_caster() -> void:
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	assert_not_null(parsed, "CONTROL: abilities.json parses")
+	var abilities: Dictionary = (parsed as Dictionary).get("abilities", parsed)
+	var mparsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	assert_not_null(mparsed, "CONTROL: monsters.json parses")
+	var monsters: Dictionary = (mparsed as Dictionary).get("monsters", mparsed)
+
+	var checked: int = 0
+	var unbounded: Array = []
+	for aid in abilities:
+		var a: Dictionary = abilities[aid]
+		if str(a.get("effect", "")) != "damage_absorb" or not a.has("absorb_amount"):
+			continue
+		var cap: int = int(a["absorb_amount"])
+		var cost: int = maxi(1, int(a.get("mp_cost", 1)))
+		for mid in monsters:
+			var mon: Dictionary = monsters[mid]
+			if not (aid in (mon.get("abilities", []) as Array)):
+				continue
+			var st: Dictionary = mon.get("stats", {})
+			var hp: int = int(st.get("max_hp", 0))
+			var mp: int = int(st.get("max_mp", 0))
+			if hp <= 0 or mp <= 0:
+				continue
+			checked += 1
+			var ceiling: int = (mp / cost) * cap
+			if ceiling >= hp:
+				unbounded.append("%s/%s: soaks %d over a fight vs %d HP" % [mid, aid, ceiling, hp])
+	assert_gt(checked, 0, "CONTROL: at least one monster actually authors a self-absorb ward")
+	assert_eq(unbounded.size(), 0,
+		"this ward can absorb more than its caster's whole health bar, so damage can never accumulate and the fight cannot be won by hitting it: " + str(unbounded))
