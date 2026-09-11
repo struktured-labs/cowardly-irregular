@@ -106,6 +106,7 @@ func _ready() -> void:
 	_place_wanderers()
 	_place_village_markers()
 	_place_treasure_chests()
+	_place_hidden_passages()
 	_place_save_point()
 	_place_ambient_effects()
 
@@ -166,6 +167,19 @@ func _place_village_markers() -> void:
 		add_child(marker)
 
 
+## W2 had no hidden passages. The carved gap is a real opening; this makes it read as unbroken fence.
+func _place_hidden_passages() -> void:
+	const HiddenPassageScript = preload("res://src/exploration/HiddenPassage.gd")
+	var passage = HiddenPassageScript.new()
+	passage.passage_id = "w2_fenced_lot"
+	passage.disguise = "hedge"
+	passage.passage_width = 2
+	passage.passage_height = 1
+	# Cell (23,10) anchors at tile (69.5, 30.5); the carved gap is tiles x69-70 on fence row y30.
+	passage.position = Vector2(23 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 10 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(passage)
+
+
 func _place_treasure_chests() -> void:
 	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 	# 10 chests across W2 zones: residential, strip mall, park, playground
@@ -181,6 +195,12 @@ func _place_treasure_chests() -> void:
 		{"id": "w2_mall_antidote", "pos": Vector2(30, 18), "type": "item", "item": "antidote", "amount": 4},
 		{"id": "w2_mall_gold", "pos": Vector2(42, 17), "type": "gold", "gold": 350},
 		# Park / playground — kid hidden stashes
+		# THE LOT BEHIND THE FENCE — W2's first secret. The ring is authored terrain carved into 168
+		# untouched lawn pixels, the emptiest square on the map; the carve refuses to run if any pixel in
+		# its footprint is not virgin lawn. Cell (23,9) = tile (69.5,27.5), which a real body reaches: it
+		# enters at tile y 34, travels 9.37 tiles, stops at y 24.63 and sweeps x 65.2..76.8 — the carved
+		# interior to a quarter tile. The back rows are unreachable by the 4.4-tile clone displacement.
+		{"id": "w2_secret_fenced_lot", "pos": Vector2(23, 9), "type": "item", "item": "elixir", "amount": 1},
 		{"id": "w2_park_phoenix", "pos": Vector2(6, 28), "type": "item", "item": "phoenix_down", "amount": 1},
 		{"id": "w2_park_remedy", "pos": Vector2(14, 30), "type": "item", "item": "remedy", "amount": 3},
 		{"id": "w2_court_elixir", "pos": Vector2(22, 28), "type": "item", "item": "elixir", "amount": 1},
