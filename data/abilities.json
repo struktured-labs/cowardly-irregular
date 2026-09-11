@@ -708,7 +708,7 @@
     "type": "support",
     "animation": "buff",
     "mp_cost": 15,
-    "description": "Wards every ally. Each ward soaks up to 800 damage from the next incoming hit — spell or steel — then breaks; anything past the cap lands. Lasts 2 turns unspent.",
+    "description": "Wards every ally. Each ward nullifies one incoming hit outright — spell or steel — then breaks. Lasts 2 turns unspent.",
     "target_type": "all_allies",
     "effect": "barrier",
     "absorb_amount": 800,

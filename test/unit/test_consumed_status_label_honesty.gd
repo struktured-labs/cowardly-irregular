@@ -97,25 +97,43 @@ func test_control_both_sides_are_non_empty() -> void:
 	assert_gt(appliers, 5, "must find abilities applying a consumed-on-use effect, else this file guards nothing")
 
 
-## PREMISE BEHIND guardian_wall's WORDING, INVERTED 2026-09-11. absorb_amount was dead data
-## (measured 2026-07-29) and the ward "nullified one hit outright". cowir-battle made it a BUDGET
-## (lane/absorb-amount-is-a-budget): the ward soaks up to absorb_amount, overflow lands in the same
-## hit, the status breaks. So the description must name the cap and must NOT say "outright".
-func test_premise_absorb_amount_is_a_live_budget() -> void:
-	var live := 0
-	for l in FileAccess.get_file_as_string(BATTLE_MGR).split("\n"):
-		var s: String = l.strip_edges()
-		if s.begins_with("#") or s.begins_with("##"):
-			continue
-		if s.contains("absorb_amount"):
-			live += 1
-	assert_gt(live, 0, "absorb_amount must have a live read in BattleManager — if it went dead again, the ward is uncapped and the description below is wrong the other way")
+## PREMISE BEHIND guardian_wall's WORDING (re-pinned 2026-09-11). absorb_amount became a LIVE
+## budget for damage_absorb (cowir-battle, lane/absorb-amount-is-a-budget) — but barrier is a
+## different effect: its handlers remove the status and nullify the WHOLE hit, so guardian_wall's
+## "outright" stays true and its absorb_amount: 800 is vestigial documentation. The day someone wires
+## the budget into barrier, the description becomes a lie; this pins both halves so that shows up.
+func _enclosing_function(src: String, idx: int) -> String:
+	var start: int = src.rfind("\nfunc ", idx)
+	var stop: int = src.find("\nfunc ", idx + 1)
+	if stop == -1:
+		stop = src.length()
+	return src.substr(start, stop - start)
+
+
+func test_premise_barrier_nullifies_whole_hits_and_only_damage_absorb_reads_the_budget() -> void:
+	var src: String = FileAccess.get_file_as_string(BATTLE_MGR)
+	var sites: int = 0
+	var from: int = 0
+	while true:
+		var idx: int = src.find("has_status(\"barrier\")", from)
+		if idx == -1:
+			break
+		sites += 1
+		var fn: String = _enclosing_function(src, idx)
+		assert_true(fn.contains("remove_status(\"barrier\")"), "CONTROL: the function around a barrier check must be the one that spends the ward, else this scanned the wrong code")
+		assert_false(fn.contains("absorb_amount"), "barrier's handler now consults absorb_amount — guardian_wall's ward is capped, so its \"outright\" wording is wrong. Fix the description and this test together.")
+		from = idx + 1
+	assert_gt(sites, 0, "CONTROL: at least one barrier site must exist, else the absence above is vacuous")
+	var absorb_idx: int = src.find("\"damage_absorb\":")
+	assert_gt(absorb_idx, -1, "the damage_absorb effect arm must exist")
+	assert_true(_enclosing_function(src, absorb_idx).contains("absorb_amount"), "damage_absorb must read absorb_amount — it is the budget that keeps fill_the_void from being unkillable")
 	var f := FileAccess.open(ABILITIES, FileAccess.READ)
 	var data: Dictionary = JSON.parse_string(f.get_as_text())
 	f.close()
 	var desc: String = str(data["guardian_wall"].get("description", ""))
-	assert_false(desc.to_lower().contains("outright"), "guardian_wall soaks a CAPPED amount now; 'outright' claims a magnitude it no longer has: %s" % desc)
-	assert_true(desc.contains(str(int(data["guardian_wall"].get("absorb_amount", 0)))), "guardian_wall's description must name its cap so the data and the prose agree: %s" % desc)
+	var single := RegEx.new()
+	single.compile(SINGLE_USE)
+	assert_true(single.search(desc) != null, "guardian_wall's ward is consumed on use and its text must admit it: %s" % desc)
 
 
 ## THE GUARD. Claim persistence only if you also admit the charge.
