@@ -62,6 +62,13 @@ func _authored_rewards() -> Dictionary:
 
 ## PREMISE, by NAME not by count — a floor is blind to partial loss.
 func test_premise_the_authored_rewards_are_present() -> void:
+	# THE CONTROL MUST NOT BE DRAINABLE EITHER. Measured 2026-09-11: emptying PREMISE_BOSSES
+	# gave Failed 0, Risky 0 — the loop below runs zero times and the corpus floor is a
+	# literal that still passes, so the named-member fix I added an hour ago introduced
+	# a new silent control. @cowir-sfx's cell: every `for x in LIST` and every
+	# `size() >= LIST.size()` is silent at LIST == []. Pinned to a literal.
+	assert_eq(PREMISE_BOSSES.size(), 2,
+		"PREMISE_BOSSES has been emptied or resized — the named-member check below is now vacuous. If a member was deliberately retired, change this number in the same edit.")
 	var rewards := _authored_rewards()
 	var absent: Array[String] = []
 	for mid in PREMISE_BOSSES:

@@ -137,6 +137,13 @@ const EXPECTED_GATED_BOSSES: Array[String] = [
 ## Growth is fine — a sixth dungeon gate is caught by the ownership ratchet below,
 ## which is the arm that should judge a new one.
 func test_premise_every_dungeon_boss_still_has_its_aftermath_gate() -> void:
+	# THE CONTROL MUST NOT BE DRAINABLE EITHER. Measured 2026-09-11: emptying EXPECTED_GATED_BOSSES
+	# gave Failed 0, Risky 0 — the loop below runs zero times and the corpus floor is a
+	# literal that still passes, so the named-member fix I added an hour ago introduced
+	# a new silent control. @cowir-sfx's cell: every `for x in LIST` and every
+	# `size() >= LIST.size()` is silent at LIST == []. Pinned to a literal.
+	assert_eq(EXPECTED_GATED_BOSSES.size(), 5,
+		"EXPECTED_GATED_BOSSES has been emptied or resized — the named-member check below is now vacuous. If a member was deliberately retired, change this number in the same edit.")
 	var gates := _gates()
 	var found: Array[String] = []
 	for gate in gates:

@@ -105,6 +105,13 @@ func _one_shot_blocks() -> Dictionary:
 ## the file moves, the walk finds nothing and the assertions pass having measured
 ## an empty set. The cheap repair for a red here is to follow the rename.
 func test_premise_the_one_shot_corpus_is_present() -> void:
+	# THE CONTROL MUST NOT BE DRAINABLE EITHER. Measured 2026-09-11: emptying PREMISE_MONSTERS
+	# gave Failed 0, Risky 0 — the loop below runs zero times and the corpus floor is a
+	# literal that still passes, so the named-member fix I added an hour ago introduced
+	# a new silent control. @cowir-sfx's cell: every `for x in LIST` and every
+	# `size() >= LIST.size()` is silent at LIST == []. Pinned to a literal.
+	assert_eq(PREMISE_MONSTERS.size(), 2,
+		"PREMISE_MONSTERS has been emptied or resized — the named-member check below is now vacuous. If a member was deliberately retired, change this number in the same edit.")
 	var blocks := _one_shot_blocks()
 	# NAMED MEMBERS, not just a count — see the note on this arm.
 	var absent: Array[String] = []
