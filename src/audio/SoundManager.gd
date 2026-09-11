@@ -8,6 +8,7 @@ class_name SoundManagerClass
 var _ui_player: AudioStreamPlayer
 var _battle_player: AudioStreamPlayer
 var _death_player: AudioStreamPlayer  # dedicated voice: death cries survive the next action's sounds (2026-08-18)
+var _footstep_player: AudioStreamPlayer  # dedicated voice: a step cut every UI cue longer than a step (2026-09-11)
 var _flourish_player: AudioStreamPlayer  # dedicated voice: a group attack's own hits were cutting its cue (2026-09-11)
 var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS long and every menu blip on _ui_player cut them (2026-09-11)
 var _ability_player: AudioStreamPlayer
@@ -270,6 +271,12 @@ func _setup_audio_players() -> void:
 	_battle_player.volume_db = SFX_BATTLE_BASE_DB  # Battle SFX: punchy alongside music
 	_battle_player.bus = SFX_BUS
 	add_child(_battle_player)
+
+	_footstep_player = AudioStreamPlayer.new()
+	_footstep_player.name = "FootstepPlayer"
+	_footstep_player.volume_db = SFX_UI_BASE_DB
+	_footstep_player.bus = SFX_BUS
+	add_child(_footstep_player)
 
 	_flourish_player = AudioStreamPlayer.new()
 	_flourish_player.name = "FlourishPlayer"
@@ -1060,10 +1067,21 @@ func get_kill_duck_db() -> float:
 	return amp.volume_db if amp else 0.0
 
 
+## Footsteps on their OWN player, and this one moves the CUTTER rather than the cue.
+## MEASURED 2026-09-11: play_ui("quest_complete") then play_footstep("grass") left the UI player
+## holding footstep_grass_v2.ogg. quest_complete is 1.53s and portal_activate 2.00s, against a
+## step that fires every few hundred ms while walking — so the quest jingle survived until the
+## player's next step, which is immediately.
+##
+## Fourth instance of one class today (death cries, voice lines, the group flourish, this), and
+## the first where the fix goes the other way: the UI player carries 41 cues and enumerating the
+## long ones would need extending for every future cue. Footsteps are the one FREQUENT member, so
+## moving them covers the whole channel and nothing to maintain. A step replacing a step is still
+## correct — that is what walking sounds like.
 func play_footstep(terrain: String = "grass") -> void:
 	"""Play a footstep sound for the given terrain type (grass, stone, sand)."""
 	var key = "footstep_" + terrain
-	_try_play_sfx_from_manifest(_ui_player, key)
+	_try_play_sfx_from_manifest(_footstep_player, key)
 
 
 func play_status(status_name: String) -> void:
