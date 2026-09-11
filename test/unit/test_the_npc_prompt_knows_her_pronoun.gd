@@ -27,7 +27,7 @@ extends GutTest
 const DP := preload("res://src/llm/DialoguePrompts.gd")
 
 const PERSONA := "Elder Theron, keeper of Harmonia's records."
-const EVENTS: Array = ["The party defeated the Cave Rat King."]
+const EVENTS: Array = [{"type": "battle", "summary": "The party defeated the Cave Rat King."}]
 
 
 # ── the defect ────────────────────────────────────────────────────────────────
@@ -62,7 +62,8 @@ func test_the_opening_line_carries_it_when_events_name_her() -> void:
 	## the note from this builder alone was SILENT — I threaded three call sites and
 	## had tested two.
 	var p: String = DP.build_npc_opening("Elder Theron", PERSONA, "Harmonia",
-		["Mordaine's banners went up over the castle."], [], "evening", {}, [])
+		[{"type": "story", "summary": "Mordaine's banners went up over the castle."}],
+		[], "evening", {}, [])
 	assert_true(p.find("Chancellor Mordaine uses she/her") != -1,
 		"an opening whose events name her must carry her pronoun too")
 
@@ -70,7 +71,7 @@ func test_the_opening_line_carries_it_when_events_name_her() -> void:
 func test_an_opening_about_nothing_relevant_stays_clean() -> void:
 	## CORRECT-WORK, opening side: no figure in the events, no note.
 	var p: String = DP.build_npc_opening("Elder Theron", PERSONA, "Harmonia",
-		["The party defeated the Cave Rat King."], [], "evening", {}, [])
+		EVENTS, [], "evening", {}, [])
 	assert_eq(p.find("uses she/her"), -1, "no figure in the events means no pronoun line")
 
 
@@ -80,6 +81,20 @@ func test_an_unrelated_conversation_carries_no_note() -> void:
 	var p: String = DP.build_npc_reply("Elder Theron", PERSONA, "Harmonia", EVENTS,
 		"Fine weather.", "Where can I buy rope?")
 	assert_eq(p.find("uses she/her"), -1, "no figure mentioned means no pronoun line")
+
+
+func test_the_fixture_is_the_shape_production_supplies() -> void:
+	## CONTROL, and it caught a real hole in this file: recent_events is
+	## Array[Dictionary] from EventLog.recent(). Passing Array[String] is a
+	## GDScript error inside _format_events, which ABORTS it — so the whole events
+	## block vanishes and every test above still passes, on a shape no caller
+	## produces. Assert the block RENDERS, so a wrong-shaped fixture reds.
+	var p: String = DP.build_npc_opening("Elder Theron", PERSONA, "Harmonia",
+		EVENTS, [], "evening", {}, [])
+	assert_true(p.find("Recent events:") != -1,
+		"the events block must render — if it does not, the fixture is not the production shape")
+	assert_true(p.find("Cave Rat King") != -1,
+		"and carry the summary text, not merely the heading")
 
 
 # ── the declaration must still match canon ────────────────────────────────────
