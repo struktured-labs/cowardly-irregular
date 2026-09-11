@@ -64,9 +64,27 @@ import sys
 import numpy as np
 
 MANIFEST = "data/music_manifest.json"
+# ⛔ "MEASURED RATHER THAN ASSUMED" WAS THE SENTENCE THAT STOPPED ANYONE
+# RE-MEASURING. This read `SR = 48000` with that comment on it, and it is wrong
+# for 19 of the 165 tracks in the corpus -- they are 44.1 kHz. Somebody measured
+# a majority and wrote it down as a universal, and the word "measured" then did
+# the work of making it un-recheckable: a stated constant with a provenance
+# claim reads as settled.
+#
+# What it cost: this tool decoded at 48k, encoded at 48k, and re-read the result
+# at 48k to verify it -- so a resampled output passed every check, because each
+# check asked ffmpeg for the rate it expected instead of the rate on disk.
+# audit_wrap_seams prints "-> run: crossfade_loop.py --only <track> --apply"
+# under whatever it flags, and four of the thirteen it flagged this session
+# (battle_snake, battle_bat, boss_tempo_medieval, danger) are 44.1 kHz beds.
+# The corpus gate was advertising the tool that would respec them.
+#
+# So the format is now read PER FILE and asserted after the encode. These are
+# set by process() before anything else runs; the module is single-threaded by
+# construction (it rewrites files in place, one at a time).
 SR = 48000
-# Encoding of the existing corpus, measured rather than assumed: vorbis 48k mono 96k.
-ENCODE = ["-ac", "1", "-ar", str(SR), "-c:a", "libvorbis", "-b:a", "96k"]
+CH = 1
+ENCODE = ["-c:a", "libvorbis", "-b:a", "96k"]
 # Seconds of overlap. Long enough to hide a splice in a sustained bed, short
 # enough that the head is not smothered by the tail on entry.
 DEFAULT_XFADE_S = 4.0
@@ -102,11 +120,21 @@ WRAP_OK_DB = 6.0
 FADE_THRESHOLD_DB = -12.0
 
 
+def probe(path):
+    """(sample_rate, channels) as they are ON DISK."""
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries",
+         "stream=sample_rate,channels", "-of", "csv=p=0", path],
+        capture_output=True, text=True).stdout.strip()
+    sr, ch = out.split(",")
+    return int(sr), int(ch)
+
+
 def decode(path):
-    """Whole file as float32 mono at SR."""
+    """Whole file as float32 at the format process() read off this file."""
     raw = subprocess.run(
         ["ffmpeg", "-nostdin", "-v", "error", "-i", path,
-         "-f", "f32le", "-ac", "1", "-ar", str(SR), "-"],
+         "-f", "f32le", "-ac", str(CH), "-ar", str(SR), "-"],
         capture_output=True).stdout
     return np.frombuffer(raw, dtype="<f4").astype(np.float64)
 
@@ -114,7 +142,8 @@ def decode(path):
 def encode(samples, out_path):
     proc = subprocess.run(
         ["ffmpeg", "-nostdin", "-v", "error", "-y",
-         "-f", "f32le", "-ac", "1", "-ar", str(SR), "-i", "-"] + ENCODE + [out_path],
+         "-f", "f32le", "-ac", str(CH), "-ar", str(SR), "-i", "-",
+         "-ac", str(CH), "-ar", str(SR)] + ENCODE + [out_path],
         input=samples.astype("<f4").tobytes(), capture_output=True)
     return proc.returncode == 0
 
@@ -200,6 +229,11 @@ def wrap_sample(y, seconds=3.0):
 
 
 def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
+    ## Adopt this file's own format before any analysis: every window size below
+    ## is derived from SR, so reading it wrong mis-sizes the seam as well as the
+    ## output.
+    global SR, CH
+    SR, CH = probe(path)
     y = decode(path)
     if len(y) < SR * 10:
         return key, "unreadable or too short", None
@@ -328,6 +362,16 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
         # verified upstream, destroyed downstream, nothing errors. Sibling
         # trim_loop_seams already re-reads its temp file before replacing;
         # this one shipped without it.
+        ## The format assertion must come FIRST, because decode() below asks
+        ## ffmpeg for SR/CH and would resample a respecced file back into
+        ## agreement before any arm beneath it looks. Every one of them would
+        ## then pass on a file that had been silently converted.
+        enc_sr, enc_ch = probe(tmp)
+        if (enc_sr, enc_ch) != (SR, CH):
+            os.remove(tmp)
+            return key, ("encoder changed the format: %d Hz/%dch in, %d Hz/%dch out"
+                         " - source untouched" % (SR, CH, enc_sr, enc_ch)), info
+
         back = decode(tmp)
         why_enc = None
         if len(back) < SR:
