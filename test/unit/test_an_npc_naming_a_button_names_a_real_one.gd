@@ -12,6 +12,14 @@ extends GutTest
 ## BattleCommandMenu comments, and Mike's dialogue. Four citations, zero handlers. A pad player on a
 ## couch -- the reference context -- squeezed both triggers and nothing happened.
 ##
+## ⛔ AND MY FIRST FIX WAS ALSO WRONG, WHICH IS WHY THE ARM BELOW LOOKS THE WAY IT DOES. I replaced
+## "squeeze both triggers" with "Start on a pad" and shipped it. Start opens the editor only in
+## BATTLE, and only when no character has autobattle on; in EXPLORATION -- where all three of these
+## NPCs stand -- `ui_menu` calls `_open_settings_menu()`. The guard I shipped with it asserted that
+## GameLoop still contains the string "ui_menu", which is true of a file that does the opposite.
+## I replaced a false claim with another false claim and pinned it with a predicate narrower than
+## its own name, in the same hour I published that defect class to the fleet.
+##
 ## ⚠️ THIS TEST DEFENDS THE PROSE, NOT THE DOC. The three lines now name Start and Select, so those
 ## two bindings are load-bearing for authored content: if either stops existing, an NPC lies again
 ## and nothing else in the suite would notice. It does NOT try to detect "prose names a fake button"
@@ -20,10 +28,11 @@ extends GutTest
 
 const GAMELOOP_SRC := "res://src/GameLoop.gd"
 const PROJECT_CFG := "res://project.godot"
+const MENU_SCENE_SRC := "res://src/ui/MenuScene.gd"
 ## The lines under guard. Named, so a rewrite that drops the button is visible here.
 const SPEAKING_LINES := {
-	"res://src/exploration/SuburbanOverworld.gd": "Start on a pad",
-	"res://src/maps/villages/FrostholdVillage.gd": "Or Start, if your hands are already full",
+	"res://src/exploration/SuburbanOverworld.gd": "open the menu and hit Autobattle",
+	"res://src/maps/villages/FrostholdVillage.gd": "Or the menu, then Autobattle",
 	"res://src/maps/villages/HarmoniaVillage.gd": "whatever your pad calls Select",
 }
 
@@ -34,14 +43,31 @@ func _read(path: String) -> String:
 	return "" if f == null else f.get_as_text()
 
 
-func test_start_really_opens_the_autobattle_editor() -> void:
+## ⛔ THIS ARM REPLACES ONE THAT WAS HOLLOW. It asserted `src.contains("ui_menu")` and called that
+## "Start opens the editor" -- true that the string is present, silent on what the branch DOES.
+## In EXPLORATION, where these NPCs stand, ui_menu opens SETTINGS. The pad route to the editor is
+## the overworld menu. Both halves are pinned below, and the settings one is pinned deliberately:
+## it is the claim I got wrong, so it is the one that must red if it ever changes.
+func test_the_pad_route_to_the_editor_is_the_menu_not_start() -> void:
 	var src := _read(GAMELOOP_SRC)
 	assert_gt(src.length(), 1000, "CONTROL: GameLoop source did not load")
 	assert_true(src.contains("_toggle_autobattle_editor()"),
 		"CONTROL: the editor opener is gone entirely, so the arms below mean nothing")
-	## ui_menu is Start. Three NPCs now tell pad players this is how the editor opens.
-	assert_true(src.contains("ui_menu"),
-		"GameLoop no longer handles ui_menu — Start does not open the editor and two NPCs now lie")
+
+	var at := src.find("elif current_state == LoopState.EXPLORATION:")
+	assert_gt(at, -1, "CONTROL: no EXPLORATION arm found in the ui_menu handler")
+	if at < 0:
+		return
+	var branch := src.substr(at, 900)
+	assert_true(branch.contains("_open_settings_menu()"),
+		"Start in exploration no longer opens Settings — if it now opens the editor, the NPC lines can say so")
+	assert_false(branch.contains("_toggle_autobattle_editor"),
+		"CONTROL: the exploration arm must NOT be the editor path, or this test is measuring the battle one")
+
+	var menu := _read(MENU_SCENE_SRC)
+	assert_gt(menu.length(), 1000, "CONTROL: MenuScene source did not load")
+	assert_true(menu.contains("_open_autobattle_editor("),
+		"the overworld menu no longer opens the editor — two NPCs now send pad players nowhere")
 
 
 func test_select_really_toggles_autobattle_for_everyone() -> void:

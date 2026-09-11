@@ -596,8 +596,8 @@ func _setup_npcs() -> void:
 
 	# === Mall Rat Mike - near arcade store ===
 	var mike = _create_npc("Mall Rat Mike", "villager", Vector2(12 * MAP_SCALE * TILE_SIZE, 15 * MAP_SCALE * TILE_SIZE), [
-		# F5 and Start are the editor's two openers (GameLoop:912 keyboard, :981 ui_menu).
-		"Yo, you know about autobattle? F5 on a keyboard. Start on a pad. Either way, dude.",
+		# F5 is GameLoop:912; on a pad the overworld route is the menu -> MenuScene:1256.
+		"Yo, you know about autobattle? F5 on a keyboard. On a pad, open the menu and hit Autobattle. Dude.",
 		"I set up my scripts to farm crows all day.",
 		"The XP isn't great but the drops are SICK.",
 		"Pro tip: condition 'Enemy HP < 25%' \u2192 Steal. Trust me."
