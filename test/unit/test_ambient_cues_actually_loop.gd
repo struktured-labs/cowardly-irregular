@@ -216,13 +216,20 @@ func _ambient_getter_re() -> RegEx:
 func _strip_comments(text: String) -> String:
 	var out: PackedStringArray = []
 	for line in text.split("\n"):
-		var in_str := false
+		## Track WHICH quote opened, and honour escapes. A bool toggled on `"` alone mis-cut
+		## 'BATTLE #%d' mid-string (0 such lines in src/ today, so latent) and mis-toggled on \".
+		## Shape taken from cowir-controller's _strip_comment after reading it on their branch —
+		## I had characterised their stripper wrongly in a broadcast, so I read it and it was better.
+		var quote := ""
 		var cut := -1
 		for i in range(line.length()):
 			var c := line[i]
-			if c == "\"":
-				in_str = not in_str
-			elif c == "#" and not in_str:
+			if quote != "":
+				if c == quote and (i == 0 or line[i - 1] != "\\"):
+					quote = ""
+			elif c == "\"" or c == "'":
+				quote = c
+			elif c == "#":
 				cut = i
 				break
 		out.append(line if cut < 0 else line.substr(0, cut))
