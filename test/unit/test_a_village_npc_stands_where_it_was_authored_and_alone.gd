@@ -173,6 +173,16 @@ func test_no_village_npc_is_sealed_in_shares_a_tile_or_was_quietly_moved() -> vo
 		assert_gt(str(MAY_STAND_OFF_GRID[who]).length(), 30,
 			"MAY_STAND_OFF_GRID['%s'] needs a reason naming the deliberate offset, not a placeholder" % who)
 
+	## ⚠️ THIS ARM HAS NEVER FIRED AND I COULD NOT MAKE IT FIRE. @cowir-battle's category: "unarmed"
+	## and "inert" look identical from outside, so I tried to arm it and failed, twice.
+	##   attempt 1  put an NPC on an impassable cell -> BaseVillage RELOCATED him and the OFF-GRID
+	##              arm caught it first. Every impassable-cell case is intercepted upstream.
+	##   attempt 2  carved a 1-tile walkable pocket ringed by HOUSE_WALL and stood him in it ->
+	##              GREEN, because `standable` includes dx=dy=0 and his own cell is walkable. That
+	##              is correct: interaction is a physics probe, and a player CAN stand where he is.
+	## 🔑 So this is not unarmed, it is SUBSUMED — relocation catches the reachable cause and the
+	## off-grid arm reports it. Kept because it costs nothing and states the invariant plainly, but
+	## it is NOT independent coverage and must not be counted as a second opinion.
 	assert_eq(sealed, [], "NPCs the player cannot stand next to: %s" % str(sealed))
 	assert_eq(shared, [],
 		("two NPCs on one tile — interaction is NEAREST-WINS, so one of them may never be selected: %s\n" +
