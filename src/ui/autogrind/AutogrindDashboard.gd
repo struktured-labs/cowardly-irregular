@@ -569,11 +569,12 @@ func _build_footer(vp_size: Vector2) -> void:
 	footer_bg.size = footer.size
 	footer.add_child(footer_bg)
 
+	# Derived from AutogrindInputHelper, which owns the bindings these rows describe.
 	var btn_data = [
-		{"text": "Select: Pause", "x": 0},
-		{"text": "Start: Rules", "x": 1},
-		{"text": "L+R: Tier", "x": 2},
-		{"text": "B: Exit", "x": 3},
+		{"text": "%s: Pause" % AutogrindInputHelper.hint_for("pause"), "x": 0},
+		{"text": "%s: Rules" % AutogrindInputHelper.hint_for("adjust_rules"), "x": 1},
+		{"text": "%s: Tier" % AutogrindInputHelper.hint_for("tier_cycle"), "x": 2},
+		{"text": "%s: Exit" % AutogrindInputHelper.hint_for("exit"), "x": 3},
 	]
 
 	var btn_w = (footer.size.x - 16) / btn_data.size()

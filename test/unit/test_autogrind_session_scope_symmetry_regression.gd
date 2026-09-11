@@ -94,7 +94,14 @@ func _body(lines: PackedStringArray, fname: String) -> PackedStringArray:
 ## is not a field of this class -- a constructor like int(), a local, a builtin -- can never enter
 ## the corpus under its own name, and can never be silenced by classifying it.
 func _declared_vars(lines: PackedStringArray) -> Dictionary:
-	var re := RegEx.create_from_string("^var\\s+(_?[a-z][a-z0-9_]*)")
+	## ⛔ ACCEPTS THE ANNOTATED FORMS. `^var` alone silently narrowed the corpus: an `@export var`
+	## session field never entered `declared`, so _assigned skipped it, so it never reached the
+	## three-set comparison. Measured — an @export field reset on start and ABSENT from the snapshot
+	## (the exact zeroes-on-resume defect this file exists for) scored Passing 7, SILENT.
+	## @cowir-deploy's shape: a filtering step whose condition narrows a corpus, with no number to
+	## grep for. Zero such declarations in AutogrindSystem today; the regex is the hazard, not the
+	## corpus, and I predicted this would fail toward ALARM before measuring that it does not.
+	var re := RegEx.create_from_string("^(?:@export\\s+|@onready\\s+|static\\s+)*var\\s+(_?[a-z][a-z0-9_]*)")
 	var out := {}
 	for l in lines:
 		var m := re.search(l)
@@ -211,6 +218,39 @@ func _snapshot_scan(lines: PackedStringArray) -> Dictionary:
 		if not hit and not PARAMETER_BACKED.has(m.get_string(1)):
 			unparsed.append("%s -> %s" % [m.get_string(1), m.get_string(2)])
 	return {"fields": fields, "unparsed": unparsed}
+
+
+## ⚓ THE REGEX ANSWERS TO AN EXTERNAL REGISTER. @cowir-sprites' point, which is sharper than
+## "a floor is blind to partial loss": a corpus derived by a FILTER does not lose members, it never
+## had them — nothing is skipped, nothing is counted, and no quantity in the guard moves. My
+## `^var` regex was that filter, and an @export field was never a candidate.
+##
+## Widening the regex fixes the form I thought of. This arm fixes the ones I did not: the running
+## autoload knows its own properties, and PROPERTY_USAGE_SCRIPT_VARIABLE separates the script's
+## fields from Node's. Any declaration the engine accepts appears here regardless of keyword, so a
+## disagreement means the SOURCE PARSER missed something — not that the field is new.
+func test_the_source_parser_sees_every_field_the_engine_does() -> void:
+	if _ags == null:
+		pass_test("AutogrindSystem autoload unavailable")
+		return
+	var runtime := {}
+	for prop in _ags.get_property_list():
+		var usage: int = int(prop.get("usage", 0))
+		if usage & PROPERTY_USAGE_SCRIPT_VARIABLE:
+			runtime[str(prop.get("name", ""))] = true
+	assert_gt(runtime.size(), 20, "CONTROL: the engine must report a non-trivial script-variable set")
+	assert_true(runtime.has("is_grinding"), "CONTROL: a known member var must appear in the register")
+
+	var parsed := _declared_vars(_lines())
+	assert_gt(parsed.size(), 20, "CONTROL: the source parser must find a non-trivial set too")
+
+	var missed: Array = []
+	for name in runtime.keys():
+		if not parsed.has(name):
+			missed.append(name)
+	missed.sort()
+	assert_eq(missed, [],
+		"the engine knows fields the source parser does not — _declared_vars' regex is narrowing the corpus, and every arm in this file intersects against it, so these fields are invisible to ALL of them")
 
 
 func test_every_session_field_is_reset_snapshotted_and_restored() -> void:

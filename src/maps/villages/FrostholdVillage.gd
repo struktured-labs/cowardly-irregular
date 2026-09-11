@@ -39,28 +39,30 @@ func _generate_map() -> void:
 	# Frosthold layout: stone walls, ice terrain
 	# W = wall, . = floor, L = lodge (inn), F = fur trader, C = chapel
 	# I = ice/snow decoration, X = exit
+	# No T on rows 8 or 12: those are tier boundaries and HeightGrid derives cliff FACES there
+	# T = snow-laden pine (SNOW_TREE) — walkable; its 0.5 rough-terrain speed is an OVERWORLD rule, and BaseVillage.get_terrain_speed_at short-circuits to stairs-only
 	var map_data: Array[String] = [
 		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
-		"W........................W",
-		"W........................W",
-		"W........................W",
-		"W....LLL......CCC.....W..W",
-		"W....LLL......CCC.....W..W",
-		"W....LLL......CCC.....W..W",
+		"WTTTTTTTTT.......TTTTTTTTW",
+		"WTTTTT...T.......TT...TTTW",
+		"WTTT.....TT...........TTTW",
+		"WTT..LLL.T....CCC.....WTTW",
+		"WT.T.LLL.TT...CCC....TWTTW",
+		"WT...LLL......CCC....TWTTW",
 		"W........................W",
 		"W.......^IIII.......^....W",
-		"W........IIII..FFF.......W",
-		"W........IIII..FFF.......W",
-		"W........IIII..FFF.......W",
+		"WT..TTT..IIII..FFF.......W",
+		"WT..TTT..IIII..FFF.......W",
+		"W....T...IIII..FFF.....T.W",
 		"W...........^.....^......W",
-		"W........................W",
-		"W........................W",
-		"W........................W",
-		"W........................W",
-		"W.......XXXXXX...........W",
-		"W.......XXXXXX...........W",
-		"W........................W",
-		"W........................W",
+		"WT.....................TTW",
+		"WTT............TT.....TTTW",
+		"WTTT...................TTW",
+		"WTTT................T.TTTW",
+		"WTTTT...XXXXXX.....TTTTTTW",
+		"WTTTTT..XXXXXX....TTTTTTTW",
+		"WTTTTT..........TTTTTTTTTW",
+		"WTTTTT..........TTTTTTTTTW",
 		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 	# Elevation (ice terraces, 2026-09-06): high overlook (2) / mid ice shelf (1) / tundra floor (0), '^' stairs cascade down at cols 8/20 then 12/18
@@ -116,6 +118,7 @@ func _char_to_tile_type(char: String) -> int:
 		"F": return TileGeneratorScript.TileType.WALL  # fur trader
 		"C": return TileGeneratorScript.TileType.WALL  # chapel
 		"X": return TileGeneratorScript.TileType.VILLAGE_PATH  # exit
+		"T": return TileGeneratorScript.TileType.SNOW_TREE
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
@@ -267,7 +270,8 @@ func _setup_npcs() -> void:
 		"I automated my entire LIFE, friend.",
 		"Breakfast? Automated. Conversations? Scripted.",
 		"Do I regret it? ...That's also scripted.",
-		# F5 is GameLoop:912; on a pad it is the overworld menu's "Auto Rules" row -> GameLoop:1563.
+		# F5 reaches GameLoop's KEY_F5 arm -> _toggle_autobattle_editor(); on a pad it is the overworld
+		# menu's "Auto Rules" row -> _on_overworld_menu_action("autobattle") -> _open_autobattle_for_character().
 		"Press F5. Or the menu, then Auto Rules, if you're holding a pad. Trust me.",
 		"Once you automate combat, you'll want to automate EVERYTHING."
 	]

@@ -87,7 +87,7 @@ func test_full_defeat_cutscene_series_complete_for_w1_w5() -> void:
 	for cutscene_id in [
 		"world1_rat_king_defeat",
 		"world2_warden_defeat",
-		"world3_tempo_defeat",
+		"world3_grand_schedule_defeat",  # 2026-09-11: W3's boss is The Grand Schedule (masterite_tempo_steampunk); the world3_tempo_* pair belongs to W4's industrial Tempo by trigger
 		"world3_warden_defeat",
 		"world4_arbiter_defeat",
 	]:

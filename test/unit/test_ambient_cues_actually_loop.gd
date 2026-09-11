@@ -82,7 +82,17 @@ func test_every_ambient_cue_loops() -> void:
 		if f == "":
 			broken.append("%s (no file)" % key)
 			continue
-		var imp: String = (f if f.begins_with("res://") else "res://" + f) + ".import"
+		## READER AXIS (@cowir-sprites 2026-09-11, c7ab6f06): the sidecar can OUTLIVE its source.
+		## --import rebuilds artifacts from disk but does not reap an orphan, so a .import left
+		## behind by an out-of-band delete keeps answering loop=true for an asset that is gone —
+		## and a missing bed is worse than one that fails to loop. FileAccess.file_exists reads
+		## the filesystem; ResourceLoader.exists()/load() would be served by the cache and could
+		## not tell these apart.
+		var src_path: String = f if f.begins_with("res://") else "res://" + f
+		if not FileAccess.file_exists(src_path):
+			broken.append("%s (SOURCE MISSING on disk: %s — the .import below may still serve a cached stream)" % [key, src_path])
+			continue
+		var imp: String = src_path + ".import"
 		var text: String = FileAccess.get_file_as_string(imp)
 		if text == "":
 			broken.append("%s (no .import — run --import)" % key)
@@ -103,7 +113,7 @@ func test_every_ambient_cue_loops() -> void:
 
 
 ## Every key handed to play_ambient anywhere in src/ — string literals AND const identifiers.
-## ⚠️ CONSTS ARE NOT OPTIONAL: SoundManager:869 calls play_ambient(NIGHT_AMBIENCE_KEY), whose value
+## ⚠️ CONSTS ARE NOT OPTIONAL: SoundManager's _on_ambient_finished calls play_ambient(NIGHT_AMBIENCE_KEY), whose value
 ## is "night_crickets_wind" — no ambient_ prefix, so the prefix half misses it too. A literal-only
 ## scan left it invisible to BOTH halves of this corpus; it happens to be loop=true, so the gap was
 ## latent, not live. The remaining unresolvable shapes (a local var or a method result) are pinned
@@ -264,5 +274,9 @@ func test_the_comment_stripper_itself() -> void:
 		var got: String = _strip_comments(str(c[0]))
 		if got != str(c[1]):
 			bad.append("%s: got %s want %s" % [c[2], got, c[1]])
-	assert_eq(cases.size(), 6, "SCOPE control: the case table shrank — a removed row is a removed guarantee")
+	## GTE, not EQ. Equality reds in BOTH directions with a message that explains only one,
+	## so adding a legitimate seventh case reads as "the case table shrank" — a message that
+	## is actively misleading about what happened, which is the shape that gets a guard edited
+	## to green rather than read.
+	assert_gte(cases.size(), 6, "SCOPE control: the case table has %d rows, was 6 — a removed row is a removed guarantee" % cases.size())
 	assert_eq(bad, [], "comment stripper wrong on: %s" % [bad])

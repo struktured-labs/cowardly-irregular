@@ -18,6 +18,10 @@ const SUPPRESS_TIME_SCALE: float = 4.0
 
 var _hold_time: float = 1.5
 
+## Beat after a spoken line finishes before the bubble starts fading, so the last word is read
+## rather than raced.
+const VOICE_TAIL_S: float = 0.3
+
 ## Victory frames stacked 4 bubbles from different triggers over the party panel — cap and evict oldest.
 const MAX_CONCURRENT: int = 2
 static var _live: Array = []
@@ -49,8 +53,10 @@ static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String
 	# player's selection (struktured 2026-09-02: "cant see ur selection until it fades").
 	b.z_index = 95
 	parent.add_child(b)
-	b._present(anchor_global_pos, speaker_name, line, border_color, prefer_right)
+	## BEFORE _present, which builds the fade tween from _hold_time. The voice extends the hold,
+	## and a tween created first would keep the old 2.0s and fade over a line still being spoken.
 	b._play_voice(audio_key)
+	b._present(anchor_global_pos, speaker_name, line, border_color, prefer_right)
 	_live.append({"bubble": b, "speaker": speaker_name})
 	return b
 
@@ -168,13 +174,21 @@ func _build_tail(pointer: Polygon2D, bubble_size: Vector2, anchor_local_x: float
 		Vector2(tip_x, bh + 16.0),
 	])
 
-## Phase-2 voice hook: plays the clip alongside the bubble when authored.
+## Plays the clip and holds the bubble for as long as the line actually lasts.
 func _play_voice(audio_key: String) -> void:
 	if audio_key == "":
 		return
 	var sm := get_node_or_null("/root/SoundManager")
-	if sm and sm.has_method("play_ui"):
-		sm.play_ui(audio_key)
+	if sm == null or not sm.has_method("play_voice"):
+		return
+	var clip_len: float = sm.play_voice(audio_key)
+	if clip_len <= 0.0:
+		return
+	## NOT divided by time_scale: the clip plays at real-time length whatever the battle speed, so
+	## scaling the hold would re-create the mismatch at 2x. The default hold still scales above.
+	## No cap, deliberately — a ceiling here would be a coincidental number that silently truncates
+	## whichever line is longest. If a line is too long for battle, that is a content call.
+	_hold_time = maxf(_hold_time, clip_len + VOICE_TAIL_S)
 
 
 ## Clamp so the bubble stays on-screen AND out of the reserved right column.

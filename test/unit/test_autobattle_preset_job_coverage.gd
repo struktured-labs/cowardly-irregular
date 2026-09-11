@@ -17,7 +17,7 @@ const COVERED := ["bard", "cleric", "fighter", "mage", "rogue"]
 ## Jobs with no preset templates today. Authoring, not mechanics — what a Guardian's Defensive
 ## preset should DO is a design call, routed out rather than invented here.
 const KNOWN_UNCOVERED := [
-	"bossbinder", "guardian", "necromancer", "ninja", "scriptweaver",
+	"bossbinder", "necromancer", "ninja", "scriptweaver",
 	"skiptrotter", "speculator", "summoner", "time_mage",
 ]
 

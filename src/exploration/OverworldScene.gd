@@ -788,6 +788,9 @@ func _place_treasure_chests() -> void:
 		{"id": "w1_secret_sunken_ring", "pos": Vector2(17, 65), "type": "item", "item": "x_potion", "amount": 2},
 		# (81,51) is open forest and always was after the re-author — a fine find, not a secret.
 		{"id": "w1_secret_magma_vault", "pos": Vector2(81, 51), "type": "gold", "gold": 999},
+		# The Frozen Alcove — a 2x1-cell grass bay bitten into the north-west mountain above Frosthold.
+		# Cell chosen by PHYSICS, not by the PNG: cell (5,4) and (4,5) both probe BLOCKED, (5,5) clear.
+		{"id": "w1_secret_frozen_alcove", "pos": Vector2(5, 5), "type": "item", "item": "megalixir", "amount": 1},
 	]
 	for c in chests:
 		var chest = TreasureChestScript.new()
@@ -819,6 +822,10 @@ func _place_hidden_passages() -> void:
 	## there. A wide chamber absorbs that; a narrow dead end is simply sealed.
 	var passages = [
 		{"id": "w1_sunken_ring", "pos": Vector2(17, 67), "disguise": "mountain", "w": 3, "h": 2},
+		# The Frozen Alcove's mouth. The bay behind it is real terrain the PNG has always carried —
+		# what it never had was a reason to go in, or anything hiding it. Cell (5,6) probes clear, so
+		# the player walks into this wall rather than past it.
+		{"id": "w1_frozen_alcove", "pos": Vector2(5, 6), "disguise": "mountain", "w": 3, "h": 1},
 	]
 	for p in passages:
 		var passage = HiddenPassage.new()

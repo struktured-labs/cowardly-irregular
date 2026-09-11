@@ -1,0 +1,132 @@
+{
+  "id": "world3_grand_schedule_defeat",
+  "title": "The Grand Schedule — Aftermath",
+  "world": 3,
+  "trigger": "boss_tempo_steampunk_defeated",
+  "background": "steampunk_workshop",
+  "description": "It does not die. It loses the ability to compensate, and goes on counting. Pays off Clem's 'I was late once. Seven seconds. The Mechanism compensated -- I still don't know how.'",
+  "steps": [
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "boss_defeat_stinger"
+    },
+    {
+      "type": "wait",
+      "duration": 1.0
+    },
+    {
+      "type": "narration",
+      "text": "It did not fall. The gear-train simply began to disagree with itself — a tooth here, a tooth there, each one arriving where it had always arrived and finding nothing waiting for it."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Grand Schedule",
+          "text": "VARIANCE: unrecoverable.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "It's still counting.",
+          "theme": "fighter"
+        },
+        {
+          "speaker": "The Grand Schedule",
+          "text": "Counting continues. Compensation does not.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        },
+        {
+          "speaker": "Bard",
+          "text": "...Does that hurt?",
+          "theme": "bard"
+        },
+        {
+          "speaker": "The Grand Schedule",
+          "text": "There is no entry for that.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "I'm sorry. I don't know if that means anything to you.",
+          "theme": "cleric"
+        },
+        {
+          "speaker": "The Grand Schedule",
+          "text": "Apology is not scheduled. It is logged.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "Across Brasston the clocks lost their agreement with one another. A lamplighter three districts away stopped on his ladder, because for the first time in eleven years nothing told him he was late."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Seven seconds. That's what it said when we came in.",
+          "theme": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Somebody in the village told us the same number. Said the Mechanism made it up somehow and he never worked out how.",
+          "theme": "rogue"
+        },
+        {
+          "speaker": "Bard",
+          "text": "It was taking them out of somewhere. It just never wrote down where.",
+          "theme": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Grand Schedule",
+          "text": "NEXT SLOT:",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 1.2
+    },
+    {
+      "type": "narration",
+      "text": "Nothing filled it."
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
+  ]
+}

@@ -85,11 +85,20 @@ func test_the_legend_tells_him_escape_goes_back() -> void:
 	var src := FileAccess.get_file_as_string(ED)
 	assert_true(src.contains("/Esc:Back"),
 		"the on-screen legend must say Escape backs out")
-	## The face glyph is DERIVED now (InputProfileManager.glyph_for_action), so pinning the
-	## literal "B/Esc:Back" pinned a spelling no PlayStation player ever sees. The intent --
-	## Escape is named as the way back -- survives derivation; the letter never should have.
-	assert_true(src.contains("glyph_for_action("),
-		"and the face letter beside it must be derived, not frozen back in")
+	## The face glyph is DERIVED now, so pinning the literal "B/Esc:Back" pinned a spelling no
+	## PlayStation player ever sees. The intent -- Escape is named as the way back -- survives
+	## derivation; the letter never should have.
+	##
+	## ⚠️ THIS PINNED `glyph_for_action(` — THE NAME OF ONE HELPER — AND WENT STALE ON A BETTER ONE.
+	## The token moved to hint_for_action because glyph_for_action falls back to the XBOX family
+	## when no pad is connected, so a keyboard player read "Ⓑ/Esc:Back" for a button they do not
+	## have. The guard redded on the change that fixed the defect it exists to defend. Third time
+	## today a helper-name pin taxed a correct fix (@cowir-controller's count in the captions guard,
+	## @cowir-battle's corpus in theirs). Pin THAT the token derives from the live profile.
+	assert_true(src.contains("g_no = InputProfileManager."),
+		"the Back token must be derived from the live profile, not frozen back in")
+	assert_false(src.contains("glyph_for_action(\"ui_cancel\")"),
+		"and not via glyph_for_action, which prints an xbox glyph when no pad is connected")
 	assert_false(src.contains("B:Delete"),
 		"and must stop advertising B as delete — that is the mapping that trapped him")
 

@@ -34,7 +34,9 @@ const CUTSCENE_DIR := "res://data/cutscenes"
 
 ## The 21 measured 2026-09-11. Not permission to stay — the count is asserted
 ## both ways below.
-const KNOWN_SILENT_ON_WEB := 21
+## 21 until 2026-09-11, when the three credits_* beds were un-excluded so the
+## W4/W5/W6 credits rolls — world6_ending's included — are audible on web.
+const KNOWN_SILENT_ON_WEB := 18
 
 
 ## ⛔ SELECT THE PRESET BY NAME. The first version of this took the LONGEST

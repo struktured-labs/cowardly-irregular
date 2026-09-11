@@ -118,3 +118,14 @@ func test_the_assertion_runs_BEFORE_the_decode_that_would_mask_it() -> void:
 			wrong.append("%s (assert at %d, masking decode at %d)" % [path.get_file(), probe_at, decode_at])
 	assert_eq(wrong.size(), 0,
 		"the format assertion sits AFTER the decode that normalises the file (%s) — it can never fail, which is worse than absent because it reads as covered" % [wrong])
+
+
+func test_the_rewriter_list_has_not_drained() -> void:
+	## Drain-tested 2026-09-11: REWRITERS emptied -> 13 asserts to 7, every test still PASSING
+	## (grade B — no red, no [Risky], only a number nobody reads on a green run). It is the
+	## subject of every loop in this file, so emptying it makes the file scan nothing and agree.
+	assert_gte(REWRITERS.size(), 2,
+		"REWRITERS lists %d tools, was 2 — every check here iterates this list; a tool leaving it stops being audited rather than passing" % REWRITERS.size())
+	for path in REWRITERS:
+		assert_true(FileAccess.file_exists(path),
+			"REWRITERS names %s and it is not on disk — audit a tool that exists, or drop the entry" % path)

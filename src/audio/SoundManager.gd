@@ -8,6 +8,9 @@ class_name SoundManagerClass
 var _ui_player: AudioStreamPlayer
 var _battle_player: AudioStreamPlayer
 var _death_player: AudioStreamPlayer  # dedicated voice: death cries survive the next action's sounds (2026-08-18)
+var _footstep_player: AudioStreamPlayer  # dedicated voice: a step cut every UI cue longer than a step (2026-09-11)
+var _flourish_player: AudioStreamPlayer  # dedicated voice: a group attack's own hits were cutting its cue (2026-09-11)
+var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS long and every menu blip on _ui_player cut them (2026-09-11)
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
@@ -77,6 +80,8 @@ const CRIT_THUD_DURATION: float = 0.18
 const CRIT_THUD_TRIM_DB: float = -4.0
 ## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The authored cue is a gentle scorch ("no bass no tones") measured at the SAME mean level as a plain hit (-22.8 vs -21.8 dB) — it cannot read as a climax. Boost the cue and give it the low body it was authored without.
 const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
+## Spoken lines sit where UI blips did, not louder — the defect was being CUT, not being quiet.
+const VOICE_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const DEATH_CUE_BOOST_DB: float = 6.0
 const DEATH_THUD_FREQ: float = 48.0
 const DEATH_THUD_DURATION: float = 0.28
@@ -266,6 +271,24 @@ func _setup_audio_players() -> void:
 	_battle_player.volume_db = SFX_BATTLE_BASE_DB  # Battle SFX: punchy alongside music
 	_battle_player.bus = SFX_BUS
 	add_child(_battle_player)
+
+	_footstep_player = AudioStreamPlayer.new()
+	_footstep_player.name = "FootstepPlayer"
+	_footstep_player.volume_db = SFX_UI_BASE_DB
+	_footstep_player.bus = SFX_BUS
+	add_child(_footstep_player)
+
+	_flourish_player = AudioStreamPlayer.new()
+	_flourish_player.name = "FlourishPlayer"
+	_flourish_player.volume_db = SFX_BATTLE_BASE_DB
+	_flourish_player.bus = SFX_BUS
+	add_child(_flourish_player)
+
+	_voice_player = AudioStreamPlayer.new()
+	_voice_player.name = "VoicePlayer"
+	_voice_player.volume_db = VOICE_PLAYER_BASE_DB
+	_voice_player.bus = SFX_BUS
+	add_child(_voice_player)
 
 	_death_player = AudioStreamPlayer.new()
 	_death_player.name = "DeathPlayer"
@@ -672,6 +695,52 @@ func play_death(sound_key: String) -> void:
 		_play_sound(_death_player, SOUNDS[sound_key])
 
 
+## The group-attack flourish on its OWN player — a group attack's own hits were cutting it.
+## MEASURED 2026-09-11: the group cue followed by a sword hit through play_attack_hit leaves the
+## shared battle channel holding attack_hit_sword.ogg. The cue is 2.48s (all_out 1.48s, combo_magic
+## 2.00s); the lunges and their damage_dealt signals land a few tenths in, and every one of the
+## 3-5 targets fires a hit sound on the same player. The biggest move in the game was audible
+## for about as long as it took to start.
+##
+## Third instance of one defect class — death cries (2026-08-15), party voice lines and this.
+## A long cue sharing a player with a frequent short one is always the short one's to lose.
+## Same volume as the battle channel: the cue was being CUT, not being quiet.
+func play_flourish(sound_key: String) -> void:
+	if _flourish_player == null:
+		play_battle(sound_key)
+		return
+	## Group attacks are rare and never overlap each other; the per-key cooldown exists to stop
+	## rapid-fire duplicates on the shared channel and would only suppress a legitimate second
+	## group attack here.
+	_sfx_cooldowns.erase(sound_key)
+	if _try_play_sfx_from_manifest(_flourish_player, sound_key, SFX_BATTLE_BASE_DB):
+		return
+	if SOUNDS.has(sound_key):
+		_play_sound(_flourish_player, SOUNDS[sound_key])
+
+
+## Party voice lines on their OWN player, and the caller is told how long the clip is.
+## Measured 2026-09-11: 25 of 31 voice_* clips run longer than 2.0s (median 4.30s, max 10.90s)
+## while they played through _ui_player, which every menu blip and cursor move reuses — so a line
+## was cut mid-word by the player's next input. Same defect as the death cry (2026-08-18), same
+## fix, different shared player.
+##
+## Returns the clip length in seconds, 0.0 if the key did not resolve. The bubble needs it: a
+## 2.0s bubble over a 6.5s line is the other half of the same mismatch, and the length lives here
+## rather than in a table the bubble would have to keep in step with the manifest.
+func play_voice(sound_key: String) -> float:
+	if _voice_player == null:
+		return 0.0
+	## Lines are not interchangeable with each other — a second one interrupting the first is the
+	## behaviour we are fixing, so never dedupe them against the shared cooldown table.
+	_sfx_cooldowns.erase(sound_key)
+	if not _try_play_sfx_from_manifest(_voice_player, sound_key, VOICE_PLAYER_BASE_DB):
+		return 0.0
+	if _voice_player.stream == null:
+		return 0.0
+	return _voice_player.stream.get_length()
+
+
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
 	"""Play a battle sound with volume and pitch scaling for power-based effects"""
 	if _try_play_sfx_from_manifest(_battle_player, sound_key, volume_db, pitch_scale):
@@ -998,10 +1067,21 @@ func get_kill_duck_db() -> float:
 	return amp.volume_db if amp else 0.0
 
 
+## Footsteps on their OWN player, and this one moves the CUTTER rather than the cue.
+## MEASURED 2026-09-11: play_ui("quest_complete") then play_footstep("grass") left the UI player
+## holding footstep_grass_v2.ogg. quest_complete is 1.53s and portal_activate 2.00s, against a
+## step that fires every few hundred ms while walking — so the quest jingle survived until the
+## player's next step, which is immediately.
+##
+## Fourth instance of one class today (death cries, voice lines, the group flourish, this), and
+## the first where the fix goes the other way: the UI player carries 41 cues and enumerating the
+## long ones would need extending for every future cue. Footsteps are the one FREQUENT member, so
+## moving them covers the whole channel and nothing to maintain. A step replacing a step is still
+## correct — that is what walking sounds like.
 func play_footstep(terrain: String = "grass") -> void:
 	"""Play a footstep sound for the given terrain type (grass, stone, sand)."""
 	var key = "footstep_" + terrain
-	_try_play_sfx_from_manifest(_ui_player, key)
+	_try_play_sfx_from_manifest(_footstep_player, key)
 
 
 func play_status(status_name: String) -> void:
@@ -1724,8 +1804,12 @@ func _is_stinger_track(track_id: String) -> bool:
 	return bool(e.get("stinger", track_id.begins_with("stinger_")))
 
 
-func play_music(track: String) -> void:
-	"""Play a music track with crossfade transition"""
+func play_music(track: String, exact: bool = false) -> void:
+	"""Play a music track with crossfade transition.
+	`exact` plays the named manifest id verbatim: the two rewrites below map a
+	GENERIC request onto the current world, which is wrong for a caller that
+	already holds a manifest key (the Jukebox lists ids, so "danger" there means
+	the bed called danger, not danger_<wherever the player happens to stand>)."""
 	if _current_music == track and _music_playing:
 		return  # Already playing
 
@@ -1782,7 +1866,9 @@ func play_music(track: String) -> void:
 	_load_music_manifest()
 	var manifest_track_id = track
 	# Map generic/monster track names to world-specific manifest keys
-	match track:
+	## An exact caller matches nothing here, so every arm below is skipped.
+	var generic_id: String = "" if exact else track
+	match generic_id:
 		"battle":
 			manifest_track_id = "battle_" + _current_world_suffix
 		"boss":
@@ -1797,7 +1883,7 @@ func play_music(track: String) -> void:
 	# defaults to something else. I wanted it replaced not removed entirely." battle_goblin.ogg
 	# was recast as battle_brute.ogg (7e6c50d2) and no manifest key replaced it, so this rewrite
 	# sent the goblin to battle_medieval and the `match` arm below became unreachable.
-	if not _music_manifest.has(manifest_track_id) and track.begins_with("battle_") \
+	if not exact and not _music_manifest.has(manifest_track_id) and track.begins_with("battle_") \
 			and not PROCEDURAL_BATTLE_TRACKS.has(track):
 		manifest_track_id = "battle_" + _current_world_suffix
 	if _music_manifest.has(manifest_track_id):
@@ -7122,6 +7208,9 @@ func _start_void_battle_music() -> void:
 	   The quietest, most uncomfortable battle music."""
 	_music_playing = true
 	if _try_play_from_manifest("battle_abstract"):
+		return
+	## battle_abstract is web-excluded and battle_void is not in the manifest, so on web BOTH tiers above miss and generating is 1.3s of main-thread GDScript.
+	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing void battle theme")
 

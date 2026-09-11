@@ -33,7 +33,7 @@
           "speaker": "Arbiter of the Root Process",
           "text": "You are running user-space. I am running kernel-space. This is not a level playing field. I want you to understand that before we begin.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_abstract"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Debugger",
@@ -45,7 +45,7 @@
           "speaker": "Arbiter of the Root Process",
           "text": "After we begin, it is also not a level playing field. But at least then you will be trying.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_abstract"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Admin",
@@ -57,7 +57,7 @@
           "speaker": "Arbiter of the Root Process",
           "text": "It is the only one I am authorized to issue at this privilege level. Proceed.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_abstract"
+          "portrait": "masterite_arbiter_futuristic"
         }
       ]
     },

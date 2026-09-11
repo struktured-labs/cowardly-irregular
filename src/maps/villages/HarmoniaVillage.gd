@@ -48,40 +48,40 @@ func _generate_map() -> void:
 	# p = cobblestone path (walkways between buildings)
 	# d = bare dirt (worn areas, market square)
 	# f = flower bed (decorative patches)
-	# e = hedge (impassable decorative border)
+	# e = hedge (impassable) — the formal border ringing the verge, and the screen hiding the nook
 	# F = fountain water
 	# X = exit path (cobblestone leading out)
-	# Each row is exactly MAP_WIDTH (30) characters
+	# Each row is exactly MAP_WIDTH (36) characters
 	var map_data: Array[String] = [
 		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-		"W..................................W",
-		"W..................................W",
-		"W...gfgpppppggggggggggpppgfgfggg...W",
-		"W...ggHHHgdppgfgAAAgddppgggfgfgg...W",
-		"W...gfHHHgdppgggAAAggdppgPPPgfgg...W",
-		"W...ggHHHgdppggfAAAggdppgPPPgfgg...W",
-		"W...gggggddpppppppppppppppggfggg...W",
-		"W...gfgggdd^^FFFFFFggd^^ggfgfggg...W",
-		"W...ggIIIgdppFFFFFFggdppGGGgfggg...W",
-		"W...ggIIIgdppFFFFFFggdppGGGggfgg...W",
-		"W...gfIIIgdppFFFFFFggdppGGGgfgfg...W",
-		"W...gggggddppFFFFFFggdppgggggfgg...W",
-		"W...gfgggddpppppppppppppppgfgfgg...W",
-		"W...ggggggdppggggfggggggdppggfgg...W",
-		"W...gfHHHgdppgfgfggfggdppgBBBfgg...W",
-		"W...ggHHHgdppggggggggfgdppBBBfgg...W",
-		"W...ggHHHgdppgfgggggggdppgBBBfgg...W",
-		"W...gfggggdpppppppppppppppggfggg...W",
-		"W...gggHHHgd^^ggfggfgg^^gggfgfgg...W",
-		"W...gfgHHHgdppggggggfggfggfgfgfg...W",
-		"W...gggHHHgdppgfggggggggggfggfgg...W",
-		"W...ggfggggddpppppppppggfgggfggg...W",
-		"W...gggfgggddppXXXXXXdppggggfggg...W",
-		"W...ggggfggddppXXXXXXdppgfgfgggg...W",
-		"W...gfgggggdddddddddddppgggfgggg...W",
-		"W..................................W",
-		"W..................................W",
-		"W..................................W",
+		"Weeeeeeeeeeeeeee.....eeeeeeeeeeeeeeW",
+		"We.............eee.eee............eW",
+		"We..gfgpppppgggggfgfggpppgfgfggg..eW",
+		"We..ggHHHgdppgfgAAAgddppgggfgfgg..eW",
+		"We..gfHHHgdppgggAAAggdppgPPPgfgg..eW",
+		"We..ggHHHgdppggfAAAggdppgPPPgfgg..eW",
+		"We..gggggddpppppppppppppppggfggg..eW",
+		"We..gfgggdd^^FFFFFFggd^^ggfgfggg..eW",
+		"We..ggIIIgdppFFFFFFggdppGGGgfggg..eW",
+		"We..ggIIIgdppFFFFFFggdppGGGggfgg..eW",
+		"We..gfIIIgdppFFFFFFggdppGGGgfgfg..eW",
+		"We..gggggddppFFFFFFggdppgggggfgg..eW",
+		"We..gfgggddpppppppppppppppgfgfgg..eW",
+		"We..ggggggdppggggfggggggdppggfgg..eW",
+		"We..gfHHHgdppgfgfggfggdppgBBBfgg..eW",
+		"We..ggHHHgdppggggggggfgdppBBBfgg..eW",
+		"We..ggHHHgdppgfgggggggdppgBBBfgg..eW",
+		"We..gfggggdpppppppppppppppggfggg..eW",
+		"We..gggHHHgd^^ggfggfgg^^gggfgfgg..eW",
+		"We..gfgHHHgdppggggggfggfggfgfgfg..eW",
+		"We..gggHHHgdppgfggggggggggfggfgg..eW",
+		"We..ggfggggddpppppppppggfgggfggg..eW",
+		"We..gggfgggddppXXXXXXdppggggfggg..eW",
+		"We..ggggfggddppXXXXXXdppgfgfgggg..eW",
+		"We..gfgggggdddddddddddppgggfgggg..eW",
+		"We................................eW",
+		"We................................eW",
+		"WeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeW",
 		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 	# Elevation: castle approach (2) / town (1) / market + gate (0); cliffs are DERIVED, stairs are the '^' cells above
@@ -343,6 +343,15 @@ func _setup_treasures() -> void:
 	chest4.contents_id = "lucky_charm"
 	chest4.position = Vector2(31 * TILE_SIZE,3.5 * TILE_SIZE)
 	treasures.add_child(chest4)
+
+	# Inside the hedge nook — reached only through the gap at (18,2). Flora hints at it.
+	var chest5 = TreasureChestScript.new()
+	chest5.chest_id = "harmonia_chest_hedge_nook"
+	chest5.contents_type = "item"
+	chest5.contents_id = "elixir"
+	chest5.contents_amount = 1
+	chest5.position = Vector2(16 * TILE_SIZE,1 * TILE_SIZE)
+	treasures.add_child(chest5)
 
 
 func _setup_npcs() -> void:
@@ -628,28 +637,32 @@ func _setup_npcs() -> void:
 		"...I don't actually sell them. Just ask.",
 		"They remind me of the old days.",
 		"Before the cave started... changing.",
-		"Take care of yourself out there."
+		"Take care of yourself out there.",
+		"...The north hedge has a gap in it. I didn't cut it. I keep meaning to close it."
 	]
 	var _flora_pre_night := [
 		"*humming softly to herself, alone at her stall*",
 		"Oh — didn't see you. The flowers close at dusk. So do I, mostly.",
 		"Nights are for the flowers to think. Days are for me to talk about them.",
 		"The moon does a nicer light on them than the sun. I don't tell the sun.",
-		"Come back when they're open. Or don't — I'll be here either way."
+		"Come back when they're open. Or don't — I'll be here either way.",
+		"Mind the north hedge after dark. There's a gap. Somebody uses it."
 	]
 	var _flora_post := [
 		"Oh — you're back! *the humming trails off, then picks back up softly*",
 		"The cave changed. Whatever you did, the cave changed *again*.",
 		"I picked these ones this morning. They opened. They haven't opened in weeks.",
 		"You can have one. They mean more when they cost nothing.",
-		"Take care of yourself. The story isn't finished."
+		"Take care of yourself. The story isn't finished.",
+		"I finally went through the gap in the north hedge. Someone left something in there. I put it back."
 	]
 	var _flora_post_night := [
 		"*humming — but with the melody more of a question than a song*",
 		"They're still open. At night. They've never done that. I don't know if it's you or the moon or both.",
 		"I picked one this evening. I thought it would close in my hand. It stayed open. I've been holding it since.",
 		"Take one. They mean more when they cost nothing. They mean MORE more when they mean it at night.",
-		"The story isn't finished. That's true both hours."
+		"The story isn't finished. That's true both hours.",
+		"The gap in the north hedge is still there. I've stopped meaning to close it."
 	]
 	var _flora_lines: Array = (_flora_post_night if _is_night else _flora_post) if _after_cave_done else (_flora_pre_night if _is_night else _flora_pre)
 	var flower = _create_npc("Flora", "villager", Vector2(20 * TILE_SIZE,14 * TILE_SIZE), _flora_lines)
@@ -660,11 +673,14 @@ func _setup_npcs() -> void:
 	# Dr. Temporal (near suburban portal) — uses dedicated sprite_archetype
 	# rather than the generic "mysterious" NPC type so other mysterious NPCs
 	# (if any) keep their procedural fallback.
+	# ui_accept is joypad button 1 — the EAST face — so the old frozen "press A" was right on Nintendo
+	# pads only. Derived at spawn; the village re-instances on entry, so it refreshes per visit.
+	var _portal_confirm: String = InputProfileManager.hint_for_action("ui_accept")
 	var temporal = _create_npc("Dr. Temporal", "mysterious", Vector2(21 * TILE_SIZE,13 * TILE_SIZE), [
 		"This device materialized overnight... it hums with a '16-bit' frequency.",
 		"My instruments detect suburban housing developments on the other side.",
 		"Strip malls. Parking lots. The horror.",
-		"Step on the pad and press A to activate. If you dare."
+		"Step on the pad and press %s to activate. If you dare." % _portal_confirm
 	])
 	temporal.sprite_archetype = "dr_temporal"
 	npcs.add_child(temporal)

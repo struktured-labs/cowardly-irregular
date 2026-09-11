@@ -1,9 +1,9 @@
 {
   "id": "world3_arbiter_defeat",
   "title": "Arbiter of Efficiency — Aftermath",
-  "world": 3,
+  "world": 4,
   "trigger": "boss_arbiter_industrial_defeated",
-  "background": "steampunk_workshop",
+  "background": "industrial_factory",
   "description": "The Arbiter stands at the drafting table, charts scattered. Efficiency rating: suboptimal. Standing: confirmed. The optimization model has encountered a result it cannot account for, and considers for the first time that the model may have been wrong.",
   "steps": [
     {

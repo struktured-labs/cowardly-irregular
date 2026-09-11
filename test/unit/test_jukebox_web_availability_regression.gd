@@ -90,7 +90,10 @@ func test_the_jukebox_consults_the_check_before_playing() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/ui/JukeboxMenu.gd")
 	assert_gt(src.length(), 2000, "SCOPE control: JukeboxMenu.gd read back %d chars" % src.length())
 	var guard: int = src.find("music_is_available")
-	var play: int = src.find("SoundManager.play_music(track_id)")
+	## Anchored without the argument list: the ordering property is about the
+	## play CALL, and pinning its arguments red-flagged a correct change
+	## (the exact-id flag, 2026-09-11) as a moved call site.
+	var play: int = src.find("SoundManager.play_music(track_id")
 	assert_gt(guard, 0, "JukeboxMenu never calls music_is_available — the check exists and nothing consults it")
 	assert_gt(play, 0, "SCOPE control: the play_music call site moved; this ordering check is anchored on nothing")
 	assert_lt(guard, play,

@@ -1945,6 +1945,30 @@ func autogrind_console_log(text: String) -> void:
 		_autogrind_console.append_text(text + "\n")
 
 
+## The grind console's own control line. Every token was frozen in Nintendo spelling and two named
+## the wrong button outright: turbo is raw JOY_BUTTON_Y (north — Ⓧ on a Switch pad, not Ⓨ), exit is
+## ui_cancel (south — Ⓐ on Xbox, ✕ on PlayStation, and X/Esc on a keyboard, never B), and tier is
+## L+R together on a pad, which the line never mentioned. Pause exists (P) and was omitted entirely.
+func _grind_console_controls() -> String:
+	var ipm = Engine.get_main_loop().root.get_node_or_null("InputProfileManager")
+	if ipm == null:
+		return "Y:Turbo T:Tier X/Esc:Exit P:Pause"
+	if Input.get_connected_joypads().is_empty():
+		## Keyboard-only: name the keys the AUTOGRIND arms actually test.
+		return "Y:Turbo T:Tier X/Esc:Exit P:Pause"
+	var turbo: String = ipm.button_name_for_index(JOY_BUTTON_Y)
+	var lb: String = ipm.button_name_for_index(JOY_BUTTON_LEFT_SHOULDER)
+	var rb: String = ipm.button_name_for_index(JOY_BUTTON_RIGHT_SHOULDER)
+	var quit_tok: String = ipm.hint_for_action("ui_cancel")
+	var out: String = ""
+	out += ("%s:Turbo " % turbo) if turbo != "" else "Y:Turbo "
+	out += ("%s+%s:Tier " % [lb, rb]) if lb != "" and rb != "" else "T:Tier "
+	out += ("%s:Exit" % quit_tok) if quit_tok != "" else "X/Esc:Exit"
+	## Pause is KEY_P with no pad binding in the AUTOGRIND arms — a pad player cannot press it, so
+	## the token is dropped rather than advertised.
+	return out
+
+
 func update_autogrind_console_stats(stats: Dictionary) -> void:
 	if not _autogrind_console or not is_instance_valid(_autogrind_console):
 		return
@@ -1959,7 +1983,7 @@ func update_autogrind_console_stats(stats: Dictionary) -> void:
 
 	_autogrind_console.append_text("[color=#666677]─────────────────────────────[/color]\n")
 	_autogrind_console.append_text("[color=#ffff66]Battle #%d[/color] | EXP: %d | Streak: %d | Eff: %.1fx | Time: %.1fx%s\n" % [battles, exp, streak, eff, time_mult, turbo])
-	_autogrind_console.append_text("[color=#6666aa]Corruption: %.2f | Y:Turbo T:Tier B:Exit[/color]\n" % corruption)
+	_autogrind_console.append_text("[color=#6666aa]Corruption: %.2f | %s[/color]\n" % [corruption, _grind_console_controls()])
 
 
 ## Button handlers
@@ -3720,11 +3744,11 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 	if group_type == "formation" and formation_id != "":
 		var formation_key = "formation_" + formation_id
 		if not _try_play_formation_sfx(formation_key):
-			SoundManager.play_battle("group_formation")
+			SoundManager.play_flourish("group_formation")
 	else:
 		match group_type:
 			"limit_break":
-				SoundManager.play_battle("group_limit_break")
+				SoundManager.play_flourish("group_limit_break")
 				# Play job stinger for party leader on limit break
 				if participants.size() > 0 and participants[0] is Combatant:
 					var job_id = participants[0].job.get("id", "fighter") if participants[0].job else "fighter"
@@ -3732,9 +3756,9 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 					if ResourceLoader.exists(stinger_path):
 						SoundManager.play_music("job_%s_special" % job_id)
 			"combo_magic":
-				SoundManager.play_battle("group_combo_magic")
+				SoundManager.play_flourish("group_combo_magic")
 			_:
-				SoundManager.play_battle("group_all_out")
+				SoundManager.play_flourish("group_all_out")
 
 	# Screen shake — intensity scales with group type
 	var shake_intensity: float

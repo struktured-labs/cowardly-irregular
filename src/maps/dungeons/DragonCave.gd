@@ -23,6 +23,8 @@ const TILE_SIZE: int = 32
 
 ## Subclass MUST override these
 var cave_name: String = "Dragon Cave"
+## "Complete a dungeon in under 5 minutes" — jobs.json's own wording for speed_demon.
+const SPEEDRUN_CLEAR_MS: int = 300000
 var cave_id: String = "dragon_cave"
 var boss_id: String = "dragon"
 var boss_flag_key: String = "dragon_defeated"
@@ -81,6 +83,8 @@ var _puzzle_layer: DungeonPuzzleLayer = null
 ## Floor state
 var current_floor: int = 1
 var boss_defeated: bool = false
+## Wall-clock at entry, floor 1 only — 0 means this run does not qualify for speed_demon.
+var _run_started_ms: int = 0
 var _transitioning: bool = false
 
 ## Scene components
@@ -141,6 +145,10 @@ func _ready() -> void:
 			GameState.game_constants[floor_key] = total_floors
 			GameState.game_constants["meta_dungeon_skip_pending"] = false
 			print("[DUNGEON_SKIP] meta-ability consumed — warped to boss floor %d of %s" % [current_floor, cave_id])
+	## Only a run that starts at the entrance is timed: a reload mid-dungeon restores a deeper
+	## floor, and the Skiptrotter warp above sets current_floor = total_floors.
+	if current_floor == 1:
+		_run_started_ms = Time.get_ticks_msec()
 	_generate_map_for_floor(current_floor)
 	_setup_player()
 	_setup_camera()
@@ -599,6 +607,11 @@ func _update_floor_encounters(floor_num: int) -> void:
 	DebugLogOverlay.log("[%s] Encounters: rate=%.0f%%, pool=%s" % [cave_name, encounter_rate * 100, str(pool)])
 
 
+## now_ms is passed in so the rule is checkable without depending on engine uptime.
+func _qualifies_for_speedrun(now_ms: int) -> bool:
+	return _run_started_ms > 0 and now_ms - _run_started_ms < SPEEDRUN_CLEAR_MS
+
+
 func _trigger_boss_battle() -> void:
 	controller.pause_exploration()
 
@@ -627,6 +640,10 @@ func _trigger_boss_battle() -> void:
 	}
 	if unlock_story_flag != "":
 		spec["story_flags"].append(unlock_story_flag)
+	## speed_demon is the Ninja's ONLY unlock route (jobs.json) and nothing in the repo awarded it,
+	## so blade_storm and shadow_strike were unformable. spec is applied by GameLoop on VICTORY only.
+	if _qualifies_for_speedrun(Time.get_ticks_msec()):
+		spec["story_flags"].append("speed_demon")
 	# Push any subclass-declared cutscene_flag_* constants into the
 	# game_constants write set so story-cutscene gates trigger on defeat.
 	for cf in defeat_cutscene_flags:

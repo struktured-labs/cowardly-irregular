@@ -1,9 +1,9 @@
 {
   "id": "world4_tempo_defeat",
   "title": "Tempo of the Clock Cycle — Aftermath",
-  "world": 4,
+  "world": 5,
   "trigger": "boss_tempo_futuristic_defeated",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "description": "Clock cycle: terminated. Operations completed: OVERFLOW. The Tempo has been processing four hundred thousand operations per second. It discovers not one of them was for itself.",
   "steps": [
     {

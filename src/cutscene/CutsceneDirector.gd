@@ -22,6 +22,8 @@ var _fast_forward: bool = false
 var _skip_hold_time: float = 0.0
 ## True while a `battle` step owns the screen: the Director is hidden, so a held B in the duel menu must not count toward a skip it cannot show.
 var _battle_in_flight: bool = false
+## Seconds of courtesy skip hint still to show at scene start (0 once the player holds B, or once it has faded).
+var _skip_hint_left: float = 0.0
 
 ## Letterbox bars
 var _letterbox_top: ColorRect
@@ -63,6 +65,10 @@ var _music_stopped_by_step: bool = false
 const LETTERBOX_HEIGHT: int = 40
 const LETTERBOX_ANIM_DURATION: float = 0.4
 const SKIP_THRESHOLD: float = 1.5
+## Courtesy skip hint at scene start: shown faintly for SKIP_HINT_SEC, fading over its last SKIP_HINT_FADE_SEC; a real hold takes over at full alpha.
+const SKIP_HINT_SEC: float = 3.0
+const SKIP_HINT_FADE_SEC: float = 0.6
+const SKIP_HINT_ALPHA: float = 0.65
 const SKIP_BAR_WIDTH: float = 220.0
 const SKIP_BAR_HEIGHT: float = 10.0
 ## game_constants key prefix for the seen ledger (persists with the save): SEEN_KEY_PREFIX + cutscene_id = true.
@@ -73,10 +79,17 @@ const SKIP_PILL_HEIGHT: float = 48.0
 
 ## The prompt names the PHYSICAL cancel cap: "Hold B" was wrong on every Nintendo-family pad (8BitDo/SN30 cancel sits under the Ⓐ cap).
 static func skip_prompt_text(device_name: String = "") -> String:
+	return "Hold %sEsc to skip..." % _cancel_pad_segment(device_name)
+
+
+## The pad's share of the prompt, empty with no pad — Esc already names the keyboard hold.
+static func _cancel_pad_segment(device_name: String) -> String:
+	if device_name == "" and Input.get_connected_joypads().is_empty():
+		return ""
 	var glyph := "B"
 	if InputProfileManager:
 		glyph = InputProfileManager.glyph_for_action("ui_cancel", device_name)
-	return "Hold %s / Esc to skip..." % glyph
+	return "%s / " % glyph
 
 ## Per-world backdrop colors (top, bottom gradient) for cutscenes without game scene behind them
 const WORLD_BACKDROP_COLORS = {
@@ -242,15 +255,25 @@ func _process(delta: float) -> void:
 	# Handle skip input (hold B/X/Escape) — inert while a duel owns the screen, and the hold resets at that boundary
 	var skip_pressed = Input.is_action_pressed("ui_cancel") and not _battle_in_flight
 	if skip_pressed and not _skipping:
+		_skip_hint_left = 0.0  # the player found it; the courtesy hint is done
 		_skip_hold_time += delta
 		_skip_indicator.visible = true
+		_skip_indicator.modulate.a = 1.0
 		_skip_bar.size.x = minf((_skip_hold_time / SKIP_THRESHOLD) * SKIP_BAR_WIDTH, SKIP_BAR_WIDTH)
 		if _skip_hold_time >= SKIP_THRESHOLD:
 			_trigger_skip()
+	elif _skip_hint_left > 0.0 and not _skipping:
+		# Courtesy hint: the prompt used to appear only while B was ALREADY held, so a new player never learned it existed. Show it faintly for the first seconds, fading out.
+		_skip_hint_left -= delta
+		_skip_hold_time = 0.0
+		_skip_bar.size.x = 0
+		_skip_indicator.visible = _skip_hint_left > 0.0
+		_skip_indicator.modulate.a = clampf(_skip_hint_left / SKIP_HINT_FADE_SEC, 0.0, 1.0) * SKIP_HINT_ALPHA
 	else:
 		if not skip_pressed:
 			_skip_hold_time = 0.0
 			_skip_indicator.visible = false
+			_skip_indicator.modulate.a = 1.0
 			_skip_bar.size.x = 0
 
 	# Tick the cutscene HUD timer (atmospheric only — never a fail state).
@@ -284,6 +307,7 @@ func play_cutscene(cutscene_id: String, replay: bool = false) -> void:
 
 	_replay = replay
 	_music_stopped_by_step = false
+	_skip_hint_left = SKIP_HINT_SEC
 	_cutscene_id = cutscene_id
 	_active = true
 	_skipping = false
@@ -348,6 +372,7 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary, replay: bool
 		return
 	_replay = replay
 	_music_stopped_by_step = false
+	_skip_hint_left = SKIP_HINT_SEC
 	_cutscene_id = cutscene_id
 	_active = true
 	_skipping = false
@@ -2249,7 +2274,11 @@ func _step_battle(step: Dictionary) -> void:
 ## Spotlight-duel defeat sting: replace the silent 0.9s wait so the retry doesn't feel like a bug. Red flash → black on the director's own _effects_rect (auto-hides when the director hides at loop top), plus defeat SFX + screen shake. Reset after the tween so the aftermath (visible=true after next battle) isn't covered by leftover opaque.
 func _play_spotlight_retry_sting() -> void:
 	if SoundManager:
-		SoundManager.play_battle("defeat")
+		## MEASURED 2026-09-11: on the battle player, round_ap_gain replaced this 3.0s sting — the
+		## retry battle starts ~0.7s in, so the cue meant to stop a retry feeling like a bug was
+		## itself cut a third of the way through. Same class as the group flourish and the voice
+		## lines; play_flourish owns a player the battle channel cannot reach.
+		SoundManager.play_flourish("defeat")
 	if EffectSystem:
 		EffectSystem._trigger_screen_shake(8.0, 0.35)
 	if _effects_rect == null or not is_instance_valid(_effects_rect):

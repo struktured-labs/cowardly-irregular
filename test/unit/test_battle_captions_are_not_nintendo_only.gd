@@ -16,7 +16,19 @@ extends GutTest
 
 const BATTLE_SCENE := "res://src/battle/BattleScene.gd"
 const GRID_EDITOR := "res://src/ui/autobattle/AutobattleGridEditor.gd"
+## cowir-controller 2026-09-11: my corpus named ONE file and the subject is TWO. The autogrind
+## editor has caption statements with format slots and my derivation property never reached it —
+## the narrowing was not in a comparison, it was in a const nobody re-reads (cowir-deploy's shape).
+const AUTOGRIND_EDITOR := "res://src/ui/autogrind/AutogrindGridEditor.gd"
 const WIN98 := "res://src/ui/Win98Menu.gd"
+
+## ONE list. The premise arm and the scan filter each had their own copy — two literal lists for
+## one corpus, free to drift, which is the defect I spent the morning routing out of the AP economy
+## (billed_ap) and the afternoon out of the headless resolver. A premise that does not narrow the
+## SAME set the scan narrows is not a premise about that scan.
+## Both editors' spellings. autobattle: help_label1/2 + help. autogrind: help1/2. A selector that
+## knows one file's naming is a second, quieter way to have the wrong corpus.
+const CAPTION_LABELS: Array[String] = ["help_label1.text", "help_label2.text", "help.text", "help1.text", "help2.text"]
 
 ## ⚠️ COMMENTS BLANKED. cowir-controller 2026-09-11: a source pin is satisfied by the COMMENT, so it
 ## catches the tidy removal and misses the realistic one — nobody deletes a line without leaving the
@@ -62,10 +74,21 @@ func test_no_battle_caption_hardcodes_a_nintendo_button() -> void:
 		BATTLE_SCENE: ["Press X (or the ` key)", "Press R to queue"],
 		GRID_EDITOR: ["A:Confirm", "B:Cancel", "A:Import", "Sel:Auto", "A:Edit", "B/Esc:Back", "Del/Y:Delete"],
 	}
+	## ⚠️ THE SINGLE ASSERT IS OUTSIDE THE LOOP, so draining `frozen` would pass with ZERO work —
+	## and @cowir-overworld's free detector (a drained loop shows as a DROP in GUT's assert count)
+	## cannot see it here, because the count would not move. Pin the corpus size, and assert once
+	## PER LITERAL so the count does move if anyone trims the list.
+	var total: int = 0
+	for path in frozen:
+		total += (frozen[path] as Array).size()
+	assert_eq(total, 9, "CONTROL: the frozen-literal corpus is intact — 2 BattleScene + 7 grid editor")
+
 	var found: Array = []
 	for path in frozen:
 		var s := _src(path)
 		for lit in frozen[path]:
+			assert_false(s.contains(lit),
+				"%s still names a button by its Nintendo spelling: \"%s\"" % [path.get_file(), lit])
 			if s.contains(lit):
 				found.append("%s: \"%s\"" % [path.get_file(), lit])
 	assert_eq(found.size(), 0,
@@ -79,9 +102,163 @@ func test_the_captions_derive_instead() -> void:
 		"the speed hint must ask the one place that knows raw JOY_BUTTON_Y")
 	assert_true(bs.contains("hint_for_action(\"battle_advance\")"),
 		"the Advance hint must derive from its InputMap action")
-	var ge := _src(GRID_EDITOR)
-	assert_eq(ge.count("InputProfileManager.hint_for_action("), 9,
-		"the grid editor has NINE pad tokens across FOUR help lines — the sweep that found it reported two lines, its own scan found three, the file has four")
+	## ⚠️ WAS `count(hint_for_action) == 9` AND IT WENT STALE ON A CORRECT MERGE. cowir-autogrind
+	## landed `face_glyph_for_index(JOY_BUTTON_Y)` for the Y token in the same file — the RIGHT helper,
+	## since Y has no InputMap action — and my count dropped to 7 while the file got better. I pinned
+	## the NAME of one helper, which is the exact class cowir-main called out at the fold: a lane's
+	## ratchet pinning a helper name goes stale on another lane's better helper. Now: every format
+	## slot in a help line must be fed by SOME derivation, and which one is the author's business.
+	var ge := _src(GRID_EDITOR) + "\n" + _src(AUTOGRIND_EDITOR)
+	var derivations: int = ge.count("InputProfileManager.hint_for_action(") + ge.count("InputProfileManager.face_glyph_for_index(")
+	assert_gt(derivations, 5, "CONTROL: the grid editor derives its pad captions at all (%d)" % derivations)
+	## Per STATEMENT, not per line: help_label1 puts its format args on continuation lines, so a
+	## line-by-line scan sees the string without its `% [...]` and reports a correct file as frozen.
+	## My first version did exactly that and failed on the merged tree.
+	## ⚠️ SUBJECT PREMISE (cowir-adhoc 2026-09-11): the exemption axis and the subject axis are
+	## orthogonal, and I had only pinned the first. Renaming help_label1/2 makes this loop examine
+	## ZERO statements and the whole file passes — measured, 7/7 green with the scan matching
+	## nothing. A corpus-size control on the LITERAL list cannot see that; only counting what the
+	## scan actually examined can.
+	var lines: PackedStringArray = ge.split("\n")
+	## ⚠️ NAMED MEMBERSHIP, NOT A COUNT. My first version pinned `captions_seen == 4` — an exact
+	## count of SUBJECTS, written an hour after I retracted an exact count of HELPERS for going
+	## stale on someone's correct change. Adding a fifth help line would have redded it the same way.
+	## A floor (`> 0`) is the other trap: cowir-controller measured that it catches a TOTAL drain and
+	## misses a PARTIAL one, and partial is likelier — a rename touches one label, not all of them.
+	## Each label must contribute at least once; adding statements is free, losing one is not.
+	for label in CAPTION_LABELS:
+		var seen: int = 0
+		for line in lines:
+			if line.contains(label):
+				seen += 1
+		assert_gt(seen, 0,
+			"CONTROL: `%s` contributed ZERO caption statements — it was renamed or removed, so every assertion below scanned less than it claims" % label)
+
+	for i in lines.size():
+		var line: String = lines[i]
+		var is_caption: bool = false
+		for label in CAPTION_LABELS:
+			if line.contains(label):
+				is_caption = true
+				break
+		if not is_caption:
+			continue
+		var slots: int = line.count("%s")
+		if slots == 0:
+			continue
+		## Statement window: this line plus continuations, stopping at the first line that closes it.
+		var stmt: String = line
+		var closed: bool = line.strip_edges().ends_with("]") or line.strip_edges().ends_with(")")
+		var k: int = i + 1
+		while k < lines.size() and k <= i + 24 and not closed:
+			stmt += lines[k]
+			if lines[k].strip_edges().begins_with("]"):
+				closed = true
+				break
+			k += 1
+		## cowir-controller 2026-09-11: the window was i+8 and a longer continuation fell out the
+		## BOTTOM — silently passing rather than failing, because an unterminated window still gets
+		## scanned and `InputProfileManager.` happens to be in it. A bound that is reached is a
+		## measurement that did not finish, so it must fail rather than answer.
+		assert_true(closed,
+			"could not find the end of this caption statement within 24 lines — widen the bound rather than trusting the result: %s" % line.strip_edges().substr(0, 70))
+		## ⚠️ PER SLOT, not per statement — the arm's own message always said "N format slots" and the
+		## check was "does this statement mention InputProfileManager ANYWHERE". With three slots where
+		## two feed from deriving helpers, the third could be any literal and it passed. Measured:
+		## freezing the first slot to "Y/" scored GREEN, in both the direct and the helper form.
+		## So: split the `% [...]` argument list and require EACH argument to derive, directly or
+		## through one level of local helper (a whole-token helper is better than an inline call —
+		## it can carry its own separator so no pad leaves no dangling slash).
+		## Two argument forms ship: `% [a, b, c]` and, for a single slot, a bare `% expr`.
+		var bracketed: int = stmt.find("% [")
+		var args_str: String = ""
+		if bracketed > -1:
+			args_str = stmt.substr(bracketed + 3)
+		else:
+			var single: int = stmt.rfind("\" % ")
+			assert_gt(single, -1, "a caption with format slots must pass arguments: " + line.strip_edges().substr(0, 60))
+			args_str = stmt.substr(single + 4) + "]"
+		
+		var depth: int = 0
+		var cur: String = ""
+		var args: Array = []
+		for ci in args_str.length():
+			var ch: String = args_str[ci]
+			if ch == "(" or ch == "[":
+				depth += 1
+			elif ch == ")":
+				depth -= 1
+			elif ch == "]":
+				if depth == 0:
+					break
+				depth -= 1
+			if ch == "," and depth == 0:
+				args.append(cur)
+				cur = ""
+				continue
+			cur += ch
+		if cur.strip_edges() != "":
+			args.append(cur)
+		assert_eq(args.size(), slots,
+			"parsed %d arguments for %d slots — the parser lost one, so the per-slot check below is not about this caption: %s" % [args.size(), slots, line.strip_edges().substr(0, 60)])
+		var frozen_slots: Array = []
+		var undecidable: Array = []
+		for arg in args:
+			var a: String = str(arg).strip_edges()
+			if a.contains("InputProfileManager."):
+				continue
+			var derived: bool = false
+			## A slot fed by a LOCAL is one more level of indirection — AutogrindGridEditor builds
+			## g_ok/g_no/g_del above its caption. Resolve the assignment and judge that instead.
+			var ident_re := RegEx.new()
+			ident_re.compile("^[a-z_][a-z0-9_]*$")
+			if ident_re.search(a) != null:
+				## ⚠️ EVERY assignment, not the declaration. AutogrindGridEditor writes
+				## `var g_del: String = "X"` and then overwrites it from face_glyph_for_index inside a
+				## pad check — taking the first match called correct code frozen.
+				var decl_re := RegEx.new()
+				decl_re.compile("(?:var )?%s\\b[^=<>!]*= *(.+)" % a)
+				var joined: String = ""
+				for dm in decl_re.search_all(ge):
+					joined += dm.get_string(1) + "\n"
+				if joined == "":
+					undecidable.append(a)
+					continue
+				a = joined
+			## Re-check AFTER resolving: the resolved text is where the derivation lives, and only
+			## looking for helper calls here called every variable-fed slot frozen.
+			if a.contains("InputProfileManager."):
+				continue
+			var call_re := RegEx.new()
+			call_re.compile("\\b(_[a-z_]+)\\(")
+			for cm in call_re.search_all(a):
+				## ⛔ EVERY definition of the name, not the first. `ge` is BOTH editors concatenated and
+				## both define `_delete_token` — a bare find() resolves the OTHER file's copy. Measured:
+				## freezing one editor's helper to a literal scored GREEN while its twin still derived.
+				## All definitions must derive, so an ambiguous helper name fails toward alarm.
+				var fname: String = cm.get_string(1)
+				var seen := false
+				var ok := true
+				var from: int = 0
+				while true:
+					var fi: int = ge.find("func %s(" % fname, from)
+					if fi < 0:
+						break
+					var fj: int = ge.find("\nfunc ", fi + 10)
+					if not ge.substr(fi, (fj - fi) if fj > -1 else 400).contains("InputProfileManager."):
+						ok = false
+					seen = true
+					from = fi + 1
+				if seen and ok:
+					derived = true
+					break
+			if not derived:
+				frozen_slots.append(a.substr(0, 40))
+		assert_eq(frozen_slots.size(), 0,
+			"a caption slot is fed by something that never asks InputProfileManager — it names a fixed button: %s in %s" % [str(frozen_slots), line.strip_edges().substr(0, 60)])
+		## Abstain loudly rather than scoring a tick for a slot this arm could not trace.
+		assert_eq(undecidable.size(), 0,
+			"this arm could not resolve where these slots come from, so it is NOT vouching for them: %s in %s" % [str(undecidable), line.strip_edges().substr(0, 60)])
 
 func test_speed_has_no_inputmap_action_so_the_helper_is_the_only_route() -> void:
 	## The premise, measured rather than asserted. If someone later ADDS a battle_speed action, this
@@ -160,3 +337,248 @@ func test_the_stripper_preserves_line_count() -> void:
 	var raw := "a\n# b\nc  # d\n"
 	assert_eq(_strip_comments(raw).split("\n").size(), raw.split("\n").size(),
 		"blanking must not remove lines")
+
+
+## ⛔ THE GAP THIS FILE HAD: "Start:Save" re-froze and BOTH guards stayed green (measured
+## 2026-09-11 by mutation). The frozen list above holds FACE letters, and cowir-autogrind's scan
+## looks for face-button letters — "Start" is neither. So the non-face names were unguarded on
+## every side, which is how "Start" survived the batch that derived "Select" beside it.
+##
+## Banned set DERIVED from BUTTON_NAMES, not listed: every family's spelling of a non-face button
+## (Start/Plus/Options, Select/Back/Share, L/LB/L1, R/RB/R1, L3/L-Stick). A new family or a
+## renamed button cannot open a hole here.
+##
+## Scans LABEL ASSIGNMENTS only. `print("[AUTOBATTLE] Start pressed via ui_menu")` at :1885 is a
+## debug line, not player-facing, and a whole-file scan would report it as a defect.
+func test_no_help_label_spells_a_non_face_button() -> void:
+	var banned: Array[String] = []
+	for family in InputProfileManager.BUTTON_NAMES:
+		for idx in InputProfileManager.BUTTON_NAMES[family]:
+			var n: String = InputProfileManager.BUTTON_NAMES[family][idx]
+			if not banned.has(n):
+				banned.append(n)
+	assert_gt(banned.size(), 8, "PRECONDITION: the banned set must come from BUTTON_NAMES, got %s" % [banned])
+
+	## EMIT THE CORPUS, ASSERT ITS SIZE. @cowir-sprites 2026-09-11: a guard whose SUBJECT drains
+	## scores a clean green over zero work — a loop over nothing asserts nothing, and GUT cannot
+	## flag it because one assert anywhere in the call graph clears [Risky]. If the label-assignment
+	## shape ever changes, this arm must FAIL rather than quietly scan an empty set.
+	## ⛔ THE CORPUS LIST IS ITSELF DRAINABLE, and this arm had that hole after two prior fixes.
+	## @cowir-sfx 2026-09-11: `for x in LIST:` over `[]` runs no body and asserts nothing — and GUT
+	## does not even flag Risky, because sibling asserts in the same function clear it. Measured:
+	## emptying this list gave EC=0, Passing 8/8, Risky 0, SILENT.
+	## A floor derived from the list it defends compares the list against itself. Pinned to a
+	## LITERAL count and both members NAMED, so draining the corpus is itself the violation.
+	var paths: Array[String] = [GRID_EDITOR, AUTOGRIND_EDITOR]
+	## GTE, not EQ. @cowir-overworld 2026-09-11 ran the magnitude nobody was testing — PLUS-ONE —
+	## and an `== 2` REDS ON A CORRECT ADDITION: a third caption-bearing file is work this guard
+	## should welcome, not tax. Their two questions: may this set grow on correct work? YES.
+	## Is growth itself the signal? NO. -> gte with a LITERAL floor (never `>= OTHER.size()`,
+	## which is `0 >= 0` when both drain), and the named members below catch minus-one.
+	assert_gte(paths.size(), 2,
+		"PRECONDITION: the corpus lost an editor; a shortened list scans less and says nothing")
+	assert_true(paths.has(GRID_EDITOR), "PRECONDITION: the autobattle editor must be in the corpus")
+	assert_true(paths.has(AUTOGRIND_EDITOR), "PRECONDITION: the autogrind editor must be in the corpus")
+	var per_file: Dictionary = {}
+	var offenders: Array[String] = []
+	for path in paths:
+		per_file[path] = 0
+		for raw in _src(path).split("\n"):
+			var line: String = raw.strip_edges()
+			## ⛔ THE CORPUS MUST FOLLOW LITERALS INTO LOCAL HELPERS. I refactored three captions into
+			## _delete_token()/_case_hint()/_done_hint() this hour, which moved their strings OFF
+			## `.text = ` lines — and a frozen name planted inside a helper scored GREEN. My own fix
+			## emptied my own guard's corpus, which is @cowir-battle's finding arriving by my hand in
+			## the same hour I read it. A `return "..."` renders a caption too.
+			if line.begins_with("#"):
+				continue
+			if not (line.contains(".text = ") or line.begins_with("return \"") or line.contains("return \"")):
+				continue
+			per_file[path] += 1
+			for n in banned:
+				## TWO IDIOMS, because a bare word-match cannot work here: "Start", "Back", "Options"
+				## and "Share" are ordinary English verbs ("Start a new grind", "Back to menu"), so
+				## matching the word alone floods on correct prose.
+				##   "Start:Save"        the terse caption form
+				##   "Press Start to…"   the prose form — @cowir-music's shape, found by mutation:
+				##                       my banned SET named Start while my PATTERN could not emit
+				##                       it, so "Press Start to save" scored GREEN.
+				## ⚠️ STILL A PATTERN, NOT A PROPERTY. A third idiom escapes. Recorded as the known
+				## reach of this arm rather than claimed as coverage of the class.
+				## ⛔ AND THE PATTERN NEEDED WIDENING TOO, not just the corpus. My first repair made the
+				## helper line VISIBLE and it still scored green: `return "Del/Start"` has the name
+				## between a slash and a quote, while every pattern above needs `Name:` ADJACENCY —
+				## and the refactor split the name from its colon across helper and format string.
+				## A caption assembled from two places has no single line where the old shape appears.
+				var bounded := false
+				for pre in ["\"", "/", " "]:
+					for post in ["\"", ":", "/", " "]:
+						if line.contains("%s%s%s" % [pre, n, post]):
+							bounded = true
+							break
+					if bounded:
+						break
+				if bounded or line.contains("Press %s " % n) or line.contains("Press %s." % n):
+					offenders.append("%s :: %s" % [path.get_file(), n])
+	## ⛔ WAS A FLOOR (`examined > 4` across both files). @cowir-adhoc 2026-09-11: a floor is armed
+	## against TOTAL vacuity and BLIND TO PARTIAL LOSS. Measured — breaking `.text = ` in ONE editor
+	## left the other above the floor and the file scored EC=0, Asserts 39, unchanged. The free
+	## assert-count detector missed it too, because these asserts are not per-row.
+	## Named membership instead: EVERY file in the corpus must contribute, so losing half is a red.
+	for path in per_file:
+		assert_gt(int(per_file[path]), 0,
+			"PRECONDITION: %s contributed ZERO label assignments — the scan silently covered only " % path.get_file() +
+			"the other editor, and a green below would be half a result reported as a whole one")
+	assert_eq(offenders, [] as Array[String],
+		"a help label spells a NON-FACE button by one family's name — derive it through " +
+		"hint_for_action so Nintendo reads Plus and PlayStation reads Options: %s" % [", ".join(offenders)])
+
+
+## ── does the named input actually REACH the handler ───────────────────────────────────────────
+## cowir-autogrind 2026-09-11, on their own console: "The Start token was wrong a SECOND way, and
+## deriving it from the action would have kept it wrong." Deriving a caption from an InputMap action
+## is only correct if that action's binding is what reaches the handler. It found the defect in MY
+## shipped caption: Del/%s:Delete derived from `ui_menu`, whose pad half is Start/L3 (save-and-close)
+## and whose keyboard half is Enter/Escape, both eaten earlier in the same elif chain. Three tokens
+## in one legend were wrong this way. These two arms quantify over the chain, not over the answer.
+
+const DELETER := "_delete_current_cell()"
+
+func test_the_delete_caption_names_the_button_that_actually_deletes() -> void:
+	## BOTH sides derived from source. A literal expectation here would have agreed with whatever I
+	## happened to write in the caption, which is how the wrong one shipped green.
+	var ge := _src(GRID_EDITOR)
+	var arm_re := RegEx.new()
+	arm_re.compile("event\\.button_index == (JOY_BUTTON_[A-Z_]+):\\n(?:.|\\n)*?" + DELETER.replace("(", "\\(").replace(")", "\\)"))
+	var m := arm_re.search(ge)
+	assert_not_null(m, "CONTROL: located the pad arm that reaches %s" % DELETER)
+	if m == null:
+		return
+	var btn: String = m.get_string(1)
+	assert_eq(btn, "JOY_BUTTON_Y", "CONTROL: the pad delete is the north face button")
+	## ⚠️ SCOPED TO THE LABEL, not to the file. My first version asserted `ge.contains(...)` — and the
+	## CycleOp token six lines below satisfies that string, so restoring the exact shipped defect left
+	## this arm GREEN (measured: Failing 1, and it was the other arm). A file-wide containment check
+	## for a value the file uses twice cannot speak about either use.
+	var a: int = ge.find("var help_label1 = Label.new()")
+	var b: int = ge.find("add_child(help_label1)")
+	assert_gt(a, -1, "CONTROL: located the delete legend")
+	assert_gt(b, a, "CONTROL: the window closes after it opens")
+	var label: String = ge.substr(a, b - a)
+	assert_true(label.contains(":Delete"), "CONTROL: this window really is the one carrying the token")
+	## ⚠️ FOLLOW ONE HELPER LEVEL. My first version searched the window alone, and cowir-controller's
+	## fix — which builds the whole token in `_delete_token()` so "Del/" cannot dangle with no pad —
+	## is BETTER than mine and this arm RED IT. A guard that fails the superior implementation of the
+	## thing it defends is taxing correct work; measured on their tree before it was widened.
+	var derivation: String = label
+	var call_re := RegEx.new()
+	call_re.compile("\\b(_[a-z_]+)\\(\\)")
+	for c in call_re.search_all(label):
+		var fn: String = "func %s(" % c.get_string(1)
+		var fi: int = ge.find(fn)
+		if fi > -1:
+			var fj: int = ge.find("\nfunc ", fi + 10)
+			derivation += ge.substr(fi, (fj - fi) if fj > -1 else 400)
+	## Either family renderer is fine — what must not vary is WHICH raw index it renders.
+	assert_true(derivation.contains("_for_index(%s)" % btn),
+		"the delete caption must render the button the delete handler tests (%s)" % btn)
+	assert_false(label.contains("hint_for_action(\"ui_menu\")"),
+		"ui_menu is save-and-close — a delete caption deriving from it names the button that EXITS")
+
+func test_no_caption_derives_from_an_action_its_own_chain_eats_first() -> void:
+	## The CLASS. For every action a caption in this file names: if every one of its keyboard bindings
+	## is claimed by an EARLIER arm of the same _input chain, its keyboard render is a key that does
+	## something else — so that token must be pad-gated or it is a false caption. Pre-fix this reds
+	## twice: `ui_menu` (Enter eaten by ui_accept, Escape by ui_cancel) and `battle_toggle_auto`
+	## (Tab eaten by the row-toggle arm). Neither was reachable by a bracketed-token scan.
+	var ge := _src(GRID_EDITOR)
+	var i: int = ge.find("func _input(event: InputEvent)")
+	assert_gt(i, -1, "CONTROL: located the input chain")
+	var j: int = ge.find("\nfunc ", i + 10)
+	var chain: String = ge.substr(i, (j - i) if j > -1 else ge.length() - i)
+	assert_true(chain.contains(DELETER), "CONTROL: the sliced chain is the real one")
+
+	## ⚠️ THE CORPUS MUST FOLLOW INDIRECTION, because MY OWN FIX INTRODUCED IT. I routed the two
+	## offending tokens through `_pad_only_token(action, label)` — so the action name became a
+	## PARAMETER, a literal `hint_for_action("x")` scan stopped finding them, and this arm went blind
+	## to exactly the two defects it was written to catch. The fix silently emptied the guard's
+	## corpus. So: actions come from direct calls AND from string literals handed to any local helper
+	## that itself calls hint_for_action. `gated` is decided the same way — a token counts as pad-safe
+	## if its own line checks, or if the helper it routes through checks.
+	var actions: Dictionary = {}   # action -> true if its caption is behind a pad-presence check
+	var named_re := RegEx.new()
+	named_re.compile("hint_for_action\\(\"([a-z_]+)\"\\)")
+	for line in ge.split("\n"):
+		for m in named_re.search_all(line):
+			var a: String = m.get_string(1)
+			actions[a] = actions.get(a, false) or line.contains("_has_pad()")
+
+	## Helpers that render an action passed in as a parameter.
+	var helper_re := RegEx.new()
+	helper_re.compile("func (_[a-z_]+)\\(action: String")
+	for hm in helper_re.search_all(ge):
+		var hname: String = hm.get_string(1)
+		var hj: int = ge.find("\nfunc ", hm.get_start() + 10)
+		var hbody: String = ge.substr(hm.get_start(), (hj - hm.get_start()) if hj > -1 else 400)
+		if not hbody.contains("hint_for_action("):
+			continue
+		var checks: bool = hbody.contains("get_connected_joypads().is_empty()") or hbody.contains("_has_pad()")
+		var call_re := RegEx.new()
+		call_re.compile("%s\\(\"([a-z_]+)\"" % hname)
+		for cm in call_re.search_all(ge):
+			var a2: String = cm.get_string(1)
+			actions[a2] = actions.get(a2, false) or checks
+	assert_gt(actions.size(), 3, "CONTROL: captions name actions at all (%d)" % actions.size())
+	for want in ["ui_accept", "ui_cancel", "battle_toggle_auto", "ui_menu"]:
+		assert_true(actions.has(want),
+			"CONTROL: the corpus still reaches %s — if a refactor hid it, this arm stopped speaking about it" % want)
+
+	var ungated: Array = []
+	var undecided: Array = []
+	for act in actions:
+		var own: int = chain.find("is_action_pressed(\"%s\")" % act)
+		if own < 0:
+			## cowir-music 2026-09-11: a guard that prints a tick for a question it could not answer is
+			## worse than one that abstains loudly. This arm can only speak about actions handled in
+			## THIS chain; anything else is recorded as undecided, never skipped into the clean column.
+			undecided.append(act)
+			continue
+		var keys: Array = []
+		for ev in InputMap.action_get_events(act):
+			if ev is InputEventKey:
+				keys.append(OS.get_keycode_string((ev as InputEventKey).keycode).to_upper())
+		if keys.is_empty():
+			continue  # pad-only binding: nothing to shadow
+		var shadowed: int = 0
+		for k in keys:
+			var kre := RegEx.new()
+			kre.compile("KEY_%s\\b" % k)
+			var first: int = -1
+			var km := kre.search(chain)
+			if km != null:
+				first = km.get_start()
+			for other in actions:
+				if other == act:
+					continue
+				var o: int = chain.find("is_action_pressed(\"%s\")" % other)
+				if o > -1 and o < own and _binds_key(other, k):
+					first = o if first < 0 else mini(first, o)
+			if first > -1 and first < own:
+				shadowed += 1
+		if shadowed == keys.size():
+			## Every keyboard route to this action is consumed before its own arm. Legal ONLY if the
+			## caption never renders that keyboard half — i.e. the token is behind a pad check.
+			if not bool(actions[act]):
+				ungated.append("%s (keys %s all eaten earlier)" % [act, str(keys)])
+	assert_eq(ungated.size(), 0,
+		"a caption renders a keyboard key the chain hands to something else: " + str(ungated))
+	## Reported, not asserted to zero: these are captions this arm is NOT competent about, and saying
+	## so is the point. If the list grows, the arm is covering less than its name claims.
+	assert_lte(undecided.size(), 1,
+		"this arm cannot see where these actions are handled, so it is not vouching for them: " + str(undecided))
+
+func _binds_key(action: String, key_upper: String) -> bool:
+	for ev in InputMap.action_get_events(action):
+		if ev is InputEventKey and OS.get_keycode_string((ev as InputEventKey).keycode).to_upper() == key_upper:
+			return true
+	return false

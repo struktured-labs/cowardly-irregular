@@ -29,6 +29,7 @@ const CUTSCENES_DIR := "res://data/cutscenes"
 ## Boss/intro cutscene files that have NO code reference yet.
 ## Update this list deliberately as content lands.
 const KNOWN_PLANNED_INTROS: Array[String] = [
+	"world3_tempo_intro",  # W4's industrial Tempo (trigger boss_tempo_industrial); W3 now has its own Grand Schedule scenes
 	"world1_arbiter_intro",
 	"world1_curator_intro",
 	"world1_tempo_intro",

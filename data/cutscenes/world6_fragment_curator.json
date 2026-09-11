@@ -3,7 +3,7 @@
   "title": "Fragment: The Thing That Stayed",
   "world": 6,
   "trigger": "curator_entropy_defeated",
-  "background": "node_prime",
+  "background": "vertex_village",
   "location": "abstract_dissolution_field_the_kept",
   "description": "Found in the Dissolution Field after defeating the Curator of Entropy. Something that refused to dissolve. In a place where everything eventually disperses, this one thing stayed — not held, not protected. It simply chose not to go.",
   "steps": [
@@ -13,7 +13,7 @@
     },
     {
       "type": "play_music",
-      "track": "cutscene_w5_cached_memory"
+      "track": "cutscene_w6_entering_nothing"
     },
     {
       "type": "wait",

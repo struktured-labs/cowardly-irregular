@@ -32,9 +32,11 @@ extends GutTest
 ## the answer, and no consumer.
 ##
 ## ⚠️ NOT THE SAME DEFECT AS THE NINJA, deliberately excluded from the list below. The
-## Ninja's condition EXISTS and is well-formed (`achievement: speed_demon`); nothing in
-## the game awards that flag. Satisfy it by hand and the Ninja unlocks — which is why
-## the arm below passes for it and why test_the_ninja_cannot_be_unlocked owns that half.
+## Ninja's condition EXISTS and is well-formed (`achievement: speed_demon`). As of
+## 2026-09-11 a sub-5-minute dungeon clear awards that flag (DragonCave), so the Ninja is
+## reachable — test_the_ninja_is_obtainable owns that half, replacing the retired
+## test_the_ninja_cannot_be_unlocked. The arm below still passes for it either way: this
+## file is about jobs with NO condition, which the Ninja has never been.
 ## A job with no condition and a job with an unproducible one fail in different places
 ## and are one fix apart in different directions; merging them would hide both.
 
@@ -107,6 +109,11 @@ func test_premise_the_job_corpus_has_starters_and_advanced() -> void:
 			advanced += 1
 	assert_gt(starters, 3, "expected several starter jobs, found %d" % starters)
 	assert_gt(advanced, 5, "expected several non-starter jobs, found %d" % advanced)
+	# NAMED MEMBERS. A floor is blind to partial loss: drop half the jobs and both
+	# counts above still clear. These four must be here by name, one per side.
+	for jid in ["fighter", "rogue", "guardian", "time_mage"]:
+		assert_true(jobs.has(jid),
+			"%s is missing from the parsed jobs — the walk is covering less than it did, which a count floor cannot see" % jid)
 
 
 ## POSITIVE CONTROL, harvested: guardian authors a well-formed condition. If the
@@ -117,7 +124,7 @@ func test_the_detector_distinguishes_a_job_that_has_a_condition() -> void:
 	assert_false(conditionless.has("guardian"),
 		"guardian authors {type: story, chapter: 2} — flagging it as conditionless means this file's reader is broken, not the data")
 	assert_false(conditionless.has("ninja"),
-		"ninja authors {type: achievement, id: speed_demon} — its condition EXISTS and has no producer, which is a different defect and a different file")
+		"ninja authors {type: achievement, id: speed_demon} — its condition EXISTS, and since 2026-09-11 a sub-5-minute dungeon clear produces it; this file is about jobs with NO condition")
 
 
 ## THE RATCHET, bidirectional.
@@ -130,6 +137,18 @@ func test_every_non_starter_job_has_some_route_or_is_named_as_stranded() -> void
 			newly_stranded.append(jid)
 	assert_eq(newly_stranded.size(), 0,
 		"a non-starter job shipped with no unlock_condition, so is_job_unlocked returns false for it in every game state: %s — give it a condition, or add it to UNREACHABLE_JOBS with the reason" % ", ".join(newly_stranded))
+
+	# STALE-BY-DELETION, same cell. `conditionless` is built from jobs that EXIST, so a
+	# deleted job simply stops appearing and its UNREACHABLE_JOBS line survives as a
+	# standing claim about a class the game no longer has.
+	var jobs := _jobs()
+	var vanished: Array[String] = []
+	for jid in UNREACHABLE_JOBS.keys():
+		if not jobs.has(str(jid)):
+			vanished.append(str(jid))
+	vanished.sort()
+	assert_eq(vanished.size(), 0,
+		"UNREACHABLE_JOBS names a job that is no longer in jobs.json: %s — if the class was retired, delete the line with it; the entry currently claims a stranded class that does not exist." % ", ".join(vanished))
 
 	var freed: Array[String] = []
 	for jid in UNREACHABLE_JOBS.keys():
