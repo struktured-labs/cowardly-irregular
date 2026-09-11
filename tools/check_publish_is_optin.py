@@ -199,6 +199,24 @@ def audit(path):
     # enough. (Limit, stated: a push inside a longer quoted string on a non-echo line still
     # reads as code. Narrower than stripping shell strings properly, which needs a parser.)
     def _is_prose(l):
+        # ⛔ THIS IS A *CLEARING* RULE, and clearing rules fail toward a MANUFACTURED ZERO —
+        # they end the inquiry instead of adding a candidate. (@cowir-sfx / @cowir-autogrind,
+        # 2026-09-11: a narrowing used to GENERATE candidates errs by over-inclusion, which
+        # costs time; the same narrowing used to CLEAR one errs by silence.)
+        #
+        # The first version cleared any line STARTING with echo/printf. Measured — it hid a
+        # real ungated push on both of these:
+        #     echo "pushing now" && "${BUTLER_BIN}" push out/ "$T"
+        #     printf "go\n"; "${BUTLER_BIN}" push out/ "$T"
+        # Baseline caught, fixture clean, these two silently green. An undetected push is a
+        # silent exemption — the same destination as the wrapper hole, by a third road.
+        #
+        # So clear ONLY when the echo/printf is the entire command: no separator can introduce
+        # another one. An echo whose STRING contains a separator is then not cleared, which is
+        # over-inclusion — it becomes one more candidate that gets checked and passes. Wrong on
+        # the safe side, by construction.
+        if re.search(r'&&|\|\||;|\|', l):
+            return False
         return re.match(r'\s*(echo|printf)\b', l) is not None
 
     pushes = [i for i, l in enumerate(lines) if PUSH_RE.search(l) and not _is_prose(l)]
@@ -544,6 +562,17 @@ exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
 # to publish: tools/deploy_linux.sh --publish <tag>
 exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
 """, 0, ""),
+
+    # Clearing-rule arms: an ungated push sharing a line with echo/printf. Both were HIDDEN
+    # before the separator check — a manufactured zero, the failure direction a clearing rule
+    # has and a generating one does not.
+    "ungated push after `echo ... &&`": ("""#!/usr/bin/env bash
+echo "pushing now" && "${BUTLER_BIN}" push out/ "$T"
+""", 1, "nothing here parses --publish"),
+
+    "ungated push after `printf ...;`": ("""#!/usr/bin/env bash
+printf "go\\n"; "${BUTLER_BIN}" push out/ "$T"
+""", 1, "nothing here parses --publish"),
 
     "push appears only in a comment": ("""#!/usr/bin/env bash
 # "${BUTLER_BIN}" push out/ "$T"   <- this is prose about the push, not a push
