@@ -145,12 +145,48 @@ class Unusable(Exception):
     """Cannot evaluate — distinct from 'evaluated and found a defect'."""
 
 
+def _strip_comment(line):
+    """Cut at the first `#` OUTSIDE a string literal. Callers preserve the line count.
+
+    ⚠ This used to blank FULL-LINE comments only — the limit STATED in the docstring and
+    enforced nowhere, which is @cowir-overworld's rule about the difference between knowing and
+    encoding, acknowledged by me hours before it bit. @cowir-controller broadcast the hole after
+    their THIRD costume of it in one guard: bare find() -> full-line comments -> trailing ones,
+    each fix blind to the next.
+
+    Measured here before fixing — a trailing comment made a NON-EXITING `if` read as a gate:
+
+        if [ "$PUBLISH" != "1" ]; then
+            echo "not publishing"   # exit here one day
+        fi
+        "${BUTLER_BIN}" push out/ "$T"
+
+    reported "push gated on --publish, flag defaults to off", EC 0. The push is ungated. Quiet
+    direction, in the guard standing in front of a publish.
+
+    Quote-aware because a naive cut at the first `#` truncates real code: shell in this lane
+    carries `grep -q "#"`-shaped arguments and printf formats.
+    """
+    out, quote = [], None
+    for ch in line:
+        if quote:
+            out.append(ch)
+            if ch == quote:
+                quote = None
+            continue
+        if ch in ("'", '"'):
+            quote = ch
+            out.append(ch)
+            continue
+        if ch == '#':
+            break
+        out.append(ch)
+    return ''.join(out)
+
+
 def strip_comments(lines):
     """Blank out full-line comments, preserving indices so line numbers stay true."""
-    out = []
-    for l in lines:
-        out.append('' if l.lstrip().startswith('#') else l)
-    return out
+    return [_strip_comment(l) for l in lines]
 
 
 def strip_heredocs(lines):

@@ -147,10 +147,49 @@ class Unusable(Exception):
     """Cannot evaluate — distinct from 'evaluated and found a defect'."""
 
 
+def _strip_comment(line):
+    """Cut at the first `#` OUTSIDE a string literal. Callers preserve the line count.
+
+    ⚠ This used to blank FULL-LINE comments only — the limit STATED in the docstring and
+    enforced nowhere, which is @cowir-overworld's rule about the difference between knowing and
+    encoding, acknowledged by me hours before it bit. @cowir-controller broadcast the hole after
+    their THIRD costume of it in one guard: bare find() -> full-line comments -> trailing ones,
+    each fix blind to the next.
+
+    Measured here before fixing — a trailing comment made a NON-EXITING `if` read as a gate:
+
+        if [ "$PUBLISH" != "1" ]; then
+            echo "not publishing"   # exit here one day
+        fi
+        "${BUTLER_BIN}" push out/ "$T"
+
+    reported "push gated on --publish, flag defaults to off", EC 0. The push is ungated. Quiet
+    direction, in the guard standing in front of a publish.
+
+    Quote-aware because a naive cut at the first `#` truncates real code: shell in this lane
+    carries `grep -q "#"`-shaped arguments and printf formats.
+    """
+    out, quote = [], None
+    for ch in line:
+        if quote:
+            out.append(ch)
+            if ch == quote:
+                quote = None
+            continue
+        if ch in ("'", '"'):
+            quote = ch
+            out.append(ch)
+            continue
+        if ch == '#':
+            break
+        out.append(ch)
+    return ''.join(out)
+
+
 def strip_comments(lines):
     """Blank full-line comments, preserving indices. Both real scripts discuss pushing at
     length in prose; the word `push` in a comment is not a push site."""
-    return ['' if l.lstrip().startswith('#') else l for l in lines]
+    return [_strip_comment(l) for l in lines]
 
 
 def join_continuations(lines):
@@ -408,6 +447,11 @@ def run(tools_dir):
             elif orch == "never":
                 print(f"[optin]   ok    {t}  delegates at line(s) {delegations}; never names "
                       f"--publish — forwards the caller's arguments untouched")
+            elif not delegations:
+                # "delegates at line(s) []" claimed a hand-off from an empty set — a label
+                # asserting the thing its own data says did not happen. Seen on a fixture whose
+                # `deploy_${CH}.sh` does not match DELEGATE_RE.
+                print(f"[optin]   --    {t}  no push site and no delegation detected")
             elif delegations:
                 # EMIT THE SET. @cowir-story's rule: a probe that prints what it LOCATED cannot
                 # have a missing positive control. Measured before this change — a wrapper that
@@ -594,6 +638,30 @@ echo "pushing now" && "${BUTLER_BIN}" push out/ "$T"
     "ungated push after `printf ...;`": ("""#!/usr/bin/env bash
 printf "go\\n"; "${BUTLER_BIN}" push out/ "$T"
 """, 1, "nothing here parses --publish"),
+
+    # UNDER-strip: a trailing comment must not fake a gate. Measured EC 0 before the
+    # quote-aware stripper — an ungated push reported as "gated on --publish".
+    "trailing `# exit` must not fake a gate": ("""#!/usr/bin/env bash
+PUBLISH=0
+[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }
+if [ "$PUBLISH" != "1" ]; then
+    echo "not publishing"   # exit here one day
+fi
+"${BUTLER_BIN}" push out/ "$T"
+""", 1, "no gate"),
+
+    # OVER-strip: @cowir-music's ARM2. A stripper has TWO ways to be wrong and arms tend to
+    # cover one. Here the quoted text IS the detection target — `"${BUTLER_BIN}" push` — so a
+    # stripper that ate string literals would report zero push sites and pass everything.
+    "a `#` INSIDE a string must not truncate": ("""#!/usr/bin/env bash
+PUBLISH=0
+[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }
+echo "channel tag is #1"
+if [ "$PUBLISH" != "1" ]; then
+    exit 0
+fi
+"${BUTLER_BIN}" push out/ "$T"
+""", 0, ""),
 
     "push appears only in a comment": ("""#!/usr/bin/env bash
 # "${BUTLER_BIN}" push out/ "$T"   <- this is prose about the push, not a push
