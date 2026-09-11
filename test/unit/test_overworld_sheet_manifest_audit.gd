@@ -101,6 +101,39 @@ func test_the_overworld_monster_template_is_what_this_file_assumes() -> void:
 		assert_eq(v, values[0], "the two consumers compose DIFFERENT paths — one family of monsters is loading from somewhere this file never checks: %s" % [found])
 
 
+## ⚠️ EVERY OTHER ARM IN THIS FILE IS A REGISTER CLAIM. They compare strings — a filename against a
+## monster id, a template against a literal in source — and a string comparison cannot see a sheet
+## that is ON DISK but did not IMPORT. That sheet renders NOTHING in game while every arm above stays
+## green, because ResourceLoader reads the import cache and DirAccess reads the filesystem. This arm
+## asks the question the player's machine asks: does the path the consumers build actually resolve?
+func test_the_composed_path_actually_resolves_for_every_monster_with_art() -> void:
+	var found := _composed_monster_templates()
+	assert_gt(found.size(), 0, "no template to test — the premise arm above explains why")
+	var template: String = found[found.keys()[0]]
+
+	var root := "res://assets/sprites/monsters/overworld"
+	var dir := DirAccess.open(root)
+	assert_true(dir != null, "the flat root is readable")
+	var on_disk := []
+	for f in dir.get_files():
+		if f.ends_with(".png"):
+			on_disk.append(f.trim_suffix(".png"))
+	assert_gt(on_disk.size(), 0, "the sweep found sheets — an empty root passes everything")
+
+	var unresolved := []
+	for id in on_disk:
+		if not ResourceLoader.exists(template % id):
+			unresolved.append(id)
+	# ⛔ ALL failing means the tree is UNIMPORTED, not that the art is broken. Say which, or this
+	# arm sends the next reader to look for 85 corrupt PNGs that are fine.
+	if unresolved.size() == on_disk.size():
+		assert_true(false,
+			"NONE of %d sheets resolve through ResourceLoader — this tree is unimported, not broken. Run: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import" % on_disk.size())
+	else:
+		assert_eq(unresolved.size(), 0,
+			"these sheets sit on disk but do NOT resolve through the loader — they render nothing in game while every string-comparison arm in this file passes:\n" + "\n".join(unresolved))
+
+
 func test_every_flat_sheet_is_reachable_by_some_monster_id() -> void:
 	var raw := FileAccess.get_file_as_string("res://data/monsters.json")
 	var parsed: Variant = JSON.parse_string(raw)
