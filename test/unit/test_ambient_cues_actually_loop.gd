@@ -52,13 +52,25 @@ func test_every_ambient_cue_loops() -> void:
 	assert_gt(sounds.size(), 100,
 		"SCOPE control: walked %d sfx entries — wrong root key? It is 'sfx', not 'sounds'." % sounds.size())
 
+	## CORPUS FROM THE CONSUMER, NOT FROM A NAME (2026-09-11). This was `begins_with("ambient_")`,
+	## and it missed all six weather beds — they reach play_ambient but are named weather_*, so the
+	## guard that exists to defend the loop contract could not see the keys that were breaking it.
+	## Measured when found: loop=false in manifest AND .import on all six, wrap steps to +53 dB.
+	## A name prefix is a guess about the corpus; the call site IS the corpus.
 	var ambient: Array[String] = []
 	for k in sounds.keys():
 		if str(k).begins_with("ambient_"):
 			ambient.append(str(k))
+	for k in _keys_passed_to_play_ambient():
+		if sounds.has(k) and not ambient.has(k):
+			ambient.append(k)
 	ambient.sort()
 	assert_gt(ambient.size(), 5,
 		"SCOPE control: found only %d ambient cues — a green here would be vacuous" % ambient.size())
+	## Control on the NEW half specifically: the prefix scan alone would still satisfy the count above,
+	## so assert the consumer scan found something a name never would.
+	assert_true(ambient.has("weather_rain"),
+		"SCOPE control: weather_rain reaches play_ambient and must be in the corpus — if this fails the src scan is dead and the prefix is silently back in charge")
 
 	var broken: Array[String] = []
 	for key in ambient:
@@ -88,3 +100,32 @@ func test_every_ambient_cue_loops() -> void:
 
 	assert_eq(broken.size(), 0,
 		"ambient cues that will NOT loop (%d): %s — play_ambient's contract is a LOOP, and a one-shot leaves the area silent for the rest of the visit. The manifest/import AGREEMENT guard cannot see this: false in both AGREES." % [broken.size(), broken])
+
+
+## Every literal handed to play_ambient anywhere in src/. WeatherSystem spells each one out
+## (its own comment says "literal keys per branch so the sfx-orphan audit can see every ambient").
+func _keys_passed_to_play_ambient() -> Array[String]:
+	var found: Array[String] = []
+	var re := RegEx.new()
+	re.compile("play_ambient\\(\\s*\"([^\"]+)\"")
+	var stack: Array[String] = ["res://src"]
+	while not stack.is_empty():
+		var dir_path: String = stack.pop_back()
+		var d := DirAccess.open(dir_path)
+		if d == null:
+			continue
+		d.list_dir_begin()
+		var name := d.get_next()
+		while name != "":
+			var full: String = dir_path + "/" + name
+			if d.current_is_dir():
+				if not name.begins_with("."):
+					stack.append(full)
+			elif name.ends_with(".gd"):
+				for m in re.search_all(FileAccess.get_file_as_string(full)):
+					var k: String = m.get_string(1)
+					if not found.has(k):
+						found.append(k)
+			name = d.get_next()
+		d.list_dir_end()
+	return found
