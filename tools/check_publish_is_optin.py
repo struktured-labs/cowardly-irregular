@@ -45,6 +45,8 @@ Usage:  check_publish_is_optin.py [tools-dir]
         check_publish_is_optin.py --selftest
 Exit:   0 every push site is gated · 1 at least one is not · 2 unusable
 """
+import contextlib
+import io
 import os
 import re
 import sys
@@ -556,23 +558,11 @@ fi
 }
 
 
-def scan_all(tools_dir):
-    """(name, pushes) for every shell script in the dir — used by the corpus-independence arm."""
-    out = []
-    for f in sorted(os.listdir(tools_dir)):
-        if not f.endswith('.sh'):
-            continue
-        pushes, _f, _d, _s, _o = audit(os.path.join(tools_dir, f))
-        if pushes:
-            out.append((f, pushes))
-    return out
-
-
 def _write_publish_all(d, channels):
     """Minimal publish_all.sh declaring the channels a probe dir is supposed to ship.
 
     The expectation is DERIVED from this loop, so a fixture without it is Unusable — which is
-    correct behaviour and was the first thing the change surfaced: 18 arms went to exit 2 at
+    correct behaviour and was the first thing that change surfaced: 18 arms went to exit 2 at
     once, because every probe dir lacked the authority the guard now reads.
     """
     open(os.path.join(d, "publish_all.sh"), "w").write(
@@ -654,10 +644,24 @@ def selftest():
             '"${BUTLER_BIN}" push out/ "$T"\n')
 
         def named(odd=odd):
-            hits = [h for h in scan_all(odd) if h[0] == "ship_it.sh"]
-            if not hits:
-                return False, "ship_it.sh was NOT examined — corpus is still name-scoped"
-            return True, "ship_it.sh examined despite its name"
+            # ⛔ ASSERT WHAT run() PRINTED, not what a parallel walk finds. This check used to
+            # call a helper, scan_all(), that re-implemented run()'s corpus walk — identical
+            # today, so the arm passed; but if run()'s walk ever gained a filter, the helper
+            # would not follow and this arm would stay green while the shipped scan skipped the
+            # file. A test exercising a twin of the production path is green, correct about the
+            # function it calls, and silent about the one that ships.
+            # (@cowir-autogrind's `_rule_to_action` / `_rule_to_actions`, 2026-09-11 — one
+            # character apart, three test callers on the dead one, zero on the live one.)
+            buf_out, buf_err = io.StringIO(), io.StringIO()
+            with contextlib.redirect_stdout(buf_out), contextlib.redirect_stderr(buf_err):
+                try:
+                    run(odd)
+                except Unusable:
+                    pass
+            seen = buf_out.getvalue() + buf_err.getvalue()
+            if "ship_it.sh" not in seen:
+                return False, "run() never mentioned ship_it.sh — the shipped corpus skipped it"
+            return True, "run() itself reports ship_it.sh"
 
         arm("a push in a file no PREFIX would scan is examined", 1, lambda: run(odd), named)
 
