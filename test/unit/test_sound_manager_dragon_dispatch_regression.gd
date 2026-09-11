@@ -70,3 +70,16 @@ func test_no_dragon_cave_arm_collapses_back_to_dragon_ice_for_all_four() -> void
 			combined_keys += 1
 	assert_lt(combined_keys, 4,
 		"all four dragon caves are bundled into a single match arm — regression of the dragon_ice-for-all bug")
+
+
+func test_the_expected_arm_table_has_not_drained() -> void:
+	## Drain-tested 2026-09-11: EXPECTED_ARM emptied -> 12 asserts to 4, both tests still PASSING
+	## (grade B). Every assertion in this file iterates its keys, so an empty table inspects no
+	## match arm and reports the dispatch correct.
+	##
+	## ⛔ NOT derived from SoundManager's match arms — those ARE the subject, and a table built
+	## from them would confirm whatever the source says, including a deleted arm.
+	assert_gte(EXPECTED_ARM.size(), 4,
+		"EXPECTED_ARM covers %d caves, was 4 (one per W1 elemental dragon) — a cave leaving this table stops being checked" % EXPECTED_ARM.size())
+	assert_true(EXPECTED_ARM.has("shadow_dragon_cave"),
+		"CONTROL: shadow_dragon_cave must stay named — its arm is the one whose track id does not match its cave name")

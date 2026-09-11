@@ -230,3 +230,26 @@ func test_play_ability_actually_CONSULTS_the_derived_map() -> void:
 	sm.play_ability(derived_id)
 	assert_true(sm._sfx_cooldowns.has("ability_fire"),
 		"play_ability('%s') did NOT resolve ability_fire — the derived map is built but play_ability is not reading it, which is the exact defect every other assertion in this file is blind to" % derived_id)
+
+
+func test_the_tables_that_drive_this_file_have_not_drained() -> void:
+	## Drain-tested 2026-09-11. DERIVED_VOCAB emptied moved NOT ONE ASSERT (grade A: no red, no
+	## [Risky], no count change — nothing about any run catches it). PHYSICAL_WITH_ELEMENT emptied
+	## took a whole test out of Passing with no Failing line (grade C), which GUT flags and an
+	## exit-code gate does not. Both are loop SUBJECTS, so losing them deletes their own checks.
+	##
+	## ⛔ NOT derived, deliberately. DERIVED_VOCAB is the set of cues the derived pass may produce
+	## and PHYSICAL_WITH_ELEMENT is its negative control; building either from _ELEMENT_SFX /
+	## _TYPE_SFX — the tables the pass itself reads — would make the check agree with the thing it
+	## checks. Where derivation would be circular, a pinned floor with a named member is the
+	## honest instrument.
+	assert_gte(DERIVED_VOCAB.size(), 13,
+		"DERIVED_VOCAB has %d cues, was 13 — a cue leaving this set silently widens what counts as 'came from the hand map'" % DERIVED_VOCAB.size())
+	assert_true(DERIVED_VOCAB.has("ability_fire"),
+		"CONTROL: ability_fire is the canonical derived cue and must stay named here")
+	assert_gte(PHYSICAL_WITH_ELEMENT.size(), 4,
+		"PHYSICAL_WITH_ELEMENT has %d ids, was 4 — this is the negative control on the fix; an id leaving it removes the proof that weapon strikes still thump" % PHYSICAL_WITH_ELEMENT.size())
+	assert_true(PHYSICAL_WITH_ELEMENT.has("dark_slash"),
+		"CONTROL: dark_slash is an elemental weapon strike and must stay in the negative control")
+	assert_gte(ELEMENT_SFX.size(), 8,
+		"ELEMENT_SFX has %d elements, was 8" % ELEMENT_SFX.size())
