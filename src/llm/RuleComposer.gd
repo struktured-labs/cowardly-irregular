@@ -345,11 +345,16 @@ func _sink_unconditional_rules(rules: Array) -> Array[String]:
 	return notes
 
 
-## True when every condition is `always`, i.e. the rule fires on any turn.
+## True when the rule fires on any turn — because every condition is `always`, OR
+## because it has none. Both engines treat an absent/empty condition list as a
+## match: AutobattleSystem._evaluate_grid_rule ("No conditions = always match")
+## and AutogrindSystem's party-rule evaluator both return true for size() == 0.
+## llama3 emits that shape, so reading it as "not a catch-all" left it in place
+## shadowing every rule below it.
 func _is_catch_all(rule: Dictionary) -> bool:
 	var conds: Array = rule.get("conditions", []) as Array
 	if conds.is_empty():
-		return false
+		return true
 	for c in conds:
 		if not (c is Dictionary) or str((c as Dictionary).get("type", "")) != "always":
 			return false
