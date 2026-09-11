@@ -560,13 +560,26 @@ const KNOWN_WIRED_TO_DEAD_SCENES := {
 ## Everything that could DISPATCH a cutscene — source, scenes, and non-cutscene
 ## data. Deliberately excludes data/cutscenes/: a scene names its own id, so
 ## including them would make every scene look dispatched by itself.
+## DECLARED, not merely printed. Measured 2026-09-11: dropping the data/*.json
+## root and dropping the src/**.tscn root each left this file 11/11 GREEN,
+## because no bed currently depends on either — so a root silently swallowed by
+## a refactor was invisible. Printing the corpus makes the claim contradictable
+## by a reader; asserting each root contributed makes a DROPPED one loud. It
+## still buys nothing against a root never added (cowir-adhoc's limit, exact).
+const DISPATCH_WALKS := [["res://src", ".gd"], ["res://src", ".tscn"], ["res://data", ".json"]]
+
+
 func _dispatcher_text() -> String:
 	var paths: Array[String] = []
 	_files("res://src", ".gd", paths)
+	var after_gd: int = paths.size()
+	assert_gt(after_gd, 0, "CORPUS: res://src/**.gd contributed ZERO files — the dispatcher walk is empty and every scene would read as dead")
 	_files("res://src", ".tscn", paths)
+	assert_gt(paths.size(), after_gd, "CORPUS: res://src/**.tscn contributed ZERO files — a scene dispatched from a .tscn would read as dead, and nothing else reports it")
 	var parts: PackedStringArray = []
 	for p in paths:
 		parts.append(_strip_comments(FileAccess.get_file_as_string(p)) if p.ends_with(".gd") else FileAccess.get_file_as_string(p))
+	var json_seen: int = 0
 	var d := DirAccess.open("res://data")
 	if d != null:
 		d.list_dir_begin()
@@ -574,8 +587,10 @@ func _dispatcher_text() -> String:
 		while n != "":
 			if n.ends_with(".json") and n != "music_manifest.json" and n != "sfx_manifest.json":
 				parts.append(FileAccess.get_file_as_string("res://data/" + n))
+				json_seen += 1
 			n = d.get_next()
 		d.list_dir_end()
+	assert_gt(json_seen, 0, "CORPUS: res://data/*.json contributed ZERO files — a dispatch table authored in data would read as dead")
 	return "\n".join(parts)
 
 
@@ -663,7 +678,7 @@ const DISPATCH_FORMS := ["return \"<id>\"", "play_cutscene(\"<id>\")", "for <v> 
 ## src/ — two hours after its author had corrected that very scope — and caught it
 ## BECAUSE the guard printed its roots. A verdict that names neither what it read
 ## nor how it read it cannot be contradicted by anyone but its author.
-const DISPATCH_ROOTS := "src/**.gd (comments stripped) + src/**.tscn + data/*.json; data/cutscenes/ EXCLUDED by design, guarded by test_no_cutscene_step_type_can_dispatch_another_cutscene"
+const DISPATCH_ROOTS := "src/**.gd (comments stripped) + src/**.tscn + data/*.json — each asserted non-empty; data/cutscenes/ EXCLUDED by design, guarded by test_no_cutscene_step_type_can_dispatch_another_cutscene"
 
 
 func _loop_dispatched_ids(disp: String) -> Dictionary:
