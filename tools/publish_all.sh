@@ -501,6 +501,17 @@ fi
 # ── 7. the store read-back, opt-in ───────────────────────────────────────────────────────
 # The ONLY check in this lane that crosses the CDN. Everything above tested the local artifact
 # or asked butler what it was asked to push.
+#
+# ✅ EXERCISED 2026-09-11, three directions, with verify_store_artifact.sh stubbed so no network
+# or credentials were needed — block extracted byte-exact from this file and verified to occur
+# verbatim once:
+#     store matches, linux+web            exit 0, READBACK_DONE=1
+#     store DIFFERS on one channel        exit 5
+#     a published channel's build gone    exit 5
+# Recorded because until then this block had been WIRED and never RUN. @cowir-autogrind,
+# 2026-09-11: "a dense verification suite around an unreachable edit produces maximum confidence
+# and zero information." I had verified the flag parsing, the exit trap, the message text and
+# five trap states — all of it about the wiring, none of it executing the thing wired.
 if [ "${READ_BACK:-0}" = "1" ] && [ -n "${PUBLISHED:-}" ]; then
     echo "[pub] ─── store read-back ───"
     _rb_fail=0
