@@ -48,10 +48,16 @@ func test_both_consumers_crop_with_the_same_frame_size() -> Vector2i:
 			"%s has no FRAME_W/FRAME_H -- it crops by some other means and this ledger is stale" % path.get_file())
 		if consts.has("FRAME_W") and consts.has("FRAME_H"):
 			sizes.append(Vector2i(int(consts["FRAME_W"]), int(consts["FRAME_H"])))
+	assert_gt(CONSUMERS.size(), 1,
+		"CONTROL: the consumer ledger holds %d entries -- this test asks whether consumers AGREE, which is vacuous below 2, and the sweeps below would silently fall back to the hardcoded default" % CONSUMERS.size())
 	assert_eq(sizes.size(), CONSUMERS.size(), "not every consumer reported a frame size")
 	for s in sizes:
 		assert_eq(s, sizes[0],
 			"the two overworld-sheet consumers crop different frame sizes %s -- one of them is drawing the wrong part of every sheet" % str(sizes))
+	# NEVER silently default: every sweep in this file takes its frame size from here, so a fallback
+	# makes them measure 32 regardless of what the consumers do. Measured 2026-09-11 -- draining
+	# CONSUMERS left this file fully green at both magnitudes.
+	assert_false(sizes.is_empty(), "no consumer reported a frame size -- the sweeps below have nothing to crop by")
 	return sizes[0] if not sizes.is_empty() else Vector2i(32, 32)
 
 
