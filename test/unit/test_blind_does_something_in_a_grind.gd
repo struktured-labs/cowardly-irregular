@@ -70,3 +70,83 @@ func test_the_two_KNOWN_divergences_have_not_grown() -> void:
 		"live still applies a weather miss bonus")
 	assert_eq(head.count("weather"), 0,
 		"the headless resolver still has no weather concept — if it gained one, the parity note needs rewriting")
+
+
+## ── the rest of the gap, enumerated so it cannot grow quietly ─────────────────────────────────
+## Blind was one of ELEVEN. The live engine reads 22 statuses; the grind reads 5. Seventeen are
+## live-only, and eleven of those can be INFLICTED BY AN ABILITY — applied to a combatant in a grind
+## and then read by nobody, exactly the shape blind had.
+##
+## ⚠️ NOT FIXED HERE, and the reason is scope rather than doubt. Blind had ONE consumer — the miss
+## roll — so honouring it was four lines. `barrier` nullifies a hit at two live sites and the grind
+## has six-plus take_damage paths; doing it properly is a change to the core damage loop with
+## balance consequences for every grind, which is struktured's call and not an hour's work.
+##
+## What this arm does is hold the LIST. Implement one and it reds, so the note gets updated instead
+## of the list quietly meaning less than it says. A new ignored status also reds.
+
+const GRIND_IGNORES_BUT_ABILITIES_INFLICT := [
+	"barrier",             # guardian_wall — and all three GUARDIAN PRESETS cast it in rule 0
+	"charm",               # puppy_eyes
+	"evasion",             # burrow
+	"invisible",           # vanish
+	"magic_block",         # access_denied
+	"pacify",              # peace_sign
+	"physical_reflect",    # port_block
+	"prismatic_reflect",   # prismatic_reflect
+	"reflect",             # magic_reflect
+	"shadow_step",         # shadow_step
+	"silence",             # void_pulse
+]
+
+func test_the_ignored_status_list_is_still_exactly_this() -> void:
+	## Derived from both engines, not from the list above — the list is the CLAIM and the scan is
+	## the measurement. They must agree, so implementing one or adding one both red.
+	var live := _src(LIVE)
+	var head := _src(RESOLVER)
+	var re := RegEx.new()
+	re.compile("has_status\\(\"([a-z_]+)\"\\)")
+	var live_reads: Dictionary = {}
+	for m in re.search_all(live):
+		live_reads[m.get_string(1)] = true
+	var head_reads: Dictionary = {}
+	for m in re.search_all(head):
+		head_reads[m.get_string(1)] = true
+	assert_gt(live_reads.size(), 15, "CONTROL: the live engine's status reads are findable (%d)" % live_reads.size())
+	assert_gt(head_reads.size(), 4, "CONTROL: the grind reads some statuses (%d)" % head_reads.size())
+	assert_true(head_reads.has("blind"), "CONTROL: the fix above is in this measurement")
+
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	assert_not_null(parsed, "CONTROL: abilities.json parses")
+	var ab: Dictionary = parsed.get("abilities", parsed)
+	var inflictable: Dictionary = {}
+	for aid in ab:
+		var a: Dictionary = ab[aid]
+		for key in ["effect", "secondary_effect"]:
+			var e: String = str(a.get(key, ""))
+			if e != "" and live_reads.has(e) and not head_reads.has(e):
+				inflictable[e] = true
+	var found: Array = inflictable.keys()
+	found.sort()
+	var claimed: Array = GRIND_IGNORES_BUT_ABILITIES_INFLICT.duplicate()
+	claimed.sort()
+	assert_eq(found, claimed,
+		"the set of statuses an ability can inflict and the grind ignores has CHANGED — if one was implemented, drop it from the list and say so; if one appeared, it is a new instance of the blind defect: " + str(found))
+
+func test_the_guardian_presets_still_cast_the_inert_one() -> void:
+	## The reason this is not a curiosity. I shipped three Guardian presets whose rule 0 casts
+	## guardian_wall for 15 MP; it inflicts `barrier`, which the grind ignores — so the presets spend
+	## a turn and the MP on nothing, in the mode the presets exist for. If barrier is ever honoured,
+	## this arm reds and the note above it stops being true, which is the outcome to want.
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/autobattle_rule_templates.json"))
+	assert_not_null(parsed, "CONTROL: the template catalog parses")
+	var casters: Array = []
+	for t in (parsed.get("templates", []) as Array):
+		if str((t as Dictionary).get("job_id", "")) != "guardian":
+			continue
+		for r in ((t as Dictionary).get("rules", []) as Array):
+			for a in ((r as Dictionary).get("actions", []) as Array):
+				if str((a as Dictionary).get("id", "")) == "guardian_wall":
+					casters.append(str((t as Dictionary).get("id", "")))
+	assert_eq(casters.size(), 3,
+		"all three Guardian presets cast guardian_wall; if that changed, revisit why: " + str(casters))
