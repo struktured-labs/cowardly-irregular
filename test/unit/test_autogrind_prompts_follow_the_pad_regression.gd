@@ -39,6 +39,22 @@ const DEFERRED := {
 }
 
 
+## Comment lines blanked, line count preserved so any positional reasoning stays valid.
+## @cowir-controller's question, which found this: what does the file look like after a REAL person
+## removes the thing you are defending? They do not delete the branch and leave no trace -- they
+## leave the comment that explained it. Measured here: reverting the derivation while leaving
+## `## was InputProfileManager.glyph_for_action(...)` above it, and keeping the "%s" template with
+## g_ok = "A" hardcoded, scored Passing 4 -- GREEN with the prompt frozen back to A/B for every
+## player. The tidy mutation (restore the literal "Press A") was caught; the realistic one was not.
+## ⚠️ BOUNDARY: this blanks WHOLE comment lines, not a trailing `code()  # note`. The realistic
+## removal leaves a full line, which is what this defends; a trailing note would still fool it.
+func _code_only(src: String) -> String:
+	var out := PackedStringArray()
+	for l in src.split("\n"):
+		out.append("" if l.strip_edges().begins_with("#") else l)
+	return "\n".join(out)
+
+
 func _gd_files() -> Array:
 	var out: Array = []
 	for d in LANE_DIRS:
@@ -91,10 +107,11 @@ func test_the_four_repaired_surfaces_actually_ask_the_authority() -> void:
 			  "res://src/ui/autogrind/AutogrindHistoryScreen.gd",
 			  "res://src/ui/autogrind/AutogrindTemplatePicker.gd",
 			  "res://src/ui/autobattle/AutobattleGridEditor.gd"]:
-		var src := FileAccess.get_file_as_string(f)
-		assert_gt(src.length(), 500, "CONTROL: %s was read" % f.get_file())
-		assert_true(src.contains("InputProfileManager.glyph_for_action("),
-			"%s must ask the authority for its button glyph" % f.get_file())
+		var raw := FileAccess.get_file_as_string(f)
+		assert_gt(raw.length(), 500, "CONTROL: %s was read" % f.get_file())
+		var src := _code_only(raw)
+		assert_true(src.contains("InputProfileManager.glyph_for_action(") or src.contains("InputProfileManager.face_glyph_for_index("),
+			"%s must ask the authority for its button glyph -- a COMMENT naming it does not count" % f.get_file())
 
 
 func test_deferred_entries_carry_a_reason_and_are_still_present() -> void:
