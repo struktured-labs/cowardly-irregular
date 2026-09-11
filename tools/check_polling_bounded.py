@@ -61,7 +61,15 @@ import tempfile
 # not on the day someone remembers to add it here.
 TARGET_GLOBS = ("deploy_", "publish_")
 
-# Contract-derived floor, measured on origin/main @ 5aef5287 (2026-09-11): deploy_desktop.sh
+# CORPUS-derived floor — NOT contract-derived, which is what this comment used to claim.
+# Nothing in this lane's contract says a deploy script must poll; the 2 is an OBSERVATION of the
+# tree on origin/main @ 5aef5287 (2026-09-11), and the tree is written by this same lane. So it
+# is a snapshot of my own pipeline's output, cited as a bound on my own pipeline's output —
+# @cowir-music's echo, in the mild form. It is sound ONLY because its job is to notice the
+# FINDER breaking, not to establish a fact about an independent corpus.
+# ⚠ A corpus-derived bound goes stale the moment the corpus legitimately changes, and its
+# failure is then a FALSE POSITIVE. A contract-derived one survives a refactor. Do not read this
+# number as the second kind. Measured: deploy_desktop.sh
 # has one polling loop and deploy_web.sh has one — two. If this file finds FEWER than that,
 # the far likelier explanation is that the loop-finder broke (a refactor, a spelling this
 # regex does not know) than that polling genuinely vanished from the deploy chain. A guard

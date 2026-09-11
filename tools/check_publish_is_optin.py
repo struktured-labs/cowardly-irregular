@@ -52,7 +52,12 @@ import tempfile
 
 TARGET_PREFIXES = ("deploy_",)
 
-# Contract-derived floor, measured on origin/main @ 5aef5287 (2026-09-11): deploy_desktop.sh
+# PARTLY contract-derived, and the comment used to claim it fully was. The CONTRACT is three
+# channels across two scripts — web has its own, linux and windows share deploy_desktop.sh — so
+# "at least 2 scripts push" does follow from the channel structure. But the exact 2 is still an
+# OBSERVATION of origin/main @ 5aef5287 (2026-09-11), of a tree this lane writes.
+# ⚠ Its job is to notice the push-site REGEX breaking, not to prove a fact about an independent
+# corpus. Measured: deploy_desktop.sh
 # and deploy_web.sh each contain exactly one push site; the linux/windows wrappers contain
 # none. If FEWER than two scripts carry a push, the likely explanation is that the push-site
 # regex stopped matching — not that the lane stopped publishing. "0 push sites, all gated" is
