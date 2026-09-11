@@ -75,8 +75,14 @@ EXPECT_MIN_PUSHERS = 2
 # silent exemption**, the same failure as the wrapper exemption and reached by a different
 # road. Latent, not live: both shipped pushes use a detected form, 0 current violations.
 PUSH_RE = re.compile(r'(?:\$\{?[A-Za-z_][A-Za-z0-9_]*\}?|\bbutler\b|\))["\']?\s+push\b')
-# A script that hands off to another deploy script: `exec … deploy_desktop.sh "$@"`.
-DELEGATE_RE = re.compile(r'\b(?:exec|bash|sh|source|\.)\b.*\bdeploy_[a-z_]+\.sh')
+# A script that hands off to another deploy script. DELIBERATELY OVER-BROAD: any mention of
+# another deploy_*.sh counts as a delegation site. The first version required a leading
+# exec/bash/sh/source keyword and missed `PLAT=linux "$D"/deploy_desktop.sh --publish "$@"` —
+# an env-prefixed indirect call, which is an ordinary way to write it.
+# Over-broad is the right error here: a false delegation site costs one extra line that is then
+# checked for --publish, while a missed one is silent. (cowir-sprites' rule — for a corpus,
+# over-broad beats precise, because precise fails by silent exclusion.)
+DELEGATE_RE = re.compile(r'\bdeploy_[a-z_]+\.sh\b')
 # the line that handles --publish, and the flag it sets
 OPTIN_RE = re.compile(r'--publish\b')
 SETS_RE = re.compile(r'\b([A-Za-z_][A-Za-z0-9_]*)=1\b')
@@ -143,7 +149,11 @@ def find_gate(lines, flag):
 
 
 def audit(path):
-    """Return (push_line_numbers, findings[]) for one script."""
+    """Return (push_lines, findings, delegation_lines) for one script.
+
+    delegation_lines is EMITTED, not just used: a wrapper whose hand-off this cannot see would
+    otherwise print the same reassuring line as one that was genuinely checked. See run().
+    """
     raw = open(path, encoding="utf-8", errors="replace").read().splitlines()
     lines = join_continuations(strip_comments(raw))
 
@@ -167,17 +177,20 @@ def audit(path):
         # safe because they forward "$@" untouched — safe by how they happen to be written,
         # which is not the same as checked.
         findings = []
+        delegations = []
         for i, l in enumerate(lines):
             if not DELEGATE_RE.search(l):
                 continue
+            delegations.append(i + 1)
             if re.search(r'(^|\s)--publish(\s|$|")', l):
                 findings.append((i + 1,
                                  "this wrapper INJECTS --publish into its delegate, so calling "
                                  "it without the flag still publishes. A wrapper is a publish "
                                  "entry point, not an exemption"))
-        return [], findings
+        return [], findings, delegations
 
     findings = []
+    delegations = []
 
     optin_lines = [i for i, l in enumerate(lines) if OPTIN_RE.search(l)]
     flag = None
@@ -190,7 +203,7 @@ def audit(path):
         findings.append((pushes[0] + 1,
                          "this script pushes, but nothing here parses --publish into a flag — "
                          "there is no opt-in to verify"))
-        return pushes, findings
+        return pushes, findings, delegations
 
     # 2. default must be the NOT-publishing value, set before the argument is parsed.
     init = None
@@ -219,7 +232,7 @@ def audit(path):
                                  f"push site is NOT dominated by the `{flag}` gate "
                                  f"(gate closes at line {gate + 1}) — reachable without "
                                  f"--publish"))
-    return pushes, findings
+    return pushes, findings, delegations
 
 
 def run(tools_dir):
@@ -235,9 +248,27 @@ def run(tools_dir):
     bad = 0
     print(f"[optin] {len(targets)} deploy script(s): {', '.join(targets)}")
     for t in targets:
-        pushes, findings = audit(os.path.join(tools_dir, t))
+        pushes, findings, delegations = audit(os.path.join(tools_dir, t))
         if not pushes and not findings:
-            print(f"[optin]   ok    {t}  no push site; delegates without injecting --publish")
+            if delegations:
+                # EMIT THE SET. @cowir-story's rule: a probe that prints what it LOCATED cannot
+                # have a missing positive control. Measured before this change — a wrapper that
+                # delegates AND injects --publish through a form the regex missed printed the
+                # IDENTICAL line to the safe real wrapper, exit 0. The verdict got more
+                # confident than the check.
+                print(f"[optin]   ok    {t}  no push site; delegates at line(s) "
+                      f"{delegations} without injecting --publish")
+            else:
+                bad += 1
+                print(f"[optin]   NEITHER PUSHES NOR DELEGATES  {t}", file=sys.stderr)
+                print(f"[optin]     this script has no push site AND no reference to another "
+                      f"deploy_*.sh.", file=sys.stderr)
+                print(f"[optin]     If it is a wrapper, the delegation detector missed it and "
+                      f"the hand-off is", file=sys.stderr)
+                print(f"[optin]     UNCHECKED for an injected --publish. If it genuinely does "
+                      f"neither, it does not", file=sys.stderr)
+                print(f"[optin]     belong in the deploy_* namespace this guard trusts.",
+                      file=sys.stderr)
             continue
         if not pushes:
             for (ln, why) in findings:
@@ -360,6 +391,11 @@ PUBLISH=0
 $(command -v butler) push out/ "$T"
 """, 1, "no gate"),
 
+    "wrapper delegating via an INDIRECT form": ("""#!/usr/bin/env bash
+D="$(dirname "$0")"
+PLAT=linux "$D"/deploy_desktop.sh --publish "$@"
+""", 1, "INJECTS --publish"),
+
     "push appears only in a comment": ("""#!/usr/bin/env bash
 # "${BUTLER_BIN}" push out/ "$T"   <- this is prose about the push, not a push
 # butler push would go here without the gate
@@ -413,7 +449,7 @@ def selftest():
             open(os.path.join(td, "deploy_filler2.sh"), "w").write(GOOD)
 
             def check(td=td, frag=frag):
-                _p, f = audit(os.path.join(td, "deploy_probe.sh"))
+                _p, f, _d = audit(os.path.join(td, "deploy_probe.sh"))
                 if frag == "":
                     return (not f), (f"falsely found {f[0][1][:40]!r}" if f else "no finding")
                 if not f:
