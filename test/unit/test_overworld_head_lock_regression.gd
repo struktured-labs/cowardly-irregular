@@ -157,16 +157,28 @@ func _head_pixels_match(img: Image, row_idx: int, col_a: int, col_b: int, y_top:
     return diffs
 
 
-func _assert_head_locked(path: String, label: String) -> void:
+## Returns "" when the sheet was MEASURED, else why it was not. It returned void and bare-returned
+## on every skip, so a listed sheet that vanished, changed size, or lost its reference column was
+## silently not checked. Measured 2026-09-11: with assets/sprites/npcs deleted entirely this file
+## reported EC 0 -- 145 listed archetypes, zero measured, success. Only a sibling file redded, and
+## only because it walks DISK rather than the list.
+func _assert_head_locked(path: String, label: String) -> String:
+    # FileAccess FIRST: load() resolves a retained .ctex for a PNG that has been DELETED, so the
+    # null arm below never fires in a tree that has ever imported. Measured 2026-09-11 -- removing
+    # monk/overworld.png and re-importing left this gate green until this line existed.
+    if not FileAccess.file_exists(path):
+        return "%s: no file at %s" % [label, path]
     var img = _load_image(path)
     if img == null:
-        return  # missing asset — skip silently (other tests assert presence)
+        return "%s: %s exists but does not load as an image" % [label, path]
     if img.get_width() != 128 or img.get_height() != 128:
-        return  # not the expected 4x4 grid format
+        return "%s: %dx%d, not the 128x128 4x4 grid this gate can measure" % [label, img.get_width(), img.get_height()]
+    var rows_measured := 0
     for row in range(4):
         var bbox := _frame_bbox_y(img, row, 0)
         if bbox.x < 0:
-            continue  # row 0 frame is empty — skip
+            continue  # row 0 frame is empty -- skip
+        rows_measured += 1
         var head_h := maxi(1, int(float(bbox.y - bbox.x + 1) * HEAD_FRAC))
         var y_lock_end := mini(FRAME_SIZE, bbox.x + head_h)
         for col in [1, 2, 3]:
@@ -176,18 +188,34 @@ func _assert_head_locked(path: String, label: String) -> void:
             assert_lt(diffs, 4,
                 "%s row %d frame %d: head region (y=%d..%d) should be pixel-identical to frame 0. Got %d diffs (expected <4)." %
                 [label, row, col, bbox.x, y_lock_end, diffs])
+    if rows_measured == 0:
+        return "%s: every row-0 reference frame is empty -- nothing to lock the walk cycle against" % label
+    return ""
+
+
+## COUNT WHAT RAN, NOT WHAT FAILED. Every listed name must be MEASURED, not merely visited: the
+## per-sheet assertions live inside a loop, so a list whose sheets are all unreadable runs zero of
+## them and reports success. Collected and asserted ONCE outside the loop, so a list that drains
+## cannot retire the guard either.
+func _sweep(names: Array, template: String, kind: String) -> void:
+    assert_gt(names.size(), 0, "CONTROL: the %s list is empty -- this gate would pass by doing nothing" % kind)
+    var unmeasured: Array = []
+    for n in names:
+        var why := _assert_head_locked(template % n, kind + ":" + n)
+        if why != "":
+            unmeasured.append(why)
+    assert_eq(unmeasured, [],
+        "%d of %d %s sheets were NOT measured by this gate -- a skipped sheet is indistinguishable from a passing one: %s" % [
+            unmeasured.size(), names.size(), kind, str(unmeasured)])
 
 
 func test_starter_jobs_head_locked() -> void:
-    for job in STARTER_JOBS:
-        _assert_head_locked("res://assets/sprites/jobs/%s/overworld.png" % job, "job:" + job)
+    _sweep(STARTER_JOBS, "res://assets/sprites/jobs/%s/overworld.png", "job")
 
 
 func test_other_jobs_head_locked() -> void:
-    for job in OTHER_JOBS:
-        _assert_head_locked("res://assets/sprites/jobs/%s/overworld.png" % job, "job:" + job)
+    _sweep(OTHER_JOBS, "res://assets/sprites/jobs/%s/overworld.png", "job")
 
 
 func test_npc_archetypes_head_locked() -> void:
-    for npc in NPC_ARCHETYPES:
-        _assert_head_locked("res://assets/sprites/npcs/%s/overworld.png" % npc, "npc:" + npc)
+    _sweep(NPC_ARCHETYPES, "res://assets/sprites/npcs/%s/overworld.png", "npc")

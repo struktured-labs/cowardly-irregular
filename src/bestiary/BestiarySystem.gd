@@ -285,6 +285,30 @@ const SORT_KILLS := "kills"
 const SORT_NAME := "name"
 
 
+## The authored tactic for a one-shot kill. Same block as the reward, same reason
+## it was invisible: nothing read it.
+static func _one_shot_hint_of(data: Dictionary) -> String:
+	var block: Variant = data.get("one_shot", null)
+	if block is Dictionary:
+		return str((block as Dictionary).get("setup_hint", ""))
+	return ""
+
+
+## The reward a one-shot kill grants, read from the block the data actually uses.
+## BattleManager._deliver_item grants exactly this value on a one-shot victory, so
+## the bestiary row and the drop now come from one field.
+static func _one_shot_reward_of(data: Dictionary) -> Variant:
+	var flat: Variant = data.get("one_shot_reward", null)
+	if flat != null and str(flat) != "":
+		return flat
+	var block: Variant = data.get("one_shot", null)
+	if block is Dictionary:
+		var reward: String = str((block as Dictionary).get("reward_item", ""))
+		if reward != "":
+			return reward
+	return null
+
+
 static func get_seen_entries_sorted(sort_mode: String = SORT_LEVEL) -> Array:
 	"""All seen monsters as [{id, name, level, stats, flavor, epithet,
 	exp_reward, gold_reward, drops, one_shot_reward}] sorted by the
@@ -314,7 +338,24 @@ static func get_seen_entries_sorted(sort_mode: String = SORT_LEVEL) -> Array:
 			"exp_reward": int(data.get("exp_reward", 0)),
 			"gold_reward": int(data.get("gold_reward", 0)),
 			"drops": data.get("drop_table", []),
-			"one_shot_reward": data.get("one_shot_reward", null),
+			## The display path below has always read a FLAT `one_shot_reward`.
+			## No monster has ever authored that key — 0 occurrences in monsters.json
+			## and bestiary.json — while 41 bosses author the reward one level down,
+			## as `one_shot.reward_item` ("boss_trophy"). So the BestiaryMenu's
+			## "(One-shot: …)" row, and the comment describing it as "set in
+			## monsters.json for special enemies", have never rendered for anything.
+			##
+			## Mirror image of the BattleManager bug fixed the same day: there the
+			## DATA declared a reward nothing read; here the UI has a READER nothing
+			## writes. Same gap, opposite ends, one key name apart. Flat form kept as
+			## a fallback so a monster that ever authors it directly still works.
+			"one_shot_reward": _one_shot_reward_of(data),
+			## 50 monsters author a one_shot.setup_hint — "Stack attack buffs, defer for
+			## max AP, then unleash all at once." — and no surface has ever shown one.
+			## The bestiary is documented right above as autobattle-loop intel ("players
+			## need drop rates to design rules"), which is exactly what a setup hint is
+			## for. Shown beside the one-shot reward it belongs to.
+			"one_shot_hint": _one_shot_hint_of(data),
 			## Tick 146: defeated flag distinct from seen. UI can show
 			## "?" stats for seen-but-not-killed entries.
 			"defeated": is_defeated(id),

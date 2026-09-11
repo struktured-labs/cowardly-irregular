@@ -833,7 +833,13 @@ func _type_matches(val: Variant, type_name: String) -> bool:
 		"bool":    return val is bool
 		"Array":   return val is Array
 		"Dictionary": return val is Dictionary
-		_:         return true  # Unknown type spec — pass through.
+		# DECLARED escape hatch: SCHEMA_RULE_COMPOSITION's rules_json needs presence without type.
+		"Variant": return true
+		_:
+			# An unrecognised spec means this key is NOT validated. Silent before, so a typo
+			# ("Strng") disabled the guard for that field and nothing said so.
+			push_warning("[LLMService][guard/json] Unknown schema type '%s' — key NOT validated." % type_name)
+			return true
 
 
 # ── Cache helpers ─────────────────────────────────────────────────────────────

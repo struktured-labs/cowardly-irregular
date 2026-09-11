@@ -121,6 +121,11 @@ func _src_blob() -> String:
 func test_premise_both_corpora_loaded() -> void:
 	assert_gt(_abilities().size(), 200,
 		"only %d abilities parsed — the walk is not reading abilities.json" % _abilities().size())
+	# NAMED MEMBER. The blob is every .gd under src/; a floor of 1M chars still passes
+	# if a whole directory stops being walked. BattleManager is the consumer this file
+	# is actually about, so its absence must be loud rather than arithmetic.
+	assert_true(_src_blob().contains("func _check_one_shot"),
+		"the consumer corpus no longer contains BattleManager (its _check_one_shot is absent) — the walk is covering less than it did, and a key would read as unconsumed for that reason")
 	assert_gt(_src_blob().length(), 1000000,
 		"the src/ walk collected only %d chars — a key would read as unconsumed because the corpus is missing, not because the engine ignores it" % _src_blob().length())
 
@@ -161,6 +166,18 @@ func test_every_authored_ability_key_is_consumed_or_named() -> void:
 
 	assert_eq(unconsumed.size(), 0,
 		"an ability authors an effect key the engine never reads: %s — wire it, or add it to UNREAD_EFFECT_KEYS saying whether it is REDUNDANT, DEFERRED or MISSING" % ", ".join(unconsumed))
+	# STALE-EXEMPTION arm. The ratchet above only compares keys the corpus still
+	# AUTHORS, so a key that disappears entirely leaves its debt entry behind with
+	# nothing to notice — an inert suppression created by deletion rather than by
+	# being written wrong. @cowir-autogrind's class, arriving from the other end.
+	var orphaned: Array[String] = []
+	for k in UNREAD_EFFECT_KEYS.keys():
+		if not counts.has(str(k)):
+			orphaned.append(str(k))
+	orphaned.sort()
+	assert_eq(orphaned.size(), 0,
+		"UNREAD_EFFECT_KEYS names a key no ability authors any more: %s — the entry is describing a corpus that has moved on. Delete the line." % ", ".join(orphaned))
+
 	assert_eq(newly_consumed.size(), 0,
 		"GOOD NEWS, STALE LIST: %s is now read in src/. Delete the key(s) from UNREAD_EFFECT_KEYS so this file stops claiming the engine ignores them." % ", ".join(newly_consumed))
 
@@ -171,8 +188,14 @@ func test_every_authored_ability_key_is_consumed_or_named() -> void:
 ## UNREAD_EFFECT_KEYS entry has to go with it.
 func test_frost_armor_still_promises_a_reflection_it_does_not_perform() -> void:
 	var a: Variant = _abilities().get("frost_armor", null)
+	# NOT pending(). Measured 2026-09-11 under @cowir-sprites' READER axis: removing
+	# frost_armor from abilities.json made this arm go PENDING and the suite stayed
+	# GREEN — a skipped arm is indistinguishable from a passing one, and the ability
+	# vanishing is exactly the event that makes the debt entry below a lie. If it is
+	# genuinely retired, delete this arm AND its UNREAD_EFFECT_KEYS line together.
+	assert_true(a is Dictionary,
+		"frost_armor is gone from abilities.json — this arm and the reflect_damage_element entry in UNREAD_EFFECT_KEYS are both now claims about an ability that does not exist. Delete them together, or restore the fixture.")
 	if not (a is Dictionary):
-		pending("frost_armor is not in abilities.json")
 		return
 	var ability: Dictionary = a as Dictionary
 

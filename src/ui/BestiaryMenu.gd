@@ -38,6 +38,7 @@ var _detail_weak: Label = null
 var _detail_resist: Label = null
 var _detail_rewards: Label = null  # "EXP: N  Gold: G"
 var _detail_drops: Label = null    # "Drops: bone 50%, ether 15%"
+var _detail_tactic: Label = null   # "One-shot: <authored setup_hint>"
 var _detail_flavor: Label = null
 var _detail_sprite: AnimatedSprite2D = null
 var _detail_sprite_bg: ColorRect = null
@@ -368,6 +369,14 @@ func _build_detail(parent: Control) -> void:
 	_detail_drops.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	parent.add_child(_detail_drops)
 
+	_detail_tactic = Label.new()
+	_detail_tactic.position = Vector2(text_x, margin + 244)
+	_detail_tactic.size = Vector2(text_w, 44)
+	_detail_tactic.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	_detail_tactic.add_theme_color_override("font_color", Color(0.95, 0.85, 0.6))
+	_detail_tactic.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	parent.add_child(_detail_tactic)
+
 	# Flavor text sits below the sprite & stats, full width
 	_detail_flavor = Label.new()
 	_detail_flavor.position = Vector2(margin, margin + sprite_size + 20)
@@ -438,12 +447,18 @@ func _refresh_detail() -> void:
 			rewards_text += "   Killed: %d" % defeat_count
 		_detail_rewards.text = rewards_text
 		_detail_drops.text = _format_drops(entry.get("drops", []), entry.get("one_shot_reward", null))
+		# The authored one-shot tactic, shown only once the player has actually beaten
+		# the monster — it is advice about a fight you have had, not a spoiler for one
+		# you have not. Blank for the 56 monsters with no one_shot block.
+		var hint: String = str(entry.get("one_shot_hint", ""))
+		_detail_tactic.text = ("One-shot: %s" % hint) if hint != "" else ""
 	else:
 		_detail_stats.text = "HP ???   MP ???   ATK ???   DEF ???   MAG ???   M.DEF ???   SPD ???"
 		_detail_weak.text = "Weak: ???"
 		_detail_resist.text = "Resist: ???"
 		_detail_rewards.text = "EXP: ???   Gold: ???"
 		_detail_drops.text = "Drops: ???   (defeat to unlock)"
+		_detail_tactic.text = ""
 
 	# Tick 193: flavor area now actually displays flavor (silent bug — never assigned in positive path) + prepends location hint for completionist navigation.
 	# Tick 260: adds "Last seen: <location>" derived from the most recent

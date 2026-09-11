@@ -1804,8 +1804,12 @@ func _is_stinger_track(track_id: String) -> bool:
 	return bool(e.get("stinger", track_id.begins_with("stinger_")))
 
 
-func play_music(track: String) -> void:
-	"""Play a music track with crossfade transition"""
+func play_music(track: String, exact: bool = false) -> void:
+	"""Play a music track with crossfade transition.
+	`exact` plays the named manifest id verbatim: the two rewrites below map a
+	GENERIC request onto the current world, which is wrong for a caller that
+	already holds a manifest key (the Jukebox lists ids, so "danger" there means
+	the bed called danger, not danger_<wherever the player happens to stand>)."""
 	if _current_music == track and _music_playing:
 		return  # Already playing
 
@@ -1862,7 +1866,9 @@ func play_music(track: String) -> void:
 	_load_music_manifest()
 	var manifest_track_id = track
 	# Map generic/monster track names to world-specific manifest keys
-	match track:
+	## An exact caller matches nothing here, so every arm below is skipped.
+	var generic_id: String = "" if exact else track
+	match generic_id:
 		"battle":
 			manifest_track_id = "battle_" + _current_world_suffix
 		"boss":
@@ -1877,7 +1883,7 @@ func play_music(track: String) -> void:
 	# defaults to something else. I wanted it replaced not removed entirely." battle_goblin.ogg
 	# was recast as battle_brute.ogg (7e6c50d2) and no manifest key replaced it, so this rewrite
 	# sent the goblin to battle_medieval and the `match` arm below became unreachable.
-	if not _music_manifest.has(manifest_track_id) and track.begins_with("battle_") \
+	if not exact and not _music_manifest.has(manifest_track_id) and track.begins_with("battle_") \
 			and not PROCEDURAL_BATTLE_TRACKS.has(track):
 		manifest_track_id = "battle_" + _current_world_suffix
 	if _music_manifest.has(manifest_track_id):
@@ -7202,6 +7208,9 @@ func _start_void_battle_music() -> void:
 	   The quietest, most uncomfortable battle music."""
 	_music_playing = true
 	if _try_play_from_manifest("battle_abstract"):
+		return
+	## battle_abstract is web-excluded and battle_void is not in the manifest, so on web BOTH tiers above miss and generating is 1.3s of main-thread GDScript.
+	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing void battle theme")
 

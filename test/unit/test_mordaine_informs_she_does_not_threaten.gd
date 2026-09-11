@@ -39,6 +39,23 @@ extends GutTest
 const PATH := "res://data/boss_dialogue.json"
 
 
+func _collect_gd(dir_path: String, out: PackedStringArray) -> void:
+	var d := DirAccess.open(dir_path)
+	if d == null:
+		return
+	d.list_dir_begin()
+	var n: String = d.get_next()
+	while n != "":
+		var full: String = dir_path + "/" + n
+		if d.current_is_dir():
+			if not n.begins_with("."):
+				_collect_gd(full, out)
+		elif n.ends_with(".gd"):
+			out.append(full)
+		n = d.get_next()
+	d.list_dir_end()
+
+
 func _entry() -> Dictionary:
 	var raw: String = FileAccess.get_file_as_string(PATH)
 	assert_false(raw.is_empty(), "CONTROL: boss_dialogue.json must load")
@@ -196,14 +213,36 @@ func test_opening_lines_have_no_consumer_yet_tripwire() -> void:
 	assert_false(src.is_empty(), "CONTROL: source must load")
 	assert_true(_code_only(src).contains("func get_opening_lines("),
 		"CONTROL: the accessor must still exist, or this tripwire is measuring nothing")
-	var callers: int = 0
-	for f in ["res://src/battle/BattleManager.gd", "res://src/battle/BattleScene.gd",
-			"res://src/cutscene/CutsceneDirector.gd", "res://src/maps/dungeons/DragonCave.gd"]:
-		if _code_only(FileAccess.get_file_as_string(f)).contains("get_opening_lines("):
-			callers += 1
-	assert_eq(callers, 0,
-		"SOMEONE WIRED BOSS OPENING LINES — that is good, and it puts 25 previously-unheard "
-		+ "lines across 10 bosses on screen at once. Review them with cowir-story, then delete this test.")
+	## Walks ALL of src/, not a hand-listed set of likely files. The shipped version
+	## scanned four named files, so a consumer wired anywhere else — including inside
+	## BossDialogue itself — left this green. Measured before the fix: 13 passing with
+	## a real caller present. A tripwire whose whole job is to notice a change cannot
+	## carry a corpus that can miss it (cowir-controller: derive it, do not list it).
+	var files: PackedStringArray = []
+	_collect_gd("res://src", files)
+	## A FLOOR catches a totally broken walk and is blind to PARTIAL loss — drop one
+	## subtree and 100+ files still pass while a caller in the lost half goes unseen
+	## (cowir-adhoc). So: floor AND named membership. If the walk cannot see the file
+	## that DEFINES the accessor, it certainly cannot see a call to it.
+	assert_gte(files.size(), 100,
+		"CONTROL: the walker found %d .gd files under src/ — it is broken, and an empty walk "
+		% files.size() + "makes the caller count 0 and this whole test vacuous")
+	for must in ["res://src/llm/BossDialogue.gd", "res://src/battle/BattleManager.gd"]:
+		assert_true(must in files,
+			"CONTROL: the walk missed %s — a subtree is being dropped, so a caller there would be invisible" % must)
+	var callers: Array[String] = []
+	for f in files:
+		var lines: PackedStringArray = _code_only(FileAccess.get_file_as_string(f)).split("\n")
+		for i in lines.size():
+			var ln: String = lines[i]
+			if ln.contains("get_opening_lines(") and not ln.strip_edges().begins_with("func "):
+				callers.append("%s:%d" % [f, i + 1])
+	assert_eq(callers, [] as Array[String],
+		"SOMEONE WIRED BOSS OPENING LINES at %s — that is good, and it puts 25 previously-unheard "
+		% [", ".join(callers)]
+		+ "lines across 10 bosses on screen at once. ⚠️ It also pre-empts struktured's "
+		+ "two-loss spotlight-hint cadence (GameLoop:239) for the five duel minibosses. "
+		+ "Review with cowir-story, confirm with struktured, then delete this test.")
 
 
 func test_the_persona_still_reaches_the_model() -> void:
@@ -261,6 +300,18 @@ func test_the_comment_stripper_itself_is_pinned() -> void:
 		 "\tvar q := \"a\\\\\"  ",
 		 "an escaped BACKSLASH ends the string — a lookbehind escape check reads this as still-open and lets the comment through"],
 	]
+	## Draining this table is itself the violation. The asserts live INSIDE the loop,
+	## so an empty table runs none — measured: EC=0, [Risky] "did not assert", and NO
+	## Failing line. A gate reading the exit code or the Failing count passes that.
+	## (cowir-sfx's two-magnitude drain; the Risky-not-Failing half is cowir-story's
+	## Tests-minus-Passing arithmetic, which I got wrong reading this very run.)
+	## gte, not eq: a SEVENTH costume is correct work and must not red. A literal floor
+	## catches both drain magnitudes and permits growth (cowir-sfx).
+	assert_gte(cases.size(), 8,
+		"the stripper case table holds %d rows, fewer than the 8 costumes measured across the "
+		% cases.size()
+		+ "fleet today. A drained table asserts NOTHING and scores [Risky] with EC=0, not a "
+		+ "failure. Add the row back, or lower this floor deliberately.")
 	for c in cases:
 		assert_eq(_strip_comment(str(c[0])), str(c[1]), str(c[2]))
 
@@ -269,5 +320,9 @@ func test_the_stripper_preserves_line_count() -> void:
 	## substr/ordering windows elsewhere depend on it, and a stripper that drops
 	## lines would shift every later assertion without failing anything here.
 	var src: String = "a\n# b\nc  # d\n"
-	assert_eq(_code_only(src).split("\n").size(), src.split("\n").size(),
+	## Both sides of a size-vs-size compare shrink together, so an emptied input reads
+	## 1 == 1 and passes trivially — cowir-sfx's self-referential floor, in the one
+	## place my guards had it. Pin the input to a LITERAL count first.
+	assert_eq(src.split("\n").size(), 4, "PREMISE: the fixture is 3 lines plus a trailing empty")
+	assert_eq(_code_only(src).split("\n").size(), 4,
 		"blanking must not remove lines")
