@@ -43,6 +43,13 @@ func _read(path: String) -> String:
 	return "" if f == null else f.get_as_text()
 
 
+## ⛔ THIS STRIPPER REMOVES COMMENTS ONLY, NEVER STRING LITERALS, AND THAT IS A LANE-SPECIFIC CHOICE.
+## Every target here is a CALL NAME -- _open_settings_menu(), _open_autobattle_editor(, cycle_tier --
+## so a quoted occurrence is not a consumer and eating strings would cost nothing. In @cowir-music's
+## and @cowir-sfx's guards the string literal IS the consumer (`play_music("boss_mordaine")`), so
+## stripping strings there would empty the corpus and report every bed orphaned. Same defect class,
+## inverted remedy: check which side your consumers live on before copying this.
+##
 ## ⛔ COMMENTS ARE BLANKED BEFORE EVERY SCAN. @cowir-controller, 2026-09-11: a source-text pin is
 ## defeated by the realistic removal, not the tidy one — nobody deletes a branch without leaving the
 ## comment that explained it, so `contains("_open_settings_menu()")` stays true of a file where the
@@ -183,3 +190,35 @@ func test_no_dialogue_in_this_lane_sends_a_pad_player_to_both_triggers() -> void
 	assert_gt(files_read, 15, "CONTROL: only %d scripts scanned — the sweep is broken" % files_read)
 	assert_eq(offenders, [],
 		"player-facing text sending a pad player to L+R, which cycles the autogrind tier: %s" % str(offenders))
+
+
+## The instrument itself, both directions. @cowir-music, 2026-09-11: a comment stripper has TWO ways
+## to be wrong and mutation arms tend to cover one -- every arm I ran asked whether it lets something
+## THROUGH, none asked whether it still lets the right things through. Over-stripping is the quieter
+## failure: it would eat the calls these pins look for and report them all absent, which reads as a
+## real regression. This pins both sides on the helper directly, so neither needs a GameLoop mutation.
+func test_the_comment_stripper_cuts_comments_and_nothing_else() -> void:
+	var cases := [
+		["x = 1  # gone", "x = 1  ", "a trailing comment must go"],
+		["\tcall()  # _open_settings_menu() used to run here", "\tcall()  ", "the epitaph case -- this is the whole point"],
+		["var h := \"#ff0000\"", "var h := \"#ff0000\"", "a # inside a string is NOT a comment"],
+		["if \"#ff0000\" != \"\": call()  # gone", "if \"#ff0000\" != \"\": call()  ", "a quoted # must not hide a later real comment"],
+		["var s := '#hash'  # gone", "var s := '#hash'  ", "single quotes count as string too"],
+		["var plain := 42", "var plain := 42", "a line with no # is returned untouched"],
+	]
+	var wrong: Array = []
+	for c in cases:
+		var got: String = _code_before_comment(str(c[0]))
+		if got != str(c[1]):
+			wrong.append("%s\n  in:  '%s'\n  got: '%s'\n  want:'%s'" % [str(c[2]), str(c[0]), got, str(c[1])])
+	assert_eq(wrong, [], "the comment stripper is wrong on:\n%s" % "\n".join(PackedStringArray(wrong)))
+
+	## Full-line comments are blanked by _strip_comments, not by the cutter, so check that separately
+	## -- and check the line COUNT survives, because the substr windows above depend on it.
+	var src := "a = 1\n\t# dead\nb = 2  # tail\n"
+	var stripped := _strip_comments(src)
+	assert_eq(stripped.split("\n").size(), src.split("\n").size(),
+		"line count changed, so every substr window in this file is now measuring the wrong bytes")
+	assert_false(stripped.contains("dead"), "a full-line comment survived")
+	assert_false(stripped.contains("tail"), "a trailing comment survived")
+	assert_true(stripped.contains("a = 1") and stripped.contains("b = 2"), "real code was eaten")
