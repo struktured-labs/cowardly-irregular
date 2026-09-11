@@ -172,6 +172,40 @@ func _strip_comment(line: String) -> String:
 	return line
 
 
+## ⛔ MEASURED AFTER LANDING, AND IT QUALIFIES THE WHOLE FILE: the two opening lines
+## above currently reach NO PLAYER. `opening_lines` is read in exactly one place —
+## BossDialogue.get_opening_lines (:119) — and that function has zero production
+## callers and zero internal ones; the only other src/ mention is a doc comment
+## listing it (:9). A comment naming a function is not a caller. Nothing else in
+## src/ reads the key, and the boss_intro cutscene step takes its name/title from
+## the step, not from this file.
+##
+## It is not Mordaine-specific: ten bosses carry 25 authored opening lines this way
+## — all five W1 bosses and all five spotlight-duel minibosses.
+##
+## NOT WIRED HERE. Reviving a dormant path is what finally tests the assumptions it
+## preserved, and wiring this would put 25 lines no player has ever heard on screen
+## at once. That is cowir-story's call on the prose and struktured's on whether
+## bosses should speak at battle start at all.
+##
+## The tripwire below is what keeps this from being a paragraph that goes stale:
+## if someone wires a consumer, it REDS and says to review the lines first.
+
+func test_opening_lines_have_no_consumer_yet_tripwire() -> void:
+	var src: String = FileAccess.get_file_as_string("res://src/llm/BossDialogue.gd")
+	assert_false(src.is_empty(), "CONTROL: source must load")
+	assert_true(_code_only(src).contains("func get_opening_lines("),
+		"CONTROL: the accessor must still exist, or this tripwire is measuring nothing")
+	var callers: int = 0
+	for f in ["res://src/battle/BattleManager.gd", "res://src/battle/BattleScene.gd",
+			"res://src/cutscene/CutsceneDirector.gd", "res://src/maps/dungeons/DragonCave.gd"]:
+		if _code_only(FileAccess.get_file_as_string(f)).contains("get_opening_lines("):
+			callers += 1
+	assert_eq(callers, 0,
+		"SOMEONE WIRED BOSS OPENING LINES — that is good, and it puts 25 previously-unheard "
+		+ "lines across 10 bosses on screen at once. Review them with cowir-story, then delete this test.")
+
+
 func test_the_persona_still_reaches_the_model() -> void:
 	## EXECUTION IS NOT SELECTION: editing the persona is worthless if nothing reads
 	## it. BattleManager lifts it off this entry into the boss-intent context.
