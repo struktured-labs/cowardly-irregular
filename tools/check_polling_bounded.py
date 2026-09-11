@@ -273,10 +273,19 @@ def scan_file(path):
 def run(tools_dir):
     if not os.path.isdir(tools_dir):
         raise Unusable(f"[waits] BLOCKED: {tools_dir} is not a directory.")
-    targets = sorted(f for f in os.listdir(tools_dir)
-                     if f.endswith('.sh') and f.startswith(TARGET_GLOBS))
+    # ⛔ CORPUS FROM THE CALL SITE, not from filenames — the same fix its sibling got two hours
+    # ago, which I did not carry across. MEASURED before changing it: a file named ship_it.sh
+    # that pushes AND carries an unbounded post-push wait was INVISIBLE here. EC 0,
+    # "0 UNBOUNDED". A correctly-gated pusher outside the deploy_* prefix could hang the batch
+    # forever and this guard would report clean — the precise defect it exists to prevent,
+    # surviving in the corpus rather than in the classifier.
+    #
+    # Fixing one guard and leaving its sibling is the shape I have hit three times today
+    # (deploy_desktop's bounded wait vs deploy_web's; the wrapper exemption; this). The
+    # incident names one file; the directory enumerates all of them.
+    targets = sorted(f for f in os.listdir(tools_dir) if f.endswith('.sh'))
     if not targets:
-        raise Unusable(f"[waits] BLOCKED: no deploy_*.sh / publish_*.sh in {tools_dir}. "
+        raise Unusable(f"[waits] BLOCKED: no *.sh in {tools_dir}. "
                        f"An empty target set is not a clean result.")
 
     total = bad = 0
@@ -470,6 +479,19 @@ def selftest():
                 return True, f"line {ln}: {frag}"
 
             arm(name, want, lambda td=td: run(td), check)
+
+        # CORPUS INDEPENDENCE: an unbounded post-push wait in a file no PREFIX would walk.
+        # Measured invisible before the corpus widened — EC 0, "0 UNBOUNDED".
+        odd = os.path.join(d, "oddname")
+        os.makedirs(odd)
+        open(os.path.join(odd, "deploy_filler.sh"), "w").write(FILLER)
+        open(os.path.join(odd, "ship_it.sh"), "w").write(
+            '#!/usr/bin/env bash\nPUBLISH=0\n'
+            '[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }\n'
+            'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
+            '"${BUTLER_BIN}" push out/ "$T"\n'
+            'until "${BUTLER_BIN}" status "$T" | grep -q "$V"; do sleep 8; done\n')
+        arm("unbounded wait in a file no PREFIX would walk", 1, lambda: run(odd))
 
         # ── instrument-died arms: absence of input must NOT read as clean ──
         empty = os.path.join(d, "empty")
