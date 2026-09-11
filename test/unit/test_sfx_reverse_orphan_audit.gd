@@ -59,6 +59,18 @@ const KNOWN_PENDING_CONSUMER := {
 	# pre-staged before ON_HIT_STATUSES grows (cowir-battle ratchet, msg 2797)
 	"status_burn": "pre-staged for future burn_chance weapon proc",
 	"status_freeze": "pre-staged for future freeze_chance weapon proc",
+	# cowir-battle: the FULL BANK fifth action (struktured 2026-09-09: "4 actions becomes SOMETIMES
+	# 5"). The call site is LIVE on lane/full-bank-fifth-action @ 9d6d2c00
+	# (BattleScene._on_full_bank_unleashed) and lands when that branch folds — at which point
+	# test_pending_consumer_allowlist_has_not_rotted reds and this MUST be deleted from here.
+	# That rot check is why this is a debt with an expiry rather than a permission.
+	#
+	# ⛔ ONE entry, not five. advance_flourish_2..5 need NO entry: the `advance_` DYNAMIC_PREFIX
+	# already suppresses them. I wrote all five first and the audit only ever flagged this one —
+	# four INERT entries, the shape this file's own header warns about, caught by the arm rather
+	# than by reading. An allowlist line the detector could never emit is indistinguishable from
+	# one doing real work.
+	"full_bank_unleash": "cowir-battle lane/full-bank-fifth-action — call site lands with that fold",
 	# cowir-battle: W6 Arbiter-duel win-condition arms (msg 3223/3226) — spec
 	# still moving; shipped inert so the cues exist when the signal lands.
 	"duel_answer_dodge": "cowir-battle W6 Arbiter duel arms",
@@ -198,6 +210,49 @@ func test_the_consumer_corpus_excludes_every_definer() -> void:
 	## CONTROL: the corpus must still hold a real consumer, or the assertions above pass by being empty.
 	assert_gt(corpus.length(), 5000,
 		"control: the consumer corpus is only %d chars — the exclusion took the whole directory with it" % corpus.length())
+
+
+func test_the_definer_list_is_actually_exhaustive() -> void:
+	## ⛔ THE PREDICATE ABOVE SAYS "EVERY DEFINER" AND THE INSTRUMENT CHECKS A TWO-ITEM LITERAL.
+	## That is the shape cowir-main named on 2026-09-09 after publishing a sweep predicate ("orphaned
+	## = unreachable by ANY path") phrased more broadly than the scanner under it: broad wording
+	## READS AS A SAFETY MARGIN and deters anyone from interrogating the code, so it conceals the gap
+	## instead of merely failing to describe it.
+	##
+	## So this DISCOVERS definers rather than trusting the list. A definer is a data/*.json holding a
+	## dict whose entries carry a `file` pointing into assets/audio/ — the manifest shape. Add a
+	## third audio manifest and this reds until it is listed, which is what makes "every" true.
+	var found: Array[String] = []
+	var dir := DirAccess.open("res://data")
+	assert_not_null(dir, "res://data unreadable — this guard would pass by finding nothing")
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var fname := dir.get_next()
+	while fname != "":
+		if not dir.current_is_dir() and fname.ends_with(".json"):
+			var parsed: Variant = JSON.parse_string(_read("res://data/" + fname))
+			if parsed is Dictionary:
+				for top in (parsed as Dictionary).keys():
+					var section: Variant = (parsed as Dictionary)[top]
+					if not (section is Dictionary) or (section as Dictionary).size() < 20:
+						continue
+					var audio_entries := 0
+					for k in (section as Dictionary).keys():
+						var e: Variant = (section as Dictionary)[k]
+						if e is Dictionary and str((e as Dictionary).get("file", "")).begins_with("assets/audio/"):
+							audio_entries += 1
+					if audio_entries >= 20 and not found.has(fname):
+						found.append(fname)
+		fname = dir.get_next()
+	dir.list_dir_end()
+
+	found.sort()
+	assert_gte(found.size(), 2,
+		"control: discovered %d audio-key definers — expected at least sfx_manifest.json and music_manifest.json, so the scan is broken and the comparison below is vacuous" % found.size())
+	for f in found:
+		assert_true(KEY_SPACE_DEFINERS.has(f),
+			"%s DEFINES audio keys and is not in KEY_SPACE_DEFINERS — it is sitting in the consumer corpus, so every key it names reads as consumed. Add it to that list." % f)
 
 
 func test_pending_consumer_allowlist_has_not_rotted() -> void:

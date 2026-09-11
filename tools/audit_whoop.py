@@ -66,7 +66,23 @@ PINNED = [
     # ability_physical. Synthesised, so the sha256 here is what stops a later regenerate.
     "ability_song", "ability_summon", "ability_revive",
     "ability_poison", "ability_earth", "ability_wind", "ability_arcane",
+    # the two world heals, no longer borrowing the base (2026-09-10)
+    "w2_ability_heal", "w3_ability_heal",
     "ability_mp_restore", "ability_flee",
+    "advance_flourish_2", "advance_flourish_3", "advance_flourish_4", "advance_flourish_5",
+    # The two per-job press ladders whose DIRECTION is the joke: fighter ascends, rogue INVERTS
+    # (quieter every press). rms_db is recorded so the GUT side can assert that shape.
+    "advance_fighter_1", "advance_fighter_2", "advance_fighter_3", "advance_fighter_4", "advance_fighter_5",
+    "advance_rogue_1", "advance_rogue_2", "advance_rogue_3", "advance_rogue_4", "advance_rogue_5",
+    "advance_cleric_1", "advance_cleric_2", "advance_cleric_3", "advance_cleric_4", "advance_cleric_5",
+    # advance_mage_2 is deliberately NOT pinned: it is the documented detector ARTIFACT in the
+    # triage note above (two struck celesta chimes, one outlier window at 2849 Hz among a settled
+    # ~1050). Pinning it would record whoops=true and red the ratchet over a non-defect, and
+    # exempting it there would be a suppression. The ladder guard asserts rungs 3-5, which is the
+    # escalation claim; rung 2's level is not part of it.
+    "advance_mage_1", "advance_mage_3", "advance_mage_4", "advance_mage_5",
+    "advance_bard_1", "advance_bard_2", "advance_bard_3", "advance_bard_4", "advance_bard_5",
+    "full_bank_unleash",
     "status_cured",
     "ability_riff",
 ]
@@ -132,6 +148,7 @@ def measure(path, nwin=16, gate_db=-18.0):
         m = measure(path, nwin, gate_db - 12.0)
         m["gate_widened"] = True
         return m
+    rms_db = float(20.0 * np.log10(np.sqrt(np.mean(x ** 2)) + 1e-12))
     lo, hi = float(min(cents)), float(max(cents))
     sweep = hi / max(lo, 1e-9)
     rho_time = _rho(cents, list(range(len(cents))))
@@ -144,6 +161,7 @@ def measure(path, nwin=16, gate_db=-18.0):
     return {
         "early_hz": round(early, 1),
         "late_hz": round(late, 1),
+        "rms_db": round(rms_db, 1),
         "low_hz": round(lo, 1),
         "high_hz": round(hi, 1),
         "sweep": round(sweep, 2),
