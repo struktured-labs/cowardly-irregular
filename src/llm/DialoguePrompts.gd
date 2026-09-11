@@ -887,7 +887,7 @@ static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -
 		"turn_start":
 			return "Your initiative just landed. Say something short before you act."
 		"low_hp":
-			return "You just dropped below 25%% HP. React in voice — worry, cockiness, prayer, etc., per your persona."
+			return "You just dropped below 25% HP. React in voice — worry, cockiness, prayer, etc., per your persona."
 		"big_hit_taken":
 			var amt: int = int(event_data.get("damage", 0))
 			return "You just took a chunky hit (%d damage). React without breaking character." % amt
