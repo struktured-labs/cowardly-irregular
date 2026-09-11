@@ -714,7 +714,9 @@ func _toggle_battle_speed() -> void:
 	_animate_speed_change()
 	SoundManager.play_ui("speed_change")
 	log_message("[color=gray]Battle speed: %s[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
-	_show_hint("speed_toggle", "Press X (or the ` key) to change battle speed. Higher speeds skip animations for faster grinding.")
+	## ASK Win98Menu, do not restate: speed is raw JOY_BUTTON_Y with no InputMap action, and that file
+	## is where the pad/keyboard decision already lives — "X" is Nintendo-only and ✕ is Cancel on a DualSense.
+	_show_hint("speed_toggle", "Press %s to change battle speed. Higher speeds skip animations for faster grinding." % Win98MenuClass.speed_hint())
 
 
 func _animate_speed_change() -> void:
@@ -3584,7 +3586,7 @@ func _on_selection_turn_started(combatant: Combatant) -> void:
 		# Play da-ding sound for player turn
 		SoundManager.play_ui("player_turn")
 		if combatant.current_ap > 0:
-			_show_hint("advance", "You have %d AP! Press R to queue extra actions." % combatant.current_ap)
+			_show_hint("advance", "You have %d AP! Press %s to queue extra actions." % [combatant.current_ap, InputProfileManager.hint_for_action("battle_advance")])
 			TutorialHints.show(self, "advance_defer")
 		# BDFFHD signature step-out toward the enemies — clear who's-up cue.
 		_step_active_pc(combatant, true)

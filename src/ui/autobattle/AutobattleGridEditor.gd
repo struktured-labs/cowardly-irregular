@@ -277,7 +277,7 @@ func _build_ui() -> void:
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "Y:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  Sel:Auto  Start:Save"
+	help_label2.text = "Y:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  %s:Auto  Start:Save" % InputProfileManager.hint_for_action("battle_toggle_auto")
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -2405,7 +2405,8 @@ func _build_option_picker() -> void:
 		_option_picker.add_child(row)
 		list_y += 22.0
 	var help := Label.new()
-	help.text = "D-Pad:Select   A:Confirm   B:Cancel"
+	## A/B are Nintendo names; on a DualSense Confirm is ✕ and Cancel is ○, and on Xbox they swap.
+	help.text = "D-Pad:Select   %s:Confirm   %s:Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
 	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -3168,7 +3169,7 @@ func _build_share_picker(files: Array) -> void:
 		list_y += 26.0
 
 	var help := Label.new()
-	help.text = "D-Pad:Select   A:Import   B:Cancel"
+	help.text = "D-Pad:Select   %s:Import   %s:Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
 	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", style.text.darkened(0.2))
