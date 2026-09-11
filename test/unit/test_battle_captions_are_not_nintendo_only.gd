@@ -162,8 +162,59 @@ func test_the_captions_derive_instead() -> void:
 		## measurement that did not finish, so it must fail rather than answer.
 		assert_true(closed,
 			"could not find the end of this caption statement within 24 lines — widen the bound rather than trusting the result: %s" % line.strip_edges().substr(0, 70))
-		assert_true(stmt.contains("InputProfileManager."),
-			"a help caption with %d format slots must feed them from InputProfileManager: %s" % [slots, line.strip_edges().substr(0, 80)])
+		## ⚠️ INLINE IS NOT THE PROPERTY — DERIVED IS. This demanded the literal string in the
+		## statement, so moving a derivation into a NAMED HELPER redded a correct change:
+		## @cowir-autogrind's `%s:Save" % _save_token()` has one arg and no other InputProfileManager
+		## call to carry it. My own `_delete_token()` passes only because the three args BESIDE it
+		## still spell the name — luck, not coverage. Same class as the helper-name count two arms
+		## up, one layer in: I pinned HOW the derivation is written instead of THAT it happens.
+		assert_true(stmt.contains("InputProfileManager.") or _derives_through_helper(ge, stmt),
+			"a help caption with %d format slots must feed them from InputProfileManager, inline or via a helper that does: %s" % [slots, line.strip_edges().substr(0, 80)])
+
+## Resolves a caption's `_name()` calls against their own bodies, so a derivation may be NAMED
+## rather than inline. Demanding the literal would let this guard dictate the caller's layout.
+## ⛔ EVERY definition of the name, not the first. `src` is BOTH editors concatenated and both define
+## `_save_token`, so a bare find() resolved the OTHER file's copy: I froze one to `return "Start"`
+## and this scored GREEN. Bare find() takes the first match — the trap I keep a note about, hit
+## while repairing a guard. All definitions must derive, so an ambiguous name fails toward alarm.
+func _derives_through_helper(src: String, stmt: String) -> bool:
+	var any := false
+	for fname in _called_helpers(stmt):
+		var from: int = 0
+		while true:
+			var i: int = src.find("func %s(" % fname, from)
+			if i == -1:
+				break
+			var body: String = src.substr(i, 600)
+			var nxt: int = body.find("\nfunc ")
+			if nxt != -1:
+				body = body.substr(0, nxt)
+			if not body.contains("InputProfileManager."):
+				return false
+			any = true
+			from = i + 1
+	return any
+
+
+func _called_helpers(stmt: String) -> Array:
+	var out: Array = []
+	var i: int = 0
+	while i < stmt.length():
+		if stmt[i] == "_" and (i == 0 or not _is_ident_char(stmt[i - 1])):
+			var j: int = i + 1
+			while j < stmt.length() and _is_ident_char(stmt[j]):
+				j += 1
+			if j < stmt.length() and stmt[j] == "(" and not out.has(stmt.substr(i, j - i)):
+				out.append(stmt.substr(i, j - i))
+			i = j
+		else:
+			i += 1
+	return out
+
+
+func _is_ident_char(c: String) -> bool:
+	return c == "_" or (c >= "a" and c <= "z") or (c >= "A" and c <= "Z") or (c >= "0" and c <= "9")
+
 
 func test_speed_has_no_inputmap_action_so_the_helper_is_the_only_route() -> void:
 	## The premise, measured rather than asserted. If someone later ADDS a battle_speed action, this

@@ -208,6 +208,13 @@ func setup(char_id: String, char_name: String, char_combatant: Combatant = null,
 		call_deferred("_refresh_grid")
 
 
+## "Del" plus the pad button when one is connected; "Del" alone otherwise. Keeps the keyboard
+## reading honest instead of leaving a dangling separator.
+func _delete_token() -> String:
+	var pad := InputProfileManager.button_name_for_index(JOY_BUTTON_Y)
+	return "Del/%s" % pad if pad != "" else "Del"
+
+
 func _build_ui() -> void:
 	"""Build the editor UI"""
 	# Clear existing children first (for rebuilding)
@@ -270,16 +277,17 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	## Delete is a RAW index (JOY_BUTTON_Y off a condition cell, :1859) and Del/Backspace on keys —
-	## it is not ui_menu, which saves and closes. Empty pad name means no pad: name the key alone.
-	var y_pad: String = InputProfileManager.button_name_for_index(JOY_BUTTON_Y)
-	var del_tok: String = "Del" if y_pad == "" else "Del/%s" % y_pad
 	## Pad halves derived, keyboard halves kept — this row sits six lines above help_label2 and both
 	## are on screen at once, so a half-derived pair reads as two contradicting legends in one glance.
 	help_label1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  %s:Delete  W/S/RStick:Value  %s:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [
 		InputProfileManager.hint_for_action("ui_accept"),
 		InputProfileManager.hint_for_action("ui_cancel"),
-		del_tok,
+		## ⛔ WAS hint_for_action("ui_menu") — the WRONG ACTION, not a shadowed one. Delete is raw
+		## JOY_BUTTON_Y off a condition cell (:1854/:1859); ui_menu SAVES AND CLOSES (:1885). On a
+		## Nintendo pad that rendered "Del/Plus:Delete", pointing at the exit button. A derivation
+		## pass turned a CORRECT frozen caption into a wrong derived one — shipped in 5c3dee46.
+		## Whole token, not a slash-plus-slot: with no pad the helper is empty and "Del/" dangles.
+		_delete_token(),
 		InputProfileManager.hint_for_action("battle_defer"),
 	]
 	help_label1.position = Vector2(16, size.y - 44)
