@@ -214,6 +214,13 @@ Targets. Values:
   weakest_to_ability, lowest_hp_ally, all_allies, self
 weakest_to_ability aims an elemental ability at the enemy weak to its element
 (and skips immune enemies) — pair it with an elemental ability id like fire.
+⚠️ A target name belongs ONLY in an action's "target" field. It is NEVER a
+condition type. To attack the weakest enemy every turn, the condition is
+{"type":"always"} and the TARGET is lowest_hp_enemy:
+  {"conditions":[{"type":"always"}],
+   "actions":[{"type":"attack","target":"lowest_hp_enemy"}],"enabled":true}
+Writing {"type":"lowest_hp_ally"} as a condition is rejected and DISCARDS THE
+WHOLE RULE SET. To ask about an ally's health use ally_hp_percent.
 
 Canonical example:
   {\"conditions\":[{\"type\":\"ally_has_status\",\"status\":\"poison\"},
