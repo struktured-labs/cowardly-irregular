@@ -134,3 +134,178 @@ func test_the_duplicate_check_can_report_a_duplicate() -> void:
 		assert_eq(g, ["alpha", "gamma"], "CONTROL: and must NAME both members, not just count them")
 	assert_eq(_duplicate_groups({"a": "X", "b": "Y"}), [],
 		"CONTROL: and must stay silent on genuinely distinct art")
+
+
+## The row check above is a DISJUNCTION — a row passes if ANY ONE of its four frames clears 5%.
+## So three of four frames can be wiped and it stays green, which is most of the defect it exists
+## to catch. Two sweeps below close that at FRAME level, matching what the sibling corpus already
+## gets: test_overworld_sheet_frame_contract pins all 85 monster overworld sheets per-frame, and
+## these 145 are the same format (128x128, 4x4 of 32) written by the same assembler — the one whose
+## second chromakey pass keyed subjects out until 2026-09-09. The guard landed on the corpus where
+## the defect was DIAGNOSED, not the corpus where it happened: 40 of these 145 were regenerated for
+## exactly that reason on 2026-09-11.
+##
+## Read from the PNG, not through load() — an imported .ctex is what renders, but these sweeps are
+## asking what the GENERATOR wrote, and that is the artifact on disk.
+##
+## Severity: LATENT. All 145 pass both arms today; this is future cover, not a finding.
+const MIN_FRAME_FRACTION_OF_MEDIAN := 0.35
+const MIN_OPAQUE_PX_PER_FRAME := 32
+const MAX_OPAQUE_FRACTION_PER_FRAME := 0.99
+
+
+func _frame_occupancy(img: Image) -> Array:
+	img.convert(Image.FORMAT_RGBA8)
+	var data := img.get_data()
+	var w := img.get_width()
+	var out: Array = []
+	for row in range(img.get_height() / FRAME):
+		for col in range(w / FRAME):
+			var n := 0
+			for y in range(row * FRAME, (row + 1) * FRAME):
+				for x in range(col * FRAME, (col + 1) * FRAME):
+					if data[(y * w + x) * 4 + 3] > 10:
+						n += 1
+			out.append({"n": n, "at": Vector2i(col, row)})
+	return out
+
+
+func _median_n(cells: Array) -> float:
+	var ns: Array = []
+	for c in cells:
+		ns.append(int(c["n"]))
+	ns.sort()
+	if ns.is_empty():
+		return 0.0
+	var m: int = ns.size() / 2
+	return float(ns[m]) if ns.size() % 2 == 1 else (float(ns[m - 1]) + float(ns[m])) / 2.0
+
+
+## Two arms, and their division of labour differs from the sibling guard's because the row check
+## above already seconds one of them.
+##
+##  RELATIVE — a frame far thinner than its own sheet's typical frame. This is the partial-wipe
+##  shape, and it is the arm doing real work here: the row check cannot see it at all.
+##  Headroom measured across all 145: the thinnest legitimate frame is monk_digital's up-row at
+##  0.448 of its sheet median (209 px), and the two broken dark_knight builds scored 0.156 and
+##  0.089. 0.35 sits between them — 1.3x above, 2.2x below. Tighter above than the monster corpus
+##  (0.743) because a chibi back view is genuinely thin, so a new sheet CAN red here legitimately;
+##  the message names the sheet, the frame and the ratio so triage is one look at the PNG.
+##
+##  ABSOLUTE — a floor of 32 px. It does NOT earn its place on the uniformly-empty sheet the way it
+##  does in the monster corpus: there, no other instrument sees that case; here the row check reds
+##  on it too. What it catches alone is a SINGLE frame at or near zero inside an otherwise healthy
+##  row, where the relative arm's median is fine and the row's disjunction is satisfied.
+func test_no_npc_frame_is_empty() -> void:
+	var names := _list_archetypes()
+	assert_gt(names.size(), 100,
+		"CONTROL: only %d archetype sheets found — the scan is broken and any clean result below is free" % names.size())
+
+	var blank: Array = []
+	var measured := 0
+	var thinnest := 1 << 30
+	for n in names:
+		var img := Image.load_from_file("%s/%s/overworld.png" % [NPCS_DIR, n])
+		if img == null:
+			continue
+		measured += 1
+		var cells := _frame_occupancy(img)
+		var med := _median_n(cells)
+		for c in cells:
+			var px: int = int(c["n"])
+			thinnest = min(thinnest, px)
+			if px < MIN_OPAQUE_PX_PER_FRAME:
+				blank.append("%s frame (col %d,row %d) holds %d opaque px" % [n, c["at"].x, c["at"].y, px])
+			elif med > 0.0 and float(px) / med < MIN_FRAME_FRACTION_OF_MEDIAN:
+				blank.append("%s frame (col %d,row %d) holds %d px, %.0f%% of this sheet's median %d" % [
+					n, c["at"].x, c["at"].y, px, 100.0 * float(px) / med, int(med)])
+
+	assert_eq(measured, names.size(), "read %d of %d sheets" % [measured, names.size()])
+	assert_gt(thinnest, 0,
+		"CONTROL: the emptiest frame measured 0 px across every sheet — the alpha probe is reading nothing")
+	assert_eq(blank, [],
+		"an NPC frame with almost no pixels renders as an invisible character on one walk step — the sheet is valid, the art is gone: %s" % str(blank))
+
+
+## The mirror failure of the same cleanup step: not keying the background out at all. The ceiling is
+## taken from the FORMAT CONTRACT, not the population — these frames composite over terrain, so a
+## frame with no transparent pixels cannot be a keyed sprite whatever the corpus happens to do.
+## Nothing on the MAX side existed for this corpus at any level; the row check has a MIN arm only.
+func test_no_npc_frame_is_fully_opaque() -> void:
+	var names := _list_archetypes()
+	assert_gt(names.size(), 100, "CONTROL: only %d archetype sheets found — the scan is broken" % names.size())
+
+	var solid: Array = []
+	var fullest := 0.0
+	var cap := int(float(FRAME * FRAME) * MAX_OPAQUE_FRACTION_PER_FRAME)
+	for n in names:
+		var img := Image.load_from_file("%s/%s/overworld.png" % [NPCS_DIR, n])
+		if img == null:
+			continue
+		for c in _frame_occupancy(img):
+			var px: int = int(c["n"])
+			fullest = max(fullest, float(px) / float(FRAME * FRAME))
+			if px > cap:
+				solid.append("%s frame (col %d,row %d) is %d/%d opaque — background not keyed out" % [
+					n, c["at"].x, c["at"].y, px, FRAME * FRAME])
+
+	assert_lt(fullest, 1.0,
+		"CONTROL: the fullest frame in the corpus measured 100% opaque — either a real defect or the alpha probe is stuck")
+	assert_eq(solid, [],
+		"an NPC frame with no transparent pixels renders as a solid square walking over the terrain: %s" % str(solid))
+
+
+func test_the_npc_probe_can_see_a_partially_wiped_row() -> void:
+	# CONTROL: the case the ROW check is blind to and this file existed without — three of four
+	# frames emptied, one healthy. Asserted against the real row predicate, not a description of it.
+	var img := Image.create(FRAME * COLS, FRAME * ROWS, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 1))
+	for col in range(1, COLS):
+		for y in range(FRAME):
+			for x in range(FRAME):
+				img.set_pixel(col * FRAME + x, y, Color(0, 0, 0, 0))
+	assert_true(_row_has_content(img, 0),
+		"CONTROL: the row check must PASS this sheet — one surviving frame satisfies its disjunction")
+	var cells := _frame_occupancy(img)
+	assert_eq(int(cells[0]["n"]), FRAME * FRAME, "CONTROL: frame 0 must be the survivor")
+	assert_lt(int(cells[1]["n"]), MIN_OPAQUE_PX_PER_FRAME,
+		"CONTROL: and the frame-level absolute arm must fail the same sheet the row check passed")
+
+
+func test_the_npc_probe_can_see_an_emptied_frame() -> void:
+	# CONTROL: the relative arm at the REAL defect's magnitude — 43 px beside full frames, the
+	# second broken dark_knight build. Any absolute floor low enough to clear monk_digital's
+	# 209 px passes this, which is why the relative arm is the one carrying the partial-wipe case.
+	var img := Image.create(FRAME * COLS, FRAME * ROWS, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 1))
+	var kept := 0
+	for y in range((ROWS - 1) * FRAME, ROWS * FRAME):
+		for x in range((COLS - 1) * FRAME, COLS * FRAME):
+			if kept < 43:
+				kept += 1
+			else:
+				img.set_pixel(x, y, Color(0, 0, 0, 0))
+	var cells := _frame_occupancy(img)
+	var med := _median_n(cells)
+	var last: Dictionary = cells[cells.size() - 1]
+	assert_eq(int(last["n"]), 43, "CONTROL: the planted frame must hold exactly the defect's 43 px")
+	assert_gt(int(last["n"]), MIN_OPAQUE_PX_PER_FRAME,
+		"CONTROL: 43 px CLEARS the absolute floor — this is precisely why the relative arm exists")
+	assert_lt(float(last["n"]) / med, MIN_FRAME_FRACTION_OF_MEDIAN,
+		"CONTROL: the relative arm must flag 43 px against a median of %d" % int(med))
+
+
+func test_the_npc_probe_can_see_an_unkeyed_frame() -> void:
+	# CONTROL: the MAX arm. Nothing else in this file can come back red on an unkeyed background.
+	var img := Image.create(FRAME * COLS, FRAME * ROWS, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for y in range((ROWS - 1) * FRAME, ROWS * FRAME):
+		for x in range((COLS - 1) * FRAME, COLS * FRAME):
+			img.set_pixel(x, y, Color(0.2, 0.2, 0.2, 1))
+	var cells := _frame_occupancy(img)
+	var last: Dictionary = cells[cells.size() - 1]
+	assert_eq(int(last["n"]), FRAME * FRAME, "CONTROL: the unkeyed frame must measure fully opaque")
+	assert_gt(int(last["n"]), int(float(FRAME * FRAME) * MAX_OPAQUE_FRACTION_PER_FRAME),
+		"CONTROL: a fully-opaque frame must exceed the ceiling the sweep applies")
+	assert_true(_row_has_content(img, ROWS - 1),
+		"CONTROL: and the row check calls this sheet HEALTHY — it has no MAX side at all")
