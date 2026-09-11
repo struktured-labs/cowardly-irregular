@@ -316,6 +316,17 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(kid)
 
+	# The one Oak Street voice with no equivalent anywhere — a W2 echo of Phil the Lost.
+	var crossing = _create_npc("Crossing Guard", "guard", Vector2(13 * TILE_SIZE,11 * TILE_SIZE), [
+		"Halt. No crossing without the signal.",
+		"The absence of visible traffic does not indicate the absence of traffic.",
+		"This intersection has been incident-free for a very long time. I intend to keep it that way.",
+		"I have been here a long while. I don't know where I was before.",
+		"It feels like longer than the neighborhood has been here. I don't dwell on it.",
+		"...You may cross. Carefully."
+	])
+	npcs.add_child(crossing)
+
 	# Retired Teacher (lore about how the world changed)
 	var teacher = _create_npc("Ms. Finch", "elder", Vector2(6 * TILE_SIZE,11 * TILE_SIZE), [
 		"Ah, a young traveler. Sit down. I used to teach history.",
