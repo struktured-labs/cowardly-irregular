@@ -89,6 +89,14 @@ func _build_ui() -> void:
 	_update_selection()
 
 
+	# Right-click closes, matching the 29 other screens that do. A mouse player can click INTO this
+	# from the overworld menu and right-click did nothing here (struktured: "useable with a mouse
+	# and keyboard for reals").
+	MenuMouseHelper.add_right_click_cancel(self, func() -> void:
+		SoundManager.play_ui("menu_close")
+		closed.emit()
+		queue_free())
+
 func _build_row(f: Dictionary, qualifies: bool, x: float, y: float, w: float) -> Control:
 	var row := Control.new()
 	row.position = Vector2(x, y)

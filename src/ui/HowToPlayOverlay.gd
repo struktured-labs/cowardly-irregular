@@ -29,6 +29,7 @@ static func build_text() -> String:
 		g_ok = InputProfileManager.glyph_for_action("ui_accept")
 		g_no = InputProfileManager.glyph_for_action("ui_cancel")
 	return TitleScreen.build_confirm_cancel_rows(g_ok, g_no) + """
+Y (west face)     Shift             —                [color=lime]Run — hold to move 1.7x faster[/color]
 L Shoulder        L Key             —                Defer / Party Chat
 R Shoulder        R Key             —                Advance (queue action)
 Start (Plus)      F5                —                Open Autobattle Editor
@@ -38,8 +39,17 @@ R3 Stick Click    F1                —                [color=lime]This screen �
                   F2                —                Quick Save
                   F3                —                Quick Load
                   F12               —                Screenshot
+                  F11               —                Live pad readout — button + axis numbers
                   F8                —                [color=lime]Bug report — screenshot + log + save in one file[/color]
                   ─                 Wheel            Scroll lists / change selection
+
+[b][color=yellow]WHILE AUTOGRINDING[/color][/b]
+[color=gray]Gamepad          Keyboard          Description[/color]
+Select (Minus)    P                 [color=lime]Pause / resume the grind[/color]
+Start (Plus)      R                 Adjust rules mid-grind
+L + R together    T                 Cycle monster tier
+Y (west face)     Y                 Turbo — run it faster
+B (Esc)           Esc               Stop grinding and return
 
 [b][color=yellow]BATTLE SYSTEM (CTB)[/color][/b]
 Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color], or strategize with AP.
