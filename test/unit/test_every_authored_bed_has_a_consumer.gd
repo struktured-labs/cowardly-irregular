@@ -563,12 +563,40 @@ func test_no_cutscene_step_type_can_dispatch_another_cutscene() -> void:
 ## playable here. They measured it: 0 of 124 called cutscenes have a dead file
 ## as their only caller, so the shortcut costs nothing TODAY. It is recorded
 ## rather than defended because the day that changes, nothing here will say so.
+## ⛔ A MENTION IS NOT A DISPATCH, and the looser test made two of this file's
+## own pins INERT. The first version asked whether the scene id appears anywhere
+## in the dispatcher corpus. It appears for world2_epilogue and world3_epilogue:
+##
+##     GameLoop:2009  _epilogue_done_or_unwired("world2_epilogue", flags)
+##     GameLoop:2045  _epilogue_done_or_unwired("world3_epilogue", flags)
+##
+## That helper returns TRUE when the scene has no completion flag — it is a gate
+## that TOLERATES the epilogue being unwired, and the function name says so. So
+## the one reference each of those scenes has is code handling their ABSENCE,
+## and I read it as evidence of their presence. Same shape as a reachability
+## grep counting the documentation of a scene's death as proof of its life.
+##
+## 🔑 FOUND BY DELETION, NOT BY READING. cowir-autogrind's check — remove each
+## pinned entry and confirm the guard reds — reported credits_steampunk and
+## credits_suburban as suppressing nothing. The pin list was right (it came from
+## a correct ad-hoc measurement); the guard's own predicate was looser than the
+## claim the list makes, so two entries excused a verdict it could never reach.
+## Loose: 3 stranded. Tight: 5, which is the list.
+func _scene_is_dispatched(scene: String, disp: String) -> bool:
+	## The two real shapes: _get_pending_story_cutscene returns the id, or a
+	## caller plays it by name. Anything else is a mention.
+	return disp.find("return \"%s\"" % scene) >= 0 \
+		or disp.find("play_cutscene(\"%s\")" % scene) >= 0
+
+
 func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 	var disp: String = _dispatcher_text()
 	assert_gt(disp.length(), 500000,
 		"SCOPE control: dispatcher corpus is %d chars — too small" % disp.length())
-	assert_gt(disp.find("world1_prologue"), 0,
-		"CONTROL FAILED: world1_prologue is dispatched by GameLoop but was not found — the corpus is wrong")
+	assert_true(_scene_is_dispatched("world1_prologue", disp),
+		"CONTROL FAILED: world1_prologue IS dispatched (GameLoop returns it from _get_pending_story_cutscene) but the predicate cannot see it — a green below would mean every scene reads as dead")
+	assert_false(_scene_is_dispatched("world2_epilogue", disp),
+		"CONTROL FAILED: world2_epilogue is only named by _epilogue_done_or_unwired, a gate that TOLERATES it being unwired. If the predicate counts that as dispatch it is the loose one this helper replaced")
 	assert_eq(disp.find("\"tracks\": {"), -1,
 		"CONTROL FAILED: music_manifest.json is in the dispatcher corpus — every id would match itself")
 
@@ -602,7 +630,7 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 		for s in scenes.keys():
 			if str(scenes[s]).find(id) >= 0:
 				naming.append(str(s))
-				if disp.find(str(s)) >= 0:
+				if _scene_is_dispatched(str(s), disp):
 					live = true
 		if naming.is_empty() or live:
 			continue
