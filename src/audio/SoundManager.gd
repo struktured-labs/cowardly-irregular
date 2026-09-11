@@ -689,8 +689,8 @@ func play_death(sound_key: String) -> void:
 
 
 ## The group-attack flourish on its OWN player — a group attack's own hits were cutting it.
-## MEASURED 2026-09-11: the group cue followed by a sword hit through play_attack_hit leaves
-## _battle_player.stream == attack_hit_sword.ogg. The cue is 2.48s (all_out 1.48s, combo_magic
+## MEASURED 2026-09-11: the group cue followed by a sword hit through play_attack_hit leaves the
+## shared battle channel holding attack_hit_sword.ogg. The cue is 2.48s (all_out 1.48s, combo_magic
 ## 2.00s); the lunges and their damage_dealt signals land a few tenths in, and every one of the
 ## 3-5 targets fires a hit sound on the same player. The biggest move in the game was audible
 ## for about as long as it took to start.
