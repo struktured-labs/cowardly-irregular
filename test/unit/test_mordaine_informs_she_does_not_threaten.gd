@@ -140,14 +140,36 @@ func test_everything_else_the_ruling_left_alone_is_intact() -> void:
 	assert_eq((e.get("jailbreak_vulnerabilities", []) as Array).size(), 3, "every jailbreak entry stands")
 
 
-## Comment lines blanked, line count preserved. A bare contains() on source text
-## matches the comment a person leaves BEHIND when they remove what you defend —
-## which is the way removals actually look (cowir-controller, msg-9663).
+## Each line cut at the first `#` OUTSIDE a string literal; line count preserved.
+## Blanking only whole-line comments was not enough — a TRAILING comment walked
+## straight through and the guard scored green with the real line gone
+## (cowir-controller msg-9672, measured here as ARM3 before this).
 func _code_only(src: String) -> String:
 	var out: PackedStringArray = PackedStringArray()
 	for line in src.split("\n"):
-		out.append("" if line.strip_edges().begins_with("#") else line)
+		out.append(_strip_comment(line))
 	return "\n".join(out)
+
+
+## Quote-aware, because a naive cut at the first `#` truncates real code carrying a
+## quoted one — over-stripping is the other way a stripper is wrong (cowir-music).
+func _strip_comment(line: String) -> String:
+	var quote: String = ""
+	var i: int = 0
+	while i < line.length():
+		var c: String = line[i]
+		if quote != "":
+			if c == "\\":
+				i += 2
+				continue
+			if c == quote:
+				quote = ""
+		elif c == "\"" or c == "'":
+			quote = c
+		elif c == "#":
+			return line.substr(0, i)
+		i += 1
+	return line
 
 
 func test_the_persona_still_reaches_the_model() -> void:
@@ -165,5 +187,9 @@ func test_the_reaches_the_model_check_cannot_be_satisfied_by_a_comment() -> void
 	## real line out and assigning a placeholder scored 9/9 green.
 	assert_false(_code_only("\t\t# ctx.persona = str(entry.get(\"persona\", \"\"))").contains("ctx.persona"),
 		"a commented-out assignment must not satisfy the check")
+	assert_false(_code_only("\t\tctx.persona = \"x\"  # ctx.persona = str(entry.get(\"persona\", \"\"))").contains("entry.get"),
+		"nor a TRAILING one — this is the arm that was green before, and trailing is how removals look")
 	assert_true(_code_only("\t\tctx.persona = str(entry.get(\"persona\", \"\"))").contains("ctx.persona"),
 		"CONTROL: and real code must still satisfy it, or the discriminator refuses everything")
+	assert_true(_code_only("\tvar s := \"# not a comment\"").contains("not a comment"),
+		"CONTROL the other way: a quoted # must NOT truncate real code — over-stripping reports every subject missing")
