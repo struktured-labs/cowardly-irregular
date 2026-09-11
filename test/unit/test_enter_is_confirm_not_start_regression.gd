@@ -54,12 +54,29 @@ func _code_only(text: String) -> String:
 	return out
 
 
+## ⛔ THIS WAS A LOOK-BEHIND AND THAT WAS THE BUG, NOT ANY OF ITS SIX PATCHES.
+## `c == quote and line[i-1] != "\\"` asks "was the previous character an escape?" — a question
+## with NO LOCAL ANSWER, because that backslash may itself have been escaped, and deciding THAT
+## needs the character before it, and so on. @cowir-autogrind: *it is not a fixable predicate;
+## each fix pushes the ambiguity one character left. Six costumes is what that looks like from
+## inside.* @cowir-overworld reached the same conclusion independently.
+##
+## A FORWARD state machine carries the answer instead of re-deriving it: the character after a
+## backslash is consumed whatever it is, so `\\` is eaten as a pair and the closing quote is seen.
+## The costume is retired BY CONSTRUCTION — which beats a seventh arm, and beats the arm I added
+## an hour ago that merely NOTICED the corpus was still safe.
 func _strip_comment(line: String) -> String:
+	var esc := false
 	var quote := ""
 	for i in range(line.length()):
 		var c := line[i]
-		if quote != "":
-			if c == quote and (i == 0 or line[i - 1] != "\\"):
+		if esc:
+			esc = false
+			continue
+		if c == "\\":
+			esc = true
+		elif quote != "":
+			if c == quote:
 				quote = ""
 		elif c == "\"" or c == "'":
 			quote = c
@@ -150,15 +167,15 @@ func test_the_comment_stripper_cuts_comments_and_keeps_code() -> void:
 	# CUT: real comments, leading and trailing.
 	assert_eq(_strip_comment("# whole line"), "", "a full-line comment must go")
 	assert_eq(_strip_comment("\tcode()  # tail"), "\tcode()  ", "a trailing comment must go")
-	# ⚠️ KNOWN LIMITATION, ENCODED RATHER THAN COMMENTED. The escape check is `line[i-1] != "\\"`,
-	# which is fooled by a string ENDING in an escaped backslash ("a\\") — the quote never closes and
-	# a later comment is treated as string content, i.e. the SILENT direction. Measured 2026-09-11:
-	# zero such lines in src/, and zero backslashes in the branch this guard reads. So it is safe by
-	# the corpus, not by the code — and the arm below NOTICES if that stops being true, instead of
-	# this paragraph quietly going stale. (@cowir-deploy found the reciprocal gap in their own.)
-	assert_false(_battle_ui_menu_branch().contains("\\"),
-		"the BATTLE arm gained a backslash — _strip_comment's escape handling is UNTESTED for a " +
-		"string ending in an escaped backslash, and the failure there is a silent false-green")
+	# THE SIXTH COSTUME, now retired by construction rather than noticed. Built from parts because
+	# a literal with four backslashes is exactly the kind of thing that goes wrong silently.
+	var bs := "\\"                                    # one backslash
+	var tricky := "var q := \"a" + bs + bs + "\"  # _open_settings_menu()"
+	assert_eq(_strip_comment(tricky), "var q := \"a" + bs + bs + "\"  ",
+		"a string ENDING in an escaped backslash must still close, so the real comment after it is " +
+		"cut — the look-behind form kept that comment and the pin went hollow")
+	assert_eq(_strip_comment("\tvar q := \"a" + bs + "\"b\"  # tail"), "\tvar q := \"a" + bs + "\"b\"  ",
+		"and an escaped QUOTE must NOT close the string — the case the look-behind did handle")
 	# The line the guard actually reads must survive untouched.
 	var real := "\t\t\tif event is InputEventKey and event.keycode in [KEY_ESCAPE, KEY_ENTER]:"
 	assert_eq(_strip_comment(real), real, "the real guard line has no comment and must be preserved")
