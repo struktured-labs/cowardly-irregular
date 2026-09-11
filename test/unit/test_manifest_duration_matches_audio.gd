@@ -145,8 +145,19 @@ func test_every_manifest_file_is_actually_on_disk() -> void:
 			## source from a path typo at a glance.
 			var cached: String = "and load() STILL SERVES IT" if ResourceLoader.exists(res_path) else "and the cache agrees it is gone"
 			missing.append("%s -> %s (%s)" % [key, f, cached])
-	assert_gt(checked, 100,
-		"SCOPE control: only %d entries carried a file path — a clean result below would be vacuous" % checked)
+	## Same exact accounting as the duration arm, for the same reason: a floor of
+	## 100 over 165 entries is blind to 40 of them vanishing. Measured — partial
+	## loss here was EC 0, no Failing, no Risky. `checked` must equal the number
+	## of entries carrying a file, because every one of them is examined.
+	var with_file: int = 0
+	for key in tracks.keys():
+		var e2: Variant = tracks[key]
+		if e2 is Dictionary and str((e2 as Dictionary).get("file", "")) != "":
+			with_file += 1
+	assert_gt(with_file, 100,
+		"SCOPE control: only %d manifest entries carry a file — the manifest read is broken" % with_file)
+	assert_eq(checked, with_file,
+		"the walk examined %d entries but %d carry a file — %d were skipped, so the on-disk result below covers less than it claims" % [checked, with_file, with_file - checked])
 	assert_eq(missing.size(), 0,
 		"the manifest names audio that is NOT ON DISK (%d of %d): %s — every other duration arm in this lane reads through load(), which keeps serving the imported artifact after the source is deleted, so they stay green. A fresh clone would fail where this tree succeeds, and an export from here can ship an asset whose source no longer exists." % [missing.size(), checked, missing])
 
@@ -195,8 +206,27 @@ func test_every_manifest_duration_matches_the_shipped_audio() -> void:
 			drifted.append("%s: manifest %.1fs vs audio %.1fs (%+.1fs)"
 				% [key, declared, actual, actual - declared])
 
-	assert_gt(checked, 100,
-		"SCOPE control: only %d tracks were actually measured — the walk is broken, and a zero-drift result would be vacuous" % checked)
+	## ⛔ A FLOOR CATCHES TOTAL LOSS AND NOTHING ELSE. This was `checked > 100`
+	## over 165 tracks: dropping 40 of them still cleared it, EC 0, no Failing,
+	## no Risky, no assert-count change — cowir-autogrind's Grade A, because the
+	## verdict below is accumulate-then-assert-once and runs happily on a short
+	## corpus. Measured, both magnitudes: iterate nothing -> caught by this line;
+	## skip every key beginning "b" -> SILENT.
+	##
+	## Exact accounting instead of a floor. Every entry carrying a file is either
+	## MEASURED or reported UNLOADABLE, so an entry cannot leave the walk without
+	## the arithmetic noticing. That is a derived equality, not a pin — it does
+	## not forbid the manifest growing or shrinking, only entries vanishing
+	## between the count and the loop.
+	var with_file: int = 0
+	for key in tracks.keys():
+		var e2: Variant = tracks[key]
+		if e2 is Dictionary and str((e2 as Dictionary).get("file", "")) != "":
+			with_file += 1
+	assert_gt(with_file, 100,
+		"SCOPE control: only %d manifest entries carry a file — the manifest read is broken and everything below is vacuous" % with_file)
+	assert_eq(checked + unloadable.size(), with_file,
+		"the walk measured %d and could not load %d, but %d entries carry a file — %d went missing between the count and the loop, so the drift result below covers less than it claims" % [checked, unloadable.size(), with_file, with_file - checked - unloadable.size()])
 	assert_eq(unloadable.size(), 0,
 		"manifest names audio that will not load (%d): %s — run --import, or the file is missing/an LFS pointer" % [unloadable.size(), unloadable])
 	## ⚠️ TWO CAUSES, AND THE MESSAGE USED TO NAME ONLY ONE. It said "whatever
