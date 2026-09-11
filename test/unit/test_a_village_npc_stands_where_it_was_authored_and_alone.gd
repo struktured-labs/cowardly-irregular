@@ -31,6 +31,22 @@ extends GutTest
 ## cell-based reachability rule is simply the wrong question for them: measured, 5 of them have no
 ## walkable neighbour at all and every one is correct. 94 talking NPCs across 13 villages; 0 sealed.
 
+## 📋 ARMS PROVEN — which asserts here have a DEMONSTRATED red, and which do not.
+## @cowir-battle: only 2 of their 7 absence entries had ever been fired when they declared the guard.
+## @cowir-deploy: liveness proofs that live only in commit messages are transcript evidence, and an
+## assert WEAKENED rather than removed keeps its place in GUT's `Asserts N` count — so the count
+## cannot see it and nothing here quantifies over "assertions still asserting".
+## This block is that evidence moved into the file. Fire an arm, add its row; do not add a row you
+## have not watched go red.
+##   shared == []          ✅ planter back onto Gerald's cell -> names both NPCs and the tile
+##   off_grid == []        ✅ MAY_STAND_OFF_GRID drained      -> names Madame Orrery and (752,224)
+##   must_build membership ✅ one village dropped from the walk -> names SandriftVillage.gd
+##   router equality       ✅ Ironhaven un-nominated by MapScripts -> "routes to 11, walked 10"
+##   examined == built     ✅ one village built then skipped  -> the two-cause message
+##   must_build.size()     ✅ an entry removed                -> "holds 2 villages, not the 3"
+##   reason length > 30    ✅ implicitly, by the drain above (the loop runs zero times: 9 -> 8)
+##   sealed == []          ⛔ NEVER FIRED, and subsumed — see the note at the assert itself
+##
 const MapScripts := preload("res://test/unit/helpers/map_scripts.gd")
 const VILLAGE_DIR := "res://src/maps/villages"
 const TILE := 32
