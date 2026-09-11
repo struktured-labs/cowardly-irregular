@@ -659,6 +659,11 @@ func test_no_cutscene_step_type_can_dispatch_another_cutscene() -> void:
 ## report is only as strong as this list is complete, and nothing in the test can
 ## know about a form nobody has thought of (cowir-adhoc, 2026-09-11).
 const DISPATCH_FORMS := ["return \"<id>\"", "play_cutscene(\"<id>\")", "for <v> in <TABLE>: return <v>"]
+## The ROOTS beside the forms. cowir-battle caught a sibling guard reading only
+## src/ — two hours after its author had corrected that very scope — and caught it
+## BECAUSE the guard printed its roots. A verdict that names neither what it read
+## nor how it read it cannot be contradicted by anyone but its author.
+const DISPATCH_ROOTS := "src/**.gd (comments stripped) + src/**.tscn + data/*.json; data/cutscenes/ EXCLUDED by design, guarded by test_no_cutscene_step_type_can_dispatch_another_cutscene"
 
 
 func _loop_dispatched_ids(disp: String) -> Dictionary:
@@ -802,7 +807,7 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 			stranded.append("%s <- %s" % [id, naming])
 
 	assert_eq(stranded.size(), 0,
-		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds. DISPATCH FORMS THIS PREDICATE KNOWS: %s. A bed is dead only if no FOURTH form exists — the loop form was invisible here until 2026-09-11 and 20 scenes read as dead the whole time" % [stranded.size(), stranded, DISPATCH_FORMS])
+		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds. DISPATCH CORPUS: %s. FORMS KNOWN: %s. A bed is dead only if no FOURTH form exists — the loop form was invisible here until 2026-09-11 and 20 scenes read as dead the whole time" % [stranded.size(), stranded, DISPATCH_ROOTS, DISPATCH_FORMS])
 	assert_eq(revived.size(), 0,
 		"pinned beds whose scene is now dispatched (%s) — the epilogue landed; delete the entries" % [revived])
 
