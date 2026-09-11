@@ -267,7 +267,8 @@ func _setup_npcs() -> void:
 		"I automated my entire LIFE, friend.",
 		"Breakfast? Automated. Conversations? Scripted.",
 		"Do I regret it? ...That's also scripted.",
-		"Press F5 to open the Autobattle Editor. Trust me.",
+		# F5 is GameLoop:912; on a pad it is the overworld menu's "Auto Rules" row -> GameLoop:1563.
+		"Press F5. Or the menu, then Auto Rules, if you're holding a pad. Trust me.",
 		"Once you automate combat, you'll want to automate EVERYTHING."
 	]
 	var _kael_post := [
