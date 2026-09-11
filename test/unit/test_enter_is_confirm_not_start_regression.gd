@@ -142,6 +142,11 @@ func test_the_comment_stripper_cuts_comments_and_keeps_code() -> void:
 		"single quotes too")
 	assert_eq(_strip_comment("\tvar s = \"it's fine\"  # trailing"), "\tvar s = \"it's fine\"  ",
 		"an apostrophe INSIDE double quotes must not open a quote state and swallow the comment")
+	# @cowir-overworld's FIFTH costume: a '#' INSIDE a string followed by a REAL comment. Their
+	# version checked quote parity before find("#") and bailed when odd, keeping the comment.
+	assert_eq(_strip_comment("\tvar _hex := \"#ff0000\"  # _open_settings_menu() used to run here"),
+		"\tvar _hex := \"#ff0000\"  ",
+		"a # in a string must not disarm the cut for a REAL comment later on the same line")
 	# CUT: real comments, leading and trailing.
 	assert_eq(_strip_comment("# whole line"), "", "a full-line comment must go")
 	assert_eq(_strip_comment("\tcode()  # tail"), "\tcode()  ", "a trailing comment must go")
