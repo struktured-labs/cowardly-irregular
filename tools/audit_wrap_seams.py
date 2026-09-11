@@ -123,7 +123,22 @@ def main():
     rows = []
     padded = []
     for key, meta in sorted(tracks.items()):
-        if not meta.get("loop") or meta.get("stinger"):
+        ## ⛔ TWO QUESTIONS, TWO CORPORA — and I fixed the FIXER first and left
+        ## this behind, which is the exact shape @cowir-sfx measured across the
+        ## fleet: five of eight lanes found a SECOND defect in a file that had
+        ## just survived the first check, because editing a guard while
+        ## believing you now understand the problem is what suppresses the
+        ## second look.
+        ##
+        ##   WRAP  — a join only exists if the track loops. Stingers: skip.
+        ##   PAD   — silence at an edge is audible in anything that plays. A
+        ##           stinger's head pad is latency between the button and the
+        ##           sound (job_cleric_special was 510ms). Stingers: INCLUDE.
+        ##
+        ## Before this, trim_wrap_padding walked 165 tracks and this walked 146,
+        ## so the tool fixed a population its own detector could not report.
+        is_stinger = bool(meta.get("stinger"))
+        if not meta.get("loop") and not is_stinger:
             continue
         path = meta.get("file", "")
         if not path or not os.path.exists(path):
@@ -133,7 +148,13 @@ def main():
             continue
         ## Worst across every window — a fade hides from any window longer
         ## than itself, so one number cannot speak for all fade durations.
-        worst = None
+        ## Stingers reach here for the PAD scan below but take no wrap step.
+        worst = None if not is_stinger else "skip"
+        if worst == "skip":
+            worst = None
+            _skip_wrap = True
+        else:
+            _skip_wrap = False
         for ws in SEAM_WINDOWS_S:
             n = int(ws * SR)
             if len(y) < 3 * n:
@@ -141,9 +162,10 @@ def main():
             step = db(y[:n]) - db(y[-n:])
             if worst is None or step > worst[0]:
                 worst = (step, ws)
-        if worst is None:
-            continue
-        rows.append((worst[0], key, worst[1]))
+        if not _skip_wrap:
+            if worst is None:
+                continue
+            rows.append((worst[0], key, worst[1]))
         ## Windowed RMS, not per-sample peak: one stray sample in the first
         ## millisecond defeated the peak form and hid 30 padded beds.
         _w = int(0.010 * SR)
