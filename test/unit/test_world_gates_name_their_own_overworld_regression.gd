@@ -194,6 +194,14 @@ func test_a_player_entering_world5_gets_the_world5_prologue_there() -> void:
 	var gl = GameLoopScript.new()
 	GameState.game_constants["cutscene_flag_world4_complete"] = true
 
+	# 2026-09-11: world4_transition was wired (cowir-story), and like W2/W3's it precedes the
+	# next world's prologue on arrival. Assert that ordering, then clear it — this test's
+	# subject is WHICH overworld the prologue fires on, not that nothing precedes it.
+	gl._current_map_id = "futuristic_overworld"
+	assert_eq(gl._get_pending_story_cutscene(), "world4_transition",
+		"the industrial->digital dissolve goes first, the same shape as world2_transition before the W3 prologue")
+	GameState.game_constants["cutscene_flag_world4_transition_complete"] = true
+
 	gl._current_map_id = "futuristic_overworld"
 	assert_eq(gl._get_pending_story_cutscene(), "world5_prologue",
 		"a player who just walked the Industrial portal into World 5 is standing on futuristic_overworld with world4_complete set. That is the whole trigger for world5_portal_entry — Boot Sequence — and nothing else fires here")
