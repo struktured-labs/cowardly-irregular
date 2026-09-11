@@ -43,14 +43,29 @@ func _battle_ui_menu_branch() -> String:
 ## form survived, which is the realistic shape, because that is what a person leaves behind when
 ## they remove a branch. Same discriminator as _frozen_code_lines in the interact-prompt ratchet;
 ## I fixed it there and left it here — @cowir-autogrind hit the identical bare-find() class today.
+## ⛔ A THIRD COSTUME. My first fix blanked FULL-LINE comments only, so
+## `keycode in [KEY_ESCAPE]:  # KEY_ENTER dropped for now` was still hollow — measured, EC=0.
+## @cowir-overworld named it before I tested it. Trailing comments must go too, and the cut has to
+## be quote-aware or a `#` inside a string literal would truncate real code.
 func _code_only(text: String) -> String:
 	var out := ""
 	for raw in text.split("\n"):
-		if raw.strip_edges().begins_with("#"):
-			out += "\n"          # keep line count so offsets stay comparable
-		else:
-			out += raw + "\n"
+		out += _strip_comment(raw) + "\n"   # line count preserved so substr offsets stay comparable
 	return out
+
+
+func _strip_comment(line: String) -> String:
+	var quote := ""
+	for i in range(line.length()):
+		var c := line[i]
+		if quote != "":
+			if c == quote and (i == 0 or line[i - 1] != "\\"):
+				quote = ""
+		elif c == "\"" or c == "'":
+			quote = c
+		elif c == "#":
+			return line.substr(0, i)
+	return line
 
 
 func _keys_for(action: String) -> Array[String]:
