@@ -88,7 +88,7 @@ Entire party can pool their Advance Points for combined attacks:
 Each starter job has a free 0-cost AP action available in the command menu:
 | Job | Free Move | Effect |
 |-----|-----------|--------|
-| Fighter | Strike | Bonus melee swing (physical fallback animation) |
+| Fighter | **Attack** | `free_move.label` is literally `"Attack"` in jobs.json — the Fighter has no separately-named free move, and a player sees the ordinary Attack row. This said "Strike" until 2026-09-11; Rogue is the one whose row reads Strike. Same drift as the Riff line below, caught by pinning the table instead of re-reading it. |
 | Cleric | Pray | Restores MP to a party member (green heal popup + sparkle FX) |
 | Mage | Channel | Restores MP to self |
 | Rogue | Strike | Bonus melee (falls back to attack anim, not cast) |
