@@ -214,8 +214,8 @@ func test_every_defeat_gate_plays_its_own_bosss_aftermath() -> void:
 	# Bidirectional: the exemption list is debt, not a settled state. It shrinks when
 	# someone authors the missing scene, and this fails so the gate gets rewired
 	# instead of the new file sitting unreachable next to the wrong one still playing.
-	assert_eq(unauthored.size(), 1,
-		"the no-authored-aftermath set is %d, expected exactly 1 (tempo_steampunk — The Grand Schedule, W3's Grand Mechanism boss, whose gate plays the INDUSTRIAL Tempo's aftermath because no steampunk masterite cutscene exists at all). Current set: %s. If this shrank, the scene was authored: point the gate at it. If it grew, a gate lost its scene." % [unauthored.size(), ", ".join(unauthored)])
+	assert_eq(unauthored.size(), 0,
+		"the no-authored-aftermath set is %d, expected 0 — the last entry (tempo_steampunk) was paid on 2026-09-11: world3_grand_schedule_defeat is authored and the Mechanism's gate points at it. Current set: %s. If this GREW, a gate lost its scene — author the aftermath and point the gate at it, do not repoint at another world's." % [unauthored.size(), ", ".join(unauthored)])
 
 
 ## The scene a gate names has to be on disk, or the gate drops the player to the

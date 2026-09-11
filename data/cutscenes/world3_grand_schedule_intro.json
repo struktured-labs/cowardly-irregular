@@ -1,0 +1,118 @@
+{
+  "id": "world3_grand_schedule_intro",
+  "title": "The Grand Schedule",
+  "world": 3,
+  "trigger": "boss_tempo_steampunk",
+  "background": "steampunk_workshop",
+  "description": "The Grand Mechanism does not notice intruders. It schedules them. W3's masterite is named as an instrument, not a person, and never says 'I' -- the Schedule has a first rule and no record of who wrote it.",
+  "steps": [
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "boss_intro",
+      "name": "The Grand Schedule",
+      "title": "Masterite \u2014 Steampunk"
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The gear-train did not stop when they entered. Nothing in the room acknowledged them at all \u2014 and then, seven seconds later, everything did at once, as though the acknowledgement had been scheduled for exactly then."
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "gear_engage"
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Grand Schedule",
+          "text": "ARRIVAL LOGGED. Variance: seven seconds.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Seven seconds late for what?",
+          "theme": "party"
+        },
+        {
+          "speaker": "The Grand Schedule",
+          "text": "Not late. Early entries are also variance. The Schedule does not prefer.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Who wrote it? The schedule \u2014 who made the first rule?",
+          "theme": "party"
+        },
+        {
+          "speaker": "The Grand Schedule",
+          "text": "The Schedule has a first rule. The first rule does not record an author.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        },
+        {
+          "speaker": "Mage",
+          "text": "That isn't an answer.",
+          "theme": "party"
+        },
+        {
+          "speaker": "The Grand Schedule",
+          "text": "It is the entire answer. There is no other entry.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "So nobody's in charge of any of this.",
+          "theme": "party"
+        },
+        {
+          "speaker": "The Grand Schedule",
+          "text": "Nothing is in charge. Everything is ON TIME.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Then there's nothing to beat.",
+          "theme": "party"
+        },
+        {
+          "speaker": "The Grand Schedule",
+          "text": "A slot has been allocated for this. It was allocated before you arrived. PROCEED.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_steampunk"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 3.5
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "set_flag",
+      "flag": "tempo_steampunk_intro_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

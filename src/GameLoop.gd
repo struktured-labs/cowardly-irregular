@@ -2031,9 +2031,9 @@ func _get_pending_story_cutscene() -> String:
 	# Tick 102: W3 Tempo of the Shift defeat cutscene — plays IN the
 	# Mechanism on return from boss victory. Same pattern as the W2
 	# warden defeat gate above.
-	if flags.get("cutscene_flag_tempo_steampunk_defeated", false) and not flags.get("cutscene_flag_world3_tempo_defeat_complete", false):
+	if flags.get("cutscene_flag_tempo_steampunk_defeated", false) and not flags.get("cutscene_flag_world3_grand_schedule_defeat_complete", false):
 		if _current_map_id == "steampunk_mechanism":
-			return "world3_tempo_defeat"
+			return "world3_grand_schedule_defeat"
 	if flags.get("cutscene_flag_world3_chapter3_complete", false) and not flags.get("cutscene_flag_world3_chapter4_complete", false):
 		# Tick 96: was gated on `cutscene_flag_warden_industrial_defeated`
 		# (a W4 flag set by AssemblyCore), so W3 chapter4 — the
@@ -2303,6 +2303,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world3_chapter5":                  "cutscene_flag_world3_chapter5_complete",
 	# Tick 102: W3 Tempo of the Shift post-defeat dialogue
 	"world3_tempo_defeat":              "cutscene_flag_world3_tempo_defeat_complete",
+	"world3_grand_schedule_defeat":     "cutscene_flag_world3_grand_schedule_defeat_complete",
 	"world3_transition":                "cutscene_flag_world3_transition_complete",
 	# Masterite fragment reveals (gated by _FRAGMENT_GATES; the loop returns the id, so the static audit does not see these)
 	"world1_fragment_arbiter":         "cutscene_flag_world1_fragment_arbiter_complete",

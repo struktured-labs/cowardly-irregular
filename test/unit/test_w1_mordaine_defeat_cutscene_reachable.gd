@@ -100,7 +100,7 @@ func test_full_w1_defeat_cutscene_chain_complete() -> void:
 		"world1_rat_king_defeat",
 		"world1_mordaine_defeat",
 		"world2_warden_defeat",
-		"world3_tempo_defeat",
+		"world3_grand_schedule_defeat",  # W3 fights The Grand Schedule; world3_tempo_defeat is W4's
 		# 2026-09-11: ids moved, gates unchanged. Each dungeon now plays the aftermath
 		# of the boss it actually spawns — AssemblyCore's Warden of the Assembly Line
 		# and RootProcess's Arbiter of the Benchmark. The old ids are the NEXT world's
