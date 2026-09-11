@@ -37,6 +37,10 @@ const CUTSCENE_DIR := "res://data/cutscenes"
 ## 21 until 2026-09-11, when the three credits_* beds were un-excluded so the
 ## W4/W5/W6 credits rolls — world6_ending's included — are audible on web.
 const KNOWN_SILENT_ON_WEB := 18
+## The consequence, not the cause. 18 BEDS are dropped; 14 SCENES go silent
+## because they stop the music before requesting one. The other 21 restore the
+## world's bed and are merely wrong-flavoured. world6_ending is in the 14.
+const WEB_SILENT_SCENES := 14
 
 
 ## ⛔ SELECT THE PRESET BY NAME. The first version of this took the LONGEST
@@ -190,6 +194,70 @@ func test_the_set_of_web_silent_cues_has_not_grown() -> void:
 	## left describing a state that no longer exists.
 	assert_true(silent.size() >= KNOWN_SILENT_ON_WEB,
 		"FEWER cutscene cues are web-silent than the %d pinned (now %d) — this was fixed or the export changed; delete the pin rather than leave it documenting history" % [KNOWN_SILENT_ON_WEB, silent.size()])
+
+
+## What a PLAYER experiences, which the cue count above does not measure.
+##
+## KNOWN_SILENT_ON_WEB counts BEDS whose file the Web preset drops — 18 of them.
+## That is a property of the manifest and the preset. It is not the consequence,
+## and reading it as one is how `world6_ending` went unnoticed: the campaign's
+## closer plays its whole scene in SILENCE on web.
+##
+## CutsceneDirector splits these two ways, and only one is graceful:
+##
+##   cue unavailable, music still playing  -> restore_music_state, the world's
+##                                            bed comes back. A wrong-flavoured
+##                                            bed, not a hole.
+##   cue unavailable AFTER a stop_music    -> "the scene stays as it is" —
+##                                            SILENCE for the rest of the scene.
+##
+## The second is authored intent per CutsceneDirector's own comment (a scene that
+## silenced the world should not have it restored behind its back), and it is
+## still the number that decides whether the bytes are worth buying: 24.88 MiB of
+## source, ~14 MiB at the shipped 48k tier, to give 14 scenes their cue back.
+##
+## Derived, never a hand-list: a scene authored tomorrow lands in whichever half
+## its own step order puts it in.
+func test_the_web_silent_population_is_reported_as_scenes() -> void:
+	var pats: PackedStringArray = _web_exclude_patterns()
+	var tracks: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string(MANIFEST)) as Dictionary).get("tracks", {})
+	assert_gt(tracks.size(), 100, "SCOPE control: walked %d manifest tracks" % tracks.size())
+	var dir := DirAccess.open("res://data/cutscenes")
+	assert_not_null(dir, "SCOPE control: the cutscene directory did not open")
+	var silent: Array[String] = []
+	var restores: Array[String] = []
+	var walked: int = 0
+	for f in dir.get_files():
+		if not str(f).ends_with(".json"):
+			continue
+		walked += 1
+		var d: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/" + str(f)))
+		if not (d is Dictionary):
+			continue
+		var stopped: bool = false
+		for step in (d as Dictionary).get("steps", []):
+			if not (step is Dictionary):
+				continue
+			var t: String = str((step as Dictionary).get("type", ""))
+			if t == "stop_music":
+				stopped = true
+			elif t == "play_music":
+				var bed: String = str((step as Dictionary).get("track", (step as Dictionary).get("music", "")))
+				if bed == "" or not tracks.has(bed):
+					continue
+				var file: String = str((tracks[bed] as Dictionary).get("file", ""))
+				if file == "" or not _is_web_excluded(file, pats):
+					continue
+				var scene: String = str(f).replace(".json", "")
+				if stopped:
+					silent.append("%s (%s)" % [scene, bed])
+				else:
+					restores.append(scene)
+	assert_gt(walked, 150, "SCOPE control: walked %d cutscene files" % walked)
+	assert_gt(restores.size(), 0,
+		"CONTROL FAILED: no scene reaches an excluded cue with music still playing. Both halves should be non-empty; one empty means the step-order read is broken, not that the population moved")
+	assert_eq(silent.size(), WEB_SILENT_SCENES,
+		"scenes that play SILENT on web changed: %d, pinned %d. This is the player-facing half of KNOWN_SILENT_ON_WEB — those are beds, these are scenes. %s" % [silent.size(), WEB_SILENT_SCENES, silent])
 
 
 func test_no_cutscene_cue_can_reach_a_procedural_generator() -> void:
