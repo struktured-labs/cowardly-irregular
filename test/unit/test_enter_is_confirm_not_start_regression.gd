@@ -128,3 +128,23 @@ func test_battlescene_still_claims_enter_reopens_the_menu() -> void:
 	assert_gt(idx, -1,
 		"BattleScene must still list Enter among the keys that reopen the command menu — " +
 		"that claim is what makes GameLoop eating Enter a defect rather than a preference")
+
+
+## THE STRIPPER'S OWN UNIT TEST. @cowir-sfx cut at the first `#` on a line and lost real calls to
+## `[color=#44ff44]` / `"BATTLE #%d"` — 84 lines in src/ carry a `#` inside a string. Mine is
+## quote-aware BY CONSTRUCTION, which is exactly the kind of claim this session kept disproving, so
+## it is pinned rather than reasoned. Both directions: it must cut comments AND keep code.
+func test_the_comment_stripper_cuts_comments_and_keeps_code() -> void:
+	# KEEP: a '#' inside a string literal is data, not a comment.
+	assert_eq(_strip_comment("\tvar s = \"[color=#44ff44]hi\""), "\tvar s = \"[color=#44ff44]hi\"",
+		"a # inside double quotes must NOT truncate — @cowir-sfx lost real calls this way")
+	assert_eq(_strip_comment("\tvar s = 'BATTLE #%d'"), "\tvar s = 'BATTLE #%d'",
+		"single quotes too")
+	assert_eq(_strip_comment("\tvar s = \"it's fine\"  # trailing"), "\tvar s = \"it's fine\"  ",
+		"an apostrophe INSIDE double quotes must not open a quote state and swallow the comment")
+	# CUT: real comments, leading and trailing.
+	assert_eq(_strip_comment("# whole line"), "", "a full-line comment must go")
+	assert_eq(_strip_comment("\tcode()  # tail"), "\tcode()  ", "a trailing comment must go")
+	# The line the guard actually reads must survive untouched.
+	var real := "\t\t\tif event is InputEventKey and event.keycode in [KEY_ESCAPE, KEY_ENTER]:"
+	assert_eq(_strip_comment(real), real, "the real guard line has no comment and must be preserved")
