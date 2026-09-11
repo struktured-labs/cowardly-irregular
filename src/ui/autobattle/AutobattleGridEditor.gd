@@ -277,7 +277,10 @@ func _build_ui() -> void:
 	if InputProfileManager:
 		g_ok = InputProfileManager.glyph_for_action("ui_accept")
 		g_no = InputProfileManager.glyph_for_action("ui_cancel")
-	help_label1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  Del/Y:Delete  W/S/RStick:Value  L:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [g_ok, g_no]
+	var g_del: String = "Y"
+	if InputProfileManager:
+		g_del = InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y)
+	help_label1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  Del/%s:Delete  W/S/RStick:Value  L:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [g_ok, g_no, g_del]
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -289,7 +292,13 @@ func _build_ui() -> void:
 	## them, and @cowir-controller's non-face derivation is on an unfolded branch. Duplicating it
 	## would create the second authority this lane spent the day removing. On a DualSense that
 	## "Sel" is Create and that "Start" is Options.
-	help_label2.text = "Y:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  Sel:Auto  Start:Save"
+	## That "Y" is JOY_BUTTON_Y (north face), NOT the keyboard letter — KEY_Y is bound to
+	## nothing here and the keyboard key for CycleOp is C (:1836). A raw button index has no
+	## action, so it derives through face_glyph_for_index rather than glyph_for_action.
+	var g_north: String = "Y"
+	if InputProfileManager:
+		g_north = InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y)
+	help_label2.text = "%s/C:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  Sel:Auto  Start:Save" % g_north
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))

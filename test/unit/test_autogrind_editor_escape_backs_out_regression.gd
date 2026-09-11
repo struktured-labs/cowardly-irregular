@@ -55,10 +55,22 @@ func test_delete_is_still_reachable_on_both_devices() -> void:
 	var src := FileAccess.get_file_as_string(ED)
 	assert_true(src.contains("KEY_DELETE, KEY_BACKSPACE"),
 		"a keyboard needs a delete now that ui_cancel backs out")
-	var x_at := src.find("JOY_BUTTON_X")
-	assert_gt(x_at, -1, "a pad needs one too — X was the only free button in this file")
-	assert_true(src.substr(x_at, 200).contains("_delete_current_cell"),
-		"and X must actually delete, not merely be bound")
+	## ⚠️ Was `src.find("JOY_BUTTON_X")` — the FIRST match — and the legend now DERIVES its glyph
+	## via face_glyph_for_index(JOY_BUTTON_X), which put a non-binding mention above the real one.
+	## A bare find() claims the whole file from one offset; scan every occurrence instead.
+	var occurrences := 0
+	var deletes := false
+	var from := 0
+	while true:
+		var at := src.find("JOY_BUTTON_X", from)
+		if at == -1:
+			break
+		occurrences += 1
+		if src.substr(at, 200).contains("_delete_current_cell"):
+			deletes = true
+		from = at + 1
+	assert_gt(occurrences, 0, "a pad needs a delete too — X was the only free button in this file")
+	assert_true(deletes, "and X must actually delete, not merely be bound")
 
 
 ## The dead exit must not be silently restored: it reads as a working Escape and is not one.

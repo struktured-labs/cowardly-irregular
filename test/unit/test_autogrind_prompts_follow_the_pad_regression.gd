@@ -16,17 +16,26 @@ extends GutTest
 ##
 ## Esc and D-Pad stay literal on purpose: a keyboard key does not change with the pad, and every
 ## pad has a d-pad. The thing that varies is the FACE letter, and only that is derived.
+##
+## ⛔ I FIRST EXEMPTED THREE OF THESE ON REASONS THAT WERE FALSE, and @cowir-controller measured
+## them rather than reading them. I wrote that "Y:CycleOp" was the keyboard row — KEY_Y is bound to
+## NOTHING in that file and the keyboard key is C (:1836); that Y is JOY_BUTTON_Y, Ⓧ on Nintendo and
+## △ on PlayStation. I wrote that "Del/Y:Delete" named a pad button for a keyboard-only action —
+## :1842-1847 deletes on JOY_BUTTON_Y whenever the cursor is off a condition cell. Both are now
+## DERIVED through face_glyph_for_index, which is the right helper for a RAW button index (no
+## action to look up), where glyph_for_action takes an action name.
+##
+## An exemption carrying a false reason is worse than no exemption: it reads as verified and stops
+## the next sweep from looking. The reason field is the deliverable, so a wrong one is the one
+## defect this design cannot absorb.
 
 const LANE_DIRS := ["res://src/ui/autogrind", "res://src/ui/autobattle"]
 
 ## Frozen captions that are NOT fixed, each with the reason -- the value is required non-empty, so
 ## an entry can be explained green but never silenced green.
 const DEFERRED := {
-	"Sel:Auto": "Select is not a face button; glyph_for_action reads FACE_GLYPHS only, and the non-face derivation is on @cowir-controller's unfolded branch. Duplicating it would create a second authority.",
+	"Sel:Auto": "Select is not a FACE button, so neither glyph_for_action nor face_glyph_for_index names it; @cowir-controller's non-face derivation is on an unfolded branch and duplicating it would create a second authority.",
 	"Start:Save": "Start is not a face button; same reason as Sel:Auto.",
-	"Y:C": "AutobattleGridEditor's help_label2 is the KEYBOARD row -- that Y is the keyboard letter for CycleOp, not the face button. Same spelling, different symbol; only the row says which.",
-	"X:D": "AutogrindGridEditor 'Del/X:Delete' names a pad button for an action bound to KEY_DELETE/KEY_BACKSPACE only. Deriving it would assert a binding I could not establish -- recorded rather than guessed.",
-	"Y:D": "AutobattleGridEditor 'Del/Y:Delete', same as X:D -- keyboard-only binding wearing a face-button caption.",
 }
 
 

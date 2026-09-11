@@ -46,9 +46,22 @@ func test_delete_is_still_reachable_on_keyboard_and_pad() -> void:
 	var src := FileAccess.get_file_as_string(ED)
 	assert_true(src.contains("KEY_DELETE, KEY_BACKSPACE"),
 		"Delete/Backspace must delete a cell now that ui_cancel backs out")
-	var y_at := src.find("JOY_BUTTON_Y")
-	assert_gt(y_at, -1, "the pad's Y branch still exists")
-	assert_true(src.substr(y_at, 320).contains("_delete_current_cell"),
+	## ⚠️ Was `src.find("JOY_BUTTON_Y")` — the FIRST match — and the legend now DERIVES its glyph
+	## via face_glyph_for_index(JOY_BUTTON_Y), which put a non-binding mention above the real one.
+	## A bare find() claims the whole file from one offset; scan every occurrence instead.
+	var occurrences := 0
+	var deletes := false
+	var from := 0
+	while true:
+		var at := src.find("JOY_BUTTON_Y", from)
+		if at == -1:
+			break
+		occurrences += 1
+		if src.substr(at, 320).contains("_delete_current_cell"):
+			deletes = true
+		from = at + 1
+	assert_gt(occurrences, 0, "the pad's Y branch still exists")
+	assert_true(deletes,
 		"a pad needs a delete too — Y off a condition cell was a dead end and now carries it")
 
 
