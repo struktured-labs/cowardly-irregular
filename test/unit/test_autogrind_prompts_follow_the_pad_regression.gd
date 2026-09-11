@@ -24,9 +24,15 @@ extends GutTest
 ## derivation, neighbours, six mutation arms — and not one asked whether a player can reach the
 ## screen. Measured only once they published it:
 ##
-##   AutogrindSummary         GameLoop:6016 loads it                      LIVE
-##   AutogrindGridEditor      AutogrindUI.gd                              LIVE
-##   AutobattleGridEditor     GameLoop + BattleScene                      LIVE
+## ⚠️ "LIVE" HERE MEANS ANCHORED, NOT PLAYTHROUGH-REACHABLE — @cowir-adhoc/@cowir-music's
+## dispatchability-vs-reachability split, which lands on my own word. This arm computes
+## `callers > 0 and not (the one caller is the dead hub)`: a static scan. The DEAD verdicts are the
+## strong half (MenuScene is instantiated nowhere, so those screens genuinely cannot be opened); the
+## LIVE ones say a chain reaches the main scene's script, NOT that a player arrives there. Whether
+## anyone reaches the summary needs a progression trace, which no grep can answer.
+##   AutogrindSummary         GameLoop loads it                          ANCHORED
+##   AutogrindGridEditor      AutogrindUI.gd                              ANCHORED
+##   AutobattleGridEditor     GameLoop + BattleScene                      ANCHORED
 ##   AutogrindHistoryScreen   MenuScene.gd ONLY                           ⛔ DEAD HUB
 ##   AutogrindTemplatePicker  MenuScene.gd ONLY                           ⛔ DEAD HUB
 ##
