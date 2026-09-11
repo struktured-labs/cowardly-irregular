@@ -618,7 +618,13 @@ func _resolve_attack(attacker, target) -> int:
 	if not target or not target.is_alive:
 		return 0
 
-	var miss_chance = max(0.02, min(0.60, 0.10 - (attacker.speed - target.speed) * 0.05))
+	## BLIND: the live engine adds 0.40 to the miss rate (BattleManager's attack miss check) and this
+	## resolver applied the status and then ignored it — the Bard's Riff inflicts blind on a 70% roll,
+	## so his signature disruption did nothing in a grind while doing its job in a live fight.
+	var base_miss: float = 0.10
+	if attacker.has_status("blind"):
+		base_miss += 0.40
+	var miss_chance = max(0.02, min(0.60, base_miss - (attacker.speed - target.speed) * 0.05))
 	if randf() < miss_chance:
 		_log("%s misses %s!" % [attacker.combatant_name, target.combatant_name])
 		return 0
