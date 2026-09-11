@@ -177,16 +177,30 @@ def audit(path):
         # safe because they forward "$@" untouched — safe by how they happen to be written,
         # which is not the same as checked.
         findings = []
-        delegations = []
-        for i, l in enumerate(lines):
-            if not DELEGATE_RE.search(l):
-                continue
-            delegations.append(i + 1)
-            if re.search(r'(^|\s)--publish(\s|$|")', l):
-                findings.append((i + 1,
-                                 "this wrapper INJECTS --publish into its delegate, so calling "
-                                 "it without the flag still publishes. A wrapper is a publish "
-                                 "entry point, not an exemption"))
+        delegations = [i + 1 for i, l in enumerate(lines) if DELEGATE_RE.search(l)]
+
+        # ⚠ The first version of this checked for --publish ONLY ON THE DELEGATION LINE. That
+        # reads half the script and infers the rest, in the check whose whole subject is "a
+        # wrapper must not introduce the flag". Measured — both of these injected it invisibly:
+        #
+        #     FLAG="--publish"; exec … deploy_desktop.sh $FLAG "$@"
+        #     set -- --publish "$@"; exec … deploy_desktop.sh "$@"
+        #
+        # A wrapper's contract is that it FORWARDS the caller's arguments and adds no publish
+        # flag of its own, so the predicate is "does the literal --publish appear anywhere in
+        # this wrapper's code", not "on one line". Over-broad on purpose: a wrapper with a
+        # legitimate reason to name the flag in live code is rare enough to be worth a look,
+        # and a missed injection is silent. (Comments are already stripped, so a usage comment
+        # mentioning --publish does not trip it.)
+        if delegations:
+            for i, l in enumerate(lines):
+                if re.search(r'(^|[\s="\'(])--publish(\s|$|["\')])', l):
+                    findings.append((i + 1,
+                                     "a delegating wrapper NAMES --publish in its own code. A "
+                                     "wrapper must forward the caller's arguments and add no "
+                                     "publish flag of its own; calling it without the flag may "
+                                     "still publish. A wrapper is a publish entry point, not "
+                                     "an exemption"))
         return [], findings, delegations
 
     findings = []
@@ -365,7 +379,7 @@ fi
     "wrapper that INJECTS --publish into its delegate": ("""#!/usr/bin/env bash
 # a thin wrapper with no push of its own — but it publishes anyway
 exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" --publish "$@"
-""", 1, "INJECTS --publish"),
+""", 1, "NAMES --publish in its own code"),
 
     "wrapper that forwards \"$@\" untouched": ("""#!/usr/bin/env bash
 exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
@@ -394,7 +408,22 @@ $(command -v butler) push out/ "$T"
     "wrapper delegating via an INDIRECT form": ("""#!/usr/bin/env bash
 D="$(dirname "$0")"
 PLAT=linux "$D"/deploy_desktop.sh --publish "$@"
-""", 1, "INJECTS --publish"),
+""", 1, "NAMES --publish in its own code"),
+
+    "wrapper injecting --publish via a VARIABLE": ("""#!/usr/bin/env bash
+FLAG="--publish"
+exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" $FLAG "$@"
+""", 1, "NAMES --publish in its own code"),
+
+    "wrapper prepending --publish via set --": ("""#!/usr/bin/env bash
+set -- --publish "$@"
+exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
+""", 1, "NAMES --publish in its own code"),
+
+    "wrapper naming --publish only in a COMMENT": ("""#!/usr/bin/env bash
+# to publish: tools/deploy_linux.sh --publish <tag>
+exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
+""", 0, ""),
 
     "push appears only in a comment": ("""#!/usr/bin/env bash
 # "${BUTLER_BIN}" push out/ "$T"   <- this is prose about the push, not a push
