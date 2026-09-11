@@ -110,7 +110,14 @@ for sym in "$@"; do
 		printf '  ABSENT  x%-4s %s\n' "$n" "$sym"
 		MISSING=$((MISSING + 1))
 	else
+		# EMIT THE MATCH, do not just count it. `grep -F` is a substring search, so `collapse_count`
+		# matches inside `collapse_count_total` and a truncated symbol matches everything it is a
+		# prefix of — a false PRESENT, which for this tool is the dangerous direction. Whole-word
+		# matching is wrong here (callers legitimately pass `"key": value,` fragments and operators),
+		# so the fix is to make the match VISIBLE rather than to narrow it: a reader seeing the line
+		# can tell `collapse_count = 0` from `collapse_count_total += 1`.
 		printf '  present x%-4s %s\n' "$n" "$sym"
+		command grep -aF -m1 -- "$sym" "$WORK" | sed 's/^[[:space:]]*/           | /' | cut -c1-100
 	fi
 done
 
