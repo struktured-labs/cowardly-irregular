@@ -390,7 +390,56 @@ func test_the_npc_probe_can_see_an_unkeyed_frame() -> void:
 const NPC_CROP_CONSUMERS := {
 	"res://src/exploration/WanderingNPC.gd": ["ARCHETYPE_FRAME_W", "ARCHETYPE_FRAME_H"],
 	"res://src/cutscene/CutsceneActor.gd": ["FRAME_SIZE", "FRAME_SIZE"],
+	"res://src/exploration/OverworldNPC.gd": ["_ARCHETYPE_FRAME_W", "_ARCHETYPE_FRAME_H"],
 }
+
+
+## The ledger above shipped with TWO entries and there were THREE. OverworldNPC._apply_facing
+## re-slices the same archetype grid for the dialogue portrait, and my sweep for crop constants
+## was `const [A-Z_]+` -- the leading underscore on _ARCHETYPE_FRAME_W walked straight through it.
+##
+## A hand-list with no premise is how that stays wrong. Deriving the population instead does NOT
+## work here and I measured rather than assumed: ".gd files naming an npcs sheet path AND building
+## a Rect2" returns HybridSpriteLoader and CutsceneDialogue (neither crops this grid) and MISSES
+## both WanderingNPC and CutsceneActor, which assemble the path from a template const. One true
+## positive, two false, two missed -- worse than the list it would replace.
+##
+## So the list stays, with a premise aimed at exactly the failure that produced it: any script
+## declaring an ARCHETYPE_FRAME constant must be IN the ledger. That vocabulary is specific to this
+## sheet family (measured: OverworldNPC and WanderingNPC, nothing else), so it cannot over-match the
+## way the path heuristic did -- and CutsceneActor's FRAME_SIZE is hand-listed and declared as such
+## rather than pretended to be derived.
+func test_no_archetype_crop_constant_is_missing_from_the_ledger() -> void:
+	var found: Array = []
+	var stack: Array = ["res://src"]
+	var scanned := 0
+	while not stack.is_empty():
+		var d: String = stack.pop_back()
+		var dir := DirAccess.open(d)
+		if dir == null:
+			continue
+		for sub in dir.get_directories():
+			stack.append("%s/%s" % [d, sub])
+		for f in dir.get_files():
+			if not f.ends_with(".gd"):
+				continue
+			scanned += 1
+			var path: String = "%s/%s" % [d, f]
+			var src := FileAccess.get_file_as_string(path)
+			if src.contains("ARCHETYPE_FRAME_W") and src.contains("const"):
+				found.append(path)
+	assert_gt(scanned, 100,
+		"CONTROL: only %d .gd files scanned under res://src -- the walk is broken and any clean result below is free" % scanned)
+	found.sort()
+	var unlisted: Array = []
+	for path in found:
+		if not NPC_CROP_CONSUMERS.has(path):
+			unlisted.append(path)
+	assert_eq(unlisted, [],
+		("a script declares an ARCHETYPE_FRAME constant and is not in NPC_CROP_CONSUMERS -- it crops " +
+		 "these sheets with its own copy of the number and nothing checks that copy: %s") % str(unlisted))
+	assert_gt(found.size(), 1,
+		"CONTROL: found %d scripts with an ARCHETYPE_FRAME constant (2 at time of writing) -- if this drops to 0 the scan matched nothing and the zero above is free" % found.size())
 
 
 func test_every_npc_sheet_consumer_crops_with_the_same_frame_size() -> void:
