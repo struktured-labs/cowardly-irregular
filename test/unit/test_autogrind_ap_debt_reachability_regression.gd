@@ -23,10 +23,18 @@ extends GutTest
 ## TWO UPDATES FOR WHOEVER MAKES THAT CALL, both from 2026-09-11.
 ##
 ## 1. THE VOCABULARY IS LIVE, ONLY THE POSITION IS STRANDED — which points at "give the template an
-##    Advance rule" rather than "drop the rule". @cowir-story's staleness signal is the
-##    discriminator: a dead set usually references a DEAD VOCABULARY (their superseded epilogues
-##    name trigger flags nothing sets). These rules do the opposite — `ap < 0` is exercised below
-##    against a combatant in real debt and answers correctly. Authored-but-unreachable, not stale.
+##    Advance rule" rather than "drop the rule". The evidence is
+##    test_the_condition_itself_reads_the_debt_when_it_exists below: `ap < 0` is TRUE for a
+##    combatant in real debt and FALSE once it is paid. Authored-but-unreachable, not stale.
+##
+##    ⚠️ I first credited this to a cross-lane "dead set references a dead vocabulary" signal, which
+##    @cowir-story RETRACTED an hour later — every trigger in their corpus scored 0 because nothing
+##    reads triggers at all, so live and dead scenes were indistinguishable. My conclusion does not
+##    depend on it and never did; the behavioural arm below is the discriminator and predates the
+##    borrowed one. But I had called the borrowed signal "the discriminator I was missing" while
+##    already holding a better one, and a justification travels further than the finding it
+##    decorates. Borrowing a signal without re-running its control on your own corpus is the
+##    mistake even when, as here, it changes nothing.
 ##
 ## 2. THE THRESHOLD MOVED, AND I MOVED IT. The resolver now charges billed_ap for an Advance
 ##    instead of size-1, so a 2-action rule costs 2 AP per round against the natural +1 rather than
