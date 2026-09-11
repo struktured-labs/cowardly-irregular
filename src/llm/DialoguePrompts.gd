@@ -841,12 +841,15 @@ static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -
 ## rule list (may be empty) surfaced as read-only context to refine, not replace.
 ##
 ## Returns a prompt String ready for LLMService.complete_json().
-static func build_rule_composition(domain: String, prompt_text: String, current_rules: Array) -> String:
+static func build_rule_composition(domain: String, prompt_text: String, current_rules: Array,
+		kit_context: Dictionary = {}) -> String:
 	var grammar: String = AUTOBATTLE_GRAMMAR_DESCRIPTION if domain == "autobattle" else AUTOGRIND_GRAMMAR_DESCRIPTION
+	var kit_block: String = _format_rule_kit(kit_context) if domain == "autobattle" else ""
 	var current_json: String = JSON.stringify(current_rules) if current_rules.size() > 0 else "[]"
 	return (
 		"You are a rule authoring assistant for a JRPG's autobattle/autogrind system.\n\n"
 		+ grammar
+		+ kit_block
 		+ "\n\nCurrent rules (for reference; may be empty):\n"
 		+ current_json
 		+ "\n\nPlayer intent:\n"
@@ -862,6 +865,47 @@ static func build_rule_composition(domain: String, prompt_text: String, current_
 		+ "    (weakest_to_ability means the enemy weak to the ability's ELEMENT.)\n\n"
 		+ "Only emit the JSON. No commentary."
 	)
+
+
+
+## Render the character's real kit and MP pool for the rule-composition prompt.
+##
+## The grammar tells the model its abilities must be in "THIS character's level-1
+## kit" and that costed rules need an mp_percent guard covering the summed cost.
+## Without this block it was told neither which character nor what anything costs,
+## so both rules were unfollowable: measured 0 of 10 compositions surviving the
+## deep check for cleric, fighter and mage alike, losing to guessed ability ids
+## (`cure` on a fighter, a `heal` that exists in no job) and to missing guards.
+##
+## Comes from AutobattleSystem.get_deep_check_kit — the validator's own view — so
+## the prompt cannot teach a kit the validator will reject.
+static func _format_rule_kit(kit_context: Dictionary) -> String:
+	if kit_context.is_empty() or not bool(kit_context.get("resolved", false)):
+		return ""
+	var kit: Array = kit_context.get("kit", [])
+	if kit.is_empty():
+		return ""
+	var costs: Dictionary = kit_context.get("costs", {})
+	var max_mp: int = int(kit_context.get("max_mp", 0))
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("\n\nTHIS CHARACTER is a %s with a %d MP pool." % [str(kit_context.get("job_id", "?")), max_mp])
+	lines.append("Ability ids you may use, and NOTHING else (0 MP needs no guard):")
+	var cheapest_id: String = ""
+	var cheapest_cost: int = 0
+	for aid in kit:
+		var cost: int = int(costs.get(str(aid), 0))
+		lines.append("  %s - %d MP" % [str(aid), cost])
+		if cost > 0 and (cheapest_id == "" or cost < cheapest_cost):
+			cheapest_id = str(aid)
+			cheapest_cost = cost
+	lines.append("Anything not on that list — including abilities from other jobs —")
+	lines.append("is rejected and DISCARDS THE WHOLE RULE SET. Prefer 'attack' when unsure.")
+	if cheapest_id != "" and max_mp > 0:
+		var pct: int = ceili(float(cheapest_cost) / float(max_mp) * 100.0)
+		lines.append("Worked example with THESE numbers: a rule casting %s (%d MP of %d)"
+			% [cheapest_id, cheapest_cost, max_mp])
+		lines.append("needs the condition {\"type\":\"mp_percent\",\"op\":\">=\",\"value\":%d}." % pct)
+	return "\n".join(lines)
 
 
 # ── Validation helpers ─────────────────────────────────────────────────────────

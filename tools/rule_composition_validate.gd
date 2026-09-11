@@ -20,6 +20,8 @@ func _init() -> void:
 	await process_frame
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	var arm: String = args[0] if args.size() > 0 else "after"
+	var character_id: String = args[1] if args.size() > 1 else ""
+	var repair: bool = not args.has("--norepair")
 	var dir_path: String = "res://tmp/replies_%s" % arm
 
 	var svc = root.get_node_or_null("LLMService")
@@ -30,6 +32,10 @@ func _init() -> void:
 		_write(arm, lines)
 		quit(2)
 		return
+
+	var rc = root.get_node_or_null("RuleComposer")
+	if rc == null:
+		rc = load("res://src/llm/RuleComposer.gd").new()
 
 	var d := DirAccess.open(dir_path)
 	if d == null:
@@ -73,10 +79,13 @@ func _init() -> void:
 		n_parse += 1
 
 		var rules: Array = v["rules"]
+		# Apply the SHIPPING repair, not a copy of it.
+		if repair and character_id != "" and rc != null and abs.has_method("get_deep_check_kit"):
+			rc._supply_missing_mp_guards(rules, abs.get_deep_check_kit(character_id))
 		var errs: Array[String] = []
 		var bad_here := 0
 		for r in rules:
-			var re: Array = abs.validate_rule(r, "")
+			var re: Array = abs.validate_rule(r, character_id)
 			if re.size() > 0:
 				bad_here += 1
 			for e in re:
@@ -94,7 +103,7 @@ func _init() -> void:
 				% [f, rules.size(), bad_here, ", ".join(errs).left(120)])
 
 	lines.append("")
-	lines.append("arm=%s  samples=%d" % [arm, names.size()])
+	lines.append("arm=%s  character=%s  samples=%d" % [arm, character_id if character_id != "" else "(shallow)", names.size()])
 	lines.append("  extracted a JSON object      %d/%d" % [n_extract, names.size()])
 	lines.append("  matched the schema           %d/%d" % [n_schema, names.size()])
 	lines.append("  rules_json parsed            %d/%d" % [n_parse, names.size()])

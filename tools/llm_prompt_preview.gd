@@ -11,6 +11,7 @@ const OUT_PATH := "res://tmp/llm_prompt_preview.txt"
 
 
 func _init() -> void:
+	await process_frame
 	var args: PackedStringArray = OS.get_cmdline_user_args()
 	var kind: String = args[0] if args.size() > 0 else "opening"
 	var rich: bool = not args.has("--bare")
@@ -35,10 +36,18 @@ func _init() -> void:
 				"Harmonia Village", events, "You return to me, battered and worn.",
 				"What do you know of the wyrm?", 4, quest, party, memory, tod)
 		"rules":
-			out = DP.build_rule_composition(
-				"autobattle",
-				"Heal whoever is hurt worst when they drop under 40%, cure poison if anyone has it, otherwise hit the weakest enemy.",
-				[])
+			# Kit comes from the validator's own resolver, same as the shipping caller.
+			var who: String = "cleric"
+			for a in args:
+				if a.begins_with("--who="):
+					who = a.substr(6)
+			var abs_sys = root.get_node_or_null("AutobattleSystem")
+			var kit_ctx: Dictionary = abs_sys.get_deep_check_kit(who) if abs_sys != null else {}
+			var intent: String = "Heal whoever is hurt worst when they drop under 40%, cure poison if anyone has it, otherwise hit the weakest enemy."
+			for a2 in args:
+				if a2.begins_with("--intent="):
+					intent = a2.substr(9)
+			out = DP.build_rule_composition("autobattle", intent, [], kit_ctx)
 		"signoff":
 			out = DP.build_npc_sign_off(
 				"Elder Theron", "a weary village elder who has seen too much",

@@ -62,7 +62,15 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		composition_ready.emit(res)
 		return res
 
-	var prompt: String = DialoguePromptsScript.build_rule_composition(domain, prompt_text, current_rules)
+	# The prompt is built from the validator's own kit view, so it cannot teach a
+	# kit the deep check then rejects.
+	var kit_context: Dictionary = {}
+	if domain == DOMAIN_AUTOBATTLE and character_id != "":
+		var abs_sys = get_node_or_null("/root/AutobattleSystem")
+		if abs_sys != null and abs_sys.has_method("get_deep_check_kit"):
+			kit_context = abs_sys.get_deep_check_kit(character_id)
+	var prompt: String = DialoguePromptsScript.build_rule_composition(
+		domain, prompt_text, current_rules, kit_context)
 	var svc = get_node_or_null("/root/LLMService")
 	var raw: Variant = await svc.complete_json(prompt, DialoguePromptsScript.SCHEMA_RULE_COMPOSITION, DialoguePromptsScript.FALLBACK_RULE_COMPOSITION)
 
@@ -89,6 +97,15 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		"domain": domain,
 		"character_id": character_id,
 	}
+
+	# The mp_percent guard is DERIVABLE, not a judgement: a rule casting cure (6 MP
+	# of a 70 pool) requires exactly mp_percent >= 9. The model was told the numbers
+	# and still omitted the guard in 20 of 29 rejected rules, and one missing guard
+	# discarded the player's WHOLE ruleset. Supplying it is arithmetic from the same
+	# kit the validator uses; it can only turn a rejection into a valid rule, and it
+	# never loosens a guard the model did emit.
+	if domain == DOMAIN_AUTOBATTLE and bool(kit_context.get("resolved", false)):
+		_supply_missing_mp_guards(v["rules"], kit_context)
 
 	var domain_system = get_node_or_null("/root/AutobattleSystem" if domain == DOMAIN_AUTOBATTLE else "/root/AutogrindSystem")
 	var grammar_errors: Array[String] = []
@@ -130,3 +147,46 @@ func _fallback_result(domain: String, character_id: String) -> Dictionary:
 		"domain": domain,
 		"character_id": character_id,
 	}
+
+
+## Add or raise the mp_percent guard each rule needs, in place.
+##
+## Mirrors _deep_check_rule's arithmetic exactly — summed MP cost of the rule's
+## ability actions against the character's pool — so a repaired rule is one the
+## validator accepts by construction rather than by coincidence. Rules whose
+## abilities are unknown or out-of-kit are left alone: those are the model's
+## errors to fail on, not arithmetic this can fix.
+func _supply_missing_mp_guards(rules: Array, kit_context: Dictionary) -> void:
+	var costs: Dictionary = kit_context.get("costs", {})
+	var kit: Array = kit_context.get("kit", [])
+	var max_mp: int = int(kit_context.get("max_mp", 0))
+	if max_mp <= 0:
+		return
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		var total: int = 0
+		var repairable: bool = true
+		for a in rule.get("actions", []):
+			if typeof(a) != TYPE_DICTIONARY or str(a.get("type", "")) != "ability":
+				continue
+			var aid: String = str(a.get("id", ""))
+			if not (aid in kit) or a.has("upgrades"):
+				repairable = false
+				break
+			total += int(costs.get(aid, 0))
+		if not repairable or total <= 0:
+			continue
+		var need: int = ceili(float(total) / float(max_mp) * 100.0)
+		var conditions: Array = rule.get("conditions", [])
+		var raised: bool = false
+		for c in conditions:
+			if typeof(c) != TYPE_DICTIONARY:
+				continue
+			if str(c.get("type", "")) == "mp_percent" and str(c.get("op", "")) == ">=":
+				if int(c.get("value", 0)) < need:
+					c["value"] = need
+				raised = true
+		if not raised:
+			conditions.append({"type": "mp_percent", "op": ">=", "value": need})
+			rule["conditions"] = conditions
