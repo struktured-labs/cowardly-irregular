@@ -113,7 +113,7 @@ func test_every_ambient_cue_loops() -> void:
 
 
 ## Every key handed to play_ambient anywhere in src/ — string literals AND const identifiers.
-## ⚠️ CONSTS ARE NOT OPTIONAL: SoundManager:869 calls play_ambient(NIGHT_AMBIENCE_KEY), whose value
+## ⚠️ CONSTS ARE NOT OPTIONAL: SoundManager's _on_ambient_finished calls play_ambient(NIGHT_AMBIENCE_KEY), whose value
 ## is "night_crickets_wind" — no ambient_ prefix, so the prefix half misses it too. A literal-only
 ## scan left it invisible to BOTH halves of this corpus; it happens to be loop=true, so the gap was
 ## latent, not live. The remaining unresolvable shapes (a local var or a method result) are pinned
