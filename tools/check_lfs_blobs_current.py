@@ -98,6 +98,37 @@ def _lfs_files(repo):
     return sorted(files)
 
 
+def _independent_corpus(repo, patterns):
+    """A SECOND derivation of the corpus, not sharing a cause with the first.
+
+    ⛔ WHY THIS EXISTS. `compared == present` was the completeness check, and both sides came
+    from `_lfs_files`. Measured 2026-09-11 by dropping one member from that query on the real
+    500-file tree:
+
+        corpus 499 · 499 present on disk · compared 499 · stale 0      EC 0, SILENT
+
+    All three numbers shrink together, because a corpus derived by a filter never HAD what it
+    excluded — there is no quantity that moves. The selftest missed it only because its fixtures
+    hold one file each, which makes minus-one identical to total drain: the arm was passing by
+    an accident of fixture size, not by covering the case.
+
+    So: re-derive from `git ls-files` plus our own extension match, and require that git's
+    attribute machinery did not LOSE anything this finds. One-directional on purpose — extra
+    files in git's answer are fine (a pattern shape we do not replicate), files MISSING from it
+    are the failure. Patterns we cannot replicate faithfully are reported, never silently
+    dropped."""
+    simple, skipped = [], []
+    for pat in patterns:
+        (simple if re.fullmatch(r'\*\.[A-Za-z0-9_]+', pat) else skipped).append(pat)
+    exts = {pat[1:] for pat in simple}
+    ec, out = _git(repo, "ls-files", "-z")
+    if ec != 0:
+        return set(), simple, skipped
+    found = {n for n in out.split("\0")
+             if n and os.path.splitext(n)[1] in exts}
+    return found, simple, skipped
+
+
 def _pointer_oid(repo, path):
     """The oid HEAD's blob for `path` claims, or None if that blob is not an LFS pointer."""
     ec, raw = _git(repo, "cat-file", "blob", f"HEAD:{path}", binary=True)
@@ -141,6 +172,28 @@ def run(repo="."):
               f"repo.")
         print(f"{TAG} corpus 0 · compared 0 · stale 0")
         return 0
+
+    # ── CROSS-CHECK THE CORPUS ITSELF, before anything is compared. A second derivation
+    # that does not share a cause with the first is the only thing that can see partial loss.
+    indep, replicated, unreplicated = _independent_corpus(repo, patterns)
+    lost = sorted(indep - set(corpus))
+    if lost:
+        raise Unusable(
+            f"{TAG} BLOCKED: git's attribute machinery reports {len(corpus)} LFS file(s), but an "
+            f"independent\n"
+            f"        match on {' '.join(replicated)} finds {len(lost)} more that it did NOT "
+            f"list:\n"
+            f"        {', '.join(lost[:8])}{' …' if len(lost) > 8 else ''}\n"
+            f"        Either .gitattributes stopped covering them — in which case they are no "
+            f"longer\n"
+            f"        stored in LFS and that is a real change — or this guard's corpus query "
+            f"lost them.\n"
+            f"        A shortened corpus reports 'stale 0' over the files it still sees, which "
+            f"is a\n"
+            f"        partial result presented as a whole one.")
+    if unreplicated:
+        print(f"{TAG} note: pattern(s) {' '.join(unreplicated)} are not independently "
+              f"cross-checked (shape not replicated)")
 
     compared, stale, unfetched, nopointer = 0, [], [], []
     for rel in corpus:
@@ -362,7 +415,35 @@ def selftest():
             lambda: (_said("no readable pointer") and _said("nothing was examined"),
                      "refuses rather than reporting stale 0"))
 
-        # 8. not a git repo
+        # 8. ⛔ MINUS-ONE. Two files, and the corpus query loses exactly ONE of them.
+        #    This arm exists because the total-drain arm (#5) passed for the wrong reason:
+        #    every other fixture here holds ONE file, which makes minus-one identical to a
+        #    total drain. Measured on the real 500-file tree before the cross-check existed:
+        #    "corpus 499 · 499 present · compared 499 · stale 0", EC 0 — silent, because
+        #    corpus/present/compared all derive from the same query and shrink together.
+        #    `_lfs_files` is patched rather than the source mutated, so this is an ARM that
+        #    re-runs, not a mutation preserved only in a commit message.
+        BYTES_C = b"REAL-AUDIO-CCC" * 40
+        PTR_C = _pointer_text(hashlib.sha256(BYTES_C).hexdigest(), len(BYTES_C))
+        two = _mkrepo(os.path.join(td, "two"), ["*.ogg"],
+                      {"a/x.ogg": (PTR_A, BYTES_A), "a/y.ogg": (PTR_C, BYTES_C)})
+        arm("two clean files — baseline for minus-one", 0, lambda: run(two),
+            lambda: (_said("compared 2"), "compares both before anything is dropped"))
+
+        _real_lfs_files = _lfs_files
+
+        def _minus_one():
+            globals()["_lfs_files"] = lambda repo: _real_lfs_files(repo)[1:]
+            try:
+                return run(two)
+            finally:
+                globals()["_lfs_files"] = _real_lfs_files
+
+        arm("corpus query loses ONE member — partial loss", 2, _minus_one,
+            lambda: (_said("did NOT list") and _said("a/x.ogg"),
+                     "names the lost file; a shortened corpus is not a clean result"))
+
+        # 9. not a git repo
         nogit = os.path.join(td, "nogit")
         os.makedirs(nogit)
         arm("not a git repository", 2, lambda: run(nogit),
