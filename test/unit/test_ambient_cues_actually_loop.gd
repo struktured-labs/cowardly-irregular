@@ -131,6 +131,14 @@ func _keys_passed_to_play_ambient() -> Array[String]:
 					var k: String = m.get_string(1)
 					if not found.has(k):
 						found.append(k)
+				## The key can also arrive ONE FRAME UP, as a method RESULT: BaseInterior calls
+				## play_ambient(_get_ambient_key()), and each interior overrides that to return a
+				## literal. A scan of call sites cannot see those. Demonstrated before fixing:
+				## an override returning a non-ambient_-prefixed key with loop=false passed GREEN.
+				for rm in _ambient_getter_re().search_all(text):
+					var rk: String = rm.get_string(1)
+					if not found.has(rk):
+						found.append(rk)
 				## play_ambient(SOME_CONST) — resolve the const's value in the same file.
 				for cm in _const_re().search_all(text):
 					var cname: String = cm.get_string(1)
@@ -180,3 +188,12 @@ func test_unresolvable_play_ambient_sites_are_known() -> void:
 	for f in found:
 		assert_true(known.has(f),
 			"%s routes play_ambient through a variable this guard cannot resolve. Either pass a literal/const, or add the file here AND confirm its keys are covered." % f)
+
+
+## Literals returned by an _get_ambient_key() override. Bounded by the `return` inside the
+## function rather than by a line window — a fixed window overruns into the next func, which is
+## how an earlier pass here pulled two _get_music_track() values in as ambient keys.
+func _ambient_getter_re() -> RegEx:
+	var r := RegEx.new()
+	r.compile("func _get_ambient_key\\([^)]*\\)[^\\n]*\\n(?:[\\t ]+[^\\n]*\\n)*?[\\t ]+return[\\t ]+\"([^\"]+)\"")
+	return r
