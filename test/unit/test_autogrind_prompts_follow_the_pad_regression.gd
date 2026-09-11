@@ -155,6 +155,10 @@ const REACHABILITY := {
 	"AutobattleGridEditor.gd": true,
 	"AutogrindHistoryScreen.gd": false,
 	"AutogrindTemplatePicker.gd": false,
+	## Added when the set-difference arm below reded on its FIRST run and named it — AutogrindUI
+	## derives glyphs (it gained hint_for_action in the .296 fold) and my hand-written table had
+	## never classified it. Anchored via GameLoop, which is the main scene's script.
+	"AutogrindUI.gd": true,
 }
 
 func test_the_live_dead_split_is_still_what_the_header_claims() -> void:
@@ -194,6 +198,28 @@ func test_the_live_dead_split_is_still_what_the_header_claims() -> void:
 			drifted.append("%s: pinned reachable=%s, measured %d caller(s)" % [target, REACHABILITY[target], callers])
 	assert_eq(drifted, [],
 		"a prompt surface changed reachability -- if MenuScene was revived or a live screen lost its last caller, update REACHABILITY and say which")
+
+	## ⛔ DRAINING MUST BE THE VIOLATION. Measured: `REACHABILITY := {}` scored Passing 7 with the
+	## assert count unmoved — the loop above runs zero times and its one verdict passes vacuously.
+	## The identical shape I fixed in DEFERRED this afternoon, in the table I wrote WHILE fixing it.
+	## @cowir-adhoc's form: make the exemption a SUBTRAHEND so an empty table is maximal exposure
+	## rather than zero work. Every file in the corpus that asks the authority for a glyph is a
+	## prompt surface and must be classified here.
+	var derives: Array = []
+	for f in _gd_files():
+		var src := _code_only(FileAccess.get_file_as_string(f))
+		if src.contains("InputProfileManager.glyph_for_action(") \
+				or src.contains("InputProfileManager.face_glyph_for_index(") \
+				or src.contains("InputProfileManager.hint_for_action("):
+			derives.append(f.get_file())
+	assert_gt(derives.size(), 0, "CONTROL: the corpus must contain at least one deriving surface")
+	var unclassified: Array = []
+	for name in derives:
+		if not REACHABILITY.has(name):
+			unclassified.append(name)
+	unclassified.sort()
+	assert_eq(unclassified, [],
+		"a surface derives its glyphs but is not classified in REACHABILITY -- add it as live or dead and say which, or this arm covers nothing")
 
 	## ⚠️ WHAT THIS ARM IS AND IS NOT. It pins TODAY'S SPLIT and reds when a surface drifts across
 	## it. It is NOT a reachability engine: it counts referrers and knows one dead hub by name,
