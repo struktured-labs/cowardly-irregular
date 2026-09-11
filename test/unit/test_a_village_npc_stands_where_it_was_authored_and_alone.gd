@@ -111,8 +111,17 @@ func test_no_village_npc_is_sealed_in_shares_a_tile_or_was_quietly_moved() -> vo
 			("CONTROL: %s did not build, so its NPCs were never examined and the empty lists below " +
 			"are half a result reported as a whole one. Built: %s") % [must, str(built)])
 	assert_gt(npcs_seen, 80, "CONTROL: only %d NPCs found, so the empty lists below are free" % npcs_seen)
+	## ⚠️ THIS ASSERT HAS TWO CAUSES AND ITS MESSAGE USED TO NAME ONE. It compares villages EXAMINED
+	## against villages BUILT, so it fires both when the oracle is broken AND when a village was
+	## instantiated and then silently skipped by a narrowing `if` above — @cowir-deploy's shape, where
+	## the filter IS the floor and there is no number to grep for. Measured: skipping one village reds
+	## here, so the coverage was already right and only the DIAGNOSIS was wrong. A reader sent to
+	## debug _is_cell_walkable for a skipped village loses the afternoon.
 	assert_eq(oracle_said_no, villages,
-		"CONTROL: _is_cell_walkable called cell (0,0) walkable in %d village(s) — it is perimeter wall, so the oracle is broken and every 'sealed' check below is vacuous" % (villages - oracle_said_no))
+		("%d village(s) were BUILT but never EXAMINED. Two causes, check in this order:\n" +
+		"  1. a narrowing `if` above skipped them (has_method, a continue) — the corpus shrank silently\n" +
+		"  2. _is_cell_walkable called cell (0,0) walkable — it is perimeter wall, so the oracle is broken\n" +
+		"Either way every 'sealed' check below is vacuous for those villages.") % (villages - oracle_said_no))
 	assert_true("Surplus Ray" in names,
 		"CONTROL: the walk never reached Maple Heights' newest NPC, so it is not reaching authored content")
 	## He exists to carry one beat out of an uncalled cutscene: the first villager who names the
