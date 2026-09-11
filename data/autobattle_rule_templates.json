@@ -1445,7 +1445,7 @@
             {
               "type": "mp_percent",
               "op": ">=",
-              "value": 25
+              "value": 43
             }
           ],
           "actions": [
@@ -1483,21 +1483,6 @@
         {
           "conditions": [
             {
-              "type": "ap",
-              "op": "<",
-              "value": 0
-            }
-          ],
-          "actions": [
-            {
-              "type": "defer"
-            }
-          ],
-          "enabled": true
-        },
-        {
-          "conditions": [
-            {
               "type": "always"
             }
           ],
@@ -1528,7 +1513,7 @@
             {
               "type": "mp_percent",
               "op": ">=",
-              "value": 25
+              "value": 43
             }
           ],
           "actions": [
@@ -1553,21 +1538,6 @@
               "type": "ability",
               "id": "shield_bash",
               "target": "highest_atk_enemy"
-            }
-          ],
-          "enabled": true
-        },
-        {
-          "conditions": [
-            {
-              "type": "ap",
-              "op": "<",
-              "value": 0
-            }
-          ],
-          "actions": [
-            {
-              "type": "defer"
             }
           ],
           "enabled": true
@@ -1605,7 +1575,7 @@
             {
               "type": "mp_percent",
               "op": ">=",
-              "value": 25
+              "value": 43
             }
           ],
           "actions": [
@@ -1622,7 +1592,7 @@
             {
               "type": "mp_percent",
               "op": ">=",
-              "value": 40
+              "value": 58
             }
           ],
           "actions": [
@@ -1647,21 +1617,6 @@
               "type": "ability",
               "id": "shield_bash",
               "target": "highest_atk_enemy"
-            }
-          ],
-          "enabled": true
-        },
-        {
-          "conditions": [
-            {
-              "type": "ap",
-              "op": "<",
-              "value": -1
-            }
-          ],
-          "actions": [
-            {
-              "type": "defer"
             }
           ],
           "enabled": true
