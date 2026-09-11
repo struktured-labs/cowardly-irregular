@@ -56,12 +56,32 @@ func _strip_comments(src: String) -> String:
 		if text.strip_edges().begins_with("#"):
 			out.append("")
 			continue
-		var hash_at := text.find("#")
-		# Only outside a string: an odd quote count before the # means we are inside one.
-		if hash_at > -1 and text.substr(0, hash_at).count("\"") % 2 == 0:
-			text = text.substr(0, hash_at)
-		out.append(text)
+		out.append(_code_before_comment(text))
 	return "\n".join(out)
+
+
+## ⚠️ THE FIRST `#` IS NOT NECESSARILY THE COMMENT. My first version checked the quote parity before
+## `find("#")` and bailed when it was odd -- so `var c := "#ff0000"  # the real comment` kept its
+## comment and the pin went hollow again. Walk the line and cut at the first `#` OUTSIDE a string.
+func _code_before_comment(line: String) -> String:
+	var in_string := false
+	var quote := ""
+	var i := 0
+	while i < line.length():
+		var ch := line[i]
+		if in_string:
+			if ch == "\\":
+				i += 2
+				continue
+			if ch == quote:
+				in_string = false
+		elif ch == "\"" or ch == "'":
+			in_string = true
+			quote = ch
+		elif ch == "#":
+			return line.substr(0, i)
+		i += 1
+	return line
 
 
 func _read_code(path: String) -> String:
