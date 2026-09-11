@@ -212,14 +212,19 @@ func test_no_editor_legend_offers_a_shadowed_key() -> void:
 				eaten.append(k.strip_edges())
 	assert_true(eaten.has("Enter"), "CONTROL: ui_accept/ui_cancel must really hold Enter, got %s" % [eaten])
 
+	## Headless has no joypads, so this IS the keyboard render. @cowir-battle's resolution, adopted
+	## in both editors: a pad-only affordance GOES rather than borrowing a key that does something
+	## else. The helper carries its own separator, so an empty token leaves no dangling "  :Save".
 	for path in EDITORS.keys():
 		var ed = load(path).new()
 		add_child_autofree(ed)
-		var token: String = ed._save_token()
-		gut.p("  %-22s save token (no pad) = '%s'" % [EDITORS[path], token])
-		assert_ne(token, "", "%s renders an empty Save key" % EDITORS[path])
-		assert_false(eaten.has(token) and token == "Enter",
-			"%s offers '%s' for Save, which ui_accept/ui_cancel consume earlier in the same elif chain" % [EDITORS[path], token])
+		var token: String = ed._pad_only_token("ui_menu", "Save")
+		gut.p("  %-22s Save token (no pad) = '%s'" % [EDITORS[path], token])
+		assert_eq(token, "",
+			"%s still offers a Save key with no pad connected ('%s') — ui_menu's own keys are eaten upstream" % [EDITORS[path], token])
+		for k in eaten:
+			assert_false(token.contains(k),
+				"%s offers '%s' for Save, which ui_accept/ui_cancel consume earlier in the same elif chain" % [EDITORS[path], k])
 
 
 func test_an_editor_legend_never_derives_from_ui_menu() -> void:
