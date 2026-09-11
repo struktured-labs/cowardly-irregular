@@ -108,6 +108,7 @@ func _ready() -> void:
 	_place_wanderers()
 	_place_village_markers()
 	_place_treasure_chests()
+	_place_hidden_passages()
 	_place_save_point()
 
 	# Start futuristic overworld music
@@ -162,10 +163,29 @@ func _place_village_markers() -> void:
 		add_child(marker)
 
 
+## No hidden passage existed here. Walls are 'N' neon_wall, not server_tower — measured on the frame, both are dim against circuit floor but neon carries more contrast (lum stdev 23.8 vs 19.0, p99 116 vs 101).
+func _place_hidden_passages() -> void:
+	const HiddenPassageScript = preload("res://src/exploration/HiddenPassage.gd")
+	var passage = HiddenPassageScript.new()
+	passage.passage_id = "w5_walled_sector"
+	passage.disguise = "cave"
+	passage.passage_width = 2
+	passage.passage_height = 1
+	# Cell anchors land at tile 3c+0.5 here; this is the only cell that covers the carved gap.
+	passage.position = Vector2(31 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 40 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(passage)
+
+
 func _place_treasure_chests() -> void:
 	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 	# 10 chests across server farm, plaza, glitch sector, node prime approach
 	var chests = [
+		# THE SECTOR BEHIND THE TOWERS — this world had no hidden passage at all. The ring is authored terrain carved into
+		# 24x22 of virgin circuit floor, the emptiest square on the map; the carve refuses any footprint that is not virgin.
+		# Cell (31,37) = tile (93.5,111.5), inside the band a real body reaches: it enters at tile
+		# y 124, travels 19.37 tiles, stops at y 104.63 and sweeps x 85.24..106.76 — the carved interior.
+		# The back rows are unreachable by the 4.4-tile clone displacement; nothing is placed there.
+		{"id": "w5_secret_walled_sector", "pos": Vector2(31, 37), "type": "item", "item": "elixir", "amount": 3},
 		# Server farm (north) — orphaned data caches
 		# One-cell nudges, each verified by a PHYSICS QUERY rather than by reading the map: these sat
 		# inside terrain collision and could never be opened. The Mode 7 collider clone is displaced

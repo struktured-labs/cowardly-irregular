@@ -103,6 +103,7 @@ func _ready() -> void:
 	_place_wanderers()
 	_place_village_markers()
 	_place_treasure_chests()
+	_place_hidden_passages()
 	_place_save_point()
 
 	# Start industrial overworld music
@@ -157,10 +158,29 @@ func _place_village_markers() -> void:
 		add_child(marker)
 
 
+## No hidden passage existed in this world. The carved gap is a real opening; 'b' brick_wall makes it read as unbroken wall.
+func _place_hidden_passages() -> void:
+	const HiddenPassageScript = preload("res://src/exploration/HiddenPassage.gd")
+	var passage = HiddenPassageScript.new()
+	passage.passage_id = "w4_sealed_bay"
+	passage.disguise = "brick"
+	passage.passage_width = 2
+	passage.passage_height = 1
+	# Cell anchors land at tile 3c+0.5 here; this is the only cell that covers the carved gap.
+	passage.position = Vector2(13 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 43 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(passage)
+
+
 func _place_treasure_chests() -> void:
 	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 	# 10 chests across rail yard, factory floor, housing, chemical zone, break room
 	var chests = [
+		# THE SEALED LOADING BAY — this world had no hidden passage at all. The ring is authored terrain carved into
+		# 24x22 of virgin factory floor, the emptiest square on the map; the carve refuses any footprint that is not virgin.
+		# Cell (13,40) = tile (39.5,120.5), inside the band a real body reaches: it enters at tile
+		# y 133, travels 19.37 tiles, stops at y 113.63 and sweeps x 30.24..51.76 — the carved interior.
+		# The back rows are unreachable by the 4.4-tile clone displacement; nothing is placed there.
+		{"id": "w4_secret_sealed_bay", "pos": Vector2(13, 40), "type": "item", "item": "phoenix_down", "amount": 2},
 		# Rail yard (north edge) — dropped shipping crates
 		{"id": "w4_rail_hipotion", "pos": Vector2(26, 5), "type": "item", "item": "hi_potion", "amount": 5},
 		{"id": "w4_rail_gold", "pos": Vector2(35, 4), "type": "gold", "gold": 600},

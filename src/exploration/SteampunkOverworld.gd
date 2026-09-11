@@ -104,6 +104,7 @@ func _ready() -> void:
 	_place_wanderers()
 	_place_village_markers()
 	_place_treasure_chests()
+	_place_hidden_passages()
 	_place_save_point()
 
 	# Start steampunk overworld music
@@ -159,10 +160,29 @@ func _place_village_markers() -> void:
 		add_child(marker)
 
 
+## No hidden passage existed in this world. The carved gap is a real opening; 'w' building_wall makes it read as unbroken wall.
+func _place_hidden_passages() -> void:
+	const HiddenPassageScript = preload("res://src/exploration/HiddenPassage.gd")
+	var passage = HiddenPassageScript.new()
+	passage.passage_id = "w3_boiler_yard"
+	passage.disguise = "brick"
+	passage.passage_width = 2
+	passage.passage_height = 1
+	# Cell anchors land at tile 3c+0.5 here; this is the only cell that covers the carved gap.
+	passage.position = Vector2(40 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 42 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(passage)
+
+
 func _place_treasure_chests() -> void:
 	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 	# 10 chests across plaza, industrial district, rail station, residential
 	var chests = [
+		# THE YARD BEHIND THE WORKS — this world had no hidden passage at all. The ring is authored terrain carved into
+		# 24x22 of virgin concrete, the emptiest square on the map; the carve refuses any footprint that is not virgin.
+		# Cell (40,38) = tile (120.5,114.5), inside the band a real body reaches: it enters at tile
+		# y 130, travels 19.37 tiles, stops at y 110.63 and sweeps x 112.24..133.76 — the carved interior.
+		# The back rows are unreachable by the 4.4-tile clone displacement; nothing is placed there.
+		{"id": "w3_secret_boiler_yard", "pos": Vector2(40, 38), "type": "item", "item": "elixir", "amount": 2},
 		# Central plaza — fountain / clock tower area
 		{"id": "w3_plaza_ether", "pos": Vector2(18, 18), "type": "item", "item": "ether", "amount": 4},
 		{"id": "w3_plaza_gold", "pos": Vector2(26, 19), "type": "gold", "gold": 400},
