@@ -70,7 +70,9 @@ fi
 ITCH_TARGET="struktured/cowardly-irregular:web"
 PCK_LIMIT=199000000   # itch refuses HTML5 embeds with any file >= 200 MB
 PCK_WARN=180000000    # early-warning band: plan the next diet before it bites
-BUTLER_BIN="$(command -v butler || echo ./butler-bin/butler)"
+# Overridable so the post-push confirmation path is testable without touching itch,
+# matching deploy_desktop.sh.
+BUTLER_BIN="${BUTLER_BIN:-$(command -v butler || echo ./butler-bin/butler)}"
 
 echo "[deploy] target: $VERSION  publish=${PUBLISH}"
 
@@ -375,6 +377,49 @@ USERVERSION="${VERSION}+${BUILD_SHA}"
 echo "[deploy] pushing to ${ITCH_TARGET} (userversion ${USERVERSION})"
 echo "[deploy]   tag ${VERSION} is a LABEL; ${BUILD_SHA} is the tree that was exported"
 "${BUTLER_BIN}" push builds/web/ "${ITCH_TARGET}" --userversion "${USERVERSION}"
-until "${BUTLER_BIN}" status "${ITCH_TARGET}" 2>/dev/null | grep -q "${VERSION}"; do sleep 8; done
-"${BUTLER_BIN}" status "${ITCH_TARGET}" | grep web
-echo "[deploy] LIVE: ${VERSION} — https://struktured.itch.io/cowardly-irregular"
+# ── post-push confirmation: BOUNDED, and advisory ───────────────────────────
+# This was `until … ; do sleep 8; done` — an UNBOUNDED wait. If the version never registered,
+# the web chain hung forever: no timeout, no diagnosis, and publish_all blocked behind it
+# indefinitely. deploy_desktop.sh's own comment recorded this ("deploy_web.sh's equivalent
+# loop has no timeout"), and the asymmetry survived because the desktop side was the one that
+# had recently misbehaved.
+#
+# An infinite hang is the worst of the three possible failures here. A RED at least says
+# something; this said nothing and stopped the batch by never returning — and it is the
+# quietest way for an hourly publish cadence to stop, because absence is what you notice last.
+#
+# Bounded to the same budget as the desktop chain, and ADVISORY for the same reason: the push
+# itself is fatal and already covered by `set -euo pipefail` above; the authoritative check is
+# store-wide and runs in publish_all after the last channel.
+CONFIRM_BUDGET="${CONFIRM_BUDGET:-900}"
+CONFIRMED=0
+_waited=0
+while [ "$_waited" -lt "$CONFIRM_BUDGET" ]; do
+    if "${BUTLER_BIN}" status "${ITCH_TARGET}" 2>/dev/null | grep -q "${VERSION}"; then
+        CONFIRMED=1; break
+    fi
+    sleep 8; _waited=$((_waited+8))
+done
+
+if [ "$CONFIRMED" -eq 1 ]; then
+    # Witness the VERSION, not the channel name. The old line here was `status | grep web`,
+    # which selects a row by CHANNEL — so the line a human reads as proof looks identical for
+    # any version on that channel.
+    #
+    # Being precise about what that was and wasn't, because I first wrote it down as worse
+    # than it is: it was NOT a false outcome. The `until` loop above it had already matched
+    # the VERSION, so by the time `grep web` ran the build genuinely had landed. It was a WEAK
+    # WITNESS — correct conclusion, evidence that cannot vary with it — not the
+    # precondition-for-outcome substitution deploy_desktop.sh had. Measured: with a stub whose
+    # status names the channel but a DIFFERENT version, the old form never reaches this line
+    # at all; it hangs in the loop above (exit 124 at a 25s cutoff). The hang is the defect.
+    "${BUTLER_BIN}" status "${ITCH_TARGET}" 2>&1 | grep -a "${VERSION}" || true
+    echo "[deploy] LIVE: ${VERSION} — https://struktured.itch.io/cowardly-irregular"
+else
+    echo "[deploy] PUSHED, NOT YET CONFIRMED: ${VERSION} has not appeared in butler status" >&2
+    echo "         after ${CONFIRM_BUDGET}s. butler reported the push succeeded; itch may still" >&2
+    echo "         be processing. NOT failing — the authoritative check is tools/store_status.sh" >&2
+    echo "         across all three channels, which publish_all asserts after the last one." >&2
+    echo "         Verify before assuming it shipped: https://itch.io/dashboard" >&2
+    "${BUTLER_BIN}" status "${ITCH_TARGET}" >&2 || true
+fi
