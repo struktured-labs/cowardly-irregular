@@ -85,11 +85,22 @@ func setup(title: String, initial_text: String = "", max_chars: int = 16) -> voi
 	_refresh_keys()
 
 
-## Case has no InputMap action — raw JOY_BUTTON_BACK (:350) or KEY_TAB (:356). With no pad the
+## Case has no InputMap action — raw JOY_BUTTON_BACK (:363) or KEY_TAB (:370). With no pad the
 ## index helper returns "" rather than naming a button the player does not have.
 func _case_hint() -> String:
 	var pad := InputProfileManager.button_name_for_index(JOY_BUTTON_BACK)
 	return pad if pad != "" else "Tab"
+
+
+## ⛔ hint_for_action REPORTS THE BINDING, NOT THE REACHABLE BINDING. @cowir-autogrind 2026-09-11.
+## ui_menu binds Enter and Escape — and BOTH are consumed earlier in this same elif chain:
+## ui_accept (:347, Enter) presses the selected key, ui_cancel (:352, Escape) backspaces. So
+## ui_menu is PAD-ONLY here, and "Enter:Done" — which I shipped in eeb260af an hour ago — names a
+## key that types a character instead.
+## A keyboard player submits by selecting the on-screen OK key (:421), which is what this says now.
+func _done_hint() -> String:
+	var pad := InputProfileManager.button_name_for_index(JOY_BUTTON_START)
+	return pad if pad != "" else "OK key"
 
 
 func _build_ui() -> void:
@@ -164,7 +175,7 @@ func _build_ui() -> void:
 		InputProfileManager.hint_for_action("ui_accept"),
 		InputProfileManager.hint_for_action("ui_cancel"),
 		_case_hint(),
-		InputProfileManager.hint_for_action("ui_menu"),
+		_done_hint(),
 	]
 	_help_label.position = Vector2(0, container_height + 10)
 	_help_label.size = Vector2(container_width, 20)

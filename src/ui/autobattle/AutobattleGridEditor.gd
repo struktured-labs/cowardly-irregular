@@ -208,6 +208,21 @@ func setup(char_id: String, char_name: String, char_combatant: Combatant = null,
 		call_deferred("_refresh_grid")
 
 
+## "Del" plus the pad button when one is connected; "Del" alone otherwise. Keeps the keyboard
+## reading honest instead of leaving a dangling separator.
+## Auto (:1877) and Save (:1885) are PAD-ONLY arms, so with no pad the token goes rather than render
+## a key the chain gives to something else — Tab toggles the ROW (:1841), Enter edits a cell (:1765).
+func _pad_only_token(action: String, label: String) -> String:
+	if Input.get_connected_joypads().is_empty():
+		return ""
+	return "  %s:%s" % [InputProfileManager.hint_for_action(action), label]
+
+
+func _delete_token() -> String:
+	var pad := InputProfileManager.button_name_for_index(JOY_BUTTON_Y)
+	return "Del/%s" % pad if pad != "" else "Del"
+
+
 func _build_ui() -> void:
 	"""Build the editor UI"""
 	# Clear existing children first (for rebuilding)
@@ -272,10 +287,15 @@ func _build_ui() -> void:
 	var help_label1 = Label.new()
 	## Pad halves derived, keyboard halves kept — this row sits six lines above help_label2 and both
 	## are on screen at once, so a half-derived pair reads as two contradicting legends in one glance.
-	help_label1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  Del/%s:Delete  W/S/RStick:Value  %s:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [
+	help_label1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  %s:Delete  W/S/RStick:Value  %s:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [
 		InputProfileManager.hint_for_action("ui_accept"),
 		InputProfileManager.hint_for_action("ui_cancel"),
-		InputProfileManager.hint_for_action("ui_menu"),
+		## ⛔ WAS hint_for_action("ui_menu") — the WRONG ACTION, not a shadowed one. Delete is raw
+		## JOY_BUTTON_Y off a condition cell (:1854/:1859); ui_menu SAVES AND CLOSES (:1885). On a
+		## Nintendo pad that rendered "Del/Plus:Delete", pointing at the exit button. A derivation
+		## pass turned a CORRECT frozen caption into a wrong derived one — shipped in 5c3dee46.
+		## Whole token, not a slash-plus-slot: with no pad the helper is empty and "Del/" dangles.
+		_delete_token(),
 		InputProfileManager.hint_for_action("battle_defer"),
 	]
 	help_label1.position = Vector2(16, size.y - 44)
@@ -285,10 +305,10 @@ func _build_ui() -> void:
 
 	var help_label2 = Label.new()
 	## That "Y" is JOY_BUTTON_Y (north face) — the keyboard key for CycleOp is C; a raw index has no action, so it derives via face_glyph_for_index.
-	help_label2.text = "%s/C:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  %s:Auto  %s:Save" % [
+	help_label2.text = "%s/C:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose%s%s" % [
 		InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y),
-		InputProfileManager.hint_for_action("battle_toggle_auto"),
-		InputProfileManager.hint_for_action("ui_menu"),
+		_pad_only_token("battle_toggle_auto", "Auto"),
+		_pad_only_token("ui_menu", "Save"),
 	]
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
