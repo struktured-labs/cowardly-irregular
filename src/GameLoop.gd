@@ -1914,6 +1914,11 @@ func _get_pending_story_cutscene() -> String:
 		if _current_map_id == "castle_harmonia":
 			return "world1_mordaine_defeat"
 
+	# W1 Epilogue: the party argues whether a designed victory counts. Authored since launch, never reachable — nothing reads a cutscene's own `trigger` field.
+	if flags.get("cutscene_flag_world1_mordaine_defeat_complete", false) and not flags.get("cutscene_flag_world1_epilogue_complete", false):
+		if _current_map_id == "castle_harmonia":
+			return "world1_epilogue"
+
 	# ===== WORLD 2: THE MUNDANE SPRAWL (Suburban) =====
 	# W2 Prologue: portal arrival, gear transformation
 	if flags.get("cutscene_flag_world1_mordaine_defeated", false) and not flags.get("cutscene_flag_world2_prologue_complete", false):
@@ -2179,6 +2184,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_harmonia_after_cave":       "cutscene_flag_world1_harmonia_after_cave_complete",
 	# Tick 104: W1 Mordaine final post-defeat dialogue
 	"world1_mordaine_defeat":           "cutscene_flag_world1_mordaine_defeat_complete",
+	"world1_epilogue":                  "cutscene_flag_world1_epilogue_complete",
 	# W1 spotlight cutscenes — dual-signal per Spotlight Duels spec (cowir-
 	# main msg 1950, 2026-06-30). Cutscene finish now writes the _watched_
 	# flag ("player saw the intro/aftermath narration"). The _unlocked_
