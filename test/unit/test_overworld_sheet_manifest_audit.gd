@@ -31,7 +31,9 @@ func _disk_sheet_names(root: String) -> Array:
 	var dir = DirAccess.open(root)
 	assert_not_null(dir, "sheet root must open: %s" % root)
 	for sub in dir.get_directories():
-		if ResourceLoader.exists("%s/%s/overworld.png" % [root, sub]):
+		# FileAccess, not ResourceLoader: a deleted PNG keeps its .ctex, so ResourceLoader.exists
+		# enumerates sheets that are gone and this whole audit runs against a phantom corpus.
+		if FileAccess.file_exists("%s/%s/overworld.png" % [root, sub]):
 			names.append(sub)
 	return names
 
@@ -57,7 +59,15 @@ func test_every_registered_overworld_sheet_exists_on_disk() -> void:
 		var entries = manifest.get(section, {})
 		for name in entries:
 			var path = str(entries[name].get("path", ""))
-			assert_true(ResourceLoader.exists(path),
+			# This test is named "exists on disk" and asked ResourceLoader, which answers about the
+			# IMPORT CACHE. Measured 2026-09-11: deleting monk/overworld.png and re-importing left
+			# this GREEN -- --import rebuilds artifacts from bytes on disk but does not reap an
+			# orphan, so load()/ResourceLoader.exists serve a sheet whose source is gone. The
+			# premise here was already right (it iterates the manifest, every registered entry by
+			# name); only the reader was wrong, and the two are independent.
+			# GUT runs against the source tree, never an export, so FileAccess is the correct
+			# authority -- do not "fix" this back for exported-build compatibility.
+			assert_true(FileAccess.file_exists(path),
 				"%s entry '%s' points at missing asset %s — stale manifest entry" % [section, name, path])
 
 
