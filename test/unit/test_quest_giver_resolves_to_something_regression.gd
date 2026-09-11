@@ -135,6 +135,11 @@ func test_both_corpora_actually_loaded() -> void:
 		"control: 'Scholar Milo' must resolve via the snake_case fallback (he has no explicit npc_id)")
 	assert_true(ids.has("community_bulletin_board"),
 		"control: a PROP giver must resolve (BulletinBoard declares its own npc_id)")
+	## ONE CONTROL PER AUTHORING FORM (cowir-overworld, 2026-09-11). Three regexes resolve three ways
+	## to declare a giver and this one had NO arm — if its pattern broke, every explicitly-assigned
+	## npc_id would vanish from the corpus and nothing here would fire.
+	assert_true(ids.has("elder_vesper"),
+		"control: an EXPLICIT `.npc_id = \"...\"` assignment must resolve (Elder Vesper, EldertreeVillage)")
 	assert_false(ids.has("zzq_not_an_npc"), "control: a fabricated id must not resolve")
 
 
