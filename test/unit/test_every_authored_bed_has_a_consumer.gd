@@ -44,6 +44,11 @@ const KNOWN_UNREACHED := {
 	"ambient_industrial": "same decision",
 	"ambient_ocean": "same decision",
 	"ambient_steampunk": "same decision",
+	## Concealed until 2026-09-11 by this file's own corpus bug: ambient_village
+	## is in BOTH manifests, so it matched its SFX twin and read as reached. The
+	## SFX bed IS played (play_ambient reads sfx_manifest); the MUSIC entry of
+	## the same name is what nothing asks for.
+	"ambient_village": "never-played MUSIC bed; the identically-named SFX bed is live, which is what hid it",
 	"cutscene_alt_breaker_speed": "briefed in tools/music_prompts.json shared_tracks (\"Whoever Moves First\"); its scene is the alt_the_breaker novella, which has no cutscene JSON",
 	"cutscene_alt_witness_lament": "briefed (\"For the Guardian Who Did Not Choose the Gate\"); same novella, no scene authored",
 	"cutscene_w5_deprecated_goblin": "briefed (\"The Loop Completed\"); no W5 scene cues it",
@@ -122,7 +127,15 @@ func _consumer_text() -> String:
 	_files("res://data", ".json", paths)
 	var parts: PackedStringArray = []
 	for p in paths:
-		if p.ends_with("music_manifest.json"):
+		## ⛔ BOTH MANIFESTS, NOT JUST OURS. Excluding only music_manifest.json
+		## left sfx_manifest.json in the corpus — and `ambient_*` lives in BOTH
+		## stores under the same keys. So ambient_village matched its own SFX
+		## entry and reported a consumer it does not have; the vacuity this
+		## exclusion exists to prevent, one store over. Measured 2026-09-11: it
+		## hid one of the five never-played ambient beds, and the three keys
+		## present in both stores were all excused this way (two of them have
+		## real consumers, so only village was actually concealed).
+		if p.ends_with("music_manifest.json") or p.ends_with("sfx_manifest.json"):
 			continue
 		var body: String = FileAccess.get_file_as_string(p)
 		## JSON carries no comments; only .gd needs stripping.
@@ -140,6 +153,9 @@ func test_control_the_consumer_corpus_is_real_and_excludes_the_manifest() -> voi
 	## Negative: the manifest must be EXCLUDED, or every id matches itself.
 	assert_eq(text.find("\"tracks\": {"), -1,
 		"CONTROL FAILED: music_manifest.json is inside the corpus — every id would match its own manifest entry and the sweep would report zero orphans forever")
+	## The same check for the OTHER store that shares this key space.
+	assert_eq(text.find("\"sfx\": {"), -1,
+		"CONTROL FAILED: sfx_manifest.json is inside the corpus — ambient_* keys exist in BOTH manifests, so an unplayed music bed matches its SFX twin and reads as reached")
 	## Comment stripping must not eat the consumers. A real call is a string
 	## literal, and over-stripping would report every named bed as an orphan.
 	assert_gt(text.find("play_music(\"boss_mordaine\")"), 0,
