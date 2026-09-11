@@ -148,38 +148,36 @@ class Unusable(Exception):
 
 
 def _strip_comment(line):
-    """Cut at the first `#` OUTSIDE a string literal. Callers preserve the line count.
+    """Cut at the first `#` OUTSIDE a string literal, with SHELL's escaping rules.
 
-    ⚠ This used to blank FULL-LINE comments only — the limit STATED in the docstring and
-    enforced nowhere, which is @cowir-overworld's rule about the difference between knowing and
-    encoding, acknowledged by me hours before it bit. @cowir-controller broadcast the hole after
-    their THIRD costume of it in one guard: bare find() -> full-line comments -> trailing ones,
-    each fix blind to the next.
+    ⚠ Escapes differ by quote type and getting this wrong truncates real code. Measured on my
+    own previous version, which tracked quotes but not escapes:
 
-    Measured here before fixing — a trailing comment made a NON-EXITING `if` read as a gate:
+        echo "a \\" # b"        ->  cut at the `#`   WRONG: \" is an escaped quote, the
+                                                       string continues and `# b"` is inside it
 
-        if [ "$PUBLISH" != "1" ]; then
-            echo "not publishing"   # exit here one day
-        fi
-        "${BUTLER_BIN}" push out/ "$T"
+    Inside DOUBLE quotes a backslash escapes the next character; inside SINGLE quotes there is
+    no escaping at all and the string ends at the next `'`. @cowir-controller's version is
+    escape-aware for `\"`; @cowir-ai found it still mis-reads `\\"` (an escaped BACKSLASH,
+    where the string really does end). Both cases are handled here by tracking the escape state
+    rather than peeking at the previous character.
 
-    reported "push gated on --publish, flag defaults to off", EC 0. The push is ungated. Quiet
-    direction, in the guard standing in front of a publish.
-
-    Quote-aware because a naive cut at the first `#` truncates real code: shell in this lane
-    carries `grep -q "#"`-shaped arguments and printf formats.
+    Over-stripping is the catastrophic direction for this lane: `"${BUTLER_BIN}" push` is the
+    detection target, so eating quoted text reports zero push sites and passes everything.
     """
-    out, quote = [], None
+    out, quote, esc = [], None, False
     for ch in line:
+        if quote == '"' and esc:
+            out.append(ch); esc = False; continue
+        if quote == '"' and ch == '\\':
+            out.append(ch); esc = True; continue
         if quote:
             out.append(ch)
             if ch == quote:
                 quote = None
             continue
         if ch in ("'", '"'):
-            quote = ch
-            out.append(ch)
-            continue
+            quote = ch; out.append(ch); continue
         if ch == '#':
             break
         out.append(ch)
