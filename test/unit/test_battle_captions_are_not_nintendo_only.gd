@@ -428,25 +428,84 @@ func test_no_caption_derives_from_an_action_its_own_chain_eats_first() -> void:
 	## something else — so that token must be pad-gated or it is a false caption. Pre-fix this reds
 	## twice: `ui_menu` (Enter eaten by ui_accept, Escape by ui_cancel) and `battle_toggle_auto`
 	## (Tab eaten by the row-toggle arm). Neither was reachable by a bracketed-token scan.
-	var ge := _src(GRID_EDITOR)
+	## ⚠️ BOTH EDITORS. This sliced only the autobattle chain, so when I adopted @cowir-battle's
+	## _pad_only_token in AutogrindGridEditor the identical defect there sat OUTSIDE the corpus —
+	## ungating my own helper scored GREEN, 10/10. By their taxonomy that is a CORPUS GAP, not a
+	## hollow guard: the arm never executed against my file at all. One chain per file, same logic.
+	var ungated: Array = []
+	var undecided: Array = []
+	for spec in [
+		[GRID_EDITOR, ["ui_accept", "ui_cancel", "battle_toggle_auto", "ui_menu"]],
+		[AUTOGRIND_EDITOR, ["ui_accept", "ui_cancel", "battle_defer", "battle_advance", "ui_menu"]],
+	]:
+		var rep: Dictionary = _shadow_report(str(spec[0]), spec[1] as Array)
+		for u in rep["ungated"]:
+			ungated.append("%s %s" % [str(spec[0]).get_file(), u])
+		for u in rep["undecided"]:
+			undecided.append("%s %s" % [str(spec[0]).get_file(), u])
+	assert_eq(ungated.size(), 0,
+		"a caption renders a keyboard key the chain hands to something else: " + str(ungated))
+	gut.p("  undecided: %s" % str(undecided))
+	## Reported, not asserted to zero: these are captions this arm is NOT competent about, and saying
+	## so is the point. If the list grows, the arm is covering less than its name claims.
+	assert_lte(undecided.size(), 2,
+		"this arm cannot see where these actions are handled, so it is not vouching for them: " + str(undecided))
+
+
+## One editor's chain. Returns rather than asserts so the caller can report across files.
+func _shadow_report(path: String, required: Array) -> Dictionary:
+	var ge := _src(path)
 	var i: int = ge.find("func _input(event: InputEvent)")
-	assert_gt(i, -1, "CONTROL: located the input chain")
+	assert_gt(i, -1, "CONTROL: located the input chain in %s" % path)
 	var j: int = ge.find("\nfunc ", i + 10)
 	var chain: String = ge.substr(i, (j - i) if j > -1 else ge.length() - i)
-	assert_true(chain.contains(DELETER), "CONTROL: the sliced chain is the real one")
+	assert_true(chain.contains(DELETER), "CONTROL: the sliced chain is the real one in %s" % path)
 
+	## ⚠️ THE CORPUS MUST FOLLOW INDIRECTION, because MY OWN FIX INTRODUCED IT. I routed the two
+	## offending tokens through `_pad_only_token(action, label)` — so the action name became a
+	## PARAMETER, a literal `hint_for_action("x")` scan stopped finding them, and this arm went blind
+	## to exactly the two defects it was written to catch. The fix silently emptied the guard's
+	## corpus. So: actions come from direct calls AND from string literals handed to any local helper
+	## that itself calls hint_for_action. `gated` is decided the same way — a token counts as pad-safe
+	## if its own line checks, or if the helper it routes through checks.
+	var actions: Dictionary = {}   # action -> true if its caption is behind a pad-presence check
 	var named_re := RegEx.new()
 	named_re.compile("hint_for_action\\(\"([a-z_]+)\"\\)")
-	var actions: Dictionary = {}
-	for m in named_re.search_all(ge):
-		actions[m.get_string(1)] = true
-	assert_gt(actions.size(), 2, "CONTROL: captions name actions at all (%d)" % actions.size())
+	for line in ge.split("\n"):
+		for m in named_re.search_all(line):
+			var a: String = m.get_string(1)
+			actions[a] = actions.get(a, false) or line.contains("_has_pad()")
+
+	## Helpers that render an action passed in as a parameter.
+	var helper_re := RegEx.new()
+	helper_re.compile("func (_[a-z_]+)\\(action: String")
+	for hm in helper_re.search_all(ge):
+		var hname: String = hm.get_string(1)
+		var hj: int = ge.find("\nfunc ", hm.get_start() + 10)
+		var hbody: String = ge.substr(hm.get_start(), (hj - hm.get_start()) if hj > -1 else 400)
+		if not hbody.contains("hint_for_action("):
+			continue
+		var checks: bool = hbody.contains("get_connected_joypads().is_empty()") or hbody.contains("_has_pad()")
+		var call_re := RegEx.new()
+		call_re.compile("%s\\(\"([a-z_]+)\"" % hname)
+		for cm in call_re.search_all(ge):
+			var a2: String = cm.get_string(1)
+			actions[a2] = actions.get(a2, false) or checks
+	assert_gt(actions.size(), 3, "CONTROL: captions name actions at all (%d)" % actions.size())
+	for want in required:
+		assert_true(actions.has(want),
+			"CONTROL: the corpus still reaches %s — if a refactor hid it, this arm stopped speaking about it" % want)
 
 	var ungated: Array = []
+	var undecided: Array = []
 	for act in actions:
 		var own: int = chain.find("is_action_pressed(\"%s\")" % act)
 		if own < 0:
-			continue  # handled elsewhere; this arm only speaks about this chain
+			## cowir-music 2026-09-11: a guard that prints a tick for a question it could not answer is
+			## worse than one that abstains loudly. This arm can only speak about actions handled in
+			## THIS chain; anything else is recorded as undecided, never skipped into the clean column.
+			undecided.append(act)
+			continue
 		var keys: Array = []
 		for ev in InputMap.action_get_events(act):
 			if ev is InputEventKey:
@@ -457,10 +516,20 @@ func test_no_caption_derives_from_an_action_its_own_chain_eats_first() -> void:
 		for k in keys:
 			var kre := RegEx.new()
 			kre.compile("KEY_%s\\b" % k)
+			## ⚠️ A MODIFIED CHORD DOES NOT SHADOW THE BARE KEY. AutogrindGridEditor handles Shift+R
+			## (rename) before battle_advance — deliberately, since battle_advance matches with
+			## modifiers held — and plain R still falls through to it. Counting that occurrence made
+			## this arm report "R:+Action" as a false caption, which is a correct-work red on a
+			## correct legend. An earlier KEY_X guarded by a modifier is a different binding.
 			var first: int = -1
-			var km := kre.search(chain)
-			if km != null:
+			for km in kre.search_all(chain):
+				var ls: int = chain.rfind("\n", km.get_start()) + 1
+				var le: int = chain.find("\n", km.get_start())
+				var kline: String = chain.substr(ls, (le - ls) if le > -1 else 80)
+				if kline.contains("_pressed") and (kline.contains("shift_pressed") or kline.contains("ctrl_pressed") or kline.contains("alt_pressed") or kline.contains("meta_pressed")):
+					continue
 				first = km.get_start()
+				break
 			for other in actions:
 				if other == act:
 					continue
@@ -472,12 +541,9 @@ func test_no_caption_derives_from_an_action_its_own_chain_eats_first() -> void:
 		if shadowed == keys.size():
 			## Every keyboard route to this action is consumed before its own arm. Legal ONLY if the
 			## caption never renders that keyboard half — i.e. the token is behind a pad check.
-			for line in ge.split("\n"):
-				if line.contains("hint_for_action(\"%s\")" % act) and not line.contains("_has_pad()"):
-					ungated.append("%s (keys %s all eaten earlier)" % [act, str(keys)])
-					break
-	assert_eq(ungated.size(), 0,
-		"a caption renders a keyboard key the chain hands to something else: " + str(ungated))
+			if not bool(actions[act]):
+				ungated.append("%s (keys %s all eaten earlier)" % [act, str(keys)])
+	return {"ungated": ungated, "undecided": undecided}
 
 func _binds_key(action: String, key_upper: String) -> bool:
 	for ev in InputMap.action_get_events(action):
