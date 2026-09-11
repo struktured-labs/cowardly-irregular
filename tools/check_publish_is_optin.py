@@ -61,6 +61,8 @@ EXPECT_MIN_PUSHERS = 2
 
 # `"${BUTLER_BIN}" push …`, `butler push …`, `$BUTLER push …`
 PUSH_RE = re.compile(r'(?:\$\{?[A-Za-z_][A-Za-z0-9_]*\}?|\bbutler\b)["\']?\s+push\b')
+# A script that hands off to another deploy script: `exec … deploy_desktop.sh "$@"`.
+DELEGATE_RE = re.compile(r'\b(?:exec|bash|sh|source|\.)\b.*\bdeploy_[a-z_]+\.sh')
 # the line that handles --publish, and the flag it sets
 OPTIN_RE = re.compile(r'--publish\b')
 SETS_RE = re.compile(r'\b([A-Za-z_][A-Za-z0-9_]*)=1\b')
@@ -105,7 +107,33 @@ def audit(path):
 
     pushes = [i for i, l in enumerate(lines) if PUSH_RE.search(l)]
     if not pushes:
-        return [], []
+        # ⛔ A SCRIPT WITH NO PUSH SITE IS NOT AUTOMATICALLY SAFE. deploy_linux.sh and
+        # deploy_windows.sh contain no push of their own — they exec deploy_desktop.sh — so
+        # the first version of this file printed "no push site (delegates)" and checked
+        # nothing further. That asymmetry (two subjects examined, two waved through) had a
+        # TRUE explanation, which is exactly why it was never interrogated: explaining why an
+        # instrument treats two members of its subject differently answers a different
+        # question from whether it SHOULD.
+        #
+        # A delegating wrapper IS a publish entry point. `tools/deploy_linux.sh --publish <tag>`
+        # reaches butler push — measured 2026-09-11. So a wrapper that INJECTS the flag into
+        # its delegate publishes without the caller ever passing it:
+        #
+        #     exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" --publish "$@"
+        #
+        # Measured: that wrapper passed this guard GREEN, 0 findings, exit 0. The real ones are
+        # safe because they forward "$@" untouched — safe by how they happen to be written,
+        # which is not the same as checked.
+        findings = []
+        for i, l in enumerate(lines):
+            if not DELEGATE_RE.search(l):
+                continue
+            if re.search(r'(^|\s)--publish(\s|$|")', l):
+                findings.append((i + 1,
+                                 "this wrapper INJECTS --publish into its delegate, so calling "
+                                 "it without the flag still publishes. A wrapper is a publish "
+                                 "entry point, not an exemption"))
+        return [], findings
 
     findings = []
 
@@ -166,8 +194,14 @@ def run(tools_dir):
     print(f"[optin] {len(targets)} deploy script(s): {', '.join(targets)}")
     for t in targets:
         pushes, findings = audit(os.path.join(tools_dir, t))
+        if not pushes and not findings:
+            print(f"[optin]   ok    {t}  no push site; delegates without injecting --publish")
+            continue
         if not pushes:
-            print(f"[optin]   --    {t}  no push site (delegates)")
+            for (ln, why) in findings:
+                bad += 1
+                print(f"[optin]   PUBLISHES WITHOUT --publish  {t}:{ln}", file=sys.stderr)
+                print(f"[optin]                                {why}", file=sys.stderr)
             continue
         pushers += 1
         if not findings:
@@ -255,6 +289,15 @@ fi
 "${BUTLER_BIN}" push out/ "$T"
 """, 1, "nothing here parses --publish"),
 
+    "wrapper that INJECTS --publish into its delegate": ("""#!/usr/bin/env bash
+# a thin wrapper with no push of its own — but it publishes anyway
+exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" --publish "$@"
+""", 1, "INJECTS --publish"),
+
+    "wrapper that forwards \"$@\" untouched": ("""#!/usr/bin/env bash
+exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
+""", 0, ""),
+
     "push appears only in a comment": ("""#!/usr/bin/env bash
 # "${BUTLER_BIN}" push out/ "$T"   <- this is prose about the push, not a push
 # butler push would go here without the gate
@@ -298,9 +341,14 @@ def selftest():
             td = os.path.join(d, f"t{i}")
             os.makedirs(td)
             open(os.path.join(td, "deploy_probe.sh"), "w").write(src)
-            # Pad to the pusher floor with a known-good script so the vacuity check never
-            # masks the arm under test.
+            # Pad to the pusher floor with known-good scripts so the vacuity check never masks
+            # the arm under test. TWO, not one: a WRAPPER probe contributes zero pushers, so a
+            # single filler left the dir at 1 < EXPECT_MIN_PUSHERS and both wrapper arms came
+            # back Unusable(2) instead of their real verdict. The floor is a vacuity control and
+            # it suppressed the exact finding it exists to protect — worth remembering that a
+            # control can mask as well as reveal, and that a fixture has to clear it explicitly.
             open(os.path.join(td, "deploy_filler.sh"), "w").write(GOOD)
+            open(os.path.join(td, "deploy_filler2.sh"), "w").write(GOOD)
 
             def check(td=td, frag=frag):
                 _p, f = audit(os.path.join(td, "deploy_probe.sh"))
