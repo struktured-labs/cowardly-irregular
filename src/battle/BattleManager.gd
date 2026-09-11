@@ -4087,6 +4087,9 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	if full_bank:
 		battle_log_message.emit("[color=gold]★ FULL BANK — %s unleashes %d actions, the fifth is free! ★[/color]" % [combatant.combatant_name, actions.size()])
 		full_bank_unleashed.emit(combatant, actions.size())
+		## Player-side only: it is the PLAYER's record, and enemies do not get the fifth action today.
+		if GameState and combatant in player_party:
+			GameState.full_banks_unleashed += 1
 	else:
 		battle_log_message.emit("[color=orange]⚡ %s advances — %d actions this turn![/color]" % [combatant.combatant_name, actions.size()])
 
