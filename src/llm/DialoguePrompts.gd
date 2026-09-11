@@ -79,6 +79,37 @@ const SCHEMA_BOSS_INTENT: Dictionary = {
 	"taunt":     "String",
 }
 
+## What each strategic intent MEANS, for the boss-intent prompt.
+##
+## The list rendered as bare identifiers. `aggress` reads as plain English and the
+## rest are jargon, so the model picked the word it understood — measured 40 of 44
+## samples chose aggress across four scenarios, including a boss at 12% HP with 0
+## AP (turtle is the obvious read) and a player visibly repeating one heal
+## (exploit_pattern is). Since the deterministic ladder still owns ability choice,
+## the intent IS this feature's entire strategic contribution.
+##
+## ⚠️ DESCRIPTIONS ALONE DID NOT MOVE SELECTION: 30 of 30 still chose aggress with
+## these in place. The measured cause is position bias — listing turtle first
+## produced 3 of 10 turtle in the turtle-appropriate scenario, the only condition
+## that has ever produced a non-aggress answer there. These lines ship because the
+## prompt was offering jargon with no meaning, not because they fixed selection.
+## Rotating the list to exploit that bias was DELIBERATELY NOT DONE: it would make
+## posture track the phase counter rather than the board, which looks like
+## strategy and is not.
+##
+## ONLY the three intents with real bias arms are described. The six widened
+## counter tags are deliberately left bare: five of them reach no bias arm that
+## produces an action (pinned inverted in BattleManager, awaiting struktured's
+## call on whether to wake them), and describing an inert posture as though it
+## works would make the prompt lie to the model. test_intent_descriptions_only_
+## describe_what_the_engine_does holds that line.
+const INTENT_DESCRIPTIONS: Dictionary = {
+	"aggress": "press the attack — bigger hits, less guarding. Best when they are hurt or exposed.",
+	"turtle": "defend and outlast — guard up, attack less. Best when YOU are hurt, low on MP or out of AP.",
+	"exploit_pattern": "counter what they keep repeating. Best when their recent actions look scripted.",
+}
+
+
 ## Schema for the party-combat-line generator (PC speaks an in-character line at a battle event).
 const SCHEMA_PARTY_LINE: Dictionary = {
 	"line": "String",
@@ -638,7 +669,8 @@ static func build_boss_intent(
 
 	var intent_block: String = ""
 	for id in intents:
-		intent_block += "  - %s\n" % str(id)
+		var desc: String = str(INTENT_DESCRIPTIONS.get(str(id), ""))
+		intent_block += ("  - %s: %s\n" % [str(id), desc]) if desc != "" else ("  - %s\n" % str(id))
 	if intent_block.is_empty():
 		intent_block = "  - (no scripted intents available — return empty intent_id)\n"
 
