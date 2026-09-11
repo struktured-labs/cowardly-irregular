@@ -62,10 +62,21 @@ func test_no_battle_caption_hardcodes_a_nintendo_button() -> void:
 		BATTLE_SCENE: ["Press X (or the ` key)", "Press R to queue"],
 		GRID_EDITOR: ["A:Confirm", "B:Cancel", "A:Import", "Sel:Auto", "A:Edit", "B/Esc:Back", "Del/Y:Delete"],
 	}
+	## ⚠️ THE SINGLE ASSERT IS OUTSIDE THE LOOP, so draining `frozen` would pass with ZERO work —
+	## and @cowir-overworld's free detector (a drained loop shows as a DROP in GUT's assert count)
+	## cannot see it here, because the count would not move. Pin the corpus size, and assert once
+	## PER LITERAL so the count does move if anyone trims the list.
+	var total: int = 0
+	for path in frozen:
+		total += (frozen[path] as Array).size()
+	assert_eq(total, 9, "CONTROL: the frozen-literal corpus is intact — 2 BattleScene + 7 grid editor")
+
 	var found: Array = []
 	for path in frozen:
 		var s := _src(path)
 		for lit in frozen[path]:
+			assert_false(s.contains(lit),
+				"%s still names a button by its Nintendo spelling: \"%s\"" % [path.get_file(), lit])
 			if s.contains(lit):
 				found.append("%s: \"%s\"" % [path.get_file(), lit])
 	assert_eq(found.size(), 0,
