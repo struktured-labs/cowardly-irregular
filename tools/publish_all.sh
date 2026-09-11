@@ -193,6 +193,18 @@ fi
 # three guards deep in a confusing failure, which is the one moment it is no use. The tripwire
 # beats the note because it arrives when it applies. (@cowir-overworld shipped a tripwire where
 # I shipped a comment; the difference is not visible in a diff.)
+# ✅ EXERCISED VIA THE REAL COMMAND LINE 2026-09-11, not by sourcing this block with ROLLBACK=1
+# preset. @cowir-overworld: "I checked the direction my change flowed OUT and not the direction
+# control flows IN — only the second is about the player." My block tests set the variable
+# directly, which never shows that `--rollback` on argv REACHES here.
+#
+#   ./tools/publish_all.sh --rollback v3.33.293-alpha   EC 2, tripwire fired
+#   ./tools/publish_all.sh --rollback <this tree's own>  EC 2, tripwire did NOT fire
+#   ./tools/publish_all.sh --check    v3.33.293-alpha    EC 2, tripwire did NOT fire
+#
+# ⚠ All three exit 2 and only one is this guard — the other two are downstream. A bare exit
+# code names one cause and accepts three, so the discriminator is the MESSAGE. (And my first
+# run of this reported EC 141: I piped it to `head`, and read SIGPIPE as the script's code.)
 if [ "$ROLLBACK" -eq 1 ]; then
     _rb_semver="$(sed -n 's/^[[:space:]]*const[[:space:]]\+SEMVER[[:space:]]*:=[[:space:]]*"\([^"]*\)".*/\1/p' \
                   src/meta/Version.gd 2>/dev/null | head -1)"
