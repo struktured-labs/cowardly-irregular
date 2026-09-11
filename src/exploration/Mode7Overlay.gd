@@ -106,6 +106,10 @@ static func void_color(world_id: String) -> Color:
 	var sky := Color(0.55, 0.65, 0.85)
 	var fog := Color(0.50, 0.60, 0.78)
 	var strength := 0.45
+	if not WORLD_PRESETS.has(world_id):
+		# Silent here meant a typo'd or new world got medieval blue and looked deliberate; apply_preset already warns.
+		push_warning("[MODE7] No preset for world '%s'; off-map fill falls back to medieval" % world_id)
+		return sky.lerp(fog, strength)
 	if WORLD_PRESETS.has(world_id):
 		var preset: Dictionary = WORLD_PRESETS[world_id]
 		if preset.has("void_color"):
