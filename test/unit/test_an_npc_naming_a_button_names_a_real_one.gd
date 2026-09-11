@@ -111,6 +111,12 @@ func test_the_pad_route_to_the_editor_is_the_menu_not_start() -> void:
 	if at < 0:
 		return
 	var branch := src.substr(at, 900)
+	## ⚠️ THIS READS THE REFERENCE, NOT WHETHER IT RUNS. @cowir-music, 2026-09-11: their reachability
+	## guard scored a bed as reached because a source file NAMED it — inside a dead `else` that a
+	## live `if` always takes. Same shape here: an early `return` added above this call would leave
+	## the text in place and this assert green. Driving it would mean standing up GameLoop, the main
+	## scene, for one branch. Stated rather than built — and the arm below is the compensating half,
+	## because it asserts the exploration arm is NOT the editor path, which a dead branch cannot fake.
 	assert_true(branch.contains("_open_settings_menu()"),
 		"Start in exploration no longer opens Settings — if it now opens the editor, the NPC lines can say so")
 	assert_false(branch.contains("_toggle_autobattle_editor"),
