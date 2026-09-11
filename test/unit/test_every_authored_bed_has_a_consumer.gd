@@ -590,6 +590,77 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 		"pinned beds whose scene is now dispatched (%s) — the epilogue landed; delete the entries" % [revived])
 
 
+## ⛔ THIS FILE IS THE SECOND CENSUS OF THE SAME SET, AND I WROTE IT WITHOUT
+## KNOWING THE FIRST EXISTED. test_unreachable_music_is_pinned (2026-09-09)
+## already pinned all ten — the seven ambient beds AND the three cutscene ones —
+## with the git provenance proving them stillborn rather than superseded, and
+## with the two-manifest mechanism spelled out. Its header even records the
+## mistake I then made twice today: "my first pass called those three REACHABLE
+## because the literal appears in OverworldScene — conflating 'this key appears
+## in code' with 'this manifest entry is reachable'."
+##
+## 🔑 SO THE LISTS ARE TIED TOGETHER RATHER THAN ONE BEING DELETED. That file is
+## the AUTHORITY for which beds are unreachable: it carries the evidence and the
+## decision framing for struktured. This file carries the reachability MODEL —
+## composed families, the brief pre-flight, shadowing, stranded cues — which is
+## a different job on a wider corpus. Deleting either loses something.
+##
+## What must never happen again is the two drifting: my own guard reported 4,
+## then 5, against a file that had said 7 since September, and nothing compared
+## them. Now nothing CAN: this arm fails the moment they disagree, in either
+## direction, so a future wrong count reds instead of being published.
+const PEER_GUARD := "res://test/unit/test_unreachable_music_is_pinned.gd"
+
+
+func _peer_pins() -> Array[String]:
+	var src: String = FileAccess.get_file_as_string(PEER_GUARD)
+	assert_gt(src.length(), 2000,
+		"SCOPE control: %s read back %d chars — if it was renamed or retired, this agreement arm is measuring nothing and must be re-pointed, not deleted" % [PEER_GUARD, src.length()])
+	var out: Array[String] = []
+	for name in ["KNOWN_UNREACHABLE_CUTSCENE_TRACKS", "KNOWN_UNREACHABLE_AMBIENT_TRACKS"]:
+		var at: int = src.find(name)
+		assert_gt(at, 0, "SCOPE control: %s no longer declares %s" % [PEER_GUARD, name])
+		if at < 0:
+			continue
+		## The declaration is `const NAME: Array[String] = [` — the type carries
+		## its own brackets, so anchor on the assignment, not the first "[".
+		var open_b: int = src.find("= [", at)
+		var close_b: int = src.find("\n]", open_b)
+		var block: String = src.substr(open_b, close_b - open_b)
+		var re := RegEx.new()
+		re.compile("\"([a-z0-9_]+)\"")
+		for m in re.search_all(block):
+			if not out.has(m.get_string(1)):
+				out.append(m.get_string(1))
+	out.sort()
+	return out
+
+
+func test_this_pin_agrees_with_the_older_census() -> void:
+	var peer: Array[String] = _peer_pins()
+	assert_gt(peer.size(), 5,
+		"SCOPE control: parsed only %d pins from the peer guard — the `Array[String]` type annotation contains a bracket and broke an earlier parse of mine, yielding a silent zero" % peer.size())
+
+	var mine: Array[String] = []
+	for k in KNOWN_UNREACHED.keys():
+		mine.append(str(k))
+	mine.sort()
+
+	var only_mine: Array[String] = []
+	for k in mine:
+		if not peer.has(k):
+			only_mine.append(k)
+	var only_peer: Array[String] = []
+	for k in peer:
+		if not mine.has(k):
+			only_peer.append(k)
+
+	assert_eq(only_mine.size(), 0,
+		"this file pins beds the older census does not (%s) — one of the two is wrong about the same question; reconcile them rather than letting a reader find both" % [only_mine])
+	assert_eq(only_peer.size(), 0,
+		"the older census pins beds this file calls reached (%s) — that is the direction that cost two wrong counts today, because a smaller number looks like progress" % [only_peer])
+
+
 func test_the_set_of_unreached_beds_has_not_changed() -> void:
 	var text: String = _consumer_text()
 	var mraw: String = FileAccess.get_file_as_string("res://data/monsters.json")
