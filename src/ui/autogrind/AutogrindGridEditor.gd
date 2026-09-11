@@ -219,7 +219,7 @@ func _build_ui() -> void:
 	## @cowir-battle's resolution, matched so the two editors do not disagree: a pad-only affordance
 	## GOES with no pad rather than borrowing someone else's key. help1 already names Esc for Back,
 	## and ui_cancel is what saves here (:1055), so a keyboard player loses no way to save.
-	help2.text = ("C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose  %s" % _save_token()).strip_edges()
+	help2.text = "C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose%s" % _pad_only_token("ui_menu", "Save")
 	help2.position = Vector2(16, size.y - 28)
 	help2.add_theme_font_size_override("font_size", 10)
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1819,11 +1819,12 @@ func _on_rename_cancelled() -> void:
 ## ═══════════════════════════════════════════════════════════════════════
 
 ## ui_menu saves+closes on a pad, but BOTH its keyboard keys are eaten earlier (ui_accept:1049 takes
-## Enter, ui_cancel:1055 takes Escape) — and ui_cancel is what actually saves on a keyboard.
-func _save_token() -> String:
-	var indices: Array = InputProfileManager.get_current_button_indices("ui_menu")
-	var pad: String = "" if indices.is_empty() else InputProfileManager.button_name_for_index(int(indices[0]))
-	return "" if pad == "" else "%s:Save" % pad
+## Enter, ui_cancel:1055 takes Escape), so the token GOES with no pad rather than borrowing a key.
+## Same helper name and shape as the autobattle editor's, so the two legends cannot drift apart.
+func _pad_only_token(action: String, label: String) -> String:
+	if Input.get_connected_joypads().is_empty():
+		return ""
+	return "  %s:%s" % [InputProfileManager.hint_for_action(action), label]
 
 
 ## Whole token, not a slash-plus-slot: with no pad the pad name is empty and "Del/" would dangle.
