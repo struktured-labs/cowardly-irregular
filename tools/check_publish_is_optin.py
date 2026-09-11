@@ -754,6 +754,17 @@ def selftest():
 
             def check(td=td, frag=frag):
                 _p, f, _d, _s, _o = audit(os.path.join(td, "deploy_probe.sh"))
+                # ⛔ A want=0 ARM CANNOT TELL "examined and clean" FROM "tested nothing".
+                # With no finding expected, an empty or malformed fixture passes vacuously —
+                # and I produced exactly that today by writing a probe with `printf '%s'`,
+                # which does not interpret \n, so the whole file became ONE line starting with
+                # `#` and stripped to nothing. It read as a clean result.
+                # (@cowir-ai, 2026-09-11: "a mutation that fails to land is indistinguishable
+                # from a guard that fails to catch" — this is the constructed-fixture form of
+                # the same thing, and the check is the same: assert the subject is THERE.)
+                if not (_p or _d or _s):
+                    return False, ("the fixture yielded NO push site, delegation or stub push — "
+                                   "there was nothing to examine, so a clean verdict is vacuous")
                 if frag == "":
                     return (not f), (f"falsely found {f[0][1][:40]!r}" if f else "no finding")
                 if not f:
