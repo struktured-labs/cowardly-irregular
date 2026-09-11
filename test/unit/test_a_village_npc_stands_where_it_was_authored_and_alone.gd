@@ -139,7 +139,15 @@ func test_no_village_npc_is_sealed_in_shares_a_tile_or_was_quietly_moved() -> vo
 		("the game routes to %d villages and this sweep walked %d of them.\n" +
 		"A village whose `extends` line changed is not SKIPPED by MapScripts — it is never nominated,\n" +
 		"so nothing here counts it missing. Walked: %s") % [routed, walked_named, str(built)])
-	for must in ["MapleHeightsVillage.gd", "GrimhollowVillage.gd", "SandriftVillage.gd"]:
+	## ⚠️ A POSITIVE CONTROL SET DRAINS QUIETLY TOO — deleting a member deletes its check, so the
+	## remaining ones still pass (@cowir-sprites retracted their own audit on exactly this today: they
+	## had reasoned it was safe from reading the assertions, and it was not). Size stated so a drain
+	## reds; these three are the villages whose prop moves this guard was written for.
+	var must_build := ["MapleHeightsVillage.gd", "GrimhollowVillage.gd", "SandriftVillage.gd"]
+	assert_eq(must_build.size(), 3,
+		"the must-build list holds %d villages, not the 3 whose prop moves this guard defends — " % must_build.size() +
+		"a member removed takes its own check with it and the survivors still pass")
+	for must in must_build:
 		assert_true(must in built,
 			("CONTROL: %s did not build, so its NPCs were never examined and the empty lists below " +
 			"are half a result reported as a whole one. Built: %s") % [must, str(built)])
