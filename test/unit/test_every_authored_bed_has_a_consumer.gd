@@ -39,8 +39,30 @@ const JOB_SPECIAL_EXPR := ["res://src/battle/BattleScene.gd", "\"job_%s_special\
 
 ## The 10, each with WHY it has no consumer and what would retire it.
 ## This is not permission to stay: the test fails if the set grows OR shrinks.
+## ⛔ WHAT "UNREACHED" MEANS HERE, stated because I reported it wrongly for a day.
+##
+## The Jukebox is a UNIVERSAL consumer and this guard cannot see it. JukeboxMenu
+## builds its rows from music_manifest.json at runtime (`TRACKS =
+## _load_manifest_tracks()`), so it names no bed as a literal and a source scan
+## finds nothing — while a player can select any of the 165 rows and hear it.
+## Measured 2026-09-11: all seven ambient_* beds are live Jukebox rows, and
+## playing one loads assets/audio/music/ambient_cave.ogg, the music-manifest file.
+##
+## That is WHY the exclusion is right, not an argument against it: counting the
+## Jukebox would make every bed reached by construction and this arm vacuous.
+## So the question this file asks is "does anything in PLAY reach it" — and the
+## answer for these ten is no.
+##
+## What it does NOT mean is "never played". I told struktured these were never
+## played, every hour, for a session. A player who opens Settings -> Jukebox can
+## play all seven right now, and deleting them costs seven rows of a shipped
+## menu. That is a different decision from deleting dead weight, and he has been
+## choosing between the wrong two options because of how I described this list.
+const MANIFEST_PATH_IN_JUKEBOX := "res://data/music_manifest.json"
+
+
 const KNOWN_UNREACHED := {
-	"ambient_digital": "one of the never-played ambient beds — @struktured to delete or wire to cave/forest/village",
+	"ambient_digital": "no consumer in PLAY; reachable in the Jukebox — @struktured to delete (costs a Jukebox row) or wire to cave/forest/village",
 	"ambient_industrial": "same decision",
 	"ambient_ocean": "same decision",
 	"ambient_steampunk": "same decision",
@@ -592,6 +614,32 @@ func _dispatcher_text() -> String:
 		d.list_dir_end()
 	assert_gt(json_seen, 0, "CORPUS: res://data/*.json contributed ZERO files — a dispatch table authored in data would read as dead")
 	return "\n".join(parts)
+
+
+## Pins the fact that makes KNOWN_UNREACHED mean "unreached IN PLAY" rather than
+## "never played". If the Jukebox ever stopped deriving its rows from the manifest
+## — a hand-list, a filter, a category cut — then some beds really would be
+## unplayable by any route and this file's verdict word would change meaning
+## without a line of it changing.
+func test_the_jukebox_reaches_every_bed_so_this_files_question_is_about_play() -> void:
+	var src: String = FileAccess.get_file_as_string("res://src/ui/JukeboxMenu.gd")
+	assert_gt(src.length(), 2000, "SCOPE control: JukeboxMenu.gd read back %d chars" % src.length())
+	assert_true(src.contains("TRACKS = _load_manifest_tracks()"),
+		"the Jukebox no longer builds its rows from the manifest at runtime — if it now filters or hand-lists, a bed in KNOWN_UNREACHED may be unplayable by ANY route, and this file's 'unreached' stops meaning 'unreached in play'")
+	assert_true(src.contains(MANIFEST_PATH_IN_JUKEBOX),
+		"the Jukebox no longer reads music_manifest.json — see above; the verdict word in this file depends on it")
+	## And it plays the MUSIC-manifest file, not an SFX twin. Three ambient_* keys
+	## exist in both manifests pointing at different directories, so this is the
+	## fact that decides which file a Jukebox row actually sounds.
+	var sm: String = FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
+	assert_true(sm.contains("func play_ambient"),
+		"CONTROL: play_ambient is the OTHER path to an ambient_* key and must still exist for the distinction below to matter")
+	var at: int = sm.find("func play_ambient")
+	var body: String = sm.substr(at, sm.find("\nfunc ", at + 10) - at)
+	assert_true(body.contains("_sfx_manifest"),
+		"play_ambient no longer resolves from the SFX manifest. It did on 2026-09-11, which is why the seven music-manifest ambient_* beds are unreachable through it and their three SFX twins play a different file from assets/audio/sfx/")
+	assert_false(body.contains("_music_manifest"),
+		"play_ambient now reads the MUSIC manifest too — the seven ambient_* beds may have gained a consumer in play, and KNOWN_UNREACHED should shrink rather than being explained")
 
 
 func test_no_cutscene_step_type_can_dispatch_another_cutscene() -> void:
