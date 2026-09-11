@@ -308,6 +308,11 @@ func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: 
 		inference_failed.emit(MODE_JSON, "no ready backend")
 		return fallback
 
+	# NullBackend is always ready and declares supports_json() == false — don't ask it for JSON.
+	if _active_backend.has_method("supports_json") and not _active_backend.supports_json():
+		inference_failed.emit(MODE_JSON, "backend cannot produce JSON")
+		return fallback
+
 	# JSON responses are not cached (high variance + ephemeral by design).
 	var merged_opts: Dictionary = opts.duplicate()
 	merged_opts["json_mode"] = true
@@ -318,7 +323,8 @@ func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: 
 		return fallback
 
 	var guarded: Variant = _guard_json(str(raw), schema, fallback)
-	if guarded == fallback:
+	# `==` on mismatched Variant types is a GDScript error that aborts this function.
+	if typeof(guarded) == typeof(fallback) and guarded == fallback:
 		inference_failed.emit(MODE_JSON, "guard rejected response")
 	else:
 		inference_succeeded.emit(MODE_JSON)
