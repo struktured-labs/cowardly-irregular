@@ -16,6 +16,16 @@ extends GutTest
 ## Fixed by moving the PROPS, not the NPCs: a planter is decoration, a quest giver's position is
 ## content. The three guards below are what makes it stay fixed.
 ##
+## ⛔ SINGLE-DIRECTION, STATED RATHER THAN FIXED (@cowir-deploy's framing, 2026-09-11: direction is
+## not a fourth axis, it is a property of the SUBJECT — what the premise quantifies over). This
+## quantifies over NPCs THAT EXIST and asserts properties of them. It says nothing about NPCs that
+## SHOULD exist and do not: a deleted NPC is not sealed in, shares no tile and is on no grid, so
+## deletion satisfies every assert here by construction. "Cannot be fooled" and "would detect it" are
+## different claims and this file only has the first.
+## The corpus SIZE is covered (router equality below) and three named members are pinned; individual
+## NPC inventory is not, and a ratchet over ~94 names would cost a line per NPC forever. If you need
+## "did someone delete a villager", that is a different guard and it does not exist yet.
+##
 ## ⚠️ SCOPE IS TALKING NPCS — nodes answering `get_npc_id()`. Shops, inns and doors are deliberately
 ## ON impassable tiles (you interact from beside them) and their Area2D is two tiles wide, so a
 ## cell-based reachability rule is simply the wrong question for them: measured, 5 of them have no
