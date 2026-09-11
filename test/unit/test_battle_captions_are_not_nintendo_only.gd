@@ -79,19 +79,36 @@ func test_the_captions_derive_instead() -> void:
 		"the speed hint must ask the one place that knows raw JOY_BUTTON_Y")
 	assert_true(bs.contains("hint_for_action(\"battle_advance\")"),
 		"the Advance hint must derive from its InputMap action")
+	## ⚠️ WAS `count(hint_for_action) == 9` AND IT WENT STALE ON A CORRECT MERGE. cowir-autogrind
+	## landed `face_glyph_for_index(JOY_BUTTON_Y)` for the Y token in the same file — the RIGHT helper,
+	## since Y has no InputMap action — and my count dropped to 7 while the file got better. I pinned
+	## the NAME of one helper, which is the exact class cowir-main called out at the fold: a lane's
+	## ratchet pinning a helper name goes stale on another lane's better helper. Now: every format
+	## slot in a help line must be fed by SOME derivation, and which one is the author's business.
 	var ge := _src(GRID_EDITOR)
-	## WAS `assert_eq(count, 9)`. cowir-controller 2026-09-11: deriving "Start:Save" through
-	## hint_for_action("ui_menu") made it 10 and this arm reds on a CORRECT change — a census of the
-	## file at a moment, not a property of it. @cowir-main flagged the same class at the .296 fold
-	## ("a lane's ratchet pinning a helper NAME goes stale on another lane's better helper").
-	## Pinned two ways instead: every action the help lines advertise must be DERIVED by name, and
-	## the count may only GROW. Adding a derivation is good news; removing one still reds.
-	for action in ["ui_accept", "ui_cancel", "ui_menu", "battle_toggle_auto", "battle_defer"]:
-		assert_true(ge.contains("hint_for_action(\"%s\")" % action),
-			"the grid editor must derive %s rather than spell its button — deleting the help line " % action +
-			"would satisfy the absence arm above, which is why this half exists")
-	assert_gte(ge.count("InputProfileManager.hint_for_action("), 9,
-		"a pad token was REMOVED from the grid editor's help lines; the absence arm cannot see a deletion")
+	var derivations: int = ge.count("InputProfileManager.hint_for_action(") + ge.count("InputProfileManager.face_glyph_for_index(")
+	assert_gt(derivations, 5, "CONTROL: the grid editor derives its pad captions at all (%d)" % derivations)
+	## Per STATEMENT, not per line: help_label1 puts its format args on continuation lines, so a
+	## line-by-line scan sees the string without its `% [...]` and reports a correct file as frozen.
+	## My first version did exactly that and failed on the merged tree.
+	var lines: PackedStringArray = ge.split("\n")
+	for i in lines.size():
+		var line: String = lines[i]
+		if not (line.contains("help_label1.text") or line.contains("help_label2.text") or line.contains("help.text")):
+			continue
+		var slots: int = line.count("%s")
+		if slots == 0:
+			continue
+		## Statement window: this line plus continuations, stopping at the first line that closes it.
+		var stmt: String = line
+		var k: int = i + 1
+		while k < lines.size() and k <= i + 8 and not line.strip_edges().ends_with("]"):
+			stmt += lines[k]
+			if lines[k].strip_edges().begins_with("]"):
+				break
+			k += 1
+		assert_true(stmt.contains("InputProfileManager."),
+			"a help caption with %d format slots must feed them from InputProfileManager: %s" % [slots, line.strip_edges().substr(0, 80)])
 
 func test_speed_has_no_inputmap_action_so_the_helper_is_the_only_route() -> void:
 	## The premise, measured rather than asserted. If someone later ADDS a battle_speed action, this
