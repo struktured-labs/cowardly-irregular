@@ -125,7 +125,16 @@ func _rendered_glyphs() -> Dictionary:
 
 
 ## Provenance prose, not player text. Named so the exclusion is visible and arguable.
-const DOC_FIELDS := ["source", "note", "notes", "comment", "_comment", "provenance"]
+## ⛔ EXACTLY ONE FIELD, and it stays that way until another is DEMONSTRATED to need it. I first
+## wrote six — source/note/notes/comment/_comment/provenance — having verified only "source", which
+## is an exemption broader than its subject: the thing I had spent the afternoon telling other lanes
+## not to do. Measured: narrowing to one leaves the corpus at 79 distinct and the guard green, so the
+## other five were hiding NOTHING and were pure speculation about fields that might exist.
+## @cowir-overworld found the live risk in the widest one: "note" is a real key in 20 quest JSONs,
+## benign today (authoring prose, zero consumers in src/) — but "note" is a word an author could
+## reasonably attach to rendered text, and excluding it would hide that silently. "source" is inert
+## by nature; "note" is not. Adding a field here requires showing nothing renders it.
+const DOC_FIELDS := ["source"]
 
 
 func _walk_json(node, key: String, glyphs: Dictionary, path: String) -> void:
