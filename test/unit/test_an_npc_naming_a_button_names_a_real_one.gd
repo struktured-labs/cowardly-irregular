@@ -267,6 +267,113 @@ func test_no_dialogue_in_this_lane_sends_a_pad_player_to_both_triggers() -> void
 		"player-facing text sending a pad player to L+R, which cycles the autogrind tier: %s" % str(offenders))
 
 
+## ⛔ THE HAND-LIST AT THE TOP IS WHY THIS ARM EXISTS. `SPEAKING_LINES` names three files I was
+## already looking at, and the sweep above asks exactly one question ("l+r"/"both triggers") over two
+## dirs, NON-recursively. So neither could see Dr. Temporal, in a file both of them read, telling the
+## player to "press A" to open the World 2 portal.
+##
+## 🔑 `ui_accept` is joypad `button_index: 1` in project.godot — the EAST face. Measured here rather
+## than taken from the channel. So "press A" was right on Nintendo pads and wrong on Xbox (Ⓑ),
+## PlayStation (○) and every keyboard, on the instruction that gates the entire second world.
+##
+## Found by applying @cowir-battle's VictoryOverlay finding to my own lane instead of reading it.
+## Four instruments missed that one for four different reasons; three of the four were CORPUS, not
+## pattern. So this arm derives its corpus RECURSIVELY — src/maps and src/exploration, subdirs
+## included, which the sweep above does not do and which is where the interiors and dungeons live.
+##
+## ⚠️ TWO EXCLUSIONS, both of which this scanner got wrong before it got them right:
+##   CASE. `press a key` is English; `press A` is a button. Run case-insensitively and TavernInterior
+##         is a false positive. One letter is the entire difference.
+##   DEBUG. `print("... press A to fight!")` in WhisperingCave is a developer log, not a caption. A
+##         guard that reds on it teaches the reader to suppress the guard.
+## And the `(?<![-\w])` guard keeps Rivet Row's in-world prose — "Form 1-A: the incident" — out of it.
+## A widened arm that reds on correct writing gets silenced, which is worse than never shipping it.
+const LANE_ROOTS := ["res://src/maps", "res://src/exploration"]
+
+
+func _gd_files_under(root: String) -> Array:
+	var out: Array = []
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var d: String = stack.pop_back()
+		var dir := DirAccess.open(d)
+		if dir == null:
+			continue
+		for sub in dir.get_directories():
+			stack.append("%s/%s" % [d, sub])
+		for f in dir.get_files():
+			if f.ends_with(".gd"):
+				out.append("%s/%s" % [d, f])
+	return out
+
+
+## Every string literal on a line, so the scan asks about CAPTIONS and not about code identifiers.
+func _literals(line: String) -> Array:
+	var out: Array = []
+	var re := RegEx.create_from_string("\"([^\"]*)\"")
+	for m in re.search_all(line):
+		out.append(m.get_string(1))
+	return out
+
+
+func _names_a_frozen_face_button(text: String) -> bool:
+	var re := RegEx.create_from_string(
+		"(?<![-\\w])(?:[Pp]ress(?:ing)?|[Hh]old|[Tt]ap)\\s+(?:the\\s+)?[ABXY]\\b" +
+		"|(?<![-\\w])[ABXY]\\s*:\\s*[A-Za-z]" +
+		"|\\[[ABXY]\\]")
+	return re.search(text) != null
+
+
+func test_no_caption_in_this_lane_freezes_a_face_button() -> void:
+	var offenders: Array = []
+	var files_read := 0
+	for root in LANE_ROOTS:
+		for path in _gd_files_under(root):
+			files_read += 1
+			for line in _strip_comments(_read(path)).split("\n"):
+				var l := str(line)
+				# A developer log is not a caption. Checked on the LINE, not the literal.
+				if l.contains("print(") or l.contains("push_warning(") or l.contains("push_error("):
+					continue
+				for lit in _literals(l):
+					if _names_a_frozen_face_button(str(lit)):
+						offenders.append("%s: %s" % [path.get_file(), str(lit).substr(0, 70)])
+	assert_gt(files_read, 120,
+		"only %d scripts scanned; 134 .gd files live under src/maps and src/exploration. A corpus " % files_read +
+		"that has shrunk looks exactly like a lane with no defects.")
+	assert_eq(offenders, [],
+		"player-facing text naming a face button by letter. This game puts Confirm on the EAST face " +
+		"(ui_accept = joypad button 1), so a frozen letter is right on one pad family at most — " +
+		"derive it through InputProfileManager.hint_for_action: %s" % str(offenders))
+
+
+## CONTROL. A zero is worth nothing until the matcher has been shown to produce a non-zero, and the
+## exclusions above are each a way for it to go silently blind. Every case pinned on the predicate
+## directly, so none of it depends on a file staying the way it is.
+func test_the_face_button_matcher_discriminates() -> void:
+	for caught in ["Step on the pad and press A to activate.", "B: Exit", "[A] Examine",
+			"press the Y button", "A: finish"]:
+		assert_true(_names_a_frozen_face_button(caught), "must CATCH: %s" % caught)
+	for spared in ["*You carefully press a key... then immediately regret it.*",
+			"Form 1-A: the incident. Form 1-B: the feelings about the incident.",
+			"Press %s to activate.", "A quiet place.", "Bram said to press on."]:
+		assert_false(_names_a_frozen_face_button(spared), "must SPARE: %s" % spared)
+
+
+## The repaired line itself, rendered. The arm above proves no literal names a button; this proves
+## the replacement actually resolves rather than substituting an empty string into the sentence.
+func test_dr_temporal_names_a_button_the_players_pad_has() -> void:
+	var src := _read("res://src/maps/villages/HarmoniaVillage.gd")
+	assert_true(src.contains("InputProfileManager.hint_for_action(\"ui_accept\")"),
+		"Dr. Temporal's portal line must derive the confirm button")
+	var hint: String = InputProfileManager.hint_for_action("ui_accept")
+	assert_gt(hint.length(), 0,
+		"hint_for_action returned empty, so the line renders as 'press  to activate' — the frozen " +
+		"letter would have been better than this")
+	assert_false(hint == "A" and Input.get_connected_joypads().is_empty(),
+		"with no pad connected the hint must be a KEY, not the face letter it replaced")
+
+
 ## The instrument itself, both directions. @cowir-music, 2026-09-11: a comment stripper has TWO ways
 ## to be wrong and mutation arms tend to cover one -- every arm I ran asked whether it lets something
 ## THROUGH, none asked whether it still lets the right things through. Over-stripping is the quieter
