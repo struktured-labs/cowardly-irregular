@@ -10,10 +10,10 @@ extends GutTest
 ##   BUTTON_NAMES   "Ⓨ" / "Ⓧ" / "□"           one family            -> what a HUD wants.
 ##
 ## ⛔ THE START TOKEN WAS WRONG A SECOND WAY, and deriving it from the action would have KEPT it
-## wrong. The caption named JOY_BUTTON_START while the handler fires on `ui_menu` (:1349) — so a
+## wrong. The caption named JOY_BUTTON_START while the handler fires on `ui_menu` — so a
 ## remap left the caption stale. But ui_menu's keyboard keys are Enter and Escape, and ui_accept
-## (:1327) and ui_cancel (:1331) consume BOTH earlier in the same elif chain. The key that actually
-## starts a grind is "+" (:1355). A keyboard player told to press Enter would have edited a cell.
+## and ui_cancel consume BOTH earlier in the same elif chain. The key that actually starts a
+## grind is the KEY_PLUS arm. A keyboard player told to press Enter would have edited a cell.
 ## So: pad half derived from the action's CURRENT binding, keyboard half named for the handler.
 ##
 ## ⛔ AND THE STRIP PROMISED A KEY THAT DID NOT EXIST. "Resume" was reachable by pad (JOY_BUTTON_Y)
@@ -130,8 +130,8 @@ func test_every_label_the_strip_advertises_names_a_key_that_works() -> void:
 		"CONTROL: every label must have been resolved to a key, got %s" % [checked])
 
 	## The specific regression, stated as the property rather than as one spelling of it: ui_menu's
-	## own keyboard keys are Enter and Escape, and ui_accept (:1327) / ui_cancel (:1331) consume
-	## BOTH before ui_menu (:1349) is reached. Derived from the InputMap so a rebinding moves it.
+	## own keyboard keys are Enter and Escape, and ui_accept / ui_cancel consume BOTH before
+	## ui_menu's arm is reached. Derived from the InputMap so a rebinding moves it.
 	var eaten: Array = []
 	for action in ["ui_accept", "ui_cancel"]:
 		for k in InputProfileManager.get_action_key_label(action).split(" / "):
@@ -161,7 +161,7 @@ func test_resume_is_reachable_without_a_mouse() -> void:
 		"KEY_R exists but does not emit grind_resume_requested")
 	assert_true(window.contains("is_snapshot_loadable"),
 		"the keyboard Resume path must carry the same snapshot guard as the pad path")
-	## Shift+R renames in both grid editors (AutogrindGridEditor:1080, AutobattleGridEditor:1785).
+	## Shift+R renames in both grid editors (their KEY_R + shift_pressed arms).
 	## The editor is add_child'd by this console, so a bare KEY_R would be shadowed only by tree
 	## ordering — incidental, and the exact shape this lane already has a hint-gate guard about.
 	assert_true(window.contains("not event.shift_pressed"),
@@ -185,3 +185,64 @@ func _key_for_label(strip: String, label: String) -> String:
 		if parts[i] == label and i > 0:
 			return parts[i - 1]
 	return ""
+
+## ⛔ THE SAME DEFECT WAS LIVE IN BOTH GRID EDITORS, and in one of them a derivation pass had turned
+## a CORRECT frozen caption into a WRONG one. `5c3dee46` (on main) replaced `Del/Y:Delete` with
+## hint_for_action("ui_menu") — but that `Y` was a RAW JOY_BUTTON_Y index, not an action, and
+## ui_menu SAVES AND CLOSES. A Nintendo player was told "Del/Plus:Delete" by the button that exits.
+##
+##   AutogrindGridEditor   ui_accept, then ui_cancel, then ui_menu LAST   Save said "Enter"
+##   AutobattleGridEditor  ui_accept, then ui_cancel, then ui_menu LAST   Save said "Enter"
+##
+## In both, ui_menu's keyboard keys (Enter, Escape) are consumed by ui_accept/ui_cancel EARLIER in
+## the same elif chain, and ui_cancel is what actually saves. @cowir-controller's framing: derived
+## is correct about the InputMap and wrong about the player — shadowing lives in the HANDLER, and
+## no amount of deriving crosses that gap.
+const EDITORS := {
+	"res://src/ui/autogrind/AutogrindGridEditor.gd": "AutogrindGridEditor",
+	"res://src/ui/autobattle/AutobattleGridEditor.gd": "AutobattleGridEditor",
+}
+
+
+func test_no_editor_legend_offers_a_shadowed_key() -> void:
+	var eaten: Array = []
+	for action in ["ui_accept", "ui_cancel"]:
+		for k in InputProfileManager.get_action_key_label(action).split(" / "):
+			if k.strip_edges() != "":
+				eaten.append(k.strip_edges())
+	assert_true(eaten.has("Enter"), "CONTROL: ui_accept/ui_cancel must really hold Enter, got %s" % [eaten])
+
+	## Headless has no joypads, so this IS the keyboard render. @cowir-battle's resolution, adopted
+	## in both editors: a pad-only affordance GOES rather than borrowing a key that does something
+	## else. The helper carries its own separator, so an empty token leaves no dangling "  :Save".
+	for path in EDITORS.keys():
+		var ed = load(path).new()
+		add_child_autofree(ed)
+		var token: String = ed._pad_only_token("ui_menu", "Save")
+		gut.p("  %-22s Save token (no pad) = '%s'" % [EDITORS[path], token])
+		assert_eq(token, "",
+			"%s still offers a Save key with no pad connected ('%s') — ui_menu's own keys are eaten upstream" % [EDITORS[path], token])
+		for k in eaten:
+			assert_false(token.contains(k),
+				"%s offers '%s' for Save, which ui_accept/ui_cancel consume earlier in the same elif chain" % [EDITORS[path], k])
+
+
+func test_an_editor_legend_never_derives_from_ui_menu() -> void:
+	## ui_menu is the one action in this lane whose BOTH keyboard keys are shadowed wherever
+	## ui_accept/ui_cancel are tested first — which is every grid editor. Naming it in a legend is
+	## the defect whatever token it happens to render today, so the guard bans the call, not a value.
+	var offenders: Array = []
+	for path in EDITORS.keys():
+		if _code_only_lines(FileAccess.get_file_as_string(path)).contains("hint_for_action(\"ui_menu\")"):
+			offenders.append(EDITORS[path])
+	assert_eq(offenders, [],
+		"a grid editor legend derives from ui_menu — correct about the InputMap, wrong about the player: both its keys are eaten earlier. Use the pad index plus the key that actually saves")
+
+
+## Comments stripped so a note ABOUT the banned call is not itself a finding.
+func _code_only_lines(src: String) -> String:
+	var out := PackedStringArray()
+	for l in src.split("\n"):
+		var h := l.find("#")
+		out.append(l if h == -1 else l.substr(0, h))
+	return "\n".join(out)

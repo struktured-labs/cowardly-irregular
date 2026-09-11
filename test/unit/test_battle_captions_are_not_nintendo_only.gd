@@ -162,8 +162,59 @@ func test_the_captions_derive_instead() -> void:
 		## measurement that did not finish, so it must fail rather than answer.
 		assert_true(closed,
 			"could not find the end of this caption statement within 24 lines — widen the bound rather than trusting the result: %s" % line.strip_edges().substr(0, 70))
-		assert_true(stmt.contains("InputProfileManager."),
-			"a help caption with %d format slots must feed them from InputProfileManager: %s" % [slots, line.strip_edges().substr(0, 80)])
+		## ⚠️ INLINE IS NOT THE PROPERTY — DERIVED IS. This demanded the literal string in the
+		## statement, so moving a derivation into a NAMED HELPER redded a correct change:
+		## @cowir-autogrind's `%s:Save" % _save_token()` has one arg and no other InputProfileManager
+		## call to carry it. My own `_delete_token()` passes only because the three args BESIDE it
+		## still spell the name — luck, not coverage. Same class as the helper-name count two arms
+		## up, one layer in: I pinned HOW the derivation is written instead of THAT it happens.
+		assert_true(stmt.contains("InputProfileManager.") or _derives_through_helper(ge, stmt),
+			"a help caption with %d format slots must feed them from InputProfileManager, inline or via a helper that does: %s" % [slots, line.strip_edges().substr(0, 80)])
+
+## Resolves a caption's `_name()` calls against their own bodies, so a derivation may be NAMED
+## rather than inline. Demanding the literal would let this guard dictate the caller's layout.
+## ⛔ EVERY definition of the name, not the first. `src` is BOTH editors concatenated and both define
+## `_save_token`, so a bare find() resolved the OTHER file's copy: I froze one to `return "Start"`
+## and this scored GREEN. Bare find() takes the first match — the trap I keep a note about, hit
+## while repairing a guard. All definitions must derive, so an ambiguous name fails toward alarm.
+func _derives_through_helper(src: String, stmt: String) -> bool:
+	var any := false
+	for fname in _called_helpers(stmt):
+		var from: int = 0
+		while true:
+			var i: int = src.find("func %s(" % fname, from)
+			if i == -1:
+				break
+			var body: String = src.substr(i, 600)
+			var nxt: int = body.find("\nfunc ")
+			if nxt != -1:
+				body = body.substr(0, nxt)
+			if not body.contains("InputProfileManager."):
+				return false
+			any = true
+			from = i + 1
+	return any
+
+
+func _called_helpers(stmt: String) -> Array:
+	var out: Array = []
+	var i: int = 0
+	while i < stmt.length():
+		if stmt[i] == "_" and (i == 0 or not _is_ident_char(stmt[i - 1])):
+			var j: int = i + 1
+			while j < stmt.length() and _is_ident_char(stmt[j]):
+				j += 1
+			if j < stmt.length() and stmt[j] == "(" and not out.has(stmt.substr(i, j - i)):
+				out.append(stmt.substr(i, j - i))
+			i = j
+		else:
+			i += 1
+	return out
+
+
+func _is_ident_char(c: String) -> bool:
+	return c == "_" or (c >= "a" and c <= "z") or (c >= "A" and c <= "Z") or (c >= "0" and c <= "9")
+
 
 func test_speed_has_no_inputmap_action_so_the_helper_is_the_only_route() -> void:
 	## The premise, measured rather than asserted. If someone later ADDS a battle_speed action, this
@@ -396,12 +447,38 @@ func test_no_caption_derives_from_an_action_its_own_chain_eats_first() -> void:
 	## something else — so that token must be pad-gated or it is a false caption. Pre-fix this reds
 	## twice: `ui_menu` (Enter eaten by ui_accept, Escape by ui_cancel) and `battle_toggle_auto`
 	## (Tab eaten by the row-toggle arm). Neither was reachable by a bracketed-token scan.
-	var ge := _src(GRID_EDITOR)
+	## ⚠️ BOTH EDITORS. This sliced only the autobattle chain, so when I adopted @cowir-battle's
+	## _pad_only_token in AutogrindGridEditor the identical defect there sat OUTSIDE the corpus —
+	## ungating my own helper scored GREEN, 10/10. By their taxonomy that is a CORPUS GAP, not a
+	## hollow guard: the arm never executed against my file at all. One chain per file, same logic.
+	var ungated: Array = []
+	var undecided: Array = []
+	for spec in [
+		[GRID_EDITOR, ["ui_accept", "ui_cancel", "battle_toggle_auto", "ui_menu"]],
+		[AUTOGRIND_EDITOR, ["ui_accept", "ui_cancel", "battle_defer", "battle_advance", "ui_menu"]],
+	]:
+		var rep: Dictionary = _shadow_report(str(spec[0]), spec[1] as Array)
+		for u in rep["ungated"]:
+			ungated.append("%s %s" % [str(spec[0]).get_file(), u])
+		for u in rep["undecided"]:
+			undecided.append("%s %s" % [str(spec[0]).get_file(), u])
+	assert_eq(ungated.size(), 0,
+		"a caption renders a keyboard key the chain hands to something else: " + str(ungated))
+	gut.p("  undecided: %s" % str(undecided))
+	## Reported, not asserted to zero: these are captions this arm is NOT competent about, and saying
+	## so is the point. If the list grows, the arm is covering less than its name claims.
+	assert_lte(undecided.size(), 2,
+		"this arm cannot see where these actions are handled, so it is not vouching for them: " + str(undecided))
+
+
+## One editor's chain. Returns rather than asserts so the caller can report across files.
+func _shadow_report(path: String, required: Array) -> Dictionary:
+	var ge := _src(path)
 	var i: int = ge.find("func _input(event: InputEvent)")
-	assert_gt(i, -1, "CONTROL: located the input chain")
+	assert_gt(i, -1, "CONTROL: located the input chain in %s" % path)
 	var j: int = ge.find("\nfunc ", i + 10)
 	var chain: String = ge.substr(i, (j - i) if j > -1 else ge.length() - i)
-	assert_true(chain.contains(DELETER), "CONTROL: the sliced chain is the real one")
+	assert_true(chain.contains(DELETER), "CONTROL: the sliced chain is the real one in %s" % path)
 
 	## ⚠️ THE CORPUS MUST FOLLOW INDIRECTION, because MY OWN FIX INTRODUCED IT. I routed the two
 	## offending tokens through `_pad_only_token(action, label)` — so the action name became a
@@ -434,7 +511,7 @@ func test_no_caption_derives_from_an_action_its_own_chain_eats_first() -> void:
 			var a2: String = cm.get_string(1)
 			actions[a2] = actions.get(a2, false) or checks
 	assert_gt(actions.size(), 3, "CONTROL: captions name actions at all (%d)" % actions.size())
-	for want in ["ui_accept", "ui_cancel", "battle_toggle_auto", "ui_menu"]:
+	for want in required:
 		assert_true(actions.has(want),
 			"CONTROL: the corpus still reaches %s — if a refactor hid it, this arm stopped speaking about it" % want)
 
@@ -458,10 +535,20 @@ func test_no_caption_derives_from_an_action_its_own_chain_eats_first() -> void:
 		for k in keys:
 			var kre := RegEx.new()
 			kre.compile("KEY_%s\\b" % k)
+			## ⚠️ A MODIFIED CHORD DOES NOT SHADOW THE BARE KEY. AutogrindGridEditor handles Shift+R
+			## (rename) before battle_advance — deliberately, since battle_advance matches with
+			## modifiers held — and plain R still falls through to it. Counting that occurrence made
+			## this arm report "R:+Action" as a false caption, which is a correct-work red on a
+			## correct legend. An earlier KEY_X guarded by a modifier is a different binding.
 			var first: int = -1
-			var km := kre.search(chain)
-			if km != null:
+			for km in kre.search_all(chain):
+				var ls: int = chain.rfind("\n", km.get_start()) + 1
+				var le: int = chain.find("\n", km.get_start())
+				var kline: String = chain.substr(ls, (le - ls) if le > -1 else 80)
+				if kline.contains("_pressed") and (kline.contains("shift_pressed") or kline.contains("ctrl_pressed") or kline.contains("alt_pressed") or kline.contains("meta_pressed")):
+					continue
 				first = km.get_start()
+				break
 			for other in actions:
 				if other == act:
 					continue
@@ -475,12 +562,7 @@ func test_no_caption_derives_from_an_action_its_own_chain_eats_first() -> void:
 			## caption never renders that keyboard half — i.e. the token is behind a pad check.
 			if not bool(actions[act]):
 				ungated.append("%s (keys %s all eaten earlier)" % [act, str(keys)])
-	assert_eq(ungated.size(), 0,
-		"a caption renders a keyboard key the chain hands to something else: " + str(ungated))
-	## Reported, not asserted to zero: these are captions this arm is NOT competent about, and saying
-	## so is the point. If the list grows, the arm is covering less than its name claims.
-	assert_lte(undecided.size(), 1,
-		"this arm cannot see where these actions are handled, so it is not vouching for them: " + str(undecided))
+	return {"ungated": ungated, "undecided": undecided}
 
 func _binds_key(action: String, key_upper: String) -> bool:
 	for ev in InputMap.action_get_events(action):
