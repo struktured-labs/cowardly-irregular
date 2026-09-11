@@ -323,21 +323,13 @@ def run(tools_dir):
         raise Unusable(f"[waits] BLOCKED: no *.sh in {tools_dir}. "
                        f"An empty target set is not a clean result.")
 
-    total = bad = 0
-    print(f"[waits] {len(targets)} deploy script(s): {', '.join(targets)}")
-    for t in targets:
-        for (ln, text, ok, why) in scan_file(os.path.join(tools_dir, t)):
-            total += 1
-            if ok:
-                print(f"[waits]   ok    {t}:{ln}  {why}")
-            else:
-                bad += 1
-                print(f"[waits]   UNBOUNDED  {t}:{ln}", file=sys.stderr)
-                print(f"[waits]              {text}", file=sys.stderr)
-                print(f"[waits]              {why}", file=sys.stderr)
-
-    print(f"[waits] {total} polling loop(s) examined · {total - bad} bounded · {bad} UNBOUNDED")
-
+    # ⛔ CONTROLS FIRST, AND THEY WITHHOLD THE RESULT. These used to run AFTER the reporting
+    # loop, so an UNUSABLE run still printed "N polling loop(s) examined · N bounded · 0
+    # UNBOUNDED" — a clean census, beside the block that says the census cannot be trusted.
+    # Measured: a pusher with its wait removed produced exactly that. The exit code was 2 and
+    # the summary line said everything was fine.
+    # (@cowir-adhoc, 2026-09-11: controls run before the verdict and withhold it on failure —
+    # "a reader that cannot find Combatant has nothing to say about anything else.")
     # DERIVED EXPECTATION: every real pusher must carry a polling loop to time out on.
     pushers = _pushers(tools_dir)
     if not pushers:
@@ -354,6 +346,21 @@ def run(tools_dir):
             f"        Either the post-push wait was removed — a real regression, restore it —\n"
             f"        or this file's loop finder stopped matching. Both are worth stopping for,\n"
             f"        and neither is a number you can lower.")
+
+    total = bad = 0
+    print(f"[waits] {len(targets)} deploy script(s): {', '.join(targets)}")
+    for t in targets:
+        for (ln, text, ok, why) in scan_file(os.path.join(tools_dir, t)):
+            total += 1
+            if ok:
+                print(f"[waits]   ok    {t}:{ln}  {why}")
+            else:
+                bad += 1
+                print(f"[waits]   UNBOUNDED  {t}:{ln}", file=sys.stderr)
+                print(f"[waits]              {text}", file=sys.stderr)
+                print(f"[waits]              {why}", file=sys.stderr)
+
+    print(f"[waits] {total} polling loop(s) examined · {total - bad} bounded · {bad} UNBOUNDED")
 
     if bad:
         print(f"[waits] a hang is the quietest way for the publish cadence to stop — it produces "
