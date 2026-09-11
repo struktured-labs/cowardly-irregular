@@ -9,8 +9,16 @@ extends GutTest
 ## arms ("fire_dragon_cave" etc.) and two composed tracks sat on disk
 ## (dungeon_dragon_fire 139s, dungeon_dragon_ice 178s) that NOTHING reached
 ## on the normal path — the only live route was GameLoop._stop_autogrind,
-## which passes _current_map_id, so the bespoke themes played solely if you
+## which passed _current_map_id, so the bespoke themes played solely if you
 ## started and then stopped an autogrind session inside the cave.
+##
+## ⚠️ THAT ROUTE NO LONGER EXISTS (2026-09-11). _stop_autogrind now asks the
+## scene via _derive_current_scene_music_key() instead of passing the map id,
+## because the map and area vocabularies are different lists and 8 of the 13
+## dungeon map ids have no arm — they fell through to _start_overworld_music().
+## For the dragon caves the two ids are identical, so nothing here changes; the
+## sentence above is kept as history and must not be read as a live mechanism.
+## See test_autogrind_stop_keeps_the_dungeon_bed_regression.
 ##
 ## The second half matters as much as the first: play_area_music's default
 ## arm is _start_overworld_music(), NOT a cave fallback. So a subclass
