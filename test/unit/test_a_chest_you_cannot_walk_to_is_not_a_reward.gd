@@ -23,6 +23,12 @@ const PLAYER_HALF := 12.0
 const INTERACT_REACH := 40.0  # OverworldController's flat-village press probe
 const VGS := preload("res://test/unit/helpers/village_grid_source.gd")
 
+## ScripturaPlaza's only chest is QUEST-GATED — _place_book_pickup() runs from _setup_npcs() solely
+## while this flag is set and the quest is unfinished. A default instance has no chest at all, so
+## the one chest in the corpus most likely to be sealed unnoticed is the one a plain sweep never
+## sees. Armed here so it IS measured.
+const GATED_CHEST_FLAG := "quest_world1_thirty_seven_favor_asked"
+
 const HARMONIA := "res://src/maps/villages/HarmoniaVillage.gd"
 const NOOK_CHEST := "harmonia_chest_hedge_nook"
 const NOOK_THROAT := Vector2i(18, 2)  # the single gap in the row-2 hedge screen
@@ -132,6 +138,10 @@ func test_every_chest_in_every_village_can_be_walked_to() -> void:
 	var villages := 0
 	var chests := 0
 	var problems: Array = []
+	var gs = get_node_or_null("/root/GameState")
+	var had_flag: bool = gs.is_story_flag_set(GATED_CHEST_FLAG) if gs != null else false
+	if gs != null:
+		gs.set_story_flag(GATED_CHEST_FLAG, true)
 	for path in VILLAGE_SCRIPTS:
 		if not ResourceLoader.exists(path):
 			continue
@@ -169,8 +179,17 @@ func test_every_chest_in_every_village_can_be_walked_to() -> void:
 		v.queue_free()
 		await get_tree().process_frame
 
-	assert_gt(villages, 4, "only %d villages carried chests — too few for this to mean anything" % villages)
-	assert_gt(chests, 10, "only %d chests were measured — the collector is not seeing them" % chests)
+	# Pinned to the MEASURED corpus (13 villages / 31 chests on b4d0bba9), not to a floor low enough
+	# to survive a drain. gte, so adding a village or a chest is free and losing one is not.
+	if gs != null:
+		gs.set_story_flag(GATED_CHEST_FLAG, had_flag)
+	# Pinned to the MEASURED corpus (13 villages / 31 chests on b4d0bba9) rather than to a floor low
+	# enough to survive a drain. gte, so adding a village or a chest is free and losing one is not.
+	# Without the flag armed above this reads 12 / 30 — which is how the gated chest stayed invisible.
+	assert_gte(villages, 13, "only %d of 13 villages carried chests — the collector has gone blind, " % villages +
+		"and a sweep that sees nothing reports nothing unreachable")
+	assert_gte(chests, 31, "only %d chests were measured; 31 are authored. A drained corpus looks " % chests +
+		"exactly like a clean sweep from the outside.")
 	assert_eq(problems, [], "unreachable chests:\n  %s" % "\n  ".join(problems))
 
 
