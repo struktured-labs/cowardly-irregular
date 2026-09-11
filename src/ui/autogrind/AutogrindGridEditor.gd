@@ -201,14 +201,21 @@ func _build_ui() -> void:
 	if InputProfileManager:
 		g_ok = InputProfileManager.glyph_for_action("ui_accept")
 		g_no = InputProfileManager.glyph_for_action("ui_cancel")
-	help1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  Del/%s:Delete  L:+AND  R:+Action  RClick:Close" % [g_ok, g_no, g_del]
+	## L/R are Nintendo's names for the shoulders — Xbox LB/RB, PlayStation L1/R1. Both are real
+	## InputMap actions here (battle_defer :1066, battle_advance :1079), so both derive.
+	help1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  Del/%s:Delete  %s:+AND  %s:+Action  RClick:Close" % [
+		g_ok, g_no, g_del,
+		InputProfileManager.hint_for_action("battle_defer"),
+		InputProfileManager.hint_for_action("battle_advance"),
+	]
 	help1.position = Vector2(16, size.y - 44)
 	help1.add_theme_font_size_override("font_size", 10)
 	help1.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help1)
 
 	var help2 = Label.new()
-	help2.text = "C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose  Start:Save"
+	## "Start" is the XBOX name for ui_menu's button; Nintendo calls it Plus, PlayStation Options.
+	help2.text = "C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose  %s:Save" % InputProfileManager.hint_for_action("ui_menu")
 	help2.position = Vector2(16, size.y - 28)
 	help2.add_theme_font_size_override("font_size", 10)
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))

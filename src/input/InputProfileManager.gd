@@ -312,6 +312,23 @@ func glyph_for_action(action: String, device_name: String = "") -> String:
 ## can keep their own wording rather than printing a placeholder.
 ## The printed NAME of a non-face button for the live pad family. Empty when the index is a face
 ## button (use the glyph) or one no profile binds.
+## The family's name for a RAW button index. BUTTON_LABELS is the REMAP-SCREEN vocabulary
+## ("Back / Select / Minus" — every family at once, correct there); this is the one a HUD wants.
+func button_name_for_index(button_index: int, device_name: String = "") -> String:
+	var name := device_name
+	if name == "":
+		var pads := Input.get_connected_joypads()
+		if pads.is_empty():
+			return ""   # NO PAD: naming one is the Win98Menu defect — let the caller name the KEY
+		name = Input.get_joy_name(pads[0])
+	var family: String = face_family_for_device(name)
+	if FACE_GLYPHS.has(family) and FACE_GLYPHS[family].has(button_index):
+		return FACE_GLYPHS[family][button_index]
+	if BUTTON_NAMES.has(family) and BUTTON_NAMES[family].has(button_index):
+		return BUTTON_NAMES[family][button_index]
+	return ""
+
+
 func button_name_for_action(action: String, device_name: String = "") -> String:
 	var name := device_name
 	if name == "":
