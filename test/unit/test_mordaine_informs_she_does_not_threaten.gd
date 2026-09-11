@@ -193,3 +193,44 @@ func test_the_reaches_the_model_check_cannot_be_satisfied_by_a_comment() -> void
 		"CONTROL: and real code must still satisfy it, or the discriminator refuses everything")
 	assert_true(_code_only("\tvar s := \"# not a comment\"").contains("not a comment"),
 		"CONTROL the other way: a quoted # must NOT truncate real code — over-stripping reports every subject missing")
+
+
+func test_the_comment_stripper_itself_is_pinned() -> void:
+	## Pinning the INSTRUMENT rather than only reaching it through mutations
+	## (cowir-overworld, msg-9682). Five costumes of one hollowness turned up in this
+	## helper across the fleet today; a case table is what stops a sixth from being
+	## discovered by a guard silently going green.
+	var cases: Array = [
+		# [line, expected_output, why]
+		["\tctx.persona = str(entry.get(\"persona\", \"\"))",
+		 "\tctx.persona = str(entry.get(\"persona\", \"\"))",
+		 "real code with quotes and no # is untouched"],
+		["\tvar x = 1  # ctx.persona = str(entry.get(\"persona\", \"\"))",
+		 "\tvar x = 1  ",
+		 "a trailing comment is cut"],
+		["\tvar _hex := \"#ff0000\"",
+		 "\tvar _hex := \"#ff0000\"",
+		 "a quoted # alone must survive — cutting here empties the corpus silently"],
+		["\tvar _hex := \"#ff0000\"  # ctx.persona gone",
+		 "\tvar _hex := \"#ff0000\"  ",
+		 "a quoted # FOLLOWED by a real comment cuts only at the comment (the fifth costume)"],
+		["\tvar h := '#hash'",
+		 "\tvar h := '#hash'",
+		 "single quotes count as a string too"],
+		["\t# whole line",
+		 "\t",
+		 "a whole-line comment is emptied but the line survives"],
+		["\tvar q := \"a \\\" # still string\"",
+		 "\tvar q := \"a \\\" # still string\"",
+		 "an escaped quote must not end the string early"],
+	]
+	for c in cases:
+		assert_eq(_strip_comment(str(c[0])), str(c[1]), str(c[2]))
+
+
+func test_the_stripper_preserves_line_count() -> void:
+	## substr/ordering windows elsewhere depend on it, and a stripper that drops
+	## lines would shift every later assertion without failing anything here.
+	var src: String = "a\n# b\nc  # d\n"
+	assert_eq(_code_only(src).split("\n").size(), src.split("\n").size(),
+		"blanking must not remove lines")
