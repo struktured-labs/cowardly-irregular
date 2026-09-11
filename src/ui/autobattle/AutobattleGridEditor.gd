@@ -270,7 +270,14 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	help_label1.text = "D-Pad:Navigate  A:Edit  B/Esc:Back  Del/Y:Delete  W/S/RStick:Value  L:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close"
+	## Pad halves derived, keyboard halves kept — this row sits six lines above help_label2 and both
+	## are on screen at once, so a half-derived pair reads as two contradicting legends in one glance.
+	help_label1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  Del/%s:Delete  W/S/RStick:Value  %s:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [
+		InputProfileManager.hint_for_action("ui_accept"),
+		InputProfileManager.hint_for_action("ui_cancel"),
+		InputProfileManager.hint_for_action("ui_menu"),
+		InputProfileManager.hint_for_action("battle_defer"),
+	]
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))

@@ -28,7 +28,7 @@ func test_no_battle_caption_hardcodes_a_nintendo_button() -> void:
 	## pad families, and none is reachable by a bracketed-token scan.
 	var frozen := {
 		BATTLE_SCENE: ["Press X (or the ` key)", "Press R to queue"],
-		GRID_EDITOR: ["A:Confirm", "B:Cancel", "A:Import", "Sel:Auto"],
+		GRID_EDITOR: ["A:Confirm", "B:Cancel", "A:Import", "Sel:Auto", "A:Edit", "B/Esc:Back", "Del/Y:Delete"],
 	}
 	var found: Array = []
 	for path in frozen:
@@ -48,8 +48,8 @@ func test_the_captions_derive_instead() -> void:
 	assert_true(bs.contains("hint_for_action(\"battle_advance\")"),
 		"the Advance hint must derive from its InputMap action")
 	var ge := _src(GRID_EDITOR)
-	assert_eq(ge.count("InputProfileManager.hint_for_action("), 5,
-		"the grid editor has FIVE pad captions across three help lines — one more than the sweep that found it listed")
+	assert_eq(ge.count("InputProfileManager.hint_for_action("), 9,
+		"the grid editor has NINE pad tokens across FOUR help lines — the sweep that found it reported two lines, its own scan found three, the file has four")
 
 func test_speed_has_no_inputmap_action_so_the_helper_is_the_only_route() -> void:
 	## The premise, measured rather than asserted. If someone later ADDS a battle_speed action, this
