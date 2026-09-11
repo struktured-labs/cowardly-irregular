@@ -113,6 +113,81 @@ func test_every_resolved_portrait_file_exists() -> void:
 	var missing: Array = []
 	for k in KNOWN_PAIRS:
 		for key in [k, KNOWN_PAIRS[k]]:
-			if map.has(key) and not ResourceLoader.exists(map[key]):
+			# FileAccess, not ResourceLoader: a deleted PNG keeps its .ctex, so ResourceLoader
+			# answers about the import cache. Measured 2026-09-11 -- deleting
+			# chancellor_mordaine.png and re-importing left this test GREEN. It catches a TYPO
+			# either way (no artifact for a bogus path) and was blind to the deletion.
+			if map.has(key) and not FileAccess.file_exists(map[key]):
 				missing.append("%s -> %s" % [key, map[key]])
 	assert_eq(missing, [], "portrait key points at a file that does not exist: %s" % [missing])
+
+
+## KNOWN_PAIRS could be DRAINED silently and I published it as load-bearing from READING the file.
+## Measured 2026-09-11 with the delete-the-entry method instead: removing "mordaine" left this file
+## Passing 3 / EC 0. The presence assertions fire only for members still in the list, so deleting a
+## member deletes its check -- and Mordaine is the character this file exists for.
+##
+## She is also NOT reachable by the derived arm, and that is correct rather than a bug: the arm
+## requires an archetype BOUND via `sprite_archetype =`, and she is a boss, never bound. Dropping
+## that requirement re-admits exactly the false positives the arm's comment already warned about
+## (king/boss_rat_king, mage/hooded_mage, mage/time_mage -- different characters, rightly different
+## faces). So KNOWN_PAIRS is her SOLE coverage, legitimately, and a sole coverage that can drain
+## quietly is the worst of both.
+##
+## Fixed by making the drain ITSELF the violation: every suffix-pair in PORTRAIT_SPRITES must be
+## classified as one that must AGREE (KNOWN_PAIRS) or one that must DIFFER (below). Remove an entry
+## from either and its pair becomes unclassified and reds. An empty KNOWN_PAIRS is maximal exposure
+## rather than zero work -- cowir-adhoc's set-difference shape, 2026-09-11.
+##
+## The DIFFER half is not bookkeeping: nothing previously stopped someone repointing hooded_mage at
+## mage.png, which is the same "two characters, one face" defect in the other direction.
+const DISTINCT_CHARACTERS := {
+	"boss_rat_king": "the Cave Rat King is a boss, not the king of Harmonia",
+	"hooded_mage": "a distinct NPC, not the Mage job portrait",
+	"time_mage": "the Time Mage job, not the Mage job",
+}
+
+
+func _suffix_pairs(map: Dictionary) -> Array:
+	var out: Array = []
+	for k in map:
+		for k2 in map:
+			if k2 != k and k2.ends_with("_" + k):
+				out.append([k, k2])
+	out.sort_custom(func(a, b): return str(a) < str(b))
+	return out
+
+
+func test_every_portrait_suffix_pair_is_classified() -> void:
+	var map := _portrait_map()
+	var pairs := _suffix_pairs(map)
+	assert_gt(pairs.size(), 3,
+		"CONTROL: only %d suffix-pairs derived from %d keys -- the derivation is broken and any clean result below is free" % [pairs.size(), map.size()])
+
+	var unclassified: Array = []
+	for pair in pairs:
+		var name_key: String = pair[0]
+		var arch_key: String = pair[1]
+		var claims_same: bool = KNOWN_PAIRS.has(name_key) and str(KNOWN_PAIRS[name_key]) == arch_key
+		if not claims_same and not DISTINCT_CHARACTERS.has(arch_key):
+			unclassified.append("%s <-> %s" % [name_key, arch_key])
+	assert_eq(unclassified, [],
+		("a portrait key pair is neither declared SAME-character (KNOWN_PAIRS) nor DIFFERENT " +
+		 "(DISTINCT_CHARACTERS). Two keys that look like one character must be ruled on, or the " +
+		 "next split ships unnoticed: %s") % [unclassified])
+
+
+func test_the_distinct_characters_really_are_distinct() -> void:
+	# The DIFFER half must be EARNED, not asserted. Without this, DISTINCT_CHARACTERS is a
+	# suppression list that would happily excuse a genuine collision.
+	var map := _portrait_map()
+	var collided: Array = []
+	for arch_key in DISTINCT_CHARACTERS:
+		for pair in _suffix_pairs(map):
+			if pair[1] != arch_key:
+				continue
+			if map.get(pair[0], "") == map.get(arch_key, "^"):
+				collided.append("%s and %s now share %s, but %s is declared a different character (%s)" % [
+					pair[0], arch_key, str(map.get(arch_key, "")).get_file(), arch_key, DISTINCT_CHARACTERS[arch_key]])
+	assert_eq(collided, [],
+		"two characters declared distinct now render the same face: %s" % [collided])
