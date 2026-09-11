@@ -287,6 +287,16 @@ func test_the_census_reads_a_real_corpus() -> void:
 		total += FileAccess.get_file_as_string(f).length()
 	assert_gt(total, 20000, "CONTROL: and real content, not empty reads")
 
+	## ⛔ LANE_DIRS is AUTHORED-FIXED — a list this guard OWNS — so it needs an `== LITERAL` pin,
+	## not just a per-member loop. @cowir-ai's split: a floor or a per-member check is right for a
+	## corpus the guard DISCOVERS (it may legitimately grow or shrink), and wrong for a set the
+	## guard owns, where shrinking should be a deliberate edit. Measured: dropping
+	## "res://src/ui/autobattle" from the array scored EC=0 Passing 7 Risky — GRADE A, because the
+	## loop below iterates the list and a removed entry takes its own check with it.
+	## Widening the lane's corpus is welcome; doing it silently is not.
+	assert_eq(LANE_DIRS.size(), 2,
+		"LANE_DIRS holds %d, not the 2 this guard was written against — if the lane gained or lost a prompt directory, update this pin AND check REACHABILITY still classifies every deriving surface" % LANE_DIRS.size())
+
 	## Every declared directory must CONTRIBUTE, and the failure names the one that went quiet.
 	for d in LANE_DIRS:
 		var from_dir := 0
