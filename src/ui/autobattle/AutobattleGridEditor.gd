@@ -294,7 +294,7 @@ func _build_ui() -> void:
 	var help_label1 = Label.new()
 	## Pad halves derived, keyboard halves kept — this row sits six lines above help_label2 and both
 	## are on screen at once, so a half-derived pair reads as two contradicting legends in one glance.
-	help_label1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  %s:Delete  W/S/RStick:Value  %s:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [
+	help_label1.text = "\u2191\u2193\u2190\u2192/D-pad:Navigate  %s:Edit  %s/Esc:Back  %s:Delete  W/S/RStick:Value  %s:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [
 		InputProfileManager.hint_for_action("ui_accept"),
 		InputProfileManager.hint_for_action("ui_cancel"),
 		## ⛔ WAS hint_for_action("ui_menu") — the WRONG ACTION, not a shadowed one. Delete is raw
@@ -2446,7 +2446,7 @@ func _build_option_picker() -> void:
 		list_y += 22.0
 	var help := Label.new()
 	## A/B are Nintendo names; on a DualSense Confirm is ✕ and Cancel is ○, and on Xbox they swap.
-	help.text = "D-Pad:Select   %s:Confirm   %s:Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
+	help.text = "\u2191\u2193/D-pad:Select   %s:Confirm   %s:Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
 	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -3209,7 +3209,7 @@ func _build_share_picker(files: Array) -> void:
 		list_y += 26.0
 
 	var help := Label.new()
-	help.text = "D-Pad:Select   %s:Import   %s:Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
+	help.text = "\u2191\u2193/D-pad:Select   %s:Import   %s:Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
 	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", style.text.darkened(0.2))

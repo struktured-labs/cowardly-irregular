@@ -191,8 +191,15 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help1 = Label.new()
-	## Face letters derived; Esc/Del/D-Pad stay literal (keyboard keys and a control every pad
-	## has). Guarded for the pre-autoload window, matching this lane's other prompt surfaces.
+	## Face letters derived; Esc/Del stay literal (real keyboard keys). Navigation is "↑↓/D-pad",
+	## @cowir-controller's ruling: it is NOT a per-family label — all four directional actions bind
+	## arrow key AND d-pad button AND stick axis at once, so every route is always live and there is
+	## nothing to branch on. The combined form already ships in DialogueChoiceMenu; 12 legend sites
+	## use the ↑↓ glyph form against 5 saying "D-Pad", so this adopts the majority rather than
+	## coining a word. "D-Pad" alone named nothing a keyboard player has AND under-reported the stick.
+	## ⚠️ FOUR glyphs, not two: this grid is 2D — ui_left/ui_right move cursor_col (:1044/:1050), so
+	## "↑↓" would under-report the axes exactly as "D-Pad" under-reported the devices.
+	## @cowir-battle's per-surface split: ↑↓ for vertical pickers, ↑↓←→ for a 2D grid.
 	## ⚠️ hint_for_action, NOT glyph_for_action: with no pad the latter falls back to the xbox
 	## family and prints Ⓐ/Ⓑ at a player holding a keyboard. hint_for_action names the key.
 	var g_del: String = "Del"
@@ -204,7 +211,7 @@ func _build_ui() -> void:
 		g_no = InputProfileManager.hint_for_action("ui_cancel")
 	## L/R are Nintendo's names for the shoulders — Xbox LB/RB, PlayStation L1/R1. Both are real
 	## InputMap actions here (battle_defer :1066, battle_advance :1079), so both derive.
-	help1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  %s:Delete  %s:+AND  %s:+Action  RClick:Close" % [
+	help1.text = "↑↓←→/D-pad:Navigate  %s:Edit  %s/Esc:Back  %s:Delete  %s:+AND  %s:+Action  RClick:Close" % [
 		g_ok, g_no, g_del,
 		InputProfileManager.hint_for_action("battle_defer"),
 		InputProfileManager.hint_for_action("battle_advance"),
