@@ -13,6 +13,15 @@ extends GutTest
 ## world4_warden_defeat / world5_arbiter_defeat. Players got the
 ## boss intro but no post-victory dialogue.
 ##
+## 2026-09-11: the cutscene IDs below moved. These lists pinned "a defeat cutscene
+## is wired", never "the defeat cutscene belongs to the boss you just beat" — and
+## two of them did not. AssemblyCore's boss is the Warden of the Assembly Line and
+## played the FUTURISTIC Warden's aftermath; RootProcess's boss is the Arbiter of
+## the Benchmark and played the ABSTRACT Arbiter's. The masterite aftermath scenes
+## are filed one world below the boss they belong to. test_defeat_cutscene_names_
+## the_boss_that_triggered_it_regression.gd is the arm that checks ownership; this
+## file stays the reachability arm and the two are deliberately separate.
+##
 ## W6 NullChamber skipped: world6_curator_defeat.json doesn't exist
 ## on disk yet (the only authored W6 boss-defeat cutscene is the
 ## final Calibrant battle, not the NullChamber dungeon Curator).
@@ -20,8 +29,8 @@ extends GutTest
 const DUNGEON_DEFEATS: Array[Array] = [
 	["res://src/maps/dungeons/SuburbanUnderground.gd",  "world2_warden_defeat"],
 	["res://src/maps/dungeons/SteampunkMechanism.gd",   "world3_tempo_defeat"],
-	["res://src/maps/dungeons/AssemblyCore.gd",         "world4_warden_defeat"],
-	["res://src/maps/dungeons/RootProcess.gd",          "world5_arbiter_defeat"],
+	["res://src/maps/dungeons/AssemblyCore.gd",         "world3_warden_defeat"],
+	["res://src/maps/dungeons/RootProcess.gd",          "world4_arbiter_defeat"],
 ]
 
 

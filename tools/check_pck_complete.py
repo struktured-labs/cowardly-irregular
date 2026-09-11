@@ -117,6 +117,17 @@ def _exclusions(stage, preset="Web"):
             f'[pck] BLOCKED: could not locate the {preset} preset\'s exclude_filter in {p} '
             f'(name="{preset}" at {i}, exclude_filter at {j}, closing quote at {k}). '
             f'Fix this parse rather than letting it derive from garbage.')
+    # ⛔ AND IT MUST BE THIS PRESET'S OWN. find(..., i) takes the NEXT exclude_filter after the
+    # name, which belongs to `preset` only because `preset` currently HAS one. Measured
+    # 2026-09-11: remove Web's and this returns ANDROID's — which carries no assets/audio
+    # patterns, so every excluded track reads as shipping and the completeness verdict is
+    # confidently wrong. The section boundary is the bound the parse was missing.
+    nxt = s.find('[preset.', i)
+    if 0 <= nxt < j:
+        raise Unevaluable(
+            f'[pck] BLOCKED: the {preset} preset has no exclude_filter of its own — the next '
+            f'one at {j} belongs to a LATER preset (section boundary at {nxt}). Refusing to '
+            f"derive {preset}'s owed content from another platform's exclusions.")
     return [x.strip() for x in s[j + 16:k].split(",") if x.strip()]
 
 

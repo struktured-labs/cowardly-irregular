@@ -101,8 +101,12 @@ func test_full_w1_defeat_cutscene_chain_complete() -> void:
 		"world1_mordaine_defeat",
 		"world2_warden_defeat",
 		"world3_tempo_defeat",
-		"world4_warden_defeat",
-		"world5_arbiter_defeat",
+		# 2026-09-11: ids moved, gates unchanged. Each dungeon now plays the aftermath
+		# of the boss it actually spawns — AssemblyCore's Warden of the Assembly Line
+		# and RootProcess's Arbiter of the Benchmark. The old ids are the NEXT world's
+		# masterites; this list is the series check, not an ownership check.
+		"world3_warden_defeat",
+		"world4_arbiter_defeat",
 	]:
 		assert_true(body.contains("return \"" + cutscene_id + "\""),
 			"%s must have a return path — closes the defeat-cutscene series" % cutscene_id)

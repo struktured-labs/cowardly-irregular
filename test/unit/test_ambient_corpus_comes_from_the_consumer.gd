@@ -42,14 +42,25 @@ const SFX_MANIFEST := "res://data/sfx_manifest.json"
 
 ## Six weather beds, measured 2026-09-11. Owner: cowir-sfx. Each entry is the
 ## reason it is here, not permission to stay.
-const KNOWN_NON_LOOPING := {
-	"weather_steam": "loop=false, 5.0s, wrap +59.0 dB (tail is digital silence) — worst of the set",
-	"weather_smog": "loop=false, 5.0s, wrap +14.6 dB",
-	"weather_glitch": "loop=false, 5.0s, wrap +10.6 dB",
-	"weather_rain": "loop=false, 5.0s, wrap +1.4 dB — seam fine, restart-driven only",
-	"weather_sunny": "loop=false, 5.0s, wrap +1.6 dB — seam fine, restart-driven only",
-	"weather_storm_bed": "loop=false, 10.0s, wrap +3.2 dB — seam fine, restart-driven only",
-}
+## ✅ EMPTIED 2026-09-11 — @cowir-sfx fixed all six and the pin retired itself.
+## This file SHIPPED with six entries and a stale-detection arm that goes RED
+## when a pinned key starts looping. It did exactly that the moment their fix
+## merged, which is the arm working — and it is also a cross-lane ratchet break
+## of the kind that turned up twice in gate 129/130, so it is repaired here
+## rather than left for the folder to discover at 3am.
+##
+## ⚠️ THE DEPENDENCY RUNS BOTH WAYS, which is why this branch CONTAINS theirs:
+## pins removed without their fix = six unpinned non-loopers, RED. Their fix
+## without this = a stale pin, RED. Neither half is safe alone.
+##
+## ⛔ AND ONE OF THE SIX WAS NOT A SEAM DEFECT AT ALL. weather_steam carried
+## 3.0s of fade in a 5.0s file; trimming the seam would have left a 2-second bed
+## looping 30x a minute. @cowir-sfx synthesised a periodic buffer instead
+## (tools/gen_steam_bed.py, built in the frequency domain so the wrap is
+## seamless as a property of the maths). My handover offered trim_wrap_padding
+## for all six and it would have no-opped on five — they measured instead of
+## taking the tool I pointed at them, and were right to.
+const KNOWN_NON_LOOPING := {}
 
 
 func _sfx() -> Dictionary:

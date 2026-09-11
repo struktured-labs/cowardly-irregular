@@ -424,7 +424,8 @@ func _setup_npcs() -> void:
 	var _greta_pre := [
 		"*cough* In my day, we ground levels by HAND!",
 		"But these young folk... they let the game PLAY ITSELF.",
-		"Press F6 or Select to toggle autobattle for everyone!",
+		# battle_toggle_auto: F6, or joypad button 4, whose NAME differs across all three profiles.
+		"Press F6 — or whatever your pad calls Select. Back. Share. Minus. In MY day it was ONE button!",
 		"Some say it's lazy. I say it's WISDOM.",
 		"Why waste time when monsters await?",
 		"Just... be careful in that cave. It... adapts."

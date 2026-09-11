@@ -95,6 +95,20 @@ func test_the_advertised_key_is_actually_bound() -> void:
 ## Corpus is the 14 actions in project.godot's [input] — not Godot's ~50 built-ins.
 
 ## action -> why it needs no row. Each entry is a claim that can go stale, so it is checked below.
+## ⚠️ THIS TABLE COULD ABSORB A LIVE FINDING UNTIL 2026-09-11. Nothing stopped someone silencing a
+## real action by adding a line here — the staleness arm below only refuses INERT entries, which is
+## a different protection and should not be mistaken for this one. @cowir-autogrind's rule: design
+## the red so the cheap repair at 2am is the CORRECT one. An exemption is now only accepted if it is
+## provably exempt-able, so the table cannot be used to silence anything.
+##
+##   DIRECTIONAL   one of the four ui_* directions, covered by the "D-Pad / Arrow Keys" row
+##   DEAD          zero quoted references anywhere in src/ — nothing handles it
+##
+## Measured when this was written: camera_rotate_left/right have 0 references (genuinely dead, and
+## they lost their last one when GamepadDiagnostic started deriving its action list); the four
+## directions have 20-34 each, so they are alive and exempt ONLY by the Navigate row.
+const DIRECTIONAL := ["ui_up", "ui_down", "ui_left", "ui_right"]
+
 const NO_ROW_NEEDED := {
 	"ui_up": "the D-Pad / Arrow Keys 'Navigate' row covers all four directions",
 	"ui_down": "same row",
@@ -204,3 +218,48 @@ func test_every_bound_f_key_in_the_corpus_is_advertised() -> void:
 		"scan cannot see it the widening is inert")
 	assert_eq(missing, [] as Array[String],
 		"an F-key is bound but named nowhere the player reads: %s" % [", ".join(missing)])
+
+## Quoted references to an action anywhere under src/ — the test for "is anything handling this".
+func _reference_count(action: String) -> int:
+	var needle := "\"%s\"" % action
+	var total := 0
+	var stack: Array[String] = ["res://src"]
+	while not stack.is_empty():
+		var dir_path: String = stack.pop_back()
+		var d := DirAccess.open(dir_path)
+		if d == null:
+			continue
+		d.list_dir_begin()
+		var fname := d.get_next()
+		while fname != "":
+			var full := dir_path + "/" + fname
+			if d.current_is_dir():
+				if not fname.begins_with("."):
+					stack.append(full)
+			elif fname.ends_with(".gd"):
+				if FileAccess.get_file_as_string(full).contains(needle):
+					total += 1
+			fname = d.get_next()
+		d.list_dir_end()
+	return total
+
+
+## THE TABLE CANNOT SILENCE A LIVE ACTION. Every exemption must be directional or provably dead.
+func test_no_exemption_can_hide_a_live_action() -> void:
+	# CONTROL first: the counter must distinguish a live action from a dead one, or every verdict
+	# below is the same verdict.
+	assert_gt(_reference_count("ui_accept"), 0, "CONTROL: a live action must count > 0")
+	assert_eq(_reference_count("zzq_not_an_action"), 0, "CONTROL: a fabricated action must count 0")
+	var illegitimate: Array[String] = []
+	for action in NO_ROW_NEEDED:
+		if DIRECTIONAL.has(action):
+			continue
+		var refs := _reference_count(action)
+		if refs > 0:
+			illegitimate.append("%s (%d references — it is LIVE)" % [action, refs])
+	assert_eq(illegitimate, [] as Array[String],
+		"an exemption names a LIVE action. You cannot silence this guard by listing an action here " +
+		"— give it a row in the reference instead: %s" % [", ".join(illegitimate)])
+	assert_eq(DIRECTIONAL.size(), 4,
+		"the directional escape hatch is exactly the four ui_* directions; widening it is how this " +
+		"table would become silenceable again")

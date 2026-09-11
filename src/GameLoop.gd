@@ -126,6 +126,17 @@ func get_village_origin_id() -> String:
 	return _village_origin_id
 
 
+## The shop walked up to, handed over the door; consumed and cleared by _create_shop_interior.
+var _pending_shop_name: String = ""
+var _pending_shop_keeper: String = ""
+
+
+## Called by VillageShop.interact() immediately before it asks for the interior.
+func set_pending_shop_identity(shop: String, keeper: String) -> void:
+	_pending_shop_name = shop
+	_pending_shop_keeper = keeper
+
+
 ## Tick 307: setter that keeps MapSystem.current_map_id in sync with our
 ## _current_map_id. Pre-fix MapSystem.current_map_id was only updated by
 ## MapSystem.load_map, which is bypassed by GameLoop's direct scene routing
@@ -1766,6 +1777,13 @@ func _demo_mode() -> bool:
 	return false
 
 
+## A between-worlds transition waits for its world's epilogue only once that epilogue is WIRED (in the completion map) — nothing writes an unwired scene's flag, and waiting on it would hold the transition forever.
+func _epilogue_done_or_unwired(epilogue_id: String, flags: Dictionary) -> bool:
+	if not _CUTSCENE_COMPLETION_FLAGS.has(epilogue_id):
+		return true
+	return bool(flags.get(_CUTSCENE_COMPLETION_FLAGS[epilogue_id], false))
+
+
 func _get_pending_story_cutscene() -> String:
 	"""Check if a story cutscene should play based on flags.
 	Returns cutscene ID or empty string."""
@@ -1914,6 +1932,11 @@ func _get_pending_story_cutscene() -> String:
 		if _current_map_id == "castle_harmonia":
 			return "world1_mordaine_defeat"
 
+	# W1 Epilogue: the party argues whether a designed victory counts. Authored since launch, never reachable — nothing reads a cutscene's own `trigger` field.
+	if flags.get("cutscene_flag_world1_mordaine_defeat_complete", false) and not flags.get("cutscene_flag_world1_epilogue_complete", false):
+		if _current_map_id == "castle_harmonia":
+			return "world1_epilogue"
+
 	# ===== WORLD 2: THE MUNDANE SPRAWL (Suburban) =====
 	# W2 Prologue: portal arrival, gear transformation
 	if flags.get("cutscene_flag_world1_mordaine_defeated", false) and not flags.get("cutscene_flag_world2_prologue_complete", false):
@@ -1982,6 +2005,9 @@ func _get_pending_story_cutscene() -> String:
 	# couldn't progress past W2 even after finishing chapter11.
 	if flags.get("cutscene_flag_chapter11_complete", false) and not flags.get("cutscene_flag_world2_complete", false):
 		_set_cutscene_flag_and_mirror("cutscene_flag_world2_complete")
+	# W2→W3 transition (the party's reflection between worlds; authored trigger world2_epilogue_complete). Orphaned with 0 callers until 2026-09-11.
+	if flags.get("cutscene_flag_world2_complete", false) and _epilogue_done_or_unwired("world2_epilogue", flags) and not flags.get("cutscene_flag_world2_transition_complete", false):
+		return "world2_transition"
 
 	# ===== WORLD 3: STEAMPUNK =====
 	if flags.get("cutscene_flag_world2_complete", false) and not flags.get("cutscene_flag_world3_prologue_complete", false):
@@ -2015,13 +2041,26 @@ func _get_pending_story_cutscene() -> String:
 	# as W2. Unblocks the W4 prologue gate which reads world3_complete.
 	if flags.get("cutscene_flag_world3_chapter5_complete", false) and not flags.get("cutscene_flag_world3_complete", false):
 		_set_cutscene_flag_and_mirror("cutscene_flag_world3_complete")
+	# W3→W4 transition (authored trigger world3_to_world4_transition; the Calibrant-revealed beat). Orphaned with 0 callers until 2026-09-11.
+	if flags.get("cutscene_flag_world3_complete", false) and _epilogue_done_or_unwired("world3_epilogue", flags) and not flags.get("cutscene_flag_world3_transition_complete", false):
+		return "world3_transition"
 
 	# ===== WORLD 4: INDUSTRIAL / DIGITAL =====
-	# Tick 102: W4 Warden of Industrial defeat cutscene — plays IN
-	# Assembly Core on return from boss victory.
+	# W4 Warden of the Assembly Line defeat cutscene — plays IN Assembly Core
+	# on return from boss victory.
+	#
+	# 2026-09-11: was `world4_warden_defeat`, which is the FUTURISTIC Warden's
+	# aftermath — "ACCESS: GRANTED", green scrolling text, a firewall opening.
+	# AssemblyCore's boss is masterite_warden_industrial (Warden of the Assembly
+	# Line), so beating it played the aftermath of a boss from the next world.
+	# The masterite aftermath scenes are filed one world BELOW the boss they
+	# belong to; each one names its true owner in its own `trigger` field and in
+	# its closing set_flag, and nothing read either. world3_warden_defeat says
+	# `boss_warden_industrial_defeated` twice and is titled "Warden of the
+	# Assembly Line — Aftermath" — it is this gate's scene and had no caller.
 	if flags.get("cutscene_flag_warden_industrial_defeated", false) and not flags.get("cutscene_flag_world4_warden_defeat_complete", false):
 		if _current_map_id == "assembly_core":
-			return "world4_warden_defeat"
+			return "world3_warden_defeat"
 	if flags.get("cutscene_flag_world3_complete", false) and not flags.get("cutscene_flag_world4_prologue_complete", false):
 		if _current_map_id == "industrial_overworld":
 			return "world4_prologue"
@@ -2045,9 +2084,14 @@ func _get_pending_story_cutscene() -> String:
 	# Tick 103: W5 Arbiter of Futuristic defeat cutscene — plays IN
 	# Root Process on return from boss victory. Same pattern as W2-W4
 	# defeat gates (tick 102).
+	# 2026-09-11, same class as the W4 gate above: `world5_arbiter_defeat` is the
+	# ABSTRACT Arbiter's aftermath (Arbiter of Function, W6). RootProcess's boss is
+	# masterite_arbiter_futuristic. world4_arbiter_defeat is titled "Arbiter of the
+	# Benchmark — Aftermath", triggers on boss_arbiter_futuristic_defeated, sets that
+	# same flag on its way out, and had no caller.
 	if flags.get("cutscene_flag_arbiter_futuristic_defeated", false) and not flags.get("cutscene_flag_world5_arbiter_defeat_complete", false):
 		if _current_map_id == "root_process":
-			return "world5_arbiter_defeat"
+			return "world4_arbiter_defeat"
 	# Same shape as its three sibling masterite dungeons; NullChamber declared no defeat flag, so this scene could never play.
 	if flags.get("cutscene_flag_curator_abstract_defeated", false) and not flags.get("cutscene_flag_world5_curator_defeat_complete", false):
 		if _current_map_id == "null_chamber":
@@ -2179,6 +2223,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_harmonia_after_cave":       "cutscene_flag_world1_harmonia_after_cave_complete",
 	# Tick 104: W1 Mordaine final post-defeat dialogue
 	"world1_mordaine_defeat":           "cutscene_flag_world1_mordaine_defeat_complete",
+	"world1_epilogue":                  "cutscene_flag_world1_epilogue_complete",
 	# W1 spotlight cutscenes — dual-signal per Spotlight Duels spec (cowir-
 	# main msg 1950, 2026-06-30). Cutscene finish now writes the _watched_
 	# flag ("player saw the intro/aftermath narration"). The _unlocked_
@@ -2205,6 +2250,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world2_chapter7_infrastructure":   "cutscene_flag_chapter7_infrastructure_complete",
 	"world2_chapter8_memos":            "cutscene_flag_chapter8_memos_found",
 	"world2_chapter11":                 "cutscene_flag_chapter11_complete",
+	"world2_transition":                "cutscene_flag_world2_transition_complete",
 	# Tick 102: W2 Warden of Routine post-defeat dialogue
 	"world2_warden_defeat":             "cutscene_flag_world2_warden_defeat_complete",
 	# World 3 (steampunk)
@@ -2216,6 +2262,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world3_chapter5":                  "cutscene_flag_world3_chapter5_complete",
 	# Tick 102: W3 Tempo of the Shift post-defeat dialogue
 	"world3_tempo_defeat":              "cutscene_flag_world3_tempo_defeat_complete",
+	"world3_transition":                "cutscene_flag_world3_transition_complete",
 	# World 4 (industrial)
 	"world4_prologue":                  "cutscene_flag_world4_prologue_complete",
 	"world4_chapter1":                  "cutscene_flag_world4_chapter1_complete",
@@ -2223,8 +2270,10 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world4_chapter3":                  "cutscene_flag_world4_chapter3_complete",
 	"world4_chapter4":                  "cutscene_flag_world4_chapter4_complete",
 	"world4_chapter5":                  "cutscene_flag_world4_chapter5_complete",
-	# Tick 102: W4 Warden of Industrial post-defeat dialogue
-	"world4_warden_defeat":             "cutscene_flag_world4_warden_defeat_complete",
+	# W4 Warden of the Assembly Line post-defeat dialogue. Key follows the scene the
+	# gate returns (world3_warden_defeat); the FLAG name is deliberately unchanged so
+	# a save that already saw the old scene does not replay this one.
+	"world3_warden_defeat":             "cutscene_flag_world4_warden_defeat_complete",
 	# World 5 (digital/abstract)
 	"world5_prologue":                  "cutscene_flag_world5_prologue_complete",
 	"world5_chapter1":                  "cutscene_flag_world5_chapter1_complete",
@@ -2232,8 +2281,9 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world5_chapter3":                  "cutscene_flag_world5_chapter3_complete",
 	"world5_chapter4":                  "cutscene_flag_world5_chapter4_complete",
 	"world5_chapter5":                  "cutscene_flag_world5_chapter5_complete",
-	# Tick 103: W5 Arbiter of Futuristic post-defeat dialogue
-	"world5_arbiter_defeat":            "cutscene_flag_world5_arbiter_defeat_complete",
+	# W5 Arbiter of the Benchmark post-defeat dialogue — key follows the scene the gate
+	# returns (world4_arbiter_defeat); flag name unchanged for the same reason as W4.
+	"world4_arbiter_defeat":            "cutscene_flag_world5_arbiter_defeat_complete",
 	"world5_curator_defeat":            "cutscene_flag_world5_curator_defeat_complete",
 	# World 6 (vertex/final)
 	"world6_prologue":                  "cutscene_flag_world6_prologue_complete",
@@ -5167,12 +5217,22 @@ func _create_shop_interior(shop_type_value: int) -> Node:
 
 	`shop_type_value` mirrors VillageShop.ShopType:
 	  0 = ITEM, 1 = BLACK_MAGIC, 2 = WHITE_MAGIC, 3 = BLACKSMITH
-	The scene self-themes (palette, decoration, NPCs) from this value.
+	The scene self-themes (palette, decoration, NPCs) from this value; its NAME and
+	KEEPER come from the VillageShop the player walked up to.
 	"""
 	var scene = ShopInteriorScript.new()
 	scene.shop_type = shop_type_value
-	# Default per-type names — outdoor shop instances can pass their own
-	# via a future override hook, but for now generic names work everywhere.
+	# The village authored a name and a keeper on the shop you walked up to; use them.
+	var pending_name := _pending_shop_name
+	var pending_keeper := _pending_shop_keeper
+	_pending_shop_name = ""
+	_pending_shop_keeper = ""
+	if pending_name != "":
+		scene.shop_name = pending_name
+		if pending_keeper != "":
+			scene.keeper_name = pending_keeper
+		return scene
+	# Reached only when nobody walked through a door -- teleport, save load, smoke test.
 	match shop_type_value:
 		0: scene.shop_name = "Mystic Remedies"
 		1: scene.shop_name = "The Arcanum"
@@ -5457,7 +5517,9 @@ func _stop_autogrind(reason: String) -> void:
 
 	# Restore clean audio state and resume area music
 	SoundManager.reset_corruption()
-	SoundManager.play_area_music(_current_map_id)
+	## _current_map_id is the MAP vocabulary; play_area_music matches the AREA one — 8 of 13 dungeon ids have no arm and fell through to overworld_medieval.
+	var _area_key: String = _derive_current_scene_music_key()
+	SoundManager.play_area_music(_area_key if _area_key != "" else _current_map_id)
 
 	# Play interrupt SFX based on stop reason
 	_play_grind_stop_sfx(reason)

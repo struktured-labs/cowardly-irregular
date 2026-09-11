@@ -107,5 +107,19 @@ func test_every_manifest_duration_matches_the_shipped_audio() -> void:
 		"SCOPE control: only %d tracks were actually measured — the walk is broken, and a zero-drift result would be vacuous" % checked)
 	assert_eq(unloadable.size(), 0,
 		"manifest names audio that will not load (%d): %s — run --import, or the file is missing/an LFS pointer" % [unloadable.size(), unloadable])
+	## ⚠️ TWO CAUSES, AND THE MESSAGE USED TO NAME ONLY ONE. It said "whatever
+	## rewrote the OGG did not rewrite the number", which sends the reader after
+	## a manifest bug. The other cause is a STALE IMPORT CACHE, and it is the
+	## likelier one during normal work: load() returns what Godot IMPORTED, not
+	## what is on disk, so checking out a tree whose OGGs differ from the last
+	## --import compares this manifest against the PREVIOUS branch's audio.
+	##
+	## Measured 2026-09-11: checking out v3.33.295-alpha with a cache built on a
+	## queued trim branch produced exactly this failure on TWO stingers, on a
+	## tagged release that was clean — manifest 9.84 vs disk 9.8400. A false RED
+	## on a shipped tag, indistinguishable from a real defect by the old wording.
+	## Re-importing made it pass.
+	##
+	## The discriminator is one command, so the message now carries it.
 	assert_eq(drifted.size(), 0,
-		"manifest duration disagrees with the shipped audio (%d): %s — whatever rewrote the OGG did not rewrite the number. This is SILENT at runtime; the Jukebox just prints the wrong time." % [drifted.size(), drifted])
+		"manifest duration disagrees with the audio Godot LOADED (%d): %s\n  TWO CAUSES, check the cheap one first:\n  (1) STALE IMPORT CACHE — you changed branches and did not re-import. load() returns the IMPORTED audio, not the file on disk. Run: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import --quit  and re-run. If it passes, there was no defect.\n  (2) A REAL DRIFT — something rewrote the OGG without rewriting the number. Confirm with ffprobe against the file on disk before believing it. This is SILENT at runtime; the Jukebox just prints the wrong time." % [drifted.size(), drifted])

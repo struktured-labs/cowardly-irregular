@@ -195,9 +195,10 @@ func apply_byok_config() -> bool:
 		http.api_format = "ollama"
 		http.model = "llama3"
 		http.api_key = ""
-	# Reset the readiness flag if the backend caches it — next probe
-	# decides whether the new endpoint is reachable.
-	if "_ready_flag" in http:
+	# Probe the new endpoint NOW — the interval gate would otherwise block it for 30s.
+	if http.has_method("invalidate_and_reprobe"):
+		http.invalidate_and_reprobe()
+	elif "_ready_flag" in http:
 		http._ready_flag = false
 	# Reset the "no backend" warning gate so a successful BYOK swap
 	# can re-warn cleanly if the new endpoint also fails.
@@ -308,6 +309,11 @@ func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: 
 		inference_failed.emit(MODE_JSON, "no ready backend")
 		return fallback
 
+	# NullBackend is always ready and declares supports_json() == false — don't ask it for JSON.
+	if _active_backend.has_method("supports_json") and not _active_backend.supports_json():
+		inference_failed.emit(MODE_JSON, "backend cannot produce JSON")
+		return fallback
+
 	# JSON responses are not cached (high variance + ephemeral by design).
 	var merged_opts: Dictionary = opts.duplicate()
 	merged_opts["json_mode"] = true
@@ -318,7 +324,8 @@ func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: 
 		return fallback
 
 	var guarded: Variant = _guard_json(str(raw), schema, fallback)
-	if guarded == fallback:
+	# `==` on mismatched Variant types is a GDScript error that aborts this function.
+	if typeof(guarded) == typeof(fallback) and guarded == fallback:
 		inference_failed.emit(MODE_JSON, "guard rejected response")
 	else:
 		inference_succeeded.emit(MODE_JSON)

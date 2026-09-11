@@ -19,6 +19,28 @@ extends GutTest
 ## So the condition is sound and the three shipped rules are unreachable WITHIN THEIR OWN TEMPLATE.
 ## That is a content decision for the catalog owner (drop the rule, or give the template an Advance
 ## rule), and this test exists so the decision rests on a measurement instead of my reasoning.
+##
+## TWO UPDATES FOR WHOEVER MAKES THAT CALL, both from 2026-09-11.
+##
+## 1. THE VOCABULARY IS LIVE, ONLY THE POSITION IS STRANDED — which points at "give the template an
+##    Advance rule" rather than "drop the rule". The evidence is
+##    test_the_condition_itself_reads_the_debt_when_it_exists below: `ap < 0` is TRUE for a
+##    combatant in real debt and FALSE once it is paid. Authored-but-unreachable, not stale.
+##
+##    ⚠️ I first credited this to a cross-lane "dead set references a dead vocabulary" signal, which
+##    @cowir-story RETRACTED an hour later — every trigger in their corpus scored 0 because nothing
+##    reads triggers at all, so live and dead scenes were indistinguishable. My conclusion does not
+##    depend on it and never did; the behavioural arm below is the discriminator and predates the
+##    borrowed one. But I had called the borrowed signal "the discriminator I was missing" while
+##    already holding a better one, and a justification travels further than the finding it
+##    decorates. Borrowing a signal without re-running its control on your own corpus is the
+##    mistake even when, as here, it changes nothing.
+##
+## 2. THE THRESHOLD MOVED, AND I MOVED IT. The resolver now charges billed_ap for an Advance
+##    instead of size-1, so a 2-action rule costs 2 AP per round against the natural +1 rather than
+##    1. Measured on that shape over 50 rounds: steady state went 0 -> -1. So if the catalog owner
+##    gives one of these templates an Advance rule, `ap < 0` becomes reachable SOONER than it would
+##    have before, and a 2-action rule now suffices where it previously did not descend at all.
 
 var _abs: Node = null
 var _fixture_ids: Array[String] = []
@@ -64,7 +86,8 @@ func _attack() -> Dictionary:
 
 
 func test_ap_debt_is_reachable_with_an_advance_rule() -> void:
-	## Four actions cost 3 AP. Sustained over rounds the natural +1 cannot keep up, so AP descends
+	## Four actions cost 4 AP (billed_ap, since 2026-09-11 — this said 3 while the resolver underpriced
+	## every Advance by one). Sustained over rounds the natural +1 cannot keep up, so AP descends
 	## past zero — the state the condition is written for.
 	var hero := _hero("Advance Hero")
 	_install(hero, [

@@ -68,8 +68,28 @@ func test_full_signal_chain_resolves() -> void:
 	assert_gt(src.length(), 5000, "SCOPE control: SoundManager.gd read back %d chars" % src.length())
 	var at: int = src.find("_ambient_player.bus =")
 	assert_gt(at, 0, "SCOPE control: the ambient bus assignment is gone; this arm is anchored on nothing")
-	var preceding: String = src.substr(max(0, at - 200), 200)
-	assert_true(preceding.contains("MusicDuck") or preceding.contains("duck"),
+	## ⛔ THIS READ substr(at - 200, 200) AND MY OWN EDIT BROKE IT. Recording the
+	## review made the annotation longer, the keyword fell outside the 200-byte
+	## window, and the guard went red on a comment that had just become MORE
+	## complete. A fixed byte window is pinned in CLAUDE.md as a trap and
+	## @cowir-ai reproduced it within ten minutes of fixing a corpus bug today;
+	## this is the same thing, sprung by improving the very text it guards.
+	##
+	## Bound by STRUCTURE instead: walk back over the contiguous comment block,
+	## however long it grows. Annotations get longer as they get better, and a
+	## guard that punishes that teaches people to write shorter notes.
+	var lines: PackedStringArray = src.substr(0, at).split("\n")
+	var annotation: String = ""
+	var i: int = lines.size() - 2          # -1 is the partial assignment line
+	while i >= 0:
+		var t: String = lines[i].strip_edges()
+		if not t.begins_with("#"):
+			break
+		annotation = t + "\n" + annotation
+		i -= 1
+	assert_ne(annotation, "",
+		"the ambient bus assignment has no comment block above it at all")
+	assert_true(annotation.contains("MusicDuck") or annotation.contains("duck"),
 		"the ambient bus assignment carries no annotation explaining what it diverges FROM — the next reader spends an hour deriving that it skips the duck, as I did. State it in one line.")
 
 

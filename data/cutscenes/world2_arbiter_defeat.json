@@ -36,16 +36,16 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "A.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "No conditions. That was an A.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         }
       ]
     },
@@ -57,10 +57,10 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "My rubric was perfect. My curve was calibrated precisely. How did you pass without studying?",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Mage",
@@ -88,22 +88,22 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "You are not the students this curriculum was designed for. And yet the curriculum worked.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "Partially. With significant deviation.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "I don't know whether to mark that as a success.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         }
       ]
     },
@@ -119,16 +119,16 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "I don't know what class this is for. I've been grading it a long time.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "I'm not sure anymore what the subject is.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         }
       ]
     },
@@ -146,10 +146,10 @@
           "portrait": "bard"
         },
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "I don't have a column for interesting.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         }
       ]
     },
@@ -169,22 +169,22 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "Charming. Incomplete.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "But passing.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
-          "speaker": "Arbiter",
+          "speaker": "Arbiter of the Grade",
           "text": "I've never had to curve the grade before.",
           "theme": "enemy",
-          "portrait": "masterite_arbiter_medieval"
+          "portrait": "masterite_arbiter_suburban"
         }
       ]
     },

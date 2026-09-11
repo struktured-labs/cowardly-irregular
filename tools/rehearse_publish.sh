@@ -90,8 +90,12 @@ _containment_control() {
         echo "[rehearse] CONTAINMENT FAILED: butler resolves to '$resolved', not the stub." >&2
         return 1
     fi
-    PATH="$STUB:$PATH" BUTLER_STUB_LOG="$CALLS" butler status probe >/dev/null 2>&1; s=$?
-    PATH="$STUB:$PATH" BUTLER_STUB_LOG="$CALLS" butler push probe target >/dev/null 2>&1; p=$?
+    # Invoke the stub BY PATH, not through $PATH resolution. Two separate assertions:
+    # the check above proves `butler` RESOLVES to the stub; these prove the stub BEHAVES.
+    # Routing them through $PATH conflated the two, and it also made this line read to a static
+    # scanner as a bare `butler push` — which is exactly what it must not look like.
+    BUTLER_STUB_LOG="$CALLS" "$STUB/butler" status probe >/dev/null 2>&1; s=$?
+    BUTLER_STUB_LOG="$CALLS" "$STUB/butler" push probe target >/dev/null 2>&1; p=$?
     after="$(wc -l < "$CALLS")"
     if [ "$s" -ne 0 ]; then
         echo "[rehearse] CONTAINMENT FAILED: stub status returned $s, expected 0." >&2
@@ -111,6 +115,13 @@ _containment_control() {
     echo "[rehearse] containment control: butler -> stub · status 0 · push 97 · both logged"
     : > "$CALLS"
     return 0
+}
+
+# Same expression as tools/check_version_matches_tag.sh:45, and the control below makes that
+# shipped checker ratify the result rather than trusting the two to stay in step.
+_semver_of() {
+    sed -n 's/^[[:space:]]*const[[:space:]]\+SEMVER[[:space:]]*:=[[:space:]]*"\([^"]*\)".*/\1/p' \
+        "$1/src/meta/Version.gd" 2>/dev/null | head -1
 }
 
 _newest_tag_local() {
@@ -143,14 +154,94 @@ rehearse() {
     fi
     git -C "$WORK/repo" checkout -q --detach "$sha" || return 2
 
-    local tag; tag="$(_newest_tag_local "$WORK/repo")"
-    [ -n "$tag" ] || { echo "[rehearse] BLOCKED: no v3.33.* tag in the clone." >&2; return 2; }
+    # ── the rehearsal tag NAME comes from the candidate, not from the tag list ──────────
+    # First version moved the newest EXISTING tag onto the candidate. That false-blocks on any
+    # VERSION-BUMPING fold — i.e. every fold. Measured on 5ff18686 (the 39-branch fold): with
+    # v3.33.294-alpha moved on, §2 said "this build calls itself 3.33.295-alpha, but it would
+    # publish as 3.33.294-alpha" and the rehearsal exited 2. The guard was right; the premise
+    # was supplied by this script. A rig that feeds a guard a false premise reds a healthy tree
+    # exactly as easily as it greens a broken one, and the red is more likely to be believed.
+    local prev; prev="$(_newest_tag_local "$WORK/repo")"
+    [ -n "$prev" ] || { echo "[rehearse] BLOCKED: no v3.33.* tag in the clone." >&2; return 2; }
 
-    # §1 reads the ANNOTATION for gate evidence, so the moved tag must carry the original
-    # message. A rehearsal whose tag has no message tests a different §1 than the real one.
+    local semver; semver="$(_semver_of "$WORK/repo")"
+    if [ -z "$semver" ]; then
+        echo "[rehearse] BLOCKED: could not read SEMVER from src/meta/Version.gd in the" >&2
+        echo "           candidate. An unreadable version is never a matching one." >&2
+        return 2
+    fi
+    local tag="v${semver}"
+
+    # §1 reads the ANNOTATION for gate evidence, so the tag must carry one. The candidate has
+    # no real annotation yet — it is not tagged — so the previous tag's message is reused.
+    # ⛔ DELIBERATELY NOT SYNTHESISING A `gated:` TOKEN. That line is the fold's evidence that
+    # the suite passed on THAT commit; fabricating one here would let a rehearsal clear a gate
+    # the real publish might fail, which is the one direction a rehearsal must never err in.
+    # tag_gate_evidence correctly notices the mismatch and downgrades to VERDICT=RUN. That is
+    # the conservative answer and it is the right one.
     local msgfile="$WORK/tagmsg.txt"
-    git -C "$WORK/repo" tag -l --format='%(contents)' "$tag" > "$msgfile"
+    git -C "$WORK/repo" tag -l --format='%(contents)' "$prev" > "$msgfile"
     git -C "$WORK/repo" tag -a -f -F "$msgfile" "$tag" "$sha" >/dev/null 2>&1 || return 2
+
+    # CONTROL: the shipped version checker must accept the name this script derived. Without
+    # this, a drift between my sed and check_version_matches_tag.sh's sed would surface as a
+    # confusing §2 block mid-rehearsal, and the obvious reading would be "the candidate is
+    # broken" rather than "the rig parsed the version differently from the tool that decides".
+    # An audit instrument must not disagree silently with the thing it is auditing.
+    # ⛔ NO SILENT SKIP. The first version of this control was `if [ -x … ]; then … fi` with no
+    # else, so a candidate missing the checker would have had this control quietly not run —
+    # one commit after I wrote "a missing guard is not a passing one" into publish_all and made
+    # the same situation exit 4 there. I wrote the rule and then wrote its opposite, inside the
+    # control I was adding BECAUSE of a lesson about audit instruments.
+    #
+    # Blocking is also the consistent answer: publish_all §2 itself refuses to publish when
+    # check_version_matches_tag.sh is absent, so a candidate without it cannot ship anyway, and
+    # a rehearsal that sailed past would be rehearsing something the real run forbids.
+    if [ ! -x "$WORK/repo/tools/check_version_matches_tag.sh" ]; then
+        echo "[rehearse] BLOCKED: the candidate has no executable tools/check_version_matches_tag.sh," >&2
+        echo "           so nothing can ratify the tag name this script derived from Version.gd." >&2
+        echo "           publish_all §2 refuses to publish without it too — this is not a case to" >&2
+        echo "           wave through. A missing guard is not a passing one." >&2
+        return 2
+    fi
+    if ! ( cd "$WORK/repo" && ./tools/check_version_matches_tag.sh "$tag" ) >/dev/null 2>&1; then
+        echo "[rehearse] BLOCKED: derived tag ${tag} from Version.gd, but the candidate's own" >&2
+        echo "           tools/check_version_matches_tag.sh rejects it. This script's parse and" >&2
+        echo "           the shipped checker's have diverged — fix the parse, do not proceed." >&2
+        return 2
+    fi
+
+    # §3b compares the tag against origin's newest. The candidate's tag does not exist on the
+    # real origin, so the comparison would report SUPERSEDED and exit 3 — again a false block
+    # from the rig. A rehearsal necessarily models "this tag has just been cut and pushed", so
+    # origin is pointed at the sandbox.
+    # ⚠ CONSEQUENCE, stated because it is a real loss of fidelity: §3b is REHEARSED, NOT PROVEN.
+    # It does its real comparison against the real origin on the day.
+    git -C "$WORK/repo" remote set-url origin "$WORK/repo"
+
+    # ⛔ AND REMOVE TAGS THAT SORT ABOVE THE CANDIDATE'S. Repointing origin models "this tag was
+    # just cut and pushed" only if the sandbox does not still contain a NEWER one. Measured:
+    # rehearsing an unmerged lane stack whose Version.gd reads 3.33.294-alpha, while the sandbox
+    # carried v3.33.295-alpha, exited 3 SUPERSEDED — a false block from the rig, and the mirror
+    # of the false block I fixed this morning when the candidate was AHEAD of the newest tag.
+    # Rehearsing my own unmerged branches is this tool's main use case, so the rig blocked
+    # exactly what it exists to check.
+    #
+    # ⚠ This is a real loss of fidelity and it is the second one: §3b supersession is now
+    # REHEARSED TWICE OVER — against a sandbox origin, with newer tags removed. It does its real
+    # comparison against the real origin on the day. Anything a rehearsal tells you about
+    # supersession is worth nothing; everything else in the chain is still faithful.
+    local _newer
+    _newer="$(git -C "$WORK/repo" for-each-ref --format='%(refname:short)' 'refs/tags/v3.33.*' \
+              | sort -V | awk -v t="$tag" 'index($0, t) == 1 {seen=1; next} seen')"
+    if [ -n "$_newer" ]; then
+        # `wc -l` on a list with no trailing newline reports 0 — it counts newlines, not items.
+        # The first version printed "removing 0 tag(s)" while removing one. Count words, and
+        # NAME them, so the line reports what happened rather than a number that can be wrong.
+        echo "[rehearse] removing $(printf '%s' "$_newer" | wc -w | tr -d ' ') tag(s) newer than" \
+             "$tag from the sandbox so §3b sees this tag as the newest: $(printf '%s' "$_newer" | tr '\n' ' ')"
+        for _t in $_newer; do git -C "$WORK/repo" tag -d "$_t" >/dev/null 2>&1; done
+    fi
 
     # The clone carries COMMITTED state only. A rehearsal of a dirty worktree is a rehearsal of
     # something other than what you are looking at — the same trap publish_all §3 guards with
@@ -162,7 +253,10 @@ rehearse() {
     fi
 
     echo "[rehearse] candidate  $ref -> ${sha:0:8}"
-    echo "[rehearse] tag        $tag moved onto it IN THE CLONE ONLY (annotation preserved)"
+    echo "[rehearse] tag        $tag  (DERIVED from the candidate's Version.gd; previous was $prev)"
+    echo "[rehearse]            created in the clone only · annotation reused from $prev, so §1"
+    echo "[rehearse]            will read VERDICT=RUN rather than a real gated: token"
+    echo "[rehearse]            origin -> sandbox, so §3b supersession is REHEARSED, not proven"
     echo "[rehearse] mode       $mode"
     echo "[rehearse] ─── publish_all ───"
 

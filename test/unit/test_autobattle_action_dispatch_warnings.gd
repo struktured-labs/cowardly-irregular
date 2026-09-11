@@ -39,47 +39,64 @@ func _fn_body(fn_signature: String) -> String:
 	return src.substr(fn_idx, next_fn - fn_idx) if next_fn > -1 else src.substr(fn_idx)
 
 
-# ── _rule_to_action ───────────────────────────────────────────────────
+# ── the LIVE dispatch path ────────────────────────────────────────────
+## RETARGETED 2026-09-11. Four arms here pinned `_rule_to_action` and `_get_target_for_rule`, which
+## had zero and zero production callers — the latter's three call sites were all INSIDE the former,
+## so a one-level caller scan reported it live. Both are now retired from the source.
+##
+## The live chain is `_rule_to_actions` (plural — ONE CHARACTER from the dead name) ->
+## `_action_def_to_action` -> `_get_target_by_type`, and the two functions differed in CONTRACT, not
+## just in name: the dead one returned an action with no target on an unknown type, the live one
+## returns a targeted attack. So this file was green, correct about the functions it called, and
+## silent about what autobattle actually does — cowir-autogrind's find, cowir-ai's discriminator.
+##
+## These are BEHAVIOURAL. The two arms that survive below are whole-file `src.contains`, which would
+## pass if the warning string existed anywhere in the file — including inside the dead functions I
+## just deleted. Calling the thing is what makes the difference.
 
-func test_rule_to_action_warns_on_unknown_actiontype() -> void:
-	var body := _fn_body("func _rule_to_action(combatant: Combatant, rule: Dictionary) -> Dictionary:")
-	assert_true(body.contains("[AutobattleSystem] _rule_to_action: unknown ActionType"),
-		"_rule_to_action must push_warning on unknown ActionType")
-	assert_true(body.contains("action will lack target data"),
-		"warning must mention the consequence (missing target data)")
-	assert_true(body.contains("stale action_type values"),
-		"warning must hint at the cause (stale rule JSON)")
+func test_the_live_dispatch_defaults_an_unknown_action_to_a_targeted_attack() -> void:
+	var abs_node = Engine.get_main_loop().root.get_node_or_null("AutobattleSystem")
+	if abs_node == null:
+		pending("AutobattleSystem autoload required")
+		return
+	var c := Combatant.new()
+	autofree(c)
+	c.combatant_name = "Caster"
+	c.max_hp = 100; c.current_hp = 100
+	var out: Dictionary = abs_node._action_def_to_action(c, {"type": "zzz_not_a_real_action"})
+	assert_eq(str(out.get("type", "")), "attack",
+		"an unknown action type must degrade to attack, not to an untargeted action")
+	assert_true(out.has("target"),
+		"and it must carry a target — the retired twin returned one without, which is the defect")
 
+func test_the_live_dispatch_still_handles_a_known_action() -> void:
+	## CONTROL: if the dispatcher returned "attack" for everything, the arm above would pass for the
+	## wrong reason. A known type must NOT come back as the fallback.
+	var abs_node = Engine.get_main_loop().root.get_node_or_null("AutobattleSystem")
+	if abs_node == null:
+		pending("AutobattleSystem autoload required")
+		return
+	var c := Combatant.new()
+	autofree(c)
+	c.combatant_name = "Caster"
+	c.max_hp = 100; c.current_hp = 100
+	var out: Dictionary = abs_node._action_def_to_action(c, {"type": "defer"})
+	assert_eq(str(out.get("type", "")), "defer",
+		"a known action type must come back as itself, not as the unknown-type fallback")
+	assert_false(out.has("target"),
+		"and defer takes no target — proof this is the defer ARM, not the attack fallback")
 
-func test_rule_to_action_has_wildcard_match_arm() -> void:
-	# Pin: the match now has a `_:` arm (previously missing entirely).
-	var body := _fn_body("func _rule_to_action(combatant: Combatant, rule: Dictionary) -> Dictionary:")
-	# The wildcard arm sits between SKIP and the final `return action`.
-	assert_true(body.contains("ActionType.SKIP:") and body.contains("\n\t\t_:\n"),
-		"_rule_to_action match must have a `_:` wildcard arm")
+func test_the_retired_twins_are_gone() -> void:
+	## Bidirectional: if either comes back, this file must be revisited rather than silently
+	## re-covering a dead path. Names one character apart is how the original trap worked.
+	var src := _read(AUTOBATTLE_SYSTEM)
+	assert_false(src.contains("func _rule_to_action("),
+		"the singular twin had no production callers — it is retired, do not reinstate it")
+	assert_false(src.contains("func _get_target_for_rule("),
+		"dead by transitivity — every caller lived inside the singular twin")
+	assert_true(src.contains("func _rule_to_actions("),
+		"CONTROL: the LIVE plural dispatcher is still here")
 
-
-# ── _get_target_for_rule ──────────────────────────────────────────────
-
-func test_get_target_for_rule_warns_on_unknown_target_type() -> void:
-	var body := _fn_body("func _get_target_for_rule(combatant: Combatant, rule: Dictionary) -> Combatant:")
-	assert_true(body.contains("[AutobattleSystem] _get_target_for_rule: unknown target_type"),
-		"_get_target_for_rule must push_warning on unknown target_type")
-	assert_true(body.contains("defaulting to lowest_hp_enemy"),
-		"warning must state the default behavior")
-	assert_true(body.contains("stale target_type values"),
-		"warning must hint at stale rule JSON")
-
-
-func test_get_target_for_rule_defensive_fallback_preserved() -> void:
-	# Pin: the warning sits next to the defensive `return _get_lowest_hp_enemy(combatant)`
-	# fallback — bad rules don't crash, just behave defensively.
-	var body := _fn_body("func _get_target_for_rule(combatant: Combatant, rule: Dictionary) -> Combatant:")
-	assert_true(body.contains("return _get_lowest_hp_enemy(combatant)"),
-		"defensive return _get_lowest_hp_enemy(combatant) must be preserved")
-
-
-# ── _action_type_to_string ────────────────────────────────────────────
 
 func test_action_type_to_string_warns_on_unknown_enum() -> void:
 	var body := _fn_body("func _action_type_to_string(action_type: ActionType) -> String:")
