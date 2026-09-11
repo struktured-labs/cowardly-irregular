@@ -1,9 +1,9 @@
 {
   "id": "world3_curator_intro",
   "title": "Curator of the Pipeline",
-  "world": 3,
+  "world": 4,
   "trigger": "boss_curator_industrial",
-  "background": "steampunk_workshop",
+  "background": "industrial_factory",
   "description": "The Curator stands at the junction of all pipelines beneath the manufactory. Everything flows through it. Nothing is wasted. Nothing is free.",
   "steps": [
     {

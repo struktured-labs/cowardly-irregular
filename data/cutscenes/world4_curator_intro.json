@@ -1,9 +1,9 @@
 {
   "id": "world4_curator_intro",
   "title": "Curator of the Memory Pool",
-  "world": 4,
+  "world": 5,
   "trigger": "boss_curator_futuristic",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "description": "The Curator of the Memory Pool exists in the data layer beneath Node Prime. It has been watching and storing everything the party has ever done.",
   "steps": [
     {

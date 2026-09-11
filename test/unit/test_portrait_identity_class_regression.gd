@@ -116,14 +116,13 @@ func test_no_new_named_npc_has_grown_a_second_face() -> void:
 ## Listed rather than omitted so the debt is visible, and EARNED by the arm below -- make the art
 ## and the entry must go, or it starts excusing something that is no longer true.
 const KNOWN_MISSING_PORTRAITS := [
-	"masterite_warden_industrial",
 	"masterite_warden_futuristic", "masterite_warden_abstract",
 	"masterite_tempo_suburban", "masterite_tempo_industrial",
 	"masterite_tempo_futuristic", "masterite_tempo_abstract",
 	"masterite_arbiter_suburban", "masterite_arbiter_industrial",
-	"masterite_arbiter_futuristic", "masterite_arbiter_abstract",
+	"masterite_arbiter_abstract",
 	"masterite_curator_suburban", "masterite_curator_industrial",
-	"masterite_curator_futuristic", "masterite_curator_abstract",
+	"masterite_curator_futuristic", 
 ]
 
 

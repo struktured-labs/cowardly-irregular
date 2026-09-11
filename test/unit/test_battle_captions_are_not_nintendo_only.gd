@@ -232,11 +232,24 @@ func test_the_captions_derive_instead() -> void:
 			var call_re := RegEx.new()
 			call_re.compile("\\b(_[a-z_]+)\\(")
 			for cm in call_re.search_all(a):
-				var fi: int = ge.find("func %s(" % cm.get_string(1))
-				if fi < 0:
-					continue
-				var fj: int = ge.find("\nfunc ", fi + 10)
-				if ge.substr(fi, (fj - fi) if fj > -1 else 400).contains("InputProfileManager."):
+				## ⛔ EVERY definition of the name, not the first. `ge` is BOTH editors concatenated and
+				## both define `_delete_token` — a bare find() resolves the OTHER file's copy. Measured:
+				## freezing one editor's helper to a literal scored GREEN while its twin still derived.
+				## All definitions must derive, so an ambiguous helper name fails toward alarm.
+				var fname: String = cm.get_string(1)
+				var seen := false
+				var ok := true
+				var from: int = 0
+				while true:
+					var fi: int = ge.find("func %s(" % fname, from)
+					if fi < 0:
+						break
+					var fj: int = ge.find("\nfunc ", fi + 10)
+					if not ge.substr(fi, (fj - fi) if fj > -1 else 400).contains("InputProfileManager."):
+						ok = false
+					seen = true
+					from = fi + 1
+				if seen and ok:
 					derived = true
 					break
 			if not derived:

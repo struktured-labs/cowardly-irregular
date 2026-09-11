@@ -1,9 +1,9 @@
 {
   "id": "world4_warden_intro",
   "title": "Warden of the Firewall",
-  "world": 4,
+  "world": 5,
   "trigger": "boss_warden_futuristic",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "description": "The party hits the Firewall at the boundary of Node Prime's secured sector. Access denied. Authorization must be demonstrated through force.",
   "steps": [
     {

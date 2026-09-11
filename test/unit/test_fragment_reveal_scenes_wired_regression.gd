@@ -78,9 +78,21 @@ func test_the_gate_table_is_the_data_every_fragment_scene_maps_to_its_masterites
 		if m is Dictionary and str(m.get("id", "")).begins_with("masterite_"):
 			masterites[m["id"]] = m
 	assert_eq(masterites.size(), 24, "control: 24 masterites (6 themes × 4 archetypes)")
+	# The aftermath scenes name their masterite by trigger, "boss_<arch>_<theme>_defeated", and their FILE numbering runs one world behind the theme from industrial up — so `after` must be looked up by trigger, never composed from the theme's world number.
+	var aftermath_by_trigger := {}
 	var dir := DirAccess.open("res://data/cutscenes")
 	dir.list_dir_begin()
 	var f := dir.get_next()
+	while f != "":
+		if f.begins_with("world") and f.ends_with("_defeat.json"):
+			var ad = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/" + f))
+			if ad is Dictionary:
+				aftermath_by_trigger[str(ad.get("trigger", ""))] = str(ad.get("id", ""))
+		f = dir.get_next()
+	dir.list_dir_end()
+	assert_gte(aftermath_by_trigger.size(), 20, "control: the aftermath corpus was read (24 masterite aftermaths on 2026-09-11)")
+	dir.list_dir_begin()
+	f = dir.get_next()
 	var seen := 0
 	while f != "":
 		if f.begins_with("world") and f.contains("_fragment_") and f.ends_with(".json"):
@@ -95,6 +107,10 @@ func test_the_gate_table_is_the_data_every_fragment_scene_maps_to_its_masterites
 				var expected: String = ("w1_%s_defeated" % arch) if theme == "medieval" else ("cutscene_flag_%s_%s_defeated" % [arch, theme])
 				assert_eq(str(_loop._FRAGMENT_GATES[cid]["flag"]), expected,
 					"%s: the gate flag must be the one its masterite's defeat actually writes" % cid)
+				var aftermath: String = str(aftermath_by_trigger.get("boss_%s_%s_defeated" % [arch, theme], ""))
+				assert_ne(aftermath, "", "%s: its masterite (%s %s) has an authored aftermath scene" % [cid, arch, theme])
+				assert_eq(str(_loop._FRAGMENT_GATES[cid]["after"]), aftermath,
+					"%s: `after` must be the aftermath whose trigger names the SAME masterite — not the theme's world number" % cid)
 			assert_eq(str(_loop._CUTSCENE_COMPLETION_FLAGS.get(cid, "")), "cutscene_flag_%s_complete" % cid, "%s is in the completion map" % cid)
 		f = dir.get_next()
 	dir.list_dir_end()

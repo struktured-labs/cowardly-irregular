@@ -31,8 +31,15 @@ static func confirm_glyph(device_name: String = "") -> String:
 	return "A"
 
 
+## The pad's share of a hint, empty with no pad so a keyboard player is not shown a cap they do not have.
+static func confirm_pad_segment(device_name: String = "") -> String:
+	if device_name == "" and Input.get_connected_joypads().is_empty():
+		return ""
+	return "%s / " % confirm_glyph(device_name)
+
+
 static func advance_hint_text(device_name: String = "") -> String:
-	return "Z / %s / Click ▶" % confirm_glyph(device_name)
+	return "Z / %sClick ▶" % confirm_pad_segment(device_name)
 var _typing_speed: float = 0.03
 var _current_text: String = ""
 var _displayed_chars: int = 0
@@ -1185,7 +1192,7 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 		"narrator":
 			_draw_narrator_portrait(img, size)
 		_:
-			# Masterite portraits: 9 of 24 keys have art (medieval x4, steampunk x4, warden_suburban). The other 15 land here as the mysterious bust and are listed in test_portrait_identity_class_regression.KNOWN_MISSING_PORTRAITS.
+			# Masterite portraits: 12 of 24 keys have art — every masterite a dungeon actually spawns, plus medieval x4. The other 12 land here as the mysterious bust and belong to cutscenes with no dispatcher; listed in test_portrait_identity_class_regression.KNOWN_MISSING_PORTRAITS.
 			if portrait_type.begins_with("masterite_"):
 				_draw_mysterious_portrait(img, size)
 			else:
