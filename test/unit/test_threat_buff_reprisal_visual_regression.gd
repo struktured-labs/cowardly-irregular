@@ -93,10 +93,11 @@ func test_battle_manager_buff_handler_threads_threat_class() -> void:
 	# any comment first (find returns earliest occurrence).
 	var handler_idx: int = src.find("Generic stat buff (masterite_* family)")
 	assert_gt(handler_idx, -1, "generic \"buff\" effect handler comment must exist as an anchor")
-	var window: String = src.substr(handler_idx, 800)
+	# 1400, not 800: the per-ability label fix (2026-09-10) added a comment block between anchor and add_buff.
+	var window: String = src.substr(handler_idx, 1400)
 	assert_string_contains(window, "ability.get(\"threat_class\"",
 		"the buff handler must read ability.threat_class")
-	assert_string_contains(window, "target.add_buff(\"Empower\", buff_stat, stat_modifier, duration, threat_class)",
+	assert_string_contains(window, "target.add_buff(str(ability.get(\"name\", \"Empower\")), buff_stat, stat_modifier, duration, threat_class)",
 		"the read value must be threaded into add_buff's class_tag param")
 
 

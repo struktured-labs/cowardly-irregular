@@ -314,7 +314,7 @@ func _play_selected() -> void:
 		_currently_playing = previous_playing
 		_now_playing_label.text = "Not included in this build: %s" % TRACKS[selected_index][1]
 		_now_playing_label.add_theme_color_override("font_color", DISABLED_COLOR)
-		SoundManager.play_ui("menu_back")
+		SoundManager.play_ui("menu_cancel")
 		_refresh_list()
 		return
 

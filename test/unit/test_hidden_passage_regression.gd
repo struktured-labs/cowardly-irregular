@@ -46,10 +46,11 @@ func test_discovery_persists_via_story_flag() -> void:
 
 func test_w1_overworld_places_passages_with_pocket_chests() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/exploration/OverworldScene.gd")
-	assert_true(src.contains("w1_ice_hollow"), "W1 NW ice passage placed")
-	assert_true(src.contains("w1_magma_vault"), "W1 SE magma passage placed")
-	assert_true(src.contains("w1_secret_ice_hollow"), "ice pocket has its chest")
-	assert_true(src.contains("w1_secret_magma_vault"), "magma pocket has its chest")
+	# 2026-09-10 (cowir-overworld): ice_hollow was authored off the map and magma_vault's wall sealed
+	# nothing; the Sunken Ring is the authored W1 secret now, the magma chest stays as an open find.
+	assert_true(src.contains("w1_sunken_ring"), "W1 Sunken Ring passage placed")
+	assert_true(src.contains("w1_secret_sunken_ring"), "Sunken Ring pocket has its chest")
+	assert_true(src.contains("w1_secret_magma_vault"), "magma chest survives as an ordinary find")
 	assert_true(src.contains("\"H\": return TileGeneratorScript.TileType.PATH"),
 		"H map char must parse walkable — the sprite provides the wall look")
 

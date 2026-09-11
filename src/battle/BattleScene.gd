@@ -488,6 +488,8 @@ func _exit_tree() -> void:
 		BattleManager.mp_restored.disconnect(_on_mp_restored)
 	if BattleManager.ap_granted.is_connected(_on_ap_granted):
 		BattleManager.ap_granted.disconnect(_on_ap_granted)
+	if BattleManager.has_signal("full_bank_unleashed") and BattleManager.full_bank_unleashed.is_connected(_on_full_bank_unleashed):
+		BattleManager.full_bank_unleashed.disconnect(_on_full_bank_unleashed)
 	if BattleManager.battle_log_message.is_connected(_on_battle_log_message):
 		BattleManager.battle_log_message.disconnect(_on_battle_log_message)
 	if BattleManager.monster_summoned.is_connected(_on_monster_summoned):

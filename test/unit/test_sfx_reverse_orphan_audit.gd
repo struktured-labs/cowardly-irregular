@@ -59,18 +59,6 @@ const KNOWN_PENDING_CONSUMER := {
 	# pre-staged before ON_HIT_STATUSES grows (cowir-battle ratchet, msg 2797)
 	"status_burn": "pre-staged for future burn_chance weapon proc",
 	"status_freeze": "pre-staged for future freeze_chance weapon proc",
-	# cowir-battle: the FULL BANK fifth action (struktured 2026-09-09: "4 actions becomes SOMETIMES
-	# 5"). The call site is LIVE on lane/full-bank-fifth-action @ 9d6d2c00
-	# (BattleScene._on_full_bank_unleashed) and lands when that branch folds — at which point
-	# test_pending_consumer_allowlist_has_not_rotted reds and this MUST be deleted from here.
-	# That rot check is why this is a debt with an expiry rather than a permission.
-	#
-	# ⛔ ONE entry, not five. advance_flourish_2..5 need NO entry: the `advance_` DYNAMIC_PREFIX
-	# already suppresses them. I wrote all five first and the audit only ever flagged this one —
-	# four INERT entries, the shape this file's own header warns about, caught by the arm rather
-	# than by reading. An allowlist line the detector could never emit is indistinguishable from
-	# one doing real work.
-	"full_bank_unleash": "cowir-battle lane/full-bank-fifth-action — call site lands with that fold",
 	# cowir-battle: W6 Arbiter-duel win-condition arms (msg 3223/3226) — spec
 	# still moving; shipped inert so the cues exist when the signal lands.
 	"duel_answer_dodge": "cowir-battle W6 Arbiter duel arms",
