@@ -64,9 +64,19 @@ TARGET_GLOBS = ("deploy_", "publish_")
 # CORPUS-derived floor — NOT contract-derived, which is what this comment used to claim.
 # Nothing in this lane's contract says a deploy script must poll; the 2 is an OBSERVATION of the
 # tree on origin/main @ 5aef5287 (2026-09-11), and the tree is written by this same lane. So it
-# is a snapshot of my own pipeline's output, cited as a bound on my own pipeline's output —
-# @cowir-music's echo, in the mild form. It is sound ONLY because its job is to notice the
-# FINDER breaking, not to establish a fact about an independent corpus.
+# is a snapshot of output this lane writes.
+#
+# ⚠ It is NOT an echo, and I first wrote that it was — over-correcting, which is the direction
+# that passes review because it reads as rigour. @cowir-sprites' discriminator is sharper than
+# authorship: does the pipeline DETERMINE the answer being reported? Nothing here forces a
+# deploy script to poll — these two could have had one polling loop, or three, or none, and the
+# count would have been different. The property was free to come out otherwise and didn't, so it
+# is a real observation that happens to be about my own output. (An echo would be "the tool
+# emits X, therefore the corpus is X" — e.g. citing squareness from a generator that only emits
+# squares.)
+#
+# Its weakness is STALENESS, not circularity: the number is right until the corpus legitimately
+# changes, and then it is a false positive. Its job is to notice the FINDER breaking.
 # ⚠ A corpus-derived bound goes stale the moment the corpus legitimately changes, and its
 # failure is then a FALSE POSITIVE. A contract-derived one survives a refactor. Do not read this
 # number as the second kind. Measured: deploy_desktop.sh
