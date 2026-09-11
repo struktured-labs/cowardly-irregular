@@ -46,3 +46,24 @@ func test_no_literal_a_prompt_survives_in_either_box() -> void:
 		var src := FileAccess.get_file_as_string(path)
 		assert_false(src.is_empty(), "%s must be readable" % path)
 		assert_eq(src.find("\"Z / A /"), -1, "%s: literal 'Z / A /' prompt came back" % path)
+
+
+## 2026-09-11: same no-pad defect as the skip prompt. Both dialogue boxes share confirm_pad_segment.
+func test_advance_hints_drop_the_pad_cap_when_no_pad_is_connected() -> void:
+	if not Input.get_connected_joypads().is_empty():
+		pass_test("a pad is connected on this machine — the no-pad path is not exercisable here")
+		return
+	assert_eq(CutsceneDialogue.advance_hint_text(), "Z / Click ▶",
+		"with no pad the cutscene hint must name only the key and the click")
+	assert_eq(BattleDialogue.advance_hint_text(), "Z / Click to continue...",
+		"BattleDialogue shares the same source, so it must drop the cap too")
+	assert_eq(CutsceneDialogue.confirm_pad_segment(), "",
+		"the shared segment is what both hints depend on")
+
+
+func test_an_explicit_pad_still_prints_its_cap_in_both_boxes() -> void:
+	var caps := _expected_confirm_caps()
+	assert_eq(CutsceneDialogue.advance_hint_text(NINTENDO), "Z / %s / Click ▶" % caps[NINTENDO],
+		"CONTROL: naming a device must be unchanged by the no-pad branch")
+	assert_eq(BattleDialogue.advance_hint_text(NINTENDO), "Z / %s / Click to continue..." % caps[NINTENDO],
+		"CONTROL: the battle box too")

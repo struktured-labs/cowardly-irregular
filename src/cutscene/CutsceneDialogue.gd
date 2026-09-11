@@ -31,8 +31,15 @@ static func confirm_glyph(device_name: String = "") -> String:
 	return "A"
 
 
+## The pad's share of a hint, empty with no pad so a keyboard player is not shown a cap they do not have.
+static func confirm_pad_segment(device_name: String = "") -> String:
+	if device_name == "" and Input.get_connected_joypads().is_empty():
+		return ""
+	return "%s / " % confirm_glyph(device_name)
+
+
 static func advance_hint_text(device_name: String = "") -> String:
-	return "Z / %s / Click ▶" % confirm_glyph(device_name)
+	return "Z / %sClick ▶" % confirm_pad_segment(device_name)
 var _typing_speed: float = 0.03
 var _current_text: String = ""
 var _displayed_chars: int = 0

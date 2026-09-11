@@ -73,10 +73,17 @@ const SKIP_PILL_HEIGHT: float = 48.0
 
 ## The prompt names the PHYSICAL cancel cap: "Hold B" was wrong on every Nintendo-family pad (8BitDo/SN30 cancel sits under the Ⓐ cap).
 static func skip_prompt_text(device_name: String = "") -> String:
+	return "Hold %sEsc to skip..." % _cancel_pad_segment(device_name)
+
+
+## The pad's share of the prompt, empty with no pad — Esc already names the keyboard hold.
+static func _cancel_pad_segment(device_name: String) -> String:
+	if device_name == "" and Input.get_connected_joypads().is_empty():
+		return ""
 	var glyph := "B"
 	if InputProfileManager:
 		glyph = InputProfileManager.glyph_for_action("ui_cancel", device_name)
-	return "Hold %s / Esc to skip..." % glyph
+	return "%s / " % glyph
 
 ## Per-world backdrop colors (top, bottom gradient) for cutscenes without game scene behind them
 const WORLD_BACKDROP_COLORS = {
