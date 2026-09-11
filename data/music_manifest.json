@@ -213,7 +213,7 @@
       "prompt": "Sterile break room in an endless factory, vending machine hum, fluorescent buzz, muffled conversations, sparse piano notes echoing in concrete corridors, brief moments of human warmth in cold surroundings",
       "style": "minimalist, muffled, lo-fi industrial, vending machine hum, sparse piano",
       "model": "suno-v4",
-      "duration": 153.52,
+      "duration": 152.3,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -277,7 +277,7 @@
       "prompt": "Boss battle against a rogue AI, massive data corruption, heavy glitch bass, distorted chiptune melody, system error tones, digital reality breaking apart",
       "style": "digital boss, heavy glitch, distorted chiptune, bass drops, system error tones",
       "model": "suno-v4",
-      "duration": 157.0,
+      "duration": 156.6,
       "loop": true,
       "generated_at": "2026-03-21"
     },
@@ -315,7 +315,7 @@
       "prompt": "Battle in the void where physics don't apply, deconstructed music — notes playing backward, rhythms that skip and stutter, sparse but intensely present, fighting the concept of conflict itself",
       "style": "abstract battle, deconstructed, glitch, reverse sounds, sparse but intense",
       "model": "suno-v4",
-      "duration": 87.0,
+      "duration": 86.6,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -431,7 +431,7 @@
       "prompt": "Catastrophic steampunk near-death music, steam pressure gauges exploding, grinding metal gears screaming, frantic alarm bells clanging, brass instruments playing in desperate dissonance, the entire clockwork machine about to blow apart, overwhelming mechanical terror and panic",
       "style": "steampunk critical HP, steam whistles, grinding gears, alarm bells, industrial horror, frantic brass, loud",
       "model": "suno-v4",
-      "duration": 82.88,
+      "duration": 82.7,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -1214,7 +1214,7 @@
       "prompt": "Steampunk machinery ambient loop. Rhythmic gear turning, steam valve hiss, distant clockwork ticking, pneumatic piston cycling, brass resonance. The constant mechanical breath of a clockwork city. Seamless loop, 60 seconds.",
       "style": "ambient, steampunk, gears, steam hiss, clockwork, industrial, looping",
       "model": "suno-v4",
-      "duration": 126.3,
+      "duration": 125.7,
       "loop": true,
       "generated_at": "2026-04-14"
     },
