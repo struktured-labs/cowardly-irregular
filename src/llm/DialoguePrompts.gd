@@ -90,24 +90,38 @@ const SCHEMA_BOSS_INTENT: Dictionary = {
 ##
 ## ⚠️ DESCRIPTIONS ALONE DID NOT MOVE SELECTION: 30 of 30 still chose aggress with
 ## these in place. The measured cause is position bias — listing turtle first
-## produced 3 of 10 turtle in the turtle-appropriate scenario, the only condition
-## that has ever produced a non-aggress answer there. These lines ship because the
-## prompt was offering jargon with no meaning, not because they fixed selection.
-## Rotating the list to exploit that bias was DELIBERATELY NOT DONE: it would make
-## posture track the phase counter rather than the board, which looks like
-## strategy and is not.
+## produced 3 of 10 turtle in the turtle-appropriate scenario. These lines ship
+## because the prompt was offering jargon with no meaning, not because they fixed
+## selection. Rotating the list to exploit that bias was deliberately NOT done: it
+## would make posture track the phase counter rather than the board.
 ##
-## ONLY the three intents with real bias arms are described. The six widened
-## counter tags are deliberately left bare: five of them reach no bias arm that
-## produces an action (pinned inverted in BattleManager, awaiting struktured's
-## call on whether to wake them), and describing an inert posture as though it
-## works would make the prompt lie to the model. test_intent_descriptions_only_
-## describe_what_the_engine_does holds that line.
+## WHICH INTENTS ARE DESCRIBED, and why it is an explicit list rather than a rule
+## derived from the engine's source:
+##
+## Every intent in BOSS_INTENT_INERT reaches a bias arm that returns a non-empty
+## dictionary, exactly like the working ones — so "does it reach a bias arm" does
+## NOT separate them. What separates them is measured downstream behaviour:
+## _get_counter_action finds no ability to build for five of the six, so they
+## produce nothing (Pyrroth, 400 rolls each: the three resist tags, focus_healer
+## and defense_boost all 0.000; rotate_aggro 0.600). That is not derivable by
+## reading _bias_by_intent, so the exclusion is authored here WITH its evidence
+## rather than inferred from how the match arms happen to be punctuated.
 const INTENT_DESCRIPTIONS: Dictionary = {
 	"aggress": "press the attack — bigger hits, less guarding. Best when they are hurt or exposed.",
 	"turtle": "defend and outlast — guard up, attack less. Best when YOU are hurt, low on MP or out of AP.",
 	"exploit_pattern": "counter what they keep repeating. Best when their recent actions look scripted.",
+	"rotate_aggro": "switch which of them you are hunting. Best when one of them has settled in.",
 }
+
+## Intents that reach a bias arm but produce NO action downstream.
+##
+## Pinned inverted in BattleManager and awaiting struktured's call on whether to
+## wake them. They must never be described as working postures, and the reason is
+## measured rather than structural: they share their match arm with rotate_aggro,
+## which DOES fire, so nothing about the arm distinguishes them.
+const BOSS_INTENT_INERT: Array[String] = [
+	"fire_resist", "ice_resist", "lightning_resist", "focus_healer", "defense_boost",
+]
 
 
 ## Schema for the party-combat-line generator (PC speaks an in-character line at a battle event).
