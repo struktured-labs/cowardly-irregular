@@ -113,13 +113,17 @@ func test_the_scan_actually_found_the_schemas() -> void:
 	## VACUITY CONTROL. A parser that silently matched nothing would make the
 	## ratchet above trivially green — the failure mode is indistinguishable from
 	## a clean corpus, which is the whole reason this file exists.
+	## Floors are deliberately WELL BELOW today's counts (8 consts / 16 specs). Their
+	## job is to catch a parser that matched nothing, not to forbid a lane from
+	## deleting a schema — a floor pinned to the current count reds on a correct
+	## change, which is how a ratchet becomes another lane's fold problem.
 	var schemas: Dictionary = _all_schemas()
-	assert_gte(schemas.size(), 8,
-		"expected at least the 8 schema consts in src/ — found %d, the parser is broken" % schemas.size())
+	assert_gte(schemas.size(), 4,
+		"the parser found %d schema consts — it is broken, not the corpus" % schemas.size())
 	var total: int = 0
 	for c in schemas:
 		total += (schemas[c] as Dictionary).size()
-	assert_gte(total, 16, "expected at least 16 string-typed specs, found %d" % total)
+	assert_gte(total, 8, "the parser found %d string-typed specs — it is broken" % total)
 	assert_true(schemas.has("SCHEMA_RULE_COMPOSITION"),
 		"CONTROL: the scan must find the one const carrying the deliberate Variant")
 	assert_true(schemas.has("REBALANCE_SCHEMA"),
