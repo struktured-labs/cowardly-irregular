@@ -21,6 +21,22 @@ extends GutTest
 ## The fix is structural rather than arithmetic: billed_ap is a static func whose own comment
 ## declares it the single authority, written after two UI surfaces each rolled their own
 ## subtraction and both misreported a full-bank turn. The resolver was a third. It now asks.
+##
+## BLAST RADIUS ON SHIPPED CONTENT, measured rather than reasoned. Three of the fifteen shipped
+## autobattle templates queue two actions — mage_aggressive, rogue_aggressive, bard_aggressive —
+## so their autogrind AP cost went 1 -> 2 per Advance. Steady state over 50 rounds:
+##     old size-1 pricing   final AP  0     stable, Advances every round
+##     billed_ap            final AP -1     descends, then can_brave fallbacks bound it
+## A one-AP shift, self-limiting, NOT a collapse. And no template's LIVE behaviour changed at all:
+## the live game already charged 2. Only the simulation became accurate. Anyone comparing autogrind
+## yield across this change will see the aggressive templates Advance slightly less often; that is
+## the fix working, not a regression.
+##
+## Checked for the revival hazard too: the three stranded `ap < 0 -> defer` rules live in
+## fighter_defensive / mage_defensive / rogue_defensive, and the three multi-action rules live in
+## the _aggressive templates. The sets are DISJOINT, so this change does not make previously
+## unreachable vocabulary live. That was worth checking rather than assuming, because making an
+## Advance dearer is exactly the sort of change that revives a dormant `ap < 0` branch.
 
 var _abs: Node = null
 
