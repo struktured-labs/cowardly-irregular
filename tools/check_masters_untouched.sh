@@ -185,6 +185,41 @@ selftest() {
         fail=$((fail+1)); printf '  FAIL  %-46s passed the OLD wording\n' "label control fires"
     fi
 
+    # ── ABSENCE ARM ──────────────────────────────────────────────────────────
+    # THE LINE THIS SCRIPT REPLACED CAME BACK, AND EVERY CHECK I RAN WAS BLIND TO IT.
+    #
+    # make_web_stage.sh used to print "masters untouched: N tracks still at 96k" — a file
+    # count asserting a bitrate it never measured. This script replaced it. Two branches then
+    # collided on that exact line (one REPLACING it, one INSERTING before it); I resolved the
+    # conflict, verified `bash -n`, verified both guards present and ordered, ran both
+    # selftests — four checks, all green — and the deleted echo came back from the other side
+    # of the hunk and shipped to main. Every web build printed "still at 96k" directly above
+    # this script measuring 59-93 kbps.
+    #
+    # I asserted the PRESENCE of what I added and never the ABSENCE of what I removed. A
+    # deletion leaves no positive artifact to check for, so it needs an arm of its own or the
+    # next merge resurrects it silently. This is that arm.
+    local stage_sh; stage_sh="$(cd "$(dirname "$0")" && pwd)/make_web_stage.sh"
+    if [ -f "$stage_sh" ]; then
+        local stale_n; stale_n="$(grep -c 'still at 96k' "$stage_sh" 2>/dev/null || true)"
+        if [ "${stale_n:-0}" -eq 0 ]; then
+            pass=$((pass+1)); printf '  ok    %-50s absent\n' "the replaced 96k claim stays deleted"
+        else
+            fail=$((fail+1)); printf '  FAIL  %-50s %s occurrence(s) — a merge resurrected it\n' "the replaced 96k claim is BACK" "$stale_n"
+        fi
+        # ...and the arm must be able to fail, or it is the vacuous pass it exists to prevent.
+        local probe; probe="$(mktemp "${TMPDIR:-/tmp}/staleprobe.XXXXXX")"
+        printf 'echo "[stage] masters untouched: 163 tracks still at 96k in assets/"\n' > "$probe"
+        if [ "$(grep -c 'still at 96k' "$probe")" -eq 1 ]; then
+            pass=$((pass+1)); printf '  ok    %-50s fires on a planted copy\n' "absence arm CONTROL"
+        else
+            fail=$((fail+1)); printf '  FAIL  %-50s blind to a planted copy\n' "absence arm CONTROL"
+        fi
+        rm -f "$probe"
+    else
+        fail=$((fail+1)); printf '  FAIL  %-50s cannot check\n' "make_web_stage.sh not found beside this script"
+    fi
+
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
     if [ "$saw0" -ne 1 ] || [ "$saw4" -ne 1 ]; then
