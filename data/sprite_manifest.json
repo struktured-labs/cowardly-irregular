@@ -5017,6 +5017,286 @@
       "frame_height": 32,
       "tier": "T1",
       "source": "gpt-image-1, identity anchored to masterite_tempo_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+    },
+    "queen_industrial": {
+      "path": "res://assets/sprites/npcs/queen_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the queen medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "traveler_industrial": {
+      "path": "res://assets/sprites/npcs/traveler_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the traveler medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "young_woman_industrial": {
+      "path": "res://assets/sprites/npcs/young_woman_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the young_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "merchant_suburban": {
+      "path": "res://assets/sprites/npcs/merchant_suburban/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the merchant medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "monk_suburban": {
+      "path": "res://assets/sprites/npcs/monk_suburban/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the monk medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "noble_suburban": {
+      "path": "res://assets/sprites/npcs/noble_suburban/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the noble medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "scholar_suburban": {
+      "path": "res://assets/sprites/npcs/scholar_suburban/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the scholar medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "child_steampunk": {
+      "path": "res://assets/sprites/npcs/child_steampunk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the child medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "farmer_steampunk": {
+      "path": "res://assets/sprites/npcs/farmer_steampunk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the farmer medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "fisherman_steampunk": {
+      "path": "res://assets/sprites/npcs/fisherman_steampunk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the fisherman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "guard_steampunk": {
+      "path": "res://assets/sprites/npcs/guard_steampunk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the guard medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "innkeeper_steampunk": {
+      "path": "res://assets/sprites/npcs/innkeeper_steampunk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the innkeeper medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "merchant_steampunk": {
+      "path": "res://assets/sprites/npcs/merchant_steampunk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the merchant medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "noblewoman_steampunk": {
+      "path": "res://assets/sprites/npcs/noblewoman_steampunk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the noblewoman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "priestess_steampunk": {
+      "path": "res://assets/sprites/npcs/priestess_steampunk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the priestess medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "queen_steampunk": {
+      "path": "res://assets/sprites/npcs/queen_steampunk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the queen medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "fisherman_industrial": {
+      "path": "res://assets/sprites/npcs/fisherman_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the fisherman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "innkeeper_industrial": {
+      "path": "res://assets/sprites/npcs/innkeeper_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the innkeeper medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "noblewoman_industrial": {
+      "path": "res://assets/sprites/npcs/noblewoman_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the noblewoman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "old_man_industrial": {
+      "path": "res://assets/sprites/npcs/old_man_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the old_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "old_woman_industrial": {
+      "path": "res://assets/sprites/npcs/old_woman_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the old_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "priestess_industrial": {
+      "path": "res://assets/sprites/npcs/priestess_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the priestess medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "soldier_industrial": {
+      "path": "res://assets/sprites/npcs/soldier_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the soldier medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "young_man_industrial": {
+      "path": "res://assets/sprites/npcs/young_man_industrial/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the young_man medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "fisherman_digital": {
+      "path": "res://assets/sprites/npcs/fisherman_digital/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the fisherman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "innkeeper_digital": {
+      "path": "res://assets/sprites/npcs/innkeeper_digital/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the innkeeper medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "monk_digital": {
+      "path": "res://assets/sprites/npcs/monk_digital/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the monk medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "noble_digital": {
+      "path": "res://assets/sprites/npcs/noble_digital/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the noble medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "noblewoman_digital": {
+      "path": "res://assets/sprites/npcs/noblewoman_digital/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the noblewoman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "soldier_digital": {
+      "path": "res://assets/sprites/npcs/soldier_digital/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the soldier medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "traveler_digital": {
+      "path": "res://assets/sprites/npcs/traveler_digital/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the traveler medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "blacksmith_abstract": {
+      "path": "res://assets/sprites/npcs/blacksmith_abstract/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the blacksmith medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "guard_abstract": {
+      "path": "res://assets/sprites/npcs/guard_abstract/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the guard medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "noble_abstract": {
+      "path": "res://assets/sprites/npcs/noble_abstract/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the noble medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "noblewoman_abstract": {
+      "path": "res://assets/sprites/npcs/noblewoman_abstract/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the noblewoman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "priestess_abstract": {
+      "path": "res://assets/sprites/npcs/priestess_abstract/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the priestess medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "queen_abstract": {
+      "path": "res://assets/sprites/npcs/queen_abstract/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the queen medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "traveler_abstract": {
+      "path": "res://assets/sprites/npcs/traveler_abstract/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1 world-variant, identity+format anchored to the traveler medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "arbiter": {
+      "path": "res://assets/sprites/npcs/arbiter/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1, identity anchored to masterite_arbiter_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+    },
+    "mysterious": {
+      "path": "res://assets/sprites/npcs/mysterious/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1, identity anchored to overworld.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
     }
   },
   "overworld_player_sheets": {

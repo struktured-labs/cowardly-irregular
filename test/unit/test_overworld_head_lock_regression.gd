@@ -46,6 +46,36 @@ const NPC_ARCHETYPES := [
     # gate's own metric: bram/elder_theron/marta/phil/scholar_milo measure 0
     # diffs under _frame_bbox_y. My 32-diff reading used a different anchor.
     "bram", "elder_theron", "marta", "phil", "scholar_milo",
+	# Added 2026-09-11 with the per-world variant relanding. The coverage test caught that
+	# 76 sheets existed that this gate never measured — every _<world> variant plus four base
+	# archetypes. Listing them MEASURES them; any that fail the head lock are real findings.
+	"blacksmith_digital", "blacksmith_industrial", "blacksmith_steampunk", "blacksmith_suburban", "child_abstract",
+	"child_digital", "child_industrial", "child_suburban", "curator", "elder",
+	"fairy_abstract", "fairy_digital", "fairy_industrial", "fairy_steampunk", "fairy_suburban",
+	"farmer_abstract", "farmer_digital", "farmer_industrial", "farmer_suburban", "fisherman_abstract",
+	"fisherman_suburban", "ghost_abstract", "ghost_digital", "ghost_industrial", "ghost_steampunk",
+	"ghost_suburban", "guard_digital", "guard_industrial", "guard_suburban", "innkeeper_abstract",
+	"innkeeper_suburban", "king_abstract", "king_digital", "king_industrial", "king_steampunk",
+	"king_suburban", "merchant_abstract", "merchant_digital", "merchant_industrial", "monk_abstract",
+	"monk_industrial", "monk_steampunk", "noble_industrial", "noble_steampunk", "noblewoman_suburban",
+	"old_man_abstract", "old_man_digital", "old_man_steampunk", "old_man_suburban", "old_woman_abstract",
+	"old_woman_digital", "old_woman_steampunk", "old_woman_suburban", "priestess_digital", "priestess_suburban",
+	"queen_digital", "queen_suburban", "scholar_abstract", "scholar_digital", "scholar_industrial",
+	"scholar_steampunk", "soldier_abstract", "soldier_steampunk", "soldier_suburban", "tempo",
+	"traveler_steampunk", "traveler_suburban", "warden", "young_man_abstract", "young_man_digital",
+	"young_man_steampunk", "young_man_suburban", "young_woman_abstract", "young_woman_digital", "young_woman_steampunk",
+	"young_woman_suburban",
+	# plus the 2026-09-11 regenerated variants (same drop, second pass).
+	"blacksmith_abstract", "child_steampunk", "farmer_steampunk", "fisherman_digital", "fisherman_industrial",
+	"fisherman_steampunk", "guard_abstract", "guard_steampunk", "innkeeper_digital", "innkeeper_industrial",
+	"innkeeper_steampunk", "merchant_steampunk", "merchant_suburban", "monk_digital", "monk_suburban",
+	"noble_abstract", "noble_digital", "noble_suburban", "noblewoman_abstract", "noblewoman_digital",
+	"noblewoman_industrial", "noblewoman_steampunk", "old_man_industrial", "old_woman_industrial", "priestess_abstract",
+	"priestess_industrial", "priestess_steampunk", "queen_abstract", "queen_industrial", "queen_steampunk",
+	"scholar_suburban", "soldier_digital", "soldier_industrial", "traveler_abstract", "traveler_digital",
+	"traveler_industrial", "young_man_industrial", "young_woman_industrial",
+	# the two base archetypes the variant tool cannot make (2026-09-11).
+	"arbiter", "mysterious",
 ]
 
 

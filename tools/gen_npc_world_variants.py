@@ -36,6 +36,8 @@ spec = importlib.util.spec_from_file_location("ow", PROJECT / "tools/gen_overwor
 ow = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(ow)
 
+ROLL_ATTEMPTS = 3
+
 WORLDS = {
     "suburban": "a cozy modern American suburb — casual contemporary clothes (jeans, hoodies, "
                 "polos, sneakers), 16-bit EarthBound-adjacent palette",
@@ -70,22 +72,33 @@ def gen_one(client: OpenAI, arch: str, world: str, quality: str) -> Path | None:
     desc = (f"the EXACT SAME character as the reference sheet (same face, hair colour, build, "
             f"silhouette and personality), re-dressed as a {arch.replace('_', ' ')} living in "
             f"{WORLDS[world]}. Keep them instantly recognisable as the reference person")
-    resp = client.images.edit(
-        model="gpt-image-1",
-        image=[("ref_identity_and_format.png", ref, "image/png")],
-        prompt=ow.PROMPT_TEMPLATE.format(char_desc=desc),
-        size="1024x1024",
-        quality=quality,
-        n=1,
-    )
-    raw = Image.open(io.BytesIO(base64.b64decode(resp.data[0].b64_json))).convert("RGBA")
     TMP.mkdir(parents=True, exist_ok=True)
-    # KEEP THESE until the sheets are reviewed and accepted. An ASSEMBLY bug is recoverable from
-    # the raw for free; a GENERATION bug is not. assemble_game_grid had a subject-destroying
-    # double-chromakey until 2026-09-09, and 40 of this run's 116 sheets came out with the body
-    # keyed off their side rows — unrecoverable only because tmp/ had been cleaned by then.
-    raw.save(TMP / f"{arch}_{world}_raw.png")
-    ow.assemble_game_grid(raw, target=32).save(out)
+    # gpt-image-1 intermittently returns 2 content rows where the assembler needs 3; that is a bad
+    # ROLL, not a bad prompt, so re-roll rather than abort the batch or ship the 3-way split of a
+    # 2-row image (which is what produced 18 head-without-body sheets on 2026-09-07).
+    last = None
+    for attempt in range(1, ROLL_ATTEMPTS + 1):
+        resp = client.images.edit(
+            model="gpt-image-1",
+            image=[("ref_identity_and_format.png", ref, "image/png")],
+            prompt=ow.PROMPT_TEMPLATE.format(char_desc=desc),
+            size="1024x1024",
+            quality=quality,
+            n=1,
+        )
+        raw = Image.open(io.BytesIO(base64.b64decode(resp.data[0].b64_json))).convert("RGBA")
+        raw.save(TMP / f"{arch}_{world}_raw{'' if attempt == 1 else f'_try{attempt}'}.png")
+        try:
+            grid = ow.assemble_game_grid(raw, target=32)
+        except ow.RowCountMismatch as e:
+            last = e
+            print(f"    re-roll {attempt}/{ROLL_ATTEMPTS} {arch} x {world}: {e}", flush=True)
+            continue
+        ow.refuse_hollow_grid(grid, f"{arch}_{world}")
+        grid.save(out)
+        break
+    else:
+        raise RuntimeError(f"{arch} x {world}: {ROLL_ATTEMPTS} rolls all unusable — {last}")
     register(arch, world)
     return out
 
@@ -107,9 +120,13 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--worlds", default="suburban")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--only", default="", help="comma-separated <arch>_<world> keys; regenerate exactly these")
     ap.add_argument("--quality", default="medium")
     a = ap.parse_args()
     worlds = list(WORLDS) if a.worlds == "all" else a.worlds.split(",")
+    # a repair run targets known-bad keys; iterating every archetype and relying on skip-if-exists
+    # regenerates whatever else happens to be missing, which is not what a repair is
+    only = {k.strip() for k in a.only.split(",") if k.strip()}
     client = OpenAI()
     done = fail = 0
     for world in worlds:
@@ -117,6 +134,8 @@ def main() -> int:
             if a.limit and done >= a.limit:
                 print(f"limit {a.limit} reached")
                 return 0
+            if only and f"{arch}_{world}" not in only:
+                continue
             try:
                 out = gen_one(client, arch, world, a.quality)
                 if out:

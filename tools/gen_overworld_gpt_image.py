@@ -784,6 +784,36 @@ def _detect_chibi_x_ranges(row_band: Image.Image, min_blob_width: int = 40) -> l
     return out if len(out) >= 2 else [full]
 
 
+class RowCountMismatch(RuntimeError):
+    """The raw has a row count the assembler cannot use. Recoverable by RE-ROLLING the
+    generation, so batch callers catch this and retry; SystemExit would abort the batch on the
+    first bad roll, which is worse than the defect it refuses."""
+
+
+def _raw_row_runs(raw: Image.Image, min_band_h: int = 20) -> list[tuple[int, int]]:
+    """Contiguous vertical runs of content. The single source both the band detector and the
+    wrong-row-count refusal read, so they can never disagree about how many rows there are."""
+    a = _strip_white_bg(raw.copy()).split()[3]
+    W, H = raw.size
+    px = a.load()
+    filled = [any(px[x, y] > 10 for x in range(0, W, 2)) for y in range(H)]
+    runs: list[tuple[int, int]] = []
+    run: int | None = None
+    for y, v in enumerate(filled):
+        if v and run is None:
+            run = y
+        elif not v and run is not None:
+            runs.append((run, y))
+            run = None
+    if run is not None:
+        runs.append((run, H))
+    return [r for r in runs if r[1] - r[0] >= min_band_h]
+
+
+def _count_row_bands(raw: Image.Image) -> int:
+    return len(_raw_row_runs(raw))
+
+
 def _detect_row_bands(raw: Image.Image, expected: int = 3, min_band_h: int = 20) -> list[tuple[int, int]] | None:
     """Row bands from CONTENT gaps rather than an equal split of the canvas.
 
@@ -796,21 +826,8 @@ def _detect_row_bands(raw: Image.Image, expected: int = 3, min_band_h: int = 20)
     the same art at 43% more pixels. Returns None when the gap structure does not yield
     exactly `expected` bands, so the caller keeps the equal split rather than guessing.
     """
-    a = _strip_white_bg(raw.copy()).split()[3]
-    W, H = raw.size
-    px = a.load()
-    filled = [any(px[x, y] > 10 for x in range(0, W, 2)) for y in range(H)]
-    bands: list[tuple[int, int]] = []
-    run: int | None = None
-    for y, v in enumerate(filled):
-        if v and run is None:
-            run = y
-        elif not v and run is not None:
-            bands.append((run, y))
-            run = None
-    if run is not None:
-        bands.append((run, H))
-    bands = [b for b in bands if b[1] - b[0] >= min_band_h]
+    H = raw.size[1]
+    bands = _raw_row_runs(raw, min_band_h)
     if len(bands) != expected:
         return None
     # Grow each band into its neighbouring gap so outlines are not clipped, without
@@ -926,9 +943,21 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32, *, head_lock: bo
     H = raw_1024.height
     NUM_ROWS = 3
     row_h = H // NUM_ROWS
-    bands = _detect_row_bands(raw_1024, NUM_ROWS) or [
-        (i * row_h, (i + 1) * row_h) for i in range(NUM_ROWS)
-    ]
+    bands = _detect_row_bands(raw_1024, NUM_ROWS)
+    if bands is None:
+        # Detection failed OR the model returned a different number of rows. Those need opposite
+        # responses, and conflating them is what produced 40 broken sheets on 2026-09-07: the
+        # 3-row assumption applied to a 2-ROW raw puts band 1 on the inter-row GAP plus the TOP
+        # of row 2, so every sheet came out with a floating hat/hair/crown and no body in the
+        # side rows. The detector SAW the count was wrong and the fallback threw that away.
+        found = _count_row_bands(raw_1024)
+        if found >= 1 and found != NUM_ROWS:
+            raise RowCountMismatch(
+                f"REFUSING to assemble: the raw has {found} content row(s), not {NUM_ROWS}. "
+                f"Splitting it {NUM_ROWS} ways lands a band on the gap between rows and yields "
+                f"heads without bodies. Re-roll the generation; do not widen this check."
+            )
+        bands = [(i * row_h, (i + 1) * row_h) for i in range(NUM_ROWS)]
     sheet_w = target * 4
     sheet_h = target * 4
 

@@ -6,6 +6,7 @@ art; Leo's versions supersede all of it."""
 
 from __future__ import annotations
 
+import argparse
 import base64
 import importlib.util
 import io
@@ -46,6 +47,29 @@ def frame0_square(path: Path) -> bytes:
     return ow.pad_to_square(im.crop((0, 0, min(side, im.width), side)), 1024)
 
 
+ROLL_ATTEMPTS = 3
+
+
+def _assemble_with_rerolls(client, name, ident, fmt, desc, raw):
+    """gpt-image-1 intermittently returns 2 content rows where the assembler needs 3; that is a bad
+    ROLL, not a bad prompt. Measured 4 of ~39 rolls on 2026-09-11."""
+    for attempt in range(1, ROLL_ATTEMPTS + 1):
+        try:
+            return ow.assemble_game_grid(raw, target=32)
+        except ow.RowCountMismatch as e:
+            print(f"    re-roll {attempt}/{ROLL_ATTEMPTS} {name}: {e}", flush=True)
+            if attempt == ROLL_ATTEMPTS:
+                raise
+            resp = client.images.edit(
+                model="gpt-image-1",
+                image=[("ref_identity.png", frame0_square(ident), "image/png"),
+                       ("ref_chibi_format.png", frame0_square(NPCS / fmt / "overworld.png"), "image/png")],
+                prompt=ow.PROMPT_TEMPLATE.format(char_desc=desc),
+                size="1024x1024", quality="medium", n=1,
+            )
+            raw = Image.open(io.BytesIO(base64.b64decode(resp.data[0].b64_json))).convert("RGBA")
+
+
 def gen_archetype(client: OpenAI, name: str) -> None:
     ident, fmt, desc = ARCHES[name]
     out = NPCS / name / "overworld.png"
@@ -61,7 +85,9 @@ def gen_archetype(client: OpenAI, name: str) -> None:
         size="1024x1024", quality="medium", n=1,
     )
     raw = Image.open(io.BytesIO(base64.b64decode(resp.data[0].b64_json))).convert("RGBA")
-    ow.assemble_game_grid(raw, target=32).save(out)
+    grid = _assemble_with_rerolls(client, name, ident, fmt, desc, raw)
+    ow.refuse_hollow_grid(grid, name)
+    grid.save(out)
     m = json.loads((PROJECT / "data/sprite_manifest.json").read_text())
     m["overworld_npc_sheets"][name] = {
         "path": f"res://assets/sprites/npcs/{name}/overworld.png",
@@ -104,16 +130,33 @@ def gen_wraith(client: OpenAI) -> None:
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", default="", help="comma-separated archetype names; default is all missing")
+    ap.add_argument("--wraith", action="store_true",
+                    help="also roll a cartographer_wraith BATTLE raw. OFF by default: it is a "
+                         "high-quality call (~$0.19) that writes no sheet — it saves a raw for "
+                         "manual review — and cartographer_wraith.png already shipped. It ran on "
+                         "EVERY invocation until 2026-09-11, so regenerating one archetype cost "
+                         "$0.19 on a roll nobody asked for.")
+    a = ap.parse_args()
+    only = {n.strip() for n in a.only.split(",") if n.strip()}
+    unknown = only - set(ARCHES)
+    if unknown:
+        print(f"ERROR: unknown archetype(s): {sorted(unknown)}; known: {sorted(ARCHES)}")
+        return 2
     client = OpenAI()
     for name in ARCHES:
+        if only and name not in only:
+            continue
         try:
             gen_archetype(client, name)
         except Exception as e:
             print(f"FAIL {name}: {e}")
-    try:
-        gen_wraith(client)
-    except Exception as e:
-        print(f"FAIL wraith: {e}")
+    if a.wraith:
+        try:
+            gen_wraith(client)
+        except Exception as e:
+            print(f"FAIL wraith: {e}")
     return 0
 
 
