@@ -92,7 +92,11 @@ const SCHEMA_PARTY_LINE: Dictionary = {
 const SCHEMA_RULE_COMPOSITION: Dictionary = {
 	"name":        "String",
 	"description": "String",
-	"rules_json":  "String",
+	# Presence is required; the TYPE deliberately is not. Models emit the rule list
+	# as a nested array far more readily than as an encoded string (measured: 20 of
+	# 20 local-llama3 replies used an array), and pinning "String" here rejected
+	# every one of them before validate_rule_composition could read it.
+	"rules_json":  "Variant",
 }
 
 
@@ -288,6 +292,33 @@ const FALLBACK_RULE_COMPOSITION: Dictionary = {
 ##   recent_events  — Array[Dictionary] from EventLog.recent(); may be empty
 ##
 ## Returns a prompt String ready for LLMService.complete_json().
+## The ONE place the shared context blocks are assembled, in ONE order.
+##
+## Three features drifted between build_npc_opening and build_combined_reply
+## because each builder assembled these by hand from its own parameter list:
+## quest_state_lines (2026-09-07), memory and time_of_day (2026-09-10). Every
+## repair fixed one block and left the next to be found the same way.
+##
+## A builder that calls this cannot carry a block the other lacks, so the class
+## is closed by construction rather than by a guard noticing after the fact.
+## Reply-specific text (its conversation history) is concatenated by the caller
+## around this, not passed in — this returns only what BOTH paths must share.
+static func _context_blocks(
+	recent_events: Array,
+	quest_state_lines: Array,
+	time_of_day: String,
+	party_state: Dictionary,
+	memory_lines: Array,
+) -> String:
+	return (
+		_format_time_of_day(time_of_day)
+		+ _format_party_state(party_state)
+		+ _format_memory(memory_lines)
+		+ _format_events(recent_events, CONTEXT_EVENTS)
+		+ _format_quest_state_voice(quest_state_lines)
+	)
+
+
 static func build_npc_opening(
 	npc_name: String,
 	npc_persona: String,
@@ -298,11 +329,8 @@ static func build_npc_opening(
 	party_state: Dictionary = {},
 	memory_lines: Array = [],
 ) -> String:
-	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
-	var voice_block: String = _format_quest_state_voice(quest_state_lines)
-	var time_block: String = _format_time_of_day(time_of_day)
-	var party_block: String = _format_party_state(party_state)
-	var memory_block: String = _format_memory(memory_lines)
+	var context: String = _context_blocks(
+		recent_events, quest_state_lines, time_of_day, party_state, memory_lines)
 
 	return (
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
@@ -311,11 +339,7 @@ static func build_npc_opening(
 		+ "NPC: %s\n" % npc_name
 		+ "Persona: %s\n" % npc_persona
 		+ "Location: %s\n" % location
-		+ time_block
-		+ party_block
-		+ memory_block
-		+ ctx_block
-		+ voice_block
+		+ context
 		+ "\n"
 		+ "Rules:\n"
 		+ "- Stay in character; no modern slang unless the setting demands it.\n"
@@ -353,6 +377,30 @@ static func build_npc_opening_topical(
 ## farewell explicitly, threads the conversation tail so the goodbye actually
 ## reacts to what was just said, and reuses the SCHEMA_NPC_OPENING shape so
 ## validate_npc_opening still applies.
+## ⛔ DELIBERATELY DOES NOT TAKE THE SHARED CONTEXT BLOCKS, and this is measured
+## rather than an oversight — the other three builders drifted into carrying them
+## one at a time, so the absence here looks identical to that drift and has twice
+## been re-opened as a bug.
+##
+## A/B against llama3, 8 samples each, identical scenario (party barely standing,
+## one member DOWNED, 7 gold, night, prior meeting remembered):
+##
+##                        control 781B   +context 1447B
+##   party wound              0/8            3/8
+##   memory / the wyrm        3/8            0/8
+##   poverty (7 gold)         0/8            0/8
+##   night                    0/8            0/8
+##
+## Context did not make the farewell MORE specific, it DISPLACED one specificity
+## with another — three concrete references either way for 85% more prompt. And
+## the thing it displaced was the better beat: the control reaches for the wyrm
+## the player actually killed, which it gets from recent_events, which it already
+## has. Gold and time of day were never used in a goodbye under either prompt.
+##
+## A farewell is a closed form; the model reaches for the stock blessing and
+## decorates it with ONE detail whatever you hand it. Re-run
+## tools/llm_prompt_preview.sh signoff --ask before re-opening this; n=8 is small
+## and a different model may not behave the same way.
 static func build_npc_sign_off(
 	npc_name: String,
 	npc_persona: String,
@@ -460,12 +508,19 @@ static func build_combined_reply(
 	num_choices: int,
 	quest_state_lines: Array = [],
 	party_state: Dictionary = {},
+	memory_lines: Array = [],
+	time_of_day: String = "",
 ) -> String:
+	# ⚠️ time_of_day is LAST here and 6th in build_npc_opening. Appended rather
+	# than aligned because 9 callers pass these positionally; the parity test
+	# enforces that both paths EMIT the same blocks, which is the property that
+	# actually broke twice — the order never did.
 	var count: int = clampi(num_choices, 1, MAX_CHOICES)
-	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
-	# Milo v2: the reply path dropped the voice notes the opening path threads.
-	var voice_block: String = _format_quest_state_voice(quest_state_lines)
-	var party_block: String = _format_party_state(party_state)
+	# Milo v2 dropped the voice notes here; memory and time_of_day each arrived
+	# with the same defect. All three assembled by hand from this parameter list.
+	# _context_blocks is now the single path, so a fourth cannot go missing.
+	var context: String = _context_blocks(
+		recent_events, quest_state_lines, time_of_day, party_state, memory_lines)
 
 	var history_block: String = ""
 	if last_npc_line.strip_edges() != "":
@@ -481,9 +536,7 @@ static func build_combined_reply(
 		+ "Persona: %s\n" % npc_persona
 		+ "Location: %s\n" % location
 		+ history_block
-		+ party_block
-		+ ctx_block
-		+ voice_block
+		+ context
 		+ "\n"
 		+ "Rules:\n"
 		+ "- The NPC reply must react to the player's specific words; max %d characters.\n" % MAX_LINE_CHARS
@@ -595,7 +648,15 @@ static func build_boss_intent(
 		+ _format_time_of_day(str(ctx.get("time_of_day", "")))
 		+ _format_party_automation(str(ctx.get("party_automation", "")))
 		+ "Your state: HP %d%%, MP %d%%, AP %d, status: %s.\n" % [int(hp_pct), int(mp_pct), ap, boss_status_tag]
-		+ "Party state:\n%s\n" % party_block
+		# "Party state" alone read as the boss's OWN side. Measured against llama3,
+		# 5 samples: 3 reasons had Mordaine protecting and healing the player's
+		# characters ("Protect Rilla and buy time for Bram to recover"), and all 5
+		# chose turtle against a 22%-HP cleric — the board an aggressive intent
+		# exists for. The model was not confused about the rules, it was confused
+		# about WHOSE SIDE IT WAS ON, which nothing in the prompt said.
+		+ "THE ADVENTURING PARTY BELOW ARE YOUR ENEMIES. You are fighting them; you\n"
+		+ "do not command, protect or heal them. Their weakness is your opportunity.\n"
+		+ "Enemy party state:\n%s\n" % party_block
 		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
 	)
 	# The party's authored automation, as prose. Falls back to the lead-PC JSON.
@@ -717,13 +778,24 @@ static func build_party_line(
 	var event_hint: String = _party_line_event_hint(event_kind, event_data)
 	var moods: String = ", ".join(PARTY_LINE_MOODS)
 
+	# Guarded: with no authored phrases the heading used to render over an empty
+	# list. Mild noise under the old one-line label, actively confusing under this
+	# one — "Do NOT output any of them" with nothing listed.
+	var voice_block: String = ""
+	if signature_phrases.size() > 0:
+		voice_block = (
+			"Signature phrases — these are EXAMPLES OF VOICE, not lines to say. Do NOT\n"
+			+ "output any of them, or a lightly reworded version. Write a NEW line this\n"
+			+ "character would say, in that register, about THIS moment:\n"
+			+ sig_block
+		)
+
 	return (
 		"You voice %s, the party's %s, in the meta-aware JRPG 'Cowardly Irregular'.\n" % [speaker_name, speaker_job]
 		+ "Stay rigorously in character. Persona:\n"
 		+ "  %s\n" % persona
 		+ personality_block
-		+ "Signature phrases (use the rhythm — do NOT copy verbatim every turn):\n"
-		+ sig_block
+		+ voice_block
 		+ "\n"
 		+ "Your state: HP %d%%, MP %d%%, status: %s.\n" % [int(hp_pct), int(mp_pct), status_tag]
 		+ "Party state:\n%s\n" % party_block
@@ -784,7 +856,10 @@ static func build_rule_composition(domain: String, prompt_text: String, current_
 		+ "  description: 1 sentence, in-character\n"
 		+ "  rules_json: the FULL rule list, as a JSON string. Each rule is\n"
 		+ "    {conditions: [...], actions: [...], enabled: true}\n"
-		+ "    conditions and actions must use only the verbs listed above.\n\n"
+		+ "    conditions and actions must use only the verbs listed above, AND every\n"
+		+ "    'target' must be one of the Targets values above, VERBATIM.\n"
+		+ "    There is no 'weakest_enemy' — for the weakest foe use lowest_hp_enemy.\n"
+		+ "    (weakest_to_ability means the enemy weak to the ability's ELEMENT.)\n\n"
 		+ "Only emit the JSON. No commentary."
 	)
 
@@ -1019,8 +1094,11 @@ static func validate_party_line(raw: Variant) -> Dictionary:
 static func validate_rule_composition(reply: Dictionary, _domain: String) -> Dictionary:
 	var name: String = str(reply.get("name", "")).strip_edges()
 	var desc: String = str(reply.get("description", "")).strip_edges()
-	var rules_json: String = str(reply.get("rules_json", ""))
-	var parsed: Variant = JSON.parse_string(rules_json)
+	# Accept both shapes: the encoded string the prompt asks for, and the nested
+	# array models actually produce. Anything else stays a parse failure.
+	var raw_rules: Variant = reply.get("rules_json", "")
+	var parsed: Variant = raw_rules if typeof(raw_rules) == TYPE_ARRAY \
+		else JSON.parse_string(str(raw_rules))
 	var rules: Array = []
 	var parse_ok: bool = typeof(parsed) == TYPE_ARRAY
 	if parse_ok:
@@ -1101,7 +1179,11 @@ static func _format_memory(memory_lines: Array) -> String:
 		"\n\nYou have spoken with this traveler before. Last time, they said to you:\n"
 		+ "\n".join(rows)
 		+ "\nYou may acknowledge having met them. Do not quote them back or recap the"
-		+ " conversation — carry it the way a person carries a half-remembered chat."
+		# Trailing newline is the CONTRACT, not decoration: every other block
+		# formatter ends with one, and this was the only exception — so whatever
+		# followed memory glued onto its last sentence. Fixed once here rather
+		# than by choosing an order that happens to be safe.
+		+ " conversation — carry it the way a person carries a half-remembered chat.\n"
 	)
 
 

@@ -728,7 +728,60 @@ func _extract_json_from_raw(raw: String) -> Variant:
 		if parsed is Dictionary:
 			return parsed
 
+	# 4. Close an object the model stopped short of finishing.
+	#
+	# Measured against local llama3 on the rule-composition prompt: 14 of 20 replies
+	# ended one '}' short of a complete object — the model closes its nested array,
+	# reports done_reason=stop, and never emits the outer brace. Step 3 cannot help,
+	# because rfind('}') lands INSIDE the array and yields an unbalanced slice.
+	#
+	# Only ever APPENDS closers, and only after every other strategy has failed, so
+	# it can turn a failure into a parse but never change one that already worked.
+	# A repaired object still faces the schema guard and each caller's validator, so
+	# a truncation that lost real content fails there rather than passing as whole.
+	if brace_open != -1:
+		var repaired: String = _close_unbalanced_json(raw.substr(brace_open))
+		if repaired != "":
+			parsed = JSON.parse_string(repaired)
+			if parsed is Dictionary:
+				push_warning("[LLMService][guard/json] Repaired a truncated JSON object.")
+				return parsed
+
 	return null
+
+
+## Append the closers a truncated JSON fragment is missing, or "" if it is not
+## repairable that way. Tracks string state so a brace inside a string value
+## (the rules_json contract nests an encoded array) is never counted.
+func _close_unbalanced_json(fragment: String) -> String:
+	var stack: PackedStringArray = PackedStringArray()
+	var in_string: bool = false
+	var escaped: bool = false
+	for i in range(fragment.length()):
+		var ch: String = fragment[i]
+		if escaped:
+			escaped = false
+			continue
+		if ch == "\\":
+			escaped = true
+			continue
+		if ch == '"':
+			in_string = not in_string
+			continue
+		if in_string:
+			continue
+		if ch == "{" or ch == "[":
+			stack.append("}" if ch == "{" else "]")
+		elif ch == "}" or ch == "]":
+			if stack.is_empty() or stack[stack.size() - 1] != ch:
+				return ""  # mismatched — not a clean truncation
+			stack.remove_at(stack.size() - 1)
+	if in_string or stack.is_empty():
+		return ""
+	var out: String = fragment
+	for i in range(stack.size() - 1, -1, -1):
+		out += stack[i]
+	return out
 
 
 func _type_matches(val: Variant, type_name: String) -> bool:
@@ -753,7 +806,16 @@ func _get_cache(key: String) -> Variant:
 		return null
 	var entry: Dictionary = _cache[key]
 	var age: float = Time.get_unix_time_from_system() - float(entry.get("ts", 0.0))
-	if age > CACHE_TTL_SECONDS:
+	# A NEGATIVE age means the stamp is in the future — the system clock moved
+	# backwards mid-session (NTP correction, DST, manual change). `age > TTL` is
+	# then false and the entry NEVER expires, so a stale response is served for as
+	# long as the lag persists. Evict instead: re-querying is the correct fallback
+	# and costs one request. Third and mildest instance of the signed-threshold
+	# class found in this lane today — the other two (conversation-reward backstop,
+	# rebalance cadence) read from PERSISTED state and disabled whole features;
+	# this cache is in-memory and cleared on scene change, so it only costs
+	# freshness.
+	if age < 0.0 or age > CACHE_TTL_SECONDS:
 		_cache.erase(key)
 		return null
 	return entry.get("text", null)

@@ -8500,6 +8500,35 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	_emit_party_line(combatant, line, vt)
 
 
+## The Nature the player chose at character creation, as a voice cue.
+##
+## This read `combatant.get_meta("personality")` and NOTHING IN THE REPO EVER SET
+## THAT META — measured, zero writers — so speaker_personality was always "" and
+## the prompt's "Personality trait:" line never rendered. Meanwhile the player
+## picks a Nature on the creation screen ("Nature: Brave (+2 ATK, Power Drink)")
+## and Combatant already carries the customization that holds it.
+##
+## The NAME is the cue, not the description: "Brave" is a temperament a model can
+## voice, "+2 ATK, Power Drink" is a stat line and would be noise in a dialogue
+## prompt. The meta is still honoured first so anything that sets it later wins.
+func _resolve_speaker_personality(combatant: Combatant) -> String:
+	if combatant == null:
+		return ""
+	if combatant.has_meta("personality"):
+		var m: String = str(combatant.get_meta("personality", ""))
+		if m != "":
+			return m
+	if not ("customization" in combatant) or combatant.customization == null:
+		return ""
+	var custom = combatant.customization
+	if not ("personality" in custom):
+		return ""
+	var CustomizationScript = load("res://src/character/CharacterCustomization.gd")
+	if CustomizationScript == null or not CustomizationScript.has_method("get_personality_name"):
+		return ""
+	return str(CustomizationScript.get_personality_name(custom.personality))
+
+
 func _resolve_party_job_id(combatant: Combatant) -> String:
 	if combatant == null:
 		return ""
@@ -8531,7 +8560,7 @@ func _build_party_line_context(combatant: Combatant, event_kind: String, event_d
 	ctx.event_data = event_data.duplicate() if event_data != null else {}
 	ctx.speaker_name = str(combatant.combatant_name)
 	ctx.speaker_job_id = _resolve_party_job_id(combatant)
-	ctx.speaker_personality = str(combatant.get_meta("personality", "")) if combatant.has_meta("personality") else ""
+	ctx.speaker_personality = _resolve_speaker_personality(combatant)
 	ctx.speaker_hp_pct = combatant.get_hp_percentage()
 	ctx.speaker_mp_pct = float(combatant.current_mp) / float(maxi(combatant.max_mp, 1)) * 100.0
 	ctx.speaker_ap = combatant.current_ap
