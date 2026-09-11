@@ -103,9 +103,13 @@ const MASK_PLAYER := 2  # (pin)
 ## signpost radii, save-point zones. The 2026-07-18 note on the previous corpse describes
 ## the same symptom it caused then: "Mode 7 NPCs kept a 40px zone under a 96px sprite".
 ##
-## Now reads the static the working call sites already use — TreasureChest:264,
-## OverworldController:230, OverworldPlayer:424 — set from the real mode7 state in
-## Mode7Overlay.gd:558. No tree walk, so there is no path for it to be wrong about.
+## Now reads `Mode7Overlay.is_active`. Every is_mode7() consumer in src/ is here — TreasureChest,
+## Signpost, SavePoint, AreaTransition, OverworldNPC, WanderingNPC — and OverworldController reads
+## that same static directly for PROBE_REACH. No tree walk, so there is no path for it to be wrong.
+## ⚠️ NAMED BY SYMBOL ON PURPOSE. This block used to cite four line numbers; on v3.33.297-alpha
+## three of the four were wrong, one pointed at a blank-ish unrelated statement, and one named a file
+## with ZERO InteractGeometry references. Nobody touched this code — folds inserted lines above them.
+## A line number in a FILE travels forward with the file and is wrong in the next reader's face.
 static func is_mode7() -> bool:
 	return Mode7Overlay.is_active
 
