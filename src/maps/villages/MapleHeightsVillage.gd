@@ -322,7 +322,7 @@ func _setup_npcs() -> void:
 	# caller. Every other speaker in it turned out to be a live NPC under a new name; this one had no
 	# roster entry at all, so recovering the beat meant authoring the character rather than
 	# re-speakering. He sells medieval surplus off a folding table beside the HOA-approved Mart, and
-	# he is the first villager who says the Coordinator is coming.
+	# Carriers Reg already NAMES the Coordinator; Ray is the first to say they are coming for you.
 	var surplus = _create_npc("Surplus Ray", "villager", Vector2(11 * TILE_SIZE,10 * TILE_SIZE), [
 		"Everything's half off. We got a huge shipment in from... I don't know, the warehouse?",
 		"It just shows up. You want to know where it comes from? So do I. I just ring them up.",
