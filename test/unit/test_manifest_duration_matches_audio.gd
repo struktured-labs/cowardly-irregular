@@ -59,6 +59,52 @@ const TOLERANCE_S := 0.6
 const UNRENDERED := 0.0
 
 
+## ⛔ ResourceLoader.exists() AND load() BOTH ANSWER FROM THE IMPORT CACHE, so
+## every duration arm in this lane was blind to a DELETED source. `--import`
+## rebuilds artifacts from the bytes on disk but does not REAP an orphan, so a
+## tree that has ever imported keeps serving a .oggstr whose .ogg is gone.
+##
+## Measured 2026-09-11 by deleting assets/audio/music/victory_medieval.ogg:
+##     test_manifest_duration_matches_audio          GREEN
+##     test_music_manifest_duration_matches_stream   GREEN
+##     test_every_authored_bed_has_a_consumer        GREEN
+## Three guards over the same corpus, none of which could see the disk.
+##
+## 🔑 THE PREMISE WAS ALREADY RIGHT — this file walks every manifest entry by
+## name, which is the named-membership shape the fleet converged on today. A
+## correct premise is fully defeated by a reader that is not looking at the
+## thing, and it is the QUIETER failure of the two, because the premise being
+## right is what makes the green persuasive. cowir-sprites hit the identical
+## split in a test literally named "exists_on_disk".
+##
+## FileAccess.file_exists reads the filesystem. That is the whole fix.
+func test_every_manifest_file_is_actually_on_disk() -> void:
+	var raw: String = FileAccess.get_file_as_string(MANIFEST)
+	var tracks: Dictionary = (JSON.parse_string(raw) as Dictionary).get("tracks", {})
+	assert_gt(tracks.size(), 100, "SCOPE control: walked %d manifest tracks" % tracks.size())
+
+	var missing: Array[String] = []
+	var checked: int = 0
+	for key in tracks.keys():
+		var e: Variant = tracks[key]
+		if not (e is Dictionary):
+			continue
+		var f: String = str((e as Dictionary).get("file", ""))
+		if f == "":
+			continue
+		var res_path: String = f if f.begins_with("res://") else "res://" + f
+		checked += 1
+		if not FileAccess.file_exists(res_path):
+			## Name what the cache says too, so the reader can tell a deleted
+			## source from a path typo at a glance.
+			var cached: String = "and load() STILL SERVES IT" if ResourceLoader.exists(res_path) else "and the cache agrees it is gone"
+			missing.append("%s -> %s (%s)" % [key, f, cached])
+	assert_gt(checked, 100,
+		"SCOPE control: only %d entries carried a file path — a clean result below would be vacuous" % checked)
+	assert_eq(missing.size(), 0,
+		"the manifest names audio that is NOT ON DISK (%d of %d): %s — every other duration arm in this lane reads through load(), which keeps serving the imported artifact after the source is deleted, so they stay green. A fresh clone would fail where this tree succeeds, and an export from here can ship an asset whose source no longer exists." % [missing.size(), checked, missing])
+
+
 func test_every_manifest_duration_matches_the_shipped_audio() -> void:
 	var raw: String = FileAccess.get_file_as_string(MANIFEST)
 	assert_gt(raw.length(), 1000, "SCOPE control: manifest read back %d chars" % raw.length())
