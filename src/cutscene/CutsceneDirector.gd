@@ -57,6 +57,8 @@ const LETTERBOX_ANIM_DURATION: float = 0.4
 const SKIP_THRESHOLD: float = 1.5
 const SKIP_BAR_WIDTH: float = 220.0
 const SKIP_BAR_HEIGHT: float = 10.0
+## game_constants key prefix for the seen ledger (persists with the save): SEEN_KEY_PREFIX + cutscene_id = true.
+const SEEN_KEY_PREFIX := "cutscene_seen_"
 const SKIP_PILL_PAD: float = 12.0
 const SKIP_PILL_HEIGHT: float = 48.0
 
@@ -2030,6 +2032,10 @@ func _end_cutscene() -> void:
 
 	# Staged-mode teardown: puppets, hidden nodes, camera. Idempotent no-op for overlay scenes.
 	_end_staging()
+
+	# Seen ledger: a real, unaborted play (skipped counts — the player chose to pass it) marks the scene replayable in the gallery, which no flag heuristic could do for the 21 scenes that set none.
+	if not _aborted and not _replay and _cutscene_id != "" and GameState and "game_constants" in GameState:
+		GameState.game_constants[SEEN_KEY_PREFIX + _cutscene_id] = true
 
 	# Snapshot then clear BEFORE the emit. Otherwise: a listener that
 	# synchronously chains into the next cutscene (e.g. prologue → chapter1
