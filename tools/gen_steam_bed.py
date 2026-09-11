@@ -27,9 +27,15 @@ reason as the noise -- a non-integer count would put a step at the wrap and undo
 import argparse
 import subprocess
 import sys
+from pathlib import Path
 
 import numpy as np
 
+## ⚠️ A HARDCODED RATE IS THE SHAPE THAT SILENTLY RESAMPLED 19 MUSIC BEDS (cowir-music, 2026-09-11):
+## their tool carried SR = 48000 under the word "measured", decoded/encoded/verified at 48k, and so
+## resampled every 44.1 kHz source back into agreement before any check looked. This is a GENERATOR,
+## not a transformer, so it has no source to preserve — but it OVERWRITES an existing asset, and
+## main() refuses if that asset's rate differs from this constant rather than quietly downsampling it.
 SR = 44100
 DUR = 8.0            # longer than the 5.0s original: a continuous bed repeats less obviously
 TARGET_RMS_DB = -22.1
@@ -76,6 +82,16 @@ def main():
     ap.add_argument("--bitrate", default="80000")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
+
+    # REFUSE rather than resample: the file we are about to replace decides the rate.
+    if Path(args.out).exists():
+        have = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a:0",
+                               "-show_entries", "stream=sample_rate", "-of", "csv=p=0", args.out],
+                              capture_output=True, text=True).stdout.strip()
+        if have and int(have) != SR:
+            print(f"  REFUSED: {args.out} is {have} Hz, this generator writes {SR} Hz — "
+                  f"writing would resample the asset. Set SR to match, or retarget.")
+            return 1
 
     n = int(DUR * SR)
     rng = np.random.default_rng(args.seed)
