@@ -103,16 +103,30 @@ func _files(root: String, ext: String, out: Array[String]) -> void:
 ## a push_warning is not a call. Here a string literal IS the consumer:
 ## play_music("boss_mordaine") is the reference. Stripping strings would report
 ## every literally-named bed as an orphan.
+## ⛔ AND ESCAPE-AWARE, which it was not until 2026-09-11. The first version
+## tracked quote parity with no escape handling, so `"x \" #y"` closed the
+## string at the ESCAPED quote, left the scanner outside a string, and let the
+## following `#` truncate the line. Measured: a real track reference after such
+## a `#` silently vanished from the corpus and the guard stayed green. Three
+## files in src/ already carry an escaped quote, so the shape is present.
+##
+## Consuming `\X` as a unit covers both costumes at once: `\"` does not close
+## the string, and `\\` does not escape the quote that follows it.
 func _strip_comments(src: String) -> String:
 	var out: PackedStringArray = []
 	for line in src.split("\n"):
 		var l: String = str(line)
 		var quote: String = ""
 		var kept: String = ""
-		for i in l.length():
+		var i: int = 0
+		while i < l.length():
 			var ch: String = l[i]
 			if quote != "":
 				kept += ch
+				if ch == "\\" and i + 1 < l.length():
+					kept += l[i + 1]
+					i += 2
+					continue
 				if ch == quote:
 					quote = ""
 			elif ch == "\"" or ch == "'":
@@ -122,6 +136,7 @@ func _strip_comments(src: String) -> String:
 				break
 			else:
 				kept += ch
+			i += 1
 		out.append(kept)
 	return "\n".join(out)
 
@@ -148,6 +163,40 @@ func _consumer_text() -> String:
 		## JSON carries no comments; only .gd needs stripping.
 		parts.append(_strip_comments(body) if p.ends_with(".gd") else body)
 	return "\n".join(parts)
+
+
+## ⛔ PIN THE HELPER, NOT THE CORPUS. Six variants of this stripper broke across
+## four lanes in one afternoon — bare find() · whole-line comments · trailing
+## comments · a quoted `#` · an escaped quote · an escaped backslash — and every
+## one was found by planting a mutation in src/ and watching the verdict move.
+## That route costs a full run per costume and each fix was blind to the next.
+## A case table on the function answers all six in milliseconds and reds on the
+## seventh. cowir-sfx and cowir-overworld arrived here first; this is their
+## structure applied to this lane's polarity.
+func test_the_comment_stripper_itself() -> void:
+	var cases: Array = [
+		## [input, expected, why]
+		["play_music(\"a\")  # note", "play_music(\"a\")  ",
+			"a trailing comment is cut AT the #, not trimmed"],
+		["# whole line", "", "a full-line comment blanks"],
+		["var c = \"[color=#44ff44]\"", "var c = \"[color=#44ff44]\"",
+			"a # inside DOUBLE quotes is not a comment"],
+		["var c = '#tag'", "var c = '#tag'",
+			"a # inside SINGLE quotes is not a comment"],
+		["var s = \"x \\\" #y\" + \"keep\"", "var s = \"x \\\" #y\" + \"keep\"",
+			"an ESCAPED QUOTE does not close the string, so the # stays inside it"],
+		["var s = \"a\\\\\"  # gone", "var s = \"a\\\\\"  ",
+			"an escaped BACKSLASH ends the string, so the comment after it IS cut"],
+		["play_music(\"a\")", "play_music(\"a\")", "no # at all is untouched"],
+	]
+	var bad: Array[String] = []
+	for c in cases:
+		var got: String = _strip_comments(str(c[0]))
+		if got != str(c[1]):
+			bad.append("%s\n      in:  %s\n      got: %s\n      want:%s" % [c[2], c[0], got, c[1]])
+	assert_gt(cases.size(), 5, "SCOPE control: only %d stripper cases" % cases.size())
+	assert_eq(bad.size(), 0,
+		"the comment stripper is wrong on %d case(s):\n   %s" % [bad.size(), "\n   ".join(bad)])
 
 
 func test_control_the_consumer_corpus_is_real_and_excludes_the_manifest() -> void:
