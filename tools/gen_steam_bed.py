@@ -37,6 +37,7 @@ import numpy as np
 ## not a transformer, so it has no source to preserve — but it OVERWRITES an existing asset, and
 ## main() refuses if that asset's rate differs from this constant rather than quietly downsampling it.
 SR = 44100
+CHANNELS = 1        # weather_steam is mono; storm_bed next door is STEREO — never assume
 DUR = 8.0            # longer than the 5.0s original: a continuous bed repeats less obviously
 TARGET_RMS_DB = -22.1
 
@@ -86,12 +87,19 @@ def main():
     # REFUSE rather than resample: the file we are about to replace decides the rate.
     if Path(args.out).exists():
         have = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a:0",
-                               "-show_entries", "stream=sample_rate", "-of", "csv=p=0", args.out],
-                              capture_output=True, text=True).stdout.strip()
-        if have and int(have) != SR:
-            print(f"  REFUSED: {args.out} is {have} Hz, this generator writes {SR} Hz — "
-                  f"writing would resample the asset. Set SR to match, or retarget.")
-            return 1
+                               "-show_entries", "stream=sample_rate,channels", "-of", "csv=p=0",
+                               args.out], capture_output=True, text=True).stdout.strip()
+        parts = [x for x in have.split(",") if x]
+        if len(parts) == 2:
+            have_sr, have_ch = int(parts[0]), int(parts[1])
+            # BOTH halves. cowir-story 2026-09-11: "48k MONO" was a majority written down as a
+            # universal, and a stereo->mono FOLD is exactly as silent as a resample. weather_storm_bed
+            # is 44100/2ch in this very corpus, so the mono assumption is already false next door.
+            if have_sr != SR or have_ch != CHANNELS:
+                print(f"  REFUSED: {args.out} is {have_sr} Hz / {have_ch}ch, this generator writes "
+                      f"{SR} Hz / {CHANNELS}ch — writing would resample or fold the asset. "
+                      f"Match the constants, or retarget.")
+                return 1
 
     n = int(DUR * SR)
     rng = np.random.default_rng(args.seed)
@@ -126,7 +134,7 @@ def main():
         print("  dry run, nothing written")
         return 0
 
-    subprocess.run(["ffmpeg", "-v", "quiet", "-y", "-f", "f32le", "-ar", str(SR), "-ac", "1",
+    subprocess.run(["ffmpeg", "-v", "quiet", "-y", "-f", "f32le", "-ar", str(SR), "-ac", str(CHANNELS),
                     "-i", "-", "-c:a", "libvorbis", "-b:a", args.bitrate, args.out],
                    input=y.astype(np.float32).tobytes(), check=True)
     print(f"  wrote {args.out}")
