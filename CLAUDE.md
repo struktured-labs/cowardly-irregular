@@ -18,7 +18,7 @@ Playable end-to-end through World 1:
   - **Boss Strategic Intent** for all 5 W1 bosses (Settings → LLM Boss Strategy). LLM picks intent/posture per phase, deterministic ladder still owns ability choice.
   - **Party Combat Dialogue** for all 5 starter jobs, rendered as speech bubbles anchored to the speaker (suppressed only at ≥4x speed); `voice_<job>_<trigger>` audio-handle convention ready for the voice pack. Scripted `trigger_voices` fallback per job when LLM off.
   - Rebalance daemon (opt-in), LLM Rule Composer, Learning Monsters. Ollama / OpenAI-compat backends via HTTPBackend; BYOK desktop-only (settings.json), configured in-game at Settings → "Configure BYOK" (base_url / format / model / api_key fields + Test Connection); web builds never hold keys.
-- **Data**: 14 jobs, 289 abilities, 98 monsters (artist art for slime/bat/goblin + 5 duel minibosses T2), 172 items, 34 encounter pools, 193 cutscenes (44 party/event chats, guarded: every registry chat needs its JSON + a live emitter), music: **161 distinct OGGs** (165 manifest entries — `battle_brute.ogg` is named by five keys under the monster-family ruling; 161 files in `assets/audio/music/`), SFX: **338 manifest keys** (336 distinct files). Three true music numbers and two true SFX numbers exist — say which you mean; bare counts here drifted for months.
+- **Data**: 14 jobs, 289 abilities, monsters (artist art for slime/bat/goblin + 5 duel minibosses T2; count: `data/monsters.json`), 172 items, 34 encounter pools, cutscenes (44 party/event chats, guarded: every registry chat needs its JSON + a live emitter), music: **161 distinct OGGs** (165 manifest entries — `battle_brute.ogg` is named by five keys under the monster-family ruling; 161 files in `assets/audio/music/`), SFX: **338 manifest keys** (336 distinct files). Three true music numbers and two true SFX numbers exist — say which you mean; bare counts here drifted for months.
 - **Tests**: ~7390 passing / 0 failing in GUT. **Full suite takes ~5-10 MINUTES headless (measured 268-689s across 14 runs / 6 lanes, 2026-07-30 — one run cleared the 600s ceiling by 89s), NOT the "~40s" this line claimed for months — BACKGROUND the gate.** A foreground run can cross a 10-minute harness ceiling, and the SIGTERM skips the export restore; that stale number is the first link in the chain that produced four orphaned snapshots and three "the export dir is clean" reports that each undid the last. The error was invisible because it is intermittent: on a quiet box the suite finishes ~380s and confirms the doc to you, at load it reaches 689s and dies. The 268s low end is as much of the cause as the 689s high end: a lane on a quiet box measures 4.5 minutes, stays inside every ceiling, and concludes the doc is roughly right. Gate on the [Failed] count. Campaign-scale integration: the story spine walks New Game → world6_ending under test (incl. a mid-campaign save/load), battle mini-fuzz every run, live/headless group-attack parity-by-construction.
 - **Sharing (pillar complete)**: autobattle scripts AND autogrind rule sets travel as `COWIR1:` clipboard codes (Shift+E copy / Shift+I paste in grid editor + autogrind console), grammar-validated at decode; file-based E/I flows unchanged
 - **Meta jobs (all five REAL)**: Scriptweaver turns a bounded game-constant dial (⚠️ "+ reveals execution order" was listed here as SHIPPED and is NOT — `formula_sight`'s `show_formulas` key and `autobattle_verbs`' `autobattle_advanced` key each occur exactly ONCE in `src/`, in their own declaration inside PassiveSystem's hardcoded fallback copy of passives.json, and the ids appear only in JobSystem's `passive_abilities` roster. Both are equippable today and do nothing. Confirmed by 4 independent methods 2026-07-30 after a count that moved 13→0→1→3→2 as five lanes each hit a different consumption shape); Necromancer permakill EXTERMINATES species from all three spawn paths (encounter pools, autogrind roster, roaming — save-persisted, New-Game-reset, live roamers dissolve); Time Mage full (quicksave/restore/temporal shield/undo_death); Skiptrotter Bypass Puzzle concedes the chicken roundup; Bossbinder controlled/mind-swapped enemies fight their own side
@@ -88,7 +88,7 @@ Entire party can pool their Advance Points for combined attacks:
 Each starter job has a free 0-cost AP action available in the command menu:
 | Job | Free Move | Effect |
 |-----|-----------|--------|
-| Fighter | Strike | Bonus melee swing (physical fallback animation) |
+| Fighter | **Attack** | `free_move.label` is literally `"Attack"` in jobs.json — the Fighter has no separately-named free move, and a player sees the ordinary Attack row. This said "Strike" until 2026-09-11; Rogue is the one whose row reads Strike. Same drift as the Riff line below, caught by pinning the table instead of re-reading it. |
 | Cleric | Pray | Restores MP to a party member (green heal popup + sparkle FX) |
 | Mage | Channel | Restores MP to self |
 | Rogue | Strike | Bonus melee (falls back to attack anim, not cast) |
@@ -166,22 +166,23 @@ exist). Each line below names a consumer so the claim is checkable rather than r
 
 Risk/reward automation with escalating stakes:
 - **EXP multiplier climbs with session length** — `efficiency_multiplier`, grown per battle by
-  `efficiency_growth_rate`; read by `AutogrindMonitor:584` and the controller's stats block
-- **Monster adaptation** — `monster_adaptation_level`, consumed at `GameLoop:5852`; crossing
+  `efficiency_growth_rate`; read by `AutogrindMonitor._compute_stability` and the controller's stats block
+- **Monster adaptation** — `monster_adaptation_level`, consumed at `GameLoop._on_autogrind_battle_ended`; crossing
   `ROTATION_SUGGEST_THRESHOLD` fires the region-rotation suggestion
 - **System fatigue → meta-bosses** — `fatigue_events_triggered` gates
-  `check_fatigue_collapse()` (`AutogrindController:248`, needs >= 5 events AND >= 50 battles this
+  `check_fatigue_collapse()` (`AutogrindSystem.check_fatigue_collapse`, called from `AutogrindController._request_next_battle`;
+  needs >= 5 events AND >= 50 battles this
   session); `meta_boss_spawn_chance` and the `meta_bosses_spawned` / `meta_bosses_defeated` tallies
   reach the Summary
 - **Interrupt rules** — `_check_interrupt_conditions()` enforces hp_threshold, party_death,
   item_depleted, corruption_limit and max_battles via `pre_battle_check()`
-  (`AutogrindController:237`). ⚠️ Configurable through the **config dict passed to
+  (`AutogrindSystem.pre_battle_check`, called from `AutogrindController._request_next_battle`). ⚠️ Configurable through the **config dict passed to
   `start_autogrind`, NOT from the console** — no `src/ui/` file sets them, so "configurable" is
   true of the API and not yet of the player
 - **Permadeath staking** — `permadeath_staking_enabled`, with a UI state:
-  `AutogrindDashboard:754` and the DANGER_COLOR panel at `AutogrindUI:698`. Routed through
+  `AutogrindDashboard.refresh` and the DANGER_COLOR panel built in `AutogrindUI._build_footer`. Routed through
   `enable_permadeath_staking()` so the flag and its growth rate cannot disagree (fixed 2026-09-11)
-- **System collapse** — `system_collapse` signal, connected at `AutogrindUI:272` with a symmetric
+- **System collapse** — `system_collapse` signal, connected in `AutogrindUI._connect_autogrind_signals` with a symmetric
   disconnect; `collapse_count` reaches the Summary, the Dashboard win-rate and session history
 
 ## Job System
@@ -223,7 +224,7 @@ Old IDs (white_mage, black_mage, thief) are aliased to new IDs (cleric, mage, ro
 - Each job maps to an outfit type and headgear type via OUTFIT_MAP/HEADGEAR_MAP
 - All 5 starters (fighter, mage, cleric, rogue, bard) ship with artist-made sheets in `assets/sprites/jobs/<job_id>/`
 - Bard added 2026-05-22 (commit 0b53f19) — idle/cast/attack done; other animations pending
-- Monster sheets: 90 entries in `monster_sheets` section, mostly 256x256 frames, AI-generated (T1) with artist passes pending
+- Monster sheets: registered in the `monster_sheets` section, mostly 256x256 frames, AI-generated (T1) with artist passes pending
 - Per-world monster variants supported: lookup `<monster>_<world_suffix>` first, fallback to base (e.g., `slime_suburban`)
 
 ### Save System Architecture
@@ -441,9 +442,9 @@ cowardly-irregular/
 │   ├── bestiary/        # BestiarySystem
 │   ├── exploration/     # OverworldController, OverworldPlayer, OverworldNPC, WanderingNPC, AreaTransition, ShopScene, VillageShop, OverworldScene + per-world variants
 │   ├── maps/            # MapSystem
-│   │   ├── villages/    # BaseVillage + 10 named villages
-│   │   ├── interiors/   # TavernInterior + others
-│   │   └── dungeons/    # DragonCave base + 4 dragon caves + CastleHarmonia + WhisperingCave + NullChamber + RootProcess + AssemblyCore + SteampunkMechanism + SuburbanUnderground
+│   │   ├── villages/    # BaseVillage + one script per named village
+│   │   ├── interiors/   # one script per interior room
+│   │   └── dungeons/    # DragonCave base + the dragon caves + per-world dungeons + BossTrigger
 │   └── ui/              # OverworldMenu, MenuScene, Win98Menu, TitleScreen, TeleportMenu, JukeboxMenu, BestiaryMenu, WorldMapMenu, etc.
 │       └── autobattle/  # Grid editor (AutobattleGridEditor + AutobattleToggleUI)
 ├── assets/
@@ -467,7 +468,7 @@ cowardly-irregular/
 │   ├── sprite_manifest.json
 │   ├── music_manifest.json
 │   ├── job_aliases.json    # white_mage→cleric, black_mage→mage, thief→rogue
-│   └── cutscenes/          # 193 cutscene JSON files
+│   └── cutscenes/          # story cutscene JSON (id, trigger, world, background, steps)
 └── test/
     └── unit/            # GUT tests (~7390 in 1157 files, ~5-10 min headless — background it)
 ```
@@ -489,7 +490,7 @@ cowardly-irregular/
 - **Story flow gating**: `GameLoop._get_pending_story_cutscene()` is the single source of truth for which cutscene plays next. Each gate is a flag-pair: `if X happened AND not <cutscene>_complete: return "<cutscene_id>"`
 - **Completion flag wiring**: `_CUTSCENE_COMPLETION_FLAGS` const maps id → flag; `_play_story_cutscene` writes the flag when CutsceneDirector emits `cutscene_finished`. Without this, cutscenes loop forever (was the Elder Theron bug).
 - **Boss intro cutscenes**: dungeons set `boss_cutscene_id` (DragonCave base reads it before emitting `battle_triggered`)
-- 193 cutscene files on disk; 76 actively triggered; remaining are planned content / event chats / party chats
+- Not every cutscene on disk is wired: the rest are planned content. Counts deliberately omitted — they drifted (193 → 197 files by 2026-09-11), and a bare "N triggered" hides that **a scene reaches a player at least SIX different ways**. Engine-initiated: (1) a literal `return "id"` in `GameLoop._get_pending_story_cutscene`; (2) `return fid` looping `_FRAGMENT_GATES` in that same function — the id never appears beside `return`; (3) a dungeon's `boss_cutscene_id`, loaded from disk by `DragonCave`; (4) a quest's `cutscene_on_complete`, played by `QuestSystem` after the turn-in dialogue unwinds; (6) a map or prop script calling `play_cutscene` directly (`WhisperingCave`, `TallyWall`) — including by CONST, as `CastleHarmonia.THRONE_APPROACH_ID`, where the id appears once at its declaration and never at the call. Player-initiated: (5) `PartyChatSystem.REGISTRY` — but that system dispatches nothing, `PartyChatMenu` calls `play_cutscene`, so an audit stopping at the data's owner reads all 44 as dead. **SIX IS A FLOOR, NOT A TOTAL.** This list was "two" and then "five" within one hour of 2026-09-11, each time corrected from outside the lane that wrote it; treat a new form as expected, not as a surprise. Any count MUST name which forms it counted and whether player-initiated scenes are in scope. Verify a form to a `play_cutscene` call, never to a declaration — and remember an id can be a literal, a loop variable, or a const.
 
 ## Artist Collaboration & Sprite Pipeline Rules
 

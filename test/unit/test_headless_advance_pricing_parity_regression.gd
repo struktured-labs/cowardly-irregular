@@ -78,6 +78,7 @@ func _run_with_queue_of(n: int) -> Dictionary:
 		acts.append({"type": "attack", "target": "lowest_hp_enemy"})
 	_abs.set_character_script("pricing_hero", {"rules": [
 		{"conditions": [{"type": "always"}], "actions": acts, "enabled": true}]})
+	seed(0x5EED)  # the resolver keeps a 2% miss floor; unseeded, 1 run in 50 takes two rounds
 	var resolver := HeadlessBattleResolver.new()
 	var res: Dictionary = resolver.resolve_battle([hero], [_one_shot_foe()])
 	return {"ap": hero.current_ap, "rounds": int(res.get("rounds", -1))}

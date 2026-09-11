@@ -197,10 +197,10 @@ func _place_treasure_chests() -> void:
 		{"id": "w6_remnant_gold", "pos": Vector2(22, 18), "type": "gold", "gold": 2000},
 		# Threshold (north) — void's edge
 		{"id": "w6_threshold_phoenix", "pos": Vector2(19, 4), "type": "item", "item": "phoenix_down", "amount": 4},
-		# Behind the disguised wall at (60,5) — the only sealed pocket in six worlds that a body can
-		# actually walk into. Placed at (60,3) because that is where a probe walking north from (60,9)
-		# comes to rest, having passed THROUGH the passage cell; the pocket analysis suggested (77,12)
-		# and I could not verify that cell is inside the sealed set rather than open ground.
+		# The far corner: 120 steps from the entrance, at the bottom of a five-deep dead end, now behind
+		# the w6_absence disguise. ⚠️ This comment used to describe a wall at (60,5) and a chest at
+		# (60,3) — neither of which is where either thing is, and the passage it named was retired
+		# directly above. Both halves decayed independently and agreed with nothing.
 		{"id": "w6_absence_elixir", "pos": Vector2(33, 7), "type": "item", "item": "elixir", "amount": 3},
 	]
 	for c in chests:
@@ -223,12 +223,24 @@ func _place_treasure_chests() -> void:
 ## at (110,62) looks sealed on the map and a body walking north stops in the doorway, so it is not a
 ## secret, it is a wall with a gap drawn in it.
 func _place_hidden_passages() -> void:
-	## ⛔ RETIRED. This passage was authored at map cell (60,5) and W6's cell grid is 40x35 — it stood
-	## 1280 px east of the world. And it could never have been a secret anyway: a flood from the
-	## spawn reaches ALL 2143 walkable tiles in W6, so there is no sealed pocket for a disguised wall
-	## to seal. The elixir moved to the farthest reachable cell instead — 120 steps from the
-	## entrance, which is a find, not a secret, and the comment says so rather than the id.
-	pass
+	## The passage authored at cell (60,5) was retired: W6's cell grid is 40x35, so it stood 1280 px
+	## east of the world. The reasoning that retired it — "a flood reaches ALL 2143 walkable tiles,
+	## so there is no sealed pocket to seal" — asked for more than a secret needs. A HiddenPassage
+	## carries NO terrain collision; it is a disguise over ground that is already walkable, so what it
+	## wants is a place a player would not go, not a place they cannot.
+	##
+	## Probed with the real body against the real colliders: the absence elixir sits at the bottom of
+	## a five-deep dead end — tile col 66, rows 10..14, sealed below by row 15, entered only from the
+	## north. That is the pocket. It just had nothing standing in front of it.
+	const HiddenPassageScript = preload("res://src/exploration/HiddenPassage.gd")
+	var passage = HiddenPassageScript.new()
+	passage.passage_id = "w6_absence"
+	passage.disguise = "brick"
+	passage.passage_width = 2
+	passage.passage_height = 1
+	# Cell (33,5) covers tiles x65-66 on row 10, the corridor mouth; both probe clear.
+	passage.position = Vector2(33 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 5 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(passage)
 
 
 func _place_save_point() -> void:

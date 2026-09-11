@@ -18,6 +18,27 @@ extends GutTest
 ## So this pins all three and requires the doc to name which it means. A single
 ## unqualified number is what let two correct measurements read as a conflict.
 
+## ⛔ WHAT THIS GUARD DOES NOT COVER — stated because four lanes got it wrong.
+##
+## Line 21 of CLAUDE.md carries FIVE numbers. This file asserts the two MUSIC
+## ones and nothing else:
+##
+##     161 distinct OGGs · 165 manifest entries    GUARDED, labels required
+##     338 SFX manifest keys · 336 distinct files  NOT GUARDED — cowir-sfx's corpus
+##     193 cutscenes (de-numbered 2026-09-11)      never guarded here
+##
+## On 2026-09-11 I ran this guard and separately measured the SFX keys with an
+## ad-hoc command, printed both under one heading, and wrote "all three match the
+## doc". cowir-sfx corrected it; I confirmed; and it then came back through
+## cowir-adhoc and cowir-battle as established fact — cowir-battle having
+## personally grepped the correct answer four hours earlier. Four lanes, and
+## cowir-sfx had to correct the same sentence twice.
+##
+## 🔑 A RETRACTION DOES NOT TRAVEL AS FAR AS THE CLAIM IT RETRACTS (cowir-sfx).
+## So the boundary lives in the guard rather than in the channel: anyone editing
+## line 21 can read here that disturbing the SFX half is unguarded, instead of
+## inferring coverage from this file passing.
+
 const DOC := "res://CLAUDE.md"
 const MANIFEST := "res://data/music_manifest.json"
 const MUSIC_DIR := "res://assets/audio/music"
