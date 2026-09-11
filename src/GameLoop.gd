@@ -126,6 +126,17 @@ func get_village_origin_id() -> String:
 	return _village_origin_id
 
 
+## The shop walked up to, handed over the door; consumed and cleared by _create_shop_interior.
+var _pending_shop_name: String = ""
+var _pending_shop_keeper: String = ""
+
+
+## Called by VillageShop.interact() immediately before it asks for the interior.
+func set_pending_shop_identity(shop: String, keeper: String) -> void:
+	_pending_shop_name = shop
+	_pending_shop_keeper = keeper
+
+
 ## Tick 307: setter that keeps MapSystem.current_map_id in sync with our
 ## _current_map_id. Pre-fix MapSystem.current_map_id was only updated by
 ## MapSystem.load_map, which is bypassed by GameLoop's direct scene routing
@@ -5188,12 +5199,22 @@ func _create_shop_interior(shop_type_value: int) -> Node:
 
 	`shop_type_value` mirrors VillageShop.ShopType:
 	  0 = ITEM, 1 = BLACK_MAGIC, 2 = WHITE_MAGIC, 3 = BLACKSMITH
-	The scene self-themes (palette, decoration, NPCs) from this value.
+	The scene self-themes (palette, decoration, NPCs) from this value; its NAME and
+	KEEPER come from the VillageShop the player walked up to.
 	"""
 	var scene = ShopInteriorScript.new()
 	scene.shop_type = shop_type_value
-	# Default per-type names — outdoor shop instances can pass their own
-	# via a future override hook, but for now generic names work everywhere.
+	# The village authored a name and a keeper on the shop you walked up to; use them.
+	var pending_name := _pending_shop_name
+	var pending_keeper := _pending_shop_keeper
+	_pending_shop_name = ""
+	_pending_shop_keeper = ""
+	if pending_name != "":
+		scene.shop_name = pending_name
+		if pending_keeper != "":
+			scene.keeper_name = pending_keeper
+		return scene
+	# Reached only when nobody walked through a door -- teleport, save load, smoke test.
 	match shop_type_value:
 		0: scene.shop_name = "Mystic Remedies"
 		1: scene.shop_name = "The Arcanum"
