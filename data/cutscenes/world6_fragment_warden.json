@@ -3,7 +3,7 @@
   "title": "Fragment: The Shape of Being Passed",
   "world": 6,
   "trigger": "warden_form_defeated",
-  "background": "node_prime",
+  "background": "vertex_village",
   "location": "abstract_threshold_the_former_wall",
   "description": "Found at the Former Wall in the abstract world after defeating the Warden of Form. A shape that used to be a wall. It is no longer that. It is not yet certain what it is instead.",
   "steps": [
@@ -13,7 +13,7 @@
     },
     {
       "type": "play_music",
-      "track": "cutscene_w5_cached_memory"
+      "track": "cutscene_w6_entering_nothing"
     },
     {
       "type": "wait",
