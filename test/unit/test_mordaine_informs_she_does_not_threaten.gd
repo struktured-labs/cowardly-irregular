@@ -223,6 +223,9 @@ func test_the_comment_stripper_itself_is_pinned() -> void:
 		["\tvar q := \"a \\\" # still string\"",
 		 "\tvar q := \"a \\\" # still string\"",
 		 "an escaped quote must not end the string early"],
+		["\tvar q := \"a\\\\\"  # gone",
+		 "\tvar q := \"a\\\\\"  ",
+		 "an escaped BACKSLASH ends the string — a lookbehind escape check reads this as still-open and lets the comment through"],
 	]
 	for c in cases:
 		assert_eq(_strip_comment(str(c[0])), str(c[1]), str(c[2]))
