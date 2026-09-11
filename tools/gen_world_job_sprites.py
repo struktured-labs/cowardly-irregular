@@ -139,8 +139,14 @@ WORLD_DRESS = {
                    "buckles, riveted pauldron, oil-stained gloves."),
     "industrial": ("heavy INDUSTRIAL workwear — hard hat or welding visor, hi-visibility "
                    "banding, thick canvas overalls, steel-toed boots."),
+    # "glowing seams" invited BLOOM, and bloom fills the frame: 3 of 4 digital rolls on
+    # 2026-09-11 came back with a lit backdrop that transparent_bg could not key (it only
+    # clears R,G,B >= 240, and a tinted glow sits under that). Light is now ON the garment.
     "digital":    ("DIGITAL/CYBER dress — a slim visor with a thin light bar, panelled "
-                   "bodysuit with glowing seams, hard-edged geometric plating."),
+                   "bodysuit whose seams are lit as CRISP PIXEL LINES on the garment "
+                   "itself, hard-edged geometric plating. NO glow, bloom, halo or light "
+                   "spill beyond the character's own outline — the area around the figure "
+                   "is EMPTY and fully transparent."),
     # The first abstract pilot read as a MISSING ASSET — a grey untextured figure. Cause was
     # "flat unshaded, no texture" landing on a sprite that had also lost its colour to the
     # old palette clause. With JOB_SIGNATURE holding the hue, minimalism can read as a
@@ -270,7 +276,7 @@ def main() -> int:
     from openai import OpenAI
     client = OpenAI()
 
-    total, made, locked = 0.0, [], []
+    total, made, locked, refused = 0.0, [], [], []
     for job, world, asset, out in todo:
         base_ow = JOBS_DIR / job / "overworld.png"
         base_idle = JOBS_DIR / job / "idle.png"
@@ -300,6 +306,14 @@ def main() -> int:
 
         if asset == "overworld":
             sheet = _rap.transparent_bg(_rap.downscale(raw, 128))
+            specks = _despeckle(sheet)
+            if specks:
+                print(f"  despeckled {specks} stray blob(s) <= 4px")
+            bad = _backdrop_residue(sheet)
+            if bad:
+                print(f"  REFUSED {job}/{world}: {bad} -- re-roll this one", file=sys.stderr)
+                refused.append(f"{job}/{world}")
+                continue
             sheet.save(out)
             # Raw generation lands at 6-37 diffs; the gate demands <4.
             n = head_lock_to_gate(out)
@@ -322,6 +336,8 @@ def main() -> int:
     print(f"\nGenerated {len(made)}/{len(todo)} — spent ~${total:.2f}")
     if locked:
         print(f"head-lock repairs: {locked}")
+    if refused:
+        print(f"REFUSED for backdrop residue (re-roll these): {refused}", file=sys.stderr)
     if len(made) != len(todo):
         return 1
     return 0
@@ -374,6 +390,66 @@ def head_lock_to_gate(path: Path) -> int:
 ##
 ## Both targets are READ FROM THE JOB'S OWN BASE idle.png, never hardcoded, so a
 ## job whose artist art sits differently still matches itself.
+## transparent_bg keys only pixels whose R, G AND B are all >= 240. A dithered or slightly tinted
+## white backdrop sits just under that and SURVIVES as speckle -- and on a 4x4 grid the speckle
+## BRIDGES frames, so the usual small-blob cleanup cannot split them without eating sprite content.
+##
+## Measured 2026-09-11: 9 of 20 rolls in one session carried residue. One of them,
+## ninja/overworld_industrial.png, SHIPPED in v3.33.298 and v3.33.299 -- 844 opaque blobs, 754 of
+## them <= 4px, rendering as a speckled haze over the terrain. Nothing checked, because the
+## OpaqueBackdrop refusal I added to regen_masterite_portraits.py an hour earlier was never added
+## here. Harden one writer, miss the rest.
+##
+## Refuse rather than clean: a re-roll costs ~$0.04 and a cleanup on a bridged grid risks the
+## subject, which is this lane's 2026-09-09 defect.
+## A few isolated sub-5px blobs survive transparent_bg on most rolls -- single pixels of near-white
+## backdrop that sit just under the 240 threshold. At a 32px frame they render as visible dots on
+## the terrain. Safe to remove ONLY because they are isolated: the ninja/industrial disaster had
+## 754 of them BRIDGING frames into one blob, which is why that sheet was re-rolled rather than
+## cleaned. Bounded at 4px so it can never reach sprite content.
+def _despeckle(sheet: Image.Image, max_blob: int = 4) -> int:
+    from collections import deque
+    px = sheet.load()
+    W, H = sheet.size
+    seen = [[False] * H for _ in range(W)]
+    removed = 0
+    for sx in range(W):
+        for sy in range(H):
+            if seen[sx][sy] or px[sx, sy][3] <= 10:
+                continue
+            blob = []
+            q = deque([(sx, sy)])
+            seen[sx][sy] = True
+            while q:
+                x, y = q.popleft()
+                blob.append((x, y))
+                if len(blob) > max_blob:
+                    break
+                for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                    if 0 <= nx < W and 0 <= ny < H and not seen[nx][ny] and px[nx, ny][3] > 10:
+                        seen[nx][ny] = True
+                        q.append((nx, ny))
+            if len(blob) <= max_blob:
+                for x, y in blob:
+                    px[x, y] = (0, 0, 0, 0)
+                removed += 1
+    return removed
+
+
+def _backdrop_residue(sheet: Image.Image) -> str:
+    im = sheet.convert("RGBA")
+    W, H = im.size
+    a = im.getchannel("A")
+    corners = [a.getpixel(p) for p in [(0, 0), (W - 1, 0), (0, H - 1), (W - 1, H - 1)]]
+    if max(corners) > 10:
+        return "corner alphas %s -- the backdrop was not keyed out" % corners
+    opaque = sum(1 for v in a.getdata() if v > 10) / float(W * H)
+    # shipped starter variants measure 0.33-0.49; 0.70 leaves ~1.4x headroom over the worst
+    if opaque > 0.70:
+        return "%.0f%% of the sheet is opaque -- backdrop residue, not a sprite" % (100 * opaque)
+    return ""
+
+
 def normalize_idle_to_base(strip: Path, base: Path) -> tuple:
     import importlib.util as _il
     s = _il.spec_from_file_location("_nz", SPRITES_REPO / "tools" / "normalize_job_scale.py")

@@ -1944,6 +1944,10 @@ func _get_pending_story_cutscene() -> String:
 		if _current_map_id == "castle_harmonia":
 			return "world1_epilogue"
 
+	# W1 transition: the party reads the diagram and counts five more worlds. Gated on the epilogue this lane wired in .296, which is what its authored trigger names.
+	if flags.get("cutscene_flag_world1_epilogue_complete", false) and not flags.get("cutscene_flag_world1_transition_complete", false):
+		return "world1_transition"
+
 	# ===== WORLD 2: THE MUNDANE SPRAWL (Suburban) =====
 	# W2 Prologue: portal arrival, gear transformation
 	if flags.get("cutscene_flag_world1_mordaine_defeated", false) and not flags.get("cutscene_flag_world2_prologue_complete", false):
@@ -2087,6 +2091,10 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_world4_chapter5_complete", false) and not flags.get("cutscene_flag_world4_complete", false):
 		_set_cutscene_flag_and_mirror("cutscene_flag_world4_complete")
 
+	# W4→W5 transition (authored trigger world4_to_world5_transition). Same shape as W2/W3: the epilogue hatch passes because world4_epilogue is unwired by design.
+	if flags.get("cutscene_flag_world4_complete", false) and _epilogue_done_or_unwired("world4_epilogue", flags) and not flags.get("cutscene_flag_world4_transition_complete", false):
+		return "world4_transition"
+
 	# ===== WORLD 5: ABSTRACT / NETWORK =====
 	# Tick 103: W5 Arbiter of Futuristic defeat cutscene — plays IN
 	# Root Process on return from boss victory. Same pattern as W2-W4
@@ -2138,6 +2146,10 @@ func _get_pending_story_cutscene() -> String:
 	# prologue gate.
 	if flags.get("cutscene_flag_world5_chapter5_complete", false) and not flags.get("cutscene_flag_world5_complete", false):
 		_set_cutscene_flag_and_mirror("cutscene_flag_world5_complete")
+
+	# W5→W6 transition (authored trigger world5_to_world6_transition). Same shape as W2/W3: the epilogue hatch passes because world5_epilogue is unwired by design.
+	if flags.get("cutscene_flag_world5_complete", false) and _epilogue_done_or_unwired("world5_epilogue", flags) and not flags.get("cutscene_flag_world5_transition_complete", false):
+		return "world5_transition"
 
 	# ===== WORLD 6: THE VERTEX (Final) =====
 	if flags.get("cutscene_flag_world5_complete", false) and not flags.get("cutscene_flag_world6_prologue_complete", false):
@@ -2249,7 +2261,8 @@ const _FRAGMENT_GATES := {
 	# `after` is the aftermath scene whose TRIGGER names the same masterite — the file numbering runs one world behind the theme from industrial up (world3_* = industrial, world4_* = futuristic, world5_* = abstract).
 	"world3_fragment_arbiter": {"flag": "cutscene_flag_arbiter_industrial_defeated", "after": "world3_arbiter_defeat"},
 	"world3_fragment_curator": {"flag": "cutscene_flag_curator_industrial_defeated", "after": "world3_curator_defeat"},
-	"world3_fragment_tempo": {"flag": "cutscene_flag_tempo_industrial_defeated", "after": "world3_tempo_defeat"},
+	# world3_tempo_defeat is in the completion map but no gate returns it (the world3 tempo gate now dispatches the Grand Schedule scenes) — waiting on it would block this reveal forever, so it waits on nothing until that aftermath is dispatched.
+	"world3_fragment_tempo": {"flag": "cutscene_flag_tempo_industrial_defeated", "after": ""},
 	"world3_fragment_warden": {"flag": "cutscene_flag_warden_industrial_defeated", "after": "world3_warden_defeat"},
 	"world5_fragment_arbiter": {"flag": "cutscene_flag_arbiter_futuristic_defeated", "after": "world4_arbiter_defeat"},
 	"world5_fragment_curator": {"flag": "cutscene_flag_curator_futuristic_defeated", "after": "world4_curator_defeat"},
@@ -2308,6 +2321,9 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world2_chapter7_infrastructure":   "cutscene_flag_chapter7_infrastructure_complete",
 	"world2_chapter8_memos":            "cutscene_flag_chapter8_memos_found",
 	"world2_chapter11":                 "cutscene_flag_chapter11_complete",
+	"world1_transition":     "cutscene_flag_world1_transition_complete",
+	"world4_transition":     "cutscene_flag_world4_transition_complete",
+	"world5_transition":     "cutscene_flag_world5_transition_complete",
 	"world2_transition":                "cutscene_flag_world2_transition_complete",
 	# Tick 102: W2 Warden of Routine post-defeat dialogue
 	"world2_warden_defeat":             "cutscene_flag_world2_warden_defeat_complete",

@@ -17,7 +17,13 @@ func before_each() -> void:
 	_loop = load("res://src/GameLoop.gd").new()
 	for k in ["cutscene_flag_world2_complete", "cutscene_flag_chapter11_complete", "cutscene_flag_world2_transition_complete",
 			"cutscene_flag_world3_complete", "cutscene_flag_world3_chapter5_complete", "cutscene_flag_world3_transition_complete",
-			"cutscene_flag_world3_prologue_complete", "cutscene_flag_world4_prologue_complete"]:
+			"cutscene_flag_world3_prologue_complete", "cutscene_flag_world4_prologue_complete",
+			"cutscene_flag_world1_mordaine_defeat_complete", "cutscene_flag_world1_epilogue_complete",
+			"cutscene_flag_world1_transition_complete",
+			"cutscene_flag_world4_complete", "cutscene_flag_world4_chapter5_complete",
+			"cutscene_flag_world4_transition_complete", "cutscene_flag_world5_prologue_complete",
+			"cutscene_flag_world5_complete", "cutscene_flag_world5_chapter5_complete",
+			"cutscene_flag_world5_transition_complete", "cutscene_flag_world6_prologue_complete"]:
 		GameState.game_constants.erase(k)
 
 
@@ -95,3 +101,44 @@ func test_both_transitions_are_in_the_completion_map_with_the_flags_the_scenes_s
 			if step is Dictionary and step.get("type") == "set_flag":
 				flags.append("cutscene_flag_" + str(step.get("flag", "")))
 		assert_true(map[id] in flags, "%s: the scene's own set_flag (%s) must be the flag the map expects (%s)" % [id, flags, map[id]])
+
+
+## 2026-09-11: W1, W4 and W5 had the same defect W2/W3 had — authored transition scenes, zero callers.
+func test_w1_transition_plays_once_the_epilogue_it_waits_on_is_done() -> void:
+	_flag("cutscene_flag_world1_mordaine_defeat_complete")
+	assert_eq(_pending_on("castle_harmonia"), "world1_epilogue", "control: the epilogue is still first")
+	_flag("cutscene_flag_world1_epilogue_complete")
+	assert_eq(_pending_on("overworld"), "world1_transition", "epilogue done -> the diagram beat is pending")
+	_flag("cutscene_flag_world1_transition_complete")
+	assert_eq(_pending_on("overworld"), "", "and once complete nothing else is pending on W1's map")
+
+
+func test_w4_transition_plays_once_w4_is_complete_ahead_of_the_w5_prologue() -> void:
+	_flag("cutscene_flag_world4_chapter5_complete")
+	_flag("cutscene_flag_world4_complete")
+	assert_eq(_pending_on("industrial_overworld"), "world4_transition", "W4 done -> the industrial->digital dissolve is pending")
+	assert_eq(_pending_on("futuristic_overworld"), "world4_transition", "and it precedes the W5 prologue on arrival")
+	_flag("cutscene_flag_world4_transition_complete")
+	assert_eq(_pending_on("futuristic_overworld"), "world5_prologue", "control: then the W5 prologue as before")
+
+
+func test_w5_transition_plays_once_w5_is_complete_ahead_of_the_w6_prologue() -> void:
+	_flag("cutscene_flag_world5_chapter5_complete")
+	_flag("cutscene_flag_world5_complete")
+	assert_eq(_pending_on("futuristic_overworld"), "world5_transition", "W5 done -> the digital->abstract simplification is pending")
+	assert_eq(_pending_on("abstract_overworld"), "world5_transition", "and it precedes the W6 prologue on arrival")
+	_flag("cutscene_flag_world5_transition_complete")
+	assert_eq(_pending_on("abstract_overworld"), "", "nothing further pending on W6's overworld")
+	assert_eq(_pending_on("vertex_village"), "world6_prologue",
+		"control: then the W6 prologue, which unlike W2-W5 gates on a VILLAGE rather than the overworld")
+
+
+func test_all_five_transitions_are_in_the_completion_map() -> void:
+	var loop_src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	for w in [1, 2, 3, 4, 5]:
+		assert_true(loop_src.contains('"world%d_transition": ' % w),
+			"world%d_transition must be dispatched; an authored transition with no caller is the defect this file exists for" % w)
+		assert_true(loop_src.contains('"cutscene_flag_world%d_transition_complete"' % w),
+			"world%d_transition needs its completion flag or it replays every map entry" % w)
+	assert_false(loop_src.contains('"world6_transition"'),
+		"CONTROL: there is no W6 transition scene — W6 is the last world, and a gate for it would be pinning something absent")

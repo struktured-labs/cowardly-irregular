@@ -720,8 +720,9 @@ static func build_boss_intent(
 		# chose turtle against a 22%-HP cleric — the board an aggressive intent
 		# exists for. The model was not confused about the rules, it was confused
 		# about WHOSE SIDE IT WAS ON, which nothing in the prompt said.
-		+ "THE ADVENTURING PARTY BELOW ARE YOUR ENEMIES. You are fighting them; you\n"
-		+ "do not command, protect or heal them. Their weakness is your opportunity.\n"
+		+ "THE ADVENTURING PARTY BELOW ARE YOUR ENEMIES. You are fighting them; you never\n"
+		+ "command, protect or heal THEM. Guarding YOURSELF is always open to you — the\n"
+		+ "intent you pick is about your own position, not about deserving to attack.\n"
 		+ "Enemy party state:\n%s\n" % party_block
 		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
 	)

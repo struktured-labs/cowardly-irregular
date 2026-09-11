@@ -690,7 +690,15 @@ func cycle_tier() -> void:
 	switch_tier(next as GrindTier)
 
 
-## Check if currently grinding
+## Check if currently grinding — the CONTROLLER's state machine, not AutogrindSystem.is_grinding.
+## ⚠️ TEST SEAM, and deliberately kept. It has zero production callers and `git log -S` shows it was
+## born that way, so it reads as dead code from every scan; it is not. It is how
+## test_autogrind_stop_rule_actually_stops_regression observes that a stop rule stopped the
+## controller — five assertions, one file, and deleting this deletes their only way to look.
+## Production reads AutogrindSystem.is_grinding (a flag) instead, including this file's own :456.
+## The two agree durably — stop_grind clears the flag in the same call — so the split is a naming
+## hazard, not a live divergence: a future caller reaching for `controller.is_grinding()` gets the
+## state machine where every existing site means the flag.
 func is_grinding() -> bool:
 	return _state != State.IDLE
 
