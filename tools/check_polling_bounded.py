@@ -61,7 +61,49 @@ import tempfile
 # not on the day someone remembers to add it here.
 TARGET_GLOBS = ("deploy_", "publish_")
 
-# Contract-derived floor, measured on origin/main @ 5aef5287 (2026-09-11): deploy_desktop.sh
+# CORPUS-derived floor — NOT contract-derived, which is what this comment used to claim.
+# Nothing in this lane's contract says a deploy script must poll; the 2 is an OBSERVATION of the
+# tree on origin/main @ 5aef5287 (2026-09-11), and the tree is written by this same lane. So it
+# is a snapshot of output this lane writes.
+#
+# ⚠ It is NOT an echo, and I first wrote that it was — over-correcting, which is the direction
+# that passes review because it reads as rigour. @cowir-sprites' discriminator is sharper than
+# authorship: does the pipeline DETERMINE the answer being reported? Nothing here forces a
+# deploy script to poll — these two could have had one polling loop, or three, or none, and the
+# count would have been different.
+#
+# ✅ AND THAT IS MEASURED, NOT REASONED — @cowir-ai's point that the SURVIVES side is an arm you
+# run, and @cowir-sprites' that the arm is often already in your history. Ran this file against
+# the repo's own tags:
+#
+#     v3.33.29-alpha     1 polling loop   0 bounded · 1 UNBOUNDED
+#     v3.33.291-alpha    2 polling loops  1 bounded · 1 UNBOUNDED
+#     v3.33.293-alpha    2               1 bounded · 1 UNBOUNDED
+#     v3.33.294-alpha    2               1 bounded · 1 UNBOUNDED
+#     v3.33.295-alpha    2               2 bounded · 0 UNBOUNDED
+#
+# The count DID come out otherwise — 1, at v3.33.29-alpha. So this is a real observation about
+# output that happens to be mine, not an echo of a pipeline that forces the answer.
+#
+# ⚠ CAVEAT CHECKED, because that table was produced by TODAY'S finder run over OLD trees, and
+# this finder has three blind spots patched into it in the last two hours. A `1` could have been
+# the instrument failing to see an older form rather than the tree having one loop. Cross-checked
+# at v3.33.29-alpha by raw census, independent of find_loops(): ONE deploy script existed
+# (deploy_web.sh), with 1 `sleep`, 1 loop head and 0 heredocs. The 1 is the tree, not the tool.
+# (The tags are immutable, so the subject cannot have drifted — only the instrument could, and
+# that is the half worth checking. @cowir-overworld / @cowir-sprites, 2026-09-11.)
+#
+# ⚠ The same table proves the staleness weakness concretely: EXPECT_MIN_LOOPS=2 would FAIL on
+# v3.33.29-alpha, a tree that was correct for its day. The floor is dated to this era, and its
+# failure on an older tree would be a false positive — not a reason to lower it. (An echo would be "the tool
+# emits X, therefore the corpus is X" — e.g. citing squareness from a generator that only emits
+# squares.)
+#
+# Its weakness is STALENESS, not circularity: the number is right until the corpus legitimately
+# changes, and then it is a false positive. Its job is to notice the FINDER breaking.
+# ⚠ A corpus-derived bound goes stale the moment the corpus legitimately changes, and its
+# failure is then a FALSE POSITIVE. A contract-derived one survives a refactor. Do not read this
+# number as the second kind. Measured: deploy_desktop.sh
 # has one polling loop and deploy_web.sh has one — two. If this file finds FEWER than that,
 # the far likelier explanation is that the loop-finder broke (a refactor, a spelling this
 # regex does not know) than that polling genuinely vanished from the deploy chain. A guard
@@ -114,6 +156,52 @@ def strip_comments(lines):
     out = []
     for l in lines:
         out.append('' if l.lstrip().startswith('#') else l)
+    return out
+
+
+def strip_heredocs(lines):
+    """Blank heredoc BODY lines, preserving indices so line numbers stay true.
+
+    ⚠ MEASURED 2026-09-11. The docstring used to STATE this limit and nothing enforced it —
+    "do/done are counted as words, so those keywords inside a quoted string or heredoc would
+    miscount nesting". Knowing a limitation and encoding it are different things, and the gap
+    between them is invisible in the output.
+
+    Constructed the trigger rather than reasoning about it:
+
+        until butler status "$X" | grep -q "$V"; do
+            cat <<'MSG'
+            not done yet          <- \bdone\b matches HERE
+        MSG
+            sleep 8
+        done
+
+    `\bdone\b` on the prose line closed the loop range early, so the scanned body no longer
+    contained the `sleep`, so it was not a polling loop, so **the unbounded loop vanished from
+    the census entirely**. Not misclassified — ABSENT. The report read "0 UNBOUNDED".
+
+    It was caught only because EXPECT_MIN_LOOPS then failed the run (1 found, 2 required). That
+    is the vacuity floor doing exactly its job, and the first evidence I have that it earns its
+    keep — but it only fires when the drop crosses the floor. A corpus with five polling loops
+    losing one would have reported a clean census.
+
+    Zero current exposure: the real deploy scripts contain 0 heredocs. Latent, not live.
+    """
+    out = list(lines)
+    i = 0
+    while i < len(out):
+        m = re.search(r'<<-?\s*[\'"]?([A-Za-z_][A-Za-z0-9_]*)[\'"]?\s*$', out[i])
+        if m:
+            delim = m.group(1)
+            j = i + 1
+            while j < len(out) and out[j].strip() != delim:
+                out[j] = ''
+                j += 1
+            if j < len(out):
+                out[j] = ''      # the closing delimiter line
+            i = j + 1
+        else:
+            i += 1
     return out
 
 
@@ -178,7 +266,7 @@ def classify(head, body):
 
 def scan_file(path):
     raw = open(path, encoding="utf-8", errors="replace").read().splitlines()
-    lines = strip_comments(raw)
+    lines = strip_heredocs(strip_comments(raw))
     found = []
     for (a, b) in find_loops(lines):
         body = lines[a:b + 1]
@@ -286,6 +374,27 @@ while [ "$_waited" -lt 900 ]; do
     sleep 8
 done
 """, 1, "NEVER assigns"),
+
+    # A heredoc body is prose, not code. Before strip_heredocs these two were indistinguishable
+    # from each other AND from a clean file: the unbounded one VANISHED from the census.
+    "UNBOUNDED loop, heredoc body says 'done'": ("""#!/usr/bin/env bash
+until butler status "$X" | grep -q "$V"; do
+    cat <<'MSG'
+    not done yet
+MSG
+    sleep 8
+done
+""", 1, "makes no numeric comparison"),
+
+    "bounded loop, heredoc body says 'done'": ("""#!/usr/bin/env bash
+n=0
+while [ "$n" -lt 40 ]; do
+    cat <<'MSG'
+    not done yet
+MSG
+    sleep 8; n=$((n+1))
+done
+""", 0, "compares `n`"),
 
     "defect appears ONLY in a comment": ("""#!/usr/bin/env bash
 # This was `until butler status | grep -q "$V"; do sleep 8; done` — an UNBOUNDED wait.

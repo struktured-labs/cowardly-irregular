@@ -52,17 +52,42 @@ import tempfile
 
 TARGET_PREFIXES = ("deploy_",)
 
-# Contract-derived floor, measured on origin/main @ 5aef5287 (2026-09-11): deploy_desktop.sh
+# PARTLY contract-derived, and the comment used to claim it fully was. The CONTRACT is three
+# channels across two scripts — web has its own, linux and windows share deploy_desktop.sh — so
+# "at least 2 scripts push" does follow from the channel structure. But the exact 2 is still an
+# OBSERVATION of origin/main @ 5aef5287 (2026-09-11), of a tree this lane writes.
+# ⚠ Its job is to notice the push-site REGEX breaking, not to prove a fact about an independent
+# corpus. Measured: deploy_desktop.sh
 # and deploy_web.sh each contain exactly one push site; the linux/windows wrappers contain
 # none. If FEWER than two scripts carry a push, the likely explanation is that the push-site
 # regex stopped matching — not that the lane stopped publishing. "0 push sites, all gated" is
 # this tool reporting its own blindness as success.
 EXPECT_MIN_PUSHERS = 2
 
-# `"${BUTLER_BIN}" push …`, `butler push …`, `$BUTLER push …`
-PUSH_RE = re.compile(r'(?:\$\{?[A-Za-z_][A-Za-z0-9_]*\}?|\bbutler\b)["\']?\s+push\b')
-# A script that hands off to another deploy script: `exec … deploy_desktop.sh "$@"`.
-DELEGATE_RE = re.compile(r'\b(?:exec|bash|sh|source|\.)\b.*\bdeploy_[a-z_]+\.sh')
+# `"${BUTLER_BIN}" push …`, `butler push …`, `$BUTLER push …`, `$(command -v butler) push …`
+#
+# ⚠ MEASURED 2026-09-11, by probing the half of this file I had hardened LESS. Every one of the
+# eleven selftest probes spelled the push the SAME way — `"${BUTLER_BIN}" push`. So the
+# JUDGEMENT half (gate, default, dominance, wrappers) was armed eight ways and the DETECTION
+# half was armed once. Feeding ten real spellings through audit() found two invisible:
+#
+#     "${BUTLER_BIN}" \            <- line continuation: the push is on the NEXT line
+#         push out/ "$T"
+#     $(command -v butler) push …  <- substitution: `)` sits where the regex wants a name
+#
+# A push site this cannot SEE is reported as "no push site" — which, since the wrapper fix,
+# means the file is checked for delegation instead and passes. **An undetected push is a
+# silent exemption**, the same failure as the wrapper exemption and reached by a different
+# road. Latent, not live: both shipped pushes use a detected form, 0 current violations.
+PUSH_RE = re.compile(r'(?:\$\{?[A-Za-z_][A-Za-z0-9_]*\}?|\bbutler\b|\))["\']?\s+push\b')
+# A script that hands off to another deploy script. DELIBERATELY OVER-BROAD: any mention of
+# another deploy_*.sh counts as a delegation site. The first version required a leading
+# exec/bash/sh/source keyword and missed `PLAT=linux "$D"/deploy_desktop.sh --publish "$@"` —
+# an env-prefixed indirect call, which is an ordinary way to write it.
+# Over-broad is the right error here: a false delegation site costs one extra line that is then
+# checked for --publish, while a missed one is silent. (cowir-sprites' rule — for a corpus,
+# over-broad beats precise, because precise fails by silent exclusion.)
+DELEGATE_RE = re.compile(r'\bdeploy_[a-z_]+\.sh\b')
 # the line that handles --publish, and the flag it sets
 OPTIN_RE = re.compile(r'--publish\b')
 SETS_RE = re.compile(r'\b([A-Za-z_][A-Za-z0-9_]*)=1\b')
@@ -76,6 +101,34 @@ def strip_comments(lines):
     """Blank full-line comments, preserving indices. Both real scripts discuss pushing at
     length in prose; the word `push` in a comment is not a push site."""
     return ['' if l.lstrip().startswith('#') else l for l in lines]
+
+
+def join_continuations(lines):
+    """Fold `\\`-continued lines onto the first one, preserving INDICES so line numbers stay
+    true and dominance comparisons against the gate remain valid.
+
+    A long butler invocation is exactly the kind that gets wrapped — the real ones already
+    carry `--userversion "$USERVERSION"` — so the continuation form is not hypothetical.
+    """
+    out = list(lines)
+    i = 0
+    while i < len(out):
+        if out[i].rstrip().endswith('\\'):
+            j = i
+            merged = out[i].rstrip()[:-1]
+            while j + 1 < len(out):
+                j += 1
+                merged += ' ' + out[j].strip()
+                out[j] = ''          # consumed; index kept so numbering does not shift
+                if not out[j - 1].rstrip().endswith('\\') and not merged.rstrip().endswith('\\'):
+                    break
+                if not lines[j].rstrip().endswith('\\'):
+                    break
+            out[i] = merged
+            i = j + 1
+        else:
+            i += 1
+    return out
 
 
 def find_gate(lines, flag):
@@ -101,9 +154,13 @@ def find_gate(lines, flag):
 
 
 def audit(path):
-    """Return (push_line_numbers, findings[]) for one script."""
+    """Return (push_lines, findings, delegation_lines) for one script.
+
+    delegation_lines is EMITTED, not just used: a wrapper whose hand-off this cannot see would
+    otherwise print the same reassuring line as one that was genuinely checked. See run().
+    """
     raw = open(path, encoding="utf-8", errors="replace").read().splitlines()
-    lines = strip_comments(raw)
+    lines = join_continuations(strip_comments(raw))
 
     pushes = [i for i, l in enumerate(lines) if PUSH_RE.search(l)]
     if not pushes:
@@ -125,17 +182,34 @@ def audit(path):
         # safe because they forward "$@" untouched — safe by how they happen to be written,
         # which is not the same as checked.
         findings = []
-        for i, l in enumerate(lines):
-            if not DELEGATE_RE.search(l):
-                continue
-            if re.search(r'(^|\s)--publish(\s|$|")', l):
-                findings.append((i + 1,
-                                 "this wrapper INJECTS --publish into its delegate, so calling "
-                                 "it without the flag still publishes. A wrapper is a publish "
-                                 "entry point, not an exemption"))
-        return [], findings
+        delegations = [i + 1 for i, l in enumerate(lines) if DELEGATE_RE.search(l)]
+
+        # ⚠ The first version of this checked for --publish ONLY ON THE DELEGATION LINE. That
+        # reads half the script and infers the rest, in the check whose whole subject is "a
+        # wrapper must not introduce the flag". Measured — both of these injected it invisibly:
+        #
+        #     FLAG="--publish"; exec … deploy_desktop.sh $FLAG "$@"
+        #     set -- --publish "$@"; exec … deploy_desktop.sh "$@"
+        #
+        # A wrapper's contract is that it FORWARDS the caller's arguments and adds no publish
+        # flag of its own, so the predicate is "does the literal --publish appear anywhere in
+        # this wrapper's code", not "on one line". Over-broad on purpose: a wrapper with a
+        # legitimate reason to name the flag in live code is rare enough to be worth a look,
+        # and a missed injection is silent. (Comments are already stripped, so a usage comment
+        # mentioning --publish does not trip it.)
+        if delegations:
+            for i, l in enumerate(lines):
+                if re.search(r'(^|[\s="\'(])--publish(\s|$|["\')])', l):
+                    findings.append((i + 1,
+                                     "a delegating wrapper NAMES --publish in its own code. A "
+                                     "wrapper must forward the caller's arguments and add no "
+                                     "publish flag of its own; calling it without the flag may "
+                                     "still publish. A wrapper is a publish entry point, not "
+                                     "an exemption"))
+        return [], findings, delegations
 
     findings = []
+    delegations = []
 
     optin_lines = [i for i, l in enumerate(lines) if OPTIN_RE.search(l)]
     flag = None
@@ -148,7 +222,7 @@ def audit(path):
         findings.append((pushes[0] + 1,
                          "this script pushes, but nothing here parses --publish into a flag — "
                          "there is no opt-in to verify"))
-        return pushes, findings
+        return pushes, findings, delegations
 
     # 2. default must be the NOT-publishing value, set before the argument is parsed.
     init = None
@@ -177,7 +251,7 @@ def audit(path):
                                  f"push site is NOT dominated by the `{flag}` gate "
                                  f"(gate closes at line {gate + 1}) — reachable without "
                                  f"--publish"))
-    return pushes, findings
+    return pushes, findings, delegations
 
 
 def run(tools_dir):
@@ -193,9 +267,27 @@ def run(tools_dir):
     bad = 0
     print(f"[optin] {len(targets)} deploy script(s): {', '.join(targets)}")
     for t in targets:
-        pushes, findings = audit(os.path.join(tools_dir, t))
+        pushes, findings, delegations = audit(os.path.join(tools_dir, t))
         if not pushes and not findings:
-            print(f"[optin]   ok    {t}  no push site; delegates without injecting --publish")
+            if delegations:
+                # EMIT THE SET. @cowir-story's rule: a probe that prints what it LOCATED cannot
+                # have a missing positive control. Measured before this change — a wrapper that
+                # delegates AND injects --publish through a form the regex missed printed the
+                # IDENTICAL line to the safe real wrapper, exit 0. The verdict got more
+                # confident than the check.
+                print(f"[optin]   ok    {t}  no push site; delegates at line(s) "
+                      f"{delegations} without injecting --publish")
+            else:
+                bad += 1
+                print(f"[optin]   NEITHER PUSHES NOR DELEGATES  {t}", file=sys.stderr)
+                print(f"[optin]     this script has no push site AND no reference to another "
+                      f"deploy_*.sh.", file=sys.stderr)
+                print(f"[optin]     If it is a wrapper, the delegation detector missed it and "
+                      f"the hand-off is", file=sys.stderr)
+                print(f"[optin]     UNCHECKED for an injected --publish. If it genuinely does "
+                      f"neither, it does not", file=sys.stderr)
+                print(f"[optin]     belong in the deploy_* namespace this guard trusts.",
+                      file=sys.stderr)
             continue
         if not pushes:
             for (ln, why) in findings:
@@ -292,9 +384,49 @@ fi
     "wrapper that INJECTS --publish into its delegate": ("""#!/usr/bin/env bash
 # a thin wrapper with no push of its own — but it publishes anyway
 exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" --publish "$@"
-""", 1, "INJECTS --publish"),
+""", 1, "NAMES --publish in its own code"),
 
     "wrapper that forwards \"$@\" untouched": ("""#!/usr/bin/env bash
+exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
+""", 0, ""),
+
+    # These two arms prove DETECTION by demanding a finding that is only reachable if the push
+    # is seen at all. If PUSH_RE misses the form, the script reports "no push site" and exits 0
+    # — so a passing arm here cannot be satisfied by blindness.
+    "push SPLIT ACROSS LINES, before the gate": ("""#!/usr/bin/env bash
+PUBLISH=0
+[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }
+"${BUTLER_BIN}" \\
+    push out/ "$T" --userversion "$V"
+if [ "$PUBLISH" != "1" ]; then
+    exit 0
+fi
+echo done
+""", 1, "NOT dominated"),
+
+    "push via $(command -v butler), no gate": ("""#!/usr/bin/env bash
+PUBLISH=0
+[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }
+$(command -v butler) push out/ "$T"
+""", 1, "no gate"),
+
+    "wrapper delegating via an INDIRECT form": ("""#!/usr/bin/env bash
+D="$(dirname "$0")"
+PLAT=linux "$D"/deploy_desktop.sh --publish "$@"
+""", 1, "NAMES --publish in its own code"),
+
+    "wrapper injecting --publish via a VARIABLE": ("""#!/usr/bin/env bash
+FLAG="--publish"
+exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" $FLAG "$@"
+""", 1, "NAMES --publish in its own code"),
+
+    "wrapper prepending --publish via set --": ("""#!/usr/bin/env bash
+set -- --publish "$@"
+exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
+""", 1, "NAMES --publish in its own code"),
+
+    "wrapper naming --publish only in a COMMENT": ("""#!/usr/bin/env bash
+# to publish: tools/deploy_linux.sh --publish <tag>
 exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
 """, 0, ""),
 
@@ -351,7 +483,7 @@ def selftest():
             open(os.path.join(td, "deploy_filler2.sh"), "w").write(GOOD)
 
             def check(td=td, frag=frag):
-                _p, f = audit(os.path.join(td, "deploy_probe.sh"))
+                _p, f, _d = audit(os.path.join(td, "deploy_probe.sh"))
                 if frag == "":
                     return (not f), (f"falsely found {f[0][1][:40]!r}" if f else "no finding")
                 if not f:
