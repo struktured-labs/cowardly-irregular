@@ -779,11 +779,13 @@ func _place_treasure_chests() -> void:
 		# forest_antidote in WATER. Each is re-anchored on the landmark its own id names — the village
 		# at (8,50), the whispering cave at (6,40), a forest patch — rather than on the nearest open
 		# cell, which twice would have put two chests on the same tile.
-		# The 200x140 re-author moved the land under both of these and nobody re-derived them.
-		# (5,2) was INSIDE MOUNTAIN — impassable, so that chest could never be opened. Moved to the
-		# only genuine sealed pocket on the map: a four-tile sand spit north of the pinch at (126,7).
-		# Id kept despite the name no longer fitting; it is a save flag for "already opened".
-		{"id": "w1_secret_ice_hollow", "pos": Vector2(126, 5), "type": "item", "item": "x_potion", "amount": 2},
+		# ⛔ (126,5) WAS OFF THE MAP. Authored positions are MAP CELLS — x*MAP_SCALE*TILE_SIZE, so the
+		# grid is 100x70 and x=126 lands at 8080 px against a 6400 px map. The chest sat 1680 px east
+		# of the world, past the boundary wall, in the void. Its coordinate came from
+		# find_secret_pockets.py, which works in the PNG's TILE grid (200x140); nothing converted it.
+		# The ice hollow is retired: tile (126,7) is a one-tile swamp spine in open water, which a
+		# two-tile cell grid cannot address anyway. W1's secret is now the Sunken Ring, below.
+		{"id": "w1_secret_sunken_ring", "pos": Vector2(17, 65), "type": "item", "item": "x_potion", "amount": 2},
 		# (81,51) is open forest and always was after the re-author — a fine find, not a secret.
 		{"id": "w1_secret_magma_vault", "pos": Vector2(81, 51), "type": "gold", "gold": 999},
 	]
@@ -804,28 +806,26 @@ func _place_treasure_chests() -> void:
 
 
 func _place_hidden_passages() -> void:
-	## A disguised wall is only a secret where removing that cell SEALS something. Measured on the
-	## current map with tools/find_secret_pockets.py: exactly one cell in W1 qualifies, the sand
-	## pinch at (126,7) that cuts off four tiles of beach. The two coordinates authored here predate
-	## the 200x140 re-author — (6,2) had become solid mountain, so the wall and the chest behind it
-	## were both unreachable, and (81,50) had become open forest, so the wall sealed nothing and
-	## stood in the woods like scenery. The comment above them still said "at the H map markers";
-	## the map's two H markers are at (12,4) and (162,100) and both seal zero cells.
-	## ⚠️ THE DEPTH RULE ABOVE THIS LINE WAS WRONG FOR ONE HOUR AND THE UNITS ARE WHY. The clone is
-	## displaced 140.6 px, which is 4.4 WORLD TILES but only 2.2 MAP CELLS — MAP_SCALE is 2, so one
-	## painted cell is two world tiles. I measured 4.4, wrote "any pocket shallower than five tiles",
-	## and applied it to a map measured in cells, which condemned a four-cell pocket that is
-	## comfortably deeper than 2.2. The walk that "proved" it unenterable had the same bug: it
-	## started at world tile (126,12) when it meant map cell (126,12), which is a different place.
-	## Re-walked with the conversion right, a body goes from cell (126,12) up to (126,4.2) — through
-	## the pinch and into the pocket. The secret works.
+	## A disguised wall is only a secret where removing that cell SEALS something, and for a year W1
+	## had nothing that qualified: find_secret_pockets.py reports exactly one pinch, and that pinch is
+	## a single tile, which a two-tile cell grid cannot address. The authored answer to that was a
+	## coordinate in the WRONG UNIT — see the chest note above — so W1's only secret was in the void.
+	## The Sunken Ring is authored terrain instead of a found pocket: a rock crater carved into 256
+	## untouched sand pixels of the Sandrift waste, the emptiest region on the map.
+	## ⚠️ THE DEPTH RULE IS WHY IT IS A RING AND NOT A CORRIDOR. The collider clone is displaced
+	## +140.6 px = 4.4 world tiles, so a body walking north stops 4.4 tiles short of the wall it can
+	## see. Measured on the real body: it enters from tile y 138, travels 11.37 tiles and stops at
+	## y 126.6 — the back four rows of a 12-tile chamber are unreachable and nothing may be placed
+	## there. A wide chamber absorbs that; a narrow dead end is simply sealed.
 	var passages = [
-		{"id": "w1_ice_hollow", "pos": Vector2(126, 7), "disguise": "mountain"},
+		{"id": "w1_sunken_ring", "pos": Vector2(17, 67), "disguise": "mountain", "w": 3, "h": 2},
 	]
 	for p in passages:
 		var passage = HiddenPassage.new()
 		passage.passage_id = p["id"]
 		passage.disguise = p["disguise"]
+		passage.passage_width = int(p.get("w", 1))
+		passage.passage_height = int(p.get("h", 1))
 		passage.position = Vector2(p["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, p["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(passage)
 
@@ -976,6 +976,8 @@ func _place_signposts() -> void:
 		{"pos": Vector2(79, 57), "text": "→ Ironhaven Village"},
 		# World portal signpost (appears regardless — context clue)
 		{"pos": Vector2(88, 30), "text": "→ World Portal  ⚙ Mundane Sprawl"},
+		# Deep Sandrift: the only thing out here, and it is pointing at the only other thing out here.
+		{"pos": Vector2(11, 65), "text": "↦ nothing this way (surveyed twice)"},
 	]
 	for s in signs:
 		var post = Signpost.new()

@@ -201,7 +201,7 @@ func _place_treasure_chests() -> void:
 		# actually walk into. Placed at (60,3) because that is where a probe walking north from (60,9)
 		# comes to rest, having passed THROUGH the passage cell; the pocket analysis suggested (77,12)
 		# and I could not verify that cell is inside the sealed set rather than open ground.
-		{"id": "w6_absence_elixir", "pos": Vector2(60, 3), "type": "item", "item": "elixir", "amount": 3},
+		{"id": "w6_absence_elixir", "pos": Vector2(33, 7), "type": "item", "item": "elixir", "amount": 3},
 	]
 	for c in chests:
 		var chest = TreasureChestScript.new()
@@ -223,12 +223,12 @@ func _place_treasure_chests() -> void:
 ## at (110,62) looks sealed on the map and a body walking north stops in the doorway, so it is not a
 ## secret, it is a wall with a gap drawn in it.
 func _place_hidden_passages() -> void:
-	const HiddenPassageScript = preload("res://src/exploration/HiddenPassage.gd")
-	var passage = HiddenPassageScript.new()
-	passage.passage_id = "w6_absence"
-	passage.disguise = "cave"
-	passage.position = Vector2(60 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 5 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
-	add_child(passage)
+	## ⛔ RETIRED. This passage was authored at map cell (60,5) and W6's cell grid is 40x35 — it stood
+	## 1280 px east of the world. And it could never have been a secret anyway: a flood from the
+	## spawn reaches ALL 2143 walkable tiles in W6, so there is no sealed pocket for a disguised wall
+	## to seal. The elixir moved to the farthest reachable cell instead — 120 steps from the
+	## entrance, which is a find, not a secret, and the comment says so rather than the id.
+	pass
 
 
 func _place_save_point() -> void:
