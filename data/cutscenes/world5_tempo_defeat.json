@@ -1,9 +1,9 @@
 {
   "id": "world5_tempo_defeat",
   "title": "Tempo of Sequence — Aftermath",
-  "world": 5,
+  "world": 6,
   "trigger": "boss_tempo_abstract_defeated",
-  "background": "node_prime",
+  "background": "vertex_village",
   "description": "The sequence broke. Not broken — completed. First, then, after. After is now. Seven hundred and forty-two before the party, none of them passed. The sequence was waiting for exactly this.",
   "steps": [
     {

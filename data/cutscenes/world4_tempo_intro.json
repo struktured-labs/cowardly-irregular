@@ -1,9 +1,9 @@
 {
   "id": "world4_tempo_intro",
   "title": "Tempo of the Clock Cycle",
-  "world": 4,
+  "world": 5,
   "trigger": "boss_tempo_futuristic",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "description": "The Tempo of the Clock Cycle exists between processor ticks. It finds the party's reaction time deeply inefficient.",
   "steps": [
     {

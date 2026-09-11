@@ -1,9 +1,9 @@
 {
   "id": "world5_arbiter_defeat",
   "title": "Arbiter of Function — Aftermath",
-  "world": 5,
+  "world": 6,
   "trigger": "boss_arbiter_abstract_defeated",
-  "background": "node_prime",
+  "background": "vertex_village",
   "description": "Function: undefined. The Arbiter has evaluated everything that has ever passed through here. Nothing has answered the question the way the party did — by making the question irrelevant.",
   "steps": [
     {

@@ -1,9 +1,9 @@
 {
   "id": "world5_arbiter_intro",
   "title": "Arbiter of Function",
-  "world": 5,
+  "world": 6,
   "trigger": "boss_arbiter_abstract",
-  "background": "node_prime",
+  "background": "vertex_village",
   "description": "The Arbiter of Function exists as pure purpose without context. It asks each party member to demonstrate what they are for.",
   "steps": [
     {

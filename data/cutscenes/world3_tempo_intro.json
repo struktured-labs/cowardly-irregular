@@ -1,9 +1,9 @@
 {
   "id": "world3_tempo_intro",
   "title": "Tempo of the Shift",
-  "world": 3,
+  "world": 4,
   "trigger": "boss_tempo_industrial",
-  "background": "steampunk_workshop",
+  "background": "industrial_factory",
   "description": "The Tempo of the Shift materializes when the shift bell rings in the manufactory district. It has been running shifts since before anyone arrived.",
   "steps": [
     {

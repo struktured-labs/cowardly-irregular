@@ -1,9 +1,9 @@
 {
   "id": "world3_tempo_defeat",
   "title": "Tempo of the Shift — Aftermath",
-  "world": 3,
+  "world": 4,
   "trigger": "boss_tempo_industrial_defeated",
-  "background": "steampunk_workshop",
+  "background": "industrial_factory",
   "description": "The shift bell has not rung. The Tempo stands at the junction, clocked in since before the gears were installed, discovering it cannot remember a clock-out.",
   "steps": [
     {
