@@ -41,18 +41,27 @@ signal choice_cancelled()
 var cancellable: bool = true
 
 
-## The cap printed on the pad button an action fires from; "A"/"B" were wrong on every Nintendo-family pad (8BitDo confirm sits under Ⓑ).
-static func pad_glyph(action: String, fallback: String, device_name: String = "") -> String:
-	if InputProfileManager:
-		return InputProfileManager.glyph_for_action(action, device_name)
-	return fallback
+## The pad cap AND its separator, or nothing at all when no pad is attached.
+## glyph_for_action answers an absent device from the family table, which defaults to
+## xbox — right for an unknown pad, a lie for no pad. The keys are printed beside it
+## either way, so a keyboard player needs the token gone, not swapped for hint_for_action
+## (that returns the key, rendering "[Enter/Enter/Click]").
+static func pad_token(action: String, device_name: String = "") -> String:
+	if InputProfileManager == null:
+		return ""
+	if device_name == "" and Input.get_connected_joypads().is_empty():
+		return ""
+	var cap: String = str(InputProfileManager.glyph_for_action(action, device_name))
+	if cap == "" or cap == "?":
+		return ""
+	return "%s/" % cap
 
 
 static func hint_text(can_cancel: bool, device_name: String = "") -> String:
-	var confirm := "[%s/Enter/Click] Confirm" % pad_glyph("ui_accept", "A", device_name)
+	var confirm := "[%sEnter/Click] Confirm" % pad_token("ui_accept", device_name)
 	if not can_cancel:
 		return "%s    (↑↓/D-pad)" % confirm
-	return "%s    [%s/Esc/RClick] Cancel    (↑↓/D-pad)" % [confirm, pad_glyph("ui_cancel", "B", device_name)]
+	return "%s    [%sEsc/RClick] Cancel    (↑↓/D-pad)" % [confirm, pad_token("ui_cancel", device_name)]
 
 
 # ── Layout constants ──────────────────────────────────────────────────────────
