@@ -290,6 +290,33 @@ func test_the_four_repaired_surfaces_actually_ask_the_authority() -> void:
 			"%s must ask the authority for its button glyph -- a COMMENT naming it does not count" % f.get_file())
 
 
+## ⛔ THE CENSUS PATTERN IS FACE-LETTERS-ONLY, asserted here rather than described in a comment.
+##
+## Both DEFERRED entries I shipped ("Sel:Auto", "Start:Save") were INERT SUPPRESSIONS: I found them
+## by eye while reading a line, wrote reasons, and published them as guarded pins — but the census
+## matches `[ABXY]` and can never emit a non-face name. Measured by deleting the entry: the census
+## stayed green. An allowlist line for what the detector cannot emit reads as coverage from BOTH
+## sides, and neither side is doing the work the other appears to delegate.
+##
+## ⚠️ AND THE ARM BELOW GOES VACUOUS WHEN THE TABLE DRAINS. @cowir-sprites shipped that exact
+## failure: a loop over an emptied list asserts nothing, and GUT cannot flag it because one assert
+## elsewhere in the call graph clears [Risky]. Measured here — DEFERRED := {} scores Passing 6.
+## So this arm lives OUTSIDE any loop and holds whatever the table's size: it pins the SCOPE of the
+## detector, so widening the pattern forces the claim to be restated.
+func test_the_census_scope_is_what_this_file_claims() -> void:
+	var re := RegEx.create_from_string("(Press [ABXY]\\b|\\b[ABXY]:[A-Za-z]|\\b[ABXY] or [ABXY]\\b|\\[[ABXY]\\])")
+	assert_not_null(re, "CONTROL: the census pattern must compile")
+	for face in ["Press A", "B:Cancel", "A or B", "[X]"]:
+		assert_not_null(re.search(face), "the census MUST emit a face-button caption: %s" % face)
+	## The limitation, encoded. @cowir-controller derives the banned set from BUTTON_NAMES, which
+	## covers every family's spelling of every NON-face button; this census does not, and a reader
+	## must not take its green as covering them. If someone widens the pattern, these red and the
+	## file's claims (and any now-real DEFERRED entry) have to be rewritten deliberately.
+	for non_face in ["Sel:Auto", "Start:Save", "L:+AND", "R:+Action"]:
+		assert_null(re.search(non_face),
+			"census scope changed: it now emits '%s'. Widening is GOOD -- update this arm, the header, and any DEFERRED entry that was previously inert" % non_face)
+
+
 func test_deferred_entries_carry_a_reason_and_are_still_present() -> void:
 	var all := ""
 	for f in _gd_files():
