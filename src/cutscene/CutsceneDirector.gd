@@ -1329,11 +1329,14 @@ func _step_face_actor(step: Dictionary) -> void:
 	var a := _get_actor(str(step.get("id", "")))
 	if a == null:
 		return
-	var toward: String = str(step.get("toward", ""))
-	if toward != "":
-		var other := _get_actor(toward)
-		if other:
-			a.face_toward(other.position)
+	# `toward` is an actor id OR an [x,y] mark — the same shapes camera_focus takes; an unresolvable target warns instead of silently facing nowhere.
+	var toward = step.get("toward", null)
+	if toward != null and str(toward) != "":
+		var pos := _resolve_point_or_actor(toward)
+		if pos == Vector2.INF:
+			push_warning("CutsceneDirector face_actor: '%s' cannot face toward %s — not an actor in this scene nor an [x,y]" % [step.get("id", ""), str(toward)])
+			return
+		a.face_toward(pos)
 		return
 	a.set_facing_name(str(step.get("dir", "down")))
 
