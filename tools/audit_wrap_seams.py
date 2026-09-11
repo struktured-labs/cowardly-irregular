@@ -163,6 +163,16 @@ def controls():
 
     CONSTRUCTED, not sampled: a control drawn from the corpus decays with it.
     Each feeds the REAL function above rather than a reimplementation.
+
+    ⚠️ The extraction that made these possible is behaviour-preserving, VERIFIED
+    against origin/main's copy of this tool rather than asserted: both print
+    "146 looping beds measured, 0 jump more than 12 dB / 0 beds carry silence
+    padding at the wrap", and the outputs are identical apart from the CONTROL
+    lines. The commit that landed this claimed that comparison and the command
+    had not run -- uv refused to spawn the snapshot because it lacked a .py
+    extension, and "Failed to spawn" scrolled past as though it were a diff.
+    The claim was true; the evidence for it did not exist when I made it. Being
+    correct is not the same as having checked (cowir-deploy, 2026-09-11).
     """
     t = np.linspace(0.0, 4.0, int(4.0 * SR), endpoint=False)
     tone = 0.5 * np.sin(2.0 * np.pi * 220.0 * t)
