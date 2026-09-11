@@ -674,6 +674,11 @@ func test_no_cutscene_step_type_can_dispatch_another_cutscene() -> void:
 ## report is only as strong as this list is complete, and nothing in the test can
 ## know about a form nobody has thought of (cowir-adhoc, 2026-09-11).
 ## ATTRIBUTABLE forms — these name a scene id this predicate can tie to a bed.
+## ⚠️ BOTH LISTS ARE FLOORS, NOT TOTALS. Together they read as a partition of
+## five; they are not. cowir-adhoc published "two dispatch forms", was corrected
+## to five, then to six, inside one hour of 2026-09-11 — each time from outside
+## the lane that wrote it. An exhaustive count of FORMS drifts on discovery the
+## way a file count drifts on content. Treat a new form as expected.
 const DISPATCH_FORMS := ["return \"<id>\"", "play_cutscene(\"<id>\")", "for <v> in <TABLE>: return <v>"]
 ## UNATTRIBUTABLE forms — these dispatch a scene whose id is a VARIABLE or a
 ## composed path, so no static read can say WHICH scene. Deliberately not
@@ -832,7 +837,7 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 			stranded.append("%s <- %s" % [id, naming])
 
 	assert_eq(stranded.size(), 0,
-		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds. DISPATCH CORPUS: %s. FORMS ATTRIBUTED: %s. FORMS THAT EXIST AND CANNOT BE ATTRIBUTED: %s — a bed reached only through one of those strands here as a FALSE ALARM, so treat this list as candidates, not a verdict. A bed is dead only if no FOURTH form exists — the loop form was invisible here until 2026-09-11 and 20 scenes read as dead the whole time" % [stranded.size(), stranded, DISPATCH_ROOTS, DISPATCH_FORMS, UNATTRIBUTABLE_FORMS])
+		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds. DISPATCH CORPUS: %s. FORMS ATTRIBUTED (a floor): %s. FORMS THAT EXIST AND CANNOT BE ATTRIBUTED (also a floor): %s — a bed reached only through one of those strands here as a FALSE ALARM, so treat this list as candidates, not a verdict. A bed is dead only if no FOURTH form exists — the loop form was invisible here until 2026-09-11 and 20 scenes read as dead the whole time" % [stranded.size(), stranded, DISPATCH_ROOTS, DISPATCH_FORMS, UNATTRIBUTABLE_FORMS])
 	assert_eq(revived.size(), 0,
 		"pinned beds whose scene is now dispatched (%s) — the epilogue landed; delete the entries" % [revived])
 
