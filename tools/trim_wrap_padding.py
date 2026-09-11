@@ -145,7 +145,18 @@ def main():
     fixed, skipped, refused = [], 0, []
     for key in sorted(tracks):
         meta = tracks[key]
-        if not isinstance(meta, dict) or not meta.get("loop") or meta.get("stinger"):
+        ## ⛔ ONE SKIP WAS ANSWERING TWO DIFFERENT QUESTIONS. Excluding stingers is
+        ## right for a WRAP check — they do not loop, so there is no join — and
+        ## wrong for a PAD check: a stinger with 510ms of leading silence is
+        ## half a second between pressing Limit Break and hearing it, and
+        ## trailing silence delays the bed it resumes. Measured 2026-09-11:
+        ## 5 of 19 stingers carry >=40ms, worst job_cleric_special at
+        ## 510ms head + 660ms tail inside a 14.7s file.
+        ##
+        ## The `loop` skip stays: a track with no file and no loop is not a bed.
+        if not isinstance(meta, dict):
+            continue
+        if not meta.get("loop") and not meta.get("stinger"):
             continue
         if args.only and key not in args.only:
             continue

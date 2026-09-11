@@ -1276,7 +1276,7 @@
       "prompt": "Boss defeated fanfare. Dramatic brass chord resolving from tension to triumph, longer than normal victory — the relief of a hard-won boss fight. Weight lifting, tension releasing, a single held triumphant note. 8 seconds.",
       "style": "JRPG stinger, dramatic resolution, brass fanfare, relief, 8 seconds",
       "model": "suno-v4",
-      "duration": 9.84,
+      "duration": 9.2,
       "loop": false,
       "generated_at": "2026-04-14",
       "stinger": true
@@ -1302,7 +1302,7 @@
       "prompt": "Save point activation sound. Gentle reassuring chime with a soft shimmer — the comfort of knowing your progress is preserved. Warm, brief, safe. 3 seconds.",
       "style": "JRPG stinger, save point, gentle chime, reassuring, 3 seconds",
       "model": "suno-v4",
-      "duration": 7.2,
+      "duration": 7.0,
       "loop": false,
       "generated_at": "2026-04-14",
       "stinger": true
@@ -1477,7 +1477,7 @@
       "prompt": "Cleric special attack stinger. Holy choir swelling upward, warm radiant light in sound, healing shimmer cascading outward. Divine power channeled through prayer. Bright, pure, overwhelming warmth. 8 seconds.",
       "style": "JRPG special attack, holy choir, ascending light, warm radiance, healing shimmer, short, 8 seconds",
       "model": "suno-v4",
-      "duration": 14.68,
+      "duration": 13.5,
       "loop": false,
       "generated_at": "2026-04-14",
       "stinger": true
@@ -1503,7 +1503,7 @@
       "prompt": "Rogue special attack stinger. Silence — then a blindingly fast slash. Sharp percussion hit, the whisper of a blade that was already past you before you heard it. Lethal precision, no wasted motion. 6 seconds.",
       "style": "JRPG special attack, quick slash, stealthy approach, sudden violence, sharp percussion, short, 6 seconds",
       "model": "suno-v4",
-      "duration": 4.72,
+      "duration": 4.5,
       "loop": false,
       "generated_at": "2026-04-14",
       "stinger": true
@@ -1542,7 +1542,7 @@
       "prompt": "Ninja special attack stinger. Rapid-fire multi-hit slashes so fast they overlap — wind cutting, afterimage whooshes, then silence. The attack was over before it started. Blinding speed compressed into 6 seconds.",
       "style": "JRPG special attack, rapid multi-hit, wind slash, afterimage, blinding speed, short, 6 seconds",
       "model": "suno-v4",
-      "duration": 3.32,
+      "duration": 2.8,
       "loop": false,
       "generated_at": "2026-04-14",
       "stinger": true
