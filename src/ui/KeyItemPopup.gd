@@ -112,7 +112,9 @@ func _present(item: Dictionary) -> void:
 
 	# Hint
 	var hint := Label.new()
-	hint.text = "Press A / Z to continue"
+	# Dismisses on ui_accept OR ui_cancel (:145) — both derived; "A / Z" was right on no pad at all.
+	hint.text = "%s or %s to continue" % [InputProfileManager.hint_for_action("ui_accept"),
+		InputProfileManager.hint_for_action("ui_cancel")]
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.position = Vector2(0, PANEL_H - 22)
 	hint.size = Vector2(PANEL_W, 18)

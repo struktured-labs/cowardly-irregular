@@ -79,7 +79,8 @@ func _build_ui() -> void:
 		y += 86.0
 
 	var hint := Label.new()
-	hint.text = "[Up/Down] Browse   [B/X] Close"
+	# [Up/Down] is a D-PAD DIRECTION and is device-neutral, so it stays. The close button is not.
+	hint.text = "[Up/Down] Browse   %s Close" % InputProfileManager.hint_for_action("ui_cancel")
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	hint.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
 	hint.position = Vector2(panel_x, vp.y - 34)
