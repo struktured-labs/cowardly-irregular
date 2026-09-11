@@ -243,6 +243,16 @@ func test_the_comment_stripper_cuts_only_what_it_should() -> void:
 		assert_eq(_code_only(c[0]), c[1], c[2])
 
 
+## ⚠️ NAMED MEMBERSHIP, not a floor. @cowir-adhoc: "a floor protects against total vacuity and is
+## blind to partial loss", learned from a red where `gates >= 4` stayed green after one gate was
+## commented out. @cowir-controller hit it the same hour. Measured here before changing anything:
+##
+##   both LANE_DIRS lost   EC=1  Failing 2   the floor CAUGHT it
+##   ONE lane dir lost     EC=0  Failing —   SILENT. Half the corpus gone, green, Asserts unmoved.
+##
+## And partial is the likelier failure by a distance — a rename or a move touches one directory,
+## not both. The case a floor catches is the one least likely to happen. @cowir-overworld's
+## assert-count detector is blind here too: these asserts aggregate, so the number never moves.
 func test_the_census_reads_a_real_corpus() -> void:
 	var files := _gd_files()
 	assert_gt(files.size(), 5, "CONTROL: the lane dirs must yield real files, or every assert below is vacuous")
@@ -250,6 +260,15 @@ func test_the_census_reads_a_real_corpus() -> void:
 	for f in files:
 		total += FileAccess.get_file_as_string(f).length()
 	assert_gt(total, 20000, "CONTROL: and real content, not empty reads")
+
+	## Every declared directory must CONTRIBUTE, and the failure names the one that went quiet.
+	for d in LANE_DIRS:
+		var from_dir := 0
+		for f in files:
+			if f.begins_with(d + "/"):
+				from_dir += 1
+		assert_gt(from_dir, 0,
+			"%s contributed ZERO files — the census silently covered only the other lane dir, and a green below would be half a result reported as a whole one" % d)
 
 
 func test_no_face_button_letter_is_frozen_into_a_caption() -> void:
