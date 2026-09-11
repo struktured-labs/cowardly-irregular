@@ -117,6 +117,52 @@ def strip_comments(lines):
     return out
 
 
+def strip_heredocs(lines):
+    """Blank heredoc BODY lines, preserving indices so line numbers stay true.
+
+    ⚠ MEASURED 2026-09-11. The docstring used to STATE this limit and nothing enforced it —
+    "do/done are counted as words, so those keywords inside a quoted string or heredoc would
+    miscount nesting". Knowing a limitation and encoding it are different things, and the gap
+    between them is invisible in the output.
+
+    Constructed the trigger rather than reasoning about it:
+
+        until butler status "$X" | grep -q "$V"; do
+            cat <<'MSG'
+            not done yet          <- \bdone\b matches HERE
+        MSG
+            sleep 8
+        done
+
+    `\bdone\b` on the prose line closed the loop range early, so the scanned body no longer
+    contained the `sleep`, so it was not a polling loop, so **the unbounded loop vanished from
+    the census entirely**. Not misclassified — ABSENT. The report read "0 UNBOUNDED".
+
+    It was caught only because EXPECT_MIN_LOOPS then failed the run (1 found, 2 required). That
+    is the vacuity floor doing exactly its job, and the first evidence I have that it earns its
+    keep — but it only fires when the drop crosses the floor. A corpus with five polling loops
+    losing one would have reported a clean census.
+
+    Zero current exposure: the real deploy scripts contain 0 heredocs. Latent, not live.
+    """
+    out = list(lines)
+    i = 0
+    while i < len(out):
+        m = re.search(r'<<-?\s*[\'"]?([A-Za-z_][A-Za-z0-9_]*)[\'"]?\s*$', out[i])
+        if m:
+            delim = m.group(1)
+            j = i + 1
+            while j < len(out) and out[j].strip() != delim:
+                out[j] = ''
+                j += 1
+            if j < len(out):
+                out[j] = ''      # the closing delimiter line
+            i = j + 1
+        else:
+            i += 1
+    return out
+
+
 def find_loops(lines):
     """Yield (start_idx, end_idx) for every loop, using do/done depth on stripped lines."""
     loops = []
@@ -178,7 +224,7 @@ def classify(head, body):
 
 def scan_file(path):
     raw = open(path, encoding="utf-8", errors="replace").read().splitlines()
-    lines = strip_comments(raw)
+    lines = strip_heredocs(strip_comments(raw))
     found = []
     for (a, b) in find_loops(lines):
         body = lines[a:b + 1]
@@ -286,6 +332,27 @@ while [ "$_waited" -lt 900 ]; do
     sleep 8
 done
 """, 1, "NEVER assigns"),
+
+    # A heredoc body is prose, not code. Before strip_heredocs these two were indistinguishable
+    # from each other AND from a clean file: the unbounded one VANISHED from the census.
+    "UNBOUNDED loop, heredoc body says 'done'": ("""#!/usr/bin/env bash
+until butler status "$X" | grep -q "$V"; do
+    cat <<'MSG'
+    not done yet
+MSG
+    sleep 8
+done
+""", 1, "makes no numeric comparison"),
+
+    "bounded loop, heredoc body says 'done'": ("""#!/usr/bin/env bash
+n=0
+while [ "$n" -lt 40 ]; do
+    cat <<'MSG'
+    not done yet
+MSG
+    sleep 8; n=$((n+1))
+done
+""", 0, "compares `n`"),
 
     "defect appears ONLY in a comment": ("""#!/usr/bin/env bash
 # This was `until butler status | grep -q "$V"; do sleep 8; done` — an UNBOUNDED wait.
