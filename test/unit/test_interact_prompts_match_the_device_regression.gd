@@ -123,7 +123,29 @@ func _frozen_code_lines(src: String) -> Array[String]:
 			continue
 		if line.contains("\"[A]") or line.contains("\"[B]"):
 			hits.append(line)
+			continue
+		# A hardcoded GLYPH is the same defect in a different costume — and it is the repair this
+		# guard's own red INVITES: told "[A]" is wrong, the cheap fix is to paste the "proper"
+		# symbol, which is Nintendo's and equally wrong on Xbox and PlayStation. Derived from
+		# FACE_GLYPHS so a new family cannot open a hole here.
+		for g in _all_face_glyphs():
+			if line.contains("\"%s " % g) or line.contains("\"%s\"" % g):
+				hits.append(line)
+				break
 	return hits
+
+
+## Every distinct face glyph across all families, DEDUPLICATED. Ⓐ appears in both the Nintendo
+## table (index 1) and the Xbox table (index 0), so a naive nested loop counts one line twice —
+## it did, and the count assert caught it.
+func _all_face_glyphs() -> Array[String]:
+	var out: Array[String] = []
+	for family in InputProfileManager.FACE_GLYPHS:
+		for idx in InputProfileManager.FACE_GLYPHS[family]:
+			var g: String = str(InputProfileManager.FACE_GLYPHS[family][idx])
+			if not out.has(g):
+				out.append(g)
+	return out
 
 
 ## CONTROL: the walker must actually be walking, and must reach files the LIST does not name.
@@ -159,3 +181,19 @@ func test_the_line_scanner_catches_every_authoring_form() -> void:
 		"CONTROL: a COMMENT must NOT be flagged — ReadableProp documents its own fix that way")
 	assert_eq(_frozen_code_lines("\t_label.text = hint + \" Examine\"").size(), 0,
 		"CONTROL: a derived line must not be flagged")
+
+## THE THIRD PASS. Two arms above already shipped; this one exists because five lanes tonight found
+## a SECOND defect in a file that had just survived the first check, and the named mechanism is that
+## fixing a guard creates the belief you understand it. Looked again and the gap was the repair the
+## red invites: paste the glyph instead of the letter.
+func test_a_hardcoded_glyph_is_caught_too() -> void:
+	var nin: String = str(InputProfileManager.FACE_GLYPHS["nintendo"][1])
+	var ps: String = str(InputProfileManager.FACE_GLYPHS["playstation"][1])
+	assert_eq(_frozen_code_lines("\t_label.text = \"%s Examine\"" % nin).size(), 1,
+		"a frozen Nintendo glyph must be caught — it is wrong on Xbox and PlayStation exactly as [A] was")
+	assert_eq(_frozen_code_lines("\t_label.text = \"%s Examine\"" % ps).size(), 1,
+		"and a frozen PlayStation glyph, which is wrong everywhere else")
+	assert_eq(_frozen_code_lines("\t_label.text = hint + \" Examine\"").size(), 0,
+		"CONTROL: a derived line must still not fire")
+	assert_eq(_frozen_code_lines("## the old \"%s\" named the wrong cap" % nin).size(), 0,
+		"CONTROL: a glyph inside a COMMENT must not fire — the same exclusion the letters get")
