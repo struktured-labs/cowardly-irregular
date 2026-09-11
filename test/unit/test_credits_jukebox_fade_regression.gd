@@ -38,8 +38,11 @@ func test_jukebox_close_no_resume_uses_fade() -> void:
 	# to
 	#   elif _resume_track == "" and current_track != "":
 	# so a jukebox opened from genuine silence doesn't fade-out silence.
-	# Match either form with a prefix search.
-	var branch_idx = text.find("elif _resume_track == \"\"")
+	# 2026-09-11: the snapshot became a full music STATE (play_area_music
+	# clears _current_music, so a track-only one read "" in every map and
+	# this branch fired on every close), and the clause reads the state's
+	# `playing` flag. Same two conditions, both still required.
+	var branch_idx = text.find("elif not bool(_resume_state.get(\"playing\"")
 	assert_true(branch_idx > -1, "JukeboxMenu must still have the no-resume-track branch")
 	if branch_idx == -1:
 		return
