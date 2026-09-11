@@ -89,6 +89,36 @@ func test_deep_check_rejects_out_of_kit_ability() -> void:
 	assert_true("not in fighter's level-1 kit" in _error_blob(result),
 				"deep-check error must name the kit-mismatch; got: %s" % _error_blob(result))
 
+## ── the player is told what was changed ─────────────────────────────────
+
+func test_a_supplied_guard_reaches_the_result_the_ui_reads() -> void:
+	## WIRING, and the aliasing is subtle enough to need it: repair_notes is declared
+	## BEFORE the result dict and appended to AFTER it, so the result sees the edits
+	## only because both reference the same Array. Rewriting that append as a
+	## reassignment would silently empty the list the confirm screen renders, with
+	## every other test still green.
+	fake_backend.prime_next(_payload(
+		"[{\"conditions\":[{\"type\":\"always\"}],\"actions\":[{\"type\":\"ability\",\"id\":\"power_strike\",\"target\":\"lowest_hp_enemy\"}],\"enabled\":true}]"))
+	var result: Dictionary = await rc.compose_async(rc.DOMAIN_AUTOBATTLE, "hit hard", "hero", [])
+	assert_eq(result.get("source", ""), "llm", "CONTROL: the composition must have survived")
+	var notes = result.get("notes", [])
+	assert_true(notes is Array and (notes as Array).size() > 0,
+				"the edit must reach result.notes — the confirm screen has nothing else to show")
+	assert_true(str((notes as Array)[0]).find("power_strike") != -1,
+				"and must name the rule it changed")
+
+
+func test_an_unedited_composition_reports_no_adjustments() -> void:
+	## CONTROL: a ruleset that already carried its guard must come back with an empty
+	## notes list, or the confirm screen claims edits that never happened.
+	fake_backend.prime_next(_payload(
+		"[{\"conditions\":[{\"type\":\"mp_percent\",\"op\":\">=\",\"value\":95}],\"actions\":[{\"type\":\"ability\",\"id\":\"power_strike\",\"target\":\"lowest_hp_enemy\"}],\"enabled\":true}]"))
+	var result: Dictionary = await rc.compose_async(rc.DOMAIN_AUTOBATTLE, "hit hard", "hero", [])
+	assert_eq(result.get("source", ""), "llm", "CONTROL: must survive")
+	assert_eq(((result.get("notes", []) as Array)).size(), 0,
+				"an untouched ruleset must report no adjustments")
+
+
 ## ── the prompt actually receives the kit ────────────────────────────────
 
 func test_the_composed_prompt_carries_the_characters_real_kit() -> void:

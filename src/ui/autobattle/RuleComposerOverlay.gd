@@ -266,10 +266,21 @@ func _populate_preview(result: Dictionary) -> void:
 	var preview_rules = result.get("rules", [])
 	var rule_count: int = preview_rules.size() if preview_rules is Array else 0
 	var desc: String = str(result.get("description", ""))
-	if desc.is_empty():
-		label.text = "%d rule(s) composed." % rule_count
-	else:
-		label.text = "%s\n%d rule(s) composed." % [desc, rule_count]
+	var lines: PackedStringArray = PackedStringArray()
+	if not desc.is_empty():
+		lines.append(desc)
+	lines.append("%d rule(s) composed." % rule_count)
+	# The composer silently edits rules that would fizzle — adding the MP guard the
+	# validator requires. Installing a ruleset that differs from what was asked for
+	# without saying so is the silent-change half of this project's silent-failure
+	# rule, so the preview names every edit before the player confirms.
+	var notes = result.get("notes", [])
+	if notes is Array and (notes as Array).size() > 0:
+		lines.append("")
+		lines.append("Adjusted so your rules actually run:")
+		for n in (notes as Array):
+			lines.append("  - %s" % str(n))
+	label.text = "\n".join(lines)
 
 
 func _show_error(errors: Array) -> void:
