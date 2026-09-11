@@ -11,6 +11,13 @@ extends GutTest
 ## EIGHT diverge -- ADMIN-01, DEBUG-7, FIREWALL-ALPHA, SUDO-1, User-7734, ARIA-9, Half-Grown Figure,
 ## Maint. Unit M-07 -- keyed `admin_01` by the quest system and `admin-01` by the reward ledger.
 ##
+## ⚠️ THAT LIST IS A DATED SNAPSHOT AND IT SHRINKS ON ITS OWN. Any NPC granted an explicit npc_id
+## leaves the set, for any reason -- @cowir-story's `239ba029` gives FIREWALL-ALPHA
+## `firewall_attendant_w5` so a QUEST GIVER resolves, and it drops out as a side effect nobody
+## intended (verified at that SHA: exactly one explicit id added, the other seven untouched).
+## NOTHING BELOW COUNTS THEM. The asserts read the live tree, so a shrinking list is not a failure --
+## and the list reaching ZERO is the one case that reds, deliberately, as "delete this test".
+##
 ## 🔑 IT IS UNREACHABLE TODAY, AND THAT IS A MEASUREMENT, NOT AN ASSUMPTION. `resolve_npc_id` is
 ## called on exactly one path, `_run_dynamic_conversation`, gated on `dynamic and persona != ""`.
 ## Three NPCs in the game pass that gate -- Elder Theron, Scholar Milo, Guard Boris -- and all three
