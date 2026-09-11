@@ -262,7 +262,19 @@ func _is_reached(id: String, text: String, monsters: Dictionary) -> bool:
 	##
 	## So for a dual-store id the consumer must be a MUSIC-side call. For every
 	## other id a literal is proof enough, because only one store can claim it.
-	if _dual_store_ids().has(id):
+	## ⛔ A GENERIC ONE-WORD ID MATCHES PROSE, NOT A CONSUMER. Five manifest ids
+	## carry no underscore — autogrind · danger · menu · title · victory — and
+	## every one is an ordinary English word. `var title = Label.new()` and
+	## "Complete an autogrind run" both score as consumers. Measured 2026-09-11
+	## in the three files cowir-adhoc proved unreachable: all three "named" two
+	## tracks each, and every hit was prose.
+	##
+	## No verdict moves today (all five are genuinely played from play_music's
+	## match arms), which is exactly why it needed encoding rather than a note:
+	## delete an arm and the bed would still read as reached, forever, on the
+	## strength of a label variable. Same class as the brief keying the shop
+	## theme "shop" and GameLoop's _smoke_shot("shop") excusing it.
+	if _dual_store_ids().has(id) or not id.contains("_"):
 		return _asked_for_by_a_music_call(id, text)
 	## Literal mention anywhere a consumer could name it.
 	if text.find(id) >= 0:
@@ -476,6 +488,47 @@ func _dispatcher_text() -> String:
 			n = d.get_next()
 		d.list_dir_end()
 	return "\n".join(parts)
+
+
+func test_no_cutscene_step_type_can_dispatch_another_cutscene() -> void:
+	## ⛔ THIS IS WHY _dispatcher_text() MAY EXCLUDE data/cutscenes/ WHOLESALE.
+	## If a step type could start another scene, a scene reachable only that way
+	## would read as unplayable — a FALSE ZERO, which reads as "nothing can get
+	## here" and is the direction that makes people skip live work. cowir-controller
+	## hit exactly that today: their referrer filter deleted `load("res://…/X.gd")`
+	## lines because the reference form carries the path they were excluding on,
+	## and two live menus reported 0 referrers.
+	##
+	## Mine is safe by CONSTRUCTION rather than by content: CutsceneDirector's
+	## `match step_type` has 37 arms and none names a scene, so a cutscene JSON
+	## has no way to reach another cutscene. play_cutscene() is a director METHOD
+	## called from source — which is the corpus I do scan. Measured alongside:
+	## 0 cross-scene id references across 195 scene files.
+	var src: String = FileAccess.get_file_as_string("res://src/cutscene/CutsceneDirector.gd")
+	assert_gt(src.length(), 10000, "SCOPE control: CutsceneDirector read back %d chars" % src.length())
+	var start: int = src.find("match step_type")
+	assert_gt(start, 0, "SCOPE control: the step dispatch was renamed — re-derive this guard")
+	var end: int = src.find("\nfunc ", start)
+	var block: String = src.substr(start, end - start)
+
+	var arms: Array[String] = []
+	var re := RegEx.new()
+	re.compile("\"([a-z_]+)\"")
+	for m in re.search_all(block):
+		if not arms.has(m.get_string(1)):
+			arms.append(m.get_string(1))
+	assert_gt(arms.size(), 25,
+		"SCOPE control: parsed only %d step types — the arm reader has drifted and a green below would be vacuous" % arms.size())
+	assert_true(arms.has("play_music"),
+		"CONTROL FAILED: play_music is a real step type but was not parsed")
+
+	var dispatchers: Array[String] = []
+	for a in arms:
+		for word in ["cutscene", "scene", "chain"]:
+			if a.contains(word) and not dispatchers.has(a):
+				dispatchers.append(a)
+	assert_eq(dispatchers.size(), 0,
+		"a cutscene step type can now start another cutscene (%s) — data/cutscenes/ can no longer be excluded from the dispatcher corpus, because a scene reached only by chaining would report as unplayable and its cues as stranded" % [dispatchers])
 
 
 ## ⚠️ ONE-LEVEL, AND SAFE BY THE CORPUS RATHER THAN BY THE CODE. "The scene id
