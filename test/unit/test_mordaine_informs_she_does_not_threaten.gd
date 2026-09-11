@@ -300,6 +300,15 @@ func test_the_comment_stripper_itself_is_pinned() -> void:
 		 "\tvar q := \"a\\\\\"  ",
 		 "an escaped BACKSLASH ends the string — a lookbehind escape check reads this as still-open and lets the comment through"],
 	]
+	## Draining this table is itself the violation. The asserts live INSIDE the loop,
+	## so an empty table runs none — measured: EC=0, [Risky] "did not assert", and NO
+	## Failing line. A gate reading the exit code or the Failing count passes that.
+	## (cowir-sfx's two-magnitude drain; the Risky-not-Failing half is cowir-story's
+	## Tests-minus-Passing arithmetic, which I got wrong reading this very run.)
+	assert_eq(cases.size(), 8,
+		"the stripper case table holds %d rows, not 8 — a drained table asserts NOTHING and "
+		% cases.size()
+		+ "scores [Risky] with EC=0, not a failure. Add the row back, or change this count deliberately.")
 	for c in cases:
 		assert_eq(_strip_comment(str(c[0])), str(c[1]), str(c[2]))
 
