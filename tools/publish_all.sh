@@ -49,6 +49,31 @@ while [ $# -gt 0 ]; do
         # nobody noticed in 36 publishes because nobody has needed one yet. The safety
         # mechanism and the recovery path were the same switch. This is the recovery path,
         # and it is opt-in, loud, and still subject to every other verification.
+        # ⛔ MEASURED 2026-09-11: this flag CANNOT BE USED FOR ITS PURPOSE, from any tree.
+        # Rolling back to tag X requires a worktree AT X (section 3 enforces HEAD == TAG and
+        # exits 2 otherwise) — and that worktree contains X's OWN tooling, which predates this
+        # flag. --rollback exists only in v3.33.294-alpha and newer. So:
+        #
+        #   worktree at the old tag  -> its publish_all has no --rollback, and the `*)` case
+        #                               below took the flag AS THE TAG NAME. Measured against
+        #                               v3.33.293-alpha: "publish_all: --rollback", then a
+        #                               block three guards deep complaining about VERSION
+        #                               IDENTITY, which is not the problem at all.
+        #   worktree at HEAD         -> blocked at section 2: this tree calls itself .294 and
+        #                               you asked to publish .293. Correct, and fatal to the
+        #                               attempt. Section 3 would refuse next anyway.
+        #
+        # ⛔ So --rollback is reachable ONLY for tags that already carry it — i.e. tags new
+        # enough that you would never roll back TO them. Both failures are SAFE (exit 2,
+        # nothing published, zero butler calls measured); the feature simply does not work.
+        # The comment above says the safety mechanism and the recovery path were the same
+        # switch. They still are — the switch just moved.
+        #
+        # ✅ The recovery path that DOES work today needs no new code: from a worktree at the
+        # target tag, drive that tree's per-channel scripts directly —
+        #     tools/deploy_linux.sh --publish <old-tag>   (likewise windows, web)
+        # The supersession gate is publish_all's, not theirs, so nothing blocks an older tag.
+        # Verified by reaching the butler push with a stubbed binary; see the commit message.
         --rollback) ROLLBACK=1; shift ;;
         # Run all three chains to completion and publish NOTHING. --check verifies the TAG;
         # this verifies the BUILD. They answer different questions and the gap between them is
@@ -56,6 +81,16 @@ while [ $# -gt 0 ]; do
         # was clean, and the web chain still died at gate 2 three days running. There was no
         # way to learn that except by attempting a publish.
         --dry-run)  DRY_RUN=1; shift ;;
+        # An unknown option must NEVER become the tag. `*) break` accepted anything, so
+        # `--rollback` on tooling that predates it, or a plain typo like `--dry-runn`, became
+        # TAG — and the run then failed several guards later with a message about whatever
+        # that guard checks. The guards hold (nothing publishes), but they name the wrong
+        # cause, and a recovery path is the worst place to hand someone a misleading error.
+        --)         shift; break ;;   # explicit escape hatch for a tag that starts with -
+        -*)         echo "publish_all: unknown option: $1" >&2
+                    echo "usage: tools/publish_all.sh [--check|--dry-run|--rollback] <tag>" >&2
+                    echo "       (use -- before a tag that begins with a dash)" >&2
+                    exit 2 ;;
         *)          break ;;
     esac
 done
