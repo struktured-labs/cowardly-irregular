@@ -267,7 +267,8 @@ func _setup_npcs() -> void:
 		"I automated my entire LIFE, friend.",
 		"Breakfast? Automated. Conversations? Scripted.",
 		"Do I regret it? ...That's also scripted.",
-		"Press F5 to open the Autobattle Editor. Trust me.",
+		# F5 and Start are the editor's two openers (GameLoop:912 keyboard, :981 ui_menu).
+		"Press F5. Or Start, if your hands are already full. Trust me.",
 		"Once you automate combat, you'll want to automate EVERYTHING."
 	]
 	var _kael_post := [

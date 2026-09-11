@@ -139,7 +139,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 ### Autobattle Editor Controls
 | Action | Gamepad | Keyboard |
 |--------|---------|----------|
-| Open editor | L+R together | F5 |
+| Open editor | Start | F5 |
 | Toggle ALL autobattle | Select | F6 |
 | Navigate grid | D-pad | Arrow keys |
 | Edit cell | A | Z |
@@ -147,6 +147,8 @@ Each starter job has a free 0-cost AP action available in the command menu:
 | Add condition | L trigger | L key |
 | Add action | R trigger | R key |
 | Close editor | B | X |
+
+⚠️ **"Open editor: L+R together" was in this table and is FALSE — measured 2026-09-11, the only L+R-together handler in `src/` is `GameLoop:901`, which cycles the AUTOGRIND TIER.** The editor has four openers and none is L+R: `GameLoop:912` (F5), `GameLoop:981` (`ui_menu`/Start), `BattleCommandMenu`'s Edit Autobattle row, and `MenuScene:1256`. The wrong claim had spread to `TutorialHint.gd:11`, three `BattleCommandMenu` comments, and one NPC's **player-facing dialogue** — Mall Rat Mike told pad players to squeeze both triggers, which does nothing.
 
 ### Future Vision
 - Jobs add new condition types and action verbs
