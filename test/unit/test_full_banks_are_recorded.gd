@@ -51,9 +51,19 @@ func test_a_corrupt_value_cannot_go_negative() -> void:
 func test_the_unleash_path_increments_it() -> void:
 	## The join. A counter nothing writes is a row that always reads zero — and the quip would sit
 	## on "Bank four. Spend five. Not yet." forever while the player did it every fight.
-	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	## ⚠️ COMMENTS BLANKED FIRST. cowir-controller 2026-09-11: a source-text pin is satisfied by the
+	## COMMENT, so the arm that catches it is the tidy removal and the arm it misses is the realistic
+	## one — nobody deletes a line without leaving the note that explained it. Measured on this very
+	## test: replacing the increment with `pass  ## was: GameState.full_banks_unleashed += 1` left it
+	## GREEN at 7/7 with the counter no longer written. Line count preserved so offsets stay valid.
+	var raw := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var stripped: Array = []
+	for line in raw.split("\n"):
+		var h: int = line.find("#")
+		stripped.append(line.substr(0, h) if h > -1 else line)
+	var src: String = "\n".join(stripped)
 	var i: int = src.find("full_bank_unleashed.emit(")
-	assert_gt(i, -1, "CONTROL: located the unleash emit")
+	assert_gt(i, -1, "CONTROL: located the unleash emit in CODE, not in a comment")
 	var j: int = src.find("\nfunc ", i)
 	var tail: String = src.substr(i, (j - i) if j > -1 else 400)
 	assert_true(tail.contains("GameState.full_banks_unleashed += 1"),
