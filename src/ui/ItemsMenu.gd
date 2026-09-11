@@ -496,7 +496,7 @@ func _populate_target_selection(panel: Control, _panel_size: Vector2) -> void:
 		panel.add_child(all_label)
 
 		var confirm_label = Label.new()
-		confirm_label.text = "[A] Confirm  [B] Cancel"
+		confirm_label.text = "%s Confirm  %s Cancel" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 		confirm_label.position = Vector2(16, 70)
 		confirm_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		confirm_label.add_theme_color_override("font_color", Color.YELLOW)

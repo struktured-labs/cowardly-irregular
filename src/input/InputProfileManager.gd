@@ -296,6 +296,23 @@ func glyph_for_action(action: String, device_name: String = "") -> String:
 
 ## The glyph printed on a RAW button index, for bindings that are a button rather than an action.
 ## No convention swap here: a raw JOY_BUTTON_* binding fires from that physical position always.
+## Device-appropriate label for an on-screen legend: the live pad family's glyph when a pad is
+## connected, the keyboard key when it is not. Hardcoded "[A] Confirm [B] Cancel" legends are wrong
+## twice over — they name a pad button to keyboard players, and this game puts Confirm on the EAST
+## face, so Ⓐ/Ⓑ are INVERTED on Xbox and PlayStation. Returns "" when neither is known, so callers
+## can keep their own wording rather than printing a placeholder.
+func hint_for_action(action: String) -> String:
+	if not Input.get_connected_joypads().is_empty():
+		var g := glyph_for_action(action)
+		if g != "?" and g != "":
+			return g
+	var keys := get_action_key_label(action)
+	if keys == "—" or keys == "":
+		return ""
+	# First binding only; a legend is a reminder, not the full list.
+	return keys.split(" / ")[0]
+
+
 func face_glyph_for_index(button_index: int, device_name: String = "") -> String:
 	var name := device_name
 	if name == "":
