@@ -31,8 +31,8 @@ const DEFEAT_GATES: Array[Array] = [
 	 "cutscene_flag_world2_warden_defeat_complete",
 	 "suburban_underground"],
 	["cutscene_flag_tempo_steampunk_defeated",
-	 "world3_tempo_defeat",
-	 "cutscene_flag_world3_tempo_defeat_complete",
+	 "world3_grand_schedule_defeat",  # 2026-09-11: W3's boss is The Grand Schedule (masterite_tempo_steampunk); the world3_tempo_* pair belongs to W4's industrial Tempo by trigger
+	 "cutscene_flag_world3_grand_schedule_defeat_complete",
 	 "steampunk_mechanism"],
 	["cutscene_flag_warden_industrial_defeated",
 	 "world3_warden_defeat",

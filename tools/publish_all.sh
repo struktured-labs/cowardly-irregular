@@ -251,10 +251,32 @@ echo "═══ publish_all: $TAG ═══"
 # deploy_desktop.sh's comment described it, which is how a documented hazard reads as a
 # handled one.
 #
+# ⛔ A PRESENT GUARD IS NOT A WORKING ONE. The `else` branch below already refuses a MISSING
+# guard — "a missing guard is not a passing one". The same sentence holds one level up and was
+# not checked: a guard whose detector has gone dead is present, executable, exit 0, and silent.
+#
+# Measured 2026-09-11 on check_publish_is_optin.py, real tools/ tree, its --publish detector
+# forced dead (one line):
+#
+#     deploy_desktop.sh  ok  push gated on --publish, flag defaults to off   <- FALSE, and green
+#     deploy_linux.sh    ok  never names --publish — forwards untouched      <- FALSE, and green
+#     2 script(s) contain a push site · 0 finding(s)                  EC 0
+#
+# Its selftest catches that instantly — 4 arms red — but NOTHING IN THE PUBLISH PATH RAN THE
+# SELFTEST. The arms existed and were unreachable at the only moment they mattered, which is
+# the same composition failure as --rollback needing tooling the old tree lacks.
+# 0.03s per gate against a ~45min publish.
 # Delegated so the decision is exercised by ITS OWN selftest as a subprocess — same reason
 # as check_import_ok.sh below, and the same reason a re-implemented copy in a probe proves
 # nothing about the shipped code.
 if [ -x tools/check_polling_bounded.py ]; then
+    if ! _ST=$(./tools/check_polling_bounded.py --selftest 2>&1); then
+        printf '%s\n' "$_ST" | tail -25 >&2
+        echo "[pub] BLOCKED: tools/check_polling_bounded.py FAILED ITS OWN SELFTEST — the bounded-wait detector" >&2
+        echo "      is not answering correctly, so its verdict on this tree means" >&2
+        echo "      nothing. A present guard is not a working one." >&2
+        exit 4
+    fi
     if ! ./tools/check_polling_bounded.py; then
         echo "[pub] BLOCKED: a polling wait in the deploy chain is unbounded — see above." >&2
         echo "      Refusing to start a batch that can hang instead of failing." >&2
@@ -276,6 +298,13 @@ fi
 # A rollback rehearsal that publishes ships a SUPERSEDED build over a newer live one. That is
 # the worst thing this lane can do, and the flag that prevents it was never checked.
 if [ -x tools/check_publish_is_optin.py ]; then
+    if ! _ST=$(./tools/check_publish_is_optin.py --selftest 2>&1); then
+        printf '%s\n' "$_ST" | tail -25 >&2
+        echo "[pub] BLOCKED: tools/check_publish_is_optin.py FAILED ITS OWN SELFTEST — the --publish detector" >&2
+        echo "      is not answering correctly, so its verdict on this tree means" >&2
+        echo "      nothing. A present guard is not a working one." >&2
+        exit 4
+    fi
     if ! ./tools/check_publish_is_optin.py; then
         echo "[pub] BLOCKED: a butler push is reachable without --publish — see above." >&2
         echo "      --dry-run and --rollback are not safe while that is true." >&2
@@ -285,6 +314,38 @@ else
     echo "[pub] BLOCKED: tools/check_publish_is_optin.py missing — nothing has checked that" >&2
     echo "      withholding --publish actually withholds the push. A missing guard is not a" >&2
     echo "      passing one." >&2
+    exit 4
+fi
+
+# ── gate 0c: the raw bytes must be the bytes the tag pins ────────────────────────────
+# ⛔ MUST RUN BEFORE ANY --import. Audio is git-lfs; the tracked blob is a pointer and the bytes
+# live in the LFS store. Every other gate in this chain reads a RE-DERIVED artifact — the suite
+# and check_pck_complete read the .oggstr, the export packs it, and `--import` rebuilds it
+# faithfully from whatever bytes are on disk. So a tree with a stale LFS blob produces a
+# perfectly coherent build of LAST WEEK'S AUDIO and every downstream gate reports green: the
+# instrument and the defect share a cause. Measured 2026-09-11: nothing in tools/ compared a
+# pointer's oid to a file's sha256, and the one LFS reference that existed only refused to
+# MEASURE a pointer.
+#
+# 2.29s for 500 files, no network, no godot — against a ~45min publish.
+if [ -x tools/check_lfs_blobs_current.py ]; then
+    if ! _ST=$(./tools/check_lfs_blobs_current.py --selftest 2>&1); then
+        printf '%s\n' "$_ST" | tail -25 >&2
+        echo "[pub] BLOCKED: tools/check_lfs_blobs_current.py FAILED ITS OWN SELFTEST — the byte" >&2
+        echo "      comparator is not answering correctly, so its verdict on this tree means" >&2
+        echo "      nothing. A present guard is not a working one." >&2
+        exit 4
+    fi
+    if ! ./tools/check_lfs_blobs_current.py; then
+        echo "[pub] BLOCKED: an LFS blob on disk is not the blob this commit pins — see above." >&2
+        echo "      Publishing now would ship audio the tag does not name. Fix the BYTES first;" >&2
+        echo "      re-importing makes the layer unknowable and the green never arrives." >&2
+        exit 4
+    fi
+else
+    echo "[pub] BLOCKED: tools/check_lfs_blobs_current.py missing — nothing has checked that the" >&2
+    echo "      audio on disk is the audio this commit pins. Every other gate reads the" >&2
+    echo "      re-derived artifact and cannot tell. A missing guard is not a passing one." >&2
     exit 4
 fi
 

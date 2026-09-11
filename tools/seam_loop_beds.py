@@ -117,6 +117,21 @@ def seam(y, sr):
     return out
 
 
+## One-shots that share the prefix and must NOT be seamed. HAND-LISTED, which is the weakest
+## rung of the ladder, so it carries the backward check its class needs: an entry naming a key
+## the manifest no longer has, or one that has since started reaching play_ambient, is a
+## REFUSAL rather than a silent skip.
+ONE_SHOT_EXCLUSIONS = {
+    "weather_thunder_distant": "fired through play_battle() as a one-shot; its 1.63s decay is correct design",
+}
+
+## A key the src scan MUST find. Positive control naming a known-present member: if the scan
+## dies (wrong cwd, a renamed call, the literal going const) this is the assert that notices,
+## and it can come back red -- a bare "is the set non-empty" cannot tell a live scan from a
+## scan that found one unrelated thing.
+SCAN_CONTROL_KEY = "weather_rain"
+
+
 def looping_keys():
     """Keys actually played on the looping path, read from the CONSUMER not from a name.
 
@@ -140,11 +155,44 @@ def main():
 
     sfx = json.load(open(MANIFEST))[ROOT_KEY]
     looped = looping_keys()
-    keys = sorted(k for k in sfx if k.startswith(args.prefix) and k in looped)
-    skipped = sorted(k for k in sfx if k.startswith(args.prefix) and k not in looped)
-    print(f"corpus: keys matching {args.prefix!r} that reach play_ambient() -> {len(keys)}")
-    if skipped:
-        print(f"  NOT a looping bed, skipped: {', '.join(skipped)}")
+
+    ## SET DIFFERENCE, not a narrowing filter. Every prefixed key in the MANIFEST -- a register
+    ## that does not shrink when the src scan dies -- must land in exactly one bucket, and an
+    ## unclassified key REFUSES. The previous shape was `k in looped`, which drains silently:
+    ## a dead scan produced an empty corpus and printed its complement as "NOT a looping bed,
+    ## skipped: <every weather key>", a confident and entirely wrong inventory with exit 0.
+    ## Draining is now the loudest outcome rather than the quietest.
+    prefixed = sorted(k for k in sfx if k.startswith(args.prefix))
+    keys = [k for k in prefixed if k in looped]
+    excluded = [k for k in prefixed if k not in looped and k in ONE_SHOT_EXCLUSIONS]
+    unclassified = [k for k in prefixed if k not in looped and k not in ONE_SHOT_EXCLUSIONS]
+
+    print(f"corpus: {len(prefixed)} manifest keys matching {args.prefix!r} -> "
+          f"{len(keys)} looping, {len(excluded)} excluded one-shot, {len(unclassified)} unclassified")
+
+    if SCAN_CONTROL_KEY.startswith(args.prefix) and SCAN_CONTROL_KEY not in looped:
+        print(f"  REFUSED: the src scan did not find {SCAN_CONTROL_KEY}, which reaches play_ambient(). "
+              f"The scan is dead, so every 'not a looping bed' verdict below would be an artifact.")
+        return 1
+
+    ## Backward arm on the hand list: an exclusion that no longer excludes anything is an
+    ## unfalsifiable claim, the same shape as an inert allowlist entry.
+    stale = [k for k in ONE_SHOT_EXCLUSIONS if k not in sfx or k in looped]
+    if stale:
+        for k in stale:
+            why = "gone from the manifest" if k not in sfx else "now REACHES play_ambient()"
+            print(f"  REFUSED: exclusion {k!r} is {why} — remove it, or it excuses nothing forever")
+        return 1
+
+    if unclassified:
+        for k in unclassified:
+            print(f"  REFUSED: {k} is in the manifest, does not reach play_ambient(), and is not "
+                  f"named in ONE_SHOT_EXCLUSIONS — classify it before this tool touches anything")
+        return 1
+
+    if excluded:
+        for k in excluded:
+            print(f"  one-shot, not seamed: {k} — {ONE_SHOT_EXCLUSIONS[k]}")
     print(f"{'key':24} {'dur':>7} {'fade':>7} {'step before':>12} {'step after':>11}  result")
 
     done, refused = [], []

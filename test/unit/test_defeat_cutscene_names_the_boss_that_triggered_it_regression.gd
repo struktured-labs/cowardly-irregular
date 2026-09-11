@@ -137,6 +137,17 @@ const EXPECTED_GATED_BOSSES: Array[String] = [
 ## Growth is fine — a sixth dungeon gate is caught by the ownership ratchet below,
 ## which is the arm that should judge a new one.
 func test_premise_every_dungeon_boss_still_has_its_aftermath_gate() -> void:
+	# THE CONTROL MUST NOT BE DRAINABLE EITHER. Measured 2026-09-11: emptying EXPECTED_GATED_BOSSES
+	# gave Failed 0, Risky 0 — the loop below runs zero times and the corpus floor is a
+	# literal that still passes, so the named-member fix I added an hour ago introduced
+	# a new silent control. @cowir-sfx's cell: every `for x in LIST` and every
+	# `size() >= LIST.size()` is silent at LIST == []. Pinned to a LITERAL — and gte,
+# not eq: @cowir-overworld's PLUS-ONE magnitude showed the eq form REDS when a lane
+# correctly adds an anchor. Their two questions: may this set grow on correct work
+# (yes — another anchor is ordinary), and is growth itself the signal (no). A guard
+# that reds on correct work is how suppression entries get written in the first place.
+	assert_gte(EXPECTED_GATED_BOSSES.size(), 5,
+		"EXPECTED_GATED_BOSSES holds %d, fewer than the 5 this guard defends — the named-member check below is going vacuous. ADDING an anchor is free; losing one is not." % EXPECTED_GATED_BOSSES.size())
 	var gates := _gates()
 	var found: Array[String] = []
 	for gate in gates:
@@ -203,8 +214,8 @@ func test_every_defeat_gate_plays_its_own_bosss_aftermath() -> void:
 	# Bidirectional: the exemption list is debt, not a settled state. It shrinks when
 	# someone authors the missing scene, and this fails so the gate gets rewired
 	# instead of the new file sitting unreachable next to the wrong one still playing.
-	assert_eq(unauthored.size(), 1,
-		"the no-authored-aftermath set is %d, expected exactly 1 (tempo_steampunk — The Grand Schedule, W3's Grand Mechanism boss, whose gate plays the INDUSTRIAL Tempo's aftermath because no steampunk masterite cutscene exists at all). Current set: %s. If this shrank, the scene was authored: point the gate at it. If it grew, a gate lost its scene." % [unauthored.size(), ", ".join(unauthored)])
+	assert_eq(unauthored.size(), 0,
+		"the no-authored-aftermath set is %d, expected 0 — the last entry (tempo_steampunk) was paid on 2026-09-11: world3_grand_schedule_defeat is authored and the Mechanism's gate points at it. Current set: %s. If this GREW, a gate lost its scene — author the aftermath and point the gate at it, do not repoint at another world's." % [unauthored.size(), ", ".join(unauthored)])
 
 
 ## The scene a gate names has to be on disk, or the gate drops the player to the

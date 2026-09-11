@@ -76,7 +76,14 @@ func test_declared_duration_matches_the_stream() -> void:
 		if abs(actual - declared) > TOLERANCE_SECONDS:
 			offenders.append("%s: manifest says %.2fs, stream is %.2fs (Jukebox renders the manifest value)" % [key, declared, actual])
 	assert_gt(checked, 100, "positive control: expected to measure >100 streams — an empty offender list means nothing if nothing was measured")
-	assert_eq(offenders, [], "\n".join(offenders))
+	## ⚠️ THIS MESSAGE USED TO BE THE OFFENDER LIST AND NOTHING ELSE, and on
+	## 2026-09-11 that cost four lanes an hour. The sibling guard
+	## (test_manifest_duration_matches_audio) carries the full diagnosis; this
+	## one tests the same relationship and said nothing, so whichever of the two
+	## a reader hit first decided whether they got help.
+	assert_eq(offenders, [],
+		"manifest duration disagrees with the audio Godot LOADED (%d):\n%s\n  THREE CAUSES, cheapest first:\n  (1) STALE IMPORT CACHE — load() returns the IMPORTED audio, not the file on disk, so a branch change without a re-import compares this manifest against the PREVIOUS branch's audio. Run: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import --quit\n  (2) A STALE LFS BLOB, one layer under (1) — if the bytes on disk are not the bytes main points at, --import re-derives the WRONG audio faithfully and the red survives. Check: git show origin/main:<file> | grep -o 'sha256:[a-f0-9]*'  vs  sha256sum <file>. DIFFER means git lfs pull FIRST.\n  (3) A REAL DRIFT — something rewrote the OGG without rewriting the number. Confirm with ffprobe on the file before believing it.\n  TELL: if your offender COUNT differs from someone else's on the same SHA, it is (1) or (2). A code defect gives everyone the same number."
+			% [offenders.size(), "\n".join(offenders)])
 
 
 func test_placeholder_sentinel_is_preserved() -> void:
