@@ -2530,6 +2530,45 @@ func save_data() -> Dictionary:
 const SNAPSHOT_PATH: String = "user://autogrind_snapshot.json"
 
 
+## The `system` half of a grind snapshot, extracted so the WRITER can be tested without
+## enabling persistence: _test_disable_persistence makes save_grind_snapshot a no-op by design
+## (fixture data twice leaked into real player saves), so a test wanting the real block had to
+## hand-build it and silently verified nothing. `elapsed` is a local of the caller, so it is a
+## parameter rather than recomputed — the snapshot must record the time the CALLER finalised.
+func build_snapshot_system_block(elapsed: float = 0.0) -> Dictionary:
+	return {
+		"battles_completed": battles_completed,
+		"total_exp_gained": total_exp_gained,
+		"total_items_gained": total_items_gained.duplicate(),
+		"items_consumed": items_consumed.duplicate(),
+		"per_character_exp": per_character_exp.duplicate(),
+		"efficiency_multiplier": efficiency_multiplier,
+		"monster_adaptation_level": monster_adaptation_level,
+		"meta_corruption_level": meta_corruption_level,
+		"meta_boss_spawn_chance": meta_boss_spawn_chance,
+		"consecutive_wins": consecutive_wins,
+		"collapse_count": collapse_count,
+		## Added with the counters themselves (2026-09-10) — they were wired to the Summary and
+		## not to the snapshot, so a resumed grind reported "0 beaten / 0 met" while its
+		## siblings collapse_count and fatigue_events_triggered survived the same pause.
+		"meta_bosses_spawned": meta_bosses_spawned,
+		"meta_bosses_defeated": meta_bosses_defeated,
+		"fatigue_events_triggered": fatigue_events_triggered,
+		"current_region_id": current_region_id,
+		"permadeath_staking_enabled": permadeath_staking_enabled,
+		"elapsed_seconds": elapsed,
+		"grind_stats_gold": _grind_stats.get("total_gold", 0),
+		"grind_stats_jp": _grind_stats.get("total_jp", 0),
+		"grind_stats_encounters": _grind_stats.get("total_encounters", 0),
+		# Session-scoped dedup/streak state — without these, resume re-fires
+		# already-shown corruption/rotation toasts and resets the Iron Vigil streak.
+		"battles_without_heal": battles_without_heal,
+		"corruption_bands_crossed": _corruption_bands_crossed.duplicate(),
+		"rotation_suggested_regions": _rotation_suggested_regions.duplicate(),
+		"save_corruption_baseline": _save_corruption_baseline,
+	}
+
+
 func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 	"""Save current grind state for resume after game close.
 	Cadence #14: symmetric with load_grind_snapshot's tick-344 hardening —
@@ -2549,32 +2588,7 @@ func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 		"version": 1,
 		"saved_at": Time.get_datetime_string_from_system(),
 		"controller": controller_snapshot,
-		"system": {
-			"battles_completed": battles_completed,
-			"total_exp_gained": total_exp_gained,
-			"total_items_gained": total_items_gained.duplicate(),
-			"items_consumed": items_consumed.duplicate(),
-			"per_character_exp": per_character_exp.duplicate(),
-			"efficiency_multiplier": efficiency_multiplier,
-			"monster_adaptation_level": monster_adaptation_level,
-			"meta_corruption_level": meta_corruption_level,
-			"meta_boss_spawn_chance": meta_boss_spawn_chance,
-			"consecutive_wins": consecutive_wins,
-			"collapse_count": collapse_count,
-			"fatigue_events_triggered": fatigue_events_triggered,
-			"current_region_id": current_region_id,
-			"permadeath_staking_enabled": permadeath_staking_enabled,
-			"elapsed_seconds": elapsed,
-			"grind_stats_gold": _grind_stats.get("total_gold", 0),
-			"grind_stats_jp": _grind_stats.get("total_jp", 0),
-			"grind_stats_encounters": _grind_stats.get("total_encounters", 0),
-			# Session-scoped dedup/streak state — without these, resume re-fires
-			# already-shown corruption/rotation toasts and resets the Iron Vigil streak.
-			"battles_without_heal": battles_without_heal,
-			"corruption_bands_crossed": _corruption_bands_crossed.duplicate(),
-			"rotation_suggested_regions": _rotation_suggested_regions.duplicate(),
-			"save_corruption_baseline": _save_corruption_baseline,
-		},
+		"system": build_snapshot_system_block(elapsed),
 	}
 
 	var file = FileAccess.open(SNAPSHOT_PATH, FileAccess.WRITE)
@@ -2653,6 +2667,8 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	meta_boss_spawn_chance = system_data.get("meta_boss_spawn_chance", 0.0)
 	consecutive_wins = system_data.get("consecutive_wins", 0)
 	collapse_count = system_data.get("collapse_count", 0)
+	meta_bosses_spawned = system_data.get("meta_bosses_spawned", 0)
+	meta_bosses_defeated = system_data.get("meta_bosses_defeated", 0)
 	fatigue_events_triggered = system_data.get("fatigue_events_triggered", 0)
 	current_region_id = system_data.get("current_region_id", "")
 	permadeath_staking_enabled = system_data.get("permadeath_staking_enabled", false)
