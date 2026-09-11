@@ -8,6 +8,7 @@ class_name SoundManagerClass
 var _ui_player: AudioStreamPlayer
 var _battle_player: AudioStreamPlayer
 var _death_player: AudioStreamPlayer  # dedicated voice: death cries survive the next action's sounds (2026-08-18)
+var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS long and every menu blip on _ui_player cut them (2026-09-11)
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
@@ -77,6 +78,8 @@ const CRIT_THUD_DURATION: float = 0.18
 const CRIT_THUD_TRIM_DB: float = -4.0
 ## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The authored cue is a gentle scorch ("no bass no tones") measured at the SAME mean level as a plain hit (-22.8 vs -21.8 dB) — it cannot read as a climax. Boost the cue and give it the low body it was authored without.
 const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
+## Spoken lines sit where UI blips did, not louder — the defect was being CUT, not being quiet.
+const VOICE_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const DEATH_CUE_BOOST_DB: float = 6.0
 const DEATH_THUD_FREQ: float = 48.0
 const DEATH_THUD_DURATION: float = 0.28
@@ -266,6 +269,12 @@ func _setup_audio_players() -> void:
 	_battle_player.volume_db = SFX_BATTLE_BASE_DB  # Battle SFX: punchy alongside music
 	_battle_player.bus = SFX_BUS
 	add_child(_battle_player)
+
+	_voice_player = AudioStreamPlayer.new()
+	_voice_player.name = "VoicePlayer"
+	_voice_player.volume_db = VOICE_PLAYER_BASE_DB
+	_voice_player.bus = SFX_BUS
+	add_child(_voice_player)
 
 	_death_player = AudioStreamPlayer.new()
 	_death_player.name = "DeathPlayer"
@@ -670,6 +679,28 @@ func play_death(sound_key: String) -> void:
 		return
 	if SOUNDS.has(sound_key):
 		_play_sound(_death_player, SOUNDS[sound_key])
+
+
+## Party voice lines on their OWN player, and the caller is told how long the clip is.
+## Measured 2026-09-11: 25 of 31 voice_* clips run longer than 2.0s (median 4.30s, max 10.90s)
+## while they played through _ui_player, which every menu blip and cursor move reuses — so a line
+## was cut mid-word by the player's next input. Same defect as the death cry (2026-08-18), same
+## fix, different shared player.
+##
+## Returns the clip length in seconds, 0.0 if the key did not resolve. The bubble needs it: a
+## 2.0s bubble over a 6.5s line is the other half of the same mismatch, and the length lives here
+## rather than in a table the bubble would have to keep in step with the manifest.
+func play_voice(sound_key: String) -> float:
+	if _voice_player == null:
+		return 0.0
+	## Lines are not interchangeable with each other — a second one interrupting the first is the
+	## behaviour we are fixing, so never dedupe them against the shared cooldown table.
+	_sfx_cooldowns.erase(sound_key)
+	if not _try_play_sfx_from_manifest(_voice_player, sound_key, VOICE_PLAYER_BASE_DB):
+		return 0.0
+	if _voice_player.stream == null:
+		return 0.0
+	return _voice_player.stream.get_length()
 
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
