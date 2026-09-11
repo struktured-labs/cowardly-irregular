@@ -59,8 +59,22 @@ TARGET_PREFIXES = ("deploy_",)
 # this tool reporting its own blindness as success.
 EXPECT_MIN_PUSHERS = 2
 
-# `"${BUTLER_BIN}" push …`, `butler push …`, `$BUTLER push …`
-PUSH_RE = re.compile(r'(?:\$\{?[A-Za-z_][A-Za-z0-9_]*\}?|\bbutler\b)["\']?\s+push\b')
+# `"${BUTLER_BIN}" push …`, `butler push …`, `$BUTLER push …`, `$(command -v butler) push …`
+#
+# ⚠ MEASURED 2026-09-11, by probing the half of this file I had hardened LESS. Every one of the
+# eleven selftest probes spelled the push the SAME way — `"${BUTLER_BIN}" push`. So the
+# JUDGEMENT half (gate, default, dominance, wrappers) was armed eight ways and the DETECTION
+# half was armed once. Feeding ten real spellings through audit() found two invisible:
+#
+#     "${BUTLER_BIN}" \            <- line continuation: the push is on the NEXT line
+#         push out/ "$T"
+#     $(command -v butler) push …  <- substitution: `)` sits where the regex wants a name
+#
+# A push site this cannot SEE is reported as "no push site" — which, since the wrapper fix,
+# means the file is checked for delegation instead and passes. **An undetected push is a
+# silent exemption**, the same failure as the wrapper exemption and reached by a different
+# road. Latent, not live: both shipped pushes use a detected form, 0 current violations.
+PUSH_RE = re.compile(r'(?:\$\{?[A-Za-z_][A-Za-z0-9_]*\}?|\bbutler\b|\))["\']?\s+push\b')
 # A script that hands off to another deploy script: `exec … deploy_desktop.sh "$@"`.
 DELEGATE_RE = re.compile(r'\b(?:exec|bash|sh|source|\.)\b.*\bdeploy_[a-z_]+\.sh')
 # the line that handles --publish, and the flag it sets
@@ -76,6 +90,34 @@ def strip_comments(lines):
     """Blank full-line comments, preserving indices. Both real scripts discuss pushing at
     length in prose; the word `push` in a comment is not a push site."""
     return ['' if l.lstrip().startswith('#') else l for l in lines]
+
+
+def join_continuations(lines):
+    """Fold `\\`-continued lines onto the first one, preserving INDICES so line numbers stay
+    true and dominance comparisons against the gate remain valid.
+
+    A long butler invocation is exactly the kind that gets wrapped — the real ones already
+    carry `--userversion "$USERVERSION"` — so the continuation form is not hypothetical.
+    """
+    out = list(lines)
+    i = 0
+    while i < len(out):
+        if out[i].rstrip().endswith('\\'):
+            j = i
+            merged = out[i].rstrip()[:-1]
+            while j + 1 < len(out):
+                j += 1
+                merged += ' ' + out[j].strip()
+                out[j] = ''          # consumed; index kept so numbering does not shift
+                if not out[j - 1].rstrip().endswith('\\') and not merged.rstrip().endswith('\\'):
+                    break
+                if not lines[j].rstrip().endswith('\\'):
+                    break
+            out[i] = merged
+            i = j + 1
+        else:
+            i += 1
+    return out
 
 
 def find_gate(lines, flag):
@@ -103,7 +145,7 @@ def find_gate(lines, flag):
 def audit(path):
     """Return (push_line_numbers, findings[]) for one script."""
     raw = open(path, encoding="utf-8", errors="replace").read().splitlines()
-    lines = strip_comments(raw)
+    lines = join_continuations(strip_comments(raw))
 
     pushes = [i for i, l in enumerate(lines) if PUSH_RE.search(l)]
     if not pushes:
@@ -297,6 +339,26 @@ exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" --publish "$@"
     "wrapper that forwards \"$@\" untouched": ("""#!/usr/bin/env bash
 exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
 """, 0, ""),
+
+    # These two arms prove DETECTION by demanding a finding that is only reachable if the push
+    # is seen at all. If PUSH_RE misses the form, the script reports "no push site" and exits 0
+    # — so a passing arm here cannot be satisfied by blindness.
+    "push SPLIT ACROSS LINES, before the gate": ("""#!/usr/bin/env bash
+PUBLISH=0
+[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }
+"${BUTLER_BIN}" \\
+    push out/ "$T" --userversion "$V"
+if [ "$PUBLISH" != "1" ]; then
+    exit 0
+fi
+echo done
+""", 1, "NOT dominated"),
+
+    "push via $(command -v butler), no gate": ("""#!/usr/bin/env bash
+PUBLISH=0
+[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }
+$(command -v butler) push out/ "$T"
+""", 1, "no gate"),
 
     "push appears only in a comment": ("""#!/usr/bin/env bash
 # "${BUTLER_BIN}" push out/ "$T"   <- this is prose about the push, not a push
