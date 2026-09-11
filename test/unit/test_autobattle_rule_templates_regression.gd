@@ -41,7 +41,17 @@ func _load_json(path: String) -> Dictionary:
 
 func test_catalog_has_15_templates_3_per_job() -> void:
 	var cat: Array = TemplatesClass.catalog()
-	assert_eq(cat.size(), 15, "catalog must hold 3 stances × 5 starter jobs")
+	## ⚠️ WAS `cat.size() == 15`. The invariant is THREE STANCES PER JOB THAT HAS ANY — the total is
+	## a consequence, and pinning it taxes the next lane to author a job's presets (it taxed mine).
+	## Derived, so a sixth covered job passes and a job with 2 or 4 stances still reds.
+	var per_job: Dictionary = {}
+	for t in cat:
+		var j: String = str((t as Dictionary).get("job_id", ""))
+		per_job[j] = int(per_job.get(j, 0)) + 1
+	assert_gt(per_job.size(), 4, "CONTROL: the catalog covers jobs at all (%d)" % per_job.size())
+	for j in per_job:
+		assert_eq(int(per_job[j]), 3, "job '%s' has %d presets; every covered job ships 3 stances" % [j, per_job[j]])
+	assert_eq(cat.size(), per_job.size() * 3, "the total is 3 per covered job, not a frozen number")
 	for job in STARTER_JOBS:
 		var for_job: Array = TemplatesClass.find_for_job(job)
 		assert_eq(for_job.size(), 3, "job '%s' must have 3 presets" % job)
