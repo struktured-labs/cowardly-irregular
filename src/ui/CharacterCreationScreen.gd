@@ -172,7 +172,10 @@ func _build_ui() -> void:
 
 	# Instructions
 	var instructions = Label.new()
-	instructions.text = "[↑↓] Option  [←→] Change  [Z/A] Next Char  [X/B] Back  [START] Confirm"
+	# "A"/"B" are the EAST/SOUTH faces — right on Nintendo only — and "START" is the Xbox name for
+	# what Nintendo calls Plus and PlayStation Options. Skip was advertised nowhere at all.
+	instructions.text = "[↑↓] Option  [←→] Change  [%s] Next Char  [%s] Back  [%s] Confirm  [%s] Skip" % [
+		_route("ui_accept", "Z"), _route("ui_cancel", "X"), _route("ui_menu", "Enter"), _skip_route()]
 	instructions.position = Vector2(20, PANEL_HEIGHT - 60)
 	instructions.add_theme_font_size_override("font_size", 10)
 	instructions.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
@@ -609,6 +612,15 @@ func _input(event: InputEvent) -> void:
 		_skip_creation()
 		get_viewport().set_input_as_handled()
 
+	# Skip had TWO routes and neither worked on a pad: KEY_TAB and a mouse-click overlay. The screen
+	# draws "[ SKIP - Use Defaults ]" and a pad player could not take it — and it is not the same as
+	# confirming, since skip emits creation_skipped (-> _create_party) while Start emits
+	# creation_complete (-> _create_party_from_customizations). The north face is free here:
+	# ui_accept/ui_cancel hold east/south and ui_menu is Start.
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
+		_skip_creation()
+		get_viewport().set_input_as_handled()
+
 
 func _change_option(direction: int) -> void:
 	"""Change the current option value"""
@@ -979,6 +991,22 @@ func _confirm_creation() -> void:
 	SoundManager.play_ui("menu_select")
 	creation_complete.emit(party_customizations)
 	queue_free()
+
+
+## Key first, then the pad's own name for the button when one is connected — the dual-vocabulary
+## convention this screen already used, with the pad half derived instead of frozen to Nintendo.
+func _route(action: String, key: String) -> String:
+	if Input.get_connected_joypads().is_empty():
+		return key
+	var pad: String = InputProfileManager.hint_for_action(action)
+	return "%s/%s" % [key, pad] if pad != "" and pad != key else key
+
+
+func _skip_route() -> String:
+	if Input.get_connected_joypads().is_empty():
+		return "Tab"
+	var pad: String = InputProfileManager.button_name_for_index(JOY_BUTTON_Y)
+	return "Tab/%s" % pad if pad != "" else "Tab"
 
 
 func _skip_creation() -> void:
