@@ -162,12 +162,29 @@ func _called_helpers(body: PackedStringArray) -> PackedStringArray:
 	return out
 
 
+## Follows TWO frames of call, not one. @cowir-controller hit the same corpus error three times in
+## one file -- `list -> walk`, `folder -> property`, `property -> the parameters that feed it` --
+## each time the scan sat one frame narrower than the thing it defended. Mine followed one level.
+##
+## The two directions differ, which is why this was worth closing rather than commenting:
+##   reset at depth 2 AND snapshotted      -> reads as "leaks", a FALSE ALARM. Safe.
+##   reset at depth 2 and NOT snapshotted  -> lands in NEITHER set, so nothing flags it. SILENT.
+## A silent miss is not something to leave to a note. Zero fields need depth 2 today, measured at
+## 14f581f4 as well as on main, so the flat call graph is not an artifact of my own edits -- but
+## flatness is a property of the code today, not a rule anyone has to keep.
+##
+## Over-selection is harmless: _called_helpers matches any `name(` at line start, so `print` and
+## `max` resolve to empty bodies and contribute nothing.
 func _resolve(lines: PackedStringArray, fname: String) -> Dictionary:
 	var declared := _declared_vars(lines)
 	var fields := _assigned(_body(lines, fname), declared)
 	for h in _called_helpers(_body(lines, fname)):
-		for k in _assigned(_body(lines, h), declared):
+		var hb := _body(lines, h)
+		for k in _assigned(hb, declared):
 			fields[k] = true
+		for h2 in _called_helpers(hb):
+			for k2 in _assigned(_body(lines, h2), declared):
+				fields[k2] = true
 	return fields
 
 
