@@ -969,6 +969,18 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 			cheapest_cost = cost
 	lines.append("Anything not on that list — including abilities from other jobs —")
 	lines.append("is rejected and DISCARDS THE WHOLE RULE SET. Prefer 'attack' when unsure.")
+	# The grammar's worked examples above carry real ability ids, and the model COPIES
+	# them: 'esuna' occurs once in the whole prompt, inside a complete rule, and turned
+	# up in 5 of 10 fighter compositions. Examples teach harder than prohibitions.
+	var strays: Array[String] = _example_ability_ids()
+	for aid in kit:
+		strays.erase(str(aid))
+	if not strays.is_empty():
+		lines.append("⚠️ The worked examples earlier use ids (%s) to demonstrate SHAPE ONLY."
+			% ", ".join(strays))
+		lines.append("They are other jobs' abilities and are INVALID for this character.")
+		lines.append("Copying an ability id out of an example is the single most common failure.")
+		lines.append("Every \"id\" you write must appear in the list directly above this warning.")
 	if cheapest_id != "" and max_mp > 0:
 		var pct: int = ceili(float(cheapest_cost) / float(max_mp) * 100.0)
 		lines.append("Worked example with THESE numbers: a rule casting %s (%d MP of %d)"
@@ -977,21 +989,33 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 	return "\n".join(lines)
 
 
+## Ability ids the grammar's own worked examples spend, PARSED rather than listed.
+## A hand-written list goes stale the moment someone rewords an example, leaving a
+## warning that names absent ids while the new ones get copied freely.
+static func _example_ability_ids() -> Array[String]:
+	var re := RegEx.new()
+	if re.compile('"id"\\s*:\\s*"([a-z_]+)"') != OK:
+		return []
+	var out: Array[String] = []
+	for m in re.search_all(AUTOBATTLE_GRAMMAR_DESCRIPTION):
+		var aid: String = m.get_string(1)
+		if not (aid in out):
+			out.append(aid)
+	return out
+
+
 ## Pronouns for named figures the player can ask an NPC about.
 ##
 ## Measured against live llama3: of 21 NPC replies that mentioned Chancellor
-## Mordaine, NINE called her "he". Nothing in the conversation prompt says
-## otherwise, so the model guesses from the title — and every scripted line, the
-## throne-room prose and her own boss dialogue use she/her.
+## Mordaine, NINE called her "he". Nothing in the conversation prompt said
+## otherwise, so the model guessed from the title — and her throne-room prose,
+## every scripted line and her own boss dialogue use she/her.
 ##
 ## DECLARED, not inferred. A pronoun is a fact about a character, and deriving it
 ## from prose statistics would propagate a future misgendering bug straight into
 ## the prompt. test_the_npc_prompt_knows_her_pronoun derives the same answer from
-## authored cutscene prose and asserts THIS table matches it, so the declaration
-## is guarded against canon drift without being computed from it.
+## authored cutscene prose and asserts THIS table matches it.
 ##
-## Only characters whose canon is unambiguous belong here. An absent name emits
-## nothing, which is exactly today's behaviour.
 ## Keyed by the name the NOTE should use; `refs` are the ways a player actually
 ## says it. Measured: the misgendering samples say "the Chancellor", not
 ## "Mordaine" — a name-only match fires on none of them.

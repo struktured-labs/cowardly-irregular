@@ -237,7 +237,9 @@ func _setup_buildings() -> void:
 	_add_lamp_post(Vector2i(8, 7))
 	_add_lamp_post(Vector2i(23, 7))
 	_add_lamp_post(Vector2i(8, 16))
-	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(10, 15))
+	# NOT (10,15): Gerald is authored there, and a prop collider on his cell got him RELOCATED to
+	# (304,464) — Neighborhood Dad's tile — where nearest-wins interaction can reach only one of them.
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(8, 15))
 	# Not (17,15): a prop collider reaches the y=(base+1)*TILE line, which IS community_center_exit
 	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(19, 15))
 	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(5, 12))
@@ -315,6 +317,23 @@ func _setup_npcs() -> void:
 		"Anyway, gotta go. Mom said dinner's at 6. BYE."
 	])
 	npcs.add_child(kid)
+
+	# Surplus Ray — the last unrecovered voice from world2_maple_heights_npcs, a cutscene with no
+	# caller. Every other speaker in it turned out to be a live NPC under a new name; this one had no
+	# roster entry at all, so recovering the beat meant authoring the character rather than
+	# re-speakering. He sells medieval surplus off a folding table beside the HOA-approved Mart, and
+	# Carriers Reg already NAMES the Coordinator; Ray is the first to say they are coming for you.
+	var surplus = _create_npc("Surplus Ray", "villager", Vector2(11 * TILE_SIZE,10 * TILE_SIZE), [
+		"Everything's half off. We got a huge shipment in from... I don't know, the warehouse?",
+		"It just shows up. You want to know where it comes from? So do I. I just ring them up.",
+		"The potions work. They're the only things that do.",
+		"The weapons are decorative. I am legally required to say that.",
+		"You're from the other side of the portal, aren't you. Don't worry about it.",
+		"People come through sometimes. You get used to it.",
+		"The HOA keeps tabs on everything. The Coordinator will find you within the day. Stock up first.",
+	])
+	surplus.npc_id = "surplus_ray_w2"
+	npcs.add_child(surplus)
 
 	# The one Oak Street voice with no equivalent anywhere — a W2 echo of Phil the Lost.
 	var crossing = _create_npc("Crossing Guard", "guard", Vector2(13 * TILE_SIZE,11 * TILE_SIZE), [

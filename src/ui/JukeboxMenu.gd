@@ -39,11 +39,14 @@ var _currently_playing: String = ""
 var _generating: bool = false
 var _last_play_time: float = -999.0
 const PLAY_DEBOUNCE_SEC = 0.3
-## Track that was playing when the jukebox opened, so we can resume it
-## on close. Bug fix (2026-04-30): pre-fix, _close_menu unconditionally
-## called SoundManager.stop_music(), leaving the overworld silent until
-## the next area transition.
-var _resume_track: String = ""
+## What was playing when the jukebox opened, so _close_menu can put it back.
+## Bug fix (2026-04-30): pre-fix, _close_menu unconditionally called
+## stop_music(), leaving the overworld silent until the next area transition.
+## That fix snapshotted `_current_music` — which play_area_music CLEARS, so in
+## every map it read "" and the close fell through to the fade-to-silence arm
+## instead. The bug it named survived it everywhere but the title screen.
+## capture_music_state() records the AREA too (SoundManager:1918).
+var _resume_state: Dictionary = {}
 
 ## Node references
 var _panel: Control
@@ -57,8 +60,8 @@ func _ready() -> void:
 	TRACKS = _load_manifest_tracks()
 	# Snapshot the currently-playing music so _close_menu can restore it
 	# instead of leaving silence behind.
-	if SoundManager and "_current_music" in SoundManager:
-		_resume_track = SoundManager._current_music
+	if SoundManager and SoundManager.has_method("capture_music_state"):
+		_resume_state = SoundManager.capture_music_state()
 	_build_ui()
 
 
@@ -319,10 +322,11 @@ func _play_selected() -> void:
 		return
 
 	if SoundManager:
-		if track_id.begins_with("overworld") or track_id in ["village", "cave"]:
-			SoundManager.play_area_music(track_id)
-		else:
-			SoundManager.play_music(track_id)
+		## Every row IS a manifest key, so name it exactly. The old prefix guess
+		## sent "danger"/"victory" through the generic->world rewrite and
+		## overworld_digital to an arm that does not exist (the W5 area key is
+		## "overworld_futuristic"), so 3 of 165 rows played a different bed.
+		SoundManager.play_music(track_id, true)
 		SoundManager.play_ui("menu_select")
 
 	_generating = false
@@ -417,20 +421,21 @@ func _close_menu() -> void:
 		# _currently_playing (which is only set when the user clicks Play
 		# inside the jukebox). Pre-fix: if the player opened the jukebox
 		# while music was playing and closed without clicking anything,
-		# the branch below saw _currently_playing == "" and re-fired
-		# play_music(_resume_track) — restarting the SAME track that was
-		# already playing seamlessly. Audible hitch on every "just
-		# browsed and backed out" close. Comparing against the live
-		# current_music makes this branch a true no-op in that case.
-		var current_track: String = ""
-		if "_current_music" in SoundManager:
-			current_track = str(SoundManager._current_music)
-		# Resume the track that was playing before the jukebox opened, if any.
-		# Falls back to stopping music if there was no prior track.
-		if _resume_track != "" and _resume_track != current_track:
-			if SoundManager.has_method("play_music"):
-				SoundManager.play_music(_resume_track)
-		elif _resume_track == "" and current_track != "":
+		# the branch below saw _currently_playing == "" and re-fired the
+		# resume, restarting a track already playing seamlessly. The AREA
+		# must be compared too: a map's bed leaves `track` empty, so a
+		# track-only compare reads every browse as a change.
+		var live: Dictionary = {}
+		if SoundManager.has_method("capture_music_state"):
+			live = SoundManager.capture_music_state()
+		var unchanged: bool = str(live.get("track", "")) == str(_resume_state.get("track", "")) \
+			and str(live.get("area", "")) == str(_resume_state.get("area", ""))
+		# Resume whatever was playing before the jukebox opened, if anything.
+		# Falls back to fading out if there was no prior music.
+		if bool(_resume_state.get("playing", false)) and not unchanged:
+			if SoundManager.has_method("restore_music_state"):
+				SoundManager.restore_music_state(_resume_state)
+		elif not bool(_resume_state.get("playing", false)) and bool(live.get("playing", false)):
 			# Smooth fade rather than hard cut — the jukebox was playing
 			# but the player opened it from silent context, so we're
 			# returning them to silence. Fade keeps the close from feeling

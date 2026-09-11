@@ -31,9 +31,60 @@ func _disk_sheet_names(root: String) -> Array:
 	var dir = DirAccess.open(root)
 	assert_not_null(dir, "sheet root must open: %s" % root)
 	for sub in dir.get_directories():
-		if ResourceLoader.exists("%s/%s/overworld.png" % [root, sub]):
+		# FileAccess, not ResourceLoader: a deleted PNG keeps its .ctex, so ResourceLoader.exists
+		# enumerates sheets that are gone and this whole audit runs against a phantom corpus.
+		if FileAccess.file_exists("%s/%s/overworld.png" % [root, sub]):
 			names.append(sub)
 	return names
+
+
+## Sections this file does NOT audit, and WHY. Without this the omission is invisible: the loops
+## simply never visit them and every test passes. Measured 2026-09-11 -- overworld_monster_sheets
+## was unaudited and nothing said so.
+##
+## The reason is structural, not neglect: SHEET_ROOTS entries are DIRECTORY-per-sheet
+## (<root>/<name>/overworld.png) and _disk_sheet_names walks get_directories(). A FLAT section
+## (<root>/<name>.png) cannot be walked that way. Declared here rather than omitted, and EARNED by
+## the test below -- an entry claiming "flat" whose paths are not flat refuses.
+const FLAT_LAYOUT_SECTIONS := {
+	"overworld_monster_sheets": "res://assets/sprites/monsters/overworld",
+}
+
+
+func test_flat_layout_sections_really_are_flat() -> void:
+	# The exemption must be EARNED. Without this, FLAT_LAYOUT_SECTIONS is a suppression list that
+	# would excuse any section someone wanted out of the audit.
+	var manifest := _load_manifest()
+	var wrong: Array = []
+	for section in FLAT_LAYOUT_SECTIONS:
+		var entries = manifest.get(section, {})
+		assert_true(entries is Dictionary and not entries.is_empty(),
+			"FLAT_LAYOUT_SECTIONS names '%s', which the manifest does not populate -- the entry excuses nothing" % section)
+		for name in entries:
+			var path := str(entries[name].get("path", ""))
+			if path.ends_with("/overworld.png"):
+				wrong.append("%s/%s is directory-per-sheet (%s) and belongs in SHEET_ROOTS" % [section, name, path])
+	assert_eq(wrong, [], "a section declared FLAT holds directory-per-sheet paths: %s" % str(wrong))
+
+
+## SHEET_ROOTS is the subject of every loop in this file, and draining it left all three tests GREEN
+## (measured 2026-09-11, both magnitudes). The manifest is the independent register: every section
+## it declares whose name matches the overworld-sheet shape must be audited here, so removing a
+## root leaves its section unclassified rather than simply unvisited.
+func test_every_overworld_manifest_section_is_audited() -> void:
+	var manifest := _load_manifest()
+	assert_gt(manifest.size(), 3, "CONTROL: manifest parsed %d sections -- a short read makes the sweep below free" % manifest.size())
+	var unaudited: Array = []
+	for section in manifest:
+		if not (section is String) or not section.ends_with("_sheets"):
+			continue
+		if not str(section).begins_with("overworld_"):
+			continue
+		if not SHEET_ROOTS.has(section) and not FLAT_LAYOUT_SECTIONS.has(section):
+			unaudited.append(section)
+	assert_eq(unaudited, [],
+		("a manifest section of overworld sheets is not in SHEET_ROOTS, so nothing in this file " +
+		 "audits it -- disk and manifest can diverge there in silence: %s") % str(unaudited))
 
 
 func test_every_disk_overworld_sheet_is_registered_with_tier() -> void:
@@ -57,7 +108,15 @@ func test_every_registered_overworld_sheet_exists_on_disk() -> void:
 		var entries = manifest.get(section, {})
 		for name in entries:
 			var path = str(entries[name].get("path", ""))
-			assert_true(ResourceLoader.exists(path),
+			# This test is named "exists on disk" and asked ResourceLoader, which answers about the
+			# IMPORT CACHE. Measured 2026-09-11: deleting monk/overworld.png and re-importing left
+			# this GREEN -- --import rebuilds artifacts from bytes on disk but does not reap an
+			# orphan, so load()/ResourceLoader.exists serve a sheet whose source is gone. The
+			# premise here was already right (it iterates the manifest, every registered entry by
+			# name); only the reader was wrong, and the two are independent.
+			# GUT runs against the source tree, never an export, so FileAccess is the correct
+			# authority -- do not "fix" this back for exported-build compatibility.
+			assert_true(FileAccess.file_exists(path),
 				"%s entry '%s' points at missing asset %s — stale manifest entry" % [section, name, path])
 
 

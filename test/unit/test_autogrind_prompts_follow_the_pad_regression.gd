@@ -53,9 +53,10 @@ const LANE_DIRS := ["res://src/ui/autogrind", "res://src/ui/autobattle"]
 
 ## Frozen captions that are NOT fixed, each with the reason -- the value is required non-empty, so
 ## an entry can be explained green but never silenced green.
-const DEFERRED := {
-	"Start:Save": "Start is not a face button; AutobattleGridEditor derives the Select half via hint_for_action (folded 2026-09-11) and Start is still owed the same treatment.",
-}
+## EMPTY, and that is the goal state. "Start:Save" was retired 2026-09-11 by cowir-controller —
+## ui_menu now resolves through hint_for_action in BOTH grid editors (Plus / Start / Options).
+## @cowir-autogrind pre-authorised the removal when they declared this pin.
+const DEFERRED := {}
 
 
 ## Comments stripped QUOTE-AWARE, line count preserved so any positional reasoning stays valid.
@@ -130,6 +131,22 @@ func _gd_files() -> Array:
 ## when MenuScene is revived, replaced, or deleted, and it does not notice when a LIVE surface
 ## quietly loses its last caller.
 ##
+## ⚓ WHY THOSE TWO ARE DEAD, named rather than left as an absence. "Unreachable" invites the next
+## reader to wonder whether it was ever reachable and whether that was intended; the cause answers
+## both, and @cowir-controller asked for the SHA to outlive their message:
+##
+##   78209230  2026-03-22  "chore: remove dead code from GameLoop — sync battle, menu, unused vars"
+##             -const MenuSceneRes = preload("res://src/ui/MenuScene.tscn")
+##             -	var menu_scene = MenuSceneRes.instantiate()
+##             2 files, 76 deletions, and it touched NEITHER of the two screens it stranded.
+##
+## So the hub was orphaned by a deliberate dead-code cleanup that removed its only preload from the
+## main scene's script, and nothing measured the blast radius at the time. Not rot — a decision with
+## an unmeasured consequence, which is a different thing to hand whoever rules on these two screens.
+## (Corroboration that this is a CLASS: @cowir-battle's `_rule_to_action` was orphaned the same way
+## by `c9b57d6f "remove dead code, batch 4"`, which deleted the CALL and left the FUNCTION. A
+## cleanup that removes one end of an edge manufactures the dead code the next cleanup finds.)
+##
 ## Pins today's split so a change in EITHER direction is deliberate. @cowir-battle's point is why
 ## the dead half matters as much as the live: an unreachable screen whose captions are already
 ## correct is BETTER bait than a frozen one, because it reads as a file someone maintains.
@@ -139,6 +156,10 @@ const REACHABILITY := {
 	"AutobattleGridEditor.gd": true,
 	"AutogrindHistoryScreen.gd": false,
 	"AutogrindTemplatePicker.gd": false,
+	## Added when the set-difference arm below reded on its FIRST run and named it — AutogrindUI
+	## derives glyphs (it gained hint_for_action in the .296 fold) and my hand-written table had
+	## never classified it. Anchored via GameLoop, which is the main scene's script.
+	"AutogrindUI.gd": true,
 }
 
 func test_the_live_dead_split_is_still_what_the_header_claims() -> void:
@@ -178,6 +199,28 @@ func test_the_live_dead_split_is_still_what_the_header_claims() -> void:
 			drifted.append("%s: pinned reachable=%s, measured %d caller(s)" % [target, REACHABILITY[target], callers])
 	assert_eq(drifted, [],
 		"a prompt surface changed reachability -- if MenuScene was revived or a live screen lost its last caller, update REACHABILITY and say which")
+
+	## ⛔ DRAINING MUST BE THE VIOLATION. Measured: `REACHABILITY := {}` scored Passing 7 with the
+	## assert count unmoved — the loop above runs zero times and its one verdict passes vacuously.
+	## The identical shape I fixed in DEFERRED this afternoon, in the table I wrote WHILE fixing it.
+	## @cowir-adhoc's form: make the exemption a SUBTRAHEND so an empty table is maximal exposure
+	## rather than zero work. Every file in the corpus that asks the authority for a glyph is a
+	## prompt surface and must be classified here.
+	var derives: Array = []
+	for f in _gd_files():
+		var src := _code_only(FileAccess.get_file_as_string(f))
+		if src.contains("InputProfileManager.glyph_for_action(") \
+				or src.contains("InputProfileManager.face_glyph_for_index(") \
+				or src.contains("InputProfileManager.hint_for_action("):
+			derives.append(f.get_file())
+	assert_gt(derives.size(), 0, "CONTROL: the corpus must contain at least one deriving surface")
+	var unclassified: Array = []
+	for name in derives:
+		if not REACHABILITY.has(name):
+			unclassified.append(name)
+	unclassified.sort()
+	assert_eq(unclassified, [],
+		"a surface derives its glyphs but is not classified in REACHABILITY -- add it as live or dead and say which, or this arm covers nothing")
 
 	## ⚠️ WHAT THIS ARM IS AND IS NOT. It pins TODAY'S SPLIT and reds when a surface drifts across
 	## it. It is NOT a reachability engine: it counts referrers and knows one dead hub by name,
@@ -227,6 +270,16 @@ func test_the_comment_stripper_cuts_only_what_it_should() -> void:
 		assert_eq(_code_only(c[0]), c[1], c[2])
 
 
+## ⚠️ NAMED MEMBERSHIP, not a floor. @cowir-adhoc: "a floor protects against total vacuity and is
+## blind to partial loss", learned from a red where `gates >= 4` stayed green after one gate was
+## commented out. @cowir-controller hit it the same hour. Measured here before changing anything:
+##
+##   both LANE_DIRS lost   EC=1  Failing 2   the floor CAUGHT it
+##   ONE lane dir lost     EC=0  Failing —   SILENT. Half the corpus gone, green, Asserts unmoved.
+##
+## And partial is the likelier failure by a distance — a rename or a move touches one directory,
+## not both. The case a floor catches is the one least likely to happen. @cowir-overworld's
+## assert-count detector is blind here too: these asserts aggregate, so the number never moves.
 func test_the_census_reads_a_real_corpus() -> void:
 	var files := _gd_files()
 	assert_gt(files.size(), 5, "CONTROL: the lane dirs must yield real files, or every assert below is vacuous")
@@ -234,6 +287,29 @@ func test_the_census_reads_a_real_corpus() -> void:
 	for f in files:
 		total += FileAccess.get_file_as_string(f).length()
 	assert_gt(total, 20000, "CONTROL: and real content, not empty reads")
+
+	## ⛔ LANE_DIRS is AUTHORED-FIXED — a list this guard OWNS — so it needs an `== LITERAL` pin,
+	## not just a per-member loop. @cowir-ai's split: a floor or a per-member check is right for a
+	## corpus the guard DISCOVERS (it may legitimately grow or shrink), and wrong for a set the
+	## guard owns, where shrinking should be a deliberate edit. Measured: dropping
+	## "res://src/ui/autobattle" from the array scored EC=0 Passing 7 Risky — GRADE A, because the
+	## loop below iterates the list and a removed entry takes its own check with it.
+	## Widening the lane's corpus is welcome; doing it silently is not.
+	## FLOOR, not equality. @cowir-sfx: the discriminator is whether the set MAY GROW on correct work,
+	## not who authored it — and a lane adding a prompt directory is ordinary work, not an event.
+	## Measured: a real third dir with a classified surface reds under `== 2` and passes under `>= 2`,
+	## while the same dir with its surface UNclassified still reds by name through the arm below.
+	assert_gte(LANE_DIRS.size(), 2,
+		"LANE_DIRS holds %d, below the 2 prompt directories this lane has — a directory was dropped from the census, which silently un-guards every caption in it" % LANE_DIRS.size())
+
+	## Every declared directory must CONTRIBUTE, and the failure names the one that went quiet.
+	for d in LANE_DIRS:
+		var from_dir := 0
+		for f in files:
+			if f.begins_with(d + "/"):
+				from_dir += 1
+		assert_gt(from_dir, 0,
+			"%s contributed ZERO files — the census silently covered only the other lane dir, and a green below would be half a result reported as a whole one" % d)
 
 
 func test_no_face_button_letter_is_frozen_into_a_caption() -> void:
@@ -272,6 +348,33 @@ func test_the_four_repaired_surfaces_actually_ask_the_authority() -> void:
 		var src := _code_only(raw)
 		assert_true(src.contains("InputProfileManager.glyph_for_action(") or src.contains("InputProfileManager.face_glyph_for_index(") or src.contains("InputProfileManager.hint_for_action("),
 			"%s must ask the authority for its button glyph -- a COMMENT naming it does not count" % f.get_file())
+
+
+## ⛔ THE CENSUS PATTERN IS FACE-LETTERS-ONLY, asserted here rather than described in a comment.
+##
+## Both DEFERRED entries I shipped ("Sel:Auto", "Start:Save") were INERT SUPPRESSIONS: I found them
+## by eye while reading a line, wrote reasons, and published them as guarded pins — but the census
+## matches `[ABXY]` and can never emit a non-face name. Measured by deleting the entry: the census
+## stayed green. An allowlist line for what the detector cannot emit reads as coverage from BOTH
+## sides, and neither side is doing the work the other appears to delegate.
+##
+## ⚠️ AND THE ARM BELOW GOES VACUOUS WHEN THE TABLE DRAINS. @cowir-sprites shipped that exact
+## failure: a loop over an emptied list asserts nothing, and GUT cannot flag it because one assert
+## elsewhere in the call graph clears [Risky]. Measured here — DEFERRED := {} scores Passing 6.
+## So this arm lives OUTSIDE any loop and holds whatever the table's size: it pins the SCOPE of the
+## detector, so widening the pattern forces the claim to be restated.
+func test_the_census_scope_is_what_this_file_claims() -> void:
+	var re := RegEx.create_from_string("(Press [ABXY]\\b|\\b[ABXY]:[A-Za-z]|\\b[ABXY] or [ABXY]\\b|\\[[ABXY]\\])")
+	assert_not_null(re, "CONTROL: the census pattern must compile")
+	for face in ["Press A", "B:Cancel", "A or B", "[X]"]:
+		assert_not_null(re.search(face), "the census MUST emit a face-button caption: %s" % face)
+	## The limitation, encoded. @cowir-controller derives the banned set from BUTTON_NAMES, which
+	## covers every family's spelling of every NON-face button; this census does not, and a reader
+	## must not take its green as covering them. If someone widens the pattern, these red and the
+	## file's claims (and any now-real DEFERRED entry) have to be rewritten deliberately.
+	for non_face in ["Sel:Auto", "Start:Save", "L:+AND", "R:+Action"]:
+		assert_null(re.search(non_face),
+			"census scope changed: it now emits '%s'. Widening is GOOD -- update this arm, the header, and any DEFERRED entry that was previously inert" % non_face)
 
 
 func test_deferred_entries_carry_a_reason_and_are_still_present() -> void:
