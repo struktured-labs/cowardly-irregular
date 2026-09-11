@@ -1185,7 +1185,7 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 		"narrator":
 			_draw_narrator_portrait(img, size)
 		_:
-			# Masterite portraits: 9 of 24 keys have art (medieval x4, steampunk x4, warden_suburban). The other 15 land here as the mysterious bust and are listed in test_portrait_identity_class_regression.KNOWN_MISSING_PORTRAITS.
+			# Masterite portraits: 12 of 24 keys have art — every masterite a dungeon actually spawns, plus medieval x4. The other 12 land here as the mysterious bust and belong to cutscenes with no dispatcher; listed in test_portrait_identity_class_regression.KNOWN_MISSING_PORTRAITS.
 			if portrait_type.begins_with("masterite_"):
 				_draw_mysterious_portrait(img, size)
 			else:

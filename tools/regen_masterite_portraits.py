@@ -150,6 +150,40 @@ WORLD_PERSONAS = {
         "faintly pleased. Ledger-green, tarnished brass and ink-black palette matching the "
         "steampunk Curator battle strip."
     ),
+    ("warden", "industrial"): (
+        "Character: THE WARDEN OF THE ASSEMBLY LINE — a massive industrial enforcer built from "
+        "factory parts, testing structural integrity by applying overwhelming force. A hulking "
+        "head and shoulders assembled from press-brake steel and stamped plate: a welded visor "
+        "slot instead of eyes, hydraulic rams flanking the neck, heavy shoulder yokes hung with "
+        "chain and safety-yellow hazard striping worn to bare metal. No face — the read is "
+        "MACHINE THAT TESTS, patient and absolute. You may fail safely; you may not fail "
+        "creatively. Soot-grey steel, hazard yellow and oil-black palette matching the industrial "
+        "Warden battle strip."
+    ),
+    ("arbiter", "futuristic"): (
+        "Character: THE ARBITER OF THE BENCHMARK — a performance-testing intelligence that grades "
+        "you against the ninetieth percentile and raises its own difficulty until you match. A "
+        "sleek synthetic head: smooth matte-white faceplate with no mouth, a single horizontal "
+        "scanline visor glowing cyan across where eyes would be, thin data-cable braids falling "
+        "from the skull to high angular shoulders, small floating percentile glyphs at the frame "
+        "edge. Utterly composed, analytical, uninterested in whether you survive — interested in "
+        "your SCORE. Cold white, cyan scanline and graphite palette matching the futuristic "
+        "Arbiter battle strip. Clean sci-fi, not fantasy."
+    ),
+    ("curator", "abstract"): (
+        "Character: THE CURATOR OF ENTROPY — resource decay incarnate, the heat death of your "
+        "reserves, the Master's final accountant. A robed bust: deep hood over a face that is an "
+        "ABSENCE, two faint cold points where eyes were, high collar, narrow skeletal shoulders. "
+        "The lower edge of the robe frays into a few loose pixels, as if the figure is coming "
+        "apart at its own outline. Not menacing by aggression; menacing by INEVITABILITY. Washed "
+        "bone-white, void-grey and faint violet palette matching the abstract Curator battle "
+        "strip. "
+        "⚠️ CRITICAL: the fraying is CONFINED TO THE SILHOUETTE'S OWN EDGE. Absolutely NO haze, "
+        "fog, mist, dust, particles, glow or void filling the frame around the figure — the area "
+        "outside the bust must be FULLY TRANSPARENT, zero alpha, not a dark or textured "
+        "background. Three consecutive rolls returned a fully opaque image; the subject is the "
+        "figure alone."
+    ),
     ("warden", "suburban"): (
         "Character: THE WARDEN OF ROUTINE, the Hall Monitor Eternal — a suburban school hall "
         "monitor who, through forty years of unbroken routine, became the thing he enforced. "
@@ -215,6 +249,32 @@ def remove_flat_background(img: Image.Image, threshold: int = 240) -> Image.Imag
     return img
 
 
+## The prompt says "fully transparent background" and NOTHING checked that it came back that way.
+## Measured 2026-09-11: 2 of 3 rolls in one batch returned a 100%-opaque image -- a solid
+## rectangle that renders as a BLACK BOX behind the speaker in the dialogue panel. The other roll
+## in the same batch was clean, so it is a bad ROLL, not a bad prompt, and re-rolling fixes it.
+##
+## Chroma-keying instead would be the wrong repair here: these subjects are near-black steel and
+## bone-white void, so a corner-seeded key can eat the figure. That is this lane's own 2026-09-09
+## defect, where a second chromakey pass wiped the subject out of 40 sheets.
+class OpaqueBackdrop(RuntimeError):
+    """Recoverable by RE-ROLLING. Raised inside the retry loop so a bad roll costs one more call,
+    not the batch."""
+
+
+def _refuse_opaque_backdrop(img: Image.Image, attempt: int, max_retries: int) -> None:
+    rgba = img.convert("RGBA")
+    w, h = rgba.size
+    a = rgba.getchannel("A")
+    corners = [a.getpixel(p) for p in [(0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)]]
+    if max(corners) < 10:
+        return
+    opaque = sum(1 for v in a.getdata() if v > 10) / float(w * h)
+    raise OpaqueBackdrop(
+        "returned image has an OPAQUE backdrop (corner alphas %s, %.0f%% opaque) -- the contract "
+        "is a transparent bust; this renders as a solid box behind the speaker" % (corners, 100 * opaque))
+
+
 def call_gpt_image(client, prompt: str, ref_files: list, quality: str,
                    max_retries: int = 3) -> Image.Image:
     for attempt in range(max_retries):
@@ -228,7 +288,14 @@ def call_gpt_image(client, prompt: str, ref_files: list, quality: str,
                 n=1,
             )
             b64 = resp.data[0].b64_json
-            return Image.open(io.BytesIO(base64.b64decode(b64)))
+            img = Image.open(io.BytesIO(base64.b64decode(b64)))
+            _refuse_opaque_backdrop(img, attempt, max_retries)
+            return img
+        except OpaqueBackdrop as e:
+            print(f"    re-roll {attempt + 1}/{max_retries}: {e}", flush=True)
+            if attempt == max_retries - 1:
+                raise
+            continue
         except Exception as e:
             msg = str(e).lower()
             if "rate" in msg or "429" in msg:
