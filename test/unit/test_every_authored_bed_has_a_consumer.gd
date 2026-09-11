@@ -789,12 +789,30 @@ func test_the_set_of_unreached_beds_has_not_changed() -> void:
 	for id in unreached:
 		if not KNOWN_UNREACHED.has(id):
 			added.append(id)
-	var gone: Array[String] = []
+	## ⛔ TWO CAUSES LOOK IDENTICAL HERE and the message used to name only one. A
+	## pin drops out of `unreached` because the bed got WIRED — or because the
+	## track was DELETED from the manifest entirely, which cowir-adhoc calls
+	## inert-by-deletion. Measured 2026-09-11 by removing ambient_ocean: caught,
+	## but told to "delete the entries so they are covered like the rest", which
+	## is the right action for the wrong reason and sends the reader looking for
+	## a consumer that was never added.
+	var ids_now: Dictionary = {}
+	for id in _manifest_ids():
+		ids_now[id] = true
+	var wired: Array[String] = []
+	var deleted: Array[String] = []
 	for id in KNOWN_UNREACHED.keys():
-		if not unreached.has(str(id)):
-			gone.append(str(id))
+		var k: String = str(id)
+		if unreached.has(k):
+			continue
+		if ids_now.has(k):
+			wired.append(k)
+		else:
+			deleted.append(k)
 
 	assert_eq(added.size(), 0,
 		"authored beds that NOTHING reaches and that are not pinned (%d): %s — a track was added to the manifest with no consumer, which is silence nobody will notice" % [added.size(), added])
-	assert_eq(gone.size(), 0,
-		"pinned beds that ARE now reached (%s) — they were wired; delete the entries so they are covered like the rest" % [gone])
+	assert_eq(wired.size(), 0,
+		"pinned beds that ARE now reached (%s) — they were wired; delete the entries so they are covered like the rest" % [wired])
+	assert_eq(deleted.size(), 0,
+		"pinned beds that are no longer IN THE MANIFEST (%s) — the track was deleted, not wired. Delete the pin here AND check the peer census, the brief in tools/music_prompts.json, and whether the OGG went with it" % [deleted])
