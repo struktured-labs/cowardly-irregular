@@ -737,6 +737,17 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 		"CONTROL FAILED: world1_prologue IS dispatched (GameLoop returns it from _get_pending_story_cutscene) but the predicate cannot see it — a green below would mean every scene reads as dead")
 	assert_false(_scene_is_dispatched("world2_epilogue", disp),
 		"CONTROL FAILED: world2_epilogue is only named by _epilogue_done_or_unwired, a gate that TOLERATES it being unwired. If the predicate counts that as dispatch it is the loose one this helper replaced")
+	## The TABLE-LOOP form needs its own control, and it did not have one when the
+	## form was added. The other two arms would still catch a total failure — a
+	## fragment bed would strand and red — but only because a bed happens to
+	## depend on it today. Rename _FRAGMENT_GATES and the parser silently finds
+	## nothing. Named members, not a count: a floor cannot tell 20 from 2.
+	var loop_ids: Dictionary = _loop_dispatched_ids(disp)
+	for member in ["world1_fragment_warden", "world6_fragment_warden"]:
+		assert_true(loop_ids.has(member),
+			"CONTROL FAILED: the table-loop parser cannot see %s. GameLoop dispatches 20 fragment reveals through `for fid in _FRAGMENT_GATES: ... return fid`; if that stops parsing, every fragment bed reads as dead again and the allowlist grows back" % member)
+	assert_false(loop_ids.has("world1_prologue"),
+		"CONTROL FAILED: world1_prologue is returned as a LITERAL, not from a table loop — if the loop parser claims it, it is matching something other than dict keys")
 	assert_eq(disp.find("\"tracks\": {"), -1,
 		"CONTROL FAILED: music_manifest.json is in the dispatcher corpus — every id would match itself")
 
