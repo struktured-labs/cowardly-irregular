@@ -213,7 +213,14 @@ func test_l_plus_r_together_still_means_the_autogrind_tier() -> void:
 		"L+R now opens the editor — CLAUDE.md's table and the NPC lines say it does not; update all three")
 
 
+## ⚠️ COLLECT-THEN-ASSERT OVER A HAND-LISTED CORPUS, which is the shape my own assert-count detector
+## is BLIND to (@cowir-sfx, 2026-09-11): drain SPEAKING_LINES and `missing` is empty, the single
+## assert still runs, the count does not move, and the guard does zero work in green. The corpus here
+## IS the list, so it needs the size stated explicitly — there is no detector output to fall back on.
 func test_every_npc_that_names_a_button_still_names_that_button() -> void:
+	assert_eq(SPEAKING_LINES.size(), 3,
+		"SPEAKING_LINES holds %d lines, not the 3 authored NPC lines this guard exists to defend — " % SPEAKING_LINES.size() +
+		"if a line was retired, retire its entry AND this number together; a shrunken list defends nobody in silence")
 	var missing: Array = []
 	for path in SPEAKING_LINES:
 		var src := _read(path)
