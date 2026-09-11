@@ -5457,7 +5457,9 @@ func _stop_autogrind(reason: String) -> void:
 
 	# Restore clean audio state and resume area music
 	SoundManager.reset_corruption()
-	SoundManager.play_area_music(_current_map_id)
+	## _current_map_id is the MAP vocabulary; play_area_music matches the AREA one — 8 of 13 dungeon ids have no arm and fell through to overworld_medieval.
+	var _area_key: String = _derive_current_scene_music_key()
+	SoundManager.play_area_music(_area_key if _area_key != "" else _current_map_id)
 
 	# Play interrupt SFX based on stop reason
 	_play_grind_stop_sfx(reason)
