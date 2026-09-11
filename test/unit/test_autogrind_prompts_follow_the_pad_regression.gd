@@ -59,6 +59,22 @@ extends GutTest
 ## arm's — and I widened only the live one, so the tripwire whose whole job is "if someone widens
 ## the pattern, red and restate the claims" went on watching a string that could no longer change.
 ## A tripwire holding its own copy of the thing it watches cannot fire.
+## ⚠️ IT WILL MATCH IN-WORLD PROSE, AND THAT IS THE DELIBERATE CHOICE. @cowir-story found
+## "Form 1-A: the incident" in Rivet Row — correct prose that `[ABXY]:` adjacency matches — and
+## @cowir-controller's conclusion for THEIR arm was to key on caption context instead, because an
+## arm that reds on prose gets suppressed. Measured here before copying it: "Plan B: retreat",
+## "Tier A: fast" and "Exhibit A: the ledger" all match; live instances in LANE_DIRS today: 0.
+##
+## Not narrowing, because the risk profiles differ and the symptom is shared while the cause is not.
+## Their corpus is 197 prose JSON files; mine is two control-panel directories — 208 `.text`
+## assignments, 15 `"text":` dict keys, no prose. A context key (`.text` / `"text":`) would cover
+## both historical offenders AND lose a caption built into a local before assignment, i.e. it trades
+## a LOUD false positive for a SILENT false negative. A red on "Tier A: fast" costs one
+## conversation; the miss shipped "B: Exit" to players in .297.
+##
+## So if this ever reds on real prose: derive the caption or restructure the string. Do NOT add a
+## DEFERRED entry — the key is the regex MATCH, so exempting "B: E" would exempt every B:E… caption
+## in the lane, an exemption broader than its subject.
 const CENSUS_PATTERN := "(Press [ABXY]\\b|\\b[ABXY]:\\s*[A-Za-z]|\\b[ABXY] or [ABXY]\\b|\\[[ABXY]\\])"
 
 const LANE_DIRS := ["res://src/ui/autogrind", "res://src/ui/autobattle"]
