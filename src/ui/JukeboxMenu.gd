@@ -298,12 +298,25 @@ func _play_selected() -> void:
 	var track_id = TRACKS[selected_index][0]
 
 	_generating = true
+	var previous_playing: String = _currently_playing
 	_currently_playing = track_id
 	_now_playing_label.text = "Generating..."
 	_now_playing_label.add_theme_color_override("font_color", DISABLED_COLOR)
 
 	await get_tree().process_frame
 	await get_tree().create_timer(0.05).timeout
+
+	## 33 rows are unplayable on web (the preset drops the files, the manifest
+	## still lists them) and play_music fades the old bed out before finding out.
+	if SoundManager and SoundManager.has_method("music_is_available") \
+			and not SoundManager.music_is_available(track_id):
+		_generating = false
+		_currently_playing = previous_playing
+		_now_playing_label.text = "Not included in this build: %s" % TRACKS[selected_index][1]
+		_now_playing_label.add_theme_color_override("font_color", DISABLED_COLOR)
+		SoundManager.play_ui("menu_back")
+		_refresh_list()
+		return
 
 	if SoundManager:
 		if track_id.begins_with("overworld") or track_id in ["village", "cave"]:
