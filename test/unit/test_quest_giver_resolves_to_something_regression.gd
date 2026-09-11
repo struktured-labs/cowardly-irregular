@@ -53,11 +53,17 @@ func _snake(n: String) -> String:
 func _decomment(src: String) -> String:
 	var out: PackedStringArray = []
 	for line in src.split("\n"):
-		var hash_at: int = line.find("#")
-		if hash_at >= 0:
-			out.append(line.substr(0, hash_at))
-		else:
-			out.append(line)
+		# Cut at the first # OUTSIDE a string: `_create_npc("Worker #4471")` is code, not a comment.
+		var in_str := false
+		var cut := -1
+		for i in line.length():
+			var ch: String = line[i]
+			if ch == "\"":
+				in_str = not in_str
+			elif ch == "#" and not in_str:
+				cut = i
+				break
+		out.append(line.substr(0, cut) if cut >= 0 else line)
 	return "\n".join(out)
 
 
@@ -197,3 +203,14 @@ func test_a_commented_out_npc_id_does_not_count_as_wiring() -> void:
 		"control: a real assignment must still be seen after decommenting")
 	assert_eq(re.search(_decomment(removed)), null,
 		"a commented-out .npc_id must NOT register as wiring — that is how removals actually look")
+
+
+## A `#` inside a string literal is CODE. Blanking from the first `#` truncated
+## `_create_npc("Worker #4471", ...)` and silently dropped that NPC from the id set.
+func test_decomment_does_not_truncate_a_hash_inside_a_string() -> void:
+	var code := "\tvar w = _create_npc(\"Worker #4471\", \"villager\", Vector2(1,2), [])"
+	assert_true(_decomment(code).contains("Worker #4471"),
+		"a # inside a string is code — decommenting must not cut the line there")
+	var commented := "\tvar w = _create_npc(\"Worker\", \"villager\")  # dropped for now"
+	assert_false(_decomment(commented).contains("dropped for now"),
+		"control: a real trailing comment must still be blanked")
