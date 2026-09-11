@@ -71,7 +71,13 @@ func test_the_unreachable_escape_branch_is_not_reinstated() -> void:
 ## The legend is what he would have read. It said B:Delete, which was true and lethal.
 func test_the_legend_tells_him_escape_goes_back() -> void:
 	var src := FileAccess.get_file_as_string(ED)
-	assert_true(src.contains("B/Esc:Back"), "the on-screen legend must say Escape backs out")
+	assert_true(src.contains("/Esc:Back"),
+		"the on-screen legend must say Escape backs out")
+	## The face glyph is DERIVED now (InputProfileManager.glyph_for_action), so pinning the
+	## literal "B/Esc:Back" pinned a spelling no PlayStation player ever sees. The intent --
+	## Escape is named as the way back -- survives derivation; the letter never should have.
+	assert_true(src.contains("glyph_for_action("),
+		"and the face letter beside it must be derived, not frozen back in")
 	assert_false(src.contains("B:Delete"),
 		"and must stop advertising B as delete — that is the mapping that trapped him")
 

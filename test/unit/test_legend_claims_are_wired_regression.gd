@@ -62,6 +62,13 @@ func _claims(line: String) -> Array:
 
 
 func _resolves(src: String, tok: String) -> bool:
+	## A "%s" is a DERIVED glyph, not an unbound claim. It is filled at runtime by
+	## InputProfileManager.glyph_for_action, which reads the profile binding table — so it resolves
+	## BY CONSTRUCTION and is strictly more trustworthy than the frozen letter it replaced. Required
+	## to be backed by a real derivation in the same file, so "%s" cannot become a way to silence
+	## this ratchet by templating a legend without wiring one.
+	if tok.contains("%s"):
+		return src.contains("glyph_for_action(")
 	if BINDING.has(tok):
 		for sym in BINDING[tok]:
 			if src.contains(sym):

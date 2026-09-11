@@ -270,13 +270,25 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	help_label1.text = "D-Pad:Navigate  A:Edit  B/Esc:Back  Del/Y:Delete  W/S/RStick:Value  L:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close"
+	## Face letters derived; Esc/Del/D-Pad stay literal (keyboard keys and a control every pad
+	## has). Guarded for the pre-autoload window, matching this lane's other prompt surfaces.
+	var g_ok: String = "A"
+	var g_no: String = "B"
+	if InputProfileManager:
+		g_ok = InputProfileManager.glyph_for_action("ui_accept")
+		g_no = InputProfileManager.glyph_for_action("ui_cancel")
+	help_label1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  Del/Y:Delete  W/S/RStick:Value  L:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [g_ok, g_no]
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
+	## ⚠️ "Sel:" and "Start:" are frozen pad names on an otherwise KEYBOARD row, and they are NOT
+	## fixed here: Select/Start are not face buttons, so glyph_for_action (FACE_GLYPHS) cannot name
+	## them, and @cowir-controller's non-face derivation is on an unfolded branch. Duplicating it
+	## would create the second authority this lane spent the day removing. On a DualSense that
+	## "Sel" is Create and that "Start" is Options.
 	help_label2.text = "Y:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  Sel:Auto  Start:Save"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
@@ -2405,7 +2417,14 @@ func _build_option_picker() -> void:
 		_option_picker.add_child(row)
 		list_y += 22.0
 	var help := Label.new()
-	help.text = "D-Pad:Select   A:Confirm   B:Cancel"
+	## A and B name buttons no PlayStation or Xbox pad carries. D-Pad stays literal — every pad has
+	## one. Guarded for the pre-autoload window, matching the other prompt surfaces.
+	var g_ok: String = "A"
+	var g_no: String = "B"
+	if InputProfileManager:
+		g_ok = InputProfileManager.glyph_for_action("ui_accept")
+		g_no = InputProfileManager.glyph_for_action("ui_cancel")
+	help.text = "D-Pad:Select   %s:Confirm   %s:Cancel" % [g_ok, g_no]
 	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
 	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -3168,7 +3187,12 @@ func _build_share_picker(files: Array) -> void:
 		list_y += 26.0
 
 	var help := Label.new()
-	help.text = "D-Pad:Select   A:Import   B:Cancel"
+	var gi_ok: String = "A"
+	var gi_no: String = "B"
+	if InputProfileManager:
+		gi_ok = InputProfileManager.glyph_for_action("ui_accept")
+		gi_no = InputProfileManager.glyph_for_action("ui_cancel")
+	help.text = "D-Pad:Select   %s:Import   %s:Cancel" % [gi_ok, gi_no]
 	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
 	help.add_theme_font_size_override("font_size", 10)
 	help.add_theme_color_override("font_color", style.text.darkened(0.2))
