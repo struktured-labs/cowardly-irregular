@@ -55,10 +55,22 @@ func test_delete_is_still_reachable_on_both_devices() -> void:
 	var src := FileAccess.get_file_as_string(ED)
 	assert_true(src.contains("KEY_DELETE, KEY_BACKSPACE"),
 		"a keyboard needs a delete now that ui_cancel backs out")
-	var x_at := src.find("JOY_BUTTON_X")
-	assert_gt(x_at, -1, "a pad needs one too — X was the only free button in this file")
-	assert_true(src.substr(x_at, 200).contains("_delete_current_cell"),
-		"and X must actually delete, not merely be bound")
+	## ⚠️ Was `src.find("JOY_BUTTON_X")` — the FIRST match — and the legend now DERIVES its glyph
+	## via face_glyph_for_index(JOY_BUTTON_X), which put a non-binding mention above the real one.
+	## A bare find() claims the whole file from one offset; scan every occurrence instead.
+	var occurrences := 0
+	var deletes := false
+	var from := 0
+	while true:
+		var at := src.find("JOY_BUTTON_X", from)
+		if at == -1:
+			break
+		occurrences += 1
+		if src.substr(at, 200).contains("_delete_current_cell"):
+			deletes = true
+		from = at + 1
+	assert_gt(occurrences, 0, "a pad needs a delete too — X was the only free button in this file")
+	assert_true(deletes, "and X must actually delete, not merely be bound")
 
 
 ## The dead exit must not be silently restored: it reads as a working Escape and is not one.
@@ -71,7 +83,13 @@ func test_the_unreachable_escape_branch_is_not_reinstated() -> void:
 ## The legend is what he would have read. It said B:Delete, which was true and lethal.
 func test_the_legend_tells_him_escape_goes_back() -> void:
 	var src := FileAccess.get_file_as_string(ED)
-	assert_true(src.contains("B/Esc:Back"), "the on-screen legend must say Escape backs out")
+	assert_true(src.contains("/Esc:Back"),
+		"the on-screen legend must say Escape backs out")
+	## The face glyph is DERIVED now (InputProfileManager.glyph_for_action), so pinning the
+	## literal "B/Esc:Back" pinned a spelling no PlayStation player ever sees. The intent --
+	## Escape is named as the way back -- survives derivation; the letter never should have.
+	assert_true(src.contains("glyph_for_action("),
+		"and the face letter beside it must be derived, not frozen back in")
 	assert_false(src.contains("B:Delete"),
 		"and must stop advertising B as delete — that is the mapping that trapped him")
 
