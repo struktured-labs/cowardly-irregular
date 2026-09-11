@@ -171,7 +171,7 @@ func _build_ui() -> void:
 	_help_label = Label.new()
 	## A/B/Start are InputMap actions; Case is a RAW index (JOY_BUTTON_BACK, :350) with no action,
 	## so it needs the index helper rather than hint_for_action. D-Pad is a direction — neutral.
-	_help_label.text = "D-Pad:Move  %s:Type  %s:Back  %s:Case  %s:Done" % [
+	_help_label.text = "↑↓←→/D-pad:Move  %s:Type  %s:Back  %s:Case  %s:Done" % [
 		InputProfileManager.hint_for_action("ui_accept"),
 		InputProfileManager.hint_for_action("ui_cancel"),
 		_case_hint(),
