@@ -150,6 +150,17 @@ WORLD_PERSONAS = {
         "faintly pleased. Ledger-green, tarnished brass and ink-black palette matching the "
         "steampunk Curator battle strip."
     ),
+    ("warden", "suburban"): (
+        "Character: THE WARDEN OF ROUTINE, the Hall Monitor Eternal — a suburban school hall "
+        "monitor who, through forty years of unbroken routine, became the thing he enforced. "
+        "Late-middle-aged man, thinning grey hair combed flat, thick square glasses, utterly "
+        "level expression. A laminated ID badge on a lanyard at the collar, a plain windbreaker "
+        "over a polo with a small crest, a whistle resting against the chest, a hall-pass clip "
+        "at the shoulder. HE DOES NOT RAISE HIS VOICE — the read is bureaucratic patience that "
+        "has outlasted everyone who ever argued with it. Faded suburban palette: beige, muted "
+        "navy windbreaker, fluorescent-lit skin tones, matching the suburban Warden battle strip. "
+        "16-bit EarthBound-adjacent, not fantasy."
+    ),
     ("warden", "steampunk"): (
         "Character: THE STANDING ORDER — a pressure gauge that has never once moved off the red. "
         "A vast riveted boiler-knight: domed iron helm with a single round gauge-face set into "
