@@ -184,13 +184,27 @@ rehearse() {
     # confusing §2 block mid-rehearsal, and the obvious reading would be "the candidate is
     # broken" rather than "the rig parsed the version differently from the tool that decides".
     # An audit instrument must not disagree silently with the thing it is auditing.
-    if [ -x "$WORK/repo/tools/check_version_matches_tag.sh" ]; then
-        if ! ( cd "$WORK/repo" && ./tools/check_version_matches_tag.sh "$tag" ) >/dev/null 2>&1; then
-            echo "[rehearse] BLOCKED: derived tag ${tag} from Version.gd, but the candidate's own" >&2
-            echo "           tools/check_version_matches_tag.sh rejects it. This script's parse and" >&2
-            echo "           the shipped checker's have diverged — fix the parse, do not proceed." >&2
-            return 2
-        fi
+    # ⛔ NO SILENT SKIP. The first version of this control was `if [ -x … ]; then … fi` with no
+    # else, so a candidate missing the checker would have had this control quietly not run —
+    # one commit after I wrote "a missing guard is not a passing one" into publish_all and made
+    # the same situation exit 4 there. I wrote the rule and then wrote its opposite, inside the
+    # control I was adding BECAUSE of a lesson about audit instruments.
+    #
+    # Blocking is also the consistent answer: publish_all §2 itself refuses to publish when
+    # check_version_matches_tag.sh is absent, so a candidate without it cannot ship anyway, and
+    # a rehearsal that sailed past would be rehearsing something the real run forbids.
+    if [ ! -x "$WORK/repo/tools/check_version_matches_tag.sh" ]; then
+        echo "[rehearse] BLOCKED: the candidate has no executable tools/check_version_matches_tag.sh," >&2
+        echo "           so nothing can ratify the tag name this script derived from Version.gd." >&2
+        echo "           publish_all §2 refuses to publish without it too — this is not a case to" >&2
+        echo "           wave through. A missing guard is not a passing one." >&2
+        return 2
+    fi
+    if ! ( cd "$WORK/repo" && ./tools/check_version_matches_tag.sh "$tag" ) >/dev/null 2>&1; then
+        echo "[rehearse] BLOCKED: derived tag ${tag} from Version.gd, but the candidate's own" >&2
+        echo "           tools/check_version_matches_tag.sh rejects it. This script's parse and" >&2
+        echo "           the shipped checker's have diverged — fix the parse, do not proceed." >&2
+        return 2
     fi
 
     # §3b compares the tag against origin's newest. The candidate's tag does not exist on the
