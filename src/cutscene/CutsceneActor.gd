@@ -31,6 +31,7 @@ var _walk_tween: Tween = null
 var _walk_target: Vector2 = Vector2.INF
 var _emote_label: Label = null
 var _bubble: Control = null
+var _shake_tween: Tween = null
 
 
 ## spec: {kind:"party"|"npc", job|archetype:String, facing:String}
@@ -225,6 +226,32 @@ func clear_bubble() -> void:
 	if _bubble and is_instance_valid(_bubble):
 		_bubble.queue_free()
 	_bubble = null
+
+
+## CT-style shudder — fear, cold, laughter. Jitters the SPRITE's offset, never `position`, so a walk in flight is not fought; self-clears. Instant no-op off-tree.
+func shake(duration: float = 0.4, intensity: float = 2.0) -> void:
+	stop_shake()
+	if not is_inside_tree() or _sprite == null or duration <= 0.0:
+		return
+	var tween := create_tween()
+	for i in maxi(1, int(duration / 0.04)):
+		tween.tween_property(_sprite, "offset", Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity)), 0.04)
+	tween.tween_property(_sprite, "offset", Vector2.ZERO, 0.04)
+	tween.tween_callback(stop_shake)
+	_shake_tween = tween
+
+
+func is_shaking() -> bool:
+	return _shake_tween != null and is_instance_valid(_shake_tween) and _shake_tween.is_valid() and _shake_tween.is_running()
+
+
+## Ends a shudder now (a skip, or a scene teardown) and puts the sprite back exactly where it was.
+func stop_shake() -> void:
+	if _shake_tween and is_instance_valid(_shake_tween) and _shake_tween.is_valid():
+		_shake_tween.kill()
+	_shake_tween = null
+	if _sprite and is_instance_valid(_sprite):
+		_sprite.offset = Vector2.ZERO
 
 
 ## Small surprise-hop; awaited. Instant no-op off-tree (headless). `duration` is per-hop cycle time (default 0.2s = 0.1 up + 0.1 down); prior signature ignored JSON `duration` silently (cadence-8 audit finding).
