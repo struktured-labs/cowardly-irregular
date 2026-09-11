@@ -204,13 +204,26 @@ func _ambient_getter_re() -> RegEx:
 	return r
 
 
-## Blank everything after a `#` on each line, keeping the line itself so offsets are unchanged.
+## Blank everything after the first `#` OUTSIDE a string literal, keeping the line so offsets hold.
+## ⚠️ A naive first-`#` cut truncates real code: 84 lines in src/ carry a `#` inside a string
+## (`[color=#44ff44]`, `"BATTLE #%d"`). Today none of them also carries an ambient key — measured,
+## corpus identical stripped vs not, 11 keys both ways — so this is latent, and it fails SILENT:
+## a truncated line drops its key from the corpus and the guard quietly stops defending it.
+## I introduced that hole in the commit that fixed a loud false positive (cowir-controller, 8e91aaa5).
 ## Deliberately NOT stripping string literals: play_ambient(SOME_CONST) and the getter returns
 ## are both string-bearing code, and blanking strings would hide the very keys this scan exists
 ## to find (cowir-autogrind's Callable(self,"fn") lesson, from the other direction).
 func _strip_comments(text: String) -> String:
 	var out: PackedStringArray = []
 	for line in text.split("\n"):
-		var i: int = line.find("#")
-		out.append(line if i < 0 else line.substr(0, i))
+		var in_str := false
+		var cut := -1
+		for i in range(line.length()):
+			var c := line[i]
+			if c == "\"":
+				in_str = not in_str
+			elif c == "#" and not in_str:
+				cut = i
+				break
+		out.append(line if cut < 0 else line.substr(0, cut))
 	return "\n".join(out)
