@@ -612,7 +612,8 @@ func _step_fade_to_black(step: Dictionary) -> void:
 	_effects_rect.color = Color(0, 0, 0, 0)
 	var tween = create_tween()
 	tween.tween_property(_effects_rect, "color", Color(0, 0, 0, 1), duration)
-	await tween.finished
+	await _await_tween_hold(tween)
+	_effects_rect.color = Color(0, 0, 0, 1)
 
 
 func _step_fade_from_black(step: Dictionary) -> void:
@@ -626,12 +627,22 @@ func _step_fade_from_black(step: Dictionary) -> void:
 	_effects_rect.color = Color(0, 0, 0, 1)
 	var tween = create_tween()
 	tween.tween_property(_effects_rect, "color", Color(0, 0, 0, 0), duration)
-	await tween.finished
+	await _await_tween_hold(tween)
+	_effects_rect.color = Color(0, 0, 0, 0)
 	_effects_rect.visible = false
 
 
 ## Held confirm runs the scene's holds this many times faster — the same hold that fast-forwards the dialogue box, so "hold A" means one thing across a scene.
 const FAST_FORWARD_RATE: float = 4.0
+
+
+## A tween-driven hold with the same contract as _sleep: a skip cuts it the same frame (caller snaps the end state), a held confirm runs it FAST_FORWARD_RATE faster. The fades, flash and shakes were the last holds that ignored both.
+func _await_tween_hold(tween: Tween) -> void:
+	while not _skipping and is_instance_valid(tween) and tween.is_valid() and tween.is_running():
+		tween.set_speed_scale(FAST_FORWARD_RATE if Input.is_action_pressed("ui_accept") else 1.0)
+		await get_tree().process_frame
+	if is_instance_valid(tween) and tween.is_valid():
+		tween.kill()
 
 
 ## A hold that a skip cuts short: holding B for 1.5s and then sitting through the rest of a wait read as an ignored press.
@@ -663,8 +674,8 @@ func _step_letterbox_in(step: Dictionary) -> void:
 	_apply_letterbox_ease(tween, step)
 	tween.tween_property(_letterbox_top, "position:y", 0.0, duration)
 	tween.tween_property(_letterbox_bottom, "position:y", screen_size.y - LETTERBOX_HEIGHT, duration)
-	await tween.finished
-	_letterbox_visible = true
+	await _await_tween_hold(tween)
+	_apply_letterbox(true)
 
 
 func _step_letterbox_out(step: Dictionary) -> void:
@@ -678,8 +689,8 @@ func _step_letterbox_out(step: Dictionary) -> void:
 	_apply_letterbox_ease(tween, step)
 	tween.tween_property(_letterbox_top, "position:y", float(-LETTERBOX_HEIGHT), duration)
 	tween.tween_property(_letterbox_bottom, "position:y", screen_size.y, duration)
-	await tween.finished
-	_letterbox_visible = false
+	await _await_tween_hold(tween)
+	_apply_letterbox(false)
 
 
 ## Cinematic letterbox slide — SINE ease-in-out default matches PR #158 camera easing so pan + bars feel like one unified move. Optional `ease`/`trans` fields per the same schema as camera_focus.
@@ -726,7 +737,9 @@ func _step_screen_shake(step: Dictionary) -> void:
 		)
 		shake_tween.tween_property(camera, "offset", original_offset + offset, 0.05)
 	shake_tween.tween_property(camera, "offset", original_offset, 0.05)
-	await shake_tween.finished
+	await _await_tween_hold(shake_tween)
+	if is_instance_valid(camera):
+		camera.offset = original_offset
 
 
 ## Jitters this CanvasLayer's offset — backdrop, vignette and letterbox all ride it; the dialogue layer (96) stays readable.
@@ -737,10 +750,7 @@ func _shake_layer(duration: float, intensity: float) -> void:
 		var jitter = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
 		shake_tween.tween_property(self, "offset", jitter, 0.05)
 	shake_tween.tween_property(self, "offset", Vector2.ZERO, 0.05)
-	while not _skipping and is_instance_valid(shake_tween) and shake_tween.is_valid() and shake_tween.is_running():
-		await get_tree().process_frame
-	if is_instance_valid(shake_tween) and shake_tween.is_valid():
-		shake_tween.kill()
+	await _await_tween_hold(shake_tween)
 	offset = Vector2.ZERO
 
 
@@ -756,7 +766,8 @@ func _step_screen_flash(step: Dictionary) -> void:
 	_effects_rect.color = color
 	var tween = create_tween()
 	tween.tween_property(_effects_rect, "color:a", 0.0, duration)
-	await tween.finished
+	await _await_tween_hold(tween)
+	_effects_rect.color.a = 0.0
 	_effects_rect.visible = false
 
 
@@ -1494,7 +1505,8 @@ func _step_chapter_title(step: Dictionary) -> void:
 	# Fade in
 	var tween = create_tween()
 	tween.tween_property(container, "modulate:a", 1.0, 0.6)
-	await tween.finished
+	await _await_tween_hold(tween)
+	container.modulate.a = 1.0
 
 	# Hold
 	await _sleep(hold_duration)
@@ -1502,7 +1514,7 @@ func _step_chapter_title(step: Dictionary) -> void:
 	# Fade out
 	var fade_out = create_tween()
 	fade_out.tween_property(container, "modulate:a", 0.0, 0.5)
-	await fade_out.finished
+	await _await_tween_hold(fade_out)
 
 	container.queue_free()
 
@@ -1568,13 +1580,16 @@ func _step_boss_intro(step: Dictionary) -> void:
 	name_tween.set_parallel(true)
 	name_tween.tween_property(name_label, "modulate:a", 1.0, 0.2)
 	name_tween.tween_property(name_label, "scale", Vector2.ONE, 0.3).set_trans(Tween.TRANS_BACK)
-	await name_tween.finished
+	await _await_tween_hold(name_tween)
+	name_label.modulate.a = 1.0
+	name_label.scale = Vector2.ONE
 
 	# Title fades in after name
 	if title_label:
 		var title_tween = create_tween()
 		title_tween.tween_property(title_label, "modulate:a", 1.0, 0.4)
-		await title_tween.finished
+		await _await_tween_hold(title_tween)
+		title_label.modulate.a = 1.0
 
 	# Hold
 	await _sleep(1.5)
@@ -1586,7 +1601,7 @@ func _step_boss_intro(step: Dictionary) -> void:
 	fade.tween_property(name_label, "modulate:a", 0.0, 0.4)
 	if title_label:
 		fade.tween_property(title_label, "modulate:a", 0.0, 0.4)
-	await fade.finished
+	await _await_tween_hold(fade)
 
 	vignette.queue_free()
 	name_label.queue_free()
