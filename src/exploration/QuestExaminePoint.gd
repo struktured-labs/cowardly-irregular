@@ -8,7 +8,7 @@ const TILE_SIZE: int = 32
 
 @export var quest_id: String = ""
 @export var flag: String = ""
-@export var indicator_text: String = "[A] Examine"
+@export var indicator_text: String = "%s Examine" % InputProfileManager.hint_for_action("ui_accept")
 @export var examine_text: String = ""
 @export var idle_text: String = ""
 @export var glyph_color: Color = Color(0.85, 0.78, 0.5)

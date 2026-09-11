@@ -3,9 +3,14 @@ extends GutTest
 ## Regression: SavePoint's proximity indicator must include the button
 ## glyph so players know HOW to save, not just THAT they're near a
 ## crystal. Pre-fix the label said "Save" — fine for JRPG-veterans who
-## know to mash A, opaque for newcomers. Updated to "[A] Save" matching
-## the game's existing input-hint convention (battle hint bar uses the
-## same [L] / [R] / [A] / [B] glyph format).
+## know to mash A, opaque for newcomers.
+##
+## ⚠️ UPDATED 2026-09-11 (cowir-controller): the INTENT above is unchanged and still enforced; the
+## frozen literal "[A] Save" is not. That literal was correct on Nintendo-layout pads only — this
+## game puts Confirm on the EAST face, so it is Ⓑ on Xbox and ○ on PlayStation, and on a keyboard
+## the interact key is Z with no A button at all. The label now derives through
+## InputProfileManager.hint_for_action("ui_accept"). These asserts pin the PURPOSE this file was
+## written for (a newcomer can see which button) instead of one family's caption.
 
 const SAVE_POINT_PATH := "res://src/exploration/SavePoint.gd"
 
@@ -25,9 +30,10 @@ func test_setup_indicator_includes_button_glyph() -> void:
 	assert_true(fn_idx > -1, "_setup_indicator must exist")
 	var fn_end = text.find("\n\nfunc ", fn_idx)
 	var body = text.substr(fn_idx, fn_end - fn_idx) if fn_end > -1 else text.substr(fn_idx, 1500)
-	# Must surface the [A] button glyph + label, not just "Save"
-	assert_true(body.find("\"[A] Save\"") > -1,
-		"_setup_indicator must set indicator.text to '[A] Save' (includes button glyph for newcomers)")
+	# Must surface a button hint + label, not just "Save" — DERIVED, so it is right on every device.
+	assert_true(body.find("hint_for_action(\"ui_accept\")") > -1,
+		"_setup_indicator must derive the button hint — a frozen '[A]' is wrong on Xbox, PlayStation and keyboard")
+	assert_true(body.find("Save") > -1, "and it must still say Save")
 	# Catch anyone reverting to the legacy bare "Save" string
 	assert_false(body.find("_indicator.text = \"Save\"") > -1,
 		"Legacy bare 'Save' text must be gone — pinned to prevent reverts")
@@ -44,15 +50,21 @@ func test_indicator_label_actually_renders_with_glyph() -> void:
 	sp._setup_indicator()
 	assert_not_null(sp._indicator, "_setup_indicator must populate _indicator field")
 	if sp._indicator:
-		assert_eq((sp._indicator as Label).text, "[A] Save",
-			"Indicator label must be exactly '[A] Save'")
+		var shown: String = (sp._indicator as Label).text
+		assert_true(shown.ends_with("Save"),
+			"Indicator must still name the action: %s" % shown)
+		assert_ne(shown, "Save",
+			"and must NOT be the bare legacy 'Save' — the whole point is showing WHICH button")
+		var expected_hint: String = InputProfileManager.hint_for_action("ui_accept")
+		assert_true(shown.begins_with(expected_hint),
+			"the hint must match THIS device (%s), not a frozen letter: %s" % [expected_hint, shown])
 		assert_false(sp._indicator.visible,
 			"Indicator must start hidden (visibility flips true on body entry)")
 
 
 func test_indicator_width_can_fit_glyph_without_truncation() -> void:
 	# Layout invariant: the indicator's size must be wide enough to
-	# accommodate the "[A] Save" text at the chosen font size without
+	# accommodate the "<hint> Save" text at the chosen font size without
 	# clipping (Godot Label truncates when text overflows size.x). The
 	# specific width chosen (64) is enough at font_size 10 — but pin
 	# it so anyone shrinking the indicator catches the regression.
@@ -62,6 +74,6 @@ func test_indicator_width_can_fit_glyph_without_truncation() -> void:
 	sp._setup_indicator()
 	if sp._indicator:
 		assert_gte(sp._indicator.size.x, 56.0,
-			"Indicator width must be >= 56px to fit '[A] Save' at font_size 10 without truncation")
+			"Indicator width must be >= 56px to fit '<hint> Save' at font_size 10 without truncation")
 		assert_eq(sp._indicator.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER,
 			"Indicator must stay center-aligned over the crystal")

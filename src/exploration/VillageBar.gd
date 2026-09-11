@@ -499,7 +499,7 @@ func _setup_name_label() -> void:
 
 func _setup_enter_label() -> void:
 	enter_label = Label.new()
-	enter_label.text = "[A] Enter"
+	enter_label.text = "%s Enter" % InputProfileManager.hint_for_action("ui_accept")
 	enter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	enter_label.position = Vector2(-30, 35)
 	enter_label.size = Vector2(60, 20)

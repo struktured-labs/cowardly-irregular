@@ -106,7 +106,7 @@ func _setup_collision() -> void:
 
 
 func _setup_indicator() -> void:
-	## "[A] Save" prompt floating above the crystal when the player is in
+	## "%s Save" % InputProfileManager.hint_for_action("ui_accept") prompt floating above the crystal when the player is in
 	## interaction range. Includes the button glyph so players know HOW to
 	## save without having to guess (pre-fix the label just said "Save"
 	## with no action hint — players unfamiliar with JRPG conventions had
@@ -131,7 +131,7 @@ func _indicator_text() -> String:
 	for map_id in GameState.activated_crystals:
 		if map_id != _current_map_id():
 			others += 1
-	return "[A] Save · [R] Warp" if others > 0 else "[A] Save"
+	return "%s Save · %s Warp" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("battle_advance")] if others > 0 else "%s Save" % InputProfileManager.hint_for_action("ui_accept")
 
 
 func _current_map_id() -> String:
