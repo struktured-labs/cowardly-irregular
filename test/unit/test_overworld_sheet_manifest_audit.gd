@@ -7,6 +7,7 @@ extends GutTest
 ## artist provenance is a core pillar (the artist has approval rights on
 ## what ships, so untracked AI sheets are a policy hole, not just tidiness).
 
+const HybridSpriteLoaderScript := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const MANIFEST_PATH := "res://data/sprite_manifest.json"
 const VALID_TIERS := ["T0", "T1", "T2", "T3"]
 
@@ -49,6 +50,58 @@ func _disk_sheet_names(root: String) -> Array:
 const FLAT_LAYOUT_SECTIONS := {
 	"overworld_monster_sheets": "res://assets/sprites/monsters/overworld",
 }
+
+
+## ⚠️ THE FLAT SECTION IS AUDITED BUT NOT CONSUMED. `overworld_monster_sheets` has ZERO readers in
+## src/ -- measured 2026-09-11, its only references outside the manifest are in THIS file. Registering
+## a monster sheet there wires NOTHING. The game resolves overworld monster art by COMPOSED PATH:
+##   RoamingMonster:147 / MasteriteEncounter:113   "res://assets/sprites/monsters/overworld/%s.png" % monster_id
+## So the audit above proves provenance, NOT reachability, and a reader is entitled to assume it
+## proves both. This arm checks the property that actually decides whether a player sees the art:
+## the FILENAME must match a monster id, because that is the whole contract. 85 of 85 reachable at
+## authoring; the direction it defends is dead art accumulating unnoticed, which no other arm sees.
+func test_every_flat_sheet_is_reachable_by_some_monster_id() -> void:
+	var raw := FileAccess.get_file_as_string("res://data/monsters.json")
+	var parsed: Variant = JSON.parse_string(raw)
+	assert_true(parsed is Dictionary, "monsters.json parses")
+	var ids: Dictionary = parsed as Dictionary
+	assert_gt(ids.size(), 50, "control: the id corpus is real, not an empty dict passing vacuously")
+
+	# ⚠️ THE SHEET VOCABULARY, NOT THE WORLD VOCABULARY. World 5 is "digital" to sprites and
+	# "futuristic" to data/field_elites.json and the audio map. Deriving from field_elites read as
+	# rigorous -- a real file, no typed list -- and rejected a correctly named <id>_digital sheet as
+	# dead art while accepting an <id>_futuristic one the loader will never ask for. The authority is
+	# the constant the loader itself indexes; see test_world_suffix_vocabulary_regression for the split.
+	var worlds: Array = []
+	for suffix in HybridSpriteLoaderScript.WORLD_SUFFIXES:
+		if str(suffix) != "":
+			worlds.append(str(suffix))
+	assert_gt(worlds.size(), 0, "control: suffixes read from HybridSpriteLoader.WORLD_SUFFIXES, not an empty set")
+
+	var unreachable: Array = []
+	var checked := 0
+	for section in FLAT_LAYOUT_SECTIONS:
+		var root: String = FLAT_LAYOUT_SECTIONS[section]
+		var dir := DirAccess.open(root)
+		if dir == null:
+			continue
+		for f in dir.get_files():
+			if not f.ends_with(".png"):
+				continue
+			checked += 1
+			var stem := f.trim_suffix(".png")
+			if ids.has(stem):
+				continue
+			var matched := false
+			for w in worlds:
+				if stem.ends_with("_" + str(w)) and ids.has(stem.trim_suffix("_" + str(w))):
+					matched = true
+					break
+			if not matched:
+				unreachable.append("%s/%s" % [root, f])
+	assert_gt(checked, 0, "the sweep visited sheets — a flat root that walks nothing passes everything")
+	assert_eq(unreachable.size(), 0,
+		"overworld monster art is loaded by FILENAME (overworld/<monster_id>.png), so a sheet whose name matches no monster id can never be drawn — it is dead weight in the export:\n" + "\n".join(unreachable))
 
 
 func test_flat_layout_sections_really_are_flat() -> void:
