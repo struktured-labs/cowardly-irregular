@@ -115,14 +115,26 @@ ACCEPT_WINDOWS_S = [0.050, 0.100, 0.300]
 
 
 def wrap_step_accept(y, sr):
-    """Worst step across the STABLE windows — what a fix must satisfy."""
+    """Worst POSITIVE step across the stable windows — what a fix must satisfy.
+
+    ⛔ THIS WAS abs() AND THAT PENALISED A NORMAL MUSICAL ATTACK. A note that
+    ramps in makes the head's 50ms RMS quieter than its 300ms RMS, so a
+    PERFECTLY looping track reads negative at the short window. Demanding every
+    window land within +/-6 dB therefore refused tracks whose only sin was a
+    soft attack: battle_brute reaches +0.4 dB at 300ms after a 300ms cut while
+    the 50ms reads -17.0, and the abs() form called that a failure and gave up.
+
+    The defect being removed is a FADE-OUT — the tail quieter than the head,
+    i.e. a POSITIVE step. A negative one is a soft intro, which a tail cut
+    cannot fix and which classify() already refuses by name up front.
+    """
     worst = None
     for ws in ACCEPT_WINDOWS_S:
         n = int(ws * sr)
         if len(y) < 3 * n:
             continue
         step = db(y[:n]) - db(y[-n:])
-        if worst is None or abs(step) > abs(worst):
+        if worst is None or step > worst:
             worst = step
     return worst if worst is not None else 0.0
 
@@ -186,7 +198,7 @@ def classify(y, sr):
         if len(t) < 3 * sr:
             break
         s = wrap_step_accept(t, sr)
-        if abs(s) <= WRAP_OK_DB:
+        if s <= WRAP_OK_DB:
             return "TRIM-SAFE", step_now, i * CUT_STEP_S, s
     return "NO CUT HELPS", step_now, 0.0, step_now
 
@@ -273,7 +285,7 @@ def main():
                 why = "duration %.2fs != cut point %.2fs" % (new_dur, keep)
                 break
             s = wrap_step_accept(vy, sr)
-            if abs(s) <= WRAP_OK_DB:
+            if s <= WRAP_OK_DB:
                 accepted = (keep, new_dur, s)
                 why = None
                 break

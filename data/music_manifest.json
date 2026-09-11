@@ -22,7 +22,7 @@
       "prompt": "Warm medieval village at dawn, cobblestone streets, shopkeepers opening doors, children playing, peaceful and inviting, gentle flute melody over soft string accompaniment, hints of a music box",
       "style": "16-bit SNES orchestral, gentle woodwinds, pizzicato strings, warm, pastoral",
       "model": "suno-v4",
-      "duration": 238.04,
+      "duration": 237.7,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -111,7 +111,7 @@
       "prompt": "Brass and iron city, massive gears turning overhead, amber gas lamp glow, 13 chimes from a twisted clock tower, something being measured, waltz rhythm with mechanical precision, mysterious and grand",
       "style": "Victorian waltz, brass ensemble, clockwork ticking, strings, suspenseful, 3/4 time",
       "model": "suno-v4",
-      "duration": 106.88,
+      "duration": 106.8,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -124,7 +124,7 @@
       "prompt": "Battle against a massive clockwork automaton, epic pipe organ over grinding gears, heavy brass and industrial percussion, waltz rhythm turned menacing, steam whistles",
       "style": "Steampunk boss, pipe organ, heavy brass, industrial percussion, epic waltz",
       "model": "suno-v4",
-      "duration": 92.48,
+      "duration": 91.8,
       "loop": true,
       "generated_at": "2026-03-21"
     },
@@ -200,7 +200,7 @@
       "prompt": "Gray concrete ceiling stretching forever, recycled air, fluorescent clinical light, factory drone in the distance, soul-draining efficiency, sparse cold synths over mechanical rhythms, oppressive and numbing",
       "style": "minimalist drone, industrial ambience, brutalist, sparse percussion, cold synth",
       "model": "suno-v4",
-      "duration": 134.5,
+      "duration": 134.4,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -226,7 +226,7 @@
       "prompt": "Battle on a factory floor, conveyor belts and stamping presses as percussion, distorted industrial synths, mechanical aggressive rhythm, relentless and dehumanizing",
       "style": "industrial battle, heavy percussion, mechanical rhythm, distorted synth, aggressive",
       "model": "suno-v4",
-      "duration": 134.2,
+      "duration": 134.1,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -340,7 +340,7 @@
       "prompt": "Classic JRPG victory fanfare, triumphant brass melody, celebratory drums, short and satisfying, the thrill of winning a hard-fought battle, 15-20 seconds",
       "style": "JRPG victory fanfare, triumphant brass, Final Fantasy, celebratory, short",
       "model": "suno-v4",
-      "duration": 72.12,
+      "duration": 71.6,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -353,7 +353,7 @@
       "prompt": "Somber game over theme, fading hope, minor key melody that trails off into silence, 10-15 seconds of melancholy",
       "style": "JRPG game over, somber, minor key, fading, short",
       "model": "suno-v4",
-      "duration": 97.56,
+      "duration": 97.0,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -366,7 +366,7 @@
       "prompt": "Epic JRPG title screen theme, majestic orchestral opening building to a powerful melody, hints of all six worlds' musical styles woven together, grandiose yet with a sarcastic undertone",
       "style": "JRPG title screen, majestic, epic, orchestral with chiptune elements, grandiose",
       "model": "suno-v4",
-      "duration": 166.48,
+      "duration": 166.0,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -379,7 +379,7 @@
       "prompt": "Desperate last-stand battle music, party near death, pounding heartbeat bass rhythm, frantic urgent strings, dissonant brass stabs, anxiety and adrenaline, the feeling of one hit from game over, 20-30 seconds looping",
       "style": "JRPG critical HP, urgent, heartbeat bass, tense strings, minor key, looping, short",
       "model": "suno-v4",
-      "duration": 40.8,
+      "duration": 39.8,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -405,7 +405,7 @@
       "prompt": "EXTREMELY intense near-death battle music, party about to be wiped out, massive thundering war drums pounding like a dying heartbeat, shrieking dissonant violins, blaring brass stabs of pure dread, tempo accelerating, overwhelming panic and terror, the sound of imminent death in a medieval battlefield, make the listener's heart race",
       "style": "JRPG critical HP, aggressive orchestral, pounding war drums, screaming brass, dissonant strings, terrifying, loud",
       "model": "suno-v4",
-      "duration": 149.41,
+      "duration": 148.6,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -496,7 +496,7 @@
       "prompt": "Frantic high-speed battle theme for fighting bats, rapid fluttering string arpeggios, quick staccato notes darting like echolocation, dark and urgent, the panic of wings swooping at you in a cave, 170 BPM relentless energy",
       "style": "JRPG battle, frantic, D minor, fast strings, fluttering percussion, dark urgent, 170 BPM",
       "model": "suno-v4",
-      "duration": 159.96,
+      "duration": 158.8,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -535,7 +535,7 @@
       "prompt": "Aggressive tribal battle theme for fighting goblins, pounding war drums, primitive chanting rhythms, crude but effective, the energy of a goblin raiding party, aggressive and relentless, tribal percussion driving the intensity",
       "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, aggressive, 140 BPM",
       "model": "suno-v4",
-      "duration": 175.3,
+      "duration": 174.3,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true,
@@ -550,7 +550,7 @@
       "prompt": "Spooky battle theme for fighting skeletons, rattling xylophone and bone-dry staccato strings, clicking percussion like bones clattering, haunted graveyard energy, eerie but driving, undead menace",
       "style": "JRPG battle, spooky, B minor, xylophone, staccato strings, rattling percussion, haunted, 120 BPM",
       "model": "suno-v4",
-      "duration": 104.6,
+      "duration": 103.7,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -563,7 +563,7 @@
       "prompt": "Tense hunting battle theme for fighting wolves, prowling bass line stalking underneath, feral aggressive strings, the feeling of being circled by a wolf pack, building tension and bursts of ferocious attack, primal and dangerous",
       "style": "JRPG battle, tense, E minor, prowling bass, hunting rhythm, feral strings, 150 BPM",
       "model": "suno-v4",
-      "duration": 154.08,
+      "duration": 153.5,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -589,7 +589,7 @@
       "prompt": "Sinuous slithering battle theme for fighting snakes, coiling bass line that winds and tightens, rattling shaker percussion like a rattlesnake warning, tense melodic line that strikes suddenly, the anxiety of facing something fast and venomous",
       "style": "JRPG battle, slithering, C minor, sinuous melody, rattling percussion, tense coiling bass, 135 BPM",
       "model": "suno-v4",
-      "duration": 162.2,
+      "duration": 159.9,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -602,7 +602,7 @@
       "prompt": "INTENSE boss battle theme, an ancient knight who has held his post for 300 years — his weariness makes him MORE dangerous not less. Pounding war drums like a heartbeat that has never stopped, crushing brass fanfare over relentless driving strings. The weight of three centuries of combat experience bearing down on you. He fights like a force of nature — methodical but OVERWHELMING. Aggressive orchestral in the style of Linked Horizon and Bravely Default boss themes. This is a fight you might not survive.",
       "style": "JRPG boss battle, Linked Horizon, aggressive orchestral, pounding war drums, heavy brass, intense strings, D minor, 145 BPM",
       "model": "suno-v4",
-      "duration": 181.88,
+      "duration": 181.4,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -614,7 +614,7 @@
       "prompt": "INTENSE boss battle theme for a master duelist, rapid aggressive strings like flashing steel, sharp percussion hits on every sword clash, relentless tempo that never lets up. She fights with honest brutality — no tricks, just overwhelming skill that cuts through everything. Driving violin runs over pounding drums, dramatic brass stabs. The beauty of combat as truth, delivered at lethal speed. Bravely Default intensity — this duel could kill you.",
       "style": "JRPG boss battle, intense dueling theme, aggressive strings, sharp percussion, sword clash, D minor, 160 BPM",
       "model": "suno-v4",
-      "duration": 165.36,
+      "duration": 164.8,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -626,7 +626,7 @@
       "prompt": "INTENSE boss battle theme for a hunter who is THRILLED to fight you, frantic galloping drums at 180 BPM, aggressive woodwind runs that dart and strike, the terrifying joy of a predator who finally found worthy prey. Relentless pursuit energy — you cannot outrun this. Driving percussion like hooves on stone, brass fanfares of the hunt. He is faster than you and he is ENJOYING this. Bravely Default boss intensity with feral energy.",
       "style": "JRPG boss battle, frantic hunting theme, aggressive woodwinds, galloping drums, relentless pursuit, G minor, 180 BPM",
       "model": "suno-v4",
-      "duration": 156.8,
+      "duration": 155.2,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -638,7 +638,7 @@
       "prompt": "INTENSE boss battle theme for a scholar-mage whose curiosity is WEAPONIZED, furious harp arpeggios cascading over thundering percussion, magical energy crackling through the orchestra. She takes notes while destroying you — the academic detachment makes her MORE terrifying. Soaring strings building to devastating magical crescendos, explosive brass. The flame doesn't illuminate — it INCINERATES. Bravely Default sage boss intensity.",
       "style": "JRPG boss battle, arcane fury, aggressive harp arpeggios, thundering percussion, magical intensity, orchestral, 150 BPM",
       "model": "suno-v4",
-      "duration": 170.68,
+      "duration": 170.2,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -794,7 +794,7 @@
       "prompt": "INTENSE boss battle theme, a timing function attacking at 60 frames per second — she is EVERYWHERE. Harsh aggressive pulse on every cycle, frantic arpeggios that swarm from isolation into overwhelming assault. She has been alone for eons and the loneliness is now FURY. Attacks come from the gaps between clock cycles where nothing should exist. Aggressive electronic combat at 170 BPM, the sound of something that has never been spoken to finally SCREAMING.",
       "style": "Digital boss battle, aggressive isolated pulse, harsh 60hz attacks, frantic lonely arpeggios, overwhelming speed, 170 BPM",
       "model": "suno-v4",
-      "duration": 202.88,
+      "duration": 202.7,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -842,7 +842,7 @@
       "prompt": "INTENSE boss battle theme for INEVITABILITY — not gentle tide but TSUNAMI. Crushing bass that approaches with unstoppable force, relentless percussion like footsteps of something enormous that WILL reach you. Slow 100 BPM but every beat hits harder than the last, an eternal crescendo that never resolves. The sound of something you cannot outrun, cannot dodge, cannot stop. Dread made audible. I am always next. I am always HERE.",
       "style": "Abstract boss battle, crushing inevitability, overwhelming approaching bass, relentless tide percussion, dread crescendo, 100 BPM",
       "model": "suno-v4",
-      "duration": 127.28,
+      "duration": 127.2,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -890,7 +890,7 @@
       "prompt": "A villain defeated but the victory feels wrong. Choir starts triumphant then distorts and thins into hollow sustained tones. The world flickers. Something behind the walls isn't stone — it's something else entirely. Eerie ambient drone emerging from fading choir. Unresolved, haunting, the feeling of a chapter ending by being deleted rather than finished. 60 seconds.",
       "style": "choir, ambient, eerie, orchestral decay, unsettling",
       "model": "suno-v4",
-      "duration": 129.04,
+      "duration": 128.9,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -1034,7 +1034,7 @@
       "prompt": "Almost nothing. A single sustained tone hovering at the edge of audibility. The sound of a space that exists only because someone decided to listen. No melody, no rhythm — just presence. The musical equivalent of a white page before the first word. Gradually, almost imperceptibly, other tones gather. Not a crescendo. A becoming. The most quiet and vast thing in the game. 100 seconds.",
       "style": "ambient drone, minimal, existential, vast silence, near-silent",
       "model": "suno-v4",
-      "duration": 168.1,
+      "duration": 168.0,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -1058,7 +1058,7 @@
       "prompt": "Solo piano in vast silence. Each note placed with extreme care, long pauses between phrases. The sound of someone asking a genuine question for the first time in their life and being afraid of the answer. Not dramatic — intimate. The smallest, most honest music in the game. A conversation between two people who have been fighting for six worlds and are finally just talking. 100 seconds.",
       "style": "solo piano, sparse, vulnerable, existential, questioning",
       "model": "suno-v4",
-      "duration": 187.0,
+      "duration": 186.7,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1142,7 +1142,7 @@
       "prompt": "A solo lute plays a lament composed in a cave after a battle. Not polished — written in the moment by someone who felt something needed to be said. Fourteen measures, no accompaniment, the sound of one person bearing witness to something that would otherwise be forgotten. Raw, honest, the beauty of paying attention to things that did not choose their fate. 60 seconds.",
       "style": "solo lute, lament, unaccompanied, medieval, raw, witnessing",
       "model": "suno-v4",
-      "duration": 96.0,
+      "duration": 95.5,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1190,7 +1190,7 @@
       "prompt": "Medieval village ambient loop. Distant market chatter, cart wheels on cobblestone, hammering from a smithy, children laughing, gentle breeze. Warm busy atmosphere without being chaotic. Seamless loop, 60 seconds.",
       "style": "ambient, village, bustle, chatter, footsteps, warm, looping",
       "model": "suno-v4",
-      "duration": 144.96,
+      "duration": 144.9,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1718,7 +1718,7 @@
       "prompt": "A workers' settlement on the factory outskirts. Rivet Row. The company provides everything, the company owns everything. Lonesome harmonica leads a blues melody, slide guitar answers, shuffle drums keep a slow shift-change tempo, a low factory drone never quite stops in the background. Minor key. Tired, worn, defiant. The feeling of the last hour of a double shift. Loopable.",
       "style": "industrial blues, lonesome harmonica, slide guitar, factory drone undertone, shuffle drums, minor key, 80 BPM",
       "model": "suno-v4",
-      "duration": 185.4,
+      "duration": 185.0,
       "loop": true,
       "generated_at": "2026-04-18"
     },
@@ -1910,7 +1910,7 @@
       "prompt": "Aggressive tribal battle theme for fighting goblins, pounding war drums, primitive chanting rhythms, crude but effective, the energy of a goblin raiding party, aggressive and relentless, tribal percussion driving the intensity",
       "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, aggressive, 140 BPM",
       "model": "suno-v4",
-      "duration": 175.3,
+      "duration": 174.3,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true,
@@ -1927,7 +1927,7 @@
       "prompt": "Aggressive tribal battle theme for fighting goblins, pounding war drums, primitive chanting rhythms, crude but effective, the energy of a goblin raiding party, aggressive and relentless, tribal percussion driving the intensity",
       "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, aggressive, 140 BPM",
       "model": "suno-v4",
-      "duration": 175.3,
+      "duration": 174.3,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true,
@@ -1944,7 +1944,7 @@
       "prompt": "Aggressive tribal battle theme for fighting goblins, pounding war drums, primitive chanting rhythms, crude but effective, the energy of a goblin raiding party, aggressive and relentless, tribal percussion driving the intensity",
       "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, aggressive, 140 BPM",
       "model": "suno-v4",
-      "duration": 175.3,
+      "duration": 174.3,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true,
@@ -1961,7 +1961,7 @@
       "prompt": "Aggressive tribal battle theme for fighting goblins, pounding war drums, primitive chanting rhythms, crude but effective, the energy of a goblin raiding party, aggressive and relentless, tribal percussion driving the intensity",
       "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, aggressive, 140 BPM",
       "model": "suno-v4",
-      "duration": 175.3,
+      "duration": 174.3,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true,

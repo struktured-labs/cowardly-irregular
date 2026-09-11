@@ -44,9 +44,22 @@ MANIFEST = "data/music_manifest.json"
 ## so treating it as silence is a claim about audibility, not about the file.
 FLOOR_DB = -60.0
 
-## Under 40ms the wrap gap is shorter than a vorbis frame pair and sits below
-## the threshold where a rhythmic discontinuity reads as a stutter. Derived
-## from the corpus (the two beds below it are 31ms and 21ms), not chosen.
+## ⛔ THE ORIGINAL JUSTIFICATION HERE WAS VOID. It read "Derived from the corpus
+## (the two beds below it are 31ms and 21ms), not chosen" — and that corpus was
+## measured with the PEAK floor this file now documents as broken. A threshold
+## derived from a defective instrument is not derived; it inherits the defect
+## and wears the word "derived" as cover.
+##
+## Re-derived 2026-09-11 with the 10ms RMS floor, and the real reason is
+## SELF-REFERENCE: this tool cuts on the window boundary BEFORE the first loud
+## window, so every file it writes keeps exactly one sub-floor window — 10ms —
+## by construction. 33 beds now sit at precisely 10ms and 4 at 20ms, and that
+## population is the tool's own residue, not a defect.
+##
+## So the floor is not about vorbis frames or stutter perception: it must simply
+## sit ABOVE THE TOOL'S OWN CUT RESIDUE, or the tool flags its own output
+## forever. One window is 10ms; 40ms is 4x that. Anything at or below 20ms would
+## make this instrument a perpetual-motion machine.
 MIN_PAD_S = 0.040
 
 ## Post-encode agreement bounds. Trimming must not move the level at all; the
@@ -78,12 +91,36 @@ def db(x):
     return 20.0 * np.log10(r) if r > 0 else float("-inf")
 
 
+## ⛔ A PER-SAMPLE PEAK FLOOR IS DEFEATED BY ONE SAMPLE, and it was. The first
+## version tested `max(abs(sample)) > -60 dBFS` per sample, so a single stray
+## value inside the first millisecond made the whole head "loud" and the pad
+## measured 0.8ms. Measured 2026-09-11: this tool trimmed 19 beds and MISSED 30
+## MORE — a larger population than it caught — including battle_snake with
+## 1,510ms of head silence reported as 0.0ms. boss_curator_medieval reads
+## -100 dB RMS for 520ms while carrying a transient in its first millisecond.
+##
+## Scan 10ms WINDOWS by RMS instead. One sample cannot move a 480-sample mean,
+## which is the whole point.
+WINDOW_S = 0.010
+
+
 def pads(y, sr):
-    """Seconds of sub-floor audio at the head and at the tail."""
-    loud = np.flatnonzero(np.max(np.abs(y), axis=1) > 10.0 ** (FLOOR_DB / 20.0))
+    """Seconds of sub-floor audio at the head and at the tail, by windowed RMS."""
+    w = int(WINDOW_S * sr)
+    if w <= 0 or len(y) < w:
+        return None
+    nw = len(y) // w
+    mono = y[:nw * w].reshape(nw, -1)
+    rms = np.sqrt(np.mean(np.square(mono), axis=1))
+    loud = np.flatnonzero(rms > 10.0 ** (FLOOR_DB / 20.0))
     if loud.size == 0:
         return None
-    return loud[0] / sr, (len(y) - 1 - loud[-1]) / sr, int(loud[0]), int(loud[-1])
+    ## Cut on the window boundary BEFORE the first loud window, so a soft attack
+    ## inside that window is never clipped.
+    first = max(0, int(loud[0]) - 1) * w
+    last = min(nw - 1, int(loud[-1]) + 1) * w + w - 1
+    last = min(last, len(y) - 1)
+    return first / sr, (len(y) - 1 - last) / sr, first, last
 
 
 def encode(y, sr, ch, out_path):
