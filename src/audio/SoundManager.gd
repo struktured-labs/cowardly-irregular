@@ -7123,6 +7123,9 @@ func _start_void_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_abstract"):
 		return
+	## battle_abstract is web-excluded and battle_void is not in the manifest, so on web BOTH tiers above miss and generating is 1.3s of main-thread GDScript.
+	if _try_play_from_manifest("battle_medieval"):
+		return
 	print("[MUSIC] Playing void battle theme")
 
 	var sample_rate = 22050
