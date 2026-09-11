@@ -213,21 +213,28 @@ func test_no_help_label_spells_a_non_face_button() -> void:
 	## scores a clean green over zero work — a loop over nothing asserts nothing, and GUT cannot
 	## flag it because one assert anywhere in the call graph clears [Risky]. If the label-assignment
 	## shape ever changes, this arm must FAIL rather than quietly scan an empty set.
-	var examined: int = 0
+	var per_file: Dictionary = {}
 	var offenders: Array[String] = []
 	for path in [GRID_EDITOR, "res://src/ui/autogrind/AutogrindGridEditor.gd"]:
+		per_file[path] = 0
 		for raw in _src(path).split("\n"):
 			var line: String = raw.strip_edges()
 			if line.begins_with("#") or not line.contains(".text = "):
 				continue
-			examined += 1
+			per_file[path] += 1
 			for n in banned:
 				# "Start:Save" / "Start Save" — a caption naming the button, not a word inside prose
 				if line.contains("\"%s:" % n) or line.contains(" %s:" % n):
 					offenders.append("%s :: %s" % [path.get_file(), n])
-	assert_gt(examined, 4,
-		"PRECONDITION: only %d label assignments examined across two editors — the scan found " % examined +
-		"almost nothing, so a green below would be vacuous rather than clean")
+	## ⛔ WAS A FLOOR (`examined > 4` across both files). @cowir-adhoc 2026-09-11: a floor is armed
+	## against TOTAL vacuity and BLIND TO PARTIAL LOSS. Measured — breaking `.text = ` in ONE editor
+	## left the other above the floor and the file scored EC=0, Asserts 39, unchanged. The free
+	## assert-count detector missed it too, because these asserts are not per-row.
+	## Named membership instead: EVERY file in the corpus must contribute, so losing half is a red.
+	for path in per_file:
+		assert_gt(int(per_file[path]), 0,
+			"PRECONDITION: %s contributed ZERO label assignments — the scan silently covered only " % path.get_file() +
+			"the other editor, and a green below would be half a result reported as a whole one")
 	assert_eq(offenders, [] as Array[String],
 		"a help label spells a NON-FACE button by one family's name — derive it through " +
 		"hint_for_action so Nintendo reads Plus and PlayStation reads Options: %s" % [", ".join(offenders)])
