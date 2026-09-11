@@ -228,8 +228,6 @@ else
     exit 4
 fi
 
-echo "[stage] masters untouched: $(find assets/audio/music -name '*.ogg' | wc -l) tracks still at 96k in assets/"
-
 # VERIFIED, NOT ASSERTED. This line used to count files and claim "untouched ... still at
 # 96k" — two things it never measured. It printed the same sentence whatever had happened to
 # the masters, which is the one event it existed to rule out. Demonstrated: a real master
