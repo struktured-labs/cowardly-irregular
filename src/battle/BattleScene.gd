@@ -3720,11 +3720,11 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 	if group_type == "formation" and formation_id != "":
 		var formation_key = "formation_" + formation_id
 		if not _try_play_formation_sfx(formation_key):
-			SoundManager.play_battle("group_formation")
+			SoundManager.play_flourish("group_formation")
 	else:
 		match group_type:
 			"limit_break":
-				SoundManager.play_battle("group_limit_break")
+				SoundManager.play_flourish("group_limit_break")
 				# Play job stinger for party leader on limit break
 				if participants.size() > 0 and participants[0] is Combatant:
 					var job_id = participants[0].job.get("id", "fighter") if participants[0].job else "fighter"
@@ -3732,9 +3732,9 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 					if ResourceLoader.exists(stinger_path):
 						SoundManager.play_music("job_%s_special" % job_id)
 			"combo_magic":
-				SoundManager.play_battle("group_combo_magic")
+				SoundManager.play_flourish("group_combo_magic")
 			_:
-				SoundManager.play_battle("group_all_out")
+				SoundManager.play_flourish("group_all_out")
 
 	# Screen shake — intensity scales with group type
 	var shake_intensity: float

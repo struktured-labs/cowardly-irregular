@@ -13,9 +13,10 @@ extends GutTest
 ## reports 52 orphans; 39 of those are real consumers the grep can't see:
 ##
 ##   1. DYNAMIC KEY CONSTRUCTION — play_status() does "status_" + name, so no
-##      status_* key ever appears literally in source. Same for ability_*,
-##      attack_hit_*, strike_*, advance_*, footstep_*, formation_*, voice_*,
-##      and the wN_ world-variant prefixes.
+##      status_* key ever appears literally in source. Same for attack_hit_*,
+##      advance_*, footstep_*, formation_*, voice_*, and the wN_ world-variant
+##      prefixes. NOT ability_* or strike_*: this line listed both for months
+##      and both are wrong — see the DYNAMIC_PREFIXES note below.
 ##   2. data/ JSON CONSUMERS — cutscene and quest JSON name SFX keys directly.
 ##      Source-only scanning misses every one (39 keys here).
 ##   3. fallback_to CHAINS — a key reached only as another key's fallback.
@@ -29,11 +30,34 @@ const MANIFEST_PATH := "res://data/sfx_manifest.json"
 ## GUARD pattern appears in SoundManager source, every key with that prefix is
 ## considered reachable. Keep GUARDs tied to the actual construction site so a
 ## refactor that removes the concatenation also drops the exemption.
+##
+## EVERY ENTRY MUST BE LOAD-BEARING — test_every_dynamic_prefix_exemption_is_load_bearing
+## reds on one that exempts nothing. Three were removed 2026-09-11 for failing it, and the
+## two dispositions behind that number are worth keeping apart, because "exempts 0 keys"
+## does not distinguish them:
+##   FALSE  `ability_` and `night_` claimed a concatenation that does not exist. Every
+##          reachable ability_ cue is a literal in _ability_sounds / _ELEMENT_SFX / _TYPE_SFX
+##          (_derive_ability_sounds_from_data picks from those tables, it does not build a
+##          key), and night_ names a const, not a construction. Both would have exempted a
+##          genuinely dead key in the largest cue family we have open questions about.
+##   TRUE   `strike_` is real -- SoundManager builds "strike_" + element -- and was merely
+##          redundant, every strike_ key also being a literal in EffectSystem. Removed
+##          anyway, under the policy below.
+##
+## The policy, and why removing a TRUE-but-redundant entry is safe: an exemption that
+## suppresses nothing cannot be observed to be wrong. `night_` sat here for months being
+## false, and nothing could have shown that while it was also inert. Delete it and the day a
+## non-literal key lands the audit REDS, loudly, naming the key -- and the entry comes back
+## with the key that needs it. That is why the unreachable message below names re-adding a
+## prefix as a disposition: without it, a correct new strike_ cue reads as a dead asset.
+##
+## ⚠️ ONE COUPLING, so the next red is not a mystery: `ambient_` is load-bearing on exactly one
+## key, `ambient_village` (42 KB, no reference in src/, data/ or any .tscn — struktured's call,
+## wire it or delete it). Every other ambient_ cue is also a source literal. Resolve that orphan
+## either way and `ambient_` goes inert, and the arm below reds on a prefix nobody touched.
 const DYNAMIC_PREFIXES := {
 	"status_": "\"status_\" +",
-	"ability_": "_ability_sounds",
 	"attack_hit_": "attack_hit_",
-	"strike_": "\"strike_\" +",
 	"advance_": "advance_%s",
 	"footstep_": "\"footstep_\" +",
 	"formation_": "formation_key",
@@ -44,7 +68,6 @@ const DYNAMIC_PREFIXES := {
 	"w5_": "_get_world_sfx_prefix",
 	"w6_": "_get_world_sfx_prefix",
 	"ambient_": "play_ambient(",
-	"night_": "NIGHT_AMBIENCE_KEY",
 }
 
 ## Keys with no consumer TODAY that are deliberately staged ahead of a named
@@ -117,36 +140,25 @@ func _slurp_dir(root: String, ext: String, skip_file: String = "") -> String:
 	return out
 
 
-func test_no_unreachable_sfx_keys() -> void:
-	var parsed: Variant = JSON.parse_string(_read(MANIFEST_PATH))
-	assert_true(parsed is Dictionary and parsed.has("sfx"), "manifest must parse to {sfx:{...}}")
-	var sfx: Dictionary = parsed["sfx"]
-
-	var src_text := _slurp_dir("res://src", ".gd")
-	var data_text := _slurp_dir("res://data", ".json", "sfx_manifest.json")
-	var all_text := src_text + data_text
-
-	# fallback_to targets are reachable via the fallback chain.
-	var fallback_targets := {}
+func _fallback_targets(sfx: Dictionary) -> Dictionary:
+	var targets := {}
 	for k in sfx:
 		var ft: String = str(sfx[k].get("fallback_to", ""))
 		if ft != "":
-			fallback_targets[ft] = true
-	## VARIANTS are a second live reachability mechanism and this audit did not model it:
-	## _try_play_sfx_from_manifest picks randomly from [base] + base.variants, so a variant is
-	## played whenever its BASE is played. Six of them (buff/debuff/heal _v2/_v3) were carried in
-	## KNOWN_PENDING_CONSUMER instead, described as "unwired alternate take" — which was FALSE.
-	## They are wired, by rotation. An allowlist entry whose stated reason is untrue is worse than
-	## no entry: it reads as a decision and it cannot expire, because the condition it names never
-	## held. Modelling the mechanism also covers every FUTURE variant with no list to maintain.
-	for k in sfx:
+			targets[ft] = true
 		var vars_v: Variant = sfx[k].get("variants", [])
-		if not (vars_v is Array):
-			continue
-		for v in (vars_v as Array):
-			fallback_targets[str(v)] = true
+		if vars_v is Array:
+			for v in (vars_v as Array):
+				targets[str(v)] = true
+	return targets
 
-	var unreachable: Array[String] = []
+
+func _unreachable(sfx: Dictionary, fallback_targets: Dictionary, all_text: String,
+		src_text: String, active_prefixes: Array) -> Array[String]:
+	## The resolver, parameterised by WHICH dynamic prefixes are in play. The backward arm
+	## re-runs it with one prefix withheld; sharing the function is the point, because a
+	## second copy would drift and then measure a resolver nobody ships.
+	var out: Array[String] = []
 	for key_variant in sfx.keys():
 		var key: String = str(key_variant)
 		if fallback_targets.has(key):
@@ -156,7 +168,7 @@ func test_no_unreachable_sfx_keys() -> void:
 			continue
 		# runtime-constructed via a live concatenation site
 		var dynamic := false
-		for prefix in DYNAMIC_PREFIXES:
+		for prefix in active_prefixes:
 			if key.begins_with(prefix) and src_text.contains(DYNAMIC_PREFIXES[prefix]):
 				dynamic = true
 				break
@@ -164,13 +176,41 @@ func test_no_unreachable_sfx_keys() -> void:
 			continue
 		if KNOWN_PENDING_CONSUMER.has(key):
 			continue
-		unreachable.append(key)
+		out.append(key)
+	return out
+
+
+func test_no_unreachable_sfx_keys() -> void:
+	var parsed: Variant = JSON.parse_string(_read(MANIFEST_PATH))
+	assert_true(parsed is Dictionary and parsed.has("sfx"), "manifest must parse to {sfx:{...}}")
+	var sfx: Dictionary = parsed["sfx"]
+
+	var src_text := _slurp_dir("res://src", ".gd")
+	var data_text := _slurp_dir("res://data", ".json", "sfx_manifest.json")
+	var all_text := src_text + data_text
+
+	## fallback_to targets are reachable via the fallback chain, and VARIANTS are a second
+	## live mechanism this audit did not model: _try_play_sfx_from_manifest picks randomly from
+	## [base] + base.variants, so a variant is played whenever its BASE is played. Six of them
+	## (buff/debuff/heal _v2/_v3) were carried in KNOWN_PENDING_CONSUMER instead, described as
+	## "unwired alternate take" — which was FALSE. They are wired, by rotation. An allowlist
+	## entry whose stated reason is untrue is worse than no entry: it reads as a decision and it
+	## cannot expire, because the condition it names never held. Modelling the mechanism also
+	## covers every FUTURE variant with no list to maintain.
+	var fallback_targets := _fallback_targets(sfx)
+
+	var unreachable := _unreachable(sfx, fallback_targets, all_text, src_text, DYNAMIC_PREFIXES.keys())
 
 	assert_eq(unreachable.size(), 0,
 		("UNREACHABLE SFX keys — %d asset(s) nothing can ever play: %s\n" +
-		"Either wire a consumer, or add to KNOWN_PENDING_CONSUMER with the owner " +
-		"and what they're waiting on, or delete the asset. Do NOT add an entry " +
-		"without a named owner — that just hides a dead asset.") % [unreachable.size(), unreachable])
+		"FOUR dispositions, and the fourth is the one this message used to omit:\n" +
+		"  1. wire a consumer;\n" +
+		"  2. if the key is BUILT at runtime, add its prefix to DYNAMIC_PREFIXES with the " +
+		"construction site as the guard — a correct new cue in a concatenated family lands " +
+		"here, and reads exactly like a dead asset if you do not know to look;\n" +
+		"  3. add to KNOWN_PENDING_CONSUMER with the owner and what they're waiting on;\n" +
+		"  4. delete the asset.\n" +
+		"Do NOT add an entry without a named owner — that just hides a dead asset.") % [unreachable.size(), unreachable])
 
 
 func test_the_consumer_corpus_excludes_every_definer() -> void:
@@ -354,3 +394,59 @@ func test_dynamic_prefix_exemptions_are_backed_by_live_behaviour() -> void:
 	assert_true(hit_fire, "play_ability('fire') must RESOLVE some ability_fire variant (any world prefix)")
 
 	assert_eq(before, "", "ambient state untouched by this test")
+
+
+func test_every_dynamic_prefix_exemption_is_load_bearing() -> void:
+	## THE BACKWARD ARM. KNOWN_PENDING_CONSUMER has had one since it was written
+	## (test_pending_consumer_allowlist_has_not_rotted): once a key is wired, it must
+	## LEAVE the list. DYNAMIC_PREFIXES — the other exemption table in this file, and
+	## the broader one, since each entry exempts a whole family — had only the forward
+	## question, "is this explained?" An exemption table needs BOTH directions, and the
+	## missing one is what let `night_` sit here claiming a concatenation that never
+	## existed: nothing can observe an exemption being wrong while it is also inert.
+	##
+	## The instrument is delete-the-entry, per prefix: withhold it and re-run the real
+	## resolver. If the unreachable set does not grow, the entry suppressed nothing.
+	var parsed: Variant = JSON.parse_string(_read(MANIFEST_PATH))
+	assert_true(parsed is Dictionary and parsed.has("sfx"), "manifest must parse to {sfx:{...}}")
+	var sfx: Dictionary = parsed["sfx"]
+	var src_text := _slurp_dir("res://src", ".gd")
+	var data_text := _slurp_dir("res://data", ".json", "sfx_manifest.json")
+	var all_text := src_text + data_text
+	var fallback_targets := _fallback_targets(sfx)
+	var all_prefixes: Array = DYNAMIC_PREFIXES.keys()
+
+	## CONTROLS, in the order they can lie. The corpus first: an empty src_text makes every
+	## guard string absent, so no prefix exempts anything and EVERY entry reads as inert —
+	## a wrong-shape unanimous verdict rather than a finding.
+	assert_gt(src_text.length(), 100000,
+		"control: src corpus is %d chars — too small to have read src/, so inertness below is an artifact" % src_text.length())
+	assert_gt(sfx.size(), 100, "control: manifest holds %d keys" % sfx.size())
+	var baseline := _unreachable(sfx, fallback_targets, all_text, src_text, all_prefixes)
+	assert_eq(baseline.size(), 0,
+		"control: the audit is already RED (%s) — this arm's deltas are not interpretable until test_no_unreachable_sfx_keys is green" % [baseline])
+
+	## And the instrument itself: a prefix that is known load-bearing MUST come back non-empty,
+	## or the delta machinery is broken and the whole table would score green by measuring nothing.
+	var probe := all_prefixes.duplicate()
+	probe.erase("voice_")
+	var probe_delta := _unreachable(sfx, fallback_targets, all_text, src_text, probe).size() - baseline.size()
+	assert_gt(probe_delta, 0,
+		"control: withholding voice_ (30 keys, none literal) exposed %d new unreachable keys — the delta instrument is broken, so every 'load-bearing' verdict below is vacuous" % probe_delta)
+
+	var inert: Array[String] = []
+	for prefix in all_prefixes:
+		var without := all_prefixes.duplicate()
+		without.erase(prefix)
+		if _unreachable(sfx, fallback_targets, all_text, src_text, without).size() == baseline.size():
+			inert.append(str(prefix))
+
+	assert_eq(inert.size(), 0,
+		("DYNAMIC_PREFIXES entries that exempt nothing (%d): %s\n" +
+		"Delete them. Either the concatenation they claim does not exist (the entry is FALSE " +
+		"and would one day exempt a genuinely dead key), or every key in the family is also a " +
+		"source literal (the entry is TRUE but redundant). The two are indistinguishable from " +
+		"here, which is exactly why neither may stay: an inert exemption cannot be observed to " +
+		"be wrong. If the family really is built at runtime, the entry comes back the day a " +
+		"non-literal key lands — test_no_unreachable_sfx_keys names that key and that " +
+		"disposition.") % [inert.size(), inert])

@@ -38,7 +38,19 @@ func test_death_cry_has_its_own_voice() -> void:
 	assert_true("var _death_player: AudioStreamPlayer" in sm, "dedicated death voice exists")
 	var fn := sm.find("func play_death")
 	assert_gt(fn, -1, "play_death helper exists")
-	var body := sm.substr(fn, sm.find("\nfunc ", fn + 1) - fn)
+	var raw := sm.substr(fn, sm.find("\nfunc ", fn + 1) - fn)
+	## COMMENTS ARE NOT CODE, and this window ends at the next `func` — so any docstring written
+	## between play_death and its neighbour is inside it. A 2026-09-11 comment on the flourish fix
+	## mentioned the shared player by name and turned this assert red with nothing routed anywhere.
+	## Second time in one hour that prose tripped a raw-text audio guard (the other reported a
+	## commented call as an orphan key), so strip rather than reword and hope.
+	var body := ""
+	for line in raw.split("\n"):
+		if str(line).strip_edges().begins_with("#"):
+			continue
+		body += str(line) + "\n"
 	assert_true("_death_player" in body, "play_death routes to the dedicated voice")
 	assert_false("_battle_player" in body, "play_death must NOT touch the shared battle voice")
+	## CONTROL: the stripper must not have eaten the body it is filtering.
+	assert_true("func play_death" in body, "CONTROL: comment stripping removed the function itself")
 

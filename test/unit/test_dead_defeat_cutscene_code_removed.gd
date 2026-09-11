@@ -79,7 +79,7 @@ func test_defeat_cutscene_gates_in_game_loop_still_present() -> void:
 		"world1_rat_king_defeat",
 		"world1_mordaine_defeat",
 		"world2_warden_defeat",
-		"world3_tempo_defeat",
+		"world3_grand_schedule_defeat",  # W3 fights The Grand Schedule; world3_tempo_defeat is W4's
 		# 2026-09-11: these two ids moved. The gate is unchanged; the SCENE it plays
 		# is now the one belonging to the boss whose flag opens it — AssemblyCore's
 		# Warden of the Assembly Line and RootProcess's Arbiter of the Benchmark.

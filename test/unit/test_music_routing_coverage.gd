@@ -37,9 +37,19 @@ const SOUNDMANAGER := "res://src/audio/SoundManager.gd"
 
 ## Every generic key that gets rewritten to "<key>_<world>" in play_music's
 ## `match track:` block, plus the area beds a world needs to not be silent.
-const WORLD_KEYS := ["battle", "boss", "overworld", "dungeon", "village", "victory"]
+## ⛔ WAS A HAND-LIST AND PARTIAL-LOSS BLIND. Draining it to [] was caught;
+## dropping ONE member was silent — cowir-sfx measured that on this file while
+## sweeping 38 tables at two magnitudes, and 24 of 35 failed one or the other.
+## A total drain is the least likely accident; losing a member to a rename is
+## the likely one, and it moved no number here.
+##
+## Derived now, so there is no minus-one to be blind to. It also turned out the
+## hand-list was MISSING `danger`, so danger_<world> was never checked at all.
+const COMPOSITION_SITES := "res://src/audio/SoundManager.gd"
 
-const MASTERITE_ARCHETYPES := ["warden", "arbiter", "tempo", "curator"]
+## Same: derived from the monsters that exist. A fifth archetype is covered the
+## moment it lands in monsters.json.
+const MONSTERS := "res://data/monsters.json"
 
 ## Beds that do not exist yet and cannot be authored: Suno has been behind a
 ## ToS modal since 2026-09-03 that only struktured can clear. Named with the
@@ -100,7 +110,7 @@ func test_every_world_has_the_beds_its_fallbacks_name() -> void:
 	var missing: Array[String] = []
 	var checked: int = 0
 	for w in worlds:
-		for k in WORLD_KEYS:
+		for k in _world_keys():
 			checked += 1
 			if not _has_bed(tracks, "%s_%s" % [k, w]):
 				missing.append("%s_%s" % [k, w])
@@ -118,7 +128,7 @@ func test_every_masterite_archetype_has_a_bed_in_every_world() -> void:
 	var missing: Array[String] = []
 	var arrived: Array[String] = []
 	var checked: int = 0
-	for a in MASTERITE_ARCHETYPES:
+	for a in _masterite_archetypes():
 		for w in worlds:
 			var key: String = "boss_%s_%s" % [a, w]
 			checked += 1
@@ -198,3 +208,63 @@ func test_a_declared_music_track_always_names_a_real_bed() -> void:
 		"SCOPE control: only %d monsters declare a music_track — the walk found almost none and a green would be vacuous" % declared)
 	assert_eq(broken.size(), 0,
 		"monsters.json declares a music_track with no bed (%d of %d): %s — a declared key outranks the derived one, so this is silence where the default would have worked" % [broken.size(), declared, broken])
+
+
+func _world_keys() -> Array[String]:
+	var src: String = FileAccess.get_file_as_string(COMPOSITION_SITES)
+	assert_gt(src.length(), 10000,
+		"SCOPE control: SoundManager read back %d chars — a short read yields an empty key set and every pair goes unchecked" % src.length())
+	var out: Array[String] = []
+	## COMPOSED: `manifest_track_id = "battle_" + suffix`, `_try_play_from_manifest("dungeon_" + world_id)`.
+	var composed := RegEx.new()
+	composed.compile("(?:manifest_track_id = |_try_play_from_manifest\\()\"([a-z]+)_\" \\+")
+	for m in composed.search_all(src):
+		if not out.has(m.get_string(1)):
+			out.append(m.get_string(1))
+	## LITERAL per-world: the overworld family is never concatenated — each
+	## _start_<world>_music names its key outright — so a composed-only
+	## derivation silently drops it.
+	## ⚠️ A family-only regex is BROADER than the subject: my first version
+	## matched any `"x_" + y` and pulled in footstep_, status_ and strike_, which
+	## are SFX. 18 phantom missing beds, caught by the result being absurd rather
+	## than by any control. Both patterns anchor to a MUSIC lookup for that reason.
+	var literal := RegEx.new()
+	literal.compile("_try_play_from_manifest\\(\"([a-z]+)_(?:medieval|suburban|steampunk|industrial|digital|abstract)\"\\)")
+	for m in literal.search_all(src):
+		if not out.has(m.get_string(1)):
+			out.append(m.get_string(1))
+	out.sort()
+
+	## ⛔ A SIZE FLOOR ON A DERIVED SET IS THE SAME HOLE ONE LEVEL UP. Replacing
+	## the hand-list with a derivation removed the minus-one blindness in the
+	## LIST and moved it into the CONTROL: `size() > 4` still passes with either
+	## pattern broken, because one yields 5 families and the other 6. Measured —
+	## both mutations green. cowir-sfx published this exact trade an hour after
+	## I made it: deriving the corpus moves the silence to the control, and a
+	## floor compared against a shrinking set is only ever compared with itself.
+	##
+	## Named members instead, ONE FROM EACH derivation path, so breaking either
+	## pattern is caught BY NAME rather than by a count that still clears a floor.
+	assert_true(out.has("danger"),
+		"the COMPOSED pattern found nothing — `danger` is only ever built as \"danger_\" + suffix, so its absence means the composed regex has drifted and every composed family is silently unchecked")
+	assert_true(out.has("overworld"),
+		"the LITERAL pattern found nothing — `overworld` is never concatenated (each _start_<world>_music names its key outright), so its absence means the per-world regex has drifted and overworld coverage is silently gone")
+	return out
+
+
+func _masterite_archetypes() -> Array[String]:
+	var raw: String = FileAccess.get_file_as_string(MONSTERS)
+	assert_gt(raw.length(), 10000, "SCOPE control: monsters.json read back %d chars" % raw.length())
+	var doc: Dictionary = JSON.parse_string(raw) as Dictionary
+	var mons: Dictionary = doc.get("monsters", doc)
+	var out: Array[String] = []
+	for k in mons.keys():
+		var id: String = str(k)
+		if not id.begins_with("masterite_"):
+			continue
+		var rest: String = id.substr(10)
+		var cut: int = rest.find("_")
+		if cut > 0 and not out.has(rest.substr(0, cut)):
+			out.append(rest.substr(0, cut))
+	out.sort()
+	return out

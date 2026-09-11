@@ -38,10 +38,16 @@ const SM := "res://src/audio/SoundManager.gd"
 const MANIFEST := "res://data/music_manifest.json"
 const PRESETS := "res://export_presets.cfg"
 
+## The suffixes _get_current_world_suffix can return. "digital" is here and
+## "futuristic" is not, because that is what the runtime emits for W5 — see the
+## vocabulary note in test_every_authored_bed_has_a_consumer.
+const WORLD_SUFFIXES: Array[String] = [
+	"medieval", "suburban", "steampunk", "industrial", "digital", "abstract",
+]
+
 const UNREACHABLE_BY_DESIGN := {
 	"_start_rat_king_music": ["boss_rat_king"],
 	"_start_cave_music": ["dungeon_medieval"],
-	"_start_void_battle_music": ["battle_void"],
 	"_start_monster_music": [
 		"battle_slime", "battle_bat", "battle_mushroom", "battle_imp",
 		"battle_goblin", "battle_skeleton", "battle_wolf", "battle_ghost",
@@ -159,12 +165,30 @@ func test_the_unreachable_exemptions_are_still_true() -> void:
 			checked += 1
 			var key: String = str(k)
 			var present: bool = tracks.has(key)
-			## Absent from the manifest is fine: play_music rewrites it to
-			## battle_<world> and the arm is never entered. Present-and-shipping
-			## is fine: the manifest tier hits first. Present-and-EXCLUDED is the
-			## failure — the arm becomes reachable on web with no bed behind it.
+			## Present-and-shipping is fine: the manifest tier hits first.
+			## Present-and-EXCLUDED is the failure — the arm becomes reachable on
+			## web with no bed behind it.
 			if present and not _ships(tracks, pats, key):
-				broken.append("%s <- %s" % [name, key])
+				broken.append("%s <- %s (present but dropped from the web build)" % [name, key])
+				continue
+			## ⛔ AND "ABSENT IS FINE" WAS FALSE, which is how _start_void_battle_music
+			## hid a live 1.3s main-thread freeze behind this exemption. play_music
+			## rewrites an absent battle_* key to "battle_" + world suffix — and the
+			## arm is skipped only if that REWRITE TARGET actually plays. battle_void
+			## is absent, rewrites to battle_abstract in W6, and battle_abstract is
+			## present-but-EXCLUDED, so _try_play_from_manifest fails, execution
+			## continues, and the `match` arm IS entered. The exemption reasoned
+			## about the trigger key and stopped one hop short of the thing that
+			## decides. Every AbstractOverworld battle on web went through it.
+			if not present and key.begins_with("battle_"):
+				var dead_targets: Array[String] = []
+				for w in WORLD_SUFFIXES:
+					var target: String = "battle_" + w
+					if tracks.has(target) and not _ships(tracks, pats, target):
+						dead_targets.append(target)
+				if not dead_targets.is_empty():
+					broken.append("%s <- %s (absent, but rewrites to %s which is present-but-excluded)"
+						% [name, key, dead_targets])
 	assert_gt(checked, 5,
 		"SCOPE control: only %d trigger keys checked" % checked)
 	assert_eq(broken.size(), 0,

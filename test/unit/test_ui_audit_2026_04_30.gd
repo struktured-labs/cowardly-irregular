@@ -92,15 +92,24 @@ func test_settings_menu_boss_emit_order() -> void:
 # Bug: JukeboxMenu close stopped music globally, leaving overworld silent.
 func test_jukebox_menu_resumes_prior_track() -> void:
 	var src = _read_file("res://src/ui/JukeboxMenu.gd")
-	# Snapshot in _ready
-	assert_string_contains(src, "_resume_track = SoundManager._current_music",
-		"JukeboxMenu must snapshot the currently-playing track on open " +
-		"so it can be restored on close")
+	# Snapshot in _ready. Pinned the expression `_resume_track =
+	# SoundManager._current_music` until 2026-09-11 — which is the bug, not the
+	# fix: play_area_music clears that field, so in every map the snapshot read
+	# "" and the close faded the world out. The property is that SOMETHING is
+	# snapshotted on open; capture_music_state() carries the area as well.
+	assert_string_contains(src, "capture_music_state()",
+		"JukeboxMenu must snapshot the playing music on open so it can be " +
+		"restored on close — and a track-only snapshot is empty in every map")
 	# Restore in _close_menu
 	var idx = src.find("func _close_menu")
 	assert_gt(idx, -1)
-	var body = src.substr(idx, 600)
-	assert_string_contains(body, "play_music(_resume_track)",
-		"JukeboxMenu._close_menu must resume the snapshot track instead of " +
+	## Scoped to the FUNCTION, not a char count. This was substr(idx, 600): a
+	## magnitude that holds only while nobody adds a comment, and a comment is
+	## what pushed the call out of it (2026-09-11).
+	var rest = src.substr(idx)
+	var next_fn = rest.find("\nfunc ", 1)
+	var body = rest.substr(0, next_fn) if next_fn > -1 else rest
+	assert_string_contains(body, "restore_music_state(_resume_state)",
+		"JukeboxMenu._close_menu must resume the snapshot instead of " +
 		"unconditionally calling stop_music — pre-fix, the overworld stayed " +
 		"silent until the next area transition")

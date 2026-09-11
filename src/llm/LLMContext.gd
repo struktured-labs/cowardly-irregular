@@ -81,15 +81,6 @@ static func build_json() -> String:
 
 # ── Internal builders ─────────────────────────────────────────────────────────
 
-## Helper: read a property from an Object, returning `default_val` if null/absent.
-## Object.get() in GDScript 4 accepts only one argument, so we check for null.
-static func _obj_get(obj: Object, prop: String, default_val: Variant) -> Variant:
-	var val: Variant = obj.get(prop)
-	if val == null:
-		return default_val
-	return val
-
-
 static func _build_party(gs: Object) -> Array:
 	var raw_party: Variant = gs.get("player_party")
 	var party_list: Array = []

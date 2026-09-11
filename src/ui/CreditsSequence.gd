@@ -36,6 +36,14 @@ func _ready() -> void:
 	pass
 
 
+## The cap printed on the pad's cancel button; "B" was wrong on every Nintendo-family pad (8BitDo cancel sits under Ⓐ) — every world ending showed it.
+static func skip_hint_text(device_name: String = "") -> String:
+	var cap := "B"
+	if InputProfileManager:
+		cap = InputProfileManager.glyph_for_action("ui_cancel", device_name)
+	return "%s / Esc: Skip" % cap
+
+
 ## Plays the credits. If `music_track` is non-empty, it's handed to
 ## SoundManager.play_music at start and stopped on completion.
 func play(world: int = 0, music_track: String = "") -> void:
@@ -75,7 +83,7 @@ func _build_ui() -> void:
 	_populate_credit_lines(_scroll_root, vp.x)
 
 	_skip_hint = Label.new()
-	_skip_hint.text = "B / Esc: Skip"
+	_skip_hint.text = skip_hint_text()  # resolved per roll: a pad plugged in after boot changes the cap
 	_skip_hint.position = Vector2(vp.x - 160, vp.y - 32)
 	_skip_hint.size = Vector2(140, 20)
 	_skip_hint.add_theme_font_size_override("font_size", 12)
