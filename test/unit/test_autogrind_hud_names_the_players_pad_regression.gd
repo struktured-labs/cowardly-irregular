@@ -185,3 +185,59 @@ func _key_for_label(strip: String, label: String) -> String:
 		if parts[i] == label and i > 0:
 			return parts[i - 1]
 	return ""
+
+## ⛔ THE SAME DEFECT WAS LIVE IN BOTH GRID EDITORS, and in one of them a derivation pass had turned
+## a CORRECT frozen caption into a WRONG one. `5c3dee46` (on main) replaced `Del/Y:Delete` with
+## hint_for_action("ui_menu") — but that `Y` was a RAW JOY_BUTTON_Y index, not an action, and
+## ui_menu SAVES AND CLOSES. A Nintendo player was told "Del/Plus:Delete" by the button that exits.
+##
+##   AutogrindGridEditor   ui_accept :1049  ui_cancel :1055  ui_menu :1148   Save said "Enter"
+##   AutobattleGridEditor  ui_accept :1765  ui_cancel :1772  ui_menu :1885   Save said "Enter"
+##
+## In both, ui_menu's keyboard keys (Enter, Escape) are consumed by ui_accept/ui_cancel EARLIER in
+## the same elif chain, and ui_cancel is what actually saves. @cowir-controller's framing: derived
+## is correct about the InputMap and wrong about the player — shadowing lives in the HANDLER, and
+## no amount of deriving crosses that gap.
+const EDITORS := {
+	"res://src/ui/autogrind/AutogrindGridEditor.gd": "AutogrindGridEditor",
+	"res://src/ui/autobattle/AutobattleGridEditor.gd": "AutobattleGridEditor",
+}
+
+
+func test_no_editor_legend_offers_a_shadowed_key() -> void:
+	var eaten: Array = []
+	for action in ["ui_accept", "ui_cancel"]:
+		for k in InputProfileManager.get_action_key_label(action).split(" / "):
+			if k.strip_edges() != "":
+				eaten.append(k.strip_edges())
+	assert_true(eaten.has("Enter"), "CONTROL: ui_accept/ui_cancel must really hold Enter, got %s" % [eaten])
+
+	for path in EDITORS.keys():
+		var ed = load(path).new()
+		add_child_autofree(ed)
+		var token: String = ed._save_token()
+		gut.p("  %-22s save token (no pad) = '%s'" % [EDITORS[path], token])
+		assert_ne(token, "", "%s renders an empty Save key" % EDITORS[path])
+		assert_false(eaten.has(token) and token == "Enter",
+			"%s offers '%s' for Save, which ui_accept/ui_cancel consume earlier in the same elif chain" % [EDITORS[path], token])
+
+
+func test_an_editor_legend_never_derives_from_ui_menu() -> void:
+	## ui_menu is the one action in this lane whose BOTH keyboard keys are shadowed wherever
+	## ui_accept/ui_cancel are tested first — which is every grid editor. Naming it in a legend is
+	## the defect whatever token it happens to render today, so the guard bans the call, not a value.
+	var offenders: Array = []
+	for path in EDITORS.keys():
+		if _code_only_lines(FileAccess.get_file_as_string(path)).contains("hint_for_action(\"ui_menu\")"):
+			offenders.append(EDITORS[path])
+	assert_eq(offenders, [],
+		"a grid editor legend derives from ui_menu — correct about the InputMap, wrong about the player: both its keys are eaten earlier. Use the pad index plus the key that actually saves")
+
+
+## Comments stripped so a note ABOUT the banned call is not itself a finding.
+func _code_only_lines(src: String) -> String:
+	var out := PackedStringArray()
+	for l in src.split("\n"):
+		var h := l.find("#")
+		out.append(l if h == -1 else l.substr(0, h))
+	return "\n".join(out)

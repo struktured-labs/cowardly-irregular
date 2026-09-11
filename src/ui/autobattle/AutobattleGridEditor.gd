@@ -270,12 +270,16 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
+	## Delete is a RAW index (JOY_BUTTON_Y off a condition cell, :1859) and Del/Backspace on keys —
+	## it is not ui_menu, which saves and closes. Empty pad name means no pad: name the key alone.
+	var y_pad: String = InputProfileManager.button_name_for_index(JOY_BUTTON_Y)
+	var del_tok: String = "Del" if y_pad == "" else "Del/%s" % y_pad
 	## Pad halves derived, keyboard halves kept — this row sits six lines above help_label2 and both
 	## are on screen at once, so a half-derived pair reads as two contradicting legends in one glance.
-	help_label1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  Del/%s:Delete  W/S/RStick:Value  %s:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [
+	help_label1.text = "D-Pad:Navigate  %s:Edit  %s/Esc:Back  %s:Delete  W/S/RStick:Value  %s:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [
 		InputProfileManager.hint_for_action("ui_accept"),
 		InputProfileManager.hint_for_action("ui_cancel"),
-		InputProfileManager.hint_for_action("ui_menu"),
+		del_tok,
 		InputProfileManager.hint_for_action("battle_defer"),
 	]
 	help_label1.position = Vector2(16, size.y - 44)
@@ -288,7 +292,7 @@ func _build_ui() -> void:
 	help_label2.text = "%s/C:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  %s:Auto  %s:Save" % [
 		InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y),
 		InputProfileManager.hint_for_action("battle_toggle_auto"),
-		InputProfileManager.hint_for_action("ui_menu"),
+		_save_token(),
 	]
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
@@ -2751,6 +2755,14 @@ func _show_rule_menu() -> void:
 		cursor_col = 0
 		_refresh_grid()
 		SoundManager.play_ui("menu_cancel")
+
+
+## ui_menu saves+closes on a pad, but BOTH its keyboard keys are eaten earlier (ui_accept:1765 takes
+## Enter, ui_cancel:1772 takes Escape) — and ui_cancel is what actually saves on a keyboard.
+func _save_token() -> String:
+	var indices: Array = InputProfileManager.get_current_button_indices("ui_menu")
+	var pad: String = "" if indices.is_empty() else InputProfileManager.button_name_for_index(int(indices[0]))
+	return pad if pad != "" else InputProfileManager.hint_for_action("ui_cancel")
 
 
 func _delete_current_cell() -> void:

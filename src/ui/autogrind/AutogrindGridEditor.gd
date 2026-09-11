@@ -215,7 +215,7 @@ func _build_ui() -> void:
 
 	var help2 = Label.new()
 	## "Start" is the XBOX name for ui_menu's button; Nintendo calls it Plus, PlayStation Options.
-	help2.text = "C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose  %s:Save" % InputProfileManager.hint_for_action("ui_menu")
+	help2.text = "C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose  %s:Save" % _save_token()
 	help2.position = Vector2(16, size.y - 28)
 	help2.add_theme_font_size_override("font_size", 10)
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1813,6 +1813,14 @@ func _on_rename_cancelled() -> void:
 ## ═══════════════════════════════════════════════════════════════════════
 ## SAVE
 ## ═══════════════════════════════════════════════════════════════════════
+
+## ui_menu saves+closes on a pad, but BOTH its keyboard keys are eaten earlier (ui_accept:1049 takes
+## Enter, ui_cancel:1055 takes Escape) — and ui_cancel is what actually saves on a keyboard.
+func _save_token() -> String:
+	var indices: Array = InputProfileManager.get_current_button_indices("ui_menu")
+	var pad: String = "" if indices.is_empty() else InputProfileManager.button_name_for_index(int(indices[0]))
+	return pad if pad != "" else InputProfileManager.hint_for_action("ui_cancel")
+
 
 func _save_rules() -> void:
 	"""Save current rules to active autogrind profile"""
