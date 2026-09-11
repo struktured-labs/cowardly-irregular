@@ -95,9 +95,17 @@ func test_execution_honours_the_fifth_only_at_a_full_bank() -> void:
 func test_headless_applies_the_same_bound() -> void:
 	## Autogrind resolves fights the live game is supposed to be able to produce. A grid rule that
 	## fires five live and four headless would make a grind an unfaithful simulation of the build.
+	## ⚠️ THIS ARM USED TO PIN THE DIVERGENCE IT EXISTS TO PREVENT. It asserted the resolver
+	## "still charge size-1, which makes the fifth free there by construction" — and labelled that
+	## a CONTROL, which is the one thing nobody re-reads. size-1 was charged at EVERY size, so a
+	## 3-action Advance cost 2 AP headless and 3 live: automation cheaper than manual play, under a
+	## docstring about faithful simulation. Two text asserts cannot compare headless to live; they
+	## compare headless to a remembered string, and the string was remembered wrong.
 	var src := FileAccess.get_file_as_string("res://src/autogrind/HeadlessBattleResolver.gd")
 	assert_gt(src.length(), 1000, "CONTROL: read the resolver")
-	assert_string_contains(src, "raw.size() > 4 and combatant.current_ap < 4",
-		"headless must trim to four below a full bank, matching the live rule")
-	assert_string_contains(src, "var ap_cost = raw.size() - 1",
-		"CONTROL: and still charge size-1, which makes the fifth free there by construction")
+	assert_string_contains(src, "BattleManager.billed_ap(combatant.current_ap, raw.size())",
+		"headless must ASK the live pricing rule, not restate it")
+	assert_false(src.contains("raw.size() - 1"),
+		"a local subtraction is a second authority — billed_ap exists because two surfaces already did this")
+	assert_string_contains(src, "BattleManager.ADVANCE_CAP",
+		"the bound is the live constant, so it cannot drift from the rule it mirrors")

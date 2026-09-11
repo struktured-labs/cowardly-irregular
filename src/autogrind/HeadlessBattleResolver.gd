@@ -206,12 +206,16 @@ func _selection_phase() -> Array[Dictionary]:
 			a["speed"] = _speed_for(a, combatant)
 			actions.append(a)
 		elif raw.size() > 1:
-			## Full-bank parity with the live game: a fifth action only at +4 AP (the round's +1 is
-			## already applied above), otherwise truncated to four. Charged size-1, so five at +4
-			## costs four — the fifth is free by construction here, as it is live.
-			if raw.size() > 4 and combatant.current_ap < 4:
-				raw = raw.slice(0, 4)
-			var ap_cost = raw.size() - 1
+			## ASK the live rule, never restate it. BattleManager.billed_ap is declared the one
+			## authority ("Every readout must ask this rather than computing `queued` itself") after
+			## two UI surfaces each rolled their own subtraction and both misreported a full-bank
+			## turn. This resolver was a third: it charged size-1 at EVERY size, so a 3-action
+			## Advance cost 2 AP here and 3 in the game it simulates — cheaper automation than
+			## manual play, which is the yield tax inverted.
+			var cap: int = BattleManager.FULL_BANK_ACTIONS if combatant.current_ap >= BattleManager.FULL_BANK_AP else BattleManager.ADVANCE_CAP
+			if raw.size() > cap:
+				raw = raw.slice(0, cap)
+			var ap_cost: int = BattleManager.billed_ap(combatant.current_ap, raw.size())
 			if combatant.can_brave(ap_cost):
 				combatant.spend_ap(ap_cost)
 				for sub in raw:
