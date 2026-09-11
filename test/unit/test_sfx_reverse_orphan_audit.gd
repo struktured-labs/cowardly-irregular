@@ -50,6 +50,11 @@ const MANIFEST_PATH := "res://data/sfx_manifest.json"
 ## non-literal key lands the audit REDS, loudly, naming the key -- and the entry comes back
 ## with the key that needs it. That is why the unreachable message below names re-adding a
 ## prefix as a disposition: without it, a correct new strike_ cue reads as a dead asset.
+##
+## ⚠️ ONE COUPLING, so the next red is not a mystery: `ambient_` is load-bearing on exactly one
+## key, `ambient_village` (42 KB, no reference in src/, data/ or any .tscn — struktured's call,
+## wire it or delete it). Every other ambient_ cue is also a source literal. Resolve that orphan
+## either way and `ambient_` goes inert, and the arm below reds on a prefix nobody touched.
 const DYNAMIC_PREFIXES := {
 	"status_": "\"status_\" +",
 	"attack_hit_": "attack_hit_",
