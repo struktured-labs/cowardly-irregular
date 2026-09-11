@@ -5283,6 +5283,20 @@
       "frame_height": 32,
       "tier": "T1",
       "source": "gpt-image-1 world-variant, identity+format anchored to the traveler medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "arbiter": {
+      "path": "res://assets/sprites/npcs/arbiter/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1, identity anchored to masterite_arbiter_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+    },
+    "mysterious": {
+      "path": "res://assets/sprites/npcs/mysterious/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1, identity anchored to overworld.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
     }
   },
   "overworld_player_sheets": {

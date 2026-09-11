@@ -74,6 +74,8 @@ const NPC_ARCHETYPES := [
 	"priestess_industrial", "priestess_steampunk", "queen_abstract", "queen_industrial", "queen_steampunk",
 	"scholar_suburban", "soldier_digital", "soldier_industrial", "traveler_abstract", "traveler_digital",
 	"traveler_industrial", "young_man_industrial", "young_woman_industrial",
+	# the two base archetypes the variant tool cannot make (2026-09-11).
+	"arbiter", "mysterious",
 ]
 
 
