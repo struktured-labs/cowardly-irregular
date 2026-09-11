@@ -831,6 +831,10 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	_wire_smart_interrupt_signals(party)
 	efficiency_multiplier = 1.0
 	monster_adaptation_level = 0.0
+	## A fresh grind must not inherit the last one's rule counts. They previously reset ONLY on a
+	## rule edit, so a second grind with unchanged rules carried the first one's numbers into the
+	## Summary's "Your Rules" row — last session's answer, presented as this session's.
+	reset_rule_fire_counts()
 	meta_bosses_spawned = 0
 	meta_bosses_defeated = 0
 	meta_corruption_level = 0.0
@@ -2551,6 +2555,10 @@ func build_snapshot_system_block(elapsed: float = 0.0) -> Dictionary:
 		## Added with the counters themselves (2026-09-10) — they were wired to the Summary and
 		## not to the snapshot, so a resumed grind reported "0 beaten / 0 met" while its
 		## siblings collapse_count and fatigue_events_triggered survived the same pause.
+		## Resume continues the SAME grind, so the tally must survive the pause — while a fresh start
+		## must not inherit it. Both behaviours need the reset on start AND the restore below.
+		"rule_eval_count": _rule_eval_count,
+		"rule_fire_counts": _rule_fire_counts.duplicate(),
 		"meta_bosses_spawned": meta_bosses_spawned,
 		"meta_bosses_defeated": meta_bosses_defeated,
 		"fatigue_events_triggered": fatigue_events_triggered,
@@ -2667,6 +2675,15 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	meta_boss_spawn_chance = system_data.get("meta_boss_spawn_chance", 0.0)
 	consecutive_wins = system_data.get("consecutive_wins", 0)
 	collapse_count = system_data.get("collapse_count", 0)
+	_rule_eval_count = int(system_data.get("rule_eval_count", 0))
+	## JSON carries STRING keys only. A snapshot round-trips through JSON, so {0: 4} returns as
+	## {"0": 4} and every fired.get(i, 0) with an int i silently misses — the fire counts would read
+	## zero on resume while the denominator read correctly, which is the worst possible pairing:
+	## "0 of 5 fired (214 checks)" is the exact string that means "your rules are broken".
+	_rule_fire_counts = {}
+	var restored_counts: Dictionary = system_data.get("rule_fire_counts", {})
+	for k in restored_counts.keys():
+		_rule_fire_counts[int(str(k))] = int(restored_counts[k])
 	meta_bosses_spawned = system_data.get("meta_bosses_spawned", 0)
 	meta_bosses_defeated = system_data.get("meta_bosses_defeated", 0)
 	fatigue_events_triggered = system_data.get("fatigue_events_triggered", 0)
