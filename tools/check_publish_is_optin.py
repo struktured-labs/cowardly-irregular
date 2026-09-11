@@ -630,12 +630,30 @@ def selftest():
     passed = failed = 0
     saw = set()
 
+    last = {"msg": ""}
+
+    def _said(fragment):
+        """Did the arm's own failure SAY this? An exit code is not a cause.
+
+        Each of these files raises Unusable from four or five different places, so an arm
+        asserting bare `exit 2` is satisfied by any of them — including a broken fixture. The
+        name would then describe one cause while the predicate accepted all of them.
+        (@cowir-overworld, 2026-09-11: "I wrote the name from what I wanted to be true and the
+        predicate from what was cheap to check.")
+        """
+        return fragment in last["msg"]
+
     def arm(name, want, fn, extra=None):
         nonlocal passed, failed
+        last["msg"] = ""
         try:
-            got = fn()
-        except Unusable:
+            _b = io.StringIO()
+            with contextlib.redirect_stdout(_b), contextlib.redirect_stderr(_b):
+                got = fn()
+            last["msg"] = _b.getvalue()
+        except Unusable as _e:
             got = 2
+            last["msg"] = str(_e)
         saw.add(got)
         detail = ""
         if extra is not None:
@@ -722,7 +740,8 @@ def selftest():
         os.makedirs(ghost)
         open(os.path.join(ghost, "deploy_filler.sh"), "w").write(GOOD)
         _write_publish_all(ghost, ["filler", "macos"])      # macos has no deploy_macos.sh
-        arm("a channel publish_all ships with no deploy script", 2, lambda: run(ghost))
+        arm("a channel publish_all ships with no deploy script", 2, lambda: run(ghost),
+            lambda: (_said("no publishable script"), "says no publishable script"))
 
         # ── instrument-died arms ──
         empty = os.path.join(d, "empty")

@@ -52,6 +52,8 @@ Exit:   0 every polling loop is bounded
         2 unusable — no target files, no pushers, or a pusher with no polling loop
 """
 import importlib.util
+import contextlib
+import io
 import os
 import re
 import sys
@@ -428,12 +430,30 @@ def selftest():
     passed = failed = 0
     saw = set()
 
+    last = {"msg": ""}
+
+    def _said(fragment):
+        """Did the arm's own failure SAY this? An exit code is not a cause.
+
+        Each of these files raises Unusable from four or five different places, so an arm
+        asserting bare `exit 2` is satisfied by any of them — including a broken fixture. The
+        name would then describe one cause while the predicate accepted all of them.
+        (@cowir-overworld, 2026-09-11: "I wrote the name from what I wanted to be true and the
+        predicate from what was cheap to check.")
+        """
+        return fragment in last["msg"]
+
     def arm(name, want, fn, extra=None):
         nonlocal passed, failed
+        last["msg"] = ""
         try:
-            got = fn()
-        except Unusable:
+            _b = io.StringIO()
+            with contextlib.redirect_stdout(_b), contextlib.redirect_stderr(_b):
+                got = fn()
+            last["msg"] = _b.getvalue()
+        except Unusable as _e:
             got = 2
+            last["msg"] = str(_e)
         saw.add(got)
         detail = ""
         if got == want and extra is not None:
@@ -490,7 +510,8 @@ def selftest():
             'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
             '"${BUTLER_BIN}" push out/ "$T"\n'
             'until "${BUTLER_BIN}" status "$T" | grep -q "$V"; do sleep 8; done\n')
-        arm("unbounded wait in a file no PREFIX would walk", 1, lambda: run(odd))
+        arm("unbounded wait in a file no PREFIX would walk", 1, lambda: run(odd),
+            lambda: (_said("ship_it.sh"), "names ship_it.sh"))
 
         # ── instrument-died arms: absence of input must NOT read as clean ──
         empty = os.path.join(d, "empty")
@@ -507,7 +528,8 @@ def selftest():
             '[ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }\n'
             'if [ "$PUBLISH" != "1" ]; then exit 0; fi\n'
             '"${BUTLER_BIN}" push out/ "$T"\n')          # pushes, never waits
-        arm("a PUSHER with no polling loop — wait was removed", 2, lambda: run(noloop))
+        arm("a PUSHER with no polling loop — wait was removed", 2, lambda: run(noloop),
+            lambda: (_said("NO polling loop"), "says NO polling loop"))
 
         nopoll = os.path.join(d, "nopoll")
         os.makedirs(nopoll)
