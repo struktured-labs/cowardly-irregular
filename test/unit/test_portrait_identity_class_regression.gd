@@ -177,6 +177,31 @@ func test_every_portrait_suffix_pair_is_classified() -> void:
 		 "next split ships unnoticed: %s") % [unclassified])
 
 
+## THE BACKWARD ARM, and it was missing from the table I shipped 20 minutes ago. Measured with
+## cowir-adhoc's inert-by-deletion probe: remove "hooded_mage" from PORTRAIT_SPRITES entirely and
+## its DISTINCT_CHARACTERS entry orphans -- Passing 5, EC 0, silent. The classification sweep
+## quantifies over pairs that EXIST, so a deleted subject produces no pair to leave unclassified.
+##
+## KNOWN_PAIRS does not have this hole: its per-pair `map.has(...)` controls red on the same
+## deletion (measured, Failing 1). Two tables in one file, one with a backward arm and one without,
+## and the one I wrote today was the one without.
+func test_no_distinct_characters_entry_is_orphaned() -> void:
+	var map := _portrait_map()
+	var pairs := _suffix_pairs(map)
+	var live: Dictionary = {}
+	for pair in pairs:
+		live[pair[1]] = true
+	var orphaned: Array = []
+	for arch_key in DISTINCT_CHARACTERS:
+		if not map.has(arch_key):
+			orphaned.append("%s: no longer a PORTRAIT_SPRITES key — the entry excuses nothing" % arch_key)
+		elif not live.has(arch_key):
+			orphaned.append("%s: still a key but no longer forms a suffix-pair — the entry excuses nothing" % arch_key)
+	assert_eq(orphaned, [],
+		("a DISTINCT_CHARACTERS entry names something the classification sweep can no longer emit. " +
+		 "An exemption that suppresses nothing cannot be observed to be WRONG, so delete it: %s") % [orphaned])
+
+
 func test_the_distinct_characters_really_are_distinct() -> void:
 	# The DIFFER half must be EARNED, not asserted. Without this, DISTINCT_CHARACTERS is a
 	# suppression list that would happily excuse a genuine collision.
