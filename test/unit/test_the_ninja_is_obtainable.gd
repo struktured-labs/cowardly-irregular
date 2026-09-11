@@ -123,3 +123,97 @@ func test_two_formation_specials_were_waiting_on_this() -> void:
 	needing.sort()
 	assert_eq(needing, ["blade_storm", "shadow_strike"],
 		"these are the specials the ninja gates; if the table changed, revisit: %s" % str(needing))
+
+
+## ── retired guard, absorbed ───────────────────────────────────────────────────────────────────
+## test_the_ninja_cannot_be_unlocked.gd is DELETED by this branch. Its own failure message said
+## "something now awards speed_demon ... delete this file" — but it could never say it: its sweep
+## matched two LITERAL spellings, `set_story_flag("speed_demon` and `"speed_demon"] = true`, and the
+## award is staged as spec["story_flags"].append(...) for GameLoop's generic applier. It scored 5/5
+## GREEN against the very commit that falsifies it. Same blindness cowir-adhoc measured the same
+## hour on flags written through _CUTSCENE_COMPLETION_FLAGS: a literal-writer scan cannot see a
+## writer that is a lookup. The replacement below matches the STRING, not a call shape.
+
+func _code_only(raw: String) -> String:
+	## Cut each line at the first `#` outside a string literal; a backslash consumes the next char.
+	var out: Array = []
+	for line in raw.split("\n"):
+		var i := 0
+		var in_d := false
+		var in_s := false
+		var cut := -1
+		while i < line.length():
+			var c := line[i]
+			if c == "\\":
+				i += 2
+				continue
+			if c == '"' and not in_s:
+				in_d = not in_d
+			elif c == "'" and not in_d:
+				in_s = not in_s
+			elif c == "#" and not in_d and not in_s:
+				cut = i
+				break
+			i += 1
+		out.append(line.substr(0, cut) if cut > -1 else line)
+	return "\n".join(out)
+
+func test_the_comment_stripper_keeps_strings_and_cuts_notes() -> void:
+	assert_eq(_code_only('var a := "x"  # gone'), 'var a := "x"  ', "a trailing note is cut")
+	assert_eq(_code_only('## whole line'), '', "a full-line note is blanked")
+	assert_eq(_code_only('var f := "speed_demon"'), 'var f := "speed_demon"', "the id inside a string SURVIVES — the whole point")
+	assert_eq(_code_only('var q := "a\\"b"  # gone'), 'var q := "a\\"b"  ', "an escaped quote does not close the string")
+
+func test_exactly_one_site_in_src_awards_it() -> void:
+	## Inverted from the retired guard: 0 was the defect, 1 is the fix, and 2 would be two routes
+	## disagreeing about when the Ninja is earned. Matching the bare id means a future award written
+	## in any shape is still counted.
+	var sites: Array = []
+	var stack: Array = ["res://src"]
+	var scanned: int = 0
+	while not stack.is_empty():
+		var path: String = str(stack.pop_back())
+		var d := DirAccess.open(path)
+		if d == null:
+			continue
+		d.list_dir_begin()
+		var entry: String = d.get_next()
+		while entry != "":
+			if entry.begins_with("."):
+				entry = d.get_next()
+				continue
+			var full: String = path + "/" + entry
+			if d.current_is_dir():
+				stack.append(full)
+			elif entry.ends_with(".gd"):
+				scanned += 1
+				## ⚠️ COMMENTS STRIPPED FIRST. My first version matched the raw text and DragonCave.gd
+				## names the flag in three comments — so removing the award left this arm GREEN
+				## (predicted Failing 2, measured 1, which is how it surfaced). A sweep for "who
+				## awards this" satisfied by a comment is the trap I cite at other lanes.
+				var text := _code_only(FileAccess.get_file_as_string(full))
+				## PassiveSystem declares a PASSIVE ability of the same name — a collision, not an
+				## award; the arm below proves it cannot unlock anything.
+				if text.contains(FLAG) and not full.ends_with("PassiveSystem.gd"):
+					sites.append(full.get_file())
+			entry = d.get_next()
+		d.list_dir_end()
+	assert_gt(scanned, 100, "CONTROL: the sweep walked src/ (%d files)" % scanned)
+	assert_eq(sites, ["DragonCave.gd"],
+		"exactly one place may award the Ninja; two routes would disagree about when it is earned: " + str(sites))
+
+func test_the_PASSIVE_of_the_same_name_cannot_unlock_the_job() -> void:
+	## `speed_demon` is BOTH an achievement id and a utility passive (+40% speed). is_story_flag_set
+	## reads four namespaces, so a collision here would hand a player the Ninja for equipping a
+	## passive. It does not — the passive is pure stat_mods and lives on the Combatant, not in any
+	## flag store — and this pins that rather than trusting it.
+	var ps: Node = Engine.get_main_loop().root.get_node_or_null("PassiveSystem")
+	if ps == null or not ps.passives.has(FLAG):
+		pending("PassiveSystem with the colliding passive required")
+		return
+	var passive: Dictionary = ps.passives[FLAG]
+	assert_true(passive.has("stat_mods"), "CONTROL: the collision really is the stat passive")
+	assert_false(passive.has("meta_effects"),
+		"a meta_effect could write a flag store; a stat passive cannot")
+	assert_false(_gs.is_story_flag_set(FLAG),
+		"declaring the passive must not by itself satisfy the achievement")
