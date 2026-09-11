@@ -35,6 +35,8 @@ R Shoulder        R Key             —                Advance (queue action)
 Start (Plus)      F5                —                Open Autobattle Editor
 Back (Minus)      F6                —                Toggle Autobattle
 X (top face)      ` (backtick)      —                Battle speed
+Y (west face)     Y                 —                [color=lime]Repeat last turn's actions — in battle[/color]
+                  F                 —                Cycle party formation (also in the command menu)
 R3 Stick Click    F1                —                [color=lime]This screen — from anywhere[/color]
                   F2                —                Quick Save
                   F3                —                Quick Load

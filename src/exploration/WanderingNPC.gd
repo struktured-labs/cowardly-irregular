@@ -364,7 +364,7 @@ func _flag_set(flag: String) -> bool:
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move") or body.is_in_group("player"):
 		_player_nearby = true
-		_label.text = "[A] %s" % npc_name
+		_label.text = "%s %s" % [InputProfileManager.hint_for_action("ui_accept"), npc_name]
 		_label.visible = true
 
 
@@ -411,7 +411,7 @@ func _start_conversation() -> void:
 		await _run_dynamic_conversation(player)
 		_in_conversation = false
 		if _player_nearby:
-			_label.text = "[A] %s" % npc_name
+			_label.text = "%s %s" % [InputProfileManager.hint_for_action("ui_accept"), npc_name]
 			_label.visible = true
 		return
 
@@ -435,7 +435,7 @@ func _start_conversation() -> void:
 
 	_in_conversation = false
 	if _player_nearby:
-		_label.text = "[A] %s" % npc_name
+		_label.text = "%s %s" % [InputProfileManager.hint_for_action("ui_accept"), npc_name]
 		_label.visible = true
 
 

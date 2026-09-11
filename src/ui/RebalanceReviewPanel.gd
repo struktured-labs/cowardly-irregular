@@ -104,7 +104,7 @@ func _build_ui() -> void:
 	add_child(_empty_label)
 
 	_hint_label = Label.new()
-	_hint_label.text = "↑/↓ Cycle    [A] Apply    [S/X] Dismiss    [B/Esc] Close"
+	_hint_label.text = "↑/↓ Cycle    %s Apply    [S] Dismiss    %s Close" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	_hint_label.add_theme_font_size_override("font_size", 12)
 	_hint_label.add_theme_color_override("font_color", TEXT_COLOR)
 	_hint_label.position = Vector2(panel_x + 24, panel_y + panel_h - 28)
@@ -190,7 +190,10 @@ func _is_dismiss_event(event: InputEvent) -> bool:
 		return true
 	if event is InputEventKey and event.pressed and not event.is_echo():
 		var k: int = (event as InputEventKey).keycode
-		if k == KEY_S or k == KEY_X:
+		# X REMOVED 2026-09-11: ui_cancel binds X and its branch above RETURNS, so this arm was
+		# unreachable — and the legend promised X would dismiss ONE entry while it closed the
+		# whole panel. S is the only keyboard dismiss.
+		if k == KEY_S:
 			return true
 	if event is InputEventJoypadButton and event.pressed:
 		# Y button on Xbox-style pads = JOY_BUTTON_Y (3). Used as

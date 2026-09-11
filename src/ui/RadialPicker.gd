@@ -247,7 +247,7 @@ func _draw_center() -> void:
 		draw_string(font, _center + Vector2(-pw * 0.5, 24), pg,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 10, DIM_TEXT)
 
-	var hint := "[Dir] Aim   [A] Confirm   [B] Back"
+	var hint := "[Dir] Aim   %s Confirm   %s Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	var hw := font.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
 	draw_string(font, Vector2(_center.x - hw * 0.5, size.y - 24), hint,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, DIM_TEXT)

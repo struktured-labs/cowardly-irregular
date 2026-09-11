@@ -72,6 +72,7 @@ const BATTLE_FX_FLAGS := [
 	["target_pulse", "Target Pulse", "The cursor insists on the thing you picked"],
 	["audio_crit_thud", "Crit Thud", "Critical hits get a low body under the cue"],
 	["audio_kill_duck", "Death Duck", "The music steps back when something dies"],
+	["full_render_on_autobattle", "Autobattle Spectacle", "Automated turns get the full cinematic too"],
 ]
 var dash_always_on: bool = false  # Item 9: dash without holding the button
 var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)

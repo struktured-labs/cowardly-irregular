@@ -17,7 +17,7 @@ const TILE_SIZE: int = 32
 @export var flavor_line: String = "The door doesn't budge."
 
 ## Optional [A] indicator label — leave default or tune per instance.
-@export var indicator_text: String = "[A] Examine"
+@export var indicator_text: String = "%s Examine" % InputProfileManager.hint_for_action("ui_accept")
 
 ## Trigger zone radius in pixels. Default is comfortable for a 1-2 tile
 ## door footprint; enlarge for wider doors.

@@ -1235,7 +1235,7 @@ func _show_autobattle_view() -> void:
 	# Hint
 	vbox.add_child(HSeparator.new())
 	var hint = Label.new()
-	hint.text = "[Select] Toggle autobattle during battle"
+	hint.text = "%s Toggle autobattle during battle" % InputProfileManager.hint_for_action("battle_toggle_auto")
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	vbox.add_child(hint)

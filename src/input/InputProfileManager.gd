@@ -34,6 +34,15 @@ var nintendo_mode: bool = true
 
 ## Face glyphs keyed by BUTTON INDEX (position) — SDL numbers by position, the silkscreen
 ## differs per family. All verified to render through FontFallbacks; squared 🅰/🅱 are tofu.
+## NON-FACE buttons have no glyph — FACE_GLYPHS only covers 0-3 — so glyph_for_action returns "?"
+## for Select, Start, L3 and the shoulders, and a legend that fell back to the keyboard key then
+## showed "Tab" to a pad player. These are the five indices the profiles actually bind.
+const BUTTON_NAMES := {
+	"nintendo": {4: "Minus", 6: "Plus", 7: "L-Stick", 9: "L", 10: "R"},
+	"xbox": {4: "Back", 6: "Start", 7: "L3", 9: "LB", 10: "RB"},
+	"playstation": {4: "Share", 6: "Options", 7: "L3", 9: "L1", 10: "R1"},
+}
+
 const FACE_GLYPHS := {
 	"nintendo": {0: "Ⓑ", 1: "Ⓐ", 2: "Ⓨ", 3: "Ⓧ"},
 	"xbox": {0: "Ⓐ", 1: "Ⓑ", 2: "Ⓧ", 3: "Ⓨ"},
@@ -296,6 +305,48 @@ func glyph_for_action(action: String, device_name: String = "") -> String:
 
 ## The glyph printed on a RAW button index, for bindings that are a button rather than an action.
 ## No convention swap here: a raw JOY_BUTTON_* binding fires from that physical position always.
+## Device-appropriate label for an on-screen legend: the live pad family's glyph when a pad is
+## connected, the keyboard key when it is not. Hardcoded "[A] Confirm [B] Cancel" legends are wrong
+## twice over — they name a pad button to keyboard players, and this game puts Confirm on the EAST
+## face, so Ⓐ/Ⓑ are INVERTED on Xbox and PlayStation. Returns "" when neither is known, so callers
+## can keep their own wording rather than printing a placeholder.
+## The printed NAME of a non-face button for the live pad family. Empty when the index is a face
+## button (use the glyph) or one no profile binds.
+func button_name_for_action(action: String, device_name: String = "") -> String:
+	var name := device_name
+	if name == "":
+		var pads := Input.get_connected_joypads()
+		name = Input.get_joy_name(pads[0]) if not pads.is_empty() else ""
+	var bindings := get_profile_bindings(active_profile)
+	if not bindings.has(action):
+		return ""
+	var indices: Array = bindings[action]
+	if indices.is_empty():
+		return ""
+	var table: Dictionary = BUTTON_NAMES[face_family_for_device(name)]
+	return str(table.get(int(indices[0]), ""))
+
+
+## `device_name` is a TEST SEAM as well as an override: pass one and the function answers as if that
+## pad were connected. Without it the pad branch is unreachable headless, and a mutation deleting the
+## whole non-face lookup stayed GREEN — measured, which is why the parameter exists.
+func hint_for_action(action: String, device_name: String = "") -> String:
+	if device_name != "" or not Input.get_connected_joypads().is_empty():
+		var g := glyph_for_action(action, device_name)
+		if g != "?" and g != "":
+			return g
+		# Non-face button: name it rather than dropping to the keyboard key, which a pad player
+		# cannot press. This is the gap recorded when the legends were first derived.
+		var b := button_name_for_action(action, device_name)
+		if b != "":
+			return b
+	var keys := get_action_key_label(action)
+	if keys == "—" or keys == "":
+		return ""
+	# First binding only; a legend is a reminder, not the full list.
+	return keys.split(" / ")[0]
+
+
 func face_glyph_for_index(button_index: int, device_name: String = "") -> String:
 	var name := device_name
 	if name == "":

@@ -80,7 +80,7 @@ func _setup_collision() -> void:
 
 func _setup_indicator() -> void:
 	_indicator = Label.new()
-	_indicator.text = "[A] Examine sword"
+	_indicator.text = "%s Examine sword" % InputProfileManager.hint_for_action("ui_accept")
 	_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_indicator.position = Vector2(-56, -44)
 	_indicator.size = Vector2(112, 14)

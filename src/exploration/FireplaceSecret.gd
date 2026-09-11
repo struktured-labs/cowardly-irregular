@@ -45,7 +45,7 @@ func _ready() -> void:
 
 func _setup_indicator() -> void:
 	_indicator = Label.new()
-	_indicator.text = "[A] Examine hearth"
+	_indicator.text = "%s Examine hearth" % InputProfileManager.hint_for_action("ui_accept")
 	_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_indicator.position = Vector2(-64, -44)
 	_indicator.size = Vector2(128, 14)

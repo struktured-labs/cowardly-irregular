@@ -90,7 +90,7 @@ func _build_ui() -> void:
 	_panel.add_child(_status)
 
 	var hint := Label.new()
-	hint.text = "[Up/Down] Select   [A] Craft   [Left/Right] Assign   [B] Back"
+	hint.text = "[Up/Down] Select   %s Craft   [Left/Right] Assign   %s Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	hint.position = Vector2(16, _panel.size.y - 26)
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.add_theme_color_override("font_color", DIM_COLOR)

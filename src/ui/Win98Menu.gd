@@ -1441,12 +1441,19 @@ func _apply_command_memory() -> void:
 ## The real toggle is JOY_BUTTON_Y — north/top face, physically X on the Nintendo-layout pads this
 ## game targets — plus the ` key. BattleScene.gd carries the same string; keep them in step.
 const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select] Auto"
+const HINT_KEYBOARD_TEXT := "[L] Defer  ·  [R] Advance  ·  [`] Speed  ·  [Tab] Auto"
 
 
 ## The bar is on screen for the whole game and named Nintendo face letters unconditionally. Speed
 ## is raw JOY_BUTTON_Y (index 3) — Ⓧ on Nintendo, Ⓨ on Xbox, △ on PlayStation — so a PlayStation
 ## player reading "[X] Speed" presses ✕, which is Cancel. Derived per family; const is the fallback.
 static func hint_text() -> String:
+	# NO PAD = KEYBOARD VOCABULARY. Measured 2026-09-11: with zero pads this returned
+	# "Ⓨ Speed · [Select] Auto" — a pad glyph and a pad button, neither of which exists on a
+	# keyboard. The real keys are ` and Tab. face_glyph_for_index falls back to the xbox family
+	# rather than "?", so the HINT_DEFAULT_TEXT path never ran and the [X] literal was moot.
+	if Input.get_connected_joypads().is_empty():
+		return HINT_KEYBOARD_TEXT
 	if not InputProfileManager:
 		return HINT_DEFAULT_TEXT
 	var speed: String = InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y)

@@ -783,7 +783,7 @@ func _show_name_grid() -> void:
 
 	# Instructions
 	var hint = Label.new()
-	hint.text = "[D-pad] Move  [A/Z] Select  [B/X] Delete  [Start] Done"
+	hint.text = "[D-pad] Move  %s Select  %s Delete  %s Done" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel"), InputProfileManager.hint_for_action("ui_menu")]
 	hint.position = Vector2(10, 85)
 	hint.add_theme_font_size_override("font_size", 9)
 	hint.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))

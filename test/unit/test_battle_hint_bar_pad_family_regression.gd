@@ -42,11 +42,19 @@ func test_the_hint_bar_is_derived_not_frozen() -> void:
 	assert_gt(bar.length(), 0, "the bar must render something")
 	assert_true(bar.contains("Defer") and bar.contains("Advance") and bar.contains("Speed"),
 		"it must still name the verbs it always named: %s" % bar)
-	# whatever family the test box resolves to, the Speed glyph in the bar must be THAT family's
-	var expected: String = InputProfileManager.face_glyph_for_index(SPEED_INDEX)
-	if expected != "?":
-		assert_true(bar.contains(expected),
-			"the bar must print the live family's Speed glyph (%s), got: %s" % [expected, bar])
+	# PAD vs KEYBOARD, corrected 2026-09-11. This arm used to require a pad glyph unconditionally,
+	# which is what let the no-pad bar ship "Ⓨ Speed · [Select] Auto" to keyboard players — a glyph
+	# and a button that do not exist on a keyboard. The contract is now conditional on a pad.
+	if Input.get_connected_joypads().is_empty():
+		assert_true(bar.contains("[`]") and bar.contains("[Tab]"),
+			"with NO pad the bar must name KEYBOARD keys — ` for speed, Tab for auto: %s" % bar)
+		assert_false(bar.contains("[Select]"),
+			"and must not say [Select], which is a pad button a keyboard player cannot press: %s" % bar)
+	else:
+		var expected: String = InputProfileManager.face_glyph_for_index(SPEED_INDEX)
+		if expected != "?":
+			assert_true(bar.contains(expected),
+				"with a pad the bar must print the live family's Speed glyph (%s), got: %s" % [expected, bar])
 
 
 ## The literal that caused it must not come back. "[X] Speed" is correct for exactly one family.
@@ -66,3 +74,22 @@ func test_the_const_remains_as_a_fallback() -> void:
 		"the fallback must still exist — no pad connected must not mean no hint bar")
 	assert_true(src.contains("return HINT_DEFAULT_TEXT"),
 		"and hint_text() must actually fall back to it")
+
+## The keyboard labels must be REAL. A corrected bar that names the wrong keys is the same defect
+## with different letters — and ` is a raw keycode handler, not an action, so only the source says so.
+func test_the_keyboard_labels_name_real_bindings() -> void:
+	var bs := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	assert_true(bs.contains("event.keycode == KEY_QUOTELEFT"),
+		"the bar advertises ` for Speed, so BattleScene must handle KEY_QUOTELEFT")
+	assert_true(InputMap.has_action("battle_toggle_auto"), "battle_toggle_auto must exist")
+	var tab_fires := false
+	var e := InputEventKey.new()
+	e.keycode = KEY_TAB
+	e.pressed = true
+	tab_fires = InputMap.event_is_action(e, "battle_toggle_auto")
+	assert_true(tab_fires, "the bar advertises Tab for Auto, so Tab must fire battle_toggle_auto")
+	var x := InputEventKey.new()
+	x.keycode = KEY_X
+	x.pressed = true
+	assert_false(InputMap.event_is_action(x, "battle_toggle_auto"),
+		"CONTROL: a key the bar does NOT advertise must not fire it — X is ui_cancel")

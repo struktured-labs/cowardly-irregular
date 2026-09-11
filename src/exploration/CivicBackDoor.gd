@@ -68,7 +68,7 @@ func _setup_collision() -> void:
 
 func _setup_indicator() -> void:
 	_indicator = Label.new()
-	_indicator.text = "[A] Service door"
+	_indicator.text = "%s Service door" % InputProfileManager.hint_for_action("ui_accept")
 	_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_indicator.position = Vector2(-52, -48)
 	_indicator.size = Vector2(104, 14)

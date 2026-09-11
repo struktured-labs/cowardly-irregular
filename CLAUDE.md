@@ -143,7 +143,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 | Toggle ALL autobattle | Select | F6 |
 | Navigate grid | D-pad | Arrow keys |
 | Edit cell | A | Z |
-| Delete cell | Start / Y | Escape |
+| Delete cell | Y (off a condition cell) | Delete / Backspace |
 | Add condition | L trigger | L key |
 | Add action | R trigger | R key |
 | Close editor | B | X |
@@ -389,6 +389,8 @@ All UI must be fully navigable via gamepad or keyboard.
 | Queue action (Advance) | R shoulder | R key |
 | Defer | L shoulder | L key |
 | Change battle speed | X (top face button) | ` (backtick) |
+| Repeat last turn's actions | Y (west face button) | Y key |
+| Cycle party formation | command menu row | F key |
 
 ### Menu Navigation
 - All menus expand LEFT (tree-style, like classic JRPGs)
