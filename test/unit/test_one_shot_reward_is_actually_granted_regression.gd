@@ -109,9 +109,13 @@ func test_premise_the_one_shot_corpus_is_present() -> void:
 	# gave Failed 0, Risky 0 — the loop below runs zero times and the corpus floor is a
 	# literal that still passes, so the named-member fix I added an hour ago introduced
 	# a new silent control. @cowir-sfx's cell: every `for x in LIST` and every
-	# `size() >= LIST.size()` is silent at LIST == []. Pinned to a literal.
-	assert_eq(PREMISE_MONSTERS.size(), 2,
-		"PREMISE_MONSTERS has been emptied or resized — the named-member check below is now vacuous. If a member was deliberately retired, change this number in the same edit.")
+	# `size() >= LIST.size()` is silent at LIST == []. Pinned to a LITERAL — and gte,
+# not eq: @cowir-overworld's PLUS-ONE magnitude showed the eq form REDS when a lane
+# correctly adds an anchor. Their two questions: may this set grow on correct work
+# (yes — another anchor is ordinary), and is growth itself the signal (no). A guard
+# that reds on correct work is how suppression entries get written in the first place.
+	assert_gte(PREMISE_MONSTERS.size(), 2,
+		"PREMISE_MONSTERS holds %d, fewer than the 2 this guard defends — the named-member check below is going vacuous. ADDING an anchor is free; losing one is not." % PREMISE_MONSTERS.size())
 	var blocks := _one_shot_blocks()
 	# NAMED MEMBERS, not just a count — see the note on this arm.
 	var absent: Array[String] = []
