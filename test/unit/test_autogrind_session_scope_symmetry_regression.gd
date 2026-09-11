@@ -112,8 +112,17 @@ func _assigned(body: PackedStringArray, declared: Dictionary) -> Dictionary:
 ## tell `field = 0` from `if config.has(x): field = 0`, so a conditional reset reads as a reset and
 ## the leak it permits is invisible. That is not hypothetical: permadeath_staking_enabled had
 ## exactly this shape, the census called it reset, and only a behaviour arm caught that a
-## staking-off grind kept the staking growth rate. Zero fields have this shape today, so this
-## assert is future cover rather than a live finding.
+## staking-off grind kept the staking growth rate.
+##
+## ⚠️ I FIRST WROTE "zero fields have this shape today, so this is future cover". True, and measured
+## one commit AFTER I removed the only instances — the echo @cowir-music named: a provenance claim
+## sampled downstream of your own writes is not evidence. Dated against the WRITE HISTORY rather
+## than against when I looked (@cowir-story's test for it):
+##     14f581f4   conditional-only = efficiency_growth_rate, permadeath_staking_enabled   TWO
+##     647b0cf1   conditional-only = 0                                                    my fix
+## Those two ARE the shipped bug this branch fixes. So the shape is not theoretical here: it has a
+## 100% hit rate in this function and reads 0 only because the instances were just cleared. The
+## echo made me UNDER-sell the guard, which is the rarer direction and no less wrong.
 func _conditionally_reset_only(body: PackedStringArray, declared: Dictionary) -> Array:
 	var re := RegEx.create_from_string("^(\\t+)(_?[a-z][a-z0-9_]*)\\s*([-+*/]?=[^=]|\\.clear\\(\\))")
 	var top := {}
