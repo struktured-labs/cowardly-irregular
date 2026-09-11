@@ -16,7 +16,19 @@ extends GutTest
 
 const BATTLE_SCENE := "res://src/battle/BattleScene.gd"
 const GRID_EDITOR := "res://src/ui/autobattle/AutobattleGridEditor.gd"
+## cowir-controller 2026-09-11: my corpus named ONE file and the subject is TWO. The autogrind
+## editor has caption statements with format slots and my derivation property never reached it —
+## the narrowing was not in a comparison, it was in a const nobody re-reads (cowir-deploy's shape).
+const AUTOGRIND_EDITOR := "res://src/ui/autogrind/AutogrindGridEditor.gd"
 const WIN98 := "res://src/ui/Win98Menu.gd"
+
+## ONE list. The premise arm and the scan filter each had their own copy — two literal lists for
+## one corpus, free to drift, which is the defect I spent the morning routing out of the AP economy
+## (billed_ap) and the afternoon out of the headless resolver. A premise that does not narrow the
+## SAME set the scan narrows is not a premise about that scan.
+## Both editors' spellings. autobattle: help_label1/2 + help. autogrind: help1/2. A selector that
+## knows one file's naming is a second, quieter way to have the wrong corpus.
+const CAPTION_LABELS: Array[String] = ["help_label1.text", "help_label2.text", "help.text", "help1.text", "help2.text"]
 
 ## ⚠️ COMMENTS BLANKED. cowir-controller 2026-09-11: a source pin is satisfied by the COMMENT, so it
 ## catches the tidy removal and misses the realistic one — nobody deletes a line without leaving the
@@ -62,10 +74,21 @@ func test_no_battle_caption_hardcodes_a_nintendo_button() -> void:
 		BATTLE_SCENE: ["Press X (or the ` key)", "Press R to queue"],
 		GRID_EDITOR: ["A:Confirm", "B:Cancel", "A:Import", "Sel:Auto", "A:Edit", "B/Esc:Back", "Del/Y:Delete"],
 	}
+	## ⚠️ THE SINGLE ASSERT IS OUTSIDE THE LOOP, so draining `frozen` would pass with ZERO work —
+	## and @cowir-overworld's free detector (a drained loop shows as a DROP in GUT's assert count)
+	## cannot see it here, because the count would not move. Pin the corpus size, and assert once
+	## PER LITERAL so the count does move if anyone trims the list.
+	var total: int = 0
+	for path in frozen:
+		total += (frozen[path] as Array).size()
+	assert_eq(total, 9, "CONTROL: the frozen-literal corpus is intact — 2 BattleScene + 7 grid editor")
+
 	var found: Array = []
 	for path in frozen:
 		var s := _src(path)
 		for lit in frozen[path]:
+			assert_false(s.contains(lit),
+				"%s still names a button by its Nintendo spelling: \"%s\"" % [path.get_file(), lit])
 			if s.contains(lit):
 				found.append("%s: \"%s\"" % [path.get_file(), lit])
 	assert_eq(found.size(), 0,
@@ -85,28 +108,60 @@ func test_the_captions_derive_instead() -> void:
 	## the NAME of one helper, which is the exact class cowir-main called out at the fold: a lane's
 	## ratchet pinning a helper name goes stale on another lane's better helper. Now: every format
 	## slot in a help line must be fed by SOME derivation, and which one is the author's business.
-	var ge := _src(GRID_EDITOR)
+	var ge := _src(GRID_EDITOR) + "\n" + _src(AUTOGRIND_EDITOR)
 	var derivations: int = ge.count("InputProfileManager.hint_for_action(") + ge.count("InputProfileManager.face_glyph_for_index(")
 	assert_gt(derivations, 5, "CONTROL: the grid editor derives its pad captions at all (%d)" % derivations)
 	## Per STATEMENT, not per line: help_label1 puts its format args on continuation lines, so a
 	## line-by-line scan sees the string without its `% [...]` and reports a correct file as frozen.
 	## My first version did exactly that and failed on the merged tree.
+	## ⚠️ SUBJECT PREMISE (cowir-adhoc 2026-09-11): the exemption axis and the subject axis are
+	## orthogonal, and I had only pinned the first. Renaming help_label1/2 makes this loop examine
+	## ZERO statements and the whole file passes — measured, 7/7 green with the scan matching
+	## nothing. A corpus-size control on the LITERAL list cannot see that; only counting what the
+	## scan actually examined can.
 	var lines: PackedStringArray = ge.split("\n")
+	## ⚠️ NAMED MEMBERSHIP, NOT A COUNT. My first version pinned `captions_seen == 4` — an exact
+	## count of SUBJECTS, written an hour after I retracted an exact count of HELPERS for going
+	## stale on someone's correct change. Adding a fifth help line would have redded it the same way.
+	## A floor (`> 0`) is the other trap: cowir-controller measured that it catches a TOTAL drain and
+	## misses a PARTIAL one, and partial is likelier — a rename touches one label, not all of them.
+	## Each label must contribute at least once; adding statements is free, losing one is not.
+	for label in CAPTION_LABELS:
+		var seen: int = 0
+		for line in lines:
+			if line.contains(label):
+				seen += 1
+		assert_gt(seen, 0,
+			"CONTROL: `%s` contributed ZERO caption statements — it was renamed or removed, so every assertion below scanned less than it claims" % label)
+
 	for i in lines.size():
 		var line: String = lines[i]
-		if not (line.contains("help_label1.text") or line.contains("help_label2.text") or line.contains("help.text")):
+		var is_caption: bool = false
+		for label in CAPTION_LABELS:
+			if line.contains(label):
+				is_caption = true
+				break
+		if not is_caption:
 			continue
 		var slots: int = line.count("%s")
 		if slots == 0:
 			continue
 		## Statement window: this line plus continuations, stopping at the first line that closes it.
 		var stmt: String = line
+		var closed: bool = line.strip_edges().ends_with("]") or line.strip_edges().ends_with(")")
 		var k: int = i + 1
-		while k < lines.size() and k <= i + 8 and not line.strip_edges().ends_with("]"):
+		while k < lines.size() and k <= i + 24 and not closed:
 			stmt += lines[k]
 			if lines[k].strip_edges().begins_with("]"):
+				closed = true
 				break
 			k += 1
+		## cowir-controller 2026-09-11: the window was i+8 and a longer continuation fell out the
+		## BOTTOM — silently passing rather than failing, because an unterminated window still gets
+		## scanned and `InputProfileManager.` happens to be in it. A bound that is reached is a
+		## measurement that did not finish, so it must fail rather than answer.
+		assert_true(closed,
+			"could not find the end of this caption statement within 24 lines — widen the bound rather than trusting the result: %s" % line.strip_edges().substr(0, 70))
 		assert_true(stmt.contains("InputProfileManager."),
 			"a help caption with %d format slots must feed them from InputProfileManager: %s" % [slots, line.strip_edges().substr(0, 80)])
 
