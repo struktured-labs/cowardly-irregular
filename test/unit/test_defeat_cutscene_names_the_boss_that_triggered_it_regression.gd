@@ -63,13 +63,27 @@ func _read(path: String) -> String:
 	return text
 
 
+## Comment lines blanked, line count preserved. Without this the scan matches a
+## COMMENTED-OUT gate as readily as a live one: measured 2026-09-11, commenting out
+## the W4 gate — which stops the aftermath playing at all — left this file 6/6 GREEN.
+## @cowir-controller's question is the one that found it: what does the file look like
+## after a REAL PERSON removes the thing you are defending? They delete the branch and
+## leave the comment that explained it, which is the mutation a bare source scan is
+## least able to see and the one that actually happens.
+func _code_only(text: String) -> String:
+	var out: PackedStringArray = []
+	for line in text.split("\n"):
+		out.append("" if line.strip_edges().begins_with("#") else line)
+	return "\n".join(out)
+
+
 ## [[role, world, cutscene_id]] for every dungeon-aftermath gate in GameLoop.
 func _gates() -> Array:
 	var out: Array = []
 	var re := RegEx.new()
 	if re.compile(GATE_PATTERN) != OK:
 		return out
-	for m in re.search_all(_read(GAME_LOOP)):
+	for m in re.search_all(_code_only(_read(GAME_LOOP))):
 		out.append([m.get_string(1), m.get_string(2), m.get_string(3)])
 	return out
 
@@ -102,14 +116,37 @@ func _bosses_with_an_authored_aftermath() -> Array[String]:
 	return out
 
 
-## PREMISE. Everything below walks the parsed gates; if the gate shape in GameLoop
-## drifts, search_all returns nothing, the ratchet compares an empty set to an empty
-## set and passes having measured nothing. The cheap repair for a red here is to fix
-## GATE_PATTERN — which keeps the check alive. Deleting this arm is the expensive one.
-func test_premise_the_gate_scan_found_the_dungeon_aftermath_family() -> void:
+## The five dungeon bosses that HAVE an aftermath gate. Named, not counted — see below.
+const EXPECTED_GATED_BOSSES: Array[String] = [
+	"warden_suburban",      # SuburbanUnderground
+	"tempo_steampunk",      # SteampunkMechanism
+	"warden_industrial",    # AssemblyCore
+	"arbiter_futuristic",   # RootProcess
+	"curator_abstract",     # NullChamber
+]
+
+
+## PREMISE, and it took two tries to make it one. A size floor (`>= 4`) is armed
+## against VACUITY — the scan finding nothing — and blind to PARTIAL LOSS. Measured
+## 2026-09-11: commenting out the W4 gate, which stops that aftermath playing at all,
+## left the scan with four gates and the whole file 6/6 GREEN. The gate was not
+## mis-wired, it was ABSENT, and a check that validates the gates it finds cannot see
+## one that is gone.
+##
+## So the membership is NAMED. Removal now fails and says which boss lost its scene.
+## Growth is fine — a sixth dungeon gate is caught by the ownership ratchet below,
+## which is the arm that should judge a new one.
+func test_premise_every_dungeon_boss_still_has_its_aftermath_gate() -> void:
 	var gates := _gates()
-	assert_gte(gates.size(), 4,
-		"GATE_PATTERN matched only %d dungeon-aftermath gates; there are at least four (W2 suburban warden, W3 steampunk tempo, W4 industrial warden, W5 futuristic arbiter). The gate shape in GameLoop moved — fix the pattern, do not delete this arm" % gates.size())
+	var found: Array[String] = []
+	for gate in gates:
+		found.append("%s_%s" % [str(gate[0]), str(gate[1])])
+	var missing: Array[String] = []
+	for boss in EXPECTED_GATED_BOSSES:
+		if not found.has(boss):
+			missing.append(boss)
+	assert_eq(missing.size(), 0,
+		"a dungeon boss lost its aftermath gate: %s — the scene no longer plays at all. If the gate was deliberately retired, remove the boss from EXPECTED_GATED_BOSSES in this file and say why; if GATE_PATTERN stopped matching, fix the pattern. Found: %s" % [", ".join(missing), ", ".join(found)])
 
 
 ## POSITIVE CONTROL, harvested not built: the W2 Warden gate was correct before this
