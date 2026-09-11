@@ -19,6 +19,27 @@ func before_each() -> void:
 func after_each() -> void:
 	GameState.full_banks_unleashed = _saved
 
+## Quote-aware: cut at the first `#` OUTSIDE a string literal. A plain find("#") truncates real code
+## on any line holding a `#` in quoted text — 3 such lines in BattleManager (cowir-controller and
+## cowir-overworld, 2026-09-11). Line count preserved so substr windows stay valid.
+func _strip_comments(raw: String) -> String:
+	var out: Array = []
+	for line in raw.split("\n"):
+		var in_d := false
+		var in_s := false
+		var cut := -1
+		for k in line.length():
+			var c := line[k]
+			if c == '"' and not in_s:
+				in_d = not in_d
+			elif c == "'" and not in_d:
+				in_s = not in_s
+			elif c == "#" and not in_d and not in_s:
+				cut = k
+				break
+		out.append(line.substr(0, cut) if cut > -1 else line)
+	return "\n".join(out)
+
 func test_the_counter_exists_and_starts_at_zero_on_a_new_game() -> void:
 	GameState.full_banks_unleashed = 7
 	GameState.reset_game_state()
@@ -57,11 +78,7 @@ func test_the_unleash_path_increments_it() -> void:
 	## test: replacing the increment with `pass  ## was: GameState.full_banks_unleashed += 1` left it
 	## GREEN at 7/7 with the counter no longer written. Line count preserved so offsets stay valid.
 	var raw := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
-	var stripped: Array = []
-	for line in raw.split("\n"):
-		var h: int = line.find("#")
-		stripped.append(line.substr(0, h) if h > -1 else line)
-	var src: String = "\n".join(stripped)
+	var src: String = _strip_comments(raw)
 	var i: int = src.find("full_bank_unleashed.emit(")
 	assert_gt(i, -1, "CONTROL: located the unleash emit in CODE, not in a comment")
 	var j: int = src.find("\nfunc ", i)
