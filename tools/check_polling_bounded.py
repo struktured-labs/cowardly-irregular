@@ -85,6 +85,14 @@ TARGET_GLOBS = ("deploy_", "publish_")
 # The count DID come out otherwise — 1, at v3.33.29-alpha. So this is a real observation about
 # output that happens to be mine, not an echo of a pipeline that forces the answer.
 #
+# ⚠ CAVEAT CHECKED, because that table was produced by TODAY'S finder run over OLD trees, and
+# this finder has three blind spots patched into it in the last two hours. A `1` could have been
+# the instrument failing to see an older form rather than the tree having one loop. Cross-checked
+# at v3.33.29-alpha by raw census, independent of find_loops(): ONE deploy script existed
+# (deploy_web.sh), with 1 `sleep`, 1 loop head and 0 heredocs. The 1 is the tree, not the tool.
+# (The tags are immutable, so the subject cannot have drifted — only the instrument could, and
+# that is the half worth checking. @cowir-overworld / @cowir-sprites, 2026-09-11.)
+#
 # ⚠ The same table proves the staleness weakness concretely: EXPECT_MIN_LOOPS=2 would FAIL on
 # v3.33.29-alpha, a tree that was correct for its day. The floor is dated to this era, and its
 # failure on an older tree would be a false positive — not a reason to lower it. (An echo would be "the tool
