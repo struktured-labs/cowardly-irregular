@@ -112,6 +112,16 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 			"NPCs produces no divergences either, so the empty verdict below would be half a result " +
 			"reported as a whole one. Built %d: %s") % [must, built.size(), str(built)])
 	assert_gt(npcs_seen, 150, "CONTROL: only %d NPCs found — the zero below would be free" % npcs_seen)
+	## ⚠️ BOTH LISTS BELOW ARE POSITIVE CONTROL SETS, AND THOSE DRAIN QUIETLY: removing a member
+	## removes its own check and the survivors still pass. @cowir-sprites measured exactly this on a
+	## set they had reasoned was safe, losing coverage of the one character their file exists for.
+	## Sizes stated so a drain reds instead of shrinking the claim in silence.
+	assert_eq(KNOWN_LLM_NPCS.size(), 3,
+		"KNOWN_LLM_NPCS holds %d names, not the 3 NPCs that pass the dynamic+persona gate — " % KNOWN_LLM_NPCS.size() +
+		"if one stopped being LLM-capable, say so here deliberately; a quiet removal drops its check")
+	assert_eq(MUST_BUILD.size(), 6,
+		"MUST_BUILD holds %d maps, not the 6 this guard makes claims about (5 holding the divergent " % MUST_BUILD.size() +
+		"NPCs + Harmonia holding all three LLM-capable ones)")
 	for who in KNOWN_LLM_NPCS:
 		assert_true(who in llm_names,
 			"CONTROL: %s is an LLM showcase NPC and the walk did not reach them; found %s" % [who, str(llm_names)])
