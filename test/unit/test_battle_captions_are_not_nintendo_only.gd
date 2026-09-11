@@ -162,8 +162,90 @@ func test_the_captions_derive_instead() -> void:
 		## measurement that did not finish, so it must fail rather than answer.
 		assert_true(closed,
 			"could not find the end of this caption statement within 24 lines — widen the bound rather than trusting the result: %s" % line.strip_edges().substr(0, 70))
-		assert_true(stmt.contains("InputProfileManager."),
-			"a help caption with %d format slots must feed them from InputProfileManager: %s" % [slots, line.strip_edges().substr(0, 80)])
+		## ⚠️ PER SLOT, not per statement — the arm's own message always said "N format slots" and the
+		## check was "does this statement mention InputProfileManager ANYWHERE". With three slots where
+		## two feed from deriving helpers, the third could be any literal and it passed. Measured:
+		## freezing the first slot to "Y/" scored GREEN, in both the direct and the helper form.
+		## So: split the `% [...]` argument list and require EACH argument to derive, directly or
+		## through one level of local helper (a whole-token helper is better than an inline call —
+		## it can carry its own separator so no pad leaves no dangling slash).
+		## Two argument forms ship: `% [a, b, c]` and, for a single slot, a bare `% expr`.
+		var bracketed: int = stmt.find("% [")
+		var args_str: String = ""
+		if bracketed > -1:
+			args_str = stmt.substr(bracketed + 3)
+		else:
+			var single: int = stmt.rfind("\" % ")
+			assert_gt(single, -1, "a caption with format slots must pass arguments: " + line.strip_edges().substr(0, 60))
+			args_str = stmt.substr(single + 4) + "]"
+		
+		var depth: int = 0
+		var cur: String = ""
+		var args: Array = []
+		for ci in args_str.length():
+			var ch: String = args_str[ci]
+			if ch == "(" or ch == "[":
+				depth += 1
+			elif ch == ")":
+				depth -= 1
+			elif ch == "]":
+				if depth == 0:
+					break
+				depth -= 1
+			if ch == "," and depth == 0:
+				args.append(cur)
+				cur = ""
+				continue
+			cur += ch
+		if cur.strip_edges() != "":
+			args.append(cur)
+		assert_eq(args.size(), slots,
+			"parsed %d arguments for %d slots — the parser lost one, so the per-slot check below is not about this caption: %s" % [args.size(), slots, line.strip_edges().substr(0, 60)])
+		var frozen_slots: Array = []
+		var undecidable: Array = []
+		for arg in args:
+			var a: String = str(arg).strip_edges()
+			if a.contains("InputProfileManager."):
+				continue
+			var derived: bool = false
+			## A slot fed by a LOCAL is one more level of indirection — AutogrindGridEditor builds
+			## g_ok/g_no/g_del above its caption. Resolve the assignment and judge that instead.
+			var ident_re := RegEx.new()
+			ident_re.compile("^[a-z_][a-z0-9_]*$")
+			if ident_re.search(a) != null:
+				## ⚠️ EVERY assignment, not the declaration. AutogrindGridEditor writes
+				## `var g_del: String = "X"` and then overwrites it from face_glyph_for_index inside a
+				## pad check — taking the first match called correct code frozen.
+				var decl_re := RegEx.new()
+				decl_re.compile("(?:var )?%s\\b[^=<>!]*= *(.+)" % a)
+				var joined: String = ""
+				for dm in decl_re.search_all(ge):
+					joined += dm.get_string(1) + "\n"
+				if joined == "":
+					undecidable.append(a)
+					continue
+				a = joined
+			## Re-check AFTER resolving: the resolved text is where the derivation lives, and only
+			## looking for helper calls here called every variable-fed slot frozen.
+			if a.contains("InputProfileManager."):
+				continue
+			var call_re := RegEx.new()
+			call_re.compile("\\b(_[a-z_]+)\\(")
+			for cm in call_re.search_all(a):
+				var fi: int = ge.find("func %s(" % cm.get_string(1))
+				if fi < 0:
+					continue
+				var fj: int = ge.find("\nfunc ", fi + 10)
+				if ge.substr(fi, (fj - fi) if fj > -1 else 400).contains("InputProfileManager."):
+					derived = true
+					break
+			if not derived:
+				frozen_slots.append(a.substr(0, 40))
+		assert_eq(frozen_slots.size(), 0,
+			"a caption slot is fed by something that never asks InputProfileManager — it names a fixed button: %s in %s" % [str(frozen_slots), line.strip_edges().substr(0, 60)])
+		## Abstain loudly rather than scoring a tick for a slot this arm could not trace.
+		assert_eq(undecidable.size(), 0,
+			"this arm could not resolve where these slots come from, so it is NOT vouching for them: %s in %s" % [str(undecidable), line.strip_edges().substr(0, 60)])
 
 func test_speed_has_no_inputmap_action_so_the_helper_is_the_only_route() -> void:
 	## The premise, measured rather than asserted. If someone later ADDS a battle_speed action, this
