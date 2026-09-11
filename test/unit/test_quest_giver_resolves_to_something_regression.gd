@@ -52,15 +52,22 @@ func _decomment(src: String) -> String:
 	var out: PackedStringArray = []
 	for line in src.split("\n"):
 		# Cut at the first # OUTSIDE a string: `_create_npc("Worker #4471")` is code, not a comment.
+		# LOOKAHEAD, not lookbehind: consume the escape PAIR so `"a\\"` closes correctly.
+		# "was the previous char an escape?" has no local answer — a backslash may itself be escaped.
 		var in_str := false
 		var cut := -1
-		for i in line.length():
+		var i := 0
+		while i < line.length():
 			var ch: String = line[i]
+			if ch == "\\":
+				i += 2
+				continue
 			if ch == "\"":
 				in_str = not in_str
 			elif ch == "#" and not in_str:
 				cut = i
 				break
+			i += 1
 		out.append(line.substr(0, cut) if cut >= 0 else line)
 	return "\n".join(out)
 
@@ -212,3 +219,19 @@ func test_decomment_does_not_truncate_a_hash_inside_a_string() -> void:
 	var commented := "\tvar w = _create_npc(\"Worker\", \"villager\")  # dropped for now"
 	assert_false(_decomment(commented).contains("dropped for now"),
 		"control: a real trailing comment must still be blanked")
+
+
+## Retired by CONSTRUCTION: lookbehind asks "was the previous char an escape?" — a question with
+## no local answer, since a backslash may itself be escaped. Lookahead consumes the pair instead.
+## ⚠️ These cases DISCRIMINATE: each yields a different result under the old simple-toggle form.
+## Two earlier cases I wrote (escaped quote, trailing backslash) passed under BOTH and proved nothing.
+func test_decomment_handles_escapes_by_construction() -> void:
+	# Old toggle: the escaped quote flips in_str to false, so the # reads as a comment and cuts.
+	# Lookahead: the escape pair is consumed, in_str stays true, the # is code and survives.
+	var hash_after_escaped_quote := "\tvar s = \"a\\\"#b\""
+	assert_true(_decomment(hash_after_escaped_quote).contains("#b"),
+		"a # inside a string, after an escaped quote, is CODE — the old toggle cut here")
+	assert_true(_decomment("\tvar c = \"[color=#88ccff]\"").contains("#88ccff"),
+		"control: a plain # inside a string must survive")
+	assert_false(_decomment("\tnpcs.add_child(foreman)  # gone").contains("gone"),
+		"control: a real trailing comment must still be cut — the stripper is not inert")
