@@ -143,7 +143,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 | Toggle ALL autobattle | Select | F6 |
 | Navigate grid | D-pad | Arrow keys |
 | Edit cell | A | Z |
-| Delete cell | Start / Y | Escape |
+| Delete cell | Y (off a condition cell) | Delete / Backspace |
 | Add condition | L trigger | L key |
 | Add action | R trigger | R key |
 | Close editor | B | X |
