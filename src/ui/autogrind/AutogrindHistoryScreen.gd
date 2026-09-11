@@ -178,12 +178,11 @@ func _render_detail(idx: int) -> void:
 	if permadeaths > 0:
 		_add_detail_row("Permadeaths", str(permadeaths), BAD_COLOR)
 
+	## Was str(item_id) — a player read "potion_minor x3" where the summary screen says
+	## "Minor Potion x3". Same dict, two screens, one of them showing the raw id.
 	var items_consumed: Dictionary = e.get("items_consumed", {})
 	if not items_consumed.is_empty():
-		var parts: Array = []
-		for item_id in items_consumed:
-			parts.append("%s x%d" % [str(item_id), int(items_consumed[item_id])])
-		_add_detail_row("Items Used", ", ".join(parts), LABEL_COLOR)
+		_add_detail_row("Items Used", AutogrindSystem.format_items_consumed(items_consumed), LABEL_COLOR)
 
 
 func _add_detail_header(text: String) -> void:

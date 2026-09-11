@@ -2360,15 +2360,23 @@ func check_new_injuries() -> int:
 	return injuries_this_session
 
 
-func get_items_consumed_summary() -> String:
-	"""Get a human-readable summary of items consumed."""
-	if items_consumed.is_empty():
+## ONE formatter for an {item_id: count} dict, live or from a snapshot. Three surfaces each rolled
+## their own and AutogrindHistoryScreen's used str(item_id) — raw ids where the others resolve names.
+## ItemNameResolver's own docstring is the precedent: ticks 130-134 made three near-identical copies
+## and tick 133 found a typo locked in by one of them. int() because a snapshot loaded from JSON
+## carries floats where live state carries ints.
+static func format_items_consumed(items: Dictionary) -> String:
+	if items.is_empty():
 		return "None"
 	var parts: Array = []
-	for item_id in items_consumed:
-		var name = ItemNameResolver.resolve(item_id)
-		parts.append("%s x%d" % [name, items_consumed[item_id]])
+	for item_id in items:
+		parts.append("%s x%d" % [ItemNameResolver.resolve(item_id), int(items[item_id])])
 	return ", ".join(parts)
+
+
+func get_items_consumed_summary() -> String:
+	"""Get a human-readable summary of items consumed."""
+	return format_items_consumed(items_consumed)
 
 
 ## ═══════════════════════════════════════════════════════════════════════
