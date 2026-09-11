@@ -28,11 +28,11 @@ extends GutTest
 
 const GAMELOOP_SRC := "res://src/GameLoop.gd"
 const PROJECT_CFG := "res://project.godot"
-const MENU_SCENE_SRC := "res://src/ui/MenuScene.gd"
+const OVERWORLD_MENU_SRC := "res://src/ui/OverworldMenu.gd"
 ## The lines under guard. Named, so a rewrite that drops the button is visible here.
 const SPEAKING_LINES := {
-	"res://src/exploration/SuburbanOverworld.gd": "open the menu and hit Autobattle",
-	"res://src/maps/villages/FrostholdVillage.gd": "Or the menu, then Autobattle",
+	"res://src/exploration/SuburbanOverworld.gd": "it's the menu — Auto Rules",
+	"res://src/maps/villages/FrostholdVillage.gd": "Or the menu, then Auto Rules",
 	"res://src/maps/villages/HarmoniaVillage.gd": "whatever your pad calls Select",
 }
 
@@ -116,10 +116,19 @@ func test_the_pad_route_to_the_editor_is_the_menu_not_start() -> void:
 	assert_false(branch.contains("_toggle_autobattle_editor"),
 		"CONTROL: the exploration arm must NOT be the editor path, or this test is measuring the battle one")
 
-	var menu := _read_code(MENU_SCENE_SRC)
-	assert_gt(menu.length(), 1000, "CONTROL: MenuScene source did not load")
-	assert_true(menu.contains("_open_autobattle_editor("),
-		"the overworld menu no longer opens the editor — two NPCs now send pad players nowhere")
+	## ⛔ THIS PINNED src/ui/MenuScene.gd UNTIL @cowir-controller MEASURED IT UNREACHABLE. Nothing
+	## references MenuScene.tscn, its uid appears nowhere, and all 17 mentions are in test/ —
+	## OverworldMenu superseded it. So the guard asserted that a DEAD file still contained a DEAD
+	## function, and would have stayed green with the live route deleted. The two NPC comments cited
+	## MenuScene:1256 as well: I put a dead file's line number into shipped source an hour ago.
+	var om := _read_code(OVERWORLD_MENU_SRC)
+	assert_gt(om.length(), 1000, "CONTROL: OverworldMenu source did not load")
+	assert_true(om.contains('"id": "autobattle"'),
+		"the overworld menu no longer offers the Auto Rules row — two NPCs now send pad players nowhere")
+	assert_true(om.contains('"label": "Auto Rules"'),
+		"the row is no longer LABELLED 'Auto Rules', which is the text both NPCs tell the player to look for")
+	assert_true(src.contains("_open_autobattle_for_character("),
+		"GameLoop's menu_action arm no longer opens the editor, so the Auto Rules row leads nowhere")
 
 
 func test_select_really_toggles_autobattle_for_everyone() -> void:
