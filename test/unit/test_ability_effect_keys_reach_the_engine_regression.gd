@@ -44,6 +44,16 @@ extends GutTest
 ## So "consumed" here means "the string is read somewhere in the engine", never "read
 ## for abilities". Wrong symbol, same spelling — @cowir-ai's trap, in the guard written
 ## while reading about it.
+##
+## ⚠️ SECOND LIMIT, same shape one level out: the corpus is every .gd under src/, and
+## src/ CONTAINS UNREACHABLE CODE. `src/ui/MenuScene.gd` is 1,500 lines of hub menu that
+## nothing instantiates — MenuScene.tscn is referenced by no file — so a key read only
+## there would score CONSUMED while no player can reach the read. @cowir-controller's
+## line: a ratchet whose corpus is src/ inherits src/'s dead code, permanently.
+## Measured 2026-09-11: 0 of the 70 ability keys have the dead hub as their only
+## consumer, so nothing is wrong today. It is stated because a one-level reachability
+## check is a claim about the graph's EDGES, not about the player, and this file makes
+## the weaker claim.
 
 const ABILITIES := "res://data/abilities.json"
 const BATTLE_MANAGER := "res://src/battle/BattleManager.gd"
