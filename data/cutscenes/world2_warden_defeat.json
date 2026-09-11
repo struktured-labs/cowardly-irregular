@@ -36,16 +36,16 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Warden",
+          "speaker": "Warden of Routine",
           "text": "I don't understand.",
           "theme": "enemy",
-          "portrait": "masterite_warden_medieval"
+          "portrait": "masterite_warden_suburban"
         },
         {
-          "speaker": "Warden",
+          "speaker": "Warden of Routine",
           "text": "I've never lost a crossing before.",
           "theme": "enemy",
-          "portrait": "masterite_warden_medieval"
+          "portrait": "masterite_warden_suburban"
         }
       ]
     },
@@ -63,10 +63,10 @@
           "portrait": "cleric"
         },
         {
-          "speaker": "Warden",
+          "speaker": "Warden of Routine",
           "text": "You're welcome.",
           "theme": "enemy",
-          "portrait": "masterite_warden_medieval"
+          "portrait": "masterite_warden_suburban"
         }
       ]
     },
@@ -82,22 +82,22 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Warden",
+          "speaker": "Warden of Routine",
           "text": "I've been here such a long time.",
           "theme": "enemy",
-          "portrait": "masterite_warden_medieval"
+          "portrait": "masterite_warden_suburban"
         },
         {
-          "speaker": "Warden",
+          "speaker": "Warden of Routine",
           "text": "I've been at this crosswalk for… how long?",
           "theme": "enemy",
-          "portrait": "masterite_warden_medieval"
+          "portrait": "masterite_warden_suburban"
         },
         {
-          "speaker": "Warden",
+          "speaker": "Warden of Routine",
           "text": "It feels like longer than the neighborhood's been here.",
           "theme": "enemy",
-          "portrait": "masterite_warden_medieval"
+          "portrait": "masterite_warden_suburban"
         }
       ]
     },
@@ -115,16 +115,16 @@
           "portrait": "mage"
         },
         {
-          "speaker": "Warden",
+          "speaker": "Warden of Routine",
           "text": "Since the beginning. That's what I was told. This neighborhood has always been here. I have always been at this intersection.",
           "theme": "enemy",
-          "portrait": "masterite_warden_medieval"
+          "portrait": "masterite_warden_suburban"
         },
         {
-          "speaker": "Warden",
+          "speaker": "Warden of Routine",
           "text": "Except I can't remember the first day. I can't remember being assigned here. I just… was. And then I was here.",
           "theme": "enemy",
-          "portrait": "masterite_warden_medieval"
+          "portrait": "masterite_warden_suburban"
         }
       ]
     },
@@ -140,10 +140,10 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Warden",
+          "speaker": "Warden of Routine",
           "text": "You should cross now. Before traffic comes.",
           "theme": "enemy",
-          "portrait": "masterite_warden_medieval"
+          "portrait": "masterite_warden_suburban"
         }
       ]
     },
@@ -163,10 +163,10 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Warden",
+          "speaker": "Warden of Routine",
           "text": "You may cross.",
           "theme": "enemy",
-          "portrait": "masterite_warden_medieval"
+          "portrait": "masterite_warden_suburban"
         }
       ]
     },

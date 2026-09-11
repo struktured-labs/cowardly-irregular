@@ -12,7 +12,11 @@ func _init() -> void:
 	boss_flag_key = "root_process_cleared"
 	boss_cutscene_id = "world5_root_process_boss"
 	# Tick 103/105: bridge to game_constants so GameLoop's defeat-cutscene
-	# gate fires world5_arbiter_defeat after victory return to root_process.
+	# gate fires this boss's aftermath after victory return to root_process.
+	# 2026-09-11: that scene is world4_arbiter_defeat ("Arbiter of the Benchmark —
+	# Aftermath"), not world5_arbiter_defeat — the masterite aftermath scenes are
+	# filed one world below the boss they belong to, and the gate was wired by
+	# filename, so this dungeon played the ABSTRACT Arbiter's scene.
 	# (The legacy defeat_cutscene field — read only by the now-removed
 	# DragonCave._on_boss_defeated — was deleted in tick 105.)
 	defeat_cutscene_flags = ["cutscene_flag_arbiter_futuristic_defeated"]

@@ -11,6 +11,15 @@ extends GutTest
 ## rat_king_defeat: a gate in _get_pending_story_cutscene that fires
 ## when (boss-defeat flag set) AND (defeat-cutscene-complete flag
 ## not set) AND (player in the dungeon scene).
+##
+## 2026-09-11: the cutscene IDs below moved. These lists pinned "a defeat cutscene
+## is wired", never "the defeat cutscene belongs to the boss you just beat" — and
+## two of them did not. AssemblyCore's boss is the Warden of the Assembly Line and
+## played the FUTURISTIC Warden's aftermath; RootProcess's boss is the Arbiter of
+## the Benchmark and played the ABSTRACT Arbiter's. The masterite aftermath scenes
+## are filed one world below the boss they belong to. test_defeat_cutscene_names_
+## the_boss_that_triggered_it_regression.gd is the arm that checks ownership; this
+## file stays the reachability arm and the two are deliberately separate.
 
 const GAME_LOOP := "res://src/GameLoop.gd"
 
@@ -26,7 +35,7 @@ const DEFEAT_GATES: Array[Array] = [
 	 "cutscene_flag_world3_tempo_defeat_complete",
 	 "steampunk_mechanism"],
 	["cutscene_flag_warden_industrial_defeated",
-	 "world4_warden_defeat",
+	 "world3_warden_defeat",
 	 "cutscene_flag_world4_warden_defeat_complete",
 	 "assembly_core"],
 ]

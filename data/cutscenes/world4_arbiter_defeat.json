@@ -1,9 +1,9 @@
 {
   "id": "world4_arbiter_defeat",
   "title": "Arbiter of the Benchmark — Aftermath",
-  "world": 4,
+  "world": 5,
   "trigger": "boss_arbiter_futuristic_defeated",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "description": "Four thousand simulations. Zero wins for the party. And yet. The benchmark was built from their own history used against them. They exceeded their own data. The model was perfect. They were not. That is why they won.",
   "steps": [
     {
