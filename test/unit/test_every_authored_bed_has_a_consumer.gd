@@ -459,11 +459,36 @@ func test_no_briefed_battle_track_is_shadowed_by_a_declaration() -> void:
 ## forgotten like the pinned orphans — they are WIRED, to a scene that does not
 ## run. cowir-story is wiring the epilogues (world1's landed 2026-09-11), so this
 ## set should shrink; when it does the arm says so.
+## ⛔ "QUEUED" WAS MY INVENTION AND IT SHIPPED IN .296. Two of these said
+## cowir-story had the epilogue queued. They do not — they ruled on 2026-09-11
+## that they will not wire the remaining nine, and told me so when they read
+## this pin. I inferred a plan from the fact that they had wired world1's and
+## wrote it into a guard as fact. A claim about another lane's intent is a
+## measurement I never took.
+##
+## 🔑 AND THE CORRECTED PICTURE IS WORSE, WHICH IS WHY IT MATTERS. Every credits
+## bed is named by EXACTLY ONE cutscene — its own epilogue — so there is no
+## second route to any of them:
+##
+##     credits_medieval  <- world1_epilogue    LIVE (wired 2026-09-11)
+##     credits_abstract  <- world6_ending      LIVE
+##     credits_suburban  <- world2_epilogue    dead, and the "supersessor" does
+##     credits_steampunk <- world3_epilogue    NOT carry a roll_credits step
+##     credits_industrial<- world4_epilogue    dead, no supersessor at all
+##     credits_digital   <- world5_epilogue    dead, no supersessor at all
+##
+## cowir-story ruled W2/W3's epilogues superseded by world2_chapter11 and
+## world3_chapter5 — true of the PROSE. Measured here: both supersessors have
+## roll_credits = 0. The chapters inherited the beat and not the credits roll,
+## so calling the epilogue superseded whole leaves these two beds with no route
+## at all. Their revised proposal is to MOVE the step into the supersessor; that
+## is a pacing decision about where a campaign's credits roll, so it is theirs
+## or struktured's, not mine.
 const KNOWN_WIRED_TO_DEAD_SCENES := {
-	"credits_digital": "world5_epilogue — unplayable; cowir-story has it queued",
-	"credits_industrial": "world4_epilogue — unplayable; queued",
-	"credits_steampunk": "world3_epilogue — cowir-story ruled it SUPERSEDED by world3_chapter5, so this may never wire",
-	"credits_suburban": "world2_epilogue — ruled SUPERSEDED by world2_chapter11, same",
+	"credits_digital": "world5_epilogue — not dispatched, and W5 has no supersessor carrying its beat",
+	"credits_industrial": "world4_epilogue — not dispatched, no supersessor. Also web-excluded, so silent there even if wired",
+	"credits_steampunk": "world3_epilogue — prose superseded by world3_chapter5, but that scene has roll_credits=0, so this bed has no other route",
+	"credits_suburban": "world2_epilogue — same shape: world2_chapter11 carries the prose and not the credits roll",
 	"cutscene_w5_cached_memory": "all four world6_fragment_* scenes, none dispatched",
 }
 
