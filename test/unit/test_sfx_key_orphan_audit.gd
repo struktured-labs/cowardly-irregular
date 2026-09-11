@@ -20,9 +20,16 @@ extends GutTest
 const SFX_MANIFEST_PATH := "res://data/sfx_manifest.json"
 const SOUND_MANAGER_PATH := "res://src/audio/SoundManager.gd"
 const SRC_DIR := "res://src"
+# ⚠️ THE SCANNER READS RAW SOURCE AND DOES NOT STRIP COMMENTS. Prose that names a call with a
+# quoted literal — `play_attack_hit("sword")` inside a docstring — registers as a call site and
+# reports its argument as an orphan key. Cost a false red 2026-09-11. Two consequences: write
+# examples in comments WITHOUT the quotes, and remember that a key "referenced" here may only be
+# referenced by prose. Related: play_attack_hit's literal is a WEAPON TYPE, not a sound key (the
+# key is built as attack_hit_<arg>), so a literal at a real call site would misreport too — no
+# call site passes one today, which is the only reason this has never bitten.
 # `sfx` here is the CUTSCENE JSON step type, not a method — no `func play_sfx` exists, so it matches nothing in src and the JSON scanner covers those refs separately.
 # Hoisted so the scope guard can READ this alternation — play_death escaped the audit for months because the list was restated by hand and nothing compared it to SoundManager.
-const SFX_CALL_PATTERN := "play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx|death|ambient|voice|status_if_authored)\\(\\s*\"([a-zA-Z_0-9]+)\""
+const SFX_CALL_PATTERN := "play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx|death|ambient|voice|flourish|status_if_authored)\\(\\s*\"([a-zA-Z_0-9]+)\""
 const CUTSCENES_DIR := "res://data/cutscenes"
 
 # Snapshot 2026-05-25 — sfx keys called from somewhere but resolving via
@@ -209,7 +216,7 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 	# literal ever appears at a call site and a named-key control here could only ever fail. It
 	# stays in the alternation so that the day someone DOES hardcode one, it is audited.
 	# METHOD LIST: the scanner's play_* alternation is a SECOND pattern with its own unaudited complement — play_death and play_ambient sat outside it and their literal keys went unscanned. Name one key per covered method; play_status is EXCLUDED BY CONSTRUCTION (it builds "status_" + arg, so no literal key exists to match) and its cues stay unauditable here.
-	for pair in [["enemy_death", "play_death"], ["weather_rain", "play_ambient"]]:
+	for pair in [["enemy_death", "play_death"], ["weather_rain", "play_ambient"], ["group_all_out", "play_flourish"]]:
 		assert_true(code_refs.has(pair[0]),
 			"scanner lost coverage of %s — its literal sfx keys are unaudited, and a key-presence check on the OTHER methods still passes" % pair[1])
 

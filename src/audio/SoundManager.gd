@@ -8,6 +8,7 @@ class_name SoundManagerClass
 var _ui_player: AudioStreamPlayer
 var _battle_player: AudioStreamPlayer
 var _death_player: AudioStreamPlayer  # dedicated voice: death cries survive the next action's sounds (2026-08-18)
+var _flourish_player: AudioStreamPlayer  # dedicated voice: a group attack's own hits were cutting its cue (2026-09-11)
 var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS long and every menu blip on _ui_player cut them (2026-09-11)
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
@@ -269,6 +270,12 @@ func _setup_audio_players() -> void:
 	_battle_player.volume_db = SFX_BATTLE_BASE_DB  # Battle SFX: punchy alongside music
 	_battle_player.bus = SFX_BUS
 	add_child(_battle_player)
+
+	_flourish_player = AudioStreamPlayer.new()
+	_flourish_player.name = "FlourishPlayer"
+	_flourish_player.volume_db = SFX_BATTLE_BASE_DB
+	_flourish_player.bus = SFX_BUS
+	add_child(_flourish_player)
 
 	_voice_player = AudioStreamPlayer.new()
 	_voice_player.name = "VoicePlayer"
@@ -679,6 +686,30 @@ func play_death(sound_key: String) -> void:
 		return
 	if SOUNDS.has(sound_key):
 		_play_sound(_death_player, SOUNDS[sound_key])
+
+
+## The group-attack flourish on its OWN player — a group attack's own hits were cutting it.
+## MEASURED 2026-09-11: the group cue followed by a sword hit through play_attack_hit leaves
+## _battle_player.stream == attack_hit_sword.ogg. The cue is 2.48s (all_out 1.48s, combo_magic
+## 2.00s); the lunges and their damage_dealt signals land a few tenths in, and every one of the
+## 3-5 targets fires a hit sound on the same player. The biggest move in the game was audible
+## for about as long as it took to start.
+##
+## Third instance of one defect class — death cries (2026-08-15), party voice lines and this.
+## A long cue sharing a player with a frequent short one is always the short one's to lose.
+## Same volume as the battle channel: the cue was being CUT, not being quiet.
+func play_flourish(sound_key: String) -> void:
+	if _flourish_player == null:
+		play_battle(sound_key)
+		return
+	## Group attacks are rare and never overlap each other; the per-key cooldown exists to stop
+	## rapid-fire duplicates on the shared channel and would only suppress a legitimate second
+	## group attack here.
+	_sfx_cooldowns.erase(sound_key)
+	if _try_play_sfx_from_manifest(_flourish_player, sound_key, SFX_BATTLE_BASE_DB):
+		return
+	if SOUNDS.has(sound_key):
+		_play_sound(_flourish_player, SOUNDS[sound_key])
 
 
 ## Party voice lines on their OWN player, and the caller is told how long the clip is.
