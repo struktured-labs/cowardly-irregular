@@ -358,3 +358,42 @@ func test_the_npc_probe_can_see_an_unkeyed_frame() -> void:
 		"CONTROL: a fully-opaque frame must exceed the ceiling the sweep applies")
 	assert_true(_row_has_content(img, ROWS - 1),
 		"CONTROL: and the row check calls this sheet HEALTHY — it has no MAX side at all")
+
+
+## THREE copies of the number 32 crop these sheets: WanderingNPC's ARCHETYPE_FRAME_W/H (village
+## NPCs), CutsceneActor's FRAME_SIZE (staged puppets), and this file's own FRAME. Nothing asserted
+## they agree -- so a consumer could change its crop and every sweep above would keep measuring 32
+## and keep passing, having become irrelevant rather than wrong. The sibling monster corpus has had
+## exactly this guard since 2026-09-09 (test_both_consumers_crop_with_the_same_frame_size); the NPC
+## corpus, cropped by two consumers instead of one, did not.
+##
+## Asserted as AGREEMENT rather than as the value 32: if the art is reauthored at a new frame size
+## the fix is one number in each consumer, and this should red until they match -- not pin 32
+## forever. The manifest is NOT the authority here: overworld_npc_sheets declares frame_width 32 on
+## all 145 entries and has ZERO readers in src/ (measured 2026-09-11), so it is a register, not a
+## consumer, and guarding it would guard a field nothing reads.
+const NPC_CROP_CONSUMERS := {
+	"res://src/exploration/WanderingNPC.gd": ["ARCHETYPE_FRAME_W", "ARCHETYPE_FRAME_H"],
+	"res://src/cutscene/CutsceneActor.gd": ["FRAME_SIZE", "FRAME_SIZE"],
+}
+
+
+func test_every_npc_sheet_consumer_crops_with_the_same_frame_size() -> void:
+	var sizes: Dictionary = {}
+	for path in NPC_CROP_CONSUMERS:
+		var consts: Dictionary = load(path).get_script_constant_map()
+		var names: Array = NPC_CROP_CONSUMERS[path]
+		assert_true(consts.has(names[0]) and consts.has(names[1]),
+			"%s no longer declares %s -- it crops by some other means now and this ledger is stale" % [path.get_file(), str(names)])
+		if consts.has(names[0]) and consts.has(names[1]):
+			sizes[path.get_file()] = Vector2i(int(consts[names[0]]), int(consts[names[1]]))
+	assert_eq(sizes.size(), NPC_CROP_CONSUMERS.size(),
+		"CONTROL: only %d of %d consumers reported a frame size -- a silent drop makes the agreement below free" % [sizes.size(), NPC_CROP_CONSUMERS.size()])
+
+	var disagree: Array = []
+	var first := Vector2i(FRAME, FRAME)
+	for f in sizes:
+		if sizes[f] != first:
+			disagree.append("%s crops %s, this guard measures %s" % [f, str(sizes[f]), str(first)])
+	assert_eq(disagree, [],
+		"a consumer crops NPC sheets at a size no other consumer or guard uses -- it draws the wrong region of every sheet, and the sprite still renders so nothing looks broken: %s" % str(disagree))
