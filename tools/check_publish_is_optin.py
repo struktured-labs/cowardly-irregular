@@ -41,6 +41,28 @@ deploy_desktop.sh) is reported as delegating and is not a finding. That is a vac
 construction, so EXPECT_MIN_PUSHERS below refuses to call the corpus clean if too few scripts
 actually contain a push.
 
+WHAT "DOMINATED" MEANS HERE, AND WHERE IT IS OVER-STRICT
+--------------------------------------------------------
+Dominance is by LINE NUMBER, not call order. Asked whether that is narrower than the claim
+"no butler push is reachable without --publish" — @cowir-controller's question, after finding
+their own ratchet covered only BRACKETED button captions while its name said otherwise — the
+answer measured out the right way round:
+
+  push inside a function, defined AND called BEFORE the gate    CAUGHT (ship_it.sh:4, exit 1)
+  helper defined before the gate, CALLED after it               FLAGGED — false positive
+
+There is no quiet miss, and the reason is bash's own semantics rather than anything clever
+here: a function must be DEFINED before it is CALLED, so a pre-gate call implies a pre-gate
+definition, and the push site's line always precedes the call's. (My first probe put the call
+above the definition and I nearly filed it as a hole — that shape does not publish, it dies
+with "command not found".)
+
+The cost is the second row: a helper defined early and invoked after the gate reds although it
+is safe and idiomatic. That is the LOUD direction — it invites "look at this", not "move on" —
+and for a guard standing in front of a publish that is the side to be wrong on. Stated rather
+than silently tolerated; if it ever bites a real script, the fix is to move the definition
+below the gate, not to weaken the check.
+
 Usage:  check_publish_is_optin.py [tools-dir]
         check_publish_is_optin.py --selftest
 Exit:   0 every push site is gated · 1 at least one is not · 2 unusable
