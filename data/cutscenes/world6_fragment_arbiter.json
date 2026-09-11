@@ -3,7 +3,7 @@
   "title": "Fragment: The Stopped Question",
   "world": 6,
   "trigger": "arbiter_function_defeated",
-  "background": "node_prime",
+  "background": "vertex_village",
   "location": "abstract_evaluation_plane_the_suspended",
   "description": "Found on the Evaluation Plane after defeating the Arbiter of Function. A question mark, floating where the Arbiter stood, that has stopped asking. Not collapsed into an answer. Simply stopped.",
   "steps": [
@@ -13,7 +13,7 @@
     },
     {
       "type": "play_music",
-      "track": "cutscene_w5_cached_memory"
+      "track": "cutscene_w6_entering_nothing"
     },
     {
       "type": "wait",

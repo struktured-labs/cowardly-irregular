@@ -1543,7 +1543,7 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 func _hint_strip_text(device_name: String = "") -> String:
 	var confirm: String = InputProfileManager.hint_for_action("ui_accept", device_name)
 	var cancel: String = InputProfileManager.hint_for_action("ui_cancel", device_name)
-	## Keyboard half is "+" (:1355), NOT ui_menu's own Enter/Escape -- ui_accept and ui_cancel
+	## Keyboard half is the KEY_PLUS arm, NOT ui_menu's own Enter/Escape -- ui_accept and ui_cancel
 	## consume both earlier in the same elif chain, so naming them would name keys that edit a cell.
 	var start: String = _pad_or_key(_pad_name_for_action("ui_menu", device_name), "+")
 	var resume: String = _pad_or_key(InputProfileManager.button_name_for_index(JOY_BUTTON_Y, device_name), "R")

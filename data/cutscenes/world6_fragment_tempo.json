@@ -3,7 +3,7 @@
   "title": "Fragment: The Gap",
   "world": 6,
   "trigger": "tempo_sequence_defeated",
-  "background": "node_prime",
+  "background": "vertex_village",
   "location": "abstract_sequence_the_space_between",
   "description": "Found in the space between moments after defeating the Tempo of Sequence. Not an object exactly — a gap, the shape of something that used to be here, which persists because what came after still needs to know that something came before.",
   "steps": [
@@ -13,7 +13,7 @@
     },
     {
       "type": "play_music",
-      "track": "cutscene_w5_cached_memory"
+      "track": "cutscene_w6_entering_nothing"
     },
     {
       "type": "wait",

@@ -22,10 +22,10 @@ from openai import OpenAI
 from PIL import Image
 
 PROJECT = Path(__file__).resolve().parent.parent
-GAME_REPO = Path(os.environ.get(
-    "GAME_REPO",
-    "/home/struktured/projects/cowardly-irregular-artist-ship"
-))
+# Defaults to the checkout this script runs from. It hardcoded a SIBLING worktree -- another
+# agent's tree -- and this module's GAME_REPO is re-exported to gen_world_job_sprites.py, which
+# WRITES job sprites through it. Fourth tool with this defect fixed on 2026-09-11.
+GAME_REPO = Path(os.environ.get("GAME_REPO", str(PROJECT)))
 OUT_DIR = GAME_REPO / "assets" / "sprites" / "portraits" / "npcs"
 RAW_DIR = PROJECT / "tmp" / "archetype_portrait_regen"
 RAW_DIR.mkdir(parents=True, exist_ok=True)

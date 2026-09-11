@@ -1,0 +1,85 @@
+extends GutTest
+
+## A health number that does not say which audio it read is not a health number.
+##
+## `audit_wrap_seams.py` resolves every bed through the manifest's `file` key,
+## which names the MASTERS in `assets/audio/music`. Every web build ships a
+## different artifact: `make_web_audio.sh` transcodes all 161 masters to 48 kbps
+## MONO, `make_web_stage.sh` packs that tier, and `deploy_web.sh` pins the
+## bitrate to 48 explicitly. So for months the gate printed
+##
+##     146 looping beds measured, 0 jump more than 12 dB
+##
+## about audio no web player has ever heard, and the sentence was identical to
+## the one it would print about the audio they do hear. The measurement was not
+## wrong; it was unlabelled, which is worse, because nothing on screen could
+## distinguish the two corpora.
+##
+## Measured 2026-09-11 across both, with a byte-size control proving they are
+## genuinely different files (146 of 146 differ): the transcode moves seams by
+## at most +1.16 dB (boss_mordaine, -26.55 -> -25.40) and NOTHING crosses the
+## 12 dB threshold. So the gate was lucky rather than right — but "lucky" is a
+## fact about today's corpus, and the next bed authored with a hot loop point
+## has no such guarantee.
+
+const TOOL := "res://tools/audit_wrap_seams.py"
+
+
+func _src() -> String:
+	var s: String = FileAccess.get_file_as_string(TOOL)
+	assert_gt(s.length(), 4000, "SCOPE control: %s read back %d chars" % [TOOL, s.length()])
+	return s
+
+
+## Comment lines dropped before scanning. This file's own header explains the
+## `--from` option, and so does the tool's — so a whole-file `contains("--from")`
+## stays green after the option is DELETED. Caught by mutating it out.
+func _code_only(src: String) -> String:
+	var keep: PackedStringArray = PackedStringArray()
+	for line in src.split("\n"):
+		var ln: String = str(line)
+		if ln.strip_edges().begins_with("#"):
+			continue
+		keep.append(ln)
+	return "\n".join(keep)
+
+
+func test_the_gate_can_be_pointed_at_a_corpus_other_than_the_masters() -> void:
+	## Without an option the gate can ONLY answer about masters, and the web
+	## question cannot be asked at all.
+	var code: String = _code_only(_src())
+	assert_false(code.contains("resolves each manifest entry"),
+		"CONTROL FAILED: a comment survived the strip, so every assert below can be satisfied by prose")
+	assert_true(code.contains("\"--from\""),
+		"audit_wrap_seams.py takes no corpus option in CODE — it can only measure the masters, and the web build ships a 48 kbps transcode of them")
+	assert_true(code.contains("CORPUS_DIR = argv["),
+		"the flag parses but never assigns the corpus root, so --from is accepted and ignored")
+	assert_true(code.contains("os.path.basename"),
+		"a redirected corpus must resolve each manifest entry by BASENAME — the manifest's paths point into assets/audio/music and would ignore the override")
+
+
+func test_the_report_names_the_audio_it_measured() -> void:
+	## The anti-recurrence property. The tool may default to masters forever;
+	## what it may not do is print a health verdict that does not say so.
+	var s: String = _src()
+	assert_true(s.contains("corpus: %s"),
+		"the gate prints a bed count and a dB verdict without naming the corpus — the masters and the shipped tier produce the identical sentence")
+	var idx: int = s.find("corpus: %s")
+	assert_gt(idx, -1)
+	var window: String = s.substr(idx, 400)
+	assert_true(window.contains("MASTERS"),
+		"the default branch must say it is reading the MASTERS — an unlabelled default is the state this file exists to prevent")
+
+
+func test_the_shipped_tier_is_48k_mono_so_the_question_is_real() -> void:
+	## SCOPE control for the whole file. If the web build ever stops transcoding,
+	## every arm above still passes while defending nothing.
+	var audio: String = FileAccess.get_file_as_string("res://tools/make_web_audio.sh")
+	assert_gt(audio.length(), 500, "SCOPE control: make_web_audio.sh read back %d chars" % audio.length())
+	assert_true(audio.contains("libvorbis"),
+		"the web tier is no longer a re-encode — if it became a copy, seams could not move and this file is moot")
+	assert_true(audio.contains("-ac 1"),
+		"the web tier is no longer folded to mono — the stereo fold is half of why a seam can move")
+	var deploy: String = FileAccess.get_file_as_string("res://tools/deploy_web.sh")
+	assert_true(deploy.contains("make_web_stage.sh 48"),
+		"deploy_web.sh no longer pins the bitrate to 48 — the tier the gate should be pointed at has changed, and the numbers in this file's header were measured at 48k")

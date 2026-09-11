@@ -3,7 +3,7 @@
   "title": "Fragment: Simulation 4001",
   "world": 5,
   "trigger": "arbiter_benchmark_defeated",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "location": "digital_performance_chamber_epsilon",
   "description": "Found in Performance Chamber Epsilon after defeating the Arbiter of the Benchmark. A performance report, still rendering its final summary. The baseline column contains the party's own data. The model was perfect. The model was wrong.",
   "steps": [
@@ -13,7 +13,7 @@
     },
     {
       "type": "play_music",
-      "track": "cutscene_w4_foreman_confession"
+      "track": "cutscene_w5_cached_memory"
     },
     {
       "type": "wait",

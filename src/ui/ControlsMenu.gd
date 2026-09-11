@@ -387,7 +387,8 @@ func _build_capture_overlay() -> void:
 	box.add_child(prompt)
 
 	var hint = Label.new()
-	hint.text = "B to cancel  |  5s timeout"
+	hint.text = _capture_cancel_hint()
+	hint.name = "CaptureHint"
 	hint.position = Vector2(20, 60)
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -873,6 +874,20 @@ func _activate_row() -> void:
 	_start_capture(InputProfileManager.REMAPPABLE_ACTIONS[action_idx])
 
 
+## The escape hatch out of pad capture, named for the pad in the player's hands. "B" was right on
+## Nintendo ONLY: cancel is RAW INDEX 0 (south face), which is Ⓐ on Xbox and ✕ on PlayStation — and
+## any OTHER index is captured as the binding, so an Xbox player obeying the old hint bound Ⓑ to the
+## action they were remapping. button_name_for_index returns "" with no pad; face_glyph_for_index
+## would hand a keyboard player an xbox glyph instead.
+func _capture_cancel_hint(device_name: String = "") -> String:
+	var keys := "X/Esc"
+	var secs := "%ds" % int(CAPTURE_TIMEOUT)
+	var pad: String = InputProfileManager.button_name_for_index(0, device_name) if InputProfileManager else ""
+	if pad == "":
+		return "%s to cancel  |  %s timeout" % [keys, secs]
+	return "%s or %s to cancel  |  %s timeout" % [pad, keys, secs]
+
+
 func _start_capture(action: String) -> void:
 	_capturing = true
 	_capture_action = action
@@ -882,6 +897,9 @@ func _start_capture(action: String) -> void:
 	if prompt:
 		var label = InputProfileManager.ACTION_LABELS.get(action, action)
 		prompt.text = "Remap '%s' — press a button..." % label
+	var hint_lbl = _capture_overlay.get_node_or_null("CaptureBox/CaptureHint")
+	if hint_lbl:
+		hint_lbl.text = _capture_cancel_hint()   # re-derived: a pad may have arrived since _ready
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
 
@@ -900,7 +918,7 @@ func _handle_capture_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
-	# Cancel on B button (button 0 = A/South = SNES B = ui_cancel)
+	# Cancel on RAW INDEX 0 — the SOUTH face: Ⓑ Nintendo, Ⓐ Xbox, ✕ PlayStation. Not "the B button".
 	if event is InputEventJoypadButton and event.pressed:
 		# Button 0 always cancels capture (consistent with SNES B = cancel)
 		if event.button_index == 0:

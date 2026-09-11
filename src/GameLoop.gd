@@ -2103,14 +2103,30 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_curator_abstract_defeated", false) and not flags.get("cutscene_flag_world5_curator_defeat_complete", false):
 		if _current_map_id == "null_chamber":
 			return "world5_curator_defeat"
+	# 2026-09-11: both W5 map guards named `abstract_overworld`, which is WORLD 6's
+	# overworld (TeleportMenu's "World 6: Abstract", AutogrindSystem.WORLD_REGIONS,
+	# and FuturisticOverworld's forward portal all agree). World 5's own overworld is
+	# `futuristic_overworld` — the map this same file instantiates as
+	# FuturisticOverworldScript and gives its own encounter table.
+	# Every sibling gates on its OWN overworld (W2 suburban_, W3 steampunk_,
+	# W4 industrial_), and the scenes are authored `world5_portal_entry` /
+	# `world5_network_border_entry` on background node_prime — not The Remainder.
+	# Effect: a player entering World 5 got no prologue, so chapter1 (gated on
+	# prologue_complete) never fired in Node Prime either, and the whole W5 act —
+	# plus all of World 6 behind it — waited until they beat the Root Process Arbiter
+	# and walked OUT into World 6's domain. Not a deadlock (that portal opens on
+	# `cutscene_flag_arbiter_futuristic_defeated`), but the act played inside out.
+	# test_story_spine_walk_regression stayed green because its walker assigns every
+	# map in MAPS at every step: it proves the chain CONNECTS, not that a beat is
+	# gated where the player actually stands.
 	if flags.get("cutscene_flag_world4_complete", false) and not flags.get("cutscene_flag_world5_prologue_complete", false):
-		if _current_map_id == "abstract_overworld":
+		if _current_map_id == "futuristic_overworld":
 			return "world5_prologue"
 	if flags.get("cutscene_flag_world5_prologue_complete", false) and not flags.get("cutscene_flag_world5_chapter1_complete", false):
 		if _current_map_id == "node_prime_village":
 			return "world5_chapter1"
 	if flags.get("cutscene_flag_world5_chapter1_complete", false) and not flags.get("cutscene_flag_world5_chapter2_complete", false):
-		if _current_map_id == "abstract_overworld":
+		if _current_map_id == "futuristic_overworld":
 			return "world5_chapter2"
 	if flags.get("cutscene_flag_world5_chapter2_complete", false) and not flags.get("cutscene_flag_world5_chapter3_complete", false):
 		return "world5_chapter3"

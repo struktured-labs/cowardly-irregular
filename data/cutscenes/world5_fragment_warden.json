@@ -3,7 +3,7 @@
   "title": "Fragment: Allow...",
   "world": 5,
   "trigger": "warden_firewall_defeated",
-  "background": "industrial_factory",
+  "background": "node_prime",
   "location": "digital_perimeter_node_zero",
   "description": "Found at Node Zero on the digital perimeter after defeating the Warden of the Firewall. A rule file, suspended in the residual data where the firewall stood. The last entry is unfinished. She stopped writing mid-word.",
   "steps": [
@@ -13,7 +13,7 @@
     },
     {
       "type": "play_music",
-      "track": "cutscene_w4_foreman_confession"
+      "track": "cutscene_w5_cached_memory"
     },
     {
       "type": "wait",

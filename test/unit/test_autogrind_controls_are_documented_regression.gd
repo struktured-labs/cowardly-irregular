@@ -34,10 +34,10 @@ func test_every_documented_autogrind_control_is_bound() -> void:
 	# pause
 	assert_true(t.contains("Pause"), "pause must be documented")
 	assert_true(helper.contains("JOY_BUTTON_BACK") and helper.contains("KEY_P"),
-		"pause must really be Select / P in the dispatch table")
+		"pause must really be raw index 4 (Back/Share/Minus) / P in the dispatch table")
 	# adjust rules
 	assert_true(helper.contains("JOY_BUTTON_START") and helper.contains("KEY_R"),
-		"adjust-rules must really be Start / R")
+		"adjust-rules must really be raw index 6 (Start/Options/Plus) / R")
 	# tier
 	assert_true(t.contains("Cycle monster tier"), "tier cycling must be documented")
 	assert_true(helper.contains("KEY_T"), "tier must really be T on a keyboard")
@@ -57,11 +57,25 @@ func test_the_section_invents_nothing() -> void:
 		"CONTROL: the dispatch-table read can report absence")
 
 
-## The section must be findable from inside the mode: the dashboard advertises Select for pause,
-## and the reference must agree with it rather than inventing a second convention.
+## The two screens must teach ONE convention. This used to pin the literal "Select: Pause" in the
+## dashboard — which passed for as long as the legend was FROZEN and broke the moment it started
+## naming the player's own pad. The agreement that matters is the BINDING, not the spelling: both
+## screens must describe raw index 4, and the dashboard must get its word from the dispatch table
+## rather than from a string somebody typed.
 func test_the_reference_agrees_with_the_dashboard_legend() -> void:
 	var dash := FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindDashboard.gd")
-	assert_true(dash.contains("Select: Pause"),
-		"PRECONDITION: the dashboard advertises Select for pause")
-	assert_true(_text().contains("Select"),
-		"the reference must name the same button, or two screens teach two conventions")
+	assert_true(dash.contains("AutogrindInputHelper.hint_for(\"pause\")"),
+		"the dashboard's pause legend must be DERIVED from the dispatch table, not typed: a frozen " +
+		"word is right on at most one pad family")
+	var helper := FileAccess.get_file_as_string(HELPER)
+	assert_true(helper.contains("JOY_BUTTON_BACK"),
+		"PRECONDITION: pause is raw index 4 — the button both screens are describing")
+	# The reference is a REMAP-STYLE screen: it names families at once rather than resolving one.
+	# It must still name index 4 in a vocabulary a real pad carries.
+	var t := _text()
+	assert_true(t.contains("Back (Minus)"),
+		"the reference must name index 4 the way the rest of its own table already does at the " +
+		"Toggle Autobattle row. It said 'Select (Minus)': Minus is real (Nintendo's), but Select is " +
+		"the SNES's name and belongs to no pad this game supports — Back/Share/Minus are the three")
+	assert_false(t.contains("Select (Minus)"),
+		"the SNES-only spelling must not come back")

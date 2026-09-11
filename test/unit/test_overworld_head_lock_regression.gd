@@ -219,3 +219,36 @@ func test_other_jobs_head_locked() -> void:
 
 func test_npc_archetypes_head_locked() -> void:
     _sweep(NPC_ARCHETYPES, "res://assets/sprites/npcs/%s/overworld.png", "npc")
+
+
+## PER-WORLD VARIANTS WERE OUTSIDE EVERY HEAD-LOCK CORPUS. The sweeps above walk
+## jobs/<job>/overworld.png -- the BASE -- so all 30 overworld_<suffix>.png sheets went ungated.
+## They are head-locked in fact (all 25 shipped starter variants measure 0), but by the GENERATOR,
+## not by anything that would notice a later edit breaking it. Measured 2026-09-11: rescaling the
+## five new ninja variants took them to 156-206 diffs and every gate in this file stayed green.
+##
+## Derived from disk rather than listed, so a new variant joins the sweep when it lands rather than
+## when someone remembers to name it.
+const VARIANT_SUFFIXES := ["suburban", "steampunk", "industrial", "digital", "abstract"]
+
+
+func test_per_world_job_variants_head_locked() -> void:
+    var dir := DirAccess.open("res://assets/sprites/jobs")
+    assert_not_null(dir, "jobs dir must open")
+    if dir == null:
+        return
+    var found: Array = []
+    var unmeasured: Array = []
+    for job in dir.get_directories():
+        for suffix in VARIANT_SUFFIXES:
+            var path: String = "res://assets/sprites/jobs/%s/overworld_%s.png" % [job, suffix]
+            if not FileAccess.file_exists(path):
+                continue
+            found.append("%s/%s" % [job, suffix])
+            var why := _assert_head_locked(path, "job:%s_%s" % [job, suffix])
+            if why != "":
+                unmeasured.append(why)
+    assert_gt(found.size(), 20,
+        "CONTROL: only %d per-world job variants found (30 at time of writing) -- the walk is broken and any clean result is free" % found.size())
+    assert_eq(unmeasured, [],
+        "per-world job variants this gate could not measure: %s" % str(unmeasured))
