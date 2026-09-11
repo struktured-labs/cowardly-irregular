@@ -53,15 +53,27 @@ const DEFERRED := {
 ## nothing. Third costume of one hollowness in this lane today (bare find() -> full-line comment ->
 ## trailing comment), each fix blind to the next.
 ##
-## Cuts at the first `#` OUTSIDE a string literal, so a `#` in quoted text cannot truncate real code.
+## Cuts at the first `#` OUTSIDE a string literal, so a `#` in quoted text cannot truncate real code
+## -- 25 such lines exist in the two scanned dirs, the bulk hazard @cowir-sfx measured in theirs.
+## Backslash escapes are skipped: without that, `"a \" b"` leaves an ODD quote count, the parser
+## thinks it is still inside a string, and a trailing comment survives the strip. Even counts
+## happen to work by luck, which is why the probe that "passes" is not evidence. Zero escaped-quote
+## lines in this corpus today -- closed anyway, because I shipped a NAMED boundary two commits ago
+## and @cowir-controller had to measure it for me.
 func _code_only(src: String) -> String:
 	var out := PackedStringArray()
 	for l in src.split("\n"):
 		var in_str := false
+		var esc := false
 		var cut := -1
 		for i in l.length():
 			var c := l[i]
-			if c == "\"":
+			if esc:
+				esc = false
+				continue
+			if c == "\\":
+				esc = true
+			elif c == "\"":
 				in_str = not in_str
 			elif c == "#" and not in_str:
 				cut = i
