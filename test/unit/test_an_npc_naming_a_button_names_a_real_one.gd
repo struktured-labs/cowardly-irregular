@@ -370,8 +370,25 @@ func test_dr_temporal_names_a_button_the_players_pad_has() -> void:
 	assert_gt(hint.length(), 0,
 		"hint_for_action returned empty, so the line renders as 'press  to activate' — the frozen " +
 		"letter would have been better than this")
-	assert_false(hint == "A" and Input.get_connected_joypads().is_empty(),
-		"with no pad connected the hint must be a KEY, not the face letter it replaced")
+	## ⛔ THIS ARM USED TO READ `assert_false(hint == "A" and no pads)` — one letter, and a REGISTER
+	## check beside it. @cowir-battle 2026-09-11: *a source assert that the code READS a helper is a
+	## register claim about behaviour.* It would have passed on Ⓑ, ○, or any face but the one I
+	## happened to name. The ReadableProp guard I wrote two hours later already did this properly and
+	## I did not come back — so: the RENDERED SENTENCE, against every face glyph.
+	assert_true(Input.get_connected_joypads().is_empty(),
+		"PRECONDITION: this arm measures the NO-PAD case; a pad is connected, so it proves nothing")
+	var line: String = "Step on the pad and press %s to activate. If you dare." % hint
+	## ⚠️ GLYPHS ONLY. My first list also banned the bare letters A/B/X/Y — but `X` is an xbox face
+	## letter AND ui_cancel's keyboard key, so that arm would red on a CORRECT value for any line
+	## deriving a cancel hint. A glyph is unambiguous; a letter is not.
+	for face in ["Ⓐ", "Ⓑ", "Ⓧ", "Ⓨ", "○", "✕", "□", "△"]:
+		assert_false(line.contains(face),
+			("with NO pad connected the World 2 portal line renders '%s' — " % line) +
+			"a player holding no controller cannot press %s" % face)
+	## And the positive half: with no pad the hint must be a KEY this action actually binds.
+	assert_true(InputProfileManager.get_action_key_label("ui_accept").contains(hint),
+		"with no pad the hint '%s' must be one of ui_accept's keyboard bindings (%s)" % [
+			hint, InputProfileManager.get_action_key_label("ui_accept")])
 
 
 ## The instrument itself, both directions. @cowir-music, 2026-09-11: a comment stripper has TWO ways
