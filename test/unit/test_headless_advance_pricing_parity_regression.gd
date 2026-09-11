@@ -89,23 +89,31 @@ func test_headless_charges_what_the_live_rule_charges() -> void:
 	gut.p("    " + " | ".join(rows))
 
 
-func test_a_single_action_is_not_billed_as_an_advance() -> void:
-	## Scoping this change honestly. A queue of one takes the non-Advance branch, so the Advance
-	## price does not apply and this arm asserts only what was measured.
+## ⚠️⚠️ THIS ARM PINS A VALUE THAT IS PROBABLY WRONG, ON PURPOSE. Read this before the assert,
+## which is why it sits above it: I first wrote this warning BELOW an assert worded "nothing is
+## billed", so the check voted for today's behaviour while the note underneath said the question
+## was open. A guard shaped like one answer is a vote (@cowir-battle), and knowing a limitation is
+## not encoding it (@cowir-overworld, via @cowir-story) — I had done both wrong in one function,
+## two hours after finding the same shape in someone else's file.
+##
+## WHAT IS OPEN: a queue of one takes the non-Advance branch and is billed NOTHING here, while live
+## `_execute_attack` spends 1 AP (BattleManager:4243) against the same natural +1, netting zero. So
+## a headless single-action script RISES to the +4 cap over 50 rounds (measured) where a live party
+## would sit at 0 (REASONED FROM TWO CODE SITES, NOT RUN). AP LEVEL gates Advance affordability,
+## group attacks, Limit Break's full-AP requirement and every `ap >=` rule condition, so if that is
+## right it is a larger fidelity gap than the Advance pricing this file exists for.
+##
+## Raised with @cowir-battle, who owns BattleManager. This arm therefore records TODAY'S NUMBER so
+## that changing it is deliberate — it is a tripwire, not a contract. When the live figure is
+## measured, expect to change this line, and change it rather than deleting the arm.
+func test_a_lone_action_still_costs_nothing_here_UNRATIFIED() -> void:
 	if _abs == null:
 		pass_test("AutobattleSystem autoload unavailable")
 		return
 	var got: Dictionary = _run_with_queue_of(1)
 	assert_eq(got["rounds"], 1, "precondition: one round")
-	assert_eq(got["ap"], 1, "a lone action is not an Advance: the round's +1 stands, nothing is billed")
-
-	## ⚠️ OPEN, AND NOT MINE TO SETTLE. Live `_execute_attack` spends 1 AP (BattleManager:4243)
-	## against the same natural +1, netting zero, while headless bills a lone action nothing and
-	## therefore RISES. Over 50 rounds a headless single-action script parks at +4 (measured); the
-	## live side is reasoned, not measured, and AP LEVEL gates Advance affordability, group attacks
-	## and every `ap >=` rule condition. Raised with @cowir-battle, who owns BattleManager. Do not
-	## "fix" this by charging a lone action here until the live number is measured, or autogrind
-	## will diverge in the other direction.
+	assert_eq(got["ap"], 1,
+		"RECORD, NOT A RULING: headless bills a lone action nothing today. If live nets zero, this is the bug — see the header above, and change this number deliberately")
 
 
 func test_the_fifth_action_is_free_only_at_a_full_bank() -> void:
