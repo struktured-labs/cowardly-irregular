@@ -154,15 +154,33 @@ Each starter job has a free 0-cost AP action available in the command menu:
 - Share/export scripts between players
 - Hall of Fame for novel strategies
 
-## Autogrind System (Future)
+## Autogrind System (SHIPPED — this said "(Future)" until 2026-09-11)
+
+⚠️ **All six bullets below are wired and reachable. The heading said "(Future)" while the lane was
+fixing shipped bugs in these same mechanisms all day** — a doc that UNDER-claims produces no bug
+report, it produces duplicated work by whoever trusts it next (@cowir-ai's BYOK finding, same day,
+opposite sign to @cowir-overworld's `L+R opens the editor`, which promised a binding that does not
+exist). Each line below names a consumer so the claim is checkable rather than re-blessed by hand.
 
 Risk/reward automation with escalating stakes:
-- Longer automation = higher EXP multipliers BUT increased danger
-- Monster adaptation: enemies learn and counter repeated strategies
-- System fatigue spawns unpredictable meta-bosses
-- Configurable interrupt rules (HP threshold, party death, corruption level)
-- Optional permadeath staking for extreme rewards
-- "System collapse" events punish perfect optimization
+- **EXP multiplier climbs with session length** — `efficiency_multiplier`, grown per battle by
+  `efficiency_growth_rate`; read by `AutogrindMonitor:584` and the controller's stats block
+- **Monster adaptation** — `monster_adaptation_level`, consumed at `GameLoop:5852`; crossing
+  `ROTATION_SUGGEST_THRESHOLD` fires the region-rotation suggestion
+- **System fatigue → meta-bosses** — `fatigue_events_triggered` gates
+  `check_fatigue_collapse()` (`AutogrindController:248`, needs >= 5 events AND >= 50 battles this
+  session); `meta_boss_spawn_chance` and the `meta_bosses_spawned` / `meta_bosses_defeated` tallies
+  reach the Summary
+- **Interrupt rules** — `_check_interrupt_conditions()` enforces hp_threshold, party_death,
+  item_depleted, corruption_limit and max_battles via `pre_battle_check()`
+  (`AutogrindController:237`). ⚠️ Configurable through the **config dict passed to
+  `start_autogrind`, NOT from the console** — no `src/ui/` file sets them, so "configurable" is
+  true of the API and not yet of the player
+- **Permadeath staking** — `permadeath_staking_enabled`, with a UI state:
+  `AutogrindDashboard:754` and the DANGER_COLOR panel at `AutogrindUI:698`. Routed through
+  `enable_permadeath_staking()` so the flag and its growth rate cannot disagree (fixed 2026-09-11)
+- **System collapse** — `system_collapse` signal, connected at `AutogrindUI:272` with a symmetric
+  disconnect; `collapse_count` reaches the Summary, the Dashboard win-rate and session history
 
 ## Job System
 
