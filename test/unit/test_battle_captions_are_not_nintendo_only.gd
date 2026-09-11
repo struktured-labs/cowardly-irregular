@@ -16,13 +16,19 @@ extends GutTest
 
 const BATTLE_SCENE := "res://src/battle/BattleScene.gd"
 const GRID_EDITOR := "res://src/ui/autobattle/AutobattleGridEditor.gd"
+## cowir-controller 2026-09-11: my corpus named ONE file and the subject is TWO. The autogrind
+## editor has caption statements with format slots and my derivation property never reached it —
+## the narrowing was not in a comparison, it was in a const nobody re-reads (cowir-deploy's shape).
+const AUTOGRIND_EDITOR := "res://src/ui/autogrind/AutogrindGridEditor.gd"
 const WIN98 := "res://src/ui/Win98Menu.gd"
 
 ## ONE list. The premise arm and the scan filter each had their own copy — two literal lists for
 ## one corpus, free to drift, which is the defect I spent the morning routing out of the AP economy
 ## (billed_ap) and the afternoon out of the headless resolver. A premise that does not narrow the
 ## SAME set the scan narrows is not a premise about that scan.
-const CAPTION_LABELS: Array[String] = ["help_label1.text", "help_label2.text", "help.text"]
+## Both editors' spellings. autobattle: help_label1/2 + help. autogrind: help1/2. A selector that
+## knows one file's naming is a second, quieter way to have the wrong corpus.
+const CAPTION_LABELS: Array[String] = ["help_label1.text", "help_label2.text", "help.text", "help1.text", "help2.text"]
 
 ## ⚠️ COMMENTS BLANKED. cowir-controller 2026-09-11: a source pin is satisfied by the COMMENT, so it
 ## catches the tidy removal and misses the realistic one — nobody deletes a line without leaving the
@@ -102,7 +108,7 @@ func test_the_captions_derive_instead() -> void:
 	## the NAME of one helper, which is the exact class cowir-main called out at the fold: a lane's
 	## ratchet pinning a helper name goes stale on another lane's better helper. Now: every format
 	## slot in a help line must be fed by SOME derivation, and which one is the author's business.
-	var ge := _src(GRID_EDITOR)
+	var ge := _src(GRID_EDITOR) + "\n" + _src(AUTOGRIND_EDITOR)
 	var derivations: int = ge.count("InputProfileManager.hint_for_action(") + ge.count("InputProfileManager.face_glyph_for_index(")
 	assert_gt(derivations, 5, "CONTROL: the grid editor derives its pad captions at all (%d)" % derivations)
 	## Per STATEMENT, not per line: help_label1 puts its format args on continuation lines, so a
