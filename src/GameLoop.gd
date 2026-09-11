@@ -2249,7 +2249,8 @@ const _FRAGMENT_GATES := {
 	# `after` is the aftermath scene whose TRIGGER names the same masterite — the file numbering runs one world behind the theme from industrial up (world3_* = industrial, world4_* = futuristic, world5_* = abstract).
 	"world3_fragment_arbiter": {"flag": "cutscene_flag_arbiter_industrial_defeated", "after": "world3_arbiter_defeat"},
 	"world3_fragment_curator": {"flag": "cutscene_flag_curator_industrial_defeated", "after": "world3_curator_defeat"},
-	"world3_fragment_tempo": {"flag": "cutscene_flag_tempo_industrial_defeated", "after": "world3_tempo_defeat"},
+	# world3_tempo_defeat is in the completion map but no gate returns it (the world3 tempo gate now dispatches the Grand Schedule scenes) — waiting on it would block this reveal forever, so it waits on nothing until that aftermath is dispatched.
+	"world3_fragment_tempo": {"flag": "cutscene_flag_tempo_industrial_defeated", "after": ""},
 	"world3_fragment_warden": {"flag": "cutscene_flag_warden_industrial_defeated", "after": "world3_warden_defeat"},
 	"world5_fragment_arbiter": {"flag": "cutscene_flag_arbiter_futuristic_defeated", "after": "world4_arbiter_defeat"},
 	"world5_fragment_curator": {"flag": "cutscene_flag_curator_futuristic_defeated", "after": "world4_curator_defeat"},
