@@ -431,7 +431,7 @@ func _try_replay_selected() -> void:
 			visible = true,
 		CONNECT_ONE_SHOT,
 	)
-	_cutscene_director.play_cutscene(entry.id)
+	_cutscene_director.play_cutscene(entry.id, true)  # replay: the scene plays, the world does not change
 
 
 func _close() -> void:
