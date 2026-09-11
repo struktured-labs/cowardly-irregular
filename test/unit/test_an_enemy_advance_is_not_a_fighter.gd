@@ -47,22 +47,42 @@ func test_a_null_combatant_is_treated_as_an_enemy_not_a_crash() -> void:
 		BattleSceneScript.ADVANCE_FLOURISH_ENEMY_COLOR,
 		"null must land on the neutral tint rather than reaching the palette at all")
 
-func test_the_enemy_tint_is_distinguishable_from_every_job_colour() -> void:
-	## The fix is only a fix if the result READS as different on a TV. A neutral that happens to
-	## equal a job's colour would pass every assertion above and change nothing on screen.
-	var scene_src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	assert_true(scene_src.contains("JOB_QUIP_COLORS"), "CONTROL: the palette still exists")
-	var enemy: Color = BattleSceneScript.ADVANCE_FLOURISH_ENEMY_COLOR
+func _l1(a: Color, b: Color) -> float:
+	return abs(a.r - b.r) + abs(a.g - b.g) + abs(a.b - b.b)
+
+## The floor is DERIVED, not chosen: the closest two DISTINCT job colours are the smallest gap this
+## game already treats as two different identities, so the enemy tint must clear at least that. My
+## first version hardcoded 0.25 — and the tint I was defending sat 0.280 from the Fighter, CLOSER to
+## a job than any two jobs are to each other, passing a threshold picked to let it pass. A one-sided
+## threshold with no known-good residual behind it is a vote, not a check.
+func test_the_enemy_tint_clears_the_palettes_own_separation() -> void:
 	var palette: Dictionary = BattleSceneScript.JOB_QUIP_COLORS
 	assert_gt(palette.size(), 4, "CONTROL: the palette is populated (%d)" % palette.size())
+	var jobs: Array = palette.keys()
+
+	var residual: float = 99.0
+	for i in jobs.size():
+		for j in range(i + 1, jobs.size()):
+			residual = minf(residual, _l1(palette[jobs[i]], palette[jobs[j]]))
+	assert_gt(residual, 0.0, "CONTROL: the palette holds distinct colours (residual %.3f)" % residual)
+
+	var enemy: Color = BattleSceneScript.ADVANCE_FLOURISH_ENEMY_COLOR
 	var too_close: Array = []
-	for jid in palette:
-		var c: Color = palette[jid]
-		var dist: float = abs(c.r - enemy.r) + abs(c.g - enemy.g) + abs(c.b - enemy.b)
-		if dist < 0.25:
-			too_close.append("%s (%.2f)" % [jid, dist])
+	for jid in jobs:
+		var dist: float = _l1(palette[jid], enemy)
+		if dist < residual:
+			too_close.append("%s (%.3f < %.3f)" % [jid, dist, residual])
 	assert_eq(too_close.size(), 0,
-		"the enemy tint must be visibly apart from every job colour, or the fix is invisible: " + str(too_close))
+		"the enemy tint sits closer to a job than the two closest jobs sit to each other, so it reads as that job: " + str(too_close))
+
+func test_the_enemy_tint_carries_no_class_identity() -> void:
+	## The other half of "neutral". A saturated tint far from every job in RGB would clear the test
+	## above and still read as AN identity — just an unassigned one. A monster has no class, so its
+	## flourish should be near-grey rather than a fourteenth hue.
+	var e: Color = BattleSceneScript.ADVANCE_FLOURISH_ENEMY_COLOR
+	var chroma: float = maxf(e.r, maxf(e.g, e.b)) - minf(e.r, minf(e.g, e.b))
+	assert_lt(chroma, 0.2, "the enemy tint must be near-grey, not a new job colour (chroma %.3f)" % chroma)
+	assert_gt(e.r + e.g + e.b, 1.2, "and still bright enough to read against a dark battle background")
 
 func test_both_flourish_sites_use_the_chooser() -> void:
 	## EXECUTION is not SELECTION: the helper being correct says nothing about the flourish reaching
