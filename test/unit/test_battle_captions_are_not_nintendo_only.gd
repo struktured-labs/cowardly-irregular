@@ -121,3 +121,42 @@ func test_the_bar_and_the_hint_agree_on_where_speed_lives() -> void:
 		var body: String = w.substr(i, (j - i) if j > -1 else 800)
 		assert_true(body.contains("face_glyph_for_index(JOY_BUTTON_Y)"),
 			"%s must key on the same raw button as the other" % fn)
+
+## ── the stripper itself ───────────────────────────────────────────────────────────────────────
+## cowir-sfx 2026-09-11: pin the HELPER, not the corpus. Six costumes of this bug were found across
+## four lanes in one afternoon, every one by mutating a source file and watching a guard, and every
+## fix blind to the next. A case table on the helper reds on the SEVENTH instead of waiting for a
+## corpus that happens to expose it.
+##
+## ⚠️ DUPLICATION, stated rather than hidden: an identical _strip_comments lives in
+## test_full_banks_are_recorded on another branch. Two copies of one rule is the defect I spent the
+## morning routing out of the AP economy. They cannot share a helper without coupling two branches
+## into a fold-order dependency, so this pins one copy and the duplication is a follow-up once both
+## land — NOT a thing I am claiming is fine.
+
+func test_the_stripper_cuts_comments_and_keeps_strings() -> void:
+	var cases := [
+		["var x := 1  # gone", "var x := 1  ", "a trailing comment is cut"],
+		["# whole line", "", "a full-line comment is blanked"],
+		["var c := \"#ff0000\"", "var c := \"#ff0000\"", "a hash INSIDE a string survives — my absence asserts live there"],
+		["var c := '#ff0000'", "var c := '#ff0000'", "single quotes too"],
+		["var c := \"#ff0000\"  # gone", "var c := \"#ff0000\"  ", "a string hash then a real comment: cut at the comment only"],
+		## ⚠️ THE ROW THAT DISCRIMINATES IS AN ESCAPED QUOTE, NOT AN ESCAPED BACKSLASH. My first table
+		## used `"a\\\\"` — cowir-overworld's example, which illustrates the LOOKBEHIND bug — and it passes
+		## identically with escape handling REMOVED ENTIRELY, because two backslashes toggle nothing.
+		## An escaped quote is what a missing skip gets wrong: the string closes early, the # lands
+		## inside the next one, and the comment survives into the scan.
+		["var q := \"a\\\"b\"  # gone", "var q := \"a\\\"b\"  ", "an escaped QUOTE must not close the string"],
+		["var q := \"a\\\\\"  # gone", "var q := \"a\\\\\"  ", "an escaped backslash DOES close it — the lookbehind costume"],
+		["var s := \"it's fine\"  # gone", "var s := \"it's fine\"  ", "an apostrophe inside a double-quoted string is not a quote"],
+		["plain code", "plain code", "no hash, untouched"],
+	]
+	for c in cases:
+		assert_eq(_strip_comments(c[0]), c[1], "%s — input: %s" % [c[2], c[0]])
+
+func test_the_stripper_preserves_line_count() -> void:
+	## substr windows in this file and the next are computed against the STRIPPED text, so a
+	## stripper that dropped blanked lines would silently shift every offset.
+	var raw := "a\n# b\nc  # d\n"
+	assert_eq(_strip_comments(raw).split("\n").size(), raw.split("\n").size(),
+		"blanking must not remove lines")
