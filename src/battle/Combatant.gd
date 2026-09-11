@@ -1115,6 +1115,11 @@ func to_dict() -> Dictionary:
 		"job_level": job_level,
 		"job_exp": job_exp,
 		"status_effects": status_effects.duplicate(),
+		## The damage_absorb ward's remaining BUDGET. Same family as the tick-151 bug directly below:
+		## a status that survives save/load and rewind while the thing BOUNDING it does not comes
+		## back unbounded. Here "no budget" legitimately means unlimited, so losing it restores the
+		## exact defect the budget exists to stop — silently, and only through a Time Mage snapshot.
+		"damage_absorb_budget": int(get_meta("_damage_absorb_budget", -1)),
 		## Tick 151: serialize the per-status duration counter. Pre-fix
 		## status_effects survived save/load (and rewind) but
 		## status_durations did not — so any poison/burn/etc that was
@@ -1221,6 +1226,10 @@ func from_dict(data: Dictionary) -> void:
 		for s in data["status_effects"]:
 			typed_status.append(str(s))
 		status_effects = typed_status
+	## Restore the ward's budget alongside the status it bounds. -1 (or an absent key, i.e. a save
+	## written before this shipped) means the unbudgeted rule, which is what those saves recorded.
+	if data.has("damage_absorb_budget") and int(data["damage_absorb_budget"]) >= 0:
+		set_meta("_damage_absorb_budget", int(data["damage_absorb_budget"]))
 	## Tick 151: per-status duration counter. JSON.parse returns
 	## numeric values as float, but status_durations is treated as
 	## int (decrement-by-1 + > 0 check). Coerce to int on load.
