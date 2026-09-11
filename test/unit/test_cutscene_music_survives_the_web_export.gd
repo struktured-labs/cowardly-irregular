@@ -36,11 +36,14 @@ const CUTSCENE_DIR := "res://data/cutscenes"
 ## both ways below.
 ## 21 until 2026-09-11, when the three credits_* beds were un-excluded so the
 ## W4/W5/W6 credits rolls — world6_ending's included — are audible on web.
-const KNOWN_SILENT_ON_WEB := 18
-## The consequence, not the cause. 18 BEDS are dropped; 14 SCENES go silent
+## 18 until 2026-09-11, when the nine cutscene_w6_* beds were un-excluded so
+## world6_ending and world5_transition stop playing in silence on web.
+const KNOWN_SILENT_ON_WEB := 9
+## The consequence, not the cause. 9 BEDS are dropped; 5 SCENES go silent
 ## because they stop the music before requesting one. The other 21 restore the
-## world's bed and are merely wrong-flavoured. world6_ending is in the 14.
-const WEB_SILENT_SCENES := 14
+## world's bed and are merely wrong-flavoured. world6_ending WAS in that set
+## until the w6 beds shipped; the five that remain are W4 and W5 scenes.
+const WEB_SILENT_SCENES := 5
 
 
 ## ⛔ SELECT THE PRESET BY NAME. The first version of this took the LONGEST
