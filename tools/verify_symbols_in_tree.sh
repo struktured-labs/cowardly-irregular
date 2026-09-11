@@ -17,7 +17,7 @@
 #
 # Usage:  tools/verify_symbols_in_tree.sh <ref> <path> <symbol> [<symbol>...]
 # Exit:   0 every symbol found · 1 a symbol was absent · 2 the path or ref does not exist
-#         3 the reader is broken (the built-in negative control matched)
+#         3 the reader is broken (a built-in control failed) · 4 the blob is an LFS pointer
 set -uo pipefail
 
 if [ $# -lt 3 ]; then
@@ -46,6 +46,21 @@ fi
 WORK=$(mktemp "${TMPDIR:-/tmp}/verify_symbols.XXXXXX")
 trap 'rm -f "$WORK"' EXIT
 git show "${COMMIT}:${PATH_IN_TREE}" > "$WORK"
+
+# `git show` returns the stored BLOB, and for an LFS-tracked path that blob is a 132-byte pointer,
+# not the content. Every check below then passes honestly — the path exists, the matcher answers,
+# three lines are readable — and the verdict reads "the file is present, the content is not" about
+# a file whose content is fine. That is this tool's worst possible output: a confident ABSENT, in
+# the failure direction someone is already braced for. This repo keeps every *.ogg in LFS, so the
+# lanes most likely to reach for this are the ones it would lie to. Refuse instead of measuring a
+# stand-in — @cowir-music's resampler had the same shape, asking for the rate it expected rather
+# than the one on disk.
+if command grep -qa '^version https://git-lfs\.github\.com/spec/' "$WORK"; then
+	echo "LFS POINTER, not content: ${PATH_IN_TREE} @ ${REF} ($(wc -c < "$WORK") bytes)"
+	echo "  -> git show returns the pointer for LFS paths; a symbol check here measures the stand-in"
+	echo "  -> nothing was measured about the real bytes; use \`git lfs\` or a checked-out copy"
+	exit 4
+fi
 
 
 # NEGATIVE CONTROL, built in so it cannot be skipped. If a fabricated symbol matches, the reader is
