@@ -245,6 +245,7 @@ func _setup_npcs() -> void:
 		"If your HP drops below twenty-five percent, REST. That's an ORDER.",
 		"A dead worker is an inefficient worker. And inefficiency is UNACCEPTABLE."
 	])
+	foreman.npc_id = "foreman_w4"
 	npcs.add_child(foreman)
 
 	# Union Rep (subversive)
@@ -256,6 +257,7 @@ func _setup_npcs() -> void:
 		"If you find out how to edit the shift log... come find me.",
 		"I'll make it worth your while."
 	])
+	union_rep.npc_id = "union_rep_w4"
 	npcs.add_child(union_rep)
 
 	# Canteen Cook (heals party, humor)
@@ -288,6 +290,7 @@ func _setup_npcs() -> void:
 		"The questions come back. The Director's recalibration doesn't hold perfectly.",
 		"There are always deviations. I'm one. You're a bigger one."
 	])
+	dorrit.npc_id = "dorrit_w4"
 	npcs.add_child(dorrit)
 
 	# Madame Orrery — giver for world4_deviation_report. Same merchant, W4 consulting office.
@@ -299,7 +302,8 @@ func _setup_npcs() -> void:
 		"Camouflage is just knowing what a thing is WORTH to the person holding it.",
 		"You have the look of someone who travels between worlds. I'm documenting that."
 	])
-	# npc_id DELIBERATELY unset: madame_orrery_w4 makes world4_deviation_report offerable, and its step 2 talks to union_rep_w4 — an id no NPC answers to. Re-add when the union rep is placed, not before.
+	# Re-enabled: union_rep_w4 now answers to Voss, so deviation_report step 2 can complete.
+	orrery.npc_id = "madame_orrery_w4"
 	npcs.add_child(orrery)
 
 	# Graffiti Wall (interactable object)

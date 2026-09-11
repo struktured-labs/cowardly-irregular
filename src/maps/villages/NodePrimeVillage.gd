@@ -295,4 +295,5 @@ func _setup_npcs() -> void:
 		"...I will be here. I am always here.",
 		"I have been here for four hundred cycles. I am fine. Everything is fine."
 	])
+	firewall.npc_id = "firewall_attendant_w5"
 	npcs.add_child(firewall)
