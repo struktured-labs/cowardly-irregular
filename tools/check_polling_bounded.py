@@ -70,8 +70,24 @@ TARGET_GLOBS = ("deploy_", "publish_")
 # that passes review because it reads as rigour. @cowir-sprites' discriminator is sharper than
 # authorship: does the pipeline DETERMINE the answer being reported? Nothing here forces a
 # deploy script to poll — these two could have had one polling loop, or three, or none, and the
-# count would have been different. The property was free to come out otherwise and didn't, so it
-# is a real observation that happens to be about my own output. (An echo would be "the tool
+# count would have been different.
+#
+# ✅ AND THAT IS MEASURED, NOT REASONED — @cowir-ai's point that the SURVIVES side is an arm you
+# run, and @cowir-sprites' that the arm is often already in your history. Ran this file against
+# the repo's own tags:
+#
+#     v3.33.29-alpha     1 polling loop   0 bounded · 1 UNBOUNDED
+#     v3.33.291-alpha    2 polling loops  1 bounded · 1 UNBOUNDED
+#     v3.33.293-alpha    2               1 bounded · 1 UNBOUNDED
+#     v3.33.294-alpha    2               1 bounded · 1 UNBOUNDED
+#     v3.33.295-alpha    2               2 bounded · 0 UNBOUNDED
+#
+# The count DID come out otherwise — 1, at v3.33.29-alpha. So this is a real observation about
+# output that happens to be mine, not an echo of a pipeline that forces the answer.
+#
+# ⚠ The same table proves the staleness weakness concretely: EXPECT_MIN_LOOPS=2 would FAIL on
+# v3.33.29-alpha, a tree that was correct for its day. The floor is dated to this era, and its
+# failure on an older tree would be a false positive — not a reason to lower it. (An echo would be "the tool
 # emits X, therefore the corpus is X" — e.g. citing squareness from a generator that only emits
 # squares.)
 #
