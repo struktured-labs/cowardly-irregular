@@ -137,6 +137,11 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	if domain == DOMAIN_AUTOBATTLE and character_id != "":
 		for note in _drop_unusable_rules(v["rules"], character_id, domain_system):
 			repair_notes.append(note)
+
+	# Last, so it orders whatever the other repairs left behind.
+	if v.has("rules") and (v["rules"] as Array).size() > 1:
+		for note in _sink_unconditional_rules(v["rules"]):
+			repair_notes.append(note)
 	var grammar_errors: Array[String] = []
 	if domain_system != null and domain_system.has_method("validate_rule"):
 		# autobattle passes character_id → deep-check (unknown ability, out-of-kit,
@@ -301,6 +306,54 @@ func _drop_unusable_rules(rules: Array, character_id: String, domain_system) -> 
 	for d in dropped:
 		notes.append("Dropped a rule this character cannot run — %s" % d)
 	return notes
+
+
+## Move catch-all rules to the bottom so they stop shadowing the player's intent.
+##
+## Rules are evaluated top-to-bottom, first match wins (AutobattleSystem: "Evaluate
+## rules in order"). A rule whose conditions are all `always` matches every turn, so
+## anything below it is unreachable. The prompt already asks for the fallback last;
+## measured against live llama3, 2 of 13 multi-rule compositions ignored that and
+## buried the rules the player actually asked for.
+##
+## Sinking is safe by construction: an always-rule matches regardless of position, so
+## moving it last preserves it as the fallback it is and un-shadows the rest. Order
+## among the sunk rules is preserved, so a model that emitted two keeps its own.
+func _sink_unconditional_rules(rules: Array) -> Array[String]:
+	var notes: Array[String] = []
+	var first: int = -1
+	for i in rules.size():
+		if rules[i] is Dictionary and _is_catch_all(rules[i] as Dictionary):
+			first = i
+			break
+	# No catch-all, or it is already last: nothing below it, nothing shadowed.
+	var shadowed: int = (rules.size() - first - 1) if first != -1 else 0
+	if shadowed <= 0:
+		return notes
+	var specific: Array = []
+	var catch_all: Array = []
+	for r in rules:
+		if r is Dictionary and _is_catch_all(r as Dictionary):
+			catch_all.append(r)
+		else:
+			specific.append(r)
+	rules.clear()
+	rules.append_array(specific)
+	rules.append_array(catch_all)
+	notes.append("Moved the catch-all rule last — %d rule%s below it could never run." % [
+		shadowed, "" if shadowed == 1 else "s"])
+	return notes
+
+
+## True when every condition is `always`, i.e. the rule fires on any turn.
+func _is_catch_all(rule: Dictionary) -> bool:
+	var conds: Array = rule.get("conditions", []) as Array
+	if conds.is_empty():
+		return false
+	for c in conds:
+		if not (c is Dictionary) or str((c as Dictionary).get("type", "")) != "always":
+			return false
+	return true
 
 
 func _drop_null_targets(rules: Array) -> int:
