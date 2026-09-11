@@ -7822,9 +7822,13 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 
 
 ## Returns true when LLM strategy is opt-in AND the persona is on the
-## showcase list. Currently every W1 boss with both a persona block and
-## scripted_intents (verified by test_boss_persona_coverage_regression).
-## Extending past W1: add the persona block + 3+ scripted_intents to
+## showcase list. The list is a DESIGN choice, not a derivation: the intent
+## path consumes only `persona` + `scripted_intents`, and the five spotlight
+## duel opponents carry both, so no property of the data separates them.
+## Guarded by test_a_new_boss_persona_cannot_be_silently_excluded, which
+## requires every eligible persona to be classified here or excluded WITH a
+## reason — a new one reds instead of being silently deterministic.
+## Extending past W1: add the persona block + scripted_intents to
 ## data/boss_dialogue.json, then add the key here.
 func _should_use_llm_strategy(persona_id: String) -> bool:
 	var gs = get_node_or_null("/root/GameState")
