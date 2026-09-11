@@ -92,11 +92,11 @@ func test_every_hidden_passage_can_be_walked_into() -> void:
 	unreachable.sort()
 
 	assert_eq(worlds_built, WORLDS.size(), "built %d of %d overworlds" % [worlds_built, WORLDS.size()])
-	# Pinned to the MEASURED corpus, not to a floor low enough to survive a drain: six passages are
-	# authored (W1 x2, suburban, steampunk, industrial, futuristic; abstract has none). gte, so
-	# adding a secret is free and losing one — or a collector that stops seeing them — is not.
-	assert_gte(probed, 6,
-		"only %d hidden passages were probed across every overworld; 6 are authored. A collector " % probed +
+	# Pinned to the MEASURED corpus, not to a floor low enough to survive a drain: seven passages are
+	# authored — W1 x2, and one each in suburban, steampunk, industrial, futuristic and abstract.
+	# gte, so adding a secret is free and losing one — or a collector that stops seeing them — is not.
+	assert_gte(probed, 7,
+		"only %d hidden passages were probed across every overworld; 7 are authored. A collector " % probed +
 		"that has gone blind looks exactly like a clean sweep from the outside.")
 	assert_eq(unreachable, [],
 		"a hidden passage sits where no body can reach its trigger — it draws, it registers in the " +
