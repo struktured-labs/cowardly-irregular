@@ -52,7 +52,17 @@ decide() {
     fi
 
     if grep -aq 'reimport: end' "$log" 2>/dev/null; then
-        echo "[import] exit ${ec}, but 'reimport: end' is present — known teardown crash, tolerated${imported:+ (${imported} files)}"
+        # SAY ONLY WHAT WAS CHECKED. The test is an ORDERING test: the reimport reached its end
+        # marker before the process died. That makes the CACHE usable, which is the only thing
+        # this script is entitled to conclude. It does NOT identify which crash followed, and
+        # the previous wording ("known teardown crash") asserted exactly that — an identity
+        # claim resting on ordering alone. A constructed log with `reimport: end`, then a failed
+        # export template, a null-instance script error and SIGABRT was reported as the known
+        # benign teardown and tolerated, exit 0. See the foreign-crash selftest arm below.
+        echo "[import] exit ${ec} AFTER 'reimport: end' — reimport completed, so the cache is usable."
+        echo "[import]   The crash that followed is UNIDENTIFIED; this is not a claim that it was"
+        echo "[import]   the known teardown segfault. Nothing downstream of the cache is vouched for."
+        echo "[import]   ${imported:+${imported} files · }see ${log}"
         return 0
     fi
 
@@ -102,6 +112,50 @@ handle_crash: Program crashed with signal 11'
     arm "non-zero exit, log empty"                4 134 ""
     arm "cache too small, even with teardown log" 4 134 "$TEARDOWN" 12
     arm "cache too small, clean exit"             4 0   "$TEARDOWN" 12
+
+    # ── LABEL CONTROL ─────────────────────────────────────────────────────────
+    # The arms above are NEGATIVE controls: each plants an input that should make the
+    # EXPRESSION fail, and checks it does. They cannot catch a message that claims more than
+    # the expression establishes, because on every one of them the expression works. That is
+    # exactly how "known teardown crash" survived: `reimport: end` really was present, the
+    # cache really was built, exit 0 really was right — and the sentence still asserted an
+    # identity nothing had tested.
+    #
+    # A LABEL control is the other shape: an input that SATISFIES the expression and VIOLATES
+    # the label. FOREIGN below is a crash that is emphatically NOT the known teardown segfault
+    # — a failed export template, a null-instance script error, SIGABRT — occurring after a
+    # completed reimport. The verdict must stay 0 (the cache IS usable; that part was never
+    # wrong) while the WORDING must not identify it.
+    local FOREIGN='reimport: begin
+reimport: end
+EXPORT: beginning web export
+ERROR: Failed to load export template
+SCRIPT ERROR: Invalid call on null instance
+handle_crash: Program crashed with signal 6'
+
+    arm "foreign crash after reimport: end"       0 134 "$FOREIGN"
+
+    # Assert on the TEXT, not the exit code, for both crash shapes.
+    local lf="$dir/imp.log" out body name
+    for name in TEARDOWN FOREIGN; do
+        eval "body=\$$name"
+        printf '%s\n' "$body" > "$lf"
+        out="$("$self" "$lf" 134 100 2528 2>&1)"
+        if printf '%s' "$out" | grep -q 'UNIDENTIFIED' && ! printf '%s' "$out" | grep -qi 'known teardown crash'; then
+            pass=$((pass+1)); printf '  ok    %-44s names no crash\n' "label: ${name} verdict"
+        else
+            fail=$((fail+1)); printf '  FAIL  %-44s claims to identify the crash\n' "label: ${name} verdict"
+        fi
+    done
+
+    # ...and the label assertion must be able to FAIL, or it is the vacuous pass it exists to
+    # prevent. Run the exact predicate over the wording this fix replaced.
+    local OLDMSG="[import] exit 134, but 'reimport: end' is present — known teardown crash, tolerated (2528 files)"
+    if printf '%s' "$OLDMSG" | grep -q 'UNIDENTIFIED' && ! printf '%s' "$OLDMSG" | grep -qi 'known teardown crash'; then
+        fail=$((fail+1)); printf '  FAIL  %-44s predicate passed the OLD wording\n' "label control fires"
+    else
+        pass=$((pass+1)); printf '  ok    %-44s rejects the OLD wording\n' "label control fires"
+    fi
 
     echo
     echo "selftest: ${pass} passed, ${fail} failed"

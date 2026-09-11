@@ -95,6 +95,7 @@ const CONDITION_TYPES = {
 	"ally_has_status": "Ally Has Status",
 	"enemy_has_status": "Enemy Has Status",
 	"ally_mp_percent": "Ally MP %",
+	"ally_dead": "Ally Is Down",
 	"is_night": "Is Night",
 	"weather": "Weather Is",
 	"has_buff": "Has Buff",
@@ -140,6 +141,31 @@ func _ready() -> void:
 	_load_character_scripts()
 
 
+## Session-scoped observed rule usage, character_id -> {rule_index: times fired} and
+## character_id -> turns the script was consulted. Never persisted: the question is "did this
+## rule fire in the fights I just ran", which a saved total cannot answer.
+var _rule_fire_counts: Dictionary = {}
+var _rule_eval_counts: Dictionary = {}
+
+
+func get_rule_fire_counts(character_id: String) -> Dictionary:
+	return (_rule_fire_counts.get(character_id, {}) as Dictionary).duplicate()
+
+
+## Turns this character's script was consulted — the denominator for a zero.
+func get_rule_eval_count(character_id: String) -> int:
+	return int(_rule_eval_counts.get(character_id, 0))
+
+
+func reset_rule_fire_counts(character_id: String = "") -> void:
+	if character_id == "":
+		_rule_fire_counts.clear()
+		_rule_eval_counts.clear()
+		return
+	_rule_fire_counts.erase(character_id)
+	_rule_eval_counts.erase(character_id)
+
+
 func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	"""Execute autobattle for a combatant using their character script.
 	Returns array of actions (1-4) for Advance mode."""
@@ -150,11 +176,19 @@ func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	if script.is_empty() or not script.has("rules"):
 		return [_get_default_action(combatant)]
 
+	## Observed counters. Simulate predicts; nothing told the player what actually happened, which
+	## is why a rule that never fires is invisible. The turn count is the denominator: 0 fires
+	## across 0 turns means "not measured yet", not "dead".
+	_rule_eval_counts[character_id] = int(_rule_eval_counts.get(character_id, 0)) + 1
+
 	# Evaluate rules in order (first match wins)
 	var rule_idx = 0
 	for rule in script["rules"]:
 		if _evaluate_grid_rule(combatant, rule):
 			var actions = _rule_to_actions(combatant, rule)
+			var fired: Dictionary = _rule_fire_counts.get(character_id, {})
+			fired[rule_idx] = int(fired.get(rule_idx, 0)) + 1
+			_rule_fire_counts[character_id] = fired
 			script_executed.emit(combatant, rule, actions)
 			return actions
 		rule_idx += 1
@@ -290,6 +324,13 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 					return false
 			return true
 
+		"ally_dead":
+			# NULLARY, same grammar discipline as is_night below: no operator, no value, nothing the
+			# Rule Composer can malform. Before this the only way to notice a death was ally_count,
+			# which needs the player to know their own party size — "someone fell" is what a revival
+			# rule actually means, and it is party-size independent.
+			return _get_dead_allies_for(combatant).size() > 0
+
 		"is_night":
 			# msg 2916/2959 (cowir-ai grammar ruling): NULLARY and night-band ONLY — no operator, no value, no dusk. Truth condition is exactly GameState.is_night(), because shipping a rule vocabulary term whose meaning diverges from the identically-named engine method is a lying name: the player reads `is_night`, reasons from observed game behaviour, and gets a rule that fires on a band they didn't expect. If "at dusk" is ever wanted it's a SECOND nullary sibling (is_dusk), never a band parameter — a parameterized band can be malformed by the Rule Composer LLM ("midnight"), a nullary cannot.
 			var gs: Node = get_node_or_null("/root/GameState")
@@ -314,6 +355,28 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 	return false
 
 
+## Conditions whose payload field carries the SUBJECT of the test. Absence never fails loudly: the
+## evaluator's "" default makes has_status/item_count/has_buff permanently FALSE, and not_has_buff
+## permanently TRUE — and an always-true condition shadows every rule below it under
+## first-match-wins, so a missing `stat` silently disables the rest of the script.
+const CONDITION_REQUIRED_FIELD := {
+	"has_status": "status",
+	"ally_has_status": "status",
+	"enemy_has_status": "status",
+	"item_count": "item_id",
+	"has_buff": "stat",
+	"not_has_buff": "stat",
+	"weather": "weather",
+}
+
+## Conditions carrying no payload beyond op/value. With the map above this must cover
+## CONDITION_TYPES exactly — a type in neither is one validate_rule waves through unexamined.
+const CONDITION_NO_PAYLOAD := [
+	"hp_percent", "mp_percent", "ap", "enemy_hp_percent", "ally_hp_percent", "ally_mp_percent",
+	"turn", "enemy_count", "ally_count", "setup_complete", "is_night", "ally_dead", "always",
+]
+
+
 func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Array[String]:
 	var errors: Array[String] = []
 	if not rule.has("conditions"):
@@ -336,6 +399,12 @@ func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Ar
 			continue
 		if c.has("op") and not OPERATORS.has(str(c["op"])):
 			errors.append("unknown operator: '%s'" % c["op"])
+		## The field must be PRESENT, before weather's stronger vocabulary check below. Six of the
+		## seven were unchecked: a status rule with no `status`, an item rule with no `item_id`.
+		if CONDITION_REQUIRED_FIELD.has(ctype):
+			var need: String = str(CONDITION_REQUIRED_FIELD[ctype])
+			if str(c.get(need, "")).strip_edges() == "":
+				errors.append("condition '%s' requires '%s' — without it the evaluator compares against \"\" and the rule can never match (not_has_buff instead matches ALWAYS, hiding every rule below it)" % [ctype, need])
 		# Weather values validate against the flat vocabulary so an LLM-composed or
 		# hand-typed bad value fails at decode, not silently-never-fires in battle.
 		if ctype == "weather" and not GameState.all_weather_conditions().has(str(c.get("weather", ""))):
@@ -359,21 +428,25 @@ func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Ar
 	return errors
 
 
-## Item 13 fast-follow (cowir-ai convergence, msg 2038): fizzle-correctness
-## deep-check for one rule against one character. Catches what grammar can't:
-## hallucinated ability/item ids, abilities outside the character's level-1
-## kit, and MP-starved rules — all three fizzle-consume a turn at runtime via
-## BM's can_use_ability path. RuleComposer's second-pass lint opts in with
-## validate_rule(rule, character_id). Per-rule scope is deliberately STRICTER
-## than the preset catalog's whole-script lint (no earlier-refill-rule
-## credit): stricter = safer for LLM-composed output.
-func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
-	var errors: Array[String] = []
+## The kit the fizzle deep-check validates against, exposed so the LLM prompt can
+## be built from the SAME source it will be judged by.
+##
+## RuleComposer knows the character; build_rule_composition never received it, so
+## the prompt said "must belong to THIS character's level-1 kit" without naming
+## the character or listing the kit, and could not state MP costs or the pool at
+## all. Measured against 20 real llama3 replies: 0 of 10 compositions survived the
+## deep check for cleric, fighter OR mage — every one lost to a guessed ability id
+## or an mp_percent guard the model had no numbers to compute.
+##
+## Returning it from here rather than re-deriving it in the prompt builder is the
+## point: a second copy of this derivation would drift from the validator, and the
+## failure mode of that drift is a prompt that confidently teaches rules the
+## validator then rejects.
+func get_deep_check_kit(character_id: String) -> Dictionary:
 	var job_id: String = _resolve_job_for_character(character_id)
 	var job: Dictionary = JobSystem.get_job(job_id)
 	if job.is_empty():
-		errors.append("cannot resolve job for character '%s' — deep check unavailable" % character_id)
-		return errors
+		return {"resolved": false, "job_id": job_id, "kit": [], "full_kit": [], "max_mp": 0, "costs": {}}
 	var kit: Array = (job.get("abilities", []) as Array).duplicate()
 	var free_move: Dictionary = job.get("free_move", {})
 	if free_move.has("ability_id"):
@@ -382,7 +455,45 @@ func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
 	for lvl_key in (job.get("abilities_at_level", {}) as Dictionary).keys():
 		for aid in (job["abilities_at_level"][lvl_key] as Array):
 			full_kit.append(aid)
-	var max_mp: int = int(job.get("stat_modifiers", {}).get("max_mp", 1))
+	var costs: Dictionary = {}
+	for aid in kit:
+		costs[str(aid)] = int(JobSystem.get_ability(str(aid)).get("mp_cost", 0))
+	return {
+		"resolved": true,
+		"job_id": job_id,
+		"kit": kit,
+		"full_kit": full_kit,
+		"max_mp": int(job.get("stat_modifiers", {}).get("max_mp", 1)),
+		"costs": costs,
+	}
+
+
+## Item 13 fast-follow (cowir-ai convergence, msg 2038): fizzle-correctness
+## deep-check for one rule against one character. Catches what grammar can't:
+## hallucinated ability/item ids, abilities outside the character's level-1
+## kit, and MP-starved rules — all three fizzle-consume a turn at runtime via
+## BM's can_use_ability path. RuleComposer's second-pass lint opts in with
+## validate_rule(rule, character_id). Per-rule scope is deliberately STRICTER
+## than the preset catalog's whole-script lint (no earlier-refill-rule
+## credit): stricter = safer for LLM-composed output.
+## Reachability-only slice, for UNTRUSTED imports. The MP-guard arm below is an authoring-STYLE
+## rule — deliberately strict for LLM output — and it fires on ordinary hand-written rules like
+## "hp < 50 -> cure". Surfacing it on every shared code would train players to ignore advisories,
+## so an import asks only "can this rule fire for this character AT ALL".
+func deep_check_reachability(rule: Dictionary, character_id: String) -> Array[String]:
+	return _deep_check_rule(rule, character_id, true)
+
+
+func _deep_check_rule(rule: Dictionary, character_id: String, reachability_only: bool = false) -> Array[String]:
+	var errors: Array[String] = []
+	var ctx: Dictionary = get_deep_check_kit(character_id)
+	if not bool(ctx.get("resolved", false)):
+		errors.append("cannot resolve job for character '%s' — deep check unavailable" % character_id)
+		return errors
+	var job_id: String = str(ctx["job_id"])
+	var kit: Array = ctx["kit"]
+	var full_kit: Array = ctx["full_kit"]
+	var max_mp: int = int(ctx["max_mp"])
 	var mp_cost_sum: int = 0
 	for a in rule.get("actions", []):
 		var atype: String = str(a.get("type", ""))
@@ -412,7 +523,7 @@ func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
 			var iid: String = str(a.get("id", ""))
 			if ItemSystem.get_item(iid).is_empty():
 				errors.append("unknown item '%s'" % iid)
-	if mp_cost_sum > 0 and max_mp > 0:
+	if not reachability_only and mp_cost_sum > 0 and max_mp > 0:
 		var need_pct: int = ceili(float(mp_cost_sum) / float(max_mp) * 100.0)
 		var guarded: bool = false
 		for c in rule.get("conditions", []):
@@ -598,6 +709,16 @@ func _resolve_ability_targets(combatant: Combatant, ability_id: String, target_t
 				return _get_all_alive_allies(combatant)
 			if ab_target == "all_enemies":
 				return _get_enemies_for(combatant)
+			## `dead_ally` is the ONLY target_type whose subject is excluded by the normal ally
+			## helpers — _get_allies_for filters is_alive, so lowest_hp_ally can never return a
+			## corpse and every revival rule aimed itself at a living member. Live skips living
+			## targets (BattleManager:5473), so raise was inert in BOTH engines.
+			if ab_target == "dead_ally":
+				var fallen: Array[Combatant] = _get_dead_allies_for(combatant)
+				var one: Array[Combatant] = []
+				if fallen.size() > 0:
+					one.append(fallen[0])
+				return one
 	# "Exploit Weakness": aim this ability at the enemy weak to its own element.
 	if target_type == "weakest_to_ability":
 		var element: String = ""
@@ -750,6 +871,10 @@ func set_character_script(character_id: String, script: Dictionary) -> void:
 	var profiles = data.get("profiles", [])
 	if active_idx < profiles.size():
 		profiles[active_idx]["script"] = script
+	## Observed counts are keyed by rule INDEX, and editing the grid renumbers them — insert a
+	## rule at the top and every count silently describes a different rule. Drop them with the
+	## edit; a stale count is worse than none, because it reads as evidence.
+	reset_rule_fire_counts(character_id)
 	_save_character_profiles()
 	character_script_changed.emit(character_id)
 
@@ -2060,6 +2185,20 @@ func _get_enemies_for(combatant: Combatant) -> Array[Combatant]:
 	var is_player = combatant in bm.player_party
 	var enemy_party = bm.enemy_party if is_player else bm.player_party
 	return enemy_party.filter(func(e): return e.is_alive)
+
+
+func _get_dead_allies_for(combatant: Combatant) -> Array[Combatant]:
+	"""Fallen members of the combatant's own party — the one group the alive-filtered helpers hide."""
+	var bm = get_node_or_null("/root/BattleManager")
+	if not bm:
+		return []
+	var is_player = combatant in bm.player_party
+	var party = bm.player_party if is_player else bm.enemy_party
+	var out: Array[Combatant] = []
+	for a in party:
+		if a != null and is_instance_valid(a) and not a.is_alive:
+			out.append(a)
+	return out
 
 
 func _get_allies_for(combatant: Combatant) -> Array[Combatant]:

@@ -68,10 +68,17 @@ func test_battle_scene_r_key_no_longer_pre_emits_defer_log() -> void:
 	var src := _read(BATTLE_SCENE)
 	# The R-key handler should still call player_defer but not pre-emit.
 	# Find the R-key block.
-	var idx: int = src.find("if event.keycode == KEY_R and is_player_selecting")
-	assert_gt(idx, -1, "R-key block must exist")
-	# Walk forward ~300 chars to find the player_defer call.
-	var window: String = src.substr(idx, 400)
+	# 2026-09-10: re-anchored from `keycode == KEY_R` to the ACTION. R was bound to battle_ADVANCE
+	# and this branch deferred — an inversion against project.godot and the hint bar, fixed that day.
+	# This test's claim is "no caller PRE-EMITS the defer log", which is unaffected by which key
+	# reaches it; the old anchor pinned the defect as the contract.
+	var idx: int = src.find("event.is_action_pressed(\"battle_defer\")")
+	assert_gt(idx, -1, "the defer branch must exist, keyed on the action")
+	# Bounded at the branch's own `return` rather than a fixed 400 chars — a fixed window can run
+	# past the end of a short block into the next one and attribute its text to this branch.
+	var tail: String = src.substr(idx, 900)
+	var stop: int = tail.find("\n\treturn")
+	var window: String = tail.substr(0, stop if stop > -1 else 400)
 	# Negative pin: no pre-emit log_message defer in this window.
 	assert_false(window.contains("log_message(\"[color=cyan]%s defers![/color]\""),
 		"BattleScene R-key path must NOT pre-emit defer log — centralized in BattleManager.player_defer")

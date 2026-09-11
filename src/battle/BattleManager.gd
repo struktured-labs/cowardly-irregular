@@ -5,6 +5,8 @@ extends Node
 
 signal battle_started()
 signal battle_ended(victory: bool)
+## A full-bank Advance is about to execute — the flourish + SFX moment (BattleScene, cowir-sfx).
+signal full_bank_unleashed(combatant: Combatant, action_count: int)
 ## Fires next to the "The Glow" flag ratchet (drop with <10% base chance). Signal so autogrind can listen without plumbing drops through GameLoop.
 signal rare_drop_found(item_id: String, base_chance: float)
 signal selection_phase_started()
@@ -295,6 +297,13 @@ const PRIORITY_OFFSET: float = 1000.0
 ## kept and LABELLED rather than deleted, so the next reader cannot mistake them for live vocabulary
 ## the way `debuff`/`status` were mistaken for years (test_the_debuffer_archetype_is_unreachable).
 const UTILITY_ABILITY_TYPES: Array[String] = ["support", "song", "summon", "buff", "defensive"]
+
+## FULL BANK (struktured 2026-09-10, design B): at +4 AP an Advance takes FIVE actions for four AP —
+## a full bank covers the full party. Fixes the stranded fifth member AND the dead fourth defer,
+## which until now bought nothing but debt-avoidance. Players only for now; enemies keep their cap.
+const FULL_BANK_AP: int = 4
+const FULL_BANK_ACTIONS: int = 5
+const ADVANCE_CAP: int = 4
 
 const ACTION_SPEEDS = {
 	"attack": 5,
@@ -1832,6 +1841,28 @@ func player_defer() -> bool:
 	_end_selection_turn()
 	return true
 
+## What a queue of N actions actually COSTS at this AP — the fifth is free at a full bank. Every
+## readout must ask this rather than computing `queued` itself: the menu and the party panel each
+## had their own subtraction, and both told the player a full-bank turn ends at -1 when it ends at 0.
+## One authority, three surfaces (Win98Menu, BattleUIManager, and the queue cap below).
+static func billed_ap(current_ap: int, queued: int) -> int:
+	if current_ap >= FULL_BANK_AP and queued >= FULL_BANK_ACTIONS:
+		return queued - 1
+	return queued
+
+
+## ONE rule for both queueing paths (manual menu, autobattle script). A fifth action is honoured
+## only at a full bank and is stamped so _execute_advance can refund it; anything over the cap
+## below a full bank is truncated rather than refused, so a 5-action script still fires at +3.
+func _apply_full_bank_rule(combatant: Combatant, actions: Array) -> Dictionary:
+	var kept: Array = actions.duplicate()
+	var full_bank: bool = combatant != null and combatant.current_ap >= FULL_BANK_AP
+	var cap: int = FULL_BANK_ACTIONS if full_bank else ADVANCE_CAP
+	if kept.size() > cap:
+		kept = kept.slice(0, cap)
+	return {"actions": kept, "full_bank": full_bank and kept.size() == FULL_BANK_ACTIONS}
+
+
 func player_advance(actions: Array[Dictionary]) -> void:
 	"""Queue Advance action (multiple actions in sequence, each costs 1 AP)"""
 	if not _check_player_selecting_state("player_advance"):
@@ -1845,14 +1876,17 @@ func player_advance(actions: Array[Dictionary]) -> void:
 
 	# Mark this as an advance with all actions
 	# Each action will cost 1 AP when executed (first cancels natural gain, rest go to debt)
+	var ruled: Dictionary = _apply_full_bank_rule(current_combatant, actions)
 	var advance_action = {
 		"type": "advance",
 		"combatant": current_combatant,
-		"actions": actions,
+		"actions": ruled["actions"],
+		"full_bank": ruled["full_bank"],
 		"speed": _compute_action_speed(current_combatant, "attack")  # Use attack speed as base
 	}
 	_queue_action(advance_action)
-	print("%s chooses to advance (%d actions, will cost %d AP)" % [current_combatant.combatant_name, actions.size(), actions.size()])
+	var n: int = (ruled["actions"] as Array).size()
+	print("%s chooses to advance (%d actions, will cost %d AP)" % [current_combatant.combatant_name, n, n - (1 if ruled["full_bank"] else 0)])
 	_end_selection_turn()
 
 
@@ -4042,7 +4076,19 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	# Bug fix (2026-04-30): removed the extra gain_ap(1).
 	print("%s advances with %d actions!" % [combatant.combatant_name, actions.size()])
 	# was print-only — Defer logs its stance (v3.32.90), so Advance's header should too (parity for the AP-spend pair)
-	battle_log_message.emit("[color=orange]⚡ %s advances — %d actions this turn![/color]" % [combatant.combatant_name, actions.size()])
+	var full_bank: bool = bool(advance_action.get("full_bank", false))
+	## ⛔ action_executing was emitted for attack, ability and the status skips — never for advance.
+	## So BattleScene's "advance" arm (added this morning for bespoke queue art) has NEVER fired,
+	## and the flourish below would have shipped just as dead. Emitting it here is what makes both
+	## reachable; the sub-actions still emit their own as they execute.
+	action_executing.emit(combatant, {
+		"type": "advance", "actions": actions, "full_bank": full_bank,
+	})
+	if full_bank:
+		battle_log_message.emit("[color=gold]★ FULL BANK — %s unleashes %d actions, the fifth is free! ★[/color]" % [combatant.combatant_name, actions.size()])
+		full_bank_unleashed.emit(combatant, actions.size())
+	else:
+		battle_log_message.emit("[color=orange]⚡ %s advances — %d actions this turn![/color]" % [combatant.combatant_name, actions.size()])
 
 	# Execute all actions in sequence (each will spend 1 AP)
 	for action in actions:
@@ -4076,6 +4122,11 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 			await get_tree().create_timer(_consume_presentation_hold(0.075)).timeout
 		if not is_instance_valid(self):
 			return
+
+	## The fifth action was spent like the other four (each executor charges 1); refund it here
+	## so a full-bank Advance nets 4 AP. After, not before: gain_ap at the +4 cap is a no-op.
+	if full_bank and is_instance_valid(combatant) and combatant.is_alive:
+		combatant.gain_ap(1)
 
 	# Continue to next action — same double-scaling fix as the inner loop above.
 	if turbo_mode:
@@ -6090,7 +6141,12 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			var threat_class: String = str(ability.get("threat_class", ""))
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
-					target.add_buff("Empower", buff_stat, stat_modifier, duration, threat_class)
+					## Labelled per ABILITY, not "Empower". add_buff dedupes on the effect name, so one
+					## shared label collapsed every masterite_* buff into a single entry keeping the
+					## FIRST one's stat — and the arbiter's "do I have an attack buff?" and the
+					## tempo's "do I have a speed buff?" could never be satisfied. Both re-cast their
+					## stance every turn and never attacked.
+					target.add_buff(str(ability.get("name", "Empower")), buff_stat, stat_modifier, duration, threat_class)
 					battle_log_message.emit("[color=cyan]%s is empowered![/color] (%s +%d%% for %d turns)" % [target.combatant_name, buff_stat.to_upper(), int((stat_modifier - 1.0) * 100), duration])
 		"debuff":
 			# Generic stat debuff (masterite_* family). Reads the stat field
@@ -6098,7 +6154,10 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			var debuff_stat = str(ability.get("stat", "attack"))
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
-					target.add_debuff("Sap", debuff_stat, stat_modifier, duration)
+					## Per ABILITY, same reason as the buff arm above: add_debuff dedupes on the effect
+					## name, so one shared "Sap" collapsed slow, time_tax and resource_cut into a
+					## single entry keeping the first one's stat.
+					target.add_debuff(str(ability.get("name", "Sap")), debuff_stat, stat_modifier, duration)
 					battle_log_message.emit("[color=%s]%s is sapped![/color] (%s -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, debuff_stat.to_upper(), int((1.0 - stat_modifier) * 100), duration])
 		# Tick 351: added sleep/poison/burn/confuse/fear/silence/curse to
 		# the simple-status arm. These are referenced by abilities.json
@@ -7349,15 +7408,17 @@ func _process_grid_autobattle(combatant: Combatant) -> void:
 		single["speed"] = _compute_action_speed(combatant, single.get("type", "attack"))
 		_queue_action(single)
 	else:
-		# Queue as advance
+		# Queue as advance — same full-bank rule as the manual menu, so scripts are never weaker
+		var ruled: Dictionary = _apply_full_bank_rule(combatant, advance_actions)
 		var advance_action = {
 			"type": "advance",
 			"combatant": combatant,
-			"actions": advance_actions,
+			"actions": ruled["actions"],
+			"full_bank": ruled["full_bank"],
 			"speed": _compute_action_speed(combatant, "attack")
 		}
 		_queue_action(advance_action)
-		print("%s (autobattle) advances with %d actions" % [combatant.combatant_name, advance_actions.size()])
+		print("%s (autobattle) advances with %d actions" % [combatant.combatant_name, (ruled["actions"] as Array).size()])
 
 	_end_selection_turn()
 
@@ -7960,23 +8021,42 @@ func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictiona
 	# Mordaine bias table — applied to *any* boss that uses these intents
 	# (the masterite_type arg is for masterite-specific scaling, optional).
 	#
-	# SCOPE, ruled 2026-07-29 (cowir-ai msg-3345/3348, cowir-battle msg-3357):
-	# 26 authored intents across the dragons and duel minibosses reach no arm
-	# here, and that is NOT a missing-arm bug. Every ability-weight key below
-	# (attack_weight / iron_guard / crushing_blow / endurance_test) is read
-	# ONLY inside _make_masterite_decision, entered via has_meta("masterite").
-	# Dragons and Mordaine do not AUTHOR the masterite key at all (absent, not
-	# false — they diverge if someone later writes masterite:true expecting the
-	# key to exist), so has_meta is false and counter_action_chance is the
-	# only key they can ever read. Adding arms for them is inert — verified by
-	# a commit that did exactly that, passed six assertions and three
-	# mutations, and changed nothing (withdrawn e1fd88e5).
+	# SCOPE, ruled 2026-07-29 (cowir-ai msg-3345/3348, cowir-battle msg-3357),
+	# CORRECTED 2026-09-10 by measurement — the note below was FALSE WHEN
+	# WRITTEN and its wrongest sentence is the one it was written to settle.
 	#
-	# So the intent layer is DIALOGUE-FIRST for non-masterites by construction:
-	# it selects which taunt fires, not how the boss weights abilities. Making
-	# it mechanical means teaching the generic AI ladder to read these keys —
-	# a feature touching every non-masterite boss, not a bugfix. Struktured's
-	# call; do not re-file it as a defect.
+	# It said every ability-weight key is read ONLY inside
+	# _make_masterite_decision, and concluded the intent layer is
+	# "DIALOGUE-FIRST for non-masterites by construction". _ai_caster has read
+	# attack_weight unconditionally since c2ae4e1b (2026-06-14) — six weeks
+	# BEFORE that note. Nothing expired; the reader was already there and the
+	# consumer was never grepped, so no rot check could have caught it.
+	#
+	# MEASURED, 400 rolls per intent against the real decision path
+	# (test_boss_intent_changes_caster_behaviour): Mordaine classifies caster
+	# and his spell rate is 0.99 under "aggress" vs 0.42 under "turtle" — a
+	# 2.3x swing the LLM chooses. So the intent layer IS mechanical, for every
+	# caster-classified boss, today.
+	#
+	# The 26-count is right. Mordaine authors all three attack_weight-armed
+	# intents (aggress / turtle / exploit_pattern) and is the only W1 boss that
+	# does, which is why the note read as true.
+	#
+	# ⛔ I FIRST WROTE "and the conclusion holds for the four DRAGONS" HERE. It
+	# does not, and I had not measured it — the dragons reach a DIFFERENT key.
+	# _COUNTER_INTENT_TAGS is exactly the six intents they author, and
+	# _resolve_counter_strategy returns the intent id ITSELF for those, so the
+	# counter branch fires with no adaptation_level and no AutogrindSystem
+	# learning: 0.3 x counter_action_chance(2.0) = 0.60.
+	#
+	# 🔴 AND FIVE OF THE SIX THEN PRODUCE NOTHING. _get_counter_action is
+	# entered, its arm finds no ability it can build an action from, returns
+	# empty, and the turn falls through to ordinary AI. Pyrroth, 400 rolls each
+	# (test_dragon_intents_are_mechanical_too): fire/ice/lightning_resist,
+	# focus_healer and defense_boost all 0.000; rotate_aggro 0.600. The three
+	# resist arms filter for an id containing "resist" or "shield" and NO BOSS
+	# OWNS ONE. So the LLM picks from six postures and five do nothing.
+	# Pinned inverted, not fixed — waking them changes five boss fights.
 	#
 	# The duels are unaffected: their mechanics run through counter_abilities /
 	# steal_response / first_steal_guaranteed and the Prismatic Construct's
@@ -8500,6 +8580,35 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	_emit_party_line(combatant, line, vt)
 
 
+## The Nature the player chose at character creation, as a voice cue.
+##
+## This read `combatant.get_meta("personality")` and NOTHING IN THE REPO EVER SET
+## THAT META — measured, zero writers — so speaker_personality was always "" and
+## the prompt's "Personality trait:" line never rendered. Meanwhile the player
+## picks a Nature on the creation screen ("Nature: Brave (+2 ATK, Power Drink)")
+## and Combatant already carries the customization that holds it.
+##
+## The NAME is the cue, not the description: "Brave" is a temperament a model can
+## voice, "+2 ATK, Power Drink" is a stat line and would be noise in a dialogue
+## prompt. The meta is still honoured first so anything that sets it later wins.
+func _resolve_speaker_personality(combatant: Combatant) -> String:
+	if combatant == null:
+		return ""
+	if combatant.has_meta("personality"):
+		var m: String = str(combatant.get_meta("personality", ""))
+		if m != "":
+			return m
+	if not ("customization" in combatant) or combatant.customization == null:
+		return ""
+	var custom = combatant.customization
+	if not ("personality" in custom):
+		return ""
+	var CustomizationScript = load("res://src/character/CharacterCustomization.gd")
+	if CustomizationScript == null or not CustomizationScript.has_method("get_personality_name"):
+		return ""
+	return str(CustomizationScript.get_personality_name(custom.personality))
+
+
 func _resolve_party_job_id(combatant: Combatant) -> String:
 	if combatant == null:
 		return ""
@@ -8531,7 +8640,7 @@ func _build_party_line_context(combatant: Combatant, event_kind: String, event_d
 	ctx.event_data = event_data.duplicate() if event_data != null else {}
 	ctx.speaker_name = str(combatant.combatant_name)
 	ctx.speaker_job_id = _resolve_party_job_id(combatant)
-	ctx.speaker_personality = str(combatant.get_meta("personality", "")) if combatant.has_meta("personality") else ""
+	ctx.speaker_personality = _resolve_speaker_personality(combatant)
 	ctx.speaker_hp_pct = combatant.get_hp_percentage()
 	ctx.speaker_mp_pct = float(combatant.current_mp) / float(maxi(combatant.max_mp, 1)) * 100.0
 	ctx.speaker_ap = combatant.current_ap

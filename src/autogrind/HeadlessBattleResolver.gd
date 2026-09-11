@@ -206,6 +206,11 @@ func _selection_phase() -> Array[Dictionary]:
 			a["speed"] = _speed_for(a, combatant)
 			actions.append(a)
 		elif raw.size() > 1:
+			## Full-bank parity with the live game: a fifth action only at +4 AP (the round's +1 is
+			## already applied above), otherwise truncated to four. Charged size-1, so five at +4
+			## costs four — the fifth is free by construction here, as it is live.
+			if raw.size() > 4 and combatant.current_ap < 4:
+				raw = raw.slice(0, 4)
 			var ap_cost = raw.size() - 1
 			if combatant.can_brave(ap_cost):
 				combatant.spend_ap(ap_cost)
@@ -744,6 +749,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var mp_amount := authored_mp if authored_mp > 0 else int(caster.get_buffed_stat("magic", caster.magic) * power)
 					var restored = target.restore_mp(max(1, mp_amount))
 					_log("%s restores %d MP to %s" % [caster.combatant_name, restored, target.combatant_name])
+
+		"revival":
+			## Mirrors BattleManager._execute_revival_ability:5470-5477 — authored
+			## revive_percentage of max_hp, living targets skipped. Routed through
+			## Combatant.revive so a permakilled PC stays dead in a grind too.
+			var revive_pct := float(ability.get("revive_percentage", 50))
+			for target in targets:
+				if target == null or not is_instance_valid(target) or target.is_alive:
+					continue
+				target.revive(int(target.max_hp * revive_pct / 100.0))
+				_log("%s revives %s with %d HP" % [caster.combatant_name, target.combatant_name, target.current_hp])
 
 		"support", "song", "status":
 			## BattleManager:4424 groups these three in one arm; headless had only "support", so

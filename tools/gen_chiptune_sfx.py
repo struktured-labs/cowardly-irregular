@@ -511,6 +511,57 @@ def cure(dur=0.60, seed=227):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.76).astype(np.float32)
 
 
+def _flourish(level, seed):
+    """ONE sound getting more committed — advance_flourish_2..5. Parameterised rather than five
+    separate voices ON PURPOSE: cowir-battle's brief is that the family must read as escalation, and
+    five hand-authored cues drift into five different sounds. Everything scales off `level`, and the
+    4->5 step is the largest by construction because the visuals put their biggest jump there.
+    """
+    rng = np.random.default_rng(seed)
+    # 5 is the discontinuity, not the next increment: longer, an octave lower root, extra voice.
+    dur = {2: 0.34, 3: 0.42, 4: 0.52, 5: 0.78}[level]
+    n = int(SR * dur)
+    root = {2: 261.63, 3: 293.66, 4: 329.63, 5: 174.61}[level]
+    voices = {2: 2, 3: 3, 4: 4, 5: 6}[level]
+    out = np.zeros(n)
+    # stacked HELD steps, one per queued action — you hear the bank filling
+    step = int(n / (voices + 1))
+    for i in range(voices):
+        f = root * (1.0 + 0.25 * i)
+        amp = 0.30 + 0.05 * i
+        off = i * step
+        _place(out, _held(n - off, f, 2.4, amp, duty=0.3 if i % 2 else 0.5), off)
+    sub = {2: 0.10, 3: 0.16, 4: 0.24, 5: 0.55}[level]
+    out += _held(n, root * 0.5, 1.6, sub)
+    grit = {2: 0.06, 3: 0.09, 4: 0.13, 5: 0.30}[level]
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 1400.0, 1200.0) * _env(n, 0.02, 2.2) * grit
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 1900.0, 1600.0)
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * {2: 0.62, 3: 0.70, 4: 0.78, 5: 0.92}[level]).astype(np.float32)
+
+
+def advance_flourish_2(dur=0.0, seed=307): return _flourish(2, seed)
+def advance_flourish_3(dur=0.0, seed=311): return _flourish(3, seed)
+def advance_flourish_4(dur=0.0, seed=313): return _flourish(4, seed)
+def advance_flourish_5(dur=0.0, seed=317): return _flourish(5, seed)
+
+
+def full_bank_unleash(dur=0.85, seed=331):
+    """NOT a louder advance_flourish_5 — cowir-battle was right to flag that, and it is the same
+    distinction as ability_mp_restore vs ability_heal. The flourish is the character WINDING UP; this
+    is the bank EMPTYING, and they fire together. So: a hard struck downbeat that DISCHARGES —
+    everything arrives at once instead of stacking, and it sits an octave below the flourish's root
+    so the two occupy different space rather than competing."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n)
+    k = int(SR * 0.07)
+    out[:k] += _sweep_lowpass(rng.uniform(-1, 1, k), 2400.0, 1600.0) * _env(k, 0.001, 4.0) * 0.62
+    for f, a, d in ((87.31, 0.85, 1.5), (130.81, 0.50, 1.8), (174.61, 0.34, 2.2), (261.63, 0.22, 2.6)):
+        out += _held(n, f, d, a)                       # struck TOGETHER, no stagger — a discharge
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 1600.0, 1300.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.95).astype(np.float32)
+
+
 VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
           "scythe_crit": scythe_crit, "strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
           "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
@@ -519,7 +570,10 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "dark": dark,
           "song": song, "summon": summon, "revive": revive, "riff": riff,
           "poison": poison, "earth": earth, "wind": wind, "arcane": arcane,
-          "mp_restore": mp_restore, "flee": flee, "cure": cure}
+          "mp_restore": mp_restore, "flee": flee, "cure": cure,
+          "advance_flourish_2": advance_flourish_2, "advance_flourish_3": advance_flourish_3,
+          "advance_flourish_4": advance_flourish_4, "advance_flourish_5": advance_flourish_5,
+          "full_bank_unleash": full_bank_unleash}
 
 
 def _refuse_if_degenerate(voice, y):
@@ -536,6 +590,18 @@ def _refuse_if_degenerate(voice, y):
     peak = float(np.max(np.abs(y))) if len(y) else 0.0
     peak_db = 20.0 * math.log10(peak + 1e-12)
     live = float((np.abs(y) > 10 ** (-60.0 / 20.0)).mean()) if len(y) else 0.0
+    # ⛔ THE OTHER DIRECTION. This checked only "too quiet" — a one-sided test on a two-sided
+    # quantity, which cowir-music named on 2026-09-10 after a signed wrap metric scored 19 dead-air
+    # loops as BEST IN CORPUS: a blind direction is not a gap in coverage, it is a FALSE CLEAN.
+    # A voice that saturates produces a clipped square wall, which is just as much a broken render
+    # as silence and would have sailed through. Every voice here normalises then scales by <= 0.95,
+    # so a correct render never pins the rail; >1% of samples at full scale means the maths ran away.
+    clipped = float(np.mean(np.abs(y) >= 0.999)) if len(y) else 0.0
+    if clipped > 0.01:
+        raise SystemExit(
+            "REFUSED to write %s: %.1f%% of samples are at full scale — the render is CLIPPED.\n"
+            "Every voice normalises then scales by <= 0.95, so a correct one never pins the rail.\n"
+            "Fix the voice; do NOT add a limiter here to hide it." % (voice, clipped * 100.0))
     if peak_db < -20.0 or live < 0.05:
         raise SystemExit(
             "REFUSED to write %s: peak %.1f dBFS, %.1f%% of samples above -60 dBFS.\n"

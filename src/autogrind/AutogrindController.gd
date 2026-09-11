@@ -78,6 +78,10 @@ func _process(delta: float) -> void:
 				tier_changed.emit(_current_tier)
 				print("[AUTOGRIND] Applied queued tier switch: %s" % GrindTier.keys()[_current_tier])
 			_evaluate_and_apply_rules()
+			## A rule may have stopped the grind. Advancing unconditionally overwrote the IDLE
+			## that stop_grind had just set, so a stop_grinding rule marched into the next battle.
+			if _state != State.BETWEEN_BATTLES:
+				return
 			_state = State.PRE_BATTLE
 			_request_next_battle()
 
@@ -133,6 +137,12 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	# Connect region_cracked signal for world progression
 	if not AutogrindSystem.region_cracked.is_connected(_on_region_cracked):
 		AutogrindSystem.region_cracked.connect(_on_region_cracked)
+
+	## grind_stopped had ZERO listeners. The system can stop itself — a stop_grinding rule action,
+	## or permadeath — and the controller only noticed through pre_battle_check's interrupts, so a
+	## stocked full-HP party whose rule said stop marched into the next battle instead.
+	if not AutogrindSystem.grind_stopped.is_connected(_on_system_stopped):
+		AutogrindSystem.grind_stopped.connect(_on_system_stopped)
 
 	# Apply current battle speed setting (persisted across battles in BattleScene)
 	# Headless mode doesn't need engine time scaling since battles are pure math
@@ -482,6 +492,15 @@ func _on_region_cracked(region_id: String, crack_level: int) -> void:
 
 
 ## Stop the grind session
+## The system stopped itself; bring the loop down with it. Re-entrant by construction: this calls
+## stop_grind, which sets _state to IDLE before calling stop_autogrind, and stop_autogrind returns
+## immediately when is_grinding is already false.
+func _on_system_stopped(results: Dictionary) -> void:
+	if _state == State.IDLE:
+		return
+	stop_grind(str(results.get("stop_reason", "Autogrind system stopped")))
+
+
 func stop_grind(reason: String = "Manual stop") -> void:
 	if _state == State.IDLE:
 		return
@@ -505,6 +524,8 @@ func stop_grind(reason: String = "Manual stop") -> void:
 	# Disconnect region_cracked signal
 	if AutogrindSystem.region_cracked.is_connected(_on_region_cracked):
 		AutogrindSystem.region_cracked.disconnect(_on_region_cracked)
+	if AutogrindSystem.grind_stopped.is_connected(_on_system_stopped):
+		AutogrindSystem.grind_stopped.disconnect(_on_system_stopped)
 
 	# Restore autobattle states
 	_restore_autobattle_states()
@@ -622,6 +643,8 @@ func get_grind_stats() -> Dictionary:
 		"total_gold": sys_stats.get("total_gold", 0),
 		"total_items": _count_total_items(),
 		"collapse_count": AutogrindSystem.collapse_count,
+		"meta_bosses_spawned": AutogrindSystem.meta_bosses_spawned,
+		"meta_bosses_defeated": AutogrindSystem.meta_bosses_defeated,
 		"post_collapse_debuff_battles": AutogrindSystem.post_collapse_debuff_battles,
 		"permadead": AutogrindSystem.permadead_characters.duplicate(),
 		"time_multiplier": AutogrindSystem.get_time_multiplier(),

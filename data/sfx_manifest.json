@@ -255,6 +255,22 @@
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
     },
+    "advance_bard_4": {
+      "file": "assets/audio/sfx/advance_bard_4.ogg",
+      "prompt": "Bard advance press 4 — the UNWRITTEN CHORD sustains and a SECOND VOICE joins over it. Press 3 was her alone; this is not. LMMS/FluidR3 nylon lute (24) + choir aahs (52). MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 3.05,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
+      "fallback_to": "advance_queue"
+    },
+    "advance_bard_5": {
+      "file": "assets/audio/sfx/advance_bard_5.ogg",
+      "prompt": "Bard advance press 5 — full ensemble bloom: lute from C3, three choir voices entering in sequence, strings underneath. The whole band arrives. LMMS/FluidR3. MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 3.3,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
+      "fallback_to": "advance_queue"
+    },
     "advance_cleric_1": {
       "file": "assets/audio/sfx/advance_cleric_1.ogg",
       "source": "lmms_sf2_fluidr3",
@@ -277,6 +293,22 @@
       "prompt": "Cleric advance press 3 full ham — tiny pause, then the suspension RESOLVES: full C-major chord (organ + choir Aahs) + a bright tubular-bell peal ringing out (spectral-verified C-E-G-C-E). 'Teaches wounds to be over with.' Tier 3/3, ~-12 dB.",
       "duration_seconds": 2.45,
       "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_cleric_4": {
+      "file": "assets/audio/sfx/advance_cleric_4.ogg",
+      "prompt": "Cleric advance press 4 — the pause is GONE. Press 1-3 shortened it each time; here the chord arrives already resolved, C-major with an added 9th over full organ and a single bell. She has stopped hesitating. LMMS/FluidR3, organ patch 19 + tubular bells 14. MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 3.04,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
+      "fallback_to": "advance_queue"
+    },
+    "advance_cleric_5": {
+      "file": "assets/audio/sfx/advance_cleric_5.ogg",
+      "prompt": "Cleric advance press 5 — the resolution BLOOMS: octave-doubled organ from C3 up, voices entering in sequence, two bells. Widest and longest rung; the 4->5 step is the largest in the ladder. LMMS/FluidR3. MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 3.63,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
       "fallback_to": "advance_queue"
     },
     "advance_fighter_1": {
@@ -303,6 +335,50 @@
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
     },
+    "advance_fighter_4": {
+      "file": "assets/audio/sfx/advance_fighter_4.ogg",
+      "prompt": "Fighter advance press 4 (STEEL) — past the full draw: a heavy shield SLAM against the braced sword, gauntlet grip re-tightening on leather, and a low armoured BOOM settling underneath. Denser and lower than press 3, no new ringing on top — he has stopped drawing and started planting. Dry, close, no reverb tail. MASTERED: alimiter 0.07 then gain to -13.5 dBFS rms — generation controls TEXTURE, not level; the ladder's level is a mix decision.",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.8,
+      "source": "elevenlabs_foley",
+      "fallback_to": "advance_queue"
+    },
+    "advance_fighter_5": {
+      "file": "assets/audio/sfx/advance_fighter_5.ogg",
+      "prompt": "Fighter advance press 5 (STEEL) — commitment past sense, and DENSE rather than peaky: a continuous roar of grinding steel and crashing plate armour that SUSTAINS for a full second, layered and wall-like with no gaps between impacts, low chest-level rumble throughout. Loud, saturated, close and dry. Not a series of separate hits — one continuous mass of metal. No music, no reverb tail. MASTERED: alimiter 0.15 then gain to -11.0 dBFS rms — same reason.",
+      "duration_seconds": 1.08,
+      "prompt_influence": 0.8,
+      "source": "elevenlabs_foley",
+      "fallback_to": "advance_queue"
+    },
+    "advance_flourish_2": {
+      "file": "assets/audio/sfx/advance_flourish_2.ogg",
+      "prompt": "SYNTHESISED — advance flourish at 2 queued actions. ONE sound getting more committed across 2..5, parameterised from a single voice so the family cannot drift into five different sounds. Run the tool.",
+      "duration_seconds": 0.34,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_flourish_2"
+    },
+    "advance_flourish_3": {
+      "file": "assets/audio/sfx/advance_flourish_3.ogg",
+      "prompt": "SYNTHESISED — advance flourish at 3 queued actions. See advance_flourish_2.",
+      "duration_seconds": 0.42,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_flourish_3"
+    },
+    "advance_flourish_4": {
+      "file": "assets/audio/sfx/advance_flourish_4.ogg",
+      "prompt": "SYNTHESISED — advance flourish at 4 queued actions. See advance_flourish_2.",
+      "duration_seconds": 0.52,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_flourish_4"
+    },
+    "advance_flourish_5": {
+      "file": "assets/audio/sfx/advance_flourish_5.ogg",
+      "prompt": "SYNTHESISED — advance flourish at 5 queued actions (struktured 2026-09-09: 4 actions becomes SOMETIMES 5). The 4->5 step is the LARGEST by construction — +1.9 dB rms and +0.26s against +1.1/+0.10 for 3->4 — because the visuals put their biggest jump there. Octave-lower root and a sixth voice, not one more increment. Run the tool.",
+      "duration_seconds": 0.78,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_flourish_5"
+    },
     "advance_mage_1": {
       "file": "assets/audio/sfx/advance_mage_1.ogg",
       "source": "lmms_sf2_fluidr3",
@@ -325,6 +401,22 @@
       "prompt": "Mage advance press 3 full ham — an ascending cascade of celesta computations (C-E-G-B), the LAST one self-corrects (C#6 wrong -> D6 right) and rings out. Tier 3/3, ~-11 dB.",
       "duration_seconds": 1.7,
       "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_mage_4": {
+      "file": "assets/audio/sfx/advance_mage_4.ogg",
+      "prompt": "Mage advance press 4 — the cascade OVERRUNS. Press 3 climbed C-E-G-B and stopped; this one carries past B into D6, landing late and louder — one computation too many. LMMS/FluidR3 celesta (patch 8). MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 2.69,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
+      "fallback_to": "advance_queue"
+    },
+    "advance_mage_5": {
+      "file": "assets/audio/sfx/advance_mage_5.ogg",
+      "prompt": "Mage advance press 5 — the cascade runs away entirely: C5 up to C7 in eight steps with no pause to check, landing on a struck C3+C4. He is no longer verifying, only computing. LMMS/FluidR3 celesta + piano. MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 2.96,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
       "fallback_to": "advance_queue"
     },
     "advance_queue": {
@@ -357,6 +449,22 @@
       "prompt": "Rogue advance press 3 'ham' = the QUIETEST — faint pick + a coin spinning down to rest (spectral-verified metallic settle). Drama as conspicuous quiet, 'the second thing in the room, heard.' Tier 3/3, ~-20 dB. NOTE for cowir-battle: lands best if the engine ducks other audio under it.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_rogue_4": {
+      "file": "assets/audio/sfx/advance_rogue_4.ogg",
+      "prompt": "Rogue advance press 4 — QUIETER STILL, continuing the inversion: cloth shifting against leather, one soft breath, and the faintest brush of a fingertip on metal. The coin is already gone. Very low level, intimate, almost subliminal — deliberately quieter than press 3. MASTERED: gain to -26.5 dBFS rms — the inversion is a LEVEL design and generation will not honour it.",
+      "duration_seconds": 0.67,
+      "prompt_influence": 0.8,
+      "source": "elevenlabs_foley",
+      "fallback_to": "advance_queue"
+    },
+    "advance_rogue_5": {
+      "file": "assets/audio/sfx/advance_rogue_5.ogg",
+      "prompt": "Rogue advance press 5 — the punchline of the inversion: near-total silence with a single tiny tell, one faint lockpick CLICK and nothing else. Maximum commitment sounds like almost nothing at all. The quietest cue in the entire ladder. No music, no body, no tail. MASTERED: gain to -31.0 dBFS rms — quietest cue in the game, deliberately.",
+      "duration_seconds": 0.62,
+      "prompt_influence": 0.8,
+      "source": "elevenlabs_foley",
       "fallback_to": "advance_queue"
     },
     "advance_undo": {
@@ -999,6 +1107,13 @@
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "source": "tools/gen_chiptune_sfx.py shadow_strike"
+    },
+    "full_bank_unleash": {
+      "file": "assets/audio/sfx/full_bank_unleash.ogg",
+      "prompt": "SYNTHESISED — the bank EMPTYING, deliberately NOT a louder advance_flourish_5. They fire together: the flourish is the character winding up, this is the discharge. Struck together with no stagger, rooted an octave below the flourish so the two occupy different space — measured 617Hz centroid apart. Run the tool.",
+      "duration_seconds": 0.85,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py full_bank_unleash"
     },
     "goblin_fanfare": {
       "file": "assets/audio/sfx/goblin_fanfare.ogg",
@@ -1859,7 +1974,7 @@
     },
     "w2_ability_heal": {
       "file": "assets/audio/sfx/ability_heal.ogg",
-      "prompt": "Garden hose spraying gently onto grass, warm suburban afternoon air, soft sprinkler hiss settling into calm — smooth and continuous with no birdsong and no chirping and no tinkling. NOT YET GENERATED: this entry still points at ability_heal.ogg (the W1 choir). The prompt was rewritten 2026-09-09 because it requested wind chimes TINKLING — the exact texture struktured rejected on the W1 cure, recorded in ability_heal's own prompt.",
+      "prompt": "Garden hose spraying gently onto grass, warm suburban afternoon air, soft sprinkler hiss settling into calm — smooth and continuous with no birdsong and no chirping and no tinkling. REPOINTED BACK 2026-09-10: the 09-10 regen was validated on spectral FLATNESS (hiss-vs-chime) and never on BRIGHTNESS, the property struktured actually rejected. Re-measured by this file's own criterion: w2 9735 Hz / 97.6%% >4kHz, w3 9404 Hz / 94.8%% — SHRILLER than the assets they replaced (8826/86.9%%, 9875/82.9%%). ability_heal.ogg is 437 Hz / 0.1%%. The dedicated assets stay on disk; re-land them only when they measure warm.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "note": "repointed 2026-08-30: generated asset was a literal bird chirp (>8.8kHz mean peak, >82% energy above 4kHz). struktured: no animal noises on ability SFX unless the ability is animal-themed."
@@ -1902,7 +2017,7 @@
     },
     "w3_ability_heal": {
       "file": "assets/audio/sfx/ability_heal.ogg",
-      "prompt": "Gentle steam release with ticking clockwork music box, warm brass pipes humming, steampunk healing apparatus — smooth and sustained with no birdsong and no chirping and no tinkling. NOT YET GENERATED: this entry still points at ability_heal.ogg (the W1 choir). 34 of 36 world-variant keys have their own asset; this and w2_ability_heal are the two exceptions. Pinned by test_world_heal_variants_are_still_owed.",
+      "prompt": "Gentle steam release with ticking clockwork music box, warm brass pipes humming, steampunk healing apparatus — smooth and sustained with no birdsong and no chirping and no tinkling. REPOINTED BACK 2026-09-10: the 09-10 regen was validated on spectral FLATNESS (hiss-vs-chime) and never on BRIGHTNESS, the property struktured actually rejected. Re-measured by this file's own criterion: w2 9735 Hz / 97.6%% >4kHz, w3 9404 Hz / 94.8%% — SHRILLER than the assets they replaced (8826/86.9%%, 9875/82.9%%). ability_heal.ogg is 437 Hz / 0.1%%. The dedicated assets stay on disk; re-land them only when they measure warm.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "note": "repointed 2026-08-30: generated asset was a literal bird chirp (>8.8kHz mean peak, >82% energy above 4kHz). struktured: no animal noises on ability SFX unless the ability is animal-themed."

@@ -73,6 +73,11 @@ func _ally_targeted_ability_ids() -> Array[String]:
 	return out
 
 
+func _target_type_of(ability_id: String) -> String:
+	var ability: Dictionary = JobSystem.get_ability(ability_id)
+	return str(ability.get("target_type", "")) if ability is Dictionary else ""
+
+
 func _inert_ids() -> Array[String]:
 	var inert: Array[String] = []
 	for ability_id in _ally_targeted_ability_ids():
@@ -81,6 +86,13 @@ func _inert_ids() -> Array[String]:
 		var target := _fresh("Target")
 		target.current_mp = 0        # leave headroom so a restore is observable
 		target.current_hp = 200      # and so a heal is observable
+		## Put the target in the state the ability is FOR. A revival hands back a corpse and
+		## declines a living ally (mirroring BattleManager:5473), so a census that only ever
+		## offers a LIVING target reads a correctly-declining arm as an absent one — which is
+		## exactly what it did to `raise` the day revival was armed.
+		if _target_type_of(ability_id) == "dead_ally":
+			target.current_hp = 0
+			target.is_alive = false
 		resolver._player_party = [caster, target]
 		resolver._enemy_party = []
 		var before := _fingerprint(target)
@@ -93,7 +105,7 @@ func _inert_ids() -> Array[String]:
 ## Types this resolver deliberately does not model. Deriving the expectation from TYPE rather than
 ## pinning a count: I measured 20 where cowir-battle derived 21 and could not explain the gap, and
 ## a number I cannot explain is not a ratchet — it is a coincidence waiting to be "fixed".
-const UNMODELLED_TYPES := ["meta", "summon", "revival", "escape"]
+const UNMODELLED_TYPES := ["meta", "summon", "escape"]
 
 
 func test_everything_inert_is_inert_for_a_KNOWN_reason() -> void:
@@ -297,7 +309,7 @@ const STARTER_JOB_TYPE := 0
 ## throwaway script and the guard — which reads the real store — disagreed and named the missing one.
 ## File-level so both the missing-entry arm AND the stale-entry arm read ONE list; two copies would
 ## be the duplication class this file exists to police.
-const KNOWN_INERT := ["flee", "raise", "bypass_puzzle", "sequence_break", "skip_cutscene",
+const KNOWN_INERT := ["flee", "bypass_puzzle", "sequence_break", "skip_cutscene",
 	"warp_to_boss", "recursive_summon", "new_game_plus_warp"]
 
 
@@ -406,3 +418,20 @@ func test_the_KNOWN_allowlist_can_EXPIRE() -> void:
 	assert_eq(stale.size(), 0,
 		("these are allowlisted as known-inert but are NOT inert any more — someone fixed them, " +
 		"so remove them from KNOWN_INERT rather than leaving a suppression with no subject: %s") % str(stale))
+
+
+func test_no_suppression_entry_outlives_its_reason() -> void:
+	## An UNMODELLED_TYPES line for a type the detector can no longer emit suppresses NOTHING, and
+	## it hides the next real regression in that type behind a permanently-satisfied exemption.
+	## revival was armed on 2026-09-09 and its entry sat here still reading as reasonable — the
+	## census stayed green whether or not the entry belonged, which is the whole failure mode.
+	var live_types: Dictionary = {}
+	for ability_id in _inert_ids():
+		live_types[_type_of(ability_id)] = true
+	var stale: Array[String] = []
+	for t in UNMODELLED_TYPES:
+		if not live_types.has(t):
+			stale.append(t)
+	assert_eq(stale.size(), 0,
+		("these types are exempted as unmodelled but the census can no longer produce them — " +
+		"the arm was implemented and the exemption is now inert, delete it: %s") % str(stale))

@@ -159,3 +159,47 @@ func test_source_resolver_has_defensive_gate_on_missing_gamestate() -> void:
 		"_resolve_time_of_day must gate on has_method — hermetic tests / pre-clock builds must not crash")
 	assert_true(src.find("get_node_or_null(\"/root/GameState\")") != -1 and src.find("_resolve_time_of_day") != -1,
 		"resolver must use get_node_or_null on the autoload path (not Engine.has_singleton — that's the always-false pitfall)")
+
+
+# ── the reply path knew nothing about the time of day ─────────────────────────
+#
+# This suite had 14 tests and touched build_combined_reply ZERO times. The reply
+# builder had no time_of_day parameter at all, so the NPC greeted you at night
+# and every follow-up forgot — the THIRD instance of one drift between these two
+# builders (quest_state_lines 2026-09-07, memory 2026-09-10, this).
+
+func test_reply_prompt_carries_the_time_of_day() -> void:
+	var prompt: String = DP.build_combined_reply(
+		"Theron", "elder", "Harmonia Village", [], "prior", "player said", 4,
+		[], {}, [], "night")
+	assert_true(prompt.find("night") != -1,
+		"the reply path must know what time it is — the opening knew and every follow-up forgot")
+
+
+func test_reply_prompt_without_a_time_is_unchanged() -> void:
+	var prompt: String = DP.build_combined_reply(
+		"Theron", "elder", "Harmonia Village", [], "prior", "player said", 4)
+	assert_true(prompt.find("Persona: elder") != -1,
+		"CONTROL: the base reply prompt is intact, so the absence below is about time and not a broken builder")
+
+
+func test_both_paths_render_the_same_time_band() -> void:
+	for band in ["dawn", "day", "dusk", "night"]:
+		var opening: String = DP.build_npc_opening(
+			"Theron", "elder", "Harmonia Village", [], [], band, {}, [])
+		var reply: String = DP.build_combined_reply(
+			"Theron", "elder", "Harmonia Village", [], "prior", "said", 4, [], {}, [], band)
+		assert_true(opening.find(band) != -1, "opening must render '%s'" % band)
+		assert_true(reply.find(band) != -1, "reply must render '%s' — the paths drifted three times" % band)
+
+
+func test_source_reply_call_site_passes_a_resolved_time() -> void:
+	var src: String = FileAccess.get_file_as_string("res://src/llm/DynamicConversation.gd")
+	assert_false(src.is_empty(), "CONTROL: source must load")
+	assert_true(src.find("_resolve_time_of_day()") != -1,
+		"DynamicConversation must resolve a time band at all")
+	# Both prompt calls must receive one — counted, so adding a third builder call
+	# without a time band is visible rather than silently fine.
+	var calls: int = src.count("_resolve_time_of_day()")
+	assert_gte(calls, 2,
+		"both the opening and the reply call sites must pass a resolved time band (found %d)" % calls)

@@ -28,6 +28,8 @@
 # Usage:
 #   tools/publish_all.sh <tag>            publish it
 #   tools/publish_all.sh --check <tag>    run every verification and STOP before publishing
+#   tools/publish_all.sh --rollback <tag> deliberately republish a SUPERSEDED tag
+#   tools/publish_all.sh --dry-run <tag>  run all three chains, publish NOTHING
 #
 # Exit: 0 published · 1 a channel red · 2 verification failed · 3 superseded, re-run with the
 #       tag named in the message · 4 prebuild failed
@@ -36,7 +38,27 @@ set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 CHECK_ONLY=0
-if [ "${1:-}" = "--check" ]; then CHECK_ONLY=1; shift; fi
+ROLLBACK=0
+DRY_RUN=0
+while [ $# -gt 0 ]; do
+    case "${1:-}" in
+        --check)    CHECK_ONLY=1; shift ;;
+        # DELIBERATE republish of a tag that is NOT the newest on origin. The supersession
+        # gate below exists so a stale terminal cannot quietly ship an old build over a new
+        # one, and it is right — but it also made ROLLBACK IMPOSSIBLE with this tool, which
+        # nobody noticed in 36 publishes because nobody has needed one yet. The safety
+        # mechanism and the recovery path were the same switch. This is the recovery path,
+        # and it is opt-in, loud, and still subject to every other verification.
+        --rollback) ROLLBACK=1; shift ;;
+        # Run all three chains to completion and publish NOTHING. --check verifies the TAG;
+        # this verifies the BUILD. They answer different questions and the gap between them is
+        # where every web RED this week lived: the tag was gated, the version matched, the tree
+        # was clean, and the web chain still died at gate 2 three days running. There was no
+        # way to learn that except by attempting a publish.
+        --dry-run)  DRY_RUN=1; shift ;;
+        *)          break ;;
+    esac
+done
 TAG="${1:-}"
 if [ -z "$TAG" ]; then
     echo "usage: tools/publish_all.sh [--check] <tag>" >&2
@@ -61,8 +83,10 @@ echo "═══ publish_all: $TAG ═══"
 # run the suite sandboxed, which is correct and merely slower. Only report it.
 EVIDENCE="$(./tools/tag_gate_evidence.sh "$TAG" 2>/dev/null)"
 case "$EVIDENCE" in
-    "VERDICT=SKIP "*) echo "[pub] evidence: ${EVIDENCE#VERDICT=SKIP }" ;;
-    *)               echo "[pub] evidence: NO SKIP TOKEN — the chains will run the suite sandboxed"
+    "VERDICT=SKIP "*) EVIDENCE_STATE="gated (suite may be skipped in the chains)"
+                     echo "[pub] evidence: ${EVIDENCE#VERDICT=SKIP }" ;;
+    *)               EVIDENCE_STATE="NOT gated — the chains will run the suite sandboxed"
+                     echo "[pub] evidence: NO SKIP TOKEN — the chains will run the suite sandboxed"
                      echo "[pub]           ${EVIDENCE:-<no output>}" ;;
 esac
 
@@ -98,8 +122,50 @@ echo "[pub] tree: ${HEAD_SHA:0:8} == ${TAG}, clean"
 SAVES_BEFORE="$(_saves_cksum)"
 echo "[pub] his saves before: ${SAVES_BEFORE}"
 
+# ── 3b. supersession, REPORTED HERE and not only at publish time ─────────────
+# This check used to live solely inside the publish loop, so `--check` validated evidence,
+# version and tree, printed a green verdict, and exited 0 for a publish that would refuse
+# immediately. Demonstrated 2026-09-10: `--check v3.33.292-alpha` from a clean worktree at
+# that tag returned exit 0 while origin was already on .293.
+#
+# A check whose verdict does not predict the run it is checking is not a check. So this now
+# fails the SAME WAY the publish would, with the same exit code.
+NEWEST_NOW="$(_newest_tag_on_origin)"
+if [ -n "$NEWEST_NOW" ] && [ "$NEWEST_NOW" != "$TAG" ]; then
+    if [ "$ROLLBACK" -eq 1 ]; then
+        echo "[pub] ⚠ ROLLBACK: ${TAG} is SUPERSEDED by ${NEWEST_NOW} on origin, and --rollback was given."
+        echo "[pub]   This will publish an OLDER build over a newer one, on all three channels."
+    else
+        echo "[pub] SUPERSEDED: ${TAG} is not the newest tag on origin — ${NEWEST_NOW} is." >&2
+        echo "      A publish would refuse at the supersession gate before touching butler." >&2
+        echo "      Publish the newest:  tools/publish_all.sh ${NEWEST_NOW}" >&2
+        echo "      Deliberate rollback: tools/publish_all.sh --rollback ${TAG}" >&2
+        exit 3
+    fi
+fi
+
 if [ "$CHECK_ONLY" -eq 1 ]; then
-    echo "[pub] --check: all verifications passed, stopping before publish."
+    # NAME WHAT RAN, AND CARRY THE ONE RESULT THAT IS REPORTED RATHER THAN ENFORCED.
+    #
+    # This line used to read "all verifications passed". It was byte-identical for a gated tag
+    # and for a tag carrying NO gate evidence at all — demonstrated end-to-end on a clean tree
+    # with an ungated annotated tag, both printing the same sentence and exiting 0. The verdict
+    # was right (no SKIP token simply means the chains run the suite sandboxed, the safe path);
+    # the sentence was not. "All" is unbounded, and it covered a step that only REPORTS.
+    #
+    # The general tell, which is cheaper than imagining a violating input: A LABEL THAT CANNOT
+    # CHANGE WHEN ITS INPUT CHANGES IS NOT REPORTING THAT INPUT. Vary each thing the summary
+    # claims to cover; if the text is invariant, the claim is decoration.
+    echo "[pub] --check: version identity OK · tree identity OK · saves baseline recorded."
+    echo "[pub]          tag evidence: ${EVIDENCE_STATE}"
+    # This line said "NOT checked here: prebuilds, supersession, and every chain gate" — and
+    # then supersession MOVED here, making it false in the under-claiming direction. A summary
+    # that enumerates what it skipped decays exactly as fast as one that claims "all", just
+    # less visibly: nothing re-reads it when a check is added. Kept because naming the gap is
+    # still right, corrected because the gap moved.
+    echo "[pub]          also checked: supersession against origin."
+    echo "[pub]          NOT checked here: prebuilds and every chain gate (suite, export, smokes)."
+    echo "[pub]          Stopping before publish."
     exit 0
 fi
 
@@ -152,6 +218,9 @@ echo "[pub] prebuild: tier ${TIER_N}/${SRC_N}"
 PUBLISHED=""
 for CH in linux windows web; do
     NEWEST="$(_newest_tag_on_origin)"
+    if [ "$ROLLBACK" -eq 1 ]; then
+        NEWEST="$TAG"   # --rollback: a newer tag is expected and is not a reason to stop
+    fi
     if [ -n "$NEWEST" ] && [ "$NEWEST" != "$TAG" ]; then
         echo "[pub] SUPERSEDED before ${CH}: origin now has ${NEWEST}." >&2
         echo "      Published so far: ${PUBLISHED:-none}. Not swapping mid-batch." >&2
@@ -164,7 +233,16 @@ for CH in linux windows web; do
         *)   SCRIPT=./tools/deploy_${CH}.sh ;;
     esac
     echo "[pub] ─── ${CH} ───"
-    "$SCRIPT" --publish "$TAG" > "tmp/publish_all_${CH}.log" 2>&1
+    # The ONLY difference between a dry run and a publish is this flag. Publishing is opt-in
+    # by construction in every deploy_*.sh — without --publish they run every gate and stop at
+    # gate 4 — so a dry run is not a separate code path that could drift from the real one. It
+    # is the same path with the last step withheld, which is the only kind of rehearsal worth
+    # having.
+    if [ "$DRY_RUN" -eq 1 ]; then
+        "$SCRIPT" "$TAG" > "tmp/publish_all_${CH}.log" 2>&1
+    else
+        "$SCRIPT" --publish "$TAG" > "tmp/publish_all_${CH}.log" 2>&1
+    fi
     EC=$?
     if [ "$EC" -ne 0 ]; then
         echo "[pub] RED on ${CH} (exit ${EC}) — STOPPING. Published so far: ${PUBLISHED:-none}" >&2
@@ -174,10 +252,25 @@ for CH in linux windows web; do
         exit 1
     fi
     PUBLISHED="${PUBLISHED}${PUBLISHED:+ }${CH}"
-    grep -a 'LIVE:' "tmp/publish_all_${CH}.log" | tail -1
+    if [ "$DRY_RUN" -eq 1 ]; then
+        # Do not grep for LIVE: on a dry run — there is none, and `tail -1` of an empty grep
+        # prints nothing, which would read as a quiet success rather than as "did not publish".
+        echo "[pub] ${CH}: all gates GREEN, nothing published"
+    else
+        grep -a 'LIVE:' "tmp/publish_all_${CH}.log" | tail -1
+    fi
 done
 
 # ── 6. verify against butler, not against our own logs ───────────────────────
+if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[pub] ─── dry run complete ───"
+    echo "[pub] all three chains GREEN for ${TAG}. NOTHING WAS PUBLISHED."
+    echo "[pub] the store is still on whatever it was — verify with tools/store_status.sh"
+    echo "[pub] his saves: $(_saves_cksum)  (before: ${SAVES_BEFORE})"
+    echo "[pub] to publish for real: tools/publish_all.sh ${TAG}"
+    exit 0
+fi
+
 echo "[pub] ─── verification ───"
 butler status struktured/cowardly-irregular 2>&1 | grep -aE 'CHANNEL|linux|windows|^\| web'
 

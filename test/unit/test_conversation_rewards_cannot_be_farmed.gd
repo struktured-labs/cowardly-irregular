@@ -111,3 +111,51 @@ func test_claims_are_written_where_the_save_will_carry_them() -> void:
 	assert_true(gs.game_constants.has(CR.LAST_BATTLE_KEY),
 		"the backstop anchor must persist for the same reason")
 	gs.free()
+
+
+# ── the signed backstop had only one direction tested ─────────────────────────
+#
+# `since < BATTLE_COOLDOWN` thresholds a SUBTRACTION, and every test above only
+# ever INCREASES battles_won. Per cowir-music 2026-09-10: a signed quantity with
+# one sign checked does not merely leave a gap — the unchecked sign produced a
+# permanent silent block here.
+#
+# Reachable because GameState._apply_save_data restores the two counters
+# asymmetrically: game_constants is kept when absent, battles_won is ZEROED when
+# absent. A save predating either key zeroes one and keeps the other.
+
+func test_a_rewound_battle_count_does_not_kill_rewards_forever() -> void:
+	var gs = _gs(40)
+	CR.mark_claimed(gs, "elder_theron", "phase_a")
+	gs.battles_won = 0  # what _apply_save_data does when the key is absent
+	var verdict: Array = CR.evaluate(gs, "scholar_milo", "phase_a", 4)
+	assert_true(bool(verdict[0]),
+		"a baseline AHEAD of the battle count is not a baseline — blocking here cost 43 battles of silence, measured")
+
+
+func test_the_negative_case_reports_elapsed_not_a_huge_cooldown() -> void:
+	var gs = _gs(40)
+	CR.mark_claimed(gs, "elder_theron", "phase_a")
+	gs.battles_won = 0
+	assert_gte(CR._battles_since_last(gs), CR.BATTLE_COOLDOWN,
+		"a negative subtraction must read as elapsed, not as an enormous outstanding cooldown")
+
+
+func test_the_absent_counter_is_still_the_blocking_direction() -> void:
+	## CONTROL, and the reason this is not a blanket "negatives are fine" change:
+	## the ABSENT case must keep returning 0 (blocking). An unknown state that
+	## grants is the farmable direction, and that reasoning was right.
+	var bare := Node.new()
+	add_child_autofree(bare)
+	assert_eq(CR._battles_since_last(bare), 0,
+		"a state with no counters at all must still block — absent and negative are different cases")
+
+
+func test_a_normal_cooldown_still_blocks() -> void:
+	## CONTROL: the fix must not turn the backstop off for the ordinary path.
+	var gs = _gs(40)
+	CR.mark_claimed(gs, "elder_theron", "phase_a")
+	gs.battles_won = 41  # one battle later, cooldown is 3
+	var verdict: Array = CR.evaluate(gs, "scholar_milo", "phase_a", 4)
+	assert_false(bool(verdict[0]),
+		"one battle after a payout must still be inside the backstop")

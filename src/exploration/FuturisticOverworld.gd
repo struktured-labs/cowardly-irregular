@@ -167,7 +167,10 @@ func _place_treasure_chests() -> void:
 	# 10 chests across server farm, plaza, glitch sector, node prime approach
 	var chests = [
 		# Server farm (north) — orphaned data caches
-		{"id": "w5_server_ether", "pos": Vector2(24, 6), "type": "item", "item": "ether", "amount": 6},
+		# One-cell nudges, each verified by a PHYSICS QUERY rather than by reading the map: these sat
+		# inside terrain collision and could never be opened. The Mode 7 collider clone is displaced
+		# 4.4 tiles, so no map-space check can tell you where a body actually fits.
+		{"id": "w5_server_ether", "pos": Vector2(22, 4), "type": "item", "item": "ether", "amount": 6},
 		{"id": "w5_server_gold", "pos": Vector2(30, 8), "type": "gold", "gold": 800},
 		# Plaza — public-facing terminals
 		{"id": "w5_plaza_hipotion", "pos": Vector2(22, 18), "type": "item", "item": "hi_potion", "amount": 5},
@@ -354,9 +357,10 @@ func _setup_scene() -> void:
 	# Background behind tilemap (deep digital void - near black with blue tint)
 	var bg = ColorRect.new()
 	bg.name = "Background"
-	bg.color = Color(0.02, 0.03, 0.06)
-	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + 400, MAP_HEIGHT * TILE_SIZE + 400)
-	bg.position = Vector2(-200, -200)
+	# Off-map used to be near-black: a hard slab of void wherever the view cleared the map edge.
+	bg.color = Mode7Overlay.void_color("digital")
+	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2, MAP_HEIGHT * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2)
+	bg.position = Vector2(-Mode7Overlay.VOID_MARGIN, -Mode7Overlay.VOID_MARGIN)
 	bg.z_index = -10
 	add_child(bg)
 

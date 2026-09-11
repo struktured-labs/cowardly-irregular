@@ -71,11 +71,32 @@ static func _already_claimed(gs: Node, npc_id: String, quest_bucket: String) -> 
 
 ## Absent counters must NOT read as "cooldown elapsed" — an unknown state that
 ## grants rewards is the farmable direction of the same false zero.
+##
+## ⚠️ NEGATIVE is a THIRD case, and the docstring above stopped one short of it.
+## I reasoned about the absent counter, chose the safe direction, and never asked
+## what happens when the subtraction goes below zero — so `since < BATTLE_COOLDOWN`
+## thresholded a SIGNED quantity in one direction only.
+##
+## It is reachable. GameState._apply_save_data restores these two asymmetrically:
+##   game_constants   `if save_data.has(...)`          absent -> KEEPS the live dict
+##   battles_won      `if save_data.has(...) else 0`   absent -> ZEROED
+## So loading a save that predates either key zeroes battles_won while the live
+## LAST_BATTLE_KEY survives. Measured: claim at battle 40, then such a load ->
+## "backstop: -40 of 3 battles since last reward", and the player must win 43
+## battles to earn another, with nothing said.
+##
+## A negative means the baseline is AHEAD of reality, so it is not a baseline at
+## all. Treat it as elapsed rather than as an enormous cooldown: the per-NPC
+## per-phase claim ledger is the primary anti-farm gate and is untouched by this,
+## while blocking is a silent dead feature with no recovery the player can see.
 static func _battles_since_last(gs: Node) -> int:
 	if not ("battles_won" in gs) or not ("game_constants" in gs):
 		return 0
 	var last: int = int(gs.game_constants.get(LAST_BATTLE_KEY, -BATTLE_COOLDOWN))
-	return int(gs.battles_won) - last
+	var since: int = int(gs.battles_won) - last
+	if since < 0:
+		return BATTLE_COOLDOWN
+	return since
 
 
 ## ── Payout ────────────────────────────────────────────────────────────────────

@@ -17,6 +17,11 @@ var sprite: Sprite2D
 var name_label: Label
 var dialogue_box: Control
 var dialogue_label: Label
+## Mode 7 throws a world-space offset at the horizon: the loot popup drew 8px wide near the skyline.
+var _prompt_layer: CanvasLayer
+var _popup_layer: CanvasLayer
+const FLAT_NAME_OFFSET := Vector2(-30, -24)
+const FLAT_NAME_FONT: int = 10
 
 ## State
 var _is_opened: bool = false
@@ -280,7 +285,7 @@ func _setup_name_label() -> void:
 	name_label = Label.new()
 	name_label.text = "Treasure" if not _is_opened else "(Empty)"
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.position = Vector2(-30, -24)
+	name_label.position = FLAT_NAME_OFFSET
 	name_label.size = Vector2(60, 20)
 	name_label.add_theme_font_size_override("font_size", 10)
 	name_label.add_theme_color_override("font_color", Color.GOLD if not _is_opened else Color.GRAY)
@@ -288,6 +293,7 @@ func _setup_name_label() -> void:
 	name_label.add_theme_constant_override("shadow_offset_x", 1)
 	name_label.add_theme_constant_override("shadow_offset_y", 1)
 	name_label.visible = false
+	Mode7Prompt.pin_above_sprites(name_label)
 	add_child(name_label)
 
 
@@ -360,8 +366,32 @@ const _POPUP_MARGIN := 16.0
 const _POPUP_LOCAL_OFFSET := Vector2(-120.0, -110.0)
 const _POPUP_SIZE := Vector2(240.0, 60.0)
 
+## Screen-space prompts follow the player's drawn position, not the chest's world offset.
+func _process(_delta: float) -> void:
+	if InteractGeometry.is_mode7():
+		if _prompt_layer == null and name_label != null:
+			_prompt_layer = Mode7Prompt.lift(self, name_label)
+		if _popup_layer == null and dialogue_box != null:
+			_popup_layer = Mode7Prompt.lift_control(self, dialogue_box)
+		var vp := get_viewport_rect().size
+		if name_label != null and name_label.visible:
+			Mode7Prompt.place(name_label, vp, Mode7Prompt.ROW_ACTION)
+		if dialogue_box != null and dialogue_box.visible:
+			Mode7Prompt.place_control(dialogue_box, vp, Mode7Prompt.ROW_POPUP)
+	elif _prompt_layer != null or _popup_layer != null:
+		if _prompt_layer != null:
+			Mode7Prompt.drop(self, _prompt_layer, name_label, FLAT_NAME_OFFSET, FLAT_NAME_FONT)
+			_prompt_layer = null
+		if _popup_layer != null:
+			Mode7Prompt.drop_control(self, _popup_layer, dialogue_box, Vector2.ZERO)
+			_popup_layer = null
+
+
 func _clamp_dialogue_box_to_viewport() -> void:
 	if not is_instance_valid(dialogue_box):
+		return
+	# Screen space is already inside the viewport; the world-coordinate clamp would fight it.
+	if _popup_layer != null:
 		return
 	dialogue_box.position = Vector2.ZERO
 	var vp := get_viewport()

@@ -52,6 +52,20 @@ const EXCHANGE_BONUS_QUEST_VOICE: int = 2
 const EXCHANGE_BONUS_PARTY_DISTRESS: int = 2
 
 ## Sentinel value returned by DialogueChoiceMenu when the player cancels.
+## Choices to REQUEST from the model. One slot of MAX_CHOICES is reserved for the
+## exit that _ensure_farewell fills.
+##
+## Asking for the full MAX_CHOICES meant the model's LAST choice was replaced and
+## silently discarded on every turn it did not itself produce an exit — and it
+## essentially never does. Measured against live llama3, 5 samples of the reply
+## prompt: 4 distinct choices every time, ZERO containing an exit, so 3 of 3
+## replayed sets lost their fourth. The prompt asks for choices "covering a range
+## of tones: curious, cautious, friendly, direct" and one tone was then dropped.
+##
+## Requesting one fewer costs the player nothing — the menu is the same size —
+## and every line the model writes now survives to the screen.
+const REQUESTED_CHOICES: int = DialoguePrompts.MAX_CHOICES - 1
+
 const CHOICE_CANCELLED: String = ""
 
 ## Fallback sign-off line used when the exchange limit is reached.
@@ -318,12 +332,16 @@ func _do_player_turn(player: Node) -> void:
 	# moment _do_player_turn returned, leaving _fetch_npc_reply with nothing
 	# to react to (regression noted in plan slice item 5).
 	_last_player_line = chosen if chosen != CHOICE_CANCELLED else ""
-	if _last_player_line != "":
-		_player_lines.append(_last_player_line)
 
 	if chosen == CHOICE_CANCELLED or _is_farewell(chosen):
 		_state = State.DONE
 		return
+
+	# Remembered only past the farewell check. A goodbye is how you LEAVE a
+	# conversation, not something you would recognise being reminded you said —
+	# and it is always LAST, so it otherwise took a slot of the two we keep.
+	if _last_player_line != "":
+		_player_lines.append(_last_player_line)
 
 	# Player made a real choice — advance to NPC reply.
 	_state = State.NPC_REPLY
@@ -446,7 +464,7 @@ func _fetch_npc_sign_off() -> String:
 
 func _fetch_player_choices() -> Array[String]:
 	var fallback_dict: Dictionary = DialoguePrompts._trimmed_fallback_choices(
-		DialoguePrompts.MAX_CHOICES
+		REQUESTED_CHOICES
 	)
 	var fallback_arr: Array[String] = []
 	for s in fallback_dict.get("choices", []):
@@ -472,7 +490,7 @@ func _fetch_player_choices() -> Array[String]:
 	var prompt: String = DialoguePrompts.build_player_choices(
 		_npc_name,
 		_last_npc_line,
-		DialoguePrompts.MAX_CHOICES,
+		REQUESTED_CHOICES,
 		recent,
 	)
 
@@ -486,7 +504,7 @@ func _fetch_player_choices() -> Array[String]:
 
 	var validated: Dictionary = DialoguePrompts.validate_player_choices(
 		raw,
-		DialoguePrompts.MAX_CHOICES,
+		REQUESTED_CHOICES,
 	)
 
 	var out: Array[String] = []
@@ -537,7 +555,7 @@ func _fetch_combined_reply() -> Dictionary:
 	# Caller pre-checks _llm_available — fast path the unavailable case.
 	if not _llm_available():
 		return DialoguePrompts._fallback_combined(
-			DialoguePrompts.MAX_CHOICES,
+			REQUESTED_CHOICES,
 			_exchange_count,
 		)
 
@@ -552,9 +570,11 @@ func _fetch_combined_reply() -> Dictionary:
 		recent,
 		_last_npc_line,
 		_last_player_line,
-		DialoguePrompts.MAX_CHOICES,
+		REQUESTED_CHOICES,
 		_quest_state_lines,
 		_party_state,
+		_memory_lines,
+		_resolve_time_of_day(),
 	)
 
 	_set_thinking(true)
@@ -567,7 +587,7 @@ func _fetch_combined_reply() -> Dictionary:
 
 	return DialoguePrompts.validate_combined_reply(
 		raw,
-		DialoguePrompts.MAX_CHOICES,
+		REQUESTED_CHOICES,
 		_exchange_count,
 	)
 
@@ -710,6 +730,16 @@ func _ensure_farewell(choices: Array[String]) -> void:
 
 func _is_farewell(choice: String) -> bool:
 	var lower: String = choice.strip_edges().to_lower()
+	# A QUESTION IS NEVER A GOODBYE, whatever it opens with. These are prefix
+	# matches, so "Take care of that wound — how did you get it?" and "I should go
+	# looking for the dragon. Where is its lair?" both read as exits and end the
+	# conversation the player was trying to continue. The first is a line the model
+	# is MORE likely to write since party condition reached the prompt.
+	# Direction matters: a missed farewell costs one extra turn, and the player
+	# still has B and the guaranteed exit option. A false farewell cannot be undone
+	# — it ends the conversation, banks the memory and settles the reward claim.
+	if lower.ends_with("?"):
+		return false
 	return (
 		lower == "farewell." or
 		lower == "farewell" or

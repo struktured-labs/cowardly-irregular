@@ -46,7 +46,7 @@ const CONDITION_TYPES = [
 	{"id": "member_injured", "label": "New Injury", "has_value": false, "default_op": "==", "default_value": 0},
 	{"id": "member_hp", "label": "Member HP%", "has_value": true, "default_op": "<", "default_value": 30},
 	{"id": "member_mp", "label": "Member MP%", "has_value": true, "default_op": "<", "default_value": 20},
-	{"id": "member_status", "label": "Member Status", "has_value": false, "default_op": "==", "default_value": 0},
+	{"id": "member_status", "label": "Member Status", "has_value": false, "default_op": "==", "default_value": "poison"},
 	{"id": "battles_done", "label": "Battles", "has_value": true, "default_op": ">=", "default_value": 50},
 	{"id": "win_streak", "label": "Win Streak", "has_value": true, "default_op": ">=", "default_value": 20},
 	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 3.0},
@@ -256,6 +256,11 @@ func _load_rules() -> void:
 		]
 
 
+## Collapses this console has already told the player about, and any it owes them on reopen.
+var _collapses_reported: int = 0
+var _pending_collapse_catchup: int = 0
+
+
 func _connect_autogrind_signals() -> void:
 	if AutogrindSystem.battle_completed.is_connected(_on_battle_completed):
 		return
@@ -265,6 +270,26 @@ func _connect_autogrind_signals() -> void:
 	AutogrindSystem.interrupt_triggered.connect(_on_interrupt_triggered)
 	AutogrindSystem.meta_boss_spawned.connect(_on_meta_boss_spawned)
 	AutogrindSystem.system_collapse.connect(_on_system_collapse)
+	## Closing the console DISCONNECTS every autogrind signal, and this UI is the ONLY listener for
+	## system_collapse. A collapse that fires while the player is watching the overworld therefore
+	## announced itself to nobody — the dramatic beat of a design pillar, delivered to a
+	## disconnected handler. collapse_count survives, so report what was missed on reopen.
+	var seen_now: int = AutogrindSystem.collapse_count
+	if seen_now > _collapses_reported:
+		_pending_collapse_catchup = seen_now - _collapses_reported
+		_collapses_reported = seen_now
+
+
+## Deferred on purpose: _connect_autogrind_signals runs BEFORE _build_ui, and _log_message
+## silently no-ops while _battle_log does not exist — logging here would compute the catch-up and
+## throw it away, which is the defect this whole message exists to fix.
+func _flush_collapse_catchup() -> void:
+	if _pending_collapse_catchup <= 0:
+		return
+	var n: int = _pending_collapse_catchup
+	_pending_collapse_catchup = 0
+	_log_message("[color=%s]=== %d SYSTEM COLLAPSE%s happened while this console was closed (total: %d) ===[/color]" % [
+		AccessibilityPalette.penalty_bbcode(), n, "" if n == 1 else "S", AutogrindSystem.collapse_count])
 
 
 func _disconnect_autogrind_signals() -> void:
@@ -321,6 +346,7 @@ func _build_ui() -> void:
 	_build_footer(vp_size)
 
 	_update_cursor()
+	_flush_collapse_catchup()
 
 
 func _build_header(vp_size: Vector2) -> void:
@@ -1440,6 +1466,7 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "explain_rules", "label": "Explain These Rules"},
 			{"id": "cycle_member", "label": "Cycle Member: %s" % _cursor_member_label()},
 			{"id": "cycle_ability", "label": "Cycle Ability: %s" % _cursor_ability_label()},
+			{"id": "cycle_status", "label": "Cycle Status: %s" % _cursor_status_label()},
 			{"id": "preset_casual", "label": "Preset: Casual          (1)"},
 			{"id": "preset_standard", "label": "Preset: Standard        (2)"},
 			{"id": "preset_hardcore", "label": "Preset: Hardcore        (3)"},
@@ -1473,6 +1500,8 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_cycle_member_on_cursor_cell()
 		"cycle_ability":
 			_cycle_ability_on_cursor_cell()
+		"cycle_status":
+			_cycle_status_on_cursor_cell()
 		"preset_casual":
 			_apply_preset("casual")
 		"preset_standard":
@@ -1721,6 +1750,32 @@ func _cursor_member_label() -> String:
 	return "Any" if who == "" else who.capitalize()
 
 
+## Afflictions worth stopping a grind for. Every entry is guarded against BattleScene's
+## STATUS_ICON_CONFIG by test, so the ring can never offer a status the game cannot even show.
+const MEMBER_STATUS_RING := [
+	"poison", "burn", "blind", "silence", "stun", "sleep", "confuse", "curse", "charm", "slow",
+]
+
+
+func _cursor_status_label() -> String:
+	var d := _cursor_cell_dict()
+	if d.is_empty() or str(d.get("type", "")) != "member_status":
+		return "n/a"
+	return str(d.get("value", "?"))
+
+
+## member_status carries the status NAME in `value` (the evaluator reads it there, and the LLM
+## grammar says so). The console had no way to set it: the type table declared has_value false
+## with default_value 0, so a console-authored rule asked has_status("0") and could never fire.
+func _cycle_status_on_cursor_cell() -> void:
+	var d := _cursor_cell_dict()
+	if d.is_empty() or str(d.get("type", "")) != "member_status":
+		return
+	var idx := MEMBER_STATUS_RING.find(str(d.get("value", "")))
+	d["value"] = MEMBER_STATUS_RING[(idx + 1) % MEMBER_STATUS_RING.size()]
+	_refresh_grid()
+
+
 func _cursor_ability_label() -> String:
 	var d := _cursor_cell_dict()
 	if d.is_empty() or str(d.get("type", "")) != "member_ability":
@@ -1850,7 +1905,16 @@ const SESSION_SCOPED_CONDITIONS := [
 ## Party-derived, answerable in principle, but the probe carries no inventory — copying one is a
 ## bigger change than this feature warrants. Stated as what it IS rather than as session scope,
 ## so the reason is true and CAN expire when someone models it.
-const PROBE_UNMODELLED_CONDITIONS := ["inventory_items"]
+const PROBE_UNMODELLED_CONDITIONS := ["inventory_items", "member_status"]
+
+## Everything the sampled parties CAN answer. The three lists together must cover
+## PARTY_CONDITION_TYPES exactly — a type in none of them is one this preview answers from a probe
+## that cannot hold the state, which is how member_status reported "no rule matches" in all four
+## states while the probe carried no statuses at all and never could.
+const PROBE_DECIDABLE_CONDITIONS := [
+	"party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count",
+	"member_dead", "member_hp", "member_mp", "reached_level", "always",
+]
 
 
 ## Sampled party situations, so a player sees their own thresholds fire rather than one snapshot.
@@ -1889,6 +1953,19 @@ func _explain_probe_party(state: Dictionary) -> Array:
 	return out
 
 
+## Why this rule cannot be previewed, or "" when it can. Session scope and unmodelled state are
+## different facts and were rendered with one sentence: an inventory_items rule was told it "needs
+## session progress (battles, corruption, time)", which is not why it was withheld.
+func _explain_blocked_reason(rule: Dictionary) -> String:
+	for c in rule.get("conditions", []):
+		var t: String = str((c as Dictionary).get("type", ""))
+		if SESSION_SCOPED_CONDITIONS.has(t):
+			return "needs session progress (battles, corruption, time) — not shown here"
+		if PROBE_UNMODELLED_CONDITIONS.has(t):
+			return "depends on %s, which this preview does not model — not shown here" % t
+	return ""
+
+
 func _rule_needs_unmodelled_state(rule: Dictionary) -> bool:
 	for c in rule.get("conditions", []):
 		if PROBE_UNMODELLED_CONDITIONS.has(str((c as Dictionary).get("type", ""))):
@@ -1910,29 +1987,69 @@ func explain_rules_report() -> Array:
 	if rules.is_empty():
 		out.append("No rules — the grind runs until you stop it.")
 		return out
+	var winners: Dictionary = {}
 	for state in _explain_states():
 		var probe: Array = _explain_probe_party(state)
 		var matched: int = -1
 		var blocked: int = -1
+		var blocked_reason: String = ""
 		for i in range(rules.size()):
 			var rule: Dictionary = rules[i]
 			if not bool(rule.get("enabled", true)):
 				continue
-			if _rule_needs_session_state(rule) or _rule_needs_unmodelled_state(rule):
+			var why: String = _explain_blocked_reason(rule)
+			if why != "":
 				blocked = i
+				blocked_reason = why
 				break
 			if AutogrindSystem._evaluate_party_rule(probe, rule):
 				matched = i
 				break
 		if blocked >= 0:
-			out.append("%s  ->  rule %d needs session progress (battles, corruption, time) — not shown here" % [str(state["label"]), blocked + 1])
+			out.append("%s  ->  rule %d %s" % [str(state["label"]), blocked + 1, blocked_reason])
 		elif matched < 0:
 			out.append("%s  ->  no rule matches — the grind continues" % str(state["label"]))
 		else:
 			out.append("%s  ->  rule %d fires: %s" % [str(state["label"]), matched + 1, _explain_actions(rules[matched])])
+		if matched >= 0:
+			winners[matched] = true
 		for c in probe:
 			if c != null:
 				c.free()
+	out.append_array(_observed_rules_report(winners))
+	return out
+
+
+## What the rules ACTUALLY did, beside what the sampled states predict. A grind rule can look right
+## in the preview and never fire in a real session — stop_grinding did exactly that.
+func _observed_rules_report(preview_winners: Dictionary = {}) -> Array:
+	var out: Array = []
+	if rules.is_empty():
+		return out
+	var evals: int = AutogrindSystem.get_rule_eval_count()
+	out.append("")
+	## A zero needs its denominator. "never fired" across zero evaluations is not evidence of a dead
+	## rule, and reporting it as one manufactures the false alarm this preview exists to avoid.
+	if evals <= 0:
+		out.append("OBSERVED — no grind rounds recorded yet. Run a grind, then reopen.")
+		return out
+	out.append("OBSERVED — %d rule check%s this session" % [evals, "" if evals == 1 else "s"])
+	var fired: Dictionary = AutogrindSystem.get_rule_fire_counts()
+	for i in range(rules.size()):
+		var n: int = int(fired.get(i, 0))
+		if not bool((rules[i] as Dictionary).get("enabled", true)):
+			out.append("  rule %d  disabled" % [i + 1])
+		elif n == 0:
+			## Correlate the two halves. "Never fired" alone cannot tell the player whether the
+			## situation simply never arose or the rule cannot win at all — and those need
+			## different fixes. The preview already computed who wins in each sampled state, so
+			## this costs nothing and invents no data.
+			if preview_winners.has(i):
+				out.append("  rule %d  never fired (but it DOES win in a sampled state — the situation has not come up yet)" % [i + 1])
+			else:
+				out.append("  rule %d  never fired, and wins in NO sampled state either" % [i + 1])
+		else:
+			out.append("  rule %d  fired %d time%s" % [i + 1, n, "" if n == 1 else "s"])
 	return out
 
 
@@ -2239,7 +2356,10 @@ func _paste_rules_share_code() -> void:
 		_log_message("[color=%s]Autogrind rules applied from share code (%d rules).[/color]" % [AccessibilityPalette.bonus_bbcode(), data.get("rules", []).size()])
 		SoundManager.play_ui("menu_select")
 	else:
-		_log_message("[color=yellow]Share code valid but could not apply.[/color]")
+		## Say WHY. The reason was computed by the validator and thrown away; "valid but could not
+		## apply" tells the player the code is fine and also that it is not.
+		var why := ScriptShareManager.last_import_reason()
+		_log_message("[color=yellow]Share code rejected: %s[/color]" % (why if why != "" else "no reason reported"))
 		SoundManager.play_ui("menu_error")
 
 
@@ -2826,6 +2946,7 @@ func _on_meta_boss_spawned(boss_name: String) -> void:
 
 
 func _on_system_collapse() -> void:
+	_collapses_reported = AutogrindSystem.collapse_count
 	_log_message("[color=%s]=== SYSTEM COLLAPSE! Reality is fragmenting... ===[/color]" % AccessibilityPalette.penalty_bbcode())
 	if _monitor and is_instance_valid(_monitor):
 		_monitor.add_highlight("SYSTEM COLLAPSE (#%d)!" % AutogrindSystem.collapse_count, "danger")

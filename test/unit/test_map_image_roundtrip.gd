@@ -77,7 +77,7 @@ const GOLDEN_CENSUS := {
 	"G": 1,
 	"H": 2,
 	"I": 1,
-	"M": 1277,
+	"M": 1385,  # +108: the Sunken Ring crater carved into Sandrift sand (cowir-overworld 2026-09-10)
 	"P": 1,
 	"S": 166,
 	"V": 1,
@@ -87,7 +87,7 @@ const GOLDEN_CENSUS := {
 	"g": 10089,  # one grass pixel became the '5' landmark
 	"i": 370,
 	"l": 414,
-	"s": 1467,
+	"s": 1359,  # -108: the same carve
 	"~": 7951,
 }
 

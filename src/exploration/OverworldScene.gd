@@ -203,9 +203,10 @@ func _setup_scene() -> void:
 	# Background behind tilemap (covers beyond map edges)
 	var bg = ColorRect.new()
 	bg.name = "Background"
-	bg.color = Color(0.12, 0.18, 0.28)  # Dark blue-gray water/void
-	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + 400, MAP_HEIGHT * TILE_SIZE + 400)
-	bg.position = Vector2(-200, -200)
+	# Off-map used to be near-black: a hard slab of void wherever the view cleared the map edge.
+	bg.color = Mode7Overlay.void_color("medieval")
+	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2, MAP_HEIGHT * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2)
+	bg.position = Vector2(-Mode7Overlay.VOID_MARGIN, -Mode7Overlay.VOID_MARGIN)
 	bg.z_index = -10
 	add_child(bg)
 
@@ -757,24 +758,35 @@ func _place_treasure_chests() -> void:
 	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 	var chests = [
 		# Near Harmonia Village — early game help
-		{"id": "w1_village_potion", "pos": Vector2(10, 24), "type": "item", "item": "potion", "amount": 3},
-		{"id": "w1_village_gold", "pos": Vector2(12, 27), "type": "gold", "gold": 150},
+		{"id": "w1_village_potion", "pos": Vector2(6, 50), "type": "item", "item": "potion", "amount": 3},
+		{"id": "w1_village_gold", "pos": Vector2(8, 48), "type": "gold", "gold": 150},
 		# Forest path — reward for exploring north
 		{"id": "w1_forest_ether", "pos": Vector2(32, 8), "type": "item", "item": "ether", "amount": 2},
-		{"id": "w1_forest_antidote", "pos": Vector2(38, 12), "type": "item", "item": "antidote", "amount": 3},
+		{"id": "w1_forest_antidote", "pos": Vector2(40, 12), "type": "item", "item": "antidote", "amount": 3},
 		# Near cave entrance — preparation supplies
-		{"id": "w1_cave_hipotion", "pos": Vector2(6, 20), "type": "item", "item": "hi_potion", "amount": 2},
+		{"id": "w1_cave_hipotion", "pos": Vector2(7, 41), "type": "item", "item": "hi_potion", "amount": 2},
 		# Central crossroads — off the beaten path
 		{"id": "w1_central_gold", "pos": Vector2(45, 18), "type": "gold", "gold": 300},
 		{"id": "w1_central_phoenix", "pos": Vector2(50, 30), "type": "item", "item": "phoenix_down", "amount": 1},
 		# Desert approach — dangerous territory reward
 		{"id": "w1_desert_elixir", "pos": Vector2(18, 48), "type": "item", "item": "elixir", "amount": 1},
 		# Near Ironhaven — endgame area
-		{"id": "w1_iron_gold", "pos": Vector2(80, 56), "type": "gold", "gold": 500},
+		{"id": "w1_iron_gold", "pos": Vector2(82, 58), "type": "gold", "gold": 500},
 		# Swamp region — hidden reward
 		{"id": "w1_swamp_remedy", "pos": Vector2(72, 8), "type": "item", "item": "remedy", "amount": 2},
-		# Secret-passage pockets — sealed behind HiddenPassage walls
-		{"id": "w1_secret_ice_hollow", "pos": Vector2(5, 2), "type": "item", "item": "x_potion", "amount": 2},
+		# FOUR MORE were stranded by the same re-author and found by the guard written for the two
+		# below: village_potion and village_gold were inside mountain, cave_hipotion inside mountain,
+		# forest_antidote in WATER. Each is re-anchored on the landmark its own id names — the village
+		# at (8,50), the whispering cave at (6,40), a forest patch — rather than on the nearest open
+		# cell, which twice would have put two chests on the same tile.
+		# ⛔ (126,5) WAS OFF THE MAP. Authored positions are MAP CELLS — x*MAP_SCALE*TILE_SIZE, so the
+		# grid is 100x70 and x=126 lands at 8080 px against a 6400 px map. The chest sat 1680 px east
+		# of the world, past the boundary wall, in the void. Its coordinate came from
+		# find_secret_pockets.py, which works in the PNG's TILE grid (200x140); nothing converted it.
+		# The ice hollow is retired: tile (126,7) is a one-tile swamp spine in open water, which a
+		# two-tile cell grid cannot address anyway. W1's secret is now the Sunken Ring, below.
+		{"id": "w1_secret_sunken_ring", "pos": Vector2(17, 65), "type": "item", "item": "x_potion", "amount": 2},
+		# (81,51) is open forest and always was after the re-author — a fine find, not a secret.
 		{"id": "w1_secret_magma_vault", "pos": Vector2(81, 51), "type": "gold", "gold": 999},
 	]
 	for c in chests:
@@ -794,16 +806,26 @@ func _place_treasure_chests() -> void:
 
 
 func _place_hidden_passages() -> void:
-	## Disguised wall sections at the H map markers — each seals a
-	## secret pocket carved into the mountain clusters above.
+	## A disguised wall is only a secret where removing that cell SEALS something, and for a year W1
+	## had nothing that qualified: find_secret_pockets.py reports exactly one pinch, and that pinch is
+	## a single tile, which a two-tile cell grid cannot address. The authored answer to that was a
+	## coordinate in the WRONG UNIT — see the chest note above — so W1's only secret was in the void.
+	## The Sunken Ring is authored terrain instead of a found pocket: a rock crater carved into 256
+	## untouched sand pixels of the Sandrift waste, the emptiest region on the map.
+	## ⚠️ THE DEPTH RULE IS WHY IT IS A RING AND NOT A CORRIDOR. The collider clone is displaced
+	## +140.6 px = 4.4 world tiles, so a body walking north stops 4.4 tiles short of the wall it can
+	## see. Measured on the real body: it enters from tile y 138, travels 11.37 tiles and stops at
+	## y 126.6 — the back four rows of a 12-tile chamber are unreachable and nothing may be placed
+	## there. A wide chamber absorbs that; a narrow dead end is simply sealed.
 	var passages = [
-		{"id": "w1_ice_hollow", "pos": Vector2(6, 2), "disguise": "mountain"},
-		{"id": "w1_magma_vault", "pos": Vector2(81, 50), "disguise": "mountain"},
+		{"id": "w1_sunken_ring", "pos": Vector2(17, 67), "disguise": "mountain", "w": 3, "h": 2},
 	]
 	for p in passages:
 		var passage = HiddenPassage.new()
 		passage.passage_id = p["id"]
 		passage.disguise = p["disguise"]
+		passage.passage_width = int(p.get("w", 1))
+		passage.passage_height = int(p.get("h", 1))
 		passage.position = Vector2(p["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, p["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(passage)
 
@@ -937,7 +959,9 @@ func _place_signposts() -> void:
 		{"pos": Vector2(35, 20), "text": "↑ Whispering Cave"},
 		# Central crossroads
 		{"pos": Vector2(30, 15), "text": "↑ Eldertree / ← Frosthold"},
-		{"pos": Vector2(50, 15), "text": "→ Grimhollow / Dark Lands"},
+		# (50,15) was unreachable — no cell within two tiles of it lets a body stand, so the sign could
+		# never be read. (48,17) is the nearest standable cell, physics-verified.
+		{"pos": Vector2(48, 17), "text": "→ Grimhollow / Dark Lands"},
 		# Southern crossroads
 		{"pos": Vector2(25, 40), "text": "↓ Sandrift / Desert"},
 		{"pos": Vector2(40, 48), "text": "↓ Bridge / Portal South"},
@@ -952,6 +976,8 @@ func _place_signposts() -> void:
 		{"pos": Vector2(79, 57), "text": "→ Ironhaven Village"},
 		# World portal signpost (appears regardless — context clue)
 		{"pos": Vector2(88, 30), "text": "→ World Portal  ⚙ Mundane Sprawl"},
+		# Deep Sandrift: the only thing out here, and it is pointing at the only other thing out here.
+		{"pos": Vector2(11, 65), "text": "↦ nothing this way (surveyed twice)"},
 	]
 	for s in signs:
 		var post = Signpost.new()

@@ -491,6 +491,24 @@ test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: export failed — see tmp/${PLAT}_e
 [ -s "$BIN" ] || { echo "[${PLAT}] BLOCKED: export reported success but produced no binary" >&2; exit 2; }
 echo "[${PLAT}] binary: $(( $(stat -c%s "$BIN") / 1048576 )) MiB"
 
+# ── does the binary CONTAIN what the export owed? ───────────────────────────
+# Until now this gate checked the exit code and that the binary is non-empty. Neither can see
+# content silently dropped: a desktop build that lost every sprite still exits 0 and still has
+# a non-empty binary, and there is deliberately no pck size gate here (that limit is itch's
+# HTML5 embed cap, irrelevant to a download) — so nothing looked at the payload at all.
+# check_exclude_patterns.sh above guards the opposite direction, an exclusion that silently
+# stopped matching. This one guards the dropout direction, and the two second each other.
+if [ -f tools/check_pck_complete.py ]; then
+    if ! python3 tools/check_pck_complete.py . "tmp/${PLAT}_export.log" "$PRESET"; then
+        echo "[${PLAT}] BLOCKED: the export is missing content it owed — see above." >&2
+        exit 2
+    fi
+else
+    echo "[${PLAT}] BLOCKED: tools/check_pck_complete.py missing. Refusing to ship a binary" >&2
+    echo "        whose payload nothing has checked." >&2
+    exit 2
+fi
+
 # ── gate 3: does it actually boot? ───────────────────────────────────────────
 # The gate web cannot have. An export can succeed and still produce something
 # that dies on startup — a missing autoload, an unresolved class_name, a broken
@@ -533,26 +551,51 @@ echo "[${PLAT}] booted to title screen · script errors during boot: ${BOOT_ERRS
 #
 # That isolation is ASSERTED below, not trusted. If it ever stops holding, this
 # gate must fail rather than quietly play the game against real save data.
-if [ "$PLAT" = "linux" ]; then
+if [ "$PLAT" = "linux" ] || [ "$PLAT" = "windows" ]; then
     if ! command -v xvfb-run >/dev/null; then
         # Loudly skipped, never silently: a smoke that does not run must not look
         # like a smoke that passed.
         echo "[${PLAT}] gate 3b: SKIPPED — xvfb-run absent, combat is UNVERIFIED" >&2
+    elif [ "$PLAT" = "windows" ] && ! command -v wine >/dev/null; then
+        echo "[${PLAT}] gate 3b: SKIPPED — wine absent, combat is UNVERIFIED" >&2
     else
         echo "[${PLAT}] gate 3b: combat smoke (isolated profile)"
+        # THE ISOLATOR DIFFERS BY PLATFORM, and that is the whole reason windows was skipped.
+        # A linux build resolves user:// from $HOME, so redirecting HOME relocates the profile.
+        # A wine build resolves it through %APPDATA% INSIDE THE WINEPREFIX, so HOME redirection
+        # is the wrong lever there — a throwaway prefix is the right one, and it is stricter:
+        # the sandbox is a whole fake Windows, not just a relocated directory.
         SMOKE_HOME="$(pwd)/tmp/smoke_home"
         rm -rf "$SMOKE_HOME"; mkdir -p "$SMOKE_HOME"
+        # CONTENT, not a count. The previous baseline was `find | wc -l`, which cannot see a
+        # save OVERWRITTEN IN PLACE — the exact shape of a partially-failed HOME redirect,
+        # where the game finds an existing profile and rewrites slot files already there.
+        # Measured: a slot overwritten in place leaves the count at 2 -> 2, so the old check
+        # printed "profile untouched" and published.
+        if [ ! -x tools/check_profile_untouched.sh ]; then
+            echo "[${PLAT}] BLOCKED: tools/check_profile_untouched.sh missing. Refusing to run" >&2
+            echo "        the game against a redirected HOME without a way to prove his saves" >&2
+            echo "        survived it." >&2
+            exit 3
+        fi
+        REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$USERDATA")"
         REAL_N_BEFORE=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
-        HOME="$SMOKE_HOME" timeout 600 xvfb-run -a "$BIN" -- --battle-smoke \
-            > "tmp/${PLAT}_battle.log" 2>&1 &
+        if [ "$PLAT" = "windows" ]; then
+            # 900s, not 600: creating a fresh WINEPREFIX dominates the first minutes and is
+            # not the game being slow. Measured 2026-09-10 — prefix creation, then engine
+            # banner, [GAME] Started, Battle commenced, and a clean exit 0.
+            ( cd "$OUT_DIR" && WINEPREFIX="$SMOKE_HOME" timeout 900 xvfb-run -a \
+                wine "./${ARTIFACT}" -- --battle-smoke ) > "tmp/${PLAT}_battle.log" 2>&1 &
+        else
+            HOME="$SMOKE_HOME" timeout 600 xvfb-run -a "$BIN" -- --battle-smoke \
+                > "tmp/${PLAT}_battle.log" 2>&1 &
+        fi
         SEC=0; wait $! || SEC=$?
-        REAL_N_AFTER=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
-
-        # Isolation first: a leak matters more than a failed battle.
-        if [ "$REAL_N_BEFORE" -ne "$REAL_N_AFTER" ]; then
-            echo "[${PLAT}] BLOCKED: the combat smoke WROTE TO THE REAL PROFILE" >&2
-            echo "        ${REAL_N_BEFORE} -> ${REAL_N_AFTER} files. HOME redirection failed;" >&2
-            echo "        refusing to keep running the game against real save data." >&2
+        # Isolation first: a leak matters more than a failed battle. The sandbox is passed so
+        # the RED can distinguish "he was playing during the deploy" from "the redirect did
+        # not work" — a battle that ran and left an EMPTY sandbox did not have a working HOME.
+        if ! ./tools/check_profile_untouched.sh --verify "$USERDATA" "$REAL_SIG_BEFORE" "$SMOKE_HOME"; then
+            echo "[${PLAT}] BLOCKED: refusing to keep running the game against real save data." >&2
             exit 3
         fi
         # Positive marker, not absence-of-error: an empty log has no errors either.
@@ -562,11 +605,25 @@ if [ "$PLAT" = "linux" ]; then
             grep -aiE "SCRIPT ERROR|Failed to load|Parse Error" "tmp/${PLAT}_battle.log" | head -5 >&2 || true
             exit 3
         fi
-        SHOTS=$(find "$SMOKE_HOME" -name '*.png' 2>/dev/null | wc -l)
-        echo "[${PLAT}] fought a real battle · ${SHOTS} screenshot(s) · profile untouched (${REAL_N_BEFORE} files)"
+        # Scoped to the game's own user:// tree so the number means the same thing on both
+        # platforms: screenshots THIS RUN wrote. An unscoped find over a WINEPREFIX counts
+        # whatever wine ships as well — measured 0 on wine-10.0, which is a fact about this
+        # wine build and not a property to rely on.
+        SHOTS=$(find "$SMOKE_HOME" -ipath '*app_userdata*' -name '*.png' 2>/dev/null | wc -l)
+        # SAY WHAT WAS CHECKED. "fought a real battle" overstated a marker test: the gate
+        # greps for "Battle commenced", which proves combat STARTED, not that it ran to a
+        # conclusion. And "profile untouched" is now a signature comparison rather than a
+        # count, so it is finally the claim it always read as.
+        # The count and the verified set are NOT the same set, so do not print one and claim
+        # the other. ${REAL_N_BEFORE} counts every file including user://logs/; the signature
+        # covers the profile MINUS logs, which is what was actually compared. Printing "176
+        # files, signature matched" attaches a verified verb to an unverified number — the
+        # same substitution this whole gate was rewritten to remove.
+        echo "[${PLAT}] reached a battle ('Battle commenced') · ${SHOTS} screenshot(s) in the sandbox"
+        echo "[${PLAT}] his profile: ${REAL_N_BEFORE} files total; signature verified unchanged over all of them except user://logs/ (see [profile] line above for the covered count)"
     fi
 else
-    echo "[${PLAT}] gate 3b: SKIPPED — combat smoke is linux-only (wine+xvfb unverified)"
+    echo "[${PLAT}] gate 3b: SKIPPED — no combat smoke defined for platform '${PLAT}'"
 fi
 
 # ── gate 4: publish, only if explicitly asked ───────────────────────────────

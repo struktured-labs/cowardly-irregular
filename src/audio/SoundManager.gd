@@ -1540,6 +1540,26 @@ func _generate_glitch(playback: AudioStreamGeneratorPlayback, samples: int, freq
 ## or a procedural arm. play_music crossfades the CURRENT track out before it
 ## resolves, so an unknown id leaves the scene silent rather than unchanged;
 ## callers that would rather keep the existing music check this first.
+## The Web preset drops 54 music files while the manifest that lists them ships intact.
+func music_is_available(track_id: String) -> bool:
+	_load_music_manifest()
+	var entry: Variant = _music_manifest.get(track_id, {})
+	if not (entry is Dictionary):
+		return true
+	var path: String = str((entry as Dictionary).get("file", ""))
+	## No file at all means a procedural path owns this id, and those always play.
+	if path == "":
+		return true
+	if not path.begins_with("res://"):
+		path = "res://" + path
+	## load() rather than ResourceLoader.exists(): the latter reports FALSE for
+	## resources that ARE present in a web PCK (see _try_play_from_manifest).
+	if load(path) != null:
+		return true
+	## Absent from this build. Only ids with a procedural arm still make sound.
+	return track_id.begins_with("battle_") or track_id.begins_with("boss")
+
+
 static func has_music_track(track: String) -> bool:
 	if track == "":
 		return false
@@ -2103,6 +2123,9 @@ func _start_battle_music() -> void:
 	_music_playing = true
 	var suffix = _get_current_world_suffix()
 	if _try_play_from_manifest("battle_" + suffix):
+		return
+	## battle_<suffix> is web-excluded in W4-W6; generating is 8.5s on the main thread.
+	if suffix != "medieval" and _try_play_from_manifest("battle_medieval"):
 		return
 
 	if _music_cache.has("battle_generic"):
@@ -2815,6 +2838,9 @@ func _start_boss_music() -> void:
 	_music_playing = true
 	var suffix = _get_current_world_suffix()
 	if _try_play_from_manifest("boss_" + suffix):
+		return
+	## boss_<suffix> is web-excluded in W4-W6; generating is 2.1s on the main thread.
+	if suffix != "medieval" and _try_play_from_manifest("boss_medieval"):
 		return
 
 	# Generate music buffer (16 bars at 150 BPM - faster, more intense)
@@ -4817,6 +4843,9 @@ func _start_area_music_deferred(area_type: String) -> void:
 		return
 
 	match area_type:
+		## No arm meant DangerZone fell to `_:` and got hardcoded overworld_medieval.
+		"danger":
+			_start_danger_music()
 		"overworld":
 			_start_overworld_music()
 		"overworld_suburban":
@@ -6132,6 +6161,9 @@ func _start_industrial_music() -> void:
 	print("[MUSIC] Playing industrial theme")
 	if _play_area_wav_cached("industrial"):
 		return
+	## overworld_industrial is web-excluded; generating the fallback is 1.9s of main-thread GDScript.
+	if _try_play_from_manifest("overworld_medieval"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 110.0  # Steady, relentless machine tempo
@@ -6254,6 +6286,9 @@ func _start_futuristic_music() -> void:
 		return
 	print("[MUSIC] Playing futuristic digital theme")
 	if _play_area_wav_cached("futuristic"):
+		return
+	## overworld_digital is web-excluded; generating the fallback is 3.8s of main-thread GDScript.
+	if _try_play_from_manifest("overworld_medieval"):
 		return
 
 	var sample_rate = 22050
@@ -6679,6 +6714,9 @@ func _start_industrial_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_industrial"):
 		return
+	## web-excluded; generating is 1.6s on the main thread.
+	if _try_play_from_manifest("battle_medieval"):
+		return
 	print("[MUSIC] Playing industrial battle theme")
 
 	var sample_rate = 22050
@@ -6876,6 +6914,9 @@ func _start_digital_battle_music() -> void:
 	   Fast arpeggios, digital distortion, Tron/Matrix vibes."""
 	_music_playing = true
 	if _try_play_from_manifest("battle_digital"):
+		return
+	## web-excluded; generating is 1.4s on the main thread.
+	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing digital battle theme")
 
@@ -7256,6 +7297,9 @@ func _start_abstract_music() -> void:
 		return
 	print("[MUSIC] Playing abstract void theme")
 	if _play_area_wav_cached("abstract"):
+		return
+	## overworld_abstract is web-excluded; generating the fallback is 19.9s of main-thread GDScript.
+	if _try_play_from_manifest("overworld_medieval"):
 		return
 
 	var sample_rate = 22050

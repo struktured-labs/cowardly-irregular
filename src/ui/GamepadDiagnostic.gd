@@ -5,6 +5,27 @@ var _label: RichTextLabel
 var _active: bool = false
 
 
+## Every action the PROJECT declares, not a hardcoded six. The old list showed 6 of 14 and two of
+## those six are dead (camera_rotate_*, no handler anywhere), so a tester chasing "my A button does
+## nothing" got no ui_accept row at all — on a pad whose whole failure mode is mode switches moving
+## button indices. Parsed once and cached; this runs every frame while the overlay is open.
+static var _cached_actions: Array[String] = []
+
+
+static func project_actions() -> Array[String]:
+	if not _cached_actions.is_empty():
+		return _cached_actions
+	var src := FileAccess.get_file_as_string("res://project.godot")
+	var start := src.find("[input]")
+	if start < 0:
+		return _cached_actions
+	var stop := src.find("\n[", start + 1)
+	var body := src.substr(start, (stop - start) if stop > start else -1)
+	for m in RegEx.create_from_string("(?m)^([A-Za-z_][A-Za-z0-9_]*)=\\{").search_all(body):
+		_cached_actions.append(m.get_string(1))
+	return _cached_actions
+
+
 func _ready() -> void:
 	visible = false
 	z_index = 100
@@ -72,7 +93,7 @@ func _process(_delta: float) -> void:
 		text += "\n\n"
 
 	text += "[color=cyan]Input Actions:[/color]\n"
-	for action in ["camera_rotate_left", "camera_rotate_right", "battle_defer", "battle_advance", "ui_left", "ui_right"]:
+	for action in project_actions():
 		if InputMap.has_action(action):
 			var strength = Input.get_action_strength(action)
 			var color = "yellow" if strength > 0.1 else "gray"

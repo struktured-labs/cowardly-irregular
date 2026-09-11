@@ -89,17 +89,65 @@ func test_deep_check_rejects_out_of_kit_ability() -> void:
 	assert_true("not in fighter's level-1 kit" in _error_blob(result),
 				"deep-check error must name the kit-mismatch; got: %s" % _error_blob(result))
 
-## ── Deep check catches mp-starve (unguarded costed rule) ────────────────
+## ── the prompt actually receives the kit ────────────────────────────────
 
-func test_deep_check_rejects_unguarded_costed_rule() -> void:
+func test_the_composed_prompt_carries_the_characters_real_kit() -> void:
+	## WIRING. build_rule_composition renders the kit block correctly when handed
+	## one, but that proves nothing about whether compose_async hands it one — for
+	## months it did not, while the grammar told the model to respect a kit it was
+	## never shown. This reads the prompt the backend actually received.
+	fake_backend.prime_next(_payload("[]"))
+	await rc.compose_async(rc.DOMAIN_AUTOBATTLE, "fight well", "hero", [])
+	assert_true(fake_backend.last_prompt.find("THIS CHARACTER is a fighter") != -1,
+				"the prompt sent to the model must name the character's job")
+	assert_true(fake_backend.last_prompt.find("power_strike") != -1,
+				"and list the ability ids it is allowed to use")
+
+
+## ── mp-starve: DERIVABLE, so now repaired rather than discarded ─────────
+##
+## CONTRACT CHANGE 2026-09-10 (cowir-ai). This test asserted that an unguarded
+## costed rule sends the whole composition to fallback. It now asserts the guard
+## is supplied instead, because the threshold is arithmetic the validator already
+## performs — its own error text names the number it was discarding the ruleset
+## over. Measured against local llama3: the model omitted this guard in 20 of 29
+## rejected rules even when handed the ability costs and the MP pool, which made
+## it the single largest cause of the player receiving a canned fallback (cleric
+## 0/10 -> 8/10, fighter 0/10 -> 5/10 once supplied).
+##
+## "Stricter = safer for LLM-composed output" is NOT relaxed by this: the repair
+## only ever ADDS a precondition or raises an existing one, so a repaired rule
+## fires strictly less often than the model asked for and can never fizzle. The
+## rejection path below is unchanged for everything arithmetic cannot fix.
+
+func test_unguarded_costed_rule_is_repaired_not_discarded() -> void:
 	watch_signals(rc)
-	# power_strike costs 8 MP; no mp_percent guard → validator rejects as fizzle risk.
+	# power_strike costs 8 MP and IS in the fighter's kit, so the guard is derivable.
 	fake_backend.prime_next(_payload(
 		"[{\"conditions\":[{\"type\":\"always\"}],\"actions\":[{\"type\":\"ability\",\"id\":\"power_strike\",\"target\":\"lowest_hp_enemy\"}],\"enabled\":true}]"))
 	var result: Dictionary = await rc.compose_async(rc.DOMAIN_AUTOBATTLE, "hit hard every turn", "hero", [])
-	assert_eq(result.get("source", ""), "fallback")
-	assert_true("fizzle" in _error_blob(result),
-				"deep-check error must mention 'fizzle'; got: %s" % _error_blob(result))
+	assert_eq(result.get("source", ""), "llm",
+				"a derivable guard must be supplied, not cost the player the whole ruleset")
+	var guarded: bool = false
+	for r in result.get("rules", []):
+		for c in r.get("conditions", []):
+			if str(c.get("type", "")) == "mp_percent" and str(c.get("op", "")) == ">=":
+				guarded = true
+	assert_true(guarded, "the supplied rule must carry the mp_percent guard it needed")
+
+
+func test_unguarded_rule_the_arithmetic_cannot_fix_is_still_rejected() -> void:
+	## The fizzle protection must survive the repair. 'cure' is not in the fighter's
+	## kit, so supplying a guard would dress a rule that still cannot run — the
+	## repair deliberately leaves it alone and the deep check still discards it.
+	watch_signals(rc)
+	fake_backend.prime_next(_payload(
+		"[{\"conditions\":[{\"type\":\"always\"}],\"actions\":[{\"type\":\"ability\",\"id\":\"cure\",\"target\":\"lowest_hp_ally\"}],\"enabled\":true}]"))
+	var result: Dictionary = await rc.compose_async(rc.DOMAIN_AUTOBATTLE, "heal up", "hero", [])
+	assert_eq(result.get("source", ""), "fallback",
+				"an out-of-kit ability must still discard the composition")
+	assert_true("not in fighter's level-1 kit" in _error_blob(result),
+				"and for the kit reason, not a masked fizzle; got: %s" % _error_blob(result))
 
 ## ── Deep check accepts a well-formed guarded costed rule ────────────────
 

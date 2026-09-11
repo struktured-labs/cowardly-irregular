@@ -66,6 +66,20 @@ func test_an_axis_event_routes_to_the_editor() -> void:
 		"a real right-stick push must reach the dial — if axis events do not route, the dial is dead in game")
 
 
+## DIRECTION under REAL routing. The arrival arms above are sign-blind by construction: `assert_ne`
+## against a `before` value passes just as well when the dial runs backwards. Inverting the delta in
+## either editor left all three of this lane's dial files green — measured, per editor.
+func test_a_routed_push_moves_the_dial_the_way_it_was_pushed() -> void:
+	for path in EDITORS:
+		await _mount(path)
+		assert_eq(_value(), 50.0, "PRECONDITION: the seeded value, or the direction below is unreadable")
+		_vp.push_input(_stick(1.0))
+		await get_tree().process_frame
+		assert_gt(_value(), 50.0, "%s: a routed RIGHT push must RAISE the value" % EDITORS[path])
+		if _ed and is_instance_valid(_ed):
+			_ed.queue_free()
+
+
 ## Both editors, since the dial is deliberately identical in each and a player switching screens
 ## must not find one live and one not.
 func test_both_editors_receive_a_real_stick_push() -> void:

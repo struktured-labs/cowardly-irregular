@@ -115,6 +115,11 @@ func _build_ui() -> void:
 
 ## Re-read the daemon's pending[] and rebuild the local entry list.
 ## Called on open + after each apply/dismiss.
+	# Right-click closes, matching the convention on 29 other screens.
+	MenuMouseHelper.add_right_click_cancel(self, func() -> void:
+		closed.emit()
+		queue_free())
+
 func _refresh() -> void:
 	_entries.clear()
 	var daemon = _get_daemon()

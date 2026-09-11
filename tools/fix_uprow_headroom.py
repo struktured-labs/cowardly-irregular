@@ -19,6 +19,7 @@ Usage:
     uv run python tools/fix_uprow_headroom.py --check-only <archetype>...
 """
 import argparse
+import os
 import shutil
 import sys
 from pathlib import Path
@@ -26,7 +27,9 @@ from pathlib import Path
 from PIL import Image
 
 PROJECT = Path(__file__).resolve().parent.parent
-GAME_REPO = Path("/home/struktured/projects/cowardly-irregular-artist-ship")
+# Default to THIS checkout. The old default named a specific sibling worktree and this tool
+# WRITES sheets there — a bare run edited art in a checkout it did not own. Override with GAME_REPO.
+GAME_REPO = Path(os.environ.get("GAME_REPO", PROJECT))
 NPCS = GAME_REPO / "assets" / "sprites" / "npcs"
 BACKUP_DIR = PROJECT / "tmp" / "pre_uprow_headroom_backups"
 

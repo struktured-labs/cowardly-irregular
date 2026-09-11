@@ -14,6 +14,10 @@ var env_background: Node = null
 ## Per-feature bells-and-whistles registry (struktured: "ridiculous menu of toggles") — unknown names default TRUE so new juice works before the menu knows it; accessibility masters (reduce_flashes/screen_shake_enabled) rank above flags
 var flags: Dictionary = {}
 
+## Shortest gap between two rumbles — a flurry of hits must not restart the motors every frame.
+const RUMBLE_MIN_GAP := 0.06
+var _last_rumble_at: float = -1.0
+
 
 func flag(feature: String) -> bool:
 	if GameState and "battle_fx_flags" in GameState and GameState.battle_fx_flags.has(feature):
@@ -46,7 +50,35 @@ func battle_tier() -> Tier:
 	return presentation_tier(Engine.time_scale, turbo, autogrind)
 
 
+## Pad rumble for a physical impact. The game had ZERO joy-vibration calls before this; 60 shake
+## sites and nothing the hands could feel, on a couch-and-TV game.
+## Wall-clock by design: vibration duration is NOT scaled by Engine.time_scale (a 4x battle would
+## stretch a thump into a buzz), and battle_tier() already returns OFF at 4x/turbo/autogrind.
+## The DECISION, separated from the effect so it is testable: headless has no pads, so a test of
+## rumble() alone can only ever observe "nothing happened" and would pass with every gate deleted.
+func should_rumble(amount: float, now: float = -1.0) -> bool:
+	if amount <= 0.0 or not flag("rumble"):
+		return false
+	if battle_tier() == Tier.OFF:
+		return false
+	var t: float = now if now >= 0.0 else Time.get_ticks_msec() / 1000.0
+	return t - _last_rumble_at >= RUMBLE_MIN_GAP
+
+
+func rumble(amount: float) -> void:
+	if not should_rumble(amount):
+		return
+	var pads := Input.get_connected_joypads()
+	if pads.is_empty():
+		return
+	_last_rumble_at = Time.get_ticks_msec() / 1000.0
+	var a := clampf(amount, 0.0, 1.0)
+	for device in pads:
+		Input.start_joy_vibration(device, a * 0.35, a * 0.7, clampf(0.08 + a * 0.18, 0.08, 0.3))
+
+
 func add_trauma(amount: float, dir: Vector2 = Vector2.ZERO, sustain: float = 0.0) -> void:
+	rumble(amount)
 	if camera_rig:
 		camera_rig.add_trauma(amount, dir, sustain)
 	# Heavy hits thump the arena itself (bass-thump pulse; struktured "try it" 2026-08-14)

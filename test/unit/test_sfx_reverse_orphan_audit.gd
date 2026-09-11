@@ -200,6 +200,49 @@ func test_the_consumer_corpus_excludes_every_definer() -> void:
 		"control: the consumer corpus is only %d chars — the exclusion took the whole directory with it" % corpus.length())
 
 
+func test_the_definer_list_is_actually_exhaustive() -> void:
+	## ⛔ THE PREDICATE ABOVE SAYS "EVERY DEFINER" AND THE INSTRUMENT CHECKS A TWO-ITEM LITERAL.
+	## That is the shape cowir-main named on 2026-09-09 after publishing a sweep predicate ("orphaned
+	## = unreachable by ANY path") phrased more broadly than the scanner under it: broad wording
+	## READS AS A SAFETY MARGIN and deters anyone from interrogating the code, so it conceals the gap
+	## instead of merely failing to describe it.
+	##
+	## So this DISCOVERS definers rather than trusting the list. A definer is a data/*.json holding a
+	## dict whose entries carry a `file` pointing into assets/audio/ — the manifest shape. Add a
+	## third audio manifest and this reds until it is listed, which is what makes "every" true.
+	var found: Array[String] = []
+	var dir := DirAccess.open("res://data")
+	assert_not_null(dir, "res://data unreadable — this guard would pass by finding nothing")
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var fname := dir.get_next()
+	while fname != "":
+		if not dir.current_is_dir() and fname.ends_with(".json"):
+			var parsed: Variant = JSON.parse_string(_read("res://data/" + fname))
+			if parsed is Dictionary:
+				for top in (parsed as Dictionary).keys():
+					var section: Variant = (parsed as Dictionary)[top]
+					if not (section is Dictionary) or (section as Dictionary).size() < 20:
+						continue
+					var audio_entries := 0
+					for k in (section as Dictionary).keys():
+						var e: Variant = (section as Dictionary)[k]
+						if e is Dictionary and str((e as Dictionary).get("file", "")).begins_with("assets/audio/"):
+							audio_entries += 1
+					if audio_entries >= 20 and not found.has(fname):
+						found.append(fname)
+		fname = dir.get_next()
+	dir.list_dir_end()
+
+	found.sort()
+	assert_gte(found.size(), 2,
+		"control: discovered %d audio-key definers — expected at least sfx_manifest.json and music_manifest.json, so the scan is broken and the comparison below is vacuous" % found.size())
+	for f in found:
+		assert_true(KEY_SPACE_DEFINERS.has(f),
+			"%s DEFINES audio keys and is not in KEY_SPACE_DEFINERS — it is sitting in the consumer corpus, so every key it names reads as consumed. Add it to that list." % f)
+
+
 func test_pending_consumer_allowlist_has_not_rotted() -> void:
 	## Guarantee 2: once something IS wired, it must leave the allowlist —
 	## otherwise the list silently becomes a graveyard nobody rereads.

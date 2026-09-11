@@ -23,7 +23,7 @@ const ENEMY_TARGETS := ["single_enemy", "all_enemies", "last_attacker"]
 ## (what SHOULD a headless undo_death do?), not a bug for a lane to invent an answer to.
 const KNOWN_INERT := [
 	"analyze_code", "bypass_puzzle", "create_autobattle_script", "edit_formula", "flee",
-	"modify_constant", "new_game_plus_warp", "pack_call", "quicksave", "raise", "rat_swarm",
+	"modify_constant", "new_game_plus_warp", "pack_call", "quicksave", "rat_swarm",
 	"recursive_summon", "restore_point", "rewind", "rewind_turn", "royal_summon",
 	"sequence_break", "skip_cutscene", "temporal_shield", "undo_death", "warp_to_boss",
 ]
@@ -134,7 +134,7 @@ func test_the_census_is_not_vacuous() -> void:
 ## are owned by STARTER jobs, so they are live for every player.
 ##   raise  Cleric revival  -> a downed member stays down; the party grinds on with a corpse
 ##   flee   Rogue escape    -> a flee rule cannot disengage
-const STARTER_REACHABLE := ["flee", "raise"]
+const STARTER_REACHABLE := ["flee"]
 
 func test_the_starter_reachable_subset_is_named_not_buried() -> void:
 	var jobs_parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))

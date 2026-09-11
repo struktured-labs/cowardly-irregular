@@ -112,6 +112,12 @@ var meta_boss_spawn_chance: float = 0.0  # Increases with corruption
 
 ## System collapse tracking
 var collapse_count: int = 0                    # How many times collapse has occurred
+## Meta bosses had NO counter at all, so the session Summary could not report them and the console
+## was the only surface that ever mentioned one. A boss spawned during a headless grind with the
+## console closed was invisible at the moment AND at session end — a design pillar the player could
+## grind straight past. collapse_count at least reached the Summary.
+var meta_bosses_spawned: int = 0
+var meta_bosses_defeated: int = 0
 var post_collapse_debuff_battles: int = 0      # Remaining battles with reduced max_efficiency
 
 ## Permadeath persistence — names of permanently dead characters (loaded/saved via user://autogrind/)
@@ -281,6 +287,22 @@ func get_learned_patterns_for_region(region_id: String) -> Dictionary:
 	return learned_patterns[region_id]
 
 
+## Conditions whose `value` is compared as a NUMBER. The three sets below must cover
+## PARTY_CONDITION_TYPES exactly — a type in none of them is one validate_rule waves through
+## without ever looking at its payload, which is how member_status shipped permanently false.
+const NUMERIC_CONDITIONS := [
+	"party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count", "battles_done",
+	"corruption", "efficiency", "member_hp", "member_mp", "win_streak", "time_elapsed",
+	"inventory_items", "reached_level",
+]
+
+## Conditions that take no value at all — asking for one would reject correct rules.
+const NULLARY_CONDITIONS := ["member_dead", "member_injured", "ability_learned", "rare_item_found", "always"]
+
+## Conditions whose `value` is a name rather than a magnitude.
+const NAMED_VALUE_CONDITIONS := ["member_status"]
+
+
 func validate_rule(rule: Dictionary) -> Array[String]:
 	## Accepts against PARTY_CONDITION_TYPES / OPERATORS / AUTOGRIND_ACTION_TYPES below, the single source of truth.
 	var errors: Array[String] = []
@@ -304,6 +326,22 @@ func validate_rule(rule: Dictionary) -> Array[String]:
 			continue
 		if c.has("op") and not OPERATORS.has(str(c["op"])):
 			errors.append("unknown operator: '%s'" % c["op"])
+		## PAYLOAD, not just the type name. A rule whose type is spelled right and whose value is
+		## the wrong SHAPE validated clean and then never fired — member_status carried the
+		## console's numeric default and asked has_status("0") on every character forever.
+		if ctype == "member_status":
+			var status_name: Variant = c.get("value", "")
+			if typeof(status_name) != TYPE_STRING or str(status_name).strip_edges() == "":
+				errors.append("condition 'member_status' needs the status NAME in 'value' (got %s) — a number can never match" % [status_name])
+		elif NUMERIC_CONDITIONS.has(ctype) and c.has("value"):
+			## Only a value of the WRONG TYPE is an error. An ABSENT one defaults to 0, which is a
+			## legal comparison — rejecting it would fail the minimal type-acceptance shapes the
+			## picker and the vocabulary tests legitimately build, and that is stricter than the
+			## defect this check exists for. member_status above is the opposite case: its default
+			## is unusable, so absence there IS the bug.
+			var v: Variant = c["value"]
+			if not (typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT):
+				errors.append("condition '%s' needs a numeric 'value' (got %s)" % [ctype, v])
 	for a in rule["actions"]:
 		if typeof(a) != TYPE_DICTIONARY:
 			errors.append("action must be a dictionary: %s" % [a])
@@ -793,6 +831,8 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	_wire_smart_interrupt_signals(party)
 	efficiency_multiplier = 1.0
 	monster_adaptation_level = 0.0
+	meta_bosses_spawned = 0
+	meta_bosses_defeated = 0
 	meta_corruption_level = 0.0
 	meta_boss_spawn_chance = 0.0
 
@@ -1179,6 +1219,7 @@ func _spawn_meta_boss() -> Dictionary:
 	Returns the enemy data dictionary so AutogrindController can launch a real battle.
 	Does NOT stop the grind — the caller decides what to do with the result."""
 	var boss_data := build_meta_boss_enemy_data(false)
+	meta_bosses_spawned += 1
 	meta_boss_spawned.emit(boss_data.get("name", "Meta-Boss"))
 	print("[AUTOGRIND] META-BOSS SPAWNED: %s (HP: %d)" % [boss_data["name"], boss_data["max_hp"]])
 	return boss_data
@@ -1197,6 +1238,7 @@ func _generate_meta_boss_name() -> String:
 func on_meta_boss_victory(boss_data: Dictionary) -> void:
 	"""Called by AutogrindController after the party defeats a meta-boss.
 	Reduces corruption and awards bonus rewards."""
+	meta_bosses_defeated += 1
 	var corruption_reduction := 0.5 + meta_corruption_level * 0.1
 	meta_corruption_level = maxf(0.0, meta_corruption_level - corruption_reduction)
 	print("[AUTOGRIND] Meta-boss defeated! Corruption reduced by %.2f (now %.2f)" % [
@@ -1585,6 +1627,9 @@ func set_autogrind_rules(rules: Array) -> bool:
 	if not errors.is_empty():
 		push_warning("[AUTOGRIND] set_autogrind_rules REJECTED — %d invalid rule(s), no mutation: %s" % [errors.size(), str(errors)])
 		return false
+	## Counts key on rule INDEX and editing renumbers them — insert a rule at the top and every
+	## stored count silently describes a different rule. A stale count reads as evidence.
+	reset_rule_fire_counts()
 	_ensure_autogrind_profiles()
 	var active_idx = autogrind_profiles.get("active", 0)
 	var profiles = autogrind_profiles.get("profiles", [])
@@ -1696,16 +1741,42 @@ func delete_autogrind_profile(index: int) -> bool:
 ## AUTOGRIND RULE EVALUATION
 ## ═══════════════════════════════════════════════════════════════════════
 
+## Session-scoped observed usage: rule_index -> times it won, plus the evaluations that produced
+## them. Never persisted — the question is "did this fire in the grind I just ran".
+var _rule_fire_counts: Dictionary = {}
+var _rule_eval_count: int = 0
+
+
+func get_rule_fire_counts() -> Dictionary:
+	return _rule_fire_counts.duplicate()
+
+
+## Evaluations since the counts were last reset — the denominator for a zero.
+func get_rule_eval_count() -> int:
+	return _rule_eval_count
+
+
+func reset_rule_fire_counts() -> void:
+	_rule_fire_counts.clear()
+	_rule_eval_count = 0
+
+
 func evaluate_autogrind_rules(party: Array) -> Dictionary:
 	"""Evaluate autogrind rules against current party state.
 	Returns the first matching rule's action set, or empty dict if none match."""
 	var rules = get_autogrind_rules()
+	## Observed usage. The console predicts what rules WOULD do and nothing said what they DID —
+	## which is how a stop_grinding rule stayed inert without anyone noticing. The evaluation count
+	## is the denominator: 0 fires across 0 evaluations means "not measured", not "dead".
+	_rule_eval_count += 1
 
-	for rule in rules:
+	for i in range(rules.size()):
+		var rule: Dictionary = rules[i]
 		if not rule.get("enabled", true):
 			continue
 
 		if _evaluate_party_rule(party, rule):
+			_rule_fire_counts[i] = int(_rule_fire_counts.get(i, 0)) + 1
 			return rule
 
 	return {}
@@ -1782,6 +1853,11 @@ func _find_restorative_caster(party: Array) -> Dictionary:
 ## (heal_amount / mp_amount) — reading `power` is the field-mismatch class this engine has now hit
 ## three times. Returns a reason rather than failing silently: a rule that never fires is the
 ## hardest kind to debug from the console.
+## Target words that mean "the ally who most needs it" rather than naming a member. Anything else
+## is a member key and still fails LOUDLY, so a typo'd member name is not silently swallowed.
+const GENERIC_ALLY_TARGETS := ["lowest_hp_ally", "lowest_hp", "ally", "all", "all_allies", "party", "any"]
+
+
 func _member_ability_apply(caster, ability_id: String, target_key: String) -> Dictionary:
 	if caster == null:
 		return {"ok": false, "reason": "caster not in party"}
@@ -1804,10 +1880,18 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 	if caster.current_mp < cost:
 		return {"ok": false, "reason": "%s lacks MP for %s" % [caster.combatant_name, ability_id]}
 
-	## Default target: the ally who most needs it. Explicit `target` wins when the rule names one.
-	var target = _resolve_member(grind_party, target_key) if target_key != "" else _lowest_hp_ally()
+	## Default target: the ally who most needs it. A `target` naming a MEMBER wins; a target using
+	## the generic ally vocabulary means the default, because that is what the grammar promises —
+	## "defaults to the lowest-HP living ally" reads as a value, and DialoguePrompts carries the
+	## autobattle target words (lowest_hp_ally, self, all_allies) in the same file, so a composer
+	## emitting one produced a rule that validated clean and silently did nothing.
+	var want := target_key.to_lower()
+	var target = _lowest_hp_ally() if target_key == "" or want in GENERIC_ALLY_TARGETS \
+		else _resolve_member(grind_party, target_key)
 	if target == null:
-		return {"ok": false, "reason": "no valid target"}
+		if target_key != "" and not want in GENERIC_ALLY_TARGETS:
+			return {"ok": false, "reason": "target '%s' names no party member" % target_key}
+		return {"ok": false, "reason": "no living ally to target"}
 
 	var heal := int(ability.get("heal_amount", 0))
 	var mp_amt := int(ability.get("mp_amount", 0))
