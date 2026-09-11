@@ -17,12 +17,28 @@ extends GutTest
 ## reason as the arm-order pin on _detect_playstyle: shadowing is invisible at
 ## authoring time, because each keyword reads perfectly well on its own line.
 ##
-## THE PREMISE IS ASSERTED, NOT ASSUMED. The shadow rule is only valid while
-## matching is substring-based and stops at the first hit. Switch to exact
-## match and shadowing becomes impossible — this file would then be green
-## forever while checking a condition that can no longer occur, which is worse
-## than being wrong. test_matcher_is_still_substring_first_match fails in that
-## case and sends the reader here.
+## THE PREMISE IS ASSERTED, NOT ASSUMED — and it is now asserted by
+## DEMONSTRATION rather than by reading the matcher's source.
+##
+## 2026-09-10: the matcher changed. It was substring-matching, which fired 'king'
+## inside asking/thinking/making and made the W1 final boss skip her turn on
+## almost any sentence (11 of 12 ordinary directives triggered a jailbreak). It
+## now matches single words whole and phrases as phrases. This file's original
+## premise test pinned the literal source `lower.find(kw_s) != -1` and correctly
+## went red on that change — it did its job and sent the reader here.
+##
+## Shadowing SURVIVES the change, so the rule is still the right question: an
+## earlier single word still swallows a later phrase that contains it, because
+## the phrase contains that whole word ('fear' still shadows 'fear of the dark').
+## What changed is the RELATION — it is no longer plain string containment, since
+## 'king' no longer shadows 'kingdom'.
+##
+## So the sweep below now ASKS THE REAL MATCHER instead of re-deriving its rule,
+## which makes it immune to the next matcher change, and
+## test_shadowing_is_still_possible_under_the_current_matcher proves the question
+## is live by constructing a shadow and watching it happen. A source-string pin
+## could only detect that something changed; a demonstration shows the sweep is
+## still capable of failing, which is the property that actually matters.
 
 const DIALOGUE_PATH: String = "res://data/boss_dialogue.json"
 const MATCHER_PATH: String = "res://src/llm/BossDialogue.gd"
@@ -55,23 +71,32 @@ func _vulns() -> Array:
 
 # ── The premise this file's rule depends on ─────────────────────────────────
 
-func test_matcher_is_still_substring_first_match() -> void:
-	# If this changes, the shadow rule below is no longer the right question.
-	var src: String = FileAccess.get_file_as_string(MATCHER_PATH)
-	assert_false(src.is_empty(), "BossDialogue must be readable")
-	var at: int = src.find("func check_jailbreak")
-	assert_gt(at, -1, "check_jailbreak must exist — if renamed, this ratchet measures nothing")
-	if at == -1:
-		return
-	var end: int = src.find("\nfunc ", at + 1)
-	var body: String = src.substr(at, (end if end != -1 else src.length()) - at)
-	assert_true(body.find("lower.find(kw_s) != -1") != -1,
-		("check_jailbreak no longer substring-matches keywords. PREMISE BROKEN: this file's shadowing " +
-		"rule assumes a shorter earlier keyword can swallow a longer later one. Under exact matching " +
-		"that cannot happen and the sweep below would pass forever while checking nothing — re-read it " +
-		"before trusting a green result here."))
-	assert_true(body.find("break") != -1 and body.find("return {") != -1,
-		"check_jailbreak must still stop at the FIRST matching vulnerability — ordering is what creates the shadow")
+var _saved_data: Dictionary = {}
+
+
+func before_each() -> void:
+	_saved_data = BossDialogue._data.duplicate(true)
+
+
+func after_each() -> void:
+	## BossDialogue is an autoload; a leaked _data edit corrupts every later test.
+	BossDialogue._data = _saved_data
+
+
+func test_shadowing_is_still_possible_under_the_current_matcher() -> void:
+	## Non-vacuity, shown rather than argued. If a future matcher makes shadowing
+	## impossible, this fails and the sweep below is no longer worth running.
+	BossDialogue._data["chancellor_mordaine"]["jailbreak_vulnerabilities"] = [
+		{"id": "earlier_short", "trigger_keywords": ["fear"],
+		 "consequence": {"type": "skip_turn"}},
+		{"id": "later_phrase", "trigger_keywords": ["fear of the dark"],
+		 "consequence": {"type": "taunt_softens"}},
+	]
+	var got = BossDialogue.check_jailbreak("chancellor_mordaine", "fear of the dark")
+	assert_not_null(got, "CONTROL: the constructed directive must match something")
+	assert_eq(str((got as Dictionary)["vulnerability_id"]), "earlier_short",
+		("shadowing must still be POSSIBLE, or this file checks a condition that cannot occur " +
+		"and would stay green forever. If this fails, re-read the header before trusting the sweep."))
 
 
 # ── Positive controls ────────────────────────────────────────────────────────
@@ -89,22 +114,26 @@ func test_scan_finds_the_authored_corpus() -> void:
 # ── The guard ────────────────────────────────────────────────────────────────
 
 func test_no_keyword_is_shadowed_by_an_earlier_one() -> void:
-	# Per boss: a later keyword containing an earlier keyword can never fire.
-	var by_boss: Dictionary = {}
+	## Behavioural: type each authored keyword as the directive and require its own
+	## vulnerability to answer. Asking the matcher rather than re-implementing its
+	## rule is what keeps this correct across matcher changes — the previous
+	## version encoded substring-containment and would have reported 'kingdom' as
+	## shadowed by 'king' the moment whole-word matching landed.
+	var checked: int = 0
 	for v in _vulns():
-		var b: String = str(v["boss"])
-		if not by_boss.has(b):
-			by_boss[b] = []
-		(by_boss[b] as Array).append(v)
-	for boss in by_boss.keys():
-		var list: Array = by_boss[boss]
-		for j in range(list.size()):
-			for kj in ((list[j] as Dictionary)["keywords"] as Array):
-				for i in range(j):
-					for ki in ((list[i] as Dictionary)["keywords"] as Array):
-						assert_false(str(kj).find(str(ki)) != -1,
-							("[%s] keyword '%s' on vulnerability '%s' can NEVER fire: '%s' on the earlier " +
-							"vulnerability '%s' is a substring of it, and check_jailbreak returns at the " +
-							"first match. A player typing the longer phrase gets the earlier consequence " +
-							"instead — silently. Reorder the vulnerabilities, or narrow the earlier keyword.")
-							% [boss, kj, (list[j] as Dictionary)["id"], ki, (list[i] as Dictionary)["id"]])
+		var boss: String = str(v["boss"])
+		var vid: String = str(v["id"])
+		for kw in (v["keywords"] as Array):
+			var got = BossDialogue.check_jailbreak(boss, str(kw))
+			checked += 1
+			assert_not_null(got,
+				"[%s] keyword '%s' on '%s' matches NOTHING — it can never fire" % [boss, kw, vid])
+			if got == null:
+				continue
+			assert_eq(str((got as Dictionary)["vulnerability_id"]), vid,
+				("[%s] keyword '%s' on vulnerability '%s' can NEVER fire: an earlier vulnerability " +
+				"('%s') answers first. A player typing it gets the earlier consequence instead — " +
+				"silently. Reorder the vulnerabilities, or narrow the earlier keyword.")
+				% [boss, kw, vid, str((got as Dictionary)["vulnerability_id"])])
+	assert_gt(checked, 10,
+		"CONTROL: only %d keywords exercised — the corpus walk has broken, so 0 shadows proves nothing" % checked)
