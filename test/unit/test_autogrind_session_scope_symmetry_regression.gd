@@ -96,6 +96,8 @@ func _declared_vars(lines: PackedStringArray) -> Dictionary:
 
 
 ## Fields assigned (or cleared) at any indent inside a body.
+## NOTE a known boundary: a reset written `self.field = 0` is not matched. That direction is safe
+## -- the field drops out of the reset set and the ratchet goes RED -- so it costs noise, not cover.
 func _assigned(body: PackedStringArray, declared: Dictionary) -> Dictionary:
 	var re := RegEx.create_from_string("^\\t+(_?[a-z][a-z0-9_]*)\\s*([-+*/]?=[^=]|\\.clear\\(\\))")
 	var out := {}
@@ -103,6 +105,32 @@ func _assigned(body: PackedStringArray, declared: Dictionary) -> Dictionary:
 		var m := re.search(l)
 		if m and declared.has(m.get_string(1)):
 			out[m.get_string(1)] = true
+	return out
+
+
+## Fields whose ONLY reset in start_autogrind sits inside a branch or a loop. The census cannot
+## tell `field = 0` from `if config.has(x): field = 0`, so a conditional reset reads as a reset and
+## the leak it permits is invisible. That is not hypothetical: permadeath_staking_enabled had
+## exactly this shape, the census called it reset, and only a behaviour arm caught that a
+## staking-off grind kept the staking growth rate. Zero fields have this shape today, so this
+## assert is future cover rather than a live finding.
+func _conditionally_reset_only(body: PackedStringArray, declared: Dictionary) -> Array:
+	var re := RegEx.create_from_string("^(\\t+)(_?[a-z][a-z0-9_]*)\\s*([-+*/]?=[^=]|\\.clear\\(\\))")
+	var top := {}
+	var nested := {}
+	for l in body:
+		var m := re.search(l)
+		if m == null or not declared.has(m.get_string(2)):
+			continue
+		if m.get_string(1).length() == 1:
+			top[m.get_string(2)] = true
+		else:
+			nested[m.get_string(2)] = true
+	var out := []
+	for f in nested.keys():
+		if not top.has(f):
+			out.append(f)
+	out.sort()
 	return out
 
 
@@ -174,6 +202,10 @@ func test_every_session_field_is_reset_snapshotted_and_restored() -> void:
 	## whose value reads no member var means the census silently dropped it, so it fails BY KEY.
 	assert_eq(scan["unparsed"], [],
 		"the census could not resolve these snapshot entries to a field -- it is not scanning them")
+
+	## A reset the census counts but a real start may skip.
+	assert_eq(_conditionally_reset_only(_body(lines, "start_autogrind"), _declared_vars(lines)), [],
+		"reset ONLY inside a branch -- the census reads that as reset, so the leak it permits is invisible")
 
 	var unclassified := []
 	for f in reset.keys():
