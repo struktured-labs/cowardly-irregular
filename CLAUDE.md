@@ -141,7 +141,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 
 | Action | Gamepad | Keyboard |
 |--------|---------|----------|
-| Open editor | L+R together | F5 |
+| Open editor | Start — in battle, and only when NO character has autobattle on (if any is on, Start disables all instead) | F5 |
 | Toggle ALL autobattle | Select | F6 |
 | Navigate grid | D-pad | Arrow keys |
 | Edit cell | A | Z |
