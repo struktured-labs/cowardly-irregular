@@ -2,7 +2,7 @@ extends GutTest
 
 ## A track in the manifest that nothing asks for is money spent on silence.
 ##
-## 165 authored beds; 8 of them are reached by no path in the game. Finding that
+## 165 authored beds; 10 of them are reached by no path in the game. Finding that
 ## needed a reachability MODEL, because a literal-only scan reports 51 orphans
 ## and 43 of those are false: the runtime composes most ids rather than naming
 ## them. `boss_arbiter_digital` appears nowhere in the repo and is played every
@@ -37,7 +37,7 @@ const COMPOSED_FAMILIES := {
 const MASTERITE_EXPR := ["res://src/battle/BattleScene.gd", "\"boss_%s_%s\" % [masterite_type, world_suffix]"]
 const JOB_SPECIAL_EXPR := ["res://src/battle/BattleScene.gd", "\"job_%s_special\" % job_id"]
 
-## The 8, each with WHY it has no consumer and what would retire it.
+## The 10, each with WHY it has no consumer and what would retire it.
 ## This is not permission to stay: the test fails if the set grows OR shrinks.
 const KNOWN_UNREACHED := {
 	"ambient_digital": "one of the never-played ambient beds — @struktured to delete or wire to cave/forest/village",
@@ -49,6 +49,13 @@ const KNOWN_UNREACHED := {
 	## SFX bed IS played (play_ambient reads sfx_manifest); the MUSIC entry of
 	## the same name is what nothing asks for.
 	"ambient_village": "never-played MUSIC bed; the identically-named SFX bed is live, which is what hid it",
+	## The last two, concealed one layer deeper: OverworldScene assigns these as
+	## plain literals and feeds them to play_ambient(), which reads sfx_manifest.
+	## The SFX twins are 5s; these music beds are 187s and 214s and have never
+	## played. Banked 2026-09-09 as project_music_ambient_two_stores; this file
+	## rediscovered it the hard way twice.
+	"ambient_cave": "music bed 187s, unplayed — OverworldScene's \"ice\" zone plays the 5s SFX bed of the same name",
+	"ambient_forest": "music bed 214s, unplayed — OverworldScene's \"forest\"/\"swamp\" zones play the 5s SFX bed of the same name",
 	"cutscene_alt_breaker_speed": "briefed in tools/music_prompts.json shared_tracks (\"Whoever Moves First\"); its scene is the alt_the_breaker novella, which has no cutscene JSON",
 	"cutscene_alt_witness_lament": "briefed (\"For the Guardian Who Did Not Choose the Gate\"); same novella, no scene authored",
 	"cutscene_w5_deprecated_goblin": "briefed (\"The Loop Completed\"); no W5 scene cues it",
@@ -131,10 +138,10 @@ func _consumer_text() -> String:
 		## left sfx_manifest.json in the corpus — and `ambient_*` lives in BOTH
 		## stores under the same keys. So ambient_village matched its own SFX
 		## entry and reported a consumer it does not have; the vacuity this
-		## exclusion exists to prevent, one store over. Measured 2026-09-11: it
-		## hid one of the five never-played ambient beds, and the three keys
-		## present in both stores were all excused this way (two of them have
-		## real consumers, so only village was actually concealed).
+		## exclusion exists to prevent, one store over. Necessary and NOT
+		## sufficient: see _is_reached, where a dual-store id needs a music-side
+		## CALL, because a bare literal is consumed by whichever store its
+		## function reads.
 		if p.ends_with("music_manifest.json") or p.ends_with("sfx_manifest.json"):
 			continue
 		var body: String = FileAccess.get_file_as_string(p)
@@ -179,7 +186,35 @@ func test_every_cited_composition_expression_still_exists() -> void:
 		"a composition site this test relies on is gone (%d): %s — the family it excused is now unreachable and its members are orphans, not exceptions" % [missing.size(), missing])
 
 
+## Ids that exist in BOTH manifests. For these a bare literal proves nothing:
+## `ambient_key = "ambient_forest"` is consumed by play_ambient(), which reads
+## the SFX store, so the identically-named MUSIC bed stays unplayed.
+func _dual_store_ids() -> Dictionary:
+	var raw: String = FileAccess.get_file_as_string("res://data/sfx_manifest.json")
+	var sfx: Dictionary = (JSON.parse_string(raw) as Dictionary).get("sfx", {})
+	assert_gt(sfx.size(), 100, "SCOPE control: parsed %d sfx entries — wrong root key?" % sfx.size())
+	var mraw: String = FileAccess.get_file_as_string(MANIFEST)
+	var tracks: Dictionary = (JSON.parse_string(mraw) as Dictionary).get("tracks", {})
+	var out: Dictionary = {}
+	for k in tracks.keys():
+		if sfx.has(str(k)):
+			out[str(k)] = true
+	return out
+
+
 func _is_reached(id: String, text: String, monsters: Dictionary) -> bool:
+	## ⛔ A LITERAL DOES NOT SAY WHICH STORE CONSUMES IT. Excluding both
+	## manifests from the corpus stopped an id matching its own entry, and was
+	## still not enough: ambient_cave and ambient_forest appear in
+	## OverworldScene as plain assignments feeding play_ambient(), which reads
+	## sfx_manifest. The music beds of the same name — 187s and 214s against the
+	## SFX twins' 5s — have never played. Measured 2026-09-11, after this file
+	## twice reported a smaller orphan set than the truth.
+	##
+	## So for a dual-store id the consumer must be a MUSIC-side call. For every
+	## other id a literal is proof enough, because only one store can claim it.
+	if _dual_store_ids().has(id):
+		return _asked_for_by_a_music_call(id, text)
 	## Literal mention anywhere a consumer could name it.
 	if text.find(id) >= 0:
 		return true
