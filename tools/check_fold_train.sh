@@ -31,7 +31,22 @@
 #   does NOT  prove they will tomorrow. The output names the tips it measured; if ls-remote
 #             disagrees, this run is stale and re-running it is the author's job.
 #
-# Usage:  tools/check_fold_train.sh <session-trailer-substring>
+# TWO SELECTORS, MATCHED AS A UNION, AND THE REASON IS A LIVE INSTANCE OF THE DEFECT
+# ----------------------------------------------------------------------------------
+# This originally derived the train from the `Claude-Session:` trailer. On 2026-09-11 my commit
+# attribution changed and that trailer STOPPED BEING EMITTED. The tool was not wrong and no
+# branch was lost — but the selection rule acquired an expiry date it did not have when
+# written, and the failure would have been SILENT: a branch pushed after the change simply
+# would not appear in the train, and a missing row looks exactly like a short list.
+#
+# So the selector is now a union: a branch is mine if its tip carries EITHER the legacy session
+# trailer OR a `Lane: <name>` trailer I control and will keep emitting. Spanning the transition
+# rather than swapping at it means the pre-change branches stay findable by the same tool that
+# finds the post-change ones, and the output names WHICH marker matched so the changeover is
+# visible rather than inferred.
+#
+# Usage:  tools/check_fold_train.sh --lane <lane-name> [--session <trailer-substring>]
+#         tools/check_fold_train.sh <session-trailer-substring>      (legacy, still works)
 #         tools/check_fold_train.sh --selftest
 # Exit:   0 clean · 4 a conflict · 5 a selftest failed on the merged tree · 2 unusable
 
@@ -40,37 +55,49 @@ set -uo pipefail
 _repo_root() { git rev-parse --show-toplevel 2>/dev/null; }
 
 train() {
-    local sess="$1"
-    [ -n "$sess" ] || { echo "[train] BLOCKED: no session trailer given." >&2; return 2; }
+    local sess="${1:-}" lane="${2:-}"
+    if [ -z "$sess" ] && [ -z "$lane" ]; then
+        echo "[train] BLOCKED: no selector given. Pass --lane <name> and/or a session trailer." >&2
+        return 2
+    fi
     local root; root="$(_repo_root)" || { echo "[train] BLOCKED: not a git repo." >&2; return 2; }
     cd "$root" || return 2
     git fetch origin --quiet 2>/dev/null || true
     git rev-parse --verify -q origin/main >/dev/null || {
         echo "[train] BLOCKED: origin/main not found." >&2; return 2; }
 
-    local mine=() excluded=()
+    local mine=() excluded=() marks=()
     while read -r r; do
         local b="${r#origin/}"
         [ "$b" = "HEAD" ] && continue
         git merge-base --is-ancestor "$r" origin/main 2>/dev/null && continue
-        git log -1 --format='%B' "$r" 2>/dev/null | grep -q "$sess" || continue
+        local msg mark=""
+        msg="$(git log -1 --format='%B' "$r" 2>/dev/null)"
+        if [ -n "$lane" ] && printf '%s' "$msg" | grep -qE "^Lane:[[:space:]]*${lane}[[:space:]]*$"; then
+            mark="Lane"
+        elif [ -n "$sess" ] && printf '%s' "$msg" | grep -q "$sess"; then
+            mark="session"
+        else
+            continue
+        fi
         case "$b" in
-            lane/*) mine+=("$b") ;;
+            lane/*) mine+=("$b"); marks+=("$mark") ;;
             *)      excluded+=("$b") ;;
         esac
     done < <(git for-each-ref --format='%(refname:short)' refs/remotes/origin)
 
     if [ "${#mine[@]}" -eq 0 ]; then
-        echo "[train] BLOCKED: no lane/* branches carry that trailer and are off main." >&2
+        echo "[train] BLOCKED: no lane/* branches match the selector(s) and are off main." >&2
         echo "        Either the trailer is wrong or everything is folded — those are" >&2
         echo "        different states and this cannot tell them apart, so it refuses." >&2
         return 2
     fi
 
     echo "[train] ${#mine[@]} branch(es) in the train, tips as measured now:"
-    local b
+    local b i=0
     for b in "${mine[@]}"; do
-        printf '[train]   %-46s %s\n' "$b" "$(git rev-parse --short "origin/$b")"
+        printf '[train]   %-44s %-9s via %s\n' "$b" "$(git rev-parse --short "origin/$b")" "${marks[$i]}"
+        i=$((i+1))
     done
     if [ "${#excluded[@]}" -gt 0 ]; then
         echo "[train] EXCLUDED (carry the trailer, not under lane/ — archive branches):"
@@ -206,8 +233,19 @@ selftest() {
 Claude-Session: https://claude.ai/code/$SESS"
         git push -q origin "$1"; git checkout -q main
     }
-    mk lane/a a.txt alpha
-    mk lane/b b.txt beta
+    # A branch carrying ONLY the Lane trailer — i.e. pushed AFTER the attribution change.
+    mk_lane() {
+        git checkout -q -b "$1" main
+        printf '%s\n' "$3" > "$2"; git add -A
+        git commit -q -m "$1
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+Lane: testlane"
+        git push -q origin "$1"; git checkout -q main
+    }
+    mk lane/a a.txt alpha                 # session trailer only (pre-change)
+    mk lane/b b.txt beta                  # session trailer only (pre-change)
+    mk_lane lane/newer n.txt newer        # Lane trailer only  (post-change)
     mk store-archive arch.txt archive     # carries the trailer, NOT under lane/
     git fetch -q origin
 
@@ -215,9 +253,28 @@ Claude-Session: https://claude.ai/code/$SESS"
         if [ "$got" -eq "$want" ]; then pass=$((pass+1)); printf '  ok    %-46s exit %s\n' "$name" "$got"
         else fail=$((fail+1)); printf '  FAIL  %-46s exit %s (wanted %s)\n' "$name" "$got" "$want"; fi; }
 
-    arm "a clean train"                    0 "$self" "$SESS"
+    arm "a clean train (union selector)"   0 "$self" --lane testlane --session "$SESS"
 
-    local out; out="$("$self" "$SESS" 2>&1)"
+    # THE TRANSITION IS THE POINT: each selector alone must find only its own branches, and
+    # the union must find both. A tool that swapped one marker for the other would pass a
+    # "finds my branches" arm while silently dropping everything from the other side of the
+    # changeover — which is exactly the failure this rewrite exists to prevent.
+    local s_only; s_only="$("$self" --session "$SESS" 2>&1)"
+    if printf '%s' "$s_only" | grep -q 'lane/a' && ! printf '%s' "$s_only" | grep -q 'lane/newer'; then
+        pass=$((pass+1)); printf '  ok    %-46s pre-change only\n' "--session alone"
+    else fail=$((fail+1)); printf '  FAIL  %-46s\n' "--session alone picked up a Lane-only branch"; fi
+    local lo; lo="$("$self" --lane testlane 2>&1)"
+    if printf '%s' "$lo" | grep -q 'lane/newer' && ! printf '%s' "$lo" | grep -q 'lane/a'; then
+        pass=$((pass+1)); printf '  ok    %-46s post-change only\n' "--lane alone"
+    else fail=$((fail+1)); printf '  FAIL  %-46s\n' "--lane alone picked up a session-only branch"; fi
+
+    local out; out="$("$self" --lane testlane --session "$SESS" 2>&1)"
+    if printf '%s' "$out" | grep -q 'lane/a' && printf '%s' "$out" | grep -q 'lane/newer'; then
+        pass=$((pass+1)); printf '  ok    %-46s both sides found\n' "union spans the changeover"
+    else fail=$((fail+1)); printf '  FAIL  %-46s\n' "union missed one side of the changeover"; fi
+    if printf '%s' "$out" | grep -q 'via Lane' && printf '%s' "$out" | grep -q 'via session'; then
+        pass=$((pass+1)); printf '  ok    %-46s reported per branch\n' "which marker matched"
+    else fail=$((fail+1)); printf '  FAIL  %-46s\n' "matched marker not reported"; fi
     if printf '%s' "$out" | grep -q 'EXCLUDED' && printf '%s' "$out" | grep -q 'store-archive'; then
         pass=$((pass+1)); printf '  ok    %-46s reported, not dropped\n' "non-lane branch EXCLUDED"
     else fail=$((fail+1)); printf '  FAIL  %-46s not reported\n' "non-lane branch EXCLUDED"; fi
@@ -236,18 +293,28 @@ Claude-Session: https://claude.ai/code/$SESS"
 
 Claude-Session: https://claude.ai/code/$SESS"
     git push -q origin lane/d; git checkout -q main; git fetch -q origin
-    arm "two branches conflicting"          4 "$self" "$SESS"
+    arm "two branches conflicting"          4 "$self" --lane testlane --session "$SESS"
 
-    arm "no trailer given"                  2 "$self" ""
-    arm "a trailer nothing carries"         2 "$self" "session_NOSUCH_zzz"
+    arm "no selector given"                 2 "$self" ""
+    arm "a selector nothing carries"        2 "$self" --lane nosuchlane
 
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
     [ "$fail" -eq 0 ]
 }
 
-case "${1:-}" in
-    --selftest) selftest ;;
-    "")         echo "usage: $0 <session-trailer-substring> | --selftest" >&2; exit 2 ;;
-    *)          train "$1" ;;
-esac
+SESS=""; LANE=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --selftest) selftest; exit $? ;;
+        --lane)     LANE="${2:-}"; shift 2 ;;
+        --session)  SESS="${2:-}"; shift 2 ;;
+        "")         shift ;;
+        *)          SESS="$1"; shift ;;   # legacy positional
+    esac
+done
+if [ -z "$SESS" ] && [ -z "$LANE" ]; then
+    echo "usage: $0 --lane <name> [--session <trailer>] | <session-trailer> | --selftest" >&2
+    exit 2
+fi
+train "$SESS" "$LANE"
