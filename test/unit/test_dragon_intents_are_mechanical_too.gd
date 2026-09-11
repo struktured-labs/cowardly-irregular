@@ -92,6 +92,17 @@ func _counter_rate(mid: String, intent_id: String) -> float:
 	var boss := _from_data(mid)
 	if intent_id != "":
 		boss.set_meta("llm_intent", intent_id)
+	# Suppress the phase-transition re-pick, or this measures an intent nobody asked
+	# for. _maybe_advance_boss_phase fires when new_phase > boss_dialogue_phase, and
+	# that meta starts at 0 — so the FIRST roll always transitions 0 -> 1, calls
+	# BossDialogue.pick_intent, and OVERWRITES llm_intent with a randomly chosen
+	# scripted intent. When that lands on a counter tag the remaining rolls counter
+	# at 0.3 x 2.0 = 0.6, which is why this file failed about 1 run in 6 with a
+	# measured 0.58 while claiming to measure "aggress". Diagnosed by printing the
+	# meta AFTER the rolls: the call requested aggress and ended holding
+	# rotate_aggro. Pinning the phase high means no transition, so the intent under
+	# test is the intent that rolls.
+	boss.set_meta("boss_dialogue_phase", 99)
 	var target := _victim()
 	# Array box, not an int: GDScript lambdas capture primitives BY VALUE, so
 	# `counters += 1` in the closure increments a copy and the caller reads 0
@@ -110,6 +121,14 @@ func _counter_rate(mid: String, intent_id: String) -> float:
 		if not action.is_empty():
 			seen_any += 1
 	assert_gt(seen_any, 0, "CONTROL: %s must produce actions at all, or nothing was driven" % mid)
+	# The rate above is only ABOUT intent_id if intent_id survived the rolls. Without
+	# this the file reported a confident number for an intent it was no longer
+	# driving, and failed as a flake rather than saying so.
+	if intent_id != "":
+		assert_eq(str(boss.get_meta("llm_intent", "")), intent_id,
+			("the boss's intent changed mid-measurement (%s -> %s), so this rate is not about %s. " +
+			"A phase transition re-picks it; see the boss_dialogue_phase pin above.")
+			% [intent_id, str(boss.get_meta("llm_intent", "")), intent_id])
 	return float(counters[0]) / float(ROLLS)
 
 
