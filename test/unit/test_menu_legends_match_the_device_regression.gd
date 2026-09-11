@@ -22,6 +22,8 @@ const CONVERTED := [
 	"res://src/ui/LensMenu.gd",
 	"res://src/ui/RadialPicker.gd",
 	"res://src/ui/MenuScene.gd",
+	"res://src/ui/CharacterCreationScreen.gd",
+	"res://src/ui/RebalanceReviewPanel.gd",
 ]
 
 
@@ -109,3 +111,34 @@ func test_hint_for_action_uses_the_name_table_on_a_pad() -> void:
 	# CONTROL: no device name = keyboard, so the seam is genuinely switching behaviour.
 	assert_eq(InputProfileManager.hint_for_action("battle_toggle_auto"), "Tab",
 		"CONTROL: with no pad and no override it must fall back to the keyboard key")
+
+## 🔴 AN ADVERTISED CONTROL THAT DID THE OPPOSITE. RebalanceReviewPanel's legend read
+## "[S/X] Dismiss ... [B/Esc] Close", and `_is_dismiss_event` really did accept KEY_X — but
+## `ui_cancel` binds X, its branch sits FIRST in _input and RETURNS, so X closed the entire review
+## panel. A player dismissing one suggestion lost the whole screen, and the X arm of the dismiss
+## check was unreachable dead code that made the binding look supported.
+func test_x_does_not_claim_to_dismiss_when_it_closes() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/RebalanceReviewPanel.gd")
+	assert_gt(src.length(), 100, "PRECONDITION: the panel must be readable")
+	# ui_cancel binds X — that is WHY the dismiss arm was unreachable.
+	var x := InputEventKey.new()
+	x.keycode = KEY_X
+	x.pressed = true
+	assert_true(InputMap.event_is_action(x, "ui_cancel"),
+		"PRECONDITION: X fires ui_cancel, which is what made the dismiss arm dead")
+	assert_false(src.contains("k == KEY_S or k == KEY_X"),
+		"the dismiss check must not accept X — ui_cancel claims it and closes the panel first")
+	assert_true(src.contains("k == KEY_S"),
+		"S must remain the keyboard dismiss, or the feature has no key at all")
+	assert_false(src.contains("[S/X] Dismiss"),
+		"and the legend must not advertise X for dismiss — it closes everything")
+
+
+## The Character Creation legend had the SAME inversion as the others, in the one screen every new
+## player sees before anything else.
+func test_character_creation_legend_is_derived() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/CharacterCreationScreen.gd")
+	assert_false(src.contains("[A/Z] Select"),
+		"the old label claimed A for Select; on Xbox and PlayStation Select is the EAST face")
+	assert_true(src.contains("hint_for_action(\"ui_menu\")"),
+		"Done is ui_menu, whose printed name varies per family (Plus / Start / Options)")
