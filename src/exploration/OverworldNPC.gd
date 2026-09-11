@@ -430,7 +430,7 @@ const _ARCHETYPE_FRAME_H: int = 32
 ## Load the archetype overworld sheet and slice the (facing_direction, frame 0)
 ## frame as a static portrait. Returns true on success, false on missing/bad asset.
 func _try_load_archetype_sprite(archetype: String) -> bool:
-	var path = "res://assets/sprites/npcs/%s/overworld.png" % archetype
+	var path = HybridSpriteLoader.npc_overworld_path(archetype)
 	if not ResourceLoader.exists(path):
 		return false
 	var tex = load(path) as Texture2D
