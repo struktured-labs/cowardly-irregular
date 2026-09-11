@@ -104,7 +104,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 - Visual: Screen flash, enhanced hit sound, damage number shake
 
 ### Battle UX
-- **Permanent input hint bar** at bottom-center of battle screen: `[L] Defer · [R] Advance · [+/-] Speed · [Select] Auto`
+- **Permanent input hint bar** at bottom-center of battle screen. It advertises four controls — **Defer · Advance · Speed · Auto** — and every button in it is **DERIVED per connected pad**, never written out. Do not "restore" a sample rendering here: this line used to read ``[L] Defer · [R] Advance · [+/-] Speed · [Select] Auto``, which was wrong twice over. `+/-` was bound to nothing (dead instruction, removed from the bar 2026-07-28, still documented here until 2026-09-11), and the other three are Nintendo names for buttons the other families call `LB/RB/Back` and `L1/R1/Share` — **`Select` exists on no Xbox, PlayStation or Switch pad.** Defer/Advance/Auto resolve through `InputProfileManager.hint_for_action()`; Speed is raw `JOY_BUTTON_Y`, so it uses `face_glyph_for_index`. Keyboard (no pad connected) gets its own bar: `` [L] Defer · [R] Advance · [`] Speed · [Tab] Auto ``.
 - Hidden during autogrind console mode
 - Inter-action delays scale with `Engine.time_scale` so 2x/4x speed actually plays faster (regression-tested)
 - Tutorial hints (TutorialHints catalog) fire once per session — the hint bar covers the long-term reference need
@@ -137,9 +137,11 @@ Each starter job has a free 0-cost AP action available in the command menu:
 - Cycle display for repeated actions (Attack ×3)
 
 ### Autobattle Editor Controls
+⚠️ The **Gamepad** column below uses **Nintendo/SNES names**, which is the layout this game targets — it is NOT what other families print on the plastic (`Select` = Xbox `Back` = PS `Share`; `L`/`R` = `LB`/`RB` = `L1`/`R1`; Confirm sits on the **EAST** face, so Nintendo `A` is Xbox `B` is PS `○`). Anything the PLAYER sees must be derived through `InputProfileManager.hint_for_action()`, never copied from this table.
+
 | Action | Gamepad | Keyboard |
 |--------|---------|----------|
-| Open editor | L+R together | F5 |
+| Open editor | **In battle:** Start — and only when NO character has autobattle on (if any is on, Start disables all instead). **In exploration:** menu → Autobattle row. Start does NOT open it outside battle; there it opens Settings | F5 (any state) |
 | Toggle ALL autobattle | Select | F6 |
 | Navigate grid | D-pad | Arrow keys |
 | Edit cell | A | Z |

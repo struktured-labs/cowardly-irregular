@@ -33,7 +33,56 @@ func _battle_ui_menu_branch() -> String:
 	assert_gt(start, handler, "the BATTLE arm must sit inside the ui_menu handler")
 	var stop := src.find("elif current_state == LoopState.EXPLORATION:", start)
 	assert_gt(stop, start, "the EXPLORATION arm must follow it — that is this branch's end")
-	return src.substr(start, stop - start)
+	return _code_only(src.substr(start, stop - start))
+
+
+## COMMENTS ARE NOT CODE, and this guard was HOLLOW without the distinction. Measured 2026-09-11:
+## delete the real `keycode in [KEY_ESCAPE, KEY_ENTER]` arm but leave a comment saying KEY_ENTER,
+## and find() returns the COMMENT — the ordering assert still holds and the file scores GREEN with
+## Enter opening the editor again. Arm 1 (drop KEY_ENTER outright) was caught; only the commented
+## form survived, which is the realistic shape, because that is what a person leaves behind when
+## they remove a branch. Same discriminator as _frozen_code_lines in the interact-prompt ratchet;
+## I fixed it there and left it here — @cowir-autogrind hit the identical bare-find() class today.
+## ⛔ A THIRD COSTUME. My first fix blanked FULL-LINE comments only, so
+## `keycode in [KEY_ESCAPE]:  # KEY_ENTER dropped for now` was still hollow — measured, EC=0.
+## @cowir-overworld named it before I tested it. Trailing comments must go too, and the cut has to
+## be quote-aware or a `#` inside a string literal would truncate real code.
+func _code_only(text: String) -> String:
+	var out := ""
+	for raw in text.split("\n"):
+		out += _strip_comment(raw) + "\n"   # line count preserved so substr offsets stay comparable
+	return out
+
+
+## ⛔ THIS WAS A LOOK-BEHIND AND THAT WAS THE BUG, NOT ANY OF ITS SIX PATCHES.
+## `c == quote and line[i-1] != "\\"` asks "was the previous character an escape?" — a question
+## with NO LOCAL ANSWER, because that backslash may itself have been escaped, and deciding THAT
+## needs the character before it, and so on. @cowir-autogrind: *it is not a fixable predicate;
+## each fix pushes the ambiguity one character left. Six costumes is what that looks like from
+## inside.* @cowir-overworld reached the same conclusion independently.
+##
+## A FORWARD state machine carries the answer instead of re-deriving it: the character after a
+## backslash is consumed whatever it is, so `\\` is eaten as a pair and the closing quote is seen.
+## The costume is retired BY CONSTRUCTION — which beats a seventh arm, and beats the arm I added
+## an hour ago that merely NOTICED the corpus was still safe.
+func _strip_comment(line: String) -> String:
+	var esc := false
+	var quote := ""
+	for i in range(line.length()):
+		var c := line[i]
+		if esc:
+			esc = false
+			continue
+		if c == "\\":
+			esc = true
+		elif quote != "":
+			if c == quote:
+				quote = ""
+		elif c == "\"" or c == "'":
+			quote = c
+		elif c == "#":
+			return line.substr(0, i)
+	return line
 
 
 func _keys_for(action: String) -> Array[String]:
@@ -96,3 +145,37 @@ func test_battlescene_still_claims_enter_reopens_the_menu() -> void:
 	assert_gt(idx, -1,
 		"BattleScene must still list Enter among the keys that reopen the command menu — " +
 		"that claim is what makes GameLoop eating Enter a defect rather than a preference")
+
+
+## THE STRIPPER'S OWN UNIT TEST. @cowir-sfx cut at the first `#` on a line and lost real calls to
+## `[color=#44ff44]` / `"BATTLE #%d"` — 84 lines in src/ carry a `#` inside a string. Mine is
+## quote-aware BY CONSTRUCTION, which is exactly the kind of claim this session kept disproving, so
+## it is pinned rather than reasoned. Both directions: it must cut comments AND keep code.
+func test_the_comment_stripper_cuts_comments_and_keeps_code() -> void:
+	# KEEP: a '#' inside a string literal is data, not a comment.
+	assert_eq(_strip_comment("\tvar s = \"[color=#44ff44]hi\""), "\tvar s = \"[color=#44ff44]hi\"",
+		"a # inside double quotes must NOT truncate — @cowir-sfx lost real calls this way")
+	assert_eq(_strip_comment("\tvar s = 'BATTLE #%d'"), "\tvar s = 'BATTLE #%d'",
+		"single quotes too")
+	assert_eq(_strip_comment("\tvar s = \"it's fine\"  # trailing"), "\tvar s = \"it's fine\"  ",
+		"an apostrophe INSIDE double quotes must not open a quote state and swallow the comment")
+	# @cowir-overworld's FIFTH costume: a '#' INSIDE a string followed by a REAL comment. Their
+	# version checked quote parity before find("#") and bailed when odd, keeping the comment.
+	assert_eq(_strip_comment("\tvar _hex := \"#ff0000\"  # _open_settings_menu() used to run here"),
+		"\tvar _hex := \"#ff0000\"  ",
+		"a # in a string must not disarm the cut for a REAL comment later on the same line")
+	# CUT: real comments, leading and trailing.
+	assert_eq(_strip_comment("# whole line"), "", "a full-line comment must go")
+	assert_eq(_strip_comment("\tcode()  # tail"), "\tcode()  ", "a trailing comment must go")
+	# THE SIXTH COSTUME, now retired by construction rather than noticed. Built from parts because
+	# a literal with four backslashes is exactly the kind of thing that goes wrong silently.
+	var bs := "\\"                                    # one backslash
+	var tricky := "var q := \"a" + bs + bs + "\"  # _open_settings_menu()"
+	assert_eq(_strip_comment(tricky), "var q := \"a" + bs + bs + "\"  ",
+		"a string ENDING in an escaped backslash must still close, so the real comment after it is " +
+		"cut — the look-behind form kept that comment and the pin went hollow")
+	assert_eq(_strip_comment("\tvar q := \"a" + bs + "\"b\"  # tail"), "\tvar q := \"a" + bs + "\"b\"  ",
+		"and an escaped QUOTE must NOT close the string — the case the look-behind did handle")
+	# The line the guard actually reads must survive untouched.
+	var real := "\t\t\tif event is InputEventKey and event.keycode in [KEY_ESCAPE, KEY_ENTER]:"
+	assert_eq(_strip_comment(real), real, "the real guard line has no comment and must be preserved")
