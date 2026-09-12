@@ -1757,6 +1757,15 @@ func _show_hint(hint_id: String, text: String) -> void:
 	log_message("[color=gray][i]Tip: %s[/i][/color]" % text)
 
 
+## Re-render the static hint bar for whatever the player is holding NOW.
+func _refresh_input_hint_bar(_connected: bool = true) -> void:
+	if not is_instance_valid(self):
+		return
+	var lbl := find_child("HintLabel", true, false)
+	if lbl and lbl is Label:
+		(lbl as Label).text = Win98Menu.hint_text()
+
+
 func _build_input_hint_bar() -> void:
 	"""Permanent input-hint bar at the bottom-center of the battle UI.
 	   Shows L1/R1 shoulder shortcuts so players who missed the
@@ -1794,6 +1803,9 @@ func _build_input_hint_bar() -> void:
 	# and keyboard (L/R keys per InputMap).
 	# One source for the bar; a second literal here drifted from Win98Menu's once already.
 	label.text = Win98Menu.hint_text()
+	# ...and re-derived when the pad arrives or leaves, not only when the bar is first built.
+	if InputProfileManager and not InputProfileManager.input_device_changed.is_connected(_refresh_input_hint_bar):
+		InputProfileManager.input_device_changed.connect(_refresh_input_hint_bar)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95, 0.95))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
