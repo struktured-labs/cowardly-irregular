@@ -40,6 +40,8 @@ func _read(p: String) -> String:
 ## CutsceneDialogue.gd carries 8 triple-quote delimiters, so `#`-only stripping is NOT enough here.
 ## `must_survive` is REQUIRED, not optional: it is the control that an over-strip did not eat the code.
 func _code_only(path: String, must_survive: String) -> String:
+	# REQUIRED is not SUPPLIED: contains("") is true, so a blank control asserts nothing.
+	assert_false(must_survive.is_empty(), "the positive control must name a real code site, not \"\"")
 	var raw := _read(path)
 	assert_true(raw.contains(must_survive),
 		"ANTI-VACUITY: %s does not contain %s at all — the arm below would pass on an empty read" % [path, must_survive])
