@@ -406,6 +406,51 @@ else
     exit 4
 fi
 
+# ── 0d. the SHELL guards check themselves too ────────────────────────────────
+# Gates 0/0b/0c run three .py guards' selftests. The shell tools on this same path had none
+# run by anything — 13 of them carry a --selftest and nothing ever executed one.
+#
+# ⛔ THE LIST IS EXPLICIT ON PURPOSE. The tempting version discovers it: every tools/*.sh
+# containing "--selftest". Do not. `reap_release_worktrees.sh --selftest` used to run a
+# repo-global `git worktree prune`, which deregisters ANY worktree whose directory is
+# momentarily absent — ~134 of them here, nearly all other lanes'. Discovery would have run
+# that as a side effect of checking that a guard works. A selftest is arbitrary code this
+# script did not write, and `--selftest` is a naming convention, not a safety contract, so
+# running one is a decision this file OWNS rather than one it derives. (@cowir-adhoc)
+#
+# MEMBERSHIP RULE for the list: the publish chain actually EXECUTES the tool, and its
+# selftest is cheap. Derived by walking what publish_all/deploy_* invoke BY BASENAME with
+# comments stripped — a literal `tools/x.sh` pattern both invents names out of fixture
+# strings and misses `$(dirname "$0")/deploy_desktop.sh`, so it got the corpus wrong in both
+# directions before this was checked against what the .340 logs show actually ran.
+#
+# NOT LISTED, each named with its reason rather than quietly dropped:
+#   verify_store_artifact.sh  on-path, selftest 36.13s — half a chain to check the read-back
+#   publish_detached.sh       19.32s, and it has already done its job before this runs
+#   check_fold_train.sh · rehearse_publish.sh · reap_release_worktrees.sh   OFF the chain
+#   publish_all.sh            has NO selftest — it appears in greps for "--selftest" only
+#                             because it invokes others', which is how it got miscounted
+# Total added: ~2.6s against a chain that runs 45s-45min.
+_SH_SELFTESTS="artifact_identity.sh build_sha.sh check_import_ok.sh check_masters_untouched.sh
+check_profile_untouched.sh check_version_matches_tag.sh pck_cache_report.sh store_status.sh
+tag_gate_evidence.sh"
+for _t in $_SH_SELFTESTS; do
+    if [ ! -x "tools/$_t" ]; then
+        echo "[pub] BLOCKED: tools/$_t missing or not executable — it is on the publish path" >&2
+        echo "      and nothing has checked that it still works. A missing guard is not a" >&2
+        echo "      passing one." >&2
+        exit 4
+    fi
+    if ! _ST=$(./tools/"$_t" --selftest 2>&1); then
+        printf '%s\n' "$_ST" | tail -25 >&2
+        echo "[pub] BLOCKED: tools/$_t FAILED ITS OWN SELFTEST. It runs on this publish path," >&2
+        echo "      so its output cannot be trusted for this build. A present guard is not a" >&2
+        echo "      working one." >&2
+        exit 4
+    fi
+    echo "[pub] selftest ok: tools/$_t — arms ran and passed"
+done
+
 # ── 1. tag evidence ──────────────────────────────────────────────────────────
 # The token is required. Absence of a SKIP is NOT a failure here — it means the chains will
 # run the suite sandboxed, which is correct and merely slower. Only report it.
