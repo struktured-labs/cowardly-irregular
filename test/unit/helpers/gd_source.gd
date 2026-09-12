@@ -16,7 +16,12 @@ extends RefCounted
 ##
 ## ⚠️ THE SPLIT IS PARITY, NOT A STATE MACHINE. cowir-adhoc lost five verdicts to a stripper
 ## whose docstring toggle parsed as `A or (B and C)`; the state desynced and swallowed whole
-## files as prose. Nothing here carries state across a delimiter, so there is nothing to desync.
+## files as prose. Nothing here carries state across a delimiter.
+##
+## ⛔ BUT "NOTHING TO DESYNC" WAS TRUE OF THE SPLIT AND FALSE OF THE PIPELINE, and the first
+## version of this header said it flatly. Running the `#` pass SECOND was itself the state
+## dependency I claimed not to have: a fence hidden in a comment flipped parity for the rest of
+## the file. Fixed in split() below, where the order is now the whole point.
 ##
 ## ⚠️ AND A STRIPPER IS AN INSTRUMENT TOO: over-stripping and a correct strip are the same green.
 ## Every caller MUST assert a known code site survives — `split()` returns both halves so the
@@ -30,7 +35,19 @@ extends RefCounted
 
 ## {"code": <outside every docstring, comments stripped>, "doc": <inside them>}
 static func split(body: String) -> Dictionary:
-	var parts: PackedStringArray = body.split("\"\"\"")
+	## ⛔ ORDER IS LOAD-BEARING, AND THIS SHIPPED THE WRONG WAY ROUND. A `"""` inside a `#`
+	## comment flips parity for the whole rest of the file, so splitting first loses real code
+	## from the code half AND leaks prose into it — both directions from one flip. Measured on
+	## this helper (cowir-sprites, 2026-09-12): `var x` and `var y` both absent, the docstring
+	## text present. Stripping comments first removes the false fence before parity ever sees it.
+	##
+	## ⚠️ THE COST, measured rather than waved past: `strip_comments` then also runs inside
+	## docstring regions, so a `#` there truncates that line in the `doc` half. Four such lines
+	## exist in src/ today — two prose ("principle #7", "Cadence #14") and two hex colours, which
+	## are inside string literals and therefore survive the quote-aware pass anyway. None carries
+	## a token any consumer asserts. A parity flip is the worse failure and the only one with two
+	## directions, so this is the right trade — but it IS a trade.
+	var parts: PackedStringArray = strip_comments(body).split("\"\"\"")
 	var code: PackedStringArray = []
 	var doc: PackedStringArray = []
 	for i in parts.size():
@@ -38,7 +55,7 @@ static func split(body: String) -> Dictionary:
 			code.append(parts[i])
 		else:
 			doc.append(parts[i])
-	return {"code": strip_comments("\n".join(code)), "doc": "\n".join(doc)}
+	return {"code": "\n".join(code), "doc": "\n".join(doc)}
 
 
 static func code_of(path: String) -> String:
