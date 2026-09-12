@@ -1987,8 +1987,12 @@ func _grind_console_controls() -> String:
 	out += ("%s:Turbo " % turbo) if turbo != "" else "Y:Turbo "
 	out += ("%s+%s:Tier " % [lb, rb]) if lb != "" and rb != "" else "T:Tier "
 	out += ("%s:Exit" % quit_tok) if quit_tok != "" else "X/Esc:Exit"
-	## Pause is KEY_P with no pad binding in the AUTOGRIND arms — a pad player cannot press it, so
-	## the token is dropped rather than advertised.
+	## Pause USED to be KEY_P only, so this token was dropped for pad players on purpose — "a pad
+	## player cannot press it, so do not advertise it". .328 bound it to battle_toggle_auto in
+	## GameLoop's AUTOGRIND branch, and that comment silently became false: the control existed and
+	## this line hid it. Derived from the action so a Controls rebind moves the caption with it.
+	var pause_tok: String = ipm.hint_for_action("battle_toggle_auto")
+	out += ("  %s:Pause" % pause_tok) if pause_tok != "" else "  P:Pause"
 	return out
 
 
