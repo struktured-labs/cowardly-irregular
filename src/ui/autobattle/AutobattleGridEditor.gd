@@ -3356,7 +3356,10 @@ func _paste_share_code() -> void:
 		return
 	var data := ScriptShareManager.decode_share_code(code)
 	if data.is_empty():
-		_flash_status("Not a valid share code", Color.YELLOW)
+		## "Not a valid share code" is wrong for the commonest refusal: a well-formed code that uses
+		## a condition this build does not know. Say which, when the decoder knows.
+		var decode_why := ScriptShareManager.last_import_reason()
+		_flash_status(decode_why if decode_why != "" else "Not a valid share code", Color.YELLOW)
 		SoundManager.play_ui("menu_error")
 		return
 	if ScriptShareManager.apply_character_script(character_id, data):
