@@ -34,21 +34,32 @@ func test_setter_writes_current_world() -> void:
 
 # ── Source pin: world helper has all 6 world arms ───────────────────
 
+## 2026-09-12: was a SOURCE-SHAPE pin — it required the literal text `return 2` … `return 6`
+## inside the function body. That is a claim about how the helper is WRITTEN, and it redded
+## on a refactor that changed nothing about what the helper ANSWERS: the arms became one
+## prefix table so the resolver and `_map_id_declares_its_world` could not drift apart.
+## A guard that reds on correct work is how suppression entries get written, so this now
+## asserts the same claim against the table both functions read.
 func test_helper_covers_all_six_worlds() -> void:
-	var src := _read(GAME_LOOP_PATH)
-	var fn_idx: int = src.find("func _get_world_for_map")
-	assert_gt(fn_idx, -1)
-	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
-	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
-	# Every world (2-6) has an explicit return, with W1 as fallback.
-	for w in [2, 3, 4, 5, 6]:
-		assert_true(body.contains("return %d" % w),
-			"Helper must include a return %d arm for that world's map ids" % w)
-	# W1 is the fallback — verified by the absence of any condition before
-	# the final return 1.
-	var final_return_idx: int = body.rfind("return 1")
-	assert_gt(final_return_idx, -1,
-		"Helper must end with return 1 (W1 fallback)")
+	var gl_script: GDScript = load(GAME_LOOP_PATH)
+	var gl: Object = gl_script.new()
+	var worlds := {}
+	for entry in gl.WORLD_PREFIXES:
+		worlds[int(entry[1])] = true
+	for w in [1, 2, 3, 4, 5, 6]:
+		assert_true(worlds.has(w),
+			"no map-id prefix resolves to World %d — that world's ids would fall to the W1 default" % w)
+	# W1 must be REACHABLE BY NAME, not only as the fallback. That is the distinction the
+	# interior fix turns on: `scriptura_guild -> 1` used to be the default firing, which is
+	# indistinguishable from "this id names no world at all".
+	assert_true(gl._map_id_declares_its_world("harmonia_chapel"),
+		"a named World 1 room must MATCH, not default — otherwise W1 and 'unknown' are the same answer")
+	assert_false(gl._map_id_declares_its_world("inn_interior"),
+		"a room reused across eleven villages must name no world, or it stops borrowing its village's")
+	# The old contract survives for callers that only want a number.
+	assert_eq(gl._get_world_for_map("__nonsense_id__"), 1,
+		"an unrecognised id still answers W1")
+	gl.free()
 
 
 # ── Behavioral: known per-world map_ids map correctly ───────────────

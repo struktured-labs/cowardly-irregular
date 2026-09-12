@@ -92,10 +92,25 @@ func test_entering_any_interior_preserves_the_villages_world() -> void:
 	assert_gt(interiors.size(), 0, "interior corpus is non-empty — zero would pass this for free")
 
 	var checked := 0
+	# 2026-09-12: the corpus is the rooms that NAME NO WORLD, which is what this file's
+	# own docstring is about — "generic village-scene interiors reused across all 11
+	# villages". It used to sweep every interior x every origin, a cross product holding
+	# routes that do not exist (harmonia_village -> rivet_row_union_hall is a door inside
+	# Rivet Row) and asserting the origin outranks a room's own name. A room that names
+	# its world is in that world however you arrived; only a nameless one borrows.
+	var borrowers: Array = []
+	for raw in interiors:
+		if not _gl._map_id_declares_its_world(str(raw)):
+			borrowers.append(str(raw))
+	assert_gt(borrowers.size(), 0,
+		"no interior borrows its world any more — every id now names one, so this sweep is vacuous and the origin fallback is dead code")
+	assert_true("inn_interior" in borrowers,
+		"inn_interior must still be a borrower; it is the canonical one-id-eleven-villages room")
+
 	var offenders: Array = []
 	for village in ORIGINS:
 		var expected: int = int(ORIGINS[village])
-		for raw in interiors:
+		for raw in borrowers:
 			var interior := str(raw)
 			_gl._village_origin_id = village
 			_gl._set_current_map_id(interior)
@@ -104,8 +119,8 @@ func test_entering_any_interior_preserves_the_villages_world() -> void:
 			if got != expected:
 				offenders.append("%s -> %s gave W%d, expected W%d" % [village, interior, got, expected])
 
-	assert_eq(checked, ORIGINS.size() * interiors.size(),
-		"drove every origin x interior pair — a short count means the loop died partway and the rest were never tested")
+	assert_eq(checked, ORIGINS.size() * borrowers.size(),
+		"drove every origin x borrowing-interior pair — a short count means the loop died partway and the rest were never tested")
 	assert_true(offenders.is_empty(),
 		"%d of %d interior entries reported the wrong world:\n  %s" % [
 			offenders.size(), checked, "\n  ".join(offenders)])
@@ -172,3 +187,44 @@ func test_walking_from_a_village_into_a_shared_shop_keeps_the_world() -> void:
 	_gl._set_current_map_id("shop_interior_item")
 	assert_eq(int(GameState.current_world), 3,
 		"inside the shop, still world 3 — a shared interior id resolves through the recorded origin, not through its own name")
+
+
+## THE OTHER HALF, added 2026-09-12: a room that NAMES its world keeps it, whatever you
+## arrived from. TeleportMenu lists scriptura_guild and scriptura_bookshop as direct
+## destinations, and `_village_origin_id` records the map you came FROM — right for exit
+## routing, wrong for identity. Arriving in a World 1 guild from the industrial overworld
+## reported World 4, which dressed the party in industrial costume (HybridSpriteLoader
+## reads current_world) and played W4's battle bed in a W1 room.
+func test_a_named_interior_keeps_its_own_world_however_you_arrived() -> void:
+	var cases := {
+		"scriptura_guild": 1,
+		"harmonia_chapel": 1,
+		"rivet_row_union_hall": 4,
+		"maple_garage_sale": 2,
+		# TeleportMenu lists this one with an empty `section`, i.e. unconditionally, so a
+		# player can arrive from any world — the borrow was a LIVE wrong answer, not a
+		# latent one (@cowir-overworld). Its id shares no prefix with its village.
+		"enrichment_annex": 2,
+	}
+	for room in cases:
+		assert_true(_gl._map_id_declares_its_world(str(room)),
+			"%s must name its own world, or this arm is asserting the borrow path by accident" % room)
+		for village in ORIGINS:
+			_gl._village_origin_id = village
+			_gl._set_current_map_id(str(room))
+			assert_eq(int(GameState.current_world), int(cases[room]),
+				"%s entered from %s reported W%d; a room that names its world keeps it" % [
+					room, village, int(GameState.current_world)])
+
+
+## The borrow path must still be REACHED — the fix narrows it and must not delete it.
+## Same room, two villages, two worlds.
+func test_a_nameless_room_still_borrows_from_the_village() -> void:
+	assert_false(_gl._map_id_declares_its_world("inn_interior"),
+		"inn_interior names no world — if it ever does, the borrow path has one less user and this arm must move")
+	_gl._village_origin_id = "rivet_row_village"
+	_gl._set_current_map_id("inn_interior")
+	assert_eq(int(GameState.current_world), 4, "the inn in Rivet Row is World 4, not World 1")
+	_gl._village_origin_id = "brasston_village"
+	_gl._set_current_map_id("inn_interior")
+	assert_eq(int(GameState.current_world), 3, "the same id in Brasston is World 3")
