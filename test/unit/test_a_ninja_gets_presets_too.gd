@@ -116,12 +116,19 @@ func test_the_deep_check_would_have_caught_an_unguarded_cost() -> void:
 
 
 func test_no_preset_rule_can_fire_forever() -> void:
-	## The property this whole catalog waited on, and it is checked across EVERY job's presets, not
-	## just mine — a self-buff rule with nothing to test against re-fires the turn after it lands and
-	## buries every rule below it. Derived from abilities.json so a future preset is covered too.
+	## The property this whole catalog waited on, checked across EVERY job's presets, not just mine.
+	##
+	## ⚠️ WIDENED 2026-09-12. It used to examine `target_type == "self"`, which was a PROXY for the
+	## thing that matters and missed half of it. What makes a re-cast a wasted turn is that the
+	## ability does NOTHING BUT apply the status — an enemy debuff is the same defect facing
+	## outward, and `not_enemy_has_status` did not exist when this was written. Damage abilities
+	## with a status rider (riff, shield_bash) are deliberately excluded: re-casting one still
+	## deals its damage, so it is a choice, not a stall.
 	var abilities: Dictionary = _json("res://data/abilities.json")
 	abilities = abilities.get("abilities", abilities)
 	var examined: int = 0
+	var self_seen: int = 0
+	var enemy_seen: int = 0
 	var unguarded: Array = []
 	for t in _all_templates():
 		for r in ((t as Dictionary).get("rules", []) as Array):
@@ -131,28 +138,49 @@ func test_no_preset_rule_can_fire_forever() -> void:
 				if str(ad.get("type", "")) != "ability":
 					continue
 				var def: Dictionary = abilities.get(str(ad.get("id", "")), {})
-				if str(def.get("target_type", "")) != "self":
-					continue
 				var effect: String = str(def.get("effect", ""))
 				if effect == "":
 					continue
+				## Does it do anything besides apply the status? If so, a repeat is not a stall.
+				if def.has("damage_multiplier") or def.has("power"):
+					continue
+				var target: String = str(def.get("target_type", ""))
+				var at_self: bool = target == "self"
+				var at_enemy: bool = target in ["all_enemies", "single_enemy"]
+				if not (at_self or at_enemy):
+					continue
 				examined += 1
+				if at_self:
+					self_seen += 1
+				else:
+					enemy_seen += 1
 				var guarded: bool = false
 				for c in conds:
 					var cd: Dictionary = c
-					if str(cd.get("type", "")) == "not_has_status" and str(cd.get("status", "")) == effect:
+					var ctype: String = str(cd.get("type", ""))
+					## The non-repeat must name THIS status — a guard on some other status bounds
+					## nothing. Sides matter too: the caster's own statuses answer for a self buff,
+					## the field's for a debuff.
+					if at_self and ctype == "not_has_status" and str(cd.get("status", "")) == effect:
 						guarded = true
-					## A stat buff is the other shape of the same guard, and the one the older
-					## presets use — accept either, so this arm never forces the wrong instrument.
-					if str(cd.get("type", "")) == "not_has_buff":
+					if at_enemy and ctype == "not_enemy_has_status" and str(cd.get("status", "")) == effect:
+						guarded = true
+					## A stat buff is the other shape of the same guard, used by the older presets.
+					if ctype == "not_has_buff":
+						guarded = true
+					## A turn gate bounds it too — `turn == 1` fires once and can never repeat. It
+					## is weaker (it cannot re-arm when the status lapses) but it is not a stall.
+					if ctype == "turn":
 						guarded = true
 				if not guarded:
-					unguarded.append("%s -> %s (%s)" % [str((t as Dictionary).get("id", "")), str(ad.get("id", "")), effect])
-	assert_gt(examined, 2, "CONTROL: self-buff rules were actually found to examine (%d) — without this "
-		% examined + "the arm passes by finding nothing, which is exactly how it would fail")
+					unguarded.append("%s -> %s (%s, %s)" % [str((t as Dictionary).get("id", "")),
+						str(ad.get("id", "")), effect, target])
+	assert_gt(self_seen, 2, "CONTROL: self-buff rules were found to examine (%d)" % self_seen)
+	assert_gt(enemy_seen, 2, "CONTROL: ENEMY-debuff rules were found too (%d) — this is the half the "
+		% enemy_seen + "old self-only predicate could not see, so without it the widening is inert")
 	assert_eq(unguarded.size(), 0,
-		"a preset casts a self-status with nothing to stop it re-casting; it will bury every rule "
-		+ "below it: " + str(unguarded))
+		"a preset applies a status with nothing to stop it re-applying, and the ability does nothing "
+		+ "else — the turn is spent and every rule below it is unreachable: " + str(unguarded))
 
 
 func test_every_preset_ends_in_an_unconditional_rule() -> void:
@@ -257,3 +285,49 @@ func test_the_balanced_preset_really_rotates_in_the_executor() -> void:
 		+ "Ninja had no presets before .307")
 	c.remove_status("shadow_step")
 	assert_eq(pick.call(), "shadow_step", "turn 3: it lapsed, so set up again")
+
+
+func test_the_defensive_opener_watches_the_room_not_the_clock() -> void:
+	## Shipped gated on `turn == 1`, because when these presets were authored the grammar had no
+	## negation for an ENEMY status — so "blind them while they can still see" was unsayable and the
+	## opener could only fire once per fight, never re-arming when the blind lapsed. That limit was
+	## flagged in the commit rather than designed around; `not_enemy_has_status` (.313) closed it.
+	if _bm == null or _abs == null:
+		pass_test("no battle autoloads in this harness")
+		return
+	var preset: Dictionary = {}
+	for t in _mine():
+		if str((t as Dictionary).get("id", "")) == "ninja_defensive":
+			preset = t
+	assert_false(preset.is_empty(), "CONTROL: the defensive preset was found to install")
+
+	var c := Combatant.new()
+	c.initialize({"name": "Opener Ninja", "max_hp": 850, "max_mp": 45,
+		"attack": 140, "defense": 80, "magic": 80, "speed": 18})
+	c.job = JobSystem.get_job(JOB)
+	c.job_level = 10
+	add_child_autofree(c)
+	var foe := Combatant.new()
+	foe.initialize({"name": "Opener Foe", "max_hp": 99999, "max_mp": 0,
+		"attack": 1, "defense": 999, "magic": 1, "speed": 1})
+	add_child_autofree(foe)
+	_bm.player_party.clear()
+	_bm.enemy_party.clear()
+	_bm.player_party.append(c)
+	_bm.enemy_party.append(foe)
+
+	var cid: String = _abs._get_character_id(c)
+	_fixture_ids.append(cid)
+	_abs.set_character_script(cid, {"character_id": cid, "name": "Defensive",
+		"rules": (preset.get("rules", []) as Array)})
+	var pick := func() -> String:
+		var a: Dictionary = _abs.execute_grid_autobattle(c)[0]
+		return str(a.get("ability_id", "")) if str(a.get("type", "")) == "ability" else str(a.get("type", ""))
+
+	assert_eq(pick.call(), "smoke_bomb", "nobody is blinded yet, so blind the room")
+	foe.add_status("blind", 2)
+	assert_eq(pick.call(), "attack", "the room is blind — do not spend the turn re-blinding it")
+	foe.remove_status("blind")
+	assert_eq(pick.call(), "smoke_bomb",
+		"and it RE-ARMS when the blind lapses, which a `turn == 1` gate could never do — that is "
+		+ "the whole difference between watching the room and watching the clock")

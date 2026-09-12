@@ -1219,14 +1219,34 @@
         {
           "conditions": [
             {
-              "type": "always"
+              "type": "not_enemy_has_status",
+              "status": "sleep"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 19
             }
           ],
           "actions": [
             {
               "type": "ability",
               "id": "lullaby",
-              "target": "highest_atk_enemy"
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
             }
           ],
           "enabled": true
@@ -1304,6 +1324,10 @@
         },
         {
           "conditions": [
+            {
+              "type": "not_enemy_has_status",
+              "status": "sleep"
+            },
             {
               "type": "enemy_count",
               "op": ">=",
@@ -1647,9 +1671,8 @@
         {
           "conditions": [
             {
-              "type": "turn",
-              "op": "==",
-              "value": 1
+              "type": "not_enemy_has_status",
+              "status": "blind"
             },
             {
               "type": "mp_percent",
