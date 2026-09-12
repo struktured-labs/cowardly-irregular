@@ -133,7 +133,20 @@ func test_every_key_the_branch_binds_is_advertised() -> void:
 	var silent: Array = []
 	for k in bound:
 		if not advertised.has(k):
-			silent.append(k)
+			## ⛔ This appended a BARE LETTER — a reader failing this arm got `["G"]` and nothing else.
+			## @cowir-story measured why that is structural rather than untidy: GUT's _extract_line_number
+			## builds its locator from get_stack(), which is debugger-backed and returns EMPTY under the
+			## headless runner, so EVERY failing assert in the suite prints `at line -1`. The builder is
+			## the whole message by construction. Name the binding site and the fix, not just the key.
+			## ⚠️ Both paths, per @cowir-battle: a wrong remedy is worse than none, because it is an
+			## INSTRUCTION. "Add a row" is right for a player-facing binding and wrong for a debug key
+			## — and this arm has no exemption mechanism, so naming only the first would push someone
+			## into advertising a debug key to players rather than telling me the arm needs widening.
+			silent.append(("KEY_%s is bound in GameLoop's LoopState.AUTOGRIND branch and no reference " +
+				"row names it. FIX: if a player should know about it, add its row in " +
+				"AutogrindInputHelper.grind_reference_rows. If it is deliberately not player-facing " +
+				"(debug, internal), this arm needs an exemption carrying that reason — do not add a " +
+				"row for it, and do not delete the binding to clear this.") % k)
 	assert_eq(silent, [],
 		("the AUTOGRIND branch binds a key the reference never names — that is exactly how turbo, " +
 		"tier and pause became an undocumented mode: %s") % [silent])
