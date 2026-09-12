@@ -239,13 +239,64 @@ func test_frost_armor_still_promises_a_reflection_it_does_not_perform() -> void:
 		"the reflect status is gone from the engine — frost_armor's missing half is now missing for everyone, which is a different and larger finding")
 
 
+## CODE ONLY — BOTH HALVES, because this file's arms are PRESENCE ASSERTS and prose satisfies
+## a presence assert exactly as well as code does.
+##
+## The risk, MEASURED rather than asserted — and my first version of this paragraph was wrong,
+## which is why the measurement is here instead of the reasoning. The arm asserts `hr` does NOT
+## contain the token, and the token it looks for is QUOTED:
+##
+##     # TODO: honour effect_chance here            raw read -> still GREEN. Not the exposure.
+##     # TODO: read the "effect_chance" key here    raw read -> RED, "GOOD NEWS: the headless
+##                                                  resolver now reads effect_chance… re-measure
+##                                                  the 13/45/5 split"
+##     …same comment, stripped                      GREEN
+##
+## So a bare mention is harmless and a QUOTED one is not — and quoting a key name in a comment
+## is an ordinary thing to write. cowir-autogrind is wiring effect_chance into the grind now, so
+## the collision is near-term rather than theoretical. The failure is in the GOOD-NEWS
+## direction, which is the bad one here: the message instructs the reader to update a count,
+## and they would update it from prose.
+##
+## TWO HALVES, because either alone leaves the hole (cowir-overworld's split, cowir-autogrind's
+## retraction of "strip by line, never with a state machine"):
+##   `#` lines      line-addressable  -> stateless line drop, nothing to desync
+##   `"""` regions  NOT line-addressable, and both files use them (BattleManager 94 delimiter
+##                  lines, HeadlessBattleResolver 4). A `#`-only strip cannot touch a docstring,
+##                  which is the .325 defect verbatim.
+##
+## The region half splits on the delimiter and keeps alternate chunks — no toggle, no state, so
+## it cannot desync the way my own precedence-bugged state machine did an hour ago (`A or (B and
+## C)` swallowed five files whole and reported five confident false positives). It also cannot
+## answer "is this line inside a region", which this file never asks.
+func _code_only(raw: String) -> String:
+	var no_lines: PackedStringArray = []
+	for line in raw.split("\n"):
+		if not line.strip_edges().begins_with("#"):
+			no_lines.append(line)
+	var chunks: PackedStringArray = "\n".join(no_lines).split("\"\"\"")
+	var kept: PackedStringArray = []
+	for i in chunks.size():
+		if i % 2 == 0:
+			kept.append(chunks[i])
+	return "\n".join(kept)
+
+
 ## The two-engine split above is prose, and prose rots. This makes it a checked fact: both
 ## engines must be IN the corpus, and the corpus must be able to tell them apart. Named
 ## members, not counts — a count reds when someone correctly wires a key into the grind,
 ## which is the good direction and must not be a failure.
 func test_the_corpus_holds_two_engines_and_can_tell_them_apart() -> void:
-	var bm: String = FileAccess.get_file_as_string(BATTLE_MANAGER)
-	var hr: String = FileAccess.get_file_as_string("res://src/autogrind/HeadlessBattleResolver.gd")
+	var bm: String = _code_only(FileAccess.get_file_as_string(BATTLE_MANAGER))
+	var hr: String = _code_only(FileAccess.get_file_as_string("res://src/autogrind/HeadlessBattleResolver.gd"))
+	# POSITIVE CONTROL ON THE STRIPPER ITSELF. An over-aggressive strip and a correct one are
+	# the same green: every `contains` below would read false and every assert_false would pass.
+	# A known CODE site must survive, in each file, or the strip is measuring an empty string.
+	assert_true(bm.contains("func _check_one_shot"),
+		"the comment/docstring strip removed a known CODE site from BattleManager — every presence assert below is now reading prose-free nothing, and the assert_false arms would pass for that reason alone")
+	assert_true(hr.contains("func _resolve_ability"),
+		"the strip removed a known CODE site from HeadlessBattleResolver — same failure, and it is the file this arm's live-only claim is ABOUT")
+
 	assert_gt(bm.length(), 100000,
 		"BattleManager did not load — the live half of the split below is measuring an empty string")
 	assert_gt(hr.length(), 10000,
