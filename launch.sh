@@ -7,6 +7,9 @@
 # 1. `pkill -x godot` (exact name), NOT `pkill -f godot` — the -f form
 #    matches ANY cmdline containing "godot", including the shell running
 #    this very script, killing it mid-flight.
+# 3. Kill BY VERIFIED CWD, never a bare `pkill -x godot` — that is SIGKILL to every
+#    godot on a ~30-agent box, including other lanes' gate runs and struktured's live
+#    session. Restarting his game unasked is a standing prohibition.
 # 2. Stale-class-cache guard: new `class_name` scripts merged since the
 #    last import make dependent scripts fail to parse at runtime → the
 #    game boots into an empty gray viewport with live input. If any
@@ -18,9 +21,15 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Kill any existing Godot (exact process name — see post-mortem note 1)
-pkill -9 -x godot 2>/dev/null || true
-sleep 2
+# Kill any existing Godot FROM THIS PROJECT DIR ONLY (post-mortem note 1 + note 3).
+# `pkill -9 -x godot` is SIGKILL to every godot on the box: measured 2026-09-12, three
+# processes, two of them other lanes' live test runs and one struktured's game.
+KILLED=0
+for p in $(pgrep -x godot 2>/dev/null); do
+    [ "$(readlink /proc/$p/cwd 2>/dev/null)" = "$SCRIPT_DIR" ] || continue
+    kill -9 "$p" 2>/dev/null && KILLED=$((KILLED+1))
+done
+[ "$KILLED" -gt 0 ] && sleep 2
 
 # Stale-class-cache guard (post-mortem note 2)
 CACHE=".godot/global_script_class_cache.cfg"
