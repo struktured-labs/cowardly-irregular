@@ -447,6 +447,15 @@ func get_automation_affinity() -> float:
 	return _automation_affinity
 
 
+## The fatigue roster. NAMED, and the draw derives its modulus from it.
+## ⛔ It was an inline literal drawn with `randi() % 6`, a hardcoded count beside the array it indexes:
+## add a 7th type and it can NEVER be drawn; remove one and the draw indexes past the end and CRASHES.
+## Both are live risks right now, because whether `screen_glitch` stays is an open question — and the
+## removal option is precisely the one that crashes. Deriving the modulus costs nothing and takes the
+## trap off the table before anyone acts on that decision.
+const FATIGUE_EVENT_TYPES: Array = ["screen_glitch", "enemy_boost", "party_debuff", "mp_drain", "item_loss", "exp_surge"]
+
+
 func check_fatigue_event() -> Dictionary:
 	if battles_completed < FATIGUE_BATTLE_THRESHOLD:
 		return {}
@@ -454,7 +463,7 @@ func check_fatigue_event() -> Dictionary:
 		return {}
 
 	fatigue_events_triggered += 1
-	var event_type = ["screen_glitch", "enemy_boost", "party_debuff", "mp_drain", "item_loss", "exp_surge"][randi() % 6]
+	var event_type: String = FATIGUE_EVENT_TYPES[randi() % FATIGUE_EVENT_TYPES.size()]
 	var description = ""
 
 	match event_type:
