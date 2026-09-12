@@ -108,10 +108,7 @@ func test_every_overlay_cutscene_backdrop_resolves() -> void:
 ## before the line can be deleted.
 ##   grows   -> a video shipped for a scene nobody wrote
 ##   shrinks -> someone authored the scene, or deleted the file. Delete the line either way.
-const UNNAMED_BACKDROP_VIDEOS := {
-	"brasston_square": "1,186,757 B — W3 town square; PNG twin ships too",
-	"maple_heights_street": "923,681 B — W2 autumn street; PNG twin ships too",
-}
+const UNNAMED_BACKDROP_VIDEOS := {}  # drained in .332: story wired both videos into chapter-one scenes
 
 
 func _video_ids() -> Array:
