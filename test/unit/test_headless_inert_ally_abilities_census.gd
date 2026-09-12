@@ -78,6 +78,11 @@ func _target_type_of(ability_id: String) -> String:
 	return str(ability.get("target_type", "")) if ability is Dictionary else ""
 
 
+func _effect_of(ability_id: String) -> String:
+	var ability: Dictionary = JobSystem.get_ability(ability_id)
+	return str(ability.get("effect", "")) if ability is Dictionary else ""
+
+
 func _inert_ids() -> Array[String]:
 	var inert: Array[String] = []
 	for ability_id in _ally_targeted_ability_ids():
@@ -93,6 +98,14 @@ func _inert_ids() -> Array[String]:
 		if _target_type_of(ability_id) == "dead_ally":
 			target.current_hp = 0
 			target.is_alive = false
+		## The same trap one effect over: esuna and garbage_collect CLEAR ailments, so an
+		## unafflicted target leaves a correct arm with nothing to do and it reads as absent.
+		## ⚠️ This only removes a false RED — it adds no detection, and do not trust it to.
+		## Both states change the fingerprint: armed clears blind (1 status -> 0), unarmed writes
+		## a bogus status named "cleanse" (1 -> 2). "Something changed" cannot separate them.
+		## What cleanse actually does is guarded in test_a_grind_can_cure_what_it_inflicts.
+		if _effect_of(ability_id) == "cleanse":
+			target.add_status("blind", 3)
 		resolver._player_party = [caster, target]
 		resolver._enemy_party = []
 		var before := _fingerprint(target)
