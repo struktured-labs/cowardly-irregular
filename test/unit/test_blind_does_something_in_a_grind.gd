@@ -77,10 +77,18 @@ func test_the_two_KNOWN_divergences_have_not_grown() -> void:
 ## live-only, and eleven of those can be INFLICTED BY AN ABILITY — applied to a combatant in a grind
 ## and then read by nobody, exactly the shape blind had.
 ##
-## ⚠️ NOT FIXED HERE, and the reason is scope rather than doubt. Blind had ONE consumer — the miss
-## roll — so honouring it was four lines. `barrier` nullifies a hit at two live sites and the grind
-## has six-plus take_damage paths; doing it properly is a change to the core damage loop with
-## balance consequences for every grind, which is struktured's call and not an hour's work.
+## ⚠️ TWO MORE HONOURED 2026-09-12, and the split is the same one this note drew for blind: a
+## status whose live consumer is the MISS or CRIT roll is cheap; one that nullifies damage is not.
+##   invisible / shadow_step   the swing misses and the status falls off — one place, like blind.
+##                             shadow_step on the ATTACKER is also a guaranteed crit, one line at
+##                             the crit roll. Both are cast by SHIPPED presets: ninja_defensive
+##                             spends 12 MP on vanish, balanced and aggressive 8 on shadow_step,
+##                             and in a grind all of it bought nothing.
+## ⛔ `barrier` is still NOT fixed, and still for scope rather than doubt: it nullifies a hit at two
+## live sites and the grind has six-plus take_damage paths. That is a core damage-loop change with
+## balance consequences for every grind — struktured's call. It matters more than it did: all three
+## GUARDIAN presets AND the guardian default script cast guardian_wall, 15 MP of a 35 pool each
+## time, so a Guardian in a grind is the worst-affected character in the game.
 ##
 ## What this arm does is hold the LIST. Implement one and it reds, so the note gets updated instead
 ## of the list quietly meaning less than it says. A new ignored status also reds.
@@ -89,13 +97,11 @@ const GRIND_IGNORES_BUT_ABILITIES_INFLICT := [
 	"barrier",             # guardian_wall — and all three GUARDIAN PRESETS cast it in rule 0
 	"charm",               # puppy_eyes
 	"evasion",             # burrow
-	"invisible",           # vanish
 	"magic_block",         # access_denied
 	"pacify",              # peace_sign
 	"physical_reflect",    # port_block
 	"prismatic_reflect",   # prismatic_reflect
 	"reflect",             # magic_reflect
-	"shadow_step",         # shadow_step
 	"silence",             # void_pulse
 ]
 
