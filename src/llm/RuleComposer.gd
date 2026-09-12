@@ -124,6 +124,10 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		for note in _supply_missing_mp_guards(v["rules"], kit_context):
 			repair_notes.append(note)
 
+	if domain == DOMAIN_AUTOBATTLE:
+		for note in _repair_weakness_elements(v["rules"]):
+			repair_notes.append(note)
+
 	var domain_system = get_node_or_null("/root/AutobattleSystem" if domain == DOMAIN_AUTOBATTLE else "/root/AutogrindSystem")
 
 	# ONE bad rule discarded the player's WHOLE ruleset. Measured on live llama3 after
@@ -305,6 +309,55 @@ func _drop_unusable_rules(rules: Array, character_id: String, domain_system) -> 
 	rules.append_array(kept)
 	for d in dropped:
 		notes.append("Dropped a rule this character cannot run — %s" % d)
+	return notes
+
+
+## Read an enemy_weak_to element the model named after the ABILITY, not the element.
+##
+## The condition matches `element in enemy.elemental_weaknesses` — a case-sensitive
+## compare against the bestiary's own words. validate_rule checks that the field is
+## PRESENT and never what it says: `weather` is the one payload with a vocabulary
+## check, and its comment gives the reason — a bad value must fail at decode rather
+## than silently-never-fire in battle. An element does neither today.
+##
+## Measured against live llama3 on the real composer prompt, four weakness intents,
+## 48 compositions: 36 enemy_weak_to conditions, 35 valid and ONE naming the ability
+## — {"element":"thunder"} beside the 'thunder' action, whose element is `lightning`.
+## The kit itself invites it: two of the mage's three spells are named for something
+## other than the element they deal (blizzard/ice, thunder/lightning).
+##
+## This MAPS rather than drops. The model named a real ability and the ability knows
+## its element, so the rule the player asked for is recoverable. It acts ONLY when the
+## string is an ability id whose element is a different word, so it can never touch a
+## real element — `fire` is the one word that is both, and it maps to itself. An
+## element nothing is weak to is left alone; the grammar promises that on purpose.
+func _repair_weakness_elements(rules: Array) -> Array[String]:
+	var notes: Array[String] = []
+	var job_sys = get_node_or_null("/root/JobSystem")
+	for r in rules:
+		if not (r is Dictionary):
+			continue
+		for c in (r as Dictionary).get("conditions", []):
+			if not (c is Dictionary):
+				continue
+			var cond: Dictionary = c as Dictionary
+			if str(cond.get("type", "")) != "enemy_weak_to":
+				continue
+			var raw: String = str(cond.get("element", "")).strip_edges()
+			if raw == "":
+				continue
+			var low: String = raw.to_lower()
+			# Case alone is not measured, only free: every weakness in monsters.json
+			# is lowercase, and the compare that reads it is case-sensitive.
+			if low != raw:
+				cond["element"] = low
+			if job_sys == null or not job_sys.has_method("get_ability"):
+				continue
+			var elem: String = str((job_sys.get_ability(low) as Dictionary).get("element", "")).strip_edges().to_lower()
+			if elem == "" or elem == low:
+				continue
+			cond["element"] = elem
+			notes.append("Read '%s' as its element, %s — '%s' is an ability, not an element." % [raw, elem, raw])
 	return notes
 
 
