@@ -79,7 +79,20 @@ func _arm(g: Combatant, foe: Combatant) -> String:
 	_bm.enemy_party.append(foe)
 	var cid: String = _abs._get_character_id(g)
 	_fixture_ids.append(cid)
-	_abs.set_character_script(cid, _abs._create_guardian_default_script(cid))
+	## ⚠️ A SYNTHETIC script, not _create_guardian_default_script any more, and the reason matters:
+	## that script was FIXED to use in-kit abilities, so installing it no longer exercises the
+	## mechanism this file defends. Measured — with the shipped script installed, deleting the
+	## fall-through from _evaluate_grid_rule left this file 8/8 GREEN. The fix emptied the corpus of
+	## its own guard. What is being claimed here is that the LADDER skips a rule the character
+	## cannot perform, so the subject has to be a rule it cannot perform; whether the shipped
+	## scripts contain one is a different claim, and it belongs to
+	## test_default_scripts_reference_their_own_kit, which is bidirectional and now asserts NONE do.
+	_abs.set_character_script(cid, {"character_id": cid, "name": "Reaches For A Monster Ability",
+		"rules": [
+			UNKNOWN_RULE.duplicate(true),
+			{"conditions": [{"type": "always"}],
+			 "actions": [{"type": "attack", "target": "lowest_hp_enemy"}], "enabled": true},
+		]})
 	return cid
 
 
@@ -189,7 +202,17 @@ func test_the_same_pin_is_gone_for_the_other_jobs_that_had_it() -> void:
 		_bm.enemy_party.append(_foe())
 		var cid: String = _abs._get_character_id(c)
 		_fixture_ids.append(cid)
-		_abs.set_character_script(cid, _abs.call("_create_%s_default_script" % job_id, cid))
+		## Same reason as _arm() above: those default scripts were fixed, so they no longer contain
+		## an out-of-kit ability to skip. The claim is about the ladder, so the subject is a rule
+		## naming an ability THAT job cannot know — rogue's backstab for the ninja, cleric's cure
+		## for the summoner, which is exactly what each script used to reach for.
+		var alien: String = "backstab" if job_id == "ninja" else "cure"
+		_abs.set_character_script(cid, {"character_id": cid, "name": "Alien " + job_id, "rules": [
+			{"conditions": [{"type": "always"}],
+			 "actions": [{"type": "ability", "id": alien, "target": "lowest_hp_enemy"}], "enabled": true},
+			{"conditions": [{"type": "always"}],
+			 "actions": [{"type": "attack", "target": "lowest_hp_enemy"}], "enabled": true},
+		]})
 		for turn in range(4):
 			for action in _abs.execute_grid_autobattle(c):
 				var a: Dictionary = action

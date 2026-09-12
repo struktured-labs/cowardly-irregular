@@ -938,6 +938,12 @@ func _input(event: InputEvent) -> void:
 			_toggle_autogrind_pause()
 			get_viewport().set_input_as_handled()
 			return
+		# The autobattle-toggle button pauses the grind. As the ACTION, not raw index 4: a Controls
+		# rebind moves it and this must follow (test_remap_reaches_every_handler caught the raw form).
+		if event is InputEventJoypadButton and event.is_action_pressed("battle_toggle_auto"):
+			_toggle_autogrind_pause()
+			get_viewport().set_input_as_handled()
+			return
 		# L+R shoulder together cycles tier
 		if event is InputEventJoypadButton and event.pressed:
 			if event.button_index == JOY_BUTTON_LEFT_SHOULDER or event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
