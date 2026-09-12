@@ -35,9 +35,38 @@ func test_steampunk_terrain_maps_to_battle_steampunk_track() -> void:
 		"_get_terrain_battle_track must have 'steampunk' arm returning 'battle_steampunk' — otherwise W3 Steampunk battles fall through to generic 'battle' track")
 
 
+## Every key the music manifest declares, at any nesting depth.
+func _manifest_keys() -> Dictionary:
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/music_manifest.json"))
+	assert_not_null(parsed, "CONTROL: the music manifest parses")
+	var out: Dictionary = {}
+	var stack: Array = [parsed]
+	while stack.size() > 0:
+		var node = stack.pop_back()
+		if node is Dictionary:
+			for k in (node as Dictionary).keys():
+				out[str(k)] = true
+				stack.append((node as Dictionary)[k])
+		elif node is Array:
+			for v in node:
+				stack.append(v)
+	return out
+
+
 func test_existing_terrain_arms_preserved() -> void:
 	# Don't regress the other W2/W4/W5/W6 routing while adding W3.
+	##
+	## ⚠️ 2026-09-12: this was a hand-list of five pairs, and two of them — urban→battle_urban and
+	## void→battle_void — named tracks that are NOT manifest keys. So it required arms promising
+	## beds nothing can play; `urban` is emitted by nothing at all, and `void` reached the right bed
+	## by FALLTHROUGH (play_music rewrites an unknown battle_* to battle_<world suffix>) rather than
+	## by its arm. The intent — never silently drop a world's theme — is right, so it is kept and
+	## the CANDIDATES are now gated on the bed existing. Authoring battle_void.ogg makes that arm
+	## required again, automatically. Dropped arms are pinned by
+	## test_every_terrain_lands_on_a_real_bed, which asserts the property rather than the text.
 	var body := _terrain_battle_track_body()
+	var keys := _manifest_keys()
+	var checked: int = 0
 	for entry in [
 		["suburban",  "battle_suburban"],
 		["urban",     "battle_urban"],
@@ -47,9 +76,15 @@ func test_existing_terrain_arms_preserved() -> void:
 	]:
 		var terrain: String = entry[0]
 		var track: String = entry[1]
+		if not keys.has(track):
+			continue
+		checked += 1
 		var pattern: String = "\"" + terrain + "\":\n\t\t\treturn \"" + track + "\""
 		assert_true(body.contains(pattern),
 			"_get_terrain_battle_track must keep '%s' → '%s' arm" % [terrain, track])
+	assert_gt(checked, 2,
+		"CONTROL: real beds were found to require arms for (%d) — if this hits zero the manifest "
+		% checked + "read is broken and every assertion above passes by checking nothing")
 
 
 func test_sound_manager_handles_battle_steampunk_key() -> void:
