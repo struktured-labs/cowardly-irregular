@@ -28,7 +28,11 @@ const REACHES_PLAYER := {
 	"corruption_threshold_crossed": "listener:GameLoop.gd",
 	"system_collapse": "collapse_count",
 	"meta_boss_spawned": "meta_bosses_spawned",
-	"fatigue_event": "fatigue_events_triggered",
+	## Was "fatigue_events_triggered" — and that counter was TRUE about the count and FALSE about the
+	## content. Six authored descriptions ("Inventory anomaly — items corrupted") reached NOBODY while
+	## this file certified the signal as reaching the player. GameLoop now subscribes; the evidence is
+	## the subscription, not the tally. This is the gap the payload rule below exists to close.
+	"fatigue_event": "listener:GameLoop.gd",
 	## NOT a subscription — my first draft claimed one and this file's own evidence check caught it.
 	## The interrupt reaches the player by a different route: pre_battle_check() RETURNS a reason,
 	## the controller calls stop_grind(reason), and GameLoop's grind_complete handler plays a stop
@@ -43,6 +47,19 @@ const CONSOLE_ONLY_BY_DESIGN := {
 	"efficiency_increased": "incremental state, readable in full whenever the console reopens",
 	"corruption_increased": "incremental state, same",
 	"autogrind_rules_changed": "an internal refresh cue, not an event about the world",
+}
+
+## ⛔ A COUNTER PROVES THE EVENT COUNT SURVIVED. IT SAYS NOTHING ABOUT A PAYLOAD.
+## `fatigue_event(event_type, description)` sat in REACHES_PLAYER with a counter as its evidence, and
+## this file called it delivered. The count was delivered. The six descriptions were emitted into the
+## void for as long as the signal existed. "Did the player learn it HAPPENED" and "did the player
+## learn WHAT happened" are different questions and the buckets above only asked the first.
+##
+## So: a signal that DECLARES PARAMETERS and is justified by a COUNTER must say here why the payload
+## is dispensable. Not permission to skip — the note IS the deliverable, and writing it is what makes
+## someone look. A signal with no parameters needs no entry; a counter fully covers it.
+const PAYLOAD_DISPENSABLE := {
+	"meta_boss_spawned": "the player is about to FIGHT it — the generated name is on screen in the battle itself, so the tally is all the signal needs to carry",
 }
 
 ## Declared but never emitted. Kept visible rather than deleted — a dead entry someone later wires
@@ -115,6 +132,62 @@ func test_each_must_reach_signal_actually_has_its_surface() -> void:
 				missing.append("%s -> Summary never renders '%s'" % [sig, evidence])
 	assert_eq(missing.size(), 0,
 		"these signals are classified as reaching the player and the evidence is absent: %s" % str(missing))
+
+
+## Signal -> its declared parameter list, "" when it takes none.
+func _declared_signal_params() -> Dictionary:
+	var out: Dictionary = {}
+	for line in _source(SYS).split("\n"):
+		var t: String = line.strip_edges()
+		if not t.begins_with("signal "):
+			continue
+		var rest: String = t.substr(7)
+		var open_paren: int = rest.find("(")
+		if open_paren == -1:
+			out[rest.strip_edges()] = ""
+		else:
+			out[rest.substr(0, open_paren).strip_edges()] = rest.substr(open_paren + 1, rest.rfind(")") - open_paren - 1).strip_edges()
+	return out
+
+
+## THE ARM THE FATIGUE BUG CAME THROUGH. A counter is evidence about the COUNT.
+func test_a_counter_cannot_vouch_for_a_payload() -> void:
+	var params: Dictionary = _declared_signal_params()
+	assert_gt(params.size(), 5, "control: the parser must yield signals — got %d" % params.size())
+	## Control on the PARSER, not just the count: a regression that returned "" for everything would
+	## silently make every signal look payload-free and this whole arm vacuous.
+	var with_params: int = 0
+	for v in params.values():
+		if str(v) != "":
+			with_params += 1
+	assert_gt(with_params, 3,
+		"control: the parser found only %d signals with parameters — it is not reading argument lists" % with_params)
+
+	var undeclared: Array = []
+	for sig in REACHES_PLAYER.keys():
+		var evidence: String = str(REACHES_PLAYER[sig])
+		if evidence.begins_with("listener:") or evidence.begins_with("notification:"):
+			continue  ## a subscriber/handler receives the payload itself
+		if str(params.get(sig, "")) == "":
+			continue  ## no payload for a counter to fail to carry
+		if not PAYLOAD_DISPENSABLE.has(sig):
+			undeclared.append("%s(%s) -> '%s'" % [sig, params[sig], evidence])
+	assert_eq(undeclared, [],
+		("these carry a PAYLOAD and are justified only by a counter. A tally proves the event count " +
+		"reached the player; it proves nothing about the arguments. Either point the evidence at a " +
+		"listener that receives them, or add a PAYLOAD_DISPENSABLE note saying why they do not " +
+		"need to arrive: %s") % [undeclared])
+
+	## Reverse direction, so a note cannot outlive its reason — the same shape as the NEVER_EMITTED arm.
+	var stale: Array = []
+	for sig in PAYLOAD_DISPENSABLE.keys():
+		if not REACHES_PLAYER.has(sig):
+			stale.append("%s is not in REACHES_PLAYER" % sig)
+		elif str(params.get(sig, "")) == "":
+			stale.append("%s declares no parameters, so nothing needs excusing" % sig)
+		elif str(REACHES_PLAYER[sig]).begins_with("listener:") or str(REACHES_PLAYER[sig]).begins_with("notification:"):
+			stale.append("%s now has a real receiver — drop the excuse" % sig)
+	assert_eq(stale, [], "PAYLOAD_DISPENSABLE entries that no longer describe anything: %s" % [stale])
 
 
 func test_the_never_emitted_entries_are_still_never_emitted() -> void:
