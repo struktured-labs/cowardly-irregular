@@ -33,6 +33,19 @@ cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 OWNER_PROCS="${PUBLISH_OWNER_PROCS:-quartus obs}"
 
+# Where the log and the .ec live. NOT under the publish worktree: `git worktree remove` is the
+# step that FOLLOWS every publish, and it deleted the .ec for v3.33.304-alpha -- the one artifact
+# whose whole purpose is to answer "did it finish?" after the fact. A publish worktree is
+# <lane>/tmp/<name>, so the lane root is the path before /tmp/, the same derivation publish_all
+# uses for its log archive. `here` is a parameter so the selftest can drive both branches.
+_logdir() {
+    local tag="$1" here="${2:-$(pwd -P)}"
+    case "$here" in
+        */tmp/*) printf '%s' "${here%%/tmp/*}/tmp/_detached/${tag}" ;;
+        *)       printf '%s' "tmp/detached/${tag}" ;;
+    esac
+}
+
 _owner_busy() {
     # His processes, by name. `pgrep -c` prints 0 AND EXITS 1, so `|| echo 0` yields "0\n0" and
     # every later integer test errors — measured, and it made an earlier gate never fire while
@@ -77,7 +90,7 @@ if [ "${1:-}" != "--selftest" ]; then
         echo "[detached] I/O I should not add to it. Re-run when they are done." >&2
         exit 2
     fi
-    LOGDIR="tmp/detached/${TAG}"
+    LOGDIR="$(_logdir "$TAG")"
     mkdir -p "$LOGDIR"
     rm -f "$LOGDIR/publish.ec"
     # The EC file is written by the DETACHED shell, so it records publish_all's own code even
@@ -111,16 +124,23 @@ _wait_ec() { local f="$1" n=0; while [ "$n" -lt 20 ]; do [ -f "$f" ] && return 0
 
 # 1/2 — the EC file records the REAL code, both directions. A launcher that always wrote 0
 #       would pass a success-only arm and hide every failure it ever had.
+# The path comes from the launcher's OWN report. An expectation restated is one that can
+# drift from the code; the archiving test measured a directory the code had stopped writing to.
+_ec_path_from() { printf '%s' "$1" | sed -n 's/^\[detached\]   ec:  \([^ ]*\).*/\1/p'; }
+
 for pair in "ok 0" "bad 7"; do
     set -- $pair
-    PUBLISH_CMD="$T/$1.sh" PUBLISH_OWNER_PROCS="__absent__" ./tools/publish_detached.sh "ZZ-$1" >/dev/null 2>&1
-    _wait_ec "tmp/detached/ZZ-$1/publish.ec"
-    chk "EC recorded faithfully ($1.sh)" "$(cat "tmp/detached/ZZ-$1/publish.ec" 2>/dev/null)" "$2"
+    out=$(PUBLISH_CMD="$T/$1.sh" PUBLISH_OWNER_PROCS="__absent__" ./tools/publish_detached.sh "ZZ-$1" 2>&1)
+    ecf=$(_ec_path_from "$out")
+    [ -n "$ecf" ] || { fail=$((fail+1)); printf '  FAIL  %-50s launcher printed no ec path\n' "EC path reported ($1.sh)"; }
+    _wait_ec "$ecf"
+    chk "EC recorded faithfully ($1.sh)" "$(cat "$ecf" 2>/dev/null)" "$2"
 done
 
 # 3 — DETACHED. If the child shares this shell's session the reaper still owns it and the
 #     whole point is lost; this is the arm that tests the fix rather than the plumbing.
-PUBLISH_CMD="$T/slow.sh" PUBLISH_OWNER_PROCS="__absent__" ./tools/publish_detached.sh ZZ-detach >/dev/null 2>&1
+out=$(PUBLISH_CMD="$T/slow.sh" PUBLISH_OWNER_PROCS="__absent__" ./tools/publish_detached.sh ZZ-detach 2>&1)
+slow_ec=$(_ec_path_from "$out")
 sleep 1
 kid=$(pgrep -f "$T/slow.sh" 2>/dev/null | head -1)
 if [ -n "$kid" ]; then
@@ -129,8 +149,8 @@ if [ -n "$kid" ]; then
 else
     fail=$((fail+1)); printf '  FAIL  %-50s child not found\n' "child runs in its OWN session"
 fi
-_wait_ec tmp/detached/ZZ-detach/publish.ec
-chk "slow child wrote its EC after the launcher returned" "$(cat tmp/detached/ZZ-detach/publish.ec 2>/dev/null)" "3"
+_wait_ec "$slow_ec"
+chk "slow child wrote its EC after the launcher returned" "$(cat "$slow_ec" 2>/dev/null)" "3"
 
 # 4/5 — the courtesy refusal, BOTH directions. An always-refusing guard passes arm 4 alone.
 PUBLISH_OWNER_PROCS="bash" ./tools/publish_detached.sh ZZ-busy >/dev/null 2>&1
@@ -139,10 +159,19 @@ PUBLISH_CMD="$T/ok.sh" PUBLISH_OWNER_PROCS="__absent__" ./tools/publish_detached
 chk "launches when none does (not a blanket refusal)" "$?" "0"
 
 # 6/7 — --status is BOUNDED and reports the recorded code rather than hanging.
-./tools/publish_detached.sh --status tmp/detached/ZZ-bad 30 >/dev/null 2>&1
+./tools/publish_detached.sh --status "$(_logdir ZZ-bad)" 30 >/dev/null 2>&1
 chk "--status returns the recorded EC" "$?" "7"
 ./tools/publish_detached.sh --status "$T" 1 >/dev/null 2>&1
 chk "--status on a missing .ec times out (bounded)" "$?" "3"
 
-rm -rf tmp/detached/ZZ-*
+# 8/9 — the .ec must OUTLIVE the publish worktree. v3.33.304-alpha's did not: the logdir was
+#       relative, so `git worktree remove` took the exit code with it. Drive both branches of
+#       the derivation directly, because one of them cannot be reached from where this runs.
+wt_dir=$(_logdir v9.9.9 /home/x/lane-wt/tmp/pub999)
+chk "logdir escapes a <lane>/tmp/<wt> worktree" \
+    "$(case "$wt_dir" in /home/x/lane-wt/tmp/_detached/v9.9.9) echo yes ;; *) echo "no:$wt_dir" ;; esac)" "yes"
+plain_dir=$(_logdir v9.9.9 /home/x/plainrepo)
+chk "logdir stays relative outside a worktree" "$plain_dir" "tmp/detached/v9.9.9"
+
+rm -rf tmp/detached/ZZ-* "$(_logdir '' | sed 's:/*$::')"/ZZ-* 2>/dev/null
 echo; echo "selftest: ${pass} passed, ${fail} failed"; [ "$fail" -eq 0 ]
