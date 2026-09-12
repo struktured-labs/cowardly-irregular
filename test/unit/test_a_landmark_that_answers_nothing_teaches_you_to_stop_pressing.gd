@@ -303,20 +303,42 @@ func test_the_pages_answer_the_players_own_state() -> void:
 	gs.party_gold = 5000
 	var rich: String = str(lore.well_register())
 
-	gs.set_story_flag("fire_dragon_defeated", false)
+	## ⚠️ ARMED THE WAY THE DUNGEON WRITES IT. Nothing in the campaign writes this flag to
+	## `story_flags`: FireDragonCave declares it as `boss_flag_key` and DragonCave banks victory
+	## into `game_constants["dungeon_flags"][boss_flag_key]`. `is_story_flag_set` reads four
+	## namespaces and finds it, so `set_story_flag` also passes — and that is the problem: armed
+	## that way this arm stays green for a reader narrowed to `get_story_flag`, i.e. for a page
+	## that never fires in play. Arming the writer's namespace makes the guard prove the reader
+	## reaches it. Measured on the sibling gate: writer-armed caught it, story_flags-armed did not.
+	var prior_consts: Dictionary = gs.game_constants.duplicate(true)
+	gs.game_constants.erase("dungeon_flags")
 	var unburned: String = str(lore.last_camp())
-	gs.set_story_flag("fire_dragon_defeated", true)
+	if not gs.game_constants.has("dungeon_flags"):
+		gs.game_constants["dungeon_flags"] = {}
+	gs.game_constants["dungeon_flags"]["fire_dragon_defeated"] = true
 	var burned: String = str(lore.last_camp())
+	gs.game_constants = prior_consts
 
 	gs.corruption_level = prior_corruption
 	gs.party_gold = prior_gold
 	gs.story_flags = prior_flags
 
-	assert_ne(calm, crawling, "the warden's count must change as corruption rises — that is the page")
-	assert_ne(poor, rich, "the well register reads the purse it is talking to")
-	assert_ne(unburned, burned, "the last camp gains the fifth party's line once the grotto is cleared")
-	assert_true(crawling.contains("Nine"), "at 0.5 corruption the warden counts nine")
-	assert_true(calm.contains("Eight, still"), "at 0.0 corruption the vigil is boring, which is the joke")
+	## Asserted on the DISTINGUISHING LINE, not on the whole page array: `assert_ne` between two
+	## multi-page providers prints both in full, so a real failure arrives as 2KB of prose twice
+	## and the reader has to diff it by eye. GUT prints `at line -1` headless, so the message is
+	## the entire locator (@cowir-story / @cowir-adhoc).
+	assert_true(calm.contains("Eight, still"), "at 0.0 corruption the warden's vigil is boring, which is the joke")
+	assert_true(crawling.contains("Nine"), "at 0.5 corruption the warden counts nine — the page reads corruption_level")
+	assert_false(calm.contains("Nine"), "and does NOT count nine while the save is clean")
+
+	assert_true(rich.contains("carrying that much"), "the register notices a rich reader (>= 1000 gold)")
+	assert_true(poor.contains("never refused anyone"), "and says the other thing to a poor one")
+	assert_false(poor.contains("carrying that much"), "the two purse branches must not both fire")
+
+	assert_true(burned.contains("Fifth party"),
+		"the last camp gains the fifth party's line once the grotto is cleared — armed through " +
+		"game_constants.dungeon_flags, the namespace DragonCave actually writes")
+	assert_false(unburned.contains("Fifth party"), "and does not carry it before the grotto falls")
 
 
 ## ⛔ THE PROVIDER ARMS ABOVE CALL A FRESH W1Landmarks AND PROVE NOTHING ABOUT THE PLACED PROP.
