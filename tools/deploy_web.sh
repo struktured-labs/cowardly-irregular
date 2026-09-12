@@ -286,7 +286,10 @@ _PCK_REPORT="$(cd "$(dirname "$0")" && pwd)/pck_cache_report.sh"
 [ -x "$_PCK_REPORT" ] || {
   echo "[deploy] BLOCKED: ${_PCK_REPORT} missing or not executable — a size report that cannot run is not a passing one." >&2
   exit 2; }
-"$_PCK_REPORT" "$PCK" "$PCK_CACHE_LINE" "$PCK_WARN" "$PCK_LIMIT"
+# builds/web is passed so the report can SEE whether this build ships a service worker that
+# caches the pck. Without it the report printed "re-downloads EVERY visit" unconditionally --
+# including in the .334 chain, the release that stopped it being true.
+"$_PCK_REPORT" "$PCK" "$PCK_CACHE_LINE" "$PCK_WARN" "$PCK_LIMIT" builds/web
 if [ "${PCK}" -ge "${PCK_LIMIT}" ]; then
   echo "[deploy] BLOCKED: pck >= 200 MB — itch will refuse the HTML5 embed." >&2
   echo "[deploy] check export_presets.cfg exclude_filter and recent large assets." >&2
