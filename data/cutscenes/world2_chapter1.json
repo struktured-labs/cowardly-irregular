@@ -3,7 +3,7 @@
   "title": "Maple Heights",
   "world": 2,
   "trigger": "world2_village_entry",
-  "background": "suburban_neighborhood",
+  "background": "maple_heights_street",
   "description": "Exploring the suburb. The strip mall with medieval items. The shopkeeper who knows about the portal.",
   "steps": [
     {
