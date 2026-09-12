@@ -127,7 +127,13 @@ func test_every_interactive_entity_can_be_reached() -> void:
 	## What IS proven: the sweep sees SavePoints (one per world, five found), and the mechanism fires
 	## — moving W1's signpost back to (50,15) returns Failing 1 naming it. A proven mechanism extended
 	## to a detected type, not a fired arm.
-	var interactive := ["Signpost", "OverworldNPC", "WanderingNPC", "SavePoint"]
+	## ReadableProp added 2026-09-12 with W1's Survey Stone, the first readable outside a village.
+	## It is the type most worth sweeping here and the one most likely to be missed: it draws NOTHING,
+	## so a stranded one is not a prop the player can see and not reach — it is a prop with no symptom
+	## at all. test_a_stone_you_cannot_press_says_nothing owns the press geometry; this owns the ground.
+	## ARMED, unlike the SavePoint line above: moving the stone to (50,15) — the cell this file already
+	## knows strands a signpost — reds this arm naming medieval/ReadableProp at (50, 15).
+	var interactive := ["Signpost", "OverworldNPC", "WanderingNPC", "SavePoint", "ReadableProp"]
 
 	for label in WORLDS:
 		if label == "abstract":

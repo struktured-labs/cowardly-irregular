@@ -142,6 +142,9 @@ func _ready() -> void:
 	# Visual landmarks between towns
 	_place_landmarks()
 
+	# Readable props anchored on those landmarks
+	_place_readables()
+
 	# Village markers (visible building clusters at entrances)
 	_place_village_markers()
 
@@ -908,12 +911,58 @@ func _place_landmarks() -> void:
 		{"pos": Vector2(66, 47), "type": Landmark.Type.RUINS},
 		# Stone circle near the bridge
 		{"pos": Vector2(38, 50), "type": Landmark.Type.STONE_CIRCLE},
+		# The Survey Stone, deep Sandrift — the visible half of the SurveyStone in _place_readables().
+		{"pos": Vector2(8, 65), "type": Landmark.Type.STATUE},
 	]
 	for l in landmarks:
 		var lm = Landmark.new()
 		lm.landmark_type = l["type"]
 		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
+
+
+## W1's first readable outside a village. A ReadableProp draws nothing, so it is a hotspot on the
+## STATUE that _place_landmarks puts at this same cell; its zone is Mode 7-sized through
+## InteractGeometry, which is what made an overworld readable possible at all. Three cells west of
+## the "nothing this way" signpost so the two never arbitrate: the probe picks nearest, zones are 2.
+func _place_readables() -> void:
+	var stone := ReadableProp.new()
+	stone.name = "SurveyStone"
+	stone.position = Vector2(8 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 65 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	stone.setup("The Survey Stone", _survey_stone_entries)
+	add_child(stone)
+
+
+## Re-invoked on every open. The waste reads back the player's own file: whether the rock line has
+## been opened, whether what was inside it is still inside it, and how much the numbers still agree.
+func _survey_stone_entries() -> Array:
+	var gs = _get_game_state()
+	var found: bool = gs != null and gs.get_story_flag("secret_w1_sunken_ring")
+	var emptied: bool = gs != null and gs.get_story_flag("chest_w1_secret_sunken_ring")
+	var corruption: float = gs.corruption_level if gs else 0.0
+
+	var pages: Array = [
+		"ROYAL SURVEY OF THE WESTERN WASTE\nSecond Pass. Commissioned to settle the First.\n\nThe First Pass is not available for comment.",
+
+		{"heading": "Chains 1-14", "body": "Measured west to east. Fourteen chains to the rock line.\n\nMeasured east to west. Eleven.\n\nI have checked the chain. I have checked the chain four times. The chain is the only thing in this quadrant I still trust."},
+
+		{"heading": "On the discrepancy", "body": "Things here are further away than they are. I would like that not to be filed as a figure of speech.\n\nWalk at the rock line and it arrives before you do. Walk away and it keeps your pace exactly, and stops when you stop, and it is a rock line, and it does not move."},
+
+		{"heading": "Filed by the office", "body": "The First Pass reported this quadrant empty and was believed, because it is empty.\n\nI report it empty AND three chains short. Those are two findings. The office has entered them as one."},
+	]
+
+	if corruption >= 0.35:
+		pages.append({"heading": "Chains 1-14, re-measured", "body": "Fourteen.\n\nEleven.\n\nFourteen.\n\nThe chain is the only thing in this quadrant I still trust."})
+
+	if not found:
+		pages.append({"heading": "Final entry, Second Pass", "body": "The missing three chains are east of this stone. I have walked the rock line twice and it does not open anywhere.\n\nIt does not open anywhere on the OUTSIDE. I am told that is the same sentence. It is not the same sentence."})
+	else:
+		pages.append({"heading": "Final entry, annotated", "body": "...it does not open anywhere on the OUTSIDE.\n\n[a later hand, pressed hard enough to score the stone]\n\nIt opens. Three chains, exactly as recorded. The office owes the Second Surveyor an apology it has no form for."})
+
+	if emptied:
+		pages.append({"heading": "Inventory, amended", "body": "Contents of the sunken ring: recorded, removed, not returned.\n\nThe survey does not object. The survey notes that a thing measured and then taken is measured once and never again, and that this is the most honest a measurement ever gets."})
+
+	return pages
 
 
 func _get_objective_position() -> Vector2:
