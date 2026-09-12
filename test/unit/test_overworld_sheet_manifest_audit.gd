@@ -116,6 +116,28 @@ func _strip_comments(src: String) -> String:
 	return out
 
 
+## ⛔ ANTI-VACUITY. The case table above proves the stripper WORKS on literals it is handed. It says
+## nothing about whether it is doing anything to the REAL files — and on a tree with no comment-borne
+## mention of the path, neutering the wiring in the two readers goes green. So: the consumer files
+## must actually CONTAIN strippable text, and stripping must actually shorten them. Without this the
+## stripper could be a no-op on the corpus that matters and every arm would still pass.
+func test_the_stripper_has_work_to_do_on_the_real_consumers() -> void:
+	var checked := 0
+	for path in MONSTER_PATH_CONSUMERS:
+		var raw := FileAccess.get_file_as_string(path)
+		assert_ne(raw, "", "%s is readable" % path)
+		assert_true(raw.contains("#"),
+			"ANTI-VACUITY: %s holds no comment at all, so the stripper cannot be shown to do anything here" % path)
+		var stripped := _strip_comments(raw)
+		assert_lt(stripped.length(), raw.length(),
+			"the stripper removed NOTHING from %s — it is a no-op on the corpus the arms actually scan" % path)
+		assert_false(stripped.contains("##"),
+			"a ## doc comment survived stripping in %s" % path)
+		checked += 1
+	assert_eq(checked, MONSTER_PATH_CONSUMERS.size(),
+		"every declared consumer was examined — a loop that visits nothing proves nothing")
+
+
 func test_the_comment_stripper_itself() -> void:
 	var cases := [
 		["var p = \"KEEP\"", "KEEP", true,  "plain code survives"],
