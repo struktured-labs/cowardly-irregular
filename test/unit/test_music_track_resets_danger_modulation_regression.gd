@@ -36,16 +36,22 @@ func test_new_track_clears_stale_danger_pitch_and_volume() -> void:
 		"a new track must reset to the user's base volume, not inherit the danger boost")
 
 
-func test_reset_happens_before_branch_dispatch() -> void:
+func test_the_clean_slate_precedes_branch_dispatch() -> void:
 	# Source pin: the reset must sit before the manifest/cache/generated
-	# branches so ALL of them get the clean slate, not just one.
+	# branches so ALL of them get the clean slate, not just one. The reset
+	# is reset_danger() since 8a15eef1 (play_area_music needs it too), so
+	# the second assert keeps this from passing on an empty function.
 	var src: String = FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
 	var fn: int = src.find("func play_music")
 	var body: String = src.substr(fn, src.find("\nfunc ", fn + 1) - fn)
-	var reset_idx: int = body.find("_music_player.pitch_scale = 1.0")
+	var reset_idx: int = body.find("reset_danger()")
 	var manifest_idx: int = body.find("_try_play_from_manifest")
 	var cache_idx: int = body.find("_music_cache.has(track)")
-	assert_gt(reset_idx, -1, "play_music must reset pitch_scale")
+	assert_gt(reset_idx, -1, "play_music must end the danger envelope")
 	assert_gt(manifest_idx, -1)
 	assert_true(reset_idx < manifest_idx and reset_idx < cache_idx,
 		"the pitch/volume reset must precede every play branch so all paths start clean")
+	var rd: int = src.find("func reset_danger(")
+	var rd_body: String = src.substr(rd, src.find("\nfunc ", rd + 1) - rd)
+	assert_true(rd_body.contains("pitch_scale = 1.0") and rd_body.contains("_music_base_db"),
+		"and reset_danger must actually restore the clean pitch and the user's volume")

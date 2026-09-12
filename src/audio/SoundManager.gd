@@ -1895,15 +1895,10 @@ func play_music(track: String, exact: bool = false) -> void:
 	# reset neither and the manifest branch reset only volume, so a new
 	# track could inherit a stale higher pitch / boost. Reset both here
 	# (after the crossfade copied the old track's volume to B).
-	_music_player.pitch_scale = 1.0
-	_music_player.volume_db = _music_base_db
 	# struktured 2026-09-06 "victory music speeds up when the party is mostly dead": the danger
 	# tween (0.5s, ignores time_scale) outlived the track switch and wrote its 1.15x pitch onto the
 	# NEW track. A track change ends the danger envelope; battle re-arms it on the next HP change.
-	if _danger_tween and _danger_tween.is_valid():
-		_danger_tween.kill()
-	_danger_tween = null
-	_danger_intensity = 0.0
+	reset_danger()
 
 	# Try manifest first — file-based music always takes priority
 	_load_music_manifest()
@@ -2143,9 +2138,16 @@ func _apply_danger_intensity(intensity: float) -> void:
 	_music_player.volume_db = _music_base_db + volume_boost
 
 
+## End the danger envelope NOW. Kill-and-zero rather than set_danger_intensity(0.0), which
+## starts a 0.5s tween that would keep writing pitch onto whatever plays next — the very
+## thing this exists to stop. play_music has carried this block inline since struktured's
+## 2026-09-06 "victory music speeds up when the party is mostly dead"; it is the single
+## definition now, and play_area_music calls it too.
 func reset_danger() -> void:
-	"""Reset danger to safe level"""
-	set_danger_intensity(0.0)
+	if _danger_tween and _danger_tween.is_valid():
+		_danger_tween.kill()
+	_danger_tween = null
+	_danger_intensity = 0.0
 	if _music_player:
 		_music_player.pitch_scale = 1.0
 		_music_player.volume_db = _music_base_db  # restore to the user's volume, not the -12.0 default
@@ -4965,6 +4967,12 @@ func play_area_music(area_type: String) -> void:
 		if _resolve_interior_track(area_type) == "":
 			return
 
+	## ⛔ THE AREA PATH NEVER ENDED THE ENVELOPE. play_music resets it; play_area_music reaches
+	## _try_play_from_manifest through _start_*_music and skipped the reset entirely, so an area
+	## bed inherited the last fight's pitch and volume — and the tween stayed alive, still writing.
+	## Measured 2026-09-12: danger at full, then play_area_music("cave") -> pitch 1.034, vol -11.3
+	## on a fresh bed, against 1.000 / -12.0 via play_music.
+	reset_danger()
 	_current_area = area_type
 	_current_world_suffix = _get_current_world_suffix()
 	_pending_music_area = area_type

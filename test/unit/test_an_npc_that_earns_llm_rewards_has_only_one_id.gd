@@ -20,10 +20,43 @@ extends GutTest
 ##
 ## 🔑 IT IS UNREACHABLE TODAY, AND THAT IS A MEASUREMENT, NOT AN ASSUMPTION. `resolve_npc_id` is
 ## called on exactly one path, `_run_dynamic_conversation`, gated on `dynamic and persona != ""`.
-## Three NPCs in the game pass that gate -- Elder Theron, Scholar Milo, Guard Boris -- and all three
-## declare an explicit npc_id, so both derivations return it and agree. All eight divergent NPCs are
-## LLM=false. The two id spaces are also disjoint stores: quest ids go to QuestSystem, reward ids to
+## Three NPCs in the game pass that gate -- Elder Theron, Scholar Milo, Guard Boris. All eight
+## divergent NPCs are LLM=false.
+##
+## ⛔ CORRECTED 2026-09-12: this said the three "declare an explicit npc_id, so both derivations
+## return it and agree". They declare NONE. `BaseVillage._create_npc` (:504) sets npc_name,
+## npc_type, position and dialogue_lines and nothing else, and HarmoniaVillage sets an explicit
+## npc_id only on aldwick/bram/rowan, which are not dynamic. So the three run BOTH slug transforms
+## and agree only because their names carry no apostrophe and no hyphen -- a contingent agreement,
+## not a structural one.
+##
+## THAT ADDS A SECOND TRIGGER THE OLD TEXT DENIED, and it takes TWO edits, not one. Measured both
+## ways rather than reasoned:
+##
+##   rename the village display name ALONE        -> the persona lookup in
+##   ("Guard Boris" -> "Guard O'Boris")              npc_showcase_personas.json is keyed by DISPLAY
+##                                                   NAME, so persona becomes "" and the NPC leaves
+##                                                   the reward path entirely. No divergence to
+##                                                   find; the KNOWN_LLM_NPCS control is what reds.
+##   rename the display name AND the persona key  -> persona resolves, the NPC is LLM-capable, and
+##                                                   the two derivations split:
+##                                                   'guard_oboris' to quests,
+##                                                   "guard_o'boris" to the reward ledger. The
+##                                                   two-id arm reds, naming both spellings.
+##
+## So the live-bug edit is a rename that keeps the persona working. The one-part rename is a
+## different failure (an NPC silently stops being LLM-capable) and a different arm catches it.
+## I drafted this paragraph claiming a one-part rename was enough; the mutation fired ONE assert
+## where I predicted two, which is the only reason the difference surfaced. The two id spaces are also disjoint stores: quest ids go to QuestSystem, reward ids to
 ## the `llm_conversation_reward_claims` ledger, and nothing reads across.
+##
+## ⚠️ AND THE WALK HAS A BLIND POPULATION. `_walk` collects nodes with `get_npc_id`.
+## `WanderingNPC` extends Area2D, has NO such method, and carries its own `dynamic` / `persona`
+## exports plus a live `ConversationRewards.resolve_npc_id("", npc_name)` call
+## (WanderingNPC:487). No wanderer is dynamic today -- measured, the only three `dynamic = true`
+## assignments in src/ are HarmoniaVillage's -- but one flipped in the editor would reach the
+## reward path INVISIBLY to this file. The arm below pins that population at zero rather than
+## leaving the walk quietly short.
 ##
 ## ⚠️ SO THIS IS A TRIPWIRE ON THE PRECONDITION, NOT A FIX. The bug arrives the day someone sets
 ## `dynamic = true` and a persona on an NPC whose name has a hyphen -- a one-line authoring change,
@@ -48,11 +81,16 @@ const MUST_BUILD := [
 ]
 
 
-func _walk(n: Node, acc: Array) -> void:
+## `acc` is the population this guard can compare (both derivations available).
+## `blind` is the one it cannot: nodes that carry the reward path's own gate
+## (`dynamic` + `persona`) but expose no `get_npc_id` — WanderingNPC, today.
+func _walk(n: Node, acc: Array, blind: Array) -> void:
 	for c in n.get_children():
 		if c.has_method("get_npc_id"):
 			acc.append(c)
-		_walk(c, acc)
+		elif c.get("dynamic") != null and c.get("persona") != null:
+			blind.append(c)
+		_walk(c, acc, blind)
 
 
 func _reward_id(npc: Node) -> String:
@@ -65,6 +103,8 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 	var two_ids: Array = []
 	var divergent_anywhere: Array = []
 	var llm_names: Array = []
+	var blind_nodes: Array = []
+	var live_blind: Array = []
 	var npcs_seen := 0
 	var maps_built := 0
 	var built: Array = []
@@ -83,7 +123,7 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 			built.append(path.get_file())
 
 			var npcs: Array = []
-			_walk(map_node, npcs)
+			_walk(map_node, npcs, blind_nodes)
 			for npc in npcs:
 				npcs_seen += 1
 				var quest_id: String = str(npc.get_npc_id())
@@ -144,6 +184,23 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 	## and this arm says so instead of quietly passing forever.
 	assert_gt(divergent_anywhere.size(), 0,
 		"the two id derivations now agree everywhere — unify them for real and DELETE this test, it guards nothing")
+
+	## THE BLIND POPULATION. These reach ConversationRewards.resolve_npc_id (WanderingNPC:487)
+	## and expose no get_npc_id, so the comparison above cannot see them at all. Pinned at zero
+	## rather than left as a silent short-fall in the walk.
+	for node in blind_nodes:
+		var dyn = node.get("dynamic")
+		if dyn != null and bool(dyn):
+			live_blind.append(str(node.get("npc_name")))
+	assert_eq(live_blind, [],
+		("these are on the LLM reward path and INVISIBLE to this guard: %s. They carry dynamic + " +
+		"persona but no get_npc_id, so the two-id comparison above skips them entirely. " +
+		"FIX: widen _walk to derive a quest id for them too, or give the class a get_npc_id.") % str(live_blind))
+	## ANTI-VACUITY: the arm above is an assertion of ABSENCE, so the walk must be finding
+	## candidates at all. Zero here means the collector is broken, not that the game is clean.
+	assert_gt(blind_nodes.size(), 0,
+		"the walk found no dynamic/persona-bearing node without get_npc_id — it is broken, " +
+		"not the tree; WanderingNPC instances exist in the overworld maps")
 
 	assert_eq(two_ids, [],
 		("an NPC on the LLM reward path answers to two different ids: %s\n" +

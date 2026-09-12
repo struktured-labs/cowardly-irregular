@@ -493,7 +493,24 @@ func _build_test_overlay() -> void:
 	box.add_child(hint)
 
 
+## ⛔ THREE PAD-ONLY FLOWS ON THIS SCREEN AND ONLY ONE GUARDED. _start_pad_mapping already refuses
+## with "Connect a pad first"; remap-capture and Test Buttons did not, so a keyboard player on a
+## screen that ALREADY SAYS "No gamepad detected" could open "press a button…" and a button tester,
+## both of which only ever answer to InputEventJoypadButton. Both are escapable (Esc/X, and capture
+## times out in 5s) — this is not a lock, it is being offered a control you do not have, which is
+## the same thing this lane spent .308-.338 removing from captions.
+func _needs_a_pad(message: String) -> bool:
+	if not Input.get_connected_joypads().is_empty():
+		return false
+	_show_flash(message)
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
+	return true
+
+
 func _start_test() -> void:
+	if _needs_a_pad("Connect a controller to test its buttons"):
+		return
 	_testing = true
 	_test_overlay.visible = true
 	var result = _test_overlay.get_node_or_null("TestBox/TestResult")
@@ -904,6 +921,8 @@ func _activate_row() -> void:
 			SoundManager.play_ui("menu_move")
 		return
 
+	if _needs_a_pad("Connect a controller — these rows rebind PAD buttons, not keys"):
+		return
 	_start_capture(InputProfileManager.REMAPPABLE_ACTIONS[action_idx])
 
 
