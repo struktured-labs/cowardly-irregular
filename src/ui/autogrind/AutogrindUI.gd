@@ -451,10 +451,11 @@ func _create_start_stop_button(panel_size: Vector2) -> Control:
 	_add_pixel_border(btn, btn.size)
 
 	var label = Label.new()
+	var toggle_token: String = _toggle_token()
 	if _is_grinding:
-		label.text = "[Start/Select/+] STOP GRINDING"
+		label.text = "%s STOP GRINDING" % toggle_token
 	else:
-		label.text = "[Start/Select/+] START GRINDING"
+		label.text = "%s START GRINDING" % toggle_token
 	label.position = Vector2(btn.size.x / 2 - 120, 8)
 	label.add_theme_font_size_override("font_size", 14)
 	label.add_theme_color_override("font_color", TEXT_COLOR)
@@ -1565,6 +1566,14 @@ func _pad_or_key(pad_name: String, key_name: String) -> String:
 func _pad_name_for_action(action: String, device_name: String = "") -> String:
 	var indices: Array = InputProfileManager.get_current_button_indices(action)
 	return "" if indices.is_empty() else InputProfileManager.button_name_for_index(int(indices[0]), device_name)
+
+
+## The START/STOP caption's button token. Said "[Start/Select/+]": ui_menu binds 6 (START) and 7
+## (L3), never 4 -- and "Select" is index 4's SNES name, which Xbox prints Back and PS prints Share.
+## Keyboard half is "+", NOT ui_menu's own Enter/Escape -- ui_accept/ui_cancel eat both earlier in
+## this console's elif chain. `device_name` is the same TEST SEAM _hint_strip_text carries.
+func _toggle_token(device_name: String = "") -> String:
+	return _pad_or_key(_pad_name_for_action("ui_menu", device_name), "+")
 
 
 func _edit_current_cell() -> void:

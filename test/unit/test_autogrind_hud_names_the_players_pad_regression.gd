@@ -142,6 +142,56 @@ func test_every_label_the_strip_advertises_names_a_key_that_works() -> void:
 		"Start/Stop offers '%s', which ui_accept/ui_cancel consume earlier in the same elif chain — pressing it edits a cell instead (eaten: %s)" % [start_key, eaten])
 
 
+## ⛔ THE BIG GREEN BUTTON SAID "[Start/Select/+] START GRINDING" and NOTHING IN THE FLEET COULD SEE
+## IT. The lane census is [ABXY]-only BY DESIGN (its scope arm asserts Sel:/Start:/L:/R: must NOT
+## match), and @cowir-controller's BUTTON_NAMES arm in test_battle_captions_are_not_nintendo_only
+## covers the two grid editors only — AutogrindUI is not in its corpus, and cannot be: this console's
+## hint strip legitimately prints "Start/Stop" as an ACTION label, which that arm's bounded
+## pre/post match (" Start/") flags as a button name. So the class gets a narrow arm here instead.
+##
+## The banned token is DERIVED per family from index 4 rather than listed: ui_menu binds 6 and 7, so
+## whatever this pad calls 4 must not appear. A future remap that really does bind 4 makes the
+## caption honest and this arm passes — it bans the MISMATCH, not the word "Select".
+func test_the_start_button_names_a_button_ui_menu_actually_binds() -> void:
+	for family in PADS.keys():
+		var device: String = PADS[family]
+		var token: String = _ui._toggle_token(device)
+		var bound := InputProfileManager.get_current_button_indices("ui_menu")
+		var unbound_name: String = InputProfileManager.button_name_for_index(4, device)
+		gut.p("  %-12s token '%s'   ui_menu binds %s   index 4 is '%s'" % [family, token, bound, unbound_name])
+		assert_false(bound.has(4),
+			"CONTROL: this arm only means something while ui_menu leaves index 4 unbound, got %s" % [bound])
+		assert_false(token.contains(unbound_name),
+			"%s START/STOP caption names '%s' (index 4), which ui_menu does not bind: '%s'" % [family, unbound_name, token])
+		var expected: String = InputProfileManager.button_name_for_index(int(bound[0]), device)
+		assert_true(token.contains(expected),
+			"%s caption must name index %d ('%s'), the button that actually toggles: '%s'" % [family, int(bound[0]), expected, token])
+
+
+## The REAL caption, off the real builder — the family arm above sees the helper, this sees the Label.
+## A mutation that freezes label.text while leaving _toggle_token derived passes there and reds here.
+func test_the_start_button_caption_is_what_the_builder_renders() -> void:
+	var btn: Control = _ui._create_start_stop_button(Vector2(420, 300))
+	var caption := ""
+	for c in btn.get_children():
+		if c is Label:
+			caption = c.text
+	btn.free()
+	gut.p("  no pad     '%s'" % caption)
+	assert_true(caption.ends_with(" START GRINDING"),
+		"the button must still say what it does, got '%s'" % caption)
+	var token: String = caption.trim_suffix(" START GRINDING")
+	assert_eq(token, "[+]",
+		"no pad is connected, so the caption may offer only the keyboard key: got '%s'" % token)
+	## Every family's whole name table, so a frozen multi-family literal cannot hide in the no-pad
+	## render — which is exactly how "[Start/Select/+]" survived: three families in one caption.
+	for family in InputProfileManager.BUTTON_NAMES.keys():
+		for idx in InputProfileManager.BUTTON_NAMES[family].keys():
+			assert_false(token.contains(InputProfileManager.BUTTON_NAMES[family][idx]),
+				"no pad connected and the caption spells the %s name for index %d ('%s'): '%s'" % [
+					family, idx, InputProfileManager.BUTTON_NAMES[family][idx], token])
+
+
 func test_the_no_pad_strip_does_not_invent_a_pad() -> void:
 	var strip: String = _ui._hint_strip_text()
 	for glyph in ["Ⓐ", "Ⓑ", "Ⓧ", "Ⓨ", "✕", "○", "□", "△"]:
