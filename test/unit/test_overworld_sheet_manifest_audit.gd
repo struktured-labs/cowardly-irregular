@@ -146,6 +146,14 @@ func test_the_comment_stripper_itself() -> void:
 		["var p = \"KEEP\"  # GONE", "KEEP", true,  "...without eating the code"],
 		["## doc GONE", "GONE", false, "## doc comment removed"],
 		["var p = \"a#b\"", "a#b", true,  "a # INSIDE a string is not a comment"],
+		# ⛔ THE DOCSTRING HALF IS ONLY TESTED HERE. Both real consumers use ## line comments, so the
+		# `#` branch does all the work on them: neutering the TRIPLE-QUOTE branch alone left this file
+		# green at 11/11 (measured 2026-09-12). A pass-through neuter kills both halves at once and
+		# cannot tell a tested branch from an untested one -- cowir-overworld's tautology point,
+		# arriving via cowir-music's branch-granular mutation.
+		["var a = 1\n\"\"\"GONE doc\"\"\"\nvar b = 2", "GONE", false, "a triple-quoted docstring is removed"],
+		["var a = 1\n\"\"\"GONE doc\"\"\"\nvar b = 2", "var b = 2", true, "...without eating the code after it"],
+		["var a = 1\n\"\"\"GONE doc\"\"\"\nvar b = 2", "var a = 1", true, "...or before it"],
 	]
 	for c in cases:
 		var stripped: String = _strip_comments(str(c[0]))
@@ -172,6 +180,39 @@ func _composed_monster_templates() -> Dictionary:
 ## checked against a derived sweep of src/: the hand-list stays (it is the premise, and deriving the
 ## premise from the thing under test is how a corpus drains to empty and passes), and this arm makes
 ## it impossible for the list to be WRONG without saying so.
+## ⛔ STRIPPING IS SAFE HERE BY CONTENT, NOT BY LANGUAGE — so watch the content. A triple-quoted
+## region means DOCUMENTATION only until someone ASSIGNS it to a name; assigned ones are shipping
+## text (cowir-ai found exactly that in DialoguePrompts' grammar constants). ⚠️ THE TEST IS NOT AN
+## OPERATOR LIST: assigned, returned, concatenated, interpolated and passed-as-argument are all
+## content. The predicate that covers every form is IS THERE CODE BEFORE THE QUOTE on the opener
+## line (cowir-controller/cowir-autogrind); documentation opens the line. ⛔ NO COUNT HERE ON
+## PURPOSE — I wrote '4' from an assignment-only pattern, corrected to '5' when the returned form
+## surfaced, and the fleet's prefix test then found 6. Three numbers in one hour, each from a
+## narrower predicate than the last, and a count in a comment cannot be re-derived by its reader.
+## ⛔ SO THIS ARM DOES NOT COUNT REGIONS AT ALL. It counts the NEEDLE, raw and stripped, and
+## asserts nothing real is lost — which is correct whatever the region count turns out to be and
+## whichever discriminator is fashionable. A count needs a right predicate; a loss measurement
+## needs none. That is the whole reason to prefer it here.
+func test_stripping_loses_no_real_consumer() -> void:
+	var files := _walk_gd("res://src")
+	assert_gt(files.size(), 0, "CONTROL: the sweep read something")
+	var raw_hits := []
+	var stripped_hits := []
+	for path in files:
+		var raw := FileAccess.get_file_as_string(path)
+		if raw.contains("assets/sprites/monsters/overworld/"):
+			raw_hits.append(path)
+		if _strip_comments(raw).contains("assets/sprites/monsters/overworld/"):
+			stripped_hits.append(path)
+	assert_gt(raw_hits.size(), 0, "CONTROL: the needle exists in src/ at all — otherwise this compares two empty sets")
+	var lost := []
+	for h in raw_hits:
+		if not stripped_hits.has(h):
+			lost.append(h)
+	assert_eq(lost.size(), 0,
+		"stripping removed an overworld monster path that was NOT in a comment — an assigned triple-quoted region is shipping CONTENT, and deleting it makes a real consumer read as absent:\n" + "\n".join(lost))
+
+
 func test_no_other_file_composes_an_overworld_monster_path() -> void:
 	var found := _walk_gd("res://src")
 	assert_gt(found.size(), 0, "CONTROL: the src sweep read something — an empty walk agrees with any list")
