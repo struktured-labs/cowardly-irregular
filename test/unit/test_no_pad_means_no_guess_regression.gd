@@ -163,7 +163,15 @@ func test_no_unsafe_helper_sits_behind_an_autoload_only_guard() -> void:
 	assert_eq(scanned, files.size(), "every file must be readable, or the sweep is partial")
 	assert_eq(offenders, [] as Array[String],
 		"an unsafe helper behind an AUTOLOAD check — that guard tests whether the singleton " +
-		"exists, never whether a pad is connected, so these render an xbox guess")
+		"exists, never whether a pad is connected, so these render an xbox guess.\n" +
+		"FIX, in order of preference:\n" +
+		"  1. route through InputProfileManager.hint_for_action(action) — it pad-checks " +
+		"internally and returns the keyboard key when no pad is attached;\n" +
+		"  2. if you need a raw index, guard with Input.get_connected_joypads().is_empty() " +
+		"FIRST and name the face position (face_position_for_action) in the empty case;\n" +
+		"  3. if the surface must name every family at once (a reference screen, not a HUD), " +
+		"use get_action_button_label(action) instead of a glyph.\n" +
+		"Offenders: %s" % [", ".join(offenders)])
 
 
 ## The neutral vocabulary the fixes lean on. Without a real position name the only honest
