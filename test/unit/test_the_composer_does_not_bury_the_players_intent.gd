@@ -187,10 +187,18 @@ func test_both_engines_really_treat_no_conditions_as_always() -> void:
 	## DialoguePrompts keeps its two grammar constants that way, HowToPlayOverlay
 	## RETURNS one, TitleScreen concatenates one — and dropping its lines deletes
 	## the subject instead of prose. Measured 0 and 0; this keeps it true.
-	assert_eq(_content_triple_quotes(ab_raw), 0,
-		"AutobattleSystem now opens a triple-quoted region after code — the strip below would eat content")
-	assert_eq(_content_triple_quotes(ag_raw), 0,
-		"AutogrindSystem now opens a triple-quoted region after code — the strip below would eat content")
+	assert_eq(_content_triple_quote_lines(ab_raw), ([] as Array[int]),
+		"AutobattleSystem now opens a triple-quoted region after code (assigned, returned or concatenated) "
+		+ "at the line(s) above — "
+		+ "the strip below drops every line carrying a triple quote and would delete it. "
+		+ "Fix in the GUARD (test_the_composer_does_not_bury_the_players_intent.gd), NOT in the source file: scope _code_only to skip that region, or drop the strip for AutobattleSystem "
+		+ "and re-verify the two contains() asserts still stand on code.")
+	assert_eq(_content_triple_quote_lines(ag_raw), ([] as Array[int]),
+		"AutogrindSystem now opens a triple-quoted region after code (assigned, returned or concatenated) "
+		+ "at the line(s) above — "
+		+ "the strip below drops every line carrying a triple quote and would delete it. "
+		+ "Fix in the GUARD (test_the_composer_does_not_bury_the_players_intent.gd), NOT in the source file: scope _code_only to skip that region, or drop the strip for AutogrindSystem "
+		+ "and re-verify the contains() assert still stands on code.")
 	var ab: String = _code_only(ab_raw)
 	var ag: String = _code_only(ag_raw)
 	## ANTI-VACUITY: both files are heavily commented (92 and 112 triple-quoted
@@ -264,17 +272,17 @@ func test_the_content_region_detector_fires_on_every_shape() -> void:
 	}
 	var blind: Array[String] = []
 	for shape in shapes:
-		if _content_triple_quotes(str(shapes[shape])) == 0:
+		if _content_triple_quote_lines(str(shapes[shape])).is_empty():
 			blind.append(str(shape))
 	assert_eq(blind, ([] as Array[String]),
 		"the detector reads these content shapes as documentation: %s" % ", ".join(blind))
 	## And it must NOT fire on the documentation shape, or every file reds.
-	assert_eq(_content_triple_quotes("func f():\n\t\"\"\"just a docstring\"\"\"\n"), 0,
+	assert_eq(_content_triple_quote_lines("func f():\n\t\"\"\"just a docstring\"\"\"\n").size(), 0,
 		"a free-standing docstring is not content")
 	## Real file, so the zeros above are not purely synthetic.
 	var dp: String = FileAccess.get_file_as_string("res://src/llm/DialoguePrompts.gd")
 	assert_false(dp.is_empty(), "CONTROL: DialoguePrompts must load")
-	assert_gt(_content_triple_quotes(dp), 0,
+	assert_gt(_content_triple_quote_lines(dp).size(), 0,
 		"the detector finds nothing in a file known to carry two grammar constants")
 
 
@@ -286,10 +294,17 @@ func test_the_content_region_detector_fires_on_every_shape() -> void:
 ## before it makes the region content: assigned, returned, concatenated, or a
 ## dict value. Free-standing under a `func` line is documentation.
 ## "docstring" is a per-file property, not a language fact.
-func _content_triple_quotes(src: String) -> int:
-	var n: int = 0
+## Returns the 1-based LINE NUMBERS of the offending openers, not a count.
+## GUT's headless runner prints `at line -1` for every failing assert
+## (gut.gd:887 builds the locator from get_stack(), which is empty with no
+## debugger attached), so the offender string is the whole message a reader
+## gets. A count names a defect; the lines name where to go.
+func _content_triple_quote_lines(src: String) -> Array[int]:
+	var out: Array[int] = []
 	var inside: bool = false
+	var lineno: int = 0
 	for line in src.split("\n"):
+		lineno += 1
 		var i: int = 0
 		while true:
 			var at: int = line.find("\"\"\"", i)
@@ -297,9 +312,9 @@ func _content_triple_quotes(src: String) -> int:
 				break
 			if not inside:
 				if line.substr(0, at).strip_edges() != "":
-					n += 1
+					out.append(lineno)
 				inside = true
 			else:
 				inside = false
 			i = at + 3
-	return n
+	return out
