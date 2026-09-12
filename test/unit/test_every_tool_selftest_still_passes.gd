@@ -27,6 +27,34 @@ extends GutTest
 ## selftest does not. Three spot-checked green today. Their runner belongs in the publish chain
 ## rather than this suite, so they are not walked here.
 ##
+## ⛔⛔ AND DO NOT ADD A `.sh` ARM. I OFFERED ONE AND IT WOULD HAVE DEREGISTERED 133 WORKTREES.
+##
+## `reap_release_worktrees.sh --selftest` ran `git worktree prune`, which deregisters any
+## worktree whose directory is momentarily absent — irrecoverably: moving the directory back
+## does not restore it, and `git worktree repair` does not either (cowir-deploy, measured).
+## This repo carried 133 registered worktrees belonging to every lane, and THIS GUARD RUNS ON
+## EVERY GATE. Fixed in 484e7dc7; the point is that my walk would have executed it, repeatedly.
+##
+## 🔑 AND THE CALL THAT MATTERED WAS NOT IN `selftest()`. Two prunes sat in the selftest body;
+## deleting both leaves the tool destructive, because the selftest invokes the tool's own real
+## path as a subprocess (`"$self" --keep 1 --apply`) and the `--apply` branch pruned elsewhere.
+## That "fix" scores GREEN — 14 arms — on a repo that still reaps its neighbours.
+##
+##     shallow rule   "read what the selftest does"       NOT ENOUGH. I wrote this one first.
+##     real rule      READ WHAT IT REACHES, TRANSITIVELY. A selftest that shells out to its
+##                    own tool inherits everything that tool does, and reading `selftest()`
+##                    tells you nothing about it.
+##
+## `--selftest` IS A NAMING CONVENTION, NOT A SAFETY CONTRACT. This file walks `.py` tools whose
+## selftests were each read and reach only files and temp files. That is a property of THESE
+## MEMBERS, established by reading them; it does not transfer to a family sharing the flag name.
+##
+## ⚠️ The exemption's safety is positional too, not categorical: `audit_whoop`'s baseline
+## refresh sits behind a SEPARATE `--write` flag, and its selftest reaches one subprocess
+## (ffmpeg, temp in and temp out) and zero repo paths — checked transitively by cowir-sfx after
+## a first pass that read only the function body. Fold refresh into the selftest, a plausible
+## convenience, and it mutates a pinned baseline on every gate.
+##
 ## 🔑 WHY THIS IS NOT HYPOTHETICAL, and it is my own tool: `cutscene_dispatch.py` shipped in
 ## `.335` not knowing the `cutscene_id` dispatch form, and reported three scenes that shipped in
 ## the SAME TAG as unreachable. Its selftest was green throughout — the gap was a door nobody
