@@ -10,15 +10,46 @@ extends GutTest
 const BS := "res://src/battle/BattleScene.gd"
 
 
+## BEHAVIOURAL since 2026-09-12. This asserted that the literal text `if not visible:` sat
+## inside _input's body ABOVE the first is_action_pressed — a claim about WHERE the guard
+## lives. The guards moved into the shared _nav_is_blocked() predicate (so the hold-to-repeat
+## path honours them too, which it did not), and this went red on a strictly better tree.
+## Driving the menu answers the question the test name asks, and cannot be broken by a move.
 func test_hidden_win98_menu_never_consumes_input() -> void:
-	var src := FileAccess.get_file_as_string("res://src/ui/Win98Menu.gd")
-	var fn_idx := src.find("func _input")
-	var next_fn := src.find("\nfunc ", fn_idx + 1)
-	var body := src.substr(fn_idx, (next_fn - fn_idx) if next_fn > -1 else -1)
-	var vis_guard := body.find("if not visible:")
-	var first_action := body.find("is_action_pressed")
-	assert_gt(vis_guard, -1, "_input must bail when the menu is hidden")
-	assert_lt(vis_guard, first_action, "the visibility bail must precede ALL action handling")
+	var menu = load("res://src/ui/Win98Menu.gd").new()
+	add_child_autofree(menu)
+	menu.setup("Command", [
+		{"id": "attack", "label": "Attack"},
+		{"id": "item", "label": "Item"},
+	], Vector2(10, 10), "fighter")
+	menu._can_accept_input = true
+	menu.selected_index = 0
+	menu.visible = false
+
+	var picked := {"v": false}
+	if menu.has_signal("item_selected"):
+		menu.item_selected.connect(func(_a = null, _b = null): picked["v"] = true)
+
+	for action in ["ui_down", "ui_accept"]:
+		var ev := InputEventAction.new()
+		ev.action = action
+		ev.pressed = true
+		menu._input(ev)
+
+	assert_eq(menu.selected_index, 0,
+		"a HIDDEN menu must not act on navigation — boss dialogue hides the command menu and " +
+		"owns the press (struktured 2026-08-15 spotlight-duel ambiguity)")
+	assert_false(picked["v"], "…and must not confirm a selection either")
+
+	# CONTROL: the same harness on a VISIBLE menu must move, or the arm above is vacuous.
+	menu.visible = true
+	var ev2 := InputEventAction.new()
+	ev2.action = "ui_down"
+	ev2.pressed = true
+	menu._input(ev2)
+	assert_eq(menu.selected_index, 1,
+		"CONTROL: visible, the identical press MUST step — otherwise 'hidden did nothing' is " +
+		"just a harness that does nothing")
 
 
 func test_mid_battle_boss_lines_route_through_the_hiding_helper() -> void:

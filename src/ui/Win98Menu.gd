@@ -275,6 +275,12 @@ func _process(delta: float) -> void:
 		Win98Menu._advance_axis_held = false
 	# Hold-to-repeat. Only up/down: left/right enter and exit submenus here, so repeating
 	# them would thrash the player in and out on a single hold.
+	# ⛔ SAME GUARDS AS THE PRESS PATH. This polls Input directly, so it reaches none of
+	# _input's refusals on its own: measured, a 2s hold inside an open submenu stepped the
+	# PARENT 22 times and re-ran _auto_expand_submenu on every one.
+	if _nav_is_blocked():
+		_nav_repeat.reset()
+		return
 	var repeat_action := _nav_repeat.tick(delta)
 	if repeat_action == "ui_up":
 		_nav_step(-1)
@@ -1635,23 +1641,31 @@ func _nav_step(dir: int) -> void:
 	_auto_expand_submenu()
 
 
-func _input(event: InputEvent) -> void:
-	"""Handle input for menu navigation"""
+## Every reason this menu must not act on navigation, in ONE place. _input and the
+## hold-to-repeat in _process both consult it: they were separate lists, and the repeat
+## path silently bypassed four of the five guards the press path had.
+func _nav_is_blocked() -> bool:
 	# A closing/queued-free menu still receives _input until freed — bail so one press isn't handled twice (double Advance / menu overlap).
 	if is_queued_for_deletion() or _is_closing:
-		return
+		return true
 	# A HIDDEN menu must not eat input either — boss dialogue hides the command menu and owns the A press (struktured 2026-08-15 spotlight-duel ambiguity).
 	if not visible:
-		return
+		return true
 	# A tutorial hint is capturing input — don't double-fire. (`or is_input_handled()` was removed 2026-09-06: unreachable in production, it only suppressed synthetic-input tests.)
 	if TutorialHint.is_any_active():
-		return
+		return true
 	# Wait for input delay to prevent accidental selection
 	if not _can_accept_input:
-		return
-
+		return true
 	# If submenu is open, let it handle input instead
 	if submenu and is_instance_valid(submenu):
+		return true
+	return false
+
+
+func _input(event: InputEvent) -> void:
+	"""Handle input for menu navigation"""
+	if _nav_is_blocked():
 		return
 
 	# DON'T consume battle_toggle_auto - let it pass through to BattleScene
