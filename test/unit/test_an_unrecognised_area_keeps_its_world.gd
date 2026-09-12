@@ -75,10 +75,15 @@ func test_control_the_medieval_default_is_unchanged() -> void:
 
 
 func test_control_a_recognised_key_still_routes_through_its_own_arm() -> void:
-	## The default must not start swallowing keys that have arms.
-	await _play("overworld_suburban")
-	assert_eq(_stream(), "res://assets/audio/music/overworld_suburban.ogg",
-		"a key WITH an arm now resolves through the default instead (%s)" % _stream())
+	## ⛔ MUST be a key whose ARM and the DEFAULT disagree, or the control cannot fail.
+	## First draft used `overworld_suburban`: deleting its arm left the test GREEN,
+	## because the world-aware default composes `overworld_suburban` too. The new
+	## default SHADOWS all five overworld arms — measured, and the reason this arm
+	## moved to a dungeon, where the arm plays dungeon_suburban and the default would
+	## play overworld_suburban.
+	await _play("suburban_dungeon")
+	assert_eq(_stream(), "res://assets/audio/music/dungeon_suburban.ogg",
+		"a key WITH an arm now resolves through the default instead (%s) — the default is a floor for unrouted keys, never a substitute for routing" % _stream())
 
 
 func test_an_unknown_key_in_an_unknown_world_still_lands_somewhere() -> void:
