@@ -43,6 +43,10 @@ const FRAME_H: int = 32
 ## Setting a flag never advances a quest; only notify_flag does.
 @export var quest_flag: String = ""
 
+## Cutscene JSON id played immediately before the fight. Empty = straight to battle.
+## Same contract as DragonCave.boss_cutscene_id, including the replay-on-reapproach behaviour.
+@export var cutscene_id: String = ""
+
 var _fired: bool = false
 
 
@@ -195,7 +199,31 @@ func _on_body_entered(body: Node2D) -> void:
 			"quest_flags": [quest_flag] if quest_flag != "" else [],
 		}
 	monitoring = false
+	await _play_encounter_beat()
 	_fire_battle()
+
+
+## The authored pre-fight beat. Every failure path falls through to the fight — a missing
+## scene must never cost the player the encounter.
+func _play_encounter_beat() -> void:
+	if cutscene_id == "":
+		return
+	var path := "res://data/cutscenes/%s.json" % cutscene_id
+	if not FileAccess.file_exists(path):
+		push_warning("[MasteriteEncounter] cutscene_id='%s' but %s does not exist — going straight to the fight" % [cutscene_id, path])
+		return
+	# CutsceneDirector is GameLoop-owned, NOT an autoload — a /root/ lookup silently falls back (DragonCave:676).
+	var game_loop = get_node_or_null("/root/GameLoop")
+	var director = null
+	if game_loop != null and game_loop.has_method("get_cutscene_director"):
+		director = game_loop.get_cutscene_director()
+	if director == null:
+		push_warning("[MasteriteEncounter] cutscene_id='%s' configured but GameLoop.get_cutscene_director() returned null — going straight to the fight" % cutscene_id)
+		return
+	if not director.has_method("play_cutscene"):
+		push_warning("[MasteriteEncounter] cutscene_id='%s' configured but CutsceneDirector lacks play_cutscene — going straight to the fight" % cutscene_id)
+		return
+	await director.play_cutscene(cutscene_id)
 
 
 func _fire_battle() -> void:
