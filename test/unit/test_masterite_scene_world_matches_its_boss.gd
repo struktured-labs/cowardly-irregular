@@ -89,7 +89,7 @@ func test_no_masterite_scene_shows_the_world_below_its_boss() -> void:
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("%s/%s.json" % [CUTSCENE_DIR, id]))
 		var bg: String = str((parsed as Dictionary).get("background", "")) if parsed is Dictionary else ""
 		if want > 1 and bg == str(WORLD_GENERIC_BACKDROP.get(want - 1, "")):
-			offenders.append("%s (boss world %d) shows %s, the world-%d backdrop; set it to %s" % [id, want, bg, want - 1, str(WORLD_GENERIC_BACKDROP.get(want, ""))])
+			offenders.append("%s (boss world %d) shows %s, the world-%d backdrop — the slid value. Set it to %s (the world-%d generic) OR to a location specific to world %d; both pass." % [id, want, bg, want - 1, str(WORLD_GENERIC_BACKDROP.get(want, "")), want, want])
 		elif bg != str(WORLD_GENERIC_BACKDROP.get(want, "")):
 			specific += 1
 	offenders.sort()
