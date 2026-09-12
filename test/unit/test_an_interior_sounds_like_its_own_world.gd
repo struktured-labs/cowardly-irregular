@@ -109,3 +109,29 @@ func test_an_unknowable_world_keeps_the_older_inherit_behaviour() -> void:
 	await get_tree().process_frame
 	assert_eq(_stream(), "res://assets/audio/music/village_scriptura.ogg",
 		"with an out-of-range world the room should inherit as it always did, not fall to a guessed bed")
+
+func test_an_unauthored_room_inherits_even_when_the_suffix_cache_has_lagged() -> void:
+	## ⛔ REGRESSION, and it was mine. The same-world check first compared the room's
+	## world to the raw `_current_world_suffix` CACHE, which has one writer and can name
+	## a world the player already left. So inheriting depended on ambient state:
+	## test_interior_music_routing::test_inherit_on_missing_keeps_current_area passed
+	## alone and FAILED inside a 58-file batch (@cowir-adhoc, 2026-09-12), because an
+	## earlier test had left the cache on another world. Measured with the setup that
+	## test uses plus the state it does not set:
+	##
+	##     cache "industrial", GameState 1  ->  _current_area became the ROOM   ⛔
+	##     cache "medieval",   GameState 1  ->  stayed "village"                ✅
+	##
+	## An intermittent red is the symptom; the defect is that an unauthored room would
+	## cut the village bed and restart it whenever the cache lagged. Comparing against
+	## _get_current_world_suffix() reads the area actually being left and falls back to
+	## the cache only when that area has no arm.
+	SoundManager._current_area = "village"
+	SoundManager._music_playing = true
+	SoundManager._current_world_suffix = "industrial"
+	GameState.current_world = 1
+
+	SoundManager.play_area_music("interior_zz_unauthored_room")
+
+	assert_eq(SoundManager._current_area, "village",
+		"an unauthored room stopped inheriting because the suffix CACHE named another world — the bed the player is hearing belongs to _current_area, which is what the comparison must resolve")

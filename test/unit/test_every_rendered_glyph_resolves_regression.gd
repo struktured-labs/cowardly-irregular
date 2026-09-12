@@ -179,8 +179,11 @@ func test_no_glyph_the_game_renders_is_tofu() -> void:
 	gut.p("glyph corpus: %d distinct | roots %s | files %d | spellings recognised: 2 (literal, \\uXXXX) | excluded: .gd comments, JSON %s"
 		% [glyphs.size(), str(ROOTS), _file_count, str(DOC_FIELDS)])
 	assert_eq(tofu, [] as Array[String],
-		"glyphs with no coverage anywhere in the font chain render as BOXES to the player: %s" %
-		", ".join(tofu))
+		"glyphs with no coverage anywhere in the font chain render as BOXES to the player.\n" +
+		"FIX: pick a glyph the chain already covers — this lane replaced 🌅/🌇/🌙 with ◑/◐/☾ in " +
+		"the day clock for exactly this reason, and the swap cost nothing. Extending the font " +
+		"subset is the other option and it grows the web build, so prefer substitution unless " +
+		"the glyph is load-bearing. Uncovered: %s" % ", ".join(tofu))
 
 
 ## CONTROL. The probe must return BOTH answers, or "no tofu" is unfalsifiable — a chain that

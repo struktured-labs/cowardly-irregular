@@ -161,7 +161,9 @@ func test_every_overworld_script_carries_the_method() -> void:
 		var src := _code(path)
 		assert_gt(src.length(), 500, "CONTROL: %s is readable" % str(path).get_file())
 		if not src.contains("func _get_music_area_id"):
-			missing.append(str(path).get_file())
+			# Not a bare filename: carry the key this file must return, so the fix is the message.
+			missing.append("%s — add `func _get_music_area_id() -> String: return \"%s\"`" % [
+				str(path).get_file(), str(WORLDS[path][0])])
 	missing.sort()
 	assert_eq(missing, [],
 		"an overworld dropped _get_music_area_id — it will fall to the deriver's \"overworld\" " +

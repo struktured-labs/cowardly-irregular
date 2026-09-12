@@ -73,10 +73,11 @@ func _draw() -> void:
 	_draw_dpad(POS_DPAD)
 	_draw_label_for("dpad", POS_DPAD)
 
-	_draw_face_button(POS_A, "A", "a")
-	_draw_face_button(POS_B, "B", "b")
-	_draw_face_button(POS_X, "X", "x")
-	_draw_face_button(POS_Y, "Y", "y")
+	# The POSITIONS are physical; only the letters on them were Nintendo's. Index per FACE_GLYPHS.
+	_draw_face_button(POS_A, _face_print(1, "E"), "a")
+	_draw_face_button(POS_B, _face_print(0, "S"), "b")
+	_draw_face_button(POS_X, _face_print(3, "N"), "x")
+	_draw_face_button(POS_Y, _face_print(2, "W"), "y")
 
 	_draw_small_button(POS_SELECT, "select")
 	_draw_small_button(POS_START, "start")
@@ -87,6 +88,15 @@ func _draw() -> void:
 	var title_font = ThemeDB.fallback_font
 	if title_font:
 		draw_string(title_font, Vector2(10, 16), "CONTROLS", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, HINT_COLOR)
+
+
+## What THIS pad prints at a face position. With no pad the position itself is the only true
+## answer — face_glyph_for_index would hand back the xbox table's letter as if it were neutral.
+func _face_print(index: int, position_initial: String) -> String:
+	if Input.get_connected_joypads().is_empty() or not InputProfileManager:
+		return position_initial
+	var g: String = InputProfileManager.face_glyph_for_index(index)
+	return position_initial if g == "" or g == "?" else g
 
 
 func _draw_face_button(pos: Vector2, letter: String, button_id: String) -> void:

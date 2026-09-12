@@ -621,6 +621,26 @@ func _resolve_attack(attacker, target) -> int:
 	## BLIND: the live engine adds 0.40 to the miss rate (BattleManager's attack miss check) and this
 	## resolver applied the status and then ignored it — the Bard's Riff inflicts blind on a 70% roll,
 	## so his signature disruption did nothing in a grind while doing its job in a live fight.
+	## INVISIBLE and SHADOW_STEP on the TARGET: the live engine misses outright and the status falls
+	## off on the swing — "the swing reveals them" (_target_dodges_physical). Both were applied in a
+	## grind and read by nobody, the same shape blind had, and both are cast by SHIPPED presets:
+	## ninja_defensive spends 12 MP on vanish, ninja_balanced and ninja_aggressive 8 on shadow_step.
+	## Checked before the miss ROLL rather than folded into it, because live does not roll at all.
+	## ⚠️ Written as two LITERAL has_status calls rather than a loop over a list, deliberately. The
+	## parity guard derives its ignored-status set by scanning both engines for has_status("…") and a
+	## loop variable is invisible to it — the first draft of this fix used one, and the guard went on
+	## reporting `invisible` as ignored while the code honoured it. A composed writer under a literal
+	## scan is the exact shape that guard exists to catch, so the implementation reads the way the
+	## measurement does.
+	if target.has_status("invisible"):
+		target.remove_status("invisible")
+		_log("%s strikes thin air — %s was invisible!" % [attacker.combatant_name, target.combatant_name])
+		return 0
+	if target.has_status("shadow_step"):
+		target.remove_status("shadow_step")
+		_log("%s strikes thin air — %s had stepped into shadow!" % [attacker.combatant_name, target.combatant_name])
+		return 0
+
 	var base_miss: float = 0.10
 	if attacker.has_status("blind"):
 		base_miss += 0.40
@@ -632,8 +652,13 @@ func _resolve_attack(attacker, target) -> int:
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
 	damage *= randf_range(0.85, 1.15)
 
+	## SHADOW_STEP on the ATTACKER: a guaranteed crit live (_calculate_crit_chance returns 1.0 up
+	## front). The Ninja's whole setup move is "step into the shadows so the next swing crits", and
+	## in a grind it bought nothing at all.
 	var crit_chance = min(0.50, 0.05 + attacker.speed * 0.01)
 	var is_crit = randf() < crit_chance
+	if attacker.has_status("shadow_step"):
+		is_crit = true
 	if is_crit:
 		damage *= 1.5
 		_log("Critical hit!")

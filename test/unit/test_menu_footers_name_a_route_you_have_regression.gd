@@ -99,7 +99,10 @@ func test_no_footer_names_a_pad_letter_without_a_key() -> void:
 			offenders.append("%s :: %s" % [str(entry[0]).get_file(), text])
 	gut.p("footer corpus: %d strings scanned from src/ui | key vocabulary: %s" % [_scanned, str(KEY_WORDS)])
 	assert_eq(offenders, [] as Array[String],
-		"a footer names a pad face letter and no key a keyboard player can press: %s" %
+		"a footer names a pad face letter and no key a keyboard player can press.\n" +
+		"FIX: derive the token with InputProfileManager.hint_for_action(<the action the footer " +
+		"describes>) — it returns that pad family's glyph when a pad is attached and the " +
+		"keyboard key when none is, so one string serves both. Offenders: %s" %
 		"\n  ".join(offenders))
 
 
