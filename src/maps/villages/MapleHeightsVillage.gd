@@ -266,13 +266,15 @@ func _setup_treasures() -> void:
 	chest2.position = Vector2(23 * TILE_SIZE,13 * TILE_SIZE)
 	treasures.add_child(chest2)
 
-	# Under a garden flower patch — a dusty ether
+	# Under a garden flower patch — a dusty ether. Was (7,16), the Basement Developer's EXACT cell
+	# 155 lines below: the chest took all six of his approach presses, so wrong_blue step 3 could
+	# not be completed, and once looted it answered "The chest is empty." in his place forever.
 	var chest3 = TreasureChestScript.new()
 	chest3.chest_id = "maple_heights_chest_3"
 	chest3.contents_type = "item"
 	chest3.contents_id = "ether"
 	chest3.contents_amount = 1
-	chest3.position = Vector2(7 * TILE_SIZE,16 * TILE_SIZE)
+	chest3.position = Vector2(5 * TILE_SIZE,18 * TILE_SIZE)
 	treasures.add_child(chest3)
 
 
