@@ -2620,7 +2620,7 @@ func _show_permadeath_confirmation() -> void:
 	var warn_lbl := RichTextLabel.new()
 	warn_lbl.bbcode_enabled = true
 	var _danger: String = AccessibilityPalette.penalty_bbcode()
-	warn_lbl.text = "[color=white]Enabling [color=%s]PERMADEATH STAKES[/color] means:\n\n- If your party is wiped, the lowest-HP member [color=%s]DIES PERMANENTLY[/color]\n- Their death is saved to disk and cannot be undone\n- Rewards grow 50%% faster as compensation\n\n[color=yellow]Are you sure?[/color][/color]" % [_danger, _danger]
+	warn_lbl.text = "[color=white]Enabling [color=%s]PERMADEATH STAKES[/color] means:\n\n- If your party is wiped, the lowest-HP member [color=%s]DIES PERMANENTLY[/color]\n- Their death is saved to disk and cannot be undone\n- Rewards grow %d%%%% faster as compensation\n\n[color=yellow]Are you sure?[/color][/color]" % [_danger, _danger, AutogrindSystem.staking_growth_bonus_percent()]
 	warn_lbl.position = Vector2(12, 36)
 	warn_lbl.size = Vector2(dialog.size.x - 24, 108)
 	warn_lbl.add_theme_font_size_override("normal_font_size", 11)
@@ -2648,7 +2648,7 @@ func _show_permadeath_confirmation() -> void:
 		func() -> void:
 			_permadeath_staking_enabled = true
 			AutogrindSystem.enable_permadeath_staking(true)
-			_log_message("[color=%s]PERMADEATH STAKES ENABLED! +50%% efficiency growth.[/color]" % AccessibilityPalette.penalty_bbcode())
+			_log_message("[color=%s]PERMADEATH STAKES ENABLED! +%d%%%% efficiency growth.[/color]" % [AccessibilityPalette.penalty_bbcode(), AutogrindSystem.staking_growth_bonus_percent()])
 			overlay.queue_free()
 			_build_ui()
 			SoundManager.play_ui("menu_select"),

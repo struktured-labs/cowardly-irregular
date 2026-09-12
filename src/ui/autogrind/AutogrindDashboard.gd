@@ -754,7 +754,7 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 
 	if _permadeath_label and is_instance_valid(_permadeath_label):
 		var staking = AutogrindSystem.permadeath_staking_enabled
-		_permadeath_label.text = "PERMADEATH: %s (3x EXP)" % ("ON" if staking else "OFF")
+		_permadeath_label.text = permadeath_label_text(staking)
 		_permadeath_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2) if staking else Color(0.5, 0.5, 0.6))
 
 	var avg_label := "~%d" % int(avg_exp_per_battle) if _exp_history.size() > 0 else ("~%d" % int(avg_exp_per_battle) if _battles_completed >= 3 else "--")
@@ -816,6 +816,17 @@ func set_ludicrous_mode(enabled: bool) -> void:
 # `_autogrind_dashboard` doesn't call them either. They were dead
 # code that read as "intentionally swallow events" — misleading.
 # Reintroduce when the Dashboard actually needs the surface.
+
+
+## The stakes caption, pure and static so a guard can RENDER both states instead of parsing this
+## file. It used to be `"PERMADEATH: %s (3x EXP)" % (...)`: the 3x is applied nowhere on the live
+## path (permadeath_multiplier reaches only _simulate_battle, whose caller has no callers), and the
+## suffix sat OUTSIDE the conditional, so a disabled dashboard also advertised it.
+## The number is derived, because three surfaces quote this trade and one of them was wrong.
+static func permadeath_label_text(staking: bool) -> String:
+	if not staking:
+		return "PERMADEATH: OFF"
+	return "PERMADEATH: ON (+%d%% growth)" % AutogrindSystem.staking_growth_bonus_percent()
 
 
 func _update_stat(key: String, value: String) -> void:
