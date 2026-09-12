@@ -38,12 +38,34 @@ const CUTSCENE_DIR := "res://data/cutscenes"
 ## W4/W5/W6 credits rolls — world6_ending's included — are audible on web.
 ## 18 until 2026-09-11, when the nine cutscene_w6_* beds were un-excluded so
 ## world6_ending and world5_transition stop playing in silence on web.
-const KNOWN_SILENT_ON_WEB := 9
+## ⛔ THESE NUMBERS DESCRIBE A BUILD NOBODY SHIPS. Renamed 2026-09-11 after I
+## reported them as player experience for a day and was wrong every time.
+##
+## deploy_web.sh publishes through make_web_stage.sh (WEB_STAGE=1, the DEFAULT).
+## That stage swaps in a 48 kbps tier and then DELIBERATELY DROPS every music
+## pattern from the Web preset's exclude_filter — "drop every music pattern that
+## actually matches a master", derived, not hand-listed. Measured: 25 live music
+## exclusions dropped, 161 of 161 masters packed, 0 deliberately excluded.
+##
+## So on the build in the store, EVERY bed ships. SoundManager.music_is_available
+## decides by attempting load(), which answers from the pack — not from this
+## filter, which nothing in src/ reads at all (0 occurrences).
+##
+## WEB_STAGE=0 is a faster direct export that deploy_web.sh itself labels
+## "ships WITHOUT the W4-W6 endings". It is not the default and is not published.
+## These two numbers are true of THAT export and of nothing a player runs.
+##
+## Kept rather than deleted because the fallback path still exists and a silent
+## regression there is worth knowing about — but the name now says which build,
+## so the next reader does not do what I did: read a config file, call it a
+## player experience, and build a scene count, a budget argument and a ruling
+## request on top of it.
+const SILENT_ON_THE_FALLBACK_EXPORT := 9
 ## The consequence, not the cause. 9 BEDS are dropped; 5 SCENES go silent
 ## because they stop the music before requesting one. The other 21 restore the
 ## world's bed and are merely wrong-flavoured. world6_ending WAS in that set
 ## until the w6 beds shipped; the five that remain are W4 and W5 scenes.
-const WEB_SILENT_SCENES := 5
+const FALLBACK_EXPORT_SILENT_SCENES := 5
 
 
 ## ⛔ SELECT THE PRESET BY NAME. The first version of this took the LONGEST
@@ -190,18 +212,18 @@ func test_the_set_of_web_silent_cues_has_not_grown() -> void:
 			silent.append(str(id))
 	silent.sort()
 
-	assert_true(silent.size() <= KNOWN_SILENT_ON_WEB,
-		"MORE cutscene cues are dropped from the web build than the %d measured 2026-09-11 (now %d): %s — a newly authored W4-W6 cutscene cue is silent on web, and nothing else would have said so" % [KNOWN_SILENT_ON_WEB, silent.size(), silent])
+	assert_true(silent.size() <= SILENT_ON_THE_FALLBACK_EXPORT,
+		"MORE cutscene cues are dropped from the WEB_STAGE=0 FALLBACK export (not the published build) than the %d measured 2026-09-11 (now %d): %s — a newly authored W4-W6 cutscene cue is silent on web, and nothing else would have said so" % [SILENT_ON_THE_FALLBACK_EXPORT, silent.size(), silent])
 	## And it must not silently shrink either: if the fallback lands, or the
 	## exclusions change, this pin is stale and should be deleted rather than
 	## left describing a state that no longer exists.
-	assert_true(silent.size() >= KNOWN_SILENT_ON_WEB,
-		"FEWER cutscene cues are web-silent than the %d pinned (now %d) — this was fixed or the export changed; delete the pin rather than leave it documenting history" % [KNOWN_SILENT_ON_WEB, silent.size()])
+	assert_true(silent.size() >= SILENT_ON_THE_FALLBACK_EXPORT,
+		"FEWER cutscene cues are silent on the WEB_STAGE=0 FALLBACK export than the %d pinned (now %d) — this was fixed or the export changed; delete the pin rather than leave it documenting history" % [SILENT_ON_THE_FALLBACK_EXPORT, silent.size()])
 
 
 ## What a PLAYER experiences, which the cue count above does not measure.
 ##
-## KNOWN_SILENT_ON_WEB counts BEDS whose file the Web preset drops — 18 of them.
+## SILENT_ON_THE_FALLBACK_EXPORT counts BEDS whose file the Web preset drops — 18 of them.
 ## That is a property of the manifest and the preset. It is not the consequence,
 ## and reading it as one is how `world6_ending` went unnoticed: the campaign's
 ## closer plays its whole scene in SILENCE on web.
@@ -259,8 +281,47 @@ func test_the_web_silent_population_is_reported_as_scenes() -> void:
 	assert_gt(walked, 150, "SCOPE control: walked %d cutscene files" % walked)
 	assert_gt(restores.size(), 0,
 		"CONTROL FAILED: no scene reaches an excluded cue with music still playing. Both halves should be non-empty; one empty means the step-order read is broken, not that the population moved")
-	assert_eq(silent.size(), WEB_SILENT_SCENES,
-		"scenes that play SILENT on web changed: %d, pinned %d. This is the player-facing half of KNOWN_SILENT_ON_WEB — those are beds, these are scenes. %s" % [silent.size(), WEB_SILENT_SCENES, silent])
+	assert_eq(silent.size(), FALLBACK_EXPORT_SILENT_SCENES,
+		"scenes that play silent on the WEB_STAGE=0 FALLBACK export changed: %d, pinned %d. This is the player-facing half of SILENT_ON_THE_FALLBACK_EXPORT — those are beds, these are scenes. %s" % [silent.size(), FALLBACK_EXPORT_SILENT_SCENES, silent])
+
+
+## The fact that makes every number above describe a build nobody ships, pinned
+## so it cannot go invisible again. If the staged path ever stops dropping music
+## exclusions, these counts start describing the store and this arm says so.
+func test_the_published_path_drops_these_exclusions_entirely() -> void:
+	var stage: String = FileAccess.get_file_as_string("res://tools/make_web_stage.sh")
+	assert_gt(stage.length(), 2000, "SCOPE control: make_web_stage.sh read back %d chars" % stage.length())
+	assert_true(stage.contains("assets/audio/music/"),
+		"make_web_stage.sh no longer inspects music exclusions — the counts in this file may now describe the published build, which is the opposite of what its header says")
+	assert_true(stage.contains("dropped.append"),
+		"the staged export no longer DROPS music exclusions. That is the one fact making SILENT_ON_THE_FALLBACK_EXPORT a statement about a fallback rather than about the store — re-read this file's header before trusting either number")
+	var deploy: String = FileAccess.get_file_as_string("res://tools/deploy_web.sh")
+	assert_true(deploy.contains("WEB_STAGE:-1"),
+		"deploy_web.sh no longer defaults to the STAGED export — if the direct export became the default, these counts describe the published build and the header is wrong")
+	## And the filter is invisible to the game: nothing in src/ reads it, so no
+	## runtime behaviour follows from it on any platform.
+	var dir := DirAccess.open("res://src")
+	assert_not_null(dir, "SCOPE control: src/ did not open")
+	assert_eq(_count_in_tree("res://src", "exclude_filter"), 0,
+		"something in src/ now reads exclude_filter — availability is decided by load() against the pack, and a second reader would change that")
+
+
+func _count_in_tree(root: String, needle: String) -> int:
+	var n: int = 0
+	var dir := DirAccess.open(root)
+	if dir == null:
+		return 0
+	dir.list_dir_begin()
+	var e: String = dir.get_next()
+	while e != "":
+		var path: String = root + "/" + e
+		if dir.current_is_dir():
+			n += _count_in_tree(path, needle)
+		elif e.ends_with(".gd") and FileAccess.get_file_as_string(path).find(needle) >= 0:
+			n += 1
+		e = dir.get_next()
+	dir.list_dir_end()
+	return n
 
 
 func test_no_cutscene_cue_can_reach_a_procedural_generator() -> void:
