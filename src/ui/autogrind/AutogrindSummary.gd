@@ -234,11 +234,11 @@ func _build_ui() -> void:
 	## Derived, not frozen: this screen accepts ui_accept OR ui_cancel (see _input), and "A"/"B"
 	## name buttons no PlayStation or Xbox pad carries. Guarded because test bootstrap can reach
 	## here before the autoload exists; the fallback letters are only seen in that window.
-	var g_ok: String = "A"
-	var g_no: String = "B"
+	var g_ok: String = "Z"
+	var g_no: String = "X"
 	if InputProfileManager:
-		g_ok = InputProfileManager.glyph_for_action("ui_accept")
-		g_no = InputProfileManager.glyph_for_action("ui_cancel")
+		g_ok = InputProfileManager.hint_for_action("ui_accept")
+		g_no = InputProfileManager.hint_for_action("ui_cancel")
 	dismiss_lbl.text = "Press %s or %s to continue" % [g_ok, g_no]
 	dismiss_lbl.position = Vector2(0, panel_h - 30)
 	dismiss_lbl.size = Vector2(panel_w, 20)

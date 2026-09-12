@@ -513,13 +513,15 @@ func _vp_size() -> Vector2:
 ## "A Button — Confirm", which is a lie on any pad whose east face is printed B; the one screen
 ## a lost player opens must name the button actually printed on the controller in their hands.
 ## Static and pure so a test can pin the VALUE without building a title screen.
-static func build_confirm_cancel_rows(glyph_accept: String, glyph_cancel: String) -> String:
+## Takes the rendered CELL, not a glyph — a caller with no pad attached must be able to put a
+## family-neutral name here instead of one family's glyph.
+static func build_confirm_cancel_rows(cell_accept: String, cell_cancel: String) -> String:
 	return """[b][color=yellow]CONTROLS[/color][/b]
 [color=gray]Gamepad          Keyboard          Mouse[/color]
 D-Pad             Arrow Keys        —                Navigate
 %-17s Z / Enter         L-Click          Confirm / Select
 %-17s X / Escape        R-Click          Cancel / Back""" % [
-		glyph_accept + " Button", glyph_cancel + " Button"]
+		cell_accept, cell_cancel]
 
 
 func _show_help_overlay() -> void:

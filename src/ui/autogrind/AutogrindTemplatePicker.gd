@@ -109,9 +109,9 @@ func _build_ui() -> void:
 	var dismiss_lbl = Label.new()
 	## Derived: _input accepts ui_cancel only. Esc stays literal — a keyboard key does not change
 	## with the pad. Guarded for the pre-autoload window, as the other prompt surfaces are.
-	var g_no: String = "B"
+	var g_no: String = "X"
 	if InputProfileManager:
-		g_no = InputProfileManager.glyph_for_action("ui_cancel")
+		g_no = InputProfileManager.hint_for_action("ui_cancel")
 	dismiss_lbl.text = "Press %s or Esc to close" % g_no
 	dismiss_lbl.position = Vector2(0, panel_h - 26)
 	dismiss_lbl.size = Vector2(panel_w, 20)

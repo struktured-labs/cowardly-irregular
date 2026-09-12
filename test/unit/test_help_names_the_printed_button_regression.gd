@@ -20,9 +20,12 @@ func before_each() -> void:
 
 
 func _rows_for(device_name: String) -> String:
+	# build_confirm_cancel_rows now takes the rendered CELL, so the " Button" suffix moves here.
+	# Every assertion below is unchanged — this guard's subject is the per-family glyph, and it
+	# still passes an EXPLICIT device on every call.
 	return TitleScreenScript.build_confirm_cancel_rows(
-		_ipm.glyph_for_action("ui_accept", device_name),
-		_ipm.glyph_for_action("ui_cancel", device_name))
+		_ipm.glyph_for_action("ui_accept", device_name) + " Button",
+		_ipm.glyph_for_action("ui_cancel", device_name) + " Button")
 
 
 func test_xbox_pad_is_told_to_press_the_button_printed_B() -> void:

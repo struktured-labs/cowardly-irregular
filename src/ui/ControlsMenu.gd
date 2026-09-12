@@ -588,8 +588,11 @@ func _set_row_value(row: int, text: String) -> void:
 ## an Xbox pad should be told "Ⓑ", not the Nintendo name for the same physical button.
 func _get_nintendo_display() -> String:
 	var on: bool = InputProfileManager.nintendo_mode
+	var face: String = "east" if on else "south"
+	if Input.get_connected_joypads().is_empty():
+		return "%s   Confirm = %s face" % ["ON" if on else "OFF", face]
 	var glyph: String = InputProfileManager.glyph_for_action("ui_accept")
-	return "%s   Confirm = %s  (%s face)" % ["ON" if on else "OFF", glyph, "east" if on else "south"]
+	return "%s   Confirm = %s  (%s face)" % ["ON" if on else "OFF", glyph, face]
 
 
 ## An already-mapped pad rarely needs this; an unmapped one always does, so the row says which.

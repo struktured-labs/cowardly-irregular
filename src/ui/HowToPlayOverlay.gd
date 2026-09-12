@@ -23,12 +23,8 @@ var _scroll_target: RichTextLabel = null
 static func build_text() -> String:
 	# Guarded because test bootstrap and very early init can reach here before the
 	# autoload exists; the fallback letters are only ever seen in that window.
-	var g_ok: String = "A"
-	var g_no: String = "B"
-	if InputProfileManager:
-		g_ok = InputProfileManager.glyph_for_action("ui_accept")
-		g_no = InputProfileManager.glyph_for_action("ui_cancel")
-	return TitleScreen.build_confirm_cancel_rows(g_ok, g_no) + """
+	return TitleScreen.build_confirm_cancel_rows(
+		_face_cell("ui_accept", "East"), _face_cell("ui_cancel", "South")) + """
 Y (west face)     Shift             —                [color=lime]Run — hold to move 1.7x faster[/color]
 L Shoulder        L Key             —                Defer / Party Chat
 R Shoulder        R Key             —                Advance (queue action)
@@ -118,10 +114,21 @@ func _ready() -> void:
 	grab_focus()
 
 
+## With a pad, the glyph printed on it; with none, the FACE — never one family's letter, which
+## is what glyph_for_action returns on an empty device name.
+static func _face_cell(action: String, fallback_face: String) -> String:
+	if not InputProfileManager:
+		return "%s face" % fallback_face
+	if Input.get_connected_joypads().is_empty():
+		var pos: String = InputProfileManager.face_position_for_action(action)
+		return "%s face" % (pos if pos != "" else fallback_face)
+	return "%s Button" % InputProfileManager.glyph_for_action(action)
+
+
 static func _close_glyph() -> String:
 	if InputProfileManager:
-		return InputProfileManager.glyph_for_action("ui_cancel")
-	return "B"
+		return InputProfileManager.hint_for_action("ui_cancel")
+	return "X"
 
 
 func _gui_input(event: InputEvent) -> void:
