@@ -1660,6 +1660,9 @@
       "model": "suno-v4",
       "duration": 46.52,
       "loop": true,
+      "worlds": [
+        "medieval"
+      ],
       "generated_at": "2026-04-18"
     },
     "village_harmonia": {
