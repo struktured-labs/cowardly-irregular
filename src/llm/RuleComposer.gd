@@ -69,6 +69,7 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		var abs_sys = get_node_or_null("/root/AutobattleSystem")
 		if abs_sys != null and abs_sys.has_method("get_deep_check_kit"):
 			kit_context = abs_sys.get_deep_check_kit(character_id)
+			kit_context = _widen_kit_to_what_this_character_knows(kit_context, character_id)
 	var prompt: String = DialoguePromptsScript.build_rule_composition(
 		domain, prompt_text, current_rules, kit_context)
 	var svc = get_node_or_null("/root/LLMService")
@@ -310,6 +311,70 @@ func _drop_unusable_rules(rules: Array, character_id: String, domain_system) -> 
 	for d in dropped:
 		notes.append("Dropped a rule this character cannot run — %s" % d)
 	return notes
+
+
+## Offer the abilities this character has actually unlocked, not the level-1 kit.
+##
+## `get_deep_check_kit` returns two sets and the prompt rendered the narrower one:
+##
+##     kit       job.abilities + free_move          NO level-gated entries
+##     full_kit  kit + every abilities_at_level     ALL levels, unfiltered
+##
+## The prompt says "Ability ids you may use, and NOTHING else" over `kit`, while
+## `_deep_check_rule` validates against `full_kit`. So the validator would have
+## accepted fira/firaga/thundaga all along and the model was told they do not
+## exist — a level-20 Mage asking for its strongest fire spell got `fire`.
+##
+## The intersection is the correct set, and both halves are load-bearing:
+##   knows_ability   struktured's provenance-blind predicate, the only thing that
+##                   gates on job_level (and the reason this is not a re-derivation)
+##   full_kit        the deep check's own vocabulary — offering anything outside it
+##                   would make _drop_unusable_rules discard the rule as unrunnable
+##
+## Learned and secondary-job abilities are deliberately NOT added: they sit outside
+## full_kit, so the validator would reject them and the player would be told a rule
+## they can run cannot run. Purchased spells need no special case — the shop sells
+## from abilities_at_level, so they are already inside full_kit.
+##
+## No live party (headless, tests, the editor opened outside a run) falls back to
+## the level-1 kit unchanged — narrower than the validator, which is the safe
+## direction and exactly today's behaviour.
+func _widen_kit_to_what_this_character_knows(ctx: Dictionary, character_id: String) -> Dictionary:
+	if ctx.is_empty() or not bool(ctx.get("resolved", false)):
+		return ctx
+	var who = _live_combatant_for(character_id)
+	if who == null or not who.has_method("knows_ability"):
+		return ctx
+	var kit: Array = (ctx.get("kit", []) as Array).duplicate()
+	var costs: Dictionary = (ctx.get("costs", {}) as Dictionary).duplicate()
+	var job_sys = get_node_or_null("/root/JobSystem")
+	for aid in (ctx.get("full_kit", []) as Array):
+		var id: String = str(aid)
+		if kit.has(id) or not who.knows_ability(id):
+			continue
+		kit.append(id)
+		# A missing cost renders as "0 MP" and the model omits the guard, so the
+		# rule fizzles for want of MP. Every added id carries its real cost.
+		costs[id] = int((job_sys.get_ability(id) as Dictionary).get("mp_cost", 0)) if job_sys != null else 0
+	ctx["kit"] = kit
+	ctx["costs"] = costs
+	return ctx
+
+
+## The live Combatant for a character_id, matched the way the rest of the codebase
+## derives one from a name. GameLoop.party holds instances; GameState.player_party
+## holds to_dict() snapshots, and from_dict does NOT restore `job` — a rehydrated
+## snapshot answers "no" to its own job kit, measured.
+func _live_combatant_for(character_id: String):
+	var gl = get_node_or_null("/root/GameLoop")
+	if gl == null or not ("party" in gl):
+		return null
+	for member in gl.party:
+		if member == null or not is_instance_valid(member):
+			continue
+		if str(member.combatant_name).to_lower().replace(" ", "_") == character_id:
+			return member
+	return null
 
 
 ## Read an enemy_weak_to element the model named after the ABILITY, not the element.
