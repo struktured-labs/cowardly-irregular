@@ -107,6 +107,11 @@ func test_the_console_really_is_hidden_during_a_grind() -> void:
 ## and a raw reader passes 5/5. Region half is a parity split — stateless, nothing to desync.
 ## `must_survive` is REQUIRED so no call site can omit the positive control.
 func _code_only(src: String, must_survive: String) -> String:
+	## "".contains("") is TRUE, so an empty control passes while asserting nothing. Required is
+	## not supplied (cowir-sfx/cowir-controller, 2026-09-12) — floor it rather than rely on
+	## every call site happening to pass a real symbol.
+	assert_gt(must_survive.length(), 0,
+		"CONTROL: must_survive must name a real code site — an empty control asserts nothing")
 	var stripped: String = str(GdSource.split(src)["code"])
 	assert_true(stripped.contains(must_survive),
 		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)

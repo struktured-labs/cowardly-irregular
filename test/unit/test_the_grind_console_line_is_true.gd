@@ -19,6 +19,11 @@ const GL := "res://src/GameLoop.gd"
 
 
 func _code_only(src: String, must_survive: String) -> String:
+	## "".contains("") is TRUE, so an empty control passes while asserting nothing. Required is
+	## not supplied (cowir-sfx/cowir-controller, 2026-09-12) — floor it rather than rely on
+	## every call site happening to pass a real symbol.
+	assert_gt(must_survive.length(), 0,
+		"CONTROL: must_survive must name a real code site — an empty control asserts nothing")
 	var stripped: String = str(GdSource.split(src)["code"])
 	assert_true(stripped.contains(must_survive),
 		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
