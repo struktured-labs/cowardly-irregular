@@ -107,7 +107,21 @@ var interrupt_rules: Dictionary = {
 
 ## Permadeath staking (optional high-risk mode)
 var permadeath_staking_enabled: bool = false
-var permadeath_multiplier: float = 3.0  # 3x rewards but permanent death on wipe
+## ⛔ permadeath_multiplier is NOT the staking reward. Its only non-declaration uses are a print and
+## _simulate_battle, whose sole caller _run_automated_battle has ZERO callers — so nothing applies 3x
+## on the live path. The real compensation is the growth-rate pair below. Left in place because
+## wiring it is a balance ruling, not a repair; the guard reds if it gains a live consumer.
+var permadeath_multiplier: float = 3.0  # UNWIRED — see above before quoting it to a player
+
+## The staking trade, in one place, because three surfaces quote it and one of them was wrong.
+const BASE_EFFICIENCY_GROWTH: float = 0.1
+const STAKING_EFFICIENCY_GROWTH: float = 0.15
+
+
+## The compensation as a percentage, derived — "+50%" was typed into two captions and printed as
+## "3.0x" in a third. A caption that computes this cannot disagree with what the grind does.
+static func staking_growth_bonus_percent() -> int:
+	return int(round((STAKING_EFFICIENCY_GROWTH / BASE_EFFICIENCY_GROWTH - 1.0) * 100.0))
 
 ## Meta-boss triggers
 var meta_bosses_enabled: bool = true
@@ -1471,15 +1485,12 @@ func set_interrupt_rules(rules: Dictionary) -> void:
 func enable_permadeath_staking(enabled: bool) -> void:
 	"""Enable/disable permadeath staking"""
 	permadeath_staking_enabled = enabled
-	if enabled:
-		# 50% efficiency bonus while permadeath staking is active
-		efficiency_growth_rate = 0.15
-	else:
-		efficiency_growth_rate = 0.1
-	print("[AUTOGRIND] Permadeath staking: %s (growth rate: %.2f, %.1fx rewards)" % [
+	efficiency_growth_rate = STAKING_EFFICIENCY_GROWTH if enabled else BASE_EFFICIENCY_GROWTH
+	## Was "%.1fx rewards" reading permadeath_multiplier — announcing 3.0x that nothing applies.
+	print("[AUTOGRIND] Permadeath staking: %s (growth rate: %.2f, +%d%% growth)" % [
 		"ENABLED" if enabled else "disabled",
 		efficiency_growth_rate,
-		permadeath_multiplier if enabled else 1.0
+		staking_growth_bonus_percent() if enabled else 0
 	])
 
 
