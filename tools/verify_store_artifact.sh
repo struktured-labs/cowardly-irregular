@@ -239,6 +239,45 @@ PYGEN
     local g=$?; [ "$g" -eq 2 ] && { pass=$((pass+1)); printf '  ok    %-46s exit %s\n' "store dir missing entirely" "$g"; } \
         || { fail=$((fail+1)); printf '  FAIL  %-46s exit %s (wanted 2)\n' "store dir missing entirely" "$g"; }
 
+    # ── archiving destination, BOTH branches ────────────────────────────────────────────
+    # One of these is unreachable from wherever this runs, which is why _readback_dest takes
+    # `here` rather than reading pwd. A resolver that always answered would pass the first arm
+    # alone; one that always refused would pass the second alone.
+    local got
+    got="$(_readback_dest /home/x/lane-wt/tmp/pub999 v9.9.9 2>/dev/null)"
+    if [ "$got" = "/home/x/lane-wt/tmp/_archive/logs/v9.9.9" ]; then
+        pass=$((pass+1)); printf '  ok    %-46s %s\n' "dest escapes the publish worktree" "$got"
+    else
+        fail=$((fail+1)); printf '  FAIL  %-46s got %s\n' "dest escapes the publish worktree" "$got"
+    fi
+    if _readback_dest /home/x/plainrepo v9.9.9 >/dev/null 2>&1; then
+        fail=$((fail+1)); printf '  FAIL  %-46s accepted a non-worktree path\n' "dest refuses outside <lane>/tmp/<wt>"
+    else
+        pass=$((pass+1)); printf '  ok    %-46s refused\n' "dest refuses outside <lane>/tmp/<wt>"
+    fi
+    # the archive must be a SIBLING of the worktree, never inside it — the publish removes it
+    case "$(_readback_dest /home/x/lane-wt/tmp/pub999 v9.9.9 2>/dev/null)" in
+        /home/x/lane-wt/tmp/pub999/*)
+            fail=$((fail+1)); printf '  FAIL  %-46s dest is INSIDE the worktree\n' "dest survives the worktree removal" ;;
+        *)  pass=$((pass+1)); printf '  ok    %-46s sibling, not child\n' "dest survives the worktree removal" ;;
+    esac
+    # ── the verdict word must track the exit code, not be decorative ─────────────────────
+    for pair in "0 identical" "5 DIFFERS FROM THE STORE" "2 could not evaluate"; do
+        set -- $pair
+        local code="$1"; shift; local want="$*"
+        got="$(_verdict_word "$code")"
+        if [ "$got" = "$want" ]; then
+            pass=$((pass+1)); printf '  ok    %-46s %s\n' "verdict word for exit ${code}" "$got"
+        else
+            fail=$((fail+1)); printf '  FAIL  %-46s got %s want %s\n' "verdict word for exit ${code}" "$got" "$want"
+        fi
+    done
+    if [ "$(_verdict_word 0)" = "$(_verdict_word 5)" ]; then
+        fail=$((fail+1)); printf '  FAIL  %-46s identical and DIFFERS read the same\n' "verdict words discriminate"
+    else
+        pass=$((pass+1)); printf '  ok    %-46s differ\n' "verdict words discriminate"
+    fi
+
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
     if [ "$saw0" -ne 1 ] || [ "$saw5" -ne 1 ]; then
@@ -248,9 +287,65 @@ PYGEN
     [ "$fail" -eq 0 ]
 }
 
+# ── archive the verdict ──────────────────────────────────────────────────────────────────
+# ⛔ THE ONLY CHECK THAT CROSSES THE CDN LEFT NO TRACE. Measured on v3.33.318-alpha's archive:
+# 18 logs, and ZERO of them mention store-verify. Every LOCAL gate is recorded -- import,
+# export, boot, battle, smoke, pck size -- while the one comparison against the bytes itch
+# actually serves went to a terminal and vanished. A release's evidence therefore proves the
+# build was correct and says nothing about what the store holds.
+#
+# Same shape as two defects already fixed on this path: the detached .ec, destroyed by the
+# worktree removal that follows every publish, and the boot logs, which could not name their
+# own subject. In all three the most decisive artifact was the one not in the record.
+#
+# `here` and `tag` are PARAMETERS so both branches can be driven; one of them is unreachable
+# from wherever the selftest happens to run.
+_readback_dest() {
+    local here="$1" tag="$2"
+    case "$here" in
+        */tmp/*) printf '%s' "${here%%/tmp/*}/tmp/_archive/logs/${tag}" ;;
+        *)       return 1 ;;
+    esac
+}
+
+_verdict_word() {
+    case "$1" in
+        0) printf 'identical' ;;
+        5) printf 'DIFFERS FROM THE STORE' ;;
+        *) printf 'could not evaluate' ;;
+    esac
+}
+
+# Not archiving is never a reason to skip the check: the comparison matters more than its
+# record, so an unrecognised layout warns and still runs.
+_run_and_archive() {
+    local ch="$1" dir="${2:-}" here tag dest ec
+    here="$(pwd -P)"
+    tag="$(git describe --tags --exact-match HEAD 2>/dev/null)" \
+        || tag="$(git rev-parse --short HEAD 2>/dev/null)" || tag="untagged"
+    [ -n "$tag" ] || tag="untagged"
+    if ! dest="$(_readback_dest "$here" "$tag")"; then
+        echo "[store-verify] note: NOT archiving — ${here} is not a <lane>/tmp/<worktree> path." >&2
+        fetch_and_compare "$ch" "$dir"
+        return $?
+    fi
+    mkdir -p "$dest" 2>/dev/null || {
+        echo "[store-verify] note: NOT archiving — could not create ${dest}." >&2
+        fetch_and_compare "$ch" "$dir"
+        return $?
+    }
+    fetch_and_compare "$ch" "$dir" 2>&1 | tee "${dest}/readback_${ch}.log"
+    ec=${PIPESTATUS[0]}
+    printf '[store-verify] verdict: exit %s (%s) · %s · tag %s\n' \
+        "$ec" "$(_verdict_word "$ec")" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$tag" \
+        | tee -a "${dest}/readback_${ch}.log"
+    echo "[store-verify] archived: ${dest}/readback_${ch}.log"
+    return "$ec"
+}
+
 case "${1:-}" in
     --selftest) selftest ;;
     --compare)  compare "${2:-}" "${3:-}" "${4:-A}" "${5:-B}" ;;
     "")         echo "usage: $0 <web|linux|windows> <local-build-dir> | --compare <a> <b> | --selftest" >&2; exit 2 ;;
-    *)          fetch_and_compare "$1" "${2:-}" ;;
+    *)          _run_and_archive "$1" "${2:-}" ;;
 esac
