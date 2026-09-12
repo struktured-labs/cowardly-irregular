@@ -86,6 +86,52 @@ func _composed_monster_templates() -> Dictionary:
 	return found
 
 
+## ⚠️ MONSTER_PATH_CONSUMERS IS A HAND-LIST, which is the one shape that agrees with itself. The arm
+## below reads the template out of those two files -- but a THIRD file composing its own overworld
+## path is invisible to it, and a third file is exactly how a divergence arrives. So the list is
+## checked against a derived sweep of src/: the hand-list stays (it is the premise, and deriving the
+## premise from the thing under test is how a corpus drains to empty and passes), and this arm makes
+## it impossible for the list to be WRONG without saying so.
+func test_no_other_file_composes_an_overworld_monster_path() -> void:
+	var found := _walk_gd("res://src")
+	assert_gt(found.size(), 0, "CONTROL: the src sweep read something — an empty walk agrees with any list")
+	var composers := []
+	for path in found:
+		var src := FileAccess.get_file_as_string(path)
+		if src.contains("assets/sprites/monsters/overworld/"):
+			composers.append(path)
+	composers.sort()
+	var declared := PINNED_CONSUMERS_SORTED()
+	assert_eq(composers, declared,
+		"src/ composes overworld monster paths in a different set of files than MONSTER_PATH_CONSUMERS names — a file outside the list is never checked for template drift:\n  found:    %s\n  declared: %s" % [composers, declared])
+
+
+func PINNED_CONSUMERS_SORTED() -> Array:
+	var out := []
+	for c in MONSTER_PATH_CONSUMERS:
+		out.append(c)
+	out.sort()
+	return out
+
+
+func _walk_gd(dir_path: String, acc: Array = []) -> Array:
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return acc
+	dir.list_dir_begin()
+	var f := dir.get_next()
+	while f != "":
+		var full := dir_path + "/" + f
+		if dir.current_is_dir():
+			if not f.begins_with("."):
+				_walk_gd(full, acc)
+		elif f.ends_with(".gd"):
+			acc.append(full)
+		f = dir.get_next()
+	dir.list_dir_end()
+	return acc
+
+
 func test_the_overworld_monster_template_is_what_this_file_assumes() -> void:
 	var found := _composed_monster_templates()
 	assert_eq(found.size(), MONSTER_PATH_CONSUMERS.size(),
