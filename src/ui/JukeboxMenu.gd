@@ -33,6 +33,10 @@ const CAT_DUNGEON_COLOR := Color(0.80, 0.65, 1.00)  # purple — interior dungeo
 const CAT_DANGER_COLOR := Color(0.95, 0.65, 0.30)   # orange — alert
 
 ## UI State
+## Where the cursor was when the jukebox last closed, so browsing 165 rows does not restart at
+## the top every time. Static = session-scoped on purpose: it dies with the process, like the
+## resume state it sits beside, and nothing about a music cursor belongs in the save.
+static var _last_selected: int = 0
 var selected_index: int = 0
 var scroll_offset: int = 0  # First visible row index
 var _currently_playing: String = ""
@@ -58,6 +62,9 @@ var _now_playing_label: Label
 func _ready() -> void:
 	# Tick 199: load tracks from manifest before _build_ui so the list reflects live music.
 	TRACKS = _load_manifest_tracks()
+	## Clamped, not trusted: the manifest can shrink between two opens in one session.
+	selected_index = clampi(_last_selected, 0, max(0, TRACKS.size() - 1))
+	_clamp_scroll()
 	# Snapshot the currently-playing music so _close_menu can restore it
 	# instead of leaving silence behind.
 	if SoundManager and SoundManager.has_method("capture_music_state"):
@@ -442,6 +449,7 @@ func _on_row_hover(local_row: int) -> void:
 
 
 func _close_menu() -> void:
+	_last_selected = selected_index
 	if SoundManager:
 		# Compare against what's ACTUALLY playing right now, not against
 		# _currently_playing (which is only set when the user clicks Play
