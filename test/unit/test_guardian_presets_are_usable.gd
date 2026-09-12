@@ -138,10 +138,12 @@ func test_the_other_reachable_jobs_still_have_none() -> void:
 	## These four have working unlock conditions and zero presets; only the Guardian is fixed here.
 	var blob: String = FileAccess.get_file_as_string(TEMPLATES)
 	var still_missing: Array = []
-	for jid in ["speculator", "summoner", "bossbinder", "skiptrotter"]:
+	## speculator dropped 2026-09-12 — it has three stances now. The list is a scope note and the
+	## assert below counts it, so a job gaining presets reds here until someone updates both.
+	for jid in ["summoner", "bossbinder", "skiptrotter"]:
 		if not blob.contains("\"job_id\": \"%s\"" % jid):
 			still_missing.append(jid)
-	assert_eq(still_missing.size(), 4,
+	assert_eq(still_missing.size(), 3,
 		"if one of these gained presets, drop it from this list — it is a scope note, not a rule: " + str(still_missing))
 
 func test_the_catalog_actually_offers_them_to_a_guardian() -> void:

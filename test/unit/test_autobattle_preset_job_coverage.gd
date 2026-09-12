@@ -20,9 +20,12 @@ const COVERED := ["bard", "cleric", "fighter", "mage", "rogue"]
 ## easy one: three of its five abilities apply a STATUS to self, and until `not_has_status` shipped
 ## in .307 a preset using them re-cast forever and buried every rule below it. The remaining eight
 ## are still authoring debt and still routed out.
+## 2026-09-12: speculator removed — three stances, authored once volatility_band made its kit
+## scriptable. Like the ninja it was blocked on grammar, not on authoring: every one of its six
+## abilities is pure support, and press_the_edge/circuit_breaker spend a band no rule could read.
 const KNOWN_UNCOVERED := [
 	"bossbinder", "necromancer", "scriptweaver",
-	"skiptrotter", "speculator", "summoner", "time_mage",
+	"skiptrotter", "summoner", "time_mage",
 ]
 
 func _job_ids() -> Array:

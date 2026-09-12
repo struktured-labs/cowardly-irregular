@@ -172,6 +172,17 @@ func test_no_preset_rule_can_fire_forever() -> void:
 					## is weaker (it cannot re-arm when the status lapses) but it is not a stall.
 					if ctype == "turn":
 						guarded = true
+					## ⚠️ So does a gate on a resource the action SPENDS, and that is not a
+					## loophole — it is the same bound one level out. press_the_edge and
+					## circuit_breaker both call shift_band(-1), so a rule gated on
+					## volatility_band lowers its own condition every time it fires and cannot
+					## run forever. Added because this predicate flagged all three Speculator
+					## presets: "has an effect and no damage term" is a PROXY for "does nothing
+					## but apply a status", and it over-includes abilities whose damage lives in
+					## the HANDLER rather than in a damage_multiplier — press_the_edge deals its
+					## band-scaled damage through take_damage and carries neither field.
+					if ctype == "volatility_band":
+						guarded = true
 				if not guarded:
 					unguarded.append("%s -> %s (%s, %s)" % [str((t as Dictionary).get("id", "")),
 						str(ad.get("id", "")), effect, target])
