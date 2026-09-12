@@ -70,6 +70,12 @@ fi
 ITCH_TARGET="struktured/cowardly-irregular:web"
 PCK_LIMIT=199000000   # itch refuses HTML5 embeds with any file >= 200 MB
 PCK_WARN=180000000    # early-warning band: plan the next diet before it bites
+# The threshold a returning PLAYER feels, and it is BELOW both of the above: chromium serves a
+# resource of 167,772,160 B from cache on reload and re-fetches anything larger (measured
+# 2026-09-11/12 at default and 2 GB disk cache; a synthetic file at the pck's exact size behaves
+# identically, so it is size, not the pck). Above this line every return visit re-downloads the
+# whole pack. Reported, never blocked -- what to cut is struktured's call.
+PCK_CACHE_LINE=167772160
 # Overridable so the post-push confirmation path is testable without touching itch,
 # matching deploy_desktop.sh.
 BUTLER_BIN="${BUTLER_BIN:-$(command -v butler || echo ./butler-bin/butler)}"
@@ -273,7 +279,14 @@ fi
 
 echo "[deploy] gate 3/4: pck size"
 PCK=$(stat -c%s builds/web/index.pck)
-echo "[deploy] index.pck: $((PCK / 1048576)) MB"
+# Was: `echo "[deploy] index.pck: $((PCK / 1048576)) MB"` -- a MiB division labelled MB. I read
+# that line and published the wrong headroom TWICE in one day. The helper spells out every unit
+# and adds the cache line, which this gate could not see at all.
+_PCK_REPORT="$(cd "$(dirname "$0")" && pwd)/pck_cache_report.sh"
+[ -x "$_PCK_REPORT" ] || {
+  echo "[deploy] BLOCKED: ${_PCK_REPORT} missing or not executable — a size report that cannot run is not a passing one." >&2
+  exit 2; }
+"$_PCK_REPORT" "$PCK" "$PCK_CACHE_LINE" "$PCK_WARN" "$PCK_LIMIT"
 if [ "${PCK}" -ge "${PCK_LIMIT}" ]; then
   echo "[deploy] BLOCKED: pck >= 200 MB — itch will refuse the HTML5 embed." >&2
   echo "[deploy] check export_presets.cfg exclude_filter and recent large assets." >&2
