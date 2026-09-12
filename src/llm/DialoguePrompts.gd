@@ -1161,7 +1161,24 @@ static func validate_player_choices(raw: Variant, expected_count: int) -> Dictio
 	if out.is_empty():
 		return _trimmed_fallback_choices(count)
 
-	return {"choices": out}
+	# DEDUPE. Returning the same string twice hands the player a menu that looks
+	# broken, and a case-only variant reads as the same option to them.
+	# llama3 returns 3 of 3 distinct (18 of 18 measured), so this defends the BYOK
+	# surface — any OpenAI-compatible model can be attached from Settings.
+	#
+	# NOT padded up to `count`, deliberately: DynamicConversation._ensure_farewell
+	# runs AFTER this and returns early when a farewell exists ANYWHERE, so padding
+	# a short set whose last entry is "Farewell." leaves the farewell mid-menu.
+	# Under-delivery is recorded as a live gap rather than papered over here.
+	var seen: Dictionary = {}
+	var distinct: Array[String] = []
+	for chosen in out:
+		var key: String = chosen.to_lower()
+		if seen.has(key):
+			continue
+		seen[key] = true
+		distinct.append(chosen)
+	return {"choices": distinct}
 
 
 ## Validate and sanitise an LLM-returned NPC reply Dictionary.
