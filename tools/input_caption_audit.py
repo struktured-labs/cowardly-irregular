@@ -33,8 +33,9 @@ LIMITS, stated so nobody reads a clean run as more than it is
   * SOURCE-level. It cannot see a caption composed at runtime from parts.
   * It says a caption is DERIVED, never that the derivation is CORRECT for that surface —
     a footer can derive ui_accept while describing ui_cancel. Only reading the handler shows that.
-  * Reachability is NOT checked. A frozen caption on a screen nothing loads is still reported;
-    MenuScene is the known dead hub. Cross-check before calling a hit player-visible.
+  * Reachability is ONE HOP. A finding on a file nothing loads is marked [UNREACHED]; a file whose
+    only loader is itself unreachable is NOT. It answers "does anything name this file", never
+    "can a player get here" — cross-check before calling a hit player-visible.
   * A shape nobody has written yet cannot be in the list, and the controls cannot help: every
     control names a shape that already exists. Adding a caption form means adding it here.
 """
@@ -178,6 +179,35 @@ def scan_bucket4(text: str, path: str = "<mem>"):
     return out
 
 
+def reachability(root: str):
+    """Which .gd files are LOADED by something else. A frozen caption on a screen nothing opens is
+    still worth fixing, but it is not PLAYER-VISIBLE — and reporting it as such is a mistake this
+    lane made in .318, calling three autogrind fixes player-facing when two sat on MenuScene, the
+    dead hub. Counts load()/preload() by res:// path, bare ClassName.new(), and autoload entries.
+
+    LIMIT: ONE HOP, not a transitive closure. A file whose only loader is itself unreachable still
+    counts as loaded — it answers "does anything name this file", never "can a player get here"."""
+    loaded, bodies = set(), {}
+    for p in gd_files(root):
+        bodies[p] = io.open(p, encoding="utf-8").read()
+    try:
+        proj = io.open("project.godot", encoding="utf-8").read()
+    except OSError:
+        proj = ""
+    for p, text in bodies.items():
+        for other in bodies:
+            if other != p and ("res://" + other.replace(os.sep, "/")) in text:
+                loaded.add(other)
+            if other != p:
+                cname = os.path.basename(other)[:-3]
+                if re.search(r'\b%s\.new\(' % re.escape(cname), text):
+                    loaded.add(other)
+    for other in bodies:
+        if ("res://" + other.replace(os.sep, "/")) in proj:
+            loaded.add(other)
+    return loaded
+
+
 def audit(root: str):
     findings, files = [], 0
     for p in gd_files(root):
@@ -185,6 +215,9 @@ def audit(root: str):
         files += 1
         findings.extend(scan_text(text, p))
         findings.extend(scan_bucket4(text, p))
+    reach = reachability(root)
+    for f in findings:
+        f["loaded_by_something"] = f["file"] in reach
     return files, findings
 
 
@@ -262,12 +295,14 @@ def main() -> int:
     print("input caption audit — %d .gd files under %s/" % (files, a.root))
     if not findings:
         print("  no frozen captions, no bucket-4 pairs, no welded diagram letters.")
-        print("  NOTE: derived is not the same as correct for its surface, and reachability")
-        print("        is not checked. See the module docstring for the full limits.")
+        print("  NOTE: derived is not the same as CORRECT FOR ITS SURFACE — a footer can derive")
+        print("        ui_accept while describing Cancel, and this cannot see that. Reachability")
+        print("        is one hop. See the module docstring for the full limits.")
         return 0
     for f in sorted(findings, key=lambda x: (x["shape"], x["file"], x["line"])):
-        print("  %-14s %-44s:%-5d %-22s %s"
-              % (f["shape"], f["file"], f["line"], f["detail"], f["text"]))
+        mark = "" if f.get("loaded_by_something", True) else "   [UNREACHED: nothing loads this file]"
+        print("  %-14s %-44s:%-5d %-22s %s%s"
+              % (f["shape"], f["file"], f["line"], f["detail"], f["text"], mark))
     print("  %d finding(s)" % len(findings))
     return 1
 
