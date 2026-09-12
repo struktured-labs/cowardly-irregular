@@ -14,8 +14,22 @@ extends SceneTree
 ## that flag also gates an in-game escape route past a broken world transition, so it must
 ## never be shipped false.
 ##
-##   xvfb-run -a godot --rendering-driver opengl3 --audio-driver Dummy \
-##       --resolution 1920x1080 -s tools/marketing_shots.gd
+##   XDG_DATA_HOME=$PWD/tmp/shot_xdg xvfb-run -a godot --rendering-driver opengl3 \
+##       --audio-driver Dummy --resolution 1920x1080 -s tools/marketing_shots.gd
+##
+## ⛔ THE XDG PREFIX IS NOT OPTIONAL AND THIS SCRIPT CANNOT SUPPLY IT. Line 11 promises the
+## suppression "lands in a sandboxed XDG profile" — that is a statement about the CALLER, not
+## about anything here: nothing in this file sets XDG_DATA_HOME, and godot resolves user:// by
+## APPLICATION NAME, so an unprefixed run lands in struktured's live save directory whatever
+## worktree you are in. The command above used to omit it while the prose above promised it,
+## which is the worst arrangement of the two: a reader who copies the line gets the behaviour
+## the paragraph says they are protected from. Its sibling tools/store_shots_225.gd documented
+## the prefix correctly the whole time.
+##
+## Measured 2026-09-12 on tools/village_screenshot.sh, the same shape: one sandboxed run
+## created app_userdata/Cowardly Irregular/{autobattle,autogrind,debug_atlas.png,logs,saves,
+## shader_cache}. saves/ and autobattle/ are the two directories run_tests.sh's net exists to
+## restore, and no screenshot run invokes that net.
 ##
 ## Writes res://tmp/marketing/<name>.png. Prints one [SHOT] line per capture with the
 ## measured size, and a [SHOT] FAIL line for any scene that would not load — a scene that
