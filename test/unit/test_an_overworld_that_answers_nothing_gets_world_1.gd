@@ -145,17 +145,32 @@ func test_every_overworld_script_carries_the_method() -> void:
 		"floor and play World 1 on autogrind stop: %s" % str(missing))
 
 
-## CONTROL for the stripper, both directions — an over-strip would make the arm above vacuous the
-## other way, and OverworldScene is the only one of the six that actually carries docstrings (2).
-func test_the_stripper_eats_prose_and_spares_code() -> void:
+## CONTROL FOR THE STRIPPER. Structural, not phrase-keyed: the previous version asserted that the
+## literal "Castle Harmonia opens only after" was gone, which reds on a correct tree the moment
+## somebody rewords that docstring — @cowir-battle's near-miss in the other direction. Anti-vacuity
+## first, because "nothing survived" is free when there was nothing to remove. OverworldScene is the
+## only one of the six carrying docstrings (2, measured), so it is the only valid subject here.
+func test_the_stripper_actually_strips() -> void:
 	var path := "res://src/exploration/OverworldScene.gd"
 	var raw := FileAccess.get_file_as_string(path)
+	# DERIVED from the file, not a phrase: chunk 1 of a split on the triple quote IS the first
+	# docstring's body. Naming a phrase reds on a reword; asserting "no triple quote survives" is
+	# WORSE — split() consumes its delimiter, so that holds for a BROKEN stripper too. Measured.
+	var parts: PackedStringArray = raw.split("\"\"\"")
+	assert_gte(parts.size(), 3,
+		"ANTI-VACUITY: the scanned file holds no docstring, so nothing below is evidence")
+	var body: String = str(parts[1])
+	assert_gt(body.strip_edges().length(), 20,
+		"ANTI-VACUITY: the first docstring is too short to tell a strip from a no-op")
+	assert_true(raw.contains("#"),
+		"ANTI-VACUITY: the scanned file holds no # comment, so the comment arm is free")
+
 	var code := _code(path)
-	assert_true(raw.contains("Castle Harmonia opens only after"),
-		"CONTROL: the raw file carries a docstring")
-	assert_false(code.contains("Castle Harmonia opens only after"),
-		"CONTROL: ...and the stripper removed it — without this the arm above reads prose as code")
+	assert_false(code.contains(body),
+		"the first docstring's BODY survived _code() — prose is reaching the source arms as code")
+	assert_false(code.contains("#"),
+		"a # survived _code() — comments are reaching the source arms as if they were code")
 	assert_true(code.contains("func _get_music_area_id"),
-		"CONTROL: the stripper did NOT eat the real declaration")
+		"CONTROL the other way: the stripper did NOT eat the real declaration")
 	assert_true(code.contains("_place_readables"),
 		"CONTROL: ordinary code outside any docstring survives")

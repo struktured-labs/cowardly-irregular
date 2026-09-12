@@ -37,9 +37,9 @@ const UNSAFE := ["glyph_for_action", "face_glyph_for_index"]
 ## string LITERALS, so a `#`-only strip leaves them and prose quoting a name satisfies a presence
 ## assert — `assert_true(src.contains("hint_for_action"))` below would pass with the real call gone.
 ## ReadableProp carries ZERO docstrings today; this guard exists for the version that does not.
-func _code() -> String:
-	var raw := FileAccess.get_file_as_string(READABLE)
-	assert_gt(raw.length(), 500, "PRECONDITION: ReadableProp must be readable")
+func _code(path: String = READABLE) -> String:
+	var raw := FileAccess.get_file_as_string(path)
+	assert_gt(raw.length(), 500, "PRECONDITION: %s must be readable" % path)
 	var body := ""
 	var chunks: PackedStringArray = raw.split("\"\"\"")
 	for i in range(chunks.size()):
@@ -105,18 +105,37 @@ func test_the_helper_scan_discriminates() -> void:
 		"CONTROL: the forbidden spelling is detectable in the exact shape that shipped")
 
 
-## CONTROL for the docstring half of the stripper, planted rather than assumed — ReadableProp has no
-## docstring to test against, so the shape is exercised on a literal instead of left unproven.
-func test_the_stripper_removes_a_docstring_but_not_a_call() -> void:
-	var sample := "func f():\n\t\"\"\"note: hint_for_action is what we use\"\"\"\n\tvar g = other_call()\n"
-	var body := ""
-	var chunks: PackedStringArray = sample.split("\"\"\"")
-	for i in range(chunks.size()):
-		if i % 2 == 0:
-			body += str(chunks[i])
-	assert_false(body.contains("note: hint_for_action is what we use"),
-		"CONTROL: the docstring body is removed — otherwise prose satisfies a presence assert")
-	assert_true(body.contains("other_call()"),
-		"CONTROL: code on both sides of the docstring survives")
-	assert_eq(_code().split("\"\"\"").size(), 1,
-		"CONTROL: and the real subject file has no unbalanced triple quote left after stripping")
+## ⛔ CONTROL FOR THE STRIPPER — and the version before it COULD NOT FAIL. @cowir-battle's third
+## point, measured here rather than accepted: neutering the docstring half of `_code` left this file
+## EC=0 · Passing 4. The old arm re-implemented the split INSIDE the test and never called `_code`,
+## and its one real assert (no triple quote survives) was vacuous because ReadableProp carries ZERO
+## docstrings — nothing to strip, so nothing to get wrong.
+##
+## Two changes, both @cowir-music's shape: point it at a file that HAS both constructs, and assert
+## STRUCTURALLY (no `#`, no triple quote survives) instead of naming a phrase, so rewording the prose
+## cannot red a correct tree. The anti-vacuity pair is what makes "it stripped everything" mean
+## something: a window with nothing to strip passes that assert for free.
+const STRIPPER_SUBJECT := "res://src/exploration/OverworldScene.gd"
+
+func test_the_stripper_actually_strips() -> void:
+	var path := STRIPPER_SUBJECT
+	var raw := FileAccess.get_file_as_string(path)
+	# DERIVED from the file, not a phrase: chunk 1 of a split on the triple quote IS the first
+	# docstring's body. Naming a phrase reds on a reword; asserting "no triple quote survives" is
+	# WORSE — split() consumes its delimiter, so that holds for a BROKEN stripper too. Measured.
+	var parts: PackedStringArray = raw.split("\"\"\"")
+	assert_gte(parts.size(), 3,
+		"ANTI-VACUITY: the scanned file holds no docstring, so nothing below is evidence")
+	var body: String = str(parts[1])
+	assert_gt(body.strip_edges().length(), 20,
+		"ANTI-VACUITY: the first docstring is too short to tell a strip from a no-op")
+	assert_true(raw.contains("#"),
+		"ANTI-VACUITY: the scanned file holds no # comment, so the comment arm is free")
+
+	var code := _code(path)
+	assert_false(code.contains(body),
+		"the first docstring's BODY survived _code() — prose is reaching the source arms as code")
+	assert_false(code.contains("#"),
+		"a # survived _code() — comments are reaching the source arms as if they were code")
+	assert_true(code.contains("func _place_readables"),
+		"CONTROL the other way: an over-strip would eat real declarations and make every arm vacuous")
