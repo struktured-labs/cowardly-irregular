@@ -53,7 +53,7 @@ func test_no_caption_promises_the_unwired_multiplier() -> void:
 	## own explanation.
 	var offenders: Array = []
 	for path in [DASH, UI]:
-		var src := _code_only(FileAccess.get_file_as_string(path), "func _ready(")
+		var src := _code_only(path, "func _ready(")
 		assert_gt(src.length(), 500, "CONTROL: %s must have been read" % path)
 		for bad in ["3x EXP", "3.0x", "triple EXP"]:
 			if src.contains(bad):
@@ -87,7 +87,7 @@ func test_the_disabled_state_advertises_nothing() -> void:
 ## If the multiplier ever gains a live consumer, this arm says so — at which point the captions
 ## should quote it again and this file is the thing that must change.
 func test_the_multiplier_is_still_unwired() -> void:
-	var sys := _code_only(FileAccess.get_file_as_string(SYS), "func stop_autogrind(")
+	var sys := _code_only(SYS, "func stop_autogrind(")
 	var at := sys.find("func _run_automated_battle")
 	assert_gt(at, -1, "PRECONDITION: the dead simulation path must still exist to be checked")
 	var callers := 0
@@ -109,13 +109,15 @@ func test_the_multiplier_is_still_unwired() -> void:
 ## live: the .338 guard scored 4/4 with a real connect deleted and a docstring claiming it. Region
 ## half is a parity split — stateless, nothing to desync. `must_survive` is REQUIRED so no call site
 ## can omit the positive control; over-stripping and correct stripping are otherwise the same green.
-func _code_only(src: String, must_survive: String) -> String:
-	## "".contains("") is TRUE, so an empty control passes while asserting nothing. Required is
-	## not supplied (cowir-sfx/cowir-controller, 2026-09-12) — floor it rather than rely on
-	## every call site happening to pass a real symbol.
+func _code_only(path: String, must_survive: String) -> String:
+	## PATH-taking by construction: a literal source string cannot reach this wrapper, which is what
+	## makes the blank-control floor below safe (cowir-sprites' rule, 2026-09-12). A source-taking
+	## wrapper must NOT floor — it would red on correct literal-input self-test rows.
 	assert_gt(must_survive.length(), 0,
 		"CONTROL: must_survive must name a real code site — an empty control asserts nothing")
-	var stripped: String = str(GdSource.split(src)["code"])
+	var raw: String = FileAccess.get_file_as_string(path)
+	assert_gt(raw.length(), 0, "CONTROL: %s must be readable" % path)
+	var stripped: String = str(GdSource.split(raw)["code"])
 	assert_true(stripped.contains(must_survive),
 		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped

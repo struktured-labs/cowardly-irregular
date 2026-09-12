@@ -186,7 +186,7 @@ func test_every_badge_survives_the_split() -> void:
 func test_the_battle_hook_announces_what_it_awards() -> void:
 	# GameLoop is the MAIN SCENE, not an autoload — absent from the tree under GUT, so this
 	# reads the source. Located by the CALL, not by a line number.
-	var code := _code_only(_read("res://src/GameLoop.gd"), "award_pending_achievements(")
+	var code := _code_only("res://src/GameLoop.gd", "award_pending_achievements(")
 	var at := code.find("award_pending_achievements(")
 	assert_gt(at, -1, "control: the per-battle award call must be findable in GameLoop")
 	var window := code.substr(at, 600)
@@ -198,7 +198,7 @@ func test_the_battle_hook_announces_what_it_awards() -> void:
 
 func test_the_award_call_sits_inside_the_battle_ended_hook() -> void:
 	# Reachability: a call in a function nothing invokes per battle announces nothing.
-	var code := _code_only(_read("res://src/GameLoop.gd"), "func _on_autogrind_battle_ended")
+	var code := _code_only("res://src/GameLoop.gd", "func _on_autogrind_battle_ended")
 	var hook := code.find("func _on_autogrind_battle_ended")
 	assert_gt(hook, -1, "control: the battle-ended hook must be findable")
 	var next_func := code.find("\nfunc ", hook + 10)
@@ -219,13 +219,15 @@ func _read(path: String) -> String:
 ## must_survive is REQUIRED, not optional — no call site can skip the positive control.
 ## Order matters: '#' lines go first (line-addressable, stateless), THEN the docstring parity
 ## split. Splitting first lets a '"""' inside a comment flip parity and eat real code.
-func _code_only(src: String, must_survive: String) -> String:
-	## "".contains("") is TRUE, so an empty control passes while asserting nothing. Required is
-	## not supplied (cowir-sfx/cowir-controller, 2026-09-12) — floor it rather than rely on
-	## every call site happening to pass a real symbol.
+func _code_only(path: String, must_survive: String) -> String:
+	## PATH-taking by construction: a literal source string cannot reach this wrapper, which is what
+	## makes the blank-control floor below safe (cowir-sprites' rule, 2026-09-12). A source-taking
+	## wrapper must NOT floor — it would red on correct literal-input self-test rows.
 	assert_gt(must_survive.length(), 0,
 		"CONTROL: must_survive must name a real code site — an empty control asserts nothing")
-	var stripped: String = str(GdSource.split(src)["code"])
+	var raw: String = FileAccess.get_file_as_string(path)
+	assert_gt(raw.length(), 0, "CONTROL: %s must be readable" % path)
+	var stripped: String = str(GdSource.split(raw)["code"])
 	assert_true(stripped.contains(must_survive),
 		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped

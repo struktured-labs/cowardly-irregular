@@ -311,20 +311,22 @@ func test_an_editor_legend_never_derives_from_ui_menu() -> void:
 	## the defect whatever token it happens to render today, so the guard bans the call, not a value.
 	var offenders: Array = []
 	for path in EDITORS.keys():
-		if _code_only_lines(FileAccess.get_file_as_string(path), "func ").contains("hint_for_action(\"ui_menu\")"):
+		if _code_only_lines(path, "func ").contains("hint_for_action(\"ui_menu\")"):
 			offenders.append(EDITORS[path])
 	assert_eq(offenders, [],
 		"a grid editor legend derives from ui_menu — correct about the InputMap, wrong about the player: both its keys are eaten earlier. Use the pad index plus the key that actually saves")
 
 
 ## Comments stripped so a note ABOUT the banned call is not itself a finding.
-func _code_only_lines(src: String, must_survive: String) -> String:
-	## "".contains("") is TRUE, so an empty control passes while asserting nothing. Required is
-	## not supplied (cowir-sfx/cowir-controller, 2026-09-12) — floor it rather than rely on
-	## every call site happening to pass a real symbol.
+func _code_only_lines(path: String, must_survive: String) -> String:
+	## PATH-taking by construction: a literal source string cannot reach this wrapper, which is what
+	## makes the blank-control floor below safe (cowir-sprites' rule, 2026-09-12). A source-taking
+	## wrapper must NOT floor — it would red on correct literal-input self-test rows.
 	assert_gt(must_survive.length(), 0,
 		"CONTROL: must_survive must name a real code site — an empty control asserts nothing")
-	var stripped: String = str(GdSource.split(src)["code"])
+	var raw: String = FileAccess.get_file_as_string(path)
+	assert_gt(raw.length(), 0, "CONTROL: %s must be readable" % path)
+	var stripped: String = str(GdSource.split(raw)["code"])
 	assert_true(stripped.contains(must_survive),
 		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped
