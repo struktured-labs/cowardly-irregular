@@ -402,6 +402,23 @@ Full import (autoloads available, catches more issues; ~10s):
 All UI must be fully navigable via gamepad or keyboard.
 
 ### Battle Controls
+⚠️ **The Gamepad column below is Nintendo/SNES naming, exactly like the Autobattle Editor table
+above — and it was the only one of the two without this warning.** Six frozen captions shipped
+between `.308` and `.332` naming `A`/`B` off this convention; every one was INVERTED on an Xbox
+pad, where Confirm is `Ⓑ` and Cancel is `Ⓐ`. Face positions, measured, so the column can be read
+without guessing which family it means:
+
+| this table says | face | Nintendo | Xbox | PlayStation |
+|---|---|---|---|---|
+| A | east | Ⓐ | Ⓑ | ○ |
+| B | south | Ⓑ | Ⓐ | ✕ |
+| Y (west face button) | west | Ⓨ | Ⓧ | □ |
+| X (top face button) | north | Ⓧ | Ⓨ | △ |
+
+**Anything a PLAYER sees must be derived — `InputProfileManager.hint_for_action(action)` for a
+bound action, `face_position_for_action(action)` when no pad is attached and a face must still be
+named. Never copy a letter out of this table into a caption.**
+
 | Action | Gamepad | Keyboard |
 |--------|---------|----------|
 | Navigate menu | D-pad | Arrow keys |
