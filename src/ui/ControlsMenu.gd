@@ -25,6 +25,7 @@ var _test_result_label: Label
 var _conflict_label: Label
 var _device_label: Label
 var _flash_label: Label
+var _footer_label: Label
 var _flash_timer: float = 0.0
 
 ## Layout. Row indices were three hardcoded magic numbers (0/7/8) across _build_ui, _input and
@@ -79,6 +80,34 @@ func _ready() -> void:
 
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 	refresh_device_label()
+	refresh_footer()
+
+
+## Re-derive the footer when a pad arrives or leaves; deriving it once at open-time is half the job.
+func refresh_footer() -> void:
+	if _footer_label != null and is_instance_valid(_footer_label):
+		_footer_label.text = _footer_text()
+
+
+func _footer_text() -> String:
+	return "%s     Keyboard: Z Confirm · X Back · Enter Remap     Mouse: LMB Click · RMB Back" % _gamepad_column()
+
+
+## Brevity when the family is knowable, completeness when it is not — and NEVER a guess: with no
+## pad, face_glyph_for_index falls back to the xbox table, so a glyph here would be an Xbox answer
+## printed unlabelled on the one screen a player opens to learn their buttons.
+func _gamepad_column() -> String:
+	var pads := Input.get_connected_joypads()
+	if pads.is_empty():
+		return "Gamepad: ←→ Profile · %s Remap · %s Back" % [
+			InputProfileManager.get_action_button_label("ui_accept"),
+			InputProfileManager.get_action_button_label("ui_cancel"),
+		]
+	var pad_name := Input.get_joy_name(pads[0])
+	return "Gamepad: ←→ Profile · %s Remap · %s Back" % [
+		InputProfileManager.hint_for_action("ui_accept", pad_name),
+		InputProfileManager.hint_for_action("ui_cancel", pad_name),
+	]
 
 
 ## Pure text/severity decision, split out so it is testable without a physical pad attached.
@@ -247,7 +276,8 @@ func _build_ui() -> void:
 
 	# Footer — list ALL three input methods for transparency
 	var footer = Label.new()
-	footer.text = "Gamepad: ←→ Profile · A Remap · B Back     Keyboard: Z Confirm · X Back · Enter Remap     Mouse: LMB Click · RMB Back"
+	_footer_label = footer
+	footer.text = _footer_text()
 	footer.position = Vector2(16, _panel.size.y - 32)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
