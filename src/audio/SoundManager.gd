@@ -4951,8 +4951,15 @@ func play_area_music(area_type: String) -> void:
 	## Inherit only from the SAME world. A teleport straight into a room leaves the
 	## origin world's bed playing, and inheriting it put W4 overworld music inside
 	## the W1 Scriptweaver's Guild.
+	##
+	## ⛔ Compares against _get_current_world_suffix(), NOT the raw _current_world_suffix
+	## cache. The cache has one writer and can lag _current_area — the resolver reads the
+	## area we are actually leaving and only falls back to the cache when that area has no
+	## arm. Using the cache made inheriting depend on ambient state: an unauthored room
+	## stopped inheriting, cut the village bed and restarted it, whenever the cache
+	## happened to name another world (2026-09-12).
 	var room_world: String = _interior_world_suffix() if area_type.begins_with("interior_") else ""
-	var inheritable: bool = room_world == "" or room_world == _current_world_suffix
+	var inheritable: bool = room_world == "" or room_world == _get_current_world_suffix()
 	if area_type.begins_with("interior_") and inheritable and _music_playing and _current_area != "":
 		_load_music_manifest()
 		if _resolve_interior_track(area_type) == "":
