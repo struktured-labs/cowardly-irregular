@@ -507,6 +507,15 @@ func test_the_stripper_this_audit_now_depends_on_actually_strips() -> void:
 		"cut at the LAST # — a key named in the middle of a comment survived as a consumer")
 	assert_true(_code_only('\tvar s := "has #hash"  # gone').contains('"has #hash"'),
 		"a # inside a string literal is not a comment")
+	## `##` — GDScript's doc-comment form and the one most of src/ uses — was in NO case here, in
+	## either position. Mutation-tested 2026-09-12 (skip a run of 2+ `#`): the sibling guards RED
+	## because their negatives assert ABSENCE and blindness makes the output LARGER, but this table
+	## never mentioned `##` so it stayed green. Latent today (0 of 338 keys are named only in a
+	## comment) and it fails toward SILENCE: a key inside a `##` comment would read as a consumer.
+	var doc_tail := _code_only('\tplay_sfx("real_key")  ## mentions ghost_key in prose')
+	assert_true(doc_tail.contains('"real_key"'), "the stripper ate a real consumer before a ##")
+	assert_false(doc_tail.contains("ghost_key"),
+		"a `##` doc comment survived — a key named in one would read as a live consumer")
 	## JSON has no comments and is NOT stripped; the data half of the corpus must survive intact.
 	var data_raw := _read("res://data/sfx_manifest.json")
 	assert_gt(data_raw.length(), 1000, "CONTROL: the manifest is %d chars" % data_raw.length())
