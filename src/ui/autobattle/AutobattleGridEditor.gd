@@ -810,7 +810,12 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 
 	# Hint text
 	var label = Label.new()
-	label.text = "[+A]"
+	## Was "[+A]", which reads two ways and is wrong under one of them. Its sibling — the empty
+	## CONDITION cell — renders "+AND", naming what it adds with no button and no brackets. If the A
+	## meant "Action" this is clearer; if it meant the A BUTTON it was a frozen Nintendo face letter
+	## on a cell you reach by pressing Confirm, which is Ⓑ on Xbox and ○ on PlayStation. Naming the
+	## thing added is correct under both readings, so the ambiguity does not need resolving.
+	label.text = "+ACTION"
 	label.position = Vector2(4, 4)
 	label.size = Vector2(CELL_WIDTH - 8, CELL_HEIGHT - 8)
 	label.add_theme_font_size_override("font_size", 11)
