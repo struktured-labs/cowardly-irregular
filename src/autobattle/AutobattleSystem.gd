@@ -102,6 +102,7 @@ const CONDITION_TYPES = {
 	"weather": "Weather Is",
 	"has_buff": "Has Buff",
 	"not_has_buff": "No Buff",
+	"volatility_band": "Volatility Band",
 	"always": "Always"
 }
 
@@ -263,6 +264,18 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 
 		"ap":
 			return _compare_str(combatant.current_ap, op, value)
+
+		## The Speculator's whole kit moves this number and then spends it — press_the_edge scales
+		## 1.5x/2.5x/4.0x/6.0x with the band and consumes a level of it — and until now no condition
+		## could see it, so the job's central decision was unauthorable: a script could only press at
+		## whatever band happened to be up. 0..3 (Stable/Shifting/Unstable/Fractured).
+		## VolatilitySystem is owned by BattleManager, not an autoload; outside a fight there is no
+		## band to read and the rule must not fire on a stale one.
+		"volatility_band":
+			var bm_node = get_node_or_null("/root/BattleManager")
+			if bm_node == null or bm_node.volatility == null:
+				return false
+			return _compare_str(float(bm_node.volatility.global_band), op, value)
 
 		"has_status":
 			var status = condition.get("status", "")
@@ -435,6 +448,7 @@ const CONDITION_REQUIRED_FIELD := {
 const CONDITION_NO_PAYLOAD := [
 	"hp_percent", "mp_percent", "ap", "enemy_hp_percent", "ally_hp_percent", "ally_mp_percent",
 	"turn", "enemy_count", "ally_count", "setup_complete", "is_night", "ally_dead", "always",
+	"volatility_band",
 ]
 
 

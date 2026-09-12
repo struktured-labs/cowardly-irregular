@@ -226,7 +226,7 @@ Conditions (AND-chained). type is one of:
   turn, enemy_count, ally_count, item_count, setup_complete,
   ally_has_status, enemy_has_status, not_enemy_has_status, ally_mp_percent,
   ally_dead, is_night, weather,
-  always, has_buff, not_has_buff
+  always, has_buff, not_has_buff, volatility_band
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
 ally_dead, is_night and always are NULLARY — no op, no value. ally_dead is
 true while any member of the caster's own party is down, whatever the party
@@ -257,6 +257,13 @@ has_buff / not_has_buff take a 'stat' field (e.g. 'defense', 'speed') and no
 op/value. Use not_has_buff to cast a buff only when it is not already up —
 {\"type\":\"not_has_buff\",\"stat\":\"defense\"} — which is how the built-in
 presets avoid wasting turns re-applying a buff that is still active.
+volatility_band takes op and value like any numeric condition, but its range
+is 0-3, NOT a percentage: 0 Stable, 1 Shifting, 2 Unstable, 3 Fractured. It is
+the Speculator's resource — leverage_position and overexpose raise it,
+press_the_edge scales 1.5x/2.5x/4.0x/6.0x with it and consumes a level, and
+circuit_breaker spends a level for AP. So
+{\"type\":\"volatility_band\",\"op\":\">=\",\"value\":2} + 'press_the_edge' is
+"cash out once the band is worth it". A value above 3 never fires.
 item_count takes an 'item_id' field NAMING the item to count, alongside op and
 value — {\"type\":\"item_count\",\"item_id\":\"potion\",\"op\":\">\",\"value\":0}.
 Omit item_id and the count is always 0, so the rule never fires.
