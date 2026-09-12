@@ -3304,6 +3304,14 @@ func _process_hold_a(delta: float) -> void:
 		var selected_id = active_win98_menu.get_selected_item_id()
 		var selected_data = active_win98_menu.get_selected_item_data()
 
+		## A polled hold inherits none of _input's refusals, so it must repeat the one that matters:
+		## with a submenu open the player is confirming a row THERE, and the root's selected row is
+		## still auto_menu. Without this, giving the row its data key turns a dead hold into an
+		## editor that opens under an open submenu.
+		if active_win98_menu.submenu and is_instance_valid(active_win98_menu.submenu):
+			_holding_auto = false
+			_hold_timer = 0.0
+			return
 		## "auto_menu" is the collapsed root row; "autobattle" kept for the pre-collapse shape
 		if selected_id in ["autobattle", "auto_menu"] and Input.is_action_pressed("ui_accept"):
 			if not _holding_auto:

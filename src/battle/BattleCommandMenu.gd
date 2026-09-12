@@ -235,10 +235,15 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		"label": trust_label,
 		"data": {"action": "trust_toggle", "combatant": combatant}
 	})
+	## `data` carries the combatant for BattleScene._process_hold_a — hold-to-open-editor reads
+	## get_selected_item_data() on the ROOT menu, and this row had no data key at all, so the hold
+	## could never resolve a combatant and silently never fired. The submenu rows each carry their
+	## own copy; the row that hosts them did not.
 	items.append({
 		"id": "auto_menu",
 		"label": "Auto",
 		"tooltip": "Run this character's autobattle script, edit it, or delegate every turn",
+		"data": {"action": "auto_menu", "combatant": combatant},
 		"submenu": auto_rows
 	})
 
