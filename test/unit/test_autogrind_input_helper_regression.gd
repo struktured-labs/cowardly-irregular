@@ -70,3 +70,52 @@ func test_an_action_event_does_not_crash_the_classifier() -> void:
 	var r: String = AutogrindInputHelper.classify_event(e)
 	assert_eq(r, "exit",
 		"an action-typed ui_cancel must classify as exit — is_echo() resolves on it, measured")
+
+
+## ⛔ THE FALLBACK MUST NOT NAME A PAD FAMILY. `hint_for` resolves through the safe siblings
+## (hint_for_action / button_name_for_index, both of which decline rather than guess), but its
+## no-profile-manager branch carried the literal "B" — a Nintendo name, in the helper whose docstring
+## says it exists to remove exactly that vocabulary. Unreachable in production, and wrong the moment
+## the autoload is absent or renamed. Derived from BUTTON_NAMES so a new family name is banned too.
+func test_no_action_falls_back_to_a_pad_family_name() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindInputHelper.gd")
+	var code := ""
+	for line in src.split("\n"):
+		code += line.split("#")[0] + "\n"
+	var banned: Array = []
+	for family in InputProfileManager.BUTTON_NAMES.keys():
+		for idx in InputProfileManager.BUTTON_NAMES[family].keys():
+			var name_str: String = str(InputProfileManager.BUTTON_NAMES[family][idx])
+			if not banned.has(name_str):
+				banned.append(name_str)
+	## Plus the four face letters, which are family names too and are not in BUTTON_NAMES.
+	for face in ["A", "B", "X", "Y"]:
+		if not banned.has(face):
+			banned.append(face)
+	var offenders: Array = []
+	for b in banned:
+		if code.contains('else "%s"' % b):
+			offenders.append(b)
+	## "X" is a KEYBOARD key here, so it may appear in ACTION_KEYS — the ban is on a bare `else "…"`
+	## fallback, which is where the family name was.
+	assert_eq(offenders, [],
+		"a hint_for fallback names a pad button directly: %s — fall back to the keyboard key from ACTION_KEYS instead" % [offenders])
+	assert_gte(banned.size(), 10,
+		"CONTROL: the banned set derived from BUTTON_NAMES collapsed to %d entries" % banned.size())
+
+
+## ACTION_KEYS must cover every action hint_for can be asked about, or an action silently renders "".
+func test_every_action_hint_for_handles_has_a_keyboard_key() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindInputHelper.gd")
+	var actions: Array = []
+	for m in ["pause", "adjust_rules", "tier_cycle", "exit"]:
+		if src.contains('"%s"' % m):
+			actions.append(m)
+	assert_gte(actions.size(), 4, "CONTROL: expected the four known actions, found %s" % [actions])
+	var missing: Array = []
+	for a in actions:
+		if not AutogrindInputHelper.ACTION_KEYS.has(a):
+			missing.append(a)
+	assert_eq(missing, [],
+		"hint_for handles these actions and ACTION_KEYS has no keyboard key for them, so they render as an empty token: %s" % [missing])
+

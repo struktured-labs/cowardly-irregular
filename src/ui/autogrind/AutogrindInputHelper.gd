@@ -32,7 +32,9 @@ static func classify_event(event: InputEvent) -> String:
 
 ## The KEY this classifier binds for each action — the single place the fallbacks are written down,
 ## so a footer legend cannot name a key classify_event does not accept.
-const ACTION_KEYS := {"pause": "P", "adjust_rules": "R", "tier_cycle": "T"}
+## The KEYBOARD key each action offers. "exit" is here too, so the no-profile-manager fallback below
+## reads from this one table instead of carrying its own literal.
+const ACTION_KEYS := {"pause": "P", "adjust_rules": "R", "tier_cycle": "T", "exit": "X"}
 
 
 ## The button token a legend should print for one of classify_event's actions, resolved against the
@@ -44,7 +46,13 @@ static func hint_for(action_name: String, device_name: String = "") -> String:
 		# ui_cancel is a face button: hint_for_action already names it per family AND falls back to
 		# the key, so "exit" needs no branch of its own here.
 		var ipm := _profile_manager()
-		return str(ipm.hint_for_action("ui_cancel", device_name)) if ipm else "B"
+		## ⛔ The fallback was the literal "B" — a NINTENDO/SNES name, in the one helper whose own
+		## docstring says it exists because footers "named 'Select' and 'Start' — the SNES vocabulary".
+		## Only reachable with no InputProfileManager (absent autoload / bare instance), so no player
+		## saw it, but it is the same defect this file was written to remove and it would print "B" to
+		## every family the moment it became live. The keyboard key is the honest answer when nothing
+		## is known about the pad, and it now comes from ACTION_KEYS rather than from a literal here.
+		return str(ipm.hint_for_action("ui_cancel", device_name)) if ipm else str(ACTION_KEYS.get("exit", ""))
 	var pad := _pad_token(action_name, device_name)
 	return pad if pad != "" else str(ACTION_KEYS.get(action_name, ""))
 
