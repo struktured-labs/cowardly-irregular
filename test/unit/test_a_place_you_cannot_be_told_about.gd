@@ -21,6 +21,13 @@ extends GutTest
 ## literally, which is what makes the property checkable there at all.
 
 const W1 := "res://src/exploration/OverworldScene.gd"
+## ⚠️ A DESTINATION MAY BE DELIBERATELY UNSIGNED, and without this the guard forbids a real design
+## choice while claiming a defect (@cowir-music's shape: the fix right, the reason wrong). W1 already
+## hides things on purpose — the Sunken Ring and the Frozen Alcove are behind disguised walls — so a
+## future hidden entrance must be able to stay unsigned. You cannot silence this green, only explain
+## it green: the reason is required and must be long enough to disagree with.
+const DELIBERATELY_UNSIGNED := {}
+
 ## Ids whose own words are too generic to carry a match; each is signed by a PROPER name instead.
 const PROPER_NAMES := {
 	"backwards_warren": "warren",
@@ -86,6 +93,8 @@ func test_every_w1_destination_is_named_on_a_signpost() -> void:
 		for tok in str(d).split("_"):
 			if str(tok).length() > 3 and blob.contains(str(tok)):
 				hit = true
+		if DELIBERATELY_UNSIGNED.has(d):
+			continue
 		if not hit and not unnamed.has(d):
 			# The BUILDER is the whole message: GUT prints `at line -1` for these asserts, so a bare
 			# id leaves the reader with nothing to act on (@cowir-story / @cowir-adhoc, 2026-09-12).
@@ -93,7 +102,7 @@ func test_every_w1_destination_is_named_on_a_signpost() -> void:
 			for tok in str(d).split("_"):
 				if str(tok).length() > 3:
 					toks.append(str(tok))
-			unnamed.append("%s — no signpost contains %s; add a row to _place_signposts, or if it IS signed by a proper name, add that name to PROPER_NAMES here" % [d, str(toks)])
+			unnamed.append("%s — no signpost contains %s; add a row to _place_signposts, or add the proper name it IS signed by to PROPER_NAMES, or record it in DELIBERATELY_UNSIGNED with a reason" % [d, str(toks)])
 	unnamed.sort()
 
 	assert_eq(unnamed, [],
@@ -117,3 +126,13 @@ func test_the_scan_can_see_an_unnamed_destination() -> void:
 			unnamed.append(d)
 	assert_eq(unnamed, ["scriptura_plaza"],
 		"the predicate must name the destination no sign mentions, and only that one")
+
+
+## The exemption's teeth: a reason a reader can disagree with, not a checkbox (@cowir-autogrind).
+func test_an_unsigned_destination_must_be_explained_not_silenced() -> void:
+	assert_true(DELIBERATELY_UNSIGNED is Dictionary, "the exemption is a reason map, not a list")
+	for d in DELIBERATELY_UNSIGNED:
+		var why: String = str(DELIBERATELY_UNSIGNED[d])
+		assert_gt(why.length(), 40,
+			"%s is exempt with the reason %s — an exemption needs a reason a reader can disagree " % [d, why] +
+			"with, naming what makes this destination one a player should DISCOVER rather than be told about")
