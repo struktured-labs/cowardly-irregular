@@ -2385,6 +2385,15 @@ func _cycle_safety(key: String) -> void:
 	## Applied NOW, not at grind start: the ring reads the system back, and a player who sets a
 	## limit and closes the console without grinding still expects it to have taken.
 	AutogrindSystem.set_interrupt_rules(_safety_rules())
+	## Persist immediately. A safety limit the player set and then lost to a crash is the same defect
+	## as not persisting at all, and there is no "apply" step in a ring to hang it off.
+	## ⛔ GATED ON _test_disable_persistence. Without this check, every existing test that moves a dial
+	## writes user://settings.json — and run_tests.sh HONOURS XDG_DATA_HOME but does not SET one, so a
+	## bare caller overwrites HIS real settings. Adding the save without the gate reintroduced exactly
+	## the defect class that put fixture data in struktured's live saves for nine deploys; caught by a
+	## sandbox file reappearing after I had deleted it. The flag is the documented contract.
+	if SaveSystem and SaveSystem.has_method("save_settings") and not AutogrindSystem._test_disable_persistence:
+		SaveSystem.save_settings()
 	_log_message("[color=%s]Safety limits: HP %s, max %s battles, stop-on-death %s, stop-on-empty %s.[/color]" % [
 		AccessibilityPalette.bonus_bbcode(), _safety_label("hp"), _safety_label("battles"),
 		_safety_label("death"), _safety_label("items"),
