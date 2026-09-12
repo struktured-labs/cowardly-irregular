@@ -507,6 +507,16 @@ func format_for_review(proposal: Dictionary) -> String:
 ## Build the human-readable line the diegetic "what did the AI change
 ## for me" surface shows. Public so the toast / settings UI can use
 ## the same formatter.
+##
+## ⚠️ REPORTS THE APPLIED CHANGE, NOT THE REQUESTED ONE. It used to read
+## `multiplier` — the LLM's ask — while the write path clamps to the cumulative
+## band. At the band edge, which is the steady state that band EXISTS to produce,
+## a proposal moves the dial by nothing and the player got a success toast saying
+## "exp_multiplier +10%". Measured: before 1.15, after 1.15, moved 0.0.
+##
+## `applied_changes` already carried `before`, `after` and a `clamped` flag; the
+## flag was written at both apply sites and read NOWHERE in src/. The data to
+## tell the truth was there, and only the formatter ignored it.
 func summarize_applied(proposal: Dictionary) -> String:
 	var verdict: String = str(proposal.get("verdict", ""))
 	var status: String = str(proposal.get("status", ""))
@@ -525,14 +535,32 @@ func summarize_applied(proposal: Dictionary) -> String:
 	var changes: Array = proposal.get("applied_changes", [])
 	if changes.is_empty():
 		return "Auto-rebalance: proposed but no changes applied."
+	# REPORT WHAT LANDED, not what was asked for. `multiplier` is the LLM's
+	# request; the cumulative band can shrink or erase it at write time.
 	var parts: Array[String] = []
+	var moved: int = 0
 	for c in changes:
 		var name: String = str(c.get("constant", "?"))
-		var mult: float = float(c.get("multiplier", 1.0))
-		var pct: int = int(round((mult - 1.0) * 100.0))
-		var sign: String = "+" if pct >= 0 else ""
-		parts.append("%s %s%d%%" % [name, sign, pct])
+		var before: float = float(c.get("before", 0.0))
+		var after: float = float(c.get("after", 0.0))
+		if is_equal_approx(before, after) or is_zero_approx(before):
+			parts.append("%s already at its safe limit" % name)
+			continue
+		moved += 1
+		var actual_pct: int = int(round((after / before - 1.0) * 100.0))
+		var asked_pct: int = int(round((float(c.get("multiplier", 1.0)) - 1.0) * 100.0))
+		var text: String = "%s %s%d%%" % [name, _sign(actual_pct), actual_pct]
+		if actual_pct != asked_pct:
+			text += " (limited from %s%d%%)" % [_sign(asked_pct), asked_pct]
+		parts.append(text)
+	if moved == 0:
+		return "Auto-rebalance: no change — " + ", ".join(parts) + "."
 	return "Auto-rebalance: " + ", ".join(parts)
+
+
+## Shared sign prefix so the asked/actual pair cannot format differently.
+func _sign(pct: int) -> String:
+	return "+" if pct >= 0 else ""
 
 
 func _move_to_applied(proposal_idx: int) -> void:
