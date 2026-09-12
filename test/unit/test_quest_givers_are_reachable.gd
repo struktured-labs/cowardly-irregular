@@ -243,6 +243,16 @@ func test_a_placed_giver_implies_every_talk_target_is_placed() -> void:
 ## by default: DRAIN AN EXEMPTION WHEN ITS VALUE IS FALSE, NEVER WHEN ITS KEY IS SATISFIED.
 ## A "GOOD NEWS, STALE LIST" arm keyed on the wrong half fires exactly this deletion.
 ##
+## ✅ world4_words_per_conversation was FIXED in .338 (cowir-story 849a97de): a DIALOGUE_EMITTERS
+## entry on union_rep_w4 for step 2, a QuestExaminePoint filing window for step 3. It stays in
+## the table above as the record of the shape; it is no longer in DEAD_END_CUSTOM_STEPS.
+##
+## 🔑 TWO OF THE THREE SURVIVORS HAVE A BUILDABLE FIRST CUSTOM STEP, AND BUILDING IT ALONE IS
+## WORSE THAN LEAVING BOTH — it moves the stall from obj 1 to obj 2 and adds a moving part that
+## finishes nothing. cowir-story was one step from claiming two quests on exactly that, and said
+## so. Every value below carries the clause, because "half of it is doable" is the reason
+## someone drains an entry.
+##
 ## ⚠️ NOT A PROPOSAL TO DELETE THE QUESTS OR UNPLACE THE GIVERS. Each needs a designed mechanic
 ## — a countersignature flow, an archive with a route, a petition rewrite, a stack-read
 ## interact. That is content work and it is not this file's call. The arm exists so a FIFTH
@@ -253,10 +263,9 @@ func test_a_placed_giver_implies_every_talk_target_is_placed() -> void:
 ##   grows   -> a giver was placed ahead of its emitters again
 ##   shrinks -> someone built the mechanic; delete the line
 const DEAD_END_CUSTOM_STEPS := {
-	"world4_form_exception_alpha": "obj[1] countersigned — madame_orrery_w4 counter-signs and IS placed, so this half is buildable; obj[2] submitted — the legacy message tube, HARD-BLOCKED on rivet_row_tunnels, which exists as no map",
-	"world4_the_watercolors": "obj[1] archive_located — dorrit_w4 rumor dialogue, buildable; obj[2] archive_reached — entering the LEGACY ARCHIVE, HARD-BLOCKED on rivet_row_tunnels",
-	"world4_words_per_conversation": "obj[1] petition_restructured — the compression puzzle, 3 sequential exchanges per the notes' own v1; obj[2] petition_submitted — Form 99-Theta filing. Both in-village, no new map",
-	"world5_termination_condition": "obj[1] stack_read, obj[2] signal_sent — the stack overflow behind the checkpoint and the compose interact, same location. Both in-village, no new map",
+	"world4_form_exception_alpha": "step 3 (submitted) = the legacy message tube in rivet_row_tunnels, which exists as NO SCRIPT under src/maps. Step 2 IS buildable — madame_orrery_w4 counter-signs and is placed in RivetRowVillage — but building step 2 alone moves the stall from obj 1 to obj 2. The map is the blocker, not the emitter.",
+	"world4_the_watercolors": "step 3 (archive_reached) = entering the LEGACY ARCHIVE, same absent rivet_row_tunnels. Tunnel ACCESS is itself gated on redundant_blueprint (Chain B W3) or cogsworth_calibration_key (Orrery W3), enforced at the door per the quest's notes. Step 2 is dorrit_w4 rumor dialogue and buildable; alone it only moves the stall.",
+	"world5_termination_condition": "step 3 (signal_sent) = an authored THREE-WAY content choice, one branch being a player-authored message. No choice mechanism a QuestExaminePoint can drive. Step 2 IS buildable as an examine point — wiring it ALONE moves the stall from obj 1 to obj 2, so do not.",
 }
 
 
@@ -289,8 +298,8 @@ func test_premise_the_emitter_corpus_is_readable() -> void:
 		"CONTROL: a known-wired emitter flag must be found; if this reads missing the scan is broken and every finding below is noise")
 	assert_false(src.contains("\"zzz_not_a_quest_flag\""),
 		"CONTROL: a fabricated flag must read as unemitted, or the check cannot return a positive")
-	assert_gte(DEAD_END_CUSTOM_STEPS.size(), 4,
-		"DEAD_END_CUSTOM_STEPS holds %d, fewer than the 4 measured — a drained list makes the ratchet silent. ADDING is free; losing one hides a quest." % DEAD_END_CUSTOM_STEPS.size())
+	assert_gte(DEAD_END_CUSTOM_STEPS.size(), 3,
+		"DEAD_END_CUSTOM_STEPS holds %d, fewer than the 3 still blocked — a drained list makes the ratchet silent. ADDING is free; losing one hides a quest. The floor moves DOWN only when a quest is genuinely finishable, never to quiet a red." % DEAD_END_CUSTOM_STEPS.size())
 
 
 ## THE RATCHET. A placed giver makes every CUSTOM step a promise too.
