@@ -78,6 +78,14 @@ const MONSTER_PATH_CONSUMERS: Array[String] = [
 ## scored 9/9 GREEN, and a comment-only mention in an unrelated file was flagged as a consumer.
 ## Both directions, from one hole. The case table below is the cheap route to the seventh variant;
 ## four lanes broke six of them by planting mutations instead.
+##
+## ⛔ BEFORE BELIEVING A MUTATION THAT SURVIVED, TRIPWIRE ITS SITE. A mutation can apply
+## (`git diff` shows it, the anchor is unique) and still never EXECUTE: making the `#` branch
+## also fire on `"` left all 12 arms green, because the `"` branch above it consumes the
+## character first. Keep the trigger, maximise the effect -- plant `return "TRIPWIRE"` under the
+## same condition. Green means the condition never fires and the survival proved nothing; red
+## means the site is live and you have a real hole. Measured 2026-09-12: dead site 12/12 green,
+## live site (the escape branch) red -- so the instrument has both of its controls.
 func _strip_comments(src: String) -> String:
 	var out := ""
 	var i := 0
@@ -154,6 +162,9 @@ func test_the_comment_stripper_itself() -> void:
 		["var a = 1\n\"\"\"GONE doc\"\"\"\nvar b = 2", "GONE", false, "a triple-quoted docstring is removed"],
 		["var a = 1\n\"\"\"GONE doc\"\"\"\nvar b = 2", "var b = 2", true, "...without eating the code after it"],
 		["var a = 1\n\"\"\"GONE doc\"\"\"\nvar b = 2", "var a = 1", true, "...or before it"],
+		# The ESCAPE branch was the last untested one: it survived an over-strip mutation at 12/12.
+		["var p = \"a\\\"b\"", "a\\\"b", true, "an escaped quote inside a string is preserved"],
+		["var p = \"a\\\"b\"  # GONE", "GONE", false, "...and the string still CLOSES, so a trailing # is still a comment"],
 	]
 	for c in cases:
 		var stripped: String = _strip_comments(str(c[0]))
