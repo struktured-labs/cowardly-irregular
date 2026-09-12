@@ -26,16 +26,25 @@ func test_a_track_switch_ends_the_danger_envelope() -> void:
 
 
 func test_the_switch_kills_the_tween_not_just_the_pitch() -> void:
-	# The test above waits out the envelope, so a lucky 1.0 could carry it. This one
-	# reads the mechanism the instant the track changes: the tween must be GONE, not
-	# merely overwritten. (Was a source-text pin on the inline kill; that block is
-	# reset_danger() since 8a15eef1, and the behaviour is what mattered.)
-	SoundManager.set_danger_intensity(1.0)
-	await get_tree().process_frame
-	assert_true(SoundManager._danger_tween != null and SoundManager._danger_tween.is_valid(),
-		"CONTROL: the danger tween is live mid-envelope")
+	# Nulling the field is not killing the tween: create_tween() binds to this node, so a
+	# dereferenced envelope keeps writing pitch onto the new track — the original bug exactly.
+	# Hold the reference across the switch and ask the TWEEN. is_running() is the reading that
+	# answers in the same frame; is_valid() only flips a frame later, which reads as "still alive"
+	# even for a tween that was just killed. (Was a source-text pin on the inline kill; that block
+	# is reset_danger() since 8a15eef1, and a field-only check let "drop the kill()" stay green.)
+	var envelope: Tween = null
+	for attempt in range(5):
+		SoundManager.reset_danger()
+		SoundManager.set_danger_intensity(1.0)
+		await get_tree().process_frame
+		envelope = SoundManager._danger_tween
+		# A slow first frame can span the whole 0.5s envelope; re-arm rather than measure a
+		# tween that ended on its own, which would pass no matter what play_music does.
+		if envelope != null and envelope.is_running():
+			break
+	assert_true(envelope != null and envelope.is_running(), "CONTROL: the danger envelope is in flight")
 	SoundManager.play_music("victory")
-	assert_true(SoundManager._danger_tween == null or not SoundManager._danger_tween.is_valid(),
-		"play_music must kill the in-flight danger tween, not race it")
+	assert_false(envelope.is_running(),
+		"play_music must KILL the danger envelope, not just forget the reference to it")
 	assert_almost_eq(SoundManager._danger_intensity, 0.0, 0.001,
 		"and zero the danger level for the new track")
