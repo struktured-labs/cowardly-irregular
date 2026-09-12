@@ -87,7 +87,13 @@ func test_every_w1_destination_is_named_on_a_signpost() -> void:
 			if str(tok).length() > 3 and blob.contains(str(tok)):
 				hit = true
 		if not hit and not unnamed.has(d):
-			unnamed.append(d)
+			# The BUILDER is the whole message: GUT prints `at line -1` for these asserts, so a bare
+			# id leaves the reader with nothing to act on (@cowir-story / @cowir-adhoc, 2026-09-12).
+			var toks: Array = []
+			for tok in str(d).split("_"):
+				if str(tok).length() > 3:
+					toks.append(str(tok))
+			unnamed.append("%s — no signpost contains %s; add a row to _place_signposts, or if it IS signed by a proper name, add that name to PROPER_NAMES here" % [d, str(toks)])
 	unnamed.sort()
 
 	assert_eq(unnamed, [],
