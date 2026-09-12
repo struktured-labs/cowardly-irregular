@@ -179,9 +179,24 @@ func test_both_engines_really_treat_no_conditions_as_always() -> void:
 	## THE PREMISE. This repair is only correct because the evaluators match an
 	## empty condition list. If either engine ever gates it instead, sinking
 	## becomes wrong and this must be revisited rather than worked around.
-	var ab: String = FileAccess.get_file_as_string("res://src/autobattle/AutobattleSystem.gd")
-	var ag: String = FileAccess.get_file_as_string("res://src/autogrind/AutogrindSystem.gd")
-	assert_false(ab.is_empty() or ag.is_empty(), "CONTROL: both sources must load")
+	var ab_raw: String = FileAccess.get_file_as_string("res://src/autobattle/AutobattleSystem.gd")
+	var ag_raw: String = FileAccess.get_file_as_string("res://src/autogrind/AutogrindSystem.gd")
+	assert_false(ab_raw.is_empty() or ag_raw.is_empty(), "CONTROL: both sources must load")
+	## Dropping docstring lines is safe only while neither file ASSIGNS a
+	## triple-quoted region — an assigned one is shipping content (DialoguePrompts
+	## keeps its two grammar constants that way), and dropping its lines would
+	## delete the subject instead of prose. Measured 0 and 0; this keeps it true.
+	assert_eq(_assigned_triple_quotes(ab_raw), 0,
+		"AutobattleSystem now assigns a triple-quoted region — the strip below would eat content")
+	assert_eq(_assigned_triple_quotes(ag_raw), 0,
+		"AutogrindSystem now assigns a triple-quoted region — the strip below would eat content")
+	var ab: String = _code_only(ab_raw)
+	var ag: String = _code_only(ag_raw)
+	## ANTI-VACUITY: both files are heavily commented (92 and 112 triple-quoted
+	## lines), so the strip must remove something. A stripper with nothing to strip
+	## is not evidence that the assert stands on code.
+	assert_lt(ab.length(), ab_raw.length(), "nothing was stripped from AutobattleSystem")
+	assert_lt(ag.length(), ag_raw.length(), "nothing was stripped from AutogrindSystem")
 	assert_true(ab.contains("rule[\"conditions\"].size() == 0"),
 		"AutobattleSystem must still branch on an empty condition list")
 	assert_true(ag.contains("conditions.size() == 0"),
@@ -190,12 +205,15 @@ func test_both_engines_really_treat_no_conditions_as_always() -> void:
 
 # ── the repair must be REACHED, not merely correct ────────────────────────────
 
-## Strip `#` comments so the check cannot be satisfied by prose. This file's own
-## header names the function, and an unstripped scan of a file whose comments
-## discuss the repair passes whether or not the code calls it.
+## Strip `#` comments — and so `##` docstrings — plus any line carrying a
+## triple-quoted delimiter, so a source assert cannot be satisfied by prose. The
+## triple-quote half is guarded by _assigned_triple_quotes at the call site: it is
+## safe only where every such region is documentation rather than content.
 func _code_only(src: String) -> String:
 	var out: PackedStringArray = PackedStringArray()
 	for line in src.split("\n"):
+		if line.find("\"\"\"") != -1:
+			continue
 		var hash_at: int = line.find("#")
 		out.append(line if hash_at == -1 else line.substr(0, hash_at))
 	return "\n".join(out)
@@ -226,3 +244,31 @@ func test_an_empty_ruleset_is_handled() -> void:
 	var rules: Array = []
 	assert_eq(_rc()._sink_unconditional_rules(rules).size(), 0, "nothing to do")
 	assert_eq(rules.size(), 0, "and nothing invented")
+
+
+func test_the_assigned_region_detector_can_fire() -> void:
+	## POSITIVE CONTROL. The two zeros above are worth nothing unless the same
+	## detector reports non-zero on a case already known to have one:
+	## DialoguePrompts keeps AUTOBATTLE_GRAMMAR_DESCRIPTION and
+	## AUTOGRIND_GRAMMAR_DESCRIPTION as assigned triple-quoted regions — shipping
+	## prompt text, not documentation. Asserted as "more than zero" rather than a
+	## count, so a third grammar constant is a correct change and not a red.
+	var dp: String = FileAccess.get_file_as_string("res://src/llm/DialoguePrompts.gd")
+	assert_false(dp.is_empty(), "CONTROL: DialoguePrompts must load")
+	assert_gt(_assigned_triple_quotes(dp), 0,
+		"the detector cannot report non-zero anywhere, so its zeros above mean nothing")
+
+
+## Triple-quoted regions ASSIGNED to something — a const, a dict value, an
+## argument. Those carry shipping content; free-standing ones are documentation.
+## "docstring" is a per-file property, not a language fact.
+func _assigned_triple_quotes(src: String) -> int:
+	var n: int = 0
+	for line in src.split("\n"):
+		var at: int = line.find("\"\"\"")
+		if at == -1:
+			continue
+		var before: String = line.substr(0, at).strip_edges()
+		if before.ends_with("=") or before.ends_with(":") or before.ends_with("(") or before.ends_with(","):
+			n += 1
+	return n
