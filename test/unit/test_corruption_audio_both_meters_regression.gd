@@ -113,3 +113,20 @@ func test_a_meter_change_leaves_a_live_tween_that_teardown_must_kill() -> void:
 	_restore_corruption()
 	assert_false(t.is_running(),
 		"this file's after_each must kill the tween: it runs 1.5s of WALL time (set_ignore_time_scale(true)) and writes _corruption_intensity inside whatever test runs next")
+
+
+func test_the_fixture_leaves_no_rendered_detune_behind() -> void:
+	# cowir-music's arm (d22b164b), carried here when that branch was withdrawn in favour of this one.
+	# It catches what the tween arm cannot: a teardown that kills the envelope and leaves the RENDERED
+	# level set. The two are not the same field — _corruption_intensity is what the music player is
+	# actually detuned by, and gate 188's red was test_victory_music_not_pitched_by_danger inheriting it.
+	SoundManager.set_corruption_intensity(0.9)
+	for _i in range(30):
+		await get_tree().process_frame
+		if SoundManager._corruption_intensity > 0.1:
+			break
+	assert_gt(SoundManager._corruption_intensity, 0.1,
+		"CONTROL: the meter must really render before cleanup is tested — it is at %.3f" % SoundManager._corruption_intensity)
+	_restore_corruption()
+	assert_almost_eq(SoundManager._corruption_intensity, 0.0, 0.001,
+		"teardown left a rendered detune on the autoload; every later music test inherits it")
