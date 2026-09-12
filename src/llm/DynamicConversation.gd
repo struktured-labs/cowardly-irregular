@@ -321,6 +321,9 @@ func _do_player_turn(player: Node) -> void:
 		_state = State.DONE
 		return
 
+	# A menu whose every option ENDS the conversation is, to the player, the same
+	# as no menu at all. Runs before _ensure_farewell, which would return early.
+	_ensure_something_to_say(choices)
 	# Ensure a "Farewell." / exit option is always last.
 	_ensure_farewell(choices)
 
@@ -716,6 +719,39 @@ func _fallback_opening_line() -> String:
 		var idx: int = randi() % _opening_lines.size()
 		return str(_opening_lines[idx])
 	return _fallback_npc_line()
+
+
+## Replace a menu whose every option is an exit with the authored fallbacks.
+##
+## `validate_player_choices` already answers "nothing usable" with the fallback
+## set — three times, for a non-Dictionary reply, a non-Array `choices`, and an
+## empty survivor list. A menu of nothing but goodbyes is the same state one step
+## later and takes the same answer: the player opened a conversation and has
+## nothing they can say.
+##
+## It became reachable when the dedupe landed: three identical goodbyes collapse
+## to ONE, and `_ensure_farewell` then returns early because a farewell exists, so
+## the player gets a single-option menu whose only option leaves. Measured:
+##   ["Farewell.", "Farewell.", "Farewell."]  -> ["Farewell."]
+##   ["Goodbye.", "Goodbye.", "Farewell."]    -> ["Goodbye.", "Farewell."]  (fine)
+## The failure is non-monotonic — a partially usable reply produced a WORSE menu
+## than a completely unusable one, which is why nothing upstream caught it.
+##
+## Farewell POSITION is untouched and stays the parked design question:
+## `_ensure_farewell` runs immediately after this and owns where the exit sits.
+func _ensure_something_to_say(choices: Array[String]) -> void:
+	if choices.is_empty():
+		return
+	for c in choices:
+		if not _is_farewell(c):
+			return
+	choices.clear()
+	var fallback: Array = DialoguePrompts.FALLBACK_PLAYER_CHOICES["choices"] as Array
+	for s in fallback:
+		if choices.size() >= REQUESTED_CHOICES:
+			break
+		if not _is_farewell(str(s)):
+			choices.append(str(s))
 
 
 ## Ensure the choices list always ends with a farewell option.
