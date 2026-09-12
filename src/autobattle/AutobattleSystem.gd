@@ -197,10 +197,42 @@ func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	return [_get_default_action(combatant)]
 
 
+## First match wins, so a rule the character CANNOT perform does not merely waste its own turn — it
+## blocks every rule beneath it, forever. Guardian Default pinned on an `iron_guard` rule (a
+## brass_golem ability no player job has) guarded by `not_has_buff defense`: the buff could never
+## land, so the condition stayed true and taunt/protect/attack were unreachable for the whole fight.
+## Scoped to knows_ability — a STRUCTURAL impossibility. Transient blocks (MP, silence) still match,
+## so the player's authored priority is honoured and the battle log still names the reason.
+func _rule_is_performable(combatant: Combatant, rule: Dictionary) -> bool:
+	## UNDECIDABLE IS NOT EMPTY. The grid editor's Simulate probe is a scratch Combatant, and with
+	## no character open it carries no job at all — knows_ability would then answer "no" to every
+	## ability in the game and the panel would report "no rule matches" for a perfectly good grid.
+	## A character with no kit and nothing learned tells us nothing about what it can cast, so the
+	## rule stands. Only a combatant we can actually interrogate gets a rule taken away.
+	if combatant == null:
+		return true
+	var has_kit: bool = combatant.job is Dictionary and not (combatant.job as Dictionary).is_empty()
+	if not has_kit and combatant.learned_abilities.is_empty() and combatant.purchased_abilities.is_empty():
+		return true
+	var acts: Array = rule.get("actions", []) as Array
+	if acts.is_empty():
+		return true
+	for action_def in acts:
+		var ad: Dictionary = action_def
+		if str(ad.get("type", "")) != "ability":
+			return true
+		if _combatant_has_learned(combatant, _resolve_ability_upgrade(combatant, ad)):
+			return true
+	return false
+
+
 func _evaluate_grid_rule(combatant: Combatant, rule: Dictionary) -> bool:
 	"""Evaluate a grid-format rule (AND-chain of conditions)"""
 	# Skip disabled rules
 	if not rule.get("enabled", true):
+		return false
+
+	if not _rule_is_performable(combatant, rule):
 		return false
 
 	if not rule.has("conditions") or rule["conditions"].size() == 0:

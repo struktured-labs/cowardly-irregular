@@ -3012,6 +3012,13 @@ func _simulate_probe(state: Dictionary) -> Combatant:
 		c.max_hp = combatant.max_hp
 		c.max_mp = combatant.max_mp
 		c.learned_abilities = combatant.learned_abilities.duplicate()
+		## knows_ability reads all five provenances, so a probe carrying only `job` answers "no" to
+		## anything PURCHASED, LEVEL-UNLOCKED or lent by a SECONDARY JOB — the exact gap struktured
+		## reported as "2ndary job does nothing". Harmless while Simulate only evaluated conditions;
+		## the moment rule selection consults the kit it would report a bought spell as uncastable.
+		c.purchased_abilities = combatant.purchased_abilities.duplicate()
+		c.job_level = combatant.job_level
+		c.secondary_job = combatant.secondary_job
 		## item_count reads the CASTER's bag. Without this the probe carried none, so every
 		## "hp < 30 AND potions > 0 -> use potion" rule read as never-firing with a full bag —
 		## and 12 of the 15 shipped templates gate on item_count.
