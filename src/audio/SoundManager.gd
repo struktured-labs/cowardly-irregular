@@ -1752,9 +1752,13 @@ func get_current_world_suffix() -> String:
 ## Returns "" when the world is not knowable, which preserves the older
 ## inherit-whatever-is-playing behaviour rather than guessing.
 func _interior_world_suffix() -> String:
-	if GameState == null:
+	## get_node_or_null, matching :946 and :2143 — a bare autoload identifier is a
+	## COMPILE error when absent, not null, so the null branch below would be dead
+	## and this file would hard-fail instead of declining (@cowir-adhoc, msg 10533).
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null:
 		return ""
-	var w: int = int(GameState.current_world)
+	var w: int = int(gs.get("current_world"))
 	## WeatherSystem.WORLD_IDS is this vocabulary already — reused rather than
 	## re-derived, and range-checked because its own default answers "abstract".
 	if w < 1 or w > 6:

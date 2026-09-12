@@ -160,8 +160,38 @@ func test_the_cached_return_cannot_smuggle_an_unseen_suffix() -> void:
 		if not RegEx.create_from_string("^\"[a-z_]+\"$").search(expr):
 			non_literal.append(expr)
 	assert_gt(total, 5, "control: parsed %d returns — implausibly few, the extraction is wrong" % total)
-	assert_eq(non_literal, ["_current_world_suffix"] as Array[String],
-		"the resolver's non-literal returns are %s. The coverage test parses LITERALS only, so any new one is a suffix arm it cannot see — pin it here or make it literal." % [non_literal])
+	non_literal.sort()
+	assert_eq(non_literal, ["_current_world_suffix", "room"] as Array[String],
+		"the resolver's non-literal returns are %s. The coverage test parses LITERALS only, so any new one is a suffix arm it cannot see — pin it here AND prove its range, or make it literal." % [non_literal])
+
+
+func test_the_interior_return_cannot_smuggle_a_suffix_either() -> void:
+	## `return room` is the SECOND non-literal return (2026-09-12, interiors resolve
+	## their world from the map rather than the cache). The cache argument above does
+	## not cover it: its value comes from WeatherSystem.WORLD_IDS, a table outside this
+	## function and outside the cache's one-writer proof.
+	##
+	## Making it literal would be a fourth copy of the world vocabulary, which this
+	## file's subject exists to prevent. So the range is proved instead: every value
+	## that table can yield must already be a LITERAL arm here, which is what makes it
+	## visible to the coverage test above.
+	var src: String = FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
+	var fn_start: int = src.find("func _get_current_world_suffix")
+	var next_fn: int = src.find("\nfunc ", fn_start + 1)
+	var body: String = src.substr(fn_start, next_fn - fn_start)
+
+	var emitted: Array[String] = []
+	for w in WeatherSystem.WORLD_IDS.keys():
+		emitted.append(str(WeatherSystem.WORLD_IDS[w]))
+	assert_gt(emitted.size(), 5,
+		"CONTROL FAILED: WORLD_IDS yielded %d values — the table moved and this proves nothing" % emitted.size())
+
+	var unseen: Array[String] = []
+	for suffix in emitted:
+		if not body.contains("return \"%s\"" % suffix):
+			unseen.append(suffix)
+	assert_eq(unseen.size(), 0,
+		"WeatherSystem.WORLD_IDS can yield %s, which `return room` would hand back, and they are not literal arms in the resolver — so the coverage test above cannot see them and an interior could play a world nothing pins" % [unseen])
 
 	var seed_re := RegEx.create_from_string("var _current_world_suffix: String = \"([a-z_]+)\"")
 	var seed_m := seed_re.search(src)
