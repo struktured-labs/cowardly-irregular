@@ -2295,11 +2295,16 @@ func apply_autogrind_actions(actions: Array) -> void:
 								member.heal(amount)
 								healed_count += 1
 								continue
-						for item_pair in [["hi_potion", 200], ["potion", 50]]:
-							if member.get_item_count(item_pair[0]) > 0:
-								member.remove_item(item_pair[0], 1)
-								member.heal(item_pair[1])
-								_track_item_consumed(item_pair[0])
+						## The amounts were HARDCODED at 50 and 200; items.json says 500 and 2000, so a
+						## player's heal_party rule granted a TENTH of what the potion in their bag
+						## promises. Tick 394 fixed exactly this in HeadlessBattleResolver._resolve_item
+						## ("route through ItemSystem.use_item so autogrind item use matches live
+						## battle exactly") and this second site was missed. Same ruling, applied here.
+						for item_id in HEAL_PARTY_ITEM_ORDER:
+							if member.get_item_count(item_id) > 0:
+								if not _apply_item_to(member, item_id):
+									continue
+								_track_item_consumed(item_id)
 								healed_count += 1
 								break
 				if healed_count > 0:
@@ -2359,6 +2364,14 @@ const _HEAL_EFFECT_KEYS := ["heal_hp", "heal_mp", "heal_hp_percent", "heal_mp_pe
 ## HP only, and NOT _HEAL_EFFECT_KEYS. That set includes heal_mp, and an Ether does not keep a party
 ## alive — reusing it would let a party holding nothing but Ethers pass the depletion gate, which is
 ## a different wrong answer. `revive` counts: a Phoenix Down is what saves a run.
+## ⚠️ UNCHANGED ORDER, ON PURPOSE. heal_party has always tried hi_potion before potion, and five
+## other restoratives (mega_potion, x_potion, elixir, megalixir, phoenix_down) have never been
+## eligible at all. Widening this is a BALANCE ruling, not a bug fix: strongest-first burns a
+## Megalixir on a scratch, weakest-first changes how long a player's hi_potions last. Handed to
+## struktured with the measurement; this commit fixes only the AMOUNTS, which were plainly wrong.
+const HEAL_PARTY_ITEM_ORDER := ["hi_potion", "potion"]
+
+
 const _HP_RESTORE_KEYS := ["heal_hp", "heal_hp_percent", "revive"]
 
 
@@ -2366,6 +2379,24 @@ const _HP_RESTORE_KEYS := ["heal_hp", "heal_hp_percent", "revive"]
 ## zero code change — the same contract _is_healing_item states for the Iron Vigil streak.
 ## ⛔ save_point_only is excluded: a Tent heals 50% and cannot be used mid-grind, so counting it says
 ## "you can still heal" about an item the player cannot reach. Effect keys alone do not separate them.
+## Consumes one `item_id` from `member` and applies its REAL effects. Returns false having consumed
+## nothing when the item cannot be applied, so a caller can try the next one.
+## Mirrors _resolve_item: inventory removal is ours, effects are ItemSystem's.
+func _apply_item_to(member, item_id: String) -> bool:
+	var item_system: Node = _get_autoload_node("ItemSystem")
+	if item_system == null or not item_system.has_method("use_item"):
+		## No fallback table, on purpose. A second copy of the heal amounts is what produced the 10x
+		## divergence; items.json is the one source. Fail loud rather than silently heal a wrong number.
+		push_warning("[AUTOGRIND] heal_party: ItemSystem unavailable — '%s' NOT consumed, no heal applied" % item_id)
+		return false
+	member.remove_item(item_id, 1)
+	var targets: Array[Combatant] = [member]
+	if not item_system.use_item(member, item_id, targets):
+		push_warning("[AUTOGRIND] heal_party: ItemSystem refused '%s' (unknown id or no effects block) — item was consumed" % item_id)
+		return false
+	return true
+
+
 func _is_battle_hp_restorative(item_id: String) -> bool:
 	var item_system: Node = _get_autoload_node("ItemSystem")
 	if item_system == null or not item_system.has_method("get_item"):
