@@ -118,6 +118,30 @@ func _writers() -> Dictionary:
 	if villages < 8:
 		thin.append("village area ids derived %d (floor 8)" % villages)
 
+	# DERIVED: HiddenPassage writes "secret_" + passage_id and TreasureChest "chest_" + chest_id,
+	# so a readable that names one literally (the Survey Stone) gates on a flag no source spells.
+	var rx_secret := RegEx.new()
+	rx_secret.compile("\\{\"id\":\\s*\"([a-z0-9_]+)\"[^}]*\"disguise\"")
+	var secrets := 0
+	for m in rx_secret.search_all(src):
+		written["secret_" + m.get_string(1)] = true
+		secrets += 1
+	var rx_secret2 := RegEx.new()
+	rx_secret2.compile("passage_id\\s*=\\s*\"([a-z0-9_]+)\"")
+	for m in rx_secret2.search_all(src):
+		written["secret_" + m.get_string(1)] = true
+		secrets += 1
+	if secrets < 5:
+		thin.append("hidden passage ids derived %d (floor 5)" % secrets)
+	var rx_chest := RegEx.new()
+	rx_chest.compile("\\{\"id\":\\s*\"([a-z0-9_]+)\"[^}]*\"pos\"[^}]*\"type\"")
+	var chests := 0
+	for m in rx_chest.search_all(src):
+		written["chest_" + m.get_string(1)] = true
+		chests += 1
+	if chests < 10:
+		thin.append("treasure chest ids derived %d (floor 10)" % chests)
+
 	# DERIVED: QuestSystem mirrors each quest's own flag_on_complete, quest-level and per-objective.
 	var quests := 0
 	var qdir := DirAccess.open(QUEST_DIR)

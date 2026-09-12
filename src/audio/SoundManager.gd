@@ -5006,7 +5006,9 @@ func _start_area_music_deferred(area_type: String) -> void:
 		"abstract_dungeon":
 			_start_dungeon_music("abstract")
 		_:
-			_start_overworld_music()
+			## _current_area is already this key, so the resolver answers from its
+			## cache — the last world we positively identified.
+			_start_overworld_world_music(_get_current_world_suffix())
 
 
 func _start_overworld_music() -> void:
@@ -5066,6 +5068,17 @@ func _start_village_world_music(world_suffix: String) -> void:
 	if _try_play_from_manifest("village_" + world_suffix):
 		return
 	_start_village_music()
+
+
+## Mirror of _start_village_world_music for the overworld. An unrecognised area key
+## used to reach _start_overworld_music, which hardcodes overworld_medieval — so a
+## miss played World 1's bed in every world. Both tick 359 and the 8-of-13 dungeon-id
+## bug were that shape; this makes the default degrade by WORLD instead.
+func _start_overworld_world_music(world_suffix: String) -> void:
+	_music_playing = true
+	if world_suffix != "medieval" and _try_play_from_manifest("overworld_" + world_suffix):
+		return
+	_start_overworld_music()
 
 
 func _resolve_interior_track(key: String) -> String:
