@@ -223,13 +223,13 @@ func _request_next_battle() -> void:
 					var mp_loss = int(target.max_mp * 0.15)
 					target.current_mp = max(0, target.current_mp - mp_loss)
 			"item_loss":
-				var alive = _party.filter(func(m): return m is Combatant and m.is_alive)
-				if alive.size() > 0:
-					var target = alive[randi() % alive.size()]
-					for item_id in ["potion", "hi_potion", "ether", "hi_ether"]:
-						if target.get_item_count(item_id) > 0:
-							target.remove_item(item_id, 1)
-							break
+				## The system owns the selection so it can report what it actually took — the player has
+				## already been told "items corrupted" by the time this runs.
+				var taken: String = AutogrindSystem.corrupt_one_restorative(_party)
+				if taken == "":
+					print("[AUTOGRIND] item_loss: party carries no restorative — nothing was corrupted, and the player has already been told otherwise")
+				else:
+					print("[AUTOGRIND] item_loss: corrupted 1x %s" % taken)
 			"exp_surge":
 				_next_battle_exp_bonus = 0.5  # +50% EXP next battle
 

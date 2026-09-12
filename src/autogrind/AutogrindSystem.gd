@@ -2428,6 +2428,35 @@ func _is_healing_item(item_id: String) -> bool:
 	return false
 
 
+## Corrupts ONE restorative from the party. Returns the id taken, or "" when the party carries none.
+## ⚠️ EXISTS BECAUSE THE PLAYER IS TOLD FIRST. check_fatigue_event emits "Inventory anomaly — items
+## corrupted" and the controller applies the effect AFTER, so an effect that frequently takes nothing
+## makes that message a lie. It became a visible lie when the authored descriptions started reaching
+## the console at all — before that the player only saw a generic line, so the gap cost nothing.
+##
+## Pre-fix it picked ONE random alive member and checked four hardcoded ids, so a five-member party
+## carrying X-Potions and Elixirs lost nothing on most rolls. Now every (member, item) pair is a
+## candidate and one is chosen at random: the flavour of a random victim survives, and the effect
+## cannot silently no-op while the party is holding something.
+##
+## NOT routed through _track_item_consumed on purpose: a corrupted item was not USED. Counting it
+## would inflate the player's items-consumed stat and break their Iron Vigil streak for a heal that
+## never happened.
+func corrupt_one_restorative(party: Array) -> String:
+	var candidates: Array = []
+	for member in party:
+		if not (member is Combatant) or not member.is_alive:
+			continue
+		for item_id in member.inventory:
+			if int(member.inventory[item_id]) > 0 and _is_healing_item(str(item_id)):
+				candidates.append([member, str(item_id)])
+	if candidates.is_empty():
+		return ""
+	var pick: Array = candidates[randi() % candidates.size()]
+	pick[0].remove_item(pick[1], 1)
+	return str(pick[1])
+
+
 func track_item_consumed(item_id: String) -> void:
 	"""Public API for external callers (GameLoop between-battle healing)."""
 	_track_item_consumed(item_id)
