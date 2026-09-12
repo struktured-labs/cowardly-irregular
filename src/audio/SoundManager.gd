@@ -5121,9 +5121,21 @@ func _resolve_interior_track(key: String) -> String:
 	var variant := key + "_" + _get_current_world_suffix()
 	if _music_manifest.has(variant):
 		return variant
-	if _music_manifest.has(key):
+	## A bed may name the worlds it was written for; outside them the room inherits, as an unauthored one does.
+	if _music_manifest.has(key) and _bed_serves_this_world(key):
 		return key
 	return ""
+
+
+func _bed_serves_this_world(key: String) -> bool:
+	"""A bed that names no worlds serves every world — the field is opt-in."""
+	var entry: Variant = _music_manifest.get(key, {})
+	if not (entry is Dictionary):
+		return true
+	var worlds: Variant = (entry as Dictionary).get("worlds", [])
+	if not (worlds is Array) or (worlds as Array).is_empty():
+		return true
+	return (worlds as Array).has(_get_current_world_suffix())
 
 
 func _start_interior_music(key: String) -> void:
