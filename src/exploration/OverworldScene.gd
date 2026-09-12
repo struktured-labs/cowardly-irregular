@@ -773,10 +773,18 @@ func _place_treasure_chests() -> void:
 		{"id": "w1_central_phoenix", "pos": Vector2(50, 30), "type": "item", "item": "phoenix_down", "amount": 1},
 		# Desert approach — dangerous territory reward
 		{"id": "w1_desert_elixir", "pos": Vector2(18, 48), "type": "item", "item": "elixir", "amount": 1},
-		# Near Ironhaven — endgame area
-		{"id": "w1_iron_gold", "pos": Vector2(82, 58), "type": "gold", "gold": 500},
-		# Swamp region — hidden reward
-		{"id": "w1_swamp_remedy", "pos": Vector2(72, 8), "type": "item", "item": "remedy", "amount": 2},
+		# Near Ironhaven — endgame area. (82,58) was the village DOORWAY, one cell east of the gate:
+		# measured 0.71 cells from IronhavenEntrance, taking the faced press from 3 of its 5 approach
+		# cells and answering "The chest is empty." there for the rest of the campaign once looted.
+		# ⚠️ CELL CHOSEN BY PHYSICS, not by the painted map — the same rule the Frozen Alcove above
+		# carries. Reading the PNG says (84,57) is grass and (80,61) is lava; the displaced Mode 7
+		# collider says (84,57) is SEALED and (80,61) is standable, and it is the collider the player
+		# walks into. test_overworld_secrets_are_reachable's header has the list of four grid models
+		# that were all wrong. (79,57) and (83,59) are standable and still rob the gate.
+		{"id": "w1_iron_gold", "pos": Vector2(80, 61), "type": "gold", "gold": 500},
+		# Swamp region — hidden reward. Same defect as the Ironhaven chest, one cell milder: (72,8)
+		# sat 1.8 cells from GrimhollowEntrance and took one of its eight approach cells.
+		{"id": "w1_swamp_remedy", "pos": Vector2(74, 11), "type": "item", "item": "remedy", "amount": 2},
 		# FOUR MORE were stranded by the same re-author and found by the guard written for the two
 		# below: village_potion and village_gold were inside mountain, cave_hipotion inside mountain,
 		# forest_antidote in WATER. Each is re-anchored on the landmark its own id names — the village
