@@ -396,6 +396,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_wd_armed = true
 	_wd_last_progress_ms = 0
 	_party_line_cooldowns.clear()
+	_party_line_last_kind.clear()
 	if not damage_dealt.is_connected(_on_damage_dealt_for_party_dialogue):
 		damage_dealt.connect(_on_damage_dealt_for_party_dialogue)
 	## Tick 414: feed the rewind ring buffer at battle start so
@@ -8466,6 +8467,13 @@ func _resolve_boss_display_name(persona_id: String) -> String:
 var _party_line_cooldowns: Dictionary = {}
 const PARTY_LINE_COOLDOWN_ROUNDS: int = 8
 
+## Which event kind last claimed a PC's cooldown, so a reaction can tell whether
+## it is being blocked by ambient chatter or by another reaction.
+var _party_line_last_kind: Dictionary = {}
+
+## Ambient events fire on a schedule rather than in response to anything.
+const AMBIENT_PARTY_LINE_EVENTS: Array[String] = ["turn_start"]
+
 ## Iconic ability per starter job — used to gate the used_signature_ability trigger.
 const SIGNATURE_ABILITIES: Dictionary = {
 	"fighter": "power_strike",
@@ -8507,9 +8515,17 @@ func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data
 	# LLM-vs-scripted based on the flag + LLM availability.
 	var name_key: String = str(combatant.combatant_name)
 	var last_round: int = int(_party_line_cooldowns.get(name_key, -PARTY_LINE_COOLDOWN_ROUNDS - 1))
-	if event_kind != "victory" and current_round - last_round < PARTY_LINE_COOLDOWN_ROUNDS:
+	# A reaction may take the slot back from ambient chatter, never from another
+	# reaction. turn_start fires on EVERY PC turn and so always reached the shared
+	# cooldown first; low_hp / big_hit_taken / used_signature_ability were then
+	# unreachable for PARTY_LINE_COOLDOWN_ROUNDS, which is most of a battle.
+	var held_by_ambient: bool = str(_party_line_last_kind.get(name_key, "")) in AMBIENT_PARTY_LINE_EVENTS
+	var preempts: bool = held_by_ambient and not (event_kind in AMBIENT_PARTY_LINE_EVENTS)
+	if event_kind != "victory" and not preempts \
+			and current_round - last_round < PARTY_LINE_COOLDOWN_ROUNDS:
 		return
 	_party_line_cooldowns[name_key] = current_round
+	_party_line_last_kind[name_key] = event_kind
 	_run_party_line_async(combatant, event_kind, event_data)
 
 
