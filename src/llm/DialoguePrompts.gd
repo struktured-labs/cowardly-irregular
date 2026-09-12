@@ -397,9 +397,7 @@ static func build_npc_opening(
 	var context: String = _context_blocks(
 		recent_events, quest_state_lines, time_of_day, party_state, memory_lines)
 
-	var pronoun_note: String = _pronoun_note(" ".join(PackedStringArray(recent_events)))
-
-	return (
+	return _with_pronoun_note(
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
 		+ "Generate exactly ONE opening line spoken by the NPC when the player approaches.\n"
 		+ "\n"
@@ -413,7 +411,6 @@ static func build_npc_opening(
 		+ "- Maximum %d characters.\n" % MAX_LINE_CHARS
 		+ "- Do NOT include the NPC name or speaker label in the line.\n"
 		+ "- Respond with ONLY valid JSON: {\"line\": \"<text>\"}\n"
-		+ pronoun_note
 	)
 
 
@@ -550,11 +547,8 @@ static func build_npc_reply(
 	if player_line.strip_edges() != "":
 		history_block += "The player just responded:\n  \"%s\"\n" % player_line.strip_edges()
 
-	# The model guesses a pronoun from a title when the prompt gives it none:
-	# 9 of 21 replies mentioning Chancellor Mordaine called her "he".
-	var pronoun_note: String = _pronoun_note(last_npc_line + " " + player_line)
-
-	return (
+	# 9 of 21 replies mentioning Chancellor Mordaine called her "he" with no note.
+	return _with_pronoun_note(
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
 		+ "Generate exactly ONE follow-up line spoken by the NPC, responding directly to what the player just said.\n"
 		+ "\n"
@@ -570,7 +564,6 @@ static func build_npc_reply(
 		+ "- Maximum %d characters.\n" % MAX_LINE_CHARS
 		+ "- Do NOT include the NPC name or speaker label in the line.\n"
 		+ "- Respond with ONLY valid JSON: {\"line\": \"<text>\"}\n"
-		+ pronoun_note
 	)
 
 
@@ -611,11 +604,8 @@ static func build_combined_reply(
 	if player_line.strip_edges() != "":
 		history_block += "The player just responded:\n  \"%s\"\n" % player_line.strip_edges()
 
-	# The model guesses a pronoun from a title when the prompt gives it none:
-	# 9 of 21 replies mentioning Chancellor Mordaine called her "he".
-	var pronoun_note: String = _pronoun_note(last_npc_line + " " + player_line)
-
-	return (
+	# 5 of those 9 misgendered replies came from this, the busiest path.
+	return _with_pronoun_note(
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
 		+ "Produce BOTH the NPC's follow-up line AND %d short player dialogue choices in one JSON object.\n" % count
 		+ "\n"
@@ -631,7 +621,6 @@ static func build_combined_reply(
 		+ "- Choices should cover a range of tones: curious, cautious, friendly, direct.\n"
 		+ "- Do NOT number the choices or add bullet points.\n"
 		+ "- Respond with ONLY valid JSON: {\"reply\": \"<text>\", \"choices\": [\"...\", \"...\"]}\n"
-		+ pronoun_note
 	)
 
 
@@ -655,7 +644,7 @@ static func build_player_choices(
 	var count: int = clampi(num_choices, 1, MAX_CHOICES)
 	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
 
-	return (
+	return _with_pronoun_note(
 		"You are writing player dialogue options for a meta-aware JRPG called 'Cowardly Irregular'.\n"
 		+ "The player just heard the following from %s:\n" % npc_name
 		+ "  \"%s\"\n" % npc_line
@@ -1066,6 +1055,23 @@ static func _pronoun_note(context_text: String) -> String:
 	if out.is_empty():
 		return ""
 	return "\n" + " ".join(out) + "\n"
+
+
+## Append the pronoun note derived from the WHOLE prompt the model will read.
+##
+## Every builder used to hand-pick its own scan input, and they disagreed: the
+## opening scanned its events, both reply paths scanned only the immediate
+## exchange, and build_player_choices scanned nothing. So a figure named in a
+## reply's events, memory or quest block got no note — the very case the opening
+## guard exists for, one turn later. Deriving it from the assembled body means no
+## block can name a figure without the note firing, which is the same way
+## _context_blocks closed the block-drift class.
+##
+## It also narrows one case: the opening used to scan the RAW event list, so an
+## event past the render limit fired a note about a figure the model cannot see.
+## All five call sites pass exactly CONTEXT_EVENTS, so that is unreachable today.
+static func _with_pronoun_note(body: String) -> String:
+	return body + _pronoun_note(body)
 
 
 ## Flatten a model-authored line so it cannot escape the block that quotes it.
