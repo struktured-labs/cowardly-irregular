@@ -179,9 +179,25 @@ func test_both_engines_really_treat_no_conditions_as_always() -> void:
 	## THE PREMISE. This repair is only correct because the evaluators match an
 	## empty condition list. If either engine ever gates it instead, sinking
 	## becomes wrong and this must be revisited rather than worked around.
-	var ab: String = FileAccess.get_file_as_string("res://src/autobattle/AutobattleSystem.gd")
-	var ag: String = FileAccess.get_file_as_string("res://src/autogrind/AutogrindSystem.gd")
-	assert_false(ab.is_empty() or ag.is_empty(), "CONTROL: both sources must load")
+	var ab_raw: String = FileAccess.get_file_as_string("res://src/autobattle/AutobattleSystem.gd")
+	var ag_raw: String = FileAccess.get_file_as_string("res://src/autogrind/AutogrindSystem.gd")
+	assert_false(ab_raw.is_empty() or ag_raw.is_empty(), "CONTROL: both sources must load")
+	## Dropping docstring lines is safe only while neither file OPENS a
+	## triple-quoted region after code. Such a region is shipping content —
+	## DialoguePrompts keeps its two grammar constants that way, HowToPlayOverlay
+	## RETURNS one, TitleScreen concatenates one — and dropping its lines deletes
+	## the subject instead of prose. Measured 0 and 0; this keeps it true.
+	assert_eq(_content_triple_quotes(ab_raw), 0,
+		"AutobattleSystem now opens a triple-quoted region after code — the strip below would eat content")
+	assert_eq(_content_triple_quotes(ag_raw), 0,
+		"AutogrindSystem now opens a triple-quoted region after code — the strip below would eat content")
+	var ab: String = _code_only(ab_raw)
+	var ag: String = _code_only(ag_raw)
+	## ANTI-VACUITY: both files are heavily commented (92 and 112 triple-quoted
+	## lines), so the strip must remove something. A stripper with nothing to strip
+	## is not evidence that the assert stands on code.
+	assert_lt(ab.length(), ab_raw.length(), "nothing was stripped from AutobattleSystem")
+	assert_lt(ag.length(), ag_raw.length(), "nothing was stripped from AutogrindSystem")
 	assert_true(ab.contains("rule[\"conditions\"].size() == 0"),
 		"AutobattleSystem must still branch on an empty condition list")
 	assert_true(ag.contains("conditions.size() == 0"),
@@ -190,12 +206,15 @@ func test_both_engines_really_treat_no_conditions_as_always() -> void:
 
 # ── the repair must be REACHED, not merely correct ────────────────────────────
 
-## Strip `#` comments so the check cannot be satisfied by prose. This file's own
-## header names the function, and an unstripped scan of a file whose comments
-## discuss the repair passes whether or not the code calls it.
+## Strip `#` comments — and so `##` docstrings — plus any line carrying a
+## triple-quoted delimiter, so a source assert cannot be satisfied by prose. The
+## triple-quote half is guarded by _assigned_triple_quotes at the call site: it is
+## safe only where every such region is documentation rather than content.
 func _code_only(src: String) -> String:
 	var out: PackedStringArray = PackedStringArray()
 	for line in src.split("\n"):
+		if line.find("\"\"\"") != -1:
+			continue
 		var hash_at: int = line.find("#")
 		out.append(line if hash_at == -1 else line.substr(0, hash_at))
 	return "\n".join(out)
@@ -226,3 +245,61 @@ func test_an_empty_ruleset_is_handled() -> void:
 	var rules: Array = []
 	assert_eq(_rc()._sink_unconditional_rules(rules).size(), 0, "nothing to do")
 	assert_eq(rules.size(), 0, "and nothing invented")
+
+
+func test_the_content_region_detector_fires_on_every_shape() -> void:
+	## POSITIVE CONTROL, and it exercises the PREDICATE rather than one syntax.
+	## My first version keyed on `= := : ( ,` and validated its zero against
+	## DialoguePrompts' two `const … := """` — so it proved the detector could fire
+	## on an assignment and nothing else. A RETURNED region is content too
+	## (HowToPlayOverlay builds its whole reference screen that way, and every
+	## triple-quote census in the fleet skipped that file as a docstring), and so
+	## is a concatenated one. Parity-aware now: an opener with anything before it
+	## on the line is content, whatever the operator.
+	var shapes: Dictionary = {
+		"assigned":     "const X := \"\"\"body\"\"\"\n",
+		"returned":     "func f() -> String:\n\treturn \"\"\"body\"\"\"\n",
+		"concatenated": "func f() -> String:\n\treturn head() + \"\"\"body\"\"\"\n",
+		"dict value":   "const D := {\"k\": \"\"\"body\"\"\"}\n",
+	}
+	var blind: Array[String] = []
+	for shape in shapes:
+		if _content_triple_quotes(str(shapes[shape])) == 0:
+			blind.append(str(shape))
+	assert_eq(blind, ([] as Array[String]),
+		"the detector reads these content shapes as documentation: %s" % ", ".join(blind))
+	## And it must NOT fire on the documentation shape, or every file reds.
+	assert_eq(_content_triple_quotes("func f():\n\t\"\"\"just a docstring\"\"\"\n"), 0,
+		"a free-standing docstring is not content")
+	## Real file, so the zeros above are not purely synthetic.
+	var dp: String = FileAccess.get_file_as_string("res://src/llm/DialoguePrompts.gd")
+	assert_false(dp.is_empty(), "CONTROL: DialoguePrompts must load")
+	assert_gt(_content_triple_quotes(dp), 0,
+		"the detector finds nothing in a file known to carry two grammar constants")
+
+
+## Triple-quoted regions that carry shipping CONTENT rather than documentation.
+##
+## Parity-aware, because the naive read over-counts in the other direction: a
+## docstring's CLOSING delimiter also has prose before it on its line. Only an
+## OPENER — a delimiter reached from outside a region — counts, and any code
+## before it makes the region content: assigned, returned, concatenated, or a
+## dict value. Free-standing under a `func` line is documentation.
+## "docstring" is a per-file property, not a language fact.
+func _content_triple_quotes(src: String) -> int:
+	var n: int = 0
+	var inside: bool = false
+	for line in src.split("\n"):
+		var i: int = 0
+		while true:
+			var at: int = line.find("\"\"\"", i)
+			if at == -1:
+				break
+			if not inside:
+				if line.substr(0, at).strip_edges() != "":
+					n += 1
+				inside = true
+			else:
+				inside = false
+			i = at + 3
+	return n

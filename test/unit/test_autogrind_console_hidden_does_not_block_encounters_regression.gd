@@ -52,7 +52,10 @@ func test_every_input_guard_tests_showing_not_existence() -> void:
 	var src := FileAccess.get_file_as_string(GL)
 	# Anchors sit on the line AFTER the if (comments) or BEFORE it (the action test), so the
 	# window spans both sides of each anchor.
-	for anchor in ["return  # UI handles its own input", 'event.is_action_pressed("battle_toggle_auto"):', "# Let AutogrindUI._input handle Start"]:
+	# The toggle-auto anchor carries its comment's tail: a bare action string now has a SECOND site
+	# (the AUTOGRIND-state pause binding, .328) and find() would land on it — that site guards a
+	# running grind, not a hidden console, so it correctly has no _autogrind_ui_open().
+	for anchor in ["return  # UI handles its own input", 'must follow it.\n\tif event is InputEventJoypadButton and event.is_action_pressed("battle_toggle_auto"):', "# Let AutogrindUI._input handle Start"]:
 		var i: int = src.find(anchor)
 		assert_gt(i, -1, "CONTROL: guard anchor must exist: %s" % anchor)
 		var window: String = src.substr(maxi(i - 160, 0), 160 + anchor.length() + 120)
