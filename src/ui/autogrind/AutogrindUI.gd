@@ -2385,6 +2385,10 @@ func _cycle_safety(key: String) -> void:
 	## Applied NOW, not at grind start: the ring reads the system back, and a player who sets a
 	## limit and closes the console without grinding still expects it to have taken.
 	AutogrindSystem.set_interrupt_rules(_safety_rules())
+	## Persist immediately. A safety limit the player set and then lost to a crash is the same defect
+	## as not persisting at all, and there is no "apply" step in a ring to hang it off.
+	if SaveSystem and SaveSystem.has_method("save_settings"):
+		SaveSystem.save_settings()
 	_log_message("[color=%s]Safety limits: HP %s, max %s battles, stop-on-death %s, stop-on-empty %s.[/color]" % [
 		AccessibilityPalette.bonus_bbcode(), _safety_label("hp"), _safety_label("battles"),
 		_safety_label("death"), _safety_label("items"),

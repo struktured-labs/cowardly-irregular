@@ -974,6 +974,18 @@ func save_settings() -> void:
 		"battle_fx_flags": GameState.battle_fx_flags if GameState else {},
 		"master_volume": AudioServer.get_bus_volume_db(0),
 	}
+	## Autogrind safety limits (.310 made them settable; per-session until now, so a player who set
+	## stop-at-50% silently got 20% next launch — worse for a safety net than for a speed preference).
+	## ⚠️ ONLY the four a player can actually change. corruption_limit is deliberately excluded: it
+	## gates system collapse, no UI edits it, and persisting a value only CODE sets means a later
+	## rebalance is silently overridden by every old settings.json on disk.
+	var ag: Node = get_node_or_null("/root/AutogrindSystem")
+	if ag != null and "interrupt_rules" in ag:
+		var keep := {}
+		for k in ["hp_threshold", "max_battles", "party_death", "item_depleted"]:
+			if ag.interrupt_rules.has(k):
+				keep[k] = ag.interrupt_rules[k]
+		settings["autogrind_interrupt_rules"] = keep
 	if GameState:
 		settings["music_volume"] = GameState.music_volume
 		settings["sfx_volume"] = GameState.sfx_volume
@@ -1070,6 +1082,17 @@ func load_settings() -> void:
 		var idx = int(settings["battle_speed_index"])
 		if idx >= 0 and idx < BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS.size():
 			BATTLE_SCENE_SCRIPT._battle_speed_index = idx
+
+	## Autogrind safety limits. Through set_interrupt_rules, which MERGES and CLAMPS — so an old or
+	## hand-edited settings.json cannot inject an out-of-range stop (a net that never fires looks
+	## exactly like one switched off) and an absent key simply keeps the shipped default.
+	var ag_load: Node = get_node_or_null("/root/AutogrindSystem")
+	if ag_load != null and ag_load.has_method("set_interrupt_rules") and settings.has("autogrind_interrupt_rules"):
+		var stored = settings["autogrind_interrupt_rules"]
+		if stored is Dictionary:
+			ag_load.set_interrupt_rules(stored)
+		else:
+			push_warning("[SaveSystem] autogrind_interrupt_rules is %s, not a Dictionary — hand-edited; autogrind safety limits keep their defaults" % typeof(stored))
 
 	# Controller overlay
 	if GameState and settings.has("show_controller_overlay"):
