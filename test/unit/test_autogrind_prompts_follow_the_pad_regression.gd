@@ -136,6 +136,22 @@ const DEFERRED := {}
 ## pattern would match, and ZERO change to any reachability caller count. So it closes a hole with no
 ## live instance, by the same standard as the escape handling above: a named boundary that defends
 ## nothing reads as diligence, which this file's own header calls out.
+##
+## 🔬 BRANCH SEPARABILITY, measured — so the next person to mutate this does not repeat the two runs
+## that taught nothing. @cowir-overworld's finding: an assert like `assert_false(contains(TRIPLE))` is
+## a TAUTOLOGY when the stripper SPLITS on the triple quote, because split() eats its delimiter.
+## Not the case here: this drops whole LINES, so a neutered docstring branch leaves the delimiter in
+## the output and the assert fires on the keep-logic. Confirmed by isolating each half:
+##
+##   docstring branch removed, # cut kept    Failing 1   the docstring case, alone
+##   # cut removed, docstring branch kept    Failing 2   the 5 stripper cases AND the reachability
+##                                                       arm — without the strip, COMMENTS naming
+##                                                       AutogrindHistoryScreen count as callers, so
+##                                                       `measured 2` flips the dead-hub verdict.
+##                                                       Fails toward ALARM, not a false clean.
+##   whole function -> `return src`          Failing 2   IDENTICAL signature to removing only the
+##                                                       # cut, so the sledgehammer cannot tell one
+##                                                       half from both. It is the run to skip.
 func _code_only(src: String) -> String:
 	var out := PackedStringArray()
 	## `in_block` lives OUTSIDE the line loop on purpose — a `"""` docstring spans lines, and the
