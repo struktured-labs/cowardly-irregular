@@ -46,15 +46,36 @@ func test_the_footer_names_the_paging_control() -> void:
 		"the footer does not name paging: '%s'. 165 rows at 14 visible and the fast route is undocumented — add it to build_footer_text, derived per device" % footer)
 
 
-func test_with_no_pad_it_names_the_page_keys_and_not_the_battle_keys() -> void:
-	## The trap. hint_for_action("battle_defer") with no pad returns "L" — bound in battle,
-	## dead here. A footer naming it would be the defect this guard's sibling arms forbid.
+func test_the_key_the_keyboard_footer_NAMES_actually_pages() -> void:
+	## ⛔ THIS ARM USED TO ASSERT A FALSEHOOD. It forbade "L/R: Page" on the grounds that
+	## those keys "do nothing in this menu". They do: page_delta checks
+	## is_action_pressed("battle_defer"), which a KEY event satisfies, so KEY_L returns -1
+	## and KEY_R returns +1 next to KEY_PAGEUP/KEY_PAGEDOWN (@cowir-controller, msg 10697).
+	## The old arm would have blocked a correct future caption while citing a dead-key
+	## reason that was never true.
+	##
+	## The truthful version: whatever the footer advertises for paging must ACTUALLY page.
 	var footer: String = JukeboxMenu.build_footer_text("")
-	assert_true(footer.contains("PgUp") and footer.contains("PgDn"),
-		"keyboard footer must name PageUp/PageDown, which is what MenuPaging actually reads on a keyboard: '%s'" % footer)
-	assert_false(footer.contains("L/R: Page"),
-		"the keyboard footer names L/R for paging — those are battle_defer/battle_advance's KEY bindings and they do nothing in this menu. MenuPaging reads KEY_PAGEUP/KEY_PAGEDOWN for keyboard; derive the two sides separately")
+	assert_true(footer.contains("PgUp/PgDn"),
+		"the keyboard footer advertises something other than PgUp/PgDn for paging: '%s'. If that is deliberate, the key it names must satisfy MenuPaging.page_delta — extend the check below rather than deleting it" % footer)
+	for probe in [[KEY_PAGEUP, "PgUp", -1], [KEY_PAGEDOWN, "PgDn", 1]]:
+		var ev := InputEventKey.new()
+		ev.keycode = probe[0]
+		ev.pressed = true
+		assert_eq(MenuPaging.page_delta(ev), probe[2],
+			"the footer advertises %s but MenuPaging.page_delta returns %d for it, not %d — the caption names a key that does not page" % [probe[1], MenuPaging.page_delta(ev), probe[2]])
 
+
+func test_control_the_shoulder_keys_also_page_so_the_choice_is_a_judgement() -> void:
+	## Pins the fact that corrected the arm above, so nobody re-derives "L is dead" from
+	## the footer's silence about it. If these stop paging, the comment in JukeboxMenu
+	## explaining why PgUp/PgDn was CHOSEN becomes wrong and should be revisited.
+	for probe in [[KEY_L, -1], [KEY_R, 1]]:
+		var ev := InputEventKey.new()
+		ev.keycode = probe[0]
+		ev.pressed = true
+		assert_eq(MenuPaging.page_delta(ev), probe[1],
+			"the battle shoulder KEY no longer pages (page_delta=%d, expected %d) — then PgUp/PgDn is the only keyboard route and JukeboxMenu's comment calling it a judgement is stale" % [MenuPaging.page_delta(ev), probe[1]])
 
 func test_a_pad_gets_its_own_familys_shoulders() -> void:
 	## Three families, three renderings: a frozen string cannot satisfy this.

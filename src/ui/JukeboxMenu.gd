@@ -107,11 +107,16 @@ static func _load_manifest_tracks() -> Array:
 ## The footer named three controls and the screen binds four. 165 rows at 14 visible, so
 ## paging is the only fast route through the list and it was the undocumented one.
 ##
-## ⛔ hint_for_action() MUST NOT speak for the keyboard here. MenuPaging reuses
-## battle_defer/battle_advance for the PAD only — on a keyboard it reads KEY_PAGEUP /
-## KEY_PAGEDOWN — while those actions' keyboard bindings are L and R, which do nothing on
-## this screen. Deriving both sides from one call would have advertised a dead key, i.e.
-## traded a bound-but-unnamed control for a named-but-unbound one.
+## The keyboard hint is written rather than derived, and that is a JUDGEMENT, not a
+## correctness requirement — @cowir-controller measured the difference (msg 10697).
+## hint_for_action("battle_defer") with no pad returns "L", and L genuinely pages:
+## page_delta's action check reads is_action_pressed, which a KEY event satisfies, so
+## KEY_L -> -1 and KEY_R -> +1 alongside KEY_PAGEUP/KEY_PAGEDOWN. Four routes, all live.
+##
+## PgUp/PgDn is named because it is the DISCOVERABLE one; L/R exist only because paging
+## reuses the battle shoulders, and a player reading "L/R: Page" in a music menu learns
+## less. Both are true, so this is not a dead-key fix — I first justified it that way and
+## was wrong.
 static func build_footer_text(device_name: String = "") -> String:
 	var has_pad: bool = device_name != "" or not Input.get_connected_joypads().is_empty()
 	var page: String = "PgUp/PgDn: Page"
