@@ -61,6 +61,7 @@ func test_no_lane_guard_asserts_a_literal_that_only_a_docstring_satisfies() -> v
 	var target_cache := {}
 	var guards_seen := 0
 	var literals_seen := 0
+	var docstring_lines_seen := 0
 	var offenders: Array = []
 
 	for file_name in dir.get_files():
@@ -108,6 +109,7 @@ func test_no_lane_guard_asserts_a_literal_that_only_a_docstring_satisfies() -> v
 			var tsrc: String = target_cache[t]
 			if tsrc == "":
 				continue
+			docstring_lines_seen += _docstring_lines(tsrc).size()
 			for lit in lits:
 				if DOCSTRING_ASSERT_IS_THE_POINT.has(lit):
 					continue
@@ -120,6 +122,14 @@ func test_no_lane_guard_asserts_a_literal_that_only_a_docstring_satisfies() -> v
 	## forever — the exact hollowness this file exists to detect, in the detector itself.
 	assert_gt(guards_seen, 50, "CONTROL: expected the lane's guards, found %d — the target scan is broken" % guards_seen)
 	assert_gt(literals_seen, 100, "CONTROL: expected many asserted literals, found %d — the literal scan is broken" % literals_seen)
+	## ⛔ ANTI-VACUITY, @cowir-music's defence: the two controls above prove the scan found guards and
+	## literals, and say NOTHING about whether it ever examined a DOCSTRING. If the lane's source had
+	## none, `_only_in_a_docstring` could never return true and "0 offenders" would be meaningless —
+	## the arm would pass by having nothing to do. Measured today: 31 blocks across 3 files, and all
+	## three ARE scanned as targets. Floored well below that so it fails when the corpus loses them,
+	## not when it merely shrinks.
+	assert_gt(docstring_lines_seen, 30,
+		"CONTROL: the scan examined only %d docstring LINES — with no docstrings in range this arm cannot fail, so its zero means nothing" % docstring_lines_seen)
 
 	assert_eq(offenders, [],
 		("a guard asserts a symbol is present and ONLY a docstring in the target contains it — the " +
