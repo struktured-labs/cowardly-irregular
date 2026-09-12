@@ -83,9 +83,18 @@ func test_no_terrain_arm_names_a_bed_that_does_not_exist() -> void:
 			liars.append("%s -> %s" % [terrain, track])
 	assert_gt(specific, 2, "CONTROL: some terrains DO claim a dedicated bed (%d) — without this the "
 		% specific + "arm passes by finding nothing to check")
+	## CROSS-LANE: this arm reads data/music_manifest.json, so the lane that reds it is usually the
+	## one that renamed a bed — not me. The builder carries the remedy because `at line -1` means it
+	## is the only locator they get (@cowir-story, msg 10699: get_stack() is empty headless, so every
+	## failing assert in the suite prints that).
+	var liar_fix: Array = []
+	for l in liars:
+		liar_fix.append("%s — either add that key to data/music_manifest.json, or drop the arm from "
+			% l + "_get_terrain_battle_track in src/battle/BattleScene.gd and let the generic path "
+			+ "resolve it (it already produces the world's own bed)")
 	assert_eq(liars.size(), 0,
 		"a terrain arm names a bed the manifest does not have; it plays the world bed instead and "
-		+ "nothing says so: " + str(liars))
+		+ "nothing says so. " + " · ".join(liar_fix))
 
 
 func test_the_generic_path_resolves_for_every_world() -> void:
@@ -107,9 +116,24 @@ func test_the_generic_path_resolves_for_every_world() -> void:
 	for s in suffixes.keys():
 		if not keys.has("battle_%s" % s):
 			missing.append("battle_%s" % s)
+	## ⚠️ THE SECOND REMEDY I FIRST WROTE HERE WAS ACTIVELY WRONG, and a wrong remedy in a
+	## cross-lane message is worse than none — it is an instruction. I had written "or remove that
+	## world's arm from _get_current_world_suffix". That arm's `_:` fallthrough returns the CACHED
+	## suffix, so deleting an arm makes that world inherit whatever world the player was in last —
+	## the exact defect tick 359 fixed for five overworlds and @cowir-music fixed again in .322/.323.
+	## Checked the fallthrough before believing my own sentence (their msg 10703: the fix can be
+	## right while the REASON is wrong, and a wrong reason ships as a guard).
+	var missing_fix: Array = []
+	for m in missing:
+		missing_fix.append("%s is missing from data/music_manifest.json — every terrain in that "
+			% m + "world with no arm of its own falls through to it. Author the bed; do NOT delete "
+			+ "the world's arm in _get_current_world_suffix, whose `_:` returns the CACHED suffix "
+			+ "and would make that world play whichever world the player came from. If the world "
+			+ "genuinely should have no battle bed of its own, that belongs here as a named "
+			+ "exemption with a reason, not as a deleted arm")
 	assert_eq(missing.size(), 0,
 		"a world has no generic battle bed, so every arm-less terrain there falls through to "
-		+ "nothing: " + str(missing))
+		+ "nothing. " + " · ".join(missing_fix))
 
 
 func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
