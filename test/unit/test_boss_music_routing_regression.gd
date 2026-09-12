@@ -16,6 +16,7 @@ extends GutTest
 
 const MONSTERS := "res://data/monsters.json"
 const MANIFEST := "res://data/music_manifest.json"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 
 func _json(p: String) -> Dictionary:
@@ -70,8 +71,20 @@ func test_the_bosses_with_their_own_theme_still_have_real_audio() -> void:
 
 func test_declared_track_outranks_the_derived_key_in_source() -> void:
 	## The helper is useless if the derived arms are still checked first.
-	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	assert_gt(src.length(), 1000, "SCOPE control: BattleScene.gd read back %d chars" % src.length())
+	##
+	## ⛔ READS CODE, NOT PROSE ABOUT IT. This arm was raw `contains`/`find` until 2026-09-12.
+	## Measured: delete the boss path's call, name it in an EARLIER docstring -> fully GREEN,
+	## with monsters.json themes ignored on the boss path. Two other placements DID red, and
+	## that was positional luck rather than detection — the order assert only fires when the
+	## prose happens to sit after the masterite arm.
+	var src: String = GdSource.code_of("res://src/battle/BattleScene.gd")
+	var doc: String = str(GdSource.split(FileAccess.get_file_as_string("res://src/battle/BattleScene.gd"))["doc"])
+	assert_gt(src.length(), 1000, "SCOPE control: BattleScene.gd read back %d chars of code" % src.length())
+	assert_gt(src.count("func "), 50,
+		"CONTROL: only %d func headers survived the strip — over-stripping and a real absence look identical below" % src.count("func "))
+	assert_gt(doc.length(), 1000,
+		"CONTROL: only %d chars of docstring split off — the strip did nothing, so prose still answers every assert below" % doc.length())
+
 	assert_true(src.contains("func _declared_music_track"), "the _declared_music_track helper is gone")
 	assert_true(src.contains("_declared_music_track(dominant_monster)"), "the non-boss path no longer consults the declared track — variants fall back to battle_<world>")
 
@@ -84,3 +97,20 @@ func test_declared_track_outranks_the_derived_key_in_source() -> void:
 	assert_gt(masterite_at, -1, "the masterite arm is gone — this guard's anchor is stale, re-derive it")
 	assert_lt(declared_at, masterite_at,
 		"the declared-track check must precede the masterite arm, otherwise a Masterite can never override its per-role bed")
+
+
+## ⛔ PIN THE HELPER, NOT THE CORPUS (this lane's rule, earned across four lanes): six stripper
+## costumes broke in one afternoon and each fix was blind to the next. A case table answers all
+## of them in milliseconds and reds on the seventh.
+func test_the_source_helper_itself() -> void:
+	var cases: Array = [
+		["var a = 1  # play_music(\"x\")", "var a = 1  ", "a trailing comment goes"],
+		["var s = \"# not a comment\"", "var s = \"# not a comment\"", "a # inside a string stays"],
+		["var s = \"a \\\" # b\"", "var s = \"a \\\" # b\"", "an escaped quote does not end the string"],
+		## The removed region leaves a newline behind on purpose: joining the surviving halves
+		## bare would glue `a"""b` into `ab` and invent a token neither side wrote.
+		["func f():\n\t\"\"\"names play_music(\"x\")\"\"\"\n\tvar b = 2", "func f():\n\t\n\n\tvar b = 2", "a docstring region goes, leaving a separator"],
+		["var keep = \"play_music\"", "var keep = \"play_music\"", "a real literal survives — it IS the consumer"],
+	]
+	for c in cases:
+		assert_eq(GdSource.split(str(c[0]))["code"], str(c[1]), str(c[2]))

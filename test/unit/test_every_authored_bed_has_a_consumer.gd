@@ -163,6 +163,64 @@ func _strip_comments(src: String) -> String:
 	return "\n".join(out)
 
 
+## A GDScript docstring is a STRING LITERAL, and this file keeps string literals on
+## purpose — so text inside one answers the sweep exactly like a call does. Parity
+## split on the delimiter: no state machine, nothing to desync (cowir-adhoc lost five
+## verdicts to a stripper whose docstring toggle was `A or (B and C)`, 2026-09-12).
+func _code_and_docstrings(body: String) -> Array:
+	var parts: PackedStringArray = body.split("\"\"\"")
+	var code: PackedStringArray = []
+	var doc: PackedStringArray = []
+	for i in parts.size():
+		if i % 2 == 0:
+			code.append(parts[i])
+		else:
+			doc.append(parts[i])
+	return ["\n".join(code), "\n".join(doc)]
+
+
+## ⛔ THE ONE COSTUME THE COMMENT STRIPPER CANNOT SEE, and this file's own polarity is
+## why: `#` comments go, string literals STAY, because play_music("boss_mordaine") IS
+## the consumer. A docstring is a string literal. So a bed named only in prose reads as
+## REACHED — and the failure is the loud-instruction kind: the sweep drops it from the
+## orphan list and the KNOWN_UNREACHED arm then reports the set SHRANK, which reads as
+## "the bed found a consumer, delete the entry". Measured on a449f5ec: of the four ids
+## quoted inside a docstring anywhere in src/, all four are also named in code or data,
+## so the count is ZERO today. MEASURED INERT, not safe by design.
+func test_no_bed_is_reached_by_prose_alone() -> void:
+	var paths: Array[String] = []
+	_files("res://src", ".gd", paths)
+	var code_parts: PackedStringArray = []
+	var doc_parts: PackedStringArray = []
+	for p in paths:
+		var pair: Array = _code_and_docstrings(FileAccess.get_file_as_string(p))
+		code_parts.append(_strip_comments(str(pair[0])))
+		doc_parts.append(str(pair[1]))
+	## JSON carries no docstrings, so data is all code side — and it is load-bearing:
+	## credits_medieval is named ONLY in a docstring in src/, and in a cutscene JSON.
+	var json_paths: Array[String] = []
+	_files("res://data", ".json", json_paths)
+	for p in json_paths:
+		if p.ends_with("music_manifest.json") or p.ends_with("sfx_manifest.json"):
+			continue
+		code_parts.append(FileAccess.get_file_as_string(p))
+	var code: String = "\n".join(code_parts)
+	var doc: String = "\n".join(doc_parts)
+
+	assert_true(code.contains("func play_area_music("),
+		"CONTROL: the split swallowed real code, so every verdict below is meaningless")
+	assert_gt(doc.length(), 2000,
+		"CONTROL: only %d chars of docstring text — an empty doc side makes this arm pass by construction" % doc.length())
+
+	var prose_only: Array[String] = []
+	for id in _manifest_ids():
+		var tok: String = "\"%s\"" % id
+		if doc.contains(tok) and not code.contains(tok):
+			prose_only.append(id)
+	assert_eq(prose_only.size(), 0,
+		"bed(s) whose only appearance is inside a docstring (%d): %s — the sweep counts these as reached and the orphan set will report itself SHRUNK, which reads as permission to delete a true exception. Name the bed in code or data, or leave it out of the prose." % [prose_only.size(), prose_only])
+
+
 ## Everything that could NAME a track, minus the manifest itself — which would
 ## match every id and make the whole sweep vacuous.
 func _consumer_text() -> String:
@@ -305,11 +363,25 @@ func test_every_cited_composition_expression_still_exists() -> void:
 	var all: Array = COMPOSED_FAMILIES.values().duplicate()
 	all.append(MASTERITE_EXPR)
 	all.append(JOB_SPECIAL_EXPR)
+	## ⛔ READ THE CODE, NOT THE PROSE. This arm excuses ~119 composed ids on the strength
+	## of an expression existing — and it read RAW source, so a docstring naming the
+	## expression kept the whole family excused after the composition was deleted.
+	## Measured on a449f5ec: the real `"boss_" + _current_world_suffix` replaced by a
+	## literal and the expression moved into _start_boss_music's docstring -> GREEN.
 	for entry in all:
-		var src: String = FileAccess.get_file_as_string(str(entry[0]))
+		var pair: Array = _code_and_docstrings(FileAccess.get_file_as_string(str(entry[0])))
+		var code: String = _strip_comments(str(pair[0]))
+		var doc: String = str(pair[1])
+		## Controls both ways, per cited file: over-stripping deletes what the verdict reads,
+		## and an empty doc side means the split did nothing and prose is still in scope.
+		assert_gt(code.count("func "), 10,
+			"CONTROL: %s kept only %d func headers after the split — the verdict below reads nothing" % [entry[0], code.count("func ")])
+		assert_gt(doc.length(), 200,
+			"CONTROL: %s produced %d chars of docstring — the split did nothing, so prose is still excusing families" % [entry[0], doc.length()])
 		checked += 1
-		if src.find(str(entry[1])) < 0:
-			missing.append("%s no longer contains %s" % [entry[0], entry[1]])
+		if code.find(str(entry[1])) < 0:
+			var in_prose: String = " — it survives ONLY inside a docstring, which plays nothing" if doc.find(str(entry[1])) >= 0 else ""
+			missing.append("%s no longer contains %s%s" % [entry[0], entry[1], in_prose])
 	assert_gt(checked, 6, "SCOPE control: checked only %d composition sites" % checked)
 	assert_eq(missing.size(), 0,
 		"a composition site this test relies on is gone (%d): %s — the family it excused is now unreachable and its members are orphans, not exceptions" % [missing.size(), missing])

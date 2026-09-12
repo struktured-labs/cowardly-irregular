@@ -97,6 +97,13 @@ func test_the_captured_state_ACTUALLY_restores_the_bed() -> void:
 ## which I did not know existed. Measured 2026-09-11 rather than reasoned:
 ##     restore_music_state' area branch made dead   -> BOTH red, 1 arm each
 ##     the `_current_area = ""` clear removed       -> BOTH green
+##     the finished one-shot never armed            -> BOTH red, and NOT equivalently:
+## this file fails on its CONTROL ("the first stinger armed no resume, so this test
+## proves nothing"), the sibling on its SUBJECT ("a stinger over area music must
+## connect a resume handler"). Both red is not both measuring — one of them is
+## saying it cannot measure. Read a joint red as one verdict and you will delete
+## the wrong file. (Third mutation added 2026-09-12; all three rows re-measured on
+## a449f5ec, and all three still hold.)
 ## So they are redundant on the branch EXISTING and jointly blind to what the
 ## branch DOES first. The clear is unpinned by either file, and by anything else
 ## in the lane. Its own comment names the hazard (restoring the area you are
