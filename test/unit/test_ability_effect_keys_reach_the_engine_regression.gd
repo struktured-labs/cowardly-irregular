@@ -9,18 +9,25 @@ extends GutTest
 ##
 ## It is not latent. Glacius, the Frozen Sovereign owns it, and BattleManager's
 ## `defense_boost` intent selects it deliberately (`effect == "defense_up"`), so the
-## cast happens in the fight. The engine HAS the mechanic — `add_status("reflect", …)`
-## at BattleManager:5699, consumed at 4356 and 4779, and four other abilities use it
-## (magic_reflect, port_block, prismatic_reflect, reflect_shield). Frost Armor is the
-## one that declares reflection in data and never asks for it.
+## cast happens in the fight. The engine HAS the mechanic — `_execute_support_ability`
+## writes `add_status("reflect", …)`, and `_execute_attack` and `_execute_physical_ability`
+## both consume it; four other abilities use it (magic_reflect, port_block,
+## prismatic_reflect, reflect_shield). Frost Armor is the one that declares reflection in
+## data and never asks for it.
+##
+## 📌 Those three were `BattleManager:5699 / 4356 / 4779` when written, and on 2026-09-12 all
+## three pointed at unrelated code — a uniform +14 drift from folds nobody in this lane made.
+## Symbols now, per the rule that a citation living in a FILE is read by everyone after the
+## next fold and is wrong in their face. Each was checked for existence AND for the claim
+## being true of it, which are two conditions, not one.
 ##
 ## 🔑 THE DISCRIMINATOR THIS FILE IS BUILT ON, because "unread key" alone is too blunt
 ## a subject — @cowir-sfx's line, earned by nearly filing 313 live manifest entries as
 ## orphaned: an unread key is only a defect when it STATES SOMETHING THAT HAS NOT
 ## HAPPENED. The five unread keys in abilities.json split cleanly on that test:
 ##
-##   REDUNDANT   damage_reduction on `default` — take_damage:315 hardcodes `* 0.5` for
-##               is_defending and the data says 0.5, so they agree TODAY by coincidence
+##   REDUNDANT   damage_reduction on `default` — take_damage's is_defending arm hardcodes
+##               `* 0.5` and the data says 0.5, so they agree TODAY by coincidence
 ##               of both being 0.5. Editing the data would not move the game.
 ##   REDUNDANT   next_crit on shadow_step — the behaviour is real, it just lives on
 ##               the STATUS, not the key. _calculate_crit_chance returns 1.0 for
@@ -54,6 +61,25 @@ extends GutTest
 ## consumer, so nothing is wrong today. It is stated because a one-level reachability
 ## check is a claim about the graph's EDGES, not about the player, and this file makes
 ## the weaker claim.
+##
+## ⛔ THIRD LIMIT, AND THE ONE THAT BITES: THIS FILE SAYS "THE ENGINE". THERE ARE TWO.
+## `HeadlessBattleResolver` is a 1,042-line reimplementation of a 9,207-line BattleManager
+## — it reads `ability.get(...)` itself and does NOT delegate ability resolution, borrowing
+## BattleManager only for round counts, AP rules and party registration. So a key consumed
+## by the live engine and ignored by the grind scores CONSUMED here, and the grind is where
+## a player spends hours. Measured on 1f5c8d2d, by literal key spelling in each file (unchanged from b621a0e0):
+##
+##     read by BOTH engines        13
+##     read by the LIVE engine only 45   incl. effect_chance (68 abilities), secondary_effect,
+##                                       hits, drain_percentage, corruption_risk, summon_*
+##     read by NEITHER               5   <- exactly UNREAD_EFFECT_KEYS, so that part is sound
+##
+## Two lanes found real defects in precisely this gap in two releases: vanish/shadow_step
+## applied and never read (.330), and cleanse writing a status named "cleanse" onto an ally
+## while the blind it was cast to cure stayed on. **This file could not have found either** —
+## both effects are read by BattleManager, so both score CONSUMED. The verdict below is a
+## claim about the LIVE engine and nothing more; the grind's coverage is a separate subject
+## and wants its own guard, which is @cowir-battle's census, not this.
 
 const ABILITIES := "res://data/abilities.json"
 const BATTLE_MANAGER := "res://src/battle/BattleManager.gd"
@@ -63,7 +89,7 @@ const BATTLE_MANAGER := "res://src/battle/BattleManager.gd"
 ##   grows   -> a new ability shipped with an effect key nothing consumes
 ##   shrinks -> someone wired one; delete the line
 const UNREAD_EFFECT_KEYS := {
-	"damage_reduction": "REDUNDANT but DIVERGENCE-PRONE — Combatant.take_damage:315 hardcodes `* 0.5` for is_defending, which happens to equal default's authored 0.5. Edit the data and nothing moves",
+	"damage_reduction": "REDUNDANT but DIVERGENCE-PRONE — Combatant.take_damage's is_defending arm hardcodes `* 0.5` for is_defending, which happens to equal default's authored 0.5. Edit the data and nothing moves",
 	"next_crit": "REDUNDANT — shadow_step's crit is guaranteed via has_status('shadow_step') in _calculate_crit_chance",
 	"bp_gain": "DEFERRED — the BP bank is unbuilt; BattleManager's default_stance arm records the decision",
 	"bp_cost": "DEFERRED — same BP bank",
@@ -211,3 +237,48 @@ func test_frost_armor_still_promises_a_reflection_it_does_not_perform() -> void:
 	var blob: String = _src_blob()
 	assert_true(blob.contains("\"reflect\""),
 		"the reflect status is gone from the engine — frost_armor's missing half is now missing for everyone, which is a different and larger finding")
+
+
+## The two-engine split above is prose, and prose rots. This makes it a checked fact: both
+## engines must be IN the corpus, and the corpus must be able to tell them apart. Named
+## members, not counts — a count reds when someone correctly wires a key into the grind,
+## which is the good direction and must not be a failure.
+func test_the_corpus_holds_two_engines_and_can_tell_them_apart() -> void:
+	var bm: String = FileAccess.get_file_as_string(BATTLE_MANAGER)
+	var hr: String = FileAccess.get_file_as_string("res://src/autogrind/HeadlessBattleResolver.gd")
+	assert_gt(bm.length(), 100000,
+		"BattleManager did not load — the live half of the split below is measuring an empty string")
+	assert_gt(hr.length(), 10000,
+		"HeadlessBattleResolver did not load — every key would read as live-only and the split would look worse than it is")
+
+	# READ BY BOTH: the shared floor. If these stop appearing in the resolver the grind has
+	# lost basic ability resolution, which is a much larger finding than any key below.
+	for shared in ["\"heal_amount\"", "\"mp_amount\"", "\"element\""]:
+		assert_true(bm.contains(shared) and hr.contains(shared),
+			"%s must be read by BOTH engines — it is part of the shared floor, and if the grind stopped reading it the split this file describes has changed shape entirely" % shared)
+
+	# LIVE ONLY: the finding itself, pinned by a named member rather than by the count 45.
+	# Reds in the GOOD direction — someone taught the grind about effect_chance.
+	assert_true(bm.contains("\"effect_chance\""),
+		"effect_chance is authored on 68 abilities and read by the live engine; if BattleManager stopped reading it this file's premise is stale")
+	assert_false(hr.contains("\"effect_chance\""),
+		"GOOD NEWS: the headless resolver now reads effect_chance, so the live-only set has shrunk. Re-measure the 13/45/5 split in the third limit above and update it — the number is the whole point of that paragraph.")
+
+	# ⛔ THERE WAS A THIRD ASSERT HERE AND IT WAS REDUNDANT. It re-checked the five
+	# UNREAD_EFFECT_KEYS against each engine separately. @cowir-story's asymmetry, and they
+	# are right: BattleManager and HeadlessBattleResolver are SUBSETS of the src/ walk, so
+	# "in bm or in hr" implies "in the blob" and the arm could never fire without the
+	# ratchet above it firing too. My own mutation run said so and I did not read it —
+	# adding an UNREAD key to BattleManager scored Failing 2, never Failing 1.
+	#
+	#     whole-src NEGATIVE  "X is read by nothing"  sound as written. Emptiness over the
+	#                         corpus is emptiness over every engine in it, by construction.
+	#                         Splitting the corpus cannot change an empty result.
+	#     whole-src POSITIVE  "X is consumed"         conflates. WHICH consumer? That is the
+	#                         defect this file was repaired for, and it is the only direction
+	#                         that needed repairing.
+	#
+	# So UNREAD_EFFECT_KEYS needs no per-engine arm and never did. What DOES inherit the
+	# defect is the ratchet's newly_consumed message: it says "now read in src/ — delete the
+	# line", and if that reader landed in the live engine only, deleting the line hides that
+	# the grind still ignores the key. Read it as "consumed by SOMETHING" and check which.
