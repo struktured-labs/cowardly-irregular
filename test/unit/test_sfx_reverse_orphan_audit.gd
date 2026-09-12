@@ -520,3 +520,24 @@ func test_the_stripper_this_audit_now_depends_on_actually_strips() -> void:
 	var data_raw := _read("res://data/sfx_manifest.json")
 	assert_gt(data_raw.length(), 1000, "CONTROL: the manifest is %d chars" % data_raw.length())
 
+## An exemption you can add without saying WHY is permission to skip, and CLAUDE.md is explicit:
+## require the DELIVERABLE, never the permission — "you can't silence it green, only explain it
+## green". Both audits TELL a lane to record a reason ("add to KNOWN_PENDING_CONSUMER with the
+## owner and what they're waiting on") and until 2026-09-12 neither CHECKED one: only keys were
+## ever read, so `"my_key": ""` would have passed. @cowir-autogrind's reason-length arm, adopted.
+## FLOOR of 20 is derived, not picked: the twelve live reasons run 31-53 chars and the shortest
+## real one ("cowir-battle contact-frame seam") is 31, so 20 cannot fail honest work today while
+## still rejecting "", "todo" and "wip".
+func test_every_exemption_states_a_reason_a_reader_can_disagree_with() -> void:
+	var thin: Array[String] = []
+	for key in KNOWN_PENDING_CONSUMER:
+		var reason: String = str(KNOWN_PENDING_CONSUMER[key]).strip_edges()
+		if reason.length() < 20:
+			thin.append("%s -> %s" % [key, "(empty)" if reason.is_empty() else reason])
+	assert_gt(KNOWN_PENDING_CONSUMER.size(), 0,
+		"CONTROL: the exemption table is empty, so this arm inspected nothing — delete it or the audit has no escape hatch left to police")
+	assert_eq(thin, [],
+		("exemptions with no usable reason (%d): %s\n" +
+		"FIX: say who owns it and what they are waiting on — \"cowir-battle contact-frame seam\" " +
+		"is the shape. An entry a reader cannot disagree with cannot be reviewed, and it never " +
+		"expires because the condition it names was never stated.") % [thin.size(), thin])
