@@ -5569,6 +5569,7 @@ func _start_autogrind(config: Dictionary) -> void:
 	_autogrind_controller.grind_resumed.connect(_on_autogrind_resumed)
 	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
 	_autogrind_controller.region_advanced.connect(_on_autogrind_region_advanced)
+	_autogrind_controller.region_cracked_in_place.connect(_on_autogrind_region_cracked_in_place)
 	if not AutogrindSystem.region_rotation_suggested.is_connected(_on_autogrind_region_rotation_suggested):
 		AutogrindSystem.region_rotation_suggested.connect(_on_autogrind_region_rotation_suggested)
 	if not AutogrindSystem.corruption_threshold_crossed.is_connected(_on_autogrind_corruption_band):
@@ -6364,6 +6365,16 @@ func _on_autogrind_corruption_band(band: String, level: float) -> void:
 			msg = "Corruption %s — %.2f / 5.0" % [band, level]
 	_show_autogrind_toast(msg)
 	_autogrind_battle_summaries.append("[color=#ff6688]>>> CORRUPTION %s: %.2f / 5.0 <<<[/color]" % [band.to_upper(), level])
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+
+
+## A crack the player is STAYING in. The auto-advance path gets the warp overlay; this one had a
+## print, and the reward penalty is live either way — up to -75% at max crack level.
+func _on_autogrind_region_cracked_in_place(region_id: String, crack_level: int, reward_penalty: float) -> void:
+	var pct: int = int(round(reward_penalty * 100.0))
+	_show_autogrind_toast("REGION CRACKED (level %d) — rewards now -%d%% here" % [crack_level, pct])
+	_autogrind_battle_summaries.append("[color=#ff6644]>>> REGION CRACKED level %d — REWARDS -%d%% (monsters adapting) <<<[/color]" % [crack_level, pct])
 	if _autogrind_battle_summaries.size() > 50:
 		_autogrind_battle_summaries.remove_at(0)
 
