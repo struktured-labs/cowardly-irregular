@@ -3,7 +3,7 @@
   "title": "Clockwork",
   "world": 3,
   "trigger": "world3_village_entry",
-  "background": "steampunk_workshop",
+  "background": "brasston_square",
   "description": "Brasston village, the Grand Schedule, Sprocket the guide, Clem the Lamplighter, Madame Orrery's revelation.",
   "steps": [
     {
