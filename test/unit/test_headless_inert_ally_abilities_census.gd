@@ -73,6 +73,20 @@ func _ally_targeted_ability_ids() -> Array[String]:
 	return out
 
 
+## The ability universe, for the membership harvest below. Ids only — a string that is not a key
+## here is not an ability, which is how `free_move`'s `basic_attack` LABELS ("Attack", "Strike")
+## and every `passive_abilities` / `overworld_abilities` entry exclude themselves without a gate.
+func _abilities() -> Dictionary:
+	var f := FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	if f == null:
+		return {}
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	if parsed == null:
+		return {}
+	return parsed.get("abilities", parsed)
+
+
 func _target_type_of(ability_id: String) -> String:
 	var ability: Dictionary = JobSystem.get_ability(ability_id)
 	return str(ability.get("target_type", "")) if ability is Dictionary else ""
@@ -322,6 +336,7 @@ const STARTER_JOB_TYPE := 0
 ## throwaway script and the guard — which reads the real store — disagreed and named the missing one.
 ## File-level so both the missing-entry arm AND the stale-entry arm read ONE list; two copies would
 ## be the duplication class this file exists to police.
+const LEVEL_UNSET := 9999
 const KNOWN_INERT := ["flee", "bypass_puzzle", "sequence_break", "skip_cutscene",
 	"warp_to_boss", "recursive_summon", "new_game_plus_warp"]
 
@@ -342,6 +357,7 @@ func _player_reachable_abilities() -> Dictionary:
 	var parsed = JSON.parse_string(f.get_as_text())
 	f.close()
 	var jobs: Dictionary = parsed.get("jobs", parsed)
+	var universe: Dictionary = _abilities()
 	for jid in jobs.keys():
 		var j = jobs[jid]
 		if typeof(j) != TYPE_DICTIONARY:
@@ -353,15 +369,48 @@ func _player_reachable_abilities() -> Dictionary:
 		var unlockable: bool = (jt == STARTER_JOB_TYPE) or (typeof(cond) == TYPE_DICTIONARY and not (cond as Dictionary).is_empty())
 		if not unlockable:
 			continue
-		for a in j.get("abilities", []):
-			out[str(a)] = 1
+		## ⛔ CORRECTED 2026-09-12: this walked `abilities` + `abilities_at_level` BY NAME and so
+		## could not see `free_move`, where `pray` (single_ally) and `channel` (self) live and
+		## nowhere else. Both are ALLY-targeted, so both are in this file's corpus, and both scored
+		## UNREACHABLE — the ratchet below would have filed a broken Cleric attack row as "needs an
+		## advanced or meta job". Same function, same direction, as the starter-only bug above it.
+		## Harvest by MEMBERSHIP instead (cowir-adhoc): keep every string in the job object that is
+		## a real ability id. It makes no claim about WHICH key holds a kit, so a source added later
+		## arrives for free — and `fighter`/`rogue` free moves, which are `basic_attack` with a
+		## LABEL and no ability_id, drop out on their own rather than needing a type gate.
+		_harvest_ability_ids(j, universe, out)
+		## Level is a separate question from membership: harvested ids default to 1, and only
+		## `abilities_at_level` can lower-bound them. Unfiltered by job_level ON PURPOSE — this
+		## asks "can a player ever reach it", not "can this character cast it now", which is
+		## `Combatant.knows_ability`'s question and needs an instance.
 		var gated = j.get("abilities_at_level", {})
 		if typeof(gated) == TYPE_DICTIONARY:
 			for lv in gated.keys():
 				for a in gated[lv]:
-					var prev: int = int(out.get(str(a), 9999))
+					var prev: int = int(out.get(str(a), LEVEL_UNSET))
 					out[str(a)] = mini(prev, int(str(lv)))
+	## Anything no level gate claimed is available from the start.
+	for a in out.keys():
+		if int(out[a]) == LEVEL_UNSET:
+			out[a] = 1
 	return out
+
+
+## Every string anywhere under `node` that names a real ability. Provenance-blind by design.
+func _harvest_ability_ids(node, universe: Dictionary, out: Dictionary) -> void:
+	match typeof(node):
+		TYPE_STRING:
+			## LEVEL_UNSET, never 1. Defaulting to 1 here made the harvest WIN the mini() below and
+			## `raise` read as level 1 instead of 10 — membership and unlock level are two questions
+			## and this function answers both, so the first must not pre-empt the second.
+			if universe.has(str(node)) and not out.has(str(node)):
+				out[str(node)] = LEVEL_UNSET
+		TYPE_DICTIONARY:
+			for k in (node as Dictionary).keys():
+				_harvest_ability_ids((node as Dictionary)[k], universe, out)
+		TYPE_ARRAY:
+			for v in (node as Array):
+				_harvest_ability_ids(v, universe, out)
 
 
 func test_the_census_separates_REACHABLE_from_unreachable() -> void:
@@ -408,6 +457,44 @@ func test_the_reachability_reader_is_not_vacuous() -> void:
 		"control: undo_death belongs to Time Mage, which has NO unlock_condition — debug-only, so not reachable")
 	assert_true(reach.has("warp_to_boss"),
 		"control: skiptrotter HAS an unlock_condition, so its abilities ARE reachable — the case my starter-only reader missed")
+
+
+func test_the_reachability_reader_sees_a_free_move() -> void:
+	## The bug this harvest replaced. `pray` (single_ally) and `channel` (self) are ALLY-targeted —
+	## squarely in this file's corpus — and they exist in NEITHER `abilities` nor
+	## `abilities_at_level`. Read by key name they scored unreachable, so a broken Cleric attack row
+	## would have been filed as "needs an advanced or meta job" instead of naming itself.
+	## NAMED, not counted: a count cannot tell a narrowed extractor from a data change.
+	var reach := _player_reachable_abilities()
+	for id in ["pray", "channel"]:
+		assert_true(reach.has(id),
+			"%s is a starter job's free move and must read as reachable — the extractor narrowed" % id)
+	## riff is the fleet's canonical example of this trap. It is single_enemy, so it never enters
+	## the inert corpus, but the READER must still see it or the same narrowing has happened.
+	assert_true(reach.has("riff"), "riff is the Bard's free move and must read as reachable")
+	assert_false(reach.has("zzz_not_a_real_ability"), "CONTROL: the reader does not invent ids")
+
+
+func test_the_harvest_keeps_passives_and_overworld_moves_out() -> void:
+	## The harvest's one real risk: it keeps any string that is an ability id, so if a passive ever
+	## shared an id with a battle ability it would enter the castable set. None does today, and
+	## `Combatant.knows_ability` reads passives no more than this does — a different capability,
+	## not an oversight. This pins the boundary rather than the field names.
+	##
+	## ⚠️ The probe names are NINJA's passives, deliberately. My first version named scriptweaver's
+	## and time_mage's — both meta jobs with no unlock_condition, so the walk `continue`s past them
+	## and the arm could not have failed whatever the harvest did. Neutering the universe check left
+	## it green, which is how I found out. A probe must name something the function actually reaches.
+	## `overworld_abilities` needs no probe at all: it is a dict KEYED by name, and the harvest
+	## recurses into values only, so those strings are never visited.
+	var reach := _player_reachable_abilities()
+	var leaked: Array[String] = []
+	for id in ["speedrun_mode", "encounter_skip", "double_jump", "wall_climb"]:
+		if reach.has(id):
+			leaked.append(id)
+	assert_eq(leaked.size(), 0,
+		"a passive entered the castable set — it is not battle-castable: " + str(leaked))
+	assert_gt(reach.size(), 20, "CONTROL: the reader is populated, so the check above ran against something")
 
 
 func test_the_KNOWN_allowlist_can_EXPIRE() -> void:
