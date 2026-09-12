@@ -208,6 +208,8 @@ var _permadeath_toggle_label: Label
 var _ludicrous_toggle_label: Label
 ## Options ring — the pad's route to the 13 verbs that were keyboard-only
 var _options_ring: Control = null
+## Set when a pad connects/disconnects while the options ring is open; applied when the ring closes.
+var _pad_change_pending: bool = false
 
 ## Region ID for CSI lookups (derived from _region_name)
 var _region_id: String = ""
@@ -226,6 +228,25 @@ func _member_label(condition: Dictionary) -> String:
 func _ready() -> void:
 	_load_custom_presets()
 	call_deferred("_build_ui")
+	## Every caption in this console is derived at BUILD time, so a pad arriving mid-session left a
+	## keyboard-only strip on screen ("[+] START GRINDING" with a pad in hand) and unplugging left
+	## pad names for a device that is gone. ControlsMenu already did this; no lane surface did.
+	## Node-lifetime, not the autogrind-signal lifetime: the captions matter whenever this console
+	## exists, not only while a grind is wired. Godot disconnects Input for us when we are freed.
+	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+
+
+## Both paths that make this console visible again end in _build_ui, so a pad that arrives while it
+## is HIDDEN needs nothing — the next show re-derives.
+func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
+	if not is_inside_tree() or not visible:
+		return
+	## ⛔ _build_ui frees EVERY child and the options ring IS one, so rebuilding under an open ring
+	## would vanish it mid-selection. Defer instead; _close_options_ring applies it.
+	if _options_ring and is_instance_valid(_options_ring):
+		_pad_change_pending = true
+		return
+	_build_ui()
 
 
 func setup(party: Array, region_name: String = "") -> void:
@@ -1473,6 +1494,12 @@ func _close_options_ring() -> void:
 	if _options_ring and is_instance_valid(_options_ring):
 		_options_ring.queue_free()
 	_options_ring = null
+	if _pad_change_pending:
+		## A pad changed while the ring held the screen. Rebuild now rather than on the next action,
+		## because backing OUT of the ring performs no action and would leave the captions stale.
+		_pad_change_pending = false
+		_build_ui()
+		return
 	_update_cursor()
 
 
