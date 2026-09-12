@@ -125,7 +125,7 @@ const ADVERTISED_AS := {
 	"ui_menu": "Start",
 	"battle_advance": "Advance",
 	"battle_defer": "Defer",
-	"battle_toggle_auto": "Back (Minus)",  # the ROW's gamepad cell — "Toggle Autobattle" also appears in prose below the table
+	"battle_toggle_auto": "Back / Select / Minus / Share",  # the ROW's gamepad cell — "Toggle Autobattle" also appears in prose below the table
 	"party_chat": "Defer / Party Chat",  # the ROW's description cell — "PARTY CHAT" is also a section header
 	"dash": "1.7x",  # the multiplier, unique to its row — "Run" also matches "Turbo — run it faster"
 }
