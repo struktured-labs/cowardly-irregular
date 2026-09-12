@@ -104,3 +104,24 @@ func test_w4_w6_world_music_stays_out_of_the_pack_except_the_credits_beds() -> v
 		"%d W4-W6 world bed(s) now ship on web that did not before: %s — a replacement glob is missing a content prefix, and the pck grows by bytes nobody asked for" % [leaked.size(), leaked])
 	assert_eq(rescued.size(), WEB_RESCUED.size(),
 		"the credits beds this preset deliberately ships are not all shipping (%d of %d): %s — world6_ending's roll_credits step names credits_abstract and the campaign ending would roll in silence" % [rescued.size(), WEB_RESCUED.size(), rescued])
+
+## The tier projection must answer the constraint that BINDS, and today that is the browser
+## cache line rather than the itch limit. A pck at 163.81 MiB is inside 189 and outside 160:
+## reporting only the itch limit says FITS about the wrong question, and a player re-downloads
+## the whole thing every visit (cowir-deploy, 2026-09-12).
+func test_the_tier_projection_reports_the_cache_line_not_just_the_itch_limit() -> void:
+	var sh: String = FileAccess.get_file_as_string("res://tools/make_web_audio.sh")
+	assert_gt(sh.length(), 2000, "SCOPE control: make_web_audio.sh read back %d chars" % sh.length())
+	assert_gt(sh.find("CACHE_LIMIT_MIB=160"), 0,
+		"make_web_audio.sh no longer carries the 160 MiB browser cache line. FIX: restore CACHE_LIMIT_MIB and the second projection line — without it a run at any bitrate reports FITS against the 189 MiB itch limit while the pck is still re-downloaded on every visit")
+	assert_gt(sh.find("browser cache line"), 0,
+		"the projection no longer PRINTS the cache-line verdict. FIX: keep the second print in the projection block; the constant alone is not a report")
+
+	## ⛔ And it must not derive the non-music payload from master bytes minus the WEB
+	## preset's exclude_filter. The published path is WEB_STAGE=1, which DROPS every music
+	## exclusion, and the pck holds TIER bytes — two errors that partly cancelled and left
+	## every projection 1.82 MiB optimistic (measured 2026-09-12).
+	assert_eq(sh.find("in_pck = sum(os.path.getsize(f) for f in (allm - ex))"), -1,
+		"the projection is deriving music-in-pck from masters minus the fallback exclusion list again. FIX: derive it from the shipped TIER (make_web_stage.sh's default bitrate) and skip the projection if that tier is not on disk, rather than mixing master bytes with a tier-sized pck")
+	assert_gt(sh.find("shipped_tier"), 0,
+		"the projection no longer derives from the shipped tier at all — see the comment block above it for why master bytes are the wrong term")

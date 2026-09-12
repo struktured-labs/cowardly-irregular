@@ -46,6 +46,11 @@ SRC_DIR="assets/audio/music"
 # check stays cheap and can no longer lie.
 OUT_DIR="tmp/web_audio/music_${BITRATE}k"
 PCK_LIMIT_MIB=189   # 199,000,000 bytes; see deploy_web.sh PCK_LIMIT
+# Chromium refuses to CACHE a single resource above ~160 MiB, so a pck under the itch
+# limit can still be re-downloaded in full on every visit (cowir-deploy, 2026-09-12).
+# That is the binding constraint today: the shipped pck is 166.89 MiB, inside 189 and
+# outside 160. A run that reports only the itch limit says FITS about the wrong question.
+CACHE_LIMIT_MIB=160
 
 command -v ffmpeg >/dev/null || { echo "[web-audio] ffmpeg not found" >&2; exit 2; }
 [ -d "$SRC_DIR" ] || { echo "[web-audio] no $SRC_DIR — wrong cwd?" >&2; exit 2; }
@@ -86,9 +91,9 @@ for src in "${SRCS[@]}"; do
 done
 
 echo "[web-audio] transcoded ${transcoded}, reused ${reused}"
-python3 - "$src_bytes" "$out_bytes" "$TOTAL" "$BITRATE" "$PCK_LIMIT_MIB" <<'PY'
-import sys, os, glob
-src, out, n, br, limit = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], int(sys.argv[5])
+python3 - "$src_bytes" "$out_bytes" "$TOTAL" "$BITRATE" "$PCK_LIMIT_MIB" "$CACHE_LIMIT_MIB" <<'PY'
+import sys, os, glob, re
+src, out, n, br, limit, cache = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], int(sys.argv[5]), int(sys.argv[6])
 mib = 1024 * 1024
 print(f"[web-audio] masters   {src/mib:7.1f} MiB  ({n} tracks)")
 print(f"[web-audio] web tier  {out/mib:7.1f} MiB  at {br} kbps  -> {out/src*100:.0f}% of source")
@@ -111,20 +116,54 @@ if not os.path.exists(PCK):
     print("[web-audio] no reference pck on disk — SKIPPING the projection rather than")
     print("[web-audio] inventing a constant. Export once, then re-run for a fit estimate.")
 else:
-    ex = set()
-    for p in EXCLUDED:
-        ex.update(f for f in glob.glob(d + p) if f.endswith(".ogg"))
+    # ⛔ WAS: masters of the tracks the WEB preset's exclude_filter keeps. Two errors,
+    # partly cancelling: the published path is WEB_STAGE=1, whose make_web_stage.sh DROPS
+    # every music exclusion (so all 161 ship, not 107), and the pck holds TIER bytes, not
+    # master bytes. Measured 2026-09-12: derived 69.95 MiB where the truth is 71.77 — every
+    # projection 1.82 MiB optimistic. Same class as reading export_presets.cfg and reporting
+    # it as the shipped build, which cost this lane two retractions the same day.
+    #
+    # The reference pck was built at make_web_stage.sh's default bitrate (struktured's
+    # ruling). Derive from THAT tier, and refuse rather than guess if it is not on disk.
     allm = set(glob.glob(d + "*.ogg"))
-    in_pck = sum(os.path.getsize(f) for f in (allm - ex))
+    shipped_br = 48
+    try:
+        with open("tools/make_web_stage.sh") as fh:
+            m = re.search(r'BITRATE="\$\{1:-(\d+)\}"', fh.read())
+            if m:
+                shipped_br = int(m.group(1))
+    except OSError:
+        pass
+    shipped_tier = glob.glob("tmp/web_audio/music_%dk/*.ogg" % shipped_br)
+    if len(shipped_tier) != len(allm):
+        print(f"[web-audio] the reference pck was built at {shipped_br}k and that tier is not on")
+        print(f"[web-audio] disk ({len(shipped_tier)} of {len(allm)} files) — SKIPPING the projection")
+        print(f"[web-audio] rather than deriving the non-music payload from master bytes.")
+        print(f"[web-audio] Run: tools/make_web_audio.sh {shipped_br}")
+        raise SystemExit(0)
+    in_pck = sum(os.path.getsize(f) for f in shipped_tier)
     other = os.path.getsize(PCK) - in_pck
     if other <= 0:
         print("[web-audio] derived non-music payload came out <= 0 — the reference pck and")
         print("[web-audio] the exclusion list disagree. Not projecting from a broken figure.")
     else:
         tot = (out + other) / mib
-        print(f"[web-audio] non-music payload {other/mib:.1f} MiB  (DERIVED from the shipped pck)")
-        print(f"[web-audio] projected pck ~{tot:.0f} MiB vs {limit} MiB limit "
+        # Disclose the reference's AGE. The script already refuses to invent this constant;
+        # it should also say how old the one it derived is, because the absolute projection is
+        # only as fresh as that pck while the bitrate DELTAS are unaffected (same term).
+        import time
+        age_d = (time.time() - os.path.getmtime(PCK)) / 86400.0
+        print(f"[web-audio] non-music payload {other/mib:.1f} MiB  (DERIVED from a pck built "
+              f"{age_d:.0f}d ago, {os.path.getsize(PCK)/mib:.2f} MiB)")
+        if age_d > 2:
+            print(f"[web-audio]   ^ that reference is {age_d:.0f} days old, so the ABSOLUTE figures "
+                  f"below lag the live store; the bitrate-to-bitrate deltas do not.")
+        print(f"[web-audio] projected pck ~{tot:.2f} MiB vs {limit} MiB itch limit "
               f"({'FITS' if tot < limit else 'OVER — drop the bitrate'})")
+        # The cache line binds before the itch limit does, and a player feels it every visit.
+        print(f"[web-audio]               vs {cache} MiB browser cache line "
+              f"({'CACHEABLE' if tot < cache else 'RE-DOWNLOADED EVERY VISIT'}"
+              f", {abs(cache - tot):.2f} MiB {'spare' if tot < cache else 'over'})")
         # Forward-looking: cowir-music has ~48 unthemed regular monsters queued.
         # At the master bitrate that is ~69 MiB more source, which scales by the
         # ratio this run just measured rather than by an assumed one.
