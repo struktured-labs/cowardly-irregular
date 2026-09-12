@@ -116,6 +116,17 @@ func test_the_trusted_turn_prompt_names_the_button_that_claims_it() -> void:
 ## docstrings are string LITERALS, so a `#`-only strip leaves prose that names a token and a scan
 ## reads that prose as the token (cowir-music, msg 10577). Not used on arms that deliberately read
 ## a string CONSTANT, where stripping would delete the very thing being checked.
+## ⚠️ KNOWN LIMIT, measured not assumed: a triple quote that is neither at the start nor the end of
+## its line — `var s := """x"""` — is NOT dropped, because the branch keys on begins_with. Across the
+## four files these guards scan there are 419 triple-quote lines and ZERO of that shape, so nothing
+## is exposed today; and it fails LOUDLY where it matters, since a survivor inside a control window
+## reds the structural assert rather than passing quietly. The `#` half truncates at the first `#`,
+## so a `#` inside a string literal would cut live code — same measurement, same direction.
+##
+## Both halves are verified INDEPENDENTLY (@cowir-overworld's tautology note via @cowir-music, msg
+## 10590): removing only the docstring branch reds "no docstring may survive", removing only the `#`
+## strip reds "no # comment may survive". A pass-through neutering kills both at once and cannot
+## tell a real assert from one that merely restates the implementation.
 func _code_only(src: String) -> String:
 	var out := PackedStringArray()
 	var in_doc := false
