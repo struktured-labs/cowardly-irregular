@@ -101,7 +101,7 @@ func test_every_map_area_id_has_an_arm() -> void:
 		if not fn.contains("\"%s\"" % str(id)):
 			orphans.append("%s (returned by %s)" % [str(id), str(ids[id])])
 	assert_eq(orphans.size(), 0,
-		"%d map area id(s) reach no arm in _get_current_world_suffix, so entering them keeps the PREVIOUS world's suffix and every derived bed — battle, boss, danger, victory — follows it: %s" % [orphans.size(), orphans])
+		"%d map area id(s) reach no arm in _get_current_world_suffix, so entering them keeps the PREVIOUS world's suffix and every derived bed — battle, boss, danger, victory — follows it: %s. FIX: add the id to that function's arm for its world (src/audio/SoundManager.gd). Do NOT delete the map's _get_music_area_id override to clear this — the map would then reach play_area_music by its MAP id, which is the 8-of-13 dungeon class at GameLoop:5616, and the suffix would still be wrong. If a map deliberately inherits its world, say so here with a reason." % [orphans.size(), orphans])
 
 
 func test_entering_a_world_one_village_does_not_keep_world_four_music() -> void:
