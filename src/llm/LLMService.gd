@@ -527,12 +527,13 @@ func _await_box(id: String, opts: Dictionary = {}) -> void:
 			# the node doesn't linger until the server (or the 30s HTTPRequest
 			# timeout) replies. HTTPBackend.cancel(id) frees the HTTPRequest and
 			# emits request_finished(id, ...) — possibly SYNCHRONOUSLY. That is
-			# safe here precisely because _inflight_id was cleared above:
-			#   - _on_backend_finished's stale-id guard (id != _inflight_id) now
-			#     holds, so the sync emit is a clean no-op (it does not re-resolve
-			#     the already-erased box, nor re-enter _process_queue);
-			#   - _pending_boxes[id] was already erased, so even if it slipped
-			#     through, _resolve_box would no-op (it has()-checks first).
+			# safe, and MEASURED which defence carries it (see
+			# test_a_late_reply_cannot_overwrite_the_fallback):
+			#   - LOAD-BEARING: _pending_boxes.erase(id) above. Remove it and the
+			#     sync emit revives the request — that arm reds.
+			#   - BELT AND BRACES: clearing _inflight_id before this call makes the
+			#     stale-id guard hold too. Moving it AFTER the cancel reds nothing,
+			#     so do not treat the ordering as the protection; the erase is.
 			# This is independent of the cancel_all() path: _draining stays false
 			# here, but the stale-id guard alone makes the sync emit harmless.
 			if _active_backend != null and _active_backend.has_method("cancel"):
