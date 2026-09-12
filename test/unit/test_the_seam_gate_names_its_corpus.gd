@@ -156,9 +156,21 @@ func test_the_shipped_tier_is_48k_mono_so_the_question_is_real() -> void:
 ## the one time anybody needs it.
 func test_a_clean_report_states_how_close_the_worst_bed_came() -> void:
 	var src: String = _code_only(_src())
-	assert_gt(src.find("closest bed still inside the threshold"), 0,
-		"the seam audit no longer reports the worst UNDER-threshold bed. FIX: restore the margin print beside the jump count in tools/audit_wrap_seams.py — rows already carries the worst step for every bed, so this costs no measurement. Without it '0 jumps' cannot tell a 3 dB corpus from a 0.2 dB one, and an encoder change is decided blind")
+	## The wording moved from a single closest bed to the whole sub-1 dB band (below), so this
+	## asserts the SURVIVING fallback — the line that still runs when no bed is inside 1 dB.
+	assert_gt(src.find("closest: %s at %+.1f dB"), 0,
+		"the seam audit reports no margin at all when every bed is comfortably clear. FIX: keep the `closest:` fallback in tools/audit_wrap_seams.py — rows already carries the worst step for every bed, so this costs no measurement. Without it '0 jumps' cannot tell a 3 dB corpus from a 0.2 dB one, and an encoder change is decided blind")
 	assert_gt(src.find("JUMP_DB - worst_ok[0]"), 0,
 		"the margin is no longer DERIVED from the threshold — a hardcoded figure here would go stale the moment JUMP_DB moves, which is the coincidental-magnitude shape CLAUDE.md warns about")
-	assert_gt(src.find("under 1 dB of headroom"), 0,
-		"the low-headroom warning is gone. FIX: keep the sub-1 dB branch; a 0.2 dB margin printed as a bare number reads as a pass, and the warning is what makes it a finding")
+	assert_gt(src.find("a re-encode at any bitrate can tip these"), 0,
+		"the low-headroom warning is gone. FIX: keep the sub-1 dB branch; a thin margin printed as a bare number reads as a pass, and the warning is what makes it a finding")
+
+	## ⛔ AND IT MUST REPORT THE BAND, NOT THE CLOSEST BED. I shipped closest-only and told
+	## struktured the tier change cost "one Jukebox-only bed". Measured the next hour: FOUR
+	## beds under 1 dB — ambient_cave 0.2, danger_suburban 0.5, dungeon_dragon_ice 0.6,
+	## battle_steampunk 0.9 — and three of those are live gameplay beds, not Jukebox rows.
+	## One name reads as an outlier; the count is what says whether the corpus is tight.
+	assert_gt(src.find("headroom: %d bed(s) under 1 dB"), 0,
+		"the seam audit reports only the closest bed again. FIX: restore the band print in tools/audit_wrap_seams.py — a single name reads as one outlier, and the measured corpus has four beds inside 1 dB with three of them on live gameplay routes")
+	assert_gt(src.find("for step, key, ws in tight:"), 0,
+		"the sub-1 dB beds are counted but no longer NAMED. FIX: keep the loop that prints each one with its margin; a count tells you the corpus is tight and not which encoder change to re-measure")
