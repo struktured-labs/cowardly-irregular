@@ -198,8 +198,9 @@ func test_pause_is_bound_on_both_grind_surfaces() -> void:
 	assert_eq(pause_rows, 1, "exactly one row documents pause")
 
 
-## Adjust-rules is bound on NEITHER device in the live branch, so the row was removed. If the
-## binding arrives, restore the row — this arm is the reminder, not a permanent ban.
+## Adjust-rules is live (.329) but only through the Tier-1 dashboard; GameLoop's own branch binds it on
+## NEITHER device, so the F1 row stays out. When the branch binds it on every tier, restore the row —
+## this arm is the reminder, not a permanent ban.
 func test_adjust_rules_is_absent_because_nothing_binds_it() -> void:
 	var window := _branch_window()
 	var bound: bool = window.contains("KEY_R\n") or window.contains("KEY_R ") \
@@ -207,11 +208,13 @@ func test_adjust_rules_is_absent_because_nothing_binds_it() -> void:
 	assert_false(bound,
 		("the AUTOGRIND branch now binds adjust-rules, so the reference must advertise it again — " +
 		"add the row back to AutogrindInputHelper.grind_reference_rows()"))
-	## The deeper reason the row went: the dashboard DOES classify index 6 / R as adjust_rules and
-	## emits adjust_rules_requested — and GameLoop connects that signal zero times. Binding a button
-	## would not have helped. If this count ever rises, the feature is live and the row comes back.
-	assert_eq(FileAccess.get_file_as_string("res://src/GameLoop.gd").count("adjust_rules_requested"), 0,
-		"GameLoop now listens for adjust-rules mid-grind — restore the reference row for it")
+	## .329 wired adjust_rules_requested (GameLoop connects the Tier-1 dashboard's signal), so the
+	## feature IS live — on the surface classify_event serves, which the header above says is NOT the
+	## one this F1 block describes. The row stays out until GameLoop's own branch binds it on every
+	## tier, the same rule pause needed in .328. The count is a floor so the .329 wiring cannot be
+	## lost silently; the row-absence assert below is the policy.
+	assert_gt(FileAccess.get_file_as_string("res://src/GameLoop.gd").count("adjust_rules_requested"), 0,
+		"adjust-rules mid-grind lost its GameLoop listener (.329 wired it) — reconnect the dashboard's adjust_rules_requested in GameLoop, or the Tier-1 route is dead again")
 	var text: String = HowToPlayOverlay.build_text()
 	assert_false(text.contains("Adjust rules mid-grind"),
 		"while nothing binds it, advertising it sends the player hunting for a button that does nothing")
