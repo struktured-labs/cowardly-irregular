@@ -810,7 +810,12 @@ func _create_empty_action_hint(row_idx: int, act_idx: int) -> Control:
 
 	# Hint text
 	var label = Label.new()
-	label.text = "[+A]"
+	## Was "[+A]", which reads two ways and is wrong under one of them. Its sibling — the empty
+	## CONDITION cell — renders "+AND", naming what it adds with no button and no brackets. If the A
+	## meant "Action" this is clearer; if it meant the A BUTTON it was a frozen Nintendo face letter
+	## on a cell you reach by pressing Confirm, which is Ⓑ on Xbox and ○ on PlayStation. Naming the
+	## thing added is correct under both readings, so the ambiguity does not need resolving.
+	label.text = "+ACTION"
 	label.position = Vector2(4, 4)
 	label.size = Vector2(CELL_WIDTH - 8, CELL_HEIGHT - 8)
 	label.add_theme_font_size_override("font_size", 11)
@@ -3356,7 +3361,10 @@ func _paste_share_code() -> void:
 		return
 	var data := ScriptShareManager.decode_share_code(code)
 	if data.is_empty():
-		_flash_status("Not a valid share code", Color.YELLOW)
+		## "Not a valid share code" is wrong for the commonest refusal: a well-formed code that uses
+		## a condition this build does not know. Say which, when the decoder knows.
+		var decode_why := ScriptShareManager.last_import_reason()
+		_flash_status(decode_why if decode_why != "" else "Not a valid share code", Color.YELLOW)
 		SoundManager.play_ui("menu_error")
 		return
 	if ScriptShareManager.apply_character_script(character_id, data):

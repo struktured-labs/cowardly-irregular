@@ -502,7 +502,7 @@ func _open_chest(player: Node2D) -> void:
 	if SoundManager:
 		match contents_type:
 			"gold":
-				SoundManager.play_ui("gold_pickup")
+				SoundManager.play_pickup("gold_pickup")
 			"equipment":
 				SoundManager.play_music("stinger_item_found")
 

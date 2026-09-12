@@ -30,16 +30,48 @@ const READABLE := "res://src/exploration/ReadableProp.gd"
 const UNSAFE := ["glyph_for_action", "face_glyph_for_index"]
 
 
+## ⚠️ A `#` INSIDE A STRING IS NOT A COMMENT, and my window has one: IndustrialOverworld's
+## `_create_npc("Worker #4471", ...)`. A naive `find("#")` truncates that line and deletes real code
+## from the scan. Harmless for a PRESENCE assert (a lost symbol reds loudly); silent and wrong for a
+## BAN assert, where a forbidden name after the cut simply stops being seen. @cowir-music flagged the
+## shape and measured their own window clean; mine was not.
+func _comment_start(line: String) -> int:
+	var in_double := false
+	var in_single := false
+	var i := 0
+	while i < line.length():
+		var c := line[i]
+		if c == "\\":
+			i += 2
+			continue
+		if c == "\"" and not in_single:
+			in_double = not in_double
+		elif c == "'" and not in_double:
+			in_single = not in_single
+		elif c == "#" and not in_double and not in_single:
+			return i
+		i += 1
+	return -1
+
 ## ⛔ CODE ONLY. The repair's own comment QUOTES `glyph_for_action` to explain what was wrong, so an
-## unstripped scan reports the fix as the defect — it did, on this guard's first run. Strings are NOT
-## stripped: a helper name here is always a call, never a caption.
-func _code() -> String:
-	var raw := FileAccess.get_file_as_string(READABLE)
-	assert_gt(raw.length(), 500, "PRECONDITION: ReadableProp must be readable")
+## unstripped scan reports the fix as the defect — it did, on this guard's first run. Ordinary quoted
+## strings are deliberately KEPT: a helper name in one is a call, never a caption.
+## ⚠️ DOCSTRINGS ARE THE EXCEPTION, added 2026-09-12 on @cowir-music's finding. `"""` blocks are
+## string LITERALS, so a `#`-only strip leaves them and prose quoting a name satisfies a presence
+## assert — `assert_true(src.contains("hint_for_action"))` below would pass with the real call gone.
+## ReadableProp carries ZERO docstrings today; this guard exists for the version that does not.
+func _code(path: String = READABLE) -> String:
+	var raw := FileAccess.get_file_as_string(path)
+	assert_gt(raw.length(), 500, "PRECONDITION: %s must be readable" % path)
+	var body := ""
+	var chunks: PackedStringArray = raw.split("\"\"\"")
+	for i in range(chunks.size()):
+		if i % 2 == 0:
+			body += str(chunks[i])
 	var out := ""
-	for line in raw.split("\n"):
+	for line in body.split("\n"):
 		var l := str(line)
-		var at := l.find("#")
+		var at := _comment_start(l)
 		out += (l.substr(0, at) if at >= 0 else l) + "\n"
 	return out
 
@@ -94,3 +126,93 @@ func test_the_helper_scan_discriminates() -> void:
 	# And the live predicate both ways, so neither direction is assumed.
 	assert_true("if InputProfileManager:\n\t\treturn InputProfileManager.glyph_for_action(".contains(UNSAFE[0]),
 		"CONTROL: the forbidden spelling is detectable in the exact shape that shipped")
+
+
+## ⛔ CONTROL FOR THE STRIPPER — and the version before it COULD NOT FAIL. @cowir-battle's third
+## point, measured here rather than accepted: neutering the docstring half of `_code` left this file
+## EC=0 · Passing 4. The old arm re-implemented the split INSIDE the test and never called `_code`,
+## and its one real assert (no triple quote survives) was vacuous because ReadableProp carries ZERO
+## docstrings — nothing to strip, so nothing to get wrong.
+##
+## Two changes, both @cowir-music's shape: point it at a file that HAS both constructs, and assert
+## STRUCTURALLY (no `#`, no triple quote survives) instead of naming a phrase, so rewording the prose
+## cannot red a correct tree. The anti-vacuity pair is what makes "it stripped everything" mean
+## something: a window with nothing to strip passes that assert for free.
+const STRIPPER_SUBJECT := "res://src/exploration/OverworldScene.gd"
+
+func test_the_stripper_actually_strips() -> void:
+	var path := STRIPPER_SUBJECT
+	var raw := FileAccess.get_file_as_string(path)
+	# DERIVED from the file, not a phrase: chunk 1 of a split on the triple quote IS the first
+	# docstring's body. Naming a phrase reds on a reword; asserting "no triple quote survives" is
+	# WORSE — split() consumes its delimiter, so that holds for a BROKEN stripper too. Measured.
+	var parts: PackedStringArray = raw.split("\"\"\"")
+	assert_gte(parts.size(), 3,
+		"ANTI-VACUITY: the scanned file holds no docstring, so nothing below is evidence")
+	var body: String = str(parts[1])
+	assert_gt(body.strip_edges().length(), 20,
+		"ANTI-VACUITY: the first docstring is too short to tell a strip from a no-op")
+	assert_true(raw.contains("#"),
+		"ANTI-VACUITY: the scanned file holds no # comment, so the comment arm is free")
+
+	var code := _code(path)
+	assert_false(code.contains(body),
+		"the first docstring's BODY survived _code() — prose is reaching the source arms as code")
+	# NOT `code.contains("#")`: a `#` inside a string LEGITIMATELY survives now, so that assert would
+	# red on a correct tree the moment a scanned file gains a "Worker #4471". Ask the property instead.
+	var surviving_comments := 0
+	for line in code.split("\n"):
+		if _comment_start(str(line)) >= 0:
+			surviving_comments += 1
+	assert_eq(surviving_comments, 0,
+		"%d line(s) still carry a comment after _code() — comments are reaching the source arms as code" % surviving_comments)
+	assert_true(code.contains("func _place_readables"),
+		"CONTROL the other way: an over-strip would eat real declarations and make every arm vacuous")
+
+
+## THE STRING-AWARE HALF, which is new logic and therefore owes its own arm. IndustrialOverworld is
+## the live instance: `_create_npc("Worker #4471", ...)`. A naive strip cuts that line and silently
+## deletes the rest of it from the scan.
+func test_a_hash_inside_a_string_is_not_a_comment() -> void:
+	assert_eq(_comment_start("var a = 1  # real comment"), 11, "a bare # starts a comment")
+	assert_eq(_comment_start("_create_npc(\"Worker #4471\", \"villager\")"), -1,
+		"a # inside a string is NOT a comment — cutting there deletes live code from the scan")
+	assert_eq(_comment_start("var s = \"a\"  # after a closed string"), 13,
+		"...and a # after the string closes still is one")
+	var code := _code("res://src/exploration/IndustrialOverworld.gd")
+	assert_true(code.contains("Worker #4471"),
+		"the live instance must survive the strip intact")
+	assert_true(code.contains("villager") and code.contains("MAP_SCALE"),
+		"CONTROL: the code AFTER that # survives — the whole point of the string-aware scan")
+
+## Every file this guard's stripper is pointed at — the subject plus the control's subject.
+func _stripper_corpus() -> Array:
+	return [READABLE, STRIPPER_SUBJECT]
+
+
+## ⛔ `"""` MEANS DOCUMENTATION ONLY UNTIL SOMEBODY ASSIGNS IT (@cowir-ai, via @cowir-music,
+## 2026-09-12). In `DialoguePrompts` the triple-quoted regions are `AUTOBATTLE_GRAMMAR_DESCRIPTION`
+## and friends — SHIPPING PROMPT TEXT. A blanket stripper there would delete the subject, and a guard
+## reading it would be reading the product, not prose. My stripper is safe because every scanned file
+## has ZERO assigned regions; that is a per-file property that can change in one commit, so it is
+## asserted here rather than relied on.
+func test_no_scanned_file_keeps_content_in_a_triple_quote() -> void:
+	var offenders: Array = []
+	var scanned := 0
+	for path in _stripper_corpus():
+		var raw := FileAccess.get_file_as_string(path)
+		assert_gt(raw.length(), 200, "CONTROL: %s is readable" % str(path).get_file())
+		scanned += 1
+		for line in raw.split("\n"):
+			var l := str(line)
+			var q := l.find("\"\"\"")
+			if q < 0:
+				continue
+			var before := l.substr(0, q).strip_edges()
+			if (before.begins_with("const ") or before.begins_with("var ")) and before.ends_with("="):
+				offenders.append("%s: %s" % [str(path).get_file(), l.strip_edges().substr(0, 60)])
+	offenders.sort()
+	assert_gt(scanned, 0, "CONTROL: the corpus is non-empty, or the zero below is free")
+	assert_eq(offenders, [],
+		"a scanned file ASSIGNS a triple-quoted region to a name — that is CONTENT, not a docstring, " +
+		"and this file's stripper would delete the very thing a source arm is looking for: %s" % str(offenders))

@@ -70,7 +70,8 @@ func _build_ui() -> void:
 	var elapsed = _stats.get("elapsed_seconds", 0.0)
 	var dur_min = int(elapsed) / 60
 	var dur_sec = int(elapsed) % 60
-	var bpm = _stats.get("battles_won", 0) / maxf(elapsed / 60.0, 0.01)
+	## Shared floor — see AutogrindSystem.MIN_RATE_WINDOW_MINUTES.
+	var bpm = _stats.get("battles_won", 0) / maxf(elapsed / 60.0, AutogrindSystem.MIN_RATE_WINDOW_MINUTES)
 
 	var stats_data = [
 		{"label": "Battles Won", "value": str(_stats.get("battles_won", 0)), "color": VALUE_COLOR},

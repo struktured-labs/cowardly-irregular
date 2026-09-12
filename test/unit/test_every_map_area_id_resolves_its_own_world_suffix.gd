@@ -1,5 +1,7 @@
 extends GutTest
 
+const TRIPLE := '"""'
+
 ## A map whose area id has no arm in `_get_current_world_suffix` keeps the PREVIOUS
 ## world's suffix, and every derived bed follows it.
 ##
@@ -41,13 +43,7 @@ func _sm_suffix_fn() -> String:
 	assert_gt(start, 0, "CONTROL FAILED: _get_current_world_suffix is gone — this guard measures nothing")
 	var end: int = s.find("\nfunc ", start + 10)
 	assert_gt(end, start, "CONTROL FAILED: could not bound the function body")
-	var body: String = s.substr(start, end - start)
-	## Comment-stripped: this function's own comments quote area ids, and an id
-	## mentioned in prose is not an arm.
-	var code: PackedStringArray = []
-	for line in body.split("\n"):
-		code.append(line.split("#")[0])
-	return "\n".join(code)
+	return _code_only(s.substr(start, end - start))
 
 
 func _area_ids() -> Dictionary:
@@ -127,3 +123,78 @@ func test_control_an_arm_bearing_area_does_update_the_suffix() -> void:
 	SoundManager.play_area_music("steampunk_dungeon")
 	assert_eq(SoundManager._current_world_suffix, "steampunk",
 		"an area WITH an arm did not update the suffix — the cache has stopped being written at all")
+
+
+## Comment-strip that also drops """ blocks. GDScript docstrings are string
+## LITERALS, so a #-only strip leaves them and prose quoting an arm reads AS the
+## arm. Measured 2026-09-12: planting "scriptura_village" in the resolver's own
+## docstring hid a DELETED arm from the scans here — the source assert fired 0
+## times with it and 2 times without, and only a behavioural arm caught it.
+##
+## Drops the WHOLE line on a triple quote, which can also drop code sharing that
+## line. That errs toward reporting an arm MISSING (a loud red) rather than
+## present (a silent green), which is the direction a guard should fail in.
+## Measured 2026-09-12, for whoever widens the scanned window later — this is the
+## note that matters then, and it will not be in tonight's log:
+##   SoundManager.gd     164 triple-quote lines · 0 that neither start nor end a line
+##                       · 80 with two on one line (single-line docstrings)
+##   audit_wrap_seams.py   7 · 0 · 1
+## `find(TRIPLE)` rather than `begins_with` is why the 80 are handled: a line holding
+## an opened AND closed docstring is dropped without arming in_doc. The one shape that
+## would slip a begins_with version — a triple quote mid-line — occurs nowhere in
+## either file, and @cowir-battle measured 0 of it across four more.
+static func _code_only(body: String) -> String:
+	var out: PackedStringArray = []
+	var in_doc: bool = false
+	for raw in body.split("\n"):
+		if in_doc:
+			if raw.contains(TRIPLE):
+				in_doc = false
+			continue
+		var q: int = raw.find(TRIPLE)
+		if q >= 0:
+			if raw.find(TRIPLE, q + 3) < 0:
+				in_doc = true
+			continue
+		out.append(raw.split("#")[0])
+	return "\n".join(out)
+
+
+## ⛔ A CONTROL THAT PROVES THE STRIPPER, because the stripper is what every source
+## arm here rests on and nothing tested it. @cowir-battle found their equivalent
+## control could not fail — it keyed on a phrase in the doc block ABOVE the `func`
+## line while the scanned window starts AT it, so there was never a comment inside
+## the window to remove. Two defences against that:
+##
+##   1. STRUCTURAL, not a phrase. Asserting "no `#` line and no triple quote
+##      survives" cannot false-alarm when a comment is reworded — @cowir-battle's
+##      other near-miss, where a guard passed only because the prose used backticks
+##      where the assert looked for double quotes.
+##   2. AN ANTI-VACUITY ASSERT. The RAW window must actually contain what we claim
+##      to strip, so the arm cannot pass by having nothing to do.
+func test_control_the_stripper_removes_both_comment_syntaxes() -> void:
+	var raw: String = _raw_resolver_body()
+	assert_true(raw.contains(TRIPLE),
+		"ANTI-VACUITY: the scanned window holds no docstring, so a strip assert proves nothing. Key this on a window that has one.")
+	var raw_hashes: int = 0
+	for line in raw.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			raw_hashes += 1
+	assert_gt(raw_hashes, 0,
+		"ANTI-VACUITY: the scanned window holds no # comment either — nothing to remove")
+
+	var stripped: String = _code_only(raw)
+	assert_false(stripped.contains(TRIPLE),
+		"a docstring survived _code_only, so every source assert in this file can be satisfied by prose")
+	for line in stripped.split("\n"):
+		assert_false(line.strip_edges().begins_with("#"),
+			"a # comment survived _code_only: '%s'" % line.strip_edges())
+
+
+func _raw_resolver_body() -> String:
+	var src: String = FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
+	var a: int = src.find("func _get_current_world_suffix")
+	var b: int = src.find("\nfunc ", a + 1)
+	if b < 0:
+		b = src.length()
+	return src.substr(a, b - a)

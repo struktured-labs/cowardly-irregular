@@ -152,7 +152,18 @@ func test_forecast_is_left_out_and_still_deserves_to_be() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	var idx: int = src.find("\t\t\"forecast\":")
 	assert_gt(idx, -1, "CONTROL: the forecast handler arm was found to inspect")
-	var arm: String = src.substr(idx, src.find("\n\t\t\"", idx + 5) - idx)
+	## CONTROL for the stripper — STRUCTURAL, not phrase-keyed (@cowir-music, msg 10585). My first
+	## version asserted a specific sentence was gone, which goes vacuous the moment anyone rewords
+	## the comment: green because the phrase left, not because the stripper works. That is the same
+	## fragility as a guard passing only because prose used backticks where the assert wanted quotes.
+	## ANTI-VACUITY first: the window must actually CONTAIN both forms, or stripping proves nothing.
+	var ctrl_raw: String = src.substr(src.find("func _execute_ability"), 1200)
+	assert_true(ctrl_raw.contains("#"), "ANTI-VACUITY: the control window must hold a # comment")
+	assert_true(ctrl_raw.contains("\"\"\""), "ANTI-VACUITY: and a docstring")
+	var ctrl: String = _code_only(ctrl_raw)
+	assert_false(ctrl.contains("#"), "no # comment may survive the strip")
+	assert_false(ctrl.contains("\"\"\""), "no docstring may survive the strip")
+	var arm: String = _code_only(src.substr(idx, src.find("\n\t\t\"", idx + 5) - idx))
 	var effects: Array = []
 	for call in ["take_damage", "add_buff", "add_debuff", "add_status", "shift_band", "gain_ap"]:
 		if arm.contains(call):
@@ -160,3 +171,36 @@ func test_forecast_is_left_out_and_still_deserves_to_be() -> void:
 	assert_eq(effects.size(), 0,
 		"forecast now CHANGES something (%s) — it is no longer a readout, so a preset may want it: "
 		% str(effects) + arm.strip_edges())
+
+
+## Source with BOTH comment forms removed. `#` lines and trailing `#`, AND `"""` blocks — GDScript
+## docstrings are string LITERALS, so a `#`-only strip leaves prose that names a token and a scan
+## reads that prose as the token (cowir-music, msg 10577). Not used on arms that deliberately read
+## a string CONSTANT, where stripping would delete the very thing being checked.
+## ⚠️ KNOWN LIMIT, measured not assumed: a triple quote that is neither at the start nor the end of
+## its line — `var s := """x"""` — is NOT dropped, because the branch keys on begins_with. Across the
+## four files these guards scan there are 419 triple-quote lines and ZERO of that shape, so nothing
+## is exposed today; and it fails LOUDLY where it matters, since a survivor inside a control window
+## reds the structural assert rather than passing quietly. The `#` half truncates at the first `#`,
+## so a `#` inside a string literal would cut live code — same measurement, same direction.
+##
+## Both halves are verified INDEPENDENTLY (@cowir-overworld's tautology note via @cowir-music, msg
+## 10590): removing only the docstring branch reds "no docstring may survive", removing only the `#`
+## strip reds "no # comment may survive". A pass-through neutering kills both at once and cannot
+## tell a real assert from one that merely restates the implementation.
+func _code_only(src: String) -> String:
+	var out := PackedStringArray()
+	var in_doc := false
+	for line in src.split("\n"):
+		var t := line.strip_edges()
+		if in_doc:
+			if t.ends_with("\"\"\""):
+				in_doc = false
+			continue
+		if t.begins_with("\"\"\""):
+			if not (t.length() > 5 and t.ends_with("\"\"\"")):
+				in_doc = true
+			continue
+		var h: int = line.find("#")
+		out.append(line.substr(0, h) if h >= 0 else line)
+	return "\n".join(out)

@@ -2511,7 +2511,8 @@ func _paste_rules_share_code() -> void:
 		return
 	var data := ScriptShareManager.decode_share_code(DisplayServer.clipboard_get())
 	if data.is_empty() or data.get("type") != "autogrind_rules":
-		_log_message("[color=yellow]Clipboard has no valid autogrind share code.[/color]")
+		var decode_why := ScriptShareManager.last_import_reason()
+		_log_message("[color=yellow]%s[/color]" % (("Share code rejected: %s" % decode_why) if decode_why != "" else "Clipboard has no valid autogrind share code."))
 		SoundManager.play_ui("menu_error")
 		return
 	if ScriptShareManager.apply_autogrind_rules(data):
