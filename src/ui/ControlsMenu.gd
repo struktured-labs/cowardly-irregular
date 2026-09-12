@@ -963,6 +963,14 @@ func _handle_capture_input(event: InputEvent) -> void:
 
 		# Any other button = capture it
 		var btn = event.button_index
+		var trap: Dictionary = InputProfileManager.binding_would_trap_the_player(_capture_action, [btn])
+		if trap.get("trapped", false):
+			_show_flash(str(trap.get("reason", "")))
+			_cancel_capture()
+			if SoundManager:
+				SoundManager.play_ui("menu_close")
+			get_viewport().set_input_as_handled()
+			return
 		InputProfileManager.set_custom_binding(_capture_action, [btn])
 		_cancel_capture()
 		_update_all_labels()
