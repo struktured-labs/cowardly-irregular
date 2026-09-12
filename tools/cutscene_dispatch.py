@@ -24,7 +24,7 @@ reader that knows three reports the other four as dead:
     return "id"                     _get_pending_story_cutscene, the story spine      63
     _FRAGMENT_GATES key             a loop returns its own loop variable              20
     _FRAGMENT_GATES "after"         the chain AFTER a fragment reveal                 19
-    boss_cutscene_id = "id"         dungeon bosses, played before the fight           12
+    <node>.cutscene_id = "id"       boss AND village encounters, before the fight     12
     cutscene_on_complete            quest JSON, on turn-in                             6
     PartyChatSystem.REGISTRY key    player-initiated, via PartyChatMenu               44
     play_cutscene("id" | CONST)     map and prop scripts, literal or by constant       5
@@ -32,6 +32,19 @@ reader that knows three reports the other four as dead:
 The "after" chain is the one that matters most and is easiest to miss: it alone routes all 19
 masterite DEFEAT scenes. A reader without it reports them dead and buries the real finding,
 which is that not one masterite INTRO scene is routed by anything.
+
+THE EIGHTH DOOR, AND HOW IT WAS FOUND (2026-09-12, same day)
+------------------------------------------------------------
+cowir-story routed three village masterite beats and this tool reported NO CHANGE: 34 before,
+34 after. Their fix was real — `MasteriteEncounter` gained an `@export cutscene_id` awaited
+before the fight, and three villages set it. The reader only knew `boss_cutscene_id`, the
+DragonCave spelling, so a second property name for the same mechanism read as no door at all.
+
+It failed toward NOT ROUTED, which is the safe direction for a death claim and the reason it
+was caught in one run instead of quietly crediting a fix that had not landed. But a new door
+is exactly what this tool cannot see by construction: it enumerates forms, and a form nobody
+has written yet is absent from the list. **When a lane adds a dispatch path, this file is part
+of the change.** The controls cannot catch it either — every control names a door that exists.
 
 WHAT THIS DOES NOT ANSWER
 -------------------------
@@ -61,7 +74,7 @@ CONTROLS_ROUTED = {
     "world1_chapter3": "return",
     "world1_fragment_arbiter": "fragment_loop",
     "world1_arbiter_defeat": "fragment_after",
-    "world1_pyrroth_intro": "boss_cutscene_id",
+    "world1_pyrroth_intro": "cutscene_id_property",
     "world1_orrery": "quest",
     "world1_chapter5": "party_chat",
     "world1_rat_king_intro": "play_literal",
@@ -70,6 +83,9 @@ CONTROLS_ROUTED = {
 # Documented non-doors. Each names a scene in src/ WITHOUT dispatching it; if the reader
 # counts any of these the mention/door distinction has collapsed and every verdict is noise.
 CONTROLS_UNROUTED = ["world2_epilogue", "world1_warden_intro"]
+# Lives in data/cutscenes/ and is NOT a scene — it must not appear in the corpus at all.
+# Without this the directory is the definition, and a persona table reads as unreached content.
+CONTROL_NOT_A_SCENE = "npc_showcase_personas"
 
 
 def read(path):
@@ -85,8 +101,22 @@ def strip_comments(text):
 
 
 def scene_ids(root="."):
-    return sorted(os.path.basename(p)[:-5]
-                  for p in glob.glob(os.path.join(root, "data/cutscenes/*.json")))
+    """Files in data/cutscenes/ that are SCENES. Directory membership is not the test.
+
+    npc_showcase_personas.json lives there and is not a cutscene: its top-level keys are
+    character names, it has no `steps`, and OverworldNPC loads it by a path CONSTANT
+    (PERSONA_DATA_PATH). Counting it made the unrouted list one longer than the content it
+    described -- a corpus defined by a directory rather than by the shape of its members.
+    """
+    out = []
+    for path in glob.glob(os.path.join(root, "data/cutscenes/*.json")):
+        try:
+            data = json.loads(read(path))
+        except ValueError:
+            continue
+        if isinstance(data, dict) and isinstance(data.get("steps"), list):
+            out.append(os.path.basename(path)[:-5])
+    return sorted(out)
 
 
 def doors(root="."):
@@ -111,8 +141,10 @@ def doors(root="."):
         for m in re.finditer(r'"after"\s*:\s*"([a-z0-9_]+)"', body):
             mark(m.group(1), "fragment_after")
 
-    for m in re.finditer(r'boss_cutscene_id\s*=\s*"([a-z0-9_]+)"', blob):
-        mark(m.group(1), "boss_cutscene_id")
+    # Matches boss_cutscene_id = "x" AND <node>.cutscene_id = "x": one form, two property
+    # names. Keyed on the suffix deliberately — see the docstring's eighth-door note.
+    for m in re.finditer(r'cutscene_id\s*=\s*"([a-z0-9_]+)"', blob):
+        mark(m.group(1), "cutscene_id_property")
 
     for path in glob.glob(os.path.join(root, "data/quests/*.json")):
         try:
@@ -236,6 +268,15 @@ def selftest():
     good = "zzz_not_a_real_scene" not in routed
     ok &= good
     print("  %s  a fabricated id is not routed" % ("PASS" if good else "FAIL"))
+
+    good = CONTROL_NOT_A_SCENE not in ids
+    ok &= good
+    print("  %s  a non-scene in data/cutscenes/ is not in the corpus: %s"
+          % ("PASS" if good else "FAIL", CONTROL_NOT_A_SCENE))
+    good = os.path.exists("data/cutscenes/%s.json" % CONTROL_NOT_A_SCENE)
+    ok &= good
+    print("  %s  ...and that control file still exists (else it proves nothing)"
+          % ("PASS" if good else "FAIL"))
 
     # Each form must be LOAD-BEARING: drop it and its control must flip. A form that can be
     # deleted with every control still green is a form this tool is not really using.
