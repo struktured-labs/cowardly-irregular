@@ -7,6 +7,7 @@ extends GutTest
 ## artist provenance is a core pillar (the artist has approval rights on
 ## what ships, so untracked AI sheets are a policy hole, not just tidiness).
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const HybridSpriteLoaderScript := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const MANIFEST_PATH := "res://data/sprite_manifest.json"
 const VALID_TIERS := ["T0", "T1", "T2", "T3"]
@@ -72,70 +73,6 @@ const MONSTER_PATH_CONSUMERS: Array[String] = [
 ]
 
 
-## ⛔ PIN THE STRIPPER, NOT THE CORPUS. A `#`-only strip leaves GDScript docstrings, which are
-## STRING LITERALS — so prose naming a path reads as the path. Measured on this file's own arms
-## 2026-09-12: gutting RoamingMonster's real composition and leaving a comment that mentioned it
-## scored 9/9 GREEN, and a comment-only mention in an unrelated file was flagged as a consumer.
-## Both directions, from one hole. The case table below is the cheap route to the seventh variant;
-## four lanes broke six of them by planting mutations instead.
-##
-## ⛔ BEFORE BELIEVING A MUTATION THAT SURVIVED, TRIPWIRE ITS SITE. A mutation can apply
-## (`git diff` shows it, the anchor is unique) and still never EXECUTE: making the `#` branch
-## also fire on `"` left all 12 arms green, because the `"` branch above it consumes the
-## character first. Keep the trigger, maximise the effect -- plant `return "TRIPWIRE"` under the
-## same condition. Green means the condition never fires and the survival proved nothing; red
-## means the site is live and you have a real hole. Measured 2026-09-12: dead site 12/12 green,
-## live site (the escape branch) red -- so the instrument has both of its controls.
-func _strip_comments(src: String) -> String:
-	var out := ""
-	var i := 0
-	# Every branch below advances i, but nothing ENFORCED that: a mutation dropping an
-	# increment would SPIN, and a hung arm is killed rather than failed (cowir-controller).
-	var budget := src.length() + 1
-	var in_str := ""          # "" none, else the delimiter we are inside
-	while i < src.length():
-		budget -= 1
-		if budget < 0:
-			assert_true(false, "_strip_comments stopped advancing i — the loop would have spun")
-			return out
-		var three := src.substr(i, 3)
-		if in_str == "" and three == "\"\"\"":
-			var close := src.find("\"\"\"", i + 3)
-			i = src.length() if close < 0 else close + 3
-			continue
-		var c := src[i]
-		if in_str != "":
-			if c == "\\":
-				out += c
-				i += 1
-				if i < src.length():
-					out += src[i]
-					i += 1
-				continue
-			if c == in_str:
-				in_str = ""
-			out += c
-			i += 1
-			continue
-		if c == "\"" or c == "'":
-			in_str = c
-			out += c
-			i += 1
-			continue
-		if c == "#":
-			var nl := src.find("\n", i)
-			i = src.length() if nl < 0 else nl
-			continue
-		out += c
-		i += 1
-	return out
-
-
-## ⛔ ANTI-VACUITY. The case table above proves the stripper WORKS on literals it is handed. It says
-## nothing about whether it is doing anything to the REAL files — and on a tree with no comment-borne
-## mention of the path, neutering the wiring in the two readers goes green. So: the consumer files
-## must actually CONTAIN strippable text, and stripping must actually shorten them. Without this the
-## stripper could be a no-op on the corpus that matters and every arm would still pass.
 func test_the_stripper_has_work_to_do_on_the_real_consumers() -> void:
 	var checked := 0
 	for path in MONSTER_PATH_CONSUMERS:
@@ -143,7 +80,7 @@ func test_the_stripper_has_work_to_do_on_the_real_consumers() -> void:
 		assert_ne(raw, "", "%s is readable" % path)
 		assert_true(raw.contains("#"),
 			"ANTI-VACUITY: %s holds no comment at all, so the stripper cannot be shown to do anything here" % path)
-		var stripped := _strip_comments(raw)
+		var stripped: String = GdSource.split(raw)["code"]
 		assert_lt(stripped.length(), raw.length(),
 			"the stripper removed NOTHING from %s — it is a no-op on the corpus the arms actually scan" % path)
 		assert_false(stripped.contains("##"),
@@ -153,37 +90,12 @@ func test_the_stripper_has_work_to_do_on_the_real_consumers() -> void:
 		"every declared consumer was examined — a loop that visits nothing proves nothing")
 
 
-func test_the_comment_stripper_itself() -> void:
-	var cases := [
-		["var p = \"KEEP\"", "KEEP", true,  "plain code survives"],
-		["# var p = \"GONE\"", "GONE", false, "whole-line comment removed"],
-		["var p = \"KEEP\"  # GONE", "GONE", false, "trailing comment removed"],
-		["var p = \"KEEP\"  # GONE", "KEEP", true,  "...without eating the code"],
-		["## doc GONE", "GONE", false, "## doc comment removed"],
-		["var p = \"a#b\"", "a#b", true,  "a # INSIDE a string is not a comment"],
-		# ⛔ THE DOCSTRING HALF IS ONLY TESTED HERE. Both real consumers use ## line comments, so the
-		# `#` branch does all the work on them: neutering the TRIPLE-QUOTE branch alone left this file
-		# green at 11/11 (measured 2026-09-12). A pass-through neuter kills both halves at once and
-		# cannot tell a tested branch from an untested one -- cowir-overworld's tautology point,
-		# arriving via cowir-music's branch-granular mutation.
-		["var a = 1\n\"\"\"GONE doc\"\"\"\nvar b = 2", "GONE", false, "a triple-quoted docstring is removed"],
-		["var a = 1\n\"\"\"GONE doc\"\"\"\nvar b = 2", "var b = 2", true, "...without eating the code after it"],
-		["var a = 1\n\"\"\"GONE doc\"\"\"\nvar b = 2", "var a = 1", true, "...or before it"],
-		# The ESCAPE branch was the last untested one: it survived an over-strip mutation at 12/12.
-		["var p = \"a\\\"b\"", "a\\\"b", true, "an escaped quote inside a string is preserved"],
-		["var p = \"a\\\"b\"  # GONE", "GONE", false, "...and the string still CLOSES, so a trailing # is still a comment"],
-	]
-	for c in cases:
-		var stripped: String = _strip_comments(str(c[0]))
-		assert_eq(stripped.contains(str(c[1])), bool(c[2]), "%s — got %s" % [c[3], stripped])
-
-
 func _composed_monster_templates() -> Dictionary:
 	var re := RegEx.new()
 	re.compile("\"(res://assets/sprites/monsters/overworld/[^\"]*)\"")
 	var found := {}
 	for path in MONSTER_PATH_CONSUMERS:
-		var src := _strip_comments(FileAccess.get_file_as_string(path))
+		var src := GdSource.code_of(path)
 		if src == "":
 			continue
 		var m := re.search(src)
@@ -220,7 +132,7 @@ func test_stripping_loses_no_real_consumer() -> void:
 		var raw := FileAccess.get_file_as_string(path)
 		if raw.contains("assets/sprites/monsters/overworld/"):
 			raw_hits.append(path)
-		if _strip_comments(raw).contains("assets/sprites/monsters/overworld/"):
+		if GdSource.split(raw)["code"].contains("assets/sprites/monsters/overworld/"):
 			stripped_hits.append(path)
 	assert_gt(raw_hits.size(), 0, "CONTROL: the needle exists in src/ at all — otherwise this compares two empty sets")
 	var lost := []
@@ -236,7 +148,7 @@ func test_no_other_file_composes_an_overworld_monster_path() -> void:
 	assert_gt(found.size(), 0, "CONTROL: the src sweep read something — an empty walk agrees with any list")
 	var composers := []
 	for path in found:
-		var src := _strip_comments(FileAccess.get_file_as_string(path))
+		var src := GdSource.code_of(path)
 		if src.contains("assets/sprites/monsters/overworld/"):
 			composers.append(path)
 	composers.sort()

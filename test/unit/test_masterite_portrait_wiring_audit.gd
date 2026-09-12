@@ -24,6 +24,7 @@ extends GutTest
 ##       registered-but-not-yet-delivered keys render intentionally instead
 ##       of falling through to narrator's grey blur.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const CUTSCENE_DIALOGUE := "res://src/cutscene/CutsceneDialogue.gd"
 const MASTERITE_ROLES := ["warden", "tempo", "arbiter", "curator"]
 const MASTERITE_WORLDS := ["medieval", "suburban", "industrial", "futuristic", "abstract"]
@@ -39,58 +40,15 @@ func _read(p: String) -> String:
 ## CutsceneDialogue.gd carries 8 triple-quote delimiters, so `#`-only stripping is NOT enough here.
 ## `must_survive` is REQUIRED, not optional: it is the control that an over-strip did not eat the code.
 func _code_only(path: String, must_survive: String) -> String:
+	# REQUIRED is not SUPPLIED: contains("") is true, so a blank control asserts nothing.
+	assert_false(must_survive.is_empty(), "the positive control must name a real code site, not \"\"")
 	var raw := _read(path)
 	assert_true(raw.contains(must_survive),
 		"ANTI-VACUITY: %s does not contain %s at all — the arm below would pass on an empty read" % [path, must_survive])
-	var stripped := _strip_comments(raw)
+	var stripped: String = GdSource.split(raw)["code"]
 	assert_true(stripped.contains(must_survive),
 		"OVER-STRIP: stripping ate %s out of %s — the stripper is broken, not the subject" % [must_survive, path])
 	return stripped
-
-
-func _strip_comments(src: String) -> String:
-	var out := ""
-	var i := 0
-	# Every branch below advances i, but nothing ENFORCED that: a mutation dropping an
-	# increment would SPIN, and a hung arm is killed rather than failed (cowir-controller).
-	var budget := src.length() + 1
-	var in_str := ""          # "" none, else the delimiter we are inside
-	while i < src.length():
-		budget -= 1
-		if budget < 0:
-			assert_true(false, "_strip_comments stopped advancing i — the loop would have spun")
-			return out
-		var three := src.substr(i, 3)
-		if in_str == "" and three == "\"\"\"":
-			var close := src.find("\"\"\"", i + 3)
-			i = src.length() if close < 0 else close + 3
-			continue
-		var c := src[i]
-		if in_str != "":
-			if c == "\\":
-				out += c
-				i += 1
-				if i < src.length():
-					out += src[i]
-					i += 1
-				continue
-			if c == in_str:
-				in_str = ""
-			out += c
-			i += 1
-			continue
-		if c == "\"" or c == "'":
-			in_str = c
-			out += c
-			i += 1
-			continue
-		if c == "#":
-			var nl := src.find("\n", i)
-			i = src.length() if nl < 0 else nl
-			continue
-		out += c
-		i += 1
-	return out
 
 
 func _cutscene_files() -> Array:
