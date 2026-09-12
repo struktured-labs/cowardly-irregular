@@ -71,7 +71,20 @@ static func strip_comments(src: String) -> String:
 		var quote: String = ""
 		var kept: String = ""
 		var i: int = 0
+		## ⛔ BOUNDED, AND THE BOUND IS THE REAL ONE: every branch below consumes at least one
+		## character, so a correct scan can never reach l.length() + 1 iterations. A mutation that
+		## drops an advance would otherwise SPIN — measured 2026-09-12 on this file: EC=124, killed
+		## by an external timeout after 90 s, with `run_tests.sh` carrying no timeout of its own.
+		## A hang is not a red: it reads as infrastructure, it outlives its own sweep (12 minutes,
+		## measured by cowir-controller) and a second sweep then collides with it on git index.lock.
+		## Truncating the line instead makes the consumers' surviving-code controls fire, which is
+		## EC=1 and names the defect. @cowir-sprites bound their private copy in 6affd8ee; the bound
+		## does not travel with a helper, and this one now has three consumers.
+		var budget: int = l.length() + 1
 		while i < l.length():
+			budget -= 1
+			if budget < 0:
+				break
 			var ch: String = l[i]
 			if quote != "":
 				kept += ch
