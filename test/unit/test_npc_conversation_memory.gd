@@ -308,9 +308,13 @@ func test_both_builders_assemble_context_through_one_path() -> void:
 	## someone adds a sixth block.
 	var src: String = FileAccess.get_file_as_string("res://src/llm/DialoguePrompts.gd")
 	assert_false(src.is_empty(), "CONTROL: source must load")
-	assert_eq(src.count("_context_blocks("), 3,
-		"expected one definition plus exactly two callers (opening and reply)")
-	for builder in ["build_npc_opening", "build_combined_reply"]:
+	## The count is DERIVED from the list below, not typed. build_npc_reply joined
+	## it when the flag-flip drift was closed, and an exact literal here taxed that
+	## correct change rather than catching anything.
+	var builders: Array[String] = ["build_npc_opening", "build_npc_reply", "build_combined_reply"]
+	assert_eq(src.count("_context_blocks("), 1 + builders.size(),
+		"expected one definition plus one call per declared builder — a caller outside this list is undeclared drift")
+	for builder in builders:
 		var start: int = src.find("static func %s(" % builder)
 		assert_gt(start, -1, "CONTROL: %s must exist" % builder)
 		var next_fn: int = src.find("\nstatic func ", start + 10)

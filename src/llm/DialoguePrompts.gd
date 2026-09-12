@@ -509,6 +509,11 @@ static func build_npc_sign_off(
 ##   recent_events  — Array[Dictionary] from EventLog.recent(); may be empty
 ##   last_npc_line  — the NPC's previous spoken line (may be "")
 ##   player_line    — the player's chosen response (may be "")
+##   quest_state_lines / time_of_day / party_state / memory_lines
+##                  — the same context its two siblings carry. They are last and
+##                    optional because this builder predates them; DynamicConversation
+##                    passes all four. Without them an NPC that remembered the player
+##                    in its opening line forgets by its reply.
 ##
 ## Returns a prompt String ready for LLMService.complete_json().
 static func build_npc_reply(
@@ -518,8 +523,13 @@ static func build_npc_reply(
 	recent_events: Array,
 	last_npc_line: String,
 	player_line: String,
+	quest_state_lines: Array = [],
+	time_of_day: String = "",
+	party_state: Dictionary = {},
+	memory_lines: Array = [],
 ) -> String:
-	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
+	var ctx_block: String = _context_blocks(
+		recent_events, quest_state_lines, time_of_day, party_state, memory_lines)
 
 	var history_block: String = ""
 	if last_npc_line.strip_edges() != "":
