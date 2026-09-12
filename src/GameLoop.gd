@@ -5532,6 +5532,10 @@ func _start_autogrind(config: Dictionary) -> void:
 		AutogrindSystem.region_rotation_suggested.connect(_on_autogrind_region_rotation_suggested)
 	if not AutogrindSystem.corruption_threshold_crossed.is_connected(_on_autogrind_corruption_band):
 		AutogrindSystem.corruption_threshold_crossed.connect(_on_autogrind_corruption_band)
+	## fatigue_event carried six authored descriptions and had ZERO listeners — every one was emitted
+	## into the void while the console printed a generic line derived from the COUNTER instead.
+	if not AutogrindSystem.fatigue_event.is_connected(_on_autogrind_fatigue_event):
+		AutogrindSystem.fatigue_event.connect(_on_autogrind_fatigue_event)
 
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
@@ -6032,11 +6036,14 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		if battles > 0 and battles % 5 == 0:
 			_autogrind_save_snapshot()
 
-		# Log any fatigue event that fired this cycle to the console
-		if AutogrindSystem.fatigue_events_triggered > 0:
-			var last_fatigue = AutogrindSystem.fatigue_events_triggered
+		## Log a fatigue event that ACTUALLY fired this cycle. The condition here used to be
+		## `fatigue_events_triggered > 0`, which is true for every remaining battle of the session
+		## once the first event lands — so the line repeated after every battle forever, with a
+		## frozen number, while the block's own comment said "fired this cycle".
+		if _pending_fatigue_line != "":
 			if current_scene and is_instance_valid(current_scene) and current_scene.has_method("autogrind_console_log"):
-				current_scene.autogrind_console_log("[color=#ff8844][FATIGUE #%d] Check system stability[/color]" % last_fatigue)
+				current_scene.autogrind_console_log("[color=#ff8844]%s[/color]" % _pending_fatigue_line)
+				_pending_fatigue_line = ""
 
 		# Update battle log on dashboard
 		if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard) and _autogrind_dashboard.has_method("add_battle_result"):
@@ -6278,6 +6285,19 @@ func _on_autogrind_region_advanced(from_region: String, to_region: String, world
 	TutorialHints.show(self, "world_transition")
 
 	print("[AUTOGRIND] Region advanced: %s -> %s (World %d)" % [from_region, to_region, world_num])
+
+
+## Holds the line until a console exists to print it. Cleared only on a SUCCESSFUL log, so an event
+## that fires while no battle scene is up survives to the next battle end rather than being dropped.
+## Latest wins: two events before one log is rare, and a stale older line is worse than a missed one.
+var _pending_fatigue_line: String = ""
+
+
+## The six descriptions are authored in AutogrindSystem.check_fatigue_event and say what actually
+## happened — "Inventory anomaly", "Reality fold — experience amplified!". Before this they reached
+## nobody, and a player whose MP drained read the same words as one who gained 50% EXP.
+func _on_autogrind_fatigue_event(_event_type: String, description: String) -> void:
+	_pending_fatigue_line = "[FATIGUE #%d] %s" % [AutogrindSystem.fatigue_events_triggered, description]
 
 
 func _on_autogrind_corruption_band(band: String, level: float) -> void:
