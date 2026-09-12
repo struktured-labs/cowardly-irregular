@@ -27,6 +27,13 @@ extends RefCounted
 ## Every caller MUST assert a known code site survives — `split()` returns both halves so the
 ## caller can also floor the doc side, because an empty doc side passes by construction.
 ##
+## ⚠️ GDSCRIPT. `#` and `"""` mean the same thing in Python, so pointing this at a `.py` works —
+## @cowir-sfx's seam guard strips tools/audit_wrap_seams.py with its own copy today — but that is a
+## caller asserting an overlap, not a property this file offers. It does NOT hold for a language
+## where `"""` is not a string: in a shell script `#` is still a comment and three quotes are three
+## quotes, so the parity split would flip on the first one it meets and take real code out of the
+## code half. Strip a non-GDScript target only after checking both syntaxes, and say so at the call.
+##
 ## 📌 test_every_authored_bed_has_a_consumer.gd keeps its OWN quote-aware stripper and its own
 ## case table. Not folded in here: that one is pinned by a six-costume table earned across four
 ## lanes, and rewiring a load-bearing guard to a new helper is a bigger change than the exposure
