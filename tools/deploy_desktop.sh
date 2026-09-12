@@ -109,8 +109,16 @@ fi
 # So publish the built SHA alongside the tag. `+` is semver build metadata and butler
 # takes the string verbatim. `-dirty` when the tree has uncommitted changes, because an
 # export of a dirty tree is not reproducible from any SHA and saying so is the point.
-BUILD_SHA="$(git rev-parse --short HEAD)"
-git diff --quiet HEAD -- 2>/dev/null || BUILD_SHA="${BUILD_SHA}-dirty"
+# Was two lines computing this locally. `git rev-parse --short` picks the shortest length
+# unambiguous AT THAT MOMENT, so two channels of ONE publish disagreed (v3.33.312-alpha:
+# +befbe408 vs +befbe4083). publish_all fixes the label once and exports it; standalone runs
+# still derive their own, which is what keeps the recovery path in publish_all.sh:281 working.
+_BUILD_SHA_TOOL="$(cd "$(dirname "$0")" && pwd)/build_sha.sh"
+[ -x "$_BUILD_SHA_TOOL" ] || {
+    echo "BLOCKED: ${_BUILD_SHA_TOOL} missing or not executable — refusing to guess a version label." >&2
+    exit 2; }
+BUILD_SHA="$("$_BUILD_SHA_TOOL")" || {
+    echo "BLOCKED: could not determine a build label." >&2; exit 2; }
 USERVERSION="${VERSION}+${BUILD_SHA}"
 
 ITCH_TARGET="struktured/cowardly-irregular:${CHANNEL}"
