@@ -1059,6 +1059,12 @@ func _format_condition(condition: Dictionary) -> String:
 			return "MP %s %d%%" % [op, value]
 		"ap":
 			return "AP %s %d" % [op, value]
+		"volatility_band":
+			## Show the name beside the number: the bands are Stable/Shifting/Unstable/Fractured and
+			## "Band >= 2" tells a player nothing about which of those they are waiting for.
+			var band_names: Array = ["Stable", "Shifting", "Unstable", "Fractured"]
+			var named: String = str(band_names[value]) if value >= 0 and value < band_names.size() else str(value)
+			return "Band %s %d (%s)" % [op, value, named]
 		"has_status":
 			var status = condition.get("status", "")
 			# Tick 215: shared StatusNames util.
@@ -2038,6 +2044,14 @@ func _apply_condition_type(new_type: String) -> void:
 	elif new_type == "setup_complete":
 		cond.erase("op")
 		cond.erase("value")
+	elif new_type == "volatility_band":
+		## The band is 0..3, not a percentage. The generic numeric default below is `< 50`, which
+		## here is permanently TRUE — and an always-true condition shadows every rule under it.
+		## Seed the signature play instead: press when the band is Unstable or better.
+		if not cond.has("op"):
+			cond["op"] = ">="
+		if not cond.has("value"):
+			cond["value"] = 2
 	else:
 		if not cond.has("op"):
 			cond["op"] = "<"
@@ -2939,10 +2953,12 @@ const _BATTLEFIELD_CONDITIONS: Array[String] = [
 	"ally_dead",
 ]
 
-## `turn` reads BattleManager.current_round, which outside a fight still holds the LAST battle's
-## final round. Answering from it is not a guess about an unknown — it is a confident answer from
-## another fight's leftovers, so two players with identical rules get different readouts.
-const _ROUND_CONDITIONS: Array[String] = ["turn"]
+## BattleManager state that is STALE outside a fight, rather than absent. `turn` reads
+## current_round, which between battles still holds the LAST fight's final round; `volatility_band`
+## reads BattleManager.volatility, which survives the same way. Answering from either is not a guess
+## about an unknown — it is a confident answer from another fight's leftovers, so two players with
+## identical rules get different readouts. `turn` was simply the first member.
+const _ROUND_CONDITIONS: Array[String] = ["turn", "volatility_band"]
 
 ## Everything the scratch probe can honestly decide. The three lists together must cover
 ## CONDITION_TYPES exactly — a condition in none of them is one this readout would GUESS at,
