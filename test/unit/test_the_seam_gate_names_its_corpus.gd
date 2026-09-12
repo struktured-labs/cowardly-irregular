@@ -1,5 +1,7 @@
 extends GutTest
 
+const TRIPLE := '"""'
+
 ## A health number that does not say which audio it read is not a health number.
 ##
 ## `audit_wrap_seams.py` resolves every bed through the manifest's `file` key,
@@ -34,10 +36,26 @@ func _src() -> String:
 ## Comment lines dropped before scanning. This file's own header explains the
 ## `--from` option, and so does the tool's — so a whole-file `contains("--from")`
 ## stays green after the option is DELETED. Caught by mutating it out.
+## Drops `#` lines AND triple-quoted blocks. The `#`-only version was a FALSE
+## GREEN, not merely a weak one: this file asserts tokens are PRESENT in a Python
+## tool that carries seven docstrings, so prose naming a token satisfied the assert
+## with the code gone. Measured 2026-09-12 — mentioning `os.path.basename` in the
+## module docstring and renaming every real call passed 4/4; without the mention it
+## reds. Unlike the two suffix guards, nothing behavioural backstopped it here.
 func _code_only(src: String) -> String:
 	var keep: PackedStringArray = PackedStringArray()
+	var in_doc: bool = false
 	for line in src.split("\n"):
 		var ln: String = str(line)
+		if in_doc:
+			if ln.contains(TRIPLE):
+				in_doc = false
+			continue
+		var q: int = ln.find(TRIPLE)
+		if q >= 0:
+			if ln.find(TRIPLE, q + 3) < 0:
+				in_doc = true
+			continue
 		if ln.strip_edges().begins_with("#"):
 			continue
 		keep.append(ln)
@@ -50,6 +68,10 @@ func test_the_gate_can_be_pointed_at_a_corpus_other_than_the_masters() -> void:
 	var code: String = _code_only(_src())
 	assert_false(code.contains("resolves each manifest entry"),
 		"CONTROL FAILED: a comment survived the strip, so every assert below can be satisfied by prose")
+	## The same control for the OTHER comment syntax, which the `#` check above cannot
+	## speak for — this phrase exists only inside the tool's module docstring.
+	assert_false(code.contains("Measure the WRAP of every looping bed"),
+		"CONTROL FAILED: a DOCSTRING survived the strip. Every presence assert below can then be satisfied by prose, and this guard has no behavioural arm to catch it")
 	assert_true(code.contains("\"--from\""),
 		"audit_wrap_seams.py takes no corpus option in CODE — it can only measure the masters, and the web build ships a 48 kbps transcode of them")
 	assert_true(code.contains("CORPUS_DIR = argv["),
