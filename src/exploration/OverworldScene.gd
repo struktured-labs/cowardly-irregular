@@ -66,6 +66,7 @@ var _weather: WeatherSystem
 var _border_indicator: MapBorderIndicator
 var _objective_arrow: ObjectiveArrow
 var _threat_meter: ThreatMeter
+var _lore: W1Landmarks  # owns the landmark providers; freeing it would empty every page
 
 
 func _ready() -> void:
@@ -894,26 +895,13 @@ func _update_zone_ambient(zone: String) -> void:
 
 
 func _place_landmarks() -> void:
-	var landmarks = [
-		# Ruins along the northern forest path
-		{"pos": Vector2(29, 11), "type": Landmark.Type.RUINS},
-		# Campfire at the central rest area
-		{"pos": Vector2(38, 22), "type": Landmark.Type.CAMPFIRE},
-		# Stone circle in the swamp region
-		{"pos": Vector2(68, 10), "type": Landmark.Type.STONE_CIRCLE},
-		# Well near Harmonia village approach
-		{"pos": Vector2(15, 24), "type": Landmark.Type.WELL},
-		# Ancient statue near the ice region bridge
-		{"pos": Vector2(18, 13), "type": Landmark.Type.STATUE},
-		# Campfire on the southern desert road
-		{"pos": Vector2(20, 45), "type": Landmark.Type.CAMPFIRE},
-		# Ruins near the volcanic approach
-		{"pos": Vector2(66, 47), "type": Landmark.Type.RUINS},
-		# Stone circle near the bridge
-		{"pos": Vector2(38, 50), "type": Landmark.Type.STONE_CIRCLE},
-		# The Survey Stone, deep Sandrift — the visible half of the SurveyStone in _place_readables().
-		{"pos": Vector2(8, 65), "type": Landmark.Type.STATUE},
-	]
+	## Cell and art type come from W1Landmarks.table(), which also holds what each one SAYS —
+	## one source, so moving a landmark moves the readable standing on it.
+	var landmarks: Array = []
+	for row in _get_lore().table():
+		landmarks.append({"pos": row["cell"], "type": row["type"]})
+	# The Survey Stone's visible half; its pages are _survey_stone_entries(), below, not the table.
+	landmarks.append({"pos": Vector2(8, 65), "type": Landmark.Type.STATUE})
 	for l in landmarks:
 		var lm = Landmark.new()
 		lm.landmark_type = l["type"]
@@ -931,6 +919,27 @@ func _place_readables() -> void:
 	stone.position = Vector2(8 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 65 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	stone.setup("The Survey Stone", _survey_stone_entries)
 	add_child(stone)
+	_place_landmark_lore()
+
+
+## The other eight landmarks W1 draws. Every one of them answered nothing until now, which is what
+## taught the player that overworld scenery is scenery — the Stone above inherits that training.
+## _lore is held on the scene because the providers are its METHODS: drop the object, drop the pages.
+func _place_landmark_lore() -> void:
+	for row in _get_lore().table():
+		var prop := ReadableProp.new()
+		prop.name = "Lore_" + str(row["fn"])
+		prop.position = Vector2(
+			row["cell"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2,
+			row["cell"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		prop.setup(str(row["name"]), Callable(_get_lore(), str(row["fn"])))
+		add_child(prop)
+
+
+func _get_lore() -> W1Landmarks:
+	if _lore == null:
+		_lore = W1Landmarks.new()
+	return _lore
 
 
 ## Re-invoked on every open. The waste reads back the player's own file: whether the rock line has
