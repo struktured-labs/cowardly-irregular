@@ -98,8 +98,8 @@ func test_the_defeat_sting_is_not_cut_by_the_retry_battle() -> void:
 
 func test_the_cutscene_director_calls_the_flourish_path() -> void:
 	## EXECUTION is not SELECTION, for the sting as for the group cues.
-	var src: String = FileAccess.get_file_as_string("res://src/cutscene/CutsceneDirector.gd")
-	assert_gt(src.length(), 10000, "CONTROL: CutsceneDirector source read back %d chars" % src.length())
+	var src := _code_only("res://src/cutscene/CutsceneDirector.gd")
+	assert_gt(src.length(), 10000, "CONTROL: CutsceneDirector CODE read back %d chars" % src.length())
 	assert_true(src.contains('play_flourish("%s")' % DEFEAT_CUE),
 		"the defeat sting is not played through play_flourish")
 	assert_false(src.contains('play_battle("%s")' % DEFEAT_CUE),
@@ -109,8 +109,8 @@ func test_the_cutscene_director_calls_the_flourish_path() -> void:
 func test_the_battle_scene_calls_the_flourish_path() -> void:
 	## EXECUTION is not SELECTION: the three tests above prove the path works, none of them
 	## proves BattleScene uses it. A call site left on play_battle is the whole defect, intact.
-	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	assert_gt(src.length(), 10000, "CONTROL: BattleScene source read back %d chars" % src.length())
+	var src := _code_only("res://src/battle/BattleScene.gd")
+	assert_gt(src.length(), 10000, "CONTROL: BattleScene CODE read back %d chars" % src.length())
 	var on_battle: Array[String] = []
 	for key in GROUP_CUES:
 		assert_true(src.contains('play_flourish("%s")' % key),
@@ -119,3 +119,80 @@ func test_the_battle_scene_calls_the_flourish_path() -> void:
 			on_battle.append(key)
 	assert_eq(on_battle, [],
 		"group cues still routed through play_battle, where their own hits cut them (%d): %s" % [on_battle.size(), on_battle])
+
+
+## Source arms read CODE, never prose. @cowir-music 2026-09-12 (`1d1d83ff`): a name in a module
+## docstring satisfied a presence check with every real call renamed — EC=0, clean green, code gone.
+## Mutation-tested here the same day: replacing the BattleScene call with
+## `pass  ## was SoundManager.play_flourish("group_all_out")` left this file EC=0 · Passing 6.
+## Both arms below reported the routing intact while the routing was deleted.
+## Quote-aware because `play_battle("x") # see BATTLE #3` must cut at the SECOND #, and escape-aware
+## because "a\\" really does end its string. Shape shared with _strip_comments in
+## test_ambient_cues_actually_loop.gd, which carries the longer derivation.
+func _code_only(path: String) -> String:
+	var out: PackedStringArray = []
+	for line in FileAccess.get_file_as_string(path).split("\n"):
+		var quote := ""
+		var cut := -1
+		var i := 0
+		while i < line.length():
+			var c := line[i]
+			if quote != "":
+				if c == "\\":
+					i += 2
+					continue
+				if c == quote:
+					quote = ""
+			elif c == "\"" or c == "'":
+				quote = c
+			elif c == "#":
+				cut = i
+				break
+			i += 1
+		out.append(line.substr(0, cut) if cut > -1 else line)
+	return "\n".join(out)
+
+
+func test_the_stripper_keeps_calls_and_drops_prose() -> void:
+	## Pinned directly, not only through the arms: a stripper that returned "" would make every
+	## `assert_false(... contains ...)` below pass and every `assert_true` fail loudly — but one that
+	## over-keeps fails SILENTLY, which is the direction that produced this file.
+	var src := _code_only("res://src/battle/BattleScene.gd")
+	var raw := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	assert_gt(src.length(), 10000, "CONTROL: stripped BattleScene is %d chars" % src.length())
+	assert_lt(src.length(), raw.length(),
+		"CONTROL: stripping removed nothing from a %d-char file that is 20%%+ comment" % raw.length())
+	assert_true(src.contains('play_flourish("group_all_out")'),
+		"the stripper ate a real call — every arm in this file would then fail for the wrong reason")
+	## The exact mutation that exposed the hole, as a literal case.
+	var probe := "\tpass  ## was SoundManager.play_flourish(\"group_all_out\")"
+	assert_false(_strip_line(probe).contains("play_flourish"),
+		"a call named in a trailing comment still reads as a call")
+	assert_true(_strip_line('\tSoundManager.play_flourish("x")  # BATTLE #3').contains('play_flourish("x")'),
+		"a comment containing # must cut at the first # OUTSIDE a string, not the last")
+	assert_true(_strip_line('\tvar s := "see #3"  # gone').contains('"see #3"'),
+		"a # inside a string literal is not a comment")
+
+
+func _strip_line(line: String) -> String:
+	## The stripper is line-wise, so a one-line case table needs a one-line entry point.
+	var out: PackedStringArray = []
+	var quote := ""
+	var cut := -1
+	var i := 0
+	while i < line.length():
+		var c := line[i]
+		if quote != "":
+			if c == "\\":
+				i += 2
+				continue
+			if c == quote:
+				quote = ""
+		elif c == "\"" or c == "'":
+			quote = c
+		elif c == "#":
+			cut = i
+			break
+		i += 1
+	out.append(line.substr(0, cut) if cut > -1 else line)
+	return "\n".join(out)
