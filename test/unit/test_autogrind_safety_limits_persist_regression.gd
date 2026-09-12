@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## `.310` made the four autogrind safety limits settable from the console; they were per-SESSION, so a
 ## player who set stop-at-50%-HP got 20% back on next launch with no indication. For a speed toggle
 ## that is a preference; for a safety net it is the net quietly moving.
@@ -47,14 +49,20 @@ func _save_src() -> String:
 ##    so every restore assertion measured the wrong function and failed on correct code.
 ## 2. The ban on `corruption_limit` fired on MY OWN COMMENT explaining why it is excluded.
 ## So: scan a named FUNCTION's body, with comments stripped. No positional anchors, no bare find().
-func _code_only(src: String) -> String:
-	var out := ""
-	for line in src.split("\n"):
-		out += line.split("#")[0] + "\n"
-	return out
+func _code_only(path: String, must_survive: String) -> String:
+	## PATH-taking by construction, so the blank-control floor is safe. Note the ORDER changed with
+	## it: the whole file is stripped BEFORE _fn_body windows it. Windowing first let a commented-out
+	## "func " truncate the window early — zero such lines in SaveSystem.gd today, occupancy again.
+	assert_gt(must_survive.length(), 0,
+		"CONTROL: must_survive must name a real code site — an empty control asserts nothing")
+	var raw: String = FileAccess.get_file_as_string(path)
+	assert_gt(raw.length(), 0, "CONTROL: %s must be readable" % path)
+	var stripped: String = str(GdSource.split(raw)["code"])
+	assert_true(stripped.contains(must_survive),
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
+	return stripped
 
 
-## A top-level function's body: from its `func` line to the next one at column 0.
 func _fn_body(src: String, header: String) -> String:
 	var i: int = src.find(header)
 	assert_gt(i, -1, "%s not found — the guard is scanning a function that no longer exists" % header)
@@ -105,7 +113,7 @@ func test_the_limits_survive_the_json_hop_settings_json_performs() -> void:
 ## ⛔ corruption_limit must NOT be persisted. No UI sets it, so a stored copy is a value only CODE
 ## chooses — and every old settings.json on disk would then silently override a later rebalance.
 func test_the_collapse_gate_is_not_persisted() -> void:
-	var block: String = _code_only(_fn_body(_save_src(), "func save_settings"))
+	var block: String = _fn_body(_code_only("res://src/save/SaveSystem.gd", "func save_settings"), "func save_settings")
 	assert_true(block.contains("autogrind_interrupt_rules"),
 		"save_settings does not persist the autogrind safety limits at all")
 	assert_false(block.contains(NOT_PERSISTED),
@@ -119,7 +127,7 @@ func test_the_collapse_gate_is_not_persisted() -> void:
 ## Restore must go through the clamping setter, not a raw assign — a hand-edited settings.json is
 ## player-authored input, and an out-of-range stop is a net that never fires.
 func test_restore_goes_through_the_clamping_setter() -> void:
-	var after: String = _code_only(_fn_body(_save_src(), "func load_settings"))
+	var after: String = _fn_body(_code_only("res://src/save/SaveSystem.gd", "func load_settings"), "func load_settings")
 	assert_true(after.contains("set_interrupt_rules("),
 		"the restore path does not call set_interrupt_rules — a raw assign skips the clamps AND drops corruption_limit")
 
@@ -135,7 +143,7 @@ func test_restore_goes_through_the_clamping_setter() -> void:
 ## losing every setting because one hand-edited key is the wrong shape is the documented pre-fix bug
 ## in load_settings' own docstring.
 func test_a_hand_edited_non_dictionary_does_not_take_the_settings_load_down() -> void:
-	var after: String = _code_only(_fn_body(_save_src(), "func load_settings"))
+	var after: String = _fn_body(_code_only("res://src/save/SaveSystem.gd", "func load_settings"), "func load_settings")
 	## ⛔ NOT `contains("is Dictionary")`. MEASURED: load_settings already holds that string TWICE for
 	## unrelated checks (`json.data is Dictionary`, `battle_fx_flags ... is Dictionary`), so the assert
 	## was satisfied by pre-existing text and the mutation that deleted MY check scored GREEN, 6/6.
@@ -149,7 +157,7 @@ func test_a_hand_edited_non_dictionary_does_not_take_the_settings_load_down() ->
 ## The console must persist at the moment of change. There is no "apply" step in a radial ring, so a
 ## limit set and then lost to a crash is indistinguishable from never persisting.
 func test_the_console_saves_when_a_dial_moves() -> void:
-	var body: String = _code_only(_fn_body(FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindUI.gd"), "func _cycle_safety"))
+	var body: String = _fn_body(_code_only("res://src/ui/autogrind/AutogrindUI.gd", "func _cycle_safety"), "func _cycle_safety")
 	assert_true(body.contains("save_settings("),
 		"_cycle_safety applies the limit but never persists it — the setting survives until the player quits")
 	assert_true(body.contains("set_interrupt_rules("),

@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## While an autogrind runs, the player has four controls — and the F1 reference, the one screen
 ## struktured asked for so it would be "really easy to know all the buttons", had NO AUTOGRIND
 ## SECTION AT ALL. Zero mentions of autogrind, turbo or tier. That was the original defect.
@@ -39,7 +41,7 @@ func _branch_window() -> String:
 	## naming KEY_R would satisfy the advertised-is-bound arm; one naming a phantom key would red the
 	## other. Demonstrated in this lane: the .338 guard passed 4/4 with a real connect deleted and a
 	## docstring claiming it.
-	var lines: PackedStringArray = _code_only(FileAccess.get_file_as_string("res://src/GameLoop.gd"), "func _on_grind_complete(").split("\n")
+	var lines: PackedStringArray = _code_only("res://src/GameLoop.gd", "func _on_grind_complete(").split("\n")
 	var start := -1
 	var base := 0
 	for i in lines.size():
@@ -214,7 +216,7 @@ func test_adjust_rules_is_advertised_because_it_is_reachable_now() -> void:
 	## contains that word — so deleting the connect scored GREEN. Prose satisfying a source-presence
 	## assert, in a guard written twenty minutes earlier. Comments stripped, and the claim is the
 	## CONNECT rather than the mention, because "something listens" is the reachability question.
-	var gl := _code_only(FileAccess.get_file_as_string("res://src/GameLoop.gd"), "func _on_grind_complete(")
+	var gl := _code_only("res://src/GameLoop.gd", "func _on_grind_complete(")
 	assert_gt(gl.count("adjust_rules_requested.connect("), 0,
 		("nothing connects adjust_rules_requested, so the feature is unreachable again — remove its " +
 		"row from AutogrindInputHelper.grind_reference_rows rather than advertising a dead control"))
@@ -298,19 +300,15 @@ func _rows_of(block: String) -> Array:
 
 ## Comment lines dropped, so a source-presence assert cannot be satisfied by an explanation of the
 ## very defect it guards. `#` covers `##` docstring comments too.
-func _code_only(src: String, must_survive: String) -> String:
-	var out: PackedStringArray = []
-	for line in src.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			continue
-		out.append(line)
-	var parts := "\n".join(out).split("\"\"\"")
-	var kept: PackedStringArray = []
-	for i2 in parts.size():
-		if i2 % 2 == 0:
-			kept.append(parts[i2])
-	var stripped := "".join(kept)
+func _code_only(path: String, must_survive: String) -> String:
+	## PATH-taking by construction: a literal source string cannot reach this wrapper, which is what
+	## makes the blank-control floor below safe (cowir-sprites' rule, 2026-09-12). A source-taking
+	## wrapper must NOT floor — it would red on correct literal-input self-test rows.
+	assert_gt(must_survive.length(), 0,
+		"CONTROL: must_survive must name a real code site — an empty control asserts nothing")
+	var raw: String = FileAccess.get_file_as_string(path)
+	assert_gt(raw.length(), 0, "CONTROL: %s must be readable" % path)
+	var stripped: String = str(GdSource.split(raw)["code"])
 	assert_true(stripped.contains(must_survive),
-		"CONTROL: the stripper removed a known CODE site (%s) — every assert below measures nothing" % must_survive)
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped
-
