@@ -173,23 +173,37 @@ static func _code_only(body: String) -> String:
 ##   2. AN ANTI-VACUITY ASSERT. The RAW window must actually contain what we claim
 ##      to strip, so the arm cannot pass by having nothing to do.
 func test_control_the_stripper_removes_both_comment_syntaxes() -> void:
-	var raw: String = _raw_resolver_body()
-	assert_true(raw.contains(TRIPLE),
-		"ANTI-VACUITY: the scanned window holds no docstring, so a strip assert proves nothing. Key this on a window that has one.")
-	var raw_hashes: int = 0
-	for line in raw.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			raw_hashes += 1
-	assert_gt(raw_hashes, 0,
-		"ANTI-VACUITY: the scanned window holds no # comment either — nothing to remove")
+	## ⛔ FEEDS A SYNTHETIC INPUT, because the scanned window does not contain every shape.
+	## Measured 2026-09-12: that window has TWO multi-line delimiters and ZERO one-line
+	## docstrings, so blinding the one-line branch left this control GREEN at 9 passing —
+	## the code handled the shape and the control could not prove it.
+	##
+	## @cowir-autogrind hit the same clause harder: their control DID contain a one-liner,
+	## in the assert_FALSE position, where blindness and correctness give the same answer.
+	## A positive control validates the shapes it contains, and a shape that only appears
+	## where absence is expected validates nothing. Both shapes are asserted PRESENT in the
+	## raw input below before anything is asserted absent from the output.
+	var raw: String = "\n".join([
+		"func f() -> void:",
+		"\t\"\"\"a one-line docstring mentioning ONELINE_NEEDLE\"\"\"",
+		"\t\"\"\"a multi-line docstring",
+		"\tmentioning MULTILINE_NEEDLE",
+		"\t\"\"\"",
+		"\tvar keep := 1  # mentioning HASH_NEEDLE",
+		"\treturn"])
+	assert_true(raw.contains("ONELINE_NEEDLE"), "ANTI-VACUITY: the synthetic input lost its one-line docstring")
+	assert_true(raw.contains("MULTILINE_NEEDLE"), "ANTI-VACUITY: the synthetic input lost its multi-line docstring")
+	assert_true(raw.contains("HASH_NEEDLE"), "ANTI-VACUITY: the synthetic input lost its # comment")
 
 	var stripped: String = _code_only(raw)
-	assert_false(stripped.contains(TRIPLE),
-		"a docstring survived _code_only, so every source assert in this file can be satisfied by prose")
-	for line in stripped.split("\n"):
-		assert_false(line.strip_edges().begins_with("#"),
-			"a # comment survived _code_only: '%s'" % line.strip_edges())
-
+	assert_false(stripped.contains("ONELINE_NEEDLE"),
+		"a ONE-LINE docstring survived _code_only — a line carrying two delimiters must be dropped without arming the block state, or every source assert here can be satisfied by one-line prose")
+	assert_false(stripped.contains("MULTILINE_NEEDLE"),
+		"a multi-line docstring survived _code_only")
+	assert_false(stripped.contains("HASH_NEEDLE"),
+		"a # comment survived _code_only")
+	assert_true(stripped.contains("var keep := 1"),
+		"the stripper removed CODE that shared a line with a # comment — it must cut at the marker, not drop the line")
 
 func _raw_resolver_body() -> String:
 	var src: String = FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
