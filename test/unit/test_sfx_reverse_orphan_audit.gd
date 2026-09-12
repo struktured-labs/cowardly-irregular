@@ -139,7 +139,7 @@ func _slurp_dir(root: String, ext: String, skip_file: String = "") -> String:
 				## src/ is 22.8% comment and 0 of 338 keys flip when stripped, so this is
 				## preventive today, exactly like KEY_SPACE_DEFINERS above. JSON has no comments,
 				## so only .gd is stripped.
-				out += _code_only(_read(full)) if ext == ".gd" else _read(full)
+				out += _code_only(_read(full), "") if ext == ".gd" else _read(full)
 			name = d.get_next()
 		d.list_dir_end()
 	return out
@@ -457,11 +457,25 @@ func test_every_dynamic_prefix_exemption_is_load_bearing() -> void:
 		"disposition.") % [inert.size(), inert])
 
 
-func _code_only(text: String) -> String:
-	## Presence checks read CODE, never prose. Quote- and escape-aware; the derivation and its
-	## case table live in test_group_attack_cue_survives_its_own_hits.gd.
+## TWO halves: `#` comments are line-based and stateless; `"""` docstrings need a REGION strip.
+## Which a guard needs is decided by what its assertion is SATISFIED BY (@cowir-overworld) — these
+## are PRESENCE asserts, so a docstring naming the call satisfies them. My .325 fix closed only the
+## `#` half. `must_survive` is REQUIRED so no call site reads prose by accident (@cowir-adhoc).
+func _code_only(text: String, must_survive: String) -> String:
 	var out: PackedStringArray = []
-	for line in text.split("\n"):
+	var in_doc := false
+	for raw_line in text.split("\n"):
+		var line: String = raw_line
+		var fences := line.count("\"\"\"")
+		if in_doc:
+			if fences % 2 == 1:
+				in_doc = false
+			continue
+		if fences >= 2:
+			line = line.substr(0, line.find("\"\"\"")) + line.substr(line.rfind("\"\"\"") + 3)
+		elif fences == 1:
+			line = line.substr(0, line.find("\"\"\""))
+			in_doc = true
 		var quote := ""
 		var cut := -1
 		var i := 0
@@ -480,7 +494,11 @@ func _code_only(text: String) -> String:
 				break
 			i += 1
 		out.append(line.substr(0, cut) if cut > -1 else line)
-	return "\n".join(out)
+	var result: String = "\n".join(out)
+	if must_survive != "":
+		assert_true(result.contains(must_survive),
+			"OVER-STRIPPED: %s did not survive — an over-eager stripper and a correct one are the same green" % must_survive)
+	return result
 
 
 func test_the_stripper_this_audit_now_depends_on_actually_strips() -> void:
@@ -490,29 +508,29 @@ func test_the_stripper_this_audit_now_depends_on_actually_strips() -> void:
 	## is the file where the failure direction is SILENCE (a key named only in a comment reads as
 	## a live consumer, and a phantom consumer suppresses a real orphan). @cowir-music `da523860`.
 	var raw := _read("res://src/audio/SoundManager.gd")
-	var code := _code_only(raw)
+	var code := _code_only(raw, "func play_ui")
 	assert_gt(raw.length(), 10000, "CONTROL: SoundManager read back %d chars" % raw.length())
 	assert_true(raw.contains("\n#") or raw.contains("\t#"),
 		"ANTI-VACUITY: SoundManager holds no comment line, so 'comments are stripped' proves nothing here")
 	assert_lt(code.length(), raw.length(),
 		"the stripper removed nothing from %d chars — it is a pass-through and this audit reads prose as code" % raw.length())
 	## STRUCTURAL, not a phrase: a reworded comment must not change the verdict.
-	assert_false(_code_only("\tvar x := 1  # play_sfx(\"ghost_key\")").contains("ghost_key"),
+	assert_false(_code_only("\tvar x := 1  # play_sfx(\"ghost_key\")", "").contains("ghost_key"),
 		"a key named only in a trailing comment still counts as a consumer")
 	## Two asserts, not one: "the call survived" is ALSO true of a last-# cut, so the single
 	## assert this replaces was green under that mutation while its message claimed otherwise.
-	var trailing := _code_only('\tplay_sfx("real_key")  # see ghost_key #3')
+	var trailing := _code_only('\tplay_sfx("real_key")  # see ghost_key #3', "")
 	assert_true(trailing.contains('"real_key"'), "a real consumer was dropped")
 	assert_false(trailing.contains("ghost_key"),
 		"cut at the LAST # — a key named in the middle of a comment survived as a consumer")
-	assert_true(_code_only('\tvar s := "has #hash"  # gone').contains('"has #hash"'),
+	assert_true(_code_only('\tvar s := "has #hash"  # gone', "").contains('"has #hash"'),
 		"a # inside a string literal is not a comment")
 	## `##` — GDScript's doc-comment form and the one most of src/ uses — was in NO case here, in
 	## either position. Mutation-tested 2026-09-12 (skip a run of 2+ `#`): the sibling guards RED
 	## because their negatives assert ABSENCE and blindness makes the output LARGER, but this table
 	## never mentioned `##` so it stayed green. Latent today (0 of 338 keys are named only in a
 	## comment) and it fails toward SILENCE: a key inside a `##` comment would read as a consumer.
-	var doc_tail := _code_only('\tplay_sfx("real_key")  ## mentions ghost_key in prose')
+	var doc_tail := _code_only('\tplay_sfx("real_key")  ## mentions ghost_key in prose', "")
 	assert_true(doc_tail.contains('"real_key"'), "the stripper ate a real consumer before a ##")
 	assert_false(doc_tail.contains("ghost_key"),
 		"a `##` doc comment survived — a key named in one would read as a live consumer")

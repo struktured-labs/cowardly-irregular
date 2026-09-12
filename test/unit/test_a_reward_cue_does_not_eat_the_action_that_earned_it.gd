@@ -78,7 +78,7 @@ func test_the_chest_calls_the_pickup_path() -> void:
 	## EXECUTION is not SELECTION. Reads CODE, not prose: a call surviving only in a comment is a
 	## deleted call (see test_group_attack_cue_survives_its_own_hits for the derivation).
 	var raw := FileAccess.get_file_as_string("res://src/exploration/TreasureChest.gd")
-	var src := _code_only(raw)
+	var src := _code_only(raw, "func _open_chest")
 	assert_gt(src.length(), 10000, "CONTROL: TreasureChest CODE read back %d chars" % src.length())
 	assert_lt(src.length(), raw.length(),
 		"CONTROL: stripping removed nothing — the stripper is a pass-through")
@@ -90,11 +90,25 @@ func test_the_chest_calls_the_pickup_path() -> void:
 		"CONTROL: the lid cue call must still be there, or this test defends nothing")
 
 
-func _code_only(text: String) -> String:
-	## Quote- and escape-aware; case table and derivation in
-	## test_group_attack_cue_survives_its_own_hits.gd.
+## TWO halves: `#` comments are line-based and stateless; `"""` docstrings need a REGION strip.
+## Which a guard needs is decided by what its assertion is SATISFIED BY (@cowir-overworld) — these
+## are PRESENCE asserts, so a docstring naming the call satisfies them. My .325 fix closed only the
+## `#` half. `must_survive` is REQUIRED so no call site reads prose by accident (@cowir-adhoc).
+func _code_only(text: String, must_survive: String) -> String:
 	var out: PackedStringArray = []
-	for line in text.split("\n"):
+	var in_doc := false
+	for raw_line in text.split("\n"):
+		var line: String = raw_line
+		var fences := line.count("\"\"\"")
+		if in_doc:
+			if fences % 2 == 1:
+				in_doc = false
+			continue
+		if fences >= 2:
+			line = line.substr(0, line.find("\"\"\"")) + line.substr(line.rfind("\"\"\"") + 3)
+		elif fences == 1:
+			line = line.substr(0, line.find("\"\"\""))
+			in_doc = true
 		var quote := ""
 		var cut := -1
 		var i := 0
@@ -113,16 +127,20 @@ func _code_only(text: String) -> String:
 				break
 			i += 1
 		out.append(line.substr(0, cut) if cut > -1 else line)
-	return "\n".join(out)
+	var result: String = "\n".join(out)
+	if must_survive != "":
+		assert_true(result.contains(must_survive),
+			"OVER-STRIPPED: %s did not survive — an over-eager stripper and a correct one are the same green" % must_survive)
+	return result
 
 
 func test_the_stripper_actually_strips() -> void:
-	assert_false(_code_only('\tpass  ## was play_pickup("gold_pickup")').contains("play_pickup"),
+	assert_false(_code_only('\tpass  ## was play_pickup("gold_pickup")', "").contains("play_pickup"),
 		"a call named in a trailing comment still reads as a call")
-	var trailing := _code_only('\tplay_pickup("x")  # coins #2')
+	var trailing := _code_only('\tplay_pickup("x")  # coins #2', "")
 	assert_true(trailing.contains('play_pickup("x")'), "the stripper ate a real call")
 	assert_false(trailing.contains("coins"), "cut at the LAST # — the comment body survived as code")
-	assert_true(_code_only('\tvar s := "has #hash"  # gone').contains('"has #hash"'),
+	assert_true(_code_only('\tvar s := "has #hash"  # gone', "").contains('"has #hash"'),
 		"a # inside a string literal is not a comment")
 
 
@@ -159,7 +177,7 @@ func test_the_victory_overlay_calls_the_pickup_path() -> void:
 	## gold_pickup to the pickup player while the victory overlay still played the same key on the
 	## battle player. One key, one channel.
 	var raw := FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
-	var src := _code_only(raw)
+	var src := _code_only(raw, "func _build_loot_strip")
 	assert_gt(src.length(), 10000, "CONTROL: VictoryOverlay CODE read back %d chars" % src.length())
 	assert_lt(src.length(), raw.length(), "CONTROL: stripping removed nothing")
 	assert_true(src.contains('play_pickup("gold_pickup")'),
