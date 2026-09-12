@@ -1100,9 +1100,16 @@ func _check_interrupt_conditions() -> String:
 		var has_healing_items = false
 		for member in grind_party:
 			if member is Combatant:
-				if member.get_item_count("potion") > 0 or member.get_item_count("hi_potion") > 0:
-					has_healing_items = true
-					break
+				## Was `potion` and `hi_potion` ONLY, so a party carrying 99 X-Potions and 5 Elixirs
+				## read as "depleted" and the grind refused to run. Five usable HP restoratives were
+				## invisible to it. The grind itself never had this limit: the item comes from the
+				## player's own rule (`action["item_id"]`) and executes through ItemSystem.use_item.
+				for item_id in member.inventory:
+					if int(member.inventory[item_id]) > 0 and _is_battle_hp_restorative(str(item_id)):
+						has_healing_items = true
+						break
+			if has_healing_items:
+				break
 		if not has_healing_items:
 			return "Healing items depleted"
 
@@ -2348,6 +2355,32 @@ func _track_item_consumed(item_id: String) -> void:
 
 
 const _HEAL_EFFECT_KEYS := ["heal_hp", "heal_mp", "heal_hp_percent", "heal_mp_percent", "revive"]
+
+## HP only, and NOT _HEAL_EFFECT_KEYS. That set includes heal_mp, and an Ether does not keep a party
+## alive — reusing it would let a party holding nothing but Ethers pass the depletion gate, which is
+## a different wrong answer. `revive` counts: a Phoenix Down is what saves a run.
+const _HP_RESTORE_KEYS := ["heal_hp", "heal_hp_percent", "revive"]
+
+
+## Can this item restore HP IN a grind? Effects-driven, so a new restorative in items.json works with
+## zero code change — the same contract _is_healing_item states for the Iron Vigil streak.
+## ⛔ save_point_only is excluded: a Tent heals 50% and cannot be used mid-grind, so counting it says
+## "you can still heal" about an item the player cannot reach. Effect keys alone do not separate them.
+func _is_battle_hp_restorative(item_id: String) -> bool:
+	var item_system: Node = _get_autoload_node("ItemSystem")
+	if item_system == null or not item_system.has_method("get_item"):
+		## Bare-instance tests without autoloads. Derived from items.json 2026-09-12 (7 of the 8
+		## HP-restoring ids; tent is save_point_only), NOT the old two-item pair.
+		return item_id in ["potion", "hi_potion", "mega_potion", "x_potion", "elixir", "megalixir", "phoenix_down"]
+	var rec: Dictionary = item_system.get_item(item_id)
+	var effects = rec.get("effects", {})
+	if effects.get("save_point_only", false):
+		return false
+	for key in _HP_RESTORE_KEYS:
+		if key in effects:
+			return true
+	return false
+
 
 
 ## Effects-driven so new healing items in items.json break the streak with zero code change.
