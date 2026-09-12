@@ -144,7 +144,10 @@ func test_every_state_questsystem_writes_has_a_bucket() -> void:
 		if not NPCScript.QUEST_STATE_BUCKETS.has(st):
 			unmapped.append(st)
 	assert_eq(unmapped, ([] as Array[String]),
-		"QuestSystem writes these states and no bucket answers them: %s" % ", ".join(unmapped))
+		("QuestSystem writes these states and no bucket answers them: %s. "
+		+ "Fix: add a key for each to OverworldNPC.QUEST_STATE_BUCKETS mapping it to a persona bucket "
+		+ "(pre_task_1 / in_progress / post_quest), or to \"\" if that state should leave the NPC's "
+		+ "authored dialogue alone.") % ", ".join(unmapped))
 
 
 func test_the_map_does_not_answer_states_nobody_writes() -> void:
