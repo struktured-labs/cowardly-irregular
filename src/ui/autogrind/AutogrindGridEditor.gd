@@ -46,6 +46,8 @@ var _keyboard: Control = null
 var _reset_confirm: Control = null
 const VirtualKeyboardClass = preload("res://src/ui/VirtualKeyboard.gd")
 var _rule_composer_overlay: Control = null # RuleComposerOverlay instance; blocks grid input while open
+## Set when a pad connects/disconnects while the composer holds the screen; applied when it closes.
+var _pad_change_pending: bool = false
 var _splash_shown: bool = false # Latches the empty-grid composer splash to once per setup() call
 const _RuleComposerOverlayScene := preload("res://src/ui/autobattle/RuleComposerOverlay.tscn")
 
@@ -90,6 +92,22 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	_build_ui()
+	## Legends here are derived at BUILD time, and this is the screen a player sits on longest.
+	## A pad arriving mid-edit left the keyboard legend up; unplugging left pad names for a device
+	## that is gone. Godot disconnects Input for us when this editor is freed.
+	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+
+
+func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
+	if not is_inside_tree():
+		return
+	## ⛔ _build_ui frees EVERY child and the composer overlay IS one, so rebuilding under it would
+	## destroy the player's in-progress composition. Defer; the cancel path applies it, and the
+	## INSTALL path already reloads and rebuilds on its own.
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+		_pad_change_pending = true
+		return
 	_build_ui()
 
 
@@ -1668,6 +1686,11 @@ func _open_rule_composer_overlay() -> void:
 		if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
 			_rule_composer_overlay.queue_free()
 		_rule_composer_overlay = null
+		## Cancelling performs no action, so nothing else would rebuild and the legend would stay
+		## stale for the rest of the session. The install path reloads on its own.
+		if _pad_change_pending:
+			_pad_change_pending = false
+			_build_ui()
 	)
 	_rule_composer_overlay.open("autogrind", "", rules.duplicate(true))
 	SoundManager.play_ui("menu_select")
