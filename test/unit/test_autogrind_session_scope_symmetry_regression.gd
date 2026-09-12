@@ -26,6 +26,15 @@ extends GutTest
 ##
 ## The first test below is the ratchet: it derives the three sets from the SOURCE, so the next
 ## field added to one and not the others fails here by name, without anyone remembering to look.
+##
+## ⚠️ KNOWN BLIND SPOT, found 2026-09-12 by the defect it let through. The census iterates
+## reset.keys() and snap.keys(), so it compares a field's membership BETWEEN sets — a field in
+## NONE of the three is never iterated and is invisible to every arm here. max_efficiency and
+## post_collapse_debuff_battles sat in zero sets, so a collapse penalty (halved efficiency cap,
+## 10 battles) leaked into the NEXT grind, which is exactly this file's thesis. Both are in all
+## three sets now and back under the ratchet; the hole is not closed, and closing it by listing
+## every zero-set field would be the allowlist CLAUDE.md warns about. Behavioural coverage for
+## that pair lives in test_autogrind_collapse_penalty_is_session_scoped_regression.
 
 const SRC := "res://src/autogrind/AutogrindSystem.gd"
 
