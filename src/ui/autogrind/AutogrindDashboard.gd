@@ -708,7 +708,8 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	if avg_secs_per_battle > 0.0:
 		battles_per_min = 60.0 / avg_secs_per_battle
 	else:
-		var elapsed_min = max(elapsed / 60.0, 0.01)
+		## Shared floor — see AutogrindSystem.MIN_RATE_WINDOW_MINUTES for why it is one constant.
+		var elapsed_min = max(elapsed / 60.0, AutogrindSystem.MIN_RATE_WINDOW_MINUTES)
 		battles_per_min = _battles_completed / elapsed_min
 
 	# Rolling gold per battle
