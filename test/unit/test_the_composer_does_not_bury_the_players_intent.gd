@@ -187,15 +187,17 @@ func test_both_engines_really_treat_no_conditions_as_always() -> void:
 	## DialoguePrompts keeps its two grammar constants that way, HowToPlayOverlay
 	## RETURNS one, TitleScreen concatenates one — and dropping its lines deletes
 	## the subject instead of prose. Measured 0 and 0; this keeps it true.
-	assert_eq(_content_triple_quote_lines(ab_raw), ([] as Array[int]),
-		"AutobattleSystem now opens a triple-quoted region after code (assigned, returned or concatenated) "
-		+ "at the line(s) above — "
+	var ab_content: Array[int] = _content_triple_quote_lines(ab_raw)
+	assert_eq(ab_content, ([] as Array[int]),
+		"AutobattleSystem opens a triple-quoted region after code (assigned, returned or concatenated) "
+		+ "at line(s) " + _joined(ab_content) + " — "
 		+ "the strip below drops every line carrying a triple quote and would delete it. "
 		+ "Fix in the GUARD (test_the_composer_does_not_bury_the_players_intent.gd), NOT in the source file: scope _code_only to skip that region, or drop the strip for AutobattleSystem "
 		+ "and re-verify the two contains() asserts still stand on code.")
-	assert_eq(_content_triple_quote_lines(ag_raw), ([] as Array[int]),
-		"AutogrindSystem now opens a triple-quoted region after code (assigned, returned or concatenated) "
-		+ "at the line(s) above — "
+	var ag_content: Array[int] = _content_triple_quote_lines(ag_raw)
+	assert_eq(ag_content, ([] as Array[int]),
+		"AutogrindSystem opens a triple-quoted region after code (assigned, returned or concatenated) "
+		+ "at line(s) " + _joined(ag_content) + " — "
 		+ "the strip below drops every line carrying a triple quote and would delete it. "
 		+ "Fix in the GUARD (test_the_composer_does_not_bury_the_players_intent.gd), NOT in the source file: scope _code_only to skip that region, or drop the strip for AutogrindSystem "
 		+ "and re-verify the contains() assert still stands on code.")
@@ -318,3 +320,13 @@ func _content_triple_quote_lines(src: String) -> Array[int]:
 				inside = false
 			i = at + 3
 	return out
+
+
+## Line numbers as text for the MESSAGE half. GUT clips both diff preview lines
+## once they grow; the interpolated message is the only part that renders whole
+## (@cowir-story), so the locator has to live here and not in the preview.
+func _joined(lines: Array[int]) -> String:
+	var out: PackedStringArray = PackedStringArray()
+	for n in lines:
+		out.append(str(n))
+	return ", ".join(out)
