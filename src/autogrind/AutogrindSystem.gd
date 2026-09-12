@@ -94,6 +94,9 @@ var _corruption_bands_crossed: Dictionary = {}
 var _save_corruption_baseline: float = 0.0
 
 ## Interrupt conditions
+## ⚠️ A PARTIAL wholesale assign drops corruption_limit and the collapse gate stops firing -- the
+## .get() fallback is 999.0, so nothing errors. Use set_interrupt_rules (merges + clamps) unless you
+## are a fixture naming all five deliberately, as test_autogrind and the interrupt-gates test do.
 var interrupt_rules: Dictionary = {
 	"hp_threshold": 20.0,      # Stop if any party member HP < 20%
 	"party_death": true,       # Stop if any party member dies
@@ -868,8 +871,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 
 	# Apply custom config
 	if config.has("interrupt_rules"):
-		for key in config["interrupt_rules"]:
-			interrupt_rules[key] = config["interrupt_rules"][key]
+		set_interrupt_rules(config["interrupt_rules"])
 
 	## Through the setter, which moves the flag and its growth rate together. Assigning the flag
 	## alone never lowered the rate again, so a staking grind followed by a NON-staking one kept
@@ -1411,6 +1413,28 @@ func _load_permadead_characters() -> void:
 				permadead_characters.append(n)
 		print("[AUTOGRIND] Loaded %d permadead characters" % permadead_characters.size())
 	file.close()
+
+
+## MERGES the named keys into interrupt_rules, leaving unnamed ones alone. The console sets four of
+## five and corruption_limit must survive, so a wholesale assign is the one thing this forbids.
+## Values are CLAMPED rather than rejected: this is a safety net, and the failure mode of a silent
+## out-of-range write is a net that never fires, which reads exactly like a net that is switched off.
+func set_interrupt_rules(rules: Dictionary) -> void:
+	for key in rules:
+		if not interrupt_rules.has(key):
+			push_warning("[AUTOGRIND] set_interrupt_rules ignoring unknown key '%s' — typo, or a rule nothing enforces" % key)
+			continue
+		match key:
+			"hp_threshold":
+				interrupt_rules[key] = clampf(float(rules[key]), 0.0, 100.0)
+			"max_battles":
+				## floor of 1, not 0: `battles_completed >= 0` is true before the first battle, so a
+				## zero here stops the grind instantly and looks like the start button doing nothing.
+				interrupt_rules[key] = maxi(int(rules[key]), 1)
+			"corruption_limit":
+				interrupt_rules[key] = maxf(float(rules[key]), 0.0)
+			_:
+				interrupt_rules[key] = rules[key]
 
 
 func enable_permadeath_staking(enabled: bool) -> void:

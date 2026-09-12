@@ -178,6 +178,21 @@ var _ludicrous_speed_enabled: bool = false
 ## Auto-advance regions when cracked
 var _auto_advance_enabled: bool = true
 
+## Safety limits. AutogrindSystem has enforced these since it shipped and no src/ui/ file ever set
+## one, so the five interrupt rules were configurable through start_autogrind's config dict and
+## nowhere a player could reach. These four ride out in _get_grind_config; the system's existing
+## merge applies them. corruption_limit is deliberately NOT here -- it gates system collapse, and
+## letting a player raise it is a stakes ruling for struktured, not a config surface.
+## Per-session like every other toggle in this console; none of the three above persist either.
+const SAFETY_HP_LADDER: Array = [0.0, 10.0, 20.0, 30.0, 50.0]
+## No "unlimited" rung: max_battles IS the safety net, so this dial moves it, never removes it.
+## (0 would not mean off anyway -- the check is `battles_completed >= max_battles`, so 0 stops at once.)
+const SAFETY_BATTLE_LADDER: Array = [25, 50, 100, 200, 500]
+var _safety_hp_threshold: float = 20.0
+var _safety_max_battles: int = 100
+var _safety_stop_on_death: bool = true
+var _safety_stop_on_item_depleted: bool = true
+
 ## Custom presets persistence
 const CUSTOM_PRESETS_PATH: String = "user://autogrind_presets.json"
 var _custom_presets: Array = []  # Array of {name, rules, ludicrous, permadeath, auto_advance}
@@ -1471,6 +1486,10 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "ludicrous", "label": "Ludicrous: %s        (H)" % ("ON" if _ludicrous_speed_enabled else "OFF")},
 			{"id": "permadeath", "label": "Permadeath: %s       (P)" % ("ON" if _permadeath_staking_enabled else "OFF")},
 			{"id": "auto_advance", "label": "Auto-Advance: %s     (W)" % ("ON" if _auto_advance_enabled else "OFF")},
+			{"id": "safety_hp", "label": "Stop at HP: %s" % _safety_label("hp")},
+			{"id": "safety_battles", "label": "Stop after: %s battles" % _safety_label("battles")},
+			{"id": "safety_death", "label": "Stop on Death: %s" % _safety_label("death")},
+			{"id": "safety_items", "label": "Stop when Out of Items: %s" % _safety_label("items")},
 			{"id": "toggle_row", "label": "Toggle This Rule        (Tab)"},
 			{"id": "explain_rules", "label": "Explain These Rules"},
 			{"id": "cycle_member", "label": "Cycle Member: %s" % _cursor_member_label()},
@@ -1495,6 +1514,14 @@ func _options_ring_spec() -> Dictionary:
 ## Every arm calls the SAME handler its key binding calls — the pad gains a route, not a behaviour.
 func _commit_autogrind_option(chosen_id: String) -> void:
 	match chosen_id:
+		"safety_hp":
+			_cycle_safety("hp")
+		"safety_battles":
+			_cycle_safety("battles")
+		"safety_death":
+			_cycle_safety("death")
+		"safety_items":
+			_cycle_safety("items")
 		"ludicrous":
 			_toggle_ludicrous_speed()
 		"permadeath":
@@ -2276,8 +2303,66 @@ func _get_grind_config() -> Dictionary:
 		"rules": rules.duplicate(true),
 		"permadeath_staking": _permadeath_staking_enabled,
 		"ludicrous_speed": _ludicrous_speed_enabled,
-		"auto_advance": _auto_advance_enabled
+		"auto_advance": _auto_advance_enabled,
+		"interrupt_rules": _safety_rules(),
 	}
+
+
+## start_autogrind merges this key-by-key, so naming only the four a player can set leaves
+## corruption_limit at the system default rather than restating it here and freezing it.
+func _safety_rules() -> Dictionary:
+	return {
+		"hp_threshold": _safety_hp_threshold,
+		"max_battles": _safety_max_battles,
+		"party_death": _safety_stop_on_death,
+		"item_depleted": _safety_stop_on_item_depleted,
+	}
+
+
+## Reads what the SYSTEM will actually use, not what this console last set -- the two agree only
+## while nothing else writes interrupt_rules, and a readout that assumes that cannot show a drift.
+func _safety_label(key: String) -> String:
+	var live: Dictionary = AutogrindSystem.interrupt_rules
+	match key:
+		"hp":
+			var v: float = float(live.get("hp_threshold", 0.0))
+			return "OFF" if v <= 0.0 else "%d%%" % int(v)
+		"battles":
+			return str(int(live.get("max_battles", 0)))
+		"death":
+			return "ON" if bool(live.get("party_death", false)) else "OFF"
+		"items":
+			return "ON" if bool(live.get("item_depleted", false)) else "OFF"
+	return "?"
+
+
+## Cycles a value up its ladder and wraps. Wrapping matters on a ring with no text entry: every
+## rung has to be reachable by repeating one input, or the bottom of the ladder is unreachable.
+func _cycle_safety(key: String) -> void:
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot change safety limits while grinding.[/color]")
+		return
+	match key:
+		"hp":
+			## maxi(i, 0), not i: find() returns -1 if something else moved the value off the
+			## ladder, and -1 + 1 == 0 is the OFF rung -- a drift would DISABLE the net silently.
+			var i: int = maxi(SAFETY_HP_LADDER.find(_safety_hp_threshold), 0)
+			_safety_hp_threshold = float(SAFETY_HP_LADDER[(i + 1) % SAFETY_HP_LADDER.size()])
+		"battles":
+			var j: int = maxi(SAFETY_BATTLE_LADDER.find(_safety_max_battles), 0)
+			_safety_max_battles = int(SAFETY_BATTLE_LADDER[(j + 1) % SAFETY_BATTLE_LADDER.size()])
+		"death":
+			_safety_stop_on_death = not _safety_stop_on_death
+		"items":
+			_safety_stop_on_item_depleted = not _safety_stop_on_item_depleted
+	## Applied NOW, not at grind start: the ring reads the system back, and a player who sets a
+	## limit and closes the console without grinding still expects it to have taken.
+	AutogrindSystem.set_interrupt_rules(_safety_rules())
+	_log_message("[color=%s]Safety limits: HP %s, max %s battles, stop-on-death %s, stop-on-empty %s.[/color]" % [
+		AccessibilityPalette.bonus_bbcode(), _safety_label("hp"), _safety_label("battles"),
+		_safety_label("death"), _safety_label("items"),
+	])
+	_build_ui()
 
 
 func _toggle_ludicrous_speed() -> void:
