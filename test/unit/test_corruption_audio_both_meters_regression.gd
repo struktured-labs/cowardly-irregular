@@ -7,16 +7,31 @@ extends GutTest
 
 var _grind_before: float = 0.0
 var _save_before: float = 0.0
+var _target_before: float = 0.0
 
 
 func before_each() -> void:
 	_grind_before = SoundManager._grind_corruption
 	_save_before = SoundManager._save_corruption
+	_target_before = SoundManager._corruption_target
 
 
 func after_each() -> void:
+	_restore_corruption()
+
+
+## The teardown itself, callable from a test so the guard below exercises the real path rather than a
+## re-creation of it. Restoring the two INPUT meters is not enough: every setter here runs
+## _apply_corruption_max, which starts a 1.5s create_tween() with set_ignore_time_scale(true) — it
+## outlives this test by wall time no Engine.time_scale change can shorten, and keeps writing
+## _corruption_intensity inside whatever test runs next. reset_corruption() is the only thing that kills it.
+func _restore_corruption() -> void:
 	SoundManager._grind_corruption = _grind_before
 	SoundManager._save_corruption = _save_before
+	SoundManager.reset_corruption()
+	# reset_corruption is a DISPLAY reset: it zeroes _corruption_intensity and leaves _corruption_target
+	# holding this test's value, which is the field _rendered() reads.
+	SoundManager._corruption_target = _target_before
 
 
 func _rendered() -> float:
@@ -81,3 +96,37 @@ func test_every_corruption_cue_resolves() -> void:
 			missing.append(k)
 	if not missing.is_empty():
 		fail_test("corruption cues wired in src but absent from the manifest — they play silence: %s" % [missing])
+
+
+func test_a_meter_change_leaves_a_live_tween_that_teardown_must_kill() -> void:
+	# The leak this file's after_each was missing. Assert the tween is genuinely live FIRST, so the
+	# second half cannot pass vacuously against a tween that was never created.
+	# is_running(), not is_valid(): kill() does not flip is_valid() in the calling frame, so an
+	# is_valid() negative reds on correct code. Measured — it is what the first version of this did.
+	# No await between trigger and assert: the envelope is at t=0 only until the next frame.
+	SoundManager.reset_corruption()
+	SoundManager.set_save_corruption(0.0)
+	SoundManager.set_corruption_intensity(0.9)
+	var t: Tween = SoundManager._corruption_tween
+	assert_true(t != null and t.is_running(),
+		"a meter change must start a running tween — if this fails the negative below proves nothing")
+	_restore_corruption()
+	assert_false(t.is_running(),
+		"this file's after_each must kill the tween: it runs 1.5s of WALL time (set_ignore_time_scale(true)) and writes _corruption_intensity inside whatever test runs next")
+
+
+func test_the_fixture_leaves_no_rendered_detune_behind() -> void:
+	# cowir-music's arm (d22b164b), carried here when that branch was withdrawn in favour of this one.
+	# It catches what the tween arm cannot: a teardown that kills the envelope and leaves the RENDERED
+	# level set. The two are not the same field — _corruption_intensity is what the music player is
+	# actually detuned by, and gate 188's red was test_victory_music_not_pitched_by_danger inheriting it.
+	SoundManager.set_corruption_intensity(0.9)
+	for _i in range(30):
+		await get_tree().process_frame
+		if SoundManager._corruption_intensity > 0.1:
+			break
+	assert_gt(SoundManager._corruption_intensity, 0.1,
+		"CONTROL: the meter must really render before cleanup is tested — it is at %.3f" % SoundManager._corruption_intensity)
+	_restore_corruption()
+	assert_almost_eq(SoundManager._corruption_intensity, 0.0, 0.001,
+		"teardown left a rendered detune on the autoload; every later music test inherits it")
