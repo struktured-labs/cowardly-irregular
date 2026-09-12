@@ -13,6 +13,8 @@ signal region_advanced(from_region: String, to_region: String, world_num: int)
 ## full-screen warp overlay; this branch had only a print, while the penalty is live either way.
 signal region_cracked_in_place(region_id: String, crack_level: int, reward_penalty: float)
 
+const AutogrindAchievementsScript = preload("res://src/autogrind/AutogrindAchievements.gd")
+
 enum State {
 	IDLE,
 	PRE_BATTLE,
@@ -663,10 +665,29 @@ func get_grind_stats() -> Dictionary:
 		"items_consumed": AutogrindSystem.items_consumed.duplicate(),
 		"elapsed_seconds": sys_stats.get("elapsed_seconds", 0.0),
 		"battles_without_heal": AutogrindSystem.battles_without_heal,
+		"achievements_earned_this_session": AutogrindSystem.achievements_earned_this_session.duplicate(),
 		"corruption_threshold": AutogrindSystem.corruption_threshold,
 		"save_corruption": sys_stats.get("save_corruption", 0.0),
 		"save_corruption_delta": sys_stats.get("save_corruption_delta", 0.0),
 	}
+
+
+## Award achievements whose thresholds the latest battle crossed, and record their ids as
+## earned THIS session. Returns the newly-earned catalog entries so the caller can announce
+## them. Awarding used to happen only inside AutogrindSummary._build_ui, so a player learned
+## nothing mid-grind and an unbuilt summary persisted nothing.
+func award_pending_achievements(game_state = null) -> Array:
+	var gs = game_state
+	if gs == null and GameState:
+		gs = GameState
+	if gs == null:
+		return []
+	var newly: Array = AutogrindAchievementsScript.check_and_award(get_grind_stats(), gs)[0]
+	for a in newly:
+		var id: String = str(a.get("id", ""))
+		if id != "" and not AutogrindSystem.achievements_earned_this_session.has(id):
+			AutogrindSystem.achievements_earned_this_session.append(id)
+	return newly
 
 
 func _count_total_items() -> int:

@@ -135,6 +135,7 @@ var collapse_count: int = 0                    # How many times collapse has occ
 ## grind straight past. collapse_count at least reached the Summary.
 var meta_bosses_spawned: int = 0
 var meta_bosses_defeated: int = 0
+var achievements_earned_this_session: Array[String] = []  # Ids awarded THIS grind; drives the Summary's "new" tier
 var post_collapse_debuff_battles: int = 0      # Remaining battles with reduced max_efficiency
 
 ## Permadeath persistence — names of permanently dead characters (loaded/saved via user://autogrind/)
@@ -881,6 +882,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	## win_rate, whose numerator battles_completed resets here while its denominator did not.
 	consecutive_wins = 0
 	collapse_count = 0
+	achievements_earned_this_session.clear()
 	meta_bosses_spawned = 0
 	meta_bosses_defeated = 0
 	meta_corruption_level = 0.0
@@ -2717,6 +2719,9 @@ func build_snapshot_system_block(elapsed: float = 0.0) -> Dictionary:
 		"meta_boss_spawn_chance": meta_boss_spawn_chance,
 		"consecutive_wins": consecutive_wins,
 		"collapse_count": collapse_count,
+		## Resume continues the SAME session, so a badge earned before the pause must still render
+		## gold in the Summary. Without this the ledger empties on resume and every one reads dim.
+		"achievements_earned_this_session": achievements_earned_this_session.duplicate(),
 		## Added with the counters themselves (2026-09-10) — they were wired to the Summary and
 		## not to the snapshot, so a resumed grind reported "0 beaten / 0 met" while its
 		## siblings collapse_count and fatigue_events_triggered survived the same pause.
@@ -2848,6 +2853,11 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	meta_boss_spawn_chance = system_data.get("meta_boss_spawn_chance", 0.0)
 	consecutive_wins = system_data.get("consecutive_wins", 0)
 	collapse_count = system_data.get("collapse_count", 0)
+	## Array[String] assigned straight from JSON is a SCRIPT ERROR that ABORTS this function --
+	## every restore below would silently never run. Coerce element by element.
+	achievements_earned_this_session = []
+	for earned_id in system_data.get("achievements_earned_this_session", []):
+		achievements_earned_this_session.append(str(earned_id))
 	_rule_eval_count = int(system_data.get("rule_eval_count", 0))
 	## JSON carries STRING keys only. A snapshot round-trips through JSON, so {0: 4} returns as
 	## {"0": 4} and every fired.get(i, 0) with an int i silently misses — the fire counts would read
