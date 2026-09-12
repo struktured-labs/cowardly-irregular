@@ -12,9 +12,23 @@ extends GutTest
 ## Bucket mapping (QuestSystem state → persona bucket):
 ##   ""            → pre_task_1
 ##   "active"      → in_progress
-##   "completed"   → post_quest
-##   "turned_in"   → post_quest
+##   "complete"    → post_quest
 ##   (else)        → "" (no override — keep dialogue_lines)
+##
+## ⛔ THIS FILE USED TO PIN THE BUG. It asserted "completed" and "turned_in" →
+## post_quest, and the code agreed — but QuestSystem writes **"complete"**, and
+## neither of those two strings occurred anywhere else in src/. So `post_quest`
+## could never be selected and Milo's five authored post-quest lines were dead,
+## while this file was green.
+##
+## The mechanism is StubQuestSys below: a stub that supplies the INPUT also
+## supplies the PREMISE. Nothing here ever asked the real QuestSystem what it
+## writes, so the test and the code shared one invented vocabulary. The stub is
+## still right for the picker's own logic — it isolates the mapping from quest
+## data — but the vocabulary it feeds now has to come from the writer. That is
+## pinned in test_the_post_quest_voice_can_actually_be_reached, which derives the
+## state strings from QuestSystem's own assignments; the two arms below keep this
+## file honest about which strings are real.
 ##
 ## Money-pick weighting: the *_money_pick_index sibling picks the line for the
 ## FIRST visit to a fresh bucket (per-bucket visit counter). Subsequent visits
@@ -164,18 +178,22 @@ func test_bucket_state_active_maps_to_in_progress() -> void:
 		"quest state \"active\" → in_progress bucket")
 
 
-func test_bucket_state_completed_maps_to_post_quest() -> void:
+func test_bucket_state_complete_maps_to_post_quest() -> void:
+	## "complete" is the string QuestSystem writes on turn-in (QuestSystem:158).
 	var npc = _make_npc()
-	var stub = _make_quest_sys("milo", "completed")
+	var stub = _make_quest_sys("milo", "complete")
 	assert_eq(npc._quest_state_bucket_for_npc(stub), "post_quest",
-		"quest state \"completed\" → post_quest bucket")
+		"quest state \"complete\" → post_quest bucket")
 
 
-func test_bucket_state_turned_in_maps_to_post_quest() -> void:
+func test_the_states_that_pinned_the_bug_do_not_map() -> void:
+	## The ratchet that replaces the two arms this file used to carry. Both strings
+	## read like plausible quest states and are written by nothing; a bucket keyed
+	## on either is coverage that cannot fire.
 	var npc = _make_npc()
-	var stub = _make_quest_sys("milo", "turned_in")
-	assert_eq(npc._quest_state_bucket_for_npc(stub), "post_quest",
-		"quest state \"turned_in\" → post_quest bucket (parity with completed)")
+	for invented in ["completed", "turned_in"]:
+		assert_eq(npc._quest_state_bucket_for_npc(_make_quest_sys("milo", invented)), "",
+			"\"%s\" is not a state QuestSystem writes — mapping it is how post_quest died" % invented)
 
 
 func test_bucket_unknown_state_returns_empty() -> void:
