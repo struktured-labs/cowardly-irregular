@@ -207,14 +207,27 @@ func apply_byok_config() -> bool:
 
 
 func _log_byok_applied(http: LLMBackend) -> void:
-	# Logs the config CHANGE without ever printing the api_key — even
-	# masked. Caller of telemetry-aware contexts can read the masked
-	# helper from GameState if they need the value.
-	print("[LLMService] BYOK applied: format=%s url=%s model=%s key=%s"
-		% [str(http.api_format),
-		   str(http.base_url),
-		   str(http.model),
-		   "<set>" if str(http.api_key) != "" else "<empty>"])
+	print(byok_log_line(http))
+
+
+## The BYOK config line, built rather than printed, so the one property that
+## matters can be asserted on the TEXT instead of read in the source.
+##
+## `llm_custom_api_key` is SENSITIVE — never log, never print (GameState:93,
+## struktured's standing rule). This reports the key's PRESENCE and never its
+## value, not even masked: a masked key still leaks length and both ends, and
+## `user://logs/godot.log` persists on disk where a config line does not expire.
+##
+## The tempting edit is one token — swapping "<set>" for the masked helper "just
+## for debugging" — and it is irreversible once a player has run it. Pinned by
+## test_the_byok_log_never_carries_the_key.
+static func byok_log_line(http: LLMBackend) -> String:
+	return "[LLMService] BYOK applied: format=%s url=%s model=%s key=%s" % [
+		str(http.api_format),
+		str(http.base_url),
+		str(http.model),
+		"<set>" if str(http.api_key) != "" else "<empty>",
+	]
 
 
 func _select_backend() -> void:
