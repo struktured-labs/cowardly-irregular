@@ -331,6 +331,7 @@ if [ -x tools/check_polling_bounded.py ]; then
         echo "      nothing. A present guard is not a working one." >&2
         exit 4
     fi
+    echo "[pub] selftest ok: tools/check_polling_bounded.py (bounded-wait detector) — arms ran and passed"
     if ! ./tools/check_polling_bounded.py; then
         echo "[pub] BLOCKED: a polling wait in the deploy chain is unbounded — see above." >&2
         echo "      Refusing to start a batch that can hang instead of failing." >&2
@@ -359,6 +360,7 @@ if [ -x tools/check_publish_is_optin.py ]; then
         echo "      nothing. A present guard is not a working one." >&2
         exit 4
     fi
+    echo "[pub] selftest ok: tools/check_publish_is_optin.py (--publish detector) — arms ran and passed"
     if ! ./tools/check_publish_is_optin.py; then
         echo "[pub] BLOCKED: a butler push is reachable without --publish — see above." >&2
         echo "      --dry-run and --rollback are not safe while that is true." >&2
@@ -390,6 +392,7 @@ if [ -x tools/check_lfs_blobs_current.py ]; then
         echo "      nothing. A present guard is not a working one." >&2
         exit 4
     fi
+    echo "[pub] selftest ok: tools/check_lfs_blobs_current.py (LFS byte comparator) — arms ran and passed"
     if ! ./tools/check_lfs_blobs_current.py; then
         echo "[pub] BLOCKED: an LFS blob on disk is not the blob this commit pins — see above." >&2
         echo "      Publishing now would ship audio the tag does not name. Fix the BYTES first;" >&2
