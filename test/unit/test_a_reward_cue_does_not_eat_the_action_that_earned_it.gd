@@ -124,3 +124,51 @@ func test_the_stripper_actually_strips() -> void:
 	assert_false(trailing.contains("coins"), "cut at the LAST # — the comment body survived as code")
 	assert_true(_code_only('\tvar s := "has #hash"  # gone').contains('"has #hash"'),
 		"a # inside a string literal is not a comment")
+
+
+func test_the_victory_loot_strip_does_not_clip_its_own_coins() -> void:
+	## SECOND instance, found by extending the scan to every player. The loot strip reveals chips
+	## on a TIMER, not in one frame: _build_loot_strip staggers each chip by `li * 0.22` and fires
+	## its cue from a tween_callback. Chips are ordered gold -> items -> bonuses -> injuries, so on
+	## any victory with gold AND an item the 1.00s coin cue started at t=1.75 and the 0.25s
+	## loot_pop replaced it at t=1.97 — 0.22s in, both on _battle_player.
+	##
+	## The lexical same-frame scan CANNOT see this: the branches are `if kind == "gold" / elif
+	## "item"`, mutually exclusive, and the collision is between two LOOP ITERATIONS. It showed up
+	## only because the two calls happen to sit near each other in the file.
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	assert_true(sm._sfx_manifest.has("loot_pop"), "CONTROL: the item cue must exist to do the cutting")
+	sm._sfx_cooldowns.erase("gold_pickup")
+	sm.play_pickup("gold_pickup")
+	var coins = sm._pickup_player.stream
+	assert_not_null(coins, "CONTROL: the coin cue must have loaded")
+	if coins == null:
+		return
+	sm._sfx_cooldowns.clear()
+	sm.play_battle("loot_pop")
+	assert_eq(sm._pickup_player.stream, coins,
+		"the item chip replaced the coin cue — the loot strip is clipping its own gold")
+	assert_ne(sm._battle_player.stream, coins,
+		"CONTROL: loot_pop must genuinely have played somewhere, or the assert above is vacuous")
+
+
+func test_the_victory_overlay_calls_the_pickup_path() -> void:
+	## EXECUTION is not SELECTION, and it also pins the CONSISTENCY: after .327 the chest routed
+	## gold_pickup to the pickup player while the victory overlay still played the same key on the
+	## battle player. One key, one channel.
+	var raw := FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
+	var src := _code_only(raw)
+	assert_gt(src.length(), 10000, "CONTROL: VictoryOverlay CODE read back %d chars" % src.length())
+	assert_lt(src.length(), raw.length(), "CONTROL: stripping removed nothing")
+	assert_true(src.contains('play_pickup("gold_pickup")'),
+		"the loot strip no longer routes its coins through play_pickup — the item chip clips them again")
+	assert_false(src.contains('play_battle("gold_pickup")'),
+		"the coins are back on the battle player, where the next loot chip replaces them 0.22s later")
+	## NOT fixed, measured and left: loot_pop is 0.25s on a 0.22s cadence, so consecutive ITEM chips
+	## clip each other by 0.03s. That is the staccato the strip is built around — a design call,
+	## not a defect, and it belongs to whoever owns the overlay.
+	assert_true(src.contains('play_battle("loot_pop")'),
+		"CONTROL: loot_pop must still be on the battle player — moving it would be the design change this test declines to make")
+

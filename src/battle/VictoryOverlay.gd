@@ -592,7 +592,7 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 		ctw.tween_interval(base_delay + 0.25 + li * 0.22)
 		ctw.tween_property(lbl, "modulate:a", 1.0, 0.12)
 		if kind == "gold":
-			ctw.tween_callback(func() -> void: SoundManager.play_battle("gold_pickup"))
+			ctw.tween_callback(func() -> void: SoundManager.play_pickup("gold_pickup"))
 			var gold_final: String = chips[li][1]
 			var total := int(gold_final.split(" ")[0])
 			var gsteps := mini(maxi(total, 1), 18)
