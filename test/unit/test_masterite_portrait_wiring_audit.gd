@@ -33,6 +33,59 @@ func _read(p: String) -> String:
 	return FileAccess.get_file_as_string(p)
 
 
+## ⛔ A PRESENCE ASSERT MUST READ CODE, NOT PROSE. Measured 2026-09-12 on the shipped guard:
+## deleting the masterite arm and leaving a docstring that names it scored 4/4 GREEN, and with the
+## arm gone every masterite key falls to the grey narrator blur this file exists to prevent.
+## CutsceneDialogue.gd carries 8 triple-quote delimiters, so `#`-only stripping is NOT enough here.
+## `must_survive` is REQUIRED, not optional: it is the control that an over-strip did not eat the code.
+func _code_only(path: String, must_survive: String) -> String:
+	var raw := _read(path)
+	assert_true(raw.contains(must_survive),
+		"ANTI-VACUITY: %s does not contain %s at all — the arm below would pass on an empty read" % [path, must_survive])
+	var stripped := _strip_comments(raw)
+	assert_true(stripped.contains(must_survive),
+		"OVER-STRIP: stripping ate %s out of %s — the stripper is broken, not the subject" % [must_survive, path])
+	return stripped
+
+
+func _strip_comments(src: String) -> String:
+	var out := ""
+	var i := 0
+	var in_str := ""          # "" none, else the delimiter we are inside
+	while i < src.length():
+		var three := src.substr(i, 3)
+		if in_str == "" and three == "\"\"\"":
+			var close := src.find("\"\"\"", i + 3)
+			i = src.length() if close < 0 else close + 3
+			continue
+		var c := src[i]
+		if in_str != "":
+			if c == "\\":
+				out += c
+				i += 1
+				if i < src.length():
+					out += src[i]
+					i += 1
+				continue
+			if c == in_str:
+				in_str = ""
+			out += c
+			i += 1
+			continue
+		if c == "\"" or c == "'":
+			in_str = c
+			out += c
+			i += 1
+			continue
+		if c == "#":
+			var nl := src.find("\n", i)
+			i = src.length() if nl < 0 else nl
+			continue
+		out += c
+		i += 1
+	return out
+
+
 func _cutscene_files() -> Array:
 	var out: Array = []
 	var dir = DirAccess.open("res://data/cutscenes")
@@ -64,7 +117,7 @@ func test_all_20_masterite_keys_registered_in_portrait_sprites() -> void:
 func test_create_portrait_has_masterite_prefix_arm() -> void:
 	# Interim contract: keys registered before PNGs arrive must resolve to
 	# something intentional (mysterious draw) instead of narrator blur.
-	var src := _read(CUTSCENE_DIALOGUE)
+	var src := _code_only(CUTSCENE_DIALOGUE, "func _create_portrait(")
 	var fn := src.find("func _create_portrait(")
 	assert_gt(fn, -1, "_create_portrait must exist")
 	var end := src.find("func _create_bust_from_job_sheet", fn)
