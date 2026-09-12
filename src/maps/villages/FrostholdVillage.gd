@@ -323,8 +323,11 @@ func _setup_npcs() -> void:
 	var lumi = _create_npc("Child Lumi", "child", Vector2(13 * TILE_SIZE,6 * TILE_SIZE), _lumi_post if _after_cave_done else _lumi_pre)
 	npcs.add_child(lumi)
 
-	# Clockkeeper Yara — meltwater_clock giver, beside the Meltwater Clock door at (15,6.5).
-	var yara = _create_npc("Clockkeeper Yara", "elder", Vector2(17 * TILE_SIZE,6 * TILE_SIZE), [
+	# Clockkeeper Yara — meltwater_clock giver, on the approach to the Meltwater Clock door at
+	# (15,6.5). Stood at (17,6) until measured: from there she won all three of the ICE CHAPEL's
+	# approach cells, so the magic shop could not be opened at all. One cell east clears it, and
+	# she is easier to reach herself (7 -> 13 of her own (cell,facing) presses).
+	var yara = _create_npc("Clockkeeper Yara", "elder", Vector2(18 * TILE_SIZE,6 * TILE_SIZE), [
 		"Two minutes fast. Every day. The same two minutes.",
 		"A clock that breaks runs wrong by a DIFFERENT amount each day. That's what broken means.",
 		"This one is wrong on purpose. Someone is melting the source pool on a schedule.",
