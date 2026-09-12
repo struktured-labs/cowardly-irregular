@@ -6,7 +6,12 @@ extends GutTest
 ## kept writing the danger pitch onto the victory track. A track change now ends the envelope.
 
 
+func before_each() -> void:
+	SoundManager.reset_corruption()  # a leaked corruption detune is re-applied by reset_danger since 55799333
+
+
 func after_each() -> void:
+	SoundManager.reset_corruption()
 	SoundManager.reset_danger()
 	SoundManager.stop_music()
 

@@ -101,6 +101,17 @@ func _writers() -> Dictionary:
 		if hits < int(d["min"]):
 			thin.append("%s matched %d (floor %d)" % [d["name"], hits, int(d["min"])])
 
+	# DERIVED: DragonCave writes game_constants["dungeon_flags"][boss_flag_key] and is_story_flag_set
+	# reads that dict, so `boss_flag_key = "x"` in a dungeon subclass is a writer no literal scan sees.
+	var rx_boss := RegEx.new()
+	rx_boss.compile("boss_flag_key\\s*=\\s*\"([a-z0-9_]+)\"")
+	var bosses := 0
+	for m in rx_boss.search_all(src):
+		written[m.get_string(1)] = true
+		bosses += 1
+	if bosses < 4:
+		thin.append("boss_flag_key definers derived %d (floor 4)" % bosses)
+
 	# DERIVED: BaseVillage writes "visited_" + area id, so these names exist in no source file.
 	var villages := 0
 	var vdir := DirAccess.open(VILLAGE_DIR)
