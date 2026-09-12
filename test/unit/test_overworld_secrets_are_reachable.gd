@@ -19,8 +19,14 @@ extends GutTest
 ## 🔑 THE MODE 7 DEPTH RULE, measured here and not previously written down: because the clone is
 ## displaced 4.4 tiles, a dead-end pocket SHALLOWER than five tiles cannot be entered at all — you
 ## are blocked by whatever lies past it while still outside it. W1's only articulation point seals
-## exactly four tiles, which is why OverworldScene now ships an empty hidden-passage list. Anyone
-## adding a secret to a Mode 7 world needs a pocket at least six tiles deep.
+## exactly four tiles, so no FOUND pocket on this map can host a secret. Anyone adding one to a
+## Mode 7 world needs a pocket at least six tiles deep.
+##
+## 📌 This said "which is why OverworldScene now ships an empty hidden-passage list" and that
+## expired: the list ships TWO, both AUTHORED terrain rather than found pockets — the Sunken Ring,
+## a carved rock crater in the Sandrift waste, and the Frozen Alcove, a grass bay above Frosthold.
+## The depth rule is why they had to be carved wide instead of discovered; the emptiness was a fact
+## about one afternoon. An occupancy count in a header outlives the afternoon that made it true.
 
 const WORLDS := {
 	"medieval": "res://src/exploration/OverworldScene.gd",
