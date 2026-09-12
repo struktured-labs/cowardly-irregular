@@ -134,6 +134,15 @@ func test_control_an_arm_bearing_area_does_update_the_suffix() -> void:
 ## Drops the WHOLE line on a triple quote, which can also drop code sharing that
 ## line. That errs toward reporting an arm MISSING (a loud red) rather than
 ## present (a silent green), which is the direction a guard should fail in.
+## Measured 2026-09-12, for whoever widens the scanned window later — this is the
+## note that matters then, and it will not be in tonight's log:
+##   SoundManager.gd     164 triple-quote lines · 0 that neither start nor end a line
+##                       · 80 with two on one line (single-line docstrings)
+##   audit_wrap_seams.py   7 · 0 · 1
+## `find(TRIPLE)` rather than `begins_with` is why the 80 are handled: a line holding
+## an opened AND closed docstring is dropped without arming in_doc. The one shape that
+## would slip a begins_with version — a triple quote mid-line — occurs nowhere in
+## either file, and @cowir-battle measured 0 of it across four more.
 static func _code_only(body: String) -> String:
 	var out: PackedStringArray = []
 	var in_doc: bool = false
