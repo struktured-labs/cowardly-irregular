@@ -7,6 +7,7 @@ extends GutTest
 ## Cutscenes ask for the name key; OverworldNPC._portrait_key() asks for the archetype key.
 ## Both render. A player who talks to Theron in Harmonia then sees him in a cutscene meets two men.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const CD := "res://src/cutscene/CutsceneDialogue.gd"
 
 ## Known name-key -> archetype-key pairs. Named-member controls; the derived arm below finds new ones.
@@ -18,7 +19,9 @@ const KNOWN_PAIRS := {
 
 
 func _portrait_map() -> Dictionary:
-	var src := FileAccess.get_file_as_string(CD)
+	# Strip the FILE, then window: a commented-out entry inside the dict would parse as a
+	# registered key. Zero such lines today (20 comments in the block, 0 with a pair).
+	var src := GdSource.code_of(CD)
 	assert_ne(src, "", "CutsceneDialogue.gd must be readable")
 	var i := src.find("const PORTRAIT_SPRITES")
 	assert_gt(i, -1, "PORTRAIT_SPRITES must exist")
@@ -60,7 +63,7 @@ func _bound_archetypes() -> Dictionary:
 	re.compile('sprite_archetype\\s*=\\s*"([a-z0-9_]+)"')
 	for root in ["res://src/maps", "res://src/exploration"]:
 		for path in _gd_files_under(root):
-			for m in re.search_all(FileAccess.get_file_as_string(path)):
+			for m in re.search_all(GdSource.code_of(path)):
 				out[m.get_string(1)] = path
 	return out
 
