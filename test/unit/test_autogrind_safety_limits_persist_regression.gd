@@ -154,3 +154,20 @@ func test_the_console_saves_when_a_dial_moves() -> void:
 		"_cycle_safety applies the limit but never persists it — the setting survives until the player quits")
 	assert_true(body.contains("set_interrupt_rules("),
 		"_cycle_safety must still apply to the live system, not only save for next launch")
+
+	## ⛔ AND THE SAVE MUST BE GATED. Adding it ungated made test_autogrind_safety_limits_are_reachable
+	## — which moves a dial — write user://settings.json on every run. run_tests.sh HONOURS
+	## XDG_DATA_HOME but does not SET one, so a bare caller overwrites HIS real settings: the defect
+	## class that put fixture data in struktured's live saves for nine deploys. I reintroduced it and
+	## caught it only because a sandbox file reappeared after I deleted it.
+	assert_true(body.contains("_test_disable_persistence"),
+		"_cycle_safety saves settings WITHOUT checking _test_disable_persistence — every test that moves a dial then writes the player's real settings.json")
+
+
+## The gate is only worth the flag actually reaching it. A save path that checks a flag nobody sets is
+## the same as no gate, so pin that the dial guard sets it — the two files have to agree.
+func test_the_dial_guard_sets_the_flag_the_save_path_checks() -> void:
+	var dial := FileAccess.get_file_as_string("res://test/unit/test_autogrind_safety_limits_are_reachable_regression.gd")
+	assert_ne(dial, "", "control: the dial guard must exist — it is the test the gate protects")
+	assert_true(dial.contains("_test_disable_persistence = true"),
+		"the guard that moves safety dials does not disable persistence, so the gate in _cycle_safety never engages")
