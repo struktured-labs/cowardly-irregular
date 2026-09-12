@@ -316,3 +316,21 @@ func _setup_npcs() -> void:
 		"Someone has drawn a surprisingly accurate map of the overworld. In crayon."
 	])
 	npcs.add_child(graffiti)
+
+	_setup_quest_points()
+
+
+## words_per_conversation step 3 — Form 99-Theta, filed at the complaints window in the east yard.
+## Sited away from Voss (19,11) and the graffiti (21,4) so the filing is a trip, not a second click.
+func _setup_quest_points() -> void:
+	var ExamineScript = load("res://src/exploration/QuestExaminePoint.gd")
+	if ExamineScript == null:
+		return
+	var window = ExamineScript.new()
+	window.quest_id = "world4_words_per_conversation"
+	window.flag = "quest_world4_words_per_conversation_petition_submitted"
+	window.indicator_text = "%s File Form 99-Theta" % InputProfileManager.hint_for_action("ui_accept")
+	window.examine_text = "Form 99-Theta: EMPLOYEE EXPRESSION REQUEST. Forty pages. Twelve are relevant. Twenty-eight are the same page, reprinted, asking whether you are certain. You are. You write it twelve words at a time, the way he taught you, and the tray accepts it without comment."
+	window.idle_text = "A filing window, shuttered at the bottom, with a tray worn smooth by forms."
+	window.position = Vector2(23 * TILE_SIZE, 8 * TILE_SIZE)
+	npcs.add_child(window)

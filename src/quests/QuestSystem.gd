@@ -297,6 +297,12 @@ const DIALOGUE_EMITTERS: Dictionary = {
 	"tyler_on_bike": [
 		{"quest": "world2_relocated", "flag": "quest_world2_relocated_annex_found"},
 	],
+	# words_per_conversation step 2 — the compression puzzle. Voss restructures the petition
+	# WITH the party; the emitter gates on the objective being current, so the accept-talk
+	# (a talk objective) cannot satisfy it and the next conversation can.
+	"union_rep_w4": [
+		{"quest": "world4_words_per_conversation", "flag": "quest_world4_words_per_conversation_petition_restructured"},
+	],
 	"mail_carrier_w2": [
 		{"quest": "world2_relocated", "flag": "quest_world2_relocated_annex_found"},
 		# forms step 3 path (c): she files third-party as a federal employee —
