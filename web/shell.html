@@ -205,6 +205,74 @@ const engine = new Engine(GODOT_CONFIG);
 		return (bytes / 1000000).toFixed(1);
 	}
 
+	// Whether this payload is cached is decided by response headers we do not
+	// control and, for this game, cannot inspect from outside -- the itch page is
+	// password-protected, so "your browser caches it" was a promise made without
+	// evidence. The page CAN measure it, after the fact, and remember the answer.
+	const SOURCE_KEY = 'ci_shell_payload_source';
+
+	function recallPayloadSource() {
+		try {
+			return window.localStorage.getItem(SOURCE_KEY);
+		} catch (err) {
+			return null;                 // private mode, blocked storage: unknown
+		}
+	}
+
+	function rememberPayloadSource(value) {
+		try {
+			window.localStorage.setItem(SOURCE_KEY, value);
+		} catch (err) {
+			/* nothing to do: the measurement is a courtesy, not a requirement */
+		}
+	}
+
+	// transferSize is 0 for a same-origin response served out of the HTTP cache.
+	// Only the big payloads matter; the small files are noise either way.
+	function measurePayload() {
+		let entries;
+		try {
+			entries = window.performance.getEntriesByType('resource');
+		} catch (err) {
+			return null;
+		}
+		if (!entries || entries.length === 0) {
+			return null;
+		}
+		const big = entries.filter(function (e) {
+			return /index\.(pck|wasm)$/.test(e.name) && typeof e.transferSize === 'number';
+		});
+		if (big.length === 0) {
+			return null;                 // nothing measurable; do not guess
+		}
+		// Reported per file, because the two behave DIFFERENTLY and the difference
+		// is the whole finding: measured 2026-09-11 against a 2 GB disk cache,
+		// index.wasm (43.7 MB) is served from cache on reload and index.pck
+		// (175.0 MB) is re-fetched every time. A single summed verdict would hide
+		// that, and "the wasm cached" is also the control proving this instrument
+		// can see a cache hit at all.
+		const files = big.map(function (e) {
+			return {
+				name: e.name.split('/').pop(),
+				cached: e.transferSize === 0,
+				bytes: e.encodedBodySize,
+			};
+		});
+		const refetched = files.filter(function (f) { return !f.cached; });
+		const refetchedBytes = refetched.reduce(function (n, f) { return n + f.bytes; }, 0);
+		return {
+			files: files,
+			verdict: refetched.length === 0 ? 'cache' : (refetched.length === files.length ? 'network' : 'partial'),
+			refetchedBytes: refetchedBytes,
+		};
+	}
+
+	// The only claim the page is entitled to make is one a previous visit measured.
+	const lastSource = recallPayloadSource();
+	const PRIMARY_HINT = (lastSource === 'network' || lastSource === 'partial')
+		? 'Your browser re-downloaded this last visit too, so expect the same wait each time.'
+		: 'Downloading the whole game. This is the slow part; it only happens while the bar moves.';
+
 	function setStatusMode(mode) {
 		if (statusMode === mode || !initializing) {
 			return;
@@ -259,7 +327,7 @@ const engine = new Engine(GODOT_CONFIG);
 		if (known > 0 && current >= known * 0.9) {
 			setHint('Nearly there. The bar pauses for a few seconds at the end while the game unpacks and starts up.');
 		} else {
-			setHint('First load downloads the whole game. Your browser caches it, so coming back is quick.');
+			setHint(PRIMARY_HINT);
 		}
 	}
 
@@ -350,6 +418,17 @@ const engine = new Engine(GODOT_CONFIG);
 			},
 		}).then(() => {
 			setStatusMode('hidden');
+			const m = measurePayload();
+			if (m !== null) {
+				rememberPayloadSource(m.verdict);
+			}
+			console.log('[shell] payload ' + formatMB(declaredTotal) + ' MB · this visit: '
+				+ (m === null ? 'unmeasurable' : m.verdict
+					+ (m.refetchedBytes > 0 ? ' (' + formatMB(m.refetchedBytes) + ' MB re-fetched)' : '')
+					+ ' · ' + m.files.map(function (f) {
+						return f.name + '=' + (f.cached ? 'cache' : 'network');
+					}).join(' '))
+				+ ' · previous visit: ' + (lastSource === null ? 'none recorded' : lastSource));
 		}, displayFailureNotice);
 	}
 }());
