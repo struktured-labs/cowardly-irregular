@@ -113,7 +113,9 @@ func _create_auto_toggle_button() -> void:
 	_auto_toggle_button.add_theme_stylebox_override("normal", sb_normal)
 	_auto_toggle_button.add_theme_stylebox_override("hover", sb_hover)
 	_auto_toggle_button.add_theme_stylebox_override("pressed", sb_pressed)
-	_auto_toggle_button.tooltip_text = "Toggle global autobattle (sticky). Same as Minus / F6."
+	# "Minus" is Nintendo's name for this button; Xbox prints Back and PlayStation Share.
+	_auto_toggle_button.tooltip_text = "Toggle global autobattle (sticky). Same as %s / F6." % (
+		InputProfileManager.hint_for_action("battle_toggle_auto"))
 	_auto_toggle_button.pressed.connect(_on_auto_toggle_pressed)
 	ui.add_child(_auto_toggle_button)
 

@@ -303,14 +303,29 @@ def main():
     ##
     ## rows already holds the worst step for EVERY bed; only the over-threshold ones
     ## were ever printed. This costs no measurement, just the sentence.
+    ## ⛔ REPORTING ONLY THE CLOSEST BED READS AS ONE OUTLIER. Shipped that yesterday and
+    ## told struktured the tier change cost "one Jukebox-only bed"; measured the band the
+    ## next hour and it is FOUR under 1 dB, three of them live gameplay beds —
+    ## danger_suburban, dungeon_dragon_ice, battle_steampunk. Only ambient_cave actually
+    ## crossed at 44k/40k, so the corpus is tighter than one outlier and less fragile than
+    ## four crossings; both halves are invisible from a single name.
     under = [r for r in rows if r[0] <= JUMP_DB]
     if under:
-        worst_ok = max(under)
-        print("  closest bed still inside the threshold: %s at %+.1f dB (margin %.1f dB)"
-              % (worst_ok[1], worst_ok[0], JUMP_DB - worst_ok[0]))
-        if JUMP_DB - worst_ok[0] < 1.0:
-            print("  ^ under 1 dB of headroom. A re-encode at any bitrate can tip this bed;")
-            print("    re-run with --from <tier dir> before changing the encoder.")
+        tight = sorted((r for r in under if JUMP_DB - r[0] < 1.0), reverse=True)
+        near = [r for r in under if 1.0 <= JUMP_DB - r[0] < 2.0]
+        print("  headroom: %d bed(s) under 1 dB, %d more under 2 dB, of %d measured"
+              % (len(tight), len(near), len(under)))
+        for step, key, ws in tight:
+            print("    %-30s %+6.1f dB @%4.0fms   margin %.1f dB"
+                  % (key, step, ws * 1000, JUMP_DB - step))
+        if tight:
+            print("  ^ a re-encode at any bitrate can tip these; re-run with --from <tier dir>")
+            print("    before changing the encoder. They are not evidence the tier is wrong —")
+            print("    measure the tier, because which of them moves is not predictable from here.")
+        elif under:
+            worst_ok = max(under)
+            print("    closest: %s at %+.1f dB (margin %.1f dB)"
+                  % (worst_ok[1], worst_ok[0], JUMP_DB - worst_ok[0]))
 
     ## 🛑 A HEALTH REPORT FROM AN EMPTY WALK IS THE WORST OUTPUT THIS TOOL CAN
     ## PRODUCE, and until now it was also its quietest. With no corpus floor,

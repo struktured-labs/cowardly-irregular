@@ -73,12 +73,20 @@ func test_every_claim_names_the_button_its_action_is_bound_to() -> void:
 			continue
 		var advertised: String = claims[phrase]
 		var bound: Array = standard[action]
-		var matched := false
-		for idx in bound:
-			var label: String = str(labels.get(int(idx), ""))
-			for part in label.split("/"):
-				if part.strip_edges().begins_with(advertised):
-					matched = true
+		## An advertised token may name ONE family ("Select") or ALL of them ("Select/Back/Share") —
+		## the fallback bar uses the second, because with derivation already failed naming any single
+		## family is a guess. EVERY part must be a real name for that button, which is strictly
+		## stronger than the old any-one-part test, not a relaxation to accommodate the new form.
+		var matched := true
+		for want in advertised.split("/"):
+			var this_part := false
+			for idx in bound:
+				var label: String = str(labels.get(int(idx), ""))
+				for part in label.split("/"):
+					if part.strip_edges().begins_with(want.strip_edges()):
+						this_part = true
+			if not this_part:
+				matched = false
 		if not matched:
 			var names := []
 			for idx in bound:
