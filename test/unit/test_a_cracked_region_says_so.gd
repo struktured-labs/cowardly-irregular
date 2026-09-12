@@ -32,7 +32,7 @@ func _fn_body(src: String, name_: String) -> String:
 
 ## PREMISE: the penalty must really apply, or announcing it guards nothing.
 func test_the_crack_penalty_is_really_applied() -> void:
-	var sys := FileAccess.get_file_as_string(SYS)
+	var sys := _code_only(FileAccess.get_file_as_string(SYS), "func on_battle_victory(")
 	assert_gt(sys.length(), 1000, "CONTROL: the system source must have been read")
 	assert_true(sys.contains("func _get_region_crack_penalty"),
 		"PRECONDITION: the penalty function must still exist")
@@ -45,10 +45,10 @@ func test_the_crack_penalty_is_really_applied() -> void:
 
 ## The staying branch must announce. The defect was a print and a return.
 func test_staying_in_a_cracked_region_emits() -> void:
-	var ctrl := FileAccess.get_file_as_string(CTRL)
+	var ctrl := _code_only(FileAccess.get_file_as_string(CTRL), "func _on_region_cracked(")
 	assert_true(ctrl.contains("signal region_cracked_in_place("),
 		"the controller must declare a signal for a crack it is staying in")
-	var body := _fn_body(_code_only(ctrl), "_on_region_cracked")
+	var body := _fn_body(ctrl, "_on_region_cracked")
 	assert_gt(body.length(), 60, "CONTROL: the crack handler body must have been found")
 	var at := body.find("if not _auto_advance_regions:")
 	assert_gt(at, -1, "PRECONDITION: the staying branch must still exist")
@@ -65,7 +65,7 @@ func test_staying_in_a_cracked_region_emits() -> void:
 
 ## GameLoop must connect it and reach the surfaces the player watches.
 func test_the_crack_reaches_the_live_surface() -> void:
-	var gl := FileAccess.get_file_as_string(GL)
+	var gl := _code_only(FileAccess.get_file_as_string(GL), "func _on_grind_complete(")
 	assert_true(gl.contains("region_cracked_in_place.connect("),
 		"GameLoop does not listen — the signal would be emitted to nobody, as system_collapse was")
 	var body := _fn_body(gl, "_on_autogrind_region_cracked_in_place")
@@ -78,7 +78,7 @@ func test_the_crack_reaches_the_live_surface() -> void:
 
 ## The PENALTY must survive into the message — a handler that drops it still toasts.
 func test_the_announcement_carries_the_penalty() -> void:
-	var body := _fn_body(FileAccess.get_file_as_string(GL), "_on_autogrind_region_cracked_in_place")
+	var body := _fn_body(_code_only(FileAccess.get_file_as_string(GL), "func _on_grind_complete("), "_on_autogrind_region_cracked_in_place")
 	assert_true(body.contains("reward_penalty"),
 		("the handler ignores its reward_penalty argument. 'REGION CRACKED' without the number is " +
 		"the half the player already infers; the percentage is the half they cannot"))
@@ -88,19 +88,36 @@ func test_the_announcement_carries_the_penalty() -> void:
 
 ## The auto-advance path must keep its own overlay — this change must not have replaced it.
 func test_the_advance_path_still_warps() -> void:
-	var gl := FileAccess.get_file_as_string(GL)
+	var gl := _code_only(FileAccess.get_file_as_string(GL), "func _on_grind_complete(")
 	assert_true(gl.contains("REGION CRACKED"),
 		"the full-screen warp overlay must survive: it is the auto-advance path's announcement")
 	assert_true(gl.contains("func _show_region_warp_transition"),
 		"and its builder must still exist — this change adds a second surface, it replaces nothing")
 
 
-## Comment lines dropped. `#` covers `##` docstrings too.
-func _code_only(src: String) -> String:
+## BOTH halves, because they need different mechanisms (@cowir-overworld):
+##   `#` comments   line-addressable, stateless — drop the line
+##   `"""` regions  NOT line-addressable; a docstring carries no `#`, so the line pass cannot see
+##                  it. Parity split on the delimiter, keep even chunks — also stateless, so there
+##                  is no toggle to desync the way a state machine can (@cowir-adhoc's precedence
+##                  bug swallowed five files that way).
+## `must_survive` is REQUIRED, not conventional, so no call site can omit the positive control
+## (@cowir-controller's shape): over-stripping and correct stripping are otherwise the same green.
+func _code_only(src: String, must_survive: String) -> String:
 	var out: PackedStringArray = []
 	for line in src.split("\n"):
 		if line.strip_edges().begins_with("#"):
 			continue
 		out.append(line)
-	return "\n".join(out)
+	var no_hash := "\n".join(out)
+	var parts := no_hash.split("\"\"\"")
+	var kept: PackedStringArray = []
+	for i in parts.size():
+		if i % 2 == 0:
+			kept.append(parts[i])
+	var stripped := "".join(kept)
+	assert_true(stripped.contains(must_survive),
+		("CONTROL: the stripper removed a known CODE site (%s). An over-aggressive strip and a " +
+		"correct one are the same green, so every assert below would be measuring nothing") % must_survive)
+	return stripped
 

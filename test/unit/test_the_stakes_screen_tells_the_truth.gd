@@ -51,7 +51,7 @@ func test_no_caption_promises_the_unwired_multiplier() -> void:
 	## own explanation.
 	var offenders: Array = []
 	for path in [DASH, UI]:
-		var src := _code_only(FileAccess.get_file_as_string(path))
+		var src := _code_only(FileAccess.get_file_as_string(path), "func _ready(")
 		assert_gt(src.length(), 500, "CONTROL: %s must have been read" % path)
 		for bad in ["3x EXP", "3.0x", "triple EXP"]:
 			if src.contains(bad):
@@ -85,7 +85,7 @@ func test_the_disabled_state_advertises_nothing() -> void:
 ## If the multiplier ever gains a live consumer, this arm says so — at which point the captions
 ## should quote it again and this file is the thing that must change.
 func test_the_multiplier_is_still_unwired() -> void:
-	var sys := FileAccess.get_file_as_string(SYS)
+	var sys := _code_only(FileAccess.get_file_as_string(SYS), "func stop_autogrind(")
 	var at := sys.find("func _run_automated_battle")
 	assert_gt(at, -1, "PRECONDITION: the dead simulation path must still exist to be checked")
 	var callers := 0
@@ -102,12 +102,23 @@ func test_the_multiplier_is_still_unwired() -> void:
 		"live. Re-measure whether staking pays 3x, and if it does, the captions should say so"))
 
 
-## Comment lines dropped. `#` covers `##` docstrings too.
-func _code_only(src: String) -> String:
+## BOTH halves (@cowir-overworld): `#` comments are line-addressable, `"""` regions are not — a
+## docstring carries no `#`, so a line pass cannot see it, which is the .325 defect. Demonstrated
+## live: the .338 guard scored 4/4 with a real connect deleted and a docstring claiming it. Region
+## half is a parity split — stateless, nothing to desync. `must_survive` is REQUIRED so no call site
+## can omit the positive control; over-stripping and correct stripping are otherwise the same green.
+func _code_only(src: String, must_survive: String) -> String:
 	var out: PackedStringArray = []
 	for line in src.split("\n"):
 		if line.strip_edges().begins_with("#"):
 			continue
 		out.append(line)
-	return "\n".join(out)
-
+	var parts := "\n".join(out).split("\"\"\"")
+	var kept: PackedStringArray = []
+	for i in parts.size():
+		if i % 2 == 0:
+			kept.append(parts[i])
+	var stripped := "".join(kept)
+	assert_true(stripped.contains(must_survive),
+		"CONTROL: the stripper removed a known CODE site (%s) — every assert below measures nothing" % must_survive)
+	return stripped
