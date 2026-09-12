@@ -133,6 +133,29 @@ func test_a_and_b_are_never_keyboard_bindings_in_this_game() -> void:
 		"KEY X really is Cancel — flagging 'X/Esc' as frozen would be a false positive")
 	assert_true(by_key.has("Z") and by_key["Z"].has("ui_accept"), "KEY Z really is Confirm")
 
+	## ⛔ THE THIRD CHANNEL, and it is the one that actually justifies excluding Y. A key can be
+	## read by RAW KEYCODE without any InputMap action, and neither an InputMap scan (this arm's
+	## first half) nor a parse of project.godot's [input] block (@cowir-overworld's independent
+	## instrument) can see that. Measured: KEY_Y is read directly at BattleScene:4882 and
+	## GameLoop:923, while KEY_A and KEY_B appear NOWHERE in src/. I had excluded Y on `ui_redo`
+	## — a Godot built-in, which by this arm's own rule for A is not a game binding at all — so
+	## the right answer was standing on the wrong evidence until this was measured.
+	## Word-bounded, because KEY_B is a PREFIX of KEY_BACKSPACE — a bare find() reported 3 hits
+	## and redded this arm against a correct tree. Same substring class that matched "B Back"
+	## inside the Mouse column's "RMB Back" in .311; second time tonight, so it is pinned below.
+	var raw := {"KEY_A": 0, "KEY_B": 0, "KEY_Y": 0}
+	for k in raw:
+		var rx := RegEx.create_from_string("\\bKEY_%s\\b" % k.substr(4))
+		for path in _corpus():
+			var src := FileAccess.get_file_as_string(path)
+			if rx.search(src) != null:
+				raw[k] += 1
+	assert_eq(raw["KEY_A"], 0, "KEY_A must be read nowhere in src/ — any hit means A became a key")
+	assert_eq(raw["KEY_B"], 0, "KEY_B must be read nowhere in src/")
+	assert_gt(raw["KEY_Y"], 0,
+		"CONTROL: KEY_Y must still be read by raw keycode, or this arm proves nothing about the " +
+		"channel it exists to cover — and Y would then belong in the alphabet after all")
+
 
 ## THE RATCHET, over the whole tree rather than one hand-listed directory. A list cannot see a
 ## file that does not exist yet; this corpus is a function of the tree.
@@ -167,6 +190,14 @@ func test_the_derived_captions_vary_by_device() -> void:
 		"on Xbox Confirm is Ⓑ — so the frozen 'A' named Cancel")
 	assert_eq(_ipm().hint_for_action("ui_cancel", "Xbox 360 Controller"), "Ⓐ",
 		"…and Cancel is Ⓐ, so the frozen 'B' named Confirm: inverted both ways")
+
+
+## The word boundary above, pinned. KEY_B must not be found inside KEY_BACKSPACE.
+func test_the_keycode_probe_respects_word_boundaries() -> void:
+	var rx := RegEx.create_from_string("\\bKEY_B\\b")
+	assert_null(rx.search("\t\t\tif event.keycode == KEY_BACKSPACE:"),
+		"KEY_B must NOT match inside KEY_BACKSPACE — a bare find() reported 3 false hits")
+	assert_not_null(rx.search("\t\t\tif event.keycode == KEY_B:"), "…and must match the real thing")
 
 
 ## THE CONTROL. Every arm above passes if the scanner reads nothing or matches nothing.
