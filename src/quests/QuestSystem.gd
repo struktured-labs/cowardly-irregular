@@ -272,7 +272,7 @@ func _announce_rewards(npc: Node) -> void:
 	var line: String = _last_reward_summary
 	_last_reward_summary = ""
 	if SoundManager:
-		SoundManager.play_ui("item_obtain")
+		SoundManager.play_pickup("item_obtain")
 	await _play_lines(npc, [{"speaker": "✦", "text": line}])
 
 
