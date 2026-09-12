@@ -142,3 +142,109 @@ func test_driving_below_threshold_does_not_fire() -> void:
 			newly_ids.append(n["id"])
 		assert_false(a["id"] in newly_ids,
 			"%s fired at %s=%d, one below its threshold of %s — the drive test above would pass on a broken join" % [a["id"], key, int(threshold) - 1, a["threshold"]])
+
+
+# ── Every catalog FIELD has a consumer ───────────────────────────────────────
+# The join above proves each stat_key resolves. It says nothing about the OTHER
+# keys an entry carries. `session_scope` shipped on all six entries and was read
+# by nothing in src/ — the catalog declared a lifetime-vs-session axis the data
+# model cannot support (no cross-session autogrind tally exists for any stat_key,
+# and GameState.battles_won counts manual battles too). It was inert only because
+# the single entry marked false had threshold 1. Removed 2026-09-12; this ratchet
+# is what stops the next one, because a dead field looks exactly like a live one.
+
+## Complete set of files referencing AutogrindAchievements — asserted complete below,
+## not assumed. AutogrindController joined this corpus on 2026-09-12.
+const CONSUMERS := [
+	"res://src/autogrind/AutogrindAchievements.gd",
+	"res://src/autogrind/AutogrindController.gd",
+	"res://src/ui/autogrind/AutogrindSummary.gd",
+]
+
+
+func test_every_catalog_field_has_a_consumer() -> void:
+	var dead: Array[String] = []
+	for a in AutogrindAchievementsScript.catalog():
+		for key in a.keys():
+			var k: String = str(key)
+			if not _field_is_read(k) and not k in dead:
+				dead.append(k)
+	assert_eq(dead.size(), 0,
+		"These catalog fields are read by NOTHING in %s — authored metadata the game ignores, which reads as a live setting to whoever edits the JSON next: %s" % [", ".join(CONSUMERS), ", ".join(dead)])
+
+
+func test_the_field_consumer_detector_can_fail() -> void:
+	# Control, both directions. Without the negative arm a detector that returned
+	# true for everything would report a perfectly healthy catalog.
+	assert_false(_field_is_read("zzz_not_a_real_field"),
+		"control: a fabricated field must be reported UNREAD, else the ratchet cannot discriminate")
+	assert_true(_field_is_read("stat_key"),
+		"control: a field read as a['stat_key'] must be detected, else the ratchet reports everything dead")
+	assert_true(_field_is_read("icon"),
+		"control: a field read as a.get('icon', ...) must be detected — both read forms must resolve")
+
+
+func test_the_consumer_corpus_is_complete() -> void:
+	# A ratchet over a hand-listed corpus is only as good as the list. A new file
+	# reading the catalog would make a live field look dead; one that stopped
+	# reading it leaves a stale entry that can green a genuinely dead field.
+	var found: Array[String] = []
+	var scripts: Array[String] = []
+	_collect_scripts("res://src", scripts)
+	assert_gt(scripts.size(), 0, "control: the src/ walk must find scripts, else this arm is vacuous")
+	for path in scripts:
+		if FileAccess.get_file_as_string(path).contains("AutogrindAchievements"):
+			found.append(path)
+	found.sort()
+	var expected: Array[String] = []
+	for c in CONSUMERS:
+		expected.append(c)
+	expected.sort()
+	assert_eq(found, expected,
+		"the set of src/ files referencing AutogrindAchievements has changed — update CONSUMERS or the field ratchet above is checking the wrong corpus")
+
+
+func _collect_scripts(dir_path: String, out: Array) -> void:
+	var d := DirAccess.open(dir_path)
+	if d == null:
+		return
+	d.list_dir_begin()
+	var n := d.get_next()
+	while n != "":
+		var full: String = dir_path.path_join(n)
+		if d.current_is_dir():
+			if not n.begins_with("."):
+				_collect_scripts(full, out)
+		elif n.ends_with(".gd"):
+			out.append(full)
+		n = d.get_next()
+	d.list_dir_end()
+
+
+## Both read shapes the consumers actually use: a["key"] and a.get("key", default).
+## Comments are stripped first so a field named only in prose cannot green itself.
+func _field_is_read(key: String) -> bool:
+	for path in CONSUMERS:
+		var code := _code_only(FileAccess.get_file_as_string(path), "func ")
+		if code.contains('["%s"]' % key) or code.contains('.get("%s"' % key):
+			return true
+	return false
+
+
+## must_survive is REQUIRED — no call site can omit the positive control.
+## '#' lines go first (stateless, line-addressable), THEN the docstring parity split.
+func _code_only(src: String, must_survive: String) -> String:
+	var out: PackedStringArray = []
+	for line in src.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			continue
+		out.append(line)
+	var parts := "\n".join(out).split("\"\"\"")
+	var kept: PackedStringArray = []
+	for i in parts.size():
+		if i % 2 == 0:
+			kept.append(parts[i])
+	var stripped := "\n".join(kept)
+	assert_true(stripped.contains(must_survive),
+		"CONTROL: the stripper removed load-bearing code (%s)" % must_survive)
+	return stripped
