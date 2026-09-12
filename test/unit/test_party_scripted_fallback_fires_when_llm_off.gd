@@ -84,9 +84,19 @@ func test_llm_off_branch_precedes_llm_availability_check() -> void:
 func test_cooldown_gate_unchanged_in_maybe_fire() -> void:
 	# Don't regress the cooldown gate. That still belongs in
 	# _maybe_fire_party_line — it gates BOTH LLM and scripted paths.
+	#
+	# Pinned by RELATIONSHIP, not by the exact source line. It used to assert the
+	# whole condition verbatim, which went red on a correct change: adding the
+	# ambient-preemption clause split the line without moving the gate, weakening
+	# it, or letting it miss either path. An absolute string where the
+	# relationship is what matters reds on a correct edit and stays green on a
+	# wrong one — a gate moved into the LLM branch keeps the string intact.
 	var body := _maybe_fire_body()
-	assert_true(body.contains("if event_kind != \"victory\" and current_round - last_round < PARTY_LINE_COOLDOWN_ROUNDS:"),
-		"cooldown gate must remain in _maybe_fire_party_line — applies to BOTH LLM and scripted paths")
+	for part in ["current_round - last_round", "PARTY_LINE_COOLDOWN_ROUNDS", "event_kind != \"victory\""]:
+		assert_true(body.contains(part),
+			"cooldown gate must remain in _maybe_fire_party_line (missing %s) — applies to BOTH LLM and scripted paths" % part)
+	assert_true(body.contains("_run_party_line_async("),
+		"and it must still gate the call that produces the line, LLM or scripted")
 
 
 func test_combatant_and_party_membership_gates_preserved() -> void:
