@@ -21,6 +21,9 @@ class_name ReadableProp
 const PANEL_W: float = 420.0
 const PANEL_H: float = 240.0
 const LOCK_NAME: String = "readable_prop"
+## Signpost's recipe verbatim — one label treatment for the two classes that are the same object.
+const FLAT_OFFSET := Vector2(-40, -32)
+const FLAT_FONT: int = 10
 
 
 ## ⛔ `if InputProfileManager:` guards the AUTOLOAD, not a pad — so the "B" fallback never fired in a
@@ -38,6 +41,9 @@ var _provider: Callable = Callable()
 var _entries: Array = []
 var _page: int = 0
 var _layer: CanvasLayer = null
+var _label: Label = null
+var _player_nearby: bool = false
+var _prompt_layer: CanvasLayer = null
 var _body_label: Label = null
 var _heading_label: Label = null
 var _footer_label: Label = null
@@ -46,17 +52,80 @@ var _footer_label: Label = null
 func setup(prop_name: String, provider: Callable) -> void:
 	display_name = prop_name
 	_provider = provider
+	if _label != null:
+		_label.text = display_name
 
 
 func _ready() -> void:
 	add_to_group("interactables")
-	collision_layer = 4
+	collision_layer = InteractGeometry.LAYER_INTERACTABLE
+	collision_mask = InteractGeometry.MASK_PLAYER
 	if get_node_or_null("CollisionShape2D") == null:
-		var shape := CollisionShape2D.new()
+		add_child(_build_zone())
+	_setup_label()
+	body_entered.connect(_on_body_entered)
+	body_exited.connect(_on_body_exited)
+
+
+## A ReadableProp draws NOTHING of its own, so without this it is an invisible hotspot on scenery —
+## survivable in a crowded village, undiscoverable beside one statue in an empty overworld quadrant.
+func _setup_label() -> void:
+	_label = Label.new()
+	_label.text = display_name
+	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_label.position = FLAT_OFFSET
+	_label.add_theme_font_size_override("font_size", FLAT_FONT)
+	_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.7))
+	_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
+	_label.add_theme_constant_override("shadow_offset_x", 1)
+	_label.add_theme_constant_override("shadow_offset_y", 1)
+	_label.visible = false
+	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	Mode7Prompt.pin_above_sprites(_label)
+	add_child(_label)
+
+
+## ROW_ACTION, not ROW_INFO: this is a thing you press, so it stacks with signs rather than over them.
+func _process(_delta: float) -> void:
+	if _label == null:
+		return
+	if InteractGeometry.is_mode7():
+		if _prompt_layer == null:
+			_prompt_layer = Mode7Prompt.lift(self, _label)
+		_label.visible = _player_nearby and not is_open()
+		if _label.visible:
+			Mode7Prompt.place(_label, get_viewport_rect().size, Mode7Prompt.ROW_ACTION)
+	elif _prompt_layer != null:
+		Mode7Prompt.drop(self, _prompt_layer, _label, FLAT_OFFSET, FLAT_FONT)
+		_label.visible = _player_nearby and not is_open()
+		_prompt_layer = null
+	else:
+		_label.visible = _player_nearby and not is_open()
+
+
+func _on_body_entered(body: Node2D) -> void:
+	if InteractGeometry.is_player(body):
+		_player_nearby = true
+
+
+func _on_body_exited(body: Node2D) -> void:
+	if InteractGeometry.is_player(body):
+		_player_nearby = false
+
+
+## Mode 7 recipe copied from Signpost, the sibling this class is: circle + the billboard Y-stretch.
+func _build_zone() -> CollisionShape2D:
+	var shape := CollisionShape2D.new()
+	if InteractGeometry.is_mode7():
+		var circle := CircleShape2D.new()
+		circle.radius = InteractGeometry.READABLE_RADIUS_MODE7
+		shape.shape = circle
+		shape.scale = Vector2(1.0, InteractGeometry.MODE7_Y_STRETCH)
+	else:
 		var rect := RectangleShape2D.new()
-		rect.size = Vector2(28, 28)
+		rect.size = InteractGeometry.READABLE_BOX_FLAT
 		shape.shape = rect
-		add_child(shape)
+	return shape
 
 
 func is_open() -> bool:

@@ -28,6 +28,13 @@ const CHEST_GRAB_RADIUS_MODE7 := 128.0  # (pin)
 const SAVE_RADIUS := 48.0  # ruling 2026-07-11; Y-stretch is Mode-7-conditional
 const SIGNPOST_RADIUS_FLAT := 48.0  # was 128 unconditional — a 4-tile label zone in flat villages
 const SIGNPOST_RADIUS_MODE7 := 128.0
+## A ReadableProp carries no sprite of its own — it is a hotspot on something visible — so it is
+## signpost-class: static, pressed from a standing distance, no facing cone. Its zone lived PRIVATELY
+## in ReadableProp as an unconditional 28x28 box, the one interactable class that never learned Mode 7.
+## A 28px box under an 80px facing probe is a 28px window at exactly arm's length; in a Mode 7 world
+## the press lands on nothing. Invisible while the only consumer was a flat village.
+const READABLE_BOX_FLAT := Vector2(28.0, 28.0)  # (pin) Phil's notebook sits beside Phil — a wider flat box steals his press
+const READABLE_RADIUS_MODE7 := SIGNPOST_RADIUS_MODE7  # same object class, so the two must not drift apart
 
 # -- Class C: press-doors / transitions --
 const BUILDING_ENTRY_BOX := Vector2(64, 96)  # shop/inn 2026-07-13 fix; VillageBar adopts
