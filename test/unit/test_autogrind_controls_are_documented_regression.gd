@@ -21,11 +21,14 @@ extends GutTest
 const HELPER_SRC := "res://src/ui/autogrind/AutogrindInputHelper.gd"
 const BRANCH_HEAD := "if current_state == LoopState.AUTOGRIND:"
 ## Vocabulary no pad this game supports has printed on it, or that names the wrong face.
-## ⛔ "Start " and "Back " carried a TRAILING SPACE here, so a cell of exactly `Start` -- the single
-## likeliest frozen value anyone would type -- slipped through. Caught by a mutation that predicted
-## two reds and produced one. Only the PAD CELL is scanned, never a description, so the space that
-## was guarding against "Stop grinding" was never needed.
-const FROZEN_PAD_WORDS := ["Select", "(Plus)", "(Minus)", "west face", "top face", "Start", "Back"]
+## ⛔ This list twice named the wrong thing. It first banned "Start " / "Back " WITH A TRAILING SPACE,
+## so a cell of exactly `Start` slipped through (a mutation predicted two reds and produced one).
+## Removing the space then banned "Back" outright -- which is what an Xbox pad genuinely PRINTS on
+## index 4, and "Minus" is the Switch name for it, so the ban would have forbidden the correct
+## derived cell. The defect was never the family name: it was the parenthetical MASH that carries
+## two families at once ("Back (Minus)", "Start (Plus)") and the face descriptions ("west face").
+## No derived cell needs a bracket or the word "face", so those are the shapes to ban.
+const FROZEN_PAD_WORDS := ["Select", "(", ")", "face"]
 
 
 ## The live handler's window, located by its own text — a line number goes stale on the first edit
@@ -170,13 +173,22 @@ func test_no_pad_means_no_pad_cell() -> void:
 	assert_gt(dashes, 2, "CONTROL: %d cells checked" % dashes)
 
 
-## Pause has NO pad binding. The row must say so — and if someone adds one, this tells them the
-## reference is now understating the controls rather than letting it drift silently.
-func test_pause_is_keyboard_only_until_the_branch_says_otherwise() -> void:
+## Pause must work on EVERY tier. The Tier-1 dashboard bound index 4 through the dispatch table
+## while GameLoop's branch bound only KEY_P, so a pad player could pause on one tier and not the
+## next — and the reference advertised the pad button regardless. Both halves are now bound.
+func test_pause_is_bound_on_both_grind_surfaces() -> void:
 	var window := _branch_window()
-	assert_false(window.contains("JOY_BUTTON_BACK"),
-		("the AUTOGRIND branch now binds a pad button for pause — give the pause row its derived " +
-		"pad cell in AutogrindInputHelper.grind_reference_rows() instead of a dash"))
+	## ⛔ The first version of this binding was raw `JOY_BUTTON_BACK` and the neighbour sweep redded
+	## test_remap_reaches_every_handler: index 4 carries the REMAPPABLE `battle_toggle_auto`, so a
+	## raw handler stays on the old button after a rebind. Both the handler and the printed cell
+	## resolve through the action now.
+	assert_true(window.contains("is_action_pressed(\"battle_toggle_auto\")"),
+		("the AUTOGRIND branch must bind a pad button for pause — the dashboard surface already does, " +
+		"and a control that works on one tier only is worse than one that works nowhere"))
+	assert_true(window.contains("KEY_P"), "and the keyboard key it has always had")
+	var helper := FileAccess.get_file_as_string(HELPER_SRC)
+	assert_true(helper.contains("hint_for_action(\"battle_toggle_auto\""),
+		"the pause row's pad cell must follow the same action, or it prints the pre-rebind button")
 	var pause_rows := 0
 	for row in _rows():
 		if str(row[2]).contains("Pause"):
@@ -195,6 +207,11 @@ func test_adjust_rules_is_absent_because_nothing_binds_it() -> void:
 	assert_false(bound,
 		("the AUTOGRIND branch now binds adjust-rules, so the reference must advertise it again — " +
 		"add the row back to AutogrindInputHelper.grind_reference_rows()"))
+	## The deeper reason the row went: the dashboard DOES classify index 6 / R as adjust_rules and
+	## emits adjust_rules_requested — and GameLoop connects that signal zero times. Binding a button
+	## would not have helped. If this count ever rises, the feature is live and the row comes back.
+	assert_eq(FileAccess.get_file_as_string("res://src/GameLoop.gd").count("adjust_rules_requested"), 0,
+		"GameLoop now listens for adjust-rules mid-grind — restore the reference row for it")
 	var text: String = HowToPlayOverlay.build_text()
 	assert_false(text.contains("Adjust rules mid-grind"),
 		"while nothing binds it, advertising it sends the player hunting for a button that does nothing")

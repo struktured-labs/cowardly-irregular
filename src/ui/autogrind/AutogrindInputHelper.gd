@@ -88,8 +88,9 @@ static func _profile_manager() -> Node:
 ## ⛔ These describe GameLoop's `LoopState.AUTOGRIND` branch, NOT classify_event above. While a grind
 ## runs, AutogrindUI sets `visible = false` and nothing calls `_show_monitor()`, so the dispatch table
 ## in this file is not the live surface -- that branch is. The reference was written against this file
-## and advertised two controls the branch does not have: "Back (Minus): Pause" (pause is KEY_P only,
-## no pad binding) and "Start (Plus): Adjust rules" (bound on neither). It also called turbo's button
+## and advertised two controls the branch did not have: "Back (Minus): Pause" (pause was KEY_P only
+## there -- index 4 is now bound, so the row keeps a pad cell) and "Start (Plus): Adjust rules", which
+## is bound on neither device and whose signal GameLoop never connects. It also called turbo's button
 ## the "west face" when JOY_BUTTON_Y is the NORTH face, and named stop "B", which is the south face's
 ## Nintendo letter -- Xbox prints A there and PlayStation prints Cross.
 const REFERENCE_PAD_NONE := "—"
@@ -106,10 +107,12 @@ static func grind_reference_rows(device_name: String = "") -> String:
 	var l: String = str(ipm.button_name_for_index(JOY_BUTTON_LEFT_SHOULDER, device_name)) if pad_ok else ""
 	var r: String = str(ipm.button_name_for_index(JOY_BUTTON_RIGHT_SHOULDER, device_name)) if pad_ok else ""
 	var stop: String = str(ipm.hint_for_action("ui_cancel", device_name)) if pad_ok else ""
+	# By ACTION, so the cell follows a Controls rebind the way the handler does. A raw index here
+	# would keep printing "Back" after the player moved the button.
+	var pause: String = str(ipm.hint_for_action("battle_toggle_auto", device_name)) if pad_ok else ""
 	var tier: String = ("%s+%s" % [l, r]) if l != "" and r != "" else ""
 	var rows: Array = [
-		# Pause has no pad binding in that branch, so the cell declines rather than lie (as BattleScene).
-		[REFERENCE_PAD_NONE, str(ACTION_KEYS["pause"]), "[color=lime]Pause / resume the grind[/color]"],
+		[_reference_cell(pause), str(ACTION_KEYS["pause"]), "[color=lime]Pause / resume the grind[/color]"],
 		[_reference_cell(tier), str(ACTION_KEYS["tier_cycle"]), "Cycle monster tier"],
 		[_reference_cell(turbo), "Y", "Turbo — run it faster"],
 		[_reference_cell(stop), "%s / Esc" % str(ACTION_KEYS["exit"]), "Stop grinding and return"],
