@@ -36,6 +36,10 @@ extends GutTest
 const DP := preload("res://src/llm/DialoguePrompts.gd")
 const MENU_SRC := "res://src/llm/DialogueChoiceMenu.gd"
 
+## Known code sites, so an over-eager stripper cannot pass for a correct one.
+const MENU_CODE_SITE := "func present(choices: Array) -> String:"
+const CONV_CODE_SITE := "func _ensure_farewell(choices: Array[String]) -> void:"
+
 var _dc: DynamicConversation
 
 
@@ -143,7 +147,9 @@ func test_the_cursor_really_starts_on_the_first_row() -> void:
 	## THE PREMISE. If the menu ever opened on a different row, "the exit is on the
 	## pre-selected row" stops being the reason this matters, and the severity
 	## argument in the header needs re-reading rather than trusting.
-	var src: String = FileAccess.get_file_as_string(MENU_SRC)
+	## Stripped: this is a PRESENCE assert, which is the one shape prose satisfies.
+	## A comment naming `_selection = 0` would keep it green with the cursor moved.
+	var src: String = _code_only(FileAccess.get_file_as_string(MENU_SRC), MENU_CODE_SITE)
 	assert_false(src.is_empty(), "CONTROL: DialogueChoiceMenu must load")
 	assert_true(src.find("_selection = 0") != -1,
 		("DialogueChoiceMenu no longer starts on row 0. The exit-position fix is still "
@@ -156,7 +162,7 @@ func test_the_exit_pass_still_runs_after_the_top_up() -> void:
 	## call site ever ran them in the other order, the top-up would append real
 	## options AFTER the exit and these arms would not notice.
 	var src: String = _code_only(
-		FileAccess.get_file_as_string("res://src/llm/DynamicConversation.gd"))
+		FileAccess.get_file_as_string("res://src/llm/DynamicConversation.gd"), CONV_CODE_SITE)
 	assert_false(src.is_empty(), "CONTROL: source must load")
 	var say_at: int = src.find("_ensure_something_to_say(choices)")
 	var bye_at: int = src.find("_ensure_farewell(choices)")
@@ -178,9 +184,32 @@ func test_the_farewell_detector_really_fires_on_these_fixtures() -> void:
 			"'%s' must NOT read as an exit" % keeper)
 
 
-func _code_only(src: String) -> String:
+## Strip BOTH comment forms. `#` is line-based and stateless; `"""` regions are
+## not line-addressable and need a parity pass — a `#`-only strip cannot see
+## inside a multi-line string, which is precisely what a presence assert accepts.
+##
+## `must_survive` is REQUIRED: an over-eager stripper and a correct one are
+## otherwise the same green, and the arms would red on correct code with no way
+## to tell which happened.
+func _code_only(src: String, must_survive: String) -> String:
 	var out: PackedStringArray = PackedStringArray()
+	var in_doc: bool = false
 	for line in src.split("\n"):
 		var hash_at: int = line.find("#")
-		out.append(line if hash_at == -1 else line.substr(0, hash_at))
-	return "\n".join(out)
+		var code: String = line if hash_at == -1 else line.substr(0, hash_at)
+		var trimmed: String = code.strip_edges()
+		if in_doc:
+			if trimmed.ends_with("\"\"\""):
+				in_doc = false
+			continue
+		if trimmed.begins_with("\"\"\""):
+			if trimmed.count("\"\"\"") % 2 == 1:
+				in_doc = true
+			continue
+		out.append(code)
+	var stripped: String = "\n".join(out)
+	assert_true(stripped.find(must_survive) != -1,
+		("STRIPPER CONTROL: '%s' is a known code site and must survive stripping. It did "
+		+ "not, so the stripper is eating code and the assert above measured wrong text.")
+		% must_survive)
+	return stripped
