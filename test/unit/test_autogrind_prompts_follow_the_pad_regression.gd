@@ -108,9 +108,31 @@ const DEFERRED := {}
 ## happen to work by luck, which is why the probe that "passes" is not evidence. Zero escaped-quote
 ## lines in this corpus today -- closed anyway, because I shipped a NAMED boundary two commits ago
 ## and @cowir-controller had to measure it for me.
+##
+## Multi-line `"""` blocks are stripped too — the last of three boundaries this file NAMED and did not
+## close. Measured BEFORE changing it: 18 such blocks in the corpus, ZERO body lines the census
+## pattern would match, and ZERO change to any reachability caller count. So it closes a hole with no
+## live instance, by the same standard as the escape handling above: a named boundary that defends
+## nothing reads as diligence, which this file's own header calls out.
 func _code_only(src: String) -> String:
 	var out := PackedStringArray()
+	## `in_block` lives OUTSIDE the line loop on purpose — a `"""` docstring spans lines, and the
+	## per-line quote state below resets every line, so block BODIES were scanned as code.
+	var in_block := false
 	for l in src.split("\n"):
+		## A lone `"""` opens or closes a block; blank it either way, and blank everything between.
+		## Docstring prose is not rendered, so a prompt-shaped string there is not a prompt — and for
+		## the reachability arm a class name mentioned in prose is not a caller.
+		var fences := l.count("\"\"\"")
+		if in_block:
+			out.append("")
+			if fences >= 1:
+				in_block = false
+			continue
+		if fences == 1:
+			in_block = true
+			out.append("")
+			continue
 		var in_str := false
 		var esc := false
 		var cut := -1
@@ -278,6 +300,10 @@ func test_the_comment_stripper_cuts_only_what_it_should() -> void:
 	var cases := [
 		# [input, expected, why]
 		["\tg = f(\"ui_accept\")  # was derived", "\tg = f(\"ui_accept\")  ", "trailing comment cut"],
+		## The docstring-block arm. A body line must come back EMPTY — it is prose, not code, and it
+		## used to be scanned as code because the quote state reset every line.
+		["\t\"\"\"\n\tPress A to confirm\n\t\"\"\"", "\n\n", "a \"\"\" body is stripped, fence lines included"],
+		["\tvar s = \"\"\"x\"\"\"", "\tvar s = \"\"\"x\"\"\"", "an inline triple-quote is NOT a block open — two fences on one line"],
 		## Cut-at-# leaves the leading whitespace, so this is "\t" and not "". Inert either way -- no
 		## code survives -- but I wrote "" from my own earlier BLANK-the-line description, and the
 		## direct pin caught the doc/behaviour drift in seconds where six mutation arms never would.
