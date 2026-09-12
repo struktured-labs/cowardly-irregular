@@ -1034,6 +1034,12 @@ func _place_signposts() -> void:
 		{"pos": Vector2(88, 30), "text": "→ World Portal  ⚙ Mundane Sprawl"},
 		# Deep Sandrift: the only thing out here, and it is pointing at the only other thing out here.
 		{"pos": Vector2(11, 65), "text": "↦ nothing this way (surveyed twice)"},
+		# Scriptura and the Warren were the only two W1 destinations with a transition and NO sign
+		# anywhere — and Scriptura holds the Guild scholar that world1_thirty_seven's step 2 needs.
+		{"pos": Vector2(9, 26), "text": "← Scriptura Plaza · Scriptweaver's Guild"},
+		# The source calls the Warren a "counter-intuitive side dungeon", so this names it without
+		# pointing: the dragon caves get ⚠ and a direction, this gets ⚠ and a warning about itself.
+		{"pos": Vector2(58, 32), "text": "⚠ The Backwards Warren — optional. It knows."},
 	]
 	for s in signs:
 		var post = Signpost.new()

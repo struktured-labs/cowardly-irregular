@@ -150,6 +150,15 @@ func test_forecast_is_left_out_and_still_deserves_to_be() -> void:
 		"forecast is excluded on purpose — if a preset now uses it, delete this arm and say why")
 
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	## ⚠️ UNIQUENESS FIRST. This anchor is a match-arm LITERAL, not a function name — a second
+	## `"forecast":` arm anywhere in the file would make find() take whichever comes first, and the
+	## arm below would then inspect the wrong code and pass. Six of this lane's eight source anchors
+	## are function names and cannot recur (a duplicate def is a parse error); this is one of the two
+	## that can. Asserting the count is cheaper than lengthening the anchor and it fails LOUDLY,
+	## which is the whole difference (@cowir-adhoc's quiet half of the composition check, msg 10669;
+	## the same class as cowir-main's c8d5a33e gate repair).
+	assert_eq(src.count("\t\t\"forecast\":"), 1,
+		"the forecast anchor must be unique — a second site silently moves what this arm inspects")
 	var idx: int = src.find("\t\t\"forecast\":")
 	assert_gt(idx, -1, "CONTROL: the forecast handler arm was found to inspect")
 	## CONTROL for the stripper — STRUCTURAL, not phrase-keyed (@cowir-music, msg 10585). My first

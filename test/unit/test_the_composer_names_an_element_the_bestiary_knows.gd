@@ -106,7 +106,10 @@ func test_the_validator_does_not_check_the_element_today() -> void:
 		return
 	for bad in ["thunder", "blizzard", "shadow"]:
 		assert_eq(abs_sys.validate_rule(_rule(bad), "").size(), 0,
-			"validate_rule rejects element '%s' now — the premise changed" % bad)
+			("validate_rule rejects element '%s' now, so RuleComposer._repair_weakness_elements is no longer "
+			+ "the only thing between a model-named ability and a dead rule. If AutobattleSystem gained an "
+			+ "element vocabulary check, that is GOOD: re-read this file's header, then either delete the "
+			+ "repair as superseded or keep it and change this arm to assert the new rejection.") % bad)
 	## POSITIVE CONTROL: the same probe must be able to report an error, or the
 	## zeros above mean nothing.
 	var missing: Dictionary = {"conditions": [{"type": "enemy_weak_to"}],

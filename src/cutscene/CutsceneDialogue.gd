@@ -67,7 +67,10 @@ var _voice_blip_next_char: int = 0        # Index at which next blip fires
 const VOICE_BLIP_DIR := "res://assets/audio/sfx/"
 const VOICE_BLIP_STEP_MIN := 2
 const VOICE_BLIP_STEP_MAX := 4
-const VOICE_BLIP_FALLBACK := "voice_blip_default"
+## The KEY, not the filename — _load_voice_blip_stream prefixes it ("voice_blip_" + key + ".ogg").
+## Was "voice_blip_default", which double-prefixed to voice_blip_voice_blip_default.ogg and has
+## never existed: every speaker without a dedicated blip got null and typed with play_ui("menu_move").
+const VOICE_BLIP_FALLBACK := "default"
 static var _voice_blip_stream_cache: Dictionary = {}
 static var _voice_blip_missing: Dictionary = {}
 
@@ -1154,6 +1157,22 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 	var bust = _create_bust_from_job_sheet(portrait_type)
 	if bust != null:
 		return bust
+
+	# EXPRESSION SUFFIX. 2026-09-12: seven lines across five scenes name a party member
+	# with a mood — "bard_happy", "cleric_sad", "fighter_determined" — and none of those
+	# ids is in PORTRAIT_SPRITES or a job folder, so both rungs above miss and the speaker
+	# got a PROCEDURAL face. The Bard's first line of the game ("What a tale this shall
+	# be!", world1_prologue) and her last (world6_ending) were both drawn that way.
+	# A mood is a variant of a character, not a different character, so fall back to the
+	# id before the first underscore and let rung 1 answer for it — which also picks up
+	# the world-suffix variant, so an expression line keeps its world costume.
+	# Recursion is bounded: the base of a base is itself, so this fires at most once.
+	# Deliberately NOT a hand-list of moods; a new expression costs nothing.
+	var base_id: String = portrait_type.get_slice("_", 0)
+	if base_id != "" and base_id != portrait_type and PORTRAIT_SPRITES.has(base_id):
+		var base_tex := _create_portrait(base_id)
+		if base_tex != null:
+			return base_tex
 
 	# Fallback to procedural portrait generation
 	var size = int(PORTRAIT_SIZE - 8)

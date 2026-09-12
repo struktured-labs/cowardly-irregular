@@ -237,7 +237,11 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 		var msg: String = "NEW orphan SFX keys (not in manifest, not in SOUNDS, not allowlisted):\n"
 		for o in new_orphans:
 			msg += "  - %s (called from: %s)\n" % [o.key, o.source]
-		msg += "Either author the sfx OR fix the caller OR add to KNOWN_ORPHAN_SFX."
+		## The third option asks for a DELIVERABLE, not permission: an entry with no stated owner
+		## cannot be reviewed and never expires. No arm polices it here because the table is EMPTY —
+		## policing zero entries is unfalsifiable, and the sibling arm in the reverse audit (12 live
+		## entries) is the precedent for the day this one gains its first.
+		msg += "Either author the sfx OR fix the caller OR add to KNOWN_ORPHAN_SFX with the owner and what it is waiting on."
 		fail_test(msg)
 
 

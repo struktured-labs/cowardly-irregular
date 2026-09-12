@@ -46,24 +46,28 @@ func _generate_map() -> void:
 	# Node Prime layout: clean geometric digital architecture
 	# W = wall, . = floor (polished), p = path (grid lines)
 	# I = inn (Sleep.exe), C = cache store, F = firewall barrier (wall)
-	# X = exit, W = water (coolant channels)
-	# Each row is exactly MAP_WIDTH (20) characters
+	# X = exit
+	# c = coolant channel (walkable floor grate, blue mist) — from the firewall and the
+	#     cache store to the south trunk and up the east riser
+	# NOT "W = water": W was declared TWICE in this legend, as wall and as coolant, and
+	# the second never reached the map. FuturisticTileGenerator has had COOLING_VENT all along.
+	# Each row is exactly MAP_WIDTH (24) characters
 	var map_data: Array[String] = [
 		"WWWWWWWWWWWWWWWWWWWWWWWW",
-		"W......................W",
+		"W..........ccc......c..W",
 		"W.........^^...........W",
-		"W......................W",
-		"W...III....CCC.........W",
-		"W...III....CCC.........W",
-		"W...III....CCC.........W",
-		"W......................W",
-		"W.....pppppppp.........W",
-		"W.....pppppppp.........W",
-		"W......................W",
-		"W......................W",
-		"W....FFFF..............W",
-		"W....FFFF..............W",
-		"W....FFFF..............W",
+		"W...................c..W",
+		"W...III....CCC......c..W",
+		"W...III....CCC......c..W",
+		"W...III....CCC......c..W",
+		"W...................c..W",
+		"W.....pppppppp......c..W",
+		"W.....pppppppp......c..W",
+		"W.....ccc...........c..W",
+		"W..cccccccccccccccccc..W",
+		"W....FFFF...........c..W",
+		"W....FFFF...........c..W",
+		"W....FFFF...........c..W",
 		"W......................W",
 		"W......................W",
 		"W........XXXXXX........W",
@@ -141,6 +145,7 @@ func _char_to_tile_type(char: String) -> int:
 		"F": return FuturisticTileGeneratorScript.TileType.NEON_WALL
 		"p": return FuturisticTileGeneratorScript.TileType.DATA_HIGHWAY
 		"X": return FuturisticTileGeneratorScript.TileType.DATA_HIGHWAY
+		"c": return FuturisticTileGeneratorScript.TileType.COOLING_VENT
 		"I": return TileGeneratorScript.TileType.WALL  # inn (Sleep.exe)
 		"C": return TileGeneratorScript.TileType.WALL  # cache store
 		_: return FuturisticTileGeneratorScript.TileType.CIRCUIT_FLOOR

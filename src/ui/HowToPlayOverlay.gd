@@ -9,7 +9,13 @@ class_name HowToPlayOverlay
 ## and the pause menu can all show the same text without duplicating it.
 ##
 ## Button names resolve against the ATTACHED pad at build time, so a Nintendo-convention
-## pad reads "Ⓑ Button — Confirm" rather than the hardcoded Xbox lettering.
+## pad reads "Ⓑ Button — Confirm" rather than the hardcoded Xbox lettering. The autogrind
+## block comes from AutogrindInputHelper.grind_reference_rows() for the same reason.
+##
+## ⚠️ The rows still written out below are NOT derived and several are Nintendo-only spellings
+## ("Start (Plus)", "Back (Minus)", "Y (west face)" for a north-face button). They belong to the
+## battle/autobattle lanes. The whole body is one returned multi-line string, which is why every
+## caption census in the fleet skipped this file as a docstring and nothing flagged them.
 
 signal closed()
 
@@ -43,12 +49,7 @@ R3 Stick Click    F1                —                [color=lime]This screen �
 
 [b][color=yellow]WHILE AUTOGRINDING[/color][/b]
 [color=gray]Gamepad          Keyboard          Description[/color]
-Back (Minus)      P                 [color=lime]Pause / resume the grind[/color]
-Start (Plus)      R                 Adjust rules mid-grind
-L + R together    T                 Cycle monster tier
-Y (west face)     Y                 Turbo — run it faster
-B (Esc)           Esc               Stop grinding and return
-
+""" + AutogrindInputHelper.grind_reference_rows() + """
 [b][color=yellow]BATTLE SYSTEM (CTB)[/color][/b]
 Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color], or strategize with AP.
 
