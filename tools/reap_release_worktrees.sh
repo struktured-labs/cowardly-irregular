@@ -152,7 +152,14 @@ reap() {
         fi
     done
 
-    [ "$APPLY" -eq 1 ] && git worktree prune
+    # NO `git worktree prune` HERE. Every removal above went through `git worktree remove
+    # --force`, which deregisters the worktree itself -- so a prune adds nothing for our own
+    # candidates. What it DOES add is a repo-global sweep with no grace period: it
+    # deregisters ANY worktree whose directory is momentarily absent, and this repo carries
+    # ~134 registered worktrees that belong to other lanes. Measured in an isolated repo:
+    # move a worktree's directory aside, prune, and its registration is gone -- moving the
+    # directory back does NOT restore it, and `git worktree repair` does not either.
+    # A removal that failed above is not helped by a prune anyway: its directory still exists.
     echo "[reap] ${total} candidate(s) under ${SCAN} (release prefix ${PREFIX}); keep=${KEEP}; apply=${APPLY}"
     [ "$APPLY" -eq 0 ] && echo "[reap] DRY RUN — nothing removed. Re-run with --apply."
     return 0
@@ -162,6 +169,27 @@ reap() {
 # Builds throwaway worktrees under a DIFFERENT prefix and runs THIS SCRIPT against them, so
 # the real release worktrees are never a candidate. Both outcomes required: something kept
 # for each distinct reason, and something actually removed.
+# ⛔ NEVER `git worktree prune` FROM HERE. This selftest builds and tears down fixture
+# worktrees, and the obvious cleanup for a directory removed with `rm -rf` is a prune. But
+# prune is REPO-GLOBAL and has NO grace period: it deregisters EVERY worktree whose directory
+# is momentarily absent, not only ours. This repo carries ~127 registered worktrees, nearly
+# all of them other lanes', and a peer mid-move or on an unmounted path loses its
+# registration -- after which `git worktree repair` was measured FAILING, so they must
+# re-create the worktree and copy files back. A selftest must not be able to do that.
+#
+# So: deregister fixtures ONE AT A TIME, BY PATH. `git worktree remove --force` is already
+# scoped. Only when the directory is already gone (a crashed earlier run) do we clear the
+# admin entry, and then only the entry whose name matches THAT fixture.
+_drop_fixture() {
+    local d="$1" name
+    [ -n "$d" ] || return 0
+    git worktree remove --force "$d" >/dev/null 2>&1 && return 0
+    name="$(basename "$d")"
+    rm -rf "$d" 2>/dev/null
+    rm -rf "$(git rev-parse --git-common-dir)/worktrees/${name}" 2>/dev/null
+    return 0
+}
+
 selftest() {
     local pass=0 fail=0 pfx="tmp/reaptest-rel-" tags t self
     self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
@@ -172,7 +200,11 @@ selftest() {
         return 2
     fi
 
-    rm -rf "${pfx}"* 2>/dev/null; git worktree prune
+    for _d in "${pfx}"*; do [ -e "$_d" ] && _drop_fixture "$_d"; done
+    # a crashed earlier run can leave an admin entry with no directory; clear ONLY ours
+    for _e in "$(git rev-parse --git-common-dir)/worktrees/"$(basename "$pfx")*; do
+        [ -e "$_e" ] && rm -rf "$_e"
+    done
     # FIXTURE ORDERING IS PART OF THE TEST. These sort with `sort -V`, and the newest-KEEP
     # rule is evaluated BEFORE the branch and dirty rules. The first version of this selftest
     # put the branch fixture at index 5, where it sorted last and was kept as "among the 1
@@ -249,8 +281,8 @@ selftest() {
 
     # cleanup fixtures
     ( cd "${pfx}2" 2>/dev/null && git reset -q HEAD REAPTEST_DIRTY.md 2>/dev/null; rm -f REAPTEST_DIRTY.md )
-    for d in "${pfx}"*; do [ -d "$d" ] && git worktree remove --force "$d" >/dev/null 2>&1; done
-    git worktree prune; git branch -D reaptest/branch >/dev/null 2>&1
+    for d in "${pfx}"*; do [ -e "$d" ] && _drop_fixture "$d"; done
+    git branch -D reaptest/branch >/dev/null 2>&1
 
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
