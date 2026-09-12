@@ -33,7 +33,16 @@ func test_the_token_is_derived_rather_than_a_frozen_face_name() -> void:
 	assert_gt(src.length(), 1000, "CONTROL: read BattleScene")
 	var idx: int = src.find("func _accept_token")
 	assert_gt(idx, -1, "the helper must exist")
-	var body: String = src.substr(idx, src.find("\nfunc ", idx + 1) - idx)
+	var body: String = _code_only(src.substr(idx, src.find("\nfunc ", idx + 1) - idx))
+	## CONTROL for the stripper, on a region that DEFINITELY carries a comment. My first version
+	## keyed on a phrase in _accept_token's own doc block — which sits ABOVE the `func` line and so
+	## was never inside the scanned window at all. Neutering the stripper did not red it: a control
+	## that cannot fail. _grind_console_controls has an explanatory line INSIDE its body.
+	var commented: String = _code_only(src.substr(src.find("func _grind_console_controls"), 900))
+	assert_gt(src.find("func _grind_console_controls"), -1, "CONTROL: that region exists to strip")
+	assert_false(commented.contains("Keyboard-only: name the keys"),
+		"the comment stripper must actually remove comments, or a deleted call can be satisfied by "
+		+ "prose that mentions it — measured: without the strip, it is")
 	assert_true(body.contains("hint_for_action(\"ui_accept\")"),
 		"the token must be derived from the action, not written out per family")
 
@@ -99,3 +108,25 @@ func test_the_trusted_turn_prompt_names_the_button_that_claims_it() -> void:
 	var line: String = src.substr(src.rfind("\n", i) + 1, src.find("\n", i) - src.rfind("\n", i) - 1)
 	assert_true(line.contains("_trust_interrupt_token()"),
 		"the prompt must name the derived button: %s" % line.strip_edges())
+
+
+## Source with BOTH comment forms removed. `#` lines and trailing `#`, AND `"""` blocks — GDScript
+## docstrings are string LITERALS, so a `#`-only strip leaves prose that names a token and a scan
+## reads that prose as the token (cowir-music, msg 10577). Not used on arms that deliberately read
+## a string CONSTANT, where stripping would delete the very thing being checked.
+func _code_only(src: String) -> String:
+	var out := PackedStringArray()
+	var in_doc := false
+	for line in src.split("\n"):
+		var t := line.strip_edges()
+		if in_doc:
+			if t.ends_with("\"\"\""):
+				in_doc = false
+			continue
+		if t.begins_with("\"\"\""):
+			if not (t.length() > 5 and t.ends_with("\"\"\"")):
+				in_doc = true
+			continue
+		var h: int = line.find("#")
+		out.append(line.substr(0, h) if h >= 0 else line)
+	return "\n".join(out)

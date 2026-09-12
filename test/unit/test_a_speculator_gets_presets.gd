@@ -152,7 +152,13 @@ func test_forecast_is_left_out_and_still_deserves_to_be() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	var idx: int = src.find("\t\t\"forecast\":")
 	assert_gt(idx, -1, "CONTROL: the forecast handler arm was found to inspect")
-	var arm: String = src.substr(idx, src.find("\n\t\t\"", idx + 5) - idx)
+	## CONTROL for the stripper first — the forecast arm itself carries no comment, so stripping it
+	## proves nothing on its own. recursive_summon's handler a few hundred lines away does.
+	var doc_region: String = _code_only(src.substr(src.find("\t\t\"recursive_summon\":") - 700, 700))
+	assert_false(doc_region.contains("Exponential power"),
+		"the comment stripper must actually remove comments, or the state-change scan below reads "
+		+ "prose as code")
+	var arm: String = _code_only(src.substr(idx, src.find("\n\t\t\"", idx + 5) - idx))
 	var effects: Array = []
 	for call in ["take_damage", "add_buff", "add_debuff", "add_status", "shift_band", "gain_ap"]:
 		if arm.contains(call):
@@ -160,3 +166,25 @@ func test_forecast_is_left_out_and_still_deserves_to_be() -> void:
 	assert_eq(effects.size(), 0,
 		"forecast now CHANGES something (%s) — it is no longer a readout, so a preset may want it: "
 		% str(effects) + arm.strip_edges())
+
+
+## Source with BOTH comment forms removed. `#` lines and trailing `#`, AND `"""` blocks — GDScript
+## docstrings are string LITERALS, so a `#`-only strip leaves prose that names a token and a scan
+## reads that prose as the token (cowir-music, msg 10577). Not used on arms that deliberately read
+## a string CONSTANT, where stripping would delete the very thing being checked.
+func _code_only(src: String) -> String:
+	var out := PackedStringArray()
+	var in_doc := false
+	for line in src.split("\n"):
+		var t := line.strip_edges()
+		if in_doc:
+			if t.ends_with("\"\"\""):
+				in_doc = false
+			continue
+		if t.begins_with("\"\"\""):
+			if not (t.length() > 5 and t.ends_with("\"\"\"")):
+				in_doc = true
+			continue
+		var h: int = line.find("#")
+		out.append(line.substr(0, h) if h >= 0 else line)
+	return "\n".join(out)

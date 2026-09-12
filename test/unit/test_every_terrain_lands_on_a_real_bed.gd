@@ -120,7 +120,13 @@ func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
 	var src: String = FileAccess.get_file_as_string(BS)
 	var start: int = src.find("func _get_terrain_battle_track")
 	assert_gt(start, -1, "CONTROL: the terrain track function exists")
-	var body: String = src.substr(start, src.find("\nfunc ", start + 10) - start)
+	var body: String = _code_only(src.substr(start, src.find("\nfunc ", start + 10) - start))
+	## CONTROL: that function's comment NAMES both dropped beds, to explain why they went. Without
+	## the strip this arm reads its own explanation as the arm it forbids — a false alarm on correct
+	## code, and the near-miss that started this commit: it passed only because the comment writes
+	## them in backticks and the assert looks for double quotes.
+	assert_false(body.contains("had arms here naming"),
+		"the stripper must remove that comment, or the assertions below read prose as code")
 	for pair in [["void", "battle_void"], ["urban", "battle_urban"]]:
 		var bed: String = pair[1]
 		if keys.has(bed):
@@ -129,3 +135,25 @@ func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
 		else:
 			assert_false(body.contains("\"%s\"" % bed),
 				"%s is not a manifest key, so an arm naming it promises a bed nothing can play" % bed)
+
+
+## Source with BOTH comment forms removed. `#` lines and trailing `#`, AND `"""` blocks — GDScript
+## docstrings are string LITERALS, so a `#`-only strip leaves prose that names a token and a scan
+## reads that prose as the token (cowir-music, msg 10577). Not used on arms that deliberately read
+## a string CONSTANT, where stripping would delete the very thing being checked.
+func _code_only(src: String) -> String:
+	var out := PackedStringArray()
+	var in_doc := false
+	for line in src.split("\n"):
+		var t := line.strip_edges()
+		if in_doc:
+			if t.ends_with("\"\"\""):
+				in_doc = false
+			continue
+		if t.begins_with("\"\"\""):
+			if not (t.length() > 5 and t.ends_with("\"\"\"")):
+				in_doc = true
+			continue
+		var h: int = line.find("#")
+		out.append(line.substr(0, h) if h >= 0 else line)
+	return "\n".join(out)
