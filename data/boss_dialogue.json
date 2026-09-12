@@ -1442,7 +1442,7 @@
       ]
     },
     "aspect_labels": {
-      "_comment": "On-sprite text-tag content for the engine hook (task #25, 2026-07-15 legibility fix). Rendered as a small overlay on the boss sprite that names the current aspect + color. cowir-main wires the engine hook; cowir-sprites picks font/placement. Each aspect has: `tag` (short readable label for the overlay, ~4-6 chars), `color` (the visible sprite color the player should match), `announce_lines` (dialogue the boss speaks the instant it shifts to this aspect — engine picks one at random per shift). If the on-sprite tag isn't wired yet, announce_lines still land in the dialogue box and carry the aspect name clearly, so this block is useful either way.",
+      "_comment": "On-sprite text-tag content for the engine hook (task #25, 2026-07-15 legibility fix). Rendered as a small overlay on the boss sprite that names the current aspect + color. cowir-main wires the engine hook; cowir-sprites picks font/placement. Each aspect has: `tag` (short readable label for the overlay, ~4-6 chars), `color` (the visible sprite color the player should match), `announce_lines` (dialogue the boss speaks the instant it shifts to this aspect — engine picks one at random per shift). If the on-sprite tag isn't wired yet, announce_lines still land in the dialogue box and carry the aspect name clearly, so this block is useful either way. KEYS ARE ENGINE ELEMENT IDS, matching monsters.json weakness_cycle - they were 'frost'/'storm' (the flavour names) until 2026-09-12, so two of three aspects could never be looked up. The flavour name lives in `tag`, which is what a player reads.",
       "fire": {
         "tag": "FIRE",
         "color": "red",
@@ -1452,7 +1452,7 @@
           "The Prismatic Construct's plates glow red-orange. 'Fire this turn. Match the red, or waste the cast.'"
         ]
       },
-      "frost": {
+      "ice": {
         "tag": "FROST",
         "color": "blue",
         "announce_lines": [
@@ -1461,7 +1461,7 @@
           "The Prismatic Construct's plates rim ice-blue. 'Frost this turn. Match the blue, or waste the cast.'"
         ]
       },
-      "storm": {
+      "lightning": {
         "tag": "STORM",
         "color": "gold",
         "announce_lines": [
