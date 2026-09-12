@@ -466,6 +466,9 @@ static func build_npc_opening_topical(
 ## decorates it with ONE detail whatever you hand it. Re-run
 ## tools/llm_prompt_preview.sh signoff --ask before re-opening this; n=8 is small
 ## and a different model may not behave the same way.
+##
+## The pronoun note is withheld here for a SEPARATE measured reason, not this one:
+## see test_the_pronoun_note_is_scoped_where_it_was_measured.
 static func build_npc_sign_off(
 	npc_name: String,
 	npc_persona: String,
@@ -829,6 +832,7 @@ static func build_party_line(
 			alive_tag,
 		])
 
+	# No pronoun note here: measured, 1 gendered pronoun in 176 party lines.
 	var enemy_lines: PackedStringArray = PackedStringArray()
 	for foe in enemies:
 		if not (foe is Dictionary):
