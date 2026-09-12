@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>$GODOT_PROJECT_NAME</title>
+		<style>
+html, body, #canvas {
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+body {
+	color: white;
+	background-color: black;
+	overflow: hidden;
+	touch-action: none;
+}
+
+#canvas {
+	display: block;
+}
+
+#canvas:focus {
+	outline: none;
+}
+
+#status, #status-splash {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+}
+
+#status {
+	background-color: $GODOT_SPLASH_COLOR;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	visibility: hidden;
+}
+
+#status-splash {
+	max-height: 100%;
+	max-width: 100%;
+	margin: auto;
+}
+
+#status-splash.show-image--false {
+	display: none;
+}
+
+#status-splash.fullsize--true {
+	height: 100%;
+	width: 100%;
+	object-fit: contain;
+}
+
+#status-splash.use-filter--false {
+	image-rendering: pixelated;
+}
+
+/* ── loading panel ──────────────────────────────────────────────────────────
+   The stock shell renders a bare <progress> with no text. This build is a
+   ~209 MiB first download, so an anonymous bar reads as a hang: the player has
+   no way to tell "still downloading" from "stuck". Everything below is
+   presentation only — the boot sequence underneath is the stock one. */
+#status-panel {
+	position: absolute;
+	bottom: 8%;
+	left: 0;
+	right: 0;
+	display: none;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.6rem;
+	padding: 0 1.5rem;
+	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+	/* the splash sits behind this; keep the text legible over any artwork */
+	text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+	z-index: 2;
+}
+
+#status-progress {
+	appearance: none;
+	-webkit-appearance: none;
+	width: min(60%, 34rem);
+	height: 0.7rem;
+	border: 1px solid rgba(255, 255, 255, 0.35);
+	border-radius: 0.35rem;
+	background-color: rgba(0, 0, 0, 0.45);
+	overflow: hidden;
+}
+
+#status-progress::-webkit-progress-bar {
+	background-color: rgba(0, 0, 0, 0.45);
+}
+
+#status-progress::-webkit-progress-value {
+	background-color: #e8d9a0;
+	transition: width 0.2s ease-out;
+}
+
+#status-progress::-moz-progress-bar {
+	background-color: #e8d9a0;
+}
+
+/* An indeterminate <progress> (no value attribute) keeps its own animation;
+   the readout below says why there is no percentage. */
+
+#status-readout {
+	color: #f2ecd8;
+	font-size: 0.95rem;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.01em;
+	text-align: center;
+	min-height: 1.2em;
+}
+
+#status-hint {
+	color: rgba(242, 236, 216, 0.72);
+	font-size: 0.8rem;
+	text-align: center;
+	max-width: 34rem;
+	line-height: 1.35;
+}
+
+#status-notice {
+	background-color: #5b3943;
+	border-radius: 0.5rem;
+	border: 1px solid #9b3943;
+	color: #e0e0e0;
+	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+	line-height: 1.3;
+	margin: 0 2rem;
+	overflow: hidden;
+	padding: 1rem;
+	text-align: center;
+	display: none;
+	z-index: 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#status-progress::-webkit-progress-value {
+		transition: none;
+	}
+}
+		</style>
+$GODOT_HEAD_INCLUDE
+	</head>
+	<body>
+		<canvas id="canvas">
+			Your browser does not support the canvas tag.
+		</canvas>
+
+		<noscript>
+			Your browser does not support JavaScript.
+		</noscript>
+
+		<div id="status">
+			<img id="status-splash" class="$GODOT_SPLASH_CLASSES" src="$GODOT_SPLASH" alt="">
+			<div id="status-panel">
+				<progress id="status-progress"></progress>
+				<div id="status-readout" role="status" aria-live="polite"></div>
+				<div id="status-hint"></div>
+			</div>
+			<div id="status-notice"></div>
+		</div>
+
+		<script src="$GODOT_URL"></script>
+		<script>
+const GODOT_CONFIG = $GODOT_CONFIG;
+const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+const engine = new Engine(GODOT_CONFIG);
+
+(function () {
+	const statusOverlay = document.getElementById('status');
+	const statusPanel = document.getElementById('status-panel');
+	const statusProgress = document.getElementById('status-progress');
+	const statusReadout = document.getElementById('status-readout');
+	const statusHint = document.getElementById('status-hint');
+	const statusNotice = document.getElementById('status-notice');
+
+	let initializing = true;
+	let statusMode = '';
+
+	// The engine reports `total` from the fetch, which is 0 when the server
+	// sends no Content-Length. The export already knows every payload size, so
+	// fall back to that sum rather than dropping to an anonymous bar.
+	const declaredTotal = (function () {
+		const sizes = GODOT_CONFIG['fileSizes'];
+		if (sizes == null || typeof sizes !== 'object') {
+			return 0;
+		}
+		return Object.keys(sizes).reduce(function (sum, k) {
+			const v = Number(sizes[k]);
+			return sum + (isFinite(v) && v > 0 ? v : 0);
+		}, 0);
+	}());
+
+	function formatMB(bytes) {
+		return (bytes / 1000000).toFixed(1);
+	}
+
+	function setStatusMode(mode) {
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		if (mode === 'hidden') {
+			statusOverlay.remove();
+			initializing = false;
+			return;
+		}
+		statusOverlay.style.visibility = 'visible';
+		statusPanel.style.display = mode === 'progress' ? 'flex' : 'none';
+		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
+		statusMode = mode;
+	}
+
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const lines = text.split('\n');
+		lines.forEach((line) => {
+			statusNotice.appendChild(document.createTextNode(line));
+			statusNotice.appendChild(document.createElement('br'));
+		});
+	}
+
+	function setHint(text) {
+		if (statusHint.textContent !== text) {
+			statusHint.textContent = text;
+		}
+	}
+
+	function showDownloadProgress(current, total) {
+		const known = total > 0 ? total : declaredTotal;
+		if (current > 0 && known > 0) {
+			statusProgress.value = current;
+			statusProgress.max = known;
+			const pct = Math.min(100, Math.floor((current / known) * 100));
+			statusReadout.textContent = pct + '%  ·  ' + formatMB(current) + ' / ' + formatMB(known) + ' MB';
+		} else {
+			statusProgress.removeAttribute('value');
+			statusProgress.removeAttribute('max');
+			statusReadout.textContent = known > 0
+				? 'Downloading ' + formatMB(known) + ' MB…'
+				: 'Downloading…';
+		}
+		// Past ~90% the next thing the player sees is the bar stopping while the
+		// engine unpacks and compiles ~44 MB of WebAssembly. Say so BEFORE it
+		// happens: that stretch blocks the main thread, so no timer, animation or
+		// later text update can run during it. Measured at 4.2s here; slower
+		// machines are worse.
+		if (known > 0 && current >= known * 0.9) {
+			setHint('Nearly there. The bar pauses for a few seconds at the end while the game unpacks and starts up.');
+		} else {
+			setHint('First load downloads the whole game. Your browser caches it, so coming back is quick.');
+		}
+	}
+
+	// The download finishing is not the game starting: a ~44 MB WebAssembly
+	// module still has to compile, and a bar parked at 100% reads as a hang.
+	function showStarting() {
+		statusProgress.removeAttribute('value');
+		statusProgress.removeAttribute('max');
+		statusReadout.textContent = 'Starting…';
+		setHint('Unpacking and warming up the engine.');
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === 'string') {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice('An unknown error occurred.');
+		}
+		setStatusMode('notice');
+		initializing = false;
+	}
+
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
+
+	if (missing.length !== 0) {
+		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
+			let serviceWorkerRegistrationPromise;
+			try {
+				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
+			} catch (err) {
+				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
+			}
+			// There's a chance that installing the service worker would fix the issue
+			Promise.race([
+				serviceWorkerRegistrationPromise.then((registration) => {
+					if (registration != null) {
+						return Promise.reject(new Error('Service worker already exists.'));
+					}
+					return registration;
+				}).then(() => engine.installServiceWorker()),
+				// For some reason, `getRegistration()` can stall
+				new Promise((resolve) => {
+					setTimeout(() => resolve(), 2000);
+				}),
+			]).then(() => {
+				// Reload if there was no error.
+				window.location.reload();
+			}).catch((err) => {
+				console.error('Error while registering service worker:', err);
+			});
+		} else {
+			// Display the message as usual
+			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
+			displayFailureNotice(missingMsg + missing.join('\n'));
+		}
+	} else {
+		setStatusMode('progress');
+		showDownloadProgress(0, 0);
+		let sawCompletion = false;
+		// A completion callback is not guaranteed: with Content-Length the engine
+		// reaches `current == total` and this fires, but over a chunked response
+		// its last call is ~98.7% and nothing follows. A timer cannot cover the
+		// difference -- the gap is a BLOCKED MAIN THREAD, so setTimeout does not
+		// run during it (measured). The honest fix is the hint above, set while
+		// the thread is still free.
+		function markStarting() {
+			if (sawCompletion) {
+				return;
+			}
+			sawCompletion = true;
+			showStarting();
+		}
+		engine.startGame({
+			'onProgress': function (current, total) {
+				const known = total > 0 ? total : declaredTotal;
+				if (known > 0 && current >= known) {
+					markStarting();
+					return;
+				}
+				if (!sawCompletion) {
+					showDownloadProgress(current, total);
+				}
+			},
+		}).then(() => {
+			setStatusMode('hidden');
+		}, displayFailureNotice);
+	}
+}());
+		</script>
+	</body>
+</html>
