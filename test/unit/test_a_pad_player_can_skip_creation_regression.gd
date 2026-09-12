@@ -130,3 +130,49 @@ func test_the_resolver_discriminates() -> void:
 		"CONTROL: the skip face must differ from the confirm face on one family")
 	assert_eq(InputProfileManager.button_name_for_index(JOY_BUTTON_Y), "",
 		"CONTROL: with no pad the raw-index helper returns EMPTY, which is why the bar says Tab")
+
+
+## ⛔ THE ARM THIS FILE SHIPPED WITHOUT, and the same gap @cowir-main directed me to close for
+## unequip: "a pad player can skip character creation" went out in .303 verified by
+## `code.contains("event.button_index == JOY_BUTTON_Y")` — a fact about SOURCE TEXT. It survives
+## the branch existing and never being reached. Same reasoning, same exception: this is a shipped
+## player-facing claim, so it gets pressed rather than grepped.
+func test_pressing_the_pad_button_really_skips() -> void:
+	var screen = load("res://src/ui/CharacterCreationScreen.gd").new()
+	add_child_autofree(screen)
+	# _ready blocks input for 0.3s "to prevent accidental selection". The first version of this arm
+	# fired inside that window and failed — which read as "the pad route does not work" and was in
+	# fact the test pressing before the screen was listening. A real player's first press is after it.
+	await wait_seconds(0.4)
+
+	var fired := [false]
+	screen.creation_skipped.connect(func(): fired[0] = true)
+
+	var ev := InputEventJoypadButton.new()
+	ev.button_index = JOY_BUTTON_Y
+	ev.pressed = true
+	screen._input(ev)
+
+	assert_true(fired[0],
+		"pressing the north face must reach _skip_creation and emit creation_skipped — the branch " +
+		"being spelled correctly in source is not the same as the event arriving at it")
+
+
+## CONTROL: the probe must observe a NON-event, or "it fired" is unfalsifiable. The face that
+## CONFIRMS must not SKIP — they are different outcomes (_create_party vs
+## _create_party_from_customizations) and that distinction is why the missing route mattered.
+func test_the_confirm_face_does_not_skip() -> void:
+	var screen = load("res://src/ui/CharacterCreationScreen.gd").new()
+	add_child_autofree(screen)
+	await wait_seconds(0.4)
+
+	var skipped := [false]
+	screen.creation_skipped.connect(func(): skipped[0] = true)
+
+	var ev := InputEventJoypadButton.new()
+	ev.button_index = JOY_BUTTON_A   # the SOUTH face — ui_cancel here, previous character
+	ev.pressed = true
+	screen._input(ev)
+
+	assert_false(skipped[0],
+		"CONTROL: a different face must NOT skip — otherwise the arm above proves nothing")
