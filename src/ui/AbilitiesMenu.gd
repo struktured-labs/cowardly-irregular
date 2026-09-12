@@ -188,9 +188,11 @@ func _build_ui() -> void:
 	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
 
 	# Footer
-	var footer_text = "←→/Click: Tab  ↑↓: Select  B/RClick: Back"
+	var accept_hint := InputProfileManager.hint_for_action("ui_accept")
+	var cancel_hint := InputProfileManager.hint_for_action("ui_cancel")
+	var footer_text = "←→/Click: Tab  ↑↓: Select  %s/RClick: Back" % cancel_hint
 	if current_tab == Tab.PASSIVES:
-		footer_text = "←→/Click: Tab  ↑↓: Select  A/Click: Equip/Unequip  B/RClick: Back"
+		footer_text = "←→/Click: Tab  ↑↓: Select  %s/Click: Equip/Unequip  %s/RClick: Back" % [accept_hint, cancel_hint]
 	var footer = Label.new()
 	footer.text = footer_text
 	footer.position = Vector2(16, viewport_size.y - 32)
