@@ -42,9 +42,24 @@ const PROPER_NAMES := {
 ## 12 transitions and silently omits the two that matter most — including the one this file was
 ## written for. Deleting the Scriptura sign left it GREEN. The flag is armed and restored here, the
 ## same way the village-chest sweep had to arm ScripturaPlaza's quest gate.
+##
+## ⚠️ ARMED THE WAY THE GAME WRITES IT, WHICH IS NOT `set_story_flag`. Nothing in the campaign ever
+## writes `world1_mordaine_defeated` to `story_flags`: CastleHarmonia declares it as
+## `boss_flag_key` (CastleHarmonia.gd:41) and DragonCave banks victory into
+## `game_constants["dungeon_flags"][boss_flag_key]`. `is_story_flag_set` reads four namespaces and
+## finds it there, so both arming styles pass TODAY — and that is the problem. Armed through
+## `story_flags`, this file stays green for a reader narrowed to `get_story_flag`, i.e. for a
+## Castle Harmonia that never appears on the overworld in play. Arming the writer's namespace ONLY
+## makes the guard prove the reader reaches it. `set_story_flag` writes one namespace and
+## `is_story_flag_set` reads four; hand-emulating a boss defeat has to use the writer's.
 func _arm_spine(gs: Node) -> Dictionary:
-	var prior: Dictionary = {"flags": gs.story_flags.duplicate(true)}
-	gs.set_story_flag("world1_mordaine_defeated", true)
+	var prior: Dictionary = {
+		"flags": gs.story_flags.duplicate(true),
+		"consts": gs.game_constants.duplicate(true),
+	}
+	if not gs.game_constants.has("dungeon_flags"):
+		gs.game_constants["dungeon_flags"] = {}
+	gs.game_constants["dungeon_flags"]["world1_mordaine_defeated"] = true
 	return prior
 
 
@@ -63,6 +78,7 @@ func test_every_w1_destination_is_named_on_a_signpost() -> void:
 	vp.add_child(w)
 	await get_tree().physics_frame
 	gs.story_flags = prior["flags"]
+	gs.game_constants = prior["consts"]
 
 	var signs: Array = []
 	var dests: Array = []
@@ -160,6 +176,7 @@ func test_an_exemption_that_stopped_being_true_must_be_deleted() -> void:
 	vp.add_child(w)
 	await get_tree().physics_frame
 	gs.story_flags = prior["flags"]
+	gs.game_constants = prior["consts"]
 
 	var signs: Array = []
 	var dests: Array = []
