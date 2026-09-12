@@ -55,7 +55,7 @@ func test_every_fragment_bed_belongs_to_its_own_world() -> void:
 		var bed := _bed(_fragment_scenes()[id])
 		assert_ne(bed, "", "%s must name a music bed" % id)
 		if not bed.begins_with("cutscene_w%d_" % w):
-			offenders.append("%s (world %d) plays %s" % [id, w, bed])
+			offenders.append("%s (world %d) plays %s, expected a cutscene_w%d_* bed" % [id, w, bed, w])
 	offenders.sort()
 	assert_eq(offenders, [],
 		("a fragment reveal must play its OWN world's bed. W1-W3 each did; W5 played "
@@ -90,4 +90,5 @@ func test_every_fragment_bed_resolves_in_the_music_manifest() -> void:
 		if bed != "" and not tracks.has(bed):
 			missing.append("%s -> %s" % [id, bed])
 	assert_eq(missing, [],
-		"a fragment bed names a track absent from the manifest, which plays as silence: %s" % str(missing))
+		("a fragment bed names a track absent from the manifest, which plays as silence — add the track to "
+		+ "data/music_manifest.json or correct the spelling in the scene's play_music step: %s") % str(missing))
