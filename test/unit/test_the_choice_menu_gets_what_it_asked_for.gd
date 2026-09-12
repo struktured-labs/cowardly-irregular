@@ -109,11 +109,20 @@ func test_the_blocker_that_justified_not_padding_is_gone() -> void:
 	##
 	## Padding is still NOT done, but it is now a free decision rather than a blocked
 	## one. Kept as a source check so this file stops citing a mechanism that is gone.
-	var src: String = FileAccess.get_file_as_string("res://src/llm/DynamicConversation.gd")
+	## Scoped to the function, not to a character count. A fixed window over raw
+	## source is measured in prose as much as code, so an explanatory line added
+	## inside the function would red this arm on a correct change. Comments are
+	## stripped first so a "func " inside one cannot end the span early.
+	var src: String = _code_only(
+		FileAccess.get_file_as_string("res://src/llm/DynamicConversation.gd"))
 	assert_false(src.is_empty(), "CONTROL: source must load")
 	var at: int = src.find("func _ensure_farewell")
 	assert_true(at != -1, "CONTROL: _ensure_farewell must exist")
-	var body: String = src.substr(at, 520)
+	var ends_at: int = src.find("\nfunc ", at + 1)
+	if ends_at == -1:
+		ends_at = src.length()
+	var body: String = src.substr(at, ends_at - at)
+	assert_gt(body.length(), 80, "CONTROL: the function body must not be empty")
 	assert_true(body.find("choices.append(exit_line)") != -1,
 		("_ensure_farewell no longer ends by appending the exit. If it went back to "
 		+ "short-circuiting on an existing farewell, the exit can sit on the "
@@ -135,3 +144,11 @@ func _distinct(items: Array) -> Array:
 			seen[i] = true
 			out.append(i)
 	return out
+
+
+func _code_only(src: String) -> String:
+	var out: PackedStringArray = PackedStringArray()
+	for line in src.split("\n"):
+		var hash_at: int = line.find("#")
+		out.append(line if hash_at == -1 else line.substr(0, hash_at))
+	return "\n".join(out)
