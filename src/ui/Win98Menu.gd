@@ -244,11 +244,21 @@ func _ready() -> void:
 	add_to_group("win98_menus")
 	_setup_timers()
 	_setup_audio()
+	# The hint bar derives its tokens, but only when _update_ap_label runs — an AP change. A pad
+	# that sleeps mid-battle left it naming Ⓑ and LB while the Toast said "keyboard still works".
+	# Godot drops this connection when the node frees, so per-menu instances need no teardown.
+	if InputProfileManager and not InputProfileManager.input_device_changed.is_connected(_on_input_device_changed):
+		InputProfileManager.input_device_changed.connect(_on_input_device_changed)
 	# Don't call _build_menu() here - setup() will call it with proper data
 	# This prevents a race condition when setup() is called immediately after add_child()
 	# Ensure we can receive input
 	focus_mode = Control.FOCUS_ALL
 	grab_focus()
+
+
+func _on_input_device_changed(_connected: bool) -> void:
+	if is_instance_valid(self) and not _is_closing:
+		_update_hint_bar()
 
 
 var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))

@@ -163,6 +163,10 @@ const BUTTON_LABELS = {
 var active_profile: String = "Standard"
 var custom_bindings: Dictionary = {}
 ## True once the player picks a profile in Settings or a saved config supplies one — autodetect never overrides an explicit choice.
+## A pad arrived or the last one left. Surfaces whose captions are DERIVED rebuild on this —
+## deriving them is only half the job if the answer is frozen at the moment the screen was built.
+signal input_device_changed(connected: bool)
+
 var profile_chosen_by_user: bool = false
 
 
@@ -180,6 +184,10 @@ func _on_joy_connection_changed(_device: int, connected: bool) -> void:
 	if connected and not profile_chosen_by_user:
 		_autodetect_and_apply()
 	_announce_pad_change(connected)
+	# Every derived caption in the game resolves at BUILD time. Four systems listened for the
+	# connection change and none of them re-rendered text, so a wireless pad that sleeps mid-battle
+	# left the hint bar naming Ⓑ and LB at a player the Toast had just told "keyboard still works".
+	input_device_changed.emit(connected)
 
 
 ## Four systems listened for this signal and NONE told the player. A wireless pad that sleeps
