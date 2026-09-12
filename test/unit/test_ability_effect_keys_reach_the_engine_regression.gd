@@ -83,6 +83,7 @@ extends GutTest
 
 const ABILITIES := "res://data/abilities.json"
 const BATTLE_MANAGER := "res://src/battle/BattleManager.gd"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 ## ability effect key -> why it is not read. Every entry is a claim about the ENGINE,
 ## so each has to be false before its line can be deleted.
@@ -265,21 +266,24 @@ func test_frost_armor_still_promises_a_reflection_it_does_not_perform() -> void:
 ##                  lines, HeadlessBattleResolver 4). A `#`-only strip cannot touch a docstring,
 ##                  which is the .325 defect verbatim.
 ##
-## The region half splits on the delimiter and keeps alternate chunks — no toggle, no state, so
-## it cannot desync the way my own precedence-bugged state machine did an hour ago (`A or (B and
-## C)` swallowed five files whole and reported five confident false positives). It also cannot
-## answer "is this line inside a region", which this file never asks.
+## ⛔ MY OWN VERSION OF THIS WAS HALF A FIX, WHICH IS WHY IT IS NOW gd_source. It dropped lines
+## that BEGIN with `#` and left every TRAILING comment in the code half — so
+## `var a = 1  # "effect_chance"` satisfied a presence assert exactly as well as the real call.
+## That is the defect this file exists to close, left open in this file's own remedy.
+## Measured on b466669e: BattleManager carries 77 trailing-comment lines, the resolver 2, and
+## NONE holds a token any arm here asserts. Correct by occupancy, not by construction
+## (cowir-autogrind's phrase, who found the same gap in eight of their own guards).
+##
+## The shared helper strips QUOTE-AWARE, so a `#` inside a string literal survives and a trailing
+## comment does not — a naive `split("#")[0]` would trade this gap for that one. It also strips
+## comments BEFORE the parity split, so a `"""` hidden in a comment cannot flip parity; my local
+## copy had that order right, which was luck rather than design.
+##
+## The must_survive controls below stay: the helper's header REQUIRES every caller to assert a
+## surviving code site and does not enforce it, so over-stripping and a correct strip are
+## otherwise the same green.
 func _code_only(raw: String) -> String:
-	var no_lines: PackedStringArray = []
-	for line in raw.split("\n"):
-		if not line.strip_edges().begins_with("#"):
-			no_lines.append(line)
-	var chunks: PackedStringArray = "\n".join(no_lines).split("\"\"\"")
-	var kept: PackedStringArray = []
-	for i in chunks.size():
-		if i % 2 == 0:
-			kept.append(chunks[i])
-	return "\n".join(kept)
+	return str(GdSource.split(raw)["code"])
 
 
 ## The two-engine split above is prose, and prose rots. This makes it a checked fact: both
