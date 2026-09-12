@@ -34,8 +34,8 @@ static func build_text() -> String:
 Y (west face)     Shift             —                [color=lime]Run — hold to move 1.7x faster[/color]
 L Shoulder        L Key             —                Defer / Party Chat
 R Shoulder        R Key             —                Advance (queue action)
-Start (Plus)      F5                —                Open Autobattle Editor
-Back (Minus)      F6                —                Toggle Autobattle
+Start / Plus / Options F5           —                Open Autobattle Editor
+Back / Select / Minus / Share F6    —                Toggle Autobattle
 X (top face)      ` (backtick)      —                Battle speed
 Y (west face)     Y                 —                [color=lime]Repeat last turn's actions — in battle[/color]
                   F                 —                Cycle party formation (also in the command menu)
@@ -60,7 +60,7 @@ Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color],
 
 [b][color=yellow]AUTOBATTLE[/color][/b]
 This game is designed to be automated!
-Open the [color=lime]Autobattle Editor[/color] (Start/F5) to write rules:
+Open the [color=lime]Autobattle Editor[/color] (Start/Plus/Options, or F5) to write rules:
   IF [condition] THEN [action]
 Rules are checked top-to-bottom. First match wins.
 Toggle autobattle per character with Select/F6.

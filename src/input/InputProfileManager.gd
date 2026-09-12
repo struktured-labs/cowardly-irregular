@@ -141,13 +141,18 @@ const BUTTON_LABELS = {
 	1: "B / East (Nintendo A)",
 	2: "X / West (Nintendo Y)",
 	3: "Y / North (Nintendo X)",
-	4: "Back / Select / Minus",
-	5: "Guide / Home",
-	6: "Start / Plus",
-	7: "L3 (Left Stick Click)",
-	8: "R3 (Right Stick Click)",
-	9: "L / LB (Left Shoulder)",
-	10: "R / RB (Right Shoulder)",
+	# ⛔ These FOUR omitted PlayStation entirely until 2026-09-12. This is the "every family at
+	# once" vocabulary the Controls screen shows with NO pad attached, so a PlayStation player
+	# read "Back / Select / Minus" and "Start / Plus" — neither of which is on their pad. The
+	# per-family BUTTON_NAMES table had Share/Options/L1/R1 the whole time; only the label that
+	# claims to name them all was short.
+	4: "Back / Select / Minus / Share",
+	5: "Guide / Home / PS",
+	6: "Start / Plus / Options",
+	7: "L3 / L-Stick (Left Stick Click)",
+	8: "R3 / R-Stick (Right Stick Click)",
+	9: "L / LB / L1 (Left Shoulder)",
+	10: "R / RB / R1 (Right Shoulder)",
 	11: "D-Up",
 	12: "D-Down",
 	13: "D-Left",
