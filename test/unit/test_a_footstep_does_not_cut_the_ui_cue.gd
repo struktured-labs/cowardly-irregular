@@ -73,6 +73,23 @@ func test_the_walk_loop_still_reaches_play_footstep() -> void:
 	assert_gt(src.length(), 10000, "CONTROL: OverworldPlayer CODE read back %d chars" % src.length())
 	assert_lt(src.length(), raw.length(),
 		"CONTROL: stripping removed nothing — the stripper is inert and this arm is a raw read again")
+	assert_true(raw.contains("\n#") or raw.contains("\t#"),
+		"ANTI-VACUITY: OverworldPlayer holds no comment line, so the control above proves nothing")
+	## STRUCTURAL, so a reworded comment cannot change the verdict (@cowir-music `da523860`).
+	assert_false(_code_only("\tpass  ## was sm.play_footstep(x)").contains("play_footstep"),
+		"a call named in a trailing comment still reads as a call")
+	## The needle must be ABSENT from the call itself: this read `# step #2` / not-contains "step"
+	## and went RED on a clean tree, because `play_footstep` contains "step". A negative assert
+	## needs a token that only the comment can supply.
+	var trailing := _code_only('\tsm.play_footstep(t)  # cadence #2')
+	assert_true(trailing.contains("play_footstep(t)"), "the stripper ate a real call")
+	assert_false(trailing.contains("cadence"),
+		"cut at the LAST # — the comment body survived as code")
+	## Quote-awareness had no case here until 2026-09-12: dropping the quote arm left this file
+	## GREEN while its two siblings redded. A shared helper needs the same case table in each
+	## copy, or the copies certify different functions.
+	assert_true(_code_only('\tvar s := "has #hash"  # gone').contains('"has #hash"'),
+		"a # inside a string literal is not a comment — live code was truncated")
 	assert_true(src.contains("play_footstep("),
 		"the walk loop no longer calls play_footstep — footsteps are silent, which this test would otherwise call 'not cutting anything'")
 
