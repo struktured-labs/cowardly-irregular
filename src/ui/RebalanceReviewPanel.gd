@@ -14,8 +14,9 @@ class_name RebalanceReviewPanel
 ## Input:
 ##   D-pad up/down — cycle proposals
 ##   A / Enter     — Apply current
-##   X / S key     — Dismiss current  (custom 'rebalance_dismiss' action
-##                                     falls back to KEY_S)
+##   North face / S — Dismiss current. NORTH, not a letter: that face prints Ⓨ on Xbox, Ⓧ on
+##                    Switch and △ on PlayStation. This said "X / S key" until 2026-09-12,
+##                    naming a button ui_cancel binds and whose arm was removed in .311.
 ##   B / Esc       — Close panel
 
 signal closed()
@@ -104,7 +105,7 @@ func _build_ui() -> void:
 	add_child(_empty_label)
 
 	_hint_label = Label.new()
-	_hint_label.text = "↑/↓ Cycle    %s Apply    [S] Dismiss    %s Close" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
+	_hint_label.text = _legend_text()
 	_hint_label.add_theme_font_size_override("font_size", 12)
 	_hint_label.add_theme_color_override("font_color", TEXT_COLOR)
 	_hint_label.position = Vector2(panel_x + 24, panel_y + panel_h - 28)
@@ -180,6 +181,21 @@ func _input(event: InputEvent) -> void:
 	elif _is_dismiss_event(event):
 		_dismiss_current()
 		get_viewport().set_input_as_handled()
+
+
+## The footer legend. Dismiss is DERIVED like its two neighbours — it was the frozen literal
+## "[S]", a KEYBOARD key, sitting between two correctly-derived tokens. Measured per family:
+## north is Ⓨ on Xbox, Ⓧ on Switch, △ on PlayStation, so no single letter is right anywhere but
+## one pad, and a Switch player was told to press S for the only control their pad has.
+func _legend_text() -> String:
+	var accept: String = InputProfileManager.hint_for_action("ui_accept")
+	var cancel: String = InputProfileManager.hint_for_action("ui_cancel")
+	# button_name_for_index returns "" with NO pad — it refuses to name one, so the caller names
+	# the KEY. Dismiss is a raw JOY_BUTTON_Y read, not a bound action, so this is the safe helper.
+	var dismiss: String = InputProfileManager.button_name_for_index(JOY_BUTTON_Y)
+	if dismiss == "":
+		dismiss = "S"
+	return "↑/↓ Cycle    %s Apply    %s Dismiss    %s Close" % [accept, dismiss, cancel]
 
 
 ## Detect a dismiss input. Custom action 'rebalance_dismiss' if it
