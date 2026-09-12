@@ -1,5 +1,7 @@
 extends GutTest
 
+const TRIPLE := '"""'
+
 ## The world vocabulary is ONE function and three lanes now read it (2026-08-06).
 ##
 ## Per-world job sprites need `<sheet>_<world_suffix>`. The only implementation of world
@@ -106,7 +108,7 @@ func test_my_areas_COVER_EVERY_ARM_the_resolver_can_return() -> void:
 	var next_fn: int = src.find("\nfunc ", fn_start + 1)
 	if next_fn < 0:
 		next_fn = src.length()
-	var body: String = src.substr(fn_start, next_fn - fn_start)
+	var body: String = _code_only(src.substr(fn_start, next_fn - fn_start))
 	assert_gt(body.length(), 200,
 		"control: the extracted body is implausibly short — a boundary, not a line window, or the arms get truncated")
 
@@ -149,7 +151,7 @@ func test_the_cached_return_cannot_smuggle_an_unseen_suffix() -> void:
 	var next_fn: int = src.find("\nfunc ", fn_start + 1)
 	if next_fn < 0:
 		next_fn = src.length()
-	var body: String = src.substr(fn_start, next_fn - fn_start)
+	var body: String = _code_only(src.substr(fn_start, next_fn - fn_start))
 
 	var non_literal: Array[String] = []
 	var re := RegEx.create_from_string("(?m)^\\s*return\\s+(.+?)\\s*$")
@@ -178,7 +180,7 @@ func test_the_interior_return_cannot_smuggle_a_suffix_either() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
 	var fn_start: int = src.find("func _get_current_world_suffix")
 	var next_fn: int = src.find("\nfunc ", fn_start + 1)
-	var body: String = src.substr(fn_start, next_fn - fn_start)
+	var body: String = _code_only(src.substr(fn_start, next_fn - fn_start))
 
 	var emitted: Array[String] = []
 	for w in WeatherSystem.WORLD_IDS.keys():
@@ -238,3 +240,29 @@ func test_the_word_futuristic_IS_in_the_body_which_is_why_grep_lies() -> void:
 		"PREMISE: 'futuristic' must still appear in the file, else this test no longer explains anything")
 	assert_false(src.contains("return \"futuristic\""),
 		"a `return \"futuristic\"` was added — either W5's vocabulary changed everywhere, or an asset is about to be named for a suffix nothing else expects")
+
+
+## Comment-strip that also drops """ blocks. GDScript docstrings are string
+## LITERALS, so a #-only strip leaves them and prose quoting an arm reads AS the
+## arm. Measured 2026-09-12: planting "scriptura_village" in the resolver's own
+## docstring hid a DELETED arm from the scans here — the source assert fired 0
+## times with it and 2 times without, and only a behavioural arm caught it.
+##
+## Drops the WHOLE line on a triple quote, which can also drop code sharing that
+## line. That errs toward reporting an arm MISSING (a loud red) rather than
+## present (a silent green), which is the direction a guard should fail in.
+static func _code_only(body: String) -> String:
+	var out: PackedStringArray = []
+	var in_doc: bool = false
+	for raw in body.split("\n"):
+		if in_doc:
+			if raw.contains(TRIPLE):
+				in_doc = false
+			continue
+		var q: int = raw.find(TRIPLE)
+		if q >= 0:
+			if raw.find(TRIPLE, q + 3) < 0:
+				in_doc = true
+			continue
+		out.append(raw.split("#")[0])
+	return "\n".join(out)
