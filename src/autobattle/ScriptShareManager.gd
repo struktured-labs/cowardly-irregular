@@ -34,6 +34,9 @@ static func decode_share_code(code: String) -> Dictionary:
 	var c := code.strip_edges()
 	if not c.begins_with(SHARE_CODE_PREFIX):
 		return {}
+	## Clear FIRST. Without this a refusal for one reason can be explained with the PREVIOUS
+	## import's reason — a confident wrong answer, which is worse than "no reason reported".
+	last_import_errors = []
 	var packed: PackedByteArray = Marshalls.base64_to_raw(c.substr(SHARE_CODE_PREFIX.length()))
 	if packed.is_empty():
 		return {}
@@ -53,6 +56,12 @@ static func decode_share_code(code: String) -> Dictionary:
 		_:
 			return {}
 	if not errs.is_empty():
+		## The reason was computed on the line above and thrown away — the same defect the APPLIERS
+		## were fixed for and this layer was not. Both paste paths only see {} and tell the player
+		## "Not a valid share code", which is false: a code using a condition this build does not
+		## have is well-formed and merely newer. That case stopped being hypothetical the day four
+		## conditions were added to the grammar.
+		last_import_errors = errs
 		push_warning("[SHARE] Share code rejected — %d invalid rule(s): %s" % [errs.size(), str(errs)])
 		return {}
 	return parsed

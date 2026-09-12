@@ -109,7 +109,7 @@ func _ready() -> void:
 
 	# Start steampunk overworld music
 	if SoundManager:
-		SoundManager.play_area_music("overworld_steampunk")
+		SoundManager.play_area_music(_get_music_area_id())
 
 	_setup_effects()
 	_minimap = OverworldMinimap.new()
@@ -785,3 +785,11 @@ func _is_field_elite(monster_id: String) -> bool:
 ## and this chain has already cost the fleet one leaked latch (the 2026-09-06 spider wedge).
 func _elite_id(monster_id: String) -> String:
 	return monster_id + EncounterSystem.ELITE_SUFFIX if not monster_id.ends_with(EncounterSystem.ELITE_SUFFIX) else monster_id
+
+
+## BaseVillage's convention, which no overworld carried: GameLoop._derive_current_scene_music_key
+## asks a scene for its own bed and falls back to the literal "overworld" — W1's key — when nothing
+## answers. All six overworlds answered nothing, so stopping autogrind or restoring a lost pause-menu
+## snapshot played World 1 in every world. Not the dispatcher's `_:` arm: "overworld" MATCHES an arm.
+func _get_music_area_id() -> String:
+	return "overworld_steampunk"

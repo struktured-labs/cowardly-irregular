@@ -134,7 +134,12 @@ func _slurp_dir(root: String, ext: String, skip_file: String = "") -> String:
 				if not name.begins_with("."):
 					dirs.append(full)
 			elif name.ends_with(ext) and name != skip_file and not KEY_SPACE_DEFINERS.has(name):
-				out += _read(full)
+				## A key named ONLY in a comment is not a consumer, and this audit fails toward
+				## SILENCE — a phantom consumer suppresses a real orphan. MEASURED 2026-09-12:
+				## src/ is 22.8% comment and 0 of 338 keys flip when stripped, so this is
+				## preventive today, exactly like KEY_SPACE_DEFINERS above. JSON has no comments,
+				## so only .gd is stripped.
+				out += _code_only(_read(full)) if ext == ".gd" else _read(full)
 			name = d.get_next()
 		d.list_dir_end()
 	return out
@@ -450,3 +455,59 @@ func test_every_dynamic_prefix_exemption_is_load_bearing() -> void:
 		"be wrong. If the family really is built at runtime, the entry comes back the day a " +
 		"non-literal key lands — test_no_unreachable_sfx_keys names that key and that " +
 		"disposition.") % [inert.size(), inert])
+
+
+func _code_only(text: String) -> String:
+	## Presence checks read CODE, never prose. Quote- and escape-aware; the derivation and its
+	## case table live in test_group_attack_cue_survives_its_own_hits.gd.
+	var out: PackedStringArray = []
+	for line in text.split("\n"):
+		var quote := ""
+		var cut := -1
+		var i := 0
+		while i < line.length():
+			var c := line[i]
+			if quote != "":
+				if c == "\\":
+					i += 2
+					continue
+				if c == quote:
+					quote = ""
+			elif c == "\"" or c == "'":
+				quote = c
+			elif c == "#":
+				cut = i
+				break
+			i += 1
+		out.append(line.substr(0, cut) if cut > -1 else line)
+	return "\n".join(out)
+
+
+func test_the_stripper_this_audit_now_depends_on_actually_strips() -> void:
+	## MEASURED 2026-09-12: with _code_only neutered to a pass-through, this file was EC=0 ·
+	## Passing 7 — the whole consumer corpus reverted to raw source and NOTHING here noticed.
+	## The sibling guards caught their own neuter on a length control; this one had none, and it
+	## is the file where the failure direction is SILENCE (a key named only in a comment reads as
+	## a live consumer, and a phantom consumer suppresses a real orphan). @cowir-music `da523860`.
+	var raw := _read("res://src/audio/SoundManager.gd")
+	var code := _code_only(raw)
+	assert_gt(raw.length(), 10000, "CONTROL: SoundManager read back %d chars" % raw.length())
+	assert_true(raw.contains("\n#") or raw.contains("\t#"),
+		"ANTI-VACUITY: SoundManager holds no comment line, so 'comments are stripped' proves nothing here")
+	assert_lt(code.length(), raw.length(),
+		"the stripper removed nothing from %d chars — it is a pass-through and this audit reads prose as code" % raw.length())
+	## STRUCTURAL, not a phrase: a reworded comment must not change the verdict.
+	assert_false(_code_only("\tvar x := 1  # play_sfx(\"ghost_key\")").contains("ghost_key"),
+		"a key named only in a trailing comment still counts as a consumer")
+	## Two asserts, not one: "the call survived" is ALSO true of a last-# cut, so the single
+	## assert this replaces was green under that mutation while its message claimed otherwise.
+	var trailing := _code_only('\tplay_sfx("real_key")  # see ghost_key #3')
+	assert_true(trailing.contains('"real_key"'), "a real consumer was dropped")
+	assert_false(trailing.contains("ghost_key"),
+		"cut at the LAST # — a key named in the middle of a comment survived as a consumer")
+	assert_true(_code_only('\tvar s := "has #hash"  # gone').contains('"has #hash"'),
+		"a # inside a string literal is not a comment")
+	## JSON has no comments and is NOT stripped; the data half of the corpus must survive intact.
+	var data_raw := _read("res://data/sfx_manifest.json")
+	assert_gt(data_raw.length(), 1000, "CONTROL: the manifest is %d chars" % data_raw.length())
+

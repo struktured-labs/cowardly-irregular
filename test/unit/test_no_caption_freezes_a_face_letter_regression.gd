@@ -85,30 +85,78 @@ func _is_not_a_caption_line(raw: String) -> bool:
 
 ## Returns the frozen captions in one file. Scans STRING LITERALS only — a face letter in code
 ## (JOY_BUTTON_A, a variable named b) is not a caption.
+## ⛔ A DOCSTRING IS NOT ONE LINE, and my line-based filter only skipped its FIRST. A multi-line
+## """ block's continuation lines were scanned, so prose like "press B to exit" inside one would
+## have redded a correct file — in a ratchet that runs over ALL of src/, i.e. aimed at other
+## lanes. Measured when @cowir-ai's point reached me: 221 multi-line blocks, 0 flaggable
+## continuation lines today. Unoccupied, not absent.
+##
+## 🔑 AND THE SKIP MUST NOT BE BLANKET, which is @cowir-ai's finding and inverts the fix: """ means
+## documentation only until someone ASSIGNS it. src/ holds 6 assigned blocks — those are shipping
+## content and MUST still be scanned. The discriminator is whether the opening line begins with
+## the quotes or carries an assignment before them.
 func _frozen_captions(src: String) -> Array[String]:
 	var hits: Array[String] = []
+	## Three states, because a multi-line region is not one line and not one kind of thing:
+	##   0 normal          scan the quoted spans on the line
+	##   1 free docstring  skip entirely — it is prose
+	##   2 assigned block  scan the WHOLE line: it is shipping content with no quotes of its own
+	## State 2 exists because my splitter only reads inside "..." pairs, so a content line in an
+	## assigned region carried no quotes and was invisible — the gap @cowir-ai's rule exposed.
+	var state := 0
 	for raw in src.split("\n"):
+		var quotes := raw.count("\"\"\"")
+		if state != 0:
+			if quotes >= 1:
+				state = 0
+				continue
+			if state == 1:
+				continue
+			for hit in _captions_in(raw, true):
+				hits.append(hit)
+			continue
+		if quotes == 1:
+			state = 1 if raw.strip_edges().begins_with("\"\"\"") else 2
+			continue
 		if _is_not_a_caption_line(raw):
 			continue
+		for hit in _captions_in(raw):
+			hits.append(hit)
+	return hits
+
+
+## The per-line scan. `whole_line` is set for assigned-block content, which has no quotes of its own.
+func _captions_in(raw: String, whole_line := false) -> Array[String]:
+	var hits: Array[String] = []
+	var spans: Array = []
+	## ⛔ NOT "or raw has no quotes". I wrote that first and it scanned every quote-less line of
+	## code as though it were a caption — `[NOTE_E3, NOTE_A3, NOTE_Cs4],  # A/E` matched on A/E.
+	## A line with no quotes holds no literal; only an assigned-block line is content without them.
+	if whole_line:
+		spans = [raw]
+	elif raw.find("\"") == -1:
+		return hits
+	else:
 		var parts := raw.split("\"")
-		# Odd indices are inside a double-quoted literal.
 		for i in range(1, parts.size(), 2):
-			var lit: String = parts[i]
-			for letter in LETTERS:
-				for ctx in CONTEXTS:
-					var needle: String = ctx % letter
-					var at := lit.find(needle)
-					if at == -1:
+			spans.append(parts[i])
+	for span in spans:
+		var lit: String = span
+		for letter in LETTERS:
+			for ctx in CONTEXTS:
+				var needle: String = ctx % letter
+				var at := lit.find(needle)
+				if at == -1:
+					continue
+				# The letter must stand alone — "Attack:" and "Back/" are words, not buttons.
+				if at > 0:
+					var before := lit[at - 1]
+					if before != " " and before != "[" and before != "/":
 						continue
-					# The letter must stand alone — "Attack:" and "Back/" are words, not buttons.
-					if at > 0:
-						var before := lit[at - 1]
-						if before != " " and before != "[" and before != "/":
-							continue
-					# "[A] " must be followed by a caption word, or it is the AUTO badge.
-					if ctx.begins_with("[") and at + needle.length() >= lit.length():
-						continue
-					hits.append(lit.strip_edges())
+				# "[A] " must be followed by a caption word, or it is the AUTO badge.
+				if ctx.begins_with("[") and at + needle.length() >= lit.length():
+					continue
+				hits.append(lit.strip_edges())
 	return hits
 
 
@@ -212,6 +260,12 @@ func test_the_scanner_can_fire_and_can_hold_its_fire() -> void:
 	assert_eq(_frozen_captions("## the old \"[B]\" named the wrong cap").size(), 0, "a # comment")
 	assert_eq(_frozen_captions("\t\"\"\"Repeat actions (A button)\"\"\"").size(), 0,
 		"a GDScript docstring is a LITERAL, not a comment — this is most of the raw noise")
+	# MULTI-LINE: the continuation lines must be skipped too, not only the opening one.
+	assert_eq(_frozen_captions("\t\"\"\"\n\tpress B to exit the grind\n\t\"\"\"").size(), 0,
+		"a docstring's CONTINUATION lines must be skipped — prose is not a caption")
+	# …but an ASSIGNED block is shipping CONTENT and must still be scanned (@cowir-ai).
+	assert_eq(_frozen_captions("\tconst G := \"\"\"\n\tPress B to exit\n\t\"\"\"").size(), 1,
+		"an assigned \"\"\" region is content, not documentation — stripping it would hide a defect")
 	assert_eq(_frozen_captions("\tvar auto_indicator = \" [A]\"").size(), 0,
 		"BattleUIManager's AUTO badge: [A] abbreviates Auto and is not a button")
 	assert_eq(_frozen_captions("\tprint(\"[BOSS] press A to fight\")").size(), 0, "a debug print")

@@ -130,7 +130,7 @@ func _examine() -> void:
 		GameState.set_story_flag(FLAG)
 		qs.notify_flag(FLAG)
 		if SoundManager:
-			SoundManager.play_ui("item_obtain")
+			SoundManager.play_pickup("item_obtain")
 		_toast("You recover the carrier's package from the wreckage. Credential secured.")
 		return
 

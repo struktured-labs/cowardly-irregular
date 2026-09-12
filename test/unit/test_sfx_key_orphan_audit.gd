@@ -29,7 +29,7 @@ const SRC_DIR := "res://src"
 # call site passes one today, which is the only reason this has never bitten.
 # `sfx` here is the CUTSCENE JSON step type, not a method — no `func play_sfx` exists, so it matches nothing in src and the JSON scanner covers those refs separately.
 # Hoisted so the scope guard can READ this alternation — play_death escaped the audit for months because the list was restated by hand and nothing compared it to SoundManager.
-const SFX_CALL_PATTERN := "play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx|death|ambient|voice|flourish|status_if_authored)\\(\\s*\"([a-zA-Z_0-9]+)\""
+const SFX_CALL_PATTERN := "play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx|death|ambient|voice|flourish|pickup|status_if_authored)\\(\\s*\"([a-zA-Z_0-9]+)\""
 const CUTSCENES_DIR := "res://data/cutscenes"
 
 # Snapshot 2026-05-25 — sfx keys called from somewhere but resolving via
