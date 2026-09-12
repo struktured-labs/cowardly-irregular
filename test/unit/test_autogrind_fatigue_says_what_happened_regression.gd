@@ -21,13 +21,29 @@ extends GutTest
 
 var _sys
 
-## Verbatim from check_fatigue_event. If an event type is added without a description, this reds.
-const EVENT_TYPES := ["screen_glitch", "enemy_boost", "party_debuff", "mp_drain", "item_loss", "exp_surge"]
+## ⚠️ Was a restatement of the roster; now READ from AutogrindSystem.FATIGUE_EVENT_TYPES. A second copy
+## of a list that must agree is the defect this lane keeps finding — and a literal here would go stale
+## the moment the pending screen_glitch decision lands.
+var EVENT_TYPES: Array = []
+
+## ⛔ Announced to the player but applied by NOTHING. The note is the deliverable, not permission to
+## skip: a new roster entry with no effect must be justified here or the arm below reds.
+## `screen_glitch` says "System instability detected — visual artifacts" and the controller has no arm
+## for it at all — 1 in 6 fatigue events promises a visual and produces none. Reusing the save-
+## corruption `visual_glitch` would be WRONG (it is a persistent GameState.corruption_effects flag, so
+## a flavour message would inflict permanent save corruption). Implementing a one-shot needs a visual
+## design decision and the monitor has no such effect today. Removing the entry is not free either —
+## it redistributes the roll from 16.7% to 20% per remaining effect, making fatigue harsher. Both
+## options cost something, so it is struktured's call and it is recorded here rather than guessed.
+const ANNOUNCED_WITHOUT_EFFECT := {
+	"screen_glitch": "no controller arm; a one-shot visual needs a design call and the save-corruption visual_glitch flag is the wrong mechanism (it is permanent)",
+}
 
 
 func before_each() -> void:
 	AutogrindSystem._test_disable_persistence = true
 	_sys = AutogrindSystem
+	EVENT_TYPES = AutogrindSystem.FATIGUE_EVENT_TYPES
 
 
 func after_each() -> void:
@@ -129,3 +145,39 @@ func test_the_connect_is_guarded_against_repeat_sessions() -> void:
 	var window: String = src.substr(maxi(i - 220, 0), 320)
 	assert_true(window.contains("is_connected(_on_autogrind_fatigue_event)"),
 		"fatigue_event is connected without an is_connected guard — a second grind session doubles every fatigue line")
+
+
+## ⛔ THE ROSTER, THE DESCRIPTIONS AND THE EFFECTS MUST AGREE — and the draw must derive its modulus.
+## A hardcoded `randi() % 6` beside the array it indexes made an added type undrawable and a removed
+## type an out-of-bounds crash. Both were live: the screen_glitch decision IS a removal.
+func test_the_draw_cannot_desync_from_the_roster() -> void:
+	var src := FileAccess.get_file_as_string("res://src/autogrind/AutogrindSystem.gd")
+	var code := ""
+	for line in src.split("\n"):
+		code += line.split("#")[0] + "\n"
+	assert_true(code.contains("FATIGUE_EVENT_TYPES[randi() % FATIGUE_EVENT_TYPES.size()]"),
+		"the fatigue draw does not derive its modulus from the roster — a hardcoded count makes an added type undrawable and a removed type an out-of-bounds crash")
+	assert_gte(EVENT_TYPES.size(), 5, "CONTROL: the roster must be readable and non-trivial, got %d" % EVENT_TYPES.size())
+
+
+## Every announced event must be APPLIED by the controller, or be justified in writing.
+func test_every_announced_event_is_applied_or_justified() -> void:
+	var ctrl := FileAccess.get_file_as_string("res://src/autogrind/AutogrindController.gd")
+	var unexplained: Array = []
+	var stale: Array = []
+	for t in EVENT_TYPES:
+		var has_arm: bool = ctrl.contains('"%s":' % t)
+		if not has_arm and not ANNOUNCED_WITHOUT_EFFECT.has(t):
+			unexplained.append(str(t))
+		if has_arm and ANNOUNCED_WITHOUT_EFFECT.has(t):
+			stale.append(str(t))
+	assert_eq(unexplained, [],
+		("these fatigue events are ANNOUNCED to the player and applied by nothing. A description the " +
+		"player reads is a claim about the world — give it an effect, or record why it has none: %s") % [unexplained])
+	assert_eq(stale, [],
+		"these now HAVE a controller arm and no longer need an excuse — drop them from ANNOUNCED_WITHOUT_EFFECT: %s" % [stale])
+	for t in ANNOUNCED_WITHOUT_EFFECT.keys():
+		assert_true(EVENT_TYPES.has(t),
+			"'%s' is excused but is not in the roster any more — drop the entry" % t)
+		assert_gt(str(ANNOUNCED_WITHOUT_EFFECT[t]).length(), 40,
+			"'%s' needs a real reason, not a placeholder" % t)
