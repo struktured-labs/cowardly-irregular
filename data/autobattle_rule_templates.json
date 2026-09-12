@@ -2197,6 +2197,374 @@
           "enabled": true
         }
       ]
+    },
+    {
+      "id": "summoner_defensive",
+      "job_id": "summoner",
+      "stance": "defensive",
+      "name": "Defensive",
+      "description": "Spend an eidolon only on a weakness and only above a 60% reserve; heal early and swing the rest of the time.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 45
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_weak_to",
+              "element": "fire"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 60
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "summon_ifrit",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_weak_to",
+              "element": "ice"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 60
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "summon_shiva",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_weak_to",
+              "element": "lightning"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 60
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "summon_ramuh",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "summoner_balanced",
+      "job_id": "summoner",
+      "stance": "balanced",
+      "name": "Balanced",
+      "description": "Answer whatever they are weak to, deepen the pact once when nothing is, and keep swinging when the pool runs thin.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 35
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_weak_to",
+              "element": "fire"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 30
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "summon_ifrit",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_weak_to",
+              "element": "ice"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 30
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "summon_shiva",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_weak_to",
+              "element": "lightning"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 30
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "summon_ramuh",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "not_has_buff",
+              "stat": "magic"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 45
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "recursive_summon",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "summoner_aggressive",
+      "job_id": "summoner",
+      "stance": "aggressive",
+      "name": "Aggressive",
+      "description": "Bahamut into a crowd, deepen the pact once, exploit whatever weakness is on the field, and never stand still.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "enemy_count",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 60
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "summon_bahamut",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "not_has_buff",
+              "stat": "magic"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 45
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "recursive_summon",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_weak_to",
+              "element": "fire"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 30
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "summon_ifrit",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_weak_to",
+              "element": "ice"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 30
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "summon_shiva",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_weak_to",
+              "element": "lightning"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 30
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "summon_ramuh",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
     }
   ]
 }

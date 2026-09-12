@@ -25,7 +25,7 @@ const COVERED := ["bard", "cleric", "fighter", "mage", "rogue"]
 ## abilities is pure support, and press_the_edge/circuit_breaker spend a band no rule could read.
 const KNOWN_UNCOVERED := [
 	"bossbinder", "necromancer", "scriptweaver",
-	"skiptrotter", "summoner", "time_mage",
+	"skiptrotter", "time_mage",
 ]
 
 func _job_ids() -> Array:
