@@ -30,6 +30,11 @@ func test_strip_comments_removes_comments_without_eating_code() -> void:
 		# The escape branch survived an over-strip mutation at 12/12 before these two landed.
 		["var p = \"a\\\"b\"", "a\\\"b", true, "an escaped quote inside a string is preserved"],
 		["var p = \"a\\\"b\"  # GONE", "GONE", false, "...and the string still CLOSES, so a trailing # is still a comment"],
+		## cowir-controller's SIXTH costume, carried in from cowir-autogrind's private table: an escaped
+		## BACKSLASH at a string's end. The backslash consumes the backslash, so the quote is NOT
+		## escaped, the string CLOSES, and the trailing # is a real comment. A look-behind for a
+		## single \\ before the quote gets this backwards and leaves the string open.
+		["var p = \"a\\\\\"  # GONE", "GONE", false, "an escaped BACKSLASH still closes the string"],
 	]
 	for c in cases:
 		var got: String = GdSource.strip_comments(str(c[0]))
@@ -44,6 +49,17 @@ func test_split_removes_docstrings_without_eating_the_code_around_them() -> void
 	assert_true(code.contains("var b = 2"), "...or after it — got %s" % code)
 	var doc: String = str(GdSource.split(body)["doc"])
 	assert_true(doc.contains("GONE"), "the doc half must still CARRY it — an empty doc half passes the three arms above by construction")
+
+
+## Two fences on ONE line open and close a region, so the code AFTER them must survive. Carried in
+## from cowir-autogrind's private table, which asserted the whole line survives INTACT — this helper
+## strips the inline content instead. The load-bearing half is that the region CLOSES; a stripper
+## that treats the first fence as a block open eats the rest of the file.
+func test_two_fences_on_one_line_do_not_leave_the_region_open() -> void:
+	var src := "var s = \"\"\"x\"\"\"\nvar after = 1"
+	var code: String = str(GdSource.split(src)["code"])
+	assert_true(code.contains("var after = 1"),
+		"two fences on one line must close the region — code after them survives. got: %s" % code)
 
 
 ## ⛔ THE ORDERING ARM. Three rows, not one: the flip fails in BOTH directions and no single row

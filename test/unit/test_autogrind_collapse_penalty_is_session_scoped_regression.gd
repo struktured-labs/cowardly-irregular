@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## A system collapse halves the efficiency CAP for 10 battles. Both `max_efficiency` and
 ## `post_collapse_debuff_battles` were in NONE of the three session sets — not reset by
 ## start_autogrind, not snapshotted, not restored. So a session that collapsed and stopped
@@ -156,7 +158,7 @@ func test_ticking_with_no_debuff_is_inert() -> void:
 func test_gameloop_connects_and_toasts_both_edges() -> void:
 	# GameLoop is the MAIN SCENE, absent from the tree under GUT — read the source, located
 	# by the CALL rather than a line number.
-	var code := _code_only(_read("res://src/GameLoop.gd"), "func _on_autogrind_system_collapse")
+	var code := _code_only("res://src/GameLoop.gd", "func _on_autogrind_system_collapse")
 	for sig in ["post_collapse_penalty_applied", "post_collapse_penalty_expired"]:
 		assert_true(code.contains("AutogrindSystem.%s.connect(" % sig),
 			"GameLoop must connect %s, or the signal reaches no player surface" % sig)
@@ -170,26 +172,16 @@ func test_gameloop_connects_and_toasts_both_edges() -> void:
 
 # ── helpers ──────────────────────────────────────────────────────────────────
 
-func _read(path: String) -> String:
-	var src := FileAccess.get_file_as_string(path)
-	assert_gt(src.length(), 0, "control: %s must be readable" % path)
-	return src
 
-
-## must_survive is REQUIRED — no call site can omit the positive control.
-## '#' lines first (stateless, line-addressable), THEN the docstring parity split.
-func _code_only(src: String, must_survive: String) -> String:
-	var out: PackedStringArray = []
-	for line in src.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			continue
-		out.append(line)
-	var parts := "\n".join(out).split("\"\"\"")
-	var kept: PackedStringArray = []
-	for i in parts.size():
-		if i % 2 == 0:
-			kept.append(parts[i])
-	var stripped := "\n".join(kept)
+## must_survive is REQUIRED — no call site can omit the positive control. Stripping itself is
+## the shared helper's, which is quote- and escape-aware where the private copy was not.
+func _code_only(path: String, must_survive: String) -> String:
+	## PATH-taking so the blank-control floor below is safe by construction.
+	assert_gt(must_survive.length(), 0,
+		"CONTROL: must_survive must name a real code site — an empty control asserts nothing")
+	var raw: String = FileAccess.get_file_as_string(path)
+	assert_gt(raw.length(), 0, "CONTROL: %s must be readable" % path)
+	var stripped: String = str(GdSource.split(raw)["code"])
 	assert_true(stripped.contains(must_survive),
-		"CONTROL: the stripper removed load-bearing code (%s)" % must_survive)
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped

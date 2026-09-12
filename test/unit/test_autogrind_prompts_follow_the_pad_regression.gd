@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## Four player-facing prompts in this lane named buttons that do not exist on the pad in the
 ## player's hands. A PlayStation player reading "Press A or B to continue" on the autogrind summary
 ## has neither button; on a DualSense those are Cross and Circle.
@@ -152,42 +154,16 @@ const DEFERRED := {}
 ##   whole function -> `return src`          Failing 2   IDENTICAL signature to removing only the
 ##                                                       # cut, so the sledgehammer cannot tell one
 ##                                                       half from both. It is the run to skip.
-func _code_only(src: String) -> String:
-	var out := PackedStringArray()
-	## `in_block` lives OUTSIDE the line loop on purpose — a `"""` docstring spans lines, and the
-	## per-line quote state below resets every line, so block BODIES were scanned as code.
-	var in_block := false
-	for l in src.split("\n"):
-		## A lone `"""` opens or closes a block; blank it either way, and blank everything between.
-		## Docstring prose is not rendered, so a prompt-shaped string there is not a prompt — and for
-		## the reachability arm a class name mentioned in prose is not a caller.
-		var fences := l.count("\"\"\"")
-		if in_block:
-			out.append("")
-			if fences >= 1:
-				in_block = false
-			continue
-		if fences == 1:
-			in_block = true
-			out.append("")
-			continue
-		var in_str := false
-		var esc := false
-		var cut := -1
-		for i in l.length():
-			var c := l[i]
-			if esc:
-				esc = false
-				continue
-			if c == "\\":
-				esc = true
-			elif c == "\"":
-				in_str = not in_str
-			elif c == "#" and not in_str:
-				cut = i
-				break
-		out.append(l if cut == -1 else l.substr(0, cut))
-	return "\n".join(out)
+func _code_only(path: String, must_survive: String) -> String:
+	## PATH-taking so the blank-control floor below is safe by construction; a literal cannot reach it.
+	assert_gt(must_survive.length(), 0,
+		"CONTROL: must_survive must name a real code site — an empty control asserts nothing")
+	var raw: String = FileAccess.get_file_as_string(path)
+	assert_gt(raw.length(), 0, "CONTROL: %s must be readable" % path)
+	var stripped: String = str(GdSource.split(raw)["code"])
+	assert_true(stripped.contains(must_survive),
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
+	return stripped
 
 
 func _gd_files() -> Array:
@@ -280,7 +256,7 @@ func test_the_live_dead_split_is_still_what_the_header_claims() -> void:
 		for f in src_files.keys():
 			if f.ends_with("/" + target):
 				continue
-			if _code_only(FileAccess.get_file_as_string(f)).contains(stem):
+			if _code_only(f, "func ").contains(stem):
 				callers += 1
 		var reachable: bool = callers > 0 and not (callers == 1 and _only_caller_is_dead_hub(src_files, target))
 		if reachable != REACHABILITY[target]:
@@ -296,7 +272,7 @@ func test_the_live_dead_split_is_still_what_the_header_claims() -> void:
 	## prompt surface and must be classified here.
 	var derives: Array = []
 	for f in _gd_files():
-		var src := _code_only(FileAccess.get_file_as_string(f))
+		var src := _code_only(f, "func ")
 		if src.contains("InputProfileManager.glyph_for_action(") \
 				or src.contains("InputProfileManager.face_glyph_for_index(") \
 				or src.contains("InputProfileManager.hint_for_action("):
@@ -329,49 +305,15 @@ func _only_caller_is_dead_hub(src_files: Dictionary, target: String) -> bool:
 	for f in src_files.keys():
 		if f.ends_with("/" + target):
 			continue
-		if _code_only(FileAccess.get_file_as_string(f)).contains(target.replace(".gd", "")):
+		if _code_only(f, "func ").contains(target.replace(".gd", "")):
 			return f.ends_with("/MenuScene.gd")
 	return false
 
 
-func test_the_comment_stripper_cuts_only_what_it_should() -> void:
-	var cases := [
-		# [input, expected, why]
-		["\tg = f(\"ui_accept\")  # was derived", "\tg = f(\"ui_accept\")  ", "trailing comment cut"],
-		## The docstring-block arm. A body line must come back EMPTY — it is prose, not code, and it
-		## used to be scanned as code because the quote state reset every line.
-		["\t\"\"\"\n\tPress A to confirm\n\t\"\"\"", "\n\n", "a \"\"\" body is stripped, fence lines included"],
-		["\tvar s = \"\"\"x\"\"\"", "\tvar s = \"\"\"x\"\"\"", "an inline triple-quote is NOT a block open — two fences on one line"],
-		## Cut-at-# leaves the leading whitespace, so this is "\t" and not "". Inert either way -- no
-		## code survives -- but I wrote "" from my own earlier BLANK-the-line description, and the
-		## direct pin caught the doc/behaviour drift in seconds where six mutation arms never would.
-		["\t## whole line", "\t", "full-line comment: only the indent survives"],
-		["\tvar c := \"#ff0000\"", "\tvar c := \"#ff0000\"", "a # INSIDE a string is not a comment"],
-		["\tvar c := \"#ff0000\"  # note", "\tvar c := \"#ff0000\"  ", "quoted # then a real comment: cut at the comment only"],
-		["\tvar s := \"odd \\\" quote\"  # note", "\tvar s := \"odd \\\" quote\"  ", "an ESCAPED quote must not flip the parser into a string"],
-		## @cowir-controller's SIXTH costume: an escaped BACKSLASH at a string's end. A look-behind
-		## check (`c == quote and line[i-1] != "\\\\"`) reads the preceding backslash and decides the
-		## quote is escaped -- but that backslash was itself escaped, so the string really ends, and a
-		## comment survives into the scan. This stripper is immune BY CONSTRUCTION rather than by
-		## corpus: it SKIPS the char after a backslash instead of looking behind at one, so `\\\\` is
-		## consumed as a pair and the closing quote is seen. Verified against both shapes side by side.
-		["\tvar q := \"a\\\\\"  # note", "\tvar q := \"a\\\\\"  ", "escaped BACKSLASH at string end still closes the string"],
-		["\tvar plain := 1", "\tvar plain := 1", "no # at all: untouched"],
-	]
-	for c in cases:
-		assert_eq(_code_only(c[0]), c[1], c[2])
-
-
-## ⚠️ NAMED MEMBERSHIP, not a floor. @cowir-adhoc: "a floor protects against total vacuity and is
-## blind to partial loss", learned from a red where `gates >= 4` stayed green after one gate was
-## commented out. @cowir-controller hit it the same hour. Measured here before changing anything:
-##
-##   both LANE_DIRS lost   EC=1  Failing 2   the floor CAUGHT it
-##   ONE lane dir lost     EC=0  Failing —   SILENT. Half the corpus gone, green, Asserts unmoved.
-##
-## And partial is the likelier failure by a distance — a rename or a move touches one directory,
-## not both. The case a floor catches is the one least likely to happen. @cowir-overworld's
-## assert-count detector is blind here too: these asserts aggregate, so the number never moves.
+## The 9-row comment/docstring case table that lived here moved to
+## test_gd_source_is_the_shared_stripper.gd when this file adopted the shared stripper.
+## Seven rows were already covered there; the two that were not — an inline """x"""
+## (two fences on one line) and an escaped BACKSLASH at a string end — were carried in.
 func test_the_census_reads_a_real_corpus() -> void:
 	var files := _gd_files()
 	assert_gt(files.size(), 5, "CONTROL: the lane dirs must yield real files, or every assert below is vacuous")
@@ -443,7 +385,7 @@ func test_the_four_repaired_surfaces_actually_ask_the_authority() -> void:
 			  "res://src/ui/autobattle/AutobattleGridEditor.gd"]:
 		var raw := FileAccess.get_file_as_string(f)
 		assert_gt(raw.length(), 500, "CONTROL: %s was read" % f.get_file())
-		var src := _code_only(raw)
+		var src := _code_only(f, "func ")
 		assert_true(src.contains("InputProfileManager.glyph_for_action(") or src.contains("InputProfileManager.face_glyph_for_index(") or src.contains("InputProfileManager.hint_for_action("),
 			"%s must ask the authority for its button glyph -- a COMMENT naming it does not count" % f.get_file())
 
@@ -506,7 +448,7 @@ func test_the_diagram_surfaces_really_are_out_of_this_patterns_reach() -> void:
 	for f in diagram_files:
 		var raw: String = FileAccess.get_file_as_string(f)
 		assert_ne(raw, "", "CONTROL: %s must be readable — a missing file would pass this vacuously" % f)
-		for line in _code_only(raw).split("\n"):
+		for line in _code_only(f, "func ").split("\n"):
 			if rx.search(line) != null:
 				reachable.append("%s: %s" % [f.get_file(), line.strip_edges().substr(0, 60)])
 	assert_eq(reachable, [],
