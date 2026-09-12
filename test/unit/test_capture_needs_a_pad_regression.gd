@@ -42,6 +42,37 @@ func _menu() -> Node:
 	return cm
 
 
+## ⛔ CODE ONLY, WITH A POSITIVE CONTROL. These arms read SOURCE, and a presence assert is
+## satisfied by a comment: measured on this very file, deleting the pad check while leaving a
+## comment that names it kept all 5 arms GREEN — with `_needs_a_pad` then blocking ALWAYS, which
+## locks a pad player out of the flows this guard exists to protect. `must_survive` is required
+## so no call site can read raw source by accident.
+func _code_only(path: String, must_survive: String) -> String:
+	var out := ""
+	for raw in FileAccess.get_file_as_string(path).split("\n"):
+		if raw.strip_edges().begins_with("#"):
+			continue
+		out += raw + "\n"
+	assert_true(out.find(must_survive) > -1,
+		"POSITIVE CONTROL: '%s' is a CODE site in %s and must survive stripping" % [must_survive, path])
+	## A #-only strip is LINE-BASED and blind inside a \"\"\" block. This file has none TODAY —
+	## MEASURED INERT, not safe by design; if it fails, that path needs a region strip.
+	assert_eq(out.count('"""'), 0,
+		"%s gained a multi-line string: a #-only strip cannot see inside one, so the arms " % path +
+		"below can be satisfied by prose again")
+	return out
+
+
+## The function's own body, bounded by the next `func` rather than a character count.
+func _func_body(src: String, header: String) -> String:
+	var at := src.find(header)
+	assert_gt(at, -1, "the function must exist: %s" % header)
+	if at < 0:
+		return ""
+	var stop := src.find("\nfunc ", at + 10)
+	return src.substr(at, stop - at) if stop > at else src.substr(at)
+
+
 ## ⛔ THE DEFECT. GUT attaches no pad, which is exactly the case that was unguarded.
 func test_with_no_pad_a_remap_row_does_not_open_a_capture_nobody_can_finish() -> void:
 	assert_true(Input.get_connected_joypads().is_empty(),
@@ -73,11 +104,8 @@ func test_the_guard_only_blocks_when_there_is_no_pad() -> void:
 	assert_true(cm._needs_a_pad("x"),
 		"with zero pads the guard must block — that is this file's subject")
 	# The guard's ONLY condition is the pad list; nothing else can make it refuse.
-	var src := FileAccess.get_file_as_string(CONTROLS_MENU)
-	var at := src.find("func _needs_a_pad")
-	assert_gt(at, -1, "the shared guard must exist")
-	var stop := src.find("\nfunc ", at + 10)
-	var body := src.substr(at, stop - at) if stop > at else src.substr(at)
+	var src := _code_only(CONTROLS_MENU, "func _needs_a_pad")
+	var body := _func_body(src, "func _needs_a_pad")
 	assert_true(body.find("Input.get_connected_joypads().is_empty()") > -1,
 		"the guard must key on the PAD LIST and nothing else — an autoload or profile check here " +
 		"would be the bucket-4 shape this lane swept in .318")
@@ -89,11 +117,8 @@ func test_the_guard_only_blocks_when_there_is_no_pad() -> void:
 ## The precedent this fix copies must still be there — if the mapping walk loses its guard, the
 ## three flows are inconsistent again in the other direction.
 func test_the_mapping_walk_still_guards_too() -> void:
-	var src := FileAccess.get_file_as_string(CONTROLS_MENU)
-	var at := src.find("func _start_pad_mapping")
-	assert_gt(at, -1, "the mapping walk must exist")
-	var stop := src.find("\nfunc ", at + 10)
-	var body := src.substr(at, stop - at) if stop > at else src.substr(at)
+	var src := _code_only(CONTROLS_MENU, "func _start_pad_mapping")
+	var body := _func_body(src, "func _start_pad_mapping")
 	assert_true(body.find("get_connected_joypads") > -1,
 		"the mapping walk is where this guard came from — all three pad-only flows check now")
 
