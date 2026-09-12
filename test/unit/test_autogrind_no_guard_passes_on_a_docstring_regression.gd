@@ -31,7 +31,14 @@ func _docstring_lines(src: String) -> Dictionary:
 	var lines := src.split("\n")
 	for i in lines.size():
 		var fences: int = lines[i].count("\"\"\"")
-		if not in_block and fences == 1:
+		if not in_block and fences >= 1:
+			## ⛔ `fences == 1` here made this blind to every ONE-LINE `"""doc"""` -- two delimiters, so
+			## the gate never fired and the line was never marked. 127 of them in the two lane files
+			## (66 in AutogrindSystem, 61 in AutogrindUI), and a literal living in one made
+			## _only_in_a_docstring return false, so the arm's zero was silent about all of them.
+			if fences % 2 == 0:
+				inside[i] = true
+				continue
 			in_block = true
 			start = i
 			continue
@@ -115,7 +122,7 @@ func test_no_lane_guard_asserts_a_literal_that_only_a_docstring_satisfies() -> v
 					continue
 				if _only_in_a_docstring(tsrc, lit):
 					offenders.append("%s asserts '%s' and only %s's DOCSTRING satisfies it" % [
-						file_name, lit.substr(0, 40), t.get_file()])
+						file_name, lit.substr(0, 60), t.get_file()])
 
 	gut.p("  scanned %d lane guards, %d asserted literals" % [guards_seen, literals_seen])
 	## ⛔ CONTROLS FIRST. A parser that finds no guards or no literals would report a clean zero
@@ -151,6 +158,16 @@ func test_the_detector_finds_a_planted_docstring_only_literal() -> void:
 	var planted := "func _real_code():\n\t\"\"\"\n\tthis mentions ZZZ_ONLY_IN_PROSE and nothing else does\n\t\"\"\"\n\tpass\n"
 	assert_true(_only_in_a_docstring(planted, "ZZZ_ONLY_IN_PROSE"),
 		"the walker cannot see a literal that lives only inside a \"\"\" block, so every zero it reports is meaningless")
+	## ⛔ THE CONTROL THIS FILE WAS MISSING, AND ITS ABSENCE COST THE ARM 127 DOCSTRINGS.
+	## The set below already CONTAINED a one-line docstring -- but only in the assert_FALSE position,
+	## where blindness and correctness give the SAME answer: `both` passed because the walker could
+	## not see its docstring, not because REAL_TOKEN appears in code. A positive control validates the
+	## shapes it contains, and the shape missing from the TRUE position is the one that broke.
+	## Found by FIRING the guard with a planted defect. Reading it would never have shown this: the
+	## plant scored GREEN and the message I had just called actionable never rendered.
+	var one_liner := "func f():\n\t\"\"\"only ZZZ_ONE_LINE_PROSE lives here\"\"\"\n\tpass\n"
+	assert_true(_only_in_a_docstring(one_liner, "ZZZ_ONE_LINE_PROSE"),
+		"the walker cannot see a literal in a ONE-LINE docstring — 127 of those exist in the lane files")
 	## …and must NOT flag one that also appears in real code.
 	var both := "func f():\n\t\"\"\"mentions REAL_TOKEN in prose\"\"\"\n\treturn REAL_TOKEN\n"
 	assert_false(_only_in_a_docstring(both, "REAL_TOKEN"),
