@@ -6562,7 +6562,7 @@ func _create_autogrind_overlay() -> void:
 	# Control hints
 	var hints = Label.new()
 	hints.name = "HintsLabel"
-	hints.text = "Y: Turbo    T: Dashboard    P: Pause    B: Exit"
+	hints.text = "Y: Turbo    T: Dashboard    P: Pause    %s: Exit" % InputProfileManager.hint_for_action("ui_cancel")
 	hints.position = Vector2(16, vp_size.y - bar_height + 112)
 	hints.size = Vector2(vp_size.x - 32, 24)
 	hints.add_theme_font_size_override("font_size", 13)

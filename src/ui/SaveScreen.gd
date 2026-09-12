@@ -543,7 +543,10 @@ func _show_overwrite_confirmation(slot: int) -> void:
 	_confirm_overlay.add_child(msg)
 
 	var hint = Label.new()
-	hint.text = "A/Enter: Confirm    B/Esc: Cancel"
+	hint.text = "%s/Enter: Confirm    %s/Esc: Cancel" % [
+		InputProfileManager.hint_for_action("ui_accept"),
+		InputProfileManager.hint_for_action("ui_cancel"),
+	]
 	hint.position = Vector2(box.position.x + 40, box.position.y + 70)
 	hint.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)

@@ -102,7 +102,11 @@ func _build_panel() -> void:
 	_scroll.add_child(_rows_container)
 
 	_hint_label = Label.new()
-	_hint_label.text = "[A/Enter/Click] Play    [B/Esc/RClick] Close    (Wheel scrolls)"
+	# A/B were Nintendo face letters; both are inverted on an Xbox pad.
+	_hint_label.text = "[%s/Enter/Click] Play    [%s/Esc/RClick] Close    (Wheel scrolls)" % [
+		InputProfileManager.hint_for_action("ui_accept"),
+		InputProfileManager.hint_for_action("ui_cancel"),
+	]
 	_hint_label.position = Vector2(20, PANEL_H - 32)
 	_hint_label.size = Vector2(PANEL_W - 40, 24)
 	_hint_label.add_theme_font_size_override("font_size", 13)
