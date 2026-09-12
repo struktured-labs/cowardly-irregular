@@ -85,6 +85,7 @@ const CONDITION_TYPES = {
 	"mp_percent": "Self MP %",
 	"ap": "Current AP",
 	"has_status": "Has Status",
+	"not_has_status": "No Status",
 	"enemy_hp_percent": "Enemy HP %",
 	"ally_hp_percent": "Ally HP %",
 	"turn": "Turn Number",
@@ -266,6 +267,15 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			var status = condition.get("status", "")
 			return status in combatant.status_effects
 
+		## The counterpart of not_has_buff, for effects that land as a STATUS rather than a stat
+		## buff — shadow_step, vanish, invisible, every debuff. Without it "set up, then fight" is
+		## unwriteable: the setup rule matches again the turn after it fires, so the character
+		## re-casts forever and the rules beneath it never run, which is the same pin that made a
+		## Guardian stand still all fight. not_has_buff cannot cover these — it keys on a STAT.
+		"not_has_status":
+			var absent_status = condition.get("status", "")
+			return not (absent_status in combatant.status_effects)
+
 		"ally_has_status":
 			# True if any living ally (including self) has the given status
 			var status = condition.get("status", "")
@@ -393,6 +403,7 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 ## first-match-wins, so a missing `stat` silently disables the rest of the script.
 const CONDITION_REQUIRED_FIELD := {
 	"has_status": "status",
+	"not_has_status": "status",
 	"ally_has_status": "status",
 	"enemy_has_status": "status",
 	"item_count": "item_id",

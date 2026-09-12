@@ -38,14 +38,40 @@ func test_every_condition_type_has_a_friendly_label() -> void:
 			"condition '%s' falls through to raw snake_case in the grid — add a _format_condition label" % key)
 
 
-func test_seeding_branch_covers_enemy_has_status() -> void:
-	# Source-pin: _apply_condition_type must seed a default 'status' for
-	# enemy_has_status, else the editor leaves it unset and the condition no-ops.
+func test_seeding_branch_covers_EVERY_status_condition() -> void:
+	# Source-pin: _apply_condition_type must seed a default 'status' for every condition that
+	# takes one, else the editor leaves it unset and the condition no-ops in the manual path.
+	#
+	# ⚠️ Was pinned to the literal `"has_status", "ally_has_status"` and a 90-char window after it,
+	# so it asserted the ORDER of an unordered list: adding not_has_status BETWEEN those two redded
+	# a correct change while a genuinely unseeded condition appended to the end would have passed.
+	# The corpus is now DERIVED from CONDITION_REQUIRED_FIELD, so the next status condition is
+	# covered the day it is added rather than the day someone remembers this file.
+	var abs_node = Engine.get_main_loop().root.get_node_or_null("AutobattleSystem")
+	if abs_node == null:
+		pending("AutobattleSystem autoload required")
+		return
+	var want: Array = []
+	for k in (abs_node.CONDITION_REQUIRED_FIELD as Dictionary).keys():
+		if str((abs_node.CONDITION_REQUIRED_FIELD as Dictionary)[k]) == "status":
+			want.append(str(k))
+	want.sort()
+	assert_gt(want.size(), 2, "CONTROL: several conditions take a status (%s)" % str(want))
+
 	var src: String = FileAccess.get_file_as_string("res://src/ui/autobattle/AutobattleGridEditor.gd")
 	var idx: int = src.find("func _apply_condition_type")
 	assert_gt(idx, -1, "_apply_condition_type must exist")
 	var body: String = src.substr(idx, src.find("\nfunc ", idx + 1) - idx)
-	var branch_idx: int = body.find("\"has_status\", \"ally_has_status\"")
-	assert_gt(branch_idx, -1, "the status-seeding branch must exist")
-	assert_string_contains(body.substr(branch_idx, 90), "enemy_has_status",
-		"enemy_has_status must be in the status-param seeding branch")
+	var branch: String = ""
+	for line in body.split("\n"):
+		if line.contains("new_type in [") and line.contains("has_status"):
+			branch = line
+			break
+	assert_ne(branch, "", "the status-seeding branch must exist in _apply_condition_type")
+	var missing: Array = []
+	for id in want:
+		if not branch.contains("\"%s\"" % id):
+			missing.append(id)
+	assert_eq(missing.size(), 0,
+		"a condition takes a 'status' but the editor never seeds one, so picking it in the manual "
+		+ "editor leaves the field unset and the rule no-ops: " + str(missing))

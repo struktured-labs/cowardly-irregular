@@ -1063,6 +1063,8 @@ func _format_condition(condition: Dictionary) -> String:
 			var status = condition.get("status", "")
 			# Tick 215: shared StatusNames util.
 			return "Has %s" % StatusNames.display(status)
+		"not_has_status":
+			return "No %s" % StatusNames.display(condition.get("status", ""))
 		"ally_has_status":
 			return "Ally has %s" % StatusNames.display(condition.get("status", ""))
 		"has_buff":
@@ -2009,7 +2011,7 @@ func _apply_condition_type(new_type: String) -> void:
 	if new_type == "always":
 		cond.erase("op")
 		cond.erase("value")
-	elif new_type in ["has_status", "ally_has_status", "enemy_has_status"]:
+	elif new_type in ["has_status", "not_has_status", "ally_has_status", "enemy_has_status"]:
 		if not cond.has("status"):
 			cond["status"] = "poison"
 		cond.erase("op")
@@ -2944,7 +2946,7 @@ const _ROUND_CONDITIONS: Array[String] = ["turn"]
 ## CONDITION_TYPES exactly — a condition in none of them is one this readout would GUESS at,
 ## which is the defect the battlefield list was created to prevent.
 const _PROBE_DECIDABLE: Array[String] = [
-	"hp_percent", "mp_percent", "ap", "has_status", "has_buff", "not_has_buff",
+	"hp_percent", "mp_percent", "ap", "has_status", "not_has_status", "has_buff", "not_has_buff",
 	"setup_complete", "item_count", "is_night", "weather", "always",
 ]
 
