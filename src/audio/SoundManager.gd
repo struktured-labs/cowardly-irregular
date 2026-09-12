@@ -1747,6 +1747,21 @@ func get_current_world_suffix() -> String:
 	return _get_current_world_suffix()
 
 
+## An interior's world comes from the MAP, never from whatever bed is playing: a
+## teleport arrives with the origin world's music still going (2026-09-12).
+## Returns "" when the world is not knowable, which preserves the older
+## inherit-whatever-is-playing behaviour rather than guessing.
+func _interior_world_suffix() -> String:
+	if GameState == null:
+		return ""
+	var w: int = int(GameState.current_world)
+	## WeatherSystem.WORLD_IDS is this vocabulary already — reused rather than
+	## re-derived, and range-checked because its own default answers "abstract".
+	if w < 1 or w > 6:
+		return ""
+	return WeatherSystem.world_id_for(w)
+
+
 func _get_current_world_suffix() -> String:
 	"""Map current area to world suffix for manifest track lookup.
 	When _current_area is empty (cleared by play_music for battle/victory),
@@ -1763,6 +1778,10 @@ func _get_current_world_suffix() -> String:
 	suburban/steampunk/industrial/futuristic/abstract overworlds used
 	MEDIEVAL battle music regardless of where the player actually was.
 	"""
+	if _current_area.begins_with("interior_"):
+		var room: String = _interior_world_suffix()
+		if room != "":
+			return room
 	match _current_area:
 		"overworld", "village", "harmonia_village", "scriptura_village", "cave", "whispering_cave":
 			return "medieval"
@@ -4905,7 +4924,12 @@ func play_area_music(area_type: String) -> void:
 	# victory, so an empty one means there is no AREA bed to inherit. Without that
 	# term the pause-menu restore path inherited the MENU track into unauthored
 	# rooms and bled it into the overworld (bug 2801 round 3, 2026-07-26).
-	if area_type.begins_with("interior_") and _music_playing and _current_area != "":
+	## Inherit only from the SAME world. A teleport straight into a room leaves the
+	## origin world's bed playing, and inheriting it put W4 overworld music inside
+	## the W1 Scriptweaver's Guild.
+	var room_world: String = _interior_world_suffix() if area_type.begins_with("interior_") else ""
+	var inheritable: bool = room_world == "" or room_world == _current_world_suffix
+	if area_type.begins_with("interior_") and inheritable and _music_playing and _current_area != "":
 		_load_music_manifest()
 		if _resolve_interior_track(area_type) == "":
 			return
