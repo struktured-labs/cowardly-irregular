@@ -294,6 +294,24 @@ def main():
     print("\n  corpus: %s" % (CORPUS_DIR if CORPUS_DIR else "assets/audio/music (MASTERS — not what the web build ships)"))
     print("  %d looping beds measured, %d jump more than %.0f dB" % (len(rows), len(jumps), JUMP_DB))
 
+    ## 🔑 A CLEAN REPORT MUST STATE ITS MARGIN. "0 jump more than 12 dB" is true of a
+    ## corpus whose worst bed sits at 3 dB and of one sitting at 11.99, and those are
+    ## different states to be in before anyone changes the encoder. Found 2026-09-12
+    ## while measuring lower web tiers: ambient_cave crosses at 44k (+12.2) and 40k
+    ## (+12.1), which is only interesting because its margin at the shipped 48k tier
+    ## was invisible here — the same green printed either way.
+    ##
+    ## rows already holds the worst step for EVERY bed; only the over-threshold ones
+    ## were ever printed. This costs no measurement, just the sentence.
+    under = [r for r in rows if r[0] <= JUMP_DB]
+    if under:
+        worst_ok = max(under)
+        print("  closest bed still inside the threshold: %s at %+.1f dB (margin %.1f dB)"
+              % (worst_ok[1], worst_ok[0], JUMP_DB - worst_ok[0]))
+        if JUMP_DB - worst_ok[0] < 1.0:
+            print("  ^ under 1 dB of headroom. A re-encode at any bitrate can tip this bed;")
+            print("    re-run with --from <tier dir> before changing the encoder.")
+
     ## 🛑 A HEALTH REPORT FROM AN EMPTY WALK IS THE WORST OUTPUT THIS TOOL CAN
     ## PRODUCE, and until now it was also its quietest. With no corpus floor,
     ## an empty manifest, a broken walk or a tree with no audio printed

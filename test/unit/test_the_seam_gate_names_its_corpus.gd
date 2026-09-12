@@ -144,3 +144,21 @@ func test_the_shipped_tier_is_48k_mono_so_the_question_is_real() -> void:
 	var deploy: String = FileAccess.get_file_as_string("res://tools/deploy_web.sh")
 	assert_true(deploy.contains("make_web_stage.sh 48"),
 		"deploy_web.sh no longer pins the bitrate to 48 — the tier the gate should be pointed at has changed, and the numbers in this file's header were measured at 48k")
+
+## A clean report must state its MARGIN, not only its violations.
+##
+## "146 looping beds measured, 0 jump more than 12 dB" is true of a corpus whose worst bed
+## sits at 3 dB and of one sitting at 11.8 — and ambient_cave is the second. Measured
+## 2026-09-12: +11.8 dB on the MASTERS, +11.7 at the shipped 48k tier, a 0.2 dB margin the
+## gate printed nothing about for months. It is why that bed crosses at 44k (+12.2) and 40k
+## (+12.1): the bitrate is the TRIGGER, not the cause. A gate that cannot distinguish
+## comfortable from one-encode-away cannot be consulted before an encoder change, which is
+## the one time anybody needs it.
+func test_a_clean_report_states_how_close_the_worst_bed_came() -> void:
+	var src: String = _code_only(_src())
+	assert_gt(src.find("closest bed still inside the threshold"), 0,
+		"the seam audit no longer reports the worst UNDER-threshold bed. FIX: restore the margin print beside the jump count in tools/audit_wrap_seams.py — rows already carries the worst step for every bed, so this costs no measurement. Without it '0 jumps' cannot tell a 3 dB corpus from a 0.2 dB one, and an encoder change is decided blind")
+	assert_gt(src.find("JUMP_DB - worst_ok[0]"), 0,
+		"the margin is no longer DERIVED from the threshold — a hardcoded figure here would go stale the moment JUMP_DB moves, which is the coincidental-magnitude shape CLAUDE.md warns about")
+	assert_gt(src.find("under 1 dB of headroom"), 0,
+		"the low-headroom warning is gone. FIX: keep the sub-1 dB branch; a 0.2 dB margin printed as a bare number reads as a pass, and the warning is what makes it a finding")
