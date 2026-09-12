@@ -68,8 +68,9 @@ func test_every_tier0_label_names_a_reachable_control() -> void:
 		assert_true(proof.has(key),
 			"the tier-0 overlay labels '%s' as \"%s\", and nothing in GameLoop's AUTOGRIND branch " % [key, ctx[key]] +
 			"binds it. Remove the label, or bind the control. Dead as of this guard: plus/minus " +
-			"(Speed+/-, unbound since 2026-07-28), dpad (Navigate), start (Rules — reachable only " +
-			"in the ludicrous context, which also shows the dashboard)")
+			"(Speed+/-, unbound since 2026-07-28), dpad (Navigate), start (Rules — belongs in the " +
+			"LUDICROUS context, whose screen also carries the dashboard that classifies START; tier 0 " +
+			"shows the overlay alone)")
 		if proof.has(key):
 			assert_true(branch.find(proof[key]) > -1,
 				"'%s' is labelled \"%s\" but %s does not appear in the branch" % [key, ctx[key], proof[key]])
@@ -88,7 +89,9 @@ func test_the_tier_label_says_both_shoulders() -> void:
 
 
 ## ⛔ THE ASYMMETRY, pinned so nobody "tidies" the two contexts into agreement. Rules belongs in
-## ludicrous ONLY, because only ludicrous shows the dashboard that listens for it.
+## the ludicrous context ONLY — that is the only context here whose screen also carries the
+## DASHBOARD, whose classify_event turns START into adjust_rules. Tier 0 shows the overlay alone.
+## (The dashboard is up at tier 1 too; the overlay simply has no tier-1 context.)
 func test_rules_is_labelled_where_the_dashboard_listens_and_nowhere_else() -> void:
 	var helper := FileAccess.get_file_as_string(HELPER)
 	assert_true(helper.find("JOY_BUTTON_START") > -1 and helper.find("adjust_rules") > -1,
@@ -100,8 +103,10 @@ func test_rules_is_labelled_where_the_dashboard_listens_and_nowhere_else() -> vo
 	assert_false(_overlay().autogrind_context().has("start"),
 		"tier 0 shows the overlay ALONE (GameLoop:5596) — no dashboard, so START reaches nothing")
 	assert_true(_overlay().autogrind_ludicrous_context().has("start"),
-		"ludicrous shows the dashboard too (GameLoop:5592), so START really does adjust rules — " +
-		"do not delete this one for symmetry with tier 0")
+		"ludicrous shows the dashboard (GameLoop:5592), the only screen that classifies START as " +
+		"adjust_rules — do not delete this one for symmetry with tier 0. NOTE: on main that signal " +
+		"has no listener yet, so the press is inert until cf0e0135 connects it; this arm pins WHERE " +
+		"the label belongs, not that the control works today")
 
 
 ## THE CONTROL. Without it the arms pass on an empty context and an unreadable branch.
