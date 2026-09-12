@@ -51,8 +51,15 @@ func _code_only(path: String, must_survive: String) -> String:
 func _strip_comments(src: String) -> String:
 	var out := ""
 	var i := 0
+	# Every branch below advances i, but nothing ENFORCED that: a mutation dropping an
+	# increment would SPIN, and a hung arm is killed rather than failed (cowir-controller).
+	var budget := src.length() + 1
 	var in_str := ""          # "" none, else the delimiter we are inside
 	while i < src.length():
+		budget -= 1
+		if budget < 0:
+			assert_true(false, "_strip_comments stopped advancing i — the loop would have spun")
+			return out
 		var three := src.substr(i, 3)
 		if in_str == "" and three == "\"\"\"":
 			var close := src.find("\"\"\"", i + 3)
