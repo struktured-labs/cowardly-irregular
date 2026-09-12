@@ -9,6 +9,9 @@ signal grind_paused()
 signal grind_resumed()
 signal tier_changed(new_tier: int)
 signal region_advanced(from_region: String, to_region: String, world_num: int)
+## Emitted when a region cracks and we are STAYING in it. The auto-advance path has GameLoop's
+## full-screen warp overlay; this branch had only a print, while the penalty is live either way.
+signal region_cracked_in_place(region_id: String, crack_level: int, reward_penalty: float)
 
 enum State {
 	IDLE,
@@ -470,7 +473,11 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 ## Handle region cracked — auto-advance to next world if enabled
 func _on_region_cracked(region_id: String, crack_level: int) -> void:
 	if not _auto_advance_regions:
+		## ⛔ This branch printed and returned. The crack applies min(level * 0.15, 0.75) to every
+		## subsequent reward via on_battle_victory, and with Auto-Advance OFF (the W toggle, and one
+		## shipped preset) the player stays in the region taking it with no announcement at all.
 		print("[AUTOGRIND] Region %s cracked (level %d), auto-advance disabled" % [region_id, crack_level])
+		region_cracked_in_place.emit(region_id, crack_level, AutogrindSystem._get_region_crack_penalty())
 		return
 
 	if crack_level < 1:
