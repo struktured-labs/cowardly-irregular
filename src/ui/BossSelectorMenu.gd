@@ -155,7 +155,10 @@ func _build_ui() -> void:
 	_panel.add_child(title)
 
 	var subtitle = Label.new()
-	subtitle.text = "[DEBUG] Select a boss to fight  ·  L1/R1 page"
+	subtitle.text = "[DEBUG] Select a boss to fight  ·  %s/%s page" % [
+		InputProfileManager.hint_for_action("battle_defer"),
+		InputProfileManager.hint_for_action("battle_advance"),
+	]
 	subtitle.position = Vector2(16, 30)
 	subtitle.add_theme_font_size_override("font_size", 10)
 	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
