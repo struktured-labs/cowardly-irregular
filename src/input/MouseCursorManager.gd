@@ -15,6 +15,10 @@ extends Node
 
 const HIDE_AFTER_IDLE_SEC := 0.0  # 0 = never hide on idle; raise to e.g. 5.0 to enable
 
+## Same value as GamepadFilter.STICK_DEADZONE, and deliberately the same NUMBER rather than an
+## import: these are the only two raw-axis readers in src/input/ and they must not disagree.
+const STICK_DEADZONE := 0.2
+
 var _last_mouse_activity: float = 0.0
 
 
@@ -38,6 +42,21 @@ func _input(event: InputEvent) -> void:
 		if Input.get_mouse_mode() != Input.MOUSE_MODE_VISIBLE:
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 		_last_mouse_activity = Time.get_ticks_msec() / 1000.0
-	elif event is InputEventJoypadButton or event is InputEventJoypadMotion:
-		if Input.get_mouse_mode() != Input.MOUSE_MODE_HIDDEN:
-			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+	elif event is InputEventJoypadButton:
+		_hide_cursor()
+	elif event is InputEventJoypadMotion:
+		# ⛔ DEADZONE. This hid the cursor on ANY axis event, and a raw InputEventJoypadMotion is
+		# not a deliberate push: resting sticks drift and triggers settle, so a plugged-in pad
+		# nobody is touching could hide a mouse-first player's cursor, which every mouse motion
+		# then restored. That is the "toggled the cursor on/off jankily during normal play"
+		# behaviour this file's own docstring says was fixed for KEYBOARD in 2026-05-03 — the
+		# same shape, left on the input that actually emits noise.
+		# 0.2 is GamepadFilter.STICK_DEADZONE, reused rather than invented: one deadzone in
+		# src/input/, not two that can drift apart.
+		if absf((event as InputEventJoypadMotion).axis_value) > STICK_DEADZONE:
+			_hide_cursor()
+
+
+func _hide_cursor() -> void:
+	if Input.get_mouse_mode() != Input.MOUSE_MODE_HIDDEN:
+		Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
