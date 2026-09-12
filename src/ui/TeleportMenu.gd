@@ -145,7 +145,10 @@ func _build_ui() -> void:
 
 	# Subtitle / instructions (mention all input methods)
 	var sub = Label.new()
-	sub.text = "Pick a destination — ↑/↓ or Mouse-wheel/Click,  Enter/A/Click to warp,  Esc/B/RClick back"
+	sub.text = "Pick a destination — ↑/↓ or Mouse-wheel/Click,  Enter/%s/Click to warp,  Esc/%s/RClick back" % [
+		InputProfileManager.hint_for_action("ui_accept"),
+		InputProfileManager.hint_for_action("ui_cancel"),
+	]
 	sub.position = Vector2(16, 32)
 	sub.add_theme_font_size_override("font_size", 11)
 	sub.add_theme_color_override("font_color", DISABLED_COLOR)

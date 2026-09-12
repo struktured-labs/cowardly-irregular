@@ -1534,11 +1534,13 @@ func _get_controls_subtitle() -> String:
 	var ipm: Node = get_node_or_null("/root/InputProfileManager")
 	if not ipm or not ipm.has_method("get_action_key_label"):
 		return "Remap gamepad buttons"
-	var a: String = str(ipm.get_action_key_label("ui_accept"))
-	var b: String = str(ipm.get_action_key_label("ui_cancel"))
-	var m: String = str(ipm.get_action_key_label("ui_menu"))
-	# Compact "A:Z  B:X  Menu:Esc" — preserves the cross-input intent of the original subtitle but surfaces the live binds.
-	return "A:%s  B:%s  Menu:%s" % [a, b, m]
+	# ACTION names, not pad letters: "A"/"B" were Nintendo's, so on an Xbox pad this labelled
+	# Confirm as A when that pad's Confirm is Ⓑ. An action name is true on every device.
+	# First binding only — a subtitle is a reminder, and the full list wrapped the slot.
+	var a: String = str(ipm.get_action_key_label("ui_accept")).split(" / ")[0]
+	var b: String = str(ipm.get_action_key_label("ui_cancel")).split(" / ")[0]
+	var m: String = str(ipm.get_action_key_label("ui_menu")).split(" / ")[0]
+	return "Confirm:%s  Cancel:%s  Menu:%s" % [a, b, m]
 
 
 ## Live LLM reachability, as the "LLM Connection" row's subtitle. Answers

@@ -135,7 +135,7 @@ func _build_ui() -> void:
 	add_child(_reset_btn)
 
 	var hint := Label.new()
-	hint.text = "[B/Esc] Close"
+	hint.text = "[%s/Esc] Close" % InputProfileManager.hint_for_action("ui_cancel")
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", TEXT_COLOR)
 	hint.position = Vector2(panel_x + panel_w - 200, panel_y + panel_h - 28)

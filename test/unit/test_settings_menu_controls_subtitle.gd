@@ -76,8 +76,15 @@ func test_helper_format_is_compact() -> void:
 	var fn_idx: int = src.find("func _get_controls_subtitle")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, src.length() - fn_idx) if next_fn < 0 else src.substr(fn_idx, next_fn - fn_idx)
-	assert_true(body.contains("\"A:%s  B:%s  Menu:%s\""),
-		"subtitle format must match the canonical 'A:%s  B:%s  Menu:%s' pattern")
+	## ⛔ CORRECTED 2026-09-12. This asserted the literal "A:%s  B:%s  Menu:%s" as CANONICAL —
+	## pinning Nintendo's face letters into a subtitle that pairs them with KEYBOARD keys. On an
+	## Xbox pad ui_accept is Ⓑ, so "A:Z" labelled Confirm with the letter that pad prints on
+	## Cancel. This file's own header says its subjects are LIVE and COMPACT; neither needs a
+	## letter. Both are still pinned below, and the letters are gone.
+	assert_true(body.contains("get_action_key_label(\"ui_accept\")"),
+		"the subtitle must still read the LIVE binding rather than static text")
+	assert_false(body.contains("\"A:%s"),
+		"a face letter must not label a keyboard key — it is Nintendo's and wrong on every other pad")
 
 
 # ── Wiring at the action-button add site ─────────────────────────────
@@ -122,6 +129,15 @@ func test_subtitle_shape_at_runtime() -> void:
 	var subtitle: String = menu._get_controls_subtitle()
 	# Either fallback shape OR live shape.
 	var is_fallback: bool = subtitle == "Remap gamepad buttons"
-	var has_live_shape: bool = subtitle.begins_with("A:") and "B:" in subtitle and "Menu:" in subtitle
+	var has_live_shape: bool = "Confirm:" in subtitle and "Cancel:" in subtitle and "Menu:" in subtitle
 	assert_true(is_fallback or has_live_shape,
-		"subtitle must match fallback OR 'A:X  B:Y  Menu:Z' shape, got: '%s'" % subtitle)
+		"subtitle must name the ACTIONS and their live keys, got: '%s'" % subtitle)
+	# COMPACT is this file's other stated subject, and it was never actually asserted. The full
+	# key list ("Z / Enter / Space") wraps the slot; first-binding-only is what keeps it short.
+	if not is_fallback:
+		assert_lt(subtitle.length(), 40,
+			"the subtitle must fit the action-button slot without wrapping, got %d chars: '%s'"
+				% [subtitle.length(), subtitle])
+		for g in ["Ⓐ", "Ⓑ", "○", "✕"]:
+			assert_false(subtitle.contains(g),
+				"no pad is attached under GUT, so a glyph here would be an xbox guess")
