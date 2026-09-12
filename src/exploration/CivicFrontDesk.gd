@@ -89,7 +89,7 @@ func _serve() -> void:
 		GameState.set_story_flag("quest_world2_forms_in_triplicate_backlog_obtained")
 		qs.notify_flag("quest_world2_forms_in_triplicate_backlog_obtained")
 		if SoundManager:
-			SoundManager.play_ui("item_obtain")
+			SoundManager.play_pickup("item_obtain")
 		_toast("Visitor credential issued. The backlog is... all of this. Seven boxes.")
 		return
 
@@ -128,7 +128,7 @@ func _serve() -> void:
 			GameState.set_story_flag("quest_world2_fine_print_credential_obtained")
 			qs.notify_flag("quest_world2_fine_print_credential_obtained")
 			if SoundManager:
-				SoundManager.play_ui("item_obtain")
+				SoundManager.play_pickup("item_obtain")
 			_toast("The receptionist waves the Cleric through. Nobody questions this. The assumption has never been challenged.")
 		else:
 			_toast("'Credentials?' You have none. The mail carrier might owe a favor. Or bring a healthcare professional.")
@@ -139,7 +139,7 @@ func _serve() -> void:
 		GameState.set_story_flag("quest_world2_fine_print_form_obtained")
 		qs.notify_flag("quest_world2_fine_print_form_obtained")
 		if SoundManager:
-			SoundManager.play_ui("item_obtain")
+			SoundManager.play_pickup("item_obtain")
 		_toast("One (1) form, stamped in triplicate. Madame Orrery is waiting.")
 		return
 

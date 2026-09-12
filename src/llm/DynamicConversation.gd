@@ -257,7 +257,7 @@ func _maybe_grant_reward() -> void:
 		return
 	var sound: Node = get_node_or_null("/root/SoundManager")
 	if sound != null and sound.has_method("play_ui"):
-		sound.play_ui("item_obtain")
+		sound.play_pickup("item_obtain")
 	await _show_npc_line(line)
 
 
