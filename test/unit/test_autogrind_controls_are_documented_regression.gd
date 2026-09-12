@@ -133,7 +133,12 @@ func test_every_key_the_branch_binds_is_advertised() -> void:
 	var silent: Array = []
 	for k in bound:
 		if not advertised.has(k):
-			silent.append(k)
+			## ⛔ This appended a BARE LETTER — a reader failing this arm got `["G"]` and nothing else.
+			## @cowir-story measured why that is structural rather than untidy: GUT's _extract_line_number
+			## builds its locator from get_stack(), which is debugger-backed and returns EMPTY under the
+			## headless runner, so EVERY failing assert in the suite prints `at line -1`. The builder is
+			## the whole message by construction. Name the binding site and the fix, not just the key.
+			silent.append("KEY_%s (bound in GameLoop's LoopState.AUTOGRIND branch; add its row to AutogrindInputHelper.grind_reference_rows)" % k)
 	assert_eq(silent, [],
 		("the AUTOGRIND branch binds a key the reference never names — that is exactly how turbo, " +
 		"tier and pause became an undocumented mode: %s") % [silent])
