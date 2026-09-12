@@ -381,6 +381,7 @@ func _place_masterite_curator() -> void:
 	curator.archetype = "curator"
 	curator.monster_id = "masterite_curator_medieval"
 	curator.display_name = "Curator of the Flame"
+	curator.cutscene_id = "world1_curator_encounter"
 	curator.quest_flag = "quest_w1_ironhaven_flame_heard"
 	curator.position = Vector2(14 * TILE_SIZE,8 * TILE_SIZE)
 	npcs.add_child(curator)
