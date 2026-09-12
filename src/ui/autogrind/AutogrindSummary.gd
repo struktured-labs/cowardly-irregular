@@ -101,14 +101,15 @@ func _build_ui() -> void:
 			stats_data.append({"label": "  %s EXP" % char_name, "value": "+%d" % char_exp[char_name], "color": Color(0.5, 0.8, 1.0)})
 
 	# Items consumed breakdown
-	var items_consumed = _stats.get("items_consumed", {})
-	if not items_consumed.is_empty():
-		var item_parts: Array = []
-		for item_id in items_consumed:
-			item_parts.append("%s x%d" % [_resolve_item_display_name(item_id), items_consumed[item_id]])
-		stats_data.append({"label": "Items Used", "value": ", ".join(item_parts), "color": LABEL_COLOR})
-	else:
-		stats_data.append({"label": "Items Used", "value": "None", "color": LABEL_COLOR})
+	## ONE formatter. This was the fourth copy of "<Name> x<N>, ..." in the lane; .301 extracted
+	## AutogrindSystem.format_items_consumed after a third copy shipped RAW IDS to the History screen,
+	## and this one survived because it happened to agree. Verified identical on five cases before
+	## converting — empty, one, many, JSON floats, unknown id — so this changes no output.
+	stats_data.append({
+		"label": "Items Used",
+		"value": AutogrindSystem.format_items_consumed(_stats.get("items_consumed", {})),
+		"color": LABEL_COLOR,
+	})
 
 	stats_data.append({"label": "Fatigue Events", "value": str(_stats.get("fatigue_events_triggered", 0)), "color": LABEL_COLOR})
 	var time_mult = _stats.get("time_multiplier", 1.0)
@@ -275,10 +276,6 @@ func _rules_did_nothing() -> bool:
 	return int(_stats.get("rules_authored", 0)) > 0 \
 		and int(_stats.get("rule_checks", 0)) > 0 \
 		and int(_stats.get("rules_that_fired", 0)) == 0
-
-
-func _resolve_item_display_name(item_id: String) -> String:
-	return ItemNameResolver.resolve(item_id)
 
 
 func _format_save_corruption(stats: Dictionary) -> String:
