@@ -77,6 +77,28 @@ extends GutTest
 ## in the lane, an exemption broader than its subject.
 const CENSUS_PATTERN := "(Press [ABXY]\\b|\\b[ABXY]:\\s*[A-Za-z]|\\b[ABXY] or [ABXY]\\b|\\[[ABXY]\\])"
 
+## ⚠️ SCOPE, MEASURED — and this corpus is named after a DIRECTORY while its subject is "captions an
+## autogrind player reads". Those are not the same set, and the difference cost a real miss: GameLoop's
+## autogrind overlay rendered "P: Pause   B: Exit" with a frozen Nintendo B, and @cowir-controller's
+## whole-src sweep found it because mine structurally could not look there.
+##
+## Who covers what, so nobody assumes this file is the whole net:
+##   THIS GUARD          src/ui/autogrind + src/ui/autobattle — captions AND derivation AND reachability
+##   controller's net    face letters in caption strings across ALL of src/ (282 files), so
+##                       GameLoop's and ControllerOverlay's caption forms are theirs, not a gap
+##   NEITHER, today      letters DRAWN on a diagram: ControllerOverlay passes "A"/"B"/"X"/"Y" as
+##                       draw_string ARGUMENTS, with no `.text =` and no bracketed form, so a
+##                       caption-shaped pattern cannot match them. RadialPicker is the same shape.
+##                       Reported to @cowir-controller (msg 10564) as an eighth surface; the fix is
+##                       face_position_for_action, in their file and their vocabulary.
+##
+## ⛔ I deliberately did NOT widen LANE_DIRS to "fix" this. Measured why it would be theatre:
+##   deriving the corpus from "files mentioning autogrind that render text" gives 24 files, 14 of them
+##   mentions only (BestiaryMenu, CreditsSequence, JukeboxMenu…) — "autogrind" is a TOPIC term, so it
+##   catches prose. And the two files that ARE autogrind-facing add nothing here: GameLoop's caption is
+##   already in controller's net and their fix is in flight, and ControllerOverlay's letters are
+##   invisible to this file's ASCII [ABXY] pattern by construction.
+## A corpus widened to look thorough while catching nothing is worse than a narrow one that says so.
 const LANE_DIRS := ["res://src/ui/autogrind", "res://src/ui/autobattle"]
 
 ## Frozen captions that are NOT fixed, each with the reason -- the value is required non-empty, so
@@ -450,3 +472,33 @@ func test_deferred_entries_carry_a_reason_and_are_still_present() -> void:
 		if not all.contains(k):
 			stale.append("%s is no longer in the corpus -- remove the exemption" % k)
 	assert_eq(stale, [], "DEFERRED entry is unexplained or stale")
+
+
+## ⛔ THE SCOPE NOTE ABOVE MAKES A CLAIM; THIS CHECKS IT. It says a letter DRAWN on a diagram is
+## invisible to this file's caption pattern "by construction" — and a claim in a comment is a claim
+## nobody verifies. Measured: 0 matches in both diagram surfaces, so the note is accurate and the gap
+## is real rather than an excuse for a narrow corpus.
+##
+## 🔑 If someone later adds a caption-FORM letter to either file ("B: Exit" rather than
+## draw_string(..., "B", ...)), this reds — which is the right moment to revisit the note, because the
+## surface would then be reachable by this pattern and arguably belongs in LANE_DIRS after all.
+func test_the_diagram_surfaces_really_are_out_of_this_patterns_reach() -> void:
+	var rx := RegEx.new()
+	assert_eq(rx.compile(CENSUS_PATTERN), OK, "CONTROL: the census pattern must compile or this proves nothing")
+	var diagram_files := ["res://src/ui/ControllerOverlay.gd", "res://src/ui/RadialPicker.gd"]
+	var reachable: Array = []
+	for f in diagram_files:
+		var raw: String = FileAccess.get_file_as_string(f)
+		assert_ne(raw, "", "CONTROL: %s must be readable — a missing file would pass this vacuously" % f)
+		for line in _code_only(raw).split("\n"):
+			if rx.search(line) != null:
+				reachable.append("%s: %s" % [f.get_file(), line.strip_edges().substr(0, 60)])
+	assert_eq(reachable, [],
+		("a diagram surface now carries a CAPTION-form face letter, so this pattern CAN see it and the " +
+		"scope note above is stale — decide whether it joins LANE_DIRS: %s") % [reachable])
+
+	## And the positive control: the same pattern must still match a caption form, or "0 matches"
+	## above means the pattern is broken rather than the surfaces being out of reach.
+	assert_true(rx.search("  B: Exit") != null,
+		"CONTROL: the census pattern no longer matches a plain caption form, so every zero it reports is meaningless")
+
