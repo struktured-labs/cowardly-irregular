@@ -14,8 +14,34 @@ func push_lock(lock_id: String) -> void:
 
 
 ## Name-specific check for callers gating on ONE lock (battle-entry funnel, 2026-08-08).
+## ⛔ REAPS FIRST. This read the dict directly until 2026-09-12, so the 10-second backstop that
+## exists for exactly this hazard protected is_locked()'s 23 callers and not this one. Measured:
+## age a lock past STALE_TIMEOUT_MS and has_lock still answered TRUE while is_locked answered
+## FALSE — and the only thing that ever cleared it for this reader was an unrelated caller
+## happening to run is_locked() and reaping as a side effect.
+##
+## The consequence is specific: _start_battle_async (GameLoop:4345) DROPS EVERY ENCOUNTER while
+## has_lock("world_transition") is true, and that guard was added for the mid-dissolve tween death
+## that skips the pop — i.e. the one leak it could not recover from on its own.
 func has_lock(lock_id: String) -> bool:
+	_reap_stale()
 	return _locks.has(lock_id)
+
+
+## One reaper, so a new reader cannot be added without the backstop. Returns the ids it expired.
+func _reap_stale() -> Array:
+	if _locks.is_empty():
+		return []
+	var now := Time.get_ticks_msec()
+	var stale: Array = []
+	for id in _locks:
+		if now - _locks[id] > STALE_TIMEOUT_MS:
+			push_warning("[InputLockManager] Stale lock expired: '%s' (held %.1fs)"
+				% [id, (now - _locks[id]) / 1000.0])
+			stale.append(id)
+	for id in stale:
+		_locks.erase(id)
+	return stale
 
 
 func pop_lock(lock_id: String) -> void:
@@ -27,17 +53,7 @@ func pop_all() -> void:
 
 
 func is_locked() -> bool:
-	if _locks.is_empty():
-		return false
-	# Auto-expire stale locks
-	var now = Time.get_ticks_msec()
-	var stale: Array = []
-	for id in _locks:
-		if now - _locks[id] > STALE_TIMEOUT_MS:
-			push_warning("[InputLockManager] Stale lock expired: '%s' (held %.1fs)" % [id, (now - _locks[id]) / 1000.0])
-			stale.append(id)
-	for id in stale:
-		_locks.erase(id)
+	_reap_stale()
 	return not _locks.is_empty()
 
 
