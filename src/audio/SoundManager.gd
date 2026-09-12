@@ -1764,7 +1764,7 @@ func _get_current_world_suffix() -> String:
 	MEDIEVAL battle music regardless of where the player actually was.
 	"""
 	match _current_area:
-		"overworld", "village", "harmonia_village", "cave", "whispering_cave":
+		"overworld", "village", "harmonia_village", "scriptura_village", "cave", "whispering_cave":
 			return "medieval"
 		"ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave":
 			return "medieval"
