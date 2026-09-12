@@ -1930,6 +1930,273 @@
           "enabled": true
         }
       ]
+    },
+    {
+      "id": "speculator_defensive",
+      "job_id": "speculator",
+      "stance": "defensive",
+      "name": "Defensive",
+      "description": "Trip the breaker before the market does, hedge the weakest ally early, and take the safe swing the rest of the time.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 40
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "volatility_band",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 16
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "circuit_breaker",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 13
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "hedge_position",
+              "target": "lowest_hp_ally"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "speculator_balanced",
+      "job_id": "speculator",
+      "stance": "balanced",
+      "name": "Balanced",
+      "description": "Build a position while it is cheap, cash it the moment the band is worth it, and swing steel in between.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 35
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "volatility_band",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 24
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "press_the_edge",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "not_has_buff",
+              "stat": "volatility"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 16
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "leverage_position",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "speculator_aggressive",
+      "job_id": "speculator",
+      "stance": "aggressive",
+      "name": "Aggressive",
+      "description": "Leverage hard, overexpose them once, and hold the press until the band is Fractured — the biggest multiplier or nothing.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "volatility_band",
+              "op": ">=",
+              "value": 3
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 24
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "press_the_edge",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 19
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "overexpose",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "not_has_buff",
+              "stat": "volatility"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 16
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "leverage_position",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
     }
   ]
 }
