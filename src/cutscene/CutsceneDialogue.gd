@@ -67,7 +67,10 @@ var _voice_blip_next_char: int = 0        # Index at which next blip fires
 const VOICE_BLIP_DIR := "res://assets/audio/sfx/"
 const VOICE_BLIP_STEP_MIN := 2
 const VOICE_BLIP_STEP_MAX := 4
-const VOICE_BLIP_FALLBACK := "voice_blip_default"
+## The KEY, not the filename — _load_voice_blip_stream prefixes it ("voice_blip_" + key + ".ogg").
+## Was "voice_blip_default", which double-prefixed to voice_blip_voice_blip_default.ogg and has
+## never existed: every speaker without a dedicated blip got null and typed with play_ui("menu_move").
+const VOICE_BLIP_FALLBACK := "default"
 static var _voice_blip_stream_cache: Dictionary = {}
 static var _voice_blip_missing: Dictionary = {}
 
