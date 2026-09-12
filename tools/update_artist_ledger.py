@@ -24,12 +24,10 @@ Usage: git add <new art> && python3 tools/update_artist_ledger.py   (then review
 import hashlib, json, subprocess, sys, os
 
 os.chdir(os.path.join(os.path.dirname(__file__), ".."))
-PINNED_DIRS = [
-    "assets/sprites/jobs",
-    "assets/sprites/monsters",
-    "assets/sprites/portraits",
-    "assets/sprites/npcs",
-]
+# The WHOLE sprite tree, not a list of families. A four-entry list pinned 832 of 864 and
+# silently omitted backgrounds (2.9 MB), ui (1.5 MB), weapons, tiles, objects and effects --
+# the omission is invisible, because a dir nobody listed simply never gets pinned.
+PINNED_DIRS = ["assets/sprites"]
 tracked = subprocess.run(
     ["git", "ls-files", *PINNED_DIRS],
     capture_output=True, text=True, check=True).stdout.splitlines()
