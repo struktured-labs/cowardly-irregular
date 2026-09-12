@@ -168,24 +168,31 @@ func _draw_label_for(button_id: String, button_pos: Vector2) -> void:
 		draw_string(font, label_pos, label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, LABEL_COLOR)
 
 
+## Tier 0: the overlay is the ONLY thing on screen, so every label here must be reachable from
+## GameLoop's AUTOGRIND branch. Speed+/Speed- were bound to nothing (dead since 2026-07-28, the
+## same pair removed from the battle hint bar); Navigate reaches no d-pad handler; and Rules needs
+## the dashboard, which tier 0 does not show — it is correct in the ludicrous context below.
 static func autogrind_context() -> Dictionary:
 	return {
 		"y": "Turbo",
 		"b": "Exit",
-		"plus": "Speed+",
-		"minus": "Speed-",
-		"l": "Tier",
-		"r": "Tier",
+		"l": "Tier (L+R)",
+		"r": "Tier (L+R)",
 		"select": "Pause",
-		"start": "Rules",
-		"dpad": "Navigate",
 	}
 
+## Rules belongs where the DASHBOARD is up, because its classify_event maps JOY_BUTTON_START ->
+## adjust_rules. The dashboard appears in ludicrous (GameLoop:5593) and at tier 1 (:6236); the
+## overlay has no tier-1 context, so ludicrous is the only context here that can carry the label.
+## ⚠️ NOT REACHABLE ON MAIN TODAY — GameLoop connects the dashboard's pause/exit/tier_cycle signals
+## and NOT adjust_rules_requested, so START emits into nothing (@cowir-autogrind, measured). Their
+## cf0e0135 connects it. The label is placed correctly for the fixed state and this note says so
+## rather than sending the next reader hunting a listener that is not there yet.
 static func autogrind_ludicrous_context() -> Dictionary:
 	return {
 		"b": "Exit",
-		"l": "Tier",
-		"r": "Tier",
+		"l": "Tier (L+R)",
+		"r": "Tier (L+R)",
 		"select": "Pause",
 		"start": "Rules",
 	}
