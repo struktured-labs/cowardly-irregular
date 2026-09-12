@@ -95,6 +95,7 @@ const CONDITION_TYPES = {
 	"setup_complete": "Setup Complete",
 	"ally_has_status": "Ally Has Status",
 	"enemy_has_status": "Enemy Has Status",
+	"not_enemy_has_status": "No Enemy Has Status",
 	"ally_mp_percent": "Ally MP %",
 	"ally_dead": "Ally Is Down",
 	"is_night": "Is Night",
@@ -296,6 +297,22 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 					return true
 			return false
 
+		## ⚠️ READ THE ASYMMETRY BEFORE AUTHORING AGAINST THIS. enemy_has_status is ANY, so its
+		## strict negation is NONE — true only while NOT ONE living enemy carries the status, not
+		## "some enemy is missing it". For an all-enemy debuff that is exactly right: blind the room
+		## once, and the rule stops until the blind lapses. For a single-target debuff on a crowd it
+		## means "nobody is poisoned yet", which fires once and then waits.
+		## Without it a debuff rule re-applies every turn, burning the MP and the turn, and buries
+		## every rule below it — the same pin not_has_status closed for SELF buffs in .307.
+		"not_enemy_has_status":
+			## No living enemies: vacuously true. The battle is ending either way, and answering
+			## FALSE here would be a claim that somebody out there has the status.
+			var absent_enemy_status = condition.get("status", "")
+			for enemy in _get_enemies_for(combatant):
+				if absent_enemy_status in enemy.status_effects:
+					return false
+			return true
+
 		"enemy_hp_percent":
 			var target = _get_lowest_hp_enemy(combatant)
 			if target:
@@ -406,6 +423,7 @@ const CONDITION_REQUIRED_FIELD := {
 	"not_has_status": "status",
 	"ally_has_status": "status",
 	"enemy_has_status": "status",
+	"not_enemy_has_status": "status",
 	"item_count": "item_id",
 	"has_buff": "stat",
 	"not_has_buff": "stat",
