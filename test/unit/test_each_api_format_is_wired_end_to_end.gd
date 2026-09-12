@@ -40,6 +40,9 @@ extends GutTest
 
 const SAVE_SYSTEM := "res://src/save/SaveSystem.gd"
 
+## A line of SaveSystem that is unambiguously code, used as the stripper's control.
+const SAVE_SYSTEM_CODE_SITE := "func save_game(slot: int = -1) -> bool:"
+
 ## The vocabulary, as HTTPBackend's own export documents it.
 const FORMATS: Array[String] = ["ollama", "openai"]
 
@@ -161,7 +164,7 @@ func test_the_clamp_admits_exactly_the_formats_this_file_covers() -> void:
 	## SaveSystem clamps a hand-edited settings.json to a hardcoded pair. If it
 	## ever admits a third, this file's coverage is silently one short and the new
 	## format reaches HTTPBackend through a door no arm above tested.
-	var src: String = FileAccess.get_file_as_string(SAVE_SYSTEM)
+	var src: String = _code_only(FileAccess.get_file_as_string(SAVE_SYSTEM))
 	assert_false(src.is_empty(), "CONTROL: SaveSystem must load")
 	for fmt in FORMATS:
 		assert_true(src.find("\"%s\"" % fmt) != -1,
@@ -174,7 +177,7 @@ func test_the_clamp_is_still_what_keeps_the_unknown_arm_off_the_player_path() ->
 	## THE PREMISE. This is a ratchet only because no writer can produce an unknown
 	## format. If the clamp goes, the unknown arm becomes live — it is coherent now,
 	## but it would be pointing a real player at an OpenAI endpoint they did not pick.
-	var src: String = FileAccess.get_file_as_string(SAVE_SYSTEM)
+	var src: String = _code_only(FileAccess.get_file_as_string(SAVE_SYSTEM))
 	assert_true(src.find("llm_custom_api_format") != -1,
 		"CONTROL: SaveSystem must still load the field")
 	assert_true(src.find("else \"openai\"") != -1,
@@ -211,3 +214,38 @@ func test_the_backend_really_built() -> void:
 	var be: HTTPBackend = _backend("ollama")
 	assert_eq(be.api_format, "ollama", "the fixture must carry the format under test")
 	assert_true(be._endpoint_url(false).begins_with(BASE), "and the base url it was given")
+
+
+## Strip BOTH comment forms before any presence assert on this file.
+##
+## Every arm below asks whether a token IS PRESENT, and a presence assert is
+## exactly what prose satisfies. `#` comments need a line-based stateless pass;
+## `"""` regions are not line-addressable and need a parity pass — SaveSystem
+## carries 36 of them, so the `#` half alone would not have been enough.
+##
+## `must_survive` is a KNOWN CODE SITE that over-stripping deletes. Without it an
+## over-aggressive stripper and a correct one are the same green, and the arms
+## would red on correct code with no way to tell which happened.
+func _code_only(src: String, must_survive: String = SAVE_SYSTEM_CODE_SITE) -> String:
+	var out: PackedStringArray = PackedStringArray()
+	var in_doc: bool = false
+	for line in src.split("\n"):
+		var hash_at: int = line.find("#")
+		var code: String = line if hash_at == -1 else line.substr(0, hash_at)
+		var trimmed: String = code.strip_edges()
+		if in_doc:
+			if trimmed.ends_with("\"\"\""):
+				in_doc = false
+			continue
+		if trimmed.begins_with("\"\"\""):
+			# A single-line """…""" opens and closes; only an odd count toggles.
+			if trimmed.count("\"\"\"") % 2 == 1:
+				in_doc = true
+			continue
+		out.append(code)
+	var stripped: String = "\n".join(out)
+	assert_true(stripped.find(must_survive) != -1,
+		("STRIPPER CONTROL: '%s' is a known code site in SaveSystem and must survive "
+		+ "stripping. It did not, so the stripper is eating code and every presence "
+		+ "assert above is measuring the wrong text.") % must_survive)
+	return stripped
