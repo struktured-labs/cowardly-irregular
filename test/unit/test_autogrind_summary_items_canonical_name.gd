@@ -21,22 +21,41 @@ func _build_ui_body() -> String:
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
 
-func test_items_consumed_loop_uses_resolver() -> void:
+## ⛔ THESE FOUR ASSERTS USED TO PIN THE IMPLEMENTATION AND SO FORBADE THE FIX.
+## They required the loop to call `_resolve_item_display_name(item_id)`, required that wrapper to
+## exist, pinned the exact `"%s x%d" % [...]` expression, and required the `is_empty()` branch. Every
+## one of those is satisfied ONLY by the Summary keeping its own copy of the formatter — the fourth in
+## this lane, and .301 extracted the shared one precisely because a third copy shipped RAW IDS to the
+## History screen. A guard that pins a duplicate in place is a guard against consolidating it.
+##
+## Rewritten to assert the BEHAVIOUR the guard exists for — canonical names, "<Name> x<N>", "None"
+## when empty — through the shared formatter that now produces it, plus ONE source assert that the
+## Summary calls it. The original defect (a raw-id prettifier) is still banned by name.
+func test_the_shared_formatter_renders_canonical_names() -> void:
+	assert_eq(AutogrindSystem.format_items_consumed({"potion": 3}), "Potion x3",
+		"a single item must render as its canonical name and count")
+	assert_eq(AutogrindSystem.format_items_consumed({}), "None",
+		"the empty state must read None")
+	var many: String = AutogrindSystem.format_items_consumed({"potion": 3, "hi_potion": 1})
+	assert_true(many.contains("Potion x3") and many.contains("Hi-Potion x1") and many.contains(", "),
+		"multiple items must be comma-joined with canonical names, got '%s'" % many)
+	## The original bug: a raw id reaching the player. `potion` lower-case would be the tell.
+	assert_false(AutogrindSystem.format_items_consumed({"potion": 1}).begins_with("potion"),
+		"a raw item id reached the output — this is the History-screen defect .301 fixed")
+	## JSON-loaded snapshots carry floats; the count must not render as "3.0".
+	assert_eq(AutogrindSystem.format_items_consumed({"potion": 3.0}), "Potion x3",
+		"a float count from a snapshot rendered with a decimal point")
+
+
+func test_the_summary_uses_the_shared_formatter_and_keeps_no_copy() -> void:
 	var body := _build_ui_body()
-	assert_true(body.contains("_resolve_item_display_name(item_id)"),
-		"items_consumed loop must call _resolve_item_display_name")
+	assert_true(body.contains("AutogrindSystem.format_items_consumed("),
+		"the Summary builds its Items Used row without the shared formatter — that is how the fourth copy got here")
+	var src := _read(AUTOGRIND_SUMMARY)
+	assert_false(src.contains("func _resolve_item_display_name"),
+		"the Summary carries its own name resolver again; ItemNameResolver is reached through the shared formatter")
 	assert_false(body.contains("item_id.replace(\"_\", \" \").capitalize()"),
 		"old direct prettifier must be gone")
-
-
-func test_local_resolver_delegates_to_shared() -> void:
-	var src := _read(AUTOGRIND_SUMMARY)
-	var idx: int = src.find("func _resolve_item_display_name")
-	assert_gt(idx, -1, "wrapper must exist")
-	var next_fn: int = src.find("\nfunc ", idx + 1)
-	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
-	assert_true(body.contains("ItemNameResolver.resolve(item_id)"),
-		"local helper must delegate to shared ItemNameResolver.resolve")
 
 
 func test_shared_resolver_prefers_item_system() -> void:
@@ -61,17 +80,11 @@ func test_shared_resolver_empty_id_returns_empty_string() -> void:
 		"shared resolver must short-circuit on empty input")
 
 
-func test_existing_items_used_format_preserved() -> void:
+## The row's LABEL is still the player-facing contract; the value's shape is asserted above through
+## the formatter rather than by pinning an expression. `"value": "None"` and the `is_empty()` branch
+## are gone from the Summary on purpose — the shared formatter returns "None" for an empty dict, which
+## is the same guarantee with one implementation instead of two.
+func test_the_items_used_row_is_still_labelled() -> void:
 	var body := _build_ui_body()
-	assert_true(body.contains("\"%s x%d\" % [_resolve_item_display_name(item_id), items_consumed[item_id]]"),
-		"items_consumed format must remain '%s x%d'")
 	assert_true(body.contains("\"label\": \"Items Used\""),
 		"'Items Used' label preserved")
-	assert_true(body.contains("\"value\": \"None\""),
-		"'None' empty state preserved")
-
-
-func test_resolver_isnt_called_with_no_items_consumed() -> void:
-	var body := _build_ui_body()
-	assert_true(body.contains("if not items_consumed.is_empty():"),
-		"items_consumed loop must be guarded on is_empty")
