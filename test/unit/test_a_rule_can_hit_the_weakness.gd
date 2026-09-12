@@ -168,6 +168,17 @@ func test_the_grammar_only_advertises_elements_something_is_actually_weak_to() -
 			real[str(e)] = true
 	assert_gt(real.size(), 3, "CONTROL: the bestiary declares weaknesses at all (%s)" % str(real.keys()))
 
+	## ⛔ READ RAW ON PURPOSE — DO NOT ROUTE THIS THROUGH GdSource OR ANY COMMENT STRIPPER.
+	## The subject of this arm is the grammar PROSE the model reads, and that prose lives inside
+	## `const AUTOBATTLE_GRAMMAR_DESCRIPTION := """…"""`. A docstring-aware stripper classifies
+	## those 132 lines as `doc` and hands back a `code` half with the paragraph gone, so every
+	## assert below would fail on a correct tree. Measured 2026-09-12: GdSource.split() on this
+	## file yields code 1465 / doc 132, and "Autobattle rules are evaluated" appears 0 times in
+	## the code half and 1 in the doc half.
+	##
+	## Six lanes converted private strippers to the shared helper this evening and two of them
+	## nearly blinded a guard whose subject was prose. This is that shape, named so the next
+	## bulk conversion skips it rather than discovering it from a red.
 	var prompt: String = FileAccess.get_file_as_string("res://src/llm/DialoguePrompts.gd")
 	## Same reason as the forecast arm next door: a prose anchor can recur where a function name
 	## cannot. If the grammar ever documents this condition twice, find() picks one and this arm
