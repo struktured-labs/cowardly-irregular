@@ -17,21 +17,20 @@ const LEDGER := "res://data/artist_sprite_ledger.json"
 ## agree at edit time. Losing a dir THERE is the silent direction — its pins stop
 ## being written and its files become unenrollABLE, not unenrolled — so the third
 ## arm below checks the two lists against each other THROUGH the ledger it wrote.
-## portraits/ and npcs/ joined 2026-09-11: 13 bulk regen tools write into them and
-## 116 hardcoded res:// paths in src/ read them, with zero content pins either side.
-const PINNED_DIRS: Array[String] = [
-	"assets/sprites/jobs",
-	"assets/sprites/monsters",
-	"assets/sprites/portraits",
-	"assets/sprites/npcs",
-]
+## Widened to the WHOLE sprite tree 2026-09-12. A family list pinned 832 of 864 and omitted
+## backgrounds (2.9 MB), ui (1.5 MB), weapons, tiles, objects, effects — and that omission is
+## INVISIBLE: an unlisted dir is never scanned, so every arm passes while its art is unguarded.
+const PINNED_DIRS: Array[String] = ["assets/sprites"]
 
-## One artist-era file per pinned dir, so a dir emptying out cannot pass as a clean run.
+## One file per FAMILY, so a family emptying out cannot pass as a clean run. PINNED_DIRS is now a
+## single root, which means the per-dir arm below can no longer notice a family vanishing — these
+## named controls are what does.
 const PIN_CONTROLS: Array[String] = [
 	"assets/sprites/jobs/bard/advance.png",
 	"assets/sprites/monsters/slime.png",
 	"assets/sprites/portraits/fighter.png",
 	"assets/sprites/npcs/elder_theron/overworld.png",
+	"assets/sprites/backgrounds/battle_world1_medieval.png",
 ]
 
 
@@ -47,7 +46,7 @@ func test_every_pinned_sprite_matches_its_ledger_hash() -> void:
 	var ledger := _ledger()
 	# A FLOOR, not a count: art only ever arrives, so this reds on a bulk DELETION and
 	# never on a legitimate addition. Do not convert it to assert_eq.
-	assert_gte(ledger.size(), 800, "ledger covers the sprite surface — a drop this size is a bulk loss, not an edit")
+	assert_gte(ledger.size(), 850, "ledger covers the sprite surface — a drop this size is a bulk loss, not an edit")
 	for control in PIN_CONTROLS:
 		assert_true(ledger.has(control), "control: %s pinned (wrong-shape-zero guard)" % control)
 	var mismatches := []
@@ -75,9 +74,13 @@ func test_the_tool_and_this_test_cover_the_same_dirs() -> void:
 	var ledger := _ledger()
 	var pinned_roots := {}
 	for path in ledger:
-		var parts := str(path).split("/")
-		if parts.size() >= 3:
-			pinned_roots["%s/%s/%s" % [parts[0], parts[1], parts[2]]] = true
+		var covered := false
+		for root in PINNED_DIRS:
+			if str(path).begins_with(root + "/"):
+				covered = true
+				pinned_roots[root] = true
+		if not covered:
+			pinned_roots[str(path).get_base_dir()] = true
 	# Tool wider than test: those pins ARE hash-checked above, but new files beside
 	# them are never enrolled and nothing says so. This is the direction that is quiet.
 	for root in pinned_roots:
