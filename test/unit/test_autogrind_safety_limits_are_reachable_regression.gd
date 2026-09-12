@@ -172,3 +172,46 @@ func test_a_dial_refuses_while_grinding() -> void:
 	assert_eq(float(_sys.interrupt_rules["hp_threshold"]), before,
 		"a safety dial moved mid-grind — the session's own stop conditions changed underneath it")
 	_ui._is_grinding = false
+
+## Arm 8: A RESUMED GRIND MUST KEEP THE LIMITS THE PLAYER SET, and it does so through a path that
+## already existed — which is the reason these settings live in the emitted config rather than being
+## poked into interrupt_rules directly. AutogrindController.serialize_snapshot stores
+## `"config": _config.duplicate(true)`, and GameLoop._resume_autogrind feeds that same config back to
+## _start_autogrind, so start_autogrind's merge re-applies them. Nothing was added for this.
+##
+## ⛔ THE STEP THIS ARM EXISTS FOR IS THE JSON ROUND-TRIP. The snapshot is written to
+## user://autogrind_snapshot.json, and JSON.parse returns FLOATS where live state held ints — the
+## same class CLAUDE.md documents for typed arrays. max_battles is an int and `battles_completed >=
+## 25.0` still works, but the readout would print "25.0 battles" and interrupt_rules would carry a
+## float where every other writer puts an int. So this walks the real lossy step, not a duplicate().
+func test_the_limits_survive_the_snapshot_json_round_trip() -> void:
+	_ui._safety_hp_threshold = 50.0
+	_ui._safety_max_battles = 25
+	_ui._safety_stop_on_death = false
+	var cfg: Dictionary = _ui._get_grind_config()
+
+	## Exactly what save_grind_snapshot + load_grind_snapshot do to it.
+	var wire: String = JSON.stringify({"controller": {"config": cfg}})
+	var back: Dictionary = JSON.parse_string(wire)
+	var resumed: Dictionary = back["controller"]["config"]
+	gut.p("  max_battles over the wire: %s (%s)" % [
+		resumed["interrupt_rules"]["max_battles"],
+		type_string(typeof(resumed["interrupt_rules"]["max_battles"]))])
+
+	## Simulate the fresh session the snapshot exists for: the autoload is back at its defaults.
+	_sys.set_interrupt_rules(DEFAULTS)
+	assert_eq(float(_sys.interrupt_rules["hp_threshold"]), 20.0,
+		"CONTROL: the fresh-session default must differ from the 50.0 the player set, or this passes vacuously")
+
+	var party := _probe_party()
+	assert_true(_sys.start_autogrind(party, {}, resumed), "CONTROL: the resumed grind must start")
+
+	assert_eq(float(_sys.interrupt_rules["hp_threshold"]), 50.0,
+		"a resumed grind lost the HP limit the player set — it reverted to the shipped default silently")
+	assert_false(bool(_sys.interrupt_rules["party_death"]),
+		"a resumed grind re-enabled stop-on-death after the player turned it off")
+	## The type, not just the value: JSON hands back 25.0, and set_interrupt_rules' int() is what
+	## keeps interrupt_rules holding the same type every other writer puts there.
+	assert_eq(int(_sys.interrupt_rules["max_battles"]), 25, "a resumed grind lost the battle cap")
+	assert_eq(typeof(_sys.interrupt_rules["max_battles"]), TYPE_INT,
+		"max_battles came back from JSON as %s — int() in set_interrupt_rules is what normalises it" % type_string(typeof(_sys.interrupt_rules["max_battles"])))
