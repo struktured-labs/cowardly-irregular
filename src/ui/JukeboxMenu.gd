@@ -104,6 +104,27 @@ static func _load_manifest_tracks() -> Array:
 
 
 # Tick 201: prefix-based category lookup so the sorted list reads as vertical color bands. Unknown ids (title, victory, game_over, autogrind, ...) stay TEXT_COLOR.
+## The footer named three controls and the screen binds four. 165 rows at 14 visible, so
+## paging is the only fast route through the list and it was the undocumented one.
+##
+## ⛔ hint_for_action() MUST NOT speak for the keyboard here. MenuPaging reuses
+## battle_defer/battle_advance for the PAD only — on a keyboard it reads KEY_PAGEUP /
+## KEY_PAGEDOWN — while those actions' keyboard bindings are L and R, which do nothing on
+## this screen. Deriving both sides from one call would have advertised a dead key, i.e.
+## traded a bound-but-unnamed control for a named-but-unbound one.
+static func build_footer_text(device_name: String = "") -> String:
+	var has_pad: bool = device_name != "" or not Input.get_connected_joypads().is_empty()
+	var page: String = "PgUp/PgDn: Page"
+	if has_pad:
+		page = "%s/%s: Page" % [
+			InputProfileManager.hint_for_action("battle_defer", device_name),
+			InputProfileManager.hint_for_action("battle_advance", device_name)]
+	return "↑↓/D-pad: Navigate   %s   %s: Play   %s: Stop & Back" % [
+		page,
+		InputProfileManager.hint_for_action("ui_accept", device_name),
+		InputProfileManager.hint_for_action("ui_cancel", device_name)]
+
+
 static func _category_color(track_id: String) -> Color:
 	if track_id.begins_with("boss_") or track_id == "boss":
 		return CAT_BOSS_COLOR
@@ -229,7 +250,7 @@ func _build_ui() -> void:
 
 	# Footer
 	var footer = Label.new()
-	footer.text = "↑↓/D-pad: Navigate   %s: Play   %s: Stop & Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
+	footer.text = build_footer_text()
 	footer.position = Vector2(16, _panel.size.y - 28)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
