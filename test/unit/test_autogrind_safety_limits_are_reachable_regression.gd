@@ -30,6 +30,15 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## ⚠️ HERE, not at the end of the arms that start a grind — AutogrindSystem is an autoload, so a
+	## session left grinding makes the next arm's start_autogrind a refused double-start.
+	## ⛔ NOT because a failing assert truncates the cleanup: MEASURED, a failed GUT assert records
+	## and CONTINUES (no exceptions in GDScript), so an in-body stop_autogrind does still run. I
+	## predicted Failing 2 for that cascade and got Failing 1, which is how the wrong reason surfaced.
+	## The reasons that hold: a runtime ERROR does abort the enclosing function (the typed-array class
+	## in CLAUDE.md), and after_each covers arms added later that start a grind and forget to stop.
+	## Early-returns when idle, so it is safe to call unconditionally.
+	_sys.stop_autogrind()
 	AutogrindSystem._test_disable_persistence = false
 	_sys.set_interrupt_rules(DEFAULTS)
 
@@ -107,7 +116,6 @@ func test_the_config_carries_the_choices_through_the_real_merge() -> void:
 	## would stop firing silently, because the read site's .get() fallback is 999.0.
 	assert_eq(float(_sys.interrupt_rules["corruption_limit"]), 4.5,
 		"corruption_limit was dropped by a four-key merge — the collapse gate now falls back to 999.0 and never fires")
-	_sys.stop_autogrind()
 
 
 ## Arm 4: the clamps. Both bounds exist because an out-of-range write produces a net that never
@@ -164,4 +172,3 @@ func test_a_dial_refuses_while_grinding() -> void:
 	assert_eq(float(_sys.interrupt_rules["hp_threshold"]), before,
 		"a safety dial moved mid-grind — the session's own stop conditions changed underneath it")
 	_ui._is_grinding = false
-	_sys.stop_autogrind()
