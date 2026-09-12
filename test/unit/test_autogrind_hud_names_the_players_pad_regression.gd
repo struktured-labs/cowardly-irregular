@@ -153,6 +153,7 @@ func test_every_label_the_strip_advertises_names_a_key_that_works() -> void:
 ## whatever this pad calls 4 must not appear. A future remap that really does bind 4 makes the
 ## caption honest and this arm passes — it bans the MISMATCH, not the word "Select".
 func test_the_start_button_names_a_button_ui_menu_actually_binds() -> void:
+	var expected_per_family := {}
 	for family in PADS.keys():
 		var device: String = PADS[family]
 		var token: String = _ui._toggle_token(device)
@@ -164,8 +165,33 @@ func test_the_start_button_names_a_button_ui_menu_actually_binds() -> void:
 		assert_false(token.contains(unbound_name),
 			"%s START/STOP caption names '%s' (index 4), which ui_menu does not bind: '%s'" % [family, unbound_name, token])
 		var expected: String = InputProfileManager.button_name_for_index(int(bound[0]), device)
+		## ⛔ SHAPE CLAIM, and it is the only thing keeping this arm from being hollow. Both
+		## `unbound_name` and `expected` are DERIVED from the table the subject reads, so they move
+		## WITH it: collapse BUTTON_NAMES to one family and the ban and the requirement both still
+		## hold while the caption is wrong. MEASURED — that collapse scored this arm GREEN, and only
+		## the literal-expectation arm above caught it. A non-derived claim about the expectation's
+		## own shape is what a derived comparison needs. @cowir-controller's rule, 2026-09-12.
+		assert_ne(unbound_name, "",
+			"precondition: index 4 must HAVE a name for %s, or banning it bans the empty string" % family)
+		assert_ne(expected, "",
+			"precondition: index %d must have a name for %s, or `contains` succeeds on nothing" % [int(bound[0]), family])
+		assert_ne(unbound_name, expected,
+			"precondition: index 4 ('%s') and index %d ('%s') must be DIFFERENT names on %s — if the table collapses them, this arm bans and requires the same string and can never fail" % [unbound_name, int(bound[0]), expected, family])
 		assert_true(token.contains(expected),
 			"%s caption must name index %d ('%s'), the button that actually toggles: '%s'" % [family, int(bound[0]), expected, token])
+		expected_per_family[family] = expected
+
+	## ⛔ THE SHAPE CLAIM HAS TO BE ABOUT THE AXIS THE DERIVATION CAN COLLAPSE, and my first attempt
+	## was not. I asserted index 4 != index 6 WITHIN a family; the real collapse is ACROSS families,
+	## where "Back" and "Start" still differ and that claim sails through. MEASURED twice: predicted
+	## Failing 2, got 1, both times. This is the claim that fires — the derived expectations must
+	## still DISAGREE between families, which is the one thing a collapsed table cannot do.
+	var distinct := {}
+	for v in expected_per_family.values():
+		distinct[v] = true
+	gut.p("  derived expectations per family: %s" % [expected_per_family])
+	assert_eq(distinct.size(), PADS.size(),
+		"the derived expectations agree across families (%s) — BUTTON_NAMES has collapsed, so this arm is comparing the caption against a value that moved WITH it and can no longer fail" % [expected_per_family])
 
 
 ## The REAL caption, off the real builder — the family arm above sees the helper, this sees the Label.
