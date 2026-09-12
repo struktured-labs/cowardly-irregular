@@ -30,32 +30,36 @@ func _mgr():
 	return MouseCursorManager
 
 
-## ⛔ CODE ONLY, AND THE STRIPPER CARRIES ITS OWN CONTROL. Twice in one hour a window I sized
-## against code was filled by prose instead — first my anchor matched inside a comment, then the
-## six explanatory lines I had written BETWEEN the branch and its body overran a 400-char window.
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
+
+## ⛔ CODE ONLY, VIA THE SHARED HELPER, WITH THE CONTROL KEPT REQUIRED.
 ##
-## ⚠️ But a stripper is an instrument too, and it fails the SAME way it fixes: by silently changing
-## what the assertion measures. @cowir-adhoc's swallowed whole files on a desynced docstring toggle
-## and produced five confident false positives — invisible in a green run, because everything
-## downstream of an over-strip is a NEGATIVE assertion that an empty string satisfies perfectly.
-## So `must_survive` is a REQUIRED argument, not an optional hardening: a known CODE site that
-## over-stripping would delete, checked here so no call site can forget it.
+## This was a local `#`-at-line-start strip. It removed a whole-line comment and left a TRAILING
+## one — `var a = 1  # token` survived it — so a presence assert could still be satisfied by a
+## mention rather than an invocation, and a negative assert could red on one. Measured on my own
+## two targets: 0 asserted tokens in a trailing comment (control: 1 and 3 such lines exist, so
+## the check can see them). **Correct by occupancy, not by construction**, which is the condition
+## worth fixing rather than noting. @cowir-autogrind found the same gap in eight of theirs.
+##
+## The helper is quote- and escape-aware, which is the half a naive trailing strip gets wrong in
+## the other direction: `#` inside a string is not a comment, and truncating there cuts live code
+## out of the scan — loud in a presence assert, SILENT in a ban assert.
+##
+## 🔑 The old local `count('"""') == 0` assertion is GONE ON PURPOSE, not lost. It was a tripwire
+## for a docstring reaching an assert; the helper removes docstring regions by construction, so
+## the tripwire would now be vacuously true. `must_survive` stays REQUIRED — the helper's header
+## says every caller must assert a surviving code site and does not enforce it.
 func _code_only(path: String, must_survive: String) -> String:
-	var out := ""
-	for raw in FileAccess.get_file_as_string(path).split("\n"):
-		if raw.strip_edges().begins_with("#"):
-			continue
-		out += raw + "\n"
+	var out: String = GdSource.code_of(path)
+	## REQUIRED is not SUPPLIED (@cowir-sfx): "" type-checks, and `find("")` is 0, so an empty
+	## control passes while asserting nothing. All four call sites pass a real symbol today —
+	## occupancy again; this makes it construction.
+	assert_gt(must_survive.length(), 0,
+		"the positive control must name a real code site — an empty one asserts nothing")
 	assert_true(out.find(must_survive) > -1,
 		"POSITIVE CONTROL: '%s' is a CODE site in %s and must survive stripping — if it did not, " % [must_survive, path] +
 		"the stripper ate code and every negative arm below would pass on an empty window")
-	## ⛔ AND THE OTHER HALF, because a #-only strip is LINE-BASED and cannot see inside a \"\"\"
-	## block: text there survives stripping and would satisfy a positive arm above. This file has
-	## none TODAY — that is MEASURED INERT, not safe by design. If it ever fails, the answer is a
-	## region strip for this path, not a wider window.
-	assert_eq(out.count('"""'), 0,
-		"%s gained a multi-line string: a #-only strip is blind inside one, so the arms above can " % path +
-		"now be satisfied by prose again — this helper needs a region strip for it")
 	return out
 
 
