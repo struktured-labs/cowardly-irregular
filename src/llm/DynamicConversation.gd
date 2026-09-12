@@ -396,7 +396,7 @@ func _do_npc_reply() -> void:
 func _fetch_npc_opening() -> String:
 	var recent: Array = []
 	if _event_log != null:
-		recent = _event_log.recent(DialoguePrompts.CONTEXT_EVENTS)
+		recent = _event_log.recent_varied(DialoguePrompts.CONTEXT_EVENTS)
 
 	# Fast path: LLM unavailable.
 	if not _llm_available():
@@ -437,7 +437,7 @@ func _fetch_npc_sign_off() -> String:
 
 	var recent: Array = []
 	if _event_log != null:
-		recent = _event_log.recent(DialoguePrompts.CONTEXT_EVENTS)
+		recent = _event_log.recent_varied(DialoguePrompts.CONTEXT_EVENTS)
 
 	# Dedicated sign-off builder — frames the line as a GOODBYE and threads
 	# the conversation tail so the farewell reacts to what was just said.
@@ -488,7 +488,7 @@ func _fetch_player_choices() -> Array[String]:
 
 	var recent: Array = []
 	if _event_log != null:
-		recent = _event_log.recent(DialoguePrompts.CONTEXT_EVENTS)
+		recent = _event_log.recent_varied(DialoguePrompts.CONTEXT_EVENTS)
 
 	var prompt: String = DialoguePrompts.build_player_choices(
 		_npc_name,
@@ -528,7 +528,7 @@ func _fetch_npc_reply() -> String:
 
 	var recent: Array = []
 	if _event_log != null:
-		recent = _event_log.recent(DialoguePrompts.CONTEXT_EVENTS)
+		recent = _event_log.recent_varied(DialoguePrompts.CONTEXT_EVENTS)
 
 	var prompt: String = DialoguePrompts.build_npc_reply(
 		_npc_name,
@@ -568,7 +568,7 @@ func _fetch_combined_reply() -> Dictionary:
 
 	var recent: Array = []
 	if _event_log != null:
-		recent = _event_log.recent(DialoguePrompts.CONTEXT_EVENTS)
+		recent = _event_log.recent_varied(DialoguePrompts.CONTEXT_EVENTS)
 
 	var prompt: String = DialoguePrompts.build_combined_reply(
 		_npc_name,
