@@ -78,6 +78,14 @@ const MONSTER_PATH_CONSUMERS: Array[String] = [
 ## scored 9/9 GREEN, and a comment-only mention in an unrelated file was flagged as a consumer.
 ## Both directions, from one hole. The case table below is the cheap route to the seventh variant;
 ## four lanes broke six of them by planting mutations instead.
+##
+## ⛔ BEFORE BELIEVING A MUTATION THAT SURVIVED, TRIPWIRE ITS SITE. A mutation can apply
+## (`git diff` shows it, the anchor is unique) and still never EXECUTE: making the `#` branch
+## also fire on `"` left all 12 arms green, because the `"` branch above it consumes the
+## character first. Keep the trigger, maximise the effect -- plant `return "TRIPWIRE"` under the
+## same condition. Green means the condition never fires and the survival proved nothing; red
+## means the site is live and you have a real hole. Measured 2026-09-12: dead site 12/12 green,
+## live site (the escape branch) red -- so the instrument has both of its controls.
 func _strip_comments(src: String) -> String:
 	var out := ""
 	var i := 0
