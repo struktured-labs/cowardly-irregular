@@ -157,7 +157,7 @@ func _ready() -> void:
 	# Runtime lookup keeps this file preload-safe for tests.
 	var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 	if sm:
-		sm.play_area_music("overworld")
+		sm.play_area_music(_get_music_area_id())
 
 	# First-time tutorial hints. Both are idempotent (TutorialHint tracks
 	# _shown_hints statically) so calling them on every overworld load is
@@ -1117,3 +1117,11 @@ func _is_field_elite(monster_id: String) -> bool:
 ## and this chain has already cost the fleet one leaked latch (the 2026-09-06 spider wedge).
 func _elite_id(monster_id: String) -> String:
 	return monster_id + EncounterSystem.ELITE_SUFFIX if not monster_id.ends_with(EncounterSystem.ELITE_SUFFIX) else monster_id
+
+
+## BaseVillage's convention, which no overworld carried: GameLoop._derive_current_scene_music_key
+## asks a scene for its own bed and falls back to the literal "overworld" — W1's key — when nothing
+## answers. All six overworlds answered nothing, so stopping autogrind or restoring a lost pause-menu
+## snapshot played World 1 in every world. Not the dispatcher's `_:` arm: "overworld" MATCHES an arm.
+func _get_music_area_id() -> String:
+	return "overworld"
