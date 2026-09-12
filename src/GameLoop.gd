@@ -6083,6 +6083,14 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		if battles in [10, 20, 30, 50, 100]:
 			_show_autogrind_toast(_get_milestone_text(battles))
 
+		# Achievements land the battle they are earned, not at the Summary
+		for a in _autogrind_controller.award_pending_achievements():
+			var ach_line: String = "ACHIEVEMENT: %s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
+			_show_autogrind_toast(ach_line)
+			_autogrind_battle_summaries.append("[color=#ffd633]%s[/color]" % ach_line)
+			if _autogrind_battle_summaries.size() > 50:
+				_autogrind_battle_summaries.remove_at(0)
+
 		# Auto-save snapshot every 5 battles for crash recovery
 		if battles > 0 and battles % 5 == 0:
 			_autogrind_save_snapshot()
