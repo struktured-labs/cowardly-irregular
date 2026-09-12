@@ -357,11 +357,11 @@ func test_no_face_button_letter_is_frozen_into_a_caption() -> void:
 	var re := RegEx.create_from_string(CENSUS_PATTERN)
 	var frozen: Array = []
 	for f in _gd_files():
-		var lines := FileAccess.get_file_as_string(f).split("\n")
+		## strip_comments, NOT split: this census REPORTS LINE NUMBERS, and strip_comments emits one
+		## output line per input line by construction where the docstring split can shift them.
+		var lines := GdSource.strip_comments(FileAccess.get_file_as_string(f)).split("\n")
 		for i in lines.size():
 			var l: String = lines[i]
-			if l.strip_edges().begins_with("#"):
-				continue
 			if not l.contains("\""):
 				continue
 			var m := re.search(l)
