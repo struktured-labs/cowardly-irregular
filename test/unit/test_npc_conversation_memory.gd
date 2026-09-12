@@ -306,8 +306,20 @@ func test_both_builders_assemble_context_through_one_path() -> void:
 	## builder assembled these by hand; if either stops calling _context_blocks,
 	## the next one can drift again and the parity test would only notice after
 	## someone adds a sixth block.
-	var src: String = FileAccess.get_file_as_string("res://src/llm/DialoguePrompts.gd")
-	assert_false(src.is_empty(), "CONTROL: source must load")
+	var raw: String = FileAccess.get_file_as_string("res://src/llm/DialoguePrompts.gd")
+	assert_false(raw.is_empty(), "CONTROL: source must load")
+	## COUNTED OVER CODE, not the file. `count()` on a raw source is safe only
+	## while the needle is something nobody writes in a sentence — measured in this
+	## very file: build_npc_opening 8 raw / 3 code, build_combined_reply 3 / 1.
+	## `_context_blocks(` survives only because the trailing paren makes it
+	## unnatural prose, so one comment written the way I wrote those three reds a
+	## correct tree. The body windows below also bleed into the NEXT function's
+	## docstring, so they were readable by prose too.
+	var src: String = _code_only(raw)
+	## LIVENESS, from this file's own asymmetry rather than a planted marker: if
+	## stripped and raw agree on a name the comments discuss, nothing is stripping.
+	assert_lt(src.count("build_npc_opening"), raw.count("build_npc_opening"),
+		"the comment strip is not running — every assert below would read prose")
 	## The count is DERIVED from the list below, not typed. build_npc_reply joined
 	## it when the flag-flip drift was closed, and an exact literal here taxed that
 	## correct change rather than catching anything.
@@ -374,3 +386,12 @@ func test_no_block_junction_glues_in_any_order() -> void:
 				var idx: int = str(line).find(str(h))
 				assert_true(idx <= 0,
 					"%s prompt glues '%s' into the middle of a line: %s" % [which, h, JSON.stringify(line)])
+
+
+## Strip `#` comments (and so `##` docstrings) so a source assert stands on code.
+func _code_only(src: String) -> String:
+	var out: PackedStringArray = PackedStringArray()
+	for line in src.split("\n"):
+		var hash_at: int = line.find("#")
+		out.append(line if hash_at == -1 else line.substr(0, hash_at))
+	return "\n".join(out)

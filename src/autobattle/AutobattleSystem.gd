@@ -1550,28 +1550,24 @@ func _create_guardian_default_script(character_id: String) -> Dictionary:
 				],
 				"actions": [{"type": "item", "id": "potion", "target": "self"}]
 			},
-			# Iron Guard: apply defense buff on self when not already defended — priority setup move
+			# Guardian Wall: ward the whole party when anyone is hurt. Replaces the old iron_guard
+			# and protect rules, which named a brass_golem ability and a CLERIC one — neither
+			# reachable, so this stance's whole defensive half did nothing. 15 MP of a 35 pool.
 			{
 				"conditions": [
-					{"type": "not_has_buff", "stat": "defense"},
-					{"type": "mp_percent", "op": ">=", "value": 10}
+					{"type": "ally_hp_percent", "op": "<", "value": 65},
+					{"type": "mp_percent", "op": ">=", "value": 43}
 				],
-				"actions": [{"type": "ability", "id": "iron_guard", "target": "self"}]
+				"actions": [{"type": "ability", "id": "guardian_wall", "target": "all_allies"}]
 			},
-			# Taunt: force the highest-ATK enemy to attack the Guardian
+			# Shield Bash: the in-kit answer to "hit the biggest threat". Replaces taunt, a
+			# spiteful_crow ability; there is no taunt in this job, and stunning the hardest
+			# hitter is the nearest real thing. Damage plus a rider, so a repeat is never a stall.
 			{
 				"conditions": [
-					{"type": "mp_percent", "op": ">=", "value": 10}
-				],
-				"actions": [{"type": "ability", "id": "taunt", "target": "highest_atk_enemy"}]
-			},
-			# Protect: cover the lowest-HP ally when they are at risk and Guardian has MP
-			{
-				"conditions": [
-					{"type": "ally_hp_percent", "op": "<", "value": 50},
 					{"type": "mp_percent", "op": ">=", "value": 15}
 				],
-				"actions": [{"type": "ability", "id": "protect", "target": "lowest_hp_ally"}]
+				"actions": [{"type": "ability", "id": "shield_bash", "target": "highest_atk_enemy"}]
 			},
 			# Default - attack to contribute damage while tanking
 			{
@@ -1597,26 +1593,22 @@ func _create_ninja_default_script(character_id: String) -> Dictionary:
 				],
 				"actions": [{"type": "item", "id": "potion", "target": "self"}]
 			},
-			# Backstab opener: maximum damage on a healthy enemy before they act
-			# Fires while enemy is above 60% HP — the opener window
+			# Smoke Bomb opener: blind the room while they can still see. Replaces backstab and
+			# steal, both ROGUE abilities a Ninja cannot know — two of this script's four rules did
+			# nothing. Guarded on the blind itself, so it re-arms when the blind lapses instead of
+			# firing once or forever.
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": ">", "value": 60}
+					{"type": "not_enemy_has_status", "status": "blind"},
+					{"type": "mp_percent", "op": ">=", "value": 14}
 				],
-				"actions": [{"type": "ability", "id": "backstab", "target": "highest_hp_enemy"}]
-			},
-			# Steal: grab items from an undamaged enemy who still has their loot
-			# Must come after backstab check so we don't steal from a target we just wounded
-			{
-				"conditions": [
-					{"type": "enemy_hp_percent", "op": ">", "value": 75}
-				],
-				"actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}]
+				"actions": [{"type": "ability", "id": "smoke_bomb", "target": "lowest_hp_enemy"}]
 			},
 			# Quick Strike: fast follow-up on a wounded target to finish them before they act
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": "<", "value": 40}
+					{"type": "enemy_hp_percent", "op": "<", "value": 40},
+					{"type": "mp_percent", "op": ">=", "value": 12}
 				],
 				"actions": [{"type": "ability", "id": "quick_strike", "target": "lowest_hp_enemy"}]
 			},
@@ -1644,7 +1636,32 @@ func _create_summoner_default_script(character_id: String) -> Dictionary:
 				],
 				"actions": [{"type": "item", "id": "potion", "target": "self"}]
 			},
-			# Summon Ifrit: AOE fire damage against packs — highest priority summon
+			# The eidolons, told apart by the enemy's weakness. These two rules used to carry
+			# IDENTICAL conditions, so Shiva was unreachable — first match wins, and the comment
+			# said "fires when Ifrit is on cooldown", a concept the grid has never had. They cost
+			# and hit the same; the only thing that distinguishes them is element.
+			{
+				"conditions": [
+					{"type": "enemy_weak_to", "element": "fire"},
+					{"type": "mp_percent", "op": ">=", "value": 30}
+				],
+				"actions": [{"type": "ability", "id": "summon_ifrit", "target": "lowest_hp_enemy"}]
+			},
+			{
+				"conditions": [
+					{"type": "enemy_weak_to", "element": "ice"},
+					{"type": "mp_percent", "op": ">=", "value": 30}
+				],
+				"actions": [{"type": "ability", "id": "summon_shiva", "target": "lowest_hp_enemy"}]
+			},
+			{
+				"conditions": [
+					{"type": "enemy_weak_to", "element": "lightning"},
+					{"type": "mp_percent", "op": ">=", "value": 30}
+				],
+				"actions": [{"type": "ability", "id": "summon_ramuh", "target": "lowest_hp_enemy"}]
+			},
+			# Nothing on the field is weak to anything: fall back to the pack answer.
 			{
 				"conditions": [
 					{"type": "enemy_count", "op": ">=", "value": 2},
@@ -1652,21 +1669,16 @@ func _create_summoner_default_script(character_id: String) -> Dictionary:
 				],
 				"actions": [{"type": "ability", "id": "summon_ifrit", "target": "lowest_hp_enemy"}]
 			},
-			# Summon Shiva: AOE ice damage — fires when Ifrit is on cooldown or already used
-			{
-				"conditions": [
-					{"type": "enemy_count", "op": ">=", "value": 2},
-					{"type": "mp_percent", "op": ">=", "value": 30}
-				],
-				"actions": [{"type": "ability", "id": "summon_shiva", "target": "lowest_hp_enemy"}]
-			},
-			# Cure: heal a critically wounded ally when MP allows
+			# A potion for the wounded ally. Replaces `cure`, a CLERIC ability — the Summoner has
+			# no healing in its kit at all, so the original rule could never fire. Kept in its
+			# original position rather than promoted above the summons: this is the mismatch fix,
+			# not a re-tuning of somebody's stance.
 			{
 				"conditions": [
 					{"type": "ally_hp_percent", "op": "<", "value": 50},
-					{"type": "mp_percent", "op": ">=", "value": 15}
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
 				],
-				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}]
+				"actions": [{"type": "item", "id": "potion", "target": "lowest_hp_ally"}]
 			},
 			# Default - basic attack when MP is depleted
 			{

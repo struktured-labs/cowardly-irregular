@@ -35,8 +35,24 @@ func test_gameloop_skips_minus_in_battle() -> void:
 	var text = _read("res://src/GameLoop.gd")
 	# Located by ACTION, not by JOY_BUTTON_BACK: the handler moved to the action so a
 	# Controls rebind reaches it, and a spelling pin reds on that correct change.
-	var idx = text.find('event.is_action_pressed("battle_toggle_auto")')
-	assert_gt(idx, -1, "GameLoop must still have a battle_toggle_auto handler")
+	## ⛔ And located among ALL occurrences, not the FIRST. GameLoop gained a second handler for this
+	## action inside the LoopState.AUTOGRIND branch (it pauses the grind), which became occurrence #1
+	## and made this arm red on a correct change — the same first-match fragility the comment above
+	## fixed one layer up. The subject is the handler whose DOUBLE-FIRE was the bug, so find it by
+	## what it calls: _toggle_all_autobattle. A handler that does something else is not this arm's.
+	var idx := -1
+	var scan := text.find('event.is_action_pressed("battle_toggle_auto")')
+	var occurrences := 0
+	while scan > -1:
+		occurrences += 1
+		if text.substr(scan, 600).find("_toggle_all_autobattle") != -1:
+			idx = scan
+			break
+		scan = text.find('event.is_action_pressed("battle_toggle_auto")', scan + 1)
+	assert_gt(occurrences, 0, "GameLoop must still have a battle_toggle_auto handler")
+	assert_gt(idx, -1,
+		"CONTROL: %d handler(s) found and none calls _toggle_all_autobattle — the arm below would " % occurrences
+		+ "pass on an empty window, which is how a first-match locator hides a moved handler")
 	# Find the surrounding if-block (~600 chars after the match should
 	# include the BATTLE-state guard the fix introduced).
 	var body = text.substr(idx, 600)

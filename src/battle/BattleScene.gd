@@ -3087,6 +3087,12 @@ func _get_terrain_battle_track() -> String:
 		## `battle_*` to `battle_<world suffix>`. An arm exists to name a DEDICATED bed; with no bed
 		## to name, the generic path below is both correct and the single definer. `abstract` has no
 		## arm for the same reason and lands on battle_abstract the same way (cowir-music, msg 10472).
+		## ⛔ DO NOT DELETE SoundManager's `"battle_steampunk", "battle_urban":` and `"battle_void":`
+		## arms by analogy to this one. They look identical and are the opposite case: those name
+		## procedural GENERATORS that exist and run, and are the floor if a bed is ever missing from
+		## a web preset. These named manifest keys that do not exist, so they could only mislead.
+		## Unreachable-while-every-key-has-a-bed is not the same statement as dead (cowir-music,
+		## msg 10610, who raised it before anyone acted on the analogy).
 		_:
 			return "battle"
 

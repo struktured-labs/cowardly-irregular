@@ -24,11 +24,16 @@ const SRC := "res://src/autobattle/AutobattleSystem.gd"
 
 ## job_id -> ability ids its default script uses that the job cannot know.
 ## Authoring, not mechanics: which in-kit ability replaces each is a design call, routed out.
-const KNOWN_MISMATCHED := {
-	"guardian": ["iron_guard", "protect", "taunt"],
-	"ninja": ["backstab", "steal"],
-	"summoner": ["cure"],
-}
+## EMPTY, 2026-09-12 — all six are fixed. Kept as a const rather than deleted because the
+## bidirectional check below is the point: an entry added here must be REMOVED the day it is fixed,
+## and an empty map is the strongest form of that statement. The six were:
+##   guardian  iron_guard (brass_golem) · taunt (spiteful_crow) · protect (cleric)
+##   ninja     backstab · steal (both rogue)
+##   summoner  cure (cleric — the Summoner has no healing in its kit at all)
+## Replaced with in-kit equivalents, not deleted: guardian_wall and shield_bash, smoke_bomb, and a
+## potion aimed at the wounded ally. "Which in-kit ability replaces each" was routed out as a design
+## call for months; it stopped being one once four preset catalogs made the same calls and shipped.
+const KNOWN_MISMATCHED := {}
 
 const ALIAS := {"black_mage": "mage", "white_mage": "cleric", "thief": "rogue"}
 
