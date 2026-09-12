@@ -2151,6 +2151,12 @@ func reset_danger() -> void:
 	if _music_player:
 		_music_player.pitch_scale = 1.0
 		_music_player.volume_db = _music_base_db  # restore to the user's volume, not the -12.0 default
+	## ⛔ CLEAN IS NOT THE BASELINE WHEN THE GRIND IS CORRUPTED. Corruption pitch is written ONLY by
+	## its own tween, which fires on a >= 0.04 CHANGE — so the clean slate above erased a settled
+	## detune and nothing put it back until corruption moved again. Measured 2026-09-12: pitch
+	## 0.9767 at corruption 0.8, then 1.0000 after the next track or area change.
+	if _corruption_intensity > 0.0:
+		_apply_corruption_intensity(_corruption_intensity)
 
 
 ## Corruption audio degradation - ties into autogrind meta-awareness theme.
