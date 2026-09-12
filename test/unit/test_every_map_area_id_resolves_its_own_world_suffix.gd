@@ -1,5 +1,7 @@
 extends GutTest
 
+const TRIPLE := '"""'
+
 ## A map whose area id has no arm in `_get_current_world_suffix` keeps the PREVIOUS
 ## world's suffix, and every derived bed follows it.
 ##
@@ -41,13 +43,7 @@ func _sm_suffix_fn() -> String:
 	assert_gt(start, 0, "CONTROL FAILED: _get_current_world_suffix is gone — this guard measures nothing")
 	var end: int = s.find("\nfunc ", start + 10)
 	assert_gt(end, start, "CONTROL FAILED: could not bound the function body")
-	var body: String = s.substr(start, end - start)
-	## Comment-stripped: this function's own comments quote area ids, and an id
-	## mentioned in prose is not an arm.
-	var code: PackedStringArray = []
-	for line in body.split("\n"):
-		code.append(line.split("#")[0])
-	return "\n".join(code)
+	return _code_only(s.substr(start, end - start))
 
 
 func _area_ids() -> Dictionary:
@@ -127,3 +123,29 @@ func test_control_an_arm_bearing_area_does_update_the_suffix() -> void:
 	SoundManager.play_area_music("steampunk_dungeon")
 	assert_eq(SoundManager._current_world_suffix, "steampunk",
 		"an area WITH an arm did not update the suffix — the cache has stopped being written at all")
+
+
+## Comment-strip that also drops """ blocks. GDScript docstrings are string
+## LITERALS, so a #-only strip leaves them and prose quoting an arm reads AS the
+## arm. Measured 2026-09-12: planting "scriptura_village" in the resolver's own
+## docstring hid a DELETED arm from the scans here — the source assert fired 0
+## times with it and 2 times without, and only a behavioural arm caught it.
+##
+## Drops the WHOLE line on a triple quote, which can also drop code sharing that
+## line. That errs toward reporting an arm MISSING (a loud red) rather than
+## present (a silent green), which is the direction a guard should fail in.
+static func _code_only(body: String) -> String:
+	var out: PackedStringArray = []
+	var in_doc: bool = false
+	for raw in body.split("\n"):
+		if in_doc:
+			if raw.contains(TRIPLE):
+				in_doc = false
+			continue
+		var q: int = raw.find(TRIPLE)
+		if q >= 0:
+			if raw.find(TRIPLE, q + 3) < 0:
+				in_doc = true
+			continue
+		out.append(raw.split("#")[0])
+	return "\n".join(out)
