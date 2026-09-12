@@ -1155,6 +1155,22 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 	if bust != null:
 		return bust
 
+	# EXPRESSION SUFFIX. 2026-09-12: seven lines across five scenes name a party member
+	# with a mood — "bard_happy", "cleric_sad", "fighter_determined" — and none of those
+	# ids is in PORTRAIT_SPRITES or a job folder, so both rungs above miss and the speaker
+	# got a PROCEDURAL face. The Bard's first line of the game ("What a tale this shall
+	# be!", world1_prologue) and her last (world6_ending) were both drawn that way.
+	# A mood is a variant of a character, not a different character, so fall back to the
+	# id before the first underscore and let rung 1 answer for it — which also picks up
+	# the world-suffix variant, so an expression line keeps its world costume.
+	# Recursion is bounded: the base of a base is itself, so this fires at most once.
+	# Deliberately NOT a hand-list of moods; a new expression costs nothing.
+	var base_id: String = portrait_type.get_slice("_", 0)
+	if base_id != "" and base_id != portrait_type and PORTRAIT_SPRITES.has(base_id):
+		var base_tex := _create_portrait(base_id)
+		if base_tex != null:
+			return base_tex
+
 	# Fallback to procedural portrait generation
 	var size = int(PORTRAIT_SIZE - 8)
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
