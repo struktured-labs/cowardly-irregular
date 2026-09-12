@@ -492,6 +492,13 @@ func check_fatigue_collapse() -> bool:
 	return randf() < 0.03
 
 
+## The shortest window a per-minute rate may be extrapolated from. ONE source, because three
+## divisors carried three different floors — 0.0001 here, 0.01 in the Dashboard and the Summary — for
+## the same computation. A floor is a claim about when a rate becomes meaningful, and three different
+## claims about one thing is how they drift.
+const MIN_RATE_WINDOW_MINUTES: float = 1.0 / 60.0
+
+
 func get_grind_stats() -> Dictionary:
 	"""Get grind session statistics with per-minute rates.
 	Returns {exp_per_min, gold_per_min, jp_per_min, encounters_per_min,
@@ -500,7 +507,15 @@ func get_grind_stats() -> Dictionary:
 	if is_grinding and _grind_stats["start_time"] > 0.0:
 		elapsed = Time.get_unix_time_from_system() - _grind_stats["start_time"]
 
-	var minutes: float = maxf(elapsed / 60.0, 0.0001)  # Avoid division by zero
+	## Floor of ONE SECOND, not 0.0001 min. The old floor was 6 MILLISECONDS — enough to avoid a
+	## division by zero and nothing else, so it let every per-minute rate be extrapolated from a
+	## window 10,000x shorter than the one it reports. Measured, 120 EXP at 5 ms elapsed:
+	##   0.0001 floor -> "EXP/min 1200000"      1s floor -> "EXP/min 7200"
+	## Reachable because LUDICROUS mode resolves battles by math, so a real EXP total lands
+	## sub-second. The comment's stated purpose ("avoid division by zero") is still satisfied; the
+	## value simply was not doing the job the comment claimed. 1s caps extrapolation at 60x instead
+	## of 10,000x and every consumer benefits — Monitor, Dashboard, Summary, History, snapshot.
+	var minutes: float = maxf(elapsed / 60.0, MIN_RATE_WINDOW_MINUTES)
 
 	var csi_val = get_csi(current_region_id) if not current_region_id.is_empty() else 0.0
 	var yield_val = get_yield_multiplier(current_region_id) if not current_region_id.is_empty() else 1.0

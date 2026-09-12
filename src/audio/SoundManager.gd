@@ -11,6 +11,7 @@ var _death_player: AudioStreamPlayer  # dedicated voice: death cries survive the
 var _footstep_player: AudioStreamPlayer  # dedicated voice: a step cut every UI cue longer than a step (2026-09-11)
 var _flourish_player: AudioStreamPlayer  # dedicated voice: a group attack's own hits were cutting its cue (2026-09-11)
 var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS long and every menu blip on _ui_player cut them (2026-09-11)
+var _pickup_player: AudioStreamPlayer  # dedicated voice: a reward cue always follows the action that earned it, and replaced it on _ui_player (2026-09-12)
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
@@ -82,6 +83,7 @@ const CRIT_THUD_TRIM_DB: float = -4.0
 const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
 ## Spoken lines sit where UI blips did, not louder — the defect was being CUT, not being quiet.
 const VOICE_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
+const PICKUP_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const DEATH_CUE_BOOST_DB: float = 6.0
 const DEATH_THUD_FREQ: float = 48.0
 const DEATH_THUD_DURATION: float = 0.28
@@ -289,6 +291,12 @@ func _setup_audio_players() -> void:
 	_voice_player.volume_db = VOICE_PLAYER_BASE_DB
 	_voice_player.bus = SFX_BUS
 	add_child(_voice_player)
+
+	_pickup_player = AudioStreamPlayer.new()
+	_pickup_player.name = "PickupPlayer"
+	_pickup_player.volume_db = PICKUP_PLAYER_BASE_DB
+	_pickup_player.bus = SFX_BUS
+	add_child(_pickup_player)
 
 	_death_player = AudioStreamPlayer.new()
 	_death_player.name = "DeathPlayer"
@@ -739,6 +747,18 @@ func play_voice(sound_key: String) -> float:
 	if _voice_player.stream == null:
 		return 0.0
 	return _voice_player.stream.get_length()
+
+
+## Reward cues (coins, key items) on their OWN player. They are always a CONSEQUENCE of the
+## action that earned them, so on the shared UI player they landed on a cue still playing: a gold
+## chest's lid (1.48s) was replaced by its coins (1.00s) in the same frame, on all 15 of them.
+func play_pickup(sound_key: String) -> void:
+	if _pickup_player == null:
+		play_ui(sound_key)
+		return
+	if not _try_play_sfx_from_manifest(_pickup_player, sound_key, PICKUP_PLAYER_BASE_DB):
+		if SOUNDS.has(sound_key):
+			_play_sound(_pickup_player, SOUNDS[sound_key])
 
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:

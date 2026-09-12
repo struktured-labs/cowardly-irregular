@@ -1301,6 +1301,20 @@ func _quest_should_yield_to_llm(quest_sys: Node, has_giver: bool) -> bool:
 	return kind != "offer" and kind != "talk"
 
 
+## QuestSystem state → persona bucket. The states are QuestSystem's, not ours:
+## it writes "active" on accept and "complete" on turn-in, and an unstarted quest
+## has no entry at all. This map used to read "completed"/"turned_in" — two strings
+## that appear nowhere else in src/ — so `post_quest` could never be selected and
+## Milo's five authored post-quest lines were unreachable on both paths.
+## Pinned against QuestSystem's own writers by
+## test_the_post_quest_voice_can_actually_be_reached.
+const QUEST_STATE_BUCKETS: Dictionary = {
+	"": "pre_task_1",
+	"active": "in_progress",
+	"complete": "post_quest",
+}
+
+
 ## Milo v2 (msg 2600): map QuestSystem state for the quest THIS NPC gives → persona bucket ("" if no override applies).
 func _quest_state_bucket_for_npc(quest_sys: Node) -> String:
 	if quest_sys == null or not quest_sys.has_method("get_all_ids") or not quest_sys.has_method("get_quest") or not quest_sys.has_method("get_state"):
@@ -1310,14 +1324,8 @@ func _quest_state_bucket_for_npc(quest_sys: Node) -> String:
 		var q: Dictionary = quest_sys.get_quest(qid)
 		if str(q.get("giver", {}).get("npc_id", "")) != npc:
 			continue
-		var state: String = str(quest_sys.get_state(qid))
-		if state == "active":
-			return "in_progress"
-		if state == "completed" or state == "turned_in":
-			return "post_quest"
-		if state == "":
-			return "pre_task_1"
-		return ""
+		# First giver-matching quest wins; an NPC giving two is not a shape that exists today.
+		return str(QUEST_STATE_BUCKETS.get(str(quest_sys.get_state(qid)), ""))
 	return ""
 
 

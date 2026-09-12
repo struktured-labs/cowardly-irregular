@@ -176,7 +176,7 @@ func _present(item: Dictionary) -> void:
 
 	# Stinger
 	if SoundManager and SoundManager.has_method("play_ui"):
-		SoundManager.play_ui("item_obtain")
+		SoundManager.play_pickup("item_obtain")
 
 
 func _input(event: InputEvent) -> void:
