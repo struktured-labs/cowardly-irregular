@@ -175,10 +175,21 @@ func test_the_player_can_reach_it_in_the_manual_editor() -> void:
 	## Engine + grammar without the editor is the enemy_has_status bug of 2026-07-05 repeated: the
 	## condition works from JSON and the LLM, and silently no-ops for anyone who picks it by hand.
 	var ge = load("res://src/ui/autobattle/AutobattleGridEditor.gd").new()
-	autofree(ge)
+	add_child_autofree(ge)
 	assert_ne(ge._format_condition({"type": "not_has_status", "status": "poison"}), "not_has_status",
 		"it must render a readable cell label, not the raw type string")
-	var cond: Dictionary = {"type": "always"}
-	ge._apply_condition_type(cond, "not_has_status")
-	assert_eq(str(cond.get("status", "")), "poison",
+	## ⚠️ `_apply_condition_type` takes ONE argument and operates on the editor's OWN cursor state.
+	## The first version of this arm called it as `(cond, "not_has_status")` — a two-arg call that
+	## errors, ABORTS the rest of the function, and leaves GUT reporting a pass. Caught by
+	## reconciling authored asserts against executed ones: 17 vs 16. Seed the editor like
+	## test_autobattle_editor_picker_regression does, then read the cell back out of it.
+	ge.rules = [{"conditions": [{"type": "always"}],
+		"actions": [{"type": "attack", "target": "lowest_hp_enemy"}], "enabled": true}]
+	ge.cursor_row = 0
+	ge.cursor_col = 0
+	ge._apply_condition_type("not_has_status")
+	var cell: Dictionary = ge.rules[0]["conditions"][0]
+	assert_eq(str(cell.get("type", "")), "not_has_status",
+		"CONTROL: the apply actually ran and rewrote the cell")
+	assert_eq(str(cell.get("status", "")), "poison",
 		"picking it in the editor must seed a default status, or the cell is born broken")

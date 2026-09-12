@@ -1073,6 +1073,8 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Not buffed: %s" % str(condition.get("stat", "?")).capitalize()
 		"enemy_has_status":
 			return "Enemy has %s" % StatusNames.display(condition.get("status", ""))
+		"not_enemy_has_status":
+			return "No enemy has %s" % StatusNames.display(condition.get("status", ""))
 		"enemy_hp_percent":
 			return "Enemy HP %s %d%%" % [op, value]
 		"ally_hp_percent":
@@ -2011,7 +2013,7 @@ func _apply_condition_type(new_type: String) -> void:
 	if new_type == "always":
 		cond.erase("op")
 		cond.erase("value")
-	elif new_type in ["has_status", "not_has_status", "ally_has_status", "enemy_has_status"]:
+	elif new_type in ["has_status", "not_has_status", "ally_has_status", "enemy_has_status", "not_enemy_has_status"]:
 		if not cond.has("status"):
 			cond["status"] = "poison"
 		cond.erase("op")
@@ -2932,7 +2934,7 @@ func _simulate_states() -> Array:
 ## exact "the UI says something the engine doesn't do" defect. They are reported as
 ## undecidable instead of guessed.
 const _BATTLEFIELD_CONDITIONS: Array[String] = [
-	"enemy_count", "enemy_has_status", "enemy_hp_percent",
+	"enemy_count", "enemy_has_status", "not_enemy_has_status", "enemy_hp_percent",
 	"ally_count", "ally_has_status", "ally_hp_percent", "ally_mp_percent",
 	"ally_dead",
 ]

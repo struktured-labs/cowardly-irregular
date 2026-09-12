@@ -224,7 +224,8 @@ Each rule shape:
 Conditions (AND-chained). type is one of:
   hp_percent, mp_percent, ap, has_status, not_has_status, enemy_hp_percent, ally_hp_percent,
   turn, enemy_count, ally_count, item_count, setup_complete,
-  ally_has_status, enemy_has_status, ally_mp_percent, ally_dead, is_night, weather,
+  ally_has_status, enemy_has_status, not_enemy_has_status, ally_mp_percent,
+  ally_dead, is_night, weather,
   always, has_buff, not_has_buff
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
 ally_dead, is_night and always are NULLARY — no op, no value. ally_dead is
@@ -240,6 +241,12 @@ STATUS, not a stat buff, so not_has_buff cannot see them. Without it a setup
 rule matches again the turn after it fires and the character re-casts forever,
 never reaching the rules below — {\"type\":\"not_has_status\",\"status\":\"shadow_step\"}
 is how you say "get into position, then fight".
+not_enemy_has_status is the same idea aimed outward, and its asymmetry matters:
+enemy_has_status is true if ANY living enemy has the status, so the negation is
+NONE — true only while not one enemy carries it. That is exactly right for an
+all-enemy debuff ({\"type\":\"not_enemy_has_status\",\"status\":\"blind\"} with an
+ability like 'smoke_bomb' blinds the room once and stops until it lapses).
+Without it a debuff rule re-applies every turn and buries the rules below it.
 weather takes a 'weather' field naming a condition, exactly one of:
 clear, rain, storm, drizzle, fog, smog, glitchstorm — no op, no value. It is
 true when the world's live weather equals that value (storm boosts lightning
