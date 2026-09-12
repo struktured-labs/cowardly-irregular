@@ -927,6 +927,12 @@ func _input(event: InputEvent) -> void:
 				print("[AUTOGRIND] Turbo mode: %s" % ("ON" if current_scene.turbo_mode else "OFF"))
 			get_viewport().set_input_as_handled()
 			return
+		# R key opens the rules editor mid-grind. The dashboard surface binds this through
+		# AutogrindInputHelper; without it here the control works on one tier and not the next.
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_R:
+			_on_dashboard_adjust_rules()
+			get_viewport().set_input_as_handled()
+			return
 		# T key (keyboard) cycles tier
 		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
 			if _autogrind_controller and is_instance_valid(_autogrind_controller):

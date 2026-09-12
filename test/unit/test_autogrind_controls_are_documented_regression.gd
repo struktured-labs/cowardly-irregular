@@ -133,20 +133,7 @@ func test_every_key_the_branch_binds_is_advertised() -> void:
 	var silent: Array = []
 	for k in bound:
 		if not advertised.has(k):
-			## ⛔ This appended a BARE LETTER — a reader failing this arm got `["G"]` and nothing else.
-			## @cowir-story measured why that is structural rather than untidy: GUT's _extract_line_number
-			## builds its locator from get_stack(), which is debugger-backed and returns EMPTY under the
-			## headless runner, so EVERY failing assert in the suite prints `at line -1`. The builder is
-			## the whole message by construction. Name the binding site and the fix, not just the key.
-			## ⚠️ Both paths, per @cowir-battle: a wrong remedy is worse than none, because it is an
-			## INSTRUCTION. "Add a row" is right for a player-facing binding and wrong for a debug key
-			## — and this arm has no exemption mechanism, so naming only the first would push someone
-			## into advertising a debug key to players rather than telling me the arm needs widening.
-			silent.append(("KEY_%s is bound in GameLoop's LoopState.AUTOGRIND branch and no reference " +
-				"row names it. FIX: if a player should know about it, add its row in " +
-				"AutogrindInputHelper.grind_reference_rows. If it is deliberately not player-facing " +
-				"(debug, internal), this arm needs an exemption carrying that reason — do not add a " +
-				"row for it, and do not delete the binding to clear this.") % k)
+			silent.append(k)
 	assert_eq(silent, [],
 		("the AUTOGRIND branch binds a key the reference never names — that is exactly how turbo, " +
 		"tier and pause became an undocumented mode: %s") % [silent])
@@ -211,26 +198,34 @@ func test_pause_is_bound_on_both_grind_surfaces() -> void:
 	assert_eq(pause_rows, 1, "exactly one row documents pause")
 
 
-## Adjust-rules is live (.329) but only through the Tier-1 dashboard; GameLoop's own branch binds it on
-## NEITHER device, so the F1 row stays out. When the branch binds it on every tier, restore the row —
-## this arm is the reminder, not a permanent ban.
-func test_adjust_rules_is_absent_because_nothing_binds_it() -> void:
-	var window := _branch_window()
-	var bound: bool = window.contains("KEY_R\n") or window.contains("KEY_R ") \
-		or window.contains("JOY_BUTTON_START")
-	assert_false(bound,
-		("the AUTOGRIND branch now binds adjust-rules, so the reference must advertise it again — " +
-		"add the row back to AutogrindInputHelper.grind_reference_rows()"))
-	## .329 wired adjust_rules_requested (GameLoop connects the Tier-1 dashboard's signal), so the
-	## feature IS live — on the surface classify_event serves, which the header above says is NOT the
-	## one this F1 block describes. The row stays out until GameLoop's own branch binds it on every
-	## tier, the same rule pause needed in .328. The count is a floor so the .329 wiring cannot be
-	## lost silently; the row-absence assert below is the policy.
-	assert_gt(FileAccess.get_file_as_string("res://src/GameLoop.gd").count("adjust_rules_requested"), 0,
-		"adjust-rules mid-grind lost its GameLoop listener (.329 wired it) — reconnect the dashboard's adjust_rules_requested in GameLoop, or the Tier-1 route is dead again")
-	var text: String = HowToPlayOverlay.build_text()
-	assert_false(text.contains("Adjust rules mid-grind"),
-		"while nothing binds it, advertising it sends the player hunting for a button that does nothing")
+## Adjust-rules is REACHABLE as of the branch that connected adjust_rules_requested, so the reference
+## must advertise it again. ⛔ THIS ARM USED TO ASSERT THE OPPOSITE, and shipping the two halves in
+## separate branches is what caught me: the "nothing binds it" version landed in .328 and the branch
+## that adds the connection landed in .329, so my own guard redded the fold — correctly, with the
+## message "restore the reference row for it". Both directions are pinned now so neither can drift
+## alone: the row exists, the key is bound in the live branch, and the signal has a listener.
+func test_adjust_rules_is_advertised_because_it_is_reachable_now() -> void:
+	## ⛔ This counted `adjust_rules_requested` anywhere in GameLoop, and MY OWN comment on the handler
+	## contains that word — so deleting the connect scored GREEN. Prose satisfying a source-presence
+	## assert, in a guard written twenty minutes earlier. Comments stripped, and the claim is the
+	## CONNECT rather than the mention, because "something listens" is the reachability question.
+	var gl := _code_only(FileAccess.get_file_as_string("res://src/GameLoop.gd"))
+	assert_gt(gl.count("adjust_rules_requested.connect("), 0,
+		("nothing connects adjust_rules_requested, so the feature is unreachable again — remove its " +
+		"row from AutogrindInputHelper.grind_reference_rows rather than advertising a dead control"))
+	assert_true(_branch_window().contains("KEY_R"),
+		("the AUTOGRIND branch must bind KEY_R: the dashboard surface reaches adjust-rules through " +
+		"AutogrindInputHelper, and without this the control works on one tier and not the next"))
+	var rows := 0
+	for row in _rows():
+		if str(row[2]).contains("Adjust rules"):
+			rows += 1
+			assert_eq(str(row[1]), str(AutogrindInputHelper.ACTION_KEYS["adjust_rules"]),
+				"the adjust-rules row's key must come from the dispatch table's own constant")
+			assert_eq(str(row[0]), AutogrindInputHelper.REFERENCE_PAD_NONE,
+				("no pad button reaches adjust-rules at tier 0, so the cell must decline. If the " +
+				"AUTOGRIND branch gains a pad binding for it, derive the cell here instead of a dash"))
+	assert_eq(rows, 1, "exactly one row documents adjust-rules")
 
 
 ## The dashboard's legend must stay derived. ⚠️ It describes classify_event, which is a DIFFERENT
@@ -294,4 +289,15 @@ func _rows_of(block: String) -> Array:
 		rows.append([line.substr(0, 18).strip_edges(), line.substr(18, 18).strip_edges(),
 			line.substr(36)])
 	return rows
+
+
+## Comment lines dropped, so a source-presence assert cannot be satisfied by an explanation of the
+## very defect it guards. `#` covers `##` docstring comments too.
+func _code_only(src: String) -> String:
+	var out: PackedStringArray = []
+	for line in src.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			continue
+		out.append(line)
+	return "\n".join(out)
 
