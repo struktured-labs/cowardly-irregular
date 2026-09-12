@@ -96,6 +96,7 @@ const CONDITION_TYPES = {
 	"ally_has_status": "Ally Has Status",
 	"enemy_has_status": "Enemy Has Status",
 	"not_enemy_has_status": "No Enemy Has Status",
+	"enemy_weak_to": "Enemy Weak To",
 	"ally_mp_percent": "Ally MP %",
 	"ally_dead": "Ally Is Down",
 	"is_night": "Is Night",
@@ -313,6 +314,20 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 					return false
 			return true
 
+		## "Hit the weakness" is the oldest decision in the genre and no rule could express it.
+		## Every one of the 106 monsters carries a `weaknesses` array and the runtime already reads
+		## it (_get_weakness_target, Combatant.elemental_weaknesses), but a SCRIPT could only pick a
+		## spell by cost. ANY living enemy is weak to it — same shape as enemy_has_status, so the
+		## two read alike. An element nothing is weak to simply never fires, like an unknown status.
+		"enemy_weak_to":
+			var want_element: String = str(condition.get("element", ""))
+			if want_element == "":
+				return false
+			for enemy in _get_enemies_for(combatant):
+				if want_element in enemy.elemental_weaknesses:
+					return true
+			return false
+
 		"enemy_hp_percent":
 			var target = _get_lowest_hp_enemy(combatant)
 			if target:
@@ -424,6 +439,7 @@ const CONDITION_REQUIRED_FIELD := {
 	"ally_has_status": "status",
 	"enemy_has_status": "status",
 	"not_enemy_has_status": "status",
+	"enemy_weak_to": "element",
 	"item_count": "item_id",
 	"has_buff": "stat",
 	"not_has_buff": "stat",
