@@ -44,7 +44,7 @@ func _fn_body(src: String, name_: String) -> String:
 
 ## Both signals must have a GameLoop listener. The defect was zero.
 func test_both_beats_are_connected_to_a_live_surface() -> void:
-	var src := FileAccess.get_file_as_string(GL)
+	var src := _code_only(FileAccess.get_file_as_string(GL), "func _on_grind_complete(")
 	assert_gt(src.length(), 1000, "CONTROL: GameLoop source must have been read")
 	## The two that already work, as a positive control: if the pattern moved, this arm's shape is
 	## wrong rather than the connections being missing, and the message should say so.
@@ -63,7 +63,7 @@ func test_both_beats_are_connected_to_a_live_surface() -> void:
 ## gutted the handler. My own "did the escape fire?" check grepped for text GUT does not emit, so
 ## it agreed with them. An escape hatch IS the vacuity; source arms with no escape instead.
 func test_a_collapse_reaches_the_surface_the_player_watches() -> void:
-	var body := _fn_body(FileAccess.get_file_as_string(GL), "_on_autogrind_system_collapse")
+	var body := _fn_body(_code_only(FileAccess.get_file_as_string(GL), "func _on_grind_complete("), "_on_autogrind_system_collapse")
 	assert_gt(body.length(), 40, "GameLoop must own a collapse handler — found %d chars" % body.length())
 	assert_true(body.contains("_show_autogrind_toast("),
 		"the collapse handler must toast: AutogrindUI's log is hidden for the whole grind")
@@ -75,7 +75,7 @@ func test_a_collapse_reaches_the_surface_the_player_watches() -> void:
 
 ## The boss NAME must survive — a handler that drops its argument still toasts.
 func test_a_meta_boss_spawn_names_the_boss() -> void:
-	var body := _fn_body(FileAccess.get_file_as_string(GL), "_on_autogrind_meta_boss_spawned")
+	var body := _fn_body(_code_only(FileAccess.get_file_as_string(GL), "func _on_grind_complete("), "_on_autogrind_meta_boss_spawned")
 	assert_gt(body.length(), 40, "GameLoop must own a spawn handler — found %d chars" % body.length())
 	assert_true(body.contains("boss_name"),
 		("the spawn handler ignores its boss_name parameter. meta_boss_spawned emits " +
@@ -88,7 +88,7 @@ func test_a_meta_boss_spawn_names_the_boss() -> void:
 ## The PREMISE. If the console ever stops hiding itself mid-grind, this fix is redundant rather than
 ## wrong — but the next reader should re-derive it instead of assuming.
 func test_the_console_really_is_hidden_during_a_grind() -> void:
-	var ui := FileAccess.get_file_as_string(UI)
+	var ui := _code_only(FileAccess.get_file_as_string(UI), "func _toggle_grinding(")
 	var at := ui.find("func _toggle_grinding")
 	assert_gt(at, -1, "PRECONDITION: the console must still own the grind toggle")
 	var body := ui.substr(at, 1400)
@@ -96,3 +96,27 @@ func test_the_console_really_is_hidden_during_a_grind() -> void:
 		("_toggle_grinding no longer hides the console. If AutogrindUI is visible during a grind its " +
 		"own _battle_log IS a live surface, and these GameLoop handlers may be duplicating it — " +
 		"re-measure which surface the player watches before removing either"))
+
+
+## BOTH halves, because they need different mechanisms (@cowir-overworld): `#` comments are
+## line-addressable and `"""` regions are not — a docstring carries no `#`, so a line pass cannot
+## see it. That is the .325 defect, and @cowir-controller demonstrated it as a live false green in
+## their lane and I reproduced one in mine: delete a real connect, plant a docstring claiming it,
+## and a raw reader passes 5/5. Region half is a parity split — stateless, nothing to desync.
+## `must_survive` is REQUIRED so no call site can omit the positive control.
+func _code_only(src: String, must_survive: String) -> String:
+	var out: PackedStringArray = []
+	for line in src.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			continue
+		out.append(line)
+	var parts := "\n".join(out).split("\"\"\"")
+	var kept: PackedStringArray = []
+	for i in parts.size():
+		if i % 2 == 0:
+			kept.append(parts[i])
+	var stripped := "".join(kept)
+	assert_true(stripped.contains(must_survive),
+		"CONTROL: the stripper removed a known CODE site (%s) — every assert below measures nothing" % must_survive)
+	return stripped
+
