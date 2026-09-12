@@ -131,6 +131,7 @@ const KNOWN_MISSING_PORTRAITS := [
 ## the reader defect this file already carries a fix for one function above.
 func test_no_registered_portrait_points_at_a_missing_file() -> void:
 	var map := _portrait_map()
+	assert_gt(map.size(), 0, "PRECONDITION: no portrait keys are registered at all — this sweep checks nothing")
 	var known := {}
 	for k in KNOWN_MISSING_PORTRAITS:
 		known[k] = true
@@ -149,8 +150,14 @@ func test_no_registered_portrait_points_at_a_missing_file() -> void:
 func test_every_known_missing_portrait_is_still_missing() -> void:
 	# EARNED. Make the art and this entry must be deleted, or it excuses something already fixed.
 	var map := _portrait_map()
-	assert_gt(KNOWN_MISSING_PORTRAITS.size(), 10,
-		"CONTROL: the declared-missing list holds %d entries (16 at time of writing) -- if it drains, the sweep above has nothing to compare and its clean result is free" % KNOWN_MISSING_PORTRAITS.size())
+	assert_gt(map.size(), 0, "PRECONDITION: no portrait keys registered — this arm has nothing to police")
+	# ⛔ THIS TABLE DRAINS BY DESIGN — every entry leaves when its art lands. The floor here used
+	# to be `size() > 10`, which reds on the FINISHED state: making the 12 masterite portraits
+	# empties it. Its premise was also backwards — an empty exemption list makes the sweep above
+	# STRICTER (every key must resolve), not free. Empty needs no policing.
+	if KNOWN_MISSING_PORTRAITS.is_empty():
+		pass_test("every declared-missing portrait has been made — nothing left to excuse")
+		return
 	var now_present: Array = []
 	var not_a_key: Array = []
 	for k in KNOWN_MISSING_PORTRAITS:
