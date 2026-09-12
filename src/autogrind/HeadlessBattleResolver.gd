@@ -824,6 +824,27 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						target.add_debuff("Despair (MAG)", "magic", mod, duration)
 						_log("%s uses %s on %s (all stats down)" % [caster.combatant_name, ability_id, target.combatant_name])
 						continue
+					elif effect == "cleanse":
+						## Esuna is in the DEFAULT cleric script and two presets, and headless had no
+						## arm for it — so it fell to the generic add_status below and gave the ally a
+						## junk status called "cleanse" while the blind it was cast to cure stayed on.
+						## The ailment list is BattleManager:6104 verbatim — that array is the parity
+						## anchor, NOT the has_status call, which takes a loop variable on both sides
+						## and is invisible to a literal `has_status("x")` scan either way.
+						var cleansed: Array[String] = []
+						for ailment in ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom"]:
+							if target.has_status(ailment):
+								cleansed.append(ailment)
+								target.remove_status(ailment)
+						if target.doom_counter > 0:
+							target.doom_counter = 0
+							if not cleansed.has("doom"):
+								cleansed.append("doom")
+						if cleansed.is_empty():
+							_log("%s uses %s on %s (nothing to cleanse)" % [caster.combatant_name, ability_id, target.combatant_name])
+						else:
+							_log("%s cleanses %s (%s)" % [caster.combatant_name, target.combatant_name, ", ".join(cleansed)])
+						continue
 					elif effect == "mp_restore_and_ap":
 						target.restore_mp(int(target.max_mp * 0.25))
 						target.gain_ap(1)
