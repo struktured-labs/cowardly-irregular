@@ -182,14 +182,15 @@ func test_both_engines_really_treat_no_conditions_as_always() -> void:
 	var ab_raw: String = FileAccess.get_file_as_string("res://src/autobattle/AutobattleSystem.gd")
 	var ag_raw: String = FileAccess.get_file_as_string("res://src/autogrind/AutogrindSystem.gd")
 	assert_false(ab_raw.is_empty() or ag_raw.is_empty(), "CONTROL: both sources must load")
-	## Dropping docstring lines is safe only while neither file ASSIGNS a
-	## triple-quoted region — an assigned one is shipping content (DialoguePrompts
-	## keeps its two grammar constants that way), and dropping its lines would
-	## delete the subject instead of prose. Measured 0 and 0; this keeps it true.
-	assert_eq(_assigned_triple_quotes(ab_raw), 0,
-		"AutobattleSystem now assigns a triple-quoted region — the strip below would eat content")
-	assert_eq(_assigned_triple_quotes(ag_raw), 0,
-		"AutogrindSystem now assigns a triple-quoted region — the strip below would eat content")
+	## Dropping docstring lines is safe only while neither file OPENS a
+	## triple-quoted region after code. Such a region is shipping content —
+	## DialoguePrompts keeps its two grammar constants that way, HowToPlayOverlay
+	## RETURNS one, TitleScreen concatenates one — and dropping its lines deletes
+	## the subject instead of prose. Measured 0 and 0; this keeps it true.
+	assert_eq(_content_triple_quotes(ab_raw), 0,
+		"AutobattleSystem now opens a triple-quoted region after code — the strip below would eat content")
+	assert_eq(_content_triple_quotes(ag_raw), 0,
+		"AutogrindSystem now opens a triple-quoted region after code — the strip below would eat content")
 	var ab: String = _code_only(ab_raw)
 	var ag: String = _code_only(ag_raw)
 	## ANTI-VACUITY: both files are heavily commented (92 and 112 triple-quoted
@@ -246,29 +247,59 @@ func test_an_empty_ruleset_is_handled() -> void:
 	assert_eq(rules.size(), 0, "and nothing invented")
 
 
-func test_the_assigned_region_detector_can_fire() -> void:
-	## POSITIVE CONTROL. The two zeros above are worth nothing unless the same
-	## detector reports non-zero on a case already known to have one:
-	## DialoguePrompts keeps AUTOBATTLE_GRAMMAR_DESCRIPTION and
-	## AUTOGRIND_GRAMMAR_DESCRIPTION as assigned triple-quoted regions — shipping
-	## prompt text, not documentation. Asserted as "more than zero" rather than a
-	## count, so a third grammar constant is a correct change and not a red.
+func test_the_content_region_detector_fires_on_every_shape() -> void:
+	## POSITIVE CONTROL, and it exercises the PREDICATE rather than one syntax.
+	## My first version keyed on `= := : ( ,` and validated its zero against
+	## DialoguePrompts' two `const … := """` — so it proved the detector could fire
+	## on an assignment and nothing else. A RETURNED region is content too
+	## (HowToPlayOverlay builds its whole reference screen that way, and every
+	## triple-quote census in the fleet skipped that file as a docstring), and so
+	## is a concatenated one. Parity-aware now: an opener with anything before it
+	## on the line is content, whatever the operator.
+	var shapes: Dictionary = {
+		"assigned":     "const X := \"\"\"body\"\"\"\n",
+		"returned":     "func f() -> String:\n\treturn \"\"\"body\"\"\"\n",
+		"concatenated": "func f() -> String:\n\treturn head() + \"\"\"body\"\"\"\n",
+		"dict value":   "const D := {\"k\": \"\"\"body\"\"\"}\n",
+	}
+	var blind: Array[String] = []
+	for shape in shapes:
+		if _content_triple_quotes(str(shapes[shape])) == 0:
+			blind.append(str(shape))
+	assert_eq(blind, ([] as Array[String]),
+		"the detector reads these content shapes as documentation: %s" % ", ".join(blind))
+	## And it must NOT fire on the documentation shape, or every file reds.
+	assert_eq(_content_triple_quotes("func f():\n\t\"\"\"just a docstring\"\"\"\n"), 0,
+		"a free-standing docstring is not content")
+	## Real file, so the zeros above are not purely synthetic.
 	var dp: String = FileAccess.get_file_as_string("res://src/llm/DialoguePrompts.gd")
 	assert_false(dp.is_empty(), "CONTROL: DialoguePrompts must load")
-	assert_gt(_assigned_triple_quotes(dp), 0,
-		"the detector cannot report non-zero anywhere, so its zeros above mean nothing")
+	assert_gt(_content_triple_quotes(dp), 0,
+		"the detector finds nothing in a file known to carry two grammar constants")
 
 
-## Triple-quoted regions ASSIGNED to something — a const, a dict value, an
-## argument. Those carry shipping content; free-standing ones are documentation.
+## Triple-quoted regions that carry shipping CONTENT rather than documentation.
+##
+## Parity-aware, because the naive read over-counts in the other direction: a
+## docstring's CLOSING delimiter also has prose before it on its line. Only an
+## OPENER — a delimiter reached from outside a region — counts, and any code
+## before it makes the region content: assigned, returned, concatenated, or a
+## dict value. Free-standing under a `func` line is documentation.
 ## "docstring" is a per-file property, not a language fact.
-func _assigned_triple_quotes(src: String) -> int:
+func _content_triple_quotes(src: String) -> int:
 	var n: int = 0
+	var inside: bool = false
 	for line in src.split("\n"):
-		var at: int = line.find("\"\"\"")
-		if at == -1:
-			continue
-		var before: String = line.substr(0, at).strip_edges()
-		if before.ends_with("=") or before.ends_with(":") or before.ends_with("(") or before.ends_with(","):
-			n += 1
+		var i: int = 0
+		while true:
+			var at: int = line.find("\"\"\"", i)
+			if at == -1:
+				break
+			if not inside:
+				if line.substr(0, at).strip_edges() != "":
+					n += 1
+				inside = true
+			else:
+				inside = false
+			i = at + 3
 	return n
