@@ -2884,14 +2884,23 @@ func _on_monitor_pause() -> void:
 
 
 func _on_monitor_adjust_rules() -> void:
-	"""Handle adjust rules request - hide monitor, open AutogrindGridEditor"""
+	open_rules_editor()
+
+
+## Opens the mid-grind rules editor and RETURNS it, so a caller owning its own overlay can restore
+## that overlay on `closed` — the Tier-1 dashboard lives on GameLoop's CanvasLayer, not on us.
+## ⛔ Parented to our PARENT, not to us. `_toggle_grinding` sets `visible = false` for the whole
+## grind and only restores it at stop, so `add_child(editor)` put the editor inside an invisible
+## node: nothing could ever see it, on the one path that reached here.
+func open_rules_editor() -> Control:
 	if _monitor and is_instance_valid(_monitor):
 		_monitor.visible = false
 
 	# Open the full AutogrindGridEditor so the player can edit rules mid-grind
 	var editor = AutogrindGridEditor.new()
 	editor.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(editor)
+	var host: Node = get_parent()
+	add_child(editor) if host == null else host.add_child(editor)
 	editor.setup(_party)
 
 	# When the editor closes, sync its saved rules back into our local rules array
@@ -2909,6 +2918,7 @@ func _on_monitor_adjust_rules() -> void:
 	editor.rules_saved.connect(func(saved_rules: Array) -> void:
 		rules = saved_rules.duplicate(true)
 	)
+	return editor
 
 
 func _on_monitor_exit() -> void:

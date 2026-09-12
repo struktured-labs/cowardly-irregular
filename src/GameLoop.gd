@@ -6707,6 +6707,7 @@ func _show_autogrind_dashboard() -> void:
 
 	_autogrind_dashboard.pause_requested.connect(_toggle_autogrind_pause)
 	_autogrind_dashboard.exit_requested.connect(func(): _stop_autogrind("Manual stop"))
+	_autogrind_dashboard.adjust_rules_requested.connect(_on_dashboard_adjust_rules)
 	_autogrind_dashboard.tier_cycle_requested.connect(func():
 		if _autogrind_controller and is_instance_valid(_autogrind_controller):
 			_autogrind_controller.cycle_tier()
@@ -6718,6 +6719,31 @@ func _show_autogrind_dashboard() -> void:
 			_autogrind_dashboard.set_ludicrous_mode(_autogrind_controller.headless_mode)
 
 	print("[AUTOGRIND] Dashboard shown (Tier 2)")
+
+
+## The dashboard advertised "Adjust Rules", classified the button, and emitted
+## adjust_rules_requested -- which NOTHING connected. The whole flow already existed on AutogrindUI
+## with one caller, `_monitor.adjust_rules_requested`, and AutogrindMonitor can never be built (its
+## only constructor sits inside a callback connected only in that constructor). So the feature was
+## authored, complete, and had no route from any live surface.
+func _on_dashboard_adjust_rules() -> void:
+	if _autogrind_ui == null or not is_instance_valid(_autogrind_ui):
+		return
+	if not _autogrind_ui.has_method("open_rules_editor"):
+		return
+	# Hidden FIRST, and that is load-bearing: the dashboard's own _input gates on `visible` and maps
+	# ui_cancel to exit_requested, so leaving it up means Cancel-to-close-the-editor stops the grind.
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+		_autogrind_dashboard.visible = false
+	var editor: Control = _autogrind_ui.open_rules_editor()
+	if editor == null:
+		if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+			_autogrind_dashboard.visible = true
+		return
+	editor.closed.connect(func() -> void:
+		if _is_autogrinding and _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+			_autogrind_dashboard.visible = true
+	)
 
 
 func _hide_autogrind_dashboard() -> void:
