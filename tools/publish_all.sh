@@ -438,6 +438,18 @@ if [ -z "$TAG_SHA" ] || [ "$HEAD_SHA" != "$TAG_SHA" ]; then
     exit 2
 fi
 DIRTY="$(git status --porcelain | wc -l)"
+
+# ── the run's build-SHA label, fixed ONCE ────────────────────────────────────────────────────
+# v3.33.312-alpha shipped TWO labels across three channels from one line of deploy_desktop.sh:
+# linux got +befbe408 and windows +befbe4083, two minutes apart. `git rev-parse --short` returns
+# the shortest length unambiguous AT THAT MOMENT, and that length scales with object count --
+# this repo has 125 worktrees with lanes pushing throughout a publish, so it grew 8 -> 9 mid-run.
+# Read once here, exported, used verbatim by every chain. The chains still compute it themselves
+# when run standalone, which is the documented recovery path at line 281.
+PUBLISH_BUILD_SHA="$(./tools/build_sha.sh)" || {
+    echo "[pub] BLOCKED: tools/build_sha.sh could not produce a build label." >&2; exit 2; }
+export PUBLISH_BUILD_SHA
+echo "[pub] build label for this run: ${PUBLISH_BUILD_SHA} (fixed once; every channel uses it)"
 if [ "$DIRTY" -ne 0 ]; then
     echo "[pub] BLOCKED: ${DIRTY} uncommitted change(s). The export ships the working tree." >&2
     exit 2
