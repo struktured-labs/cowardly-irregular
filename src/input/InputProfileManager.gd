@@ -372,6 +372,20 @@ func hint_for_action(action: String, device_name: String = "") -> String:
 	return keys.split(" / ")[0]
 
 
+## The face a button sits on, which is the ONLY name that is true on every pad. Indices match
+## FACE_GLYPHS: 0/1/2/3 are south/east/west/north on Nintendo, Xbox and PlayStation alike.
+const FACE_POSITIONS = {0: "South", 1: "East", 2: "West", 3: "North"}
+
+
+## For a surface that must name a face button with NO pad attached — where a glyph would be an
+## xbox guess — this is the family-neutral answer rather than a wrong specific one.
+func face_position_for_action(action: String) -> String:
+	var indices = get_current_button_indices(action)
+	if indices.is_empty():
+		return ""
+	return FACE_POSITIONS.get(indices[0], "")
+
+
 func face_glyph_for_index(button_index: int, device_name: String = "") -> String:
 	var name := device_name
 	if name == "":
