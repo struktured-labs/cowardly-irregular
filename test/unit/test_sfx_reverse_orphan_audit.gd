@@ -481,3 +481,33 @@ func _code_only(text: String) -> String:
 			i += 1
 		out.append(line.substr(0, cut) if cut > -1 else line)
 	return "\n".join(out)
+
+
+func test_the_stripper_this_audit_now_depends_on_actually_strips() -> void:
+	## MEASURED 2026-09-12: with _code_only neutered to a pass-through, this file was EC=0 ·
+	## Passing 7 — the whole consumer corpus reverted to raw source and NOTHING here noticed.
+	## The sibling guards caught their own neuter on a length control; this one had none, and it
+	## is the file where the failure direction is SILENCE (a key named only in a comment reads as
+	## a live consumer, and a phantom consumer suppresses a real orphan). @cowir-music `da523860`.
+	var raw := _read("res://src/audio/SoundManager.gd")
+	var code := _code_only(raw)
+	assert_gt(raw.length(), 10000, "CONTROL: SoundManager read back %d chars" % raw.length())
+	assert_true(raw.contains("\n#") or raw.contains("\t#"),
+		"ANTI-VACUITY: SoundManager holds no comment line, so 'comments are stripped' proves nothing here")
+	assert_lt(code.length(), raw.length(),
+		"the stripper removed nothing from %d chars — it is a pass-through and this audit reads prose as code" % raw.length())
+	## STRUCTURAL, not a phrase: a reworded comment must not change the verdict.
+	assert_false(_code_only("\tvar x := 1  # play_sfx(\"ghost_key\")").contains("ghost_key"),
+		"a key named only in a trailing comment still counts as a consumer")
+	## Two asserts, not one: "the call survived" is ALSO true of a last-# cut, so the single
+	## assert this replaces was green under that mutation while its message claimed otherwise.
+	var trailing := _code_only('\tplay_sfx("real_key")  # see ghost_key #3')
+	assert_true(trailing.contains('"real_key"'), "a real consumer was dropped")
+	assert_false(trailing.contains("ghost_key"),
+		"cut at the LAST # — a key named in the middle of a comment survived as a consumer")
+	assert_true(_code_only('\tvar s := "has #hash"  # gone').contains('"has #hash"'),
+		"a # inside a string literal is not a comment")
+	## JSON has no comments and is NOT stripped; the data half of the corpus must survive intact.
+	var data_raw := _read("res://data/sfx_manifest.json")
+	assert_gt(data_raw.length(), 1000, "CONTROL: the manifest is %d chars" % data_raw.length())
+
