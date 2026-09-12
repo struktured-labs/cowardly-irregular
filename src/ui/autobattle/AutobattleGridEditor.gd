@@ -1970,7 +1970,9 @@ func _edit_current_cell() -> void:
 
 
 func _open_condition_editor() -> void:
-	"""Open condition picker — submenu listing all 14 supported condition types.
+	"""Open condition picker — submenu listing every condition type the grammar defines.
+	Deliberately un-numbered: it said 14 and there are 23, because the list is CONDITION_TYPES
+	and a count written here drifts every time one is added (four were, on 2026-09-12 alone).
 	Idx==-1 (current type not in the canonical list) leaves the type unchanged
 	and plays menu_error, so editing a cell with an unrecognized type can never
 	silently overwrite it (prior bug: hitting A on 'ally_has_status' wiped it
