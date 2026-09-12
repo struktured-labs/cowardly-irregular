@@ -8,8 +8,10 @@ extends GutTest
 ##     model returns 1 of 3 requested   -> the player sees a one-option menu
 ##     model returns the same twice     -> the player sees the same option twice
 ##
-## THE SECOND IS FIXED HERE. The first is recorded, not fixed — padding is unsafe
-## while _ensure_farewell short-circuits on an existing farewell (see the arm).
+## THE SECOND IS FIXED HERE. The first is still recorded, not fixed — but the
+## reason changed: padding was unsafe while _ensure_farewell short-circuited on an
+## existing farewell. That short-circuit was the exit-position bug and is gone, so
+## padding is now merely undone, not blocked (see the arm).
 ##
 ## Measured against live llama3 on the real combined-reply prompt, three
 ## conversation states, six samples each: **18 of 18 returned exactly 3 distinct
@@ -35,13 +37,12 @@ func _choices(v: Dictionary) -> Array:
 # ── the defect ────────────────────────────────────────────────────────────────
 
 func test_under_delivery_is_recorded_not_padded() -> void:
-	## THE GAP, pinned as it stands rather than fixed. A model returning one
-	## choice yields a one-option menu — and padding it here is NOT safe:
-	## _ensure_farewell runs afterwards and returns early when a farewell exists
-	## anywhere, so padding a set ending in "Farewell." puts it mid-menu. Measured
-	## on the real path: test_llm_dynamic_conversation_live primes exactly that
-	## shape. Fixing it means deciding who owns farewell POSITION, which is a
-	## design call, not a validator change.
+	## THE GAP, pinned as it stands rather than fixed. A model returning one choice
+	## yields a one-option menu. Padding here used to be unsafe because
+	## _ensure_farewell returned early when a farewell existed anywhere, stranding
+	## it mid-menu; that short-circuit is gone and the exit is now always last, so
+	## nothing blocks padding any more. It is simply not done: llama3 returns the
+	## full count 18 of 18, so the gap is latent and belongs to its own change.
 	var v: Dictionary = DP.validate_player_choices({"choices": ["Tell me about the warden."]}, 3)
 	assert_eq(_choices(v).size(), 1,
 		"today the player gets one option — when this changes, farewell position must be handled")
@@ -100,17 +101,23 @@ func test_a_garbage_reply_still_falls_back_whole() -> void:
 
 # ── controls ──────────────────────────────────────────────────────────────────
 
-func test_the_farewell_interaction_that_blocks_padding_is_real() -> void:
-	## THE PREMISE for not padding. If _ensure_farewell ever stops returning early
-	## on an existing farewell, padding becomes safe and this note should be
-	## revisited rather than worked around.
+func test_the_blocker_that_justified_not_padding_is_gone() -> void:
+	## THE PREMISE, INVERTED. This used to assert that _ensure_farewell short-circuits
+	## on an existing farewell — the reason padding was unsafe. That short-circuit
+	## was the position bug, and it is fixed: the exit is moved to last, so a padded
+	## set can no longer strand a goodbye mid-menu.
+	##
+	## Padding is still NOT done, but it is now a free decision rather than a blocked
+	## one. Kept as a source check so this file stops citing a mechanism that is gone.
 	var src: String = FileAccess.get_file_as_string("res://src/llm/DynamicConversation.gd")
 	assert_false(src.is_empty(), "CONTROL: source must load")
 	var at: int = src.find("func _ensure_farewell")
 	assert_true(at != -1, "CONTROL: _ensure_farewell must exist")
-	var body: String = src.substr(at, 420)
-	assert_true(body.find("_is_farewell(c)") != -1 and body.find("return") != -1,
-		"_ensure_farewell must still short-circuit on an existing farewell")
+	var body: String = src.substr(at, 520)
+	assert_true(body.find("choices.append(exit_line)") != -1,
+		("_ensure_farewell no longer ends by appending the exit. If it went back to "
+		+ "short-circuiting on an existing farewell, the exit can sit on the "
+		+ "pre-selected row again and padding becomes unsafe a second time."))
 
 
 func test_the_count_is_still_clamped_to_the_maximum() -> void:

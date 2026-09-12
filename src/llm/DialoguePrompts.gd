@@ -1204,10 +1204,10 @@ static func validate_player_choices(raw: Variant, expected_count: int) -> Dictio
 	# llama3 returns 3 of 3 distinct (18 of 18 measured), so this defends the BYOK
 	# surface — any OpenAI-compatible model can be attached from Settings.
 	#
-	# NOT padded up to `count`, deliberately: DynamicConversation._ensure_farewell
-	# runs AFTER this and returns early when a farewell exists ANYWHERE, so padding
-	# a short set whose last entry is "Farewell." leaves the farewell mid-menu.
-	# Under-delivery is recorded as a live gap rather than papered over here.
+	# NOT padded up to `count`. The blocker that used to justify this is GONE —
+	# _ensure_farewell now moves the exit to last, so a padded set cannot strand a
+	# goodbye mid-menu. Padding is a separate, now-unblocked call; llama3 delivers
+	# the full count (18 of 18 measured), so under-delivery stays a recorded gap.
 	var seen: Dictionary = {}
 	var distinct: Array[String] = []
 	for chosen in out:

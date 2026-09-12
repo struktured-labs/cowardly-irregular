@@ -25,9 +25,11 @@ extends GutTest
 ## This defends the BYOK surface — any OpenAI-compatible model can be attached
 ## from Settings, and a terse one repeating "Goodbye." is exactly the shape.
 ##
-## ⚠️ Farewell POSITION is deliberately untouched and stays the parked design
-## question. `_ensure_farewell` runs immediately after this and owns where the
-## exit sits; this only guarantees there is something else on the menu.
+## ⚠️ Farewell POSITION was parked when this shipped and is no longer: the
+## short-circuit named above ("_ensure_farewell then returns early") was itself the
+## position bug, and it is fixed — the exit is now moved to the last row. This file
+## still only guarantees there IS something else on the menu; see
+## test_the_exit_is_the_last_row_the_player_sees for where it sits.
 
 const DP := preload("res://src/llm/DialoguePrompts.gd")
 
