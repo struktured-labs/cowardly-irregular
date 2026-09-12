@@ -298,8 +298,24 @@ func test_premise_the_emitter_corpus_is_readable() -> void:
 		"CONTROL: a known-wired emitter flag must be found; if this reads missing the scan is broken and every finding below is noise")
 	assert_false(src.contains("\"zzz_not_a_quest_flag\""),
 		"CONTROL: a fabricated flag must read as unemitted, or the check cannot return a positive")
-	assert_gte(DEAD_END_CUSTOM_STEPS.size(), 3,
-		"DEAD_END_CUSTOM_STEPS holds %d, fewer than the 3 still blocked — a drained list makes the ratchet silent. ADDING is free; losing one hides a quest. The floor moves DOWN only when a quest is genuinely finishable, never to quiet a red." % DEAD_END_CUSTOM_STEPS.size())
+	# ⛔ THERE WAS A `assert_gte(DEAD_END_CUSTOM_STEPS.size(), 3)` HERE AND IT REDDED ON THE
+	# FINISHED STATE. That table exists to DRAIN: every entry leaves it the moment its quest
+	# becomes completable. So the state that tripped the floor was "someone fixed a quest and
+	# deleted its line" — correct work — and the failure text told them the list was too short.
+	# cowir-sfx hit the identical shape in their own file the same hour
+	# (`assert_gt(KNOWN_PENDING_CONSUMER.size(), 0)` on a table whose purpose is to reach zero).
+	#
+	# AND IT WAS REDUNDANT, which is what settles it. The floor's stated job was to stop someone
+	# draining the list to silence the ratchet. The ratchet already stops that by construction:
+	# it quantifies over QUESTS, not over this table, so a quest removed from the exemptions
+	# while still dead-ended surfaces in `stranded` on the very next run. Measured — draining the
+	# table entirely reds the ratchet with all four named, which is the M1 mutation on this file.
+	#
+	# An empty table is therefore not vacuous here and needs no floor: it means every startable
+	# quest is finishable, and the ratchet still runs over all 33.
+	#
+	# 🔑 `assert_gt(size, 0)` is right for a table that must never empty and wrong for one whose
+	# whole purpose is to reach zero. Written from the first habit, on the second kind.
 
 
 ## THE RATCHET. A placed giver makes every CUSTOM step a promise too.
