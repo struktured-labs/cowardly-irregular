@@ -1428,11 +1428,17 @@ func _input(event: InputEvent) -> void:
 		_paste_rules_share_code()
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and not event.is_echo():
+	## `not event.shift_pressed`, so Shift+E cannot reach this arm. It copies a share code via the arm
+	## above — which won ONLY by being EARLIER in this chain, because this arm used to accept shift too.
+	## Reflow the chain and Shift+E silently became _export_scripts(). Same reasoning as KEY_R: make it
+	## a property of the condition, not of line order.
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and not event.shift_pressed and not event.is_echo():
 		_export_scripts()
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and not event.is_echo():
+	## `not event.shift_pressed`, so Shift+I cannot reach this arm — it pastes a share code via the arm
+	## above, which won only by ordering. Reflow the chain and Shift+I silently became _import_scripts().
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and not event.shift_pressed and not event.is_echo():
 		_import_scripts()
 		get_viewport().set_input_as_handled()
 
