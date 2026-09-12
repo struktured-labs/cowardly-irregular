@@ -416,8 +416,41 @@ func _replace_joypad_buttons(action: String, button_indices: Array) -> void:
 		InputMap.action_add_event(action, new_event)
 
 
+## ⛔ THE ONE BIND THAT LOCKS THE PLAYER IN. Confirm and Cancel on the same button is not merely a
+## conflict — ControlsMenu checks ui_accept BEFORE ui_cancel in an elif chain, so the shared button
+## fires Confirm and the Controls screen never closes. Measured: stock cancel closes it, the remap
+## does not. Every other conflict is survivable and stays the player's business; this one removes
+## the only way to undo itself, on the one screen where you would be standing when you made it.
+## Keyboard X/Escape still works, which is exactly the consolation a couch player does not have.
+func binding_would_trap_the_player(action: String, button_indices: Array) -> Dictionary:
+	var other := ""
+	if action == "ui_cancel":
+		other = "ui_accept"
+	elif action == "ui_accept":
+		other = "ui_cancel"
+	if other == "":
+		return {"trapped": false, "reason": ""}
+	var other_buttons: Array = get_current_button_indices(other)
+	for b in button_indices:
+		if int(b) in other_buttons:
+			return {
+				"trapped": true,
+				"reason": "%s and %s would share %s — the Controls screen could not be closed on a pad"
+					% [ACTION_LABELS.get(action, action), ACTION_LABELS.get(other, other),
+					   get_button_label(int(b))],
+			}
+	return {"trapped": false, "reason": ""}
+
+
 func set_custom_binding(action: String, button_indices: Array) -> void:
 	if action not in REMAPPABLE_ACTIONS:
+		return
+	# Refused at the API, not only in the capture UI: a caller that bypasses ControlsMenu must not
+	# be able to strand the player either, and the UI checks first so it can explain rather than
+	# just decline. See binding_would_trap_the_player for why this one conflict is special.
+	var trap := binding_would_trap_the_player(action, button_indices)
+	if trap.get("trapped", false):
+		push_warning("[InputProfileManager] refused: %s" % str(trap.get("reason", "")))
 		return
 	# A rebind on a stock profile stored the button and NEVER applied it: this InputMap write was
 	# gated on already being Custom, and nothing switched. Measured — Standard, rebind ui_accept to

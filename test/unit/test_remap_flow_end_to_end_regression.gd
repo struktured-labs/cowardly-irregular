@@ -69,12 +69,18 @@ func test_a_rebind_lands_persists_and_renders() -> void:
 
 
 ## Rebinding two actions onto one button must be REPORTED, not silently accepted.
+## ⛔ PAIR CHANGED 2026-09-12: this used ui_accept + ui_cancel, and that exact pair is now REFUSED
+## at the API — sharing a button between Confirm and Cancel makes the Controls screen itself
+## impossible to close on a pad (ControlsMenu checks accept before cancel in an elif chain), so a
+## player could strand themselves on the one screen they would need to undo it. The refusal is
+## narrow and by name; every other collision is still the player's business and still reported,
+## which is exactly what this arm exists to prove. battle_defer/battle_advance is such a pair.
 func test_a_conflict_is_detected() -> void:
 	InputProfileManager.apply_profile("Standard")
 	assert_eq(InputProfileManager.detect_conflicts().size(), 0,
 		"PRECONDITION: a stock profile has no conflicts, else the arm below proves nothing")
-	InputProfileManager.set_custom_binding("ui_accept", [3])
-	InputProfileManager.set_custom_binding("ui_cancel", [3])
+	InputProfileManager.set_custom_binding("battle_defer", [3])
+	InputProfileManager.set_custom_binding("battle_advance", [3])
 	var conflicts: Array = InputProfileManager.detect_conflicts()
 	assert_gt(conflicts.size(), 0, "two actions on one button must surface as a conflict")
 
