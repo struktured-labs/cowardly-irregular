@@ -5577,6 +5577,15 @@ func _start_autogrind(config: Dictionary) -> void:
 	## into the void while the console printed a generic line derived from the COUNTER instead.
 	if not AutogrindSystem.fatigue_event.is_connected(_on_autogrind_fatigue_event):
 		AutogrindSystem.fatigue_event.connect(_on_autogrind_fatigue_event)
+	## ⛔ system_collapse and meta_boss_spawned had AutogrindUI as their ONLY listener, and
+	## _toggle_grinding sets that node `visible = false` for the whole grind — so its _battle_log is
+	## a child of a hidden panel. A collapse fired, a boss appeared, and the player watching the
+	## battle console was told nothing. The build-up already reached them: corruption_threshold_crossed
+	## toasts "collapse imminent" from this same block. The warning shipped and the payoff did not.
+	if not AutogrindSystem.system_collapse.is_connected(_on_autogrind_system_collapse):
+		AutogrindSystem.system_collapse.connect(_on_autogrind_system_collapse)
+	if not AutogrindSystem.meta_boss_spawned.is_connected(_on_autogrind_meta_boss_spawned):
+		AutogrindSystem.meta_boss_spawned.connect(_on_autogrind_meta_boss_spawned)
 
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
@@ -6355,6 +6364,26 @@ func _on_autogrind_corruption_band(band: String, level: float) -> void:
 			msg = "Corruption %s — %.2f / 5.0" % [band, level]
 	_show_autogrind_toast(msg)
 	_autogrind_battle_summaries.append("[color=#ff6688]>>> CORRUPTION %s: %.2f / 5.0 <<<[/color]" % [band.to_upper(), level])
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+
+
+## The collapse itself, on the surface the player is actually watching. Mirrors the corruption-band
+## handler above: a toast plus a line in the battle summary, because the console the grind runs in is
+## BattleScene's, not AutogrindUI's.
+func _on_autogrind_system_collapse() -> void:
+	var n: int = AutogrindSystem.collapse_count
+	_show_autogrind_toast("SYSTEM COLLAPSE #%d — reality is fragmenting" % n)
+	_autogrind_battle_summaries.append("[color=#ff4444]>>> SYSTEM COLLAPSE #%d — REALITY IS FRAGMENTING <<<[/color]" % n)
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+
+
+## Same reason: the boss ARRIVES on screen and nothing said where it came from.
+func _on_autogrind_meta_boss_spawned(boss_name: String) -> void:
+	var shown: String = boss_name if boss_name != "" else "an unnamed entity"
+	_show_autogrind_toast("META-BOSS: %s has noticed you" % shown)
+	_autogrind_battle_summaries.append("[color=#ff66ff]>>> META-BOSS SPAWNED: %s <<<[/color]" % shown)
 	if _autogrind_battle_summaries.size() > 50:
 		_autogrind_battle_summaries.remove_at(0)
 
