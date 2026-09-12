@@ -58,6 +58,45 @@ func test_the_gate_can_be_pointed_at_a_corpus_other_than_the_masters() -> void:
 		"a redirected corpus must resolve each manifest entry by BASENAME — the manifest's paths point into assets/audio/music and would ignore the override")
 
 
+## ⛔ THE ARTIFACT ARM. The source arm below asserts the tool CONTAINS a print of
+## its corpus. That is a register claim about output — it survives the line being
+## unreachable, the format string changing, or the value being wrong. This runs
+## the tool and reads what it actually said.
+##
+## Written after two of my claims were retracted this session for exactly that
+## distinction: I read export_presets.cfg and called it a player experience, and
+## I read a source scan and called seven Jukebox rows "never played". This guard
+## defends the tool whose number I quote at the top of every hourly report, and
+## it was the last register-only claim I had left.
+func test_the_tool_actually_prints_the_corpus_it_read() -> void:
+	## An EMPTY directory is enough: the corpus line prints before the too-small
+	## refusal, so this costs ~1s instead of the 30s a full walk takes.
+	var probe: String = OS.get_user_data_dir() + "/seam_corpus_probe"
+	DirAccess.make_dir_recursive_absolute(probe)
+	assert_true(DirAccess.dir_exists_absolute(probe), "SCOPE control: the probe directory was not created")
+
+	var redirected: Array = []
+	var ec_redirected: int = OS.execute("uv", ["run", "tools/audit_wrap_seams.py", "--from", probe], redirected, true)
+	assert_gt(redirected.size(), 0,
+		"CONTROL FAILED: running the tool produced no output at all — the probe cannot distinguish anything below")
+	var said: String = str(redirected[0])
+	assert_true(said.contains("corpus: " + probe),
+		"the tool did not name the corpus it was pointed at. Expected 'corpus: %s' in its output; a source scan for the print statement would have passed regardless. Got: %s" % [probe, said.substr(0, 400)])
+	assert_eq(ec_redirected, 2,
+		"an empty corpus should be REFUSED (exit 2), not reported as healthy — got %d. The refusal is what keeps a redirected run from reading as a clean bill" % ec_redirected)
+
+	## And the default must say MASTERS, or the two runs are indistinguishable and
+	## naming the corpus buys nothing.
+	var masters: Array = []
+	OS.execute("uv", ["run", "tools/audit_wrap_seams.py", "--from", "assets/audio/music"], masters, true)
+	assert_gt(masters.size(), 0, "CONTROL FAILED: the masters run produced no output")
+	var m: String = str(masters[0])
+	assert_true(m.contains("corpus: assets/audio/music"),
+		"the tool did not name the masters corpus when pointed at it: %s" % m.substr(0, 400))
+	assert_false(m.contains(probe),
+		"the masters run named the PROBE directory — the corpus line is not tracking what was read")
+
+
 func test_the_report_names_the_audio_it_measured() -> void:
 	## The anti-recurrence property. The tool may default to masters forever;
 	## what it may not do is print a health verdict that does not say so.
