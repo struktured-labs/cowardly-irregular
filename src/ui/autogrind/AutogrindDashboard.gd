@@ -772,17 +772,28 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 				already_recorded = true
 				break
 		if not already_recorded:
-			var predicted_5 = _total_exp + int(avg_exp_per_battle * 5)
-			_predictions.append({"predicted": predicted_5, "at_battle": _battles_completed, "target_battle": _battles_completed + 5})
+			## Store the DELTA this projection claims plus the baseline it was made from — not a
+			## cumulative total. See the accuracy check below for why that distinction is the whole bug.
+			_predictions.append({
+				"predicted_delta": int(avg_exp_per_battle * 5),
+				"baseline_exp": _total_exp,
+				"at_battle": _battles_completed,
+				"target_battle": _battles_completed + 5,
+			})
 
 	# Check old predictions for accuracy
 	for pred in _predictions.duplicate():
 		if _battles_completed >= pred["target_battle"]:
-			var actual = _total_exp
-			var predicted = pred["predicted"]
-			var error_pct = abs(actual - predicted) / max(float(predicted), 1.0) * 100.0
-			var accuracy = max(0.0, 100.0 - error_pct)
-			_update_projection("accuracy", "%.0f%%" % accuracy)
+			## ⛔ DELTAS, not cumulative totals. This compared `_total_exp + 5 battles` against
+			## `_total_exp` later and divided by the CUMULATIVE figure, so the denominator grew all
+			## session and the same projection error reported better and better. Measured with a
+			## constant 20% over-estimate every single time:
+			##   shipped  80% -> 89 -> 92 -> 94 ... -> 98%   climbs toward perfect
+			##   deltas   80% flat                           reports the error that is actually there
+			## A number that flatters itself with session length tells the player nothing about the
+			## projection it is grading.
+			var actual_delta: int = _total_exp - int(pred["baseline_exp"])
+			_update_projection("accuracy", "%.0f%%" % projection_accuracy(int(pred["predicted_delta"]), actual_delta))
 			_predictions.erase(pred)
 
 	if _stats_strip and is_instance_valid(_stats_strip):
@@ -809,6 +820,22 @@ func set_ludicrous_mode(enabled: bool) -> void:
 func _update_stat(key: String, value: String) -> void:
 	if key in _stat_labels and is_instance_valid(_stat_labels[key]):
 		_stat_labels[key].text = value
+
+
+## Grades one EXP projection: how close the DELTA it claimed came to the delta that happened.
+## ⛔ DELTAS, NOT CUMULATIVE TOTALS. This used to compare `_total_exp + 5 battles` against `_total_exp`
+## later and divide by the cumulative figure, so the denominator grew all session and an unchanged
+## projection error reported better and better. Measured, with a projection over by 20% EVERY time:
+##   cumulative  80% -> 89 -> 92 -> 94 -> 95 -> 96 -> 97 -> 97 -> 97 -> 98%
+##   deltas      80% flat
+## And late in a session a projection TWENTY TIMES too high scored 99% under the old form, 5% under
+## this one. A number that flatters itself with session length grades nothing.
+##
+## Public (no underscore) so the guard can exercise THIS function instead of a copy of the arithmetic
+## — a test that reimplements the formula keeps passing when the shipped one changes.
+func projection_accuracy(predicted_delta: int, actual_delta: int) -> float:
+	var error_pct: float = abs(actual_delta - predicted_delta) / max(float(predicted_delta), 1.0) * 100.0
+	return max(0.0, 100.0 - error_pct)
 
 
 func _update_projection(key: String, value: String) -> void:
