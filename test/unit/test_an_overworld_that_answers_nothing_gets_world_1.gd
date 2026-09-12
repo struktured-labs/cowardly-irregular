@@ -108,12 +108,34 @@ func test_a_scene_that_answers_nothing_still_gets_world_1() -> void:
 		"...and that floor resolves to MEDIEVAL, which is the defect: it is W1's bed, not a neutral one")
 
 
+## ⛔ PROSE IS NOT CODE, and this scanner learned that by failing the experiment. @cowir-music
+## 2026-09-12: a `#`-only strip leaves GDScript docstrings, which are string LITERALS, so a comment
+## quoting a signature satisfies a presence assert. Run against this very file — real method deleted,
+## `func _get_music_area_id` planted in a docstring — the arm below scored a CLEAN PASS while the
+## behaviour arm above correctly redded. Backstopped, which is exactly why it was invisible.
+## Split on the triple quote and keep the even pieces: inside/outside alternate, so the odd ones are
+## the docstring bodies. `#` comments go after, never before — a docstring may legitimately contain one.
+func _code(path: String) -> String:
+	var raw := FileAccess.get_file_as_string(path)
+	var out := ""
+	var chunks: PackedStringArray = raw.split("\"\"\"")
+	for i in range(chunks.size()):
+		if i % 2 == 0:
+			out += str(chunks[i])
+	var stripped := ""
+	for line in out.split("\n"):
+		var l := str(line)
+		var at := l.find("#")
+		stripped += (l.substr(0, at) if at >= 0 else l) + "\n"
+	return stripped
+
+
 ## SOURCE. The behaviour arms pass the moment a scene answers; this is what makes DELETING an
 ## answer red rather than silently sending that world back to the floor above.
 func test_every_overworld_script_carries_the_method() -> void:
 	var missing: Array = []
 	for path in WORLDS:
-		var src := FileAccess.get_file_as_string(path)
+		var src := _code(path)
 		assert_gt(src.length(), 500, "CONTROL: %s is readable" % str(path).get_file())
 		if not src.contains("func _get_music_area_id"):
 			missing.append(str(path).get_file())
@@ -121,3 +143,19 @@ func test_every_overworld_script_carries_the_method() -> void:
 	assert_eq(missing, [],
 		"an overworld dropped _get_music_area_id — it will fall to the deriver's \"overworld\" " +
 		"floor and play World 1 on autogrind stop: %s" % str(missing))
+
+
+## CONTROL for the stripper, both directions — an over-strip would make the arm above vacuous the
+## other way, and OverworldScene is the only one of the six that actually carries docstrings (2).
+func test_the_stripper_eats_prose_and_spares_code() -> void:
+	var path := "res://src/exploration/OverworldScene.gd"
+	var raw := FileAccess.get_file_as_string(path)
+	var code := _code(path)
+	assert_true(raw.contains("Castle Harmonia opens only after"),
+		"CONTROL: the raw file carries a docstring")
+	assert_false(code.contains("Castle Harmonia opens only after"),
+		"CONTROL: ...and the stripper removed it — without this the arm above reads prose as code")
+	assert_true(code.contains("func _get_music_area_id"),
+		"CONTROL: the stripper did NOT eat the real declaration")
+	assert_true(code.contains("_place_readables"),
+		"CONTROL: ordinary code outside any docstring survives")

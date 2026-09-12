@@ -31,13 +31,22 @@ const UNSAFE := ["glyph_for_action", "face_glyph_for_index"]
 
 
 ## ⛔ CODE ONLY. The repair's own comment QUOTES `glyph_for_action` to explain what was wrong, so an
-## unstripped scan reports the fix as the defect — it did, on this guard's first run. Strings are NOT
-## stripped: a helper name here is always a call, never a caption.
+## unstripped scan reports the fix as the defect — it did, on this guard's first run. Ordinary quoted
+## strings are deliberately KEPT: a helper name in one is a call, never a caption.
+## ⚠️ DOCSTRINGS ARE THE EXCEPTION, added 2026-09-12 on @cowir-music's finding. `"""` blocks are
+## string LITERALS, so a `#`-only strip leaves them and prose quoting a name satisfies a presence
+## assert — `assert_true(src.contains("hint_for_action"))` below would pass with the real call gone.
+## ReadableProp carries ZERO docstrings today; this guard exists for the version that does not.
 func _code() -> String:
 	var raw := FileAccess.get_file_as_string(READABLE)
 	assert_gt(raw.length(), 500, "PRECONDITION: ReadableProp must be readable")
+	var body := ""
+	var chunks: PackedStringArray = raw.split("\"\"\"")
+	for i in range(chunks.size()):
+		if i % 2 == 0:
+			body += str(chunks[i])
 	var out := ""
-	for line in raw.split("\n"):
+	for line in body.split("\n"):
 		var l := str(line)
 		var at := l.find("#")
 		out += (l.substr(0, at) if at >= 0 else l) + "\n"
@@ -94,3 +103,20 @@ func test_the_helper_scan_discriminates() -> void:
 	# And the live predicate both ways, so neither direction is assumed.
 	assert_true("if InputProfileManager:\n\t\treturn InputProfileManager.glyph_for_action(".contains(UNSAFE[0]),
 		"CONTROL: the forbidden spelling is detectable in the exact shape that shipped")
+
+
+## CONTROL for the docstring half of the stripper, planted rather than assumed — ReadableProp has no
+## docstring to test against, so the shape is exercised on a literal instead of left unproven.
+func test_the_stripper_removes_a_docstring_but_not_a_call() -> void:
+	var sample := "func f():\n\t\"\"\"note: hint_for_action is what we use\"\"\"\n\tvar g = other_call()\n"
+	var body := ""
+	var chunks: PackedStringArray = sample.split("\"\"\"")
+	for i in range(chunks.size()):
+		if i % 2 == 0:
+			body += str(chunks[i])
+	assert_false(body.contains("note: hint_for_action is what we use"),
+		"CONTROL: the docstring body is removed — otherwise prose satisfies a presence assert")
+	assert_true(body.contains("other_call()"),
+		"CONTROL: code on both sides of the docstring survives")
+	assert_eq(_code().split("\"\"\"").size(), 1,
+		"CONTROL: and the real subject file has no unbalanced triple quote left after stripping")
