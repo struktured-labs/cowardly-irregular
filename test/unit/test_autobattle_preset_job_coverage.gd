@@ -16,8 +16,12 @@ const COVERED := ["bard", "cleric", "fighter", "mage", "rogue"]
 
 ## Jobs with no preset templates today. Authoring, not mechanics — what a Guardian's Defensive
 ## preset should DO is a design call, routed out rather than invented here.
+## 2026-09-12: ninja removed — it has three stances now. It was the hard one of the nine, not the
+## easy one: three of its five abilities apply a STATUS to self, and until `not_has_status` shipped
+## in .307 a preset using them re-cast forever and buried every rule below it. The remaining eight
+## are still authoring debt and still routed out.
 const KNOWN_UNCOVERED := [
-	"bossbinder", "necromancer", "ninja", "scriptweaver",
+	"bossbinder", "necromancer", "scriptweaver",
 	"skiptrotter", "speculator", "summoner", "time_mage",
 ]
 

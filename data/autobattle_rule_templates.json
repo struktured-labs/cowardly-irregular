@@ -1636,6 +1636,277 @@
           "enabled": true
         }
       ]
+    },
+    {
+      "id": "ninja_defensive",
+      "job_id": "ninja",
+      "stance": "defensive",
+      "name": "Defensive",
+      "description": "Blind the whole room on turn 1, vanish when it gets dangerous, drink before it gets worse, then cut whatever is left.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 14
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "smoke_bomb",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 35
+            },
+            {
+              "type": "not_has_status",
+              "status": "invisible"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 27
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "vanish",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 55
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "ninja_balanced",
+      "job_id": "ninja",
+      "stance": "balanced",
+      "name": "Balanced",
+      "description": "Patch up first, finish anything wounded with a priority strike, otherwise step into the shadows so the next swing crits.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 40
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_hp_percent",
+              "op": "<",
+              "value": 30
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 12
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "quick_strike",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "not_has_status",
+              "status": "shadow_step"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 18
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "shadow_step",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "ninja_aggressive",
+      "job_id": "ninja",
+      "stance": "aggressive",
+      "name": "Aggressive",
+      "description": "Shuriken any crowd, snipe the wounded before they act, set up a crit when the field is quiet, and never stop swinging.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "enemy_count",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 18
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "throw_shuriken",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_hp_percent",
+              "op": "<",
+              "value": 40
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 12
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "quick_strike",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "not_has_status",
+              "status": "shadow_step"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 18
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "shadow_step",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "highest_atk_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
     }
   ]
 }
