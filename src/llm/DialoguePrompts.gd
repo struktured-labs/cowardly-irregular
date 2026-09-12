@@ -224,7 +224,8 @@ Each rule shape:
 Conditions (AND-chained). type is one of:
   hp_percent, mp_percent, ap, has_status, not_has_status, enemy_hp_percent, ally_hp_percent,
   turn, enemy_count, ally_count, item_count, setup_complete,
-  ally_has_status, enemy_has_status, not_enemy_has_status, ally_mp_percent,
+  ally_has_status, enemy_has_status, not_enemy_has_status, enemy_weak_to,
+  ally_mp_percent,
   ally_dead, is_night, weather,
   always, has_buff, not_has_buff, volatility_band
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
@@ -264,6 +265,13 @@ press_the_edge scales 1.5x/2.5x/4.0x/6.0x with it and consumes a level, and
 circuit_breaker spends a level for AP. So
 {\"type\":\"volatility_band\",\"op\":\">=\",\"value\":2} + 'press_the_edge' is
 "cash out once the band is worth it". A value above 3 never fires.
+enemy_weak_to takes an 'element' field and no op/value. True when ANY living
+enemy is weak to that element — the oldest decision in the genre, and until now
+unsayable in a rule. Elements that actually appear as a weakness in the
+bestiary: fire (38 of 106 monsters), holy (32), lightning (30), ice (27),
+water, physical, dark. Pair it with an ability of the SAME element, e.g.
+{\"type\":\"enemy_weak_to\",\"element\":\"fire\"} + 'fire' or 'summon_ifrit'.
+An element nothing is weak to simply never fires.
 item_count takes an 'item_id' field NAMING the item to count, alongside op and
 value — {\"type\":\"item_count\",\"item_id\":\"potion\",\"op\":\">\",\"value\":0}.
 Omit item_id and the count is always 0, so the rule never fires.
