@@ -93,6 +93,18 @@ func test_the_captured_state_ACTUALLY_restores_the_bed() -> void:
 		"the bed was restored as state but nothing is playing — silence after every Limit Break")
 
 
+## ⛔ THIS ARM OVERLAPS test_stinger_resume_over_area_music.gd (2026-07-31),
+## which I did not know existed. Measured 2026-09-11 rather than reasoned:
+##     restore_music_state' area branch made dead   -> BOTH red, 1 arm each
+##     the `_current_area = ""` clear removed       -> BOTH green
+## So they are redundant on the branch EXISTING and jointly blind to what the
+## branch DOES first. The clear is unpinned by either file, and by anything else
+## in the lane. Its own comment names the hazard (restoring the area you are
+## nominally still in early-outs at SoundManager:4901) but every takeover that
+## goes through play_music empties _current_area at :1826 before restore is ever
+## called, so the sequence that would bite has not been found — which is why
+## there is no arm here asserting one. Unpinned and possibly unreachable are
+## different claims; only the first is measured.
 func test_a_stinger_over_AREA_music_restores_it_after_one_frame() -> void:
 	## The OTHER restore path, and the one four stingers actually use.
 	## restore_music_state branches: area != "" -> play_area_music (DEFERRED via
