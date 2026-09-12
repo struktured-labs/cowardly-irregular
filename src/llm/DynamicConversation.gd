@@ -534,6 +534,10 @@ func _fetch_npc_reply() -> String:
 		recent,
 		_last_npc_line,
 		_last_player_line,
+		_quest_state_lines,
+		_resolve_time_of_day(),
+		_party_state,
+		_memory_lines,
 	)
 
 	_set_thinking(true)
