@@ -363,11 +363,25 @@ func test_every_cited_composition_expression_still_exists() -> void:
 	var all: Array = COMPOSED_FAMILIES.values().duplicate()
 	all.append(MASTERITE_EXPR)
 	all.append(JOB_SPECIAL_EXPR)
+	## ⛔ READ THE CODE, NOT THE PROSE. This arm excuses ~119 composed ids on the strength
+	## of an expression existing — and it read RAW source, so a docstring naming the
+	## expression kept the whole family excused after the composition was deleted.
+	## Measured on a449f5ec: the real `"boss_" + _current_world_suffix` replaced by a
+	## literal and the expression moved into _start_boss_music's docstring -> GREEN.
 	for entry in all:
-		var src: String = FileAccess.get_file_as_string(str(entry[0]))
+		var pair: Array = _code_and_docstrings(FileAccess.get_file_as_string(str(entry[0])))
+		var code: String = _strip_comments(str(pair[0]))
+		var doc: String = str(pair[1])
+		## Controls both ways, per cited file: over-stripping deletes what the verdict reads,
+		## and an empty doc side means the split did nothing and prose is still in scope.
+		assert_gt(code.count("func "), 10,
+			"CONTROL: %s kept only %d func headers after the split — the verdict below reads nothing" % [entry[0], code.count("func ")])
+		assert_gt(doc.length(), 200,
+			"CONTROL: %s produced %d chars of docstring — the split did nothing, so prose is still excusing families" % [entry[0], doc.length()])
 		checked += 1
-		if src.find(str(entry[1])) < 0:
-			missing.append("%s no longer contains %s" % [entry[0], entry[1]])
+		if code.find(str(entry[1])) < 0:
+			var in_prose: String = " — it survives ONLY inside a docstring, which plays nothing" if doc.find(str(entry[1])) >= 0 else ""
+			missing.append("%s no longer contains %s%s" % [entry[0], entry[1], in_prose])
 	assert_gt(checked, 6, "SCOPE control: checked only %d composition sites" % checked)
 	assert_eq(missing.size(), 0,
 		"a composition site this test relies on is gone (%d): %s — the family it excused is now unreachable and its members are orphans, not exceptions" % [missing.size(), missing])
