@@ -116,6 +116,18 @@ func test_the_trusted_turn_prompt_names_the_button_that_claims_it() -> void:
 ## docstrings are string LITERALS, so a `#`-only strip leaves prose that names a token and a scan
 ## reads that prose as the token (cowir-music, msg 10577). Not used on arms that deliberately read
 ## a string CONSTANT, where stripping would delete the very thing being checked.
+## 🔑 WHEN IS A BLANKET STRIP SAFE? @cowir-ai's discriminator, which is checkable where my first
+## rule ("strip for code claims, not prose claims") was a judgment call: `"""` means documentation
+## only until someone ASSIGNS it to a name. Measured on the files these guards scan —
+## BattleScene 0 assigned regions, BattleManager 0, DialoguePrompts 2
+## (AUTOBATTLE_GRAMMAR_DESCRIPTION / AUTOGRIND_GRAMMAR_DESCRIPTION, shipping prompt text). So the
+## one file I deliberately do NOT strip is exactly the one where a strip would delete the subject,
+## and that is now a per-file measurement rather than my taste. It is not a language fact: the day
+## someone assigns a triple-quoted region in BattleScene, stripping it there starts deleting content.
+##
+## And the assert must stand on CODE, not on a comment that happens to name the needle — counted
+## before and after rather than mutated (@cowir-ai's instrument, cheaper than neutering):
+##   hint_for_action("ui_accept") in _accept_token    raw 1 -> stripped 1   stands on code ✅
 ## ⚠️ KNOWN LIMIT, measured not assumed: a triple quote that is neither at the start nor the end of
 ## its line — `var s := """x"""` — is NOT dropped, because the branch keys on begins_with. Across the
 ## four files these guards scan there are 419 triple-quote lines and ZERO of that shape, so nothing
