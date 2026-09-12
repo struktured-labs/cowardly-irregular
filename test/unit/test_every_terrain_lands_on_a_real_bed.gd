@@ -121,12 +121,17 @@ func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
 	var start: int = src.find("func _get_terrain_battle_track")
 	assert_gt(start, -1, "CONTROL: the terrain track function exists")
 	var body: String = _code_only(src.substr(start, src.find("\nfunc ", start + 10) - start))
-	## CONTROL: that function's comment NAMES both dropped beds, to explain why they went. Without
-	## the strip this arm reads its own explanation as the arm it forbids — a false alarm on correct
-	## code, and the near-miss that started this commit: it passed only because the comment writes
-	## them in backticks and the assert looks for double quotes.
-	assert_false(body.contains("had arms here naming"),
-		"the stripper must remove that comment, or the assertions below read prose as code")
+	## CONTROL for the stripper — STRUCTURAL, not phrase-keyed (@cowir-music, msg 10585). My first
+	## version asserted a specific sentence was gone, which goes vacuous the moment anyone rewords
+	## the comment: green because the phrase left, not because the stripper works. That is the same
+	## fragility as a guard passing only because prose used backticks where the assert wanted quotes.
+	## ANTI-VACUITY first: the window must actually CONTAIN both forms, or stripping proves nothing.
+	var ctrl_raw: String = src.substr(src.find("func _get_terrain_battle_track"), 1200)
+	assert_true(ctrl_raw.contains("#"), "ANTI-VACUITY: the control window must hold a # comment")
+	assert_true(ctrl_raw.contains("\"\"\""), "ANTI-VACUITY: and a docstring")
+	var ctrl: String = _code_only(ctrl_raw)
+	assert_false(ctrl.contains("#"), "no # comment may survive the strip")
+	assert_false(ctrl.contains("\"\"\""), "no docstring may survive the strip")
 	for pair in [["void", "battle_void"], ["urban", "battle_urban"]]:
 		var bed: String = pair[1]
 		if keys.has(bed):

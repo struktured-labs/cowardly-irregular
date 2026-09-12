@@ -34,15 +34,17 @@ func test_the_token_is_derived_rather_than_a_frozen_face_name() -> void:
 	var idx: int = src.find("func _accept_token")
 	assert_gt(idx, -1, "the helper must exist")
 	var body: String = _code_only(src.substr(idx, src.find("\nfunc ", idx + 1) - idx))
-	## CONTROL for the stripper, on a region that DEFINITELY carries a comment. My first version
-	## keyed on a phrase in _accept_token's own doc block — which sits ABOVE the `func` line and so
-	## was never inside the scanned window at all. Neutering the stripper did not red it: a control
-	## that cannot fail. _grind_console_controls has an explanatory line INSIDE its body.
-	var commented: String = _code_only(src.substr(src.find("func _grind_console_controls"), 900))
-	assert_gt(src.find("func _grind_console_controls"), -1, "CONTROL: that region exists to strip")
-	assert_false(commented.contains("Keyboard-only: name the keys"),
-		"the comment stripper must actually remove comments, or a deleted call can be satisfied by "
-		+ "prose that mentions it — measured: without the strip, it is")
+	## CONTROL for the stripper — STRUCTURAL, not phrase-keyed (@cowir-music, msg 10585). My first
+	## version asserted a specific sentence was gone, which goes vacuous the moment anyone rewords
+	## the comment: green because the phrase left, not because the stripper works. That is the same
+	## fragility as a guard passing only because prose used backticks where the assert wanted quotes.
+	## ANTI-VACUITY first: the window must actually CONTAIN both forms, or stripping proves nothing.
+	var ctrl_raw: String = src.substr(src.find("func _get_terrain_battle_track"), 1200)
+	assert_true(ctrl_raw.contains("#"), "ANTI-VACUITY: the control window must hold a # comment")
+	assert_true(ctrl_raw.contains("\"\"\""), "ANTI-VACUITY: and a docstring")
+	var ctrl: String = _code_only(ctrl_raw)
+	assert_false(ctrl.contains("#"), "no # comment may survive the strip")
+	assert_false(ctrl.contains("\"\"\""), "no docstring may survive the strip")
 	assert_true(body.contains("hint_for_action(\"ui_accept\")"),
 		"the token must be derived from the action, not written out per family")
 

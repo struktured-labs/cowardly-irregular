@@ -152,12 +152,17 @@ func test_forecast_is_left_out_and_still_deserves_to_be() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	var idx: int = src.find("\t\t\"forecast\":")
 	assert_gt(idx, -1, "CONTROL: the forecast handler arm was found to inspect")
-	## CONTROL for the stripper first — the forecast arm itself carries no comment, so stripping it
-	## proves nothing on its own. recursive_summon's handler a few hundred lines away does.
-	var doc_region: String = _code_only(src.substr(src.find("\t\t\"recursive_summon\":") - 700, 700))
-	assert_false(doc_region.contains("Exponential power"),
-		"the comment stripper must actually remove comments, or the state-change scan below reads "
-		+ "prose as code")
+	## CONTROL for the stripper — STRUCTURAL, not phrase-keyed (@cowir-music, msg 10585). My first
+	## version asserted a specific sentence was gone, which goes vacuous the moment anyone rewords
+	## the comment: green because the phrase left, not because the stripper works. That is the same
+	## fragility as a guard passing only because prose used backticks where the assert wanted quotes.
+	## ANTI-VACUITY first: the window must actually CONTAIN both forms, or stripping proves nothing.
+	var ctrl_raw: String = src.substr(src.find("func _execute_ability"), 1200)
+	assert_true(ctrl_raw.contains("#"), "ANTI-VACUITY: the control window must hold a # comment")
+	assert_true(ctrl_raw.contains("\"\"\""), "ANTI-VACUITY: and a docstring")
+	var ctrl: String = _code_only(ctrl_raw)
+	assert_false(ctrl.contains("#"), "no # comment may survive the strip")
+	assert_false(ctrl.contains("\"\"\""), "no docstring may survive the strip")
 	var arm: String = _code_only(src.substr(idx, src.find("\n\t\t\"", idx + 5) - idx))
 	var effects: Array = []
 	for call in ["take_damage", "add_buff", "add_debuff", "add_status", "shift_band", "gain_ap"]:
