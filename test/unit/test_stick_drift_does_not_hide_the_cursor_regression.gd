@@ -30,17 +30,49 @@ func _mgr():
 	return MouseCursorManager
 
 
-## ⛔ CODE ONLY. Twice in one hour a window I sized against code was filled by prose instead —
-## first my anchor matched inside a comment, then the six explanatory lines I had written BETWEEN
-## the branch and its body overran a 400-char window. Widening is a guess; stripping is the
-## answer, and it is the same fix this lane applied to the Enter-guard ratchet in .297.
-func _code_only(path: String) -> String:
+## ⛔ CODE ONLY, AND THE STRIPPER CARRIES ITS OWN CONTROL. Twice in one hour a window I sized
+## against code was filled by prose instead — first my anchor matched inside a comment, then the
+## six explanatory lines I had written BETWEEN the branch and its body overran a 400-char window.
+##
+## ⚠️ But a stripper is an instrument too, and it fails the SAME way it fixes: by silently changing
+## what the assertion measures. @cowir-adhoc's swallowed whole files on a desynced docstring toggle
+## and produced five confident false positives — invisible in a green run, because everything
+## downstream of an over-strip is a NEGATIVE assertion that an empty string satisfies perfectly.
+## So `must_survive` is a REQUIRED argument, not an optional hardening: a known CODE site that
+## over-stripping would delete, checked here so no call site can forget it.
+func _code_only(path: String, must_survive: String) -> String:
 	var out := ""
 	for raw in FileAccess.get_file_as_string(path).split("\n"):
 		if raw.strip_edges().begins_with("#"):
 			continue
 		out += raw + "\n"
+	assert_true(out.find(must_survive) > -1,
+		"POSITIVE CONTROL: '%s' is a CODE site in %s and must survive stripping — if it did not, " % [must_survive, path] +
+		"the stripper ate code and every negative arm below would pass on an empty window")
+	## ⛔ AND THE OTHER HALF, because a #-only strip is LINE-BASED and cannot see inside a \"\"\"
+	## block: text there survives stripping and would satisfy a positive arm above. This file has
+	## none TODAY — that is MEASURED INERT, not safe by design. If it ever fails, the answer is a
+	## region strip for this path, not a wider window.
+	assert_eq(out.count('"""'), 0,
+		"%s gained a multi-line string: a #-only strip is blind inside one, so the arms above can " % path +
+		"now be satisfied by prose again — this helper needs a region strip for it")
 	return out
+
+
+## The branch's own body, bounded by the NEXT branch rather than by a character count. A magic
+## width is the coincidental-value shape CLAUDE.md names: 120 happened to stop 17 characters short
+## of the motion branch's condition, so an ordinary edit there would have redded a correct fix.
+func _branch_body(src: String, header: String) -> String:
+	var at := src.find(header)
+	assert_gt(at, -1, "the branch must still exist, as a branch: %s" % header)
+	if at < 0:
+		return ""
+	var next_elif := src.find("\n\telif ", at)
+	var next_func := src.find("\nfunc ", at)
+	var stop := next_elif
+	if stop < 0 or (next_func > -1 and next_func < stop):
+		stop = next_func
+	return src.substr(at, stop - at) if stop > at else src.substr(at)
 
 
 ## ⛔ THE DEFECT. Drift must not cross the threshold; a real push must.
@@ -57,41 +89,44 @@ func test_only_a_deliberate_push_crosses_the_hide_threshold() -> void:
 
 ## The handler must actually CONSULT axis_value — a deadzone constant nothing reads is decoration.
 func test_the_handler_reads_the_axis_value() -> void:
-	var src := _code_only(MCM)
-	assert_gt(src.length(), 200, "CONTROL: the source must be readable")
 	## ⛔ ANCHOR ON THE CODE FORM, not the bare type name. My first version searched
 	## "InputEventJoypadMotion" and matched inside the COMMENT I had just added above the branch,
 	## so the window measured 400 characters of my own prose and the arm redded on a correct fix.
 	## @cowir-autogrind hit the identical trap this hour: prose crowding out the code an assertion
 	## is measuring. Anchoring on the `elif …:` form fixed the first half; _code_only fixes the
 	## second, where my own six comment lines sat between the branch and the thing being asserted.
-	var at := src.find("elif event is InputEventJoypadMotion:")
-	assert_gt(at, -1, "the motion branch must still exist, as a branch")
-	var tail := src.substr(at, 400)
-	assert_true(tail.find("axis_value") > -1,
+	var src := _code_only(MCM, "func _hide_cursor() -> void:")
+	var body := _branch_body(src, "elif event is InputEventJoypadMotion:")
+	assert_true(body.find("axis_value") > -1,
 		"the motion branch must read axis_value — before 2026-09-12 it hid the cursor on the " +
 		"event's mere EXISTENCE, which is what made a resting stick enough")
-	assert_true(tail.find("STICK_DEADZONE") > -1, "…and compare it against the deadzone")
+	assert_true(body.find("STICK_DEADZONE") > -1, "…and compare it against the deadzone")
 
 
 ## ⛔ THE OTHER DIRECTION. A BUTTON press is always deliberate and must keep hiding the cursor
 ## immediately — deadzoning the wrong branch would make a gamepad-first player's cursor linger.
 func test_a_button_press_still_hides_without_a_deadzone() -> void:
-	var src := _code_only(MCM)
-	var at := src.find("elif event is InputEventJoypadButton:")
-	assert_gt(at, -1, "the button branch must exist, as a branch")
-	var window := src.substr(at, 120)
+	var src := _code_only(MCM, "func _hide_cursor() -> void:")
+	var body := _branch_body(src, "elif event is InputEventJoypadButton:")
+	## ⛔ THE POSITIVE HALF FIRST. Both asserts below are NEGATIVE, and an empty window satisfies
+	## a negative perfectly — which is exactly how an over-eager stripper reads as green.
+	assert_true(body.find("_hide_cursor()") > -1,
+		"the button branch must still HIDE — without this the two negatives below would pass on " +
+		"an empty window, which is the failure @cowir-adhoc measured in their own stripper")
 	## ⛔ CHECK FOR THE DEADZONE, not just for axis_value. My first version asserted only
 	## `find("axis_value") == -1`, and the mutation that deadzones this branch realistically —
 	## `if absf(0.0) > STICK_DEADZONE:` — never mentions axis_value, so the arm PASSED a mutation
 	## that restored the defect on the wrong branch. Caught because I predicted a red and got a
 	## green; the arm was hollow against everything except the one shape I happened to imagine.
-	assert_eq(window.find("axis_value"), -1,
+	assert_eq(body.find("axis_value"), -1,
 		"a button press has no axis and must NOT be gated on one — gamepad-first players expect " +
 		"the cursor gone the moment they press anything")
-	assert_eq(window.find("STICK_DEADZONE"), -1,
+	assert_eq(body.find("STICK_DEADZONE"), -1,
 		"…and must not be gated on the deadzone by any other route either: a button press is " +
 		"always deliberate, and a threshold here would make the cursor linger after a press")
+	assert_eq(body.find("InputEventJoypadMotion"), -1,
+		"BOUNDS: the slice must STOP at the next branch — a window that ran on into the motion " +
+		"branch would red both negatives above on entirely correct code")
 
 
 ## The two raw-axis readers in src/input/ must agree, or the directory has two deadzones that
