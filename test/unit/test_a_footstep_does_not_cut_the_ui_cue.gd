@@ -69,36 +69,50 @@ func test_the_walk_loop_still_reaches_play_footstep() -> void:
 	## guard: a call replaced by `pass  ## was ...play_flourish(...)` left it EC=0 · Passing 6 —
 	## the same shape @cowir-music hit in `1d1d83ff`. A commented-out call is a deleted call.
 	var raw := FileAccess.get_file_as_string("res://src/exploration/OverworldPlayer.gd")
-	var src := _code_only(raw)
+	var src := _code_only(raw, "func _resolve_footstep_terrain")
 	assert_gt(src.length(), 10000, "CONTROL: OverworldPlayer CODE read back %d chars" % src.length())
 	assert_lt(src.length(), raw.length(),
 		"CONTROL: stripping removed nothing — the stripper is inert and this arm is a raw read again")
 	assert_true(raw.contains("\n#") or raw.contains("\t#"),
 		"ANTI-VACUITY: OverworldPlayer holds no comment line, so the control above proves nothing")
 	## STRUCTURAL, so a reworded comment cannot change the verdict (@cowir-music `da523860`).
-	assert_false(_code_only("\tpass  ## was sm.play_footstep(x)").contains("play_footstep"),
+	assert_false(_code_only("\tpass  ## was sm.play_footstep(x)", "").contains("play_footstep"),
 		"a call named in a trailing comment still reads as a call")
 	## The needle must be ABSENT from the call itself: this read `# step #2` / not-contains "step"
 	## and went RED on a clean tree, because `play_footstep` contains "step". A negative assert
 	## needs a token that only the comment can supply.
-	var trailing := _code_only('\tsm.play_footstep(t)  # cadence #2')
+	var trailing := _code_only('\tsm.play_footstep(t)  # cadence #2', "")
 	assert_true(trailing.contains("play_footstep(t)"), "the stripper ate a real call")
 	assert_false(trailing.contains("cadence"),
 		"cut at the LAST # — the comment body survived as code")
 	## Quote-awareness had no case here until 2026-09-12: dropping the quote arm left this file
 	## GREEN while its two siblings redded. A shared helper needs the same case table in each
 	## copy, or the copies certify different functions.
-	assert_true(_code_only('\tvar s := "has #hash"  # gone').contains('"has #hash"'),
+	assert_true(_code_only('\tvar s := "has #hash"  # gone', "").contains('"has #hash"'),
 		"a # inside a string literal is not a comment — live code was truncated")
 	assert_true(src.contains("play_footstep("),
 		"the walk loop no longer calls play_footstep — footsteps are silent, which this test would otherwise call 'not cutting anything'")
 
 
-func _code_only(text: String) -> String:
-	## Presence checks read CODE, never prose. Quote- and escape-aware; the derivation and its
-	## case table live in test_group_attack_cue_survives_its_own_hits.gd.
+## TWO halves: `#` comments are line-based and stateless; `"""` docstrings need a REGION strip.
+## Which a guard needs is decided by what its assertion is SATISFIED BY (@cowir-overworld) — these
+## are PRESENCE asserts, so a docstring naming the call satisfies them. My .325 fix closed only the
+## `#` half. `must_survive` is REQUIRED so no call site reads prose by accident (@cowir-adhoc).
+func _code_only(text: String, must_survive: String) -> String:
 	var out: PackedStringArray = []
-	for line in text.split("\n"):
+	var in_doc := false
+	for raw_line in text.split("\n"):
+		var line: String = raw_line
+		var fences := line.count("\"\"\"")
+		if in_doc:
+			if fences % 2 == 1:
+				in_doc = false
+			continue
+		if fences >= 2:
+			line = line.substr(0, line.find("\"\"\"")) + line.substr(line.rfind("\"\"\"") + 3)
+		elif fences == 1:
+			line = line.substr(0, line.find("\"\"\""))
+			in_doc = true
 		var quote := ""
 		var cut := -1
 		var i := 0
@@ -117,4 +131,8 @@ func _code_only(text: String) -> String:
 				break
 			i += 1
 		out.append(line.substr(0, cut) if cut > -1 else line)
-	return "\n".join(out)
+	var result: String = "\n".join(out)
+	if must_survive != "":
+		assert_true(result.contains(must_survive),
+			"OVER-STRIPPED: %s did not survive — an over-eager stripper and a correct one are the same green" % must_survive)
+	return result

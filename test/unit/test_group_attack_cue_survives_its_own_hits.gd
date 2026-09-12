@@ -98,7 +98,7 @@ func test_the_defeat_sting_is_not_cut_by_the_retry_battle() -> void:
 
 func test_the_cutscene_director_calls_the_flourish_path() -> void:
 	## EXECUTION is not SELECTION, for the sting as for the group cues.
-	var src := _code_of("res://src/cutscene/CutsceneDirector.gd")
+	var src := _code_of("res://src/cutscene/CutsceneDirector.gd", "func _play_spotlight_retry_sting")
 	assert_gt(src.length(), 10000, "CONTROL: CutsceneDirector CODE read back %d chars" % src.length())
 	assert_true(src.contains('play_flourish("%s")' % DEFEAT_CUE),
 		"the defeat sting is not played through play_flourish")
@@ -109,7 +109,7 @@ func test_the_cutscene_director_calls_the_flourish_path() -> void:
 func test_the_battle_scene_calls_the_flourish_path() -> void:
 	## EXECUTION is not SELECTION: the three tests above prove the path works, none of them
 	## proves BattleScene uses it. A call site left on play_battle is the whole defect, intact.
-	var src := _code_of("res://src/battle/BattleScene.gd")
+	var src := _code_of("res://src/battle/BattleScene.gd", "func _on_group_attack_executing")
 	assert_gt(src.length(), 10000, "CONTROL: BattleScene CODE read back %d chars" % src.length())
 	var on_battle: Array[String] = []
 	for key in GROUP_CUES:
@@ -129,13 +129,33 @@ func test_the_battle_scene_calls_the_flourish_path() -> void:
 ## Quote-aware because `play_battle("x") # see BATTLE #3` must cut at the SECOND #, and escape-aware
 ## because "a\\" really does end its string. Shape shared with _strip_comments in
 ## test_ambient_cues_actually_loop.gd, which carries the longer derivation.
-func _code_of(path: String) -> String:
-	return _code_only(FileAccess.get_file_as_string(path))
+func _code_of(path: String, must_survive: String) -> String:
+	return _code_only(FileAccess.get_file_as_string(path), must_survive)
 
 
-func _code_only(text: String) -> String:
+## TWO halves, and which one a guard needs is decided by WHAT ITS ASSERTION IS SATISFIED BY
+## (@cowir-overworld). `#` comments are line-based and stateless — nothing to desync. `"""`
+## docstrings are NOT line-addressable and need a region strip. These arms are PRESENCE asserts, so
+## a docstring naming the call satisfies them: @cowir-music's 1d1d83ff verbatim, and my own .325 fix
+## closed only the `#` half. BattleScene carries 133 `"""` lines, CutsceneDirector 23.
+## `must_survive` is REQUIRED so no call site can read prose by accident, and it is asserted here
+## rather than returned, because an over-stripping stripper and a correct one are the same green
+## (@cowir-adhoc, whose over-strip produced five confident false positives).
+func _code_only(text: String, must_survive: String) -> String:
 	var out: PackedStringArray = []
-	for line in text.split("\n"):
+	var in_doc := false
+	for raw_line in text.split("\n"):
+		var line: String = raw_line
+		var fences := line.count("\"\"\"")
+		if in_doc:
+			if fences % 2 == 1:
+				in_doc = false
+			continue
+		if fences >= 2:
+			line = line.substr(0, line.find("\"\"\"")) + line.substr(line.rfind("\"\"\"") + 3)
+		elif fences == 1:
+			line = line.substr(0, line.find("\"\"\""))
+			in_doc = true
 		var quote := ""
 		var cut := -1
 		var i := 0
@@ -154,7 +174,12 @@ func _code_only(text: String) -> String:
 				break
 			i += 1
 		out.append(line.substr(0, cut) if cut > -1 else line)
-	return "\n".join(out)
+	var result: String = "\n".join(out)
+	if must_survive != "":
+		assert_true(result.contains(must_survive),
+			"OVER-STRIPPED: %s did not survive — an over-eager stripper and a correct one are the same green" % must_survive)
+	return result
+
 
 func test_the_stripper_keeps_calls_and_drops_prose() -> void:
 	## @cowir-music 2026-09-12 (`da523860`): the stripper is what every arm here rests on, and
@@ -163,7 +188,7 @@ func test_the_stripper_keeps_calls_and_drops_prose() -> void:
 	## this case table called a SECOND COPY of the logic (`_strip_line`) and so measured a
 	## function no arm uses. Every case below now drives _code_only itself.
 	var raw := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	var src := _code_of("res://src/battle/BattleScene.gd")
+	var src := _code_of("res://src/battle/BattleScene.gd", "func _on_group_attack_executing")
 	assert_gt(src.length(), 10000, "CONTROL: stripped BattleScene is %d chars" % src.length())
 	assert_lt(src.length(), raw.length(),
 		"CONTROL: stripping removed nothing from %d chars — the stripper is a pass-through" % raw.length())
@@ -171,15 +196,31 @@ func test_the_stripper_keeps_calls_and_drops_prose() -> void:
 		"ANTI-VACUITY: BattleScene holds no comment line, so this arm would pass with nothing to do")
 	assert_true(src.contains('play_flourish("group_all_out")'),
 		"the stripper ate a real call — every arm in this file would then fail for the wrong reason")
-	assert_false(_code_only("\tpass  ## was SoundManager.play_flourish(\"group_all_out\")").contains("play_flourish"),
+	assert_false(_code_only("\tpass  ## was SoundManager.play_flourish(\"group_all_out\")", "").contains("play_flourish"),
 		"a call named in a trailing comment still reads as a call")
 	## This pair used to be ONE assert claiming "cuts at the first # not the last" while only
 	## checking the call survived — which a last-# cut also satisfies. Mutation-tested 2026-09-12
 	## (drop the `break`, cut at the LAST #): EC=0, green, message unchanged. @cowir-overworld via
 	## @cowir-music: a pass-through neuter cannot tell a real assert from a tautology.
-	var trailing := _code_only('\tSoundManager.play_flourish("x")  # BATTLE #3')
+	var trailing := _code_only('\tSoundManager.play_flourish("x")  # BATTLE #3', "")
 	assert_true(trailing.contains('play_flourish("x")'), "the stripper ate a real call")
 	assert_false(trailing.contains("BATTLE"),
 		"cut at the LAST # — everything between the first # and the last survived as code")
-	assert_true(_code_only('\tvar s := "see #3"  # gone').contains('"see #3"'),
+	## ESCAPE BRANCH — @cowir-sprites: their escape branch survived every over-strip mutation because
+	## no case row contained a backslash. Mine had ZERO backslash rows across four files while a
+	## COMMENT in this very helper named the escaped-backslash case as the reason the branch exists.
+	## Two rows, because the branch does two jobs and one row cannot fail for both.
+	## MEASURED to discriminate: `"a\\"  # gone` does NOT — skipping 1 char or 2 gives the identical
+	## result, so that row exists and can fail for nothing (@cowir-sprites' third level: applied,
+	## well-aimed, semantically unable to fail). An escaped QUOTE followed by a `#` INSIDE the string
+	## is the input where the two differ: correct keeps the whole line, a 1-char skip closes the
+	## string early and cuts at the `#`.
+	assert_true(_code_only('\tvar s := "a\\"  # inside"', "").contains("# inside"),
+		"the escape branch let the string close early — a `#` INSIDE a string was read as a comment")
+	## DOCSTRING REGION — the half .325 left open. A presence assert is satisfied by prose.
+	assert_false(_code_only('"""\nplay_flourish("group_all_out")\n"""', "").contains("play_flourish"),
+		"a call named inside a triple-quoted docstring still reads as a call")
+	assert_true(_code_only('play_flourish("x")\n"""doc"""\nplay_flourish("y")', "").contains('play_flourish("y")'),
+		"code AFTER a docstring block was swallowed — the region walk did not resume")
+	assert_true(_code_only('\tvar s := "see #3"  # gone', "").contains('"see #3"'),
 		"a # inside a string literal is not a comment")
