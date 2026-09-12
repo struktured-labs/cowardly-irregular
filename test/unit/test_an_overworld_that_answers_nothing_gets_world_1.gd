@@ -140,17 +140,21 @@ func _comment_start(line: String) -> int:
 ## the docstring bodies. `#` comments go after, never before — a docstring may legitimately contain one.
 func _code(path: String) -> String:
 	var raw := FileAccess.get_file_as_string(path)
+	# ⚠️ ORDER IS LOAD-BEARING (@cowir-sprites 2026-09-12): a `"""` INSIDE a # comment flips the
+	# parity for the rest of the file — real code leaves the code half AND prose enters it, from one
+	# flip. Strip comments FIRST so such a delimiter is gone before the split ever sees it.
+	# Measured 0 occurrences in this corpus today: latent, not live. Inert, not safe by design.
+	var decommented := ""
+	for line in raw.split("\n"):
+		var l := str(line)
+		var at := _comment_start(l)
+		decommented += (l.substr(0, at) if at >= 0 else l) + "\n"
 	var out := ""
-	var chunks: PackedStringArray = raw.split("\"\"\"")
+	var chunks: PackedStringArray = decommented.split("\"\"\"")
 	for i in range(chunks.size()):
 		if i % 2 == 0:
 			out += str(chunks[i])
-	var stripped := ""
-	for line in out.split("\n"):
-		var l := str(line)
-		var at := _comment_start(l)
-		stripped += (l.substr(0, at) if at >= 0 else l) + "\n"
-	return stripped
+	return out
 
 
 ## SOURCE. The behaviour arms pass the moment a scene answers; this is what makes DELETING an
