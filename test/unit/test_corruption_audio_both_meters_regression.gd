@@ -17,6 +17,56 @@ func before_each() -> void:
 func after_each() -> void:
 	SoundManager._grind_corruption = _grind_before
 	SoundManager._save_corruption = _save_before
+	## ⛔ THE INPUTS ARE NOT THE STATE. These two are the meters; the RENDERED level lives in
+	## _corruption_intensity and is written by the tween, so restoring the meters left a detune of
+	## up to 0.95 on the autoload for every later file. It cost gate 188 a red in
+	## test_victory_music_not_pitched_by_danger_regression once reset_danger began restoring a
+	## settled detune — visible only in the full suite, never in this file's own run. cowir-main
+	## patched the victim's fixture in-fold; this is the source.
+	SoundManager.reset_corruption()
+
+
+## The fixture's own contract, because the leak was invisible to every arm below: they assert what
+## the RENDERER computed and none of them looks at what is left behind. A file that raises a global
+## meter owes the next file a clean one.
+func test_the_fixture_leaves_no_detune_behind() -> void:
+	SoundManager.set_corruption_intensity(0.9)
+	for i in range(30):
+		await get_tree().process_frame
+		if SoundManager._corruption_intensity > 0.1:
+			break
+	assert_gt(SoundManager._corruption_intensity, 0.1,
+		"CONTROL: the meter really did render before cleanup — it is at %.3f" % SoundManager._corruption_intensity)
+
+	after_each()
+
+	assert_almost_eq(SoundManager._corruption_intensity, 0.0, 0.001,
+		"after_each left a rendered detune of %.3f on the autoload; every later music test inherits it" % SoundManager._corruption_intensity)
+	## ⚠️ NOT MUTATION-DISTINGUISHED, and stated rather than assumed: a teardown that only zeroes the
+	## field passes this too. Catching that needs the envelope caught MID-FLIGHT, and it cannot be
+	## held there — measured 2026-09-12, the tween completes inside ONE frame whenever the frame
+	## delta spans its 1.5 s, so a control asserting is_running() red on correct code. The LEVEL
+	## assertion above is the load-bearing one; this is a cheap second look, not a proof.
+	assert_true(SoundManager._corruption_tween == null or not SoundManager._corruption_tween.is_running(),
+		"after_each left the corruption tween RUNNING — it keeps writing pitch into whatever the next file plays")
+
+
+## The envelope half, which the arm above cannot distinguish: a teardown that only zeroed
+## _corruption_intensity passed it. You cannot HOLD a tween mid-flight — measured, a 1.5 s envelope
+## completes inside one frame whenever the frame delta spans it — but you do not need to
+## (@cowir-autogrind, 2026-09-12): a tween created THIS frame has not advanced, so assert before the
+## first await. And ask is_running(), never is_valid(): kill() does not flip valid in the calling
+## frame, so a control built on it reds on correct code.
+func test_the_fixture_kills_the_envelope_not_just_the_number() -> void:
+	SoundManager.set_corruption_intensity(0.9)
+	var envelope: Tween = SoundManager._corruption_tween
+	assert_true(envelope != null and envelope.is_running(),
+		"CONTROL: a fresh envelope runs before any frame — without this the assertion below cannot fail")
+
+	after_each()
+
+	assert_false(envelope.is_running(),
+		"the teardown zeroed the number and left the envelope alive; it keeps writing _corruption_intensity for up to 1.5 s of WALL time, into whatever file runs next")
 
 
 func _rendered() -> float:
