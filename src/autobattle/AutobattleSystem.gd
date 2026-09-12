@@ -535,8 +535,12 @@ func get_deep_check_kit(character_id: String) -> Dictionary:
 ## kit, and MP-starved rules — all three fizzle-consume a turn at runtime via
 ## BM's can_use_ability path. RuleComposer's second-pass lint opts in with
 ## validate_rule(rule, character_id). Per-rule scope is deliberately STRICTER
-## than the preset catalog's whole-script lint (no earlier-refill-rule
-## credit): stricter = safer for LLM-composed output.
+## than the whole-script view (no earlier-refill-rule credit): stricter =
+## safer for LLM-composed output. ⚠️ So do NOT run this over the shipped
+## preset catalog and read the output as defects — four correct presets fail
+## it, because their catch-all is protected by a 0-MP rule ABOVE it that this
+## scope cannot see. That whole-script lint used to be named here and exist
+## nowhere; it is now test_a_preset_can_always_afford_its_last_rule.
 ## Reachability-only slice, for UNTRUSTED imports. The MP-guard arm below is an authoring-STYLE
 ## rule — deliberately strict for LLM output — and it fires on ordinary hand-written rules like
 ## "hp < 50 -> cure". Surfacing it on every shared code would train players to ignore advisories,
