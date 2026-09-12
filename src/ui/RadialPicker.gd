@@ -242,7 +242,9 @@ func _draw_center() -> void:
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 15, ACCENT)
 
 	if _page_count() > 1:
-		var pg := "%d / %d   [L1/R1]" % [_page + 1, _page_count()]
+		var pg := "%d / %d   [%s/%s]" % [_page + 1, _page_count(),
+			InputProfileManager.hint_for_action("battle_defer"),
+			InputProfileManager.hint_for_action("battle_advance")]
 		var pw := font.get_string_size(pg, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
 		draw_string(font, _center + Vector2(-pw * 0.5, 24), pg,
 			HORIZONTAL_ALIGNMENT_LEFT, -1, 10, DIM_TEXT)

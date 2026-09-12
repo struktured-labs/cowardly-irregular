@@ -1961,6 +1961,17 @@ func autogrind_console_log(text: String) -> void:
 ## the wrong button outright: turbo is raw JOY_BUTTON_Y (north — Ⓧ on a Switch pad, not Ⓨ), exit is
 ## ui_cancel (south — Ⓐ on Xbox, ✕ on PlayStation, and X/Esc on a keyboard, never B), and tier is
 ## L+R together on a pad, which the line never mentioned. Pause exists (P) and was omitted entirely.
+## The post-battle prompt named "A", which is the EAST face only on a Nintendo pad — `ui_accept` is
+## button index 1, so an Xbox player was told to press Ⓐ when the button that continues is Ⓑ. It
+## also offered "Click", and _process_post_battle gates on ui_accept alone: the mouse did nothing.
+func _accept_token() -> String:
+	var ipm = Engine.get_main_loop().root.get_node_or_null("InputProfileManager")
+	if ipm == null:
+		return "Z"
+	var tok: String = ipm.hint_for_action("ui_accept")
+	return tok if tok != "" else "Z"
+
+
 func _grind_console_controls() -> String:
 	var ipm = Engine.get_main_loop().root.get_node_or_null("InputProfileManager")
 	if ipm == null:
@@ -3127,7 +3138,7 @@ func _on_battle_ended(victory: bool) -> void:
 		log_message("\n[color=%s]=== VICTORY ===[/color]" % AccessibilityPalette.bonus_bbcode())
 		_battle_victory = true
 		if not turbo_mode:
-			log_message("[color=gray]Z / A / Click to continue...[/color]")
+			log_message("[color=gray]%s to continue...[/color]" % _accept_token())
 			## A spotlight duel authors its own victory cue; every ordinary fight falls back.
 			SoundManager.play_battle(BattleManager.victory_cue_for(test_enemies))
 			_play_staggered_victory_animations()
@@ -3140,7 +3151,7 @@ func _on_battle_ended(victory: bool) -> void:
 	else:
 		# Tick 239: penalty BBCode (defeat header).
 		log_message("\n[color=%s]=== DEFEAT ===[/color]" % AccessibilityPalette.penalty_bbcode())
-		log_message("[color=gray]Z / A / Click to restart...[/color]")
+		log_message("[color=gray]%s to restart...[/color]" % _accept_token())
 		# Play defeat animation for all party members
 		for animator in party_animators:
 			if animator:

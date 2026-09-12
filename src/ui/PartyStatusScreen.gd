@@ -113,7 +113,8 @@ func _build_ui() -> void:
 
 	# Footer
 	var footer := Label.new()
-	footer.text = "←→: Switch member  B/Esc: Back"
+	# "B" named index 1, which on an Xbox pad is ui_accept — Back was telling players to Confirm.
+	footer.text = "←→: Switch member  %s: Back" % InputProfileManager.hint_for_action("ui_cancel")
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.position = Vector2(0, vp.y - 28)
 	footer.size = Vector2(vp.x, 18)

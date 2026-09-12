@@ -1689,15 +1689,26 @@ const TRUST_INTERRUPT_WINDOW_SECONDS: float = 0.9
 var _trust_window_pc: Combatant = null
 
 
-## Emit the window signal (BattleScene renders the "press B to take
-## control" affordance + captures cancel input), then await the timeout.
+## Emit the window signal (BattleScene renders the take-control affordance and
+## captures CANCEL input), then await the timeout.
 ## If request_trust_interrupt() fired during the window, _trust_window_pc
 ## was cleared and we return without kicking AI — the state is already
 ## PLAYER_SELECTING and BattleScene's normal command-menu path picks up.
+## The window is claimed with ui_cancel, which is button index 0 — the SOUTH face. "B" is that face
+## only on a Nintendo pad: an Xbox player was told B when the button that takes the turn is Ⓐ, and a
+## PlayStation player B when it is ✕. hint_for_action names the key when no pad is connected.
+func _trust_interrupt_token() -> String:
+	var ipm = get_node_or_null("/root/InputProfileManager")
+	if ipm == null:
+		return "X"
+	var tok: String = ipm.hint_for_action("ui_cancel")
+	return tok if tok != "" else "X"
+
+
 func _run_trust_interrupt_window(pc: Combatant) -> void:
 	_trust_window_pc = pc
 	trust_interrupt_window_opened.emit(pc, TRUST_INTERRUPT_WINDOW_SECONDS)
-	battle_log_message.emit("[color=cyan]%s: Trusted — press B to take this turn[/color]" % pc.combatant_name)
+	battle_log_message.emit("[color=cyan]%s: Trusted — press %s to take this turn[/color]" % [pc.combatant_name, _trust_interrupt_token()])
 	var tree: SceneTree = get_tree()
 	if tree:
 		await tree.create_timer(TRUST_INTERRUPT_WINDOW_SECONDS).timeout
