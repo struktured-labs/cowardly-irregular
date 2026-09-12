@@ -106,18 +106,13 @@ func _probe_url() -> String:
 	match api_format:
 		"ollama":
 			return base_url.rstrip("/") + "/api/tags"
-		"openai":
+		"openai", _:
 			return base_url.rstrip("/") + "/v1/models"
-		_:
-			return base_url.rstrip("/")
 
 
 func _probe_method() -> int:
-	match api_format:
-		"ollama", "openai":
-			return HTTPClient.METHOD_GET
-		_:
-			return HTTPClient.METHOD_HEAD
+	# Both formats probe with GET; an unknown one follows OpenAI like every other site.
+	return HTTPClient.METHOD_GET
 
 
 func _on_probe_completed(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
@@ -279,8 +274,8 @@ func _endpoint_url(json_mode: bool) -> String:
 		"openai":
 			return base_url.rstrip("/") + "/v1/chat/completions"
 		_:
-			push_warning("[HTTPBackend] Unknown api_format '%s'; defaulting to Ollama." % api_format)
-			return base_url.rstrip("/") + "/api/generate"
+			push_warning("[HTTPBackend] Unknown api_format '%s'; using OpenAI-compatible requests." % api_format)
+			return base_url.rstrip("/") + "/v1/chat/completions"
 
 
 func _build_headers() -> PackedStringArray:
