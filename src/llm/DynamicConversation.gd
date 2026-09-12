@@ -324,7 +324,7 @@ func _do_player_turn(player: Node) -> void:
 	# A menu whose every option ENDS the conversation is, to the player, the same
 	# as no menu at all. Runs before _ensure_farewell, which would return early.
 	_ensure_something_to_say(choices)
-	# Ensure a "Farewell." / exit option is always last.
+	# The exit is the last row; an existing farewell is MOVED there, not left in place.
 	_ensure_farewell(choices)
 
 	var chosen: String = await _show_choice_menu(choices)
@@ -737,8 +737,9 @@ func _fallback_opening_line() -> String:
 ## The failure is non-monotonic — a partially usable reply produced a WORSE menu
 ## than a completely unusable one, which is why nothing upstream caught it.
 ##
-## Farewell POSITION is untouched and stays the parked design question:
-## `_ensure_farewell` runs immediately after this and owns where the exit sits.
+## Farewell POSITION is no longer parked — `_ensure_farewell` runs immediately
+## after this and now guarantees the exit is last, so the top-up here cannot
+## strand a goodbye mid-menu.
 func _ensure_something_to_say(choices: Array[String]) -> void:
 	if choices.is_empty():
 		return
@@ -754,18 +755,41 @@ func _ensure_something_to_say(choices: Array[String]) -> void:
 			choices.append(str(s))
 
 
-## Ensure the choices list always ends with a farewell option.
-## If one is already present anywhere, we don't add a duplicate.
+## Ensure the choices list ENDS with a farewell option — the exit is the last row.
+##
+## It used to return the moment it found a farewell ANYWHERE, so a model that led
+## with one left the exit wherever it landed. Row 0 is the pre-selected row
+## (`DialogueChoiceMenu.present` sets `_selection = 0`), so an exit in front put
+## the player one confirm-press from leaving a conversation they had just opened
+## — and per _is_farewell, leaving banks the memory and settles the reward claim.
+## Irreversible, from the most reflexive input a JRPG menu takes.
+##
+## Both this docstring and the call site already promised "always last". Only the
+## body disagreed, which is why nothing read as wrong.
+##
+## Measured against live llama3 on the real combined-reply prompt, three
+## conversation states, six samples each: 0 of 18 offered an exit at all, so the
+## append path ran every time and this is LATENT for the shipped default. It is
+## open on the BYOK surface — any OpenAI-compatible model can be attached from
+## Settings, and this is the last thing between that model and the menu.
+##
+## A second exit is dropped rather than kept: two ways to leave is not two choices.
 func _ensure_farewell(choices: Array[String]) -> void:
+	var exit_line: String = ""
+	var kept: Array[String] = []
 	for c in choices:
-		if _is_farewell(c):
-			return
-	# Append a farewell option, but only if we haven't already hit the max.
-	if choices.size() < DialoguePrompts.MAX_CHOICES:
-		choices.append("Farewell.")
-	else:
-		# Replace last entry with farewell to stay within capacity.
-		choices[choices.size() - 1] = "Farewell."
+		if not _is_farewell(c):
+			kept.append(c)
+		elif exit_line.is_empty():
+			exit_line = c
+	if exit_line.is_empty():
+		exit_line = "Farewell."
+	if kept.size() >= DialoguePrompts.MAX_CHOICES:
+		kept.resize(DialoguePrompts.MAX_CHOICES - 1)
+	choices.clear()
+	for k in kept:
+		choices.append(k)
+	choices.append(exit_line)
 
 
 func _is_farewell(choice: String) -> bool:
