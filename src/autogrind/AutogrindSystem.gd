@@ -16,6 +16,10 @@ signal corruption_increased(level: float)
 signal interrupt_triggered(reason: String)
 signal meta_boss_spawned(boss_name: String)
 signal system_collapse()
+## The collapse penalty halves the efficiency CAP for 10 battles. Both edges reached the player
+## through print() only, while the pillar the penalty attacks is the climbing multiplier itself.
+signal post_collapse_penalty_applied(capped_max: float, battles: int)
+signal post_collapse_penalty_expired(restored_max: float)
 signal region_cracked(region_id: String, crack_level: int)
 signal region_advanced(from_region: String, to_region: String, world_num: int)
 ## Fires once per region per session when monster_adaptation_level crosses ROTATION_SUGGEST_THRESHOLD; suggested may be empty if no next region exists.
@@ -58,8 +62,9 @@ var _automation_paused: bool = false
 var battles_without_heal: int = 0  # Longest un-broken run of victorious battles with no healing consumed
 
 ## Efficiency system
+const DEFAULT_MAX_EFFICIENCY := 10.0
 var efficiency_multiplier: float = 1.0  # Increases rewards but also danger
-var max_efficiency: float = 10.0
+var max_efficiency: float = DEFAULT_MAX_EFFICIENCY
 var efficiency_growth_rate: float = 0.1  # Per battle
 
 ## Region crack detection
@@ -872,6 +877,10 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 			_injury_baseline += member.permanent_injuries.size()
 	_wire_smart_interrupt_signals(party)
 	efficiency_multiplier = 1.0
+	## Both were in NONE of reset/snapshot/restore, so a session that collapsed and stopped before
+	## the debuff expired started the NEXT grind with a halved cap and a live counter.
+	max_efficiency = DEFAULT_MAX_EFFICIENCY
+	post_collapse_debuff_battles = 0
 	monster_adaptation_level = 0.0
 	## A fresh grind must not inherit the last one's rule counts. They previously reset ONLY on a
 	## rule edit, so a second grind with unchanged rules carried the first one's numbers into the
@@ -1361,6 +1370,7 @@ func apply_post_collapse_penalty() -> void:
 	print("[AUTOGRIND] Post-collapse penalty: max_efficiency capped at %.1f for %d battles" % [
 		max_efficiency, post_collapse_debuff_battles
 	])
+	post_collapse_penalty_applied.emit(max_efficiency, post_collapse_debuff_battles)
 
 
 func tick_post_collapse_debuff() -> void:
@@ -1371,8 +1381,9 @@ func tick_post_collapse_debuff() -> void:
 	post_collapse_debuff_battles -= 1
 	if post_collapse_debuff_battles == 0:
 		# Restore original max_efficiency
-		max_efficiency = 10.0
+		max_efficiency = DEFAULT_MAX_EFFICIENCY
 		print("[AUTOGRIND] Post-collapse debuff expired — max_efficiency restored to %.1f" % max_efficiency)
+		post_collapse_penalty_expired.emit(max_efficiency)
 
 
 func _trigger_permadeath() -> void:
@@ -2719,6 +2730,8 @@ func build_snapshot_system_block(elapsed: float = 0.0) -> Dictionary:
 		"meta_boss_spawn_chance": meta_boss_spawn_chance,
 		"consecutive_wins": consecutive_wins,
 		"collapse_count": collapse_count,
+		"max_efficiency": max_efficiency,
+		"post_collapse_debuff_battles": post_collapse_debuff_battles,
 		## Resume continues the SAME session, so a badge earned before the pause must still render
 		## gold in the Summary. Without this the ledger empties on resume and every one reads dim.
 		"achievements_earned_this_session": achievements_earned_this_session.duplicate(),
@@ -2853,6 +2866,8 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	meta_boss_spawn_chance = system_data.get("meta_boss_spawn_chance", 0.0)
 	consecutive_wins = system_data.get("consecutive_wins", 0)
 	collapse_count = system_data.get("collapse_count", 0)
+	max_efficiency = float(system_data.get("max_efficiency", DEFAULT_MAX_EFFICIENCY))
+	post_collapse_debuff_battles = int(system_data.get("post_collapse_debuff_battles", 0))
 	## Array[String] assigned straight from JSON is a SCRIPT ERROR that ABORTS this function --
 	## every restore below would silently never run. Coerce element by element.
 	achievements_earned_this_session = []

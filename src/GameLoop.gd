@@ -5587,6 +5587,10 @@ func _start_autogrind(config: Dictionary) -> void:
 		AutogrindSystem.system_collapse.connect(_on_autogrind_system_collapse)
 	if not AutogrindSystem.meta_boss_spawned.is_connected(_on_autogrind_meta_boss_spawned):
 		AutogrindSystem.meta_boss_spawned.connect(_on_autogrind_meta_boss_spawned)
+	if not AutogrindSystem.post_collapse_penalty_applied.is_connected(_on_autogrind_post_collapse_penalty):
+		AutogrindSystem.post_collapse_penalty_applied.connect(_on_autogrind_post_collapse_penalty)
+	if not AutogrindSystem.post_collapse_penalty_expired.is_connected(_on_autogrind_post_collapse_expired):
+		AutogrindSystem.post_collapse_penalty_expired.connect(_on_autogrind_post_collapse_expired)
 
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
@@ -6390,6 +6394,24 @@ func _on_autogrind_region_cracked_in_place(region_id: String, crack_level: int, 
 ## The collapse itself, on the surface the player is actually watching. Mirrors the corruption-band
 ## handler above: a toast plus a line in the battle summary, because the console the grind runs in is
 ## BattleScene's, not AutogrindUI's.
+## The collapse toast lands and then the multiplier silently stops climbing for ten battles.
+## Naming the cap and the countdown is the difference between a consequence and a bug report.
+func _on_autogrind_post_collapse_penalty(capped_max: float, battles: int) -> void:
+	var msg: String = "AFTERSHOCK — efficiency capped at %.1fx for %d battles" % [capped_max, battles]
+	_show_autogrind_toast(msg)
+	_autogrind_battle_summaries.append("[color=#ff8844]%s[/color]" % msg)
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+
+
+func _on_autogrind_post_collapse_expired(restored_max: float) -> void:
+	var msg: String = "Aftershock passed — efficiency cap restored to %.1fx" % restored_max
+	_show_autogrind_toast(msg)
+	_autogrind_battle_summaries.append("[color=#44ff44]%s[/color]" % msg)
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+
+
 func _on_autogrind_system_collapse() -> void:
 	var n: int = AutogrindSystem.collapse_count
 	_show_autogrind_toast("SYSTEM COLLAPSE #%d — reality is fragmenting" % n)

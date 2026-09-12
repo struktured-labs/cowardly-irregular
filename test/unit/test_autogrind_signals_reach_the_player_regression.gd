@@ -27,6 +27,12 @@ const REACHES_PLAYER := {
 	"region_rotation_suggested": "listener:GameLoop.gd",
 	"corruption_threshold_crossed": "listener:GameLoop.gd",
 	"system_collapse": "collapse_count",
+	## The collapse toast lands and then the multiplier stops climbing for ten battles. Both edges
+	## of that penalty were print()-only, so the console could not have shown them even when OPEN.
+	## Justified by the subscription, not a counter — post_collapse_debuff_battles reaches the stats
+	## dict but no UI renders it, which is how the whole penalty stayed invisible.
+	"post_collapse_penalty_applied": "listener:GameLoop.gd",
+	"post_collapse_penalty_expired": "listener:GameLoop.gd",
 	"meta_boss_spawned": "meta_bosses_spawned",
 	## Was "fatigue_events_triggered" — and that counter was TRUE about the count and FALSE about the
 	## content. Six authored descriptions ("Inventory anomaly — items corrupted") reached NOBODY while
