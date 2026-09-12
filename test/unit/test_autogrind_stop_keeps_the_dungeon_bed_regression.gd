@@ -20,10 +20,15 @@ extends GutTest
 ## `_derive_current_scene_music_key()`; two callers wanted the same answer and
 ## only one of them asked the authority.
 ##
-## ⚠️ THE FALL-THROUGH IS NOT WORLD-AWARE, which is what makes it audible rather
-## than merely wrong. `_start_overworld_music` does not consult the world suffix
-## at all, so it cannot degrade gracefully to the local overworld — every one of
-## the eight lands on the same medieval bed.
+## ⚠️ SEVERITY DOWNGRADED 2026-09-12, exactly as the arm below asked to be re-read.
+## The fall-through IS world-aware now: the dispatcher's `_:` arm composes the
+## current world's overworld bed instead of calling `_start_overworld_music`
+## directly. So these eight land on the wrong ROOM in the right WORLD — an
+## overworld bed inside a dungeon — rather than on World 1's bed inside World 6.
+## Still worth guarding, and for the original reason: the entry path is correct, so
+## nothing routine revisits the state where it goes wrong. `_start_overworld_music`
+## remains a hardcoded `overworld_medieval` and is still the floor when a world has
+## no bed of its own; it simply is no longer what the default reaches first.
 
 const GAMELOOP := "res://src/GameLoop.gd"
 const SOUNDMANAGER := "res://src/audio/SoundManager.gd"
@@ -155,22 +160,28 @@ func test_the_map_id_and_the_area_id_really_do_sound_different() -> void:
 		"SCOPE control: the AREA id resolved to no track at all — the probe is not reaching the manifest, so a difference below would be meaningless")
 	assert_eq(by_area, "dungeon_abstract",
 		"entering Null Chamber should resolve to dungeon_abstract, got '%s'" % by_area)
-	assert_eq(by_map, "overworld_medieval",
-		"the MAP id should fall through to the hardcoded overworld bed, got '%s' — if this changed, the severity of the regression changed with it" % by_map)
+	assert_eq(by_map, "overworld_abstract",
+		"the MAP id should fall through to THIS WORLD's overworld bed, got '%s'. It was overworld_medieval until the default arm became world-aware (2026-09-12); if it is medieval again the default regressed, and if it is dungeon_abstract the arm was added and this guard can retire" % by_map)
 	assert_ne(by_area, by_map,
 		"the two vocabularies now resolve to the same track, so passing either is safe and this guard can be retired")
 
 
-func test_the_fallthrough_is_still_the_hardcoded_medieval_bed() -> void:
-	## Records WHY this matters rather than restating that it happens. If the
-	## default arm ever becomes world-aware, the bug downgrades from "wrong
-	## world" to "wrong room" and this guard's urgency should be re-read.
+func test_the_fallthrough_degrades_by_world_and_the_medieval_floor_remains() -> void:
+	## ⛔ THIS ARM USED TO READ `_start_overworld_music` AND WAS ABOUT TO LIE. Its two
+	## asserts stayed TRUE after the default became world-aware — that function is
+	## untouched and still names overworld_medieval — while its subject, "the
+	## fall-through is not world-aware", had become false. Green and misleading,
+	## because it pinned the wrong function: the one that plays a bed rather than the
+	## one that DECIDES which. Asserting the deciding site instead.
 	var sm: String = _src(SOUNDMANAGER)
+	var at: int = sm.find("func _start_area_music_deferred")
+	assert_gt(at, 0, "SCOPE control: the dispatcher is not there to read")
+	var dispatch: String = sm.substr(at, sm.find("\nfunc ", at + 10) - at)
+	assert_gt(dispatch.find("_get_current_world_suffix"), 0,
+		"the dispatcher's default no longer consults the world suffix — an unrouted key is back to playing World 1's bed in every world, which is the severity this file measures")
+
 	var start: int = sm.find("func _start_overworld_music")
 	assert_gt(start, 0, "SCOPE control: _start_overworld_music not found")
-	var end: int = sm.find("\nfunc ", start + 10)
-	var body: String = sm.substr(start, end - start)
+	var body: String = sm.substr(start, sm.find("\nfunc ", start + 10) - start)
 	assert_gt(body.find("overworld_medieval"), 0,
-		"_start_overworld_music no longer names overworld_medieval — if it became world-aware, the fall-through now plays the local overworld instead of W1's, which changes what this regression sounds like")
-	assert_eq(body.find("_get_current_world_suffix"), -1,
-		"_start_overworld_music now consults the world suffix — it degrades gracefully; re-read whether the map/area gap is still worth guarding this hard")
+		"_start_overworld_music no longer names overworld_medieval — it is the floor the world-aware default falls back to when a world has no bed, and without it that floor is gone")
