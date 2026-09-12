@@ -524,8 +524,25 @@ fi
 # manifest entry. Asserting a POSITIVE marker rather than the absence of errors:
 # "no errors" is also what an empty log looks like.
 echo "[${PLAT}] gate 3/4: boot smoke"
-( cd "$OUT_DIR" && timeout 240 ${BOOT_RUNNER[@]+"${BOOT_RUNNER[@]}"} "./${ARTIFACT}" \
-    --headless --quit ) > "tmp/${PLAT}_boot.log" 2>&1 || true
+# ⛔ THE TWO BOOT LOGS WERE INDISTINGUISHABLE BY CONTENT. Measured on v3.33.316-alpha's archive:
+# both carry "[GAME] Started", both carry a byte-identical "Godot Engine v4.4.1.stable..." banner,
+# and neither carries a wine/drive-letter path. The platform identity of this evidence lived
+# ENTIRELY IN THE FILENAME. The chain is correct -- `cd build/windows` and the Linux binary is
+# not in that directory -- but the Windows boot smoke is the ONLY thing proving the .exe runs at
+# all, and if BOOT_RUNNER or ARTIFACT were ever mis-wired the logs would look exactly the same.
+# So record the subject INSIDE the log: what was run, and the magic bytes of the thing run.
+_ARTID="$(cd "$(dirname "$0")" && pwd)/artifact_identity.sh"
+[ -x "$_ARTID" ] || {
+    echo "[${PLAT}] BLOCKED: ${_ARTID} missing or not executable — refusing to record an unidentified boot." >&2
+    exit 2; }
+_RUNNER="${BOOT_RUNNER[*]+${BOOT_RUNNER[*]}}"
+[ -n "$_RUNNER" ] || _RUNNER="<native>"
+{
+    echo "[${PLAT}] boot subject: runner=${_RUNNER} path=${OUT_DIR}/${ARTIFACT}"
+    echo "[${PLAT}] boot subject: $("$_ARTID" "${OUT_DIR}/${ARTIFACT}" 2>&1)"
+    ( cd "$OUT_DIR" && timeout 240 ${BOOT_RUNNER[@]+"${BOOT_RUNNER[@]}"} "./${ARTIFACT}" \
+        --headless --quit )
+} > "tmp/${PLAT}_boot.log" 2>&1 || true
 _require_marker_live "[GAME] Started"
 if ! grep -q "\[GAME\] Started" tmp/${PLAT}_boot.log; then
     echo "[${PLAT}] BLOCKED: exported binary did not reach '[GAME] Started'" >&2
