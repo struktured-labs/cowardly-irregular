@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## A system collapse and a meta-boss spawn are the two loudest beats the grind has, and both were
 ## announced to a panel the player cannot see.
 ##
@@ -105,18 +107,7 @@ func test_the_console_really_is_hidden_during_a_grind() -> void:
 ## and a raw reader passes 5/5. Region half is a parity split — stateless, nothing to desync.
 ## `must_survive` is REQUIRED so no call site can omit the positive control.
 func _code_only(src: String, must_survive: String) -> String:
-	var out: PackedStringArray = []
-	for line in src.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			continue
-		out.append(line)
-	var parts := "\n".join(out).split("\"\"\"")
-	var kept: PackedStringArray = []
-	for i in parts.size():
-		if i % 2 == 0:
-			kept.append(parts[i])
-	var stripped := "".join(kept)
+	var stripped: String = str(GdSource.split(src)["code"])
 	assert_true(stripped.contains(must_survive),
-		"CONTROL: the stripper removed a known CODE site (%s) — every assert below measures nothing" % must_survive)
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped
-

@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## While an autogrind runs, the player has four controls — and the F1 reference, the one screen
 ## struktured asked for so it would be "really easy to know all the buttons", had NO AUTOGRIND
 ## SECTION AT ALL. Zero mentions of autogrind, turbo or tier. That was the original defect.
@@ -299,18 +301,7 @@ func _rows_of(block: String) -> Array:
 ## Comment lines dropped, so a source-presence assert cannot be satisfied by an explanation of the
 ## very defect it guards. `#` covers `##` docstring comments too.
 func _code_only(src: String, must_survive: String) -> String:
-	var out: PackedStringArray = []
-	for line in src.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			continue
-		out.append(line)
-	var parts := "\n".join(out).split("\"\"\"")
-	var kept: PackedStringArray = []
-	for i2 in parts.size():
-		if i2 % 2 == 0:
-			kept.append(parts[i2])
-	var stripped := "".join(kept)
+	var stripped: String = str(GdSource.split(src)["code"])
 	assert_true(stripped.contains(must_survive),
-		"CONTROL: the stripper removed a known CODE site (%s) — every assert below measures nothing" % must_survive)
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped
-

@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## A region cracks every 20 consecutive wins and applies min(level * 0.15, 0.75) to every reward
 ## after it — up to -75%, live, through on_battle_victory's `reward_scale = yield * (1 - penalty)`.
 ##
@@ -104,20 +106,7 @@ func test_the_advance_path_still_warps() -> void:
 ## `must_survive` is REQUIRED, not conventional, so no call site can omit the positive control
 ## (@cowir-controller's shape): over-stripping and correct stripping are otherwise the same green.
 func _code_only(src: String, must_survive: String) -> String:
-	var out: PackedStringArray = []
-	for line in src.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			continue
-		out.append(line)
-	var no_hash := "\n".join(out)
-	var parts := no_hash.split("\"\"\"")
-	var kept: PackedStringArray = []
-	for i in parts.size():
-		if i % 2 == 0:
-			kept.append(parts[i])
-	var stripped := "".join(kept)
+	var stripped: String = str(GdSource.split(src)["code"])
 	assert_true(stripped.contains(must_survive),
-		("CONTROL: the stripper removed a known CODE site (%s). An over-aggressive strip and a " +
-		"correct one are the same green, so every assert below would be measuring nothing") % must_survive)
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped
-

@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## The autogrind console's hint strip rendered "X / West (Nintendo Y)" and "Start / Plus" — that is
 ## BUTTON_LABELS, the REMAP-SCREEN vocabulary, which names every family at once because a player
 ## rebinding a button needs to recognise it whatever pad they hold. In a HUD it is three button
@@ -309,16 +311,15 @@ func test_an_editor_legend_never_derives_from_ui_menu() -> void:
 	## the defect whatever token it happens to render today, so the guard bans the call, not a value.
 	var offenders: Array = []
 	for path in EDITORS.keys():
-		if _code_only_lines(FileAccess.get_file_as_string(path)).contains("hint_for_action(\"ui_menu\")"):
+		if _code_only_lines(FileAccess.get_file_as_string(path), "func ").contains("hint_for_action(\"ui_menu\")"):
 			offenders.append(EDITORS[path])
 	assert_eq(offenders, [],
 		"a grid editor legend derives from ui_menu — correct about the InputMap, wrong about the player: both its keys are eaten earlier. Use the pad index plus the key that actually saves")
 
 
 ## Comments stripped so a note ABOUT the banned call is not itself a finding.
-func _code_only_lines(src: String) -> String:
-	var out := PackedStringArray()
-	for l in src.split("\n"):
-		var h := l.find("#")
-		out.append(l if h == -1 else l.substr(0, h))
-	return "\n".join(out)
+func _code_only_lines(src: String, must_survive: String) -> String:
+	var stripped: String = str(GdSource.split(src)["code"])
+	assert_true(stripped.contains(must_survive),
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
+	return stripped

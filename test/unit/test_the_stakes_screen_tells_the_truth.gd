@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## The Tier-1 dashboard told the player permadeath staking pays "3x EXP". It does not, and the
 ## player is opting into a disk-persisted permanent character death on the strength of it.
 ##
@@ -108,17 +110,7 @@ func test_the_multiplier_is_still_unwired() -> void:
 ## half is a parity split — stateless, nothing to desync. `must_survive` is REQUIRED so no call site
 ## can omit the positive control; over-stripping and correct stripping are otherwise the same green.
 func _code_only(src: String, must_survive: String) -> String:
-	var out: PackedStringArray = []
-	for line in src.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			continue
-		out.append(line)
-	var parts := "\n".join(out).split("\"\"\"")
-	var kept: PackedStringArray = []
-	for i in parts.size():
-		if i % 2 == 0:
-			kept.append(parts[i])
-	var stripped := "".join(kept)
+	var stripped: String = str(GdSource.split(src)["code"])
 	assert_true(stripped.contains(must_survive),
-		"CONTROL: the stripper removed a known CODE site (%s) — every assert below measures nothing" % must_survive)
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped

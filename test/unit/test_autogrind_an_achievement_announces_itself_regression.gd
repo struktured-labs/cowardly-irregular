@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## Autogrind achievements were awarded in exactly one place: inside AutogrindSummary._build_ui().
 ## Persistence was therefore a side effect of RENDERING A SCREEN — a player crossing 100 battles
 ## in a three-hour session was told nothing until the session ended, and a summary that never
@@ -218,17 +220,7 @@ func _read(path: String) -> String:
 ## Order matters: '#' lines go first (line-addressable, stateless), THEN the docstring parity
 ## split. Splitting first lets a '"""' inside a comment flip parity and eat real code.
 func _code_only(src: String, must_survive: String) -> String:
-	var out: PackedStringArray = []
-	for line in src.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			continue
-		out.append(line)
-	var parts := "\n".join(out).split("\"\"\"")
-	var kept: PackedStringArray = []
-	for i in parts.size():
-		if i % 2 == 0:
-			kept.append(parts[i])
-	var stripped := "\n".join(kept)
+	var stripped: String = str(GdSource.split(src)["code"])
 	assert_true(stripped.contains(must_survive),
 		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped

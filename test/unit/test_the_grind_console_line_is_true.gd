@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## Every control the grind console advertises must actually be bound where that line is shown.
 ##
 ## The line lives in BattleScene's autogrind console; the live handler during a grind is GameLoop's
@@ -16,27 +18,15 @@ const BS := "res://src/battle/BattleScene.gd"
 const GL := "res://src/GameLoop.gd"
 
 
-func _code_only(src: String) -> String:
-	var out := PackedStringArray()
-	var in_doc := false
-	for line in src.split("\n"):
-		var t := line.strip_edges()
-		if in_doc:
-			if t.ends_with("\"\"\""):
-				in_doc = false
-			continue
-		if t.begins_with("\"\"\""):
-			if not (t.length() > 5 and t.ends_with("\"\"\"")):
-				in_doc = true
-			continue
-		var h: int = line.find("#")
-		out.append(line.substr(0, h) if h >= 0 else line)
-	return "\n".join(out)
+func _code_only(src: String, must_survive: String) -> String:
+	var stripped: String = str(GdSource.split(src)["code"])
+	assert_true(stripped.contains(must_survive),
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
+	return stripped
 
 
-## What GameLoop's AUTOGRIND branch actually binds, as {label: true}.
 func _bound_controls() -> Dictionary:
-	var src: String = _code_only(FileAccess.get_file_as_string(GL))
+	var src: String = _code_only(FileAccess.get_file_as_string(GL), "func ")
 	var i: int = src.find("LoopState.AUTOGRIND")
 	assert_gt(i, -1, "CONTROL: the AUTOGRIND branch was found to read")
 	var branch: String = src.substr(i, 4000)
@@ -62,7 +52,7 @@ func _bound_controls() -> Dictionary:
 ## derived-token arm and left this one GREEN. The pad path is everything after the keyboard
 ## early-return, so that is what gets read.
 func _advertised() -> Dictionary:
-	var src: String = _code_only(FileAccess.get_file_as_string(BS))
+	var src: String = _code_only(FileAccess.get_file_as_string(BS), "func ")
 	var i: int = src.find("func _grind_console_controls")
 	assert_gt(i, -1, "CONTROL: the console-line builder was found")
 	var body: String = src.substr(i, src.find("\nfunc ", i + 10) - i)
@@ -121,7 +111,7 @@ func test_every_bound_control_is_advertised() -> void:
 func test_the_pause_token_is_derived_not_frozen() -> void:
 	## Pause is the one whose pad binding is an ACTION rather than a raw key, so the caption must go
 	## through the action or it freezes one family's letter.
-	var src: String = _code_only(FileAccess.get_file_as_string(BS))
+	var src: String = _code_only(FileAccess.get_file_as_string(BS), "func ")
 	var i: int = src.find("func _grind_console_controls")
 	var body: String = src.substr(i, src.find("\nfunc ", i + 10) - i)
 	assert_true(body.contains("hint_for_action(\"battle_toggle_auto\")"),
