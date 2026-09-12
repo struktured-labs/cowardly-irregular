@@ -169,6 +169,11 @@ func test_the_grammar_only_advertises_elements_something_is_actually_weak_to() -
 	assert_gt(real.size(), 3, "CONTROL: the bestiary declares weaknesses at all (%s)" % str(real.keys()))
 
 	var prompt: String = FileAccess.get_file_as_string("res://src/llm/DialoguePrompts.gd")
+	## Same reason as the forecast arm next door: a prose anchor can recur where a function name
+	## cannot. If the grammar ever documents this condition twice, find() picks one and this arm
+	## silently checks the wrong paragraph.
+	assert_eq(prompt.count("enemy_weak_to takes an 'element' field"), 1,
+		"the grammar paragraph anchor must be unique, or this arm reads whichever copy comes first")
 	var start: int = prompt.find("enemy_weak_to takes an 'element' field")
 	assert_gt(start, -1, "the grammar must document the condition")
 	var para: String = prompt.substr(start, 420)
@@ -181,6 +186,15 @@ func test_the_grammar_only_advertises_elements_something_is_actually_weak_to() -
 	for e in claimed:
 		if not real.has(e):
 			phantom.append(e)
+	## ⚠️ The REMEDY goes in the offender string, not this paragraph. GUT prints `at line -1` for a
+	## source-scanning assert, so the builder is the entire locator a reader gets — and this guard is
+	## CROSS-LANE: it reads src/llm/DialoguePrompts.gd, which the ai lane edits, so the person who
+	## reds it is usually not me and cannot be expected to open this file (@cowir-story, msg 10692).
+	var remedy: Array = []
+	for e in phantom:
+		remedy.append("'%s' in AUTOBATTLE_GRAMMAR_DESCRIPTION (src/llm/DialoguePrompts.gd): either "
+			% e + "drop it from the bestiary-weakness list in that paragraph, or give some monster "
+			+ "a `weaknesses` entry for it in data/monsters.json")
 	assert_eq(phantom.size(), 0,
 		"the grammar offers an element NOTHING in the bestiary is weak to, so a rule composed with "
-		+ "it can never fire: " + str(phantom))
+		+ "it can never fire. " + " · ".join(remedy))
