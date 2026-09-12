@@ -162,7 +162,12 @@ func _set_current_map_id(id: String) -> void:
 	if GameState and "current_world" in GameState:
 		var w: int = _get_world_for_map(id)
 		# Shared interiors (inn/shop/quest rooms) carry no world in their id, so prefix matching zeroes them to W1 — the village we entered from is the truth.
-		if id in INTERIOR_MAP_IDS and _village_origin_id != "":
+		# 2026-09-12: only for rooms that name no world. `_village_origin_id` is set to
+		# whatever map you came FROM, which is right for exit routing and wrong for
+		# identity — teleport from industrial_overworld into the Scriptura guild (W1) and
+		# it reported World 4, dressing the party in industrial costume and playing W4's
+		# battle bed inside a World 1 room. A named room's own id outranks the origin.
+		if id in INTERIOR_MAP_IDS and _village_origin_id != "" and not _map_id_declares_its_world(id):
 			w = _get_world_for_map(_village_origin_id)
 		if w != GameState.current_world:
 			GameState.current_world = w
@@ -184,23 +189,47 @@ func _set_current_map_id(id: String) -> void:
 ## covers harmonia / dragon caves / 5 side villages / Castle Harmonia
 ## / Whispering Cave). Adding a new W2-W6 region without updating
 ## this needs a push_warning at the call site so the gap is loud.
+## map-id prefix -> world, ONE table read by both the resolver and the predicate below.
+## Two parallel lists would drift, and a drift between two lists that must agree is the
+## defect class this whole block exists to fix.
+##
+## W1 IS LISTED EXPLICITLY, which it was not before. Its ids carry no shared prefix — the
+## medieval overworld is literally `overworld` — so "no match" and "World 1" were the same
+## answer, and `_get_world_for_map("scriptura_guild") -> 1` carried no information: it was
+## the default firing, not a match. Naming them is what lets `_map_id_declares_its_world`
+## tell those two apart.
+const WORLD_PREFIXES: Array = [
+	["suburban_", 2], ["maple_", 2], ["enrichment_", 2],
+	["steampunk_", 3], ["brasston", 3],
+	["industrial_", 4], ["rivet_row", 4], ["assembly_", 4],
+	["futuristic_", 5], ["node_prime", 5], ["root_process", 5],
+	["abstract_", 6], ["vertex", 6], ["null_chamber", 6],
+	# W1 — Medieval. `overworld` is the whole id, not a prefix of another world's:
+	# "suburban_overworld".begins_with("overworld") is false.
+	["overworld", 1], ["harmonia_", 1], ["castle_harmonia", 1], ["whispering_cave", 1],
+	["scriptura_", 1], ["eldertree_", 1], ["frosthold_", 1], ["grimhollow_", 1],
+	["ironhaven_", 1], ["sandrift_", 1], ["tavern_", 1],
+]
+
+
+## True when the id NAMES a world, rather than merely failing to name another one.
+## The distinction the caller needs: a room that declares W1 is in W1 wherever you
+## arrived from; a room that declares nothing (`inn_interior`, `shop_interior_item` —
+## one id, eleven villages) has no world of its own and must borrow the origin's.
+func _map_id_declares_its_world(id: String) -> bool:
+	for entry in WORLD_PREFIXES:
+		if id.begins_with(str(entry[0])):
+			return true
+	return false
+
+
 func _get_world_for_map(id: String) -> int:
-	# W2 — Suburban
-	if id.begins_with("suburban_") or id.begins_with("maple_heights"):
-		return 2
-	# W3 — Steampunk
-	if id.begins_with("steampunk_") or id.begins_with("brasston"):
-		return 3
-	# W4 — Industrial
-	if id.begins_with("industrial_") or id.begins_with("rivet_row") or id.begins_with("assembly_"):
-		return 4
-	# W5 — Futuristic
-	if id.begins_with("futuristic_") or id.begins_with("node_prime") or id == "root_process":
-		return 5
-	# W6 — Abstract
-	if id.begins_with("abstract_") or id.begins_with("vertex") or id == "null_chamber":
-		return 6
-	# W1 — Medieval (default; covers all original-world ids)
+	for entry in WORLD_PREFIXES:
+		if id.begins_with(str(entry[0])):
+			return int(entry[1])
+	# Unrecognised ids still answer W1, unchanged: callers that only want a world
+	# number keep the old contract. Ask _map_id_declares_its_world when the
+	# difference between "W1" and "no idea" matters.
 	return 1
 
 
