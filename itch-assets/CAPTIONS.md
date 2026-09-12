@@ -305,3 +305,39 @@ matched any file containing the shot's first word: `battle` "found" 165 sources 
 `title_screen` resolved to a *test* file — over-broad, and its output looked like a result. The
 second (used above) is exact-basename, which is too narrow: it leaves 9 unmapped. Neither is
 wrong about the 9 it names; the first would have inflated the list and the second under-reports.
+
+## ⛔ 2026-09-12 — THE AUDIT ABOVE IS SUPERSEDED BY A TOOL. Do not quote its numbers.
+
+The section above says *"at least 9 of 20"*, measured `v3.33.267-alpha..v3.33.299-alpha`. The
+store now serves **`v3.33.337-alpha`**. That figure was correct when written and is no longer
+the answer to anything — **a staleness number decays faster than the thing it measures**, because
+it is pinned to a tag the moment it is typed, and it was sitting in the document someone reads
+before deciding whether to re-shoot.
+
+Re-derive it instead of trusting a figure with no re-measurement date:
+
+```sh
+tools/store_shot_staleness.py --from v3.33.267-alpha --to <tag the store serves> \
+    --shots itch-assets/screenshots          # --json for other tooling
+```
+
+The tool was **validated against the audit above on the audit's own range** before being used on
+a new one: `.267..299` reproduces `{'changed': 9, 'unchanged': 2, 'unmapped': 9}` and the same
+nine names. It agrees with the hand-run sweep exactly; that is why its new number is worth
+something.
+
+**Reading at `v3.33.337-alpha`: AT LEAST 10 of 20 · 1 unchanged · 9 unmapped.**
+
+🔑 **The tenth is `title_screen`, and it is the one this file warned about.** The audit put it in
+the *unchanged* column with the caveat *"renders a controls table that several lanes edited this
+session."* It has since moved, via `d1ded4380` — *"with no pad, name the face — never guess a
+family"*, the no-pad button-naming fix. **And line 112 of this file records that
+`title_screen.png` is the source for the provisional cover**, so the single shot that crossed
+buckets is the one feeding the store's cover image.
+
+⚠️ Still a candidate, not proof: the tool sees the scene *script*, never the *frame*. Whether
+that frame shows the corrected labels needs an eye, and `whispering_cave` being "unchanged"
+still means only that its script did not move.
+
+📌 The 9 unmapped (battle surfaces, field elites, data-driven dungeon floors) remain
+**unexamined, not current** — which is why the headline is a floor in the tool's output too.
