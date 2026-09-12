@@ -114,6 +114,9 @@ static func grind_reference_rows(device_name: String = "") -> String:
 	var rows: Array = [
 		[_reference_cell(pause), str(ACTION_KEYS["pause"]), "[color=lime]Pause / resume the grind[/color]"],
 		[_reference_cell(tier), str(ACTION_KEYS["tier_cycle"]), "Cycle monster tier"],
+		# Keyboard only: the dashboard binds index 6 for this, but at tier 0 no dashboard exists and
+		# the AUTOGRIND branch binds only KEY_R -- so a pad cell here would be dead half the time.
+		[REFERENCE_PAD_NONE, str(ACTION_KEYS["adjust_rules"]), "Adjust rules mid-grind"],
 		[_reference_cell(turbo), "Y", "Turbo — run it faster"],
 		[_reference_cell(stop), "%s / Esc" % str(ACTION_KEYS["exit"]), "Stop grinding and return"],
 	]
