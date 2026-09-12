@@ -166,9 +166,15 @@ func test_the_victory_overlay_calls_the_pickup_path() -> void:
 		"the loot strip no longer routes its coins through play_pickup — the item chip clips them again")
 	assert_false(src.contains('play_battle("gold_pickup")'),
 		"the coins are back on the battle player, where the next loot chip replaces them 0.22s later")
-	## NOT fixed, measured and left: loot_pop is 0.25s on a 0.22s cadence, so consecutive ITEM chips
-	## clip each other by 0.03s. That is the staccato the strip is built around — a design call,
-	## not a defect, and it belongs to whoever owns the overlay.
+	## MEASURED and left alone: loot_pop is 0.25s on a 0.22s cadence, so consecutive ITEM chips clip
+	## each other by 0.03s. ⚠️ This pin used to justify itself with "that is the staccato the strip
+	## is built around — a design call" — which I INFERRED from the cadence and never confirmed with
+	## the overlay's owner. A guard that forbids a change while citing an intent nobody stated is
+	## defending a preference dressed as a constraint (@cowir-music 2026-09-12, the same shape as a
+	## pin that required "Back (Minus)"). So the honest version: I did not evaluate whether item
+	## chips should layer, and this pin exists to make that change DELIBERATE, not to call the
+	## current routing correct. Move it and update this line with the reason — you cannot silence
+	## it green, only explain it green.
 	assert_true(src.contains('play_battle("loot_pop")'),
-		"CONTROL: loot_pop must still be on the battle player — moving it would be the design change this test declines to make")
+		"loot_pop left the battle player. That may well be right — consecutive item chips clip each other by 0.03s and nobody has ruled on whether they should layer. Update this pin with the reason; it is here so the change is deliberate, not because the current routing is known correct")
 
