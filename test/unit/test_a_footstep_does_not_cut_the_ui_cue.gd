@@ -65,7 +65,39 @@ func test_a_step_does_not_replace_a_ui_cue() -> void:
 func test_the_walk_loop_still_reaches_play_footstep() -> void:
 	## EXECUTION is not SELECTION: the asserts above prove the path works, none of them proves
 	## OverworldPlayer still calls it. A step that plays nothing is silent, not merely uncut.
-	var src: String = FileAccess.get_file_as_string("res://src/exploration/OverworldPlayer.gd")
-	assert_gt(src.length(), 10000, "CONTROL: OverworldPlayer source read back %d chars" % src.length())
+	## Was a RAW source read until 2026-09-12. Mutation-tested that day on the sibling group-attack
+	## guard: a call replaced by `pass  ## was ...play_flourish(...)` left it EC=0 · Passing 6 —
+	## the same shape @cowir-music hit in `1d1d83ff`. A commented-out call is a deleted call.
+	var raw := FileAccess.get_file_as_string("res://src/exploration/OverworldPlayer.gd")
+	var src := _code_only(raw)
+	assert_gt(src.length(), 10000, "CONTROL: OverworldPlayer CODE read back %d chars" % src.length())
+	assert_lt(src.length(), raw.length(),
+		"CONTROL: stripping removed nothing — the stripper is inert and this arm is a raw read again")
 	assert_true(src.contains("play_footstep("),
 		"the walk loop no longer calls play_footstep — footsteps are silent, which this test would otherwise call 'not cutting anything'")
+
+
+func _code_only(text: String) -> String:
+	## Presence checks read CODE, never prose. Quote- and escape-aware; the derivation and its
+	## case table live in test_group_attack_cue_survives_its_own_hits.gd.
+	var out: PackedStringArray = []
+	for line in text.split("\n"):
+		var quote := ""
+		var cut := -1
+		var i := 0
+		while i < line.length():
+			var c := line[i]
+			if quote != "":
+				if c == "\\":
+					i += 2
+					continue
+				if c == quote:
+					quote = ""
+			elif c == "\"" or c == "'":
+				quote = c
+			elif c == "#":
+				cut = i
+				break
+			i += 1
+		out.append(line.substr(0, cut) if cut > -1 else line)
+	return "\n".join(out)

@@ -134,7 +134,12 @@ func _slurp_dir(root: String, ext: String, skip_file: String = "") -> String:
 				if not name.begins_with("."):
 					dirs.append(full)
 			elif name.ends_with(ext) and name != skip_file and not KEY_SPACE_DEFINERS.has(name):
-				out += _read(full)
+				## A key named ONLY in a comment is not a consumer, and this audit fails toward
+				## SILENCE — a phantom consumer suppresses a real orphan. MEASURED 2026-09-12:
+				## src/ is 22.8% comment and 0 of 338 keys flip when stripped, so this is
+				## preventive today, exactly like KEY_SPACE_DEFINERS above. JSON has no comments,
+				## so only .gd is stripped.
+				out += _code_only(_read(full)) if ext == ".gd" else _read(full)
 			name = d.get_next()
 		d.list_dir_end()
 	return out
@@ -450,3 +455,29 @@ func test_every_dynamic_prefix_exemption_is_load_bearing() -> void:
 		"be wrong. If the family really is built at runtime, the entry comes back the day a " +
 		"non-literal key lands — test_no_unreachable_sfx_keys names that key and that " +
 		"disposition.") % [inert.size(), inert])
+
+
+func _code_only(text: String) -> String:
+	## Presence checks read CODE, never prose. Quote- and escape-aware; the derivation and its
+	## case table live in test_group_attack_cue_survives_its_own_hits.gd.
+	var out: PackedStringArray = []
+	for line in text.split("\n"):
+		var quote := ""
+		var cut := -1
+		var i := 0
+		while i < line.length():
+			var c := line[i]
+			if quote != "":
+				if c == "\\":
+					i += 2
+					continue
+				if c == quote:
+					quote = ""
+			elif c == "\"" or c == "'":
+				quote = c
+			elif c == "#":
+				cut = i
+				break
+			i += 1
+		out.append(line.substr(0, cut) if cut > -1 else line)
+	return "\n".join(out)
