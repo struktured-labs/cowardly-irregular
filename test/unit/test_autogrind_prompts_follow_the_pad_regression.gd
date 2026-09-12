@@ -136,6 +136,22 @@ const DEFERRED := {}
 ## pattern would match, and ZERO change to any reachability caller count. So it closes a hole with no
 ## live instance, by the same standard as the escape handling above: a named boundary that defends
 ## nothing reads as diligence, which this file's own header calls out.
+##
+## 🔬 BRANCH SEPARABILITY, measured — so the next person to mutate this does not repeat the two runs
+## that taught nothing. @cowir-overworld's finding: an assert like `assert_false(contains(TRIPLE))` is
+## a TAUTOLOGY when the stripper SPLITS on the triple quote, because split() eats its delimiter.
+## Not the case here: this drops whole LINES, so a neutered docstring branch leaves the delimiter in
+## the output and the assert fires on the keep-logic. Confirmed by isolating each half:
+##
+##   docstring branch removed, # cut kept    Failing 1   the docstring case, alone
+##   # cut removed, docstring branch kept    Failing 2   the 5 stripper cases AND the reachability
+##                                                       arm — without the strip, COMMENTS naming
+##                                                       AutogrindHistoryScreen count as callers, so
+##                                                       `measured 2` flips the dead-hub verdict.
+##                                                       Fails toward ALARM, not a false clean.
+##   whole function -> `return src`          Failing 2   IDENTICAL signature to removing only the
+##                                                       # cut, so the sledgehammer cannot tell one
+##                                                       half from both. It is the run to skip.
 func _code_only(src: String) -> String:
 	var out := PackedStringArray()
 	## `in_block` lives OUTSIDE the line loop on purpose — a `"""` docstring spans lines, and the
@@ -502,3 +518,66 @@ func test_the_diagram_surfaces_really_are_out_of_this_patterns_reach() -> void:
 	assert_true(rx.search("  B: Exit") != null,
 		"CONTROL: the census pattern no longer matches a plain caption form, so every zero it reports is meaningless")
 
+
+## ⛔ THE BLANKET DOCSTRING STRIP IS SAFE ONLY WHILE NO SCANNED FILE ASSIGNS A TRIPLE-QUOTED REGION.
+## @cowir-ai's inversion: `"""` means DOCUMENTATION only until someone assigns it to a name. In
+## src/llm/DialoguePrompts.gd the regions are `const AUTOGRIND_GRAMMAR_DESCRIPTION := """…` — shipping
+## prompt CONTENT. Stripping there would delete the subject, so the fix inverts. **That is a per-file
+## measurement, not a language fact**, and _code_only above strips blindly.
+##
+## Measured when this arm was written: 0 assigned regions across 41 openers in the 4 scanned files that
+## have any. The day someone writes `const SOMETHING := """…"""` into one of them, this reds — which is
+## the moment the strip stops being safe and starts deleting the thing a census should read.
+func test_no_scanned_file_assigns_a_triple_quoted_region() -> void:
+	## The test is "is there CODE BEFORE THE QUOTE", not "does an assignment operator precede it".
+	## My first version enumerated operators — `(:=|=|:|\(|,|\[)\s*"""` — and MISSED 2 of the 6 real
+	## cases in src/: `return """…` (TitleScreen:519) and a triple quote after a call argument
+	## (HowToPlayOverlay:27). Wrong in the REASSURING direction: it reports a clean zero on a file
+	## that holds content. The prefix test needs no operator list and reproduces all 6.
+	var assigned: Array = []
+	var openers := 0
+	for d in LANE_DIRS:
+		var da := DirAccess.open(d)
+		if da == null:
+			continue
+		for f in da.get_files():
+			if not f.ends_with(".gd"):
+				continue
+			var in_block := false
+			var line_no := 0
+			for line in FileAccess.get_file_as_string("%s/%s" % [d, f]).split("\n"):
+				line_no += 1
+				var fences: int = line.count("\"\"\"")
+				## `fences >= 1`, not `== 1`: a ONE-LINE `const X := """caption"""` has two fences and an
+				## `== 1` gate skips it entirely — the same reassuring-direction miss one layer down.
+				if not in_block and fences >= 1:
+					openers += 1
+					if not _prefix_before_quote(line).is_empty():
+						assigned.append("%s:%d %s" % [f, line_no, line.strip_edges().substr(0, 48)])
+					in_block = fences % 2 == 1
+					continue
+				if in_block and fences >= 1:
+					in_block = false
+
+	## ✅ VALIDATE BEFORE TRUSTING THE ZERO — @cowir-music's rule. Every form below is a form that
+	## EXISTS in src/ today, so this control fails if the classifier stops seeing a real case.
+	for known in ['const FOO := """x"""', '\treturn """x"""', '\t\tvar shader_code = """',
+			'\t_face_cell("ui_accept", "East")) + """', '\t"key": """x"""']:
+		assert_false(_prefix_before_quote(known).is_empty(),
+			"classifier cannot see a real assigned form, so its zero is worthless: %s" % known)
+	for doc in ['"""Play transition when leaving battle"""', '\t"""Iris-close centered on party"""']:
+		assert_true(_prefix_before_quote(doc).is_empty(),
+			"classifier called a free docstring assigned — it would red every documented function: %s" % doc)
+
+	gut.p("  scanned openers: %d, assigned (content) regions: %d" % [openers, assigned.size()])
+	assert_gt(openers, 10,
+		"CONTROL: only %d triple-quote openers found — with none in range this arm cannot fail" % openers)
+	assert_eq(assigned, [],
+		("a scanned file now ASSIGNS a triple-quoted region, so it is CONTENT and _code_only is " +
+		"deleting it — a caption living in that const would be invisible to the census: %s") % [assigned])
+
+
+## Whatever precedes the first triple quote on a line, trimmed. Empty = a free docstring.
+func _prefix_before_quote(line: String) -> String:
+	var at: int = line.find("\"\"\"")
+	return "" if at < 0 else line.substr(0, at).strip_edges()
