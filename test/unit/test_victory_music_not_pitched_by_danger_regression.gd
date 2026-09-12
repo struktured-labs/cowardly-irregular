@@ -25,11 +25,17 @@ func test_a_track_switch_ends_the_danger_envelope() -> void:
 	assert_almost_eq(SoundManager._danger_intensity, 0.0, 0.001, "and the danger level resets with the track")
 
 
-func test_play_music_kills_the_tween_in_source() -> void:
-	# The behavioral test above can pass on timing luck; pin the mechanism too.
-	var src := FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
-	var i: int = src.find("func play_music(")
-	assert_gt(i, -1, "CONTROL")
-	var body: String = src.substr(i, 3000)
-	assert_true(body.contains("_danger_tween.kill()"), "play_music must kill an in-flight danger tween")
-	assert_true(body.contains("_danger_intensity = 0.0"), "and zero the danger level for the new track")
+func test_the_switch_kills_the_tween_not_just_the_pitch() -> void:
+	# The test above waits out the envelope, so a lucky 1.0 could carry it. This one
+	# reads the mechanism the instant the track changes: the tween must be GONE, not
+	# merely overwritten. (Was a source-text pin on the inline kill; that block is
+	# reset_danger() since 8a15eef1, and the behaviour is what mattered.)
+	SoundManager.set_danger_intensity(1.0)
+	await get_tree().process_frame
+	assert_true(SoundManager._danger_tween != null and SoundManager._danger_tween.is_valid(),
+		"CONTROL: the danger tween is live mid-envelope")
+	SoundManager.play_music("victory")
+	assert_true(SoundManager._danger_tween == null or not SoundManager._danger_tween.is_valid(),
+		"play_music must kill the in-flight danger tween, not race it")
+	assert_almost_eq(SoundManager._danger_intensity, 0.0, 0.001,
+		"and zero the danger level for the new track")
