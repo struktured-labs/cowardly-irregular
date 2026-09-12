@@ -3077,14 +3077,16 @@ func _get_terrain_battle_track() -> String:
 			return "battle_suburban"
 		"steampunk":
 			return "battle_steampunk"
-		"urban":
-			return "battle_urban"
 		"industrial":
 			return "battle_industrial"
 		"digital":
 			return "battle_digital"
-		"void":
-			return "battle_void"
+		## `urban` and `void` had arms here naming `battle_urban` / `battle_void`. Neither is a
+		## manifest key, and `urban` is emitted by nothing — so one was unreachable and the other
+		## reached the right bed by FALLTHROUGH, not by the arm: play_music rewrites an unknown
+		## `battle_*` to `battle_<world suffix>`. An arm exists to name a DEDICATED bed; with no bed
+		## to name, the generic path below is both correct and the single definer. `abstract` has no
+		## arm for the same reason and lands on battle_abstract the same way (cowir-music, msg 10472).
 		_:
 			return "battle"
 
