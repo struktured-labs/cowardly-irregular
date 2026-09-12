@@ -8,6 +8,8 @@
 ## next pass, so the truncation and newline-stripping arms are the real guards.
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 
 const CM := preload("res://src/llm/ConversationMemory.gd")
 const DP := preload("res://src/llm/DialoguePrompts.gd")
@@ -389,9 +391,16 @@ func test_no_block_junction_glues_in_any_order() -> void:
 
 
 ## Strip `#` comments (and so `##` docstrings) so a source assert stands on code.
-func _code_only(src: String) -> String:
-	var out: PackedStringArray = PackedStringArray()
-	for line in src.split("\n"):
-		var hash_at: int = line.find("#")
-		out.append(line if hash_at == -1 else line.substr(0, hash_at))
-	return "\n".join(out)
+## Delegates to the shared stripper. The private `#`-only pass this replaces could not
+## touch a `"""` region, and this guard's target carries 132 lines of const grammar prose
+## (AUTOBATTLE/AUTOGRIND_GRAMMAR_DESCRIPTION) on top of 415 comment lines.
+##
+## Measured equivalent on every token this file counts — `build_npc_opening` 8 raw -> 3 code
+## either way, `_context_blocks(` 4 -> 4 — so this buys construction, not a changed verdict.
+## `must_survive` is required, because over-stripping and a correct strip are the same green.
+func _code_only(src: String, must_survive: String = "static func build_npc_opening(") -> String:
+	var code: String = str(GdSource.split(src)["code"])
+	assert_true(code.find(must_survive) != -1,
+		("STRIPPER CONTROL: '%s' is a known code site and must survive stripping — it did not, "
+		+ "so every count below is measuring the wrong text.") % must_survive)
+	return code
