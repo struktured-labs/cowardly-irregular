@@ -99,6 +99,19 @@ func test_declared_track_outranks_the_derived_key_in_source() -> void:
 		"the declared-track check must precede the masterite arm, otherwise a Masterite can never override its per-role bed")
 
 
+## Three rows, because the parity flip fails in TWO directions and one row cannot fail for both:
+## real code leaves the code half AND prose enters it. @cowir-sprites measured these against the
+## real scanner and inverted each to prove it fires; the prose row is the one a "does the code
+## survive" instinct leaves out, and it is the only one that catches a leak in the GOOD order.
+func test_a_fence_hidden_in_a_comment_does_not_flip_parity() -> void:
+	var q: String = "\"\"\""
+	var haz: String = "func a():\n\t# see the %s block below\n\tvar x = 1\n\t%sdoc naming FOO%s\n\tvar y = 2" % [q, q, q]
+	var code: String = str(GdSource.split(haz)["code"])
+	assert_true(code.contains("var x = 1"), "a %s inside a # comment must not flip parity — var x survives" % q)
+	assert_true(code.contains("var y = 2"), "...and neither does var y")
+	assert_false(code.contains("doc naming FOO"), "...and the PROSE never enters the code half")
+
+
 ## ⛔ PIN THE HELPER, NOT THE CORPUS (this lane's rule, earned across four lanes): six stripper
 ## costumes broke in one afternoon and each fix was blind to the next. A case table answers all
 ## of them in milliseconds and reds on the seventh.

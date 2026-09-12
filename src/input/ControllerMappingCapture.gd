@@ -84,9 +84,23 @@ func record(event: InputEvent) -> bool:
 	var token := binding_token(event)
 	if token == "":
 		return false
+	# ⛔ One physical input cannot serve two SDL controls, and a STICK STREAMS: a single flick
+	# emits every sample above the 0.5 gate, so without this one push claimed leftx, lefty,
+	# rightx, righty and two d-pad directions, all as a0, and the result still built.
+	if control_using(token) != "":
+		return false
 	bindings[current_control()] = token
 	index += 1
 	return true
+
+
+## The control already holding this token, or "". Also catches a player pressing the same
+## BUTTON for two prompts — SDL accepts the duplicate and then reports the wrong controls.
+func control_using(token: String) -> String:
+	for name in bindings:
+		if str(bindings[name]) == token:
+			return str(name)
+	return ""
 
 
 ## Skips the current control — legitimate for a pad with no Guide button or no right stick.

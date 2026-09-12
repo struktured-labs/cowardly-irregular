@@ -140,17 +140,26 @@ func _comment_start(line: String) -> int:
 ## the docstring bodies. `#` comments go after, never before — a docstring may legitimately contain one.
 func _code(path: String) -> String:
 	var raw := FileAccess.get_file_as_string(path)
-	var out := ""
-	var chunks: PackedStringArray = raw.split("\"\"\"")
-	for i in range(chunks.size()):
-		if i % 2 == 0:
-			out += str(chunks[i])
-	var stripped := ""
-	for line in out.split("\n"):
+	# ⚠️ ORDER IS LOAD-BEARING (@cowir-sprites 2026-09-12): a `"""` INSIDE a # comment flips the
+	# parity for the rest of the file — real code leaves the code half AND prose enters it, from one
+	# flip. Strip comments FIRST so such a delimiter is gone before the split ever sees it.
+	# Measured 0 occurrences in this corpus today: latent, not live. Inert, not safe by design.
+	var decommented := ""
+	for line in raw.split("\n"):
 		var l := str(line)
 		var at := _comment_start(l)
-		stripped += (l.substr(0, at) if at >= 0 else l) + "\n"
-	return stripped
+		decommented += (l.substr(0, at) if at >= 0 else l) + "\n"
+	# Rejoin with "\n", not "" — an empty join concatenates the text either side of a docstring into
+	# ONE line, creating adjacencies no line of the file has. For a presence assert that is a false
+	# POSITIVE (…conn + ect( satisfies contains("connect(")). A line break cannot be swallowed into
+	# the middle of a token. Measured 0 artifacts across this guard's literals; taking the shape that
+	# cannot have them rather than recording another "inert" (@cowir-autogrind, @cowir-adhoc).
+	var kept: Array = []
+	var chunks: PackedStringArray = decommented.split("\"\"\"")
+	for i in range(chunks.size()):
+		if i % 2 == 0:
+			kept.append(str(chunks[i]))
+	return "\n".join(PackedStringArray(kept))
 
 
 ## SOURCE. The behaviour arms pass the moment a scene answers; this is what makes DELETING an

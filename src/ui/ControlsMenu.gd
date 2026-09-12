@@ -663,6 +663,13 @@ func _handle_mapping_input(event: InputEvent) -> void:
 		return
 	if _mapping.record(event):
 		_advance_mapping()
+		return
+	# A refused event must SAY why — a walk that silently ignores you reads as a frozen screen.
+	var token: String = _mapping.binding_token(event)
+	if token != "" and _mapping_status:
+		var owner: String = _mapping.control_using(token)
+		if owner != "":
+			_mapping_status.text = "That input is already '%s'. Use a DIFFERENT control, or X to skip." % owner
 
 
 func _advance_mapping() -> void:

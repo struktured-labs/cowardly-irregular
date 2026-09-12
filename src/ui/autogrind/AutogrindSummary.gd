@@ -126,8 +126,11 @@ func _build_ui() -> void:
 	# newly earned this run render gold; already-unlocked render dim.
 	var gs := _get_game_state()
 	var split := AutogrindAchievementsScript.check_and_award(_stats, gs)
-	var newly: Array = split[0]
-	var previously: Array = split[1]
+	## check_and_award above still runs as a backstop (a threshold crossed on the final battle,
+	## or a grind that ended before any battle hook ran).
+	var tiers := split_session_new(split, _stats.get("achievements_earned_this_session", []))
+	var newly: Array = tiers[0]
+	var previously: Array = tiers[1]
 	var all_badges: Array = newly + previously
 
 	# Compute panel height from row count
@@ -302,6 +305,20 @@ func _get_game_state() -> Node:
 	if tree != null and tree.root != null:
 		return tree.root.get_node_or_null("GameState")
 	return null
+
+
+## Returns [newly, previously]. "New" means earned THIS session, NOT "unflagged until now":
+## the per-battle award has already written every flag by the time this screen builds, so the
+## flag test alone would render a freshly-earned badge dim. session_ids comes from the stats dict.
+static func split_session_new(split: Array, session_ids: Array) -> Array:
+	var newly: Array = split[0].duplicate()
+	var previously: Array = []
+	for a in split[1]:
+		if str(a.get("id", "")) in session_ids:
+			newly.append(a)
+		else:
+			previously.append(a)
+	return [newly, previously]
 
 
 func _measure_badge_width(a: Dictionary) -> float:

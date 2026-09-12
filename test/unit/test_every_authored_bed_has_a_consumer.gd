@@ -168,7 +168,11 @@ func _strip_comments(src: String) -> String:
 ## split on the delimiter: no state machine, nothing to desync (cowir-adhoc lost five
 ## verdicts to a stripper whose docstring toggle was `A or (B and C)`, 2026-09-12).
 func _code_and_docstrings(body: String) -> Array:
-	var parts: PackedStringArray = body.split("\"\"\"")
+	## ⛔ STRIP BEFORE THE FENCE. This had the same ordering defect as the shared helper until
+	## 2026-09-12: a `"""` inside a `#` comment flips parity for the rest of the file, losing real
+	## code from the code half and leaking prose into it. Zero such comments in src/ today, which
+	## is why no verdict here ever moved — occupancy, not design.
+	var parts: PackedStringArray = _strip_comments(body).split("\"\"\"")
 	var code: PackedStringArray = []
 	var doc: PackedStringArray = []
 	for i in parts.size():
@@ -187,6 +191,18 @@ func _code_and_docstrings(body: String) -> Array:
 ## "the bed found a consumer, delete the entry". Measured on a449f5ec: of the four ids
 ## quoted inside a docstring anywhere in src/, all four are also named in code or data,
 ## so the count is ZERO today. MEASURED INERT, not safe by design.
+## The same three rows against THIS file's own copy of the split — it had the same ordering
+## defect, and a guard whose corpus can lose code is worse than one that misses a docstring.
+func test_a_fence_hidden_in_a_comment_does_not_flip_this_files_split() -> void:
+	var q: String = "\"\"\""
+	var haz: String = "func a():\n\t# see the %s block below\n\tvar x = 1\n\t%sdoc naming FOO%s\n\tvar y = 2" % [q, q, q]
+	var pair: Array = _code_and_docstrings(haz)
+	var code: String = str(pair[0])
+	assert_true(code.contains("var x = 1"), "a %s inside a # comment must not flip parity — var x survives" % q)
+	assert_true(code.contains("var y = 2"), "...and neither does var y")
+	assert_false(code.contains("doc naming FOO"), "...and the PROSE never enters the code half, where it would answer the sweep")
+
+
 func test_no_bed_is_reached_by_prose_alone() -> void:
 	var paths: Array[String] = []
 	_files("res://src", ".gd", paths)
@@ -194,7 +210,7 @@ func test_no_bed_is_reached_by_prose_alone() -> void:
 	var doc_parts: PackedStringArray = []
 	for p in paths:
 		var pair: Array = _code_and_docstrings(FileAccess.get_file_as_string(p))
-		code_parts.append(_strip_comments(str(pair[0])))
+		code_parts.append(str(pair[0]))  ## already stripped, inside the split
 		doc_parts.append(str(pair[1]))
 	## JSON carries no docstrings, so data is all code side — and it is load-bearing:
 	## credits_medieval is named ONLY in a docstring in src/, and in a cutscene JSON.
