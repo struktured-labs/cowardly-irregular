@@ -462,9 +462,21 @@ case "${_EVIDENCE}" in
         elif [ -x tools/gate.sh ]; then
             [ -n "${_EVIDENCE}" ] && echo "[${PLAT}] gate 1: running the suite — ${_EVIDENCE#VERDICT=RUN }"
             mkdir -p tmp/gate_xdg
-            XDG_DATA_HOME="$PWD/tmp/gate_xdg" ./tools/gate.sh > tmp/${PLAT}_gate.log 2>&1 &
+            # Budgeted: run_tests.sh has no timeout and gate.sh adds none, so a WEDGE stops
+            # this chain silently instead of redding it. See deploy_web.sh's _SUITE_BUDGET_S
+            # note for why 2700s and for the measured proof that the signal reaches
+            # run_tests.sh's `trap ... EXIT INT TERM` -- the player-data net lives one level
+            # below gate.sh, and a timeout that stranded it would leave his settings and
+            # autobattle/ unrestored.
+            _SUITE_BUDGET_S="${SUITE_BUDGET_S:-2700}"
+            XDG_DATA_HOME="$PWD/tmp/gate_xdg" timeout "$_SUITE_BUDGET_S" ./tools/gate.sh > tmp/${PLAT}_gate.log 2>&1 &
             EC=0; wait $! || EC=$?
             tail -12 tmp/${PLAT}_gate.log
+            if [ "$EC" -eq 124 ]; then
+                echo "[${PLAT}] BLOCKED: the suite did not finish within ${_SUITE_BUDGET_S}s — it HUNG, it did not fail." >&2
+                echo "          tmp/${PLAT}_gate.log holds whatever it reached before the budget expired." >&2
+                exit 1
+            fi
             test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: suite gate failed (exit ${EC}) — tmp/${PLAT}_gate.log" >&2; exit 1; }
             echo "${PLAT} $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$_SUITE_STAMP"
         else

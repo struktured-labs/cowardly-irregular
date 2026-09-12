@@ -192,6 +192,26 @@ GATE_TREE_ID="$(_tree_id)"
 # Verified 2026-09-07: templates present at the real path, absent in tmp/gate_xdg.
 _GATE_XDG="$PWD/tmp/gate_xdg"
 mkdir -p "$_GATE_XDG"
+# ── SUITE BUDGET ─────────────────────────────────────────────────────────────
+# run_tests.sh has no timeout of its own, and gate.sh adds none. A suite that HANGS therefore
+# does not red this chain -- it stops it, with no output and no diagnosis, which is the
+# quietest way for an hourly publish cadence to halt. publish_detached.sh's own --status is
+# bounded for exactly this reason ("a wait that cannot time out is a hang"); that bounds the
+# OBSERVER and does nothing for the run.
+#
+# 2700s is ~4x the documented full-suite range (268-689s) and ~2.8x the worst wall time
+# observed on a loaded box (gate 187, twelve branches, ~960s). A legitimate slow run must
+# never trip this; only a wedge should.
+#
+# ✅ SIGNAL REACH, MEASURED on this box rather than taken from the docs -- `timeout` here is
+# uutils 0.2.2, not GNU. gate.sh carries NO trap and runs NO godot; the player-data net is
+# run_tests.sh's `trap ... EXIT INT TERM`, one level DOWN. A timeout that killed only the
+# direct child would strand run_tests.sh and godot with the net unfired -- the stray-process
+# shape, with his settings and autobattle/ left unrestored. Probe: parent with no trap, child
+# with one, timeout 3 -> EC 124, "CHILD TRAP FIRED", and zero surviving children (counted with
+# `pgrep -x sleep`, because `pgrep -f 'sleep 300'` matches the probing shell's own argv and
+# reported 2 phantom orphans on the first attempt).
+_SUITE_BUDGET_S="${SUITE_BUDGET_S:-2700}"
 _SUITE_STAMP="tmp/suite_ok_$(printf '%s' "$GATE_TREE_ID" | md5sum | cut -d' ' -f1)"
 
 echo "[deploy] gate 1/4: unit suite"
@@ -205,10 +225,25 @@ case "${_EVIDENCE}" in
       echo "[deploy] gate 1: already run for this exact tree by an earlier chain ($(cat "$_SUITE_STAMP"))"
     else
       [ -n "${_EVIDENCE}" ] && echo "[deploy] gate 1: running the suite — ${_EVIDENCE#VERDICT=RUN }"
-      if ! XDG_DATA_HOME="$_GATE_XDG" ./tools/gate.sh tmp/deploy_suite.log; then
+      _suite_ec=0
+      XDG_DATA_HOME="$_GATE_XDG" timeout "$_SUITE_BUDGET_S" ./tools/gate.sh tmp/deploy_suite.log || _suite_ec=$?
+      # A TIMEOUT IS NOT A FLAKE. The retry below exists for physics-timing noise; re-running a
+      # wedge just spends the budget twice and reports the second one.
+      if [ "$_suite_ec" -eq 124 ]; then
+        echo "[deploy] BLOCKED: the suite did not finish within ${_SUITE_BUDGET_S}s — it HUNG, it did not fail." >&2
+        echo "         Not retrying: a timeout is not a flake. tmp/deploy_suite.log holds whatever it reached." >&2
+        tail -5 tmp/deploy_suite.log >&2 || true
+        exit 1
+      fi
+      if [ "$_suite_ec" -ne 0 ]; then
         cp tmp/deploy_suite.log tmp/deploy_suite.attempt1.log
         echo "[deploy] suite attempt 1 did not pass the gate — retrying once (physics-timing flake?)"
-        if ! XDG_DATA_HOME="$_GATE_XDG" ./tools/gate.sh tmp/deploy_suite.log; then
+        _suite_ec=0
+        XDG_DATA_HOME="$_GATE_XDG" timeout "$_SUITE_BUDGET_S" ./tools/gate.sh tmp/deploy_suite.log || _suite_ec=$?
+        if [ "$_suite_ec" -eq 124 ]; then
+          echo "[deploy] BLOCKED: the suite HUNG on retry (${_SUITE_BUDGET_S}s)." >&2; exit 1
+        fi
+        if [ "$_suite_ec" -ne 0 ]; then
           echo "[deploy] BLOCKED: gate refused the suite on retry — see tmp/deploy_suite.log (+ attempt1)" >&2
           grep -E "^GATE:|^exit=|^scope:" tmp/deploy_suite.log >&2 || true
           grep -B12 "\[Failed\]" tmp/deploy_suite.log | grep -E "^res://test" | sort -u >&2 || true
@@ -227,7 +262,17 @@ esac
 echo "[deploy] gate 1b: movement-isolation suite (own process — suite-order contamination quarantine 2026-07-15)"
 # Same delegation. test/isolated holds very few files, so an emptied directory would have reported
 # green forever under the old [Failed] count — gate.sh's scripts-run == on-disk check catches that.
-if ! XDG_DATA_HOME="$_GATE_XDG" ./tools/gate.sh tmp/deploy_isolated.log --isolated; then
+# Budgeted for the same reason as gate 1, on a much smaller corpus: test/isolated is tiny, so
+# it should never approach this, and that is exactly what makes an unbounded wait here easy to
+# overlook. A small suite that wedges stops the chain just as completely as a large one.
+_ISO_EC=0
+XDG_DATA_HOME="$_GATE_XDG" timeout "$_SUITE_BUDGET_S" ./tools/gate.sh tmp/deploy_isolated.log --isolated || _ISO_EC=$?
+if [ "$_ISO_EC" -eq 124 ]; then
+  echo "[deploy] BLOCKED: the isolated suite did not finish within ${_SUITE_BUDGET_S}s — it HUNG, it did not fail." >&2
+  tail -5 tmp/deploy_isolated.log >&2 || true
+  exit 1
+fi
+if [ "$_ISO_EC" -ne 0 ]; then
   echo "[deploy] BLOCKED: gate refused the isolated suite — see tmp/deploy_isolated.log" >&2
   grep -E "^GATE:|^exit=|^scope:" tmp/deploy_isolated.log >&2 || true
   exit 1
