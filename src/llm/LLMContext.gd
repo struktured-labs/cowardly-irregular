@@ -25,7 +25,17 @@ extends RefCounted
 # ── Budget constants ───────────────────────────────────────────────────────────
 const MAX_EVENTS_FULL:    int = 8    # Events included before budget check.
 const MAX_EVENTS_TRIMMED: int = 4    # Events retained after budget trim.
-const MAX_PARTY_FULL:     int = 5    # Max party members in full detail. Tick 269/270: bumped 4 → 5 for the strict-5 party (CLAUDE.md). Pre-fix the 5th member (typically Bard) was silently omitted from every LLM prompt — boss strategy / party dialogue / NPC context all saw a 4-PC party. Per-member JSON is ~50 bytes; total still well under MAX_JSON_BYTES=2048.
+## ⚠️ CORRECTED 2026-09-12. This said the pre-fix 4 meant "the 5th member was
+## silently omitted from every LLM prompt — boss strategy / party dialogue / NPC
+## context all saw a 4-PC party". That is FALSE: none of those three reads this
+## file. They build their own party blocks (DialoguePrompts._format_party_state,
+## build_boss_intent's party loop, build_party_line's) and none has ever capped —
+## measured, 5 of 5 rendered in all three, pinned by
+## test_every_party_member_reaches_the_prompt.
+## LLMContext.build() has NO production caller; this constant governs a snapshot
+## nothing currently requests. The bump to 5 is still correct for the day it is
+## adopted — it is the justification that was wrong, not the value.
+const MAX_PARTY_FULL:     int = 5    # Max party members in full detail (strict-5 party, CLAUDE.md). Per-member JSON is ~50 bytes; total well under MAX_JSON_BYTES=2048.
 const MAX_JSON_BYTES:     int = 2048 # ~2 KB JSON budget guard.
 
 
