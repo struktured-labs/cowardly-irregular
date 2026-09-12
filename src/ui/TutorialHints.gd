@@ -203,20 +203,33 @@ static func resolve_tokens(text: String) -> String:
 	var ipm = null
 	if ml and ml is SceneTree:
 		ipm = (ml as SceneTree).root.get_node_or_null("/root/InputProfileManager")
-	var confirm := "Ⓐ"
-	var cancel := "Ⓑ"
-	if ipm and ipm.has_method("glyph_for_action"):
-		confirm = ipm.glyph_for_action("ui_accept")
-		cancel = ipm.glyph_for_action("ui_cancel")
 	var out := text
-	out = out.replace("{confirm}", "%s / Z" % confirm)
-	out = out.replace("{cancel}", "%s / X" % cancel)
+	out = out.replace("{confirm}", _control_name(ipm, "ui_accept", "Z"))
+	out = out.replace("{cancel}", _control_name(ipm, "ui_cancel", "X"))
 	out = out.replace("{move}", "D-pad, left stick or the arrow keys")
-	out = out.replace("{menu}", "Start / Enter")
+	out = out.replace("{menu}", _control_name(ipm, "ui_menu", "Enter"))
 	out = out.replace("{defer}", "L shoulder / L key")
 	out = out.replace("{advance}", "R shoulder / R key")
 	out = out.replace("{options}", "L/R shoulder or the O key")
 	return out
+
+
+## Pad button beside the key when a pad is attached, the key ALONE when none is.
+## ⛔ The old form asked `has_method("glyph_for_action")` — an AUTOLOAD check, never a PAD check —
+## and that helper answers from the xbox table on an empty device name, so a keyboard player with
+## no pad was shown "Ⓑ / Z": a glyph for hardware they do not have, in a family they may not own.
+static func _control_name(ipm, action: String, fallback_key: String) -> String:
+	if ipm == null:
+		return fallback_key
+	var key := fallback_key
+	if ipm.has_method("get_action_key_label"):
+		var label: String = ipm.get_action_key_label(action)
+		if label != "" and label != "—":
+			key = label.split(" / ")[0]
+	if Input.get_connected_joypads().is_empty():
+		return key
+	var glyph: String = ipm.hint_for_action(action)
+	return "%s / %s" % [glyph, key] if glyph != "" and glyph != key else key
 
 
 static func _present(parent: Node, hint_id: String, key: String) -> void:
