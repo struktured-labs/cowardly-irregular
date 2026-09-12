@@ -85,6 +85,9 @@ var _wares_layer: CanvasLayer = null
 
 
 func _ready() -> void:
+	# Interiors are never Mode 7 — clear the static so the overworld boost cannot leak in.
+	Mode7Overlay.is_active = false
+	Mode7Overlay.camera_angle = 0.0  # Defense-in-depth: OverworldPlayer reads this UNCONDITIONALLY, so a leaked non-zero angle would rotate interior movement.
 	_pick_palette()
 	_setup_tilemap()
 	_setup_decorations()
