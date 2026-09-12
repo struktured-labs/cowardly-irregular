@@ -7,8 +7,25 @@ extends GutTest
 ## re-derivable by someone else. `pck_budget.py` carries the web-size figures, `pck_drift.py`
 ## and `check_pck_complete.py` gate deploys, `cutscene_dispatch.py` produced the unrouted-scene
 ## count, `input_caption_audit.py` found four shipped caption defects. Each has a selftest.
-## **Nothing in the suite, the gate or CI executes one.** `tag_gate_evidence.sh --selftest` is
-## its own, and runs nothing else.
+##
+## ⛔ THE FIRST VERSION OF THIS FILE SAID "NOTHING IN THE SUITE, THE GATE OR CI EXECUTES ONE."
+## THAT WAS FALSE, and the error is worth more than the claim was. I searched `test/*`,
+## `.github/*`, `tools/run_tests.sh` and `tools/*gate*` — four path patterns picked because they
+## sounded like where a runner lives. `publish_all.sh` is in none of them, and it runs three on
+## EVERY publish (cowir-deploy, 2026-09-11), each as `if ! _ST=$(… --selftest); then … exit 4`.
+## **A negative over a corpus chosen by guessing is worth nothing.** Corrected, measured against
+## the whole repo:
+##
+##      3 .py tools   selftest RUN on every publish       publish_all.sh
+##      8 .py tools   run NOWHERE                         this file covers 6, exempts 2
+##     15 .sh tools   declare --selftest, run NOWHERE     cowir-deploy's; deliberately not walked
+##
+## ⚠️ THE .sh ROW NEARLY SHIPPED AS "invoked by 1 file each." The single match is each tool's OWN
+## usage comment — `#   tools/check_import_ok.sh --selftest`. Mention, not invocation.
+## `publish_all.sh` invokes zero `.sh` selftests; it CALLS `check_import_ok.sh`, and its comment
+## says the decision is "exercised by ITS OWN selftest as a subprocess" — the tool runs, its
+## selftest does not. Three spot-checked green today. Their runner belongs in the publish chain
+## rather than this suite, so they are not walked here.
 ##
 ## 🔑 WHY THIS IS NOT HYPOTHETICAL, and it is my own tool: `cutscene_dispatch.py` shipped in
 ## `.335` not knowing the `cutscene_id` dispatch form, and reported three scenes that shipped in
