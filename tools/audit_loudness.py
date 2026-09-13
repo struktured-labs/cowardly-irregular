@@ -53,6 +53,11 @@ BASELINE = "data/loudness_baseline.json"
 OUTLIER_LU = 6.0
 ## Below this a "median" is not describing a corpus.
 MIN_TRACKS = 100
+## EBU R128 integrated loudness is not bit-reproducible across runs: two full audits over a
+## byte-identical corpus gave -15.08 and -15.09 LUFS (measured 2026-09-12). The baseline is a
+## TRACKED file, so writing it unconditionally made a read-only audit dirty every lane's worktree
+## and put a 0.01 LU wobble in the diff. Rewrite only when the corpus actually moved.
+BASELINE_JITTER_LU = 0.05
 
 
 def measure(path: str):
@@ -143,11 +148,30 @@ def main() -> int:
         return 2
     ## Only a full run may write the baseline -- a --only run has no standing to.
     if not args.only:
-        json.dump({"median_lufs": round(med, 2), "n_tracks": len(rows),
-                   "outlier_bound_lu": OUTLIER_LU},
-                  open(BASELINE, "w"), indent=2)
-        print("\n  baseline written: %s (median %.1f LUFS over %d tracks)"
-              % (BASELINE, med, len(rows)))
+        want = {"median_lufs": round(med, 2), "n_tracks": len(rows),
+                "outlier_bound_lu": OUTLIER_LU}
+        have = None
+        if os.path.exists(BASELINE):
+            try:
+                have = json.load(open(BASELINE))
+            except (json.JSONDecodeError, OSError):
+                have = None
+        ## Unchanged means UNCHANGED ON DISK. Re-encoding the same numbers would still touch the
+        ## file, and the point is that `git status` stays clean after a measurement.
+        settled = (have is not None
+                   and int(have.get("n_tracks", -1)) == want["n_tracks"]
+                   and float(have.get("outlier_bound_lu", -1)) == want["outlier_bound_lu"]
+                   and abs(float(have.get("median_lufs", 1e9)) - want["median_lufs"]) <= BASELINE_JITTER_LU)
+        if settled:
+            print("\n  baseline unchanged: %s (median %.2f LUFS on disk, %.2f measured — inside the"
+                  " %.2f LU jitter, so nothing was written)"
+                  % (BASELINE, float(have["median_lufs"]), want["median_lufs"], BASELINE_JITTER_LU))
+        else:
+            json.dump(want, open(BASELINE, "w"), indent=2)
+            was = "absent" if have is None else ("median %.2f over %s tracks"
+                                                % (float(have.get("median_lufs", 0.0)), have.get("n_tracks", "?")))
+            print("\n  baseline written: %s (median %.1f LUFS over %d tracks; was %s)"
+                  % (BASELINE, med, len(rows), was))
     return 1 if (out or unreadable) else 0
 
 
