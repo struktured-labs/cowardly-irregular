@@ -44,6 +44,13 @@ LIMITS, stated so nobody reads a clean run as more than it is
     "can a player get here" — cross-check before calling a hit player-visible.
   * A shape nobody has written yet cannot be in the list, and the controls cannot help: every
     control names a shape that already exists. Adding a caption form means adding it here.
+  * For data/, it reads TEXT and knows nothing about ROUTING. authored-text says a line names a
+    button, never that a player reaches that line. Reachability there is PER-NPC and can be
+    TOTAL shadowing: Scholar Milo's fallbacks[] are outranked by his quest_state_lines on the
+    static idle path, so his six fallback lines render only inside an active LLM conversation
+    (his own _fallbacks_note says so, and cowir-story measured it after I claimed otherwise).
+    Four of five personas have no quest_state_lines and theirs ARE live. A finding here is a
+    caption defect; whether it is player-visible is a separate question this cannot answer.
 """
 
 from __future__ import annotations
