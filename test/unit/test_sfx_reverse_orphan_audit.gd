@@ -552,8 +552,12 @@ func test_every_exemption_states_a_reason_a_reader_can_disagree_with() -> void:
 		var reason: String = str(KNOWN_PENDING_CONSUMER[key]).strip_edges()
 		if reason.length() < 20:
 			thin.append("%s -> %s" % [key, "(empty)" if reason.is_empty() else reason])
-	assert_gt(KNOWN_PENDING_CONSUMER.size(), 0,
-		"CONTROL: the exemption table is empty, so this arm inspected nothing — delete it or the audit has no escape hatch left to police")
+	if KNOWN_PENDING_CONSUMER.is_empty():
+		# An empty table is the GOOD state — every key reached a consumer and no escape hatch is
+		# left to police. This used to assert_gt(size, 0), which redded on exactly that outcome
+		# and told the reader to delete the arm: a red whose instruction destroys coverage.
+		pass_test("no exemptions remain — nothing to police, and that is the finished state")
+		return
 	assert_eq(thin, [],
 		("exemptions with no usable reason (%d): %s\n" +
 		"FIX: say who owns it and what they are waiting on — \"cowir-battle contact-frame seam\" " +
