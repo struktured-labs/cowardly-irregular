@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## Joins the achievement catalog (data/autogrind_achievements.json) to the dict that
 ## actually reaches it at runtime: AutogrindController.get_grind_stats().
 ##
@@ -225,7 +227,7 @@ func _collect_scripts(dir_path: String, out: Array) -> void:
 ## Comments are stripped first so a field named only in prose cannot green itself.
 func _field_is_read(key: String) -> bool:
 	for path in CONSUMERS:
-		var code := _code_only(FileAccess.get_file_as_string(path), "func ")
+		var code := _code_only(path, "func ")
 		if code.contains('["%s"]' % key) or code.contains('.get("%s"' % key):
 			return true
 	return false
@@ -233,18 +235,13 @@ func _field_is_read(key: String) -> bool:
 
 ## must_survive is REQUIRED — no call site can omit the positive control.
 ## '#' lines go first (stateless, line-addressable), THEN the docstring parity split.
-func _code_only(src: String, must_survive: String) -> String:
-	var out: PackedStringArray = []
-	for line in src.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			continue
-		out.append(line)
-	var parts := "\n".join(out).split("\"\"\"")
-	var kept: PackedStringArray = []
-	for i in parts.size():
-		if i % 2 == 0:
-			kept.append(parts[i])
-	var stripped := "\n".join(kept)
+func _code_only(path: String, must_survive: String) -> String:
+	## PATH-taking so the blank-control floor is safe by construction.
+	assert_gt(must_survive.length(), 0,
+		"CONTROL: must_survive must name a real code site — an empty control asserts nothing")
+	var raw: String = FileAccess.get_file_as_string(path)
+	assert_gt(raw.length(), 0, "CONTROL: %s must be readable" % path)
+	var stripped: String = str(GdSource.split(raw)["code"])
 	assert_true(stripped.contains(must_survive),
-		"CONTROL: the stripper removed load-bearing code (%s)" % must_survive)
+		"CONTROL: the stripper removed load-bearing code (%s) — every arm below it is vacuous" % must_survive)
 	return stripped

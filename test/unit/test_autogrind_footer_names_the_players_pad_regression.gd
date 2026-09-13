@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource = preload("res://test/unit/helpers/gd_source.gd")
+
 ## The autogrind footer — the only control legend visible while a grind runs — named buttons that
 ## do not exist, on BOTH screens, for every player who is not holding a SNES pad:
 ##
@@ -84,9 +86,11 @@ func test_exit_resolves_to_something_pressable_with_no_pad() -> void:
 func test_neither_footer_spells_a_frozen_button_name() -> void:
 	for entry in _footer_sources():
 		var path: String = entry[0]
-		for line in entry[1].split("\n"):
+		## A line-start-only skip left TRAILING comments in the scan, so a banned token in a comment
+		## beside a "text" assignment redded correct code. Quote-aware strip instead.
+		for line in GdSource.strip_comments(entry[1]).split("\n"):
 			var code: String = line.strip_edges()
-			if code.begins_with("#") or code.begins_with("##") or not code.contains("\"text\""):
+			if not code.contains("\"text\""):
 				continue
 			for banned in ["Select:", "Start:", "L+R:", "B:"]:
 				assert_false(code.contains(banned),

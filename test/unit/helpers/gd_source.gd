@@ -34,6 +34,19 @@ extends RefCounted
 
 
 ## {"code": <outside every docstring, comments stripped>, "doc": <inside them>}
+##
+## ⚠️ LANGUAGE CONTRACT, measured 2026-09-12 after @cowir-sfx found a consumer pointing this at a
+## .py file. Safe wherever `#` starts a line comment AND `"""` either never appears or delimits a
+## region. .gd and .py both qualify — python docstrings strip identically. A file with NO `"""`
+## also qualifies: one part, even index, passes through whole.
+##
+## ⛔ UNSAFE where `"""` appears WITHOUT delimiting a region, because parity then eats live code.
+## Measured on shell, which has `#` comments and no `"""` semantics at all:
+##     echo """a / rm -rf important / echo """b / keep_me=1
+##  -> echo / b / keep_me=1        the rm line is SILENTLY GONE from the code half
+## A caller's must_survive control catches this only when the surviving token is outside the
+## accidental fences. Point this at .gd or .py; anything else is asserting an overlap, not using
+## the helper as specified.
 static func split(body: String) -> Dictionary:
 	## ⛔ ORDER IS LOAD-BEARING, AND THIS SHIPPED THE WRONG WAY ROUND. A `"""` inside a `#`
 	## comment flips parity for the whole rest of the file, so splitting first loses real code
