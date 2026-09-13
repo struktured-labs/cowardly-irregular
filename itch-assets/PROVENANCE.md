@@ -152,3 +152,39 @@ shipped set. It is the evidence for the era map above, and without it the shippe
 ⚠️ **Recoverable in principle, not in practice:** re-running the capture tools at an old tag
 needs that tag's tree, a warm import and a sandboxed xvfb run, and would not reproduce a frame
 whose difference came from an asset that has since changed. Cheaper to keep 9 MB.
+
+## 2026-09-13 — re-shoot at v3.33.345-alpha: 2 of 11 replaced, and why not the third
+
+`capture-history/shots-345/` holds the full fresh set (11 shots, the scenes
+`marketing_shots.gd` can reach). Captured from a worktree at v3.33.345-alpha with
+`XDG_DATA_HOME` pointed at a sandbox — verified both directions: 0 files touched in
+struktured's live profile during the run, 8 in the sandbox.
+
+`--compare` against the shipped set called three MOVED. The eye disagreed with the bytes on
+one of them, which is exactly what that tool's own closing line warns about:
+
+| shot | bytes | verdict |
+|---|---|---|
+| `whispering_cave` | 50,654 -> 230,968 (+356%) | **REPLACED.** The stored frame is flat-lit; the dungeon lighting that landed after the shot was taken is absent from it. The shipped image shows a version of the cave that no longer exists. ⚠️ The new one is *dark* — accurate, and a harder read as a thumbnail. Editorial call, easy to revert. |
+| `frosthold_village` | 83,598 -> 101,696 (+22%) | **REPLACED.** Straight improvement: snow banks, pines, lampposts and a fence where the stored frame is bare brick. |
+| `battle` | 153,385 -> 176,134 (+15%) | **NOT replaced — the fresh frame is WORSE.** Two speech bubbles overlap each other and the action menu, and a tooltip sits across the field; the text is illegible where they collide. The capture lands mid-dialogue. Bytes grew because the frame gained clutter. |
+
+⛔ **`--compare`'s 5% MOVED threshold is below this capture's noise floor.** Two independent
+captures of the *identical tree*, identical protocol:
+
+```
+tavern_interior   6.82%   <-- MOVED on one run, "same" on the other. Same commit.
+eldertree 1.48 · ironhaven 1.38 · inn 1.34 · battle 1.16 · frosthold 1.04
+sandrift 0.87 · harmonia 0.34 · grimhollow 0.21 · whispering_cave 0.02 · shop 0.00
+median 1.04%
+```
+
+Villages and interiors spawn wandering NPCs and the script waits a fixed number of frames, so
+the frame differs run to run. 10 of 11 stay under 1.5%, but one exceeds the threshold on noise
+alone. **A single-run MOVED under ~7% is not evidence.** The three above were stable across
+both runs; `tavern_interior` was not, and was not touched.
+
+📌 `MANIFEST.txt` was stale before this change: it listed 42 files against a tree of 116 (the
+whole `capture-history/` archive was missing), and `CAPTIONS.md` + `PROVENANCE.md` checksums
+had already drifted. Regenerated here. A manifest that is not regenerated when the archive
+grows cannot detect the loss it exists to detect.
