@@ -96,6 +96,10 @@ func _declared_signals() -> Array:
 	return out
 
 
+func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
+
+
 func test_every_declared_signal_is_classified_both_ways() -> void:
 	var declared: Array = _declared_signals()
 	assert_gt(declared.size(), 5, "control: the source must actually yield signals — got %d" % declared.size())

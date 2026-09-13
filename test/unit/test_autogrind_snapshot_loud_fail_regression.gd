@@ -26,6 +26,10 @@ func _read(p: String) -> String:
 
 # ── Source pin: 4 push_warning calls in load_grind_snapshot ─────────
 
+func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
+
+
 func test_loader_has_four_warnings() -> void:
 	var src := _read(AUTOGRIND_SYSTEM_PATH)
 	var fn_idx: int = src.find("func load_grind_snapshot")

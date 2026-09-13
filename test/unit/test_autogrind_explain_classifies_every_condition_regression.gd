@@ -18,6 +18,7 @@ var _ui
 
 
 func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
 	add_child_autofree(_ui)
 	var party: Array = []

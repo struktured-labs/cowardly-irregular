@@ -37,6 +37,10 @@ func _sample_entry(overrides: Dictionary = {}) -> Dictionary:
 	return base
 
 
+func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
+
+
 func test_format_list_row_shows_date_battles_exp_and_region() -> void:
 	var screen := _make_screen()
 	var row := screen._format_list_row(_sample_entry())

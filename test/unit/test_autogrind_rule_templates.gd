@@ -36,6 +36,7 @@ class FakeAutogrindSystem extends RefCounted:
 
 
 func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
 	AutogrindRuleTemplatesScript._reset_cache_for_test()
 
 

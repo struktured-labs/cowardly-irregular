@@ -44,6 +44,10 @@ func _read(path: String) -> String:
 
 # ── Source pin ────────────────────────────────────────────────────────────────
 
+func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
+
+
 func test_start_autogrind_resets_fatigue_events_triggered() -> void:
 	var text := _read(AUTOGRIND_SYSTEM_PATH)
 	var idx := text.find("func start_autogrind")
