@@ -10,7 +10,6 @@ const SNAPSHOT_PATH := "user://autogrind_snapshot.json"
 
 
 func before_each() -> void:
-	AutogrindSystem._test_disable_persistence = true
 	_system = preload("res://src/autogrind/AutogrindSystem.gd").new()
 	add_child_autofree(_system)
 	## Persistence stays ON deliberately — these exercise the real on-disk roundtrip.
