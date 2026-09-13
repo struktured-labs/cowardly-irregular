@@ -227,7 +227,19 @@ const engine = new Engine(GODOT_CONFIG);
 		}
 	}
 
-	// transferSize is 0 for a same-origin response served out of the HTTP cache.
+	// ⛔ transferSize === 0 IS NO LONGER A SUFFICIENT TEST, and this comment used to say it was.
+	// Since v3.33.334-alpha the web build ships as a PWA, so a payload can arrive three ways and
+	// the first two are indistinguishable by transferSize alone. Measured 2026-09-13 against the
+	// build fetched live from the store, three consecutive visits, one profile:
+	//
+	//   visit   transferSize   deliveryType      workerStart   meaning
+	//   1       175,081,884    ''                0             over the wire
+	//   2       0              'cache'           41            the HTTP cache answered
+	//   3       0              'cache-storage'   44            the service worker's Cache API
+	//
+	// Both rigs agreed (with and without `Cache-Control: no-cache`), so the header is not the
+	// variable. `deliveryType` separates all three; transferSize collapses 2 and 3 into "cached"
+	// and the page then reports a state it did not observe.
 	// Only the big payloads matter; the small files are noise either way.
 	function measurePayload() {
 		let entries;
@@ -252,9 +264,23 @@ const engine = new Engine(GODOT_CONFIG);
 		// that, and "the wasm cached" is also the control proving this instrument
 		// can see a cache hit at all.
 		const files = big.map(function (e) {
+			// `deliveryType` is absent on older engines; fall back to the old test rather than
+			// claiming a source we cannot see. An unknown delivery is reported as unknown.
+			const dt = (typeof e.deliveryType === 'string') ? e.deliveryType : null;
+			let source;
+			if (dt === 'cache-storage') {
+				source = 'worker';       // the service worker's own cache — free, and durable
+			} else if (dt === 'cache') {
+				source = 'httpcache';    // the browser's HTTP cache answered
+			} else if (dt === '') {
+				source = 'network';      // over the wire
+			} else {
+				source = (e.transferSize === 0) ? 'cached-unknown' : 'network';
+			}
 			return {
 				name: e.name.split('/').pop(),
-				cached: e.transferSize === 0,
+				source: source,
+				cached: source !== 'network',
 				bytes: e.encodedBodySize,
 			};
 		});
@@ -426,7 +452,7 @@ const engine = new Engine(GODOT_CONFIG);
 				+ (m === null ? 'unmeasurable' : m.verdict
 					+ (m.refetchedBytes > 0 ? ' (' + formatMB(m.refetchedBytes) + ' MB re-fetched)' : '')
 					+ ' · ' + m.files.map(function (f) {
-						return f.name + '=' + (f.cached ? 'cache' : 'network');
+						return f.name + '=' + f.source;
 					}).join(' '))
 				+ ' · previous visit: ' + (lastSource === null ? 'none recorded' : lastSource));
 		}, displayFailureNotice);
