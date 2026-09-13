@@ -60,16 +60,42 @@ _owner_busy() {
 
 _status() {
     local dir="$1" budget="${2:-5400}" waited=0 step=15
+    # Poll granularity scales with the bound. A fixed 15s step does not just overshoot a small
+    # budget — it also DELAYS DETECTION within one: with budget 6 and a .ec written at t=1, the
+    # single 6s nap means the answer arrives at t=6 rather than t=1. Tenth of the budget,
+    # clamped to [1,15], so the long real waits keep their cheap 15s cadence and short ones
+    # answer promptly.
+    [ "$(( budget / 10 ))" -lt "$step" ] && step=$(( budget / 10 ))
+    [ "$step" -lt 1 ] && step=1
     # BOUNDED, like every polling wait in this directory: a wait that cannot time out is a hang.
+    #
+    # ⛔ AND THE BOUND WAS NOT HONOURED. `sleep "$step"` was unconditional, so the 15s poll
+    # granularity dominated any budget below it: `--status <dir> 1` waited FIFTEEN seconds and
+    # then reported "no .ec after 1s". Two defects in one line — the caller's bound ignored,
+    # and a message stating a duration nobody measured. Measured on the selftest's own arm:
+    # 15.01s for a budget of 1, which was 79% of a 19.03s selftest and the last cost exemption
+    # in gate 0d.
+    #
+    # Nap the LESSER of the step and what is left, and report what was actually waited.
     while [ "$waited" -lt "$budget" ]; do
         if [ -f "$dir/publish.ec" ]; then
             local ec; ec=$(cat "$dir/publish.ec")
             echo "[detached] publish_all exited ${ec} after ~${waited}s"
             return "$ec"
         fi
-        sleep "$step"; waited=$(( waited + step ))
+        local remain=$(( budget - waited )) nap="$step"
+        [ "$remain" -lt "$nap" ] && nap="$remain"
+        sleep "$nap"; waited=$(( waited + nap ))
     done
-    echo "[detached] no .ec after ${budget}s — still running, or died without writing one." >&2
+    # One more look before declaring a timeout: a .ec written DURING the final nap was
+    # previously reported as "still running", which is a false negative on the one artifact
+    # whose whole purpose is to answer "did it finish?" after the fact.
+    if [ -f "$dir/publish.ec" ]; then
+        local ec; ec=$(cat "$dir/publish.ec")
+        echo "[detached] publish_all exited ${ec} after ~${waited}s"
+        return "$ec"
+    fi
+    echo "[detached] no .ec after ${waited}s — still running, or died without writing one." >&2
     echo "[detached] check the log and the store; a missing .ec is NOT evidence of failure." >&2
     return 3
 }
@@ -163,6 +189,23 @@ chk "launches when none does (not a blanket refusal)" "$?" "0"
 chk "--status returns the recorded EC" "$?" "7"
 ./tools/publish_detached.sh --status "$T" 1 >/dev/null 2>&1
 chk "--status on a missing .ec times out (bounded)" "$?" "3"
+
+# 8/9/10 — THE BOUND IS HONOURED, THE MESSAGE IS MEASURED, AND A LATE .ec IS NOT A TIMEOUT.
+# The old loop slept a fixed 15s regardless of the budget, so `--status <dir> 1` waited 15s
+# and then printed "no .ec after 1s". Both halves are pinned here because both were wrong:
+# an arm asserting only the exit code passed for the broken version too.
+_t0=$(date +%s)
+_out="$(./tools/publish_detached.sh --status "$T" 2 2>&1)"; _ec=$?
+_elapsed=$(( $(date +%s) - _t0 ))
+chk "--status budget 2 returns within 5s (not the 15s step)" "$([ "$_elapsed" -le 5 ] && echo yes || echo "no:${_elapsed}s")" "yes"
+chk "--status reports the time it ACTUALLY waited"           "$(printf '%s' "$_out" | grep -c 'no \.ec after 2s')" "1"
+
+# A .ec written during the final nap used to be reported as "still running" — a false negative
+# on the one artifact whose purpose is to answer "did it finish?" after the fact.
+( sleep 1; echo 4 > "$T/publish.ec" ) &
+./tools/publish_detached.sh --status "$T" 6 >/dev/null 2>&1
+chk "a .ec written DURING the wait returns its code, not 3" "$?" "4"
+wait; rm -f "$T/publish.ec"
 
 # 8/9 — the .ec must OUTLIVE the publish worktree. v3.33.304-alpha's did not: the logdir was
 #       relative, so `git worktree remove` took the exit code with it. Drive both branches of
