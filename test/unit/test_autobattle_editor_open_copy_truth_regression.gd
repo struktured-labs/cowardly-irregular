@@ -69,5 +69,13 @@ func test_milo_names_the_real_pad_routes_in_both_sources() -> void:
 		var src := FileAccess.get_file_as_string(path)
 		assert_false(src.is_empty(), "%s must be readable" % path)
 		assert_eq(src.find("or START to open"), -1, "%s: the unconditional START claim came back" % path)
-		assert_true(src.contains("Start does it mid-battle"), "%s: the battle-only Start route must be named" % path)
+		## PROPERTY, not phrase, since 2026-09-13. This pinned the exact sentence "Start does it
+		## mid-battle" — which named ONE family: Start is printed on no PlayStation pad (Options)
+		## and no Switch pad (Plus). Correcting the copy redded a guard defending a real property
+		## through a coincidental string, so the property is asserted directly now.
+		assert_true(src.contains("mid-battle"),
+			"%s: the route must stay BATTLE-ONLY — that is what the unconditional claim got wrong" % path)
+		for family_name in ["Start", "Options", "Plus"]:
+			assert_true(src.contains(family_name),
+				"%s: the copy must name %s — one family's name is a caption two thirds of pads cannot follow" % [path, family_name])
 		assert_true(src.contains("Auto Rules"), "%s: the field route must be named" % path)

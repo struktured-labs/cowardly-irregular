@@ -18,6 +18,12 @@ THE FOUR SHAPES, each learned from a defect that shipped
                       glyph_for_action(...)       guard — it answers as xbox with no pad
   diagram         _draw_face_button(pos, "A", …)  a letter as a DRAWING-CALL argument, which
                                                   no caption scan can see
+  mixed-caption   "%s Apply  [S] Dismiss  %s Close" ONE string that DERIVES some tokens and
+                                                  hardcodes a KEYBOARD key for another
+  authored-text   data/**.json: "On a pad, Start …" a family NAME in AUTHORED dialogue. Scanned
+                                                  separately: data/ has no code to derive with,
+                                                  so the remedy is complete vocabulary, not a
+                                                  helper call
 
 WHY THE LETTER ALPHABET IS EXACTLY {A, B} — measured against the live InputMap, not chosen:
     KEY A -> ui_text_select_all + a macos caret action   (Godot built-ins only)
@@ -44,6 +50,7 @@ from __future__ import annotations
 import argparse, io, json, os, re, sys
 
 SRC_ROOT = "src"
+DATA_ROOT = "data"
 
 # Face letters that can never be a keyboard binding in this game. See the docstring.
 FACE_LETTERS = ("A", "B")
@@ -55,6 +62,23 @@ LETTER_CONTEXTS = (
     ("to", r'(?<![\w/-]){L} to\b'),      # "press A to fight"
     ("slash", r'(?<![\w/-]){L}/'),       # "A/Enter/Click"
     ("gloss", r'(?<![\w/-]){L} \('),     # "B (Esc): Stop"  <- the shape the net missed until now
+)
+
+# A caption that DERIVES is one whose author knew to. Used only by mixed-caption: the signature
+# is not "a key appears" — a keyboard-only legend naming keys is CORRECT — it is a key appearing
+# BESIDE a derived token, i.e. someone wired the neighbours and left this one.
+DERIVE_CALLS = (
+    "hint_for_action", "button_name_for_index", "button_name_for_action",
+    "glyph_for_action", "face_glyph_for_index", "face_position_for_action",
+    "get_action_key_label",
+)
+
+# Keyboard keys as they appear in a caption. Bracketed or colon-suffixed only: both are
+# unambiguous caption syntax, where a bare letter is prose. F-keys and named keys included
+# because "[F5] Editor" and "[Tab] Auto" are the same defect as "[S] Dismiss".
+KEY_TOKENS = (
+    r'\[(?:Tab|Esc|Enter|Space|Shift|Ctrl|Alt|Del|Backspace|F\d{1,2}|[A-Za-z])\]',
+    r'(?<![\w/-])(?:Tab|Esc|Enter|Space|Backspace|F\d{1,2})\s*:',
 )
 
 # One family's printed button NAME. The BUTTON_NAMES/BUTTON_LABELS tables are the source of
@@ -96,6 +120,34 @@ def _literal_spans(line: str):
         return []
     parts = line.split('"')
     return parts[1::2]
+
+
+# Authored text can name a button too, and no amount of src/ scanning sees it. The
+# discriminator against ordinary prose is PAD CONTEXT: "Back to the fire it goes" is a sentence,
+# "On a pad, Start does it" is a caption. Structural, not an allowlist — six prose hits in
+# data/ are excluded by the absence of a pad word, not by being listed.
+PAD_WORDS = re.compile(r'(?<![\w])(?:pad|gamepad|controller|joystick|button|d-pad|dpad)(?![\w])', re.I)
+
+
+def scan_authored(text: str, path: str = "<mem>"):
+    """Findings for one authored-text file. A family NAME only counts inside a sentence that is
+    talking about a controller; the SAME name in prose is not a caption."""
+    out = []
+    for m in re.finditer(r'"([^"\\]{6,400})"', text):
+        span = m.group(1)
+        if not PAD_WORDS.search(span):
+            continue
+        fams = {f for n, f in FAMILY_NAMES.items()
+                if re.search(r'(?<![\w])%s(?![\w])' % n, span)}
+        if len({f.split("/")[0] for f in fams}) >= 3:
+            continue          # complete vocabulary, same rule as src/
+        for name, family in FAMILY_NAMES.items():
+            if re.search(r'(?<![\w])%s(?![\w])' % name, span):
+                out.append(dict(file=path, line=text[:m.start()].count("\n") + 1,
+                                shape="authored-text", detail="%s (%s)" % (name, family),
+                                context="pad-sentence", text=span.strip()[:74]))
+                break
+    return out
 
 
 def scan_text(text: str, path: str = "<mem>"):
@@ -148,6 +200,38 @@ def scan_text(text: str, path: str = "<mem>"):
                     out.append(dict(file=path, line=ln, shape="frozen-family",
                                     detail="%s (%s)" % (name, family), context="name",
                                     text=span.strip()[:70]))
+        # mixed-caption: the span hardcodes a KEYBOARD key while its own line derives another
+        # token. A pure-keyboard legend is CORRECT (it is the no-pad branch) and must not fire,
+        # which is why the predicate is the MIX rather than the key. Learned from
+        # RebalanceReviewPanel's "%s Apply  [S] Dismiss  %s Close": Apply and Close resolved
+        # through hint_for_action and Dismiss said S to every pad, for a control that fires on
+        # the north face. The audit read that file CLEAN — this shape did not exist yet.
+        if any(c in raw for c in DERIVE_CALLS):
+            for span in spans:
+                for pat in KEY_TOKENS:
+                    m = re.search(pat, span)
+                    if m:
+                        out.append(dict(file=path, line=ln, shape="mixed-caption",
+                                        detail=m.group(0), context="derives-and-hardcodes",
+                                        text=span.strip()[:70]))
+                        break
+
+        # A family name inside a PAD SENTENCE is a caption even without bracket/slash syntax.
+        # NAME_NEEDS_BRACKET exists to spare prose ("Start the battle"), and it also spared
+        # "On a pad, Start does it mid-battle" — authored NPC dialogue, in a .gd file, naming
+        # one family. Pad context is the discriminator the bracket rule cannot express.
+        # ...but ONLY where the line derives NOTHING. "%s: Fight  %s: Back" uses Back as the
+        # LABEL of a derived token, and "Select"/"Back"/"Start" are ordinary English besides —
+        # which is what NAME_NEEDS_BRACKET protects. A line that derives had an author who knew
+        # to; a pad sentence naming a family with no derivation at all is frozen authored copy.
+        if not any(c in raw for c in DERIVE_CALLS):
+            for span in spans:
+                if "%s" in span or not PAD_WORDS.search(span):
+                    continue
+                for f in scan_authored('"%s"' % span.replace('"', ""), path):
+                    f["line"] = ln
+                    out.append(f)
+
         # diagram form: a face letter as a drawing-call ARGUMENT, invisible to a caption scan
         if any(c in raw for c in DRAW_CALLS):
             for letter in FACE_LETTERS:
@@ -209,16 +293,25 @@ def reachability(root: str):
 
 
 def audit(root: str):
-    findings, files = [], 0
+    findings, files, data_files = [], 0, 0
     for p in gd_files(root):
         text = io.open(p, encoding="utf-8").read()
         files += 1
         findings.extend(scan_text(text, p))
         findings.extend(scan_bucket4(text, p))
+    # Authored text lives in data/, has no code to derive with, and no src/ scan reaches it.
+    import glob as _glob
+    for dp in sorted(_glob.glob(os.path.join(DATA_ROOT, "**", "*.json"), recursive=True)):
+        data_files += 1
+        try:
+            findings.extend(scan_authored(io.open(dp, encoding="utf-8").read(), dp))
+        except OSError:
+            continue
     reach = reachability(root)
     for f in findings:
-        f["loaded_by_something"] = f["file"] in reach
-    return files, findings
+        # data/ files are content, not scripts: reachability is a .gd question and does not apply.
+        f["loaded_by_something"] = True if f["shape"] == "authored-text" else f["file"] in reach
+    return (files, data_files), findings
 
 
 def selftest() -> int:
@@ -235,6 +328,19 @@ def selftest() -> int:
         ('\tx.text = "Start (Plus)  F5  Open Editor"', "frozen-family"),   # TWO families is still incomplete
         ('\tx.text = "the Autobattle Editor (Start/F5) writes rules"', "frozen-family"),
         ('\t_draw_face_button(POS_A, "A", "a")', "diagram"),
+        ('\tl.text = "Cycle  %s Apply  [S] Dismiss  %s Close" % [ipm.hint_for_action("ui_accept")]',
+         "mixed-caption"),                                                 # the .344 defect verbatim
+        ('\tl.text = "%s Auto   [Tab] Toggle" % ipm.hint_for_action("ui_menu")', "mixed-caption"),
+    ]
+    authored_fire = [
+        '"On a pad, Start does it mid-battle"',                            # the .345 defect verbatim
+        '"hit Select on your controller"',
+    ]
+    authored_safe = [
+        '"Back to the fire it goes. Nothing wasted in Ironhaven."',        # prose, no pad word
+        '"Start the battle after dialogue"',                              # prose, no pad word
+        '"On a pad: Start, Options, or Plus — whatever yours prints"',     # COMPLETE vocabulary
+        '"the button does nothing yet"',                                  # pad word, no family name
     ]
     must_not_fire = [
         '## the old "[B]" named the wrong cap',
@@ -251,6 +357,9 @@ def selftest() -> int:
         '\tx.text = "Z / Enter   L-Click   Confirm / Select"',            # "Select" the action word
         '\tx.text = "Form 1-A: the incident"',                            # a form number, not a caption
         '\tx.text = "whatever your pad calls Select. Back. Share."',       # ALL THREE = complete vocabulary
+        '\treturn "Y:Turbo T:Tier X/Esc:Exit P:Pause"',                    # keyboard-ONLY legend: correct
+        '\tout += ("%s:Turbo " % turbo) if turbo != "" else "Y:Turbo "',   # the documented FALLBACK shape
+        '\tvar dismiss: String = ipm.button_name_for_index(JOY_BUTTON_Y)', # a derive call, no caption
     ]
     bad = 0
     for src, shape in must_fire:
@@ -263,6 +372,15 @@ def selftest() -> int:
         if got:
             print("SELFTEST FAIL: %r fired %s" % (src, [f["shape"] for f in got]))
             bad += 1
+    for src in authored_fire:
+        if not scan_authored(src):
+            print("SELFTEST FAIL: authored %r did not fire" % src)
+            bad += 1
+    for src in authored_safe:
+        got = scan_authored(src)
+        if got:
+            print("SELFTEST FAIL: authored %r fired %s" % (src, [f["detail"] for f in got]))
+            bad += 1
     b4_fire = '\tif InputProfileManager:\n\t\tg = InputProfileManager.glyph_for_action("ui_cancel")'
     if not scan_bucket4(b4_fire):
         print("SELFTEST FAIL: the bucket-4 pair did not fire")
@@ -272,7 +390,7 @@ def selftest() -> int:
         print("SELFTEST FAIL: a pad-checked call was reported as bucket-4")
         bad += 1
     print("selftest: %d case(s) failed" % bad if bad else "selftest: all %d cases pass"
-          % (len(must_fire) + len(must_not_fire) + 2))
+          % (len(must_fire) + len(must_not_fire) + len(authored_fire) + len(authored_safe) + 2))
     return 1 if bad else 0
 
 
@@ -288,11 +406,13 @@ def main() -> int:
     if not os.path.isdir(a.root):
         print("no such root: %s" % a.root, file=sys.stderr)
         return 2
-    files, findings = audit(a.root)
+    (files, data_files), findings = audit(a.root)
     if a.json:
-        print(json.dumps(dict(root=a.root, files=files, findings=findings), indent=2))
+        print(json.dumps(dict(root=a.root, files=files, data_files=data_files,
+                              findings=findings), indent=2))
         return 1 if findings else 0
-    print("input caption audit — %d .gd files under %s/" % (files, a.root))
+    print("input caption audit — %d .gd files under %s/, %d authored files under %s/"
+          % (files, a.root, data_files, DATA_ROOT))
     if not findings:
         print("  no frozen captions, no bucket-4 pairs, no welded diagram letters.")
         print("  NOTE: derived is not the same as CORRECT FOR ITS SURFACE — a footer can derive")
