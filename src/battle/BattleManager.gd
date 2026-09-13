@@ -8377,7 +8377,7 @@ func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool) -
 	var recent_events: Array = []
 	var gs = get_node_or_null("/root/GameState")
 	if gs and "event_log" in gs and gs.event_log != null:
-		recent_events = gs.event_log.recent(5)
+		recent_events = gs.event_log.recent_varied(5)
 
 	# Deterministic how-the-fight-went facts.
 	var facts: Array[String] = []

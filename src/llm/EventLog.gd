@@ -119,6 +119,39 @@ func recent_entries(n: int = RING_CAP) -> Array[Dictionary]:
 	return recent(n)
 
 
+## The `n` most-recent entries with consecutive same-type RUNS collapsed to their
+## newest member — what the party DID, not where it walked.
+##
+## ⛔ `recent(n)` hands a prompt the last n rows, and area_entered is recorded on
+## EVERY map transition (GameLoop, on each `_transition`). Walking into a village,
+## into a shop and back out is three rows. Measured on a realistic evening — boss
+## defeat, level up, item, then a walk to town — the NPC's whole Recent events
+## block was five `Entered X` lines and the Cave Rat King was gone:
+##
+##     recent(5)         [area_entered] x5, two of them one shop door
+##     recent_varied(5)  level_up · boss_defeat · item_obtained · area_entered
+##
+## Chronology is preserved (oldest first, same contract as recent()); only runs
+## shrink, and a run keeps its NEWEST member because that is where the party is.
+##
+## Not used for the rebalance daemon's trend window (GameLoop passes recent(10)
+## there): a trend wants the real sequence, including how much walking happened.
+func recent_varied(n: int = RING_CAP) -> Array[Dictionary]:
+	if n <= 0:
+		return []
+	var picked: Array[Dictionary] = []
+	var i: int = _entries.size() - 1
+	while i >= 0 and picked.size() < n:
+		var entry: Dictionary = _entries[i]
+		picked.append(entry)
+		var t: String = str(entry.get("type", ""))
+		while i > 0 and str(_entries[i - 1].get("type", "")) == t:
+			i -= 1
+		i -= 1
+	picked.reverse()
+	return picked
+
+
 ## Return all entries matching `type` (oldest first).
 func by_type(type: String) -> Array[Dictionary]:
 	var out: Array[Dictionary] = []
