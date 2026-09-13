@@ -28,6 +28,9 @@ const SAVE_ROW = saveRowIndex();
 
 const url = process.argv[2] || 'http://127.0.0.1:8371';
 const BOOT_BUDGET_MS = 45000;
+// Worker activation budget. `ready` normally resolves during stage 1's boot settle;
+// this only has to cover a loaded box, not a cold fetch.
+const SW_BUDGET_MS = 30000;
 // Resuming a save re-boots the engine AND loads game state, so it needs its own budget.
 const LOAD_BUDGET_MS = Number(process.env.WEB_SMOKE_LOAD_BUDGET_MS || 45000);
 const FATAL = /RuntimeError|abort\(|out of memory|failed to (load|instantiate|fetch)|wasm.*error|Unable to load/i;
@@ -113,11 +116,70 @@ if (booted && errors.length === 0) {
     + `if that is not the save screen the row list and the cursor disagree, otherwise the save was refused`);
 }
 if (booted && errors.length === 0 && saved) {
+  // Stage 4b: the web build is a PWA since v3.33.334-alpha. index.service.worker.js
+  // caches index.pck -- 175 MB, and chromium's per-entry HTTP cache line is 160 MiB,
+  // so WITHOUT the worker a returning player re-downloads 167 MiB every single visit.
+  // NOTHING gated that: the worker is not a file this suite ever looked at, so a
+  // registration that silently stopped happening (shell edit, export-preset flag,
+  // engine upgrade) would leave every other arm here green and cost every returning
+  // player the whole pck, forever, with no red anywhere.
+  //
+  // The reload below is the one navigation in this suite a worker can take over, so
+  // the check belongs here. Measured 2026-09-13 against the live v3.33.345-alpha web
+  // build, both directions on one rig:
+  //     with index.service.worker.js  -> controlled=true   pck deliveryType=cache   0 B
+  //     with it removed               -> controlled=false  pck=network  175,081,884 B
+  // `ready` resolves on activation, which is why it is awaited BEFORE the reload --
+  // a worker only takes control of a page it did not itself start on.
+  const swReady = await page.evaluate(async (budget) => {
+    if (!('serviceWorker' in navigator)) return 'unsupported';
+    return Promise.race([
+      navigator.serviceWorker.ready.then(() => 'ready'),
+      new Promise((r) => setTimeout(() => r('timeout'), budget)),
+    ]);
+  }, SW_BUDGET_MS);
   booted = false;
   await page.reload({ waitUntil: 'domcontentloaded' });
   const t0 = Date.now();
   while (!booted && errors.length === 0 && Date.now() - t0 < BOOT_BUDGET_MS) {
     await page.waitForTimeout(500);
+  }
+  // Ask the CACHE STORE whether the pck is in it. Do NOT ask resource timing: once a
+  // worker controls the page, `transferSize` is 0 and `deliveryType` reads 'cache' for
+  // ANYTHING the worker returns, including a straight network passthrough. Measured
+  // 2026-09-13 -- a worker with index.pck deleted from CACHEABLE_FILES still reported
+  // `cache 0B` to the page, so a transferSize check here is unfalsifiable: it restates
+  // `controller != null` and cannot see the failure it claims to catch.
+  const sw = await page.evaluate(async () => {
+    const out = { controlled: !!navigator.serviceWorker.controller, pck: 'no-cache-api' };
+    if (!('caches' in window)) return out;
+    out.pck = 'absent';
+    for (const name of await caches.keys()) {
+      const cache = await caches.open(name);
+      for (const req of await cache.keys()) {
+        if (req.url.endsWith('index.pck')) { out.pck = 'cached'; return out; }
+      }
+    }
+    return out;
+  });
+  const pckDesc = sw.pck;
+  console.log('[WEB-SMOKE] service worker: ready=' + swReady + ' controls-reload=' + sw.controlled
+    + ' pck=' + pckDesc);
+  if (swReady !== 'ready' || !sw.controlled) {
+    errors.push('stage4b: the PWA service worker did not take over the reload (ready=' + swReady
+      + ', controller=' + sw.controlled + '). index.service.worker.js is what keeps the 175 MB pck '
+      + 'out of every returning visit -- chromium will not hold it in the HTTP cache (160 MiB '
+      + 'per-entry line), so without the worker every returning player re-downloads it. Check that '
+      + 'the web export still emits index.service.worker.js and that the shell still registers it.');
+  } else if (sw.pck !== 'cached') {
+    // Controlled but still paying: the worker is alive and NOT holding the pck, which is
+    // the only reason it exists. This arm is reachable -- it was exercised by serving the
+    // real build with index.pck struck from CACHEABLE_FILES, where the worker registers,
+    // activates and controls the reload exactly as normal.
+    errors.push('stage4b: the service worker controls the page but index.pck is NOT in the cache '
+      + 'store (' + pckDesc + '). The worker is running and not holding the one file it exists to '
+      + 'hold, so returning players still pay 167 MiB a visit -- check CACHEABLE_FILES in '
+      + 'index.service.worker.js.');
   }
   if (booted) {
     // RETRY THE PRESSES, don't time them. These were two flat sleeps (5 s, then 2 s) and
