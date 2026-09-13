@@ -425,7 +425,10 @@ fi
 # directions before this was checked against what the .340 logs show actually ran.
 #
 # NOT LISTED, each named with its reason rather than quietly dropped:
-#   verify_store_artifact.sh  on-path, selftest 36.13s — half a chain to check the read-back
+#   (verify_store_artifact.sh was exempted here at 36.13s. Its cost was two O(n) -> O(n^2)
+#    defects in its own code, not an inherent price: compare() spawned one awk PER FILE to
+#    re-scan the whole other manifest, and _manifest() spawned TWO processes per file. Both
+#    fixed; the selftest is 0.38s and it is in the list above.)
 #   publish_detached.sh       19.32s, and it has already done its job before this runs
 #   check_fold_train.sh · rehearse_publish.sh · reap_release_worktrees.sh   OFF the chain
 #   publish_all.sh            has NO selftest — it appears in greps for "--selftest" only
@@ -433,7 +436,7 @@ fi
 # Total added: ~2.6s against a chain that runs 45s-45min.
 _SH_SELFTESTS="artifact_identity.sh build_sha.sh check_import_ok.sh check_masters_untouched.sh
 check_profile_untouched.sh check_version_matches_tag.sh pck_cache_report.sh store_status.sh
-tag_gate_evidence.sh"
+tag_gate_evidence.sh verify_store_artifact.sh"
 for _t in $_SH_SELFTESTS; do
     if [ ! -x "tools/$_t" ]; then
         echo "[pub] BLOCKED: tools/$_t missing or not executable — it is on the publish path" >&2

@@ -62,8 +62,23 @@ TARGET="struktured/cowardly-irregular"
 # silently — the shape that made "masters untouched" blind to an overwrite.
 _manifest() {
     local dir="$1"
+    # ⛔ THIS USED TO SPAWN TWO PROCESSES PER FILE — `cksum` and `awk`, inside the read loop.
+    # On the selftest's 5000-file fixture that is 20,000 spawns across the two directories and
+    # it cost 18.6 s, the whole of what remained after compare()'s O(n^2) content loop was
+    # fixed. Batched through xargs: same manifest, same order, same field format.
+    #
+    # The name is taken as "everything after the second space" rather than $3, because cksum
+    # prints `SUM SIZE NAME` and a NAME may contain spaces; and the directory prefix is
+    # stripped by LENGTH rather than by a regex, because a path can carry regex metacharacters.
     find "$dir" -type f -print0 2>/dev/null | sort -z \
-        | while IFS= read -r -d '' f; do printf '%s ' "${f#"$dir"/}"; cksum < "$f" | awk '{print $1}'; done
+        | xargs -0 -r cksum 2>/dev/null \
+        | awk -v p="$dir/" '{
+              s = $1
+              i = index($0, " "); rest = substr($0, i + 1)
+              j = index(rest, " "); n = substr(rest, j + 1)
+              if (substr(n, 1, length(p)) == p) { n = substr(n, length(p) + 1) }
+              print n " " s
+          }'
 }
 
 compare() {
@@ -87,12 +102,13 @@ compare() {
     # anyway; the selftest could never have caught it because 3-file fixtures are far below
     # the truncation point. Sorted real files, and grep -Fxv rather than comm.
     local tmpd; tmpd="$(mktemp -d "${TMPDIR:-/tmp}/svcmp.XXXXXX")"
-    printf '%s\n' "$ma" | awk 'NF{print $1}' | sort > "$tmpd/a.names"
-    printf '%s\n' "$mb" | awk 'NF{print $1}' | sort > "$tmpd/b.names"
+    printf '%s\n' "$ma" > "$tmpd/a.manifest"
+    printf '%s\n' "$mb" > "$tmpd/b.manifest"
+    awk 'NF{print $1}' "$tmpd/a.manifest" | sort > "$tmpd/a.names"
+    awk 'NF{print $1}' "$tmpd/b.manifest" | sort > "$tmpd/b.names"
     local only_a only_b diff_files=0
     only_a="$(grep -Fxv -f "$tmpd/b.names" "$tmpd/a.names" | tr '\n' ' ')"
     only_b="$(grep -Fxv -f "$tmpd/a.names" "$tmpd/b.names" | tr '\n' ' ')"
-    rm -rf "$tmpd"
 
     local rc=0
     if [ -n "${only_a// }" ]; then
@@ -106,15 +122,29 @@ compare() {
         rc=5
     fi
 
-    # contents, for the files present on both sides
-    while read -r name sum; do
-        [ -z "$name" ] && continue
-        local other; other="$(printf '%s\n' "$mb" | awk -v n="$name" '$1==n {print $2}')"
-        if [ -n "$other" ] && [ "$other" != "$sum" ]; then
+    # contents, for the files present on both sides.
+    #
+    # ⛔ THIS USED TO SPAWN ONE awk PER FILE, each re-scanning the WHOLE other manifest — O(n^2)
+    # work plus n process spawns. Measured on the selftest's 5000-file fixture: 35.88 s, which
+    # is 99.7% of a 35.99 s selftest and the sole reason this tool was EXEMPTED from gate 0d
+    # on cost. The fixtures themselves cost 0.24 s to build and hash; the slow thing was not
+    # the thing that looked slow, and shrinking the fixture — my first idea — would have
+    # hollowed the arm that catches the comm/procsub truncation for a 0.18 s saving.
+    #
+    # One awk pass instead: read B into a map, stream A, emit only the differing triples. The
+    # loop below then runs over the differences (normally zero) rather than over every file.
+    local diffs
+    diffs="$(awk 'NR==FNR { if (NF) b[$1]=$2; next }
+                  NF && ($1 in b) && b[$1] != $2 { print $1 " " $2 " " b[$1] }' \
+             "$tmpd/b.manifest" "$tmpd/a.manifest")"
+    if [ -n "$diffs" ]; then
+        while read -r name sum other; do
+            [ -z "$name" ] && continue
             echo "[store-verify] BLOCKED: ${name} differs — ${alabel}=${sum} ${blabel}=${other}" >&2
             diff_files=$((diff_files+1)); rc=5
-        fi
-    done <<< "$ma"
+        done <<< "$diffs"
+    fi
+    rm -rf "$tmpd"
 
     if [ "$rc" -eq 0 ]; then
         # The verdict names the two sides it was GIVEN. This line used to read "the store
