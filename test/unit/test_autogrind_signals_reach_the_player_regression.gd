@@ -23,7 +23,13 @@ const SUMMARY := "res://src/ui/autogrind/AutogrindSummary.gd"
 const REACHES_PLAYER := {
 	"grind_stopped": "listener:AutogrindController.gd",
 	"region_cracked": "listener:AutogrindController.gd",
-	"region_advanced": "listener:GameLoop.gd",
+	## NOT a GameLoop subscription to THIS signal — that claim passed only because GameLoop
+	## connects `_autogrind_controller.region_advanced`, a DIFFERENT object's signal of the same
+	## name, and the old bare contains() could not tell them apart. AutogrindSystem's own
+	## region_advanced has ZERO subscribers; the controller emits its own after calling
+	## advance_to_next_region, and GameLoop listens to that. The event reaches the player; the
+	## stated route did not. Both halves of the relay are checked below.
+	"region_advanced": "relay:AutogrindController.gd",
 	"region_rotation_suggested": "listener:GameLoop.gd",
 	"corruption_threshold_crossed": "listener:GameLoop.gd",
 	"system_collapse": "collapse_count",
@@ -131,8 +137,21 @@ func test_each_must_reach_signal_actually_has_its_surface() -> void:
 			var src: String = FileAccess.get_file_as_string("res://src/autogrind/%s" % f)
 			if src == "":
 				src = FileAccess.get_file_as_string("res://src/%s" % f)
-			if not src.contains("%s.connect" % sig):
-				missing.append("%s -> %s does not subscribe" % [sig, f])
+			## OBJECT-QUALIFIED. A bare `<sig>.connect` is satisfied by any object carrying a signal
+			## of that name — the controller mirrors four of these — so the unqualified form certified
+			## region_advanced as reaching the player while AutogrindSystem's copy had no subscriber.
+			if not src.contains("AutogrindSystem.%s.connect" % sig):
+				missing.append("%s -> %s does not subscribe to AutogrindSystem.%s" % [sig, f, sig])
+		elif evidence.begins_with("relay:"):
+			## The system signal is unconsumed BY DESIGN and the event reaches the player through a
+			## re-emit. Both halves required: the relay must emit its own, and GameLoop must take it.
+			var rf: String = evidence.substr(6)
+			var relay: String = FileAccess.get_file_as_string("res://src/autogrind/%s" % rf)
+			var gl2: String = FileAccess.get_file_as_string("res://src/GameLoop.gd")
+			if not relay.contains("%s.emit(" % sig):
+				missing.append("%s -> %s never re-emits it" % [sig, rf])
+			elif not gl2.contains("_autogrind_controller.%s.connect" % sig):
+				missing.append("%s -> GameLoop does not subscribe to the relay's %s" % [sig, sig])
 		else:
 			if not summary.contains(evidence):
 				missing.append("%s -> Summary never renders '%s'" % [sig, evidence])
@@ -172,8 +191,13 @@ func test_a_counter_cannot_vouch_for_a_payload() -> void:
 	var undeclared: Array = []
 	for sig in REACHES_PLAYER.keys():
 		var evidence: String = str(REACHES_PLAYER[sig])
-		if evidence.begins_with("listener:") or evidence.begins_with("notification:"):
-			continue  ## a subscriber/handler receives the payload itself
+		## A relay delivers the payload too: the controller re-emits WITH arguments and GameLoop's
+		## handler declares all three. Note the relay's first argument is its OWN region_id, where the
+		## system passes old_region — same value in practice, not the same expression, which is worth
+		## knowing before anyone treats the two emits as interchangeable.
+		if evidence.begins_with("listener:") or evidence.begins_with("notification:") \
+				or evidence.begins_with("relay:"):
+			continue  ## a subscriber/handler/relay receives the payload itself
 		if str(params.get(sig, "")) == "":
 			continue  ## no payload for a counter to fail to carry
 		if not PAYLOAD_DISPENSABLE.has(sig):
