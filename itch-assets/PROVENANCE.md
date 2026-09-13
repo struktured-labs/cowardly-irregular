@@ -70,3 +70,61 @@ that was never read back is a claim, not a backup.
 find itch-assets -type f ! -name MANIFEST.txt -print0 | sort -z \
   | while IFS= read -r -d '' f; do printf '%s ' "$f"; cksum < "$f"; done
 ```
+
+## ⛔ 2026-09-12 — "LAST RE-TAKEN AT v3.33.267-alpha" IS WRONG FOR 17 OF 20 SHOTS
+
+Measured by sha256 against seven surviving capture directories in the lane's `tmp/`. The
+shipped set is a MIXTURE of at least five capture eras, not one:
+
+```
+shots-225        battle_storm · field_elite_steampunk · grimhollow_spiral
+                 infernal_grotto_f3 · warren_lever_portals · warren_wrap_field
+shots-262        battle · frosthold_village · harmonia_village · inn_interior
+                 tavern_interior · whispering_cave
+shots-267        eldertree_village · grimhollow_village · sandrift_village
+shots-262 OR 267 ironhaven_village · shop_interior   (byte-identical in both — unchanged between)
+shots-62a1a2d6   title_screen
+no local match   field_elite_medieval · field_elite_prompt_medieval
+```
+
+⛔ **So `--from v3.33.267-alpha` is the wrong baseline for most of this set**, and
+`tools/store_shot_staleness.py`'s documented usage said to use it. Staleness is PER SHOT:
+a `shots-225`-era frame has ~119 tags of drift behind it, not 76.
+
+🔑 **AND IT RETRACTS A CLAIM THIS LANE PUBLISHED TWICE TODAY.** The `.343` report said
+`whispering_cave`'s frame had drifted while its script had not, from a fresh capture at 4.5x
+the shipped bytes (50,654 -> 230,970). The cause is not drift:
+
+```
+shipped whispering_cave.png   50,654 B   sha 1913253999384…  == shots-262, byte-identical
+shots-267 capture            230,992 B   sha 4c7ca5afb04f…   ~= a fresh .342 capture (230,970)
+```
+
+**A 231 KB capture already existed at `.267`. The shipped file is the older `.262` one, and it
+was never replaced when the rest of that batch was.** The frame changed BEFORE `.267`; the
+staleness was an un-updated file, not content moving underneath a stable script. The tool's
+"unchanged" verdict on the script axis was right, my reading of what the byte gap MEANT was
+wrong, and only the surviving capture directories could have told the difference.
+
+📌 The `.343` framing also credited `--compare` with finding "the frame changed". What it
+actually found is that the shipped file disagrees with a current capture — which is the useful
+signal and does not say WHY. Attributing it to drift was inference, not measurement.
+
+## `unshipped-captures/` — captures that existed in exactly one place
+
+Rescued from orphaned worktree directories that a `git worktree prune` had unregistered while
+leaving the files (the residue of the prune this lane removed from
+`reap_release_worktrees.sh` in `484e7dc7`). None of these was on this branch; the containing
+directories are ~18 GB of reclaimable scratch, and deleting it would have taken them.
+
+```
+brasston_lift.png · eldertree_canopy.png      shots-225, in store_shots_225.gd's list,
+infernal_grotto_f2.png · infernal_grotto_f4.png   captured and never shipped
+field_elite_medieval.shots-239-variant.png    1,082,794 B vs the shipped 1,125,674 — a
+                                              DIFFERENT frame, kept beside it, not over it
+whispering_cave.shots-267.png                 the 231 KB capture the shipped set skipped
+```
+
+**These are candidates, not decisions** — whether any belongs in the gallery is @struktured's
+call, and `CAPTIONS.md` carries the order and the lead. They are here so the choice survives
+the scratch being cleaned.
