@@ -398,7 +398,17 @@ if ./tools/web_smoke.sh > tmp/deploy_web_smoke.log 2>&1; then
 else
   RC=$?
   if [ "$RC" = "3" ]; then
-    echo "[deploy] WARNING: web smoke SKIPPED (no playwright on this machine) — desktop smoke still gated"
+    echo "[deploy] WARNING: web smoke SKIPPED (WEB_SMOKE_OPTIONAL=1 was set) — desktop smoke still gated"
+  elif [ "$RC" = "4" ]; then
+    # The gate could not RUN. Retrying cannot conjure a playwright module, and the
+    # old code path turned this into a WARNING and published anyway -- which is how
+    # the only gate that boots the real WASM build could leave the deploy without
+    # anyone choosing that. Same shape as the EC 124 rule above: say what actually
+    # happened instead of retrying a thing that cannot succeed.
+    cat tmp/deploy_web_smoke.log >&2
+    echo "[deploy] BLOCKED: the web boot smoke could not RUN (it did not fail to boot)." >&2
+    echo "        No second attempt: a retry cannot install a missing module." >&2
+    exit 5
   else
     cp tmp/deploy_web_smoke.log tmp/deploy_web_smoke.attempt1.log
     echo "[deploy] web smoke attempt 1 failed (chromium flake?) — retrying once"
@@ -407,7 +417,11 @@ else
     else
       RC=$?
       if [ "$RC" = "3" ]; then
-        echo "[deploy] WARNING: web smoke SKIPPED on retry — desktop smoke still gated"
+        echo "[deploy] WARNING: web smoke SKIPPED on retry (WEB_SMOKE_OPTIONAL=1) — desktop smoke still gated"
+      elif [ "$RC" = "4" ]; then
+        cat tmp/deploy_web_smoke.log >&2
+        echo "[deploy] BLOCKED: the web boot smoke could not RUN on the retry either." >&2
+        exit 5
       else
         echo "[deploy] BLOCKED: web build failed to boot in chromium TWICE — see tmp/deploy_web_smoke.log (+ attempt1)" >&2; exit 5
       fi

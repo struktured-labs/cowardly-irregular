@@ -433,7 +433,7 @@ fi
 # Total added: ~2.6s against a chain that runs 45s-45min.
 _SH_SELFTESTS="artifact_identity.sh build_sha.sh check_import_ok.sh check_masters_untouched.sh
 check_profile_untouched.sh check_version_matches_tag.sh pck_cache_report.sh store_status.sh
-tag_gate_evidence.sh"
+tag_gate_evidence.sh web_smoke.sh"
 for _t in $_SH_SELFTESTS; do
     if [ ! -x "tools/$_t" ]; then
         echo "[pub] BLOCKED: tools/$_t missing or not executable — it is on the publish path" >&2
