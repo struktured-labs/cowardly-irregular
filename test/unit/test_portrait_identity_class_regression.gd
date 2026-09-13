@@ -7,6 +7,7 @@ extends GutTest
 ## Cutscenes ask for the name key; OverworldNPC._portrait_key() asks for the archetype key.
 ## Both render. A player who talks to Theron in Harmonia then sees him in a cutscene meets two men.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const CD := "res://src/cutscene/CutsceneDialogue.gd"
 
 ## Known name-key -> archetype-key pairs. Named-member controls; the derived arm below finds new ones.
@@ -18,7 +19,9 @@ const KNOWN_PAIRS := {
 
 
 func _portrait_map() -> Dictionary:
-	var src := FileAccess.get_file_as_string(CD)
+	# Strip the FILE, then window: a commented-out entry inside the dict would parse as a
+	# registered key. Zero such lines today (20 comments in the block, 0 with a pair).
+	var src := GdSource.code_of(CD)
 	assert_ne(src, "", "CutsceneDialogue.gd must be readable")
 	var i := src.find("const PORTRAIT_SPRITES")
 	assert_gt(i, -1, "PORTRAIT_SPRITES must exist")
@@ -60,7 +63,7 @@ func _bound_archetypes() -> Dictionary:
 	re.compile('sprite_archetype\\s*=\\s*"([a-z0-9_]+)"')
 	for root in ["res://src/maps", "res://src/exploration"]:
 		for path in _gd_files_under(root):
-			for m in re.search_all(FileAccess.get_file_as_string(path)):
+			for m in re.search_all(GdSource.code_of(path)):
 				out[m.get_string(1)] = path
 	return out
 
@@ -131,6 +134,7 @@ const KNOWN_MISSING_PORTRAITS := [
 ## the reader defect this file already carries a fix for one function above.
 func test_no_registered_portrait_points_at_a_missing_file() -> void:
 	var map := _portrait_map()
+	assert_gt(map.size(), 0, "PRECONDITION: no portrait keys are registered at all — this sweep checks nothing")
 	var known := {}
 	for k in KNOWN_MISSING_PORTRAITS:
 		known[k] = true
@@ -149,8 +153,14 @@ func test_no_registered_portrait_points_at_a_missing_file() -> void:
 func test_every_known_missing_portrait_is_still_missing() -> void:
 	# EARNED. Make the art and this entry must be deleted, or it excuses something already fixed.
 	var map := _portrait_map()
-	assert_gt(KNOWN_MISSING_PORTRAITS.size(), 10,
-		"CONTROL: the declared-missing list holds %d entries (16 at time of writing) -- if it drains, the sweep above has nothing to compare and its clean result is free" % KNOWN_MISSING_PORTRAITS.size())
+	assert_gt(map.size(), 0, "PRECONDITION: no portrait keys registered — this arm has nothing to police")
+	# ⛔ THIS TABLE DRAINS BY DESIGN — every entry leaves when its art lands. The floor here used
+	# to be `size() > 10`, which reds on the FINISHED state: making the 12 masterite portraits
+	# empties it. Its premise was also backwards — an empty exemption list makes the sweep above
+	# STRICTER (every key must resolve), not free. Empty needs no policing.
+	if KNOWN_MISSING_PORTRAITS.is_empty():
+		pass_test("every declared-missing portrait has been made — nothing left to excuse")
+		return
 	var now_present: Array = []
 	var not_a_key: Array = []
 	for k in KNOWN_MISSING_PORTRAITS:
