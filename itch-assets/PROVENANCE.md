@@ -128,3 +128,27 @@ whispering_cave.shots-267.png                 the 231 KB capture the shipped set
 **These are candidates, not decisions** — whether any belongs in the gallery is @struktured's
 call, and `CAPTIONS.md` carries the order and the lead. They are here so the choice survives
 the scratch being cleaned.
+
+## `capture-history/` — every surviving capture era, preserved wholesale
+
+**2026-09-12, and it exists because my first rescue was SAMPLED.** I checked two of seven
+capture directories, rescued six files, and reported the set safe. Checking all seven found
+**31 more files on no branch** — superseded era-variants of shots that ARE shipped, plus the
+`shots-267` batch that never replaced the `.262` one.
+
+Preserving all of it beat curating it: **57 files, 9.0 MB.** At that size, deciding which
+era-variant matters is a judgement nobody needs to make, and I had just been wrong once about
+which files were covered.
+
+```
+shoot-prep · shots-225 · shots-239 · shots-262 · shots-267 · shots-62a1a2d6
+```
+
+🔑 **`shots-267/` is the forensically useful one** — it holds what the `.267` re-shoot actually
+produced for `battle`, `frosthold`, `harmonia`, `inn` and `tavern`, none of which reached the
+shipped set. It is the evidence for the era map above, and without it the shipped
+`whispering_cave` would still look like drift.
+
+⚠️ **Recoverable in principle, not in practice:** re-running the capture tools at an old tag
+needs that tag's tree, a warm import and a sandboxed xvfb run, and would not reproduce a frame
+whose difference came from an asset that has since changed. Cheaper to keep 9 MB.
