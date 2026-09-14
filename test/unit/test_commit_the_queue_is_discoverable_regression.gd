@@ -18,15 +18,38 @@ const W98 := "res://src/ui/Win98Menu.gd"
 
 
 ## The commit-as-is path must exist and submit ONLY what is queued.
+## BEHAVIOURAL since 2026-09-14. This pinned the literal `actions_submitted.emit(root._queued_actions
+## .duplicate())`. The Advance/5-action work order needs the queue cleared and queue_changed(0) sent
+## BEFORE that signal (it dispatches turn end, and the next PC's menu can exist before control
+## returns), so the text had to change while the property did not. Driving the menu asserts the
+## property itself: exactly the queue, and not the highlighted item.
 func test_hold_l_commits_the_queue_without_adding_anything() -> void:
-	var src := FileAccess.get_file_as_string(W98)
-	var at := src.find("func _confirm_turn_with_queue")
-	assert_gt(at, -1, "the commit-as-is path must exist")
-	var body := src.substr(at, src.find("\nfunc ", at + 10) - at)
-	assert_true(body.contains("actions_submitted.emit(root._queued_actions.duplicate())"),
-		"it must submit the queue as it stands")
-	assert_false(body.contains("current_item"),
-		"and must NOT append the highlighted item — that is the difference from A, and his whole ask")
+	var m = load(W98).new()
+	m.is_root_menu = true
+	m.battle_mode = true
+	add_child_autofree(m)
+	m.setup("Command", [
+		{"id": "attack", "label": "Attack"},
+		{"id": "guard", "label": "Guard"},
+	], Vector2(10, 10), "fighter")
+	m._can_accept_input = true
+	m.set_max_queue_size(4)
+	m.selected_index = 0
+	for i in range(2):
+		Win98Menu._last_advance_ms = -1000000
+		m._handle_advance_input()
+	assert_eq(m.get_queue_count(), 2, "CONTROL: two actions must be queued before the hold")
+	m.selected_index = 1  # a DIFFERENT item highlighted — the one A would add
+	var got: Array = []
+	m.actions_submitted.connect(func(a): got.append(a))
+	m._confirm_turn_with_queue()
+	assert_eq(got.size(), 1, "the commit-as-is path must submit")
+	if got.size() != 1:
+		return
+	assert_eq(got[0].size(), 2, "it must submit the queue as it stands — two, not three")
+	for a in got[0]:
+		assert_ne(a.id, "guard",
+			"and must NOT append the highlighted item — that is the difference from A, and his whole ask")
 
 
 ## CONTROL: the OTHER path must genuinely add the highlighted item, or the arm above distinguishes

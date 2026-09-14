@@ -1000,6 +1000,7 @@ func save_settings() -> void:
 			settings["reduce_flashes"] = GameState.reduce_flashes
 		settings["encounter_rate_multiplier"] = GameState.encounter_rate_multiplier
 		settings["screen_shake_enabled"] = GameState.screen_shake_enabled
+		settings["advance_commits_at_limit"] = GameState.advance_commits_at_limit
 		settings["default_battle_speed"] = GameState.default_battle_speed
 		settings["debug_log_enabled"] = GameState.debug_log_enabled
 		settings["debug_all_pcs_unlocked"] = GameState.debug_all_pcs_unlocked
@@ -1136,6 +1137,8 @@ func load_settings() -> void:
 			GameState.encounter_rate_multiplier = clampf(float(settings["encounter_rate_multiplier"]), 0.0, 2.0)
 		if settings.has("screen_shake_enabled"):
 			GameState.screen_shake_enabled = bool(settings["screen_shake_enabled"])
+		if settings.has("advance_commits_at_limit"):
+			GameState.advance_commits_at_limit = bool(settings["advance_commits_at_limit"])
 		# v3-gated: a pre-v3 file's stale engine value silently UNDID the speed migration 40 lines above
 		if settings.has("default_battle_speed") and settings.get("speed_scale_v3", false):
 			# Validate against actual BATTLE_SPEEDS — fall back to the 0.25 default if drift.
