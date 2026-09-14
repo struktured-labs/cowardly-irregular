@@ -94,8 +94,12 @@ func test_tween_still_animates_y_by_minus_10() -> void:
 	# the hold_time. With the new dynamic y, the tween animates from
 	# the corrected initial position which is the right behavior.
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("tween_property(self, \"position:y\", position.y - 10, _hold_time * 0.5)"),
-		"tween must still animate container.position.y by -10 — preserves the float-up bubble animation")
+	assert_true(body.contains("tween_property(self, \"position:y\", position.y - _float_px, _hold_time * 0.5)"),
+		"tween must still animate container.position.y upward — preserves the float-up bubble animation")
+	var b := BattleSpeechBubble.new()
+	autofree(b)
+	assert_eq(b._float_px, 10.0,
+		"a bubble with headroom still floats the full 10px; only a ceiling-pinned one floats less")
 
 
 func test_side_placement_happens_in_the_layout_pass() -> void:

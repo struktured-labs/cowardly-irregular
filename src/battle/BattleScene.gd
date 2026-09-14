@@ -5474,16 +5474,37 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 		var home = sprite.get_meta("home_position")
 		if home is Vector2:
 			anchor += (home - sprite.position)
+	var half_w: float = 0.0
 	if sprite is AnimatedSprite2D:
 		var anim_sprite: AnimatedSprite2D = sprite
 		if anim_sprite.sprite_frames and anim_sprite.sprite_frames.has_animation(anim_sprite.animation):
 			var tex: Texture2D = anim_sprite.sprite_frames.get_frame_texture(anim_sprite.animation, anim_sprite.frame)
 			if tex:
 				anchor.y -= tex.get_height() * absf(anim_sprite.scale.y) * 0.5
+				half_w = tex.get_width() * absf(anim_sprite.scale.x) * 0.5
 	var vp_w: float = get_viewport_rect().size.x
 	# struktured playtest 2026-08-22 "style the bubble away from them": the old always-left nudge still CENTRED the bubble on the anchor, so it sat on the speaker. Offset to a side instead — right for left-half speakers, left for right-half ones so it stays off the party panel; BattleSpeechBubble flips if the clamp would re-cover them.
 	var prefer_right: bool = anchor.x < vp_w * 0.5
-	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right)
+	# The top party slot's head is above the old 48px clamp, and clamped bubbles covered the SELECT banner (store capture v3.33.345) — ceiling is the banner's real bottom.
+	var banner: Control = turn_info.get_parent() as Control if turn_info else null
+	var ceiling: float = banner.get_global_rect().end.y + 6.0 if banner and banner.is_visible_in_tree() else BattleSpeechBubble.TOP_MARGIN
+	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right, half_w, ceiling, _bubble_keep_out_rects)
+
+
+## Screen rects a bubble must slide past: the open command menu, its submenus and tooltip (siblings under this scene, not children).
+func _bubble_keep_out_rects() -> Array:
+	var out: Array = []
+	var m = active_win98_menu
+	var depth: int = 0
+	while m != null and is_instance_valid(m) and depth < 8:
+		if m.is_visible_in_tree():
+			out.append(m.get_global_rect())
+		var tip = m.get("_tooltip_label")
+		if tip is Control and is_instance_valid(tip) and tip.is_visible_in_tree():
+			out.append(tip.get_global_rect())
+		m = m.get("submenu")
+		depth += 1
+	return out
 
 func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	"""Display one-shot visual feedback when all enemies are defeated in a single execution phase"""
