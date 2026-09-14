@@ -46,15 +46,34 @@ func after_each() -> void:
 # ─── the aura's own contract ───
 
 func test_every_channel_rises_with_the_count() -> void:
-	## Four channels at once is what "grows" means. One flat channel and 4 reads the same as 3.
+	## Many channels at once is what "grows" means. One flat channel and 4 reads the same as 3.
 	var flat: Array = []
-	for key in ["radius", "pulse_hz", "glyphs", "brightness"]:
+	for key in ["radius", "fill_alpha", "rim_width", "pulse_hz", "glyphs", "spin", "outline_grow", "outline_alpha"]:
 		for n in range(2, 6):
 			var lo = AuraScript.params_for(n - 1, false)[key]
 			var hi = AuraScript.params_for(n, false)[key]
 			if not (float(hi) > float(lo)):
 				flat.append("%s %d->%d (%s -> %s)" % [key, n - 1, n, str(lo), str(hi)])
 	assert_eq(flat.size(), 0, "a channel failed to rise with the queue: " + str(flat))
+
+
+## ⛔ THE BAR THE FIRST PASS MISSED. Every channel rose, and cowir-main still could not see counts
+## 1-4 in the folded frames — a ring stepping a few px per press is monotone and invisible. So the
+## thresholds live HERE, not beside the table: a floor declared next to what it bounds can be lowered
+## in the same edit that flattens the table, and stay green.
+const VISIBLE_STEP := {"radius": 6.0, "fill_alpha": 0.06, "rim_width": 1.0}
+const VISIBLE_FIRST_FILL: float = 0.15
+
+func test_every_press_is_a_visible_step_not_just_a_bigger_number() -> void:
+	var faint: Array = []
+	for key in VISIBLE_STEP.keys():
+		for n in range(1, 6):
+			var step: float = float(AuraScript.params_for(n, false)[key]) - float(AuraScript.params_for(n - 1, false)[key])
+			if step < float(VISIBLE_STEP[key]):
+				faint.append("%s %d->%d steps %.3f, needs %.3f" % [key, n - 1, n, step, float(VISIBLE_STEP[key])])
+	assert_eq(faint.size(), 0, "a press changes the aura by less than reads at couch distance: " + str(faint))
+	assert_gte(float(AuraScript.params_for(1, false)["fill_alpha"]), VISIBLE_FIRST_FILL,
+		"press 1 must read on its own — a filled disc from the first action, not only relative to the second")
 
 
 func test_a_full_bank_is_its_own_state_not_a_louder_fourth() -> void:
@@ -75,25 +94,70 @@ func test_it_is_off_at_minimal_and_at_the_turbo_console_tier() -> void:
 	assert_false(AuraScript.should_show(BattleJuice.Tier.FULL, false), "and off when the player turns it off")
 
 
-func test_it_stays_under_the_battle_start_quip() -> void:
-	## cowir-cutscenes: the turn-one quip anchors PARTY_SPRITE_HEIGHT / 2 above sprite centre. The
-	## aura's furthest reach, full-bank radius at the top of its pulse, must stay under it.
-	var anchor: float = SceneScript.PARTY_SPRITE_HEIGHT / 2.0
-	assert_gt(anchor, 50.0, "CONTROL: the quip anchor reads as a real height (%.1f)" % anchor)
-	assert_lt(AuraScript.max_reach(), anchor,
-		"the aura reaches %.1f px and would collide with the %.1f px quip anchor" % [AuraScript.max_reach(), anchor])
+func test_the_disc_stays_within_its_actors_figure() -> void:
+	## ⛔ This was "stays under the battle-start quip" against a 105 px anchor, and cowir-cutscenes
+	## measured that for the lead PC the bubble is clamped DOWN onto the body — the arm passed while
+	## the overlap existed. Bubble placement is BattleSpeechBubble's to guarantee; this only keeps the
+	## disc, at its most extreme moment (full bank, pulse peak, mid-kick), inside its own actor's figure.
+	var half: float = SceneScript.PARTY_SPRITE_HEIGHT / 2.0
+	assert_gt(half, 50.0, "CONTROL: the party figure height reads as real (%.1f)" % half)
+	assert_lt(AuraScript.max_reach(), half,
+		"the disc reaches %.1f px, past its own %.1f px figure" % [AuraScript.max_reach(), half])
 
 
 func test_a_press_that_raises_the_count_pops_and_an_undo_does_not() -> void:
 	var aura = autofree(AuraScript.new())
 	assert_true(aura.set_state(1, false, Color.RED, "runes"), "0 -> 1 rises")
+	assert_eq(aura.kick_amount(), 1.0, "and a rising press kicks the ring")
+	aura._process(AuraScript.KICK_DECAY_S)
+	assert_eq(aura.kick_amount(), 0.0, "the kick settles within its decay")
 	assert_true(aura.set_state(2, false, Color.RED, "runes"), "1 -> 2 rises")
 	assert_false(aura.set_state(2, false, Color.RED, "runes"), "a repeat of the same count does not pop")
 	var r_two: float = float(AuraScript.params_for(aura.count, false)["radius"])
+	aura._process(AuraScript.KICK_DECAY_S)
 	assert_false(aura.set_state(1, false, Color.RED, "runes"), "an undo does not pop")
+	assert_eq(aura.kick_amount(), 0.0, "and does not kick")
 	assert_lt(float(AuraScript.params_for(aura.count, false)["radius"]), r_two, "and the aura shrinks with it")
 	aura.clear()
 	assert_false(aura.is_active(), "clear leaves nothing on screen")
+
+
+func _frames() -> SpriteFrames:
+	var f := SpriteFrames.new()
+	var img := Image.create(8, 16, false, Image.FORMAT_RGBA8)
+	img.fill(Color.WHITE)
+	f.add_frame("default", ImageTexture.create_from_image(img))
+	f.add_frame("default", ImageTexture.create_from_image(img))
+	return f
+
+
+func test_the_outline_mirrors_the_body_and_grows_with_the_count() -> void:
+	## The half the bubble cannot cover: a silhouette of the body's own frame, so it reads beside a
+	## turn_start bubble clamped onto the upper body — on any sheet, without knowing where the art sits.
+	var body := AnimatedSprite2D.new()
+	body.sprite_frames = _frames()
+	body.scale = Vector2(0.8, 0.8)
+	body.flip_h = true
+	body.frame = 1
+	add_child_autofree(body)
+	var aura = AuraScript.new()
+	body.add_child(aura)
+	aura.bind_body(body)
+	var line = aura.outline()
+	assert_not_null(line, "binding a body creates the outline")
+	assert_false(line.visible, "CONTROL: an empty queue shows no outline")
+	aura.set_state(2, false, Color.RED, "runes")
+	assert_true(line.visible, "a queued action shows it")
+	assert_eq(line.sprite_frames, body.sprite_frames, "drawn from the body's own frames")
+	assert_eq(line.frame, 1, "on the body's current frame")
+	assert_true(line.flip_h, "facing the same way")
+	var two: float = line.scale.x / body.scale.x
+	aura.set_state(5, true, Color.RED, "runes")
+	var five: float = line.scale.x / body.scale.x
+	assert_gt(five, two, "the outline stands further out at 5 than at 2")
+	assert_gt(two, 1.0, "and is always larger than the body, or it is hidden behind it")
+	aura.clear()
+	assert_false(line.visible, "clear hides it")
 
 
 # ─── the scene drives it from the queue ───
@@ -106,6 +170,7 @@ func _scene_with_pc(job: String) -> Array:
 	pc.job = {"id": job}
 	var sprite := AnimatedSprite2D.new()
 	sprite.scale = Vector2(0.8, 0.8)
+	sprite.sprite_frames = _frames()
 	add_child_autofree(sprite)
 	scene.party_members.append(pc)
 	scene.party_sprite_nodes.append(sprite)
@@ -132,6 +197,7 @@ func test_the_queue_count_drives_an_aura_on_the_acting_pc() -> void:
 	assert_eq(aura.count, 3, "carrying the count")
 	assert_eq(aura.shape, "runes", "in the Mage's glyph, from ADVANCE_FLOURISH_SHAPES")
 	assert_almost_eq(aura.scale.x, 1.25, 0.01, "counter-scaled against the sheet's 0.8x draw scale")
+	assert_true(aura.outline() != null and aura.outline().visible, "and the scene bound the body outline to that sprite")
 	scene._on_advance_queue_changed(4, 4)
 	assert_eq(aura.count, 4, "it follows the next press")
 	scene._on_advance_queue_changed(3, 4)
@@ -219,6 +285,35 @@ func test_battle_end_clears_it() -> void:
 	assert_gt(at, -1, "CONTROL: the battle-end handler exists")
 	assert_true(src.substr(at, 200).contains("_clear_advance_aura()"),
 		"and _on_battle_ended calls it first — a win mid-queue must not leave a glowing PC on the results screen")
+
+
+func test_each_press_bursts_the_jobs_own_glyph_ring() -> void:
+	## The first pass popped particles only, and cowir-main could not see a press in the frames. The pop
+	## now bursts the job's glyph ring — the resolution flourish in miniature. It runs inside a live
+	## scene, so this reads the stripped code of the pop itself.
+	var code: String = GdSource.code_of("res://src/battle/BattleScene.gd")
+	var at: int = code.find("func _spawn_advance_queue_pop(")
+	assert_gt(at, -1, "CONTROL: the per-press pop survives stripping")
+	var end: int = code.find("\nfunc ", at + 10)
+	var body: String = code.substr(at, (end - at) if end > at else 2000)
+	assert_true(body.contains("BattleJuice.spawn_burst("), "CONTROL: a known code line in the pop survives the strip")
+	assert_true(body.contains("_spawn_advance_shape(shape"), "each rising press bursts the job's own glyph ring")
+
+
+func test_the_full_bank_cue_is_written_where_the_audit_can_read_it() -> void:
+	## full_bank_charged is manifest-guarded and fails SILENT. test_sfx_key_orphan_audit catches a typo
+	## only when the key sits literally at a play_advance_state call — measured: a typo in that form reds
+	## it, the identical typo through `SoundManager.call("play_advance_state", key)` stays green. And the
+	## audit is one-directional (a key written in code must resolve; nothing requires a manifest key to
+	## be consumed), so it cannot notice the call being re-wrapped. This arm is what notices.
+	var code: String = GdSource.code_of("res://src/battle/BattleScene.gd")
+	var at: int = code.find("func _on_advance_queue_changed(")
+	assert_gt(at, -1, "CONTROL: the queue handler survives stripping")
+	var end: int = code.find("\nfunc ", at + 10)
+	var body: String = code.substr(at, (end - at) if end > at else 3000)
+	assert_true(body.contains("_attach_advance_aura(sprite)"), "CONTROL: a known code line in the handler survives the strip")
+	assert_true(body.contains('SoundManager.play_advance_state("full_bank_charged")'),
+		"the full-bank cue must be a literal play_advance_state call, or a typo in its key plays silence unaudited")
 
 
 func test_the_settings_menu_offers_the_toggle() -> void:

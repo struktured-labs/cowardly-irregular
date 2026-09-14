@@ -6295,14 +6295,18 @@ func _on_advance_queue_changed(count: int, max_size: int) -> void:
 	## Full bank is a property of the QUEUE the menu opened, not of a constant: max_size is 5 only at
 	## +4 AP, so 5/5 there is the full bank and a 4/4 below it is not (cowir-controller's contract).
 	var full_bank: bool = max_size >= BattleManager.FULL_BANK_ACTIONS and count >= max_size
+	var shape: String = str(ADVANCE_FLOURISH_SHAPES.get(job_id, "sparks"))
 	var rose: bool = _advance_aura.set_state(count, full_bank,
-		advance_flourish_color(combatant, _get_job_quip_color(combatant)),
-		str(ADVANCE_FLOURISH_SHAPES.get(job_id, "sparks")))
+		advance_flourish_color(combatant, _get_job_quip_color(combatant)), shape)
 	if not rose:
 		return
-	_spawn_advance_queue_pop(combatant, sprite, count)
+	_spawn_advance_queue_pop(combatant, sprite, count, shape)
 	if full_bank:
-		_play_advance_state_cue("full_bank_charged")
+		## Direct form, never through a helper taking the key as a variable: this cue is manifest-guarded
+		## and fails SILENT, so a typo would play nothing — and test_sfx_key_orphan_audit only sees a key
+		## written literally at a play_advance_state call (cowir-sfx). The wrapper hid it.
+		if SoundManager.has_method("play_advance_state"):
+			SoundManager.play_advance_state("full_bank_charged")
 
 
 ## One aura per battle, re-parented to whichever PC is queueing. A child of the sprite so it follows
@@ -6315,25 +6319,25 @@ func _attach_advance_aura(sprite: Node2D) -> void:
 		if _advance_aura.get_parent():
 			_advance_aura.get_parent().remove_child(_advance_aura)
 		sprite.add_child(_advance_aura)
+	## The silhouette outline mirrors this body's own frame, so it reads beside a quip bubble that
+	## covers the upper half — cowir-cutscenes measured the lead PC's bubble clamped onto its body.
+	if sprite is AnimatedSprite2D:
+		_advance_aura.bind_body(sprite as AnimatedSprite2D)
 	var sx: float = absf(sprite.scale.x)
 	var sy: float = absf(sprite.scale.y)
 	_advance_aura.scale = Vector2(1.0 / sx if sx > 0.001 else 1.0, 1.0 / sy if sy > 0.001 else 1.0)
 
 
-## A small pop on each press that raises the count — the resolution flourish in miniature, so the
-## queue feels like charging the same move rather than a different effect.
-func _spawn_advance_queue_pop(combatant: Combatant, sprite: Node2D, count: int) -> void:
+## A pop on each press that raises the count — the resolution flourish in miniature, so the queue
+## feels like charging the same move rather than a different effect. The job's own glyph ring bursts
+## outward (capped at the size-3 ring so a press never outgrows the payoff), with particles and a
+## squash under it. The first pass had only the particles, which cowir-main could not see in frames.
+func _spawn_advance_queue_pop(combatant: Combatant, sprite: Node2D, count: int, shape: String) -> void:
 	var color: Color = advance_flourish_color(combatant, _get_job_quip_color(combatant))
+	_spawn_advance_shape(shape, sprite.global_position, color, mini(count, 3))
 	BattleJuice.spawn_burst(sprite.global_position, Vector2.UP, 3 + count * 2, color, 60.0 + 20.0 * float(count))
 	if count >= 3:
 		BattleJuice.squash(sprite, 1.0 + 0.015 * float(count), 1.0 - 0.01 * float(count), 0.03, 0.08)
-
-
-## Cue routing belongs to the sfx lane: play_advance_state is their dedicated voice, so a state cue
-## cannot stomp the job's advance rung on the shared battle player. Silent until that lands.
-func _play_advance_state_cue(key: String) -> void:
-	if SoundManager and SoundManager.has_method("play_advance_state"):
-		SoundManager.call("play_advance_state", key)
 
 
 func _clear_advance_aura() -> void:
