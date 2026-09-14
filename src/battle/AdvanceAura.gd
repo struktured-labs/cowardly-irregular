@@ -1,114 +1,142 @@
 extends Node2D
 
-## The persistent aura on the acting PC while an Advance is being QUEUED — struktured 2026-09-14:
-## "I didn't see animated flourishes as u hit advance more — or animated auras, etc."
+## The aura on the acting PC while an Advance is being QUEUED — struktured 2026-09-14: "I didn't see
+## animated flourishes as u hit advance more — or animated auras, etc."
 ##
-## ⛔ SECOND PASS. The first version rose on every channel and still could not be SEEN below 5/5:
-## cowir-main read the folded frames and found counts 1-4 a thin faint ring you had to hunt for,
-## half-hidden under the battle-start quip bubbles — which is the exact thing he said he could not
-## see. "Rises monotonically" was true and was the wrong bar. Every channel now steps by a VISIBLE
-## minimum per press, pinned by the guard, and a silhouette outline hugs the body so the lower half
-## reads even when a bubble covers the upper half.
-##
-## Two axes, the split the resolution flourish already uses: INTENSITY rides the count (fill, rim,
-## radius, orbit, outline), IDENTITY rides the job (colour + glyph shape).
-##
-## Attached as a child of the actor's sprite with show_behind_parent, so it follows the body and
-## draws behind it. Counter-scaled, so a 256px sheet drawn at 0.8x does not shrink the aura with it.
+## ⛔ THIRD PASS. Proportional steps (a few % per press) could not carry 1→2 at full screen, and the disc
+## sat centred on the sprite origin BEHIND its own body: measured 68-70% hidden by the body at every
+## moment, 11% more under the next PC while the actor steps out of formation. So each count now ADDS A
+## LAYER, and every layer lives where the body cannot cover it:
+##   1 silhouette outline · 2 + a ground disc under the feet · 3 + glyph arms orbiting THROUGH the body
+##   (front half drawn in front of it) · 4 + rising motes, faster orbit · 5/5 full bank + gold rim
+## INTENSITY still rides the count inside a layer; IDENTITY rides the job (colour + glyph shape).
 
-## Indexed by queued count; 0 is unused (an empty queue has no aura).
-const RADIUS: Array[float] = [0.0, 36.0, 44.0, 52.0, 60.0, 68.0]
-const FILL_ALPHA: Array[float] = [0.0, 0.20, 0.28, 0.36, 0.44, 0.52]
-const RIM_WIDTH: Array[float] = [0.0, 3.0, 4.5, 6.0, 7.5, 9.0]
+const LAYER_OUTLINE := 1
+const LAYER_DISC := 2
+const LAYER_ARMS := 4
+const LAYER_MOTES := 8
+const LAYER_GOLD := 16
+const LAYER_ALL := 31
+## The categorical table itself, indexed by count. Gold is added by the full bank, not by the count.
+const LAYERS: Array[int] = [0, LAYER_OUTLINE, LAYER_OUTLINE | LAYER_DISC, LAYER_OUTLINE | LAYER_DISC | LAYER_ARMS,
+	LAYER_OUTLINE | LAYER_DISC | LAYER_ARMS | LAYER_MOTES, LAYER_OUTLINE | LAYER_DISC | LAYER_ARMS | LAYER_MOTES]
+const LAYER_NAMES := {LAYER_OUTLINE: "outline", LAYER_DISC: "disc", LAYER_ARMS: "arms", LAYER_MOTES: "motes", LAYER_GOLD: "gold"}
+
+## Disc: a flattened ellipse the actor stands in. RADIUS is its horizontal half-width in screen px.
+const RADIUS: Array[float] = [0.0, 0.0, 58.0, 66.0, 74.0, 82.0]
+const DISC_FLAT: float = 0.36
+const FILL_ALPHA: Array[float] = [0.0, 0.0, 0.48, 0.54, 0.60, 0.66]
+const RIM_WIDTH: Array[float] = [0.0, 0.0, 3.0, 4.0, 5.0, 6.0]
 const PULSE_HZ: Array[float] = [0.0, 0.8, 1.1, 1.5, 2.0, 2.6]
-const GLYPHS: Array[int] = [0, 4, 6, 8, 11, 14]
-## Orbit speed of the glyph arms, radians per second.
-const SPIN: Array[float] = [0.0, 0.8, 1.2, 1.7, 2.3, 3.0]
-## The silhouette outline: how much larger than the body, and how strong. The outline does NOT pulse
-## in scale — at ±4% against a +2% step it made count 2 draw smaller than count 1 at an unlucky phase
-## (cowir-adhoc, from the frames). It breathes in alpha only, and less than its smallest step.
-const OUTLINE_GROW: Array[float] = [1.0, 1.06, 1.10, 1.14, 1.18, 1.22]
-const OUTLINE_ALPHA: Array[float] = [0.0, 0.40, 0.50, 0.60, 0.70, 0.80]
-const OUTLINE_ALPHA_PULSE: float = 0.08
+## Arms: glyphs on a tilted orbit around the figure's middle; its lower half passes in front of the body.
+const GLYPHS: Array[int] = [0, 0, 0, 6, 8, 10]
+const SPIN: Array[float] = [0.0, 0.0, 0.0, 1.4, 2.4, 3.0]
+const ORBIT_RX: Array[float] = [0.0, 0.0, 0.0, 70.0, 76.0, 82.0]
+const ORBIT_TILT: float = 0.32
+## Motes: sparks rising from the disc to the head.
+const MOTES: Array[int] = [0, 0, 0, 0, 12, 18]
+const RISE_HZ: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.9, 1.2]
+## The outline breathes in alpha only, and by less than its smallest step, so no phase inverts two counts.
+const OUTLINE_GROW: Array[float] = [1.0, 1.08, 1.10, 1.12, 1.14, 1.16]
+const OUTLINE_ALPHA: Array[float] = [0.0, 0.50, 0.58, 0.66, 0.74, 0.82]
+const OUTLINE_ALPHA_PULSE: float = 0.06
 
-## The minimum VISIBLE step between counts is owned by the guard, not declared here: a floor stored
-## beside the table it bounds can be lowered in the same edit that flattens the table, and stay green.
-
-## 5/5 is its own state, not a louder fourth: a gold rim and a faster pulse.
 const FULL_BANK_RIM: Color = Color(1.0, 0.84, 0.25)
 const FULL_BANK_RIM_WIDTH: float = 3.0
-const FULL_BANK_RIM_GAP: float = 4.0
+const FULL_BANK_RIM_GAP: float = 5.0
 const FULL_BANK_PULSE_HZ: float = 3.6
-## How far the ring breathes, and how hard a press kicks it, as fractions of radius. The breathe must
-## stay under the smallest radius gap between counts, or a higher count draws smaller than a lower one
-## at the wrong phase: at 0.08 counts 3->4 and 4->5 overlapped (60 x 0.92 < 52 x 1.08). The guard samples
-## the whole cycle, so this cannot quietly grow back.
-const PULSE_DEPTH: float = 0.05
+## Breathe and kick, as fractions of the disc radius. The breathe stays under the smallest radius gap.
+const PULSE_DEPTH: float = 0.04
 const KICK_DEPTH: float = 0.10
 const KICK_DECAY_S: float = 0.18
-## Glyphs orbit just inside the ring so their tips never extend the reach.
-const GLYPH_ORBIT: float = 0.9
+## Where the figure's middle sits for the orbit, as a fraction of its height below its top.
+const ORBIT_HEIGHT: float = 0.55
+## Disc centre lifted above the feet line by this fraction of its smallest vertical radius.
+const DISC_LIFT: float = 0.35
 
 var count: int = 0
 var full_bank: bool = false
 var color: Color = Color.WHITE
 var shape: String = "sparks"
+## Which layers may draw. Only the proof tool narrows it, to measure one layer at a time on screen.
+var draw_layers: int = LAYER_ALL
 var _t: float = 0.0
 var _kick: float = 0.0
 var _body: AnimatedSprite2D = null
 var _outline: AnimatedSprite2D = null
+var _front: Node2D = null
+var _figure: Rect2 = Rect2()
 
 static var _outline_shader: Shader = null
+static var _figure_cache: Dictionary = {}
+
+
+static func layers_for(n: int, is_full_bank: bool) -> int:
+	var i: int = clampi(n, 0, LAYERS.size() - 1)
+	return LAYERS[i] | (LAYER_GOLD if is_full_bank and i > 0 else 0)
 
 
 static func params_for(n: int, is_full_bank: bool) -> Dictionary:
 	var i: int = clampi(n, 0, RADIUS.size() - 1)
 	return {
+		"layers": layers_for(i, is_full_bank),
 		"radius": RADIUS[i],
 		"fill_alpha": FILL_ALPHA[i],
 		"rim_width": RIM_WIDTH[i],
 		"pulse_hz": FULL_BANK_PULSE_HZ if (is_full_bank and i > 0) else PULSE_HZ[i],
 		"glyphs": GLYPHS[i],
 		"spin": SPIN[i],
+		"orbit_rx": ORBIT_RX[i],
+		"motes": MOTES[i],
+		"rise_hz": RISE_HZ[i],
 		"outline_grow": OUTLINE_GROW[i],
 		"outline_alpha": OUTLINE_ALPHA[i],
 		"gold_rim": is_full_bank and i > 0,
 	}
 
 
-## Off at MINIMAL (2x+), and OFF already covers turbo, the grind console and 4x — the work order's
-## three exclusions are exactly "tier is not FULL or REDUCED".
+## Off at MINIMAL (2x+); OFF already covers turbo, the grind console and 4x.
 static func should_show(tier: int, flag_on: bool) -> bool:
 	if not flag_on:
 		return false
 	return tier == BattleJuice.Tier.FULL or tier == BattleJuice.Tier.REDUCED
 
 
-## The furthest the DISC reaches from sprite centre at its most extreme moment — full bank, top of
-## the pulse, mid-kick, outer edge of the gold rim. This bounds the aura to its own actor's figure; it
-## is NOT a bubble-clearance guarantee. The first version claimed one against a 105 px quip anchor,
-## and cowir-cutscenes measured that for the lead PC the bubble is clamped DOWN onto the body, so the
-## check passed while the overlap existed. Bubble placement is BattleSpeechBubble's to guarantee.
-## The silhouette outline is excluded: it hugs the body and is what reads beside a bubble.
+## Furthest horizontal reach from its anchor at the most extreme moment. A figure bound, NOT bubble clearance.
 static func max_reach() -> float:
 	var top: int = RADIUS.size() - 1
 	var r: float = RADIUS[top] * (1.0 + PULSE_DEPTH) * (1.0 + KICK_DEPTH)
-	var ring_edge: float = r + RIM_WIDTH[top] * 0.5
-	var bank_edge: float = r + FULL_BANK_RIM_GAP + FULL_BANK_RIM_WIDTH * 0.5
-	var glyph_edge: float = r * GLYPH_ORBIT + _glyph_size(top)
-	return maxf(ring_edge, maxf(bank_edge, glyph_edge))
+	var disc_edge: float = r + maxf(RIM_WIDTH[top] * 0.5, FULL_BANK_RIM_GAP + FULL_BANK_RIM_WIDTH * 0.5)
+	var arm_edge: float = ORBIT_RX[top] + _glyph_size(top) * 1.2
+	return maxf(disc_edge, arm_edge)
 
 
 static func _glyph_size(n: int) -> float:
-	return 4.0 + 1.2 * float(n)
+	return 9.0 + 1.5 * float(n)
+
+
+## The opaque bounds of a frame, in that frame's pixels. Cached per texture; the whole frame if unreadable.
+static func figure_rect_of(tex: Texture2D) -> Rect2:
+	if tex == null:
+		return Rect2()
+	var key: int = tex.get_instance_id()
+	if _figure_cache.has(key):
+		return _figure_cache[key]
+	var rect := Rect2(Vector2.ZERO, tex.get_size())
+	var img: Image = tex.get_image()
+	if img != null and not img.is_empty():
+		var used: Rect2i = img.get_used_rect()
+		if used.size.x > 0 and used.size.y > 0:
+			rect = Rect2(used)
+	_figure_cache[key] = rect
+	return rect
 
 
 func is_active() -> bool:
 	return count > 0 and visible
 
 
-## Returns true when the count ROSE — the caller fires the per-press pop on exactly those presses,
-## never on an undo or a repeat of the same count. A rise also kicks the ring outward.
+## Returns true when the count ROSE; the caller pops on exactly those presses. A rise kicks the disc.
 func set_state(new_count: int, is_full_bank: bool, new_color: Color, new_shape: String) -> bool:
 	var rose: bool = new_count > count
 	count = maxi(new_count, 0)
@@ -120,7 +148,7 @@ func set_state(new_count: int, is_full_bank: bool, new_color: Color, new_shape: 
 		_kick = 1.0
 	set_process(count > 0)
 	_sync_outline()
-	queue_redraw()
+	_redraw()
 	return rose
 
 
@@ -128,14 +156,18 @@ func kick_amount() -> float:
 	return _kick
 
 
-## The disc's radius as drawn THIS frame. _draw and the guard both read it, so a test sampling phases
-## measures what is on screen rather than a restatement of the tables.
+func has_layer(layer: int) -> bool:
+	return (layers_for(count, full_bank) & draw_layers & layer) != 0
+
+
+## The disc's horizontal radius as drawn THIS frame; 0 while the disc layer is absent.
 func current_radius() -> float:
+	if (layers_for(count, full_bank) & LAYER_DISC) == 0:
+		return 0.0
 	var p: Dictionary = params_for(count, full_bank)
 	return float(p["radius"]) * _breathe(p)
 
 
-## The outline's alpha as applied this frame — ranges [OUTLINE_ALPHA x (1 - OUTLINE_ALPHA_PULSE), OUTLINE_ALPHA].
 func current_outline_alpha() -> float:
 	var p: Dictionary = params_for(count, full_bank)
 	return float(p["outline_alpha"]) * (1.0 - OUTLINE_ALPHA_PULSE * 0.5 * (1.0 - sin(TAU * float(p["pulse_hz"]) * _t)))
@@ -149,10 +181,19 @@ func clear() -> void:
 	set_process(false)
 	if _outline and is_instance_valid(_outline):
 		_outline.visible = false
+	if _front and is_instance_valid(_front):
+		_front.visible = false
 	queue_redraw()
 
 
-## The body the outline mirrors. Rebinding to a new actor moves the outline with the aura.
+## Narrow which layers draw (the proof tool's per-layer measurement), and redraw every part now.
+func set_draw_layers(mask: int) -> void:
+	draw_layers = mask
+	_sync_outline()
+	_redraw()
+
+
+## The body the outline mirrors and the layers stand on. Rebinding moves the front layer with the aura.
 func bind_body(sprite: AnimatedSprite2D) -> void:
 	_body = sprite
 	if _outline == null or not is_instance_valid(_outline):
@@ -162,19 +203,55 @@ func bind_body(sprite: AnimatedSprite2D) -> void:
 		mat.shader = _get_outline_shader()
 		_outline.material = mat
 		add_child(_outline)
+	if _front == null or not is_instance_valid(_front):
+		_front = Node2D.new()
+		_front.name = "AdvanceAuraFront"
+		_front.draw.connect(_draw_front)
+	if _front.get_parent() != sprite:
+		if _front.get_parent():
+			_front.get_parent().remove_child(_front)
+		sprite.add_child(_front)
+	_measure_figure()
 	_sync_outline()
+	_redraw()
 
 
 func outline() -> AnimatedSprite2D:
 	return _outline
 
 
+## The half of the aura drawn IN FRONT of the body: the near side of the orbit and the rising motes.
+func front() -> Node2D:
+	return _front
+
+
+## The figure's opaque bounds in this node's space (screen px, sprite origin at 0,0).
+func figure_rect() -> Rect2:
+	return _figure
+
+
+## Under the feet, lifted a little so the feet stand inside the disc rather than on its far rim.
+func disc_center() -> Vector2:
+	return Vector2(_figure.get_center().x, _figure.end.y - RADIUS[2] * DISC_FLAT * DISC_LIFT)
+
+
+func orbit_center() -> Vector2:
+	return Vector2(_figure.get_center().x, _figure.position.y + _figure.size.y * ORBIT_HEIGHT)
+
+
+## Screen-space position of glyph i this frame, and whether it is on the near (front) side of the orbit.
+func glyph_at(i: int) -> Dictionary:
+	var p: Dictionary = params_for(count, full_bank)
+	var n: int = maxi(int(p["glyphs"]), 1)
+	var a: float = TAU * float(i) / float(n) + _t * float(p["spin"]) * (1.0 if count % 2 == 1 else -1.0)
+	var rx: float = float(p["orbit_rx"])
+	return {"pos": orbit_center() + Vector2(cos(a) * rx, sin(a) * rx * ORBIT_TILT), "front": sin(a) >= 0.0, "angle": a}
+
+
 static func _get_outline_shader() -> Shader:
 	if _outline_shader == null:
 		_outline_shader = Shader.new()
-		## Every opaque pixel of the body becomes the job colour — a flat silhouette, scaled a touch
-		## larger and drawn behind the body, reads as an outline on any sheet without knowing where
-		## the art sits inside its frame.
+		## Every opaque body pixel becomes the job colour: a flat silhouette, drawn larger and behind the body.
 		_outline_shader.code = "shader_type canvas_item;\nuniform vec4 tint : source_color = vec4(1.0);\nvoid fragment() {\n\tCOLOR = vec4(tint.rgb, texture(TEXTURE, UV).a * tint.a);\n}\n"
 	return _outline_shader
 
@@ -184,22 +261,59 @@ func _ready() -> void:
 	set_process(count > 0)
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and _front != null and is_instance_valid(_front) and not _front.is_queued_for_deletion():
+		_front.queue_free()
+
+
 func _process(delta: float) -> void:
 	_t += delta
 	if _kick > 0.0:
 		_kick = maxf(0.0, _kick - delta / KICK_DECAY_S)
 	_sync_outline()
+	_redraw()
+
+
+func _redraw() -> void:
 	queue_redraw()
+	if _front and is_instance_valid(_front):
+		_front.queue_redraw()
 
 
 func _breathe(p: Dictionary) -> float:
 	return (1.0 + PULSE_DEPTH * sin(TAU * float(p["pulse_hz"]) * _t)) * (1.0 + KICK_DEPTH * _kick)
 
 
+## Maps the body's current frame bounds into this node's space: sprite-local, times the body's scale.
+func _measure_figure() -> void:
+	if _body == null or not is_instance_valid(_body) or _body.sprite_frames == null:
+		_figure = Rect2()
+		return
+	var anim: StringName = _body.animation
+	if not _body.sprite_frames.has_animation(anim) or _body.sprite_frames.get_frame_count(anim) == 0:
+		_figure = Rect2()
+		return
+	var tex: Texture2D = _body.sprite_frames.get_frame_texture(anim, 0)
+	if tex == null:
+		_figure = Rect2()
+		return
+	var size: Vector2 = tex.get_size()
+	var fr: Rect2 = figure_rect_of(tex)
+	var origin: Vector2 = _body.offset - (size * 0.5 if _body.centered else Vector2.ZERO)
+	var x0: float = origin.x + (size.x - fr.end.x if _body.flip_h else fr.position.x)
+	var y0: float = origin.y + (size.y - fr.end.y if _body.flip_v else fr.position.y)
+	var s: Vector2 = _body.scale.abs()
+	_figure = Rect2(Vector2(x0, y0) * s, fr.size * s)
+
+
 func _sync_outline() -> void:
+	if _front and is_instance_valid(_front):
+		_front.visible = count > 0 and visible
+		_front.position = position
+		_front.scale = scale
 	if _outline == null or not is_instance_valid(_outline):
 		return
-	if count <= 0 or _body == null or not is_instance_valid(_body) or _body.sprite_frames == null:
+	if not has_layer(LAYER_OUTLINE) or _body == null or not is_instance_valid(_body) or _body.sprite_frames == null:
 		_outline.visible = false
 		return
 	var p: Dictionary = params_for(count, full_bank)
@@ -212,48 +326,85 @@ func _sync_outline() -> void:
 	_outline.flip_v = _body.flip_v
 	_outline.centered = _body.centered
 	_outline.offset = _body.offset
-	## The aura is counter-scaled against the body, so multiply the body's scale back in. No pulse term.
+	## Counter-scaled against the body, so multiply the body's scale back in. No pulse term.
 	_outline.scale = _body.scale * float(p["outline_grow"])
 	(_outline.material as ShaderMaterial).set_shader_parameter("tint", Color(color.r, color.g, color.b, current_outline_alpha()))
 
 
+## Behind the body: the ground disc, its gold rim, and the far half of the orbit.
 func _draw() -> void:
 	if count <= 0:
 		return
 	var p: Dictionary = params_for(count, full_bank)
-	var r: float = current_radius()
-	var fill: float = float(p["fill_alpha"])
-	## A translucent filled disc from press 1, with a softer halo — the body of the aura.
-	draw_circle(Vector2.ZERO, r, Color(color.r, color.g, color.b, fill))
-	draw_circle(Vector2.ZERO, r * 0.62, Color(color.r, color.g, color.b, fill * 0.6))
-	## The rim carries the pulse; its width steps with the count.
-	var rim := Color(color.r, color.g, color.b, clampf(0.55 + fill, 0.0, 1.0))
-	draw_arc(Vector2.ZERO, r, 0.0, TAU, 56, rim, float(p["rim_width"]), true)
-	if full_bank:
-		draw_arc(Vector2.ZERO, r + FULL_BANK_RIM_GAP, 0.0, TAU, 56, FULL_BANK_RIM, FULL_BANK_RIM_WIDTH, true)
-	## Orbiting class glyphs — more of them and faster as the count rises, direction alternating.
-	var n: int = int(p["glyphs"])
-	var spin: float = _t * float(p["spin"]) * (1.0 if count % 2 == 1 else -1.0)
-	var glyph := Color(color.r, color.g, color.b, 1.0).lightened(0.25)
+	if has_layer(LAYER_DISC):
+		var r: float = current_radius()
+		var fill: float = float(p["fill_alpha"])
+		draw_set_transform(disc_center(), 0.0, Vector2(1.0, DISC_FLAT))
+		draw_circle(Vector2.ZERO, r, Color(color.r, color.g, color.b, fill))
+		var core: Color = color.lightened(0.3)
+		draw_circle(Vector2.ZERO, r * 0.6, Color(core.r, core.g, core.b, fill * 0.7))
+		draw_arc(Vector2.ZERO, r, 0.0, TAU, 64, Color(color.r, color.g, color.b, clampf(0.45 + fill, 0.0, 1.0)), float(p["rim_width"]), true)
+		if has_layer(LAYER_GOLD):
+			draw_arc(Vector2.ZERO, r + FULL_BANK_RIM_GAP, 0.0, TAU, 64, FULL_BANK_RIM, FULL_BANK_RIM_WIDTH, true)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if has_layer(LAYER_ARMS):
+		_draw_arms(self, false)
+
+
+## In front of the body: the near half of the orbit and the rising motes.
+func _draw_front() -> void:
+	if count <= 0 or _front == null:
+		return
+	if has_layer(LAYER_ARMS):
+		_draw_arms(_front, true)
+	if has_layer(LAYER_MOTES):
+		var p: Dictionary = params_for(count, full_bank)
+		var n: int = int(p["motes"])
+		var base: Vector2 = disc_center()
+		var rise: float = maxf(_figure.size.y, 60.0)
+		var c := color.lightened(0.45)
+		for i in n:
+			var ph: float = fposmod(_t * float(p["rise_hz"]) + float(i) / float(n), 1.0)
+			var x: float = sin(float(i) * 2.39996) * float(p["radius"]) * 0.8
+			var at := base + Vector2(x, -ph * rise)
+			var fade: float = sin(ph * PI)
+			var rad: float = 3.5 + 2.5 * (1.0 - ph)
+			_front.draw_circle(at, rad, Color(c.r, c.g, c.b, fade))
+			_front.draw_circle(at, rad * 0.45, Color(1.0, 1.0, 1.0, fade))
+
+
+func _draw_arms(canvas: CanvasItem, near: bool) -> void:
+	var n: int = int(params_for(count, full_bank)["glyphs"])
+	var glyph := Color(color.r, color.g, color.b, 1.0).lightened(0.45)
 	for i in n:
-		var a: float = TAU * float(i) / float(n) + spin
-		_draw_glyph(Vector2(cos(a), sin(a)) * r * GLYPH_ORBIT, a, glyph)
+		var g: Dictionary = glyph_at(i)
+		if bool(g["front"]) != near:
+			continue
+		var depth: float = 0.8 + 0.4 * (sin(float(g["angle"])) * 0.5 + 0.5)
+		var c: Color = glyph if near else glyph.darkened(0.25)
+		_draw_glyph(canvas, g["pos"], float(g["angle"]), c, _glyph_size(count) * depth)
 
 
-func _draw_glyph(at: Vector2, ang: float, c: Color) -> void:
-	var s: float = _glyph_size(count)
+## A dark under-stroke first, so a glyph crossing a body the same hue as the job colour still reads.
+func _draw_glyph(canvas: CanvasItem, at: Vector2, ang: float, c: Color, s: float) -> void:
+	var dark := Color(0.05, 0.03, 0.08, c.a * 0.85)
+	_stroke_glyph(canvas, at, ang, dark, s, 5.5)
+	_stroke_glyph(canvas, at, ang, c, s, 3.0)
+
+
+func _stroke_glyph(canvas: CanvasItem, at: Vector2, ang: float, c: Color, s: float, w: float) -> void:
 	match shape:
 		"runes":
 			var pts := PackedVector2Array([at + Vector2(0, -s), at + Vector2(s, 0), at + Vector2(0, s), at + Vector2(-s, 0), at + Vector2(0, -s)])
-			draw_polyline(pts, c, 2.0)
+			canvas.draw_polyline(pts, c, w)
 		"motes":
-			draw_circle(at, s * 0.55, c)
+			canvas.draw_circle(at, s * 0.45 + w * 0.5, c)
 		"slashes":
 			var d := Vector2(cos(ang + 0.7), sin(ang + 0.7)) * s
-			draw_line(at - d, at + d, c, 2.5)
+			canvas.draw_line(at - d, at + d, c, w)
 		"notes":
-			draw_circle(at, s * 0.45, c)
-			draw_line(at + Vector2(s * 0.45, 0), at + Vector2(s * 0.45, -s * 1.6), c, 2.0)
+			canvas.draw_circle(at, s * 0.35 + w * 0.5, c)
+			canvas.draw_line(at + Vector2(s * 0.45, 0), at + Vector2(s * 0.45, -s * 1.4), c, w * 0.8)
 		_:
 			var d2 := Vector2(cos(ang), sin(ang)) * s
-			draw_line(at - d2, at + d2, c, 2.5)
+			canvas.draw_line(at - d2, at + d2, c, w)

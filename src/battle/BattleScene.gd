@@ -6295,6 +6295,9 @@ static func advance_presentation_hold(count: int) -> float:
 ## ─── Advance aura: escalates while the player QUEUES, not only when the queue resolves ───
 
 var _advance_aura: Node2D = null
+## The acting PC drawn in front of its formation while it queues, and the sibling slot it came from.
+var _advance_raised_sprite: Node2D = null
+var _advance_raised_index: int = -1
 
 
 ## Driven by the root Win98Menu's queue_changed(count, max_size), emitted after every queue
@@ -6312,6 +6315,7 @@ func _on_advance_queue_changed(count: int, max_size: int) -> void:
 		_clear_advance_aura()
 		return
 	_attach_advance_aura(sprite)
+	_raise_advance_actor(sprite)
 	var job_id: String = str(combatant.job.get("id", "")) if combatant.job else ""
 	## Full bank is a property of the QUEUE the menu opened, not of a constant: max_size is 5 only at
 	## +4 AP, so 5/5 there is the full bank and a 4/4 below it is not (cowir-controller's contract).
@@ -6364,6 +6368,31 @@ func _spawn_advance_queue_pop(combatant: Combatant, sprite: Node2D, count: int, 
 func _clear_advance_aura() -> void:
 	if _advance_aura != null and is_instance_valid(_advance_aura):
 		_advance_aura.clear()
+	_lower_advance_actor()
+
+
+## ⛔ The disc under the feet sits on the next PC's head in the V stack, and that PC draws in front: in the
+## round-1 frames the count-2 disc was behind the Cleric. The actor has stepped out, so it draws in front.
+func _raise_advance_actor(sprite: Node2D) -> void:
+	if sprite == _advance_raised_sprite:
+		return
+	_lower_advance_actor()
+	var parent: Node = sprite.get_parent()
+	if parent == null:
+		return
+	_advance_raised_sprite = sprite
+	_advance_raised_index = sprite.get_index()
+	parent.move_child(sprite, parent.get_child_count() - 1)
+
+
+func _lower_advance_actor() -> void:
+	## Untyped on purpose: a party rebuild can free the sprite, and a freed object cannot enter a typed var.
+	var sprite = _advance_raised_sprite
+	_advance_raised_sprite = null
+	if sprite == null or not is_instance_valid(sprite) or sprite.get_parent() == null:
+		return
+	var parent: Node = sprite.get_parent()
+	parent.move_child(sprite, clampi(_advance_raised_index, 0, parent.get_child_count() - 1))
 
 
 func _try_combat_quip(quip_dict: Dictionary, combatant: Combatant) -> void:

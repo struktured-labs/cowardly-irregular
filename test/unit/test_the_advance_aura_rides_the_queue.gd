@@ -45,35 +45,55 @@ func after_each() -> void:
 
 # ─── the aura's own contract ───
 
-func test_every_channel_rises_with_the_count() -> void:
-	## Many channels at once is what "grows" means. One flat channel and 4 reads the same as 3.
+## Which layer each channel belongs to. A channel rises with every press while its layer is on.
+const CHANNEL_LAYER := {"radius": AuraScript.LAYER_DISC, "fill_alpha": AuraScript.LAYER_DISC, "rim_width": AuraScript.LAYER_DISC,
+	"glyphs": AuraScript.LAYER_ARMS, "spin": AuraScript.LAYER_ARMS, "orbit_rx": AuraScript.LAYER_ARMS,
+	"motes": AuraScript.LAYER_MOTES, "rise_hz": AuraScript.LAYER_MOTES,
+	"pulse_hz": AuraScript.LAYER_OUTLINE, "outline_grow": AuraScript.LAYER_OUTLINE, "outline_alpha": AuraScript.LAYER_OUTLINE}
+
+func test_every_channel_rises_while_its_layer_is_on() -> void:
 	var flat: Array = []
-	for key in ["radius", "fill_alpha", "rim_width", "pulse_hz", "glyphs", "spin", "outline_grow", "outline_alpha"]:
+	for key in CHANNEL_LAYER.keys():
+		var layer: int = int(CHANNEL_LAYER[key])
 		for n in range(2, 6):
 			var lo = AuraScript.params_for(n - 1, false)[key]
 			var hi = AuraScript.params_for(n, false)[key]
-			if not (float(hi) > float(lo)):
+			var on_below: bool = (AuraScript.layers_for(n - 1, false) & layer) != 0
+			if on_below and not (float(hi) > float(lo)):
 				flat.append("%s %d->%d (%s -> %s)" % [key, n - 1, n, str(lo), str(hi)])
-	assert_eq(flat.size(), 0, "a channel failed to rise with the queue: " + str(flat))
+			if not on_below and float(lo) != 0.0:
+				flat.append("%s is %s at %d, before its layer arrives" % [key, str(lo), n - 1])
+	assert_eq(flat.size(), 0, "a channel failed to rise, or drew before its layer: " + str(flat))
 
 
-## ⛔ THE BAR THE FIRST PASS MISSED. Every channel rose, and cowir-main still could not see counts
-## 1-4 in the folded frames — a ring stepping a few px per press is monotone and invisible. So the
-## thresholds live HERE, not beside the table: a floor declared next to what it bounds can be lowered
-## in the same edit that flattens the table, and stay green.
-const VISIBLE_STEP := {"radius": 6.0, "fill_alpha": 0.06, "rim_width": 1.0}
-const VISIBLE_FIRST_FILL: float = 0.15
+## ⛔ THE BAR TWO PASSES MISSED. Every channel rose by a few % a press, and at full screen 1 and 2 were
+## "a thin ring apart" (cowir-main, .347 frames). So each count must ADD a layer the count below lacks,
+## and each layer must arrive strong enough to read alone. The floors live here, not beside the table.
+const LAYER_ARRIVAL_FLOOR := {"outline_alpha": 0.45, "fill_alpha": 0.35, "radius": 50.0, "glyphs": 6.0, "motes": 8.0}
 
-func test_every_press_is_a_visible_step_not_just_a_bigger_number() -> void:
+func test_each_count_adds_a_layer_the_count_below_lacks() -> void:
+	var order: Array = []
+	for n in range(1, 6):
+		var below: int = AuraScript.layers_for(n - 1, false)
+		var here: int = AuraScript.layers_for(n, n == 5)
+		var added: int = here & ~below
+		if (here & below) != below or added == 0:
+			order.append("count %d (%d) does not add a layer to count %d (%d)" % [n, here, n - 1, below])
+	assert_eq(order.size(), 0, "a press that adds no new layer is a few percent again: " + str(order))
+	assert_eq(AuraScript.layers_for(1, false), AuraScript.LAYER_OUTLINE, "1 is the outline alone")
+	assert_eq(AuraScript.layers_for(2, false) & ~AuraScript.layers_for(1, false), AuraScript.LAYER_DISC, "2 adds the disc")
+	assert_eq(AuraScript.layers_for(3, false) & ~AuraScript.layers_for(2, false), AuraScript.LAYER_ARMS, "3 adds the orbiting arms")
+	assert_eq(AuraScript.layers_for(4, false) & ~AuraScript.layers_for(3, false), AuraScript.LAYER_MOTES, "4 adds the rising motes")
+	assert_eq(AuraScript.layers_for(5, true) & ~AuraScript.layers_for(4, false), AuraScript.LAYER_GOLD, "5/5 adds the gold rim")
 	var faint: Array = []
-	for key in VISIBLE_STEP.keys():
+	for key in LAYER_ARRIVAL_FLOOR.keys():
+		var layer: int = int(CHANNEL_LAYER[key])
 		for n in range(1, 6):
-			var step: float = float(AuraScript.params_for(n, false)[key]) - float(AuraScript.params_for(n - 1, false)[key])
-			if step < float(VISIBLE_STEP[key]):
-				faint.append("%s %d->%d steps %.3f, needs %.3f" % [key, n - 1, n, step, float(VISIBLE_STEP[key])])
-	assert_eq(faint.size(), 0, "a press changes the aura by less than reads at couch distance: " + str(faint))
-	assert_gte(float(AuraScript.params_for(1, false)["fill_alpha"]), VISIBLE_FIRST_FILL,
-		"press 1 must read on its own — a filled disc from the first action, not only relative to the second")
+			if (AuraScript.layers_for(n, false) & layer) != 0:
+				if float(AuraScript.params_for(n, false)[key]) < float(LAYER_ARRIVAL_FLOOR[key]):
+					faint.append("%s at %d is %s, needs %s" % [key, n, str(AuraScript.params_for(n, false)[key]), str(LAYER_ARRIVAL_FLOOR[key])])
+				break
+	assert_eq(faint.size(), 0, "a layer arrives too faint to read on its own: " + str(faint))
 
 
 ## ⛔ THE SECOND BAR THE STEP ARM MISSED. Comparing the tables at rest said every press was a visible
@@ -126,6 +146,7 @@ func test_a_full_bank_is_its_own_state_not_a_louder_fourth() -> void:
 	var five := AuraScript.params_for(5, false)
 	var bank := AuraScript.params_for(5, true)
 	assert_true(bool(bank["gold_rim"]), "5/5 at a full bank carries the gold rim")
+	assert_ne(int(bank["layers"]) & AuraScript.LAYER_GOLD, 0, "as its own layer")
 	assert_false(bool(five["gold_rim"]), "CONTROL: the rim is the full-bank state, not the count")
 	assert_gt(float(bank["pulse_hz"]), float(five["pulse_hz"]), "and it pulses faster than a plain 5")
 	assert_false(bool(AuraScript.params_for(0, true)["gold_rim"]), "an empty queue has no rim at all")
@@ -149,6 +170,92 @@ func test_the_disc_stays_within_its_actors_figure() -> void:
 	assert_gt(half, 50.0, "CONTROL: the party figure height reads as real (%.1f)" % half)
 	assert_lt(AuraScript.max_reach(), half,
 		"the disc reaches %.1f px, past its own %.1f px figure" % [AuraScript.max_reach(), half])
+
+
+## ⛔ THE DEFECT UNDER THE LEGIBILITY ONE. The .347 disc was centred on the sprite origin and drawn
+## behind its own body: on the real sheets the body hid 72-95% of it, bubble or no bubble (measured,
+## xvfb frames diffed with the disc on and off). This reads each starter's REAL idle frame through
+## Sprite2D.is_pixel_opaque — the engine's own transform, not a restatement of the aura's — both facings.
+const DISC_VISIBLE_FLOOR: float = 0.5
+const CENTRED_CONTROL_CEILING: float = 0.35
+
+func _disc_visible_fraction(body: AnimatedSprite2D, centre: Vector2, rx: float, flat: float) -> float:
+	var probe := Sprite2D.new()
+	probe.texture = body.sprite_frames.get_frame_texture(body.animation, 0)
+	probe.flip_h = body.flip_h
+	probe.offset = body.offset
+	var inside: int = 0
+	var seen: int = 0
+	var ry: float = rx * flat
+	for iy in 31:
+		for ix in 31:
+			var p := Vector2(-rx + 2.0 * rx * ix / 30.0, -ry + 2.0 * ry * iy / 30.0)
+			if (p.x * p.x) / (rx * rx) + (p.y * p.y) / (ry * ry) > 1.0:
+				continue
+			inside += 1
+			if not probe.is_pixel_opaque((centre + p) / body.scale):
+				seen += 1
+	probe.free()
+	return float(seen) / maxf(1.0, float(inside))
+
+func test_the_disc_stands_where_its_own_body_cannot_hide_it() -> void:
+	var hidden: Array = []
+	for job in ["fighter", "mage", "cleric", "rogue", "bard"]:
+		for flip in [false, true]:
+			var body := AnimatedSprite2D.new()
+			body.sprite_frames = HybridSpriteLoader.load_sprite_frames(null, job, "", "", "", "")
+			body.animation = &"idle"
+			body.scale = Vector2(1.7, 1.7)
+			body.flip_h = flip
+			add_child_autofree(body)
+			var aura = AuraScript.new()
+			body.add_child(aura)
+			aura.bind_body(body)
+			aura.set_state(2, false, Color.RED, "motes")
+			assert_gt(aura.figure_rect().size.y, 60.0, "CONTROL: %s's figure was measured from its sheet (%s)" % [job, str(aura.figure_rect())])
+			var centred: float = _disc_visible_fraction(body, Vector2.ZERO, 44.0, 1.0)
+			assert_lt(centred, CENTRED_CONTROL_CEILING, "CONTROL: the instrument sees the body hide a disc centred on %s (%.2f visible)" % [job, centred])
+			var shown: float = _disc_visible_fraction(body, aura.disc_center(), AuraScript.RADIUS[2], AuraScript.DISC_FLAT)
+			if shown < DISC_VISIBLE_FLOOR:
+				hidden.append("%s flip=%s: %.2f of the disc visible" % [job, str(flip), shown])
+	assert_eq(hidden.size(), 0, "the count-2 disc is hidden behind its own actor: " + str(hidden))
+
+
+func test_the_near_half_of_the_orbit_draws_in_front_of_the_body() -> void:
+	var body := AnimatedSprite2D.new()
+	body.sprite_frames = _frames()
+	body.scale = Vector2(0.8, 0.8)
+	add_child_autofree(body)
+	var aura = AuraScript.new()
+	body.add_child(aura)
+	aura.bind_body(body)
+	aura.set_state(3, false, Color.RED, "runes")
+	assert_true(aura.show_behind_parent, "CONTROL: the aura itself draws behind the body")
+	var front: Node2D = aura.front()
+	assert_not_null(front, "binding a body creates the front layer")
+	assert_eq(front.get_parent(), body, "on the body, as the aura's sibling — a child of the aura would be behind the body too")
+	assert_false(front.show_behind_parent, "and drawn in front of it")
+	var near: int = 0
+	var far: int = 0
+	for i in int(AuraScript.params_for(3, false)["glyphs"]):
+		var g: Dictionary = aura.glyph_at(i)
+		if bool(g["front"]):
+			near += 1
+			assert_gte((g["pos"] as Vector2).y, aura.orbit_center().y - 0.01, "a near glyph sits on the lower half of the orbit")
+		else:
+			far += 1
+	assert_true(near > 0 and far > 0, "the orbit passes both behind and in front (%d near, %d far)" % [near, far])
+	var other := AnimatedSprite2D.new()
+	other.sprite_frames = _frames()
+	add_child_autofree(other)
+	body.remove_child(aura)
+	other.add_child(aura)
+	aura.bind_body(other)
+	assert_eq(front.get_parent(), other, "rebinding to the next actor moves the front layer with the aura")
+	aura.clear()
+	assert_false(front.visible, "clear hides the front layer")
+	aura.free()
+	assert_true(not is_instance_valid(front) or front.is_queued_for_deletion(), "freeing the aura frees its front layer")
 
 
 func test_a_press_that_raises_the_count_pops_and_an_undo_does_not() -> void:
@@ -244,12 +351,40 @@ func test_the_queue_count_drives_an_aura_on_the_acting_pc() -> void:
 	assert_eq(aura.shape, "runes", "in the Mage's glyph, from ADVANCE_FLOURISH_SHAPES")
 	assert_almost_eq(aura.scale.x, 1.25, 0.01, "counter-scaled against the sheet's 0.8x draw scale")
 	assert_true(aura.outline() != null and aura.outline().visible, "and the scene bound the body outline to that sprite")
+	assert_true(aura.front() != null and aura.front().get_parent() == sprite, "and put the front layer on that sprite")
+	assert_almost_eq(aura.front().scale.x, aura.scale.x, 0.01, "counter-scaled like the aura")
 	scene._on_advance_queue_changed(4, 4)
 	assert_eq(aura.count, 4, "it follows the next press")
 	scene._on_advance_queue_changed(3, 4)
 	assert_eq(aura.count, 3, "and shrinks on undo")
 	scene._on_advance_queue_changed(0, 4)
 	assert_false(aura.is_active(), "and is gone when the queue empties")
+
+
+func test_the_acting_pc_draws_in_front_of_its_formation_while_it_queues() -> void:
+	## The disc is under the feet, which in the V stack is the next PC's head — drawn later, so in front.
+	var s := _scene_with_pc("fighter")
+	var scene = s[0]; var sprite: AnimatedSprite2D = s[2]
+	var row := Node2D.new()
+	add_child_autofree(row)
+	remove_child(sprite)
+	row.add_child(sprite)
+	for i in 2:
+		row.add_child(AnimatedSprite2D.new())
+	assert_eq(sprite.get_index(), 0, "CONTROL: the lead PC starts first in its row, so the next PC draws over its feet")
+	scene._on_advance_queue_changed(2, 4)
+	assert_eq(sprite.get_index(), row.get_child_count() - 1, "queueing draws the actor after every other PC")
+	scene._on_advance_queue_changed(3, 4)
+	assert_eq(sprite.get_index(), row.get_child_count() - 1, "and a further press keeps it there")
+	scene._on_advance_queue_changed(0, 4)
+	assert_eq(sprite.get_index(), 0, "an empty queue puts it back in its own slot")
+	scene._on_advance_queue_changed(2, 4)
+	scene._clear_advance_aura()
+	assert_eq(sprite.get_index(), 0, "and so does every clear — commit, defer, go-back, close and battle end all route through it")
+	scene._on_advance_queue_changed(2, 4)
+	sprite.free()
+	scene._clear_advance_aura()
+	assert_null(scene._advance_raised_sprite, "a party rebuild that frees the raised actor mid-queue clears without erroring")
 
 
 func test_five_of_five_enters_the_full_bank_state() -> void:
@@ -308,16 +443,26 @@ func test_commit_defer_go_back_and_close_each_clear_it() -> void:
 		"close": func(m): m._on_win98_menu_closed(null),
 	}
 	var survived: Array = []
+	var still_in_front: Array = []
 	for exit_name in exits.keys():
 		var s := _scene_with_pc("bard")
 		var scene = s[0]; var sprite: AnimatedSprite2D = s[2]
+		var row := Node2D.new()
+		add_child_autofree(row)
+		remove_child(sprite)
+		row.add_child(sprite)
+		row.add_child(Node2D.new())
 		scene._on_advance_queue_changed(3, 4)
 		assert_true(_aura_on(sprite).is_active(), "CONTROL: live before %s" % exit_name)
+		assert_eq(sprite.get_index(), 1, "CONTROL: raised in front of its row before %s" % exit_name)
 		BattleManager.current_combatant = null
 		(exits[exit_name] as Callable).call(_menu_for(scene))
 		if _aura_on(sprite).is_active():
 			survived.append(exit_name)
+		if sprite.get_index() != 0:
+			still_in_front.append(exit_name)
 	assert_eq(survived.size(), 0, "the aura outlived a way out of the menu: " + str(survived))
+	assert_eq(still_in_front.size(), 0, "the actor stayed in front of its formation after: " + str(still_in_front))
 
 
 func test_battle_end_clears_it() -> void:

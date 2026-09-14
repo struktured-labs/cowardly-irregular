@@ -6,26 +6,31 @@ extends SceneTree
 ##     --resolution 1280x720 -s tools/advance_aura_shots.gd
 ##
 ## Writes to tmp/advance_aura/:
-##   bubble_<n>   steady frames on round 1 WITH the acting PC's turn_start line up — what a player sees
-##                while queueing on the first turn of every fight (cowir-adhoc: that line fires exactly
-##                then, and it is the likeliest frame behind "I couldn't see it")
-##   pop_<n>      ~80 ms of REAL time after the press that reaches n — the per-press flourish mid-burst
-##   clear_<n>    steady frames once no speech bubble is live, plus clear_4_of_4 below a full bank
-##   strip_bubble.png · strip_pop.png · strip_clear.png   the crops side by side
+##   bubble_<n>        FULL 1280x720 frames on round 1 WITH the acting PC's turn_start line up
+##   bubble_<n>_wide   a full-width 1:1 band at the actor's height: the bubble AND every layer, nothing downscaled
+##   pop_<n>           ~80 ms of REAL time after the press that reaches n — the per-press pop mid-burst
+##   clear_<n>         once no speech bubble is live, plus clear_4_of_4 below a full bank
+##   strip_*.png       the actor crops side by side; strip_bubble_wide.png stacks the 1:1 bands
 ##
-## The bubble-clear wait is a CONDITION, never a fixed delay: a voiced line holds for its clip length
-## plus a tail with no cap, and the first version of this tool captured at 4.7 s with bubbles still up.
-## Steady frames are PINNED to one pulse phase: the aura breathes, and one unpinned frame per count
-## samples an arbitrary phase, so a correct count 2 could look weaker than count 1 (cowir-adhoc). The
-## guard proves no phase inverts the order; the pin makes the frames compare like with like.
-## Sandboxed user:// is not optional: this runs the GAME, which resolves user:// by application name.
+## LAYER CHECK, in the bubble set and the clear set: each count must show every layer it owns and none it
+## does not. Measured ON SCREEN — the tree is paused, the frame is taken with one layer's drawing off, and
+## the pixels that changed are that layer. ⛔ This is the instrument that found the .347 disc 70% hidden
+## behind its own body: a table can say a layer is on while the screen shows nothing of it.
+## Counts 1-2 of the bubble set land while the actor is still stepping out of formation, deliberately:
+## that is the frame where the next PC covered the old disc.
 
 const OUT := "res://tmp/advance_aura"
+const AuraScript = preload("res://src/battle/AdvanceAura.gd")
 const CROP := Vector2i(300, 300)
+const WIDE := Vector2i(1280, 460)
 const CLEAR_TIMEOUT_MS := 60000
 const BUBBLE_APPEAR_TIMEOUT_MS := 15000
-const WIDE_SRC := Rect2i(180, 20, 840, 300)
-const WIDE_OUT := Vector2i(420, 150)
+## On-screen pixels a layer must change to count as shown, and the most an absent layer may change.
+const LAYER_PX_FLOOR := 150
+const ABSENT_PX_CEILING := 12
+const DIFF_BOX := Vector2i(560, 520)
+const STILL_TRIES := 40
+const LAYER_BITS: Array[int] = [AuraScript.LAYER_OUTLINE, AuraScript.LAYER_DISC, AuraScript.LAYER_ARMS, AuraScript.LAYER_MOTES, AuraScript.LAYER_GOLD]
 var _fail: int = 0
 var _scene: Node
 var _sprite: Node2D
@@ -43,8 +48,7 @@ func _init() -> void:
 	if gs and "debug_all_pcs_unlocked" in gs:
 		gs.debug_all_pcs_unlocked = false
 	DirAccess.make_dir_recursive_absolute(OUT)
-	## Tutorial panels cover the top of the frame, where the V-formation's lead PC stands. Same
-	## suppression as marketing_shots.gd; loud if the id set reads empty, which would suppress nothing.
+	## Tutorial panels cover the lead PC; loud if the id set reads empty, which would suppress nothing.
 	var hints = load("res://src/ui/TutorialHints.gd")
 	var ids: Array = hints.HINTS.keys() if hints and ("HINTS" in hints) else []
 	if ids.is_empty():
@@ -77,33 +81,31 @@ func _init() -> void:
 	_sprite = _scene._get_combatant_sprite(pc)
 	print("[SHOT] actor=%s job=%s tier=%d time_scale=%.2f" % [pc.combatant_name, str(pc.job.get("id", "")), int(root.get_node("BattleJuice").battle_tier()), Engine.time_scale])
 
-	## Set 1 — round 1, turn_start bubble up. ⛔ This set used to wait 1.0 + 0.35/count on the battle
-	## clock (~11 s of wall time at 0.25) and was fine while bubbles outlived their voice by 4x. Once a
-	## voiced bubble held for its voice (a39d1df6, ~4.7 s for the Fighter), every capture here ran with
-	## live_bubbles=0 and the set printed a tidy "bubble" frame of nothing (cowir-main, .347). So it now
-	## WAITS for a bubble, runs on short real-time settles, and FAILS any frame taken with none up.
+	## Set 1 — round 1, turn_start bubble up. Waits for a bubble, runs on short real-time settles, FAILS
+	## any frame taken with none up. Captures are held and diffed after the set, so the bubble outlasts them.
 	var bubble_start: int = await _wait_bubble_live()
 	if bubble_start < 0:
 		print("[SHOT] FAIL: no speech bubble appeared within %d ms — the bubble set has nothing to prove" % BUBBLE_APPEAR_TIMEOUT_MS)
 		_fail += 1
 	var bubble: Array[Image] = []
 	var bubble_wide: Array[Image] = []
+	var bubble_layers: Array = []
 	for n in range(1, 6):
 		_scene._on_advance_queue_changed(n, 5)
 		await create_timer(0.12, true, false, true).timeout
-		await _pin_phase()
-		var live: int = _live_bubbles()
-		if live == 0:
+		var shot: Dictionary = await _pinned_with_layers("bubble_%d" % n)
+		if int(shot["live"]) == 0:
 			print("[SHOT] FAIL: bubble_%d — the bubble cleared before this frame; it would not show the aura beside one" % n)
 			_fail += 1
-		bubble.append(_capture("bubble_%d" % n, "live_bubbles=%d +%d ms after the bubble appeared" % [live, Time.get_ticks_msec() - bubble_start]))
-		bubble_wide.append(_wide_crop())
-		_unpin()
+		print("[SHOT] bubble_%d live_bubbles=%d +%d ms after the bubble appeared, slide=%+.0f px" % [n, int(shot["live"]), Time.get_ticks_msec() - bubble_start, float(shot["slide"])])
+		bubble.append(shot["crop"])
+		bubble_wide.append(shot["wide"])
+		bubble_layers.append(shot)
 	_scene._on_advance_queue_changed(0, 5)
+	for i in bubble_layers.size():
+		_check_layers(bubble_layers[i], i + 1, true)
 	_strip(bubble, "strip_bubble")
-	## The actor crop cannot hold the bubble once it is placed beside the speaker, so this strip is a
-	## wider half-scale band holding the bubble AND the aura — the frame that shows the two together.
-	_strip_sized(bubble_wide, "strip_bubble_wide", WIDE_OUT)
+	_stack(bubble_wide, "strip_bubble_wide")
 
 	## Set 2 — mid-pop, 80 ms of real time after each rising press.
 	var pop: Array[Image] = []
@@ -121,25 +123,23 @@ func _init() -> void:
 	if waited < 0:
 		print("[SHOT] FAIL: speech bubbles still live after %d ms — the clear frames would not prove what they say" % CLEAR_TIMEOUT_MS)
 		_fail += 1
-	elif waited == 0:
-		print("[SHOT] no bubble live when the clear set began (waited 0 ms)")
 	else:
 		print("[SHOT] waited %d ms real time for the last bubble to clear" % waited)
 	var clear: Array[Image] = []
 	for n in range(1, 6):
 		_scene._on_advance_queue_changed(n, 5)
 		await create_timer(0.35).timeout
-		await _pin_phase()
-		clear.append(_capture("clear_%d" % n, "live_bubbles=%d" % _live_bubbles()))
-		_unpin()
+		var shot: Dictionary = await _pinned_with_layers("clear_%d" % n)
+		_check_layers(shot, n, true)
+		clear.append(shot["crop"])
 	_scene._on_advance_queue_changed(0, 4)
 	await create_timer(0.1).timeout
 	for n in range(1, 5):
 		_scene._on_advance_queue_changed(n, 4)
 	await create_timer(0.35).timeout
-	await _pin_phase()
-	clear.append(_capture("clear_4_of_4", "below full bank"))
-	_unpin()
+	var below: Dictionary = await _pinned_with_layers("clear_4_of_4")
+	_check_layers(below, 4, false)
+	clear.append(below["crop"])
 	_scene._on_advance_queue_changed(0, 4)
 	_strip(clear, "strip_clear")
 
@@ -147,24 +147,95 @@ func _init() -> void:
 	quit(0 if _fail == 0 else 1)
 
 
-## Freeze the aura at phase 0 with no kick, redraw, and wait a frame so the capture shows that state.
-func _pin_phase() -> void:
+## Pause the tree, pin the aura at phase 0 with no kick, and measure each layer as an on/off/on sandwich.
+## ⛔ Pausing does not freeze the screen: Win98Menu runs PROCESS_MODE_ALWAYS, so the command menu keeps
+## opening and its cursor keeps blinking — the first run of this check read 18,000 px of menu as "the disc
+## draws at count 1". A sandwich counts only when both ON frames are byte-identical around the actor.
+func _pinned_with_layers(tag: String) -> Dictionary:
 	var aura = _aura()
-	if aura == null:
-		return
-	aura.set_process(false)
-	aura._t = 0.0
-	aura._kick = 0.0
-	aura._sync_outline()
-	aura.queue_redraw()
-	await process_frame
-	await process_frame
+	paused = true
+	if aura:
+		aura._t = 0.0
+		aura._kick = 0.0
+	var centre := Vector2i(_sprite.get_global_transform_with_canvas().origin)
+	var pairs := {}
+	var full: Image = null
+	var live: int = 0
+	if aura:
+		for bit in LAYER_BITS:
+			for attempt in STILL_TRIES:
+				var on1: Image = await _frame_with(aura, AuraScript.LAYER_ALL)
+				var off: Image = await _frame_with(aura, AuraScript.LAYER_ALL & ~bit)
+				var on2: Image = await _frame_with(aura, AuraScript.LAYER_ALL)
+				var box := _clamped(centre - DIFF_BOX / 2, DIFF_BOX, on1)
+				pairs[bit] = [on1, off]
+				if on1.get_region(box).get_data() == on2.get_region(box).get_data():
+					break
+				if attempt == STILL_TRIES - 1:
+					print("[SHOT] FAIL: %s — the screen never held still for the %s layer in %d tries" % [tag, str(AuraScript.LAYER_NAMES[bit]), STILL_TRIES])
+					_fail += 1
+			if full == null:
+				full = pairs[bit][0]
+				live = _live_bubbles()
+	else:
+		await process_frame
+		full = root.get_texture().get_image()
+	var slide: float = _sprite.position.x - float(_sprite.get_meta("home_position", _sprite.position).x)
+	paused = false
+	full.save_png("%s/%s.png" % [OUT, tag])
+	var crop := full.get_region(_clamped(centre - CROP / 2, CROP, full))
+	crop.save_png("%s/%s_crop.png" % [OUT, tag])
+	var wide := full.get_region(_clamped(Vector2i(0, centre.y - WIDE.y / 2), WIDE, full))
+	wide.save_png("%s/%s_wide.png" % [OUT, tag])
+	if aura == null or not aura.is_active():
+		print("[SHOT] FAIL: %s — no active aura on the actor" % tag)
+		_fail += 1
+	return {"tag": tag, "pairs": pairs, "centre": centre, "crop": crop, "wide": wide, "live": live, "slide": slide,
+		"count": aura.count if aura else 0, "full_bank": aura.full_bank if aura else false}
 
 
-func _unpin() -> void:
-	var aura = _aura()
-	if aura and aura.count > 0:
-		aura.set_process(true)
+func _frame_with(aura, mask: int) -> Image:
+	aura.set_draw_layers(mask)
+	await process_frame
+	await process_frame
+	return root.get_texture().get_image()
+
+
+## Every layer the count owns must change at least LAYER_PX_FLOOR pixels; every layer it lacks, none.
+func _check_layers(shot: Dictionary, n: int, max_five: bool) -> void:
+	var owned: int = AuraScript.layers_for(n, max_five and n >= 5)
+	var row: Array = []
+	for bit in LAYER_BITS:
+		if not (shot["pairs"] as Dictionary).has(bit):
+			continue
+		var px: int = _changed_px(shot["pairs"][bit][0], shot["pairs"][bit][1], shot["centre"])
+		var name: String = str(AuraScript.LAYER_NAMES[bit])
+		var want: bool = (owned & bit) != 0
+		row.append("%s=%d%s" % [name, px, "" if want else "(absent)"])
+		if want and px < LAYER_PX_FLOOR:
+			print("[SHOT] FAIL: %s — the %s layer changes only %d px on screen (needs %d)" % [shot["tag"], name, px, LAYER_PX_FLOOR])
+			_fail += 1
+		elif not want and px > ABSENT_PX_CEILING:
+			print("[SHOT] FAIL: %s — the %s layer draws %d px at a count that does not own it" % [shot["tag"], name, px])
+			_fail += 1
+	print("[SHOT] %s count=%d full_bank=%s on-screen px: %s" % [shot["tag"], int(shot["count"]), str(shot["full_bank"]), " ".join(row)])
+
+
+func _changed_px(a: Image, b: Image, centre: Vector2i) -> int:
+	var box := _clamped(centre - DIFF_BOX / 2, DIFF_BOX, a)
+	var n: int = 0
+	for y in range(box.position.y, box.end.y):
+		for x in range(box.position.x, box.end.x):
+			var p := a.get_pixel(x, y)
+			var q := b.get_pixel(x, y)
+			if absf(p.r - q.r) + absf(p.g - q.g) + absf(p.b - q.b) > 0.03:
+				n += 1
+	return n
+
+
+func _clamped(at: Vector2i, size: Vector2i, img: Image) -> Rect2i:
+	var s := Vector2i(mini(size.x, img.get_width()), mini(size.y, img.get_height()))
+	return Rect2i(at.clamp(Vector2i.ZERO, img.get_size() - s), s)
 
 
 func _aura() -> Node:
@@ -206,32 +277,23 @@ func _wait_bubbles_clear() -> int:
 func _capture(tag: String, note: String) -> Image:
 	var img := root.get_texture().get_image()
 	img.save_png("%s/%s.png" % [OUT, tag])
-	var at := Vector2i(_sprite.get_global_transform_with_canvas().origin) - CROP / 2
-	at = at.clamp(Vector2i.ZERO, Vector2i(img.get_width(), img.get_height()) - CROP)
-	var crop := img.get_region(Rect2i(at, CROP))
+	var at := Vector2i(_sprite.get_global_transform_with_canvas().origin)
+	var crop := img.get_region(_clamped(at - CROP / 2, CROP, img))
 	crop.save_png("%s/%s_crop.png" % [OUT, tag])
 	var aura = _aura()
 	if aura == null or not aura.is_active():
 		print("[SHOT] FAIL: %s — no active aura on the actor" % tag)
 		_fail += 1
 	else:
-		var line = aura.outline()
-		print("[SHOT] %s count=%d full_bank=%s outline=%s %s" % [tag, aura.count, str(aura.full_bank), str(line != null and line.visible), note])
+		print("[SHOT] %s count=%d full_bank=%s %s" % [tag, aura.count, str(aura.full_bank), note])
 	return crop
 
 
-func _wide_crop() -> Image:
-	var img := root.get_texture().get_image()
-	var src := WIDE_SRC.intersection(Rect2i(Vector2i.ZERO, img.get_size()))
-	var band := img.get_region(src)
-	band.resize(WIDE_OUT.x, WIDE_OUT.y, Image.INTERPOLATE_BILINEAR)
-	return band
-
-
-func _strip_sized(crops: Array[Image], name: String, size: Vector2i) -> void:
-	var strip := Image.create(size.x, size.y * crops.size(), false, Image.FORMAT_RGBA8)
-	for i in crops.size():
-		strip.blit_rect(crops[i], Rect2i(Vector2i.ZERO, size), Vector2i(0, size.y * i))
+func _stack(images: Array[Image], name: String) -> void:
+	var size: Vector2i = images[0].get_size()
+	var strip := Image.create(size.x, size.y * images.size(), false, Image.FORMAT_RGBA8)
+	for i in images.size():
+		strip.blit_rect(images[i], Rect2i(Vector2i.ZERO, size), Vector2i(0, size.y * i))
 	strip.save_png("%s/%s.png" % [OUT, name])
 
 
