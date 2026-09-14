@@ -24,14 +24,28 @@ const VOICE_TAIL_S: float = 0.3
 
 ## Victory frames stacked 4 bubbles from different triggers over the party panel — cap and evict oldest.
 const MAX_CONCURRENT: int = 2
+## Float-up distance for a bubble with headroom; a ceiling-pinned bubble floats only as far as the ceiling allows.
+const FLOAT_UP_PX: float = 10.0
 static var _live: Array = []
+
+## Rendered half-width of the speaker's sprite; 0 when the caller does not know it.
+var _speaker_half_width: float = 0.0
+## Lowest y a bubble may occupy — the caller passes the SELECT banner's bottom so flavor never covers selection.
+var _ceiling_y: float = TOP_MARGIN
+## Extra sideways clearance, set when the ceiling forced the bubble down into its speaker's body.
+var _side_clear: float = 0.0
+var _float_px: float = FLOAT_UP_PX
+var _panel: PanelContainer = null
+## Returns screen Rect2s the player is reading (the open command menu) — read at layout time, when the menu exists.
+var _keep_out: Callable = Callable()
 
 
 ## Spawns a bubble above anchor_global_pos. Returns null when suppressed.
 ## audio_key: optional SFX/voice clip (phase-2 voice acting hook for cowir-sfx).
 static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String, line: String,
 		border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5,
-		audio_key: String = "", prefer_right: bool = true) -> BattleSpeechBubble:
+		audio_key: String = "", prefer_right: bool = true, speaker_half_width: float = 0.0,
+		ceiling_y: float = TOP_MARGIN, keep_out: Callable = Callable()) -> BattleSpeechBubble:
 	if parent == null or not is_instance_valid(parent):
 		return null
 	if Engine.time_scale >= SUPPRESS_TIME_SCALE:
@@ -56,6 +70,9 @@ static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String
 	## BEFORE _present, which builds the fade tween from _hold_time. The voice extends the hold,
 	## and a tween created first would keep the old 2.0s and fade over a line still being spoken.
 	b._play_voice(audio_key)
+	b._speaker_half_width = maxf(0.0, speaker_half_width)
+	b._ceiling_y = maxf(TOP_MARGIN, ceiling_y)
+	b._keep_out = keep_out
 	b._present(anchor_global_pos, speaker_name, line, border_color, prefer_right)
 	_live.append({"bubble": b, "speaker": speaker_name})
 	return b
@@ -120,7 +137,11 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	var est_height: int = est_lines * 16 + 24
 	position = anchor_global_pos + Vector2(SIDE_GAP_PX, -float(est_height + 28))
 	# Top clamp happens HERE (pre-tween) so the float-up tween's captured y never jumps.
-	position.y = maxf(position.y, TOP_MARGIN)
+	position.y = maxf(position.y, _ceiling_y)
+	# Pushed below the head top, the bubble now sits on its speaker — clear the body sideways instead (top party slot).
+	if position.y + float(est_height) > anchor_global_pos.y:
+		_side_clear = _speaker_half_width
+	_float_px = minf(FLOAT_UP_PX, position.y - _ceiling_y)
 	modulate.a = 0.0
 
 	var anchor_x: float = anchor_global_pos.x
@@ -129,7 +150,7 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 1.0, 0.15)
-	tween.tween_property(self, "position:y", position.y - 10, _hold_time * 0.5)
+	tween.tween_property(self, "position:y", position.y - _float_px, _hold_time * 0.5)
 	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.3).set_delay(_hold_time)
 	tween.tween_callback(queue_free)
 
@@ -143,23 +164,77 @@ func _finalize_layout(bubble: PanelContainer, pointer: Polygon2D, anchor_x: floa
 		return
 	var bw: float = bubble.size.x
 	position.x = _side_placed_x(anchor_x, bw, prefer_right)
+	position.x = _clear_keep_out(position.x, bubble.size, anchor_x)
 	_build_tail(pointer, bubble.size, anchor_x - position.x)
+	_panel = bubble
+	_retire_overlapped_elders()
 
 
 ## Places the bubble BESIDE the speaker, flipping side when the clamp would drag it back onto them — centring on the anchor is what covered the sprite (struktured 2026-08-22).
 func _side_placed_x(anchor_x: float, bubble_width: float, prefer_right: bool) -> float:
-	var first: float = (anchor_x + SIDE_GAP_PX) if prefer_right else (anchor_x - SIDE_GAP_PX - bubble_width)
+	var gap: float = SIDE_GAP_PX + _side_clear
+	var first: float = (anchor_x + gap) if prefer_right else (anchor_x - gap - bubble_width)
 	var placed: float = _clamped_x(first, bubble_width)
 	if not _covers_anchor(placed, bubble_width, anchor_x):
 		return placed
-	var second: float = (anchor_x - SIDE_GAP_PX - bubble_width) if prefer_right else (anchor_x + SIDE_GAP_PX)
+	var second: float = (anchor_x - gap - bubble_width) if prefer_right else (anchor_x + gap)
 	var alt: float = _clamped_x(second, bubble_width)
 	return alt if not _covers_anchor(alt, bubble_width, anchor_x) else placed
 
 
 ## True when the speaker falls inside the bubble's horizontal span — the bubble is ON them.
 func _covers_anchor(x: float, bubble_width: float, anchor_x: float) -> bool:
-	return anchor_x > x - CLEAR_SLACK_PX and anchor_x < x + bubble_width + CLEAR_SLACK_PX
+	var slack: float = CLEAR_SLACK_PX + _side_clear
+	return anchor_x > x - slack and anchor_x < x + bubble_width + slack
+
+
+## Slides past the open command menu, away from the speaker; if it cannot fit on screen it stays put and the menu (z 100) draws over it.
+func _clear_keep_out(x: float, size: Vector2, anchor_x: float) -> float:
+	if not _keep_out.is_valid():
+		return x
+	var rects = _keep_out.call()
+	if not (rects is Array) or (rects as Array).is_empty():
+		return x
+	var off: Vector2 = global_position - position
+	var go_left: bool = x + size.x * 0.5 < anchor_x
+	var candidate: float = x
+	for _step in range(6):
+		var mine := Rect2(Vector2(candidate, position.y - _float_px) + off, Vector2(size.x, size.y + _float_px))
+		var hit := Rect2()
+		for r in rects:
+			if r is Rect2 and (r as Rect2).size != Vector2.ZERO and mine.intersects(r):
+				hit = r
+				break
+		if hit.size == Vector2.ZERO:
+			return candidate
+		var next: float = (hit.position.x - off.x - SIDE_GAP_PX - size.x) if go_left else (hit.end.x - off.x + SIDE_GAP_PX)
+		var clamped: float = _clamped_x(next, size.x)
+		if absf(clamped - next) > 0.5:
+			return x
+		candidate = clamped
+	return x
+
+
+## Screen rect of the laid-out panel; empty until the layout pass has run.
+func _screen_rect() -> Rect2:
+	if _panel == null or not is_instance_valid(_panel):
+		return Rect2()
+	return Rect2(global_position, _panel.size)
+
+
+## Two stacked bubbles are unreadable (store capture v3.33.345) — the newer line wins; the older is already in the battle log.
+func _retire_overlapped_elders() -> void:
+	var mine := _screen_rect()
+	if mine.size == Vector2.ZERO:
+		return
+	for e in _live.duplicate():
+		var other = e["bubble"]
+		if other == self or not is_instance_valid(other) or other.is_queued_for_deletion():
+			continue
+		var theirs: Rect2 = other._screen_rect()
+		if theirs.size != Vector2.ZERO and mine.intersects(theirs):
+			other.queue_free()
+			_live.erase(e)
 
 
 ## Tail base on the bubble's bottom edge, tip leaning back toward the speaker, so a diagonally-offset bubble still reads as belonging to that character.
