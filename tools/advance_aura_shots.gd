@@ -23,6 +23,9 @@ extends SceneTree
 const OUT := "res://tmp/advance_aura"
 const CROP := Vector2i(300, 300)
 const CLEAR_TIMEOUT_MS := 60000
+const BUBBLE_APPEAR_TIMEOUT_MS := 15000
+const WIDE_SRC := Rect2i(180, 20, 840, 300)
+const WIDE_OUT := Vector2i(420, 150)
 var _fail: int = 0
 var _scene: Node
 var _sprite: Node2D
@@ -34,6 +37,9 @@ func _init() -> void:
 	var gs = root.get_node_or_null("GameState")
 	if gs and "debug_log_enabled" in gs:
 		gs.debug_log_enabled = false
+	var dbg = root.get_node_or_null("DebugLogOverlay")
+	if dbg and dbg.has_method("set_enabled"):
+		dbg.set_enabled(false)
 	if gs and "debug_all_pcs_unlocked" in gs:
 		gs.debug_all_pcs_unlocked = false
 	DirAccess.make_dir_recursive_absolute(OUT)
@@ -57,7 +63,6 @@ func _init() -> void:
 	await process_frame
 	gl._create_party()
 	await gl._start_battle_async(["goblin"], true)
-	await create_timer(1.0).timeout
 
 	_scene = _find_battle_scene(root)
 	if _scene == null:
@@ -72,16 +77,33 @@ func _init() -> void:
 	_sprite = _scene._get_combatant_sprite(pc)
 	print("[SHOT] actor=%s job=%s tier=%d time_scale=%.2f" % [pc.combatant_name, str(pc.job.get("id", "")), int(root.get_node("BattleJuice").battle_tier()), Engine.time_scale])
 
-	## Set 1 — round 1, turn_start bubble up.
+	## Set 1 — round 1, turn_start bubble up. ⛔ This set used to wait 1.0 + 0.35/count on the battle
+	## clock (~11 s of wall time at 0.25) and was fine while bubbles outlived their voice by 4x. Once a
+	## voiced bubble held for its voice (a39d1df6, ~4.7 s for the Fighter), every capture here ran with
+	## live_bubbles=0 and the set printed a tidy "bubble" frame of nothing (cowir-main, .347). So it now
+	## WAITS for a bubble, runs on short real-time settles, and FAILS any frame taken with none up.
+	var bubble_start: int = await _wait_bubble_live()
+	if bubble_start < 0:
+		print("[SHOT] FAIL: no speech bubble appeared within %d ms — the bubble set has nothing to prove" % BUBBLE_APPEAR_TIMEOUT_MS)
+		_fail += 1
 	var bubble: Array[Image] = []
+	var bubble_wide: Array[Image] = []
 	for n in range(1, 6):
 		_scene._on_advance_queue_changed(n, 5)
-		await create_timer(0.35).timeout
+		await create_timer(0.12, true, false, true).timeout
 		await _pin_phase()
-		bubble.append(_capture("bubble_%d" % n, "live_bubbles=%d" % _live_bubbles()))
+		var live: int = _live_bubbles()
+		if live == 0:
+			print("[SHOT] FAIL: bubble_%d — the bubble cleared before this frame; it would not show the aura beside one" % n)
+			_fail += 1
+		bubble.append(_capture("bubble_%d" % n, "live_bubbles=%d +%d ms after the bubble appeared" % [live, Time.get_ticks_msec() - bubble_start]))
+		bubble_wide.append(_wide_crop())
 		_unpin()
 	_scene._on_advance_queue_changed(0, 5)
 	_strip(bubble, "strip_bubble")
+	## The actor crop cannot hold the bubble once it is placed beside the speaker, so this strip is a
+	## wider half-scale band holding the bubble AND the aura — the frame that shows the two together.
+	_strip_sized(bubble_wide, "strip_bubble_wide", WIDE_OUT)
 
 	## Set 2 — mid-pop, 80 ms of real time after each rising press.
 	var pop: Array[Image] = []
@@ -99,8 +121,10 @@ func _init() -> void:
 	if waited < 0:
 		print("[SHOT] FAIL: speech bubbles still live after %d ms — the clear frames would not prove what they say" % CLEAR_TIMEOUT_MS)
 		_fail += 1
+	elif waited == 0:
+		print("[SHOT] no bubble live when the clear set began (waited 0 ms)")
 	else:
-		print("[SHOT] bubbles cleared after %d ms real time" % waited)
+		print("[SHOT] waited %d ms real time for the last bubble to clear" % waited)
 	var clear: Array[Image] = []
 	for n in range(1, 6):
 		_scene._on_advance_queue_changed(n, 5)
@@ -160,6 +184,16 @@ func _live_bubbles() -> int:
 	return n
 
 
+## Wall-clock ms at which a bubble was first seen live, or -1 if none appeared within the timeout.
+func _wait_bubble_live() -> int:
+	var start: int = Time.get_ticks_msec()
+	while _live_bubbles() == 0:
+		if Time.get_ticks_msec() - start > BUBBLE_APPEAR_TIMEOUT_MS:
+			return -1
+		await process_frame
+	return Time.get_ticks_msec()
+
+
 func _wait_bubbles_clear() -> int:
 	var start: int = Time.get_ticks_msec()
 	while _live_bubbles() > 0:
@@ -184,6 +218,21 @@ func _capture(tag: String, note: String) -> Image:
 		var line = aura.outline()
 		print("[SHOT] %s count=%d full_bank=%s outline=%s %s" % [tag, aura.count, str(aura.full_bank), str(line != null and line.visible), note])
 	return crop
+
+
+func _wide_crop() -> Image:
+	var img := root.get_texture().get_image()
+	var src := WIDE_SRC.intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+	var band := img.get_region(src)
+	band.resize(WIDE_OUT.x, WIDE_OUT.y, Image.INTERPOLATE_BILINEAR)
+	return band
+
+
+func _strip_sized(crops: Array[Image], name: String, size: Vector2i) -> void:
+	var strip := Image.create(size.x, size.y * crops.size(), false, Image.FORMAT_RGBA8)
+	for i in crops.size():
+		strip.blit_rect(crops[i], Rect2i(Vector2i.ZERO, size), Vector2i(0, size.y * i))
+	strip.save_png("%s/%s.png" % [OUT, name])
 
 
 func _strip(crops: Array[Image], name: String) -> void:
