@@ -16,6 +16,7 @@ const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleCameraRigClass = preload("res://src/battle/BattleCameraRig.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
+const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")
 
 ## Base display height for party sprites. Aseprite frames are ground truth —
 ## we don't compensate for non-uniform character fill within the artist's
@@ -450,6 +451,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	"""Cleanup signal connections when scene is freed"""
+	_clear_advance_aura()
 	BattleJuice.clear_battle_context()
 	# Disconnect from BattleManager signals to prevent memory leaks
 	if BattleManager.battle_started.is_connected(_on_battle_started):
@@ -3103,6 +3105,7 @@ func _get_terrain_battle_track() -> String:
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	_clear_advance_aura()
 	## Tick 428: boss defeat dialogue line. Pre-fix only `intro` was
 	## wired — cave_rat_king, the dragons, etc. never spoke their
 	## "you've bested me" beat. Fires on player victory ONLY if the
@@ -3720,6 +3723,10 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				BattleManager.presentation_hold = 0.95 if full_render_this else 0.62
 			"item":
 				BattleManager.presentation_hold = 0.45
+			"advance":
+				## The first sub-action's lunge started the same frame as this flourish and masked it.
+				## BattleManager._execute_advance awaits this hold before its first sub-action.
+				BattleManager.presentation_hold = advance_presentation_hold((action.get("actions", []) as Array).size())
 	match action_type:
 		"attack":
 			_current_ability_id = ""  # Clear — this is a basic attack
@@ -6256,6 +6263,82 @@ static func advance_flourish_color(combatant: Combatant, party_color: Color) -> 
 func _get_job_quip_color(combatant: Combatant) -> Color:
 	var job_id = combatant.job.get("id", "fighter") if combatant.job else "fighter"
 	return JOB_QUIP_COLORS.get(job_id, Color(0.8, 0.8, 0.8))
+
+
+## Game-seconds the advance beat holds the stage before its first sub-action. Sized to the
+## flourish's own tweens (0.26-0.50s across counts 2-5) so the burst finishes reading first.
+static func advance_presentation_hold(count: int) -> float:
+	return 0.30 + 0.04 * float(clampi(count, 2, ADVANCE_FLOURISH_RINGS.size() - 1))
+
+
+## ─── Advance aura: escalates while the player QUEUES, not only when the queue resolves ───
+
+var _advance_aura: Node2D = null
+
+
+## Driven by the root Win98Menu's queue_changed(count, max_size), emitted after every queue
+## mutation. Connected behind has_signal in BattleCommandMenu, so this lands in either fold order.
+func _on_advance_queue_changed(count: int, max_size: int) -> void:
+	var combatant: Combatant = BattleManager.current_combatant
+	if combatant == null or not (combatant in party_members) or count <= 0:
+		_clear_advance_aura()
+		return
+	if not AdvanceAuraClass.should_show(_tier(), BattleJuice.flag("advance_aura")):
+		_clear_advance_aura()
+		return
+	var sprite: Node2D = _get_combatant_sprite(combatant)
+	if sprite == null or not is_instance_valid(sprite):
+		_clear_advance_aura()
+		return
+	_attach_advance_aura(sprite)
+	var job_id: String = str(combatant.job.get("id", "")) if combatant.job else ""
+	## Full bank is a property of the QUEUE the menu opened, not of a constant: max_size is 5 only at
+	## +4 AP, so 5/5 there is the full bank and a 4/4 below it is not (cowir-controller's contract).
+	var full_bank: bool = max_size >= BattleManager.FULL_BANK_ACTIONS and count >= max_size
+	var rose: bool = _advance_aura.set_state(count, full_bank,
+		advance_flourish_color(combatant, _get_job_quip_color(combatant)),
+		str(ADVANCE_FLOURISH_SHAPES.get(job_id, "sparks")))
+	if not rose:
+		return
+	_spawn_advance_queue_pop(combatant, sprite, count)
+	if full_bank:
+		_play_advance_state_cue("full_bank_charged")
+
+
+## One aura per battle, re-parented to whichever PC is queueing. A child of the sprite so it follows
+## the body; counter-scaled so the sheet's draw scale does not shrink it.
+func _attach_advance_aura(sprite: Node2D) -> void:
+	if _advance_aura == null or not is_instance_valid(_advance_aura):
+		_advance_aura = AdvanceAuraClass.new()
+		_advance_aura.name = "AdvanceAura"
+	if _advance_aura.get_parent() != sprite:
+		if _advance_aura.get_parent():
+			_advance_aura.get_parent().remove_child(_advance_aura)
+		sprite.add_child(_advance_aura)
+	var sx: float = absf(sprite.scale.x)
+	var sy: float = absf(sprite.scale.y)
+	_advance_aura.scale = Vector2(1.0 / sx if sx > 0.001 else 1.0, 1.0 / sy if sy > 0.001 else 1.0)
+
+
+## A small pop on each press that raises the count — the resolution flourish in miniature, so the
+## queue feels like charging the same move rather than a different effect.
+func _spawn_advance_queue_pop(combatant: Combatant, sprite: Node2D, count: int) -> void:
+	var color: Color = advance_flourish_color(combatant, _get_job_quip_color(combatant))
+	BattleJuice.spawn_burst(sprite.global_position, Vector2.UP, 3 + count * 2, color, 60.0 + 20.0 * float(count))
+	if count >= 3:
+		BattleJuice.squash(sprite, 1.0 + 0.015 * float(count), 1.0 - 0.01 * float(count), 0.03, 0.08)
+
+
+## Cue routing belongs to the sfx lane: play_advance_state is their dedicated voice, so a state cue
+## cannot stomp the job's advance rung on the shared battle player. Silent until that lands.
+func _play_advance_state_cue(key: String) -> void:
+	if SoundManager and SoundManager.has_method("play_advance_state"):
+		SoundManager.call("play_advance_state", key)
+
+
+func _clear_advance_aura() -> void:
+	if _advance_aura != null and is_instance_valid(_advance_aura):
+		_advance_aura.clear()
 
 
 func _try_combat_quip(quip_dict: Dictionary, combatant: Combatant) -> void:

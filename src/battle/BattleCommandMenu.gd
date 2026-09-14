@@ -143,6 +143,10 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.actions_submitted.connect(_on_win98_actions_submitted)
 	_scene.active_win98_menu.defer_requested.connect(_on_win98_defer_requested)
 	_scene.active_win98_menu.go_back_requested.connect(_on_win98_go_back_requested)
+	## cowir-controller's queue_changed contract (lane/advance-only-queues). Behind has_signal so the
+	## aura lands in either fold order; until then the aura simply never receives a count.
+	if _scene.active_win98_menu.has_signal("queue_changed") and _scene.has_method("_on_advance_queue_changed"):
+		_scene.active_win98_menu.queue_changed.connect(_scene._on_advance_queue_changed)
 
 	# Set max queue size and current AP for display
 	var ap_limit = combatant.current_ap + 4
@@ -1127,12 +1131,20 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 		return
 
 
+## The aura clears on commit, defer, go-back and close. queue_changed(0) also clears it on submit and
+## close, but defer and go-back are not queue mutations, so those need the explicit call.
+func _clear_aura() -> void:
+	if _scene and _scene.has_method("_clear_advance_aura"):
+		_scene._clear_advance_aura()
+
+
 func _on_win98_menu_closed(closing_menu: Node = null) -> void:
 	"""Handle Win98 menu being closed. Identity guard (msg 2529): the bound closing_menu is the specific instance that emitted menu_closed. Only null active_win98_menu if it still references THIS closing menu — otherwise the next PC's menu already spawned and we'd orphan it. The bind() at the connect site passes the menu instance in; a plain connect() would fall back to closing_menu=null and skip the guard (safe default preserving pre-fix behavior for any future emit path that doesn't go through the standard connect)."""
 	print("[MENU-NULL] t=%dms path=menu_closed_signal closing=%s active=%s" % [Time.get_ticks_msec(), _instance_id(closing_menu), _instance_id(_scene.active_win98_menu)])
 	if closing_menu != null and _scene.active_win98_menu != null and _scene.active_win98_menu != closing_menu:
 		# The closing menu is stale — a later menu is already active. Don't null the active ref or the watchdog force-spawns a duplicate.
 		return
+	_clear_aura()
 	_scene.active_win98_menu = null
 
 
@@ -1147,6 +1159,7 @@ func _instance_id(n: Object) -> String:
 
 func _on_win98_actions_submitted(actions: Array) -> void:
 	"""Handle multiple actions submitted via Advance mode (Brave)"""
+	_clear_aura()
 	print("[MENU-NULL] t=%dms path=actions_submitted count=%d" % [Time.get_ticks_msec(), actions.size()])
 	_scene.active_win98_menu = null
 	var current = BattleManager.current_combatant
@@ -1246,6 +1259,7 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 
 func _on_win98_defer_requested() -> void:
 	"""Handle L button defer request (no queue)"""
+	_clear_aura()
 	print("[MENU-NULL] t=%dms path=defer_requested" % Time.get_ticks_msec())
 	var current = BattleManager.current_combatant
 	if not current:
@@ -1263,6 +1277,7 @@ func _on_win98_defer_requested() -> void:
 
 func _on_win98_go_back_requested() -> void:
 	"""Handle B button request to go back to previous player"""
+	_clear_aura()
 	if _scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu):
 		print("[MENU-NULL] t=%dms path=go_back_requested" % Time.get_ticks_msec())
 		_scene.active_win98_menu.force_close()
