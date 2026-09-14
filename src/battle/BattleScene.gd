@@ -6240,7 +6240,7 @@ func _on_full_bank_unleashed(combatant: Combatant, action_count: int) -> void:
 	var sprite: Node2D = _get_combatant_sprite(combatant)
 	if sprite and is_instance_valid(sprite):
 		BattleJuice.punch_zoom(sprite.global_position, 0.05, 0.18)
-	SoundManager.play_battle("full_bank_unleash")
+	SoundManager.play_advance_state("full_bank_unleash")
 	log_message("[color=gold]★ FULL BANK — %d actions ★[/color]" % action_count)
 
 

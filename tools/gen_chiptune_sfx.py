@@ -562,6 +562,45 @@ def full_bank_unleash(dur=0.85, seed=331):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.95).astype(np.float32)
 
 
+def full_bank_charged(dur=0.62, seed=347):
+    """5/5 reached WHILE QUEUEING — the bank's third moment, and not either of the other two:
+    advance_flourish_5 is the wind-up at resolution, full_bank_unleash the discharge. This is the
+    bank LOCKING FULL, so it HOLDS instead of stacking or striking. A latch click, then an open
+    fifth with no third — it plays in the same frame as the job's own fifth rung, whose key nobody
+    controls, and a missing third cannot clash with it. Tremolo is the shimmer of a held charge.
+    Fundamentals stay under 1.1 kHz; the band he rejected is above that."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n)
+    k = int(SR * 0.025)                                                    # the latch
+    out[:k] += _sweep_lowpass(rng.uniform(-1, 1, k), 2200.0, 1600.0) * _env(k, 0.001, 5.0) * 0.50
+    _place(out, _held(int(SR * 0.09), 87.31, 2.8, 0.70), 0)                # F2 thud under it
+    off = int(SR * 0.03); tail = n - off
+    chord = np.zeros(tail)
+    for f, a, duty in ((349.23, 0.42, 0.5), (523.25, 0.34, 0.35), (698.46, 0.24, 0.25)):   # F4 C5 F5
+        chord += _held(tail, f, 1.5, a, duty=duty, vib_hz=5.0, vib_cents=12.0)
+    chord *= 1.0 + 0.30 * np.sin(2 * math.pi * 8.0 * np.arange(tail) / SR)
+    _place(out, chord, off)
+    _place(out, _held(tail, 174.61, 1.3, 0.28), off)                       # F3 body
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 2100.0, 1800.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.84).astype(np.float32)
+
+
+def advance_queue_full(dur=0.17, seed=349):
+    """The REFUSED Advance press, at a full queue. It will be mashed: R used to commit at the limit,
+    so every momentum press past five now lands here. Two held low blips a semitone apart, DOWN —
+    a "no" — short enough that repeats at the per-key interval never smear into a drone. Stepped,
+    never slid, and on the bank's F so it reads as the bank refusing, not a generic menu error."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n); h = int(n * 0.42)
+    _place(out, _held(h, 185.00, 3.2, 0.62), 0)                            # F#3
+    _place(out, _held(n - h, 174.61, 2.6, 0.66), h)                        # F3, a discrete step down
+    _place(out, _held(n, 87.31, 2.4, 0.24), 0)                             # F2 weight, the family root
+    k = int(SR * 0.012)
+    out[:k] += _sweep_lowpass(rng.uniform(-1, 1, k), 1400.0, 1200.0) * _env(k, 0.001, 5.0) * 0.25
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 1600.0, 1400.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.72).astype(np.float32)
+
+
 VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
           "scythe_crit": scythe_crit, "strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
           "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
@@ -573,7 +612,8 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "mp_restore": mp_restore, "flee": flee, "cure": cure,
           "advance_flourish_2": advance_flourish_2, "advance_flourish_3": advance_flourish_3,
           "advance_flourish_4": advance_flourish_4, "advance_flourish_5": advance_flourish_5,
-          "full_bank_unleash": full_bank_unleash}
+          "full_bank_unleash": full_bank_unleash,
+          "full_bank_charged": full_bank_charged, "advance_queue_full": advance_queue_full}
 
 
 def _refuse_if_degenerate(voice, y):
