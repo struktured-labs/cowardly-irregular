@@ -9,6 +9,11 @@ signal menu_closed()
 signal actions_submitted(actions: Array)  # For Advance mode - multiple actions
 signal defer_requested()  # L button with no queue - defer turn
 signal go_back_requested()  # B button at root to go back to previous player
+## Advance-queue contract for battle (work order 2026-09-14). Emitted by the ROOT after EVERY queue
+## mutation (queue, undo, cancel-all) and with 0 when a commit empties it. Always BEFORE
+## actions_submitted/item_selected, never after: those dispatch turn end, and the next PC's menu can
+## already exist by the time control comes back. A close emits 0 only if the last count was not 0.
+signal queue_changed(count: int, max_size: int)
 
 
 ## Get currently selected item ID (for hold detection)
@@ -185,6 +190,9 @@ var _target_pulse_tween: Tween = null
 var _pending_target_pos: Vector2 = Vector2.ZERO  # Target position for line
 var _queued_actions: Array = []  # Actions queued via Advance mode
 var _max_queue_size: int = 4  # Max actions (limited by AP)
+var _last_queue_emit: int = 0  # last count sent on queue_changed — close only owes a 0 if this is not 0
+var _readout_shake: Tween = null
+var _readout_base_x: float = 0.0
 var _is_closing: bool = false  # Prevent double-close
 ## STATIC (2026-09-06): defer destroys the menu, so an instance debounce dies with it and the NEXT member's fresh menu accepts the tail of the same L2 squeeze — one press deferred two PCs.
 static var _last_advance_ms: int = 0
@@ -1167,6 +1175,12 @@ func force_close() -> void:
 		return
 	_is_closing = true
 
+	# queue_changed backstop: a root closing with a live count still owes battle its 0. Deduped, because
+	# every commit path already sent 0 before dispatching turn end.
+	if parent_menu == null and _last_queue_emit != 0:
+		_last_queue_emit = 0
+		queue_changed.emit(0, _max_queue_size)
+
 	# Reset L button state to prevent stale state
 	_l_button_pressed = false
 
@@ -1235,6 +1249,14 @@ func _handle_advance_input() -> void:
 		return
 	Win98Menu._last_advance_ms = now_ms
 
+	## ⛔ ADVANCE ONLY QUEUES (work order 2026-09-14). It used to commit on the press that reached
+	## max-1, so R on the last slot queued AND ended the turn. Now a full queue REFUSES, with a deny
+	## cue and a shake on the queue readout, and never submits. Confirm is the commit.
+	var commits_at_limit := _advance_commits_at_limit()
+	if not commits_at_limit and _queue_is_full():
+		_refuse_advance_full()
+		return
+
 	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
 	if current_item.has("submenu"):
@@ -1248,9 +1270,8 @@ func _handle_advance_input() -> void:
 		_reject_selection(current_item)
 		return
 
-	# Check if we're at the queue limit - if so, act as confirm
-	if root._queued_actions.size() >= root._max_queue_size - 1:
-		# At or near limit - this will be the last action, so submit
+	# Opt-in legacy (advance_commits_at_limit ON): the press that fills the queue also commits it.
+	if commits_at_limit and root._queued_actions.size() >= root._max_queue_size - 1:
 		_play_advance_sound(root._queued_actions.size() + 1)  # Consistent advance sound even when auto-submitting
 		_submit_actions()
 		return
@@ -1283,8 +1304,10 @@ func _confirm_turn_with_queue() -> void:
 	if root._queued_actions.size() > 0:
 		# Submit queued actions as advance
 		SoundManager.play_ui("menu_select")
-		root.actions_submitted.emit(root._queued_actions.duplicate())
+		var queued: Array = root._queued_actions.duplicate()
 		root._queued_actions.clear()
+		root._emit_queue_changed()  # BEFORE actions_submitted — it dispatches turn end
+		root.actions_submitted.emit(queued)
 		root._close_entire_tree()
 	else:
 		# No queue - just defer
@@ -1312,6 +1335,7 @@ func _queue_current_action(item: Dictionary) -> void:
 
 	# Update AP display to show pending cost
 	root._update_ap_label()
+	root._emit_queue_changed()
 
 	# DON'T close menus or clear highlights - keep everything visible for more selections
 	# The highlight stays on the current target until player moves to another
@@ -1353,6 +1377,7 @@ func _undo_last_action() -> void:
 		root._queued_actions.pop_back()
 		_play_undo_sound()
 		root._update_ap_label()
+		root._emit_queue_changed()
 
 
 func _cancel_all_queued() -> void:
@@ -1361,10 +1386,86 @@ func _cancel_all_queued() -> void:
 	root._queued_actions.clear()
 	_play_cancel_sound()
 	root._update_ap_label()
+	root._emit_queue_changed()
+
+
+## Send the root's queue count to battle. The single emit point, so the contract cannot drift per site.
+func _emit_queue_changed() -> void:
+	var root = _get_root_menu()
+	root._last_queue_emit = root._queued_actions.size()
+	root.queue_changed.emit(root._last_queue_emit, root._max_queue_size)
+
+
+## OFF by default (work order 2026-09-14): Advance only queues. ON restores the press that fills the
+## queue also committing it — the only behaviour there was before that date.
+func _advance_commits_at_limit() -> bool:
+	return GameState != null and "advance_commits_at_limit" in GameState \
+			and bool(GameState.advance_commits_at_limit)
+
+
+## A full queue always holds at least one action — the > 0 clause stops a zero max from reading as full
+## and committing an empty advance, which BattleManager treats as the EXECUTE-freeze class.
+func _queue_is_full() -> bool:
+	var root = _get_root_menu()
+	return root._queued_actions.size() > 0 and root._queued_actions.size() >= root._max_queue_size
+
+
+## Advance at a full queue does nothing but say so. Before 2026-09-14 this press could not happen —
+## the press that FILLED the queue committed it — so a full queue never needed a refusal.
+func _refuse_advance_full() -> void:
+	var root = _get_root_menu()
+	# cowir-sfx ships SoundManager.play_advance_state (manifest-guarded); fall back until it lands.
+	if SoundManager.has_method("play_advance_state"):
+		SoundManager.play_advance_state("advance_queue_full")
+	else:
+		SoundManager.play_ui("menu_error")
+	root._shake_queue_readout()
+	var label := _find_hint_label()
+	if label:
+		label.text = "Queue full — %s to commit" % InputProfileManager.hint_for_action("ui_accept")
+		_hint_showing_reason = true
+
+
+## A short horizontal shake on the queue readout, in REAL time: battle speed scales Engine.time_scale
+## (0.25 is "1x"), and a refusal that plays at a quarter speed reads as lag, not as "no".
+func _shake_queue_readout() -> void:
+	if not _ap_label or not is_instance_valid(_ap_label):
+		return
+	if GameState != null and "screen_shake_enabled" in GameState and not GameState.screen_shake_enabled:
+		return
+	if _readout_shake and _readout_shake.is_valid():
+		_readout_shake.kill()
+		_ap_label.position.x = _readout_base_x
+	_readout_base_x = _ap_label.position.x
+	_readout_shake = create_tween().set_ignore_time_scale(true)
+	for dx in [6.0, -5.0, 4.0, -2.0, 0.0]:
+		_readout_shake.tween_property(_ap_label, "position:x", _readout_base_x + dx, 0.035)
+
+
+## At a FULL queue, Confirm commits EXACTLY the queue. It used to go through _submit_actions, which
+## appends the highlighted item — one past the limit — and BattleManager._apply_full_bank_rule then
+## sliced the overflow off without a word, so the turn that resolved was not the one on screen.
+func _commit_queue_exactly() -> void:
+	var root = _get_root_menu()
+	var all_actions: Array = root._queued_actions.duplicate()
+	root._queued_actions.clear()
+	root._emit_queue_changed()  # BEFORE the submit signals — they dispatch turn end
+	_play_select_sound()
+	if _target_highlight and is_instance_valid(_target_highlight):
+		_target_highlight.visible = false
+		_set_chain_dim(false)
+	if all_actions.size() == 1:
+		root.item_selected.emit(all_actions[0].id, all_actions[0].data)
+	else:
+		root.actions_submitted.emit(all_actions)
+	root.force_close()
 
 
 func _submit_actions() -> void:
-	"""Submit all queued actions + current selection"""
+	"""Submit all queued actions + current selection — or exactly the queue, when it is full"""
+	if _queue_is_full():
+		_commit_queue_exactly()
+		return
 	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
 	if current_item.get("disabled", false):
@@ -1387,6 +1488,7 @@ func _submit_actions() -> void:
 	})
 
 	root._queued_actions.clear()
+	root._emit_queue_changed()  # BEFORE item_selected/actions_submitted — they dispatch turn end
 
 	# Emit signals immediately, then close
 	_play_select_sound()
@@ -1569,7 +1671,11 @@ func _update_hint_bar() -> void:
 		# HOLD/tap use battle_defer — "L" is the keyboard key AND Nintendo's shoulder; Xbox calls it
 		# LB and PlayStation L1, so the bare letter was right on one family only.
 		var g_l: String = InputProfileManager.hint_for_action("battle_defer")
-		label.text = "%s Add+Commit  ·  HOLD %s Commit  ·  tap %s/%s Undo  ·  queued %d/%d" % [g_ok, g_l, g_l, g_no, n, root._max_queue_size]
+		if n >= root._max_queue_size:
+			# FULL (work order 2026-09-14): Confirm now commits exactly the queue, so "Add" would be false.
+			label.text = "%s Commit  ·  tap %s/%s Undo  ·  queued %d/%d FULL" % [g_ok, g_l, g_no, n, root._max_queue_size]
+		else:
+			label.text = "%s Add+Commit  ·  HOLD %s Commit  ·  tap %s/%s Undo  ·  queued %d/%d" % [g_ok, g_l, g_l, g_no, n, root._max_queue_size]
 	else:
 		label.text = hint_text()
 
@@ -1730,7 +1836,9 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
-		if current_item.has("submenu"):
+		if _queue_is_full():
+			_commit_queue_exactly()
+		elif current_item.has("submenu"):
 			_play_expand_sound()
 			if not submenu:
 				_do_open_submenu(selected_index, current_item)
@@ -1770,7 +1878,9 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_left") and not event.is_echo():
 		if expand_left:
 			var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
-			if current_item.has("submenu"):
+			if _queue_is_full():
+				_commit_queue_exactly()
+			elif current_item.has("submenu"):
 				# Item has submenu - expand it
 				_play_expand_sound()
 				if not submenu:
@@ -1815,7 +1925,9 @@ func _input(event: InputEvent) -> void:
 		else:
 			# RIGHT = confirm for right-expanding menus
 			var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
-			if current_item.has("submenu"):
+			if _queue_is_full():
+				_commit_queue_exactly()
+			elif current_item.has("submenu"):
 				_play_expand_sound()
 				if not submenu:
 					_do_open_submenu(selected_index, current_item)

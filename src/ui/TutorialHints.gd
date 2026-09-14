@@ -27,7 +27,7 @@ const HINTS = {
 	},
 	"advance_defer": {
 		"title": "Advance & Defer",
-		"body": "Press {advance} to Advance — queue up to 4 actions in one turn (costs AP). Press {defer} to Defer — skip your turn and take HALF damage that round. You gain +1 AP every turn either way; Defer banks it, because you spend none.",
+		"body": "Press {advance} to Advance — queue up to 4 actions in one turn (costs AP), or 5 at a full bank (+4 AP). Press {confirm} to commit the queue. Press {defer} to Defer — skip your turn and take HALF damage that round. You gain +1 AP every turn either way; Defer banks it, because you spend none.",
 	},
 	"group_attacks": {
 		"title": "Group Attacks",

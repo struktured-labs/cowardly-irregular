@@ -50,6 +50,7 @@ var text_size_index: int = 1
 var color_blind_mode: bool = false
 var reduce_flashes: bool = false
 var screen_shake_enabled: bool = true
+var advance_commits_at_limit: bool = false
 
 ## The 'ridiculous menu of toggles' (struktured 2026-08-14) — [flag_key, label, description]; audio lanes append theirs here
 const BATTLE_FX_FLAGS := [
@@ -167,6 +168,8 @@ func _ready() -> void:
 			reduce_flashes = bool(GameState.reduce_flashes)
 		if "screen_shake_enabled" in GameState:
 			screen_shake_enabled = GameState.screen_shake_enabled
+		if "advance_commits_at_limit" in GameState:
+			advance_commits_at_limit = bool(GameState.advance_commits_at_limit)
 		if "dash_always_on" in GameState:
 			dash_always_on = GameState.dash_always_on
 		if "llm_enabled" in GameState:
@@ -398,6 +401,19 @@ func _build_ui() -> void:
 	_settings_items.append({"control": shake_item, "type": "toggle", "id": "screen_shake"})
 	MenuMouseHelper.make_clickable(shake_item, 7, 400, 60,
 		_on_setting_click.bind(7), _on_setting_hover.bind(7))
+
+	# Advance/Confirm split (work order 2026-09-14). Dynamic idx like every row below, so nothing renumbers.
+	var adv_idx: int = _settings_items.size()
+	var adv_item = _create_toggle_setting(
+		"Advance Also Commits",
+		"Off: Advance only queues, Confirm ends the turn. On: filling the queue ends it",
+		advance_commits_at_limit,
+		adv_idx
+	)
+	vbox.add_child(adv_item)
+	_settings_items.append({"control": adv_item, "type": "toggle", "id": "advance_commits_at_limit"})
+	MenuMouseHelper.make_clickable(adv_item, adv_idx, 400, 60,
+		_on_setting_click.bind(adv_idx), _on_setting_hover.bind(adv_idx))
 
 	# Item 9: dash always-on (testing/accessibility) — hold-to-dash works regardless.
 	var dash_idx: int = _settings_items.size()
@@ -1194,6 +1210,12 @@ func _adjust_setting(delta: int) -> void:
 		_save_screen_shake_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "advance_commits_at_limit":
+		advance_commits_at_limit = not advance_commits_at_limit
+		_update_toggle_display(selected_index, advance_commits_at_limit)
+		_save_advance_commits_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif str(item["id"]).begins_with("fx_"):
 		# Battle FX flags: sparse overrides on GameState, persisted with the other settings
 		var fx_key: String = str(item["id"]).substr(3)
@@ -1354,6 +1376,14 @@ func _save_screen_shake_setting() -> void:
 		GameState.screen_shake_enabled = screen_shake_enabled
 	settings_changed.emit("screen_shake", screen_shake_enabled)
 	print("[SETTINGS] Screen shake %s" % ("enabled" if screen_shake_enabled else "disabled"))
+	_persist_settings()
+
+
+func _save_advance_commits_setting() -> void:
+	if GameState:
+		GameState.advance_commits_at_limit = advance_commits_at_limit
+	settings_changed.emit("advance_commits_at_limit", advance_commits_at_limit)
+	print("[SETTINGS] Advance commits at limit %s" % ("enabled" if advance_commits_at_limit else "disabled"))
 	_persist_settings()
 
 
