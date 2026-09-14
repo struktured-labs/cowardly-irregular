@@ -5,7 +5,7 @@ extends Node
 ##
 ## New 2D Grid Format:
 ## - Rules are evaluated top-to-bottom (first match wins)
-## - Each rule has AND-chained conditions and up to 5 actions (the fifth fires only at a full bank, +4 AP; truncated to 4 below it)
+## - Each rule has AND-chained conditions and up to 4 actions
 ## - Multiple actions = Advance mode (costs AP per action)
 
 signal script_executed(combatant: Combatant, rule: Dictionary, actions: Array)
