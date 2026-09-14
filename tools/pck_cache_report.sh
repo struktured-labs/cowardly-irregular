@@ -74,8 +74,10 @@ _report() {
         echo "[deploy]        cacheable at or below $(_mib "$line") MiB (${line} B), measured on chromium."
         case "$(_sw_state "$build")" in
           covers)
-            echo "[deploy]        service worker caches it: a returning player pays $(_mib "$pck") MiB on the"
-            echo "[deploy]        first two visits of each release, then nothing until the next release."
+            echo "[deploy]        service worker caches it: a returning player pays $(_mib "$pck") MiB to warm"
+            echo "[deploy]        the cache, then nothing while that browser session lasts."
+            echo "[deploy]        ⚠ THEY ALSO DO NOT GET THIS RELEASE until they close and reopen the"
+            echo "[deploy]        browser — the installed worker keeps serving the build it cached."
             echo "[deploy]        A FIRST-TIME player still downloads $(_mib "$pck") MiB, and itch-iframe"
             echo "[deploy]        registration is UNVERIFIED — over the line is still over the line." ;;
           present-uncovered)
@@ -174,6 +176,14 @@ chk "covers does NOT claim EVERY visit"          "$(said "$cov" 'EVERY visit')" 
 chk "covers names the service worker"            "$(said "$cov" 'service worker caches it')" yes
 chk "covers still warns first-time players pay"  "$(said "$cov" 'FIRST-TIME player still downloads')" yes
 chk "covers does not overclaim on itch"          "$(said "$cov" 'UNVERIFIED')" yes
+# The wording this replaced said "then nothing until the next release", which implies the
+# player RECEIVES the next release. Measured 2026-09-13, build A then build B on one origin and
+# profile with the HTTP cache neutralised: four visits after B shipped, all four served A — the
+# new worker installs (its cache appears) and waits. Only closing and reopening the browser
+# promoted it. So the cost framing was right and the DELIVERY framing was wrong, and these two
+# arms pin both halves so it cannot drift back.
+chk "covers does NOT imply the next release arrives" "$(said "$cov" 'until the next release')" no
+chk "covers says a reopen is what promotes it"       "$(said "$cov" 'close and reopen the')" yes
 chk "uncovered DOES claim EVERY visit"           "$(said "$unc" 'EVERY visit')" yes
 chk "uncovered names it as a regression"         "$(said "$unc" 'does NOT name index.pck')" yes
 chk "none DOES claim EVERY visit"                "$(said "$non" 'EVERY visit')" yes
