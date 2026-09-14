@@ -5500,7 +5500,7 @@ func _bubble_keep_out_rects() -> Array:
 		if m.is_visible_in_tree():
 			out.append(m.get_global_rect())
 		var tip = m.get("_tooltip_label")
-		if tip is Control and is_instance_valid(tip) and tip.is_visible_in_tree():
+		if is_instance_valid(tip) and tip is Control and tip.is_visible_in_tree():
 			out.append(tip.get_global_rect())
 		m = m.get("submenu")
 		depth += 1
