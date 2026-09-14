@@ -10,6 +10,7 @@ extends GutTest
 
 const GL := "res://src/GameLoop.gd"
 const OVERLAY := "res://src/ui/HowToPlayOverlay.gd"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 
 func _fn_body(src: String, fn: String) -> String:
@@ -96,3 +97,26 @@ func test_f1_toggles_closed_and_frees_its_layer() -> void:
 	assert_true(close_body.contains("_help_overlay.queue_free()"), "the overlay is freed")
 	assert_true(close_body.contains("_help_layer.queue_free()"), "and so is its CanvasLayer")
 	assert_true(close_body.contains("_help_overlay = null"), "and the handle is cleared, so F1 re-opens")
+
+
+## struktured 2026-09-14: "the 5 action system isn't quite right." After the Advance batch the queue
+## caps at ADVANCE_CAP, or FULL_BANK_ACTIONS at a full bank, and Confirm is the only commit. This
+## reference still read "Queue up to 4 actions, then they all execute at once!" — no fifth, no commit.
+func test_the_reference_teaches_the_fifth_action_and_how_to_commit() -> void:
+	var text: String = load(OVERLAY).build_text()
+	var cap := "up to %d actions" % BattleManager.ADVANCE_CAP
+	var bank := "or %d at a full bank (+%d AP)" % [BattleManager.FULL_BANK_ACTIONS, BattleManager.FULL_BANK_AP]
+	assert_true(text.contains(cap), "the Advance line must state the live cap: '%s'" % cap)
+	assert_true(text.contains(bank), "the Advance line must name the fifth action at a full bank: '%s'" % bank)
+	assert_true(text.contains("Confirm to commit the queue"),
+		"Advance only queues now, so the reference must say Confirm commits or a player has no documented way to act")
+
+
+## The numbers are DERIVED. Typing 4 and 5 back in renders identically today and stops following the
+## rule — a restated cap in the battle menu is how that goes stale. Read from the CODE half: the
+## symbols sit between a closing and an opening triple quote, which gd_source keeps as code.
+func test_the_advance_numbers_come_from_battle_manager() -> void:
+	var code: String = GdSource.code_of(OVERLAY)
+	assert_true(code.contains("func build_text"), "CONTROL: the stripper kept the builder, so the arms below are not vacuous")
+	for sym in ["BattleManager.ADVANCE_CAP", "BattleManager.FULL_BANK_ACTIONS", "BattleManager.FULL_BANK_AP"]:
+		assert_true(code.contains(sym), "the Advance line must read %s rather than a typed digit" % sym)

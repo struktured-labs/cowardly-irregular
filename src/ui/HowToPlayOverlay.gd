@@ -56,7 +56,8 @@ Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color],
 [color=white]AP (Action Points)[/color] range from -4 to +4.
   [color=lime]Defer (L)[/color]: Skip your turn. Gain +1 AP, take less damage.
   [color=cyan]Advance (R)[/color]: Queue extra actions. Each costs 1 AP.
-    Queue up to 4 actions, then they all execute at once!
+    Queue up to """ + str(BattleManager.ADVANCE_CAP) + """ actions, or """ + str(BattleManager.FULL_BANK_ACTIONS) + """ at a full bank (+""" + str(BattleManager.FULL_BANK_AP) + """ AP) — the last one is free.
+    Press Confirm to commit the queue; they all execute at once!
 
 [b][color=yellow]AUTOBATTLE[/color][/b]
 This game is designed to be automated!
