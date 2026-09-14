@@ -4105,6 +4105,15 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	else:
 		battle_log_message.emit("[color=orange]⚡ %s advances — %d actions this turn![/color]" % [combatant.combatant_name, actions.size()])
 
+	## The advance beat's flourish and the first sub-action's lunge started in the SAME frame, so the
+	## lunge masked it. BattleScene sets a hold on this beat; only an await here can honour it, because
+	## the loop below runs the first sub-action synchronously. Gated on a hold actually being set, so
+	## every path that sets none — turbo, the console, 2x+, headless tests — is unchanged.
+	if not turbo_mode and presentation_hold > 0.0:
+		await get_tree().create_timer(_consume_presentation_hold(0.0)).timeout
+		if not is_instance_valid(self):
+			return
+
 	# Execute all actions in sequence (each will spend 1 AP)
 	for action in actions:
 		if not combatant.is_alive:
