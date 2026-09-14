@@ -41,10 +41,18 @@ const OUTLINE_GROW: Array[float] = [1.0, 1.08, 1.10, 1.12, 1.14, 1.16]
 const OUTLINE_ALPHA: Array[float] = [0.0, 0.50, 0.58, 0.66, 0.74, 0.82]
 const OUTLINE_ALPHA_PULSE: float = 0.06
 
-const FULL_BANK_RIM: Color = Color(1.0, 0.84, 0.25)
-const FULL_BANK_RIM_WIDTH: float = 3.0
-const FULL_BANK_RIM_GAP: float = 5.0
+## 5/5 is the payoff, not a louder 4: a saturated gold ring AROUND the disc — near half in front of the feet,
+## uniform width, never squashed by the disc's flattening — and the outline turns gold. ⛔ .348 drew a 3 px
+## rim inside the flattening transform and behind the body: a pale arc on the disc's lower edge (cowir-main).
+const FULL_BANK_RIM: Color = Color(1.0, 0.78, 0.10)
+const FULL_BANK_HIGHLIGHT: Color = Color(1.0, 0.96, 0.62)
+const FULL_BANK_RIM_WIDTH: float = 6.0
+const FULL_BANK_GLOW_WIDTH: float = 12.0
+const FULL_BANK_GLOW_ALPHA: float = 0.4
+const FULL_BANK_RIM_GAP: float = 4.0
+const FULL_BANK_OUTLINE_GOLD: float = 0.85
 const FULL_BANK_PULSE_HZ: float = 3.6
+const RING_SEGMENTS := 32
 ## Breathe and kick, as fractions of the disc radius. The breathe stays under the smallest radius gap.
 const PULSE_DEPTH: float = 0.04
 const KICK_DEPTH: float = 0.10
@@ -106,7 +114,7 @@ static func should_show(tier: int, flag_on: bool) -> bool:
 static func max_reach() -> float:
 	var top: int = RADIUS.size() - 1
 	var r: float = RADIUS[top] * (1.0 + PULSE_DEPTH) * (1.0 + KICK_DEPTH)
-	var disc_edge: float = r + maxf(RIM_WIDTH[top] * 0.5, FULL_BANK_RIM_GAP + FULL_BANK_RIM_WIDTH * 0.5)
+	var disc_edge: float = r + maxf(RIM_WIDTH[top] * 0.5, FULL_BANK_RIM_GAP + FULL_BANK_GLOW_WIDTH * 0.5)
 	var arm_edge: float = ORBIT_RX[top] + _glyph_size(top) * 1.2
 	return maxf(disc_edge, arm_edge)
 
@@ -235,6 +243,26 @@ func disc_center() -> Vector2:
 	return Vector2(_figure.get_center().x, _figure.end.y - RADIUS[2] * DISC_FLAT * DISC_LIFT)
 
 
+## Half of the full-bank ring, in unflattened space so its line width is the same all the way round.
+## The near half is the lower one on screen, and is drawn on the front layer.
+func gold_ring_points(near: bool) -> PackedVector2Array:
+	var c: Vector2 = disc_center()
+	var rx: float = current_radius() + FULL_BANK_RIM_GAP
+	var ry: float = rx * DISC_FLAT
+	var from: float = 0.0 if near else PI
+	var pts := PackedVector2Array()
+	for k in RING_SEGMENTS + 1:
+		var a: float = from + PI * float(k) / float(RING_SEGMENTS)
+		pts.append(c + Vector2(cos(a) * rx, sin(a) * ry))
+	return pts
+
+
+## The outline's tint this frame: the job colour, pulled toward gold at a full bank.
+func outline_tint() -> Color:
+	var base: Color = color.lerp(FULL_BANK_RIM, FULL_BANK_OUTLINE_GOLD) if has_layer(LAYER_GOLD) else color
+	return Color(base.r, base.g, base.b, current_outline_alpha())
+
+
 func orbit_center() -> Vector2:
 	return Vector2(_figure.get_center().x, _figure.position.y + _figure.size.y * ORBIT_HEIGHT)
 
@@ -328,10 +356,10 @@ func _sync_outline() -> void:
 	_outline.offset = _body.offset
 	## Counter-scaled against the body, so multiply the body's scale back in. No pulse term.
 	_outline.scale = _body.scale * float(p["outline_grow"])
-	(_outline.material as ShaderMaterial).set_shader_parameter("tint", Color(color.r, color.g, color.b, current_outline_alpha()))
+	(_outline.material as ShaderMaterial).set_shader_parameter("tint", outline_tint())
 
 
-## Behind the body: the ground disc, its gold rim, and the far half of the orbit.
+## Behind the body: the ground disc, the far half of the gold ring, and the far half of the orbit.
 func _draw() -> void:
 	if count <= 0:
 		return
@@ -344,17 +372,19 @@ func _draw() -> void:
 		var core: Color = color.lightened(0.3)
 		draw_circle(Vector2.ZERO, r * 0.6, Color(core.r, core.g, core.b, fill * 0.7))
 		draw_arc(Vector2.ZERO, r, 0.0, TAU, 64, Color(color.r, color.g, color.b, clampf(0.45 + fill, 0.0, 1.0)), float(p["rim_width"]), true)
-		if has_layer(LAYER_GOLD):
-			draw_arc(Vector2.ZERO, r + FULL_BANK_RIM_GAP, 0.0, TAU, 64, FULL_BANK_RIM, FULL_BANK_RIM_WIDTH, true)
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if has_layer(LAYER_GOLD):
+		_draw_gold_ring(self, false)
 	if has_layer(LAYER_ARMS):
 		_draw_arms(self, false)
 
 
-## In front of the body: the near half of the orbit and the rising motes.
+## In front of the body: the near half of the gold ring and of the orbit, and the rising motes.
 func _draw_front() -> void:
 	if count <= 0 or _front == null:
 		return
+	if has_layer(LAYER_GOLD):
+		_draw_gold_ring(_front, true)
 	if has_layer(LAYER_ARMS):
 		_draw_arms(_front, true)
 	if has_layer(LAYER_MOTES):
@@ -371,6 +401,13 @@ func _draw_front() -> void:
 			var rad: float = 3.5 + 2.5 * (1.0 - ph)
 			_front.draw_circle(at, rad, Color(c.r, c.g, c.b, fade))
 			_front.draw_circle(at, rad * 0.45, Color(1.0, 1.0, 1.0, fade))
+
+
+func _draw_gold_ring(canvas: CanvasItem, near: bool) -> void:
+	var pts: PackedVector2Array = gold_ring_points(near)
+	canvas.draw_polyline(pts, Color(FULL_BANK_RIM.r, FULL_BANK_RIM.g, FULL_BANK_RIM.b, FULL_BANK_GLOW_ALPHA), FULL_BANK_GLOW_WIDTH, true)
+	canvas.draw_polyline(pts, FULL_BANK_RIM, FULL_BANK_RIM_WIDTH, true)
+	canvas.draw_polyline(pts, FULL_BANK_HIGHLIGHT, 2.0, true)
 
 
 func _draw_arms(canvas: CanvasItem, near: bool) -> void:
