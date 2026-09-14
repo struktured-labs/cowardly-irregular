@@ -212,9 +212,13 @@ func _selection_phase() -> Array[Dictionary]:
 			## turn. This resolver was a third: it charged size-1 at EVERY size, so a 3-action
 			## Advance cost 2 AP here and 3 in the game it simulates — cheaper automation than
 			## manual play, which is the yield tax inverted.
-			var cap: int = BattleManager.FULL_BANK_ACTIONS if combatant.current_ap >= BattleManager.FULL_BANK_AP else BattleManager.ADVANCE_CAP
-			if raw.size() > cap:
-				raw = raw.slice(0, cap)
+			## The cap is the live rule too: this line restated _apply_full_bank_rule under the comment above.
+			var ruled: Array = BattleManager._apply_full_bank_rule(combatant, raw)["actions"]
+			## Copied element-wise: the rule returns raw's own typed array today, but one rebuilt untyped would abort here.
+			var kept: Array[Dictionary] = []
+			for sub in ruled:
+				kept.append(sub)
+			raw = kept
 			var ap_cost: int = BattleManager.billed_ap(combatant.current_ap, raw.size())
 			if combatant.can_brave(ap_cost):
 				combatant.spend_ap(ap_cost)

@@ -107,5 +107,9 @@ func test_headless_applies_the_same_bound() -> void:
 		"headless must ASK the live pricing rule, not restate it")
 	assert_false(src.contains("raw.size() - 1"),
 		"a local subtraction is a second authority — billed_ap exists because two surfaces already did this")
-	assert_string_contains(src, "BattleManager.ADVANCE_CAP",
-		"the bound is the live constant, so it cannot drift from the rule it mirrors")
+	## This used to require `BattleManager.ADVANCE_CAP` in the resolver, which pinned the RESTATED
+	## cap the arm exists to forbid. Sharing the constants is not sharing the rule.
+	assert_string_contains(src, "BattleManager._apply_full_bank_rule(",
+		"the bound is the live RULE, not a restatement assembled from its constants")
+	assert_false(src.contains("BattleManager.FULL_BANK_ACTIONS if"),
+		"an inline cap is a second copy of _apply_full_bank_rule and drifts the moment the rule changes")
