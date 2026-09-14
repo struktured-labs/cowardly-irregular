@@ -416,7 +416,7 @@ func _setup_npcs() -> void:
 	var scholar = _create_npc("Scholar Milo", "villager", Vector2(19 * TILE_SIZE,9 * TILE_SIZE), [
 		"Ah, a fellow seeker of knowledge!",
 		"I've been studying an ancient art called 'AUTOBATTLE'.",
-		"F5 opens the Autobattle Editor. On a pad, Start does it mid-battle — or pick Auto Rules from the menu!",
+		"F5 opens the Autobattle Editor. On a pad it's the start button mid-battle — Start, Options or Plus, depending whose plastic you're holding — or pick Auto Rules from the menu!",
 		"You can create rules like 'If HP < 25%, use Potion'.",
 		"The system executes your script when it's your turn.",
 		"It's not cheating - it's ENLIGHTENMENT!"
