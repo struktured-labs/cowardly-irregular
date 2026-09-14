@@ -1625,9 +1625,11 @@ func _restore_hint_after_reason() -> void:
 	if not _hint_showing_reason:
 		return
 	_hint_showing_reason = false
-	var label := _find_hint_label()
-	if label:
-		label.text = hint_text()
+	## Through _update_hint_bar, never hint_text() directly. hint_text() is the EMPTY-queue legend, so a
+	## reason shown with actions queued restored to "Defer · Advance · Speed" and told the player they
+	## had nothing queued. Rare while the only reason was "Not enough MP"; the normal path once a full
+	## queue refuses Advance with "Queue full" (measured 2026-09-14: 5/5 queued, one move, empty legend).
+	_update_hint_bar()
 
 
 func _find_hint_label() -> Label:
