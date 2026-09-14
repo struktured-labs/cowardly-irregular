@@ -30,6 +30,9 @@ const LAYER_PX_FLOOR := 150
 const ABSENT_PX_CEILING := 12
 const DIFF_BOX := Vector2i(560, 520)
 const STILL_TRIES := 40
+## 5/5's gold must out-draw the disc it rings. Measured on-screen gold/disc: full ring + gold outline 1.65 ·
+## ring alone 0.74 · gold outline + .348's arc 1.00 · .348's arc 0.10 — so either half regressing fails.
+const GOLD_TO_DISC_FLOOR := 1.3
 const LAYER_BITS: Array[int] = [AuraScript.LAYER_OUTLINE, AuraScript.LAYER_DISC, AuraScript.LAYER_ARMS, AuraScript.LAYER_MOTES, AuraScript.LAYER_GOLD]
 var _fail: int = 0
 var _scene: Node
@@ -217,6 +220,14 @@ func _check_layers(shot: Dictionary, n: int, max_five: bool) -> void:
 			_fail += 1
 		elif not want and px > ABSENT_PX_CEILING:
 			print("[SHOT] FAIL: %s — the %s layer draws %d px at a count that does not own it" % [shot["tag"], name, px])
+			_fail += 1
+	if (owned & AuraScript.LAYER_GOLD) != 0 and (shot["pairs"] as Dictionary).has(AuraScript.LAYER_GOLD):
+		var gold: int = _changed_px(shot["pairs"][AuraScript.LAYER_GOLD][0], shot["pairs"][AuraScript.LAYER_GOLD][1], shot["centre"])
+		var disc: int = _changed_px(shot["pairs"][AuraScript.LAYER_DISC][0], shot["pairs"][AuraScript.LAYER_DISC][1], shot["centre"])
+		var ratio: float = float(gold) / maxf(1.0, float(disc))
+		row.append("gold/disc=%.2f" % ratio)
+		if ratio < GOLD_TO_DISC_FLOOR:
+			print("[SHOT] FAIL: %s — the full bank's gold draws %.2fx the disc on screen (needs %.2fx); it has faded back toward an arc" % [shot["tag"], ratio, GOLD_TO_DISC_FLOOR])
 			_fail += 1
 	print("[SHOT] %s count=%d full_bank=%s on-screen px: %s" % [shot["tag"], int(shot["count"]), str(shot["full_bank"]), " ".join(row)])
 

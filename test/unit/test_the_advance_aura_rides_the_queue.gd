@@ -152,6 +152,42 @@ func test_a_full_bank_is_its_own_state_not_a_louder_fourth() -> void:
 	assert_false(bool(AuraScript.params_for(0, true)["gold_rim"]), "an empty queue has no rim at all")
 
 
+## ⛔ .348's gold was a 3 px rim inside the disc's flattening and behind the body — a pale arc, and 4 vs 5
+## read as "a bit bigger" (cowir-main). The on-screen floor lives in tools/advance_aura_shots.gd; these
+## pin the parts that make it a RING: width, the near half on the front layer, and the outline going gold.
+const GOLD_RING_WIDTH_FLOOR: float = 5.0
+
+func test_the_full_bank_is_a_gold_ring_around_the_feet_and_a_gold_outline() -> void:
+	assert_gte(AuraScript.FULL_BANK_RIM_WIDTH, GOLD_RING_WIDTH_FLOOR, "the gold ring is a bold line, not a rim")
+	assert_gt(AuraScript.FULL_BANK_RIM.r, AuraScript.FULL_BANK_RIM.b + 0.6, "and saturated gold, not a pale cream")
+	var body := AnimatedSprite2D.new()
+	body.sprite_frames = _frames()
+	body.scale = Vector2(1.5, 1.5)
+	add_child_autofree(body)
+	var aura = AuraScript.new()
+	body.add_child(aura)
+	aura.bind_body(body)
+	var job := Color(0.2, 0.4, 1.0)
+	aura.set_state(4, false, job, "runes")
+	assert_true(aura.outline_tint().is_equal_approx(Color(job.r, job.g, job.b, aura.current_outline_alpha())), "CONTROL: below a full bank the outline is the job colour")
+	aura.set_state(5, true, job, "runes")
+	var tint: Color = aura.outline_tint()
+	assert_lt(Vector3(tint.r, tint.g, tint.b).distance_to(Vector3(AuraScript.FULL_BANK_RIM.r, AuraScript.FULL_BANK_RIM.g, AuraScript.FULL_BANK_RIM.b)), 0.25,
+		"at 5/5 the outline turns gold (%s)" % str(tint))
+	var centre: Vector2 = aura.disc_center()
+	var near: PackedVector2Array = aura.gold_ring_points(true)
+	var far: PackedVector2Array = aura.gold_ring_points(false)
+	var below: bool = true
+	for p in near:
+		below = below and p.y >= centre.y - 0.01
+	var above: bool = true
+	for p in far:
+		above = above and p.y <= centre.y + 0.01
+	assert_true(below and above, "the near half is the lower one on screen, the far half the upper")
+	assert_almost_eq(near[0].distance_to(far[far.size() - 1]), 0.0, 0.01, "and the halves meet into one closed ring")
+	assert_gt(near[0].x - centre.x, aura.current_radius(), "outside the disc, not on its edge")
+
+
 func test_it_is_off_at_minimal_and_at_the_turbo_console_tier() -> void:
 	## OFF already covers turbo, the grind console and 4x, so the three exclusions reduce to this.
 	assert_true(AuraScript.should_show(BattleJuice.Tier.FULL, true), "on at full render")
