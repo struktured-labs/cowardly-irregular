@@ -427,6 +427,13 @@
       "prompt_influence": 0.0,
       "fallback_to": "menu_select"
     },
+    "advance_queue_full": {
+      "file": "assets/audio/sfx/advance_queue_full.ogg",
+      "prompt": "SYNTHESISED — the REFUSED Advance press at a full queue (struktured 2026-09-14: Advance no longer commits). It will be MASHED — every momentum press past five lands here — so it is 0.17s: two held low blips a semitone apart, DOWN, a 'no'. On the bank's F so it reads as the bank refusing, not a menu error. Own voice (play_advance_queue_full): on _battle_player it cut the job's 3s fifth rung, still ringing. Run the tool.",
+      "duration_seconds": 0.17,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_queue_full"
+    },
     "advance_rogue_1": {
       "file": "assets/audio/sfx/advance_rogue_1.ogg",
       "source": "elevenlabs_foley",
@@ -1107,6 +1114,13 @@
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "source": "tools/gen_chiptune_sfx.py shadow_strike"
+    },
+    "full_bank_charged": {
+      "file": "assets/audio/sfx/full_bank_charged.ogg",
+      "prompt": "SYNTHESISED — the bank LOCKING FULL at 5/5 while queueing. NOT advance_flourish_5 (the wind-up at resolution) and NOT full_bank_unleash (the discharge): a latch click then a HELD open fifth with no third, because it fires in the SAME FRAME as the job's own fifth rung and a missing third cannot clash with a key nobody controls. Own voice (play_full_bank_charged); on _battle_player one of the two was always eaten. Run the tool.",
+      "duration_seconds": 0.62,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py full_bank_charged"
     },
     "full_bank_unleash": {
       "file": "assets/audio/sfx/full_bank_unleash.ogg",

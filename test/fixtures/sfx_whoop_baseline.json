@@ -693,6 +693,36 @@
       "sha256": "a6cd85665bd506a47d343bd56c169da4dbb2b7166b5534289ee1c456d2cf0313",
       "file": "assets/audio/sfx/advance_flourish_5.ogg"
     },
+    "full_bank_charged": {
+      "early_hz": 1317.6,
+      "late_hz": 1330.1,
+      "rms_db": -14.2,
+      "low_hz": 1094.1,
+      "high_hz": 1478.4,
+      "sweep": 1.35,
+      "rho_time": -0.23,
+      "rho_energy": 0.53,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "5f6574d99e2dcd7821ea60112c80c8be7003260fe3913ff152cf9cf3f2962eb1",
+      "file": "assets/audio/sfx/full_bank_charged.ogg"
+    },
+    "advance_queue_full": {
+      "early_hz": 1116.7,
+      "late_hz": 997.6,
+      "rms_db": -13.0,
+      "low_hz": 856.1,
+      "high_hz": 1315.4,
+      "sweep": 1.54,
+      "rho_time": -0.18,
+      "rho_energy": 0.59,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "1c2b5199f215ac28248101ae95ee70d0e944d233c935366138e6e9aca87b27e6",
+      "file": "assets/audio/sfx/advance_queue_full.ogg"
+    },
     "advance_fighter_1": {
       "early_hz": 4458.0,
       "late_hz": 4192.9,

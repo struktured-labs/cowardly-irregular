@@ -12,6 +12,8 @@ var _footstep_player: AudioStreamPlayer  # dedicated voice: a step cut every UI 
 var _flourish_player: AudioStreamPlayer  # dedicated voice: a group attack's own hits were cutting its cue (2026-09-11)
 var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS long and every menu blip on _ui_player cut them (2026-09-11)
 var _pickup_player: AudioStreamPlayer  # dedicated voice: a reward cue always follows the action that earned it, and replaced it on _ui_player (2026-09-12)
+var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replaced advance_flourish_5 in the same frame, every full bank (2026-09-14)
+var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance press lands while the job's 3s fifth rung is still ringing (2026-09-14)
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
@@ -297,6 +299,18 @@ func _setup_audio_players() -> void:
 	_pickup_player.volume_db = PICKUP_PLAYER_BASE_DB
 	_pickup_player.bus = SFX_BUS
 	add_child(_pickup_player)
+
+	_bank_player = AudioStreamPlayer.new()
+	_bank_player.name = "BankPlayer"
+	_bank_player.volume_db = SFX_BATTLE_BASE_DB
+	_bank_player.bus = SFX_BUS
+	add_child(_bank_player)
+
+	_refuse_player = AudioStreamPlayer.new()
+	_refuse_player.name = "RefusePlayer"
+	_refuse_player.volume_db = SFX_BATTLE_BASE_DB
+	_refuse_player.bus = SFX_BUS
+	add_child(_refuse_player)
 
 	_death_player = AudioStreamPlayer.new()
 	_death_player.name = "DeathPlayer"
@@ -759,6 +773,33 @@ func play_pickup(sound_key: String) -> void:
 	if not _try_play_sfx_from_manifest(_pickup_player, sound_key, PICKUP_PLAYER_BASE_DB):
 		if SOUNDS.has(sound_key):
 			_play_sound(_pickup_player, SOUNDS[sound_key])
+
+
+## Advance-bank cues, each off _battle_player: the job's fifth rung and advance_flourish_5 play in the same frames.
+func play_advance_state(sound_key: String) -> void:
+	match sound_key:
+		# Charge and discharge share one voice on purpose: one bank's lifecycle, a turn apart.
+		"full_bank_charged", "full_bank_unleash":
+			_play_battle_on(_bank_player, sound_key)
+		# Own voice: a refused momentum press straight after 5/5 would otherwise cut the charge.
+		"advance_queue_full":
+			_play_battle_on(_refuse_player, sound_key)
+		_:
+			push_warning("play_advance_state: '%s' is not an advance-bank cue; routed to play_battle" % sound_key)
+			play_battle(sound_key)
+
+
+## play_battle's world-variant lookup and level, onto a dedicated voice; silent if the key is absent.
+func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
+	if player == null:
+		play_battle(sound_key)
+		return
+	var level: float = SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	var world_key: String = _get_world_sfx_prefix() + sound_key
+	if world_key != sound_key and _try_play_sfx_from_manifest(player, world_key, level):
+		return
+	if not _try_play_sfx_from_manifest(player, sound_key, level) and SOUNDS.has(sound_key):
+		_play_sound(player, SOUNDS[sound_key])
 
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:

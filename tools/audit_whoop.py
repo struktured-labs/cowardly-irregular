@@ -70,6 +70,7 @@ PINNED = [
     "w2_ability_heal", "w3_ability_heal",
     "ability_mp_restore", "ability_flee",
     "advance_flourish_2", "advance_flourish_3", "advance_flourish_4", "advance_flourish_5",
+    "full_bank_charged", "advance_queue_full",
     # The two per-job press ladders whose DIRECTION is the joke: fighter ascends, rogue INVERTS
     # (quieter every press). rms_db is recorded so the GUT side can assert that shape.
     "advance_fighter_1", "advance_fighter_2", "advance_fighter_3", "advance_fighter_4", "advance_fighter_5",
