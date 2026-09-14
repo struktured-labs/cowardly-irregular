@@ -250,6 +250,27 @@ func test_the_hint_bar_says_commit_not_add_when_full() -> void:
 	assert_true(hint.text.find("Commit") > -1, "…and it must still name the commit: '%s'" % hint.text)
 
 
+## ⛔ The refusal message must hand back to the QUEUE, not to the empty-queue legend. Measured before
+## the fix: 5/5 queued, a refused press, one move — and the bar read "[L] Defer · [R] Advance · …",
+## telling the player they had nothing queued with a full turn loaded.
+func test_moving_after_a_refusal_restores_the_queue_not_the_empty_legend() -> void:
+	var bar := Control.new()
+	bar.name = "InputHintBar"
+	var hint := Label.new()
+	hint.name = "HintLabel"
+	bar.add_child(hint)
+	add_child_autofree(bar)
+	var m = _menu(4)
+	for i in range(4):
+		_advance(m)
+	_advance(m)
+	assert_true(hint.text.find("Queue full") > -1, "CONTROL: the refusal must be showing first")
+	_press(m, "ui_down")
+	assert_eq(hint.text.find("Queue full"), -1, "…and a move must clear it")
+	assert_true(hint.text.find("queued 4/4") > -1,
+		"the bar must come back to the QUEUE — the empty legend here says nothing is queued: '%s'" % hint.text)
+
+
 ## The only tutorial that teaches Advance must mention the fifth action and the new commit button.
 func test_the_tutorial_teaches_the_fifth_action_and_confirm() -> void:
 	var body: String = str(TutorialHints.HINTS["advance_defer"]["body"])
