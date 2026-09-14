@@ -276,10 +276,14 @@ item_count takes an 'item_id' field NAMING the item to count, alongside op and
 value — {\"type\":\"item_count\",\"item_id\":\"potion\",\"op\":\">\",\"value\":0}.
 Omit item_id and the count is always 0, so the rule never fires.
 
-Actions (executed in order, up to 4 per rule). type is one of:
+Actions (executed in order, up to 5 per rule). type is one of:
   attack, ability, item, defer
 ability requires id (e.g. 'cure', 'fire').
 item requires id (e.g. 'potion').
+A FIFTH action only fires at a full bank (AP +4). Below that the rule is cut to
+its first 4 actions, not rejected, so put whatever must happen in the first 4.
+When the fifth action matters, add the condition
+{\"type\":\"ap\",\"op\":\">=\",\"value\":4}.
 
 Targets. Values:
   lowest_hp_enemy, highest_hp_enemy, random_enemy,

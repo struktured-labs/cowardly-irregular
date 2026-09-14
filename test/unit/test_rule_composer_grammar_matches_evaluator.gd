@@ -51,7 +51,7 @@ const AXES: Array[Dictionary] = [
 	{
 		"name": "autobattle actions",
 		"grammar": "autobattle",
-		"head": "Actions (executed in order, up to 4 per rule). type is one of:",
+		"head": "per rule). type is one of:",  # no cap number: the bank moved 4->5 and blinded this marker
 		"tail": "ability requires id",
 		"src": AUTOBATTLE_SRC,
 		"needle": "match action_type:",
