@@ -63,7 +63,10 @@ func test_the_animator_exposes_the_query() -> void:
 func test_advance_requests_its_animation_at_all() -> void:
 	## The advance arm was a bare `pass`, so bespoke advance art could never render for any job.
 	var s := _scene()
-	var i := s.find("\t\t\"advance\":")
+	## Anchored at LINE START. `\t\t"advance":` alone is also a substring of a three-tab arm, and the
+	## presentation-hold match gained one above the animation match (2026-09-14), so the bare anchor
+	## landed on the hold arm and reported the animation request missing.
+	var i := s.find("\n\t\t\"advance\":")
 	assert_gt(i, -1, "CONTROL: located the advance arm")
 	var arm := s.substr(i, 400)
 	assert_true(arm.contains("play_named_animation(\"advance\")"),

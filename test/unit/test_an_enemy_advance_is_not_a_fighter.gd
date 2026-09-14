@@ -88,6 +88,19 @@ func test_both_flourish_sites_use_the_chooser() -> void:
 	## EXECUTION is not SELECTION: the helper being correct says nothing about the flourish reaching
 	## it. Two sites feed the flourish — the per-action aura and the full-bank flash — and a fix
 	## applied to one of them looks complete while the other still tints an enemy Fighter-red.
+	##
+	## ⛔ This pinned the chooser's call COUNT at exactly 2, and the queue aura (2026-09-14) redded it
+	## by adding two more correct sites — the count could not tell a new routed site from a dropped
+	## one. It now names every site that colours an Advance flourish and requires the chooser in each,
+	## which catches a dropped site exactly as the count did and lets a correct one through.
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	assert_eq(src.count("advance_flourish_color(combatant, _get_job_quip_color(combatant))"), 2,
-		"both the Advance aura and the full-bank flash must pick their colour through the chooser")
+	var chooser := "advance_flourish_color(combatant, _get_job_quip_color(combatant))"
+	var bypassed: Array = []
+	for fn in ["_spawn_advance_flourish", "_on_full_bank_unleashed", "_on_advance_queue_changed", "_spawn_advance_queue_pop"]:
+		var at: int = src.find("func %s(" % fn)
+		assert_gt(at, -1, "CONTROL: flourish site %s exists" % fn)
+		var end: int = src.find("\nfunc ", at + 5)
+		if not src.substr(at, (end - at) if end > at else 3000).contains(chooser):
+			bypassed.append(fn)
+	assert_eq(bypassed.size(), 0,
+		"every Advance flourish site must pick its colour through the chooser, or an enemy flares Fighter-red: " + str(bypassed))
