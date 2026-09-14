@@ -35,6 +35,8 @@ var _ceiling_y: float = TOP_MARGIN
 ## Extra sideways clearance, set when the ceiling forced the bubble down into its speaker's body.
 var _side_clear: float = 0.0
 var _float_px: float = FLOAT_UP_PX
+## True once a voice clip set the hold — that hold is in real seconds, so the tween must be too.
+var _voiced: bool = false
 var _panel: PanelContainer = null
 ## Returns screen Rect2s the player is reading (the open command menu) — read at layout time, when the menu exists.
 var _keep_out: Callable = Callable()
@@ -149,6 +151,9 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	_finalize_layout(bubble, pointer, anchor_x, prefer_right)
 
 	var tween := create_tween()
+	# A voiced hold is measured on the audio clock; a scaled tween stretched it 4x at default speed and would desync on a mid-hold speed change.
+	if _voiced:
+		tween.set_ignore_time_scale(true)
 	tween.tween_property(self, "modulate:a", 1.0, 0.15)
 	tween.tween_property(self, "position:y", position.y - _float_px, _hold_time * 0.5)
 	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.3).set_delay(_hold_time)
@@ -259,11 +264,13 @@ func _play_voice(audio_key: String) -> void:
 	var clip_len: float = sm.play_voice(audio_key)
 	if clip_len <= 0.0:
 		return
-	## NOT divided by time_scale: the clip plays at real-time length whatever the battle speed, so
-	## scaling the hold would re-create the mismatch at 2x. The default hold still scales above.
+	## The clip plays in REAL seconds, so this hold is real seconds too — and _present puts a voiced
+	## bubble's tween on the real clock to match. A scaled tween held a 5.3s line ≈24s at default
+	## speed (measured 2026-09-14). Voiceless bubbles keep battle-relative pacing.
 	## No cap, deliberately — a ceiling here would be a coincidental number that silently truncates
 	## whichever line is longest. If a line is too long for battle, that is a content call.
 	_hold_time = maxf(_hold_time, clip_len + VOICE_TAIL_S)
+	_voiced = true
 
 
 ## Clamp so the bubble stays on-screen AND out of the reserved right column.
