@@ -44,11 +44,29 @@ has not moved since .267 -- while a fresh capture was 4.5x the stored bytes (50,
 DungeonLighting carries no fade, so the two frames are comparable and the difference is real.
 
     changed/unchanged  a cheap PRIORITISER over scene scripts
-    --compare          the AUTHORITATIVE check, and the only one that sees a frame
+    --compare          the only check that sees a FRAME -- authoritative only once its
+                       signal is shown to beat its own noise, which needs two captures
+
+⛔ 2026-09-13 — ONE CAPTURE IS NOT ENOUGH, AND EVERY FINDING ABOVE WAS TAKEN FROM ONE.
+Captured v3.33.345-alpha twice, same commit, same protocol. `tavern_interior` differed by
+6.82% BETWEEN THE TWO RUNS -- MOVED on one, "same" on the other -- because villages and
+interiors spawn wandering NPCs and marketing_shots.gd waits a fixed frame count. The 5%
+threshold sits below that. Ten of eleven shots stay under 1.5% (median 1.04%), so the noise
+is usually invisible and has a tail that clears the bar on its own.
+
+Pass a SECOND fresh directory and the swing is measured per shot instead of assumed: a delta
+must beat its own shot's swing by NOISE_MARGIN to count, and one that cannot lands in a
+`~noise~` bucket that says so. With one directory the old behaviour is unchanged and the
+footer says which threshold the answer rests on.
+
+⛔ AND A STABLE MOVED IS STILL NOT A VERDICT. Of the three that survived both captures, the
+`battle` frame was WORSE than the one it would have replaced -- two speech bubbles overlapping
+each other and the action menu, text illegible, because the capture lands mid-dialogue. Bytes
+grew because the frame gained clutter. Growth is not improvement; look at the image.
 
 Usage:
     tools/store_shot_staleness.py --from <tag> --to <tag> [--shots DIR] [--json]
-    tools/store_shot_staleness.py --compare <stored DIR> <fresh DIR> [--json]
+    tools/store_shot_staleness.py --compare <stored DIR> <fresh DIR> [FRESH2 DIR] [--json]
     tools/store_shot_staleness.py --selftest
 """
 import argparse, json, os, re, subprocess, sys
@@ -97,6 +115,25 @@ def classify(shots, a, b):
 # under it photographed nothing and the exit code will not say so.
 VOID_BYTES = 20000
 
+# A byte delta this large is worth a LOOK. It is not a claim that the frame changed --
+# see NOISE_MARGIN, which is what stops that number being believed on its own.
+MOVED_PCT = 5.0
+
+# ⛔ 5% IS BELOW THIS CAPTURE'S OWN NOISE FLOOR. Two captures of the IDENTICAL commit,
+# identical protocol, measured 2026-09-13 at v3.33.345-alpha:
+#
+#     tavern_interior   6.82%   <-- MOVED on one run, "same" on the other
+#     eldertree 1.48 · ironhaven 1.38 · inn 1.34 · battle 1.16 · frosthold 1.04
+#     sandrift 0.87 · harmonia 0.34 · grimhollow 0.21 · whispering_cave 0.02 · shop 0.00
+#     median 1.04%
+#
+# Villages and interiors spawn wandering NPCs and marketing_shots.gd waits a fixed frame
+# count, so the frame itself differs run to run. Ten of eleven stay under 1.5% and one
+# clears the threshold on noise alone -- so a single capture can manufacture a MOVED.
+# Pass a SECOND fresh directory and the noise is measured per shot instead of assumed:
+# a delta must beat its own shot's run-to-run swing by this factor to count.
+NOISE_MARGIN = 2.0
+
 
 def _png_dim(path):
     with open(path, "rb") as f:
@@ -107,7 +144,7 @@ def _png_dim(path):
     return struct.unpack(">II", head[16:24])
 
 
-def compare(stored_dir, fresh_dir):
+def compare(stored_dir, fresh_dir, fresh_dir2=None):
     """Byte-and-dimension diff between the shipped set and a fresh capture run.
 
     Reports the two failures a size diff can actually see: a capture that photographed a void,
@@ -115,7 +152,7 @@ def compare(stored_dir, fresh_dir):
     change is an improvement -- that needs an eye, and the caption file records which shot
     leads and why.
     """
-    for d in (stored_dir, fresh_dir):
+    for d in (stored_dir, fresh_dir) + ((fresh_dir2,) if fresh_dir2 else ()):
         if not os.path.isdir(d):
             sys.exit(f"BLOCKED: no directory at {d!r}. Refusing to report a comparison over a "
                      f"directory that does not exist.")
@@ -124,22 +161,41 @@ def compare(stored_dir, fresh_dir):
     if not fresh:
         sys.exit(f"BLOCKED: {fresh_dir!r} holds no .png -- an empty capture run reports every "
                  f"stored shot as missing, which is not a finding about the shots.")
-    out = {"moved": [], "same": [], "void": [], "dim_mismatch": [],
-           "only_stored": sorted(stored - fresh), "only_fresh": sorted(fresh - stored)}
+    out = {"moved": [], "noise": [], "same": [], "void": [], "dim_mismatch": [],
+           "only_stored": sorted(stored - fresh), "only_fresh": sorted(fresh - stored),
+           "noise_measured": bool(fresh_dir2)}
     for name in sorted(stored & fresh):
         sp = os.path.join(stored_dir, name + ".png")
         fp = os.path.join(fresh_dir, name + ".png")
         sb, fb = os.path.getsize(sp), os.path.getsize(fp)
         sd, fd = _png_dim(sp), _png_dim(fp)
+        # Run-to-run swing for THIS shot, if a second capture was supplied. A shot missing
+        # from the second run gets None, and is judged on the bare threshold -- flagged, so
+        # the report never implies a noise check that did not happen.
+        noise_pct = None
+        if fresh_dir2 is not None:
+            fp2 = os.path.join(fresh_dir2, name + ".png")
+            if os.path.isfile(fp2):
+                fb2 = os.path.getsize(fp2)
+                noise_pct = round(abs(fb2 - fb) / fb * 100.0, 2) if fb else None
         row = {"shot": name, "stored_bytes": sb, "fresh_bytes": fb,
                "pct": round((fb - sb) / sb * 100.0, 1) if sb else None,
-               "stored_dim": sd, "fresh_dim": fd}
+               "stored_dim": sd, "fresh_dim": fd, "noise_pct": noise_pct}
+        delta = abs(fb - sb) / sb * 100.0 if sb else 0.0
+        # The bar is the threshold OR this shot's own measured swing, whichever is higher.
+        bar = MOVED_PCT if noise_pct is None else max(MOVED_PCT, noise_pct * NOISE_MARGIN)
+        row["bar_pct"] = round(bar, 2)
         if fb < VOID_BYTES:
             out["void"].append(row)          # a void is not a "change", it is a failed capture
         elif sd != fd:
             out["dim_mismatch"].append(row)  # different subject, not a comparable frame
-        elif abs(fb - sb) * 100 >= sb * 5:   # >=5% of the stored size
+        elif delta >= bar:
             out["moved"].append(row)
+        elif delta >= MOVED_PCT:
+            # Big enough to have been called MOVED on one capture, not big enough to
+            # separate from this shot's own run-to-run swing. This is the bucket the
+            # single-capture version could not express, and tavern_interior lived in it.
+            out["noise"].append(row)
         else:
             out["same"].append(row)
     return out
@@ -167,16 +223,21 @@ def main():
     ap.add_argument("--to", dest="b")
     ap.add_argument("--shots", default="itch-assets/screenshots")
     ap.add_argument("--json", action="store_true")
-    ap.add_argument("--compare", nargs=2, metavar=("STORED", "FRESH"))
+    ap.add_argument("--compare", nargs="+", metavar="DIR",
+                    help="STORED FRESH [FRESH2]. A second fresh capture measures this "
+                         "capture's own run-to-run noise per shot, which the MOVED "
+                         "threshold alone sits below.")
     ap.add_argument("--selftest", action="store_true")
     args = ap.parse_args()
     if args.selftest:
         return selftest()
     if args.compare:
+        if not 2 <= len(args.compare) <= 3:
+            sys.exit("usage: --compare STORED FRESH [FRESH2]")
         res = compare(*args.compare)
         if args.json:
             print(json.dumps(res, indent=2)); return 0
-        n = sum(len(res[k]) for k in ("moved", "same", "void", "dim_mismatch"))
+        n = sum(len(res[k]) for k in ("moved", "noise", "same", "void", "dim_mismatch"))
         print(f"[shots] {n} comparable · stored {args.compare[0]} · fresh {args.compare[1]}")
         for r in res["void"]:
             print(f"  ⛔ VOID      {r['shot']:<26} fresh {r['fresh_bytes']:,} B < {VOID_BYTES:,} "
@@ -185,8 +246,13 @@ def main():
             print(f"  ⛔ DIM       {r['shot']:<26} stored {r['stored_dim']} vs fresh {r['fresh_dim']} "
                   f"— different subject, not a comparable frame")
         for r in res["moved"]:
+            band = "" if r["noise_pct"] is None else f"  [swing {r['noise_pct']:.2f}%, bar {r['bar_pct']:.2f}%]"
             print(f"  MOVED       {r['shot']:<26} {r['stored_bytes']:>9,} -> {r['fresh_bytes']:>9,} B "
-                  f"({r['pct']:+.1f}%)")
+                  f"({r['pct']:+.1f}%){band}")
+        for r in res["noise"]:
+            print(f"  ~noise~     {r['shot']:<26} {r['stored_bytes']:>9,} -> {r['fresh_bytes']:>9,} B "
+                  f"({r['pct']:+.1f}%)  NOT a finding: this shot swings {r['noise_pct']:.2f}% "
+                  f"between two captures of the SAME tree")
         for r in res["same"]:
             print(f"  same        {r['shot']:<26} {r['stored_bytes']:>9,} -> {r['fresh_bytes']:>9,} B "
                   f"({r['pct']:+.1f}%)")
@@ -194,7 +260,12 @@ def main():
             for name in res[k]:
                 print(f"  {k:<11} {name}")
         print(f"[shots] MOVED is a re-shoot CANDIDATE, not a verdict — bytes cannot say which "
-              f"frame is better.")
+              f"frame is better. Measured 2026-09-13: of three stable MOVEDs, one fresh frame "
+              f"was WORSE than the one it would have replaced.")
+        if not res["noise_measured"]:
+            print(f"[shots] ⚠ ONE capture only, so every MOVED here rests on the bare {MOVED_PCT:.0f}% "
+                  f"threshold — and this capture's noise floor was measured at 6.82% on one shot. "
+                  f"Pass a second fresh directory to separate signal from NPC wander.")
         return 0
     if not (args.a and args.b):
         sys.exit("usage: --from <tag> --to <tag> [--shots DIR] [--json]")
@@ -304,6 +375,57 @@ def selftest():
                 compare(*args); chk(name, "returned", "SystemExit")
             except SystemExit:
                 chk(name, "SystemExit", "SystemExit")
+
+    # ── noise arms: a second fresh capture must be able to REFUSE a MOVED ────────────────
+    # These encode the defect that made them necessary: tavern_interior swung 6.82% between
+    # two captures of the same commit, clearing a 5% threshold on nothing but NPC wander.
+    saw_noise = saw_moved_over_noise = False
+    with tempfile.TemporaryDirectory() as d:
+        st, f1, f2 = (os.path.join(d, x) for x in ("stored", "fresh1", "fresh2"))
+        for x in (st, f1, f2):
+            os.makedirs(x)
+        # tavern-shaped: +6% against stored, but the two captures differ by 6.82%
+        png(os.path.join(st, "tavern.png"), 1280, 720, 100_000)
+        png(os.path.join(f1, "tavern.png"), 1280, 720, 106_000)
+        png(os.path.join(f2, "tavern.png"), 1280, 720, 113_229)      # 6.82% off fresh1
+        # whispering-shaped: a huge real move, with a quiet shot
+        png(os.path.join(st, "cave.png"), 1280, 720, 100_000)
+        png(os.path.join(f1, "cave.png"), 1280, 720, 350_000)
+        png(os.path.join(f2, "cave.png"), 1280, 720, 350_070)        # 0.02% off fresh1
+        # present in fresh1, ABSENT from fresh2: no noise data, must not pretend otherwise
+        png(os.path.join(st, "lonely.png"), 1280, 720, 100_000)
+        png(os.path.join(f1, "lonely.png"), 1280, 720, 120_000)
+
+        one = compare(st, f1)
+        chk("noise: ONE capture calls tavern MOVED (the defect)",
+            "tavern" in [x["shot"] for x in one["moved"]], True)
+        chk("noise: one capture reports noise_measured False", one["noise_measured"], False)
+
+        two = compare(st, f1, f2)
+        mv = [x["shot"] for x in two["moved"]]
+        nz = [x["shot"] for x in two["noise"]]
+        chk("noise: TWO captures move tavern out of MOVED", "tavern" in mv, False)
+        chk("noise: …and into the noise bucket",            nz, ["tavern"])
+        chk("noise: a real move survives the noise check",  "cave" in mv, True)
+        chk("noise: a shot missing from run 2 still judged", "lonely" in mv, True)
+        chk("noise: …and is flagged as unmeasured",
+            [x["noise_pct"] for x in two["moved"] if x["shot"] == "lonely"], [None])
+        chk("noise: the bar is raised above the swing",
+            [x["bar_pct"] for x in two["noise"]], [round(6.82 * NOISE_MARGIN, 2)])
+        chk("noise: two captures report noise_measured True", two["noise_measured"], True)
+        saw_noise = bool(nz)
+        saw_moved_over_noise = "cave" in mv
+
+        # direction control: shrink the swing and tavern must come BACK as MOVED, or the
+        # noise bucket is just swallowing everything.
+        png(os.path.join(f2, "tavern.png"), 1280, 720, 106_050)      # 0.05% swing
+        back = [x["shot"] for x in compare(st, f1, f2)["moved"]]
+        chk("noise: a QUIET shot at the same delta is MOVED again", "tavern" in back, True)
+
+    if not (saw_noise and saw_moved_over_noise):
+        print(f"  FAIL  noise arms vacuous: noise bucket seen={saw_noise}, "
+              f"moved-over-noise seen={saw_moved_over_noise}; both required")
+        f += 1
 
     print(f"\nselftest: {p} passed, {f} failed")
     return 1 if f else 0
