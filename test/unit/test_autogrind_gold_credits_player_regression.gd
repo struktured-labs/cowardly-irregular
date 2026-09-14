@@ -39,6 +39,10 @@ func _read(p: String) -> String:
 
 # ── Source pin: live autogrind path computes + forwards gold ────────
 
+func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
+
+
 func test_live_path_computes_gold() -> void:
 	var src := _read(GAME_LOOP_PATH)
 	var fn_idx: int = src.find("func _on_autogrind_battle_ended")

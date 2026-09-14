@@ -32,6 +32,10 @@ func _member(cname: String, job_id: String) -> Combatant:
 	return c
 
 
+func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
+
+
 func test_every_offered_status_is_one_the_game_can_actually_show() -> void:
 	## Derived guard rather than a restated list: the ring must be a subset of the statuses
 	## BattleScene has icons for, so it can never offer something the player cannot even see on

@@ -24,6 +24,10 @@ func _rule(cond: Dictionary) -> Dictionary:
 	return {"conditions": [cond], "actions": [{"type": "stop_grinding"}], "enabled": true}
 
 
+func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
+
+
 func test_every_condition_is_classified_for_validation_both_ways() -> void:
 	var classified: Array = []
 	classified.append_array(AutogrindSystem.NUMERIC_CONDITIONS)

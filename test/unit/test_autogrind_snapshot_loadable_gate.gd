@@ -14,6 +14,7 @@ var _pre_bytes: PackedByteArray = PackedByteArray()
 
 
 func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
 	_pre_existed = FileAccess.file_exists(SNAP_PATH)
 	if _pre_existed:
 		_pre_bytes = FileAccess.get_file_as_bytes(SNAP_PATH)

@@ -31,6 +31,10 @@ func _build_ui_body() -> String:
 ## Rewritten to assert the BEHAVIOUR the guard exists for — canonical names, "<Name> x<N>", "None"
 ## when empty — through the shared formatter that now produces it, plus ONE source assert that the
 ## Summary calls it. The original defect (a raw-id prettifier) is still banned by name.
+func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
+
+
 func test_the_shared_formatter_renders_canonical_names() -> void:
 	assert_eq(AutogrindSystem.format_items_consumed({"potion": 3}), "Potion x3",
 		"a single item must render as its canonical name and count")

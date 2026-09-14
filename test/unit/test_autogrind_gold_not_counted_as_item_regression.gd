@@ -28,6 +28,10 @@ func _read(p: String) -> String:
 
 # ── Source pin: gold filter in the loop ─────────────────────────────
 
+func before_each() -> void:
+	AutogrindSystem._test_disable_persistence = true
+
+
 func test_gold_filter_in_loop() -> void:
 	var src := _read(AUTOGRIND_SYSTEM_PATH)
 	var fn_idx: int = src.find("func on_battle_victory")
