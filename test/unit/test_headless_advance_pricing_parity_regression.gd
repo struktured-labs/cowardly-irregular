@@ -98,11 +98,65 @@ func test_headless_charges_what_the_live_rule_charges() -> void:
 		assert_eq(got["rounds"], 1,
 			"precondition: queue of %d must resolve in ONE round or the AP below is not one decision" % n)
 		# Start 0, +1 at round start, then the Advance is billed against that 1.
-		var expected: int = 1 - BattleManager.billed_ap(1, n)
-		rows.append("n=%d ap=%d expected=%d" % [n, got["ap"], expected])
+		## Bill what the live rule KEEPS, not n. They agree under the cap, but billing n assumed a queue
+		## of 4 is never truncated, so a legitimate rule change redded this arm and blamed headless for following it.
+		var probe := Combatant.new()
+		probe.initialize({"name": "Probe", "max_hp": 1, "max_mp": 0, "attack": 0, "defense": 0, "magic": 0, "speed": 1})
+		add_child_autofree(probe)
+		probe.current_ap = 1
+		var queue: Array = []
+		for i in n:
+			queue.append({"type": "attack", "target": "lowest_hp_enemy"})
+		var kept: int = (BattleManager._apply_full_bank_rule(probe, queue)["actions"] as Array).size()
+		var expected: int = 1 - BattleManager.billed_ap(1, kept)
+		rows.append("n=%d kept=%d ap=%d expected=%d" % [n, kept, got["ap"], expected])
 		assert_eq(got["ap"], expected,
-			"queue of %d: headless must charge billed_ap(1,%d)=%d, leaving %d AP" % [
-				n, n, BattleManager.billed_ap(1, n), expected])
+			"queue of %d: the live rule keeps %d, so headless must charge billed_ap(1,%d)=%d, leaving %d AP" % [
+				n, kept, kept, BattleManager.billed_ap(1, kept), expected])
+	gut.p("    " + " | ".join(rows))
+
+
+func _run_over_cap(n: int, start_ap: int) -> Dictionary:
+	var hero := _hero()
+	hero.current_ap = start_ap
+	var acts: Array = []
+	for i in n:
+		acts.append({"type": "attack", "target": "lowest_hp_enemy"})
+	_abs.set_character_script("pricing_hero", {"rules": [
+		{"conditions": [{"type": "always"}], "actions": acts, "enabled": true}]})
+	seed(0x5EED)
+	var resolver := HeadlessBattleResolver.new()
+	var res: Dictionary = resolver.resolve_battle([hero], [_one_shot_foe()])
+	return {"ap": hero.current_ap, "rounds": int(res.get("rounds", -1)), "acts": acts}
+
+
+## TRUNCATION, measured. Every arm above queues 2-4 at 1 AP, under the cap, so none could see the
+## resolver restating _apply_full_bank_rule instead of asking it. Expected values are computed FROM
+## the live rule: change the rule and this arm moves with it, which a restated copy does not.
+func test_headless_keeps_what_the_live_rule_keeps_over_the_cap() -> void:
+	if _abs == null:
+		pass_test("AutobattleSystem autoload unavailable")
+		return
+	var rows: Array = []
+	## At a full bank the fifth is free, so AP cannot tell 4 kept from 5 — that row catches no truncation
+	## at all (6 kept ends at -1); a drift in the RULE shows on the below-bank row.
+	for row in [[0, 6], [3, 6]]:  # below a full bank, and at one
+		var start_ap: int = row[0]
+		var n: int = row[1]
+		var got: Dictionary = _run_over_cap(n, start_ap)
+		assert_eq(got["rounds"], 1, "precondition: one round (start %d AP, queue of %d)" % [start_ap, n])
+		var probe := Combatant.new()
+		probe.initialize({"name": "Probe", "max_hp": 1, "max_mp": 0, "attack": 0, "defense": 0, "magic": 0, "speed": 1})
+		add_child_autofree(probe)
+		probe.current_ap = start_ap + 1  # the natural +1 lands before selection
+		var kept: int = (BattleManager._apply_full_bank_rule(probe, got["acts"])["actions"] as Array).size()
+		assert_lt(kept, n,
+			"CONTROL: a queue of %d must exceed the live cap at %d AP, or this arm tests no truncation" % [n, start_ap + 1])
+		var expected: int = (start_ap + 1) - BattleManager.billed_ap(start_ap + 1, kept)
+		rows.append("ap0=%d n=%d kept=%d ap=%d expected=%d" % [start_ap, n, kept, got["ap"], expected])
+		assert_eq(got["ap"], expected,
+			"start %d AP, queue of %d: the live rule keeps %d, so headless must bill billed_ap(%d,%d) and end at %d" % [
+				start_ap, n, kept, start_ap + 1, kept, expected])
 	gut.p("    " + " | ".join(rows))
 
 
