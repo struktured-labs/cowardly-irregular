@@ -15,6 +15,9 @@ extends SceneTree
 ##
 ## The bubble-clear wait is a CONDITION, never a fixed delay: a voiced line holds for its clip length
 ## plus a tail with no cap, and the first version of this tool captured at 4.7 s with bubbles still up.
+## Steady frames are PINNED to one pulse phase: the aura breathes, and one unpinned frame per count
+## samples an arbitrary phase, so a correct count 2 could look weaker than count 1 (cowir-adhoc). The
+## guard proves no phase inverts the order; the pin makes the frames compare like with like.
 ## Sandboxed user:// is not optional: this runs the GAME, which resolves user:// by application name.
 
 const OUT := "res://tmp/advance_aura"
@@ -74,7 +77,9 @@ func _init() -> void:
 	for n in range(1, 6):
 		_scene._on_advance_queue_changed(n, 5)
 		await create_timer(0.35).timeout
+		await _pin_phase()
 		bubble.append(_capture("bubble_%d" % n, "live_bubbles=%d" % _live_bubbles()))
+		_unpin()
 	_scene._on_advance_queue_changed(0, 5)
 	_strip(bubble, "strip_bubble")
 
@@ -100,18 +105,42 @@ func _init() -> void:
 	for n in range(1, 6):
 		_scene._on_advance_queue_changed(n, 5)
 		await create_timer(0.35).timeout
+		await _pin_phase()
 		clear.append(_capture("clear_%d" % n, "live_bubbles=%d" % _live_bubbles()))
+		_unpin()
 	_scene._on_advance_queue_changed(0, 4)
 	await create_timer(0.1).timeout
 	for n in range(1, 5):
 		_scene._on_advance_queue_changed(n, 4)
 	await create_timer(0.35).timeout
+	await _pin_phase()
 	clear.append(_capture("clear_4_of_4", "below full bank"))
+	_unpin()
 	_scene._on_advance_queue_changed(0, 4)
 	_strip(clear, "strip_clear")
 
 	print("[SHOT] done, %d failed" % _fail)
 	quit(0 if _fail == 0 else 1)
+
+
+## Freeze the aura at phase 0 with no kick, redraw, and wait a frame so the capture shows that state.
+func _pin_phase() -> void:
+	var aura = _aura()
+	if aura == null:
+		return
+	aura.set_process(false)
+	aura._t = 0.0
+	aura._kick = 0.0
+	aura._sync_outline()
+	aura.queue_redraw()
+	await process_frame
+	await process_frame
+
+
+func _unpin() -> void:
+	var aura = _aura()
+	if aura and aura.count > 0:
+		aura.set_process(true)
 
 
 func _aura() -> Node:

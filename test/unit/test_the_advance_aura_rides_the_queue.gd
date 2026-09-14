@@ -76,6 +76,52 @@ func test_every_press_is_a_visible_step_not_just_a_bigger_number() -> void:
 		"press 1 must read on its own — a filled disc from the first action, not only relative to the second")
 
 
+## ⛔ THE SECOND BAR THE STEP ARM MISSED. Comparing the tables at rest said every press was a visible
+## step. But three channels PULSE, and the outline pulsed ±4% in scale against a +2% step — so at the
+## wrong phase count 2 drew SMALLER than count 1 (cowir-adhoc caught it in clear_1 vs clear_2, the exact
+## step struktured said he couldn't see). One steady frame per count samples one arbitrary phase, so the
+## proof couldn't show it either. This samples every phase of every count, on a live aura with a body
+## bound, reading what is drawn this frame — not the tables.
+const PHASE_SAMPLES := 400
+
+func _drawn_ranges(n: int, body: AnimatedSprite2D) -> Dictionary:
+	var aura = AuraScript.new()
+	body.add_child(aura)
+	aura.bind_body(body)
+	aura.set_state(n, n >= 5, Color.RED, "runes")
+	var hz: float = float(AuraScript.params_for(n, n >= 5)["pulse_hz"])
+	var out := {"radius": [INF, -INF], "outline_alpha": [INF, -INF], "outline_scale": [INF, -INF]}
+	for i in PHASE_SAMPLES:
+		aura._t = (float(i) / float(PHASE_SAMPLES)) / hz
+		aura._kick = 0.0
+		aura._sync_outline()
+		var v := {"radius": aura.current_radius(), "outline_alpha": aura.current_outline_alpha(),
+			"outline_scale": aura.outline().scale.x / body.scale.x}
+		for k in v.keys():
+			out[k] = [minf(out[k][0], v[k]), maxf(out[k][1], v[k])]
+	aura.free()
+	return out
+
+func test_no_pulse_phase_makes_a_higher_count_look_smaller() -> void:
+	var body := AnimatedSprite2D.new()
+	body.sprite_frames = _frames()
+	body.scale = Vector2(0.8, 0.8)
+	add_child_autofree(body)
+	var ranges: Array = [{}]
+	for n in range(1, 6):
+		ranges.append(_drawn_ranges(n, body))
+	assert_gt(float(ranges[3]["radius"][1]), float(ranges[3]["radius"][0]),
+		"CONTROL: the disc really breathes, so this is sampling a range and not a constant")
+	var overlaps: Array = []
+	for n in range(1, 5):
+		for key in ["radius", "outline_alpha", "outline_scale"]:
+			var hi_n: float = float(ranges[n][key][1])
+			var lo_up: float = float(ranges[n + 1][key][0])
+			if not (lo_up > hi_n):
+				overlaps.append("%s: count %d at its lowest (%.3f) is not above count %d at its highest (%.3f)" % [key, n + 1, lo_up, n, hi_n])
+	assert_eq(overlaps.size(), 0, "a pulse phase draws a higher count smaller than a lower one: " + str(overlaps))
+
+
 func test_a_full_bank_is_its_own_state_not_a_louder_fourth() -> void:
 	var five := AuraScript.params_for(5, false)
 	var bank := AuraScript.params_for(5, true)

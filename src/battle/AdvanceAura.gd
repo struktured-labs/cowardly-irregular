@@ -24,9 +24,12 @@ const PULSE_HZ: Array[float] = [0.0, 0.8, 1.1, 1.5, 2.0, 2.6]
 const GLYPHS: Array[int] = [0, 4, 6, 8, 11, 14]
 ## Orbit speed of the glyph arms, radians per second.
 const SPIN: Array[float] = [0.0, 0.8, 1.2, 1.7, 2.3, 3.0]
-## The silhouette outline: how much larger than the body, and how strong.
-const OUTLINE_GROW: Array[float] = [1.0, 1.05, 1.07, 1.09, 1.11, 1.13]
+## The silhouette outline: how much larger than the body, and how strong. The outline does NOT pulse
+## in scale — at ±4% against a +2% step it made count 2 draw smaller than count 1 at an unlucky phase
+## (cowir-adhoc, from the frames). It breathes in alpha only, and less than its smallest step.
+const OUTLINE_GROW: Array[float] = [1.0, 1.06, 1.10, 1.14, 1.18, 1.22]
 const OUTLINE_ALPHA: Array[float] = [0.0, 0.40, 0.50, 0.60, 0.70, 0.80]
+const OUTLINE_ALPHA_PULSE: float = 0.08
 
 ## The minimum VISIBLE step between counts is owned by the guard, not declared here: a floor stored
 ## beside the table it bounds can be lowered in the same edit that flattens the table, and stay green.
@@ -36,8 +39,11 @@ const FULL_BANK_RIM: Color = Color(1.0, 0.84, 0.25)
 const FULL_BANK_RIM_WIDTH: float = 3.0
 const FULL_BANK_RIM_GAP: float = 4.0
 const FULL_BANK_PULSE_HZ: float = 3.6
-## How far the ring breathes, and how hard a press kicks it, as fractions of radius.
-const PULSE_DEPTH: float = 0.08
+## How far the ring breathes, and how hard a press kicks it, as fractions of radius. The breathe must
+## stay under the smallest radius gap between counts, or a higher count draws smaller than a lower one
+## at the wrong phase: at 0.08 counts 3->4 and 4->5 overlapped (60 x 0.92 < 52 x 1.08). The guard samples
+## the whole cycle, so this cannot quietly grow back.
+const PULSE_DEPTH: float = 0.05
 const KICK_DEPTH: float = 0.10
 const KICK_DECAY_S: float = 0.18
 ## Glyphs orbit just inside the ring so their tips never extend the reach.
@@ -122,6 +128,19 @@ func kick_amount() -> float:
 	return _kick
 
 
+## The disc's radius as drawn THIS frame. _draw and the guard both read it, so a test sampling phases
+## measures what is on screen rather than a restatement of the tables.
+func current_radius() -> float:
+	var p: Dictionary = params_for(count, full_bank)
+	return float(p["radius"]) * _breathe(p)
+
+
+## The outline's alpha as applied this frame — ranges [OUTLINE_ALPHA x (1 - OUTLINE_ALPHA_PULSE), OUTLINE_ALPHA].
+func current_outline_alpha() -> float:
+	var p: Dictionary = params_for(count, full_bank)
+	return float(p["outline_alpha"]) * (1.0 - OUTLINE_ALPHA_PULSE * 0.5 * (1.0 - sin(TAU * float(p["pulse_hz"]) * _t)))
+
+
 func clear() -> void:
 	count = 0
 	full_bank = false
@@ -193,17 +212,16 @@ func _sync_outline() -> void:
 	_outline.flip_v = _body.flip_v
 	_outline.centered = _body.centered
 	_outline.offset = _body.offset
-	## The aura is counter-scaled against the body, so multiply the body's scale back in.
-	_outline.scale = _body.scale * float(p["outline_grow"]) * (1.0 + 0.5 * PULSE_DEPTH * sin(TAU * float(p["pulse_hz"]) * _t))
-	var a: float = float(p["outline_alpha"]) * (0.85 + 0.15 * sin(TAU * float(p["pulse_hz"]) * _t))
-	(_outline.material as ShaderMaterial).set_shader_parameter("tint", Color(color.r, color.g, color.b, a))
+	## The aura is counter-scaled against the body, so multiply the body's scale back in. No pulse term.
+	_outline.scale = _body.scale * float(p["outline_grow"])
+	(_outline.material as ShaderMaterial).set_shader_parameter("tint", Color(color.r, color.g, color.b, current_outline_alpha()))
 
 
 func _draw() -> void:
 	if count <= 0:
 		return
 	var p: Dictionary = params_for(count, full_bank)
-	var r: float = float(p["radius"]) * _breathe(p)
+	var r: float = current_radius()
 	var fill: float = float(p["fill_alpha"])
 	## A translucent filled disc from press 1, with a softer halo — the body of the aura.
 	draw_circle(Vector2.ZERO, r, Color(color.r, color.g, color.b, fill))
