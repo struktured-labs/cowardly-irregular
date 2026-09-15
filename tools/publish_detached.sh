@@ -31,7 +31,57 @@
 set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
-OWNER_PROCS="${PUBLISH_OWNER_PROCS:-quartus obs}"
+# Processes whose mere PRESENCE means his machine is busy. `obs` used to be here, and that was
+# the wrong question: OBS being OPEN is not OBS being LIVE. On 2026-09-14 OBS stayed open
+# playing an internet-radio source after an 11h38m recording ended at 18:48, and this gate held
+# v3.33.349-alpha off the store for hours more -- until it was launched by hand with the gate
+# narrowed. `obs-ffmpeg-mux` is the recording muxer: it exists only while a file is written.
+OWNER_PROCS="${PUBLISH_OWNER_PROCS:-quartus obs-ffmpeg-mux}"
+
+# Is OBS LIVE? Recording, streaming and the replay buffer all run an encoder, and only the first
+# has a process of its own -- a stream is an in-process socket, a replay buffer is RAM. OBS
+# states all three in its own log, so read the state from the thing that has it:
+#
+#     07:04:54 ==== Recording Start ====        <- the muxer's file is 20260914_070454_*.mkv
+#     07:05:19 ==== Replay Buffer Start ====    <- invisible to any process-name check
+#     18:48:28 ==== Replay Buffer Stop ====
+#     18:48:28 ==== Recording Stop ====         <- at 19:43 the muxer was gone
+#     21:05:19 ==== Recording Start ====        <- and back when this was written
+#
+# Measured against independent evidence at every transition that day. FAILS CLOSED: if OBS is
+# running and its state cannot be read, that is a refusal, never a launch.
+OBS_PROC="${PUBLISH_OBS_PROC:-obs}"
+OBS_LOG_DIR="${PUBLISH_OBS_LOG_DIR:-$HOME/.config/obs-studio/logs}"
+
+# Outputs whose LAST marker in the log is a Start. Prints e.g. "Recording, Replay Buffer".
+_obs_live_outputs() {
+    awk '
+        /==== Recording Start/     { s["Recording"] = 1 }  /==== Recording Stop/     { s["Recording"] = 0 }
+        /==== Streaming Start/     { s["Streaming"] = 1 }  /==== Streaming Stop/     { s["Streaming"] = 0 }
+        /==== Replay Buffer Start/ { s["Replay Buffer"] = 1 } /==== Replay Buffer Stop/ { s["Replay Buffer"] = 0 }
+        END { n = 0; for (k in s) if (s[k]) printf "%s%s", (n++ ? ", " : ""), k }' "$1"
+}
+
+# Prints one reason per line; empty output means OBS is not a reason to wait.
+_obs_busy() {
+    local pid; pid=$(pgrep -x "$OBS_PROC" 2>/dev/null | head -1)
+    [ -n "$pid" ] || return 0                               # not running: nothing to protect
+    local log; log=$(ls -t "$OBS_LOG_DIR"/*.txt 2>/dev/null | head -1)
+    if [ -z "$log" ]; then
+        echo "OBS is running and has no log under ${OBS_LOG_DIR}, so its output state is unknown"
+        return 0
+    fi
+    # The newest log must belong to THIS OBS. A log older than the process is a previous
+    # instance's, and its last marker says nothing about what is running now.
+    local started; started=$(( $(date +%s) - $(ps -o etimes= -p "$pid" | tr -d ' ') ))
+    if [ "$(stat -c %Y "$log")" -lt "$started" ]; then
+        echo "OBS is running but its newest log predates it ($(basename "$log")), so its output state is unknown"
+        return 0
+    fi
+    local live; live=$(_obs_live_outputs "$log")
+    [ -n "$live" ] && echo "OBS is live: ${live}"
+    return 0
+}
 
 # Where the log and the .ec live. NOT under the publish worktree: `git worktree remove` is the
 # step that FOLLOWS every publish, and it deleted the .ec for v3.33.304-alpha -- the one artifact
@@ -110,12 +160,16 @@ esac
 if [ "${1:-}" != "--selftest" ]; then
     TAG="$1"; shift
     busy=$(_owner_busy)
-    if [ "$busy" -gt 0 ]; then
-        echo "[detached] REFUSING: ${busy} process(es) matching '${OWNER_PROCS}' are running." >&2
+    obs=$(_obs_busy)
+    if [ "$busy" -gt 0 ] || [ -n "$obs" ]; then
+        [ "$busy" -gt 0 ] && echo "[detached] REFUSING: ${busy} process(es) matching '${OWNER_PROCS}' are running." >&2
+        [ -n "$obs" ] && printf '[detached] REFUSING: %s\n' "$obs" >&2
         echo "[detached] That is struktured's own work on his own machine. A publish is CPU and" >&2
         echo "[detached] I/O I should not add to it. Re-run when they are done." >&2
         exit 2
     fi
+    [ -n "$(pgrep -x "$OBS_PROC" 2>/dev/null)" ] && \
+        echo "[detached] OBS is open but not recording, streaming or holding a replay buffer — not a reason to wait"
     LOGDIR="$(_logdir "$TAG")"
     mkdir -p "$LOGDIR"
     rm -f "$LOGDIR/publish.ec"
@@ -156,7 +210,7 @@ _ec_path_from() { printf '%s' "$1" | sed -n 's/^\[detached\]   ec:  \([^ ]*\).*/
 
 for pair in "ok 0" "bad 7"; do
     set -- $pair
-    out=$(PUBLISH_CMD="$T/$1.sh" PUBLISH_OWNER_PROCS="__absent__" ./tools/publish_detached.sh "ZZ-$1" 2>&1)
+    out=$(PUBLISH_CMD="$T/$1.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="__absent__" ./tools/publish_detached.sh "ZZ-$1" 2>&1)
     ecf=$(_ec_path_from "$out")
     [ -n "$ecf" ] || { fail=$((fail+1)); printf '  FAIL  %-50s launcher printed no ec path\n' "EC path reported ($1.sh)"; }
     _wait_ec "$ecf"
@@ -165,7 +219,7 @@ done
 
 # 3 — DETACHED. If the child shares this shell's session the reaper still owns it and the
 #     whole point is lost; this is the arm that tests the fix rather than the plumbing.
-out=$(PUBLISH_CMD="$T/slow.sh" PUBLISH_OWNER_PROCS="__absent__" ./tools/publish_detached.sh ZZ-detach 2>&1)
+out=$(PUBLISH_CMD="$T/slow.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="__absent__" ./tools/publish_detached.sh ZZ-detach 2>&1)
 slow_ec=$(_ec_path_from "$out")
 sleep 1
 kid=$(pgrep -f "$T/slow.sh" 2>/dev/null | head -1)
@@ -181,8 +235,42 @@ chk "slow child wrote its EC after the launcher returned" "$(cat "$slow_ec" 2>/d
 # 4/5 — the courtesy refusal, BOTH directions. An always-refusing guard passes arm 4 alone.
 PUBLISH_OWNER_PROCS="bash" ./tools/publish_detached.sh ZZ-busy >/dev/null 2>&1
 chk "refuses while an owner process runs" "$?" "2"
-PUBLISH_CMD="$T/ok.sh" PUBLISH_OWNER_PROCS="__absent__" ./tools/publish_detached.sh ZZ-free >/dev/null 2>&1
+PUBLISH_CMD="$T/ok.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="__absent__" ./tools/publish_detached.sh ZZ-free >/dev/null 2>&1
 chk "launches when none does (not a blanket refusal)" "$?" "0"
+
+# 5b — OBS OPEN IS NOT OBS LIVE. Every arm drives the SHIPPED launcher with an injected log and
+#      an OBS stand-in process (`bash`, which is always running here), both directions, so an
+#      always-refuse or always-launch gate cannot pass. Markers are OBS's own, copied from a real
+#      log. Expectations include the REASON, not just the exit code.
+O="$T/obslogs"; mkdir -p "$O"
+_obslog() { rm -f "$O"/*.txt; printf '%s\n' "$@" > "$O/2026-01-01 00-00-00.txt"; }
+_try() {  # label want_ec want_text  (runs with bash standing in for obs)
+    local out ec
+    out=$(PUBLISH_CMD="$T/ok.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="bash" \
+          PUBLISH_OBS_LOG_DIR="$O" ./tools/publish_detached.sh "ZZ-obs" 2>&1); ec=$?
+    chk "$1" "$ec" "$2"
+    case "$out" in *"$3"*) chk "  ...and says why" yes yes ;; *) chk "  ...and says why ($3)" "no" "yes" ;; esac
+}
+R_START='07:04:54.593: ==== Recording Start ==============================================='
+R_STOP='18:48:28.667: ==== Recording Stop ================================================'
+B_START='07:05:19.835: ==== Replay Buffer Start ==========================================='
+B_STOP='18:48:28.176: ==== Replay Buffer Stop ============================================'
+S_START='20:00:00.000: ==== Streaming Start ==============================================='
+S_STOP='20:30:00.000: ==== Streaming Stop ================================================'
+
+_obslog "$R_START";                               _try "obs recording -> refuse"                  2 "OBS is live: Recording"
+_obslog "$R_START" "$B_START" "$B_STOP" "$R_STOP"; _try "obs open, everything stopped -> launch"   0 "not a reason to wait"
+_obslog "$R_START" "$R_STOP" "$B_START";          _try "replay buffer alone -> refuse"            2 "Replay Buffer"
+_obslog "$S_START";                               _try "streaming -> refuse"                      2 "Streaming"
+_obslog "$S_START" "$S_STOP";                     _try "stream ended -> launch"                   0 "not a reason to wait"
+rm -f "$O"/*.txt;                                 _try "obs running, NO log -> refuse (fail closed)" 2 "output state is unknown"
+_obslog "$R_STOP"; touch -d '2000-01-01' "$O"/*.txt
+                                                  _try "log older than obs -> refuse (fail closed)"  2 "predates it"
+# the same live-looking log with OBS NOT running is not a reason to wait
+_obslog "$R_START"
+PUBLISH_CMD="$T/ok.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="__absent__" \
+  PUBLISH_OBS_LOG_DIR="$O" ./tools/publish_detached.sh ZZ-obsgone >/dev/null 2>&1
+chk "stale 'Recording Start' with obs NOT running -> launch" "$?" "0"
 
 # 6/7 — --status is BOUNDED and reports the recorded code rather than hanging.
 ./tools/publish_detached.sh --status "$(_logdir ZZ-bad)" 30 >/dev/null 2>&1
