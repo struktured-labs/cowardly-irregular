@@ -16,11 +16,12 @@ const LAYER_DISC := 2
 const LAYER_ARMS := 4
 const LAYER_MOTES := 8
 const LAYER_GOLD := 16
-const LAYER_ALL := 31
-## The categorical table itself, indexed by count. Gold is added by the full bank, not by the count.
+const LAYER_GOLD_OUTLINE := 32
+const LAYER_ALL := 63
+## The categorical table itself, indexed by count. The full bank, not the count, adds both gold layers.
 const LAYERS: Array[int] = [0, LAYER_OUTLINE, LAYER_OUTLINE | LAYER_DISC, LAYER_OUTLINE | LAYER_DISC | LAYER_ARMS,
 	LAYER_OUTLINE | LAYER_DISC | LAYER_ARMS | LAYER_MOTES, LAYER_OUTLINE | LAYER_DISC | LAYER_ARMS | LAYER_MOTES]
-const LAYER_NAMES := {LAYER_OUTLINE: "outline", LAYER_DISC: "disc", LAYER_ARMS: "arms", LAYER_MOTES: "motes", LAYER_GOLD: "gold"}
+const LAYER_NAMES := {LAYER_OUTLINE: "outline", LAYER_DISC: "disc", LAYER_ARMS: "arms", LAYER_MOTES: "motes", LAYER_GOLD: "gold_ring", LAYER_GOLD_OUTLINE: "gold_outline"}
 
 ## Disc: a flattened ellipse the actor stands in. RADIUS is its horizontal half-width in screen px.
 const RADIUS: Array[float] = [0.0, 0.0, 58.0, 66.0, 74.0, 82.0]
@@ -81,7 +82,7 @@ static var _figure_cache: Dictionary = {}
 
 static func layers_for(n: int, is_full_bank: bool) -> int:
 	var i: int = clampi(n, 0, LAYERS.size() - 1)
-	return LAYERS[i] | (LAYER_GOLD if is_full_bank and i > 0 else 0)
+	return LAYERS[i] | (LAYER_GOLD | LAYER_GOLD_OUTLINE if is_full_bank and i > 0 else 0)
 
 
 static func params_for(n: int, is_full_bank: bool) -> Dictionary:
@@ -259,7 +260,7 @@ func gold_ring_points(near: bool) -> PackedVector2Array:
 
 ## The outline's tint this frame: the job colour, pulled toward gold at a full bank.
 func outline_tint() -> Color:
-	var base: Color = color.lerp(FULL_BANK_RIM, FULL_BANK_OUTLINE_GOLD) if has_layer(LAYER_GOLD) else color
+	var base: Color = color.lerp(FULL_BANK_RIM, FULL_BANK_OUTLINE_GOLD) if has_layer(LAYER_GOLD_OUTLINE) else color
 	return Color(base.r, base.g, base.b, current_outline_alpha())
 
 

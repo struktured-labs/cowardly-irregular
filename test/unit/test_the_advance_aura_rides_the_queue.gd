@@ -84,7 +84,7 @@ func test_each_count_adds_a_layer_the_count_below_lacks() -> void:
 	assert_eq(AuraScript.layers_for(2, false) & ~AuraScript.layers_for(1, false), AuraScript.LAYER_DISC, "2 adds the disc")
 	assert_eq(AuraScript.layers_for(3, false) & ~AuraScript.layers_for(2, false), AuraScript.LAYER_ARMS, "3 adds the orbiting arms")
 	assert_eq(AuraScript.layers_for(4, false) & ~AuraScript.layers_for(3, false), AuraScript.LAYER_MOTES, "4 adds the rising motes")
-	assert_eq(AuraScript.layers_for(5, true) & ~AuraScript.layers_for(4, false), AuraScript.LAYER_GOLD, "5/5 adds the gold rim")
+	assert_eq(AuraScript.layers_for(5, true) & ~AuraScript.layers_for(4, false), AuraScript.LAYER_GOLD | AuraScript.LAYER_GOLD_OUTLINE, "5/5 adds the gold ring and the gold outline")
 	var faint: Array = []
 	for key in LAYER_ARRIVAL_FLOOR.keys():
 		var layer: int = int(CHANNEL_LAYER[key])
