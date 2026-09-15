@@ -10,6 +10,7 @@ extends SceneTree
 ##   bubble_<n>_wide   a full-width 1:1 band at the actor's height: the bubble AND every layer, nothing downscaled
 ##   pop_<n>           ~80 ms of REAL time after the press that reaches n — the per-press pop mid-burst
 ##   clear_<n>         once no speech bubble is live, plus clear_4_of_4 below a full bank
+##   slot<i>_<job>_<n> every party slot taking its own turn, stepped out; strip_slots.png is one row per slot
 ##   strip_*.png       the actor crops side by side; strip_bubble_wide.png stacks the 1:1 bands
 ##
 ## LAYER CHECK, in the bubble set and the clear set: each count must show every layer it owns and none it
@@ -30,10 +31,13 @@ const LAYER_PX_FLOOR := 150
 const ABSENT_PX_CEILING := 12
 const DIFF_BOX := Vector2i(560, 520)
 const STILL_TRIES := 40
-## 5/5's gold must out-draw the disc it rings. Measured on-screen gold/disc: full ring + gold outline 1.65 ·
-## ring alone 0.74 · gold outline + .348's arc 1.00 · .348's arc 0.10 — so either half regressing fails.
-const GOLD_TO_DISC_FLOOR := 1.3
-const LAYER_BITS: Array[int] = [AuraScript.LAYER_OUTLINE, AuraScript.LAYER_DISC, AuraScript.LAYER_ARMS, AuraScript.LAYER_MOTES, AuraScript.LAYER_GOLD]
+## 5/5's two gold layers, each against the layer it dresses. ⛔ One combined gold/disc ratio went red on a
+## CORRECT Rogue (1.28 vs 1.30): the outline half scales with the figure,
+## the disc does not. Measured over all five slots: ring/disc 0.71-0.82 (.348's arc ~0.10) · gold
+## outline/outline 0.98-1.00 (none: 0).
+const GOLD_RING_TO_DISC_FLOOR := 0.4
+const GOLD_OUTLINE_TO_OUTLINE_FLOOR := 0.6
+const LAYER_BITS: Array[int] = [AuraScript.LAYER_OUTLINE, AuraScript.LAYER_DISC, AuraScript.LAYER_ARMS, AuraScript.LAYER_MOTES, AuraScript.LAYER_GOLD, AuraScript.LAYER_GOLD_OUTLINE]
 var _fail: int = 0
 var _scene: Node
 var _sprite: Node2D
@@ -146,6 +150,36 @@ func _init() -> void:
 	_scene._on_advance_queue_changed(0, 4)
 	_strip(clear, "strip_clear")
 
+	## Set 4 — every party slot, not only the lead. Each PC takes the turn the way the scene gives one:
+	## the last actor steps back, this one steps out, and the check waits for the slide to land.
+	var lead = pc
+	var rows: Array[Image] = []
+	for i in _scene.party_members.size():
+		var member = _scene.party_members[i]
+		_scene._step_active_pc(lead, false)
+		bm.current_combatant = member
+		_scene._step_active_pc(member, true)
+		lead = member
+		_sprite = _scene._get_combatant_sprite(member)
+		var job: String = str(member.job.get("id", "")) if member.job else ""
+		if not await _wait_stepped_out(i):
+			print("[SHOT] FAIL: slot %d (%s) never finished stepping out" % [i + 1, job])
+			_fail += 1
+		var row: Array[Image] = []
+		for n in range(1, 6):
+			_scene._on_advance_queue_changed(n, 5)
+			await create_timer(0.35).timeout
+			var shot: Dictionary = await _pinned_with_layers("slot%d_%s_%d" % [i + 1, job, n])
+			_check_layers(shot, n, true)
+			row.append(shot["crop"])
+		_scene._on_advance_queue_changed(0, 5)
+		var strip := Image.create(CROP.x * row.size(), CROP.y, false, Image.FORMAT_RGBA8)
+		for k in row.size():
+			strip.blit_rect(row[k], Rect2i(Vector2i.ZERO, CROP), Vector2i(CROP.x * k, 0))
+		rows.append(strip)
+	_stack(rows, "strip_slots")
+	_scene._step_active_pc(lead, false)
+
 	print("[SHOT] done, %d failed" % _fail)
 	quit(0 if _fail == 0 else 1)
 
@@ -197,6 +231,16 @@ func _pinned_with_layers(tag: String) -> Dictionary:
 		"count": aura.count if aura else 0, "full_bank": aura.full_bank if aura else false}
 
 
+func _wait_stepped_out(slot: int) -> bool:
+	var target: float = float(_scene._party_base_positions[slot].x) + float(_scene.ACTIVE_PC_STEP_OUT_OFFSET)
+	var start: int = Time.get_ticks_msec()
+	while absf(_sprite.position.x - target) > 0.5:
+		if Time.get_ticks_msec() - start > 5000:
+			return false
+		await process_frame
+	return true
+
+
 func _frame_with(aura, mask: int) -> Image:
 	aura.set_draw_layers(mask)
 	await process_frame
@@ -221,15 +265,25 @@ func _check_layers(shot: Dictionary, n: int, max_five: bool) -> void:
 		elif not want and px > ABSENT_PX_CEILING:
 			print("[SHOT] FAIL: %s — the %s layer draws %d px at a count that does not own it" % [shot["tag"], name, px])
 			_fail += 1
-	if (owned & AuraScript.LAYER_GOLD) != 0 and (shot["pairs"] as Dictionary).has(AuraScript.LAYER_GOLD):
-		var gold: int = _changed_px(shot["pairs"][AuraScript.LAYER_GOLD][0], shot["pairs"][AuraScript.LAYER_GOLD][1], shot["centre"])
-		var disc: int = _changed_px(shot["pairs"][AuraScript.LAYER_DISC][0], shot["pairs"][AuraScript.LAYER_DISC][1], shot["centre"])
-		var ratio: float = float(gold) / maxf(1.0, float(disc))
-		row.append("gold/disc=%.2f" % ratio)
-		if ratio < GOLD_TO_DISC_FLOOR:
-			print("[SHOT] FAIL: %s — the full bank's gold draws %.2fx the disc on screen (needs %.2fx); it has faded back toward an arc" % [shot["tag"], ratio, GOLD_TO_DISC_FLOOR])
-			_fail += 1
+	if (owned & AuraScript.LAYER_GOLD) != 0:
+		_check_ratio(shot, row, AuraScript.LAYER_GOLD, AuraScript.LAYER_DISC, GOLD_RING_TO_DISC_FLOOR, "the gold ring has faded back toward an arc")
+	if (owned & AuraScript.LAYER_GOLD_OUTLINE) != 0:
+		_check_ratio(shot, row, AuraScript.LAYER_GOLD_OUTLINE, AuraScript.LAYER_OUTLINE, GOLD_OUTLINE_TO_OUTLINE_FLOOR, "the outline no longer turns gold")
 	print("[SHOT] %s count=%d full_bank=%s on-screen px: %s" % [shot["tag"], int(shot["count"]), str(shot["full_bank"]), " ".join(row)])
+
+
+func _check_ratio(shot: Dictionary, row: Array, bit: int, ref: int, floor_ratio: float, meaning: String) -> void:
+	var pairs: Dictionary = shot["pairs"]
+	if not (pairs.has(bit) and pairs.has(ref)):
+		return
+	var px: int = _changed_px(pairs[bit][0], pairs[bit][1], shot["centre"])
+	var ref_px: int = _changed_px(pairs[ref][0], pairs[ref][1], shot["centre"])
+	var ratio: float = float(px) / maxf(1.0, float(ref_px))
+	var label: String = "%s/%s" % [str(AuraScript.LAYER_NAMES[bit]), str(AuraScript.LAYER_NAMES[ref])]
+	row.append("%s=%.2f" % [label, ratio])
+	if ratio < floor_ratio:
+		print("[SHOT] FAIL: %s — %s is %.2f on screen (needs %.2f): %s" % [shot["tag"], label, ratio, floor_ratio, meaning])
+		_fail += 1
 
 
 func _changed_px(a: Image, b: Image, centre: Vector2i) -> int:
