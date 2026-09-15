@@ -101,7 +101,7 @@ compare() {
     # which reads as a clean audit. This is in my own notes and I wrote the forbidden form
     # anyway; the selftest could never have caught it because 3-file fixtures are far below
     # the truncation point. Sorted real files, and grep -Fxv rather than comm.
-    local tmpd; tmpd="$(mktemp -d "${TMPDIR:-/tmp}/svcmp.XXXXXX")"
+    local tmpd; tmpd="$(mktemp -d "$(_scratch_base "$(pwd -P)")/svcmp.XXXXXX")"
     printf '%s\n' "$ma" > "$tmpd/a.manifest"
     printf '%s\n' "$mb" > "$tmpd/b.manifest"
     awk 'NF{print $1}' "$tmpd/a.manifest" | sort > "$tmpd/a.names"
@@ -194,7 +194,7 @@ fetch_and_compare() {
 selftest() {
     local d pass=0 fail=0 saw0=0 saw5=0 self
     self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
-    d="$(mktemp -d "${TMPDIR:-/tmp}/sv.XXXXXX")"
+    d="$(mktemp -d "$(_scratch_base "$(pwd -P)")/sv.XXXXXX")"
     # shellcheck disable=SC2064
     trap "rm -rf '$d'" EXIT
     mkdir -p "$d/a" "$d/b"
