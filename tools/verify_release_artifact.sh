@@ -34,8 +34,17 @@ cd "$(cd "$(dirname "$0")/.." && pwd)"
 REPO="${RELEASE_REPO:-struktured-labs/cowardly-irregular}"
 
 # Total bytes of the LFS-backed .ogg corpus, read from git, not remembered.
+# ⛔ AT A REF, NOT THE CHECKOUT. This read the CURRENT tree whatever tag it was asked about,
+# so every older release was judged against today's corpus. Measured 2026-09-14: v2.2.0-alpha
+# carried 194 LFS .ogg / 321 MB, the tree at v3.33.349-alpha 502 / 192 MB -- the "floor" for
+# the March release was off by 129 MB. And "the current tree" meant whichever CHECKOUT the tool
+# ran from: run from a stale lane worktree (425 .ogg) it gave v3.33.349-alpha a 425-object floor,
+# where that tag's own tree has 502. The answer depended on where you stood, not what you asked.
+# No real release's verdict flipped (every downloaded asset was below every floor), but a floor
+# describing the wrong tree is a coincidence waiting for the corpus to move.
+# Arg: a ref; empty means HEAD, which is what it always did.
 lfs_audio_floor() {
-    git lfs ls-files -s 2>/dev/null | awk '
+    git lfs ls-files -s ${1:+"$1"} 2>/dev/null | awk '
         /\.ogg/ {
             if (match($0, /\(([0-9.]+) (B|KB|MB|GB)\)/)) {
                 s = substr($0, RSTART + 1, RLENGTH - 2)
@@ -93,6 +102,29 @@ selftest() {
         fail=$((fail+1)); echo "  FAIL  floor derived from this repo -> n=${n:-?} bytes=${got:-?}" >&2
     fi
 
+    # the floor is read AT THE REF. Pair derived from history, never named: the latest commit
+    # that ADDED an .ogg, against its own parent. The two must differ, in the right direction,
+    # and HEAD read with no argument must equal HEAD read explicitly.
+    local addc; addc=$(git log -n1 --format=%H --diff-filter=A -- '*.ogg' 2>/dev/null)
+    if [ -n "$addc" ]; then
+        local na fa np fp nh fh ne fe
+        read -r fa na <<<"$(lfs_audio_floor "$addc")"
+        read -r fp np <<<"$(lfs_audio_floor "${addc}^")"
+        if [ "${na:-0}" -gt "${np:-0}" ] && [ "${fa:-0}" -gt "${fp:-0}" ]; then
+            pass=$((pass+1)); echo "  ok    floor follows the ref -> ${addc:0:9}: ${na} ogg · its parent: ${np} ogg"
+        else
+            fail=$((fail+1)); echo "  FAIL  floor follows the ref -> ${addc:0:9}: n=${na:-?} vs parent n=${np:-?} (must be more)" >&2
+        fi
+        read -r fh nh <<<"$(lfs_audio_floor)"; read -r fe ne <<<"$(lfs_audio_floor HEAD)"
+        if [ "$fh $nh" = "$fe $ne" ]; then
+            pass=$((pass+1)); echo "  ok    no argument still means HEAD -> ${nh} ogg"
+        else
+            fail=$((fail+1)); echo "  FAIL  no argument vs HEAD disagree -> '${fh} ${nh}' vs '${fe} ${ne}'" >&2
+        fi
+    else
+        fail=$((fail+1)); echo "  FAIL  no commit that added an .ogg -- cannot derive a ref pair" >&2
+    fi
+
     echo "selftest: ${pass} passed, ${fail} failed"
     if [ "$saw_ok$saw_short" != "11" ]; then
         echo "selftest: BROKEN — outcomes seen: pass=${saw_ok} short=${saw_short}; both required" >&2
@@ -109,7 +141,15 @@ esac
 TAG="$1"
 command -v gh >/dev/null || { echo "[release] BLOCKED: gh is not installed" >&2; exit 3; }
 
-read -r FLOOR NOGG <<<"$(lfs_audio_floor)"
+# The tag must be IN this clone. Falling back to HEAD when it is absent would silently restore
+# the defect above for exactly the tags most likely to be missing -- old ones.
+REF="$(git rev-parse --verify -q "${TAG}^{commit}" 2>/dev/null)"
+if [ -z "$REF" ]; then
+    echo "[release] BLOCKED: ${TAG} is not a commit in this clone (fetch tags?). The audio floor" >&2
+    echo "          must be read from the tag's own tree; refusing to substitute HEAD's." >&2
+    exit 4
+fi
+read -r FLOOR NOGG <<<"$(lfs_audio_floor "$REF")"
 if [ "${NOGG:-0}" -lt 1 ] || [ "${FLOOR:-0}" -lt 1 ]; then
     echo "[release] BLOCKED: no LFS .ogg corpus found in this tree, so there is no floor to" >&2
     echo "          check against. Refusing to report a release as fine on an empty corpus." >&2
@@ -124,7 +164,7 @@ if [ -z "$ASSETS" ]; then
     exit 4
 fi
 
-echo "[release] ${TAG} on ${REPO} — floor ${FLOOR} B from ${NOGG} LFS .ogg object(s)"
+echo "[release] ${TAG} on ${REPO} — floor ${FLOOR} B from ${NOGG} LFS .ogg object(s) in ${TAG}'s own tree"
 printf '%s\n' "$ASSETS" | classify "$FLOOR"
 RC=$?
 if [ "$RC" = 5 ]; then
