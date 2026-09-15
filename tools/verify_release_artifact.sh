@@ -2,6 +2,7 @@
 # Does the GitHub Release for a tag actually contain the game's audio?
 #
 #   tools/verify_release_artifact.sh <tag>
+#   tools/verify_release_artifact.sh --file <built binary>   (floor at HEAD; what CI runs before publishing)
 #   tools/verify_release_artifact.sh --selftest
 #
 # WHY THIS EXISTS
@@ -125,6 +126,19 @@ selftest() {
         fail=$((fail+1)); echo "  FAIL  no commit that added an .ogg -- cannot derive a ref pair" >&2
     fi
 
+    # --file: the CI gate, both directions, on real files sized either side of this tree's floor.
+    # Sparse, so the arm costs no disk. Run through the SHIPPED dispatch ("$0"), not classify alone.
+    local ff fd rcf; read -r ff _ <<<"$(lfs_audio_floor)"
+    fd="$(mktemp -d "$HOME/.cache/vra_file.XXXXXX")"
+    truncate -s $(( ff - 1 )) "$fd/short.x86_64"; truncate -s $(( ff + 1 )) "$fd/full.x86_64"
+    "$0" --file "$fd/short.x86_64" >/dev/null 2>&1; rcf=$?
+    chk "--file: one byte under this tree's floor is SHORT" "$rcf" "5"
+    "$0" --file "$fd/full.x86_64" >/dev/null 2>&1; rcf=$?
+    chk "--file: one byte over it passes" "$rcf" "0"
+    "$0" --file "$fd/absent.x86_64" >/dev/null 2>&1; rcf=$?
+    chk "--file: a missing binary BLOCKS, not passes" "$rcf" "2"
+    rm -rf -- "$fd"
+
     echo "selftest: ${pass} passed, ${fail} failed"
     if [ "$saw_ok$saw_short" != "11" ]; then
         echo "selftest: BROKEN — outcomes seen: pass=${saw_ok} short=${saw_short}; both required" >&2
@@ -135,6 +149,20 @@ selftest() {
 
 case "${1:-}" in
     --selftest) selftest; exit $? ;;
+    --file)
+        # CI's gate, run on the binary BEFORE it is attached to a release. Same floor and same
+        # classify as the tag mode, so the rule exists once. Floor at HEAD: in CI the checkout IS
+        # the tag being built, which is exactly the tree whose audio the binary must carry.
+        f="${2:-}"
+        [ -f "$f" ] || { echo "[release] BLOCKED: --file needs an existing binary, got '${f}'" >&2; exit 2; }
+        read -r FLOOR NOGG <<<"$(lfs_audio_floor)"
+        if [ "${NOGG:-0}" -lt 1 ] || [ "${FLOOR:-0}" -lt 1 ]; then
+            echo "[release] BLOCKED: no LFS .ogg corpus in this tree -- a floor of zero clears everything." >&2
+            exit 4
+        fi
+        echo "[release] $(basename "$f") — floor ${FLOOR} B from ${NOGG} LFS .ogg object(s) at HEAD"
+        printf '%s %s\n' "$(basename "$f")" "$(wc -c < "$f")" | classify "$FLOOR"
+        exit $? ;;
     "") echo "usage: $0 <tag> | --selftest" >&2; exit 2 ;;
 esac
 

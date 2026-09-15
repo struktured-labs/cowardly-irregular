@@ -28,7 +28,52 @@ jobs:
     container:
       image: barichello/godot-ci:4.4.1
     steps:
+      # ── AUDIO IS LFS, AND FOR ITS WHOLE HISTORY THE RELEASE SHIPPED WITHOUT IT ─────────────
+      # A plain `actions/checkout@v4` leaves the 502 LFS-backed .ogg files as ~130-byte pointer
+      # text. Godot's import of them fails, and the export packs a game that boots and plays no
+      # music or SFX. Measured 2026-09-14: all 96 downloaded GitHub builds, back to v2.2.0-alpha,
+      # were smaller than their own tag's LFS audio (.345: 126 MB binary vs 192 MB of audio).
+      #
+      # The ORDER is the whole point. `lfs: true` on checkout fetches every object INSIDE the
+      # checkout step, before any cache can be restored, and bills ~192 MB per job, every run.
+      # So: pointers only -> list the LFS object ids -> restore a cache of .git/lfs keyed on that
+      # list -> `git lfs pull`, which downloads only what the cache lacks. `restore-keys` means a
+      # tag that changes one clip restores the previous cache and pulls about that clip, not the
+      # whole corpus. Ruled by struktured 2026-09-15.
       - uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: List LFS objects (the cache key)
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          # Install git-lfs if this image lacks it. Two earlier tools in this file assumed a
+          # binary this image did not have (`file`, then `python3`) and failed for that reason
+          # alone. The container runs as root, so apt is available.
+          command -v git-lfs >/dev/null 2>&1 || { apt-get update -qq && apt-get install -y -qq git-lfs; }
+          git lfs install --local >/dev/null
+          git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+          echo "LFS objects in this tree: $(wc -l < .lfs-assets-id)"
+          test -s .lfs-assets-id || { echo "::error::no LFS objects listed — git-lfs missing or not a LFS checkout"; exit 1; }
+
+      - name: Restore LFS object cache
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id') }}
+          restore-keys: lfs-
+
+      - name: Pull LFS objects (only cache misses download)
+        run: |
+          before=$(du -sb .git/lfs/objects 2>/dev/null | cut -f1); before=${before:-0}
+          git lfs pull
+          after=$(du -sb .git/lfs/objects | cut -f1)
+          # The acceptance number. ~0 on a tag whose audio did not change; about one clip's bytes
+          # on a tag that changed one clip. Read it TOGETHER with the cache step's own line
+          # ("Cache restored from key: lfs-...") -- a ~0 without a restore is luck, not the cache.
+          echo "LFS bytes downloaded this run: $((after - before))"
+          still=$(git lfs ls-files | awk '$2 == "-"' | wc -l)
+          test "$still" -eq 0 || { echo "::error::${still} LFS file(s) are still pointers after the pull — the build would have no audio"; exit 1; }
 
       - name: Setup export templates
         run: |
@@ -57,6 +102,12 @@ jobs:
           mkdir -p build/linux
           godot --headless --export-release "Linux" build/linux/${EXPORT_NAME}.x86_64
 
+      - name: Assert the Linux build carries its audio
+        run: |
+          # A build smaller than this tree's LFS audio cannot contain it. Same floor and rule as
+          # the post-release check, so it exists once: tools/verify_release_artifact.sh --file.
+          ./tools/verify_release_artifact.sh --file build/linux/${EXPORT_NAME}.x86_64
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -77,7 +128,52 @@ jobs:
     container:
       image: barichello/godot-ci:4.4.1
     steps:
+      # ── AUDIO IS LFS, AND FOR ITS WHOLE HISTORY THE RELEASE SHIPPED WITHOUT IT ─────────────
+      # A plain `actions/checkout@v4` leaves the 502 LFS-backed .ogg files as ~130-byte pointer
+      # text. Godot's import of them fails, and the export packs a game that boots and plays no
+      # music or SFX. Measured 2026-09-14: all 96 downloaded GitHub builds, back to v2.2.0-alpha,
+      # were smaller than their own tag's LFS audio (.345: 126 MB binary vs 192 MB of audio).
+      #
+      # The ORDER is the whole point. `lfs: true` on checkout fetches every object INSIDE the
+      # checkout step, before any cache can be restored, and bills ~192 MB per job, every run.
+      # So: pointers only -> list the LFS object ids -> restore a cache of .git/lfs keyed on that
+      # list -> `git lfs pull`, which downloads only what the cache lacks. `restore-keys` means a
+      # tag that changes one clip restores the previous cache and pulls about that clip, not the
+      # whole corpus. Ruled by struktured 2026-09-15.
       - uses: actions/checkout@v4
+        with:
+          lfs: false
+
+      - name: List LFS objects (the cache key)
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          # Install git-lfs if this image lacks it. Two earlier tools in this file assumed a
+          # binary this image did not have (`file`, then `python3`) and failed for that reason
+          # alone. The container runs as root, so apt is available.
+          command -v git-lfs >/dev/null 2>&1 || { apt-get update -qq && apt-get install -y -qq git-lfs; }
+          git lfs install --local >/dev/null
+          git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+          echo "LFS objects in this tree: $(wc -l < .lfs-assets-id)"
+          test -s .lfs-assets-id || { echo "::error::no LFS objects listed — git-lfs missing or not a LFS checkout"; exit 1; }
+
+      - name: Restore LFS object cache
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id') }}
+          restore-keys: lfs-
+
+      - name: Pull LFS objects (only cache misses download)
+        run: |
+          before=$(du -sb .git/lfs/objects 2>/dev/null | cut -f1); before=${before:-0}
+          git lfs pull
+          after=$(du -sb .git/lfs/objects | cut -f1)
+          # The acceptance number. ~0 on a tag whose audio did not change; about one clip's bytes
+          # on a tag that changed one clip. Read it TOGETHER with the cache step's own line
+          # ("Cache restored from key: lfs-...") -- a ~0 without a restore is luck, not the cache.
+          echo "LFS bytes downloaded this run: $((after - before))"
+          still=$(git lfs ls-files | awk '$2 == "-"' | wc -l)
+          test "$still" -eq 0 || { echo "::error::${still} LFS file(s) are still pointers after the pull — the build would have no audio"; exit 1; }
 
       - name: Setup export templates
         run: |
@@ -144,6 +240,9 @@ jobs:
             echo "::warning::od not available — PE32+ magic NOT verified. The non-empty" \
                  "check above still passed, so this is an unverified pass, not a failure."
           fi
+
+      - name: Assert the Windows build carries its audio
+        run: ./tools/verify_release_artifact.sh --file build/windows/${EXPORT_NAME}.exe
 
       # NOTE: no boot gate here. Locally, tools/deploy_windows.sh runs the exported
       # .exe under wine and asserts "[GAME] Started"; this CI image has no wine, so
