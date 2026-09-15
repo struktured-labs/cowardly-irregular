@@ -101,7 +101,7 @@ compare() {
     # which reads as a clean audit. This is in my own notes and I wrote the forbidden form
     # anyway; the selftest could never have caught it because 3-file fixtures are far below
     # the truncation point. Sorted real files, and grep -Fxv rather than comm.
-    local tmpd; tmpd="$(mktemp -d "${TMPDIR:-/tmp}/svcmp.XXXXXX")"
+    local tmpd; tmpd="$(mktemp -d "$(_scratch_base "$(pwd -P)")/svcmp.XXXXXX")"
     printf '%s\n' "$ma" > "$tmpd/a.manifest"
     printf '%s\n' "$mb" > "$tmpd/b.manifest"
     awk 'NF{print $1}' "$tmpd/a.manifest" | sort > "$tmpd/a.names"
@@ -173,7 +173,10 @@ fetch_and_compare() {
     command -v butler >/dev/null || { echo "[store-verify] BLOCKED: butler not on PATH." >&2; return 2; }
     [ -d "$local_dir" ] || { echo "[store-verify] BLOCKED: local build dir ${local_dir} not found." >&2; return 2; }
 
-    local out; out="$(mktemp -d "${TMPDIR:-/tmp}/storeverify.XXXXXX")"
+    # NOT /tmp. On this box /tmp is TMPFS (RAM, measured 2026-09-15), so every read-back held a
+    # whole build -- 209-306 MiB -- in memory while it compared, which is the free-memory signal
+    # the harness reaper has killed publishes on before. An explicit TMPDIR is still honoured.
+    local out; out="$(mktemp -d "$(_scratch_base "$(pwd -P)")/storeverify.XXXXXX")"
     # shellcheck disable=SC2064
     trap "rm -rf '$out'" RETURN
     echo "[store-verify] fetching ${TARGET}:${channel} (this downloads the whole build)"
@@ -191,7 +194,7 @@ fetch_and_compare() {
 selftest() {
     local d pass=0 fail=0 saw0=0 saw5=0 self
     self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
-    d="$(mktemp -d "${TMPDIR:-/tmp}/sv.XXXXXX")"
+    d="$(mktemp -d "$(_scratch_base "$(pwd -P)")/sv.XXXXXX")"
     # shellcheck disable=SC2064
     trap "rm -rf '$d'" EXIT
     mkdir -p "$d/a" "$d/b"
@@ -308,6 +311,43 @@ PYGEN
         pass=$((pass+1)); printf '  ok    %-46s differ\n' "verdict words discriminate"
     fi
 
+    # ── evidence is named after what the STORE serves, and scratch is not tmpfs ──────────────
+    _eq() { if [ "$2" = "$3" ]; then pass=$((pass+1)); printf '  ok    %-46s %s\n' "$1" "${2:-<empty>}"
+            else fail=$((fail+1)); printf '  FAIL  %-46s got %s want %s\n' "$1" "${2:-<empty>}" "${3:-<empty>}"; fi; }
+    # a real `butler status` table, copied from 2026-09-15
+    local st='+----------+-----------+----------------------------+---------------------------+
+| CHANNEL  |  UPLOAD   |           BUILD            |          VERSION          |
++----------+-----------+----------------------------+---------------------------+
+| linux    | #18690458 | ✓ #1979875 (from #1973335) | v3.33.349-alpha+09334a342 |
+| web      | #16306641 | ✓ #1979888 (from #1973342) | v3.33.349-alpha+09334a342 |
+| windows  | #18757510 | ✓ #1979877 (from #1973339) | v3.33.349-alpha+09334a342 |'
+    _eq "store version: linux row, +sha dropped"      "$(printf '%s\n' "$st" | _store_version linux)"   "v3.33.349-alpha"
+    _eq "store version: windows row"                  "$(printf '%s\n' "$st" | _store_version windows)" "v3.33.349-alpha"
+    _eq "store version: channel absent -> empty"      "$(printf '%s\n' "$st" | _store_version android)" ""
+    local et
+    et="$(_evidence_tag v3.33.349-alpha v3.33.349-alpha)"
+    _eq "evidence: match -> store tag, no note"       "${et%%$'\t'*}|${et#*$'\t'}" "v3.33.349-alpha|"
+    et="$(_evidence_tag v3.33.347-alpha v3.33.349-alpha)"
+    _eq "evidence: mismatch -> named after the STORE" "${et%%$'\t'*}" "v3.33.349-alpha"
+    case "${et#*$'\t'}" in *MISMATCH*v3.33.349-alpha*v3.33.347-alpha*) _eq "  ...and the note names both" yes yes ;;
+                              *) _eq "  ...and the note names both" "${et#*$'\t'}" "MISMATCH naming both" ;; esac
+    et="$(_evidence_tag 3cd794ea6 "")"
+    _eq "evidence: store unknown -> checkout, flagged" "${et%%$'\t'*}" "3cd794ea6"
+    case "${et#*$'\t'}" in *"store version unknown"*) _eq "  ...and says so" yes yes ;; *) _eq "  ...and says so" no yes ;; esac
+    # Probe paths live in a SCOPED temp dir -- _scratch_base mkdirs what it returns, so fixed
+    # absolute probes would create (and a cleanup would delete) real paths. It must contain NO
+    # "/tmp/" of its own: the lane root is everything before the FIRST /tmp/ (the archive's rule),
+    # so a probe nested under this worktree's tmp/ resolves to the real lane, not the probe.
+    local sd sb; mkdir -p "$HOME/.cache"; sd="$(mktemp -d "$HOME/.cache/vsa_scratch.XXXXXX")"
+    sb="$(TMPDIR= _scratch_base "$sd/lane-wt/tmp/pub999")"
+    _eq "scratch: lane tmp, not /tmp"                  "$sb" "$sd/lane-wt/tmp/_storeverify"
+    sb="$(TMPDIR= _scratch_base "$sd/plainrepo")"
+    _eq "scratch: plain repo -> its own tmp/"          "$sb" "$sd/plainrepo/tmp/_storeverify"
+    sb="$(TMPDIR="$sd/explicit" _scratch_base "$sd/lane-wt/tmp/pub999")"
+    _eq "scratch: an explicit TMPDIR is honoured"      "$sb" "$sd/explicit"
+    case "$sb" in /tmp/*) _eq "scratch: never defaults under /tmp" "$sb" "not /tmp" ;; esac
+    rm -rf -- "$sd"
+
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
     if [ "$saw0" -ne 1 ] || [ "$saw5" -ne 1 ]; then
@@ -330,6 +370,39 @@ PYGEN
 #
 # `here` and `tag` are PARAMETERS so both branches can be driven; one of them is unreachable
 # from wherever the selftest happens to run.
+# Scratch base: explicit TMPDIR if the caller set one, else the lane's own tmp/ (derived the same
+# way as the archive), else ./tmp. Never a default of /tmp.
+_scratch_base() {
+    local here="$1" base
+    if [ -n "${TMPDIR:-}" ]; then base="$TMPDIR"
+    else case "$here" in
+            */tmp/*) base="${here%%/tmp/*}/tmp/_storeverify" ;;
+            *)       base="$here/tmp/_storeverify" ;;
+         esac
+    fi
+    mkdir -p "$base" 2>/dev/null
+    printf '%s' "$base"
+}
+
+# The version the STORE serves on a channel, from `butler status` text on stdin -> "v3.33.349-alpha"
+# (the +sha build label is dropped). Empty if the channel row is absent or unparseable.
+_store_version() {
+    awk -F'|' -v ch="$1" '{ c=$2; gsub(/ /,"",c); if (c==ch) { v=$5; gsub(/ /,"",v); sub(/\+.*/,"",v); print v; exit } }'
+}
+
+# Which release this read-back is EVIDENCE for. The subject of a store read-back is what the store
+# SERVES, so that names it -- not the checkout the tool happens to run in. Prints "<tag>\t<note>".
+_evidence_tag() {
+    local checkout="$1" store="$2"
+    if [ -z "$store" ]; then
+        printf '%s\t%s' "$checkout" "store version unknown -- labelled from the checkout (${checkout})"
+    elif [ "$store" = "$checkout" ]; then
+        printf '%s\t' "$store"
+    else
+        printf '%s\t%s' "$store" "MISMATCH: the store serves ${store} but this checkout is ${checkout}; the local build compared may not be ${store}'s"
+    fi
+}
+
 _readback_dest() {
     local here="$1" tag="$2"
     case "$here" in
@@ -351,9 +424,16 @@ _verdict_word() {
 _run_and_archive() {
     local ch="$1" dir="${2:-}" here tag dest ec
     here="$(pwd -P)"
-    tag="$(git describe --tags --exact-match HEAD 2>/dev/null)" \
-        || tag="$(git rev-parse --short HEAD 2>/dev/null)" || tag="untagged"
-    [ -n "$tag" ] || tag="untagged"
+    # ⛔ This used to be the ONLY source of the label: the tag of whatever checkout the tool ran in.
+    # Run from a publish worktree right after its publish that is right; run anywhere else it
+    # files a read-back of what the store serves under a release the store may not be serving.
+    local checkout store note
+    checkout="$(git describe --tags --exact-match HEAD 2>/dev/null)" \
+        || checkout="$(git rev-parse --short HEAD 2>/dev/null)" || checkout="untagged"
+    [ -n "$checkout" ] || checkout="untagged"
+    store="$(butler status "$TARGET" 2>/dev/null | _store_version "$ch")"
+    IFS=$'\t' read -r tag note <<<"$(_evidence_tag "$checkout" "$store")"
+    [ -n "$note" ] && echo "[store-verify] ⚠ ${note}" >&2
     if ! dest="$(_readback_dest "$here" "$tag")"; then
         echo "[store-verify] note: NOT archiving — ${here} is not a <lane>/tmp/<worktree> path." >&2
         fetch_and_compare "$ch" "$dir"
@@ -366,9 +446,9 @@ _run_and_archive() {
     }
     fetch_and_compare "$ch" "$dir" 2>&1 | tee "${dest}/readback_${ch}.log"
     ec=${PIPESTATUS[0]}
-    printf '[store-verify] verdict: exit %s (%s) · %s · tag %s\n' \
-        "$ec" "$(_verdict_word "$ec")" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$tag" \
-        | tee -a "${dest}/readback_${ch}.log"
+    printf '[store-verify] verdict: exit %s (%s) · %s · store serves %s · checkout %s%s\n' \
+        "$ec" "$(_verdict_word "$ec")" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${store:-unknown}" "$checkout" \
+        "${note:+ · $note}" | tee -a "${dest}/readback_${ch}.log"
     echo "[store-verify] archived: ${dest}/readback_${ch}.log"
     return "$ec"
 }
