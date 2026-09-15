@@ -49,7 +49,7 @@ func after_each() -> void:
 const CHANNEL_LAYER := {"radius": AuraScript.LAYER_DISC, "fill_alpha": AuraScript.LAYER_DISC, "rim_width": AuraScript.LAYER_DISC,
 	"glyphs": AuraScript.LAYER_ARMS, "spin": AuraScript.LAYER_ARMS, "orbit_rx": AuraScript.LAYER_ARMS,
 	"motes": AuraScript.LAYER_MOTES, "rise_hz": AuraScript.LAYER_MOTES,
-	"pulse_hz": AuraScript.LAYER_OUTLINE, "outline_grow": AuraScript.LAYER_OUTLINE, "outline_alpha": AuraScript.LAYER_OUTLINE}
+	"pulse_hz": AuraScript.LAYER_OUTLINE, "outline_width": AuraScript.LAYER_OUTLINE, "outline_alpha": AuraScript.LAYER_OUTLINE}
 
 func test_every_channel_rises_while_its_layer_is_on() -> void:
 	var flat: Array = []
@@ -69,7 +69,7 @@ func test_every_channel_rises_while_its_layer_is_on() -> void:
 ## ⛔ THE BAR TWO PASSES MISSED. Every channel rose by a few % a press, and at full screen 1 and 2 were
 ## "a thin ring apart" (cowir-main, .347 frames). So each count must ADD a layer the count below lacks,
 ## and each layer must arrive strong enough to read alone. The floors live here, not beside the table.
-const LAYER_ARRIVAL_FLOOR := {"outline_alpha": 0.45, "fill_alpha": 0.35, "radius": 50.0, "glyphs": 6.0, "motes": 8.0}
+const LAYER_ARRIVAL_FLOOR := {"outline_alpha": 0.45, "outline_width": 4.0, "fill_alpha": 0.35, "radius": 50.0, "glyphs": 6.0, "motes": 8.0}
 
 func test_each_count_adds_a_layer_the_count_below_lacks() -> void:
 	var order: Array = []
@@ -110,13 +110,13 @@ func _drawn_ranges(n: int, body: AnimatedSprite2D) -> Dictionary:
 	aura.bind_body(body)
 	aura.set_state(n, n >= 5, Color.RED, "runes")
 	var hz: float = float(AuraScript.params_for(n, n >= 5)["pulse_hz"])
-	var out := {"radius": [INF, -INF], "outline_alpha": [INF, -INF], "outline_scale": [INF, -INF]}
+	var out := {"radius": [INF, -INF], "outline_alpha": [INF, -INF], "outline_width": [INF, -INF]}
 	for i in PHASE_SAMPLES:
 		aura._t = (float(i) / float(PHASE_SAMPLES)) / hz
 		aura._kick = 0.0
 		aura._sync_outline()
 		var v := {"radius": aura.current_radius(), "outline_alpha": aura.current_outline_alpha(),
-			"outline_scale": aura.outline().scale.x / body.scale.x}
+			"outline_width": float((aura.outline().material as ShaderMaterial).get_shader_parameter("radius")) * body.scale.x}
 		for k in v.keys():
 			out[k] = [minf(out[k][0], v[k]), maxf(out[k][1], v[k])]
 	aura.free()
@@ -134,7 +134,7 @@ func test_no_pulse_phase_makes_a_higher_count_look_smaller() -> void:
 		"CONTROL: the disc really breathes, so this is sampling a range and not a constant")
 	var overlaps: Array = []
 	for n in range(1, 5):
-		for key in ["radius", "outline_alpha", "outline_scale"]:
+		for key in ["radius", "outline_alpha", "outline_width"]:
 			var hi_n: float = float(ranges[n][key][1])
 			var lo_up: float = float(ranges[n + 1][key][0])
 			if not (lo_up > hi_n):
@@ -174,6 +174,11 @@ func test_the_full_bank_is_a_gold_ring_around_the_feet_and_a_gold_outline() -> v
 	var tint: Color = aura.outline_tint()
 	assert_lt(Vector3(tint.r, tint.g, tint.b).distance_to(Vector3(AuraScript.FULL_BANK_RIM.r, AuraScript.FULL_BANK_RIM.g, AuraScript.FULL_BANK_RIM.b)), 0.25,
 		"at 5/5 the outline turns gold (%s)" % str(tint))
+	aura.set_state(4, false, job, "runes")
+	var four_w: float = aura.current_outline_width()
+	aura.set_state(5, true, job, "runes")
+	assert_gte(aura.current_outline_width() - four_w, 3.0,
+		"and THICKENS by a visible step — the Cleric's own colour is already pale gold, so hue alone cannot carry 4 -> 5")
 	var centre: Vector2 = aura.disc_center()
 	var near: PackedVector2Array = aura.gold_ring_points(true)
 	var far: PackedVector2Array = aura.gold_ring_points(false)
@@ -340,11 +345,14 @@ func test_the_outline_mirrors_the_body_and_grows_with_the_count() -> void:
 	assert_eq(line.sprite_frames, body.sprite_frames, "drawn from the body's own frames")
 	assert_eq(line.frame, 1, "on the body's current frame")
 	assert_true(line.flip_h, "facing the same way")
-	var two: float = line.scale.x / body.scale.x
+	assert_eq(line.scale, body.scale, "at the body's own scale — the width comes from the shader, not a grow about the frame centre")
+	var mat := line.material as ShaderMaterial
+	var two: float = float(mat.get_shader_parameter("radius")) * body.scale.x
+	assert_almost_eq(two, aura.current_outline_width(), 0.001, "the shader dilates by the width in SCREEN px, whatever the sheet's scale")
 	aura.set_state(5, true, Color.RED, "runes")
-	var five: float = line.scale.x / body.scale.x
+	var five: float = float(mat.get_shader_parameter("radius")) * body.scale.x
 	assert_gt(five, two, "the outline stands further out at 5 than at 2")
-	assert_gt(two, 1.0, "and is always larger than the body, or it is hidden behind it")
+	assert_gte(two, 4.0, "and is a band you can see, not a hairline")
 	aura.clear()
 	assert_false(line.visible, "clear hides it")
 

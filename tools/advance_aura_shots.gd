@@ -31,14 +31,21 @@ const LAYER_PX_FLOOR := 150
 const ABSENT_PX_CEILING := 12
 const DIFF_BOX := Vector2i(560, 520)
 const STILL_TRIES := 40
+const STRONG_DELTA_E := 20.0
 ## 5/5's two gold layers, each against the layer it dresses. ⛔ One combined gold/disc ratio went red on a
 ## CORRECT Rogue (1.28 vs 1.30): the outline half scales with the figure,
 ## the disc does not. Measured over all five slots: ring/disc 0.71-0.82 (.348's arc ~0.10) · gold
 ## outline/outline 0.98-1.00 (none: 0).
 const GOLD_RING_TO_DISC_FLOOR := 0.4
+## Gold outline: STRONG px (Lab) over the outline's px, so a gold that barely differs from the job colour fails.
 const GOLD_OUTLINE_TO_OUTLINE_FLOOR := 0.6
+## Press 1 is the outline alone, so it must READ, not merely exist. Strong px at count 1, dilation outline:
+## rogue 3207 · fighter 3974 · cleric 4483 · mage 6013 · bard 6018. The scaled outline it replaced changed at
+## most 1560 px on the Rogue and 2307 on the Fighter, strong or not. The Rogue is the smallest starter figure.
+const OUTLINE_FIRST_STRONG_FLOOR := 2400
 const LAYER_BITS: Array[int] = [AuraScript.LAYER_OUTLINE, AuraScript.LAYER_DISC, AuraScript.LAYER_ARMS, AuraScript.LAYER_MOTES, AuraScript.LAYER_GOLD, AuraScript.LAYER_GOLD_OUTLINE]
 var _fail: int = 0
+var _stats_cache: Dictionary = {}
 var _scene: Node
 var _sprite: Node2D
 
@@ -87,6 +94,13 @@ func _init() -> void:
 		bm.current_combatant = pc
 	_sprite = _scene._get_combatant_sprite(pc)
 	print("[SHOT] actor=%s job=%s tier=%d time_scale=%.2f" % [pc.combatant_name, str(pc.job.get("id", "")), int(root.get_node("BattleJuice").battle_tier()), Engine.time_scale])
+
+	if OS.get_cmdline_user_args().has("--slots-only"):
+		print("[SHOT] --slots-only: skipping the bubble, pop and clear sets — NOT a full proof run")
+		await _every_slot(pc, bm)
+		print("[SHOT] done, %d failed" % _fail)
+		quit(0 if _fail == 0 else 1)
+		return
 
 	## Set 1 — round 1, turn_start bubble up. Waits for a bubble, runs on short real-time settles, FAILS
 	## any frame taken with none up. Captures are held and diffed after the set, so the bubble outlasts them.
@@ -150,6 +164,13 @@ func _init() -> void:
 	_scene._on_advance_queue_changed(0, 4)
 	_strip(clear, "strip_clear")
 
+	await _every_slot(pc, bm)
+
+	print("[SHOT] done, %d failed" % _fail)
+	quit(0 if _fail == 0 else 1)
+
+
+func _every_slot(pc, bm) -> void:
 	## Set 4 — every party slot, not only the lead. Each PC takes the turn the way the scene gives one:
 	## the last actor steps back, this one steps out, and the check waits for the slide to land.
 	var lead = pc
@@ -179,9 +200,6 @@ func _init() -> void:
 		rows.append(strip)
 	_stack(rows, "strip_slots")
 	_scene._step_active_pc(lead, false)
-
-	print("[SHOT] done, %d failed" % _fail)
-	quit(0 if _fail == 0 else 1)
 
 
 ## Pause the tree, pin the aura at phase 0 with no kick, and measure each layer as an on/off/on sandwich.
@@ -255,10 +273,14 @@ func _check_layers(shot: Dictionary, n: int, max_five: bool) -> void:
 	for bit in LAYER_BITS:
 		if not (shot["pairs"] as Dictionary).has(bit):
 			continue
-		var px: int = _changed_px(shot["pairs"][bit][0], shot["pairs"][bit][1], shot["centre"])
+		var stats: Dictionary = _diff_stats(shot["pairs"][bit][0], shot["pairs"][bit][1], shot["centre"])
+		var px: int = int(stats["px"])
 		var name: String = str(AuraScript.LAYER_NAMES[bit])
 		var want: bool = (owned & bit) != 0
-		row.append("%s=%d%s" % [name, px, "" if want else "(absent)"])
+		row.append("%s=%d/%d%s" % [name, px, int(stats["strong"]), "" if want else "(absent)"])
+		if want and n == 1 and bit == AuraScript.LAYER_OUTLINE and int(stats["strong"]) < OUTLINE_FIRST_STRONG_FLOOR:
+			print("[SHOT] FAIL: %s — press 1's outline has only %d strong px (needs %d): it is there but does not read" % [shot["tag"], int(stats["strong"]), OUTLINE_FIRST_STRONG_FLOOR])
+			_fail += 1
 		if want and px < LAYER_PX_FLOOR:
 			print("[SHOT] FAIL: %s — the %s layer changes only %d px on screen (needs %d)" % [shot["tag"], name, px, LAYER_PX_FLOOR])
 			_fail += 1
@@ -266,17 +288,17 @@ func _check_layers(shot: Dictionary, n: int, max_five: bool) -> void:
 			print("[SHOT] FAIL: %s — the %s layer draws %d px at a count that does not own it" % [shot["tag"], name, px])
 			_fail += 1
 	if (owned & AuraScript.LAYER_GOLD) != 0:
-		_check_ratio(shot, row, AuraScript.LAYER_GOLD, AuraScript.LAYER_DISC, GOLD_RING_TO_DISC_FLOOR, "the gold ring has faded back toward an arc")
+		_check_ratio(shot, row, AuraScript.LAYER_GOLD, AuraScript.LAYER_DISC, GOLD_RING_TO_DISC_FLOOR, "the gold ring has faded back toward an arc", false)
 	if (owned & AuraScript.LAYER_GOLD_OUTLINE) != 0:
-		_check_ratio(shot, row, AuraScript.LAYER_GOLD_OUTLINE, AuraScript.LAYER_OUTLINE, GOLD_OUTLINE_TO_OUTLINE_FLOOR, "the outline no longer turns gold")
+		_check_ratio(shot, row, AuraScript.LAYER_GOLD_OUTLINE, AuraScript.LAYER_OUTLINE, GOLD_OUTLINE_TO_OUTLINE_FLOOR, "the outline no longer turns a gold that reads against this job's colour", true)
 	print("[SHOT] %s count=%d full_bank=%s on-screen px: %s" % [shot["tag"], int(shot["count"]), str(shot["full_bank"]), " ".join(row)])
 
 
-func _check_ratio(shot: Dictionary, row: Array, bit: int, ref: int, floor_ratio: float, meaning: String) -> void:
+func _check_ratio(shot: Dictionary, row: Array, bit: int, ref: int, floor_ratio: float, meaning: String, strong_only: bool) -> void:
 	var pairs: Dictionary = shot["pairs"]
 	if not (pairs.has(bit) and pairs.has(ref)):
 		return
-	var px: int = _changed_px(pairs[bit][0], pairs[bit][1], shot["centre"])
+	var px: int = int(_diff_stats(pairs[bit][0], pairs[bit][1], shot["centre"])["strong" if strong_only else "px"])
 	var ref_px: int = _changed_px(pairs[ref][0], pairs[ref][1], shot["centre"])
 	var ratio: float = float(px) / maxf(1.0, float(ref_px))
 	var label: String = "%s/%s" % [str(AuraScript.LAYER_NAMES[bit]), str(AuraScript.LAYER_NAMES[ref])]
@@ -286,16 +308,52 @@ func _check_ratio(shot: Dictionary, row: Array, bit: int, ref: int, floor_ratio:
 		_fail += 1
 
 
+## sRGB (D65) -> CIE Lab.
+static func _lab(c: Color) -> Vector3:
+	var lin := Vector3(_to_linear(c.r), _to_linear(c.g), _to_linear(c.b))
+	var x: float = (0.4124 * lin.x + 0.3576 * lin.y + 0.1805 * lin.z) / 0.95047
+	var y: float = 0.2126 * lin.x + 0.7152 * lin.y + 0.0722 * lin.z
+	var z: float = (0.0193 * lin.x + 0.1192 * lin.y + 0.9505 * lin.z) / 1.08883
+	var fx: float = _lab_f(x)
+	var fy: float = _lab_f(y)
+	var fz: float = _lab_f(z)
+	return Vector3(116.0 * fy - 16.0, 500.0 * (fx - fy), 200.0 * (fy - fz))
+
+
+static func _to_linear(v: float) -> float:
+	return v / 12.92 if v <= 0.04045 else pow((v + 0.055) / 1.055, 2.4)
+
+
+static func _lab_f(t: float) -> float:
+	return pow(t, 1.0 / 3.0) if t > 0.008856 else 7.787 * t + 16.0 / 116.0
+
+
 func _changed_px(a: Image, b: Image, centre: Vector2i) -> int:
+	return int(_diff_stats(a, b, centre)["px"])
+
+
+## px: any visible change. strong: a change of at least STRONG_DELTA_E (CIE76, in Lab) — what still reads at
+## couch distance. ⛔ An RGB-sum threshold was tried first and scored backwards: the Fighter's orange -> gold
+## outline, plainly visible in the frames, counted 0 strong px, while a cream band on a cream robe counted
+## 2,577. Lab distance is what the eye compares; only changed pixels are converted, so it stays cheap.
+func _diff_stats(a: Image, b: Image, centre: Vector2i) -> Dictionary:
+	var key := "%d:%d:%d" % [a.get_instance_id(), b.get_instance_id(), centre.x * 4096 + centre.y]
+	if _stats_cache.has(key):
+		return _stats_cache[key]
 	var box := _clamped(centre - DIFF_BOX / 2, DIFF_BOX, a)
 	var n: int = 0
+	var strong: int = 0
 	for y in range(box.position.y, box.end.y):
 		for x in range(box.position.x, box.end.x):
 			var p := a.get_pixel(x, y)
 			var q := b.get_pixel(x, y)
 			if absf(p.r - q.r) + absf(p.g - q.g) + absf(p.b - q.b) > 0.03:
 				n += 1
-	return n
+				if _lab(p).distance_to(_lab(q)) >= STRONG_DELTA_E:
+					strong += 1
+	var out := {"px": n, "strong": strong}
+	_stats_cache[key] = out
+	return out
 
 
 func _clamped(at: Vector2i, size: Vector2i, img: Image) -> Rect2i:
