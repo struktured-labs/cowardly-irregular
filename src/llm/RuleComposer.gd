@@ -131,14 +131,12 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 
 	var domain_system = get_node_or_null("/root/AutobattleSystem" if domain == DOMAIN_AUTOBATTLE else "/root/AutogrindSystem")
 
-	# ONE bad rule discarded the player's WHOLE ruleset. Measured on live llama3 after
-	# the prompt fix: 4 of 10 fighter compositions still fell back, 3 of them for a
-	# single rule naming an ability the character does not have (esuna, raise) while
-	# the other three rules in the set were valid. The player asked for a strategy and
-	# got a canned fallback because one line of four was wrong.
-	# Same shape as _drop_null_targets above: drop the offending rule, keep the rest,
-	# and TELL the player. Never empties the set — a zero-rule composition is not a
-	# valid one, it is the save-wiping one, so the caller's refusal path still runs.
+	# Autogrind refuses the whole ruleset for one bad rule, so a near-miss name is a
+	# total loss. Both of these are normalisations against the system's own vocabulary.
+	if domain == DOMAIN_AUTOGRIND:
+		for note in _normalise_autogrind_conditions(v["rules"], domain_system):
+			repair_notes.append(note)
+
 	# A heal with no target is sent at the enemy by the evaluator's default.
 	if domain == DOMAIN_AUTOBATTLE:
 		for note in _aim_untargeted_abilities(v["rules"]):
@@ -150,6 +148,14 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		for note in _drop_target_shaped_conditions(v["rules"], domain_system):
 			repair_notes.append(note)
 
+	# ONE bad rule discarded the player's WHOLE ruleset. Measured on live llama3 after
+	# the prompt fix: 4 of 10 fighter compositions still fell back, 3 of them for a
+	# single rule naming an ability the character does not have (esuna, raise) while
+	# the other three rules in the set were valid. The player asked for a strategy and
+	# got a canned fallback because one line of four was wrong.
+	# Same shape as _drop_null_targets above: drop the offending rule, keep the rest,
+	# and TELL the player. Never empties the set — a zero-rule composition is not a
+	# valid one, it is the save-wiping one, so the caller's refusal path still runs.
 	if domain == DOMAIN_AUTOBATTLE and character_id != "":
 		for note in _drop_unusable_rules(v["rules"], character_id, domain_system):
 			repair_notes.append(note)
@@ -488,6 +494,48 @@ func _is_catch_all(rule: Dictionary) -> bool:
 		if not (c is Dictionary) or str((c as Dictionary).get("type", "")) != "always":
 			return false
 	return true
+
+
+## Two autogrind shapes that cost the player the WHOLE ruleset, both normalisations.
+##
+## Autogrind has no per-rule rescue — one bad rule and the composition falls back — so a
+## near-miss name is a total loss. Measured on 24 live llama3 autogrind compositions:
+##
+##   party_corruption                       2 of 24, each the composition's ONLY rule
+##   {"type":"always","op":"","value":""}   1 of 24, beside two valid rules
+##
+## 1. `party_corruption` is the model generalising from its own siblings — the grammar
+##    lists party_hp_min / party_hp_avg / party_mp_avg beside a bare `corruption`. The
+##    prefix is stripped ONLY when the remainder is itself a live condition type, so this
+##    is a lookup in the system's own vocabulary, not a table of guesses kept here.
+## 2. `always` takes no payload, and validate_rule rejects a PRESENT `op` that is empty
+##    rather than ignoring it. Erasing an empty payload key from a nullary condition
+##    changes nothing the rule asks — the same shape as _drop_null_targets.
+func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[String]:
+	var notes: Array[String] = []
+	if domain_system == null or not ("PARTY_CONDITION_TYPES" in domain_system):
+		return notes
+	var types: Dictionary = domain_system.PARTY_CONDITION_TYPES
+	var nullary: Array = domain_system.NULLARY_CONDITIONS if "NULLARY_CONDITIONS" in domain_system else []
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for c in rule.get("conditions", []):
+			if typeof(c) != TYPE_DICTIONARY:
+				continue
+			var ctype: String = str(c.get("type", ""))
+			if not types.has(ctype) and ctype.begins_with("party_"):
+				var stripped: String = ctype.substr("party_".length())
+				if types.has(stripped):
+					c["type"] = stripped
+					notes.append("Read '%s' as '%s' — the condition this grind rule meant." % [ctype, stripped])
+					ctype = stripped
+			if ctype in nullary:
+				for key in ["op", "value"]:
+					if c.has(key) and str(c[key]) == "":
+						c.erase(key)
+						notes.append("Dropped an empty '%s' from '%s' — it takes no payload." % [key, ctype])
+	return notes
 
 
 ## An ability action with NO target key, aimed by the ability's own declaration.
