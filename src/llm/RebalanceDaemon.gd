@@ -296,6 +296,28 @@ func try_auto_apply(proposal_idx: int) -> String:
 		proposal["status"] = "applied_no_change"
 		_move_to_applied(proposal_idx)
 		return APPLY_NO_CHANGE
+	# MEASURED 2026-09-16, live llama3, 12 samples per cell, through this daemon's own
+	# build_prompt: the verdict is 'nudge_easier' on every board tested, including a boss
+	# beaten with nobody dying at 95% party HP (11/12, and 12/12 once the verdict list is
+	# reordered so nudge_easier is no longer first). A prompt naming that exact board and
+	# the exact verdict it should produce — "beaten with nobody dying -> nudge_harder" —
+	# still returned nudge_easier 12 of 12. It is not position bias and it is not wording.
+	#
+	# So the model's verdict is not evidence about difficulty, and the daemon applied it
+	# straight after a WIN: exp/gold/encounter_rate drift one way only, bounded by the
+	# cumulative band but never reversed by playing well.
+	#
+	# This gate is narrow on purpose. It does NOT delete the proposal or judge its size —
+	# it declines to AUTO-apply an easing verdict on a victory trigger and routes it to
+	# the review queue, where the player decides. force_apply is untouched: an explicit
+	# yes still applies. The eligibility rule lives here rather than in the prompt for
+	# the same reason ConversationRewards owns payout eligibility — so the model cannot
+	# talk its way past it.
+	if verdict == "nudge_easier" and str(proposal.get("trigger", "")) == TRIGGER_BOSS_DEFEAT:
+		proposal["status"] = "needs_review"
+		proposal["auto_apply_declined"] = "eased_after_a_win"
+		return APPLY_NEEDS_REVIEW
+
 	# Reject malformed deltas before any other check — unknown
 	# constants must never write into game_constants.
 	for delta in deltas:
