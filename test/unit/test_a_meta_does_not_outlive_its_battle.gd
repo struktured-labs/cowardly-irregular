@@ -30,6 +30,37 @@ const COMBATANT_PATH := "res://src/battle/Combatant.gd"
 const DECLARED_PERSISTENT := {}
 
 
+## ⛔ THREE OF THIS FILE'S ARMS SCORED PASSING WHILE ABORTING, found by running
+## cowir-autogrind's expressibility check (11888) against my own guard. Reading the const straight
+## off the autoload is a DIRECT REFERENCE: rename it — the precise drift these arms exist to catch —
+## and the access raises at RUNTIME, aborting each function AFTER its floors have passed. Measured:
+##
+##   const renamed   Passing 4 · Failing 1 · Risky 0 · Asserts 17 -> 12
+##   the ONE failure was test_start_battle_actually_walks_that_list, a SOURCE pin that never touches
+##   the const. The three arms whose whole subject is the list's CONTENT aborted SILENTLY.
+##
+## The red was luck of having a text-reading arm in the same file. Parsed from source now, so every
+## arm runs against any version of the subject — including one where the const is gone, which is
+## precisely the case they exist to report.
+##
+## ⚠️ And this paragraph deliberately does NOT spell the autoload-qualified name: an arm below
+## asserts that no direct reference survives, and it reads raw text. Same trap as the
+## corpse-guard comment that tripped the status-icon sweep this morning.
+func _declared_metas() -> Array:
+	var code: String = GdSourceHelper.code_of(BM_PATH)
+	var at: int = code.find("const PER_BATTLE_METAS")
+	if at < 0:
+		return []
+	var open_bracket: int = code.find("[", code.find("=", at))
+	var close_bracket: int = code.find("]", open_bracket)
+	if open_bracket < 0 or close_bracket < 0:
+		return []
+	var out: Array = []
+	for m in RegEx.create_from_string('"(_[a-z_0-9]+)"').search_all(code.substr(open_bracket, close_bracket - open_bracket)):
+		out.append(m.get_string(1))
+	return out
+
+
 ## Every `set_meta("_x")` the engine performs, derived rather than listed.
 func _metas_set_in_source() -> Array:
 	var out: Array = []
@@ -57,7 +88,7 @@ func test_the_sweep_finds_the_real_call_sites() -> void:
 	assert_true(found.has("_bark_adv_"), "NAMED-MEMBER control: the composed-key case stays visible")
 	for key in found:
 		if str(key).ends_with("_"):
-			assert_true(BattleManager.PER_BATTLE_METAS.has(key),
+			assert_true(_declared_metas().has(key),
 				"a composed key must reach the boundary as a PREFIX entry: %s" % key)
 
 
@@ -69,9 +100,12 @@ func test_every_per_battle_meta_is_cleared_at_the_boundary() -> void:
 	var found: Array = _metas_set_in_source()
 	assert_gt(found.size(), 10,
 		"VOID, not clean: the set_meta sweep read back %d metas, so an empty offender list proves nothing" % found.size())
+	var declared: Array = _declared_metas()
+	assert_gt(declared.size(), 10,
+		"the boundary list is gone or empty — this arm is about a list that does not exist (%d parsed)" % declared.size())
 	var undeclared: Array = []
 	for key in found:
-		if not BattleManager.PER_BATTLE_METAS.has(key) and not DECLARED_PERSISTENT.has(key):
+		if not declared.has(key) and not DECLARED_PERSISTENT.has(key):
 			undeclared.append(key)
 	assert_eq(undeclared, [],
 		"a new combatant meta reaches no battle boundary — add it to PER_BATTLE_METAS, or to DECLARED_PERSISTENT with why it must survive a fight: " + str(undeclared))
@@ -83,8 +117,11 @@ func test_a_declaration_does_not_outlive_its_fact() -> void:
 	var found: Array = _metas_set_in_source()
 	assert_gt(found.size(), 10,
 		"VOID, not clean: the sweep read back %d metas, so every entry would look stale" % found.size())
+	var declared: Array = _declared_metas()
+	assert_gt(declared.size(), 10,
+		"the boundary list is gone or empty — every entry would read as stale (%d parsed)" % declared.size())
 	var stale: Array = []
-	for key in BattleManager.PER_BATTLE_METAS:
+	for key in declared:
 		if not found.has(key):
 			stale.append(key)
 	assert_eq(stale, [], "these are cleared but nothing sets them — delete the line(s): " + str(stale))
@@ -121,8 +158,28 @@ func test_the_summoner_followup_does_not_survive_a_battle() -> void:
 	hero.set_meta("_summon_followup", {"remaining_turns": 3, "element": "fire", "multiplier": 0.5})
 	assert_true(hero.has_meta("_summon_followup"), "CONTROL: the eidolon is lingering when the fight ends")
 	## The boundary's own loop, run over this combatant exactly as start_battle runs it.
-	for meta_key in BattleManager.PER_BATTLE_METAS:
+	var declared: Array = _declared_metas()
+	assert_true(declared.has("_summon_followup"),
+		"the boundary list must still name the meta that leaked, or this arm clears nothing")
+	for meta_key in declared:
 		if hero.has_meta(meta_key):
 			hero.remove_meta(meta_key)
 	assert_false(hero.has_meta("_summon_followup"),
 		"the eidolon does not follow you into the next encounter")
+
+
+func test_no_arm_here_reads_the_constant_off_the_autoload() -> void:
+	## ⛔ THE ARM THAT MAKES THE REPAIR STICK. A direct `BattleManager.<const>` read aborts at RUNTIME
+	## when the const is renamed — after this file's floors have passed — so GUT scores it PASSING:
+	## it asserted, so not Risky; nothing failed, so not Failing. Measured on this very file before
+	## the repair: three arms aborted silently and the only red came from a source pin that never
+	## touched the const.
+	##
+	## Reading THIS file's own text, because the defect is in how the arms are written rather than in
+	## what they assert.
+	var own: String = GdSourceHelper.code_of("res://test/unit/test_a_meta_does_not_outlive_its_battle.gd")
+	assert_ne(own, "", "CONTROL: this file must be readable, or the assertion below is vacuous")
+	assert_true(own.contains("func _declared_metas()"),
+		"CONTROL: the source-parsed reader exists, or there is nothing for the arms to use instead")
+	assert_false(own.contains("BattleManager." + "PER_BATTLE_METAS"),
+		"no arm may read the boundary list off the autoload — parse it from source, so the arm still runs when the const is the thing that moved")
