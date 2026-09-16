@@ -42,12 +42,22 @@ func test_label_has_autowrap_word_mode() -> void:
 
 func test_label_has_max_width_via_custom_minimum_size() -> void:
 	# Pin: custom_minimum_size sets the MAX width for wrapping —
-	# Label autowrap requires a minimum width to know when to break.
-	# 260px chosen as a reasonable read column without overflowing
-	# the typical sprite position bracket.
+	# Label autowrap requires a minimum width to know when to break,
+	# and a bounded one is what keeps a long line on screen.
+	#
+	# 2026-09-16: the width is no longer the literal MAX_TEXT_WIDTH. A quip that would take a THIRD
+	# row now widens first (struktured's clipped-crown complaint: height is what occludes), so the
+	# label takes the narrowest width that fits two rows, capped at MAX_TEXT_WIDTH_WIDE. The INTENT
+	# of this arm is unchanged and still defended — the wrap width is bounded and comes from a
+	# constant, not from the text — and the superseded literal is asserted ABSENT so the two cannot
+	# both be true. Boundedness is measured behaviourally in
+	# test_a_long_quip_widens_before_it_grows_tall_regression (the cap arm, and the live bubble's
+	# own label ≤ the cap); this file stays source-level, as the rest of it is.
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("text_label.custom_minimum_size = Vector2(MAX_TEXT_WIDTH, 0)"),
-		"_spawn_quip_bubble must set label.custom_minimum_size = Vector2(260, 0) — caps the wrap width")
+	assert_true(body.contains("text_label.custom_minimum_size = Vector2(wrap_width_for("),
+		"_spawn_quip_bubble must size the label from wrap_width_for — a bounded width the text cannot exceed")
+	assert_false(body.contains("text_label.custom_minimum_size = Vector2(MAX_TEXT_WIDTH, 0)"),
+		"the fixed 260px width is what grew the third row; it must not come back alongside the widening")
 
 
 func test_wrapping_applied_only_to_quote_label_not_name_label() -> void:
