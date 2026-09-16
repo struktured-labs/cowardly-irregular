@@ -185,9 +185,53 @@ func test_every_meta_this_file_sets_is_cleared_at_the_boundary() -> void:
 	gut.p("    set_meta keys in the resolver: %s" % str(found.keys()))
 	assert_gt(found.size(), 0, "CONTROL: the scan must find the set_meta calls, or it proves nothing")
 
+	## ⚠️ COMPOSITION IS TESTED FIRST, AND "LITERAL" MEANS THE WHOLE ARGUMENT IS ONE QUOTED STRING.
+	## My first version compared call counts, and a composed key that STARTS with a quote —
+	## set_meta("_bark_" + face) — was filed as the literal "_bark_". It reddened only by luck,
+	## through the unlisted check below, and a composed key whose prefix WAS listed would have passed
+	## both. That is @cowir-cutscenes' exact miss from this morning, reproduced inside the instrument
+	## I wrote to catch it. Measured, not assumed: every set_meta here is a whole-string literal today.
+	assert_eq(_composed_meta_sites(code), [],
+		"a set_meta key in the resolver is COMPOSED, not a literal: %s — the scan below cannot see it, so extend both it and PER_BATTLE_METAS" % str(_composed_meta_sites(code)))
+	var total_sets: int = code.count("set_meta(")
+	assert_eq(total_sets, found.size() + _duplicate_literal_sets(code),
+		"a set_meta call does not begin with a quoted key at all — same consequence, different shape")
+
 	var unlisted: Array = []
 	for k in found:
 		if not declared.has(k):
 			unlisted.append(k)
 	assert_eq(unlisted, [],
 		"these metas are set by the grind and NOT cleared at the battle boundary: %s — add them to PER_BATTLE_METAS or say why they outlive a battle" % str(unlisted))
+
+
+## set_meta("_next_attack_multiplier", ...) appears twice (set and reset), so the literal COUNT
+## exceeds the distinct-key count. This returns that surplus so the composed-key check above
+## compares like with like instead of reding on an honest duplicate.
+func _duplicate_literal_sets(code: String) -> int:
+	var literal_calls: int = code.count("set_meta(\"")
+	var distinct: Dictionary = {}
+	var at: int = code.find("set_meta(\"")
+	while at >= 0:
+		var start: int = at + 10
+		var end: int = code.find("\"", start)
+		if end > start:
+			distinct[code.substr(start, end - start)] = true
+		at = code.find("set_meta(\"", at + 1)
+	return literal_calls - distinct.size()
+
+
+## A set_meta whose key is built rather than written. "Literal" = the closing quote is followed by a
+## comma; anything else (notably `+`) is composition wearing a literal's opening quote.
+func _composed_meta_sites(code: String) -> Array:
+	var out: Array = []
+	var at: int = code.find("set_meta(\"")
+	while at >= 0:
+		var start: int = at + 10
+		var end: int = code.find("\"", start)
+		if end > start:
+			var after: String = code.substr(end + 1, 1)
+			if after != ",":
+				out.append(code.substr(start, end - start))
+		at = code.find("set_meta(\"", at + 1)
+	return out
