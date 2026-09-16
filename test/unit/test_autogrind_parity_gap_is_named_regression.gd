@@ -217,9 +217,13 @@ const GRIND_PATH_MARKER := {
 	## arm skips it. Its support-only placement is pinned in
 	## test_autogrind_applies_the_second_effect_regression instead. Left here so the map matches the
 	## set of keys this lane has wired, and so it reds if the marker ever disappears.
-	## All four secondary_* keys: they live in `_apply_secondary_effect`, which `_execute_support_ability`
-	## calls, and the repaired walk-back resolves them to that executor. One marker covers the four —
-	## they are the same call, and a key travelling alone would be the anomaly.
+	## ⚠️ ALL FOUR secondary_* KEYS, AND THREE OF THEM WERE INVISIBLE TO THIS MAP UNTIL 2026-09-16.
+	## They live in `_apply_secondary_effect`, which `_execute_support_ability` calls — but the old
+	## walk-back skipped past any non-executor function, so a read inside a helper was credited to
+	## whichever executor happened to precede it in the file and the count came out wrong. With the
+	## walk-back fixed (see _executors_for_read) they resolve to the support executor, which is where
+	## live reads them and where the resolver calls the same helper. One marker covers the four:
+	## they are the same call, and a key that travelled alone would be the anomaly.
 	"secondary_effect": "_apply_secondary_effect(",
 	"secondary_chance": "_apply_secondary_effect(",
 	"secondary_target": "_apply_secondary_effect(",

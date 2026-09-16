@@ -1005,6 +1005,12 @@ func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: Stri
 		status_to_add = "stun"
 	if status_to_add == "burn":
 		status_to_add = "burning"
+	## doom is a COUNTER, not a status, in both engines: Combatant.doom_counter ticks down and KOs,
+	## and this file already CURES it in the cleanse arm while nothing could ever set it.
+	if status_to_add == "doom":
+		target.doom_counter = int(ability.get("countdown", 3))
+		_log("%s dooms %s in %d (%s)" % [caster.combatant_name, target.combatant_name, target.doom_counter, ability_id])
+		return
 	target.add_status(status_to_add, int(ability.get("duration", 3)))
 	_log("%s inflicts %s on %s (%s)" % [caster.combatant_name, status_to_add, target.combatant_name, ability_id])
 
