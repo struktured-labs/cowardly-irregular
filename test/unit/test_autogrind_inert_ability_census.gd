@@ -28,6 +28,25 @@ const KNOWN_INERT := [
 	"sequence_break", "skip_cutscene", "temporal_shield", "undo_death", "warp_to_boss",
 ]
 
+## ⚠️ A THIRD STATE, added 2026-09-16: an arm can exist AND produce no mechanical effect.
+## `"meta":` was added to the resolver that day for a reason that has nothing to do with this
+## census — all 24 meta abilities were reaching the `_:` default, and its opposing-side branch
+## DEALT MAGIC DAMAGE. Eight target the enemy side, including save_deletion on permadeath_reaper,
+## which the grind's own meta-boss builder spawns: measured 1195 damage to a party member that live
+## never deals. The arm is a deliberate no-op that stops the damage.
+##
+## So those 16 abilities stopped reaching the default and this census wanted them deleted from
+## KNOWN_INERT — which would have DISCARDED THE DEBT. They still do nothing in a grind; the
+## design question routed to struktured ("what SHOULD a headless undo_death do?") is untouched.
+## "Reaches the default" and "does nothing" were the same thing when this file was written and are
+## not any more, and only the second one is what the census is for.
+##
+## ⛔ THIS IS NOT A SILENCER, and it cannot become one. An entry here is admitted ONLY if its arm
+## provably contains no damage call — see test_a_deliberately_inert_arm_really_is_inert. Adding a
+## type to this list to quiet a red makes that arm red instead. CLAUDE.md: you cannot silence it
+## green, only explain it green, and the explanation is the fix.
+const DELIBERATELY_INERT_ARMS := ["meta"]
+
 ## Parsed from the resolver rather than copied, so adding an arm updates this test for free.
 ## ⚠️ Must handle MULTI-VALUE arms — `"support", "song", "status":` is one arm covering three
 ## types. A parser requiring `"name":` silently drops it and reports 86 support abilities as
@@ -50,6 +69,10 @@ func _armed_types() -> Dictionary:
 			continue
 		for nm in name_re.search_all(m.get_string(1)):
 			armed[nm.get_string(1)] = true
+	## An arm that exists to PREVENT the default rather than to model the ability is not "armed"
+	## for this census's purpose. See DELIBERATELY_INERT_ARMS.
+	for t in DELIBERATELY_INERT_ARMS:
+		armed.erase(t)
 	return armed
 
 func _abilities() -> Dictionary:
@@ -101,7 +124,10 @@ func test_the_arm_parser_sees_multi_value_arms() -> void:
 	assert_true(armed.has("support"), "support is armed via the grouped arm — a parser that misses it inflates the census")
 	assert_true(armed.has("song"), "song shares that arm")
 	assert_true(armed.has("healing"), "CONTROL: a plain single-value arm is found too")
-	assert_false(armed.has("meta"), "CONTROL: meta genuinely has no arm — the parser can say NO")
+	## `meta` was this control until the resolver gained a deliberately-inert meta arm. `summon` is
+	## the replacement because it genuinely has no arm at all — the parser must still be able to
+	## say NO, and a type this census EXCLUDES cannot demonstrate that.
+	assert_false(armed.has("summon"), "CONTROL: summon genuinely has no arm — the parser can say NO")
 
 func test_no_new_ability_is_silently_inert() -> void:
 	var unlisted: Array = []
@@ -174,3 +200,25 @@ func test_the_meta_job_kit_is_the_bulk_of_it() -> void:
 			meta += 1
 	assert_gt(meta, 10,
 		"CONTROL: the inert population is dominated by meta-job abilities (%d) — that is the finding, not an accident of counting" % meta)
+
+
+## The deliverable that keeps DELIBERATELY_INERT_ARMS from being a silencer. A type may be excluded
+## from the armed set ONLY while its arm is provably free of damage; the moment someone gives it a
+## real effect, this reds and the exclusion must go. Reading the arm as TEXT rather than driving it
+## is deliberate — the claim is about what the arm CANNOT do, and one passing cast cannot show that.
+func test_a_deliberately_inert_arm_really_is_inert() -> void:
+	var src := FileAccess.get_file_as_string(RESOLVER)
+	assert_gt(src.length(), 1000, "CONTROL: read the resolver")
+	for t in DELIBERATELY_INERT_ARMS:
+		var at := src.find("\t\t\"%s\":" % t)
+		assert_gt(at, -1,
+			"'%s' is excluded from the armed set but has NO arm in the resolver — the exclusion describes nothing" % t)
+		var nxt := src.find("\n\t\t\"", at + 1)
+		var end_default := src.find("\n\t\t_:", at + 1)
+		if end_default > at and (nxt < 0 or end_default < nxt):
+			nxt = end_default
+		var body := src.substr(at, (nxt - at) if nxt > at else 2000)
+		assert_gt(body.length(), 40, "CONTROL: sliced a real arm body for '%s' (%d chars)" % [t, body.length()])
+		for forbidden in ["take_damage", "_resolve_attack_with_power", ".heal(", "restore_mp"]:
+			assert_false(body.contains(forbidden),
+				"the '%s' arm calls %s — it is no longer inert, so remove it from DELIBERATELY_INERT_ARMS and let the census count it" % [t, forbidden])

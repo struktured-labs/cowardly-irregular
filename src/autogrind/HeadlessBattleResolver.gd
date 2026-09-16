@@ -1101,6 +1101,39 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 				caster.set_meta("_next_attack_multiplier", nam)
 				_log("%s charges its next strike (x%.1f) with %s" % [caster.combatant_name, nam, ability_id])
 
+		"meta":
+			## Live routes these to _execute_meta_ability (BattleManager:6427), which matches on
+			## `meta_effect` and does reality manipulation — battle-log narrative plus
+			## GameState.add_corruption(corruption_risk). It deals NO DAMAGE on any branch. Without
+			## this arm all 24 meta abilities fell to the default below, and the EIGHT that target the
+			## opposing side reached its damaging branch: permakill · mind_swap · boss_puppet ·
+			## control_override · mutual_destruction (single_enemy) and corrupt_save · save_deletion ·
+			## time_stop (all_enemies). Measured before the fix: permakill invented 395 damage, and
+			## save_deletion took a 5000 HP party member to 3805.
+			##
+			## ⛔ REACHABLE VIA THE PLAYER, NOT THE META BOSS — I published the opposite and it was wrong.
+			## The enemy path has exactly two ability routes and BOTH filter by type:
+			## _find_attack_ability takes only ["magic", "physical"], _find_heal_ability only "healing".
+			## So permadeath_reaper can never SELECT save_deletion in a grind, however reachable the
+			## monster is — I proved the arm damages by calling _resolve_ability directly and then
+			## claimed the AI takes that path. It does not.
+			## What IS reachable: AutobattleSystem applies NO type filter (0 sites, against 108
+			## mentions of "ability"), so a player rule naming a meta ability routes straight here.
+			## Five are single_enemy and in a job kit today — permakill (necromancer), mind_swap,
+			## boss_puppet, control_override, mutual_destruction (bossbinder). A scripted Necromancer
+			## was dealing 395 phantom damage per permakill.
+			##
+			## NOT PORTING THE MECHANICS: save deletion, permakill and mind-swap are save-side and
+			## scene-side, and corruption_risk / corruption_amount are already DECLARED in the ledger
+			## as struktured's stakes ruling. A no-op is this file's own stated rule for an effect it
+			## does not model — "never damage" — applied one level up, at the TYPE.
+			for target in targets:
+				if target == null or not is_instance_valid(target):
+					continue
+				_log("%s uses %s on %s (meta — unmodelled here, and never damage)" % [caster.combatant_name, ability_id, target.combatant_name])
+			if targets.is_empty():
+				_log("%s uses %s (meta — unmodelled here)" % [caster.combatant_name, ability_id])
+
 		_:
 			## Was: magic damage to targets[0]. AutobattleSystem builds targets from target_type,
 			## so an all_allies ability arrived holding the PARTY and this attacked them. 39
