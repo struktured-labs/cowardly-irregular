@@ -217,6 +217,24 @@ const GRIND_PATH_MARKER := {
 ## executor — but "looks structural" is not "checked", and the difference is the whole point of axis 2.
 const AXIS2_UNASSESSED := ["mp_cost", "stat_modifier", "element", "max_multiplier", "stat", "modifier"]
 
+## ⛔ WHAT AXIS 2 DOES NOT CHECK, named because the arm's name implies more than it does.
+## It compares ONE marker per key against ONE live executor: the site where the AUTHORED KEY IS READ.
+## For a PRODUCER/CONSUMER key that is the producer only — `next_attack_multiplier` is read in live's
+## support executor and its stored effect is SPENT in two others (:4374 attack, :4969 magic), and
+## nothing here would notice if the grind spent it on one path or three.
+##
+## That coverage exists, in the fix's own file, and the map below pins WHERE so it cannot be deleted
+## while this ledger keeps reporting green. @cowir-cutscenes' shape, an hour old: a guard naming the
+## right subject, asserting a true thing, and covering one half reads greener than no guard at all —
+## theirs tested `_set_choice_flag` while the menu it was named for went unguarded.
+const CONSUMER_COVERAGE := {
+	"next_attack_multiplier": [
+		"res://test/unit/test_autogrind_charged_strike_lands_regression.gd",
+		["test_a_charge_reaches_the_next_swing", "test_the_magic_path_consumes_it_too_and_only_once",
+		 "test_the_charge_is_spent_once_and_not_kept"],
+	],
+}
+
 ## The live executor each key must be read from, measured out of BattleManager rather than listed —
 ## see _live_executor_of. The grind arm that must match it:
 const ARM_FOR_EXECUTOR := {
@@ -415,3 +433,27 @@ func test_neither_engine_composes_an_ability_field_name() -> void:
 	## Anti-vacuity: the scan must be able to SEE a literal access, or an empty result proves nothing.
 	assert_true(GdSource.code_of(GRIND).contains('ability.get("hits"'),
 		"CONTROL: the scan must find a known literal access, or it is matching nothing")
+
+
+func test_a_multi_site_key_keeps_its_consumer_coverage_elsewhere() -> void:
+	## Axis 2 checks the producer. For a key whose effect is spent in other executors, the arms that
+	## prove the SPENDING matches live live in the fix's own file — so this reds if that file or any of
+	## those arms disappears, rather than this ledger going on reporting a green it did not earn.
+	var missing: Array = []
+	for key in CONSUMER_COVERAGE:
+		var spec: Array = CONSUMER_COVERAGE[key]
+		var path: String = str(spec[0])
+		if not FileAccess.file_exists(path):
+			missing.append("%s: the file carrying its consumer arms is gone (%s)" % [key, path])
+			continue
+		var body: String = GdSource.code_of(path)
+		assert_gt(body.length(), 1000, "CONTROL: %s was actually read" % path)
+		for arm in spec[1]:
+			if not body.contains("func %s(" % arm):
+				missing.append("%s: %s no longer defines %s" % [key, path, arm])
+	assert_eq(missing, [],
+		"axis 2 checks only where the authored key is READ; these keys rely on arms elsewhere to check where the effect is SPENT, and that coverage has moved: %s" % str(missing))
+	## The map is only meaningful if every key in it is one axis 2 actually treats as producer-only.
+	for key in CONSUMER_COVERAGE:
+		assert_true(GRIND_PATH_MARKER.has(key),
+			"'%s' claims consumer coverage but is not path-checked at all — one of the two is wrong" % key)
