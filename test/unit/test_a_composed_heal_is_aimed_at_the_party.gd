@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## An ability action with no target key is sent at the LOWEST-HP ENEMY by the
 ## evaluator's default (AutobattleSystem._action_def_to_action), and
 ## _resolve_ability_targets only overrides that for all_allies / all_enemies /
@@ -175,3 +177,43 @@ func test_every_ally_ability_is_aimed_not_a_hardcoded_few() -> void:
 	assert_eq(unaimed, [],
 		"every single_ally ability must be aimed at the party — these were left for the enemy default: %s"
 			% str(unaimed))
+
+
+func test_the_subject_members_this_file_drives_still_exist() -> void:
+	## A guard that reaches its subject by direct call goes SILENT when that subject is
+	## renamed: the arm asserts, THEN aborts, so GUT scores it PASSING — not Risky, not
+	## Failed. Measured on this file 2026-09-16 by renaming the member it defends: every
+	## arm still passed, Failing 0, Risky 0, EC 0, and the ONLY cardinal that moved was
+	## the assert count. run_tests.sh's exit 4 cannot see this rung, because these arms
+	## DID assert before dying. Derived from this file's own calls, so a new direct call
+	## joins the floor without anyone remembering to add it.
+	var src: String = GdSource.code_of("res://test/unit/test_a_composed_heal_is_aimed_at_the_party.gd")
+	assert_false(src.is_empty(), "CONTROL: this file's own source must be readable")
+	var builtin := Object.new()
+	var want_methods: Array = []
+	var re_m := RegEx.create_from_string("\\brc\\.(_?[a-z][A-Za-z0-9_]*)\\s*\\(")
+	for m in re_m.search_all(src):
+		var n: String = m.get_string(1)
+		if not builtin.has_method(n) and not want_methods.has(n):
+			want_methods.append(n)
+	var want_consts: Array = []
+	var re_c := RegEx.create_from_string("\\brc\\.([A-Z][A-Z0-9_]+)\\b")
+	for m in re_c.search_all(src):
+		var n: String = m.get_string(1)
+		if not want_consts.has(n):
+			want_consts.append(n)
+	builtin.free()
+	assert_gt(want_methods.size() + want_consts.size(), 0,
+		"FLOOR: the derivation must find the members this file drives, or it guards nothing")
+	assert_not_null(rc, "CONTROL: the subject must be reachable")
+	var consts: Dictionary = rc.get_script().get_script_constant_map()
+	var missing: Array = []
+	for n in want_methods:
+		if not rc.has_method(str(n)):
+			missing.append(str(n) + "()")
+	for n in want_consts:
+		if not consts.has(str(n)):
+			missing.append(str(n))
+	assert_eq(missing, [],
+		"the subject no longer has these, so the arms above assert once and then ABORT into a silent pass: %s"
+			% str(missing))
