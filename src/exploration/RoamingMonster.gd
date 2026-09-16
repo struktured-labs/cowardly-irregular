@@ -13,6 +13,12 @@ signal touched(monster_id: String, monster_types: Array, is_elite: bool)
 const FRAME_W: int = 32
 const FRAME_H: int = 32
 const SHEET_COLS: int = 4
+## Resolved from overworld_monster_sheets at load; the consts above are the CONVENTION these
+## default to, not the rule. A sheet declaring another frame size, column count or row order
+## used to be mis-sliced or walked facing the wrong way, silently.
+var _frame: Vector2i = Vector2i(FRAME_W, FRAME_H)
+var _cols: int = SHEET_COLS
+var _rows: Dictionary = {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}
 const WANDER_SPEED: float = 90.0
 const CHASE_SPEED: float = 115.0
 const CHASE_RADIUS: float = 96.0
@@ -146,10 +152,26 @@ func _setup_sprite() -> void:
 
 	var path = "res://assets/sprites/monsters/overworld/%s.png" % monster_id
 	if ResourceLoader.exists(path):
+		var geo: Dictionary = HybridSpriteLoader.overworld_monster_geometry(monster_id)
+		_frame = geo.get("frame", Vector2i(FRAME_W, FRAME_H))
+		_cols = maxi(1, int(geo.get("cols", SHEET_COLS)))
+		_rows = geo.get("rows", _rows)
 		_sheet = load(path)
+		var sheet_size: Vector2 = _sheet.get_size()
+		# REFUSE a sheet the declaration does not divide, rather than mis-slice it.
+		if _frame.x <= 0 or _frame.y <= 0 \
+				or int(sheet_size.x) % _frame.x != 0 or int(sheet_size.y) % _frame.y != 0 \
+				or int(sheet_size.x) / _frame.x < _cols or int(sheet_size.y) / _frame.y < _rows.size():
+			push_warning("[ROAM] '%s' sheet is %dx%d, not an exact %dx%d grid of %d cols x %d rows — using the placeholder" % [monster_id, int(sheet_size.x), int(sheet_size.y), _frame.x, _frame.y, _cols, _rows.size()])
+			_draw_fallback_sprite()
+			return
 		_sheet_loaded = true
 		_sprite.texture = _sheet
 		_sprite.region_enabled = true
+		# Cut at the DECLARED size, render at the CONVENTION size. TOUCH_RADIUS_PX and the
+		# placeholder are both tuned to FRAME_W; deriving the cut and leaving the render native
+		# would make a 48px sheet draw 1.5x with a collider that no longer matches it.
+		_sprite.scale = Vector2(float(FRAME_W) / float(_frame.x), float(FRAME_H) / float(_frame.y))
 		_apply_frame(0, 0)
 	else:
 		_draw_fallback_sprite()
@@ -180,7 +202,7 @@ func _placeholder_color(id: String) -> Color:
 func _apply_frame(row: int, col: int) -> void:
 	if not _sheet_loaded:
 		return
-	_sprite.region_rect = Rect2(col * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H)
+	_sprite.region_rect = Rect2(col * _frame.x, row * _frame.y, _frame.x, _frame.y)
 
 
 ## Touch radius tuned to ~1.4x the 32px sprite half-width — encounter fires only on actual sprite overlap.
@@ -325,7 +347,7 @@ func _tick_anim(delta: float) -> void:
 	if _anim_timer >= 1.0 / ANIM_FPS:
 		_anim_timer -= 1.0 / ANIM_FPS
 		if _dir != Vector2.ZERO or _state == 2:
-			_anim_frame = (_anim_frame + 1) % SHEET_COLS
+			_anim_frame = (_anim_frame + 1) % _cols
 		else:
 			_anim_frame = 0
 		_apply_frame(_row, _anim_frame)
@@ -426,10 +448,14 @@ func _move(delta: float) -> void:
 
 
 func _update_row_from_move_dir(move_dir: Vector2) -> void:
+	# Which row is which FACING is declared per sheet. Hardcoding 0=down/1=left/2=right/3=up
+	# meant a sheet ordered any other way walked facing the wrong direction, with nothing failing.
+	var anim: String
 	if abs(move_dir.x) > abs(move_dir.y):
-		_row = 2 if move_dir.x > 0 else 1
+		anim = "walk_right" if move_dir.x > 0 else "walk_left"
 	else:
-		_row = 0 if move_dir.y > 0 else 3
+		anim = "walk_down" if move_dir.y > 0 else "walk_up"
+	_row = int(_rows.get(anim, 0))
 
 
 func _tick_fade(delta: float) -> void:
