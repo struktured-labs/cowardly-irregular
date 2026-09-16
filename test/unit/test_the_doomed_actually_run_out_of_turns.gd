@@ -78,6 +78,58 @@ func _cast_live(type: String, ability: Dictionary, target: Combatant) -> void:
 		BattleManager._execute_physical_ability(caster, ability, [target])
 
 
+## ⛔ RENAME `doom_ticked` AND THIS ENTIRE FILE GOES QUIET WITH EXIT CODE ZERO. Measured before this
+## arm existed:
+##
+##   clean     EC=0 · Passing 13 · Asserts 125
+##   renamed   EC=0 · Passing  4 · Risky/Pending 9 · Asserts 125 -> 16
+##
+## Nine arms aborted before asserting, GUT scored them Risky rather than Failed, and Risky does not
+## fail a run — so the guard for a lethal mechanic reported SUCCESS while its subject did not exist.
+## cowir-sfx found the same shape across eight files of theirs (11897); cowir-autogrind found it in a
+## const read (11888). This is the signal variant, and it is the loudest of the three because the
+## whole file depends on one name.
+##
+## ⚠️ EXISTENCE, not syntax. cowir-autogrind declined a ban on direct member reads because
+## existence-vs-vehicle cannot be told apart from the access itself — 10 of their 11 reads are
+## vehicles. Pinning EXISTENCE needs no such judgement: the silent abort does not care WHY the member
+## was reached. `has_signal` / `has_method` answer rather than raise, which is the whole point —
+## `assert_ne(obj.get(name), null)` deep-compares and refuses a Dictionary (cowir-sfx's six-for-six).
+##
+## ⛔ WHAT THIS ARM DOES NOT DO, measured rather than hoped. Two mutations, two different outcomes,
+## and the arm changes NEITHER:
+##
+##   rename the signal ONLY      BattleManager stops compiling, Combatant.new() returns Nil,
+##                               10 of 14 arms go Risky — INCLUDING THIS ONE — and EC is 0.
+##   remove the feature CLEANLY  this file references BattleManager._on_doom_ticked directly, so it
+##                               fails to LOAD: EC=3, nothing ran. Loud, and the wrapper stops it.
+##
+## So the arm fires only where the member is gone AND the file still loads — a real case (drop
+## `doom_counter`, keep the signal) and a narrower one than "this file cannot go quiet". The broad
+## protection is the WRAPPER's exit 3, not anything in here.
+##
+## 🔑 AND THE FLEET-WIDE FINDING FROM THE FIRST ROW: GUT EXITS 0 WITH ANY NUMBER OF RISKY TESTS.
+## `EC=0 · Passing 4 · Risky 10 · Asserts 125 -> 16` is a SUCCESSFUL run by every gate we use. The
+## vacuity check catches a corpus that produced no Totals block; it does not catch one where most of
+## the arms aborted. Read the Risky line — it is the only thing on screen that says so.
+func test_the_members_this_file_depends_on_still_exist() -> void:
+	var probe := Combatant.new()
+	autofree(probe)
+	assert_true(probe.has_signal("doom_ticked"),
+		"Combatant has no doom_ticked — every behavioural arm below aborts SILENTLY and the run exits 0")
+	assert_true("doom_counter" in probe,
+		"Combatant has no doom_counter — the counter this file is about does not exist")
+	assert_true(probe.has_method("update_buff_durations"),
+		"Combatant cannot tick — the countdown arms would abort rather than fail")
+	assert_true(BattleManager.has_method("_on_doom_ticked"),
+		"BattleManager has no _on_doom_ticked — the log arm aborts rather than failing")
+	assert_true(BattleManager.has_method("_inflict_doom"),
+		"BattleManager has no _inflict_doom — the producer this file pins is gone")
+	for fn in ["_execute_magic_ability", "_execute_physical_ability", "_execute_support_ability"]:
+		assert_true(BattleManager.has_method(fn),
+			"BattleManager has no %s — the arms that drive it would abort, not fail" % fn)
+
+
 ## ── the defect, in behaviour, on both damage paths ────────────────────
 
 func test_a_damaging_doom_sets_the_counter_the_hud_reads() -> void:
