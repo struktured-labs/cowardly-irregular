@@ -127,7 +127,45 @@ func test_debt_is_reachable_at_all_through_the_advance_path() -> void:
 ## @cowir-sfx's form, and it needs no judgement about WHY a member is reached: the silent-abort
 ## failure does not care, so a vehicle is as worth pinning as a subject. `get()` returns null for
 ## an absent property rather than raising; `assert_ne(x, null)` is NOT usable — it deep-compares.
+## ⚠️ THIS LIST IS A SNAPSHOT, NOT A DERIVATION, and that is the live limit. It was derived once by
+## a script from this file's own `_res.` / AutogrindSystem reaches and then written as literals — so
+## a member reached by a NEW arm added later is not covered, and the list goes quietly incomplete
+## rather than loudly wrong. @cowir-cutscenes' rule puts it on the wrong side of the line: a figure
+## the guard's claim DEPENDS on should be derived, and this is one.
+## Deliberately not converted to a runtime derivation, per @cowir-sfx's reasoning: doing that needs
+## @cowir-ai's bare-Object exclusion, because a runtime scan of this file would collect the `get` and
+## `has_method` calls THIS ARM ITSELF makes and pin the mechanism it is written in. That is a real
+## defence against a real hazard, and writing it tonight would be shipping it untested. Correct as of
+## 2026-09-16; if you add an arm that reaches a new member, add it here or derive the set properly.
+const _FLOOR_ARM_NAME := "test_every_resolver_member_this_file_reaches_still_exists"
+const _PINNED_COUNT := 4
+
 func test_every_resolver_member_this_file_reaches_still_exists() -> void:
+	## @cowir-ai's counter to the snapshot limit above, and it converts the failure mode rather than
+	## documenting it: a static list fails toward INCOMPLETENESS — add a reach tomorrow and the floor
+	## silently covers all-but-one. This counts the distinct members reached in the text BEFORE this
+	## function, so the arm cannot count its own `get`/`has_method` calls — @cowir-ai's bare-Object
+	## exclusion replaced by SCOPING, which they named as the alternative. A new reach reds here.
+	var own_src: String = FileAccess.get_file_as_string(get_script().resource_path)
+	var cut: int = own_src.find("func %s(" % _FLOOR_ARM_NAME)
+	assert_gt(cut, 0, "CONTROL: located this arm, so the scoped slice is real")
+	var before: String = own_src.substr(0, cut)
+	var reached: Dictionary = {}
+	## ⛔ SKIP PATH LITERALS. `AutogrindSystem.gd` inside a res:// string matched as a member named
+	## "gd" — the same false positive I fixed in the generator two hours earlier and reintroduced
+	## here. A regex reading source cannot tell a member reach from a filename by shape.
+	for raw_line in before.split("\n"):
+		if raw_line.contains("res://") or raw_line.strip_edges().begins_with("#"):
+			continue
+		for m in RegEx.create_from_string("(?:_res|AutogrindSystem)\\.([A-Za-z_][A-Za-z_0-9]*)").search_all(raw_line):
+			reached[m.get_string(1)] = true
+	reached.erase("_test_disable_persistence")
+	reached.erase("PER_BATTLE_METAS")   ## read from SOURCE on purpose — see the arm above
+	gut.p("    reaches before this arm: %d | pinned: %d" % [reached.size(), _PINNED_COUNT])
+	assert_gt(reached.size(), 0, "CONTROL: the scan found reaches, or this count proves nothing")
+	assert_eq(reached.size(), _PINNED_COUNT,
+		"this file now reaches %d distinct members and the floor pins %d — add the new one, the list is a snapshot: %s" % [reached.size(), _PINNED_COUNT, str(reached.keys())])
+
 	var missing: Array = []
 	if _res.get("_enemy_party") == null: missing.append("_enemy_party")
 	if _res.get("_player_party") == null: missing.append("_player_party")
