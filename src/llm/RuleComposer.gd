@@ -139,6 +139,17 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# Same shape as _drop_null_targets above: drop the offending rule, keep the rest,
 	# and TELL the player. Never empties the set — a zero-rule composition is not a
 	# valid one, it is the save-wiping one, so the caller's refusal path still runs.
+	# A heal with no target is sent at the enemy by the evaluator's default.
+	if domain == DOMAIN_AUTOBATTLE:
+		for note in _aim_untargeted_abilities(v["rules"]):
+			repair_notes.append(note)
+
+	# Before the rule-level drop: a rule whose only fault is a restated target is
+	# repairable, and dropping it loses the behaviour the player asked for.
+	if domain == DOMAIN_AUTOBATTLE:
+		for note in _drop_target_shaped_conditions(v["rules"], domain_system):
+			repair_notes.append(note)
+
 	if domain == DOMAIN_AUTOBATTLE and character_id != "":
 		for note in _drop_unusable_rules(v["rules"], character_id, domain_system):
 			repair_notes.append(note)
@@ -477,6 +488,104 @@ func _is_catch_all(rule: Dictionary) -> bool:
 		if not (c is Dictionary) or str((c as Dictionary).get("type", "")) != "always":
 			return false
 	return true
+
+
+## An ability action with NO target key, aimed by the ability's own declaration.
+##
+## The evaluator defaults a missing target to `lowest_hp_enemy`
+## (AutobattleSystem._action_def_to_action), and `_resolve_ability_targets` only
+## overrides that for all_allies / all_enemies / dead_ally — `single_ally` falls
+## through. So a composed `{"type":"ability","id":"cure"}` with no target HEALS THE
+## ENEMY. Measured: 1 of 12 live llama3 cleric compositions emitted exactly that.
+##
+## The fix is arithmetic from the ability's own data, like the MP guards: cure
+## declares target_type single_ally, so the rule is aimed at an ally. Offensive
+## abilities are left alone — the existing default is already correct for them, and
+## writing it out would be a second copy of the engine's default.
+func _aim_untargeted_abilities(rules: Array) -> Array[String]:
+	var notes: Array[String] = []
+	var js = get_node_or_null("/root/JobSystem")
+	if js == null or not js.has_method("get_ability"):
+		return notes
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for a in rule.get("actions", []):
+			if typeof(a) != TYPE_DICTIONARY or str(a.get("type", "")) != "ability":
+				continue
+			if a.has("target"):
+				continue
+			var aid: String = str(a.get("id", a.get("ability_id", "")))
+			var ability: Variant = js.get_ability(aid)
+			if not (ability is Dictionary) or (ability as Dictionary).is_empty():
+				continue
+			var declared: String = str((ability as Dictionary).get("target_type", ""))
+			var aim: String = ""
+			match declared:
+				"single_ally", "all_allies":
+					aim = "lowest_hp_ally"
+				"self":
+					aim = "self"
+			if aim == "":
+				continue
+			a["target"] = aim
+			notes.append("Aimed '%s' at %s — it had no target, and an untargeted ability is sent at the enemy." % [aid, aim])
+	return notes
+
+
+## A TARGET name used as a CONDITION type, when the rule's own action already aims
+## there — {"type":"lowest_hp_enemy"} beside {"target":"lowest_hp_enemy"}.
+##
+## The condition carries no intent the action does not already carry, but it is not a
+## condition type, so `_drop_unusable_rules` discarded the WHOLE rule — and in the
+## measured case that rule was the player's actual request. Live llama3, 12 real
+## fighter compositions through the shipped chain: 2 lost the attack rule this way and
+## reached the player as a one-rule script.
+##
+## Deliberately narrow, because a condition is a gate and dropping one makes a rule
+## fire MORE often:
+##   • the type must be a live TARGET_TYPES key, read from the system, never a copy;
+##   • an action in that same rule must already name that exact target, which is the
+##     evidence the condition is a restatement rather than a lost intent;
+##   • a non-`always` condition must survive, so a gated rule can never become a
+##     catch-all. If nothing would survive, the rule is left alone to be dropped.
+func _drop_target_shaped_conditions(rules: Array, domain_system) -> Array[String]:
+	var notes: Array[String] = []
+	if domain_system == null or not ("TARGET_TYPES" in domain_system):
+		return notes
+	var targets: Dictionary = domain_system.TARGET_TYPES
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		var conditions: Array = rule.get("conditions", [])
+		var aimed: Dictionary = {}
+		for a in rule.get("actions", []):
+			if typeof(a) == TYPE_DICTIONARY and a.has("target"):
+				aimed[str(a["target"])] = true
+		var keep: Array = []
+		var removed: Array[String] = []
+		for c in conditions:
+			if typeof(c) != TYPE_DICTIONARY:
+				keep.append(c)
+				continue
+			var ctype: String = str(c.get("type", ""))
+			if targets.has(ctype) and aimed.has(ctype):
+				removed.append(ctype)
+			else:
+				keep.append(c)
+		if removed.is_empty():
+			continue
+		var substantive: bool = false
+		for c in keep:
+			if typeof(c) == TYPE_DICTIONARY and str((c as Dictionary).get("type", "")) != "always":
+				substantive = true
+				break
+		if not substantive:
+			continue
+		rule["conditions"] = keep
+		for t in removed:
+			notes.append("Dropped '%s' from a rule's conditions — it is a target, and the rule already aims there." % t)
+	return notes
 
 
 func _drop_null_targets(rules: Array) -> int:
