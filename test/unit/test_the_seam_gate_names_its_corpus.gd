@@ -64,7 +64,7 @@ func _code_only(src: String) -> String:
 	return "\n".join(keep)
 
 
-## \u26d4 SHELL, NOT PYTHON — and `_code_only` above CANNOT do this file's shell subjects.
+## ⛔ SHELL, NOT PYTHON — and `_code_only` above CANNOT do this file's shell subjects.
 ## `test/unit/helpers/gd_source.gd` cannot either: its own header measures that `"""` parity
 ## eats live shell lines, because shell has no docstring for the fences to delimit.
 ##
@@ -219,14 +219,6 @@ func _shipped_kbps(source_override: String = "") -> int:
 	assert_not_null(m, "deploy_web.sh no longer pins a bitrate through WEB_AUDIO_KBPS — the shipped tier cannot be derived, so nothing below knows which corpus ships")
 	if m == null:
 		return 0
-	## \u26d4 THE PROPERTY, NOT THE SPELLING. This asserted the literal
-	## `make_web_stage.sh "$WEB_AUDIO_KBPS"` — a claim about where a token SITS, not about what the
-	## script DOES. Measured 2026-09-16: two legal respellings red it on correct code —
-	## `"${WEB_AUDIO_KBPS}"` and a bare `$WEB_AUDIO_KBPS`. The property is that the invocation
-	## REFERENCES the pinned variable, however @cowir-deploy chooses to write it.
-	## (@cowir-battle's smell, same day: the literal I asserted about was a NAME.)
-	assert_true(_has_handover(deploy),
-		"deploy_web.sh pins a bitrate it does not hand to the stage script — no make_web_stage.sh invocation references WEB_AUDIO_KBPS, so the stage default would ship instead and the pin would be decorative")
 	return int(m.get_string(1))
 
 
@@ -239,6 +231,28 @@ func _transcode_code(source_override: String = "") -> String:
 	assert_true(audio.contains("ffmpeg"),
 		"CONTROL: the strip ate the transcode call — the asserts that consume this would measure an empty string")
 	return audio
+
+
+## ⛔ ITS OWN ARM, not a side-assert inside a value-returning helper — so a real change to
+## deploy_web.sh reds by NAME instead of firing inside `_shipped_kbps` under a message about
+## deriving a tier.
+##
+## ⚠ AND ITS LIMIT, because I measured it rather than assuming: this is a LIVE-STATE
+## assertion, so no mutation of THIS file can red it while deploy_web.sh is correct — neutering
+## it is invisible. The logic behind it is covered by the two arms that drive `_has_handover`
+## with constructed sources; dropping its variable condition reds both by name. A named failure
+## is worth having and is not the same as being mutation-proven.
+##
+## ⛔ THE PROPERTY, NOT THE SPELLING. It used to assert the literal
+## `make_web_stage.sh "$WEB_AUDIO_KBPS"` — where a token SITS rather than what the script DOES.
+## Two legal respellings red that on correct code: `"${WEB_AUDIO_KBPS}"` and a bare
+## `$WEB_AUDIO_KBPS`. (@cowir-battle's smell, same day: the literal I asserted about was a NAME.)
+func test_the_pinned_tier_is_handed_to_the_stage_script() -> void:
+	var deploy: String = _shell_code_only(FileAccess.get_file_as_string("res://tools/deploy_web.sh"))
+	assert_true(deploy.contains("WEB_AUDIO_KBPS"),
+		"CONTROL: the strip ate the assignment — the assert below would be satisfied by nothing")
+	assert_true(_has_handover(deploy),
+		"deploy_web.sh pins a bitrate it does not hand to the stage script — no make_web_stage.sh invocation references WEB_AUDIO_KBPS, so the stage default would ship instead and the pin would be decorative")
 
 
 func test_the_shipped_tier_is_a_measured_mono_reencode_so_the_question_is_real() -> void:
