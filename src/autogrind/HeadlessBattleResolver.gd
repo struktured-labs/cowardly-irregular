@@ -654,6 +654,9 @@ func _resolve_attack(attacker, target) -> int:
 		return 0
 
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
+	## ONE-SHOT, consumed as live consumes it (BattleManager:4374-4377) — a charged strike pays off
+	## once, not on every swing for the rest of the battle.
+	damage *= _take_charged_multiplier(attacker)
 	damage *= randf_range(0.85, 1.15)
 
 	## SHADOW_STEP on the ATTACKER: a guaranteed crit live (_calculate_crit_chance returns 1.0 up
@@ -769,9 +772,20 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					_log("%s heals %s for %d" % [caster.combatant_name, target.combatant_name, healed])
 
 		"magic":
+			## BEFORE the loop and ONCE, mirroring BattleManager:4969 — an AoE gets the boosted
+			## multiplier on every target and the charge clears a single time, not per target.
+			power = float(power) * _take_charged_multiplier(caster)
+			## Accumulated ACROSS the cast, because live's recoil is proportional to the whole volley
+			## (BattleManager:4981/5172) — stack_overflow hits all_enemies and pays 20% of the total.
+			var total_for_recoil: int = 0
 			for target in targets:
 				if target and target.is_alive:
 					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power)
+					## Doubles, mirroring BattleManager:5054 — live's own comment calls it "a rough
+					## compensation for take_damage's defense formula" rather than a true-damage path, and
+					## the grind must compensate the same way or phantom_byte lands at half strength here.
+					if bool(ability.get("ignores_defense", false)):
+						base_dmg *= 2
 					var elem_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
 					var actual = int(base_dmg * elem_mod)
 					actual = max(1, actual)
@@ -782,8 +796,13 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## 04f2b2f8 and the grind hit harder than the game it simulates — @cowir-battle 2d14d92d.
 					var dealt: int = target.take_damage(actual, true)
 					_drain_to(caster, dealt, drain_pct, ability_id)
+					## PER TARGET and gated on damage landing, mirroring BattleManager:5085-5090 — so
+					## memory_drain (all_enemies) stacks its restore across the party exactly as live does.
+					_siphon_mp(caster, ability, dealt, ability_id)
 					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dealt])
+					total_for_recoil += dealt
 					_maybe_inflict_status(caster, target, ability, ability_id)
+			_recoil_to(caster, ability, total_for_recoil, ability_id)
 
 		"physical":
 			for target in targets:
@@ -897,6 +916,12 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			## ONCE per cast, after the loop — live calls it once with the whole target list, and a
 			## per-target call would roll howl's 0.3 fear separately for each enemy it already covers.
 			_apply_secondary_effect(caster, ability, targets, ability_id)
+			## Stored on the CASTER for its next swing, mirroring BattleManager:6326 — burrow authors 1.5
+			## and ironback_beetle (POOLED) casts it, so the telegraph never paid off in a grind.
+			var nam: float = float(ability.get("next_attack_multiplier", 0.0))
+			if nam > 0.0 and caster != null and caster.is_alive:
+				caster.set_meta("_next_attack_multiplier", nam)
+				_log("%s charges its next strike (x%.1f) with %s" % [caster.combatant_name, nam, ability_id])
 
 		_:
 			## Was: magic damage to targets[0]. AutobattleSystem builds targets from target_type,
@@ -1065,6 +1090,64 @@ func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array
 		else:
 			t.add_status(sec_effect, sec_duration)
 		_log("%s: secondary %s on %s (%s)" % [caster.combatant_name, sec_effect, t.combatant_name, ability_id])
+
+
+
+## The MP a damaging magic ability siphons back to its caster, mirroring BattleManager:5085.
+##
+## ⛔ Two POOLED monsters advertise an MP siphon and got nothing in the grind: data_wraith's data_drain
+## (20) and the_absence's memory_drain (15, all_enemies). Live refills the caster per damaging hit, so
+## they keep casting; here they ran dry and stopped, and the grind's version of those fights was
+## weaker than the game's — which is what the safety limits are calibrated against.
+##
+## Magic arm ONLY, because live reads drain_mp only in _execute_magic_ability and both owners are
+## type=magic. Adding it elsewhere would make the grind harsher than the game it simulates.
+func _siphon_mp(caster, ability: Dictionary, damage_dealt: int, ability_id: String) -> void:
+	var amount: int = int(ability.get("drain_mp", 0))
+	if amount <= 0 or damage_dealt <= 0 or caster == null or not caster.is_alive:
+		return
+	var restored: int = caster.restore_mp(amount)
+	if restored > 0:
+		_log("%s siphons %d MP with %s" % [caster.combatant_name, restored, ability_id])
+
+
+
+## The self-damage a magic ability costs its caster, mirroring BattleManager:5171-5174.
+##
+## ⛔ The FIRST parity gap in this file that made the grind HARDER than the game. stack_overflow is
+## 3.0x to all_enemies with a 20% recoil, and recursive_loop (POOLED) casts it — so in the grind that
+## monster paid nothing for its biggest attack and survived fights the real game kills it in. Live's
+## own comment records the same field being unread on ITS side once: "stack_overflow dealt 3.0x to all
+## enemies for free, defeating the catastrophic-damage / 20%-recoil tradeoff design."
+##
+## After the loop and proportional to the WHOLE volley, not per target — an all_enemies cast pays once
+## on the total. Skipped when the caster died to something else this cast, as live skips it.
+func _recoil_to(caster, ability: Dictionary, total_dealt: int, ability_id: String) -> void:
+	var pct: float = float(ability.get("damage_to_self_pct", 0.0))
+	if pct <= 0.0 or total_dealt <= 0 or caster == null or not caster.is_alive:
+		return
+	var recoil: int = max(1, int(round(total_dealt * pct)))
+	caster.take_damage(recoil, true)
+	_log("%s takes %d recoil from %s" % [caster.combatant_name, recoil, ability_id])
+
+
+
+## Reads and CLEARS a stored next-attack multiplier, returning 1.0 when there is none.
+##
+## ⛔ Live SETS this in _execute_support_ability (:6326) and CONSUMES it on BOTH the basic-attack path
+## (:4374) and the magic path (:4969) — two consumers, one producer. The grind had none of the three,
+## so burrow was a wasted turn: ironback_beetle (POOLED) telegraphed and then hit for the same damage.
+##
+## One-shot BY CONSTRUCTION — the clear lives here rather than at each call site, so a third consumer
+## cannot forget it and leave a permanent bonus running.
+func _take_charged_multiplier(combatant) -> float:
+	if combatant == null or not combatant.has_method("get_meta"):
+		return 1.0
+	var stored: float = float(combatant.get_meta("_next_attack_multiplier", 0.0))
+	if stored <= 0.0:
+		return 1.0
+	combatant.set_meta("_next_attack_multiplier", 0.0)
+	return stored
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:

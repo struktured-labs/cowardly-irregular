@@ -47,6 +47,7 @@ const DECLARED := {
 	"summon_message": "battle-log flavour for a spawn the grind does not perform",
 	"corruption_risk": "SAVE corruption from meta abilities during automated play is a stakes ruling (CLAUDE.md: 'save corruption: actual mechanic, not just flavor'), not a parity repair",
 	"corruption_amount": "see corruption_risk — same stakes ruling",
+	"ignores_resistance": "EXAMINED 2026-09-16 and UNREACHABLE in a grind, so deliberately not wired. Its two owners (exploit_weakness, fourth_wall_break) are cast only by meta_knight, which is in no enemy pool — and this lane's OWN extra spawn path does not reach it either: _spawn_meta_boss builds a procedural enemy with a generated name, it does not instantiate a monsters.json id. Wiring it would add a mechanism no grind can exercise, and the arm below reds if either caster becomes drawable",
 	"regen_per_turn": "EXAMINED 2026-09-16 and it is a LIVE defect, not a grind gap. `regenerate` is type=healing, so live dispatches it to _execute_healing_ability, which reads only heal_amount — and regenerate authors none. Measured: live heals 0 and never adds the regen status, so regen_per_turn AND duration are dead there; the grind heals 30 once via its own heal_amount-absent fallback and also never regens. NEITHER engine delivers the authored ability. Wiring it in the grind alone would widen the divergence, and repairing live is a BattleManager change — handed to cowir-battle, whose 2d14d92d ledger is the right home for it",
 }
 
@@ -63,12 +64,26 @@ const CLOSED_PENDING_FOLD := [
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
-	"absorb_amount", "ap_gain", "cost", "countdown", "crit_chance", "damage_to_self_pct",
-	"damage_variance", "drain_mp", "element_boost", "element_boost_modifier", "evasion_bonus",
-	"guaranteed_escape", "ignores_defense", "ignores_evasion", "ignores_resistance", "max_depth",
-	"meta_effect", "mp_restore_percent", "multiplier", "next_attack_multiplier", "penalty",
-	"priority", "recoil_pct", "steals", "success_rate", "threat_class",
+	"absorb_amount", "ap_gain", "countdown", "crit_chance", "damage_variance",
+	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
+	"meta_effect", "mp_restore_percent", "priority", "recoil_pct",
+	"steals", "success_rate", "threat_class",
 ]
+
+## ⛔ THE THIRD STATE, and it exists because I published a backlog number my instrument could not
+## support. Axis 1 calls a key live-only when live CONTAINS it and the grind does not. The grind side
+## is a ZERO and trustworthy; the LIVE side is a HIT, and a hit can be a string, a different subject's
+## field, or prose. So "23 unexamined gaps" was 19 gaps plus 4 keys that may not be gaps at all.
+##
+## These four have the NAME in BattleManager and no `ability.get`/`[]`/`.has` access anywhere in it:
+## `cost` is shop/ability-menu pricing, `multiplier` and `penalty` are local variables, `evasion_bonus`
+## is read off equipment rather than the ability. UNDECIDED, not absolved — a text search cannot tell
+## "read another way" from "not read", and saying so is the point.
+##
+## Taken from @cowir-sprites' three-state manifest census and @cowir-music's re-measurement of their
+## own: both had drawn a conclusion from the non-zero side of an instrument they had correctly
+## labelled trustworthy only on zeroes. Mine did the same thing to a number I put in a channel.
+const UNDECIDED_LIVE_SIDE := ["cost", "evasion_bonus", "multiplier", "penalty"]
 
 
 func _authored_keys() -> Array:
@@ -132,6 +147,8 @@ func test_no_new_divergence_arrives_unnamed() -> void:
 		known[k] = true
 	for k in UNEXAMINED:
 		known[k] = true
+	for k in UNDECIDED_LIVE_SIDE:
+		known[k] = true
 	for k in CLOSED_PENDING_FOLD:
 		known[k] = true
 	var unnamed: Array = []
@@ -175,6 +192,15 @@ const GRIND_PATH_MARKER := {
 	"hits": "for _h in hits",
 	"drain_percentage": "_drain_to(",
 	"scales_with": "_scaled_base(",
+	"drain_mp": "_siphon_mp(",
+	"ignores_defense": "ability.get(\"ignores_defense\"",
+	"damage_to_self_pct": "_recoil_to(",
+	## PRODUCER/CONSUMER key, so the marker is the PRODUCER. Live reads the authored field in
+	## _execute_support_ability and consumes its stored effect in two OTHER executors (:4374 attack,
+	## :4969 magic); axis 2 asks where the authored key is READ, not where its effect is spent. My
+	## first marker pointed at a consumer and this arm caught it — the grind's support arm reads the
+	## key exactly where live's support executor does.
+	"next_attack_multiplier": "ability.get(\"next_attack_multiplier\"",
 	## Mapped, but NOT path-checked: live reads secondary_effect inside _apply_secondary_effect, a
 	## dispatcher rather than a per-type executor, so _live_executor_count sees no executor and the
 	## arm skips it. Its support-only placement is pinned in
@@ -190,6 +216,24 @@ const GRIND_PATH_MARKER := {
 ## `mp_cost` is spent at the top of _resolve_ability BEFORE the match, where live spends it inside an
 ## executor — but "looks structural" is not "checked", and the difference is the whole point of axis 2.
 const AXIS2_UNASSESSED := ["mp_cost", "stat_modifier", "element", "max_multiplier", "stat", "modifier"]
+
+## ⛔ WHAT AXIS 2 DOES NOT CHECK, named because the arm's name implies more than it does.
+## It compares ONE marker per key against ONE live executor: the site where the AUTHORED KEY IS READ.
+## For a PRODUCER/CONSUMER key that is the producer only — `next_attack_multiplier` is read in live's
+## support executor and its stored effect is SPENT in two others (:4374 attack, :4969 magic), and
+## nothing here would notice if the grind spent it on one path or three.
+##
+## That coverage exists, in the fix's own file, and the map below pins WHERE so it cannot be deleted
+## while this ledger keeps reporting green. @cowir-cutscenes' shape, an hour old: a guard naming the
+## right subject, asserting a true thing, and covering one half reads greener than no guard at all —
+## theirs tested `_set_choice_flag` while the menu it was named for went unguarded.
+const CONSUMER_COVERAGE := {
+	"next_attack_multiplier": [
+		"res://test/unit/test_autogrind_charged_strike_lands_regression.gd",
+		["test_a_charge_reaches_the_next_swing", "test_the_magic_path_consumes_it_too_and_only_once",
+		 "test_the_charge_is_spent_once_and_not_kept"],
+	],
+}
 
 ## The live executor each key must be read from, measured out of BattleManager rather than listed —
 ## see _live_executor_of. The grind arm that must match it:
@@ -333,3 +377,83 @@ func test_regenerate_is_still_dead_on_lives_own_path() -> void:
 		"live's healing executor now reads `effect` — regenerate's regen may work there, and the grind must follow")
 	assert_false(body.contains("regen"),
 		"live's healing executor now mentions regen — re-examine, this declaration was measured when it did not")
+
+
+## Does BattleManager read this key off an ABILITY, rather than merely containing the word?
+func _live_reads_it_as_an_ability_field(key: String, live: String) -> bool:
+	var q: String = '"%s"' % key
+	return live.contains("ability.get(%s" % q) or live.contains("ability[%s]" % q) or live.contains("ability.has(%s" % q)
+
+
+func test_the_backlog_distinguishes_a_real_gap_from_a_word_that_appears() -> void:
+	## DERIVED, not transcribed: the split is recomputed and compared to the recorded lists, so a key
+	## that changes status reds instead of sitting in the wrong bucket. That is the difference between
+	## a classification and a note about one.
+	var live: String = GdSource.code_of(LIVE)
+	assert_gt(live.length(), 50000, "CONTROL: BattleManager was actually read")
+	var misfiled: Array = []
+	for k in UNEXAMINED:
+		if not _live_reads_it_as_an_ability_field(k, live):
+			misfiled.append("%s: listed as a real gap, but live never reads it off an ability" % k)
+	for k in UNDECIDED_LIVE_SIDE:
+		if _live_reads_it_as_an_ability_field(k, live):
+			misfiled.append("%s: listed as UNDECIDED, but live DOES read it off an ability — it is a real gap" % k)
+	gut.p("    confirmed gaps: %d   undecided: %d" % [UNEXAMINED.size(), UNDECIDED_LIVE_SIDE.size()])
+	assert_eq(misfiled, [], "the backlog's own classification is out of date: %s" % str(misfiled))
+	## Anti-vacuity in both directions: the discriminator must be able to say yes AND no.
+	assert_true(_live_reads_it_as_an_ability_field("hits", live),
+		"CONTROL: a key live demonstrably reads off an ability must classify as read")
+	assert_false(_live_reads_it_as_an_ability_field("a_key_no_ability_has", live),
+		"CONTROL: an invented key must not classify as read")
+
+
+## ⛔ THE FOURTH STATE — composed-at-runtime — DOES NOT APPLY HERE, and that is measured rather than
+## assumed. @cowir-sfx's cue audit has 212 keys absent from the corpus because `play_ability` builds
+## `"ability_" + element` at runtime, so a literal scan cannot see a key that fires on every cast.
+## An ability FIELD is not like that: both engines read fields with literal keys only, so a zero means
+## the key is genuinely unread rather than reached by a name this instrument cannot construct.
+##
+## If either engine ever reads an ability field through a variable, every zero in this file becomes
+## unsound at once — so it reds here rather than silently weakening the whole ledger.
+func test_neither_engine_composes_an_ability_field_name() -> void:
+	for path in [LIVE, GRIND]:
+		var code: String = GdSource.code_of(path)
+		assert_gt(code.length(), 20000, "CONTROL: %s was actually read" % path)
+		var composed: Array = []
+		for line in code.split("\n"):
+			for form in ["ability.get(", "ability.has("]:
+				var at: int = line.find(form)
+				while at >= 0:
+					var nxt: String = line.substr(at + form.length(), 1)
+					if nxt != "\"":
+						composed.append(line.strip_edges())
+					at = line.find(form, at + 1)
+		assert_eq(composed, [],
+			"%s reads an ability field through a non-literal key, so a 'the grind never names it' zero in this ledger no longer means the field is unread: %s" % [path, str(composed)])
+	## Anti-vacuity: the scan must be able to SEE a literal access, or an empty result proves nothing.
+	assert_true(GdSource.code_of(GRIND).contains('ability.get("hits"'),
+		"CONTROL: the scan must find a known literal access, or it is matching nothing")
+
+
+func test_a_multi_site_key_keeps_its_consumer_coverage_elsewhere() -> void:
+	## Axis 2 checks the producer. For a key whose effect is spent in other executors, the arms that
+	## prove the SPENDING matches live live in the fix's own file — so this reds if that file or any of
+	## those arms disappears, rather than this ledger going on reporting a green it did not earn.
+	var missing: Array = []
+	for key in CONSUMER_COVERAGE:
+		var spec: Array = CONSUMER_COVERAGE[key]
+		var path: String = str(spec[0])
+		if not FileAccess.file_exists(path):
+			missing.append("%s: the file carrying its consumer arms is gone (%s)" % [key, path])
+			continue
+		var body: String = GdSource.code_of(path)
+		assert_gt(body.length(), 1000, "CONTROL: %s was actually read" % path)
+		for arm in spec[1]:
+			if not body.contains("func %s(" % arm):
+				missing.append("%s: %s no longer defines %s" % [key, path, arm])
+	assert_eq(missing, [],
+		"axis 2 checks only where the authored key is READ; these keys rely on arms elsewhere to check where the effect is SPENT, and that coverage has moved: %s" % str(missing))
+	## The map is only meaningful if every key in it is one axis 2 actually treats as producer-only.
+	for key in CONSUMER_COVERAGE:
+		assert_true(GRIND_PATH_MARKER.has(key),
+			"'%s' claims consumer coverage but is not path-checked at all — one of the two is wrong" % key)
