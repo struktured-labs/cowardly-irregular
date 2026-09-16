@@ -351,6 +351,34 @@ else
     exit 4
 fi
 
+# ── 0a-2. every invocation that can write user:// redirects it ───────────────
+# 2026-09-16: struktured's live profile took five log rotations from this chain in one day, each
+# three seconds before this lane's own archived boot log for .355 · .356 · .357 · .358. Godot
+# keeps exactly five, so his own play traces were gone from the ring. The cause was the boot
+# gate running the EXPORTED BINARY with no redirect — a line with no `godot` on it, invisible to
+# every sandbox rule any lane carries.
+#
+# This runs BEFORE the batch because it is the publish itself that would do the writing.
+if [ -x tools/check_user_data_sandboxed.py ]; then
+    if ! _ST=$(./tools/check_user_data_sandboxed.py --selftest 2>&1); then
+        printf '%s\n' "$_ST" | tail -25 >&2
+        echo "[pub] BLOCKED: tools/check_user_data_sandboxed.py FAILED ITS OWN SELFTEST — the" >&2
+        echo "      user:// redirect detector is not answering correctly, so its verdict on this" >&2
+        echo "      tree means nothing. A present guard is not a working one." >&2
+        exit 4
+    fi
+    echo "[pub] selftest ok: tools/check_user_data_sandboxed.py (user:// redirect detector) — arms ran and passed"
+    if ! ./tools/check_user_data_sandboxed.py; then
+        echo "[pub] BLOCKED: a deploy invocation can write struktured's live user:// — see above." >&2
+        echo "      Refusing to publish from a chain that would boot the game against his profile." >&2
+        exit 4
+    fi
+else
+    echo "[pub] BLOCKED: tools/check_user_data_sandboxed.py missing — nothing has checked that the" >&2
+    echo "      deploy chain keeps out of his save directory. A missing guard is not a passing one." >&2
+    exit 4
+fi
+
 # ── 0b. publishing is opt-in in every deploy script ──────────────────────────
 # --dry-run and --rollback both rehearse a publish by WITHHOLDING --publish. That makes the
 # whole containment rest on one sentence in the --dry-run comment below: "publishing is opt-in
