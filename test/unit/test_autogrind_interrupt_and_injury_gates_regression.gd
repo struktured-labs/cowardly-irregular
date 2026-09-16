@@ -7,6 +7,8 @@ extends GutTest
 ## These two carry the real consequences: an interrupt that stops firing grinds a wiped party
 ## forever, and an injury count that stops rising hides permanent damage from the session report.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 var _system
 var _party: Array[Combatant] = []
 
@@ -68,6 +70,55 @@ func test_party_death_stops_the_battle() -> void:
 	var reason: String = _system.pre_battle_check()
 	assert_ne(reason, "", "a dead party member must stop the grind")
 	assert_true(reason.contains("died"), "the reason must name the death")
+
+
+## ⛔ THE TWO RULES WERE NEVER ARMED TOGETHER. Every arm above disarms one to test the other, and
+## that is how this survived: a corpse reads 0% HP, so with hp_threshold ON it tripped the HP rule
+## before party_death was ever consulted. Two consequences, both player-visible — a death was
+## reported as "HP threshold reached", and turning "stop on death" OFF in the console could not keep
+## a grind running, because the corpse kept stopping it under the other rule's name.
+func test_a_corpse_does_not_trip_the_hp_rule() -> void:
+	_system.interrupt_rules["hp_threshold"] = 20.0
+	_system.interrupt_rules["party_death"] = false
+	_party[2].current_hp = 0
+	_party[2].is_alive = false
+	assert_eq(_system.pre_battle_check(), "",
+		"stop-on-death is OFF, so a fallen member must not stop the grind under the HP rule — the console offers these as two independent switches")
+
+
+func test_a_death_is_reported_as_a_death_not_an_hp_stop() -> void:
+	## BOTH armed, which no other arm does. The stop reason reaches the player: GameLoop plays a cue
+	## per reason and the Summary prints "Stopped: <reason>".
+	_system.interrupt_rules["hp_threshold"] = 20.0
+	_system.interrupt_rules["party_death"] = true
+	_party[2].current_hp = 0
+	_party[2].is_alive = false
+	var reason: String = _system.pre_battle_check()
+	assert_true(reason.contains("died"),
+		"a death must be reported as a death; got %s" % reason)
+	assert_false(reason.contains("HP"),
+		"the HP rule must not claim a death — the player set two switches and deserves the right one named")
+
+
+func test_a_living_member_below_the_line_still_stops_it() -> void:
+	## Control for both arms above: the skip must be for the DEAD only, or the HP rule is gone.
+	_system.interrupt_rules["hp_threshold"] = 20.0
+	_system.interrupt_rules["party_death"] = true
+	_party[1].current_hp = 10
+	var reason: String = _system.pre_battle_check()
+	assert_true(reason.contains("HP"),
+		"a LIVING member below the threshold must still stop the grind; got %s" % reason)
+
+
+func test_a_wiped_party_is_still_stopped_elsewhere() -> void:
+	## The skip above is only safe because a full wipe is caught before rules are evaluated. That
+	## guard lives in the controller, not here, so this pins it rather than assuming it.
+	var code: String = GdSource.code_of("res://src/autogrind/AutogrindController.gd")
+	assert_true(code.contains("func _process"), "CONTROL: the stripper kept the controller's process loop")
+	var at: int = code.find("not m.is_alive")
+	assert_gt(at, -1, "the controller must still detect an all-dead party, or skipping the dead above could grind a corpse party forever")
+	assert_true(code.substr(at, 120).contains("stop_grind("),
+		"detecting the wipe must STOP the grind, not merely notice it")
 
 
 func test_max_battles_stops_the_battle() -> void:
