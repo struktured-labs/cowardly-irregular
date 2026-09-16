@@ -102,11 +102,15 @@ func test_a_bed_does_not_play_against_itself() -> void:
 	## opens from the overworld menu, and "Dripping Stone" is a row in it while an ice zone is
 	## running that exact bed.
 	##
-	## ⚠️ DECLARED RESIDUAL: the ambient layer does NOT come back when the Jukebox closes.
-	## _update_zone_ambient fires on a zone CHANGE, so a player who auditions the bed where it is
-	## already playing keeps zone ambience off until they walk into another zone. That is the
-	## deliberate trade — silence beats a flanged double — and it is written here rather than
-	## discovered, so a complaint about it is a decision to revisit and not a mystery.
+	## ⚠️ DECLARED RESIDUAL, AND IT IS THE EXISTING DESIGN RATHER THAN A NEW COST — checked
+	## before writing it down, because the first draft of this note implied the fix introduced it.
+	## The ambient player is ONE SLOT and only a zone CHANGE re-asserts a key
+	## (OverworldScene:579, inside `if new_zone != _current_zone`). WeatherSystem already contends
+	## for the same slot the same way: rain replaces zone ambience, and when weather clears it
+	## calls stop_ambient() without restoring what was there. So "ambience stays off until you
+	## cross a boundary" predates this change; auditioning a bed in the Jukebox is one more way in.
+	## The trade is still deliberate — silence beats a flanged double — and if the single slot ever
+	## becomes worth fixing, it is one fix for weather and this together, not two.
 	SoundManager.play_ambient("ambient_cave")
 	assert_true(SoundManager._ambient_player.playing, "CONTROL: the zone ambience is running before the Jukebox asks")
 	var amb_path: String = SoundManager._ambient_player.stream.resource_path
