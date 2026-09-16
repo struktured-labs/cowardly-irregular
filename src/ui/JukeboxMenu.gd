@@ -390,24 +390,13 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		if selected_index > 0:
-			selected_index -= 1
-			_clamp_scroll()
-			_refresh_list()
-			_update_selection()
-			if SoundManager:
-				SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		if selected_index < TRACKS.size() - 1:
-			selected_index += 1
-			_clamp_scroll()
-			_refresh_list()
-			_update_selection()
-			if SoundManager:
-				SoundManager.play_ui("menu_move")
+	## ⛔ THROUGH MenuNav, NOT `not event.is_echo()`. ui_up/ui_down bind the left stick's Y axis
+	## and an axis carries NO echo flag, so the old guard took every step of a ramp: one nudge moved
+	## FIVE of 161 rows, on the screen whose entire purpose is browsing a long list. The echo check
+	## was written for a held key and a key is the only input it can see (@cowir-controller, .367).
+	var nav: String = MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 
 	elif MenuPaging.page_delta(event) != 0:
@@ -452,6 +441,20 @@ func _on_row_hover(local_row: int) -> void:
 		_update_selection()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+
+
+## One owner for a cursor step: the two directions duplicated six lines each and a paging jump
+## duplicated them again. Clamped, not wrapped — the same choice the Bestiary and Items lists make.
+func _nav_step(delta: int) -> void:
+	var was: int = selected_index
+	selected_index = clampi(selected_index + delta, 0, max(0, TRACKS.size() - 1))
+	if selected_index == was:
+		return
+	_clamp_scroll()
+	_refresh_list()
+	_update_selection()
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
 
 
 func _close_menu() -> void:
