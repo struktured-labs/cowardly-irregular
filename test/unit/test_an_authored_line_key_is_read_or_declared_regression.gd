@@ -119,6 +119,16 @@ func test_an_inert_declaration_carries_its_reasoning() -> void:
 			"%s: and must name who holds the decision or what closing it looks like" % k)
 
 
+## ⚠️ A DECLARATION THAT OUTLIVES ITS FACT is worse than none, because the next reader trusts it.
+## The moment the runtime starts reading a key this file calls inert, the declaration is the lie.
+## (cowir-sprites' third arm in b058b6ac, applied here — same hazard, different authored surface.)
+func test_a_declared_key_that_gained_a_reader_is_no_longer_inert() -> void:
+	var src: String = _sources()
+	for k in DECLARED_INERT.keys():
+		assert_false(_is_read(str(k), src),
+			"%s is DECLARED inert and the cutscene runtime now mentions it — wire it and delete the declaration, or record why that hit is a coincidence" % k)
+
+
 ## The state is held to the sites that exist today: a NEW conditional line must red this, not pile on.
 func test_no_new_conditional_line_joins_the_pile() -> void:
 	var keys: Dictionary = _authored_line_keys()
