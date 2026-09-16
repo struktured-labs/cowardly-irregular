@@ -136,11 +136,19 @@ _readback_notice() {
         fi
     done
     if [ "$any" = "1" ]; then
+        # ABSOLUTE, and rooted in the worktree that produced these artifacts. These used to be
+        # relative, which is correct only if you are standing in this worktree — and the whole
+        # point of the block is that you are reading it later, somewhere else. Measured 2026-09-16:
+        # I pasted them into the lane's main checkout, which sat on a branch from three weeks
+        # earlier, and ran a read-back of .354 against an Aug-22 build. verify_store_artifact.sh
+        # now refuses that comparison outright, but the instruction is what sent me there.
+        local _root; _root="$(pwd -P)"
         echo "[pub]   RUN IT NOW, for the channels whose build survives:" >&2
+        echo "[pub]     cd ${_root}" >&2
         for _c in ${PUBLISHED}; do
             case "$_c" in
-                web) [ -d builds/web ] && echo "[pub]     tools/verify_store_artifact.sh web builds/web" >&2 ;;
-                *)   [ -d "build/${_c}" ] && echo "[pub]     tools/verify_store_artifact.sh ${_c} build/${_c}" >&2 ;;
+                web) [ -d builds/web ] && echo "[pub]     ${_root}/tools/verify_store_artifact.sh web ${_root}/builds/web" >&2 ;;
+                *)   [ -d "build/${_c}" ] && echo "[pub]     ${_root}/tools/verify_store_artifact.sh ${_c} ${_root}/build/${_c}" >&2 ;;
             esac
         done
         echo "[pub]   Do not remove the worktree until it has run or you have decided to skip it." >&2
@@ -746,12 +754,19 @@ if [ "${READ_BACK:-0}" = "1" ] && [ -n "${PUBLISHED:-}" ]; then
             echo "[pub] BLOCKED: ${_c}'s local build ${_rbdir} is gone; nothing to compare." >&2
             _rb_fail=1; continue
         fi
-        if ./tools/verify_store_artifact.sh "$_c" "$_rbdir"; then
-            echo "[pub]   ${_c}: store matches what we built"
-        else
-            echo "[pub]   ${_c}: STORE DIFFERS from what we built — see above" >&2
-            _rb_fail=1
-        fi
+        # The verdict is the tool's, not a summary of its exit status. verify_store_artifact.sh
+        # separates 5 (the store differs) from 2 (it could not evaluate — no butler, a missing
+        # dir, or the version guard refusing a comparison between two different releases). This
+        # used to print "STORE DIFFERS" for both, which accuses the store of serving bad bytes
+        # when the truth may be that nothing was compared at all.
+        ./tools/verify_store_artifact.sh "$_c" "$_rbdir"; _rbec=$?
+        case "$_rbec" in
+            0) echo "[pub]   ${_c}: store matches what we built" ;;
+            5) echo "[pub]   ${_c}: STORE DIFFERS from what we built — see above" >&2; _rb_fail=1 ;;
+            *) echo "[pub]   ${_c}: read-back COULD NOT EVALUATE (exit ${_rbec}) — see above." >&2
+               echo "[pub]        This is not a statement about the store; nothing was compared." >&2
+               _rb_fail=1 ;;
+        esac
     done
     READBACK_DONE=1
     if [ "$_rb_fail" -ne 0 ]; then

@@ -48,7 +48,15 @@
 #                test that gets skipped. The split is deliberate so the untested part stays
 #                as small as possible.
 #
-# Usage:  tools/verify_store_artifact.sh <channel> <local-build-dir>
+# BOTH SIDES MUST BE THIS RELEASE, checked BEFORE the fetch (2026-09-16). The store side has been
+# named since the evidence-tag work; the local side was taken on faith, and "warn, then compare
+# anyway" turns a wrong local build into a confident accusation against a correct store. Two
+# guards, both cheap, both refusing rather than guessing:
+#   version   this checkout's tag vs the version the store serves on that channel
+#   staleness the newest file in the build dir vs this checkout's own commit time
+# --allow-version-skew exists for a deliberate cross-release comparison and says so in the log.
+#
+# Usage:  tools/verify_store_artifact.sh <channel> <local-build-dir> [--allow-version-skew]
 #         tools/verify_store_artifact.sh --compare <dir-a> <dir-b>
 #         tools/verify_store_artifact.sh --selftest
 # Exit:   0 identical · 5 the store differs from what we built · 2 could not evaluate
@@ -334,6 +342,51 @@ PYGEN
     et="$(_evidence_tag 3cd794ea6 "")"
     _eq "evidence: store unknown -> checkout, flagged" "${et%%$'\t'*}" "3cd794ea6"
     case "${et#*$'\t'}" in *"store version unknown"*) _eq "  ...and says so" yes yes ;; *) _eq "  ...and says so" no yes ;; esac
+
+    # ── BOTH SIDES: is this comparison's LOCAL side the release the store serves? ──────────
+    # Every arm here exists because the previous behaviour was to warn and compare anyway,
+    # which spends a whole build's bandwidth to produce "DIFFERS FROM THE STORE" about a
+    # store that is correct.
+    local sk
+    sk="$(_skew_verdict v3.33.355-alpha v3.33.355-alpha no)"
+    _eq "skew: same release -> ok, nothing to say"     "${sk%%$'\t'*}|${sk#*$'\t'}" "ok|"
+    sk="$(_skew_verdict 3cd794ea6 v3.33.354-alpha no)"
+    _eq "skew: checkout is not the release -> BLOCK"   "${sk%%$'\t'*}" "block"
+    case "${sk#*$'\t'}" in *3cd794ea6*v3.33.354-alpha*) _eq "  ...and names both sides" yes yes ;;
+                            *) _eq "  ...and names both sides" "${sk#*$'\t'}" "names both" ;; esac
+    case "${sk#*$'\t'}" in *"pub<N>"*) _eq "  ...and says where the right build is" yes yes ;;
+                            *) _eq "  ...and says where the right build is" no yes ;; esac
+    sk="$(_skew_verdict 3cd794ea6 v3.33.354-alpha yes)"
+    _eq "skew: --allow-version-skew -> ok, on purpose" "${sk%%$'\t'*}" "ok"
+    case "${sk#*$'\t'}" in *DELIBERATELY*) _eq "  ...and labels it deliberate" yes yes ;;
+                            *) _eq "  ...and labels it deliberate" no yes ;; esac
+    # A store we could not read is NOT a mismatch. Blocking here would make an unreachable
+    # butler look like a bad build, and the comparison is still worth running.
+    sk="$(_skew_verdict v3.33.355-alpha "" no)"
+    _eq "skew: store version unknown -> still runs"    "${sk%%$'\t'*}" "ok"
+
+    # ── the other stale case the version check CANNOT see: right tree, old export ──────────
+    local stv
+    stv="$(_stale_verdict 1700000000 1600000000)"
+    _eq "stale: artifact newer than HEAD -> ok"        "${stv%%$'\t'*}" "ok"
+    stv="$(_stale_verdict 1600000000 1700000000)"
+    _eq "stale: artifact OLDER than HEAD -> BLOCK"     "${stv%%$'\t'*}" "block"
+    case "${stv#*$'\t'}" in *2020-09-13*2023-11-14*) _eq "  ...and dates both" yes yes ;;
+                             *) _eq "  ...and dates both" "${stv#*$'\t'}" "both dates" ;; esac
+    stv="$(_stale_verdict 1600000000 1600000000)"
+    _eq "stale: same second -> ok, not a block"        "${stv%%$'\t'*}" "ok"
+    stv="$(_stale_verdict "" 1700000000)"
+    _eq "stale: unreadable mtime -> ok, never a claim" "${stv%%$'\t'*}" "ok"
+    stv="$(_stale_verdict 1600000000 "")"
+    _eq "stale: unreadable HEAD -> ok, never a claim"  "${stv%%$'\t'*}" "ok"
+    # _newest_mtime against real files, both a populated and an empty directory.
+    local md; md="$(mktemp -d "$HOME/.cache/vsa_mtime.XXXXXX")"
+    : > "$md/old"; touch -d @1600000000 "$md/old"
+    : > "$md/new"; touch -d @1700000000 "$md/new"
+    _eq "newest mtime: takes the MAX, not the first"   "$(_newest_mtime "$md")" "1700000000"
+    mkdir -p "$md/empty"
+    _eq "newest mtime: empty dir -> empty, not 0"      "$(_newest_mtime "$md/empty")" ""
+    rm -rf "$md"
     # Probe paths live in a SCOPED temp dir -- _scratch_base mkdirs what it returns, so fixed
     # absolute probes would create (and a cleanup would delete) real paths. It must contain NO
     # "/tmp/" of its own: the lane root is everything before the FIRST /tmp/ (the archive's rule),
@@ -403,6 +456,53 @@ _evidence_tag() {
     fi
 }
 
+# Can this read-back answer the question it was asked? The subject is "does the store serve what
+# we built for THIS release", and that needs BOTH sides to be that release. The store side has
+# been named since 49b6fc87; the local side was taken on faith.
+#
+# WHY IT IS A BLOCK AND NOT THE WARNING IT USED TO BE (cowir-deploy, 2026-09-16). I ran this
+# against `cowir-deploy-wt/builds/web` while that worktree sat on an Aug-22 branch — the real
+# .354 artifacts were in the publish's own `tmp/pub354`. The tool would have printed its ⚠, then
+# downloaded 207 MiB, then reported exit 5 = "DIFFERS FROM THE STORE". Every word of that verdict
+# accuses the store of serving the wrong bytes, and the store was correct. A skewed comparison
+# does not produce a weaker answer, it produces a CONFIDENT WRONG ONE, and it charges a full
+# build's bandwidth to do it.
+#
+# Prints "block\t<reason>" or "ok\t<note>".
+_skew_verdict() {
+    local checkout="$1" store="$2" allow="$3"
+    if [ -z "$store" ]; then
+        printf 'ok\t%s' "store version unknown — proceeding, the comparison is still the evidence"
+    elif [ "$checkout" = "$store" ]; then
+        printf 'ok\t'
+    elif [ "$allow" = "yes" ]; then
+        printf 'ok\t--allow-version-skew: comparing %s against a store serving %s DELIBERATELY' "$checkout" "$store"
+    else
+        printf 'block\tthis checkout is %s but the store serves %s. The local build in this tree is not %s'"'"'s, so a difference here would be reported as the STORE being wrong when the wrong build is the one that was handed in. Point this at the worktree that produced %s (the publish leaves it at <lane>/tmp/pub<N>), or pass --allow-version-skew to compare across releases on purpose.' "$checkout" "$store" "$store" "$store"
+    fi
+}
+
+# The newest regular file in a build directory. A build cannot be OLDER than the commit it would
+# be attributed to, and this is the case the version check above cannot see: the right tree, an
+# artifact directory left over from an earlier export in it.
+_newest_mtime() {
+    find "$1" -type f -printf '%T@\n' 2>/dev/null | sort -n | tail -1 | cut -d. -f1
+}
+
+# "block\t<reason>" when the artifacts cannot be this checkout's. Pure, so the selftest can
+# reach it; the filesystem half is _newest_mtime.
+_stale_verdict() {
+    local newest="$1" head_ts="$2"
+    if [ -z "$head_ts" ] || [ -z "$newest" ]; then
+        printf 'ok\t'                       # unknown is not evidence either way
+    elif [ "$newest" -lt "$head_ts" ]; then
+        printf 'block\tnewest artifact %s predates HEAD %s' \
+            "$(date -d "@$newest" -u +%Y-%m-%dT%H:%MZ)" "$(date -d "@$head_ts" -u +%Y-%m-%dT%H:%MZ)"
+    else
+        printf 'ok\t'
+    fi
+}
+
 _readback_dest() {
     local here="$1" tag="$2"
     case "$here" in
@@ -434,6 +534,28 @@ _run_and_archive() {
     store="$(butler status "$TARGET" 2>/dev/null | _store_version "$ch")"
     IFS=$'\t' read -r tag note <<<"$(_evidence_tag "$checkout" "$store")"
     [ -n "$note" ] && echo "[store-verify] ⚠ ${note}" >&2
+
+    # BOTH SIDES, before the fetch. Everything below this point costs 207-312 MiB.
+    local verdict reason
+    IFS=$'\t' read -r verdict reason <<<"$(_skew_verdict "$checkout" "$store" "$ALLOW_SKEW")"
+    if [ "$verdict" = "block" ]; then
+        echo "[store-verify] BLOCKED: ${reason}" >&2
+        return 2
+    fi
+    [ -n "$reason" ] && echo "[store-verify] note: ${reason}"
+    if [ -d "$dir" ]; then
+        local sv sreason
+        IFS=$'\t' read -r sv sreason <<<"$(_stale_verdict \
+            "$(_newest_mtime "$dir")" "$(git log -1 --format=%ct HEAD 2>/dev/null)")"
+        if [ "$sv" = "block" ]; then
+            echo "[store-verify] BLOCKED: every file in ${dir} predates this checkout's own commit" >&2
+            echo "               (${sreason})." >&2
+            echo "               A build cannot be older than the commit it would be attributed to, so this" >&2
+            echo "               directory is a leftover export, not this release's. Re-export, or point at" >&2
+            echo "               the worktree that produced it." >&2
+            return 2
+        fi
+    fi
     if ! dest="$(_readback_dest "$here" "$tag")"; then
         echo "[store-verify] note: NOT archiving — ${here} is not a <lane>/tmp/<worktree> path." >&2
         fetch_and_compare "$ch" "$dir"
@@ -452,6 +574,18 @@ _run_and_archive() {
     echo "[store-verify] archived: ${dest}/readback_${ch}.log"
     return "$ec"
 }
+
+# --allow-version-skew may appear anywhere; it is stripped before dispatch so the positional
+# arguments keep their meaning.
+ALLOW_SKEW=no
+_args=()
+for _a in "$@"; do
+    case "$_a" in
+        --allow-version-skew) ALLOW_SKEW=yes ;;
+        *) _args+=("$_a") ;;
+    esac
+done
+set -- "${_args[@]:-}"
 
 case "${1:-}" in
     --selftest) selftest ;;
