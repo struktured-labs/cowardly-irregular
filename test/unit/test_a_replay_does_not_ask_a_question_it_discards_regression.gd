@@ -9,8 +9,13 @@ extends GutTest
 ##
 ## Second half, latent: options with no text are dropped before the menu, but the deterministic
 ## answer (skip, dismiss, menu-script-unloadable) indexed the UNFILTERED array — so a skip could
-## answer with an option the player was never shown. No authored scene has an empty option today
-## (1 choice step, 4 options, all texted), so this half defends the mechanism, not a live scene.
+## answer with an option the player was never shown. MEASURED 2026-09-16: one choice step existed
+## across the cutscene corpus, 4 options, all texted — so that half defended a mechanism rather than
+## a live scene AT THE TIME. ⚠️ That is a dated observation, not a current count: data/cutscenes is
+## cowir-story's to add to, and the day an authored choice carries a blank option this half becomes
+## live. No arm here depends on the number, and none should — a ratchet on "how many choices are
+## authored" would red on content being written, which is the point of writing it
+## (cowir-music's test: would a reader quote this as true TODAY?).
 ##
 ## HELD FOR STRUKTURED: whether a replay should ECHO the answer the player gave first time round
 ## (the four flags are persisted and read by nothing — separate finding). Only
