@@ -155,10 +155,16 @@ func test_the_members_this_file_reaches_still_exist() -> void:
 	assert_gt(src.length(), 1000, "CONTROL: this arm read its own source back — %d chars" % src.length())
 	var methods := {}
 	var props := {}
+	## ⛔ THE STRIP IS NOT COSMETIC. These floors exist to catch RENAMES, and the commit that
+	## renames a member is the commit whose comment explains the rename BY NAME — so prose naming
+	## `SoundManager.<old>` is the MODAL case here, not a corner one (@cowir-sprites, 2026-09-16).
+	## The shipped version skipped lines BEGINNING with `#`, which leaves a trailing comment on a
+	## code line inside the corpus. Measured before switching: identical sets either way today, so
+	## this is latent-not-live — and the shared helper is quote- and escape-aware where a `#` scan
+	## is not.
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 	var re := RegEx.create_from_string("SoundManager\\.([A-Za-z_][A-Za-z0-9_]*)(\\()?")
-	for line in src.split("\n"):
-		if str(line).strip_edges().begins_with("#"):
-			continue
+	for line in GdSource.strip_comments(src).split("\n"):
 		for m in re.search_all(str(line)):
 			if m.get_string(2) == "(":
 				methods[m.get_string(1)] = true
