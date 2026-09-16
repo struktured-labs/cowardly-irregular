@@ -136,13 +136,12 @@ func test_mordaine_is_routed_to_her_own_track_not_the_generic_bed() -> void:
 		"boss_mordaine is missing from the manifest but BattleScene plays it")
 
 
-## One real collision, pinned with its reason rather than renamed: both are
-## legitimately W6 pieces and the name fits each, so which keeps it is a
-## creative call and not mine. Goes RED if it is FIXED, so the pin cannot
-## outlive its cause.
-const KNOWN_TITLE_COLLISIONS := {
-	"the answered absence": "overworld_abstract + cutscene_w6_entering_nothing — both W6, name fits both, @struktured picks",
-}
+## Empty, and it emptied itself. The one entry — "the answered absence" on
+## overworld_abstract + cutscene_w6_entering_nothing — was RESOLVED 2026-09-16 by
+## retitling the cutscene bed, and this pin went red naming itself in the same run.
+## Which bed owned the name is argued where the fix lives, in
+## test_the_jukebox_lists_a_track_once.gd; it is not repeated here.
+const KNOWN_TITLE_COLLISIONS := {}
 
 
 func test_no_two_DIFFERENT_tracks_share_a_title() -> void:
