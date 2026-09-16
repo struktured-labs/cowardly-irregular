@@ -105,6 +105,51 @@ static func load_battle_effect_texture(key: String) -> Texture2D:
 	return tex if tex is Texture2D else null
 
 
+## Where the FIGURE sits inside frame 0, not where the frame is. Job sheets place their
+## figures very differently — measured 2026-09-16, the Fighter fills 0.38 of its 256px frame
+## with its head at y=66, the Cleric's head at y=10 — so any geometry cut from the FRAME is
+## framing empty space for some jobs and the character for others.
+static var _figure_rect_cache: Dictionary = {}
+
+static func figure_rect(sheet_path: String) -> Rect2i:
+	if _figure_rect_cache.has(sheet_path):
+		return _figure_rect_cache[sheet_path]
+	var empty := Rect2i(0, 0, 0, 0)
+	if not ResourceLoader.exists(sheet_path):
+		_figure_rect_cache[sheet_path] = empty
+		return empty
+	var tex := load(sheet_path) as Texture2D
+	if tex == null:
+		_figure_rect_cache[sheet_path] = empty
+		return empty
+	var img: Image = tex.get_image()
+	if img == null:
+		_figure_rect_cache[sheet_path] = empty
+		return empty
+	var frame: int = img.get_height()
+	if frame <= 0 or img.get_width() < frame:
+		_figure_rect_cache[sheet_path] = empty
+		return empty
+	var used: Rect2i = img.get_region(Rect2i(0, 0, frame, frame)).get_used_rect()
+	_figure_rect_cache[sheet_path] = used
+	return used
+
+
+## A head-and-shoulders box around the FIGURE, square so every job renders at one aspect.
+## `ratio` is the fraction of the FIGURE's height the bust keeps (0.55 = head + torso).
+## Falls back to the old frame-relative crop when the sheet has no opaque pixels to measure.
+static func bust_region(sheet_path: String, frame: int, ratio: float) -> Rect2i:
+	var fig := figure_rect(sheet_path)
+	if fig.size.x <= 0 or fig.size.y <= 0:
+		return Rect2i(0, 0, frame, int(float(frame) * ratio))
+	var bust_h: int = maxi(8, int(round(float(fig.size.y) * ratio)))
+	var side: int = clampi(maxi(fig.size.x, bust_h), 8, frame)
+	var headroom: int = int(round(float(side) * 0.06))
+	var x: int = clampi(fig.position.x + fig.size.x / 2 - side / 2, 0, frame - side)
+	var y: int = clampi(fig.position.y - headroom, 0, frame - side)
+	return Rect2i(x, y, side, side)
+
+
 static func has_artist_sheet(job_id: String) -> bool:
 	"""Check if a job has an artist sprite sheet in the manifest."""
 	_load_manifest()

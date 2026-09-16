@@ -1251,11 +1251,10 @@ func _create_bust_from_job_sheet(job_id: String) -> Texture2D:
 	var frame: int = int(size.y)
 	if frame <= 0:
 		return null
-	var crop_h: int = int(float(frame) * BUST_CROP_RATIO)
 
 	var atlas := AtlasTexture.new()
 	atlas.atlas = sheet
-	atlas.region = Rect2(0, 0, frame, crop_h)
+	atlas.region = Rect2(HybridSpriteLoader.bust_region(sheet_path, frame, BUST_CROP_RATIO))
 	_portrait_cache[cache_key] = atlas
 	return atlas
 
