@@ -6623,5 +6623,13 @@
       },
       "generator": "tools/gen_tile_sheet_world.py --world futuristic -- same bitmask geometry as medieval, recoloured from NodePrimeVillage._get_cliff_palette(). Manifest cliff art OVERRIDES that palette, so deriving from it keeps the village's colours and adds only detail. derived_palette records what was used: if the village's colours change, this atlas is stale and the guard says so."
     }
+  },
+  "_field_provenance": {
+    "_why": "Fields with NO runtime reader. The rule this implements (cowir-music/cowir-main, 2026-09-16): an authored key must be READ by the runtime or DECLARED inert with a note naming who holds it — you cannot silence it green, only explain it green. test_a_manifest_field_is_read_or_declared reds on a field that is neither.",
+    "generator": "which tool wrote the sheet. Read by tools/audit_sprite_tiers.py and by a human deciding whether an AI regen may touch it — never by the game.",
+    "_note": "prose for the next reader of this file. Never parsed.",
+    "flip_h_reason": "why a sheet's flip_h was set against the frame-size convention. The DECISION is flip_h, which the loader reads; this records the argument.",
+    "derived_from": "the village whose _get_cliff_palette() a world atlas was recoloured from. Read by test_a_village_palette_is_not_silently_overridden, not by src/ — it is the evidence that an override is a no-op in hue.",
+    "derived_palette": "the exact colours used at generation time. Its job is to EXPIRE: if the village's colours change, the guard reds and the atlas is stale."
   }
 }
