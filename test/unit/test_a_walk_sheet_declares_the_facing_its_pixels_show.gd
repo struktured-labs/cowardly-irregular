@@ -26,11 +26,25 @@ extends GutTest
 ## unordered pair against an unordered pair, so a swap inside it is invisible.
 ##
 ## 🔑 THAT IS NOT A HOLE I CAN CLOSE WITH PIXELS, AND THE MEASUREMENT SAYS WHY: walk_right is a
-## LITERAL MIRROR of walk_left — median alpha-IoU 1.000 across the 53 declaring sheets, 47 of them
-## at >= 0.99. Mirror-generated art has no intrinsic handedness, so "which row faces left" is not a
-## property of the image. Two cross-sheet tests confirmed it rather than assumed it: matching the
-## declared left rows of different characters directly vs mirrored split 204/406 (50.2%) on alpha
-## and 198/406 (48.8%) on masked colour, median margin 0.0000. Exactly chance, twice.
+## LITERAL MIRROR of walk_left — 47 of the 53 declaring sheets are BYTE-FOR-BYTE mirrors, exact
+## RGBA equality, not merely similar. Mirror-generated art has no intrinsic handedness, so for
+## those 47 "which row faces left" is not a property of the image at all.
+##
+## ⛔ AND THE SCOPE OF THAT NEGATIVE IS 47, NOT 53 — corrected after cowir-adhoc read it. I ran two
+## cross-sheet tests (declared left rows, direct vs mirrored: 204/406 = 50.2% on alpha, 198/406 =
+## 48.8% on masked colour, median margin 0.0000) and called the result decisive. It was chance BY
+## CONSTRUCTION: 47 of the 53 can only contribute noise, and they outvote the 6 that could carry
+## signal nine to one. A pooled test over a corpus that is 89% zero-signal cannot answer in either
+## direction — my own "a green sweep is evidence only about a corpus that could have contained the
+## defect", committed by me, in the commit that quoted it.
+##
+## 📌 THE 6 NON-EXACT SHEETS, and why no restricted test is run here. Five are meta-job sheets
+## (bossbinder, necromancer, scriptweaver, skiptrotter, time_mage) with genuine hand-drawn
+## asymmetry — ~25 differing alpha px per frame in one column band, no shift helps. The sixth is
+## slime, which is NOT asymmetric: its rows differ only by a 1px internal registration offset, and
+## its alpha centroid and bounding box are IDENTICAL across all four rows to three decimals, so
+## nothing moves when it turns. That leaves five signal-bearing sheets of one art family. Too few
+## to decide handedness, and stating that is the honest end of it rather than a thinner test.
 ##
 ## ✅ SO THE SWAP IS CAUGHT BY AGREEMENT INSTEAD — CLAUDE.md case (a). All 53 declaring sheets
 ## across the three sections use ONE order (walk_down 0, walk_left 1, walk_right 2, walk_up 3), so
@@ -215,3 +229,52 @@ func test_every_declaring_sheet_uses_the_same_row_order() -> void:
 			+ "has no handedness in its pixels: %s") % [report])
 	else:
 		assert_eq(keys.size(), 1, "exactly one row order must be in use across %d sheets" % total)
+
+
+## ⛔ THE FACT THE HEADER'S NEGATIVE RESTS ON, RATCHETED so the scope cannot go stale silently.
+##
+## The claim "pixels cannot tell you which row faces left" is only true because almost every sheet
+## is an EXACT mirror. Re-export enough sheets with real asymmetry and the claim narrows — and the
+## header would still assert it, because prose does not re-measure itself.
+func test_most_declared_mirror_pairs_are_exact_to_the_byte() -> void:
+	var exact := 0
+	var inexact: Array = []
+	for s in _declaring_sheets():
+		var e: Dictionary = s["entry"]
+		var anims: Dictionary = e.get("animations", {})
+		# ⛔ SOURCE BYTES, NOT load(). A Texture2D's get_image() hands back the imported .ctex,
+		# which is VRAM-compressed: byte-exactness measured through it is 1 of 53 where the PNG
+		# on disk is 47 of 53. CLAUDE.md's "the file on disk is ALSO a pointer" trap, in the one
+		# arm here that compares pixels for EQUALITY rather than for overlap.
+		var img := Image.load_from_file(s["path"])
+		if img == null:
+			inexact.append("%s/%s: source PNG unreadable" % [s["section"], s["id"]])
+			continue
+		var fw: int = int(e.get("frame_width", 32))
+		var fh: int = int(e.get("frame_height", 32))
+		var l: int = int((anims["walk_left"] as Dictionary).get("row", -1))
+		var r: int = int((anims["walk_right"] as Dictionary).get("row", -1))
+		var cols: int = img.get_width() / fw
+		var same := true
+		for c in cols:
+			for y in fh:
+				for x in fw:
+					if img.get_pixel(c * fw + x, l * fh + y) != img.get_pixel((c + 1) * fw - 1 - x, r * fh + y):
+						same = false
+						break
+				if not same:
+					break
+			if not same:
+				break
+		if same:
+			exact += 1
+		else:
+			inexact.append("%s/%s" % [s["section"], s["id"]])
+	inexact.sort()
+	assert_gt(exact + inexact.size(), 45,
+		"ANTI-VACUITY: only %d sheets were compared" % (exact + inexact.size()))
+	assert_gt(exact, 40,
+		("only %d of %d declared mirror pairs are exact. The header's negative — that handedness is "
+		+ "not in the pixels — rests on that majority, so a drop means the scope claim needs "
+		+ "re-measuring rather than re-asserting. Non-exact: %s")
+		% [exact, exact + inexact.size(), inexact])
