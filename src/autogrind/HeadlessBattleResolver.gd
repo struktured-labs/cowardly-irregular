@@ -772,6 +772,11 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			for target in targets:
 				if target and target.is_alive:
 					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power)
+					## Doubles, mirroring BattleManager:5054 — live's own comment calls it "a rough
+					## compensation for take_damage's defense formula" rather than a true-damage path, and
+					## the grind must compensate the same way or phantom_byte lands at half strength here.
+					if bool(ability.get("ignores_defense", false)):
+						base_dmg *= 2
 					var elem_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
 					var actual = int(base_dmg * elem_mod)
 					actual = max(1, actual)

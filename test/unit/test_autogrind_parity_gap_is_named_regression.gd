@@ -47,6 +47,7 @@ const DECLARED := {
 	"summon_message": "battle-log flavour for a spawn the grind does not perform",
 	"corruption_risk": "SAVE corruption from meta abilities during automated play is a stakes ruling (CLAUDE.md: 'save corruption: actual mechanic, not just flavor'), not a parity repair",
 	"corruption_amount": "see corruption_risk — same stakes ruling",
+	"ignores_resistance": "EXAMINED 2026-09-16 and UNREACHABLE in a grind, so deliberately not wired. Its two owners (exploit_weakness, fourth_wall_break) are cast only by meta_knight, which is in no enemy pool — and this lane's OWN extra spawn path does not reach it either: _spawn_meta_boss builds a procedural enemy with a generated name, it does not instantiate a monsters.json id. Wiring it would add a mechanism no grind can exercise, and the arm below reds if either caster becomes drawable",
 	"regen_per_turn": "EXAMINED 2026-09-16 and it is a LIVE defect, not a grind gap. `regenerate` is type=healing, so live dispatches it to _execute_healing_ability, which reads only heal_amount — and regenerate authors none. Measured: live heals 0 and never adds the regen status, so regen_per_turn AND duration are dead there; the grind heals 30 once via its own heal_amount-absent fallback and also never regens. NEITHER engine delivers the authored ability. Wiring it in the grind alone would widen the divergence, and repairing live is a BattleManager change — handed to cowir-battle, whose 2d14d92d ledger is the right home for it",
 }
 
@@ -65,7 +66,7 @@ const CLOSED_PENDING_FOLD := [
 const UNEXAMINED := [
 	"absorb_amount", "ap_gain", "cost", "countdown", "crit_chance", "damage_to_self_pct",
 	"damage_variance", "element_boost", "element_boost_modifier", "evasion_bonus",
-	"guaranteed_escape", "ignores_defense", "ignores_evasion", "ignores_resistance", "max_depth",
+	"guaranteed_escape", "ignores_evasion", "max_depth",
 	"meta_effect", "mp_restore_percent", "multiplier", "next_attack_multiplier", "penalty",
 	"priority", "recoil_pct", "steals", "success_rate", "threat_class",
 ]
@@ -176,6 +177,7 @@ const GRIND_PATH_MARKER := {
 	"drain_percentage": "_drain_to(",
 	"scales_with": "_scaled_base(",
 	"drain_mp": "_siphon_mp(",
+	"ignores_defense": "ability.get(\"ignores_defense\"",
 	## Mapped, but NOT path-checked: live reads secondary_effect inside _apply_secondary_effect, a
 	## dispatcher rather than a per-type executor, so _live_executor_count sees no executor and the
 	## arm skips it. Its support-only placement is pinned in
