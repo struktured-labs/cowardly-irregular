@@ -64,7 +64,7 @@ const CLOSED_PENDING_FOLD := [
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
 	"absorb_amount", "ap_gain", "cost", "countdown", "crit_chance", "damage_to_self_pct",
-	"damage_variance", "drain_mp", "element_boost", "element_boost_modifier", "evasion_bonus",
+	"damage_variance", "element_boost", "element_boost_modifier", "evasion_bonus",
 	"guaranteed_escape", "ignores_defense", "ignores_evasion", "ignores_resistance", "max_depth",
 	"meta_effect", "mp_restore_percent", "multiplier", "next_attack_multiplier", "penalty",
 	"priority", "recoil_pct", "steals", "success_rate", "threat_class",
@@ -175,6 +175,7 @@ const GRIND_PATH_MARKER := {
 	"hits": "for _h in hits",
 	"drain_percentage": "_drain_to(",
 	"scales_with": "_scaled_base(",
+	"drain_mp": "_siphon_mp(",
 	## Mapped, but NOT path-checked: live reads secondary_effect inside _apply_secondary_effect, a
 	## dispatcher rather than a per-type executor, so _live_executor_count sees no executor and the
 	## arm skips it. Its support-only placement is pinned in

@@ -782,6 +782,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## 04f2b2f8 and the grind hit harder than the game it simulates — @cowir-battle 2d14d92d.
 					var dealt: int = target.take_damage(actual, true)
 					_drain_to(caster, dealt, drain_pct, ability_id)
+					## PER TARGET and gated on damage landing, mirroring BattleManager:5085-5090 — so
+					## memory_drain (all_enemies) stacks its restore across the party exactly as live does.
+					_siphon_mp(caster, ability, dealt, ability_id)
 					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dealt])
 					_maybe_inflict_status(caster, target, ability, ability_id)
 
@@ -1065,6 +1068,25 @@ func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array
 		else:
 			t.add_status(sec_effect, sec_duration)
 		_log("%s: secondary %s on %s (%s)" % [caster.combatant_name, sec_effect, t.combatant_name, ability_id])
+
+
+
+## The MP a damaging magic ability siphons back to its caster, mirroring BattleManager:5085.
+##
+## ⛔ Two POOLED monsters advertise an MP siphon and got nothing in the grind: data_wraith's data_drain
+## (20) and the_absence's memory_drain (15, all_enemies). Live refills the caster per damaging hit, so
+## they keep casting; here they ran dry and stopped, and the grind's version of those fights was
+## weaker than the game's — which is what the safety limits are calibrated against.
+##
+## Magic arm ONLY, because live reads drain_mp only in _execute_magic_ability and both owners are
+## type=magic. Adding it elsewhere would make the grind harsher than the game it simulates.
+func _siphon_mp(caster, ability: Dictionary, damage_dealt: int, ability_id: String) -> void:
+	var amount: int = int(ability.get("drain_mp", 0))
+	if amount <= 0 or damage_dealt <= 0 or caster == null or not caster.is_alive:
+		return
+	var restored: int = caster.restore_mp(amount)
+	if restored > 0:
+		_log("%s siphons %d MP with %s" % [caster.combatant_name, restored, ability_id])
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
