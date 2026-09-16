@@ -19,6 +19,12 @@ const FORMATIONS = [
 
 ## Group attack cooldown — don't spam every round
 const GROUP_ATTACK_COOLDOWN = 3
+## Every per-battle meta this file sets. Cleared at the battle boundary alongside live's seven
+## fields — cowir-battle's ec70e8e43 extended live's clear from FIELDS to METAS after
+## _summon_followup kept a lingering eidolon hitting in the NEXT encounter. A const rather than a
+## literal so test_autogrind_a_battle_starts_clean_regression can compare it against the set_meta
+## calls in this file and red when a fourth appears unlisted.
+const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget"]
 var _rounds_since_group_attack: int = 99
 
 var _player_party: Array = []
@@ -65,6 +71,12 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 		## and its comment records that 0 was the bug.
 		if "doom_counter" in combatant:
 			combatant.doom_counter = -1
+		## Metas too, tracking live. Cleared AFTER the fields on purpose: _regen_per_turn and
+		## _damage_absorb_budget are bounded by statuses cleared just above, so dropping the status
+		## without its meta leaves a number nothing owns — which is how the ward went uncapped.
+		for meta_key in PER_BATTLE_METAS:
+			if combatant.has_meta(meta_key):
+				combatant.remove_meta(meta_key)
 
 	## Tick 145: mark encountered monsters as seen in the bestiary,
 	## mirroring BattleScene._show_battle_quip. Pre-fix autogrind
