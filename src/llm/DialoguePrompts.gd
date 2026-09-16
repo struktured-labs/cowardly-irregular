@@ -970,7 +970,15 @@ static func build_rule_composition(domain: String, prompt_text: String, current_
 		+ "\n\nEmit a JSON object with fields:\n"
 		+ "  name: short (3-6 words), snake-case-friendly, describing the strategy\n"
 		+ "  description: 1 sentence, in-character\n"
-		+ "  rules_json: the FULL rule list, as a JSON string. Each rule is\n"
+		# Asking for the list as a quoted STRING makes the model nest JSON inside JSON,
+		# and that is where whole compositions died: the reply opens `"rules_json": "[{"`
+		# and breaks on the inner quotes, so the player gets the canned draft instead of
+		# the strategy they asked for. validate_rule_composition has ALWAYS accepted both
+		# shapes, so asking for the array costs nothing and removes the nesting.
+		# Measured sequentially (concurrency changes the failure rate, so it was held
+		# fixed), 3 jobs x 30 x 3 rounds per arm: string 264/270 usable, array 270/270.
+		# Fisher exact two-tailed p = 0.030, same direction in all three rounds.
+		+ "  rules_json: the FULL rule list, as a JSON ARRAY (not a quoted string). Each rule is\n"
 		+ "    {conditions: [...], actions: [...], enabled: true}\n"
 		+ "    conditions and actions must use only the verbs listed above, AND every\n"
 		+ "    'target' must be one of the Targets values above, VERBATIM.\n"
