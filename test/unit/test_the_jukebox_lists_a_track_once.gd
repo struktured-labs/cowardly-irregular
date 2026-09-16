@@ -158,7 +158,8 @@ func test_the_prompt_catalog_never_hands_two_beds_one_name() -> void:
 	## `/shared_tracks/cutscene_w6_entering_nothing` — and the manifest inherited it at generation.
 	## Fixing only the manifest leaves the next run free to write it back.
 	##
-	## Measured 2026-09-16 after the retitle: 180 templates, 0 colliding.
+	## The template count is derived and printed by the CONTROL below, not restated here — nine
+	## staged prompts are waiting on a Suno login, so this figure is one login from wrong.
 	var raw: String = FileAccess.get_file_as_string(CATALOG)
 	assert_gt(raw.length(), 1000, "CONTROL: the prompt catalog read back %d chars" % raw.length())
 	var parsed: Variant = JSON.parse_string(raw)
