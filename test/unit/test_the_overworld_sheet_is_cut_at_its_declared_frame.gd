@@ -151,3 +151,59 @@ func test_the_overworld_loader_reads_the_declaration() -> void:
 		"the hardcoded 32px frame is the rule this file replaced")
 	assert_false(code.contains("img.get_width() < 128"),
 		"the 'big enough' check is what let a wrong-shaped sheet through to be mis-sliced")
+	# The CALL SITE, not just the helper. A correct _fit_to_sprite_size that the cut loop never
+	# calls passes every arm above — this lane's mutation 7, and the reason this line exists.
+	assert_true(code.contains("_fit_to_sprite_size(frame_img)"),
+		"the cut loop must normalise each frame to SPRITE_SIZE, or a correctly-sliced 48px sheet renders oversized")
+
+
+## ⛔ THE HALF THIS FIX NEARLY BROKE. Deriving the CUT while everything else still assumes 32 is
+## worse than assuming both: the two agree on every sheet EXCEPT the ones the fix was written for.
+## A 48px sheet would go from mis-sliced (wrong art, right size) to correctly sliced and oversized
+## (right art, wrong size), 1.5x the procedural fallback and 1.5x a STEP_DISTANCE tile.
+##
+## cowir-cutscenes hit this exact shape one branch after their slicer fix (2026-09-16, d92d368f):
+## `_load_sheet` measured the frame while `show_emote` kept computing from the constant. Their
+## sentence is the rule — ONE HALF DERIVED AND ONE HALF GUESSING IS WORSE THAN BOTH GUESSING —
+## and I went looking here because of it rather than finding it myself.
+func test_a_frame_cut_at_any_size_still_renders_at_sprite_size() -> void:
+	const OWP := preload("res://src/exploration/OverworldPlayer.gd")
+	var player = OWP.new()
+	add_child_autofree(player)
+	var sprite_size: int = OWP.SPRITE_SIZE
+	assert_eq(sprite_size, 32, "PRECONDITION: the overworld renders at 32px, one STEP_DISTANCE tile")
+
+	# A frame larger than SPRITE_SIZE must come back AT SPRITE_SIZE, not at its own size.
+	var big := Image.create(48, 48, true, Image.FORMAT_RGBA8)
+	big.fill(Color(1, 0, 0, 1))
+	var fitted: Image = player.call("_fit_to_sprite_size", big)
+	assert_eq(Vector2i(fitted.get_width(), fitted.get_height()), Vector2i(sprite_size, sprite_size),
+		"a 48px frame must be normalised to %dpx — otherwise the player renders 1.5x the tile" % sprite_size)
+
+	# Smaller too, or a 16px sheet would render half-size beside the procedural fallback.
+	var small := Image.create(16, 16, true, Image.FORMAT_RGBA8)
+	small.fill(Color(0, 1, 0, 1))
+	var up: Image = player.call("_fit_to_sprite_size", small)
+	assert_eq(Vector2i(up.get_width(), up.get_height()), Vector2i(sprite_size, sprite_size),
+		"a 16px frame must also land at %dpx" % sprite_size)
+
+	# ⛔ AND THE CONTROL: a frame ALREADY at SPRITE_SIZE must be returned untouched, or every
+	# shipped 32px sheet pays a resize it does not need and the arms above pass on a no-op.
+	var exact := Image.create(sprite_size, sprite_size, true, Image.FORMAT_RGBA8)
+	exact.fill(Color(0, 0, 1, 1))
+	var same: Image = player.call("_fit_to_sprite_size", exact)
+	assert_eq(Vector2i(same.get_width(), same.get_height()), Vector2i(sprite_size, sprite_size),
+		"a frame already at SPRITE_SIZE stays at SPRITE_SIZE")
+	assert_eq(same.get_pixel(0, 0), Color(0, 0, 1, 1),
+		"...and is returned unaltered — the fitted path must not touch a sheet that needs no fitting")
+
+	# Aspect is preserved, foot-aligned: a WIDE frame keeps its shape rather than being squashed.
+	var wide := Image.create(64, 32, true, Image.FORMAT_RGBA8)
+	wide.fill(Color(1, 1, 0, 1))
+	var w: Image = player.call("_fit_to_sprite_size", wide)
+	assert_eq(Vector2i(w.get_width(), w.get_height()), Vector2i(sprite_size, sprite_size),
+		"a non-square frame still lands on a square canvas")
+	assert_eq(w.get_pixel(sprite_size / 2, sprite_size - 1), Color(1, 1, 0, 1),
+		"...foot-aligned to the bottom, same baseline as the procedural sprite")
+	assert_eq(w.get_pixel(sprite_size / 2, 0), Color(0, 0, 0, 0),
+		"...with the headroom left transparent rather than the art stretched into it")
