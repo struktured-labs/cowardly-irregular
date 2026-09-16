@@ -1051,6 +1051,9 @@ func _make_svc_with_null_only() -> Node:
 	svc.add_child(nb)
 	svc._backends.append(nb)
 	nb.request_finished.connect(svc._on_backend_finished)
+	## NO existence floor here DELIBERATELY: renaming _select_backend makes this file
+	## EC=4 · Risky 2 — rung 1, which run_tests.sh already names. A floor would add the
+	## member's name and nothing else. Measured 2026-09-16.
 	svc._select_backend()
 	return svc
 

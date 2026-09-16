@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## The LLM Rule Composer told the model a rule holds four actions. It holds five.
 ##
 ## Full Bank raised the bank to five actions at +4 AP, and
@@ -116,3 +118,32 @@ func test_the_grammar_really_loaded() -> void:
 	## CONTROL: every arm reads one constant. An empty grammar would fail them for the wrong reason.
 	assert_gt(_grammar().length(), 500, "the autobattle grammar must be the real text")
 	assert_true(_grammar().contains("Actions (executed in order"), "and still carry its Actions section")
+
+
+func test_the_subject_members_this_file_drives_still_exist() -> void:
+	## This file drives three composer repairs by direct call. Renaming one leaves every
+	## arm PASSING — the arm asserts, THEN aborts, so GUT scores it neither Risky nor
+	## Failed and run_tests.sh's exit 4 cannot fire. Measured 2026-09-16 on
+	## _drop_null_targets: EC 0, Passing 5/5, Failing 0, Risky 0, Asserts 14 -> 13.
+	## Derived from this file's own calls, through answering calls that cannot themselves
+	## abort.
+	var src: String = GdSource.code_of("res://test/unit/test_the_composer_knows_the_bank_is_five.gd")
+	assert_false(src.is_empty(), "CONTROL: this file's own source must be readable")
+	var builtin := Object.new()
+	var want: Array = []
+	var re_m := RegEx.create_from_string("\\brc\\.(_?[a-z][A-Za-z0-9_]*)\\s*\\(")
+	for m in re_m.search_all(src):
+		var n: String = m.get_string(1)
+		if not builtin.has_method(n) and not want.has(n):
+			want.append(n)
+	builtin.free()
+	assert_gt(want.size(), 0, "FLOOR: the derivation must find the calls this file makes, or it guards nothing")
+	var subject: Node = get_tree().root.get_node_or_null("RuleComposer")
+	assert_not_null(subject, "CONTROL: RuleComposer must be reachable")
+	var missing: Array = []
+	for n in want:
+		if not subject.has_method(str(n)):
+			missing.append(str(n) + "()")
+	assert_eq(missing, [],
+		"RuleComposer no longer has these, so the arms above assert once and then ABORT into a silent pass: %s"
+			% str(missing))
