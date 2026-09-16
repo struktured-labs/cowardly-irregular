@@ -134,6 +134,11 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 		return
 	## Methods are NOT properties: get() returns null for a method name, so the loop below cannot
 	## see a renamed METHOD. has_method ANSWERS instead of raising, same reason.
+	## ⚠️ BOTH LISTS ARE A SNAPSHOT, derived once from this file's own sm. reaches and frozen — NOT a
+	## live derivation. Add a new sm. reach to this file and it is NOT covered until you add it here.
+	## A runtime derivation would self-maintain but would read this arm's own body as corpus
+	## (cowir-sprites' tautology class), needing cowir-ai's bare-Object exclusion to stay honest.
+	## Convert it the next time this file gains a reach; until then the list is correct by being fresh.
 	for method_name in ["play_ability"]:
 		assert_true(sm.has_method(method_name),
 			"SoundManager has no method %s — this file CALLS it, and whether that shows as Risky or as a silent pass is decided by arm ORDER, not by care" % method_name)
