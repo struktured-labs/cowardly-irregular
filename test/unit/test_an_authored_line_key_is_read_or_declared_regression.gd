@@ -23,13 +23,20 @@ extends GutTest
 ## silence it green, only explain it green.
 
 const CUTSCENE_DIR := "res://data/cutscenes"
-const SRC_FILES := [
-	"res://src/cutscene/CutsceneDirector.gd",
-	"res://src/cutscene/CutsceneDialogue.gd",
-	"res://src/cutscene/CutsceneActor.gd",
-	"res://src/cutscene/PartyChatSystem.gd",
-	"res://src/save/ChapterTitles.gd",
-]
+## ⛔ THIS WAS A HAND-LIST OF FIVE PATHS and that is the hole cowir-controller found in their own
+## shoulder-caption guard the same day (11649): the class was guarded, the corpus was curated, and a
+## sixth surface carrying the defect redded nothing. Mine had the same shape one day old — a NEW file
+## consuming dialogue lines would not be scanned, so a DECLARED-inert key could gain a reader there
+## and the declaration would outlive its fact in silence.
+##
+## TWO corpora now, derived, because the two arms ask different questions:
+##   LINE_CONSUMER_DIR   every .gd in the cutscene lane — "does the code that consumes a line read
+##                       this key?" is a question about that code, and new files join automatically
+##   SRC_ROOT            the whole tree — "has a declared-inert key gained ANY reader?" is the claim
+##                       the declaration makes, and it is tree-wide
+const LINE_CONSUMER_DIR := "res://src/cutscene"
+const EXTRA_LINE_CONSUMERS := ["res://src/save/ChapterTitles.gd"]
+const SRC_ROOT := "res://src"
 
 ## key -> why it is inert and who holds the decision. An empty note is not a declaration.
 const DECLARED_INERT := {
@@ -41,11 +48,39 @@ const DECLARED_INERT := {
 const CONDITION_SITES := ["world1_transition.json", "world2_transition.json"]
 
 
+## The lane's own consumers, derived from the directory rather than named.
 func _sources() -> String:
 	var all: String = ""
-	for p in SRC_FILES:
+	var paths: Array = _gd_files_in(LINE_CONSUMER_DIR, false)
+	for p in EXTRA_LINE_CONSUMERS:
+		if not paths.has(p):
+			paths.append(p)
+	for p in paths:
 		all += FileAccess.get_file_as_string(p)
 	return all
+
+
+## Every .gd under src/, for the tree-wide claim a declaration makes.
+func _all_sources() -> String:
+	var all: String = ""
+	for p in _gd_files_in(SRC_ROOT, true):
+		all += FileAccess.get_file_as_string(p)
+	return all
+
+
+func _gd_files_in(dir_path: String, recurse: bool) -> Array:
+	var out: Array = []
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return out
+	for f in dir.get_files():
+		if f.ends_with(".gd"):
+			out.append("%s/%s" % [dir_path, f])
+	if recurse:
+		for d in dir.get_directories():
+			out.append_array(_gd_files_in("%s/%s" % [dir_path, d], true))
+	out.sort()
+	return out
 
 
 ## Every line-level key any authored dialogue uses, with the files that use it.
@@ -105,6 +140,9 @@ func test_every_authored_line_key_is_read_or_declared() -> void:
 ## CONTROL, both directions: the instrument must find a key the runtime really reads and miss one
 ## nothing does, or the arm above passes on anything.
 func test_control_the_reader_check_discriminates() -> void:
+	var lane: Array = _gd_files_in(LINE_CONSUMER_DIR, false)
+	assert_gt(lane.size(), 3,
+		"ANTI-VACUITY: the lane corpus must be derived and non-trivial (%d files)" % lane.size())
 	var src: String = _sources()
 	assert_true(_is_read("portrait", src), "the runtime demonstrably reads `portrait`")
 	assert_false(_is_read("zzq_fabricated_line_key", src), "and does not read a key nobody authored")
@@ -123,10 +161,13 @@ func test_an_inert_declaration_carries_its_reasoning() -> void:
 ## The moment the runtime starts reading a key this file calls inert, the declaration is the lie.
 ## (cowir-sprites' third arm in b058b6ac, applied here — same hazard, different authored surface.)
 func test_a_declared_key_that_gained_a_reader_is_no_longer_inert() -> void:
-	var src: String = _sources()
+	var files: Array = _gd_files_in(SRC_ROOT, true)
+	assert_gt(files.size(), 150,
+		"ANTI-VACUITY: the tree-wide corpus must actually load (%d files) — a short corpus reports every key unread" % files.size())
+	var src: String = _all_sources()
 	for k in DECLARED_INERT.keys():
 		assert_false(_is_read(str(k), src),
-			"%s is DECLARED inert and the cutscene runtime now mentions it — wire it and delete the declaration, or record why that hit is a coincidence" % k)
+			"%s is DECLARED inert and something in src/ now mentions it — wire it and delete the declaration, or record why that hit is a coincidence" % k)
 
 
 ## The state is held to the sites that exist today: a NEW conditional line must red this, not pile on.
