@@ -273,9 +273,34 @@ const engine = new Engine(GODOT_CONFIG);
 		}
 	}
 
-	// transferSize is 0 for a same-origin response served out of the HTTP cache.
+	// ⛔ transferSize CANNOT SEE PAST A SERVICE WORKER, and since v3.33.334-alpha this page ships
+	// with one. Every response a worker returns reports transferSize 0 — INCLUDING the ones it
+	// fetched from the network for us. Measured 2026-09-13 on the live build: with index.pck
+	// struck from the worker's CACHEABLE_FILES, so the worker demonstrably went to the network,
+	// the page still read transferSize 0. `cached: transferSize === 0` therefore printed "cache"
+	// about a 175 MB download. `deliveryType` is no better: both of the worker's paths report
+	// 'cache' on a reload, which is why an earlier attempt at this was withdrawn.
+	//
+	// The cache STORE can answer it. So: with no worker, transferSize still decides (it is
+	// accurate there); with a worker, ask `caches` whether the file is actually held.
 	// Only the big payloads matter; the small files are noise either way.
-	function measurePayload() {
+	async function payloadSource(entry) {
+		const controlled = ('serviceWorker' in navigator) && !!navigator.serviceWorker.controller;
+		if (!controlled) {
+			return entry.transferSize === 0 ? 'httpcache' : 'network';
+		}
+		if (!('caches' in window)) {
+			return 'worker-unknown';        // a worker answered and nothing can say from where
+		}
+		try {
+			const hit = await caches.match(entry.name, { ignoreSearch: true });
+			return hit ? 'worker-cache' : 'worker-network';
+		} catch (err) {
+			return 'worker-unknown';        // report the inability, never guess "cache"
+		}
+	}
+
+	async function measurePayload() {
 		let entries;
 		try {
 			entries = window.performance.getEntriesByType('resource');
@@ -297,13 +322,18 @@ const engine = new Engine(GODOT_CONFIG);
 		// (175.0 MB) is re-fetched every time. A single summed verdict would hide
 		// that, and "the wasm cached" is also the control proving this instrument
 		// can see a cache hit at all.
-		const files = big.map(function (e) {
-			return {
+		const files = [];
+		for (const e of big) {
+			const source = await payloadSource(e);
+			files.push({
 				name: e.name.split('/').pop(),
-				cached: e.transferSize === 0,
+				source: source,
+				// PAID means bytes crossed the wire on this visit, whoever asked for them.
+				// A worker's own fetch costs the player exactly what a page fetch costs.
+				cached: source === 'httpcache' || source === 'worker-cache',
 				bytes: e.encodedBodySize,
-			};
-		});
+			});
+		}
 		const refetched = files.filter(function (f) { return !f.cached; });
 		const refetchedBytes = refetched.reduce(function (n, f) { return n + f.bytes; }, 0);
 		return {
@@ -534,7 +564,7 @@ const engine = new Engine(GODOT_CONFIG);
 					showDownloadProgress(current, total);
 				}
 			},
-		}).then(() => {
+		}).then(async () => {
 			setStatusMode('hidden');
 			// Never let the update check take the game down with it.
 			try {
@@ -542,7 +572,12 @@ const engine = new Engine(GODOT_CONFIG);
 			} catch (err) {
 				console.error('[shell] update watch failed to start:', err);
 			}
-			const m = measurePayload();
+			let m = null;
+			try {
+				m = await measurePayload();
+			} catch (err) {
+				m = null;                    // a failed measurement is not a cache hit
+			}
 			if (m !== null) {
 				rememberPayloadSource(m.verdict);
 			}
@@ -550,7 +585,7 @@ const engine = new Engine(GODOT_CONFIG);
 				+ (m === null ? 'unmeasurable' : m.verdict
 					+ (m.refetchedBytes > 0 ? ' (' + formatMB(m.refetchedBytes) + ' MB re-fetched)' : '')
 					+ ' · ' + m.files.map(function (f) {
-						return f.name + '=' + (f.cached ? 'cache' : 'network');
+						return f.name + '=' + f.source;
 					}).join(' '))
 				+ ' · previous visit: ' + (lastSource === null ? 'none recorded' : lastSource));
 		}, displayFailureNotice);
