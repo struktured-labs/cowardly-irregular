@@ -28,7 +28,7 @@ func _clear_latch() -> void:
 	Input.action_release("battle_defer")
 	Input.action_release("battle_advance")
 	var rel := InputEventJoypadButton.new()
-	rel.button_index = JOY_BUTTON_LEFT_SHOULDER
+	rel.button_index = _bound_button("battle_defer")
 	rel.pressed = false
 	MenuPaging.page_delta(rel)
 
@@ -53,6 +53,20 @@ func _button(index: int, pressed: bool) -> InputEventJoypadButton:
 	ev.button_index = index
 	ev.pressed = pressed
 	return ev
+
+
+## ⛔ THE BOUND INDEX IS READ FROM THE InputMap, NEVER HARDCODED. Eight test files apply controller
+## profiles, and InputProfileManager._replace_joypad_buttons ERASES an action's joypad events and
+## re-adds them at the profile's indices. battle_defer and battle_advance are both in
+## REMAPPABLE_ACTIONS, so in a batch run the default index is NOT a fact about the tree.
+## Measured: after a profile moves battle_defer from the left shoulder to the right, an event
+## carrying the old index stops reading as that action and every button arm here returns 0. That
+## is what redded gate 222, and this file passed ALONE because nothing had remapped anything.
+func _bound_button(action: String) -> int:
+	for e in InputMap.action_get_events(action):
+		if e is InputEventJoypadButton:
+			return (e as InputEventJoypadButton).button_index
+	return -1
 
 
 func _key(code: int) -> InputEventKey:
@@ -107,13 +121,18 @@ func test_a_genuine_release_arms_the_next_pull() -> void:
 
 
 func test_the_shoulder_button_still_pages() -> void:
+	var defer_btn := _bound_button("battle_defer")
+	var advance_btn := _bound_button("battle_advance")
+	assert_gt(defer_btn, -1, "precondition: battle_defer must be bound to SOME joypad button")
+	assert_gt(advance_btn, -1, "precondition: battle_advance must be bound to SOME joypad button")
+
 	Input.action_press("battle_defer")
-	assert_eq(MenuPaging.page_delta(_button(JOY_BUTTON_LEFT_SHOULDER, true)), -1,
-		"L1 is the documented control and must still page")
+	assert_eq(MenuPaging.page_delta(_button(defer_btn, true)), -1,
+		"the bound shoulder is the documented control and must still page")
 	Input.action_release("battle_defer")
-	MenuPaging.page_delta(_button(JOY_BUTTON_LEFT_SHOULDER, false))
+	MenuPaging.page_delta(_button(defer_btn, false))
 	Input.action_press("battle_advance")
-	assert_eq(MenuPaging.page_delta(_button(JOY_BUTTON_RIGHT_SHOULDER, true)), 1, "…and R1 the other way")
+	assert_eq(MenuPaging.page_delta(_button(advance_btn, true)), 1, "…and the other one pages forward")
 
 
 ## Keyboard paging is NOT gated, and must not be: keys carry an echo flag, so a hold is already
@@ -157,5 +176,5 @@ func test_a_stranded_latch_heals_itself() -> void:
 
 	assert_false(Input.is_action_pressed("battle_defer"), "precondition: nothing is actually held")
 	Input.action_press("battle_defer")
-	assert_eq(MenuPaging.page_delta(_button(JOY_BUTTON_LEFT_SHOULDER, true)), -1,
+	assert_eq(MenuPaging.page_delta(_button(_bound_button("battle_defer"), true)), -1,
 		"a stale latch must not eat the first page of the next menu")
