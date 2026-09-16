@@ -23,6 +23,8 @@ extends GutTest
 ## party member rather than a foe.
 
 const ResolverScript = preload("res://src/autogrind/HeadlessBattleResolver.gd")
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 
 var _res
 
@@ -130,3 +132,62 @@ func test_the_enemy_side_is_cleared_too_because_live_clears_all_combatants() -> 
 	foe.add_status("poison", 5)
 	_res.resolve_battle([_hero()], [foe])
 	assert_false(foe.has_status("poison"), "the clear covers both sides, as live's does")
+
+
+## ── metas, added after live's clear grew ──────────────────────────────────────────────────────────
+## ⚠️ I TOLD @cowir-battle THAT META-CLEARING WAS SYMMETRIC AND THAT MY SCOPE WAS THEREFORE RIGHT BY
+## PARITY. It was true when I measured it — neither engine cleared a single meta — and their
+## ec70e8e43 then extended live's clear from FIELDS to METAS, after _summon_followup kept a lingering
+## eidolon hitting in the NEXT encounter. My claim was correct and is now superseded, which is the
+## difference between a stale measurement and a wrong one; the licence it issued ("I need not clear
+## metas") is what expired. No arm of mine asserted the symmetry, so nothing here had to be undone —
+## but nothing here would have NOTICED either, and that is what the last arm below is for.
+
+func test_a_charge_does_not_follow_the_party_into_the_next_battle() -> void:
+	## _next_attack_multiplier is the one I raised with them: ungated per-battle state on a persistent
+	## object. Gated metas hide behind a status the boundary already clears; this one is read directly.
+	var hero := _hero()
+	hero.set_meta("_next_attack_multiplier", 1.5)
+	_res.resolve_battle([hero], [_chaff()])
+	assert_false(hero.has_meta("_next_attack_multiplier"),
+		"a charge banked at the end of one grind battle must not pay out in the next")
+
+
+func test_a_ward_budget_does_not_follow_the_party_into_the_next_battle() -> void:
+	## Bounded by a status the boundary clears, so this cannot misfire today — it is here because
+	## dropping the status WITHOUT its budget is exactly how the ward went uncapped in the first place.
+	var hero := _hero()
+	hero.add_status("damage_absorb", 3)
+	hero.set_meta("_damage_absorb_budget", 400)
+	_res.resolve_battle([hero], [_chaff()])
+	assert_false(hero.has_meta("_damage_absorb_budget"),
+		"the ward's budget must not outlive the ward — a number nothing owns is how this broke before")
+
+
+func test_every_meta_this_file_sets_is_cleared_at_the_boundary() -> void:
+	## THE INSTRUMENT, not a case. It scans the resolver for set_meta("...") literals and requires
+	## each to be listed in PER_BATTLE_METAS. A new meta added without being cleared reds HERE rather
+	## than surviving as a leak nobody enumerated — which is precisely how live's own metas escaped
+	## its field-clear for months. @cowir-battle's "a new set_meta undeclared" mutation, adopted.
+	var code: String = GdSource.code_of(GRIND)
+	assert_gt(code.length(), 2000, "CONTROL: the source must actually have loaded")
+	var declared: Array = _res.PER_BATTLE_METAS
+	assert_gt(declared.size(), 0, "CONTROL: PER_BATTLE_METAS must be readable and non-empty")
+
+	var found: Dictionary = {}
+	var at: int = code.find("set_meta(\"")
+	while at >= 0:
+		var start: int = at + 10
+		var end: int = code.find("\"", start)
+		if end > start:
+			found[code.substr(start, end - start)] = true
+		at = code.find("set_meta(\"", at + 1)
+	gut.p("    set_meta keys in the resolver: %s" % str(found.keys()))
+	assert_gt(found.size(), 0, "CONTROL: the scan must find the set_meta calls, or it proves nothing")
+
+	var unlisted: Array = []
+	for k in found:
+		if not declared.has(k):
+			unlisted.append(k)
+	assert_eq(unlisted, [],
+		"these metas are set by the grind and NOT cleared at the battle boundary: %s — add them to PER_BATTLE_METAS or say why they outlive a battle" % str(unlisted))
