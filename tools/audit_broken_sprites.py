@@ -27,6 +27,8 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+from sprite_corpus import banner
+
 import numpy as np
 from PIL import Image
 from scipy import ndimage
@@ -164,6 +166,8 @@ def audit_file(path: Path) -> dict:
 
 
 def main() -> int:
+    print(banner(GAME_REPO))
+    print()
     parser = argparse.ArgumentParser()
     parser.add_argument("--pattern", default="",
                         help="substring filter on path (e.g. 'monsters' or 'fighter')")

@@ -38,6 +38,8 @@ import json
 import sys
 from pathlib import Path
 
+from sprite_corpus import banner
+
 import numpy as np
 from PIL import Image
 from scipy import ndimage
@@ -238,6 +240,8 @@ def manifest_sheets():
 
 
 def main() -> int:
+    print(banner(GAME))
+    print()
     ap = argparse.ArgumentParser()
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--calibrate", action="store_true")
