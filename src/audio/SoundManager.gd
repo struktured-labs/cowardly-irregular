@@ -951,6 +951,13 @@ func play_ambient(sound_key: String) -> void:
 	var stream = load(path) as AudioStream
 	if not stream:
 		return
+	## ⛔ THE SAME RULE IN THE OTHER DIRECTION. The check in _try_play_from_manifest only fires
+	## when MUSIC starts second; this one covers ambient starting second on a bed the music player
+	## already holds. Music is the foreground layer, so it wins both ways and the ambient simply
+	## does not start — stop_ambient() above has already cleared the slot.
+	if _music_player and _music_player.playing and _music_player.stream \
+			and _music_player.stream.resource_path == path:
+		return
 	_ambient_player.stream = stream
 	_ambient_player.play()
 
