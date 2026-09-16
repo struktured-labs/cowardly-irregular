@@ -201,8 +201,17 @@ printf '%s' "$WANT_ID" > "$STAGE_ID_FILE"
 
 # ── 4. import + export + measure the REAL artifact ─────────────────────────
 echo "[stage] 4/4 import + export (first run builds a fresh cache, ~minutes)"
+# SANDBOXED. `--import` is editor-class: it resolves user:// by application name and writes
+# .recovery_mode_lock into whichever profile is active — struktured's, from any worktree. This
+# runs on EVERY web publish. The stage's import CACHE lives in $STAGE/.godot (res://), so
+# relocating the data root costs it nothing; the export below CANNOT carry the same variable,
+# because export templates live under the root it would relocate.
+# Found 2026-09-16 by widening check_user_data_sandboxed.py's corpus from tools/deploy_*.sh to
+# tools/*.sh — the hand-shaped glob covered 4 files and this one was not among them.
+_STAGE_XDG="$PWD/tmp/stage_xdg"
+mkdir -p "$_STAGE_XDG"
 ( cd "$STAGE" && mkdir -p builds/web \
-  && godot --headless --audio-driver Dummy --import > ../stage_import.log 2>&1 ) &
+  && XDG_DATA_HOME="$_STAGE_XDG" godot --headless --audio-driver Dummy --import > ../stage_import.log 2>&1 ) &
 IEC=0; wait $! || IEC=$?
 test $IEC -eq 0 || { echo "[stage] BLOCKED: staged import failed — tmp/stage_import.log" >&2; exit 3; }
 

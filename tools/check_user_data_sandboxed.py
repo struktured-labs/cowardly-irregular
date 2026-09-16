@@ -59,25 +59,52 @@ INSPECTORS = {"[", "test", "stat", "echo", "printf", "ls", "du", "cksum", "cat",
               "rm", "file", "dirname", "basename", "wc", "head", "tail"}
 
 
+def _in_command_position(before):
+    """Is what follows `before` an actual command, or is it text/data?
+
+    Three ways it is NOT, all measured on this repo's own tools/:
+      BASE=(godot …)                  an array DEFINITION — run_tests.sh:24
+      echo "Run: godot --import …"    ADVICE TEXT inside a string — run_tests.sh:223, :239
+      [ -s "$BIN" ] / stat …          the binary as an ARGUMENT
+    The second is this lane's documented quoted-text class: a stripper that handles `#` and
+    nothing else reads text inside quotes as code.
+    """
+    # INSIDE A STRING is data, whatever it looks like. An odd number of unescaped quotes before
+    # the match means the match is inside one. This is the lane's documented quoted-text class:
+    # a stripper that handles `#` and nothing else reads an echo'd command as a command, and
+    # run_tests.sh:223 prints the exact `godot --headless --import` line it advises you to run.
+    if before.count('"') % 2 == 1 or before.count("'") % 2 == 1:
+        return False
+    trimmed = before.rstrip()
+    if trimmed.endswith("=(") or trimmed.endswith("="):
+        return False                       # NAME=( … )  or  NAME=<thing>
+    gov = ""
+    for tok in reversed(before.replace("(", " ( ").replace("&&", " && ").split()):
+        if tok.startswith("-") or "=" in tok:
+            continue
+        gov = tok
+        break
+    if gov in INSPECTORS:
+        return False
+    return True
+
+
 def _runs_the_binary(code):
     """True only where the exported binary is in COMMAND position."""
     for m in EXPORTED_BIN.finditer(code):
         before = code[:m.start()]
         # the governing word: the last token that is neither a flag nor an env assignment
-        gov = ""
-        for tok in reversed(before.replace("(", " ( ").replace("&&", " && ").split()):
-            if tok.startswith("-") or "=" in tok:
-                continue
-            gov = tok
-            break
-        if gov in INSPECTORS:
-            continue          # the binary is an ARGUMENT here
-        if gov and gov not in RUNNERS and not gov.endswith(("&&", "(", ";", "|", "then", "do")):
-            # an unknown governing command: report it rather than assume either way, since a
-            # silent skip here is the false NEGATIVE direction and that is the costly one.
-            if gov not in ("cd",):
-                return True
+        if not _in_command_position(before):
+            continue
         return True
+    return False
+
+
+def _runs_godot(code):
+    """True only where a `godot --` match is an invocation rather than data."""
+    for m in EDITOR_CLASS.finditer(code):
+        if _in_command_position(code[:m.start()]):
+            return True
     return False
 
 
@@ -120,7 +147,7 @@ def audit(paths):
             code = cmd.split("#", 1)[0] if not cmd.lstrip().startswith("#") else ""
             if not code.strip():
                 continue
-            is_editor = bool(EDITOR_CLASS.search(code))
+            is_editor = _runs_godot(code)
             is_binary = _runs_the_binary(code)
             if not (is_editor or is_binary):
                 continue
@@ -142,7 +169,11 @@ def audit(paths):
 
 
 def main(argv):
-    paths = argv or sorted(glob.glob("tools/deploy_*.sh"))
+    # tools/*.sh, not tools/deploy_*.sh. The first corpus was hand-shaped and covered 4 files;
+    # the tools that can write user:// are 10, and the one it missed — make_web_stage.sh — runs
+    # on EVERY web publish. A neighbour list is a hypothesis about blast radius; a pattern over
+    # the tree is a measurement of it (cowir-sprites, 2026-09-16).
+    paths = argv or sorted(glob.glob("tools/*.sh"))
     findings, ok, declared, scanned = audit(paths)
     if scanned == 0:
         print("[sandbox] BLOCKED: examined no files — a check with an empty corpus passes "
@@ -207,6 +238,14 @@ def selftest():
         check("...but a REAL sandboxed run still parses", len(f), 0)
         f, o, dec, _ = audit([w("fp4.sh", 'xvfb-run -a "$BIN" -- --battle-smoke\n')])
         check("...and a REAL unsandboxed run is still FLAGGED", len(f), 1)
+
+        # data that LOOKS like an invocation. Both measured in tools/run_tests.sh.
+        f, o, dec, _ = audit([w("fp5.sh", 'BASE=(godot --headless --audio-driver Dummy -s gut.gd)\n')])
+        check("an array DEFINITION is not an invocation", len(f), 0)
+        f, o, dec, _ = audit([w("fp6.sh", 'echo "      Run: godot --headless --import --quit, then re-run" >&2\n')])
+        check("ADVICE TEXT in an echo is not an invocation", len(f), 0)
+        f, o, dec, _ = audit([w("fp7.sh", 'godot --headless --import --quit\n')])
+        check("...but the same command, bare, IS flagged", len(f), 1)
 
         # the declared exception
         f, o, dec, _ = audit([w("f.sh", 'godot --headless --export-release "$PRESET" "$BIN"\n')])
