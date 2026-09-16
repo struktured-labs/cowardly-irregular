@@ -1174,6 +1174,15 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 		if base_tex != null:
 			return base_tex
 
+	# LAST rung before a drawn face: a bust from the speaker's MONSTER sheet. Measured 2026-09-16:
+	# 13 speaking ids (the goblin and 12 masterite world-variants) have art on disk that no rung
+	# above looked at — the job rung reads assets/sprites/jobs only — so 396 authored lines drew a
+	# PROCEDURAL face for characters the game already has art for, while the SAME masterite in
+	# another world showed its portrait.
+	var monster_bust = _create_bust_from_monster_sheet(portrait_type)
+	if monster_bust != null:
+		return monster_bust
+
 	# Fallback to procedural portrait generation
 	var size = int(PORTRAIT_SIZE - 8)
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
@@ -1255,6 +1264,38 @@ func _create_bust_from_job_sheet(job_id: String) -> Texture2D:
 	var atlas := AtlasTexture.new()
 	atlas.atlas = sheet
 	atlas.region = Rect2(HybridSpriteLoader.bust_region(sheet_path, frame, BUST_CROP_RATIO))
+	_portrait_cache[cache_key] = atlas
+	return atlas
+
+
+## Bust cropped from a monster sheet's idle frame. Same crop rule as the job rung — one owner,
+## `HybridSpriteLoader.bust_region` (cowir-sprites' path-side helper), no second scan.
+func _create_bust_from_monster_sheet(monster_id: String) -> Texture2D:
+	if monster_id.is_empty():
+		return null
+	var suffix := HybridSpriteLoader.current_world_suffix()
+	var cache_key := "mbust:%s:%s" % [monster_id, suffix]
+	if _portrait_cache.has(cache_key):
+		return _portrait_cache[cache_key]
+	# Per-world variant first, same convention as the battle sheet lookup (`slime_suburban`).
+	var frame_tex: AtlasTexture = null
+	if suffix != "" and suffix != "medieval":
+		frame_tex = HybridSpriteLoader.monster_frame_texture("%s_%s" % [monster_id, suffix], "idle")
+	if frame_tex == null:
+		frame_tex = HybridSpriteLoader.monster_frame_texture(monster_id, "idle")
+	if frame_tex == null or frame_tex.atlas == null:
+		_portrait_cache[cache_key] = null
+		return null
+	var sheet_path: String = frame_tex.atlas.resource_path
+	var frame: int = int(frame_tex.region.size.y)
+	if sheet_path.is_empty() or frame <= 0:
+		_portrait_cache[cache_key] = null
+		return null
+	var box := HybridSpriteLoader.bust_region(sheet_path, frame, BUST_CROP_RATIO)
+	var atlas := AtlasTexture.new()
+	atlas.atlas = frame_tex.atlas
+	# bust_region measures frame 0; offset into whichever frame the idle animation starts on.
+	atlas.region = Rect2(frame_tex.region.position + Vector2(box.position), Vector2(box.size))
 	_portrait_cache[cache_key] = atlas
 	return atlas
 
