@@ -28,40 +28,40 @@ func test_win98_menu_has_echo_checks() -> void:
 	var content = FileAccess.get_file_as_string("res://src/ui/Win98Menu.gd")
 
 	# Check for echo checks on navigation
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"Win98Menu should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"Win98Menu should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/Win98Menu.gd", "ui_up"),
+		"Win98Menu must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/Win98Menu.gd", "ui_down"),
+		"Win98Menu must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_overworld_menu_has_echo_checks() -> void:
 	"""OverworldMenu should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/OverworldMenu.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"OverworldMenu should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"OverworldMenu should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/OverworldMenu.gd", "ui_up"),
+		"OverworldMenu must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/OverworldMenu.gd", "ui_down"),
+		"OverworldMenu must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_items_menu_has_echo_checks() -> void:
 	"""ItemsMenu should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/ItemsMenu.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"ItemsMenu should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"ItemsMenu should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/ItemsMenu.gd", "ui_up"),
+		"ItemsMenu must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/ItemsMenu.gd", "ui_down"),
+		"ItemsMenu must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_save_screen_has_echo_checks() -> void:
 	"""SaveScreen should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/SaveScreen.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"SaveScreen should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"SaveScreen should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/SaveScreen.gd", "ui_up"),
+		"SaveScreen must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/SaveScreen.gd", "ui_down"),
+		"SaveScreen must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_settings_menu_has_echo_checks() -> void:
@@ -78,10 +78,10 @@ func test_title_screen_has_echo_checks() -> void:
 	"""TitleScreen should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/TitleScreen.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"TitleScreen should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"TitleScreen should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/TitleScreen.gd", "ui_up"),
+		"TitleScreen must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/TitleScreen.gd", "ui_down"),
+		"TitleScreen must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_equipment_menu_has_echo_checks() -> void:
@@ -98,20 +98,20 @@ func test_abilities_menu_has_echo_checks() -> void:
 	"""AbilitiesMenu should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/AbilitiesMenu.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"AbilitiesMenu should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"AbilitiesMenu should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/AbilitiesMenu.gd", "ui_up"),
+		"AbilitiesMenu must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/AbilitiesMenu.gd", "ui_down"),
+		"AbilitiesMenu must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_character_creation_has_echo_checks() -> void:
 	"""CharacterCreationScreen should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/CharacterCreationScreen.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"CharacterCreationScreen should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"CharacterCreationScreen should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/CharacterCreationScreen.gd", "ui_up"),
+		"CharacterCreationScreen must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/CharacterCreationScreen.gd", "ui_down"),
+		"CharacterCreationScreen must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_virtual_keyboard_has_echo_checks() -> void:
@@ -128,30 +128,30 @@ func test_autobattle_grid_editor_has_echo_checks() -> void:
 	"""AutobattleGridEditor should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/autobattle/AutobattleGridEditor.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"AutobattleGridEditor should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"AutobattleGridEditor should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/autobattle/AutobattleGridEditor.gd", "ui_up"),
+		"AutobattleGridEditor must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/autobattle/AutobattleGridEditor.gd", "ui_down"),
+		"AutobattleGridEditor must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_autogrind_grid_editor_has_echo_checks() -> void:
 	"""AutogrindGridEditor should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindGridEditor.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"AutogrindGridEditor should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"AutogrindGridEditor should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/autogrind/AutogrindGridEditor.gd", "ui_up"),
+		"AutogrindGridEditor must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/autogrind/AutogrindGridEditor.gd", "ui_down"),
+		"AutogrindGridEditor must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_autogrind_ui_has_echo_checks() -> void:
 	"""AutogrindUI should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindUI.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"AutogrindUI should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"AutogrindUI should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/autogrind/AutogrindUI.gd", "ui_up"),
+		"AutogrindUI must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/autogrind/AutogrindUI.gd", "ui_down"),
+		"AutogrindUI must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 ## Signal cleanup tests

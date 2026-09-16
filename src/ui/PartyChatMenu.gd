@@ -196,6 +196,14 @@ func _ensure_selection_visible() -> void:
 	_scroll.ensure_control_visible(row)
 
 
+## One owner for a row step.
+func _nav_step(step: int) -> void:
+	if _row_nodes.is_empty():
+		return
+	_selection = (_selection + step + _row_nodes.size()) % _row_nodes.size()
+	_highlight()
+
+
 func _input(event: InputEvent) -> void:
 	if _playing:
 		return
@@ -209,13 +217,13 @@ func _input(event: InputEvent) -> void:
 			_close("")
 			get_viewport().set_input_as_handled()
 		return
-	if event.is_action_pressed("ui_up"):
-		_selection = (_selection - 1 + _row_nodes.size()) % _row_nodes.size()
-		_highlight()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down"):
-		_selection = (_selection + 1) % _row_nodes.size()
-		_highlight()
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis and an axis carries no
+	# echo flag, so one push used to step ~5 rows. This menu also lacked the `not event.is_echo()`
+	# its neighbours carry — which granted nothing either way, because is_action_pressed defaults
+	# allow_echo=false. Measured: the arm for it passes against the old code too.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 	elif MenuPaging.page_delta(event) != 0:
 		# The registry carries 44 chats and availability grows all game; clamped, not wrapped, like every other paging menu.
