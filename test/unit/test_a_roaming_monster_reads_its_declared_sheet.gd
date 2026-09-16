@@ -169,6 +169,9 @@ func test_every_member_this_guard_drives_by_name_exists() -> void:
 	add_child_autofree(subject)
 	var calls: Dictionary = GuardSubject.audit_calls("res://test/unit/test_a_roaming_monster_reads_its_declared_sheet.gd", subject)
 	var props: Dictionary = GuardSubject.audit_properties("res://test/unit/test_a_roaming_monster_reads_its_declared_sheet.gd", subject)
+	assert_eq((str(calls["why"]) + " " + str(props["why"])).strip_edges(), "",
+		("the COMMENT STRIP failed, so the derived member list is prose or empty — that is the "
+		+ "INSTRUMENT, not the subject: %s %s") % [calls["why"], props["why"]])
 	assert_gt(int(calls["found"]) + int(props["found"]), 0,
 		"VOID: no `.call(\"name\")` or `.get(\"_name\")` found in this file's own text — the extraction is broken, not the subject")
 	assert_eq(calls["missing"], [],

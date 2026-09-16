@@ -1,0 +1,29 @@
+extends GutTest
+
+## A FIXTURE, NOT A GUARD. `.gd.txt` so nothing parses it and GUT never collects it — it exists to
+## be READ, which is the only way guard_subject.gd touches a file.
+##
+## It carries FOUR member names in two forms. A comment-blind extraction reports all four; a
+## correct one reports the two the code actually reaches:
+##
+##   prose, `##` line   .call("_only_in_hash_prose")   .get("_hash_prop")     NOT reached
+##   prose, docstring   see the """ region below                              NOT reached
+##   code               _only_in_code                  _code_prop             reached
+##
+## ⛔ THE `##` HALF AND THE `"""` HALF ARE SEPARATE FAILURES and this lane has shipped the second
+## one twice: a `#`-only strip cannot touch a docstring region (gd_source's `.325` defect), so a
+## fixture carrying only `##` prose would pass against a half-fixed stripper.
+##
+## ⚠️ THE NAMES ARE DELIBERATELY IMPOSSIBLE. `_only_in_hash_prose` exists on no class in this
+## project, so if a strip regression lets it through, the audit reports it MISSING on any subject —
+## the arm reds naming the exact leaked name rather than failing some count.
+
+
+func test_that_never_runs() -> void:
+	"""
+	A docstring region. It names `.call("_only_in_docstring")` and `.get("_docstring_prop")` and
+	reaches neither. Under a `#`-only strip both survive into the code half.
+	"""
+	var subject: Object = self
+	subject.call("_only_in_code")
+	var _v = subject.get("_code_prop")

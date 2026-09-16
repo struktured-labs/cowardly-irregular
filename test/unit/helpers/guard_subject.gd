@@ -33,6 +33,33 @@ extends RefCounted
 ## ⛔ `has_method` and `get_method_list` ANSWER rather than raising. An existence arm built on a
 ## direct reference aborts alongside the arms it exists to catch (cowir-sfx), which makes it
 ## decoration.
+##
+## ⛔ AND THE NAMES ARE DERIVED FROM THE CODE HALF, NOT THE RAW FILE. A guard's header is the
+## LIKELIEST prose to name a renamed member — it documents the very renames these floors exist to
+## catch, and this file's own header does it four times. Over raw source that prose is a reach in
+## both directions: a name the subject HAS inflates `found`, so the void floor is satisfied by
+## comment text alone, and a name it has LOST reds an arm that is correct. Measured on all four
+## callers 2026-09-16 before the strip went in — raw and stripped agreed on every one, so the
+## hazard was LATENT rather than live, and the fix is cheap precisely because nothing had to move.
+
+
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
+
+## A guard's own source with prose removed, and the two strip failures kept apart.
+##
+## ⚠️ THE STRIPPER IS AN INSTRUMENT TOO — gd_source's own contract requires every caller to prove
+## the strip fired. An OVER-strip empties the code half, which the caller's `found > 0` floor
+## already catches. An UNDER-strip hands prose back AS code and is invisible to that floor, so it
+## is checked here: every caller carries `##` lines, so the code half must come back shorter.
+static func _code_of(own_source_path: String) -> Dictionary:
+	var src := FileAccess.get_file_as_string(own_source_path)
+	if src.length() < 200:
+		return {"code": "", "why": "%s read as %d bytes" % [own_source_path, src.length()]}
+	var code := str(GdSource.split(src).get("code", ""))
+	if src.contains("\n##") and code.length() >= src.length():
+		return {"code": "", "why": "the comment strip removed nothing from a file with ## headers"}
+	return {"code": code, "why": ""}
 
 
 ## Every `.call("name")` literal in a guard's OWN source, paired with whether the subject has it.
@@ -41,9 +68,11 @@ extends RefCounted
 ## is non-zero, because an extraction that matched nothing reports an empty `missing` and reads
 ## exactly like a clean subject.
 static func audit_calls(own_source_path: String, subject: Object) -> Dictionary:
-	var out := {"found": 0, "missing": [] as Array}
-	var src := FileAccess.get_file_as_string(own_source_path)
-	if src.length() < 200:
+	var out := {"found": 0, "missing": [] as Array, "why": ""}
+	var read := _code_of(own_source_path)
+	out["why"] = read["why"]
+	var src := str(read["code"])
+	if src == "":
 		return out
 	var re := RegEx.new()
 	re.compile('\\.call\\("([a-zA-Z_][a-zA-Z_0-9]*)"')
@@ -68,9 +97,11 @@ static func audit_calls(own_source_path: String, subject: Object) -> Dictionary:
 ## `Object.get()` returns null for an absent property AND for a property that is legitimately null,
 ## so existence is read off the property list rather than off the value.
 static func audit_properties(own_source_path: String, subject: Object) -> Dictionary:
-	var out := {"found": 0, "missing": [] as Array}
-	var src := FileAccess.get_file_as_string(own_source_path)
-	if src.length() < 200:
+	var out := {"found": 0, "missing": [] as Array, "why": ""}
+	var read := _code_of(own_source_path)
+	out["why"] = read["why"]
+	var src := str(read["code"])
+	if src == "":
 		return out
 	var re := RegEx.new()
 	re.compile('\\.(?:get|set)\\("(_[a-zA-Z_0-9]*)"')
