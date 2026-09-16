@@ -6,9 +6,11 @@ const TRIPLE := '"""'
 ##
 ## `audit_wrap_seams.py` resolves every bed through the manifest's `file` key,
 ## which names the MASTERS in `assets/audio/music`. Every web build ships a
-## different artifact: `make_web_audio.sh` transcodes all 161 masters to 48 kbps
-## MONO, `make_web_stage.sh` packs that tier, and `deploy_web.sh` pins the
-## bitrate to 48 explicitly. So for months the gate printed
+## different artifact: `make_web_audio.sh` transcodes all 161 masters to a
+## reduced-bitrate MONO tier, `make_web_stage.sh` packs it, and `deploy_web.sh`
+## pins which tier through `WEB_AUDIO_KBPS` (48 until struktured's 2026-09-16
+## ruling dropped the web build to 40k for the browser cache line). So for
+## months the gate printed
 ##
 ##     146 looping beds measured, 0 jump more than 12 dB
 ##
@@ -73,7 +75,7 @@ func test_the_gate_can_be_pointed_at_a_corpus_other_than_the_masters() -> void:
 	assert_false(code.contains("Measure the WRAP of every looping bed"),
 		"CONTROL FAILED: a DOCSTRING survived the strip. Every presence assert below can then be satisfied by prose, and this guard has no behavioural arm to catch it")
 	assert_true(code.contains("\"--from\""),
-		"audit_wrap_seams.py takes no corpus option in CODE — it can only measure the masters, and the web build ships a 48 kbps transcode of them")
+		"audit_wrap_seams.py takes no corpus option in CODE — it can only measure the masters, and the web build ships a reduced-bitrate transcode of them")
 	assert_true(code.contains("CORPUS_DIR = argv["),
 		"the flag parses but never assigns the corpus root, so --from is accepted and ignored")
 	assert_true(code.contains("os.path.basename"),
@@ -132,7 +134,28 @@ func test_the_report_names_the_audio_it_measured() -> void:
 		"the default branch must say it is reading the MASTERS — an unlabelled default is the state this file exists to prevent")
 
 
-func test_the_shipped_tier_is_48k_mono_so_the_question_is_real() -> void:
+## Tiers this file's seam numbers were actually measured at (2026-09-12, both corpora).
+## A shipped tier outside this list has no measurement behind it, and the verdict would
+## again describe audio nobody hears — the exact defect this file exists to prevent.
+const MEASURED_TIERS: Array[int] = [48, 44, 40]
+
+
+## Derived, never restated: a second copy of the number here would go stale the next
+## time the ruling moves, which is how this arm broke when 48 became 40.
+func _shipped_kbps() -> int:
+	var deploy: String = FileAccess.get_file_as_string("res://tools/deploy_web.sh")
+	assert_gt(deploy.length(), 500, "SCOPE control: deploy_web.sh read back %d chars" % deploy.length())
+	var re: RegEx = RegEx.create_from_string("WEB_AUDIO_KBPS:-([0-9]+)")
+	var m: RegExMatch = re.search(deploy)
+	assert_not_null(m, "deploy_web.sh no longer pins a bitrate through WEB_AUDIO_KBPS — the shipped tier cannot be derived, so nothing below knows which corpus ships")
+	if m == null:
+		return 0
+	assert_true(deploy.contains("make_web_stage.sh \"$WEB_AUDIO_KBPS\""),
+		"deploy_web.sh pins a bitrate it does not hand to the stage script — the stage default would ship instead, and the pin would be decorative")
+	return int(m.get_string(1))
+
+
+func test_the_shipped_tier_is_a_measured_mono_reencode_so_the_question_is_real() -> void:
 	## SCOPE control for the whole file. If the web build ever stops transcoding,
 	## every arm above still passes while defending nothing.
 	var audio: String = FileAccess.get_file_as_string("res://tools/make_web_audio.sh")
@@ -141,17 +164,20 @@ func test_the_shipped_tier_is_48k_mono_so_the_question_is_real() -> void:
 		"the web tier is no longer a re-encode — if it became a copy, seams could not move and this file is moot")
 	assert_true(audio.contains("-ac 1"),
 		"the web tier is no longer folded to mono — the stereo fold is half of why a seam can move")
-	var deploy: String = FileAccess.get_file_as_string("res://tools/deploy_web.sh")
-	assert_true(deploy.contains("make_web_stage.sh 48"),
-		"deploy_web.sh no longer pins the bitrate to 48 — the tier the gate should be pointed at has changed, and the numbers in this file's header were measured at 48k")
+	var kbps: int = _shipped_kbps()
+	assert_true(kbps in MEASURED_TIERS,
+		"the web build ships a %dk tier and this file's numbers were measured at %s — re-run audit_wrap_seams.py --from tmp/web_audio/music_%dk and add the tier to MEASURED_TIERS, or the gate speaks about audio nobody ships" % [kbps, str(MEASURED_TIERS), kbps])
+
 
 ## A clean report must state its MARGIN, not only its violations.
 ##
 ## "146 looping beds measured, 0 jump more than 12 dB" is true of a corpus whose worst bed
 ## sits at 3 dB and of one sitting at 11.8 — and ambient_cave is the second. Measured
-## 2026-09-12: +11.8 dB on the MASTERS, +11.7 at the shipped 48k tier, a 0.2 dB margin the
+## 2026-09-12: +11.8 dB on the MASTERS, +11.7 at the then-shipped 48k tier, a 0.2 dB margin the
 ## gate printed nothing about for months. It is why that bed crosses at 44k (+12.2) and 40k
-## (+12.1): the bitrate is the TRIGGER, not the cause. A gate that cannot distinguish
+## (+12.1): the bitrate is the TRIGGER, not the cause. ⛔ The web build MOVED to 40k on
+## 2026-09-16, so ambient_cave now crosses on the tier players actually hear — cowir-music's
+## loop point, not a gate defect. A gate that cannot distinguish
 ## comfortable from one-encode-away cannot be consulted before an encoder change, which is
 ## the one time anybody needs it.
 func test_a_clean_report_states_how_close_the_worst_bed_came() -> void:
