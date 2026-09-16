@@ -27,6 +27,11 @@ var cursor_col: int = 0
 ## Current character set (0=lower, 1=upper, 2=symbols)
 var char_set: int = 0
 
+## Hold-to-repeat, one per behaviour. The grid is 10 wide, so crossing a row is nine presses
+## without this; and the backspace branch below has claimed to repeat since it was written.
+var _nav_repeat := MenuRepeat.new()
+var _backspace_repeat := MenuRepeat.new(PackedStringArray(["ui_cancel"]))
+
 ## Visual references
 var _title_label: Label
 var _input_display: Label
@@ -329,29 +334,22 @@ func _input(event: InputEvent) -> void:
 	var max_row = layout.size() - 1
 	var max_col = layout[0].size() - 1
 
-	# Navigation - check echo to prevent rapid-fire when holding keys
+	# Navigation. The echo guards are belt-and-braces: is_action_pressed defaults allow_echo=false,
+	# so an echo already reads as not-pressed. Held repeat comes from MenuRepeat in _process.
 	if event.is_action_pressed("ui_up") and not event.is_echo():
-		cursor_row = (cursor_row - 1 + layout.size()) % layout.size()
-		_update_cursor()
-		SoundManager.play_ui("menu_move")
+		_nav_step("ui_up")
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		cursor_row = (cursor_row + 1) % layout.size()
-		_update_cursor()
-		SoundManager.play_ui("menu_move")
+		_nav_step("ui_down")
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_left") and not event.is_echo():
-		cursor_col = (cursor_col - 1 + layout[0].size()) % layout[0].size()
-		_update_cursor()
-		SoundManager.play_ui("menu_move")
+		_nav_step("ui_left")
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_right") and not event.is_echo():
-		cursor_col = (cursor_col + 1) % layout[0].size()
-		_update_cursor()
-		SoundManager.play_ui("menu_move")
+		_nav_step("ui_right")
 		get_viewport().set_input_as_handled()
 
 	# Press key (A button)
@@ -359,12 +357,14 @@ func _input(event: InputEvent) -> void:
 		_press_key()
 		get_viewport().set_input_as_handled()
 
-	# Backspace / Cancel (B button) - allow echo for backspace-like behavior
+	# Backspace, or cancel when the field is already empty.
+	# ⛔ The old comment here said "allow echo for backspace-like behavior". It never did:
+	# is_action_pressed defaults allow_echo=false, so an echo reads as not-pressed — measured.
+	# Holding never deleted a second character on a keyboard, and a pad emits no echo at all.
+	# The repeat is real now and lives in _process; it only ever DELETES (see _backspace_step).
 	elif event.is_action_pressed("ui_cancel"):
 		if input_text.length() > 0:
-			input_text = input_text.substr(0, input_text.length() - 1)
-			_refresh_display()
-			SoundManager.play_ui("menu_cancel")
+			_backspace_step()
 		else:
 			# Cancel if text is empty
 			SoundManager.play_ui("menu_close")
@@ -412,6 +412,51 @@ func _input(event: InputEvent) -> void:
 				_refresh_display()
 				SoundManager.play_ui("menu_select")
 			get_viewport().set_input_as_handled()
+
+
+## One owner for a cursor step, shared by the press path and the hold. Wraps on both axes, as
+## the press path always has.
+func _nav_step(action: String) -> void:
+	var layout = _get_current_layout()
+	if layout.is_empty() or layout[0].is_empty():
+		return
+	match action:
+		"ui_up":
+			cursor_row = (cursor_row - 1 + layout.size()) % layout.size()
+		"ui_down":
+			cursor_row = (cursor_row + 1) % layout.size()
+		"ui_left":
+			cursor_col = (cursor_col - 1 + layout[0].size()) % layout[0].size()
+		"ui_right":
+			cursor_col = (cursor_col + 1) % layout[0].size()
+		_:
+			return
+	_update_cursor()
+	SoundManager.play_ui("menu_move")
+
+
+## Delete one character. DELETING ONLY — a held cancel must never reach the cancel branch, or
+## holding it to clear the field would close the dialog the moment the field emptied.
+func _backspace_step() -> void:
+	if input_text.is_empty():
+		return
+	input_text = input_text.substr(0, input_text.length() - 1)
+	_refresh_display()
+	SoundManager.play_ui("menu_cancel")
+
+
+## Hold-to-repeat. These guards MIRROR _input's, and they have to: MenuRepeat polls Input, so it
+## inherits none of the refusals the event path makes for itself.
+func _process(delta: float) -> void:
+	if not visible:
+		_nav_repeat.reset()
+		_backspace_repeat.reset()
+		return
+	var nav := _nav_repeat.tick(delta)
+	if nav != "":
+		_nav_step(nav)
+	if _backspace_repeat.tick(delta) != "":
+		_backspace_step()
 
 
 func _press_key() -> void:
