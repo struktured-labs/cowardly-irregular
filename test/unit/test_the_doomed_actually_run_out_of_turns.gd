@@ -235,10 +235,26 @@ func test_an_undoomed_combatant_stays_quiet() -> void:
 
 
 func test_the_listener_is_cached_and_released_like_died_is() -> void:
-	## The bound-Callable caching exists because is_connected cannot see bound listeners the same way
-	## — the same reason _died_callbacks exists, and the same leak if it is skipped.
+	## ⛔ THE ARM ABOVE CONNECTS THE HANDLER BY HAND, so the PRODUCTION wiring could be absent and it
+	## would still pass — it supplies the thing it is meant to be checking. That is the hole this arm
+	## exists to close, and the missing line was the connect itself: the first version of this test
+	## pinned the cache, the disconnect and the clears, and DELETING
+	## `combatant.doom_ticked.connect(dcb)` would have left every arm in this file green.
+	##
+	## ⚠️ HONEST LIMIT: this is a SOURCE pin, not a driven battle. `start_battle()` is not callable
+	## from an isolated GUT run — it dies on "data.tree is null", which
+	## test_battle_start_cleanup_regression documents and works around the same way. A behavioural arm
+	## through the real setup would be strictly better and is not available here.
 	var code: String = GdSourceHelper.code_of(BM_PATH)
 	assert_true(code.contains("var _doom_callbacks: Dictionary = {}"), "the cache exists")
+	assert_true(code.contains("combatant.doom_ticked.connect(dcb)"),
+		"THE LOAD-BEARING LINE: start_battle must actually connect the handler, or the countdown is emitted to nobody in a real fight")
 	assert_true(code.contains("_doom_callbacks[combatant] = dcb"), "the bound Callable is cached at connect")
 	assert_true(code.contains("combatant.doom_ticked.disconnect(dcb)"), "and disconnected from that cache at cleanup")
 	assert_eq(code.count("_doom_callbacks.clear()"), 2, "cleared where _died_callbacks is — at setup and at cleanup")
+	## The handler is reached from the SAME loop that wires `died`, not from some other pass that a
+	## later refactor could drop independently.
+	var at: int = code.find("_died_callbacks[combatant] = cb")
+	assert_gt(at, -1, "CONTROL: the died wiring survives stripping")
+	assert_true(code.substr(at, 400).contains("combatant.doom_ticked.connect(dcb)"),
+		"and it is wired in the same loop as died, where the cleanup already knows to look")
