@@ -833,6 +833,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## ⚠️ 1.5 FLAT, matching this file's own basic-attack crit. Live adds PassiveSystem's
 					## crit_damage_bonus on top and the grind mirrors it on NEITHER crit path; declared here
 					## rather than silently halved, because closing it is one change for both paths.
+					## ⛔ AND THAT IS ONE INSTANCE OF A CATEGORY GAP, measured 2026-09-16: this file models
+					## ZERO passives. 45 authored, 12 distinct stat_mods keys (attack/magic/defense/speed/
+					## max_hp/max_mp multipliers, mp_cost_multiplier, crit_chance, crit_damage_bonus,
+					## evasion, healing_multiplier, steal_chance), and exactly ONE of the 45 carries a job
+					## restriction — so essentially any party member can equip any of them. Live consumes
+					## them (attack_multiplier alone has 10 BattleManager sites; mp_cost_multiplier routes
+					## through JobSystem.get_ability_mp_cost, which this file does NOT call — its own
+					## _get_ability_mp_cost reads the raw authored number). So a passive BUILD evaluated in
+					## a grind is evaluated without its passives. Not wired here because it is a port, not
+					## a repair: it changes party strength and therefore the reward economy, which is
+					## struktured's call — the same reasoning that left summon_* declared.
 					if randf() < float(ability.get("crit_chance", 0.0)):
 						base_dmg = int(base_dmg * 1.5)
 						_log("%s crits with %s" % [caster.combatant_name, ability_id])
