@@ -25,6 +25,38 @@ func after_each() -> void:
 	TSM.reset_for_test()
 
 
+## ⛔ EVERY ARM BELOW CUTS AN INJECTED FIXTURE. That proves the CODE cuts, and says nothing
+## about the sheets that ship — `validate()` only checks that their paths load. Four world
+## atlases landed in .351 and the only thing that ever proved they cut a real region was an
+## ad-hoc probe. Registered is not rendered; this asks the shipped sheets the same question.
+func test_every_shipped_sheet_cuts_its_own_regions() -> void:
+	TSM.reset_for_test()
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+	assert_true(parsed is Dictionary, "sprite_manifest.json must parse")
+	var sheets: Dictionary = parsed.get("tile_sheets", {}) if parsed is Dictionary else {}
+	assert_gt(sheets.size(), 0, "ANTI-VACUITY: no tile_sheets are shipped, so this arm checks nothing")
+	var dead: Array = []
+	var cut := 0
+	for key in sheets:
+		var entry = sheets[key]
+		if not (entry is Dictionary):
+			continue
+		## One region per SECTION the entry declares, so a sheet that cuts cliffs but not
+		## overlays cannot pass on its cliffs alone.
+		for section in ["cliff", "overlay", "tiles", "props"]:
+			var sec = entry.get(section)
+			if not (sec is Dictionary) or sec.is_empty():
+				continue
+			var name: String = str(sec.keys()[0])
+			var img: Image = TSM.region(str(key), section, name)
+			if img == null or img.get_width() <= 0 or img.get_height() <= 0:
+				dead.append("%s/%s/%s cut nothing — the village falls through to the procedural drawer" % [key, section, name])
+			else:
+				cut += 1
+	assert_eq(dead, [], "a SHIPPED tile sheet does not cut its own declared region: %s" % [dead])
+	assert_gt(cut, 4, "only %d shipped regions were cut — too few to have covered the five worlds" % cut)
+
+
 func test_region_cuts_the_named_cell() -> void:
 	_inject({"tiles": {"VILLAGE_GRASS": [0, 0], "VILLAGE_GRASS:1": [1, 0]}})
 	var a := TSM.region("medieval", "tiles", "VILLAGE_GRASS")
