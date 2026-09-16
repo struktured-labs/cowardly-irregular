@@ -1805,6 +1805,14 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	if not stream:
 		push_warning("[MUSIC] Failed to load audio: %s (track_id: %s)" % [path, track_id])
 		return false
+	## ⛔ A BED MUST NOT PLAY AGAINST ITSELF. Since play_ambient started preferring the music
+	## manifest, ambient_cave/forest/village can be live on the AMBIENT player while the Jukebox
+	## asks the MUSIC player for the same id — one file, two players, arbitrary offset, 16 dB
+	## apart. That is comb filtering, not layering. Compared by resolved PATH rather than key so
+	## an alias naming the same file is caught too.
+	if _ambient_player and _ambient_player.playing and _ambient_player.stream \
+			and _ambient_player.stream.resource_path == path:
+		stop_ambient()
 	# Stingers never loop and resume previous music when done.
 	# Bug fix (2026-05-02): stinger_level_up + 4 other stingers had
 	# loop=true in the manifest, which made them loop forever and never

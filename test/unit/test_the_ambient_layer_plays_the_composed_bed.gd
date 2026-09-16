@@ -92,3 +92,32 @@ func test_the_members_this_file_reaches_still_exist() -> void:
 		assert_true(SoundManager.has_method(name), "SoundManager has no method %s()" % name)
 	for name in props:
 		assert_true(name in SoundManager, "SoundManager has no property %s" % name)
+
+
+func test_a_bed_does_not_play_against_itself() -> void:
+	## ⛔ A CONSEQUENCE OF THE MUSIC-FIRST CHANGE, NOT A PRE-EXISTING BUG. While the ambient
+	## layer resolved from the SFX store the Jukebox could only ever double a 187s bed against a
+	## 5s sting — obviously two things. Now both players can hold the SAME FILE at an arbitrary
+	## offset, 16 dB apart, which is comb filtering rather than layering. Reachable: the Jukebox
+	## opens from the overworld menu, and "Dripping Stone" is a row in it while an ice zone is
+	## running that exact bed.
+	##
+	## ⚠️ DECLARED RESIDUAL, AND IT IS THE EXISTING DESIGN RATHER THAN A NEW COST — checked
+	## before writing it down, because the first draft of this note implied the fix introduced it.
+	## The ambient player is ONE SLOT and only a zone CHANGE re-asserts a key
+	## (OverworldScene:579, inside `if new_zone != _current_zone`). WeatherSystem already contends
+	## for the same slot the same way: rain replaces zone ambience, and when weather clears it
+	## calls stop_ambient() without restoring what was there. So "ambience stays off until you
+	## cross a boundary" predates this change; auditioning a bed in the Jukebox is one more way in.
+	## The trade is still deliberate — silence beats a flanged double — and if the single slot ever
+	## becomes worth fixing, it is one fix for weather and this together, not two.
+	SoundManager.play_ambient("ambient_cave")
+	assert_true(SoundManager._ambient_player.playing, "CONTROL: the zone ambience is running before the Jukebox asks")
+	var amb_path: String = SoundManager._ambient_player.stream.resource_path
+	SoundManager.play_music("ambient_cave", true)
+	await get_tree().create_timer(0.2).timeout
+	assert_true(SoundManager._music_player.stream != null and SoundManager._music_player.stream.resource_path == amb_path,
+		"CONTROL: the music player took the same file — without that there is no collision to defend against")
+	assert_false(SoundManager._ambient_player.playing,
+		"%s is running on BOTH players at once — one file, two offsets, 16 dB apart" % amb_path)
+	SoundManager.stop_music()
