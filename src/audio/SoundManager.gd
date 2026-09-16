@@ -406,7 +406,8 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["steal"] = "ability_physical"
 	_ability_sounds["mug"] = "ability_physical"
 	# Meta-job signature cues (cowir-sfx 2026-07-11) — reality edits must not sound like sword hits.
-	_ability_sounds["constant_modification"] = "ability_constant_modification"
+	# The ability is modify_constant; this key read constant_modification from 2026-07-11, matched nothing, and left the authored cue unreachable while the Scriptweaver's signature act played a sword.
+	_ability_sounds["modify_constant"] = "ability_constant_modification"
 	_ability_sounds["analyze_code"] = "ability_analyze_code"
 	_ability_sounds["permakill"] = "ability_permakill"
 	_ability_sounds["permakill_strike"] = "ability_permakill"
