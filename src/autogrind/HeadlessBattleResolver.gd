@@ -1146,7 +1146,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			## noticed it was stale, and moved on; @cowir-sprites having the same thing falsified by their
 			## own commit five days earlier is what sent me back.
 			##
-			## So the number is GONE rather than refreshed. test_autogrind_inert_ability_census PARSES the
+			## So the LIVE number is gone rather than refreshed — what stands above is dated provenance for
+			## a set that is recomputed elsewhere, which is @cowir-music's test: not "is there a number"
+			## but "would a reader quote this as true TODAY". test_autogrind_inert_ability_census PARSES the
 			## armed types out of this match block and maintains the population against abilities.json —
 			## a live count that cannot drift, in a file whose job is keeping it honest. A count in prose
 			## here is a second declarer of a fact that already has a self-retiring one.
