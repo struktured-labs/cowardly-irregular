@@ -363,7 +363,12 @@ if [ "${WEB_STAGE:-1}" = "1" ]; then
     echo "[deploy] BLOCKED: ${_TIER_CHECK} missing — nothing would check that the pck carries the" >&2
     echo "        ${WEB_AUDIO_KBPS}k tier rather than whatever was left in tmp/web_audio." >&2
     exit 2; }
-  python3 "$_TIER_CHECK" builds/web/index.pck "$_TIER_DIR" --cache-line="$PCK_CACHE_LINE" || {
+  # --stage is what makes this exact rather than statistical: with the stage still on disk the
+  # checker md5s each staged source against the tier file, and resolves each track to its
+  # artifact through its own .import sidecar. Without it the tool falls back to a basename join,
+  # which in THIS project is ambiguous for four tracks (music/ and sfx/ share the names).
+  python3 "$_TIER_CHECK" builds/web/index.pck "$_TIER_DIR" \
+          --stage=tmp/web_stage --cache-line="$PCK_CACHE_LINE" || {
     echo "[deploy] BLOCKED: the shipped pck does not carry the ${WEB_AUDIO_KBPS} kbps tier." >&2
     exit 2; }
 fi
