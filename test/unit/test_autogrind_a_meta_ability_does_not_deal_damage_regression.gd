@@ -11,12 +11,18 @@ extends GutTest
 ##   single_enemy  permakill · mind_swap · boss_puppet · control_override · mutual_destruction
 ##   all_enemies   corrupt_save · save_deletion · time_stop
 ##
-## 🔑 REACHABLE BY THE GRIND'S OWN SPAWNER, which is what makes this more than a meta-job curiosity:
-## `permadeath_reaper` casts `save_deletion` and carries `autogrind_spawned: true`, so
-## AutogrindSystem.build_meta_boss_enemy_data instantiates it directly (form 4). Its target_type is
-## `all_enemies` — from the reaper's side that is the PARTY. A grind's meta boss was dealing magic
-## damage to the whole party that live does not deal, in the one context where damage matters most:
-## the fatigue-collapse boss fight, with permadeath staking available.
+## ⛔ REACHABLE VIA THE PLAYER, NOT THE META BOSS. I first wrote the opposite here, shipped it in a
+## commit and a broadcast, and it was wrong. The grind's ENEMY path has exactly two ability routes
+## and both filter by type — `_find_attack_ability` takes only ["magic", "physical"] and
+## `_find_heal_ability` only "healing" — so `permadeath_reaper` can never SELECT `save_deletion`,
+## however reachable the monster itself is. I measured the damage by calling `_resolve_ability`
+## directly, which is correct for the ARM, and then asserted the AI takes that path without checking.
+##
+## What IS reachable: `AutobattleSystem` applies NO type filter (0 sites against 108 mentions of
+## "ability"), so a player rule naming a meta ability routes straight to `_resolve_ability`. Five are
+## single_enemy and in a job kit today: permakill (necromancer) and mind_swap / boss_puppet /
+## control_override / mutual_destruction (bossbinder). A scripted Necromancer dealt 395 phantom
+## damage per permakill — that is the defect, and it is a player-side one.
 ##
 ## ⚠️ THE MECHANICS ARE NOT PORTED AND THIS ARM DOES NOT PORT THEM. Save deletion, permakill and
 ## mind-swap are save-side and scene-side, and `corruption_risk` / `corruption_amount` are already
@@ -71,9 +77,11 @@ func test_a_meta_ability_cast_at_an_enemy_deals_no_damage() -> void:
 		"live's meta executor deals no damage on any branch — the grind's default arm invented %d" % (hp_before - foe.current_hp))
 
 
-func test_the_grinds_own_meta_boss_does_not_invent_damage() -> void:
-	## The reachable one. save_deletion is cast by permadeath_reaper, which the grind's meta-boss
-	## builder instantiates directly, and its all_enemies target is the PARTY.
+func test_an_all_enemies_meta_ability_does_not_damage_the_whole_side() -> void:
+	## Multi-target coverage of the arm, NOT a reachability claim: the grind's enemy AI cannot select
+	## a meta ability at all (see the header), so nothing casts save_deletion in a real session. It is
+	## kept because the arm must hold for every target in the list, and an all_enemies shape is the
+	## only way to test that — renamed so it stops asserting a route that does not exist.
 	var ab: Dictionary = _authored("save_deletion")
 	if ab.is_empty():
 		pass_test("JobSystem autoload unavailable")
@@ -120,15 +128,30 @@ func test_a_real_damage_ability_still_damages() -> void:
 
 
 func test_the_reachability_this_rests_on_still_holds() -> void:
-	## Crying-wolf arm: if permadeath_reaper stops being autogrind_spawned or stops casting
-	## save_deletion, the severity argument in the header weakens and should be re-read.
+	## ⛔ THIS ARM USED TO PIN THE REAPER AND PROVED THE WRONG THING — permadeath_reaper being
+	## autogrind_spawned is true and IRRELEVANT, because the enemy AI filters meta abilities out
+	## before selection. A reachability arm that pins a fact on a path nothing takes is worse than
+	## none: it makes the claim look checked. It now pins the route that IS live — a player kit
+	## holding an enemy-targeted meta ability, with no type filter between the rule and the resolver.
 	var es: Node = get_node_or_null("/root/EncounterSystem")
 	if es == null or es.monster_database.is_empty():
 		pass_test("EncounterSystem unavailable")
 		return
-	var reaper: Dictionary = es.monster_database.get("permadeath_reaper", {})
-	assert_false(reaper.is_empty(), "permadeath_reaper must still exist — it is the grind's own meta boss")
-	assert_true(bool(reaper.get("autogrind_spawned", false)),
-		"and must still be autogrind_spawned, or form 4 no longer reaches it")
-	assert_true("save_deletion" in (reaper.get("abilities", []) as Array),
-		"and must still cast save_deletion, which is the meta ability that reaches the party")
+	var js: Node = get_node_or_null("/root/JobSystem")
+	if js == null or not js.has_method("get_job"):
+		pass_test("JobSystem unavailable")
+		return
+	## A job kit holding an enemy-targeted meta ability is the whole reachability story.
+	var found: Array = []
+	for job_id in ["necromancer", "bossbinder"]:
+		for ab_id in ((js.get_job(job_id) as Dictionary).get("abilities", []) as Array):
+			var ab: Dictionary = js.get_ability(str(ab_id))
+			if str(ab.get("type", "")) == "meta" and str(ab.get("target_type", "")).findn("enem") >= 0:
+				found.append(str(ab_id))
+	gut.p("    player-castable enemy-targeted meta abilities: %s" % str(found))
+	assert_gt(found.size(), 0,
+		"if no job kit holds an enemy-targeted meta ability, nothing can reach the damaging branch and this file guards nothing")
+	## And the enemy side genuinely cannot, which is why the reaper is NOT the route.
+	var src: String = FileAccess.get_file_as_string("res://src/autogrind/HeadlessBattleResolver.gd")
+	assert_true(src.contains("in [\"magic\", \"physical\"]"),
+		"the enemy attack selector must still filter by type — if that filter goes, an enemy CAN select a meta ability and the header needs rewriting")

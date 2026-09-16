@@ -1111,11 +1111,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			## time_stop (all_enemies). Measured before the fix: permakill invented 395 damage, and
 			## save_deletion took a 5000 HP party member to 3805.
 			##
-			## REACHABLE BY THIS ENGINE'S OWN SPAWNER, which is why it is not a meta-job curiosity:
-			## permadeath_reaper casts save_deletion and carries autogrind_spawned, so
-			## build_meta_boss_enemy_data instantiates it directly — and all_enemies from the reaper's
-			## side is the PARTY. The grind's meta boss was damaging the party in the fatigue-collapse
-			## fight, with permadeath staking on the table, where live deals nothing.
+			## ⛔ REACHABLE VIA THE PLAYER, NOT THE META BOSS — I published the opposite and it was wrong.
+			## The enemy path has exactly two ability routes and BOTH filter by type:
+			## _find_attack_ability takes only ["magic", "physical"], _find_heal_ability only "healing".
+			## So permadeath_reaper can never SELECT save_deletion in a grind, however reachable the
+			## monster is — I proved the arm damages by calling _resolve_ability directly and then
+			## claimed the AI takes that path. It does not.
+			## What IS reachable: AutobattleSystem applies NO type filter (0 sites, against 108
+			## mentions of "ability"), so a player rule naming a meta ability routes straight here.
+			## Five are single_enemy and in a job kit today — permakill (necromancer), mind_swap,
+			## boss_puppet, control_override, mutual_destruction (bossbinder). A scripted Necromancer
+			## was dealing 395 phantom damage per permakill.
 			##
 			## NOT PORTING THE MECHANICS: save deletion, permakill and mind-swap are save-side and
 			## scene-side, and corruption_risk / corruption_amount are already DECLARED in the ledger
