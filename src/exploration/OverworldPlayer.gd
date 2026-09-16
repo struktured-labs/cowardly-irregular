@@ -610,12 +610,23 @@ func _try_load_overworld_sheet() -> Dictionary:
 		return {}
 
 	var img = tex.get_image()
-	if not img or img.get_width() < 128 or img.get_height() < 128:
+	if not img:
+		return {}
+
+	# Frame size is DECLARED per job, not assumed. "big enough" let a sheet of any other frame
+	# size through to be cut into 32px squares — a quarter of a figure, and nothing errors.
+	var frame: Vector2i = HybridSpriteLoader.overworld_frame_size(current_job)
+	var frame_w: int = frame.x
+	var frame_h: int = frame.y
+	if frame_w <= 0 or frame_h <= 0:
+		return {}
+	# REFUSE a sheet that is not an exact grid rather than mis-slice it.
+	if img.get_width() % frame_w != 0 or img.get_height() % frame_h != 0 \
+			or img.get_width() / frame_w < WALK_FRAMES or img.get_height() / frame_h < 4:
+		push_warning("[OVERWORLD] '%s' sheet is %dx%d, not an exact grid of %d columns x 4 rows at %dx%d — refusing rather than mis-slicing" % [current_job, img.get_width(), img.get_height(), WALK_FRAMES, frame_w, frame_h])
 		return {}
 
 	var cache: Dictionary = {}
-	var frame_w = 32
-	var frame_h = 32
 	# Row mapping: 0=down, 1=left, 2=right, 3=up
 	var row_to_dir = [Direction.DOWN, Direction.LEFT, Direction.RIGHT, Direction.UP]
 
@@ -624,11 +635,35 @@ func _try_load_overworld_sheet() -> Dictionary:
 		for col in range(WALK_FRAMES):
 			var region = Rect2i(col * frame_w, row * frame_h, frame_w, frame_h)
 			var frame_img = img.get_region(region)
+			# A frame cut at its DECLARED size still has to render at SPRITE_SIZE: the procedural
+			# fallback and _extract_artist_frame both produce 32px, and STEP_DISTANCE is one tile.
+			# Cutting correctly and handing back a 48px texture would trade a mis-sliced sprite for
+			# an oversized one — right art, wrong size, for exactly the sheets the fix was for.
+			if frame_w != SPRITE_SIZE or frame_h != SPRITE_SIZE:
+				frame_img = _fit_to_sprite_size(frame_img)
 			var frame_tex = ImageTexture.create_from_image(frame_img)
 			cache["%d_%d" % [dir, col]] = frame_tex
 
 	print("[OVERWORLD] Loaded overworld sheet for '%s'" % current_job)
 	return cache
+
+
+## Proportional fit into a SPRITE_SIZE canvas, foot-aligned. Shares the rule with
+## _extract_artist_frame: a direct resize squashes the aspect ratio, and the feet must sit on the
+## same baseline as the procedural sprite or the character bobs when the source changes.
+func _fit_to_sprite_size(src: Image) -> Image:
+	var sw: int = src.get_width()
+	var sh: int = src.get_height()
+	if sw == SPRITE_SIZE and sh == SPRITE_SIZE:
+		return src
+	var scale_factor: float = min(float(SPRITE_SIZE) / max(sw, 1), float(SPRITE_SIZE) / max(sh, 1))
+	var new_w: int = max(1, int(sw * scale_factor))
+	var new_h: int = max(1, int(sh * scale_factor))
+	var scaled := src.duplicate() as Image
+	scaled.resize(new_w, new_h, Image.INTERPOLATE_NEAREST)
+	var canvas := Image.create(SPRITE_SIZE, SPRITE_SIZE, true, Image.FORMAT_RGBA8)
+	canvas.blit_rect(scaled, Rect2i(0, 0, new_w, new_h), Vector2i((SPRITE_SIZE - new_w) / 2, SPRITE_SIZE - new_h))
+	return canvas
 
 
 ## Extract and downscale a single frame from a SpriteFrames animation into a 32x32 Image.
