@@ -43,6 +43,9 @@ static func advance_hint_text(device_name: String = "") -> String:
 var _typing_speed: float = 0.03
 var _current_text: String = ""
 var _displayed_chars: int = 0
+## A line taller than the box had no gamepad way to be read: nothing here scrolls the body (only the wheel, and this is a pad-first game) and clip_contents hides the rest. Long lines page.
+var _pages: PackedStringArray = PackedStringArray()
+var _page_index: int = 0
 var _typing_timer: Timer
 ## Does THIS panel own the music duck? Freeing mid-line must unduck, but only its own.
 var _ducked_music: bool = false
@@ -793,7 +796,46 @@ func _show_current_line() -> void:
 	# Start typing effect — pull the resolved speed FROM SETTINGS each line
 	# so a toggle through the in-cutscene settings menu takes effect at the
 	# next box, not the next cutscene.
-	_current_text = entry.get("text", "")
+	# Paginate AFTER the hide_portrait block above — a narrator line owns the portrait's width too.
+	_pages = _paginate(str(entry.get("text", "")))
+	_page_index = 0
+	_begin_page(_pages[0] if _pages.size() > 0 else "")
+
+
+## Splits a line into box-sized pages at word boundaries. One page is the overwhelming case (1 of
+## 3276 authored strings overflows at 1280), so a short line takes the first return and is untouched.
+func _paginate(text: String) -> PackedStringArray:
+	var out := PackedStringArray()
+	if text.is_empty() or _text_label == null or not is_instance_valid(_text_label):
+		out.append(text)
+		return out
+	var font: Font = _text_label.get_theme_font("normal_font")
+	var w: float = _text_label.size.x
+	var h: float = _text_label.size.y
+	if font == null or w <= 0.0 or h <= 0.0:
+		out.append(text)
+		return out
+	# Measured on the raw string. No authored line uses bbcode today; a future tag would only break a page EARLY, never hide text.
+	var fsz: int = _scaled_font_size(16)
+	if font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, w, fsz).y <= h:
+		out.append(text)
+		return out
+	var cur: String = ""
+	for word in text.split(" "):
+		var probe: String = word if cur.is_empty() else cur + " " + word
+		if not cur.is_empty() and font.get_multiline_string_size(probe, HORIZONTAL_ALIGNMENT_LEFT, w, fsz).y > h:
+			out.append(cur)
+			cur = word
+		else:
+			cur = probe
+	if not cur.is_empty():
+		out.append(cur)
+	return out
+
+
+## Types one page. The portrait, theme and voice blip belong to the LINE and are not rebuilt here.
+func _begin_page(text: String) -> void:
+	_current_text = text
 	_displayed_chars = 0
 	_voice_blip_next_char = randi_range(VOICE_BLIP_STEP_MIN, VOICE_BLIP_STEP_MAX)
 	_text_label.text = ""
@@ -868,12 +910,19 @@ func _finish_typing() -> void:
 		_text_label.scroll_active = true
 	if _advance_hint and is_instance_valid(_advance_hint):
 		_advance_hint.text = advance_hint_text()  # re-resolved per line: a pad plugged in mid-scene changes the cap
+		# A paged line must say so, or the player cannot tell a full box from a continued one.
+		if _pages.size() > 1:
+			_advance_hint.text = "%s  (%d/%d)" % [_advance_hint.text, _page_index + 1, _pages.size()]
 		_advance_hint.visible = true
 
 
 func _advance_dialogue() -> void:
 	if _is_typing:
 		_finish_typing()
+	elif _page_index + 1 < _pages.size():
+		# A page turn is not a new line: no dialogue_advanced, no portrait rebuild, no re-read of the queue.
+		_page_index += 1
+		_begin_page(_pages[_page_index])
 	else:
 		_current_index += 1
 		dialogue_advanced.emit()
