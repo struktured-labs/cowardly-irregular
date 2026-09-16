@@ -258,3 +258,37 @@ func test_the_listener_is_cached_and_released_like_died_is() -> void:
 	assert_gt(at, -1, "CONTROL: the died wiring survives stripping")
 	assert_true(code.substr(at, 400).contains("combatant.doom_ticked.connect(dcb)"),
 		"and it is wired in the same loop as died, where the cleanup already knows to look")
+
+
+## ── the grind's own loop, not its helper ──────────────────────────────
+
+func test_the_grind_round_actually_runs_the_counter_down_and_kills() -> void:
+	## ⛔ MY GRIND ARM ABOVE SETS THE COUNTER BY CALLING _maybe_inflict_status DIRECTLY, so it proves
+	## the producer and NOTHING about whether the grind ever spends it. Setting a timer nothing ticks
+	## is the same nothing as not setting it — and this is the shape that has cost three lanes a green
+	## arm today, so it gets driven through the resolver's OWN round loop instead.
+	var resolver = ResolverScript.new()
+	var caster := _combatant("Reaper")
+	var victim := _combatant("Mira")
+	resolver._player_party = [victim]
+	resolver._enemy_party = [caster]
+	resolver._maybe_inflict_status(caster, victim, _doom_ability("magic", 2), "final_death")
+	assert_eq(victim.doom_counter, 2, "CONTROL: doomed for two, or the loop has nothing to spend")
+	resolver._tick_round_start()
+	assert_eq(victim.doom_counter, 1, "the grind's round start spends a turn of it")
+	assert_true(victim.is_alive, "and not before the count is done")
+	resolver._tick_round_start()
+	assert_false(victim.is_alive, "the grind kills with it, like live does")
+
+
+func test_the_grind_round_leaves_the_undoomed_alone() -> void:
+	## Anti-vacuity: _tick_round_start touches every living combatant, so the kill above must come
+	## from the counter rather than from the loop being lethal to anyone it visits.
+	var resolver = ResolverScript.new()
+	var bystander := _combatant("Talia")
+	resolver._player_party = [bystander]
+	resolver._enemy_party = []
+	for i in 6:
+		resolver._tick_round_start()
+	assert_true(bystander.is_alive, "six rounds and an undoomed combatant is untouched")
+	assert_eq(bystander.doom_counter, -1, "with the sentinel intact")
