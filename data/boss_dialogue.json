@@ -1173,8 +1173,7 @@
           "why fight",
           "why swing",
           "simulation",
-          "dictionaries",
-          "authored"
+          "dictionaries"
         ],
         "consequence": {
           "type": "skip_turn",
