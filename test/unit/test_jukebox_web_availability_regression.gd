@@ -4,8 +4,13 @@ extends GutTest
 ##
 ## ⛔ SCOPE FIRST, BECAUSE THIS FILE USED TO SAY "on web" AND MEAN SOMETHING ELSE. The music
 ## exclusions apply to the DIRECT export (`WEB_STAGE=0`) only. The published path is
-## `make_web_stage.sh` (`WEB_STAGE=1`, the default at deploy_web.sh:326), which swaps in a 48 kbps
-## tier and drops every music exclusion. So on the build a player actually gets, NO jukebox row is
+## `make_web_stage.sh` (`WEB_STAGE=1`, the default at deploy_web.sh:326), which swaps in a
+## reduced-bitrate tier and drops every music exclusion. ⛔ NO BITRATE IS NAMED HERE ON PURPOSE:
+## this paragraph said "48 kbps" for about four minutes, which is `make_web_stage.sh`'s own
+## `BITRATE="${1:-48}"` fallback and NOT what publishes — `deploy_web.sh:85` passes
+## `WEB_AUDIO_KBPS`, default 40, and has since `.357` (cowir-deploy, measured at the serving tag).
+## Reading a callee's default instead of the caller's argument put a fresh stale number in the very
+## commit that exists to remove stale numbers. So on the build a player actually gets, NO jukebox row is
 ## unbacked, and nothing here is a statement about what a player hears. What it defends is the
 ## direct export and any future build where a track is genuinely absent.
 ##
