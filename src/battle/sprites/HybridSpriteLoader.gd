@@ -9,6 +9,7 @@ const _SnesPartySprites = preload("res://src/battle/sprites/SnesPartySprites.gd"
 static var _manifest: Dictionary = {}
 static var _monster_manifest: Dictionary = {}
 static var _battle_effects: Dictionary = {}
+static var _overworld_player_sheets: Dictionary = {}
 static var _manifest_loaded: bool = false
 
 
@@ -88,8 +89,28 @@ static func _load_manifest() -> void:
 	_manifest = json.data.get("sheets", {})
 	_monster_manifest = json.data.get("monster_sheets", {})
 	_battle_effects = json.data.get("battle_effects", {})
+	_overworld_player_sheets = json.data.get("overworld_player_sheets", {})
 	print("[SPRITES] Loaded sprite manifest: %d sheets, %d monster sheets, %d battle effects" % [_manifest.size(), _monster_manifest.size(), _battle_effects.size()])
 	_manifest_loaded = true
+
+
+## The overworld walk sheet's frame size, DECLARED per job in overworld_player_sheets.
+##
+## OverworldPlayer cut every sheet at a hardcoded 32 and only checked the image was BIG ENOUGH
+## (>= 128x128), so a sheet authored at any other frame size passed and was sliced into 32px
+## squares — the player character rendered as a quarter of a figure, with nothing erroring.
+## All 14 sheets are 32px today, which is exactly why it held; cowir-cutscenes hit the identical
+## shape in CutsceneActor the same afternoon, on sheets that were 159-for-159 uniform.
+##
+## Wiring it also gives overworld_player_sheets its first runtime reader. It was one of six
+## manifest sections nothing read — and a section whose FIELDS are all read elsewhere is invisible
+## to a field-level census, which is the gap this closes rather than declares.
+static func overworld_frame_size(job_id: String) -> Vector2i:
+	_load_manifest()
+	var entry = _overworld_player_sheets.get(job_id, {})
+	if not (entry is Dictionary):
+		return Vector2i(32, 32)
+	return Vector2i(int(entry.get("frame_width", 32)), int(entry.get("frame_height", 32)))
 
 
 static func load_battle_effect_texture(key: String) -> Texture2D:
