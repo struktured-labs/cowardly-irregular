@@ -190,7 +190,12 @@ func test_a_finished_cutscene_reconciles_the_locks() -> void:
 	# _watched_, so this call had not fired since that rename.
 	# Two paths write a completion flag and print it — _play_story_cutscene and the direct-play
 	# helper the prologue uses. BOTH are pinned; picking one by find() picked the wrong one first.
-	var src := _read(GAME_LOOP)
+	# CODE, not raw source: this arm searches a 900-char WINDOW, and GameLoop.gd already contains two
+	# COMMENTS naming _reconcile_spotlight_locks. One reordering and prose satisfies the pin — the
+	# false-GREEN direction. A window boundary is approximate by construction (cowir-sfx), so the
+	# stripper is what makes the claim about code rather than about text near code.
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+	var src: String = GdSource.code_of(GAME_LOOP)
 	var anchor := 'print("[CUTSCENE] %s complete → set flag %s"'
 	var found := 0
 	var from := 0
