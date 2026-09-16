@@ -516,6 +516,8 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# GameLoop already resets current_ap to 0 in normal victory paths, but
 	# having it here means edge cases (load-save mid-battle, flee, debug
 	# warps) can't leak +4 AP into the next encounter.
+	# Audio's per-battle state, cleared for the same reason as the six below: SoundManager._combo_step is reset only when an ACTION completes, so any exit that skips that leaks up to +12% pitch onto the next battle's first hit.
+	SoundManager.reset_hit_chain()
 	for combatant in all_combatants:
 		if "active_buffs" in combatant:
 			combatant.active_buffs.clear()
