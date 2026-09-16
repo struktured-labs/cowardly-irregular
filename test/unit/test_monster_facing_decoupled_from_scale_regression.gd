@@ -264,3 +264,44 @@ func test_the_bestiary_really_renders_the_declared_facing() -> void:
 	assert_true(spr.visible, "PRECONDITION: slime's sheet must load")
 	assert_true(spr.flip_h,
 		"an undeclared 128px sheet must still get the convention's flip — the owner must not swallow the fallback")
+
+
+## ⛔ THE SAME SILENT-PASS EXPOSURE AS THIS LANE'S ROAMING-MONSTER GUARD, measured on this file
+## 2026-09-16 before this arm existed — rename `_load_sprite` away and the run reports:
+##
+##     EC=0 · Passing 10 · Failing 0 · no Risky line · Asserts 32 -> 26
+##
+## The end-to-end arm asserts, then drives a method that no longer exists, then aborts. GUT scores
+## it Passing; `run_tests.sh`'s exit 4 fires only when a test asserted NOTHING, so it cannot see
+## this rung at all (cowir-ai, 2026-09-16).
+##
+## ⚠️ AND THE OTHER HALF OF THIS FILE WAS ALREADY COVERED BY ACCIDENT, which is why only the method
+## needs a floor: renaming `_detail_sprite` reds at EC=1, because the end-to-end arm seeds the wrong
+## answer and asserts the sprite exists BEFORE using it. That PRECONDITION is a floor I wrote for a
+## different reason — to stop the arm passing on a call that never ran — and it happens to cover the
+## property reach too. The method reach had no such guard.
+##
+## 🔑 Derived from this file's own text, `has_method` because it ANSWERS rather than raising, and
+## inline rather than shared — see the retirement condition on the roaming-monster copy.
+func test_every_method_this_guard_drives_by_name_exists() -> void:
+	var own_src := FileAccess.get_file_as_string("res://test/unit/test_monster_facing_decoupled_from_scale_regression.gd")
+	assert_gt(own_src.length(), 500,
+		"VOID: this guard could not read its own source, so the name list below is empty by construction")
+	var re := RegEx.new()
+	re.compile('\\.call\\("([a-zA-Z_][a-zA-Z_0-9]*)"')
+	var names := {}
+	for m in re.search_all(own_src):
+		names[m.get_string(1)] = true
+	assert_gt(names.size(), 0,
+		"VOID: no `.call(\"name\")` found in this file's own text — the extraction is broken, not the subject")
+
+	var subject: Node = load(BESTIARY).new()
+	add_child_autofree(subject)
+	var missing: Array = []
+	for n in names:
+		if not subject.has_method(str(n)):
+			missing.append(str(n))
+	missing.sort()
+	assert_eq(missing, [],
+		("this guard drives the bestiary BY NAME and those methods are gone, so the end-to-end arm "
+		+ "would ABORT INTO A SILENT PASS — EC=0, nothing failing, nothing risky: %s") % [missing])
