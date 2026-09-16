@@ -75,3 +75,31 @@ func test_it_actually_resolves_at_runtime() -> void:
 	assert_not_null(sm._ability_player.stream, "the Scriptweaver's dial resolved no stream at all")
 	assert_true(str(sm._ability_player.stream.resource_path).contains("constant_modification"),
 		"play_ability('modify_constant') loaded %s" % str(sm._ability_player.stream.resource_path).get_file())
+
+
+func test_the_meta_cue_note_has_not_gone_stale() -> void:
+	## SoundManager:409 carries a PROSE note — "4 of 24 meta-typed abilities are mapped; the other 20
+	## fall through to ability_physical" — pending struktured's call on authoring cues. Prose dies
+	## quietly: cowir-sprites had a declaration falsified by their own commit and nothing redded.
+	## This is the retirement trigger, and it is DIRECTIONAL rather than a pinned count: it does not
+	## assert "20", which a correct mapping would red. It asserts that the note still describes
+	## something real, and fires only when the last unmapped meta ability gains a cue — i.e. exactly
+	## when the note should be deleted. A declaration that can only be removed, never silently kept.
+	var sm: Node = _sm()
+	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
+	if sm == null:
+		return
+	var ab: Dictionary = _abilities()
+	assert_gt(ab.size(), 0, "VOID, not clean: abilities.json read back 0 entries")
+	assert_true(sm.get("_ability_sounds") != null, "SoundManager has no _ability_sounds")
+	var metas: Array = []
+	var unmapped: Array = []
+	for k in ab.keys():
+		var v = ab[k]
+		if v is Dictionary and str(v.get("type", "")) == "meta":
+			metas.append(str(k))
+			if not sm._ability_sounds.has(str(k)):
+				unmapped.append(str(k))
+	assert_gt(metas.size(), 0, "VOID, not clean: no meta-typed abilities found, so this arm checked nothing")
+	assert_gt(unmapped.size(), 0,
+		"every meta-typed ability now has a cue — the note at SoundManager:409 describes nothing and must be DELETED")
