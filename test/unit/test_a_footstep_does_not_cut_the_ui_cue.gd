@@ -156,8 +156,8 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 	## ⚠️ get() CANNOT DISTINGUISH ABSENT FROM LEGITIMATELY NULL (@cowir-sprites): it returns null
 	## for both. Every member below is a player, a Dictionary or a String — none is ever null once
 	## _ready has run — so the check is sound HERE. If you add a nullable member to this list
-	## (_crossfade_tween, _duck_tween, _kill_duck_tween, _danger_tween, _corruption_tween are the
-	## ones that exist), switch to get_property_list(), which answers about existence rather than value.
+	## (_crossfade_tween and the other _*_tween members are EXAMPLES, not an exhaustive list — check
+	## the declaration), switch to get_property_list(), which answers about existence rather than value.
 	for member_name in ["_footstep_player", "_sfx_cooldowns", "_sfx_manifest", "_ui_player"]:
 		## assert_true on an explicit `!= null`: assert_ne deep-compares, and three of these members
 		## are Dictionaries, which it refuses with "Only Arrays and Dictionaries are supported".
