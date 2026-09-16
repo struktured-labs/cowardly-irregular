@@ -623,12 +623,11 @@ func _input(event: InputEvent) -> void:
 
 func _handle_slot_input(event: InputEvent) -> void:
 	"""Handle input in slot selection mode"""
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		_nav_step("ui_up")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		_nav_step("ui_down")
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
+	# an axis has no echo flag — so one stick push used to step the cursor five rows.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(nav)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
@@ -721,12 +720,9 @@ func _handle_item_input(event: InputEvent) -> void:
 	"""Handle input in item selection mode"""
 	var items = _get_available_items_for_slot()
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		_nav_step("ui_up")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		_nav_step("ui_down")
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(nav)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():

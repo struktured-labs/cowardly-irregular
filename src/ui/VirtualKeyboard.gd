@@ -336,20 +336,11 @@ func _input(event: InputEvent) -> void:
 
 	# Navigation. The echo guards are belt-and-braces: is_action_pressed defaults allow_echo=false,
 	# so an echo already reads as not-pressed. Held repeat comes from MenuRepeat in _process.
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		_nav_step("ui_up")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		_nav_step("ui_down")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
-		_nav_step("ui_left")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
-		_nav_step("ui_right")
+	# MenuNav, not a raw read: the four directions bind the left stick's axes as well as the d-pad,
+	# and an axis has no echo flag — so one stick push used to walk five keys across the grid.
+	var nav := MenuNav.step(event)
+	if nav != "":
+		_nav_step(nav)
 		get_viewport().set_input_as_handled()
 
 	# Press key (A button)

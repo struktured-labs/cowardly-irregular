@@ -6,6 +6,23 @@ extends GutTest
 ## Files that should have echo checks for navigation
 
 
+## ⛔ A FILE SATISFIES THIS EITHER WAY, and the second way is STRICTER. The original property is
+## "a held key must not rapid-fire", expressed as an inline `and not event.is_echo()`. Routing
+## navigation through MenuNav satisfies it one level up — that helper's FIRST line is
+## `if event == null or event.is_echo(): return ""` — and it additionally latches the analog axes,
+## which an inline echo check cannot do at all, because an axis carries no echo flag.
+## So a converted file is not exempt; it has the property by a route that also covers the stick.
+func _guards_navigation(path: String, action: String) -> bool:
+	var content := FileAccess.get_file_as_string(path)
+	if content.contains('is_action_pressed("%s") and not event.is_echo()' % action):
+		return true
+	# Converted: the file must route through MenuNav, and MenuNav must still refuse echoes.
+	if not content.contains("MenuNav.step("):
+		return false
+	var nav := FileAccess.get_file_as_string("res://src/ui/MenuNav.gd")
+	return nav.contains("event.is_echo()")
+
+
 func test_win98_menu_has_echo_checks() -> void:
 	"""Win98Menu should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/Win98Menu.gd")
@@ -71,10 +88,10 @@ func test_equipment_menu_has_echo_checks() -> void:
 	"""EquipmentMenu should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/EquipmentMenu.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"EquipmentMenu should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"EquipmentMenu should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/EquipmentMenu.gd", "ui_up"),
+		"EquipmentMenu must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/EquipmentMenu.gd", "ui_down"),
+		"EquipmentMenu must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_abilities_menu_has_echo_checks() -> void:
@@ -101,10 +118,10 @@ func test_virtual_keyboard_has_echo_checks() -> void:
 	"""VirtualKeyboard should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/VirtualKeyboard.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"VirtualKeyboard should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"VirtualKeyboard should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/VirtualKeyboard.gd", "ui_up"),
+		"VirtualKeyboard must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/VirtualKeyboard.gd", "ui_down"),
+		"VirtualKeyboard must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_autobattle_grid_editor_has_echo_checks() -> void:
@@ -229,8 +246,9 @@ func test_all_ui_files_follow_input_patterns() -> void:
 	var issues = []
 
 	for file_path in critical_files:
-		var content = FileAccess.get_file_as_string(file_path)
-		if not content.contains('is_action_pressed("ui_up") and not event.is_echo()'):
+		# Same property, either route — inline, or through MenuNav, which refuses echoes AND
+		# latches the analog axes an inline check structurally cannot see.
+		if not _guards_navigation(file_path, "ui_up"):
 			issues.append(file_path)
 
 	assert_true(issues.is_empty(),
