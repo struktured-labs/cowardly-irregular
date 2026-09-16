@@ -154,7 +154,12 @@ func _build_ui() -> void:
 	var footer := Label.new()
 	## "B" is Nintendo's name for Cancel; that face is Ⓐ on Xbox and ✕ on PlayStation, so the old
 	## literal was wrong on two families out of three. Derived per connected pad (2026-09-16).
-	footer.text = "↑↓ / Wheel: Select    %s / RClick: Close    (hover to preview)" % InputProfileManager.hint_for_action("ui_cancel")
+	## A control the footer does not advertise is a control nobody finds. Derived, never a family
+	## letter: battle_defer/battle_advance are L1/R1 · LB/RB · L/R depending on the pad.
+	footer.text = "↑↓ / Wheel: Select    %s/%s: Page    %s / RClick: Close    (hover to preview)" % [
+		InputProfileManager.hint_for_action("battle_defer"),
+		InputProfileManager.hint_for_action("battle_advance"),
+		InputProfileManager.hint_for_action("ui_cancel")]
 	footer.position = Vector2(24, viewport.y - 32)
 	footer.size = Vector2(viewport.x - 48, 24)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(14))
@@ -617,6 +622,16 @@ func _input(event: InputEvent) -> void:
 		_highlight_row()
 		_scroll_to_selected()
 		_refresh_detail()
+		get_viewport().set_input_as_handled()
+	elif MenuPaging.page_delta(event) != 0:
+		## 113 monsters at one row per press. Clamped, not wrapped like the arrows above: a page jump
+		## is "move a screenful", and wrapping from the top to the tail is a different intent.
+		_selected = clampi(_selected + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, _row_nodes.size() - 1)
+		_highlight_row()
+		_scroll_to_selected()
+		_refresh_detail()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_left") and not event.is_echo():
 		# Tick 267: cycle sort mode (Level → Kills → Name → Level).

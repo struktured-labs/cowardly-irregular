@@ -148,7 +148,12 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	var _ok: String = InputProfileManager.hint_for_action("ui_accept")
 	var _no: String = InputProfileManager.hint_for_action("ui_cancel")
-	footer.text = ("↑↓: Select  %s/Click: Use  %s/RClick: Back" if mode == 0 else "↑↓: Select Target  %s/Click: Confirm  %s/RClick: Cancel") % [_ok, _no]
+	## Paging is advertised only in list mode, because only the item list pages — a party of five
+	## needs no page jump, and a footer promising one there would be a caption for nothing.
+	var _pg: String = "%s/%s" % [InputProfileManager.hint_for_action("battle_defer"),
+		InputProfileManager.hint_for_action("battle_advance")]
+	footer.text = ("↑↓: Select  %s: Page  %s/Click: Use  %s/RClick: Back" % [_pg, _ok, _no]) if mode == 0 \
+		else ("↑↓: Select Target  %s/Click: Confirm  %s/RClick: Cancel" % [_ok, _no])
 	footer.position = Vector2(16, viewport_size.y - 32)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -634,6 +639,16 @@ func _handle_item_list_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		if _item_list.size() > 0:
 			selected_item_index = (selected_item_index + 1) % _item_list.size()
+			_build_ui()
+			SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+
+	elif MenuPaging.page_delta(event) != 0:
+		## 172 items at one row per press. Clamped, not wrapped like the arrows above.
+		if _item_list.size() > 0:
+			selected_item_index = clampi(
+				selected_item_index + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS,
+				0, _item_list.size() - 1)
 			_build_ui()
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
