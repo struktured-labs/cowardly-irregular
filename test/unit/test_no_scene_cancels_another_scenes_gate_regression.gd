@@ -354,8 +354,15 @@ func test_a_cutscene_id_reaching_the_engine_is_always_a_literal() -> void:
 	var constructed: Array = []
 	var literals := 0
 	var whole_string := RegEx.create_from_string('^"[^"]*"\\s*(?:#.*)?$')
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 	for a in assignments:
-		var rhs: String = str(a[2])
+		# QUOTE-AWARE STRIP FIRST, through the SHARED helper (its 4th consumer — this fleet counted
+		# 18 redundant private strippers today; a 6th tonight would be the measurement ignoring
+		# itself). The construction test below reads the RHS, and a trailing comment is part of it:
+		# `= "x"  # 100% sure` contains a %, so the raw form reds on CORRECT code. Latent, not live —
+		# no such comment exists today — and it is the shape a RENAME commit writes, which is the
+		# modal commit for a guard like this (@cowir-sprites, @cowir-music).
+		var rhs: String = GdSource.strip_comments(str(a[2])).strip_edges()
 		# CONSTRUCTION IS TESTED FIRST, and "a literal" means the WHOLE right-hand side is one.
 		# Ordered the other way, `"world%d_x" % w` begins with a quote and was filed as a literal:
 		# the arm passed the mutation it exists for. Caught by predicting the red, not by the green.
