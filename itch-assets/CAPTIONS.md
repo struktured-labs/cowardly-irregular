@@ -341,3 +341,47 @@ still means only that its script did not move.
 
 📌 The 9 unmapped (battle surfaces, field elites, data-driven dungeon floors) remain
 **unexamined, not current** — which is why the headline is a floor in the tool's output too.
+
+## 2026-09-16 — `battle_advance`, and a staleness audit that REFUTED its own candidate (`v3.33.356-alpha`)
+
+### `unshipped-captures/battle_advance.png` — a CANDIDATE, not placed in the gallery
+
+The Advance mechanic, which **no shot in the shipped set has ever depicted**. Fighter carries the
+gold advance aura at a full 5/5 queue, the party panel reads `AP: +1` down the column, and the
+hint bar spells the input out: `[R] Advance`.
+
+⚠️ **The reason I have not put it in the gallery myself: it duplicates `battle.png`'s framing.**
+Same five-job battle, same command menu open on `Auto >`, same banter underneath — Cleric on the
+ledger of injuries, Fighter answering *"My turn. Hand on the stick, not the script."* The only
+differences are the aura and the AP column. So this is a choice between two frames of one scene,
+which is a gallery decision and @struktured's, not a capture decision and mine. It is here rather
+than in `screenshots/` for exactly the reason this directory exists.
+
+📌 **What the capture tool itself asserts, so the caption does not have to be trusted:**
+`marketing_shots.gd` FAILS the shot if the queued frame is byte-identical to the un-queued one.
+It passed — *"battle_advance (1280x720) — full bank 5/5, aura drew"* — so the aura is really in
+the pixels and not just in the state I set.
+
+### The audit that came with it, and it says DO NOT re-shoot
+
+Twelve shots captured fresh at `v3.33.356-alpha`, eleven comparable against the shipped set:
+
+```
+script axis   .345 -> .356   AT LEAST 1 of 20 moved: harmonia_village   (9 unmapped, unexamined)
+frame axis    all 11 comparable shots read SAME — including harmonia_village
+```
+
+🔑 **The script axis nominated `harmonia_village` and the frame axis refused it.** `HarmoniaVillage.gd`
+did move between `.345` and `.356`; the frame it produces did not, by 0.50% against a run-to-run
+swing of 0.01%. That is the whole point of the two axes disagreeing being allowed to happen —
+a script-only candidate is a *candidate*, and re-shooting on it alone would have replaced a good
+frame with an identical one and burned a capture era doing it.
+
+⚠️ **`tavern_interior` is why the comparison used TWO fresh captures.** Its own run-to-run swing is
+**3.37%** — the encoder is not deterministic on that frame — so its bar rises to 6.74% and its
+−4.5% delta correctly reads as noise rather than as a moved frame. With a single capture it would
+have been the one MOVED result in the set, and it would have been wrong. The other ten swing
+0.00–0.03%.
+
+**So: nothing in the shipped set needs replacing at `.356`.** The nine unmapped shots (battle
+surfaces, field elites, data-driven dungeon floors) remain **unexamined, not current**.

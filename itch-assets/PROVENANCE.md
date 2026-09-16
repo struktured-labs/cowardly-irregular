@@ -188,3 +188,42 @@ both runs; `tavern_interior` was not, and was not touched.
 whole `capture-history/` archive was missing), and `CAPTIONS.md` + `PROVENANCE.md` checksums
 had already drifted. Regenerated here. A manifest that is not regenerated when the archive
 grows cannot detect the loss it exists to detect.
+
+## 2026-09-16 — `capture-history/shots-356/`, a full era at `v3.33.356-alpha`
+
+Twelve captures, the whole `marketing_shots.gd` set, taken while the store served
+`v3.33.356-alpha+93272a40d` and read back identical on all three channels the same hour. Stored
+wholesale per this file's own rule — the first rescue was sampled, so eras go in complete.
+
+```
+harmonia · ironhaven · frosthold · sandrift · eldertree · grimhollow   villages
+inn · tavern · shop   interiors        whispering_cave   dungeon
+battle          the shipped framing, re-taken
+battle_advance  NEW — never shipped, never captured before this era
+```
+
+`battle_advance.png` is also in `unshipped-captures/`, which is the directory for candidates
+rather than decisions. `CAPTIONS.md` carries why I did not place it in the gallery myself.
+
+**Capture conditions, stated because a shot's provenance is its conditions:**
+
+```
+worktree     <lane>/tmp/pub356, the publish's own worktree, at the tag, already imported
+command      XDG_DATA_HOME=$PWD/tmp/shot_xdg xvfb-run -a godot --rendering-driver opengl3 \
+             --audio-driver Dummy --resolution 1920x1080 -s tools/marketing_shots.gd
+sandbox      the XDG prefix is NOT optional — godot resolves user:// by application name, so
+             an unprefixed run writes into struktured's live save directory from any worktree.
+             Two runs, both prefixed; the profile they created is in tmp/shot_xdg and nowhere else.
+output       1280x720, matching the shipped set, despite --resolution 1920x1080
+```
+
+⛔ **This era exists BECAUSE of a measurement that told me not to re-shoot.** The script axis said
+`harmonia_village` had moved since `.345` and the frame axis said it had not — 0.50% against a
+0.01% run-to-run swing. Preserving the era is worth doing anyway; replacing the shipped frames
+was not, and the `capture-history/` convention is what lets the second half be true without
+losing the first.
+
+⚠️ **The comparison is only trustworthy because it used two fresh captures.** `tavern_interior`
+swings **3.37%** between two runs of the same build — so a single-capture comparison would have
+reported it MOVED at −4.5% and been wrong. Ten of the eleven swing 0.00–0.03%; that one frame is
+the reason the second directory is not optional.

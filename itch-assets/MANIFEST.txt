@@ -1,5 +1,5 @@
-itch-assets/CAPTIONS.md 1325903429 19764
-itch-assets/PROVENANCE.md 1333491911 10686
+itch-assets/CAPTIONS.md 2046718853 22491
+itch-assets/PROVENANCE.md 502005015 12977
 itch-assets/capture-history/shoot-prep/backwards_warren.png 3215387116 248241
 itch-assets/capture-history/shoot-prep/battle.png 4233415631 155720
 itch-assets/capture-history/shoot-prep/eldertree_village.png 3892142027 69201
@@ -56,6 +56,18 @@ itch-assets/capture-history/shots-345/sandrift_village.png 1168725053 77990
 itch-assets/capture-history/shots-345/shop_interior.png 3878743627 61428
 itch-assets/capture-history/shots-345/tavern_interior.png 3135111728 138344
 itch-assets/capture-history/shots-345/whispering_cave.png 1927031894 230968
+itch-assets/capture-history/shots-356/battle.png 3537746713 155409
+itch-assets/capture-history/shots-356/battle_advance.png 4161414502 167008
+itch-assets/capture-history/shots-356/eldertree_village.png 3474912510 80172
+itch-assets/capture-history/shots-356/frosthold_village.png 1593687604 100659
+itch-assets/capture-history/shots-356/grimhollow_village.png 3972153021 93733
+itch-assets/capture-history/shots-356/harmonia_village.png 1260934347 183769
+itch-assets/capture-history/shots-356/inn_interior.png 2769270069 99404
+itch-assets/capture-history/shots-356/ironhaven_village.png 4029959550 71751
+itch-assets/capture-history/shots-356/sandrift_village.png 1100108851 77331
+itch-assets/capture-history/shots-356/shop_interior.png 2164681579 61430
+itch-assets/capture-history/shots-356/tavern_interior.png 1078110151 142123
+itch-assets/capture-history/shots-356/whispering_cave.png 1779972582 230988
 itch-assets/capture-history/shots-62a1a2d6/battle.png 423882489 154437
 itch-assets/capture-history/shots-62a1a2d6/eldertree_village.png 3283097348 59819
 itch-assets/capture-history/shots-62a1a2d6/frosthold_village.png 3780829946 79385
@@ -108,6 +120,7 @@ itch-assets/screenshots/title_screen.png 1018508178 869439
 itch-assets/screenshots/warren_lever_portals.png 2869565719 235895
 itch-assets/screenshots/warren_wrap_field.png 1730422479 252147
 itch-assets/screenshots/whispering_cave.png 1927031894 230968
+itch-assets/unshipped-captures/battle_advance.png 4161414502 167008
 itch-assets/unshipped-captures/brasston_lift.png 2915317563 81668
 itch-assets/unshipped-captures/eldertree_canopy.png 1893652909 69016
 itch-assets/unshipped-captures/field_elite_medieval.shots-239-variant.png 3655086297 1082794
