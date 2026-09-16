@@ -186,3 +186,17 @@ func _autogrind_spawnable_count(monsters: Dictionary) -> int:
 		if bool((monsters[mid] as Dictionary).get("autogrind_spawned", false)):
 			n += 1
 	return n
+
+
+## FLOOR. Measured 2026-09-16: renaming a member this file reaches leaves it SILENT —
+## e.g. pierces_what_it_pierces went Asserts 17 -> 15 at EC=0, Passing unchanged, no Risky.
+## That is rung 3, which `.366`'s exit 4 cannot reach: the arms assert and THEN abort, so GUT
+## scores them Passing. `get()` and `has_method()` ANSWER rather than raise — an existence arm
+## written with a direct read aborts alongside the arms it exists to catch.
+func test_every_resolver_member_this_file_reaches_still_exists() -> void:
+	var missing: Array = []
+	if _res.get("_enemy_party") == null: missing.append("_enemy_party")
+	if _res.get("_player_party") == null: missing.append("_player_party")
+	if not _res.has_method("_resolve_ability"): missing.append("_resolve_ability()")
+	assert_eq(missing, [],
+		"the resolver no longer has these, so the arms above would ABORT into a silent pass: %s" % str(missing))
