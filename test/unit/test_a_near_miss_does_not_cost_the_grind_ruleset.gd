@@ -168,3 +168,26 @@ func test_without_a_system_nothing_is_normalised() -> void:
 	assert_eq(notes.size(), 0, "no system means no repair")
 	assert_eq(str((rules[0]["conditions"][0] as Dictionary)["type"]), "party_corruption",
 		"and the rule is left exactly as the model wrote it")
+
+
+func test_every_live_condition_name_is_handled_not_a_hardcoded_few() -> void:
+	## Same measured hole as the target repair (@cowir-sprites' mutation 7 shape): code
+	## that READS PARTY_CONDITION_TYPES and then uses a hardcoded short list satisfies the
+	## source arm above. Drive it with EVERY condition the system declares instead.
+	var sys = get_tree().root.get_node_or_null("AutogrindSystem")
+	assert_not_null(sys, "CONTROL: AutogrindSystem must be reachable")
+	var types: Dictionary = sys.PARTY_CONDITION_TYPES
+	assert_gt(types.size(), 10, "CONTROL: the vocabulary must be non-trivial")
+	var unhandled: Array = []
+	for name in types:
+		var t: String = str(name)
+		if t.begins_with("party_"):
+			continue  # already the real name; prefixing it again is not a near miss
+		var rules: Array = [{"conditions": [{"type": "party_" + t, "op": ">=", "value": 1}],
+			"actions": [{"type": "stop_grinding"}]}]
+		var notes: Array = rc._normalise_autogrind_conditions(rules, sys)
+		if notes.is_empty() or str((rules[0]["conditions"][0] as Dictionary)["type"]) != t:
+			unhandled.append(t)
+	assert_eq(unhandled, [],
+		"a party_-prefixed near miss must resolve for every declared condition — these did not: %s"
+			% str(unhandled))
