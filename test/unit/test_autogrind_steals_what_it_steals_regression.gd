@@ -302,7 +302,15 @@ func test_every_resolver_member_this_file_reaches_still_exists() -> void:
 	for raw_line in before.split("\n"):
 		if raw_line.contains("res://") or raw_line.strip_edges().begins_with("#"):
 			continue
-		for m in RegEx.create_from_string("(?:_res|AutogrindSystem)\\.([A-Za-z_][A-Za-z_0-9]*)").search_all(raw_line):
+		## ⛔ TRAILING COMMENTS TOO, per @cowir-sprites: a floor exists to catch a RENAME, and the commit
+		## that renames a member is the one whose prose explains the rename BY NAME. `_res.foo()  #
+		## renamed from _res.bar` would inflate this count and red a CORRECT file. Leading-## lines were
+		## already skipped; this drops the trailing half. Measured 2026-09-16: strict and lenient
+		## extraction agree on all ten floored files, so this is latent rather than a live repair.
+		## NOT stripped: a member named inside a triple-quoted block. Measured absent in these files,
+		## and recorded rather than handled — a quote-aware stripper here would be its own hazard.
+		var code_only: String = raw_line.split("#")[0]
+		for m in RegEx.create_from_string("(?:_res|AutogrindSystem)\\.([A-Za-z_][A-Za-z_0-9]*)").search_all(code_only):
 			reached[m.get_string(1)] = true
 	reached.erase("_test_disable_persistence")
 	reached.erase("PER_BATTLE_METAS")   ## read from SOURCE on purpose — see the arm above
