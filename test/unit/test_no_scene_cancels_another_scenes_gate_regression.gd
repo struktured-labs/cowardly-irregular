@@ -294,3 +294,54 @@ func test_a_cue_prompt_is_not_a_wiring() -> void:
 	for id in phantom:
 		assert_false(_src().contains('"%s"' % id),
 			"a cue's prompt must not read as a wiring for %s" % id)
+
+
+## Every statement-level assignment to a cutscene-id field, as (file, line, right-hand side).
+func _id_assignments() -> Array:
+	var out: Array = []
+	# The dotted prefix is OPTIONAL: `boss_cutscene_id = "x"` has no word boundary inside its own
+	# name, so a mandatory prefix matched 3 of 20 assignments — the floors below are what caught it.
+	var re := RegEx.create_from_string("^(?:@export\\s+var\\s+|var\\s+)?(?:[A-Za-z_][A-Za-z0-9_]*\\.)?(?:boss_)?cutscene_id\\b[^=]*=\\s*(.+)$")
+	var dirs: Array = ["res://src"]
+	while not dirs.is_empty():
+		var d: String = dirs.pop_back()
+		for sub in DirAccess.get_directories_at(d):
+			dirs.append(d.trim_suffix("/") + "/" + sub)
+		for f in DirAccess.get_files_at(d):
+			if not f.ends_with(".gd"):
+				continue
+			var path := d.trim_suffix("/") + "/" + f
+			var n := 0
+			for line in _read(path).split("\n"):
+				n += 1
+				var t: String = line.strip_edges()
+				if t.begins_with("#") or t.contains("=="):
+					continue
+				var m := re.search(t)
+				if m:
+					out.append([path, n, m.get_string(1).strip_edges()])
+	return out
+
+
+func test_a_cutscene_id_reaching_the_engine_is_always_a_literal() -> void:
+	# THE PRECONDITION OF THE ORACLE ABOVE, which was an unstated assumption until now: a text scan
+	# finds every configured play only while every id is WRITTEN OUT. One `boss_cutscene_id =
+	# "world%d_boss" % w` and the scan goes blind — in the silencing direction, since an
+	# unreachable-looking writer passes this guard's offender check.
+	var assignments := _id_assignments()
+	assert_gt(assignments.size(), 10, "control: the scan really finds the assignments (%d)" % assignments.size())
+	var constructed: Array = []
+	var literals := 0
+	var whole_string := RegEx.create_from_string('^"[^"]*"\\s*(?:#.*)?$')
+	for a in assignments:
+		var rhs: String = str(a[2])
+		# CONSTRUCTION IS TESTED FIRST, and "a literal" means the WHOLE right-hand side is one.
+		# Ordered the other way, `"world%d_x" % w` begins with a quote and was filed as a literal:
+		# the arm passed the mutation it exists for. Caught by predicting the red, not by the green.
+		if rhs.contains("%") or rhs.contains(" + ") or rhs.contains("str("):
+			constructed.append("%s:%d -> %s" % [a[0], a[1], rhs])
+		elif whole_string.search(rhs) != null:
+			literals += 1
+	assert_gt(literals, 10, "control: most assignments are plain literals (%d)" % literals)
+	assert_eq(constructed, [],
+		"a constructed cutscene id cannot be found by a text scan — widen the oracle in the same change:\n  %s" % "\n  ".join(PackedStringArray(constructed)))
