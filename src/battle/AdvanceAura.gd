@@ -131,6 +131,12 @@ static func _glyph_size(n: int) -> float:
 
 
 ## The opaque bounds of a frame, in that frame's pixels. Cached per texture; the whole frame if unreadable.
+## TWIN, deliberately not shared: HybridSpriteLoader.figure_rect(sheet_path) answers the same
+## question from a SHEET PATH and falls back to an EMPTY rect, because an absent sheet has no
+## bounds to guess. This one takes a LIVE TEXTURE and falls back to the whole frame, because a
+## texture in hand always has bounds. Harmonising the fallbacks breaks one caller either way.
+## Retire the split when a caller needs both inputs: then take the Texture2D and let the path
+## side load and delegate.
 static func figure_rect_of(tex: Texture2D) -> Rect2:
 	if tex == null:
 		return Rect2()

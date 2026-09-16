@@ -229,6 +229,8 @@ func test_the_detector_sees_the_defect_it_was_written_for() -> void:
 	for pair in gates:
 		if planted.has(pair[0]) and str(pair[1]) != planted[pair[0]]:
 			caught.append(pair[1])
+	# A RATCHET, not a measurement: five is the W1 starter count. A SIXTH spotlight scene should red
+	# this, and the correct response is to add it to `planted` — not to relax the number.
 	assert_eq(caught.size(), 5,
 		"the five spotlight gates must be visible to the extractor, or a green above means nothing: %s" % [caught])
 

@@ -132,6 +132,10 @@ static func load_battle_effect_texture(key: String) -> Texture2D:
 ## framing empty space for some jobs and the character for others.
 static var _figure_rect_cache: Dictionary = {}
 
+## TWIN, deliberately not shared: AdvanceAura.figure_rect_of(tex) answers the same question from a
+## LIVE TEXTURE and falls back to the WHOLE frame. This one takes a path, so an absent or unreadable
+## sheet returns EMPTY — a caller with no sheet must not be handed a plausible rect. Same retirement
+## condition as the twin: collapse only when one caller needs both inputs.
 static func figure_rect(sheet_path: String) -> Rect2i:
 	if _figure_rect_cache.has(sheet_path):
 		return _figure_rect_cache[sheet_path]
