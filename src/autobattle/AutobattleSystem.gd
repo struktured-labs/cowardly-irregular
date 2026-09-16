@@ -672,7 +672,14 @@ func _rule_to_actions(combatant: Combatant, rule: Dictionary) -> Array[Dictionar
 func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dictionary:
 	"""Convert a grid-format action definition to a battle action"""
 	var action_type = action_def.get("type", "attack")
-	var target_type = action_def.get("target", "lowest_hp_enemy")
+	## ⛔ A rule that names NO target used to default to lowest_hp_enemy for EVERYTHING. Measured on the
+	## live evaluator: an untargeted `cure`, `protect`, `esuna` or the Mage's self-only `channel` all
+	## resolved to the Goblin — the heal then fizzled (nobody healed, no MP spent, turn wasted), and an
+	## untargeted `potion` was WORSE: ItemSystem healed the goblin 60 -> 300 and consumed the item.
+	## The grid editor always writes a target, so the reachable paths are shared COWIR1: codes, hand-edited
+	## JSON and older saved scripts (cowir-ai 11481, who fixed the composer's half). An EXPLICIT target is
+	## still obeyed exactly as written — this only supplies the default the action's own data implies.
+	var target_type = action_def.get("target", _implied_target(action_def))
 
 	match action_type:
 		"attack":
@@ -788,6 +795,33 @@ func _get_targets_by_type(combatant: Combatant, target_type: String) -> Array[Co
 			if t != null:
 				arr.append(t)
 			return arr
+
+
+## The target an action with no `target` key should get, read from the thing it actually does.
+## Offensive stays lowest_hp_enemy, which is what every rule without a target used to get.
+func _implied_target(action_def: Dictionary) -> String:
+	var kind: String = str(action_def.get("type", "attack"))
+	if kind == "ability":
+		var js = get_node_or_null("/root/JobSystem")
+		if js and js.has_method("get_ability"):
+			var ability = js.get_ability(str(action_def.get("id", "")))
+			if ability is Dictionary and not ability.is_empty():
+				match str(ability.get("target_type", "")):
+					"single_ally", "all_allies", "dead_ally":
+						return "lowest_hp_ally"
+					"self":
+						return "self"
+	elif kind == "item":
+		var its = get_node_or_null("/root/ItemSystem")
+		if its and its.has_method("get_item"):
+			var item = its.get_item(str(action_def.get("id", "")))
+			if item is Dictionary and not item.is_empty():
+				var t: int = int(item.get("target_type", its.TargetType.SINGLE_ALLY))
+				if t == its.TargetType.SINGLE_ALLY or t == its.TargetType.ALL_ALLIES:
+					return "lowest_hp_ally"
+				if t == its.TargetType.SELF:
+					return "self"
+	return "lowest_hp_enemy"
 
 
 func _resolve_ability_targets(combatant: Combatant, ability_id: String, target_type: String) -> Array[Combatant]:
