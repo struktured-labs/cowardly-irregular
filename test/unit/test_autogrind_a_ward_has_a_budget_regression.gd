@@ -130,3 +130,19 @@ func test_the_pooled_caster_that_makes_this_reachable_is_still_pooled() -> void:
 		"the_absence is the reachable caster this fix is justified by — if it is pooled nowhere, re-read the header")
 	assert_true("fill_the_void" in (es.monster_database["the_absence"] as Dictionary).get("abilities", []),
 		"CONTROL: and it must still cast the ability")
+
+
+## FLOOR FOR THE WHOLE FILE, added 2026-09-16. Every arm here reaches members of the resolver,
+## and a member that is RENAMED does not fail — it aborts the arm at runtime, which GUT scores
+## PASSING when the abort lands after the last assert. Measured on my own meta guard that day:
+## Passing 10 -> 10, Failing 0, Risky 0, EC 0, and only Asserts moved (22 -> 17).
+## @cowir-sfx's form, and it needs no judgement about WHY a member is reached: the silent-abort
+## failure does not care, so a vehicle is as worth pinning as a subject. `get()` returns null for
+## an absent property rather than raising; `assert_ne(x, null)` is NOT usable — it deep-compares.
+func test_every_resolver_member_this_file_reaches_still_exists() -> void:
+	var missing: Array = []
+	if _res.get("_enemy_party") == null: missing.append("_enemy_party")
+	if _res.get("_player_party") == null: missing.append("_player_party")
+	if not _res.has_method("_resolve_ability"): missing.append("_resolve_ability()")
+	assert_eq(missing, [],
+		"the resolver no longer has these, so the arms above would ABORT into a silent pass: %s" % str(missing))

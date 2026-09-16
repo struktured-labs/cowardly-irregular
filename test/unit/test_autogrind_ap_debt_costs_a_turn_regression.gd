@@ -118,3 +118,20 @@ func test_debt_is_reachable_at_all_through_the_advance_path() -> void:
 	var hero := _fighter("Spender", 0)
 	hero.spend_ap(3)
 	assert_lt(hero.current_ap, 0, "FLOOR: a combatant can in fact be driven into debt")
+
+
+## FLOOR FOR THE WHOLE FILE, added 2026-09-16. Every arm here reaches members of the resolver,
+## and a member that is RENAMED does not fail — it aborts the arm at runtime, which GUT scores
+## PASSING when the abort lands after the last assert. Measured on my own meta guard that day:
+## Passing 10 -> 10, Failing 0, Risky 0, EC 0, and only Asserts moved (22 -> 17).
+## @cowir-sfx's form, and it needs no judgement about WHY a member is reached: the silent-abort
+## failure does not care, so a vehicle is as worth pinning as a subject. `get()` returns null for
+## an absent property rather than raising; `assert_ne(x, null)` is NOT usable — it deep-compares.
+func test_every_resolver_member_this_file_reaches_still_exists() -> void:
+	var missing: Array = []
+	if _res.get("_enemy_party") == null: missing.append("_enemy_party")
+	if _res.get("_player_party") == null: missing.append("_player_party")
+	if not _res.has_method("_selection_phase"): missing.append("_selection_phase()")
+	if not _res.has_method("_tick_round_start"): missing.append("_tick_round_start()")
+	assert_eq(missing, [],
+		"the resolver no longer has these, so the arms above would ABORT into a silent pass: %s" % str(missing))

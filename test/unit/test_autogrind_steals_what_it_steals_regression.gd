@@ -263,3 +263,23 @@ func test_the_unported_boss_half_is_still_unreachable_in_a_grind() -> void:
 		"CONTROL: if nothing authors these flags the scan is measuring nothing and would pass empty")
 	assert_eq(reachable.size(), 0,
 		"a monster carrying first_steal_guaranteed/steal_response is now grind-reachable (%s) — the omission is a real gap, port it" % str(reachable))
+
+
+## FLOOR FOR THE WHOLE FILE, added 2026-09-16. Every arm here reaches members of the resolver,
+## and a member that is RENAMED does not fail — it aborts the arm at runtime, which GUT scores
+## PASSING when the abort lands after the last assert. Measured on my own meta guard that day:
+## Passing 10 -> 10, Failing 0, Risky 0, EC 0, and only Asserts moved (22 -> 17).
+## @cowir-sfx's form, and it needs no judgement about WHY a member is reached: the silent-abort
+## failure does not care, so a vehicle is as worth pinning as a subject. `get()` returns null for
+## an absent property rather than raising; `assert_ne(x, null)` is NOT usable — it deep-compares.
+func test_every_resolver_member_this_file_reaches_still_exists() -> void:
+	var missing: Array = []
+	if _res.get("_battle_log") == null: missing.append("_battle_log")
+	if _res.get("_enemy_party") == null: missing.append("_enemy_party")
+	if _res.get("_player_party") == null: missing.append("_player_party")
+	if _res.get("_stolen_gold") == null: missing.append("_stolen_gold")
+	if not _res.has_method("_build_results"): missing.append("_build_results()")
+	if not _res.has_method("_resolve_ability"): missing.append("_resolve_ability()")
+	if not _res.has_method("_roll_steal"): missing.append("_roll_steal()")
+	assert_eq(missing, [],
+		"the resolver no longer has these, so the arms above would ABORT into a silent pass: %s" % str(missing))

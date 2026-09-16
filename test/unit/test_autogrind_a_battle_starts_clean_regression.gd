@@ -289,3 +289,17 @@ func _declared_metas(code: String) -> Array:
 		if t != "":
 			out.append(t)
 	return out
+
+
+## FLOOR FOR THE WHOLE FILE, added 2026-09-16. Every arm here reaches members of the resolver,
+## and a member that is RENAMED does not fail — it aborts the arm at runtime, which GUT scores
+## PASSING when the abort lands after the last assert. Measured on my own meta guard that day:
+## Passing 10 -> 10, Failing 0, Risky 0, EC 0, and only Asserts moved (22 -> 17).
+## @cowir-sfx's form, and it needs no judgement about WHY a member is reached: the silent-abort
+## failure does not care, so a vehicle is as worth pinning as a subject. `get()` returns null for
+## an absent property rather than raising; `assert_ne(x, null)` is NOT usable — it deep-compares.
+func test_every_resolver_member_this_file_reaches_still_exists() -> void:
+	var missing: Array = []
+	if not _res.has_method("resolve_battle"): missing.append("resolve_battle()")
+	assert_eq(missing, [],
+		"the resolver no longer has these, so the arms above would ABORT into a silent pass: %s" % str(missing))
