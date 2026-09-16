@@ -30,6 +30,8 @@ import argparse
 import json
 import re
 import subprocess
+
+from sprite_corpus import banner
 import sys
 from pathlib import Path
 
@@ -137,11 +139,13 @@ def grep_repo(needle: str) -> int:
     so the failure is UNDER-reporting — an inert sheet goes unmentioned,
     never a live one wrongly condemned.
 
-    NO LONGER LATENT, and this paragraph used to say it was. It read "there
-    are 0 unregistered monster PNGs, so this predicate is unexercised" —
-    falsified by this tool's own output, which reports cartographer_wraith
-    and dark_knight as ORPHANs with 0 refs. The data landed and the note
-    did not move (measured 2026-09-16).
+    NO LONGER LATENT, and this paragraph has now been wrong twice. It first
+    read "there are 0 unregistered monster PNGs, so this predicate is
+    unexercised". I replaced that with a claim that cartographer_wraith and
+    dark_knight are inert — TRUE of the audited artist tree, FALSE of the game
+    repo, where both have had manifest entries pointing at those exact bytes
+    since before 2026-09-16. The predicate is genuinely exercised now; what I
+    got wrong was not naming WHICH TREE exercised it. See _corpus_banner.
 
     ⚠️ AND THE PREDICATE WAS STILL WRONG WHILE THE DOCSTRING PROMISED "in
     CODE, not in prose": `s.startswith("#")` skips only a line that BEGINS
@@ -265,6 +269,9 @@ def main() -> int:
 
     # ⛔ THE INSTRUMENT BEFORE THE CORPUS. Every check below reads source
     # through _code_of; an over-strip makes all five report a clean repo.
+    print(banner(GAME))
+    print()
+
     bad_strip = _strip_control()
     if bad_strip:
         print(bad_strip)

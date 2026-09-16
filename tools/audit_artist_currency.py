@@ -41,6 +41,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from sprite_corpus import banner
+
 SPRITES = Path("/home/struktured/projects/cowir-sprites")
 GAME = Path("/home/struktured/projects/cowardly-irregular-artist-ship")
 DRIVE = "gdrive: cowir"
@@ -227,6 +229,8 @@ def self_check() -> int:
 
 
 def main() -> int:
+    print(banner(GAME))
+    print()
     ap = argparse.ArgumentParser()
     ap.add_argument("--pull", metavar="DIR", default=None,
                     help="download artist-newer files to DIR (never overwrites "
