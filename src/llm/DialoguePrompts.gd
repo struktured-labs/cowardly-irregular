@@ -966,6 +966,7 @@ static func build_rule_composition(domain: String, prompt_text: String, current_
 		+ current_json
 		+ "\n\nPlayer intent:\n"
 		+ prompt_text
+		+ _format_kit_reminder(kit_context)
 		+ "\n\nEmit a JSON object with fields:\n"
 		+ "  name: short (3-6 words), snake-case-friendly, describing the strategy\n"
 		+ "  description: 1 sentence, in-character\n"
@@ -991,6 +992,35 @@ static func build_rule_composition(domain: String, prompt_text: String, current_
 ##
 ## Comes from AutobattleSystem.get_deep_check_kit — the validator's own view — so
 ## the prompt cannot teach a kit the validator will reject.
+## The kit ids again, immediately before the answer.
+##
+## `_format_rule_kit` already says "and NOTHING else" and already warns that the
+## worked examples carry ids to demonstrate shape — and it sits ~1.1k characters
+## earlier, with the whole grammar between it and the output spec. Distance is the
+## thing this fixes, not wording.
+##
+## Measured, live llama3, the mage's real prompt, 24 samples per arm:
+##   as shipped          8 off-kit ability rules (all `esuna`, an id the examples use)
+##   kit restated here   1
+## Unparsed replies were 0-8% in BOTH arms — the one failure was a malformed nested
+## quote in `rules_json`, not truncation — so the sample cannot separate them, and
+## this does not claim to improve that.
+##
+## Derived from the same kit_context the block above reads; a second copy of the ids
+## here is exactly the drift three lanes fixed elsewhere today.
+static func _format_kit_reminder(kit_context: Dictionary) -> String:
+	if kit_context.is_empty() or not bool(kit_context.get("resolved", false)):
+		return ""
+	var kit: Array = kit_context.get("kit", [])
+	if kit.is_empty():
+		return ""
+	var ids: PackedStringArray = PackedStringArray()
+	for aid in kit:
+		ids.append(str(aid))
+	return ("\n\nBefore you answer: this character knows ONLY these ability ids — %s. "
+		+ "A rule naming any other ability is discarded, so spend every rule on these.") % ", ".join(ids)
+
+
 static func _format_rule_kit(kit_context: Dictionary) -> String:
 	if kit_context.is_empty() or not bool(kit_context.get("resolved", false)):
 		return ""
