@@ -712,13 +712,17 @@ func _await_tween_hold(tween: Tween) -> void:
 
 
 ## A hold that a skip cuts short: holding B for 1.5s and then sitting through the rest of a wait read as an ignored press.
-func _sleep(duration: float) -> void:
+## `on_tick` receives the rate this frame, for holds whose SUBJECT also has to hurry — a scatter's
+## walkers, say. It rides the same rate the hold advances at, so the two cannot come apart.
+func _sleep(duration: float, on_tick: Callable = Callable()) -> void:
 	if duration <= 0.0 or _skipping:
 		return
 	var elapsed := 0.0
 	while not _skipping and elapsed < duration:
 		await get_tree().process_frame
 		var rate: float = FAST_FORWARD_RATE if Input.is_action_pressed("ui_accept") else 1.0
+		if on_tick.is_valid():
+			on_tick.call(rate)
 		elapsed += get_process_delta_time() * rate
 
 
@@ -1368,6 +1372,9 @@ func _step_move_actor(step: Dictionary) -> void:
 	var speed: float = float(step.get("speed", CutsceneActor.DEFAULT_WALK_SPEED))
 	a.walk_to(target, speed)  # unawaited: a skip mid-walk must land the actor now, not after the walk
 	while not _skipping and is_instance_valid(a) and a._walking:
+		# Same contract as _await_tween_hold and _sleep: a held confirm hurries this too. A staged walk
+		# was the last hold that ignored it — everything around it sped up 4x and the walk did not.
+		a.set_walk_rate(FAST_FORWARD_RATE if Input.is_action_pressed("ui_accept") else 1.0)
 		await get_tree().process_frame
 	if _skipping and is_instance_valid(a):
 		a.snap_walk()
@@ -1528,6 +1535,7 @@ func _step_nearby_scatter(step: Dictionary) -> void:
 	var speed: float = float(step.get("speed", 70.0))
 	# Start every walk unawaited so the crowd parts at once, then wait out the longest — awaiting each in turn would make them shuffle single-file.
 	var longest: float = 0.0
+	var scattered: Array = []
 	for id in _conscripted:
 		var a := _get_actor(id)
 		if a == null:
@@ -1541,9 +1549,16 @@ func _step_nearby_scatter(step: Dictionary) -> void:
 			a.stand()
 			continue
 		a.walk_to(dest, speed)
+		scattered.append(a)
 		longest = maxf(longest, a.global_position.distance_to(dest) / maxf(1.0, speed))
 	if not _skipping and longest > 0.0:
-		await _sleep(longest)
+		# STILL _sleep — it owns the hold contract (a skip cuts it, a held confirm hurries it) and an
+		# existing guard pins that. The hook is how the WALKERS hurry with it: without it the wait
+		# ended 4x sooner than the crowd arrived and the scene moved on over puppets still walking.
+		await _sleep(longest, func(rate: float) -> void:
+			for w in scattered:
+				if is_instance_valid(w) and w._walking:
+					w.set_walk_rate(rate))
 
 
 ## Accept either an actor id or an [x,y] pair; Vector2.INF means unresolvable.
