@@ -148,7 +148,13 @@ func test_all_bs_physical_spawns_pass_weapon_type() -> void:
 		if eol == -1:
 			eol = src.length()
 		var call: String = src.substr(idx, eol - idx)
-		if call.find("_weapon_type_for(") < 0:
+		## ⚠️ A FORWARDED weapon_type SATISFIES THIS, and the arm below keeps the chain honest.
+		## The subject is "a PHYSICAL effect never spawns without a weapon type", not "the literal
+		## `_weapon_type_for(` appears on this line". When the limit-break stagger moved the spawn
+		## into a timer helper (2026-09-16), the value still came from `_weapon_type_for(participant)`
+		## at the call site and arrived as a parameter — intent met, shape broken. Following the value
+		## ONE HOP is the same repair the axis-2 ledger needed for helper-borne reads.
+		if call.find("_weapon_type_for(") < 0 and call.find(", weapon_type)") < 0:
 			# Also allow explicit ""` for the never-had-attacker case;
 			# but PHYSICAL calls in execution are the target class — flag.
 			# Annotate with a rough line number so a diff is easy.
@@ -156,8 +162,58 @@ func test_all_bs_physical_spawns_pass_weapon_type() -> void:
 			offending.append("line %d: %s" % [line_num, call.substr(0, 120)])
 		cursor = eol
 	assert_eq(offending.size(), 0,
-		"every PHYSICAL EffectSystem.spawn_effect must pass _weapon_type_for(...) — missing at: %s" % str(offending))
+		"every PHYSICAL EffectSystem.spawn_effect must pass a weapon type — missing at: %s" % str(offending))
 
+
+func test_every_forwarder_is_fed_a_real_weapon_type() -> void:
+	## ⛔ THE CHAIN IS TWO HOPS AND MY FIRST VERSION OF THIS ARM GUARDED ONE (cowir-sfx 11871).
+	##   hop 1  _spawn_impact_after(delay, sprite, _weapon_type_for(participant))
+	##   hop 2  create_timer(...).timeout.connect(_spawn_impact_now.bind(sprite, weapon_type))
+	## A `.bind()` hides a hop from a line-oriented scan, because the forwarding happens inside a
+	## Callable rather than in a call. `.bind(sprite, "")` would have redded nothing.
+	##
+	## ⚠️ AND THE FORWARDER LIST WAS A HAND-LIST OF ONE — complete only because the second forwarder
+	## COULD NOT SATISFY THE RULE AS WRITTEN, which makes it "the forwarders this arm can express"
+	## rather than "the forwarders". Same class as a key ratchet picking its own keys. DERIVED now: a
+	## forwarder is any function that hands a bare `weapon_type` to a PHYSICAL spawn.
+	var src: String = FileAccess.get_file_as_string(BS_PATH)
+	var forwarders: Array = []
+	for m in RegEx.create_from_string("func (_[a-z_0-9]+)\\(([^)]*)\\)").search_all(src):
+		var fname: String = m.get_string(1)
+		var params: String = m.get_string(2)
+		var body_at: int = m.get_end()
+		var body_end: int = src.find("\nfunc ", body_at)
+		var body: String = src.substr(body_at, (body_end - body_at) if body_end > body_at else 2000)
+		if body.contains("EffectType.PHYSICAL") and body.contains(", weapon_type)"):
+			assert_true(params.contains("weapon_type: String"),
+				"%s hands a bare weapon_type to a PHYSICAL spawn but does not DECLARE one — it is reading something else" % fname)
+			forwarders.append(fname)
+	assert_gt(forwarders.size(), 0,
+		"VOID, not clean: no weapon-type forwarder was derived, so every check below would pass over nothing")
+
+	## Every inbound edge must carry a REAL weapon type: `_weapon_type_for(...)` at the entry, or
+	## another forwarder's own `weapon_type` parameter one hop along. A literal is the hole.
+	var starved: Array = []
+	for fwd in forwarders:
+		var seen_edge: bool = false
+		for needle in [fwd + "(", fwd + ".bind("]:
+			var cursor: int = 0
+			while true:
+				var idx: int = src.find(needle, cursor)
+				if idx == -1:
+					break
+				cursor = idx + needle.length()
+				if src.substr(maxi(0, idx - 5), 5) == "func ":
+					continue  # the declaration
+				var eol: int = src.find("\n", idx)
+				var call: String = src.substr(idx, (eol - idx) if eol > idx else 200)
+				seen_edge = true
+				if call.find("_weapon_type_for(") < 0 and call.find("weapon_type)") < 0:
+					starved.append("%s <- %s" % [fwd, call.strip_edges().substr(0, 110)])
+		assert_true(seen_edge,
+			"CONTROL: %s must have at least one call or bind site, or its edges prove nothing" % fwd)
+	assert_eq(starved, [],
+		"a weapon-type forwarder is handed a literal instead of a real weapon type — the hole is one indirection wide: %s" % str(starved))
 
 ## ── (6) _delayed_play_hit_fx uses the cycle-12 cache for weapon_type ──
 
