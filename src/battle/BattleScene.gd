@@ -5480,7 +5480,8 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 		if anim_sprite.sprite_frames and anim_sprite.sprite_frames.has_animation(anim_sprite.animation):
 			var tex: Texture2D = anim_sprite.sprite_frames.get_frame_texture(anim_sprite.animation, anim_sprite.frame)
 			if tex:
-				anchor.y -= tex.get_height() * absf(anim_sprite.scale.y) * 0.5
+				# Lifts to the FIGURE's top, not the frame's: one 256px frame holds figures at different offsets, so half-frame floated the bubble 12-114px above the head depending on who spoke.
+				anchor.y -= BattleSpeechBubble.head_lift(sprite)
 				half_w = tex.get_width() * absf(anim_sprite.scale.x) * 0.5
 	var vp_w: float = get_viewport_rect().size.x
 	# struktured playtest 2026-08-22 "style the bubble away from them": the old always-left nudge still CENTRED the bubble on the anchor, so it sat on the speaker. Offset to a side instead — right for left-half speakers, left for right-half ones so it stays off the party panel; BattleSpeechBubble flips if the clamp would re-cover them.

@@ -16,6 +16,9 @@ const CLEAR_SLACK_PX: float = 10.0
 ## Suppress only at 4x+ (doc'd intent); pre-fix code suppressed at 2x so users at 2x saw no bubbles.
 const SUPPRESS_TIME_SCALE: float = 4.0
 
+## The figure-bounds scan has ONE owner; the aura disc seats on the same measurement.
+const AdvanceAuraClass = preload("res://src/battle/AdvanceAura.gd")
+
 var _hold_time: float = 1.5
 
 ## Beat after a spoken line finishes before the bubble starts fading, so the last word is read
@@ -40,6 +43,27 @@ var _voiced: bool = false
 var _panel: PanelContainer = null
 ## Returns screen Rect2s the player is reading (the open command menu) — read at layout time, when the menu exists.
 var _keep_out: Callable = Callable()
+
+## Screen px from a sprite's centre to the TOP OF ITS FIGURE — not its frame.
+## The artists' 256px frames hold figures of different heights at different offsets (measured
+## 2026-09-16: top margin 66px on the Fighter, 10px on the Cleric), so lifting by half the FRAME
+## floated the bubble 12-114px above the head, per job. That per-speaker inconsistency is the
+## unfixed half of struktured's 2026-08-29 "not quite aligned to who says them".
+static func head_lift(sprite: Node2D) -> float:
+	if not (sprite is AnimatedSprite2D):
+		return 0.0
+	var anim: AnimatedSprite2D = sprite
+	if anim.sprite_frames == null or not anim.sprite_frames.has_animation(anim.animation):
+		return 0.0
+	var tex: Texture2D = anim.sprite_frames.get_frame_texture(anim.animation, anim.frame)
+	if tex == null:
+		return 0.0
+	# AdvanceAura owns the opaque-bounds scan (cached; whole frame when unreadable, i.e. the old half-frame lift) — the aura seats on the same figure this bubble points at.
+	var top: float = AdvanceAuraClass.figure_rect_of(tex).position.y + anim.offset.y
+	# Where the frame hangs off the origin, read the same way the aura reads it — battle sprites are centered today and nothing here should quietly assume it.
+	if anim.centered:
+		top -= float(tex.get_height()) * 0.5
+	return -top * absf(anim.scale.y)
 
 
 ## Spawns a bubble above anchor_global_pos. Returns null when suppressed.
