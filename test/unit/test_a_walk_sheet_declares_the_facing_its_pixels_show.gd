@@ -20,10 +20,27 @@ extends GutTest
 ##   margin >= 0.05   42 sheets   42 correct    CLEAN   <- the floor this file uses
 ##   margin >= 0.15   28 sheets   28 correct    CLEAN
 ##
-## ⚠️ AND THE LIMIT, MEASURED RATHER THAN ASSUMED. This identifies WHICH PAIR is left/right. It
-## does NOT say which of the two is left, nor which of the other two is down. I tried to recover
-## the full order by matching rows across sheets that declare the same order: the identity
-## permutation won 93 of 406 pairs (22.9%) with a median margin of 0.007 — noise. So 116
+## ⛔ AND HERE IS WHAT THE MIRROR ARM CANNOT SEE, PROVEN RATHER THAN SUSPECTED. Swap a sheet's
+## walk_left and walk_right with EACH OTHER and this file stays green — EC=0, Passing 2 — while
+## the character moonwalks, showing the right-facing row when travelling left. The arm compares an
+## unordered pair against an unordered pair, so a swap inside it is invisible.
+##
+## 🔑 THAT IS NOT A HOLE I CAN CLOSE WITH PIXELS, AND THE MEASUREMENT SAYS WHY: walk_right is a
+## LITERAL MIRROR of walk_left — median alpha-IoU 1.000 across the 53 declaring sheets, 47 of them
+## at >= 0.99. Mirror-generated art has no intrinsic handedness, so "which row faces left" is not a
+## property of the image. Two cross-sheet tests confirmed it rather than assumed it: matching the
+## declared left rows of different characters directly vs mirrored split 204/406 (50.2%) on alpha
+## and 198/406 (48.8%) on masked colour, median margin 0.0000. Exactly chance, twice.
+##
+## ✅ SO THE SWAP IS CAUGHT BY AGREEMENT INSTEAD — CLAUDE.md case (a). All 53 declaring sheets
+## across the three sections use ONE order (walk_down 0, walk_left 1, walk_right 2, walk_up 3), so
+## a single swapped sheet stops agreeing with the other 52 and the arm below reds. A GLOBAL swap of
+## all 53 would pass, and that is stated rather than hidden: it is not an accident anyone makes,
+## and no instrument here could tell it from a deliberate convention change.
+##
+## ⚠️ AND THE OTHER LIMIT. This identifies WHICH PAIR is left/right; it does NOT say which of the
+## other two is down. Recovering the full order by matching rows across sheets gave the identity
+## permutation 93 of 406 pairs (22.9%), median margin 0.007 — noise. So the 116
 ## overworld_npc_sheets entries that declare no animations STAY undeclared; provenance names an
 ## anchor for 110 of them and an anchor string is not a pixel.
 const MANIFEST := "res://data/sprite_manifest.json"
@@ -147,3 +164,54 @@ func test_every_decisive_sheet_declares_the_rows_its_pixels_mirror() -> void:
 		("a sheet declares its facing rows somewhere other than where its own pixels put them. The "
 		+ "sheet still slices correctly and every geometry check stays green — the character simply "
 		+ "walks facing the wrong way: %s") % [wrong])
+
+
+## ⛔ THE HALF THE PIXELS CANNOT ANSWER. A lone swapped sheet is caught here and nowhere else.
+##
+## 📌 NOT A DUPLICATE of test_a_roaming_monster_reads_its_declared_sheet's roster arm, which asks
+## whether the MONSTER sheets match the CONSTANTS RoamingMonster used to hardcode. This asks
+## whether all 53 sheets in three sections agree with EACH OTHER. Deliberately move the whole
+## fleet to a new order and that arm reds while this one stays green — different questions, and
+## the pair is why a convention change is distinguishable from a one-sheet mistake.
+func test_every_declaring_sheet_uses_the_same_row_order() -> void:
+	var m := _manifest()
+	var orders := {}
+	var total := 0
+	for section in SECTIONS:
+		var node = m.get(section, {})
+		if not (node is Dictionary):
+			continue
+		for id in node:
+			var e = node[id]
+			if not (e is Dictionary):
+				continue
+			var anims = e.get("animations", {})
+			if not (anims is Dictionary) or anims.is_empty():
+				continue
+			var names: Array = anims.keys()
+			names.sort()
+			var parts: Array = []
+			for n in names:
+				parts.append("%s=%d" % [n, int((anims[n] as Dictionary).get("row", -1))])
+			var key := ",".join(parts)
+			if not orders.has(key):
+				orders[key] = []
+			(orders[key] as Array).append("%s/%s" % [section, id])
+			total += 1
+	assert_gt(total, 45, "ANTI-VACUITY: only %d sheets declare an order — nothing is being compared" % total)
+
+	var keys: Array = orders.keys()
+	keys.sort()
+	if keys.size() > 1:
+		var report: Array = []
+		for k in keys:
+			var who: Array = orders[k]
+			who.sort()
+			report.append("%s <- %d sheet(s): %s" % [k, who.size(), who if who.size() <= 4 else str(who.slice(0, 4)) + " ..."])
+		assert_eq(keys.size(), 1,
+			("the overworld sheets no longer agree on one row order. A sheet whose walk_left and "
+			+ "walk_right are SWAPPED slices perfectly, mirrors perfectly, and renders a character "
+			+ "moonwalking — agreement is the only thing that sees it, because mirror-generated art "
+			+ "has no handedness in its pixels: %s") % [report])
+	else:
+		assert_eq(keys.size(), 1, "exactly one row order must be in use across %d sheets" % total)
