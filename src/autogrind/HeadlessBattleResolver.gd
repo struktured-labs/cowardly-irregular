@@ -745,6 +745,10 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 	## all monster-side, all drawn from the same pools the grind draws from, so the grind was taking a
 	## third of the authored damage from them. Third instance of this file's field-mismatch class.
 	var hits: int = max(1, int(ability.get("hits", 1)))
+	## Live heals the caster for this share of the damage it actually dealt (BattleManager:5121). Four
+	## POOLED monsters drain — specter, pipe_phantom, shadow_knight, bone_warden — and the Necromancer's
+	## drain_life is a player build. Neither side healed in the grind.
+	var drain_pct: float = float(ability.get("drain_percentage", 0))
 
 	match category:
 		"healing":
@@ -775,6 +779,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## temporal_strike (magic, hits=2) strikes ONCE in the real game. I looped here in
 					## 04f2b2f8 and the grind hit harder than the game it simulates — @cowir-battle 2d14d92d.
 					var dealt: int = target.take_damage(actual, true)
+					_drain_to(caster, dealt, drain_pct, ability_id)
 					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dealt])
 					_maybe_inflict_status(caster, target, ability, ability_id)
 
@@ -782,11 +787,18 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			for target in targets:
 				if target and target.is_alive:
 					var base_dmg = int(caster.get_buffed_stat("attack", caster.attack) * power)
-					var dmg: int = 0
+					## HP DELTA, not the helper's return: _resolve_attack_with_power returns its computed
+					## figure and take_damage then applies the defense formula AGAIN, so the return runs
+					## high. Live drains a share of what was ACTUALLY dealt, and the log should say so too.
+					var hp_before: int = target.current_hp
 					for _h in hits:
 						if not target.is_alive:
 							break
-						dmg += _resolve_attack_with_power(caster, target, base_dmg)
+						_resolve_attack_with_power(caster, target, base_dmg)
+					var dmg: int = hp_before - target.current_hp
+					## NO DRAIN HERE, deliberately: live reads drain_percentage only in _execute_magic_ability, so
+					## dark_slash (physical, 30%) heals its caster in NEITHER engine. Draining here would make the
+					## grind heal bone_warden and shadow_knight where the game does not (@cowir-battle 2d14d92d).
 					_log("%s uses %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dmg])
 					_maybe_inflict_status(caster, target, ability, ability_id)
 
@@ -931,6 +943,17 @@ func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: Stri
 		status_to_add = "burning"
 	target.add_status(status_to_add, int(ability.get("duration", 3)))
 	_log("%s inflicts %s on %s (%s)" % [caster.combatant_name, status_to_add, target.combatant_name, ability_id])
+
+## Drains a share of damage ACTUALLY DEALT back to the caster, mirroring BattleManager:5121-5123.
+## Takes the accumulated total so a multi-hit drain heals off the whole volley, as live does.
+func _drain_to(caster, damage_dealt: int, drain_pct: float, ability_id: String) -> void:
+	if drain_pct <= 0.0 or damage_dealt <= 0:
+		return
+	var drained: int = int(damage_dealt * drain_pct / 100.0)
+	if drained <= 0:
+		return
+	var healed: int = caster.heal(drained)
+	_log("%s drains %d HP with %s" % [caster.combatant_name, healed, ability_id])
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
