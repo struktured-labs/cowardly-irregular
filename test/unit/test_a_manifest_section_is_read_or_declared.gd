@@ -9,7 +9,8 @@ extends GutTest
 ##
 ## Measured on this tree: SIX sections are read and FOUR are not, holding 153 entries.
 ##
-##   npc_sheets            SIX conversational sheets, 1326 KB — 2048x256, eight 256px frames
+##   npc_sheets            SIX conversational sheets, 1326 KB as of 2026-09-16 — the COUNT is
+##                         pinned by the disk arm below, the byte figure is not — 2048x256, eight 256px frames
 ##                         animating idle/talk/gesture/react. No path form in src/ reaches them: the
 ##                         live convention is `npcs/<archetype>/overworld.png`, a DIRECTORY, and four
 ##                         of the six have a twin there. The characters ship; the talking art does
@@ -162,8 +163,9 @@ func test_no_declaration_names_a_section_that_is_gone() -> void:
 ## entry. A section census cannot see art the section does not mention; that is not a tuning
 ## problem, it is the direction the instrument faces.
 ##
-## 🔑 SCOPED TO `npcs/` ON PURPOSE, and the reason is a measurement: 868 PNGs live under
-## assets/sprites and only 301 are named by a manifest path. The other 567 are overwhelmingly FINE
+## 🔑 SCOPED TO `npcs/` ON PURPOSE, and the reason is a measurement — MEASURED 2026-09-16 AND NOT
+## PINNED BY ANY ARM, so read it as a dated observation rather than a live claim: 868 PNGs lived
+## under assets/sprites and 301 were named by a manifest path. The other 567 are overwhelmingly FINE
 ## — a job's animation frames sit inside a directory registered as `sheets[job].path`, and
 ## portraits resolve through portrait_path() — so a tree-wide "unregistered means unreachable"
 ## census would report 567 false positives and be worse than nothing.
@@ -204,3 +206,24 @@ func test_every_flat_npc_sheet_is_visible_to_the_census() -> void:
 		("a flat npcs/<name>.png ships with no manifest entry, so no census in this lane can see it — "
 		+ "register it (which does not make it reachable, it makes the unreachability countable) or "
 		+ "remove it: %s") % [invisible])
+
+
+## ⛔ A NUMBER IN PROSE DECAYS AND A NUMBER IN AN ARM CANNOT. Every load-bearing figure in this
+## file's header is derived live by an arm below — the six/four split, the sheet count, the
+## declaration/disk agreement. The two that are NOT pinned are labelled with the date they were
+## measured, because cowir-music spent this evening finding a header that said "54 excluded, 33
+## unbacked" when the truth was 42 and 21, and the fix that actually held was deriving both in the
+## arm rather than correcting the sentence. Correcting it would have bought about eight days.
+##
+## ⚠️ SO: DO NOT COPY THE ARM'S OUTPUT BACK INTO THE COMMENT. That is the move that created every
+## stale header any lane found today, including the five-days-stale one I corrected an hour ago in
+## test_overworld_sheet_manifest_audit — which claimed a section had zero readers after my own
+## commit gave it one.
+func test_the_headers_unpinned_numbers_are_dated() -> void:
+	var src := FileAccess.get_file_as_string("res://test/unit/test_a_manifest_section_is_read_or_declared.gd")
+	assert_gt(src.length(), 500, "VOID: this guard could not read its own source")
+	assert_true(src.contains("MEASURED 2026-09-16 AND NOT"),
+		("the 868/301 scoping figure must carry the date it was measured and say it is unpinned — "
+		+ "an undated number in a header reads as a live claim and decays silently"))
+	assert_true(src.contains("1326 KB as of"),
+		"the byte total must be dated for the same reason — its COUNT is pinned by the disk arm, its size is not")
