@@ -580,6 +580,15 @@ func _play_advance_sound(depth: int = 1) -> void:
 			key = candidate
 			break
 		rung -= 1
+	# 9 of 14 jobs have no per-job ladder and repeated ONE flat credit at every press, full bank included.
+	if key == "":
+		var generic := clampi(depth, 1, 5)
+		while generic >= 1:
+			var fallback := "advance_generic_%d" % generic
+			if SoundManager._sfx_manifest.has(fallback):
+				key = fallback
+				break
+			generic -= 1
 	if key != "":
 		SoundManager.play_battle(key)
 	else:
