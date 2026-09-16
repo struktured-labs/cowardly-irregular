@@ -230,6 +230,13 @@ func test_every_mechanical_key_is_read_by_some_executor() -> void:
 
 
 func test_no_ability_authors_a_key_its_own_path_cannot_read() -> void:
+	## ⛔ FLOOR IN THIS ARM, not in a sibling. An empty abilities.json, or a key set that came back
+	## empty, yields the same zero-orphan answer a clean tree does — and GUT reports per test, so the
+	## sibling that measures the surface cannot vouch for this one (cowir-sfx 11852).
+	assert_gt(_abilities().size(), 100,
+		"VOID, not clean: abilities.json read back %d entries" % _abilities().size())
+	assert_gt(_mechanical_keys().size(), 20,
+		"VOID, not clean: the derived key set is %d wide" % _mechanical_keys().size())
 	var found: Dictionary = _orphans()
 	var undeclared: Array = []
 	for orphan in found:
@@ -242,6 +249,8 @@ func test_no_ability_authors_a_key_its_own_path_cannot_read() -> void:
 func test_a_declaration_does_not_outlive_the_thing_it_declares() -> void:
 	## cowir-sprites' arm, adopted: the moment one of these is wired, the declaration becomes a lie that
 	## the next reader trusts. Reds in the GOOD direction and says which way to close it.
+	assert_gt(_abilities().size(), 100,
+		"VOID, not clean: abilities.json read back %d entries, which would make every declaration look stale" % _abilities().size())
 	var found: Dictionary = _orphans()
 	var stale: Array = []
 	for declared in DECLARED_ORPHANS:

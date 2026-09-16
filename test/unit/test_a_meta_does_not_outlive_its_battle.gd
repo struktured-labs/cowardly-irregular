@@ -62,8 +62,15 @@ func test_the_sweep_finds_the_real_call_sites() -> void:
 
 
 func test_every_per_battle_meta_is_cleared_at_the_boundary() -> void:
+	## ⛔ THE FLOOR LIVES IN THIS ARM, not in the sibling that measures the same sweep. A void scan
+	## produces the same empty `undeclared` list a correct one does, and GUT reports PER TEST — so a
+	## loud file tells you nothing about whether THIS arm was about anything (cowir-sfx 11852, whose
+	## four neighbouring arms red on a void while the absence arm stayed individually green).
+	var found: Array = _metas_set_in_source()
+	assert_gt(found.size(), 10,
+		"VOID, not clean: the set_meta sweep read back %d metas, so an empty offender list proves nothing" % found.size())
 	var undeclared: Array = []
-	for key in _metas_set_in_source():
+	for key in found:
 		if not BattleManager.PER_BATTLE_METAS.has(key) and not DECLARED_PERSISTENT.has(key):
 			undeclared.append(key)
 	assert_eq(undeclared, [],
@@ -74,6 +81,8 @@ func test_a_declaration_does_not_outlive_its_fact() -> void:
 	## The other direction, adopted from the axis-2 ledger: a list entry for a meta nothing sets any
 	## more is a lie the next reader inherits.
 	var found: Array = _metas_set_in_source()
+	assert_gt(found.size(), 10,
+		"VOID, not clean: the sweep read back %d metas, so every entry would look stale" % found.size())
 	var stale: Array = []
 	for key in BattleManager.PER_BATTLE_METAS:
 		if not found.has(key):
