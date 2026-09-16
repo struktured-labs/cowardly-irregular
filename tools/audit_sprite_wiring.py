@@ -60,6 +60,70 @@ def referenced_paths(m: dict) -> dict[str, list[str]]:
     return out
 
 
+def _code_of(src: str) -> str:
+    """The CODE half of a .gd file: trailing comments and docstring regions removed.
+
+    ⛔ A REPLICA OF test/unit/helpers/gd_source.gd, AND THAT IS A COST. Two
+    instruments for one question drift, and this lane's own memory says a
+    replica in another language is another instrument. It is written anyway
+    because the alternative was not "no replica" — grep_repo already carried
+    one at its `s.startswith("#")` line, just a broken one. This replaces a
+    half-stripper, it does not add a stripper. If gd_source gains a case,
+    this needs it too; the control below is what makes that discoverable.
+
+    Quote-aware and escape-aware: a `#` inside a string is not a comment.
+    `src/exploration/IndustrialOverworld.gd` really does create an NPC named
+    "Worker #4471", and a naive `#`-strip eats that placement — measured
+    2026-09-16, when it made this very audit report a prose ghost that was
+    live code. Comments are stripped BEFORE the `\"\"\"` parity split, or a
+    fence hidden in a comment flips parity for the rest of the file.
+    """
+    out = []
+    for line in src.split("\n"):
+        quote = ""
+        kept = []
+        i = 0
+        while i < len(line):
+            c = line[i]
+            if quote:
+                kept.append(c)
+                if c == "\\" and i + 1 < len(line):
+                    kept.append(line[i + 1])
+                    i += 2
+                    continue
+                if c == quote:
+                    quote = ""
+                i += 1
+                continue
+            if c in "\"'":
+                quote = c
+                kept.append(c)
+                i += 1
+                continue
+            if c == "#":
+                break
+            kept.append(c)
+            i += 1
+        out.append("".join(kept))
+    return "\n".join("\n".join(out).split('\"\"\"')[0::2])
+
+
+def _strip_control() -> str:
+    """The stripper, proven in BOTH directions before anything trusts it.
+
+    An over-strip and a correct strip are the same green — gd_source's rule.
+    """
+    keep = 'var n = _create_npc("Worker #4471", "villager")  # trailing prose'
+    drop = '\t# was _create_npc("ghost_npc", "villager")'
+    if 'Worker #4471' not in _code_of(keep):
+        return "STRIP CONTROL FAILED: a `#` inside a string literal ate real code"
+    if 'trailing prose' in _code_of(keep):
+        return "STRIP CONTROL FAILED: a trailing comment survived into the code half"
+    if 'ghost_npc' in _code_of(drop):
+        return "STRIP CONTROL FAILED: a whole-line comment survived into the code half"
+    return ""
+
+
 def grep_repo(needle: str) -> int:
     """Count files that reference a name in CODE, not in prose.
 
@@ -73,10 +137,21 @@ def grep_repo(needle: str) -> int:
     so the failure is UNDER-reporting — an inert sheet goes unmentioned,
     never a live one wrongly condemned.
 
-    Currently latent: there are 0 unregistered monster PNGs, so this
-    predicate is unexercised (cowir-sfx's shape — a weak predicate shows
-    no symptom until the data reaches it). Fixed rather than documented,
-    because latent is precisely what bites the next time one lands.
+    NO LONGER LATENT, and this paragraph used to say it was. It read "there
+    are 0 unregistered monster PNGs, so this predicate is unexercised" —
+    falsified by this tool's own output, which reports cartographer_wraith
+    and dark_knight as ORPHANs with 0 refs. The data landed and the note
+    did not move (measured 2026-09-16).
+
+    ⚠️ AND THE PREDICATE WAS STILL WRONG WHILE THE DOCSTRING PROMISED "in
+    CODE, not in prose": `s.startswith("#")` skips only a line that BEGINS
+    with a comment, so a TRAILING `# was <path>` counted as a reference and
+    a triple-quoted region was never touched at all (naming that delimiter
+    literally here closes this very docstring — the false fence, in the
+    sentence about false fences). Both inflate the count, so
+    both fail toward under-reporting — an inert sheet goes unmentioned.
+    Measured before the fix across 427 needles: 0 prose-only references, so
+    the repo was clean and the promise was not.
     """
     try:
         r = subprocess.run(
@@ -89,11 +164,10 @@ def grep_repo(needle: str) -> int:
     for path in (x for x in r.stdout.splitlines() if x.strip()):
         try:
             with open(path, errors="ignore") as fh:
-                for line in fh:
-                    s = line.strip()
-                    if needle in s and not s.startswith("#"):
-                        hits += 1
-                        break
+                body = fh.read()
+            # .json has no comments and _code_of leaves it untouched; .gd is the case
+            if needle in _code_of(body):
+                hits += 1
         except OSError:
             hits += 1  # unreadable: assume referenced, stay under-reporting
     return hits
@@ -130,7 +204,7 @@ def placement_gaps() -> list[str]:
     placed: dict[str, set[str]] = {}
     for p in src_root.rglob("*.gd"):
         for c in re.finditer(r'_create_npc\(\s*"([^"]+)"\s*,\s*"([^"]+)"',
-                             p.read_text(errors="ignore")):
+                             _code_of(p.read_text(errors="ignore"))):
             placed.setdefault(c.group(2), set()).add(c.group(1))
 
     npcs_dir = SPRITES / "npcs"
@@ -188,6 +262,13 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--section", default=None)
     args = ap.parse_args()
+
+    # ⛔ THE INSTRUMENT BEFORE THE CORPUS. Every check below reads source
+    # through _code_of; an over-strip makes all five report a clean repo.
+    bad_strip = _strip_control()
+    if bad_strip:
+        print(bad_strip)
+        return 2
 
     m = load_manifest()
     refs = referenced_paths(m)
