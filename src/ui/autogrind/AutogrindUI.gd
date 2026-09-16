@@ -169,8 +169,8 @@ var _total_exp: int = 0
 var _efficiency: float = 1.0
 var _corruption: float = 0.0
 
-## Permadeath staking toggle state
-var _permadeath_staking_enabled: bool = false
+## ⛔ NO MIRROR FOR THE STAKE. This console is FREED on close and rebuilt on open (GameLoop:5477,
+## :5543), so a console-side copy read false at every open while the system stayed armed.
 
 ## Ludicrous speed (headless resolver) toggle
 var _ludicrous_speed_enabled: bool = false
@@ -732,18 +732,18 @@ func _build_footer(vp_size: Vector2) -> void:
 
 	var pd_bg := ColorRect.new()
 	pd_bg.size = pd_btn.size
-	pd_bg.color = DANGER_COLOR if _permadeath_staking_enabled else Color(0.15, 0.1, 0.1)
+	pd_bg.color = DANGER_COLOR if _staking_on() else Color(0.15, 0.1, 0.1)
 	pd_btn.add_child(pd_bg)
 
 	_add_pixel_border(pd_btn, pd_btn.size)
 
 	_permadeath_toggle_label = Label.new()
-	_permadeath_toggle_label.text = "OPTIONS / [P] PERMADEATH: %s" % ("ON" if _permadeath_staking_enabled else "OFF")
+	_permadeath_toggle_label.text = "OPTIONS / [P] PERMADEATH: %s" % ("ON" if _staking_on() else "OFF")
 	_permadeath_toggle_label.position = Vector2(8, 6)
 	_permadeath_toggle_label.add_theme_font_size_override("font_size", 11)
 	_permadeath_toggle_label.add_theme_color_override(
 		"font_color",
-		Color.WHITE if _permadeath_staking_enabled else DISABLED_COLOR
+		Color.WHITE if _staking_on() else DISABLED_COLOR
 	)
 	pd_btn.add_child(_permadeath_toggle_label)
 
@@ -1517,7 +1517,7 @@ func _options_ring_spec() -> Dictionary:
 		"selected": 0,
 		"options": [
 			{"id": "ludicrous", "label": "Ludicrous: %s        (H)" % ("ON" if _ludicrous_speed_enabled else "OFF")},
-			{"id": "permadeath", "label": "Permadeath: %s       (P)" % ("ON" if _permadeath_staking_enabled else "OFF")},
+			{"id": "permadeath", "label": "Permadeath: %s       (P)" % ("ON" if _staking_on() else "OFF")},
 			{"id": "auto_advance", "label": "Auto-Advance: %s     (W)" % ("ON" if _auto_advance_enabled else "OFF")},
 			{"id": "safety_hp", "label": "Stop at HP: %s" % _safety_label("hp")},
 			{"id": "safety_battles", "label": "Stop after: %s battles" % _safety_label("battles")},
@@ -2334,11 +2334,17 @@ func _get_grind_config() -> Dictionary:
 	return {
 		"region": _region_name,
 		"rules": rules.duplicate(true),
-		"permadeath_staking": _permadeath_staking_enabled,
+		"permadeath_staking": _staking_on(),
 		"ludicrous_speed": _ludicrous_speed_enabled,
 		"auto_advance": _auto_advance_enabled,
 		"interrupt_rules": _safety_rules(),
 	}
+
+
+## The stake, read from the enforcer every time. AutogrindDashboard already read it this way; this
+## console did not, so the two disagreed on screen about whether lives were staked.
+func _staking_on() -> bool:
+	return bool(AutogrindSystem.permadeath_staking_enabled)
 
 
 ## start_autogrind merges this key-by-key, so naming only the four a player can set leaves
@@ -2434,13 +2440,10 @@ func _apply_preset(preset_id: String) -> void:
 	var preset = GRIND_PRESETS[preset_id]
 	rules = preset["rules"].duplicate(true)
 	_ludicrous_speed_enabled = preset.get("ludicrous", false)
-	_permadeath_staking_enabled = preset.get("permadeath", false)
 	_auto_advance_enabled = preset.get("auto_advance", true)
 
-	if _permadeath_staking_enabled:
-		AutogrindSystem.enable_permadeath_staking(true)
-	else:
-		AutogrindSystem.enable_permadeath_staking(false)
+	## Straight to the enforcer, which is also the readout's source -- the if/else set a copy first.
+	AutogrindSystem.enable_permadeath_staking(bool(preset.get("permadeath", false)))
 
 	_log_message("[color=cyan]Preset: %s — %s[/color]" % [preset["label"], preset["description"]])
 	TutorialHints.show(self, "autogrind_presets")
@@ -2573,9 +2576,8 @@ func _toggle_permadeath_staking() -> void:
 		_log_message("[color=yellow]Cannot change permadeath stakes while grinding.[/color]")
 		return
 
-	if _permadeath_staking_enabled:
+	if _staking_on():
 		# Disable immediately — no confirmation needed to turn it off
-		_permadeath_staking_enabled = false
 		AutogrindSystem.enable_permadeath_staking(false)
 		_log_message("[color=%s]Permadeath staking disabled.[/color]" % AccessibilityPalette.bonus_bbcode())
 		_build_ui()
@@ -2646,7 +2648,6 @@ func _show_permadeath_confirmation() -> void:
 
 	MenuMouseHelper.make_clickable(confirm_btn, 0, confirm_btn.size.x, confirm_btn.size.y,
 		func() -> void:
-			_permadeath_staking_enabled = true
 			AutogrindSystem.enable_permadeath_staking(true)
 			_log_message("[color=%s]PERMADEATH STAKES ENABLED! +%d%%%% efficiency growth.[/color]" % [AccessibilityPalette.penalty_bbcode(), AutogrindSystem.staking_growth_bonus_percent()])
 			overlay.queue_free()
@@ -3157,7 +3158,7 @@ func _save_current_as_preset() -> void:
 		"name": "Custom %d" % (slot + 1),
 		"rules": rules.duplicate(true),
 		"ludicrous": _ludicrous_speed_enabled,
-		"permadeath": _permadeath_staking_enabled,
+		"permadeath": _staking_on(),
 		"auto_advance": _auto_advance_enabled,
 	}
 	_custom_presets.append(preset)
@@ -3181,13 +3182,10 @@ func _apply_custom_preset(index: int) -> void:
 	var preset = _custom_presets[index]
 	rules = preset["rules"].duplicate(true)
 	_ludicrous_speed_enabled = preset.get("ludicrous", false)
-	_permadeath_staking_enabled = preset.get("permadeath", false)
 	_auto_advance_enabled = preset.get("auto_advance", true)
 
-	if _permadeath_staking_enabled:
-		AutogrindSystem.enable_permadeath_staking(true)
-	else:
-		AutogrindSystem.enable_permadeath_staking(false)
+	## Straight to the enforcer, which is also the readout's source -- the if/else set a copy first.
+	AutogrindSystem.enable_permadeath_staking(bool(preset.get("permadeath", false)))
 
 	_log_message("[color=cyan]Loaded preset: %s[/color]" % preset["name"])
 	_build_ui()
