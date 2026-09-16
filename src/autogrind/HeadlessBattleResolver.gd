@@ -894,6 +894,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 				else:
 					target.add_debuff(ability_id, stat, modifier, duration)
 				_log("%s uses %s on %s" % [caster.combatant_name, ability_id, target.combatant_name])
+			## ONCE per cast, after the loop — live calls it once with the whole target list, and a
+			## per-target call would roll howl's 0.3 fear separately for each enemy it already covers.
+			_apply_secondary_effect(caster, ability, targets, ability_id)
 
 		_:
 			## Was: magic damage to targets[0]. AutobattleSystem builds targets from target_type,
@@ -988,6 +991,80 @@ func _missing_hp_multiplier(caster, ability: Dictionary) -> float:
 	var hp_pct: float = float(caster.current_hp) / float(caster.max_hp)
 	var max_mult: float = float(ability.get("max_multiplier", 5.0))
 	return 1.0 + (1.0 - hp_pct) * (max_mult - 1.0)
+
+## The SECOND effect a support ability authors, on the same roll the live engine makes.
+##
+## ⛔ 9 abilities author `secondary_effect` and the grind honoured none — so a spider's web_shot only
+## slowed and never stunned, a wolf's howl never frightened the party, and enrage was a free attack
+## buff with no defense penalty. Six of the casters are POOLED monsters a grind draws every session.
+##
+## Mirrors BattleManager:6368 — its target groups, its `secondary_chance` default of 1.0, its
+## `secondary_modifier` default of 0.7, and its fall-through to add_status for a name that is not a
+## stat. Called from the support arm ONLY, which is where live calls it (_execute_support_ability is
+## its single call site): `subset_drain` (magic) and `toxic_embrace` (physical) therefore keep their
+## secondaries dropped HERE TOO, because live drops them. Applying them only in the grind would make
+## the grind harsher than the game it simulates, which is this file's own failure mode inverted.
+const _SECONDARY_STAT_BUFF_MAP: Dictionary = {
+	"attack_up": ["attack", "Secondary Attack Up"],
+	"defense_up": ["defense", "Secondary Defense Up"],
+	"magic_up": ["magic", "Secondary Magic Up"],
+	"speed_up": ["speed", "Secondary Speed Up"],
+	"magic_defense_up": ["magic_defense", "Secondary Magic Defense Up"],
+}
+const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
+	"attack_down": ["attack", "Secondary Attack Down"],
+	"defense_down": ["defense", "Secondary Defense Down"],
+	"magic_down": ["magic", "Secondary Magic Down"],
+	"speed_down": ["speed", "Secondary Speed Down"],
+	"magic_defense_down": ["magic_defense", "Secondary Magic Defense Down"],
+}
+
+
+func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array, ability_id: String) -> void:
+	var sec_effect: String = str(ability.get("secondary_effect", ""))
+	if sec_effect == "":
+		return
+	var sec_chance: float = clampf(float(ability.get("secondary_chance", 1.0)), 0.0, 1.0)
+	if sec_chance <= 0.0:
+		return
+	var sec_targets: Array = []
+	## Sides resolved by MEMBERSHIP, from the caster out. A grind resolves monster casts too, so a
+	## fixed `_enemy_party` here would make a wolf's howl frighten its own pack.
+	var caster_is_player: bool = _player_party.has(caster)
+	var foes: Array = _enemy_party if caster_is_player else _player_party
+	var allies: Array = _player_party if caster_is_player else _enemy_party
+	match str(ability.get("secondary_target", "")):
+		"all_enemies":
+			for c in foes:
+				if c != null and c.is_alive:
+					sec_targets.append(c)
+		"all_allies":
+			for c in allies:
+				if c != null and c.is_alive:
+					sec_targets.append(c)
+		"self":
+			if caster != null and caster.is_alive:
+				sec_targets.append(caster)
+		_:
+			for t in primary_targets:
+				if t != null and t.is_alive:
+					sec_targets.append(t)
+	if sec_targets.is_empty():
+		return
+	var sec_modifier: float = float(ability.get("secondary_modifier", 0.7))
+	var sec_duration: int = int(ability.get("duration", 3))
+	for t in sec_targets:
+		if randf() >= sec_chance:
+			continue
+		if _SECONDARY_STAT_BUFF_MAP.has(sec_effect):
+			var b: Array = _SECONDARY_STAT_BUFF_MAP[sec_effect]
+			t.add_buff(b[1], b[0], sec_modifier, sec_duration)
+		elif _SECONDARY_STAT_DEBUFF_MAP.has(sec_effect):
+			var d: Array = _SECONDARY_STAT_DEBUFF_MAP[sec_effect]
+			t.add_debuff(d[1], d[0], sec_modifier, sec_duration)
+		else:
+			t.add_status(sec_effect, sec_duration)
+		_log("%s: secondary %s on %s (%s)" % [caster.combatant_name, sec_effect, t.combatant_name, ability_id])
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
