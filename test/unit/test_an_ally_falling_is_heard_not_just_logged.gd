@@ -98,6 +98,11 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
 	if sm == null:
 		return
+	## Methods are NOT properties: get() returns null for a method name, so the loop below cannot
+	## see a renamed METHOD. has_method ANSWERS instead of raising, same reason.
+	for method_name in ["play_battle", "play_death"]:
+		assert_true(sm.has_method(method_name),
+			"SoundManager has no method %s — this file CALLS it, and whether that shows as Risky or as a silent pass is decided by arm ORDER, not by care" % method_name)
 	for member_name in ["_battle_player", "_death_player", "_sfx_cooldowns", "_sfx_manifest"]:
 		## assert_true on an explicit `!= null`: assert_ne deep-compares, and three of these members
 		## are Dictionaries, which it refuses with "Only Arrays and Dictionaries are supported".
