@@ -111,6 +111,11 @@ func test_a_bed_does_not_play_against_itself() -> void:
 	## cross a boundary" predates this change; auditioning a bed in the Jukebox is one more way in.
 	## The trade is still deliberate — silence beats a flanged double — and if the single slot ever
 	## becomes worth fixing, it is one fix for weather and this together, not two.
+	##
+	## The suppression has a MIRROR of the same residual (@cowir-adhoc): walk into the ice zone
+	## while the music player already holds that bed and ambience is suppressed, and if the
+	## music then changes while you STAY in the zone it does not come back either. One class,
+	## two doors, one fix if the single slot is ever worth re-asserting.
 	SoundManager.play_ambient("ambient_cave")
 	assert_true(SoundManager._ambient_player.playing, "CONTROL: the zone ambience is running before the Jukebox asks")
 	var amb_path: String = SoundManager._ambient_player.stream.resource_path
@@ -140,4 +145,21 @@ func test_the_collision_is_blocked_in_the_other_order_too() -> void:
 	SoundManager.play_ambient(str(DUAL_STORE_WIRED[0]))
 	assert_false(SoundManager._ambient_player.playing,
 		"the ambient layer started %s while the music player was already playing it — same file, two players, the collision the other arm blocks in the opposite order" % mus_path)
+	SoundManager.stop_music()
+
+
+func test_the_current_key_never_names_a_bed_that_is_not_playing() -> void:
+	## ⛔ THE TWO SUPPRESSION PATHS LEFT DIFFERENT STATE and only one of them was truthful.
+	## Direction one calls stop_ambient(), which clears the field. Direction two returned early
+	## with _current_ambient_key already assigned at the top of play_ambient, so the field named a
+	## bed that was not playing. Inert when found — every reader was checked — but this field IS
+	## the record of what is live, and one that lies on one of two paths is the kind nobody
+	## re-checks. Asserted rather than noted, because "does the field match reality" is checkable.
+	var bed: String = str(DUAL_STORE_WIRED[0])
+	SoundManager.play_music(bed, true)
+	await get_tree().create_timer(0.2).timeout
+	SoundManager.play_ambient(bed)
+	assert_false(SoundManager._ambient_player.playing, "CONTROL: the ambient layer is suppressed in this order")
+	assert_eq(SoundManager._current_ambient_key, "",
+		"_current_ambient_key is \"%s\" while nothing is playing on the ambient layer — a reader asking what ambience is live gets a bed that was refused" % SoundManager._current_ambient_key)
 	SoundManager.stop_music()
