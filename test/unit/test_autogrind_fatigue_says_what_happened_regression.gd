@@ -54,6 +54,19 @@ const ANNOUNCED_WITHOUT_EFFECT := {
 ## sets max_battles to 999. A diagnostic that names one value while the comparison turns on another.
 ##
 ## Same class as the seed() leak the same day: process-global state a file sets and does not restore.
+##
+## 🔑 THE CLASS WAS SWEPT AND THE RESULT IS RECORDED HERE RATHER THAN IN A COMMIT MESSAGE, because
+## this is where the next person auditing it will be. A scan for autogrind test files that set
+## AutogrindSystem state ONLY inside test methods, with no teardown restore, returns ~50 (file, field)
+## pairs. THAT IS A CANDIDATE LIST, NOT A DEFECT LIST, and re-deriving it will mislead you the same
+## way it nearly misled me:
+##
+##   a later file that SETS what it reads cannot be poisoned — which is most of them
+##   the discriminator is whether a WIDELY-READ path consumes the field without the reader
+##   setting it first. `battles_completed` qualifies because pre_battle_check gates on it and
+##   an unrelated healing-item sweep depended on a grind being runnable.
+##
+## So: do not floor 50 files off that scan. Ask which fields gate a shared path, and measure those.
 ## The counter is CAPTURED rather than zeroed, because 0 is this file's assumption about a baseline
 ## it does not own.
 var _battles_before: int = 0
