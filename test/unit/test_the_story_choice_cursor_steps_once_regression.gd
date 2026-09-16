@@ -106,6 +106,13 @@ func test_a_dpad_press_still_steps_every_time() -> void:
 		assert_ne(_menu._selection, before, "d-pad press %d must step" % (i + 1))
 
 
+## ⚠️ DECLARED RUNG 3, DELIBERATELY NOT FLOORED. Measured 2026-09-16: renaming `_selection` (16
+## sites) makes this arm abort AFTER its last reachable assert, so GUT scores it PASSING and the
+## wrapper's exit 4 cannot see it — it is masked by two rung-1 siblings in this file, which is what
+## makes the FILE loud (EC=4 · Risky 2 · Asserts 13 -> 5). No floor here on purpose: this arm's
+## subject is MenuNav's BEHAVIOUR and `_menu._selection` is its VEHICLE, and a floor pinning a
+## member the arm claims nothing about defends the wrong thing (cowir-sfx's existence-vs-vehicle
+## rule). If the wheel path ever becomes the subject, floor it then.
 func test_the_wheel_bypasses_the_latch_entirely() -> void:
 	# The arm cowir-controller asked for: this is the first MenuNav consumer with a wheel path.
 	_present(["a", "b", "c", "d"])
