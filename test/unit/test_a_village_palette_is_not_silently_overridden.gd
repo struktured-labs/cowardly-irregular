@@ -82,6 +82,58 @@ func _world_key_of(code: String) -> String:
 	return "" if km == null else km.get_string(1)
 
 
+## `"key": Color(r, g, b[, a])` pairs out of one function body. Same shape the generator reads.
+func _palette_of(code: String, fname: String) -> Dictionary:
+	var body := _func_body(code, fname)
+	var out := {}
+	var re := RegEx.new()
+	re.compile("\"([a-z_]+)\"\\s*:\\s*Color\\(([^)]*)\\)")
+	for m in re.search_all(body):
+		var parts := m.get_string(2).split(",")
+		var vals: Array[float] = []
+		for part in parts:
+			vals.append(float(part.strip_edges()))
+		if vals.size() == 3:
+			vals.append(1.0)
+		if vals.size() == 4:
+			out[m.get_string(1)] = vals
+	return out
+
+
+## The whole tile_sheets entry, so an arm can read derived_from / derived_palette.
+func _sheet_entry(key: String) -> Dictionary:
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
+	if not (parsed is Dictionary) or not (parsed.get("tile_sheets") is Dictionary):
+		return {}
+	var e = parsed["tile_sheets"].get(key, {})
+	return e if e is Dictionary else {}
+
+
+## ✅ THE THIRD RESOLUTION. A sheet may override a village palette when it was DERIVED from it —
+## same colours, more detail. The evidence is the entry's own `derived_palette`, and it expires:
+## edit the village's colours without regenerating and this returns false, which is the point.
+func _sheet_is_derived_from(world: String, village_file: String, code: String) -> Dictionary:
+	var e := _sheet_entry(world)
+	var want := str(e.get("derived_from", ""))
+	if want == "":
+		return {"ok": false, "why": "the sheet declares no derived_from"}
+	if want + ".gd" != village_file:
+		return {"ok": false, "why": "derived_from names %s, not this village" % want}
+	var rec = e.get("derived_palette", {})
+	if not (rec is Dictionary) or rec.is_empty():
+		return {"ok": false, "why": "derived_from is declared but derived_palette is missing"}
+	var live := _palette_of(code, "_get_cliff_palette")
+	for k in live:
+		if not rec.has(k):
+			return {"ok": false, "why": "STALE: the village added '%s' since the atlas was generated" % k}
+		var a: Array = live[k]
+		var b: Array = rec[k]
+		for i in mini(a.size(), b.size()):
+			if absf(float(a[i]) - float(b[i])) > 0.001:
+				return {"ok": false, "why": "STALE: '%s' changed in the village but the atlas still has the old colour — regenerate it" % k}
+	return {"ok": true, "why": ""}
+
+
 func _survey() -> Array:
 	var rows: Array = []
 	for path in _village_files():
@@ -95,6 +147,7 @@ func _survey() -> Array:
 			"custom_palette": custom,
 			"opted_out": opted_out,
 			"world": "" if opted_out else _world_key_of(code),
+			"code": code,
 		})
 	return rows
 
@@ -103,10 +156,27 @@ func test_no_village_palette_is_silently_overridden_by_its_world_sheet() -> void
 	var sheets := _sheets_with_cliff_art()
 	var offenders: Array = []
 	for r in _survey():
-		if r["custom_palette"] and not r["opted_out"] and sheets.has(r["world"]):
-			offenders.append("%s: hand-picked palette, binds sheet '%s' which has cliff/overlay art — the palette is DEAD. Either add `func _get_cliff_sheet_key() -> String: return \"\"` (as Grimhollow/Ironhaven do), or delete _get_cliff_palette() to say the sheet is intended." % [r["file"], r["world"]])
+		if not (r["custom_palette"] and not r["opted_out"] and sheets.has(r["world"])):
+			continue
+		var derived := _sheet_is_derived_from(str(r["world"]), str(r["file"]), str(r["code"]))
+		if bool(derived["ok"]):
+			continue
+		offenders.append("%s: hand-picked palette, binds sheet '%s' which has cliff/overlay art — the palette is DEAD (%s). Three fixes: DERIVE the atlas from this palette (tools/gen_tile_sheet_world.py), or add `func _get_cliff_sheet_key() -> String: return \"\"` (as Grimhollow/Ironhaven do), or delete _get_cliff_palette() to say the sheet is intended." % [r["file"], r["world"], derived["why"]])
 	assert_eq(offenders.size(), 0,
 		"a village's cliff palette is overridden by its world sheet with nothing saying so:\n  %s" % "\n  ".join(offenders))
+
+
+## ⛔ ANTI-VACUITY FOR THE THIRD RESOLUTION. If nothing is excused BY DERIVATION, that branch
+## never runs and the arm above is the old two-way check wearing a longer message.
+func test_at_least_one_village_is_excused_by_a_derived_atlas() -> void:
+	var sheets := _sheets_with_cliff_art()
+	var derived := 0
+	for r in _survey():
+		if r["custom_palette"] and not r["opted_out"] and sheets.has(r["world"]):
+			if bool(_sheet_is_derived_from(str(r["world"]), str(r["file"]), str(r["code"]))["ok"]):
+				derived += 1
+	assert_gt(derived, 0,
+		"no village is excused by a derived atlas — the derivation branch is dead and this file is back to two outcomes")
 
 
 ## ⛔ ANTI-VACUITY. Every arm above passes trivially on an empty survey, a survey where nothing has
