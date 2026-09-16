@@ -350,6 +350,31 @@ static func _normalize_suffix(audio_suffix: String) -> String:
 	return audio_suffix if audio_suffix in WORLD_SUFFIXES else ""
 
 
+## A world costume is a RESKIN, not a re-timing. `fps` is authored per SHEET, so a dressed
+## sheet with fewer frames than the artist's base runs the same animation in less time:
+## measured 2026-09-16, the cleric's 7-frame idle breathes once every 0.875 s in world 1 and
+## its 2-frame costume every 0.250 s in worlds 2-6 — the same character, 3.5x faster.
+##
+## It is not only cosmetic. Action sheets play once and BattleAnimator sequences combat on
+## `animation_finished`, so a dressed attack with fewer frames would finish early and move the
+## beat a fight lands on. Only idles are dressed today; this keeps the seam honest either way.
+##
+## Returns the base fps unchanged whenever there is nothing to match against — an undressed
+## sheet, an equal frame count, or a base sheet that is not on disk.
+static func dressed_fps(base_fps: float, sheet_path: String, base_sheet: String, frames: int, frame_width: int) -> float:
+	if sheet_path == base_sheet or frames <= 0 or frame_width <= 0:
+		return base_fps
+	if not ResourceLoader.exists(base_sheet):
+		return base_fps
+	var base_tex := load(base_sheet) as Texture2D
+	if base_tex == null:
+		return base_fps
+	var base_frames: int = base_tex.get_width() / frame_width
+	if base_frames <= 0 or base_frames == frames:
+		return base_fps
+	return base_fps * float(frames) / float(base_frames)
+
+
 static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> SpriteFrames:
 	var base_path = sheet_data.get("path", "res://assets/sprites/jobs/%s" % job_id)
 	var frame_width = sheet_data.get("frame_width", 32)
@@ -361,7 +386,8 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 	var suffix: String = world_suffix()
 
 	for anim_name in animations:
-		var sheet_path = "%s/%s.png" % [base_path, anim_name]
+		var base_sheet: String = "%s/%s.png" % [base_path, anim_name]
+		var sheet_path: String = base_sheet
 		# A world-dressed sheet wins ONLY when it exists; absence falls back to artist base.
 		if suffix != "":
 			var dressed: String = "%s/%s_%s.png" % [base_path, anim_name, suffix]
@@ -374,12 +400,14 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 		if not texture:
 			continue
 
+		var frame_count = texture.get_width() / frame_width
+
 		sprite_frames.add_animation(anim_name)
-		sprite_frames.set_animation_speed(anim_name, sheet_data.get("fps", 8))
+		sprite_frames.set_animation_speed(anim_name,
+			dressed_fps(float(sheet_data.get("fps", 8)), sheet_path, base_sheet, int(frame_count), int(frame_width)))
 		# Rest poses loop (weak breathes like idle); action anims play once so animation_finished fires
 		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "victory", "weak"])
 
-		var frame_count = texture.get_width() / frame_width
 		for i in range(frame_count):
 			var atlas = AtlasTexture.new()
 			atlas.atlas = texture

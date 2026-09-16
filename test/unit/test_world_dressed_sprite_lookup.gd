@@ -332,3 +332,122 @@ func test_the_two_fetch_names_share_ONE_source() -> void:
 			"consumer resolves a different one") % [world])
 	gs.current_world = restore
 	assert_eq(int(gs.current_world), restore, "current_world must be restored")
+
+
+## ⛔ A COSTUME IS A RESKIN, NOT A RE-TIMING — the seam this file never looked at.
+##
+## Every arm above asks WHICH sheet the lookup picks. None asks how fast it then plays, and
+## `fps` is authored per SHEET while the dressed art has its own frame count. Measured
+## 2026-09-16 on the shipped roster: the five hand-drawn idles are 4-7 frames, every costume
+## idle is 2, so changing world sped a character's breathing up by 2.0x to 3.5x.
+##
+##   cleric 7 -> 2 frames   0.875 s -> 0.250 s     fighter/bard/rogue 4 -> 2   0.500 s -> 0.250 s
+##   mage   6 -> 2 frames   0.750 s -> 0.250 s     the other nine are 2 everywhere, unchanged
+##
+## The nine unaffected jobs are why this was invisible: a party of meta jobs looks identical in
+## every world, and it is exactly the artist's own sheets that lose their cadence.
+const RETIMED_JOBS: Array[String] = ["fighter", "cleric", "mage", "rogue", "bard"]
+
+
+func _period(frames: SpriteFrames, anim: String) -> float:
+	var n: int = frames.get_frame_count(anim)
+	var fps: float = frames.get_animation_speed(anim)
+	return float(n) / fps if fps > 0.0 else 0.0
+
+
+## The owner, driven directly. Both directions, plus every reason it must decline to act.
+func test_dressed_fps_matches_the_period_and_declines_when_it_cannot() -> void:
+	const BASE := "res://assets/sprites/jobs/cleric/idle.png"
+	const DRESSED := "res://assets/sprites/jobs/cleric/idle_suburban.png"
+	assert_true(ResourceLoader.exists(BASE) and ResourceLoader.exists(DRESSED),
+		"PRECONDITION: the cleric's base and suburban idles must both load")
+
+	# 7 base frames, 2 dressed: 8 fps must become 8 * 2/7 so the LOOP takes the same time.
+	var got: float = Loader.dressed_fps(8.0, DRESSED, BASE, 2, 256)
+	assert_almost_eq(got, 8.0 * 2.0 / 7.0, 0.001,
+		"a 2-frame costume of a 7-frame idle must play at 2/7 the rate, not at the sheet's authored fps")
+	assert_almost_eq(2.0 / got, 7.0 / 8.0, 0.001, "...which is the same period as the base sheet")
+
+	# A dressed sheet with MORE frames must slow down, or the rule only works one way.
+	assert_gt(Loader.dressed_fps(8.0, DRESSED, BASE, 14, 256), 8.0,
+		"a costume with more frames than the base must raise fps to keep the period")
+
+	# Every declining case returns the authored fps untouched.
+	assert_eq(Loader.dressed_fps(8.0, BASE, BASE, 7, 256), 8.0, "an UNDRESSED sheet is never re-timed")
+	assert_eq(Loader.dressed_fps(8.0, DRESSED, BASE, 7, 256), 8.0, "an equal frame count needs no change")
+	assert_eq(Loader.dressed_fps(8.0, DRESSED, "res://assets/sprites/jobs/cleric/__nope__.png", 2, 256), 8.0,
+		"no base sheet on disk means nothing to match — keep the authored fps")
+	assert_eq(Loader.dressed_fps(8.0, DRESSED, BASE, 0, 256), 8.0, "a zero frame count must not divide")
+	assert_eq(Loader.dressed_fps(8.0, DRESSED, BASE, 2, 0), 8.0, "a zero frame width must not divide")
+
+
+## ⛔ END TO END, through the real loader in a real world. The arm above passes on a helper
+## nothing calls; this one reads the period the player would actually see.
+func test_a_job_breathes_at_the_same_rate_in_every_world() -> void:
+	var gs := get_node_or_null("/root/GameState")
+	assert_not_null(gs, "GameState autoload required — run via tools/run_tests.sh")
+	if gs == null:
+		return
+	var restore: int = int(gs.current_world)
+
+	var drifted: Array = []
+	var compared: int = 0
+	for job in RETIMED_JOBS:
+		var data := {"path": "res://assets/sprites/jobs/%s" % job, "frame_width": 256, "frame_height": 256}
+		gs.current_world = 1
+		var base_frames: SpriteFrames = Loader._load_external_sheet(data, job)
+		if base_frames == null or not base_frames.has_animation("idle"):
+			continue
+		var base_period: float = _period(base_frames, "idle")
+		for world in range(2, 7):
+			gs.current_world = world
+			var dressed: SpriteFrames = Loader._load_external_sheet(data, job)
+			if dressed == null or not dressed.has_animation("idle"):
+				continue
+			if dressed.get_frame_count("idle") == base_frames.get_frame_count("idle"):
+				continue
+			compared += 1
+			if absf(_period(dressed, "idle") - base_period) > 0.01:
+				drifted.append("%s in world %d: %.3fs vs %.3fs in world 1"
+					% [job, world, _period(dressed, "idle"), base_period])
+	gs.current_world = restore
+	assert_eq(int(gs.current_world), restore, "current_world must be restored for later tests")
+
+	assert_gt(compared, 10,
+		("ANTI-VACUITY: only %d job/world pairs actually differ in frame count, so this arm is "
+		+ "comparing sheets that were never at risk") % compared)
+	assert_eq(drifted, [],
+		"a costume changed how fast a character animates — a reskin must not re-time: %s" % [drifted])
+
+
+## ⛔ THE LOADER'S DEFAULTS ARE THE PROCEDURAL CONVENTION, AND NO SHIPPED ENTRY REACHES THEM.
+##
+## `_load_external_sheet` reads `frame_width`/`frame_height` with a default of 32 — the 32x48
+## SnesPartySprites size, not the artist's 256. All 18 entries author all four keys today, so
+## every default is unreachable and NO behavioural arm can see one drift or be taken by a new
+## entry (cowir-autogrind's point about `max_multiplier`, 2026-09-16: an unreachable default is
+## untestable by construction).
+##
+## The consequence is not a small mis-render. An entry that omits `frame_width` cuts a 1024x256
+## artist strip into 32 slivers of 32px and registers all 32 as frames of the animation.
+func test_every_job_sheet_authors_the_geometry_the_loader_would_otherwise_default() -> void:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+	assert_true(parsed is Dictionary, "sprite_manifest.json must parse")
+	var sheets: Dictionary = (parsed as Dictionary).get("sheets", {}) if parsed is Dictionary else {}
+	assert_gt(sheets.size(), 10, "ANTI-VACUITY: only %d job sheet entries — wrong corpus" % sheets.size())
+
+	var silent: Array = []
+	for job in sheets:
+		var e: Dictionary = sheets[job]
+		for key in ["path", "frame_width", "frame_height", "fps", "animations"]:
+			if not e.has(key):
+				silent.append("%s is missing '%s'" % [job, key])
+	assert_eq(silent, [],
+		"a job sheet entry leaning on a loader default — 32px frames would slice an artist strip "
+		+ "into slivers and nothing else would fail: %s" % [silent])
+
+	# CONTROL: the default must actually differ from what is authored, or this arm defends nothing.
+	var fighter: Dictionary = sheets.get("fighter", {})
+	assert_eq(int(fighter.get("frame_width", 32)), 256,
+		"the artist's frame is 256 where the loader's default is 32 — if those ever agree, an "
+		+ "omitted key stops being visible and this arm is no longer the thing protecting it")
