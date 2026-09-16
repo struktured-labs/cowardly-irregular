@@ -933,9 +933,16 @@ func play_ambient(sound_key: String) -> void:
 		return  # Already playing this ambient
 	stop_ambient()
 	_current_ambient_key = sound_key
-	if not _sfx_manifest.has(sound_key):
+	## MUSIC MANIFEST FIRST. ambient_cave/forest/village exist in BOTH stores: a 145-214s authored
+	## bed here and a 30-40 KB sting there. Reading sfx only, the long beds had never played once.
+	_load_music_manifest()
+	var entry: Dictionary = {}
+	if _music_manifest.has(sound_key):
+		entry = _music_manifest[sound_key]
+	elif _sfx_manifest.has(sound_key):
+		entry = _sfx_manifest[sound_key]
+	else:
 		return
-	var entry = _sfx_manifest[sound_key]
 	var path = entry.get("file", "")
 	if path == "":
 		return
