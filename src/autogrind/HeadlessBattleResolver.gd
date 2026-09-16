@@ -741,6 +741,10 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 	var category = ability.get("type", ability.get("category", "magic"))
 	var power = ability.get("power", ability.get("damage_multiplier", 1.0))
 	var element = ability.get("element", "")
+	## Live runs the damage step `hits` times (BattleManager:4854) for the 5 abilities that author it —
+	## all monster-side, all drawn from the same pools the grind draws from, so the grind was taking a
+	## third of the authored damage from them. Third instance of this file's field-mismatch class.
+	var hits: int = max(1, int(ability.get("hits", 1)))
 
 	match category:
 		"healing":
@@ -767,14 +771,23 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					actual = max(1, actual)
 					if target.is_defending:
 						actual = actual / 2
-					target.take_damage(actual, true)
-					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, actual])
+					var dealt: int = 0
+					for _h in hits:
+						## Stop hitting a corpse, exactly as the live loop does.
+						if not target.is_alive:
+							break
+						dealt += target.take_damage(actual, true)
+					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dealt])
 
 		"physical":
 			for target in targets:
 				if target and target.is_alive:
 					var base_dmg = int(caster.get_buffed_stat("attack", caster.attack) * power)
-					var dmg = _resolve_attack_with_power(caster, target, base_dmg)
+					var dmg: int = 0
+					for _h in hits:
+						if not target.is_alive:
+							break
+						dmg += _resolve_attack_with_power(caster, target, base_dmg)
 					_log("%s uses %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dmg])
 
 		"mp_restore":
