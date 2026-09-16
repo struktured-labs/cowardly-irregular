@@ -29,6 +29,7 @@ extends GutTest
 ## Both are guarded behaviourally — this drives the real menu and reads
 ## rendered geometry, because "does it fit" is not answerable from source.
 
+const GuardSubject := preload("res://test/unit/helpers/guard_subject.gd")
 const WORST_CASE := "HP 16500   MP 999   ATK 750   DEF 550   MAG 780   M.DEF 270   SPD 30"
 
 
@@ -155,3 +156,21 @@ func test_magic_defense_is_shown_and_matches_what_combat_uses() -> void:
 	await wait_frames(2)
 	assert_true(stats_label.text.contains("M.DEF %d" % expected),
 		"rendered stat line must show M.DEF %d for %s (the value Combatant divides magic damage by) — got '%s'" % [expected, id, stats_label.text])
+
+
+## ⛔ THE SILENT-PASS FLOOR. This guard drives its subject BY NAME; rename the member and every
+## cardinal stays clean — see test/unit/helpers/guard_subject.gd for the four measurements and why
+## run_tests.sh's exit 4 cannot see this rung. Names are DERIVED from this file's own text, so a
+## new `.call("...")` is floored the day it is written rather than the day someone remembers.
+func test_every_member_this_guard_drives_by_name_exists() -> void:
+	var subject: Object = load("res://src/ui/BestiaryMenu.gd").new()
+	add_child_autofree(subject)
+	var calls: Dictionary = GuardSubject.audit_calls("res://test/unit/test_bestiary_stat_panel_regression.gd", subject)
+	var props: Dictionary = GuardSubject.audit_properties("res://test/unit/test_bestiary_stat_panel_regression.gd", subject)
+	assert_gt(int(calls["found"]) + int(props["found"]), 0,
+		"VOID: no `.call(\"name\")` or `.get(\"_name\")` found in this file's own text — the extraction is broken, not the subject")
+	assert_eq(calls["missing"], [],
+		("this guard drives those methods BY NAME and the subject no longer has them, so its arms "
+		+ "would ABORT INTO A SILENT PASS — EC=0, nothing failing, nothing risky: %s") % [calls["missing"]])
+	assert_eq(props["missing"], [],
+		"this guard reads those private properties by name and the subject no longer has them: %s" % [props["missing"]])
