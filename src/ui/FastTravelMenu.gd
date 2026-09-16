@@ -121,7 +121,10 @@ func _build_ui() -> void:
 	panel.add_child(gold_label)
 
 	var sub = Label.new()
-	sub.text = "Warp between attuned crystals — cost scales with distance"
+	sub.text = "Warp between attuned crystals — cost scales with distance    (%s/%s to page)" % [
+		InputProfileManager.hint_for_action("battle_defer"),
+		InputProfileManager.hint_for_action("battle_advance"),
+	]
 	sub.position = Vector2(16, 32)
 	sub.add_theme_font_size_override("font_size", 11)
 	sub.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -192,6 +195,10 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		_move(1)
+		get_viewport().set_input_as_handled()
+	# Attuned crystals accumulate all game, so this list grows; same page jump as every other long menu.
+	elif MenuPaging.page_delta(event) != 0:
+		_move(MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_pick()

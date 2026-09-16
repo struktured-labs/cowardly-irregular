@@ -145,7 +145,9 @@ func _build_ui() -> void:
 
 	# Subtitle / instructions (mention all input methods)
 	var sub = Label.new()
-	sub.text = "Pick a destination — ↑/↓ or Mouse-wheel/Click,  Enter/%s/Click to warp,  Esc/%s/RClick back" % [
+	sub.text = "Pick a destination — ↑/↓ or Mouse-wheel/Click,  %s/%s to page,  Enter/%s/Click to warp,  Esc/%s/RClick back" % [
+		InputProfileManager.hint_for_action("battle_defer"),
+		InputProfileManager.hint_for_action("battle_advance"),
 		InputProfileManager.hint_for_action("ui_accept"),
 		InputProfileManager.hint_for_action("ui_cancel"),
 	]
@@ -248,11 +250,10 @@ func _input(event: InputEvent) -> void:
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		_move(1)
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_page_up") and not event.is_echo():
-		_move(-8)
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_page_down") and not event.is_echo():
-		_move(8)
+	# ui_page_up/ui_page_down are Godot built-ins with a KEYBOARD default and no pad binding, so
+	# this menu's fast scroll did nothing on a controller. MenuPaging carries both.
+	elif MenuPaging.page_delta(event) != 0:
+		_move(MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_home") and not event.is_echo():
 		_selected = 0
