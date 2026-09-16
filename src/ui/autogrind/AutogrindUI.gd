@@ -292,8 +292,9 @@ func _load_rules() -> void:
 		]
 
 
-## Collapses this console has already told the player about, and any it owes them on reopen.
-var _collapses_reported: int = 0
+## ⛔ THE BASELINE IS NOT HERE. A per-instance counter started at 0 at every open, so each reopen
+## re-announced every collapse of the session as newly missed. AutogrindSystem.collapses_announced
+## outlives the console, which is the only thing that can.
 var _pending_collapse_catchup: int = 0
 
 
@@ -311,9 +312,9 @@ func _connect_autogrind_signals() -> void:
 	## announced itself to nobody — the dramatic beat of a design pillar, delivered to a
 	## disconnected handler. collapse_count survives, so report what was missed on reopen.
 	var seen_now: int = AutogrindSystem.collapse_count
-	if seen_now > _collapses_reported:
-		_pending_collapse_catchup = seen_now - _collapses_reported
-		_collapses_reported = seen_now
+	if seen_now > AutogrindSystem.collapses_announced:
+		_pending_collapse_catchup = seen_now - AutogrindSystem.collapses_announced
+		AutogrindSystem.collapses_announced = seen_now
 
 
 ## Deferred on purpose: _connect_autogrind_signals runs BEFORE _build_ui, and _log_message
@@ -3119,7 +3120,7 @@ func _on_meta_boss_spawned(boss_name: String) -> void:
 
 
 func _on_system_collapse() -> void:
-	_collapses_reported = AutogrindSystem.collapse_count
+	AutogrindSystem.collapses_announced = AutogrindSystem.collapse_count
 	_log_message("[color=%s]=== SYSTEM COLLAPSE! Reality is fragmenting... ===[/color]" % AccessibilityPalette.penalty_bbcode())
 	if _monitor and is_instance_valid(_monitor):
 		_monitor.add_highlight("SYSTEM COLLAPSE (#%d)!" % AutogrindSystem.collapse_count, "danger")

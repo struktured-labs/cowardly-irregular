@@ -135,7 +135,10 @@ var meta_bosses_enabled: bool = true
 var meta_boss_spawn_chance: float = 0.0  # Increases with corruption
 
 ## System collapse tracking
-var collapse_count: int = 0                    # How many times collapse has occurred
+var collapse_count: int = 0
+## Collapses the PLAYER has been told about. Session-scoped like collapse_count, and it lives here
+## rather than in the console because the console is freed and rebuilt at every open.
+var collapses_announced: int = 0                    # How many times collapse has occurred
 ## Meta bosses had NO counter at all, so the session Summary could not report them and the console
 ## was the only surface that ever mentioned one. A boss spawned during a headless grind with the
 ## console closed was invisible at the moment AND at session end — a design pillar the player could
@@ -895,6 +898,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	## win_rate, whose numerator battles_completed resets here while its denominator did not.
 	consecutive_wins = 0
 	collapse_count = 0
+	collapses_announced = 0
 	achievements_earned_this_session.clear()
 	meta_bosses_spawned = 0
 	meta_bosses_defeated = 0
@@ -2747,6 +2751,7 @@ func build_snapshot_system_block(elapsed: float = 0.0) -> Dictionary:
 		"meta_boss_spawn_chance": meta_boss_spawn_chance,
 		"consecutive_wins": consecutive_wins,
 		"collapse_count": collapse_count,
+		"collapses_announced": collapses_announced,
 		"max_efficiency": max_efficiency,
 		"post_collapse_debuff_battles": post_collapse_debuff_battles,
 		"corruption_threshold": corruption_threshold,
@@ -2884,6 +2889,7 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	meta_boss_spawn_chance = system_data.get("meta_boss_spawn_chance", 0.0)
 	consecutive_wins = system_data.get("consecutive_wins", 0)
 	collapse_count = system_data.get("collapse_count", 0)
+	collapses_announced = int(system_data.get("collapses_announced", 0))
 	max_efficiency = float(system_data.get("max_efficiency", DEFAULT_MAX_EFFICIENCY))
 	post_collapse_debuff_battles = int(system_data.get("post_collapse_debuff_battles", 0))
 	## Defaults to the CURRENT value so a pre-key snapshot keeps start_autogrind's re-baseline.
