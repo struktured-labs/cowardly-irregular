@@ -73,6 +73,12 @@ const DYNAMIC_PREFIXES := {
 ## Keys with no consumer TODAY that are deliberately staged ahead of a named
 ## owner. Every entry needs the owner and what they're waiting on — an entry
 ## with no owner is just a dead asset wearing a costume.
+## SIBLING: test_sfx_key_orphan_audit.KNOWN_ORPHAN_SFX is the OTHER direction (a key CALLED
+## that resolves to nothing). Different name, different contents, deliberately separate —
+## but ONE event retires entries in both, and fixing only one leaves a red. That file names
+## this one; this comment is the return leg, so a reader arriving HERE (the list with the
+## live entries) sees the pair. Collapse them only if the two directions ever agree, which
+## would mean the audits had stopped being opposites.
 const KNOWN_PENDING_CONSUMER := {
 	# cowir-battle: contact-frame seam (their cycle, confirmed msg 2910)
 	"thump_light": "cowir-battle contact-frame seam",
