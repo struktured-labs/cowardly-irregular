@@ -135,6 +135,45 @@ func _shoot_battle() -> void:
 	print("[SHOT] battle (%dx%d)" % [img.get_width(), img.get_height()])
 	_ok += 1
 
+	# The store had no picture of ADVANCE, the mechanic shipped in v3.33.346-350: queue up to
+	# four actions, five at a full bank, and the acting PC's aura grows a layer per press. The
+	# plain battle frame above is taken before anything is queued, so the aura is never in it.
+	# Driven through the scene's OWN queue_changed handler -- the same entry point the menu
+	# uses -- so this is the real rendered aura at 5/5, not a mock-up.
+	var scene := _find_battle_scene(root)
+	if scene == null:
+		print("[SHOT] FAIL: battle_advance — no node with _on_advance_queue_changed; the aura API moved")
+		_fail += 1
+		return
+	scene._on_advance_queue_changed(5, 5)
+	await process_frame
+	await process_frame
+	# The aura settles (disc, orbit, gold rim) over a few frames; the kick decays.
+	await create_timer(0.35).timeout
+	var img_adv := root.get_texture().get_image()
+	# A FRAME THAT DID NOT CHANGE IS A FRAME WITHOUT THE AURA. Saving it would put a picture of
+	# nothing on the store page under a name that promises the mechanic -- the exact shape of
+	# the "battle" shot this one exists to supplement.
+	if img_adv.get_data() == img.get_data():
+		print("[SHOT] FAIL: battle_advance — identical to the un-queued frame; the aura did not draw")
+		_fail += 1
+		return
+	img_adv.save_png("res://tmp/marketing/battle_advance.png")
+	print("[SHOT] battle_advance (%dx%d) — full bank 5/5, aura drew" % [img_adv.get_width(), img_adv.get_height()])
+	_ok += 1
+
+
+## The BattleScene by CAPABILITY, not by path: the node that answers the queue signal is the one
+## that owns the aura, whatever the scene tree is called this month.
+func _find_battle_scene(n: Node) -> Node:
+	if n.has_method("_on_advance_queue_changed"):
+		return n
+	for c in n.get_children():
+		var found := _find_battle_scene(c)
+		if found != null:
+			return found
+	return null
+
 
 func _suppress_furniture() -> void:
 	var gs = root.get_node_or_null("GameState")
