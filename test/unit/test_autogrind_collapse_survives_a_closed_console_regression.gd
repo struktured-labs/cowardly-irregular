@@ -15,6 +15,13 @@ extends GutTest
 ## events punish perfect optimization") delivered to a disconnected handler.
 ##
 ## Same shape as the stop-rule bug: an event whose single listener may not exist.
+##
+## ⛔ AND THE REPEAT-SUPPRESSION ARM BELOW WAS BLIND UNTIL 2026-09-16, which is how the catch-up
+## then re-announced every collapse at every reopen. It disconnected and reconnected THE SAME `_ui`,
+## so the per-instance high-water mark survived — but GameLoop FREES the console on close (:5543)
+## and builds a new one on open (:5477), where that mark is 0. The arm's name said "on reopen" and
+## its body never reopened. It now builds a second console, which is what the game does. Behavioural
+## coverage of the whole lifecycle lives in test_autogrind_a_collapse_is_announced_once_regression.
 
 var _ags: Node = null
 var _ui
@@ -25,6 +32,9 @@ func before_each() -> void:
 	if _ags:
 		_ags._test_disable_persistence = true
 		_ags.collapse_count = 0
+		## The baseline outlives the console BY DESIGN now, so it also outlives an arm. Reset it here
+		## or the second arm to run inherits the first one's high-water mark and reports nothing.
+		_ags.collapses_announced = 0
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
 	add_child_autofree(_ui)
 
@@ -32,6 +42,7 @@ func before_each() -> void:
 func after_each() -> void:
 	if _ags:
 		_ags.collapse_count = 0
+		_ags.collapses_announced = 0
 
 
 func _log_text() -> String:
@@ -71,14 +82,21 @@ func test_a_collapse_already_reported_live_is_not_repeated_on_reopen() -> void:
 	## Assert the MECHANISM, not the log text: _build_ui reconstructs _battle_log, so the earlier
 	## message is gone from it regardless — a log-based assertion here would measure the rebuild
 	## rather than the repeat-suppression. (Found by writing the log version first and getting 0.)
+	##
+	## ⛔ A SECOND CONSOLE, not this one reconnected. Reusing `_ui` was the blindness described in the
+	## header: the mark it checked could only survive because the object did.
 	_ui._disconnect_autogrind_signals()
-	_ui._connect_autogrind_signals()
-	assert_eq(_ui._pending_collapse_catchup, 0,
+	var reopened = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
+	add_child_autofree(reopened)
+	reopened._connect_autogrind_signals()
+	assert_eq(reopened._pending_collapse_catchup, 0,
 		"a collapse already reported must not queue a catch-up on reopen")
-	assert_eq(_ui._collapses_reported, 1, "and the console's high-water mark must stand at what it reported")
-	_ui._build_ui()
-	assert_false(_log_text().contains("SYSTEM COLLAPSE"),
-		"so the reopened console says nothing about it: %s" % _log_text())
+	assert_eq(_ags.collapses_announced, 1,
+		"and the high-water mark must stand at what was reported — on the SYSTEM, which is what outlives a console")
+	reopened._build_ui()
+	if reopened._battle_log and is_instance_valid(reopened._battle_log):
+		assert_false(str(reopened._battle_log.get_parsed_text()).contains("SYSTEM COLLAPSE"),
+			"so the reopened console says nothing about it: %s" % str(reopened._battle_log.get_parsed_text()))
 
 
 func test_the_catch_up_survives_the_build_order() -> void:
