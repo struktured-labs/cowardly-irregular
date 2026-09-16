@@ -157,6 +157,12 @@ func _extract_sfx_keys_from_text(text: String, refs: Dictionary) -> void:
 	# Matches: play_ui("foo") | play_battle("foo") | play_battle_scaled("foo" | play_ability("foo" | play_attack_hit("foo" | play_sfx("foo"
 	regex.compile(SFX_CALL_PATTERN)
 	for match in regex.search_all(text):
+		## A literal followed by `+` is a PREFIX being composed at runtime, not a key: play_battle(
+		## "corruption_gain_" + effect) would otherwise report `corruption_gain_` as an orphan call.
+		## Composed keys are invisible to this audit either way — see the composition-aware guards.
+		var after: String = text.substr(match.get_end(), 12).strip_edges()
+		if after.begins_with("+"):
+			continue
 		refs[match.get_string(1)] = true
 
 
