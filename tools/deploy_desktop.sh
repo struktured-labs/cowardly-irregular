@@ -167,7 +167,14 @@ _require_marker_live() {
 # the files sit right there on disk. A test run in that state exits 0 having run
 # NOTHING, which is indistinguishable from success. Cheap and idempotent once warm.
 echo "[${PLAT}] gate 0/4: import prewarm"
-godot --headless --audio-driver Dummy --import --quit > tmp/${PLAT}_import.log 2>&1 &
+# SANDBOXED. `--import` is EDITOR-CLASS: it resolves user:// by application name and writes
+# .recovery_mode_lock into whichever profile is active. Measured 2026-09-16 on struktured's live
+# profile — a lock stamped 10:40, the minute this line ran during the .358 publish.
+# The import CACHE lives in res://.godot, in the project, so relocating the data root costs the
+# prewarm nothing; deploy_web.sh:140 has done exactly this since 2026-09-07 with the arms to
+# prove the prewarm's purpose survives.
+mkdir -p tmp/prewarm_xdg
+XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" godot --headless --audio-driver Dummy --import --quit > tmp/${PLAT}_import.log 2>&1 &
 EC=0; wait $! || EC=$?
 test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: asset import failed — see tmp/${PLAT}_import.log" >&2; exit 1; }
 
@@ -549,11 +556,31 @@ _ARTID="$(cd "$(dirname "$0")" && pwd)/artifact_identity.sh"
     exit 2; }
 _RUNNER="${BOOT_RUNNER[*]+${BOOT_RUNNER[*]}}"
 [ -n "$_RUNNER" ] || _RUNNER="<native>"
+# ⛔ THE BOOT SMOKE RUNS THE GAME. It is the one invocation in this file that boots the whole
+# thing against a real profile, and until 2026-09-16 it did so against STRUKTURED'S.
+#
+# Measured that day, after four desktop publishes: his user://logs/ held five rotations stamped
+# 08:53 · 09:11 · 10:00 · 10:35, each three seconds before this gate's own archived boot log for
+# .355 · .356 · .357 · .358. Godot keeps exactly five, so every slot held one of these boots and
+# none of his own play survived in the ring. That is CLAUDE.md's 2026-07-15 hazard verbatim: a
+# crash trace is the one log you cannot regenerate.
+#
+# WHY NO GREP WOULD HAVE FOUND IT: there is no `godot` on that line. It runs the EXPORTED BINARY
+# by path, so every sandbox rule written as `godot <flags>` is blind to it. The axis is what the
+# process does to user://, never what the command line looks like.
+#
+# XDG_DATA_HOME is safe HERE and is NOT safe on the export two gates up: it relocates the whole
+# godot data root including ~/.local/share/godot/export_templates, which --export-release needs
+# and an exported binary does not. Verified 2026-09-16 with pub358's own linux build: the log
+# landed in the sandbox, his five rotations were byte-identical before and after, and the binary
+# still reached "[GAME] Started" so the gate's assertion survives the redirect.
+_BOOT_XDG="$PWD/tmp/boot_xdg"
+mkdir -p "$_BOOT_XDG"
 {
     echo "[${PLAT}] boot subject: runner=${_RUNNER} path=${OUT_DIR}/${ARTIFACT}"
     echo "[${PLAT}] boot subject: $("$_ARTID" "${OUT_DIR}/${ARTIFACT}" 2>&1)"
-    ( cd "$OUT_DIR" && timeout 240 ${BOOT_RUNNER[@]+"${BOOT_RUNNER[@]}"} "./${ARTIFACT}" \
-        --headless --quit )
+    ( cd "$OUT_DIR" && XDG_DATA_HOME="$_BOOT_XDG" timeout 240 \
+        ${BOOT_RUNNER[@]+"${BOOT_RUNNER[@]}"} "./${ARTIFACT}" --headless --quit )
 } > "tmp/${PLAT}_boot.log" 2>&1 || true
 _require_marker_live "[GAME] Started"
 if ! grep -q "\[GAME\] Started" tmp/${PLAT}_boot.log; then
