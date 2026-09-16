@@ -769,6 +769,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					_log("%s heals %s for %d" % [caster.combatant_name, target.combatant_name, healed])
 
 		"magic":
+			## Accumulated ACROSS the cast, because live's recoil is proportional to the whole volley
+			## (BattleManager:4981/5172) — stack_overflow hits all_enemies and pays 20% of the total.
+			var total_for_recoil: int = 0
 			for target in targets:
 				if target and target.is_alive:
 					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power)
@@ -791,7 +794,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## memory_drain (all_enemies) stacks its restore across the party exactly as live does.
 					_siphon_mp(caster, ability, dealt, ability_id)
 					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dealt])
+					total_for_recoil += dealt
 					_maybe_inflict_status(caster, target, ability, ability_id)
+			_recoil_to(caster, ability, total_for_recoil, ability_id)
 
 		"physical":
 			for target in targets:
@@ -1092,6 +1097,26 @@ func _siphon_mp(caster, ability: Dictionary, damage_dealt: int, ability_id: Stri
 	var restored: int = caster.restore_mp(amount)
 	if restored > 0:
 		_log("%s siphons %d MP with %s" % [caster.combatant_name, restored, ability_id])
+
+
+
+## The self-damage a magic ability costs its caster, mirroring BattleManager:5171-5174.
+##
+## ⛔ The FIRST parity gap in this file that made the grind HARDER than the game. stack_overflow is
+## 3.0x to all_enemies with a 20% recoil, and recursive_loop (POOLED) casts it — so in the grind that
+## monster paid nothing for its biggest attack and survived fights the real game kills it in. Live's
+## own comment records the same field being unread on ITS side once: "stack_overflow dealt 3.0x to all
+## enemies for free, defeating the catastrophic-damage / 20%-recoil tradeoff design."
+##
+## After the loop and proportional to the WHOLE volley, not per target — an all_enemies cast pays once
+## on the total. Skipped when the caster died to something else this cast, as live skips it.
+func _recoil_to(caster, ability: Dictionary, total_dealt: int, ability_id: String) -> void:
+	var pct: float = float(ability.get("damage_to_self_pct", 0.0))
+	if pct <= 0.0 or total_dealt <= 0 or caster == null or not caster.is_alive:
+		return
+	var recoil: int = max(1, int(round(total_dealt * pct)))
+	caster.take_damage(recoil, true)
+	_log("%s takes %d recoil from %s" % [caster.combatant_name, recoil, ability_id])
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
