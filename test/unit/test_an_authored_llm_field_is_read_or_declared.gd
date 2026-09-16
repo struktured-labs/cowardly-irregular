@@ -25,6 +25,22 @@ extends GutTest
 const BOSS_DATA := "res://data/boss_dialogue.json"
 const JOB_PERSONAS := "res://data/job_personas.json"
 const NPC_PERSONAS := "res://data/cutscenes/npc_showcase_personas.json"
+const CONVERSATION_REWARDS := "res://data/conversation_rewards.json"
+
+## EVERY authored file this lane's code loads. The first version of this census listed
+## three and read as complete — `conversation_rewards.json` was missed, and a census with
+## a hole reads exactly like a census without one (@cowir-autogrind, 11607, whose filtered
+## key view hid thirty). Derived below rather than trusted: an arm greps src/llm for
+## res://data paths and fails if one is not in this list.
+const AUTHORED_FILES := [BOSS_DATA, JOB_PERSONAS, NPC_PERSONAS, CONVERSATION_REWARDS]
+
+## Keys whose CHILDREN are entry ids rather than fields, at any depth.
+const ID_MAP_KEYS := ["bosses", "jobs", "npcs", "by_npc"]
+
+## Files whose ROOT is itself an id map — boss ids and npc display names sit at the top
+## level, beside prose keys. Measured from the four files rather than assumed: the other
+## two open with sections (`jobs`, `default`/`by_npc`).
+const ROOT_IS_ID_MAP := [BOSS_DATA, NPC_PERSONAS]
 
 ## Keys with no literal mention in src/, each excused by the code that BUILDS the name.
 ## If that construction site goes, the excuse goes with it.
@@ -77,21 +93,27 @@ func _walk(dir_path: String, out: PackedStringArray) -> void:
 	d.list_dir_end()
 
 
-## FIELDS only — the top level of each file is an ENTRY MAP (boss ids, job ids, npc
-## names), and an entry id is reached by a runtime lookup from other DATA, never by
-## being named in src/. Counting those as fields reported three spotlight-duel personas
-## as unread when each is named nine times in data/. Entry reachability is its own arm.
+## FIELDS only — an entry id is reached by a runtime lookup from other DATA, never by
+## being named in src/. Counting ids as fields reported three spotlight-duel personas as
+## unread when each is named nine times in data/.
+##
+## MEASURED HOLE, second version: the first form REPLACED the root with the id-map
+## container it found, so every SIBLING section went uncensused — adding a field to
+## conversation_rewards.json's `default` block changed nothing, because the walk had
+## jumped into `by_npc` and never came back. Nothing is skipped now: the walk starts at
+## the root, and id maps are stepped over WHEREVER they appear.
 func _keys_of(path: String) -> Dictionary:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	assert_true(parsed is Dictionary, "CONTROL: %s must parse as an object" % path)
 	var root: Dictionary = parsed as Dictionary
-	for container in ["bosses", "jobs", "npcs"]:
-		if root.has(container) and root[container] is Dictionary:
-			root = root[container] as Dictionary
-			break
 	var acc: Dictionary = {}
-	for entry_id in root:
-		_collect(root[entry_id], acc)
+	if path in ROOT_IS_ID_MAP:
+		for entry_id in root:
+			if _is_prose(str(entry_id)) or str(entry_id) == "version":
+				continue
+			_collect(root[entry_id], acc)
+	else:
+		_collect(root, acc)
 	return acc
 
 
@@ -100,7 +122,14 @@ func _collect(v: Variant, acc: Dictionary) -> void:
 		TYPE_DICTIONARY:
 			for k in (v as Dictionary):
 				acc[str(k)] = true
-				_collect((v as Dictionary)[k], acc)
+				# A nested ID MAP holds entry ids, not fields — `by_npc` keys are npc ids
+				# reached by a runtime lookup, exactly like the top-level boss ids. Descend
+				# past them or the census reports an npc as an unread field.
+				if str(k) in ID_MAP_KEYS:
+					for nested_id in ((v as Dictionary)[k] as Dictionary):
+						_collect(((v as Dictionary)[k] as Dictionary)[nested_id], acc)
+				else:
+					_collect((v as Dictionary)[k], acc)
 		TYPE_ARRAY:
 			for item in (v as Array):
 				_collect(item, acc)
@@ -139,7 +168,7 @@ func test_the_corpus_is_real() -> void:
 
 func test_every_authored_field_is_read_or_declared() -> void:
 	var undeclared: Array = []
-	for path in [BOSS_DATA, JOB_PERSONAS, NPC_PERSONAS]:
+	for path in AUTHORED_FILES:
 		for key in _keys_of(path):
 			var k: String = str(key)
 			if _is_prose(k) or _read_literally(k) or _dynamic_excuse(k) != "" or DECLARED_INERT.has(k):
@@ -222,3 +251,58 @@ func test_every_boss_persona_entry_is_reachable() -> void:
 	assert_gt(checked, 5, "CONTROL: several boss personas must have been examined")
 	assert_eq(orphans, [],
 		"a persona nothing names is content no player can meet: %s" % str(orphans))
+
+
+func test_the_census_covers_every_data_file_this_lane_loads() -> void:
+	## The scope arm. A census is only as good as its file list, and a missing file is
+	## invisible from the green. Derive the list from the code that loads them.
+	var loaded: Dictionary = {}
+	var dir := DirAccess.open("res://src/llm")
+	assert_not_null(dir, "CONTROL: src/llm must be readable")
+	dir.list_dir_begin()
+	var fname := dir.get_next()
+	while fname != "":
+		if fname.ends_with(".gd"):
+			var src: String = FileAccess.get_file_as_string("res://src/llm/" + fname)
+			var at: int = src.find("res://data/")
+			while at != -1:
+				var end: int = src.find(".json", at)
+				if end == -1:
+					break
+				loaded[src.substr(at, end - at + 5)] = fname
+				at = src.find("res://data/", end)
+		fname = dir.get_next()
+	dir.list_dir_end()
+	assert_gt(loaded.size(), 2, "CONTROL: src/llm must load several data files, or this arm is vacuous")
+	var uncensused: Array = []
+	for path in loaded:
+		if not (str(path) in AUTHORED_FILES):
+			uncensused.append("%s (loaded by %s)" % [str(path), str(loaded[path])])
+	assert_eq(uncensused, [],
+		"src/llm loads these and the census does not cover them: %s" % str(uncensused))
+
+
+func test_every_rewarded_npc_id_is_one_an_npc_can_have() -> void:
+	## Reward entries are keyed by the id derived from the NPC's own display name. A reward
+	## keyed to a name no NPC has never pays out — the unreachable-content shape, in the
+	## file that hands the player items.
+	##
+	## MEASURED WRONG FIRST: scraping the persona file line by line flagged all three real
+	## NPCs. The arm was broken, not the data. Parse the file.
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(CONVERSATION_REWARDS))
+	var by_npc: Dictionary = (parsed as Dictionary).get("by_npc", {})
+	assert_gt(by_npc.size(), 0, "CONTROL: some npc must have an authored reward")
+	var personas: Variant = JSON.parse_string(FileAccess.get_file_as_string(NPC_PERSONAS))
+	assert_true(personas is Dictionary, "CONTROL: the persona file must parse")
+	var known_ids: Dictionary = {}
+	for display_name in (personas as Dictionary):
+		if str(display_name).begins_with("_") or str(display_name) == "version":
+			continue
+		known_ids[str(display_name).to_lower().replace(" ", "_")] = true
+	assert_gt(known_ids.size(), 0, "CONTROL: the persona file must name some NPCs")
+	var unreachable: Array = []
+	for npc_id in by_npc:
+		if not known_ids.has(str(npc_id)):
+			unreachable.append(str(npc_id))
+	assert_eq(unreachable, [],
+		"a reward keyed to an npc id nothing can produce never pays out: %s" % str(unreachable))
