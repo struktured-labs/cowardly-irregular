@@ -44,6 +44,9 @@ const JOB_SCALE_OVERRIDES: Dictionary = {
 ## threshold is the same one party-side uses to discriminate artist vs
 ## proc-gen sprite paths.
 const ENEMY_SCALE_BUMP: float = 2.5
+## Air between a figure's feet and its name label, and the label's own box width (centred on the body).
+const NAME_LABEL_GAP: float = 6.0
+const NAME_LABEL_WIDTH: float = 200.0
 const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 
 ## UI References
@@ -1099,7 +1102,7 @@ func _create_battle_sprites() -> void:
 		enemy_animators.append(animator)
 
 		# Add label with enemy name
-		_add_sprite_label(sprite, enemy.combatant_name.to_upper(), Vector2(-20, 40))
+		_add_sprite_label(sprite, enemy.combatant_name.to_upper(), 40.0)
 
 		# Setup status icons for this enemy
 		_setup_status_icons(enemy, sprite)
@@ -1399,19 +1402,26 @@ func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 			return BattleAnimatorClass.create_slime_sprite_frames()
 
 
-func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) -> void:
-	"""Add a label below a sprite"""
+func _add_sprite_label(sprite: AnimatedSprite2D, text: String, fallback_drop: float) -> void:
+	"""Add a name label under a sprite's figure, centred on its body"""
 	var label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	# a fixed +40 lands mid-body on 256px artist frames (SKELETON KNIGHT read at the waist) — drop below the frame
-	var half_h: float = offset.y
+	label.clip_text = false
+	label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	# Seat on the FIGURE, not the frame. Its 114 monster sheets pad differently (feet 6-77px above the frame bottom, body up to 51px off centre) and ENEMY_SCALE_BUMP multiplies that 2.5x on every 128px sheet, so a frame-derived drop left the name nearer the monster BELOW it — and telling same-species monsters apart is the whole job.
+	var drop: float = fallback_drop
+	var centre_x: float = 0.0
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") \
 			and sprite.sprite_frames.get_frame_count(&"idle") > 0:
 		var idle_tex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
 		if idle_tex:
-			half_h = maxf(offset.y, idle_tex.get_height() / 2.0 + 6.0)
-	label.position = Vector2(offset.x, half_h)
+			var fig: Rect2 = AdvanceAuraClass.figure_rect_of(idle_tex)
+			drop = fig.end.y - float(idle_tex.get_height()) * 0.5 + NAME_LABEL_GAP
+			centre_x = fig.get_center().x - float(idle_tex.get_width()) * 0.5
+			# flip_h mirrors the drawn frame but not its children, so the body centre mirrors with it.
+			if sprite.flip_h:
+				centre_x = -centre_x
 	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	# Tick 219: 1px outline + shadow — name labels sit below sprites on the Mode 7 floor and need edge protection vs grid lines (matches tick 218 contrast scheme, scaled down for 10pt).
 	label.add_theme_constant_override("outline_size", 1)
@@ -1420,6 +1430,9 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	sprite.add_child(label)
+	# Sized and placed AFTER the add so the width is the clamped real one — an auto-width label at a fixed x put its own centre at x + width/2, which drifted right as the name got longer (BAT -10px, PYRROTH +50px).
+	label.size = Vector2(NAME_LABEL_WIDTH, 0.0)
+	label.position = Vector2(centre_x - label.size.x * 0.5, drop)
 
 
 ## Status effect icon display system
@@ -5881,7 +5894,7 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	enemy_animators.append(animator)
 
 	# Add label
-	_add_sprite_label(sprite, enemy.combatant_name.to_upper(), Vector2(-20, 40))
+	_add_sprite_label(sprite, enemy.combatant_name.to_upper(), 40.0)
 
 	# Setup status icons for summoned enemy
 	_setup_status_icons(enemy, sprite)
