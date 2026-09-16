@@ -24,7 +24,15 @@
 #   .import sidecars and the import cache in place, and through a hardlink that
 #   corrupts the originals.
 #
-# Usage:  tools/make_web_stage.sh [bitrate]     default 48 (struktured's ruling)
+# Usage:  tools/make_web_stage.sh [bitrate]     deploy_web.sh always passes one
+#
+# ⛔ THE FALLBACK BELOW IS NOT THE SHIPPED BITRATE and this line used to say it was
+# ("default 48 (struktured's ruling)"). It was his ruling in August; his 40k ruling
+# shipped in .357 and this comment did not move. The shipped value lives in ONE place —
+# deploy_web.sh's WEB_AUDIO_KBPS default — and that is what reaches this script as $1 on
+# every publish. A reader who takes the fallback for the shipped value gets a number that
+# is true about this function and false about every real invocation: one lane did exactly
+# that tonight, and tools/make_web_audio.sh had been doing it in code since .357.
 #         tools/make_web_stage.sh --clean       delete the stage, free the disk
 set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
