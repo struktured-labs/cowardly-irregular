@@ -139,8 +139,18 @@ func test_neither_engine_rolls_inside_its_hit_loop() -> void:
 	var live_at: int = live.find("for hit_idx in range(hits):")
 	assert_gt(live_at, -1, "CONTROL: the live hit loop survives stripping")
 	var live_loop: String = live.substr(live_at, 400)
-	assert_false(live_loop.contains("effect_chance"),
-		"the live engine must not roll effect_chance inside its hit loop")
+	## ⚠️ RE-POINTED 2026-09-16 AND IT WAS GREEN-AND-VACUOUS FOR ONE COMMIT. This read
+	## `contains("effect_chance")`, and the day the two copies of the status block collapsed into
+	## `_apply_ability_status` the literal left the executor entirely — so the arm passed by absence
+	## rather than by placement. The roll is now named by its CALL, which is what sits in or out of
+	## the loop. Anti-vacuity: the call must exist in the executor at all.
+	var live_exec_at: int = live.find("func _execute_physical_ability(")
+	var live_exec_end: int = live.find("\nfunc ", live_exec_at + 1)
+	var live_exec: String = live.substr(live_exec_at, live_exec_end - live_exec_at)
+	assert_true(live_exec.contains("_apply_ability_status(caster, target, ability)"),
+		"CONTROL: the physical executor rolls the status through the one owner, or this arm is about nothing")
+	assert_false(live_loop.contains("_apply_ability_status"),
+		"the live engine must not roll the status inside its hit loop")
 	var grind: String = GdSourceHelper.code_of("res://src/autogrind/HeadlessBattleResolver.gd")
 	var offenders: Array = []
 	for at in [grind.find('"magic":'), grind.find('"physical":')]:

@@ -22,7 +22,30 @@ func test_log_uses_original_effect_name_not_aliased_status() -> void:
 	# The message must feed StatusNames.display with log_effect (the
 	# pre-alias name), not status_to_add (which is now "stun" for ice).
 	var count = src.count("StatusNames.display(log_effect)")
-	assert_eq(count, 2,
-		"both physical and magic dispatch sites must use the pre-alias name for the log")
+	assert_eq(count, 1,
+		"one owner since 2026-09-16 — the duplicated block collapsed (found %d)" % count)
+	assert_true(_owner_body().contains("StatusNames.display(log_effect)"),
+		"the pre-alias name is logged inside _apply_ability_status")
+	assert_eq(_owner_callers(), 2,
+		"and both physical and magic dispatch still reach it")
 	assert_false(src.contains("StatusNames.display(status_to_add)"),
 		"post-alias status name in the log leaks the mechanical detail — replaced by log_effect")
+
+
+## ⚠️ SHAPE CHANGED 2026-09-16, INTENT UNCHANGED. The effect-application block existed VERBATIM in
+## _execute_physical_ability AND _execute_magic_ability, so this file counted copies. It is now one
+## owner, `_apply_ability_status`, that both call — so the pin is "the rule lives in the owner, and
+## both damage executors still reach it", which is what counting two copies was really defending.
+func _owner_body() -> String:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var at: int = src.find("func _apply_ability_status(")
+	if at < 0:
+		return ""
+	var nxt: int = src.find("\nfunc ", at + 1)
+	return src.substr(at, (nxt - at) if nxt > at else 4000)
+
+
+## Both damage executors must still CALL that owner, or the rule inside it defends nothing.
+func _owner_callers() -> int:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	return src.count("_apply_ability_status(caster, target, ability)")

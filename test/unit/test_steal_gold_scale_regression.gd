@@ -95,8 +95,20 @@ func test_no_steal_site_hardcodes_the_old_divisor() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	assert_false(src.contains("max_hp / 50.0"),
 		"the pre-scale divisor must be gone from every steal path, not just the one that was found")
-	assert_eq(src.count("STEAL_GOLD_HP_DIVISOR"), 3,
-		"one declaration plus both steal sites — a count below 3 means a site was missed")
+	## ⚠️ WAS 3 (declaration + two independent sites). The two sites were collapsed into
+	## `_award_stolen_gold` on 2026-09-16 — they had already drifted apart in their logging and were
+	## about to drift apart in their caster-side guard — so the count is now declaration + owner. The
+	## comment above still holds and is better served by pinning that BOTH sites reach the owner:
+	## the partial-enumeration shape it warns about is exactly what one owner makes impossible.
+	assert_eq(src.count("STEAL_GOLD_HP_DIVISOR"), 2,
+		"one declaration plus the one owner that computes the amount")
+	var owner_at: int = src.find("func _award_stolen_gold(")
+	assert_gt(owner_at, -1, "CONTROL: the owner survives stripping")
+	var owner_end: int = src.find("\nfunc ", owner_at + 1)
+	assert_true(src.substr(owner_at, owner_end - owner_at).contains("STEAL_GOLD_HP_DIVISOR"),
+		"and the scale is applied inside it, where both sites inherit it")
+	assert_eq(src.count("_award_stolen_gold("), 3,
+		"one declaration plus BOTH steal sites — below 3 means a site computes its own payout again")
 
 
 # ── positive control ────────────────────────────────────────────────

@@ -47,7 +47,7 @@ const DECLARED := {
 	"summon_message": "battle-log flavour for a spawn the grind does not perform",
 	"corruption_risk": "SAVE corruption from meta abilities during automated play is a stakes ruling (CLAUDE.md: 'save corruption: actual mechanic, not just flavor'), not a parity repair",
 	"corruption_amount": "see corruption_risk — same stakes ruling",
-	"regen_per_turn": "EXAMINED 2026-09-16 and it is a LIVE defect, not a grind gap. `regenerate` is type=healing, so live dispatches it to _execute_healing_ability, which reads only heal_amount — and regenerate authors none. Measured: live heals 0 and never adds the regen status, so regen_per_turn AND duration are dead there; the grind heals 30 once via its own heal_amount-absent fallback and also never regens. NEITHER engine delivers the authored ability. Wiring it in the grind alone would widen the divergence, and repairing live is a BattleManager change — handed to cowir-battle, whose 2d14d92d ledger is the right home for it",
+	"ignores_resistance": "EXAMINED 2026-09-16 and UNREACHABLE in a grind, so deliberately not wired. Its two owners (exploit_weakness, fourth_wall_break) are cast only by meta_knight, which is in no enemy pool — and this lane's OWN extra spawn path does not reach it either: _spawn_meta_boss builds a procedural enemy with a generated name, it does not instantiate a monsters.json id. Wiring it would add a mechanism no grind can exercise, and the arm below reds if either caster becomes drawable",
 }
 
 ## Fixed and awaiting a fold. Named so arm 4 does not red on them, and asserted by NOTHING ELSE on
@@ -56,19 +56,52 @@ const DECLARED := {
 ## arm 4 permits silently.
 const CLOSED_PENDING_FOLD := [
 	"drain_percentage",
-	"secondary_effect", "secondary_chance", "secondary_modifier", "secondary_target",
 	"scales_with", "max_multiplier",
+	## cowir-battle's 48a70e4dd — the doom counter. It was dead in BOTH engines until today (its only
+	## setter sat in _execute_support_ability while all three abilities authoring `effect: doom` are
+	## magic or physical), and their fix wires live AND mirrors the grind in the same commit. So it
+	## stops being a gap of mine at the fold rather than becoming one.
+	"countdown",
+	## Both halves of steal, closed together because they are one mechanism authored twice: `steal`
+	## (support) reads success_rate, `mug` (physical) reads it AND `steals`. The grind resolved
+	## neither — it had zero mentions of steal — so a Rogue, whose BASE kit holds both, earned no
+	## steal-gold in a grind and the victim collected a junk status called "steal".
+	"success_rate", "steals",
+	## A DIFFERENT SHAPE from every other entry here: the grind had an arm for this effect and it
+	## HARDCODED both numbers — 25% where inspiring_melody authors 5%, so a grinding Bard's song
+	## restored five times what the game grants. Not a missing read; a read that was never written.
+	## The `ap_gain` literal agreed with live's default by coincidence, which is why it looked fine.
+	"mp_restore_percent", "ap_gain",
+	## THIRD SHAPE. Not a missing read and not a hardcode: the mechanism was ALREADY LIVE in the
+	## grind and UNCAPPED. The unmodelled-effect else added the damage_absorb status, and
+	## Combatant.take_damage treats an absent budget meta as UNLIMITED — so a POOLED 8000 HP enemy
+	## was immune and self-healing for two rounds. Live had the same bug and fixed it 2026-09-10;
+	## the grind never got the fix because it never read the key.
+	"absorb_amount",
 ]
 
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
-	"absorb_amount", "ap_gain", "cost", "countdown", "crit_chance", "damage_to_self_pct",
-	"damage_variance", "drain_mp", "element_boost", "element_boost_modifier", "evasion_bonus",
-	"guaranteed_escape", "ignores_defense", "ignores_evasion", "ignores_resistance", "max_depth",
-	"meta_effect", "mp_restore_percent", "multiplier", "next_attack_multiplier", "penalty",
-	"priority", "recoil_pct", "steals", "success_rate", "threat_class",
+	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
+	"meta_effect", "priority", "recoil_pct",
+	"threat_class",
 ]
+
+## ⛔ THE THIRD STATE, and it exists because I published a backlog number my instrument could not
+## support. Axis 1 calls a key live-only when live CONTAINS it and the grind does not. The grind side
+## is a ZERO and trustworthy; the LIVE side is a HIT, and a hit can be a string, a different subject's
+## field, or prose. So "23 unexamined gaps" was 19 gaps plus 4 keys that may not be gaps at all.
+##
+## These four have the NAME in BattleManager and no `ability.get`/`[]`/`.has` access anywhere in it:
+## `cost` is shop/ability-menu pricing, `multiplier` and `penalty` are local variables, `evasion_bonus`
+## is read off equipment rather than the ability. UNDECIDED, not absolved — a text search cannot tell
+## "read another way" from "not read", and saying so is the point.
+##
+## Taken from @cowir-sprites' three-state manifest census and @cowir-music's re-measurement of their
+## own: both had drawn a conclusion from the non-zero side of an instrument they had correctly
+## labelled trustworthy only on zeroes. Mine did the same thing to a number I put in a channel.
+const UNDECIDED_LIVE_SIDE := ["cost", "evasion_bonus", "multiplier", "penalty"]
 
 
 func _authored_keys() -> Array:
@@ -132,6 +165,8 @@ func test_no_new_divergence_arrives_unnamed() -> void:
 		known[k] = true
 	for k in UNEXAMINED:
 		known[k] = true
+	for k in UNDECIDED_LIVE_SIDE:
+		known[k] = true
 	for k in CLOSED_PENDING_FOLD:
 		known[k] = true
 	var unnamed: Array = []
@@ -175,12 +210,47 @@ const GRIND_PATH_MARKER := {
 	"hits": "for _h in hits",
 	"drain_percentage": "_drain_to(",
 	"scales_with": "_scaled_base(",
-	## Mapped, but NOT path-checked: live reads secondary_effect inside _apply_secondary_effect, a
-	## dispatcher rather than a per-type executor, so _live_executor_count sees no executor and the
-	## arm skips it. Its support-only placement is pinned in
-	## test_autogrind_applies_the_second_effect_regression instead. Left here so the map matches the
-	## set of keys this lane has wired, and so it reds if the marker ever disappears.
+	"drain_mp": "_siphon_mp(",
+	"ignores_defense": "ability.get(\"ignores_defense\"",
+	"damage_to_self_pct": "_recoil_to(",
+	"damage_variance": "ability.get(\"damage_variance\"",
+	"crit_chance": "ability.get(\"crit_chance\"",
+	"regen_per_turn": "ability.get(\"regen_per_turn\"",
+	## ⚠️ RE-RANKED by the form-4 finding rather than examined: `meta_effect` is carried by
+	## save_deletion on permadeath_reaper, which the grind's OWN spawner instantiates. It stays in the
+	## backlog — cowir-battle has not touched it — but it is no longer "no reachable caster", which is
+	## how this file ranked it before form 4 was known. Recorded here so the next person picking from
+	## the backlog by reach does not repeat my ranking.
+	## PRODUCER/CONSUMER key, so the marker is the PRODUCER. Live reads the authored field in
+	## _execute_support_ability and consumes its stored effect in two OTHER executors (:4374 attack,
+	## :4969 magic); axis 2 asks where the authored key is READ, not where its effect is spent. My
+	## first marker pointed at a consumer and this arm caught it — the grind's support arm reads the
+	## key exactly where live's support executor does.
+	"next_attack_multiplier": "ability.get(\"next_attack_multiplier\"",
+	## ⚠️ ALL FOUR secondary_* KEYS, AND THREE OF THEM WERE INVISIBLE TO THIS MAP UNTIL 2026-09-16.
+	## They live in `_apply_secondary_effect`, which `_execute_support_ability` calls — but the old
+	## walk-back skipped past any non-executor function, so a read inside a helper was credited to
+	## whichever executor happened to precede it in the file and the count came out wrong. With the
+	## walk-back fixed (see _executors_for_read) they resolve to the support executor, which is where
+	## live reads them and where the resolver calls the same helper. One marker covers the four:
+	## they are the same call, and a key that travelled alone would be the anomaly.
 	"secondary_effect": "_apply_secondary_effect(",
+	"secondary_chance": "_apply_secondary_effect(",
+	"secondary_target": "_apply_secondary_effect(",
+	"secondary_modifier": "_apply_secondary_effect(",
+	## Live reads success_rate TWICE, on two different kinds of site: inside _execute_support_ability
+	## (the `steal` effect) and inline in _execute_ability's "physical" arm (mug). Only the first
+	## resolves to an executor — the second sits in the DISPATCHER, the `secondary_effect` shape — so
+	## axis 2 checks the support half and the physical half is pinned behaviourally in
+	## test_autogrind_steals_what_it_steals_regression instead. One marker: both grind arms call it.
+	"success_rate": "_roll_steal(",
+	"steals": "ability.get(\"steals\"",
+	## Both read in live's _execute_support_ability and in the grind's support arm — the one case
+	## this session where axis 1 was GREEN (the grind "read" the effect) and the divergence was in
+	## the VALUE. A key census cannot see this class; only comparing the two arms can.
+	"mp_restore_percent": "ability.get(\"mp_restore_percent\"",
+	"ap_gain": "ability.get(\"ap_gain\"",
+	"absorb_amount": "ability.has(\"absorb_amount\")",
 }
 
 ## Read by both engines, live-confined to one executor, and NOT path-assessed by me. They are here
@@ -191,6 +261,44 @@ const GRIND_PATH_MARKER := {
 ## executor — but "looks structural" is not "checked", and the difference is the whole point of axis 2.
 const AXIS2_UNASSESSED := ["mp_cost", "stat_modifier", "element", "max_multiplier", "stat", "modifier"]
 
+## ⛔ HOW A KEY REACHES A GRIND — FOUR FORMS, AND I RANKED THIS BACKLOG ON THREE.
+## Every reachability judgement in this file rests on "can a grind actually cast this", and I built
+## that oracle by enumerating the ways I knew:
+##   1. a pooled monster            EncounterSystem.enemy_pools, drawn by AutogrindController:309
+##   2. a job ability               jobs.json, cast by the party
+##   3. the meta-boss generator     AutogrindSystem._spawn_meta_boss -> a PROCEDURAL enemy
+##   4. THE ONE I MISSED — build_meta_boss_enemy_data reads monsters.json and instantiates any
+##      monster flagged `autogrind_spawned`. Two carry it: adaptive_slime and permadeath_reaper.
+##
+## So the GRIND ITSELF spawns real monsters.json entries, and `permadeath_reaper` casts `final_death`,
+## `permakill_strike` and `save_deletion` — carrying `countdown` and `meta_effect`, both of which this
+## backlog ranked as having no reachable caster. My declarations survived, but by luck of the data:
+## neither meta_knight nor time_phantom carries the flag, so the answers were right and the instrument
+## was not.
+##
+## CLAUDE.md says of cutscenes "a scene reaches a player at least SIX different ways — SIX IS A FLOOR,
+## NOT A TOTAL", and @cowir-cutscenes' point is that an oracle which enumerates forms is how you miss
+## one. The arm below therefore does not enumerate: it asks what the grind's own spawner can reach and
+## requires every key it finds to be NAMED somewhere in this file.
+##
+## ⛔ WHAT AXIS 2 DOES NOT CHECK, named because the arm's name implies more than it does.
+## It compares ONE marker per key against ONE live executor: the site where the AUTHORED KEY IS READ.
+## For a PRODUCER/CONSUMER key that is the producer only — `next_attack_multiplier` is read in live's
+## support executor and its stored effect is SPENT in two others (:4374 attack, :4969 magic), and
+## nothing here would notice if the grind spent it on one path or three.
+##
+## That coverage exists, in the fix's own file, and the map below pins WHERE so it cannot be deleted
+## while this ledger keeps reporting green. @cowir-cutscenes' shape, an hour old: a guard naming the
+## right subject, asserting a true thing, and covering one half reads greener than no guard at all —
+## theirs tested `_set_choice_flag` while the menu it was named for went unguarded.
+const CONSUMER_COVERAGE := {
+	"next_attack_multiplier": [
+		"res://test/unit/test_autogrind_charged_strike_lands_regression.gd",
+		["test_a_charge_reaches_the_next_swing", "test_the_magic_path_consumes_it_too_and_only_once",
+		 "test_the_charge_is_spent_once_and_not_kept"],
+	],
+}
+
 ## The live executor each key must be read from, measured out of BattleManager rather than listed —
 ## see _live_executor_of. The grind arm that must match it:
 const ARM_FOR_EXECUTOR := {
@@ -200,16 +308,52 @@ const ARM_FOR_EXECUTOR := {
 }
 
 
+## ⛔ THE WALK-BACK USED TO MIS-ATTRIBUTE, and I recorded the symptom as a property. My version did
+## `rfind("func _execute_")`, so a key read inside an ordinary HELPER was credited to whichever
+## executor happened to sit above that helper in the file. I noted that `secondary_effect` "resolves
+## to no executor, so the arm skips it" and wrote it down as a characteristic of a dispatcher — it was
+## my own bug, and @cowir-battle found it (48a70e4dd) when `_apply_ability_status` landed just below
+## `_execute_physical_ability` and made `effect_chance` measure as physical-only.
+##
+## Their repair, ported verbatim: resolve the ENCLOSING function whatever it is, and when that is not
+## an executor, return every executor whose body calls it. A helper-read key now attributes to all the
+## paths that actually reach it.
+func _enclosing_func(at: int, live: String) -> String:
+	var owner: int = live.substr(0, at).rfind("\nfunc ")
+	if owner < 0:
+		return ""
+	var line: String = live.substr(owner + 1, 80)
+	var paren: int = line.find("(")
+	return line.substr(5, paren - 5) if paren > 5 else ""
+
+
+## Every executor a read at `at` belongs to: the enclosing function when that IS an executor,
+## otherwise every executor whose own body calls it.
+func _executors_for_read(at: int, live: String) -> Array:
+	var fn: String = _enclosing_func(at, live)
+	if fn == "":
+		return []
+	if ARM_FOR_EXECUTOR.has(fn):
+		return [fn]
+	var out: Array = []
+	for executor in ARM_FOR_EXECUTOR:
+		var e_at: int = live.find("func %s(" % executor)
+		if e_at < 0:
+			continue
+		var e_end: int = live.find("\nfunc ", e_at + 1)
+		var body: String = live.substr(e_at, (e_end - e_at) if e_end > e_at else 4000)
+		if body.contains(fn + "("):
+			out.append(executor)
+	return out
+
+
 ## The `func _execute_*` that encloses live's read of this key, or "" if it does not read it.
 func _live_executor_of(key: String, live: String) -> String:
 	var at: int = live.find('ability.get("%s"' % key)
 	if at < 0:
 		return ""
-	var owner: int = live.substr(0, at).rfind("func _execute_")
-	if owner < 0:
-		return ""
-	var line: String = live.substr(owner, 60)
-	return line.substr(5, line.find("(") - 5)
+	var owners: Array = _executors_for_read(at, live)
+	return str(owners[0]) if owners.size() > 0 else ""
 
 
 ## How many DISTINCT per-type executors read this key. Only a key live confines to exactly ONE has a
@@ -221,12 +365,8 @@ func _live_executor_count(key: String, live: String) -> int:
 	var needle: String = 'ability.get("%s"' % key
 	var at: int = live.find(needle)
 	while at >= 0:
-		var owner: int = live.substr(0, at).rfind("func _execute_")
-		if owner >= 0:
-			var line: String = live.substr(owner, 60)
-			var name: String = line.substr(5, line.find("(") - 5)
-			if ARM_FOR_EXECUTOR.has(name):
-				seen[name] = true
+		for name in _executors_for_read(at, live):
+			seen[name] = true
 		at = live.find(needle, at + 1)
 	return seen.size()
 
@@ -312,24 +452,164 @@ func test_the_axis_two_backlog_is_not_silently_empty() -> void:
 	assert_eq(stale, [], "these are listed as unassessed AND mapped — one of the two is wrong: %s" % str(stale))
 
 
-## The one key from the UNEXAMINED backlog I have actually examined, pinned so the finding is not lost
-## in a channel message. `regenerate` authors an `effect` and a `regen_per_turn` that its own live
-## executor cannot read, because type=healing routes to _execute_healing_ability and the regen arm
-## lives in _execute_support_ability. If live ever gains an effect arm on the healing path — or
-## regenerate is retyped — the ability starts working there and the grind must be taught to follow.
-func test_regenerate_is_still_dead_on_lives_own_path() -> void:
+## ⛔ THIS ARM ASSERTED LIVE WAS BROKEN AND IT IS NOT, ANY MORE — and that is the arm working, not
+## failing. I examined `regen_per_turn` at 15:00, measured that NEITHER engine delivered it, declared
+## it a LIVE defect and handed it to @cowir-battle. They took it (`dcfb2158`), and this arm went red
+## in the fold where both halves met, naming the exact line that had changed.
+##
+## So the fact moved from "neither engine delivers it" to "live delivers, the grind does not" — a NEW
+## parity gap that did not exist this morning — and the gap is closed in the same commit rather than
+## re-declared. A declaration whose subject has been repaired is stale in the best possible way.
+func test_regenerate_is_delivered_by_both_engines_now() -> void:
 	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
 	var regen: Dictionary = abilities.get("regenerate", {})
 	assert_false(regen.is_empty(), "CONTROL: regenerate must still exist")
-	assert_eq(str(regen.get("type", "")), "healing",
-		"regenerate is no longer type=healing — it may now reach live's regen arm, so re-examine both engines")
-	assert_false(regen.has("heal_amount"),
-		"regenerate now authors a heal_amount — live's healing executor would finally heal for it, so this declaration is stale")
+	assert_eq(str(regen.get("type", "")), "healing", "CONTROL: it must still be healing-typed — that is what makes the routing load-bearing")
+	assert_false(regen.has("heal_amount"), "CONTROL: and still author no heal_amount")
 	var live: String = GdSource.code_of(LIVE)
 	var at: int = live.find("func _execute_healing_ability")
 	assert_gt(at, 0, "CONTROL: the healing executor must be locatable")
 	var body: String = live.substr(at, live.find("\nfunc ", at + 10) - at)
-	assert_false(body.contains('ability.get("effect"'),
-		"live's healing executor now reads `effect` — regenerate's regen may work there, and the grind must follow")
-	assert_false(body.contains("regen"),
-		"live's healing executor now mentions regen — re-examine, this declaration was measured when it did not")
+	assert_true(body.contains('ability.get("effect"'),
+		"live's healing executor no longer inspects `effect` — regenerate may be dead there again, and the grind now routes it expecting live does not")
+	var grind: String = GdSource.code_of(GRIND)
+	assert_true(grind.contains('category == "healing" and str(ability.get("effect", "")) != ""'),
+		"the grind no longer re-points an over-time heal to its support arm, so it heals once and ticks nothing while live regenerates")
+func _live_reads_it_as_an_ability_field(key: String, live: String) -> bool:
+	var q: String = '"%s"' % key
+	return live.contains("ability.get(%s" % q) or live.contains("ability[%s]" % q) or live.contains("ability.has(%s" % q)
+
+
+func test_the_backlog_distinguishes_a_real_gap_from_a_word_that_appears() -> void:
+	## DERIVED, not transcribed: the split is recomputed and compared to the recorded lists, so a key
+	## that changes status reds instead of sitting in the wrong bucket. That is the difference between
+	## a classification and a note about one.
+	var live: String = GdSource.code_of(LIVE)
+	assert_gt(live.length(), 50000, "CONTROL: BattleManager was actually read")
+	var misfiled: Array = []
+	for k in UNEXAMINED:
+		if not _live_reads_it_as_an_ability_field(k, live):
+			misfiled.append("%s: listed as a real gap, but live never reads it off an ability" % k)
+	for k in UNDECIDED_LIVE_SIDE:
+		if _live_reads_it_as_an_ability_field(k, live):
+			misfiled.append("%s: listed as UNDECIDED, but live DOES read it off an ability — it is a real gap" % k)
+	gut.p("    confirmed gaps: %d   undecided: %d" % [UNEXAMINED.size(), UNDECIDED_LIVE_SIDE.size()])
+	assert_eq(misfiled, [], "the backlog's own classification is out of date: %s" % str(misfiled))
+	## Anti-vacuity in both directions: the discriminator must be able to say yes AND no.
+	assert_true(_live_reads_it_as_an_ability_field("hits", live),
+		"CONTROL: a key live demonstrably reads off an ability must classify as read")
+	assert_false(_live_reads_it_as_an_ability_field("a_key_no_ability_has", live),
+		"CONTROL: an invented key must not classify as read")
+
+
+## ⛔ THE FOURTH STATE — composed-at-runtime — DOES NOT APPLY HERE, and that is measured rather than
+## assumed. @cowir-sfx's cue audit has 212 keys absent from the corpus because `play_ability` builds
+## `"ability_" + element` at runtime, so a literal scan cannot see a key that fires on every cast.
+## An ability FIELD is not like that: both engines read fields with literal keys only, so a zero means
+## the key is genuinely unread rather than reached by a name this instrument cannot construct.
+##
+## If either engine ever reads an ability field through a variable, every zero in this file becomes
+## unsound at once — so it reds here rather than silently weakening the whole ledger.
+func test_neither_engine_composes_an_ability_field_name() -> void:
+	for path in [LIVE, GRIND]:
+		var code: String = GdSource.code_of(path)
+		assert_gt(code.length(), 20000, "CONTROL: %s was actually read" % path)
+		var composed: Array = []
+		for line in code.split("\n"):
+			for form in ["ability.get(", "ability.has("]:
+				var at: int = line.find(form)
+				while at >= 0:
+					var nxt: String = line.substr(at + form.length(), 1)
+					if nxt != "\"":
+						composed.append(line.strip_edges())
+					at = line.find(form, at + 1)
+		assert_eq(composed, [],
+			"%s reads an ability field through a non-literal key, so a 'the grind never names it' zero in this ledger no longer means the field is unread: %s" % [path, str(composed)])
+	## Anti-vacuity: the scan must be able to SEE a literal access, or an empty result proves nothing.
+	assert_true(GdSource.code_of(GRIND).contains('ability.get("hits"'),
+		"CONTROL: the scan must find a known literal access, or it is matching nothing")
+
+
+func test_a_multi_site_key_keeps_its_consumer_coverage_elsewhere() -> void:
+	## Axis 2 checks the producer. For a key whose effect is spent in other executors, the arms that
+	## prove the SPENDING matches live live in the fix's own file — so this reds if that file or any of
+	## those arms disappears, rather than this ledger going on reporting a green it did not earn.
+	var missing: Array = []
+	for key in CONSUMER_COVERAGE:
+		var spec: Array = CONSUMER_COVERAGE[key]
+		var path: String = str(spec[0])
+		if not FileAccess.file_exists(path):
+			missing.append("%s: the file carrying its consumer arms is gone (%s)" % [key, path])
+			continue
+		var body: String = GdSource.code_of(path)
+		assert_gt(body.length(), 1000, "CONTROL: %s was actually read" % path)
+		for arm in spec[1]:
+			if not body.contains("func %s(" % arm):
+				missing.append("%s: %s no longer defines %s" % [key, path, arm])
+	assert_eq(missing, [],
+		"axis 2 checks only where the authored key is READ; these keys rely on arms elsewhere to check where the effect is SPENT, and that coverage has moved: %s" % str(missing))
+	## The map is only meaningful if every key in it is one axis 2 actually treats as producer-only.
+	for key in CONSUMER_COVERAGE:
+		assert_true(GRIND_PATH_MARKER.has(key),
+			"'%s' claims consumer coverage but is not path-checked at all — one of the two is wrong" % key)
+
+
+## Ability keys reachable through form 4 — a monster the GRIND'S OWN SPAWNER instantiates.
+func _keys_the_grind_can_spawn() -> Array:
+	var monsters: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var keys: Dictionary = {}
+	for mid in monsters.keys():
+		var m: Dictionary = monsters[mid]
+		if not bool(m.get("autogrind_spawned", false)):
+			continue
+		for aid in m.get("abilities", []):
+			for k in (abilities.get(aid, {}) as Dictionary).keys():
+				keys[k] = true
+	return keys.keys()
+
+
+func test_every_key_the_grind_can_spawn_is_named_in_this_file() -> void:
+	## The form I missed, turned into a ratchet. A key reachable through the grind's OWN spawner must
+	## be path-checked, declared, or in the backlog — never simply absent, which is what it was.
+	var live: String = GdSource.code_of(LIVE)
+	var grind: String = GdSource.code_of(GRIND)
+	var spawnable: Array = _keys_the_grind_can_spawn()
+	assert_gt(spawnable.size(), 5,
+		"CONTROL: the grind's spawner must still reach a real key set (%d) — if this collapses the derivation broke, not the game" % spawnable.size())
+	var known: Dictionary = {}
+	for k in DECLARED:
+		known[k] = true
+	for k in UNEXAMINED:
+		known[k] = true
+	for k in UNDECIDED_LIVE_SIDE:
+		known[k] = true
+	for k in CLOSED_PENDING_FOLD:
+		known[k] = true
+	for k in GRIND_PATH_MARKER:
+		known[k] = true
+	var unnamed: Array = []
+	for k in spawnable:
+		var q: String = '"%s"' % k
+		if not live.contains(q):
+			continue  # live does not read it either — not a parity question
+		if grind.contains(q):
+			continue  # both engines read it
+		if not known.has(k):
+			unnamed.append(k)
+	gut.p("    keys reachable via the grind's own spawner: %d" % spawnable.size())
+	assert_eq(unnamed, [],
+		"these keys are reachable by a monster the GRIND ITSELF spawns, are read by live and not by the grind, and are named nowhere in this file: %s" % str(unnamed))
+
+
+func test_the_spawner_form_still_exists_where_it_is_documented() -> void:
+	## The header describes form 4 by mechanism. If the spawner stops reading monsters.json, or the
+	## flag is renamed, that description becomes a lie and the arm above silently measures nothing.
+	var sys: String = GdSource.code_of("res://src/autogrind/AutogrindSystem.gd")
+	assert_gt(sys.length(), 5000, "CONTROL: AutogrindSystem was actually read")
+	assert_true(sys.contains("func build_meta_boss_enemy_data"),
+		"the builder named in this file's reachability notes is gone — re-derive the forms before trusting any declaration here")
+	assert_true(sys.contains('"autogrind_spawned"'),
+		"the spawner no longer selects on autogrind_spawned; form 4 is described by a mechanism that no longer exists")
+	assert_gt(_keys_the_grind_can_spawn().size(), 5,
+		"no monster carries autogrind_spawned any more — form 4 reaches nothing, and the ratchet above is vacuous rather than clean")

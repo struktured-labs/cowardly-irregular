@@ -4580,6 +4580,8 @@ func _on_party_hp_changed(old_value: int, new_value: int, member_idx: int) -> vo
 		party_animators[member_idx].play_hit()
 	# Ally KO quip — when a party member drops to 0 HP, a living ally reacts
 	if new_value <= 0 and old_value > 0:
+		# Tick 176 closed this moment's LOG parity with _on_enemy_died and left its AUDIO open: the enemy plays enemy_death, the ally played nothing. Fires before the index guard so a bad idx still sounds.
+		SoundManager.play_death("party_ko")
 		## Tick 176: announce the KO in the battle log. Pre-fix party
 		## member deaths were silent in the log — the HP bar dropped to
 		## 0, an optional ally quip fired ("Hero, no!"), but no clear

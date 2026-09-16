@@ -569,6 +569,8 @@ func _step_narration(step: Dictionary) -> void:
 ## the FIRST option's flag so the cutscene state machine doesn't get
 ## stuck waiting for a response that never arrives, matching the
 ## skip-resilient pattern used elsewhere in the director.
+## A gallery replay shows the prompt and stops there: the answer would be
+## discarded, so demanding one is a modal the scene cannot use.
 func _step_choice(step: Dictionary) -> void:
 	var prompt: String = str(step.get("prompt", ""))
 	var options: Array = step.get("options", [])
@@ -588,31 +590,34 @@ func _step_choice(step: Dictionary) -> void:
 		dialogue.show_dialogue([narration_line])
 		await dialogue.dialogue_finished
 
-	# Build the choice text list. Drop options without text — they
-	# can't be displayed.
+	# A replay keeps the prompt and drops the menu — _set_choice_flag discards the pick, and the menu refuses B.
+	if _replay:
+		return
+
+	# Build the choice text list alongside the options that own those texts — an option with no text cannot be the answer.
 	var choice_texts: Array[String] = []
+	var presented: Array[Dictionary] = []
 	for opt in options:
 		if not (opt is Dictionary):
 			continue
 		var t: String = str((opt as Dictionary).get("text", ""))
 		if t.strip_edges() != "":
 			choice_texts.append(t)
+			presented.append(opt as Dictionary)
 	if choice_texts.is_empty():
 		push_warning("CutsceneDirector._step_choice: no valid option texts after filtering — skipping")
 		return
 
-	# Skip path: set the first option's flag deterministically. Avoids
-	# leaving the cutscene state machine waiting on input that won't
-	# come when the player hits skip.
+	# Skip path: answer with the first option the player WOULD have been shown, never one filtered out.
 	if _skipping:
-		_set_choice_flag(options[0])
+		_set_choice_flag(presented[0])
 		return
 
 	# Present the menu and await selection.
 	var DialogueChoiceMenuScript = load("res://src/llm/DialogueChoiceMenu.gd")
 	if DialogueChoiceMenuScript == null:
-		push_warning("CutsceneDirector._step_choice: DialogueChoiceMenu script unloadable — setting first option's flag and continuing")
-		_set_choice_flag(options[0])
+		push_warning("CutsceneDirector._step_choice: DialogueChoiceMenu script unloadable — setting first presented option's flag and continuing")
+		_set_choice_flag(presented[0])
 		return
 	var menu: Node = DialogueChoiceMenuScript.new()
 	# Anchor to a CanvasLayer so it renders above the cutscene UI.
@@ -629,11 +634,11 @@ func _step_choice(step: Dictionary) -> void:
 	_choice_menu = null
 	layer.queue_free()
 
-	# Find the matched option. Empty (cancel) falls back to first.
-	var matched: Dictionary = options[0]
+	# Find the matched option. Empty (cancel) falls back to the first one shown.
+	var matched: Dictionary = presented[0]
 	if result != "":
-		for opt in options:
-			if opt is Dictionary and str((opt as Dictionary).get("text", "")) == result:
+		for opt in presented:
+			if str(opt.get("text", "")) == result:
 				matched = opt
 				break
 	_set_choice_flag(matched)

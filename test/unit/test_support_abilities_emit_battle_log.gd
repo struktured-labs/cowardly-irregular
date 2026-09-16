@@ -90,8 +90,20 @@ func test_taunt_emits_focus_log() -> void:
 
 
 func test_doom_emits_doomed_log() -> void:
+	## ⚠️ SHAPE CHANGED 2026-09-16, INTENT UNCHANGED. The support arm no longer emits inline: doom is
+	## now set by `_inflict_doom`, the ONE producer the damage executors reach too — previously the
+	## setter lived here and every ability authoring `effect: "doom"` is magic or physical, so it
+	## could never fire. The arm follows the emit to its new home and pins that the support arm still
+	## reaches it, which is what "the branch is not silent" has always meant.
 	var body := _support_body()
-	assert_true(body.contains("☠ %s is doomed!"),
+	assert_true(body.contains("_inflict_doom(target, doom_countdown)"),
+		"the support doom branch must reach the one doom producer")
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var at: int = src.find("func _inflict_doom(")
+	assert_gt(at, -1, "CONTROL: the producer survives stripping")
+	var nxt: int = src.find("\nfunc ", at + 1)
+	var producer: String = src.substr(at, (nxt - at) if nxt > at else 1200)
+	assert_true(producer.contains("☠ %s is doomed!"),
 		"doom must emit a battle_log_message with ☠ marker — pre-fix only print()")
 
 

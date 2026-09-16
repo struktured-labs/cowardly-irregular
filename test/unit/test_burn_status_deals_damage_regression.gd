@@ -136,17 +136,22 @@ func test_apply_path_aliases_burn_to_burning() -> void:
 	# duplicated and fixing one would leave the other dead.
 	var src := FileAccess.get_file_as_string(BM_SRC)
 	assert_ne(src, "", "the file must be readable or this assertion is vacuous")
-	var count: int = src.count("status_to_add = \"burning\"")
-	assert_eq(count, 2,
-		"both effect-application sites must alias burn->burning — there are two, and the freeze alias is duplicated across the same pair")
+	assert_eq(src.count("status_to_add = \"burning\""), 1,
+		"one owner: the two verbatim copies collapsed into _apply_ability_status (2026-09-16)")
+	assert_true(_owner_body().contains("status_to_add = \"burning\""),
+		"and the alias lives INSIDE that owner, not in an unreached leftover")
+	assert_eq(_owner_callers(), 2,
+		"and both damage executors still reach it — the count the two-copy pin was really defending")
 
 
 func test_freeze_alias_still_present() -> void:
 	# The precedent this was modelled on. If freeze->stun is ever removed, the
 	# burn alias sitting beside it should be re-examined at the same time.
 	var src := FileAccess.get_file_as_string(BM_SRC)
-	assert_eq(src.count("status_to_add = \"stun\""), 2,
-		"freeze->stun aliases at both sites; burn->burning was added alongside it")
+	assert_eq(src.count("status_to_add = \"stun\""), 1,
+		"freeze->stun sits beside burn->burning in the one owner; if it moves, re-examine both")
+	assert_true(_owner_body().contains("status_to_add = \"stun\""),
+		"and inside _apply_ability_status, where burn->burning is")
 
 
 ## ── the corpus this defends ──────────────────────────────────────────
@@ -179,3 +184,22 @@ func test_nothing_authors_burning_directly() -> void:
 			direct.append(str(id))
 	assert_eq(direct, [] as Array[String],
 		"nothing authors 'burning' directly; if that changes, both spellings are live and the alias needs revisiting")
+
+
+## ⚠️ SHAPE CHANGED 2026-09-16, INTENT UNCHANGED. The effect-application block existed VERBATIM in
+## _execute_physical_ability AND _execute_magic_ability, so this file counted copies. It is now one
+## owner, `_apply_ability_status`, that both call — so the pin is "the rule lives in the owner, and
+## both damage executors still reach it", which is what counting two copies was really defending.
+func _owner_body() -> String:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var at: int = src.find("func _apply_ability_status(")
+	if at < 0:
+		return ""
+	var nxt: int = src.find("\nfunc ", at + 1)
+	return src.substr(at, (nxt - at) if nxt > at else 4000)
+
+
+## Both damage executors must still CALL that owner, or the rule inside it defends nothing.
+func _owner_callers() -> int:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	return src.count("_apply_ability_status(caster, target, ability)")

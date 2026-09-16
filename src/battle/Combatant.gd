@@ -25,6 +25,10 @@ signal ability_learned(ability_id: String)
 ## the popup can color/style differently if desired.
 signal status_tick_damage(amount: int, source: String)
 signal status_tick_heal(amount: int, source: String)
+## Doom is the one lethal timer that deals NO damage, so it fires neither status_tick_damage nor
+## hp_changed as it runs down — the ☠ badge was the only feedback, and the kill itself reached the
+## player as a bare print(). Emitted every tick so the log can count it down out loud.
+signal doom_ticked(turns_left: int)
 
 ## Core stats
 @export var combatant_name: String = "Unknown"
@@ -900,6 +904,7 @@ func update_buff_durations() -> void:
 	# lethal-by-burn cascade; this is the same defense for doom.
 	if doom_counter > 0 and is_alive:
 		doom_counter -= 1
+		doom_ticked.emit(doom_counter)
 		if doom_counter == 0:
 			print("%s succumbs to Death Sentence!" % combatant_name)
 			die()

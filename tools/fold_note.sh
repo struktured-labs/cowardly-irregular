@@ -10,6 +10,18 @@ TO="${2:-HEAD}"
 git rev-parse --verify -q "$FROM" >/dev/null || { echo "no such ref: $FROM" >&2; exit 2; }
 git rev-parse --verify -q "$TO"   >/dev/null || { echo "no such ref: $TO"   >&2; exit 2; }
 
+# A dirty worktree is not the tree you are about to tag. v3.33.362-alpha was tagged with an
+# untracked .import sidecar present: the gate ran WITH it, the tag's tree is WITHOUT it, and
+# tag_gate_evidence.sh correctly returned VERDICT=RUN — after the tag was already pushed.
+# This runs before the tag, which is the only place the check is cheap.
+DIRTY=$(git status --porcelain)
+if [ -n "$DIRTY" ]; then
+    echo "fold_note.sh: REFUSING — the worktree is not clean, so it is not the tree you would tag:" >&2
+    printf '%s\n' "$DIRTY" | sed 's/^/  /' >&2
+    echo "  (an untracked file here is usually a generated sidecar an --import produced; commit it or remove it)" >&2
+    exit 4
+fi
+
 MERGES=$(git log --merges --format='%s' "$FROM..$TO" \
   | sed "s/Merge remote-tracking branch //; s/'//g; s|origin/||" | sort)
 N=$(printf '%s\n' "$MERGES" | command grep -c . || true)

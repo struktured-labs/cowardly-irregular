@@ -635,6 +635,25 @@ def advance_queue_full(dur=0.17, seed=349):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.72).astype(np.float32)
 
 
+def party_ko(dur=0.52, seed=241):
+    """party_ko — a party member falling. The battle LOG closed this parity at tick 176 ("X has
+    fallen!", matching _on_enemy_died's line); the AUDIO parity was never closed — an enemy death
+    plays enemy_death on the dedicated death voice and an ally dropping played nothing at all.
+    Mid-register and short on purpose: play_death lays its own thud under this on _sub_player, and
+    the moment can repeat several times in one fight. Stepped, never slid — a descending slide is
+    the whoop in the other direction (see flee)."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n)
+    step = int(n * 0.17)
+    for i, f in enumerate((440.00, 349.23, 261.63)):
+        _place(out, _held(step, f, 2.6, 0.52, duty=0.35), i * step)
+    tail_at = 3 * step
+    _place(out, _held(max(n - tail_at, step), 220.00, 1.9, 0.44, duty=0.5), tail_at)
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 900.0, 700.0) * _env(n, 0.03, 4.2) * 0.22
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 1600.0, 1400.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.72).astype(np.float32)
+
+
 VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
           "scythe_crit": scythe_crit, "strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
           "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
@@ -650,7 +669,8 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "full_bank_charged": full_bank_charged, "advance_queue_full": advance_queue_full,
           "advance_generic_1": advance_generic_1,
           "advance_generic_2": advance_generic_2, "advance_generic_3": advance_generic_3,
-          "advance_generic_4": advance_generic_4, "advance_generic_5": advance_generic_5}
+          "advance_generic_4": advance_generic_4, "advance_generic_5": advance_generic_5,
+          "party_ko": party_ko}
 
 
 def _refuse_if_degenerate(voice, y):

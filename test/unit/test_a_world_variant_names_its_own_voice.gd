@@ -1,0 +1,118 @@
+extends GutTest
+
+## A world variant whose own OGG sits on disk but which names a DIFFERENT file is either a
+## registration slip (silent authored asset) or a deliberate repoint. w2_ability_heal and
+## w3_ability_heal are the deliberate case: struktured rejected both for brightness on 2026-09-10
+## and they were pointed back at the W1 cue, with the measurement recorded in their own prompt.
+## So this cannot assert "always names its own file" — 34 of 36 do and two must not.
+## It requires the EXPLANATION instead: you can't silence this green, only explain it green.
+
+const SFX_DIR := "res://assets/audio/sfx/"
+## The deliverable — a repoint has to say why, so a SILENT one is what reds.
+const REPOINT_MARKER := "REPOINTED"
+
+
+func _sm() -> Node:
+	return get_node_or_null("/root/SoundManager")
+
+
+func _variant_keys(sm: Node) -> Array:
+	var out: Array = []
+	for k in sm._sfx_manifest.keys():
+		var s: String = str(k)
+		if s.length() > 3 and s[0] == "w" and s[1] >= "2" and s[1] <= "6" and s[2] == "_":
+			out.append(s)
+	out.sort()
+	return out
+
+
+func test_a_repointed_world_variant_records_why() -> void:
+	var sm: Node = _sm()
+	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
+	if sm == null:
+		return
+	var checked := 0
+	var repointed := 0
+	for key in _variant_keys(sm):
+		var own: String = SFX_DIR + str(key) + ".ogg"
+		if not ResourceLoader.exists(own):
+			continue
+		checked += 1
+		var entry: Dictionary = sm._sfx_manifest[str(key)]
+		var named: String = str(entry.get("file", ""))
+		if named.get_file() == str(key) + ".ogg":
+			continue
+		repointed += 1
+		assert_true(str(entry.get("prompt", "")).contains(REPOINT_MARKER),
+			"%s names %s with its own variant on disk and no recorded reason — a silent repoint is indistinguishable from a registration slip" % [str(key), named.get_file()])
+	assert_gt(checked, 0, "CONTROL: no world variant has its own file on disk, so this arm checked nothing")
+	assert_gt(repointed, 0, "CONTROL: nothing is repointed, so the explanation requirement was never exercised")
+
+
+func test_the_heal_repoint_is_still_the_recorded_decision() -> void:
+	# Pins the 2026-09-10 ruling itself: these two play the W1 cue BY DECISION. If someone
+	# re-lands the bright variants, this reds and points at the measurement that rejected them.
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	for key in ["w2_ability_heal", "w3_ability_heal"]:
+		assert_true(sm._sfx_manifest.has(key), "CONTROL: %s must exist for this arm to mean anything" % key)
+		if not sm._sfx_manifest.has(key):
+			continue
+		var named: String = str(sm._sfx_manifest[key].get("file", ""))
+		assert_eq(named.get_file(), "ability_heal.ogg",
+			"%s now names %s — struktured rejected the bright variant on 2026-09-10; re-land it only once it measures warm" % [key, named.get_file()])
+
+
+func test_every_world_still_resolves_a_heal() -> void:
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	var restore = sm._current_area
+	for area in ["overworld_medieval", "suburban_overworld", "steampunk_overworld"]:
+		sm._current_area = area
+		sm._sfx_cooldowns.clear()
+		sm._ability_player.stream = null
+		sm.play_ability("cure")
+		assert_not_null(sm._ability_player.stream, "no heal cue resolved at all in %s" % area)
+	sm._current_area = restore
+
+
+func test_what_a_world_plays_is_what_its_entry_names() -> void:
+	# The resolution path must honour the manifest, whichever file the manifest names.
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	var heal_ability := ""
+	for ability_id in sm._ability_sounds.keys():
+		if str(sm._ability_sounds[ability_id]) == "ability_heal":
+			heal_ability = str(ability_id)
+			break
+	assert_ne(heal_ability, "", "CONTROL: no ability maps to ability_heal, so this arm cannot fire")
+	if heal_ability == "":
+		return
+	var restore = sm._current_area
+	sm._current_area = "suburban_overworld"
+	sm._sfx_cooldowns.clear()
+	sm._ability_player.stream = null
+	sm.play_ability(heal_ability)
+	var played: String = str(sm._ability_player.stream.resource_path) if sm._ability_player.stream else ""
+	sm._current_area = restore
+	var declared: String = str(sm._sfx_manifest["w2_ability_heal"].get("file", "")).get_file()
+	assert_eq(played.get_file(), declared,
+		"W2 played %s while its entry names %s — the lookup and the manifest disagree" % [played.get_file(), declared])
+
+
+func test_no_manifest_entry_names_a_file_that_is_not_there() -> void:
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	var missing: Array = []
+	for key in sm._sfx_manifest.keys():
+		var f: String = str(sm._sfx_manifest[key].get("file", ""))
+		if f == "":
+			continue
+		var path: String = f if f.begins_with("res://") else "res://" + f
+		if not ResourceLoader.exists(path):
+			missing.append("%s -> %s" % [str(key), f])
+	assert_eq(missing.size(), 0, "manifest keys name files that are not on disk: %s" % str(missing))
