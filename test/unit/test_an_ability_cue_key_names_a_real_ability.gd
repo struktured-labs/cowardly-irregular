@@ -101,5 +101,8 @@ func test_the_meta_cue_note_has_not_gone_stale() -> void:
 			if not sm._ability_sounds.has(str(k)):
 				unmapped.append(str(k))
 	assert_gt(metas.size(), 0, "VOID, not clean: no meta-typed abilities found, so this arm checked nothing")
+	## Printed, not asserted: the note at SoundManager:409 deliberately carries NO count, so this is
+	## where the current figure lives. Do not copy it back up there.
+	print("[meta-cue] %d of %d meta-typed abilities are mapped; %d fall through to ability_physical" % [metas.size() - unmapped.size(), metas.size(), unmapped.size()])
 	assert_gt(unmapped.size(), 0,
 		"every meta-typed ability now has a cue — the note at SoundManager:409 describes nothing and must be DELETED")
