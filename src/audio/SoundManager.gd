@@ -2135,10 +2135,22 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 	_crossfade_tween = create_tween()
 	# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
 	_crossfade_tween.set_ignore_time_scale(true)
-	_crossfade_tween.tween_property(_music_player, "volume_db", -40.0, duration)
-	_crossfade_tween.tween_callback(func() -> void:
+	_crossfade_tween.set_parallel(true)
+	## ⛔ NEVER FADE UP — the crossfade's inversion (a90ae379) a second time, and this site runs
+	## 1.2s in battle. Measured muted 2026-09-16: -79.8 -> -40.0 across the fade, a 40 dB swell out
+	## of silence at Mordaine's unmasking. minf leaves a quiet player exactly where they are.
+	_crossfade_tween.tween_property(_music_player, "volume_db", minf(-40.0, _music_player.volume_db), duration)
+	## ⛔ AND THE B PLAYER IS PART OF THE MUSIC. The kill above cancels the crossfade callback that
+	## stops the outgoing bed, so a fade within CROSSFADE_DURATION of a track change left B playing
+	## FOREVER — measured: B at -10.8 dB with _music_playing already false. Close the jukebox right
+	## after picking a track and the previous one followed you out.
+	if _music_player_b and _music_player_b.playing:
+		_crossfade_tween.tween_property(_music_player_b, "volume_db", minf(-40.0, _music_player_b.volume_db), duration)
+	_crossfade_tween.chain().tween_callback(func() -> void:
 		if _music_player:
 			_music_player.stop()
+		if _music_player_b:
+			_music_player_b.stop()
 		_music_playing = false
 		_current_music = "")
 
