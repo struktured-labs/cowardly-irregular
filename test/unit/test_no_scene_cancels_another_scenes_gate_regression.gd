@@ -77,6 +77,24 @@ func _gates() -> Array:
 			stop = i
 			break
 	assert_gt(start, -1, "control: found %s" % GATE_FN)
+	# JOIN LINE CONTINUATIONS FIRST. A multi-line `if a \` / `and not flags.get(...)` puts the flag on
+	# a line that does not begin with "if", so the scan skipped it: 2 real gates of 71 sites, invisible
+	# to a MIN_GATES floor because 61 > 40 passes happily. Both are self-writing, so it was latent —
+	# and it took a COMPLETENESS check to find, not a non-emptiness one (@cowir-sprites: a check can be
+	# wrong for months while every run looks clean).
+	var joined: Array = []
+	var carry: String = ""
+	for i in range(start, stop):
+		var raw: String = carry + lines[i]
+		if raw.strip_edges().ends_with("\\"):
+			carry = raw.substr(0, raw.rfind("\\"))
+			joined.append("")
+			continue
+		carry = ""
+		joined.append(raw)
+	lines = PackedStringArray(joined)
+	start = 0
+	stop = lines.size()
 	var out: Array = []
 	var flag_re := RegEx.create_from_string('not flags\\.get\\("cutscene_flag_([a-z0-9_]+)"')
 	var ret_re := RegEx.create_from_string('return "([a-z0-9_]+)"')
@@ -389,3 +407,45 @@ func test_the_other_pin_on_this_fact_still_exists() -> void:
 		"CONTROL: the sibling's declaration list is still called KNOWN_PLANNED_INTROS")
 	assert_true(sibling.contains('"world2_arbiter_intro"'),
 		"the OTHER pin on world2_arbiter_intro is gone — if that scene got wired, retire BOTH declarations, not one")
+
+
+## COMPLETENESS, not non-emptiness. MIN_GATES catches a scan that finds NOTHING and says nothing
+## about one that finds MOST — which is what this file did: 61 of 71 blocking-flag sites, missing two
+## real gates behind multi-line `if` continuations.
+##
+## ⛔ THIS ARM CHECKS _gates() ITSELF rather than re-deriving the answer. My first version recomputed
+## the classification independently, so disabling the join inside _gates() left it GREEN — an arm
+## about the source file, not about the extractor it exists to defend. It also double-counted four
+## sites with a flat 6-line lookahead (63 + 12 = 75 against 71) and caught itself doing it.
+func test_every_blocking_flag_site_is_accounted_for() -> void:
+	var lines := _read(GAME_LOOP).split("\n")
+	var start := -1
+	var stop := lines.size()
+	for i in lines.size():
+		if lines[i].begins_with(GATE_FN):
+			start = i
+		elif start > -1 and i > start and lines[i].begins_with("func "):
+			stop = i
+			break
+	var flag_re := RegEx.create_from_string('not flags\\.get\\("cutscene_flag_([a-z0-9_]+)"')
+	var sites := 0
+	var auto_advance := 0
+	for i in range(start, stop):
+		var found := flag_re.search_all(lines[i])
+		if found.is_empty():
+			continue
+		sites += found.size()
+		var base := _indent(lines[i])
+		for j in range(i + 1, mini(i + 8, stop)):
+			if lines[j].strip_edges() == "":
+				continue
+			if _indent(lines[j]) <= base and not lines[j].strip_edges().begins_with("and "):
+				break
+			if lines[j].contains("_set_cutscene_flag_and_mirror"):
+				auto_advance += found.size()
+				break
+	assert_gt(sites, 40, "control: the gate function still carries blocking-flag sites (%d)" % sites)
+	assert_gt(auto_advance, 0, "control: the auto-advance classifier still matches something")
+	assert_eq(_gates().size() + auto_advance, sites,
+		"%d blocking-flag sites, but _gates() pairs %d and %d auto-advance — the difference is gates THIS FILE CANNOT SEE"
+		% [sites, _gates().size(), auto_advance])
