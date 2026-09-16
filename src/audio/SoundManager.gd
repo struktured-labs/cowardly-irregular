@@ -19,6 +19,8 @@ var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
 var _ambient_player: AudioStreamPlayer  # Looping weather/environment ambience
 var _sub_player: AudioStreamPlayer  # Crit sub-layer only; separate so the thud LAYERS under the hit instead of replacing it on _battle_player
+var _strike_player: AudioStreamPlayer  # dedicated voice: the elemental strike voice is authored to ride OVER the weapon hit, and replaced it on _battle_player (2026-09-16)
+var _flash_player: AudioStreamPlayer  # dedicated voice: the weakness stinger fires same-frame with the hit by design, so the hit always replaced it (2026-09-16)
 var _current_ambient_key: String = ""
 var _crossfade_tween: Tween = null
 
@@ -323,6 +325,18 @@ func _setup_audio_players() -> void:
 	_sub_player.volume_db = SFX_BATTLE_BASE_DB + CRIT_THUD_TRIM_DB
 	_sub_player.bus = SFX_BUS
 	add_child(_sub_player)
+
+	_strike_player = AudioStreamPlayer.new()
+	_strike_player.name = "StrikePlayer"
+	_strike_player.volume_db = SFX_BATTLE_BASE_DB
+	_strike_player.bus = SFX_BUS
+	add_child(_strike_player)
+
+	_flash_player = AudioStreamPlayer.new()
+	_flash_player.name = "FlashPlayer"
+	_flash_player.volume_db = SFX_BATTLE_BASE_DB
+	_flash_player.bus = SFX_BUS
+	add_child(_flash_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
@@ -987,12 +1001,14 @@ func are_night_music_effects_enabled() -> bool:
 func play_strike_element(element: String) -> void:
 	if element == "":
 		return
-	_try_play_sfx_from_manifest(_battle_player, "strike_" + element.to_lower())
+	# Own voice: this is a layer over the weapon hit, not a replacement for it.
+	_try_play_sfx_from_manifest(_strike_player if _strike_player != null else _battle_player, "strike_" + element.to_lower())
 
 
 ## Public: play weakness-hit stinger (msg 2789 axis D + cowir-battle msg 2787 visual).
 func play_weakness_flash() -> void:
-	_try_play_sfx_from_manifest(_battle_player, "weakness_flash")
+	# Own voice: BattleScene fires this in the same frame as the hit it accents.
+	_try_play_sfx_from_manifest(_flash_player if _flash_player != null else _battle_player, "weakness_flash")
 
 
 ## Public: start/stop the night ambience loop; mirror of set_night_music_effects.
