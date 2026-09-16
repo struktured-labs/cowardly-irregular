@@ -771,12 +771,10 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					actual = max(1, actual)
 					if target.is_defending:
 						actual = actual / 2
-					var dealt: int = 0
-					for _h in hits:
-						## Stop hitting a corpse, exactly as the live loop does.
-						if not target.is_alive:
-							break
-						dealt += target.take_damage(actual, true)
+					## ONE HIT, deliberately. Live reads `hits` only in _execute_physical_ability, so
+					## temporal_strike (magic, hits=2) strikes ONCE in the real game. I looped here in
+					## 04f2b2f8 and the grind hit harder than the game it simulates — @cowir-battle 2d14d92d.
+					var dealt: int = target.take_damage(actual, true)
 					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dealt])
 					_maybe_inflict_status(caster, target, ability, ability_id)
 

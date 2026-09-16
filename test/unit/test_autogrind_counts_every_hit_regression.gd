@@ -88,31 +88,31 @@ func test_a_three_hit_ability_lands_three_times() -> void:
 		"%s authors %d hits and the grind dealt %d — one hit's worth of %d" % [MULTI, hits, lost, per_hit])
 
 
-## The MAGIC arm carries its own loop and needs its own subject, or removing that loop reds nothing.
-## temporal_strike (time_phantom, hits=2) is the only magic-typed one authored.
+## ⛔ THIS ARM ASSERTED THE OPPOSITE AND IT WAS WRONG — it PINNED a divergence I introduced.
 ##
-## ⚠️ MY FIRST VERSION OF THIS ARM WAS SATISFIED BY THE WRONG ANSWER, and the mutation caught it: it
-## asserted `lost % hits == 0`, which a SINGLE hit of 70 passes as readily as two. Removing the magic
-## loop redded nothing. Two asserts now — an exact one against a restated formula, and a
-## formula-free bound — so a drift in either still fails one of them.
-func test_the_magic_arm_counts_its_hits_too() -> void:
+## Live reads `hits` only in `_execute_physical_ability`, so `temporal_strike` (magic, hits=2) strikes
+## ONCE in the real game. I looped it in the magic arm too, wrote an arm asserting the loop, and
+## broadcast it as a fix; the grind then hit harder than the game it simulates. @cowir-battle's
+## 2d14d92d caught it, and their distinction is the one I had missed: "is this key read at all" is a
+## different question from "is it read on the PATH this ability takes". My parity ledger only asked
+## the first, and scored this CONSUMED.
+##
+## Nothing behavioural caught it because `time_phantom` — temporal_strike's only caster — is NOT in
+## any enemy pool. Correct by occupancy, which is not correct.
+##
+## ⚠️ Whether LIVE should loop hits on the magic path is a balance question in @cowir-battle's ledger
+## with struktured's name on it. Both inversions close by narrowing the GRIND, because live is the
+## anchor — not by widening live to match what I had already shipped.
+func test_the_magic_arm_strikes_once_because_live_does() -> void:
 	var ab: Dictionary = _authored("temporal_strike")
 	if ab.is_empty():
 		pass_test("JobSystem autoload unavailable")
 		return
-	var hits: int = int(ab.get("hits", 1))
-	assert_gt(hits, 1, "CONTROL: temporal_strike must still author more than one hit")
-	assert_eq(str(ab.get("type", "")), "magic", "CONTROL: and it must still take the magic arm")
-
+	assert_gt(int(ab.get("hits", 1)), 1,
+		"CONTROL: temporal_strike must still AUTHOR more than one hit — that is what makes this a parity question and not a no-op")
+	assert_eq(str(ab.get("type", "")), "magic", "CONTROL: and must still take the magic arm")
 	var caster := _fighter("Time Phantom", 9999)
 	var target := _fighter("Victim", 99999)
-	var before: int = target.current_hp
-	_res._resolve_ability(caster, "temporal_strike", [target])
-	var lost: int = before - target.current_hp
-
-	## RESTATEMENT, declared as one: the magic arm computes inline and there is no helper to ask, unlike
-	## the physical side's _resolve_attack_with_power. Kept beside the bound below so the pair cannot
-	## both be wrong in the same direction.
 	var power: float = float(ab.get("power", ab.get("damage_multiplier", 1.0)))
 	var element: String = str(ab.get("element", ""))
 	var actual: int = int(caster.get_buffed_stat("magic", caster.magic) * power)
@@ -121,14 +121,25 @@ func test_the_magic_arm_counts_its_hits_too() -> void:
 	var probe := _fighter("Probe", 99999)
 	var pb: int = probe.current_hp
 	probe.take_damage(actual, true)
-	var per_hit: int = pb - probe.current_hp
-	gut.p("    temporal_strike: hits=%d per_hit=%d lost=%d" % [hits, per_hit, lost])
-	assert_eq(lost, per_hit * hits,
-		"temporal_strike authors %d hits and the magic arm dealt %d — one hit's worth of %d" % [hits, lost, per_hit])
-	## Formula-free: take_damage only ever REDUCES, so one hit can never exceed the pre-reduction
-	## figure. Clearing it proves a second hit landed without restating how either is computed.
-	assert_gt(lost, actual,
-		"the whole volley (%d) did not exceed a single pre-reduction hit (%d) — only one hit landed" % [lost, actual])
+	var one_hit: int = pb - probe.current_hp
+	var before: int = target.current_hp
+	_res._resolve_ability(caster, "temporal_strike", [target])
+	var lost: int = before - target.current_hp
+	gut.p("    temporal_strike: authored hits=%d  one hit=%d  dealt=%d" % [int(ab.get("hits", 1)), one_hit, lost])
+	assert_eq(lost, one_hit,
+		"the magic arm dealt %d, which is %d hits — live strikes once here, so the grind hits harder than the game" % [lost, lost / max(one_hit, 1)])
+
+
+## The parity claim is about LIVE's structure, so it is asserted against live rather than remembered.
+func test_live_still_reads_hits_on_the_physical_path_only() -> void:
+	var live: String = GdSource.code_of("res://src/battle/BattleManager.gd")
+	assert_gt(live.length(), 50000, "CONTROL: BattleManager was actually read")
+	var at: int = live.find('ability.get("hits"')
+	assert_gt(at, 0, "CONTROL: live must still read the key at all")
+	var owner: int = live.substr(0, at).rfind("func _execute_")
+	var owner_line: String = live.substr(owner, 42)
+	assert_true(owner_line.begins_with("func _execute_physical_ability"),
+		"live now reads hits inside %s — the grind loops only the physical arm and must be taught to follow" % owner_line)
 
 
 func test_a_single_hit_ability_is_unchanged() -> void:
