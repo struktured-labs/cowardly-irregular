@@ -10,9 +10,14 @@ extends GutTest
 ##   battle_toggle_auto   Back · Minus · Share                          the hint said "Select" —
 ##                                                                      a name NO family prints
 ##
-## ⛔ WHY TWO SWEEPS MISSED IT: the existing guard scans rendered tokens for FACE glyphs, and a
-## shoulder name is not a face glyph. The arm that would have caught it reads the CATALOG BODIES for
-## frozen family words, which is the arm below.
+## ⛔ WHY IT SURVIVED — corrected by cowir-controller (11649), because my first account was only half
+## of it and the half I could see from this file:
+##   this lane's own hint guard scans rendered tokens for FACE glyphs, and a shoulder name is not one
+##   AND `test_shoulder_and_back_captions_name_your_pad_regression` guards exactly this class across
+##   three families — but its corpus is a HAND-LIST of five files, and TutorialHints is not in it
+## So the class was guarded and the corpus was curated; a sixth surface carrying the defect reds
+## nothing. cowir-controller is deriving that corpus from `src/`. The arm below is the complement:
+## it reads the catalog BODIES, which is where a frozen word gets authored in the first place.
 
 const Hints = preload("res://src/ui/TutorialHints.gd")
 
