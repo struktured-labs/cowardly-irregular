@@ -1137,8 +1137,19 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 		_:
 			## Was: magic damage to targets[0]. AutobattleSystem builds targets from target_type,
 			## so an all_allies ability arrived holding the PARTY and this attacked them. 39
-			## abilities author a type with no arm (meta 24 · summon 7 · song 4 · mp_restore 2 ·
-			## revival 1 · escape 1), so the blast radius was never just the Bard.
+			## abilities author a type with no arm, so the blast radius was never just the Bard.
+			##
+			## ⛔ THIS SENTENCE CARRIED A COUNT AND THE COUNT WENT STALE. It read "39 abilities … (meta 24
+			## · summon 7 · song 4 · mp_restore 2 · revival 1 · escape 1)" until 2026-09-16, and by then
+			## song, mp_restore and revival had arms and so did meta. Measured that day: EIGHT abilities
+			## across TWO types — escape 1, summon 7. I READ THIS COMMENT WHILE ADDING THE META ARM,
+			## noticed it was stale, and moved on; @cowir-sprites having the same thing falsified by their
+			## own commit five days earlier is what sent me back.
+			##
+			## So the number is GONE rather than refreshed. test_autogrind_inert_ability_census PARSES the
+			## armed types out of this match block and maintains the population against abilities.json —
+			## a live count that cannot drift, in a file whose job is keeping it honest. A count in prose
+			## here is a second declarer of a fact that already has a self-retiring one.
 			var target = targets[0] if targets.size() > 0 else null
 			if target and target.is_alive:
 				if _is_same_side(caster, target):
