@@ -103,8 +103,11 @@ func _build_panel() -> void:
 
 	_hint_label = Label.new()
 	# A/B were Nintendo face letters; both are inverted on an Xbox pad.
-	_hint_label.text = "[%s/Enter/Click] Play    [%s/Esc/RClick] Close    (Wheel scrolls)" % [
+	## Paging is advertised for the same reason the face letters are derived: an unnamed control is one nobody finds.
+	_hint_label.text = "[%s/Enter/Click] Play    [%s/%s] Page    [%s/Esc/RClick] Close    (Wheel scrolls)" % [
 		InputProfileManager.hint_for_action("ui_accept"),
+		InputProfileManager.hint_for_action("battle_defer"),
+		InputProfileManager.hint_for_action("battle_advance"),
 		InputProfileManager.hint_for_action("ui_cancel"),
 	]
 	_hint_label.position = Vector2(20, PANEL_H - 32)
@@ -212,6 +215,11 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_down"):
 		_selection = (_selection + 1) % _row_nodes.size()
+		_highlight()
+		get_viewport().set_input_as_handled()
+	elif MenuPaging.page_delta(event) != 0:
+		# The registry carries 44 chats and availability grows all game; clamped, not wrapped, like every other paging menu.
+		_selection = clampi(_selection + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, _row_nodes.size() - 1)
 		_highlight()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept"):

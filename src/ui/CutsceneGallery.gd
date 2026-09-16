@@ -220,7 +220,9 @@ func _build_ui() -> void:
 	_footer = Label.new()
 	## Two frozen Nintendo letters: Replay sits on the EAST face (Xbox Ⓑ, PS ○) and Close on the
 	## SOUTH (Xbox Ⓐ, PS ✕), so both were inverted on an Xbox pad. Derived (2026-09-16).
-	_footer.text = "←/→: World   ↑/↓ / Wheel: Select   %s / Enter / Click: Replay   %s / Esc / RClick: Close" % [
+	## A control the footer does not advertise is a control nobody finds, so paging is named here too — derived, since MenuPaging binds battle_defer/battle_advance and L/L1/LB are three families' names for one button.
+	_footer.text = "←/→: World   ↑/↓ / Wheel: Select   %s/%s: Page   %s / Enter / Click: Replay   %s / Esc / RClick: Close" % [
+		InputProfileManager.hint_for_action("battle_defer"), InputProfileManager.hint_for_action("battle_advance"),
 		InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	_footer.position = Vector2(24, viewport.y - 32)
 	_footer.size = Vector2(viewport.x - 48, 20)
@@ -379,6 +381,14 @@ func _input(event: InputEvent) -> void:
 		var world_items: Array = _items_by_world.get(_world_order[_selected_world_idx], [])
 		if not world_items.is_empty():
 			_selected_item_idx = (_selected_item_idx + 1) % world_items.size()
+			_update_display()
+			_play_nav_sfx()
+		get_viewport().set_input_as_handled()
+	elif MenuPaging.page_delta(event) != 0:
+		# A world can carry 40+ scenes; clamped rather than wrapped, per AbilitiesMenu's rule that a page jump past the end disorients.
+		var world_items: Array = _items_by_world.get(_world_order[_selected_world_idx], [])
+		if not world_items.is_empty():
+			_selected_item_idx = clampi(_selected_item_idx + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, world_items.size() - 1)
 			_update_display()
 			_play_nav_sfx()
 		get_viewport().set_input_as_handled()
