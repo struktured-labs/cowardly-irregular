@@ -255,8 +255,13 @@ func _maybe_grant_reward() -> void:
 	var line: String = ConversationRewards.grant_if_earned(gs, _npc_id, _quest_bucket, _exchange_count)
 	if line == "":
 		return
+	# Guards the method it CALLS. It checked play_ui and called play_pickup, so a
+	# SoundManager carrying one and not the other passes the guard and errors on the
+	# call — and a bad call aborts the rest of this function, which is the await
+	# below: the reward is already written by grant_if_earned, so the player would
+	# be paid and never told. The cue is incidental; the line is the payout.
 	var sound: Node = get_node_or_null("/root/SoundManager")
-	if sound != null and sound.has_method("play_ui"):
+	if sound != null and sound.has_method("play_pickup"):
 		sound.play_pickup("item_obtain")
 	await _show_npc_line(line)
 

@@ -111,6 +111,13 @@ const INTENT_DESCRIPTIONS: Dictionary = {
 	"turtle": "defend and outlast — guard up, attack less. Best when YOU are hurt, low on MP or out of AP.",
 	"exploit_pattern": "counter what they keep repeating. Best when their recent actions look scripted.",
 	"rotate_aggro": "switch which of them you are hunting. Best when one of them has settled in.",
+	## Umbraxis names the same three postures in its own register, and its names
+	## reach the armed arms by delegation (BattleManager._bias_by_intent). Its
+	## ladder is the caster one, which is the only ladder reading attack_weight,
+	## so these three are described on the same measured standard as the four above.
+	"null_strike": "press the attack — bigger hits, less guarding. Best when they are hurt or exposed.",
+	"null_field": "defend and outlast — guard up, attack less. Best when YOU are hurt, low on MP or out of AP.",
+	"existential_dread": "counter what they keep repeating. Best when their recent actions look scripted.",
 }
 
 ## Intents that reach a bias arm but produce NO action downstream.
