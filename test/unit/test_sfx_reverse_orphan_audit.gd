@@ -51,10 +51,11 @@ const MANIFEST_PATH := "res://data/sfx_manifest.json"
 ## with the key that needs it. That is why the unreachable message below names re-adding a
 ## prefix as a disposition: without it, a correct new strike_ cue reads as a dead asset.
 ##
-## ⚠️ ONE COUPLING, so the next red is not a mystery: `ambient_` is load-bearing on exactly one
-## key, `ambient_village` (42 KB, no reference in src/, data/ or any .tscn — struktured's call,
-## wire it or delete it). Every other ambient_ cue is also a source literal. Resolve that orphan
-## either way and `ambient_` goes inert, and the arm below reds on a prefix nobody touched.
+## ✅ THAT COUPLING RESOLVED 2026-09-16, EXACTLY AS PREDICTED HERE. `ambient_` was load-bearing
+## on one key, `ambient_village`; struktured ruled the three music/SFX twins should play, so
+## BaseVillage._get_ambient_key() now returns it as a source literal. The prefix went inert and
+## this arm redded on a prefix nobody touched — the note called its own trigger, and the entry is
+## deleted rather than explained. It comes back the day a non-literal ambient_ key lands.
 const DYNAMIC_PREFIXES := {
 	"status_": "\"status_\" +",
 	"attack_hit_": "attack_hit_",
@@ -67,7 +68,6 @@ const DYNAMIC_PREFIXES := {
 	"w4_": "_get_world_sfx_prefix",
 	"w5_": "_get_world_sfx_prefix",
 	"w6_": "_get_world_sfx_prefix",
-	"ambient_": "play_ambient(",
 }
 
 ## Keys with no consumer TODAY that are deliberately staged ahead of a named

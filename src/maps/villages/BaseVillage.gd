@@ -96,6 +96,9 @@ func _ready() -> void:
 
 	if SoundManager:
 		SoundManager.play_area_music(_get_music_area_id())
+	var ambient_key := _get_ambient_key()
+	if ambient_key != "" and SoundManager and SoundManager.has_method("play_ambient"):
+		SoundManager.play_ambient(ambient_key)
 
 	# Tick 279: ratchet visited_<village> story_flag. Pre-fix the
 	# *Overworld scripts read visited_maple_heights / visited_brasston /
@@ -691,3 +694,16 @@ func set_player_job(job_name: String) -> void:
 func set_player_appearance(leader) -> void:
 	if player and player.has_method("set_appearance_from_leader"):
 		player.set_appearance_from_leader(leader)
+
+
+func _exit_tree() -> void:
+	# Stop the village loop so it does not leak into the next scene, the way BaseInterior does.
+	if _get_ambient_key() != "" and SoundManager and SoundManager.has_method("stop_ambient"):
+		SoundManager.stop_ambient()
+
+
+## Virtual: the ambient-loop key layered UNDER this village's music, or "" for none.
+## `ambient_village` is a 144.9s authored bed that had never played — nothing called
+## play_ambient with it, and villages had no ambient layer at all until 2026-09-16.
+func _get_ambient_key() -> String:
+	return "ambient_village"
