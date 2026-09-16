@@ -291,6 +291,31 @@ var _battle_action_log: Array[Dictionary] = []  # Log every player action per ba
 ## Action speed modifiers (lower = faster)
 ## Subtracted from a priority action's speed. Larger than any reachable speed_value, so a priority
 ## action outruns the whole queue while priority actions still sort against each other.
+## ⛔ start_battle CLEARED FIELDS AND NEVER METAS, and the party's Combatants are REUSED objects
+## (GameLoop holds them across every battle), so a per-battle meta outlived the fight that set it.
+## The measured leak: a Summoner's `_summon_followup` holds `remaining_turns` and is removed only
+## when it ticks to zero — end the battle with the eidolon still lingering, which is the ordinary way
+## a summon fight ends, and it kept hitting in the NEXT encounter. Same class cowir-autogrind found on
+## the grind's side of the boundary (11805), from the other direction: theirs never cleared state at
+## all, live cleared everything except this.
+##
+## Cleared unconditionally rather than case by case: every entry is per-FIGHT by construction, and a
+## meta that must survive a battle belongs in the save, not on a reused object. Ratcheted by
+## test_a_meta_does_not_outlive_its_battle, which derives the set from source so a new one cannot be
+## added without landing here or being declared.
+const PER_BATTLE_METAS: Array[String] = [
+	"_summon_followup", "_damage_absorb_budget", "_regen_per_turn", "_next_attack_multiplier",
+	"_mind_swap_controller", "_steal_response_consumed", "_swayed_stacks", "_utility_spent",
+	"_signature_fired", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
+	"_learned_adaptation", "_learns_element_counts", "_last_ability_against", "_bark_n",
+	"_in_shared_damage_redirect",
+	## ⚠️ TRAILING UNDERSCORE = PREFIX, and these two are why the clear cannot be exact-match only:
+	## the boss-bark trackers are COMPOSED (`"_bark_adv_" + face_key`), so removing the literal string
+	## would remove nothing. My own ratchet caught them on its first run, one minute after I wrote it —
+	## the composed-key blindness three lanes hit today, arriving in the instrument built to find it.
+	"_bark_adv_", "_bark_auto_",
+]
+
 const PRIORITY_OFFSET: float = 1000.0
 
 ## The ability types an archetype's UTILITY slot may select, in ONE place — three filters carried
@@ -537,6 +562,17 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 			combatant.current_ap = 0
 		if "queued_actions" in combatant:
 			combatant.queued_actions.clear()
+		## Metas too — see PER_BATTLE_METAS. Fields alone left a Summoner's eidolon lingering into
+		## the next encounter, because the party's Combatant objects are reused across battles.
+		if combatant.has_method("remove_meta"):
+			for meta_key in PER_BATTLE_METAS:
+				if meta_key.ends_with("_"):
+					## Composed key — clear every meta carrying the prefix.
+					for held in combatant.get_meta_list():
+						if str(held).begins_with(meta_key):
+							combatant.remove_meta(str(held))
+				elif combatant.has_meta(meta_key):
+					combatant.remove_meta(meta_key)
 
 	# Connect to combatant signals.
 	# We bind `combatant` because the `died` signal has no args but
