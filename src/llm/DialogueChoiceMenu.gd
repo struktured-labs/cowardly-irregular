@@ -289,10 +289,15 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
-	if event.is_action_pressed("ui_up"):
+	# One step per stick push. The WHEEL branches above are deliberately upstream of this: a wheel
+	# event has no held state to poll, and MenuNav.step returns "" for it because ui_up/ui_down bind
+	# no mouse button — probed in a live InputMap, since these are engine-default actions whose
+	# bindings never appear in project.godot.
+	var nav: String = MenuNav.step(event)
+	if nav == "ui_up":
 		_move_selection(-1)
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down"):
+	elif nav == "ui_down":
 		_move_selection(1)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept"):
