@@ -22,18 +22,19 @@ extends GutTest
 
 const ABILITIES := "res://data/abilities.json"
 
-## promise word in the description -> EVERY key that could honour it. A word is satisfied if the
-## ability authors ANY of them, so a narrow map is what produces false positives rather than findings.
-const PROMISES := {
-	"poison": ["effect"],
-	"stun": ["effect"],
-	"blind": ["effect"],
-	"silence": ["effect"],
-	"sleep": ["effect"],
-	"confus": ["effect"],
-	"steal": ["steals", "drain_percentage", "effect"],
-	"crit": ["crit_chance", "effect"],
-	"revive": ["revive_percentage", "effect"],
+## ⛔ KEY PRESENCE IS NOT ENOUGH FOR A STATUS, and my first version checked only presence. An ability
+## promising POISON while authoring `effect: "defense_down"` has an `effect` key, so a presence test
+## calls it honoured. Mutation-proved: I rewrote acid_splash's description to promise poison and the
+## sweep stayed GREEN. Status promises now check the VALUE.
+##
+## Word must appear in the authored `effect` / `secondary_effect` VALUE.
+const STATUS_PROMISES := ["poison", "blind", "silence", "sleep", "confus", "stun", "doom", "charm"]
+
+## Word is honoured by the PRESENCE of any of these keys — none of them carries a name to match.
+const KEY_PROMISES := {
+	"steal": ["steals", "drain_percentage"],
+	"crit": ["crit_chance"],
+	"revive": ["revive_percentage"],
 	"twice": ["hits"],
 	"three times": ["hits"],
 	"drains mp": ["drain_mp", "mp_amount"],
@@ -44,6 +45,9 @@ const PROMISES := {
 ## A promise the data does not author, with who holds the call. Every entry is a BALANCE decision or
 ## a declared flavour reading — never a defect someone forgot.
 const DECLARED := {
+	"shadow_step:crit": "support; the guaranteed crit IS delivered, through the shadow_step STATUS rather than a crit_chance key (_calculate_crit_chance returns 1.0 for it, BattleManager:5272). The description is honest and the key is simply not how — declared so nobody 'fixes' a working ability. ⚠️ This entry was DELETED and restored within one pass: under the loose map `effect` satisfied 'crit' and the stale-declaration arm correctly removed it; under the value-checking map it is a finding again. The declaration follows the instrument, which is the point of having the arm both ways",
+	"masterite_haste:blind": "support; FLAVOUR, declared rather than pattern-matched away. \"Accelerates to BLINDING speed\" is an adverb, not the blind status. A boundary at the word START is required — descriptions legitimately say \"blinds the target\" — so a stem match cannot separate the two and a human reading is the only instrument. Declared, not silenced",
+	"masterite_time_tax:steal": "support; FLAVOUR, same shape. \"STEALS moments from every opponent\" is a speed debuff written in the Curator's voice; the ability authors stat_modifier and means it. Declared",
 	"masterite_mana_drain:drains magical energy": "magic; authors NO drain_mp while the mechanic exists and two abilities use it (data_drain 20, memory_drain 15). Cast by all six masterite_curator_* bosses, whose whole theme is attacking resources — CLAUDE.md's Curator Lens is an MP tithe. Wiring it restores the boss's own MP and makes the fight longer. struktured's call, not a repair",
 }
 
@@ -53,7 +57,16 @@ func _abilities() -> Dictionary:
 	return data.get("abilities", data)
 
 
-## Every (ability, promise) whose description makes a claim the data authors no key for.
+## ⛔ SUBSTRING MATCHING ON PROSE FINDS FLAVOUR. "accelerates to BLINDING speed" is not the blind
+## status; "STEALS moments" is a speed debuff. My first tightening produced three such hits out of
+## four. A promise is a WHOLE WORD (or a word stem at a word start) — checked with a boundary rather
+## than declared away one adjective at a time, because the next flavour word would need another line.
+func _promised(desc: String, word: String) -> bool:
+	var re := RegEx.create_from_string("\\b" + word)
+	return re.search(desc) != null
+
+
+## Every (ability, promise) whose description makes a claim the data does not honour.
 func _unhonoured() -> Dictionary:
 	var out: Dictionary = {}
 	var abilities: Dictionary = _abilities()
@@ -64,11 +77,18 @@ func _unhonoured() -> Dictionary:
 		var desc: String = str(d.get("description", "")).to_lower()
 		if desc == "":
 			continue
-		for word in PROMISES:
-			if not desc.contains(str(word)):
+		var authored_effects: String = "%s %s" % [
+			str(d.get("effect", "")).to_lower(), str(d.get("secondary_effect", "")).to_lower()]
+		for word in STATUS_PROMISES:
+			if _promised(desc, word) and not authored_effects.contains(word):
+				out["%s:%s" % [id, word]] = desc
+		for word in KEY_PROMISES:
+			if not _promised(desc, str(word)):
 				continue
+			if authored_effects.contains(str(word)):
+				continue  ## "steal" is honoured by effect: "steal" as well as by the steals flag
 			var honoured: bool = false
-			for key in PROMISES[word]:
+			for key in KEY_PROMISES[word]:
 				if d.has(key):
 					honoured = true
 					break
@@ -87,7 +107,8 @@ func test_the_sweep_reads_a_real_corpus() -> void:
 		if abilities[id] is Dictionary and str(abilities[id].get("description", "")) != "":
 			described += 1
 	assert_gt(described, 200, "and %d of them carry a description, which is what this file reads" % described)
-	assert_gt(PROMISES.size(), 5, "the promise map must be wide enough to be about something")
+	assert_gt(STATUS_PROMISES.size() + KEY_PROMISES.size(), 10,
+		"the promise map must be wide enough to be about something")
 
 
 func test_a_promise_word_matches_something_in_the_corpus() -> void:
@@ -95,7 +116,10 @@ func test_a_promise_word_matches_something_in_the_corpus() -> void:
 	## empty for a reason that has nothing to do with the data being honest.
 	var abilities: Dictionary = _abilities()
 	var matched: Array = []
-	for word in PROMISES:
+	var all_words: Array = STATUS_PROMISES.duplicate()
+	for w in KEY_PROMISES:
+		all_words.append(w)
+	for word in all_words:
 		for id in abilities:
 			var d = abilities[id]
 			if d is Dictionary and str(d.get("description", "")).to_lower().contains(str(word)):
@@ -133,5 +157,10 @@ func test_the_declared_set_names_who_decides() -> void:
 	for k in DECLARED:
 		var reason: String = str(DECLARED[k])
 		assert_gt(reason.length(), 60, "%s needs a real reason, not a tag" % k)
-		assert_true(reason.contains("struktured") or reason.contains("declared"),
+		## ⚠️ CASE-INSENSITIVE, because my first version was not and fired on a reason ending
+		## "Declared". The arm was wrong, not the declaration — @cowir-controller's rule from this
+		## morning: when you are checking for the presence of a token, use the loosest pattern that
+		## can match. A capital letter is not a missing reason.
+		var lowered: String = reason.to_lower()
+		assert_true(lowered.contains("struktured") or lowered.contains("declared") or lowered.contains("flavour"),
 			"%s must name whose call it is, or record that the behaviour is delivered another way" % k)
