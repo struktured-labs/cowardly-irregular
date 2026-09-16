@@ -1803,7 +1803,17 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		stream.loop = should_loop
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
-	_music_player.play()
+	## ⛔ CONSUMED ONCE, AND CLAMPED. A parked position outlives its own start otherwise, and
+	## seeking past the end of a shorter bed plays nothing at all — silence that reads as a missing
+	## file. Anything within 1 s of the end restarts instead: resuming there is a wrap the player
+	## hears as a stutter.
+	var resume_at: float = _pending_resume_position
+	_pending_resume_position = 0.0
+	var length: float = stream.get_length()
+	if resume_at > 0.0 and length > 0.0 and resume_at < length - 1.0:
+		_music_player.play(resume_at)
+	else:
+		_music_player.play()
 	_music_playing = true
 	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
 	# Resume whatever was playing once the stinger ends. Restores through the
@@ -2099,7 +2109,12 @@ func play_music(track: String, exact: bool = false) -> void:
 ## play_area_music re-derives world-suffixed and interior-variant keys, which
 ## a raw track name cannot.
 func capture_music_state() -> Dictionary:
-	return {"track": _current_music, "area": _current_area, "playing": _music_playing}
+	## ⛔ THE POSITION, because a restore without one RESTARTS THE BED. Measured 2026-09-16:
+	## overworld at 1.21 s, one battle, back at 0.09 s. overworld_medieval is 198 s and a W1
+	## encounter lands every ~30 s, so a player heard the first half-minute of a three-minute
+	## track for the whole game and never once reached the rest of it.
+	var pos: float = _music_player.get_playback_position() if _music_player and _music_player.playing else 0.0
+	return {"track": _current_music, "area": _current_area, "playing": _music_playing, "position": pos}
 
 
 ## Put back a state captured by capture_music_state(). Safe to call with an
@@ -2113,7 +2128,7 @@ func restore_music_state(state: Dictionary) -> void:
 	if area != "":
 		## Deliberately does NOT clear _current_area: the early-out it would defeat
 		## is the correct answer when nothing took the music (measured 2026-09-11).
-		play_area_music(area)
+		play_area_music(area, float(state.get("position", 0.0)))
 		return
 	var track: String = str(state.get("track", ""))
 	if track != "":
@@ -2170,6 +2185,10 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 		_music_playing = false
 		_current_music = "")
 
+
+## Where the next AREA bed should pick up. Set by play_area_music, consumed by the first
+## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head.
+var _pending_resume_position: float = 0.0
 
 var _danger_intensity: float = 0.0  # 0.0 = safe, 1.0 = critical
 var _danger_tween: Tween = null
@@ -5021,7 +5040,7 @@ var _current_area: String = ""
 var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
 
-func play_area_music(area_type: String) -> void:
+func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
 	"""Play appropriate music for an exploration area.
 	Generation is deferred to the next frame so it does not block scene setup."""
 	if _current_area == area_type and _music_playing:
@@ -5059,6 +5078,12 @@ func play_area_music(area_type: String) -> void:
 	_current_area = area_type
 	_current_world_suffix = _get_current_world_suffix()
 	_pending_music_area = area_type
+	## Parked for the deferred start one frame from now. stop_music() has already run, so nothing
+	## else can consume it in between; _try_play_from_manifest clears it as it uses it.
+	## Not clamped here: the `> 0.0` at the use site is the single guard, and two would mean a
+	## mutation to either one survives. `play(-12)` is not harmless — measured, it reports a
+	## playback position of 89,466 s.
+	_pending_resume_position = resume_at
 	stop_music()
 
 	call_deferred("_start_area_music_deferred", area_type)
