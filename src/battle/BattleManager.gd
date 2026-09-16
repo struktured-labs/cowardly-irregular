@@ -4905,6 +4905,13 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 ## 1.0 default, the freeze->stun and burn->burning aliases — had to be written twice to be true, and
 ## `doom` was written into neither.
 func _apply_ability_status(caster: Combatant, target: Combatant, ability: Dictionary) -> void:
+	## ⛔ THE DEAD ARE NOT AFFLICTED. This apply runs AFTER the damage, so a killing blow also poisoned,
+	## blinded or stunned the corpse and the log announced it — and revival exists, so the ally came
+	## back still carrying it with the duration untouched by the turns they spent dead. The GRIND has
+	## refused this since it was written; live never had the check, and collapsing the two copies of
+	## this block carried the omission across faithfully. Parity closed toward the engine that was right.
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
 	var effect = ability.get("effect", "")
 	# Tick 354: special-case "random_debuff" — pre-fix add_status
 	# ("random_debuff") wrote a literal "random_debuff" string into
