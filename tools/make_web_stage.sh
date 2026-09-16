@@ -43,6 +43,20 @@ TIER_N=$(find "$TIER" -name '*.ogg' | wc -l)
 SRC_N=$(find assets/audio/music -name '*.ogg' | wc -l)
 # Every master must have a transcode. A short tier silently ships fewer tracks
 # than the masters have, which looks like a size win.
+#
+# ⚠️ WHAT THIS GUARD CANNOT SEE, both measured 2026-09-16 and both handled elsewhere:
+#   * THE BITRATE. It counts files. A leftover tmp/web_audio/music_40k built at some other
+#     setting, or hand-copied from another tree, has 161 files and stages clean (cowir-sfx).
+#     deploy_web.sh gate 3b answers this from the SHIPPED pck's own file table —
+#     tools/check_web_audio_tier.py — because the staging inputs cannot testify about
+#     themselves. That is a real check, not a note: it blocks the deploy.
+#   * A SUPERSET. `-eq` fires on a tier with MORE tracks than the masters too, which is not
+#     a hypothetical: cowir-main's tree carries a 163-track 48k tier (two `sfx_ability_*`
+#     left from when those lived under assets/audio/music/) and would be BLOCKED here today.
+#     Left as-is deliberately — an unexplained extra track is a reason to look, not to stage.
+#
+# And the tier is built in THIS tree (step 1 above runs make_web_audio.sh), so a tier that
+# exists in some other lane's checkout is not one this stage can use (cowir-adhoc).
 [ "$TIER_N" -eq "$SRC_N" ] || {
     echo "[stage] BLOCKED: tier has ${TIER_N} tracks, masters have ${SRC_N}." >&2
     echo "        Refusing to stage a tier that does not cover the masters." >&2; exit 2; }
