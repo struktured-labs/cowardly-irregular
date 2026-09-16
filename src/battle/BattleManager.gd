@@ -1666,6 +1666,19 @@ func _process_next_selection() -> void:
 					current_combatant.current_ap - 1,
 					current_combatant.current_ap
 				])
+				## ⛔ THE TURN VANISHED WITH NO EXPLANATION. Advance is sold on "can go into debt"
+				## (CLAUDE.md) and the debt is PAID IN TURNS here — the combatant is skipped entirely.
+				## That was a print() only, so a player who queued four actions watched their character
+				## be passed over with nothing saying why or for how much longer. The Go Back handler
+				## twenty lines down already emits for the SAME condition, with the comment "either way
+				## the player needs to see why" — the engine knew, in the less important place.
+				var _owed: int = -current_combatant.current_ap
+				if _owed > 0:
+					battle_log_message.emit("[color=%s]%s is paying down Advance — %d turn%s still owed.[/color]" % [
+						AccessibilityPalette.penalty_bbcode(), current_combatant.combatant_name,
+						_owed, "" if _owed == 1 else "s"])
+				else:
+					battle_log_message.emit("[color=cyan]%s's Advance debt is settled — they act next turn.[/color]" % current_combatant.combatant_name)
 				selection_index += 1
 				continue
 			break
