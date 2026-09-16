@@ -94,10 +94,11 @@ func test_every_rung_is_reachable_by_repeating_one_input() -> void:
 ## Arm 3: THE END-TO-END ONE. The console's config must carry the choices through start_autogrind's
 ## real merge, and corruption_limit — which the console never names — must survive it.
 func test_the_config_carries_the_choices_through_the_real_merge() -> void:
-	_ui._safety_hp_threshold = 50.0
-	_ui._safety_max_battles = 25
-	_ui._safety_stop_on_death = false
-	_ui._safety_stop_on_item_depleted = false
+	## Configured the way a player configures it — through the enforcer, which is where the console
+	## now reads from. Poking console fields is how these arms used to set up, and it is exactly why
+	## none of them could see the console writing from a copy the system had already moved past.
+	_sys.set_interrupt_rules({"hp_threshold": 50.0, "max_battles": 25,
+		"party_death": false, "item_depleted": false})
 	_sys.interrupt_rules["corruption_limit"] = 4.5
 
 	var cfg: Dictionary = _ui._get_grind_config()
@@ -139,7 +140,10 @@ func test_the_setter_clamps_rather_than_storing_a_net_that_cannot_fire() -> void
 ## Arm 5: the readout reports the SYSTEM, not the console's own copy. A label sourced from console
 ## state agrees with itself even when the two have drifted, so it could never show a drift.
 func test_the_readout_reports_the_system_not_the_consoles_own_copy() -> void:
-	_ui._safety_hp_threshold = 30.0
+	## ⚠️ THIS ARM USED TO CONSTRUCT THE DRIFT (`_ui._safety_hp_threshold = 30.0`) AND IT NO LONGER
+	## CAN, because the console field it set is gone. That is the fix, not a weakened arm: the drift
+	## it proved possible on the READ side was live on the WRITE side and nothing here looked. What
+	## survives is the property — the label sources the enforcer — plus the structural arm below.
 	_sys.set_interrupt_rules({"hp_threshold": 10.0})
 	assert_eq(_ui._safety_label("hp"), "10%",
 		"the label read the console's 30%% while the enforcer holds 10%% — a readout that cannot disagree cannot warn")
@@ -185,9 +189,7 @@ func test_a_dial_refuses_while_grinding() -> void:
 ## 25.0` still works, but the readout would print "25.0 battles" and interrupt_rules would carry a
 ## float where every other writer puts an int. So this walks the real lossy step, not a duplicate().
 func test_the_limits_survive_the_snapshot_json_round_trip() -> void:
-	_ui._safety_hp_threshold = 50.0
-	_ui._safety_max_battles = 25
-	_ui._safety_stop_on_death = false
+	_sys.set_interrupt_rules({"hp_threshold": 50.0, "max_battles": 25, "party_death": false})
 	var cfg: Dictionary = _ui._get_grind_config()
 
 	## Exactly what save_grind_snapshot + load_grind_snapshot do to it.

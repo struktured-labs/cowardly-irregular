@@ -176,9 +176,15 @@ Risk/reward automation with escalating stakes:
   reach the Summary
 - **Interrupt rules** — `_check_interrupt_conditions()` enforces hp_threshold, party_death,
   item_depleted, corruption_limit and max_battles via `pre_battle_check()`
-  (`AutogrindSystem.pre_battle_check`, called from `AutogrindController._request_next_battle`). ⚠️ Configurable through the **config dict passed to
-  `start_autogrind`, NOT from the console** — no `src/ui/` file sets them, so "configurable" is
-  true of the API and not yet of the player
+  (`AutogrindSystem.pre_battle_check`, called from `AutogrindController._request_next_battle`). **Four of
+  the five are player-editable from the console** — the options ring's `safety_hp` / `safety_battles` /
+  `safety_death` / `safety_items` rows cycle ladders and write through `AutogrindSystem.set_interrupt_rules`
+  (`AutogrindUI._cycle_safety`), applied immediately and persisted by `SaveSystem`. This line said
+  "NOT from the console — no `src/ui/` file sets them" until 2026-09-16, six weeks after they shipped;
+  it is the same UNDER-claim this section's own header warns about, and a doc that under-claims produces
+  duplicated work rather than a bug report. ⚠️ `corruption_limit` is the one exception and is deliberate:
+  it gates system collapse, no UI edits it, and `SaveSystem` excludes it from persistence so a later
+  rebalance is not overridden by every old `settings.json` on disk
 - **Permadeath staking** — `permadeath_staking_enabled`, with a UI state:
   `AutogrindDashboard.refresh` and the DANGER_COLOR panel built in `AutogrindUI._build_footer`. Routed through
   `enable_permadeath_staking()` so the flag and its growth rate cannot disagree (fixed 2026-09-11)

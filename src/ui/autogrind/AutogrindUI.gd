@@ -188,10 +188,9 @@ const SAFETY_HP_LADDER: Array = [0.0, 10.0, 20.0, 30.0, 50.0]
 ## No "unlimited" rung: max_battles IS the safety net, so this dial moves it, never removes it.
 ## (0 would not mean off anyway -- the check is `battles_completed >= max_battles`, so 0 stops at once.)
 const SAFETY_BATTLE_LADDER: Array = [25, 50, 100, 200, 500]
-var _safety_hp_threshold: float = 20.0
-var _safety_max_battles: int = 100
-var _safety_stop_on_death: bool = true
-var _safety_stop_on_item_depleted: bool = true
+## ⛔ NO MIRROR VARS HERE. Four of them used to hold a second copy of interrupt_rules' shipped
+## defaults and were never hydrated from the system, so after SaveSystem restored a saved limit the
+## ring displayed it (the label reads live) while every WRITE still came off the stale copy.
 
 ## Custom presets persistence
 const CUSTOM_PRESETS_PATH: String = "user://autogrind_presets.json"
@@ -2344,11 +2343,14 @@ func _get_grind_config() -> Dictionary:
 ## start_autogrind merges this key-by-key, so naming only the four a player can set leaves
 ## corruption_limit at the system default rather than restating it here and freezing it.
 func _safety_rules() -> Dictionary:
+	## Read back from the enforcer, the same field _safety_label reads. The emitted config is then a
+	## faithful copy, so the merge at grind start cannot revert a limit the player already has.
+	var live: Dictionary = AutogrindSystem.interrupt_rules
 	return {
-		"hp_threshold": _safety_hp_threshold,
-		"max_battles": _safety_max_battles,
-		"party_death": _safety_stop_on_death,
-		"item_depleted": _safety_stop_on_item_depleted,
+		"hp_threshold": float(live.get("hp_threshold", 0.0)),
+		"max_battles": int(live.get("max_battles", 1)),
+		"party_death": bool(live.get("party_death", false)),
+		"item_depleted": bool(live.get("item_depleted", false)),
 	}
 
 
@@ -2375,22 +2377,25 @@ func _cycle_safety(key: String) -> void:
 	if _is_grinding:
 		_log_message("[color=yellow]Cannot change safety limits while grinding.[/color]")
 		return
+	## The rung the player can SEE is the one the step starts from -- the label already reads live.
+	var live: Dictionary = AutogrindSystem.interrupt_rules
+	var moved: Dictionary = {}
 	match key:
 		"hp":
 			## maxi(i, 0), not i: find() returns -1 if something else moved the value off the
 			## ladder, and -1 + 1 == 0 is the OFF rung -- a drift would DISABLE the net silently.
-			var i: int = maxi(SAFETY_HP_LADDER.find(_safety_hp_threshold), 0)
-			_safety_hp_threshold = float(SAFETY_HP_LADDER[(i + 1) % SAFETY_HP_LADDER.size()])
+			var i: int = maxi(SAFETY_HP_LADDER.find(float(live.get("hp_threshold", 0.0))), 0)
+			moved["hp_threshold"] = float(SAFETY_HP_LADDER[(i + 1) % SAFETY_HP_LADDER.size()])
 		"battles":
-			var j: int = maxi(SAFETY_BATTLE_LADDER.find(_safety_max_battles), 0)
-			_safety_max_battles = int(SAFETY_BATTLE_LADDER[(j + 1) % SAFETY_BATTLE_LADDER.size()])
+			var j: int = maxi(SAFETY_BATTLE_LADDER.find(int(live.get("max_battles", 1))), 0)
+			moved["max_battles"] = int(SAFETY_BATTLE_LADDER[(j + 1) % SAFETY_BATTLE_LADDER.size()])
 		"death":
-			_safety_stop_on_death = not _safety_stop_on_death
+			moved["party_death"] = not bool(live.get("party_death", false))
 		"items":
-			_safety_stop_on_item_depleted = not _safety_stop_on_item_depleted
-	## Applied NOW, not at grind start: the ring reads the system back, and a player who sets a
-	## limit and closes the console without grinding still expects it to have taken.
-	AutogrindSystem.set_interrupt_rules(_safety_rules())
+			moved["item_depleted"] = not bool(live.get("item_depleted", false))
+	## ONE key, not all four: writing the whole block reverted the three rows the player did not touch.
+	## Applied NOW, not at grind start: a player who sets a limit and closes the console still expects it.
+	AutogrindSystem.set_interrupt_rules(moved)
 	## Persist immediately. A safety limit the player set and then lost to a crash is the same defect
 	## as not persisting at all, and there is no "apply" step in a ring to hang it off.
 	## ⛔ GATED ON _test_disable_persistence. Without this check, every existing test that moves a dial
