@@ -366,3 +366,19 @@ func test_a_cutscene_id_reaching_the_engine_is_always_a_literal() -> void:
 	assert_gt(literals, 10, "control: most assignments are plain literals (%d)" % literals)
 	assert_eq(constructed, [],
 		"a constructed cutscene id cannot be found by a text scan — widen the oracle in the same change:\n  %s" % "\n  ".join(PackedStringArray(constructed)))
+
+
+## The SECOND PIN on this fact, asserted rather than described. @cowir-autogrind's discriminator:
+## where the premise is a FACT, prose is the weaker choice — and "does that registry still declare
+## this scene" is checkable from here without editing a file that is not mine.
+func test_the_other_pin_on_this_fact_still_exists() -> void:
+	var sibling: String = _read("res://test/unit/test_orphan_boss_cutscene_registry.gd")
+	# TWO CONTROLS, because an agreement check between two files passes hardest when it can read
+	# NEITHER: rename the sibling or its constant and a bare `contains` goes quietly green
+	# (cowir-music, whose own control caught exactly this).
+	assert_gt(sibling.length(), 500,
+		"CONTROL: the sibling guard read back %d chars — moved or renamed, so this arm proves nothing" % sibling.length())
+	assert_true(sibling.contains("KNOWN_PLANNED_INTROS"),
+		"CONTROL: the sibling's declaration list is still called KNOWN_PLANNED_INTROS")
+	assert_true(sibling.contains('"world2_arbiter_intro"'),
+		"the OTHER pin on world2_arbiter_intro is gone — if that scene got wired, retire BOTH declarations, not one")
