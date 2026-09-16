@@ -19,10 +19,17 @@ func test_quest_log_nav_and_cancel_are_chirped() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/ui/QuestLog.gd")
 	assert_true(src.contains("SoundManager.play_ui(\"menu_cancel\")"),
 		"QuestLog close must play menu_cancel like every other overworld menu")
-	# nav plays only when scroll actually MOVED — count both menu_move sites (up + down)
+	# nav plays only when scroll actually MOVED. This counted 2 (up + down) until 2026-09-16, when
+	# the page jump became a THIRD moving branch — a bare count is right only while the number of
+	# branches happens to match it, so the sites are named instead.
 	var count: int = src.count("SoundManager.play_ui(\"menu_move\")")
-	assert_eq(count, 2,
-		"both ui_up and ui_down branches must chirp menu_move on real scroll advance")
+	assert_eq(count, 3,
+		"ui_up, ui_down and the page jump must each chirp menu_move on real scroll advance")
+	var page_at: int = src.find("MenuPaging.page_delta(event)")
+	assert_gt(page_at, -1, "CONTROL: the page branch must exist, or the 3 above is the wrong number")
+	assert_true(src.substr(page_at, 420).find("SoundManager.play_ui(\"menu_move\")") > -1,
+		"the page jump moves the scroll, so it chirps like the other two — a silent jump reads as a " +
+		"dead button")
 
 
 func test_fast_travel_menu_portal_whoosh_wired() -> void:

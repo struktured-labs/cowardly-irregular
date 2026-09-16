@@ -224,7 +224,12 @@ func _build_ui() -> void:
 	# Footer
 	var footer = Label.new()
 	# "B" was right on Nintendo only, and a keyboard player was offered only a mouse.
-	footer.text = "↑↓/D-pad / Wheel: Scroll    %s / RClick: Close" % InputProfileManager.hint_for_action("ui_cancel")
+	## The page control must be ADVERTISED and DERIVED — MenuPaging binds battle_defer/battle_advance,
+	## which three families print as L/LB/L1 and R/RB/R1, so a literal would be right on one pad only.
+	footer.text = "↑↓/D-pad / Wheel: Scroll    %s%s: Page    %s / RClick: Close" % [
+		InputProfileManager.hint_for_action("battle_defer"),
+		InputProfileManager.hint_for_action("battle_advance"),
+		InputProfileManager.hint_for_action("ui_cancel")]
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.position = Vector2(0, vp_size.y - 28)
 	footer.size = Vector2(vp_size.x, 20)
@@ -443,6 +448,22 @@ func _is_quest_flag_set(flag: String) -> bool:
 
 func _input(event: InputEvent) -> void:
 	if not visible:
+		return
+
+	# Page jump (shared MenuPaging: PageUp/PageDown, or the shoulders on a pad). Placed BEFORE the
+	# cancel/up/down chain — page_delta matches none of them, and an elif must follow its if.
+	# This log scrolls by LINES, so a page is a screenful (_max_visible_lines), not
+	# MenuPaging.PAGE_ROWS, which counts rows in the menus that select one. Clamped, never wrapped.
+	var page := MenuPaging.page_delta(event)
+	if page != 0:
+		var before: int = _scroll_offset
+		var limit: int = maxi(0, _total_lines - _max_visible_lines)
+		_scroll_offset = clampi(_scroll_offset + page * maxi(1, _max_visible_lines), 0, limit)
+		if _scroll_offset != before:
+			_build_ui()
+			if SoundManager:
+				SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
 		return
 
 	# Bug fix (2026-04-30): removed ui_accept from the close-conditions
