@@ -121,3 +121,23 @@ func test_a_bed_does_not_play_against_itself() -> void:
 	assert_false(SoundManager._ambient_player.playing,
 		"%s is running on BOTH players at once — one file, two offsets, 16 dB apart" % amb_path)
 	SoundManager.stop_music()
+
+
+func test_the_collision_is_blocked_in_the_other_order_too() -> void:
+	## ⛔ THE FIRST FIX WAS ONE-DIRECTIONAL AND SO WAS THE ARM THAT PROVED IT. The guard sat in
+	## _try_play_from_manifest — the MUSIC load path — so it only won when music started second.
+	## The arm above drives exactly the order I happened to find the bug in, and swapping its two
+	## lines failed against the shipped fix. Green about one direction and silent about the other,
+	## which is the 64-green-radius mistake one layer in (@cowir-adhoc, who walked every caller).
+	##
+	## Latent rather than live at the time: nothing in the tree passes an ambient_* id to
+	## play_music, so only the Jukebox reaches it, and that opens where a player cannot walk into
+	## a zone. The reverse door was held shut by a UI accident, not by the fix.
+	SoundManager.play_music(str(DUAL_STORE_WIRED[0]), true)
+	await get_tree().create_timer(0.2).timeout
+	assert_true(SoundManager._music_player.playing, "CONTROL: the music player holds the bed first in this order")
+	var mus_path: String = SoundManager._music_player.stream.resource_path
+	SoundManager.play_ambient(str(DUAL_STORE_WIRED[0]))
+	assert_false(SoundManager._ambient_player.playing,
+		"the ambient layer started %s while the music player was already playing it — same file, two players, the collision the other arm blocks in the opposite order" % mus_path)
+	SoundManager.stop_music()
