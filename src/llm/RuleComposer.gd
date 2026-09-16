@@ -139,6 +139,11 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# Same shape as _drop_null_targets above: drop the offending rule, keep the rest,
 	# and TELL the player. Never empties the set — a zero-rule composition is not a
 	# valid one, it is the save-wiping one, so the caller's refusal path still runs.
+	# A heal with no target is sent at the enemy by the evaluator's default.
+	if domain == DOMAIN_AUTOBATTLE:
+		for note in _aim_untargeted_abilities(v["rules"]):
+			repair_notes.append(note)
+
 	# Before the rule-level drop: a rule whose only fault is a restated target is
 	# repairable, and dropping it loses the behaviour the player asked for.
 	if domain == DOMAIN_AUTOBATTLE:
@@ -483,6 +488,49 @@ func _is_catch_all(rule: Dictionary) -> bool:
 		if not (c is Dictionary) or str((c as Dictionary).get("type", "")) != "always":
 			return false
 	return true
+
+
+## An ability action with NO target key, aimed by the ability's own declaration.
+##
+## The evaluator defaults a missing target to `lowest_hp_enemy`
+## (AutobattleSystem._action_def_to_action), and `_resolve_ability_targets` only
+## overrides that for all_allies / all_enemies / dead_ally — `single_ally` falls
+## through. So a composed `{"type":"ability","id":"cure"}` with no target HEALS THE
+## ENEMY. Measured: 1 of 12 live llama3 cleric compositions emitted exactly that.
+##
+## The fix is arithmetic from the ability's own data, like the MP guards: cure
+## declares target_type single_ally, so the rule is aimed at an ally. Offensive
+## abilities are left alone — the existing default is already correct for them, and
+## writing it out would be a second copy of the engine's default.
+func _aim_untargeted_abilities(rules: Array) -> Array[String]:
+	var notes: Array[String] = []
+	var js = get_node_or_null("/root/JobSystem")
+	if js == null or not js.has_method("get_ability"):
+		return notes
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for a in rule.get("actions", []):
+			if typeof(a) != TYPE_DICTIONARY or str(a.get("type", "")) != "ability":
+				continue
+			if a.has("target"):
+				continue
+			var aid: String = str(a.get("id", a.get("ability_id", "")))
+			var ability: Variant = js.get_ability(aid)
+			if not (ability is Dictionary) or (ability as Dictionary).is_empty():
+				continue
+			var declared: String = str((ability as Dictionary).get("target_type", ""))
+			var aim: String = ""
+			match declared:
+				"single_ally", "all_allies":
+					aim = "lowest_hp_ally"
+				"self":
+					aim = "self"
+			if aim == "":
+				continue
+			a["target"] = aim
+			notes.append("Aimed '%s' at %s — it had no target, and an untargeted ability is sent at the enemy." % [aid, aim])
+	return notes
 
 
 ## A TARGET name used as a CONDITION type, when the rule's own action already aims
