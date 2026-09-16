@@ -303,6 +303,14 @@ var _battle_action_log: Array[Dictionary] = []  # Log every player action per ba
 ## meta that must survive a battle belongs in the save, not on a reused object. Ratcheted by
 ## test_a_meta_does_not_outlive_its_battle, which derives the set from source so a new one cannot be
 ## added without landing here or being declared.
+##
+## ⚠️ HeadlessBattleResolver DECLARES A CONSTANT OF THIS SAME NAME with deliberately DIFFERENT
+## contents: its list covers the metas THAT file sets, this one covers live's. They are not meant to
+## agree, and neither should be "harmonised" toward the other — two matching names whose contents
+## diverge is invisible at authoring, so this note is the guard rather than a ratchet (CLAUDE.md,
+## "Two data sources feeding one surface", case (b)).
+## RETIREMENT CONDITION, so the note cannot outlive its reason: the day the two engines set the same
+## per-battle metas, collapse the copies into one shared declaration and delete this paragraph.
 const PER_BATTLE_METAS: Array[String] = [
 	"_summon_followup", "_damage_absorb_budget", "_regen_per_turn", "_next_attack_multiplier",
 	"_mind_swap_controller", "_steal_response_consumed", "_swayed_stacks", "_utility_spent",
@@ -3919,8 +3927,13 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			for p in participants:
 				if p is Combatant and p.is_alive:
 					var heal_amount = int(p.max_hp * 0.25)
-					p.heal(heal_amount)
-					healing_done.emit(p, heal_amount)
+					## The REQUESTED amount is not the healed amount: heal() clamps at max_hp and
+					## HALVES under curse. Emitting the request floated "+250 HP!" over a member who
+					## gained 100 — or 125 while cursed, which is the one mechanic the number was the
+					## player's only evidence for.
+					var healed: int = p.heal(heal_amount)
+					if healed > 0:
+						healing_done.emit(p, healed)
 			battle_log_message.emit("[color=cyan]★ Four Heroes — balanced strike + party healed 25%! ★[/color]")
 
 		"arcane_tempest":
@@ -5211,12 +5224,16 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		print("  → %s takes %d %s damage! (terrain: %.2fx)" % [target.combatant_name, actual_damage, elem_text, terrain_mod])
 
 		if drain_pct > 0:
-			var drained = int(actual_damage * drain_pct / 100.0)
-			caster.heal(drained)
-			healing_done.emit(caster, drained)
-			var drain_log = "  → [color=white]%s[/color] drains [color=%s]%d[/color] HP!" % [caster.combatant_name, AccessibilityPalette.bonus_bbcode(), drained]
-			battle_log_message.emit(drain_log)
-			print("  → %s drains %d HP!" % [caster.combatant_name, drained])
+			## heal() returns what LANDED — clamped at max_hp, halved by curse, and zero on a caster
+			## killed mid-cast by a counter. The popup and the log both said what was ASKED FOR, so a
+			## full-HP or cursed drainer read a number they never received. The grind has logged the
+			## return since it was written (_drain_to); this is live catching up.
+			var drained: int = caster.heal(int(actual_damage * drain_pct / 100.0))
+			if drained > 0:
+				healing_done.emit(caster, drained)
+				var drain_log = "  → [color=white]%s[/color] drains [color=%s]%d[/color] HP!" % [caster.combatant_name, AccessibilityPalette.bonus_bbcode(), drained]
+				battle_log_message.emit(drain_log)
+				print("  → %s drains %d HP!" % [caster.combatant_name, drained])
 
 		# Apply status effect if ability has one — ONE owner, see _apply_ability_status
 		_apply_ability_status(caster, target, ability)
