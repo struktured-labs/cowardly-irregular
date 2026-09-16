@@ -122,17 +122,21 @@ func test_a_won_duel_still_closes_that_gate() -> void:
 
 
 func test_no_authored_cutscene_claims_a_duel_win() -> void:
+	# FLOOR FIRST: an absence arm passes for free over a VOID subject, and its message then blames
+	# the wrong thing (cowir-deploy). If the corpus read comes back empty, say VOID, not "clean".
+	var scanned: Array = []
 	var offenders: Array = []
 	for path in DirAccess.get_files_at("res://data/cutscenes"):
 		if not path.ends_with(".json"):
 			continue
-		var raw := _read("res://data/cutscenes/" + path)
-		if raw.contains("spotlight_unlocked_"):
+		scanned.append(path)
+		if _read("res://data/cutscenes/" + path).contains("spotlight_unlocked_"):
 			offenders.append(path)
-	assert_eq(offenders, [], "spotlight_unlocked_<job> means the duel was won; authored data must not write it: %s" % [offenders])
+	assert_gt(scanned.size(), 100, "VOID, not clean: the cutscene corpus read back %d files" % scanned.size())
 	var arms := _authored_lead_arms()
 	assert_eq(arms.get("fighter", []), ["spotlight_lead_fighter"],
 		"the prologue's fighter arm records who led, not a duel result")
+	assert_eq(offenders, [], "spotlight_unlocked_<job> means the duel was won; authored data must not write it: %s" % [offenders])
 
 
 func test_the_lead_key_still_grants_manual_control() -> void:
