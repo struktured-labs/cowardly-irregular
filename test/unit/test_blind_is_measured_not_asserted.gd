@@ -37,6 +37,15 @@ func _miss_rate(blinded: bool) -> float:
 			misses += 1
 	return float(misses) / float(N)
 
+
+## seed() sets the PROCESS-WIDE rng and GUT runs every file in ONE process, so a seeded file
+## leaves every file after it deterministic. Measured 2026-09-16: a probe running after this one
+## drew byte-identical values across three separate runs; alone it varied every time. randomize()
+## rather than replaying a captured seed — replaying re-freezes the next file at a different
+## constant, which is the same defect wearing a number that changes between runs (@cowir-music).
+func after_each() -> void:
+	randomize()
+
 func test_a_blinded_attacker_actually_misses_more() -> void:
 	## Equal speed, so the base rate is 0.10 and blind adds 0.40 — roughly 10% vs 50%.
 	## Asserted as a RELATIONSHIP plus loose bounds, never an exact count: an exact number would
