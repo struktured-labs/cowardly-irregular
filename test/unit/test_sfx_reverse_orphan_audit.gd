@@ -79,9 +79,16 @@ const KNOWN_PENDING_CONSUMER := {
 	"thump_med": "cowir-battle contact-frame seam",
 	"thump_heavy": "cowir-battle contact-frame seam",
 	"thump_crit": "cowir-battle contact-frame seam",
-	# pre-staged before ON_HIT_STATUSES grows (cowir-battle ratchet, msg 2797)
-	"status_burn": "pre-staged for future burn_chance weapon proc",
-	"status_freeze": "pre-staged for future freeze_chance weapon proc",
+	# NOT pre-staged — CONSUMED, and invisible here because the key is COMPOSED. Re-checked
+	# 2026-09-16: 8 magic abilities author effect burn/freeze (fire_breath, blizzard_breath,
+	# boiler_burst, steam_vent, ice_prison, absolute_zero, flame_wall, scalding_mist); each falls
+	# to BattleScene._on_action_executed's catch-all, which calls play_status(effect) ->
+	# status_<name>. The weapon-proc path these were staged for still does not exist
+	# (ON_HIT_STATUSES is poison + sleep only), so the OLD REASON described a path that is still
+	# absent while the cue had been reachable by another one all along. The exemption stays; a
+	# text audit cannot see a runtime-composed key. Do not read this as "unwired" and wire it twice.
+	"status_burn": "COMPOSED — play_status(effect) from 5 burn abilities",
+	"status_freeze": "COMPOSED — play_status(effect) from 3 freeze abilities",
 	# cowir-battle: W6 Arbiter-duel win-condition arms (msg 3223/3226) — spec
 	# still moving; shipped inert so the cues exist when the signal lands.
 	"duel_answer_dodge": "cowir-battle W6 Arbiter duel arms",
