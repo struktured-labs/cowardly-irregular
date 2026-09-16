@@ -136,3 +136,20 @@ func _code_only(text: String, must_survive: String) -> String:
 		assert_true(result.contains(must_survive),
 			"OVER-STRIPPED: %s did not survive — an over-eager stripper and a correct one are the same green" % must_survive)
 	return result
+
+
+func test_every_member_this_file_reaches_for_still_exists() -> void:
+	## A direct `sm._x` on a RENAMED member raises at runtime and ABORTS the arm. An abort after
+	## that arm's last assert scores PASSING — measured 2026-09-16: renaming the dedicated voice
+	## this file exists to defend gave EXIT=0, Failing 0, NO Risky line, and moved only the assert
+	## count. `get()` returns null for an absent name instead of raising, so the rename fails loudly
+	## here and names itself before any other arm gets the chance to go quiet.
+	var sm: Node = _sm()
+	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
+	if sm == null:
+		return
+	for member_name in ["_footstep_player", "_sfx_cooldowns", "_sfx_manifest", "_ui_player"]:
+		## assert_true on an explicit `!= null`: assert_ne deep-compares, and three of these members
+		## are Dictionaries, which it refuses with "Only Arrays and Dictionaries are supported".
+		assert_true(sm.get(member_name) != null,
+			"SoundManager has no %s — this file reaches for it directly, and a rename would abort its arms SILENTLY" % member_name)
