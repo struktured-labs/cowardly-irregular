@@ -23,6 +23,11 @@ const EMOTE_GLYPHS: Dictionary = {
 var actor_id: String = ""
 var _sprite: Sprite2D
 var _frames: Dictionary = {}
+## The frame this actor's sheet was actually cut at. FRAME_SIZE is the convention; a sheet may differ,
+## and the slicer now measures it — so everything positioned off "the frame" must read THIS, not the
+## constant. Without it my own slicer fix left two halves disagreeing: the cut derived, the emote
+## guessed, so a 48px sheet would be sliced correctly and then have its emote 8px inside its head.
+var _frame_px: int = FRAME_SIZE
 var _facing: int = Dir.DOWN
 var _anim_time: float = 0.0
 var _anim_frame: int = 0
@@ -76,6 +81,7 @@ func _load_sheet(path: String) -> bool:
 	var frame: int = frame_size_of(tex)
 	if frame <= 0:
 		return false
+	_frame_px = frame
 	for row in 4:
 		for col in WALK_FRAMES:
 			var at := AtlasTexture.new()
@@ -104,6 +110,7 @@ static func frame_size_of(tex: Texture2D) -> int:
 
 ## Headless/unknown-id fallback so a bad spec never crashes a cutscene.
 func _build_placeholder() -> void:
+	_frame_px = FRAME_SIZE  # the placeholder IS the convention, so say so rather than inherit a stale one
 	var img := Image.create(FRAME_SIZE, FRAME_SIZE, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0.6, 0.55, 0.8, 0.9))
 	var t := ImageTexture.create_from_image(img)
@@ -191,7 +198,7 @@ func show_emote(kind: String, duration: float = 1.0) -> void:
 	_emote_label = Label.new()
 	_emote_label.text = EMOTE_GLYPHS.get(kind, str(kind))
 	_emote_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_emote_label.position = Vector2(-40, -float(FRAME_SIZE) * scale.y * 0.5 - 22.0)
+	_emote_label.position = Vector2(-40, -float(_frame_px) * scale.y * 0.5 - 22.0)
 	_emote_label.size = Vector2(80, 22)
 	_emote_label.add_theme_font_size_override("font_size", 18)
 	_emote_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.4))
@@ -237,7 +244,7 @@ func say(text: String, duration: float = 1.5) -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
 	panel.size = panel.get_combined_minimum_size()
-	var head_y := -float(FRAME_SIZE) * scale.y * 0.5 - 8.0
+	var head_y := -float(_frame_px) * scale.y * 0.5 - 8.0
 	panel.position = Vector2(-panel.size.x * 0.5, head_y - panel.size.y)
 	_bubble = panel
 	if duration > 0.0 and is_inside_tree():
