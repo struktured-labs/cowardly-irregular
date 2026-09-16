@@ -1,5 +1,7 @@
 extends GutTest
 
+var _gating_battles_before: int = 0
+
 ## Regression: AutogrindSystem.start_autogrind() must reset
 ## `fatigue_events_triggered` so the lifetime counter doesn't leak
 ## across grind sessions.
@@ -45,6 +47,7 @@ func _read(path: String) -> String:
 # ── Source pin ────────────────────────────────────────────────────────────────
 
 func before_each() -> void:
+	_gating_battles_before = AutogrindSystem.battles_completed
 	AutogrindSystem._test_disable_persistence = true
 
 
@@ -99,3 +102,11 @@ func test_already_grinding_early_return_does_not_clobber_counter() -> void:
 	# Cleanup.
 	AutogrindSystem.is_grinding = prior_is_grinding
 	AutogrindSystem.fatigue_events_triggered = prior_fatigue
+
+
+func after_each() -> void:
+	## Restore the battle counter: it GATES pre_battle_check, so a value left behind refuses a grind
+	## in every later file of the same GUT process (measured 2026-09-16 — a healing-item sweep saw a
+	## party that could not heal). Captured, not zeroed: 0 is an assumption about a baseline this
+	## file does not own.
+	AutogrindSystem.battles_completed = _gating_battles_before

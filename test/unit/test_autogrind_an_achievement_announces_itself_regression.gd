@@ -1,5 +1,7 @@
 extends GutTest
 
+var _gating_battles_before: int = 0
+
 const GdSource = preload("res://test/unit/helpers/gd_source.gd")
 
 ## Autogrind achievements were awarded in exactly one place: inside AutogrindSummary._build_ui().
@@ -40,6 +42,7 @@ class FakeGameState extends RefCounted:
 
 
 func before_each() -> void:
+	_gating_battles_before = AutogrindSystem.battles_completed
 	AchievementsScript._reset_cache_for_test()
 	AutogrindSystem._test_disable_persistence = true
 	for f in TOUCHED:
@@ -54,6 +57,11 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## Restore the battle counter: it GATES pre_battle_check, so a value left behind refuses a grind
+	## in every later file of the same GUT process (measured 2026-09-16 — a healing-item sweep saw a
+	## party that could not heal). Captured, not zeroed: 0 is an assumption about a baseline this
+	## file does not own.
+	AutogrindSystem.battles_completed = _gating_battles_before
 	for f in _saved:
 		AutogrindSystem.set(f, _saved[f])
 	_saved.clear()
