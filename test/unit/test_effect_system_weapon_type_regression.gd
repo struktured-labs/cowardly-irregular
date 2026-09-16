@@ -1,5 +1,15 @@
 extends GutTest
 
+## ⚠️ THIS FILE READS SOURCE RAW at every other site (`FileAccess.get_file_as_string`), so prose can
+## satisfy its assertions. The two arms below use the shared stripper instead. Measured 2026-09-16
+## before changing them: zero comments in BattleScene.gd match the PHYSICAL-spawn pattern, so the
+## hazard was real and UNOCCUPIED — but the forwarder derivation slices a function's body to the next
+## `\nfunc `, which swallows the NEXT function's docstring, and BattleScene:85 is a comment naming
+## "PHYSICAL EffectSystem.spawn_effect". One reordering away from a false red on correct code.
+## The other eight raw reads predate me and are left alone rather than migrated blind — a mass
+## rewrite of guards nobody re-reads is the tidy move this fleet spent the afternoon warning about.
+const GdSourceHelper = preload("res://test/unit/helpers/gd_source.gd")
+
 ## Cycle 14 (msg 2754) — cycle 12's deferred item.
 ##
 ## Before this cycle, EffectSystem._play_effect_sound read
@@ -131,7 +141,7 @@ func test_all_bs_physical_spawns_pass_weapon_type() -> void:
 	# Ratchet: a new PHYSICAL spawn_effect that forgets the trailing
 	# weapon_type param would silently drop weapon SFX to the generic
 	# fallback — same UX regression the cycle-14 fix closed.
-	var src: String = FileAccess.get_file_as_string(BS_PATH)
+	var src: String = GdSourceHelper.code_of(BS_PATH)
 	# Every EffectSystem.spawn_effect(...) call with EffectType.PHYSICAL
 	# as the first arg should thread _weapon_type_for(...) through.
 	var pattern: String = "EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL"
@@ -176,7 +186,7 @@ func test_every_forwarder_is_fed_a_real_weapon_type() -> void:
 	## COULD NOT SATISFY THE RULE AS WRITTEN, which makes it "the forwarders this arm can express"
 	## rather than "the forwarders". Same class as a key ratchet picking its own keys. DERIVED now: a
 	## forwarder is any function that hands a bare `weapon_type` to a PHYSICAL spawn.
-	var src: String = FileAccess.get_file_as_string(BS_PATH)
+	var src: String = GdSourceHelper.code_of(BS_PATH)
 	var forwarders: Array = []
 	for m in RegEx.create_from_string("func (_[a-z_0-9]+)\\(([^)]*)\\)").search_all(src):
 		var fname: String = m.get_string(1)
