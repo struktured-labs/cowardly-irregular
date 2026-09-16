@@ -219,6 +219,26 @@ const GRIND_PATH_MARKER := {
 ## executor — but "looks structural" is not "checked", and the difference is the whole point of axis 2.
 const AXIS2_UNASSESSED := ["mp_cost", "stat_modifier", "element", "max_multiplier", "stat", "modifier"]
 
+## ⛔ HOW A KEY REACHES A GRIND — FOUR FORMS, AND I RANKED THIS BACKLOG ON THREE.
+## Every reachability judgement in this file rests on "can a grind actually cast this", and I built
+## that oracle by enumerating the ways I knew:
+##   1. a pooled monster            EncounterSystem.enemy_pools, drawn by AutogrindController:309
+##   2. a job ability               jobs.json, cast by the party
+##   3. the meta-boss generator     AutogrindSystem._spawn_meta_boss -> a PROCEDURAL enemy
+##   4. THE ONE I MISSED — build_meta_boss_enemy_data reads monsters.json and instantiates any
+##      monster flagged `autogrind_spawned`. Two carry it: adaptive_slime and permadeath_reaper.
+##
+## So the GRIND ITSELF spawns real monsters.json entries, and `permadeath_reaper` casts `final_death`,
+## `permakill_strike` and `save_deletion` — carrying `countdown` and `meta_effect`, both of which this
+## backlog ranked as having no reachable caster. My declarations survived, but by luck of the data:
+## neither meta_knight nor time_phantom carries the flag, so the answers were right and the instrument
+## was not.
+##
+## CLAUDE.md says of cutscenes "a scene reaches a player at least SIX different ways — SIX IS A FLOOR,
+## NOT A TOTAL", and @cowir-cutscenes' point is that an oracle which enumerates forms is how you miss
+## one. The arm below therefore does not enumerate: it asks what the grind's own spawner can reach and
+## requires every key it finds to be NAMED somewhere in this file.
+##
 ## ⛔ WHAT AXIS 2 DOES NOT CHECK, named because the arm's name implies more than it does.
 ## It compares ONE marker per key against ONE live executor: the site where the AUTHORED KEY IS READ.
 ## For a PRODUCER/CONSUMER key that is the producer only — `next_attack_multiplier` is read in live's
@@ -458,3 +478,64 @@ func test_a_multi_site_key_keeps_its_consumer_coverage_elsewhere() -> void:
 	for key in CONSUMER_COVERAGE:
 		assert_true(GRIND_PATH_MARKER.has(key),
 			"'%s' claims consumer coverage but is not path-checked at all — one of the two is wrong" % key)
+
+
+## Ability keys reachable through form 4 — a monster the GRIND'S OWN SPAWNER instantiates.
+func _keys_the_grind_can_spawn() -> Array:
+	var monsters: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var keys: Dictionary = {}
+	for mid in monsters.keys():
+		var m: Dictionary = monsters[mid]
+		if not bool(m.get("autogrind_spawned", false)):
+			continue
+		for aid in m.get("abilities", []):
+			for k in (abilities.get(aid, {}) as Dictionary).keys():
+				keys[k] = true
+	return keys.keys()
+
+
+func test_every_key_the_grind_can_spawn_is_named_in_this_file() -> void:
+	## The form I missed, turned into a ratchet. A key reachable through the grind's OWN spawner must
+	## be path-checked, declared, or in the backlog — never simply absent, which is what it was.
+	var live: String = GdSource.code_of(LIVE)
+	var grind: String = GdSource.code_of(GRIND)
+	var spawnable: Array = _keys_the_grind_can_spawn()
+	assert_gt(spawnable.size(), 5,
+		"CONTROL: the grind's spawner must still reach a real key set (%d) — if this collapses the derivation broke, not the game" % spawnable.size())
+	var known: Dictionary = {}
+	for k in DECLARED:
+		known[k] = true
+	for k in UNEXAMINED:
+		known[k] = true
+	for k in UNDECIDED_LIVE_SIDE:
+		known[k] = true
+	for k in CLOSED_PENDING_FOLD:
+		known[k] = true
+	for k in GRIND_PATH_MARKER:
+		known[k] = true
+	var unnamed: Array = []
+	for k in spawnable:
+		var q: String = '"%s"' % k
+		if not live.contains(q):
+			continue  # live does not read it either — not a parity question
+		if grind.contains(q):
+			continue  # both engines read it
+		if not known.has(k):
+			unnamed.append(k)
+	gut.p("    keys reachable via the grind's own spawner: %d" % spawnable.size())
+	assert_eq(unnamed, [],
+		"these keys are reachable by a monster the GRIND ITSELF spawns, are read by live and not by the grind, and are named nowhere in this file: %s" % str(unnamed))
+
+
+func test_the_spawner_form_still_exists_where_it_is_documented() -> void:
+	## The header describes form 4 by mechanism. If the spawner stops reading monsters.json, or the
+	## flag is renamed, that description becomes a lie and the arm above silently measures nothing.
+	var sys: String = GdSource.code_of("res://src/autogrind/AutogrindSystem.gd")
+	assert_gt(sys.length(), 5000, "CONTROL: AutogrindSystem was actually read")
+	assert_true(sys.contains("func build_meta_boss_enemy_data"),
+		"the builder named in this file's reachability notes is gone — re-derive the forms before trusting any declaration here")
+	assert_true(sys.contains('"autogrind_spawned"'),
+		"the spawner no longer selects on autogrind_spawned; form 4 is described by a mechanism that no longer exists")
+	assert_gt(_keys_the_grind_can_spawn().size(), 5,
+		"no monster carries autogrind_spawned any more — form 4 reaches nothing, and the ratchet above is vacuous rather than clean")
