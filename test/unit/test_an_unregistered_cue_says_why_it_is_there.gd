@@ -37,6 +37,18 @@ func _disk_oggs() -> Array:
 	return out
 
 
+func _manifest_key_count() -> int:
+	var f := FileAccess.open("res://data/sfx_manifest.json", FileAccess.READ)
+	if f == null:
+		return 0
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	if not (parsed is Dictionary):
+		return 0
+	var sfx = parsed.get("sfx", {})
+	return sfx.size() if sfx is Dictionary else 0
+
+
 func _named_by_manifest() -> Dictionary:
 	var f := FileAccess.open("res://data/sfx_manifest.json", FileAccess.READ)
 	if f == null:
@@ -60,6 +72,10 @@ func test_every_unregistered_ogg_is_declared() -> void:
 	assert_gt(disk.size(), 0, "VOID, not clean: the sfx directory read back 0 .ogg files")
 	var named: Dictionary = _named_by_manifest()
 	assert_gt(named.size(), 0, "VOID, not clean: the manifest named 0 files")
+	## The three true SFX numbers, DERIVED. CLAUDE.md deliberately carries none of them: it held
+	## 338/336 for months, was corrected on 2026-09-16, and went stale the same day when party_ko
+	## landed one release later. Do not copy these back into the doc.
+	print("[sfx-counts] manifest keys=%d · distinct files named=%d · .ogg on disk=%d" % [_manifest_key_count(), named.size(), disk.size()])
 	var undeclared: Array = []
 	for f in disk:
 		if not named.has(str(f)) and not KNOWN_UNREGISTERED.has(str(f)):
