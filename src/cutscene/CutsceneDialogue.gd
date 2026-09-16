@@ -104,6 +104,8 @@ var _background: ColorRect
 var _dialogue_box: Control
 var _portrait_frame: Control
 var _portrait_image: TextureRect
+var _portrait_bg: ColorRect = null
+var _portrait_theme_bg: Color = Color(0.05, 0.05, 0.08)
 var _speaker_label: Label
 var _text_label: RichTextLabel
 var _advance_hint: Label
@@ -555,10 +557,11 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_portrait_frame.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
 	_dialogue_box.add_child(_portrait_frame)
 
-	var portrait_bg = ColorRect.new()
-	portrait_bg.color = theme["portrait_bg"]
-	portrait_bg.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
-	_portrait_frame.add_child(portrait_bg)
+	_portrait_bg = ColorRect.new()
+	_portrait_bg.color = theme["portrait_bg"]
+	_portrait_bg.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
+	_portrait_frame.add_child(_portrait_bg)
+	_portrait_theme_bg = theme["portrait_bg"]
 
 	_draw_retro_border(_portrait_frame, PORTRAIT_SIZE, PORTRAIT_SIZE, theme["border"].darkened(0.2))
 
@@ -908,6 +911,9 @@ func _show_current_line() -> void:
 			expression = expr
 			break
 	_portrait_image.texture = _create_portrait(portrait_type)
+	# The ground is chosen AFTER the art is known — _create_dialogue_visuals runs before it.
+	if _portrait_bg and is_instance_valid(_portrait_bg):
+		_portrait_bg.color = portrait_ground(_portrait_image.texture, _portrait_theme_bg)
 	# Apply expression tint to portrait
 	_portrait_image.modulate = EXPRESSION_TINTS.get(expression, Color.WHITE)
 
@@ -1460,6 +1466,23 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 ## when the job has no idle sheet (caller then falls back to procedural).
 const BUST_CROP_RATIO: float = 0.55
 
+## A theme's `portrait_bg` is a MOOD choice, and dark art on it has nothing to read against.
+## Measured 2026-09-16 at the rendered 72px cell — mean luminance of the opaque pixels, and mean
+## |ΔL| against the narrator ground (0.05,0.05,0.08), which is the one most lines use:
+##   warden bust 0.159 / 0.108   ·   mage PNG 0.203 / 0.154   ·   rogue PNG 0.199 / 0.147
+##   cleric PNG  0.728 / 0.676   ·   elder PNG 0.533 / 0.481
+## The darkest three are one sheet bust and TWO HAND-DRAWN portraits, so this is not a bust problem
+## and not a crop problem (cowir-sprites measured three tighter crops, all worse on the sheet that
+## prompted it).
+##
+## ⛔ NOT A THRESHOLD. A "lift anything below 0.35" rule moved 29 of the authored portraits and made
+## `phil` WORSE — his art sits at 0.33, so the lifted ground is the colour he already is. The ground
+## is CHOSEN instead: whichever of the two reads better for this art, so the theme keeps every frame
+## it already served and can never lose one.
+const PORTRAIT_LIFTED_BG: Color = Color(0.32, 0.33, 0.38)
+## Mean luminance per portrait texture, so the 72px scan runs once per speaker rather than per line.
+static var _portrait_lum_cache: Dictionary = {}
+
 func _create_bust_from_job_sheet(job_id: String) -> Texture2D:
 	if job_id.is_empty():
 		return null
@@ -1523,6 +1546,52 @@ func _create_bust_from_monster_sheet(monster_id: String) -> Texture2D:
 	atlas.region = Rect2(frame_tex.region.position + Vector2(box.position), Vector2(box.size))
 	_portrait_cache[cache_key] = atlas
 	return atlas
+
+
+## Mean luminance of a portrait's opaque pixels at the size it is RENDERED, not at source size — a
+## 256px crop and a 72px cell resample differently, which is why "sparse at source" did not predict
+## what the box looks like.
+static func portrait_mean_luminance(tex: Texture2D) -> float:
+	if tex == null:
+		return 1.0
+	var key: int = tex.get_instance_id()
+	if _portrait_lum_cache.has(key):
+		return _portrait_lum_cache[key]
+	var img: Image = tex.get_image()
+	if img == null or img.is_empty():
+		_portrait_lum_cache[key] = 1.0
+		return 1.0
+	var cell := img.duplicate()
+	cell.convert(Image.FORMAT_RGBA8)
+	cell.resize(PORTRAIT_SIZE - 8, PORTRAIT_SIZE - 8, Image.INTERPOLATE_NEAREST)
+	var opaque: int = 0
+	var total: float = 0.0
+	for y in cell.get_height():
+		for x in cell.get_width():
+			var c: Color = cell.get_pixel(x, y)
+			if c.a < 0.5:
+				continue
+			opaque += 1
+			total += 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
+	# No opaque pixels at all: nothing to read either way, so keep the theme's mood.
+	var mean: float = (total / float(opaque)) if opaque > 0 else 1.0
+	_portrait_lum_cache[key] = mean
+	return mean
+
+
+## The better of two grounds for THIS art, by mean |ΔL|. Monotone by construction: the theme's colour
+## is only replaced when the replacement reads better, so no frame this already served gets worse.
+static func portrait_ground(tex: Texture2D, theme_bg: Color) -> Color:
+	if tex == null:
+		return theme_bg
+	var art: float = portrait_mean_luminance(tex)
+	var themed: float = absf(art - _luminance_of(theme_bg))
+	var lifted: float = absf(art - _luminance_of(PORTRAIT_LIFTED_BG))
+	return PORTRAIT_LIFTED_BG if lifted > themed else theme_bg
+
+
+static func _luminance_of(c: Color) -> float:
+	return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
 
 
 func _draw_fighter_portrait(img: Image, size: int) -> void:
