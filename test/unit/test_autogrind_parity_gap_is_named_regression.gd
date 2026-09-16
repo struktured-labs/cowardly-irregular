@@ -62,6 +62,11 @@ const CLOSED_PENDING_FOLD := [
 	## magic or physical), and their fix wires live AND mirrors the grind in the same commit. So it
 	## stops being a gap of mine at the fold rather than becoming one.
 	"countdown",
+	## Both halves of steal, closed together because they are one mechanism authored twice: `steal`
+	## (support) reads success_rate, `mug` (physical) reads it AND `steals`. The grind resolved
+	## neither — it had zero mentions of steal — so a Rogue, whose BASE kit holds both, earned no
+	## steal-gold in a grind and the victim collected a junk status called "steal".
+	"success_rate", "steals",
 ]
 
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
@@ -70,7 +75,7 @@ const UNEXAMINED := [
 	"absorb_amount", "ap_gain",
 	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
 	"meta_effect", "mp_restore_percent", "priority", "recoil_pct",
-	"steals", "success_rate", "threat_class",
+	"threat_class",
 ]
 
 ## ⛔ THE THIRD STATE, and it exists because I published a backlog number my instrument could not
@@ -224,6 +229,13 @@ const GRIND_PATH_MARKER := {
 	"secondary_chance": "_apply_secondary_effect(",
 	"secondary_target": "_apply_secondary_effect(",
 	"secondary_modifier": "_apply_secondary_effect(",
+	## Live reads success_rate TWICE, on two different kinds of site: inside _execute_support_ability
+	## (the `steal` effect) and inline in _execute_ability's "physical" arm (mug). Only the first
+	## resolves to an executor — the second sits in the DISPATCHER, the `secondary_effect` shape — so
+	## axis 2 checks the support half and the physical half is pinned behaviourally in
+	## test_autogrind_steals_what_it_steals_regression instead. One marker: both grind arms call it.
+	"success_rate": "_roll_steal(",
+	"steals": "ability.get(\"steals\"",
 }
 
 ## Read by both engines, live-confined to one executor, and NOT path-assessed by me. They are here

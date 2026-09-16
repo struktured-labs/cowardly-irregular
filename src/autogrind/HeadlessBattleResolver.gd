@@ -25,6 +25,9 @@ var _player_party: Array = []
 var _enemy_party: Array = []
 var _current_round: int = 0
 var _battle_log: Array[String] = []
+## BattleManager:230. Steal gold scales with the victim's max HP on both sides of the port.
+const STEAL_GOLD_HP_DIVISOR: float = 500.0
+var _stolen_gold: int = 0
 
 
 func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
@@ -33,6 +36,7 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	_current_round = 0
 	_battle_log.clear()
 	_rounds_since_group_attack = 99
+	_stolen_gold = 0
 
 	## Tick 145: mark encountered monsters as seen in the bestiary,
 	## mirroring BattleScene._show_battle_quip. Pre-fix autogrind
@@ -846,6 +850,11 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## grind heal bone_warden and shadow_knight where the game does not (@cowir-battle 2d14d92d).
 					_log("%s uses %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dmg])
 					_maybe_inflict_status(caster, target, ability, ability_id)
+			## mug is "attack and steal in one action"; the grind's physical arm read neither `steals`
+			## nor success_rate, so a Rogue's mug was a plain hit. After the damage, exactly as live
+			## (BattleManager:4650) — which also means a target killed by the hit cannot be robbed.
+			if bool(ability.get("steals", false)):
+				_roll_steal(caster, ability, targets, float(ability.get("success_rate", 0.5)))
 
 		"mp_restore":
 			## pray (single_ally) and channel (self) had no arm and fell to the default, which
@@ -923,6 +932,12 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						target.restore_mp(int(target.max_mp * 0.25))
 						target.gain_ap(1)
 						_log("%s uses %s on %s (MP + AP)" % [caster.combatant_name, ability_id, target.combatant_name])
+						continue
+					elif effect == "steal":
+						## Fell to the else below and gave the victim a junk status called "steal" while the
+						## gold never moved — the cleanse class, one arm down. Live's support default is 1.0
+						## (BattleManager:5609's local), NOT mug's 0.5; `steal` authors 0.5 explicitly either way.
+						_roll_steal(caster, ability, [target], float(ability.get("success_rate", 1.0)))
 						continue
 					elif effect == "regen":
 						## Combatant.end_turn ticks "regen" and reads an authored override off
@@ -1077,6 +1092,32 @@ const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
 	"speed_down": ["speed", "Secondary Speed Down"],
 	"magic_defense_down": ["magic_defense", "Secondary Magic Defense Down"],
 }
+
+
+## Live pays the PLAYER for a landed steal — BattleManager:6147 (the support `steal` effect) and
+## :4655 (mug's steal half), both GameState.add_gold, which applies gold_multiplier itself.
+## PARTY SIDE ONLY here, deliberately: live has no caster-side check, so an enemy's steal pays the
+## party it just robbed. That is reachable — goblin/spiteful_crow/conveyor_gremlin author `steal`
+## across 7 pools, and "support" is in UTILITY_ABILITY_TYPES, which the brute and assassin AI both
+## draw from. Mirroring it into an engine that runs hundreds of unattended battles turns a per-fight
+## bug into a gold fountain, so the enemy side is declared in the ledger rather than copied.
+## Base rate only: _steal_success_rate also sums an equipment steal_bonus and a passive steal_chance,
+## and this file models NEITHER category at all — a broader gap than steal, declared as its own entry.
+func _roll_steal(caster, ability: Dictionary, targets: Array, base_rate: float) -> void:
+	var party_side: bool = _player_party.has(caster)
+	for target in targets:
+		if target == null or not is_instance_valid(target) or not target.is_alive:
+			continue
+		if randf() >= base_rate:
+			_log("%s fails to steal from %s" % [caster.combatant_name, target.combatant_name])
+			continue
+		## BattleManager:6147 verbatim. rogue_lockward's first_steal_guaranteed and steal_response are
+		## NOT ported: it is the only monster authoring either, and it is neither pooled nor
+		## autogrind_spawned, so no grind can field it by any of the four spawn forms.
+		var amount: int = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
+		if party_side:
+			_stolen_gold += amount
+		_log("%s steals %d gold from %s" % [caster.combatant_name, amount, target.combatant_name])
 
 
 func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array, ability_id: String) -> void:
@@ -1301,6 +1342,19 @@ func _build_results(victory: bool, termination_reason: String = "") -> Dictionar
 				0.1, 10.0)
 			exp = int(exp * exp_mult)
 			gold = int(gold * gold_mult)
+
+	## Credited whether or not the party won. Every other reward here is victory-only, but live
+	## calls add_gold the MOMENT the steal lands, so gold taken off a monster survives a wipe.
+	## Multiplied separately for that reason, with add_gold's own clamp (GameState:1059).
+	if _stolen_gold > 0:
+		var steal_mult: float = 1.0
+		var gs_s: Object = null
+		var tree_s: SceneTree = Engine.get_main_loop() as SceneTree
+		if tree_s != null and tree_s.root != null:
+			gs_s = tree_s.root.get_node_or_null("GameState")
+		if gs_s != null and "game_constants" in gs_s:
+			steal_mult = clampf(float(gs_s.game_constants.get("gold_multiplier", 1.0)), 0.1, 10.0)
+		gold += int(_stolen_gold * steal_mult)
 
 	# Drop parity with BattleManager (~line 596): pre-fix ludicrous mode gave EXP+gold
 	# but ZERO item drops — rare_item_found never fired and inventory_items interrupts
