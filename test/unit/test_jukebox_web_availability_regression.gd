@@ -16,8 +16,10 @@ extends GutTest
 ##
 ## ⛔ AND EVERY NUMBER THAT USED TO LIVE IN THIS PARAGRAPH WAS STALE. It read "drops 54 music
 ## files ... `*industrial*`, `*digital*`, `*abstract*`, `*futuristic*`, `cutscene_w4/5/6*`" and
-## "33 with no procedural path ... cutscene(16), credits(3)". Measured 2026-09-16: 42 files, and
-## THERE IS NO `cutscene_w6*` CLAUSE — the nine w6 beds and the three credits beds were
+## "33 with no procedural path ... cutscene(16), credits(3)". Both were wrong, and the CURRENT
+## pair is derived and printed by the arm at the bottom rather than restated here — writing it
+## here is how the last pair went stale, and this paragraph is not exempt from its own lesson.
+## The one durable fact: THERE IS NO `cutscene_w6*` CLAUSE — the nine w6 beds and the three credits beds were
 ## deliberately un-excluded on 2026-09-11 (cowir-main's ruling; world6_ending requested
 ## cutscene_w6_epilogue and got silence). The three worlds are also enumerated per prefix, not
 ## matched bare. So the sentence described a filter that had already changed underneath it.
