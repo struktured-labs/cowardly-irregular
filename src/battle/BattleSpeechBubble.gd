@@ -9,6 +9,19 @@ const RESERVED_RIGHT_PX: float = 210.0
 const EDGE_MARGIN: float = 8.0
 const TOP_MARGIN: float = 48.0  # 2026-07-16 smoke: head-anchored bubbles on tall party sprites climbed into the AUTO button row (y 6..36) — keep bubbles below it
 const MAX_TEXT_WIDTH: float = 260.0
+## A quip too long for two rows WIDENS before it grows a third. struktured 2026-08-29 and after: a
+## tall bubble clips the crown of the enemy it is next to, and height is what occludes — width is
+## already managed (clamped to the viewport, kept off the party panel by RESERVED_RIGHT_PX, slid past
+## the command menu by the keep-out rects). Measured with the shaper at the bubble's own font (13):
+##   of the 25 scripted party lines at 260px:  1 row 1 · 2 rows 11 · 3 rows 13
+##                              at 420px:      1 row 11 · 2 rows 14 · 3 rows 0
+## and a 140-char LLM line (MAX_PARTY_LINE_CHARS) goes 4 rows -> 3. This changes no authored line,
+## which is the half struktured has open: shortening the Mage/Cleric/Bard lines is still his call,
+## and this removes the clipping those lines caused without making it.
+const MAX_TEXT_WIDTH_WIDE: float = 420.0
+const WIDEN_STEP: float = 40.0
+## Two rows is the target, not a limit: a line that cannot reach it by WIDTH keeps its rows.
+const WIDEN_TARGET_ROWS: int = 2
 ## Gap between the speaker and the bubble's near edge — the bubble sits BESIDE the head, not on it.
 const SIDE_GAP_PX: float = 22.0
 ## Speaker counts as covered when it falls inside the bubble span plus this slack.
@@ -43,6 +56,30 @@ var _voiced: bool = false
 var _panel: PanelContainer = null
 ## Returns screen Rect2s the player is reading (the open command menu) — read at layout time, when the menu exists.
 var _keep_out: Callable = Callable()
+
+## The narrowest width at which `text` fits WIDEN_TARGET_ROWS, stepping up to MAX_TEXT_WIDTH_WIDE.
+## Monotone by construction: it can only ever return a width that needs the same rows or fewer than
+## the one before it, and a line that already fits takes the first return untouched.
+static func wrap_width_for(text: String, font: Font, font_size: int) -> float:
+	if text.is_empty() or font == null or font_size <= 0:
+		return MAX_TEXT_WIDTH
+	var steps: int = int(ceil((MAX_TEXT_WIDTH_WIDE - MAX_TEXT_WIDTH) / WIDEN_STEP))
+	var w: float = MAX_TEXT_WIDTH
+	for i in steps + 1:
+		w = minf(MAX_TEXT_WIDTH + WIDEN_STEP * float(i), MAX_TEXT_WIDTH_WIDE)
+		if _rows_at(text, w, font, font_size) <= WIDEN_TARGET_ROWS:
+			return w
+	return MAX_TEXT_WIDTH_WIDE
+
+
+## Rows the shaper itself would wrap this text into — the same engine the Label uses, synchronously.
+## ⛔ NOT Label.size / get_content_height: those need a layout pass and answer 1 row headless.
+static func _rows_at(text: String, width: float, font: Font, font_size: int) -> int:
+	var tp := TextParagraph.new()
+	tp.width = width
+	tp.add_string(text, font, font_size)
+	return tp.get_line_count()
+
 
 ## Screen px from a sprite's centre to the TOP OF ITS FIGURE — not its frame.
 ## The artists' 256px frames hold figures of different heights at different offsets (measured
@@ -148,7 +185,9 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	text_label.add_theme_constant_override("outline_size", 4)
 	text_label.add_theme_color_override("font_outline_color", Color(0.2, 0.15, 0.0))
 	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	text_label.custom_minimum_size = Vector2(MAX_TEXT_WIDTH, 0)
+	# SMALLEST width that fits the target rows — a short quip keeps the narrow bubble it has today.
+	text_label.custom_minimum_size = Vector2(wrap_width_for(text_label.text,
+		text_label.get_theme_font("font"), TextScale.scaled(13)), 0)
 	text_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(text_label)
 	add_child(bubble)
