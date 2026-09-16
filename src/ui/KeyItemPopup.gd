@@ -13,6 +13,8 @@ signal dismissed()
 
 const PANEL_W := 440.0
 const PANEL_H := 260.0
+## One extra text line on the card, measured: a font-11 Label clamps to ~34px with theme margins.
+const EXTRA_LINE_H := 36.0
 const BG_COLOR := Color(0.03, 0.03, 0.08, 0.75)
 const PANEL_COLOR := Color(0.12, 0.10, 0.18)
 const BORDER_LIGHT := Color(1.0, 0.85, 0.4)
@@ -43,6 +45,19 @@ static func continue_hint_text(device_name: String = "") -> String:
 	if InputProfileManager:
 		cap = InputProfileManager.glyph_for_action("ui_accept", device_name)
 	return "Press %s / Z to continue" % cap
+
+
+## The name the INVENTORY will show for this id, or "" when the id is unknown or ItemSystem is absent
+## (headless tests, a mid-cutscene reveal of an item that was never registered).
+static func _canonical_name(item_id: String) -> String:
+	if item_id == "" or not ItemSystem:
+		return ""
+	if not ItemSystem.has_method("get_item"):
+		return ""
+	var data = ItemSystem.get_item(item_id)
+	if not (data is Dictionary):
+		return ""
+	return str((data as Dictionary).get("name", ""))
 
 
 ## Emblem for a reveal with no sprite (all 21 authored grant_item steps): a glyph the font chain already proves, keyed on the item's ItemSystem category so the slot is never a blank band.
@@ -80,10 +95,19 @@ func _present(item: Dictionary) -> void:
 	_bg.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_bg)
 
+	# A divergent reveal carries one extra line, so the CARD grows by one line rather than the
+	# description sliding under it. EXTRA_LINE_H is the measured height of that label (a font-11
+	# Label clamps to ~34px with the theme's margins, not to its font size).
+	var bag_name: String = _canonical_name(str(item.get("item_id", "")))
+	var shown_name: String = str(item.get("name", ""))
+	var show_bag: bool = bag_name != "" \
+		and bag_name.strip_edges().to_lower() != shown_name.strip_edges().to_lower()
+	var panel_h: float = PANEL_H + (EXTRA_LINE_H if show_bag else 0.0)
+
 	# Panel
 	_panel = Control.new()
-	_panel.size = Vector2(PANEL_W, PANEL_H)
-	_panel.position = Vector2((vp_size.x - PANEL_W) / 2.0, (vp_size.y - PANEL_H) / 2.0 - 20)
+	_panel.size = Vector2(PANEL_W, panel_h)
+	_panel.position = Vector2((vp_size.x - PANEL_W) / 2.0, (vp_size.y - panel_h) / 2.0 - 20)
 	add_child(_panel)
 
 	var panel_bg := ColorRect.new()
@@ -141,13 +165,32 @@ func _present(item: Dictionary) -> void:
 	name_label.add_theme_color_override("font_color", NAME_COLOR)
 	_panel.add_child(name_label)
 
+	# ⛔ 16 of the 21 authored reveals announce a name items.json does not use — "Arbiter's Final
+	# Paper" for `arbiter_grade_fragment`, whose canonical name is "Grade Fragment". All 16 are
+	# CATEGORY 4 key items and ItemsMenu lists every category but OFFENSIVE, so the player is told one
+	# name at the reveal and shown another in the bag, on the only two surfaces that name the thing.
+	# WHICH name is canonical is cowir-story's call; that the player can FIND it is not. So when the
+	# two differ, the bag's name goes under the flavour name — and this line DISAPPEARS on its own if
+	# the names are ever aligned, because equal names render nothing.
+	var desc_y := 188.0
+	if show_bag:
+		var bag := Label.new()
+		bag.text = "In your bag: %s" % bag_name
+		bag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		bag.position = Vector2(0, 184)
+		bag.size = Vector2(PANEL_W, EXTRA_LINE_H)
+		bag.add_theme_font_size_override("font_size", 11)
+		bag.add_theme_color_override("font_color", HINT_COLOR)
+		_panel.add_child(bag)
+		desc_y = 184.0 + EXTRA_LINE_H
+
 	# Description
 	var desc := Label.new()
 	desc.text = str(item.get("description", ""))
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.position = Vector2(20, 188)
-	desc.size = Vector2(PANEL_W - 40, 44)
+	desc.position = Vector2(20, desc_y)
+	desc.size = Vector2(PANEL_W - 40, 44.0)
 	desc.add_theme_font_size_override("font_size", 12)
 	desc.add_theme_color_override("font_color", DESC_COLOR)
 	_panel.add_child(desc)
@@ -156,7 +199,7 @@ func _present(item: Dictionary) -> void:
 	var hint := Label.new()
 	hint.text = continue_hint_text()
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.position = Vector2(0, PANEL_H - 22)
+	hint.position = Vector2(0, panel_h - 22.0)
 	hint.size = Vector2(PANEL_W, 18)
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.add_theme_color_override("font_color", HINT_COLOR)
