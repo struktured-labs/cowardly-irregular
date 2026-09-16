@@ -180,8 +180,17 @@ func test_every_meta_this_file_sets_is_cleared_at_the_boundary() -> void:
 	## its field-clear for months. @cowir-battle's "a new set_meta undeclared" mutation, adopted.
 	var code: String = GdSource.code_of(GRIND)
 	assert_gt(code.length(), 2000, "CONTROL: the source must actually have loaded")
-	var declared: Array = _res.PER_BATTLE_METAS
-	assert_gt(declared.size(), 0, "CONTROL: PER_BATTLE_METAS must be readable and non-empty")
+	## ⛔ THIS READ `_res.PER_BATTLE_METAS` UNTIL 2026-09-16 AND THAT DEFEATED THE WHOLE ARM. Rename or
+	## delete the const — the exact drift this guard exists to catch — and the direct reference raises
+	## "Invalid access to property or key" at RUNTIME, which ABORTS the function after the two floors
+	## above have already passed. GUT then scores it PASSING: it asserted, so it is not Risky; nothing
+	## failed, so it is not Failing. Measured: Passing 10 -> 10, Risky 0 -> 0, EC 0 -> 0, and ONLY
+	## Asserts moved, 22 -> 17. A guard that reports success when its subject vanishes.
+	## Read from SOURCE instead — @cowir-battle's distinction: a source-pin naming a symbol in a string
+	## runs against any version of the subject, a direct reference only against one.
+	var declared: Array = _declared_metas(code)
+	assert_gt(declared.size(), 0,
+		"PER_BATTLE_METAS is gone or empty — the boundary clears nothing and the arm below would pass over it")
 
 	var found: Dictionary = {}
 	var at: int = code.find("set_meta(\"")
@@ -254,4 +263,29 @@ func _composed_meta_sites(code: String) -> Array:
 			if after != ",":
 				out.append(code.substr(start, end - start))
 		at = code.find("set_meta(\"", at + 1)
+	return out
+
+
+## The boundary's declared key list, parsed out of the source so a missing const REDS here instead of
+## aborting this arm into a silent pass. Returns [] when the declaration is absent, which the caller
+## treats as the failure it is.
+func _declared_metas(code: String) -> Array:
+	var at: int = code.find("const PER_BATTLE_METAS")
+	if at < 0:
+		return []
+	## AFTER the `=`, not after the const name: the type annotation `Array[String]` carries its own
+	## brackets, and finding those parsed the list as ["String"]. The clean run redded on it, which is
+	## the arm's floor doing its job on the arm's own parser.
+	var eq: int = code.find("=", at)
+	if eq < 0:
+		return []
+	var open_b: int = code.find("[", eq)
+	var close_b: int = code.find("]", open_b)
+	if open_b < 0 or close_b < open_b:
+		return []
+	var out: Array = []
+	for part in code.substr(open_b + 1, close_b - open_b - 1).split(","):
+		var t: String = part.strip_edges().replace("\"", "")
+		if t != "":
+			out.append(t)
 	return out
