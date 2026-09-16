@@ -223,6 +223,17 @@ func _duplicate_literal_sets(code: String) -> int:
 
 ## A set_meta whose key is built rather than written. "Literal" = the closing quote is followed by a
 ## comma; anything else (notably `+`) is composition wearing a literal's opening quote.
+##
+## ⚠️ THIS ASSERTS ABOUT A CHARACTER, NOT ABOUT THE PROPERTY — @cowir-cutscenes' name-vs-property
+## smell, and their own instance was the same shape (`begins_with('"')` standing in for "is a
+## literal"). Knowing that, the failure DIRECTION is what makes it safe to keep, and it was measured
+## rather than hoped for: every way I can defeat this errs toward CRYING WOLF, never toward silence.
+##   set_meta("_k" , v)        space before the comma  -> flagged, wrongly. Loud, harmless.
+##   set_meta("_k".repeat(2))  a method on the literal -> flagged. Correct, by luck of the same rule.
+##   set_meta(("_k" + b), v)   parenthesised           -> this scan never sees it, and the
+##                             total-vs-literal count check above catches it instead.
+## A real answer needs a parser. Until one is cheap, this is a syntax heuristic that fails loud, and
+## saying so is the point — an instrument that cannot state its own blind spot has two.
 func _composed_meta_sites(code: String) -> Array:
 	var out: Array = []
 	var at: int = code.find("set_meta(\"")
