@@ -204,8 +204,9 @@ echo "[stage] 4/4 import + export (first run builds a fresh cache, ~minutes)"
 # SANDBOXED. `--import` is editor-class: it resolves user:// by application name and writes
 # .recovery_mode_lock into whichever profile is active — struktured's, from any worktree. This
 # runs on EVERY web publish. The stage's import CACHE lives in $STAGE/.godot (res://), so
-# relocating the data root costs it nothing; the export below CANNOT carry the same variable,
-# because export templates live under the root it would relocate.
+# relocating the data root costs it nothing. The export below CAN carry it too, once the
+# templates are symlinked into the sandbox — see tools/export_sandbox.sh. It could not before
+# 2026-09-16, and this comment used to say so as if it were permanent.
 # Found 2026-09-16 by widening check_user_data_sandboxed.py's corpus from tools/deploy_*.sh to
 # tools/*.sh — the hand-shaped glob covered 4 files and this one was not among them.
 _STAGE_XDG="$PWD/tmp/stage_xdg"
@@ -215,7 +216,17 @@ mkdir -p "$_STAGE_XDG"
 IEC=0; wait $! || IEC=$?
 test $IEC -eq 0 || { echo "[stage] BLOCKED: staged import failed — tmp/stage_import.log" >&2; exit 3; }
 
-( cd "$STAGE" && godot --headless --audio-driver Dummy \
+# SANDBOXED, with the export templates symlinked in. This was the LAST deploy invocation writing
+# struktured's real profile: v3.33.360-alpha shipped with the boot gate and both imports sandboxed
+# and his .recovery_mode_lock still moved 10:40:04 -> 12:22:04, stamped by an export.
+# Measured both directions on a real Linux export, 2026-09-16:
+#   bare sandbox      "No export template found at <sandbox>/godot/export_templates/4.4.1.stable/..."
+#   sandbox + symlink 318,140,832 bytes exported, exit 0, his lock UNCHANGED
+# The templates are read-only to an export, so a link is all it takes.
+_EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
+    echo "[stage] BLOCKED: could not build the export sandbox — see above." >&2
+    exit 3; }
+( cd "$STAGE" && XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --audio-driver Dummy \
     --export-release "Web" builds/web/index.html > ../stage_export.log 2>&1 ) &
 EEC=0; wait $! || EEC=$?
 test $EEC -eq 0 || { echo "[stage] BLOCKED: staged export failed — tmp/stage_export.log" >&2; exit 3; }

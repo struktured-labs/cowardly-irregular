@@ -526,7 +526,17 @@ if [ "$GATE_TREE_ID_NOW" != "$GATE_TREE_ID" ]; then
     exit 1
 fi
 echo "[${PLAT}] gate 2/4: export (tree unchanged since gate 1)"
-godot --headless --audio-driver Dummy --export-release "$PRESET" "$BIN" > tmp/${PLAT}_export.log 2>&1 &
+# SANDBOXED, with the export templates symlinked in. This was the LAST deploy invocation writing
+# struktured's real profile: v3.33.360-alpha shipped with the boot gate and both imports sandboxed
+# and his .recovery_mode_lock still moved 10:40:04 -> 12:22:04, stamped by an export.
+# Measured both directions on a real Linux export, 2026-09-16:
+#   bare sandbox      "No export template found at <sandbox>/godot/export_templates/4.4.1.stable/..."
+#   sandbox + symlink 318,140,832 bytes exported, exit 0, his lock UNCHANGED
+# The templates are read-only to an export, so a link is all it takes.
+_EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
+    echo "[${PLAT}] BLOCKED: could not build the export sandbox — see above." >&2
+    exit 2; }
+XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --audio-driver Dummy --export-release "$PRESET" "$BIN" > tmp/${PLAT}_export.log 2>&1 &
 EC=0; wait $! || EC=$?
 test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: export failed — see tmp/${PLAT}_export.log" >&2; exit 2; }
 [ -s "$BIN" ] || { echo "[${PLAT}] BLOCKED: export reported success but produced no binary" >&2; exit 2; }
