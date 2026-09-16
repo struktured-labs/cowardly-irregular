@@ -23,6 +23,7 @@ extends GutTest
 
 const JUKEBOX := preload("res://src/ui/JukeboxMenu.gd")
 const MANIFEST := "res://data/music_manifest.json"
+const CATALOG := "res://tools/music_prompts.json"
 
 
 func _tracks_map() -> Dictionary:
@@ -41,18 +42,22 @@ func _alias_ids() -> Array:
 	return out
 
 
-## \u26d4 ONE TITLE IS AUTHORED TWICE ON TWO DIFFERENT BEDS, and hiding the aliases does not touch it.
-## Declared rather than excluded from the check, so it cannot be silenced and a THIRD one reds:
+## ⛔ DELIBERATELY EMPTY, AND THE ARM BELOW KEEPS IT THAT WAY. The one entry it held —
+## "The Answered Absence" on both `overworld_abstract` and `cutscene_w6_entering_nothing` — was
+## retired 2026-09-16 by retitling the cutscene bed, not by declaring it forever.
 ##
-##     overworld_abstract              1,144,648 B   128.8 s
-##     cutscene_w6_entering_nothing    1,527,803 B   168.0 s
+## Which bed owned the name was a determination, not a preference. `overworld_abstract` was
+## generated 2026-03-21 and its own prompt contains the phrase; the cutscene bed was generated
+## three weeks later in a 25-track batch and inherited the title from `tools/music_prompts.json`,
+## where one `title_template` had been copied onto two entries. The credits bed settles it —
+## "The Answered Absence returns but fuller ... a single sustained piano chord" describes the
+## overworld bed's piano, not the cutscene bed's near-silent drone. It is a recurring theme with
+## one owner.
 ##
-## Different files, different lengths, same name. Retitling one is authored content — a track title
-## is writing, not data — so it is @struktured's call, not this lane's. The set must not grow OR
-## shrink without this note changing: a shrink means somebody retitled one and did not say so.
-const KNOWN_TITLE_COLLISIONS := {
-	"The Answered Absence": ["cutscene_w6_entering_nothing", "overworld_abstract"],
-}
+## An entry here must name WHY two beds share a name. The second assert deletes it the moment the
+## collision stops being real, which is how this one left: it went red naming itself before the
+## line was touched.
+const KNOWN_TITLE_COLLISIONS := {}
 
 
 func test_no_two_rows_read_the_same() -> void:
@@ -77,7 +82,7 @@ func test_no_two_rows_read_the_same() -> void:
 		undeclared.append("%s: %s" % [title, str(ids)])
 	assert_eq(undeclared.size(), 0,
 		"%d jukebox rows read identically to another and are not declared: %s" % [undeclared.size(), str(undeclared)])
-	## \u26d4 AND THE DECLARATION MUST STILL BE TRUE. A note that outlives its fact is worse than
+	## ⛔ AND THE DECLARATION MUST STILL BE TRUE. A note that outlives its fact is worse than
 	## none, because the next reader trusts it (@cowir-sprites, 2026-09-16).
 	assert_eq(declared_seen.size(), KNOWN_TITLE_COLLISIONS.size(),
 		"%d of %d declared collisions are no longer real — delete the entry that went away" % [declared_seen.size(), KNOWN_TITLE_COLLISIONS.size()])
@@ -145,3 +150,34 @@ func test_the_list_is_still_sorted_and_well_formed() -> void:
 		if prev != "":
 			assert_true(str(r[0]) >= prev, "rows must stay sorted by id (saw %s after %s)" % [str(r[0]), prev])
 		prev = str(r[0])
+
+func test_the_prompt_catalog_never_hands_two_beds_one_name() -> void:
+	## ⛔ THE COLLISION WAS BORN HERE, NOT IN THE MANIFEST. `tools/music_prompts.json` carried
+	## one `title_template` on two entries — `/worlds/6/tracks/overworld` and
+	## `/shared_tracks/cutscene_w6_entering_nothing` — and the manifest inherited it at generation.
+	## Fixing only the manifest leaves the next run free to write it back.
+	##
+	## Measured 2026-09-16 after the retitle: 180 templates, 0 colliding.
+	var raw: String = FileAccess.get_file_as_string(CATALOG)
+	assert_gt(raw.length(), 1000, "CONTROL: the prompt catalog read back %d chars" % raw.length())
+	var parsed: Variant = JSON.parse_string(raw)
+	assert_true(parsed is Dictionary, "CONTROL: the catalog parsed as a Dictionary")
+	var seen := {}
+	var dupes: Array = []
+	var stack: Array = [parsed]
+	while not stack.is_empty():
+		var node: Variant = stack.pop_back()
+		if node is Dictionary:
+			if node.has("title_template"):
+				var t: String = str(node["title_template"])
+				if seen.has(t):
+					dupes.append(t)
+				seen[t] = true
+			for v in (node as Dictionary).values():
+				stack.push_back(v)
+		elif node is Array:
+			for v in (node as Array):
+				stack.push_back(v)
+	assert_gt(seen.size(), 100, "CONTROL: walked %d title templates — a shallow walk would measure nothing" % seen.size())
+	assert_eq(dupes.size(), 0,
+		"%d title templates are authored on more than one catalog entry, so a regeneration writes two beds one name: %s" % [dupes.size(), str(dupes)])
