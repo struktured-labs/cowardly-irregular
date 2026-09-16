@@ -929,9 +929,19 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 							_log("%s cleanses %s (%s)" % [caster.combatant_name, target.combatant_name, ", ".join(cleansed)])
 						continue
 					elif effect == "mp_restore_and_ap":
-						target.restore_mp(int(target.max_mp * 0.25))
-						target.gain_ap(1)
-						_log("%s uses %s on %s (MP + AP)" % [caster.combatant_name, ability_id, target.combatant_name])
+						## Live reads BOTH keys (BattleManager:6123-6124). This arm HARDCODED 25% where
+						## inspiring_melody authors 5%, so a grinding Bard's song restored FIVE TIMES the MP
+						## the game grants. The ap_gain half was right only by COINCIDENCE — the literal 1
+						## equalled live's default, so an ability authoring 2 would still have paid 1.
+						var mp_pct: float = float(ability.get("mp_restore_percent", 0.05))
+						var ap_gain: int = int(ability.get("ap_gain", 1))
+						if mp_pct > 0.0:
+							var mp_restored: int = int(target.max_mp * mp_pct)
+							if mp_restored > 0:
+								target.restore_mp(mp_restored)
+						if ap_gain != 0:
+							target.gain_ap(ap_gain)
+						_log("%s uses %s on %s (+%d AP, +%d%% MP)" % [caster.combatant_name, ability_id, target.combatant_name, ap_gain, int(mp_pct * 100)])
 						continue
 					elif effect == "steal":
 						## Fell to the else below and gave the victim a junk status called "steal" while the

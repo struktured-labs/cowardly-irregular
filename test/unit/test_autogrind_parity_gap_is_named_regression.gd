@@ -67,14 +67,19 @@ const CLOSED_PENDING_FOLD := [
 	## neither — it had zero mentions of steal — so a Rogue, whose BASE kit holds both, earned no
 	## steal-gold in a grind and the victim collected a junk status called "steal".
 	"success_rate", "steals",
+	## A DIFFERENT SHAPE from every other entry here: the grind had an arm for this effect and it
+	## HARDCODED both numbers — 25% where inspiring_melody authors 5%, so a grinding Bard's song
+	## restored five times what the game grants. Not a missing read; a read that was never written.
+	## The `ap_gain` literal agreed with live's default by coincidence, which is why it looked fine.
+	"mp_restore_percent", "ap_gain",
 ]
 
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
-	"absorb_amount", "ap_gain",
+	"absorb_amount",
 	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
-	"meta_effect", "mp_restore_percent", "priority", "recoil_pct",
+	"meta_effect", "priority", "recoil_pct",
 	"threat_class",
 ]
 
@@ -236,6 +241,11 @@ const GRIND_PATH_MARKER := {
 	## test_autogrind_steals_what_it_steals_regression instead. One marker: both grind arms call it.
 	"success_rate": "_roll_steal(",
 	"steals": "ability.get(\"steals\"",
+	## Both read in live's _execute_support_ability and in the grind's support arm — the one case
+	## this session where axis 1 was GREEN (the grind "read" the effect) and the divergence was in
+	## the VALUE. A key census cannot see this class; only comparing the two arms can.
+	"mp_restore_percent": "ability.get(\"mp_restore_percent\"",
+	"ap_gain": "ability.get(\"ap_gain\"",
 }
 
 ## Read by both engines, live-confined to one executor, and NOT path-assessed by me. They are here

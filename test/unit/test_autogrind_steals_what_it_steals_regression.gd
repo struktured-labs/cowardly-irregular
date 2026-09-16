@@ -17,12 +17,12 @@ extends GutTest
 ## (one of the four executors) and for `mug` inline in _execute_ability's "physical" arm, so the two
 ## reads land on the two arms wired here — not on one shared path.
 ##
-## ⚠️ WHAT IS DELIBERATELY *NOT* MIRRORED, and why this file asserts the divergence rather than parity:
-## live's two add_gold calls have NO caster-side check, so an ENEMY's steal pays the party it just
-## robbed. That is reachable — goblin, spiteful_crow and conveyor_gremlin author `steal` across 7
+## ⚠️ WHAT WAS DELIBERATELY *NOT* MIRRORED (and is now agreed on both sides): live's two add_gold
+## calls had NO caster-side check, so an ENEMY's steal paid the party it just robbed. That is reachable — goblin, spiteful_crow and conveyor_gremlin author `steal` across 7
 ## pools, and "support" is in UTILITY_ABILITY_TYPES, which _ai_brute and _ai_assassin both draw from
 ## at 0.2/0.25. Copying it into an engine that runs hundreds of unattended battles turns a per-fight
-## bug into a gold fountain. Reported to @cowir-battle, who owns BattleManager; declared here.
+## bug into a gold fountain. Reported to @cowir-battle, who owns BattleManager, and CONFIRMED by them
+## behaviourally before the fix — so this file found a live defect by declining to mirror it.
 
 const ResolverScript = preload("res://src/autogrind/HeadlessBattleResolver.gd")
 
@@ -110,8 +110,15 @@ func test_mug_still_hits_AND_steals() -> void:
 
 
 func test_an_enemys_steal_does_not_pay_the_party_it_robbed() -> void:
-	## THE DELIBERATE DIVERGENCE. Live has no caster-side check here; this asserts the grind does.
-	## If someone "fixes" this toward live, this arm reds and the header explains why it should not.
+	## Written as a DELIBERATE DIVERGENCE — live had no caster-side check and this asserted the grind
+	## did. @cowir-battle then reproduced it behaviourally (party_gold 1000 -> 1014 off a goblin's
+	## steal) and fixed live in `_award_stolen_gold`, so once that folds the two engines AGREE and
+	## this arm pins parity instead. The assertion is identical either way, which is the only reason
+	## it was safe to write before the ruling existed.
+	## ⚠️ Still OPEN and explicitly struktured's: whether an enemy's steal should COST the party gold.
+	## The amount scales with the VICTIM's max HP, so against a party member it is far larger than the
+	## same ability yields against a goblin — an unsized drain on monsters a level-3 party meets. The
+	## grind takes no position on that; it only refuses to PAY the victim.
 	if _authored("steal").is_empty():
 		pass_test("JobSystem autoload unavailable")
 		return
