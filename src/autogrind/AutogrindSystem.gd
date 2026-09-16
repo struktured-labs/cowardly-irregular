@@ -2372,11 +2372,14 @@ func apply_autogrind_actions(actions: Array) -> void:
 				for member in grind_party:
 					if member is Combatant and member.is_alive and member.current_mp < member.max_mp * 0.5:
 						eligible_count += 1
-						for item_pair in [["hi_ether", 100], ["ether", 30]]:
-							if member.get_item_count(item_pair[0]) > 0:
-								member.remove_item(item_pair[0], 1)
-								member.restore_mp(item_pair[1])
-								_track_item_consumed(item_pair[0])
+						## The amounts were a SECOND COPY of items.json (100/30). They agree today, which is the
+						## only reason nothing was wrong — the identical copy on the HP side drifted to a TENTH
+						## of the authored heal. Routed through ItemSystem so there is one source, per that ruling.
+						for item_id in RESTORE_MP_ITEM_ORDER:
+							if member.get_item_count(item_id) > 0:
+								if not _apply_item_to(member, item_id, "restore_mp"):
+									continue
+								_track_item_consumed(item_id)
 								restored_count += 1
 								break
 				if restored_count > 0:
@@ -2423,6 +2426,13 @@ const _HEAL_EFFECT_KEYS := ["heal_hp", "heal_mp", "heal_hp_percent", "heal_mp_pe
 const HEAL_PARTY_ITEM_ORDER := ["hi_potion", "potion"]
 
 
+## The MP twin of HEAL_PARTY_ITEM_ORDER, and UNCHANGED for the same reason: elixir and megalixir
+## restore MP (heal_mp_percent) and have never been eligible here either. Widening is the same
+## BALANCE ruling already with struktured for the HP side, not a bug fix. This commit changes only
+## where the AMOUNTS come from.
+const RESTORE_MP_ITEM_ORDER := ["hi_ether", "ether"]
+
+
 const _HP_RESTORE_KEYS := ["heal_hp", "heal_hp_percent", "revive"]
 
 
@@ -2433,17 +2443,17 @@ const _HP_RESTORE_KEYS := ["heal_hp", "heal_hp_percent", "revive"]
 ## Consumes one `item_id` from `member` and applies its REAL effects. Returns false having consumed
 ## nothing when the item cannot be applied, so a caller can try the next one.
 ## Mirrors _resolve_item: inventory removal is ours, effects are ItemSystem's.
-func _apply_item_to(member, item_id: String) -> bool:
+func _apply_item_to(member, item_id: String, caller: String = "heal_party") -> bool:
 	var item_system: Node = _get_autoload_node("ItemSystem")
 	if item_system == null or not item_system.has_method("use_item"):
 		## No fallback table, on purpose. A second copy of the heal amounts is what produced the 10x
 		## divergence; items.json is the one source. Fail loud rather than silently heal a wrong number.
-		push_warning("[AUTOGRIND] heal_party: ItemSystem unavailable — '%s' NOT consumed, no heal applied" % item_id)
+		push_warning("[AUTOGRIND] %s: ItemSystem unavailable — '%s' NOT consumed, nothing applied" % [caller, item_id])
 		return false
 	member.remove_item(item_id, 1)
 	var targets: Array[Combatant] = [member]
 	if not item_system.use_item(member, item_id, targets):
-		push_warning("[AUTOGRIND] heal_party: ItemSystem refused '%s' (unknown id or no effects block) — item was consumed" % item_id)
+		push_warning("[AUTOGRIND] %s: ItemSystem refused '%s' (unknown id or no effects block) — item was consumed" % [caller, item_id])
 		return false
 	return true
 
