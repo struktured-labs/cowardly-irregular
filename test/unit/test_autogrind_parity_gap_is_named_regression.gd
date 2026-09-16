@@ -48,7 +48,6 @@ const DECLARED := {
 	"corruption_risk": "SAVE corruption from meta abilities during automated play is a stakes ruling (CLAUDE.md: 'save corruption: actual mechanic, not just flavor'), not a parity repair",
 	"corruption_amount": "see corruption_risk — same stakes ruling",
 	"ignores_resistance": "EXAMINED 2026-09-16 and UNREACHABLE in a grind, so deliberately not wired. Its two owners (exploit_weakness, fourth_wall_break) are cast only by meta_knight, which is in no enemy pool — and this lane's OWN extra spawn path does not reach it either: _spawn_meta_boss builds a procedural enemy with a generated name, it does not instantiate a monsters.json id. Wiring it would add a mechanism no grind can exercise, and the arm below reds if either caster becomes drawable",
-	"regen_per_turn": "EXAMINED 2026-09-16 and it is a LIVE defect, not a grind gap. `regenerate` is type=healing, so live dispatches it to _execute_healing_ability, which reads only heal_amount — and regenerate authors none. Measured: live heals 0 and never adds the regen status, so regen_per_turn AND duration are dead there; the grind heals 30 once via its own heal_amount-absent fallback and also never regens. NEITHER engine delivers the authored ability. Wiring it in the grind alone would widen the divergence, and repairing live is a BattleManager change — handed to cowir-battle, whose 2d14d92d ledger is the right home for it",
 }
 
 ## Fixed and awaiting a fold. Named so arm 4 does not red on them, and asserted by NOTHING ELSE on
@@ -196,6 +195,7 @@ const GRIND_PATH_MARKER := {
 	"ignores_defense": "ability.get(\"ignores_defense\"",
 	"damage_to_self_pct": "_recoil_to(",
 	"damage_variance": "ability.get(\"damage_variance\"",
+	"regen_per_turn": "ability.get(\"regen_per_turn\"",
 	## PRODUCER/CONSUMER key, so the marker is the PRODUCER. Live reads the authored field in
 	## _execute_support_ability and consumes its stored effect in two OTHER executors (:4374 attack,
 	## :4969 magic); axis 2 asks where the authored key is READ, not where its effect is spent. My
@@ -357,30 +357,29 @@ func test_the_axis_two_backlog_is_not_silently_empty() -> void:
 	assert_eq(stale, [], "these are listed as unassessed AND mapped — one of the two is wrong: %s" % str(stale))
 
 
-## The one key from the UNEXAMINED backlog I have actually examined, pinned so the finding is not lost
-## in a channel message. `regenerate` authors an `effect` and a `regen_per_turn` that its own live
-## executor cannot read, because type=healing routes to _execute_healing_ability and the regen arm
-## lives in _execute_support_ability. If live ever gains an effect arm on the healing path — or
-## regenerate is retyped — the ability starts working there and the grind must be taught to follow.
-func test_regenerate_is_still_dead_on_lives_own_path() -> void:
+## ⛔ THIS ARM ASSERTED LIVE WAS BROKEN AND IT IS NOT, ANY MORE — and that is the arm working, not
+## failing. I examined `regen_per_turn` at 15:00, measured that NEITHER engine delivered it, declared
+## it a LIVE defect and handed it to @cowir-battle. They took it (`dcfb2158`), and this arm went red
+## in the fold where both halves met, naming the exact line that had changed.
+##
+## So the fact moved from "neither engine delivers it" to "live delivers, the grind does not" — a NEW
+## parity gap that did not exist this morning — and the gap is closed in the same commit rather than
+## re-declared. A declaration whose subject has been repaired is stale in the best possible way.
+func test_regenerate_is_delivered_by_both_engines_now() -> void:
 	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
 	var regen: Dictionary = abilities.get("regenerate", {})
 	assert_false(regen.is_empty(), "CONTROL: regenerate must still exist")
-	assert_eq(str(regen.get("type", "")), "healing",
-		"regenerate is no longer type=healing — it may now reach live's regen arm, so re-examine both engines")
-	assert_false(regen.has("heal_amount"),
-		"regenerate now authors a heal_amount — live's healing executor would finally heal for it, so this declaration is stale")
+	assert_eq(str(regen.get("type", "")), "healing", "CONTROL: it must still be healing-typed — that is what makes the routing load-bearing")
+	assert_false(regen.has("heal_amount"), "CONTROL: and still author no heal_amount")
 	var live: String = GdSource.code_of(LIVE)
 	var at: int = live.find("func _execute_healing_ability")
 	assert_gt(at, 0, "CONTROL: the healing executor must be locatable")
 	var body: String = live.substr(at, live.find("\nfunc ", at + 10) - at)
-	assert_false(body.contains('ability.get("effect"'),
-		"live's healing executor now reads `effect` — regenerate's regen may work there, and the grind must follow")
-	assert_false(body.contains("regen"),
-		"live's healing executor now mentions regen — re-examine, this declaration was measured when it did not")
-
-
-## Does BattleManager read this key off an ABILITY, rather than merely containing the word?
+	assert_true(body.contains('ability.get("effect"'),
+		"live's healing executor no longer inspects `effect` — regenerate may be dead there again, and the grind now routes it expecting live does not")
+	var grind: String = GdSource.code_of(GRIND)
+	assert_true(grind.contains('category == "healing" and str(ability.get("effect", "")) != ""'),
+		"the grind no longer re-points an over-time heal to its support arm, so it heals once and ticks nothing while live regenerates")
 func _live_reads_it_as_an_ability_field(key: String, live: String) -> bool:
 	var q: String = '"%s"' % key
 	return live.contains("ability.get(%s" % q) or live.contains("ability[%s]" % q) or live.contains("ability.has(%s" % q)

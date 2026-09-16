@@ -742,6 +742,13 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 	## that author the canonical magic-shape field aren't reading the
 	## default 1.0 (which would silently nerf eidolon casts and similar).
 	var category = ability.get("type", ability.get("category", "magic"))
+	## A healing ability that heals OVER TIME reaches the wrong arm otherwise. `regenerate` authors
+	## `effect: regen` with `regen_per_turn: 40` and NO heal_amount, so the healing arm's fallback healed
+	## magic x power ONCE and ticked nothing. Live routes exactly this shape to its support executor
+	## (cowir-battle dcfb2158). Re-pointed rather than copied: the support arm below already owns what
+	## an `effect` means, and duplicating it here is how two definitions of "regen" start to drift.
+	if category == "healing" and str(ability.get("effect", "")) != "" and int(ability.get("heal_amount", 0)) <= 0:
+		category = "support"
 	var power = ability.get("power", ability.get("damage_multiplier", 1.0))
 	var element = ability.get("element", "")
 	## Live runs the damage step `hits` times (BattleManager:4854) for the 5 abilities that author it —
@@ -907,6 +914,16 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						target.restore_mp(int(target.max_mp * 0.25))
 						target.gain_ap(1)
 						_log("%s uses %s on %s (MP + AP)" % [caster.combatant_name, ability_id, target.combatant_name])
+						continue
+					elif effect == "regen":
+						## Combatant.end_turn ticks "regen" and reads an authored override off
+						## `_regen_per_turn`, falling back to 5% of max HP when absent — so adding the
+						## status alone would heal the DEFAULT, not the authored 40. Live sets both
+						## (BattleManager's regen arm); so do we, or the amount silently differs.
+						target.add_status("regen", duration)
+						if target.has_method("set_meta"):
+							target.set_meta("_regen_per_turn", int(ability.get("regen_per_turn", 0)))
+						_log("%s grants regen to %s (%d/turn for %d)" % [caster.combatant_name, target.combatant_name, int(ability.get("regen_per_turn", 0)), duration])
 						continue
 					else:
 						## Live owns a ~40-arm effect table; headless deliberately does NOT mirror
