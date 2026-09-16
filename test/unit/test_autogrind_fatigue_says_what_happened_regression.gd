@@ -40,14 +40,35 @@ const ANNOUNCED_WITHOUT_EFFECT := {
 }
 
 
+## ⛔ `_sys` IS THE AUTOLOAD, and this file sets `battles_completed = 999` to reach the fatigue
+## branch. Until 2026-09-16 nothing put it back, so EVERY LATER FILE IN THE SAME GUT PROCESS
+## inherited a session at its battle cap and `pre_battle_check` refused with "Max battles reached
+## (999)". @cowir-battle hit it in a 474-file corpus — test_autogrind_sees_every_healing_item saw a
+## party that could not heal — and handed it over; it reproduces with just these two files in order.
+##
+## ⚠️ THE MESSAGE NAMES THE WRONG OPERAND, which cost them three negative narrowing runs and is the
+## reason grepping for the number does not find this. AutogrindSystem:1181-1182 reads
+## `battles_completed >= interrupt_rules.get("max_battles", 999)` and then prints
+## "Max battles reached (%d)" % battles_completed — so the 999 on screen is the COUNTER this file
+## sets, and the limit that actually tripped is the authored default 100 at :112. Nothing anywhere
+## sets max_battles to 999. A diagnostic that names one value while the comparison turns on another.
+##
+## Same class as the seed() leak the same day: process-global state a file sets and does not restore.
+## The counter is CAPTURED rather than zeroed, because 0 is this file's assumption about a baseline
+## it does not own.
+var _battles_before: int = 0
+
+
 func before_each() -> void:
 	AutogrindSystem._test_disable_persistence = true
 	_sys = AutogrindSystem
+	_battles_before = AutogrindSystem.battles_completed
 	EVENT_TYPES = AutogrindSystem.FATIGUE_EVENT_TYPES
 
 
 func after_each() -> void:
 	AutogrindSystem._test_disable_persistence = false
+	AutogrindSystem.battles_completed = _battles_before
 
 
 ## THE ARM THAT WOULD HAVE CAUGHT IT: the signal must reach somebody, and carry the real text.
