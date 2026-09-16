@@ -18,6 +18,17 @@ extends GutTest
 ## pinned by hand-set flags (test_story_cutscene_chain_regression) and the prologue's write was
 ## pinned nowhere, so the collision between the two was invisible. Every arm below drives the
 ## AUTHORED data through the real prefix rule into the real gate.
+##
+## PROVENANCE, read after the fix and recorded because it decides whether this is a fix at all
+## (b06065117, "W1 spotlight pattern + lead-branched prologue"): "the default case fires the
+## trope-demonstrating beat that unlocks the PC; the LEAD-OF-THIS-PC case shows the lead doing the
+## moment without a separate unlock (their flag was already set in prologue)". The same commit
+## authored a lead-specific narration arm in ALL FIVE spotlight scenes AND the prologue write that
+## closes their gates — so those five arms have never been reachable. The pre-set flag is
+## deliberate and so is the lead arm; they cannot both work off one key. Splitting the key is what
+## makes the commit's own first sentence true. Pinned by
+## test_every_lead_still_reaches_its_own_scene, which is the arm that would red if anyone decides
+## the lead should NOT see their own beat.
 
 const GAME_LOOP := "res://src/GameLoop.gd"
 const PROLOGUE := "res://data/cutscenes/world1_prologue.json"
@@ -191,3 +202,55 @@ func test_a_finished_cutscene_reconciles_the_locks() -> void:
 	assert_eq(found, 2, "control: both completion paths were read")
 	assert_false(src.contains('begins_with("cutscene_flag_spotlight_unlocked_")'),
 		"no reconcile is gated on a prefix that no completion flag carries")
+
+
+## Each spotlight scene's gate, as authored: the flags and place where that PC's scene is pending.
+const GATE_CONTEXT := {
+	"cleric": {"map": "harmonia_village", "floor": 0, "flags": ["chapter1_complete"]},
+	"rogue": {"map": "whispering_cave", "floor": 1, "flags": ["chapter1_complete", "chapter2_complete", "chapter3_complete"]},
+	"mage": {"map": "whispering_cave", "floor": 3, "flags": ["chapter1_complete", "chapter2_complete", "chapter3_complete", "spotlight_unlocked_rogue"]},
+	"fighter": {"map": "whispering_cave", "floor": 5, "flags": ["chapter1_complete", "chapter2_complete", "chapter3_complete", "spotlight_unlocked_rogue", "spotlight_unlocked_mage"]},
+	"bard": {"map": "harmonia_village", "floor": 0, "flags": ["chapter1_complete", "chapter2_complete", "chapter3_complete", "chapter4_complete", "rat_king_defeated", "world1_harmonia_after_cave_complete"]},
+}
+const SCENE_OF := {
+	"cleric": "world1_spotlight_cleric_ch1",
+	"rogue": "world1_spotlight_rogue_ch3",
+	"mage": "world1_spotlight_mage_ch3",
+	"fighter": "world1_spotlight_fighter_ch2",
+	"bard": "world1_spotlight_bard_ch7",
+}
+
+
+## Does this scene carry a narration arm for the case where its own PC is the lead?
+func _has_own_lead_arm(scene_id: String, job: String) -> bool:
+	for step in _json("res://data/cutscenes/%s.json" % scene_id).get("steps", []):
+		if step is Dictionary and step.get("type", "") == "branch" and str(step.get("condition", "")) == "lead_job":
+			var cases = step.get("cases", {})
+			if cases is Dictionary and cases.has(job):
+				return true
+	return false
+
+
+func test_every_lead_still_reaches_its_own_scene() -> void:
+	# All five scenes carry a lead-specific beat (b06065117). Under the old prologue write the lead
+	# closed their own gate, so all five of those arms were dead prose.
+	for job in SCENE_OF:
+		var gl = _detached_loop()
+		GameState.game_constants = _saved_constants.duplicate(true)
+		var ctx: Dictionary = GATE_CONTEXT[job]
+		GameState.game_constants["cutscene_flag_prologue_complete"] = true
+		GameState.game_constants["talked_to_theron"] = true
+		for f in ctx["flags"]:
+			GameState.game_constants["cutscene_flag_" + str(f)] = true
+		# Close the other four gates so the one under test is the pending beat — the earlier gate
+		# in _get_pending_story_cutscene wins otherwise (the bard case read cleric's scene first).
+		for other in SCENE_OF:
+			if other != job:
+				GameState.game_constants["cutscene_flag_spotlight_unlocked_" + str(other)] = true
+		gl._current_map_id = str(ctx["map"])
+		gl._current_cave_floor = int(ctx["floor"])
+		assert_true(_has_own_lead_arm(SCENE_OF[job], job),
+			"control: %s authors a beat for the case where %s is the lead" % [SCENE_OF[job], job])
+		_play_lead_arm(job)
+		assert_eq(gl._get_pending_story_cutscene(), SCENE_OF[job],
+			"leading with %s must not close %s" % [job, SCENE_OF[job]])
