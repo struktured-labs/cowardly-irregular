@@ -654,6 +654,9 @@ func _resolve_attack(attacker, target) -> int:
 		return 0
 
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
+	## ONE-SHOT, consumed as live consumes it (BattleManager:4374-4377) — a charged strike pays off
+	## once, not on every swing for the rest of the battle.
+	damage *= _take_charged_multiplier(attacker)
 	damage *= randf_range(0.85, 1.15)
 
 	## SHADOW_STEP on the ATTACKER: a guaranteed crit live (_calculate_crit_chance returns 1.0 up
@@ -769,6 +772,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					_log("%s heals %s for %d" % [caster.combatant_name, target.combatant_name, healed])
 
 		"magic":
+			## BEFORE the loop and ONCE, mirroring BattleManager:4969 — an AoE gets the boosted
+			## multiplier on every target and the charge clears a single time, not per target.
+			power = float(power) * _take_charged_multiplier(caster)
 			## Accumulated ACROSS the cast, because live's recoil is proportional to the whole volley
 			## (BattleManager:4981/5172) — stack_overflow hits all_enemies and pays 20% of the total.
 			var total_for_recoil: int = 0
@@ -910,6 +916,12 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			## ONCE per cast, after the loop — live calls it once with the whole target list, and a
 			## per-target call would roll howl's 0.3 fear separately for each enemy it already covers.
 			_apply_secondary_effect(caster, ability, targets, ability_id)
+			## Stored on the CASTER for its next swing, mirroring BattleManager:6326 — burrow authors 1.5
+			## and ironback_beetle (POOLED) casts it, so the telegraph never paid off in a grind.
+			var nam: float = float(ability.get("next_attack_multiplier", 0.0))
+			if nam > 0.0 and caster != null and caster.is_alive:
+				caster.set_meta("_next_attack_multiplier", nam)
+				_log("%s charges its next strike (x%.1f) with %s" % [caster.combatant_name, nam, ability_id])
 
 		_:
 			## Was: magic damage to targets[0]. AutobattleSystem builds targets from target_type,
@@ -1117,6 +1129,25 @@ func _recoil_to(caster, ability: Dictionary, total_dealt: int, ability_id: Strin
 	var recoil: int = max(1, int(round(total_dealt * pct)))
 	caster.take_damage(recoil, true)
 	_log("%s takes %d recoil from %s" % [caster.combatant_name, recoil, ability_id])
+
+
+
+## Reads and CLEARS a stored next-attack multiplier, returning 1.0 when there is none.
+##
+## ⛔ Live SETS this in _execute_support_ability (:6326) and CONSUMES it on BOTH the basic-attack path
+## (:4374) and the magic path (:4969) — two consumers, one producer. The grind had none of the three,
+## so burrow was a wasted turn: ironback_beetle (POOLED) telegraphed and then hit for the same damage.
+##
+## One-shot BY CONSTRUCTION — the clear lives here rather than at each call site, so a third consumer
+## cannot forget it and leave a permanent bonus running.
+func _take_charged_multiplier(combatant) -> float:
+	if combatant == null or not combatant.has_method("get_meta"):
+		return 1.0
+	var stored: float = float(combatant.get_meta("_next_attack_multiplier", 0.0))
+	if stored <= 0.0:
+		return 1.0
+	combatant.set_meta("_next_attack_multiplier", 0.0)
+	return stored
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:

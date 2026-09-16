@@ -66,7 +66,7 @@ const CLOSED_PENDING_FOLD := [
 const UNEXAMINED := [
 	"absorb_amount", "ap_gain", "countdown", "crit_chance", "damage_variance",
 	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
-	"meta_effect", "mp_restore_percent", "next_attack_multiplier", "priority", "recoil_pct",
+	"meta_effect", "mp_restore_percent", "priority", "recoil_pct",
 	"steals", "success_rate", "threat_class",
 ]
 
@@ -195,6 +195,12 @@ const GRIND_PATH_MARKER := {
 	"drain_mp": "_siphon_mp(",
 	"ignores_defense": "ability.get(\"ignores_defense\"",
 	"damage_to_self_pct": "_recoil_to(",
+	## PRODUCER/CONSUMER key, so the marker is the PRODUCER. Live reads the authored field in
+	## _execute_support_ability and consumes its stored effect in two OTHER executors (:4374 attack,
+	## :4969 magic); axis 2 asks where the authored key is READ, not where its effect is spent. My
+	## first marker pointed at a consumer and this arm caught it — the grind's support arm reads the
+	## key exactly where live's support executor does.
+	"next_attack_multiplier": "ability.get(\"next_attack_multiplier\"",
 	## Mapped, but NOT path-checked: live reads secondary_effect inside _apply_secondary_effect, a
 	## dispatcher rather than a per-type executor, so _live_executor_count sees no executor and the
 	## arm skips it. Its support-only placement is pinned in
