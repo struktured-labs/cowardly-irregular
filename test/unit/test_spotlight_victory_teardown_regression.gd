@@ -112,5 +112,12 @@ func test_tutorial_hints_show_accepts_dedupe_key() -> void:
 	var body := _body_of(src, "show")
 	assert_true("_shown_hints.get(key" in body, "session dedupe must use the key")
 	assert_true("\"tutorial_\" + key" in body, "save dedupe must use the key")
-	assert_true("hint.show_hint(key" in body,
-		"the hint records ITS key on dismiss — recording hint_id would re-shadow all jobs under one flag")
+	## Pinned to the PROPERTY, not the location: `show` may present inline or delegate, and it
+	## delegated to `_present` on 2026-09-16 while still threading the key. What must never happen
+	## is the recorded value becoming hint_id — that re-shadows all jobs under one flag.
+	assert_false("show_hint(hint_id" in src,
+		"the hint records hint_id on dismiss — that re-shadows every job under one flag, which dedupe_key exists to prevent")
+	assert_true("hint.show_hint(key" in src,
+		"nothing records the dedupe key — whatever presents the hint must pass `key`, wherever that call now lives")
+	assert_true(", key)" in body,
+		"show() no longer hands its dedupe key onward, so the presenter above is recording someone else's key")
