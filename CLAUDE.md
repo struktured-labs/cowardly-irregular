@@ -326,10 +326,17 @@ XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd          # Run 
 - **The suite writes over the player's exported scripts, and your protection is a property of YOUR checkout.** `test/unit` writes fixtures to `user://script_exports/` under the same filenames the shipped Shift+E export and `export_autogrind_rules()` use, so a plain full-suite run overwrote real player data — for nine deploys, the same defect class as the 2026-07-24 save-eating one. `run_tests.sh` snapshots and restores that directory around every run. It lived in `gate.sh` until 2026-07-30, which protected only the runs that typed `gate.sh` while the docs said `run_tests.sh`; **a tree predating that move has no net whatever main contains** — cowir-battle measured their own checkout 42 commits behind, gating faithfully through `gate.sh`, with zero snapshot machinery in it. Verify your tree, not the repo: `grep -c 'PLAYER-DATA NET' tools/run_tests.sh` (`0` = unprotected, rebase). The net is a backstop, not the fix: the real one is per-test, overriding the export path in your own fixture so no run writes production regardless of which tooling it went through.
 - **Gate on the EXIT CODE, captured before you shape the output.** `run_tests.sh` propagates failure correctly (verified independently by 5 lanes, 2026-07-29); every gate that ever passed a red tree broke the signal downstream:
   ```bash
-  tools/run_tests.sh > tmp/gate.log 2>&1; EC=$?   # capture BEFORE piping
-  grep -E "^  (Passing|Failing)" tmp/gate.log     # then look
+  tools/run_tests.sh > tmp/lane_run.log 2>&1; EC=$?   # capture BEFORE piping
+  grep -E "^  (Passing|Failing)" tmp/lane_run.log     # then look
   test $EC -eq 0 || exit 1                        # then decide
   ```
+  - ⚠️ **Write it to `tmp/lane_run.log`, NOT `tmp/gate.log`.** `tools/gate.sh` writes `tmp/gate.log`
+    itself and **strips the ANSI escapes at `:25`** before any grep; this command writes the same
+    name and does not. One filename, two artifacts, nothing inside saying which — and on 2026-09-16
+    three lanes measured a stale lane-written `tmp/gate.log`, found the colour codes, and concluded
+    `gate.sh` was blind to its own Risky check. It is not. The measurement was right and the
+    inference was about a file the gate never opens; cowir-main repeated it into a commit before
+    checking. **Verify the artifact, not the pointer — and a FILENAME is a pointer.**
   - `suite | grep … && commit` tests **grep's** exit code, not the suite's. `suite ; commit ; push` in one block never checks at all — the gate runs and does not gate.
   - Counting `[Failed]` is wrong twice: `grep -cE '^\s+\[Failed\]'` returns a clean **0** on a red tree (Godot colours stdout, so the ANSI escape precedes the whitespace; `\s*` does not save you — `--log-file` is ANSI-free and immune), and `grep -cF '[Failed]'` is a **valid boolean and never a count** — it equals 2 × failing *asserts*, a quantity GUT never prints, so nothing on screen can catch it being wrong. Measured: 1 failing test with 3 failing asserts → `Failing 1`, `grep -cF` **6**; 2 tests × 1 assert → 4. The ratio to `Failing N` is unbounded. Report `Failing N` (the only exact cardinal GUT prints) or `$?`.
 - **`cowir-ai-intent-kit-ratchet` @ `b50a90f6` is a permanent known-RED branch, kept deliberately — do not fold or delete it.** It is an executable bug report (boss intents that reach no bias arm) and doubles as the fleet's gate control: point a gate at it, and if it reports green the detector is broken. A real coloured multi-line failure catches parse bugs a planted one-line assert does not.
