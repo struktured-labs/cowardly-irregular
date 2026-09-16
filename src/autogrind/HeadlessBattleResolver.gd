@@ -252,10 +252,19 @@ func _selection_phase() -> Array[Dictionary]:
 		## it plays.
 		## ⚠️ DECLARED while measuring this, NOT fixed: live's natural gain is not always 1. Under the
 		## `bp_instability` corruption effect it rolls 0/+1/+2 for PARTY members (BattleManager:1630).
-		## This file references bp_instability 0 times against live's 3, so a corrupted AP economy is
-		## flat here. Left alone deliberately — it is a corruption mechanic whose whole point is
-		## unpredictability, and modelling it changes grind variance, which is a design question rather
-		## than a parity repair. Same call as the 45-passive category above it.
+		## No CODE site in the autogrind stack reads that key — AutogrindSystem passes `corruption_effects`
+		## around as an opaque dict and attaches it to ENEMY data (:645, :1022, :1262); the only key it
+		## names is stat_drain. So there is no party-side consumer to extend, and a corrupted AP economy
+		## is flat in the grind. (Stated as "no code site" rather than a grep count, because this comment
+		## now contains the word and would falsify its own count.)
+		##
+		## LEFT ALONE for @cowir-battle's reason, which is better than the one I first wrote: the jitter
+		## is SYMMETRIC — 0/+1/+2, mean exactly 1 — so modelling it moves the VARIANCE of what autogrind
+		## reports and not the EXPECTATION. A build measured over hundreds of battles scores the same and
+		## reads noisier: a real cost against no change in the answer. The AP-debt bug above is the
+		## opposite and that is why it was fixed — it moved the MEAN, and graded Advance builds better
+		## than they play. The discriminator: model it when it moves the expectation, declare it when it
+		## only moves the spread. The 45-passive category is the first kind and still outstanding.
 		if combatant.current_ap < 0:
 			combatant.gain_ap(1)
 			_log("%s pays AP debt (now %d) and forfeits the turn" % [combatant.combatant_name, combatant.current_ap])
