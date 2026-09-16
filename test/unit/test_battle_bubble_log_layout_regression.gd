@@ -30,8 +30,14 @@ func test_quip_bubble_anchors_above_head_not_center() -> void:
 	var body := src.substr(i, (next - i) if next > -1 else 1500)
 	assert_true("get_frame_texture" in body,
 		"bubble anchor must derive the sprite's frame height — raw global_position is mid-body on tall monsters")
-	assert_true("anchor.y -= tex.get_height() * absf(anim_sprite.scale.y) * 0.5" in body,
-		"anchor must lift by half the rendered frame height so the bubble clears the head")
+	## 2026-09-16: half the FRAME is not the head. One 256px frame holds figures at different
+	## offsets (Fighter's top margin 66px, Cleric's 10px), so this lifted the bubble 12-114px above
+	## the head depending on the speaker. The property — clears the head, never mid-body — now comes
+	## from the figure's own rect via BattleSpeechBubble.head_lift.
+	assert_true("anchor.y -= BattleSpeechBubble.head_lift(sprite)" in body,
+		"anchor must lift to the FIGURE's top so the bubble sits on the head it belongs to")
+	assert_false("anchor.y -= tex.get_height()" in body,
+		"lifting by the frame height is the per-speaker float this replaced")
 	assert_true("var prefer_right: bool = anchor.x < vp_w * 0.5" in body,
 		"enemy-side bubbles (left 45% of viewport) must bias left, clear of the center command menu")
 	assert_false("anchor.x -= 70.0" in body,
