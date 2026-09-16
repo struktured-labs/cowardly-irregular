@@ -749,6 +749,8 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 	## POOLED monsters drain — specter, pipe_phantom, shadow_knight, bone_warden — and the Necromancer's
 	## drain_life is a player build. Neither side healed in the grind.
 	var drain_pct: float = float(ability.get("drain_percentage", 0))
+	## Multiplies the POWER, so it must land before either damage arm reads it.
+	power = float(power) * _missing_hp_multiplier(caster, ability)
 
 	match category:
 		"healing":
@@ -786,7 +788,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 		"physical":
 			for target in targets:
 				if target and target.is_alive:
-					var base_dmg = int(caster.get_buffed_stat("attack", caster.attack) * power)
+					var base_dmg = int(_scaled_base(caster, ability) * power)
 					## HP DELTA, not the helper's return: _resolve_attack_with_power returns its computed
 					## figure and take_damage then applies the defense formula AGAIN, so the return runs
 					## high. Live drains a share of what was ACTUALLY dealt, and the log should say so too.
@@ -954,6 +956,38 @@ func _drain_to(caster, damage_dealt: int, drain_pct: float, ability_id: String) 
 		return
 	var healed: int = caster.heal(drained)
 	_log("%s drains %d HP with %s" % [caster.combatant_name, healed, ability_id])
+
+
+
+## The stat a physical ability computes its damage FROM, and the missing-HP multiplier, mirroring
+## BattleManager:4736-4758.
+##
+## ⛔ Headless used `attack` for every physical ability, so guard_strike on a high-defense caster dealt
+## poverty damage — the live engine's own words for the same bug when IT had it (tick 437). rat_guard
+## (pooled) casts guard_strike; throw_shuriken and last_stand_ability are job abilities.
+##
+## ⛔ `target_defense` and `most_used_ability` are NOT here, and that is deliberate: LIVE reads neither
+## (0 references), so `complement` and `player_knowledge` scale from attack in both engines. Wiring
+## them here alone would push the simulation past the game it simulates. Declared, with an arm that
+## reds if live starts reading either.
+func _scaled_base(caster, ability: Dictionary) -> int:
+	match str(ability.get("scales_with", "")):
+		"defense":
+			return int(caster.get_buffed_stat("defense", caster.defense))
+		"speed":
+			return int(caster.get_buffed_stat("speed", caster.speed))
+		_:
+			return int(caster.get_buffed_stat("attack", caster.attack))
+
+
+## Linear from 1.0x at full HP to max_multiplier at zero, exactly as live computes it. Separate from
+## _scaled_base because it multiplies the POWER rather than swapping the base stat.
+func _missing_hp_multiplier(caster, ability: Dictionary) -> float:
+	if str(ability.get("scales_with", "")) != "missing_hp" or caster.max_hp <= 0:
+		return 1.0
+	var hp_pct: float = float(caster.current_hp) / float(caster.max_hp)
+	var max_mult: float = float(ability.get("max_multiplier", 5.0))
+	return 1.0 + (1.0 - hp_pct) * (max_mult - 1.0)
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
