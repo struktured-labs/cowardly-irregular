@@ -162,3 +162,23 @@ func test_the_outgoing_bed_fades_rather_than_being_cut() -> void:
 	assert_true(SoundManager._music_player_b.playing, "CONTROL: it is still sounding at the midpoint")
 	assert_lte(SoundManager._music_player_b.volume_db, base - 5.0,
 		"halfway through, the outgoing bed is still at %.1f dB against %.1f — it is being cut, not faded" % [SoundManager._music_player_b.volume_db, base])
+
+
+func test_the_members_this_file_reaches_still_exist() -> void:
+	## ⛔ WITHOUT THIS ARM A RENAME IS A CLEAN EXIT. Measured 2026-09-16: rename `_music_player_b`
+	## — the subject of the orphan half of this fix — and the three arms defending it abort before
+	## their first assert, so GUT scores them RISKY rather than FAILED:
+	##
+	##     Passing 26 -> 23 · Risky 0 -> 3 · Asserts 66 -> 51 · Failing 0 · EC 0
+	##
+	## 🔑 EC=0 IS THE PART THAT MATTERS. "Capture the exit code before you shape the output" is this
+	## project's gate discipline and it does not catch this — the run succeeds while the guard has
+	## stopped guarding. Only the Risky column and the assert collapse show it, and a gate that
+	## reads `Failing N` ships it. (@cowir-autogrind's silent-pass sweep, @cowir-sfx's abort ladder:
+	## this is the rung that is VISIBLE in Risky and still exits zero.)
+	##
+	## `get()` returns null for an absent property instead of raising, so a rename fails HERE, by
+	## name, before the arms whose subject it is go quiet.
+	for member in ["_music_player", "_music_player_b", "_crossfade_tween", "_music_base_db"]:
+		assert_true(SoundManager.get(member) != null or member == "_crossfade_tween",
+			"SoundManager has no %s — the arms in this file reach it directly and would go Risky rather than red, on a run that exits 0" % member)
