@@ -8,7 +8,10 @@ extends GutTest
 ##   rows 0=down 1=left 2=right   animations.walk_*.row
 ##   3=up, written into _update_row_from_move_dir
 ##
-## All 10 sheets are 128x128 / 32px / that row order today, so every hardcoded value is correct
+## Every shipped sheet agreed with all three conventions when this was written (2026-09-16), so
+## each hardcoded value is correct and none is enforced. The agreement is DERIVED rather than
+## restated here — test_the_roster_agreeing_with_the_convention_is_recorded_not_assumed reds the
+## day it stops holding, which is the point: a count in this comment would go stale silently
 ## and none of them is enforced. A sheet at another frame size is mis-sliced; a sheet that orders
 ## its rows differently WALKS FACING THE WRONG WAY, with nothing failing. This is the same defect
 ## the player's own walk sheet carried an hour ago, on the second consumer of the same convention.
@@ -166,6 +169,9 @@ func test_every_member_this_guard_drives_by_name_exists() -> void:
 	add_child_autofree(subject)
 	var calls: Dictionary = GuardSubject.audit_calls("res://test/unit/test_a_roaming_monster_reads_its_declared_sheet.gd", subject)
 	var props: Dictionary = GuardSubject.audit_properties("res://test/unit/test_a_roaming_monster_reads_its_declared_sheet.gd", subject)
+	assert_eq((str(calls["why"]) + " " + str(props["why"])).strip_edges(), "",
+		("the COMMENT STRIP failed, so the derived member list is prose or empty — that is the "
+		+ "INSTRUMENT, not the subject: %s %s") % [calls["why"], props["why"]])
 	assert_gt(int(calls["found"]) + int(props["found"]), 0,
 		"VOID: no `.call(\"name\")` or `.get(\"_name\")` found in this file's own text — the extraction is broken, not the subject")
 	assert_eq(calls["missing"], [],
