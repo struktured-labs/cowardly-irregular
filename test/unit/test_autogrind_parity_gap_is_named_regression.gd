@@ -58,12 +58,17 @@ const CLOSED_PENDING_FOLD := [
 	"drain_percentage",
 	"secondary_effect", "secondary_chance", "secondary_modifier", "secondary_target",
 	"scales_with", "max_multiplier",
+	## cowir-battle's 48a70e4dd — the doom counter. It was dead in BOTH engines until today (its only
+	## setter sat in _execute_support_ability while all three abilities authoring `effect: doom` are
+	## magic or physical), and their fix wires live AND mirrors the grind in the same commit. So it
+	## stops being a gap of mine at the fold rather than becoming one.
+	"countdown",
 ]
 
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
-	"absorb_amount", "ap_gain", "countdown",
+	"absorb_amount", "ap_gain",
 	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
 	"meta_effect", "mp_restore_percent", "priority", "recoil_pct",
 	"steals", "success_rate", "threat_class",
@@ -197,6 +202,11 @@ const GRIND_PATH_MARKER := {
 	"damage_variance": "ability.get(\"damage_variance\"",
 	"crit_chance": "ability.get(\"crit_chance\"",
 	"regen_per_turn": "ability.get(\"regen_per_turn\"",
+	## ⚠️ RE-RANKED by the form-4 finding rather than examined: `meta_effect` is carried by
+	## save_deletion on permadeath_reaper, which the grind's OWN spawner instantiates. It stays in the
+	## backlog — cowir-battle has not touched it — but it is no longer "no reachable caster", which is
+	## how this file ranked it before form 4 was known. Recorded here so the next person picking from
+	## the backlog by reach does not repeat my ranking.
 	## PRODUCER/CONSUMER key, so the marker is the PRODUCER. Live reads the authored field in
 	## _execute_support_ability and consumes its stored effect in two OTHER executors (:4374 attack,
 	## :4969 magic); axis 2 asks where the authored key is READ, not where its effect is spent. My
