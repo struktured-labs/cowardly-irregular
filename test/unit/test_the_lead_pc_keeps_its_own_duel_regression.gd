@@ -203,6 +203,8 @@ func test_a_finished_cutscene_reconciles_the_locks() -> void:
 		var block := src.substr(idx, 900)
 		assert_true(block.contains("_reconcile_spotlight_locks()"),
 			"completion path %d reconciles the locks" % found)
+	# A RATCHET: two paths write a completion flag today. A THIRD should red this and be read —
+	# a path that writes the flag without reconciling is the original defect in this branch.
 	assert_eq(found, 2, "control: both completion paths were read")
 	assert_false(src.contains('begins_with("cutscene_flag_spotlight_unlocked_")'),
 		"no reconcile is gated on a prefix that no completion flag carries")
