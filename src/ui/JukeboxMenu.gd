@@ -102,6 +102,12 @@ static func _load_manifest_tracks() -> Array:
 		var title: String = ""
 		var duration: float = 0.0
 		if entry is Dictionary:
+			## ⛔ ONE ROW PER TRACK. Four keys are routing ALIASES of battle_brute under the
+			## monster-family ruling, and they carry its file AND its title — so the jukebox listed
+			## "Raid!" five times, five rows that play the same bed and read identically. The alias
+			## is for play_music, which asks for battle_ogre; a player browsing asks for a track.
+			if str(entry.get("alias_of", "")) != "":
+				continue
 			title = str(entry.get("title", ""))
 			duration = float(entry.get("duration", 0.0))
 		var display: String = title if title != "" else _titlecase(str(id))
