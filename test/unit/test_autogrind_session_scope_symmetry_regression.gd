@@ -35,6 +35,13 @@ extends GutTest
 ## three sets now and back under the ratchet; the hole is not closed, and closing it by listing
 ## every zero-set field would be the allowlist CLAUDE.md warns about. Behavioural coverage for
 ## that pair lives in test_autogrind_collapse_penalty_is_session_scoped_regression.
+##
+## ⛔ AND THE SAME HOLE LET A THIRD ONE THROUGH, 2026-09-16: corruption_threshold, the collapse line
+## itself, in zero sets — so it leaked into the next grind and reverted on every resume. The narrowing
+## is in test_autogrind_collapse_threshold_is_session_scoped_regression, which derives its census from
+## what _trigger_system_collapse / apply_post_collapse_penalty / tick_post_collapse_debuff ASSIGN
+## rather than from the three sets. Starting at the writers is what lets it see a zero-set field; it
+## covers the collapse cluster only, so the general hole stands.
 
 const SRC := "res://src/autogrind/AutogrindSystem.gd"
 
