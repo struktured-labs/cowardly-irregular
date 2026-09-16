@@ -1366,6 +1366,12 @@
       "duration_seconds": 0.8,
       "prompt_influence": 0.7
     },
+    "party_ko": {
+      "file": "assets/audio/sfx/party_ko.ogg",
+      "prompt": "SYNTHESISED (tools/gen_chiptune_sfx.py party_ko), not an ElevenLabs render. A party member falling. The battle LOG closed this parity at tick 176 -- _on_party_hp_changed emits 'X has fallen!' to match _on_enemy_died's line -- while the AUDIO parity stayed open: an enemy death plays enemy_death on the dedicated _death_player with a thud under it, and an ally dropping played NOTHING. Four discrete steps down an A-minor shape (A4 F4 C4, holding on A3) with a short filtered breath; stepped and never slid, because a descending glide is the whoop struktured rejected three times pointed the other way. Deliberately mid-register and 0.52s: play_death already lays DEATH_THUD under it on _sub_player, and this moment can repeat several times in one fight.",
+      "duration_seconds": 0.52,
+      "prompt_influence": 0.4
+    },
     "phase_execute": {
       "file": "assets/audio/sfx/phase_execute.ogg",
       "prompt": "Firm drum hit, single confident snare strike signaling go-time, decisive and authoritative",
