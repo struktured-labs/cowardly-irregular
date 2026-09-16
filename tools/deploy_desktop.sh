@@ -462,6 +462,19 @@ case "${_EVIDENCE}" in
         elif [ -x tools/gate.sh ]; then
             [ -n "${_EVIDENCE}" ] && echo "[${PLAT}] gate 1: running the suite — ${_EVIDENCE#VERDICT=RUN }"
             mkdir -p tmp/gate_xdg
+            # REAL-SAVE HYDRATION. test_real_saves_hydrate_smoke.gd reads user://saves/, so a
+            # fresh sandbox makes it PEND — measured 2026-09-16: empty sandbox
+            # "Passing none · Risky/Pending 2", seeded sandbox "Passing 2 · Asserts 124".
+            # Every release this lane shipped carried failing=0 over a file that exercised
+            # nothing, and no cardinal in that line could say so.
+            # The copy is ONE-WAY: the suite mutates what it hydrates; his originals never see it.
+            if [ -x tools/seed_gate_saves.sh ]; then
+                ./tools/seed_gate_saves.sh "$PWD/tmp/gate_xdg" || {
+                    echo "[${PLAT}] BLOCKED: seeding the gate sandbox was REFUSED — see above." >&2
+                    exit 2; }
+            else
+                echo "[${PLAT}] note: tools/seed_gate_saves.sh missing — real-save hydration will PEND." >&2
+            fi
             # Budgeted: run_tests.sh has no timeout and gate.sh adds none, so a WEDGE stops
             # this chain silently instead of redding it. See deploy_web.sh's _SUITE_BUDGET_S
             # note for why 2700s and for the measured proof that the signal reaches
