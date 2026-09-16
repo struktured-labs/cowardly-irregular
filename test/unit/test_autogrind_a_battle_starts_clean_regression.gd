@@ -110,13 +110,22 @@ func test_the_clear_does_not_wipe_what_live_keeps() -> void:
 	var hero := _hero()
 	hero.current_hp = 500
 	hero.current_mp = 7
+	var hp_before: int = hero.current_hp
 	## Array[DICTIONARY], not Array[String] — I appended a String here first and the control failed
 	## while the code was fine. The typed-array trap CLAUDE.md documents, inside the arm written to
 	## catch over-clearing.
 	hero.permanent_injuries.append({"id": "cracked_rib", "name": "Cracked Rib"})
 	_res.resolve_battle([hero], [_chaff()])
-	assert_eq(hero.current_hp, 500, "HP must carry across the boundary — that is the whole risk model of a grind")
-	assert_eq(hero.current_mp, 7, "and so must MP")
+	## ⛔ THIS ASSERTED `== 500` AND WAS FLAKY, which is how it shipped green and red the same day.
+	## The chaff has attack 1 and sometimes lands a hit before it dies, so the exact figure depended
+	## on turn order. CLAUDE.md's coincidental-value trap: the PROPERTY is "the boundary did not
+	## restore this combatant", and 500 was merely what that produced on a run where nothing connected.
+	## Asserted as a band now — damaged is fine, healed to full is the over-clear this arm exists for.
+	assert_lt(hero.current_hp, hero.max_hp,
+		"HP must carry across the boundary, not be restored — that is the whole risk model of a grind")
+	assert_gt(hero.current_hp, 0, "and the party must not be wiped either")
+	assert_lte(hero.current_hp, hp_before, "a battle can only cost HP here; nothing in the clear may add it")
+	assert_lt(hero.current_mp, hero.max_mp, "and MP must not be restored by the boundary")
 	var kept: bool = false
 	for inj in hero.permanent_injuries:
 		if str(inj.get("id", "")) == "cracked_rib":
