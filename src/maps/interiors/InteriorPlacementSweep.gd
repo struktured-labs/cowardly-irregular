@@ -32,15 +32,31 @@ static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array
 	if npcs == null:
 		return
 	var furniture := _collect_furniture_rects(scene_root, decorations)
+	## Reserve every stationary NPC's cell BEFORE moving anyone. Two NPCs whose authored spots are
+	## both blocked ring-search independently and can land on the SAME nearest clear cell — measured
+	## in Harmonia's library, where Yorick Pell and Cantor Vell both ended at (336,336) and the
+	## interact probe (nearest-by-anchor) gave every one of Yorick's 24 approach cells to Cantor, so
+	## his five dialogue lines could not be reached. A stationary NPC has to be reserved too: it is
+	## standing there whether or not the sweep touched it.
+	var taken: Dictionary = {}
+	var movers: Array = []
 	for n in npcs.get_children():
 		if not (n is Node2D):
 			continue
 		var origin: Vector2 = (n as Node2D).position
-		var fixed := _find_clear_near(origin, layout, furniture)
+		if _is_position_clear(origin, layout, furniture):
+			taken[_cell_of(origin)] = true
+		else:
+			movers.append(n)
+	for n in movers:
+		var origin: Vector2 = (n as Node2D).position
+		var fixed := _find_clear_near(origin, layout, furniture, taken)
 		if fixed != origin:
 			push_warning("[%s] relocated '%s' off wall/furniture %s -> %s" % [
 				area_id, n.name, origin, fixed])
 			(n as Node2D).position = fixed
+		# Reserved either way — a failed relocation leaves the NPC standing at its origin.
+		taken[_cell_of((n as Node2D).position)] = true
 
 
 static func _collect_furniture_rects(scene_root: Node, decorations: Node) -> Array:
@@ -110,22 +126,30 @@ static func _is_position_clear(pos: Vector2, layout: Array, furniture: Array) ->
 	return true
 
 
-## Ring-search up to 8 tiles for the nearest cell that's both walkable
-## and outside every furniture rect.
-static func _find_clear_near(pos: Vector2, layout: Array, furniture: Array) -> Vector2:
-	if _is_position_clear(pos, layout, furniture):
+static func _cell_of(pos: Vector2) -> Vector2i:
+	return Vector2i(int(floor(pos.x / TILE_SIZE)), int(floor(pos.y / TILE_SIZE)))
+
+
+## Ring-search up to 8 tiles for the nearest cell that's walkable, outside every furniture rect,
+## and not already claimed by another NPC. `taken` may be empty for a single-NPC caller.
+static func _find_clear_near(pos: Vector2, layout: Array, furniture: Array, taken: Dictionary = {}) -> Vector2:
+	if _is_position_clear(pos, layout, furniture) and not taken.has(_cell_of(pos)):
 		return pos
-	var start := Vector2i(int(floor(pos.x / TILE_SIZE)), int(floor(pos.y / TILE_SIZE)))
+	var start := _cell_of(pos)
 	for radius in range(1, 9):
 		for dy in range(-radius, radius + 1):
 			for dx in range(-radius, radius + 1):
 				if maxi(absi(dx), absi(dy)) != radius:
 					continue
 				var c := start + Vector2i(dx, dy)
+				if taken.has(c):
+					continue
 				var probe := Vector2((c.x + 0.5) * TILE_SIZE, (c.y + 0.5) * TILE_SIZE)
 				if _is_position_clear(probe, layout, furniture):
 					return probe
 	## Gave up. The caller only warns when the position CHANGED, so without this a failed
-	## relocation is silent and the NPC stays standing on the furniture.
-	push_warning("[InteriorPlacementSweep] no clear cell within 8 tiles of %s — NPC left where it was" % str(pos))
+	## relocation is silent and the NPC stays standing on the furniture. Standing on a table is
+	## cosmetic; standing INSIDE another NPC makes one of the two unreachable, so an unplaceable
+	## NPC is left where it was rather than stacked onto an occupied cell.
+	push_warning("[InteriorPlacementSweep] no clear unoccupied cell within 8 tiles of %s — NPC left where it was" % str(pos))
 	return pos
