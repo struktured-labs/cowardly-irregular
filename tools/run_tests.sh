@@ -8,7 +8,7 @@
 #   tools/run_tests.sh <name> [<name>...]  # one or more files, in ONE godot process
 #   tools/run_tests.sh --isolated      # the quarantined suite (own process by design)
 #
-# Exit codes:  0 pass · 1 test failures · 2 bad invocation · 3 nothing ran
+# Exit codes:  0 pass · 1 test failures · 2 bad invocation · 3 nothing ran · 4 a test did not assert
 set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p tmp
@@ -203,6 +203,42 @@ run_gut() {
       exit 3
     fi
   fi
+  # A test that asserted NOTHING is not a pass, and nothing above can see it: GUT scores it
+  # Risky, `-gexit` returns 0, and the Totals block is perfectly well-formed. Six lanes measured
+  # this on 2026-09-16 by renaming the member their guard defends — one got
+  # `EC=0 · Passing 4 · Risky 10 · Asserts 125 -> 16` from a file whose subject no longer existed.
+  #
+  # Derived from unique test NAMES, never from a line count: `[Risky]` prints TWICE per test (a
+  # named line and a bare "Did not assert"), so a count is 2x — the same trap as `grep -cF
+  # '[Failed]'`. tools/gate.sh has derived it this way for months; this is that line, in the
+  # wrapper every LANE uses, which had no risky handling at all.
+  #
+  # `[Pending]` is NOT counted. It is a DELIBERATE skip this codebase uses on purpose
+  # (test_real_saves_hydrate_smoke says so in its own text, on every sandboxed run).
+  #
+  # Exit 4 only when the run would otherwise be GREEN: a real failure must keep reporting 1.
+  # ⚠️ STRIP ANSI FIRST. Godot colours stdout, so the raw line is
+  #   `\e[33m    [Risky]:  \e[0mtest_name did not assert`
+  # and a pattern anchored on `[Risky]:` cannot cross the escape to reach the name — it matches
+  # ZERO on a log that plainly contains the marker. gate.sh greps the ANSI-free `--log-file` and
+  # never meets this; RUN_LOG is the stdout capture and does. CLAUDE.md documents the same trap
+  # for `[Failed]`, and this implementation walked into it before the probe caught it.
+  local _noassert
+  _noassert="$(sed 's/\x1b\[[0-9;]*m//g' "$RUN_LOG" | command grep -aoE '\[Risky\]: +[a-z_0-9]+ did not assert' | sort -u | command grep -c . )"
+  if [ "${_noassert:-0}" -gt 0 ]; then
+    echo "run_tests.sh: ${_noassert} TEST(S) RAN AND ASSERTED NOTHING — scored Risky, never [Failed]." >&2
+    echo "  ⇒ An arm that aborts before its first assert is NOT failing, so EC and Failing are both" >&2
+    echo "    clean while the guard defends nothing. Usually the member it names was renamed or" >&2
+    echo "    removed and a direct reference raised. An existence arm using get()/has_method()" >&2
+    echo "    turns this into a failing assert that says so." >&2
+    sed 's/\x1b\[[0-9;]*m//g' "$RUN_LOG" | command grep -aoE '\[Risky\]: +[a-z_0-9]+ did not assert' | sort -u | sed 's/^/    /' >&2
+    if [ "$ec" = "0" ]; then
+      echo "  ⇒ exit 4: this run would otherwise have reported success." >&2
+      exit 4
+    fi
+    echo "  (the run already reports failures; leaving exit $ec)" >&2
+  fi
+
   if [ -n "$_gdir" ] && [ -d "$_gdir" ]; then
     local _authored _executed
     _authored="$(ls "$_gdir"/test_*.gd 2>/dev/null | command grep -c .)"   # grep -c PRINTS 0; no ||
