@@ -31,5 +31,12 @@ echo "# branches merged in $FROM..$TO  ($N)"
 printf '%s\n' "$MERGES" | sed 's/^/  /'
 echo
 echo "# every clause in the note must name one of the above."
+echo "# ⚠️ BUILD THE TAG MESSAGE WITH A QUOTED HEREDOC. An unquoted <<MSG runs backticks as"
+echo "#    command substitution: v3.33.366-alpha lost \`is_action_pressed(...)\` from its note"
+echo "#    that way, silently, because the substitution failed and left an empty string."
+echo "#      cat > tmp/tagmsg <<'\''EOF'\''   # quoted: backticks stay literal"
+echo "#      ...prose...                  EOF"
+echo "#      tools/fold_note.sh <from> <to> | sed -n '2,20p' >> tmp/tagmsg"
+echo "#      git tag -a <tag> -F tmp/tagmsg"
 echo "# verify a claim by CONTENT too, not only by ancestry:"
 echo "#   git show $TO:<file> | grep -c <symbol>"
