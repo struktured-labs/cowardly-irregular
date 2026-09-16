@@ -20,6 +20,8 @@ enum Mode { SLOT_SELECT, ITEM_SELECT }
 var mode: int = Mode.SLOT_SELECT
 var selected_slot: int = 0  # 0=weapon, 1=armor, 2=accessory
 var selected_item_index: int = 0
+## Sticky window start for the item list; MenuScroll moves it only when the selection leaves it.
+var _item_scroll: int = 0
 var _slot_labels: Array = []
 var _item_labels: Array = []
 
@@ -443,7 +445,8 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 	var max_visible = int((panel_size.y - 50) / item_height)
 
 	# Handle scroll offset so the selection always stays in view
-	var scroll_offset = max(0, selected_item_index - max_visible + 1)
+	_item_scroll = MenuScroll.window_offset(selected_item_index, max_visible, items.size(), _item_scroll)
+	var scroll_offset = _item_scroll
 
 	for i in range(min(items.size() - scroll_offset, max_visible)):
 		var item_idx = i + scroll_offset

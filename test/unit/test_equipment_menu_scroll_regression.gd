@@ -10,8 +10,7 @@ extends GutTest
 ## gamepad/keyboard. This is the project's silent-failure class: no crash, content
 ## silently unreachable.
 ##
-## Fix: mirror JobMenu's scroll pattern — scroll_offset = max(0, selected_item_index
-## - max_visible + 1), render absolute item_idx = i + scroll_offset, pass item_idx to
+## Fix: a scroll window — render absolute item_idx = i + scroll_offset, pass item_idx to
 ## _create_item_row so the highlight/cursor resolves for scrolled-into-view selections.
 
 const EquipmentMenuScript = preload("res://src/ui/EquipmentMenu.gd")
@@ -111,7 +110,8 @@ func test_last_item_is_reachable() -> void:
 
 
 func test_scroll_window_follows_selection() -> void:
-	"""The visible window slides so the selection is always its last visible row."""
+	"""A forward jump past the window lands the selection on its bottom row — still true under
+	the sticky window, because there is nothing below it yet to show."""
 	var menu = _make_menu(20)
 	var max_visible = int((PANEL_SIZE.y - 50) / 60)
 
@@ -144,8 +144,10 @@ func test_source_uses_scroll_offset() -> void:
 	assert_false(content.is_empty(), "EquipmentMenu.gd should be readable")
 	assert_true(content.contains("scroll_offset"),
 		"EquipmentMenu must compute a scroll_offset so selections past max_visible stay in view")
-	assert_true(content.contains("selected_item_index - max_visible + 1"),
-		"scroll_offset should follow the selection like JobMenu does")
+	assert_true(content.contains("_item_scroll = MenuScroll.window_offset(selected_item_index"),
+		"scroll_offset should come from the shared sticky window, storing its own offset")
+	assert_eq(content.find("selected_item_index - max_visible + 1"), -1,
+		"the selection-only formula pinned the cursor to the bottom row on every upward step")
 	# The render loop must pass an absolute item index, not the raw loop counter.
 	assert_true(content.contains("_create_item_row(item_id, item_idx)"),
 		"Row must be built with the absolute item_idx so the highlight resolves")

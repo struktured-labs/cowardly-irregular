@@ -15,6 +15,8 @@ enum Mode { SLOT_SELECT, JOB_SELECT }
 var mode: int = Mode.SLOT_SELECT
 var selected_slot: int = 0  # 0=primary, 1=secondary
 var selected_job_index: int = 0
+## Sticky window start for the job list; MenuScroll moves it only when the selection leaves it.
+var _job_scroll: int = 0
 var _slot_labels: Array = []
 var _job_labels: Array = []
 
@@ -402,7 +404,8 @@ func _create_job_list_panel(panel_size: Vector2) -> Control:
 	var max_visible = int((panel_size.y - 50) / item_height)
 
 	# Handle scroll offset
-	var scroll_offset = max(0, selected_job_index - max_visible + 1)
+	_job_scroll = MenuScroll.window_offset(selected_job_index, max_visible, available_jobs.size(), _job_scroll)
+	var scroll_offset = _job_scroll
 
 	for i in range(min(available_jobs.size() - scroll_offset, max_visible)):
 		var job_idx = i + scroll_offset
