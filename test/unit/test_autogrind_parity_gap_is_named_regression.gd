@@ -56,14 +56,18 @@ const DECLARED := {
 ## arm 4 permits silently.
 const CLOSED_PENDING_FOLD := [
 	"drain_percentage",
-	"secondary_effect", "secondary_chance", "secondary_modifier", "secondary_target",
 	"scales_with", "max_multiplier",
+	## cowir-battle's 48a70e4dd — the doom counter. It was dead in BOTH engines until today (its only
+	## setter sat in _execute_support_ability while all three abilities authoring `effect: doom` are
+	## magic or physical), and their fix wires live AND mirrors the grind in the same commit. So it
+	## stops being a gap of mine at the fold rather than becoming one.
+	"countdown",
 ]
 
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
-	"absorb_amount", "ap_gain", "countdown", "crit_chance",
+	"absorb_amount", "ap_gain",
 	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
 	"meta_effect", "mp_restore_percent", "priority", "recoil_pct",
 	"steals", "success_rate", "threat_class",
@@ -195,7 +199,13 @@ const GRIND_PATH_MARKER := {
 	"ignores_defense": "ability.get(\"ignores_defense\"",
 	"damage_to_self_pct": "_recoil_to(",
 	"damage_variance": "ability.get(\"damage_variance\"",
+	"crit_chance": "ability.get(\"crit_chance\"",
 	"regen_per_turn": "ability.get(\"regen_per_turn\"",
+	## ⚠️ RE-RANKED by the form-4 finding rather than examined: `meta_effect` is carried by
+	## save_deletion on permadeath_reaper, which the grind's OWN spawner instantiates. It stays in the
+	## backlog — cowir-battle has not touched it — but it is no longer "no reachable caster", which is
+	## how this file ranked it before form 4 was known. Recorded here so the next person picking from
+	## the backlog by reach does not repeat my ranking.
 	## PRODUCER/CONSUMER key, so the marker is the PRODUCER. Live reads the authored field in
 	## _execute_support_ability and consumes its stored effect in two OTHER executors (:4374 attack,
 	## :4969 magic); axis 2 asks where the authored key is READ, not where its effect is spent. My
@@ -207,7 +217,13 @@ const GRIND_PATH_MARKER := {
 	## arm skips it. Its support-only placement is pinned in
 	## test_autogrind_applies_the_second_effect_regression instead. Left here so the map matches the
 	## set of keys this lane has wired, and so it reds if the marker ever disappears.
+	## All four secondary_* keys: they live in `_apply_secondary_effect`, which `_execute_support_ability`
+	## calls, and the repaired walk-back resolves them to that executor. One marker covers the four —
+	## they are the same call, and a key travelling alone would be the anomaly.
 	"secondary_effect": "_apply_secondary_effect(",
+	"secondary_chance": "_apply_secondary_effect(",
+	"secondary_target": "_apply_secondary_effect(",
+	"secondary_modifier": "_apply_secondary_effect(",
 }
 
 ## Read by both engines, live-confined to one executor, and NOT path-assessed by me. They are here
@@ -218,6 +234,26 @@ const GRIND_PATH_MARKER := {
 ## executor — but "looks structural" is not "checked", and the difference is the whole point of axis 2.
 const AXIS2_UNASSESSED := ["mp_cost", "stat_modifier", "element", "max_multiplier", "stat", "modifier"]
 
+## ⛔ HOW A KEY REACHES A GRIND — FOUR FORMS, AND I RANKED THIS BACKLOG ON THREE.
+## Every reachability judgement in this file rests on "can a grind actually cast this", and I built
+## that oracle by enumerating the ways I knew:
+##   1. a pooled monster            EncounterSystem.enemy_pools, drawn by AutogrindController:309
+##   2. a job ability               jobs.json, cast by the party
+##   3. the meta-boss generator     AutogrindSystem._spawn_meta_boss -> a PROCEDURAL enemy
+##   4. THE ONE I MISSED — build_meta_boss_enemy_data reads monsters.json and instantiates any
+##      monster flagged `autogrind_spawned`. Two carry it: adaptive_slime and permadeath_reaper.
+##
+## So the GRIND ITSELF spawns real monsters.json entries, and `permadeath_reaper` casts `final_death`,
+## `permakill_strike` and `save_deletion` — carrying `countdown` and `meta_effect`, both of which this
+## backlog ranked as having no reachable caster. My declarations survived, but by luck of the data:
+## neither meta_knight nor time_phantom carries the flag, so the answers were right and the instrument
+## was not.
+##
+## CLAUDE.md says of cutscenes "a scene reaches a player at least SIX different ways — SIX IS A FLOOR,
+## NOT A TOTAL", and @cowir-cutscenes' point is that an oracle which enumerates forms is how you miss
+## one. The arm below therefore does not enumerate: it asks what the grind's own spawner can reach and
+## requires every key it finds to be NAMED somewhere in this file.
+##
 ## ⛔ WHAT AXIS 2 DOES NOT CHECK, named because the arm's name implies more than it does.
 ## It compares ONE marker per key against ONE live executor: the site where the AUTHORED KEY IS READ.
 ## For a PRODUCER/CONSUMER key that is the producer only — `next_attack_multiplier` is read in live's
@@ -245,16 +281,52 @@ const ARM_FOR_EXECUTOR := {
 }
 
 
+## ⛔ THE WALK-BACK USED TO MIS-ATTRIBUTE, and I recorded the symptom as a property. My version did
+## `rfind("func _execute_")`, so a key read inside an ordinary HELPER was credited to whichever
+## executor happened to sit above that helper in the file. I noted that `secondary_effect` "resolves
+## to no executor, so the arm skips it" and wrote it down as a characteristic of a dispatcher — it was
+## my own bug, and @cowir-battle found it (48a70e4dd) when `_apply_ability_status` landed just below
+## `_execute_physical_ability` and made `effect_chance` measure as physical-only.
+##
+## Their repair, ported verbatim: resolve the ENCLOSING function whatever it is, and when that is not
+## an executor, return every executor whose body calls it. A helper-read key now attributes to all the
+## paths that actually reach it.
+func _enclosing_func(at: int, live: String) -> String:
+	var owner: int = live.substr(0, at).rfind("\nfunc ")
+	if owner < 0:
+		return ""
+	var line: String = live.substr(owner + 1, 80)
+	var paren: int = line.find("(")
+	return line.substr(5, paren - 5) if paren > 5 else ""
+
+
+## Every executor a read at `at` belongs to: the enclosing function when that IS an executor,
+## otherwise every executor whose own body calls it.
+func _executors_for_read(at: int, live: String) -> Array:
+	var fn: String = _enclosing_func(at, live)
+	if fn == "":
+		return []
+	if ARM_FOR_EXECUTOR.has(fn):
+		return [fn]
+	var out: Array = []
+	for executor in ARM_FOR_EXECUTOR:
+		var e_at: int = live.find("func %s(" % executor)
+		if e_at < 0:
+			continue
+		var e_end: int = live.find("\nfunc ", e_at + 1)
+		var body: String = live.substr(e_at, (e_end - e_at) if e_end > e_at else 4000)
+		if body.contains(fn + "("):
+			out.append(executor)
+	return out
+
+
 ## The `func _execute_*` that encloses live's read of this key, or "" if it does not read it.
 func _live_executor_of(key: String, live: String) -> String:
 	var at: int = live.find('ability.get("%s"' % key)
 	if at < 0:
 		return ""
-	var owner: int = live.substr(0, at).rfind("func _execute_")
-	if owner < 0:
-		return ""
-	var line: String = live.substr(owner, 60)
-	return line.substr(5, line.find("(") - 5)
+	var owners: Array = _executors_for_read(at, live)
+	return str(owners[0]) if owners.size() > 0 else ""
 
 
 ## How many DISTINCT per-type executors read this key. Only a key live confines to exactly ONE has a
@@ -266,12 +338,8 @@ func _live_executor_count(key: String, live: String) -> int:
 	var needle: String = 'ability.get("%s"' % key
 	var at: int = live.find(needle)
 	while at >= 0:
-		var owner: int = live.substr(0, at).rfind("func _execute_")
-		if owner >= 0:
-			var line: String = live.substr(owner, 60)
-			var name: String = line.substr(5, line.find("(") - 5)
-			if ARM_FOR_EXECUTOR.has(name):
-				seen[name] = true
+		for name in _executors_for_read(at, live):
+			seen[name] = true
 		at = live.find(needle, at + 1)
 	return seen.size()
 
@@ -457,3 +525,64 @@ func test_a_multi_site_key_keeps_its_consumer_coverage_elsewhere() -> void:
 	for key in CONSUMER_COVERAGE:
 		assert_true(GRIND_PATH_MARKER.has(key),
 			"'%s' claims consumer coverage but is not path-checked at all — one of the two is wrong" % key)
+
+
+## Ability keys reachable through form 4 — a monster the GRIND'S OWN SPAWNER instantiates.
+func _keys_the_grind_can_spawn() -> Array:
+	var monsters: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var keys: Dictionary = {}
+	for mid in monsters.keys():
+		var m: Dictionary = monsters[mid]
+		if not bool(m.get("autogrind_spawned", false)):
+			continue
+		for aid in m.get("abilities", []):
+			for k in (abilities.get(aid, {}) as Dictionary).keys():
+				keys[k] = true
+	return keys.keys()
+
+
+func test_every_key_the_grind_can_spawn_is_named_in_this_file() -> void:
+	## The form I missed, turned into a ratchet. A key reachable through the grind's OWN spawner must
+	## be path-checked, declared, or in the backlog — never simply absent, which is what it was.
+	var live: String = GdSource.code_of(LIVE)
+	var grind: String = GdSource.code_of(GRIND)
+	var spawnable: Array = _keys_the_grind_can_spawn()
+	assert_gt(spawnable.size(), 5,
+		"CONTROL: the grind's spawner must still reach a real key set (%d) — if this collapses the derivation broke, not the game" % spawnable.size())
+	var known: Dictionary = {}
+	for k in DECLARED:
+		known[k] = true
+	for k in UNEXAMINED:
+		known[k] = true
+	for k in UNDECIDED_LIVE_SIDE:
+		known[k] = true
+	for k in CLOSED_PENDING_FOLD:
+		known[k] = true
+	for k in GRIND_PATH_MARKER:
+		known[k] = true
+	var unnamed: Array = []
+	for k in spawnable:
+		var q: String = '"%s"' % k
+		if not live.contains(q):
+			continue  # live does not read it either — not a parity question
+		if grind.contains(q):
+			continue  # both engines read it
+		if not known.has(k):
+			unnamed.append(k)
+	gut.p("    keys reachable via the grind's own spawner: %d" % spawnable.size())
+	assert_eq(unnamed, [],
+		"these keys are reachable by a monster the GRIND ITSELF spawns, are read by live and not by the grind, and are named nowhere in this file: %s" % str(unnamed))
+
+
+func test_the_spawner_form_still_exists_where_it_is_documented() -> void:
+	## The header describes form 4 by mechanism. If the spawner stops reading monsters.json, or the
+	## flag is renamed, that description becomes a lie and the arm above silently measures nothing.
+	var sys: String = GdSource.code_of("res://src/autogrind/AutogrindSystem.gd")
+	assert_gt(sys.length(), 5000, "CONTROL: AutogrindSystem was actually read")
+	assert_true(sys.contains("func build_meta_boss_enemy_data"),
+		"the builder named in this file's reachability notes is gone — re-derive the forms before trusting any declaration here")
+	assert_true(sys.contains('"autogrind_spawned"'),
+		"the spawner no longer selects on autogrind_spawned; form 4 is described by a mechanism that no longer exists")
+	assert_gt(_keys_the_grind_can_spawn().size(), 5,
+		"no monster carries autogrind_spawned any more — form 4 reaches nothing, and the ratchet above is vacuous rather than clean")
