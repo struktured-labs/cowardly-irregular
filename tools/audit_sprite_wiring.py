@@ -29,6 +29,7 @@ Usage:
 import argparse
 import json
 import re
+import datetime
 import subprocess
 import sys
 from pathlib import Path
@@ -42,6 +43,46 @@ SPRITES = GAME / "assets" / "sprites"
 
 def load_manifest() -> dict:
     return json.loads(MANIFEST.read_text())
+
+
+def _corpus_banner() -> str:
+    """Name the tree these findings are ABOUT, which is not the tree you are in.
+
+    ⛔ THIS TOOL AUDITS A HARDCODED CHECKOUT, and 22 other tools in this
+    directory do the same — it is the sprite lane's convention, not a bug:
+    artist deliveries land in a dedicated tree. But the OUTPUT never said so,
+    and a finding with no corpus reads as a finding about the repo you are
+    standing in.
+
+    Cost, measured on myself 2026-09-16: this tool reported cartographer_wraith
+    and dark_knight as ORPHAN with 0 refs. Both are TRUE of the audited tree
+    (108 monster_sheets entries, neither registered) and FALSE of the game repo
+    (114 entries, both wired, manifest pointing at those exact bytes). I wrote
+    the finding into a commit as a live defect before checking which tree it
+    came from. The fleet rule is "state the corpus as part of the claim"; a
+    tool that prints findings must therefore state it FOR the reader, because
+    the reader is the one who will quote it.
+    """
+    head = branch = when = "?"
+    try:
+        head = subprocess.run(["git", "-C", str(GAME), "rev-parse", "--short", "HEAD"],
+                              capture_output=True, text=True, timeout=20).stdout.strip() or "?"
+        branch = subprocess.run(["git", "-C", str(GAME), "rev-parse", "--abbrev-ref", "HEAD"],
+                                capture_output=True, text=True, timeout=20).stdout.strip() or "?"
+        when = subprocess.run(["git", "-C", str(GAME), "log", "-1", "--format=%cs"],
+                              capture_output=True, text=True, timeout=20).stdout.strip() or "?"
+    except Exception:
+        pass
+    age = ""
+    try:
+        d = (datetime.date.today() - datetime.date.fromisoformat(when)).days
+        if d >= 7:
+            age = f"  ⚠️ {d} days stale"
+    except Exception:
+        pass
+    return (f"CORPUS: {GAME}\n"
+            f"        {branch} @ {head}, last commit {when}{age}\n"
+            f"        findings below are about THAT tree, not your working directory")
 
 
 def referenced_paths(m: dict) -> dict[str, list[str]]:
@@ -137,11 +178,13 @@ def grep_repo(needle: str) -> int:
     so the failure is UNDER-reporting — an inert sheet goes unmentioned,
     never a live one wrongly condemned.
 
-    NO LONGER LATENT, and this paragraph used to say it was. It read "there
-    are 0 unregistered monster PNGs, so this predicate is unexercised" —
-    falsified by this tool's own output, which reports cartographer_wraith
-    and dark_knight as ORPHANs with 0 refs. The data landed and the note
-    did not move (measured 2026-09-16).
+    NO LONGER LATENT, and this paragraph has now been wrong twice. It first
+    read "there are 0 unregistered monster PNGs, so this predicate is
+    unexercised". I replaced that with a claim that cartographer_wraith and
+    dark_knight are inert — TRUE of the audited artist tree, FALSE of the game
+    repo, where both have had manifest entries pointing at those exact bytes
+    since before 2026-09-16. The predicate is genuinely exercised now; what I
+    got wrong was not naming WHICH TREE exercised it. See _corpus_banner.
 
     ⚠️ AND THE PREDICATE WAS STILL WRONG WHILE THE DOCSTRING PROMISED "in
     CODE, not in prose": `s.startswith("#")` skips only a line that BEGINS
@@ -265,6 +308,9 @@ def main() -> int:
 
     # ⛔ THE INSTRUMENT BEFORE THE CORPUS. Every check below reads source
     # through _code_of; an over-strip makes all five report a clean repo.
+    print(_corpus_banner())
+    print()
+
     bad_strip = _strip_control()
     if bad_strip:
         print(bad_strip)
