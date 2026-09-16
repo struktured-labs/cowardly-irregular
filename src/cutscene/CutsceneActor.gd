@@ -42,6 +42,9 @@ var _anim_frame: int = 0
 var _walking: bool = false
 ## The speed the current walk is running at; the animation divides by it so the stride stays put.
 var _walk_speed: float = DEFAULT_WALK_SPEED
+## Fast-forward rate for the CURRENT walk. It scales the tween and the cycle TOGETHER — a
+## speed-scaled tween covers more ground per second and the legs have to cover it too.
+var _walk_rate: float = 1.0
 var _walk_tween: Tween = null
 var _walk_target: Vector2 = Vector2.INF
 var _emote_label: Label = null
@@ -114,7 +117,7 @@ func _process(delta: float) -> void:
 	if not _walking:
 		return
 	_anim_time += delta
-	if _anim_time >= frame_time_for(_walk_speed):
+	if _anim_time >= frame_time_for(_walk_speed * _walk_rate):
 		_anim_time = 0.0
 		_anim_frame = (_anim_frame + 1) % WALK_FRAMES
 		_apply_frame()
@@ -130,6 +133,7 @@ func walk_to(target_global: Vector2, speed: float = DEFAULT_WALK_SPEED) -> void:
 	face_vector(delta_v)
 	_walking = true
 	_walk_speed = speed
+	_walk_rate = 1.0  # a new walk starts at normal rate; a button held through the last one must not carry
 	_walk_target = target_global
 	_walk_tween = create_tween()
 	_walk_tween.tween_property(self, "global_position", target_global, delta_v.length() / speed)
@@ -176,6 +180,15 @@ func set_facing_name(dir_name: String) -> void:
 ## `world_pos` is GLOBAL (authored [x,y] marks and other puppets' global_position both are) — subtracting the local `position` faced the wrong way on any offset stage.
 func face_toward(world_pos: Vector2) -> void:
 	face_vector(world_pos - global_position)
+
+
+## Hurry (or slow) the walk in flight. The director calls this from its poll loop so a held confirm
+## speeds a staged walk the same way it speeds every other hold — and because the cycle divides by
+## `speed * rate`, the legs keep up instead of skating at 4x.
+func set_walk_rate(rate: float) -> void:
+	_walk_rate = maxf(0.01, rate)
+	if _walk_tween and is_instance_valid(_walk_tween) and _walk_tween.is_valid():
+		_walk_tween.set_speed_scale(_walk_rate)
 
 
 ## Seconds per walk frame at `speed`, so travel-per-frame is STRIDE_PER_FRAME_PX whatever the speed.
