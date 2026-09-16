@@ -668,6 +668,8 @@ const _BATTLE_VOLUME_TRIM_DB: Dictionary = {
 	"corruption_gain_bp_instability": -3.0,
 	"corruption_gain_ability_corruption": -3.0,
 	"corruption_ap_flicker": -6.0,
+	## Pre-attenuated asset (-22.9 dB rms), like menu_error's +6.6: without this the undo sits ~20 dB under the press it undoes.
+	"advance_undo": 6.0,
 }
 
 
@@ -781,8 +783,8 @@ func play_advance_state(sound_key: String) -> void:
 		# Charge and discharge share one voice on purpose: one bank's lifecycle, a turn apart.
 		"full_bank_charged", "full_bank_unleash":
 			_play_battle_on(_bank_player, sound_key)
-		# Own voice: a refused momentum press straight after 5/5 would otherwise cut the charge.
-		"advance_queue_full":
+		# The queue CORRECTION voice: a refusal or an undo lands while the press it answers is still ringing.
+		"advance_queue_full", "advance_undo":
 			_play_battle_on(_refuse_player, sound_key)
 		_:
 			push_warning("play_advance_state: '%s' is not an advance-bank cue; routed to play_battle" % sound_key)
