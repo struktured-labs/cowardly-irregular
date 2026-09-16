@@ -25,6 +25,9 @@ var _player_party: Array = []
 var _enemy_party: Array = []
 var _current_round: int = 0
 var _battle_log: Array[String] = []
+## BattleManager:230. Steal gold scales with the victim's max HP on both sides of the port.
+const STEAL_GOLD_HP_DIVISOR: float = 500.0
+var _stolen_gold: int = 0
 
 
 func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
@@ -33,6 +36,35 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	_current_round = 0
 	_battle_log.clear()
 	_rounds_since_group_attack = 99
+	_stolen_gold = 0
+
+	## A BATTLE STARTS CLEAN, mirroring BattleManager.start_battle:519-534 field for field and with
+	## the same scope (all combatants, not just the party). Live's own comment says why: so nothing
+	## "can't leak into the next encounter." This file cleared NONE of it, and the grind is the engine
+	## where that compounds — AutogrindController holds `_party` as Combatant OBJECTS (:34), populated
+	## once in start_grind and reused for EVERY battle of the session. So a buff won in battle 1 made
+	## the party stronger than live for battles 2..N, a poison kept ticking into fights the game would
+	## have started clean, and a doom_counter — lethal since cowir-battle's 48a70e4dd — could kill in a
+	## battle live had already disarmed. Enemies are rebuilt per battle, so only the party accumulated.
+	## NOT cleared, because live does not: HP, MP and permanent_injuries. A grind that healed the party
+	## between fights would be a worse bug than the leak it replaced; there is an arm for that.
+	for combatant in (_player_party + _enemy_party):
+		if combatant == null or not is_instance_valid(combatant):
+			continue
+		if "active_buffs" in combatant:
+			combatant.active_buffs.clear()
+		if "active_debuffs" in combatant:
+			combatant.active_debuffs.clear()
+		if "status_effects" in combatant:
+			combatant.status_effects.clear()
+		if "status_durations" in combatant:
+			combatant.status_durations.clear()
+		if "is_defending" in combatant:
+			combatant.is_defending = false
+		## -1 is the "not doomed" sentinel (Combatant.gd:84). 0 is a LIVE counter — live sets -1 here
+		## and its comment records that 0 was the bug.
+		if "doom_counter" in combatant:
+			combatant.doom_counter = -1
 
 	## Tick 145: mark encountered monsters as seen in the bestiary,
 	## mirroring BattleScene._show_battle_quip. Pre-fix autogrind
@@ -829,6 +861,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## ⚠️ 1.5 FLAT, matching this file's own basic-attack crit. Live adds PassiveSystem's
 					## crit_damage_bonus on top and the grind mirrors it on NEITHER crit path; declared here
 					## rather than silently halved, because closing it is one change for both paths.
+					## ⛔ AND THAT IS ONE INSTANCE OF A CATEGORY GAP, measured 2026-09-16: this file models
+					## ZERO passives. 45 authored, 12 distinct stat_mods keys (attack/magic/defense/speed/
+					## max_hp/max_mp multipliers, mp_cost_multiplier, crit_chance, crit_damage_bonus,
+					## evasion, healing_multiplier, steal_chance), and exactly ONE of the 45 carries a job
+					## restriction — so essentially any party member can equip any of them. Live consumes
+					## them (attack_multiplier alone has 10 BattleManager sites; mp_cost_multiplier routes
+					## through JobSystem.get_ability_mp_cost, which this file does NOT call — its own
+					## _get_ability_mp_cost reads the raw authored number). So a passive BUILD evaluated in
+					## a grind is evaluated without its passives. Not wired here because it is a port, not
+					## a repair: it changes party strength and therefore the reward economy, which is
+					## struktured's call — the same reasoning that left summon_* declared.
 					if randf() < float(ability.get("crit_chance", 0.0)):
 						base_dmg = int(base_dmg * 1.5)
 						_log("%s crits with %s" % [caster.combatant_name, ability_id])
@@ -846,6 +889,11 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## grind heal bone_warden and shadow_knight where the game does not (@cowir-battle 2d14d92d).
 					_log("%s uses %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dmg])
 					_maybe_inflict_status(caster, target, ability, ability_id)
+			## mug is "attack and steal in one action"; the grind's physical arm read neither `steals`
+			## nor success_rate, so a Rogue's mug was a plain hit. After the damage, exactly as live
+			## (BattleManager:4650) — which also means a target killed by the hit cannot be robbed.
+			if bool(ability.get("steals", false)):
+				_roll_steal(caster, ability, targets, float(ability.get("success_rate", 0.5)))
 
 		"mp_restore":
 			## pray (single_ally) and channel (self) had no arm and fell to the default, which
@@ -920,9 +968,40 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 							_log("%s cleanses %s (%s)" % [caster.combatant_name, target.combatant_name, ", ".join(cleansed)])
 						continue
 					elif effect == "mp_restore_and_ap":
-						target.restore_mp(int(target.max_mp * 0.25))
-						target.gain_ap(1)
-						_log("%s uses %s on %s (MP + AP)" % [caster.combatant_name, ability_id, target.combatant_name])
+						## Live reads BOTH keys (BattleManager:6123-6124). This arm HARDCODED 25% where
+						## inspiring_melody authors 5%, so a grinding Bard's song restored FIVE TIMES the MP
+						## the game grants. The ap_gain half was right only by COINCIDENCE — the literal 1
+						## equalled live's default, so an ability authoring 2 would still have paid 1.
+						var mp_pct: float = float(ability.get("mp_restore_percent", 0.05))
+						var ap_gain: int = int(ability.get("ap_gain", 1))
+						if mp_pct > 0.0:
+							var mp_restored: int = int(target.max_mp * mp_pct)
+							if mp_restored > 0:
+								target.restore_mp(mp_restored)
+						if ap_gain != 0:
+							target.gain_ap(ap_gain)
+						_log("%s uses %s on %s (+%d AP, +%d%% MP)" % [caster.combatant_name, ability_id, target.combatant_name, ap_gain, int(mp_pct * 100)])
+						continue
+					elif effect == "damage_absorb":
+						## Combatant.take_damage:349 reads `_damage_absorb_budget` and treats ABSENT as
+						## UNLIMITED (-1). The unmodelled-effect else below DID add the status — so the ward
+						## was live in the grind with no cap, and fill_the_void made an 8000 HP POOLED enemy
+						## (the_absence, abstract_overworld) immune AND self-healing for two full rounds.
+						## That is live's own pre-2026-09-10 bug, which it fixed by making absorb_amount a
+						## BUDGET; the grind never got the fix because it never read the key. BattleManager:5860.
+						## An omitted absorb_amount still means unlimited, on both sides.
+						target.add_status("damage_absorb", duration)
+						if ability.has("absorb_amount"):
+							target.set_meta("_damage_absorb_budget", maxi(0, int(ability["absorb_amount"])))
+						elif target.has_meta("_damage_absorb_budget"):
+							target.remove_meta("_damage_absorb_budget")
+						_log("%s wards %s (absorbs %d for %d turns)" % [caster.combatant_name, target.combatant_name, int(ability.get("absorb_amount", -1)), duration])
+						continue
+					elif effect == "steal":
+						## Fell to the else below and gave the victim a junk status called "steal" while the
+						## gold never moved — the cleanse class, one arm down. Live's support default is 1.0
+						## (BattleManager:5609's local), NOT mug's 0.5; `steal` authors 0.5 explicitly either way.
+						_roll_steal(caster, ability, [target], float(ability.get("success_rate", 1.0)))
 						continue
 					elif effect == "regen":
 						## Combatant.end_turn ticks "regen" and reads an authored override off
@@ -1083,6 +1162,32 @@ const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
 	"speed_down": ["speed", "Secondary Speed Down"],
 	"magic_defense_down": ["magic_defense", "Secondary Magic Defense Down"],
 }
+
+
+## Live pays the PLAYER for a landed steal — BattleManager:6147 (the support `steal` effect) and
+## :4655 (mug's steal half), both GameState.add_gold, which applies gold_multiplier itself.
+## PARTY SIDE ONLY here, deliberately: live has no caster-side check, so an enemy's steal pays the
+## party it just robbed. That is reachable — goblin/spiteful_crow/conveyor_gremlin author `steal`
+## across 7 pools, and "support" is in UTILITY_ABILITY_TYPES, which the brute and assassin AI both
+## draw from. Mirroring it into an engine that runs hundreds of unattended battles turns a per-fight
+## bug into a gold fountain, so the enemy side is declared in the ledger rather than copied.
+## Base rate only: _steal_success_rate also sums an equipment steal_bonus and a passive steal_chance,
+## and this file models NEITHER category at all — a broader gap than steal, declared as its own entry.
+func _roll_steal(caster, ability: Dictionary, targets: Array, base_rate: float) -> void:
+	var party_side: bool = _player_party.has(caster)
+	for target in targets:
+		if target == null or not is_instance_valid(target) or not target.is_alive:
+			continue
+		if randf() >= base_rate:
+			_log("%s fails to steal from %s" % [caster.combatant_name, target.combatant_name])
+			continue
+		## BattleManager:6147 verbatim. rogue_lockward's first_steal_guaranteed and steal_response are
+		## NOT ported: it is the only monster authoring either, and it is neither pooled nor
+		## autogrind_spawned, so no grind can field it by any of the four spawn forms.
+		var amount: int = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
+		if party_side:
+			_stolen_gold += amount
+		_log("%s steals %d gold from %s" % [caster.combatant_name, amount, target.combatant_name])
 
 
 func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array, ability_id: String) -> void:
@@ -1307,6 +1412,19 @@ func _build_results(victory: bool, termination_reason: String = "") -> Dictionar
 				0.1, 10.0)
 			exp = int(exp * exp_mult)
 			gold = int(gold * gold_mult)
+
+	## Credited whether or not the party won. Every other reward here is victory-only, but live
+	## calls add_gold the MOMENT the steal lands, so gold taken off a monster survives a wipe.
+	## Multiplied separately for that reason, with add_gold's own clamp (GameState:1059).
+	if _stolen_gold > 0:
+		var steal_mult: float = 1.0
+		var gs_s: Object = null
+		var tree_s: SceneTree = Engine.get_main_loop() as SceneTree
+		if tree_s != null and tree_s.root != null:
+			gs_s = tree_s.root.get_node_or_null("GameState")
+		if gs_s != null and "game_constants" in gs_s:
+			steal_mult = clampf(float(gs_s.game_constants.get("gold_multiplier", 1.0)), 0.1, 10.0)
+		gold += int(_stolen_gold * steal_mult)
 
 	# Drop parity with BattleManager (~line 596): pre-fix ludicrous mode gave EXP+gold
 	# but ZERO item drops — rare_item_found never fired and inventory_items interrupts
