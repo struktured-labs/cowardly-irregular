@@ -192,3 +192,53 @@ func test_one_producer_and_every_path_reaches_it() -> void:
 	var owner_end: int = code.find("\nfunc ", owner_at + 1)
 	assert_true(code.substr(owner_at, owner_end - owner_at).contains("_inflict_doom("),
 		"the damage path reaches the producer through the one status owner both executors call")
+
+
+## ── the countdown narrates itself ─────────────────────────────────────
+
+func test_the_doom_counter_says_something_every_turn_it_runs() -> void:
+	## ⛔ A LETHAL TIMER THAT SAID NOTHING. Doom deals no damage, so it fires neither
+	## status_tick_damage nor hp_changed — the ☠ badge was the only feedback, and the kill itself
+	## reached the player as a bare print() on stdout. Every other way to die in this engine narrates
+	## itself; this one killed you in silence.
+	var victim := _combatant("Mira")
+	var heard: Array[String] = []
+	var tap := func(msg: String) -> void: heard.append(msg)
+	BattleManager.battle_log_message.connect(tap)
+	var cb := BattleManager._on_doom_ticked.bind(victim)
+	victim.doom_ticked.connect(cb)
+	_cast_live("magic", _doom_ability("magic", 3), victim)
+	assert_eq(victim.doom_counter, 3, "CONTROL: doomed for three, or the countdown is about nothing")
+	heard.clear()
+	victim.update_buff_durations()
+	victim.update_buff_durations()
+	victim.update_buff_durations()
+	victim.doom_ticked.disconnect(cb)
+	BattleManager.battle_log_message.disconnect(tap)
+	assert_eq(heard.size(), 3, "one line per tick, not one at the start: %s" % str(heard))
+	assert_true(str(heard[0]).contains("2 turns left"), "it counts DOWN and says the number: %s" % heard[0])
+	assert_true(str(heard[1]).contains("1 turn left"), "and says 'turn' singular at one: %s" % heard[1])
+	assert_true(str(heard[2]).contains("time runs out"), "and names the kill rather than letting them just drop: %s" % heard[2])
+	assert_false(victim.is_alive, "CONTROL: the third tick really did kill them")
+
+
+func test_an_undoomed_combatant_stays_quiet() -> void:
+	## Anti-vacuity for the arm above: the emit must be gated on the counter, not on the turn.
+	var bystander := _combatant("Talia")
+	var heard: int = 0
+	var cb := func(_n: int) -> void: heard += 1
+	bystander.doom_ticked.connect(cb)
+	for i in 5:
+		bystander.update_buff_durations()
+	bystander.doom_ticked.disconnect(cb)
+	assert_eq(heard, 0, "an undoomed combatant emits nothing, %d turns running" % 5)
+
+
+func test_the_listener_is_cached_and_released_like_died_is() -> void:
+	## The bound-Callable caching exists because is_connected cannot see bound listeners the same way
+	## — the same reason _died_callbacks exists, and the same leak if it is skipped.
+	var code: String = GdSourceHelper.code_of(BM_PATH)
+	assert_true(code.contains("var _doom_callbacks: Dictionary = {}"), "the cache exists")
+	assert_true(code.contains("_doom_callbacks[combatant] = dcb"), "the bound Callable is cached at connect")
+	assert_true(code.contains("combatant.doom_ticked.disconnect(dcb)"), "and disconnected from that cache at cleanup")
+	assert_eq(code.count("_doom_callbacks.clear()"), 2, "cleared where _died_callbacks is — at setup and at cleanup")

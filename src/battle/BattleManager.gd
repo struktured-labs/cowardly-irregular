@@ -257,6 +257,7 @@ var _all_enemies_initial_count: int = 0  # Total enemies at battle start
 ## this map, every start_battle stacked another listener and KO callbacks
 ## fanned out N times after N battles.
 var _died_callbacks: Dictionary = {}
+var _doom_callbacks: Dictionary = {}
 
 ## Autobattle reward tracking
 var _full_autobattle: bool = true          # False if any player turn was manual
@@ -543,10 +544,16 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# the same way as unbound ones, so we cache the bound Callable to
 	# allow proper disconnect in _cleanup_battle (preventing listener leak).
 	_died_callbacks.clear()
+	_doom_callbacks.clear()
 	for combatant in all_combatants:
 		var cb = _on_combatant_died.bind(combatant)
 		_died_callbacks[combatant] = cb
 		combatant.died.connect(cb)
+		## Same bound-Callable caching as died, for the same disconnect reason.
+		if combatant.has_signal("doom_ticked"):
+			var dcb = _on_doom_ticked.bind(combatant)
+			_doom_callbacks[combatant] = dcb
+			combatant.doom_ticked.connect(dcb)
 
 	# Clear action log for adaptive AI
 	_battle_action_log.clear()
@@ -1092,7 +1099,11 @@ func _cleanup_battle() -> void:
 		var cb = _died_callbacks.get(combatant, null)
 		if cb and combatant.died.is_connected(cb):
 			combatant.died.disconnect(cb)
+		var dcb = _doom_callbacks.get(combatant, null)
+		if dcb and combatant.has_signal("doom_ticked") and combatant.doom_ticked.is_connected(dcb):
+			combatant.doom_ticked.disconnect(dcb)
 	_died_callbacks.clear()
+	_doom_callbacks.clear()
 
 	player_party.clear()
 	enemy_party.clear()
@@ -4948,6 +4959,19 @@ func _inflict_doom(target: Combatant, countdown: int) -> void:
 		return
 	target.doom_counter = countdown
 	battle_log_message.emit("[color=purple]☠ %s is doomed![/color] (%d turns to KO)" % [target.combatant_name, countdown])
+
+
+## ⛔ A LETHAL TIMER THAT SAID NOTHING WHILE IT RAN. Doom deals no damage, so it fires neither
+## status_tick_damage nor hp_changed — the ☠ badge was the only feedback a player got, and the kill
+## reached them as a bare print() on stdout. Every other way to die in this engine narrates itself.
+func _on_doom_ticked(turns_left: int, combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	if turns_left <= 0:
+		battle_log_message.emit("[color=purple]☠ %s's time runs out.[/color]" % combatant.combatant_name)
+		return
+	battle_log_message.emit("[color=purple]☠ %s — %d turn%s left.[/color]" % [
+		combatant.combatant_name, turns_left, "" if turns_left == 1 else "s"])
 
 
 ## Strongest matching element_boost buff, or 0.0. MAX not product — buffs already clamp elsewhere.
