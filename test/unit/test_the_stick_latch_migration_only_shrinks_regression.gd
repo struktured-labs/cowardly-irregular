@@ -14,9 +14,14 @@ extends GutTest
 ##   · a CONVERTED surface may not stay on the list, so the list cannot outlive its fact
 ##   · a surface may not be HALF converted — routed and still reading raw beside it
 ##
-## @cowir-cutscenes has claimed DialogueChoiceMenu + CutsceneGallery, @cowir-music the JukeboxMenu.
-## DialogueChoiceMenu is the severe one: four options, a five-row cursor, and it refuses cancel, so
-## an overshoot cannot be backed out of — only confirmed.
+## DialogueChoiceMenu + CutsceneGallery (cowir-cutscenes) and JukeboxMenu (cowir-music) came OFF
+## this list the hour it was written — they were claimed before it landed and converted straight
+## after. DialogueChoiceMenu was the severe one: four options, a five-row cursor, and it refuses
+## cancel, so an overshoot could not be backed out of, only confirmed.
+##
+## Their removal is the ledger's own second arm doing its job: it redded on a tree carrying both
+## their conversions and this list, naming the two files. A declaration may not outlive its fact,
+## and this is what that costs — one edit, in the file that owns the list.
 
 const RAW_UP := 'is_action_pressed("ui_up")'
 const RAW_DOWN := 'is_action_pressed("ui_down")'
@@ -24,18 +29,15 @@ const RAW_DOWN := 'is_action_pressed("ui_down")'
 ## Measured 2026-09-16. Shrinks only.
 const KNOWN_UNCONVERTED := [
 	"res://src/cutscene/CutsceneDialogue.gd",
-	"res://src/llm/DialogueChoiceMenu.gd",
 	"res://src/ui/AbilitiesMenu.gd",
 	"res://src/ui/BossSelectorMenu.gd",
 	"res://src/ui/CharacterCreationScreen.gd",
 	"res://src/ui/ControlsMenu.gd",
-	"res://src/ui/CutsceneGallery.gd",
 	"res://src/ui/FormationsMenu.gd",
 	"res://src/ui/GameOverScreen.gd",
 	"res://src/ui/HowToPlayOverlay.gd",
 	"res://src/ui/ItemsMenu.gd",
 	"res://src/ui/JobMenu.gd",
-	"res://src/ui/JukeboxMenu.gd",
 	"res://src/ui/LensMenu.gd",
 	"res://src/ui/OverworldMenu.gd",
 	"res://src/ui/PartyChatMenu.gd",
