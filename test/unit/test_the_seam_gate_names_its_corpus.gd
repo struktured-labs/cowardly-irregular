@@ -198,6 +198,16 @@ const MEASURED_TIERS: Array[int] = [48, 44, 40]
 ## deleting the strip from this very function left all 8 arms green, because every one of them
 ## called the helper directly. A helper kept and its answer discarded is the shape three lanes
 ## hit today (@cowir-sprites mutation 7, @cowir-cutscenes, @cowir-ai).
+## Does any `make_web_stage.sh` invocation reference the pinned variable? The PROPERTY behind
+## "the pin is handed over", independent of quoting, braces, or the path it is called by.
+func _has_handover(src: String) -> bool:
+	for line in src.split("\n"):
+		var l: String = str(line)
+		if l.contains("make_web_stage.sh") and l.contains("WEB_AUDIO_KBPS"):
+			return true
+	return false
+
+
 func _shipped_kbps(source_override: String = "") -> int:
 	var deploy_raw: String = source_override if source_override != "" else FileAccess.get_file_as_string("res://tools/deploy_web.sh")
 	assert_gt(deploy_raw.length(), 500, "SCOPE control: deploy_web.sh read back %d chars" % deploy_raw.length())
@@ -209,8 +219,14 @@ func _shipped_kbps(source_override: String = "") -> int:
 	assert_not_null(m, "deploy_web.sh no longer pins a bitrate through WEB_AUDIO_KBPS — the shipped tier cannot be derived, so nothing below knows which corpus ships")
 	if m == null:
 		return 0
-	assert_true(deploy.contains("make_web_stage.sh \"$WEB_AUDIO_KBPS\""),
-		"deploy_web.sh pins a bitrate it does not hand to the stage script — the stage default would ship instead, and the pin would be decorative")
+	## \u26d4 THE PROPERTY, NOT THE SPELLING. This asserted the literal
+	## `make_web_stage.sh "$WEB_AUDIO_KBPS"` — a claim about where a token SITS, not about what the
+	## script DOES. Measured 2026-09-16: two legal respellings red it on correct code —
+	## `"${WEB_AUDIO_KBPS}"` and a bare `$WEB_AUDIO_KBPS`. The property is that the invocation
+	## REFERENCES the pinned variable, however @cowir-deploy chooses to write it.
+	## (@cowir-battle's smell, same day: the literal I asserted about was a NAME.)
+	assert_true(_has_handover(deploy),
+		"deploy_web.sh pins a bitrate it does not hand to the stage script — no make_web_stage.sh invocation references WEB_AUDIO_KBPS, so the stage default would ship instead and the pin would be decorative")
 	return int(m.get_string(1))
 
 
@@ -309,16 +325,22 @@ func test_a_comment_cannot_stand_in_for_the_pass_through() -> void:
 	## The pass-through assert is what stops a pinned bitrate being decorative. A comment naming
 	## the call satisfies `contains()` exactly as well as the call does.
 	var raw: String = FileAccess.get_file_as_string("res://tools/deploy_web.sh")
-	var needle: String = "make_web_stage.sh \"$WEB_AUDIO_KBPS\""
-	assert_true(raw.contains(needle), "CONTROL: the live file really does hand the tier over")
+	## Gut the real invocation BY REFERENCE rather than by spelling, then leave a comment naming it.
+	var gutted_lines: PackedStringArray = PackedStringArray()
+	var gutted_one: bool = false
+	for line in raw.split("\n"):
+		var l: String = str(line)
+		if not gutted_one and l.contains("make_web_stage.sh") and l.contains("WEB_AUDIO_KBPS"):
+			gutted_lines.append(l.replace("WEB_AUDIO_KBPS", "48"))
+			gutted_one = true
+		else:
+			gutted_lines.append(l)
+	assert_true(gutted_one, "CONTROL: the live file really does hand the tier over on some line")
+	var gutted: String = "\n".join(gutted_lines) + "\n# we hand it over with make_web_stage.sh \"$WEB_AUDIO_KBPS\" further up\n"
 
-	## Remove the real call, leave only a comment mentioning it.
-	var gutted: String = raw.replace(needle, "make_web_stage.sh 48")
-	gutted += "\n# we hand it over with make_web_stage.sh \"$WEB_AUDIO_KBPS\" further up\n"
-	assert_true(gutted.contains(needle),
-		"CONTROL FAILED: the gutted source lost the comment too, so this arm proves nothing")
-	assert_false(_shell_code_only(gutted).contains(needle),
-		"a comment stood in for the pass-through: a deploy that pins a tier and never hands it to the stage would read as wired")
+	assert_true(_has_handover(gutted), "CONTROL FAILED: the gutted source lost the planted comment, so this arm proves nothing")
+	assert_false(_has_handover(_shell_code_only(gutted)),
+		"a comment stood in for the pass-through: a deploy that pins a tier and never hands it over would read as wired")
 
 
 func test_the_strip_leaves_shell_that_is_not_a_comment() -> void:
@@ -378,3 +400,26 @@ func test_a_comment_cannot_stand_in_for_the_transcode() -> void:
 		"CONTROL FAILED: the gutted source lost the planted comment, so this arm proves nothing")
 	assert_false(_transcode_code(gutted).contains("libvorbis"),
 		"a comment stood in for the transcode: a tier that became a straight copy would read as a re-encode")
+
+
+func test_the_handover_check_reads_the_reference_not_the_spelling() -> void:
+	## ⛔ THE ARM THAT MAKES THE REWRITE MEAN SOMETHING. The old form asserted the literal
+	## `make_web_stage.sh "$WEB_AUDIO_KBPS"`, so two legal shell respellings redded it on correct
+	## code. Without this arm the tolerance is unpinned and the next edit can quietly restore the
+	## brittleness — the property is "the invocation references the pinned variable", and shell has
+	## several right ways to write that.
+	var forms: Array[String] = [
+		'  ./tools/make_web_stage.sh "$WEB_AUDIO_KBPS" || die',
+		'  ./tools/make_web_stage.sh "${WEB_AUDIO_KBPS}" || die',
+		'  bash tools/make_web_stage.sh $WEB_AUDIO_KBPS',
+		'  WEB_AUDIO_KBPS=40 exec ./tools/make_web_stage.sh "$WEB_AUDIO_KBPS"',
+	]
+	for f in forms:
+		assert_true(_has_handover(f), "a legal shell spelling must still read as handed over: %s" % f.strip_edges())
+
+	## ⛔ AND THE NEGATIVE, or the check above is satisfied by anything: a hardcoded tier is
+	## exactly the defect — the pin exists and the stage never sees it.
+	assert_false(_has_handover('  ./tools/make_web_stage.sh 48 || die'),
+		"a hardcoded bitrate must NOT read as handed over — that is the decorative pin this arm exists for")
+	assert_false(_has_handover('  echo "$WEB_AUDIO_KBPS kbps tier"'),
+		"a line naming the variable without calling the stage script is not a handover")
