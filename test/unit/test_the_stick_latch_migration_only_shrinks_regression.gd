@@ -77,6 +77,7 @@ func _scan() -> Dictionary:
 	var GdSource = load("res://test/unit/helpers/gd_source.gd")
 	var raw: Array = []
 	var converted: Array = []
+	var mixed: Array = []
 	var scanned := 0
 	for path in _gd_files("res://src"):
 		if path.ends_with("MenuNav.gd"):
@@ -85,11 +86,15 @@ func _scan() -> Dictionary:
 		if code == "":
 			continue
 		scanned += 1
-		if code.contains(RAW_UP) or code.contains(RAW_DOWN):
-			raw.append(path)
-		if code.contains("MenuNav.step("):
+		var has_raw: bool = code.contains(RAW_UP) or code.contains(RAW_DOWN)
+		var has_nav: bool = code.contains("MenuNav.step(")
+		if has_nav:
 			converted.append(path)
-	return {"raw": raw, "converted": converted, "scanned": scanned}
+			if has_raw:
+				mixed.append(path)
+		elif has_raw:
+			raw.append(path)
+	return {"raw": raw, "converted": converted, "mixed": mixed, "scanned": scanned}
 
 
 func test_no_new_surface_joins_the_unconverted_set() -> void:
@@ -115,17 +120,39 @@ func test_the_ledger_does_not_outlive_its_fact() -> void:
 		+ "declaration that describes nothing: %s" % [stale])
 
 
-## A surface routed through MenuNav must not keep a raw read beside it: the latch would gate one
-## path while the other still bursts, which is worse than either alone because it looks converted.
-func test_no_surface_is_half_converted() -> void:
+## ⛔ A RAW READ BESIDE MenuNav IS NOT AUTOMATICALLY A HALF-CONVERSION, and my first version of
+## this arm said it was. cowir-music's JukeboxMenu conversion is correct AND keeps one:
+##     :389  if _generating: if event.is_action_pressed("ui_up") or ... : suppress
+## That is a PREDICATE — "swallow navigation while a track is generating" — not a cursor step, and
+## it needs no latch because it moves nothing. A text scan cannot tell a step from a predicate, so
+## the claim it CAN support is narrower: a converted file keeping a raw read must say why.
+const DECLARED_NON_STEP_RAW_READS := {
+	"res://src/ui/JukeboxMenu.gd":
+		"a _generating suppression predicate, not a cursor step — it moves nothing, so a burst is a no-op",
+}
+
+
+func test_a_raw_read_beside_menunav_is_declared() -> void:
 	var scan := _scan()
-	var half: Array = []
-	for path in scan["converted"]:
-		if scan["raw"].has(path):
-			half.append(path)
-	assert_eq(half, [],
-		"these route through MenuNav AND still read raw — one path is latched and one is not: %s"
-			% [half])
+	var undeclared: Array = []
+	for path in scan["mixed"]:
+		if not DECLARED_NON_STEP_RAW_READS.has(path):
+			undeclared.append(path)
+	assert_eq(undeclared, [],
+		"these route through MenuNav AND still read raw — if that read is a cursor STEP the file "
+		+ "is half converted and one path still bursts; if it is a predicate, declare it: %s"
+			% [undeclared])
+
+
+## The declaration may not outlive ITS fact either: a file that stops reading raw must leave.
+func test_the_non_step_declarations_are_still_true() -> void:
+	var scan := _scan()
+	var stale: Array = []
+	for path in DECLARED_NON_STEP_RAW_READS:
+		if not scan["mixed"].has(path):
+			stale.append(path)
+	assert_eq(stale, [],
+		"these no longer keep a raw read beside MenuNav — drop the declaration: %s" % [stale])
 
 
 ## ANTI-VACUITY, both directions: the scan must actually find both populations, or all three arms
