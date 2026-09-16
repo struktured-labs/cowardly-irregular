@@ -33,6 +33,13 @@ const PARTY_SPRITE_HEIGHT: float = 210.0
 ## 1.5 picked as the visible-but-not-too-big sweet spot after fighter override
 ## was removed.
 const SPRITE_SCALE_BUMP: float = 1.5
+## ⛔ EVERY JOB'S FEET STAND ON ONE LINE BELOW ITS SLOT. Sprites are centred on the slot, so a sheet whose
+## figure stops short of the frame bottom floats: measured live, four starters' feet sat 78.8 px below
+## their slot and the Fighter's 58.6 — its figure ends at y=162 of 256 where the others reach 192, and the
+## 1.4 size override multiplies that 30 px gap (cowir-sprites). One number cannot fix size AND position.
+## The line is the one those four already stood on, derived rather than tuned: the 64 px frame-bottom
+## margin at the base scale is PARTY_SPRITE_HEIGHT * SPRITE_SCALE_BUMP / 4 = 78.75 px.
+const PARTY_FEET_BELOW_SLOT: float = PARTY_SPRITE_HEIGHT * SPRITE_SCALE_BUMP / 4.0
 const JOB_SCALE_OVERRIDES: Dictionary = {
 	"fighter": 1.4,
 }
@@ -985,23 +992,7 @@ func _create_battle_sprites() -> void:
 		# PARTY_SPRITE_HEIGHT is the strict-5 base (210px, lowered from 280
 		# per BDFFHD layout design). No further density scaling — the base
 		# was tuned for the strict-5 layout directly.
-		var target_height = PARTY_SPRITE_HEIGHT
-		var proc_target_height = 108.0  # was 144 — proportional shrink with target_height
-
-		# Auto-scale based on frame height and per-job target
-		var _sprite_scale = 3.0
-		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
-			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
-				var _ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
-				if _ftex and _ftex.get_height() > 128:
-					_sprite_scale = target_height / float(_ftex.get_height())
-				elif _ftex and _ftex.get_height() > 48:
-					_sprite_scale = proc_target_height / float(_ftex.get_height())
-		# Apply per-job scale override. NOT empty — fighter carries 1.4 (const at line 34); the artist sheet fills only 0.38 of its 256px frame, so frame-height scaling renders it smallest.
-		var scale_mult = JOB_SCALE_OVERRIDES.get(job_id, 1.0)
-		_sprite_scale *= scale_mult
-		# Constant uniform bump — applies to artist + procedural paths alike.
-		_sprite_scale *= SPRITE_SCALE_BUMP
+		var _sprite_scale: float = party_sprite_scale(sprite.sprite_frames, job_id)
 		sprite.scale = Vector2(_sprite_scale, _sprite_scale)
 		sprite.set_meta("base_scale", sprite.scale)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -1010,6 +1001,7 @@ func _create_battle_sprites() -> void:
 		var base_pos = party_positions[i].global_position if i < party_positions.size() else Vector2(600, 100 + i * 100)
 		var offset = _get_formation_offset(i, party_members.size())
 		base_pos += offset
+		base_pos.y += party_feet_correction(sprite)
 		sprite.position = base_pos
 		sprite.set_meta("home_position", base_pos)  # 2026-07-14: attack tweens target this so a party-attack against a monster still in its lunge-return tween lands where the monster WILL be (not chases its transient position, playtest bug)
 		_party_base_positions.append(base_pos)
@@ -3339,6 +3331,43 @@ func _process_hold_a(delta: float) -> void:
 	else:
 		_holding_auto = false
 		_hold_timer = 0.0
+
+
+## The draw scale for a party sheet: frame-height target, per-job override, uniform bump. Extracted so a
+## guard can ask for the SHIPPED scale of a real sheet — feet alignment is meaningless at a test's own scale.
+static func party_sprite_scale(frames: SpriteFrames, job_id: String) -> float:
+	var proc_target_height := 108.0  # was 144 — proportional shrink with PARTY_SPRITE_HEIGHT
+	var out := 3.0
+	if frames and frames.has_animation(&"idle") and frames.get_frame_count(&"idle") > 0:
+		var ftex: Texture2D = frames.get_frame_texture(&"idle", 0)
+		if ftex and ftex.get_height() > 128:
+			out = PARTY_SPRITE_HEIGHT / float(ftex.get_height())
+		elif ftex and ftex.get_height() > 48:
+			out = proc_target_height / float(ftex.get_height())
+	# Per-job override. NOT empty — fighter carries 1.4 (const above); the artist sheet fills only 0.38 of
+	# its 256px frame, so frame-height scaling renders it smallest. It sizes the figure; PARTY_FEET_BELOW_SLOT
+	# places it, because one number could not do both.
+	out *= float(JOB_SCALE_OVERRIDES.get(job_id, 1.0))
+	# Constant uniform bump — applies to artist + procedural paths alike.
+	return out * SPRITE_SCALE_BUMP
+
+
+## How far to drop this sprite so its FIGURE's feet land on PARTY_FEET_BELOW_SLOT, whatever the sheet.
+## The opaque-bounds scan is AdvanceAura's — battle already owns one for a Texture2D and cutscenes' bubble
+## anchor consumes it too; a third copy of "where is the figure in the frame" is what we are avoiding.
+## 0.0 when the frame is unreadable or already lands on the line.
+static func party_feet_correction(sprite: AnimatedSprite2D) -> float:
+	if sprite == null or sprite.sprite_frames == null:
+		return 0.0
+	var anim: StringName = &"idle" if sprite.sprite_frames.has_animation(&"idle") else sprite.animation
+	if not sprite.sprite_frames.has_animation(anim) or sprite.sprite_frames.get_frame_count(anim) == 0:
+		return 0.0
+	var tex: Texture2D = sprite.sprite_frames.get_frame_texture(anim, 0)
+	if tex == null:
+		return 0.0
+	var figure: Rect2 = AdvanceAuraClass.figure_rect_of(tex)
+	var feet_below_origin: float = (figure.end.y - tex.get_size().y * 0.5) * absf(sprite.scale.y)
+	return PARTY_FEET_BELOW_SLOT - feet_below_origin
 
 
 func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
