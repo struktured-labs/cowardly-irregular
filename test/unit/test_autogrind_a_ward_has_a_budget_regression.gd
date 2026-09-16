@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## `absorb_amount` is read by live (BattleManager:5860) and by the grind NOWHERE — but unlike every
 ## other missing-read this lane has closed, THE MECHANISM WAS ALREADY LIVE IN THE GRIND AND UNCAPPED.
 ##
@@ -158,7 +160,12 @@ func test_every_resolver_member_this_file_reaches_still_exists() -> void:
 	## silently covers all-but-one. This counts the distinct members reached in the text BEFORE this
 	## function, so the arm cannot count its own `get`/`has_method` calls — @cowir-ai's bare-Object
 	## exclusion replaced by SCOPING, which they named as the alternative. A new reach reds here.
-	var own_src: String = FileAccess.get_file_as_string(get_script().resource_path)
+	## ⛔ THE SHARED STRIPPER, not a tenth private one. My first version split each line on "#" —
+	## adding another inline comment-strip on the day this fleet counted EIGHTEEN redundant
+	## private ones (@cowir-music, who used gd_source rather than writing a sixth). It is
+	## quote-aware and escape-aware, which a split on "#" is not: a `#` inside a string
+	## literal truncates the line and can hide a real reach.
+	var own_src: String = GdSource.code_of(get_script().resource_path)
 	var cut: int = own_src.find("func %s(" % _FLOOR_ARM_NAME)
 	assert_gt(cut, 0, "CONTROL: located this arm, so the scoped slice is real")
 	var before: String = own_src.substr(0, cut)
@@ -167,7 +174,7 @@ func test_every_resolver_member_this_file_reaches_still_exists() -> void:
 	## "gd" — the same false positive I fixed in the generator two hours earlier and reintroduced
 	## here. A regex reading source cannot tell a member reach from a filename by shape.
 	for raw_line in before.split("\n"):
-		if raw_line.contains("res://") or raw_line.strip_edges().begins_with("#"):
+		if raw_line.contains("res://"):
 			continue
 		## ⛔ TRAILING COMMENTS TOO, per @cowir-sprites: a floor exists to catch a RENAME, and the commit
 		## that renames a member is the one whose prose explains the rename BY NAME. `_res.foo()  #
@@ -176,8 +183,7 @@ func test_every_resolver_member_this_file_reaches_still_exists() -> void:
 		## extraction agree on all ten floored files, so this is latent rather than a live repair.
 		## NOT stripped: a member named inside a triple-quoted block. Measured absent in these files,
 		## and recorded rather than handled — a quote-aware stripper here would be its own hazard.
-		var code_only: String = raw_line.split("#")[0]
-		for m in RegEx.create_from_string("(?:_res|AutogrindSystem)\\.([A-Za-z_][A-Za-z_0-9]*)").search_all(code_only):
+		for m in RegEx.create_from_string("(?:_res|AutogrindSystem)\\.([A-Za-z_][A-Za-z_0-9]*)").search_all(raw_line):
 			reached[m.get_string(1)] = true
 	reached.erase("_test_disable_persistence")
 	reached.erase("PER_BATTLE_METAS")   ## read from SOURCE on purpose — see the arm above
