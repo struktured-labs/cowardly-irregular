@@ -31,13 +31,13 @@ import json
 import re
 import subprocess
 
-from sprite_corpus import banner
+from sprite_corpus import banner, default_root
 import sys
 from pathlib import Path
 
 from PIL import Image
 
-GAME = Path("/home/struktured/projects/cowardly-irregular-artist-ship")
+GAME = default_root()
 MANIFEST = GAME / "data" / "sprite_manifest.json"
 SPRITES = GAME / "assets" / "sprites"
 
@@ -281,6 +281,7 @@ def main() -> int:
     refs = referenced_paths(m)
     findings = {"DANGLING": [], "SILENT": [], "MISMATCH": [], "ORPHAN": [],
                 "PLACEMENT": []}
+    undeclared_n = 0
 
     # --- PLACEMENT: an NPC placed in a map whose archetype has no art -------
     # The four checks below all start from the MANIFEST. Aria (2026-07-30)
@@ -313,7 +314,22 @@ def main() -> int:
             # should. Detect by the value shape, never by section name.
             is_grid = bool(isinstance(anims, dict) and anims and all(
                 isinstance(v, dict) and "row" in v for v in anims.values()))
-            if isinstance(anims, dict) and not is_grid and "idle" not in anims:
+            # ⛔ THREE SCHEMAS, NOT TWO. An entry with NO animations block
+            # declares neither, and defaulting it to STRIP asserts
+            # frame_height == image height -- true of a one-row strip, false
+            # of every 4x4 walk grid. Measured 2026-09-16 the first time this
+            # tool was pointed at the game repo: 116 of 145
+            # overworld_npc_sheets entries have no animations, and all 116
+            # were reported as frame_height mismatches. Every one was a
+            # phantom; the PNGs are correct 128x128 grids of 32px cells.
+            # It never fired before because the hardcoded corpus predates
+            # that section. Unknown is reported AS unknown -- skipping it
+            # silently is the clean-looking failure this tool exists to
+            # prevent.
+            undeclared = not isinstance(anims, dict) or not anims
+            if undeclared:
+                undeclared_n += 1
+            if isinstance(anims, dict) and anims and not is_grid and "idle" not in anims:
                 findings["SILENT"].append(
                     f"{section}/{key}: strip sheet with no 'idle' "
                     f"({', '.join(sorted(anims)) or 'empty'})")
@@ -325,7 +341,16 @@ def main() -> int:
                     w, h = Image.open(fp).size
                 except Exception:
                     continue
-                if is_grid:
+                if undeclared:
+                    # Schema-agnostic and therefore always valid: a strip and
+                    # a grid must BOTH be a whole number of cells. Only the
+                    # row/column COUNTS need a schema, and that is what these
+                    # entries do not declare.
+                    if w % fw or h % fh:
+                        findings["MISMATCH"].append(
+                            f"{section}/{key}: PNG {w}x{h} is not a whole "
+                            f"number of {fw}x{fh} cells")
+                elif is_grid:
                     rows = max((v.get("row", 0) for v in anims.values()),
                                default=0) + 1
                     cols = max((v.get("frames", 1) for v in anims.values()),
@@ -376,6 +401,12 @@ def main() -> int:
     on_disk = len(list((SPRITES / "monsters").glob("*.png")))
     print(f"examined {examined} manifest entr(ies), {len(refs)} referenced "
           f"path(s), {on_disk} monster PNG(s) on disk")
+    if undeclared_n:
+        # NOT a finding: these pass the schema-agnostic cell check above. It is
+        # reported because a sheet with no animations gets the WEAKER check,
+        # and a weaker check is invisible in a clean report.
+        print(f"  ...of which {undeclared_n} declare frame geometry but no "
+              f"animations, so only whole-cell divisibility was checked")
     if examined == 0 or len(refs) == 0 or on_disk == 0:
         print("REFUSING TO REPORT: a zero above means this sweep read nothing, "
               "and a clean result over an empty corpus is not a clean corpus.")

@@ -27,13 +27,13 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from sprite_corpus import banner
+from sprite_corpus import banner, default_root
 
 import numpy as np
 from PIL import Image
 from scipy import ndimage
 
-GAME_REPO = Path("/home/struktured/projects/cowardly-irregular-artist-ship")
+GAME_REPO = default_root()
 SPRITES_ROOT = GAME_REPO / "assets/sprites"
 
 # frame width for known assets; detected from height when unknown
