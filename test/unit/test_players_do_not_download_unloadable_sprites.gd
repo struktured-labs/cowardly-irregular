@@ -112,6 +112,37 @@ func test_no_unloadable_sprite_dir_ships_in_any_export() -> void:
 	assert_eq(shipped, [], "a sprite dir no job can load is still in a player's download: %s" % [shipped])
 
 
+## A LOOSE png directly under jobs/ is a master sheet, not a job. `assets/sprites/jobs/fighter.png`
+## is the artist's 4x6 grid of 256px frames the per-animation files were cut from — 3.58 MB as an
+## imported texture, referenced by nothing but the ledger's provenance pin.
+##
+## ⛔ IT MUST BE EXCLUDED BY EXACT PATH. `assets/sprites/jobs/*.png` reads like the right glob and
+## ALSO matches `assets/sprites/jobs/fighter/idle.png`, because `*` spans `/` — which ships a game
+## with no Fighter. The safety arm above catches that; this one requires the exclusion to exist.
+func test_loose_master_sheets_under_jobs_do_not_ship() -> void:
+	var filters := _exclude_filters()
+	var shipped: Array = []
+	var loose := 0
+	var d := DirAccess.open(JOB_DIR)
+	assert_not_null(d, "jobs dir must open")
+	if d == null:
+		return
+	d.list_dir_begin()
+	var n := d.get_next()
+	while n != "":
+		if not d.current_is_dir() and n.ends_with(".png"):
+			loose += 1
+			var probe := "assets/sprites/jobs/%s" % n
+			for f in filters:
+				if not _excluded_by(f["patterns"], probe):
+					shipped.append("%s is in the %s download — a master sheet no job id can load" % [probe, f["preset"]])
+		n = d.get_next()
+	d.list_dir_end()
+	assert_gt(loose, 0,
+		"ANTI-VACUITY: no loose png sits under jobs/ any more, so this arm guards nothing — check whether its filter is stale")
+	assert_eq(shipped, [], "a master sheet ships to players: %s" % [shipped])
+
+
 ## The manifest registers four of these dirs as `sheets` entries. That is provenance, not a
 ## route — but it is also how a reader concludes they are live, so the claim is pinned here.
 func test_the_registered_experiment_sheets_are_not_job_ids() -> void:
