@@ -176,7 +176,8 @@ func _const_re() -> RegEx:
 ## reach today is ambient_*-prefixed and therefore in the corpus by the other half; this pins the
 ## SITES so a new unresolvable one fails here instead of quietly shrinking what the guard defends.
 func test_unresolvable_play_ambient_sites_are_known() -> void:
-	var known := ["src/exploration/OverworldScene.gd", "src/maps/interiors/BaseInterior.gd"]
+	var known := ["src/exploration/OverworldScene.gd", "src/maps/interiors/BaseInterior.gd",
+		"src/maps/villages/BaseVillage.gd"]
 	var found: Array[String] = []
 	var re := RegEx.new()
 	re.compile("play_ambient\\(\\s*([a-z_][a-zA-Z0-9_]*)\\s*\\)")
