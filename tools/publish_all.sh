@@ -104,6 +104,28 @@ _archive_evidence() {
         cp -p "$f" "$dest/" 2>/dev/null && n=$((n + 1))
     done
     [ "$n" -gt 0 ] && echo "[pub] evidence archived: ${n} log(s) -> ${dest}"
+
+    # The release NOTE, derived from the tag's own merge history rather than from prose.
+    #
+    # WHY IT IS HERE. Measured 2026-09-16: a release describes itself to nobody. Every GitHub
+    # release body we have published is one auto-generated compare link (checked live on .355,
+    # .356, .357) and itch gets a version string. The changelog written per tag lives in the
+    # annotation, reaches no surface outside the repo, and nothing checks it against the tree —
+    # v3.33.358-alpha's opened with "a costume no longer re-times the character" and that tag
+    # contains no such change, plus two more clauses naming branches that never merged.
+    #
+    # This writes the derived note beside the evidence so every release HAS one. Publishing it
+    # to the GitHub release body is a one-line change and deliberately NOT made here: that is
+    # outward-facing and is struktured's call, not a side effect of archiving.
+    if [ -n "${TAG:-}" ] && [ -x tools/release_note.sh ]; then
+        if ./tools/release_note.sh "$TAG" --out "${dest}/RELEASE_NOTE.md" >/dev/null 2>&1; then
+            echo "[pub] release note derived -> ${dest}/RELEASE_NOTE.md"
+        else
+            # Never fatal: a publish that shipped correctly is not undone by a note that did not
+            # generate. But say it, because a silently absent note is how this gap persisted.
+            echo "[pub] note: release note NOT derived for ${TAG} — see tools/release_note.sh" >&2
+        fi
+    fi
     return 0
 }
 
