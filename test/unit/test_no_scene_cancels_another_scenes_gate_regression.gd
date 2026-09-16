@@ -8,11 +8,22 @@ extends GutTest
 ## The rule: if a gate says a scene plays only while flag F is UNSET, then no OTHER reachable scene
 ## may set F. One scene writing its own completion flag is the normal case and is fine.
 ##
-## Reachability is the load-bearing half, because an unreachable writer cannot cancel anything.
-## CLAUDE.md's "a scene reaches a player at least SIX different ways — SIX IS A FLOOR, NOT A TOTAL"
-## is why the oracle here scans every .gd under src/ for the id rather than checking a list of
-## known forms: a literal, a loop variable and a const all match, and a form nobody has thought of
-## yet still matches.
+## Reachability is the load-bearing half, because an unreachable writer cannot cancel anything —
+## and an oracle that wrongly says "unreachable" SILENCES an offender, so its errors must fall the
+## other way. CLAUDE.md's "a scene reaches a player at least SIX different ways — SIX IS A FLOOR,
+## NOT A TOTAL" is why it scans text rather than checking a list of known forms: a literal, a const
+## and a loop variable all match, and so does a form nobody has thought of yet.
+##
+## Corpus, and why each piece is in it:
+##   every .gd under src/   the engine, any form
+##   every .tscn            MasteriteEncounter.cutscene_id is an @export, so a scene file can
+##                          configure a play. Measured 2026-09-16: no .tscn sets one TODAY, which
+##                          is exactly why the scan is here rather than added after it bites.
+##   data/quests/*.json     by KEY (cutscene_on_complete / cutscene / cutscene_id), because SIX
+##                          scenes — world1..world6_orrery — are reachable by no other form, and
+##                          this guard's first version could not see any of them.
+## NOT raw JSON text: data/sfx_manifest.json names "world2_arbiter_intro" inside a prompt string,
+## so a blanket scan would read authored PROSE as a wiring and declare the latent case reachable.
 ##
 ## KNOWN LATENT, declared rather than allowlisted: world2_arbiter_intro (11 authored steps) writes
 ## arbiter_suburban_intro_complete, which gates world2_chapter4 — and world2_chapter4 writes it too,
@@ -118,26 +129,57 @@ func _writers() -> Dictionary:
 	return out
 
 
-## Every .gd under src/, concatenated once. An id can appear as a literal, a const or a loop
-## variable, so the question asked is only "does this string exist in the engine at all".
+## Every .gd under src/ and every .tscn in the project, concatenated once.
 func _src() -> String:
 	if _src_blob != "":
 		return _src_blob
 	var parts: PackedStringArray = []
-	var dirs: Array = ["res://src"]
+	var dirs: Array = ["res://src", "res://"]
+	var seen: Dictionary = {}
 	while not dirs.is_empty():
 		var d: String = dirs.pop_back()
+		if seen.has(d):
+			continue
+		seen[d] = true
 		for sub in DirAccess.get_directories_at(d):
-			dirs.append(d + "/" + sub)
+			if sub.begins_with(".") or sub == "addons" or sub == "tmp" or sub == "builds":
+				continue
+			dirs.append(d.trim_suffix("/") + "/" + sub)
 		for f in DirAccess.get_files_at(d):
-			if f.ends_with(".gd"):
-				parts.append(_read(d + "/" + f))
+			if f.ends_with(".gd") and d.begins_with("res://src"):
+				parts.append(_read(d.trim_suffix("/") + "/" + f))
+			elif f.ends_with(".tscn"):
+				parts.append(_read(d.trim_suffix("/") + "/" + f))
 	_src_blob = "\n".join(parts)
 	return _src_blob
 
 
+## Scene ids a quest can play, read by KEY so authored prose cannot look like a wiring.
+func _quest_played() -> Dictionary:
+	var out: Dictionary = {}
+	for name in DirAccess.get_files_at("res://data/quests"):
+		if not name.ends_with(".json"):
+			continue
+		var parsed = JSON.parse_string(_read("res://data/quests/" + name))
+		_harvest_cutscene_keys(parsed, out)
+	return out
+
+
+func _harvest_cutscene_keys(node, out: Dictionary) -> void:
+	if node is Dictionary:
+		for k in (node as Dictionary):
+			var v = (node as Dictionary)[k]
+			if (k == "cutscene_on_complete" or k == "cutscene" or k == "cutscene_id") and v is String and str(v) != "":
+				out[str(v)] = true
+			else:
+				_harvest_cutscene_keys(v, out)
+	elif node is Array:
+		for x in (node as Array):
+			_harvest_cutscene_keys(x, out)
+
+
 func _is_reachable(scene_id: String) -> bool:
-	return _src().contains('"%s"' % scene_id)
+	return _src().contains('"%s"' % scene_id) or _quest_played().has(scene_id)
 
 
 func test_no_reachable_scene_cancels_another_scenes_gate() -> void:
@@ -192,3 +234,24 @@ func test_the_latent_w2_pair_is_still_exactly_one_scene_away() -> void:
 		"the known-latent pair is exactly these two scenes: %s" % [sharers])
 	assert_true(_read(GAME_LOOP).contains('"world2_chapter4":                  "cutscene_flag_arbiter_suburban_intro_complete"'),
 		"world2_chapter4 owns that flag in the completion map — so the intro is the interloper, not it")
+
+
+func test_the_quest_form_is_in_the_oracle() -> void:
+	# FLOOR: six scenes reach a player ONLY as a quest's cutscene_on_complete. This guard's first
+	# version scanned src/ alone and would have called all six unreachable — the direction that
+	# silences an offender rather than crying wolf.
+	var quest_ids := _quest_played()
+	assert_gt(quest_ids.size(), 5, "the quest oracle must still find its ids: %s" % [quest_ids.keys()])
+	assert_true(quest_ids.has("world6_orrery"), "control: the W6 orrery is quest-played and by nothing else")
+	assert_false(_src().contains('"world6_orrery"'), "control: and it is genuinely absent from the code scan")
+	assert_true(_is_reachable("world6_orrery"), "so the oracle must call it reachable")
+
+
+func test_the_scan_reads_scene_files_and_not_authored_prose() -> void:
+	# .tscn is in the corpus because MasteriteEncounter.cutscene_id is an @export; raw JSON is NOT,
+	# because sfx_manifest names a scene id inside a prompt.
+	assert_true(_src().contains("[gd_scene"), "control: at least one .tscn really was read")
+	assert_true(_read("res://data/sfx_manifest.json").contains("world2_arbiter_intro"),
+		"control: authored prose still names that id — the reason raw JSON stays out of the corpus")
+	assert_false(_is_reachable("world2_arbiter_intro"),
+		"prose is not a wiring: the latent case stays latent")
