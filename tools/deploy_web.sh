@@ -76,6 +76,13 @@ PCK_WARN=180000000    # early-warning band: plan the next diet before it bites
 # identically, so it is size, not the pck). Above this line every return visit re-downloads the
 # whole pack. Reported, never blocked -- what to cut is struktured's call.
 PCK_CACHE_LINE=167772160
+# The web music tier, in kbps. struktured's ruling 2026-09-16: 48 -> 40, because the shipped pck
+# was 167.09 MiB and the line above is 160.00 MiB, so every returning player re-downloaded the
+# whole pack. The lever is HERE and in make_web_stage.sh, never export_presets.cfg — the stage
+# drops every music exclusion from its own copy of that file, so editing it changes nothing on web.
+# A variable rather than a literal: the previous code passed 48 in one place and PRINTED "48 kbps
+# tier" in another, two spellings of one number that a change updates separately.
+WEB_AUDIO_KBPS="${WEB_AUDIO_KBPS:-40}"
 # Overridable so the post-push confirmation path is testable without touching itch,
 # matching deploy_desktop.sh.
 BUTLER_BIN="${BUTLER_BIN:-$(command -v butler || echo ./butler-bin/butler)}"
@@ -291,8 +298,9 @@ echo "[deploy] gate 2/4: web export"
 # STAGED EXPORT, not a direct one. struktured's ruling (2026-07-30): ship the W4-W6
 # endings, compress to fit. The web preset excludes 54 ending tracks to stay under
 # itch's embed cap; make_web_stage.sh builds a throwaway copy of the project with a
-# 48 kbps audio tier swapped in and those exclusions dropped, so the endings ship.
-# Measured: 154 tracks at 48k is SMALLER than 98 at 96k, so they cost nothing.
+# $WEB_AUDIO_KBPS tier swapped in and those exclusions dropped, so the endings ship.
+# Measured: the whole 161-track library at that tier is far smaller than 98 tracks at
+# 96k, so the endings cost nothing — the tier is what pays for them.
 #
 # It is a COPY, never a swap. assets/ keeps the 96k masters for desktop and is never
 # touched, so a deploy killed mid-run cannot leave lo-fi audio where the masters
@@ -304,7 +312,7 @@ echo "[deploy] gate 2/4: web export"
 # so it is deliberately NOT the default.
 mkdir -p builds/web
 if [ "${WEB_STAGE:-1}" = "1" ]; then
-  ./tools/make_web_stage.sh 48 || {
+  ./tools/make_web_stage.sh "$WEB_AUDIO_KBPS" || {
     echo "[deploy] BLOCKED: staged web build failed — see its own BLOCKED line above." >&2
     echo "        WEB_STAGE=0 exports directly, but ships WITHOUT the W4-W6 endings." >&2
     exit 2; }
@@ -312,7 +320,7 @@ if [ "${WEB_STAGE:-1}" = "1" ]; then
   # staged artifact there rather than re-pointing five call sites.
   rm -rf builds/web && mkdir -p builds/web
   cp -a tmp/web_stage/builds/web/. builds/web/
-  echo "[deploy] staged build in place (48 kbps tier, endings included)"
+  echo "[deploy] staged build in place (${WEB_AUDIO_KBPS} kbps tier, endings included)"
 else
   echo "[deploy] WEB_STAGE=0 — direct export, W4-W6 endings EXCLUDED"
   godot --headless --export-release "Web" builds/web/index.html 2>&1 | tail -3
@@ -342,6 +350,27 @@ if [ "${PCK}" -ge "${PCK_LIMIT}" ]; then
 fi
 if [ "${PCK}" -ge "${PCK_WARN}" ]; then
   echo "[deploy] WARNING: pck within 20 MB of the itch limit — plan the next diet now."
+fi
+# gate 3b: the pck's own file table must show the tier this run asked for. make_web_stage.sh
+# already refuses a tier with the wrong TRACK COUNT, but counting cannot tell 40k files from 48k
+# ones (cowir-sfx, 2026-09-16) — a leftover directory from a previous bitrate stages clean. This
+# reads the shipped artifact instead of the staging inputs, and blocks on identity. The cache
+# line stays ADVISORY here, as it has always been: what to cut is struktured's call.
+_TIER_DIR="tmp/web_audio/music_${WEB_AUDIO_KBPS}k"
+_TIER_CHECK="$(cd "$(dirname "$0")" && pwd)/check_web_audio_tier.py"
+if [ "${WEB_STAGE:-1}" = "1" ]; then
+  [ -x "$_TIER_CHECK" ] || {
+    echo "[deploy] BLOCKED: ${_TIER_CHECK} missing — nothing would check that the pck carries the" >&2
+    echo "        ${WEB_AUDIO_KBPS}k tier rather than whatever was left in tmp/web_audio." >&2
+    exit 2; }
+  # --stage is what makes this exact rather than statistical: with the stage still on disk the
+  # checker md5s each staged source against the tier file, and resolves each track to its
+  # artifact through its own .import sidecar. Without it the tool falls back to a basename join,
+  # which in THIS project is ambiguous for four tracks (music/ and sfx/ share the names).
+  python3 "$_TIER_CHECK" builds/web/index.pck "$_TIER_DIR" \
+          --stage=tmp/web_stage --cache-line="$PCK_CACHE_LINE" || {
+    echo "[deploy] BLOCKED: the shipped pck does not carry the ${WEB_AUDIO_KBPS} kbps tier." >&2
+    exit 2; }
 fi
 
 echo "[deploy] gate 4/4: render smoke"

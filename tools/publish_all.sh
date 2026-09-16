@@ -589,12 +589,18 @@ else
     exit 4
 fi
 
-echo "[pub] prebuild: 48k audio tier"
-if ! ./tools/make_web_audio.sh 48 > tmp/publish_all_audio.log 2>&1; then
+# ONE spelling of the bitrate, shared with deploy_web.sh via the environment. This step used to
+# say 48 in three places — the message, the argument and the directory it then counted — so a tier
+# change that missed one would prebuild one tier and count another, and report the count as proof.
+# struktured's ruling 2026-09-16 moved web music to 40k; see deploy_web.sh for why the lever is here.
+WEB_AUDIO_KBPS="${WEB_AUDIO_KBPS:-40}"
+export WEB_AUDIO_KBPS
+echo "[pub] prebuild: ${WEB_AUDIO_KBPS}k audio tier"
+if ! ./tools/make_web_audio.sh "$WEB_AUDIO_KBPS" > tmp/publish_all_audio.log 2>&1; then
     echo "[pub] BLOCKED: audio tier build failed — see tmp/publish_all_audio.log" >&2
     exit 4
 fi
-TIER_N="$(find tmp/web_audio/music_48k -name '*.ogg' 2>/dev/null | wc -l)"
+TIER_N="$(find "tmp/web_audio/music_${WEB_AUDIO_KBPS}k" -name '*.ogg' 2>/dev/null | wc -l)"
 SRC_N="$(find assets/audio/music -name '*.ogg' | wc -l)"
 if [ "$TIER_N" -ne "$SRC_N" ]; then
     echo "[pub] BLOCKED: tier has ${TIER_N} tracks, masters have ${SRC_N}." >&2
