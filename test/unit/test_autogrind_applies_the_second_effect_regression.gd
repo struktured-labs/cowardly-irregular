@@ -227,3 +227,15 @@ func test_no_ability_exercises_both_the_support_and_the_damage_mechanisms() -> v
 		var arm: String = code.substr(start, code.find("\n\t\t\"", start + 12) - start)
 		assert_false(arm.contains("_apply_secondary_effect("),
 			"a damage arm now calls the secondary dispatcher — live calls it only from the support path")
+
+
+## ⛔ `seed()` SETS THE PROCESS-WIDE RNG AND GUT RUNS EVERY FILE IN ONE PROCESS, so a file that
+## seeds and does not restore makes every LATER file deterministic — @cowir-battle measured a probe
+## drawing one identical value three times after a seeded file, and three different ones after the
+## restore. The hazard is ORDER-DEPENDENCE: a later probabilistic arm's result then depends on which
+## files preceded it, so a flake reads as a real failure and a probabilistic bug reads as absent.
+## Same class as the Input-singleton leak CLAUDE.md documents for physics tests, and not in that list.
+## after_all, not after_each: determinism WITHIN this file is deliberate and untouched — only the
+## exit is cleaned up.
+func after_all() -> void:
+	randomize()

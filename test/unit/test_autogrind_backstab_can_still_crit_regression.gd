@@ -141,3 +141,17 @@ func test_the_declared_multiplier_divergence_is_still_true() -> void:
 		"the basic-attack crit no longer uses a flat 1.5 — the ability crit still does, and the two grind paths now disagree")
 	assert_false(attack_body.contains("crit_damage_bonus"),
 		"the basic-attack path learned PassiveSystem's accumulator; the ability path must learn it in the SAME change")
+
+
+## ⛔ `seed()` SETS THE PROCESS-WIDE RNG AND GUT RUNS EVERY FILE IN ONE PROCESS, so a file that
+## seeds and does not restore makes every LATER file deterministic — @cowir-battle measured a probe
+## drawing one identical value three times after a seeded file, and three different ones after the
+## restore. The hazard is ORDER-DEPENDENCE: a later probabilistic arm's result then depends on which
+## files preceded it, so a flake reads as a real failure and a probabilistic bug reads as absent.
+## Same class as the Input-singleton leak CLAUDE.md documents for physics tests, and not in that list.
+## after_all, not after_each: determinism WITHIN this file is deliberate and untouched — only the
+## exit is cleaned up. randomize() rather than replaying a saved seed (@cowir-music): replaying
+## re-freezes the next file's stream at a different constant, which is the same defect wearing a
+## number that changes between runs.
+func after_all() -> void:
+	randomize()

@@ -144,3 +144,15 @@ func test_live_still_sets_on_support_and_consumes_on_both_paths() -> void:
 	assert_gt(code.length(), 5000, "CONTROL: the resolver was actually read")
 	assert_eq(code.count("_take_charged_multiplier("), 3,
 		"the grind must have exactly one helper and two consumers — found %d occurrences" % code.count("_take_charged_multiplier("))
+
+
+## ⛔ `seed()` SETS THE PROCESS-WIDE RNG AND GUT RUNS EVERY FILE IN ONE PROCESS, so a file that
+## seeds and does not restore makes every LATER file deterministic — @cowir-battle measured a probe
+## drawing one identical value three times after a seeded file, and three different ones after the
+## restore. The hazard is ORDER-DEPENDENCE: a later probabilistic arm's result then depends on which
+## files preceded it, so a flake reads as a real failure and a probabilistic bug reads as absent.
+## Same class as the Input-singleton leak CLAUDE.md documents for physics tests, and not in that list.
+## after_all, not after_each: determinism WITHIN this file is deliberate and untouched — only the
+## exit is cleaned up.
+func after_all() -> void:
+	randomize()
