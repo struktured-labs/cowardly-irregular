@@ -3,7 +3,7 @@
     {
       "id": "achievement_autogrind_first_grind",
       "name": "First Steps",
-      "description": "Complete your first autogrind session",
+      "description": "Win your first autogrind battle",
       "icon": "•",
       "stat_key": "battles_won",
       "threshold": 1

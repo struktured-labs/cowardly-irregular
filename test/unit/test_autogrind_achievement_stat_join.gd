@@ -146,6 +146,65 @@ func test_driving_below_threshold_does_not_fire() -> void:
 			"%s fired at %s=%d, one below its threshold of %s — the drive test above would pass on a broken join" % [a["id"], key, int(threshold) - 1, a["threshold"]])
 
 
+# ── A badge says what earns it ───────────────────────────────────────────────
+# The description is the only sentence a player reads about an achievement — it is the chip's
+# tooltip on the Summary. It restates the threshold in prose, which is the second-copy shape that
+# made restore_mp grant its own numbers and made heal_party grant a tenth of the authored heal.
+# Rebalance `century` to 150 and the badge still promises 100, with nothing to notice.
+
+func test_a_description_states_its_own_threshold() -> void:
+	var wrong: Array[String] = []
+	for a in AutogrindAchievementsScript.catalog():
+		var numerals: Array[int] = _numerals_in(str(a.get("description", "")))
+		if numerals.is_empty():
+			continue  ## a wordless description (First Steps) states no number to disagree with
+		if not numerals.has(int(a["threshold"])):
+			wrong.append("%s says %s but fires at %s" % [a["id"], str(numerals), a["threshold"]])
+	assert_eq(wrong.size(), 0,
+		"a badge promising a number the condition does not use is a second copy of the threshold: %s" % ", ".join(wrong))
+
+
+func test_the_numeral_check_can_actually_fail() -> void:
+	## Control, both directions. Without it a parser that found no numerals anywhere would report
+	## every catalog clean — which is exactly what "continue on empty" would hide.
+	assert_eq(_numerals_in("Win 100 battles in a single grind session"), [100] as Array[int],
+		"control: the parser must read a plain number")
+	assert_eq(_numerals_in("Earn 10,000 EXP in a single grind session"), [10000] as Array[int],
+		"control: it must read a grouped number, or millennium and ten_thousand_exp pass vacuously")
+	assert_eq(_numerals_in("Win your first autogrind battle"), [] as Array[int],
+		"control: a wordless description must yield nothing, not a false match")
+	var with_numbers: int = 0
+	for a in AutogrindAchievementsScript.catalog():
+		if not _numerals_in(str(a.get("description", ""))).is_empty():
+			with_numbers += 1
+	assert_gt(with_numbers, 2,
+		"ANTI-VACUITY: at least three descriptions must carry a number, or the arm above checks nothing")
+
+
+func test_first_steps_describes_a_battle_not_a_session() -> void:
+	## It read "Complete your first autogrind session" while firing at battles_won >= 1 — and since
+	## the award moved per-battle it announces DURING the first session, so the sentence described
+	## neither the trigger nor the moment.
+	for a in AutogrindAchievementsScript.catalog():
+		if str(a["id"]).ends_with("first_grind"):
+			var d: String = str(a["description"]).to_lower()
+			assert_false(d.contains("complete") and d.contains("session"),
+				"first_grind fires on one won battle, mid-session — it must not promise a completed session")
+			assert_true(d.contains("battle"),
+				"it fires on battles_won, so the sentence must name a battle: got '%s'" % a["description"])
+			return
+	assert_true(false, "CONTROL: first_grind must exist in the catalog")
+
+
+func _numerals_in(text: String) -> Array[int]:
+	## Grouped numbers matter: "10,000" is one threshold, not 10 and 000.
+	var out: Array[int] = []
+	var rx := RegEx.create_from_string("[0-9][0-9,]*")
+	for m in rx.search_all(text):
+		out.append(int(m.get_string().replace(",", "")))
+	return out
+
+
 # ── Every catalog FIELD has a consumer ───────────────────────────────────────
 # The join above proves each stat_key resolves. It says nothing about the OTHER
 # keys an entry carries. `session_scope` shipped on all six entries and was read
