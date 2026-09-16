@@ -5206,29 +5206,47 @@ func _ability_power(ability: Dictionary) -> float:
 
 func estimate_attack_damage(attacker: Combatant, target: Combatant) -> int:
 	"""Estimate basic attack damage (no variance, no crit) for UI preview"""
+	return int(estimate_attack_breakdown(attacker, target)["damage"])
+
+
+## The same estimate, plus the arithmetic that produced it. Formula Sight (the Scriptweaver's
+## `show_formulas` meta_effect) prints `formula`, so the number on the row and the working under it
+## are the same computation — never a second copy of the maths that can drift from it.
+func estimate_attack_breakdown(attacker: Combatant, target: Combatant) -> Dictionary:
 	var atk = attacker.get_buffed_stat("attack", attacker.attack)
 	var def_val = target.get_buffed_stat("defense", target.defense)
 	var raw = int((atk * atk) / float(max(1, atk + def_val)))
-	return max(1, raw)
+	var dmg: int = max(1, raw)
+	return {"damage": dmg, "formula": "ATK %d² ÷ (ATK %d + DEF %d) = %d, then ×variance ×crit" % [atk, atk, def_val, dmg]}
 
 
 func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Dictionary) -> int:
 	"""Estimate ability damage for UI preview"""
+	return int(estimate_ability_breakdown(attacker, target, ability)["damage"])
+
+
+## The ability estimate and its working, for Formula Sight. Same single computation as the preview.
+func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability: Dictionary) -> Dictionary:
 	# `power` is a legacy key NO ability authors (0 of 288); damage_multiplier is, and it is what execution reads — preferring power made every preview assume 1.0x, understating a 5.0x ability by 5x and suppressing its [KILL] tag.
 	var power = float(ability.get("damage_multiplier", float(ability.get("power", 10)) / 10.0)) * 10.0
 	var ability_type = ability.get("type", "physical")
 	var is_magical = ability_type == "magic"
 
 	var stat_val: int
+	var stat_name: String
 	if is_magical:
 		stat_val = attacker.get_buffed_stat("magic", attacker.magic)
+		stat_name = "MAG"
 	else:
 		stat_val = attacker.get_buffed_stat("attack", attacker.attack)
+		stat_name = "ATK"
 
 	var raw = int(stat_val * power / 10.0)
 	var def_val = target.get_buffed_stat("magic_defense", target.magic_defense) if is_magical \
 		else target.get_buffed_stat("defense", target.defense)
+	var def_name: String = "MDEF" if is_magical else "DEF"
 	var mitigated = int((raw * raw) / float(max(1, raw + def_val)))
+	var formula: String = "%s %d ×%.1f = %d; %d² ÷ (%d + %s %d) = %d" % [stat_name, stat_val, power / 10.0, raw, raw, raw, def_name, def_val, mitigated]
 
 	# Elemental modifier — reuse the real hit's source of truth so the "~N dmg"
 	# preview matches reality (0.0x immune, 1.5x weak, 0.5x resist). Immunity
@@ -5238,10 +5256,11 @@ func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Di
 	if element_val != null and str(element_val) != "":
 		var elem_mod: float = target.calculate_elemental_modifier(str(element_val))
 		mitigated = int(mitigated * elem_mod)
+		formula += " ×%s %.2f = %d" % [str(element_val), elem_mod, mitigated]
 		if elem_mod <= 0.0:
-			return 0
+			return {"damage": 0, "formula": formula + " (immune)"}
 
-	return max(1, mitigated)
+	return {"damage": max(1, mitigated), "formula": formula}
 
 
 func _calculate_crit_chance(attacker: Combatant) -> float:

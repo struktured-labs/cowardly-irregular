@@ -66,8 +66,15 @@ func test_nonelemental_preview_ignores_target_immunity() -> void:
 func test_estimate_matches_the_canonical_modifier() -> void:
 	# The whole point of the fix: parity with the real hit. Pin that the estimate
 	# routes through calculate_elemental_modifier rather than a hand-rolled subset.
+	## The arithmetic moved into estimate_ability_breakdown when Formula Sight began showing the working;
+	## estimate_ability_damage is now its one-line caller. Same intent, pinned on both halves: the
+	## estimate must come from the breakdown, and the breakdown must use the canonical modifier.
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	var idx: int = src.find("func estimate_ability_damage")
 	var body: String = src.substr(idx, src.find("\nfunc ", idx + 1) - idx)
-	assert_true(body.contains("calculate_elemental_modifier"),
+	assert_true(body.contains("estimate_ability_breakdown"),
+		"the estimate must be the breakdown's number, not a second computation")
+	var bidx: int = src.find("func estimate_ability_breakdown")
+	var bbody: String = src.substr(bidx, src.find("\nfunc ", bidx + 1) - bidx)
+	assert_true(bbody.contains("calculate_elemental_modifier"),
 		"estimate must reuse the real hit's elemental source of truth")

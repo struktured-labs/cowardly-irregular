@@ -104,7 +104,10 @@ const AUTHORED_AHEAD := {
 	## these three by their effect first. The set then reported the SAME three as both
 	## "nothing reads them" and "they now resolve", because neither lookup could match.
 	"autobattle_verbs": "effect autobattle_advanced — Scriptweaver text-mode rules, CLAUDE.md 'unlocks text-based expression mode' (Future Vision), so plausibly authored ahead",
-	"formula_sight": "effect show_formulas — CLAUDE.md lists Scriptweaver 'reveals execution order' as SHIPPED, so this key being dead is worth a look rather than an assumption",
+	## formula_sight WAS here — "worth a look rather than an assumption" — and the look found nothing
+	## reading show_formulas. It is wired now: PassiveSystem.has_meta_effect gives meta_effects its first
+	## consumer, and BattleCommandMenu shows the damage working to a PC carrying the passive. Removed on
+	## the day it stopped being true, which is this list working as designed.
 	"market_sense": "effect volatility_scaling is decorative and unread — but the PASSIVE IS WIRED BY ID: BattleManager._apply_market_sense (:5032, gated on equipped_passives) scales damage per volatility band at :3955/:4369/:4550. Listed because its KEY is dead; do not read this entry as the passive being inert",
 }
 
