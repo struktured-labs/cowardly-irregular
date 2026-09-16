@@ -610,12 +610,23 @@ func _try_load_overworld_sheet() -> Dictionary:
 		return {}
 
 	var img = tex.get_image()
-	if not img or img.get_width() < 128 or img.get_height() < 128:
+	if not img:
+		return {}
+
+	# Frame size is DECLARED per job, not assumed. "big enough" let a sheet of any other frame
+	# size through to be cut into 32px squares — a quarter of a figure, and nothing errors.
+	var frame: Vector2i = HybridSpriteLoader.overworld_frame_size(current_job)
+	var frame_w: int = frame.x
+	var frame_h: int = frame.y
+	if frame_w <= 0 or frame_h <= 0:
+		return {}
+	# REFUSE a sheet that is not an exact grid rather than mis-slice it.
+	if img.get_width() % frame_w != 0 or img.get_height() % frame_h != 0 \
+			or img.get_width() / frame_w < WALK_FRAMES or img.get_height() / frame_h < 4:
+		push_warning("[OVERWORLD] '%s' sheet is %dx%d, not an exact grid of %d columns x 4 rows at %dx%d — refusing rather than mis-slicing" % [current_job, img.get_width(), img.get_height(), WALK_FRAMES, frame_w, frame_h])
 		return {}
 
 	var cache: Dictionary = {}
-	var frame_w = 32
-	var frame_h = 32
 	# Row mapping: 0=down, 1=left, 2=right, 3=up
 	var row_to_dir = [Direction.DOWN, Direction.LEFT, Direction.RIGHT, Direction.UP]
 
