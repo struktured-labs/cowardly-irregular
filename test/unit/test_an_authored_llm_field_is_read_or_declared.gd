@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## CLAUDE.md's precedence rule, applied to this lane's authored data: a field is READ
 ## by the runtime, or DECLARED inert with a note naming who holds the call. You cannot
 ## silence it green, only explain it green.
@@ -87,7 +89,12 @@ func _walk(dir_path: String, out: PackedStringArray) -> void:
 			if not name.begins_with("."):
 				_walk(full, out)
 		elif name.ends_with(".gd"):
-			out.append(FileAccess.get_file_as_string(full))
+			## CODE ONLY: a key named in a COMMENT is not a reader. This corpus read raw
+			## until 2026-09-16, so one explanatory comment naming a key made that field
+			## permanently invisible to the census — the silencing direction, in the guard
+			## whose job is finding unread fields. Latent when found (0 of 78 keys), and
+			## this repo comments densely enough that latent is not the same as safe.
+			out.append(GdSource.code_of(full))
 			_corpus_files += 1
 		name = d.get_next()
 	d.list_dir_end()
