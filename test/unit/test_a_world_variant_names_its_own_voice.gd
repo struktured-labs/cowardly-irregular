@@ -107,6 +107,10 @@ func test_no_manifest_entry_names_a_file_that_is_not_there() -> void:
 	var sm: Node = _sm()
 	if sm == null:
 		return
+	# FLOOR FIRST, so a void corpus blames itself rather than reading as clean: this arm asserts an
+	# ABSENCE, and an empty manifest produces the same empty `missing` list as a correct one.
+	assert_gt(sm._sfx_manifest.size(), 0, "VOID, not clean: the sfx manifest read back 0 keys")
+	assert_true(sm._sfx_manifest.has("attack_hit"), "VOID, not clean: the manifest lacks a key every build has")
 	var missing: Array = []
 	for key in sm._sfx_manifest.keys():
 		var f: String = str(sm._sfx_manifest[key].get("file", ""))
