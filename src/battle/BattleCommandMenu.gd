@@ -541,6 +541,12 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 ## the highest-value targeting cue (finish this enemy). Empty otherwise. The
 ## estimate is approximate (note the "~"), but est >= HP is the honest lethal
 ## signal; immune targets estimate 0 dmg so they never earn the tag.
+## Formula Sight — the Scriptweaver's `show_formulas` meta_effect. The row keeps its "~N dmg"; the
+## tooltip under it shows the arithmetic BattleManager just did to get that N.
+func _sees_formulas(combatant: Combatant) -> bool:
+	return PassiveSystem.has_meta_effect(combatant, "show_formulas")
+
+
 func _lethal_tag(est_dmg: int, current_hp: int) -> String:
 	return " [KILL]" if current_hp > 0 and est_dmg >= current_hp else ""
 
@@ -590,14 +596,18 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			# Only damaging abilities get a "~N dmg" (and [KILL]) readout — a
 			# debuff/steal/scan deals 0, so the estimate would be a bogus number.
 			var enemy_label: String = "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp]
-			if _ability_deals_damage(ability):
-				var est_ability_dmg: int = BattleManager.estimate_ability_damage(combatant, enemy, ability)
-				enemy_label += " ~%d dmg%s" % [est_ability_dmg, _lethal_tag(est_ability_dmg, enemy.current_hp)]
-			enemy_targets.append({
+			var row := {
 				"id": "ability_" + ability_id + "_enemy_" + str(enemy_idx),
 				"label": enemy_label,
 				"data": {"ability_id": ability_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
-			})
+			}
+			if _ability_deals_damage(ability):
+				var est: Dictionary = BattleManager.estimate_ability_breakdown(combatant, enemy, ability)
+				var est_ability_dmg: int = int(est["damage"])
+				row["label"] = enemy_label + " ~%d dmg%s" % [est_ability_dmg, _lethal_tag(est_ability_dmg, enemy.current_hp)]
+				if _sees_formulas(combatant):
+					row["tooltip"] = str(est["formula"])
+			enemy_targets.append(row)
 		return {
 			"id": "ability_menu_" + ability_id,
 			"label": str(ability["name"]),
@@ -774,12 +784,16 @@ func _build_attack_item(combatant: Combatant, alive_enemies: Array[Combatant], c
 			var s = _scene.enemy_sprite_nodes[enemy_idx]
 			if is_instance_valid(s):
 				target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
-		var est_dmg: int = BattleManager.estimate_attack_damage(combatant, enemy)
-		enemy_targets.append({
+		var est: Dictionary = BattleManager.estimate_attack_breakdown(combatant, enemy)
+		var est_dmg: int = int(est["damage"])
+		var row := {
 			"id": "attack_" + str(enemy_idx),
 			"label": "%s (%d HP) ~%d dmg%s" % [enemy.combatant_name, enemy.current_hp, est_dmg, _lethal_tag(est_dmg, enemy.current_hp)],
 			"data": {"target_idx": enemy_idx, "action": "attack", "target_pos": target_pos}
-		})
+		}
+		if _sees_formulas(combatant):
+			row["tooltip"] = str(est["formula"])
+		enemy_targets.append(row)
 	return {
 		"id": "attack_menu",
 		"label": label,

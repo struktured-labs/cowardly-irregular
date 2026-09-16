@@ -331,6 +331,22 @@ func get_passive(passive_id: String) -> Dictionary:
 	return passives.get(passive_id, {})
 
 
+## True when any passive this combatant has EQUIPPED declares meta_effects[key].
+## ⛔ meta_effects had no consumer at all: `formula_sight` (show_formulas) and `autobattle_verbs`
+## (autobattle_advanced) were equippable and did nothing, while CLAUDE.md listed the first as shipped.
+## Both keys occur exactly once in src/ — their own declaration — which is how it stayed invisible.
+func has_meta_effect(combatant: Combatant, key: String) -> bool:
+	if combatant == null or not is_instance_valid(combatant):
+		return false
+	if not ("equipped_passives" in combatant):
+		return false
+	for passive_id in combatant.equipped_passives:
+		var passive: Dictionary = get_passive(str(passive_id))
+		if bool((passive.get("meta_effects", {}) as Dictionary).get(key, false)):
+			return true
+	return false
+
+
 func get_passive_mods(combatant: Combatant) -> Dictionary:
 	"""Calculate total passive modifiers for a combatant"""
 	if not combatant or not is_instance_valid(combatant):
