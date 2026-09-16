@@ -1,0 +1,194 @@
+extends GutTest
+
+## ⛔ THE DOOM COUNTER HAD SIX CONSUMERS AND NO REACHABLE PRODUCER. `Combatant.doom_counter` ticks
+## down each turn and KOs at zero (Combatant:901), BattleScene paints a "☠ N" badge for it, `cleanse`
+## clears it in BOTH engines, the save carries it and BattleManager resets it at battle start. Its
+## ONLY setter sat in `_execute_support_ability` — and all three abilities that author
+## `effect: "doom"` are magic or physical, so not one of them could ever reach it:
+##
+##   death_sentence    magic     no chance  countdown 3   (inert by its own description, deliberately)
+##   final_death       magic     0.2        countdown 1   permadeath_reaper
+##   permakill_strike  physical  0.2        countdown 1   permadeath_reaper
+##
+## The damage path instead added a STATUS called "doom" — no tick, no badge, no KO, and `cleanse`
+## dutifully "cured" it. The grind was worse: it cured a counter nothing on Earth could set.
+##
+## ⚠️ THE NUMBERS ARE AUTHORED, NOT INVENTED. 0.2 and countdown 1 are in abilities.json; the only
+## thing that changed is that they now arrive. The live consequence is confined to
+## `permadeath_reaper` — an autogrind meta-boss that already carries `save_deletion` — and the
+## player keeps the counterplay that was already wired: one turn of warning, a visible badge, and
+## esuna. Flagged to struktured rather than silently re-balanced.
+
+const ResolverScript = preload("res://src/autogrind/HeadlessBattleResolver.gd")
+const GdSourceHelper = preload("res://test/unit/helpers/gd_source.gd")
+const BM_PATH := "res://src/battle/BattleManager.gd"
+
+var _saved_persist: bool
+var _saved_party: Array
+var _saved_enemies: Array
+
+
+func before_each() -> void:
+	_saved_persist = AutobattleSystem._test_disable_persistence
+	_saved_party = BattleManager.player_party.duplicate()
+	_saved_enemies = BattleManager.enemy_party.duplicate()
+	AutobattleSystem._test_disable_persistence = true
+	seed(20260916)
+
+
+func after_each() -> void:
+	AutobattleSystem._test_disable_persistence = _saved_persist
+	BattleManager.player_party.assign(_alive(_saved_party))
+	BattleManager.enemy_party.assign(_alive(_saved_enemies))
+
+
+func _alive(saved: Array) -> Array:
+	var out: Array = []
+	for c in saved:
+		if is_instance_valid(c):
+			out.append(c)
+	return out
+
+
+func _combatant(name: String) -> Combatant:
+	var c := Combatant.new()
+	autofree(c)
+	c.combatant_name = name
+	c.max_hp = 9999
+	c.current_hp = 9999
+	c.attack = 60
+	c.magic = 60
+	c.defense = 5
+	c.is_alive = true
+	return c
+
+
+func _doom_ability(type: String, countdown: int = 2) -> Dictionary:
+	return {"type": type, "effect": "doom", "effect_chance": 1.0, "countdown": countdown,
+		"damage_multiplier": 0.1, "power": 0.1}
+
+
+func _cast_live(type: String, ability: Dictionary, target: Combatant) -> void:
+	var caster := _combatant("Reaper")
+	BattleManager.player_party.assign([caster] as Array[Combatant])
+	BattleManager.enemy_party.assign([target] as Array[Combatant])
+	if type == "magic":
+		BattleManager._execute_magic_ability(caster, ability, [target])
+	else:
+		BattleManager._execute_physical_ability(caster, ability, [target])
+
+
+## ── the defect, in behaviour, on both damage paths ────────────────────
+
+func test_a_damaging_doom_sets_the_counter_the_hud_reads() -> void:
+	for type in ["magic", "physical"]:
+		var victim := _combatant("Mira")
+		assert_eq(victim.doom_counter, -1, "CONTROL: %s target starts undoomed" % type)
+		_cast_live(type, _doom_ability(type), victim)
+		assert_eq(victim.doom_counter, 2,
+			"%s: the authored countdown must reach doom_counter — pre-fix only _execute_support_ability set it" % type)
+		assert_false(victim.has_status("doom"),
+			"%s: and it is NOT left as an inert status, which is what the damage path used to add" % type)
+
+
+func test_the_counter_actually_runs_out_and_kills() -> void:
+	## The whole point of the key. A counter that is set but never lethal is the same nothing.
+	var victim := _combatant("Mira")
+	_cast_live("magic", _doom_ability("magic", 2), victim)
+	victim.update_buff_durations()
+	assert_eq(victim.doom_counter, 1, "one turn spent")
+	assert_true(victim.is_alive, "and not dead yet — the warning turn the player gets")
+	victim.update_buff_durations()
+	assert_false(victim.is_alive, "the doomed run out of turns")
+
+
+func test_cleanse_still_takes_it_off() -> void:
+	## Counterplay was wired before the producer was; this pins that the two now meet.
+	var victim := _combatant("Mira")
+	_cast_live("physical", _doom_ability("physical", 3), victim)
+	assert_eq(victim.doom_counter, 3, "CONTROL: doomed first, or the cure proves nothing")
+	var cleric := _combatant("Talia")
+	BattleManager.player_party.assign([cleric, victim] as Array[Combatant])
+	BattleManager._execute_support_ability(cleric, {"type": "support", "effect": "cleanse"}, [victim])
+	assert_true(victim.doom_counter <= 0, "esuna clears the countdown")
+	victim.update_buff_durations()
+	assert_true(victim.is_alive, "and the cured target survives the turn that would have killed them")
+
+
+func test_the_opt_in_default_still_decides_a_chanceless_doom() -> void:
+	## death_sentence authors `effect: "doom"` and NO chance, and its own description says
+	## "(Currently no effect)". The 0.0 default is what keeps that true — this fix must not
+	## accidentally arm the Necromancer's joke.
+	var sentence: Dictionary = JobSystem.get_ability("death_sentence")
+	assert_eq(str(sentence.get("effect", "")), "doom", "CONTROL: it authors the effect")
+	assert_false(sentence.has("effect_chance"), "CONTROL: and no chance")
+	for i in 40:
+		var victim := _combatant("Mira")
+		_cast_live("magic", sentence, victim)
+		assert_eq(victim.doom_counter, -1, "a chanceless doom still dooms nobody")
+		victim.free()
+
+
+## ── the grind mirrors it ──────────────────────────────────────────────
+
+func test_the_grind_dooms_what_the_battle_dooms() -> void:
+	## The resolver already CURED doom in its cleanse arm while nothing could set it. Parity here is
+	## not decoration: CLAUDE.md puts hours of play through this engine.
+	var resolver = ResolverScript.new()
+	var caster := _combatant("Reaper")
+	for type in ["magic", "physical"]:
+		var victim := _combatant("Mira")
+		resolver._maybe_inflict_status(caster, victim, _doom_ability(type, 2), "final_death")
+		assert_eq(victim.doom_counter, 2, "%s: the grind sets the same counter live does" % type)
+		assert_false(victim.has_status("doom"), "%s: and not an inert status either" % type)
+		victim.free()
+
+
+func test_the_grind_leaves_a_chanceless_doom_alone_too() -> void:
+	var resolver = ResolverScript.new()
+	var caster := _combatant("Reaper")
+	var sentence: Dictionary = JobSystem.get_ability("death_sentence")
+	for i in 40:
+		var victim := _combatant("Mira")
+		resolver._maybe_inflict_status(caster, victim, sentence, "death_sentence")
+		assert_eq(victim.doom_counter, -1, "the grind honours the same opt-in default")
+		victim.free()
+
+
+## ── the shape that caused it ──────────────────────────────────────────
+
+func test_every_ability_that_authors_doom_is_typed_away_from_the_old_setter() -> void:
+	## This is WHY the producer was unreachable, pinned so the reason cannot quietly stop being true.
+	## If someone re-types one of these to `support` the old path would serve it and this arm says so.
+	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var abilities: Dictionary = data.get("abilities", data)
+	var authors: Array = []
+	for id in abilities:
+		var a = abilities[id]
+		if a is Dictionary and str(a.get("effect", "")) == "doom":
+			authors.append("%s:%s" % [id, a.get("type", "")])
+	authors.sort()
+	assert_eq(authors, ["death_sentence:magic", "final_death:magic", "permakill_strike:physical"],
+		"the doom roster and its types — a change here is a balance decision, not a refactor: %s" % str(authors))
+
+
+func test_one_producer_and_every_path_reaches_it() -> void:
+	## The support arm and the damage path must set the counter through the SAME function, or the
+	## countdown, the log and the badge can disagree by path — which is the class that produced this
+	## bug in the first place (two verbatim copies of the status block, doom in neither).
+	var code: String = GdSourceHelper.code_of(BM_PATH)
+	assert_eq(code.count("target.doom_counter = countdown"), 1,
+		"exactly one assignment sets the counter")
+	var at: int = code.find("func _inflict_doom(")
+	assert_gt(at, -1, "CONTROL: the producer survives stripping")
+	var nxt: int = code.find("\nfunc ", at + 1)
+	var producer: String = code.substr(at, (nxt - at) if nxt > at else 1200)
+	assert_true(producer.contains("target.doom_counter = countdown"),
+		"and it is _inflict_doom that owns it")
+	assert_eq(code.count("_inflict_doom("), 3,
+		"one declaration plus two callers — the support arm and the shared status owner")
+	var owner_at: int = code.find("func _apply_ability_status(")
+	assert_gt(owner_at, -1, "CONTROL: the shared status owner survives stripping")
+	var owner_end: int = code.find("\nfunc ", owner_at + 1)
+	assert_true(code.substr(owner_at, owner_end - owner_at).contains("_inflict_doom("),
+		"the damage path reaches the producer through the one status owner both executors call")

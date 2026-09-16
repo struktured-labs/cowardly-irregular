@@ -100,8 +100,12 @@ func test_battle_manager_inflict_log_uses_status_names() -> void:
 	# picked entry, and freeze displays "Frozen" (via
 	# DISPLAY_OVERRIDES) rather than the aliased "Stun".
 	var count: int = src.count("StatusNames.display(log_effect)")
-	assert_eq(count, 2,
-		"BattleManager must have exactly 2 StatusNames.display(log_effect) calls (status inflict log + magic inflict log)")
+	assert_eq(count, 1,
+		"BattleManager has ONE inflict log since the physical/magic blocks collapsed into _apply_ability_status (found %d)" % count)
+	assert_true(_owner_body().contains("StatusNames.display(log_effect)"),
+		"and it is the owner that logs it")
+	assert_eq(_owner_callers(), 2,
+		"reached from both damage executors — what the old count of 2 stood for")
 	# Old bare effect.capitalize() pattern must be gone.
 	assert_false(src.contains("effect.capitalize()"),
 		"BattleManager's effect.capitalize() must be gone")
@@ -116,3 +120,22 @@ func test_tick_211_stat_names_preserved() -> void:
 		"tick 211 StatNames.display_name preserved")
 	assert_true(src.contains("static func short_code(stat_name: String) -> String:"),
 		"tick 211 StatNames.short_code preserved")
+
+
+## ⚠️ SHAPE CHANGED 2026-09-16, INTENT UNCHANGED. The effect-application block existed VERBATIM in
+## _execute_physical_ability AND _execute_magic_ability, so this file counted copies. It is now one
+## owner, `_apply_ability_status`, that both call — so the pin is "the rule lives in the owner, and
+## both damage executors still reach it", which is what counting two copies was really defending.
+func _owner_body() -> String:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var at: int = src.find("func _apply_ability_status(")
+	if at < 0:
+		return ""
+	var nxt: int = src.find("\nfunc ", at + 1)
+	return src.substr(at, (nxt - at) if nxt > at else 4000)
+
+
+## Both damage executors must still CALL that owner, or the rule inside it defends nothing.
+func _owner_callers() -> int:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	return src.count("_apply_ability_status(caster, target, ability)")

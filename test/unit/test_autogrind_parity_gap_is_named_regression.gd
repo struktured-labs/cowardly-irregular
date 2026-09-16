@@ -175,12 +175,17 @@ const GRIND_PATH_MARKER := {
 	"hits": "for _h in hits",
 	"drain_percentage": "_drain_to(",
 	"scales_with": "_scaled_base(",
-	## Mapped, but NOT path-checked: live reads secondary_effect inside _apply_secondary_effect, a
-	## dispatcher rather than a per-type executor, so _live_executor_count sees no executor and the
-	## arm skips it. Its support-only placement is pinned in
-	## test_autogrind_applies_the_second_effect_regression instead. Left here so the map matches the
-	## set of keys this lane has wired, and so it reds if the marker ever disappears.
+	## ⚠️ ALL FOUR secondary_* KEYS, AND THREE OF THEM WERE INVISIBLE TO THIS MAP UNTIL 2026-09-16.
+	## They live in `_apply_secondary_effect`, which `_execute_support_ability` calls — but the old
+	## walk-back skipped past any non-executor function, so a read inside a helper was credited to
+	## whichever executor happened to precede it in the file and the count came out wrong. With the
+	## walk-back fixed (see _executors_for_read) they resolve to the support executor, which is where
+	## live reads them and where the resolver calls the same helper. One marker covers the four:
+	## they are the same call, and a key that travelled alone would be the anomaly.
 	"secondary_effect": "_apply_secondary_effect(",
+	"secondary_chance": "_apply_secondary_effect(",
+	"secondary_target": "_apply_secondary_effect(",
+	"secondary_modifier": "_apply_secondary_effect(",
 }
 
 ## Read by both engines, live-confined to one executor, and NOT path-assessed by me. They are here
@@ -200,16 +205,49 @@ const ARM_FOR_EXECUTOR := {
 }
 
 
+## ⛔ THE WALK-BACK USED TO SKIP PAST NON-EXECUTOR FUNCTIONS AND MIS-ATTRIBUTE. It did
+## `rfind("func _execute_")`, so a key read inside an ordinary helper was credited to whichever
+## executor happened to sit ABOVE that helper in the file. On 2026-09-16 the duplicated status block
+## became `_apply_ability_status`, which sits just below `_execute_physical_ability` — and
+## `effect_chance`, read by both damage executors, suddenly measured as physical-only and this file
+## demanded a declaration for it. The fix stops at the NEAREST enclosing func of any name, and
+## resolves a helper to every executor that calls it. Nothing about the ledger's subject changed.
+func _enclosing_func(at: int, live: String) -> String:
+	var owner: int = live.substr(0, at).rfind("\nfunc ")
+	if owner < 0:
+		return ""
+	var line: String = live.substr(owner + 1, 80)
+	var paren: int = line.find("(")
+	return line.substr(5, paren - 5) if paren > 5 else ""
+
+
+## Every executor a read at `at` belongs to: the enclosing function when that IS an executor,
+## otherwise every executor whose own body calls it.
+func _executors_for_read(at: int, live: String) -> Array:
+	var fn: String = _enclosing_func(at, live)
+	if fn == "":
+		return []
+	if ARM_FOR_EXECUTOR.has(fn):
+		return [fn]
+	var out: Array = []
+	for executor in ARM_FOR_EXECUTOR:
+		var e_at: int = live.find("func %s(" % executor)
+		if e_at < 0:
+			continue
+		var e_end: int = live.find("\nfunc ", e_at + 1)
+		var body: String = live.substr(e_at, (e_end - e_at) if e_end > e_at else 4000)
+		if body.contains(fn + "("):
+			out.append(executor)
+	return out
+
+
 ## The `func _execute_*` that encloses live's read of this key, or "" if it does not read it.
 func _live_executor_of(key: String, live: String) -> String:
 	var at: int = live.find('ability.get("%s"' % key)
 	if at < 0:
 		return ""
-	var owner: int = live.substr(0, at).rfind("func _execute_")
-	if owner < 0:
-		return ""
-	var line: String = live.substr(owner, 60)
-	return line.substr(5, line.find("(") - 5)
+	var owners: Array = _executors_for_read(at, live)
+	return str(owners[0]) if owners.size() > 0 else ""
 
 
 ## How many DISTINCT per-type executors read this key. Only a key live confines to exactly ONE has a
@@ -221,12 +259,8 @@ func _live_executor_count(key: String, live: String) -> int:
 	var needle: String = 'ability.get("%s"' % key
 	var at: int = live.find(needle)
 	while at >= 0:
-		var owner: int = live.substr(0, at).rfind("func _execute_")
-		if owner >= 0:
-			var line: String = live.substr(owner, 60)
-			var name: String = line.substr(5, line.find("(") - 5)
-			if ARM_FOR_EXECUTOR.has(name):
-				seen[name] = true
+		for name in _executors_for_read(at, live):
+			seen[name] = true
 		at = live.find(needle, at + 1)
 	return seen.size()
 

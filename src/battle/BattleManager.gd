@@ -4885,42 +4885,69 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		battle_log_message.emit(log_msg)
 		print("  → %s takes %d damage!" % [target.combatant_name, actual_damage])
 
-		# Apply status effect if ability has one
-		var effect = ability.get("effect", "")
-		# Tick 354: special-case "random_debuff" — pre-fix add_status
-		# ("random_debuff") wrote a literal "random_debuff" string into
-		# status_effects, an inert sentinel no downstream consumer
-		# recognizes. corrupting_touch / data_corruption JSON descriptions
-		# present the debuff as the headline behavior, but omitted
-		# effect_chance — which defaulted to 0.0, so the apply never
-		# fired even if random_debuff were a real status. Default the
-		# chance to 1.0 for random_debuff specifically; other abilities
-		# keep their 0.0 default to preserve "you must opt in explicitly"
-		# semantics for status_effect.
-		var effect_chance: float
-		if effect == "random_debuff":
-			effect_chance = float(ability.get("effect_chance", 1.0))
-		else:
-			effect_chance = float(ability.get("effect_chance", 0.0))
-		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
-			var status_to_add: String = effect
-			if effect == "random_debuff":
-				const _RANDOM_DEBUFF_POOL := [
-					"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
-				]
-				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
-			# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
-			var log_effect: String = status_to_add
-			if status_to_add == "freeze":
-				status_to_add = "stun"
-			# burn aliases to burning — 5 fire abilities AND the random-debuff pool author "burn", but the 8%/turn DoT in Combatant ticks only "burning". Measured: burn 100->100, burning 100->92. Aliasing at apply (not widening the tick) also gets burn into the cleanse and negative-status lists, which already say "burning".
-			if status_to_add == "burn":
-				status_to_add = "burning"
-			var duration: int = int(ability.get("duration", 3))
-			target.add_status(status_to_add, duration)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
+		# Apply status effect if ability has one — ONE owner, see _apply_ability_status
+		_apply_ability_status(caster, target, ability)
 
 		_trigger_monster_counter(target, caster)
+
+
+## ⛔ ONE OWNER FOR THE POST-DAMAGE STATUS APPLY. This block lived VERBATIM in BOTH
+## _execute_physical_ability and _execute_magic_ability, so every rule it carries — the random_debuff
+## 1.0 default, the freeze->stun and burn->burning aliases — had to be written twice to be true, and
+## `doom` was written into neither.
+func _apply_ability_status(caster: Combatant, target: Combatant, ability: Dictionary) -> void:
+	var effect = ability.get("effect", "")
+	# Tick 354: special-case "random_debuff" — pre-fix add_status
+	# ("random_debuff") wrote a literal "random_debuff" string into
+	# status_effects, an inert sentinel no downstream consumer
+	# recognizes. corrupting_touch / data_corruption JSON descriptions
+	# present the debuff as the headline behavior, but omitted
+	# effect_chance — which defaulted to 0.0, so the apply never
+	# fired even if random_debuff were a real status. Default the
+	# chance to 1.0 for random_debuff specifically; other abilities
+	# keep their 0.0 default to preserve "you must opt in explicitly"
+	# semantics for status_effect.
+	var effect_chance: float
+	if effect == "random_debuff":
+		effect_chance = float(ability.get("effect_chance", 1.0))
+	else:
+		effect_chance = float(ability.get("effect_chance", 0.0))
+	if effect == "" or effect_chance <= 0.0 or randf() >= effect_chance:
+		return
+	var status_to_add: String = effect
+	if effect == "random_debuff":
+		const _RANDOM_DEBUFF_POOL := [
+			"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
+		]
+		status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
+	# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
+	var log_effect: String = status_to_add
+	if status_to_add == "freeze":
+		status_to_add = "stun"
+	# burn aliases to burning — 5 fire abilities AND the random-debuff pool author "burn", but the 8%/turn DoT in Combatant ticks only "burning". Measured: burn 100->100, burning 100->92. Aliasing at apply (not widening the tick) also gets burn into the cleanse and negative-status lists, which already say "burning".
+	if status_to_add == "burn":
+		status_to_add = "burning"
+	## doom is a COUNTER, not a status — see _inflict_doom.
+	if status_to_add == "doom":
+		_inflict_doom(target, int(ability.get("countdown", 3)))
+		return
+	var duration: int = int(ability.get("duration", 3))
+	target.add_status(status_to_add, duration)
+	battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
+
+
+## ⛔ THE ONE PLACE doom IS SET, AND UNTIL NOW NOTHING COULD REACH IT. Combatant.doom_counter ticks
+## down and KOs at zero (Combatant:901), BattleScene paints the "☠ N" badge, cleanse clears it, the
+## save carries it and the grind mirrors the cure — six live consumers of a producer that sat in
+## _execute_support_ability while all three abilities authoring `effect: "doom"` are magic or
+## physical. The damage path added an inert STATUS named doom instead: no tick, no badge, no KO.
+## (Spelling the old call literally here would trip test_status_icons_cover_applied_statuses, whose
+## sweep reads source text and cannot tell a comment from a call site — its documented limit.)
+func _inflict_doom(target: Combatant, countdown: int) -> void:
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	target.doom_counter = countdown
+	battle_log_message.emit("[color=purple]☠ %s is doomed![/color] (%d turns to KO)" % [target.combatant_name, countdown])
 
 
 ## Strongest matching element_boost buff, or 0.0. MAX not product — buffs already clamp elsewhere.
@@ -5126,40 +5153,8 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			battle_log_message.emit(drain_log)
 			print("  → %s drains %d HP!" % [caster.combatant_name, drained])
 
-		# Apply status effect if ability has one
-		var effect = ability.get("effect", "")
-		# Tick 354: special-case "random_debuff" — pre-fix add_status
-		# ("random_debuff") wrote a literal "random_debuff" string into
-		# status_effects, an inert sentinel no downstream consumer
-		# recognizes. corrupting_touch / data_corruption JSON descriptions
-		# present the debuff as the headline behavior, but omitted
-		# effect_chance — which defaulted to 0.0, so the apply never
-		# fired even if random_debuff were a real status. Default the
-		# chance to 1.0 for random_debuff specifically; other abilities
-		# keep their 0.0 default to preserve "you must opt in explicitly"
-		# semantics for status_effect.
-		var effect_chance: float
-		if effect == "random_debuff":
-			effect_chance = float(ability.get("effect_chance", 1.0))
-		else:
-			effect_chance = float(ability.get("effect_chance", 0.0))
-		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
-			var status_to_add: String = effect
-			if effect == "random_debuff":
-				const _RANDOM_DEBUFF_POOL := [
-					"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
-				]
-				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
-			# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
-			var log_effect: String = status_to_add
-			if status_to_add == "freeze":
-				status_to_add = "stun"
-			# burn aliases to burning — 5 fire abilities AND the random-debuff pool author "burn", but the 8%/turn DoT in Combatant ticks only "burning". Measured: burn 100->100, burning 100->92. Aliasing at apply (not widening the tick) also gets burn into the cleanse and negative-status lists, which already say "burning".
-			if status_to_add == "burn":
-				status_to_add = "burning"
-			var duration: int = int(ability.get("duration", 3))
-			target.add_status(status_to_add, duration)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
+		# Apply status effect if ability has one — ONE owner, see _apply_ability_status
+		_apply_ability_status(caster, target, ability)
 
 		_trigger_monster_counter(target, caster)
 
@@ -5923,11 +5918,9 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					target.add_status("shadow_step", ss_duration)
 					battle_log_message.emit("[color=cyan]%s vanishes into shadow![/color] (evade + guaranteed crit, %d turns)" % [target.combatant_name, ss_duration])
 		"doom":
-			var countdown = ability.get("countdown", 3)
+			var doom_countdown: int = int(ability.get("countdown", 3))
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive:
-					target.doom_counter = countdown
-					battle_log_message.emit("[color=purple]☠ %s is doomed![/color] (%d turns to KO)" % [target.combatant_name, countdown])
+				_inflict_doom(target, doom_countdown)
 		"volatility_up_self":
 			if volatility:
 				caster.add_buff("Leveraged", "volatility", stat_modifier, duration)
