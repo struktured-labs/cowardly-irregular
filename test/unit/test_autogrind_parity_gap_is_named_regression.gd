@@ -47,6 +47,7 @@ const DECLARED := {
 	"summon_message": "battle-log flavour for a spawn the grind does not perform",
 	"corruption_risk": "SAVE corruption from meta abilities during automated play is a stakes ruling (CLAUDE.md: 'save corruption: actual mechanic, not just flavor'), not a parity repair",
 	"corruption_amount": "see corruption_risk — same stakes ruling",
+	"regen_per_turn": "EXAMINED 2026-09-16 and it is a LIVE defect, not a grind gap. `regenerate` is type=healing, so live dispatches it to _execute_healing_ability, which reads only heal_amount — and regenerate authors none. Measured: live heals 0 and never adds the regen status, so regen_per_turn AND duration are dead there; the grind heals 30 once via its own heal_amount-absent fallback and also never regens. NEITHER engine delivers the authored ability. Wiring it in the grind alone would widen the divergence, and repairing live is a BattleManager change — handed to cowir-battle, whose 2d14d92d ledger is the right home for it",
 }
 
 ## Fixed and awaiting a fold. Named so arm 4 does not red on them, and asserted by NOTHING ELSE on
@@ -66,7 +67,7 @@ const UNEXAMINED := [
 	"damage_variance", "drain_mp", "element_boost", "element_boost_modifier", "evasion_bonus",
 	"guaranteed_escape", "ignores_defense", "ignores_evasion", "ignores_resistance", "max_depth",
 	"meta_effect", "mp_restore_percent", "multiplier", "next_attack_multiplier", "penalty",
-	"priority", "recoil_pct", "regen_per_turn", "steals", "success_rate", "threat_class",
+	"priority", "recoil_pct", "steals", "success_rate", "threat_class",
 ]
 
 
@@ -309,3 +310,26 @@ func test_the_axis_two_backlog_is_not_silently_empty() -> void:
 		if GRIND_PATH_MARKER.has(k):
 			stale.append(k)
 	assert_eq(stale, [], "these are listed as unassessed AND mapped — one of the two is wrong: %s" % str(stale))
+
+
+## The one key from the UNEXAMINED backlog I have actually examined, pinned so the finding is not lost
+## in a channel message. `regenerate` authors an `effect` and a `regen_per_turn` that its own live
+## executor cannot read, because type=healing routes to _execute_healing_ability and the regen arm
+## lives in _execute_support_ability. If live ever gains an effect arm on the healing path — or
+## regenerate is retyped — the ability starts working there and the grind must be taught to follow.
+func test_regenerate_is_still_dead_on_lives_own_path() -> void:
+	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var regen: Dictionary = abilities.get("regenerate", {})
+	assert_false(regen.is_empty(), "CONTROL: regenerate must still exist")
+	assert_eq(str(regen.get("type", "")), "healing",
+		"regenerate is no longer type=healing — it may now reach live's regen arm, so re-examine both engines")
+	assert_false(regen.has("heal_amount"),
+		"regenerate now authors a heal_amount — live's healing executor would finally heal for it, so this declaration is stale")
+	var live: String = GdSource.code_of(LIVE)
+	var at: int = live.find("func _execute_healing_ability")
+	assert_gt(at, 0, "CONTROL: the healing executor must be locatable")
+	var body: String = live.substr(at, live.find("\nfunc ", at + 10) - at)
+	assert_false(body.contains('ability.get("effect"'),
+		"live's healing executor now reads `effect` — regenerate's regen may work there, and the grind must follow")
+	assert_false(body.contains("regen"),
+		"live's healing executor now mentions regen — re-examine, this declaration was measured when it did not")
