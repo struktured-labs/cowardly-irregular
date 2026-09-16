@@ -148,7 +148,13 @@ func test_all_bs_physical_spawns_pass_weapon_type() -> void:
 		if eol == -1:
 			eol = src.length()
 		var call: String = src.substr(idx, eol - idx)
-		if call.find("_weapon_type_for(") < 0:
+		## ⚠️ A FORWARDED weapon_type SATISFIES THIS, and the arm below keeps the chain honest.
+		## The subject is "a PHYSICAL effect never spawns without a weapon type", not "the literal
+		## `_weapon_type_for(` appears on this line". When the limit-break stagger moved the spawn
+		## into a timer helper (2026-09-16), the value still came from `_weapon_type_for(participant)`
+		## at the call site and arrived as a parameter — intent met, shape broken. Following the value
+		## ONE HOP is the same repair the axis-2 ledger needed for helper-borne reads.
+		if call.find("_weapon_type_for(") < 0 and call.find(", weapon_type)") < 0:
 			# Also allow explicit ""` for the never-had-attacker case;
 			# but PHYSICAL calls in execution are the target class — flag.
 			# Annotate with a rough line number so a diff is easy.
@@ -156,7 +162,36 @@ func test_all_bs_physical_spawns_pass_weapon_type() -> void:
 			offending.append("line %d: %s" % [line_num, call.substr(0, 120)])
 		cursor = eol
 	assert_eq(offending.size(), 0,
-		"every PHYSICAL EffectSystem.spawn_effect must pass _weapon_type_for(...) — missing at: %s" % str(offending))
+		"every PHYSICAL EffectSystem.spawn_effect must pass a weapon type — missing at: %s" % str(offending))
+
+
+func test_every_forwarder_is_fed_a_real_weapon_type() -> void:
+	## The other end of the hop the arm above now permits. A function that takes `weapon_type` and
+	## passes it through is only as good as what its CALLERS hand it — so each one must be fed
+	## `_weapon_type_for(...)`, or the exemption becomes a hole the size of one indirection.
+	var src: String = FileAccess.get_file_as_string(BS_PATH)
+	var forwarders: Array = ["_spawn_impact_after("]
+	var starved: Array = []
+	for fwd in forwarders:
+		var declared: int = src.find("func " + fwd)
+		assert_gt(declared, -1, "CONTROL: the forwarder %s must exist, or this arm defends nothing" % fwd)
+		var seen_call: bool = false
+		var cursor: int = 0
+		while true:
+			var idx: int = src.find(fwd, cursor)
+			if idx == -1:
+				break
+			cursor = idx + fwd.length()
+			if idx == declared + 5:
+				continue  # the declaration itself
+			var eol: int = src.find("\n", idx)
+			var call: String = src.substr(idx, (eol - idx) if eol > idx else 160)
+			seen_call = true
+			if call.find("_weapon_type_for(") < 0:
+				starved.append("%s <- %s" % [fwd, call.substr(0, 100)])
+		assert_true(seen_call, "CONTROL: %s must have at least one caller, or the loop proves nothing" % fwd)
+	assert_eq(starved, [],
+		"a weapon-type forwarder is called without a real weapon type: %s" % str(starved))
 
 
 ## ── (6) _delayed_play_hit_fx uses the cycle-12 cache for weapon_type ──

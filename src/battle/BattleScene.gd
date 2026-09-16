@@ -186,6 +186,27 @@ const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const BATTLE_SPEED_LABELS: Array[String] = ["1x", "2x", "4x", "8x", "16x", "32x", "64x"]
 static var _battle_speed_index: int = 0  # persists across battles; index 0 = label "1x" (engine 0.25) — struktured 2026-07-11: the old 0.5x pacing IS the correct default
 # Crit hitlag nests — two crits in the 80ms window and the second captured 0.1 as "normal"; depth-counted so only the outermost restores
+## ⛔ THE COMMENT PROMISED THIS AND THE CODE NEVER DID IT. `_on_group_attack_executing`'s
+## limit_break arm carried "# Stagger lunges slightly for visual impact" while every
+## `_animate_melee_attack` in the loop fired in the SAME FRAME — and four lines above, the outer
+## comment says "simultaneously". The file asserted both (cowir-sfx 11864, who asked rather than
+## assumed and was right).
+##
+## ⚠️ ITS OWN CONSTANT, deliberately NOT derived from the animator's 0.08 phase interval. That paces
+## phases WITHIN one lunge; this spaces lunges BETWEEN members. They are different quantities that
+## would look related and drift independently — the coincidental-coupling shape (cowir-cutscenes).
+##
+## LOWER BOUND IS MEASURED, NOT CHOSEN: SoundManager.SFX_MIN_INTERVAL_MS is 80, and its test is
+## `now - last < 80` on wall-clock ticks. 0.08 passes by one millisecond of strictness and a frame
+## landing 79 ms apart silently eats the second strike — a threshold that reads as a flake. 0.12
+## clears it at every battle speed, since create_timer already applies Engine.time_scale and the
+## fastest setting is the tightest case.
+##
+## ⚠️ THE FEEL IS struktured's CALL, not mine: five members span 0.48 s at 4x and 1.92 s at 1x.
+## This value is the smallest that makes the audio collision impossible; whether the cascade should
+## be that long is a different question and the constant is here to be turned.
+const LIMIT_BREAK_LUNGE_STAGGER_SEC: float = 0.12
+
 const HITLAG_SCALE: float = 0.1
 var _hitlag_depth: int = 0
 var _hitlag_base_scale: float = 1.0
@@ -3885,7 +3906,11 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 	if group_type == "combo_magic":
 		_spawn_screen_flash(Color(0.2, 0.8, 1.0, 0.35), 0.4, 0.15)
 
-	# Play attack animation on every participating party member simultaneously
+	## `lunges_started` counts only the members who ACTUALLY lunge, so a skipped or dead participant
+	## does not leave a hole in the cascade.
+	var lunges_started: int = 0
+	# Play attack animation on every participating party member — staggered for limit_break (see
+	# LIMIT_BREAK_LUNGE_STAGGER_SEC), simultaneous for the rest.
 	for participant in participants:
 		if not (participant is Combatant) or not participant.is_alive:
 			continue
@@ -3903,14 +3928,21 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			var target_combatant = targets[target_idx] as Combatant
 			var target_sprite = _get_combatant_sprite(target_combatant)
 			if target_sprite:
-				# Stagger lunges slightly for visual impact
+				## The stagger the old comment here PROMISED AND NEVER DID. Every lunge started in the
+				## same frame; see LIMIT_BREAK_LUNGE_STAGGER_SEC for why the interval is its own
+				## constant and why it must clear 80 ms.
+				var lead_in: float = float(lunges_started) * LIMIT_BREAK_LUNGE_STAGGER_SEC
+				lunges_started += 1
 				var target_anim: BattleAnimatorClass = null
 				var enemy_idx = BattleManager.enemy_party.find(target_combatant)
 				if enemy_idx >= 0 and enemy_idx < enemy_animators.size():
 					target_anim = enemy_animators[enemy_idx]
-				_animate_melee_attack(sprite, target_sprite, anim, target_anim)
+				_animate_melee_attack(sprite, target_sprite, anim, target_anim, lead_in)
 				# Spawn physical hit effect on impact (msg 2569 #1: stable anchor so mid-tween targets don't drag the effect off). weapon_type from participant so each limit-break lunge plays its own weapon SFX (msg 2754 cycle 14).
-				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(participant))
+				## Shifted by the same lead-in so the impact still lands with ITS lunge rather than
+				## with the first one. Connected, never awaited — an await here would serialise the
+				## cascade into five sequential full lunges.
+				_spawn_impact_after(lead_in, target_sprite, _weapon_type_for(participant))
 				continue
 		# Combo Magic: casters step forward, cast animation, converging spell effects
 		if group_type == "combo_magic":
@@ -4045,6 +4077,22 @@ func _delayed_snap_and_idle(sprite, animator) -> void:
 		animator.set_idle()
 
 
+## Impact effect for a staggered lunge. Timer-and-connect, the idiom this file already uses at
+## _delayed_snap_and_idle — NOT an await, which in the caller's loop would serialise the cascade.
+func _spawn_impact_after(delay: float, target_sprite: Node2D, weapon_type: String) -> void:
+	if delay <= 0.0:
+		if is_instance_valid(target_sprite):
+			EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, weapon_type)
+		return
+	get_tree().create_timer(delay).timeout.connect(_spawn_impact_now.bind(target_sprite, weapon_type))
+
+
+func _spawn_impact_now(target_sprite: Node2D, weapon_type: String) -> void:
+	if not is_instance_valid(target_sprite):
+		return
+	EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, weapon_type)
+
+
 func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 	if target_anim and is_instance_valid(target_anim) and is_instance_valid(target_sprite):
 		target_anim.play_hit()
@@ -4153,7 +4201,7 @@ func _spawn_screen_flash(color: Color, fade_duration: float, delay: float = 0.0)
 	t.tween_callback(flash.queue_free)
 
 
-func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass) -> void:
+func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attacker_anim: BattleAnimatorClass, target_anim: BattleAnimatorClass, lead_in: float = 0.0) -> void:
 	"""Animate attacker moving to target, attacking, then returning"""
 	# Store home position as metadata to ensure we can always return
 	if not attacker_sprite.has_meta("home_position"):
@@ -4176,6 +4224,11 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	# Create movement tween — Fable pass (struktured: "timing and emphasis... should be nonlinear — the attack slows down slightly during impact"). Shape: ACCELERATING approach → HITSTOP at contact → eased settle home.
 	var tween = create_tween()
 	attacker_sprite.set_meta("attack_tween", tween)
+	## The stagger, as an interval on the tween rather than an await in the caller's loop —
+	## CLAUDE.md: "`await` in a loop SERIALIZES what should be simultaneous", and the same trap
+	## inverted would turn a 5-member cascade into 5 sequential full lunges.
+	if lead_in > 0.0:
+		tween.tween_interval(lead_in)
 
 	# Play lunge/dash windup animation in parallel with the position tween below.
 	# Falls back gracefully: if no 'lunge' animation exists in SpriteFrames,
