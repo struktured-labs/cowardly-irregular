@@ -31,6 +31,20 @@ func after_each() -> void:
 		Input.action_release(a)
 
 
+
+## ⛔ EXISTENCE FIRST, and the reason is a GATE fact rather than a style one. Every behavioural arm
+## below calls _process directly. If the hold mechanism were removed, those calls abort BEFORE
+## their first assert — GUT scores that Risky, Risky is NOT Failing, and the run EXITS ZERO. So a
+## guard whose subject had vanished would pass every gate this project uses. has_method ANSWERS
+## rather than raising, so the disappearance fails loudly instead of going quiet.
+func test_the_hold_mechanism_still_exists() -> void:
+	var subject := _make_keyboard()
+	assert_true(subject.has_method("_process"),
+		"VirtualKeyboard has no _process — the arms in this file reach it directly and would go Risky "
+		+ "rather than red, on a run that exits 0")
+	assert_true(subject.has_method("_nav_step"),
+		"the shared step owner must exist; without it every behavioural arm here aborts silently")
+
 func test_holding_right_walks_the_row() -> void:
 	var kb := _make_keyboard()
 	kb.cursor_col = 0
