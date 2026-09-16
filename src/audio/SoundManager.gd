@@ -406,6 +406,14 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["steal"] = "ability_physical"
 	_ability_sounds["mug"] = "ability_physical"
 	# Meta-job signature cues (cowir-sfx 2026-07-11) — reality edits must not sound like sword hits.
+	# ⚠️ MEASURED 2026-09-16: 4 of 24 meta-typed abilities are mapped here; the other 20 fall through
+	# to ability_physical, a sword unsheathing. rewind · time_stop · quicksave · undo_death ·
+	# temporal_shield · warp_to_boss · sequence_break and the rest are cast by the player ON THEMSELVES,
+	# so they need no enemy and no autobattle rule to be heard. Open with struktured: author cues, or map
+	# onto the three that exist (ability_permakill · ability_mind_swap · ability_dark).
+	# ⛔ DO NOT "fix" this by adding a meta arm to _TYPE_SFX — its own comment records that
+	# physical/support/meta are deliberately absent because meta cues are keyed BY ID, which is this
+	# map. I was one step from making that change before reading the table four lines below it.
 	# The ability is modify_constant; this key read constant_modification from 2026-07-11, matched nothing, and left the authored cue unreachable while the Scriptweaver's signature act played a sword.
 	_ability_sounds["modify_constant"] = "ability_constant_modification"
 	_ability_sounds["analyze_code"] = "ability_analyze_code"
