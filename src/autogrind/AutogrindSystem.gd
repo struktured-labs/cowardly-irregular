@@ -1135,7 +1135,10 @@ func _check_interrupt_conditions() -> String:
 	# Check HP threshold
 	if interrupt_rules.get("hp_threshold", 0) > 0:
 		for member in grind_party:
-			if member is Combatant and member.get_hp_percentage() < interrupt_rules["hp_threshold"]:
+			## SKIPS THE DEAD. A corpse reads 0% and tripped this before party_death was ever consulted:
+			## a death was reported as an HP stop, and turning "stop on death" OFF could not keep a grind
+			## running. A wiped party is still stopped by the controller's own "No party available" guard.
+			if member is Combatant and member.is_alive and member.get_hp_percentage() < interrupt_rules["hp_threshold"]:
 				return "HP threshold reached (%d%%)" % interrupt_rules["hp_threshold"]
 
 	# Check party death

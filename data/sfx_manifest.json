@@ -379,6 +379,41 @@
       "prompt_influence": 0.8,
       "source": "tools/gen_chiptune_sfx.py advance_flourish_5"
     },
+    "advance_generic_1": {
+      "file": "assets/audio/sfx/advance_generic_1.ogg",
+      "prompt": "SYNTHESISED — generic Advance press ladder, rung 1 of 5. 9 of 14 jobs have no per-job ladder (only the 5 starters do) and repeated ONE flat arcade credit at every press, including at a full bank — struktured 2026-09-09 asked for a new sound at the 4th press. Escalates CATEGORICALLY: one note, one per press, so the step does not rest on loudness or on pitch (the manifest path adds ±5% random pitch, wider than any musical per-press step). NOT advance_flourish_*: that family is the wind-up at RESOLUTION and reusing it while queueing would blur two moments. Run the tool.",
+      "duration_seconds": 0.24,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_generic_1"
+    },
+    "advance_generic_2": {
+      "file": "assets/audio/sfx/advance_generic_2.ogg",
+      "prompt": "SYNTHESISED — generic Advance press ladder, rung 2 of 5. 9 of 14 jobs have no per-job ladder (only the 5 starters do) and repeated ONE flat arcade credit at every press, including at a full bank — struktured 2026-09-09 asked for a new sound at the 4th press. Escalates CATEGORICALLY: two notes, one per press, so the step does not rest on loudness or on pitch (the manifest path adds ±5% random pitch, wider than any musical per-press step). NOT advance_flourish_*: that family is the wind-up at RESOLUTION and reusing it while queueing would blur two moments. Run the tool.",
+      "duration_seconds": 0.3,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_generic_2"
+    },
+    "advance_generic_3": {
+      "file": "assets/audio/sfx/advance_generic_3.ogg",
+      "prompt": "SYNTHESISED — generic Advance press ladder, rung 3 of 5. 9 of 14 jobs have no per-job ladder (only the 5 starters do) and repeated ONE flat arcade credit at every press, including at a full bank — struktured 2026-09-09 asked for a new sound at the 4th press. Escalates CATEGORICALLY: three notes, one per press, so the step does not rest on loudness or on pitch (the manifest path adds ±5% random pitch, wider than any musical per-press step). NOT advance_flourish_*: that family is the wind-up at RESOLUTION and reusing it while queueing would blur two moments. Run the tool.",
+      "duration_seconds": 0.36,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_generic_3"
+    },
+    "advance_generic_4": {
+      "file": "assets/audio/sfx/advance_generic_4.ogg",
+      "prompt": "SYNTHESISED — generic Advance press ladder, rung 4 of 5. 9 of 14 jobs have no per-job ladder (only the 5 starters do) and repeated ONE flat arcade credit at every press, including at a full bank — struktured 2026-09-09 asked for a new sound at the 4th press. Escalates CATEGORICALLY: four notes, one per press, so the step does not rest on loudness or on pitch (the manifest path adds ±5% random pitch, wider than any musical per-press step). NOT advance_flourish_*: that family is the wind-up at RESOLUTION and reusing it while queueing would blur two moments. Run the tool.",
+      "duration_seconds": 0.44,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_generic_4"
+    },
+    "advance_generic_5": {
+      "file": "assets/audio/sfx/advance_generic_5.ogg",
+      "prompt": "SYNTHESISED — generic Advance press ladder, rung 5 of 5. 9 of 14 jobs have no per-job ladder (only the 5 starters do) and repeated ONE flat arcade credit at every press, including at a full bank — struktured 2026-09-09 asked for a new sound at the 4th press. Escalates CATEGORICALLY: five notes, one per press, so the step does not rest on loudness or on pitch (the manifest path adds ±5% random pitch, wider than any musical per-press step). NOT advance_flourish_*: that family is the wind-up at RESOLUTION and reusing it while queueing would blur two moments. Run the tool.",
+      "duration_seconds": 0.54,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_generic_5"
+    },
     "advance_mage_1": {
       "file": "assets/audio/sfx/advance_mage_1.ogg",
       "source": "lmms_sf2_fluidr3",

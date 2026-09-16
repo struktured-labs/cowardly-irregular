@@ -562,6 +562,40 @@ def full_bank_unleash(dur=0.85, seed=331):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.95).astype(np.float32)
 
 
+def _press(level, seed):
+    """advance_generic_2..5 — the press ladder for the 9 jobs with no per-job one, which repeated ONE
+    flat arcade credit at every depth (struktured 2026-09-09 asked for a new sound at the 4th press).
+    Deliberately NOT advance_flourish_*: that family is the wind-up at RESOLUTION, and reusing it
+    while queueing would blur two moments. This is the credit REGISTERING, so it keeps the coin tick
+    and adds a note per press. Discrete notes, never a slide; the top note is held so the late third
+    is not the brightest. Escalation must not rest on pitch scaling — the manifest path adds +-5%
+    random pitch, which is wider than any per-press step small enough to stay musical."""
+    rng = np.random.default_rng(seed)
+    dur = {1: 0.24, 2: 0.30, 3: 0.36, 4: 0.44, 5: 0.54}[level]
+    n = int(SR * dur)
+    out = np.zeros(n)
+    k = int(SR * 0.016)                                            # the coin tick
+    out[:k] += _sweep_lowpass(rng.uniform(-1, 1, k), 1800.0, 1500.0) * _env(k, 0.001, 5.0) * 0.45
+    notes = [523.25, 659.25, 783.99, 987.77, 1046.50][:level]      # C5 E5 G5 B5 C6, one per press
+    step = int(SR * 0.055)
+    for i, f in enumerate(notes[:-1]):
+        _place(out, _held(step, f, 3.0, 0.42, duty=0.5), k + i * step)
+    tail_at = k + (len(notes) - 1) * step
+    _place(out, _held(max(n - tail_at, step), notes[-1], 2.0, 0.46, duty=0.35), tail_at)
+    out += _held(n, {1: 130.81, 2: 130.81, 3: 130.81, 4: 110.00, 5: 87.31}[level], 1.8,
+                 {1: 0.12, 2: 0.18, 3: 0.26, 4: 0.34, 5: 0.46}[level])   # the bank filling underneath
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 2000.0, 1700.0)
+    out /= max(np.max(np.abs(out)), 1e-9)
+    return (out * {1: 0.42, 2: 0.55, 3: 0.69, 4: 0.83, 5: 0.98}[level]).astype(np.float32)
+
+
+def advance_generic_1(dur=0.0, seed=397): return _press(1, seed)
+def advance_generic_2(dur=0.0, seed=401): return _press(2, seed)
+def advance_generic_3(dur=0.0, seed=409): return _press(3, seed)
+def advance_generic_4(dur=0.0, seed=419): return _press(4, seed)
+def advance_generic_5(dur=0.0, seed=421): return _press(5, seed)
+
+
 def full_bank_charged(dur=0.62, seed=347):
     """5/5 reached WHILE QUEUEING — the bank's third moment, and not either of the other two:
     advance_flourish_5 is the wind-up at resolution, full_bank_unleash the discharge. This is the
@@ -613,7 +647,10 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "advance_flourish_2": advance_flourish_2, "advance_flourish_3": advance_flourish_3,
           "advance_flourish_4": advance_flourish_4, "advance_flourish_5": advance_flourish_5,
           "full_bank_unleash": full_bank_unleash,
-          "full_bank_charged": full_bank_charged, "advance_queue_full": advance_queue_full}
+          "full_bank_charged": full_bank_charged, "advance_queue_full": advance_queue_full,
+          "advance_generic_1": advance_generic_1,
+          "advance_generic_2": advance_generic_2, "advance_generic_3": advance_generic_3,
+          "advance_generic_4": advance_generic_4, "advance_generic_5": advance_generic_5}
 
 
 def _refuse_if_degenerate(voice, y):

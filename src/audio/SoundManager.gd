@@ -1926,7 +1926,13 @@ func play_music(track: String, exact: bool = false) -> void:
 		_crossfade_tween = create_tween()
 		# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
 		_crossfade_tween.set_ignore_time_scale(true)
-		_crossfade_tween.tween_property(_music_player_b, "volume_db", -40.0, CROSSFADE_DURATION)
+		## ⛔ NEVER FADE UP. -40 is "silent enough" only above it: the slider maps to -80 at mute and
+		## anything under ~3.2% sits below -40, so the outgoing bed RAMPED OUT OF SILENCE for 0.5 s at
+		## every track change. Measured muted 2026-09-16: B climbed -79.5 → -76.8 over six frames,
+		## heading for -40. minf keeps the fade at -40 from any normal level — identical to before —
+		## and leaves a quiet player where it already was.
+		var fade_to: float = minf(-40.0, _music_player_b.volume_db)
+		_crossfade_tween.tween_property(_music_player_b, "volume_db", fade_to, CROSSFADE_DURATION)
 		_crossfade_tween.tween_callback(func(): _music_player_b.stop())
 
 	_current_music = track

@@ -37,8 +37,11 @@ const ORBIT_TILT: float = 0.32
 ## Motes: sparks rising from the disc to the head.
 const MOTES: Array[int] = [0, 0, 0, 0, 12, 18]
 const RISE_HZ: Array[float] = [0.0, 0.0, 0.0, 0.0, 0.9, 1.2]
-## The outline breathes in alpha only, and by less than its smallest step, so no phase inverts two counts.
-const OUTLINE_GROW: Array[float] = [1.0, 1.08, 1.10, 1.12, 1.14, 1.16]
+## The outline is a DILATION of the body's own alpha, this many screen px wide. ⛔ It was the body scaled up
+## 8-16% about the frame centre: a few px of halo on a small sheet (Rogue, Mage), and off-centre wherever the
+## figure is not mid-frame — faint on four of five slots (cowir-battle, every-slot frames).
+## It breathes in alpha only, and by less than its smallest step, so no phase inverts two counts.
+const OUTLINE_WIDTH: Array[float] = [0.0, 5.0, 6.0, 7.0, 8.0, 9.0]
 const OUTLINE_ALPHA: Array[float] = [0.0, 0.50, 0.58, 0.66, 0.74, 0.82]
 const OUTLINE_ALPHA_PULSE: float = 0.06
 
@@ -51,7 +54,10 @@ const FULL_BANK_RIM_WIDTH: float = 6.0
 const FULL_BANK_GLOW_WIDTH: float = 12.0
 const FULL_BANK_GLOW_ALPHA: float = 0.4
 const FULL_BANK_RIM_GAP: float = 4.0
-const FULL_BANK_OUTLINE_GOLD: float = 0.85
+const FULL_BANK_OUTLINE_GOLD: float = 1.0
+## At 5/5 the outline also THICKENS: a width step reads where a colour step cannot — the Cleric's own
+## colour is already pale gold (cowir-adhoc).
+const FULL_BANK_OUTLINE_BONUS: float = 4.0
 const FULL_BANK_PULSE_HZ: float = 3.6
 const RING_SEGMENTS := 32
 ## Breathe and kick, as fractions of the disc radius. The breathe stays under the smallest radius gap.
@@ -98,7 +104,7 @@ static func params_for(n: int, is_full_bank: bool) -> Dictionary:
 		"orbit_rx": ORBIT_RX[i],
 		"motes": MOTES[i],
 		"rise_hz": RISE_HZ[i],
-		"outline_grow": OUTLINE_GROW[i],
+		"outline_width": OUTLINE_WIDTH[i],
 		"outline_alpha": OUTLINE_ALPHA[i],
 		"gold_rim": is_full_bank and i > 0,
 	}
@@ -258,7 +264,13 @@ func gold_ring_points(near: bool) -> PackedVector2Array:
 	return pts
 
 
-## The outline's tint this frame: the job colour, pulled toward gold at a full bank.
+## The outline's width in screen px this frame, thicker at a full bank.
+func current_outline_width() -> float:
+	var w: float = float(params_for(count, full_bank)["outline_width"])
+	return w + (FULL_BANK_OUTLINE_BONUS if has_layer(LAYER_GOLD_OUTLINE) else 0.0)
+
+
+## The outline's tint this frame: the job colour, gold at a full bank.
 func outline_tint() -> Color:
 	var base: Color = color.lerp(FULL_BANK_RIM, FULL_BANK_OUTLINE_GOLD) if has_layer(LAYER_GOLD_OUTLINE) else color
 	return Color(base.r, base.g, base.b, current_outline_alpha())
@@ -280,8 +292,22 @@ func glyph_at(i: int) -> Dictionary:
 static func _get_outline_shader() -> Shader:
 	if _outline_shader == null:
 		_outline_shader = Shader.new()
-		## Every opaque body pixel becomes the job colour: a flat silhouette, drawn larger and behind the body.
-		_outline_shader.code = "shader_type canvas_item;\nuniform vec4 tint : source_color = vec4(1.0);\nvoid fragment() {\n\tCOLOR = vec4(tint.rgb, texture(TEXTURE, UV).a * tint.a);\n}\n"
+		## Dilates the body's alpha by `radius` texels in 16 directions at two distances, flat job colour,
+		## drawn behind the body — so what shows is a band of even width around any sheet's silhouette.
+		_outline_shader.code = """shader_type canvas_item;
+uniform vec4 tint : source_color = vec4(1.0);
+uniform float radius = 3.0;
+void fragment() {
+	float a = texture(TEXTURE, UV).a;
+	for (int i = 0; i < 16; i++) {
+		float ang = 6.2831853 * float(i) / 16.0;
+		vec2 d = vec2(cos(ang), sin(ang)) * TEXTURE_PIXEL_SIZE * radius;
+		a = max(a, texture(TEXTURE, UV + d).a);
+		a = max(a, texture(TEXTURE, UV + d * 0.5).a);
+	}
+	COLOR = vec4(tint.rgb, a * tint.a);
+}
+"""
 	return _outline_shader
 
 
@@ -345,7 +371,6 @@ func _sync_outline() -> void:
 	if not has_layer(LAYER_OUTLINE) or _body == null or not is_instance_valid(_body) or _body.sprite_frames == null:
 		_outline.visible = false
 		return
-	var p: Dictionary = params_for(count, full_bank)
 	_outline.visible = true
 	_outline.sprite_frames = _body.sprite_frames
 	if _outline.animation != _body.animation:
@@ -355,9 +380,11 @@ func _sync_outline() -> void:
 	_outline.flip_v = _body.flip_v
 	_outline.centered = _body.centered
 	_outline.offset = _body.offset
-	## Counter-scaled against the body, so multiply the body's scale back in. No pulse term.
-	_outline.scale = _body.scale * float(p["outline_grow"])
-	(_outline.material as ShaderMaterial).set_shader_parameter("tint", outline_tint())
+	## Counter-scaled against the body, so multiply the body's scale back in: an exact mirror, no grow.
+	_outline.scale = _body.scale
+	var mat := _outline.material as ShaderMaterial
+	mat.set_shader_parameter("tint", outline_tint())
+	mat.set_shader_parameter("radius", current_outline_width() / maxf(absf(_body.scale.x), 0.001))
 
 
 ## Behind the body: the ground disc, the far half of the gold ring, and the far half of the orbit.
