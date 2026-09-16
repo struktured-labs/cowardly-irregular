@@ -5553,6 +5553,16 @@ func _nudge_macro_volatility(amount: float) -> void:
 
 
 func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	## ⛔ A healing ability that heals OVER TIME delivered nothing. This executor reads `heal_amount` and
+	## nothing else, and `regenerate` (the Cleric's Recreatio, 10 MP) authors none — it authors
+	## `effect: regen` with `regen_per_turn: 40`, and the arm that reads those lives in
+	## _execute_support_ability, which a `healing`-typed ability never reaches. So the cast spent MP,
+	## healed 0, applied no status, and ticked nothing (cowir-autogrind 11638, running cowir-battle's
+	## executor-path axis over its own backlog). Routed to the support path's own arm rather than
+	## copied: one owner for what "regen" means, and the authored 40 is the only number involved.
+	if str(ability.get("effect", "")) != "" and int(ability.get("heal_amount", 0)) <= 0:
+		_execute_support_ability(caster, ability, targets)
+		return
 	var heal_amount = ability.get("heal_amount", 0)
 	var multiplier = GameState.get_constant("healing_multiplier")
 	heal_amount = int(heal_amount * multiplier)

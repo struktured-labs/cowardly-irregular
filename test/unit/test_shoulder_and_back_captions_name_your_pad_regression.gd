@@ -216,3 +216,146 @@ func test_the_probe_can_tell_a_frozen_caption_from_a_derived_one() -> void:
 	assert_eq(seen.size(), 3,
 		"the three families must give three DIFFERENT cancel glyphs — if they collapsed to one, " +
 		"a frozen caption would be indistinguishable from a derived one and this file is moot")
+
+
+## ─────────────────────────────────────────────────────────────────────────────────────────────
+## DERIVED CORPUS (2026-09-16). Everything above this line pins FIVE files named by hand, and that
+## is how TutorialHints carried this exact defect through two sweeps and a lane declaring it clean:
+## the class was guarded, the file was simply not in the list. A sixth surface reds nothing.
+##
+## So the corpus is now the tree. The rule is narrow on purpose — a family pad token in BUTTON
+## POSITION inside a string the player reads — because the loose version returns ~70 lines of
+## prose ("Back Row", "Share the code", "Select an ability") and a guard that cries wolf is one
+## somebody silences.
+
+## Each names a button exactly one family prints on the plastic. "Select" is on none of the three
+## (Xbox Back · PlayStation Share · Switch Minus); "Start" is on none of the current three either
+## (Xbox Menu · PlayStation Options). L/R is the Nintendo shoulder pair — LB/RB, L1/R1 elsewhere.
+const FAMILY_PAD_TOKENS := ["L1", "R1", "L2", "R2", "LB", "RB", "LT", "RT",
+	"L/R", "R/L", "Select", "Start", "Share", "Minus", "Plus"]
+
+## Assignments a player actually reads. A token in a variable name or a dictionary key is not a
+## caption, and neither is one in a comment — the scan strips those.
+const UI_SINKS := [".text =", ".text +=", "draw_string(", "hint_text(", "tooltip_text ="]
+
+## ⛔ DECLARED, NOT SKIPPED. MenuScene renders four "[L/R] Change Character" captions — the frozen
+## Nintendo shoulder pair, on a screen whose own _input cycles the party on both shoulders. They
+## are not fixed here because NOTHING REACHES THEM: MenuScene.tscn is referenced by no file and no
+## uid, and MenuScene.gd is instantiated nowhere in src/ (measured 2026-09-16; three other test
+## files record the same orphan independently). Deriving captions on a dead screen would be a
+## change whose only effect is on a player who cannot get there.
+## The arm below makes the exemption expire: the day anything instantiates it, this reds.
+const DECLARED_ORPHANS := {
+	"res://src/ui/MenuScene.gd": "orphan — MenuScene.tscn referenced by nothing, .gd instantiated nowhere in src/",
+}
+
+
+func _gd_files_under(dir_path: String) -> Array:
+	var out: Array = []
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return out
+	dir.list_dir_begin()
+	var name := dir.get_next()
+	while name != "":
+		var full := dir_path.path_join(name)
+		if dir.current_is_dir():
+			out.append_array(_gd_files_under(full))
+		elif name.ends_with(".gd"):
+			out.append(full)
+		name = dir.get_next()
+	dir.list_dir_end()
+	return out
+
+
+## A token counts only where it names a button: bracketed, followed by a colon, or after an
+## imperative. "Select an ability" is the English verb and must never red.
+func _frozen_tokens_in(text: String) -> Array:
+	var found: Array = []
+	for tok in FAMILY_PAD_TOKENS:
+		if text.find("[%s]" % tok) > -1 or text.find("[%s " % tok) > -1:
+			found.append(tok)
+			continue
+		if text.find("%s:" % tok) > -1 or text.find("%s :" % tok) > -1:
+			found.append(tok)
+			continue
+		for verb in ["Press ", "Hold ", "Tap "]:
+			if text.find(verb + tok) > -1:
+				found.append(tok)
+				break
+	return found
+
+
+func _scan_for_frozen_captions() -> Dictionary:
+	var GdSource = load("res://test/unit/helpers/gd_source.gd")
+	var result := {"offenders": [], "scanned": 0, "orphan_hits": []}
+	for path in _gd_files_under("res://src"):
+		var code: String = GdSource.code_of(path)
+		if code == "":
+			continue
+		result["scanned"] += 1
+		for line in code.split("\n"):
+			var is_sink := false
+			for sink in UI_SINKS:
+				if line.find(sink) > -1:
+					is_sink = true
+					break
+			if not is_sink:
+				continue
+			for tok in _frozen_tokens_in(line):
+				var entry := "%s -> %s" % [path.get_file(), tok]
+				if DECLARED_ORPHANS.has(path):
+					result["orphan_hits"].append(entry)
+				else:
+					result["offenders"].append(entry)
+	return result
+
+
+## THE ARM THE HAND-LIST COULD NOT BE. Every .gd under src/, not five paths.
+func test_no_reachable_caption_freezes_a_family_pad_token() -> void:
+	var scan := _scan_for_frozen_captions()
+	assert_gt(scan["scanned"], 200,
+		"the scan must read the whole src/ tree; a short corpus passes vacuously")
+	assert_eq(scan["offenders"], [],
+		"these captions name a button one pad family prints, on a surface a player reaches: %s"
+			% [scan["offenders"]])
+
+
+## ANTI-VACUITY, both directions: the matcher must catch a button token and must ignore the verb.
+## Without this, an empty offender list is equally consistent with a scan that matches nothing.
+func test_the_matcher_catches_a_button_and_spares_the_verb() -> void:
+	assert_eq(_frozen_tokens_in('hint.text = "[L/R] Change Character"'), ["L/R"],
+		"a bracketed shoulder pair is a button caption and must be caught")
+	# R1, not L1: the colon rule catches the token TOUCHING the colon, and in a pair caption that
+	# is the right-hand one. Catching either is enough — the offender list is per line, so one hit
+	# reds the caption. Pinned as measured rather than as I first assumed it would read.
+	assert_eq(_frozen_tokens_in('footer.text = "L1/R1: Page"'), ["R1"],
+		"a token followed by a colon is a button caption")
+	assert_eq(_frozen_tokens_in('label.text = "Press Select to continue"'), ["Select"],
+		"an imperative names a button — and no current pad family prints Select")
+	assert_eq(_frozen_tokens_in('title.text = "Select an ability"'), [],
+		"the English verb must never red; that is the noise that gets a guard silenced")
+	assert_eq(_frozen_tokens_in('lbl.text = "Start the battle"'), [],
+		"…nor a verb that happens to share a button name")
+
+
+## THE EXEMPTION EXPIRES. MenuScene's four frozen captions are excused because nothing can reach
+## them; if that stops being true the excuse must stop with it, rather than outliving its fact.
+func test_the_declared_orphan_is_still_unreachable() -> void:
+	var scan := _scan_for_frozen_captions()
+	assert_ne(scan["orphan_hits"], [],
+		"MenuScene's frozen captions must still be FOUND — if they were fixed, delete this "
+		+ "declaration rather than leaving a note that no longer describes anything")
+
+	for path in DECLARED_ORPHANS:
+		var referenced: Array = []
+		for candidate in _gd_files_under("res://src"):
+			if candidate == path:
+				continue
+			var code: String = FileAccess.get_file_as_string(candidate)
+			if code.find(path.get_file()) > -1 or code.find(path) > -1:
+				referenced.append(candidate.get_file())
+		assert_eq(referenced, [],
+			"%s is no longer an orphan (%s reference it), so its captions are now reachable and "
+			% [path.get_file(), referenced]
+			+ "must be derived through InputProfileManager before this declaration is removed")

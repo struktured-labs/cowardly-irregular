@@ -109,7 +109,6 @@ const DECLARED_ORPHANS := {
 	"reflect_damage_element:frost_armor": "support; the retaliation itself is unwired and HELD for struktured (lane/frost-armor-bites-back). This key only names the element the retaliation would use, so it cannot be assessed before the retaliation is",
 	"secondary_modifier:subset_drain": "magic; travels with secondary_effect and is read in the same helper. Wiring one without the other is meaningless",
 	"secondary_modifier:toxic_embrace": "physical; see secondary_modifier:subset_drain",
-	"regen_per_turn:regenerate": "healing; cowir-autogrind's finding (parity ledger, DECLARED). regenerate is type=healing, so live dispatches it to _execute_healing_ability, which reads only heal_amount — and regenerate authors none. FIXED on lane/the-grind-regenerates-too + my dcfb2158; this entry retires when those fold",
 }
 
 

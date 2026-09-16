@@ -6630,6 +6630,17 @@
     "_note": "prose for the next reader of this file. Never parsed.",
     "flip_h_reason": "why a sheet's flip_h was set against the frame-size convention. The DECISION is flip_h, which the loader reads; this records the argument.",
     "derived_from": "the village whose _get_cliff_palette() a world atlas was recoloured from. Read by test_a_village_palette_is_not_silently_overridden, not by src/ — it is the evidence that an override is a no-op in hue.",
-    "derived_palette": "the exact colours used at generation time. Its job is to EXPIRE: if the village's colours change, the guard reds and the atlas is stale."
+    "derived_palette": "the exact colours used at generation time. Its job is to EXPIRE: if the village's colours change, the guard reds and the atlas is stale.",
+    "tier": "the artist-first pipeline tier (T0 procedural / T1 AI / T2 artist draft / T3 artist final) from CLAUDE.md. Authored on every entry; read by tools/audit_sprite_tiers.py and by the artist deciding what an AI regen may touch — never by src/. The \"tier\" hits in src/ are autogrind's grind tier and ShopScene's spell tier, different data under the same name.",
+    "source": "how the sheet was produced — model, prompt or ingest run. Provenance for the artist ledger and for a human judging whether a sheet may be regenerated. The \"source\" hits in src/ are RuleComposer's and AbilityVFX's own provenance strings, not this field."
+  },
+  "_section_provenance": {
+    "_why": "Whole SECTIONS with no runtime reader. A field-level census cannot see these: every key in an unconsumed section is individually dead, and declaring them one by one would hide the real fact, which is that nothing reads the section at all.",
+    "weapon_sheets": "4 weapon sheets tagged T2_artist_draft (10 PNGs, 132 KB, all present and imported) for a compositing feature that does not exist: no file in src/ names weapon_sheets or assets/sprites/weapons. The note on each entry says \"Compose over body animations\" — the art is ready and the code was never written. DECLARED rather than excluded from export, because CLAUDE.md's artist-first rule makes what ships a visible decision and quietly dropping artist work from the build is the opposite of it. Wire it or retire it is struktured's call; 132 KB is not a payload argument."
+  },
+  "_field_indirect_readers": {
+    "_why": "Fields the census cannot see as READ because the key is supplied by a VARIABLE rather than a literal, so no get(\"key\") appears anywhere. Recorded so a zero here is never mistaken for an unwired promise — the opposite error to _field_provenance's.",
+    "cliff": "READ. TileSheetManifest.region(key, section, name) takes the section as a PARAMETER; EnvironmentTileSets passes \"cliff\" at its _art_or call sites for the edge and face tiles. The literal lives in the caller, which is not a file that parses the manifest.",
+    "overlay": "READ, same path: EnvironmentTileSets passes \"overlay\" to TileSheetManifest.region(key, section, name) for the fringe tiles, so the literal lives in the caller rather than in a file that parses the manifest."
   }
 }
