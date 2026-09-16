@@ -786,6 +786,14 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## the grind must compensate the same way or phantom_byte lands at half strength here.
 					if bool(ability.get("ignores_defense", false)):
 						base_dmg *= 2
+					## Rolled BEFORE the elemental multiplier, mirroring BattleManager:5013-5015 — live
+					## applies it to `damage` ahead of the terrain/element path, and the order changes the
+					## spread once a weakness or resistance is in play. type_error authors 2.0, so its roll
+					## spans [0, 2x] where every other spell sits near 1.0; forgotten_variable (POOLED)
+					## casts it, and a grind met a predictable attacker where the real game met a swingy one.
+					var variance: float = float(ability.get("damage_variance", 0.0))
+					if variance > 0.0:
+						base_dmg = int(base_dmg * randf_range(0.0, variance))
 					var elem_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
 					var actual = int(base_dmg * elem_mod)
 					actual = max(1, actual)
