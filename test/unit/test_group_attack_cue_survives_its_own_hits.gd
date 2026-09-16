@@ -238,14 +238,24 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 		return
 	## Methods are NOT properties: get() returns null for a method name, so the loop below cannot
 	## see a renamed METHOD. has_method ANSWERS instead of raising, same reason.
+	## ⚠️ BOTH LISTS ARE A SNAPSHOT, derived once from this file's own sm. reaches and frozen — NOT a
+	## live derivation. Add a new sm. reach to this file and it is NOT covered until you add it here.
+	## A runtime derivation would self-maintain but would read this arm's own body as corpus
+	## (cowir-sprites' tautology class), needing cowir-ai's bare-Object exclusion to stay honest.
+	## Convert it the next time this file gains a reach; until then the list is correct by being fresh.
+	## ⚠️ IF YOU REGENERATE THIS LIST, STRIP COMMENTS FIRST (test/unit/helpers/gd_source.gd). The
+	## generator that produced it read RAW source, so a trailing `# was sm.old_name()` — precisely
+	## what a rename commit writes — becomes a listed member that never existed, and the floor then
+	## REDS ON CORRECT CODE. cowir-music demonstrated that false red in their own floors 2026-09-16.
+	## This list is ghost-free only because no such comment existed when it was generated.
 	for method_name in ["play_attack_hit", "play_battle", "play_flourish"]:
 		assert_true(sm.has_method(method_name),
 			"SoundManager has no method %s — this file CALLS it, and whether that shows as Risky or as a silent pass is decided by arm ORDER, not by care" % method_name)
 	## ⚠️ get() CANNOT DISTINGUISH ABSENT FROM LEGITIMATELY NULL (@cowir-sprites): it returns null
 	## for both. Every member below is a player, a Dictionary or a String — none is ever null once
 	## _ready has run — so the check is sound HERE. If you add a nullable member to this list
-	## (_crossfade_tween, _duck_tween, _kill_duck_tween, _danger_tween, _corruption_tween are the
-	## ones that exist), switch to get_property_list(), which answers about existence rather than value.
+	## (_crossfade_tween and the other _*_tween members are EXAMPLES, not an exhaustive list — check
+	## the declaration), switch to get_property_list(), which answers about existence rather than value.
 	for member_name in ["_battle_player", "_flourish_player", "_sfx_cooldowns", "_sfx_manifest"]:
 		## assert_true on an explicit `!= null`: assert_ne deep-compares, and three of these members
 		## are Dictionaries, which it refuses with "Only Arrays and Dictionaries are supported".

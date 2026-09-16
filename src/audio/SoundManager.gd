@@ -406,8 +406,10 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["steal"] = "ability_physical"
 	_ability_sounds["mug"] = "ability_physical"
 	# Meta-job signature cues (cowir-sfx 2026-07-11) — reality edits must not sound like sword hits.
-	# ⚠️ MEASURED 2026-09-16: 4 of 24 meta-typed abilities are mapped here; the other 20 fall through
-	# to ability_physical, a sword unsheathing. rewind · time_stop · quicksave · undo_death ·
+	# ⚠️ MOST meta-typed abilities are NOT mapped here and fall through
+	# to ability_physical, a sword unsheathing. NO COUNT HERE ON PURPOSE — test_an_ability_cue_key_names_a_real_ability
+	# DERIVES and prints the current figure; a number copied up here is how the web-exclusion header went stale for
+	# eight days (@cowir-music). rewind · time_stop · quicksave · undo_death ·
 	# temporal_shield · warp_to_boss · sequence_break and the rest are cast by the player ON THEMSELVES,
 	# so they need no enemy and no autobattle rule to be heard. Open with struktured: author cues, or map
 	# onto the three that exist (ability_permakill · ability_mind_swap · ability_dark).
