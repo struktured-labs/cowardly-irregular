@@ -643,6 +643,7 @@ static func _bust_from_job_sheet(job_id: String) -> Texture2D:
 		return null
 	var atlas := AtlasTexture.new()
 	atlas.atlas = sheet
-	atlas.region = Rect2(0, 0, frame, int(float(frame) * 0.55))
+	# Frame-relative crops framed empty space: the Fighter's head starts 47% down this box.
+	atlas.region = Rect2(HybridSpriteLoader.bust_region(sheet_path, frame, 0.55))
 	_bust_cache[cache_key] = atlas
 	return atlas
