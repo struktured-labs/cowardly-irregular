@@ -38,6 +38,13 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## ⛔ RESTORE GLOBAL RANDOMNESS. `seed()` in before_each sets the PROCESS-WIDE rng, and GUT runs
+	## every file in one process — so without this, every test that runs AFTER this file inherits a
+	## deterministic stream. Measured: a probe drawing one randi() reported three different values
+	## when run alone and THE SAME VALUE three times when run after this file.
+	## The leak is order-dependent, which is the worst shape: a later probabilistic arm becomes
+	## deterministic, and whether it draws a lucky number depends on which files preceded it.
+	randomize()
 	GameState.party_gold = _saved_gold
 	AutobattleSystem._test_disable_persistence = _saved_persist
 	BattleManager.player_party.assign(_alive(_saved_party))
