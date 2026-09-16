@@ -161,17 +161,33 @@ else:
     # projection 1.82 MiB optimistic. Same class as reading export_presets.cfg and reporting
     # it as the shipped build, which cost this lane two retractions the same day.
     #
-    # The reference pck was built at make_web_stage.sh's default bitrate (struktured's
-    # ruling). Derive from THAT tier, and refuse rather than guess if it is not on disk.
+    # ⛔ WAS: shipped_br parsed out of make_web_stage.sh's `BITRATE="${1:-48}"` — THE CALLEE'S
+    # DEFAULT, which is true about that function and false about every real invocation, because
+    # deploy_web.sh ALWAYS passes an argument. struktured's 40k ruling shipped in .357 and this
+    # kept reading 48, so the projection below looked for a 48k tier, found `0 of 161` files and
+    # SKIPPED — in .368 and .369 and every publish since the ruling. The refusal reads as care
+    # ("rather than inventing a constant") while the reason for it IS a stale constant, and its
+    # remediation line said `Run: tools/make_web_audio.sh 48` — the wrong bitrate, to the one
+    # person in a position to notice. It also propagated: a lane read 48 out of that comment
+    # tonight and nearly shipped it into a test header as the value players receive.
+    #
+    # The shipped bitrate has ONE home: deploy_web.sh's WEB_AUDIO_KBPS default, which is what
+    # the caller passes down. Read THAT, and refuse rather than fall back to any constant — a
+    # silent fallback is how a wrong number survives a rewrite of the thing that produced it.
     allm = set(glob.glob(d + "*.ogg"))
-    shipped_br = 48
+    shipped_br = None
     try:
-        with open("tools/make_web_stage.sh") as fh:
-            m = re.search(r'BITRATE="\$\{1:-(\d+)\}"', fh.read())
+        with open("tools/deploy_web.sh") as fh:
+            m = re.search(r'WEB_AUDIO_KBPS="\$\{WEB_AUDIO_KBPS:-(\d+)\}"', fh.read())
             if m:
                 shipped_br = int(m.group(1))
     except OSError:
         pass
+    if shipped_br is None:
+        print("[web-audio] could not read the shipped bitrate from tools/deploy_web.sh —")
+        print("[web-audio] SKIPPING the projection rather than assuming one. If that default")
+        print("[web-audio] moved, this parse moves with it; it must never fall back to a constant.")
+        raise SystemExit(0)
     shipped_tier = glob.glob("tmp/web_audio/music_%dk/*.ogg" % shipped_br)
     if len(shipped_tier) != len(allm):
         print(f"[web-audio] the reference pck was built at {shipped_br}k and that tier is not on")
