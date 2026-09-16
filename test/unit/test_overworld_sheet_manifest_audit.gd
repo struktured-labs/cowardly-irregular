@@ -53,9 +53,25 @@ const FLAT_LAYOUT_SECTIONS := {
 }
 
 
-## ⚠️ THE FLAT SECTION IS AUDITED BUT NOT CONSUMED. `overworld_monster_sheets` has ZERO readers in
-## src/ -- measured 2026-09-11, its only references outside the manifest are in THIS file. Registering
-## a monster sheet there wires NOTHING. The game resolves overworld monster art by COMPOSED PATH:
+## ⚠️ THE FLAT SECTION IS AUDITED AND ONLY HALF CONSUMED, and this paragraph said something
+## stronger until 2026-09-16. It read: "has ZERO readers in src/ ... registering a monster sheet
+## there wires NOTHING." That was measured on 2026-09-11 and TRUE THEN; it is false now, because
+## HybridSpriteLoader.overworld_monster_geometry() gives the section its first reader and
+## RoamingMonster takes frame size, column count and the walk_* ROW MAPPING from it.
+##
+## ⛔ THE HALF THAT IS STILL TRUE IS THE HALF THAT MATTERS HERE: the PATH is still composed and
+## never read from the manifest, so registering an entry still wires no ART. Geometry yes, reach no.
+## The arm below is unaffected and everything after this paragraph still holds.
+##
+## 🔑 A SECOND DECLARER OF ONE FACT, AND NEITHER NAMED THE OTHER (cowir-music, 2026-09-16: "a
+## self-retiring pin protects the fact; it does not tell you how many pins the fact has"). The other
+## declaration lives in data/sprite_manifest.json's `_section_provenance`, and when the section
+## gained a reader my own census retired that entry automatically — while THIS one, being prose in
+## another file, went stale silently. A symbol-built radius cannot find it: a declaration about a
+## manifest section shares no code symbol with the guard that declares it differently
+## (cowir-cutscenes). So the claim is pinned by an arm below rather than left as a sentence.
+##
+## The game resolves overworld monster art by COMPOSED PATH:
 ##   RoamingMonster:147 / MasteriteEncounter:113   "res://assets/sprites/monsters/overworld/%s.png" % monster_id
 ## So the audit above proves provenance, NOT reachability, and a reader is entitled to assume it
 ## proves both. This arm checks the property that actually decides whether a player sees the art:
@@ -355,3 +371,34 @@ func test_registered_paths_match_naming_convention() -> void:
 			var expected = "%s/%s/overworld.png" % [SHEET_ROOTS[section], name]
 			assert_eq(str(entries[name].get("path", "")), expected,
 				"%s entry '%s' path must follow the <root>/<name>/overworld.png convention" % [section, name])
+
+
+## ⛔ THE PARAGRAPH ABOVE IS PINNED, BECAUSE ITS PREDECESSOR WENT STALE FOR FIVE DAYS AND NOTHING
+## NOTICED. It claimed `overworld_monster_sheets` had zero readers; a commit on 2026-09-16 gave it
+## one, and the sentence kept telling the next reader the opposite. Prose about a fact ages; an
+## assert about the same fact cannot.
+##
+## Both halves are pinned, and they move in opposite directions on purpose:
+##   the section IS read for GEOMETRY   -> reds if that reader disappears and the note is now wrong
+##   the PATH is still COMPOSED         -> reds if the manifest becomes the route, which would make
+##                                         "registering wires no art" false too
+func test_the_note_about_this_section_is_still_true() -> void:
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+	var loader: String = GdSource.code_of("res://src/battle/sprites/HybridSpriteLoader.gd")
+	assert_gt(loader.length(), 1000, "PRECONDITION: HybridSpriteLoader must be readable and stripped")
+	assert_true(loader.contains("\"overworld_monster_sheets\""),
+		("the note above says this section HAS a reader — it no longer does, so the note is wrong in "
+		+ "the other direction now. Restore the reader or rewrite the paragraph."))
+
+	var roamer: String = GdSource.code_of("res://src/exploration/RoamingMonster.gd")
+	assert_true(roamer.contains("overworld_monster_geometry("),
+		"the note names RoamingMonster as the consumer of that geometry and it no longer asks for it")
+
+	# The other half: the PATH must still be composed, or "registering an entry wires no art" is false.
+	assert_true(roamer.contains("\"res://assets/sprites/monsters/overworld/%s.png\""),
+		("the note says the path is COMPOSED rather than read from the manifest. If the manifest has "
+		+ "become the route, registering an entry now DOES wire art and the paragraph must say so."))
+	assert_false(roamer.contains("overworld_monster_sheets"),
+		("RoamingMonster now names the section directly — it takes geometry through the loader's owner "
+		+ "precisely so there is one reader, and a second one makes the note's 'geometry yes, reach no' "
+		+ "split harder to state than it is worth."))
