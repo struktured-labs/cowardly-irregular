@@ -1021,6 +1021,12 @@ func _clear_timer_hud() -> void:
 		_timer_label.queue_free()
 	_timer_label = null
 	_timer_remaining = 0.0
+	# The flag start_timer wrote is SAVED state — game_constants round-trips through the save file —
+	# so the teardown has to clear it, not just the HUD. A skipped or aborted scene reached here via
+	# _end_cutscene and left `timer_active_<flag>` true with nothing but a future stop_timer step able
+	# to put it back, and the W4 orrery is the only scene that has one.
+	if _timer_flag != "" and GameState:
+		GameState.game_constants["timer_active_" + _timer_flag] = false
 	_timer_flag = ""
 
 
