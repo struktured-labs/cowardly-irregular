@@ -379,25 +379,17 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				"submenu": item_items
 			})
 
-	# Group attacks - available when >= 2 alive party members and enemies exist
-	var alive_party: Array[Combatant] = []
-	for m in BattleManager.player_party:
-		if m.is_alive:
-			alive_party.append(m)
-	if alive_party.size() >= 2 and alive_enemies.size() > 0:
-		var can_all_out = true
-		var can_limit = true
-		var can_combo_magic = true
-		var combo_elements: Array[String] = []
-		for m in alive_party:
-			var effective_ap = m.current_ap + (1 if m == combatant else 0)
-			if effective_ap < 1:
-				can_all_out = false
-			if effective_ap < 2:
-				can_combo_magic = false
-			if effective_ap < 4:
-				can_limit = false
-		combo_elements = combo_elements_for(alive_party)
+	# Group attacks — offered when the engine would pool at least two PCs and enemies are alive.
+	## ⛔ EVERY AP QUESTION HERE GOES TO BattleManager, which is what actually refuses. This block used to
+	## answer them itself, over all alive members and with a phantom +1 AP for the actor — whose natural
+	## gain is already in current_ap by the time this menu opens. Measured in a live battle: actor at 3 AP
+	## with the party at 4 showed Limit Break ENABLED and player_group_attack REFUSED it.
+	var participants: Array[Combatant] = BattleManager.group_participants()
+	if participants.size() >= 2 and alive_enemies.size() > 0:
+		var can_all_out = BattleManager.group_ap_shortfall("all_out_attack") == null
+		var can_limit = BattleManager.group_ap_shortfall("limit_break") == null
+		var can_combo_magic = BattleManager.group_ap_shortfall("combo_magic") == null
+		var combo_elements: Array[String] = combo_elements_for(participants)
 		# Need >= 2 distinct elements for combo magic
 		if combo_elements.size() < 2:
 			can_combo_magic = false
@@ -434,14 +426,9 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"disabled": not can_limit
 		})
 		# Formation Special — unlocked by specific party job compositions
-		var formation = _detect_formation(alive_party)
+		var formation = _detect_formation(participants)
 		if not formation.is_empty():
-			var can_formation = true
-			for m in alive_party:
-				var effective_ap = m.current_ap + (1 if m == combatant else 0)
-				if effective_ap < formation.get("ap_cost", 2):
-					can_formation = false
-					break
+			var can_formation: bool = BattleManager.group_ap_shortfall("formation", int(formation.get("ap_cost", 2))) == null
 			group_items.append({
 				"id": "group_formation",
 				"label": formation["name"],
