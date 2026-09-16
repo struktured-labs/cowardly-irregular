@@ -19,6 +19,10 @@ extends GutTest
 ## Skip-resilient: if the player held skip, sets the first option's
 ## flag deterministically so the state machine doesn't wait on input
 ## that won't arrive.
+##
+## 2026-09-16: that literal moved from options[0] to presented[0] — an option with no
+## text is filtered out before the menu, so options[0] could be an answer the player was
+## never shown. The pin below now requires the new form AND forbids the old one.
 
 const CUTSCENE_DIRECTOR_PATH := "res://src/cutscene/CutsceneDirector.gd"
 
@@ -78,8 +82,10 @@ func test_skip_path_sets_first_option() -> void:
 	var skip_idx: int = body.find("if _skipping:")
 	assert_gt(skip_idx, -1)
 	var skip_body: String = body.substr(skip_idx, 200)
-	assert_true(skip_body.contains("_set_choice_flag(options[0])"),
-		"skip path must set the first option's flag and return")
+	assert_true(skip_body.contains("_set_choice_flag(presented[0])"),
+		"skip path must answer with the first PRESENTED option and return")
+	assert_false(skip_body.contains("_set_choice_flag(options[0])"),
+		"and must not index the unfiltered array — the two forms cannot both be true")
 
 
 # ── Behavioral: _set_choice_flag writes to game_constants ───────────
