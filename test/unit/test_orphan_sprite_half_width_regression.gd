@@ -29,13 +29,16 @@ func test_orphan_sprite_half_width_deleted() -> void:
 		"the orphan `_sprite_half_width` helper must stay deleted — _sprite_visible_half_width (pinned by test_melee_contact_gap_regression) is the canonical width read")
 
 
-func test_surviving_width_helper_still_there() -> void:
-	# Sanity: my cleanup didn't accidentally take out the wrong one.
-	# _sprite_visible_half_width remains; its pins in test_melee_contact_
-	# gap_regression continue to guard the actual contact-gap math.
+func test_exactly_one_reach_helper_survives() -> void:
+	# Sanity: the cleanup didn't take out the wrong one. The canonical helper is now
+	# `sprite_figure_lead` — `_sprite_visible_half_width` measured the FRAME (padding), which stopped every
+	# attacker 209-221 px short of contact (test_the_lunge_stops_at_the_body_not_the_frame, 2026-09-16).
+	# Both older names must stay gone: two similarly-named helpers in one file is what this file exists for.
 	var src: String = FileAccess.get_file_as_string(BS_PATH)
-	assert_string_contains(src, "func _sprite_visible_half_width(sprite: Node2D) -> float:",
-		"the canonical width helper _sprite_visible_half_width must remain — it's what _melee_contact_gap actually calls")
+	assert_string_contains(src, "static func sprite_figure_lead(sprite: Node2D, toward: float) -> float:",
+		"the canonical reach helper must remain — it's what _melee_contact_gap actually calls")
+	assert_false(src.find("func _sprite_visible_half_width(") > -1,
+		"and the frame-width helper it replaced must not linger beside it")
 
 
 func test_apply_hitstop_still_present_and_unchanged() -> void:
@@ -54,4 +57,4 @@ func test_no_lingering_calls_to_deleted_helper() -> void:
 	# needs to also add the definition (or use the canonical helper).
 	var src: String = FileAccess.get_file_as_string(BS_PATH)
 	assert_false(src.find("_sprite_half_width(") > -1,
-		"no CALLS to _sprite_half_width may remain — if you need the width, use _sprite_visible_half_width")
+		"no CALLS to _sprite_half_width may remain — if you need a sprite's reach, use sprite_figure_lead")

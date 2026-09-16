@@ -3357,17 +3357,11 @@ static func party_sprite_scale(frames: SpriteFrames, job_id: String) -> float:
 ## anchor consumes it too; a third copy of "where is the figure in the frame" is what we are avoiding.
 ## 0.0 when the frame is unreadable or already lands on the line.
 static func party_feet_correction(sprite: AnimatedSprite2D) -> float:
-	if sprite == null or sprite.sprite_frames == null:
+	## Idle frame 0: a slot placement must not shift when the sprite plays an attack.
+	var figure: Rect2 = AdvanceAuraClass.figure_rect_in_sprite(sprite, &"idle")
+	if figure.size.y <= 0.0:
 		return 0.0
-	var anim: StringName = &"idle" if sprite.sprite_frames.has_animation(&"idle") else sprite.animation
-	if not sprite.sprite_frames.has_animation(anim) or sprite.sprite_frames.get_frame_count(anim) == 0:
-		return 0.0
-	var tex: Texture2D = sprite.sprite_frames.get_frame_texture(anim, 0)
-	if tex == null:
-		return 0.0
-	var figure: Rect2 = AdvanceAuraClass.figure_rect_of(tex)
-	var feet_below_origin: float = (figure.end.y - tex.get_size().y * 0.5) * absf(sprite.scale.y)
-	return PARTY_FEET_BELOW_SLOT - feet_below_origin
+	return PARTY_FEET_BELOW_SLOT - figure.end.y
 
 
 func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
@@ -4342,29 +4336,51 @@ func _stable_sprite_anchor(sprite: Node2D) -> Vector2:
 	return sprite.global_position
 
 
-## Fable-pass melee contact-gap (msg 2634): the lunge should stop where the attacker's weapon frame reaches the target's visible edge — not at a fixed 40px hardcode. Sums half-widths of both sprites' idle frames (scaled) plus a small mercy margin so the attack animation lands at the boundary, not clipped inside a wide monster or short of a narrow one. Falls back to the pre-fix 40 constant when frame textures are unreadable so procedural sprites without idle animations don't regress.
+## Melee contact-gap: the lunge stops where the attacker's FIGURE reaches the target's FIGURE, plus a small
+## mercy margin. Falls back to the pre-fix 40 constant when a frame is unreadable, so procedural sprites
+## without idle frames don't regress.
+##
+## ⛔ It summed FRAME half-widths, which is padding, not the character — and its own docstring said "visible
+## edge". Measured live against the shipped goblin (256 frame at 2.5x: 160 px half-width, figure edge 32 px
+## from its origin) every attacker halted 209-221 px short of contact; the Fighter covered 179 px of the
+## 392 it was told to (cowir-adhoc 11472). The 2026-07 fix cured the opposite error, stopping 88 px INSIDE
+## the goblin, by swapping a 40 px constant for frame halves — the right direction, off by the padding.
 const MELEE_CONTACT_MERCY_PX: float = 12.0
 const MELEE_CONTACT_FALLBACK_PX: float = 40.0
 
-func _melee_contact_gap(attacker_sprite: Node2D, target_sprite: Node2D) -> float:
-	var attacker_half: float = _sprite_visible_half_width(attacker_sprite)
-	var target_half: float = _sprite_visible_half_width(target_sprite)
-	if attacker_half <= 0.0 or target_half <= 0.0:
+static func _melee_contact_gap(attacker_sprite: Node2D, target_sprite: Node2D) -> float:
+	## Each sprite is measured on the side that FACES the other: a figure sits off-centre in its frame
+	## (the Fighter's sword reaches left), so one symmetric half-width is wrong on one of the two edges.
+	var toward: float = signf(_sprite_home(target_sprite).x - _sprite_home(attacker_sprite).x)
+	if toward == 0.0:
+		toward = 1.0
+	var attacker_lead: float = sprite_figure_lead(attacker_sprite, toward)
+	var target_lead: float = sprite_figure_lead(target_sprite, -toward)
+	if attacker_lead <= 0.0 or target_lead <= 0.0:
 		return MELEE_CONTACT_FALLBACK_PX
-	return attacker_half + target_half + MELEE_CONTACT_MERCY_PX
+	return attacker_lead + target_lead + MELEE_CONTACT_MERCY_PX
 
 
-## Idle-frame width × current sprite scale. AnimatedSprite2D doesn't expose get_rect() on Node2D, so we read the frame texture directly (same pattern as _create_battle_sprites at BS:929-935). Returns 0.0 when the frame can't be measured — caller then falls back to the pre-fix constant.
-func _sprite_visible_half_width(sprite: Node2D) -> float:
+## Where a sprite comes to rest — the same home_position the lunge itself aims at, so the facing this gap
+## is computed for is the facing the tween will travel.
+static func _sprite_home(sprite: Node2D) -> Vector2:
 	if not is_instance_valid(sprite):
+		return Vector2.ZERO
+	return sprite.get_meta("home_position", sprite.position)
+
+
+## Distance from a sprite's origin to its FIGURE's edge on the given side (+1 right, -1 left), in screen px.
+## 0.0 when the frame can't be measured — the caller then falls back to the pre-fix constant. The opaque
+## bounds come from AdvanceAura, battle's owner for a live frame; there is no second scan.
+static func sprite_figure_lead(sprite: Node2D, toward: float) -> float:
+	if not is_instance_valid(sprite) or not (sprite is AnimatedSprite2D):
 		return 0.0
-	if sprite is AnimatedSprite2D:
-		var a: AnimatedSprite2D = sprite
-		if a.sprite_frames and a.sprite_frames.has_animation(&"idle") and a.sprite_frames.get_frame_count(&"idle") > 0:
-			var tex: Texture2D = a.sprite_frames.get_frame_texture(&"idle", 0)
-			if tex:
-				return tex.get_size().x * 0.5 * absf(a.scale.x)
-	return 0.0
+	## Idle frame 0, the resting silhouette — an attack frame is wider (weapon swing) and the lunge's
+	## destination must not shift mid-tween.
+	var figure: Rect2 = AdvanceAuraClass.figure_rect_in_sprite(sprite as AnimatedSprite2D, &"idle")
+	if figure.size.x <= 0.0:
+		return 0.0
+	return absf(figure.end.x if toward > 0.0 else figure.position.x)
 
 
 func _get_combatant_animator(combatant: Combatant) -> BattleAnimatorClass:

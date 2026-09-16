@@ -339,26 +339,35 @@ func _breathe(p: Dictionary) -> float:
 	return (1.0 + PULSE_DEPTH * sin(TAU * float(p["pulse_hz"]) * _t)) * (1.0 + KICK_DEPTH * _kick)
 
 
-## Maps the body's current frame bounds into this node's space: sprite-local, times the body's scale.
-func _measure_figure() -> void:
-	if _body == null or not is_instance_valid(_body) or _body.sprite_frames == null:
-		_figure = Rect2()
-		return
-	var anim: StringName = _body.animation
-	if not _body.sprite_frames.has_animation(anim) or _body.sprite_frames.get_frame_count(anim) == 0:
-		_figure = Rect2()
-		return
-	var tex: Texture2D = _body.sprite_frames.get_frame_texture(anim, 0)
+## The figure's bounds around a sprite's OWN ORIGIN, in screen px at its current scale — flip, offset and
+## centering applied. The one place that mapping lives: the aura draws from it, the party's feet are placed
+## from it (BattleScene.party_feet_correction), the melee lunge stops by it, and the speech bubble lifts by
+## it. Empty when the frame cannot be read, so every caller can tell "unmeasurable" from "measured zero".
+## `anim` empty means "whatever this sprite is playing" (the aura's outline mirrors the live frame);
+## a caller that must not move when the animation changes — a lunge's stop distance, a slot placement —
+## asks for &"idle" explicitly.
+static func figure_rect_in_sprite(sprite: AnimatedSprite2D, want: StringName = &"") -> Rect2:
+	if sprite == null or not is_instance_valid(sprite) or sprite.sprite_frames == null:
+		return Rect2()
+	var anim: StringName = want if want != &"" else sprite.animation
+	if not sprite.sprite_frames.has_animation(anim) or sprite.sprite_frames.get_frame_count(anim) == 0:
+		anim = &"idle"
+	if not sprite.sprite_frames.has_animation(anim) or sprite.sprite_frames.get_frame_count(anim) == 0:
+		return Rect2()
+	var tex: Texture2D = sprite.sprite_frames.get_frame_texture(anim, 0)
 	if tex == null:
-		_figure = Rect2()
-		return
+		return Rect2()
 	var size: Vector2 = tex.get_size()
 	var fr: Rect2 = figure_rect_of(tex)
-	var origin: Vector2 = _body.offset - (size * 0.5 if _body.centered else Vector2.ZERO)
-	var x0: float = origin.x + (size.x - fr.end.x if _body.flip_h else fr.position.x)
-	var y0: float = origin.y + (size.y - fr.end.y if _body.flip_v else fr.position.y)
-	var s: Vector2 = _body.scale.abs()
-	_figure = Rect2(Vector2(x0, y0) * s, fr.size * s)
+	var origin: Vector2 = sprite.offset - (size * 0.5 if sprite.centered else Vector2.ZERO)
+	var x0: float = origin.x + (size.x - fr.end.x if sprite.flip_h else fr.position.x)
+	var y0: float = origin.y + (size.y - fr.end.y if sprite.flip_v else fr.position.y)
+	var s: Vector2 = sprite.scale.abs()
+	return Rect2(Vector2(x0, y0) * s, fr.size * s)
+
+
+func _measure_figure() -> void:
+	_figure = figure_rect_in_sprite(_body)
 
 
 func _sync_outline() -> void:
