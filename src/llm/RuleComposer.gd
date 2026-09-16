@@ -139,6 +139,12 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# Same shape as _drop_null_targets above: drop the offending rule, keep the rest,
 	# and TELL the player. Never empties the set — a zero-rule composition is not a
 	# valid one, it is the save-wiping one, so the caller's refusal path still runs.
+	# Before the rule-level drop: a rule whose only fault is a restated target is
+	# repairable, and dropping it loses the behaviour the player asked for.
+	if domain == DOMAIN_AUTOBATTLE:
+		for note in _drop_target_shaped_conditions(v["rules"], domain_system):
+			repair_notes.append(note)
+
 	if domain == DOMAIN_AUTOBATTLE and character_id != "":
 		for note in _drop_unusable_rules(v["rules"], character_id, domain_system):
 			repair_notes.append(note)
@@ -477,6 +483,61 @@ func _is_catch_all(rule: Dictionary) -> bool:
 		if not (c is Dictionary) or str((c as Dictionary).get("type", "")) != "always":
 			return false
 	return true
+
+
+## A TARGET name used as a CONDITION type, when the rule's own action already aims
+## there — {"type":"lowest_hp_enemy"} beside {"target":"lowest_hp_enemy"}.
+##
+## The condition carries no intent the action does not already carry, but it is not a
+## condition type, so `_drop_unusable_rules` discarded the WHOLE rule — and in the
+## measured case that rule was the player's actual request. Live llama3, 12 real
+## fighter compositions through the shipped chain: 2 lost the attack rule this way and
+## reached the player as a one-rule script.
+##
+## Deliberately narrow, because a condition is a gate and dropping one makes a rule
+## fire MORE often:
+##   • the type must be a live TARGET_TYPES key, read from the system, never a copy;
+##   • an action in that same rule must already name that exact target, which is the
+##     evidence the condition is a restatement rather than a lost intent;
+##   • a non-`always` condition must survive, so a gated rule can never become a
+##     catch-all. If nothing would survive, the rule is left alone to be dropped.
+func _drop_target_shaped_conditions(rules: Array, domain_system) -> Array[String]:
+	var notes: Array[String] = []
+	if domain_system == null or not ("TARGET_TYPES" in domain_system):
+		return notes
+	var targets: Dictionary = domain_system.TARGET_TYPES
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		var conditions: Array = rule.get("conditions", [])
+		var aimed: Dictionary = {}
+		for a in rule.get("actions", []):
+			if typeof(a) == TYPE_DICTIONARY and a.has("target"):
+				aimed[str(a["target"])] = true
+		var keep: Array = []
+		var removed: Array[String] = []
+		for c in conditions:
+			if typeof(c) != TYPE_DICTIONARY:
+				keep.append(c)
+				continue
+			var ctype: String = str(c.get("type", ""))
+			if targets.has(ctype) and aimed.has(ctype):
+				removed.append(ctype)
+			else:
+				keep.append(c)
+		if removed.is_empty():
+			continue
+		var substantive: bool = false
+		for c in keep:
+			if typeof(c) == TYPE_DICTIONARY and str((c as Dictionary).get("type", "")) != "always":
+				substantive = true
+				break
+		if not substantive:
+			continue
+		rule["conditions"] = keep
+		for t in removed:
+			notes.append("Dropped '%s' from a rule's conditions — it is a target, and the rule already aims there." % t)
+	return notes
 
 
 func _drop_null_targets(rules: Array) -> int:
