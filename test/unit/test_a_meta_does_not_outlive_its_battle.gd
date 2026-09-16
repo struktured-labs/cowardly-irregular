@@ -43,9 +43,12 @@ const DECLARED_PERSISTENT := {}
 ## arm runs against any version of the subject — including one where the const is gone, which is
 ## precisely the case they exist to report.
 ##
-## ⚠️ And this paragraph deliberately does NOT spell the autoload-qualified name: an arm below
-## asserts that no direct reference survives, and it reads raw text. Same trap as the
-## corpse-guard comment that tripped the status-icon sweep this morning.
+## ⚠️ CORRECTION TO MY OWN NOTE, because I published the wrong cause twice. This paragraph avoids
+## spelling the autoload-qualified name, but NOT because the recurrence arm would trip on it — that
+## arm reads `GdSourceHelper.code_of`, which strips comments, so prose cannot reach it. What tripped
+## was the raw-text assertion in my EDIT script while writing this repair. The arm is comment-safe;
+## my authoring harness was not. Kept the wording anyway: it costs nothing and the next reader has
+## one less thing to verify.
 func _declared_metas() -> Array:
 	var code: String = GdSourceHelper.code_of(BM_PATH)
 	var at: int = code.find("const PER_BATTLE_METAS")
