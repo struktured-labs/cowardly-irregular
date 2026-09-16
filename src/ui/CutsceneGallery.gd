@@ -218,7 +218,10 @@ func _build_ui() -> void:
 	_item_scroll.add_child(_item_container)
 
 	_footer = Label.new()
-	_footer.text = "←/→: World   ↑/↓ / Wheel: Select   A / Enter / Click: Replay   B / Esc / RClick: Close"
+	## Two frozen Nintendo letters: Replay sits on the EAST face (Xbox Ⓑ, PS ○) and Close on the
+	## SOUTH (Xbox Ⓐ, PS ✕), so both were inverted on an Xbox pad. Derived (2026-09-16).
+	_footer.text = "←/→: World   ↑/↓ / Wheel: Select   %s / Enter / Click: Replay   %s / Esc / RClick: Close" % [
+		InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
 	_footer.position = Vector2(24, viewport.y - 32)
 	_footer.size = Vector2(viewport.x - 48, 20)
 	_footer.add_theme_font_size_override("font_size", 13)

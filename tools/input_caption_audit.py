@@ -69,7 +69,17 @@ LETTER_CONTEXTS = (
     ("to", r'(?<![\w/-]){L} to\b'),      # "press A to fight"
     ("slash", r'(?<![\w/-]){L}/'),       # "A/Enter/Click"
     ("gloss", r'(?<![\w/-]){L} \('),     # "B (Esc): Stop"  <- the shape the net missed until now
+    # "B / Esc / RClick: Close" — a SPACED slash. The unspaced `slash` context could not see it, and
+    # four live footers wore this form on 2026-09-16 (Bestiary, Controls, CutsceneGallery, WorldMap)
+    # while the audit reported main clean.
+    ("spaced-slash", r'(?<![\w/-]){L} /'),
 )
+
+# A label that names the FACE POSITION is the device-truthful form, not a frozen letter:
+# BUTTON_LABELS' "A / South (Nintendo B)" is the every-family vocabulary the Controls screen shows
+# with no pad. Position words are true on every pad, so a span carrying one is exempt from the
+# letter rules (never from the family rules).
+FACE_POSITION_WORDS = ("South", "East", "West", "North")
 
 # A caption that DERIVES is one whose author knew to. Used only by mixed-caption: the signature
 # is not "a key appears" — a keyboard-only legend naming keys is CORRECT — it is a key appearing
@@ -182,6 +192,8 @@ def scan_text(text: str, path: str = "<mem>"):
             spans = _literal_spans(raw)
 
         for span in spans:
+            if any(w in span for w in FACE_POSITION_WORDS):
+                continue          # a position-naming vocabulary label, not a button instruction
             for letter in FACE_LETTERS:
                 for tag, pat in LETTER_CONTEXTS:
                     if re.search(pat.format(L=letter), span):
@@ -330,6 +342,8 @@ def selftest() -> int:
         ('\tx.text = "A/Enter: Confirm"', "frozen-letter"),
         ('\tx.text = "press A to fight"', "frozen-letter"),
         ('\tx.text = "B (Esc): Stop"', "frozen-letter"),
+        ('\tx.text = "B / Esc / RClick: Close"', "frozen-letter"),        # the .351 defect verbatim
+        ('\tf.text = "A / Enter / Click: Replay"', "frozen-letter"),
         ('\tx.text = "L1/R1 page"', "frozen-family"),
         ('\tx.text = "[Select] Auto"', "frozen-family"),
         ('\tx.text = "Start (Plus)  F5  Open Editor"', "frozen-family"),   # TWO families is still incomplete
@@ -364,6 +378,8 @@ def selftest() -> int:
         '\tx.text = "Z / Enter   L-Click   Confirm / Select"',            # "Select" the action word
         '\tx.text = "Form 1-A: the incident"',                            # a form number, not a caption
         '\tx.text = "whatever your pad calls Select. Back. Share."',       # ALL THREE = complete vocabulary
+        '\t0: "A / South (Nintendo B)",',                                  # BUTTON_LABELS: names the POSITION
+        '\t1: "B / East (Nintendo A)",',
         '\treturn "Y:Turbo T:Tier X/Esc:Exit P:Pause"',                    # keyboard-ONLY legend: correct
         '\tout += ("%s:Turbo " % turbo) if turbo != "" else "Y:Turbo "',   # the documented FALLBACK shape
         '\tvar dismiss: String = ipm.button_name_for_index(JOY_BUTTON_Y)', # a derive call, no caption

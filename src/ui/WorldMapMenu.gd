@@ -180,7 +180,8 @@ func _build_ui() -> void:
 
 	# Footer
 	var footer := Label.new()
-	footer.text = "↑↓←→ / Wheel: Select   B / Esc / RClick: Close"
+	## Frozen Nintendo letter — see BestiaryMenu; same footer shape, same defect (2026-09-16).
+	footer.text = "↑↓←→ / Wheel: Select   %s / RClick: Close" % InputProfileManager.hint_for_action("ui_cancel")
 	footer.position = Vector2(24, vp.y - 32)
 	footer.size = Vector2(vp.x - 48, 20)
 	footer.add_theme_font_size_override("font_size", 13)

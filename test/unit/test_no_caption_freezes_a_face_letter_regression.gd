@@ -43,7 +43,15 @@ const CONTEXTS := [
 	"%s:",       # "B: Exit"
 	"%s to ",    # "press A to fight"
 	"%s/",       # "A/Enter/Click"
+	"%s / ",     # "B / Esc / RClick: Close" — SPACED. Four live footers wore this on 2026-09-16
+	             # (Bestiary · Controls · CutsceneGallery · WorldMap) and the unspaced context
+	             # above could not see any of them.
 ]
+
+## A label naming the FACE POSITION is the device-truthful form, not a frozen letter:
+## BUTTON_LABELS' "A / South (Nintendo B)" is the every-family vocabulary the Controls screen
+## shows with no pad. Exempt from the LETTER rules only.
+const POSITION_WORDS := ["South", "East", "West", "North"]
 const LETTERS := ["A", "B"]
 
 
@@ -142,6 +150,13 @@ func _captions_in(raw: String, whole_line := false) -> Array[String]:
 			spans.append(parts[i])
 	for span in spans:
 		var lit: String = span
+		var names_position := false
+		for w in POSITION_WORDS:
+			if lit.find(w) > -1:
+				names_position = true
+				break
+		if names_position:
+			continue
 		for letter in LETTERS:
 			for ctx in CONTEXTS:
 				var needle: String = ctx % letter

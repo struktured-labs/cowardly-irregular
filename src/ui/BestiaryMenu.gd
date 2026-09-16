@@ -152,7 +152,9 @@ func _build_ui() -> void:
 
 	# Footer — list all input methods so mouse/kb users know what works
 	var footer := Label.new()
-	footer.text = "↑↓ / Wheel: Select    B / Esc / RClick: Close    (hover to preview)"
+	## "B" is Nintendo's name for Cancel; that face is Ⓐ on Xbox and ✕ on PlayStation, so the old
+	## literal was wrong on two families out of three. Derived per connected pad (2026-09-16).
+	footer.text = "↑↓ / Wheel: Select    %s / RClick: Close    (hover to preview)" % InputProfileManager.hint_for_action("ui_cancel")
 	footer.position = Vector2(24, viewport.y - 32)
 	footer.size = Vector2(viewport.x - 48, 24)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(14))

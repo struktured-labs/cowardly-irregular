@@ -486,7 +486,8 @@ func _build_test_overlay() -> void:
 	box.add_child(raw_label)
 
 	var hint = Label.new()
-	hint.text = "B / Escape to close"
+	## Frozen Nintendo letter on the CONTROLS screen itself, of all surfaces (2026-09-16).
+	hint.text = "%s / Escape to close" % InputProfileManager.hint_for_action("ui_cancel")
 	hint.position = Vector2(20, box.size.y - 36)
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)
