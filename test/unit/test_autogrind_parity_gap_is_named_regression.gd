@@ -14,6 +14,14 @@ extends GutTest
 ## exists so the next person reads a list instead of rebuilding one, and so a NEW divergence announces
 ## itself instead of waiting to be stumbled over.
 ##
+## ⛔ TWO AXES, AND THE SECOND ONE EXISTS BECAUSE THE FIRST MISSED TWO OF MY OWN FIXES. Asking "does
+## each engine read this key" is not enough: every ability type dispatches to ONE executor, so a key
+## read in `_execute_physical_ability` does nothing for a `magic` ability. I wired `hits` into BOTH
+## grind arms when live reads it only on the physical path, and `drain_percentage` into both when live
+## reads it only on the magic path — so the grind hit harder than the game for `temporal_strike` and
+## healed `bone_warden` where the game heals nothing. THIS LEDGER SCORED BOTH "CONSUMED IN BOTH
+## ENGINES" and was right on axis 1 and blind on axis 2. @cowir-battle's 2d14d92d is the distinction.
+##
 ## WHAT THIS FILE IS NOT: it is not a claim that the unexamined keys are harmless. They are recorded
 ## as UNEXAMINED precisely because nobody has checked them, and saying so is the point.
 ##
@@ -154,3 +162,150 @@ func test_the_ledger_does_not_claim_the_backlog_is_empty() -> void:
 ## A gap that REOPENS needs no arm of its own: it leaves DECLARED / UNEXAMINED / CLOSED_PENDING_FOLD
 ## unmatched, so arm 4 reds on it by name. A hand-written "these are closed" list would have to be
 ## edited every time one lands, which is how a ledger starts lying.
+
+
+## AXIS 2: which PATH each engine reads the key on.
+##
+## A key is realised in the grind by a symbol rather than by its own name — `hits` is read once at the
+## top of _resolve_ability and consumed by a loop inside an arm — so the arm a key acts on cannot be
+## found by searching for the key. This map says how each key shows up, and it is REQUIRED to cover
+## every key both engines read (arm 7), so wiring a new one without declaring its path reds.
+const GRIND_PATH_MARKER := {
+	"hits": "for _h in hits",
+	"drain_percentage": "_drain_to(",
+	"scales_with": "_scaled_base(",
+	## Mapped, but NOT path-checked: live reads secondary_effect inside _apply_secondary_effect, a
+	## dispatcher rather than a per-type executor, so _live_executor_count sees no executor and the
+	## arm skips it. Its support-only placement is pinned in
+	## test_autogrind_applies_the_second_effect_regression instead. Left here so the map matches the
+	## set of keys this lane has wired, and so it reds if the marker ever disappears.
+	"secondary_effect": "_apply_secondary_effect(",
+}
+
+## Read by both engines, live-confined to one executor, and NOT path-assessed by me. They are here
+## rather than exempted by a cleverer rule: I narrowed the arm's heuristic twice to fit the answer and
+## stopped, because a rule that keeps shrinking to match its result is how a guard stops meaning
+## anything. Each of these reads differently in the grind by structure rather than by divergence —
+## `mp_cost` is spent at the top of _resolve_ability BEFORE the match, where live spends it inside an
+## executor — but "looks structural" is not "checked", and the difference is the whole point of axis 2.
+const AXIS2_UNASSESSED := ["mp_cost", "stat_modifier", "element", "max_multiplier", "stat", "modifier"]
+
+## The live executor each key must be read from, measured out of BattleManager rather than listed —
+## see _live_executor_of. The grind arm that must match it:
+const ARM_FOR_EXECUTOR := {
+	"_execute_physical_ability": '"physical":',
+	"_execute_magic_ability": '"magic":',
+	"_execute_support_ability": '"support", "song", "status":',
+}
+
+
+## The `func _execute_*` that encloses live's read of this key, or "" if it does not read it.
+func _live_executor_of(key: String, live: String) -> String:
+	var at: int = live.find('ability.get("%s"' % key)
+	if at < 0:
+		return ""
+	var owner: int = live.substr(0, at).rfind("func _execute_")
+	if owner < 0:
+		return ""
+	var line: String = live.substr(owner, 60)
+	return line.substr(5, line.find("(") - 5)
+
+
+## How many DISTINCT per-type executors read this key. Only a key live confines to exactly ONE has a
+## path to match: `element`, `duration` and `damage_multiplier` are read by several, so "the same arm"
+## is not a property they have. Getting this wrong made arm 7 demand a declaration for ten keys that
+## cannot have one.
+func _live_executor_count(key: String, live: String) -> int:
+	var seen: Dictionary = {}
+	var needle: String = 'ability.get("%s"' % key
+	var at: int = live.find(needle)
+	while at >= 0:
+		var owner: int = live.substr(0, at).rfind("func _execute_")
+		if owner >= 0:
+			var line: String = live.substr(owner, 60)
+			var name: String = line.substr(5, line.find("(") - 5)
+			if ARM_FOR_EXECUTOR.has(name):
+				seen[name] = true
+		at = live.find(needle, at + 1)
+	return seen.size()
+
+
+## The slice of the resolver belonging to one `match` arm, bounded by the next arm label.
+func _grind_arm(code: String, label: String) -> String:
+	var start: int = code.find(label)
+	if start < 0:
+		return ""
+	var nxt: int = code.find('\n\t\t"', start + label.length())
+	var default_arm: int = code.find("\n\t\t_:", start)
+	if default_arm > 0 and (nxt < 0 or default_arm < nxt):
+		nxt = default_arm
+	return code.substr(start, (nxt - start) if nxt > start else 2000)
+
+
+func test_every_shared_key_is_read_on_the_same_path_in_both_engines() -> void:
+	## THE ARM THAT WOULD HAVE CAUGHT BOTH OF MINE. A key on the wrong arm makes the grind harsher or
+	## softer than the game it simulates, and axis 1 cannot see it — both engines "read" the key.
+	var live: String = GdSource.code_of(LIVE)
+	var grind: String = GdSource.code_of(GRIND)
+	assert_gt(live.length(), 50000, "CONTROL: BattleManager was actually read")
+	var shared: Array = []
+	for k in _authored_keys():
+		var q: String = '"%s"' % k
+		if live.contains(q) and grind.contains(q):
+			shared.append(k)
+	assert_gt(shared.size(), 5, "CONTROL: the engines must share a real set of keys")
+
+	var checked: Array = []
+	var wrong: Array = []
+	for k in GRIND_PATH_MARKER:
+		var executor: String = _live_executor_of(k, live)
+		if executor == "" or not ARM_FOR_EXECUTOR.has(executor):
+			continue  # live reads it outside a per-type executor; axis 2 does not apply
+		var marker: String = str(GRIND_PATH_MARKER[k])
+		assert_true(grind.contains(marker),
+			"CONTROL: '%s' is mapped to marker '%s', which the resolver does not contain — the map is stale" % [k, marker])
+		checked.append(k)
+		for exec_name in ARM_FOR_EXECUTOR:
+			var arm: String = _grind_arm(grind, str(ARM_FOR_EXECUTOR[exec_name]))
+			assert_ne(arm, "", "CONTROL: the %s arm must be locatable" % exec_name)
+			var present: bool = arm.contains(marker)
+			var should: bool = exec_name == executor
+			if present != should:
+				wrong.append("%s: live reads it in %s, grind %s it in the %s arm" % [
+					k, executor, "reads" if present else "does NOT read", exec_name])
+	gut.p("    path-checked: %s" % str(checked))
+	assert_gt(checked.size(), 2, "CONTROL: at least three keys must actually be path-checked")
+	assert_eq(wrong, [],
+		"a key is read on a different PATH in each engine, so the grind simulates a different game: %s" % str(wrong))
+
+
+func test_a_newly_wired_key_must_declare_its_path() -> void:
+	## Without this, the map above is a list someone can forget to extend — and a key wired into the
+	## grind with no entry would be silently exempt from axis 2, which is how axis 1 failed.
+	var live: String = GdSource.code_of(LIVE)
+	var grind: String = GdSource.code_of(GRIND)
+	var undeclared: Array = []
+	for k in _authored_keys():
+		var q: String = '"%s"' % k
+		if not (live.contains(q) and grind.contains(q)):
+			continue
+		## Exactly one executor, or the key has no single path to be on.
+		if _live_executor_count(k, live) != 1:
+			continue
+		if not GRIND_PATH_MARKER.has(k) and not AXIS2_UNASSESSED.has(k):
+			undeclared.append(k)
+	assert_eq(undeclared, [],
+		"these keys are read by both engines from a per-type executor and have no entry in GRIND_PATH_MARKER, so nothing checks they are on the same path: %s" % str(undeclared))
+
+
+func test_the_axis_two_backlog_is_not_silently_empty() -> void:
+	## Same guard axis 1 has: a list that quietly empties reads as a clean bill of health. If someone
+	## assesses all six, this reds and asks for the list to be retired deliberately.
+	assert_gt(AXIS2_UNASSESSED.size(), 0,
+		"every axis-2 key has been assessed — move them into GRIND_PATH_MARKER and retire this list on purpose")
+	var live: String = GdSource.code_of(LIVE)
+	var stale: Array = []
+	for k in AXIS2_UNASSESSED:
+		if GRIND_PATH_MARKER.has(k):
+			stale.append(k)
+	assert_eq(stale, [], "these are listed as unassessed AND mapped — one of the two is wrong: %s" % str(stale))
