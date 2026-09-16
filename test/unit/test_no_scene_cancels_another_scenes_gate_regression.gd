@@ -161,14 +161,23 @@ func _src() -> String:
 	return _src_blob
 
 
-## Scene ids a quest can play, read by KEY so authored prose cannot look like a wiring.
+## Scene ids any DATA file can configure, read by KEY so authored prose cannot look like a wiring.
+## Walks all of data/ rather than data/quests/ alone: this oracle has already gone blind twice in
+## one hour by missing a form, so a third data file carrying a cutscene key is not hypothetical.
+## data/cutscenes/ itself is excluded — a scene's own id is not a wiring for it.
 func _quest_played() -> Dictionary:
 	var out: Dictionary = {}
-	for name in DirAccess.get_files_at("res://data/quests"):
-		if not name.ends_with(".json"):
+	var dirs: Array = ["res://data"]
+	while not dirs.is_empty():
+		var d: String = dirs.pop_back()
+		if d.begins_with("res://data/cutscenes"):
 			continue
-		var parsed = JSON.parse_string(_read("res://data/quests/" + name))
-		_harvest_cutscene_keys(parsed, out)
+		for sub in DirAccess.get_directories_at(d):
+			dirs.append(d.trim_suffix("/") + "/" + sub)
+		for name in DirAccess.get_files_at(d):
+			if not name.ends_with(".json"):
+				continue
+			_harvest_cutscene_keys(JSON.parse_string(_read(d.trim_suffix("/") + "/" + name)), out)
 	return out
 
 
@@ -248,7 +257,11 @@ func test_the_quest_form_is_in_the_oracle() -> void:
 	# version scanned src/ alone and would have called all six unreachable — the direction that
 	# silences an offender rather than crying wolf.
 	var quest_ids := _quest_played()
-	assert_gt(quest_ids.size(), 5, "the quest oracle must still find its ids: %s" % [quest_ids.keys()])
+	assert_gt(quest_ids.size(), 5, "the data-side oracle must still find its ids: %s" % [quest_ids.keys()])
+	# FLOOR on the WALK, not just the result: a harvest that only ever reads one directory would
+	# pass the line above forever on the six orreries alone.
+	assert_true(DirAccess.get_directories_at("res://data").size() > 1,
+		"control: data/ really has sub-directories to walk")
 	assert_true(quest_ids.has("world6_orrery"), "control: the W6 orrery is quest-played and by nothing else")
 	assert_false(_src().contains('"world6_orrery"'), "control: and it is genuinely absent from the code scan")
 	assert_true(_is_reachable("world6_orrery"), "so the oracle must call it reachable")
