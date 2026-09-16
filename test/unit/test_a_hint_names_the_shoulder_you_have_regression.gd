@@ -116,8 +116,13 @@ func test_the_new_tokens_resolve_without_a_pad() -> void:
 func test_the_new_tokens_still_name_a_key() -> void:
 	assert_ne(Hints.resolve_tokens("{defer}").strip_edges(), "", "Defer must name its key")
 	assert_ne(Hints.resolve_tokens("{advance}").strip_edges(), "", "Advance must name its key")
-	assert_true(Hints.resolve_tokens("{options}").contains("O"),
-		"the console's options ring is on the O key when no pad is attached")
+	var opts: String = Hints.resolve_tokens("{options}")
+	assert_true(opts.contains("O"), "the console's options ring is on the O key when no pad is attached")
+	# ⛔ AND the pad route must still be NAMED, generically — test_tutorial_hint_control_truth_regression
+	# exists because struktured could not find permadeath on a controller, and naming only the key
+	# recreates that. "shoulder" is the English word for the control, not a name one family prints.
+	assert_true(opts.to_lower().contains("shoulder"),
+		"with no pad the route must still be named generically, or the ring's 13 verbs go unmentioned: %s" % opts)
 	assert_ne(Hints.resolve_tokens("{auto}").strip_edges(), "", "the autobattle toggle must name its key")
 
 
