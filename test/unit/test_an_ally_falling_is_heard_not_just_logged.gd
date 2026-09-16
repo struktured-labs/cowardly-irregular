@@ -98,6 +98,16 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
 	if sm == null:
 		return
+	## Methods are NOT properties: get() returns null for a method name, so the loop below cannot
+	## see a renamed METHOD. has_method ANSWERS instead of raising, same reason.
+	for method_name in ["play_battle", "play_death"]:
+		assert_true(sm.has_method(method_name),
+			"SoundManager has no method %s — this file CALLS it, and whether that shows as Risky or as a silent pass is decided by arm ORDER, not by care" % method_name)
+	## ⚠️ get() CANNOT DISTINGUISH ABSENT FROM LEGITIMATELY NULL (@cowir-sprites): it returns null
+	## for both. Every member below is a player, a Dictionary or a String — none is ever null once
+	## _ready has run — so the check is sound HERE. If you add a nullable member to this list
+	## (_crossfade_tween, _duck_tween, _kill_duck_tween, _danger_tween, _corruption_tween are the
+	## ones that exist), switch to get_property_list(), which answers about existence rather than value.
 	for member_name in ["_battle_player", "_death_player", "_sfx_cooldowns", "_sfx_manifest"]:
 		## assert_true on an explicit `!= null`: assert_ne deep-compares, and three of these members
 		## are Dictionaries, which it refuses with "Only Arrays and Dictionaries are supported".
