@@ -4019,6 +4019,41 @@ func _apply_vulnerability_window(participants: Array) -> void:
 	battle_log_message.emit("[color=%s]All participants are now exposed! (-2 AP, 1.5x damage taken)[/color]" % AccessibilityPalette.penalty_bbcode())
 
 
+## Armour that bites back. `frost_armor` (Glacius) authors `reflect_damage_element: "ice"` and its
+## description promises "raising defense AND damaging attackers" — only the defense half existed, so the
+## key was decoration on a W1 boss's signature move. Generic by element: any defensive ability that
+## declares one retaliates in it.
+const ARMOR_THORNS_PCT: float = 0.25
+
+
+func _apply_armor_thorns(target: Combatant, ability: Dictionary, duration: int) -> void:
+	var element: String = str(ability.get("reflect_damage_element", ""))
+	if element == "" or target == null or not is_instance_valid(target):
+		return
+	target.add_status("armor_thorns", duration)
+	## The element rides on the combatant, not on the status string, so one status serves every element.
+	target.set_meta("_armor_thorns_element", element)
+	battle_log_message.emit("[color=cyan]%s's armor will bite back![/color] (%s)" % [target.combatant_name, element.capitalize()])
+
+
+## A physical hit on thorned armour costs the attacker a fraction of what it dealt, in the armour's own
+## element — so an attacker resistant to it takes less, and one weak to it takes more.
+func _retaliate_armor_thorns(attacker: Combatant, defender: Combatant, damage_dealt_to_defender: int) -> void:
+	if attacker == null or not is_instance_valid(attacker) or not attacker.is_alive:
+		return
+	if defender == null or not is_instance_valid(defender) or not defender.has_status("armor_thorns"):
+		return
+	var element: String = str(defender.get_meta("_armor_thorns_element", ""))
+	if element == "":
+		return
+	var bite: int = maxi(1, int(damage_dealt_to_defender * ARMOR_THORNS_PCT))
+	var taken: int = attacker.take_elemental_damage(bite, element)
+	if taken <= 0:
+		return
+	damage_dealt.emit(attacker, taken, false, element, 1.0)
+	battle_log_message.emit("[color=%s]%s's frost bites %s for %d![/color]" % [AccessibilityPalette.penalty_bbcode(), defender.combatant_name, attacker.combatant_name, taken])
+
+
 func _get_party_elements(participants: Array) -> Array[String]:
 	"""Scan participants' magic abilities and return unique elements"""
 	var elements: Array[String] = []
@@ -4425,6 +4460,8 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	damage = _consume_cover_mitigation(damage)
 	var actual_damage = actual_target.take_damage(damage, false)
 	damage_dealt.emit(actual_target, actual_damage, is_crit, "", 1.0)
+	## Retaliation, not negation: the hit lands in full and then the armour bites back.
+	_retaliate_armor_thorns(attacker, actual_target, actual_damage)
 
 	# Track first damage for one-shot detection
 	if actual_target in enemy_party:
@@ -5695,6 +5732,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_buff("Praesidium", "defense", stat_modifier, duration)
 					battle_log_message.emit("[color=cyan]%s gains Protect![/color] (DEF +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
+					_apply_armor_thorns(target, ability, duration)
 		## Shell — the magic mirror of Protect. take_damage reads magic_defense for magical hits and defense for physical ones, so Protect gave no magic mitigation and nothing raised magic_defense at all: soul_wail could sap it, no ability restored it.
 		"magic_defense_up":
 			for target in targets:

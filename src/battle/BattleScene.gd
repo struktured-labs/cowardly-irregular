@@ -1473,6 +1473,7 @@ const STATUS_ICON_CONFIG = {
 	"evasion": {"label": "EVDE", "color": Color(0.3, 1.0, 0.3)},
 	"reflect": {"label": "RFLC", "color": Color(0.4, 0.8, 1.0)},
 	"shadow_step": {"label": "SHDW", "color": Color(0.5, 0.4, 0.8)},
+	"armor_thorns": {"label": "THRN", "color": Color(0.4, 0.8, 1.0)},
 }
 
 
@@ -1603,7 +1604,7 @@ func _status_icon_family(status: String) -> String:
 		return "jitter"
 	if s in ["burn", "burning", "poison", "curse", "festered", "memory_leak", "doom_counter"]:
 		return "throb"
-	if s.ends_with("_up") or s in ["regen", "haste", "barrier", "damage_absorb", "evasion", "reflect", "shadow_step"]:
+	if s.ends_with("_up") or s in ["regen", "haste", "barrier", "damage_absorb", "evasion", "reflect", "shadow_step", "armor_thorns"]:
 		return "rise"
 	if s.ends_with("_down") or s in ["slow", "blind", "silence", "exposed"]:
 		return "sag"

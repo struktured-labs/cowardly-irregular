@@ -1,6 +1,8 @@
 extends GutTest
 
-## GLACIUS CASTS FROST ARMOR AND NOTHING HAPPENS TO THE PARTY.
+## GLACIUS CASTS FROST ARMOR AND NOTHING HAPPENED TO THE PARTY — wired 2026-09-16, see the
+## reflect_damage_element note in UNREAD_EFFECT_KEYS below. The history is kept because the
+## BALANCE half of it is still struktured's open call.
 ##
 ## 2026-09-11. `frost_armor` ships this description: *"Encases itself in frost,
 ## raising defense and damaging attackers."* Its `effect` is `defense_up` — a defence
@@ -94,7 +96,12 @@ const UNREAD_EFFECT_KEYS := {
 	"next_crit": "REDUNDANT — shadow_step's crit is guaranteed via has_status('shadow_step') in _calculate_crit_chance",
 	"bp_gain": "DEFERRED — the BP bank is unbuilt; BattleManager's default_stance arm records the decision",
 	"bp_cost": "DEFERRED — same BP bank",
-	"reflect_damage_element": "MISSING — frost_armor's shipped description promises it, the reflect status exists, nothing connects them. A balance call, not an oversight to silently fix",
+	## reflect_damage_element WAS here — "MISSING … a balance call, not an oversight to silently fix".
+	## Wired 2026-09-16 (lane/frost-armor-bites-back): defense_up arms an `armor_thorns` status carrying
+	## the element, and a physical hit costs the attacker ARMOR_THORNS_PCT of what it dealt, in that
+	## element. ⚠️ THE BALANCE CALL THIS FILE RESERVED IS STRUKTURED'S AND IS STILL OPEN: wiring it makes
+	## Glacius harder, and 25% is an invented number. If he prefers the other edit — trim the description
+	## — this line comes back and the wiring goes.
 }
 
 ## Keys that are structure rather than effect, and are read by the loader or by name.
