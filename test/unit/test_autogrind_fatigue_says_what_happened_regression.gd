@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## AutogrindSystem.check_fatigue_event authors SIX descriptions — "Inventory anomaly — items
 ## corrupted", "Reality fold — experience amplified!", "System interference — MP reserves
 ## fluctuating" — and emits them on `fatigue_event`. Measured before this fix: that signal had
@@ -241,14 +243,17 @@ func test_no_autogrind_test_leaves_a_gating_field_dirty() -> void:
 	for fname in names:
 		if not str(fname).begins_with("test_autogrind"):
 			continue
-		var src: String = FileAccess.get_file_as_string("res://test/unit/%s" % fname)
-		if src == "":
+		## ⛔ THE SHARED, QUOTE-AWARE STRIPPER. This carried a leading-`#` filter of its own until
+		## 2026-09-16, which is @cowir-music's measured false-red shape: a TRAILING
+		## `# was .battles_completed = 999` counts as a setter and flags a clean file. It matters more
+		## here than elsewhere for @cowir-sprites' reason — the prose that trips a guard is the prose
+		## you write while fixing the thing it defends, and THIS file is full of comments about the
+		## exact assignment the arm scans for. GdSource also survives a `#` inside a string literal,
+		## which a split on "#" truncates: the same hazard pointed the other way.
+		## Fourth consumer rather than a private copy — this fleet counted eighteen of those today.
+		var code: String = GdSource.code_of("res://test/unit/%s" % fname)
+		if code == "":
 			continue
-		## Comments describing the hazard must not count as setting it — this file is full of them.
-		var code: String = ""
-		for line in src.split("\n"):
-			if not line.strip_edges().begins_with("#"):
-				code += line + "\n"
 		for field in GATING_FIELDS:
 			if not code.contains(field):
 				continue
