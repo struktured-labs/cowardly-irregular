@@ -954,6 +954,21 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 							target.gain_ap(ap_gain)
 						_log("%s uses %s on %s (+%d AP, +%d%% MP)" % [caster.combatant_name, ability_id, target.combatant_name, ap_gain, int(mp_pct * 100)])
 						continue
+					elif effect == "damage_absorb":
+						## Combatant.take_damage:349 reads `_damage_absorb_budget` and treats ABSENT as
+						## UNLIMITED (-1). The unmodelled-effect else below DID add the status — so the ward
+						## was live in the grind with no cap, and fill_the_void made an 8000 HP POOLED enemy
+						## (the_absence, abstract_overworld) immune AND self-healing for two full rounds.
+						## That is live's own pre-2026-09-10 bug, which it fixed by making absorb_amount a
+						## BUDGET; the grind never got the fix because it never read the key. BattleManager:5860.
+						## An omitted absorb_amount still means unlimited, on both sides.
+						target.add_status("damage_absorb", duration)
+						if ability.has("absorb_amount"):
+							target.set_meta("_damage_absorb_budget", maxi(0, int(ability["absorb_amount"])))
+						elif target.has_meta("_damage_absorb_budget"):
+							target.remove_meta("_damage_absorb_budget")
+						_log("%s wards %s (absorbs %d for %d turns)" % [caster.combatant_name, target.combatant_name, int(ability.get("absorb_amount", -1)), duration])
+						continue
 					elif effect == "steal":
 						## Fell to the else below and gave the victim a junk status called "steal" while the
 						## gold never moved — the cleanse class, one arm down. Live's support default is 1.0

@@ -72,12 +72,17 @@ const CLOSED_PENDING_FOLD := [
 	## restored five times what the game grants. Not a missing read; a read that was never written.
 	## The `ap_gain` literal agreed with live's default by coincidence, which is why it looked fine.
 	"mp_restore_percent", "ap_gain",
+	## THIRD SHAPE. Not a missing read and not a hardcode: the mechanism was ALREADY LIVE in the
+	## grind and UNCAPPED. The unmodelled-effect else added the damage_absorb status, and
+	## Combatant.take_damage treats an absent budget meta as UNLIMITED — so a POOLED 8000 HP enemy
+	## was immune and self-healing for two rounds. Live had the same bug and fixed it 2026-09-10;
+	## the grind never got the fix because it never read the key.
+	"absorb_amount",
 ]
 
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
-	"absorb_amount",
 	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
 	"meta_effect", "priority", "recoil_pct",
 	"threat_class",
@@ -246,6 +251,7 @@ const GRIND_PATH_MARKER := {
 	## the VALUE. A key census cannot see this class; only comparing the two arms can.
 	"mp_restore_percent": "ability.get(\"mp_restore_percent\"",
 	"ap_gain": "ability.get(\"ap_gain\"",
+	"absorb_amount": "ability.has(\"absorb_amount\")",
 }
 
 ## Read by both engines, live-confined to one executor, and NOT path-assessed by me. They are here
