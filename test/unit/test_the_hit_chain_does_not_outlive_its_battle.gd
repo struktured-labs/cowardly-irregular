@@ -35,9 +35,13 @@ func test_the_ramp_actually_ramps_and_caps() -> void:
 	sm._combo_step = 99
 	var capped: float = sm.get_combo_pitch_bias()
 	sm._combo_step = restore
+	## Read through get(): a DIRECT `sm.COMBO_PITCH_CAP` aborts at runtime if the const is renamed,
+	## and an abort after the asserts above scores PASSING — every cardinal clean but Asserts.
+	var cap_v = sm.get("COMBO_PITCH_CAP")
+	assert_ne(cap_v, null, "COMBO_PITCH_CAP is gone or renamed — the cap assert below cannot run")
 	assert_almost_eq(flat, 1.0, 0.0001, "an unramped chain must be bit-identical to no ramp")
 	assert_gt(ramped, flat, "the chain does not ramp — a leaked counter would be silent and harmless")
-	assert_almost_eq(capped, 1.0 + sm.COMBO_PITCH_CAP, 0.0001, "the ramp does not cap where it says it does")
+	assert_almost_eq(capped, 1.0 + float(cap_v if cap_v != null else 0.0), 0.0001, "the ramp does not cap where it says it does")
 
 
 func test_resetting_the_chain_returns_it_to_flat() -> void:

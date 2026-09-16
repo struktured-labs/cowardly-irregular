@@ -120,3 +120,20 @@ func test_no_manifest_entry_names_a_file_that_is_not_there() -> void:
 		if not ResourceLoader.exists(path):
 			missing.append("%s -> %s" % [str(key), f])
 	assert_eq(missing.size(), 0, "manifest keys name files that are not on disk: %s" % str(missing))
+
+
+func test_every_member_this_file_reaches_for_still_exists() -> void:
+	## A direct `sm._x` on a RENAMED member raises at runtime and ABORTS the arm. An abort after
+	## that arm's last assert scores PASSING — measured 2026-09-16: renaming the dedicated voice
+	## this file exists to defend gave EXIT=0, Failing 0, NO Risky line, and moved only the assert
+	## count. `get()` returns null for an absent name instead of raising, so the rename fails loudly
+	## here and names itself before any other arm gets the chance to go quiet.
+	var sm: Node = _sm()
+	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
+	if sm == null:
+		return
+	for member_name in ["_ability_player", "_ability_sounds", "_current_area", "_sfx_cooldowns", "_sfx_manifest"]:
+		## assert_true on an explicit `!= null`: assert_ne deep-compares, and three of these members
+		## are Dictionaries, which it refuses with "Only Arrays and Dictionaries are supported".
+		assert_true(sm.get(member_name) != null,
+			"SoundManager has no %s — this file reaches for it directly, and a rename would abort its arms SILENTLY" % member_name)

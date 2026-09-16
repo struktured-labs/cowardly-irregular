@@ -29,10 +29,15 @@ func test_the_three_hit_layers_have_three_voices() -> void:
 	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
 	if sm == null:
 		return
-	for p in [sm._strike_player, sm._flash_player]:
+	## Through get() for the same reason as the cap const: a direct reference to a renamed voice
+	## aborts, and an abort scores Risky or Passing — never Failing. This file's whole subject is
+	## that these two voices EXIST, so their absence has to be the loudest thing it can say.
+	for vname in ["_strike_player", "_flash_player"]:
+		assert_ne(sm.get(vname), null, "SoundManager has no %s — the voice this file defends is gone or renamed" % vname)
+	for p in [sm.get("_strike_player"), sm.get("_flash_player")]:
 		assert_not_null(p, "a hit-layer voice is missing")
 		assert_ne(p, sm._battle_player, "a layered cue is back on _battle_player — it replaces the weapon hit it was meant to ride over")
-	assert_ne(sm._strike_player, sm._flash_player, "the stinger shares the element's voice — a weakness hit with an elemental weapon loses one of them")
+	assert_ne(sm.get("_strike_player"), sm.get("_flash_player"), "the stinger shares the element's voice — a weakness hit with an elemental weapon loses one of them")
 
 
 func test_the_weapon_hit_no_longer_replaces_the_weakness_stinger() -> void:
