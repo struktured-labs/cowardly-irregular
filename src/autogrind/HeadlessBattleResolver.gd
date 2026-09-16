@@ -24,6 +24,19 @@ const GROUP_ATTACK_COOLDOWN = 3
 ## _summon_followup kept a lingering eidolon hitting in the NEXT encounter. A const rather than a
 ## literal so test_autogrind_a_battle_starts_clean_regression can compare it against the set_meta
 ## calls in this file and red when a fourth appears unlisted.
+##
+## ⚠️ A CONST OF THIS NAME EXISTS TWICE, IN TWO ENGINES, WITH DELIBERATELY DIFFERENT CONTENTS.
+## BattleManager has its own (ec70e8e43): 12+ keys including _summon_followup,
+## _mind_swap_controller, _steal_response_consumed, _boss_face_index, plus PREFIX support for
+## composed keys (a trailing "_" clears every meta carrying it). This list is a strict SUBSET and is
+## meant to be — it is derived from what THIS file sets, which the arm named above enforces, and the
+## grind has no summon, no mind-swap and no boss faces. DO NOT UNIFY THEM: the name matching is the
+## trap, and CLAUDE.md's case (b) is exactly this shape — divergent, and invisible at authoring.
+## Same name, two engines, arrived at independently within an hour; neither copied the other.
+##
+## RETIREMENT CONDITION, so this note cannot quietly become permanent (@cowir-music's form): the day
+## the two engines' per-battle state is genuinely the same set, these two collapse into one and this
+## comment goes with them. Until then the lists disagree BY CONSTRUCTION, not by drift.
 const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget"]
 var _rounds_since_group_attack: int = 99
 

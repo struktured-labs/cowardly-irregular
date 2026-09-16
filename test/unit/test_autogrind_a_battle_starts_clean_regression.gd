@@ -110,13 +110,22 @@ func test_the_clear_does_not_wipe_what_live_keeps() -> void:
 	var hero := _hero()
 	hero.current_hp = 500
 	hero.current_mp = 7
+	var hp_before: int = hero.current_hp
 	## Array[DICTIONARY], not Array[String] — I appended a String here first and the control failed
 	## while the code was fine. The typed-array trap CLAUDE.md documents, inside the arm written to
 	## catch over-clearing.
 	hero.permanent_injuries.append({"id": "cracked_rib", "name": "Cracked Rib"})
 	_res.resolve_battle([hero], [_chaff()])
-	assert_eq(hero.current_hp, 500, "HP must carry across the boundary — that is the whole risk model of a grind")
-	assert_eq(hero.current_mp, 7, "and so must MP")
+	## ⛔ THIS ASSERTED `== 500` AND WAS FLAKY, which is how it shipped green and red the same day.
+	## The chaff has attack 1 and sometimes lands a hit before it dies, so the exact figure depended
+	## on turn order. CLAUDE.md's coincidental-value trap: the PROPERTY is "the boundary did not
+	## restore this combatant", and 500 was merely what that produced on a run where nothing connected.
+	## Asserted as a band now — damaged is fine, healed to full is the over-clear this arm exists for.
+	assert_lt(hero.current_hp, hero.max_hp,
+		"HP must carry across the boundary, not be restored — that is the whole risk model of a grind")
+	assert_gt(hero.current_hp, 0, "and the party must not be wiped either")
+	assert_lte(hero.current_hp, hp_before, "a battle can only cost HP here; nothing in the clear may add it")
+	assert_lt(hero.current_mp, hero.max_mp, "and MP must not be restored by the boundary")
 	var kept: bool = false
 	for inj in hero.permanent_injuries:
 		if str(inj.get("id", "")) == "cracked_rib":
@@ -185,9 +194,64 @@ func test_every_meta_this_file_sets_is_cleared_at_the_boundary() -> void:
 	gut.p("    set_meta keys in the resolver: %s" % str(found.keys()))
 	assert_gt(found.size(), 0, "CONTROL: the scan must find the set_meta calls, or it proves nothing")
 
+	## ⚠️ COMPOSITION IS TESTED FIRST, AND "LITERAL" MEANS THE WHOLE ARGUMENT IS ONE QUOTED STRING.
+	## My first version compared call counts, and a composed key that STARTS with a quote —
+	## set_meta("_bark_" + face) — was filed as the literal "_bark_". It reddened only by luck,
+	## through the unlisted check below, and a composed key whose prefix WAS listed would have passed
+	## both. That is @cowir-cutscenes' exact miss from this morning, reproduced inside the instrument
+	## I wrote to catch it. Measured, not assumed: every set_meta here is a whole-string literal today.
+	assert_eq(_composed_meta_sites(code), [],
+		"a set_meta key in the resolver is COMPOSED, not a literal: %s — the scan below cannot see it, so extend both it and PER_BATTLE_METAS" % str(_composed_meta_sites(code)))
+	var total_sets: int = code.count("set_meta(")
+	assert_eq(total_sets, found.size() + _duplicate_literal_sets(code),
+		"a set_meta call does not begin with a quoted key at all — same consequence, different shape")
+
 	var unlisted: Array = []
 	for k in found:
 		if not declared.has(k):
 			unlisted.append(k)
 	assert_eq(unlisted, [],
 		"these metas are set by the grind and NOT cleared at the battle boundary: %s — add them to PER_BATTLE_METAS or say why they outlive a battle" % str(unlisted))
+
+
+## set_meta("_next_attack_multiplier", ...) appears twice (set and reset), so the literal COUNT
+## exceeds the distinct-key count. This returns that surplus so the composed-key check above
+## compares like with like instead of reding on an honest duplicate.
+func _duplicate_literal_sets(code: String) -> int:
+	var literal_calls: int = code.count("set_meta(\"")
+	var distinct: Dictionary = {}
+	var at: int = code.find("set_meta(\"")
+	while at >= 0:
+		var start: int = at + 10
+		var end: int = code.find("\"", start)
+		if end > start:
+			distinct[code.substr(start, end - start)] = true
+		at = code.find("set_meta(\"", at + 1)
+	return literal_calls - distinct.size()
+
+
+## A set_meta whose key is built rather than written. "Literal" = the closing quote is followed by a
+## comma; anything else (notably `+`) is composition wearing a literal's opening quote.
+##
+## ⚠️ THIS ASSERTS ABOUT A CHARACTER, NOT ABOUT THE PROPERTY — @cowir-cutscenes' name-vs-property
+## smell, and their own instance was the same shape (`begins_with('"')` standing in for "is a
+## literal"). Knowing that, the failure DIRECTION is what makes it safe to keep, and it was measured
+## rather than hoped for: every way I can defeat this errs toward CRYING WOLF, never toward silence.
+##   set_meta("_k" , v)        space before the comma  -> flagged, wrongly. Loud, harmless.
+##   set_meta("_k".repeat(2))  a method on the literal -> flagged. Correct, by luck of the same rule.
+##   set_meta(("_k" + b), v)   parenthesised           -> this scan never sees it, and the
+##                             total-vs-literal count check above catches it instead.
+## A real answer needs a parser. Until one is cheap, this is a syntax heuristic that fails loud, and
+## saying so is the point — an instrument that cannot state its own blind spot has two.
+func _composed_meta_sites(code: String) -> Array:
+	var out: Array = []
+	var at: int = code.find("set_meta(\"")
+	while at >= 0:
+		var start: int = at + 10
+		var end: int = code.find("\"", start)
+		if end > start:
+			var after: String = code.substr(end + 1, 1)
+			if after != ",":
+				out.append(code.substr(start, end - start))
+		at = code.find("set_meta(\"", at + 1)
+	return out

@@ -84,6 +84,12 @@ func test_the_victim_no_longer_gets_a_junk_status_called_steal() -> void:
 	for _i in _CASTS:
 		rogue.current_mp = rogue.max_mp
 		_res._resolve_ability(rogue, "steal", [victim])
+	## FLOOR, and this arm had none until 2026-09-16: an absence assertion passes just as happily when
+	## the cast never happened. _resolve_ability RETURNS silently on unpayable MP or an unknown id, so
+	## a no-op run would have "proved" the junk status was gone. Require the steal to have RESOLVED.
+	assert_gt(_res._battle_log.size(), 0, "FLOOR: the casts must have produced log lines at all")
+	assert_true("\n".join(_res._battle_log).contains("steal"),
+		"FLOOR: the steal branch must have been reached — otherwise this arm is green over a no-op")
 	assert_false(victim.has_status("steal"),
 		"steal is a gold transfer, not a status — the unmodelled-effect else used to brand the victim with it")
 
@@ -192,6 +198,9 @@ func test_a_support_ability_that_is_not_steal_pays_nothing() -> void:
 	for _i in _CASTS:
 		cleric.current_mp = cleric.max_mp
 		_res._resolve_ability(cleric, "protect", [ally])
+	## FLOOR, same reason: a protect that never resolved also takes no gold. Require the buff to exist.
+	assert_gt(ally.active_buffs.size(), 0,
+		"FLOOR: protect must actually have applied — a no-op cast would pass the assertion below for free")
 	assert_eq(_res._stolen_gold, 0, "only a steal takes gold — a buff must not")
 
 
