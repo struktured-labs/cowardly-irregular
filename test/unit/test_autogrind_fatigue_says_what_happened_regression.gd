@@ -240,8 +240,13 @@ func test_no_autogrind_test_leaves_a_gating_field_dirty() -> void:
 
 	var offenders: Array = []
 	var checked: int = 0
+	## ⛔ NO NAME FILTER. This scanned only `test_autogrind*` until 2026-09-16 — and a corpus chosen by
+	## filename is a JUDGEMENT about where offenders live, not a measurement. @cowir-sprites: "a green
+	## sweep is evidence only about a corpus that could have held the defect." Measured that day: all
+	## NINE files setting the field are test_autogrind*, so the filter cost nothing yet — and a future
+	## file named anything else would have been invisible while this still reported clean.
 	for fname in names:
-		if not str(fname).begins_with("test_autogrind"):
+		if not str(fname).ends_with(".gd"):
 			continue
 		## ⛔ THE SHARED, QUOTE-AWARE STRIPPER. This carried a leading-`#` filter of its own until
 		## 2026-09-16, which is @cowir-music's measured false-red shape: a TRAILING
