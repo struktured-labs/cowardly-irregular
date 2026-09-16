@@ -9,10 +9,14 @@ extends GutTest
 ## the selected row was never created — the `>` cursor and SELECTED_COLOR
 ## highlight vanished and most of the catalog was unreachable.
 ##
-## Fix: both panels now compute
-##   scroll_offset = clampi(selected_index - max_visible + 1, 0, max(0, size - max_visible))
-## and render rows from scroll_offset, passing the absolute index so
-## is_selected / cursor / highlight stay aligned with selected_index.
+## Fix: both panels compute a scroll offset and render rows from it, passing the
+## absolute index so is_selected / cursor / highlight stay aligned with selected_index.
+##
+## 2026-09-16: the offset moved to MenuScroll.window_offset and became STICKY. The
+## formula this file used to pin kept the selection on screen by gluing it to the
+## bottom row, so walking back up dragged the window one row per step. The arms below
+## still defend the original bug — a selected row past the window must render — and now
+## drive the shared helper instead of re-implementing its arithmetic.
 
 const AbilitiesMenuScript = preload("res://src/ui/AbilitiesMenu.gd")
 
@@ -123,24 +127,17 @@ func test_abilities_panel_renders_selected_row_past_max_visible() -> void:
 
 
 func test_scroll_offset_never_negative_or_overruns() -> void:
-	"""The clampi guard keeps scroll_offset within [0, size - max_visible]."""
+	"""Bounds, driven through the real helper rather than re-implementing its arithmetic."""
 	var size = 50
 	var max_visible = 17
 
-	# selected_index at start -> offset 0
-	assert_eq(clampi(0 - max_visible + 1, 0, max(0, size - max_visible)), 0,
+	assert_eq(MenuScroll.window_offset(0, max_visible, size, 0), 0,
 		"Selection at top should not scroll")
-
-	# selected_index in middle -> keeps selection visible
-	var mid_offset = clampi(30 - max_visible + 1, 0, max(0, size - max_visible))
-	assert_eq(mid_offset, 14, "Middle selection should scroll so row stays in view")
-
-	# selected_index at end -> offset capped at size - max_visible
-	var end_offset = clampi(49 - max_visible + 1, 0, max(0, size - max_visible))
-	assert_eq(end_offset, size - max_visible, "Last selection caps scroll at list end")
-
-	# Short list (fits entirely) -> offset 0
-	assert_eq(clampi(2 - max_visible + 1, 0, max(0, 5 - max_visible)), 0,
+	assert_eq(MenuScroll.window_offset(30, max_visible, size, 0), 14,
+		"Middle selection should scroll so row stays in view")
+	assert_eq(MenuScroll.window_offset(49, max_visible, size, 0), size - max_visible,
+		"Last selection caps scroll at list end")
+	assert_eq(MenuScroll.window_offset(2, max_visible, 5, 0), 0,
 		"List shorter than window never scrolls")
 
 
@@ -148,7 +145,9 @@ func test_source_has_scroll_offset_in_both_panels() -> void:
 	"""Source guard: both panel builders must compute a scroll_offset."""
 	var content = FileAccess.get_file_as_string("res://src/ui/AbilitiesMenu.gd")
 	assert_false(content.is_empty(), "AbilitiesMenu.gd should be readable")
-	# clampi-based offset appears for passives and abilities.
-	var occurrences = content.count("scroll_offset = clampi(selected_index - max_visible + 1")
+	# Both panels must derive their window from the shared helper, one stored offset each.
+	var occurrences = content.count("MenuScroll.window_offset(selected_index, max_visible")
 	assert_eq(occurrences, 2,
 		"Both _create_passives_panel and _create_abilities_panel must compute scroll_offset")
+	assert_eq(content.find("- max_visible + 1"), -1,
+		"Neither panel may recompute a window from the selection alone; that pins the cursor to the bottom row")

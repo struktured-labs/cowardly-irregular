@@ -14,6 +14,9 @@ var character: Combatant = null
 enum Tab { ABILITIES, PASSIVES }
 var current_tab: int = Tab.ABILITIES
 var selected_index: int = 0
+## Sticky window starts, one per list; MenuScroll moves them only when the selection leaves them.
+var _ability_scroll: int = 0
+var _passive_scroll: int = 0
 var _ability_labels: Array = []
 var _passive_labels: Array = []
 
@@ -306,7 +309,8 @@ func _create_abilities_panel(panel_size: Vector2) -> Control:
 	var max_visible = int((panel_size.y - 40) / item_height)
 
 	# Handle scroll offset so the selected row stays visible
-	var scroll_offset = clampi(selected_index - max_visible + 1, 0, max(0, _abilities_list.size() - max_visible))
+	_ability_scroll = MenuScroll.window_offset(selected_index, max_visible, _abilities_list.size(), _ability_scroll)
+	var scroll_offset = _ability_scroll
 
 	for i in range(min(_abilities_list.size() - scroll_offset, max_visible)):
 		var idx = i + scroll_offset
@@ -495,7 +499,8 @@ func _create_passives_panel(panel_size: Vector2) -> Control:
 	var max_visible = int((panel_size.y - 40) / item_height)
 
 	# Handle scroll offset so the selected row stays visible
-	var scroll_offset = clampi(selected_index - max_visible + 1, 0, max(0, _passives_list.size() - max_visible))
+	_passive_scroll = MenuScroll.window_offset(selected_index, max_visible, _passives_list.size(), _passive_scroll)
+	var scroll_offset = _passive_scroll
 
 	for i in range(min(_passives_list.size() - scroll_offset, max_visible)):
 		var idx = i + scroll_offset
