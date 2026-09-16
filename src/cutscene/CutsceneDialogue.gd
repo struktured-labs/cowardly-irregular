@@ -46,6 +46,15 @@ var _displayed_chars: int = 0
 ## A line taller than the box had no gamepad way to be read: nothing here scrolls the body (only the wheel, and this is a pad-first game) and clip_contents hides the rest. Long lines page.
 var _pages: PackedStringArray = PackedStringArray()
 var _page_index: int = 0
+## Lines already shown, newest LAST. A player who mashed confirm through a line had no way back to
+## it: the box keeps one line, pagination keeps one line's pages, and nothing kept the conversation.
+const BACKLOG_MAX: int = 12
+const BACKLOG_PANEL_W: int = 860
+const BACKLOG_PANEL_H: int = 460
+var _backlog: Array = []
+var _backlog_layer: Control = null
+var _backlog_rows: VBoxContainer = null
+var _backlog_scroll: ScrollContainer = null
 var _typing_timer: Timer
 ## Does THIS panel own the music duck? Freeing mid-line must unduck, but only its own.
 var _ducked_music: bool = false
@@ -623,6 +632,136 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_dialogue_box.add_child(_thinking_label)
 
 
+## =====================
+## BACKLOG (re-read what just went past)
+## =====================
+
+func _record_in_backlog(speaker: String, text: String) -> void:
+	if text.strip_edges() == "":
+		return
+	_backlog.append({"speaker": speaker, "text": text})
+	while _backlog.size() > BACKLOG_MAX:
+		_backlog.pop_front()
+
+
+func backlog_size() -> int:
+	return _backlog.size()
+
+
+func is_backlog_open() -> bool:
+	return _backlog_layer != null and is_instance_valid(_backlog_layer)
+
+
+## The backlog affordance is only advertised once there is something behind the current line.
+func _backlog_hint_fragment() -> String:
+	if _backlog.size() < 2:
+		return ""
+	return "   [%s] Log" % InputProfileManager.hint_for_action("ui_up")
+
+
+func toggle_backlog() -> void:
+	if is_backlog_open():
+		close_backlog()
+	else:
+		open_backlog()
+
+
+func open_backlog() -> void:
+	if is_backlog_open() or _backlog.is_empty():
+		return
+	# A typewriter mid-line must not keep typing under a panel the player is reading.
+	if _typing_timer and is_instance_valid(_typing_timer):
+		_typing_timer.stop()
+
+	_backlog_layer = Control.new()
+	_backlog_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_backlog_layer.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_backlog_layer)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.72)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_backlog_layer.add_child(dim)
+
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	var panel: Control = RetroPanel.create_panel(
+		BACKLOG_PANEL_W, BACKLOG_PANEL_H,
+		Color(0.05, 0.05, 0.08, 0.97), Color(0.85, 0.8, 0.55), Color(0.2, 0.18, 0.1))
+	panel.position = Vector2((vp.x - BACKLOG_PANEL_W) * 0.5, (vp.y - BACKLOG_PANEL_H) * 0.5)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_backlog_layer.add_child(panel)
+
+	var title := Label.new()
+	title.text = "Already said"
+	title.position = Vector2(20, 12)
+	title.size = Vector2(BACKLOG_PANEL_W - 40, 28)
+	title.add_theme_font_size_override("font_size", _scaled_font_size(18))
+	title.add_theme_color_override("font_color", Color(0.9, 0.85, 0.6))
+	panel.add_child(title)
+
+	_backlog_scroll = ScrollContainer.new()
+	_backlog_scroll.position = Vector2(16, 48)
+	_backlog_scroll.size = Vector2(BACKLOG_PANEL_W - 32, BACKLOG_PANEL_H - 92)
+	_backlog_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(_backlog_scroll)
+
+	_backlog_rows = VBoxContainer.new()
+	_backlog_rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_backlog_rows.add_theme_constant_override("separation", 10)
+	_backlog_scroll.add_child(_backlog_rows)
+
+	for entry in _backlog:
+		var row := Label.new()
+		var who: String = str(entry.get("speaker", ""))
+		row.text = ("%s: %s" % [who, entry["text"]]) if who != "" else str(entry["text"])
+		row.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		row.custom_minimum_size = Vector2(BACKLOG_PANEL_W - 60, 0)
+		row.add_theme_font_size_override("font_size", _scaled_font_size(15))
+		row.add_theme_color_override("font_color", Color(0.9, 0.9, 0.95) if who == "" else Color(1.0, 0.97, 0.85))
+		_backlog_rows.add_child(row)
+
+	var hint := Label.new()
+	hint.text = "[%s] Scroll    [%s] Close" % [
+		InputProfileManager.hint_for_action("ui_down"),
+		InputProfileManager.hint_for_action("ui_cancel"),
+	]
+	hint.position = Vector2(20, BACKLOG_PANEL_H - 34)
+	hint.size = Vector2(BACKLOG_PANEL_W - 40, 24)
+	hint.add_theme_font_size_override("font_size", _scaled_font_size(12))
+	hint.add_theme_color_override("font_color", Color(0.65, 0.65, 0.75))
+	panel.add_child(hint)
+
+	# Open at the BOTTOM: the line you just missed is the newest one.
+	call_deferred("_scroll_backlog_to_end")
+
+
+func _scroll_backlog_to_end() -> void:
+	if _backlog_scroll == null or not is_instance_valid(_backlog_scroll):
+		return
+	var bar := _backlog_scroll.get_v_scroll_bar()
+	if bar:
+		_backlog_scroll.scroll_vertical = int(bar.max_value)
+
+
+func close_backlog() -> void:
+	if not is_backlog_open():
+		return
+	_backlog_layer.queue_free()
+	_backlog_layer = null
+	_backlog_rows = null
+	_backlog_scroll = null
+	# Resume a line that was still typing when the panel went up.
+	if _is_typing and _typing_timer and is_instance_valid(_typing_timer):
+		_typing_timer.start(_typing_speed)
+
+
+func _scroll_backlog(delta: int) -> void:
+	if _backlog_scroll == null or not is_instance_valid(_backlog_scroll):
+		return
+	_backlog_scroll.scroll_vertical += delta
+
+
 func _draw_retro_border(parent: Control, width: float, height: float, color: Color) -> void:
 	var shadow_color = color.darkened(0.5)
 
@@ -796,6 +935,9 @@ func _show_current_line() -> void:
 	# Start typing effect — pull the resolved speed FROM SETTINGS each line
 	# so a toggle through the in-cutscene settings menu takes effect at the
 	# next box, not the next cutscene.
+	# One entry per LINE, recorded where the line is resolved rather than where a page is typed — a
+	# paged line is one thing the player read, not three.
+	_record_in_backlog(str(entry.get("speaker", "")), str(entry.get("text", "")))
 	# Paginate AFTER the hide_portrait block above — a narrator line owns the portrait's width too.
 	_pages = _paginate(str(entry.get("text", "")))
 	_page_index = 0
@@ -913,6 +1055,7 @@ func _finish_typing() -> void:
 		# A paged line must say so, or the player cannot tell a full box from a continued one.
 		if _pages.size() > 1:
 			_advance_hint.text = "%s  (%d/%d)" % [_advance_hint.text, _page_index + 1, _pages.size()]
+		_advance_hint.text += _backlog_hint_fragment()
 		_advance_hint.visible = true
 
 
@@ -934,8 +1077,11 @@ func _advance_dialogue() -> void:
 
 func _finish_dialogue() -> void:
 	visible = false
+	close_backlog()
 	_dialogue_queue.clear()
 	_current_index = 0
+	# The backlog belongs to the conversation that is ending; the next one starts empty.
+	_backlog.clear()
 	# Pair with the duck-on from show_dialogue. Idempotent per cowir-music's API — safe to call even if we never ducked (autoload was absent, etc.).
 	_duck_music_for_dialogue(false)
 	dialogue_finished.emit()
@@ -992,6 +1138,36 @@ func _input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			get_viewport().set_input_as_handled()
 			return
+		# The backlog is readable while the LLM thinks — it shows only lines already delivered — but
+		# nothing inside it may advance the queue, which the modal branch below already enforces.
+		if event.is_action_pressed("ui_up") and not event.is_echo():
+			toggle_backlog()
+			get_viewport().set_input_as_handled()
+			return
+
+	# The backlog is MODAL: while it is up, a press that would advance or skip the scene closes it
+	# instead. Anything else would let a player advance a line they cannot see.
+	if is_backlog_open():
+		if event.is_action_pressed("ui_down") and not event.is_echo():
+			_scroll_backlog(40)
+			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_pressed("ui_up") and not event.is_echo():
+			_scroll_backlog(-40)
+			get_viewport().set_input_as_handled()
+			return
+		if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel") \
+				or (event is InputEventMouseButton and event.pressed):
+			close_backlog()
+			get_viewport().set_input_as_handled()
+			return
+		return
+
+	# Re-read what already went past. ui_up is free in this box and derived in the hint, never a letter.
+	if event.is_action_pressed("ui_up") and not event.is_echo() and _backlog.size() >= 2:
+		open_backlog()
+		get_viewport().set_input_as_handled()
+		return
 
 	# Bug fix (2026-04-30): added `not event.is_echo()` so holding Enter
 	# doesn't rapid-fire _advance_dialogue at echo rate (was burning past
