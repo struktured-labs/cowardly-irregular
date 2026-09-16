@@ -68,10 +68,10 @@ func test_settings_menu_has_echo_checks() -> void:
 	"""SettingsMenu should check echo for navigation actions"""
 	var content = FileAccess.get_file_as_string("res://src/ui/SettingsMenu.gd")
 
-	assert_true(content.contains('is_action_pressed("ui_up") and not event.is_echo()'),
-		"SettingsMenu should check echo for ui_up")
-	assert_true(content.contains('is_action_pressed("ui_down") and not event.is_echo()'),
-		"SettingsMenu should check echo for ui_down")
+	assert_true(_guards_navigation("res://src/ui/SettingsMenu.gd", "ui_up"),
+		"SettingsMenu must refuse echo for ui_up — inline, or by routing through MenuNav")
+	assert_true(_guards_navigation("res://src/ui/SettingsMenu.gd", "ui_down"),
+		"SettingsMenu must refuse echo for ui_down — inline, or by routing through MenuNav")
 
 
 func test_title_screen_has_echo_checks() -> void:

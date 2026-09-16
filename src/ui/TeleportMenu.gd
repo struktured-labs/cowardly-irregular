@@ -244,11 +244,11 @@ func _add_row(idx: int, y: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	# Key + gamepad navigation; mouse handled per-row via MenuMouseHelper
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		_move(-1)
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		_move(1)
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
+	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_move(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 	# ui_page_up/ui_page_down are Godot built-ins with a KEYBOARD default and no pad binding, so
 	# this menu's fast scroll did nothing on a controller. MenuPaging carries both.
