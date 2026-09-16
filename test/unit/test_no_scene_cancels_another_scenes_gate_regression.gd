@@ -32,6 +32,12 @@ extends GutTest
 ## test_a_cue_prompt_is_not_a_wiring so the exclusion cannot be tidied away by someone who sees
 ## only one example.
 ##
+## ⚠️ SECOND DECLARER: test_orphan_boss_cutscene_registry.gd (tick 243) ALSO declares
+## world2_arbiter_intro — as one of 20 KNOWN_PLANNED_INTROS, and its arms red when an entry gains a
+## code reference. So wiring that scene reds BOTH files, correctly, and retiring either declaration
+## means checking the other. A self-retiring pin protects the fact; it does not tell you how many
+## pins the fact has (cowir-music, who shipped a red branch as the second declarer of one collision).
+##
 ## KNOWN LATENT, declared rather than allowlisted: world2_arbiter_intro (11 authored steps) writes
 ## arbiter_suburban_intro_complete, which gates world2_chapter4 — and world2_chapter4 writes it too,
 ## as its own completion flag. The intro reaches a player by no form today, so it cancels nothing.
