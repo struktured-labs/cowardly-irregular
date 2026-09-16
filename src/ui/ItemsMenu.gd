@@ -629,18 +629,11 @@ func _handle_item_list_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		if _item_list.size() > 0:
-			selected_item_index = (selected_item_index - 1 + _item_list.size()) % _item_list.size()
-			_build_ui()
-			SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		if _item_list.size() > 0:
-			selected_item_index = (selected_item_index + 1) % _item_list.size()
-			_build_ui()
-			SoundManager.play_ui("menu_move")
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
+	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step_item(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 
 	elif MenuPaging.page_delta(event) != 0:
@@ -669,23 +662,31 @@ func _handle_item_list_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## One owner per list, so the press path and any later caller cannot drift.
+func _nav_step_item(step: int) -> void:
+	if _item_list.is_empty():
+		return
+	selected_item_index = (selected_item_index + step + _item_list.size()) % _item_list.size()
+	_build_ui()
+	SoundManager.play_ui("menu_move")
+
+
+func _nav_step_target(step: int, target_type) -> void:
+	if target_type == ItemSystem.TargetType.ALL_ALLIES or party.is_empty():
+		return
+	selected_target_index = (selected_target_index + step + party.size()) % party.size()
+	_update_selection()
+	SoundManager.play_ui("menu_move")
+
+
 func _handle_target_selection_input(event: InputEvent) -> void:
 	"""Handle input in target selection mode"""
 	var item = _item_list[selected_item_index]
 	var target_type = item["data"].get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		if target_type != ItemSystem.TargetType.ALL_ALLIES:
-			selected_target_index = (selected_target_index - 1 + party.size()) % party.size()
-			_update_selection()
-			SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		if target_type != ItemSystem.TargetType.ALL_ALLIES:
-			selected_target_index = (selected_target_index + 1) % party.size()
-			_update_selection()
-			SoundManager.play_ui("menu_move")
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step_target(-1 if nav == "ui_up" else 1, target_type)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():

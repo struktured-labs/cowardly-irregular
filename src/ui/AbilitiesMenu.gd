@@ -661,6 +661,15 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 	return panel
 
 
+## One owner for a row step, shared by both directions.
+func _nav_step(step: int, list_size: int) -> void:
+	if list_size <= 0:
+		return
+	selected_index = (selected_index + step + list_size) % list_size
+	_build_ui()
+	SoundManager.play_ui("menu_move")
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle menu input"""
 	if not visible:
@@ -689,18 +698,11 @@ func _input(event: InputEvent) -> void:
 	# List navigation
 	var list_size = _abilities_list.size() if current_tab == Tab.ABILITIES else _passives_list.size()
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		if list_size > 0:
-			selected_index = (selected_index - 1 + list_size) % list_size
-			_build_ui()
-			SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		if list_size > 0:
-			selected_index = (selected_index + 1) % list_size
-			_build_ui()
-			SoundManager.play_ui("menu_move")
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
+	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(-1 if nav == "ui_up" else 1, list_size)
 		get_viewport().set_input_as_handled()
 
 	elif MenuPaging.page_delta(event) != 0:

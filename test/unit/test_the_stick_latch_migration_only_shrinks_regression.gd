@@ -29,18 +29,15 @@ const RAW_DOWN := 'is_action_pressed("ui_down")'
 ## Measured 2026-09-16. Shrinks only.
 const KNOWN_UNCONVERTED := [
 	"res://src/cutscene/CutsceneDialogue.gd",
-	"res://src/ui/AbilitiesMenu.gd",
 	"res://src/ui/BossSelectorMenu.gd",
 	"res://src/ui/CharacterCreationScreen.gd",
 	"res://src/ui/ControlsMenu.gd",
 	"res://src/ui/FormationsMenu.gd",
 	"res://src/ui/GameOverScreen.gd",
 	"res://src/ui/HowToPlayOverlay.gd",
-	"res://src/ui/ItemsMenu.gd",
 	"res://src/ui/JobMenu.gd",
 	"res://src/ui/LensMenu.gd",
 	"res://src/ui/OverworldMenu.gd",
-	"res://src/ui/PartyChatMenu.gd",
 	"res://src/ui/QuestLog.gd",
 	"res://src/ui/RadialPicker.gd",
 	"res://src/ui/RebalanceReviewPanel.gd",
@@ -163,5 +160,5 @@ func test_the_scan_finds_both_populations() -> void:
 	assert_gt(scan["converted"].size(), 0, "the converted set must be non-empty, or nothing uses the helper")
 	assert_true(scan["converted"].has("res://src/ui/EquipmentMenu.gd"),
 		"a known converted surface must be found, or the MenuNav probe is wrong")
-	assert_true(scan["raw"].has("res://src/ui/ItemsMenu.gd"),
+	assert_true(scan["raw"].has("res://src/ui/SaveScreen.gd"),
 		"a known unconverted surface must be found, or the raw probe is wrong")
