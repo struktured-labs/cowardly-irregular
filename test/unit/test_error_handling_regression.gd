@@ -561,12 +561,16 @@ func test_autobattle_action_def_default_case() -> void:
 	"""AutobattleSystem _action_def_to_action should handle unknown action types"""
 	var content = FileAccess.get_file_as_string("res://src/autobattle/AutobattleSystem.gd")
 
-	# Find the action def match and check for default case
+	# Bounded by the FUNCTION, not by a character count. A fixed `substr(idx, 1200)` window fails in both
+	# directions: the body grows past it and the arm reds on correct code (it did, when
+	# _action_def_to_action gained the implied-target default), or a later function drifts inside it and
+	# the arm passes on the wrong body. Precedent: 24ad0b3, "bound the guard by its function".
 	var idx = content.find("func _action_def_to_action")
-	if idx > 0:
-		var context = content.substr(idx, 1200)
-		assert_true(context.contains("_:") and context.contains("Unknown action type"),
-			"_action_def_to_action should have default case with warning")
+	assert_gt(idx, -1, "CONTROL: _action_def_to_action must exist for this arm to mean anything")
+	var next_func: int = content.find("\nfunc ", idx + 1)
+	var context = content.substr(idx, (next_func - idx) if next_func > idx else 2000)
+	assert_true(context.contains("_:") and context.contains("Unknown action type"),
+		"_action_def_to_action should have default case with warning")
 
 
 ## Combatant Revive Safety Tests
