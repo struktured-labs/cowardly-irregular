@@ -92,3 +92,28 @@ func test_the_members_this_file_reaches_still_exist() -> void:
 		assert_true(SoundManager.has_method(name), "SoundManager has no method %s()" % name)
 	for name in props:
 		assert_true(name in SoundManager, "SoundManager has no property %s" % name)
+
+
+func test_a_bed_does_not_play_against_itself() -> void:
+	## ⛔ A CONSEQUENCE OF THE MUSIC-FIRST CHANGE, NOT A PRE-EXISTING BUG. While the ambient
+	## layer resolved from the SFX store the Jukebox could only ever double a 187s bed against a
+	## 5s sting — obviously two things. Now both players can hold the SAME FILE at an arbitrary
+	## offset, 16 dB apart, which is comb filtering rather than layering. Reachable: the Jukebox
+	## opens from the overworld menu, and "Dripping Stone" is a row in it while an ice zone is
+	## running that exact bed.
+	##
+	## ⚠️ DECLARED RESIDUAL: the ambient layer does NOT come back when the Jukebox closes.
+	## _update_zone_ambient fires on a zone CHANGE, so a player who auditions the bed where it is
+	## already playing keeps zone ambience off until they walk into another zone. That is the
+	## deliberate trade — silence beats a flanged double — and it is written here rather than
+	## discovered, so a complaint about it is a decision to revisit and not a mystery.
+	SoundManager.play_ambient("ambient_cave")
+	assert_true(SoundManager._ambient_player.playing, "CONTROL: the zone ambience is running before the Jukebox asks")
+	var amb_path: String = SoundManager._ambient_player.stream.resource_path
+	SoundManager.play_music("ambient_cave", true)
+	await get_tree().create_timer(0.2).timeout
+	assert_true(SoundManager._music_player.stream != null and SoundManager._music_player.stream.resource_path == amb_path,
+		"CONTROL: the music player took the same file — without that there is no collision to defend against")
+	assert_false(SoundManager._ambient_player.playing,
+		"%s is running on BOTH players at once — one file, two offsets, 16 dB apart" % amb_path)
+	SoundManager.stop_music()
