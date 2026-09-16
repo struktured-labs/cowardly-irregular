@@ -66,6 +66,30 @@ TOTAL=${#SRCS[@]}
 
 echo "[web-audio] ${TOTAL} masters -> ${BITRATE} kbps mono, staging in ${OUT_DIR}"
 
+# ── CROSS-WORKTREE CACHE ─────────────────────────────────────────────────────────────────────
+# The idempotence check below is mtime-based and lives INSIDE the worktree, so it does nothing
+# for a publish: every release builds in a fresh `tmp/pub<N>` with no tmp/web_audio, and a git
+# checkout stamps the masters with the checkout time, so even a copied tier would look stale.
+# Measured across .363-.366: 107s, 108s, 107s, 110s — ~108 seconds per publish to re-encode a
+# byte-identical 83 MB tier, because the masters had not changed.
+#
+# KEYED ON CONTENT, not on mtime or size. A size-keyed cache would serve a stale tier for an
+# edited master that kept its byte count, and nothing downstream would catch it: deploy_web's
+# gate 3b compares the STAGE against the TIER, and both would come from the same bad cache.
+# Hashing 169 MB of masters costs 1.0s against the 108s it saves.
+_CACHE_ROOT="${WEB_AUDIO_CACHE:-$HOME/.cache/cowir_web_audio}"
+_key="$(printf '%s\n' "${SRCS[@]}" \
+        | while read -r _f; do printf '%s %s\n' "$(basename "$_f")" "$(md5sum < "$_f" | cut -d' ' -f1)"; done \
+        | md5sum | cut -d' ' -f1)"
+_CACHE_DIR="${_CACHE_ROOT}/${BITRATE}k_${_key}"
+if [ -d "$_CACHE_DIR" ] && [ "$(find "$_CACHE_DIR" -name '*.ogg' | wc -l)" -eq "$TOTAL" ]; then
+    cp -a "$_CACHE_DIR/." "$OUT_DIR/" && find "$OUT_DIR" -name '*.ogg' -exec touch {} +
+    echo "[web-audio] restored ${TOTAL} track(s) from the cache — no re-encode"
+    echo "[web-audio]   ${_CACHE_DIR}"
+else
+    echo "[web-audio] cache miss (${BITRATE}k_${_key:0:8}) — encoding"
+fi
+
 src_bytes=0; out_bytes=0; transcoded=0; reused=0
 for src in "${SRCS[@]}"; do
     out="$OUT_DIR/$(basename "$src")"
@@ -91,6 +115,20 @@ for src in "${SRCS[@]}"; do
 done
 
 echo "[web-audio] transcoded ${transcoded}, reused ${reused}"
+
+# POPULATE ONLY A COMPLETE, VERIFIED TIER. The loop above aborts on an empty output, so reaching
+# here means every track exists and is non-empty; writing the cache before that check would
+# persist a broken tier for every future publish.
+if [ ! -d "$_CACHE_DIR" ]; then
+    mkdir -p "$_CACHE_DIR" && cp -a "$OUT_DIR/." "$_CACHE_DIR/" \
+        && echo "[web-audio] cached this tier for the next build" \
+        || echo "[web-audio] note: could not write the cache — this run is unaffected" >&2
+    # Bound the disk: keep the three most recent tiers for THIS bitrate. A tier is 83 MB and a
+    # key changes whenever any master does, so an unbounded cache grows with every audio edit.
+    ls -1dt "${_CACHE_ROOT}/${BITRATE}k_"* 2>/dev/null | tail -n +4 | while read -r _old; do
+        rm -rf "$_old" && echo "[web-audio] pruned an older cached tier: $(basename "$_old")"
+    done
+fi
 python3 - "$src_bytes" "$out_bytes" "$TOTAL" "$BITRATE" "$PCK_LIMIT_MIB" "$CACHE_LIMIT_MIB" <<'PY'
 import sys, os, glob, re
 src, out, n, br, limit, cache = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], int(sys.argv[5]), int(sys.argv[6])
