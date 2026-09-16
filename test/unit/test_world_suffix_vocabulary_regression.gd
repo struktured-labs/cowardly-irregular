@@ -206,9 +206,20 @@ func test_the_interior_return_cannot_smuggle_a_suffix_either() -> void:
 		"_current_world_suffix has %d assignment sites. It is safe ONLY as a cache of this function's own output; a second writer (save-load, settings restore, a test helper) breaks that invariant from outside the function the coverage parser reads." % writes.size())
 
 	## The count above catches a writer APPEARING; this catches the writer MOVING (konsolai, 2026-08-09).
-	assert_eq(src.split("\n").count("func play_area_music(area_type: String) -> void:"), 1,
+	## \u26a0 MATCHED ON THE NAME, NOT THE SIGNATURE. This pinned the whole declaration line
+	## including its parameter list, so adding a parameter broke it while the property it defends
+	## was untouched — a use-site pinned to a spelling. 2026-09-16: `play_area_music` gained a
+	## `resume_at` argument so a field bed could pick up where a battle interrupted it, and this
+	## arm read 0 declarations and took the bounds check down with it. `func play_area_music(`
+	## still identifies the declaration uniquely and survives its arguments changing.
+	const PAM_DECL := "func play_area_music("
+	var pam_decls: int = 0
+	for l in src.split("\n"):
+		if str(l).begins_with(PAM_DECL):
+			pam_decls += 1
+	assert_eq(pam_decls, 1,
 		"SCOPE control: the play_area_music declaration must occur exactly once or the bounds below are arbitrary")
-	var pam: int = src.find("func play_area_music(area_type: String) -> void:")
+	var pam: int = src.find(PAM_DECL)
 	var pam_end: int = src.find("\nfunc ", pam + 1)
 	if pam_end < 0:
 		pam_end = src.length()
