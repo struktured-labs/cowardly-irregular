@@ -1838,13 +1838,12 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
-	# Unified navigation via input actions (covers both keyboard and gamepad)
-	# Note: Check echo to prevent rapid-fire when holding d-pad
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		_nav_step(-1)
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		_nav_step(1)
+	# Unified navigation via input actions (covers both keyboard and gamepad), through MenuNav:
+	# ui_up/ui_down bind the left stick's Y axis and an axis carries no echo flag, so one push used
+	# to step five rows — in the menu a player touches on every turn of every battle.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
