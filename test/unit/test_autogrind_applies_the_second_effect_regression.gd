@@ -257,7 +257,7 @@ func after_all() -> void:
 ## defence against a real hazard, and writing it tonight would be shipping it untested. Correct as of
 ## 2026-09-16; if you add an arm that reaches a new member, add it here or derive the set properly.
 const _FLOOR_ARM_NAME := "test_every_resolver_member_this_file_reaches_still_exists"
-const _PINNED_COUNT := 3
+const _PINNED_MEMBERS := ["_enemy_party", "_player_party", "_resolve_ability"]
 
 func test_every_resolver_member_this_file_reaches_still_exists() -> void:
 	## @cowir-ai's counter to the snapshot limit above, and it converts the failure mode rather than
@@ -292,10 +292,26 @@ func test_every_resolver_member_this_file_reaches_still_exists() -> void:
 			reached[m.get_string(1)] = true
 	reached.erase("_test_disable_persistence")
 	reached.erase("PER_BATTLE_METAS")   ## read from SOURCE on purpose — see the arm above
-	gut.p("    reaches before this arm: %d | pinned: %d" % [reached.size(), _PINNED_COUNT])
-	assert_gt(reached.size(), 0, "CONTROL: the scan found reaches, or this count proves nothing")
-	assert_eq(reached.size(), _PINNED_COUNT,
-		"this file now reaches %d distinct members and the floor pins %d — add the new one, the list is a snapshot: %s" % [reached.size(), _PINNED_COUNT, str(reached.keys())])
+	## ⛔ SETS, NOT SIZES. This compared COUNTS until 2026-09-16, and @cowir-cutscenes' completeness
+	## finding is why that is not enough: pin {A,B,X} where X exists but is never reached, while the
+	## file reaches {A,B,C}, and the existence arm passes (all three exist) AND the count passes
+	## (3 == 3) — with C unpinned and X spurious. Equal cardinality is not equal membership, and an
+	## over-count is the same defect as an under-count in a louder coat.
+	var pinned: Dictionary = {}
+	for x in _PINNED_MEMBERS:
+		pinned[x] = true
+	assert_gt(reached.size(), 0, "CONTROL: the scan found reaches, or this comparison proves nothing")
+	var unpinned: Array = []
+	for k in reached:
+		if not pinned.has(k):
+			unpinned.append(k)
+	var spurious: Array = []
+	for k in pinned:
+		if not reached.has(k):
+			spurious.append(k)
+	gut.p("    reaches: %d | pinned: %d | unpinned: %s | spurious: %s" % [reached.size(), pinned.size(), str(unpinned), str(spurious)])
+	assert_eq(unpinned, [], "this file reaches members the floor does not pin — the list is a snapshot: %s" % str(unpinned))
+	assert_eq(spurious, [], "the floor pins members this file no longer reaches — stale entries: %s" % str(spurious))
 
 	var missing: Array = []
 	if _res.get("_enemy_party") == null: missing.append("_enemy_party")
