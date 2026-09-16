@@ -769,6 +769,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						actual = actual / 2
 					target.take_damage(actual, true)
 					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, actual])
+					_maybe_inflict_status(caster, target, ability, ability_id)
 
 		"physical":
 			for target in targets:
@@ -776,6 +777,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var base_dmg = int(caster.get_buffed_stat("attack", caster.attack) * power)
 					var dmg = _resolve_attack_with_power(caster, target, base_dmg)
 					_log("%s uses %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dmg])
+					_maybe_inflict_status(caster, target, ability, ability_id)
 
 		"mp_restore":
 			## pray (single_ally) and channel (self) had no arm and fell to the default, which
@@ -881,6 +883,43 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power)
 					target.take_damage(max(1, base_dmg), true)
 					_log("%s uses %s on %s" % [caster.combatant_name, ability_id, target.combatant_name])
+
+
+## The status a DAMAGING ability inflicts, on the same roll the live engine makes.
+##
+## ⛔ Headless dealt the damage and dropped the status entirely: 68 abilities author `effect_chance`
+## (0.2 to 1.0) and the grind honoured none of them, in EITHER direction — the Bard's Riff never
+## blinded, plague_bite never poisoned at its authored 1.0, and no enemy ever stunned the party. A
+## player spends hours in the grind, so this is not a corner.
+##
+## Mirrors BattleManager:4899-4920 — the parity anchor, including both of its aliases and its
+## deliberate 0.0 default (a damaging ability opts IN to a status by authoring a chance; only
+## `random_debuff` defaults to 1.0, because two abilities present the debuff as their headline and
+## omit the key). Kept as literal arms rather than a shared helper for the reason this file's other
+## mirrors are: the two engines are separate implementations, and the parity guard scans both.
+const _RANDOM_DEBUFF_POOL := ["poison", "blind", "burn", "confuse", "fear", "silence", "curse"]
+
+
+func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: String) -> void:
+	if target == null or not target.is_alive:
+		return
+	var effect := str(ability.get("effect", ""))
+	if effect == "":
+		return
+	var chance: float = float(ability.get("effect_chance", 1.0 if effect == "random_debuff" else 0.0))
+	if chance <= 0.0 or randf() >= chance:
+		return
+	var status_to_add := effect
+	if effect == "random_debuff":
+		status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
+	## freeze aliases to stun and burn to burning — the DoT ticks only "burning", and both aliases
+	## are applied at the same point live applies them, so the cleanse lists match too.
+	if status_to_add == "freeze":
+		status_to_add = "stun"
+	if status_to_add == "burn":
+		status_to_add = "burning"
+	target.add_status(status_to_add, int(ability.get("duration", 3)))
+	_log("%s inflicts %s on %s (%s)" % [caster.combatant_name, status_to_add, target.combatant_name, ability_id])
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:

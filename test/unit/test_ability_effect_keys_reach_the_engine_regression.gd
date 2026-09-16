@@ -67,12 +67,26 @@ extends GutTest
 ## — it reads `ability.get(...)` itself and does NOT delegate ability resolution, borrowing
 ## BattleManager only for round counts, AP rules and party registration. So a key consumed
 ## by the live engine and ignored by the grind scores CONSUMED here, and the grind is where
-## a player spends hours. Measured on 1f5c8d2d, by literal key spelling in each file (unchanged from b621a0e0):
+## a player spends hours.
 ##
-##     read by BOTH engines        13
-##     read by the LIVE engine only 45   incl. effect_chance (68 abilities), secondary_effect,
-##                                       hits, drain_percentage, corruption_risk, summon_*
-##     read by NEITHER               5   <- exactly UNREAD_EFFECT_KEYS, so that part is sound
+## Re-measured 2026-09-16 on this file's OWN instrument — `GdSource.code_of` on each engine, literal
+## key spelling, all 70 authored keys — after the grind learned to roll `effect_chance`:
+##
+##     read by BOTH engines        14   was 13; effect_chance crossed over
+##     read by the LIVE engine only 43   was 45   incl. secondary_effect, hits, drain_percentage,
+##                                       corruption_risk, summon_* — each still a grind blind spot
+##     read by NEITHER ENGINE      13
+##
+## ⚠️ The old line read "read by NEITHER 5 <- exactly UNREAD_EFFECT_KEYS". That equality does not hold
+## on this instrument and the number was never comparable: UNREAD_EFFECT_KEYS is about the whole of
+## `src/`, where `animation`, `family`, `tier`, `cost`, `condition`, `threshold`, `trigger` and
+## `magic_school` are all read by SOMETHING (BattleScene and friends) while neither ENGINE reads them.
+## Two scopes, one number. Stated rather than silently re-fitted, because the paragraph's point is the
+## GAP between the engines and that part is unchanged.
+##
+## What the crossing bought, measured on the real resolver at 400 casts each: riff 0 -> 284 (authored
+## 0.7), poison_touch 0 -> 400 (1.0), ice_prison 0 -> 320 (0.8), shield_bash 0 -> 107 (0.3).
+## test_the_grind_inflicts_what_the_battle_does owns that behaviour now.
 ##
 ## Two lanes found real defects in precisely this gap in two releases: vanish/shadow_step
 ## applied and never read (.330), and cleanse writing a status named "cleanse" onto an ally
@@ -316,8 +330,10 @@ func test_the_corpus_holds_two_engines_and_can_tell_them_apart() -> void:
 	# Reds in the GOOD direction — someone taught the grind about effect_chance.
 	assert_true(bm.contains("\"effect_chance\""),
 		"effect_chance is authored on 68 abilities and read by the live engine; if BattleManager stopped reading it this file's premise is stale")
-	assert_false(hr.contains("\"effect_chance\""),
-		"GOOD NEWS: the headless resolver now reads effect_chance, so the live-only set has shrunk. Re-measure the 13/45/5 split in the third limit above and update it — the number is the whole point of that paragraph.")
+	## Flipped 2026-09-16, in the direction this assert was written to invite: the grind now rolls the
+	## authored chance instead of dropping every status a damaging ability inflicts.
+	assert_true(hr.contains("\"effect_chance\""),
+		"the grind stopped reading effect_chance — every damaging ability's status is silently dropped there again, which is what test_the_grind_inflicts_what_the_battle_does measures in behaviour")
 
 	# ⛔ THERE WAS A THIRD ASSERT HERE AND IT WAS REDUNDANT. It re-checked the five
 	# UNREAD_EFFECT_KEYS against each engine separately. @cowir-story's asymmetry, and they
