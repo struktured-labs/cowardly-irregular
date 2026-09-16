@@ -21,6 +21,7 @@ var _saved_party: Array
 var _saved_current
 var _saved_flags: Dictionary
 var _saved_persist: bool
+var _saved_state: int
 
 
 func before_each() -> void:
@@ -29,17 +30,25 @@ func before_each() -> void:
 	_saved_current = BattleManager.current_combatant
 	_saved_flags = GameState.battle_fx_flags.duplicate()
 	_saved_persist = AutobattleSystem._test_disable_persistence
+	_saved_state = BattleManager.current_state
 	AutobattleSystem._test_disable_persistence = true
 	GameState.battle_fx_flags.erase("advance_aura")
 
 
+## ⛔ RESTORE ONLY WHAT IS STILL ALIVE. An earlier file can leave a freed Combatant in the autoload;
+## assigning one is a script error, and a script error ABORTS the rest of after_each — so the lines
+## below it never ran and this file left the autoload dirty for whoever came next. It cost a red in a
+## 91-file sweep (test_commit_defer_go_back_and_close_each_clear_it, whose CONTROL reads that state)
+## while every file passed alone.
 func after_each() -> void:
 	Engine.time_scale = _saved_time_scale
 	BattleManager.player_party.clear()
 	for c in _saved_party:
-		BattleManager.player_party.append(c)
-	BattleManager.current_combatant = _saved_current
+		if is_instance_valid(c):
+			BattleManager.player_party.append(c)
+	BattleManager.current_combatant = _saved_current if is_instance_valid(_saved_current) else null
 	GameState.battle_fx_flags = _saved_flags
+	BattleManager.current_state = _saved_state
 	AutobattleSystem._test_disable_persistence = _saved_persist
 
 
@@ -478,6 +487,10 @@ func _menu_for(scene) -> Object:
 func test_commit_defer_go_back_and_close_each_clear_it() -> void:
 	## queue_changed(0) clears on submit and close, but defer and go-back are not queue mutations —
 	## so each exit is driven on its own, starting from a live aura every time.
+	## ⛔ SET the idle state, never assert the ambient one: an earlier file in the same GUT process can
+	## leave the autoload mid-selection, and this arm then failed on its own CONTROL in a 92-file sweep
+	## while passing alone. What it needs is that go-back finds no live battle, which is now arranged here.
+	BattleManager.current_state = BattleManager.BattleState.INACTIVE
 	assert_ne(BattleManager.current_state, BattleManager.BattleState.PLAYER_SELECTING,
 		"CONTROL: the autoload is idle, so go-back returns without touching a real battle")
 	var exits := {

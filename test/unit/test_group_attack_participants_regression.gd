@@ -43,12 +43,17 @@ func test_combo_magic_element_pool_uses_participants() -> void:
 		"Combo Magic element pool must use participants.")
 
 
+## The declaration moved into group_participants() when the COMMAND MENU began asking for the same
+## set (it had been gating on every alive member, with a phantom +1 AP for the actor). The intent is
+## unchanged and is what this pins: the pooled set is computed, from the selection order, before the gates.
 func test_participants_built_before_gates() -> void:
 	var text = _read(BATTLE_MANAGER_PATH)
-	var participants_pos := text.find("var participants: Array[Combatant] = []")
+	assert_true(text.find("out.append(current_combatant)") > -1 and text.find("for i in range(selection_index + 1, selection_order.size()):") > -1,
+		"group_participants() must build the pooled set from the selection order")
+	var participants_pos := text.find("var participants: Array[Combatant] = group_participants()")
 	var limit_pos := text.find("group_type == \"limit_break\":")
 	var combo_pos := text.find("group_type == \"combo_magic\":")
-	assert_true(participants_pos > -1, "participants array declaration must exist in player_group_attack")
+	assert_true(participants_pos > -1, "player_group_attack must take its participants from group_participants()")
 	assert_true(limit_pos > participants_pos,
 		"participants must be computed BEFORE the limit_break gate")
 	assert_true(combo_pos > participants_pos,

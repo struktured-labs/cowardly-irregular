@@ -1902,6 +1902,38 @@ func player_advance(actions: Array[Dictionary]) -> void:
 	_end_selection_turn()
 
 
+## What one participant must already hold to join each pooled strike. The COMMAND MENU reads this and
+## group_participants() too, so a row is never offered that this function will refuse.
+const GROUP_AP_COST: Dictionary = {"all_out_attack": 1, "combo_magic": 2, "limit_break": 4}
+
+
+## The PCs a group attack pools: the actor, plus everyone after them in the selection order. Members
+## EARLIER in the order already chose their own action — they neither pay nor gate
+## (test_group_attack_participants_regression).
+func group_participants() -> Array[Combatant]:
+	var out: Array[Combatant] = []
+	if current_combatant == null:
+		return out
+	out.append(current_combatant)
+	for i in range(selection_index + 1, selection_order.size()):
+		var c = selection_order[i]
+		if c in player_party and c.is_alive:
+			out.append(c)
+	return out
+
+
+## The first participant who cannot pay for this group type, or null when it can be launched now.
+## ⛔ The menu used to answer this itself, over ALL alive members and with a phantom +1 AP for the
+## actor — whose natural gain is already in current_ap by the time the menu opens. Measured in a live
+## battle: actor at 3 AP with the party at 4 showed Limit Break ENABLED and the engine REFUSED it.
+func group_ap_shortfall(group_type: String, ap_cost: int = -1) -> Combatant:
+	var need: int = ap_cost if ap_cost >= 0 else int(GROUP_AP_COST.get(group_type, 1))
+	for member in group_participants():
+		if member.current_ap < need:
+			return member
+	return null
+
+
 func player_group_attack(group_type: String, formation_id: String = "") -> void:
 	"""Initiate a group attack — all alive party members pool AP for a combined strike.
 	group_type: "all_out_attack", "limit_break", "combo_magic", or "formation"
@@ -1914,12 +1946,7 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 	_track_manual_player_turn()
 
 	# Participants are the only PCs whose AP/element should gate group attacks.
-	var participants: Array[Combatant] = []
-	participants.append(current_combatant)
-	for i in range(selection_index + 1, selection_order.size()):
-		var c = selection_order[i]
-		if c in player_party and c.is_alive:
-			participants.append(c)
+	var participants: Array[Combatant] = group_participants()
 
 	# Limit Break requires full AP (>= 4) from every PARTICIPATING member.
 	if group_type == "limit_break":
