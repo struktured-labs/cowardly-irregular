@@ -7002,6 +7002,8 @@ func _on_corruption_effect_added(effect: String) -> void:
 	Toast.show(self,
 		"⚠ Reality glitches: %s" % display,
 		Toast.DANGER_COLOR)
+	# One authored cue per effect; their levels were trimmed in SoundManager and never played.
+	SoundManager.play_battle("corruption_gain_" + effect)
 
 
 ## Tick 179: Scriptweaver edits via modify_constant fire
