@@ -16,6 +16,19 @@ extends GutTest
 ## cannot read) and if it SHRINKS (someone wired one and left the declaration standing — cowir-sprites'
 ## arm, adopted: a declaration that outlives its fact is worse than none).
 
+## ⛔ WHAT THIS RATCHET IS STRUCTURALLY BLIND TO, named because a presence census cannot find its
+## own blind spot. This asks "is the key READ on the path this ability takes" — a presence question.
+## It cannot see:
+##   1. A key read and its answer DISCARDED. Mutation-7's shape: `var v = ability.get("k", 0.0)`
+##      followed by a branch that does nothing with `v` scores CONSUMED here.
+##   2. A handler that exists and HARDCODES what the key authors. cowir-autogrind hit this in the
+##      grind (11791): an arm restored 25% MP where live reads an authored 5%, so the grep was
+##      correctly NON-EMPTY and the behaviour was five times off. Axis 1 and axis 2 are both green
+##      on that shape; only comparing the two implementations line by line finds it.
+## Both are VALUE divergences, and every arm in this file is a PRESENCE arm. Measured on live
+## 2026-09-16 for case 1 — every `var x = ability.get(...)` in BattleManager uses `x` again in the
+## same function, 0 dead reads — so the blind spot is real and currently unoccupied here, which is
+## the honest thing to record rather than "no instances" or silence.
 const BM_PATH := "res://src/battle/BattleManager.gd"
 const ABILITIES := "res://data/abilities.json"
 const GdSourceHelper = preload("res://test/unit/helpers/gd_source.gd")
