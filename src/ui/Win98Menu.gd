@@ -597,7 +597,8 @@ func _play_advance_sound(depth: int = 1) -> void:
 
 func _play_undo_sound() -> void:
 	"""Play sound when undoing a queued action"""
-	SoundManager.play_ui("advance_undo")
+	# Battle channel, not UI: on play_ui this sat ~20 dB under the press it undoes.
+	SoundManager.play_advance_state("advance_undo")
 
 
 func _play_defer_sound() -> void:

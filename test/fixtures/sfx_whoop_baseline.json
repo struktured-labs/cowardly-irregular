@@ -723,6 +723,21 @@
       "sha256": "1c2b5199f215ac28248101ae95ee70d0e944d233c935366138e6e9aca87b27e6",
       "file": "assets/audio/sfx/advance_queue_full.ogg"
     },
+    "advance_undo": {
+      "early_hz": 6778.1,
+      "late_hz": 6032.8,
+      "rms_db": -22.9,
+      "low_hz": 6032.8,
+      "high_hz": 7018.0,
+      "sweep": 1.16,
+      "rho_time": -0.5,
+      "rho_energy": 1.0,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "4102133c5177532b026509e72f272d6f9cada75787f6406329bab48ae18d53a8",
+      "file": "assets/audio/sfx/advance_undo.ogg"
+    },
     "advance_generic_1": {
       "early_hz": 1297.2,
       "late_hz": 1382.8,
