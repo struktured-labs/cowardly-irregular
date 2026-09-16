@@ -25,6 +25,7 @@ extends GutTest
 ## arm here. Mutating it alone is GREEN, and that is expected rather than a hole. The proof is a
 ## PAIR — declare slime's walk_down on row 3 AND blind the owner, and the first arm reds naming the
 ## key. Neither half is evidence; the pair is. Same shape as the player's sheet one hour ago.
+const GuardSubject := preload("res://test/unit/helpers/guard_subject.gd")
 const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const Roamer := preload("res://src/exploration/RoamingMonster.gd")
 const MANIFEST := "res://data/sprite_manifest.json"
@@ -156,43 +157,19 @@ func test_the_roster_agreeing_with_the_convention_is_recorded_not_assumed() -> v
 		+ "it rather than leaving a stale claim: %s") % [divergent])
 
 
-## ⛔ THIS GUARD WENT SILENT WHEN ITS SUBJECT WAS RENAMED, AND EVERY CARDINAL STAYED CLEAN.
-## Measured on this file 2026-09-16, before this arm existed — rename `_update_row_from_move_dir`
-## away and the run reports:
-##
-##     EC=0 · Passing 5 · Failing 0 · no Risky line · Asserts 73 -> 67
-##
-## The arms assert FIRST and abort LATER, so GUT scores them Passing. `run_tests.sh`'s exit 4 fires
-## when a test asserted NOTHING, so it structurally cannot see this — cowir-ai's RUNG 3 (2026-09-16):
-## rung 1 is Risky and the wrapper catches it, rung 2 is a real failure, rung 3 is visible ONLY to a
-## per-file floor. The assert collapse corroborates and nothing gates on it.
-##
-## 🔑 DERIVED FROM THIS FILE'S OWN TEXT rather than hand-listed, so a new `.call("...")` is floored
-## the day it is written. `has_method` ANSWERS instead of raising — an existence arm built on a
-## direct read aborts alongside the arms it exists to catch (cowir-sfx's load-bearing point).
-##
-## 📌 Inline rather than shared, deliberately: two guards in this lane need it, and a seventh private
-## helper under test/unit is the duplication class this fleet measured today. RETIREMENT CONDITION —
-## if a THIRD guard needs this, promote it to a shared helper and delete both copies.
-func test_every_method_this_guard_drives_by_name_exists() -> void:
-	var own_src := FileAccess.get_file_as_string("res://test/unit/test_a_roaming_monster_reads_its_declared_sheet.gd")
-	assert_gt(own_src.length(), 500,
-		"VOID: this guard could not read its own source, so the name list below is empty by construction")
-	var re := RegEx.new()
-	re.compile('\\.call\\("([a-zA-Z_][a-zA-Z_0-9]*)"')
-	var names := {}
-	for m in re.search_all(own_src):
-		names[m.get_string(1)] = true
-	assert_gt(names.size(), 0,
-		"VOID: no `.call(\"name\")` found in this file's own text — the extraction is broken, not the subject")
-
-	var subject = Roamer.new()
+## ⛔ THE SILENT-PASS FLOOR. This guard drives its subject BY NAME; rename the member and every
+## cardinal stays clean — see test/unit/helpers/guard_subject.gd for the four measurements and why
+## run_tests.sh's exit 4 cannot see this rung. Names are DERIVED from this file's own text, so a
+## new `.call("...")` is floored the day it is written rather than the day someone remembers.
+func test_every_member_this_guard_drives_by_name_exists() -> void:
+	var subject: Object = Roamer.new()
 	add_child_autofree(subject)
-	var missing: Array = []
-	for n in names:
-		if not subject.has_method(str(n)):
-			missing.append(str(n))
-	missing.sort()
-	assert_eq(missing, [],
-		("this guard drives the subject BY NAME and those methods are gone, so every arm that uses "
-		+ "them would ABORT INTO A SILENT PASS — EC=0, nothing failing, nothing risky: %s") % [missing])
+	var calls: Dictionary = GuardSubject.audit_calls("res://test/unit/test_a_roaming_monster_reads_its_declared_sheet.gd", subject)
+	var props: Dictionary = GuardSubject.audit_properties("res://test/unit/test_a_roaming_monster_reads_its_declared_sheet.gd", subject)
+	assert_gt(int(calls["found"]) + int(props["found"]), 0,
+		"VOID: no `.call(\"name\")` or `.get(\"_name\")` found in this file's own text — the extraction is broken, not the subject")
+	assert_eq(calls["missing"], [],
+		("this guard drives those methods BY NAME and the subject no longer has them, so its arms "
+		+ "would ABORT INTO A SILENT PASS — EC=0, nothing failing, nothing risky: %s") % [calls["missing"]])
+	assert_eq(props["missing"], [],
+		"this guard reads those private properties by name and the subject no longer has them: %s" % [props["missing"]])
