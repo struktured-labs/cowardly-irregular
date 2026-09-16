@@ -1101,6 +1101,33 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 				caster.set_meta("_next_attack_multiplier", nam)
 				_log("%s charges its next strike (x%.1f) with %s" % [caster.combatant_name, nam, ability_id])
 
+		"meta":
+			## Live routes these to _execute_meta_ability (BattleManager:6427), which matches on
+			## `meta_effect` and does reality manipulation — battle-log narrative plus
+			## GameState.add_corruption(corruption_risk). It deals NO DAMAGE on any branch. Without
+			## this arm all 24 meta abilities fell to the default below, and the EIGHT that target the
+			## opposing side reached its damaging branch: permakill · mind_swap · boss_puppet ·
+			## control_override · mutual_destruction (single_enemy) and corrupt_save · save_deletion ·
+			## time_stop (all_enemies). Measured before the fix: permakill invented 395 damage, and
+			## save_deletion took a 5000 HP party member to 3805.
+			##
+			## REACHABLE BY THIS ENGINE'S OWN SPAWNER, which is why it is not a meta-job curiosity:
+			## permadeath_reaper casts save_deletion and carries autogrind_spawned, so
+			## build_meta_boss_enemy_data instantiates it directly — and all_enemies from the reaper's
+			## side is the PARTY. The grind's meta boss was damaging the party in the fatigue-collapse
+			## fight, with permadeath staking on the table, where live deals nothing.
+			##
+			## NOT PORTING THE MECHANICS: save deletion, permakill and mind-swap are save-side and
+			## scene-side, and corruption_risk / corruption_amount are already DECLARED in the ledger
+			## as struktured's stakes ruling. A no-op is this file's own stated rule for an effect it
+			## does not model — "never damage" — applied one level up, at the TYPE.
+			for target in targets:
+				if target == null or not is_instance_valid(target):
+					continue
+				_log("%s uses %s on %s (meta — unmodelled here, and never damage)" % [caster.combatant_name, ability_id, target.combatant_name])
+			if targets.is_empty():
+				_log("%s uses %s (meta — unmodelled here)" % [caster.combatant_name, ability_id])
+
 		_:
 			## Was: magic damage to targets[0]. AutobattleSystem builds targets from target_type,
 			## so an all_allies ability arrived holding the PARTY and this attacked them. 39
