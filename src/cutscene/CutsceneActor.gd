@@ -62,21 +62,44 @@ static func build(id: String, spec: Dictionary) -> CutsceneActor:
 	return a
 
 
-## Slice the 128x128 4x4 grid into 16 AtlasTextures keyed "row_col".
+## Slice a 4-row x WALK_FRAMES grid into AtlasTextures keyed "row_col". The frame size is DERIVED
+## from the sheet, not assumed: FRAME_SIZE is the convention (159 of 159 overworld sheets are 128x128
+## at 32px today) and a 48px sheet sliced at 32 would have shown a quarter of a figure, silently,
+## because the guard above only required the sheet to be BIG ENOUGH. Same class as cowir-sprites'
+## per-sheet `fps` (2026-09-16): the manifest declares per sheet and the consumer assumed a constant.
 func _load_sheet(path: String) -> bool:
 	if not ResourceLoader.exists(path):
 		return false
 	var tex: Texture2D = load(path)
-	if tex == null or tex.get_width() < FRAME_SIZE * WALK_FRAMES or tex.get_height() < FRAME_SIZE * 4:
+	if tex == null:
+		return false
+	var frame: int = frame_size_of(tex)
+	if frame <= 0:
 		return false
 	for row in 4:
 		for col in WALK_FRAMES:
 			var at := AtlasTexture.new()
 			at.atlas = tex
-			at.region = Rect2(col * FRAME_SIZE, row * FRAME_SIZE, FRAME_SIZE, FRAME_SIZE)
+			at.region = Rect2(col * frame, row * frame, frame, frame)
 			_frames["%d_%d" % [row, col]] = at
 	_apply_frame()
 	return true
+
+
+## The square frame this sheet is cut into: 4 rows of WALK_FRAMES columns. 0 when the sheet cannot be
+## a grid of square frames at all — a sheet that is merely the WRONG size is refused rather than
+## mis-sliced, which is what the old "big enough" test allowed.
+static func frame_size_of(tex: Texture2D) -> int:
+	if tex == null:
+		return 0
+	var h: int = tex.get_height()
+	var w: int = tex.get_width()
+	if h <= 0 or w <= 0 or h % 4 != 0:
+		return 0
+	var frame: int = h / 4
+	if frame <= 0 or w < frame * WALK_FRAMES:
+		return 0
+	return frame
 
 
 ## Headless/unknown-id fallback so a bad spec never crashes a cutscene.
