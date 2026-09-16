@@ -18,6 +18,8 @@ var _cutscene_id: String = ""
 ## The key-item reveal in flight, so a hold-B skip can dismiss it — a held B raises no new press event, and the popup only listens for presses.
 var _key_item_popup: Node = null
 var _skipping: bool = false
+## True while THIS director holds the canonical "cutscene" lock, so a teardown releases only its own.
+var _holds_input_lock: bool = false
 var _fast_forward: bool = false
 var _skip_hold_time: float = 0.0
 ## True while a `battle` step owns the screen: the Director is hidden, so a held B in the duel menu must not count toward a skip it cannot show.
@@ -243,6 +245,20 @@ func _update_layout() -> void:
 	_effects_rect.size = screen_size
 
 
+## A director freed mid-scene left the lock held: _process heartbeats `push_lock("cutscene")` every
+## frame while _active, and ONLY _end_cutscene pops it — so a scene change under a cutscene, or any
+## teardown that does not run the ending, left input dead until the 10s stale reaper. Release what
+## this director is holding, and only what it is holding.
+func _exit_tree() -> void:
+	if not _holds_input_lock:
+		return
+	var tree := get_tree()
+	var ilm = tree.root.get_node_or_null("InputLockManager") if tree else null
+	if ilm:
+		ilm.pop_lock("cutscene")
+	_holds_input_lock = false
+
+
 func _process(delta: float) -> void:
 	if not _active:
 		return
@@ -251,6 +267,7 @@ func _process(delta: float) -> void:
 	var ilm_hb = get_tree().root.get_node_or_null("InputLockManager")
 	if ilm_hb:
 		ilm_hb.push_lock("cutscene")
+		_holds_input_lock = true
 
 	# Handle skip input (hold B/X/Escape) — inert while a duel owns the screen, and the hold resets at that boundary
 	var skip_pressed = Input.is_action_pressed("ui_cancel") and not _battle_in_flight
@@ -2047,6 +2064,7 @@ func _freeze_player() -> void:
 	var ilm = get_tree().root.get_node_or_null("InputLockManager")
 	if ilm:
 		ilm.push_lock("cutscene")
+		_holds_input_lock = true
 	var player = MapSystem.get_player() if MapSystem else null
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(false)
@@ -2056,6 +2074,7 @@ func _unfreeze_player() -> void:
 	var ilm = get_tree().root.get_node_or_null("InputLockManager")
 	if ilm:
 		ilm.pop_lock("cutscene")
+	_holds_input_lock = false
 	var player = MapSystem.get_player() if MapSystem else null
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(true)
