@@ -97,11 +97,11 @@
     }},
 
     {"type": "branch", "condition": "lead_job", "cases": {
-      "fighter": [{"type": "set_flag", "flag": "spotlight_unlocked_fighter", "value": true}],
-      "cleric": [{"type": "set_flag", "flag": "spotlight_unlocked_cleric", "value": true}],
-      "mage": [{"type": "set_flag", "flag": "spotlight_unlocked_mage", "value": true}],
-      "rogue": [{"type": "set_flag", "flag": "spotlight_unlocked_rogue", "value": true}],
-      "bard": [{"type": "set_flag", "flag": "spotlight_unlocked_bard", "value": true}]
+      "fighter": [{"type": "set_flag", "flag": "spotlight_lead_fighter", "value": true}],
+      "cleric": [{"type": "set_flag", "flag": "spotlight_lead_cleric", "value": true}],
+      "mage": [{"type": "set_flag", "flag": "spotlight_lead_mage", "value": true}],
+      "rogue": [{"type": "set_flag", "flag": "spotlight_lead_rogue", "value": true}],
+      "bard": [{"type": "set_flag", "flag": "spotlight_lead_bard", "value": true}]
     }},
 
     {"type": "set_flag", "flag": "prologue_complete", "value": true},
