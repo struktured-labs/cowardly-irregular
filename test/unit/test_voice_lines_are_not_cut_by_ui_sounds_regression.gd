@@ -121,6 +121,11 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 	## A runtime derivation would self-maintain but would read this arm's own body as corpus
 	## (cowir-sprites' tautology class), needing cowir-ai's bare-Object exclusion to stay honest.
 	## Convert it the next time this file gains a reach; until then the list is correct by being fresh.
+	## ⚠️ IF YOU REGENERATE THIS LIST, STRIP COMMENTS FIRST (test/unit/helpers/gd_source.gd). The
+	## generator that produced it read RAW source, so a trailing `# was sm.old_name()` — precisely
+	## what a rename commit writes — becomes a listed member that never existed, and the floor then
+	## REDS ON CORRECT CODE. cowir-music demonstrated that false red in their own floors 2026-09-16.
+	## This list is ghost-free only because no such comment existed when it was generated.
 	for method_name in ["play_voice"]:
 		assert_true(sm.has_method(method_name),
 			"SoundManager has no method %s — this file CALLS it, and whether that shows as Risky or as a silent pass is decided by arm ORDER, not by care" % method_name)
