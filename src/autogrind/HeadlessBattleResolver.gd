@@ -823,6 +823,15 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			for target in targets:
 				if target and target.is_alive:
 					var base_dmg = int(_scaled_base(caster, ability) * power)
+					## The ability's OWN crit roll, mirroring BattleManager:4795. `backstab` authors 0.3 and
+					## is a Rogue ability, so a grind testing a crit build never saw its signature land.
+					## Default 0.0 — an ability opts IN, exactly as live does, so nothing else starts critting.
+					## ⚠️ 1.5 FLAT, matching this file's own basic-attack crit. Live adds PassiveSystem's
+					## crit_damage_bonus on top and the grind mirrors it on NEITHER crit path; declared here
+					## rather than silently halved, because closing it is one change for both paths.
+					if randf() < float(ability.get("crit_chance", 0.0)):
+						base_dmg = int(base_dmg * 1.5)
+						_log("%s crits with %s" % [caster.combatant_name, ability_id])
 					## HP DELTA, not the helper's return: _resolve_attack_with_power returns its computed
 					## figure and take_damage then applies the defense formula AGAIN, so the return runs
 					## high. Live drains a share of what was ACTUALLY dealt, and the log should say so too.

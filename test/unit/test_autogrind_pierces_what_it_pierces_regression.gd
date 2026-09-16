@@ -143,6 +143,25 @@ func test_the_unreachable_sibling_is_still_unreachable() -> void:
 	gut.p("    ignores_resistance owners: %s   grind-drawable casters: %s" % [str(owners), str(drawable)])
 	assert_eq(drawable, [],
 		"a pooled monster can now cast %s — ignores_resistance is reachable in a grind and the declaration is stale" % str(drawable))
+
+	## ⛔ FORM 4, ADDED AFTER THIS ARM SHIPPED WITHOUT IT. `build_meta_boss_enemy_data` instantiates any
+	## monster flagged `autogrind_spawned` straight out of monsters.json — so the pool check above is
+	## not the whole question, and an arm that asked only it would go on passing if meta_knight ever
+	## gained the flag. @cowir-cutscenes' rule is why this matters more than the omission looks: an
+	## oracle that wrongly says UNREACHABLE passes an offender, so its errors have to fall toward
+	## crying wolf, and mine fell the silencing way.
+	var spawnable: Array = []
+	for mid in monsters.keys():
+		if not bool((monsters[mid] as Dictionary).get("autogrind_spawned", false)):
+			continue
+		for aid in (monsters[mid] as Dictionary).get("abilities", []):
+			if owners.has(aid):
+				spawnable.append("%s/%s" % [mid, aid])
+	assert_eq(spawnable, [],
+		"a monster the GRIND'S OWN SPAWNER instantiates can cast %s — reachable by form 4, which this arm did not check when the declaration was written" % str(spawnable))
+	## And the form-4 mechanism must still be the one described, or the check above measures nothing.
+	assert_gt(_autogrind_spawnable_count(monsters), 0,
+		"no monster carries autogrind_spawned any more — form 4 reaches nothing and this check is vacuous rather than clean")
 	## The second path, which a pool census alone would miss: this lane spawns meta-bosses itself.
 	var sys_code: String = GdSource.code_of("res://src/autogrind/AutogrindSystem.gd")
 	assert_gt(sys_code.length(), 5000, "CONTROL: AutogrindSystem was actually read")
@@ -157,3 +176,13 @@ func test_the_resolver_reads_the_key_the_live_engine_reads() -> void:
 		"the resolver must read the same authored key live reads")
 	assert_false(code.contains('ability.get("ignores_resistance"'),
 		"the resolver wired ignores_resistance — no grind can cast it, so this adds a mechanism nothing exercises")
+
+
+## Monsters the grind's own spawner can instantiate. A FLOOR for the form-4 check: if this is zero the
+## check above is vacuous, and a vacuous unreachability check is precisely the silencing error.
+func _autogrind_spawnable_count(monsters: Dictionary) -> int:
+	var n := 0
+	for mid in monsters.keys():
+		if bool((monsters[mid] as Dictionary).get("autogrind_spawned", false)):
+			n += 1
+	return n
