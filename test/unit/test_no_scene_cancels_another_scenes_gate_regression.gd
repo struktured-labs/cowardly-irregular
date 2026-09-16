@@ -22,8 +22,15 @@ extends GutTest
 ##   data/quests/*.json     by KEY (cutscene_on_complete / cutscene / cutscene_id), because SIX
 ##                          scenes — world1..world6_orrery — are reachable by no other form, and
 ##                          this guard's first version could not see any of them.
-## NOT raw JSON text: data/sfx_manifest.json names "world2_arbiter_intro" inside a prompt string,
-## so a blanket scan would read authored PROSE as a wiring and declare the latent case reachable.
+## NOT raw JSON text: data/sfx_manifest.json names cutscene ids inside prompt strings, recording
+## which scene a cue was authored for. Measured 2026-09-16 (cowir-sfx counted 22 mentions across 20
+## keys in their own file; derived here as 16 DISTINCT ids that have a cutscene file, since three
+## keys can name one scene): 16 named in prose, of which 4 are reached by NO real form —
+## world2_arbiter_intro, world3_tempo_intro, world4_curator_intro, world4_warden_intro. So a
+## blanket scan does not merely risk a phantom consumer, it invents exactly four, and each one
+## SILENCES an offender rather than crying wolf. Pinned by
+## test_a_cue_prompt_is_not_a_wiring so the exclusion cannot be tidied away by someone who sees
+## only one example.
 ##
 ## KNOWN LATENT, declared rather than allowlisted: world2_arbiter_intro (11 authored steps) writes
 ## arbiter_suburban_intro_complete, which gates world2_chapter4 — and world2_chapter4 writes it too,
@@ -255,3 +262,35 @@ func test_the_scan_reads_scene_files_and_not_authored_prose() -> void:
 		"control: authored prose still names that id — the reason raw JSON stays out of the corpus")
 	assert_false(_is_reachable("world2_arbiter_intro"),
 		"prose is not a wiring: the latent case stays latent")
+
+
+## Cutscene ids named in an SFX cue's prompt text — provenance, never a consumer.
+func _ids_named_in_sfx_prose() -> Array:
+	var manifest := _read("res://data/sfx_manifest.json")
+	var out: Array = []
+	for name in DirAccess.get_files_at(CUTSCENE_DIR):
+		if not name.ends_with(".json"):
+			continue
+		var parsed = JSON.parse_string(_read(CUTSCENE_DIR + "/" + name))
+		if not (parsed is Dictionary):
+			continue
+		var id: String = str((parsed as Dictionary).get("id", name.trim_suffix(".json")))
+		if id != "" and manifest.contains(id):
+			out.append(id)
+	return out
+
+
+func test_a_cue_prompt_is_not_a_wiring() -> void:
+	# A floor, not a count: cowir-sfx may name more scenes in cue prompts at any time, and that is
+	# the provenance those strings exist for. What must stay true is that none of them COUNTS.
+	var named := _ids_named_in_sfx_prose()
+	assert_gt(named.size(), 5, "control: cue prompts really do name scenes (%d)" % named.size())
+	var phantom: Array = []
+	for id in named:
+		if not _is_reachable(str(id)):
+			phantom.append(id)
+	assert_gt(phantom.size(), 0,
+		"control: at least one prose-named scene is reached by no real form — the set a raw-JSON scan would invent consumers for: %s" % [phantom])
+	for id in phantom:
+		assert_false(_src().contains('"%s"' % id),
+			"a cue's prompt must not read as a wiring for %s" % id)
