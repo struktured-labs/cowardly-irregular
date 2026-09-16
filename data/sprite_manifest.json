@@ -5810,6 +5810,818 @@
         ]
       },
       "generator": "tools/gen_tile_sheet_medieval.py -- cliff+overlay only. Ground tiles stay procedural (TileGenerator already draws them); the 10 props are routed to the artist. Bitmask tiles are generated from the mask and side-checked, never hand-placed."
+    },
+    "suburban": {
+      "path": "res://assets/sprites/tiles/suburban.png",
+      "tier": "T1",
+      "tile": 32,
+      "cliff": {
+        "face": [
+          0,
+          0
+        ],
+        "edge_1": [
+          1,
+          0
+        ],
+        "edge_2": [
+          2,
+          0
+        ],
+        "edge_3": [
+          3,
+          0
+        ],
+        "edge_4": [
+          4,
+          0
+        ],
+        "edge_5": [
+          5,
+          0
+        ],
+        "edge_6": [
+          6,
+          0
+        ],
+        "edge_7": [
+          7,
+          0
+        ],
+        "edge_8": [
+          8,
+          0
+        ],
+        "edge_9": [
+          9,
+          0
+        ],
+        "edge_10": [
+          10,
+          0
+        ],
+        "edge_11": [
+          11,
+          0
+        ],
+        "edge_12": [
+          12,
+          0
+        ],
+        "edge_13": [
+          13,
+          0
+        ],
+        "edge_14": [
+          14,
+          0
+        ],
+        "edge_15": [
+          15,
+          0
+        ]
+      },
+      "overlay": {
+        "fringe_1": [
+          0,
+          1
+        ],
+        "fringe_2": [
+          1,
+          1
+        ],
+        "fringe_3": [
+          2,
+          1
+        ],
+        "fringe_4": [
+          3,
+          1
+        ],
+        "fringe_5": [
+          4,
+          1
+        ],
+        "fringe_6": [
+          5,
+          1
+        ],
+        "fringe_7": [
+          6,
+          1
+        ],
+        "fringe_8": [
+          7,
+          1
+        ],
+        "fringe_9": [
+          8,
+          1
+        ],
+        "fringe_10": [
+          9,
+          1
+        ],
+        "fringe_11": [
+          10,
+          1
+        ],
+        "fringe_12": [
+          11,
+          1
+        ],
+        "fringe_13": [
+          12,
+          1
+        ],
+        "fringe_14": [
+          13,
+          1
+        ],
+        "fringe_15": [
+          14,
+          1
+        ],
+        "stair": [
+          15,
+          1
+        ],
+        "ramp": [
+          0,
+          2
+        ],
+        "shadow": [
+          1,
+          2
+        ]
+      },
+      "derived_from": "MapleHeightsVillage",
+      "derived_palette": {
+        "face_dark": [
+          0.14,
+          0.14,
+          0.15,
+          1.0
+        ],
+        "face_mid": [
+          0.58,
+          0.56,
+          0.54,
+          1.0
+        ],
+        "face_light": [
+          0.72,
+          0.7,
+          0.68,
+          1.0
+        ],
+        "lip": [
+          0.85,
+          0.83,
+          0.8,
+          1.0
+        ],
+        "lip_shadow": [
+          0.2,
+          0.19,
+          0.18,
+          0.85
+        ],
+        "grass": [
+          0.35,
+          0.68,
+          0.3,
+          1.0
+        ],
+        "grass_light": [
+          0.48,
+          0.78,
+          0.38,
+          1.0
+        ],
+        "stair_tread": [
+          0.75,
+          0.73,
+          0.7,
+          1.0
+        ],
+        "stair_riser": [
+          0.45,
+          0.44,
+          0.42,
+          1.0
+        ]
+      },
+      "generator": "tools/gen_tile_sheet_world.py --world suburban -- same bitmask geometry as medieval, recoloured from MapleHeightsVillage._get_cliff_palette(). Manifest cliff art OVERRIDES that palette, so deriving from it keeps the village's colours and adds only detail. derived_palette records what was used: if the village's colours change, this atlas is stale and the guard says so."
+    },
+    "steampunk": {
+      "path": "res://assets/sprites/tiles/steampunk.png",
+      "tier": "T1",
+      "tile": 32,
+      "cliff": {
+        "face": [
+          0,
+          0
+        ],
+        "edge_1": [
+          1,
+          0
+        ],
+        "edge_2": [
+          2,
+          0
+        ],
+        "edge_3": [
+          3,
+          0
+        ],
+        "edge_4": [
+          4,
+          0
+        ],
+        "edge_5": [
+          5,
+          0
+        ],
+        "edge_6": [
+          6,
+          0
+        ],
+        "edge_7": [
+          7,
+          0
+        ],
+        "edge_8": [
+          8,
+          0
+        ],
+        "edge_9": [
+          9,
+          0
+        ],
+        "edge_10": [
+          10,
+          0
+        ],
+        "edge_11": [
+          11,
+          0
+        ],
+        "edge_12": [
+          12,
+          0
+        ],
+        "edge_13": [
+          13,
+          0
+        ],
+        "edge_14": [
+          14,
+          0
+        ],
+        "edge_15": [
+          15,
+          0
+        ]
+      },
+      "overlay": {
+        "fringe_1": [
+          0,
+          1
+        ],
+        "fringe_2": [
+          1,
+          1
+        ],
+        "fringe_3": [
+          2,
+          1
+        ],
+        "fringe_4": [
+          3,
+          1
+        ],
+        "fringe_5": [
+          4,
+          1
+        ],
+        "fringe_6": [
+          5,
+          1
+        ],
+        "fringe_7": [
+          6,
+          1
+        ],
+        "fringe_8": [
+          7,
+          1
+        ],
+        "fringe_9": [
+          8,
+          1
+        ],
+        "fringe_10": [
+          9,
+          1
+        ],
+        "fringe_11": [
+          10,
+          1
+        ],
+        "fringe_12": [
+          11,
+          1
+        ],
+        "fringe_13": [
+          12,
+          1
+        ],
+        "fringe_14": [
+          13,
+          1
+        ],
+        "fringe_15": [
+          14,
+          1
+        ],
+        "stair": [
+          15,
+          1
+        ],
+        "ramp": [
+          0,
+          2
+        ],
+        "shadow": [
+          1,
+          2
+        ]
+      },
+      "derived_from": "BrasstonVillage",
+      "derived_palette": {
+        "face_dark": [
+          0.22,
+          0.15,
+          0.09,
+          1.0
+        ],
+        "face_mid": [
+          0.52,
+          0.36,
+          0.16,
+          1.0
+        ],
+        "face_light": [
+          0.76,
+          0.58,
+          0.28,
+          1.0
+        ],
+        "lip": [
+          0.85,
+          0.68,
+          0.32,
+          1.0
+        ],
+        "lip_shadow": [
+          0.16,
+          0.11,
+          0.06,
+          0.85
+        ],
+        "grass": [
+          0.38,
+          0.62,
+          0.28,
+          1.0
+        ],
+        "grass_light": [
+          0.5,
+          0.74,
+          0.34,
+          1.0
+        ],
+        "stair_tread": [
+          0.62,
+          0.47,
+          0.22,
+          1.0
+        ],
+        "stair_riser": [
+          0.3,
+          0.2,
+          0.1,
+          1.0
+        ]
+      },
+      "generator": "tools/gen_tile_sheet_world.py --world steampunk -- same bitmask geometry as medieval, recoloured from BrasstonVillage._get_cliff_palette(). Manifest cliff art OVERRIDES that palette, so deriving from it keeps the village's colours and adds only detail. derived_palette records what was used: if the village's colours change, this atlas is stale and the guard says so."
+    },
+    "industrial": {
+      "path": "res://assets/sprites/tiles/industrial.png",
+      "tier": "T1",
+      "tile": 32,
+      "cliff": {
+        "face": [
+          0,
+          0
+        ],
+        "edge_1": [
+          1,
+          0
+        ],
+        "edge_2": [
+          2,
+          0
+        ],
+        "edge_3": [
+          3,
+          0
+        ],
+        "edge_4": [
+          4,
+          0
+        ],
+        "edge_5": [
+          5,
+          0
+        ],
+        "edge_6": [
+          6,
+          0
+        ],
+        "edge_7": [
+          7,
+          0
+        ],
+        "edge_8": [
+          8,
+          0
+        ],
+        "edge_9": [
+          9,
+          0
+        ],
+        "edge_10": [
+          10,
+          0
+        ],
+        "edge_11": [
+          11,
+          0
+        ],
+        "edge_12": [
+          12,
+          0
+        ],
+        "edge_13": [
+          13,
+          0
+        ],
+        "edge_14": [
+          14,
+          0
+        ],
+        "edge_15": [
+          15,
+          0
+        ]
+      },
+      "overlay": {
+        "fringe_1": [
+          0,
+          1
+        ],
+        "fringe_2": [
+          1,
+          1
+        ],
+        "fringe_3": [
+          2,
+          1
+        ],
+        "fringe_4": [
+          3,
+          1
+        ],
+        "fringe_5": [
+          4,
+          1
+        ],
+        "fringe_6": [
+          5,
+          1
+        ],
+        "fringe_7": [
+          6,
+          1
+        ],
+        "fringe_8": [
+          7,
+          1
+        ],
+        "fringe_9": [
+          8,
+          1
+        ],
+        "fringe_10": [
+          9,
+          1
+        ],
+        "fringe_11": [
+          10,
+          1
+        ],
+        "fringe_12": [
+          11,
+          1
+        ],
+        "fringe_13": [
+          12,
+          1
+        ],
+        "fringe_14": [
+          13,
+          1
+        ],
+        "fringe_15": [
+          14,
+          1
+        ],
+        "stair": [
+          15,
+          1
+        ],
+        "ramp": [
+          0,
+          2
+        ],
+        "shadow": [
+          1,
+          2
+        ]
+      },
+      "derived_from": "RivetRowVillage",
+      "derived_palette": {
+        "face_dark": [
+          0.17,
+          0.17,
+          0.18,
+          1.0
+        ],
+        "face_mid": [
+          0.4,
+          0.4,
+          0.42,
+          1.0
+        ],
+        "face_light": [
+          0.6,
+          0.6,
+          0.62,
+          1.0
+        ],
+        "lip": [
+          0.72,
+          0.36,
+          0.16,
+          1.0
+        ],
+        "lip_shadow": [
+          0.12,
+          0.1,
+          0.09,
+          0.85
+        ],
+        "grass": [
+          0.38,
+          0.62,
+          0.28,
+          1.0
+        ],
+        "grass_light": [
+          0.5,
+          0.74,
+          0.34,
+          1.0
+        ],
+        "stair_tread": [
+          0.55,
+          0.3,
+          0.14,
+          1.0
+        ],
+        "stair_riser": [
+          0.26,
+          0.26,
+          0.26,
+          1.0
+        ]
+      },
+      "generator": "tools/gen_tile_sheet_world.py --world industrial -- same bitmask geometry as medieval, recoloured from RivetRowVillage._get_cliff_palette(). Manifest cliff art OVERRIDES that palette, so deriving from it keeps the village's colours and adds only detail. derived_palette records what was used: if the village's colours change, this atlas is stale and the guard says so."
+    },
+    "futuristic": {
+      "path": "res://assets/sprites/tiles/futuristic.png",
+      "tier": "T1",
+      "tile": 32,
+      "cliff": {
+        "face": [
+          0,
+          0
+        ],
+        "edge_1": [
+          1,
+          0
+        ],
+        "edge_2": [
+          2,
+          0
+        ],
+        "edge_3": [
+          3,
+          0
+        ],
+        "edge_4": [
+          4,
+          0
+        ],
+        "edge_5": [
+          5,
+          0
+        ],
+        "edge_6": [
+          6,
+          0
+        ],
+        "edge_7": [
+          7,
+          0
+        ],
+        "edge_8": [
+          8,
+          0
+        ],
+        "edge_9": [
+          9,
+          0
+        ],
+        "edge_10": [
+          10,
+          0
+        ],
+        "edge_11": [
+          11,
+          0
+        ],
+        "edge_12": [
+          12,
+          0
+        ],
+        "edge_13": [
+          13,
+          0
+        ],
+        "edge_14": [
+          14,
+          0
+        ],
+        "edge_15": [
+          15,
+          0
+        ]
+      },
+      "overlay": {
+        "fringe_1": [
+          0,
+          1
+        ],
+        "fringe_2": [
+          1,
+          1
+        ],
+        "fringe_3": [
+          2,
+          1
+        ],
+        "fringe_4": [
+          3,
+          1
+        ],
+        "fringe_5": [
+          4,
+          1
+        ],
+        "fringe_6": [
+          5,
+          1
+        ],
+        "fringe_7": [
+          6,
+          1
+        ],
+        "fringe_8": [
+          7,
+          1
+        ],
+        "fringe_9": [
+          8,
+          1
+        ],
+        "fringe_10": [
+          9,
+          1
+        ],
+        "fringe_11": [
+          10,
+          1
+        ],
+        "fringe_12": [
+          11,
+          1
+        ],
+        "fringe_13": [
+          12,
+          1
+        ],
+        "fringe_14": [
+          13,
+          1
+        ],
+        "fringe_15": [
+          14,
+          1
+        ],
+        "stair": [
+          15,
+          1
+        ],
+        "ramp": [
+          0,
+          2
+        ],
+        "shadow": [
+          1,
+          2
+        ]
+      },
+      "derived_from": "NodePrimeVillage",
+      "derived_palette": {
+        "face_dark": [
+          0.04,
+          0.05,
+          0.08,
+          1.0
+        ],
+        "face_mid": [
+          0.09,
+          0.11,
+          0.17,
+          1.0
+        ],
+        "face_light": [
+          0.16,
+          0.2,
+          0.28,
+          1.0
+        ],
+        "lip": [
+          0.25,
+          0.95,
+          0.95,
+          1.0
+        ],
+        "lip_shadow": [
+          0.05,
+          0.2,
+          0.2,
+          0.85
+        ],
+        "grass": [
+          0.38,
+          0.62,
+          0.28,
+          1.0
+        ],
+        "grass_light": [
+          0.5,
+          0.74,
+          0.34,
+          1.0
+        ],
+        "stair_tread": [
+          0.11,
+          0.19,
+          0.23,
+          1.0
+        ],
+        "stair_riser": [
+          0.05,
+          0.09,
+          0.11,
+          1.0
+        ]
+      },
+      "generator": "tools/gen_tile_sheet_world.py --world futuristic -- same bitmask geometry as medieval, recoloured from NodePrimeVillage._get_cliff_palette(). Manifest cliff art OVERRIDES that palette, so deriving from it keeps the village's colours and adds only detail. derived_palette records what was used: if the village's colours change, this atlas is stale and the guard says so."
     }
   }
 }
