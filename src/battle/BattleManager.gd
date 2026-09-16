@@ -8124,6 +8124,22 @@ func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictiona
 			}
 		"fire_resist", "ice_resist", "lightning_resist", "focus_healer", "defense_boost", "rotate_aggro":
 			return {"counter_action_chance": 2.0}
+		# Umbraxis authors its own names for the three armed postures and reached
+		# NO arm, so every intent the LLM picked for it was inert. Measured on the
+		# defend board (12% HP, 0 AP, party fresh), llama3 x20: it picks the
+		# press-the-attack posture 17/20 and nothing happens either way. Delegated
+		# rather than copied so the two can never drift apart.
+		# Scoped to the ONE dragon whose ladder reads this: Umbraxis classifies as
+		# caster, and _ai_caster is the only ladder consuming attack_weight.
+		# Pyrroth/Glacius (tank) and Voltharion (assassin) reach ladders that read
+		# no bias at all, so arming their names would advertise a posture that
+		# still does nothing — that is a ladder change and struktured's call.
+		"null_strike":
+			return _bias_by_intent("aggress", masterite_type)
+		"null_field":
+			return _bias_by_intent("turtle", masterite_type)
+		"existential_dread":
+			return _bias_by_intent("exploit_pattern", masterite_type)
 		_:
 			return {}
 
