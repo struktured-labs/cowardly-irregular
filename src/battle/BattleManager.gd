@@ -4663,9 +4663,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 				for _st in retargeted:
 					if is_instance_valid(_st) and _st is Combatant and _st.is_alive:
 						if _first_steal_guaranteed(_st) or randf() < _steal_rate:
-							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / STEAL_GOLD_HP_DIVISOR))
-							GameState.add_gold(_g)
-							battle_log_message.emit("[color=yellow]%s mugs %d gold from %s![/color]" % [caster.combatant_name, _g, _st.combatant_name])
+							_award_stolen_gold(caster, _st, "mugs")
 							# msg 2483: Mug is attack + steal in one action, so its steal-success branch fires the same steal_response the pure Steal handler does — Warden's Key path opens either way. Guarded once per fight by _steal_response_consumed inside the helper.
 							_apply_steal_response(_st)
 						else:
@@ -5389,6 +5387,32 @@ func earns_exp_while_dead(combatant: Combatant) -> bool:
 		if me is Dictionary and float((me as Dictionary).get("exp_while_dead", 0.0)) > 0.0:
 			return true
 	return false
+
+
+## ⛔ A MONSTER THAT ROBBED THE PARTY PAID THE PARTY. Both steal sites called
+## `GameState.add_gold(...)` with no check on which SIDE the caster was on — and `goblin`,
+## `spiteful_crow` and `conveyor_gremlin` all author `steal` across seven pools, `goblin` among them,
+## so this was early-game and the battle log cheerfully announced the theft while the counter went UP.
+## One owner now, because the two sites had already drifted apart in their logging and would have
+## drifted apart in their guard too (cowir-autogrind 11786, confirmed behaviourally: 1000 -> 1014).
+##
+## ⚠️ WHAT THIS DOES NOT DECIDE: whether an enemy's steal should COST the party gold. The amount
+## scales with the VICTIM's max_hp, so against a party member it is a far larger number than the same
+## ability yields against a goblin — a drain nobody has sized, on monsters a level-3 party meets.
+## Being robbed must not PAY you; the penalty is struktured's call. Until then the theft fails
+## honestly and the log says so rather than claiming a transfer that did not happen.
+func _award_stolen_gold(caster: Combatant, target: Combatant, verb: String = "stole") -> void:
+	if caster == null or not is_instance_valid(caster) or target == null or not is_instance_valid(target):
+		return
+	var gold_amount: int = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
+	if not (caster in player_party):
+		battle_log_message.emit("[color=gray]%s rifles through %s's pack and comes up empty.[/color]" % [
+			caster.combatant_name, target.combatant_name])
+		return
+	GameState.add_gold(gold_amount)
+	print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])
+	battle_log_message.emit("[color=yellow]%s %s %d gold from %s![/color]" % [
+		caster.combatant_name, verb, gold_amount, target.combatant_name])
 
 
 ## The ONE place a steal rate is composed. Two paths roll for a steal — the pure Steal handler and Mug's physical branch — and each grew its own inline clamp, so tick 462 wired thiefs_glove into one and the steal_boost passive reached one. A Rogue equipping a passive promising "+30% steal success" got it on Steal and not on Mug, which reads as randomness rather than as a bug.
@@ -6171,10 +6195,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					if _first_steal_guaranteed(target) or randf() < effective_rate:
-						var gold_amount = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
-						GameState.add_gold(gold_amount)
-						print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])
-						battle_log_message.emit("[color=yellow]%s stole %d gold from %s![/color]" % [caster.combatant_name, gold_amount, target.combatant_name])
+						_award_stolen_gold(caster, target)
 						# Boss-specific steal_response (msg 2474): a successful steal against a target with a monsters.json steal_response definition triggers its mechanical effect exactly once per fight (Lockward's vault-crack = defense-break to 50%). Cowir-main's Option 2. Subsequent steals still succeed for gold; only the response is one-shot.
 						_apply_steal_response(target)
 					else:
