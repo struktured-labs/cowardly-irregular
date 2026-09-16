@@ -212,11 +212,6 @@ const GRIND_PATH_MARKER := {
 	## first marker pointed at a consumer and this arm caught it — the grind's support arm reads the
 	## key exactly where live's support executor does.
 	"next_attack_multiplier": "ability.get(\"next_attack_multiplier\"",
-	## Mapped, but NOT path-checked: live reads secondary_effect inside _apply_secondary_effect, a
-	## dispatcher rather than a per-type executor, so _live_executor_count sees no executor and the
-	## arm skips it. Its support-only placement is pinned in
-	## test_autogrind_applies_the_second_effect_regression instead. Left here so the map matches the
-	## set of keys this lane has wired, and so it reds if the marker ever disappears.
 	## ⚠️ ALL FOUR secondary_* KEYS, AND THREE OF THEM WERE INVISIBLE TO THIS MAP UNTIL 2026-09-16.
 	## They live in `_apply_secondary_effect`, which `_execute_support_ability` calls — but the old
 	## walk-back skipped past any non-executor function, so a read inside a helper was credited to

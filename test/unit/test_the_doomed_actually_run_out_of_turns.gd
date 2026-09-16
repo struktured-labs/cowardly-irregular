@@ -192,3 +192,103 @@ func test_one_producer_and_every_path_reaches_it() -> void:
 	var owner_end: int = code.find("\nfunc ", owner_at + 1)
 	assert_true(code.substr(owner_at, owner_end - owner_at).contains("_inflict_doom("),
 		"the damage path reaches the producer through the one status owner both executors call")
+
+
+## ── the countdown narrates itself ─────────────────────────────────────
+
+func test_the_doom_counter_says_something_every_turn_it_runs() -> void:
+	## ⛔ A LETHAL TIMER THAT SAID NOTHING. Doom deals no damage, so it fires neither
+	## status_tick_damage nor hp_changed — the ☠ badge was the only feedback, and the kill itself
+	## reached the player as a bare print() on stdout. Every other way to die in this engine narrates
+	## itself; this one killed you in silence.
+	var victim := _combatant("Mira")
+	var heard: Array[String] = []
+	var tap := func(msg: String) -> void: heard.append(msg)
+	BattleManager.battle_log_message.connect(tap)
+	var cb := BattleManager._on_doom_ticked.bind(victim)
+	victim.doom_ticked.connect(cb)
+	_cast_live("magic", _doom_ability("magic", 3), victim)
+	assert_eq(victim.doom_counter, 3, "CONTROL: doomed for three, or the countdown is about nothing")
+	heard.clear()
+	victim.update_buff_durations()
+	victim.update_buff_durations()
+	victim.update_buff_durations()
+	victim.doom_ticked.disconnect(cb)
+	BattleManager.battle_log_message.disconnect(tap)
+	assert_eq(heard.size(), 3, "one line per tick, not one at the start: %s" % str(heard))
+	assert_true(str(heard[0]).contains("2 turns left"), "it counts DOWN and says the number: %s" % heard[0])
+	assert_true(str(heard[1]).contains("1 turn left"), "and says 'turn' singular at one: %s" % heard[1])
+	assert_true(str(heard[2]).contains("time runs out"), "and names the kill rather than letting them just drop: %s" % heard[2])
+	assert_false(victim.is_alive, "CONTROL: the third tick really did kill them")
+
+
+func test_an_undoomed_combatant_stays_quiet() -> void:
+	## Anti-vacuity for the arm above: the emit must be gated on the counter, not on the turn.
+	var bystander := _combatant("Talia")
+	var heard: int = 0
+	var cb := func(_n: int) -> void: heard += 1
+	bystander.doom_ticked.connect(cb)
+	for i in 5:
+		bystander.update_buff_durations()
+	bystander.doom_ticked.disconnect(cb)
+	assert_eq(heard, 0, "an undoomed combatant emits nothing, %d turns running" % 5)
+
+
+func test_the_listener_is_cached_and_released_like_died_is() -> void:
+	## ⛔ THE ARM ABOVE CONNECTS THE HANDLER BY HAND, so the PRODUCTION wiring could be absent and it
+	## would still pass — it supplies the thing it is meant to be checking. That is the hole this arm
+	## exists to close, and the missing line was the connect itself: the first version of this test
+	## pinned the cache, the disconnect and the clears, and DELETING
+	## `combatant.doom_ticked.connect(dcb)` would have left every arm in this file green.
+	##
+	## ⚠️ HONEST LIMIT: this is a SOURCE pin, not a driven battle. `start_battle()` is not callable
+	## from an isolated GUT run — it dies on "data.tree is null", which
+	## test_battle_start_cleanup_regression documents and works around the same way. A behavioural arm
+	## through the real setup would be strictly better and is not available here.
+	var code: String = GdSourceHelper.code_of(BM_PATH)
+	assert_true(code.contains("var _doom_callbacks: Dictionary = {}"), "the cache exists")
+	assert_true(code.contains("combatant.doom_ticked.connect(dcb)"),
+		"THE LOAD-BEARING LINE: start_battle must actually connect the handler, or the countdown is emitted to nobody in a real fight")
+	assert_true(code.contains("_doom_callbacks[combatant] = dcb"), "the bound Callable is cached at connect")
+	assert_true(code.contains("combatant.doom_ticked.disconnect(dcb)"), "and disconnected from that cache at cleanup")
+	assert_eq(code.count("_doom_callbacks.clear()"), 2, "cleared where _died_callbacks is — at setup and at cleanup")
+	## The handler is reached from the SAME loop that wires `died`, not from some other pass that a
+	## later refactor could drop independently.
+	var at: int = code.find("_died_callbacks[combatant] = cb")
+	assert_gt(at, -1, "CONTROL: the died wiring survives stripping")
+	assert_true(code.substr(at, 400).contains("combatant.doom_ticked.connect(dcb)"),
+		"and it is wired in the same loop as died, where the cleanup already knows to look")
+
+
+## ── the grind's own loop, not its helper ──────────────────────────────
+
+func test_the_grind_round_actually_runs_the_counter_down_and_kills() -> void:
+	## ⛔ MY GRIND ARM ABOVE SETS THE COUNTER BY CALLING _maybe_inflict_status DIRECTLY, so it proves
+	## the producer and NOTHING about whether the grind ever spends it. Setting a timer nothing ticks
+	## is the same nothing as not setting it — and this is the shape that has cost three lanes a green
+	## arm today, so it gets driven through the resolver's OWN round loop instead.
+	var resolver = ResolverScript.new()
+	var caster := _combatant("Reaper")
+	var victim := _combatant("Mira")
+	resolver._player_party = [victim]
+	resolver._enemy_party = [caster]
+	resolver._maybe_inflict_status(caster, victim, _doom_ability("magic", 2), "final_death")
+	assert_eq(victim.doom_counter, 2, "CONTROL: doomed for two, or the loop has nothing to spend")
+	resolver._tick_round_start()
+	assert_eq(victim.doom_counter, 1, "the grind's round start spends a turn of it")
+	assert_true(victim.is_alive, "and not before the count is done")
+	resolver._tick_round_start()
+	assert_false(victim.is_alive, "the grind kills with it, like live does")
+
+
+func test_the_grind_round_leaves_the_undoomed_alone() -> void:
+	## Anti-vacuity: _tick_round_start touches every living combatant, so the kill above must come
+	## from the counter rather than from the loop being lethal to anyone it visits.
+	var resolver = ResolverScript.new()
+	var bystander := _combatant("Talia")
+	resolver._player_party = [bystander]
+	resolver._enemy_party = []
+	for i in 6:
+		resolver._tick_round_start()
+	assert_true(bystander.is_alive, "six rounds and an undoomed combatant is untouched")
+	assert_eq(bystander.doom_counter, -1, "with the sentinel intact")

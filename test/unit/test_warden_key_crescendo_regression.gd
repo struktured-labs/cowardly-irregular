@@ -290,8 +290,11 @@ func test_hit_loop_calls_deepen_after_damage_lands() -> void:
 
 func test_mug_steal_success_calls_apply_steal_response() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
-	var idx: int = src.find("mugs %d gold from %s")
-	assert_gt(idx, -1, "Mug success log line must exist as anchor")
+	## ⚠️ ANCHOR MOVED 2026-09-16: the "mugs %d gold" literal lives in `_award_stolen_gold` now (the
+	## verb is a parameter), so it no longer marks Mug's branch. The CALL does, and it is the thing
+	## the response must sit beside.
+	var idx: int = src.find("_award_stolen_gold(caster, _st, \"mugs\")")
+	assert_gt(idx, -1, "Mug's steal-success branch must exist as anchor")
 	var window: String = src.substr(idx, 400)
 	assert_string_contains(window, "_apply_steal_response(_st)",
 		"Mug's steal-success branch must fire the response — Mug is also a Warden's Key opener")
