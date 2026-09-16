@@ -203,8 +203,9 @@ func _tick_round_start() -> void:
 			continue
 		combatant.is_defending = false
 		combatant.end_turn()
-		if combatant.current_ap < 0:
-			combatant.gain_ap(1)
+		## NO DEBT PAYMENT HERE. Live pays it inside the SELECTION loop (BattleManager:1604), where the
+		## same branch also forfeits the turn. Paying at round start AND granting the natural +1 below
+		## made debt recover at 2 AP/round and cost nothing — @cowir-battle, 2026-09-16.
 
 
 func _selection_phase() -> Array[Dictionary]:
@@ -218,6 +219,14 @@ func _selection_phase() -> Array[Dictionary]:
 		# Group attack consumes all players' turns — skip to enemies
 		for enemy in _enemy_party:
 			if not enemy.is_alive:
+				continue
+			## Live pays AP debt and FORFEITS the turn in one branch (BattleManager:1604): its `continue`
+			## skips the natural gain at :1635 as well as the action. Advance's whole cost model is that
+			## debt is the price, so a grind where debt is free grades an Advance-heavy script better than
+			## it plays.
+			if enemy.current_ap < 0:
+				enemy.gain_ap(1)
+				_log("%s pays AP debt (now %d) and forfeits the turn" % [enemy.combatant_name, enemy.current_ap])
 				continue
 			enemy.gain_ap(1)
 			var skip = _check_status_skip(enemy)
@@ -236,6 +245,29 @@ func _selection_phase() -> Array[Dictionary]:
 
 	for combatant in _player_party:
 		if not combatant.is_alive:
+			continue
+		## Live pays AP debt and FORFEITS the turn in one branch (BattleManager:1604): its `continue`
+		## skips the natural gain at :1635 as well as the action. Advance's whole cost model is that
+		## debt is the price, so a grind where debt is free grades an Advance-heavy script better than
+		## it plays.
+		## ⚠️ DECLARED while measuring this, NOT fixed: live's natural gain is not always 1. Under the
+		## `bp_instability` corruption effect it rolls 0/+1/+2 for PARTY members (BattleManager:1630).
+		## No CODE site in the autogrind stack reads that key — AutogrindSystem passes `corruption_effects`
+		## around as an opaque dict and attaches it to ENEMY data (:645, :1022, :1262); the only key it
+		## names is stat_drain. So there is no party-side consumer to extend, and a corrupted AP economy
+		## is flat in the grind. (Stated as "no code site" rather than a grep count, because this comment
+		## now contains the word and would falsify its own count.)
+		##
+		## LEFT ALONE for @cowir-battle's reason, which is better than the one I first wrote: the jitter
+		## is SYMMETRIC — 0/+1/+2, mean exactly 1 — so modelling it moves the VARIANCE of what autogrind
+		## reports and not the EXPECTATION. A build measured over hundreds of battles scores the same and
+		## reads noisier: a real cost against no change in the answer. The AP-debt bug above is the
+		## opposite and that is why it was fixed — it moved the MEAN, and graded Advance builds better
+		## than they play. The discriminator: model it when it moves the expectation, declare it when it
+		## only moves the spread. The 45-passive category is the first kind and still outstanding.
+		if combatant.current_ap < 0:
+			combatant.gain_ap(1)
+			_log("%s pays AP debt (now %d) and forfeits the turn" % [combatant.combatant_name, combatant.current_ap])
 			continue
 		combatant.gain_ap(1)
 
@@ -292,6 +324,14 @@ func _selection_phase() -> Array[Dictionary]:
 
 	for enemy in _enemy_party:
 		if not enemy.is_alive:
+			continue
+		## Live pays AP debt and FORFEITS the turn in one branch (BattleManager:1604): its `continue`
+		## skips the natural gain at :1635 as well as the action. Advance's whole cost model is that
+		## debt is the price, so a grind where debt is free grades an Advance-heavy script better than
+		## it plays.
+		if enemy.current_ap < 0:
+			enemy.gain_ap(1)
+			_log("%s pays AP debt (now %d) and forfeits the turn" % [enemy.combatant_name, enemy.current_ap])
 			continue
 		enemy.gain_ap(1)
 
