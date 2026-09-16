@@ -134,10 +134,16 @@ func test_the_press_path_and_the_hold_path_share_one_step() -> void:
 	var code: String = GdSource.code_of("res://src/ui/EquipmentMenu.gd")
 	assert_ne(code, "", "EquipmentMenu must be readable as source")
 	assert_eq(code.count("func _nav_step("), 1, "there must be exactly one definition of the step")
-	# Five call sites: ui_up and ui_down in each of the two modes, plus the hold in _process.
-	# Counted as call sites rather than as a bare total, so the number says what it defends.
-	assert_eq(code.count("_nav_step(") - code.count("func _nav_step("), 5,
-		"both press branches in both modes, and the hold, must all route through the one step")
+	# A COUNT of call sites was a magnitude standing in for a property: routing the press branches
+	# through MenuNav collapsed four of them into two and redded this arm on a correct change.
+	# The property is that BOTH paths reach the one owner and neither carries its own arithmetic.
+	assert_gt(code.count("_nav_step(") - code.count("func _nav_step("), 1,
+		"the press path and the hold path must BOTH route through the one step")
+	var proc_at := code.find("func _process(")
+	assert_gt(proc_at, -1, "the hold path must exist")
+	var proc_end := code.find("\nfunc ", proc_at + 1)
+	var proc_body := code.substr(proc_at, proc_end - proc_at) if proc_end > proc_at else code.substr(proc_at)
+	assert_true(proc_body.find("_nav_step(") > -1, "the hold path must call the shared step")
 	assert_eq(code.find("selected_item_index - 1 + items.size()"), -1,
 		"the press path must not carry its own copy of the arithmetic any more")
 	assert_eq(code.find("selected_slot - 1 + SLOTS.size()"), -1,

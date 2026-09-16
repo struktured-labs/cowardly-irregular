@@ -128,6 +128,13 @@ func test_the_press_path_and_the_hold_share_one_owner() -> void:
 	assert_ne(code, "", "VirtualKeyboard must be readable as source")
 	assert_eq(code.count("func _nav_step("), 1, "exactly one definition of the cursor step")
 	assert_eq(code.count("func _backspace_step("), 1, "exactly one definition of the delete")
-	assert_eq(code.count("_nav_step(") - 1, 5, "four press branches and the hold route through it")
+	# Not a count: routing the four press branches through MenuNav collapsed them into one, and a
+	# magnitude here would red on that correct change. The property is that both paths reach it.
+	assert_gt(code.count("_nav_step(") - 1, 1, "the press path and the hold path both route through it")
+	var proc_at := code.find("func _process(")
+	assert_gt(proc_at, -1, "the hold path must exist")
+	var proc_end := code.find("\nfunc ", proc_at + 1)
+	var proc_body := code.substr(proc_at, proc_end - proc_at) if proc_end > proc_at else code.substr(proc_at)
+	assert_true(proc_body.find("_nav_step(") > -1, "the hold path must call the shared step")
 	assert_eq(code.find("allow echo for backspace-like behavior"), -1,
 		"the comment promising a repeat that never happened must not survive the repeat being real")
