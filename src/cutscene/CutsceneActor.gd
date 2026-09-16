@@ -11,7 +11,20 @@ enum Dir { DOWN = 0, LEFT = 1, RIGHT = 2, UP = 3 }
 const FRAME_SIZE: int = 32
 const BUBBLE_MAX_WIDTH: float = 128.0
 const WALK_FRAMES: int = 4
+## Seconds per walk frame AT THE DEFAULT SPEED. Kept as the anchor rather than the rule: the rule is
+## the stride below, and this is the number that makes today's default-speed walks unchanged.
 const ANIM_SPEED: float = 0.12
+## ⛔ A FIXED frame time makes the STRIDE track the authored speed, so a faster walk skates.
+## Measured 2026-09-16 (px of travel per animation frame, the thing that makes feet look planted):
+##   this actor, fixed 0.12s   default 120 -> 14.4 px    ·   authored 160 -> 19.2 px
+##   OverworldPlayer, SAME sheets, same 4-frame cycle    ->  19.2 px at ANY speed, because it
+##                                                           divides its frame time by the speed
+## Two different gaits for one character, and 12 authored walks split 10/2 across them. The stride is
+## now invariant here too, anchored at DEFAULT_WALK_SPEED so the 10 default walks are untouched and
+## only the two authored-160 walks change (they stop out-striding the other ten).
+## 📌 Anchoring at the PLAYER's 19.2 instead would leave those two alone and liven the other ten —
+## same mechanism, opposite subset. That is a look call and it is struktured's, not mine.
+const STRIDE_PER_FRAME_PX: float = DEFAULT_WALK_SPEED * ANIM_SPEED
 const DEFAULT_WALK_SPEED: float = 120.0
 ## Safe monochrome glyphs only — no emoji font fallback exists (recon: tofu risk).
 const EMOTE_GLYPHS: Dictionary = {
@@ -27,6 +40,8 @@ var _facing: int = Dir.DOWN
 var _anim_time: float = 0.0
 var _anim_frame: int = 0
 var _walking: bool = false
+## The speed the current walk is running at; the animation divides by it so the stride stays put.
+var _walk_speed: float = DEFAULT_WALK_SPEED
 var _walk_tween: Tween = null
 var _walk_target: Vector2 = Vector2.INF
 var _emote_label: Label = null
@@ -99,7 +114,7 @@ func _process(delta: float) -> void:
 	if not _walking:
 		return
 	_anim_time += delta
-	if _anim_time >= ANIM_SPEED:
+	if _anim_time >= frame_time_for(_walk_speed):
 		_anim_time = 0.0
 		_anim_frame = (_anim_frame + 1) % WALK_FRAMES
 		_apply_frame()
@@ -114,6 +129,7 @@ func walk_to(target_global: Vector2, speed: float = DEFAULT_WALK_SPEED) -> void:
 		return
 	face_vector(delta_v)
 	_walking = true
+	_walk_speed = speed
 	_walk_target = target_global
 	_walk_tween = create_tween()
 	_walk_tween.tween_property(self, "global_position", target_global, delta_v.length() / speed)
@@ -160,6 +176,14 @@ func set_facing_name(dir_name: String) -> void:
 ## `world_pos` is GLOBAL (authored [x,y] marks and other puppets' global_position both are) — subtracting the local `position` faced the wrong way on any offset stage.
 func face_toward(world_pos: Vector2) -> void:
 	face_vector(world_pos - global_position)
+
+
+## Seconds per walk frame at `speed`, so travel-per-frame is STRIDE_PER_FRAME_PX whatever the speed.
+## A non-positive speed keeps the anchor rather than dividing by it.
+static func frame_time_for(speed: float) -> float:
+	if speed <= 0.0:
+		return ANIM_SPEED
+	return STRIDE_PER_FRAME_PX / speed
 
 
 ## Classic above-head emote glyph (quest-marker Label pattern: wide + centered).
