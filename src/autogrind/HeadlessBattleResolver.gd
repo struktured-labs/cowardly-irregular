@@ -38,6 +38,34 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	_rounds_since_group_attack = 99
 	_stolen_gold = 0
 
+	## A BATTLE STARTS CLEAN, mirroring BattleManager.start_battle:519-534 field for field and with
+	## the same scope (all combatants, not just the party). Live's own comment says why: so nothing
+	## "can't leak into the next encounter." This file cleared NONE of it, and the grind is the engine
+	## where that compounds — AutogrindController holds `_party` as Combatant OBJECTS (:34), populated
+	## once in start_grind and reused for EVERY battle of the session. So a buff won in battle 1 made
+	## the party stronger than live for battles 2..N, a poison kept ticking into fights the game would
+	## have started clean, and a doom_counter — lethal since cowir-battle's 48a70e4dd — could kill in a
+	## battle live had already disarmed. Enemies are rebuilt per battle, so only the party accumulated.
+	## NOT cleared, because live does not: HP, MP and permanent_injuries. A grind that healed the party
+	## between fights would be a worse bug than the leak it replaced; there is an arm for that.
+	for combatant in (_player_party + _enemy_party):
+		if combatant == null or not is_instance_valid(combatant):
+			continue
+		if "active_buffs" in combatant:
+			combatant.active_buffs.clear()
+		if "active_debuffs" in combatant:
+			combatant.active_debuffs.clear()
+		if "status_effects" in combatant:
+			combatant.status_effects.clear()
+		if "status_durations" in combatant:
+			combatant.status_durations.clear()
+		if "is_defending" in combatant:
+			combatant.is_defending = false
+		## -1 is the "not doomed" sentinel (Combatant.gd:84). 0 is a LIVE counter — live sets -1 here
+		## and its comment records that 0 was the bug.
+		if "doom_counter" in combatant:
+			combatant.doom_counter = -1
+
 	## Tick 145: mark encountered monsters as seen in the bestiary,
 	## mirroring BattleScene._show_battle_quip. Pre-fix autogrind
 	## battles never updated the bestiary — a player running
