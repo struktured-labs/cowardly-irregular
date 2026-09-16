@@ -81,7 +81,7 @@ func _build_ui() -> void:
 		{"label": "Battles/Min", "value": "%.1f" % bpm, "color": VALUE_COLOR},
 		{"label": "Consecutive Wins", "value": str(_stats.get("consecutive_wins", 0)), "color": VALUE_COLOR},
 		{"label": "Efficiency", "value": "%.1fx" % _stats.get("efficiency", 1.0), "color": VALUE_COLOR},
-		{"label": "Corruption", "value": "%.2f / %.1f" % [_stats.get("corruption", 0.0), _stats.get("corruption_threshold", 5.0)], "color": BAD_COLOR if _stats.get("corruption", 0.0) > 2.0 else VALUE_COLOR},
+		{"label": "Corruption", "value": "%.2f / %.1f" % [_stats.get("corruption", 0.0), _stats.get("corruption_threshold", AutogrindSystem.DEFAULT_CORRUPTION_THRESHOLD)], "color": BAD_COLOR if _stats.get("corruption", 0.0) > 2.0 else VALUE_COLOR},
 		{"label": "Save Corruption", "value": _format_save_corruption(_stats), "color": _save_corruption_color(_stats)},
 		{"label": "Adaptation", "value": "%.2f" % _stats.get("adaptation", 0.0), "color": LABEL_COLOR},
 		{"label": "Collapses", "value": str(_stats.get("collapse_count", 0)), "color": BAD_COLOR if _stats.get("collapse_count", 0) > 0 else VALUE_COLOR},

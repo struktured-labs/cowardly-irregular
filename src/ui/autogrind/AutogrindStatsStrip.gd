@@ -176,7 +176,8 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 		_aa_label.text = "%.3f" % aa
 
 	var corruption = stats.get("corruption", 0.0)
-	var corruption_max = stats.get("corruption_threshold", 5.0)
+	## Derived, not 5.0 typed again — this fallback and the Summary's both restated the shipped default.
+	var corruption_max = stats.get("corruption_threshold", AutogrindSystem.DEFAULT_CORRUPTION_THRESHOLD)
 	if _corruption_label:
 		# Show current / max so the player sees proximity to collapse at a glance.
 		_corruption_label.text = "%.2f / %.1f" % [corruption, corruption_max]

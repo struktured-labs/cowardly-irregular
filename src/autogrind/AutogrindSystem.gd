@@ -85,7 +85,9 @@ var meta_corruption_level: float = 0.0     # Reality starts breaking
 ## first and only falls back to the inventory — struktured 2026-09-06: "some way to use
 ## restorative abilities instead of potions". MP regenerates between battles; potions do not.
 var prefer_restoratives: bool = false
-var corruption_threshold: float = 5.0      # When system collapse occurs
+## The shipped collapse line. Two UI fallbacks typed 5.0 themselves; lower this and they disagreed.
+const DEFAULT_CORRUPTION_THRESHOLD := 5.0
+var corruption_threshold: float = DEFAULT_CORRUPTION_THRESHOLD  # When system collapse occurs
 
 ## Region rotation advisory — fire the suggestion once per region per session
 const ROTATION_SUGGEST_THRESHOLD: float = 3.0
@@ -881,6 +883,8 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	## the debuff expired started the NEXT grind with a halved cap and a live counter.
 	max_efficiency = DEFAULT_MAX_EFFICIENCY
 	post_collapse_debuff_battles = 0
+	## The third field the collapse writes, missed by the sweep that added the two above it.
+	corruption_threshold = DEFAULT_CORRUPTION_THRESHOLD
 	monster_adaptation_level = 0.0
 	## A fresh grind must not inherit the last one's rule counts. They previously reset ONLY on a
 	## rule edit, so a second grind with unchanged rules carried the first one's numbers into the
@@ -2745,6 +2749,7 @@ func build_snapshot_system_block(elapsed: float = 0.0) -> Dictionary:
 		"collapse_count": collapse_count,
 		"max_efficiency": max_efficiency,
 		"post_collapse_debuff_battles": post_collapse_debuff_battles,
+		"corruption_threshold": corruption_threshold,
 		## Resume continues the SAME session, so a badge earned before the pause must still render
 		## gold in the Summary. Without this the ledger empties on resume and every one reads dim.
 		"achievements_earned_this_session": achievements_earned_this_session.duplicate(),
@@ -2881,6 +2886,8 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	collapse_count = system_data.get("collapse_count", 0)
 	max_efficiency = float(system_data.get("max_efficiency", DEFAULT_MAX_EFFICIENCY))
 	post_collapse_debuff_battles = int(system_data.get("post_collapse_debuff_battles", 0))
+	## Defaults to the CURRENT value so a pre-key snapshot keeps start_autogrind's re-baseline.
+	corruption_threshold = float(system_data.get("corruption_threshold", corruption_threshold))
 	## Array[String] assigned straight from JSON is a SCRIPT ERROR that ABORTS this function --
 	## every restore below would silently never run. Coerce element by element.
 	achievements_earned_this_session = []
