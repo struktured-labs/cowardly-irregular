@@ -63,7 +63,7 @@ const CLOSED_PENDING_FOLD := [
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
-	"absorb_amount", "ap_gain", "countdown", "crit_chance",
+	"absorb_amount", "ap_gain", "countdown",
 	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
 	"meta_effect", "mp_restore_percent", "priority", "recoil_pct",
 	"steals", "success_rate", "threat_class",
@@ -195,6 +195,7 @@ const GRIND_PATH_MARKER := {
 	"ignores_defense": "ability.get(\"ignores_defense\"",
 	"damage_to_self_pct": "_recoil_to(",
 	"damage_variance": "ability.get(\"damage_variance\"",
+	"crit_chance": "ability.get(\"crit_chance\"",
 	"regen_per_turn": "ability.get(\"regen_per_turn\"",
 	## PRODUCER/CONSUMER key, so the marker is the PRODUCER. Live reads the authored field in
 	## _execute_support_ability and consumes its stored effect in two OTHER executors (:4374 attack,
