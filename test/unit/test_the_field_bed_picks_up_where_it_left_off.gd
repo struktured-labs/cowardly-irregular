@@ -19,6 +19,7 @@ extends GutTest
 ## one.
 
 const AREA := "overworld"
+const SELF_PATH := "res://test/unit/test_the_field_bed_picks_up_where_it_left_off.gd"
 
 
 func before_each() -> void:
@@ -129,3 +130,45 @@ func test_a_negative_position_never_reaches_the_player() -> void:
 	assert_true(SoundManager._music_player.playing, "a negative position must start the bed at its head, not refuse to play")
 	assert_lt(SoundManager._music_player.get_playback_position(), 2.0,
 		"the player reports %.2f s — a negative seek reached AudioStreamPlayer.play()" % SoundManager._music_player.get_playback_position())
+
+func test_the_members_this_file_reaches_still_exist() -> void:
+	## THE FILE IS LOUD ON A RENAME BY ARM ORDER, NOT BY CONSTRUCTION. Measured 2026-09-16,
+	## renaming across src/ with this arm absent:
+	##
+	##     capture_music_state   EC=4 · Passing 4 · Risky 1 · Asserts 15 -> 7
+	##     play_area_music       EC=4 · Passing 0 · Risky 5 · Asserts 15 -> 0
+	##
+	## Passing 4 is the number to read. Two of those four arms assert their CONTROL, then call
+	## the missing method, abort, and score PASSING on the half of their asserts that ran. Only
+	## `a_battle_bed_still_starts_at_its_head` reaches the subject BEFORE its first assert, and
+	## that one arm is the whole reason the wrapper exits 4. Reorder it and this file goes green
+	## with its subject deleted.
+	##
+	## The member list is DERIVED from this file's own text on every run, so a reach added later
+	## is covered without anyone remembering to add it here.
+	##
+	## `has_method` for methods, `in` for properties: both ANSWER rather than raise, which is why
+	## they fail here by name instead of aborting alongside the arms they protect. `get() != null`
+	## cannot do the property half — a null-valued property is indistinguishable from an absent
+	## one, which is why the fade guard's floor needed a hardcoded exemption.
+	var src: String = FileAccess.get_file_as_string(SELF_PATH)
+	assert_gt(src.length(), 1000, "CONTROL: this arm read its own source back — %d chars" % src.length())
+	var methods := {}
+	var props := {}
+	var re := RegEx.create_from_string("SoundManager\\.([A-Za-z_][A-Za-z0-9_]*)(\\()?")
+	for line in src.split("\n"):
+		if str(line).strip_edges().begins_with("#"):
+			continue
+		for m in re.search_all(str(line)):
+			if m.get_string(2) == "(":
+				methods[m.get_string(1)] = true
+			else:
+				props[m.get_string(1)] = true
+	assert_gt(methods.size(), 3, "CONTROL: derived %d method reaches from this file's own source" % methods.size())
+	assert_gt(props.size(), 0, "CONTROL: derived %d property reaches from this file's own source" % props.size())
+	for name in methods:
+		assert_true(SoundManager.has_method(name),
+			"SoundManager has no method %s() — arms in this file call it and would abort mid-way, scoring PASSING on the asserts that already ran" % name)
+	for name in props:
+		assert_true(name in SoundManager,
+			"SoundManager has no property %s — arms in this file read it directly and would go quiet rather than red" % name)
