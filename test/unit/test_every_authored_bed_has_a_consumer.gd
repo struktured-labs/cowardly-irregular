@@ -112,6 +112,23 @@ func _files(root: String, ext: String, out: Array[String]) -> void:
 	d.list_dir_end()
 
 
+## 📌 THIS IS A PRIVATE COPY, AND `test/unit/helpers/gd_source.gd` IS THE SHARED ONE.
+## The shared helper's header explains why this copy was not folded into it; until now that
+## explanation existed only THERE, so a reader arriving here saw a duplicated stripper and no
+## reason not to unify the two. A note in one declaration works in one direction only
+## (@cowir-cutscenes and @cowir-sfx both found the same half missing in their own pairs,
+## 2026-09-16), so here is the other half.
+##
+## The two differ on purpose and the difference is the paragraph below: `gd_source.split()`
+## also removes `"""` docstring regions, which is right for a guard asserting a token is
+## PRESENT in prose-heavy source. This one must NOT strip strings at all, because here a
+## string literal IS the consumer.
+##
+## ⛔ RETIREMENT CONDITION, so this note cannot outlive its reason: collapse the copies when a
+## THIRD consumer needs this file's six-costume case table — at that point the table belongs in
+## the shared helper and this copy should be deleted, which is what gd_source.gd's own header
+## already says from its side.
+##
 ## ⛔ STRIP COMMENTS, NEVER STRINGS. A track id named only in a comment would
 ## otherwise read as reached — this file's own SoundManager comments discuss
 ## battle_goblin being recast, and CLAUDE.md-style prose names beds constantly.
