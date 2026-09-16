@@ -1,5 +1,7 @@
 extends GutTest
 
+var _gating_battles_before: int = 0
+
 ## pre_battle_check and check_new_injuries are LIVE, each with exactly ONE real caller:
 ## AutogrindController:227 gates every grind battle on the first, GameLoop:5552 reads the second
 ## for the session injury warning. A third GameLoop mention of pre_battle_check is a COMMENT, not
@@ -14,6 +16,7 @@ var _party: Array[Combatant] = []
 
 
 func before_each() -> void:
+	_gating_battles_before = AutogrindSystem.battles_completed
 	_system = preload("res://src/autogrind/AutogrindSystem.gd").new()
 	add_child_autofree(_system)
 	_system._test_disable_persistence = true
@@ -158,3 +161,11 @@ func test_new_injuries_publishes_to_the_session_field() -> void:
 	_system.check_new_injuries()
 	assert_eq(_system.injuries_this_session, 2,
 		"check_new_injuries must publish to injuries_this_session, which is what the report reads")
+
+
+func after_each() -> void:
+	## Restore the battle counter: it GATES pre_battle_check, so a value left behind refuses a grind
+	## in every later file of the same GUT process (measured 2026-09-16 — a healing-item sweep saw a
+	## party that could not heal). Captured, not zeroed: 0 is an assumption about a baseline this
+	## file does not own.
+	AutogrindSystem.battles_completed = _gating_battles_before

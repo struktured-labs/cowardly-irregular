@@ -1,5 +1,7 @@
 extends GutTest
 
+var _gating_battles_before: int = 0
+
 ## Tests for autogrind pause/resume snapshot system
 
 var _system: Node = null
@@ -10,6 +12,7 @@ const SNAPSHOT_PATH := "user://autogrind_snapshot.json"
 
 
 func before_each() -> void:
+	_gating_battles_before = AutogrindSystem.battles_completed
 	_system = preload("res://src/autogrind/AutogrindSystem.gd").new()
 	add_child_autofree(_system)
 	## Persistence stays ON deliberately — these exercise the real on-disk roundtrip.
@@ -22,6 +25,11 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## Restore the battle counter: it GATES pre_battle_check, so a value left behind refuses a grind
+	## in every later file of the same GUT process (measured 2026-09-16 — a healing-item sweep saw a
+	## party that could not heal). Captured, not zeroed: 0 is an assumption about a baseline this
+	## file does not own.
+	AutogrindSystem.battles_completed = _gating_battles_before
 	## Restore the player's bytes rather than deleting — deleting is what the isolation rule forbids.
 	if _pre_existed:
 		var f := FileAccess.open(SNAPSHOT_PATH, FileAccess.WRITE)

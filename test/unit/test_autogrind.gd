@@ -1,5 +1,7 @@
 extends GutTest
 
+var _gating_battles_before: int = 0
+
 ## Unit tests for AutogrindSystem
 ## Tests interrupt conditions, enemy scaling, efficiency/corruption growth, region crack
 
@@ -8,6 +10,7 @@ var _party: Array[Combatant] = []
 
 
 func before_each() -> void:
+	_gating_battles_before = AutogrindSystem.battles_completed
 	# Create a fresh AutogrindSystem instance for isolated testing
 	_system = preload("res://src/autogrind/AutogrindSystem.gd").new()
 	add_child_autofree(_system)
@@ -642,3 +645,11 @@ func test_autogrind_ui_condition_types_cover_evaluator() -> void:
 	for id in picker_ids:
 		assert_true(id in supported,
 			"AutogrindUI picker exposes '%s' but _evaluate_party_condition has no arm for it" % id)
+
+
+func after_each() -> void:
+	## Restore the battle counter: it GATES pre_battle_check, so a value left behind refuses a grind
+	## in every later file of the same GUT process (measured 2026-09-16 — a healing-item sweep saw a
+	## party that could not heal). Captured, not zeroed: 0 is an assumption about a baseline this
+	## file does not own.
+	AutogrindSystem.battles_completed = _gating_battles_before

@@ -1,5 +1,7 @@
 extends GutTest
 
+var _gating_battles_before: int = 0
+
 ## Joins the session-GRADE thresholds to the escalation CURVE that decides whether they can
 ## ever be met. Two authored corpora, in two files, with nothing connecting them:
 ##
@@ -42,6 +44,7 @@ const _DICTS: Array[String] = ["region_crack_levels", "_region_csi", "_csi_times
 
 
 func before_each() -> void:
+	_gating_battles_before = AutogrindSystem.battles_completed
 	AutogrindSystem._test_disable_persistence = true
 	for f in _FIELDS:
 		_saved[f] = AutogrindSystem.get(f)
@@ -66,6 +69,11 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## Restore the battle counter: it GATES pre_battle_check, so a value left behind refuses a grind
+	## in every later file of the same GUT process (measured 2026-09-16 — a healing-item sweep saw a
+	## party that could not heal). Captured, not zeroed: 0 is an assumption about a baseline this
+	## file does not own.
+	AutogrindSystem.battles_completed = _gating_battles_before
 	for f in _FIELDS:
 		AutogrindSystem.set(f, _saved[f])
 	for d in _DICTS:

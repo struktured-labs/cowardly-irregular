@@ -215,3 +215,61 @@ func test_every_announced_event_is_applied_or_justified() -> void:
 			"'%s' is excused but is not in the roster any more — drop the entry" % t)
 		assert_gt(str(ANNOUNCED_WITHOUT_EFFECT[t]).length(), 40,
 			"'%s' needs a real reason, not a placeholder" % t)
+
+
+## THE REGRESSION ARM FOR THE LEAK ITSELF, which the fix above did not have. CLAUDE.md: "every time
+## a bug is fixed, add a regression test" — I restored the counter and left nothing stopping the next
+## file from doing what this one did.
+##
+## Scoped to `battles_completed` DELIBERATELY, and that is the discriminator from the header made
+## executable: it is the field measured to gate a shared path (pre_battle_check refuses a grind on
+## it, so an unrelated healing-item sweep saw a party that could not heal). The ~50 other
+## (file, field) pairs the class scan returns are NOT pinned here, because a field nothing gates on
+## cannot poison a later file that sets what it reads. If another field is ever shown to gate a
+## shared path, add it to GATING_FIELDS — the list is the claim, not a convenience.
+const GATING_FIELDS := ["battles_completed"]
+
+
+func test_no_autogrind_test_leaves_a_gating_field_dirty() -> void:
+	var dir := DirAccess.open("res://test/unit")
+	assert_not_null(dir, "CONTROL: the test directory must be readable")
+	var names: PackedStringArray = dir.get_files()
+	assert_gt(names.size(), 50, "CONTROL: read a real corpus (%d files)" % names.size())
+
+	var offenders: Array = []
+	var checked: int = 0
+	for fname in names:
+		if not str(fname).begins_with("test_autogrind"):
+			continue
+		var src: String = FileAccess.get_file_as_string("res://test/unit/%s" % fname)
+		if src == "":
+			continue
+		## Comments describing the hazard must not count as setting it — this file is full of them.
+		var code: String = ""
+		for line in src.split("\n"):
+			if not line.strip_edges().begins_with("#"):
+				code += line + "\n"
+		for field in GATING_FIELDS:
+			if not code.contains(field):
+				continue
+			checked += 1
+			var sets_it: bool = code.contains("." + field + " =")
+			if not sets_it:
+				continue
+			## A restore is that field assigned inside after_each/after_all. Slice from the teardown
+			## to the next top-level func, so a set in a TEST body cannot be mistaken for a restore.
+			var restored: bool = false
+			for hook in ["func after_each(", "func after_all("]:
+				var at: int = code.find(hook)
+				if at < 0:
+					continue
+				var nxt: int = code.find("\nfunc ", at + 1)
+				var body: String = code.substr(at, (nxt - at) if nxt > at else 2000)
+				if body.contains("." + field + " ="):
+					restored = true
+			if not restored:
+				offenders.append("%s sets %s and never restores it" % [fname, field])
+	gut.p("    autogrind files naming a gating field: %d" % checked)
+	assert_gt(checked, 0, "CONTROL: at least one file must name a gating field, or this arm scans nothing")
+	assert_eq(offenders, [],
+		"a gating field set without a teardown restore poisons every later file in the process: %s" % str(offenders))
