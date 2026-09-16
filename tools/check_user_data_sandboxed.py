@@ -26,11 +26,19 @@ THE TWO REASONS NOBODY CAUGHT IT, and this file is shaped by both:
      unsandboxed — it is sandboxed by HOME and WINEPREFIX one line up. That false positive and
      the real defect are the same mistake with opposite signs.
 
-DECLARED EXCEPTIONS, never silent ones. `--export-release` CANNOT carry XDG_DATA_HOME: export
-templates live at ~/.local/share/godot/export_templates/, under the data root it would relocate,
-and a sandboxed export fails "No export template found at the expected path". It is exempt
-because it is measured to be, and the exemption is checked: if the line ever stops being an
-export, it stops being exempt.
+⛔ THERE ARE NO EXEMPTIONS ANY MORE, and the one there was is why this paragraph is long.
+`--export-release` was exempt on a measured premise: export templates live under the data root
+XDG_DATA_HOME relocates, so a sandboxed export fails "No export template found". True — of a
+BARE sandbox. Symlink the real templates into the sandbox and the export runs clean, because
+templates are read-only to it. Measured both ways on a real Linux export, 2026-09-16:
+bare -> produced nothing; linked -> 318,140,832 bytes, exit 0, his lock untouched.
+
+WHAT THE EXEMPTION COST: v3.33.360-alpha shipped with the boot gate and both imports sandboxed —
+his user://logs/ survived a full three-channel publish byte-identical for the first time that day
+— and his .recovery_mode_lock still moved 10:40:04 -> 12:22:04, stamped by the web export. This
+tool reported that line as `declared`, which reads as handled. A declaration is a licence not to
+fix something, and this one was issued on a premise that held only for the sandbox nobody had
+tried to fix. Exports now carry a redirect like every other invocation; see tools/export_sandbox.sh.
 
     tools/check_user_data_sandboxed.py [files...]      default: tools/deploy_*.sh
     tools/check_user_data_sandboxed.py --selftest
@@ -108,12 +116,10 @@ def _runs_godot(code):
     return False
 
 
-# A line is exempt only for a reason that is itself checkable on that line.
-EXEMPT = (
-    ("--export-release",
-     "export templates live under the data root XDG_DATA_HOME would relocate; a sandboxed "
-     "export fails 'No export template found'"),
-)
+# Deliberately EMPTY. Kept as a named, greppable place so that adding an exemption is a visible
+# act with a reason attached, rather than a special case buried in the matcher — and so the
+# report keeps a `declared` column that reads 0 instead of silently having no such concept.
+EXEMPT = ()
 
 
 def _commands(path):
@@ -248,12 +254,17 @@ def selftest():
         check("...but the same command, bare, IS flagged", len(f), 1)
 
         # the declared exception
+        # ⛔ REVERSED 2026-09-16. This arm used to assert --export-release was exempt. It is not:
+        # an export sandboxed with tools/export_sandbox.sh runs clean, and while it was exempt it
+        # was the last thing writing his profile.
         f, o, dec, _ = audit([w("f.sh", 'godot --headless --export-release "$PRESET" "$BIN"\n')])
-        check("--export-release is DECLARED, not flagged", len(f), 0)
-        check("...and is counted as declared", dec, 1)
+        check("an UNSANDBOXED export is now FLAGGED", len(f), 1)
+        check("...and nothing is declared any more", dec, 0)
+        f, o, dec, _ = audit([w("f2.sh", 'XDG_DATA_HOME="$X" godot --headless --export-release "$P" "$B"\n')])
+        check("...and a SANDBOXED export passes", len(f), 0)
         # and the exemption is not a blanket one
         f, o, dec, _ = audit([w("g.sh", 'godot --headless --quit "$PRESET"\n')])
-        check("a NON-export godot line gets no exemption", len(f), 1)
+        check("a non-export godot line is flagged too", len(f), 1)
         # vacuity floors
         rc = main([w("h.sh", "# nothing but a comment\n")])
         check("a corpus with no invocations is BLOCKED (2)", rc, 2)

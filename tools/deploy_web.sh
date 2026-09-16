@@ -323,7 +323,10 @@ if [ "${WEB_STAGE:-1}" = "1" ]; then
   echo "[deploy] staged build in place (${WEB_AUDIO_KBPS} kbps tier, endings included)"
 else
   echo "[deploy] WEB_STAGE=0 — direct export, W4-W6 endings EXCLUDED"
-  godot --headless --export-release "Web" builds/web/index.html 2>&1 | tail -3
+  _EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
+    echo "[deploy] BLOCKED: could not build the export sandbox — see above." >&2
+    exit 2; }
+  XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --export-release "Web" builds/web/index.html 2>&1 | tail -3
 fi
 # An export that reported success and produced nothing would otherwise reach the pck
 # gate as a stat error rather than a named failure.
