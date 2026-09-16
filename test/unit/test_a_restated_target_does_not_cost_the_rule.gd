@@ -176,3 +176,35 @@ func test_without_a_system_the_repair_does_nothing() -> void:
 	var notes: Array = rc._drop_target_shaped_conditions(rules, null)
 	assert_eq(notes.size(), 0, "no system means no repair")
 	assert_eq((rules[0]["conditions"] as Array).size(), 1, "and the rule is left untouched")
+
+
+func test_every_live_target_name_is_handled_not_a_hardcoded_few() -> void:
+	## MEASURED HOLE (2026-09-16, @cowir-sprites' mutation 7 shape): the source arm above
+	## is satisfied by code that READS domain_system.TARGET_TYPES and then uses a
+	## hardcoded short list — all seven arms stayed green under exactly that mutation.
+	## A source assert cannot see an answer being discarded; only behaviour can.
+	##
+	## So: drive the repair with EVERY target the system declares. A subset fails on the
+	## first name it omits, and the arm follows the data rather than restating it.
+	var abs_sys = get_tree().root.get_node_or_null("AutobattleSystem")
+	assert_not_null(abs_sys, "CONTROL: AutobattleSystem must be reachable")
+	var targets: Dictionary = abs_sys.TARGET_TYPES
+	assert_gt(targets.size(), 5, "CONTROL: the vocabulary must be non-trivial, or this proves little")
+	var unhandled: Array = []
+	for target_name in targets:
+		var t: String = str(target_name)
+		var rules: Array = [{
+			"conditions": [{"type": t}, {"type": "mp_percent", "op": ">=", "value": 30}],
+			"actions": [{"type": "attack", "target": t}],
+			"enabled": true,
+		}]
+		var notes: Array = rc._drop_target_shaped_conditions(rules, abs_sys)
+		var still_there: bool = false
+		for c in (rules[0]["conditions"] as Array):
+			if str((c as Dictionary).get("type", "")) == t:
+				still_there = true
+		if notes.is_empty() or still_there:
+			unhandled.append(t)
+	assert_eq(unhandled, [],
+		"every declared target must be recognised when restated as a condition — these were not: %s"
+			% str(unhandled))

@@ -151,3 +151,27 @@ func test_a_revival_is_left_alone_for_the_engine_to_place() -> void:
 	assert_eq(notes.size(), 0, "a dead_ally ability must not be aimed by the composer")
 	assert_false((rules[0]["actions"][0] as Dictionary).has("target"),
 		"and it must be left with no target for the engine to place")
+
+
+func test_every_ally_ability_is_aimed_not_a_hardcoded_few() -> void:
+	## Same measured hole: code that calls get_ability() and then consults a hardcoded
+	## list of "heals" satisfies the source arm. Drive the repair with EVERY ability that
+	## DECLARES single_ally, read from the data.
+	var abilities: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var root: Dictionary = (abilities as Dictionary).get("abilities", abilities)
+	var checked: int = 0
+	var unaimed: Array = []
+	for aid in root:
+		var ab: Variant = root[aid]
+		if not (ab is Dictionary) or str((ab as Dictionary).get("target_type", "")) != "single_ally":
+			continue
+		checked += 1
+		var rules: Array = [{"conditions": [{"type": "always"}],
+			"actions": [{"type": "ability", "id": str(aid)}]}]
+		rc._aim_untargeted_abilities(rules)
+		if str((rules[0]["actions"][0] as Dictionary).get("target", "")) != "lowest_hp_ally":
+			unaimed.append(str(aid))
+	assert_gt(checked, 5, "CONTROL: several abilities must declare single_ally, or this measures nothing")
+	assert_eq(unaimed, [],
+		"every single_ally ability must be aimed at the party — these were left for the enemy default: %s"
+			% str(unaimed))
