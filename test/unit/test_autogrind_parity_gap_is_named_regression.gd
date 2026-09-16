@@ -64,12 +64,26 @@ const CLOSED_PENDING_FOLD := [
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
-	"absorb_amount", "ap_gain", "cost", "countdown", "crit_chance", "damage_to_self_pct",
-	"damage_variance", "element_boost", "element_boost_modifier", "evasion_bonus",
-	"guaranteed_escape", "ignores_evasion", "max_depth",
-	"meta_effect", "mp_restore_percent", "multiplier", "next_attack_multiplier", "penalty",
-	"priority", "recoil_pct", "steals", "success_rate", "threat_class",
+	"absorb_amount", "ap_gain", "countdown", "crit_chance", "damage_to_self_pct", "damage_variance",
+	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
+	"meta_effect", "mp_restore_percent", "next_attack_multiplier", "priority", "recoil_pct",
+	"steals", "success_rate", "threat_class",
 ]
+
+## ⛔ THE THIRD STATE, and it exists because I published a backlog number my instrument could not
+## support. Axis 1 calls a key live-only when live CONTAINS it and the grind does not. The grind side
+## is a ZERO and trustworthy; the LIVE side is a HIT, and a hit can be a string, a different subject's
+## field, or prose. So "23 unexamined gaps" was 19 gaps plus 4 keys that may not be gaps at all.
+##
+## These four have the NAME in BattleManager and no `ability.get`/`[]`/`.has` access anywhere in it:
+## `cost` is shop/ability-menu pricing, `multiplier` and `penalty` are local variables, `evasion_bonus`
+## is read off equipment rather than the ability. UNDECIDED, not absolved — a text search cannot tell
+## "read another way" from "not read", and saying so is the point.
+##
+## Taken from @cowir-sprites' three-state manifest census and @cowir-music's re-measurement of their
+## own: both had drawn a conclusion from the non-zero side of an instrument they had correctly
+## labelled trustworthy only on zeroes. Mine did the same thing to a number I put in a channel.
+const UNDECIDED_LIVE_SIDE := ["cost", "evasion_bonus", "multiplier", "penalty"]
 
 
 func _authored_keys() -> Array:
@@ -132,6 +146,8 @@ func test_no_new_divergence_arrives_unnamed() -> void:
 	for k in DECLARED:
 		known[k] = true
 	for k in UNEXAMINED:
+		known[k] = true
+	for k in UNDECIDED_LIVE_SIDE:
 		known[k] = true
 	for k in CLOSED_PENDING_FOLD:
 		known[k] = true
@@ -336,3 +352,59 @@ func test_regenerate_is_still_dead_on_lives_own_path() -> void:
 		"live's healing executor now reads `effect` — regenerate's regen may work there, and the grind must follow")
 	assert_false(body.contains("regen"),
 		"live's healing executor now mentions regen — re-examine, this declaration was measured when it did not")
+
+
+## Does BattleManager read this key off an ABILITY, rather than merely containing the word?
+func _live_reads_it_as_an_ability_field(key: String, live: String) -> bool:
+	var q: String = '"%s"' % key
+	return live.contains("ability.get(%s" % q) or live.contains("ability[%s]" % q) or live.contains("ability.has(%s" % q)
+
+
+func test_the_backlog_distinguishes_a_real_gap_from_a_word_that_appears() -> void:
+	## DERIVED, not transcribed: the split is recomputed and compared to the recorded lists, so a key
+	## that changes status reds instead of sitting in the wrong bucket. That is the difference between
+	## a classification and a note about one.
+	var live: String = GdSource.code_of(LIVE)
+	assert_gt(live.length(), 50000, "CONTROL: BattleManager was actually read")
+	var misfiled: Array = []
+	for k in UNEXAMINED:
+		if not _live_reads_it_as_an_ability_field(k, live):
+			misfiled.append("%s: listed as a real gap, but live never reads it off an ability" % k)
+	for k in UNDECIDED_LIVE_SIDE:
+		if _live_reads_it_as_an_ability_field(k, live):
+			misfiled.append("%s: listed as UNDECIDED, but live DOES read it off an ability — it is a real gap" % k)
+	gut.p("    confirmed gaps: %d   undecided: %d" % [UNEXAMINED.size(), UNDECIDED_LIVE_SIDE.size()])
+	assert_eq(misfiled, [], "the backlog's own classification is out of date: %s" % str(misfiled))
+	## Anti-vacuity in both directions: the discriminator must be able to say yes AND no.
+	assert_true(_live_reads_it_as_an_ability_field("hits", live),
+		"CONTROL: a key live demonstrably reads off an ability must classify as read")
+	assert_false(_live_reads_it_as_an_ability_field("a_key_no_ability_has", live),
+		"CONTROL: an invented key must not classify as read")
+
+
+## ⛔ THE FOURTH STATE — composed-at-runtime — DOES NOT APPLY HERE, and that is measured rather than
+## assumed. @cowir-sfx's cue audit has 212 keys absent from the corpus because `play_ability` builds
+## `"ability_" + element` at runtime, so a literal scan cannot see a key that fires on every cast.
+## An ability FIELD is not like that: both engines read fields with literal keys only, so a zero means
+## the key is genuinely unread rather than reached by a name this instrument cannot construct.
+##
+## If either engine ever reads an ability field through a variable, every zero in this file becomes
+## unsound at once — so it reds here rather than silently weakening the whole ledger.
+func test_neither_engine_composes_an_ability_field_name() -> void:
+	for path in [LIVE, GRIND]:
+		var code: String = GdSource.code_of(path)
+		assert_gt(code.length(), 20000, "CONTROL: %s was actually read" % path)
+		var composed: Array = []
+		for line in code.split("\n"):
+			for form in ["ability.get(", "ability.has("]:
+				var at: int = line.find(form)
+				while at >= 0:
+					var nxt: String = line.substr(at + form.length(), 1)
+					if nxt != "\"":
+						composed.append(line.strip_edges())
+					at = line.find(form, at + 1)
+		assert_eq(composed, [],
+			"%s reads an ability field through a non-literal key, so a 'the grind never names it' zero in this ledger no longer means the field is unread: %s" % [path, str(composed)])
+	## Anti-vacuity: the scan must be able to SEE a literal access, or an empty result proves nothing.
+	assert_true(GdSource.code_of(GRIND).contains('ability.get("hits"'),
+		"CONTROL: the scan must find a known literal access, or it is matching nothing")
