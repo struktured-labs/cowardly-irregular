@@ -24,6 +24,7 @@ extends GutTest
 const JUKEBOX := preload("res://src/ui/JukeboxMenu.gd")
 const MANIFEST := "res://data/music_manifest.json"
 const CATALOG := "res://tools/music_prompts.json"
+const SIBLING_PIN := "res://test/unit/test_generic_beds_are_not_named_after_a_boss.gd"
 
 
 func _tracks_map() -> Dictionary:
@@ -181,3 +182,36 @@ func test_the_prompt_catalog_never_hands_two_beds_one_name() -> void:
 	assert_gt(seen.size(), 100, "CONTROL: walked %d title templates — a shallow walk would measure nothing" % seen.size())
 	assert_eq(dupes.size(), 0,
 		"%d title templates are authored on more than one catalog entry, so a regeneration writes two beds one name: %s" % [dupes.size(), str(dupes)])
+
+func test_the_other_pin_of_this_fact_agrees_with_this_one() -> void:
+	## ⛔ TWO FILES PIN TITLE COLLISIONS AND NEITHER KNEW ABOUT THE OTHER. Resolving the one
+	## real entry here left `test_generic_beds_are_not_named_after_a_boss.gd` still declaring it;
+	## that file is self-retiring too, so it went red naming itself — which found the second pin
+	## by luck of it being a good guard, not by anything connecting them.
+	##
+	## A self-retiring pin protects the FACT. It does not tell you how many pins the fact has.
+	## This arm is the link, as an assert rather than a comment, because "do the two dicts agree"
+	## is checkable: add an entry to either file alone and this reds.
+	##
+	## ⛔ THE CONTROL IS THE LOAD-BEARING HALF. Rename or move the sibling and the regex below
+	## finds nothing, both sets read empty, and the arm passes while connecting nothing.
+	var sibling: String = FileAccess.get_file_as_string(SIBLING_PIN)
+	assert_gt(sibling.length(), 1000, "CONTROL: the sibling guard read back %d chars" % sibling.length())
+	var decl: int = sibling.find("const KNOWN_TITLE_COLLISIONS")
+	assert_gt(decl, 0, "CONTROL: %s no longer declares KNOWN_TITLE_COLLISIONS — this arm would agree with nothing" % SIBLING_PIN)
+	var body: String = sibling.substr(decl, sibling.find("}", decl) - decl)
+	var theirs := {}
+	var re := RegEx.create_from_string("\"([^\"]+)\"\\s*:")
+	for m in re.search_all(body):
+		theirs[m.get_string(1).to_lower()] = true
+	var mine := {}
+	for k in KNOWN_TITLE_COLLISIONS:
+		mine[str(k).to_lower()] = true
+	var only_here: Array = []
+	var only_there: Array = []
+	for k in mine:
+		if not theirs.has(k): only_here.append(k)
+	for k in theirs:
+		if not mine.has(k): only_there.append(k)
+	assert_eq(only_here.size() + only_there.size(), 0,
+		"the two title-collision pins disagree — declared only here: %s; only in the sibling: %s. Both files must name the same collisions or one will outlive the other" % [str(only_here), str(only_there)])
