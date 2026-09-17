@@ -336,3 +336,73 @@ func test_the_player_no_longer_carries_a_hardcoded_row_order() -> void:
 		"the row order must be read from the manifest owner")
 	assert_false(code.contains("[Direction.DOWN, Direction.LEFT, Direction.RIGHT, Direction.UP]"),
 		"the hardcoded row order is the constant this change replaced")
+
+
+## ⛔ EVERY CONSUMER THAT PICKS A WALK ROW MUST ASK THE MANIFEST — and the corpus is DERIVED, which
+## is the whole point of this arm.
+##
+## I fixed RoamingMonster, then OverworldPlayer, and reported the pattern "consistent across
+## monsters and player". It was not. Deriving the corpus by four different spellings found SIX
+## files picking a sheet row; I had looked at TWO. OverworldNPC carried a hardcoded match, and
+## WanderingNPC was worse than hardcoded — `_current_dir` WAS the row index, coupled by nothing
+## but a trailing comment, at two sites (the frame key and the heavy-top density lookup, which is
+## keyed by row). Fixing one of those two would have nudged the wrong direction's headroom.
+##
+## 🔑 cowir-controller's root cause, arrived at the same evening on menus: THE INSTRUMENT AND THE
+## WORK HAD THE SAME BLIND SPOT, so the instrument could not report it. Their ledger searched for
+## the pattern their conversions used; my search was the two files I was already editing. A
+## hand-listed corpus can only confirm what you already looked at.
+##
+## ⚠️ THE DISCRIMINATOR IS SHEET RESOLUTION, NOT ROW ARITHMETIC. `row * frame_h` also appears in
+## MapleCommunityCenterInterior, which draws a decorative photo wall and consumes no sheet at all.
+## Requiring a file to obtain an overworld sheet PATH keeps it out without naming it.
+func test_every_overworld_sheet_consumer_reads_its_rows_from_the_manifest() -> void:
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+	var resolves := ["npc_overworld_path(", "overworld_frame_size(", "monsters/overworld/"]
+	var owners := ["overworld_walk_rows(", "overworld_player_rows(", "overworld_monster_geometry("]
+
+	var consumers: Array = []
+	var offenders: Array = []
+	var stack: Array[String] = ["res://src"]
+	while not stack.is_empty():
+		var cur: String = stack.pop_back()
+		var d := DirAccess.open(cur)
+		if d == null:
+			continue
+		d.list_dir_begin()
+		var n := d.get_next()
+		while n != "":
+			var full: String = "%s/%s" % [cur, n]
+			if d.current_is_dir():
+				if not n.begins_with("."):
+					stack.append(full)
+			elif n.ends_with(".gd"):
+				var code: String = GdSource.code_of(full)
+				var gets_sheet := false
+				for r in resolves:
+					if code.contains(r):
+						gets_sheet = true
+				# Slicing BY ROW is what makes row order matter; a whole-sheet load does not.
+				var slices := code.contains("_frame.y") or code.contains("FRAME_H") \
+					or code.contains("frame_h") or code.contains("_ARCHETYPE_FRAME_H")
+				if gets_sheet and slices:
+					consumers.append(full)
+					var asks := false
+					for o in owners:
+						if code.contains(o):
+							asks = true
+					if not asks:
+						offenders.append(full)
+			n = d.get_next()
+		d.list_dir_end()
+
+	consumers.sort()
+	offenders.sort()
+	assert_gt(consumers.size(), 2,
+		("ANTI-VACUITY: only %d sheet-slicing consumers were derived. The extraction is broken, and "
+		+ "an empty corpus reports a clean repo: %s") % [consumers.size(), consumers])
+	assert_eq(offenders, [],
+		("a file resolves an overworld sheet and slices it BY ROW without asking the manifest which "
+		+ "row is which. Every shipped sheet uses the same order today, so it renders correctly and "
+		+ "nothing fails — until one declares a different order, at which point this consumer faces "
+		+ "the wrong way while the others do not: %s") % [offenders])
