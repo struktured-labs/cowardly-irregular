@@ -504,9 +504,15 @@ fi
 #   publish_all.sh            has NO selftest — it appears in greps for "--selftest" only
 #                             because it invokes others', which is how it got miscounted
 # Total added: ~2.6s against a chain that runs 45s-45min.
+# ⛔ check_tree_unmoved.sh AND release_note.sh WERE MISSING FROM THIS LIST WHILE BEING INVOKED
+# BY THIS SCRIPT. Measured 2026-09-17: both carry selftests (11 and 23 arms) and the publish ran
+# neither, so their arms were written, committed, and never exercised by the path whose verdict
+# depends on them -- the same gap check_web_audio_tier_selftest.py had until gate 3c ran it.
+# The list is the thing that decides, so a tool added to the chain without being added here is
+# silently unchecked; that is why they are adjacent in this file and why this comment is here.
 _SH_SELFTESTS="artifact_identity.sh build_sha.sh check_import_ok.sh check_masters_untouched.sh
 check_profile_untouched.sh check_version_matches_tag.sh pck_cache_report.sh store_status.sh
-tag_gate_evidence.sh verify_store_artifact.sh web_smoke.sh"
+tag_gate_evidence.sh verify_store_artifact.sh web_smoke.sh check_tree_unmoved.sh release_note.sh"
 for _t in $_SH_SELFTESTS; do
     if [ ! -x "tools/$_t" ]; then
         echo "[pub] BLOCKED: tools/$_t missing or not executable — it is on the publish path" >&2
