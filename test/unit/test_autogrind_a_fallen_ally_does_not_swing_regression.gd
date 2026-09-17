@@ -98,23 +98,32 @@ func test_a_dead_participant_does_not_cost_blade_storm_its_hits() -> void:
 				n += 1
 		return n
 
+	## ⚠️ REPEATED, because one storm is not a detector. Under the pre-fix form the dead case landed
+	## 6·5·5·7·6·2 across six measured runs — variable, mean ~5.2 — against a deterministic 6 when
+	## fixed. A single comparison therefore MISSES the defect about a third of the time. Summing five
+	## storms turns a ~2/3 detector into a reliable one: 30 fixed vs ~26 and falling.
 	var spec := {"id": "blade_storm", "required_jobs": ["fighter", "rogue", "ninja"], "min_members": 2, "ap_cost": 2}
-	var res_three := ResolverScript.new()
-	res_three._enemy_party = [_enemy("E1"), _enemy("E2")]
-	var three := [_member("A", "fighter"), _member("B", "rogue"), _member("C", "ninja")]
-	res_three._player_party = three
-	res_three._execute_group_formation(three, spec)
-	var hits_three: int = landed.call(res_three, three)
+	var hits_three: int = 0
+	for r in 5:
+		var rt := ResolverScript.new()
+		rt._enemy_party = [_enemy("E1"), _enemy("E2")]
+		var three := [_member("A", "fighter"), _member("B", "rogue"), _member("C", "ninja")]
+		rt._player_party = three
+		rt._execute_group_formation(three, spec)
+		hits_three += landed.call(rt, three)
 
-	_res._enemy_party = [_enemy("F1"), _enemy("F2")]
-	var four := [_member("A", "fighter"), _member("B", "rogue"), _member("C", "ninja"), _member("D", "cleric")]
-	four[3].current_hp = 0
-	four[3].is_alive = false
-	_res._player_party = four
-	_res._execute_group_formation(four, spec)
-	var hits_dead: int = landed.call(_res, four)
+	var hits_dead: int = 0
+	for r in 5:
+		var rd := ResolverScript.new()
+		rd._enemy_party = [_enemy("F1"), _enemy("F2")]
+		var four := [_member("A", "fighter"), _member("B", "rogue"), _member("C", "ninja"), _member("D", "cleric")]
+		four[3].current_hp = 0
+		four[3].is_alive = false
+		rd._player_party = four
+		rd._execute_group_formation(four, spec)
+		hits_dead += landed.call(rd, four)
 
-	gut.p("    blade_storm LANDED HITS: three living %d · four rostered with one dead %d" % [hits_three, hits_dead])
+	gut.p("    blade_storm LANDED HITS over 5 storms: three living %d · four rostered with one dead %d" % [hits_three, hits_dead])
 	assert_gt(hits_three, 0, "CONTROL: the storm must land hits, or the comparison is empty")
 	assert_eq(hits_dead, hits_three,
 		"a rostered corpse cost blade_storm its hits — the budget or the attacker SELECTION is reading the rostered list, and a dead pick consumes the swing")
