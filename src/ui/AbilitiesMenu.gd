@@ -670,6 +670,22 @@ func _nav_step(step: int, list_size: int) -> void:
 	SoundManager.play_ui("menu_move")
 
 
+## Hold-to-repeat. MenuRepeat POLLS Input and inherits none of _input's early returns, so the
+## visibility guard below mirrors the press path's rather than relying on it.
+var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
+
+
+func _process(delta: float) -> void:
+	if not visible or is_queued_for_deletion():
+		_nav_repeat.reset()
+		return
+	var action := _nav_repeat.tick(delta)
+	if action == "":
+		return
+	var list_size = _abilities_list.size() if current_tab == Tab.ABILITIES else _passives_list.size()
+	_nav_step(-1 if action == "ui_up" else 1, list_size)
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle menu input"""
 	if not visible:

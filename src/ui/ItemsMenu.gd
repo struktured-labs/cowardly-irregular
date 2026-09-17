@@ -607,6 +607,35 @@ func _update_selection() -> void:
 				cursor.text = ">" if i == selected_target_index else " "
 
 
+## Hold-to-repeat on the item list. MenuRepeat POLLS Input, so it inherits NONE of _input's
+## early returns — _nav_blocked() has to mirror them or a hold navigates a hidden menu.
+var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
+
+
+func _nav_blocked() -> bool:
+	if not visible or is_queued_for_deletion():
+		return true
+	# Target mode indexes _item_list; the press path got there through a non-empty check, a poll did not.
+	if mode != 0 and (selected_item_index < 0 or selected_item_index >= _item_list.size()):
+		return true
+	return false
+
+
+func _process(delta: float) -> void:
+	if _nav_blocked():
+		_nav_repeat.reset()
+		return
+	var action := _nav_repeat.tick(delta)
+	if action == "":
+		return
+	var step := -1 if action == "ui_up" else 1
+	if mode == 0:
+		_nav_step_item(step)
+	else:
+		var item = _item_list[selected_item_index]
+		_nav_step_target(step, item["data"].get("target_type", ItemSystem.TargetType.SINGLE_ALLY))
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle menu input"""
 	if not visible:

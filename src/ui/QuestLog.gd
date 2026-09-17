@@ -446,6 +446,36 @@ func _is_quest_flag_set(flag: String) -> bool:
 		or GameState.game_constants.get(flag, false)
 
 
+## Hold-to-repeat. MenuRepeat POLLS Input and inherits none of _input's early returns, so the
+## visibility guard below mirrors the press path's rather than relying on it.
+var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
+
+## Lines per arrow step. The log scrolls by LINES, not by selectable rows.
+const _SCROLL_LINES := 3
+
+
+## One owner for the scroll, so the press path and the hold path cannot drift apart.
+func _scroll_step(dir: int) -> void:
+	var limit: int = maxi(0, _total_lines - _max_visible_lines)
+	# Clamped here as well as in _build_ui(), so this owner is correct read on its own.
+	var want: int = clampi(_scroll_offset + dir * _SCROLL_LINES, 0, limit)
+	if want == _scroll_offset:
+		return
+	_scroll_offset = want
+	_build_ui()
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
+
+
+func _process(delta: float) -> void:
+	if not visible or is_queued_for_deletion():
+		_nav_repeat.reset()
+		return
+	var action := _nav_repeat.tick(delta)
+	if action != "":
+		_scroll_step(-1 if action == "ui_up" else 1)
+
+
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
@@ -480,18 +510,10 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	elif nav == "ui_up":
-		if _scroll_offset > 0:
-			_scroll_offset -= 3
-			_build_ui()
-			if SoundManager:
-				SoundManager.play_ui("menu_move")
+		_scroll_step(-1)
 		get_viewport().set_input_as_handled()
 	elif nav == "ui_down":
-		if _scroll_offset + _max_visible_lines < _total_lines:
-			_scroll_offset += 3
-			_build_ui()
-			if SoundManager:
-				SoundManager.play_ui("menu_move")
+		_scroll_step(1)
 		get_viewport().set_input_as_handled()
 	# Mouse wheel scrolling
 	elif event is InputEventMouseButton and event.pressed:

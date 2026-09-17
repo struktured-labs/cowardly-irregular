@@ -7,7 +7,7 @@ extends GutTest
 ##                          ui_cancel branch  same deletion, same guard
 ##                          _close_name_grid()                   no minimum length
 ##                          _confirm_creation()                  emits with NO validation
-##   GameLoop._build_party_from_customizations   "name": custom.name — straight through
+##   GameLoop._create_party_from_customizations   "name": custom.name — straight through
 ##   AutobattleSystem._get_character_id          combatant_name.to_lower()  ->  ""
 ##
 ## ⛔ CITED BY SYMBOL, NOT BY LINE, BECAUSE MY OWN COMMIT INVALIDATED THE LINE NUMBERS. The first
