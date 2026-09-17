@@ -675,9 +675,14 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
-	# Tab switching — echo-guarded (2026-04-30 fix). Holding Left/Right
-	# was rebuilding the entire UI per echo and spamming menu_move.
-	if event.is_action_pressed("ui_left") and not event.is_echo():
+	# MenuNav, not a raw read. ALL FOUR directions: ui_up/ui_down bind the left stick's Y axis and
+	# ui_left/ui_right its X, and an axis carries no echo flag.
+	var nav := MenuNav.step(event)
+
+	# Tab switching. The 2026-04-30 fix echo-guarded this because holding Left/Right rebuilt the
+	# whole UI per echo and spammed menu_move — and a stick ramp did exactly that anyway, because
+	# an echo guard cannot see an axis. Same defect, fixed for the keyboard half only.
+	if nav == "ui_left":
 		if current_tab > 0:
 			current_tab -= 1
 			selected_index = 0
@@ -686,7 +691,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		if current_tab < Tab.PASSIVES:
 			current_tab += 1
 			selected_index = 0
@@ -698,9 +703,6 @@ func _input(event: InputEvent) -> void:
 	# List navigation
 	var list_size = _abilities_list.size() if current_tab == Tab.ABILITIES else _passives_list.size()
 
-	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
-	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
-	var nav := MenuNav.step(event)
 	if nav == "ui_up" or nav == "ui_down":
 		_nav_step(-1 if nav == "ui_up" else 1, list_size)
 		get_viewport().set_input_as_handled()

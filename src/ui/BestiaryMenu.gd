@@ -637,7 +637,7 @@ func _input(event: InputEvent) -> void:
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
+	elif nav == "ui_left":
 		# Tick 267: cycle sort mode (Level → Kills → Name → Level).
 		# Press Left advances; Right could un-cycle but most one-axis
 		# cycle UIs are direction-agnostic, so we keep input minimal.

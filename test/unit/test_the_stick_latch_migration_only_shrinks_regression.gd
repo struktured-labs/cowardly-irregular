@@ -23,13 +23,24 @@ extends GutTest
 ## their conversions and this list, naming the two files. A declaration may not outlive its fact,
 ## and this is what that costs — one edit, in the file that owns the list.
 
-const RAW_UP := 'is_action_pressed("ui_up")'
-const RAW_DOWN := 'is_action_pressed("ui_down")'
+## ⛔ ALL FOUR DIRECTIONS. This checked only ui_up/ui_down until 2026-09-17, and my own
+## conversions were vertical-only — so six menus routed up/down through MenuNav while left/right
+## stayed raw, and the instrument policing the migration shared the blind spot exactly. A file
+## whose only raw read was horizontal classified as fully converted. @cowir-adhoc found it by
+## classifying every .gd rather than trusting this list.
+const RAW_READS := [
+	'is_action_pressed("ui_up")',
+	'is_action_pressed("ui_down")',
+	'is_action_pressed("ui_left")',
+	'is_action_pressed("ui_right")',
+]
 
 ## Measured 2026-09-16. Shrinks only.
 const KNOWN_UNCONVERTED := [
 	"res://src/cutscene/CutsceneDialogue.gd",
+	"res://src/exploration/ReadableProp.gd",
 	"res://src/ui/BossSelectorMenu.gd",
+	"res://src/ui/PartyStatusScreen.gd",
 	"res://src/ui/CharacterCreationScreen.gd",
 	"res://src/ui/ControlsMenu.gd",
 	"res://src/ui/FormationsMenu.gd",
@@ -77,7 +88,11 @@ func _scan() -> Dictionary:
 		if code == "":
 			continue
 		scanned += 1
-		var has_raw: bool = code.contains(RAW_UP) or code.contains(RAW_DOWN)
+		var has_raw := false
+		for r in RAW_READS:
+			if code.contains(r):
+				has_raw = true
+				break
 		var has_nav: bool = code.contains("MenuNav.step(")
 		if has_nav:
 			converted.append(path)

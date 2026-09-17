@@ -25,6 +25,17 @@ static var _v_axis_held: bool = false
 static var _h_axis_held: bool = false
 
 
+## ⛔ step() CONSUMES. It looks like a pure query and is not: on an analog event it SETS the latch
+## as a side effect, so calling it TWICE for one event returns "" the second time and that step is
+## silently dropped. Call it ONCE per event, per handler.
+##
+## Five menus already have two call sites — JobMenu, ItemsMenu and EquipmentMenu have one per mode
+## handler; SettingsMenu's quit-confirm and DialogueChoiceMenu dispatch before the main chain is
+## reached. All are mutually exclusive, so exactly one runs per event and they are correct today —
+## but that is a property of where their early returns sit, not of this helper. A menu that reads a
+## direction in two places on ONE path loses the second, and no guard would see it.
+## (@cowir-adhoc, 2026-09-17, checking the consumers this migration created.)
+##
 ## The direction this event steps, or "" for nothing. Buttons and keys pass straight through;
 ## an analog push steps ONCE until it returns past the deadzone.
 static func step(event: InputEvent) -> String:
