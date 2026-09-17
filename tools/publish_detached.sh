@@ -25,6 +25,7 @@
 # is true regardless of who can kill what.
 #
 # Usage:  tools/publish_detached.sh <tag> [extra publish_all args...]
+#         tools/publish_detached.sh --check               would a publish start now, and if not why
 #         tools/publish_detached.sh --status <logdir>     bounded wait for the .ec file
 #         tools/publish_detached.sh --selftest
 # Exit:   0 launched (or, with --status, the publish's own code) · 2 usage/refusal
@@ -154,7 +155,33 @@ case "${1:-}" in
     --status)   [ -n "${2:-}" ] || { echo "usage: $0 --status <logdir>" >&2; exit 2; }
                 _status "$2" "${3:-5400}"; exit $? ;;
     --selftest) ;;                      # handled at the bottom
-    "" |-*)     echo "usage: $0 <tag> [args...] | --status <logdir> | --selftest" >&2; exit 2 ;;
+    # ⛔ THE HOLD USED TO BE UNASKABLE. The only way to learn whether a publish would be
+    # refused, and why, was to ATTEMPT ONE — so the reason existed solely in the launcher's
+    # stderr, at the moment somebody happened to try. tools/store_status.sh answers WHAT the
+    # store owes ("BEHIND at v3.33.376-alpha: linux windows web") and nothing answered WHY it
+    # had not shipped. Those are different states with different responses: a courtesy hold
+    # waits, a RED gate stops, a crashed run needs relaunching, and "nobody ran it" needs
+    # somebody to run it. All four look identical from the store side.
+    #
+    # On 2026-09-16 the store sat five tags behind for two hours on a correct courtesy hold,
+    # and the only record of that anywhere was my own hourly intercom posts.
+    #
+    # --check answers it WITHOUT launching: same two gates, same reasons, no side effects, no
+    # worktree, no butler traffic. Exit 0 = a publish would start now; 2 = it would refuse.
+    --check)    _busy=$(_owner_busy)
+                _obs=$(_obs_busy)
+                if [ "$_busy" -gt 0 ] || [ -n "$_obs" ]; then
+                    [ "$_busy" -gt 0 ] && echo "[check] HELD: ${_busy} process(es) matching '${OWNER_PROCS}' are running."
+                    [ -n "$_obs" ] && printf '[check] HELD: %s\n' "$_obs"
+                    echo "[check] A publish would REFUSE right now. That is struktured's own work on his"
+                    echo "[check] own machine; re-run when it is done. Nothing here launches anything."
+                    exit 2
+                fi
+                [ -n "$(pgrep -x "$OBS_PROC" 2>/dev/null)" ] && \
+                    echo "[check] OBS is open but not recording, streaming or holding a replay buffer."
+                echo "[check] CLEAR: a publish would start now. Nothing is holding it."
+                exit 0 ;;
+    "" |-*)     echo "usage: $0 <tag> [args...] | --check | --status <logdir> | --selftest" >&2; exit 2 ;;
 esac
 
 if [ "${1:-}" != "--selftest" ]; then
@@ -266,6 +293,41 @@ _obslog "$S_START" "$S_STOP";                     _try "stream ended -> launch" 
 rm -f "$O"/*.txt;                                 _try "obs running, NO log -> refuse (fail closed)" 2 "output state is unknown"
 _obslog "$R_STOP"; touch -d '2000-01-01' "$O"/*.txt
                                                   _try "log older than obs -> refuse (fail closed)"  2 "predates it"
+# ── --check answers the same question WITHOUT launching ──────────────────────────────────
+# Both directions, and a third arm proving it has no side effects: the whole point is that a
+# reader can ask the gate instead of attempting a publish to find out.
+_chk_mode() {  # label want_ec want_text
+    local out ec
+    out=$(PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="bash" \
+          PUBLISH_OBS_LOG_DIR="$O" ./tools/publish_detached.sh --check 2>&1); ec=$?
+    chk "$1" "$ec" "$2"
+    case "$out" in *"$3"*) chk "  ...and says why" yes yes ;; *) chk "  ...and says why ($3)" "no" "yes" ;; esac
+}
+_obslog "$S_START";           _chk_mode "--check while streaming -> HELD"        2 "OBS is live: Streaming"
+_obslog "$S_START" "$S_STOP"; _chk_mode "--check with nothing live -> CLEAR"     0 "CLEAR: a publish would start now"
+# ⛔ AND IT MUST NOT HAVE LAUNCHED ANYTHING ON THE WAY TO THAT ANSWER — a check that publishes
+# is worse than no check.
+#
+# ⚠️ The first version of this arm asserted that `_logdir ZZ-checkmode` was absent. --check
+# takes no tag, so that path could never exist whether it launched or not: an absence assert
+# over a sample that cannot occur, which passes identically on a broken --check. Replaced with
+# a before/after of the detached ROOT, and floored by a real launch — without the floor,
+# "unchanged" is equally satisfied by a root that never changes for anybody.
+_detroot="$(dirname "$(_logdir ZZ-probe)")"
+# A DIGEST, not the listing: this root holds one entry per release and printing it put a
+# 1000-character line into every publish's selftest output. Count plus checksum moves on any
+# add, remove or rename, which is the whole question.
+_snap() { ls -1 "$_detroot" 2>/dev/null | sort | cksum | tr -s ' ' | cut -d' ' -f1,2; }
+_before="$(_snap)"
+PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="bash" PUBLISH_OBS_LOG_DIR="$O" \
+  ./tools/publish_detached.sh --check >/dev/null 2>&1
+chk "--check leaves the detached root untouched" "$(_snap)" "$_before"
+# the floor: a REAL launch must move that same listing, or the arm above proves nothing
+_obslog "$S_START" "$S_STOP"
+PUBLISH_CMD="$T/ok.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="bash" \
+  PUBLISH_OBS_LOG_DIR="$O" ./tools/publish_detached.sh ZZ-launchfloor >/dev/null 2>&1
+chk "  ...and a real launch DOES move it" "$([ "$(_snap)" != "$_before" ] && echo moved || echo same)" "moved"
+
 # the same live-looking log with OBS NOT running is not a reason to wait
 _obslog "$R_START"
 PUBLISH_CMD="$T/ok.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="__absent__" \
