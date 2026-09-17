@@ -28,9 +28,13 @@ func test_the_ramp_is_INERT_at_rest() -> void:
 
 
 func test_the_ramp_rises_per_consecutive_hit_and_CAPS() -> void:
+	## The cooldown is cleared between hits so each one is genuinely HEARD. This loop used to
+	## fire 12 same-frame calls: since af8434fe0 the ramp counts audible plays, not calls, so
+	## an uncleared loop measures one step and twelve suppressions — it tested the defect.
 	var seen: Array[float] = []
 	for i in range(12):
 		seen.append(SoundManager.get_combo_pitch_bias())
+		SoundManager._sfx_cooldowns.clear()
 		SoundManager.play_attack_hit("", false)
 	assert_eq(seen[0], 1.0, "first hit of a chain must be unbiased")
 	assert_gt(seen[1], seen[0], "the second hit must ramp above the first")
@@ -51,7 +55,11 @@ func test_the_step_and_cap_match_the_specified_envelope() -> void:
 
 
 func test_reset_returns_the_chain_to_inert() -> void:
+	## Cooldown cleared per hit for the same reason as the ramp arm above: since af8434fe0 a
+	## same-frame repeat is suppressed and does not advance the chain, so this control needs
+	## hits that are actually HEARD before it can assert the chain ramped.
 	for i in range(5):
+		SoundManager._sfx_cooldowns.clear()
 		SoundManager.play_attack_hit("", false)
 	assert_gt(SoundManager.get_combo_pitch_bias(), 1.0, "control: the chain must actually have ramped")
 	SoundManager.reset_hit_chain()

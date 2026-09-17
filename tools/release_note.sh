@@ -42,6 +42,25 @@ _die() { echo "[relnote] BLOCKED: $*" >&2; exit 2; }
 
 # The previous release tag, by version order rather than by date -- a tag cut out of order would
 # otherwise make the range lie about what is new.
+# Tags strictly between prev and tag, oldest first. These are the SUPERSEDED releases: this
+# lane publishes the NEWEST tag only, so when the store has been held — a courtesy hold while
+# struktured is streaming, a RED, a box nobody was at — the release a player receives carries
+# every tag in between and the note has always described only the last one.
+#
+# Measured 2026-09-17, mid-hold: the store sat on v3.33.371-alpha with v3.33.379-alpha tagged.
+#
+#     note for .379, default prev (.378)   2 branches ·   7 commits ·  4 files
+#     note vs what the store actually has  59 branches · 157 commits · 96 files
+#
+# A 30x under-description, and the direction is the bad one: it tells a reader that a release
+# they cannot otherwise inspect is small.
+_superseded_tags() {
+    local prev="$1" tag="$2"
+    [ -n "$prev" ] || return 0
+    git tag -l 'v3.33.*' --sort=v:refname \
+        | awk -v p="$prev" -v t="$tag" 'f && $0==t{exit} f{print} $0==p{f=1}'
+}
+
 _prev_tag() {
     local tag="$1"
     git tag -l 'v3.33.*' --sort=-v:refname \
@@ -58,12 +77,18 @@ _merged_branches() {
         case "$subj" in
             "Merge remote-tracking branch '"*)
                 local name="${subj#Merge remote-tracking branch \'}"
-                name="${name%\'}"
+                # ⛔ `${name%\'}` strips a TRAILING apostrophe, and the fold's subject does not
+                # end in one: it ends `' (68bcd7a39)`. So 47 of 69 lines in the note for
+                # v3.33.383-alpha read
+                #     lane/a-theater-verdict-is-guarded-not-measured' (68bcd7a39)
+                # A branch name cannot contain an apostrophe, so cutting at the FIRST one is
+                # exact and handles both shapes — with the sha suffix and without.
+                name="${name%%\'*}"
                 name="${name#origin/}"
                 printf '%s\t%s\n' "$sha" "$name" ;;
             "Merge branch '"*)
                 local name="${subj#Merge branch \'}"
-                name="${name%\'}"
+                name="${name%%\'*}"
                 printf '%s\t%s\n' "$sha" "$name" ;;
             *) printf '%s\t%s\n' "$sha" "[unparsed] $subj" ;;
         esac
@@ -106,6 +131,14 @@ note() {
         printf '_No previous release tag found, so this note covers the whole history and the list below is not a delta._\n\n'
     else
         printf 'Changes since **%s** — %s commit(s), %s file(s) changed.\n\n' "$prev" "$commits" "$files"
+        local sup; sup="$(_superseded_tags "$prev" "$tag")"
+        local sn; sn="$(printf '%s' "$sup" | command grep -c . || true)"
+        if [ "${sn:-0}" -gt 0 ]; then
+            printf '**Supersedes %s tag(s) the store never received:** ' "$sn"
+            printf '%s' "$sup" | tr '\n' ' ' | sed 's/ $//'
+            printf '\n\n'
+            printf '_Those are cadence markers, not skipped work — every commit in them is in this release._\n\n'
+        fi
     fi
 
     local n; n="$(printf '%s' "$merges" | command grep -c . || true)"
@@ -170,6 +203,20 @@ gated: cafe1234 scripts=11 tests=111 passing=111 failing=0"
     local out
     out="$(cd "$d" && bash "$SELF" v3.33.101-alpha --prev v3.33.100-alpha)"
     _has   "a merged branch APPEARS"                    "$out" "lane/landed"
+    # ⛔ THE FIXTURE ABOVE USES A SHAPE MAIN DOES NOT PRODUCE. Its merge subject ends at the
+    # closing quote; every real fold ends `' (68bcd7a39)`. The old stripper removed a TRAILING
+    # apostrophe, which the real shape does not have — so 47 of 69 lines in v3.33.383-alpha's
+    # note read `lane/a-theater-verdict-is-guarded-not-measured' (68bcd7a39)` while this
+    # selftest stayed green. A fixture that cannot carry the defect cannot catch it.
+    (cd "$d" && git checkout -q main 2>/dev/null || git checkout -q master 2>/dev/null
+     git checkout -qb lane/suffixed 2>/dev/null; echo s > s.txt; git add s.txt; git commit -qm s
+     git checkout -q - 2>/dev/null
+     git merge -q --no-ff lane/suffixed -m "Merge remote-tracking branch 'origin/lane/suffixed' (deadbeef)"
+     git tag -a v3.33.104-alpha -m "v3.33.104-alpha" >/dev/null 2>&1) >/dev/null 2>&1
+    local outs; outs="$(cd "$d" && bash "$SELF" v3.33.104-alpha --prev v3.33.101-alpha)"
+    _has   "the REAL fold subject yields a clean name"  "$outs" "lane/suffixed"
+    _hasnt "  ...with no trailing quote"                "$outs" "lane/suffixed'"
+    _hasnt "  ...and no merge sha glued to it"          "$outs" "deadbeef)"
     _hasnt "a branch that did NOT merge is ABSENT"      "$out" "never-landed"
     _has   "the gate evidence line is carried"          "$out" "scripts=11 tests=111 passing=111 failing=0"
     _hasnt "...and it is THIS tag's, not the previous"  "$out" "scripts=10"
@@ -198,6 +245,21 @@ gated: cafe1234 scripts=11 tests=111 passing=111 failing=0"
     local p
     p="$(cd "$d" && git tag -l 'v3.33.*' --sort=-v:refname | awk -v t=v3.33.101-alpha 'f{print; exit} $0==t{f=1}')"
     _eq    "_prev_tag: the VERSION predecessor"         "$p" "v3.33.100-alpha"
+
+    # ── supersession: the case this lane actually publishes in ──────────────────────────────
+    # The fixture already has .100, .101 and .102. A note for .102 against .100 SKIPS .101, so
+    # the superseded tag must be named; against .101 it skips nothing and the line must be
+    # ABSENT. The second arm is the one that matters — a line that always prints would satisfy
+    # the first on its own and say nothing.
+    local out4 out5
+    out4="$(cd "$d" && bash "$SELF" v3.33.102-alpha --prev v3.33.100-alpha)"
+    _has   "a skipped tag is NAMED"                     "$out4" "Supersedes 1 tag(s)"
+    _has   "  ...and named exactly"                     "$out4" "v3.33.101-alpha"
+    _has   "  ...and says they are not lost work"       "$out4" "cadence markers, not skipped work"
+    out5="$(cd "$d" && bash "$SELF" v3.33.102-alpha --prev v3.33.101-alpha)"
+    _hasnt "an ADJACENT prev names no supersession"     "$out5" "Supersedes"
+    # and the endpoints are exclusive: neither prev nor tag may appear in its own list
+    _hasnt "  ...the range excludes prev itself"        "$out4" "Supersedes 1 tag(s) the store never received: v3.33.100-alpha"
 
     rm -rf "$d"
     printf '\nselftest: %s passed, %s failed\n' "$pass" "$fail"

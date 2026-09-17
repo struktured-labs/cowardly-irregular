@@ -744,6 +744,35 @@ func _execute_action(action: Dictionary) -> void:
 			pass  # Already executed during selection phase
 
 
+## Twin of BattleManager._sum_equipment_special_effect (:5434). Walks the three equipment slots and
+## sums the requested key, returning 0.0 cleanly when the combatant has no gear, the autoload is
+## absent, or the key is unauthored. A grinding party's gear did NOTHING before this: the resolver
+## read 0 of the 15 keys equipment.json authors, so the grind reported survivability and rewards for
+## a party wearing no equipment effects at all.
+## ⚠️ Four of the fifteen keys are read in live by CONSTRUCTION (element + "_damage_bonus"), so a
+## literal census of either engine under-reports them — @cowir-battle's third shape, which is why
+## this helper takes the key as an argument rather than matching names.
+func _sum_equipment_special_effect(combatant, key: String) -> float:
+	if combatant == null or not is_instance_valid(combatant):
+		return 0.0
+	var es = _get_autoload("EquipmentSystem")
+	if es == null:
+		return 0.0
+	var total: float = 0.0
+	for slot in [["equipped_weapon", "get_weapon"], ["equipped_armor", "get_armor"], ["equipped_accessory", "get_accessory"]]:
+		var field: String = str(slot[0])
+		var getter: String = str(slot[1])
+		if not (field in combatant) or str(combatant.get(field)) == "":
+			continue
+		if not es.has_method(getter):
+			continue
+		var piece: Dictionary = es.call(getter, str(combatant.get(field)))
+		var se: Variant = piece.get("special_effects", {})
+		if se is Dictionary:
+			total += float((se as Dictionary).get(key, 0.0))
+	return total
+
+
 func _resolve_attack(attacker, target) -> int:
 	if not target or not target.is_alive:
 		return 0
@@ -778,6 +807,12 @@ func _resolve_attack(attacker, target) -> int:
 	if randf() < miss_chance:
 		_log("%s misses %s!" % [attacker.combatant_name, target.combatant_name])
 		return 0
+	## equipment evasion_bonus is a SEPARATE roll in live (BattleManager:9106), not folded into the
+	## miss chance — elven_cloak plus a passive gives two independent chances to dodge. Same clamp.
+	var equip_dodge: float = clampf(_sum_equipment_special_effect(target, "evasion_bonus"), 0.0, 0.50)
+	if equip_dodge > 0.0 and randf() < equip_dodge:
+		_log("%s evades %s's attack!" % [target.combatant_name, attacker.combatant_name])
+		return 0
 
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
 	## ONE-SHOT, consumed as live consumes it (BattleManager:4374-4377) — a charged strike pays off
@@ -788,7 +823,11 @@ func _resolve_attack(attacker, target) -> int:
 	## SHADOW_STEP on the ATTACKER: a guaranteed crit live (_calculate_crit_chance returns 1.0 up
 	## front). The Ninja's whole setup move is "step into the shadows so the next swing crits", and
 	## in a grind it bought nothing at all.
-	var crit_chance = min(0.50, 0.05 + attacker.speed * 0.01)
+	## equipment critical_bonus, clamped at 0.50 on its own and then folded in UNDER the same total
+	## cap live applies (BattleManager:5423 caps base+speed+passive+equip+buff at 0.50) — added after
+	## the min would let gear exceed a ceiling live never lets it cross.
+	var equip_crit: float = clampf(_sum_equipment_special_effect(attacker, "critical_bonus"), 0.0, 0.50)
+	var crit_chance = min(0.50, 0.05 + attacker.speed * 0.01 + equip_crit)
 	var is_crit = randf() < crit_chance
 	if attacker.has_status("shadow_step"):
 		is_crit = true
@@ -809,7 +848,42 @@ func _resolve_attack(attacker, target) -> int:
 		actual = actual / 2
 
 	target.take_damage(actual)
+	## Live calls this from _execute_attack ONLY (:4539) — the BASIC attack. Deliberately NOT added to
+	## _resolve_attack_with_power, which is this file's ability-damage path: an ability that happens to
+	## deal physical damage does not proc a weapon's on-hit status in live, and wiring it there would
+	## be the axis-2 error this lane's ledger exists to catch — a key read on the wrong executor.
+	_apply_equipment_on_hit_status(attacker, target)
 	return actual
+
+
+## Twin of BattleManager.ON_HIT_STATUSES (:4574) — same keys, same statuses, same durations.
+## poison_dagger authors poison_chance 0.25, sleep_dagger authors sleep_chance 0.20, and a grinding
+## party's daggers gave their stat bonus while the headline gimmick did nothing.
+## Table-driven for live's reason rather than mine: a new on-hit chance drops in by extending the
+## const, and the two engines stay comparable entry-for-entry instead of by reading two loops.
+const ON_HIT_STATUSES: Array = [
+	{"key": "poison_chance", "status": "poison", "duration": 3},
+	{"key": "sleep_chance", "status": "sleep", "duration": 2},
+]
+
+
+## Mirrors BattleManager._apply_equipment_on_hit_status:4581, called AFTER the damage lands so the
+## status piles on the hit. Each chance rolls independently, and the TARGET's status_resistance is
+## subtracted here exactly as live subtracts it — the same clamp-the-RESULT form, never a cap on the
+## resist itself, which live applies nowhere.
+func _apply_equipment_on_hit_status(attacker, target) -> void:
+	if attacker == null or target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	for entry in ON_HIT_STATUSES:
+		var chance: float = _sum_equipment_special_effect(attacker, str(entry["key"]))
+		if chance <= 0.0:
+			continue
+		var resist: float = _sum_equipment_special_effect(target, "status_resistance")
+		var effective: float = clampf(chance - resist, 0.0, 1.0)
+		if effective <= 0.0 or randf() >= effective:
+			continue
+		target.add_status(str(entry["status"]), int(entry["duration"]))
+		_log("%s inflicts %s on %s (on-hit)" % [attacker.combatant_name, str(entry["status"]), target.combatant_name])
 
 
 ## Canonical effect -> [stat, modifier] pairs, mirroring BattleManager's own names. Only the
@@ -1213,7 +1287,18 @@ func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: Stri
 	if effect == "":
 		return
 	var chance: float = float(ability.get("effect_chance", 1.0 if effect == "random_debuff" else 0.0))
-	if chance <= 0.0 or randf() >= chance:
+	## Equipment status_resistance, mirroring BattleManager:5002 (and :4592, which uses the identical
+	## formula so the two live sites cannot drift). @cowir-battle's resist_ring fix is the live half:
+	## the ring had ONE reader, on the ATTACKER's on-hit path, so it only ever resisted the party's own
+	## daggers. Every status a player actually suffers arrives on this route in both engines.
+	## ⚠️ NOT clamped like its neighbours, and deliberately: evasion_bonus and critical_bonus clamp
+	## their INPUT to 0.50 because live caps those at their own sites. Live caps status_resistance
+	## NOWHERE — it clamps the RESULT to [0,1]. Copying the neighbouring line's shape would invent a
+	## ceiling the real game does not have. Today's only author is resist_ring at 0.3, so an invented
+	## input cap would be unobservable, which is exactly why it is written down here.
+	var resist: float = _sum_equipment_special_effect(target, "status_resistance")
+	var effective: float = clampf(chance - resist, 0.0, 1.0)
+	if effective <= 0.0 or randf() >= effective:
 		return
 	var status_to_add := effect
 	if effect == "random_debuff":
@@ -1311,14 +1396,20 @@ const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
 ## across 7 pools, and "support" is in UTILITY_ABILITY_TYPES, which the brute and assassin AI both
 ## draw from. Mirroring it into an engine that runs hundreds of unattended battles turns a per-fight
 ## bug into a gold fountain, so the enemy side is declared in the ledger rather than copied.
-## Base rate only: _steal_success_rate also sums an equipment steal_bonus and a passive steal_chance,
-## and this file models NEITHER category at all — a broader gap than steal, declared as its own entry.
+## ⚠️ HALF of live's rate, and the other half is a RULING rather than an omission. Mirrors
+## BattleManager._steal_success_rate:5503 — `clampf(base + equip + passive, 0.0, 1.0)` — with the
+## EQUIPMENT term wired and the PASSIVE term deliberately absent: `steal_chance` is one of the 12
+## stat_mods keys in the 45-passive scoping call, declared and waiting on struktured. Wiring the
+## equipment half alone does not skew the grind the way a half-ported Speculator would, because both
+## terms ADD to the same rate: modelling one moves the number toward live, never past it.
+## RETIREMENT CONDITION: when the passives ruling lands, this composes all three and the note goes.
 func _roll_steal(caster, ability: Dictionary, targets: Array, base_rate: float) -> void:
 	var party_side: bool = _player_party.has(caster)
+	var rate: float = clampf(base_rate + _sum_equipment_special_effect(caster, "steal_bonus"), 0.0, 1.0)
 	for target in targets:
 		if target == null or not is_instance_valid(target) or not target.is_alive:
 			continue
-		if randf() >= base_rate:
+		if randf() >= rate:
 			_log("%s fails to steal from %s" % [caster.combatant_name, target.combatant_name])
 			continue
 		## BattleManager:6147 verbatim. rogue_lockward's first_steal_guaranteed and steal_response are

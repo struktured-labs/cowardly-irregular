@@ -43,16 +43,25 @@ func test_quest_log_remove_ui_accept_from_close() -> void:
 
 
 func test_quest_log_scroll_guards_echo() -> void:
+	# The defect: _build_ui rebuilds the whole menu per press, and unguarded it ran at OS echo rate.
+	# Either the inline guard or MenuNav.step satisfies that — the latter drops echoes AND the
+	# analog ramp the inline form never covered, so it is a strictly stronger guarantee.
 	var src = _read_file("res://src/ui/QuestLog.gd")
-	var up_idx = src.find("event.is_action_pressed(\"ui_up\")")
-	var dn_idx = src.find("event.is_action_pressed(\"ui_down\")")
-	assert_gt(up_idx, -1, "ui_up must exist")
-	assert_gt(dn_idx, -1, "ui_down must exist")
-	assert_string_contains(src.substr(up_idx, 80), "not event.is_echo()",
-		"QuestLog ui_up scroll must echo-guard — _build_ui rebuilds the " +
-		"entire menu on every press, was running per-echo at OS rate")
-	assert_string_contains(src.substr(dn_idx, 80), "not event.is_echo()",
-		"QuestLog ui_down scroll must echo-guard")
+	var inline_up = src.find("event.is_action_pressed(\"ui_up\")")
+	if inline_up > -1:
+		assert_string_contains(src.substr(inline_up, 80), "not event.is_echo()",
+			"QuestLog ui_up scroll must echo-guard")
+		var inline_dn = src.find("event.is_action_pressed(\"ui_down\")")
+		assert_string_contains(src.substr(inline_dn, 80), "not event.is_echo()",
+			"QuestLog ui_down scroll must echo-guard")
+		return
+	assert_true(src.contains("MenuNav.step("),
+		"QuestLog scroll must be echo-guarded, inline or through MenuNav")
+	assert_true(src.contains("nav == \"ui_up\"") and src.contains("nav == \"ui_down\""),
+		"QuestLog must branch on the latched step, or it is not guarded by MenuNav either")
+	var nav_src = _read_file("res://src/ui/MenuNav.gd")
+	assert_true(nav_src.contains("event.is_echo()"),
+		"MenuNav.step must drop echoes, or routing through it guards nothing")
 
 
 # Bug: WorldMapMenu navigation lacked echo + visibility guard.

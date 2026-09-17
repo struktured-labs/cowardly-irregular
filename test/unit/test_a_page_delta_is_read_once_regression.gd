@@ -24,7 +24,13 @@ extends GutTest
 ## its shoulder-button control passes. That arm owns the outcome for one menu; this owns the
 ## property for all ten. Neither substitutes for the other.
 
-const PAGING_CALL := "MenuPaging.page_delta(event)"
+## ⚠️ The call, NOT the argument. This pinned `page_delta(event)` until 2026-09-17, so a handler
+## naming its parameter anything else — `func _input(ev)` -> `page_delta(ev)` — was invisible to the
+## count and a double read could hide behind a rename. Nothing in src/ spelled it that way, so the
+## guard was never evaded; it was resting on the absence of a spelling rather than enforcing
+## anything (@cowir-battle's DERIVED KEY shape, one level down: the read never spells the key).
+const PAGING_CALL := "MenuPaging.page_delta("
+const PAGING_DEF := "static func page_delta("
 
 
 func _gd_files(dir_path: String) -> Array:
@@ -65,6 +71,15 @@ func test_no_file_reads_page_delta_twice() -> void:
 	assert_eq(offenders, [],
 		"page_delta CONSUMES the trigger axis — a second read in one handler returns 0 and the "
 		+ "branch pages nothing on L2/R2. Read it once into a var and reuse it: %s" % [offenders])
+
+
+## CONTROL for the widened pattern: it must match CALLS and not the definition, or `callers`
+## counts MenuPaging itself and the floor below can be met without a single menu.
+func test_the_pattern_counts_calls_and_not_the_definition() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/MenuPaging.gd")
+	assert_eq(src.count(PAGING_DEF), 1, "MenuPaging must define page_delta exactly once")
+	assert_eq(src.count(PAGING_CALL), 0,
+		"the call pattern must not match MenuPaging's own definition, else the helper counts as a caller")
 
 
 ## The property the call-graph check stands on. If this stops being true the check is pointless,

@@ -397,6 +397,95 @@ Full import (autoloads available, catches more issues; ~10s):
 - **Two data sources feeding one surface — one silently wins (2026-07-25)** — a dialogue rewrite can ship, diff clean, review fine, pass the suite, and be a runtime NO-OP because a *second* file overwrites it at `_ready` (`OverworldNPC._setup_persona_data` replaces constructor `dialogue_lines` with the persona JSON's `fallbacks[]`; bit Theron and Boris). Unlike every other trap here, NO git-side check finds it: the other failures are *pointer disagrees with content*, this is **two contents that are both correct where only the consumer's choice is wrong** — findable only by reading the consumer. When editing authored content, confirm which source the runtime actually reads.
   **Which guard is right depends on ONE axis — are the sources supposed to agree, and if not, can the author see which wins?** (a) *Redundant* (`monsters.json` ↔ cutscene `win_condition`): assert AGREEMENT — never model precedence, if both agree the question is moot. (b) *Divergent + invisible at authoring* (`fallbacks[]` ↔ `quest_state_lines`): guard the INVISIBILITY, not the collision — require an annotation naming what outranks it. (c) *Divergent + already documented* (`SOUNDS` ↔ `sfx_manifest`, manifest-wins-by-contract): NO ratchet, comment only.
   **Corollary — a check whose CORRECT case requires a suppression flag is not a check.** 40 allowlist entries on day one, or an `"_shadow_ok": true` that's muscle memory by the second NPC, is rot arriving dressed as diligence. When a guard IS warranted, require the DELIVERABLE (the note explaining precedence), never permission to skip — you can't silence it green, only explain it green, and the explanation is the fix
+- **A GDScript error aborts its ENCLOSING FUNCTION ONLY, and a test can survive that abort scoring PASSING with every cardinal clean (2026-09-17, isolated probe + 6 lanes' files).** This is the same engine behaviour as the typed-array trap above — *abort and yield the default* — but it decides whether a GUARD IS VISIBLE, so it is worth its own entry. Measured on three arms differing by exactly one line:
+
+  | arm | shape | outcome |
+  |---|---|---|
+  | A | risky call INLINE, no prior assert | `Risky` · "did not assert" · **EC=4** — loud |
+  | B | risky call INLINE, **one** prior assert | **`Passing`** on that assert · EC=0 — **SILENT** |
+  | C | same call via a HELPER | all asserts run; helper returns its type's default |
+
+  **In arm B the next line was `assert_true(false)` and it NEVER RAN — zero occurrences in the log, file green.** One prior assert is the entire difference between loud and silent.
+
+  🔑 **Two independent axes decide what you see:**
+  - **FRAME** — the error kills only its own function. A call behind a helper lets the caller continue, and the helper returns its return type's default (`false` / `0` / `0.0` / `{}` / `""`). **A helper call is already isolation.**
+  - **RUNG** — where the call sits relative to *that arm's* first assert. Nothing asserted yet → Risky, and `run_tests.sh`'s EC=4 names it. An assert already ran → Passing, and **EC=4 is structurally blind to it, because it derives from `[Risky]` NAMES.**
+
+  ⛔ **So "is there an anti-vacuity floor after the loop" is the WRONG question — it measures placement, not exposure.** The right one is *"can the loop body abort IN THE SAME FRAME as the floor"*. One lane's audit went 106 floors → 48 after-a-loop → 14 same-frame-risky → 11 distinct functions → **3 genuinely silent**, and not one of those cuts came from placement.
+
+  ⚠️ **Worse, a file can be loud purely by STATEMENT ORDER, which nothing records.** If some arm's first touch of a symbol happens to precede that arm's first assert, the file is loud — and adding a precondition line above that call (the improvement everyone makes) silently drops the cover to zero. **That is the coincidental-value ratchet applied to ABORT COVER rather than to an assertion.** A note claiming a rung must name the ARM it is true of, or it goes quietly false on a reorder.
+
+  ✅ **The repair that survives a reorder is a FILE-LEVEL FLOOR naming every symbol the file reaches, derived from the file's own source** — stronger than a `has_method` line above each call, because it cannot go stale with respect to the reaches. A rung-3 arm still passes vacuously under a rename; the floor reds and names the symbol.
+  ⛔ **Verify `reached ⊆ pinned` BEFORE mutating, not after.** Mutate first, see EC=1, and you cannot tell whether the floor caught it or statement order did — **a green from the right mechanism and a green from a coincidence are the same green.**
+
+  ⚠️ **A DERIVED FLOOR IS SCOPED TO THE RECEIVER ITS DERIVATION NAMES, and a file may drive two subjects.** A floor deriving `SoundManager.<name>` covers `play_music`/`stop_music` and is silent about the same file's `jb._input(e)` — a different subject, never in the derivation. So *"is this file floored?"* answers **YES** while the one symbol whose cover is accidental sits outside it. The floor is correct, current and cannot drift, and still does not say what a reader takes it to say. **Check `reached ⊆ pinned` per RECEIVER, not per file — and say which receiver a green is about, because a coverage CHECK is scoped to ITS pattern too and will report full coverage of the part it looked at.**
+
+  🔑 **The per-receiver question has THREE answers, not two, and the discriminator is the CALL SHAPE rather than the symbol:**
+
+  | reached by | resolves | visibility | needs a floor? |
+  |---|---|---|---|
+  | instance method / property | runtime | abortable — rung applies | **YES** |
+  | `class_name` static or const | **parse time** | **EC=3, nothing ran** | **NO** — impossible to miss |
+  | a helper's return | absorbed | the type's default | NO, if an assert JUDGES that default |
+
+  A reach through a `class_name` compiles, so a missing member is not an abort at all: the file never runs and `run_tests.sh` exits **3**. That is louder than rung 1 — EC=4 means *a test asserted nothing*, EC=3 means *nothing ran* — and neither can be mistaken for a pass. **"Floor every receiver" would add dead code here.** Same helper, two ways of reaching it, two different answers.
+
+  ⚠️ **Enumerating receivers by regex is wrong in BOTH directions and neither error shows in the output.** `\b(\w+)\.(\w+)\(` invents subjects out of string literals shaped like calls (`'\tsm.play_footstep(t)'` yields a receiver `tsm`) and splits one subject into many on chained access (`sm._sfx_cooldowns.clear()` yields `_sfx_cooldowns`). One lane's first scan reported eleven receivers in a file driving exactly one. **Read the hit; do not count it.**
+
+  📌 **And read the FAILURE TEXT, not the count: `Failing 1` does not say WHICH arm produced it.** Only the message — the floor naming the missing symbol — separates *the floor fired* from *a sibling fired for its own reason*. A cover claim published off a bare red is a claim about nothing.
+  🔑 **A CONTROL JUDGING A HELPER'S DEFAULT IS RECEIVER-AGNOSTIC, and that is the case where "N receivers needs N floors" is false.** One lane's guard drives two receivers inside one helper; renaming one from each, separately, red the SAME controls (`Failing 1` / `Failing 3`, Risky 0 both). The helper returns `int`'s default `0`, the caller continues, and the assert judges that default — **it does not know which receiver died, so it scales with the helper's reaches rather than with a derivation, and there is nothing to keep current.**
+  ⛔ **The proviso is the whole condition: the default must be DISTINGUISHABLE from the passing state.** In that same file the *consequence* assert (with the ring, the stun never lands) passes vacuously under both mutations — the status does not land because nothing ran, which is identical to the ring working. So: **a floor covers the receiver its derivation names (N receivers, N floors, N things to maintain); a control covers whatever the helper reached (N receivers, ONE assert, nothing to maintain) — but only where the default is loud.**
+
+  📌 **A FLOOR'S WORTH IS INVERSE TO THE SYMBOL'S BLAST RADIUS, which decides whether an uncovered receiver is a gap or noise.** Measured across one lane's files:
+  ```
+  JobSystem.get_ability      65 test files use it  -> a rename reds 65; THE CORPUS IS THE COVER
+  _ability_has_priority       2 test files, both its own -> nothing else reds; THE FLOOR IS THE COVER
+  ```
+  **A shared API needs no floor and a floor over it is dead weight; a private or lane-local symbol has nothing else to scream for it.** ✅ **Consumer count and rung are INDEPENDENT measurements that agree**: across one lane's five floors, the three symbols with exactly ONE consumer were the three that measured rung 3 (silent), while a symbol with 9 consumers measured rung 1 (loud, EC=4) and was doubly covered. **Consumer count predicts whether a floor EARNS its place; rung predicts whether the file goes silent without it.** Use both — a floor that is load-bearing on either metric is worth keeping, and one that is weak on both was written before anyone had the framework to say so. Combine with the call-shape table: ask how a name is REACHED *and* how many others reach it, and "five bound names, one floored" becomes four questions rather than four gaps.
+
+  ⛔ **RUNG IS A PROPERTY OF (ARM, SYMBOL), NOT OF AN ARM — and getting this wrong is what made three lanes' first triage wrong.** One arm can be rung 1 for a symbol it touches at `:63` and rung 3 for one it touches at `:70`, if its first assert sits at `:69`. Taking the arm's FIRST risky call reports the LOUDEST symbol's rung and hides every later one. **A symbol is silent only if EVERY arm touching it is rung 3 for it.** One lane's published triage had the right COUNT and the wrong MEMBERSHIP on every entry — the file they twice named as the hole was loud, and two symbols in a file they had cleared were the real gaps.
+
+  ⚠️ **A reach inside an ASSERT ARGUMENT is rung 1, not rung 3 — the argument evaluates BEFORE the assert is entered.** So `assert_gt(sm.get_combo_pitch_bias(), 1.0)` aborts with nothing asserted. **A classifier's treatment of the assert line IS the whole measurement, and three lanes each wrote it differently:** skipping any line starting with `assert` hides every reach inside an argument; `i < first_assert` scores a same-line reach as AFTER; only `<=` on the assert line matches the engine's evaluation order. **Same shape as the merge-tree oracle table — publish the category, and everyone fills in a different spelling.**
+
+  📌 **COVER = distinct other TEST files reaching that symbol ON THAT RECEIVER.** Not `src/` callers — **a real rename updates its own call sites, so they move WITH the symbol and red nothing** (measured: renaming a definition AND its `src` caller left the floor arm as the only failure). Not the bare name either — a deliberate TWIN of the same method on two engines merges into one count, so a rename of the grind's copy reads as 12-file cover when only 2 would notice. **Every error in that metric INFLATES cover, which pushes a symbol toward "no floor needed" — and the asymmetry decides how to fail: a rule saying "this floor is dead weight" costs a deletion; one saying "this floor is sufficient" costs a defect.**
+
+  ✅ **PREFER A SEPARATE FLOOR ARM OVER AN INLINE PRECONDITION where both would work.** A precondition hoisted into an existing arm makes call 1 loud and calls 2..n rung 3 IN THAT FRAME — net cover CHANGES and needs re-triage. A floor added as its own arm touches nobody's statement order, so cover only increases. **A floor needs its own frame to be a floor at all**, which is exactly why it cannot shift anyone else's rung.
+  🔑 **The exemption: a precondition that FAILS in the same scenario that would abort the later call is free.** `assert_ne(_handler(m), "")` does not merely run — it reds precisely when the later `m.call(handler, ev)` would abort. **A precondition that PASSES in the failure scenario buys one symbol and sells the rest; one that FAILS in it buys the symbol for nothing.** Same line count, opposite cost, and only a per-symbol read tells them apart.
+  ✅ **DERIVE the floor from the file's own source rather than hand-listing it.** A hand-picked list selects from your own map of what the file reaches — and one lane's derived floor caught a symbol their own rung analysis had MISSED. A snapshot can be stale; it can also be wrong on the day it is written.
+
+  ✅ **Two different repairs for two different halves, and they sit beside each other rather than one under the other:** a FLOOR names the missing symbol when an arm goes vacuous; moving the inline call into the HELPER the sibling arms already use removes the dependence on line placement entirely — the abort is absorbed, the assert judges unchanged state and reds, structurally, with no list to keep current.
+
+  📌 **Guards whose subject is an ABSENCE have no loud direction of their own.** "The ring blocked it" and "the executor never ran" both show zero. Only a CONTROL arm — the same path without the protection, which MUST land — separates them; the consequence assert passes vacuously under the mutation.
+- **`git merge-tree` has THREE oracles and only two of them work — and chaining it needs a `commit-tree` wrapper (2026-09-17, hit by 3 lanes independently in one night).** The pre-check that says "will this fold apply" is easy to get silently wrong in both directions. Measured on a purpose-built two-branch conflict:
+
+  **THE TWO FORMS PRINT DIFFERENT THINGS AND THEREFORE WANT DIFFERENT MARKERS. Every count below was measured on one purpose-built conflicting pair (git 2.51.0), by four lanes independently, same numbers:**
+
+  | form | oracle | on a REAL conflict | verdict |
+  |---|---|---|---|
+  | `--write-tree A B` | `$?` | **1** | ✅ valid |
+  | `--write-tree A B` | `grep -c CONFLICT` | **1** | ✅ valid |
+  | `--write-tree A B` | **any** `<<<<<<<` pattern | **0** | ⛔ FALSE CLEAN |
+  | legacy 3-arg | `$?` | **0** | ⛔ FALSE CLEAN |
+  | legacy 3-arg | `^+<<<<<<<` | **1** | ✅ valid |
+  | legacy 3-arg | `<<<<<<<` (unanchored) | **1** | ✅ valid |
+  | legacy 3-arg | `^<<<<<<<` | **0** | ⛔ FALSE CLEAN |
+  | legacy 3-arg | `^++<<<<<<<` | **0** | ⛔ FALSE CLEAN |
+  | legacy 3-arg | `changed in both` | **1** | ✅ valid |
+
+  **`--write-tree` emits a TREE OID + stage-1/2/3 index lines + a message block — it is an INDEX DUMP, not a diff, and contains no conflict markers at all.** The legacy form emits a **unified** diff, so its markers carry exactly ONE `+`. So a marker grep fails three ways: right marker against the wrong output KIND (`<<<<<<<` vs `--write-tree`), an anchor with no `+` (`^<<<<<<<`, written as if the output were a plain file), and an anchor with two (`^++<<<<<<<`, written for `diff --cc` **combined** output). **All three return 0 on a genuine conflict, silently.**
+
+  ⛔ **The expensive combination is `legacy + $?` together with `legacy + ^<<<<<<<` (or `^++`), because BOTH HALVES FAIL TOWARD CLEAN INDEPENDENTLY.** The exit code says 0, the marker count says 0, they corroborate each other, and neither looked. A "belt and braces" pair whose braces cannot fire is one signal wearing two names. **A marker grep is a signal only once you have watched it say YES** — run it against a known-conflicting pair before trusting a clean.
+
+  **And `--write-tree` emits a TREE oid, not a commit.** Feeding it back as the next base to chain branch 3 onto branches 1+2 gives `expected commit type, but the object dereferences to tree type` / `not something we can merge` — which **reads as "branch 2 conflicts" and is a type error in your chaining**. Wrap every intermediate:
+  ```bash
+  base=$(git rev-parse origin/main)
+  for b in <branches>; do
+      tree=$(git merge-tree --write-tree "$base" "origin/$b") || { echo "CONFLICT: $b"; break; }
+      base=$(git commit-tree "$tree" -p "$base" -p "origin/$b" -m "synthetic: $b")
+  done
+  ```
+  ⚠️ **Most sibling checks do not need the chain at all** (cowir-controller, 814 calls, never met the trap): *"does my branch conflict with any sibling"* is **pairwise** — `--write-tree HEAD <b>` per branch, no base carried forward. Only *"does this multi-branch FOLD apply in order"* is **cumulative** and needs the wrapper. The trap is reaching for the cumulative form to answer a pairwise question, which is easy because the fold is what you are ultimately worried about. **And the pairwise form has its own misleading number:** 27 of 814 came back CONFLICT, and five sampled were all 364-3807 commits behind and already conflict with `origin/main` itself. **A conflict against an abandoned branch is a fact about that branch, not about your change** — test each conflicter against main before it means anything.
+
 - **Ratchets pinned to a COINCIDENTAL value go red on a correct change and green on a wrong one (2026-07-25)** — e.g. asserting a flame sits at `x=4.5 tiles` (true, but only because that's where the fireplace happened to be) fails a correct relocation while permitting a genuinely misaligned flame. Assert the RELATIONSHIP (flame shares the surround's X, light tracks flame) not the coordinate. Tell: an absolute coordinate or magnitude in an assertion where the relationship is what's being defended
 - **New GDScript files** need `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import` before `class_name` is globally available
 - **Launch godot** with `setsid godot < /dev/null > tmp/godot.stdout 2>&1 &` (fully detached) — bare `godot &` can break Wayland window visibility

@@ -65,6 +65,71 @@ func _two_lines() -> void:
 	_box._advance_dialogue()
 
 
+## ⛔ A DERIVED FLOOR, not one `has_method` per call site. @cowir-autogrind's form: it names every
+## member this file reaches, read out of this file's OWN source, so it cannot fall out of date with
+## the reaches the way a hand-written list does. That matters because the rung of any single reach
+## is decided by whether an assert already ran in ITS arm — so adding a precondition line above a
+## reach silently converts it from rung 1 (Risky, EC=4, loud) to rung 3 (Passing, EC=0, silent).
+## This floor is indifferent to that: it reds on a rename whatever the order.
+##
+## ⚠️ THE DERIVATION IS NOT QUOTE-AWARE, and that is a declared limit rather than an oversight.
+## @cowir-sfx's scanner invented a receiver out of a fixture STRING shaped like a call, so an
+## assert message here containing `_box.something` would add a phantom member. **It fails LOUD** —
+## a phantom does not exist on the subject, so this arm reds and names it — which is the safe
+## direction and why a quote-aware pass is not worth its complexity in a file with no such fixture.
+## If this ever reds on a name that is only ever inside a string, that is the cause.
+##
+## 📌 THE FLOOR COVERS THE RECEIVER ITS DERIVATION NAMES, and this file drives three
+## (@cowir-music's clause — "is this file floored?" can answer YES about a narrower set than the
+## name suggests). Checked per receiver rather than per file, measured:
+##     _box      27 reaches   THIS FLOOR
+##     MenuNav    1 reach     NO FLOOR WARRANTED — a `class_name` static resolves at PARSE TIME, so
+##                            a missing member is not an abort at all: the script never compiles and
+##                            run_tests.sh exits 3, NOTHING RAN. Measured: renaming step() gave
+##                            EC=3. @cowir-controller's discriminator is the CALL SHAPE, not the
+##                            symbol — a floor here could only ever be dead code
+##     Input      6 reaches   engine builtin; a rename is not a change this repo can make
+## So no second floor is warranted here, and that is a measurement rather than an assumption.
+##
+## ✅ AND THE FLOOR IS LOAD-BEARING RATHER THAN CEREMONY, by @cowir-autogrind's blast-radius column:
+## what a floor is worth is INVERSE to how many other files reach the symbol, because a widely-used
+## API is covered by the corpus screaming. Measured across test/unit — 8 of the 12 members pinned
+## here have TWO OR FEWER other consumers, so nothing else would red for them. `_input` (72 others)
+## and `show_dialogue` (7) are the corpus-covered ones and the floor is near-free weight there.
+## 🔑 `_backlog_scroll` has ZERO other consumers — and it was this file's ONLY silent rung-3 reach.
+## The single hole sat on the single member no other test could ever have caught.
+func test_every_member_this_file_reaches_still_exists() -> void:
+	var src: String = FileAccess.get_file_as_string(
+		"res://test/unit/test_the_backlog_opens_once_per_nudge_regression.gd")
+	assert_gt(src.length(), 3000, "control: this file must be readable, got %d chars" % src.length())
+
+	var reached: Dictionary = {}
+	for raw in src.split("\n"):
+		var line: String = str(raw).strip_edges()
+		if line.begins_with("#"):
+			continue
+		var at := line.find("_box.")
+		while at >= 0:
+			var start := at + 5
+			var end := start
+			while end < line.length() and (line[end] == "_" or line[end].is_valid_identifier()):
+				end += 1
+			var name := line.substr(start, end - start)
+			if name != "" and name != "has_method":
+				reached[name] = true
+			at = line.find("_box.", end)
+	assert_gt(reached.size(), 8,
+		"ANTI-VACUITY: the scan must find this file's own reaches, found %d" % reached.size())
+
+	var missing: Array = []
+	for m in reached:
+		if not (_box.has_method(m) or m in _box):
+			missing.append(m)
+	assert_eq(missing, [],
+		"CutsceneDialogue no longer exposes members this file drives, so the arms touching them " +
+		"abort — and an abort after a passing assert scores GREEN. Renamed or removed: %s" % [missing])
+
+
 ## ANTI-VACUITY: if the synthetic ramp does not read as a burst, every arm below is asserting
 ## against a single press and would pass on the unconverted code too.
 func test_the_ramp_really_reads_as_a_burst() -> void:
@@ -83,6 +148,13 @@ func test_the_fixture_reaches_the_input_handler_at_all() -> void:
 	_two_lines()
 	assert_true(_box.visible, "the box must be visible or _input returns before reading anything")
 	assert_gt(_box.backlog_size(), 1, "and the log must have something behind the current line")
+	## ⛔ THE HANDLER IS ASSERTED BEFORE IT IS CALLED, not assumed. @cowir-controller hit this on
+	## LensMenu, which defines _unhandled_input: calling a method that does not exist ABORTS the
+	## test function, so the arms below would stop mid-loop with their earlier asserts already
+	## passed and nothing on screen wrong. A rename is the realistic way this happens.
+	assert_true(_box.has_method("_input"),
+		"CutsceneDialogue must still route through _input — if it moved to _unhandled_input, every " +
+		"arm here aborts at the first call and scores green on the asserts it reached")
 
 
 ## ⛔ THE DEFECT, thinking branch: four bursting events used to toggle FOUR TIMES and land closed.
@@ -118,6 +190,22 @@ func test_one_nudge_scrolls_the_open_log_once() -> void:
 	await _frames(6)
 	assert_true(_box.is_backlog_open(), "precondition: the log is open")
 
+	## ⛔ ONE OF TWO RUNG-3 REACHES IN THIS FILE — and `.378` shipped this line saying "the ONLY"
+	## one, which my own later measurement falsified. @cowir-sfx's (ARM, SYMBOL) refinement: my
+	## classifier skipped any line starting with `assert`, so every reach INSIDE an assert argument
+	## was invisible to it — and an argument evaluates BEFORE the assert is entered. That hid 4 of 9
+	## reaches and the second silence, `backlog_size`, which no explicit floor covers. The DERIVED
+	## floor does (mutation: rename it, `Failing 1` naming it), so the cover was never wrong — only
+	## my account of it. That is the argument for deriving over hand-picking: it covered a symbol my
+	## own rung analysis had missed, and hand-selecting pins would have chosen from the wrong map.
+	## Two asserts have already run by
+	## here, so a rename of _backlog_scroll aborts this arm to Passing/EC=0 — `.366`'s EC=4 derives
+	## from [Risky] names and cannot see an abort after a passing assert (@cowir-sfx's triage axis:
+	## pre-assert reaches are rung 1 and already loud; post-assert ones are the hole). `in` is the
+	## non-aborting existence test — assert_not_null would abort on the read it is checking.
+	assert_true("_backlog_scroll" in _box,
+		"CutsceneDialogue must still expose _backlog_scroll — renamed, this arm aborts AFTER its " +
+		"asserts and scores green with the scroll never measured")
 	var start: int = _box._backlog_scroll.scroll_vertical
 	assert_gt(start, 100,
 		"ANTI-VACUITY: open_backlog scrolls to the end, so there must be range to scroll BACK " +

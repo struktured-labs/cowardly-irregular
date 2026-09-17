@@ -289,6 +289,8 @@ func _confirm_selection() -> void:
 func _input(event: InputEvent) -> void:
 	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
 	var page := MenuPaging.page_delta(event)
+	# MenuNav, not a raw read: the stick's Y axis carries no echo flag, so one push stepped 5 rows.
+	var nav := MenuNav.step(event)
 	if not visible:
 		return
 
@@ -297,7 +299,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	if nav == "ui_up":
 		if selected_index > 0:
 			selected_index -= 1
 			_clamp_scroll()
@@ -307,7 +309,7 @@ func _input(event: InputEvent) -> void:
 				SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		if selected_index < _selectable_indices.size() - 1:
 			selected_index += 1
 			_clamp_scroll()

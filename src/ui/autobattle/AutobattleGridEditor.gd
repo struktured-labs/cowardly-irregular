@@ -1281,7 +1281,7 @@ func _update_cursor() -> void:
 
 func _get_cell_at_cursor() -> Control:
 	"""Get the cell control at current cursor position"""
-	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
 
@@ -1356,7 +1356,7 @@ func _get_cell_at_cursor() -> Control:
 
 func _get_max_col_for_row(row_idx: int) -> int:
 	"""Get maximum column index for a row"""
-	if row_idx >= rules.size():
+	if row_idx < 0 or row_idx >= rules.size():
 		return 0
 
 	var rule = rules[row_idx]
@@ -1498,7 +1498,7 @@ func _split_action_group() -> void:
 
 func _get_condition_slots_for_row(row_idx: int) -> int:
 	"""Get the number of condition columns (including empty AND slot) for a row"""
-	if row_idx >= rules.size():
+	if row_idx < 0 or row_idx >= rules.size():
 		return 0
 	var rule = rules[row_idx]
 	var conditions = rule.get("conditions", [])
@@ -1553,7 +1553,7 @@ func _on_grid_cell_clicked(cell: Control) -> void:
 
 func _get_action_group_index(row_idx: int, act_start_idx: int) -> int:
 	"""Get the group index for an action at a given start index"""
-	if row_idx >= rules.size():
+	if row_idx < 0 or row_idx >= rules.size():
 		return 0
 	var action_groups = _group_actions(rules[row_idx].get("actions", []))
 	for i in range(action_groups.size()):
@@ -1714,14 +1714,21 @@ func _input(event: InputEvent) -> void:
 	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
 		return
 
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis and an axis carries no echo
+	# flag, so one push stepped this grid five rows. Measured on a 12-rule grid: dpad 1, stick 5.
+	# ⛔ READ ONCE, HERE. step() CONSUMES, and the latch is static — so it must sit AFTER the virtual
+	# keyboard's delegation above (which would otherwise lose its own nav) and BEFORE the pickers,
+	# which receive the result rather than reading the event again.
+	var nav: String = MenuNav.step(event)
+
 	# Import file-picker submenu handles its own input when open (don't steal grid input)
 	if _share_picker and is_instance_valid(_share_picker) and _share_picker.visible:
-		_handle_share_picker_input(event)
+		_handle_share_picker_input(event, nav)
 		return
 
 	# Generic option picker (condition/action/item/target) handles its own input
 	if _option_picker and is_instance_valid(_option_picker) and _option_picker.visible:
-		_handle_option_picker_input(event)
+		_handle_option_picker_input(event, nav)
 		return
 
 	# Simulate readout handles its own input (any key closes)
@@ -1745,21 +1752,21 @@ func _input(event: InputEvent) -> void:
 
 	# Portrait panel focus mode (character selection via D-pad)
 	if _portrait_focused:
-		if event.is_action_pressed("ui_up") and not event.is_echo():
+		if nav == "ui_up":
 			_cycle_character(-1)
 			get_viewport().set_input_as_handled()
 			return
-		elif event.is_action_pressed("ui_down") and not event.is_echo():
+		elif nav == "ui_down":
 			_cycle_character(1)
 			get_viewport().set_input_as_handled()
 			return
-		elif (event.is_action_pressed("ui_right") or event.is_action_pressed("ui_accept")) and not event.is_echo():
+		elif nav == "ui_right" or (event.is_action_pressed("ui_accept") and not event.is_echo()):
 			_portrait_focused = false
 			_update_cursor()
 			SoundManager.play_ui("menu_move")
 			get_viewport().set_input_as_handled()
 			return
-		elif event.is_action_pressed("ui_left") and not event.is_echo():
+		elif nav == "ui_left":
 			# Left again = enter submenu, this game's documented menu convention. Nine verbs
 			# below were raw KEY_* only, so a pad could not export, import, share, compose,
 			# toggle a row or switch profile at all. This is the pad's route to them.
@@ -1775,21 +1782,21 @@ func _input(event: InputEvent) -> void:
 		# Fall through for other inputs (save, toggle, etc.)
 
 	# D-Pad navigation - check echo to prevent rapid-fire when holding keys
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	if nav == "ui_up":
 		cursor_row = max(0, cursor_row - 1)
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		cursor_row = min(rules.size() - 1, cursor_row + 1)
+	elif nav == "ui_down":
+		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
+	elif nav == "ui_left":
 		if cursor_col == 0:
 			# Enter portrait panel focus mode for character switching
 			_portrait_focused = true
@@ -1800,7 +1807,7 @@ func _input(event: InputEvent) -> void:
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		cursor_col = min(_get_max_col_for_row(cursor_row), cursor_col + 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
@@ -1955,7 +1962,7 @@ func _edit_current_cell() -> void:
 
 	# If no cell found, try to add AND condition (cursor is past end of conditions)
 	if not cell:
-		var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+		var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 		var conditions = rule.get("conditions", [])
 		if cursor_col == conditions.size() and conditions.size() < MAX_CONDITIONS:
 			_add_and_condition()
@@ -2078,7 +2085,7 @@ func _apply_condition_type(new_type: String) -> void:
 
 func _cycle_condition_operator() -> void:
 	"""Cycle through operators (<, <=, ==, >=, >, !=) - X button"""
-	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
 
 	print("[CYCLE_OP] row=%d col=%d, conditions.size=%d" % [cursor_row, cursor_col, conditions.size()])
@@ -2132,7 +2139,7 @@ func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
 
 func _adjust_condition_value(delta: int) -> void:
 	"""Adjust condition value up/down - used with shoulder buttons"""
-	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
 
 	if cursor_col < conditions.size():
@@ -2487,7 +2494,7 @@ func _build_option_picker() -> void:
 	_option_picker.add_child(help)
 
 
-func _handle_option_picker_input(event: InputEvent) -> void:
+func _handle_option_picker_input(event: InputEvent, nav: String = "") -> void:
 	"""Self-contained input for the generic picker (mirrors _handle_share_picker_input)."""
 	if not _option_picker or not is_instance_valid(_option_picker):
 		return
@@ -2497,13 +2504,13 @@ func _handle_option_picker_input(event: InputEvent) -> void:
 	if options.is_empty():
 		_close_option_picker()
 		return
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	if nav == "ui_up":
 		spec["selected"] = (selected - 1 + options.size()) % options.size()
 		_option_picker.set_meta("spec", spec)
 		_build_option_picker()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		spec["selected"] = (selected + 1) % options.size()
 		_option_picker.set_meta("spec", spec)
 		_build_option_picker()
@@ -3259,7 +3266,7 @@ func _build_share_picker(files: Array) -> void:
 	_share_picker.add_child(help)
 
 
-func _handle_share_picker_input(event: InputEvent) -> void:
+func _handle_share_picker_input(event: InputEvent, nav: String = "") -> void:
 	"""Self-contained input for the import picker (keeps grid input frozen while open)."""
 	if not _share_picker or not is_instance_valid(_share_picker):
 		return
@@ -3267,12 +3274,12 @@ func _handle_share_picker_input(event: InputEvent) -> void:
 	var files: Array = _share_picker.get_meta("files")
 	var selected: int = _share_picker.get_meta("selected")
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	if nav == "ui_up":
 		_share_picker.set_meta("selected", (selected - 1 + files.size()) % files.size())
 		_build_share_picker(files)
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		_share_picker.set_meta("selected", (selected + 1) % files.size())
 		_build_share_picker(files)
 		SoundManager.play_ui("menu_move")

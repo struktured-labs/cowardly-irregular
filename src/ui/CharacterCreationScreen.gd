@@ -566,30 +566,35 @@ func _input(event: InputEvent) -> void:
 	if _input_blocked:
 		return
 
+	# MenuNav, not a raw read: the stick's Y axis carries no echo flag, so one push advanced the option 5 times (measured: dpad 1, stick 5).
+	var nav: String = MenuNav.step(event)
+
+	# ⛔ Read BEFORE the name-grid dispatch and passed down — step() CONSUMES, so the grid
+	# cannot read the event again.
 	# Name editing mode
 	if _name_editing:
-		_handle_name_input(event)
+		_handle_name_input(event, nav)
 		return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	if nav == "ui_up":
 		current_option_index = (current_option_index - 1) if current_option_index > 0 else OPTIONS.size() - 1
 		SoundManager.play_ui("menu_move")
 		_update_display()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		current_option_index = (current_option_index + 1) % OPTIONS.size()
 		SoundManager.play_ui("menu_move")
 		_update_display()
 		get_viewport().set_input_as_handled()
 
 	# Allow echo on left/right for faster option cycling
-	elif event.is_action_pressed("ui_left"):
+	elif nav == "ui_left":
 		_change_option(-1)
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right"):
+	elif nav == "ui_right":
 		_change_option(1)
 		get_viewport().set_input_as_handled()
 
@@ -839,13 +844,13 @@ func _update_name_grid_cursor() -> void:
 			ok_btn.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
 
 
-func _handle_name_input(event: InputEvent) -> void:
+func _handle_name_input(event: InputEvent, nav: String = "") -> void:
 	"""Handle gamepad/keyboard input for name grid"""
 	var current = party_customizations[current_character_index]
 	var rows = (NAME_CHARS.length() + NAME_GRID_COLS - 1) / NAME_GRID_COLS
 	var max_rows = rows + 1  # +1 for special buttons row
 
-	if event.is_action_pressed("ui_up"):
+	if nav == "ui_up":
 		_name_cursor_y = (_name_cursor_y - 1) if _name_cursor_y > 0 else max_rows - 1
 		if _name_cursor_y == rows:
 			_name_cursor_x = mini(_name_cursor_x, 1)  # Only 2 buttons
@@ -853,7 +858,7 @@ func _handle_name_input(event: InputEvent) -> void:
 		_update_name_grid_cursor()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down"):
+	elif nav == "ui_down":
 		_name_cursor_y = (_name_cursor_y + 1) % max_rows
 		if _name_cursor_y == rows:
 			_name_cursor_x = mini(_name_cursor_x, 1)  # Only 2 buttons
@@ -861,7 +866,7 @@ func _handle_name_input(event: InputEvent) -> void:
 		_update_name_grid_cursor()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left"):
+	elif nav == "ui_left":
 		if _name_cursor_y < rows:
 			_name_cursor_x = (_name_cursor_x - 1) if _name_cursor_x > 0 else NAME_GRID_COLS - 1
 		else:
@@ -870,7 +875,7 @@ func _handle_name_input(event: InputEvent) -> void:
 		_update_name_grid_cursor()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right"):
+	elif nav == "ui_right":
 		if _name_cursor_y < rows:
 			_name_cursor_x = (_name_cursor_x + 1) % NAME_GRID_COLS
 		else:

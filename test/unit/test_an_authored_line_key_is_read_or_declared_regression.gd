@@ -22,6 +22,7 @@ extends GutTest
 ## either be READ by the runtime or be DECLARED here with a note saying why it is not. You cannot
 ## silence it green, only explain it green.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const CUTSCENE_DIR := "res://data/cutscenes"
 ## ⛔ THIS WAS A HAND-LIST OF FIVE PATHS and that is the hole cowir-controller found in their own
 ## shoulder-caption guard the same day (11649): the class was guarded, the corpus was curated, and a
@@ -61,10 +62,12 @@ func _sources() -> String:
 
 
 ## Every .gd under src/, for the tree-wide claim a declaration makes.
+## Comment-stripped: this file's own declaration NAMES the inert key in prose, and a raw read
+## made that comment satisfy "something reads it" — the declaration tripping its own guard.
 func _all_sources() -> String:
 	var all: String = ""
 	for p in _gd_files_in(SRC_ROOT, true):
-		all += FileAccess.get_file_as_string(p)
+		all += str(GdSource.split(FileAccess.get_file_as_string(p))["code"])
 	return all
 
 

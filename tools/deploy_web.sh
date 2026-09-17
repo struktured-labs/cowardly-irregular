@@ -382,8 +382,13 @@ if [ "${WEB_STAGE:-1}" = "1" ]; then
   # checker md5s each staged source against the tier file, and resolves each track to its
   # artifact through its own .import sidecar. Without it the tool falls back to a basename join,
   # which in THIS project is ambiguous for four tracks (music/ and sfx/ share the names).
+  # --record: on a PASS, leave the two numbers a future size projection needs, measured from
+  # this pck's own file table. make_web_audio.sh used to derive them by subtracting a tier
+  # DIRECTORY from a hardcoded reference pck, which is how it subtracted a 40k tier from a
+  # 48k-era build for thirteen releases. A record written here cannot be from another era.
   python3 "$_TIER_CHECK" builds/web/index.pck "$_TIER_DIR" \
-          --stage=tmp/web_stage --cache-line="$PCK_CACHE_LINE" || {
+          --stage=tmp/web_stage --cache-line="$PCK_CACHE_LINE" \
+          --record="${WEB_REF_RECORD:-$HOME/.cache/cowir_web_audio/reference.txt}" || {
     echo "[deploy] BLOCKED: the shipped pck does not carry the ${WEB_AUDIO_KBPS} kbps tier." >&2
     exit 2; }
 fi
@@ -522,7 +527,20 @@ CONFIRM_BUDGET="${CONFIRM_BUDGET:-900}"
 CONFIRMED=0
 _waited=0
 while [ "$_waited" -lt "$CONFIRM_BUDGET" ]; do
-    if "${BUTLER_BIN}" status "${ITCH_TARGET}" 2>/dev/null | grep -q "${VERSION}"; then
+    # ⛔ NOT `butler status | grep -q`. This file's own header (line 38) records that
+    # `git tag | head -1` dies under `set -o pipefail` — head closes the pipe, git takes
+    # SIGPIPE, pipefail propagates 141. `grep -q` does the same thing: it exits the instant it
+    # MATCHES, so a successful confirmation is exactly when the producer gets SIGPIPE.
+    #
+    # Measured 2026-09-17: exit 0, three for three — because butler's output is 1052 bytes and
+    # fits the 64 KiB pipe buffer, so it finishes writing before grep exits. Correct by OUTPUT
+    # SIZE, not by construction. Add channels or a more verbose butler and the confirmation
+    # loop inverts: a successful upload reads as unconfirmed, and the loop burns its full
+    # 900-second budget before reporting a failure that did not happen.
+    #
+    # The same hazard, one line apart in kind, already cost this file a documented fix.
+    _st="$("${BUTLER_BIN}" status "${ITCH_TARGET}" 2>/dev/null)"
+    if printf '%s' "$_st" | grep -q "${VERSION}"; then
         CONFIRMED=1; break
     fi
     sleep 8; _waited=$((_waited+8))

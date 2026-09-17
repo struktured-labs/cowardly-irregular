@@ -1785,7 +1785,12 @@ func _step_branch(step: Dictionary) -> void:
 				break
 			await _execute_step(sub_step)
 	elif step.get("condition", "") == "playstyle":
-		# Playstyle-based branching
+		## ⚠️ STEP-level `condition` is the only one read. Five dialogue LINE objects in
+		## world1/world2_transition carry `"_condition": "playstyle_*"` and NOTHING reads it, so
+		## they play for every player — a hand-playing one is told "the automation translated".
+		## Not mechanical: _detect_playstyle returns automator/manual/grinder/exploiter/balanced,
+		## so "autobattle" is a near-miss and "completionist" has no detector; wiring it literally
+		## would hide 4 of the 5 forever. struktured's + cowir-story's call (measured 2026-09-16).
 		var playstyle = _detect_playstyle()
 		var cases = step.get("cases", {})
 		var branch_steps = cases.get(playstyle, cases.get("default", []))

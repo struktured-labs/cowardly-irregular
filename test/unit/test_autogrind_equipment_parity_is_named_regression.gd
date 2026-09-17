@@ -29,9 +29,19 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 ## Real live behaviour the grind does not model: ALL FIFTEEN gear effects equipment.json authors.
 ## This set may SHRINK freely — that is someone closing a gap — but it may not GROW unnamed.
 const GRIND_IGNORES := [
-	"critical_bonus", "dark_damage_bonus", "dark_resistance", "evasion_bonus", "exp_while_dead",
+	"dark_damage_bonus", "dark_resistance", "exp_while_dead",
 	"familiar_weight_bonus", "fire_damage_bonus", "fire_resistance", "holy_damage_bonus",
-	"ice_damage_bonus", "lightning_damage_bonus", "poison_chance", "sleep_chance",
+	"ice_damage_bonus", "lightning_damage_bonus",
+]
+
+## Modelled by the resolver now, each mirroring live's formula rather than a new one. The set above
+## SHRANK into this one, which is the direction this file's ratchet permits silently — but the move
+## must be explicit, because "the grind ignores all fifteen" was this file's headline claim and a
+## silent shrink would leave it reading as still true.
+## Behaviour is pinned in test_autogrind_a_party_wears_its_gear_regression, not here: this file is a
+## census and says WHICH keys are modelled, never that they are modelled CORRECTLY.
+const GRIND_MODELS := [
+	"critical_bonus", "evasion_bonus", "poison_chance", "sleep_chance",
 	"status_resistance", "steal_bonus",
 ]
 
@@ -135,6 +145,80 @@ func _consumer_lines(key: String, files: Array) -> Array:
 	return hits
 
 
+## ⛔ CLAIMS THIS FILE HAS RETRACTED, AND THE SHA THAT RETRACTED EACH.
+## @cowir-main lost time to this on the `.374` fold: my retraction REWROTE the arm rather than
+## deleting the file, and kept the retracted name in the prose that explains it — deliberately, since
+## the prose IS the lesson. So the obvious check ("is the file gone; does the phrase grep") reads
+## IDENTICALLY to the un-retracted state. Their discriminator was right and is the structural one:
+##     the grep answered about a SYMBOL   — "is INERT_EVERYWHERE present"  -> yes, in a comment
+##     the question was about an ARM      — "does anything ASSERT it"      -> no
+## This makes that answer come from a test instead of from whoever remembers to write the better
+## pattern. It is @cowir-battle's DERIVED KEY pointed the other way: theirs is a consumer with no
+## literal, so a search UNDER-reports; this is a literal with no consumer, so a search OVER-reports.
+## Both are "the text is not the behaviour", and in both, widening the search makes it worse.
+const RETRACTED_CLAIMS := {
+	"INERT_EVERYWHERE": "db276f500 retracted it. Seven gear effects were listed as consumed by nothing in src/, with a passing arm asserting it. @cowir-battle showed all seven are read by a DERIVED key — BattleManager:5080 builds element + \"_damage_bonus\" and Combatant:993 builds element + \"_resistance\" — so four of them occur zero times in src/ and are fully live.",
+}
+
+
+func test_a_retracted_claim_survives_as_prose_and_never_as_an_arm() -> void:
+	## The retracted name is ALLOWED here — in comments, where the lesson lives. What must never come
+	## back is a declaration or an assertion, which is what "the claim is still being made" means.
+	var own: String = GdSource.code_of(get_script().resource_path)
+	assert_gt(own.length(), 1000, "CONTROL: this file's own source was actually read")
+
+	## Scope out the registry itself: its KEYS are these names, on code lines, by construction.
+	var reg_at: int = own.find("const RETRACTED_CLAIMS")
+	assert_gt(reg_at, 0, "CONTROL: the registry must be locatable, or the slice below is the whole file")
+	var reg_end: int = own.find("\n}", reg_at)
+	assert_gt(reg_end, reg_at, "CONTROL: the registry's end must be locatable")
+	var scanned: String = own.substr(0, reg_at) + own.substr(reg_end)
+
+	var still_asserted: Array = []
+	for name in RETRACTED_CLAIMS:
+		for line in scanned.split("\n"):
+			if not line.contains(str(name)):
+				continue
+			if line.strip_edges().begins_with("#"):
+				continue   ## prose: this is where a retraction is SUPPOSED to live
+			still_asserted.append("%s <- %s" % [name, line.strip_edges().substr(0, 60)])
+	assert_eq(still_asserted, [],
+		"a retracted claim is being made again in CODE, not merely explained in prose: %s" % str(still_asserted))
+
+
+func test_the_retraction_check_can_actually_see_code() -> void:
+	## LIVENESS, per @cowir-controller: an empty result is ambiguous between "no code occurrences" and
+	## "the scan found nothing at all". A name that IS live code must be found on a non-comment line,
+	## or the arm above is green for the wrong reason.
+	var own: String = GdSource.code_of(get_script().resource_path)
+	var code_hits: int = 0
+	var prose_hits: int = 0
+	for line in own.split("\n"):
+		if not line.contains("GRIND_IGNORES"):
+			continue
+		if line.strip_edges().begins_with("#"):
+			prose_hits += 1
+		else:
+			code_hits += 1
+	gut.p("    liveness: GRIND_IGNORES on %d code lines, %d prose lines" % [code_hits, prose_hits])
+	assert_gt(code_hits, 0,
+		"CONTROL: a name that IS live code must register on a code line, else the retraction arm's empty result means nothing")
+
+
+func test_every_retraction_names_the_commit_that_made_it() -> void:
+	## A bare list would rot into "someone said this was wrong once". The SHA is what lets the next
+	## reader go and read the correction rather than re-deriving it, or re-publishing the claim.
+	assert_gt(RETRACTED_CLAIMS.size(), 0,
+		"the registry has emptied — delete it deliberately rather than leaving it asserting nothing")
+	var unexplained: Array = []
+	for name in RETRACTED_CLAIMS:
+		var why: String = str(RETRACTED_CLAIMS[name])
+		if why.length() < 60 or RegEx.create_from_string("[0-9a-f]{7,}").search(why) == null:
+			unexplained.append(str(name))
+	assert_eq(unexplained, [],
+		"a retraction must name the commit that made it and say what was wrong: %s" % str(unexplained))
+
+
 func test_the_sweep_actually_reads_the_tree() -> void:
 	## CONTROL. Every arm below fires on a ZERO, and a zero is what an empty corpus looks like too.
 	var files: Array = _gd_files()
@@ -150,6 +234,8 @@ func test_every_authored_gear_effect_is_named_here() -> void:
 	var known: Dictionary = {}
 	for k in GRIND_IGNORES:
 		known[k] = true
+	for k in GRIND_MODELS:
+		known[k] = true
 	for k in DECLARED:
 		known[k] = true
 	var authored: Array = _authored_effect_keys()
@@ -158,29 +244,43 @@ func test_every_authored_gear_effect_is_named_here() -> void:
 	for k in authored:
 		if not known.has(k):
 			unnamed.append(k)
-	gut.p("    authored gear effects: %d | named here: %d" % [authored.size(), GRIND_IGNORES.size() + DECLARED.size()])
+	gut.p("    authored gear effects: %d | ignored %d + modelled %d + declared %d = %d named" % [authored.size(), GRIND_IGNORES.size(), GRIND_MODELS.size(), DECLARED.size(), GRIND_IGNORES.size() + GRIND_MODELS.size() + DECLARED.size()])
 	assert_eq(unnamed, [],
 		"a gear effect is authored and named nowhere in this file: %s — add it to GRIND_IGNORES, or to DECLARED with a reason" % str(unnamed))
 
 
-func test_the_grind_models_no_gear_effect_even_by_a_derived_key() -> void:
-	## ⛔ THE ARM THAT SURVIVES SHAPE 3. My grind-side claim is a ZERO over literals, and a literal
-	## zero is exactly what a derived-key consumer looks like — which is how I got live's side wrong.
-	## So this checks the grind for the CONSTRUCTION too: no concatenated suffix, no suffix scan.
+func test_no_gear_key_is_read_by_a_derived_key_in_the_grind() -> void:
+	## ⛔ THE ARM THAT SURVIVES SHAPE 3, now that the grind legitimately reads equipment. Its first
+	## version asked "does the resolver touch equipment at all", which was the right question while
+	## the answer was no and became useless the moment it was yes — it fired on the helper's own name.
+	## The real question is narrower and stays true: is any gear key assembled by CONCATENATION, which
+	## the literal census in this file would miss? The helper takes its key as an ARGUMENT, so every
+	## call site spells the key and the census sees it.
 	var grind: String = GdSource.code_of(GRIND)
 	assert_gt(grind.length(), 10000, "CONTROL: the resolver was actually read")
-	var derived: Array = []
-	for suffix in DERIVED_KEY_SUFFIXES:
-		if grind.contains('"%s"' % suffix) or grind.contains("_sum_equipment_special_effect"):
-			derived.append(suffix)
-	assert_eq(derived, [],
-		"the resolver now builds a gear-effect key by construction, so the literal census above is blind to it — the same shape that made this file's first version publish a wrong finding: %s" % str(derived))
-	var equipment_reads: Array = []
-	for probe in ["special_effects", "get_weapon(", "get_armor(", "get_accessory("]:
-		if grind.contains(probe):
-			equipment_reads.append(probe)
-	assert_eq(equipment_reads, [],
-		"the resolver now reads equipment somehow — good, but this file's 'models none' claim is stale and must be re-derived rather than left standing: %s" % str(equipment_reads))
+	var constructed: Array = []
+	for line in grind.split("\n"):
+		var t: String = line.strip_edges()
+		if t.begins_with("#"):
+			continue   ## the helper's own annotation NAMES the shape; that is prose, not a read
+		for suffix in DERIVED_KEY_SUFFIXES:
+			if RegEx.create_from_string('\\+\\s*"%s"' % suffix).search(t) != null:
+				constructed.append(t.substr(0, 70))
+	assert_eq(constructed, [],
+		"a gear key is built by concatenation in the resolver, so this file's literal census is blind to it — the shape that made an earlier version of this file publish a wrong finding: %s" % str(constructed))
+
+
+func test_the_modelled_keys_are_actually_present_in_the_resolver() -> void:
+	## LIVENESS for the list above: a key can be moved into GRIND_MODELS by editing this file alone,
+	## and then the census would claim a gap was closed that nobody closed.
+	var grind: String = GdSource.code_of(GRIND)
+	var absent: Array = []
+	for k in GRIND_MODELS:
+		if not grind.contains('"%s"' % k):
+			absent.append(k)
+	gut.p("    modelled: %s" % str(GRIND_MODELS))
+	assert_eq(absent, [],
+		"a key is listed as modelled and the resolver does not name it — the list moved without the code: %s" % str(absent))
 
 
 func test_the_grind_side_gap_is_real_and_not_a_bad_pattern() -> void:
