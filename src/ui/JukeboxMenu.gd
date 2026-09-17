@@ -395,13 +395,15 @@ func _input(event: InputEvent) -> void:
 	## FIVE of 161 rows, on the screen whose entire purpose is browsing a long list. The echo check
 	## was written for a held key and a key is the only input it can see (@cowir-controller, .367).
 	var nav: String = MenuNav.step(event)
+	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
+	var page := MenuPaging.page_delta(event)
 	if nav == "ui_up" or nav == "ui_down":
 		_nav_step(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 
-	elif MenuPaging.page_delta(event) != 0:
+	elif page != 0:
 		# 153 tracks — one row at a time is unusable.
-		selected_index = clampi(selected_index + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, TRACKS.size() - 1)
+		selected_index = clampi(selected_index + page * MenuPaging.PAGE_ROWS, 0, TRACKS.size() - 1)
 		_clamp_scroll()
 		_refresh_list()
 		_update_selection()

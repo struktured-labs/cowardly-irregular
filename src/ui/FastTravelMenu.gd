@@ -193,12 +193,14 @@ func _input(event: InputEvent) -> void:
 	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
 	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
 	var nav := MenuNav.step(event)
+	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
+	var page := MenuPaging.page_delta(event)
 	if nav == "ui_up" or nav == "ui_down":
 		_move(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 	# Attuned crystals accumulate all game, so this list grows; same page jump as every other long menu.
-	elif MenuPaging.page_delta(event) != 0:
-		_move(MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS)
+	elif page != 0:
+		_move(page * MenuPaging.PAGE_ROWS)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		_pick()

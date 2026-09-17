@@ -247,13 +247,15 @@ func _input(event: InputEvent) -> void:
 	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
 	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
 	var nav := MenuNav.step(event)
+	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
+	var page := MenuPaging.page_delta(event)
 	if nav == "ui_up" or nav == "ui_down":
 		_move(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 	# ui_page_up/ui_page_down are Godot built-ins with a KEYBOARD default and no pad binding, so
 	# this menu's fast scroll did nothing on a controller. MenuPaging carries both.
-	elif MenuPaging.page_delta(event) != 0:
-		_move(MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS)
+	elif page != 0:
+		_move(page * MenuPaging.PAGE_ROWS)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_home") and not event.is_echo():
 		_selected = 0

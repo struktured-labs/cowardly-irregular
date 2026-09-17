@@ -632,15 +632,17 @@ func _handle_item_list_input(event: InputEvent) -> void:
 	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
 	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
 	var nav := MenuNav.step(event)
+	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
+	var page := MenuPaging.page_delta(event)
 	if nav == "ui_up" or nav == "ui_down":
 		_nav_step_item(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 
-	elif MenuPaging.page_delta(event) != 0:
+	elif page != 0:
 		## 172 items at one row per press. Clamped, not wrapped like the arrows above.
 		if _item_list.size() > 0:
 			selected_item_index = clampi(
-				selected_item_index + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS,
+				selected_item_index + page * MenuPaging.PAGE_ROWS,
 				0, _item_list.size() - 1)
 			_build_ui()
 			SoundManager.play_ui("menu_move")

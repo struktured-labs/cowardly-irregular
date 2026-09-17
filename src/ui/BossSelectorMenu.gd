@@ -287,6 +287,8 @@ func _confirm_selection() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
+	var page := MenuPaging.page_delta(event)
 	if not visible:
 		return
 
@@ -315,9 +317,9 @@ func _input(event: InputEvent) -> void:
 				SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif MenuPaging.page_delta(event) != 0:
+	elif page != 0:
 		# 46 entries once the list came from data — one row at a time is unusable.
-		selected_index = clampi(selected_index + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, _selectable_indices.size() - 1)
+		selected_index = clampi(selected_index + page * MenuPaging.PAGE_ROWS, 0, _selectable_indices.size() - 1)
 		_clamp_scroll()
 		_refresh_list()
 		_update_selection()
