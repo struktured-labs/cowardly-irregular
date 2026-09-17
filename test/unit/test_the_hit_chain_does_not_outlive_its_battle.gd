@@ -78,6 +78,9 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
 	if sm == null:
 		return
+	## ⚠️ THIS LIST IS A SNAPSHOT, derived once from this file's own sm. reaches and frozen — NOT
+	## a live derivation. Add a new sm. reach to this file and it is NOT covered until you add it
+	## here. The sibling floors in this lane carry the same disclaimer, for the same reason.
 	## has_method ANSWERS; a direct read would abort alongside the arms this exists to catch.
 	for method_name in ["get_combo_pitch_bias", "reset_hit_chain"]:
 		assert_true(sm.has_method(method_name),
