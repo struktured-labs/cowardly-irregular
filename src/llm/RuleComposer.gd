@@ -130,6 +130,10 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 			repair_notes.append(note)
 		for note in _normalise_item_ids(v["rules"], kit_context.get("items", [])):
 			repair_notes.append(note)
+		## BEFORE the MP-guard pass below: an action only recognised as an ability AFTER it
+		## never gets the guard the deep check then demands, and the rule is dropped.
+		for note in _normalise_autobattle_shapes(v["rules"], kit_context):
+			repair_notes.append(note)
 
 	if domain == DOMAIN_AUTOBATTLE and bool(kit_context.get("resolved", false)):
 		for note in _supply_missing_mp_guards(v["rules"], kit_context):
@@ -689,6 +693,73 @@ func _normalise_switch_profile(rules: Array, kit_context: Dictionary) -> Array[S
 ## An autobattle condition's `status` field, matched literally by Combatant.has_status.
 ## Measured 7 of 19 unmatchable on an intent about being silenced — the model wrote
 ## "silenced". Same lookup as the grind's, same table, because it is the same engine call.
+## Three shapes measured across 48 captured live replies, 4 jobs x 12, replayed through the
+## real compose_async. One grammar error discards the whole composition, so each cost a
+## player their entire ruleset:
+##
+##     {"type":"ally_dead","op":"","value":null}      an empty payload on a NULLARY condition
+##     {"type":"ally_hp_percent","op":">=0"}          the operator and value fused
+##     {"type":"lullaby","target":"self"}             an ability id used as the action TYPE
+##
+## Every repair is a lookup in AutobattleSystem's own vocabulary or a parse of the string's
+## own content. The ability rewrite is scoped to THIS character's kit, so it can only
+## produce an action the deep check would already have accepted.
+func _normalise_autobattle_shapes(rules: Array, kit_context: Dictionary) -> Array[String]:
+	var notes: Array[String] = []
+	var domain_system = get_node_or_null("/root/AutobattleSystem")
+	if domain_system == null:
+		return notes
+	var nullary: Array = domain_system.NULLARY_CONDITIONS if "NULLARY_CONDITIONS" in domain_system else []
+	var operators: Dictionary = domain_system.OPERATORS if "OPERATORS" in domain_system else {}
+	var actions_ok: Dictionary = domain_system.ACTION_TYPES if "ACTION_TYPES" in domain_system else {}
+	var kit: Array = kit_context.get("kit", [])
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for c in rule.get("conditions", []):
+			if typeof(c) != TYPE_DICTIONARY:
+				continue
+			var ctype: String = str(c.get("type", ""))
+			## A nullary condition carrying an empty payload — the same repair the autogrind
+			## side has had all along, absent here only because nothing named the set.
+			if nullary.has(ctype):
+				for key in ["op", "value"]:
+					if c.has(key) and (c[key] == null or str(c[key]) == ""):
+						c.erase(key)
+						notes.append("Dropped an empty '%s' from '%s' — it takes no payload." % [key, ctype])
+				continue
+			## The operator and its value fused into one string. Splitting it is a PARSE of
+			## what the model wrote, not a guess — and it is refused when a separate value
+			## is already present and disagrees, because then it IS a guess.
+			var raw_op: String = str(c.get("op", ""))
+			if raw_op == "" or operators.has(raw_op):
+				continue
+			for op in operators.keys():
+				var op_s: String = str(op)
+				if not raw_op.begins_with(op_s):
+					continue
+				var tail: String = raw_op.substr(op_s.length()).strip_edges()
+				if not tail.is_valid_float():
+					continue
+				if c.has("value") and str(c["value"]) != tail:
+					break
+				c["op"] = op_s
+				c["value"] = float(tail) if tail.contains(".") else int(tail)
+				notes.append("Read '%s' as op '%s' with value %s." % [raw_op, op_s, tail])
+				break
+		var acts: Array = rule.get("actions", [])
+		for a in acts:
+			if typeof(a) != TYPE_DICTIONARY:
+				continue
+			var atype: String = str(a.get("type", ""))
+			if actions_ok.has(atype) or not kit.has(atype):
+				continue
+			a["type"] = "ability"
+			a["id"] = atype
+			notes.append("Read '%s' as the ability it names — an ability is an action's id." % atype)
+	return notes
+
+
 func _normalise_autobattle_statuses(rules: Array) -> Array[String]:
 	const STATUS_CONDITIONS := ["has_status", "not_has_status", "ally_has_status",
 		"enemy_has_status", "not_enemy_has_status"]
