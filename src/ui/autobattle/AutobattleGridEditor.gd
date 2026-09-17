@@ -30,6 +30,8 @@ var current_party_index: int = 0
 ## Grid state
 var rules: Array = []  # Array of rule rows
 var cursor_row: int = 0  # Current rule (row)
+## Vertical only: left/right move between CELLS, and repeating those would thrash a rule's fields.
+var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
 var cursor_col: int = 0  # Current cell in row (conditions then actions)
 var is_editing: bool = false  # Currently editing a cell
 var _portrait_focused: bool = false  # True when cursor is on character portrait panel
@@ -1783,17 +1785,11 @@ func _input(event: InputEvent) -> void:
 
 	# D-Pad navigation - check echo to prevent rapid-fire when holding keys
 	if nav == "ui_up":
-		cursor_row = max(0, cursor_row - 1)
-		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
-		_update_cursor()
-		SoundManager.play_ui("menu_move")
+		_nav_step_row(-1)
 		get_viewport().set_input_as_handled()
 
 	elif nav == "ui_down":
-		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
-		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
-		_update_cursor()
-		SoundManager.play_ui("menu_move")
+		_nav_step_row(1)
 		get_viewport().set_input_as_handled()
 
 	elif nav == "ui_left":
@@ -3464,7 +3460,47 @@ func _flash_status(text: String, color: Color = Color.LIME) -> void:
 	_flash_timer = 2.5
 
 
+## One row step, shared by a press and a held repeat so the two can never drift apart.
+func _nav_step_row(step: int) -> void:
+	cursor_row = clampi(cursor_row + step, 0, maxi(0, rules.size() - 1))
+	cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
+	_update_cursor()
+	SoundManager.play_ui("menu_move")
+
+
+## Every reason this editor must not act on ROW navigation, in ONE place, consulted by _input's
+## gates and by the hold-to-repeat below. MenuRepeat polls Input directly, so it inherits none of
+## _input's refusals — Win98Menu measured a 2s hold stepping the parent 22 times behind a submenu.
+func _row_nav_blocked() -> bool:
+	if not visible or is_queued_for_deletion():
+		return true
+	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
+		return true
+	if _share_picker and is_instance_valid(_share_picker) and _share_picker.visible:
+		return true
+	if _option_picker and is_instance_valid(_option_picker) and _option_picker.visible:
+		return true
+	if _simulate_panel and is_instance_valid(_simulate_panel) and _simulate_panel.visible:
+		return true
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay) and _rule_composer_overlay.visible:
+		return true
+	# is_editing owns the modal; _portrait_focused maps up/down to CHARACTER cycling, not rows.
+	if is_editing or _portrait_focused:
+		return true
+	return false
+
+
 func _process(delta: float) -> void:
+	# struktured 2026-08-22 asked for hold-to-repeat; it reached 6 of 30 menus and not this one, whose list caps at MAX_RULES = 32 and has no page jump (both shoulders add rows).
+	if _row_nav_blocked():
+		_nav_repeat.reset()
+	else:
+		var action := _nav_repeat.tick(delta)
+		if action == "ui_up":
+			_nav_step_row(-1)
+		elif action == "ui_down":
+			_nav_step_row(1)
+
 	if _flash_timer > 0.0:
 		_flash_timer -= delta
 		if _flash_timer <= 0.0 and _flash_label and is_instance_valid(_flash_label):
