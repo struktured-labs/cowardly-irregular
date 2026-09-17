@@ -1254,7 +1254,12 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 	var duration = params.get("duration", 0.1)
 	var freq = params.get("freq", 440.0)
 	var sound_type = params.get("type", "blip")
-	var volume_db = params.get("volume_db", 0.0)
+	## Default to the PLAYER'S level, not 0.0. volume_db is CHANNEL state — every player is built
+	## at a design-intent base (SFX_UI_BASE_DB -16, SFX_BATTLE_BASE_DB -6, …) and set_sfx_volume
+	## re-asserts those "in case a caller mutated them". _play_sound was that caller: a 0.0 default
+	## overwrote the base, so the six procedural-only UI cues played 16 dB above every menu blip,
+	## and a later file cue passing NAN ("preserve the channel base") inherited 0.0 instead.
+	var volume_db = params.get("volume_db", player.volume_db)
 
 	var generator = AudioStreamGenerator.new()
 	generator.mix_rate = sample_rate
