@@ -190,7 +190,15 @@ func test_one_nudge_scrolls_the_open_log_once() -> void:
 	await _frames(6)
 	assert_true(_box.is_backlog_open(), "precondition: the log is open")
 
-	## ⛔ THE ONLY RUNG-3 REACH IN THIS FILE, so the only silent one. Two asserts have already run by
+	## ⛔ ONE OF TWO RUNG-3 REACHES IN THIS FILE — and `.378` shipped this line saying "the ONLY"
+	## one, which my own later measurement falsified. @cowir-sfx's (ARM, SYMBOL) refinement: my
+	## classifier skipped any line starting with `assert`, so every reach INSIDE an assert argument
+	## was invisible to it — and an argument evaluates BEFORE the assert is entered. That hid 4 of 9
+	## reaches and the second silence, `backlog_size`, which no explicit floor covers. The DERIVED
+	## floor does (mutation: rename it, `Failing 1` naming it), so the cover was never wrong — only
+	## my account of it. That is the argument for deriving over hand-picking: it covered a symbol my
+	## own rung analysis had missed, and hand-selecting pins would have chosen from the wrong map.
+	## Two asserts have already run by
 	## here, so a rename of _backlog_scroll aborts this arm to Passing/EC=0 — `.366`'s EC=4 derives
 	## from [Risky] names and cannot see an abort after a passing assert (@cowir-sfx's triage axis:
 	## pre-assert reaches are rung 1 and already loud; post-assert ones are the hole). `in` is the
