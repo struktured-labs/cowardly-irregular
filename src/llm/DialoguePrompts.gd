@@ -236,6 +236,8 @@ Conditions (AND-chained). type is one of:
   ally_dead, is_night, weather,
   always, has_buff, not_has_buff, volatility_band
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
+ap is the Advance Point bank and runs -4 to +4: 4 is a full bank, negative is debt.
+A value outside that range validates and then never fires.
 ally_dead, is_night and always are NULLARY — no op, no value. ally_dead is
 true while any member of the caster's own party is down, whatever the party
 size; pair it with a revival ability id like 'raise'. is_night is true only
