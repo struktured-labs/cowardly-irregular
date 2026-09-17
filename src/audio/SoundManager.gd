@@ -4169,19 +4169,18 @@ const MONSTER_MUSIC_PARAMS = {
 }
 
 func _start_monster_music(monster_type: String) -> void:
-	"""Start monster-specific battle music — unique per monster type.
-	Prefers OGG file from assets/audio/music/ if available, falls back to proc-gen."""
+	"""Procedurally generate a monster-specific battle theme.
+	The authored OGG, when there is one, is played by _try_play_from_manifest BEFORE this
+	function is reached — so arriving here means the manifest had no usable bed for the key."""
 	_music_playing = true
 
-	# Try loading OGG file first (artist/Suno-generated tracks take priority)
-	var ogg_path = "res://assets/audio/music/battle_%s.ogg" % monster_type
-	if ResourceLoader.exists(ogg_path):
-		var stream = load(ogg_path)
-		if stream:
-			_music_player.stream = stream
-			_music_player.play()
-			print("[MUSIC] Loaded OGG: %s" % ogg_path)
-			return
+	## The blind OGG probe that used to sit here is gone. Every route into this function is a
+	## play_music match arm, so _try_play_from_manifest("battle_<type>") has ALREADY run for the
+	## same key -- reaching here means that load failed, and re-probing the same path cannot help.
+	## It also used ResourceLoader.exists(), which :1777 and :1846 both document as unreliable for
+	## IMPORTED resources: an .ogg is remapped to .oggstr, so the original path can be absent while
+	## load() resolves it (cowir-sfx, 2026-09-17). test_every_monster_theme_is_named_by_the_manifest
+	## pins that the types reaching here are manifest-covered, so nothing is lost by deleting it.
 
 	# Check proc-gen cache
 	if _music_cache.has(monster_type):
