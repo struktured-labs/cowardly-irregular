@@ -1261,6 +1261,12 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 
 	player.stream = generator
 	player.volume_db = volume_db
+	## Players are SHARED and _try_play_sfx_from_manifest writes pitch_scale on every file cue —
+	## the combo bias plus a ±5% jitter. Without this reset a synth cue inherits the last file
+	## cue's pitch: measured 1.1013 after one biased hit, ~2 semitones sharp and ~10% shorter.
+	## The procedural path biases by FREQUENCY (play_battle_scaled multiplies params.freq), so
+	## an inherited pitch_scale applies the same bias a second time.
+	player.pitch_scale = 1.0
 	player.play()
 	print("[SFX] procedural %s freq=%s dur=%s (%s)" % [sound_type, str(freq), str(duration), player.name])
 
