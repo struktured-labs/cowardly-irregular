@@ -104,6 +104,14 @@ const UNEXAMINED := [
 const UNDECIDED_LIVE_SIDE := ["cost", "evasion_bonus", "multiplier", "penalty"]
 
 
+## ⚠️ TOP-LEVEL ONLY, and that is correct by the DATA's shape rather than by construction.
+## @cowir-music found a cue id living at a NESTING LEVEL rather than in a step type — four endgame
+## tracks inside a choice step's branches, invisible to a walk that enumerated step types correctly.
+## Their line: "which step types carry a track" is a complete answer to the wrong question.
+## Measured here 2026-09-16: abilities.json has 70 top-level keys and ZERO nested ones — no ability
+## carries a dict or a list-of-dicts whose inner keys the engines could read. So this census sees
+## everything today. The day an ability gains a nested block, it goes SILENTLY incomplete, and the
+## whole backlog below is derived from it.
 func _authored_keys() -> Array:
 	var ab: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
 	var keys: Dictionary = {}
