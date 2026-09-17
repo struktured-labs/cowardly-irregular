@@ -537,6 +537,22 @@ mkdir -p tmp
 # needs the templates that live under the real XDG_DATA_HOME (see the ⛔ note above).
 _SMOKE_XDG="$PWD/tmp/smoke_xdg"
 mkdir -p "$_SMOKE_XDG"
+# ⛔ PROVE THE REDIRECT HELD, PER RUN. The sandbox above is the FIX; this is the CHECK, and
+# until now only the desktop chain had one. deploy_desktop.sh takes a signature of his real
+# profile before its boot smoke and verifies it after (:737/:753); the web smoke redirected
+# and then trusted the redirect on the strength of a one-time manual verification from
+# 2026-09-07, recorded in the comment above. A one-time check is not a per-run check, and
+# this gate boots the real game and fights real battles on every publish.
+# ⚠️ NOT $_UD: that is defined with ${XDG_DATA_HOME:-...}, so it would resolve to the SANDBOX
+# whenever the caller already exported XDG_DATA_HOME -- i.e. it would compare the sandbox with
+# itself and pass. His real profile is the unconditional path, as deploy_desktop.sh:200 has it.
+_REAL_UD="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular"
+if [ ! -x tools/check_profile_untouched.sh ]; then
+  echo "[deploy] BLOCKED: tools/check_profile_untouched.sh missing. Refusing to boot the game" >&2
+  echo "        for the render smoke without a way to prove his saves survived it." >&2
+  exit 3
+fi
+_REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$_REAL_UD")"
 SMOKE_CMD=(env "XDG_DATA_HOME=$_SMOKE_XDG" xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke)
 if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
   cp tmp/deploy_smoke.log tmp/deploy_smoke.attempt1.log
@@ -544,6 +560,14 @@ if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
   if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
     echo "[deploy] BLOCKED: render smoke failed TWICE — see tmp/deploy_smoke.log (+ attempt1)" >&2; exit 3
   fi
+fi
+# Isolation first: a leak matters more than a failed smoke. The sandbox is passed so a RED can
+# tell "he was playing during the deploy" from "the redirect did not work" — a smoke that ran
+# and left an EMPTY sandbox did not have a working XDG_DATA_HOME.
+if ! ./tools/check_profile_untouched.sh --verify "$_REAL_UD" "$_REAL_SIG_BEFORE" "$_SMOKE_XDG"; then
+  echo "[deploy] BLOCKED: the render smoke touched struktured's real profile. Refusing to" >&2
+  echo "        keep running the game against his live save data." >&2
+  exit 3
 fi
 grep "VERDICT" tmp/deploy_smoke.log
 
