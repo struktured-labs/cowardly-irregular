@@ -42,6 +42,25 @@ _die() { echo "[relnote] BLOCKED: $*" >&2; exit 2; }
 
 # The previous release tag, by version order rather than by date -- a tag cut out of order would
 # otherwise make the range lie about what is new.
+# Tags strictly between prev and tag, oldest first. These are the SUPERSEDED releases: this
+# lane publishes the NEWEST tag only, so when the store has been held — a courtesy hold while
+# struktured is streaming, a RED, a box nobody was at — the release a player receives carries
+# every tag in between and the note has always described only the last one.
+#
+# Measured 2026-09-17, mid-hold: the store sat on v3.33.371-alpha with v3.33.379-alpha tagged.
+#
+#     note for .379, default prev (.378)   2 branches ·   7 commits ·  4 files
+#     note vs what the store actually has  59 branches · 157 commits · 96 files
+#
+# A 30x under-description, and the direction is the bad one: it tells a reader that a release
+# they cannot otherwise inspect is small.
+_superseded_tags() {
+    local prev="$1" tag="$2"
+    [ -n "$prev" ] || return 0
+    git tag -l 'v3.33.*' --sort=v:refname \
+        | awk -v p="$prev" -v t="$tag" 'f && $0==t{exit} f{print} $0==p{f=1}'
+}
+
 _prev_tag() {
     local tag="$1"
     git tag -l 'v3.33.*' --sort=-v:refname \
@@ -106,6 +125,14 @@ note() {
         printf '_No previous release tag found, so this note covers the whole history and the list below is not a delta._\n\n'
     else
         printf 'Changes since **%s** — %s commit(s), %s file(s) changed.\n\n' "$prev" "$commits" "$files"
+        local sup; sup="$(_superseded_tags "$prev" "$tag")"
+        local sn; sn="$(printf '%s' "$sup" | command grep -c . || true)"
+        if [ "${sn:-0}" -gt 0 ]; then
+            printf '**Supersedes %s tag(s) the store never received:** ' "$sn"
+            printf '%s' "$sup" | tr '\n' ' ' | sed 's/ $//'
+            printf '\n\n'
+            printf '_Those are cadence markers, not skipped work — every commit in them is in this release._\n\n'
+        fi
     fi
 
     local n; n="$(printf '%s' "$merges" | command grep -c . || true)"
@@ -198,6 +225,21 @@ gated: cafe1234 scripts=11 tests=111 passing=111 failing=0"
     local p
     p="$(cd "$d" && git tag -l 'v3.33.*' --sort=-v:refname | awk -v t=v3.33.101-alpha 'f{print; exit} $0==t{f=1}')"
     _eq    "_prev_tag: the VERSION predecessor"         "$p" "v3.33.100-alpha"
+
+    # ── supersession: the case this lane actually publishes in ──────────────────────────────
+    # The fixture already has .100, .101 and .102. A note for .102 against .100 SKIPS .101, so
+    # the superseded tag must be named; against .101 it skips nothing and the line must be
+    # ABSENT. The second arm is the one that matters — a line that always prints would satisfy
+    # the first on its own and say nothing.
+    local out4 out5
+    out4="$(cd "$d" && bash "$SELF" v3.33.102-alpha --prev v3.33.100-alpha)"
+    _has   "a skipped tag is NAMED"                     "$out4" "Supersedes 1 tag(s)"
+    _has   "  ...and named exactly"                     "$out4" "v3.33.101-alpha"
+    _has   "  ...and says they are not lost work"       "$out4" "cadence markers, not skipped work"
+    out5="$(cd "$d" && bash "$SELF" v3.33.102-alpha --prev v3.33.101-alpha)"
+    _hasnt "an ADJACENT prev names no supersession"     "$out5" "Supersedes"
+    # and the endpoints are exclusive: neither prev nor tag may appear in its own list
+    _hasnt "  ...the range excludes prev itself"        "$out4" "Supersedes 1 tag(s) the store never received: v3.33.100-alpha"
 
     rm -rf "$d"
     printf '\nselftest: %s passed, %s failed\n' "$pass" "$fail"
