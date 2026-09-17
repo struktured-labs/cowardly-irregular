@@ -933,7 +933,16 @@ func play_ambient(sound_key: String) -> void:
 	if sound_key == _current_ambient_key and _ambient_player.playing:
 		return  # Already playing this ambient
 	stop_ambient()
-	_current_ambient_key = sound_key
+	## ⛔ THE KEY IS SET WHERE IT BECOMES TRUE — AT THE PLAY, NOT HERE. It used to be assigned
+	## on this line, above FOUR returns: key in neither manifest · empty `file` field · stream
+	## failed to load · the music player already holds this path. Each left the field naming a bed
+	## that is NOT playing, and readers treat it as the record of what is live
+	## (test_sound_manager_night_ambience_regression does exactly that).
+	##
+	## I fixed the FOURTH of those returns on 2026-09-17 with a clear-on-exit and left the other
+	## three — the same "was the first instance the only one" that found play_music after
+	## play_area_music, on a fix of my own, twice in one day. Setting it once on success retires
+	## the patch and all four leaks together.
 	## MUSIC MANIFEST FIRST. ambient_cave/forest/village exist in BOTH stores: a 145-214s authored
 	## bed here and a 30-40 KB sting there. Reading sfx only, the long beds had never played once.
 	_load_music_manifest()
@@ -958,15 +967,10 @@ func play_ambient(sound_key: String) -> void:
 	## does not start — stop_ambient() above has already cleared the slot.
 	if _music_player and _music_player.playing and _music_player.stream \
 			and _music_player.stream.resource_path == path:
-		## ⛔ CLEAR THE KEY ON THE WAY OUT. It was assigned at the top of this function, so
-		## returning here would leave _current_ambient_key naming a bed that is NOT playing —
-		## truthful in the other direction, which calls stop_ambient() and clears it. Readers treat
-		## this field as the record of what is live (test_sound_manager_night_ambience_regression
-		## does exactly that), and a field that lies in one of two paths is the kind nobody checks.
-		_current_ambient_key = ""
 		return
 	_ambient_player.stream = stream
 	_ambient_player.play()
+	_current_ambient_key = sound_key
 
 
 func stop_ambient() -> void:
