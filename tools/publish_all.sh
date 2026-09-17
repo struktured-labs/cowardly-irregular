@@ -118,7 +118,10 @@ _archive_evidence() {
     # to the GitHub release body is a one-line change and deliberately NOT made here: that is
     # outward-facing and is struktured's call, not a side effect of archiving.
     if [ -n "${TAG:-}" ] && [ -x tools/release_note.sh ]; then
-        if ./tools/release_note.sh "$TAG" --out "${dest}/RELEASE_NOTE.md" >/dev/null 2>&1; then
+        # --prev is what the STORE had, not the previous tag: see STORE_BEFORE above.
+        _note_prev=(); [ -n "${STORE_BEFORE:-}" ] && _note_prev=(--prev "$STORE_BEFORE")
+        if ./tools/release_note.sh "$TAG" ${_note_prev[@]+"${_note_prev[@]}"} \
+                --out "${dest}/RELEASE_NOTE.md" >/dev/null 2>&1; then
             echo "[pub] release note derived -> ${dest}/RELEASE_NOTE.md"
         else
             # Never fatal: a publish that shipped correctly is not undone by a note that did not
@@ -567,6 +570,29 @@ echo "[pub] tree: ${HEAD_SHA:0:8} == ${TAG}, clean"
 
 SAVES_BEFORE="$(_saves_cksum)"
 echo "[pub] his saves before: ${SAVES_BEFORE}"
+
+# ── what the store is superseding ────────────────────────────────────────────────────────────
+# Captured BEFORE the upload, because afterwards the answer is this tag. It is passed to
+# release_note.sh as --prev so the note describes what a PLAYER is receiving rather than what
+# changed since the previous tag.
+#
+# Those differ whenever supersession skips tags — this lane publishes the NEWEST tag only, and
+# a held store accumulates. Measured 2026-09-17 mid-hold, store on .371 with .379 tagged:
+# the default note said 2 branches / 7 commits; the range a player actually gets was
+# 59 branches / 157 commits / 96 files. A 30x under-description of a release nobody can inspect.
+#
+# THE OLDEST channel wins, not linux: a partial store means the least-current channel decides
+# what some players are still missing, which is the same rule store_status.sh already encodes.
+# Unreadable -> empty -> release_note.sh falls back to the previous tag and says so, which is
+# the behaviour that shipped for the last eighty releases.
+STORE_BEFORE="$(butler status struktured/cowardly-irregular 2>/dev/null \
+    | awk -F'|' '/\| *(linux|windows|web) *\|/ {gsub(/[ \t]/,"",$5); sub(/\+.*$/,"",$5); if ($5 != "") print $5}' \
+    | sort -V | head -1)"
+if [ -n "$STORE_BEFORE" ]; then
+    echo "[pub] store is on ${STORE_BEFORE} before this publish (oldest channel)"
+else
+    echo "[pub] could not read the store's current version — the release note will fall back to the previous TAG" >&2
+fi
 
 # ── 3b. supersession, REPORTED HERE and not only at publish time ─────────────
 # This check used to live solely inside the publish loop, so `--check` validated evidence,
