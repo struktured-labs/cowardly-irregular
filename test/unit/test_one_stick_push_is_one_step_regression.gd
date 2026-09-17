@@ -130,3 +130,25 @@ func test_a_stranded_latch_heals() -> void:
 	Input.action_press("ui_down")
 	assert_eq(MenuNav.step(_motion(JOY_AXIS_LEFT_Y, 0.9)), "ui_down",
 		"the next genuine push must step — a stale latch would have eaten it")
+
+
+## ⛔ step() CONSUMES, and this pins it so the property cannot change silently. It reads like a
+## pure query; on an analog event it sets the latch as a side effect. A handler calling it twice
+## for one event drops the second step, which is how a future two-call menu would break.
+func test_step_consumes_so_a_second_call_on_one_event_returns_nothing() -> void:
+	Input.action_press("ui_down")
+	var ev := _motion(JOY_AXIS_LEFT_Y, 0.9)
+	assert_eq(MenuNav.step(ev), "ui_down", "the first read of an event steps")
+	assert_eq(MenuNav.step(ev), "",
+		"the SECOND read of the SAME event returns nothing — step() is consuming, not a query")
+
+
+## A BUTTON event is not latched, so it is safe to read twice — the asymmetry is deliberate and
+## worth pinning beside the hazard, or someone 'fixes' the button path to match the axis one.
+func test_a_button_event_may_be_read_twice() -> void:
+	var down := _bound_button("ui_down")
+	assert_gt(down, -1, "precondition: ui_down must be bound to a joypad button")
+	Input.action_press("ui_down")
+	var ev := _button(down)
+	assert_eq(MenuNav.step(ev), "ui_down", "first read")
+	assert_eq(MenuNav.step(ev), "ui_down", "…and a button may be read again; only an axis latches")
