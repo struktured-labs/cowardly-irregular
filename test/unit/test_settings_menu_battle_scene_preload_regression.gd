@@ -30,6 +30,38 @@ extends GutTest
 ##     preset index
 
 const SETTINGS_MENU_PATH := "res://src/ui/SettingsMenu.gd"
+const SETTINGS_PATH := "user://settings.json"
+
+## The round-trip below calls the REAL _save_battle_speed, which reaches DISK. Nothing here restored
+## it: the only "restore" was the in-memory static, so a bare suite run created settings.json for a
+## player who had none and overwrote one who did.
+var _settings_existed: bool = false
+var _settings_backup: PackedByteArray = PackedByteArray()
+
+
+func before_each() -> void:
+	_settings_existed = FileAccess.file_exists(SETTINGS_PATH)
+	_settings_backup = FileAccess.get_file_as_bytes(SETTINGS_PATH) if _settings_existed else PackedByteArray()
+
+
+func after_each() -> void:
+	if not _settings_existed:
+		## A file the player never had must not survive the run.
+		if FileAccess.file_exists(SETTINGS_PATH):
+			var dir := DirAccess.open("user://")
+			if dir:
+				dir.remove("settings.json")
+		return
+	if FileAccess.get_file_as_bytes(SETTINGS_PATH) == _settings_backup:
+		return
+	## open(WRITE) truncates BEFORE store_buffer, so never reopen his file on an empty snapshot.
+	if _settings_backup.is_empty():
+		push_warning("[TEST] refusing to restore an EMPTY snapshot over %s" % SETTINGS_PATH)
+		return
+	var f := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
+	if f:
+		f.store_buffer(_settings_backup)
+		f.close()
 
 
 func _read(path: String) -> String:
