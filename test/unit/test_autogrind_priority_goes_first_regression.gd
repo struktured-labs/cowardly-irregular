@@ -30,6 +30,8 @@ func before_each() -> void:
 	var abs_node = _res._get_autoload("AutobattleSystem")
 	if abs_node:
 		_abs_persistence_was = abs_node._test_disable_persistence
+		## after_each scrubs via set_character_script, which PERSISTS — ungated, the teardown writes
+		abs_node._test_disable_persistence = true
 
 
 ## The end-to-end arm installs a REAL grid script on a shared autoload. Left behind, it would hand
