@@ -52,8 +52,15 @@ PATH_RE = re.compile(rb'^path(?:\.[\w]+)?="([^"]+)"', re.M)
 
 
 def loader_consumers(src_dir):
-    """res:// path -> set of 'file:line' sites that LOAD it. Derived, never listed."""
+    """(res:// path -> sites) and a PARTITION of every resolution attempt.
+
+    ⛔ THE PARTITION MUST SUM. This tool used to print "186 asset(s) loaded" while silently
+    dropping every argument it could not resolve -- measured 2026-09-17: 403 of 478 attempts
+    resolved and 75 vanished from the report. A corpus that cannot say what it dropped is a
+    corpus you cannot size, and a green here would have been read as covering all 478.
+    """
     found = {}
+    stats = {"res": 0, "user": 0, "template": 0, "unresolved": 0, "attempts": 0}
     for path in raw.gd_files(src_dir):
         lines = raw.read_lines(path)
         consts = raw.file_consts(lines)
@@ -63,10 +70,18 @@ def loader_consumers(src_dir):
                 args = raw.split_args(ln[m.end():])
                 if not args:
                     continue
+                stats["attempts"] += 1
                 v = raw.resolve(args[0], consts)
-                if v and v.startswith("res://") and not raw.is_template(v):
+                if v is None:
+                    stats["unresolved"] += 1
+                elif raw.is_template(v):
+                    stats["template"] += 1
+                elif v.startswith("res://"):
+                    stats["res"] += 1
                     found.setdefault(v, set()).add("%s:%d" % (rel, i + 1))
-    return found
+                else:
+                    stats["user"] += 1
+    return found, stats
 
 
 def _targets(blob):
@@ -119,7 +134,7 @@ def main(argv):
         print("[load] BLOCKED: could not read %s: %s" % (pack, exc), file=sys.stderr)
         return 2
 
-    consumers = loader_consumers(src)
+    consumers, stats = loader_consumers(src)
     if not consumers:
         # The vacuity floor: a derivation that collapsed certifies everything.
         print("[load] BLOCKED: derived ZERO load() consumers from %s/. Either the readers were "
@@ -145,6 +160,22 @@ def main(argv):
     if not quiet:
         for k in sorted(kinds):
             print("[load]   %-24s %d" % (k, kinds[k]))
+    # A test-only seam. The sum check guards a state a healthy tool never produces, so
+    # without this it is a guard nobody has watched say yes -- measured: removing the check
+    # left every arm green. Same shape as this lane's BUTLER= and SEED_REAL_BASE= seams.
+    if os.environ.get("PARTITION_DRIFT_PROBE"):
+        stats["attempts"] += 1
+    _sum = stats["res"] + stats["user"] + stats["template"] + stats["unresolved"]
+    if _sum != stats["attempts"]:
+        print("[load] BLOCKED: the partition does not sum — %d attempt(s), %d bucketed. A site "
+              "fell through, so the corpus this reports is not the one it read."
+              % (stats["attempts"], _sum), file=sys.stderr)
+        return 2
+    print("[load] resolution attempts %d = res:// %d · user:// %d · runtime-built %d · "
+          "UNRESOLVABLE %d" % (stats["attempts"], stats["res"], stats["user"],
+                               stats["template"], stats["unresolved"]))
+    print("[load]   UNRESOLVABLE means a path this cannot see statically. It is NOT a pass "
+          "for those sites.")
     print("[load] %d pack entries · %d asset(s) loaded · %d resolve · %d BROKEN"
           % (len(table), len(consumers), len(consumers) - len(broken), len(broken)))
     return 5 if broken else 0
