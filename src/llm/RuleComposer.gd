@@ -70,6 +70,8 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		if abs_sys != null and abs_sys.has_method("get_deep_check_kit"):
 			kit_context = abs_sys.get_deep_check_kit(character_id)
 			kit_context = _widen_kit_to_what_this_character_knows(kit_context, character_id)
+	elif domain == DOMAIN_AUTOGRIND:
+		kit_context = _party_kit_context()
 	var prompt: String = DialoguePromptsScript.build_rule_composition(
 		domain, prompt_text, current_rules, kit_context)
 	var svc = get_node_or_null("/root/LLMService")
@@ -135,6 +137,8 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# total loss. Both of these are normalisations against the system's own vocabulary.
 	if domain == DOMAIN_AUTOGRIND:
 		for note in _normalise_autogrind_conditions(v["rules"], domain_system):
+			repair_notes.append(note)
+		for note in _normalise_member_status(v["rules"]):
 			repair_notes.append(note)
 
 	# A heal with no target is sent at the enemy by the evaluator's default.
@@ -382,6 +386,38 @@ func _widen_kit_to_what_this_character_knows(ctx: Dictionary, character_id: Stri
 ## derives one from a name. GameLoop.party holds instances; GameState.player_party
 ## holds to_dict() snapshots, and from_dict does NOT restore `job` — a rehydrated
 ## snapshot answers "no" to its own job kit, measured.
+
+## The grind grammar asks member_ability for "an ability id that member knows" and the
+## prompt named no abilities at all. Measured on live llama3 2026-09-17, an intent that
+## asks for one: 24 of 24 emitted ids were absent from abilities.json — 'revive' and
+## 'heal' for the real 'raise' and 'cure'. The engine skips an unknown id with a stdout
+## print, so the rule silently never fires.
+func _party_kit_context() -> Dictionary:
+	var gl = get_node_or_null("/root/GameLoop")
+	var abs_sys = get_node_or_null("/root/AutobattleSystem")
+	if gl == null or not ("party" in gl):
+		return {}
+	if abs_sys == null or not abs_sys.has_method("get_deep_check_kit"):
+		return {}
+	var members: Array = []
+	for member in gl.party:
+		if member == null or not is_instance_valid(member):
+			continue
+		var cid: String = str(member.combatant_name).to_lower().replace(" ", "_")
+		var kit: Dictionary = abs_sys.get_deep_check_kit(cid)
+		if not bool(kit.get("resolved", false)):
+			continue
+		kit = _widen_kit_to_what_this_character_knows(kit, cid)
+		members.append({
+			"member": cid,
+			"job_id": str(kit.get("job_id", "")),
+			"kit": kit.get("kit", []),
+			"costs": kit.get("costs", {}),
+		})
+	if members.is_empty():
+		return {}
+	return {"resolved": true, "party": members}
+
 func _live_combatant_for(character_id: String):
 	var gl = get_node_or_null("/root/GameLoop")
 	if gl == null or not ("party" in gl):
@@ -511,6 +547,57 @@ func _is_catch_all(rule: Dictionary) -> bool:
 ## 2. `always` takes no payload, and validate_rule rejects a PRESENT `op` that is empty
 ##    rather than ignoring it. Erasing an empty payload key from a nullary condition
 ##    changes nothing the rule asks — the same shape as _drop_null_targets.
+## member_status carries ONE status id, and validate_rule refuses anything else — which
+## discards the WHOLE composition, not the rule. Measured on live llama3 2026-09-17, after the
+## prompt was given the vocabulary: 3 of 20 compositions put an ARRAY in `value` ("or" spelled
+## the way the player said it), and a residual English participle survived the instruction.
+##
+## Both are lookups in DialoguePrompts.AUTOGRIND_STATUS_VOCABULARY, the same table the prompt
+## renders — not a table of guesses kept here. An array becomes one rule per id because OR is
+## what this grammar's rule list already means; the conditions are AND-chained, so cloning the
+## rule preserves every other condition it carried.
+func _normalise_member_status(rules: Array) -> Array[String]:
+	var notes: Array[String] = []
+	var spellings: Dictionary = {}
+	for id in DialoguePromptsScript.AUTOGRIND_STATUS_VOCABULARY:
+		spellings[str(id)] = str(id)
+		for word in (DialoguePromptsScript.AUTOGRIND_STATUS_VOCABULARY[id] as Array):
+			spellings[str(word).to_lower()] = str(id)
+	var i: int = 0
+	while i < rules.size():
+		var rule = rules[i]
+		i += 1
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for c in rule.get("conditions", []):
+			if typeof(c) != TYPE_DICTIONARY or str(c.get("type", "")) != "member_status":
+				continue
+			var raw: Variant = c.get("value", "")
+			var wanted: Array = raw if typeof(raw) == TYPE_ARRAY else [raw]
+			var ids: Array = []
+			for entry in wanted:
+				var key: String = str(entry).strip_edges().to_lower()
+				if spellings.has(key) and not ids.has(spellings[key]):
+					ids.append(spellings[key])
+			if ids.is_empty():
+				continue
+			if typeof(raw) != TYPE_ARRAY and ids[0] == str(raw):
+				continue
+			c["value"] = ids[0]
+			if typeof(raw) == TYPE_ARRAY:
+				notes.append("Split '%s' into one rule per status — a rule asks for one." % str(raw))
+			else:
+				notes.append("Read '%s' as '%s', the id the engine matches." % [str(raw), ids[0]])
+			for extra in ids.slice(1):
+				var clone: Dictionary = rule.duplicate(true)
+				for cc in clone.get("conditions", []):
+					if typeof(cc) == TYPE_DICTIONARY and str(cc.get("type", "")) == "member_status":
+						cc["value"] = extra
+				rules.insert(i, clone)
+				i += 1
+	return notes
+
+
 func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[String]:
 	var notes: Array[String] = []
 	if domain_system == null or not ("PARTY_CONDITION_TYPES" in domain_system):
