@@ -9167,8 +9167,13 @@ func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
 			battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
 			return true
 	## Tick 459: equipment.json special_effects.evasion_bonus —
-	## elven_cloak, thiefs_glove, speed_boots, etc. author this
-	## but pre-tick no code path read the field. The dodge chance
+	## ELVEN_CLOAK (0.1) is the only item that authors it; the
+	## original note also named thiefs_glove and speed_boots and
+	## both were wrong (steal_bonus, and no special_effects block
+	## at all). Corrected 2026-09-17 — a reader checking whether
+	## evasion is wired picks speed_boots off a list like that,
+	## dodges nothing, and "fixes" working code. Pre-tick no code
+	## path read the field. The dodge chance
 	## the gear name promised was decoration. Walks all three
 	## equipment slots via the generic helper from tick 457 and
 	## clamps the combined contribution at 50% so a stacked-evade
