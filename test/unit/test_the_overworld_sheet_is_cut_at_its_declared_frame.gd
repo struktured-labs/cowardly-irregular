@@ -241,8 +241,21 @@ func test_turning_does_not_move_the_avatar() -> void:
 			continue  # procedural fallback: no artist sheet for this job, nothing to correct
 		probed += 1
 
+		# ⛔ ASSERT BEFORE ANYTHING THAT CAN ABORT. With _update_sprite stubbed to `return`, the
+		# texture stays null and `(sprite.texture as Texture2D).get_image()` RAISES — so this arm
+		# aborted at rung 1, asserted nothing, and scored Risky. run_tests.sh's EC=4 caught it;
+		# the arm itself said nothing. A named failure beats a wrapper noticing the silence.
+		player.set("current_direction", 0)
+		player.set("_anim_frame", 0)
+		player.call("_update_sprite")
+		assert_not_null(sprite.texture,
+			"%s: _update_sprite produced no texture, so it did not run and nothing below means anything" % job)
+		if sprite.texture == null:
+			continue
+
 		var placed := {}
 		var raw := {}
+		var textures := {}
 		# ⛔ THE MEAN OVER FRAMES, matching what a per-row CONSTANT can remove. Sampling frame 0
 		# alone measures the within-row stride variation too, and that reddened this arm on
 		# correct code at 0.25px for fighter — the same mean-vs-per-frame distinction that made
@@ -261,6 +274,7 @@ func test_turning_does_not_move_the_avatar() -> void:
 					continue
 				sum_raw += centre
 				sum_placed += centre + sprite.offset.x
+				textures[(sprite.texture as Texture2D).get_instance_id()] = true
 				n += 1
 			if n == 0:
 				continue
@@ -268,6 +282,15 @@ func test_turning_does_not_move_the_avatar() -> void:
 			placed[dir] = sum_placed / float(n)
 
 		assert_gt(placed.size(), 3, "%s: fewer than four directions rendered" % job)
+		# ⛔ LIVENESS, ASSERTED HERE RATHER THAN BORROWED. Every quantity below is read AFTER
+		# _update_sprite, so a no-op version returns the same texture and the same offset for all
+		# four directions — spread 0, which is what PERFECT CORRECTION looks like. Measured: stub
+		# _update_sprite to `return` and this arm PASSED; only a sibling arm's precondition
+		# reddened. cowir-controller's shape — a still cursor is ambiguous between "broken" and
+		# "the handler early-returned", so the arm that owns the property must prove it ran.
+		assert_gt(textures.size(), 1,
+			("%s: every direction drew the SAME texture object, so _update_sprite did not run and "
+			+ "the agreement below is between four copies of one value") % job)
 		var lo := 1e9
 		var hi := -1e9
 		var rlo := 1e9
