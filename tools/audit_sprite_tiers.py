@@ -50,9 +50,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from sprite_corpus import banner
+from sprite_corpus import banner, default_root
 
-GAME = Path("/home/struktured/projects/cowardly-irregular-artist-ship")
+GAME = default_root()
 MANIFEST = GAME / "data" / "sprite_manifest.json"
 
 ARTIST_BASELINE_TAG = "v0.15.0"

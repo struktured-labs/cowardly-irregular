@@ -207,3 +207,86 @@ func test_a_frame_cut_at_any_size_still_renders_at_sprite_size() -> void:
 		"...foot-aligned to the bottom, same baseline as the procedural sprite")
 	assert_eq(w.get_pixel(sprite_size / 2, 0), Color(0, 0, 0, 0),
 		"...with the headroom left transparent rather than the art stretched into it")
+
+
+## ⛔ TURNING MUST NOT MOVE THE AVATAR — driven through a real node and read off the SPRITE.
+##
+## A sprite drawn off-centre in its cell and mirrored IN PLACE lands at the mirrored offset, so
+## the left and right rows sit at different x inside the frame. `_sprite` is centred on the node,
+## so that displacement is literal on-screen motion at a position that never changed. Measured
+## 2026-09-16 on the systematic metric: 9 of 14 job sheets drift, worst 1.75px. Smaller than the
+## roaming monsters' 4.0px, on the one sprite that is on screen for the entire run.
+##
+## 🔑 READ `_sprite.offset`, NOT THE OFFSETS DICT. The first version of the equivalent arm on
+## RoamingMonster read the computed dictionary, so deleting the line that APPLIES it left the arm
+## green — an arm that runs, asserts, and defends nothing (cowir-controller). The rendered offset
+## is the subject.
+func test_turning_does_not_move_the_avatar() -> void:
+	const OWP := preload("res://src/exploration/OverworldPlayer.gd")
+	var drifted := 0
+	var probed := 0
+	# EVERY job, not a sample. My first list was fighter/mage/cleric/rogue/bard/time_mage/
+	# necromancer, and the two with real drift fall back to procedural so they were SKIPPED — the
+	# five that loaded all spread under the tolerance, and the mutation passed.
+	for job in ["fighter", "mage", "cleric", "rogue", "bard", "guardian", "ninja", "summoner",
+			"speculator", "scriptweaver", "time_mage", "necromancer", "bossbinder", "skiptrotter"]:
+		var player = OWP.new()
+		player.current_job = job
+		add_child_autofree(player)
+		var sprite: Sprite2D = player.get_node_or_null("Sprite")
+		if sprite == null:
+			continue
+		var cache: Dictionary = player.get("_sprite_cache")
+		if not cache.has(OWP.OFFSETS_KEY):
+			continue  # procedural fallback: no artist sheet for this job, nothing to correct
+		probed += 1
+
+		var placed := {}
+		var raw := {}
+		# ⛔ THE MEAN OVER FRAMES, matching what a per-row CONSTANT can remove. Sampling frame 0
+		# alone measures the within-row stride variation too, and that reddened this arm on
+		# correct code at 0.25px for fighter — the same mean-vs-per-frame distinction that made
+		# cowir-adhoc's 29 and my 21 both right.
+		for dir in (cache[OWP.OFFSETS_KEY] as Dictionary):
+			var sum_raw := 0.0
+			var sum_placed := 0.0
+			var n := 0
+			for f in OWP.WALK_FRAMES:
+				player.set("current_direction", dir)
+				player.set("_anim_frame", f)
+				player.call("_update_sprite")
+				var img: Image = (sprite.texture as Texture2D).get_image()
+				var centre: float = player.call("_bbox_centre_x", img)
+				if centre < 0.0:
+					continue
+				sum_raw += centre
+				sum_placed += centre + sprite.offset.x
+				n += 1
+			if n == 0:
+				continue
+			raw[dir] = sum_raw / float(n)
+			placed[dir] = sum_placed / float(n)
+
+		assert_gt(placed.size(), 3, "%s: fewer than four directions rendered" % job)
+		var lo := 1e9
+		var hi := -1e9
+		var rlo := 1e9
+		var rhi := -1e9
+		for dir in placed:
+			lo = minf(lo, placed[dir])
+			hi = maxf(hi, placed[dir])
+			rlo = minf(rlo, raw[dir])
+			rhi = maxf(rhi, raw[dir])
+		if rhi - rlo >= 0.5:
+			drifted += 1
+		# The offsets are exact rather than rounded, so every direction must land ON the anchor.
+		# A tolerance wide enough to admit rounding was wide enough to admit NO CORRECTION: the
+		# first version allowed 1.01px and the mutation that deletes the offset passed under it.
+		assert_almost_eq(hi - lo, 0.0, 0.01,
+			("%s: after correction the directions still draw %.2fpx apart inside the frame, so the "
+			+ "avatar slides sideways when it turns while its position is unchanged (uncorrected "
+			+ "spread %.2fpx)") % [job, hi - lo, rhi - rlo])
+	assert_gt(probed, 3, "ANTI-VACUITY: only %d jobs reached the artist-sheet path" % probed)
+	assert_gt(drifted, 0,
+		("ANTI-VACUITY: none of the probed jobs was off-centre at all, so the correction was proved "
+		+ "on nothing — 9 of 14 job sheets drifted when this was written, worst 1.75px"))

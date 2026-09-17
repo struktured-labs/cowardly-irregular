@@ -199,6 +199,10 @@ const JOB_PALETTES: Dictionary = {
 
 ## Current job for sprite generation
 var current_job: String = "fighter"
+## Reserved key inside a frame cache holding {Direction: float} draw offsets. Not a frame key —
+## the others are "%d_%d" — so it rides the static cache without a parallel structure to keep in
+## step, and a procedural cache simply has none.
+const OFFSETS_KEY := "_registration_offsets"
 
 ## Character customization for appearance
 var _custom_hair_color: Color = Color(0.35, 0.25, 0.18)
@@ -552,6 +556,10 @@ func _update_sprite() -> void:
 	var cache_key = "%d_%d" % [current_direction, _anim_frame]
 	if _sprite_cache.has(cache_key):
 		_sprite.texture = _sprite_cache[cache_key]
+	# Procedural frames carry no offsets key and reset to 0, which is correct: they are generated
+	# centred, so a correction derived from artist art must not leak onto them.
+	var offsets: Dictionary = _sprite_cache.get(OFFSETS_KEY, {})
+	_sprite.offset.x = float(offsets.get(current_direction, 0.0))
 
 
 func _get_static_cache_key() -> String:
@@ -629,6 +637,7 @@ func _try_load_overworld_sheet() -> Dictionary:
 	var cache: Dictionary = {}
 	# Row mapping: 0=down, 1=left, 2=right, 3=up
 	var row_to_dir = [Direction.DOWN, Direction.LEFT, Direction.RIGHT, Direction.UP]
+	var row_centre: Dictionary = {}
 
 	for row in range(4):
 		var dir = row_to_dir[row]
@@ -643,9 +652,54 @@ func _try_load_overworld_sheet() -> Dictionary:
 				frame_img = _fit_to_sprite_size(frame_img)
 			var frame_tex = ImageTexture.create_from_image(frame_img)
 			cache["%d_%d" % [dir, col]] = frame_tex
+			var centre := _bbox_centre_x(frame_img)
+			if centre >= 0.0:
+				row_centre[dir] = float(row_centre.get(dir, 0.0)) + centre / float(WALK_FRAMES)
 
+	cache[OFFSETS_KEY] = _registration_offsets(row_centre)
 	print("[OVERWORLD] Loaded overworld sheet for '%s'" % current_job)
 	return cache
+
+
+## Horizontal centre of a frame's alpha bounding box, or -1 for an empty frame.
+func _bbox_centre_x(img: Image) -> float:
+	var lo: int = img.get_width()
+	var hi: int = -1
+	for x in img.get_width():
+		for y in img.get_height():
+			if img.get_pixel(x, y).a > 0.0:
+				lo = mini(lo, x)
+				hi = maxi(hi, x)
+				break
+	return float(lo + hi) * 0.5 if hi >= 0 else -1.0
+
+
+## Per-direction draw offset so TURNING does not MOVE the avatar.
+##
+## A sprite drawn off-centre in its cell and mirrored IN PLACE lands at the mirrored offset, so
+## the left and right rows sit at different x. `_sprite` is centred on the node, which makes that
+## displacement literal on-screen motion at a position that never changed. Measured 2026-09-16:
+## 9 of 14 job sheets drift, worst 1.75px — smaller than the roaming monsters' 4.0px, on the one
+## sprite that is on screen for the whole run (cowir-adhoc).
+##
+## ⚠️ MEASURED ON THE BUILT FRAMES, NOT THE SHEET CELLS, because `_fit_to_sprite_size` may rescale
+## and foot-align a non-32px sheet — an offset derived in sheet coordinates would be wrong for
+## exactly the sheets that need the fit. These are the pixels that get drawn.
+##
+## ⛔ NOT ROUNDED, and the first version was. Rounding to whole pixels looks right for pixel art
+## but INVERTS a half-pixel drift instead of removing it: ninja sits at left 15.0 / right 16.0
+## about a 15.5 anchor, so the offsets are +0.5 and -0.5, round to +1 and -1, and the rows swap
+## places 1.0px apart — the same spread, mirrored. Caught by the guard reddening on correct code.
+## Fractional is also free here: the avatar already occupies fractional world positions every
+## frame it walks, so this adds no sub-pixel placement that was not happening already.
+func _registration_offsets(row_centre: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	if not row_centre.has(Direction.DOWN):
+		return out
+	var anchor: float = float(row_centre[Direction.DOWN])
+	for dir in row_centre:
+		out[dir] = anchor - float(row_centre[dir])
+	return out
 
 
 ## Proportional fit into a SPRITE_SIZE canvas, foot-aligned. Shares the rule with

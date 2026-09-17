@@ -179,3 +179,147 @@ func test_every_member_this_guard_drives_by_name_exists() -> void:
 		+ "would ABORT INTO A SILENT PASS — EC=0, nothing failing, nothing risky: %s") % [calls["missing"]])
 	assert_eq(props["missing"], [],
 		"this guard reads those private properties by name and the subject no longer has them: %s" % [props["missing"]])
+
+
+## ⛔ TURNING MUST NOT MOVE THE CREATURE, checked through a REAL node rather than in source.
+##
+## An off-centre sprite mirrored IN PLACE lands at the mirrored offset, so walk_left and
+## walk_right sit at different x inside the cell. `centered = true` pins the CELL to the node, so
+## that displacement is literal on-screen motion at a position that never changed. Measured
+## 2026-09-16 on BBOX CENTRE, the body's visible position: 21 of the 53 declaring overworld sheets
+## drift >= 0.5px — monsters 8 of 10 (worst snake 4.0px, wolf 3.0px), players 9 of 14 (worst
+## 1.75px), npcs 4 of 29 (worst 0.75px). On alpha CENTROID the count is 44 of 53; centroid is more
+## sensitive and less visible, and quoting one count beside the other metric's numbers is the
+## mixed-basis error this note exists to not repeat.
+##
+## 🔑 THE INVARIANT IS POST-CORRECTION AGREEMENT, not "the offset is non-zero": every row's drawn
+## centre plus its offset must land on the walk_down row's centre. That is one assertion that
+## covers a sheet needing a big correction and a sheet needing none.
+func test_turning_does_not_move_the_creature() -> void:
+	var drifted := 0
+	for id in ["wolf", "snake", "slime"]:
+		var m = Roamer.new()
+		m.monster_id = id
+		add_child_autofree(m)
+		var sprite: Node = m.get_node_or_null("Sprite")
+		assert_not_null(sprite, "%s must build a Sprite node" % id)
+		var offsets: PackedFloat32Array = m.get("_row_offsets")
+		assert_gt(offsets.size(), 3, "%s: no per-row offsets were computed" % id)
+
+		var img: Image = (sprite.get("texture") as Texture2D).get_image()
+		var frame: Vector2i = m.get("_frame")
+		var cols: int = int(m.get("_cols"))
+		var centres := []
+		for r in offsets.size():
+			var total := 0.0
+			var counted := 0
+			for c in cols:
+				var lo: int = frame.x
+				var hi: int = -1
+				for y in frame.y:
+					for x in frame.x:
+						if img.get_pixel(c * frame.x + x, r * frame.y + y).a > 0.0:
+							lo = mini(lo, x)
+							hi = maxi(hi, x)
+				if hi >= 0:
+					total += float(lo + hi) * 0.5
+					counted += 1
+			centres.append(total / float(counted) if counted > 0 else 0.0)
+
+		# ⛔ DRIVE _apply_frame AND READ THE SPRITE. Reading `_row_offsets` tests the COMPUTATION;
+		# deleting the line that applies it left this arm green — cowir-controller's shape, an arm
+		# that runs, asserts, and is about the wrong subject. The rendered offset is the subject.
+		var anchor: int = int((m.get("_rows") as Dictionary).get("walk_down", 0))
+		var spread := 0.0
+		for r in centres.size():
+			m.call("_apply_frame", r, 0)
+			var applied: float = (sprite.get("offset") as Vector2).x
+			spread = maxf(spread, absf((centres[r] + applied) - centres[anchor]))
+			if absf(centres[r] - centres[anchor]) > 0.5:
+				drifted += 1
+		assert_almost_eq(spread, 0.0, 0.01,
+			("%s: after correction the rows still draw at different x inside the cell, so the "
+			+ "creature slides sideways when it turns while its position is unchanged") % id)
+	assert_gt(drifted, 0,
+		("ANTI-VACUITY: none of the probed sheets is off-centre at all, so the correction above was "
+		+ "proved on nothing — wolf and snake drifted 3.0px and 4.0px when this was written"))
+
+
+## ⛔ THE SCOPE DECISION, RATCHETED. Only RoamingMonster corrects registration; OverworldPlayer and
+## OverworldNPC/WanderingNPC carry the same defect and are unfixed. That is defensible ONLY while
+## the severe end lives in the sheets this file renders — which is a fact about today's art, not a
+## property of the code, and it is the fact the decision rests on.
+##
+## 🔑 DERIVED HERE RATHER THAN WRITTEN IN A HEADER, per CLAUDE.md:21 — "three true music numbers
+## and three true SFX numbers exist; say which you mean; bare counts here drifted for months". The
+## SFX half of that line was repaired by deleting the count and pointing at the arm that derives
+## it, because correcting a number buys until the next one. Same shape: one PNG, three honest
+## drift measurements. This arm PRINTS the distribution every run and asserts only the part the
+## decision depends on.
+func test_the_severe_registration_drift_is_in_the_sheets_this_file_renders() -> void:
+	var m := _manifest_root()
+	var worst := {}
+	var counted := 0
+	for section in ["overworld_monster_sheets", "overworld_player_sheets", "overworld_npc_sheets"]:
+		var node = m.get(section, {})
+		if not (node is Dictionary):
+			continue
+		var top := 0.0
+		for id in node:
+			var e = node[id]
+			if not (e is Dictionary):
+				continue
+			var anims = e.get("animations", {})
+			if not (anims is Dictionary) or not anims.has("walk_left") or not anims.has("walk_right"):
+				continue
+			var path := str(e.get("path", ""))
+			if path == "" or not ResourceLoader.exists(path):
+				continue
+			var img: Image = (load(path) as Texture2D).get_image()
+			var fw: int = int(e.get("frame_width", 32))
+			var fh: int = int(e.get("frame_height", 32))
+			var lc := _mean_bbox_centre(img, fw, fh, int((anims["walk_left"] as Dictionary).get("row", 0)))
+			var rc := _mean_bbox_centre(img, fw, fh, int((anims["walk_right"] as Dictionary).get("row", 0)))
+			top = maxf(top, absf(lc - rc))
+			counted += 1
+		worst[section] = snappedf(top, 0.01)
+	assert_gt(counted, 45, "ANTI-VACUITY: only %d sheets were measured" % counted)
+	gut.p("systematic registration drift, worst per section (px): %s" % [worst])
+
+	var mine: float = worst.get("overworld_monster_sheets", 0.0)
+	assert_gt(mine, 0.5,
+		("ANTI-VACUITY: the sheets this file renders no longer drift at all (%.2fpx), so the "
+		+ "comparison below is between three zeros") % mine)
+	for other in ["overworld_player_sheets", "overworld_npc_sheets"]:
+		assert_true(float(worst[other]) <= mine,
+			("%s now drifts %.2fpx against %.2fpx here, so the SEVERE end has moved out of the one "
+			+ "consumer that corrects registration. Fixing only RoamingMonster was justified by this "
+			+ "distribution; it no longer is: %s") % [other, worst[other], mine, worst])
+
+
+## Mean over frames of the alpha bounding box's horizontal centre, for one row.
+##
+## MEAN, not max-over-frames: the correction is one CONSTANT per row, so this is the quantity it
+## can remove. Max-over-frames also counts variation WITHIN a row, which is the walk animation
+## moving and must not be flattened. cowir-adhoc measured 29 sheets that way where this measures
+## 21; both are right and the definitions had simply not travelled with the numbers.
+func _mean_bbox_centre(img: Image, fw: int, fh: int, row: int) -> float:
+	var total := 0.0
+	var counted := 0
+	for c in int(img.get_width() / fw):
+		var lo: int = fw
+		var hi: int = -1
+		for y in fh:
+			for x in fw:
+				if img.get_pixel(c * fw + x, row * fh + y).a > 0.0:
+					lo = mini(lo, x)
+					hi = maxi(hi, x)
+		if hi >= 0:
+			total += float(lo + hi) * 0.5
+			counted += 1
+	return total / float(counted) if counted > 0 else 0.0
+
+
+func _manifest_root() -> Dictionary:
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
+	return parsed if parsed is Dictionary else {}
