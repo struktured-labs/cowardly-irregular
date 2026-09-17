@@ -13,6 +13,7 @@ extends GutTest
 ## something this grammar spells differently rather than inventing a mechanic:
 ##
 ##     member_hp_min · member_hp_avg    an aggregate that is spelled party_*
+##     corruption_avg                   an aggregate SUFFIX on a live type (2nd intent)
 ##     op "in" with a list value        "is it one of these" on member_status
 ##     any_of {conditions: [...]}       boolean OR
 ##     or {options: [...]}              boolean OR, second spelling
@@ -97,6 +98,54 @@ func test_a_member_type_whose_swap_is_not_live_is_left_alone() -> void:
 	var notes: Array = _rc()._normalise_autogrind_conditions(rules, _sys())
 	assert_eq(_types(rules), ["member_vibes"], "party_vibes is not a type either, so this is a guess")
 	assert_eq(notes, [], "and the validator keeps its refusal")
+
+
+# ── an aggregate suffix on a live type ────────────────────────────────────────
+
+func test_an_aggregate_suffix_is_stripped_when_the_head_is_a_type() -> void:
+	## Verbatim from a second grind intent ("bail out if corruption gets high"), 1 of 20.
+	## `corruption` is a live type; `corruption_avg` is not, and the op/value already
+	## carry the comparison.
+	var rules: Array = [_rule([{"type": "corruption_avg", "op": ">", "value": 50}])]
+	var notes: Array = _rc()._normalise_autogrind_conditions(rules, _sys())
+	assert_eq(_types(rules), ["corruption"], "the head is the condition")
+	assert_eq(_errors(rules), [], "and it validates")
+	assert_gt(notes.size(), 0, "and it is reported")
+
+
+func test_the_party_swap_claims_member_hp_min_before_the_strip_can() -> void:
+	## ORDER IS THE MECHANISM, not a detail. `member_hp_min` strips to `member_hp`, which
+	## is ALSO a live type — and the wrong answer: it would turn a party-wide minimum into
+	## a question about any single member. The swap runs first and takes it.
+	var rules: Array = [_rule([{"type": "member_hp_min", "op": "<", "value": 30}])]
+	_rc()._normalise_autogrind_conditions(rules, _sys())
+	assert_eq(_types(rules), ["party_hp_min"], "the aggregate, not the per-member question")
+
+
+func test_a_suffix_whose_head_is_not_a_type_is_left_alone() -> void:
+	var rules: Array = [_rule([{"type": "vibes_avg", "op": ">", "value": 1}])]
+	var notes: Array = _rc()._normalise_autogrind_conditions(rules, _sys())
+	assert_eq(_types(rules), ["vibes_avg"], "stripping to a non-type would be a guess")
+	assert_eq(notes, [], "and nothing claimed")
+
+
+func test_no_live_type_strips_to_another_live_type() -> void:
+	## THE RATCHET, and the reason the strip is a lookup rather than a gamble: today no
+	## condition type's suffix-strip yields a DIFFERENT live type, so the rewrite is
+	## unambiguous for this vocabulary. Add `party_hp` beside `party_hp_min` and that
+	## stops being true — this arm reds and says so, rather than the repair quietly
+	## starting to answer a different question.
+	var types: Dictionary = _sys().PARTY_CONDITION_TYPES
+	var ambiguous: Array = []
+	for t in types.keys():
+		var id: String = str(t)
+		if not id.contains("_"):
+			continue
+		var head: String = id.substr(0, id.rfind("_"))
+		if types.has(head):
+			ambiguous.append("%s -> %s" % [id, head])
+	assert_eq(ambiguous, [],
+		"a type that strips to another type makes the repair ambiguous: %s" % str(ambiguous))
 
 
 # ── boolean OR, which this grammar spells as separate rules ───────────────────

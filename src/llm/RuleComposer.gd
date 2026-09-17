@@ -840,6 +840,16 @@ func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[Strin
 					c["type"] = swapped
 					notes.append("Read '%s' as '%s' — that aggregate is party-level." % [ctype, swapped])
 					ctype = swapped
+			## An aggregate suffix on a live type: `corruption_avg` for `corruption`, measured
+			## 1 of 20 on a second grind intent. Stripped ONLY when the remainder is itself a
+			## live type — and the ORDER matters: member_hp_min strips to the live member_hp,
+			## which is the wrong answer, so the party_ swap above runs first and claims it.
+			if not types.has(ctype) and ctype.contains("_"):
+				var head: String = ctype.substr(0, ctype.rfind("_"))
+				if types.has(head):
+					c["type"] = head
+					notes.append("Read '%s' as '%s' — the comparison already carries the aggregate." % [ctype, head])
+					ctype = head
 			if not types.has(ctype) and ctype.begins_with("party_"):
 				var stripped: String = ctype.substr("party_".length())
 				if types.has(stripped):
