@@ -819,6 +819,57 @@ const PARTY_CONDITION_TYPES = {
 	"always": "Always"
 }
 
+## The op and value a condition STARTS with when a player picks that type. Lives here, beside
+## PARTY_CONDITION_TYPES, because this file already calls itself the single source of truth for the
+## grammar and the defaults are part of it — the OPERATOR is half the meaning of a condition.
+##
+## ⛔ IT WAS IN THE UI AND THE GRID EDITOR HAD ITS OWN COPY, WHICH WAS WRONG FOR SIX OF NINE.
+## `_cycle_condition_type` wrote `op = "<"` for every numeric type, so cycling to Battles produced
+## `battles_done < 50` — true from battle zero and false forever after — the exact inverse of the
+## only reason anyone adds that condition. Same for Reached Lv, Corrupt, Effic and Inv Items; each
+## fired while the quantity was LOW and stopped once it reached the number the player typed.
+## Found by @cowir-main in a tree-wide sweep.
+const CONDITION_DEFAULTS := {
+	"party_hp_avg": {"op": "<", "value": 30},
+	"party_hp_min": {"op": "<", "value": 20},
+	"party_mp_avg": {"op": "<", "value": 20},
+	"alive_count": {"op": "<=", "value": 2},
+	"member_dead": {"op": "==", "value": 0},
+	"member_injured": {"op": "==", "value": 0},
+	"member_hp": {"op": "<", "value": 30},
+	"member_mp": {"op": "<", "value": 20},
+	"member_status": {"op": "==", "value": "poison"},
+	"battles_done": {"op": ">=", "value": 50},
+	"win_streak": {"op": ">=", "value": 20},
+	"corruption": {"op": ">=", "value": 3.0},
+	"efficiency": {"op": ">=", "value": 5.0},
+	"time_elapsed": {"op": ">=", "value": 30},
+	"inventory_items": {"op": ">=", "value": 20},
+	"ability_learned": {"op": "==", "value": 0},
+	"reached_level": {"op": ">=", "value": 10},
+	"rare_item_found": {"op": "==", "value": 0},
+	"always": {"op": "==", "value": 0},
+}
+
+
+## Party-level condition ids, in PARTY_CONDITION_TYPES order. The grid editor offers these: it has no
+## member picker, so a member_* condition there would sit on a default character forever.
+func party_level_condition_ids() -> Array:
+	var out: Array = []
+	for k in PARTY_CONDITION_TYPES:
+		if not str(k).begins_with("member_"):
+			out.append(str(k))
+	return out
+
+
+## The op/value a freshly-picked condition of this type should carry.
+func condition_defaults_for(type_id: String) -> Dictionary:
+	var d: Variant = CONDITION_DEFAULTS.get(type_id, null)
+	if d == null:
+		return {"op": "<", "value": 0}
+	return {"op": str((d as Dictionary).get("op", "<")), "value": (d as Dictionary).get("value", 0)}
+
+
 ## Operators (shared with autobattle)
 const OPERATORS = {
 	"<": "Less Than",
