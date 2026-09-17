@@ -154,6 +154,8 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 			repair_notes.append(note)
 		for note in _normalise_switch_profile(v["rules"], kit_context):
 			repair_notes.append(note)
+		for note in _drop_unrunnable_member_abilities(v["rules"], get_node_or_null("/root/AutogrindSystem")):
+			repair_notes.append(note)
 
 	# A heal with no target is sent at the enemy by the evaluator's default.
 	if domain == DOMAIN_AUTOBATTLE:
@@ -462,12 +464,22 @@ func _party_kit_context() -> Dictionary:
 		if abs_sys.has_method("get_character_profiles"):
 			for prof in (abs_sys.get_character_profiles(cid) as Array):
 				profile_names.append(str((prof as Dictionary).get("name", "Profile")))
+		## member_ability runs BETWEEN battles and AutogrindSystem refuses anything without an
+		## authored heal_amount/mp_amount. Offering the whole kit taught the model ids that
+		## cannot run — 40 of 53 emitted actions, measured. Asked, not re-derived.
+		var between: Array = []
+		var grind = get_node_or_null("/root/AutogrindSystem")
+		if grind != null and grind.has_method("ability_works_between_battles"):
+			for aid in (kit.get("kit", []) as Array):
+				if grind.ability_works_between_battles(str(aid)):
+					between.append(str(aid))
 		members.append({
 			"member": cid,
 			"job_id": str(kit.get("job_id", "")),
 			"kit": kit.get("kit", []),
 			"costs": kit.get("costs", {}),
 			"profiles": profile_names,
+			"between_battle": between,
 		})
 	if members.is_empty():
 		return {}
@@ -631,6 +643,66 @@ func _is_catch_all(rule: Dictionary) -> bool:
 ## what the intent asked for. An id naming nobody is DROPPED, because the alternative is
 ## letting it reach the save. Both need the live party, so with no kit context this does
 ## nothing: unable to verify is not the same as verified absent.
+## A member_ability the engine cannot run between fights.
+##
+## Measured on live llama3 2026-09-17, an intent naming three members' abilities: 40 of 53
+## emitted actions named a REAL ability AutogrindSystem refuses — power_strike 20,
+## battle_hymn 19. Telling the model which ids work barely moved it (37 of 51), and the
+## reason is worth keeping: THE PLAYER ASKED FOR THOSE ABILITIES BY NAME. The model is
+## being faithful to an instruction the engine cannot honour, so no amount of prompt
+## closes it.
+##
+## The engine's own response is `print("[AUTOGRIND] member_ability skipped")` — a silent
+## no-op, which is the failure mode this project rates worse than a crash. Dropping the
+## action and NAMING it turns "my rule does nothing" into "your fighter has no ability that
+## works between fights", which is the thing the player actually needs to know.
+##
+## An emptied rule goes too: validate_rule accepts an empty `actions` array, so a rule
+## stripped of its only action validates clean and does nothing at all.
+func _drop_unrunnable_member_abilities(rules: Array, domain_system) -> Array[String]:
+	var notes: Array[String] = []
+	if domain_system == null or not domain_system.has_method("ability_works_between_battles"):
+		return notes
+	var kept: Array = []
+	var pending: Array[String] = []
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			kept.append(rule)
+			continue
+		var acts: Array = rule.get("actions", [])
+		var had: int = acts.size()
+		var live: Array = []
+		for a in acts:
+			if typeof(a) != TYPE_DICTIONARY or str(a.get("type", "")) != "member_ability":
+				live.append(a)
+				continue
+			var aid: String = str(a.get("ability", ""))
+			if aid == "" or domain_system.ability_works_between_battles(aid):
+				live.append(a)
+				continue
+			pending.append("Dropped '%s' for %s — it only works inside a battle, and member_ability runs between them."
+				% [aid, str(a.get("member", "that member"))])
+		if live.size() == had:
+			kept.append(rule)
+			continue
+		if live.is_empty():
+			pending.append("Dropped a rule that had nothing left to do once that ability was removed.")
+			continue
+		rule["actions"] = live
+		kept.append(rule)
+	if pending.is_empty():
+		return notes
+	## Never deliver an empty ruleset — that is the save-wiping shape, not a repair. If
+	## nothing would survive, leave the composition alone and let the refusal path run.
+	if kept.is_empty():
+		return notes
+	rules.clear()
+	rules.append_array(kept)
+	for n in pending:
+		notes.append(n)
+	return notes
+
+
 func _normalise_switch_profile(rules: Array, kit_context: Dictionary) -> Array[String]:
 	var notes: Array[String] = []
 	if not bool(kit_context.get("resolved", false)):

@@ -1919,9 +1919,9 @@ func _can_apply_between_battles(ability_id: String) -> bool:
 	## stays HERE and deliberately differs: the engine refuses when it cannot check, the console
 	## must not block authoring over a missing autoload.
 	var ags = get_tree().root.get_node_or_null("AutogrindSystem") if is_inside_tree() else null
-	if ags == null or not ags.has_method("ability_has_between_battle_effect"):
+	if ags == null or not ags.has_method("ability_works_between_battles"):
 		return true
-	return bool(ags.ability_has_between_battle_effect(ability_id))
+	return bool(ags.ability_works_between_battles(ability_id))
 
 
 ## Members with at least one ability this action can actually execute.

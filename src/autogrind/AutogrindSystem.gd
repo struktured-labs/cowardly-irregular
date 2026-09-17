@@ -1970,20 +1970,20 @@ func _find_restorative_caster(party: Array) -> Dictionary:
 const GENERIC_ALLY_TARGETS := ["lowest_hp_ally", "lowest_hp", "ally", "all", "all_allies", "party", "any"]
 
 
-## THE ABILITY-INTRINSIC HALF of _member_ability_apply's refusal, public and state-free on purpose.
-## Between battles this system can only apply an authored heal_amount / mp_amount; everything else
-## is refused BY NAME at runtime with a printed skip line. Consumers need to know that BEFORE they
-## offer an ability — the console filters its ring with it, and the LLM prompt needs it so the model
-## is never taught a kit the engine will skip.
+## Whether member_ability can actually execute an ability between fights, and BY HOW MUCH.
+## Between battles this system applies an authored heal_amount / mp_amount and refuses everything
+## else BY NAME at runtime with a printed skip line, so a consumer has to know before it OFFERS one.
 ##
-## ⛔ IT IS PUBLIC BECAUSE A PRIVATE COPY ALREADY COST A REGRESSION. The console carried its own
-## `_can_apply_between_battles` (2026-09-09, after the editor seeded a Fighter's power_strike into a
-## rule that could never fire), and being private it could not be reached from src/llm — so the
-## grind prompt re-derived the rule, listed whole kits, and @cowir-ai measured 40 of 53 delivered
-## actions as silent no-ops. Same fact, three places, one of them wrong.
+## ⛔ THE OWNER OF A RULE THAT HAD THREE COPIES, and each of us found a different one. The executor
+## enforced it inline; AutogrindUI carried a private `_can_apply_between_battles` (2026-09-09, after
+## the editor seeded a Fighter's power_strike into a rule that could never fire); and because that
+## copy was PRIVATE, src/llm could not reach it and the grind prompt re-derived the rule, listing
+## each member's WHOLE kit. @cowir-ai measured the cost on live llama3 2026-09-17: 40 of 53
+## member_ability actions named a real ability this refuses — power_strike 20, battle_hymn 19.
 ##
-## Returns the AMOUNTS as well as the verdict so the executor reads the keys ONCE: a predicate that
-## answers "can it" while its caller separately re-reads "how much" is two expressions of one fact.
+## Returns the AMOUNTS as well as the verdict so the executor reads the keys ONCE. A predicate that
+## answers "can it" while its caller separately re-reads "how much" is still two expressions of one
+## fact, which is the shape this function exists to remove.
 func between_battle_effect_of(ability_id: String) -> Dictionary:
 	var none: Dictionary = {"ok": false, "heal": 0, "mp": 0}
 	if ability_id == "":
@@ -1999,8 +1999,9 @@ func between_battle_effect_of(ability_id: String) -> Dictionary:
 	return {"ok": heal > 0 or mp > 0, "heal": heal, "mp": mp}
 
 
-## Convenience for callers that only want the verdict.
-func ability_has_between_battle_effect(ability_id: String) -> bool:
+## Verdict-only convenience. @cowir-ai's name is kept deliberately: RuleComposer already calls it in
+## four places, and collapsing two owners should not also move another lane's call sites.
+func ability_works_between_battles(ability_id: String) -> bool:
 	return bool(between_battle_effect_of(ability_id).get("ok", false))
 
 
@@ -2039,8 +2040,9 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 			return {"ok": false, "reason": "target '%s' names no party member" % target_key}
 		return {"ok": false, "reason": "no living ally to target"}
 
-	## Through the public predicate, not a second read of the same two keys — the console and the
-	## LLM prompt filter on it, and a local copy here is how those two drift away from the engine.
+	## Through the owner, not a second read of the same two keys. Both halves came from one call:
+	## the landed version asked `ability_works_between_battles` and then re-read heal_amount /
+	## mp_amount immediately after, which leaves the duplication this function was written to delete.
 	var effect: Dictionary = between_battle_effect_of(ability_id)
 	var heal := int(effect.get("heal", 0))
 	var mp_amt := int(effect.get("mp", 0))
