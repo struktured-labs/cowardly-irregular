@@ -25,6 +25,14 @@ extends GutTest
 ##      grind (11791): an arm restored 25% MP where live reads an authored 5%, so the grep was
 ##      correctly NON-EMPTY and the behaviour was five times off. Axis 1 and axis 2 are both green
 ##      on that shape; only comparing the two implementations line by line finds it.
+##   3. THE INVERSE DIRECTION ENTIRELY. This file asks "is an authored key READ". It never asks
+##      "is a read key ever AUTHORED" — a capability that exists in code and no data reaches.
+##      Measured instance, handed over by cowir-autogrind 2026-09-17: `_compute_action_speed:2210`
+##      reads `ability["speed_modifier"]` behind a `has()` guard, and ZERO of 289 abilities author
+##      it — nor do monsters.json, items.json, equipment.json or passives.json. Safe dead code,
+##      not a defect, and invisible to every arm here because the key never enters the authored set
+##      this file derives its corpus from. Naming it rather than building an arm: the corpus for
+##      that question is the SOURCE's reads, which is a different sweep with a different predicate.
 ## Both are VALUE divergences, and every arm in this file is a PRESENCE arm. Measured on live
 ## 2026-09-16 for case 1 — every `var x = ability.get(...)` in BattleManager uses `x` again in the
 ## same function, 0 dead reads — so the blind spot is real and currently unoccupied here, which is
