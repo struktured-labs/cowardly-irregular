@@ -14,11 +14,17 @@ var _ui
 
 
 func before_each() -> void:
+	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
+	AutogrindSystem._test_disable_persistence = true
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
 	add_child_autofree(_ui)
 	_ui._battle_log = RichTextLabel.new()
 	_ui._battle_log.bbcode_enabled = true
 	add_child_autofree(_ui._battle_log)
+
+
+func after_each() -> void:
+	AutogrindSystem._test_disable_persistence = false
 
 
 func _panel_text() -> String:

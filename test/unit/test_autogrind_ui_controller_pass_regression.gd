@@ -19,6 +19,8 @@ var _ui: Control = null
 ## drives _input, the console's own guard returns early for every later arm, and an assertion
 ## that "nothing moved" then passes no matter what. Measured: it hid a dead guard from mutation.
 func before_each() -> void:
+	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
+	AutogrindSystem._test_disable_persistence = true
 	_vp = SubViewport.new()
 	_vp.size = Vector2i(1280, 720)
 	add_child_autofree(_vp)
@@ -32,6 +34,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	AutogrindSystem._test_disable_persistence = false
 	if _ui and is_instance_valid(_ui):
 		_ui.queue_free()
 	_ui = null

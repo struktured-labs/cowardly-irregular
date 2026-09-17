@@ -22,6 +22,8 @@ var _party: Array[Combatant] = []
 
 
 func before_each() -> void:
+	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
+	AutogrindSystem._test_disable_persistence = true
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
 	add_child_autofree(_ui)
 	_party.clear()
@@ -37,6 +39,10 @@ func before_each() -> void:
 	_party[0].learned_abilities.append_array(["cure", "protect"])     # protect cannot fire
 	_party[1].learned_abilities.append_array(["power_strike", "cleave"])  # neither can these
 	_ui._party = _party
+
+
+func after_each() -> void:
+	AutogrindSystem._test_disable_persistence = false
 
 
 func test_the_executable_predicate_matches_the_executor() -> void:

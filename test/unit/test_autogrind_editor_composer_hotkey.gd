@@ -6,6 +6,15 @@ extends GutTest
 const AutogrindGridEditor := preload("res://src/ui/autogrind/AutogrindGridEditor.gd")
 
 
+func before_each() -> void:
+	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
+	AutogrindSystem._test_disable_persistence = true
+
+
+func after_each() -> void:
+	AutogrindSystem._test_disable_persistence = false
+
+
 func test_editor_script_exposes_open_rule_composer_overlay() -> void:
 	var editor = AutogrindGridEditor.new()
 	add_child_autofree(editor)
