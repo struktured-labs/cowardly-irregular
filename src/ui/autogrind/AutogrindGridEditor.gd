@@ -885,7 +885,7 @@ func _update_cursor() -> void:
 
 func _get_cell_at_cursor() -> Control:
 	"""Get the cell control at current cursor position"""
-	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
 
@@ -930,7 +930,7 @@ func _get_cell_at_cursor() -> Control:
 
 func _get_max_col_for_row(row_idx: int) -> int:
 	"""Get maximum column index for a row"""
-	if row_idx >= rules.size():
+	if row_idx < 0 or row_idx >= rules.size():
 		return 0
 
 	var rule = rules[row_idx]
@@ -1056,7 +1056,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		cursor_row = min(rules.size() - 1, cursor_row + 1)
+		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
@@ -1196,7 +1196,7 @@ func _edit_current_cell() -> void:
 	"""Edit the current cell"""
 	var cell = _get_cell_at_cursor()
 	if not cell:
-		var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+		var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 		var conditions = rule.get("conditions", [])
 		if cursor_col == conditions.size() and conditions.size() < MAX_CONDITIONS:
 			_add_and_condition()
@@ -1262,7 +1262,7 @@ func _cycle_condition_type() -> void:
 
 func _cycle_condition_operator() -> void:
 	"""Cycle through operators (C key)"""
-	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
 	if cursor_col >= conditions.size():
 		return
@@ -1311,7 +1311,7 @@ func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
 
 func _adjust_condition_value(delta: int) -> void:
 	"""Adjust condition value (W/S keys)"""
-	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
 	if cursor_col >= conditions.size():
 		return
@@ -1585,7 +1585,7 @@ func _delete_current_cell() -> void:
 
 func _get_condition_slots_for_row(row_idx: int) -> int:
 	"""Get the number of condition columns (including empty AND slot) for a row"""
-	if row_idx >= rules.size():
+	if row_idx < 0 or row_idx >= rules.size():
 		return 0
 	var rule = rules[row_idx]
 	var conditions = rule.get("conditions", [])
