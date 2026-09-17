@@ -1027,6 +1027,12 @@ func _input(event: InputEvent) -> void:
 	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay) and _rule_composer_overlay.visible:
 		return
 
+	# MenuNav, not a raw read: the stick's Y axis carries no echo flag, so one push stepped this grid
+	# five rows. Measured on a 12-rule grid: dpad 1, stick 5. Placed AFTER the keyboard and composer
+	# delegations above — step() CONSUMES and its latch is static, so reading it earlier would take
+	# the nav those overlays handle themselves.
+	var nav: String = MenuNav.step(event)
+
 	# Right stick X only — ui_up/ui_down bind axis 1, so a blanket motion return kills navigation
 	if event is InputEventJoypadMotion and event.axis == JOY_AXIS_RIGHT_X:
 		if _handle_value_stick(event):
@@ -1048,27 +1054,27 @@ func _input(event: InputEvent) -> void:
 		return
 
 	# D-Pad navigation - check echo to prevent rapid-fire when holding keys
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	if nav == "ui_up":
 		cursor_row = max(0, cursor_row - 1)
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
+	elif nav == "ui_left":
 		cursor_col = max(0, cursor_col - 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		cursor_col = min(_get_max_col_for_row(cursor_row), cursor_col + 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
