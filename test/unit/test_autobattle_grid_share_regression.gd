@@ -59,12 +59,28 @@ func after_all() -> void:
 		DirAccess.remove_absolute(mine)
 
 
+var _saved_persist: bool = false
+
+
+## ⛔ THIS FILE GUARDED user://script_exports/ CAREFULLY AND WROTE user://autobattle/profiles.json
+## ANYWAY. The export half is handled well — a per-process EXPORT_DIR and cleanup both ways — and the
+## leak is a second store the file never mentions: `_make_editor()` builds an AutobattleGridEditor,
+## whose own save path reaches AutobattleSystem's persisting API two hops from here. Guarding one
+## user:// directory is not guarding user://.
+## ⚠️ FOUND ONLY BY A SOUND SWEEP. A 56-file population run reported this file clean, because the
+## flag is an AUTOLOAD global and a test that sets it without restoring silences every later file in
+## the process. One file per PROCESS is what makes the null mean anything (cowir-music's measurement).
 func before_each() -> void:
+	_saved_persist = AutobattleSystem._test_disable_persistence
+	AutobattleSystem._test_disable_persistence = true
 	_cleanup_exports()
 
 
 func after_each() -> void:
 	_cleanup_exports()
+	## The PRIOR value, not `false` — restoring a constant is how this file would go on to mask the
+	## next leaker even after its own is closed.
+	AutobattleSystem._test_disable_persistence = _saved_persist
 
 
 func _cleanup_exports() -> void:

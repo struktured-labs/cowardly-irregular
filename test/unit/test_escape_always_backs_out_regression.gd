@@ -37,13 +37,31 @@ const GL := "res://src/GameLoop.gd"
 const ED := "res://src/ui/autobattle/AutobattleGridEditor.gd"
 
 var _editor: Node = null
+var _saved_persist: bool = false
 
 
+## ⛔ THIS FILE WROTE user://autobattle/profiles.json ON EVERY RUN. Driving the editor's `_input`
+## reaches AutobattleSystem's persisting API two hops away — the test names neither the autoload nor
+## any of its functions, so a source-level census of `<receiver>.<api>(` is structurally blind to it
+## (cowir-autogrind found the autogrind twin of this exact shape: an editor test pressing ui_cancel).
+## ⚠️ AND IT IS NOT COVERED BY run_tests.sh's NET: the net's `[ -d ] || continue` never arms for a
+## directory that does not exist yet, and its restore is additive and never deletes — so on the disk
+## of a player who has never opened the editor, this file's fixture is created and LEFT.
 func before_each() -> void:
+	_saved_persist = AutobattleSystem._test_disable_persistence
+	AutobattleSystem._test_disable_persistence = true
 	_editor = load(ED).new()
 	add_child_autofree(_editor)
 	_editor.setup("hero", "Hero")
 	await get_tree().process_frame
+
+
+## ⚠️ RESTORES THE PRIOR VALUE rather than assigning `false`. The flag lives on an AUTOLOAD, so a
+## test that sets it and walks away silences every leaker that runs after it in the same process —
+## measured: this file writes ALONE and writes NOTHING when any such setter precedes it, which is
+## how its own leak stayed invisible inside a 56-file population run.
+func after_each() -> void:
+	AutobattleSystem._test_disable_persistence = _saved_persist
 
 
 func _esc() -> InputEventKey:
