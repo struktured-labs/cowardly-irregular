@@ -672,9 +672,16 @@ cowardly-irregular/
 - Generated sprites go in `assets/sprites/jobs/<job_id>/` following the per-animation PNG convention
 
 ### What AI Sprite Agents MUST Do
-- Match the artist's established 256x256 frame size and 16-bit aesthetic
-- Use consistent palettes derived from existing artist work
-- Generate all 9 standard animations: idle, walk, attack, hit, dead, cast, defend, item, victory
+- Match the frame size OF THE SURFACE, not one constant. Measured 2026-09-17 across
+  `data/sprite_manifest.json`: **battle** sheets are 256x256 (jobs, monsters, NPC portraits — 127
+  entries, 11 monster sheets at 128x128), **overworld** sheets are 32x32 (npc/player/monster — 169
+  entries, the larger population). "256x256" was stated here unconditionally and would put an
+  overworld sprite at 8x the right size.
+- Keep the 16-bit aesthetic, and use palettes derived from existing artist work
+- Generate at least the 9 standard animations — idle, walk, attack, hit, dead, cast, defend, item,
+  victory — which is a FLOOR, not the set. Shipped jobs carry more: fighter 18, bard 16, cleric 15
+  (advance, defer, cleave, dash, lunge, heal, raise, buff, and per-job specials). Read the job's
+  existing `animations` list in the manifest before deciding what "all" means for it.
 - Register output in sprite_manifest.json
 - Log what was generated vs what exists as artist work
 
