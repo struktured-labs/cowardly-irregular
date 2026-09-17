@@ -18,6 +18,10 @@ const MANIFEST := "res://data/sfx_manifest.json"
 const SOUND_MANAGER := "res://src/audio/SoundManager.gd"
 const ABILITIES := "res://data/abilities.json"
 const MONSTERS := "res://data/monsters.json"
+## ITEMS is load-bearing, not thoroughness: _ITEM_EFFECT_SFX maps ITEM effects to status cues, so
+## `status_cured` is reached by an item authoring cure_all_status and by nothing else. Omitting this
+## file made the arm score that cue reachable off the MAP ROW ALONE — right answer, no basis.
+const ITEMS := "res://data/items.json"
 
 ## Declared UNREACHABLE with a reason, not suppressed. Retirement trigger below: the day anything
 ## authors this status the entry must go, because the cue starts working and the note becomes a
@@ -44,13 +48,29 @@ func _applicable() -> Dictionary:
 	var code: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	for m in RegEx.create_from_string('add_status\\(\\s*"([a-z_]+)"').search_all(code):
 		out[m.get_string(1)] = true
+	var authored := {}
 	for path in [ABILITIES, MONSTERS]:
 		var raw: String = FileAccess.get_file_as_string(path)
 		for m in RegEx.create_from_string('"(?:effect|status|secondary_effect)"\\s*:\\s*"([a-z_]+)"').search_all(raw):
+			authored[m.get_string(1)] = true
 			out[m.get_string(1)] = true
-	## Cues keyed on an ABILITY rather than a status reach the manifest through this map.
+	## items.json spells an effect as a KEY, not a value — `"effects": {"cure_all_status": true}` —
+	## so the regex above cannot see one. Parsed, not pattern-matched: a third wrong predicate on
+	## this one corpus would be a pattern of its own.
+	var items: Dictionary = _json(ITEMS)
+	var item_rows = items.get("items", items)
+	if item_rows is Dictionary:
+		for iid in item_rows.keys():
+			var row = item_rows[iid]
+			if row is Dictionary and row.get("effects") is Dictionary:
+				for eff in (row["effects"] as Dictionary).keys():
+					authored[str(eff)] = true
+	## Cues reached through _ITEM_EFFECT_SFX are keyed on an ITEM EFFECT, not on a status name. The
+	## map row is NOT proof: the cue is reachable only if something authors the effect it keys on.
+	## Counting the row alone scored status_cured reachable while never opening items.json.
 	for m in RegEx.create_from_string('\\["([a-z_]+)",\\s*"status_([a-z_]+)"\\]').search_all(src):
-		out[m.get_string(2)] = true
+		if authored.has(m.get_string(1)):
+			out[m.get_string(2)] = true
 	return out
 
 
