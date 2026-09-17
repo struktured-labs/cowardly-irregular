@@ -789,6 +789,10 @@ func play_voice(sound_key: String) -> float:
 	_sfx_cooldowns.erase(sound_key)
 	if not _try_play_sfx_from_manifest(_voice_player, sound_key, VOICE_PLAYER_BASE_DB):
 		return 0.0
+	## The erase above only clears the OUTER key; a fallback_to target can still be cooled, and a
+	## suppressed return leaves the PREVIOUS line's stream on the player for get_length() to time.
+	if _sfx_suppressed_by_cooldown:
+		return 0.0
 	if _voice_player.stream == null:
 		return 0.0
 	return _voice_player.stream.get_length()
