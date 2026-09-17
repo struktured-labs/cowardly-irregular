@@ -54,18 +54,25 @@ func _gd_files(dir_path: String) -> Array:
 func test_no_file_reads_page_delta_twice() -> void:
 	var GdSource = load("res://test/unit/helpers/gd_source.gd")
 	var offenders: Array = []
+	var unreadable: Array = []
 	var scanned := 0
 	var callers := 0
 	for path in _gd_files("res://src"):
-		var code: String = GdSource.code_of(path)
-		if code == "":
+		# A file that will not read is a corpus DROP, not a pass. This used to `continue`, so an
+		# unreadable src/ file left the scan smaller and every verdict below narrower, silently.
+		if FileAccess.get_file_as_string(path) == "":
+			unreadable.append(path.get_file())
 			continue
+		var code: String = GdSource.code_of(path)
 		scanned += 1
 		var n := code.count(PAGING_CALL)
 		if n > 0:
 			callers += 1
 		if n > 1:
 			offenders.append("%s (%d calls)" % [path.get_file(), n])
+	assert_eq(unreadable, [],
+		"these src/ files could not be read, so the scan below never saw them. A shrunken corpus "
+		+ "reports clean for the same reason a clean tree does: %s" % [unreadable])
 	assert_gt(scanned, 200, "the scan must read the src tree; a short corpus passes vacuously")
 	assert_gt(callers, 5, "…and must actually find paging menus, or it is scanning the wrong thing")
 	assert_eq(offenders, [],
