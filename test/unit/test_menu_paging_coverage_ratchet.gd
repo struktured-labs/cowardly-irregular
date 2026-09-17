@@ -14,6 +14,9 @@ var GdSource = load("res://test/unit/helpers/gd_source.gd")
 ## offers a page jump. Deliberately NOT "every menu" — short fixed menus don't
 ## need it and requiring them would be the allowlist-on-day-one shape.
 
+## ⛔ A FLOOR, NOT THE POPULATION — and it read as the population until 2026-09-17. Six hand-picked
+## paths in a file called "coverage ratchet": a seventh long menu was caught by nothing. The derived
+## arm at the bottom is what actually ratchets; this list only pins six that must never regress.
 const LONG_LIST_MENUS := [
 	"res://src/ui/SettingsMenu.gd",
 	"res://src/ui/BossSelectorMenu.gd",
@@ -112,3 +115,82 @@ func _ui_scripts(dir_path: String) -> Array:
 		name = dir.get_next()
 	dir.list_dir_end()
 	return out
+
+
+## ⛔ THE DERIVED POPULATION. A list that needs a SCROLL WINDOW is, by its own code's admission,
+## longer than the panel showing it — `MenuScroll.window_offset` exists for exactly that. So the
+## population is derivable from the tree instead of hand-picked, and a new windowed menu is covered
+## without editing this file.
+##
+## Found by deriving it: JobMenu had a windowed list, BOTH shoulders free, and no page jump — up to
+## 14 jobs plus "(None)" as unlocks land, walked one row per press. The hand-list above never named
+## it, and `test_every_long_list_menu_offers_a_page_jump` passed throughout.
+##
+## 🔑 EXEMPTIONS CARRY A REASON THIS ARM VERIFIES IN THE SOURCE, never a boolean. CLAUDE.md's rule:
+## you cannot silence it green, only explain it green, and the explanation has to still be true.
+const WINDOWED_WITHOUT_PAGING := [
+	{"path": "res://src/ui/EquipmentMenu.gd", "because": "shoulders_taken"},
+]
+
+
+## Is the declared reason still true of the file? Each verb is checked against the source.
+func _reason_holds(because: String, code: String) -> bool:
+	match because:
+		"shoulders_taken":
+			# ⛔ `event.`, NOT bare — the bare spelling is ALSO satisfied by the _process self-heal's
+			# `Input.is_action_pressed("battle_advance")`, so the first version of this check stayed
+			# green with the shoulder HANDLER gutted. Caught by mutation, never by reading.
+			return code.contains("event.is_action_pressed(\"battle_defer\")") \
+				and code.contains("event.is_action_pressed(\"battle_advance\")")
+	return false
+
+
+func _declared(path: String) -> Dictionary:
+	for e in WINDOWED_WITHOUT_PAGING:
+		if str(e["path"]) == path:
+			return e
+	return {}
+
+
+func test_every_windowed_list_pages_or_explains_why() -> void:
+	var windowed: Array = []
+	var unreadable: Array = []
+	var offenders: Array = []
+	for path in _ui_scripts("res://src/ui"):
+		# An unreadable file is a corpus DROP, not a pass — it used to `continue` silently.
+		if FileAccess.get_file_as_string(path) == "":
+			unreadable.append(path.get_file())
+			continue
+		var code: String = GdSource.code_of(path)
+		if not code.contains("MenuScroll.window_offset("):
+			continue
+		windowed.append(path)
+		if code.contains("MenuPaging.page_delta("):
+			continue
+		var e := _declared(path)
+		if e.is_empty():
+			offenders.append("%s: windowed list, no page jump, no declared reason" % path.get_file())
+		elif not _reason_holds(str(e["because"]), code):
+			offenders.append("%s: declares '%s' but the source no longer shows it" % [path.get_file(), str(e["because"])])
+	assert_eq(unreadable, [],
+		"these src/ui files could not be read, so the sweep never saw them: %s" % [unreadable])
+	assert_gt(windowed.size(), 1,
+		"the derivation found %d windowed menus — a short corpus passes vacuously" % windowed.size())
+	assert_eq(offenders, [],
+		"a windowed list is longer than its panel by construction, so one row per press is the "
+		+ "longest walk in that menu. Page it, or add it to WINDOWED_WITHOUT_PAGING with a reason "
+		+ "this file can verify: %s" % [offenders])
+
+
+## The ledger must not outlive its fact: an entry that now pages is a declaration describing nothing.
+func test_the_paging_exemptions_are_still_exempt() -> void:
+	var stale: Array = []
+	for e in WINDOWED_WITHOUT_PAGING:
+		var code: String = GdSource.code_of(str(e["path"]))
+		if code == "":
+			continue
+		if code.contains("MenuPaging.page_delta("):
+			stale.append("%s now pages — delete its exemption" % str(e["path"]).get_file())
+		elif not code.contains("MenuScroll.window_offset("):
+			stale.append("%s no longer windows its list — the exemption is about nothing" % str(e["path"]).get_file())
+	assert_eq(stale, [], "%s" % [stale])

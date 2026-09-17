@@ -638,8 +638,19 @@ func _handle_job_input(event: InputEvent) -> void:
 	var jobs = _get_available_jobs()
 
 	var nav := MenuNav.step(event)
+	# page_delta CONSUMES the trigger axis, so it is read ONCE here beside nav, never in a branch.
+	var page := MenuPaging.page_delta(event)
 	if nav == "ui_up" or nav == "ui_down":
 		_nav_step_job(-1 if nav == "ui_up" else 1, jobs)
+		get_viewport().set_input_as_handled()
+
+	# Windowed list, up to 14 jobs plus "(None)"; both shoulders are free here, unlike EquipmentMenu where L/R cycle the party member.
+	elif page != 0:
+		if jobs.size() > 0:
+			# Clamped, not wrapped: a page jump past the end is disorienting (AbilitiesMenu's ruling).
+			selected_job_index = clampi(selected_job_index + page * MenuPaging.PAGE_ROWS, 0, jobs.size() - 1)
+			_build_ui()
+			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
