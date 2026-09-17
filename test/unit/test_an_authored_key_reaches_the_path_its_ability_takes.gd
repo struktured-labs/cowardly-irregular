@@ -299,3 +299,30 @@ func test_the_out_of_scope_list_names_a_consumer_for_every_entry() -> void:
 		if str(OUT_OF_SCOPE[key]).length() < 8:
 			thin.append(key)
 	assert_eq(thin, ["id"], "only `id` may be exempted without naming a consumer, because nothing reads it: " + str(thin))
+
+
+## ⛔ BLIND SPOT 3, AND UNLIKE 1 AND 2 THIS ARM CLOSES IT. Every arm above decides "read" by
+## searching for the QUOTED key, so a reader that BUILDS its key — `ability.get(prefix + "_pct")` —
+## is invisible and its abilities all read as orphans. cowir-autogrind published seven equipment
+## keys as consumed-by-nothing on 2026-09-16 and had to retract: five were read via
+## `element + "_damage_bonus"`, and FOUR of the seven occur zero times in src/ while being live.
+## Their two instrument repairs — widen the corpus, then discriminate data copies from reads — are
+## both correct and compose into a confident wrong answer, because the read spells nothing.
+## The census above was correct only because no such reader exists; this keeps that true.
+func test_every_ability_key_is_read_as_a_literal() -> void:
+	var code: String = GdSourceHelper.code_of(BM_PATH)
+	var sites: int = 0
+	var constructed: Array = []
+	for form in ["ability.get(", "ability.has(", "ability["]:
+		var at: int = code.find(form)
+		while at > -1:
+			sites += 1
+			var c: String = code.substr(at + form.length(), 1)
+			if c != "\"":
+				var line: int = code.substr(0, at).count("\n") + 1
+				constructed.append("%s…%s (stripped line %d)" % [form, code.substr(at + form.length(), 24), line])
+			at = code.find(form, at + 1)
+	assert_gt(sites, 100,
+		"VOID, not clean: only %d ability-key reads found — the scan matched nothing, so an empty result says nothing" % sites)
+	assert_eq(constructed, [],
+		"an ability key read by CONSTRUCTION makes every quoted-key census in this file report false orphans; give it a literal or teach the census the construction: " + str(constructed))
