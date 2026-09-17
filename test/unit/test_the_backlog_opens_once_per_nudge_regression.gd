@@ -100,20 +100,13 @@ func test_one_nudge_toggles_the_log_once_while_the_llm_thinks() -> void:
 		"one stick push must toggle the log ONCE — four toggles land closed, which is what a ramp did")
 
 
-## The ordinary path: the log opens, and the rest of the same push must not reach the modal branch
-## behind it and scroll the text the player just asked to read.
-func test_one_nudge_opens_the_log_without_scrolling_it() -> void:
-	_two_lines()
-	Input.action_press("ui_up")
-	for v in RAMP:
-		_box._input(_motion(v))
-
-	assert_true(_box.is_backlog_open(), "the push opens the log")
-	# Pre-fix, values 2..4 fell through to the modal branch and each scrolled -40.
-	if _box._backlog_scroll != null and is_instance_valid(_box._backlog_scroll):
-		assert_eq(_box._backlog_scroll.scroll_vertical, 0,
-			"and does not also scroll it — a headless log is shorter than its window, so any " +
-			"movement here is the ramp leaking into the modal branch")
+## ⛔ AN ARM FOR THE ORDINARY PATH WAS WRITTEN, MEASURED AS NON-DISCRIMINATING, AND REMOVED.
+## It opened the log with a ramp and asserted `scroll_vertical == 0`, i.e. that values 2..4 did not
+## fall through to the modal branch and scroll it. Both of its claims are green against the DEFECT:
+## the log is open either way (event 1 opens it and nothing closes it), and a headless log is
+## shorter than its window, so `scroll_vertical` is 0 whether or not `_scroll_backlog(-40)` ran.
+## Measured against the mutation below, not reasoned. Proving that path needs real scroll geometry;
+## it is not covered here, and a green arm that cannot go red would have implied it was.
 
 
 ## A SECOND genuine push must still work: the latch is released by state, not by the event.
