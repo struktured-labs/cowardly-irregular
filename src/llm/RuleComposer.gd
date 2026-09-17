@@ -130,6 +130,10 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 			repair_notes.append(note)
 		for note in _normalise_item_ids(v["rules"], kit_context.get("items", [])):
 			repair_notes.append(note)
+		## BEFORE the MP-guard pass below: an action only recognised as an ability AFTER it
+		## never gets the guard the deep check then demands, and the rule is dropped.
+		for note in _normalise_autobattle_shapes(v["rules"], kit_context):
+			repair_notes.append(note)
 
 	if domain == DOMAIN_AUTOBATTLE and bool(kit_context.get("resolved", false)):
 		for note in _supply_missing_mp_guards(v["rules"], kit_context):
@@ -170,8 +174,17 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# Same shape as _drop_null_targets above: drop the offending rule, keep the rest,
 	# and TELL the player. Never empties the set — a zero-rule composition is not a
 	# valid one, it is the save-wiping one, so the caller's refusal path still runs.
+	## The grind domain was left out of this when it shipped, and the asymmetry cost the
+	## same thing it was written to prevent. Measured on 50 captured live replies across
+	## five deliberately messy intents: 4 died on ONE rule each — a null numeric value, a
+	## null operator, an invented `rest` action, and one malformed rule — while the rest of
+	## each set was valid. None of those four is repairable by lookup; dropping the rule is
+	## the only honest move, and it is the move this project already chose for autobattle.
 	if domain == DOMAIN_AUTOBATTLE and character_id != "":
 		for note in _drop_unusable_rules(v["rules"], character_id, domain_system):
+			repair_notes.append(note)
+	elif domain == DOMAIN_AUTOGRIND:
+		for note in _drop_unusable_rules(v["rules"], "", domain_system):
 			repair_notes.append(note)
 
 	# Last, so it orders whatever the other repairs left behind.
@@ -311,7 +324,10 @@ func _drop_unusable_rules(rules: Array, character_id: String, domain_system) -> 
 	var kept: Array = []
 	var dropped: Array[String] = []
 	for r in rules:
-		var errs: Array = domain_system.validate_rule(r, character_id)
+		## autobattle's validate_rule takes the character for its deep check; autogrind's is
+		## party-level and takes the rule alone. Same refusal, different arity.
+		var errs: Array = domain_system.validate_rule(r, character_id) if character_id != "" \
+			else domain_system.validate_rule(r)
 		if errs.is_empty():
 			kept.append(r)
 		else:
@@ -689,6 +705,73 @@ func _normalise_switch_profile(rules: Array, kit_context: Dictionary) -> Array[S
 ## An autobattle condition's `status` field, matched literally by Combatant.has_status.
 ## Measured 7 of 19 unmatchable on an intent about being silenced — the model wrote
 ## "silenced". Same lookup as the grind's, same table, because it is the same engine call.
+## Three shapes measured across 48 captured live replies, 4 jobs x 12, replayed through the
+## real compose_async. One grammar error discards the whole composition, so each cost a
+## player their entire ruleset:
+##
+##     {"type":"ally_dead","op":"","value":null}      an empty payload on a NULLARY condition
+##     {"type":"ally_hp_percent","op":">=0"}          the operator and value fused
+##     {"type":"lullaby","target":"self"}             an ability id used as the action TYPE
+##
+## Every repair is a lookup in AutobattleSystem's own vocabulary or a parse of the string's
+## own content. The ability rewrite is scoped to THIS character's kit, so it can only
+## produce an action the deep check would already have accepted.
+func _normalise_autobattle_shapes(rules: Array, kit_context: Dictionary) -> Array[String]:
+	var notes: Array[String] = []
+	var domain_system = get_node_or_null("/root/AutobattleSystem")
+	if domain_system == null:
+		return notes
+	var nullary: Array = domain_system.NULLARY_CONDITIONS if "NULLARY_CONDITIONS" in domain_system else []
+	var operators: Dictionary = domain_system.OPERATORS if "OPERATORS" in domain_system else {}
+	var actions_ok: Dictionary = domain_system.ACTION_TYPES if "ACTION_TYPES" in domain_system else {}
+	var kit: Array = kit_context.get("kit", [])
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for c in rule.get("conditions", []):
+			if typeof(c) != TYPE_DICTIONARY:
+				continue
+			var ctype: String = str(c.get("type", ""))
+			## A nullary condition carrying an empty payload — the same repair the autogrind
+			## side has had all along, absent here only because nothing named the set.
+			if nullary.has(ctype):
+				for key in ["op", "value"]:
+					if c.has(key) and (c[key] == null or str(c[key]) == ""):
+						c.erase(key)
+						notes.append("Dropped an empty '%s' from '%s' — it takes no payload." % [key, ctype])
+				continue
+			## The operator and its value fused into one string. Splitting it is a PARSE of
+			## what the model wrote, not a guess — and it is refused when a separate value
+			## is already present and disagrees, because then it IS a guess.
+			var raw_op: String = str(c.get("op", ""))
+			if raw_op == "" or operators.has(raw_op):
+				continue
+			for op in operators.keys():
+				var op_s: String = str(op)
+				if not raw_op.begins_with(op_s):
+					continue
+				var tail: String = raw_op.substr(op_s.length()).strip_edges()
+				if not tail.is_valid_float():
+					continue
+				if c.has("value") and str(c["value"]) != tail:
+					break
+				c["op"] = op_s
+				c["value"] = float(tail) if tail.contains(".") else int(tail)
+				notes.append("Read '%s' as op '%s' with value %s." % [raw_op, op_s, tail])
+				break
+		var acts: Array = rule.get("actions", [])
+		for a in acts:
+			if typeof(a) != TYPE_DICTIONARY:
+				continue
+			var atype: String = str(a.get("type", ""))
+			if actions_ok.has(atype) or not kit.has(atype):
+				continue
+			a["type"] = "ability"
+			a["id"] = atype
+			notes.append("Read '%s' as the ability it names — an ability is an action's id." % atype)
+	return notes
+
+
 func _normalise_autobattle_statuses(rules: Array) -> Array[String]:
 	const STATUS_CONDITIONS := ["has_status", "not_has_status", "ally_has_status",
 		"enemy_has_status", "not_enemy_has_status"]
@@ -840,6 +923,16 @@ func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[Strin
 					c["type"] = swapped
 					notes.append("Read '%s' as '%s' — that aggregate is party-level." % [ctype, swapped])
 					ctype = swapped
+			## An aggregate suffix on a live type: `corruption_avg` for `corruption`, measured
+			## 1 of 20 on a second grind intent. Stripped ONLY when the remainder is itself a
+			## live type — and the ORDER matters: member_hp_min strips to the live member_hp,
+			## which is the wrong answer, so the party_ swap above runs first and claims it.
+			if not types.has(ctype) and ctype.contains("_"):
+				var head: String = ctype.substr(0, ctype.rfind("_"))
+				if types.has(head):
+					c["type"] = head
+					notes.append("Read '%s' as '%s' — the comparison already carries the aggregate." % [ctype, head])
+					ctype = head
 			if not types.has(ctype) and ctype.begins_with("party_"):
 				var stripped: String = ctype.substr("party_".length())
 				if types.has(stripped):

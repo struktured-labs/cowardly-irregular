@@ -107,6 +107,14 @@ const CONDITION_TYPES = {
 	"always": "Always"
 }
 
+## Conditions whose evaluator reads neither op nor value. Nothing named the set until now,
+## so the Rule Composer had no list to repair an empty payload against, while the autogrind
+## side has carried NULLARY_CONDITIONS all along.
+## ⚠️ setup_complete is nullary BY BEHAVIOUR (:392 reads active_buffs and current_ap, never
+## op or value) but the prompt grammar lists only the other three. Derived from the arms,
+## not from the grammar, because the arms are what decides at runtime.
+const NULLARY_CONDITIONS: Array[String] = ["ally_dead", "is_night", "always", "setup_complete"]
+
 ## String-based operators
 const OPERATORS = {
 	"<": "Less Than",
