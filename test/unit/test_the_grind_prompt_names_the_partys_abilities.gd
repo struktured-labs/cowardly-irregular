@@ -105,11 +105,14 @@ func _grind_prompt(ctx: Dictionary) -> String:
 ## Only the per-member roster lines. A whole-prompt search cannot answer "is this id
 ## OFFERED" — the grammar's own prose carries ids, and the block's closing sentence
 ## ends "that rule never fires", which a substring search for `fire` matches.
+## Anchored on the two most stable strings in the block — its own heading and the sentence
+## that closes it. An earlier version keyed on the heading's WORDING and went stale the day
+## the block gained its between-battle lines, reding three arms that were all still correct.
 func _roster(p: String) -> String:
-	var at: int = p.find("the member who knows it. No other ability id exists:")
+	var at: int = p.find("PARTY KITS.")
 	if at == -1:
 		return ""
-	var end: int = p.find("An id not on this list", at)
+	var end: int = p.find("member_ability's \"ability\" MUST come from", at)
 	return p.substr(at, end - at) if end > at else p.substr(at)
 
 
@@ -186,8 +189,7 @@ func test_no_party_renders_no_block_and_does_not_crash() -> void:
 	var p: String = _grind_prompt({})
 	## Match the HEADING, not the phrase: the prompt may legitimately mention the block by
 	## name elsewhere, and a bare substring turns that prose into a failure.
-	assert_true(p.find("PARTY KITS. member_ability's") == -1,
-		"an empty context must render no kit heading")
+	assert_true(p.find("PARTY KITS.") == -1, "an empty context must render no kit heading")
 	assert_gt(p.length(), 500, "CONTROL: the rest of the prompt must still be built")
 
 
@@ -199,8 +201,7 @@ func test_an_autobattle_composition_is_untouched() -> void:
 		"max_mp": 70, "costs": {"fire": 8}})
 	assert_true(p.find("Ability ids you may use, and NOTHING else") != -1,
 		"CONTROL: the per-character kit block must still render for autobattle")
-	assert_true(p.find("PARTY KITS. member_ability's") == -1,
-		"and the party block must not appear beside it")
+	assert_true(p.find("PARTY KITS.") == -1, "and the party block must not appear beside it")
 
 
 # ── the other half: the composer must GATHER it ───────────────────────────────

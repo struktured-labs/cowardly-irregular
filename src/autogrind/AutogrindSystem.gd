@@ -1970,6 +1970,27 @@ func _find_restorative_caster(party: Array) -> Dictionary:
 const GENERIC_ALLY_TARGETS := ["lowest_hp_ally", "lowest_hp", "ally", "all", "all_allies", "party", "any"]
 
 
+## Whether member_ability can actually execute this ability between fights. THE OWNER of a
+## rule that had three copies: this function's caller enforced it inline, AutogrindUI carries
+## a private `_can_apply_between_battles`, and the Rule Composer needed a third to stop the
+## prompt teaching the model ids that cannot run.
+##
+## Measured on live llama3 2026-09-17 with an intent naming three members' abilities: 40 of
+## 53 member_ability actions named a REAL ability this refuses — power_strike 20,
+## battle_hymn 19. The composer's party-kit block lists each member's WHOLE kit, which is
+## the same defect the grid editor was fixed for on 2026-09-09.
+func ability_works_between_battles(ability_id: String) -> bool:
+	if ability_id == "":
+		return false
+	var js = _get_autoload_node("JobSystem")
+	if js == null or not js.has_method("get_ability"):
+		return false
+	var a: Dictionary = js.get_ability(ability_id)
+	if a.is_empty():
+		return false
+	return int(a.get("heal_amount", 0)) > 0 or int(a.get("mp_amount", 0)) > 0
+
+
 func _member_ability_apply(caster, ability_id: String, target_key: String) -> Dictionary:
 	if caster == null:
 		return {"ok": false, "reason": "caster not in party"}
@@ -2005,10 +2026,10 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 			return {"ok": false, "reason": "target '%s' names no party member" % target_key}
 		return {"ok": false, "reason": "no living ally to target"}
 
+	if not ability_works_between_battles(ability_id):
+		return {"ok": false, "reason": "'%s' has no between-battle effect this system models" % ability_id}
 	var heal := int(ability.get("heal_amount", 0))
 	var mp_amt := int(ability.get("mp_amount", 0))
-	if heal <= 0 and mp_amt <= 0:
-		return {"ok": false, "reason": "'%s' has no between-battle effect this system models" % ability_id}
 
 	caster.current_mp -= cost
 	if heal > 0:
