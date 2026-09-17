@@ -189,14 +189,49 @@ else:
         print("[web-audio] SKIPPING the projection rather than assuming one. If that default")
         print("[web-audio] moved, this parse moves with it; it must never fall back to a constant.")
         raise SystemExit(0)
-    shipped_tier = glob.glob("tmp/web_audio/music_%dk/*.ogg" % shipped_br)
-    if len(shipped_tier) != len(allm):
-        print(f"[web-audio] the reference pck was built at {shipped_br}k and that tier is not on")
-        print(f"[web-audio] disk ({len(shipped_tier)} of {len(allm)} files) — SKIPPING the projection")
-        print(f"[web-audio] rather than deriving the non-music payload from master bytes.")
-        print(f"[web-audio] Run: tools/make_web_audio.sh {shipped_br}")
+    # ⛔ WAS: subtract the tier at SHIPPED_BR from the reference pck, guarded only by
+    # `len(tier) != len(masters)` — a count of a DIRECTORY, which never asks whether the
+    # reference pck's music IS that tier. It printed "the reference pck was built at {N}k"
+    # as a statement of fact about the one thing it did not check, and its remediation line
+    # said `Run: tools/make_web_audio.sh {shipped_br}` — i.e. BUILD THE WRONG TIER AND THE
+    # GUARD WILL LET YOU THROUGH.
+    #
+    # ⚠️ NOT LATENT. A publish worktree always builds the shipped tier before this runs, so
+    # the count matched on every publish and the subtraction was cross-era every time:
+    #
+    #     reference pck (48k era, 2026-09-06)     163.81 MiB
+    #     minus the 40k tier the publish built    -82.54
+    #     = "non-music payload"                    81.27 MiB   <- printed by .371 and .374
+    #     minus the 48k tier it actually holds    -96.21
+    #     = the truth                              67.60 MiB
+    #     INFLATION                                13.67 MiB, every run, pessimistic
+    #
+    # And it is why "projected pck" equalled the reference's own size to the byte: with
+    # other = pck - out, tot = out + other = pck identically. The identity and the inflation
+    # are the same arithmetic seen from two sides.
+    #
+    # THE REFERENCE MUST DECLARE ITS OWN TIER. WEB_REF_PCK_KBPS says which bitrate the
+    # reference pck's music was encoded at; that tier is what gets subtracted, and the
+    # shipped tier is then added back on top. Undeclared is REFUSED, never assumed — the
+    # whole defect was an assumption wearing a guard's clothes.
+    ref_br = os.environ.get("WEB_REF_PCK_KBPS")
+    if not ref_br:
+        print(f"[web-audio] the reference pck's own bitrate is not declared, so the non-music")
+        print(f"[web-audio] payload cannot be derived from it — subtracting a {shipped_br}k tier")
+        print(f"[web-audio] from a pck encoded at some other bitrate inflates that payload and")
+        print(f"[web-audio] every projection built on it. SKIPPING.")
+        print(f"[web-audio] Set WEB_REF_PCK_KBPS=<bitrate of {os.path.basename(PCK)}> to enable it.")
         raise SystemExit(0)
-    in_pck = sum(os.path.getsize(f) for f in shipped_tier)
+    ref_br = int(ref_br)
+    ref_tier = glob.glob("tmp/web_audio/music_%dk/*.ogg" % ref_br)
+    if len(ref_tier) != len(allm):
+        print(f"[web-audio] the reference pck declares {ref_br}k and THAT tier is not on disk")
+        print(f"[web-audio] ({len(ref_tier)} of {len(allm)} files) — SKIPPING rather than subtracting")
+        print(f"[web-audio] a tier the reference does not contain.")
+        print(f"[web-audio] Run: tools/make_web_audio.sh {ref_br}   <- the REFERENCE's bitrate,")
+        print(f"[web-audio] not this run's; building {shipped_br}k here would arm the bug this guard exists for.")
+        raise SystemExit(0)
+    in_pck = sum(os.path.getsize(f) for f in ref_tier)
     other = os.path.getsize(PCK) - in_pck
     if other <= 0:
         print("[web-audio] derived non-music payload came out <= 0 — the reference pck and")
@@ -231,9 +266,13 @@ else:
         # Every publish runs at the shipping bitrate, so that is the degenerate case ALWAYS.
         # The projection earns its name only for a DIFFERENT bitrate, which is what the
         # deltas are for and what the comment above already claims.
-        degenerate = (str(br) == str(shipped_br))
+        # The identity fires when the tier SUBTRACTED is the tier ADDED BACK, which is
+        # ref_br vs br. It read shipped_br while the subtraction itself used the wrong
+        # tier; correcting that moved the condition with it. Against a 48k reference a
+        # 40k run is now a REAL projection, not a re-report of the reference's size.
+        degenerate = (str(br) == str(ref_br))
         if degenerate:
-            print(f"[web-audio] at {br}k — the shipping bitrate — there is nothing to project: "
+            print(f"[web-audio] at {br}k — the REFERENCE's own bitrate — there is nothing to project: "
                   f"the figure would be")
             print(f"[web-audio] the REFERENCE build's own size ({os.path.getsize(PCK)/mib:.2f} MiB, "
                   f"{age_d:.0f}d old), not this one's.")
