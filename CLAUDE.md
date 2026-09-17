@@ -399,13 +399,23 @@ Full import (autoloads available, catches more issues; ~10s):
   **Corollary — a check whose CORRECT case requires a suppression flag is not a check.** 40 allowlist entries on day one, or an `"_shadow_ok": true` that's muscle memory by the second NPC, is rot arriving dressed as diligence. When a guard IS warranted, require the DELIVERABLE (the note explaining precedence), never permission to skip — you can't silence it green, only explain it green, and the explanation is the fix
 - **`git merge-tree` has THREE oracles and only two of them work — and chaining it needs a `commit-tree` wrapper (2026-09-17, hit by 3 lanes independently in one night).** The pre-check that says "will this fold apply" is easy to get silently wrong in both directions. Measured on a purpose-built two-branch conflict:
 
-  | form | conflict signal | verdict |
-  |---|---|---|
-  | `merge-tree --write-tree A B` + `$?` | **ec=1** | ✅ valid |
-  | legacy 3-arg + `$?` | **ec=0** | ⛔ INVALID — exits 0 on a real conflict |
-  | legacy 3-arg + marker count | `+<<<<<<<` | ✅ valid, **but only with ONE `+`** |
+  **THE TWO FORMS PRINT DIFFERENT THINGS AND THEREFORE WANT DIFFERENT MARKERS. Every count below was measured on one purpose-built conflicting pair (git 2.51.0), by four lanes independently, same numbers:**
 
-  The marker pattern is its own trap: `merge-tree`'s legacy form prints a **unified** diff, so the markers carry a single `+`. A pattern written for `diff --cc` **combined** output (`^++<<<<<<<`) returns **0 on a genuine conflict** — a false clean, from an oracle that was itself proposed as the fix for the false-clean exit code. Count `^+<<<<<<<`, or key on the `changed in both` header line.
+  | form | oracle | on a REAL conflict | verdict |
+  |---|---|---|---|
+  | `--write-tree A B` | `$?` | **1** | ✅ valid |
+  | `--write-tree A B` | `grep -c CONFLICT` | **1** | ✅ valid |
+  | `--write-tree A B` | **any** `<<<<<<<` pattern | **0** | ⛔ FALSE CLEAN |
+  | legacy 3-arg | `$?` | **0** | ⛔ FALSE CLEAN |
+  | legacy 3-arg | `^+<<<<<<<` | **1** | ✅ valid |
+  | legacy 3-arg | `<<<<<<<` (unanchored) | **1** | ✅ valid |
+  | legacy 3-arg | `^<<<<<<<` | **0** | ⛔ FALSE CLEAN |
+  | legacy 3-arg | `^++<<<<<<<` | **0** | ⛔ FALSE CLEAN |
+  | legacy 3-arg | `changed in both` | **1** | ✅ valid |
+
+  **`--write-tree` emits a TREE OID + stage-1/2/3 index lines + a message block — it is an INDEX DUMP, not a diff, and contains no conflict markers at all.** The legacy form emits a **unified** diff, so its markers carry exactly ONE `+`. So a marker grep fails three ways: right marker against the wrong output KIND (`<<<<<<<` vs `--write-tree`), an anchor with no `+` (`^<<<<<<<`, written as if the output were a plain file), and an anchor with two (`^++<<<<<<<`, written for `diff --cc` **combined** output). **All three return 0 on a genuine conflict, silently.**
+
+  ⛔ **The expensive combination is `legacy + $?` together with `legacy + ^<<<<<<<` (or `^++`), because BOTH HALVES FAIL TOWARD CLEAN INDEPENDENTLY.** The exit code says 0, the marker count says 0, they corroborate each other, and neither looked. A "belt and braces" pair whose braces cannot fire is one signal wearing two names. **A marker grep is a signal only once you have watched it say YES** — run it against a known-conflicting pair before trusting a clean.
 
   **And `--write-tree` emits a TREE oid, not a commit.** Feeding it back as the next base to chain branch 3 onto branches 1+2 gives `expected commit type, but the object dereferences to tree type` / `not something we can merge` — which **reads as "branch 2 conflicts" and is a type error in your chaining**. Wrap every intermediate:
   ```bash
