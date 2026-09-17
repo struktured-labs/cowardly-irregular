@@ -69,6 +69,29 @@ func test_the_battle_boundary_clears_it() -> void:
 		"CONTROL: start_battle's per-battle clearing block must still be here, or the arm above is vacuous")
 
 
+func test_every_member_this_file_reaches_for_still_exists() -> void:
+	## reset_hit_chain is reached ONCE, at :53, after the assert at :52 — rung 3, so renaming it
+	## leaves this file GREEN while the .374 boundary fix stops being tested (measured 2026-09-17).
+	## A SEPARATE arm on purpose: a precondition hoisted into an existing arm would make its first
+	## call loud and every later call in that arm rung 3, changing cover instead of adding it.
+	var sm: Node = _sm()
+	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
+	if sm == null:
+		return
+	## has_method ANSWERS; a direct read would abort alongside the arms this exists to catch.
+	for method_name in ["get_combo_pitch_bias", "reset_hit_chain"]:
+		assert_true(sm.has_method(method_name),
+			"SoundManager has no method %s — this file CALLS it, and whether that shows as Risky or as a silent pass is decided by arm ORDER, not by care" % method_name)
+	## _combo_step is an int and never null once _ready has run, so get() is sound here.
+	for member_name in ["_combo_step"]:
+		assert_true(sm.get(member_name) != null,
+			"SoundManager has no %s — this file reaches for it directly, and a rename would abort its arms SILENTLY" % member_name)
+	## The cap is a CONST, not a property: the constant map answers about existence, get() about value.
+	var consts: Dictionary = sm.get_script().get_script_constant_map()
+	assert_true(consts.has("COMBO_PITCH_CAP"),
+		"SoundManager has no COMBO_PITCH_CAP — the cap assert at :44 would compare against a default")
+
+
 func test_the_action_boundary_still_owns_the_per_action_reset() -> void:
 	# Anti-overcorrection: the battle-level clear must not replace the per-ACTION one, or a
 	# multi-hit ability would ramp across every action of the fight.
