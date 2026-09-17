@@ -33,24 +33,37 @@ TOOL = os.path.join(HERE, "check_raw_assets_shipped.py")
 PASS, BLOCK, CANNOT = 0, 5, 2
 
 
-def write_pck(path, entries, magic=b"GDPC", flags=0):
+def pck_bytes(entries, magic=b"GDPC", flags=0):
     """entries: list of packed paths. No payload -- the file table is the whole subject."""
+    out = [magic, struct.pack("<I", 2), struct.pack("<III", 4, 4, 1),
+           struct.pack("<I", flags), struct.pack("<Q", 0), b"\0" * (16 * 4),
+           struct.pack("<I", len(entries))]
+    for name in entries:
+        raw = name.encode("utf-8")
+        pad = (-len(raw)) % 4
+        out += [struct.pack("<I", len(raw) + pad), raw + b"\0" * pad,
+                struct.pack("<QQ", 0, 0), b"\0" * 16, struct.pack("<I", 0)]
+    return b"".join(out)
+
+
+def write_pck(path, entries, magic=b"GDPC", flags=0):
     with open(path, "wb") as f:
-        f.write(magic)
-        f.write(struct.pack("<I", 2))
-        f.write(struct.pack("<III", 4, 4, 1))
-        f.write(struct.pack("<I", flags))
-        f.write(struct.pack("<Q", 0))
-        f.write(b"\0" * (16 * 4))
-        f.write(struct.pack("<I", len(entries)))
-        for name in entries:
-            raw = name.encode("utf-8")
-            pad = (-len(raw)) % 4
-            f.write(struct.pack("<I", len(raw) + pad))
-            f.write(raw + b"\0" * pad)
-            f.write(struct.pack("<QQ", 0, 0))
-            f.write(b"\0" * 16)
-            f.write(struct.pack("<I", 0))
+        f.write(pck_bytes(entries, magic, flags))
+
+
+def write_embedded(path, entries, prefix=b"\x7fELF" + b"E" * 4096, size_override=None):
+    """An executable with the pack appended: [binary][pack][u64 pack len]["GDPC"].
+
+    This is what the Linux and Windows channels actually ship -- export_presets.cfg sets
+    binary_format/embed_pck=true, so there is no .pck on disk for either of them.
+    """
+    body = pck_bytes(entries)
+    ds = len(body) if size_override is None else size_override
+    with open(path, "wb") as f:
+        f.write(prefix)
+        f.write(body)
+        f.write(struct.pack("<Q", ds))
+        f.write(b"GDPC")
 
 
 def write_src(root, files):
@@ -216,6 +229,48 @@ def main():
         ec, out = run(enc, direct)
         arm("an ENCRYPTED directory cannot evaluate", ec, CANNOT)
         arm("  ...and says so rather than reading garbage", "ENCRYPTED" in out, True)
+
+        # ---- THE PACK INSIDE THE EXECUTABLE: linux and windows ship no .pck at all ----------
+        emb_have = os.path.join(d, "game.x86_64")
+        emb_lack = os.path.join(d, "game_lack.x86_64")
+        write_embedded(emb_have, ["data/present.json", "data/maps/overworld_w1.png",
+                                  "data/pre#sent.json"])
+        write_embedded(emb_lack, ["data/present.json", "data/pre#sent.json"])
+        arm("an EMBEDDED pack is read, asset present", run(emb_have, direct)[0], PASS)
+        ec, out = run(emb_lack, direct)
+        arm("  ...and absent, BLOCKS", ec, BLOCK)
+        arm("  ...naming the same asset a .pck would", "overworld_w1.png" in out, True)
+        # ⛔ THE FLOOR: the same table in both containers must give the same answer, or the
+        # embedded reader is answering a different question from the one the .pck reader answers.
+        arm("  FLOOR: same table, .pck and embedded, agree",
+            run(emb_lack, direct)[0] == run(lack, direct)[0], True)
+
+        # a binary with NO pack at all is not a passing one
+        plain = os.path.join(d, "no_pack.bin")
+        with open(plain, "wb") as fh:
+            fh.write(b"\x7fELF" + b"E" * 8192)
+        ec, out = run(plain, direct)
+        arm("a binary carrying NO pack cannot evaluate", ec, CANNOT)
+        arm("  ...and says it neither is nor carries one", "nor carries one" in out, True)
+
+        # ⛔ a footer that survives truncation: the tail magic is intact and points nowhere.
+        # Trusting the declared size here would read a file table out of executable code.
+        # ⚠️ THESE FIXTURES HAVE NEUTRAL NAMES ON PURPOSE. The first version called this one
+        # `truncated.x86_64` and asserted `"truncated" in out` -- which matched the FIXTURE'S OWN
+        # FILENAME, echoed back in the error message. The arm passed with the header check
+        # deleted, because the needle was in the subject's name rather than in the diagnosis.
+        # Caught by a mutation that stayed green; the arm was never testing what it claimed.
+        trunc = os.path.join(d, "fixture_a.x86_64")
+        write_embedded(trunc, ["data/present.json"], size_override=32)
+        ec, out = run(trunc, direct)
+        arm("a footer that locates NO header is REFUSED", ec, CANNOT)
+        arm("  ...and NAMES the cause, not a struct error",
+            "no GDPC header at offset" in out, True)
+        toobig = os.path.join(d, "fixture_b.x86_64")
+        write_embedded(toobig, ["data/present.json"], size_override=1 << 40)
+        ec, out = run(toobig, direct)
+        arm("a footer size larger than the file is REFUSED", ec, CANNOT)
+        arm("  ...and says it does not fit", "does not fit in a" in out, True)
 
         # ---- --quiet changes the volume, never the verdict ----------------------------------
         q_ec, q_out = run(lack, direct, ["--quiet"])

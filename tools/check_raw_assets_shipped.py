@@ -48,7 +48,7 @@ Only literals and same-file `const`/`var` string initialisers resolve; a path bu
 followed. This is why a derivation of ZERO BLOCKS rather than passes -- a corpus that collapsed
 is the shape that certifies everything.
 
-Usage:  tools/check_raw_assets_shipped.py <index.pck> [--src=DIR] [--quiet]
+Usage:  tools/check_raw_assets_shipped.py <index.pck|binary> [--src=DIR] [--quiet]
         tools/check_raw_assets_shipped_selftest.py
 Exit:   0 every raw-bytes asset ships raw · 5 at least one does not · 2 could not evaluate
 """
@@ -226,11 +226,53 @@ def derive(src_dir):
     return found, sinks
 
 
+def _pack_start(f):
+    """Byte offset of the GDPC header: 0 for a .pck, or the embedded pack inside an executable.
+
+    ⛔ THE DESKTOP CHANNELS DO NOT SHIP A .pck AT ALL. export_presets.cfg sets
+    `binary_format/embed_pck=true` for Linux and Windows, so the pack is appended to the
+    executable and the only .pck on disk belongs to web. A checker that reads .pck files
+    covers ONE of the three channels this lane publishes, and reports nothing about two.
+
+    Godot writes a 12-byte footer at the very end: [u64 embedded block size][u32 "GDPC"].
+    Measured against both real artifacts (godot 4.4.1, pack format v2):
+        cowardly-irregular.x86_64  312,010,384 B  pack at n-ds-12 = 69,688,024   2758 entries
+        cowardly-irregular.exe     344,062,096 B  pack at n-ds-12 = 97,520,128   2956 entries
+    """
+    f.seek(0, 2)
+    n = f.tell()
+    f.seek(0)
+    if f.read(4) == b"GDPC":
+        return 0                                   # a standalone .pck
+    if n < 12:
+        raise ValueError("too small to be a pack or to carry one")
+    f.seek(n - 4)
+    if f.read(4) != b"GDPC":
+        raise ValueError("no GDPC at the head, and no GDPC footer at the tail — this file "
+                         "neither is a pack nor carries one")
+    f.seek(n - 12)
+    ds = struct.unpack("<Q", f.read(8))[0]
+    start = n - ds - 12
+    # VERIFY the footer actually locates a header rather than trusting the size it declares.
+    # A truncated or rewritten binary keeps its tail magic and points nowhere.
+    if start < 0 or start > n - 4:
+        raise ValueError("embedded pack size %d does not fit in a %d-byte file" % (ds, n))
+    f.seek(start)
+    if f.read(4) != b"GDPC":
+        raise ValueError("the footer declares a %d-byte pack, but there is no GDPC header at "
+                         "offset %d — the file is truncated or the pack was rewritten"
+                         % (ds, start))
+    return start
+
+
 def pck_entries(path):
-    """Every path inside a Godot .pck. Raises on anything it cannot honestly enumerate."""
+    """Every path inside a Godot pack, whether a .pck or embedded in an executable.
+
+    Raises on anything it cannot honestly enumerate.
+    """
     with open(path, "rb") as f:
-        if f.read(4) != b"GDPC":
-            raise ValueError("not a Godot pack (magic is not GDPC)")
+        start = _pack_start(f)
+        f.seek(start + 4)
         ver = struct.unpack("<I", f.read(4))[0]
         f.read(12)                                           # godot major/minor/patch
         if ver >= 2:
@@ -258,7 +300,7 @@ def main(argv):
     flags = [a for a in argv if a.startswith("--") and "=" not in a]
     args = [a for a in argv if not a.startswith("--")]
     if len(args) != 1:
-        print("usage: check_raw_assets_shipped.py <index.pck> [--src=DIR] [--quiet]",
+        print("usage: check_raw_assets_shipped.py <pack|executable> [--src=DIR] [--quiet]",
               file=sys.stderr)
         return 2
     pck, src, quiet = args[0], opts.get("src", "src"), "--quiet" in flags
