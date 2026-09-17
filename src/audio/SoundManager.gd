@@ -802,7 +802,8 @@ func play_pickup(sound_key: String) -> void:
 			_play_sound(_pickup_player, SOUNDS[sound_key])
 
 
-## Advance-bank cues, each off _battle_player: the job's fifth rung and advance_flourish_5 play in the same frames.
+## Advance-bank cues. Each routes to its OWN voice (_bank_player / _refuse_player) and NOT to _battle_player —
+## the job's fifth rung and advance_flourish_5 play in the same frames, which is why they were moved off it (2026-09-14).
 func play_advance_state(sound_key: String) -> void:
 	match sound_key:
 		# Charge and discharge share one voice on purpose: one bank's lifecycle, a turn apart.
