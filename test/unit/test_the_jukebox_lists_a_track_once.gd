@@ -216,3 +216,32 @@ func test_the_other_pin_of_this_fact_agrees_with_this_one() -> void:
 		if not mine.has(k): only_there.append(k)
 	assert_eq(only_here.size() + only_there.size(), 0,
 		"the two title-collision pins disagree — declared only here: %s; only in the sibling: %s. Both files must name the same collisions or one will outlive the other" % [str(only_here), str(only_there)])
+
+
+func test_the_rows_a_player_actually_sees_are_unique() -> void:
+	## ⛔ EVERY OTHER ARM HERE CALLS THE STATIC. `JUKEBOX._load_manifest_tracks()` is the list
+	## BUILDER; what a player reads is `TRACKS`, assigned from it in `_ready` at JukeboxMenu:64 and
+	## then indexed by the draw loop. Today that is a bare assignment, so the two are the same list
+	## — and "today it is a bare assignment" is a precondition no arm stated.
+	##
+	## @cowir-autogrind hit this an hour ago from the other side: seven arms calling their helper
+	## directly, and the path that actually reaches the grind building its dict elsewhere. The
+	## split @cowir-controller named is the general form — the helper owns the PROPERTY, an
+	## instance owns the CONSEQUENCE — and the consequence is the half a player experiences.
+	##
+	## So this arm stands the menu up and reads the field the draw loop reads. Add a filter to
+	## _ready and the static arms above stay green while this one follows the rows.
+	var jb: Node = JUKEBOX.new()
+	add_child_autofree(jb)
+	await get_tree().process_frame
+	assert_gt(jb.TRACKS.size(), 100,
+		"CONTROL: the live menu built %d rows — a small list would make the duplicate check vacuous" % jb.TRACKS.size())
+	var seen: Dictionary = {}
+	var dupes: Array = []
+	for row in jb.TRACKS:
+		var title: String = str(row[1])
+		if seen.has(title):
+			dupes.append(title)
+		seen[title] = true
+	assert_eq(dupes.size(), 0,
+		"%d rows in the LIVE menu read identically to another: %s — the static builder may still be clean, so look at _ready before looking at _load_manifest_tracks" % [dupes.size(), str(dupes)])
