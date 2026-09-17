@@ -12,9 +12,11 @@ const ACTION_SPEEDS = {"attack": 5, "ability": 10, "item": 8, "defend": 0, "defe
 ## other. The two are independent declarations BY CONSTRUCTION and must agree in VALUE, not in type:
 ## live's is a float on a scale of `base - speed*0.5` plus CTB jitter, this one an int on `base -
 ## speed`, which is twice as sensitive to speed — so live's "larger than any reachable speed_value"
-## does NOT transfer and was re-derived here. Measured 2026-09-16: max authored job speed 18 (ninja),
-## max level multiplier 4.92 (Combatant.gd:1634, +4%/level to job_level 99) -> ~88; monsters cap at
-## 30 authored. 1000 keeps a ~10x margin on the grind's own scale.
+## does NOT transfer and was re-derived here. Measured 2026-09-16 over BOTH corpora, because deriving
+## a speed ceiling from jobs alone is blind to the faster half: max authored speed is 30 and it is a
+## MONSTER (masterite_tempo_abstract); the fastest job is ninja at 18. With Combatant.gd:1634's
+## +4%/level multiplier, 4.92 at job_level 99, that is ~148 — so 1000 keeps a ~7x margin. The margin
+## arm recomputes this from jobs.json AND monsters.json every run rather than trusting this line.
 ## RETIREMENT CONDITION: the day the grind adopts live's speed formula (halved speed + jitter), the
 ## two consts collapse into one and this note goes with them.
 const PRIORITY_OFFSET: int = 1000
