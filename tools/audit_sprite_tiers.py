@@ -135,6 +135,32 @@ def artist_evidence(rel_path: str) -> list[str]:
     return out
 
 
+# FLOOR, unioned with the derived corpus so coverage can only grow — the same
+# shape as gen_full_sweep's legacy protection floor, and for the same reason.
+#
+# @cowir-battle's distinction, measured on this tool: `examined < t1_total`
+# proves the buckets PARTITION the corpus, never that the corpus was fully
+# READ. Truncate the read and both sides shrink together — "examined 12 of 12"
+# balances exactly as "288 of 288" does. The tell is that the two numbers AGREE
+# while being wrong, which is what a shared denominator looks like on screen.
+#
+# So the floor is checked against a raw `in manifest` — a DIFFERENT read from
+# the one that builds the corpus. A section deleted from the manifest outright
+# is not flagged (the floor must not fight a real removal); a section still in
+# the file but dropped by the corpus read is.
+_REQUIRED_SECTIONS = (
+    "sheets", "party_sheets", "weapon_sheets", "overworld_monster_sheets",
+    "monster_sheets", "npc_sheets", "overworld_npc_sheets",
+    "overworld_player_sheets", "battle_effects", "tile_sheets",
+)
+
+
+def missing_sections(manifest: dict) -> list[str]:
+    """Required sections the manifest still declares but the corpus did not reach."""
+    reached = set(_tier_sections(manifest))
+    return [s for s in _REQUIRED_SECTIONS if s in manifest and s not in reached]
+
+
 def _tier_sections(manifest: dict) -> list[str]:
     """Every entry-declaring section, DERIVED from the manifest, never listed.
 
@@ -222,6 +248,16 @@ def main() -> int:
     findings = []
     examined = 0
     skipped: list[str] = []
+    # COVERAGE FLOOR, before anything is counted. Everything below is a claim
+    # about the corpus; if the corpus is short, the claim is void rather than
+    # clean, and no count on screen would say so.
+    gone = missing_sections(m)
+    if gone:
+        print(f"\nCORPUS SHORT — the manifest declares {len(gone)} section(s) this "
+              f"run never read: {', '.join(gone)}. Every result above is VOID, "
+              f"not clean.")
+        return 2
+
     t1 = _t1_entries(m)
     t1_total = len(t1)
     for section, key, val in t1:
@@ -251,7 +287,13 @@ def main() -> int:
     # and reported a clean sweep — a vacuous pass is indistinguishable from a
     # clean corpus unless the count is stated. Every number below is what was
     # actually looked at, never what was intended.
-    print(f"\nexamined {examined} of {t1_total} T1 entries")
+    by_section: dict[str, int] = {}
+    for section, _k, _v in t1:
+        by_section[section] = by_section.get(section, 0) + 1
+    print(f"\nexamined {examined} of {t1_total} T1 entries across "
+          f"{len(_tier_sections(m))} sections")
+    for s, n in sorted(by_section.items()):
+        print(f"    {n:4d}  {s}")
     for s in skipped[:5]:
         print(f"  SKIPPED {s}")
     if len(skipped) > 5:
@@ -313,6 +355,21 @@ def selftest() -> int:
           == ["a/idle.png", "a/attack.png"])
     check("an entry declaring NO path yields none, so the caller skips it loudly",
           _entry_paths({"tier": "T1", "notes": "x"}) == [])
+
+    print("coverage floor (the arm the balance check cannot be)")
+    # A corpus read that drops a section keeps `examined == t1_total`, so the
+    # floor is the only arm that can say VOID rather than clean.
+    narrowed = {"sheets": {}, "monster_sheets": {}, "tile_sheets": {}}
+    check("a manifest missing required sections is reported short",
+          missing_sections(narrowed) == [], "floor must not invent absent sections")
+    real = json.loads(MANIFEST.read_text())
+    check("the real manifest reaches every required section it declares",
+          missing_sections(real) == [], str(missing_sections(real)))
+    declared = [s for s in _REQUIRED_SECTIONS if s in real]
+    check("the floor is not vacuous — it names sections that exist",
+          len(declared) >= 8, f"only {len(declared)} required sections present")
+    print(f"        floor covers {len(declared)} of {len(_REQUIRED_SECTIONS)} "
+          f"required sections, all present in the manifest")
 
     print("wiring against the real manifest")
     m = json.loads(MANIFEST.read_text())
