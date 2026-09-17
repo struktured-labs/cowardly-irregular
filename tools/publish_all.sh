@@ -117,6 +117,15 @@ _archive_evidence() {
     # This writes the derived note beside the evidence so every release HAS one. Publishing it
     # to the GitHub release body is a one-line change and deliberately NOT made here: that is
     # outward-facing and is struktured's call, not a side effect of archiving.
+    # ── and verify it did not move while the channels ran ───────────────────────────────────
+    # Never fatal: the upload has already happened by the time this runs, so failing the publish
+    # here would undo nothing. It is loud instead, and the evidence records it — an artifact that
+    # may not be the gated commit is a fact about the release, not a reason to pretend otherwise.
+    if [ -x tools/check_tree_unmoved.sh ] && [ -r "${_TREE_REC:-/nonexistent}" ]; then
+        ./tools/check_tree_unmoved.sh --verify "$TAG" "$_TREE_REC" \
+            || echo "[pub] ⚠ THE SHIPPED TREE IS NOT THE GATED TREE — see above. The read-back cannot detect this." >&2
+    fi
+
     if [ -n "${TAG:-}" ] && [ -x tools/release_note.sh ]; then
         # --prev is what the STORE had, not the previous tag: see STORE_BEFORE above.
         _note_prev=(); [ -n "${STORE_BEFORE:-}" ] && _note_prev=(--prev "$STORE_BEFORE")
@@ -567,6 +576,16 @@ if [ "$DIRTY" -ne 0 ]; then
     exit 2
 fi
 echo "[pub] tree: ${HEAD_SHA:0:8} == ${TAG}, clean"
+
+# ── record the gated tree ────────────────────────────────────────────────────────────────────
+# The check above is taken BEFORE any artifact exists; the chains export the working tree ~25
+# minutes later. Nothing re-checked it, and the store read-back structurally cannot: it compares
+# the store against the LOCAL BUILD, so a tree that moved after the gate produces two agreeing
+# sides that are both downstream of the change.
+_TREE_REC="tmp/gated_tree.fingerprint"
+if [ -x tools/check_tree_unmoved.sh ]; then
+    ./tools/check_tree_unmoved.sh --record "$TAG" "$_TREE_REC" || true
+fi
 
 SAVES_BEFORE="$(_saves_cksum)"
 echo "[pub] his saves before: ${SAVES_BEFORE}"

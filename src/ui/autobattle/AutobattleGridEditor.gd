@@ -1714,14 +1714,21 @@ func _input(event: InputEvent) -> void:
 	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
 		return
 
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis and an axis carries no echo
+	# flag, so one push stepped this grid five rows. Measured on a 12-rule grid: dpad 1, stick 5.
+	# ⛔ READ ONCE, HERE. step() CONSUMES, and the latch is static — so it must sit AFTER the virtual
+	# keyboard's delegation above (which would otherwise lose its own nav) and BEFORE the pickers,
+	# which receive the result rather than reading the event again.
+	var nav: String = MenuNav.step(event)
+
 	# Import file-picker submenu handles its own input when open (don't steal grid input)
 	if _share_picker and is_instance_valid(_share_picker) and _share_picker.visible:
-		_handle_share_picker_input(event)
+		_handle_share_picker_input(event, nav)
 		return
 
 	# Generic option picker (condition/action/item/target) handles its own input
 	if _option_picker and is_instance_valid(_option_picker) and _option_picker.visible:
-		_handle_option_picker_input(event)
+		_handle_option_picker_input(event, nav)
 		return
 
 	# Simulate readout handles its own input (any key closes)
@@ -1745,21 +1752,21 @@ func _input(event: InputEvent) -> void:
 
 	# Portrait panel focus mode (character selection via D-pad)
 	if _portrait_focused:
-		if event.is_action_pressed("ui_up") and not event.is_echo():
+		if nav == "ui_up":
 			_cycle_character(-1)
 			get_viewport().set_input_as_handled()
 			return
-		elif event.is_action_pressed("ui_down") and not event.is_echo():
+		elif nav == "ui_down":
 			_cycle_character(1)
 			get_viewport().set_input_as_handled()
 			return
-		elif (event.is_action_pressed("ui_right") or event.is_action_pressed("ui_accept")) and not event.is_echo():
+		elif nav == "ui_right" or (event.is_action_pressed("ui_accept") and not event.is_echo()):
 			_portrait_focused = false
 			_update_cursor()
 			SoundManager.play_ui("menu_move")
 			get_viewport().set_input_as_handled()
 			return
-		elif event.is_action_pressed("ui_left") and not event.is_echo():
+		elif nav == "ui_left":
 			# Left again = enter submenu, this game's documented menu convention. Nine verbs
 			# below were raw KEY_* only, so a pad could not export, import, share, compose,
 			# toggle a row or switch profile at all. This is the pad's route to them.
@@ -1775,21 +1782,21 @@ func _input(event: InputEvent) -> void:
 		# Fall through for other inputs (save, toggle, etc.)
 
 	# D-Pad navigation - check echo to prevent rapid-fire when holding keys
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	if nav == "ui_up":
 		cursor_row = max(0, cursor_row - 1)
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
+	elif nav == "ui_left":
 		if cursor_col == 0:
 			# Enter portrait panel focus mode for character switching
 			_portrait_focused = true
@@ -1800,7 +1807,7 @@ func _input(event: InputEvent) -> void:
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		cursor_col = min(_get_max_col_for_row(cursor_row), cursor_col + 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
@@ -2487,7 +2494,7 @@ func _build_option_picker() -> void:
 	_option_picker.add_child(help)
 
 
-func _handle_option_picker_input(event: InputEvent) -> void:
+func _handle_option_picker_input(event: InputEvent, nav: String = "") -> void:
 	"""Self-contained input for the generic picker (mirrors _handle_share_picker_input)."""
 	if not _option_picker or not is_instance_valid(_option_picker):
 		return
@@ -2497,13 +2504,13 @@ func _handle_option_picker_input(event: InputEvent) -> void:
 	if options.is_empty():
 		_close_option_picker()
 		return
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	if nav == "ui_up":
 		spec["selected"] = (selected - 1 + options.size()) % options.size()
 		_option_picker.set_meta("spec", spec)
 		_build_option_picker()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		spec["selected"] = (selected + 1) % options.size()
 		_option_picker.set_meta("spec", spec)
 		_build_option_picker()
@@ -3259,7 +3266,7 @@ func _build_share_picker(files: Array) -> void:
 	_share_picker.add_child(help)
 
 
-func _handle_share_picker_input(event: InputEvent) -> void:
+func _handle_share_picker_input(event: InputEvent, nav: String = "") -> void:
 	"""Self-contained input for the import picker (keeps grid input frozen while open)."""
 	if not _share_picker or not is_instance_valid(_share_picker):
 		return
@@ -3267,12 +3274,12 @@ func _handle_share_picker_input(event: InputEvent) -> void:
 	var files: Array = _share_picker.get_meta("files")
 	var selected: int = _share_picker.get_meta("selected")
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	if nav == "ui_up":
 		_share_picker.set_meta("selected", (selected - 1 + files.size()) % files.size())
 		_build_share_picker(files)
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		_share_picker.set_meta("selected", (selected + 1) % files.size())
 		_build_share_picker(files)
 		SoundManager.play_ui("menu_move")

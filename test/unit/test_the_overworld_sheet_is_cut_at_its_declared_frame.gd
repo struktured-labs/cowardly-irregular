@@ -1,4 +1,5 @@
 extends GutTest
+const ImageProbe := preload("res://test/unit/helpers/image_probe.gd")
 
 ## The player's overworld walk sheet was cut at a hardcoded 32 px, guarded only by "is the image
 ## BIG ENOUGH" (`get_width() < 128 or get_height() < 128`). A sheet authored at any other frame
@@ -221,10 +222,22 @@ func test_a_frame_cut_at_any_size_still_renders_at_sprite_size() -> void:
 ## RoamingMonster read the computed dictionary, so deleting the line that APPLIES it left the arm
 ## green — an arm that runs, asserts, and defends nothing (cowir-controller). The rendered offset
 ## is the subject.
+
+## The bbox centre of the frame the avatar is rendering right now, as a ONE-ELEMENT array.
+##
+## ⛔ A HELPER SO THE ABORT IS VISIBLE. `(sprite.texture as Texture2D).get_image()` aborts its
+## ENCLOSING function when _update_sprite leaves the texture null. Inlined in the arm, that abort
+## was silent: Tests 13, Passing 13, EC 0, nothing red — measured 2026-09-17 by injecting a
+## typed-null abort. From here it returns [] and the caller counts it.
+func _centre_now(player: Node, sprite: Sprite2D) -> PackedFloat32Array:
+	var img: Image = (sprite.texture as Texture2D).get_image()
+	return PackedFloat32Array([float(player.call("_bbox_centre_x", img))])
+
 func test_turning_does_not_move_the_avatar() -> void:
 	const OWP := preload("res://src/exploration/OverworldPlayer.gd")
 	var drifted := 0
 	var probed := 0
+	var aborted := 0
 	# EVERY job, not a sample. My first list was fighter/mage/cleric/rogue/bard/time_mage/
 	# necromancer, and the two with real drift fall back to procedural so they were SKIPPED — the
 	# five that loaded all spread under the tolerance, and the mutation passed.
@@ -268,8 +281,11 @@ func test_turning_does_not_move_the_avatar() -> void:
 				player.set("current_direction", dir)
 				player.set("_anim_frame", f)
 				player.call("_update_sprite")
-				var img: Image = (sprite.texture as Texture2D).get_image()
-				var centre: float = player.call("_bbox_centre_x", img)
+				var probe := _centre_now(player, sprite)
+				if probe.is_empty():
+					aborted += 1
+					continue
+				var centre: float = probe[0]
 				if centre < 0.0:
 					continue
 				sum_raw += centre
@@ -309,6 +325,10 @@ func test_turning_does_not_move_the_avatar() -> void:
 			("%s: after correction the directions still draw %.2fpx apart inside the frame, so the "
 			+ "avatar slides sideways when it turns while its position is unchanged (uncorrected "
 			+ "spread %.2fpx)") % [job, hi - lo, rhi - rlo])
+	assert_eq(aborted, 0,
+		("%d frame measurements ABORTED instead of measuring. The helper returns [] when "
+		+ "get_image() raises on a null texture, so this reports a broken measurement rather than "
+		+ "letting it vanish into a green run") % aborted)
 	assert_gt(probed, 3, "ANTI-VACUITY: only %d jobs reached the artist-sheet path" % probed)
 	assert_gt(drifted, 0,
 		("ANTI-VACUITY: none of the probed jobs was off-centre at all, so the correction was proved "
@@ -461,7 +481,12 @@ func test_an_npc_renders_the_row_its_declaration_names() -> void:
 	for facing in cases:
 		npc.set("facing_direction", facing)
 		npc.call("_apply_facing")
-		var drawn: Image = (sprite.texture as Texture2D).get_image()
+		var probe := ImageProbe.image_of(sprite.texture as Texture2D)
+		assert_eq(probe.size(), 1,
+			"reading the rendered frame ABORTED rather than measuring which row was drawn")
+		if probe.is_empty():
+			continue
+		var drawn: Image = probe[0]
 		var got := int(roundf(drawn.get_pixel(0, 0).r * 8.0))
 		assert_eq(got, int(cases[facing]),
 			("facing %d must slice the row its DECLARATION names (%d), not the one the convention "
@@ -495,7 +520,12 @@ func test_a_wandering_npc_shows_the_row_its_declaration_names() -> void:
 	for dir in 4:
 		npc.set("_current_dir", dir)
 		npc.call("_update_archetype_frame")
-		var drawn: Image = (sprite.texture as Texture2D).get_image()
+		var probe := ImageProbe.image_of(sprite.texture as Texture2D)
+		assert_eq(probe.size(), 1,
+			"reading the rendered frame ABORTED rather than measuring which row was drawn")
+		if probe.is_empty():
+			continue
+		var drawn: Image = probe[0]
 		var got := int(roundf(drawn.get_pixel(0, 0).r * 8.0))
 		var want := int(PackedInt32Array([2, 3, 0, 1])[dir])
 		assert_eq(got, want,

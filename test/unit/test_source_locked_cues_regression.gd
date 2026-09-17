@@ -33,8 +33,12 @@ func test_the_fire_rotation_is_source_locked() -> void:
 func test_the_generator_refuses_source_locked_entries() -> void:
 	var gen := FileAccess.get_file_as_string(GENERATOR)
 	assert_ne(gen, "", "elevenlabs_sfx.py unreadable — this check would be vacuous")
-	assert_true('src.startswith("tools/")' in gen,
-		"the generator does not gate on a tools/ source — nothing stops a --force run from overwriting a synthesised cue")
+	## Pin the SHAPE, not the prefix. This asserted `src.startswith("tools/")` — a DENY-list of
+	## one spelling, which let 80 label-sourced assets (sox_synth, lmms_*, ffmpeg_derive) through.
+	assert_true(gen.contains("src.startswith("),
+		"the generator no longer keys any refusal on `source` — nothing stops a --force run from overwriting a hand-built cue")
+	assert_true(gen.contains("not src.startswith("),
+		"the source gate is a DENY-list: it names what to refuse, so an UNRECOGNISED source label passes. It must refuse unless the source is one it owns, so an unknown label fails CLOSED")
 	assert_false('if entry.get("source"):' in gen,
 		"the refusal is too broad: `source` is a provenance label on 88 entries and 11 are elevenlabs-sourced and legitimately regenerable")
 	assert_true("REFUSE" in gen,

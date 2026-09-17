@@ -111,22 +111,43 @@ func _build_collision() -> void:
 	add_child(cs)
 
 
+## The frame this portrait can be CUT and SCALED at, or ZERO to refuse the sheet.
+##
+## ⛔ A DECLARED FRAME OF 0 DIVIDES TO `inf`, NOT TO AN ERROR. `_build_silhouette` scales by
+## `TILE_SIZE * 2 / frame.x`, so a zero renders the masterite at infinite scale and nothing
+## reports it — a wrong NUMBER, which is the costume this class wears (cowir-sfx, 2026-09-17:
+## a `.size()` reaching a divisor is the same hazard as one reaching an index, and no
+## clamp-keyed sweep finds it). RoamingMonster refuses the same geometry at its own :163;
+## this site did the identical division and refused nothing until 2026-09-17.
+##
+## 🔑 A PURE FUNCTION SO A CONTROL CAN DRIVE IT. No shipped sheet declares a zero frame, so the
+## refusing branch is unreachable end-to-end — same limit as this lane's other geometry guards,
+## where the proof is a PAIR: this arm for the RULE, a source pin for the CONSUMER using it.
+static func usable_frame(geo: Dictionary) -> Vector2i:
+	var f = geo.get("frame", Vector2i(FRAME_W, FRAME_H))
+	if not (f is Vector2i):
+		return Vector2i.ZERO
+	return f if (f as Vector2i).x > 0 and (f as Vector2i).y > 0 else Vector2i.ZERO
+
+
 ## Artist sheet if one exists, procedural figure otherwise. Same path convention
 ## RoamingMonster._setup_sprite consumes, so masterite art drops in without a code change.
 func _build_silhouette() -> void:
 	var art := "res://assets/sprites/monsters/overworld/%s.png" % monster_id
-	if monster_id != "" and ResourceLoader.exists(art):
+	# The FRONT-facing frame, asked for by name. Row 0 was hardcoded here: correct for every
+	# shipped sheet and an assumption all the same — a sheet declaring walk_down elsewhere
+	# would show the masterite from BEHIND, with nothing failing.
+	var geo: Dictionary = HybridSpriteLoader.overworld_monster_geometry(monster_id)
+	var frame: Vector2i = usable_frame(geo)
+	if frame == Vector2i.ZERO and monster_id != "":
+		push_warning("[MASTERITE] '%s' declares an unusable frame — falling back to the procedural figure rather than scaling by zero" % monster_id)
+	if monster_id != "" and frame != Vector2i.ZERO and ResourceLoader.exists(art):
 		var art_sprite := Sprite2D.new()
 		art_sprite.name = "MasteriteSilhouette"
 		art_sprite.texture = load(art)
 		art_sprite.centered = true
 		# Overworld sheets are frame grids; without a region the WHOLE sheet draws as a block of figures
 		art_sprite.region_enabled = true
-		# The FRONT-facing frame, asked for by name. Row 0 was hardcoded here: correct for every
-		# shipped sheet and an assumption all the same — a sheet declaring walk_down elsewhere
-		# would show the masterite from BEHIND, with nothing failing.
-		var geo: Dictionary = HybridSpriteLoader.overworld_monster_geometry(monster_id)
-		var frame: Vector2i = geo.get("frame", Vector2i(FRAME_W, FRAME_H))
 		var down_row: int = int((geo.get("rows", {}) as Dictionary).get("walk_down", 0))
 		art_sprite.region_rect = Rect2(0, down_row * frame.y, frame.x, frame.y)
 		# One frame is mob-sized; a masterite fills its own 2x2 trigger so what you see is what you touch

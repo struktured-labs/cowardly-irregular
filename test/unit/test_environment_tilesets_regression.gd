@@ -1,4 +1,5 @@
 extends GutTest
+const ImageProbe := preload("res://test/unit/helpers/image_probe.gd")
 
 ## The two derived-layer tilesets. Collision geometry is the contract: a mask tile carries
 ## exactly one 4px strip per set bit on the matching side, the face blocks the whole cell,
@@ -64,10 +65,20 @@ func test_overlay_tileset_is_walkable_everywhere() -> void:
 
 
 func test_face_and_stair_tiles_are_not_blank() -> void:
-	var cliff := _source(ETS.build_cliff_tileset()).texture.get_image()
+	var cliff_probe := ImageProbe.image_of(_source(ETS.build_cliff_tileset()).texture)
+	assert_eq(cliff_probe.size(), 1,
+		"reading the cliff tileset ABORTED rather than measuring it")
+	if cliff_probe.is_empty():
+		return
+	var cliff: Image = cliff_probe[0]
 	var face_px := cliff.get_pixel(ETS.FACE_ID * ETS.TILE + 16, 16)
 	assert_gt(face_px.a, 0.9, "face tile is painted")
-	var overlay := _source(ETS.build_overlay_tileset()).texture.get_image()
+	var overlay_probe := ImageProbe.image_of(_source(ETS.build_overlay_tileset()).texture)
+	assert_eq(overlay_probe.size(), 1,
+		"reading the overlay tileset ABORTED rather than measuring it")
+	if overlay_probe.is_empty():
+		return
+	var overlay: Image = overlay_probe[0]
 	var stair_px := overlay.get_pixel(ETS.STAIR_ID * ETS.TILE + 16, 16)
 	assert_gt(stair_px.a, 0.9, "stair tile is painted")
 	var blank := overlay.get_pixel(16, 16)

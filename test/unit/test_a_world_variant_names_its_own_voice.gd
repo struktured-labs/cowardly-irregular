@@ -112,14 +112,23 @@ func test_no_manifest_entry_names_a_file_that_is_not_there() -> void:
 	assert_gt(sm._sfx_manifest.size(), 0, "VOID, not clean: the sfx manifest read back 0 keys")
 	assert_true(sm._sfx_manifest.has("attack_hit"), "VOID, not clean: the manifest lacks a key every build has")
 	var missing: Array = []
+	## An EMPTY file field used to `continue` here — the one case this arm skipped is the one that
+	## misbehaves at runtime: _try_play_sfx_from_manifest STAMPS the cooldown at :626 and only then
+	## returns false on an empty path (:638), so the next call within SFX_MIN_INTERVAL_MS hits the
+	## gate, returns true, and suppresses the PROCEDURAL fallback for a cue that never sounded.
+	## Zero entries today (measured 2026-09-17) and nothing kept that true.
+	var blank: Array = []
 	for key in sm._sfx_manifest.keys():
 		var f: String = str(sm._sfx_manifest[key].get("file", ""))
 		if f == "":
+			blank.append(str(key))
 			continue
 		var path: String = f if f.begins_with("res://") else "res://" + f
 		if not ResourceLoader.exists(path):
 			missing.append("%s -> %s" % [str(key), f])
 	assert_eq(missing.size(), 0, "manifest keys name files that are not on disk: %s" % str(missing))
+	assert_eq(blank.size(), 0,
+		"manifest entries with an EMPTY file field (%d): %s — each stamps its cooldown and plays nothing, silencing the procedural fallback for the next %sms" % [blank.size(), str(blank), str(sm.get("SFX_MIN_INTERVAL_MS"))])
 
 
 func test_every_member_this_file_reaches_for_still_exists() -> void:

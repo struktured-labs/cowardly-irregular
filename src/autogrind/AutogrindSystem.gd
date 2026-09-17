@@ -653,6 +653,17 @@ func create_scaled_enemy_data(base_data: Dictionary) -> Dictionary:
 	return scaled
 
 
+## A KO'd member earns nothing — unless gear or a passive says so (struktured 2026-09-06).
+## Asks LIVE's own predicate instead of growing a third copy of the equipment walk: BattleManager
+## owns both halves (mourners_ledger's accessory key, posthumous_credit's meta_effect) and resolves
+## PassiveSystem from the TREE, which a detached grind Combatant cannot do for itself.
+func _earns_exp_while_dead(member) -> bool:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null or not bm.has_method("earns_exp_while_dead"):
+		return false
+	return bool(bm.earns_exp_while_dead(member))
+
+
 func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 	"""Handle a battle victory during autogrind.
 	Updates stats, CSI, efficiency, checks thresholds."""
@@ -691,9 +702,9 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 		else:
 			total_items_gained[item_id] = quantity
 
-	# Award EXP to party
+	# Award EXP to party — the dead earn nothing without the gear or passive that says otherwise
 	for member in grind_party:
-		if member is Combatant and member.is_alive:
+		if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
 			member.gain_job_exp(adjusted_exp)
 
 	# Derive JP: 1 base JP per battle, scaled by yield and efficiency
@@ -1094,7 +1105,9 @@ func _process_battle_results(result: Dictionary) -> void:
 			else:
 				total_items_gained[item_id] = quantity
 
-		# Award EXP to party
+		# Award EXP to party. NOT given the exp_while_dead exception the other two sites carry:
+		# _run_automated_battle, this function's only caller, has ZERO callers of its own. Wiring a
+		# dead path would make the fix look three-for-three while the grind ran two.
 		for member in grind_party:
 			if member is Combatant and member.is_alive:
 				member.gain_job_exp(adjusted_exp)
@@ -1325,7 +1338,7 @@ func on_meta_boss_victory(boss_data: Dictionary) -> void:
 	# Bonus EXP from meta-boss
 	var bonus_exp: int = boss_data.get("exp_reward", 250)
 	for member in grind_party:
-		if member is Combatant and member.is_alive:
+		if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
 			member.gain_job_exp(bonus_exp)
 	total_exp_gained += bonus_exp
 	_grind_stats["total_exp"] += bonus_exp

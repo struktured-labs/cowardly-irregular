@@ -1,4 +1,5 @@
 extends GutTest
+const ImageProbe := preload("res://test/unit/helpers/image_probe.gd")
 
 ## The head-lock gate's coverage is a HAND LIST. This joins it to the corpus.
 ##
@@ -128,7 +129,12 @@ func test_every_exemption_is_still_EARNED() -> void:
 		var path := "res://assets/sprites/npcs/%s/overworld.png" % name
 		if not ResourceLoader.exists(path):
 			continue  # the other test reports a missing sheet
-		var img: Image = (load(path) as Texture2D).get_image()
+		var probe := ImageProbe.image_of(load(path) as Texture2D)
+		assert_eq(probe.size(), 1,
+			"%s: reading the sheet ABORTED rather than measuring it" % path)
+		if probe.is_empty():
+			continue
+		var img: Image = probe[0]
 		var worst := 0
 		for row in range(4):
 			var bbox: Vector2i = gate._frame_bbox_y(img, row, 0)

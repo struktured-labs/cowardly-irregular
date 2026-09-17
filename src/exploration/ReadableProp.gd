@@ -246,12 +246,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		if SoundManager:
 			SoundManager.play_ui("menu_cancel")  # menu_back exists in neither manifest nor SOUNDS (orphan audit)
 		return
-	if _entries.size() > 1 and event.is_action_pressed("ui_right"):
+	# MenuNav, not a raw read: ui_left/ui_right bind the stick's X axis and an axis carries no echo
+	# flag, so one push turned five pages. Measured: dpad 1, odd-ramp 5, even-ramp 4.
+	var nav: String = MenuNav.step(event)
+	if _entries.size() > 1 and nav == "ui_right":
 		_page = mini(_page + 1, _entries.size() - 1)
 		_render_page()
 		get_viewport().set_input_as_handled()
 		return
-	if _entries.size() > 1 and event.is_action_pressed("ui_left"):
+	if _entries.size() > 1 and nav == "ui_left":
 		_page = maxi(_page - 1, 0)
 		_render_page()
 		get_viewport().set_input_as_handled()

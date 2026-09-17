@@ -104,6 +104,17 @@ func test_the_sprite_offset_moves_the_head() -> void:
 
 ## REAL SHEETS. Expectation comes from the ENGINE's own frame rect (get_rect honours centered + offset),
 ## so this arm does not re-derive head_lift's arithmetic — it checks it against the draw geometry.
+
+## The transparent margin above the figure in a frame, as a ONE-ELEMENT array.
+##
+## ⛔ THE RETURN TYPE IS THE POINT. `get_image()` on a null texture aborts its enclosing function,
+## and a `-> float` helper would hand back 0.0 — a VALID top, indistinguishable from a figure
+## flush with the frame. An empty array is not a measurement anything could produce.
+## Inlined, an abort here left the run green: Tests 9, Passing 9, EC 0 (measured 2026-09-17).
+func _used_top(tex: Texture2D) -> PackedFloat32Array:
+	var img: Image = tex.get_image()
+	return PackedFloat32Array([float(img.get_used_rect().position.y)])
+
 func test_the_real_job_sheets_land_on_their_own_figures() -> void:
 	var tops: Array = []
 	for job in STARTERS:
@@ -118,8 +129,13 @@ func test_the_real_job_sheets_land_on_their_own_figures() -> void:
 		spr.scale = Vector2(1.23, 1.23)
 		add_child_autofree(spr)
 		var tex: Texture2D = sf.get_frame_texture(&"idle", 0)
-		var img: Image = tex.get_image()
-		var used_top: float = float(img.get_used_rect().position.y)
+		var top_probe := _used_top(tex)
+		assert_eq(top_probe.size(), 1,
+			("%s: reading the idle frame produced no top. The helper returns an EMPTY array when it "
+			+ "ABORTS, so this reports a failed measurement, not a figure sitting at y=0") % job)
+		if top_probe.is_empty():
+			continue
+		var used_top: float = top_probe[0]
 		tops.append(used_top)
 		# Sprite2D.get_rect() is the ENGINE's own centered+offset rule for a frame this size — the oracle for where the frame hangs off the origin. AnimatedSprite2D exposes no get_rect.
 		var oracle := Sprite2D.new()
