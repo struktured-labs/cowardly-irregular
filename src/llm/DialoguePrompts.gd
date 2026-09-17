@@ -236,6 +236,8 @@ Conditions (AND-chained). type is one of:
   ally_dead, is_night, weather,
   always, has_buff, not_has_buff, volatility_band
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
+ap is the Advance Point bank and runs -4 to +4: 4 is a full bank, negative is debt.
+A value outside that range validates and then never fires.
 ally_dead, is_night and always are NULLARY — no op, no value. ally_dead is
 true while any member of the caster's own party is down, whatever the party
 size; pair it with a revival ability id like 'raise'. is_night is true only
@@ -1581,6 +1583,12 @@ static func _format_events(events: Array, limit: int) -> String:
 	var lines: PackedStringArray = PackedStringArray()
 	var start: int = events.size() - n
 	for i in range(start, events.size()):
+		## A non-Dictionary entry assigned to a typed Dictionary is a SCRIPT ERROR that aborts
+		## this function — so ONE malformed event silently costs the prompt its entire context
+		## block, including entries already appended. Measured: a valid entry placed before a
+		## bare string is lost with it. Skipping costs that one entry instead.
+		if typeof(events[i]) != TYPE_DICTIONARY:
+			continue
 		var entry: Dictionary = events[i]
 		var summary: String = str(entry.get("summary", ""))
 		var etype: String = str(entry.get("type", ""))

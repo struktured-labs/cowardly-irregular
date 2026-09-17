@@ -74,18 +74,27 @@ func test_page_jump_is_a_meaningful_stride() -> void:
 ## menus someone remembers to update: any UI file reaching for a keyboard-only nav action is
 ## shipping a control a controller cannot press, in a project whose first rule is the opposite.
 func test_no_menu_pages_through_a_keyboard_only_action() -> void:
-	var declared := FileAccess.get_file_as_string("res://project.godot")
 	var offenders: Array = []
+	var unreadable: Array = []
 	var scanned := 0
+	# ⛔ ASK InputMap, NOT project.godot. The old check read the FILE for a declaration, which is a
+	# PROXY for the property this list rests on. They diverge: Godot's built-ins live in InputMap
+	# and are declared nowhere (cowir-main, 2026-09-17 — 85 actions vs 14 authored), and the
+	# exporter renames project.godot to project.binary so the file is not even the shipped artifact.
 	for action in KEYBOARD_ONLY_PAGE_ACTIONS + KEYBOARD_ONLY_EXTRA_ACTIONS:
-		assert_false(declared.contains("\n%s={" % action),
-			"%s is now declared in project.godot — if it was given a pad binding, drop it from this list" % action)
+		assert_true(InputMap.has_action(action),
+			"%s is not an action at all — this list describes nothing" % action)
+		assert_eq(_joypad_events(action), 0,
+			"%s now has %d joypad event(s) — it is no longer keyboard-only, drop it from this list"
+			% [action, _joypad_events(action)])
 	for path in _ui_scripts("res://src/ui"):
 		# Comment-stripped: the fix for this very defect explains itself in a comment naming both
 		# actions, and a raw scan would red on the sentence describing why they were removed.
-		var src: String = GdSource.code_of(path)
-		if src == "":
+		# An unreadable file is a corpus DROP, not a pass — it used to `continue` silently.
+		if FileAccess.get_file_as_string(path) == "":
+			unreadable.append(path.get_file())
 			continue
+		var src: String = GdSource.code_of(path)
 		scanned += 1
 		for action in KEYBOARD_ONLY_PAGE_ACTIONS:
 			if src.contains('is_action_pressed("%s")' % action):
@@ -93,6 +102,8 @@ func test_no_menu_pages_through_a_keyboard_only_action() -> void:
 		for action in KEYBOARD_ONLY_EXTRA_ACTIONS:
 			if src.contains('is_action_pressed("%s")' % action) and not src.contains("MenuPaging.page_delta("):
 				offenders.append("%s -> %s with no pad-reachable page jump beside it" % [path.get_file(), action])
+	assert_eq(unreadable, [],
+		"these src/ui files could not be read, so the sweep never saw them: %s" % [unreadable])
 	assert_gt(scanned, 20, "the scan must actually read the UI corpus; a short corpus passes vacuously")
 	assert_eq(offenders, [],
 		"these menus navigate with an action that has no gamepad binding, so the control is "
@@ -218,3 +229,22 @@ func test_the_paging_exemptions_are_still_exempt() -> void:
 		elif not _is_windowed(code):
 			stale.append("%s no longer windows its list — the exemption is about nothing" % str(e["path"]).get_file())
 	assert_eq(stale, [], "%s" % [stale])
+
+
+## Joypad events bound to an action in the LIVE InputMap — the property the keyboard-only lists
+## rest on, rather than whether project.godot happens to spell it out.
+func _joypad_events(action: String) -> int:
+	var n := 0
+	for e in InputMap.action_get_events(action):
+		if e is InputEventJoypadButton or e is InputEventJoypadMotion:
+			n += 1
+	return n
+
+
+## CONTROL: the counter must be able to say YES, or the zeros above are the answer it always gives.
+func test_control_the_joypad_counter_can_see_a_pad_binding() -> void:
+	for action in ["battle_defer", "battle_advance"]:
+		assert_true(InputMap.has_action(action), "%s must exist for this control to mean anything" % action)
+		assert_gt(_joypad_events(action), 0,
+			"%s is the pad-reachable page control and reads as having NO joypad events — then the "
+			% action + "zeros asserted above are this counter failing, not the actions being keyboard-only")

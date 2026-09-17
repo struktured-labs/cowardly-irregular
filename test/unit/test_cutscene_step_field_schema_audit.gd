@@ -334,9 +334,11 @@ func test_every_step_field_the_director_reads_is_declared() -> void:
 	var bodies := _director_functions()
 	var handlers_seen := 0
 	var undeclared: Array = []
+	var unreachable: Array = []
 	for step_type in STEP_SCHEMA:
 		var handler := "_step_%s" % step_type
 		if not bodies.has(handler):
+			unreachable.append(step_type)
 			continue
 		handlers_seen += 1
 		var declared: Array = []
@@ -345,8 +347,12 @@ func test_every_step_field_the_director_reads_is_declared() -> void:
 		for field in _reads_reachable(handler, bodies, []):
 			if field != KNOWN_ONLY_SEMANTIC and not declared.has(field):
 				undeclared.append("%s.%s" % [step_type, field])
-	# Corpus floor: the derivation is worthless if it matched no handlers at all.
-	assert_gt(handlers_seen, 30,
-		"derivation must reach the director's step handlers — %d matched" % handlers_seen)
+	# Relationship, not a magnitude. The shipped floor was `> 30` against 34 handlers,
+	# so THREE could be renamed away and their fields would go unchecked behind the
+	# `continue` above with nothing saying so — a threshold defending a correspondence.
+	assert_eq(unreachable.size(), 0,
+		"STEP_SCHEMA declares these types but this derivation cannot find their _step_<type> handler, so their fields are unchecked: %s" % str(unreachable))
+	assert_eq(handlers_seen, STEP_SCHEMA.size(),
+		"every declared step type must be checked — reached %d of %d" % [handlers_seen, STEP_SCHEMA.size()])
 	assert_eq(undeclared.size(), 0,
 		"CutsceneDirector reads step fields STEP_SCHEMA does not declare, so authoring them reds this audit while the engine honours them: %s" % str(undeclared))

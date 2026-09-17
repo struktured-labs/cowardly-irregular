@@ -789,6 +789,10 @@ func play_voice(sound_key: String) -> float:
 	_sfx_cooldowns.erase(sound_key)
 	if not _try_play_sfx_from_manifest(_voice_player, sound_key, VOICE_PLAYER_BASE_DB):
 		return 0.0
+	## The erase above only clears the OUTER key; a fallback_to target can still be cooled, and a
+	## suppressed return leaves the PREVIOUS line's stream on the player for get_length() to time.
+	if _sfx_suppressed_by_cooldown:
+		return 0.0
 	if _voice_player.stream == null:
 		return 0.0
 	return _voice_player.stream.get_length()
@@ -1999,7 +2003,7 @@ func _is_stinger_track(track_id: String) -> bool:
 	return bool(e.get("stinger", track_id.begins_with("stinger_")))
 
 
-func play_music(track: String, exact: bool = false) -> void:
+func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> void:
 	"""Play a music track with crossfade transition.
 	`exact` plays the named manifest id verbatim: the two rewrites below map a
 	GENERIC request onto the current world, which is wrong for a caller that
@@ -2093,8 +2097,14 @@ func play_music(track: String, exact: bool = false) -> void:
 			and not PROCEDURAL_BATTLE_TRACKS.has(track):
 		manifest_track_id = "battle_" + _current_world_suffix
 	if _music_manifest.has(manifest_track_id):
+		## ⛔ PARK THE RESUME ONLY AROUND THE ATTEMPT THAT CONSUMES IT. _try_play_from_manifest
+		## clears it at its PLAY, which is below two early `return false`s -- so a failed attempt
+		## would leave the position parked for whatever plays next, which is the leak its own
+		## comment warns about ("a parked position outlives its own start").
+		_pending_resume_position = resume_at
 		if _try_play_from_manifest(manifest_track_id):
 			return
+		_pending_resume_position = 0.0
 
 	# Universal music cache — skip expensive generation if this track was already built
 	if _music_cache.has(track):
@@ -2225,7 +2235,12 @@ func restore_music_state(state: Dictionary) -> void:
 		return
 	var track: String = str(state.get("track", ""))
 	if track != "":
-		play_music(track)
+		## ⛔ THE POSITION TRAVELS ON THIS PATH TOO. capture_music_state has recorded it since
+		## 2026-09-16 -- "a restore without one RESTARTS THE BED" -- and the fix reached the AREA
+		## branch above and not this one. Measured 2026-09-17: captured 0.28 s, restored 0.00 s,
+		## against the area branch's 0.37 -> 0.38. Reachable by pausing during a battle: play_music
+		## clears _current_area, so a battle/boss/victory bed restores through HERE.
+		play_music(track, false, float(state.get("position", 0.0)))
 
 
 func stop_music() -> void:

@@ -125,5 +125,10 @@ func test_an_unhandled_branch_condition_is_not_silent() -> void:
 	assert_gt(idx, -1, "_step_branch must exist")
 	var next_fn := text.find("\nfunc ", idx + 1)
 	var body := text.substr(idx, next_fn - idx) if next_fn > 0 else text.substr(idx)
-	assert_true(body.contains("push_warning"),
-		"_step_branch must warn when a branch condition matches no handler, or authored sub-steps vanish silently")
+	# A bare contains("push_warning") passes as soon as ANY warning exists in this
+	# function — including one added to the flag path — so it would stop guarding
+	# the fallthrough without reddening. Pin the arm and the message it owes.
+	assert_true(body.contains("\n\telse:"),
+		"_step_branch must keep an else arm — without it an unknown condition runs nothing silently")
+	assert_true(body.contains("has no handler"),
+		"the fallthrough must NAME the unhandled condition; a silent else is the same bug with extra lines")
