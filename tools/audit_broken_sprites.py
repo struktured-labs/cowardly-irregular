@@ -51,6 +51,69 @@ STRAY_MAX_RATIO = 0.15   # ≥ 15% → not stray, multi-body
 STRAY_MIN_GAP = 8        # pixels of separation from main
 
 
+_DECLARED_CELLS: dict[str, tuple[int, int]] | None = None
+
+
+def declared_cells() -> dict[str, tuple[int, int]]:
+    """path -> (frame_w, frame_h) for every manifest entry that declares one.
+
+    ⛔ THE HEURISTIC BELOW IS A STRIP HEURISTIC AND THE CORPUS HAS GRIDS. `H <= 128 -> frame_w =
+    128` plus a horizontal-only split turns a 128x128 overworld sheet into ONE frame holding
+    SIXTEEN figures — reported as `multi_body x15`, which is the grid being counted rather than a
+    broken sprite. Measured 2026-09-17 on the game repo: 275 of 666 files scored non-zero, and the
+    overworld sheets among them were all this. A detector that floods hides the findings it has.
+
+    So the DECLARATION wins where there is one and the heuristic is the fallback, which is the
+    same repair `audit_sprite_wiring` needed for the same conflation the day before.
+    """
+    global _DECLARED_CELLS
+    if _DECLARED_CELLS is None:
+        _DECLARED_CELLS = {}
+        mf = GAME_REPO / "data" / "sprite_manifest.json"
+        try:
+            data = json.loads(mf.read_text())
+        except Exception:
+            return _DECLARED_CELLS
+        for section, node in data.items():
+            if not isinstance(node, dict):
+                continue
+            for entry in node.values():
+                if not isinstance(entry, dict):
+                    continue
+                path = str(entry.get("path", ""))
+                fw, fh = entry.get("frame_width"), entry.get("frame_height")
+                if path.endswith(".png") and fw and fh:
+                    _DECLARED_CELLS[path.replace("res://", "")] = (int(fw), int(fh))
+    return _DECLARED_CELLS
+
+
+def convention_cell(rel: str) -> tuple[int, int] | None:
+    """The cell size the RUNTIME slices an overworld sheet at, for sheets the manifest omits.
+
+    ⛔ THE MANIFEST DECLARES 10 OF 116 OVERWORLD MONSTER SHEETS — that section is an audit ledger
+    and the art is reached by PATH CONVENTION (see HybridSpriteLoader.npc_overworld_path). So
+    `declared_cells()` alone still left 85 grid sheets on the strip heuristic, reported as
+    `multi_body x15` through `x63` — the grid being counted, not a defect.
+
+    32px is not a guess: RoamingMonster.FRAME_W, OverworldNPC._ARCHETYPE_FRAME_W and
+    OverworldPlayer.SPRITE_SIZE are all 32, and every one of the 85 sheets is 128x128. A detector
+    should slice the way the engine slices, or it is measuring a picture the game never draws.
+    """
+    if "/overworld/" in rel or Path(rel).name.startswith("overworld"):
+        return (32, 32)
+    return None
+
+
+def split_cells(img: np.ndarray, fw: int, fh: int) -> list[np.ndarray]:
+    """Every cell of a GRID sheet, row-major. One frame when the sheet is a single cell."""
+    H, W = img.shape[:2]
+    if fw <= 0 or fh <= 0:
+        return [img]
+    cols, rows = max(1, W // fw), max(1, H // fh)
+    return [img[r * fh:(r + 1) * fh, c * fw:(c + 1) * fw]
+            for r in range(rows) for c in range(cols)]
+
+
 def split_frames(img: np.ndarray, frame_w: int) -> list[np.ndarray]:
     """Split a horizontal strip into square-ish frames of frame_w wide."""
     H, W = img.shape[:2]
@@ -140,13 +203,21 @@ def audit_file(path: Path) -> dict:
     img = np.array(Image.open(path).convert("RGBA"))
     H, W = img.shape[:2]
     # Guess frame width: monster/job sheets 256 or 128; portrait single 256
-    if "portraits" in str(path):
-        frame_w = W
-    elif H <= 128:
-        frame_w = 128
+    rel = str(path.relative_to(GAME_REPO)) if str(path).startswith(str(GAME_REPO)) else str(path)
+    cell = declared_cells().get(rel)
+    if cell is None:
+        cell = convention_cell(rel)
+    if cell is not None:
+        frame_w = cell[0]
+        frames = split_cells(img, cell[0], cell[1])
     else:
-        frame_w = 256
-    frames = split_frames(img, frame_w)
+        if "portraits" in str(path):
+            frame_w = W
+        elif H <= 128:
+            frame_w = 128
+        else:
+            frame_w = 256
+        frames = split_frames(img, frame_w)
     results = []
     for idx, frame in enumerate(frames):
         a = analyze_frame(frame)

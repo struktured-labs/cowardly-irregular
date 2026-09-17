@@ -58,13 +58,32 @@ func _kit_for(job_id: String) -> Dictionary:
 	}
 
 
+## Autogrind is party-level: the real composer builds this from GameLoop.party, which a
+## -s script has no autoloads for. Same hand-rebuild as _kit_for, over the five starters.
+func _party_kit_for() -> Dictionary:
+	var members: Array = []
+	for job_id in ["fighter", "cleric", "mage", "rogue", "bard"]:
+		var k: Dictionary = _kit_for(job_id)
+		if k.is_empty():
+			continue
+		members.append({
+			"member": job_id, "job_id": job_id,
+			"kit": k.get("kit", []), "costs": k.get("costs", {}),
+		})
+	if members.is_empty():
+		return {}
+	return {"resolved": true, "party": members}
+
+
 func _init() -> void:
 	var DP = load("res://src/llm/DialoguePrompts.gd")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	var scenarios: Array = []
 	for ask in ASKS:
+		var kc: Dictionary = _party_kit_for() if str(ask["domain"]) == "autogrind" \
+			else _kit_for(str(ask["job"]))
 		var prompt: String = DP.build_rule_composition(
-			str(ask["domain"]), str(ask["text"]), [], _kit_for(str(ask["job"])))
+			str(ask["domain"]), str(ask["text"]), [], kc)
 		var path: String = "%s/%s.txt" % [OUT, str(ask["key"])]
 		var f := FileAccess.open(path, FileAccess.WRITE)
 		f.store_string(prompt)

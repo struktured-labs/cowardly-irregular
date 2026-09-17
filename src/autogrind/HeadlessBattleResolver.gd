@@ -442,6 +442,20 @@ func _detect_formation(alive_party: Array) -> Dictionary:
 	return {}
 
 
+## Live's post-fix form (BattleManager `_living_count` / `_group_scale`, cowir-battle 6b89ecf4b): a
+## pooled strike scales on the LIVING roster, never the rostered one.
+## ⚠️ DEAD CODE IN THIS FILE TODAY, and recorded as such rather than dressed as a repair: both
+## callers pass `alive`, filtered one line above in the same frame, and the blade_storm loop damages
+## ENEMIES — nothing can kill a participant mid-execution. Live's gap is real because its roster is
+## fixed at SELECTION and execution is speed-sorted; this resolver has no such gap.
+## 🔑 ALIGNED ANYWAY because the two engines had started computing DIFFERENTLY, and in OPPOSITE
+## directions: live pre-fix made the strike stronger when a member died, this file makes it weaker
+## (blade_storm CONSUMES a hit on a dead attacker via its `continue`). Two engines disagreeing about
+## the SIGN of an error from one authored formation is the failure this resolver exists to prevent.
+func _living(participants: Array) -> Array:
+	return participants.filter(func(p): return p is Combatant and p.is_alive)
+
+
 func _execute_group_physical(participants: Array, group_type: String) -> Dictionary:
 	"""Execute all-out attack — AoE physical damage to all enemies."""
 	var total_power = 0.0
@@ -450,7 +464,7 @@ func _execute_group_physical(participants: Array, group_type: String) -> Diction
 			p.spend_ap(1)
 			total_power += p.get_buffed_stat("attack", p.attack)
 
-	var scale = pow(participants.size(), 1.5)
+	var scale = pow(maxi(1, _living(participants).size()), 1.5)
 	var alive_enemies = _enemy_party.filter(func(e): return e.is_alive)
 
 	for enemy in alive_enemies:
@@ -473,7 +487,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 		if p is Combatant and p.is_alive:
 			p.spend_ap(ap_cost)
 
-	var scale = pow(participants.size(), 1.5)
+	var scale = pow(maxi(1, _living(participants).size()), 1.5)
 
 	match formation_id:
 		"four_heroes":
@@ -504,10 +518,16 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 			_log("FORMATION: Arcane Tempest — raw magic ignores resistances!")
 
 		"blade_storm":
-			var hit_count = participants.size() * 2
+			## Budget AND selection both from the living roster, mirroring live's post-fix form. Fixing
+			## only the budget left a rostered corpse still selectable, and `continue` then CONSUMED
+			## the hit — six budgeted, four thrown. My own "was the first instance the only one",
+			## failed minutes after writing it down, and caught by the arm's numbers rather than by it
+			## going red: 197 vs 154 inside a tolerance I had set too loose.
+			var storm_living = _living(participants)
+			var hit_count = storm_living.size() * 2
 			for _hit in range(hit_count):
-				var attacker = participants[randi() % participants.size()]
-				if not (attacker is Combatant) or not attacker.is_alive: continue
+				if storm_living.is_empty(): break
+				var attacker = storm_living[randi() % storm_living.size()]
 				if alive_enemies.is_empty(): break
 				var target = alive_enemies[randi() % alive_enemies.size()]
 				if not target.is_alive: continue
@@ -791,13 +811,7 @@ func _resolve_attack(attacker, target) -> int:
 	## reporting `invisible` as ignored while the code honoured it. A composed writer under a literal
 	## scan is the exact shape that guard exists to catch, so the implementation reads the way the
 	## measurement does.
-	if target.has_status("invisible"):
-		target.remove_status("invisible")
-		_log("%s strikes thin air — %s was invisible!" % [attacker.combatant_name, target.combatant_name])
-		return 0
-	if target.has_status("shadow_step"):
-		target.remove_status("shadow_step")
-		_log("%s strikes thin air — %s had stepped into shadow!" % [attacker.combatant_name, target.combatant_name])
+	if _target_dodges_physical(attacker, target):
 		return 0
 
 	var base_miss: float = 0.10
@@ -806,12 +820,6 @@ func _resolve_attack(attacker, target) -> int:
 	var miss_chance = max(0.02, min(0.60, base_miss - (attacker.speed - target.speed) * 0.05))
 	if randf() < miss_chance:
 		_log("%s misses %s!" % [attacker.combatant_name, target.combatant_name])
-		return 0
-	## equipment evasion_bonus is a SEPARATE roll in live (BattleManager:9106), not folded into the
-	## miss chance — elven_cloak plus a passive gives two independent chances to dodge. Same clamp.
-	var equip_dodge: float = clampf(_sum_equipment_special_effect(target, "evasion_bonus"), 0.0, 0.50)
-	if equip_dodge > 0.0 and randf() < equip_dodge:
-		_log("%s evades %s's attack!" % [target.combatant_name, attacker.combatant_name])
 		return 0
 
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
@@ -835,6 +843,11 @@ func _resolve_attack(attacker, target) -> int:
 		damage *= 1.5
 		_log("Critical hit!")
 
+	## returned_sword's Familiar Weight, mirroring BattleManager:4498 — applied to the PRE-mitigation
+	## damage, exactly where live applies it, because this file's defense formula is quadratic and
+	## scaling `actual` instead would give a different number for the same gear.
+	damage = float(_apply_familiar_weight_bonus(attacker, target, int(damage)))
+
 	var def_val = float(target.get_buffed_stat("defense", target.defense))
 	# Guard divisor (mirrors Combatant.take_damage). attack 0 + defense 0
 	# combinations are reachable: get_buffed_stat returns 0 for base 0
@@ -854,6 +867,106 @@ func _resolve_attack(attacker, target) -> int:
 	## be the axis-2 error this lane's ledger exists to catch — a key read on the wrong executor.
 	_apply_equipment_on_hit_status(attacker, target)
 	return actual
+
+
+## Twin of BattleManager._apply_familiar_weight_bonus (:3120). returned_sword's "Familiar Weight":
+## +10% damage against any enemy the party has SEEN or DEFEATED, or that lives in the item's own
+## static ledger. Live applies it from TWO sites — _execute_attack (:4498) and
+## _execute_physical_ability (:4915) — so this file does too.
+##
+## 🔑 THE MOST GRIND-RELEVANT GEAR EFFECT IN THE GAME, and it was invisible to this lane's gear
+## census because HALF OF IT LIVES OUTSIDE `special_effects`: the bonus is a special_effect, the seed
+## list is a TOP-LEVEL equipment field. A census keyed on special_effects could only ever see one
+## half. Found by applying @cowir-battle's "the predicate is a corpus" to my own census.
+##
+## ⚠️ A grind fills the bestiary faster than any other play, so `bestiary_hit` is true of nearly
+## everything after the first few battles — this is worth MORE in a grind than in a normal fight,
+## which is the opposite of how it reads from the item description.
+func _apply_familiar_weight_bonus(attacker, target, damage: int) -> int:
+	if attacker == null or target == null or damage <= 0:
+		return damage
+	var bonus: float = _sum_equipment_special_effect(attacker, "familiar_weight_bonus")
+	if bonus <= 0.0:
+		return damage
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return damage
+	var mtype: String = str(target.get_meta("monster_type", ""))
+	if mtype == "":
+		return damage
+	var bs = _get_autoload("BestiarySystem")
+	var bestiary_hit: bool = false
+	if bs and bs.has_method("is_seen") and bs.has_method("is_defeated"):
+		bestiary_hit = bs.is_seen(mtype) or bs.is_defeated(mtype)
+	var seed_hit: bool = mtype in _familiar_weight_static_seed(attacker)
+	if not (bestiary_hit or seed_hit):
+		return damage
+	return int(round(damage * (1.0 + bonus)))
+
+
+## Union of the familiar_weight_static_seed arrays on all three slots, mirroring :3144. A TOP-LEVEL
+## equipment field rather than a special_effect, which is exactly why the gear census missed it.
+func _familiar_weight_static_seed(combatant) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	if combatant == null:
+		return out
+	var es = _get_autoload("EquipmentSystem")
+	if es == null:
+		return out
+	for slot in [["equipped_weapon", "get_weapon"], ["equipped_armor", "get_armor"], ["equipped_accessory", "get_accessory"]]:
+		var field: String = str(slot[0])
+		if not (field in combatant):
+			continue
+		var eid: String = str(combatant.get(field))
+		if eid == "" or not es.has_method(str(slot[1])):
+			continue
+		var entry: Dictionary = es.call(str(slot[1]), eid)
+		var raw: Variant = entry.get("familiar_weight_static_seed", [])
+		if not (raw is Array):
+			continue
+		for m in (raw as Array):
+			var mstr: String = str(m)
+			if mstr != "" and not (mstr in out):
+				out.append(mstr)
+	return out
+
+
+## Twin of BattleManager._target_dodges_physical (:9046), and EXTRACTED for live's own reason: live
+## calls it from TWO sites — _execute_attack (:4391) and _execute_physical_ability (:4853) — so a
+## physical ABILITY can be dodged exactly as a basic swing can. This resolver had the logic inline in
+## _resolve_attack and the physical-ability arm had NO dodge check at all, so a grinding party's
+## power_strike, cleave and slash could never be evaded while the real game's can.
+##
+## ⚠️ SCOPE, stated because it is narrower than live's: this mirrors the three components the grind
+## ALREADY modelled — invisible, shadow_step and equipment evasion_bonus. Live's version also rolls
+## an `evasion` STATUS (0.6) and a monster `phase_out` chance, and this file models NEITHER anywhere
+## (0 mentions of each). Those are a pre-existing gap, declared rather than invented here: porting
+## them means deciding whether the grind models phase_out's monster_database read at all.
+##
+## ⚠️ The speed-based miss chance stays in _resolve_attack and is deliberately NOT moved in. Live
+## keeps it out of this function too: an ability is DODGED, never fumbled — a physical ability that
+## inherited the basic attack's speed-miss would be harder to land in the grind than in the game.
+func _target_dodges_physical(attacker, target) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	## ⚠️ Two LITERAL has_status calls rather than a loop, deliberately. The parity guard derives its
+	## ignored-status set by scanning both engines for has_status("…"), and a loop variable is
+	## invisible to it — the first draft of this fix used one, and the guard went on reporting
+	## `invisible` as ignored while the code honoured it.
+	if target.has_status("invisible"):
+		target.remove_status("invisible")
+		_log("%s strikes thin air — %s was invisible!" % [attacker.combatant_name, target.combatant_name])
+		return true
+	if target.has_status("shadow_step"):
+		target.remove_status("shadow_step")
+		_log("%s strikes thin air — %s had stepped into shadow!" % [attacker.combatant_name, target.combatant_name])
+		return true
+	## equipment evasion_bonus is a SEPARATE roll in live (:9106), not folded into the miss chance —
+	## elven_cloak plus a passive gives two independent chances to dodge. Same clamp.
+	var equip_dodge: float = clampf(_sum_equipment_special_effect(target, "evasion_bonus"), 0.0, 0.50)
+	if equip_dodge > 0.0 and randf() < equip_dodge:
+		_log("%s evades %s's attack!" % [target.combatant_name, attacker.combatant_name])
+		return true
+	return false
 
 
 ## Twin of BattleManager.ON_HIT_STATUSES (:4574) — same keys, same statuses, same durations.
@@ -886,21 +999,42 @@ func _apply_equipment_on_hit_status(attacker, target) -> void:
 		_log("%s inflicts %s on %s (on-hit)" % [attacker.combatant_name, str(entry["status"]), target.combatant_name])
 
 
-## Canonical effect -> [stat, modifier] pairs, mirroring BattleManager's own names. Only the
-## shapes headless actually needs; anything absent is handled as a status or a no-op, never damage.
-func _effect_to_stat(effect: String) -> Array:
+## Canonical effect -> the STAT it moves, mirroring BattleManager's own arm names.
+##
+## ⛔ THE MAGNITUDE IS NOT HERE, AND USED TO BE. This table returned [stat, modifier] with ONE
+## hardcoded number per effect — every down 0.75, every up 1.5 — and the caller OVERWROTE the
+## authored value it had already read one line earlier. abilities.json authors nine distinct
+## magnitudes across these effects, so 25 of the 30 support abilities that reach this function
+## ground at the wrong strength: shell_guard "massively boosting defense" at an authored 2.5 was
+## 1.5 (-40%), web_shot 0.5 was 0.75, and battle_hymn's 1.25 was buffed UP to 1.5. The grind pulled
+## every authored value toward one number, making the strong ones weak and the weak ones strong.
+## @cowir-battle found it; the same hardcode-under-a-reader shape as this file's own MP-drain bug.
+##
+## ⚠️ magic_up / speed_up / magic_down are mapped here and LIVE HAS NO ARM FOR THEM (its 45-arm
+## match has attack/defense/magic_defense/volatility only). Nothing authors them on a support-typed
+## ability today, so the divergence is unreachable rather than fixed — pinned by an arm that reds if
+## anyone authors one, because the grind would buff where the real game push_warnings and fizzles.
+## ⚠️ ONE ARM PER EFFECT, not `"attack_up", "attack_down":` grouped — deliberately, and the same
+## reason `_target_dodges_physical` spells out two literal has_status calls. The inert-ally census
+## DERIVES this map from this function's source with `"([a-z_]+)":\s*return`, so a grouped arm hides
+## every name but the last: grouping these ten made six of them vanish from that census and turned
+## its control red. The implementation reads the way the measurement reads.
+func _effect_to_stat(effect: String) -> String:
 	match effect:
-		"attack_up": return ["attack", 1.5]
-		"defense_up": return ["defense", 1.5]
-		"magic_up": return ["magic", 1.5]
-		"speed_up": return ["speed", 1.5]
-		"magic_defense_up": return ["magic_defense", 1.5]
-		"attack_down": return ["attack", 0.75]
-		"defense_down": return ["defense", 0.75]
-		"magic_down": return ["magic", 0.75]
-		"speed_down": return ["speed", 0.75]
-		"volatility_down": return ["volatility", 0.75]
-	return []
+		"attack_up": return "attack"
+		"defense_up": return "defense"
+		"magic_up": return "magic"
+		"speed_up": return "speed"
+		"magic_defense_up": return "magic_defense"
+		"attack_down": return "attack"
+		"defense_down": return "defense"
+		"magic_down": return "magic"
+		"speed_down": return "speed"
+		## magic_defense_down mirrors live's Soul Sap arm. Unreachable from HERE today (soul_wail is
+		## magic-typed), but its absence made this table the only stat map missing one of live's.
+		"magic_defense_down": return "magic_defense"
+		"volatility_down": return "volatility"
+	return ""
 
 
 ## Same side = both in the player party, or neither. Used to refuse friendly fire from an
@@ -1001,6 +1135,18 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var variance: float = float(ability.get("damage_variance", 0.0))
 					if variance > 0.0:
 						base_dmg = int(base_dmg * randf_range(0.0, variance))
+					## Equipment element damage bonus, mirroring BattleManager:5089. Live builds the key by
+					## CONCATENATION — `element + "_damage_bonus"` — which is why a literal census of either
+					## engine reports flame_sword's 1.5 as unread: four of the five keys occur ZERO times in
+					## src/. @cowir-battle's derived-key shape, and the reason I retracted a wrong "inert"
+					## finding about exactly these five last night.
+					## ⚠️ MULTIPLIES, it does not add: live writes `multiplier *= elem_bonus`, so flame_sword's
+					## 1.5 is a 1.5x scale rather than +150%. Skipped for element-less abilities, matching
+					## live's "no fire scroll, no fire bonus" intent.
+					if element != "":
+						var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
+						if elem_bonus > 0.0:
+							base_dmg = int(base_dmg * elem_bonus)
 					var elem_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
 					var actual = int(base_dmg * elem_mod)
 					actual = max(1, actual)
@@ -1022,7 +1168,18 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 		"physical":
 			for target in targets:
 				if target and target.is_alive:
+					## Live gates the dodge on `ignores_evasion` and calls _target_dodges_physical here
+					## (:4853) exactly as it does for a basic swing. Without this the grind's physical
+					## abilities could NEVER be evaded — invisible, shadow_step and an elven_cloak all
+					## worked against an ordinary attack and did nothing against power_strike.
+					if not bool(ability.get("ignores_evasion", false)):
+						if _target_dodges_physical(caster, target):
+							continue
 					var base_dmg = int(_scaled_base(caster, ability) * power)
+					## Second call site, mirroring BattleManager:4915. Live applies Familiar Weight to a
+					## physical ABILITY's damage as well as a basic swing, and wiring only one site is
+					## the mistake this file's dodge fix was written for an hour ago.
+					base_dmg = _apply_familiar_weight_bonus(caster, target, base_dmg)
 					## The ability's OWN crit roll, mirroring BattleManager:4795. `backstab` authors 0.3 and
 					## is a Rogue ability, so a grind testing a crit build never saw its signature land.
 					## Default 0.0 — an ability opts IN, exactly as live does, so nothing else starts critting.
@@ -1097,21 +1254,24 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 				var duration = int(ability.get("duration", 3))
 				var effect := str(ability.get("effect", ""))
 				var stat = ability.get("stat", "")
-				var modifier = float(ability.get("modifier", ability.get("stat_modifier", 1.5)))
+				## Live's read, key order and default included (BattleManager:5752). The default was
+				## 1.5 here against live's 1.0 — a phantom buff for an ability authoring neither key.
+				## No ability authors BOTH, measured, so the order is cosmetic and the twin reads alike.
+				var modifier = float(ability.get("stat_modifier", ability.get("modifier", 1.0)))
 				if stat == "" and effect != "":
-					var mapped: Array = _effect_to_stat(effect)
-					if not mapped.is_empty():
-						stat = mapped[0]
-						modifier = float(mapped[1])
+					var mapped: String = _effect_to_stat(effect)
+					if mapped != "":
+						stat = mapped
 					elif effect == "all_stats_down":
 						## Mirrors BattleManager:5887. Four DISTINCT names on purpose — add_debuff
 						## keys on the name and refreshes in place, so one shared name would
 						## debuff a single stat and look like it worked.
-						var mod := float(ability.get("stat_modifier", ability.get("modifier", 0.75)))
-						target.add_debuff("Despair (ATK)", "attack", mod, duration)
-						target.add_debuff("Despair (DEF)", "defense", mod, duration)
-						target.add_debuff("Despair (SPD)", "speed", mod, duration)
-						target.add_debuff("Despair (MAG)", "magic", mod, duration)
+						## `modifier` above, not a third local re-read with a third default: this line
+						## spelled the same lookup with 0.75 where live uses its shared 1.0.
+						target.add_debuff("Despair (ATK)", "attack", modifier, duration)
+						target.add_debuff("Despair (DEF)", "defense", modifier, duration)
+						target.add_debuff("Despair (SPD)", "speed", modifier, duration)
+						target.add_debuff("Despair (MAG)", "magic", modifier, duration)
 						_log("%s uses %s on %s (all stats down)" % [caster.combatant_name, ability_id, target.combatant_name])
 						continue
 					elif effect == "cleanse":

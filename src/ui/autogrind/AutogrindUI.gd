@@ -1853,8 +1853,20 @@ func _cursor_member_label() -> String:
 
 ## Afflictions worth stopping a grind for. Every entry is guarded against BattleScene's
 ## STATUS_ICON_CONFIG by test, so the ring can never offer a status the game cannot even show.
+## ⛔ `slow` REMOVED 2026-09-17 — it was a ring position that wrote a rule which could never fire.
+## `member_status` is evaluated with `has_status`, which reads `status_effects`. Nothing in the game
+## ever puts "slow" there: the slowdown is `masterite_slow`, authored `effect: debuff, stat: speed`,
+## which lands in `active_debuffs` via add_debuff("Slow", …). Derived check, not a literal one —
+## statuses are applied through a VARIABLE, so counting add_status("slow") proves nothing: of the ten
+## entries, `slow` is the only one never authored as an `effect` by any ability.
+##
+## ⚠️ THE GUARD THAT SHOULD HAVE CAUGHT IT CHECKED THE WRONG CORPUS, and said so in its own comment:
+## the ring was validated against BattleScene's STATUS_ICON_CONFIG, which HAS a `slow` key — so the
+## entry passed a test of DISPLAYABILITY while failing APPLICABILITY. Found by @cowir-ai; the icon
+## key is dead for the same reason. test_autogrind_the_status_ring_can_be_true_regression now
+## validates against the authored effect set instead.
 const MEMBER_STATUS_RING := [
-	"poison", "burn", "blind", "silence", "stun", "sleep", "confuse", "curse", "charm", "slow",
+	"poison", "burn", "blind", "silence", "stun", "sleep", "confuse", "curse", "charm",
 ]
 
 
