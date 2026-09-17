@@ -976,6 +976,18 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 
 	var stranded: Array[String] = []
 	var revived: Array[String] = []
+	## \u26d4 EVERY ID LANDS IN EXACTLY ONE BUCKET, AND THEY MUST SUM. This loop has two bare
+	## `continue`s under scope controls that assert only that the CORPUS WAS READ -- not that any id
+	## survived to the assertion. Measured 2026-09-17: 94 of 165 ids skip as `composed` before the
+	## stranded test is reached. Widen COMPOSED_FAMILIES by one prefix that matches everything, or
+	## make `disp` contain every id, and all 165 skip: `stranded` is empty, the arm is green, and it
+	## defends nothing. @cowir-sfx found the identical shape in their duration guard -- three bare
+	## continues under one floor of 100, against a real corpus of 321.
+	var n_composed: int = 0
+	var n_in_dispatcher: int = 0
+	var n_no_naming_scene: int = 0
+	var n_live: int = 0
+	var n_allowlisted: int = 0
 	for id in _manifest_ids():
 		## Only ids with no consumer outside the cutscene corpus are candidates.
 		var composed: bool = false
@@ -983,6 +995,10 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 			if id.begins_with(str(prefix)):
 				composed = true
 		if composed or disp.find(id) >= 0:
+			if composed:
+				n_composed += 1
+			else:
+				n_in_dispatcher += 1
 			if KNOWN_WIRED_TO_DEAD_SCENES.has(id) and not composed:
 				revived.append(id)
 			continue
@@ -1000,10 +1016,28 @@ func test_no_bed_is_wired_only_to_a_cutscene_nothing_plays() -> void:
 			## measured 2026-09-11, when the loop-dispatch fix made this bed live
 			## and its pin sat there inert in every arm.
 			revived.append(id)
-		if naming.is_empty() or live:
+		if naming.is_empty():
+			n_no_naming_scene += 1
+			continue
+		if live:
+			n_live += 1
 			continue
 		if not KNOWN_WIRED_TO_DEAD_SCENES.has(id):
 			stranded.append("%s <- %s" % [id, naming])
+		else:
+			n_allowlisted += 1
+
+	## The partition: nothing may vanish between the corpus and the verdict.
+	var total: int = _manifest_ids().size()
+	var accounted: int = n_composed + n_in_dispatcher + n_no_naming_scene + n_live + n_allowlisted + stranded.size()
+	assert_eq(accounted, total,
+		"the buckets do not sum: %d accounted against %d manifest ids — an id fell out of the walk and nothing would report it (composed %d · in-dispatcher %d · unnamed %d · live %d · allowlisted %d · stranded %d)" % [
+			accounted, total, n_composed, n_in_dispatcher, n_no_naming_scene, n_live, n_allowlisted, stranded.size()])
+	## \u26d4 AND THE VERDICT MUST HAVE A POPULATION. Everything skipping is the vacuous green this
+	## partition exists to catch; the floor is on what REACHES the stranded test, not on the corpus.
+	var reached: int = total - n_composed - n_in_dispatcher
+	assert_gt(reached, 40,
+		"only %d of %d ids reached the stranded test — the rest skipped as composed (%d) or already in the dispatcher (%d), so the assertion below is about almost nothing" % [reached, total, n_composed, n_in_dispatcher])
 
 	assert_eq(stranded.size(), 0,
 		"beds cued ONLY by cutscenes no dispatcher can play (%d): %s — the cue exists, so nothing reports it missing, and the bed still never sounds. DISPATCH CORPUS: %s. FORMS ATTRIBUTED (a floor): %s. FORMS THAT EXIST AND CANNOT BE ATTRIBUTED (also a floor): %s — a bed reached only through one of those strands here as a FALSE ALARM, so treat this list as candidates, not a verdict. A bed is dead only if no FOURTH form exists — the loop form was invisible here until 2026-09-11 and 20 scenes read as dead the whole time" % [stranded.size(), stranded, DISPATCH_ROOTS, DISPATCH_FORMS, UNATTRIBUTABLE_FORMS])
