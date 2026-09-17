@@ -12,7 +12,9 @@ extends GutTest
 ## and meta jobs are intentionally excluded since they may be procedurally
 ## generated at runtime.
 
-const STARTER_JOBS = ["fighter", "mage", "cleric", "rogue", "bard"]
+const JobRoster := preload("res://test/unit/helpers/job_roster.gd")
+# Derived: hand-listing the starters means this guard keeps checking exactly the five it named.
+var STARTER_JOBS: Array[String] = JobRoster.of_types([0])
 const EXPECTED_FRAME_SIZE = 256
 
 

@@ -1,4 +1,5 @@
 extends GutTest
+const JobRoster := preload("res://test/unit/helpers/job_roster.gd")
 
 ## struktured 2026-09-02 (via cowir-sprites): five jobs shipped weak.png + dead.png and NONE of
 ## the ten sheets could appear on screen — loading is not playing. "weak" had zero consumers and
@@ -73,13 +74,19 @@ func test_battle_scene_wires_the_provider_to_the_combatant() -> void:
 
 
 func test_every_shipped_weak_or_dead_sheet_is_reachable() -> void:
-	# Data half: iterate jobs that SHIP the art, so this auto-covers rogue/cleric when they fold.
+	# ⛔ DERIVED, not the five starters. This arm says EVERY shipped sheet and hand-listed
+	# fighter/cleric/mage/rogue/bard, while guardian, ninja, speculator and summoner each ship a
+	# dead.png and went unchecked. The absent-path skip below means deriving over every real job
+	# id is safe — it checks whatever ships and ignores what does not. The `_sdxl`/`_artist`
+	# directories are deliberately excluded by being job IDS rather than directories: no job id
+	# names them, which is the same reason players never download them.
 	var checked := 0
-	for job in ["fighter", "cleric", "mage", "rogue", "bard"]:
+	for job in JobRoster.of_types([0, 1, 2]):
 		for anim in ["weak", "dead"]:
 			var path := "res://assets/sprites/jobs/%s/%s.png" % [job, anim]
 			if not ResourceLoader.exists(path):
 				continue
 			checked += 1
 			assert_not_null(load(path), "%s must load" % path)
-	assert_gt(checked, 4, "CONTROL: the shipped weak/dead sheets must be found (%d) — 0 means the scan is dead" % checked)
+	assert_gt(checked, 12,
+		"CONTROL: the shipped weak/dead sheets must be found (%d) — the five starters alone gave 10, so a derived scan must exceed it" % checked)
