@@ -17,6 +17,34 @@ const GdSourceHelper = preload("res://test/unit/helpers/gd_source.gd")
 const BM_PATH := "res://src/battle/BattleManager.gd"
 
 
+## ⛔ THE BRANCH IS BOUND BY INDENTATION, NOT BY THE NEXT LANDMARK. Both arms below used
+## `substr(gate, next_anchor - gate)`, which spans PAST the branch — over its sibling `break`, over
+## the outer `selection_index += 1` — so a line that LEFT the debt branch still sat inside the
+## window. Measured: moving the settled-emit out to the outer loop level, where it would fire for
+## every combatant on every pass, left this file EC=0 · Passing 4. Vacuous for exactly the case its
+## own header describes. Substring position cannot express "inside this branch"; indentation can.
+func _block_under(code: String, gate: int) -> String:
+	var line_start: int = code.rfind("\n", gate) + 1
+	var gate_indent: int = gate - line_start
+	var body_start: int = code.find("\n", gate)
+	if body_start < 0:
+		return ""
+	var out: String = ""
+	var i: int = body_start + 1
+	while i < code.length():
+		var eol: int = code.find("\n", i)
+		if eol < 0:
+			eol = code.length()
+		var line: String = code.substr(i, eol - i)
+		if line.strip_edges() != "":
+			var indent: int = line.length() - line.lstrip("\t").length()
+			if indent <= gate_indent:
+				break
+		out += line + "\n"
+		i = eol + 1
+	return out
+
+
 func test_the_debt_skip_emits_and_says_what_is_owed() -> void:
 	## Drives the real loop's arithmetic rather than the loop: the emit is inside
 	## `_start_next_selection`, which needs a live battle. What is pinned here is that the message
@@ -29,9 +57,10 @@ func test_the_debt_skip_emits_and_says_what_is_owed() -> void:
 	var code: String = GdSourceHelper.code_of(BM_PATH)
 	var at: int = code.find("if current_combatant.current_ap < 0:")
 	assert_gt(at, -1, "CONTROL: the debt branch survives stripping")
-	var nxt: int = code.find("if selection_index >= selection_order.size():", at)
-	assert_gt(nxt, at, "CONTROL: the block is bounded by the selection-complete check")
-	var block: String = code.substr(at, nxt - at)
+	var block: String = _block_under(code, at)
+	assert_gt(block.length(), 0, "CONTROL: the debt branch has a body to read")
+	assert_false(block.contains("break"),
+		"CONTROL: the window stops at the branch — `break` is its SIBLING, and a window containing it spans past the branch")
 	assert_true(block.contains("battle_log_message.emit("),
 		"a turn taken away must say so — this was a print() only")
 	assert_true(block.contains("turn%s still owed"),
@@ -50,8 +79,8 @@ func test_the_owed_count_is_derived_from_the_ap_not_written_out() -> void:
 	var code: String = GdSourceHelper.code_of(BM_PATH)
 	var at: int = code.find("if current_combatant.current_ap < 0:")
 	assert_gt(at, -1, "CONTROL: the debt branch survives stripping")
-	var nxt: int = code.find("if selection_index >= selection_order.size():", at)
-	var block: String = code.substr(at, nxt - at)
+	var block: String = _block_under(code, at)
+	assert_gt(block.length(), 0, "CONTROL: the debt branch has a body to read")
 	assert_true(block.contains("var _owed: int = -current_combatant.current_ap"),
 		"the turns owed are the negated AP, derived at the moment of the skip")
 	assert_false(block.contains("_owed = 4") or block.contains("_owed: int = 4"),
