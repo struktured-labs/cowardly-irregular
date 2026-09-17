@@ -2216,6 +2216,12 @@ func capture_music_state() -> Dictionary:
 	## overworld at 1.21 s, one battle, back at 0.09 s. overworld_medieval is 198 s and a W1
 	## encounter lands every ~30 s, so a player heard the first half-minute of a three-minute
 	## track for the whole game and never once reached the rest of it.
+	## ⛔ A STINGER IS NEVER A RESUME TARGET, AND play_music GUARDED ONLY ITS OWN CAPTURE. The
+	## jukebox, the pause menu and CutsceneDirector all call this directly: open a chest, press
+	## Start, close -- the 5 s one-shot came back AS THE BED and ended in silence. Hand back what
+	## the stinger itself will resume to, which is empty when nothing was playing before it.
+	if _is_stinger_track(_current_music):
+		return _stinger_resume_state.duplicate()
 	var pos: float = _music_player.get_playback_position() if _music_player and _music_player.playing else 0.0
 	return {"track": _current_music, "area": _current_area, "playing": _music_playing, "position": pos}
 
