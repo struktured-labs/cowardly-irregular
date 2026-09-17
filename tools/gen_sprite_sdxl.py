@@ -35,6 +35,7 @@ from tools.pipeline.identity import compute_identity_embeddings, save_embeddings
 from tools.pipeline.controlnet_poses import load_pose_skeleton
 from tools.pipeline.postprocess import extract_reference_palette
 from tools.pipeline.generate import generate_strip
+from tools.artist_guard import assert_writable
 
 
 def main():
@@ -51,6 +52,8 @@ def main():
     parser.add_argument("--reference-image", help="Path to reference character image for IP-Adapter")
     parser.add_argument("--ipadapter-scale", type=float, default=0.45, help="IP-Adapter strength (0.0-1.0)")
     parser.add_argument("--output", help="Output directory (default: tmp/generated/<job>/)")
+    parser.add_argument("--force", action="store_true",
+                        help="Overwrite artist-made pixels. Without this, a write over artist art refuses.")
     parser.add_argument(
         "--lora-mode",
         choices=["fighter", "style", "none"],
@@ -179,6 +182,11 @@ def main():
 
             suffix = f"_v{v}" if args.variations > 1 else ""
             out_path = output_dir / f"{anim}{suffix}.png"
+            # Refuses when --output points into artist art. The default (tmp/generated/) is
+            # never protected, so ordinary generation is untouched; only a write ONTO shipped
+            # artist pixels stops here. gen_full_sweep guards its own install step, but a
+            # direct run of this script bypassed that entirely.
+            assert_writable(out_path, force=args.force)
             strip.save(out_path)
             print(f"  Saved: {out_path} ({strip.size[0]}x{strip.size[1]}, seeds={seeds})")
 

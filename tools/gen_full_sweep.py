@@ -26,64 +26,11 @@ ARTIST_REFS = {
 
 # SACRED: never overwrite artist files during a sweep.
 #
-# This was a HARDCODED list of fighter + rogue, and it was correct the day it
-# was written — 68b049d0 says so explicitly: "Other jobs (cleric/mage/bard/...)
-# — no prior artist sprites to protect." Then cleric and mage artist art
-# arrived (4cab90d0, c3d1b732) and nobody came back to the list.
-#
-# By 2026-07-29 it was silently wrong: 7 artist animations (cleric idle/
-# attack/cast/walk, mage idle/attack/cast) were absent from it, so an
-# --install would have overwritten them with LoRA output, underneath a
-# comment saying SACRED.
-#
-# Same rot as the tier fields fixed the same night, one layer down: that was
-# provenance METADATA going stale, this is the ENFORCEMENT copy of it. And
-# it is cowir-sfx's incident-vs-property shape — the list recorded which jobs
-# were artist-made at one moment, when the invariant is "whatever is
-# artist-made right now must survive the sweep."
-#
-# So: derived from git, never enumerated. A new artist drop protects itself
-# the moment it lands, with nobody remembering to edit this file.
-# The legacy hand-written list is KEPT as a floor, never replaced. It is
-# stale (it predates the cleric/mage drops) but it is not wrong — someone
-# who knew wrote it down, and that is evidence the derivation does not have.
-#
-# Keeping it caught a live regression: the derivation DROPS rogue/cast,
-# because that file's commit subject is "rogue + cleric clashing ML-gen
-# anims -> artist idle placeholders". The classifier sees "ML-gen" and reads
-# machine; the arrow means the file is the artist art that REPLACED the
-# ML-gen. Swapping the list for the derivation would have un-protected a
-# file the old list defended — a derivation is not automatically safer than
-# an enumeration, it just fails differently.
-#
-# So: union, and protection can only ever GROW.
-_LEGACY_PROTECTED = {
-    "fighter": ["idle", "walk", "attack", "hit", "dead", "cast", "defend", "item", "victory",
-                "advance", "defer", "cleave", "power_strike", "provoke", "slash"],
-    "rogue": ["idle", "attack", "cast"],
-}
-
-
-def _protected_anims(job_id: str) -> list:
-    """Animation names in this job that must survive a sweep.
-
-    Union of what git can prove and what the legacy list asserts. Union
-    rather than replacement because the two have different blind spots and
-    the cost of missing one is destroying artist work.
-    """
-    try:
-        sys.path.insert(0, str(PROJECT))
-        from tools.audit_sprite_tiers import artist_evidence
-    except ImportError as exc:
-        # Fail CLOSED. Unable to determine provenance means unable to
-        # promise we won't destroy it.
-        raise SystemExit(
-            f"cannot import artist_evidence ({exc}) — refusing to sweep, "
-            f"because without it every artist animation is unprotected."
-        )
-    rel = f"assets/sprites/jobs/{job_id}"
-    derived = {line.split(".png")[0] for line in artist_evidence(rel)}
-    return sorted(derived | set(_LEGACY_PROTECTED.get(job_id, [])))
+# The rule, the legacy floor and the fail-closed derivation now live in ONE place —
+# tools/artist_guard.py — so the other writers can share them instead of each re-deriving
+# provenance. This file kept the only working copy for months; the module is that copy moved,
+# with the reasoning preserved there rather than summarised here.
+from tools.artist_guard import protected_anims as _protected_anims  # noqa: E402
 
 # Jobs with extended animations
 EXTENDED_JOBS = ["rogue"]
