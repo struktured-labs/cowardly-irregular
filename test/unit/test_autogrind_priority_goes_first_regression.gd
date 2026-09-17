@@ -22,10 +22,23 @@ const ResolverScript = preload("res://src/autogrind/HeadlessBattleResolver.gd")
 const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 
 var _res
+var _abs_persistence_was: bool = false
 
 
 func before_each() -> void:
 	_res = ResolverScript.new()
+	var abs_node = _res._get_autoload("AutobattleSystem")
+	if abs_node:
+		_abs_persistence_was = abs_node._test_disable_persistence
+
+
+## The end-to-end arm installs a REAL grid script on a shared autoload. Left behind, it would hand
+## my rule to any later test whose combatant happens to be named "Ninja".
+func after_each() -> void:
+	var abs_node = _res._get_autoload("AutobattleSystem") if _res else null
+	if abs_node:
+		abs_node.set_character_script("ninja", {})
+		abs_node._test_disable_persistence = _abs_persistence_was
 
 
 func _hero(name: String, speed: int) -> Combatant:
@@ -135,8 +148,45 @@ func test_the_offset_clears_the_speed_spread_a_grind_can_actually_reach() -> voi
 		"a speed rebalance has outgrown PRIORITY_OFFSET: a fast enough combatant's ordinary action now outruns a priority one, which is the exact bug this const exists to prevent")
 
 
+func test_the_real_selection_path_carries_the_priority_all_the_way() -> void:
+	## ⛔ THE ARM THE ONES ABOVE CANNOT REPLACE, and my file was missing it. Every arm above calls
+	## _speed_for DIRECTLY — but the grind's ONLY route to quick_strike is the PLAYER path, and there
+	## AutobattleSystem builds the action dict, not the resolver. If that dict ever named the ability
+	## under a different key, _speed_for's `ability_id` read would quietly see "" and every arm above
+	## would still pass. @cowir-music's Jukebox finding is this exact shape: their helper was correct
+	## and three green tests about it hid a menu where paging did nothing.
+	var abs_node = _res._get_autoload("AutobattleSystem")
+	assert_ne(abs_node, null, "CONTROL: AutobattleSystem must be reachable, or this arm proves nothing")
+	abs_node._test_disable_persistence = true
+	var ninja := _hero("Ninja", 1)
+	ninja.learned_abilities.append("quick_strike")
+	var speedster := _hero("Speedster", 30)
+	abs_node.set_character_script("ninja", {"rules": [
+		{"conditions": [], "actions": [{"type": "ability", "id": "quick_strike", "target": "lowest_hp_enemy"}]}
+	]})
+	_res._player_party = [ninja, speedster]
+	_res._enemy_party = [_hero("Foe", 5)]
+	var actions: Array = _res._selection_phase()
+	var ninja_action: Dictionary = {}
+	var other_action: Dictionary = {}
+	for a in actions:
+		if a.get("combatant") == ninja:
+			ninja_action = a
+		elif a.get("combatant") == speedster:
+			other_action = a
+	assert_false(ninja_action.is_empty(), "CONTROL: the ninja must have selected an action at all")
+	assert_false(other_action.is_empty(), "CONTROL: the speedster must have selected an action at all")
+	gut.p("    real path -> ninja %s/%s speed %s | speedster %s speed %s" % [
+		ninja_action.get("type"), ninja_action.get("ability_id"), ninja_action.get("speed"),
+		other_action.get("type"), other_action.get("speed")])
+	assert_eq(str(ninja_action.get("ability_id", "")), "quick_strike",
+		"the real selection path no longer carries the ability id under `ability_id` — _speed_for reads that key, so the priority offset would silently never apply")
+	assert_lt(int(ninja_action.get("speed", 0)), int(other_action.get("speed", 0)),
+		"through the REAL selection path the priority action did not outrank a faster combatant's — the helper is right and the path is not")
+
+
 const _FLOOR_ARM_NAME := "test_every_resolver_member_this_file_reaches_still_exists"
-const _PINNED_MEMBERS := ["_ability_has_priority", "_speed_for"]
+const _PINNED_MEMBERS := ["_ability_has_priority", "_enemy_party", "_get_autoload", "_player_party", "_selection_phase", "_speed_for"]
 
 func test_every_resolver_member_this_file_reaches_still_exists() -> void:
 	## The lane's floor. Counts distinct members reached in the text BEFORE this function, so the arm
