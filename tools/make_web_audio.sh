@@ -146,7 +146,8 @@ print(f"[web-audio] saving    {(src-out)/mib:7.1f} MiB")
 #   non-music = (shipped pck) - (music currently INSIDE that pck)
 # and "currently inside" is itself derived from export_presets' exclude_filter
 # rather than assumed, so it stays correct as the exclusion list changes.
-PCK = os.path.expanduser("~/projects/cowir-main/builds/web/index.pck")
+PCK = os.path.expanduser(os.environ.get("WEB_REF_PCK",
+                         "~/projects/cowir-main/builds/web/index.pck"))
 EXCLUDED = ["*industrial*", "*digital*", "*abstract*",
             "cutscene_w4*", "cutscene_w5*", "cutscene_w6*"]
 d = "assets/audio/music/"
@@ -212,12 +213,43 @@ else:
         if age_d > 2:
             print(f"[web-audio]   ^ that reference is {age_d:.0f} days old, so the ABSOLUTE figures "
                   f"below lag the live store; the bitrate-to-bitrate deltas do not.")
-        print(f"[web-audio] projected pck ~{tot:.2f} MiB vs {limit} MiB itch limit "
-              f"({'FITS' if tot < limit else 'OVER — drop the bitrate'})")
-        # The cache line binds before the itch limit does, and a player feels it every visit.
-        print(f"[web-audio]               vs {cache} MiB browser cache line "
-              f"({'CACHEABLE' if tot < cache else 'RE-DOWNLOADED EVERY VISIT'}"
-              f", {abs(cache - tot):.2f} MiB {'spare' if tot < cache else 'over'})")
+        # ⛔ AT THE SHIPPING BITRATE THIS IS NOT A PROJECTION — IT IS AN IDENTITY.
+        # `other` is (reference pck - the tier at shipped_br); `out` is the tier this run
+        # built. When those are the SAME tier the arithmetic collapses:
+        #
+        #     tot = (out + other) = out + (pck - out) = pck        exactly, every time
+        #
+        # so "projected pck" re-reports the REFERENCE BUILD'S OWN SIZE and the verdicts
+        # below rule on a build that is not this one. Measured in v3.33.371-alpha, the
+        # first release where this code ran at all: reference 163.81 MiB, "projected"
+        # 163.81 MiB, and it printed RE-DOWNLOADED EVERY VISIT, 3.81 MiB over — while
+        # gate 3b weighed the real artifact of that same run at 147.28 MiB, 12.72 UNDER.
+        # A verdict with the WRONG SIGN, from a number that could only ever have been the
+        # reference's size. Same class as the hardcoded remedy below, one line up: a
+        # constant driving a verdict, except the constant arrives by cancellation.
+        #
+        # Every publish runs at the shipping bitrate, so that is the degenerate case ALWAYS.
+        # The projection earns its name only for a DIFFERENT bitrate, which is what the
+        # deltas are for and what the comment above already claims.
+        degenerate = (str(br) == str(shipped_br))
+        if degenerate:
+            print(f"[web-audio] at {br}k — the shipping bitrate — there is nothing to project: "
+                  f"the figure would be")
+            print(f"[web-audio] the REFERENCE build's own size ({os.path.getsize(PCK)/mib:.2f} MiB, "
+                  f"{age_d:.0f}d old), not this one's.")
+            print(f"[web-audio] No ruling on the {limit} MiB itch limit or the {cache} MiB cache "
+                  f"line from a stale build:")
+            print(f"[web-audio] deploy_web.sh gate 3 weighs the real pck and is the only thing "
+                  f"that can say.")
+            print(f"[web-audio] Re-run at another bitrate for the deltas, which staleness does "
+                  f"not affect.")
+        else:
+            print(f"[web-audio] projected pck ~{tot:.2f} MiB vs {limit} MiB itch limit "
+                  f"({'FITS' if tot < limit else 'OVER — drop the bitrate'})")
+            # The cache line binds before the itch limit does, and a player feels it every visit.
+            print(f"[web-audio]               vs {cache} MiB browser cache line "
+                  f"({'CACHEABLE' if tot < cache else 'RE-DOWNLOADED EVERY VISIT'}"
+                  f", {abs(cache - tot):.2f} MiB {'spare' if tot < cache else 'over'})")
         # Forward-looking: cowir-music has ~48 unthemed regular monsters queued.
         # At the master bitrate that is ~69 MiB more source, which scales by the
         # ratio this run just measured rather than by an assumed one.
