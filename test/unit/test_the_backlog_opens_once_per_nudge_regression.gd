@@ -90,6 +90,14 @@ func _two_lines() -> void:
 ##                            symbol — a floor here could only ever be dead code
 ##     Input      6 reaches   engine builtin; a rename is not a change this repo can make
 ## So no second floor is warranted here, and that is a measurement rather than an assumption.
+##
+## ✅ AND THE FLOOR IS LOAD-BEARING RATHER THAN CEREMONY, by @cowir-autogrind's blast-radius column:
+## what a floor is worth is INVERSE to how many other files reach the symbol, because a widely-used
+## API is covered by the corpus screaming. Measured across test/unit — 8 of the 12 members pinned
+## here have TWO OR FEWER other consumers, so nothing else would red for them. `_input` (72 others)
+## and `show_dialogue` (7) are the corpus-covered ones and the floor is near-free weight there.
+## 🔑 `_backlog_scroll` has ZERO other consumers — and it was this file's ONLY silent rung-3 reach.
+## The single hole sat on the single member no other test could ever have caught.
 func test_every_member_this_file_reaches_still_exists() -> void:
 	var src: String = FileAccess.get_file_as_string(
 		"res://test/unit/test_the_backlog_opens_once_per_nudge_regression.gd")
