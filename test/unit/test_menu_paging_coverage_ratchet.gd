@@ -129,11 +129,14 @@ func _ui_scripts(dir_path: String) -> Array:
 ## 🔑 EXEMPTIONS CARRY A REASON THIS ARM VERIFIES IN THE SOURCE, never a boolean. CLAUDE.md's rule:
 ## you cannot silence it green, only explain it green, and the explanation has to still be true.
 ##
-## ⚠️ WHAT A SOURCE CHECK PROVES, EXACTLY: the token is still there. It catches a RENAME (measured)
-## and NOT a handler that keeps its text and becomes unreachable behind a new guard. @cowir-sfx's
-## split — a floor asking the LIVE OBJECT catches a rename, one deriving from the test file's own
-## source catches snapshot staleness, and this one reads the SUBJECT's source, which is a third
-## thing again. Three checks, one word "verify"; the trigger is the part that differs.
+## ⚠️ TWO DERIVATIONS HERE, TWO TRIGGERS — and this note described only the one I had last mutated.
+##   POPULATION (_is_windowed over src/ui): a tree-wide rename of both tokens collapses it to 0 and
+##     the scope control reds NAMED — measured, not assumed.
+##   EXEMPTION (_reason_holds over the subject's source): catches the token disappearing, and NOT a
+##     handler that keeps its text and becomes unreachable behind a new guard.
+## @cowir-sfx's split: a floor asking the LIVE OBJECT catches a rename; one deriving from the TEST
+## file's own source moves both sides together and stays silent; one deriving from the SUBJECT's
+## source plus a non-empty scope control reds by collapse. Same word "verify", three triggers.
 const WINDOWED_WITHOUT_PAGING := [
 	{"path": "res://src/ui/EquipmentMenu.gd", "because": "shoulders_taken"},
 	{"path": "res://src/ui/autobattle/AutobattleGridEditor.gd", "because": "shoulders_taken"},
