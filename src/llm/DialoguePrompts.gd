@@ -956,7 +956,7 @@ static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -
 static func build_rule_composition(domain: String, prompt_text: String, current_rules: Array,
 		kit_context: Dictionary = {}) -> String:
 	var grammar: String = AUTOBATTLE_GRAMMAR_DESCRIPTION if domain == "autobattle" else AUTOGRIND_GRAMMAR_DESCRIPTION
-	var kit_block: String = _format_rule_kit(kit_context) if domain == "autobattle" else ""
+	var kit_block: String = _format_rule_kit(kit_context) if domain == "autobattle" else _format_party_kit(kit_context)
 	var current_json: String = JSON.stringify(current_rules) if current_rules.size() > 0 else "[]"
 	return (
 		"You are a rule authoring assistant for a JRPG's autobattle/autogrind system.\n\n"
@@ -1027,6 +1027,32 @@ static func _format_kit_reminder(kit_context: Dictionary) -> String:
 		ids.append(str(aid))
 	return ("\n\nBefore you answer: this character knows ONLY these ability ids — %s. "
 		+ "A rule naming any other ability is discarded, so spend every rule on these.") % ", ".join(ids)
+
+
+## The AUTOGRIND twin of _format_rule_kit. That grammar tells the model member_ability's
+## "ability" is "an ability id that member knows" and, until 2026-09-17, named no abilities
+## anywhere in the prompt — 2,487 chars against autobattle's ~8,076, the kit being the
+## difference. Measured on live llama3 with an intent that asks for one: 24 of 24 emitted
+## ids were absent from abilities.json.
+static func _format_party_kit(kit_context: Dictionary) -> String:
+	if kit_context.is_empty() or not bool(kit_context.get("resolved", false)):
+		return ""
+	var party: Array = kit_context.get("party", [])
+	if party.is_empty():
+		return ""
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("\n\nPARTY KITS. member_ability's \"ability\" MUST be one of these, listed under")
+	lines.append("the member who knows it. No other ability id exists:")
+	for raw in party:
+		var entry: Dictionary = raw
+		var costs: Dictionary = entry.get("costs", {})
+		var parts: PackedStringArray = PackedStringArray()
+		for aid in (entry.get("kit", []) as Array):
+			parts.append("%s (%d MP)" % [str(aid), int(costs.get(str(aid), 0))])
+		lines.append("  %s [%s]: %s" % [
+			str(entry.get("member", "?")), str(entry.get("job_id", "?")), ", ".join(parts)])
+	lines.append("An id not on this list is DISCARDED and that rule never fires.")
+	return "\n".join(lines)
 
 
 static func _format_rule_kit(kit_context: Dictionary) -> String:
