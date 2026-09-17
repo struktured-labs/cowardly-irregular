@@ -848,7 +848,42 @@ func _resolve_attack(attacker, target) -> int:
 		actual = actual / 2
 
 	target.take_damage(actual)
+	## Live calls this from _execute_attack ONLY (:4539) — the BASIC attack. Deliberately NOT added to
+	## _resolve_attack_with_power, which is this file's ability-damage path: an ability that happens to
+	## deal physical damage does not proc a weapon's on-hit status in live, and wiring it there would
+	## be the axis-2 error this lane's ledger exists to catch — a key read on the wrong executor.
+	_apply_equipment_on_hit_status(attacker, target)
 	return actual
+
+
+## Twin of BattleManager.ON_HIT_STATUSES (:4574) — same keys, same statuses, same durations.
+## poison_dagger authors poison_chance 0.25, sleep_dagger authors sleep_chance 0.20, and a grinding
+## party's daggers gave their stat bonus while the headline gimmick did nothing.
+## Table-driven for live's reason rather than mine: a new on-hit chance drops in by extending the
+## const, and the two engines stay comparable entry-for-entry instead of by reading two loops.
+const ON_HIT_STATUSES: Array = [
+	{"key": "poison_chance", "status": "poison", "duration": 3},
+	{"key": "sleep_chance", "status": "sleep", "duration": 2},
+]
+
+
+## Mirrors BattleManager._apply_equipment_on_hit_status:4581, called AFTER the damage lands so the
+## status piles on the hit. Each chance rolls independently, and the TARGET's status_resistance is
+## subtracted here exactly as live subtracts it — the same clamp-the-RESULT form, never a cap on the
+## resist itself, which live applies nowhere.
+func _apply_equipment_on_hit_status(attacker, target) -> void:
+	if attacker == null or target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	for entry in ON_HIT_STATUSES:
+		var chance: float = _sum_equipment_special_effect(attacker, str(entry["key"]))
+		if chance <= 0.0:
+			continue
+		var resist: float = _sum_equipment_special_effect(target, "status_resistance")
+		var effective: float = clampf(chance - resist, 0.0, 1.0)
+		if effective <= 0.0 or randf() >= effective:
+			continue
+		target.add_status(str(entry["status"]), int(entry["duration"]))
+		_log("%s inflicts %s on %s (on-hit)" % [attacker.combatant_name, str(entry["status"]), target.combatant_name])
 
 
 ## Canonical effect -> [stat, modifier] pairs, mirroring BattleManager's own names. Only the
