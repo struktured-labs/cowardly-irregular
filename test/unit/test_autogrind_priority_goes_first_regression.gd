@@ -38,6 +38,7 @@ func after_each() -> void:
 	var abs_node = _res._get_autoload("AutobattleSystem") if _res else null
 	if abs_node:
 		abs_node.set_character_script("ninja", {})
+		abs_node.set_character_script("speedster", {})
 		abs_node._test_disable_persistence = _abs_persistence_was
 
 
@@ -164,6 +165,17 @@ func test_the_real_selection_path_carries_the_priority_all_the_way() -> void:
 	abs_node.set_character_script("ninja", {"rules": [
 		{"conditions": [], "actions": [{"type": "ability", "id": "quick_strike", "target": "lowest_hp_enemy"}]}
 	]})
+	## ⚠️ THE SPEEDSTER'S SCRIPT IS PINNED TOO, and that is a contamination fix rather than tidiness.
+	## Pinning only the ninja made this arm masking-proof for the ninja and left the other character
+	## reading whatever `user://autobattle/profiles.json` happens to hold. Measured: injecting a stale
+	## `speedster` profile turned its action from `attack speed -25` into `defer speed -30` — a value
+	## this arm's comparison reads. It passed anyway because -991 beats both; a stale profile moving
+	## the speedster NEAR the offset would not have been survivable.
+	## @cowir-controller's "the contamination is a corpus too": mine had one member, and it was the
+	## character I was already immune to.
+	abs_node.set_character_script("speedster", {"rules": [
+		{"conditions": [], "actions": [{"type": "attack", "target": "lowest_hp_enemy"}]}
+	]})
 	_res._player_party = [ninja, speedster]
 	_res._enemy_party = [_hero("Foe", 5)]
 	var actions: Array = _res._selection_phase()
@@ -204,6 +216,17 @@ func test_a_priority_ability_queued_by_advance_still_goes_first() -> void:
 			{"type": "ability", "id": "quick_strike", "target": "lowest_hp_enemy"},
 			{"type": "ability", "id": "quick_strike", "target": "lowest_hp_enemy"},
 		]}
+	]})
+	## ⚠️ THE SPEEDSTER'S SCRIPT IS PINNED TOO, and that is a contamination fix rather than tidiness.
+	## Pinning only the ninja made this arm masking-proof for the ninja and left the other character
+	## reading whatever `user://autobattle/profiles.json` happens to hold. Measured: injecting a stale
+	## `speedster` profile turned its action from `attack speed -25` into `defer speed -30` — a value
+	## this arm's comparison reads. It passed anyway because -991 beats both; a stale profile moving
+	## the speedster NEAR the offset would not have been survivable.
+	## @cowir-controller's "the contamination is a corpus too": mine had one member, and it was the
+	## character I was already immune to.
+	abs_node.set_character_script("speedster", {"rules": [
+		{"conditions": [], "actions": [{"type": "attack", "target": "lowest_hp_enemy"}]}
 	]})
 	_res._player_party = [ninja, speedster]
 	_res._enemy_party = [_hero("Foe", 5)]
