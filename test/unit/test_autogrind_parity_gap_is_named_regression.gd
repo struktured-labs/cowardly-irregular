@@ -55,6 +55,20 @@ const DECLARED := {
 	## 2026-09-16: THREE sites touch the key in all of src/ — two writes in Combatant.gd and one read
 	## in BattleScene.gd. So it is inert to combat math in BOTH engines, and the grind, which renders
 	## nothing, is correct to ignore it. The day a fourth site appears in a math path, this is a lie.
+	## ⛔ NOT HALF AN ABILITY — A WHOLE JOB, and the reason this is a scoping call rather than a repair.
+	## @cowir-adhoc raised it naming three Speculator abilities; measured 2026-09-16 the kit is SIX, and
+	## all six are built on the volatility system: leverage_position (volatility_up_self, the recoil_pct
+	## author), overexpose, hedge_position, press_the_edge, forecast, circuit_breaker. Live's arm for
+	## each touches volatility 2-7 times and it has a dedicated VolatilitySystem.gd across 10 files in
+	## src/. The grind's ENTIRE handling is one line — `"volatility_down": return ["volatility", 0.75]`
+	## — and that line is also its only mention of the word, so the buff it stores is never read back:
+	## the one arm that looks implemented is inert too.
+	## 🔑 AND THE HALF-PORT IS WORSE THAN NOTHING, which is why the recoil is not shipped alone:
+	## recoil_pct is the only portable piece, so wiring it would make leverage_position COST a grinding
+	## Speculator 10% max HP while delivering none of its upside. The question is not "is the buff half
+	## portable" but whether the grind can play this job at all — today it cannot, 6 of 6 abilities are
+	## inert or approximated there. struktured's call, filed alongside porting summons.
+	"recoil_pct": "the grind cannot play the Speculator at all — all SIX of its abilities are volatility-built and the grind has no volatility system, so porting the one portable piece (recoil) would cost HP and deliver no upside. Scoping call, not a repair",
 	"threat_class": "presentation only — the stored tag's ONLY reader in src/ is BattleScene's visual (:4789); the stat path keys on buff[\"stat\"], and the grind renders nothing",
 	"ignores_resistance": "EXAMINED 2026-09-16 and UNREACHABLE in a grind, so deliberately not wired. Its two owners (exploit_weakness, fourth_wall_break) are cast only by meta_knight, which is in no enemy pool — and this lane's OWN extra spawn path does not reach it either: _spawn_meta_boss builds a procedural enemy with a generated name, it does not instantiate a monsters.json id. Wiring it would add a mechanism no grind can exercise, and the arm below reds if either caster becomes drawable",
 }
@@ -95,7 +109,7 @@ const CLOSED_PENDING_FOLD := [
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
 	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
-	"meta_effect", "recoil_pct",
+	"meta_effect",
 ]
 
 ## ⛔ THE THIRD STATE, and it exists because I published a backlog number my instrument could not
