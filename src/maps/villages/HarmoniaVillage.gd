@@ -23,6 +23,11 @@ func _get_area_id() -> String:
 	return "harmonia_village"
 
 
+## The capital owns a signature bed; the generic "village" default no longer routes here.
+func _get_music_area_id() -> String:
+	return "harmonia_village"
+
+
 func _get_village_display_name() -> String:
 	return "Harmonia"
 
