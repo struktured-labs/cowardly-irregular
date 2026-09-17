@@ -15,6 +15,10 @@ Palette and drawing primitives are identical to gen_mage_sprites.py.
 from PIL import Image, ImageDraw
 import os
 import math
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 OUT_DIR = "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/mage"
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -1291,6 +1295,7 @@ def put_frame(strip, frame_idx, frame_img):
 
 def save_strip(strip, name):
     path = os.path.join(OUT_DIR, name)
+    assert_writable(path)
     strip.save(path, "PNG")
     size_kb = os.path.getsize(path) // 1024
     print(f"  Saved {path}  ({strip.width}x{strip.height}, {size_kb} KB)")

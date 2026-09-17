@@ -39,6 +39,7 @@ Usage in a generating tool, one line before the write:
 
 Exit: refuses via SystemExit, which a tool run from the shell reports as a non-zero exit.
 """
+import os
 import sys
 from pathlib import Path
 
@@ -71,6 +72,51 @@ def _artist_evidence():
         )
 
 
+
+def _sprite_roots() -> list:
+    """Every tree a sprite path may legitimately live under.
+
+    ⛔ THE GENERATORS DO NOT WRITE WHERE THIS MODULE LIVES. Traced 2026-09-17: of 19 tools whose
+    save target resolves to a jobs sprite path, essentially all write into ANOTHER checkout —
+    `cowardly-irregular` or `cowardly-irregular-sprite-gen`, by literal path or by $GAME_REPO.
+    Resolving only against this worktree made every EXISTING file out there unknowable, so the
+    guard refused T1 regeneration as readily as artist work — correct-by-accident on the artist
+    case and useless on the rest, which is how a guard gets switched off.
+
+    The provenance oracle reads `sprite_corpus.default_root()` (the artist-delivery checkout), so
+    a path is asked about by its path RELATIVE to whichever sprite root contains it.
+    """
+    roots = [PROJECT]
+    try:
+        for extra in (str(PROJECT), str(PROJECT / "tools")):
+            if extra not in sys.path:
+                sys.path.insert(0, extra)
+        from sprite_corpus import default_root
+        roots.append(Path(default_root()))
+    except Exception:
+        pass
+    # Sibling checkouts the generators target, discovered rather than listed: any ancestor of the
+    # target that itself contains assets/sprites is a sprite root.
+    return roots
+
+
+def _sprite_relative(p: Path):
+    """`p` relative to the sprite root that contains it, or None when nothing does."""
+    for root in _sprite_roots():
+        try:
+            return p.relative_to(Path(root).resolve())
+        except (ValueError, OSError):
+            continue
+    # Walk up: a checkout we were not told about still has assets/sprites at its root.
+    for anc in p.parents:
+        if (anc / "assets" / "sprites").is_dir():
+            try:
+                return p.relative_to(anc)
+            except ValueError:
+                return None
+    return None
+
+
 def protected_anims(job_id: str, _evidence=None) -> list:
     """Animation names in this job that must survive a regeneration.
 
@@ -91,10 +137,9 @@ def is_protected(path, _evidence=None) -> bool:
     p = Path(path)
     if not p.exists():
         return False
-    try:
-        rel = p.resolve().relative_to(PROJECT)
-    except ValueError:
-        # Outside this checkout. Provenance is unknowable from here, so refuse to bless it.
+    rel = _sprite_relative(p.resolve())
+    if rel is None:
+        # No sprite root contains it. Provenance is unknowable, so refuse to bless it.
         return True
     parts = rel.parts
     if len(parts) >= 4 and parts[0] == "assets" and parts[1] == "sprites" and parts[2] == "jobs":
@@ -105,8 +150,13 @@ def is_protected(path, _evidence=None) -> bool:
 
 
 def assert_writable(path, force: bool = False, _evidence=None) -> None:
-    """Refuse to let the caller overwrite artist pixels. `force=True` is the explicit approval."""
-    if force:
+    """Refuse to let the caller overwrite artist pixels. `force=True` is the explicit approval.
+
+    Most of these generators have no argparse at all — running the script IS the act — so
+    `ARTIST_GUARD_FORCE=1` is the override for them. Setting an environment variable is still an
+    explicit decision a person has to make; the default without it is to refuse.
+    """
+    if force or os.environ.get("ARTIST_GUARD_FORCE") == "1":
         return
     if is_protected(path, _evidence=_evidence):
         raise SystemExit(
@@ -167,6 +217,45 @@ def selftest() -> int:
         except SystemExit:
             forced = False
         check("--force is the explicit approval", forced, True)
+
+    # Cross-checkout resolution. The generators write into sibling checkouts, so a path must be
+    # asked about by its path RELATIVE to whichever sprite root holds it — not refused because it
+    # is not under this one. Built as a throwaway tree so the arm needs no sibling checkout.
+    with tempfile.TemporaryDirectory() as d2:
+        fake = Path(d2) / "some-other-checkout"
+        art = fake / "assets" / "sprites" / "jobs" / "fighter"
+        art.mkdir(parents=True)
+        sheet = art / "idle.png"
+        sheet.write_bytes(b"x")
+        rel = _sprite_relative(sheet.resolve())
+        check("a sibling checkout resolves to a repo-relative path",
+              str(rel), "assets/sprites/jobs/fighter/idle.png")
+        # and the legacy floor still applies out there, with no oracle at all
+        check("the legacy floor reaches a sibling checkout",
+              is_protected(sheet, _evidence=no), True)
+        stray = Path(d2) / "not-a-checkout" / "idle.png"
+        stray.parent.mkdir(parents=True)
+        stray.write_bytes(b"x")
+        check("a path under NO sprite root is refused", is_protected(stray, _evidence=no), True)
+
+    # The env override, for the tools with no CLI to carry a --force.
+    with tempfile.TemporaryDirectory() as d3:
+        f3 = Path(d3) / "idle.png"
+        f3.write_bytes(b"x")
+        os.environ["ARTIST_GUARD_FORCE"] = "1"
+        allowed = True
+        try:
+            assert_writable(f3, _evidence=yes)
+        except SystemExit:
+            allowed = False
+        del os.environ["ARTIST_GUARD_FORCE"]
+        check("ARTIST_GUARD_FORCE=1 is an explicit approval", allowed, True)
+        refused_again = False
+        try:
+            assert_writable(f3, _evidence=yes)
+        except SystemExit:
+            refused_again = True
+        check("...and unsetting it restores the refusal", refused_again, True)
 
     # Fail-closed: a broken oracle must refuse, never pass.
     def broken(rel):

@@ -24,6 +24,10 @@ from pathlib import Path
 
 from openai import OpenAI
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 PROJECT = Path(__file__).resolve().parent.parent
 GAME_REPO = Path(os.environ.get(
@@ -98,6 +102,7 @@ def main() -> int:
         n=1,
     )
     raw = Image.open(io.BytesIO(base64.b64decode(resp.data[0].b64_json))).convert("RGBA")
+    assert_writable(OUT_TMP / "victory_raw.png")
     raw.save(OUT_TMP / "victory_raw.png")
 
     half = 512
@@ -122,6 +127,7 @@ def main() -> int:
     backup = BARD_DIR / "victory.pre_artist_anchor.png"
     if not backup.exists():
         shutil.copy2(out, backup)
+    assert_writable(out)
     strip.save(out)
     print(f"  → {out.relative_to(GAME_REPO)} (backup: {backup.name})")
     return 0

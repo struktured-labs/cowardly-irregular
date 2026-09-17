@@ -10,6 +10,10 @@ Fighter walk cycle - FINAL RELEASE VERSION
 
 from PIL import Image
 import numpy as np
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 idle = Image.open("/home/struktured/projects/cowardly-irregular/assets/sprites/jobs/fighter/idle.png")
 idle_rgba = idle.convert("RGBA")
@@ -166,6 +170,7 @@ assert strip.size == (1536, 256)
 assert strip.getpixel((0,0))[3] == 0, "Background not transparent"
 
 out = "/home/struktured/projects/cowardly-irregular/assets/sprites/jobs/fighter/walk.png"
+assert_writable(out)
 strip.save(out)
 print(f"\nSaved to: {out}")
 print(f"Size: {strip.size} | Mode: {strip.mode} | Transparent: YES")

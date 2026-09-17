@@ -8,6 +8,10 @@ FF Black Mage inspired: deep blue robes, tall pointed hat, glowing cyan eyes, cr
 from PIL import Image, ImageDraw
 import os
 import math
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 OUT_DIR = "/home/struktured/projects/cowardly-irregular/assets/sprites/jobs/mage"
 os.makedirs(OUT_DIR, exist_ok=True)
@@ -940,6 +944,7 @@ def put_frame(strip, frame_idx, frame_img):
 
 def save_strip(strip, name):
     path = os.path.join(OUT_DIR, name)
+    assert_writable(path)
     strip.save(path, "PNG")
     print(f"  Saved {path}  ({strip.width}x{strip.height})")
     return path

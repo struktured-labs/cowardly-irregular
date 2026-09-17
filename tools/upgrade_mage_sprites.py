@@ -26,6 +26,10 @@ import math
 import os
 from pathlib import Path
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 # ── Insert mage generator source inline via exec ───────────────────────────
 # We need the make_frame() function from gen_mage_sprites.py
@@ -494,36 +498,43 @@ def main():
 
     print("Generating IDLE (4 frames, 1024x256)...")
     idle = generate_idle()
+    assert_writable(OUT_DIR / "idle.png")
     idle.save(OUT_DIR / "idle.png")
     validate_strip(idle, "idle", 4, FRAME_W * 4)
 
     print("Generating WALK (8 frames, 2048x256)...")
     walk = generate_walk()
+    assert_writable(OUT_DIR / "walk.png")
     walk.save(OUT_DIR / "walk.png")
     validate_strip(walk, "walk", 8, FRAME_W * 8)
 
     print("Generating ATTACK (8 frames, 2048x256)...")
     attack = generate_attack()
+    assert_writable(OUT_DIR / "attack.png")
     attack.save(OUT_DIR / "attack.png")
     validate_strip(attack, "attack", 8, FRAME_W * 8)
 
     print("Generating HIT (6 frames, 1536x256)...")
     hit = generate_hit()
+    assert_writable(OUT_DIR / "hit.png")
     hit.save(OUT_DIR / "hit.png")
     validate_strip(hit, "hit", 6, FRAME_W * 6)
 
     print("Generating DEAD (6 frames, 1536x256)...")
     dead = generate_dead()
+    assert_writable(OUT_DIR / "dead.png")
     dead.save(OUT_DIR / "dead.png")
     validate_strip(dead, "dead", 6, FRAME_W * 6)
 
     print("Generating CAST (6 frames, 1536x256)...")
     cast = generate_cast()
+    assert_writable(OUT_DIR / "cast.png")
     cast.save(OUT_DIR / "cast.png")
     validate_strip(cast, "cast", 6, FRAME_W * 6)
 
     print("Generating VICTORY (6 frames, 1536x256)...")
     victory = generate_victory()
+    assert_writable(OUT_DIR / "victory.png")
     victory.save(OUT_DIR / "victory.png")
     validate_strip(victory, "victory", 6, FRAME_W * 6)
 
