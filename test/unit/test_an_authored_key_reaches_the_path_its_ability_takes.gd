@@ -126,7 +126,7 @@ const OUT_OF_SCOPE := {
 ##                                          design, not broken
 ##   condition · threshold                  desperate_bite, see DECLARED_ORPHANS
 ##   next_crit                              shadow_step's guaranteed crit IS wired, by status rather
-##                                          than by this key (BattleManager:5272) — decorative, not dead
+##                                          than by this key (`BattleManager._calculate_crit_chance`) — decorative, not dead
 ##   reflect_damage_element                 frost_armor, held for struktured
 ##   trigger                                counter, see DECLARED_ORPHANS
 const UNREAD_BY_THE_LIVE_ENGINE := ["bp_cost", "bp_gain", "condition", "damage_reduction",
@@ -152,8 +152,8 @@ const DECLARED_ORPHANS := {
 	"bp_cost:brave": "support; the Guardian's Brave/Default BP stacking is listed in CLAUDE.md under 'Future: Combat System Mutation'. Unbuilt by design — declared so it cannot be mistaken for a regression",
 	"bp_gain:default": "support; see bp_cost:brave",
 	"damage_reduction:default": "support; see bp_cost:brave",
-	"next_crit:shadow_step": "support; DECORATIVE, not dead — the guaranteed crit is wired through the shadow_step STATUS (_calculate_crit_chance returns 1.0 for it, BattleManager:5272), so the behaviour the description promises does happen and this key is simply not how. Wiring it would be a refactor with no player-visible change",
-	"evasion_bonus:shadow_step": "support; same shape — the 100%% dodge is wired through the status (BattleManager:8929), not through this key",
+	"next_crit:shadow_step": "support; DECORATIVE, not dead — the guaranteed crit is wired through the shadow_step STATUS (`BattleManager._calculate_crit_chance` returns 1.0 for it), so the behaviour the description promises does happen and this key is simply not how. Wiring it would be a refactor with no player-visible change",
+	"evasion_bonus:shadow_step": "support; same shape — the 100%% dodge is wired through the status (`BattleManager._target_dodges_physical` — QUALIFIED: the grind has a twin of that name), not through this key",
 	"reflect_damage_element:frost_armor": "support; the retaliation itself is unwired and HELD for struktured (lane/frost-armor-bites-back). This key only names the element the retaliation would use, so it cannot be assessed before the retaliation is",
 	"secondary_modifier:subset_drain": "magic; travels with secondary_effect and is read in the same helper. Wiring one without the other is meaningless",
 	"secondary_modifier:toxic_embrace": "physical; see secondary_modifier:subset_drain",
