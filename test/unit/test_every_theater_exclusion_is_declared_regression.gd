@@ -181,10 +181,27 @@ func _collect_strings(node: Variant, out: Dictionary) -> void:
 			_collect_strings(node[k], out)
 
 
+## Source lines with unbalanced-paren continuations JOINED, so a call wrapped across lines is one
+## subject. A line-based scan sees `play_cutscene(` and an EMPTY argument when the id sits on the
+## next line — invisible, in the direction that passes. Measured 2026-09-16: 12 call sites, 0
+## wrapped, so this changes nothing today and stops the parser depending on that.
+func _joined_code_lines() -> Array:
+	var out: Array = []
+	var buf := ""
+	for raw in _src_code_blob().split("\n"):
+		buf += (" " if buf != "" else "") + str(raw).strip_edges()
+		if buf.count("(") <= buf.count(")"):
+			out.append(buf)
+			buf = ""
+	if buf != "":
+		out.append(buf)
+	return out
+
+
 ## Every play_cutscene() argument in src/, comments stripped, as written.
 func _play_cutscene_arguments() -> Array:
 	var out: Array = []
-	for raw in _src_code_blob().split("\n"):
+	for raw in _joined_code_lines():
 		var line: String = raw
 		var at := line.find("play_cutscene(")
 		while at >= 0:
