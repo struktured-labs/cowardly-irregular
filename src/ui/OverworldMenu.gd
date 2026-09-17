@@ -69,6 +69,8 @@ var selected_character: int = 0
 var _menu_labels: Array = []
 var _party_panels: Array = []
 var _submenu_open: bool = false
+## What _hide_main_ui actually hid, so the restore cannot un-hide something the menu wanted hidden.
+var _hidden_by_submenu: Array[Control] = []
 var _nav_repeat := MenuRepeat.new()
 var _ui_built: bool = false
 
@@ -897,8 +899,7 @@ func _open_save_screen(mode: int) -> void:
 func _on_save_screen_closed() -> void:
 	"""Save screen closed - show main menu again"""
 	_submenu_open = false
-	for child in get_children():
-		child.visible = true
+	_restore_main_ui()
 	_build_ui()
 
 
@@ -992,8 +993,7 @@ func _on_settings_boss_battle(boss_id: String) -> void:
 func _on_settings_closed() -> void:
 	"""Settings menu closed - show main menu again"""
 	_submenu_open = false
-	for child in get_children():
-		child.visible = true
+	_restore_main_ui()
 	_build_ui()  # Refresh UI
 
 
@@ -1133,10 +1133,21 @@ func _on_passive_changed(_passive_id: String, _equipped: bool) -> void:
 
 func _hide_main_ui(except: Control) -> void:
 	"""Hide main menu UI while submenu is open, then slide-in the submenu"""
+	_hidden_by_submenu.clear()
 	for child in get_children():
-		if child != except:
-			child.visible = false
+		if child != except and child is Control and (child as Control).visible:
+			_hidden_by_submenu.append(child as Control)
+			(child as Control).visible = false
 	_play_submenu_slide_in(except)
+
+
+## Restore exactly what _hide_main_ui hid. Restoring EVERY child to true instead un-hides
+## anything that was already hidden — the shape that reopened a closed cutscene panel.
+func _restore_main_ui() -> void:
+	for child in _hidden_by_submenu:
+		if is_instance_valid(child):
+			child.visible = true
+	_hidden_by_submenu.clear()
 
 
 func _play_submenu_slide_in(submenu_ctrl: Control) -> void:
@@ -1154,8 +1165,7 @@ func _play_submenu_slide_in(submenu_ctrl: Control) -> void:
 func _on_submenu_closed() -> void:
 	"""Generic handler for submenu close - show main menu again"""
 	_submenu_open = false
-	for child in get_children():
-		child.visible = true
+	_restore_main_ui()
 	_build_ui()  # Refresh UI to show updated stats
 
 
@@ -1192,8 +1202,7 @@ func _on_teleport_chosen(map_id: String, spawn_point: String) -> void:
 func _on_teleport_closed() -> void:
 	"""Teleport menu cancelled — restore main menu visibility."""
 	_submenu_open = false
-	for child in get_children():
-		child.visible = true
+	_restore_main_ui()
 	_build_ui()
 
 
