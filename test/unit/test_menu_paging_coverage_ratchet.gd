@@ -130,12 +130,27 @@ func _ui_scripts(dir_path: String) -> Array:
 ## you cannot silence it green, only explain it green, and the explanation has to still be true.
 const WINDOWED_WITHOUT_PAGING := [
 	{"path": "res://src/ui/EquipmentMenu.gd", "because": "shoulders_taken"},
+	{"path": "res://src/ui/autobattle/AutobattleGridEditor.gd", "because": "shoulders_taken"},
+	{"path": "res://src/ui/Win98Menu.gd", "because": "shoulders_are_battle_mechanics"},
 ]
+
+
+## A list the menu has to WINDOW is longer than its panel — through the shared helper, or rolled by
+## hand. ⛔ The first version required the helper, and that CALL-SHAPE bound hid two menus that roll
+## their own (@cowir-sfx's axis: a location bound and a shape bound are different sentences).
+func _is_windowed(code: String) -> bool:
+	return code.contains("MenuScroll.window_offset(") or code.contains("max_visible")
 
 
 ## Is the declared reason still true of the file? Each verb is checked against the source.
 func _reason_holds(because: String, code: String) -> bool:
 	match because:
+		"shoulders_are_battle_mechanics":
+			# The one menu live DURING battle, where these actions ARE Defer and Advance — the case
+			# MenuPaging's own header carves out. Paging here would spend a turn, not scroll a list.
+			return code.contains("event.is_action_pressed(\"battle_defer\")") \
+				and code.contains("event.is_action_pressed(\"battle_advance\")") \
+				and code.contains("_handle_defer_input") and code.contains("_handle_advance_input")
 		"shoulders_taken":
 			# ⛔ `event.`, NOT bare — the bare spelling is ALSO satisfied by the _process self-heal's
 			# `Input.is_action_pressed("battle_advance")`, so the first version of this check stayed
@@ -162,7 +177,7 @@ func test_every_windowed_list_pages_or_explains_why() -> void:
 			unreadable.append(path.get_file())
 			continue
 		var code: String = GdSource.code_of(path)
-		if not code.contains("MenuScroll.window_offset("):
+		if not _is_windowed(code):
 			continue
 		windowed.append(path)
 		if code.contains("MenuPaging.page_delta("):
@@ -191,6 +206,6 @@ func test_the_paging_exemptions_are_still_exempt() -> void:
 			continue
 		if code.contains("MenuPaging.page_delta("):
 			stale.append("%s now pages — delete its exemption" % str(e["path"]).get_file())
-		elif not code.contains("MenuScroll.window_offset("):
+		elif not _is_windowed(code):
 			stale.append("%s no longer windows its list — the exemption is about nothing" % str(e["path"]).get_file())
 	assert_eq(stale, [], "%s" % [stale])
