@@ -6,6 +6,9 @@ extends GutTest
 ## Found by asking which FIELDS of the manifest any guard reads (@cowir-autogrind's column lesson,
 ## 2026-09-17): 11 of 17 fields are named by some test; `pinned` was not, on 48 entries.
 ##
+## 📌 SCOPE: this covers the REGENERATION route only. The other way a master can be overwritten is
+## a build transcoding it in place, and `tools/check_masters_untouched.sh` already proves that one.
+##
 ## ⛔ NOT A "THESE 48 MUST STAY PINNED" RATCHET — `suno_api.py` has a deliberate `unpin_tracks()`
 ## command and a hard ratchet would fight it. This reds in BOTH directions and says what to do, so
 ## an intentional unpin is one list edit and an ACCIDENTAL one cannot pass.
