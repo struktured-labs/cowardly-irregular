@@ -1583,6 +1583,12 @@ static func _format_events(events: Array, limit: int) -> String:
 	var lines: PackedStringArray = PackedStringArray()
 	var start: int = events.size() - n
 	for i in range(start, events.size()):
+		## A non-Dictionary entry assigned to a typed Dictionary is a SCRIPT ERROR that aborts
+		## this function — so ONE malformed event silently costs the prompt its entire context
+		## block, including entries already appended. Measured: a valid entry placed before a
+		## bare string is lost with it. Skipping costs that one entry instead.
+		if typeof(events[i]) != TYPE_DICTIONARY:
+			continue
 		var entry: Dictionary = events[i]
 		var summary: String = str(entry.get("summary", ""))
 		var etype: String = str(entry.get("type", ""))
