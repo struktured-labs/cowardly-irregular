@@ -81,9 +81,24 @@ func test_villages_wire_the_same_renderer() -> void:
 	# Source-level: BaseVillage instantiates WeatherSystem in _ready and pumps it.
 	var src := FileAccess.get_file_as_string("res://src/maps/villages/BaseVillage.gd")
 	assert_gt(src.length(), 1000, "CONTROL: read a real file")
-	assert_true(src.contains("_setup_weather()"), "village _ready must set up weather")
-	assert_true(src.contains("WeatherSystem.new()"), "villages use the SAME renderer as overworlds")
-	assert_true(src.contains("_weather.process(delta)"), "and must pump it, or the layer freezes")
+	## ⛔ WHOLE-FILE `contains` PASSED ON THE DEFINITION. `_setup_weather()` is a substring of
+	## `func _setup_weather() -> void:`, so deleting the CALL left villages weatherless and this arm
+	## GREEN — measured 2026-09-17. The other two live INSIDE those functions, so they pass on
+	## unreachable code the moment the call goes. Each is now asserted in its own enclosing body.
+	var ready_body: String = _body_of(src, "func _ready")
+	assert_ne(ready_body, "", "CONTROL: BaseVillage must declare _ready, or the pin below reads an empty string")
+	assert_true(ready_body.contains("_setup_weather()"),
+		"village _ready must CALL _setup_weather() — without the call the renderer is built by nobody and every village is weatherless")
+
+	var setup_body: String = _body_of(src, "func _setup_weather")
+	assert_ne(setup_body, "", "CONTROL: BaseVillage must declare _setup_weather")
+	assert_true(setup_body.contains("WeatherSystem.new()"),
+		"villages must build the SAME renderer as overworlds, inside _setup_weather")
+
+	var process_body: String = _body_of(src, "func _process")
+	assert_ne(process_body, "", "CONTROL: BaseVillage must declare _process")
+	assert_true(process_body.contains("_weather.process(delta)"),
+		"and _process must pump it, or the layer freezes")
 
 
 func test_world_id_mapping_covers_all_worlds() -> void:
@@ -91,3 +106,13 @@ func test_world_id_mapping_covers_all_worlds() -> void:
 		assert_ne(WeatherSystem.world_id_for(n), "", "world %d must map to a renderer id" % n)
 	assert_eq(WeatherSystem.world_id_for(6), "abstract")
 	assert_eq(WeatherSystem.world_id_for(99), "abstract", "unknown worlds fail safe to weatherless")
+
+
+## The body of `header`'s function, or "" when it is absent. A whole-file `contains` cannot tell a
+## CALL from the DEFINITION it is named after; this scopes the question to one function.
+func _body_of(src: String, header: String) -> String:
+	var i: int = src.find(header)
+	if i < 0:
+		return ""
+	var j: int = src.find("\nfunc ", i + 1)
+	return src.substr(i, (j - i) if j > i else -1)

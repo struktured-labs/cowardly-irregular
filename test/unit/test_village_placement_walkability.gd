@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## Placement-walkability ratchet (live playtest 2026-07-11, msg 2360):
 ## a quest hen sat inside Harmonia's Inn wall block, Gerald + the wildflower
 ## sat inside the Suburban Mart, a loft-exit spawn dropped the player inside
@@ -225,9 +227,29 @@ func _char_at(rows: Array, cx: int, cy: int) -> String:
 ## The runtime belt must stay wired: BaseVillage sweeps npcs-container
 ## children + wanderer patrols after scene build.
 func test_runtime_sweep_is_wired() -> void:
-	var base: String = FileAccess.get_file_as_string("res://src/maps/villages/BaseVillage.gd")
-	assert_true(base.contains("_validate_placements()"), "sweep called in _ready")
+	## ⛔ "sweep called in _ready" WAS SATISFIED BY THE DEFINITION. `_validate_placements()` is a
+	## substring of `func _validate_placements() -> void:`, so deleting the CALL — no village sweeps
+	## its props or wanderer legs for walkability — left this GREEN. Measured 2026-09-17.
+	var base: String = GdSource.code_of("res://src/maps/villages/BaseVillage.gd")
+	assert_ne(base, "", "CONTROL: BaseVillage.gd must read back as code")
+	var ready_body: String = _body_of(base, "func _ready")
+	assert_ne(ready_body, "", "CONTROL: BaseVillage must declare _ready")
+	assert_true(ready_body.contains("_validate_placements()"),
+		"_ready must CALL _validate_placements() — without the call nothing sweeps props or patrols and they can sit on unwalkable tiles")
 	assert_true(base.contains("get_collision_polygons_count"), "walkability reads TileSet physics data")
-	assert_true(base.contains("_validate_patrol"), "wanderer legs validated")
+	var sweep_body: String = _body_of(base, "func _validate_placements")
+	assert_ne(sweep_body, "", "CONTROL: BaseVillage must declare _validate_placements")
+	assert_true(sweep_body.contains("_validate_patrol"),
+		"the sweep must validate wanderer legs, or a patrol can route through a wall")
 	var wanderer: String = FileAccess.get_file_as_string("res://src/exploration/WanderingNPC.gd")
 	assert_true(wanderer.contains("func get_patrol"), "patrol read-back exists for the sweep")
+
+
+## The body of `header`'s function, or "" when absent — a whole-file `contains` cannot tell a CALL
+## from the DEFINITION it is named after.
+func _body_of(src: String, header: String) -> String:
+	var i: int = src.find(header)
+	if i < 0:
+		return ""
+	var j: int = src.find("\nfunc ", i + 1)
+	return src.substr(i, (j - i) if j > i else -1)
