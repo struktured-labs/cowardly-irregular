@@ -135,6 +135,80 @@ func _consumer_lines(key: String, files: Array) -> Array:
 	return hits
 
 
+## ⛔ CLAIMS THIS FILE HAS RETRACTED, AND THE SHA THAT RETRACTED EACH.
+## @cowir-main lost time to this on the `.374` fold: my retraction REWROTE the arm rather than
+## deleting the file, and kept the retracted name in the prose that explains it — deliberately, since
+## the prose IS the lesson. So the obvious check ("is the file gone; does the phrase grep") reads
+## IDENTICALLY to the un-retracted state. Their discriminator was right and is the structural one:
+##     the grep answered about a SYMBOL   — "is INERT_EVERYWHERE present"  -> yes, in a comment
+##     the question was about an ARM      — "does anything ASSERT it"      -> no
+## This makes that answer come from a test instead of from whoever remembers to write the better
+## pattern. It is @cowir-battle's DERIVED KEY pointed the other way: theirs is a consumer with no
+## literal, so a search UNDER-reports; this is a literal with no consumer, so a search OVER-reports.
+## Both are "the text is not the behaviour", and in both, widening the search makes it worse.
+const RETRACTED_CLAIMS := {
+	"INERT_EVERYWHERE": "db276f500 retracted it. Seven gear effects were listed as consumed by nothing in src/, with a passing arm asserting it. @cowir-battle showed all seven are read by a DERIVED key — BattleManager:5080 builds element + \"_damage_bonus\" and Combatant:993 builds element + \"_resistance\" — so four of them occur zero times in src/ and are fully live.",
+}
+
+
+func test_a_retracted_claim_survives_as_prose_and_never_as_an_arm() -> void:
+	## The retracted name is ALLOWED here — in comments, where the lesson lives. What must never come
+	## back is a declaration or an assertion, which is what "the claim is still being made" means.
+	var own: String = GdSource.code_of(get_script().resource_path)
+	assert_gt(own.length(), 1000, "CONTROL: this file's own source was actually read")
+
+	## Scope out the registry itself: its KEYS are these names, on code lines, by construction.
+	var reg_at: int = own.find("const RETRACTED_CLAIMS")
+	assert_gt(reg_at, 0, "CONTROL: the registry must be locatable, or the slice below is the whole file")
+	var reg_end: int = own.find("\n}", reg_at)
+	assert_gt(reg_end, reg_at, "CONTROL: the registry's end must be locatable")
+	var scanned: String = own.substr(0, reg_at) + own.substr(reg_end)
+
+	var still_asserted: Array = []
+	for name in RETRACTED_CLAIMS:
+		for line in scanned.split("\n"):
+			if not line.contains(str(name)):
+				continue
+			if line.strip_edges().begins_with("#"):
+				continue   ## prose: this is where a retraction is SUPPOSED to live
+			still_asserted.append("%s <- %s" % [name, line.strip_edges().substr(0, 60)])
+	assert_eq(still_asserted, [],
+		"a retracted claim is being made again in CODE, not merely explained in prose: %s" % str(still_asserted))
+
+
+func test_the_retraction_check_can_actually_see_code() -> void:
+	## LIVENESS, per @cowir-controller: an empty result is ambiguous between "no code occurrences" and
+	## "the scan found nothing at all". A name that IS live code must be found on a non-comment line,
+	## or the arm above is green for the wrong reason.
+	var own: String = GdSource.code_of(get_script().resource_path)
+	var code_hits: int = 0
+	var prose_hits: int = 0
+	for line in own.split("\n"):
+		if not line.contains("GRIND_IGNORES"):
+			continue
+		if line.strip_edges().begins_with("#"):
+			prose_hits += 1
+		else:
+			code_hits += 1
+	gut.p("    liveness: GRIND_IGNORES on %d code lines, %d prose lines" % [code_hits, prose_hits])
+	assert_gt(code_hits, 0,
+		"CONTROL: a name that IS live code must register on a code line, else the retraction arm's empty result means nothing")
+
+
+func test_every_retraction_names_the_commit_that_made_it() -> void:
+	## A bare list would rot into "someone said this was wrong once". The SHA is what lets the next
+	## reader go and read the correction rather than re-deriving it, or re-publishing the claim.
+	assert_gt(RETRACTED_CLAIMS.size(), 0,
+		"the registry has emptied — delete it deliberately rather than leaving it asserting nothing")
+	var unexplained: Array = []
+	for name in RETRACTED_CLAIMS:
+		var why: String = str(RETRACTED_CLAIMS[name])
+		if why.length() < 60 or RegEx.create_from_string("[0-9a-f]{7,}").search(why) == null:
+			unexplained.append(str(name))
+	assert_eq(unexplained, [],
+		"a retraction must name the commit that made it and say what was wrong: %s" % str(unexplained))
+
+
 func test_the_sweep_actually_reads_the_tree() -> void:
 	## CONTROL. Every arm below fires on a ZERO, and a zero is what an empty corpus looks like too.
 	var files: Array = _gd_files()
