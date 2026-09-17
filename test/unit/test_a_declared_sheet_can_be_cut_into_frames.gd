@@ -1,20 +1,26 @@
 extends GutTest
 
-## `HybridSpriteLoader` computes `cols_per_row = texture.get_width() / frame_width` and then indexes
-## with `frame_idx % cols_per_row`. Integer modulo by zero RAISES in GDScript, so a sheet narrower
-## than ONE declared frame does not render badly — it aborts the loader and the monster gets no
-## frames at all.
+## `HybridSpriteLoader` divides by a manifest-declared `frame_width` at four sites and multiplies by
+## `frame_height`. The two are NOT the same hazard, which is why this file drives both:
 ##
-## ⛔ THE CODE IS NOW GUARDED AT BOTH SITES, and this arm guards the INPUT, because the guard turns
-## an abort into a silently wrong single-column layout. Refusing to divide is not the same as
-## having something sensible to divide.
+## 🔑 MEASURED 2026-09-17, not assumed — a GDScript divide-by-zero ABORTS the enclosing function and
+## the caller resumes with the return type's DEFAULT. So a zero WIDTH already ended at `null`, and a
+## guard returning `null` is indistinguishable from the abort: an arm asserting `== null` on width
+## cannot fail, and would have been a passing test of nothing.
 ##
-## 🔑 A DIVISOR, NOT AN INDEX. This lane's empty-list sweep came back clean on this file — no
-## `size() - 1`, no clamp — because the hazard reaches `/` and `%` instead of `[]`. cowir-sfx named
-## the class 2026-09-17; it is the second instance found in this lane the same morning, after
-## MasteriteEncounter's frame divisor.
+## ⛔ A zero HEIGHT never divides, so it never aborts. Pre-guard the loader built `Rect2(x, 0, w, 0)`
+## regions, printed "Loaded monster sheet", and returned a non-null SpriteFrames of INVISIBLE frames
+## — so the procedural fallback never ran and the character was simply absent. That is the arm below.
 const MANIFEST := "res://data/sprite_manifest.json"
 const SECTIONS: Array[String] = ["monster_sheets", "sheets", "battle_effects"]
+const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
+const PROBE := "_a_declared_sheet_probe"
+const JOB_DIR := "res://assets/sprites/jobs/bard"
+
+
+func after_each() -> void:
+	# Loader._monster_manifest is a STATIC var: an injected key would reach every later test.
+	Loader._monster_manifest.erase(PROBE)
 
 
 func test_every_declared_sheet_is_at_least_one_frame_wide() -> void:
@@ -35,8 +41,9 @@ func test_every_declared_sheet_is_at_least_one_frame_wide() -> void:
 			if not (e as Dictionary).has("frame_width"):
 				continue
 			var fw: int = int((e as Dictionary)["frame_width"])
-			if fw <= 0:
-				bad.append("%s/%s: declares frame_width %d — the loader divides by this" % [section, id, fw])
+			var fh: int = int((e as Dictionary).get("frame_height", 0))
+			if fw <= 0 or fh <= 0:
+				bad.append("%s/%s: declares frame %dx%d — the loader divides by the width and sizes its regions by the height" % [section, id, fw, fh])
 				continue
 			var path := str((e as Dictionary).get("path", ""))
 			if path == "" or not path.ends_with(".png") or not ResourceLoader.exists(path):
@@ -58,15 +65,71 @@ func test_every_declared_sheet_is_at_least_one_frame_wide() -> void:
 		+ "wrong picture rather than a missing one: %s") % [bad])
 
 
-## ⛔ BOTH DIVISION SITES, because one was guarded and one was not for the whole life of the file.
-func test_neither_cols_per_row_site_divides_unguarded() -> void:
-	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
-	var code: String = GdSource.code_of("res://src/battle/sprites/HybridSpriteLoader.gd")
-	assert_gt(code.length(), 2000, "PRECONDITION: the loader must be readable and stripped")
+## The monster path. Borrows a REAL declared sheet so the only difference from the control is height.
+func test_a_zero_height_monster_declaration_refuses_instead_of_shipping_invisible_frames() -> void:
+	Loader._load_manifest()
+	var donor := _a_real_monster_id()
+	assert_ne(donor, "", "PRECONDITION: need one real declared monster sheet to borrow")
 
-	assert_eq(code.count("cols_per_row: int = maxi(1, texture.get_width() / frame_width)"), 2,
-		("both cols_per_row sites must clamp to at least one column. They differed for the life of "
-		+ "this file — monster_frame_texture guarded, load_monster_sprite_frames not — and a "
-		+ "modulo by zero aborts the loader rather than drawing something wrong"))
-	assert_false(code.contains("int = texture.get_width() / frame_width"),
-		"the unguarded form is what this replaced")
+	var control := Loader.load_monster_sprite_frames(donor)
+	assert_not_null(control,
+		"CONTROL: the unmodified donor must load. If it does not, the null below means nothing")
+
+	var broken: Dictionary = (Loader._monster_manifest[donor] as Dictionary).duplicate(true)
+	broken["frame_height"] = 0
+	Loader._monster_manifest[PROBE] = broken
+	assert_null(Loader.load_monster_sprite_frames(PROBE),
+		("a sheet declaring zero-height frames must be REFUSED so the procedural fallback runs. "
+		+ "Unguarded this returns a SpriteFrames of Rect2(x, 0, w, 0) regions and logs it as loaded, "
+		+ "so the monster is invisible rather than absent — and nothing in the log says so"))
+
+
+## The job path, driven directly: _load_external_sheet takes its declaration as an argument.
+func test_a_zero_height_job_sheet_refuses_instead_of_shipping_invisible_frames() -> void:
+	assert_true(DirAccess.dir_exists_absolute(JOB_DIR), "PRECONDITION: the donor job dir must exist")
+
+	var control = Loader._load_external_sheet(_job_decl(256), "bard")
+	assert_not_null(control,
+		"CONTROL: the same declaration with a real height must load, or the null below is free")
+
+	assert_null(Loader._load_external_sheet(_job_decl(0), "bard"),
+		("a job sheet declaring zero-height frames must be REFUSED. Unguarded, `loaded_any` is set "
+		+ "for an animation whose every frame is zero pixels tall, so the loader reports success"))
+
+
+## Pins the maxi(1, …) floor by BEHAVIOUR rather than by its spelling: a sheet narrower than one
+## declared frame must still come back, because cols_per_row 0 would abort on `frame_idx % 0`.
+func test_a_sheet_narrower_than_one_frame_lays_out_rather_than_aborting() -> void:
+	Loader._load_manifest()
+	var donor := _a_real_monster_id()
+	assert_ne(donor, "", "PRECONDITION: need one real declared monster sheet to borrow")
+
+	var narrow: Dictionary = (Loader._monster_manifest[donor] as Dictionary).duplicate(true)
+	var tex := load(str(narrow["path"])) as Texture2D
+	assert_not_null(tex, "PRECONDITION: the donor sheet must load as a texture")
+	narrow["frame_width"] = tex.get_width() * 2
+	Loader._monster_manifest[PROBE] = narrow
+	assert_not_null(Loader.load_monster_sprite_frames(PROBE),
+		("a sheet narrower than one declared frame must lay out as a single column. Without the "
+		+ "floor, cols_per_row is 0 and `frame_idx % cols_per_row` aborts the loader mid-build"))
+
+
+func _a_real_monster_id() -> String:
+	for id in Loader._monster_manifest:
+		var e = Loader._monster_manifest[id]
+		if not (e is Dictionary):
+			continue
+		var d: Dictionary = e
+		if int(d.get("frame_width", 0)) > 0 and int(d.get("frame_height", 0)) > 0 \
+			and str(d.get("path", "")).ends_with(".png") and ResourceLoader.exists(str(d["path"])):
+			return str(id)
+	return ""
+
+
+func _job_decl(frame_height: int) -> Dictionary:
+	return {
+		"path": JOB_DIR,
+		"frame_width": 256,
+		"frame_height": frame_height,
+		"animations": ["idle"],
+	}

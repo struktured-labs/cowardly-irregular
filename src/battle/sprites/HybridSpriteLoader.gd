@@ -392,15 +392,14 @@ static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 
 	var frame_width: int = sheet_data.get("frame_width", 256)
 	var frame_height: int = sheet_data.get("frame_height", 256)
+	# Refuse a zero declaration as monster_frame_texture does — the division below raises before maxi() can clamp it.
+	if frame_width <= 0 or frame_height <= 0:
+		return null
 	var fps: float = sheet_data.get("fps", 8)
 	var animations = sheet_data.get("animations", {})
 
 	var sprite_frames = SpriteFrames.new()
-	# ⛔ maxi(1, …) LIKE ITS SIBLING AT monster_frame_texture. A sheet narrower than one frame
-	# gives cols_per_row 0, and the loop below does `frame_idx % cols_per_row` — integer modulo
-	# by zero RAISES in GDScript, so the monster loads with NO frames rather than wrong ones.
-	# Latent: no shipped entry is narrower than its declared frame (115 checked, 2026-09-17), and
-	# test_a_declared_sheet_can_be_cut_into_frames now keeps it that way.
+	# maxi() floors a NARROW sheet at one column; a ZERO declaration is refused above, because this division runs first.
 	var cols_per_row: int = maxi(1, texture.get_width() / frame_width)
 
 	for anim_name in animations:
@@ -513,6 +512,9 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 	var base_path = sheet_data.get("path", "res://assets/sprites/jobs/%s" % job_id)
 	var frame_width = sheet_data.get("frame_width", 32)
 	var frame_height = sheet_data.get("frame_height", 32)
+	# frame_count divides by this; dressed_fps already refuses it three lines on, and this site did not.
+	if frame_width <= 0 or frame_height <= 0:
+		return null
 	var animations = sheet_data.get("animations", ["idle", "walk", "attack", "cast", "hit", "dead"])
 
 	var sprite_frames = SpriteFrames.new()
