@@ -155,6 +155,20 @@ func _game_weather() -> String:
 	return "clear"
 
 
+## The ambient key weather is currently driving, or "" when it is driving none. ONE expression,
+## read by the match below AND by owns_ambient() -- a second copy would let the zone router and the
+## player disagree about who owns the layer.
+func _ambient_key_for(condition: String) -> String:
+	var p: Dictionary = RENDER.get(condition, {})
+	return str(p.get("ambient", WORLD_CLEAR_AMBIENTS.get(_current_world, "")))
+
+
+## True while weather owns the ambient layer. The zone router asks before it overrides, and
+## WeatherSystem hands the layer back through the host when this goes false.
+func owns_ambient() -> bool:
+	return _ambient_key_for(_rendered_condition) != ""
+
+
 func _apply_condition(condition: String) -> void:
 	_rendered_condition = condition
 	var params: Dictionary = RENDER.get(condition, {})
@@ -180,7 +194,7 @@ func _apply_condition(condition: String) -> void:
 	if sm and sm.has_method("play_ambient"):
 		# Clear falls back to the world's fair-weather bed (v1 behavior), not silence.
 		# Literal keys per branch so the sfx-orphan audit can see every ambient this plays.
-		match str(params.get("ambient", WORLD_CLEAR_AMBIENTS.get(_current_world, ""))):
+		match _ambient_key_for(condition):
 			"weather_rain": sm.play_ambient("weather_rain")
 			"weather_storm_bed": sm.play_ambient("weather_storm_bed")
 			"weather_steam": sm.play_ambient("weather_steam")

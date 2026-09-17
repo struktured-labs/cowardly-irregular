@@ -892,6 +892,11 @@ func _update_zone_ambient(zone: String) -> void:
 	var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 	if sm == null:
 		return
+	## Weather owns this layer while it is on, and hands it back via restore_place_ambient() when
+	## it clears. Without this a zone boundary crossed during rain replaced the rain with the new
+	## zone's bed, and nothing re-asserted until the weather next changed.
+	if _weather and _weather.has_method("owns_ambient") and _weather.owns_ambient():
+		return
 	var ambient_key = ""
 	match zone:
 		"forest": ambient_key = "ambient_forest"
