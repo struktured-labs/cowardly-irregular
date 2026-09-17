@@ -3859,9 +3859,16 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 				# Play job stinger for party leader on limit break
 				if participants.size() > 0 and participants[0] is Combatant:
 					var job_id = participants[0].job.get("id", "fighter") if participants[0].job else "fighter"
-					var stinger_path = "res://assets/audio/music/job_%s_special.ogg" % job_id
-					if ResourceLoader.exists(stinger_path):
-						SoundManager.play_music("job_%s_special" % job_id)
+					## ⛔ ASKED THE OWNER INSTEAD OF RE-DERIVING. This built the path itself — duplicating
+					## the manifest's knowledge of where the file lives — and gated on
+					## ResourceLoader.exists(), which SoundManager documents TWICE (:1777, :1846) as
+					## reporting FALSE for resources that ARE present in a web PCK. A false negative
+					## here is a silent stinger on the Limit Break, desktop unaffected.
+					## music_is_available() is the predicate CutsceneDirector and JukeboxMenu use; it
+					## reads the manifest for the path and tests it with load() for that stated reason.
+					var stinger_key: String = "job_%s_special" % job_id
+					if SoundManager.music_is_available(stinger_key):
+						SoundManager.play_music(stinger_key)
 			"combo_magic":
 				SoundManager.play_flourish("group_combo_magic")
 			_:
