@@ -396,7 +396,12 @@ static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 	var animations = sheet_data.get("animations", {})
 
 	var sprite_frames = SpriteFrames.new()
-	var cols_per_row: int = texture.get_width() / frame_width
+	# ⛔ maxi(1, …) LIKE ITS SIBLING AT monster_frame_texture. A sheet narrower than one frame
+	# gives cols_per_row 0, and the loop below does `frame_idx % cols_per_row` — integer modulo
+	# by zero RAISES in GDScript, so the monster loads with NO frames rather than wrong ones.
+	# Latent: no shipped entry is narrower than its declared frame (115 checked, 2026-09-17), and
+	# test_a_declared_sheet_can_be_cut_into_frames now keeps it that way.
+	var cols_per_row: int = maxi(1, texture.get_width() / frame_width)
 
 	for anim_name in animations:
 		var anim_data = animations[anim_name]
