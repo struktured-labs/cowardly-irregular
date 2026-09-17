@@ -1990,6 +1990,11 @@ func play_music(track: String, exact: bool = false) -> void:
 		_cancel_pending_fade()
 		return  # Already playing
 
+	## An id that resolves to nothing must not tear down the bed it cannot replace.
+	if not _music_cache.has(track) and (not has_music_track(track) or not music_is_available(track)):
+		push_warning("[MUSIC] Unknown music track: %s - keeping current music" % track)
+		return
+
 	# Capture here, ABOVE the clear below — not at the old site further down,
 	# which ran after _current_area was already emptied and so could only ever
 	# describe a play_music() bed.
