@@ -1274,7 +1274,7 @@ const PORTRAIT_SPRITES = {
 	"boss_rat_king": "res://assets/sprites/portraits/npcs/boss_rat_king.png",
 	# Pre-registered pending art (same pattern as the masterite variants). NOT on disk — assets/sprites/npcs/dr_temporal/ is his OVERWORLD sheet dir, not a portrait; PR #155 registered this claiming otherwise. Renders the mysterious procedural until a real bust lands here.
 	"dr_temporal": "res://assets/sprites/portraits/npcs/dr_temporal.png",
-	# Generic archetype pool — every OverworldNPC.npc_type value that OverworldNPC:1112 passes as `portrait` when the player interacts. Aliased to closest existing procedural via the archetype prefix arm; cowir-sprites replaces individually as art lands.
+	# Generic archetype pool — the ARCHETYPE values OverworldNPC._portrait_key() resolves, NOT npc_type (struktured 2026-07-31: npc_type meant phil.png never rendered). Aliased to closest existing procedural via the archetype prefix arm; cowir-sprites replaces individually as art lands.
 	"farmer": "res://assets/sprites/portraits/npcs/farmer.png",
 	"traveler": "res://assets/sprites/portraits/npcs/traveler.png",
 	"child": "res://assets/sprites/portraits/npcs/child.png",
