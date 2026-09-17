@@ -14,8 +14,10 @@ extends GutTest
 ##      opaque pixels in its idle frame and masterite_curator_abstract
 ##      with 140. Nothing errored. The boss was invisible until it swung,
 ##      and its Bestiary entry was an empty box, because BestiaryMenu
-##      renders the IDLE animation specifically (BestiaryMenu.gd:511 sets
-##      _detail_sprite.visible = false rather than drawing a placeholder).
+##      renders the IDLE animation specifically (`BestiaryMenu._load_sprite()`
+##      sets `_detail_sprite.visible = false` rather than drawing a placeholder).
+##      Cited as :511 until 2026-09-17; that line was a load_monster_sprite_frames
+##      call when the citation was written, so it never pointed at this claim.
 ##
 ## Defect 2 is why this test reads PIXELS and not just the manifest. A
 ## coverage check that only asks "is there an entry" passes happily on a

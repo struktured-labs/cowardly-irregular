@@ -3,7 +3,8 @@ extends GutTest
 ## Live-playtest regression (2026-07-17 → cowir-main msg 2779):
 ##
 ## Struktured saw the procedural `_draw_dancer` composite in The Dancing
-## Tonberry (VillageBar.gd:275) — a pixel-by-pixel red-dress dancer with
+## Tonberry (`VillageBar._draw_dancer()`, reached from `_generate_dancer_sprites()`) — a
+## pixel-by-pixel red-dress dancer with
 ## 4 hardcoded frames — and asked for real art / gpt-image sprites.
 ##
 ## Fix: DANCER_FRAME_PATHS pre-registers 4 PNG paths under
