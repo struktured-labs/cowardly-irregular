@@ -117,6 +117,8 @@ func _counter_rate(mid: String, intent_id: String) -> float:
 	for _i in ROLLS:
 		boss.current_hp = boss.max_hp
 		boss.current_mp = boss.max_mp
+		## NO existence floor here DELIBERATELY: renaming _make_ai_decision makes this file
+		## EC=1 · Failing 1 — rung 2, always visible. Measured 2026-09-16.
 		var action: Dictionary = _bm._make_ai_decision(boss, [boss], [target])
 		if not action.is_empty():
 			seen_any += 1

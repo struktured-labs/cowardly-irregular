@@ -167,7 +167,14 @@ _require_marker_live() {
 # the files sit right there on disk. A test run in that state exits 0 having run
 # NOTHING, which is indistinguishable from success. Cheap and idempotent once warm.
 echo "[${PLAT}] gate 0/4: import prewarm"
-godot --headless --audio-driver Dummy --import --quit > tmp/${PLAT}_import.log 2>&1 &
+# SANDBOXED. `--import` is EDITOR-CLASS: it resolves user:// by application name and writes
+# .recovery_mode_lock into whichever profile is active. Measured 2026-09-16 on struktured's live
+# profile — a lock stamped 10:40, the minute this line ran during the .358 publish.
+# The import CACHE lives in res://.godot, in the project, so relocating the data root costs the
+# prewarm nothing; deploy_web.sh:140 has done exactly this since 2026-09-07 with the arms to
+# prove the prewarm's purpose survives.
+mkdir -p tmp/prewarm_xdg
+XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" godot --headless --audio-driver Dummy --import --quit > tmp/${PLAT}_import.log 2>&1 &
 EC=0; wait $! || EC=$?
 test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: asset import failed — see tmp/${PLAT}_import.log" >&2; exit 1; }
 
@@ -462,6 +469,19 @@ case "${_EVIDENCE}" in
         elif [ -x tools/gate.sh ]; then
             [ -n "${_EVIDENCE}" ] && echo "[${PLAT}] gate 1: running the suite — ${_EVIDENCE#VERDICT=RUN }"
             mkdir -p tmp/gate_xdg
+            # REAL-SAVE HYDRATION. test_real_saves_hydrate_smoke.gd reads user://saves/, so a
+            # fresh sandbox makes it PEND — measured 2026-09-16: empty sandbox
+            # "Passing none · Risky/Pending 2", seeded sandbox "Passing 2 · Asserts 124".
+            # Every release this lane shipped carried failing=0 over a file that exercised
+            # nothing, and no cardinal in that line could say so.
+            # The copy is ONE-WAY: the suite mutates what it hydrates; his originals never see it.
+            if [ -x tools/seed_gate_saves.sh ]; then
+                ./tools/seed_gate_saves.sh "$PWD/tmp/gate_xdg" || {
+                    echo "[${PLAT}] BLOCKED: seeding the gate sandbox was REFUSED — see above." >&2
+                    exit 2; }
+            else
+                echo "[${PLAT}] note: tools/seed_gate_saves.sh missing — real-save hydration will PEND." >&2
+            fi
             # Budgeted: run_tests.sh has no timeout and gate.sh adds none, so a WEDGE stops
             # this chain silently instead of redding it. See deploy_web.sh's _SUITE_BUDGET_S
             # note for why 2700s and for the measured proof that the signal reaches
@@ -506,7 +526,17 @@ if [ "$GATE_TREE_ID_NOW" != "$GATE_TREE_ID" ]; then
     exit 1
 fi
 echo "[${PLAT}] gate 2/4: export (tree unchanged since gate 1)"
-godot --headless --audio-driver Dummy --export-release "$PRESET" "$BIN" > tmp/${PLAT}_export.log 2>&1 &
+# SANDBOXED, with the export templates symlinked in. This was the LAST deploy invocation writing
+# struktured's real profile: v3.33.360-alpha shipped with the boot gate and both imports sandboxed
+# and his .recovery_mode_lock still moved 10:40:04 -> 12:22:04, stamped by an export.
+# Measured both directions on a real Linux export, 2026-09-16:
+#   bare sandbox      "No export template found at <sandbox>/godot/export_templates/4.4.1.stable/..."
+#   sandbox + symlink 318,140,832 bytes exported, exit 0, his lock UNCHANGED
+# The templates are read-only to an export, so a link is all it takes.
+_EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
+    echo "[${PLAT}] BLOCKED: could not build the export sandbox — see above." >&2
+    exit 2; }
+XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --audio-driver Dummy --export-release "$PRESET" "$BIN" > tmp/${PLAT}_export.log 2>&1 &
 EC=0; wait $! || EC=$?
 test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: export failed — see tmp/${PLAT}_export.log" >&2; exit 2; }
 [ -s "$BIN" ] || { echo "[${PLAT}] BLOCKED: export reported success but produced no binary" >&2; exit 2; }
@@ -549,11 +579,31 @@ _ARTID="$(cd "$(dirname "$0")" && pwd)/artifact_identity.sh"
     exit 2; }
 _RUNNER="${BOOT_RUNNER[*]+${BOOT_RUNNER[*]}}"
 [ -n "$_RUNNER" ] || _RUNNER="<native>"
+# ⛔ THE BOOT SMOKE RUNS THE GAME. It is the one invocation in this file that boots the whole
+# thing against a real profile, and until 2026-09-16 it did so against STRUKTURED'S.
+#
+# Measured that day, after four desktop publishes: his user://logs/ held five rotations stamped
+# 08:53 · 09:11 · 10:00 · 10:35, each three seconds before this gate's own archived boot log for
+# .355 · .356 · .357 · .358. Godot keeps exactly five, so every slot held one of these boots and
+# none of his own play survived in the ring. That is CLAUDE.md's 2026-07-15 hazard verbatim: a
+# crash trace is the one log you cannot regenerate.
+#
+# WHY NO GREP WOULD HAVE FOUND IT: there is no `godot` on that line. It runs the EXPORTED BINARY
+# by path, so every sandbox rule written as `godot <flags>` is blind to it. The axis is what the
+# process does to user://, never what the command line looks like.
+#
+# XDG_DATA_HOME is safe HERE and is NOT safe on the export two gates up: it relocates the whole
+# godot data root including ~/.local/share/godot/export_templates, which --export-release needs
+# and an exported binary does not. Verified 2026-09-16 with pub358's own linux build: the log
+# landed in the sandbox, his five rotations were byte-identical before and after, and the binary
+# still reached "[GAME] Started" so the gate's assertion survives the redirect.
+_BOOT_XDG="$PWD/tmp/boot_xdg"
+mkdir -p "$_BOOT_XDG"
 {
     echo "[${PLAT}] boot subject: runner=${_RUNNER} path=${OUT_DIR}/${ARTIFACT}"
     echo "[${PLAT}] boot subject: $("$_ARTID" "${OUT_DIR}/${ARTIFACT}" 2>&1)"
-    ( cd "$OUT_DIR" && timeout 240 ${BOOT_RUNNER[@]+"${BOOT_RUNNER[@]}"} "./${ARTIFACT}" \
-        --headless --quit )
+    ( cd "$OUT_DIR" && XDG_DATA_HOME="$_BOOT_XDG" timeout 240 \
+        ${BOOT_RUNNER[@]+"${BOOT_RUNNER[@]}"} "./${ARTIFACT}" --headless --quit )
 } > "tmp/${PLAT}_boot.log" 2>&1 || true
 _require_marker_live "[GAME] Started"
 if ! grep -q "\[GAME\] Started" tmp/${PLAT}_boot.log; then

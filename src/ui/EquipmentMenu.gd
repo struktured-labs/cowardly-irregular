@@ -623,16 +623,11 @@ func _input(event: InputEvent) -> void:
 
 func _handle_slot_input(event: InputEvent) -> void:
 	"""Handle input in slot selection mode"""
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		selected_slot = (selected_slot - 1 + SLOTS.size()) % SLOTS.size()
-		_build_ui()
-		SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		selected_slot = (selected_slot + 1) % SLOTS.size()
-		_build_ui()
-		SoundManager.play_ui("menu_move")
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
+	# an axis has no echo flag — so one stick push used to step the cursor five rows.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(nav)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
@@ -670,11 +665,39 @@ func _handle_slot_input(event: InputEvent) -> void:
 
 var _shoulder_held: bool = false
 
+## Vertical only: left/right do nothing on this screen, and watching them would let a diagonal
+## on a d-pad claim the hold. struktured 2026-08-22 asked for hold-to-repeat; it reached 3 menus.
+var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
 
-func _process(_delta: float) -> void:
+
+func _process(delta: float) -> void:
 	# Self-heal: a release that lands while a rebuild swallows events must not stick the gate.
 	if _shoulder_held and not Input.is_action_pressed("battle_defer") and not Input.is_action_pressed("battle_advance"):
 		_shoulder_held = false
+
+	# Hold-to-repeat. This guard MIRRORS _input's, and it has to: MenuRepeat polls Input directly,
+	# so it inherits none of the refusals the event path makes for itself.
+	if not visible:
+		_nav_repeat.reset()
+		return
+	var action := _nav_repeat.tick(delta)
+	if action != "":
+		_nav_step(action)
+
+
+## One owner for a vertical step, called by the press path and the hold path alike. Copying it
+## into both is how the two drift — the defect class this repo has fixed repeatedly.
+func _nav_step(action: String) -> void:
+	var step: int = -1 if action == "ui_up" else 1
+	if mode == Mode.SLOT_SELECT:
+		selected_slot = (selected_slot + step + SLOTS.size()) % SLOTS.size()
+	else:
+		var items := _get_available_items_for_slot()
+		if items.is_empty():
+			return
+		selected_item_index = (selected_item_index + step + items.size()) % items.size()
+	_build_ui()
+	SoundManager.play_ui("menu_move")
 
 
 ## Re-target the menu at the previous/next party member without leaving it. No-op solo or when the character is not in the party (a detached test combatant).
@@ -697,18 +720,9 @@ func _handle_item_input(event: InputEvent) -> void:
 	"""Handle input in item selection mode"""
 	var items = _get_available_items_for_slot()
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		if items.size() > 0:
-			selected_item_index = (selected_item_index - 1 + items.size()) % items.size()
-			_build_ui()
-			SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		if items.size() > 0:
-			selected_item_index = (selected_item_index + 1) % items.size()
-			_build_ui()
-			SoundManager.play_ui("menu_move")
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(nav)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():

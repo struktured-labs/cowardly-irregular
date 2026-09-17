@@ -19,6 +19,8 @@ var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
 var _ambient_player: AudioStreamPlayer  # Looping weather/environment ambience
 var _sub_player: AudioStreamPlayer  # Crit sub-layer only; separate so the thud LAYERS under the hit instead of replacing it on _battle_player
+var _strike_player: AudioStreamPlayer  # dedicated voice: the elemental strike voice is authored to ride OVER the weapon hit, and replaced it on _battle_player (2026-09-16)
+var _flash_player: AudioStreamPlayer  # dedicated voice: the weakness stinger fires same-frame with the hit by design, so the hit always replaced it (2026-09-16)
 var _current_ambient_key: String = ""
 var _crossfade_tween: Tween = null
 
@@ -324,6 +326,18 @@ func _setup_audio_players() -> void:
 	_sub_player.bus = SFX_BUS
 	add_child(_sub_player)
 
+	_strike_player = AudioStreamPlayer.new()
+	_strike_player.name = "StrikePlayer"
+	_strike_player.volume_db = SFX_BATTLE_BASE_DB
+	_strike_player.bus = SFX_BUS
+	add_child(_strike_player)
+
+	_flash_player = AudioStreamPlayer.new()
+	_flash_player.name = "FlashPlayer"
+	_flash_player.volume_db = SFX_BATTLE_BASE_DB
+	_flash_player.bus = SFX_BUS
+	add_child(_flash_player)
+
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
 	_ability_player.volume_db = SFX_ABILITY_BASE_DB  # Ability SFX: same level as music — spells should be felt
@@ -392,7 +406,18 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["steal"] = "ability_physical"
 	_ability_sounds["mug"] = "ability_physical"
 	# Meta-job signature cues (cowir-sfx 2026-07-11) — reality edits must not sound like sword hits.
-	_ability_sounds["constant_modification"] = "ability_constant_modification"
+	# ⚠️ MOST meta-typed abilities are NOT mapped here and fall through
+	# to ability_physical, a sword unsheathing. NO COUNT HERE ON PURPOSE — test_an_ability_cue_key_names_a_real_ability
+	# DERIVES and prints the current figure; a number copied up here is how the web-exclusion header went stale for
+	# eight days (@cowir-music). rewind · time_stop · quicksave · undo_death ·
+	# temporal_shield · warp_to_boss · sequence_break and the rest are cast by the player ON THEMSELVES,
+	# so they need no enemy and no autobattle rule to be heard. Open with struktured: author cues, or map
+	# onto the three that exist (ability_permakill · ability_mind_swap · ability_dark).
+	# ⛔ DO NOT "fix" this by adding a meta arm to _TYPE_SFX — its own comment records that
+	# physical/support/meta are deliberately absent because meta cues are keyed BY ID, which is this
+	# map. I was one step from making that change before reading the table four lines below it.
+	# The ability is modify_constant; this key read constant_modification from 2026-07-11, matched nothing, and left the authored cue unreachable while the Scriptweaver's signature act played a sword.
+	_ability_sounds["modify_constant"] = "ability_constant_modification"
 	_ability_sounds["analyze_code"] = "ability_analyze_code"
 	_ability_sounds["permakill"] = "ability_permakill"
 	_ability_sounds["permakill_strike"] = "ability_permakill"
@@ -908,9 +933,16 @@ func play_ambient(sound_key: String) -> void:
 		return  # Already playing this ambient
 	stop_ambient()
 	_current_ambient_key = sound_key
-	if not _sfx_manifest.has(sound_key):
+	## MUSIC MANIFEST FIRST. ambient_cave/forest/village exist in BOTH stores: a 145-214s authored
+	## bed here and a 30-40 KB sting there. Reading sfx only, the long beds had never played once.
+	_load_music_manifest()
+	var entry: Dictionary = {}
+	if _music_manifest.has(sound_key):
+		entry = _music_manifest[sound_key]
+	elif _sfx_manifest.has(sound_key):
+		entry = _sfx_manifest[sound_key]
+	else:
 		return
-	var entry = _sfx_manifest[sound_key]
 	var path = entry.get("file", "")
 	if path == "":
 		return
@@ -918,6 +950,19 @@ func play_ambient(sound_key: String) -> void:
 		path = "res://" + path
 	var stream = load(path) as AudioStream
 	if not stream:
+		return
+	## ⛔ THE SAME RULE IN THE OTHER DIRECTION. The check in _try_play_from_manifest only fires
+	## when MUSIC starts second; this one covers ambient starting second on a bed the music player
+	## already holds. Music is the foreground layer, so it wins both ways and the ambient simply
+	## does not start — stop_ambient() above has already cleared the slot.
+	if _music_player and _music_player.playing and _music_player.stream \
+			and _music_player.stream.resource_path == path:
+		## ⛔ CLEAR THE KEY ON THE WAY OUT. It was assigned at the top of this function, so
+		## returning here would leave _current_ambient_key naming a bed that is NOT playing —
+		## truthful in the other direction, which calls stop_ambient() and clears it. Readers treat
+		## this field as the record of what is live (test_sound_manager_night_ambience_regression
+		## does exactly that), and a field that lies in one of two paths is the kind nobody checks.
+		_current_ambient_key = ""
 		return
 	_ambient_player.stream = stream
 	_ambient_player.play()
@@ -987,12 +1032,14 @@ func are_night_music_effects_enabled() -> bool:
 func play_strike_element(element: String) -> void:
 	if element == "":
 		return
-	_try_play_sfx_from_manifest(_battle_player, "strike_" + element.to_lower())
+	# Own voice: this is a layer over the weapon hit, not a replacement for it.
+	_try_play_sfx_from_manifest(_strike_player if _strike_player != null else _battle_player, "strike_" + element.to_lower())
 
 
 ## Public: play weakness-hit stinger (msg 2789 axis D + cowir-battle msg 2787 visual).
 func play_weakness_flash() -> void:
-	_try_play_sfx_from_manifest(_battle_player, "weakness_flash")
+	# Own voice: BattleScene fires this in the same frame as the hit it accents.
+	_try_play_sfx_from_manifest(_flash_player if _flash_player != null else _battle_player, "weakness_flash")
 
 
 ## Public: start/stop the night ambience loop; mirror of set_night_music_effects.
@@ -1771,6 +1818,14 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	if not stream:
 		push_warning("[MUSIC] Failed to load audio: %s (track_id: %s)" % [path, track_id])
 		return false
+	## ⛔ A BED MUST NOT PLAY AGAINST ITSELF. Since play_ambient started preferring the music
+	## manifest, ambient_cave/forest/village can be live on the AMBIENT player while the Jukebox
+	## asks the MUSIC player for the same id — one file, two players, arbitrary offset, 16 dB
+	## apart. That is comb filtering, not layering. Compared by resolved PATH rather than key so
+	## an alias naming the same file is caught too.
+	if _ambient_player and _ambient_player.playing and _ambient_player.stream \
+			and _ambient_player.stream.resource_path == path:
+		stop_ambient()
 	# Stingers never loop and resume previous music when done.
 	# Bug fix (2026-05-02): stinger_level_up + 4 other stingers had
 	# loop=true in the manifest, which made them loop forever and never
@@ -1787,7 +1842,17 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		stream.loop = should_loop
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
-	_music_player.play()
+	## ⛔ CONSUMED ONCE, AND CLAMPED. A parked position outlives its own start otherwise, and
+	## seeking past the end of a shorter bed plays nothing at all — silence that reads as a missing
+	## file. Anything within 1 s of the end restarts instead: resuming there is a wrap the player
+	## hears as a stutter.
+	var resume_at: float = _pending_resume_position
+	_pending_resume_position = 0.0
+	var length: float = stream.get_length()
+	if resume_at > 0.0 and length > 0.0 and resume_at < length - 1.0:
+		_music_player.play(resume_at)
+	else:
+		_music_player.play()
 	_music_playing = true
 	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
 	# Resume whatever was playing once the stinger ends. Restores through the
@@ -2083,7 +2148,12 @@ func play_music(track: String, exact: bool = false) -> void:
 ## play_area_music re-derives world-suffixed and interior-variant keys, which
 ## a raw track name cannot.
 func capture_music_state() -> Dictionary:
-	return {"track": _current_music, "area": _current_area, "playing": _music_playing}
+	## ⛔ THE POSITION, because a restore without one RESTARTS THE BED. Measured 2026-09-16:
+	## overworld at 1.21 s, one battle, back at 0.09 s. overworld_medieval is 198 s and a W1
+	## encounter lands every ~30 s, so a player heard the first half-minute of a three-minute
+	## track for the whole game and never once reached the rest of it.
+	var pos: float = _music_player.get_playback_position() if _music_player and _music_player.playing else 0.0
+	return {"track": _current_music, "area": _current_area, "playing": _music_playing, "position": pos}
 
 
 ## Put back a state captured by capture_music_state(). Safe to call with an
@@ -2097,7 +2167,7 @@ func restore_music_state(state: Dictionary) -> void:
 	if area != "":
 		## Deliberately does NOT clear _current_area: the early-out it would defeat
 		## is the correct answer when nothing took the music (measured 2026-09-11).
-		play_area_music(area)
+		play_area_music(area, float(state.get("position", 0.0)))
 		return
 	var track: String = str(state.get("track", ""))
 	if track != "":
@@ -2154,6 +2224,10 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 		_music_playing = false
 		_current_music = "")
 
+
+## Where the next AREA bed should pick up. Set by play_area_music, consumed by the first
+## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head.
+var _pending_resume_position: float = 0.0
 
 var _danger_intensity: float = 0.0  # 0.0 = safe, 1.0 = critical
 var _danger_tween: Tween = null
@@ -5005,7 +5079,7 @@ var _current_area: String = ""
 var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
 
-func play_area_music(area_type: String) -> void:
+func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
 	"""Play appropriate music for an exploration area.
 	Generation is deferred to the next frame so it does not block scene setup."""
 	if _current_area == area_type and _music_playing:
@@ -5043,6 +5117,12 @@ func play_area_music(area_type: String) -> void:
 	_current_area = area_type
 	_current_world_suffix = _get_current_world_suffix()
 	_pending_music_area = area_type
+	## Parked for the deferred start one frame from now. stop_music() has already run, so nothing
+	## else can consume it in between; _try_play_from_manifest clears it as it uses it.
+	## Not clamped here: the `> 0.0` at the use site is the single guard, and two would mean a
+	## mutation to either one survives. `play(-12)` is not harmless — measured, it reports a
+	## playback position of 89,466 s.
+	_pending_resume_position = resume_at
 	stop_music()
 
 	call_deferred("_start_area_music_deferred", area_type)

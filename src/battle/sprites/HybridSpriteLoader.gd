@@ -9,6 +9,8 @@ const _SnesPartySprites = preload("res://src/battle/sprites/SnesPartySprites.gd"
 static var _manifest: Dictionary = {}
 static var _monster_manifest: Dictionary = {}
 static var _battle_effects: Dictionary = {}
+static var _overworld_player_sheets: Dictionary = {}
+static var _overworld_monster_sheets: Dictionary = {}
 static var _manifest_loaded: bool = false
 
 
@@ -88,8 +90,63 @@ static func _load_manifest() -> void:
 	_manifest = json.data.get("sheets", {})
 	_monster_manifest = json.data.get("monster_sheets", {})
 	_battle_effects = json.data.get("battle_effects", {})
+	_overworld_player_sheets = json.data.get("overworld_player_sheets", {})
+	_overworld_monster_sheets = json.data.get("overworld_monster_sheets", {})
 	print("[SPRITES] Loaded sprite manifest: %d sheets, %d monster sheets, %d battle effects" % [_manifest.size(), _monster_manifest.size(), _battle_effects.size()])
 	_manifest_loaded = true
+
+
+## The overworld walk sheet's frame size, DECLARED per job in overworld_player_sheets.
+##
+## OverworldPlayer cut every sheet at a hardcoded 32 and only checked the image was BIG ENOUGH
+## (>= 128x128), so a sheet authored at any other frame size passed and was sliced into 32px
+## squares — the player character rendered as a quarter of a figure, with nothing erroring.
+## All 14 sheets are 32px today, which is exactly why it held; cowir-cutscenes hit the identical
+## shape in CutsceneActor the same afternoon, on sheets that were 159-for-159 uniform.
+##
+## Wiring it also gives overworld_player_sheets its first runtime reader. It was one of six
+## manifest sections nothing read — and a section whose FIELDS are all read elsewhere is invisible
+## to a field-level census, which is the gap this closes rather than declares.
+static func overworld_frame_size(job_id: String) -> Vector2i:
+	_load_manifest()
+	var entry = _overworld_player_sheets.get(job_id, {})
+	if not (entry is Dictionary):
+		return Vector2i(32, 32)
+	return Vector2i(int(entry.get("frame_width", 32)), int(entry.get("frame_height", 32)))
+
+
+## The roaming-monster walk sheet's geometry, DECLARED per monster in overworld_monster_sheets:
+## frame size, columns per row, and WHICH ROW IS WHICH FACING.
+##
+## RoamingMonster hardcoded all three — FRAME_W/FRAME_H 32, SHEET_COLS 4, and rows 0=down 1=left
+## 2=right 3=up written into _update_row_from_move_dir — while the manifest declared each of them
+## and nothing read the section. A sheet that ordered its rows differently would walk facing the
+## wrong way; one at another frame size would be mis-sliced. All 10 are 128x128 / 32px / that row
+## order today, which is the uniformity that hides it, same as the player's sheet one hour ago.
+##
+## Returns convention defaults for an unregistered monster — the section is an audit ledger for
+## art the runtime also reaches by path convention, so absence must not refuse a sheet.
+static func overworld_monster_geometry(monster_id: String) -> Dictionary:
+	_load_manifest()
+	var out := {"frame": Vector2i(32, 32), "cols": 4, "rows": {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}}
+	var entry = _overworld_monster_sheets.get(monster_id, {})
+	if not (entry is Dictionary) or entry.is_empty():
+		return out
+	out["frame"] = Vector2i(int(entry.get("frame_width", 32)), int(entry.get("frame_height", 32)))
+	var anims = entry.get("animations", {})
+	if anims is Dictionary and not anims.is_empty():
+		var rows := {}
+		var cols := 0
+		for name in anims:
+			var a = anims[name]
+			if a is Dictionary and a.has("row"):
+				rows[str(name)] = int(a["row"])
+				cols = maxi(cols, int(a.get("frames", 0)))
+		if not rows.is_empty():
+			out["rows"] = rows
+		if cols > 0:
+			out["cols"] = cols
+	return out
 
 
 static func load_battle_effect_texture(key: String) -> Texture2D:
@@ -111,6 +168,10 @@ static func load_battle_effect_texture(key: String) -> Texture2D:
 ## framing empty space for some jobs and the character for others.
 static var _figure_rect_cache: Dictionary = {}
 
+## TWIN, deliberately not shared: AdvanceAura.figure_rect_of(tex) answers the same question from a
+## LIVE TEXTURE and falls back to the WHOLE frame. This one takes a path, so an absent or unreadable
+## sheet returns EMPTY — a caller with no sheet must not be handed a plausible rect. Same retirement
+## condition as the twin: collapse only when one caller needs both inputs.
 static func figure_rect(sheet_path: String) -> Rect2i:
 	if _figure_rect_cache.has(sheet_path):
 		return _figure_rect_cache[sheet_path]
@@ -350,6 +411,31 @@ static func _normalize_suffix(audio_suffix: String) -> String:
 	return audio_suffix if audio_suffix in WORLD_SUFFIXES else ""
 
 
+## A world costume is a RESKIN, not a re-timing. `fps` is authored per SHEET, so a dressed
+## sheet with fewer frames than the artist's base runs the same animation in less time:
+## measured 2026-09-16, the cleric's 7-frame idle breathes once every 0.875 s in world 1 and
+## its 2-frame costume every 0.250 s in worlds 2-6 — the same character, 3.5x faster.
+##
+## It is not only cosmetic. Action sheets play once and BattleAnimator sequences combat on
+## `animation_finished`, so a dressed attack with fewer frames would finish early and move the
+## beat a fight lands on. Only idles are dressed today; this keeps the seam honest either way.
+##
+## Returns the base fps unchanged whenever there is nothing to match against — an undressed
+## sheet, an equal frame count, or a base sheet that is not on disk.
+static func dressed_fps(base_fps: float, sheet_path: String, base_sheet: String, frames: int, frame_width: int) -> float:
+	if sheet_path == base_sheet or frames <= 0 or frame_width <= 0:
+		return base_fps
+	if not ResourceLoader.exists(base_sheet):
+		return base_fps
+	var base_tex := load(base_sheet) as Texture2D
+	if base_tex == null:
+		return base_fps
+	var base_frames: int = base_tex.get_width() / frame_width
+	if base_frames <= 0 or base_frames == frames:
+		return base_fps
+	return base_fps * float(frames) / float(base_frames)
+
+
 static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> SpriteFrames:
 	var base_path = sheet_data.get("path", "res://assets/sprites/jobs/%s" % job_id)
 	var frame_width = sheet_data.get("frame_width", 32)
@@ -361,7 +447,8 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 	var suffix: String = world_suffix()
 
 	for anim_name in animations:
-		var sheet_path = "%s/%s.png" % [base_path, anim_name]
+		var base_sheet: String = "%s/%s.png" % [base_path, anim_name]
+		var sheet_path: String = base_sheet
 		# A world-dressed sheet wins ONLY when it exists; absence falls back to artist base.
 		if suffix != "":
 			var dressed: String = "%s/%s_%s.png" % [base_path, anim_name, suffix]
@@ -374,12 +461,14 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 		if not texture:
 			continue
 
+		var frame_count = texture.get_width() / frame_width
+
 		sprite_frames.add_animation(anim_name)
-		sprite_frames.set_animation_speed(anim_name, sheet_data.get("fps", 8))
+		sprite_frames.set_animation_speed(anim_name,
+			dressed_fps(float(sheet_data.get("fps", 8)), sheet_path, base_sheet, int(frame_count), int(frame_width)))
 		# Rest poses loop (weak breathes like idle); action anims play once so animation_finished fires
 		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "victory", "weak"])
 
-		var frame_count = texture.get_width() / frame_width
 		for i in range(frame_count):
 			var atlas = AtlasTexture.new()
 			atlas.atlas = texture

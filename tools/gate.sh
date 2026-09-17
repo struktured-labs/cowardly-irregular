@@ -63,12 +63,25 @@ LOADFAIL=$(grep -c 'does not extend GutTest\|Failed to load script' "$LOG")
 # measured 21 = 8 risky + 13 deliberate pending() skips. Labelling all 21
 # "asserted nothing" would be false about 13 legitimate skips and would train
 # people to ignore the line — the exact habit this exists to break. So print
+# ⚠️ THE DERIVATION BELOW IS ONLY SAFE BECAUSE $LOG IS STRIPPED AT :25. Godot colours the
+# per-test MARKERS and leaves the Totals block plain, so `[Risky]:  \e[0mtest_x did not assert`
+# defeats a pattern anchored on the colon while `Risky/Pending N` is unaffected. Three lanes
+# measured that on 2026-09-16 against logs this file never reads and concluded the tool was
+# blind; it is not, and the one line keeping it honest is the sed above, not this pattern.
+# Move this derivation anywhere without that strip and it silently returns 0.
 # GUT's own cardinal AND the risky subset derived from unique test NAMES.
 # Not from line counts: each test emits the inline and summary form, so
 # [Risky]-lines is 2x and is a boolean, the same trap as [Failed].
 RISKYPEND=$(grep -oE "^ +Risky/Pending +[0-9]+" "$LOG" | grep -oE "[0-9]+" | tail -1)
 RISKYPEND=${RISKYPEND:-0}
-NOASSERT=$(grep -oE '\[Risky\]: +[a-z_0-9]+ did not assert' "$LOG" | sort -u | wc -l)
+# ⚠️ STRIP ANSI FIRST — this line had the very trap its comment cites, for months.
+# The documented gate is `tools/run_tests.sh > tmp/gate.log 2>&1`, i.e. the COLOURED stdout, and
+# godot puts the escape BETWEEN the colon and the name:  `[Risky]:  \e[0mtest_x did not assert`.
+# So the pattern matched ZERO on every real invocation, the naming block is gated on NOASSERT,
+# and the gate printed `asserted-nothing=0` beside a non-zero cardinal — the number without the
+# list its own comment says is the point. Found 2026-09-16 by cowir-autogrind; the cardinal below
+# was never affected, because `Risky/Pending N` carries no escape.
+NOASSERT=$(sed 's/\x1b\[[0-9;]*m//g' "$LOG" | grep -oE '\[Risky\]: +[a-z_0-9]+ did not assert' | sort -u | wc -l)
 echo "exit=$EC  failing=$FAILED (authoritative)  risky/pending=$RISKYPEND (GUT total)  asserted-nothing=$NOASSERT (named below)  [Failed]-lines=$FAILLINES (boolean only, NOT a count)  totals-blocks=$TOTALS  tests-run=$RAN"
 echo "scope: scripts-run=$SCRIPTS  test-files-on-disk=$ONDISK  load-failures=$LOADFAIL"
 if [ "$NOASSERT" -ne 0 ]; then

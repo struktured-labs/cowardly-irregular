@@ -59,8 +59,9 @@ func _exit_tree() -> void:
 		SoundManager.stop_ambient()
 
 
-## Virtual: subclass returns an sfx_manifest ambient-loop key (e.g.
-## "ambient_chapel"); "" = no room ambience.
+## Virtual: subclass returns an ambient-loop key (e.g. "ambient_chapel"); "" = no room ambience.
+## Resolved MUSIC-manifest-first since 2026-09-16, sfx second — a key in both stores now plays
+## the authored bed rather than the sting.
 func _get_ambient_key() -> String:
 	return ""
 

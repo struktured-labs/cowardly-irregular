@@ -2,11 +2,29 @@ extends GutTest
 
 ## The Jukebox must not claim to play a track this build cannot load.
 ##
-## The Web preset drops 54 music files (`assets/audio/music/*industrial*`,
-## `*digital*`, `*abstract*`, `*futuristic*`, `cutscene_w4/5/6*`) while
-## data/music_manifest.json — which lists all 165 — ships intact. JukeboxMenu
-## builds its list from the manifest with no availability filter, so a third of
-## the rows are unbacked on web.
+## ⛔ SCOPE FIRST, BECAUSE THIS FILE USED TO SAY "on web" AND MEAN SOMETHING ELSE. The music
+## exclusions apply to the DIRECT export (`WEB_STAGE=0`) only. The published path is
+## `make_web_stage.sh` (`WEB_STAGE=1`, the default at deploy_web.sh:326), which swaps in a
+## reduced-bitrate tier and drops every music exclusion. ⛔ NO BITRATE IS NAMED HERE ON PURPOSE:
+## this paragraph said "48 kbps" for about four minutes, which is `make_web_stage.sh`'s own
+## `BITRATE="${1:-48}"` fallback and NOT what publishes — `deploy_web.sh:85` passes
+## `WEB_AUDIO_KBPS`, default 40, and has since `.357` (cowir-deploy, measured at the serving tag).
+## Reading a callee's default instead of the caller's argument put a fresh stale number in the very
+## commit that exists to remove stale numbers. So on the build a player actually gets, NO jukebox row is
+## unbacked, and nothing here is a statement about what a player hears. What it defends is the
+## direct export and any future build where a track is genuinely absent.
+##
+## ⛔ AND EVERY NUMBER THAT USED TO LIVE IN THIS PARAGRAPH WAS STALE. It read "drops 54 music
+## files ... `*industrial*`, `*digital*`, `*abstract*`, `*futuristic*`, `cutscene_w4/5/6*`" and
+## "33 with no procedural path ... cutscene(16), credits(3)". Both were wrong, and the CURRENT
+## pair is derived and printed by the arm at the bottom rather than restated here — writing it
+## here is how the last pair went stale, and this paragraph is not exempt from its own lesson.
+## The one durable fact: THERE IS NO `cutscene_w6*` CLAUSE — the nine w6 beds and the three credits beds were
+## deliberately un-excluded on 2026-09-11 (cowir-main's ruling; world6_ending requested
+## cutscene_w6_epilogue and got silence). The three worlds are also enumerated per prefix, not
+## matched bare. So the sentence described a filter that had already changed underneath it.
+##
+## The arm at the bottom now DERIVES the population and prints it, so no count lives in prose.
 ##
 ## 🔑 THE UI DID NOT JUST GO QUIET, IT REPORTED SUCCESS. _play_selected sets
 ## _currently_playing and turns the label PLAYING_COLOR *before* the attempt and
@@ -14,14 +32,8 @@ extends GutTest
 ## discovers the load failed. So the player got: music stops, nothing starts,
 ## and the screen says "Now Playing: Break Room".
 ##
-## ⚠️ 33 of the 54, not all of them. The Jukebox routes ids starting with
-## "overworld" through play_area_music, and play_music's `_:` arm sends
-## battle_*/boss* to a procedural generator — both make sound. The 33 with no
-## such path are cutscene(16), credits(3), danger(3), dungeon(3), victory(3),
-## village(3), ambient(2). Normal gameplay is NOT affected: every area starter
-## falls back procedurally after its manifest attempt, which is the documented
-## W4-W6 web design. The Jukebox is the one surface that lets a player name an
-## arbitrary manifest key, and so the one place the design leaks.
+## Not every excluded id is silent: ids starting with battle_ or boss keep a procedural arm in
+## music_is_available, and the Jukebox routes overworld* through play_area_music.
 ##
 ## 🛑 THE AVAILABILITY CHECK MUST BE load(), NOT ResourceLoader.exists(). This
 ## file's own subject documents why: exists() reports FALSE for resources that
@@ -29,6 +41,8 @@ extends GutTest
 
 const MANIFEST := "res://data/music_manifest.json"
 const PRESETS := "res://export_presets.cfg"
+const DEPLOY := "res://tools/deploy_web.sh"
+const STAGE := "res://tools/make_web_stage.sh"
 
 ## Not a real id under any naming scheme in this project, so it cannot collide
 ## with a track that later gets authored.
@@ -132,5 +146,30 @@ func test_the_excluded_population_is_large_enough_to_be_worth_guarding() -> void
 			if f.match(p):
 				hit += 1
 				break
+	var unbacked: int = 0
+	for k in tracks.keys():
+		var f2: String = str((tracks[k] as Dictionary).get("file", ""))
+		if f2 == "":
+			continue
+		for p2 in pats:
+			if f2.match(p2):
+				var id2: String = str(k)
+				if not (id2.begins_with("battle_") or id2.begins_with("boss") or id2.begins_with("overworld")):
+					unbacked += 1
+				break
 	assert_gt(hit, 20,
-		"only %d manifest tracks match the Web exclusions — expected ~54; either the filter parse broke or the corpus changed shape" % hit)
+		"the Web preset excludes %d manifest tracks, %d of them with no procedural arm — if this collapses the guard defends nothing and should be retired deliberately. Both numbers are DERIVED; do not copy them into the comment above, which is how the last pair went stale" % [hit, unbacked])
+
+
+func test_the_scope_note_at_the_top_is_still_true() -> void:
+	## ⛔ THE HEADER CLAIMS THE PUBLISHED BUILD SHIPS EVERY TRACK. That rests on two facts in
+	## other files, and if either moves the note becomes a confident lie in the direction that
+	## matters — telling a reader no player can hit an unbacked row when one can.
+	var deploy: String = FileAccess.get_file_as_string(DEPLOY)
+	assert_gt(deploy.length(), 1000, "CONTROL: deploy_web.sh read back %d chars" % deploy.length())
+	assert_gt(deploy.find("WEB_STAGE:-1"), 0,
+		"deploy_web.sh no longer defaults WEB_STAGE to 1 — the header says the staged path is what publishes, and that is now unverified")
+	var stage: String = FileAccess.get_file_as_string(STAGE)
+	assert_gt(stage.length(), 1000, "CONTROL: make_web_stage.sh read back %d chars" % stage.length())
+	assert_gt(stage.find("assets/audio/music"), 0,
+		"make_web_stage.sh no longer touches the music exclusions — the header claims it drops them")

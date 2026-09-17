@@ -13,6 +13,13 @@ signal touched(monster_id: String, monster_types: Array, is_elite: bool)
 const FRAME_W: int = 32
 const FRAME_H: int = 32
 const SHEET_COLS: int = 4
+## Resolved from overworld_monster_sheets at load; the consts above are the CONVENTION these
+## default to, not the rule. A sheet declaring another frame size, column count or row order
+## used to be mis-sliced or walked facing the wrong way, silently.
+var _frame: Vector2i = Vector2i(FRAME_W, FRAME_H)
+var _cols: int = SHEET_COLS
+var _rows: Dictionary = {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}
+var _row_offsets: PackedFloat32Array = PackedFloat32Array()
 const WANDER_SPEED: float = 90.0
 const CHASE_SPEED: float = 115.0
 const CHASE_RADIUS: float = 96.0
@@ -146,10 +153,27 @@ func _setup_sprite() -> void:
 
 	var path = "res://assets/sprites/monsters/overworld/%s.png" % monster_id
 	if ResourceLoader.exists(path):
+		var geo: Dictionary = HybridSpriteLoader.overworld_monster_geometry(monster_id)
+		_frame = geo.get("frame", Vector2i(FRAME_W, FRAME_H))
+		_cols = maxi(1, int(geo.get("cols", SHEET_COLS)))
+		_rows = geo.get("rows", _rows)
 		_sheet = load(path)
+		var sheet_size: Vector2 = _sheet.get_size()
+		# REFUSE a sheet the declaration does not divide, rather than mis-slice it.
+		if _frame.x <= 0 or _frame.y <= 0 \
+				or int(sheet_size.x) % _frame.x != 0 or int(sheet_size.y) % _frame.y != 0 \
+				or int(sheet_size.x) / _frame.x < _cols or int(sheet_size.y) / _frame.y < _rows.size():
+			push_warning("[ROAM] '%s' sheet is %dx%d, not an exact %dx%d grid of %d cols x %d rows — using the placeholder" % [monster_id, int(sheet_size.x), int(sheet_size.y), _frame.x, _frame.y, _cols, _rows.size()])
+			_draw_fallback_sprite()
+			return
 		_sheet_loaded = true
 		_sprite.texture = _sheet
 		_sprite.region_enabled = true
+		# Cut at the DECLARED size, render at the CONVENTION size. TOUCH_RADIUS_PX and the
+		# placeholder are both tuned to FRAME_W; deriving the cut and leaving the render native
+		# would make a 48px sheet draw 1.5x with a collider that no longer matches it.
+		_sprite.scale = Vector2(float(FRAME_W) / float(_frame.x), float(FRAME_H) / float(_frame.y))
+		_compute_row_offsets()
 		_apply_frame(0, 0)
 	else:
 		_draw_fallback_sprite()
@@ -180,7 +204,74 @@ func _placeholder_color(id: String) -> Color:
 func _apply_frame(row: int, col: int) -> void:
 	if not _sheet_loaded:
 		return
-	_sprite.region_rect = Rect2(col * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H)
+	_sprite.region_rect = Rect2(col * _frame.x, row * _frame.y, _frame.x, _frame.y)
+	if row < _row_offsets.size():
+		_sprite.offset.x = _row_offsets[row]
+
+
+## Per-row horizontal correction, so TURNING does not MOVE the creature.
+##
+## An off-centre sprite mirrored IN PLACE lands at the mirrored offset, so walk_left and
+## walk_right sit at different x inside the cell — and `centered = true` pins the CELL to the
+## node, which makes that displacement literal on-screen motion at a position that never changed.
+## Measured 2026-09-16. THREE definitions give three counts, so each is named with what it asks —
+## an unqualified "N sheets drift" is not a reproducible statement:
+##
+##   difference of per-row MEAN bbox centres   21 of 53   the SYSTEMATIC row offset
+##   MAX over frames of per-frame bbox centres 29 of 53   worst instantaneous difference
+##   alpha centroid                            44 of 53   mass rather than outline
+##
+## 🔑 THE FIRST IS THE ONE THIS FIX ADDRESSES, and that is not a preference: the correction is one
+## CONSTANT per row, so it can only remove the systematic part. The extra 8 sheets in the max
+## count are frame-to-frame variation inside a row, which is the walk animation moving and must
+## NOT be flattened. Reconciled against cowir-adhoc's independent measurement — their 29 and my 21
+## agree exactly once both definitions are stated; there was never a data disagreement.
+##
+## ⚠️ AND WHICH OUTLINE METRIC IS HONEST DEPENDS ON THE SHEET (cowir-adhoc). On a MIRRORED row the
+## outline and the mass move together and centroid reads larger (wolf bbox 3.00 / centroid 5.00).
+## On a REDRAWN row the outline extent changes while the mass barely moves, so bbox overstates the
+## perceived jump (the five hand-drawn meta-job sheets: bbox 4.00 / centroid ~1.18).
+##
+## By section on the systematic metric: monsters 8 of 10 (worst snake 4.0px, wolf 3.0px) · players
+## 9 of 14 (worst 1.75px) · npcs 4 of 29 (worst 0.75px). The severe end is entirely in the monster
+## sheets this file renders. `slime` is the one sheet already registered correctly and gets offsets
+## of exactly 0 here, by construction rather than by exception.
+##
+## ⚠️ ANCHORED TO walk_down, NOT TO THE CELL CENTRE. The resting facing is the authored
+## placement; re-centring every row on the cell would move sheets whose author deliberately sat
+## the body off-centre, which is a different change from the one this fixes.
+##
+## ⛔ ALPHA ONLY, AND THAT IS WHY get_image() IS SAFE HERE. The imported texture is not
+## byte-identical to the PNG — 7196 of 16384 pixels differ on wolf even at compress/mode=0 — but
+## alpha PRESENCE differs on zero pixels, so a bounding box reads the same through either. Exact
+## RGBA through a Texture2D would not.
+func _compute_row_offsets() -> void:
+	_row_offsets = PackedFloat32Array()
+	var img: Image = _sheet.get_image()
+	if img == null or _frame.x <= 0 or _frame.y <= 0:
+		return
+	var n_rows: int = img.get_height() / _frame.y
+	var centres := PackedFloat32Array()
+	for r in n_rows:
+		var total := 0.0
+		var counted := 0
+		for c in _cols:
+			var lo: int = _frame.x
+			var hi: int = -1
+			for y in _frame.y:
+				for x in _frame.x:
+					if img.get_pixel(c * _frame.x + x, r * _frame.y + y).a > 0.0:
+						lo = mini(lo, x)
+						hi = maxi(hi, x)
+			if hi >= 0:
+				total += float(lo + hi) * 0.5
+				counted += 1
+		centres.append(total / float(counted) if counted > 0 else float(_frame.x - 1) * 0.5)
+	var anchor: int = int(_rows.get("walk_down", 0))
+	if anchor < 0 or anchor >= centres.size():
+		return
+	for r in n_rows:
+		_row_offsets.append(centres[anchor] - centres[r])
 
 
 ## Touch radius tuned to ~1.4x the 32px sprite half-width — encounter fires only on actual sprite overlap.
@@ -325,7 +416,7 @@ func _tick_anim(delta: float) -> void:
 	if _anim_timer >= 1.0 / ANIM_FPS:
 		_anim_timer -= 1.0 / ANIM_FPS
 		if _dir != Vector2.ZERO or _state == 2:
-			_anim_frame = (_anim_frame + 1) % SHEET_COLS
+			_anim_frame = (_anim_frame + 1) % _cols
 		else:
 			_anim_frame = 0
 		_apply_frame(_row, _anim_frame)
@@ -426,10 +517,14 @@ func _move(delta: float) -> void:
 
 
 func _update_row_from_move_dir(move_dir: Vector2) -> void:
+	# Which row is which FACING is declared per sheet. Hardcoding 0=down/1=left/2=right/3=up
+	# meant a sheet ordered any other way walked facing the wrong direction, with nothing failing.
+	var anim: String
 	if abs(move_dir.x) > abs(move_dir.y):
-		_row = 2 if move_dir.x > 0 else 1
+		anim = "walk_right" if move_dir.x > 0 else "walk_left"
 	else:
-		_row = 0 if move_dir.y > 0 else 3
+		anim = "walk_down" if move_dir.y > 0 else "walk_up"
+	_row = int(_rows.get(anim, 0))
 
 
 func _tick_fade(delta: float) -> void:

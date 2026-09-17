@@ -13,10 +13,14 @@ extends GutTest
 
 func test_freeze_alias_present_in_both_dispatch_sites() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
-	# Both physical and magic dispatch went through replace_all: 2 sites.
+	# Was 2 sites (the block was duplicated); now one owner both executors call.
 	var count = src.count("if status_to_add == \"freeze\":")
-	assert_eq(count, 2,
-		"freeze alias must live at BOTH physical and magic dispatch sites (found %d)" % count)
+	assert_eq(count, 1,
+		"the freeze alias has ONE owner since 2026-09-16 (found %d)" % count)
+	assert_true(_owner_body().contains("if status_to_add == \"freeze\":"),
+		"and it is _apply_ability_status that owns it")
+	assert_eq(_owner_callers(), 2,
+		"and BOTH physical and magic dispatch still reach that owner — the property this arm has always been about")
 
 
 func test_freeze_alias_maps_to_stun() -> void:
@@ -94,3 +98,22 @@ func test_no_ability_effect_falls_to_default_silently() -> void:
 			unhandled.append("%s → %s" % [aid, eff])
 	assert_eq(unhandled.size(), 0,
 		"abilities author effects that hit no dispatch branch (silent fizzle class): %s" % str(unhandled))
+
+
+## ⚠️ SHAPE CHANGED 2026-09-16, INTENT UNCHANGED. The effect-application block existed VERBATIM in
+## _execute_physical_ability AND _execute_magic_ability, so this file counted copies. It is now one
+## owner, `_apply_ability_status`, that both call — so the pin is "the rule lives in the owner, and
+## both damage executors still reach it", which is what counting two copies was really defending.
+func _owner_body() -> String:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var at: int = src.find("func _apply_ability_status(")
+	if at < 0:
+		return ""
+	var nxt: int = src.find("\nfunc ", at + 1)
+	return src.substr(at, (nxt - at) if nxt > at else 4000)
+
+
+## Both damage executors must still CALL that owner, or the rule inside it defends nothing.
+func _owner_callers() -> int:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	return src.count("_apply_ability_status(caster, target, ability)")

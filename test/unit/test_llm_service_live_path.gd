@@ -40,6 +40,10 @@ func before_each() -> void:
 	_svc._backends.clear()
 	_svc._backends.append(_be)
 	_be.request_finished.connect(_svc._on_backend_finished)
+	## NO existence floor here DELIBERATELY: renaming _select_backend leaves this file
+	## EC=0, Passing 7/7, Asserts 15 -> 15 — nothing moves. It is the LAST line of setup
+	## and no arm's outcome depends on it, so the member is a VEHICLE, not this file's
+	## subject. Floor it if an arm ever asserts on which backend was selected.
 	_svc._select_backend()
 
 

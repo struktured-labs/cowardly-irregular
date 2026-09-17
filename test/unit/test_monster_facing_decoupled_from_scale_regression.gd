@@ -23,6 +23,7 @@ extends GutTest
 ## Note the shape: nothing here needs an allowlist or a suppression flag. The
 ## correct state today passes clean.
 
+const GuardSubject := preload("res://test/unit/helpers/guard_subject.gd")
 const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const SMALL := 128
 
@@ -264,3 +265,24 @@ func test_the_bestiary_really_renders_the_declared_facing() -> void:
 	assert_true(spr.visible, "PRECONDITION: slime's sheet must load")
 	assert_true(spr.flip_h,
 		"an undeclared 128px sheet must still get the convention's flip — the owner must not swallow the fallback")
+
+
+## ⛔ THE SILENT-PASS FLOOR. This guard drives its subject BY NAME; rename the member and every
+## cardinal stays clean — see test/unit/helpers/guard_subject.gd for the four measurements and why
+## run_tests.sh's exit 4 cannot see this rung. Names are DERIVED from this file's own text, so a
+## new `.call("...")` is floored the day it is written rather than the day someone remembers.
+func test_every_member_this_guard_drives_by_name_exists() -> void:
+	var subject: Object = load(BESTIARY).new()
+	add_child_autofree(subject)
+	var calls: Dictionary = GuardSubject.audit_calls("res://test/unit/test_monster_facing_decoupled_from_scale_regression.gd", subject)
+	var props: Dictionary = GuardSubject.audit_properties("res://test/unit/test_monster_facing_decoupled_from_scale_regression.gd", subject)
+	assert_eq((str(calls["why"]) + " " + str(props["why"])).strip_edges(), "",
+		("the COMMENT STRIP failed, so the derived member list is prose or empty — that is the "
+		+ "INSTRUMENT, not the subject: %s %s") % [calls["why"], props["why"]])
+	assert_gt(int(calls["found"]) + int(props["found"]), 0,
+		"VOID: no `.call(\"name\")` or `.get(\"_name\")` found in this file's own text — the extraction is broken, not the subject")
+	assert_eq(calls["missing"], [],
+		("this guard drives those methods BY NAME and the subject no longer has them, so its arms "
+		+ "would ABORT INTO A SILENT PASS — EC=0, nothing failing, nothing risky: %s") % [calls["missing"]])
+	assert_eq(props["missing"], [],
+		"this guard reads those private properties by name and the subject no longer has them: %s" % [props["missing"]])

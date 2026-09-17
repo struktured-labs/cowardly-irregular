@@ -44,14 +44,10 @@ const ALLOWED_OCCURRENCES: Dictionary = {
 	# guard — broken in production code, but harmless inside GUT because the
 	# branch they protect is the LLM-on path that has no headless coverage.
 	# Fixing them is tracked separately from Wave A and out of scope here.
-	"test_llm_infra.gd": [
-		{"needle": "Engine.has_singleton(\"GameState\")",
-		 "reason": "Legacy gate; GameState autoload is always present in headless GUT (loaded by project.godot) so the protected branch never runs."},
-	],
-	"test_dynamic_conversation.gd": [
-		{"needle": "Engine.has_singleton(\"LLMService\")",
-		 "reason": "Legacy gate; LLMService autoload exists post-Wave-A but is_available() returns false without a backend, so fallback assertions still hold."},
-	],
+	# 2026-09-16: the last two entries retired. Both calls were gone from code —
+	# test_llm_infra.gd keeps the needle only inside a ## line, test_dynamic_conversation.gd
+	# has none at all — so each was exempting a call that could return unnoticed. Found by
+	# the arm below rather than by hand, which is the difference from tick 261.
 	# Tick 261: test_llm_integration.gd no longer needs the allowlist
 	# entry — all 8 dead gates were replaced with the
 	# _llm_actually_reachable() helper (proper autoload + is_available
@@ -153,4 +149,70 @@ func _is_allowed(line: String, allowed_list: Array) -> bool:
 		var needle: String = str(entry.get("needle", ""))
 		if needle != "" and line.contains(needle):
 			return true
+	return false
+
+
+func test_an_allowlist_entry_still_names_a_live_occurrence() -> void:
+	## A licence that outlives its fact: an entry here exempts a call that no longer
+	## exists, so re-introducing that call is silently permitted. Measured 2026-09-16 —
+	## BOTH llm-lane entries were stale, and the tick-261 note above records that the
+	## only previous retirement was spotted by hand. Both triggers: the file goes, or
+	## the call goes.
+	## NO floor on the allowlist SIZE: empty is the goal state, not a vacuous one. The
+	## corpus floor below is the one that matters — it is what would read as "clean".
+	var found: Dictionary = {}
+	for root in RES_ROOTS:
+		_index_by_basename(root, found)
+	assert_gt(found.size(), 100,
+		"FLOOR: the walk must find the corpus, or every entry below reads as merely absent")
+	var stale: Array = []
+	for basename in ALLOWED_OCCURRENCES:
+		var b: String = str(basename)
+		if not found.has(b):
+			stale.append("%s: the file it names is gone" % b)
+			continue
+		var content: String = FileAccess.get_file_as_string(str(found[b]))
+		for entry in (ALLOWED_OCCURRENCES[basename] as Array):
+			if not (entry is Dictionary):
+				continue
+			var needle: String = str((entry as Dictionary).get("needle", ""))
+			if not _needle_is_live(content, needle):
+				stale.append("%s: '%s' no longer occurs as code" % [b, needle])
+	assert_eq(stale, [],
+		"these entries exempt a call that no longer exists — delete them, or the call returns unnoticed: %s"
+			% str(stale))
+
+
+func _index_by_basename(path: String, out: Dictionary) -> void:
+	var dir: DirAccess = DirAccess.open(path)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var entry: String = dir.get_next()
+	while entry != "":
+		if entry != "." and entry != "..":
+			var full: String = "%s/%s" % [path, entry]
+			if dir.current_is_dir():
+				_index_by_basename(full, out)
+			elif entry.ends_with(".gd"):
+				out[entry] = full
+		entry = dir.get_next()
+	dir.list_dir_end()
+
+
+func _needle_is_live(content: String, needle: String) -> bool:
+	## The same rule _scan_file applies: a needle inside a leading or trailing comment
+	## is not an occurrence, so a retired call surviving in prose does not excuse itself.
+	if needle == "":
+		return false
+	for raw_line in content.split("\n"):
+		if not raw_line.contains(needle):
+			continue
+		if raw_line.strip_edges().begins_with("#"):
+			continue
+		var hash_idx: int = raw_line.find("#")
+		var needle_idx: int = raw_line.find(needle)
+		if hash_idx != -1 and hash_idx < needle_idx:
+			continue
+		return true
 	return false

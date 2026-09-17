@@ -51,10 +51,11 @@ const MANIFEST_PATH := "res://data/sfx_manifest.json"
 ## with the key that needs it. That is why the unreachable message below names re-adding a
 ## prefix as a disposition: without it, a correct new strike_ cue reads as a dead asset.
 ##
-## ⚠️ ONE COUPLING, so the next red is not a mystery: `ambient_` is load-bearing on exactly one
-## key, `ambient_village` (42 KB, no reference in src/, data/ or any .tscn — struktured's call,
-## wire it or delete it). Every other ambient_ cue is also a source literal. Resolve that orphan
-## either way and `ambient_` goes inert, and the arm below reds on a prefix nobody touched.
+## ✅ THAT COUPLING RESOLVED 2026-09-16, EXACTLY AS PREDICTED HERE. `ambient_` was load-bearing
+## on one key, `ambient_village`; struktured ruled the three music/SFX twins should play, so
+## BaseVillage._get_ambient_key() now returns it as a source literal. The prefix went inert and
+## this arm redded on a prefix nobody touched — the note called its own trigger, and the entry is
+## deleted rather than explained. It comes back the day a non-literal ambient_ key lands.
 const DYNAMIC_PREFIXES := {
 	"status_": "\"status_\" +",
 	"attack_hit_": "attack_hit_",
@@ -67,21 +68,33 @@ const DYNAMIC_PREFIXES := {
 	"w4_": "_get_world_sfx_prefix",
 	"w5_": "_get_world_sfx_prefix",
 	"w6_": "_get_world_sfx_prefix",
-	"ambient_": "play_ambient(",
 }
 
 ## Keys with no consumer TODAY that are deliberately staged ahead of a named
 ## owner. Every entry needs the owner and what they're waiting on — an entry
 ## with no owner is just a dead asset wearing a costume.
+## SIBLING: test_sfx_key_orphan_audit.KNOWN_ORPHAN_SFX is the OTHER direction (a key CALLED
+## that resolves to nothing). Different name, different contents, deliberately separate —
+## but ONE event retires entries in both, and fixing only one leaves a red. That file names
+## this one; this comment is the return leg, so a reader arriving HERE (the list with the
+## live entries) sees the pair. Collapse them only if the two directions ever agree, which
+## would mean the audits had stopped being opposites.
 const KNOWN_PENDING_CONSUMER := {
 	# cowir-battle: contact-frame seam (their cycle, confirmed msg 2910)
 	"thump_light": "cowir-battle contact-frame seam",
 	"thump_med": "cowir-battle contact-frame seam",
 	"thump_heavy": "cowir-battle contact-frame seam",
 	"thump_crit": "cowir-battle contact-frame seam",
-	# pre-staged before ON_HIT_STATUSES grows (cowir-battle ratchet, msg 2797)
-	"status_burn": "pre-staged for future burn_chance weapon proc",
-	"status_freeze": "pre-staged for future freeze_chance weapon proc",
+	# NOT pre-staged — CONSUMED, and invisible here because the key is COMPOSED. Re-checked
+	# 2026-09-16: 8 magic abilities author effect burn/freeze (fire_breath, blizzard_breath,
+	# boiler_burst, steam_vent, ice_prison, absolute_zero, flame_wall, scalding_mist); each falls
+	# to BattleScene._on_action_executed's catch-all, which calls play_status(effect) ->
+	# status_<name>. The weapon-proc path these were staged for still does not exist
+	# (ON_HIT_STATUSES is poison + sleep only), so the OLD REASON described a path that is still
+	# absent while the cue had been reachable by another one all along. The exemption stays; a
+	# text audit cannot see a runtime-composed key. Do not read this as "unwired" and wire it twice.
+	"status_burn": "COMPOSED — play_status(effect) from 5 burn abilities",
+	"status_freeze": "COMPOSED — play_status(effect) from 3 freeze abilities",
 	# cowir-battle: W6 Arbiter-duel win-condition arms (msg 3223/3226) — spec
 	# still moving; shipped inert so the cues exist when the signal lands.
 	"duel_answer_dodge": "cowir-battle W6 Arbiter duel arms",

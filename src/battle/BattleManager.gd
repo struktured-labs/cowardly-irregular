@@ -257,6 +257,7 @@ var _all_enemies_initial_count: int = 0  # Total enemies at battle start
 ## this map, every start_battle stacked another listener and KO callbacks
 ## fanned out N times after N battles.
 var _died_callbacks: Dictionary = {}
+var _doom_callbacks: Dictionary = {}
 
 ## Autobattle reward tracking
 var _full_autobattle: bool = true          # False if any player turn was manual
@@ -290,6 +291,39 @@ var _battle_action_log: Array[Dictionary] = []  # Log every player action per ba
 ## Action speed modifiers (lower = faster)
 ## Subtracted from a priority action's speed. Larger than any reachable speed_value, so a priority
 ## action outruns the whole queue while priority actions still sort against each other.
+## ⛔ start_battle CLEARED FIELDS AND NEVER METAS, and the party's Combatants are REUSED objects
+## (GameLoop holds them across every battle), so a per-battle meta outlived the fight that set it.
+## The measured leak: a Summoner's `_summon_followup` holds `remaining_turns` and is removed only
+## when it ticks to zero — end the battle with the eidolon still lingering, which is the ordinary way
+## a summon fight ends, and it kept hitting in the NEXT encounter. Same class cowir-autogrind found on
+## the grind's side of the boundary (11805), from the other direction: theirs never cleared state at
+## all, live cleared everything except this.
+##
+## Cleared unconditionally rather than case by case: every entry is per-FIGHT by construction, and a
+## meta that must survive a battle belongs in the save, not on a reused object. Ratcheted by
+## test_a_meta_does_not_outlive_its_battle, which derives the set from source so a new one cannot be
+## added without landing here or being declared.
+##
+## ⚠️ HeadlessBattleResolver DECLARES A CONSTANT OF THIS SAME NAME with deliberately DIFFERENT
+## contents: its list covers the metas THAT file sets, this one covers live's. They are not meant to
+## agree, and neither should be "harmonised" toward the other — two matching names whose contents
+## diverge is invisible at authoring, so this note is the guard rather than a ratchet (CLAUDE.md,
+## "Two data sources feeding one surface", case (b)).
+## RETIREMENT CONDITION, so the note cannot outlive its reason: the day the two engines set the same
+## per-battle metas, collapse the copies into one shared declaration and delete this paragraph.
+const PER_BATTLE_METAS: Array[String] = [
+	"_summon_followup", "_damage_absorb_budget", "_regen_per_turn", "_next_attack_multiplier",
+	"_mind_swap_controller", "_steal_response_consumed", "_swayed_stacks", "_utility_spent",
+	"_signature_fired", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
+	"_learned_adaptation", "_learns_element_counts", "_last_ability_against", "_bark_n",
+	"_in_shared_damage_redirect",
+	## ⚠️ TRAILING UNDERSCORE = PREFIX, and these two are why the clear cannot be exact-match only:
+	## the boss-bark trackers are COMPOSED (`"_bark_adv_" + face_key`), so removing the literal string
+	## would remove nothing. My own ratchet caught them on its first run, one minute after I wrote it —
+	## the composed-key blindness three lanes hit today, arriving in the instrument built to find it.
+	"_bark_adv_", "_bark_auto_",
+]
+
 const PRIORITY_OFFSET: float = 1000.0
 
 ## The ability types an archetype's UTILITY slot may select, in ONE place — three filters carried
@@ -515,6 +549,8 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# GameLoop already resets current_ap to 0 in normal victory paths, but
 	# having it here means edge cases (load-save mid-battle, flee, debug
 	# warps) can't leak +4 AP into the next encounter.
+	# Audio's per-battle state, cleared for the same reason as the six below: SoundManager._combo_step is reset only when an ACTION completes, so any exit that skips that leaks up to +12% pitch onto the next battle's first hit.
+	SoundManager.reset_hit_chain()
 	for combatant in all_combatants:
 		if "active_buffs" in combatant:
 			combatant.active_buffs.clear()
@@ -536,6 +572,17 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 			combatant.current_ap = 0
 		if "queued_actions" in combatant:
 			combatant.queued_actions.clear()
+		## Metas too — see PER_BATTLE_METAS. Fields alone left a Summoner's eidolon lingering into
+		## the next encounter, because the party's Combatant objects are reused across battles.
+		if combatant.has_method("remove_meta"):
+			for meta_key in PER_BATTLE_METAS:
+				if meta_key.ends_with("_"):
+					## Composed key — clear every meta carrying the prefix.
+					for held in combatant.get_meta_list():
+						if str(held).begins_with(meta_key):
+							combatant.remove_meta(str(held))
+				elif combatant.has_meta(meta_key):
+					combatant.remove_meta(meta_key)
 
 	# Connect to combatant signals.
 	# We bind `combatant` because the `died` signal has no args but
@@ -543,10 +590,16 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# the same way as unbound ones, so we cache the bound Callable to
 	# allow proper disconnect in _cleanup_battle (preventing listener leak).
 	_died_callbacks.clear()
+	_doom_callbacks.clear()
 	for combatant in all_combatants:
 		var cb = _on_combatant_died.bind(combatant)
 		_died_callbacks[combatant] = cb
 		combatant.died.connect(cb)
+		## Same bound-Callable caching as died, for the same disconnect reason.
+		if combatant.has_signal("doom_ticked"):
+			var dcb = _on_doom_ticked.bind(combatant)
+			_doom_callbacks[combatant] = dcb
+			combatant.doom_ticked.connect(dcb)
 
 	# Clear action log for adaptive AI
 	_battle_action_log.clear()
@@ -1092,7 +1145,11 @@ func _cleanup_battle() -> void:
 		var cb = _died_callbacks.get(combatant, null)
 		if cb and combatant.died.is_connected(cb):
 			combatant.died.disconnect(cb)
+		var dcb = _doom_callbacks.get(combatant, null)
+		if dcb and combatant.has_signal("doom_ticked") and combatant.doom_ticked.is_connected(dcb):
+			combatant.doom_ticked.disconnect(dcb)
 	_died_callbacks.clear()
+	_doom_callbacks.clear()
 
 	player_party.clear()
 	enemy_party.clear()
@@ -1609,6 +1666,19 @@ func _process_next_selection() -> void:
 					current_combatant.current_ap - 1,
 					current_combatant.current_ap
 				])
+				## ⛔ THE TURN VANISHED WITH NO EXPLANATION. Advance is sold on "can go into debt"
+				## (CLAUDE.md) and the debt is PAID IN TURNS here — the combatant is skipped entirely.
+				## That was a print() only, so a player who queued four actions watched their character
+				## be passed over with nothing saying why or for how much longer. The Go Back handler
+				## twenty lines down already emits for the SAME condition, with the comment "either way
+				## the player needs to see why" — the engine knew, in the less important place.
+				var _owed: int = -current_combatant.current_ap
+				if _owed > 0:
+					battle_log_message.emit("[color=%s]%s is paying down Advance — %d turn%s still owed.[/color]" % [
+						AccessibilityPalette.penalty_bbcode(), current_combatant.combatant_name,
+						_owed, "" if _owed == 1 else "s"])
+				else:
+					battle_log_message.emit("[color=cyan]%s's Advance debt is settled — they act next turn.[/color]" % current_combatant.combatant_name)
 				selection_index += 1
 				continue
 			break
@@ -3872,8 +3942,13 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			for p in participants:
 				if p is Combatant and p.is_alive:
 					var heal_amount = int(p.max_hp * 0.25)
-					p.heal(heal_amount)
-					healing_done.emit(p, heal_amount)
+					## The REQUESTED amount is not the healed amount: heal() clamps at max_hp and
+					## HALVES under curse. Emitting the request floated "+250 HP!" over a member who
+					## gained 100 — or 125 while cursed, which is the one mechanic the number was the
+					## player's only evidence for.
+					var healed: int = p.heal(heal_amount)
+					if healed > 0:
+						healing_done.emit(p, healed)
 			battle_log_message.emit("[color=cyan]★ Four Heroes — balanced strike + party healed 25%! ★[/color]")
 
 		"arcane_tempest":
@@ -4652,9 +4727,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 				for _st in retargeted:
 					if is_instance_valid(_st) and _st is Combatant and _st.is_alive:
 						if _first_steal_guaranteed(_st) or randf() < _steal_rate:
-							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / STEAL_GOLD_HP_DIVISOR))
-							GameState.add_gold(_g)
-							battle_log_message.emit("[color=yellow]%s mugs %d gold from %s![/color]" % [caster.combatant_name, _g, _st.combatant_name])
+							_award_stolen_gold(caster, _st, "mugs")
 							# msg 2483: Mug is attack + steal in one action, so its steal-success branch fires the same steal_response the pure Steal handler does — Warden's Key path opens either way. Guarded once per fight by _steal_response_consumed inside the helper.
 							_apply_steal_response(_st)
 						else:
@@ -4885,42 +4958,89 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		battle_log_message.emit(log_msg)
 		print("  → %s takes %d damage!" % [target.combatant_name, actual_damage])
 
-		# Apply status effect if ability has one
-		var effect = ability.get("effect", "")
-		# Tick 354: special-case "random_debuff" — pre-fix add_status
-		# ("random_debuff") wrote a literal "random_debuff" string into
-		# status_effects, an inert sentinel no downstream consumer
-		# recognizes. corrupting_touch / data_corruption JSON descriptions
-		# present the debuff as the headline behavior, but omitted
-		# effect_chance — which defaulted to 0.0, so the apply never
-		# fired even if random_debuff were a real status. Default the
-		# chance to 1.0 for random_debuff specifically; other abilities
-		# keep their 0.0 default to preserve "you must opt in explicitly"
-		# semantics for status_effect.
-		var effect_chance: float
-		if effect == "random_debuff":
-			effect_chance = float(ability.get("effect_chance", 1.0))
-		else:
-			effect_chance = float(ability.get("effect_chance", 0.0))
-		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
-			var status_to_add: String = effect
-			if effect == "random_debuff":
-				const _RANDOM_DEBUFF_POOL := [
-					"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
-				]
-				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
-			# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
-			var log_effect: String = status_to_add
-			if status_to_add == "freeze":
-				status_to_add = "stun"
-			# burn aliases to burning — 5 fire abilities AND the random-debuff pool author "burn", but the 8%/turn DoT in Combatant ticks only "burning". Measured: burn 100->100, burning 100->92. Aliasing at apply (not widening the tick) also gets burn into the cleanse and negative-status lists, which already say "burning".
-			if status_to_add == "burn":
-				status_to_add = "burning"
-			var duration: int = int(ability.get("duration", 3))
-			target.add_status(status_to_add, duration)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
+		# Apply status effect if ability has one — ONE owner, see _apply_ability_status
+		_apply_ability_status(caster, target, ability)
 
 		_trigger_monster_counter(target, caster)
+
+
+## ⛔ ONE OWNER FOR THE POST-DAMAGE STATUS APPLY. This block lived VERBATIM in BOTH
+## _execute_physical_ability and _execute_magic_ability, so every rule it carries — the random_debuff
+## 1.0 default, the freeze->stun and burn->burning aliases — had to be written twice to be true, and
+## `doom` was written into neither.
+func _apply_ability_status(caster: Combatant, target: Combatant, ability: Dictionary) -> void:
+	## ⛔ THE DEAD ARE NOT AFFLICTED. This apply runs AFTER the damage, so a killing blow also poisoned,
+	## blinded or stunned the corpse and the log announced it — and revival exists, so the ally came
+	## back still carrying it with the duration untouched by the turns they spent dead. The GRIND has
+	## refused this since it was written; live never had the check, and collapsing the two copies of
+	## this block carried the omission across faithfully. Parity closed toward the engine that was right.
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	var effect = ability.get("effect", "")
+	# Tick 354: special-case "random_debuff" — pre-fix add_status
+	# ("random_debuff") wrote a literal "random_debuff" string into
+	# status_effects, an inert sentinel no downstream consumer
+	# recognizes. corrupting_touch / data_corruption JSON descriptions
+	# present the debuff as the headline behavior, but omitted
+	# effect_chance — which defaulted to 0.0, so the apply never
+	# fired even if random_debuff were a real status. Default the
+	# chance to 1.0 for random_debuff specifically; other abilities
+	# keep their 0.0 default to preserve "you must opt in explicitly"
+	# semantics for status_effect.
+	var effect_chance: float
+	if effect == "random_debuff":
+		effect_chance = float(ability.get("effect_chance", 1.0))
+	else:
+		effect_chance = float(ability.get("effect_chance", 0.0))
+	if effect == "" or effect_chance <= 0.0 or randf() >= effect_chance:
+		return
+	var status_to_add: String = effect
+	if effect == "random_debuff":
+		const _RANDOM_DEBUFF_POOL := [
+			"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
+		]
+		status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
+	# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
+	var log_effect: String = status_to_add
+	if status_to_add == "freeze":
+		status_to_add = "stun"
+	# burn aliases to burning — 5 fire abilities AND the random-debuff pool author "burn", but the 8%/turn DoT in Combatant ticks only "burning". Measured: burn 100->100, burning 100->92. Aliasing at apply (not widening the tick) also gets burn into the cleanse and negative-status lists, which already say "burning".
+	if status_to_add == "burn":
+		status_to_add = "burning"
+	## doom is a COUNTER, not a status — see _inflict_doom.
+	if status_to_add == "doom":
+		_inflict_doom(target, int(ability.get("countdown", 3)))
+		return
+	var duration: int = int(ability.get("duration", 3))
+	target.add_status(status_to_add, duration)
+	battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
+
+
+## ⛔ THE ONE PLACE doom IS SET, AND UNTIL NOW NOTHING COULD REACH IT. Combatant.doom_counter ticks
+## down and KOs at zero (Combatant:901), BattleScene paints the "☠ N" badge, cleanse clears it, the
+## save carries it and the grind mirrors the cure — six live consumers of a producer that sat in
+## _execute_support_ability while all three abilities authoring `effect: "doom"` are magic or
+## physical. The damage path added an inert STATUS named doom instead: no tick, no badge, no KO.
+## (Spelling the old call literally here would trip test_status_icons_cover_applied_statuses, whose
+## sweep reads source text and cannot tell a comment from a call site — its documented limit.)
+func _inflict_doom(target: Combatant, countdown: int) -> void:
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	target.doom_counter = countdown
+	battle_log_message.emit("[color=purple]☠ %s is doomed![/color] (%d turns to KO)" % [target.combatant_name, countdown])
+
+
+## ⛔ A LETHAL TIMER THAT SAID NOTHING WHILE IT RAN. Doom deals no damage, so it fires neither
+## status_tick_damage nor hp_changed — the ☠ badge was the only feedback a player got, and the kill
+## reached them as a bare print() on stdout. Every other way to die in this engine narrates itself.
+func _on_doom_ticked(turns_left: int, combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	if turns_left <= 0:
+		battle_log_message.emit("[color=purple]☠ %s's time runs out.[/color]" % combatant.combatant_name)
+		return
+	battle_log_message.emit("[color=purple]☠ %s — %d turn%s left.[/color]" % [
+		combatant.combatant_name, turns_left, "" if turns_left == 1 else "s"])
 
 
 ## Strongest matching element_boost buff, or 0.0. MAX not product — buffs already clamp elsewhere.
@@ -5119,47 +5239,19 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		print("  → %s takes %d %s damage! (terrain: %.2fx)" % [target.combatant_name, actual_damage, elem_text, terrain_mod])
 
 		if drain_pct > 0:
-			var drained = int(actual_damage * drain_pct / 100.0)
-			caster.heal(drained)
-			healing_done.emit(caster, drained)
-			var drain_log = "  → [color=white]%s[/color] drains [color=%s]%d[/color] HP!" % [caster.combatant_name, AccessibilityPalette.bonus_bbcode(), drained]
-			battle_log_message.emit(drain_log)
-			print("  → %s drains %d HP!" % [caster.combatant_name, drained])
+			## heal() returns what LANDED — clamped at max_hp, halved by curse, and zero on a caster
+			## killed mid-cast by a counter. The popup and the log both said what was ASKED FOR, so a
+			## full-HP or cursed drainer read a number they never received. The grind has logged the
+			## return since it was written (_drain_to); this is live catching up.
+			var drained: int = caster.heal(int(actual_damage * drain_pct / 100.0))
+			if drained > 0:
+				healing_done.emit(caster, drained)
+				var drain_log = "  → [color=white]%s[/color] drains [color=%s]%d[/color] HP!" % [caster.combatant_name, AccessibilityPalette.bonus_bbcode(), drained]
+				battle_log_message.emit(drain_log)
+				print("  → %s drains %d HP!" % [caster.combatant_name, drained])
 
-		# Apply status effect if ability has one
-		var effect = ability.get("effect", "")
-		# Tick 354: special-case "random_debuff" — pre-fix add_status
-		# ("random_debuff") wrote a literal "random_debuff" string into
-		# status_effects, an inert sentinel no downstream consumer
-		# recognizes. corrupting_touch / data_corruption JSON descriptions
-		# present the debuff as the headline behavior, but omitted
-		# effect_chance — which defaulted to 0.0, so the apply never
-		# fired even if random_debuff were a real status. Default the
-		# chance to 1.0 for random_debuff specifically; other abilities
-		# keep their 0.0 default to preserve "you must opt in explicitly"
-		# semantics for status_effect.
-		var effect_chance: float
-		if effect == "random_debuff":
-			effect_chance = float(ability.get("effect_chance", 1.0))
-		else:
-			effect_chance = float(ability.get("effect_chance", 0.0))
-		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
-			var status_to_add: String = effect
-			if effect == "random_debuff":
-				const _RANDOM_DEBUFF_POOL := [
-					"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
-				]
-				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
-			# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
-			var log_effect: String = status_to_add
-			if status_to_add == "freeze":
-				status_to_add = "stun"
-			# burn aliases to burning — 5 fire abilities AND the random-debuff pool author "burn", but the 8%/turn DoT in Combatant ticks only "burning". Measured: burn 100->100, burning 100->92. Aliasing at apply (not widening the tick) also gets burn into the cleanse and negative-status lists, which already say "burning".
-			if status_to_add == "burn":
-				status_to_add = "burning"
-			var duration: int = int(ability.get("duration", 3))
-			target.add_status(status_to_add, duration)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
+		# Apply status effect if ability has one — ONE owner, see _apply_ability_status
+		_apply_ability_status(caster, target, ability)
 
 		_trigger_monster_counter(target, caster)
 
@@ -5372,6 +5464,32 @@ func earns_exp_while_dead(combatant: Combatant) -> bool:
 	return false
 
 
+## ⛔ A MONSTER THAT ROBBED THE PARTY PAID THE PARTY. Both steal sites called
+## `GameState.add_gold(...)` with no check on which SIDE the caster was on — and `goblin`,
+## `spiteful_crow` and `conveyor_gremlin` all author `steal` across seven pools, `goblin` among them,
+## so this was early-game and the battle log cheerfully announced the theft while the counter went UP.
+## One owner now, because the two sites had already drifted apart in their logging and would have
+## drifted apart in their guard too (cowir-autogrind 11786, confirmed behaviourally: 1000 -> 1014).
+##
+## ⚠️ WHAT THIS DOES NOT DECIDE: whether an enemy's steal should COST the party gold. The amount
+## scales with the VICTIM's max_hp, so against a party member it is a far larger number than the same
+## ability yields against a goblin — a drain nobody has sized, on monsters a level-3 party meets.
+## Being robbed must not PAY you; the penalty is struktured's call. Until then the theft fails
+## honestly and the log says so rather than claiming a transfer that did not happen.
+func _award_stolen_gold(caster: Combatant, target: Combatant, verb: String = "stole") -> void:
+	if caster == null or not is_instance_valid(caster) or target == null or not is_instance_valid(target):
+		return
+	var gold_amount: int = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
+	if not (caster in player_party):
+		battle_log_message.emit("[color=gray]%s rifles through %s's pack and comes up empty.[/color]" % [
+			caster.combatant_name, target.combatant_name])
+		return
+	GameState.add_gold(gold_amount)
+	print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])
+	battle_log_message.emit("[color=yellow]%s %s %d gold from %s![/color]" % [
+		caster.combatant_name, verb, gold_amount, target.combatant_name])
+
+
 ## The ONE place a steal rate is composed. Two paths roll for a steal — the pure Steal handler and Mug's physical branch — and each grew its own inline clamp, so tick 462 wired thiefs_glove into one and the steal_boost passive reached one. A Rogue equipping a passive promising "+30% steal success" got it on Steal and not on Mug, which reads as randomness rather than as a bug.
 func _steal_success_rate(caster: Combatant, base_rate: float) -> float:
 	var equip_bonus: float = _sum_equipment_special_effect(caster, "steal_bonus")
@@ -5558,6 +5676,16 @@ func _nudge_macro_volatility(amount: float) -> void:
 
 
 func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	## ⛔ A healing ability that heals OVER TIME delivered nothing. This executor reads `heal_amount` and
+	## nothing else, and `regenerate` (the Cleric's Recreatio, 10 MP) authors none — it authors
+	## `effect: regen` with `regen_per_turn: 40`, and the arm that reads those lives in
+	## _execute_support_ability, which a `healing`-typed ability never reaches. So the cast spent MP,
+	## healed 0, applied no status, and ticked nothing (cowir-autogrind 11638, running cowir-battle's
+	## executor-path axis over its own backlog). Routed to the support path's own arm rather than
+	## copied: one owner for what "regen" means, and the authored 40 is the only number involved.
+	if str(ability.get("effect", "")) != "" and int(ability.get("heal_amount", 0)) <= 0:
+		_execute_support_ability(caster, ability, targets)
+		return
 	var heal_amount = ability.get("heal_amount", 0)
 	var multiplier = GameState.get_constant("healing_multiplier")
 	heal_amount = int(heal_amount * multiplier)
@@ -5923,11 +6051,9 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					target.add_status("shadow_step", ss_duration)
 					battle_log_message.emit("[color=cyan]%s vanishes into shadow![/color] (evade + guaranteed crit, %d turns)" % [target.combatant_name, ss_duration])
 		"doom":
-			var countdown = ability.get("countdown", 3)
+			var doom_countdown: int = int(ability.get("countdown", 3))
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive:
-					target.doom_counter = countdown
-					battle_log_message.emit("[color=purple]☠ %s is doomed![/color] (%d turns to KO)" % [target.combatant_name, countdown])
+				_inflict_doom(target, doom_countdown)
 		"volatility_up_self":
 			if volatility:
 				caster.add_buff("Leveraged", "volatility", stat_modifier, duration)
@@ -6144,10 +6270,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					if _first_steal_guaranteed(target) or randf() < effective_rate:
-						var gold_amount = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
-						GameState.add_gold(gold_amount)
-						print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])
-						battle_log_message.emit("[color=yellow]%s stole %d gold from %s![/color]" % [caster.combatant_name, gold_amount, target.combatant_name])
+						_award_stolen_gold(caster, target)
 						# Boss-specific steal_response (msg 2474): a successful steal against a target with a monsters.json steal_response definition triggers its mechanical effect exactly once per fight (Lockward's vault-crack = defense-break to 50%). Cowir-main's Option 2. Subsequent steals still succeed for gold; only the response is one-shot.
 						_apply_steal_response(target)
 					else:

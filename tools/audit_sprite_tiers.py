@@ -50,7 +50,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-GAME = Path("/home/struktured/projects/cowardly-irregular-artist-ship")
+from sprite_corpus import banner, default_root
+
+GAME = default_root()
 MANIFEST = GAME / "data" / "sprite_manifest.json"
 
 ARTIST_BASELINE_TAG = "v0.15.0"
@@ -162,6 +164,8 @@ def self_check() -> bool:
 
 
 def main() -> int:
+    print(banner(GAME))
+    print()
     if not self_check():
         print("\nControls failed — the classifier is wrong, so every result "
               "below is untrustworthy. Fix it before believing any of this.")

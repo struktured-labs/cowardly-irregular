@@ -38,11 +38,13 @@ import json
 import sys
 from pathlib import Path
 
+from sprite_corpus import banner, default_root
+
 import numpy as np
 from PIL import Image
 from scipy import ndimage
 
-GAME = Path("/home/struktured/projects/cowardly-irregular-artist-ship")
+GAME = default_root()
 MANIFEST = GAME / "data" / "sprite_manifest.json"
 
 # ── MEASURED against all 242 shipped sheets, 2026-07-28. Tier by FP rate,
@@ -238,6 +240,8 @@ def manifest_sheets():
 
 
 def main() -> int:
+    print(banner(GAME))
+    print()
     ap = argparse.ArgumentParser()
     ap.add_argument("--all", action="store_true")
     ap.add_argument("--calibrate", action="store_true")

@@ -107,20 +107,21 @@ func test_nav_handlers_call_scroll_to_selected() -> void:
 		"Expected _scroll_to_selected() wired into every nav path (>=7 calls), found %d" % calls)
 
 
+## The property is "holding a direction must not rapid-fire _refresh_detail -> _load_sprite". It
+## used to be expressed as an inline `not event.is_echo()` on each branch. Routing navigation
+## through MenuNav satisfies it one level up — that helper's first line refuses echoes — AND
+## additionally latches the left stick's axis, which an inline echo check cannot do at all, because
+## an axis carries no echo flag. Measured before the conversion: one stick push reloaded the sprite
+## FIVE times, and this arm was green throughout.
 func test_keyboard_nav_ignores_echo_events() -> void:
-	# Holding the d-pad must not rapid-fire _refresh_detail -> _load_sprite on
-	# every key-repeat echo. The ui_up/ui_down branches gate on is_echo().
 	var text = _read(BESTIARY_MENU_PATH)
-	var up_idx = text.find("\"ui_up\"")
-	assert_true(up_idx > -1, "ui_up branch must exist")
-	var up_line = text.substr(up_idx, 80)
-	assert_true(up_line.find("not event.is_echo()") > -1,
-		"ui_up branch must gate on `not event.is_echo()` to avoid sprite-reload spam on d-pad hold")
-	var down_idx = text.find("\"ui_down\"")
-	assert_true(down_idx > -1, "ui_down branch must exist")
-	var down_line = text.substr(down_idx, 80)
-	assert_true(down_line.find("not event.is_echo()") > -1,
-		"ui_down branch must gate on `not event.is_echo()`")
+	assert_true(text.find("MenuNav.step(") > -1,
+		"navigation must route through MenuNav, which refuses echoes AND latches the stick axis")
+	var nav := _read("res://src/ui/MenuNav.gd")
+	assert_true(nav.find("event.is_echo()") > -1,
+		"MenuNav must still refuse echo events — the property this arm has always defended")
+	assert_true(nav.find("_v_axis_held") > -1,
+		"…and must still latch the vertical axis, which is the half an inline check never had")
 
 
 # --- Behavioral (does not crash, wiring actually runs) ----------------------

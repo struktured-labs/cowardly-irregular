@@ -19,7 +19,7 @@ const HINTS = {
 	},
 	"autobattle_toggle": {
 		"title": "Toggle Autobattle",
-		"body": "Press F6 or Select to toggle autobattle ON/OFF for all party members. When active, your rules execute automatically each turn.",
+		"body": "Press {auto} to toggle autobattle ON/OFF for all party members — or F6 anywhere. When active, your rules execute automatically each turn.",
 	},
 	"save_crystal": {
 		"title": "Save Crystal",
@@ -198,6 +198,16 @@ static func show(parent: Node, hint_id: String, dedupe_key: String = "") -> void
 ## key, so one string serves a pad player and a keyboard player at once. Hints used to hardcode
 ## "press A", which names the wrong button on any pad whose east face is not A — and never
 ## mentioned a key at all, leaving keyboard players with nothing.
+##
+## ⛔ 2026-09-16, THIRD pass over this file: {confirm}, {cancel} and {menu} were derived and
+## {defer}/{advance}/{options} were still frozen NINTENDO names, plus one body printing the literal
+## "Select". Measured per family:
+##   battle_defer   LB (xbox) · L (nintendo) · L1 (playstation)      the hint said "L shoulder"
+##   battle_advance RB · R · R1                                      the hint said "R shoulder"
+##   toggle_auto    Back · Minus · Share                             the hint said "Select" — a name
+##                                                                   NO family prints
+## The existing guard scans rendered tokens for FACE glyphs, and a shoulder name is not a face
+## glyph, which is how two sweeps of this file passed over these three.
 static func resolve_tokens(text: String) -> String:
 	var ml := Engine.get_main_loop()
 	var ipm = null
@@ -208,10 +218,38 @@ static func resolve_tokens(text: String) -> String:
 	out = out.replace("{cancel}", _control_name(ipm, "ui_cancel", "X"))
 	out = out.replace("{move}", "D-pad, left stick or the arrow keys")
 	out = out.replace("{menu}", _control_name(ipm, "ui_menu", "Enter"))
-	out = out.replace("{defer}", "L shoulder / L key")
-	out = out.replace("{advance}", "R shoulder / R key")
-	out = out.replace("{options}", "L/R shoulder or the O key")
+	out = out.replace("{defer}", _control_name(ipm, "battle_defer", "L"))
+	out = out.replace("{advance}", _control_name(ipm, "battle_advance", "R"))
+	out = out.replace("{auto}", _control_name(ipm, "battle_toggle_auto", "Tab"))
+	out = out.replace("{options}", _options_name(ipm))
 	return out
+
+
+## The autogrind console opens its options ring on EITHER shoulder or the O key, and it reads the raw
+## JOY_BUTTON_*_SHOULDER indices rather than an action — so these names come from
+## button_name_for_index, the same helper the console's own footer uses. Empty of pad names when no
+## pad is attached, exactly like _control_name.
+## ⛔ TWO RULES COLLIDE HERE and the no-pad wording is where they meet:
+##   test_tutorial_hint_control_truth_regression — the ring is the pad's ONLY route to 13 verbs, so
+##     the token must NAME the pad route. That guard exists for struktured's own 2026-09-06 report
+##     ("I dont know how to enable ludicrous or permadeath with controller").
+##   test_a_hint_names_a_button_you_have_regression — a player with NO pad must never be shown a
+##     family glyph, because glyph_for_action answers from the xbox table on an empty device.
+## Both are satisfied by naming the route GENERICALLY when no pad is attached: "shoulder" is the
+## English word for the control, not a name one family prints. With a pad it names that pad's own
+## buttons. My first version returned the key alone and broke the first guard — caught by folding
+## my branches together and sweeping on a `hint` PATTERN rather than the files I picked by hand.
+static func _options_name(ipm) -> String:
+	var generic := "either shoulder or the O key"
+	if ipm == null or Input.get_connected_joypads().is_empty():
+		return generic
+	if not ipm.has_method("button_name_for_index"):
+		return generic
+	var l: String = str(ipm.button_name_for_index(JOY_BUTTON_LEFT_SHOULDER))
+	var r: String = str(ipm.button_name_for_index(JOY_BUTTON_RIGHT_SHOULDER))
+	if l == "" or r == "":
+		return generic
+	return "%s/%s or the O key" % [l, r]
 
 
 ## Pad button beside the key when a pad is attached, the key ALONE when none is.

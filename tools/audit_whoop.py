@@ -73,6 +73,9 @@ PINNED = [
     "full_bank_charged", "advance_queue_full",
     "advance_undo",
     "advance_generic_1", "advance_generic_2", "advance_generic_3", "advance_generic_4", "advance_generic_5",
+    # The ally-death cue: descending by construction, so it is exactly the shape the
+    # centroid test can mistake for a whoop — pinned so a re-roll cannot slip past.
+    "party_ko",
     # The two per-job press ladders whose DIRECTION is the joke: fighter ascends, rogue INVERTS
     # (quieter every press). rms_db is recorded so the GUT side can assert that shape.
     "advance_fighter_1", "advance_fighter_2", "advance_fighter_3", "advance_fighter_4", "advance_fighter_5",

@@ -52,9 +52,12 @@ import numpy as np
 
 MANIFEST = "data/music_manifest.json"
 ## The corpus ROOT. The manifest names master paths, and for months this tool
-## only ever read those — while every web build ships a 48 kbps mono transcode
-## (make_web_audio.sh, invoked by make_web_stage.sh and pinned to 48 by
-## deploy_web.sh). So "146 beds, 0 jump more than 12 dB" certified audio no web
+## only ever read those — while every web build ships a LOW-BITRATE mono transcode
+## (make_web_audio.sh, invoked by make_web_stage.sh at the bitrate deploy_web.sh
+## passes down; that value lives in WEB_AUDIO_KBPS and nowhere else, so this line
+## names the home rather than the number — it used to say "48", which stopped
+## being true when struktured's 40k ruling shipped in .357).
+## So "146 beds, 0 jump more than 12 dB" certified audio no web
 ## player has ever heard. `--from <dir>` resolves each manifest entry against
 ## another directory so the gate can be pointed at the artifact that ships.
 CORPUS_DIR = None

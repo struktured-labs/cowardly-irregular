@@ -1144,12 +1144,11 @@ func _input(event: InputEvent) -> void:
 			return
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		_nav_step("ui_up")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		_nav_step("ui_down")
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
+	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(nav)
 		get_viewport().set_input_as_handled()
 
 	# Page jump — this list is long enough that one-row-at-a-time is a slog (struktured 2026-07-25).

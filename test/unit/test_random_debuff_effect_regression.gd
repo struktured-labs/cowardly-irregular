@@ -92,5 +92,28 @@ func test_other_abilities_keep_zero_default() -> void:
 	# Pre-fix line existed in two spots; post-fix should have the
 	# else-branch defaulting to 0.0 in both spots.
 	var zero_default_count: int = src.count("get(\"effect_chance\", 0.0)")
-	assert_gte(zero_default_count, 2,
-		"non-random_debuff abilities must keep the 0.0 effect_chance default in both physical and magic handlers. Found: %d" % zero_default_count)
+	assert_eq(zero_default_count, 1,
+		"the opt-in 0.0 default has ONE owner since the two handlers collapsed into _apply_ability_status. Found: %d" % zero_default_count)
+	assert_true(_owner_body().contains("get(\"effect_chance\", 0.0)"),
+		"and the default lives in that owner")
+	assert_eq(_owner_callers(), 2,
+		"which both the physical and magic handlers reach — the property the old count of 2 asserted")
+
+
+## ⚠️ SHAPE CHANGED 2026-09-16, INTENT UNCHANGED. The effect-application block existed VERBATIM in
+## _execute_physical_ability AND _execute_magic_ability, so this file counted copies. It is now one
+## owner, `_apply_ability_status`, that both call — so the pin is "the rule lives in the owner, and
+## both damage executors still reach it", which is what counting two copies was really defending.
+func _owner_body() -> String:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var at: int = src.find("func _apply_ability_status(")
+	if at < 0:
+		return ""
+	var nxt: int = src.find("\nfunc ", at + 1)
+	return src.substr(at, (nxt - at) if nxt > at else 4000)
+
+
+## Both damage executors must still CALL that owner, or the rule inside it defends nothing.
+func _owner_callers() -> int:
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	return src.count("_apply_ability_status(caster, target, ability)")

@@ -24,6 +24,7 @@ extends GutTest
 
 const BED := "battle_medieval"
 const NEXT := "victory"
+const SELF_PATH := "res://test/unit/test_a_fade_out_never_fades_up.gd"
 
 
 func before_each() -> void:
@@ -162,3 +163,53 @@ func test_the_outgoing_bed_fades_rather_than_being_cut() -> void:
 	assert_true(SoundManager._music_player_b.playing, "CONTROL: it is still sounding at the midpoint")
 	assert_lte(SoundManager._music_player_b.volume_db, base - 5.0,
 		"halfway through, the outgoing bed is still at %.1f dB against %.1f — it is being cut, not faded" % [SoundManager._music_player_b.volume_db, base])
+
+func test_the_members_this_file_reaches_still_exist() -> void:
+	## WITHOUT THIS ARM A RENAME IS A CLEAN EXIT. Measured 2026-09-16: rename `_music_player_b` —
+	## the subject of the orphan half of this fix — and the three arms defending it abort before
+	## their first assert, so GUT scores them RISKY rather than FAILED:
+	##
+	##     Passing 26 -> 23 · Risky 0 -> 3 · Asserts 66 -> 51 · Failing 0 · EC 0
+	##
+	## EC=0 IS THE PART THAT MATTERS. "Capture the exit code before you shape the output" is this
+	## project's gate discipline and it does not catch this — the run succeeds while the guard has
+	## stopped guarding. Only the Risky column and the assert collapse show it, and a gate that
+	## reads `Failing N` ships it.
+	##
+	## METHODS TOO, AND THE LIST IS DERIVED. This arm covered properties only until 2026-09-16,
+	## when the sister guard measured `restore_music_state` renamed across src/ at EC=0 · Passing
+	## 5/5 · Risky 0 · Asserts 15 -> 12 — every cardinal clean, the guard silently not guarding.
+	## `get()` answers null for a method name, so an arm called "every member this file reaches
+	## still exists" was blind to half of what the file reaches.
+	##
+	## `in` replaces the old `get() != null`, which could not tell an absent property from a
+	## legitimately null one and needed `_crossfade_tween` hardcoded as an exemption. Both `in`
+	## and `has_method` ANSWER rather than raise — that is the whole mechanism, and it is why
+	## this arm fails by name instead of aborting alongside the arms it protects.
+	var src: String = FileAccess.get_file_as_string(SELF_PATH)
+	assert_gt(src.length(), 1000, "CONTROL: this arm read its own source back — %d chars" % src.length())
+	var methods := {}
+	var props := {}
+	## ⛔ THE STRIP IS NOT COSMETIC. These floors exist to catch RENAMES, and the commit that
+	## renames a member is the commit whose comment explains the rename BY NAME — so prose naming
+	## `SoundManager.<old>` is the MODAL case here, not a corner one (@cowir-sprites, 2026-09-16).
+	## The shipped version skipped lines BEGINNING with `#`, which leaves a trailing comment on a
+	## code line inside the corpus. Measured before switching: identical sets either way today, so
+	## this is latent-not-live — and the shared helper is quote- and escape-aware where a `#` scan
+	## is not.
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+	var re := RegEx.create_from_string("SoundManager\\.([A-Za-z_][A-Za-z0-9_]*)(\\()?")
+	for line in GdSource.strip_comments(src).split("\n"):
+		for m in re.search_all(str(line)):
+			if m.get_string(2) == "(":
+				methods[m.get_string(1)] = true
+			else:
+				props[m.get_string(1)] = true
+	assert_gt(methods.size(), 2, "CONTROL: derived %d method reaches from this file's own source" % methods.size())
+	assert_gt(props.size(), 2, "CONTROL: derived %d property reaches from this file's own source" % props.size())
+	for name in methods:
+		assert_true(SoundManager.has_method(name),
+			"SoundManager has no method %s() — arms in this file call it and would abort mid-way, scoring PASSING on the asserts that already ran" % name)
+	for name in props:
+		assert_true(name in SoundManager,
+			"SoundManager has no property %s — the arms in this file read it directly and would go Risky rather than red, on a run that exits 0" % name)

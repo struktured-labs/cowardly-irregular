@@ -199,6 +199,18 @@ GATE_TREE_ID="$(_tree_id)"
 # Verified 2026-09-07: templates present at the real path, absent in tmp/gate_xdg.
 _GATE_XDG="$PWD/tmp/gate_xdg"
 mkdir -p "$_GATE_XDG"
+# REAL-SAVE HYDRATION. `test_real_saves_hydrate_smoke.gd` reads `user://saves/`, so a fresh
+# sandbox makes it PEND — measured 2026-09-16: empty sandbox `Passing none · Risky/Pending 2`,
+# seeded sandbox `Passing 2 · Asserts 124`. Every release this lane shipped carried `failing=0`
+# over a file that exercised nothing, and no cardinal in that line could say so.
+# The copy is ONE-WAY: the suite mutates what it hydrates, and his originals never see it.
+if [ -x tools/seed_gate_saves.sh ]; then
+    ./tools/seed_gate_saves.sh "$_GATE_XDG" || {
+        echo "[deploy] BLOCKED: seeding the gate sandbox was REFUSED — see above." >&2
+        exit 2; }
+else
+    echo "[deploy] note: tools/seed_gate_saves.sh missing — the suite's real-save hydration will PEND." >&2
+fi
 # ── SUITE BUDGET ─────────────────────────────────────────────────────────────
 # run_tests.sh has no timeout of its own, and gate.sh adds none. A suite that HANGS therefore
 # does not red this chain -- it stops it, with no output and no diagnosis, which is the
@@ -323,7 +335,10 @@ if [ "${WEB_STAGE:-1}" = "1" ]; then
   echo "[deploy] staged build in place (${WEB_AUDIO_KBPS} kbps tier, endings included)"
 else
   echo "[deploy] WEB_STAGE=0 — direct export, W4-W6 endings EXCLUDED"
-  godot --headless --export-release "Web" builds/web/index.html 2>&1 | tail -3
+  _EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
+    echo "[deploy] BLOCKED: could not build the export sandbox — see above." >&2
+    exit 2; }
+  XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --export-release "Web" builds/web/index.html 2>&1 | tail -3
 fi
 # An export that reported success and produced nothing would otherwise reach the pck
 # gate as a stat error rather than a named failure.

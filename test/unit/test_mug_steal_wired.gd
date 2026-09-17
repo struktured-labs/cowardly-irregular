@@ -23,5 +23,13 @@ func test_physical_dispatch_wires_the_steal() -> void:
 	var block: String = src.substr(arm, 900)
 	assert_true(block.contains("ability.get(\"steals\""),
 		"the physical arm must check the steals flag")
-	assert_true(block.contains("add_gold"),
-		"a flagged steal must actually award stolen gold")
+	## ⚠️ SHAPE CHANGED 2026-09-16, INTENT KEPT. The two steal sites each called add_gold inline and
+	## NEITHER checked which side the caster was on, so a goblin's Steal paid the party. They share
+	## one owner now; the pin follows the payout to it rather than asserting the inline call is back.
+	assert_true(block.contains("_award_stolen_gold("),
+		"a flagged steal must actually award stolen gold — through the one owner")
+	var owner_at: int = src.find("func _award_stolen_gold(")
+	assert_gt(owner_at, -1, "CONTROL: the owner survives stripping")
+	var owner_end: int = src.find("\nfunc ", owner_at + 1)
+	assert_true(src.substr(owner_at, owner_end - owner_at).contains("GameState.add_gold("),
+		"and the owner is what actually credits it")

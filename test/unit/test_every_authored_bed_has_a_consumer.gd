@@ -62,22 +62,19 @@ const MANIFEST_PATH_IN_JUKEBOX := "res://data/music_manifest.json"
 
 
 const KNOWN_UNREACHED := {
-	"ambient_digital": "no consumer in PLAY; reachable in the Jukebox — @struktured to delete (costs a Jukebox row) or wire to cave/forest/village",
+	## THREE LEFT THIS LIST ON 2026-09-16 and the four below are what remains of the seven.
+	## ambient_cave, ambient_forest and ambient_village were unreachable because play_ambient read
+	## the SFX manifest only, so each resolved to a 30-40 KB sting instead of the 145-214s bed of
+	## the same name. struktured ruled they should play; play_ambient now prefers the music store
+	## and BaseVillage gained the ambient layer that BaseInterior always had.
+	##
+	## These four are a DIFFERENT problem and the ruling did not cover them: nothing calls
+	## play_ambient with them at all. There is no W4-W6 ambient zone to attach them to, so wiring
+	## is authoring work rather than a one-line store preference.
+	"ambient_digital": "no consumer in PLAY; reachable in the Jukebox — @struktured to delete (costs a Jukebox row) or give W4-W6 an ambient zone",
 	"ambient_industrial": "same decision",
 	"ambient_ocean": "same decision",
 	"ambient_steampunk": "same decision",
-	## Concealed until 2026-09-11 by this file's own corpus bug: ambient_village
-	## is in BOTH manifests, so it matched its SFX twin and read as reached. The
-	## SFX bed IS played (play_ambient reads sfx_manifest); the MUSIC entry of
-	## the same name is what nothing asks for.
-	"ambient_village": "never-played MUSIC bed; the identically-named SFX bed is live, which is what hid it",
-	## The last two, concealed one layer deeper: OverworldScene assigns these as
-	## plain literals and feeds them to play_ambient(), which reads sfx_manifest.
-	## The SFX twins are 5s; these music beds are 187s and 214s and have never
-	## played. Banked 2026-09-09 as project_music_ambient_two_stores; this file
-	## rediscovered it the hard way twice.
-	"ambient_cave": "music bed 187s, unplayed — OverworldScene's \"ice\" zone plays the 5s SFX bed of the same name",
-	"ambient_forest": "music bed 214s, unplayed — OverworldScene's \"forest\"/\"swamp\" zones play the 5s SFX bed of the same name",
 	"cutscene_alt_breaker_speed": "briefed in tools/music_prompts.json shared_tracks (\"Whoever Moves First\"); its scene is the alt_the_breaker novella, which has no cutscene JSON",
 	"cutscene_alt_witness_lament": "briefed (\"For the Guardian Who Did Not Choose the Gate\"); same novella, no scene authored",
 	"cutscene_w5_deprecated_goblin": "briefed (\"The Loop Completed\"); no W5 scene cues it",
@@ -112,6 +109,23 @@ func _files(root: String, ext: String, out: Array[String]) -> void:
 	d.list_dir_end()
 
 
+## 📌 THIS IS A PRIVATE COPY, AND `test/unit/helpers/gd_source.gd` IS THE SHARED ONE.
+## The shared helper's header explains why this copy was not folded into it; until now that
+## explanation existed only THERE, so a reader arriving here saw a duplicated stripper and no
+## reason not to unify the two. A note in one declaration works in one direction only
+## (@cowir-cutscenes and @cowir-sfx both found the same half missing in their own pairs,
+## 2026-09-16), so here is the other half.
+##
+## The two differ on purpose and the difference is the paragraph below: `gd_source.split()`
+## also removes `"""` docstring regions, which is right for a guard asserting a token is
+## PRESENT in prose-heavy source. This one must NOT strip strings at all, because here a
+## string literal IS the consumer.
+##
+## ⛔ RETIREMENT CONDITION, so this note cannot outlive its reason: collapse the copies when a
+## THIRD consumer needs this file's six-costume case table — at that point the table belongs in
+## the shared helper and this copy should be deleted, which is what gd_source.gd's own header
+## already says from its side.
+##
 ## ⛔ STRIP COMMENTS, NEVER STRINGS. A track id named only in a comment would
 ## otherwise read as reached — this file's own SoundManager comments discuss
 ## battle_goblin being recast, and CLAUDE.md-style prose names beds constantly.
@@ -480,6 +494,20 @@ func _asked_for_by_a_music_call(id: String, text: String) -> bool:
 	## interior_ keys are resolved per-world before the base key is tried.
 	if id.begins_with("interior_") and text.find("play_area_music(\"%s\")" % id) >= 0:
 		return true
+	## ⛔ AMBIENT ROUTING IS A MUSIC CALL SINCE 2026-09-16, and it is the reason the three dual
+	## -store beds moved out of KNOWN_UNREACHED. play_ambient prefers the music manifest now, so a
+	## literal feeding it reaches the MUSIC bed rather than the SFX sting of the same name.
+	##
+	## Neither shape is `play_ambient("<id>")` — both routes pass a VARIABLE, which is exactly why
+	## this needed its own arm rather than one more entry in the list above:
+	##   OverworldScene._update_zone_ambient   ambient_key = "ambient_cave"   -> play_ambient(var)
+	##   BaseVillage/BaseInterior              return "ambient_village"       -> play_ambient(var)
+	## test_ambient_cues_actually_loop pins the set of files allowed to route through a variable,
+	## so a THIRD such site cannot appear without that guard naming it.
+	if text.find("ambient_key = \"%s\"" % id) >= 0:
+		return true
+	if id.begins_with("ambient_") and text.find("return \"%s\"" % id) >= 0:
+		return true
 	return false
 
 
@@ -724,10 +752,15 @@ func test_the_jukebox_reaches_every_bed_so_this_files_question_is_about_play() -
 		"CONTROL: play_ambient is the OTHER path to an ambient_* key and must still exist for the distinction below to matter")
 	var at: int = sm.find("func play_ambient")
 	var body: String = sm.substr(at, sm.find("\nfunc ", at + 10) - at)
+	## ⛔ THIS PAIR FLIPPED 2026-09-16 AND THE OLD WORDING IS KEPT IN THE COMMIT, NOT HERE.
+	## It used to assert play_ambient did NOT read the music manifest — true until struktured
+	## ruled the three twins should play. Now it must read BOTH, music first: drop the music arm
+	## and ambient_cave/forest/village silently fall back to their 5s SFX stings, which is the
+	## state this file spent two months describing.
+	assert_true(body.contains("_music_manifest"),
+		"play_ambient no longer prefers the MUSIC manifest — ambient_cave/forest/village revert to their 5s SFX twins and KNOWN_UNREACHED must GROW by those three again")
 	assert_true(body.contains("_sfx_manifest"),
-		"play_ambient no longer resolves from the SFX manifest. It did on 2026-09-11, which is why the seven music-manifest ambient_* beds are unreachable through it and their three SFX twins play a different file from assets/audio/sfx/")
-	assert_false(body.contains("_music_manifest"),
-		"play_ambient now reads the MUSIC manifest too — the seven ambient_* beds may have gained a consumer in play, and KNOWN_UNREACHED should shrink rather than being explained")
+		"play_ambient no longer falls back to the SFX manifest — ambient_coast/plains/dungeon and every weather_* key live ONLY there and would go silent")
 
 
 func test_no_cutscene_step_type_can_dispatch_another_cutscene() -> void:

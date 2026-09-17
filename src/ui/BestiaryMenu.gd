@@ -601,6 +601,16 @@ func _load_sprite(monster_id: String) -> void:
 	_detail_placeholder.visible = false
 
 
+## One owner for a row step, so the two directions cannot drift apart.
+func _nav_step(step: int) -> void:
+	if _row_nodes.is_empty():
+		return
+	_selected = (_selected + step + _row_nodes.size()) % _row_nodes.size()
+	_highlight_row()
+	_scroll_to_selected()
+	_refresh_detail()
+
+
 func _input(event: InputEvent) -> void:
 	if _entries.is_empty():
 		if event.is_action_pressed("ui_cancel"):
@@ -611,17 +621,11 @@ func _input(event: InputEvent) -> void:
 			_close()
 			get_viewport().set_input_as_handled()
 		return
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		_selected = (_selected - 1 + _row_nodes.size()) % _row_nodes.size()
-		_highlight_row()
-		_scroll_to_selected()
-		_refresh_detail()
-		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		_selected = (_selected + 1) % _row_nodes.size()
-		_highlight_row()
-		_scroll_to_selected()
-		_refresh_detail()
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
+	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 	elif MenuPaging.page_delta(event) != 0:
 		## 113 monsters at one row per press. Clamped, not wrapped like the arrows above: a page jump

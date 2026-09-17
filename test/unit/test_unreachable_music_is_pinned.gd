@@ -148,19 +148,32 @@ func test_cutscene_track_reachability_matches_the_pin() -> void:
 ##               Those work.
 ##
 ## So these are not superseded legacy — they are STILLBORN. Composed, committed,
-## and the consumer that arrived two weeks later looked somewhere else. Nothing
-## a player has ever heard is at stake either way, which makes the decision
-## cheap: DELETE for 11.4 MB back, or WIRE them and cave/forest/village get a
-## 2.5-3.5 minute composed bed instead of a 5-second loop. That is struktured's
-## call; the guard only ensures the 17 MB is visible while he makes it.
-const KNOWN_UNREACHABLE_AMBIENT_TRACKS: Array[String] = [
+## and the consumer that arrived two weeks later looked somewhere else.
+##
+## ✅ RULED 2026-09-16: WIRE the three shadowed ones. cave/forest/village left this list that
+## day — play_ambient now prefers the music manifest, and BaseVillage gained the ambient layer
+## BaseInterior always had, so each plays its 145-214s composed bed instead of a 5s loop.
+##
+## ⛔ THE GIT PARAGRAPH ABOVE IS NOW HISTORY, NOT A LIVE CLAIM. "No version of play_ambient
+## ever consulted the music manifest" was true from 2026-04-06 to 2026-09-16 and is false today;
+## it is kept because it is what made the three findable. The four below are NOT covered by that
+## ruling — nothing calls play_ambient with them at all, so they need an ambient zone authored,
+## which is why they stay pinned and the decision on them is still open.
+## Wired 2026-09-16 by struktured's ruling. NOT reached by play_music — they route through
+## play_ambient, which prefers the music manifest since that day. Listed separately so the arm
+## below reds in BOTH directions: a pinned bed that becomes reachable, and a wired bed that stops.
+const WIRED_AMBIENT_TRACKS: Array[String] = [
 	"ambient_cave",
-	"ambient_digital",
 	"ambient_forest",
+	"ambient_village",
+]
+
+
+const KNOWN_UNREACHABLE_AMBIENT_TRACKS: Array[String] = [
+	"ambient_digital",
 	"ambient_industrial",
 	"ambient_ocean",
 	"ambient_steampunk",
-	"ambient_village",
 ]
 
 
@@ -177,8 +190,14 @@ func test_ambient_music_entries_are_all_unreachable_as_pinned() -> void:
 	pinned.sort()
 	assert_gt(found.size(), 3,
 		"SCOPE control: only %d ambient music entries walked — a green here would be vacuous" % found.size())
-	assert_eq(found, pinned,
-		"the ambient_* set in the music manifest changed (found %s, pinned %s) — every entry here is unreachable (play_ambient reads the SFX manifest), so adding one ships audio nothing can play. Remove it, or move it to the SFX manifest where the consumer looks." % [found, pinned])
+	var accounted: Array[String] = []
+	for k in pinned:
+		accounted.append(str(k))
+	for k in WIRED_AMBIENT_TRACKS:
+		accounted.append(str(k))
+	accounted.sort()
+	assert_eq(found, accounted,
+		"the ambient_* set in the music manifest changed (found %s, accounted %s) — every entry must be either PINNED as unreachable or listed as WIRED, so adding one cannot ship audio nothing plays." % [str(found), str(accounted)])
 
 	## 🛑 THE SET CHECK ABOVE IS HOLLOW ON ITS OWN, proven not argued: wire
 	## play_music("ambient_cave") into SoundManager and it stays GREEN, because
@@ -197,12 +216,23 @@ func test_ambient_music_entries_are_all_unreachable_as_pinned() -> void:
 	assert_true(all_src.contains("play_music(\"boss_mordaine\")"),
 		"CONTROL FAILED: a play_music call we know exists was not found — the scan cannot detect a new one either")
 
-	var wired: Array[String] = []
+	## ⛔ REACH IS NOT ONLY play_music. The ambient route passes a VARIABLE to play_ambient, so
+	## the literal appears as a zone assignment or an _get_ambient_key() return; matching only
+	## play_music called all three wired beds unreachable on the day they started playing.
+	var reached: Array[String] = []
 	for key in found:
-		if all_src.contains("play_music(\"%s\")" % key):
-			wired.append(str(key))
-	assert_eq(wired.size(), 0,
-		"an ambient music entry is now REACHED by play_music (%s) — it is no longer unreachable, so remove it from the pin and delete the claim that these never play" % wired)
+		var k: String = str(key)
+		if all_src.contains("play_music(\"%s\")" % k) \
+				or all_src.contains("ambient_key = \"%s\"" % k) \
+				or all_src.contains("return \"%s\"" % k):
+			reached.append(k)
+	reached.sort()
+	var expect: Array[String] = []
+	for k in WIRED_AMBIENT_TRACKS:
+		expect.append(str(k))
+	expect.sort()
+	assert_eq(reached, expect,
+		"the REACHED ambient set is %s but %s is declared wired — a pinned bed gained a consumer (move it to WIRED_AMBIENT_TRACKS) or a wired one lost its route (it is silent now, and KNOWN_UNREACHABLE_AMBIENT_TRACKS must take it back)" % [str(reached), str(expect)])
 
 
 func _walk_gd(dir_path: String) -> String:

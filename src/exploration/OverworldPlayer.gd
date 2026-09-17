@@ -199,6 +199,10 @@ const JOB_PALETTES: Dictionary = {
 
 ## Current job for sprite generation
 var current_job: String = "fighter"
+## Reserved key inside a frame cache holding {Direction: float} draw offsets. Not a frame key —
+## the others are "%d_%d" — so it rides the static cache without a parallel structure to keep in
+## step, and a procedural cache simply has none.
+const OFFSETS_KEY := "_registration_offsets"
 
 ## Character customization for appearance
 var _custom_hair_color: Color = Color(0.35, 0.25, 0.18)
@@ -552,6 +556,10 @@ func _update_sprite() -> void:
 	var cache_key = "%d_%d" % [current_direction, _anim_frame]
 	if _sprite_cache.has(cache_key):
 		_sprite.texture = _sprite_cache[cache_key]
+	# Procedural frames carry no offsets key and reset to 0, which is correct: they are generated
+	# centred, so a correction derived from artist art must not leak onto them.
+	var offsets: Dictionary = _sprite_cache.get(OFFSETS_KEY, {})
+	_sprite.offset.x = float(offsets.get(current_direction, 0.0))
 
 
 func _get_static_cache_key() -> String:
@@ -610,25 +618,106 @@ func _try_load_overworld_sheet() -> Dictionary:
 		return {}
 
 	var img = tex.get_image()
-	if not img or img.get_width() < 128 or img.get_height() < 128:
+	if not img:
+		return {}
+
+	# Frame size is DECLARED per job, not assumed. "big enough" let a sheet of any other frame
+	# size through to be cut into 32px squares — a quarter of a figure, and nothing errors.
+	var frame: Vector2i = HybridSpriteLoader.overworld_frame_size(current_job)
+	var frame_w: int = frame.x
+	var frame_h: int = frame.y
+	if frame_w <= 0 or frame_h <= 0:
+		return {}
+	# REFUSE a sheet that is not an exact grid rather than mis-slice it.
+	if img.get_width() % frame_w != 0 or img.get_height() % frame_h != 0 \
+			or img.get_width() / frame_w < WALK_FRAMES or img.get_height() / frame_h < 4:
+		push_warning("[OVERWORLD] '%s' sheet is %dx%d, not an exact grid of %d columns x 4 rows at %dx%d — refusing rather than mis-slicing" % [current_job, img.get_width(), img.get_height(), WALK_FRAMES, frame_w, frame_h])
 		return {}
 
 	var cache: Dictionary = {}
-	var frame_w = 32
-	var frame_h = 32
 	# Row mapping: 0=down, 1=left, 2=right, 3=up
 	var row_to_dir = [Direction.DOWN, Direction.LEFT, Direction.RIGHT, Direction.UP]
+	var row_centre: Dictionary = {}
 
 	for row in range(4):
 		var dir = row_to_dir[row]
 		for col in range(WALK_FRAMES):
 			var region = Rect2i(col * frame_w, row * frame_h, frame_w, frame_h)
 			var frame_img = img.get_region(region)
+			# A frame cut at its DECLARED size still has to render at SPRITE_SIZE: the procedural
+			# fallback and _extract_artist_frame both produce 32px, and STEP_DISTANCE is one tile.
+			# Cutting correctly and handing back a 48px texture would trade a mis-sliced sprite for
+			# an oversized one — right art, wrong size, for exactly the sheets the fix was for.
+			if frame_w != SPRITE_SIZE or frame_h != SPRITE_SIZE:
+				frame_img = _fit_to_sprite_size(frame_img)
 			var frame_tex = ImageTexture.create_from_image(frame_img)
 			cache["%d_%d" % [dir, col]] = frame_tex
+			var centre := _bbox_centre_x(frame_img)
+			if centre >= 0.0:
+				row_centre[dir] = float(row_centre.get(dir, 0.0)) + centre / float(WALK_FRAMES)
 
+	cache[OFFSETS_KEY] = _registration_offsets(row_centre)
 	print("[OVERWORLD] Loaded overworld sheet for '%s'" % current_job)
 	return cache
+
+
+## Horizontal centre of a frame's alpha bounding box, or -1 for an empty frame.
+func _bbox_centre_x(img: Image) -> float:
+	var lo: int = img.get_width()
+	var hi: int = -1
+	for x in img.get_width():
+		for y in img.get_height():
+			if img.get_pixel(x, y).a > 0.0:
+				lo = mini(lo, x)
+				hi = maxi(hi, x)
+				break
+	return float(lo + hi) * 0.5 if hi >= 0 else -1.0
+
+
+## Per-direction draw offset so TURNING does not MOVE the avatar.
+##
+## A sprite drawn off-centre in its cell and mirrored IN PLACE lands at the mirrored offset, so
+## the left and right rows sit at different x. `_sprite` is centred on the node, which makes that
+## displacement literal on-screen motion at a position that never changed. Measured 2026-09-16:
+## 9 of 14 job sheets drift, worst 1.75px — smaller than the roaming monsters' 4.0px, on the one
+## sprite that is on screen for the whole run (cowir-adhoc).
+##
+## ⚠️ MEASURED ON THE BUILT FRAMES, NOT THE SHEET CELLS, because `_fit_to_sprite_size` may rescale
+## and foot-align a non-32px sheet — an offset derived in sheet coordinates would be wrong for
+## exactly the sheets that need the fit. These are the pixels that get drawn.
+##
+## ⛔ NOT ROUNDED, and the first version was. Rounding to whole pixels looks right for pixel art
+## but INVERTS a half-pixel drift instead of removing it: ninja sits at left 15.0 / right 16.0
+## about a 15.5 anchor, so the offsets are +0.5 and -0.5, round to +1 and -1, and the rows swap
+## places 1.0px apart — the same spread, mirrored. Caught by the guard reddening on correct code.
+## Fractional is also free here: the avatar already occupies fractional world positions every
+## frame it walks, so this adds no sub-pixel placement that was not happening already.
+func _registration_offsets(row_centre: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	if not row_centre.has(Direction.DOWN):
+		return out
+	var anchor: float = float(row_centre[Direction.DOWN])
+	for dir in row_centre:
+		out[dir] = anchor - float(row_centre[dir])
+	return out
+
+
+## Proportional fit into a SPRITE_SIZE canvas, foot-aligned. Shares the rule with
+## _extract_artist_frame: a direct resize squashes the aspect ratio, and the feet must sit on the
+## same baseline as the procedural sprite or the character bobs when the source changes.
+func _fit_to_sprite_size(src: Image) -> Image:
+	var sw: int = src.get_width()
+	var sh: int = src.get_height()
+	if sw == SPRITE_SIZE and sh == SPRITE_SIZE:
+		return src
+	var scale_factor: float = min(float(SPRITE_SIZE) / max(sw, 1), float(SPRITE_SIZE) / max(sh, 1))
+	var new_w: int = max(1, int(sw * scale_factor))
+	var new_h: int = max(1, int(sh * scale_factor))
+	var scaled := src.duplicate() as Image
+	scaled.resize(new_w, new_h, Image.INTERPOLATE_NEAREST)
+	var canvas := Image.create(SPRITE_SIZE, SPRITE_SIZE, true, Image.FORMAT_RGBA8)
+	canvas.blit_rect(scaled, Rect2i(0, 0, new_w, new_h), Vector2i((SPRITE_SIZE - new_w) / 2, SPRITE_SIZE - new_h))
+	return canvas
 
 
 ## Extract and downscale a single frame from a SpriteFrames animation into a 32x32 Image.

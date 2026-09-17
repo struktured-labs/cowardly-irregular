@@ -64,6 +64,57 @@ func _code_only(src: String) -> String:
 	return "\n".join(keep)
 
 
+## ⛔ SHELL, NOT PYTHON — and `_code_only` above CANNOT do this file's shell subjects.
+## `test/unit/helpers/gd_source.gd` cannot either: its own header measures that `"""` parity
+## eats live shell lines, because shell has no docstring for the fences to delimit.
+##
+## The exposure is live and load-bearing, measured 2026-09-16 on `deploy_web.sh`:
+##
+##     a comment ABOVE line 85 reading `# was WEB_AUDIO_KBPS:-48 until the ruling`
+##     -> _shipped_kbps() returns 48 while the build ships 40, and 48 is in MEASURED_TIERS,
+##        so the whole file reasons about a corpus nobody hears AND reports green
+##     `deploy.contains("make_web_stage.sh \"$WEB_AUDIO_KBPS\"")` -> satisfied by a COMMENT
+##        naming it, so a deploy that pins a tier and never hands it over reads as wired
+##
+## That token already appears in a comment in that file today (`:301`), so this is a live
+## syntax, not a hypothetical one. Quote-aware, and `#` only starts a comment at the start of
+## a word — `${VAR#pat}` and `music_${KBPS}k` must survive.
+static func _shell_code_only(src: String) -> String:
+	var keep: PackedStringArray = PackedStringArray()
+	for line in src.split("\n"):
+		var ln: String = str(line)
+		var quote: String = ""
+		var out: String = ""
+		var i: int = 0
+		## Bounded by construction: every branch consumes at least one character, so a correct
+		## scan cannot reach length + 1. A dropped advance TRUNCATES instead of spinning — a hang
+		## reads as infrastructure and outlives its own sweep.
+		var budget: int = ln.length() + 1
+		while i < ln.length():
+			budget -= 1
+			if budget < 0:
+				break
+			var ch: String = ln[i]
+			if quote != "":
+				out += ch
+				if ch == "\\" and quote == "\"" and i + 1 < ln.length():
+					out += ln[i + 1]
+					i += 2
+					continue
+				if ch == quote:
+					quote = ""
+			elif ch == "\"" or ch == "'":
+				quote = ch
+				out += ch
+			elif ch == "#" and (i == 0 or ln[i - 1] == " " or ln[i - 1] == "\t"):
+				break
+			else:
+				out += ch
+			i += 1
+		keep.append(out)
+	return "\n".join(keep)
+
+
 func test_the_gate_can_be_pointed_at_a_corpus_other_than_the_masters() -> void:
 	## Without an option the gate can ONLY answer about masters, and the web
 	## question cannot be asked at all.
@@ -142,24 +193,72 @@ const MEASURED_TIERS: Array[int] = [48, 44, 40]
 
 ## Derived, never restated: a second copy of the number here would go stale the next
 ## time the ruling moves, which is how this arm broke when 48 became 40.
-func _shipped_kbps() -> int:
-	var deploy: String = FileAccess.get_file_as_string("res://tools/deploy_web.sh")
-	assert_gt(deploy.length(), 500, "SCOPE control: deploy_web.sh read back %d chars" % deploy.length())
+## `source_override` exists ONLY so an arm can drive THIS function with a poisoned source.
+## Without it the arms could test `_shell_code_only` and never its USE — measured 2026-09-16:
+## deleting the strip from this very function left all 8 arms green, because every one of them
+## called the helper directly. A helper kept and its answer discarded is the shape three lanes
+## hit today (@cowir-sprites mutation 7, @cowir-cutscenes, @cowir-ai).
+## Does any `make_web_stage.sh` invocation reference the pinned variable? The PROPERTY behind
+## "the pin is handed over", independent of quoting, braces, or the path it is called by.
+func _has_handover(src: String) -> bool:
+	for line in src.split("\n"):
+		var l: String = str(line)
+		if l.contains("make_web_stage.sh") and l.contains("WEB_AUDIO_KBPS"):
+			return true
+	return false
+
+
+func _shipped_kbps(source_override: String = "") -> int:
+	var deploy_raw: String = source_override if source_override != "" else FileAccess.get_file_as_string("res://tools/deploy_web.sh")
+	assert_gt(deploy_raw.length(), 500, "SCOPE control: deploy_web.sh read back %d chars" % deploy_raw.length())
+	var deploy: String = _shell_code_only(deploy_raw)
+	assert_true(deploy.contains("WEB_AUDIO_KBPS"),
+		"CONTROL: the strip ate the assignment — every assert below would be satisfied by nothing")
 	var re: RegEx = RegEx.create_from_string("WEB_AUDIO_KBPS:-([0-9]+)")
 	var m: RegExMatch = re.search(deploy)
 	assert_not_null(m, "deploy_web.sh no longer pins a bitrate through WEB_AUDIO_KBPS — the shipped tier cannot be derived, so nothing below knows which corpus ships")
 	if m == null:
 		return 0
-	assert_true(deploy.contains("make_web_stage.sh \"$WEB_AUDIO_KBPS\""),
-		"deploy_web.sh pins a bitrate it does not hand to the stage script — the stage default would ship instead, and the pin would be decorative")
 	return int(m.get_string(1))
+
+
+## Same `source_override` seam as `_shipped_kbps`, for the same reason: without it an arm can only
+## reach `_shell_code_only`, and the strip could be dropped from this read with every arm green.
+func _transcode_code(source_override: String = "") -> String:
+	var audio_raw: String = source_override if source_override != "" else FileAccess.get_file_as_string("res://tools/make_web_audio.sh")
+	assert_gt(audio_raw.length(), 500, "SCOPE control: make_web_audio.sh read back %d chars" % audio_raw.length())
+	var audio: String = _shell_code_only(audio_raw)
+	assert_true(audio.contains("ffmpeg"),
+		"CONTROL: the strip ate the transcode call — the asserts that consume this would measure an empty string")
+	return audio
+
+
+## ⛔ ITS OWN ARM, not a side-assert inside a value-returning helper — so a real change to
+## deploy_web.sh reds by NAME instead of firing inside `_shipped_kbps` under a message about
+## deriving a tier.
+##
+## ⚠ AND ITS LIMIT, because I measured it rather than assuming: this is a LIVE-STATE
+## assertion, so no mutation of THIS file can red it while deploy_web.sh is correct — neutering
+## it is invisible. The logic behind it is covered by the two arms that drive `_has_handover`
+## with constructed sources; dropping its variable condition reds both by name. A named failure
+## is worth having and is not the same as being mutation-proven.
+##
+## ⛔ THE PROPERTY, NOT THE SPELLING. It used to assert the literal
+## `make_web_stage.sh "$WEB_AUDIO_KBPS"` — where a token SITS rather than what the script DOES.
+## Two legal respellings red that on correct code: `"${WEB_AUDIO_KBPS}"` and a bare
+## `$WEB_AUDIO_KBPS`. (@cowir-battle's smell, same day: the literal I asserted about was a NAME.)
+func test_the_pinned_tier_is_handed_to_the_stage_script() -> void:
+	var deploy: String = _shell_code_only(FileAccess.get_file_as_string("res://tools/deploy_web.sh"))
+	assert_true(deploy.contains("WEB_AUDIO_KBPS"),
+		"CONTROL: the strip ate the assignment — the assert below would be satisfied by nothing")
+	assert_true(_has_handover(deploy),
+		"deploy_web.sh pins a bitrate it does not hand to the stage script — no make_web_stage.sh invocation references WEB_AUDIO_KBPS, so the stage default would ship instead and the pin would be decorative")
 
 
 func test_the_shipped_tier_is_a_measured_mono_reencode_so_the_question_is_real() -> void:
 	## SCOPE control for the whole file. If the web build ever stops transcoding,
 	## every arm above still passes while defending nothing.
-	var audio: String = FileAccess.get_file_as_string("res://tools/make_web_audio.sh")
-	assert_gt(audio.length(), 500, "SCOPE control: make_web_audio.sh read back %d chars" % audio.length())
+	var audio: String = _transcode_code()
 	assert_true(audio.contains("libvorbis"),
 		"the web tier is no longer a re-encode — if it became a copy, seams could not move and this file is moot")
 	assert_true(audio.contains("-ac 1"),
@@ -200,3 +299,141 @@ func test_a_clean_report_states_how_close_the_worst_bed_came() -> void:
 		"the seam audit reports only the closest bed again. FIX: restore the band print in tools/audit_wrap_seams.py — a single name reads as one outlier, and the measured corpus has four beds inside 1 dB with three of them on live gameplay routes")
 	assert_gt(src.find("for step, key, ws in tight:"), 0,
 		"the sub-1 dB beds are counted but no longer NAMED. FIX: keep the loop that prints each one with its margin; a count tells you the corpus is tight and not which encoder change to re-measure")
+
+
+## ⛔ THE DERIVATION READS SHELL SOURCE, AND SHELL HAS COMMENTS. These three arms exist because
+## `_shipped_kbps()` decides which corpus this whole file reasons about: get it wrong and every
+## other arm is a correct measurement of audio nobody hears — the exact defect the file was
+## written to prevent, arriving through its own instrument.
+const _KBPS_RE := "WEB_AUDIO_KBPS:-([0-9]+)"
+
+
+func _derive_kbps(src: String) -> int:
+	var re: RegEx = RegEx.create_from_string(_KBPS_RE)
+	var m: RegExMatch = re.search(src)
+	return int(m.get_string(1)) if m != null else 0
+
+
+func test_a_comment_cannot_name_the_shipped_tier() -> void:
+	var raw: String = FileAccess.get_file_as_string("res://tools/deploy_web.sh")
+	var real: int = _derive_kbps(_shell_code_only(raw))
+	assert_true(real in MEASURED_TIERS,
+		"CONTROL: the live file derives %d kbps, which must be a tier this file has numbers for" % real)
+
+	## Planted ABOVE the assignment, because RegEx.search takes the FIRST match — a comment below
+	## it changes nothing and would make this arm pass without defending anything.
+	var lines: PackedStringArray = raw.split("\n")
+	var planted: PackedStringArray = PackedStringArray()
+	planted.append("# historical: WEB_AUDIO_KBPS:-48 until the 2026-09-16 ruling")
+	for l in lines:
+		planted.append(str(l))
+	var poisoned: String = "\n".join(planted)
+
+	assert_eq(_derive_kbps(poisoned), 48,
+		"CONTROL FAILED: the planted comment did not poison the RAW source, so the strip below has nothing to prove")
+	assert_eq(_derive_kbps(_shell_code_only(poisoned)), real,
+		"a shell COMMENT named the shipped tier: derived %d against the code's %d. Every arm in this file would then measure the wrong corpus and report green" % [_derive_kbps(_shell_code_only(poisoned)), real])
+
+
+func test_a_comment_cannot_stand_in_for_the_pass_through() -> void:
+	## The pass-through assert is what stops a pinned bitrate being decorative. A comment naming
+	## the call satisfies `contains()` exactly as well as the call does.
+	var raw: String = FileAccess.get_file_as_string("res://tools/deploy_web.sh")
+	## Gut the real invocation BY REFERENCE rather than by spelling, then leave a comment naming it.
+	var gutted_lines: PackedStringArray = PackedStringArray()
+	var gutted_one: bool = false
+	for line in raw.split("\n"):
+		var l: String = str(line)
+		if not gutted_one and l.contains("make_web_stage.sh") and l.contains("WEB_AUDIO_KBPS"):
+			gutted_lines.append(l.replace("WEB_AUDIO_KBPS", "48"))
+			gutted_one = true
+		else:
+			gutted_lines.append(l)
+	assert_true(gutted_one, "CONTROL: the live file really does hand the tier over on some line")
+	var gutted: String = "\n".join(gutted_lines) + "\n# we hand it over with make_web_stage.sh \"$WEB_AUDIO_KBPS\" further up\n"
+
+	assert_true(_has_handover(gutted), "CONTROL FAILED: the gutted source lost the planted comment, so this arm proves nothing")
+	assert_false(_has_handover(_shell_code_only(gutted)),
+		"a comment stood in for the pass-through: a deploy that pins a tier and never hands it over would read as wired")
+
+
+func test_the_strip_leaves_shell_that_is_not_a_comment() -> void:
+	## ⛔ THE DANGEROUS DIRECTION, and shell has two ways to lose here that Python does not:
+	## `${VAR#pattern}` is parameter expansion, and a `#` inside quotes is data. Over-stripping
+	## and a correct strip are the same green — the controls above only fire if code SURVIVES.
+	var probe: String = "\n".join([
+		"KBPS=\"${WEB_AUDIO_KBPS:-40}\"",
+		"DIR=\"tmp/web_audio/music_${KBPS}k\"",
+		"TRIMMED=${DIR#tmp/}",
+		"echo \"a # inside quotes is data\"",
+		"echo 'single # too'",
+		"real_code=1  # but this trailing one is a comment",
+		"# and this whole line is",
+	])
+	var code: String = _shell_code_only(probe)
+	assert_true(code.contains("${WEB_AUDIO_KBPS:-40}"), "the assignment must survive")
+	assert_true(code.contains("music_${KBPS}k"), "a ${} expansion must survive")
+	## ⛔ UNQUOTED ON PURPOSE. Quoted, the quote branch swallows the `#` before the word-start rule
+	## is ever consulted — so a quoted probe passes with that rule DELETED. Measured: mutating
+	## `# only at a word start` to `# always` left this arm green until the quotes came off.
+	assert_true(code.contains("${DIR#tmp/}"), "parameter expansion with # must survive — this is not a comment")
+	assert_true(code.contains("a # inside quotes is data"), "a # inside double quotes is data")
+	assert_true(code.contains("single # too"), "a # inside single quotes is data")
+	assert_true(code.contains("real_code=1"), "code before a trailing comment must survive")
+	assert_false(code.contains("but this trailing one is a comment"), "a trailing comment must go")
+	assert_false(code.contains("and this whole line is"), "a whole-line comment must go")
+
+
+func test_the_derivation_itself_strips_before_it_reads() -> void:
+	## ⛔ THE ARM THE OTHER THREE COULD NOT BE. They drive `_shell_code_only` directly, so the
+	## strip could be deleted from `_shipped_kbps()` and every one of them stays green — the
+	## helper is still correct, it is simply no longer consulted. This drives the REAL function.
+	var raw: String = FileAccess.get_file_as_string("res://tools/deploy_web.sh")
+	var real: int = _shipped_kbps()
+	assert_true(real in MEASURED_TIERS, "CONTROL: the live derivation gives %d" % real)
+
+	var planted: PackedStringArray = PackedStringArray()
+	planted.append("# historical: WEB_AUDIO_KBPS:-48 until the 2026-09-16 ruling")
+	for l in raw.split("\n"):
+		planted.append(str(l))
+	assert_eq(_shipped_kbps("\n".join(planted)), real,
+		"_shipped_kbps() read a COMMENT as the shipped tier — it returned %d against the code's %d, and this file would then measure a corpus nobody hears" % [_shipped_kbps("\n".join(planted)), real])
+
+
+func test_a_comment_cannot_stand_in_for_the_transcode() -> void:
+	## The other half of the same exposure. "the web tier is still a re-encode" is asserted by
+	## `contains("libvorbis")` over shell source, and a comment saying the word satisfies it just
+	## as well — at which point a tier that became a straight COPY reads as a re-encode, and every
+	## seam number in this file describes a transform that no longer happens.
+	var raw: String = FileAccess.get_file_as_string("res://tools/make_web_audio.sh")
+	assert_true(_transcode_code().contains("libvorbis"), "CONTROL: the live script really does transcode")
+
+	var gutted: String = raw.replace("libvorbis", "copy")
+	gutted += "\n# we used to pass -c:a libvorbis here before the copy-through\n"
+	assert_true(gutted.contains("libvorbis"),
+		"CONTROL FAILED: the gutted source lost the planted comment, so this arm proves nothing")
+	assert_false(_transcode_code(gutted).contains("libvorbis"),
+		"a comment stood in for the transcode: a tier that became a straight copy would read as a re-encode")
+
+
+func test_the_handover_check_reads_the_reference_not_the_spelling() -> void:
+	## ⛔ THE ARM THAT MAKES THE REWRITE MEAN SOMETHING. The old form asserted the literal
+	## `make_web_stage.sh "$WEB_AUDIO_KBPS"`, so two legal shell respellings redded it on correct
+	## code. Without this arm the tolerance is unpinned and the next edit can quietly restore the
+	## brittleness — the property is "the invocation references the pinned variable", and shell has
+	## several right ways to write that.
+	var forms: Array[String] = [
+		'  ./tools/make_web_stage.sh "$WEB_AUDIO_KBPS" || die',
+		'  ./tools/make_web_stage.sh "${WEB_AUDIO_KBPS}" || die',
+		'  bash tools/make_web_stage.sh $WEB_AUDIO_KBPS',
+		'  WEB_AUDIO_KBPS=40 exec ./tools/make_web_stage.sh "$WEB_AUDIO_KBPS"',
+	]
+	for f in forms:
+		assert_true(_has_handover(f), "a legal shell spelling must still read as handed over: %s" % f.strip_edges())
+
+	## ⛔ AND THE NEGATIVE, or the check above is satisfied by anything: a hardcoded tier is
+	## exactly the defect — the pin exists and the stage never sees it.
+	assert_false(_has_handover('  ./tools/make_web_stage.sh 48 || die'),
+		"a hardcoded bitrate must NOT read as handed over — that is the decorative pin this arm exists for")
+	assert_false(_has_handover('  echo "$WEB_AUDIO_KBPS kbps tier"'),
+		"a line naming the variable without calling the stage script is not a handover")

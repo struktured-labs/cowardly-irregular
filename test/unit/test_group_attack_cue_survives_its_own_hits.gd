@@ -224,3 +224,40 @@ func test_the_stripper_keeps_calls_and_drops_prose() -> void:
 		"code AFTER a docstring block was swallowed — the region walk did not resume")
 	assert_true(_code_only('\tvar s := "see #3"  # gone', "").contains('"see #3"'),
 		"a # inside a string literal is not a comment")
+
+
+func test_every_member_this_file_reaches_for_still_exists() -> void:
+	## A direct `sm._x` on a RENAMED member raises at runtime and ABORTS the arm. An abort after
+	## that arm's last assert scores PASSING — measured 2026-09-16: renaming the dedicated voice
+	## this file exists to defend gave EXIT=0, Failing 0, NO Risky line, and moved only the assert
+	## count. `get()` returns null for an absent name instead of raising, so the rename fails loudly
+	## here and names itself before any other arm gets the chance to go quiet.
+	var sm: Node = _sm()
+	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
+	if sm == null:
+		return
+	## Methods are NOT properties: get() returns null for a method name, so the loop below cannot
+	## see a renamed METHOD. has_method ANSWERS instead of raising, same reason.
+	## ⚠️ BOTH LISTS ARE A SNAPSHOT, derived once from this file's own sm. reaches and frozen — NOT a
+	## live derivation. Add a new sm. reach to this file and it is NOT covered until you add it here.
+	## A runtime derivation would self-maintain but would read this arm's own body as corpus
+	## (cowir-sprites' tautology class), needing cowir-ai's bare-Object exclusion to stay honest.
+	## Convert it the next time this file gains a reach; until then the list is correct by being fresh.
+	## ⚠️ IF YOU REGENERATE THIS LIST, STRIP COMMENTS FIRST (test/unit/helpers/gd_source.gd). The
+	## generator that produced it read RAW source, so a trailing `# was sm.old_name()` — precisely
+	## what a rename commit writes — becomes a listed member that never existed, and the floor then
+	## REDS ON CORRECT CODE. cowir-music demonstrated that false red in their own floors 2026-09-16.
+	## This list is ghost-free only because no such comment existed when it was generated.
+	for method_name in ["play_attack_hit", "play_battle", "play_flourish"]:
+		assert_true(sm.has_method(method_name),
+			"SoundManager has no method %s — this file CALLS it, and whether that shows as Risky or as a silent pass is decided by arm ORDER, not by care" % method_name)
+	## ⚠️ get() CANNOT DISTINGUISH ABSENT FROM LEGITIMATELY NULL (@cowir-sprites): it returns null
+	## for both. Every member below is a player, a Dictionary or a String — none is ever null once
+	## _ready has run — so the check is sound HERE. If you add a nullable member to this list
+	## (_crossfade_tween and the other _*_tween members are EXAMPLES, not an exhaustive list — check
+	## the declaration), switch to get_property_list(), which answers about existence rather than value.
+	for member_name in ["_battle_player", "_flourish_player", "_sfx_cooldowns", "_sfx_manifest"]:
+		## assert_true on an explicit `!= null`: assert_ne deep-compares, and three of these members
+		## are Dictionaries, which it refuses with "Only Arrays and Dictionaries are supported".
+		assert_true(sm.get(member_name) != null,
+			"SoundManager has no %s — this file reaches for it directly, and a rename would abort its arms SILENTLY" % member_name)

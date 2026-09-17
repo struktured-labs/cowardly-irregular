@@ -24,7 +24,15 @@
 #   .import sidecars and the import cache in place, and through a hardlink that
 #   corrupts the originals.
 #
-# Usage:  tools/make_web_stage.sh [bitrate]     default 48 (struktured's ruling)
+# Usage:  tools/make_web_stage.sh [bitrate]     deploy_web.sh always passes one
+#
+# ⛔ THE FALLBACK BELOW IS NOT THE SHIPPED BITRATE and this line used to say it was
+# ("default 48 (struktured's ruling)"). It was his ruling in August; his 40k ruling
+# shipped in .357 and this comment did not move. The shipped value lives in ONE place —
+# deploy_web.sh's WEB_AUDIO_KBPS default — and that is what reaches this script as $1 on
+# every publish. A reader who takes the fallback for the shipped value gets a number that
+# is true about this function and false about every real invocation: one lane did exactly
+# that tonight, and tools/make_web_audio.sh had been doing it in code since .357.
 #         tools/make_web_stage.sh --clean       delete the stage, free the disk
 set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
@@ -201,12 +209,32 @@ printf '%s' "$WANT_ID" > "$STAGE_ID_FILE"
 
 # ── 4. import + export + measure the REAL artifact ─────────────────────────
 echo "[stage] 4/4 import + export (first run builds a fresh cache, ~minutes)"
+# SANDBOXED. `--import` is editor-class: it resolves user:// by application name and writes
+# .recovery_mode_lock into whichever profile is active — struktured's, from any worktree. This
+# runs on EVERY web publish. The stage's import CACHE lives in $STAGE/.godot (res://), so
+# relocating the data root costs it nothing. The export below CAN carry it too, once the
+# templates are symlinked into the sandbox — see tools/export_sandbox.sh. It could not before
+# 2026-09-16, and this comment used to say so as if it were permanent.
+# Found 2026-09-16 by widening check_user_data_sandboxed.py's corpus from tools/deploy_*.sh to
+# tools/*.sh — the hand-shaped glob covered 4 files and this one was not among them.
+_STAGE_XDG="$PWD/tmp/stage_xdg"
+mkdir -p "$_STAGE_XDG"
 ( cd "$STAGE" && mkdir -p builds/web \
-  && godot --headless --audio-driver Dummy --import > ../stage_import.log 2>&1 ) &
+  && XDG_DATA_HOME="$_STAGE_XDG" godot --headless --audio-driver Dummy --import > ../stage_import.log 2>&1 ) &
 IEC=0; wait $! || IEC=$?
 test $IEC -eq 0 || { echo "[stage] BLOCKED: staged import failed — tmp/stage_import.log" >&2; exit 3; }
 
-( cd "$STAGE" && godot --headless --audio-driver Dummy \
+# SANDBOXED, with the export templates symlinked in. This was the LAST deploy invocation writing
+# struktured's real profile: v3.33.360-alpha shipped with the boot gate and both imports sandboxed
+# and his .recovery_mode_lock still moved 10:40:04 -> 12:22:04, stamped by an export.
+# Measured both directions on a real Linux export, 2026-09-16:
+#   bare sandbox      "No export template found at <sandbox>/godot/export_templates/4.4.1.stable/..."
+#   sandbox + symlink 318,140,832 bytes exported, exit 0, his lock UNCHANGED
+# The templates are read-only to an export, so a link is all it takes.
+_EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
+    echo "[stage] BLOCKED: could not build the export sandbox — see above." >&2
+    exit 3; }
+( cd "$STAGE" && XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --audio-driver Dummy \
     --export-release "Web" builds/web/index.html > ../stage_export.log 2>&1 ) &
 EEC=0; wait $! || EEC=$?
 test $EEC -eq 0 || { echo "[stage] BLOCKED: staged export failed — tmp/stage_export.log" >&2; exit 3; }

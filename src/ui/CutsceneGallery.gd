@@ -358,26 +358,30 @@ func _input(event: InputEvent) -> void:
 	if _world_order.is_empty():
 		return
 
-	if event.is_action_pressed("ui_left"):
+	# One step per stick push: ui_up/ui_down share the left stick's Y axis and carry no echo flag, so
+	# a nudge past the deadzone reads as ~5 presses. Buttons and keys pass through MenuNav untouched.
+	var nav: String = MenuNav.step(event)
+
+	if nav == "ui_left":
 		_selected_world_idx = (_selected_world_idx - 1 + _world_order.size()) % _world_order.size()
 		_selected_item_idx = 0
 		_update_display()
 		_play_nav_sfx()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_right"):
+	elif nav == "ui_right":
 		_selected_world_idx = (_selected_world_idx + 1) % _world_order.size()
 		_selected_item_idx = 0
 		_update_display()
 		_play_nav_sfx()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_up"):
+	elif nav == "ui_up":
 		var world_items: Array = _items_by_world.get(_world_order[_selected_world_idx], [])
 		if not world_items.is_empty():
 			_selected_item_idx = (_selected_item_idx - 1 + world_items.size()) % world_items.size()
 			_update_display()
 			_play_nav_sfx()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down"):
+	elif nav == "ui_down":
 		var world_items: Array = _items_by_world.get(_world_order[_selected_world_idx], [])
 		if not world_items.is_empty():
 			_selected_item_idx = (_selected_item_idx + 1) % world_items.size()

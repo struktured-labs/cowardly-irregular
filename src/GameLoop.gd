@@ -1782,6 +1782,8 @@ func _mark_story_cutscene_complete(cutscene_id: String) -> void:
 		return
 	_set_cutscene_flag_and_mirror(completion_flag)
 	print("[CUTSCENE] %s complete → set flag %s" % [cutscene_id, completion_flag])
+	# The prologue lands here, not in _play_story_cutscene, and its lead_job arm writes a lock key — so the PC you led with is controllable when the scene ends rather than at the next load.
+	_reconcile_spotlight_locks()
 
 
 func check_pending_cutscene() -> void:
@@ -2461,8 +2463,8 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 			# W1 spotlight completion also unlocks the matching PC's
 			# manual control. Reconcile is idempotent so a no-op for
 			# non-spotlight cutscenes.
-			if completion_flag.begins_with("cutscene_flag_spotlight_unlocked_"):
-				_reconcile_spotlight_locks()
+			# The old guard tested for cutscene_flag_spotlight_unlocked_, which no entry in the map carries — they all write _watched_ — so this call had not fired since that rename. Unconditional: any scene can set_flag a lock key mid-scene.
+			_reconcile_spotlight_locks()
 			# Tick 108: world6_ending is the game's narrative closer.
 			# Mark the run as complete + surface a celebratory toast so
 			# the player has acknowledgment that they finished, rather
@@ -3169,7 +3171,9 @@ func _reconcile_spotlight_locks() -> void:
 		if job_id.is_empty():
 			continue
 		var flag = "cutscene_flag_spotlight_unlocked_" + job_id
-		if flags.get(flag, false) and member.autobattle_locked:
+		# The prologue's lead_job arm writes spotlight_lead_<job>: the PC you led with is controllable without a duel. It used to write the _unlocked_ key, which the story gates read as "the duel was won" — so the lead's own spotlight duel never fired.
+		var lead_flag = "cutscene_flag_spotlight_lead_" + job_id
+		if (flags.get(flag, false) or flags.get(lead_flag, false)) and member.autobattle_locked:
 			member.autobattle_locked = false
 			any_flipped = true
 	# Mid-battle locked → unlocked transition fires the spotlight_unlock
@@ -7002,6 +7006,8 @@ func _on_corruption_effect_added(effect: String) -> void:
 	Toast.show(self,
 		"⚠ Reality glitches: %s" % display,
 		Toast.DANGER_COLOR)
+	# One authored cue per effect; their levels were trimmed in SoundManager and never played.
+	SoundManager.play_battle("corruption_gain_" + effect)
 
 
 ## Tick 179: Scriptweaver edits via modify_constant fire

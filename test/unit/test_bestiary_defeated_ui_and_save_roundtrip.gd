@@ -13,6 +13,7 @@ extends GutTest
 ## reset on every save/load (encounter would resume tracking
 ## correctly via mark_seen, but kill credit would be lost).
 
+const GuardSubject := preload("res://test/unit/helpers/guard_subject.gd")
 const BESTIARY_MENU := "res://src/ui/BestiaryMenu.gd"
 const GAME_STATE := "res://src/meta/GameState.gd"
 const MARKER_SEEN := "tick_147_seen_only"
@@ -244,3 +245,24 @@ func test_seen_entries_carry_defeated_after_reload() -> void:
 		(GameState.game_constants["seen_monsters"] as Dictionary).erase("slime")
 	assert_eq(bool(slime_post.get("defeated", false)), true,
 		"post-roundtrip: slime entry's defeated flag preserved")
+
+
+## ⛔ THE SILENT-PASS FLOOR. This guard drives its subject BY NAME; rename the member and every
+## cardinal stays clean — see test/unit/helpers/guard_subject.gd for the four measurements and why
+## run_tests.sh's exit 4 cannot see this rung. Names are DERIVED from this file's own text, so a
+## new `.call("...")` is floored the day it is written rather than the day someone remembers.
+func test_every_member_this_guard_drives_by_name_exists() -> void:
+	var subject: Object = load("res://src/ui/BestiaryMenu.gd").new()
+	add_child_autofree(subject)
+	var calls: Dictionary = GuardSubject.audit_calls("res://test/unit/test_bestiary_defeated_ui_and_save_roundtrip.gd", subject)
+	var props: Dictionary = GuardSubject.audit_properties("res://test/unit/test_bestiary_defeated_ui_and_save_roundtrip.gd", subject)
+	assert_eq((str(calls["why"]) + " " + str(props["why"])).strip_edges(), "",
+		("the COMMENT STRIP failed, so the derived member list is prose or empty — that is the "
+		+ "INSTRUMENT, not the subject: %s %s") % [calls["why"], props["why"]])
+	assert_gt(int(calls["found"]) + int(props["found"]), 0,
+		"VOID: no `.call(\"name\")` or `.get(\"_name\")` found in this file's own text — the extraction is broken, not the subject")
+	assert_eq(calls["missing"], [],
+		("this guard drives those methods BY NAME and the subject no longer has them, so its arms "
+		+ "would ABORT INTO A SILENT PASS — EC=0, nothing failing, nothing risky: %s") % [calls["missing"]])
+	assert_eq(props["missing"], [],
+		"this guard reads those private properties by name and the subject no longer has them: %s" % [props["missing"]])

@@ -334,20 +334,22 @@ func _input(event: InputEvent) -> void:
 	var rows := 3
 	var old := _selected
 
-	# Echo-guard navigation: holding D-pad otherwise spams `menu_move` and
-	# selection updates every frame at the OS key-repeat rate.
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		if _selected >= cols:
-			_selected -= cols
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		if _selected + cols < WORLD_DATA.size():
-			_selected += cols
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
-		if _selected % cols > 0:
-			_selected -= 1
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
-		if _selected % cols < cols - 1 and _selected + 1 < WORLD_DATA.size():
-			_selected += 1
+	# MenuNav, not a raw read. This is a GRID, so all four directions matter — and the helper
+	# latches the two axes independently, which a single latch would get wrong: holding a vertical
+	# would swallow a horizontal step. The echo guard here never saw the stick at all.
+	match MenuNav.step(event):
+		"ui_up":
+			if _selected >= cols:
+				_selected -= cols
+		"ui_down":
+			if _selected + cols < WORLD_DATA.size():
+				_selected += cols
+		"ui_left":
+			if _selected % cols > 0:
+				_selected -= 1
+		"ui_right":
+			if _selected % cols < cols - 1 and _selected + 1 < WORLD_DATA.size():
+				_selected += 1
 
 	if _selected != old:
 		_highlight()
