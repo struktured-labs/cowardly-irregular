@@ -124,8 +124,17 @@ func test_every_resolver_member_this_file_reaches_still_exists() -> void:
 	var own_src: String = GdSource.code_of(get_script().resource_path)
 	var cut: int = own_src.find("func %s(" % _FLOOR_ARM_NAME)
 	assert_gt(cut, 0, "CONTROL: located this arm, so the scoped slice is real")
+	## ⛔ EXCLUDE THIS ARM'S OWN BODY, NOT EVERYTHING AFTER IT. Slicing to `cut` was a POSITIONAL
+	## bound standing in for a structural one: an arm appended AFTER this function escaped the
+	## derivation entirely. Measured 2026-09-17 — a planted arm reaching an UNPINNED member scored
+	## `reaches: 2 | pinned: 2 | unpinned: []`, EC=0. The floor is conventionally last, so this bites
+	## exactly when the file GROWS, which is when a new reach appears. @cowir-controller's
+	## "substring position cannot express a region" and @cowir-sfx's substr-to-end-of-function, same
+	## class: the scope was a coincidence of layout, not a property of the code.
+	var _after: int = own_src.find("\nfunc ", cut + 10)
+	var scanned: String = own_src.substr(0, cut) + ("" if _after < 0 else own_src.substr(_after))
 	var reached: Dictionary = {}
-	for raw_line in own_src.substr(0, cut).split("\n"):
+	for raw_line in scanned.split("\n"):
 		if raw_line.contains("res://"):
 			continue
 		for m in RegEx.create_from_string("(?:_res|AutogrindSystem)\\.([A-Za-z_][A-Za-z_0-9]*)").search_all(raw_line):
