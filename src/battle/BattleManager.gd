@@ -3990,7 +3990,10 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 
 		"blade_storm":
 			# Multi-hit physical, each can crit
-			var hit_count = participants.size() * 2 if not participants.is_empty() else 0
+			## ⛔ THE SAME COUNT/SUM ASYMMETRY AS THE SCALE, ONE BRANCH DOWN. The hit budget came from the
+			## RAW roster while line 64 re-filters to `living_participants` to pick each attacker — so a
+			## four-strong Blade Storm that loses a member still threw 8 strikes, all from the 3 alive.
+			var hit_count: int = _living_count(participants) * 2
 			for _hit in range(hit_count):
 				# Re-filter alive targets each hit (enemies may die mid-storm)
 				var living_enemies = alive_enemies.filter(func(e): return e.is_alive)
@@ -4987,6 +4990,49 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		_trigger_monster_counter(target, caster)
 
 
+## ⛔ SIXTEEN MONSTER ABILITIES AUTHORED A STAT-DOWN THAT REACHED A DEAD TOKEN. The six stat-down
+## effects are handled in `_execute_support_ability`'s match, keyed on the effect NAME — so a SUPPORT
+## ability authoring `speed_down` gets a real `add_debuff`, and a MAGIC or PHYSICAL one authoring the
+## same string falls to `_apply_ability_status`, which wrote `add_status("speed_down")`: a token with
+## ZERO `has_status` consumers anywhere in src/. 13 magic + 4 physical, every one monster-cast.
+##
+## Nothing is invented here. `oxidize` authors stat_modifier 0.6 for 4 turns and says "massively
+## reducing defense"; `armor_break` authors 0.5 for 3 and says "shatters armor". The magnitude, the
+## duration and the effect name were all already in the data, read with the SAME defaults the
+## working path uses.
+##
+## ⚠️ THIS MIRRORS THE SUPPORT ARMS RATHER THAN OWNING THEM, DELIBERATELY: those arms are
+## non-contiguous inside a 700-line match and folding them in is a separate change with its own
+## risk. `test_a_stat_down_means_the_same_thing_on_both_paths` asserts the two agree, per CLAUDE.md's
+## redundant-source rule — assert AGREEMENT, never model precedence.
+##
+## ⚠️ `magic_down` is NOT handled: it has no owner on EITHER path, so giving it one would be new
+## behaviour with an invented debuff name rather than wiring. Declared, not fixed.
+func _apply_stat_down(target: Combatant, effect: String, stat_modifier: float, duration: int) -> bool:
+	match effect:
+		"defense_down":
+			target.add_debuff("Armor Break", "defense", stat_modifier, duration)
+			battle_log_message.emit("[color=%s]%s's armor is broken![/color] (DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		"magic_defense_down":
+			target.add_debuff("Soul Sap", "magic_defense", stat_modifier, duration)
+			battle_log_message.emit("[color=%s]%s's magic defense is sapped![/color] (M.DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		"attack_down":
+			target.add_debuff("Weaken", "attack", stat_modifier, duration)
+			battle_log_message.emit("[color=%s]%s is weakened![/color] (ATK -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		"speed_down":
+			target.add_debuff("Slow", "speed", stat_modifier, duration)
+			battle_log_message.emit("[color=%s]%s slows down![/color] (SPD -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		"all_stats_down":
+			target.add_debuff("Despair (ATK)", "attack", stat_modifier, duration)
+			target.add_debuff("Despair (DEF)", "defense", stat_modifier, duration)
+			target.add_debuff("Despair (SPD)", "speed", stat_modifier, duration)
+			target.add_debuff("Despair (MAG)", "magic", stat_modifier, duration)
+			battle_log_message.emit("[color=%s]%s sinks into Despair![/color] (all stats -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		_:
+			return false
+	return true
+
+
 ## ⛔ ONE OWNER FOR THE POST-DAMAGE STATUS APPLY. This block lived VERBATIM in BOTH
 ## _execute_physical_ability and _execute_magic_ability, so every rule it carries — the random_debuff
 ## 1.0 default, the freeze->stun and burn->burning aliases — had to be written twice to be true, and
@@ -5044,6 +5090,10 @@ func _apply_ability_status(caster: Combatant, target: Combatant, ability: Dictio
 		_inflict_doom(target, int(ability.get("countdown", 3)))
 		return
 	var duration: int = int(ability.get("duration", 3))
+	## A stat-down is a DEBUFF, not a status token — see _apply_stat_down.
+	var stat_modifier: float = float(ability.get("stat_modifier", ability.get("modifier", 1.0)))
+	if _apply_stat_down(target, status_to_add, stat_modifier, duration):
+		return
 	target.add_status(status_to_add, duration)
 	battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
 
