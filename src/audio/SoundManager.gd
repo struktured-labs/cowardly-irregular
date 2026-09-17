@@ -713,13 +713,21 @@ func play_ui(sound_key: String) -> void:
 	_play_sound(_ui_player, SOUNDS[sound_key])
 
 
+## The battle channel's level for a cue: its base plus any authored trim. ONE owner, because
+## volume_db PERSISTS on the shared player — a caller passing NAN inherits whatever the previous
+## cue left. Measured 2026-09-17: advance_undo (+6) left every following hit 6 dB LOUD and
+## corruption_ap_flicker (-6) left them 6 dB QUIET, until some other cue set an explicit level.
+func _battle_level(sound_key: String) -> float:
+	return SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+
+
 func play_battle(sound_key: String) -> void:
 	"""Play a battle sound effect — world variant first, then default, else procedural"""
 	# Cycle #13: play_ability was the ONLY prefix-aware path, so an authored
 	# w4_enemy_death could never be reached from the battle side.
 	var world_key: String = _get_world_sfx_prefix() + sound_key
 	# Explicit level on EVERY call, matching play_ui: volume_db persists on the shared player, so one trimmed cue would otherwise quiet every battle sound after it.
-	var level: float = SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	var level: float = _battle_level(sound_key)
 	if world_key != sound_key and _try_play_sfx_from_manifest(_battle_player, world_key, level):
 		return
 	if _try_play_sfx_from_manifest(_battle_player, sound_key, level):
@@ -830,7 +838,7 @@ func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
 	if player == null:
 		play_battle(sound_key)
 		return
-	var level: float = SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	var level: float = _battle_level(sound_key)
 	var world_key: String = _get_world_sfx_prefix() + sound_key
 	if world_key != sound_key and _try_play_sfx_from_manifest(player, world_key, level):
 		return
@@ -865,10 +873,10 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 	var bias: float = _combo_pitch_bias()
 	if not weapon_type.is_empty():
 		var per_weapon_key = "attack_hit_%s%s" % [weapon_type, suffix]
-		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key, NAN, bias):
+		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key, _battle_level(per_weapon_key), bias):
 			_advance_hit_chain()
 			return
-	if _try_play_sfx_from_manifest(_battle_player, generic_key, NAN, bias):
+	if _try_play_sfx_from_manifest(_battle_player, generic_key, _battle_level(generic_key), bias):
 		_advance_hit_chain()
 		return
 	if not SOUNDS.has(generic_key):
@@ -1226,7 +1234,7 @@ func play_footstep(terrain: String = "grass") -> void:
 func play_status(status_name: String) -> void:
 	"""Play sound for a status effect application (poison, sleep, confuse, paralyze, etc.)"""
 	var key = "status_" + status_name.to_lower()
-	if _try_play_sfx_from_manifest(_battle_player, key):
+	if _try_play_sfx_from_manifest(_battle_player, key, _battle_level(key)):
 		return
 	if SOUNDS.has(key):
 		_play_sound(_battle_player, SOUNDS[key])
@@ -1241,7 +1249,7 @@ func play_status_if_authored(sound_key: String) -> bool:
 	## and this return is documented by its caller (BattleScene._cue_if_turn_skipped) as "whether the
 	## cue actually fired, so a test can assert BEHAVIOUR" — a claim the raw return cannot support.
 	## Measured: two skips in one frame both returned true, the second having played nothing.
-	if not _try_play_sfx_from_manifest(_battle_player, sound_key):
+	if not _try_play_sfx_from_manifest(_battle_player, sound_key, _battle_level(sound_key)):
 		return false
 	return not _sfx_suppressed_by_cooldown
 
