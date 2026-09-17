@@ -573,8 +573,16 @@ fi
 # and the only .pck on disk belongs to web. The web gate covered ONE of the three channels this
 # lane publishes and said nothing about two; this reads the pack out of the binary itself.
 # Measured on both real artifacts: 2758 entries in the .x86_64, 2956 in the .exe.
-_RAW_CHECK="$(cd "$(dirname "$0")" && pwd)/check_raw_assets_shipped.py"
-_RAW_SELFTEST="$(cd "$(dirname "$0")" && pwd)/check_raw_assets_shipped_selftest.py"
+# ⛔ _RAW_TOOLS IS DEFINED HERE BECAUSE GATE 3d BELOW USES IT AND THIS FILE NEVER DEFINED IT.
+# Measured on the v3.33.409-alpha publish, the first time either gate ran in a real chain:
+#   ./tools/deploy_desktop.sh: line 599: _RAW_TOOLS: unbound variable
+# Gate 3c passed (29/29 raw assets, all six overworld maps present) and the chain then died
+# under `set -u` on the very next gate, taking the whole publish with it -- 38 tags behind.
+# Cause: one block template applied to two files with different preludes. deploy_web.sh defines
+# _RAW_TOOLS; this file defined _RAW_CHECK inline and nothing else.
+_RAW_TOOLS="$(cd "$(dirname "$0")" && pwd)"
+_RAW_CHECK="${_RAW_TOOLS}/check_raw_assets_shipped.py"
+_RAW_SELFTEST="${_RAW_TOOLS}/check_raw_assets_shipped_selftest.py"
 [ -f "$_RAW_CHECK" ] && [ -f "$_RAW_SELFTEST" ] || {
     echo "[${PLAT}] BLOCKED: check_raw_assets_shipped.py or its selftest is missing -- nothing" >&2
     echo "        would check that a raw-bytes read has bytes to read in this binary." >&2
