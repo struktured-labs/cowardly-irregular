@@ -77,12 +77,18 @@ _merged_branches() {
         case "$subj" in
             "Merge remote-tracking branch '"*)
                 local name="${subj#Merge remote-tracking branch \'}"
-                name="${name%\'}"
+                # ⛔ `${name%\'}` strips a TRAILING apostrophe, and the fold's subject does not
+                # end in one: it ends `' (68bcd7a39)`. So 47 of 69 lines in the note for
+                # v3.33.383-alpha read
+                #     lane/a-theater-verdict-is-guarded-not-measured' (68bcd7a39)
+                # A branch name cannot contain an apostrophe, so cutting at the FIRST one is
+                # exact and handles both shapes — with the sha suffix and without.
+                name="${name%%\'*}"
                 name="${name#origin/}"
                 printf '%s\t%s\n' "$sha" "$name" ;;
             "Merge branch '"*)
                 local name="${subj#Merge branch \'}"
-                name="${name%\'}"
+                name="${name%%\'*}"
                 printf '%s\t%s\n' "$sha" "$name" ;;
             *) printf '%s\t%s\n' "$sha" "[unparsed] $subj" ;;
         esac
@@ -197,6 +203,20 @@ gated: cafe1234 scripts=11 tests=111 passing=111 failing=0"
     local out
     out="$(cd "$d" && bash "$SELF" v3.33.101-alpha --prev v3.33.100-alpha)"
     _has   "a merged branch APPEARS"                    "$out" "lane/landed"
+    # ⛔ THE FIXTURE ABOVE USES A SHAPE MAIN DOES NOT PRODUCE. Its merge subject ends at the
+    # closing quote; every real fold ends `' (68bcd7a39)`. The old stripper removed a TRAILING
+    # apostrophe, which the real shape does not have — so 47 of 69 lines in v3.33.383-alpha's
+    # note read `lane/a-theater-verdict-is-guarded-not-measured' (68bcd7a39)` while this
+    # selftest stayed green. A fixture that cannot carry the defect cannot catch it.
+    (cd "$d" && git checkout -q main 2>/dev/null || git checkout -q master 2>/dev/null
+     git checkout -qb lane/suffixed 2>/dev/null; echo s > s.txt; git add s.txt; git commit -qm s
+     git checkout -q - 2>/dev/null
+     git merge -q --no-ff lane/suffixed -m "Merge remote-tracking branch 'origin/lane/suffixed' (deadbeef)"
+     git tag -a v3.33.104-alpha -m "v3.33.104-alpha" >/dev/null 2>&1) >/dev/null 2>&1
+    local outs; outs="$(cd "$d" && bash "$SELF" v3.33.104-alpha --prev v3.33.101-alpha)"
+    _has   "the REAL fold subject yields a clean name"  "$outs" "lane/suffixed"
+    _hasnt "  ...with no trailing quote"                "$outs" "lane/suffixed'"
+    _hasnt "  ...and no merge sha glued to it"          "$outs" "deadbeef)"
     _hasnt "a branch that did NOT merge is ABSENT"      "$out" "never-landed"
     _has   "the gate evidence line is carried"          "$out" "scripts=11 tests=111 passing=111 failing=0"
     _hasnt "...and it is THIS tag's, not the previous"  "$out" "scripts=10"

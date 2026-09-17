@@ -3794,6 +3794,29 @@ func _execute_group_action(action: Dictionary) -> void:
 	_execute_next_action()
 
 
+## ⛔ THE SCALE COUNTED THE DEAD AND THE POWER DID NOT. All three group paths sum attack/magic from
+## LIVING participants only — the `is_alive` guard sits three lines above each scale line — and then
+## raised `participants.size()`, the UNFILTERED roster, to the 1.5 power. A member KO'd between the
+## selection phase and the execution phase contributed no power, paid no AP, and still inflated the
+## multiplier: a four-strong Limit Break that loses one member hit for pow(4,1.5)/pow(3,1.5) = 1.54x
+## what three members should land. The three `is_alive` guards are the proof the case is reachable —
+## they are dead code otherwise, and the roster is fixed at selection while execution is speed-sorted.
+func _living_count(participants: Array) -> int:
+	var n: int = 0
+	for p in participants:
+		if p is Combatant and p.is_alive:
+			n += 1
+	return n
+
+
+func _group_scale(participants: Array) -> float:
+	var contributing: int = 0
+	for p in participants:
+		if p is Combatant and p.is_alive:
+			contributing += 1
+	return pow(float(maxi(1, contributing)), 1.5)
+
+
 func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant], group_type: String, ap_cost: int) -> void:
 	"""Execute All-Out Attack or Limit Break — physical combined damage"""
 	var is_limit_break: bool = group_type == "limit_break"
@@ -3806,7 +3829,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 	if is_limit_break:
 		battle_log_message.emit("[color=gold]★★★ LIMIT BREAK! ★★★[/color]")
 	else:
-		battle_log_message.emit("[color=orange]All-Out Attack![/color] (%d participants)" % participants.size())
+		battle_log_message.emit("[color=orange]All-Out Attack![/color] (%d participants)" % _living_count(participants))
 	var total_power: float = 0.0
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
@@ -3814,7 +3837,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 		p.spend_ap(ap_cost)
 		total_power += p.get_buffed_stat("attack", p.attack)
 
-	var scale: float = pow(participants.size(), 1.5)
+	var scale: float = _group_scale(participants)
 	var lb_dmg_mult: float = 3.0
 	for enemy in alive_enemies:
 		if not enemy.is_alive:
@@ -3865,7 +3888,7 @@ func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], 
 	var combo_element: String = combo.get("element", "")
 	var bonus: String = combo.get("bonus_effect", "")
 
-	var scale: float = pow(participants.size(), 1.5)
+	var scale: float = _group_scale(participants)
 	battle_log_message.emit("[color=magenta]★ %s! ★[/color]" % combo_name)
 
 	for enemy in alive_enemies:
@@ -3924,7 +3947,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 		if p is Combatant and p.is_alive:
 			p.spend_ap(ap_cost)
 
-	var scale: float = pow(participants.size(), 1.5)
+	var scale: float = _group_scale(participants)
 
 	match formation_id:
 		"four_heroes":

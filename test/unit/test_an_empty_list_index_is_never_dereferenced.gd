@@ -207,3 +207,39 @@ func test_a_locally_guarded_clamp_keeps_its_emptiness_check() -> void:
 		assert_true(clamp_guarded or _opened_by(src, spec["wrapper"], bound),
 			"%s clamps against %s with neither a low bound nor `%s` as the block it sits in"
 			% [spec["name"], spec["list"], spec["wrapper"]])
+
+
+## ⛔ ARM B — PIN THE MECHANISM, NOT THE OUTCOME (cowir-battle's shape, after cowir-sfx measured the
+## gap in their own repair). The arm above currently proves `_opened_by` works by RESULT: delete
+## CutsceneGallery's enclosing guard and it reds. But revert `_opened_by` to a positional find and
+## that same mutation PASSES, because the file's two sibling copies keep any find()-based bound
+## satisfied. So the outcome proof cannot see the binding silently reverting to the defect it fixed.
+func test_the_locally_guarded_arm_binds_by_indentation_not_by_position() -> void:
+	var own := FileAccess.get_file_as_string(
+		"res://test/unit/test_an_empty_list_index_is_never_dereferenced.gd")
+	assert_gt(own.length(), 0, "this file must be able to read itself")
+	var at := own.find("func test_a_locally_guarded_clamp_keeps_its_emptiness_check")
+	assert_gt(at, -1, "CONTROL: the arm must exist, or this pin is about nothing")
+	var rest := own.substr(at)
+	var nxt := rest.find("\nfunc ")
+	var arm_body: String = rest if nxt < 0 else rest.substr(0, nxt)
+	assert_true(arm_body.contains("_opened_by("),
+		"the locally-guarded arm no longer binds structurally — a positional bound cannot tell "
+		+ "CutsceneGallery's enclosing guard from its two sibling copies")
+	assert_false(arm_body.contains("find(spec[\"wrapper\"])"),
+		"the arm is locating its guard by POSITION again; that is the defect _opened_by replaced")
+
+
+## The mechanism itself, on SYNTHETIC input, because no live file can distinguish a correct bound
+## from a lucky one: CutsceneGallery's siblings all precede the clamp, so a positional bound scores
+## the same as a structural one there. Constructed input is the only place the difference shows.
+func test_opened_by_distinguishes_the_enclosing_block_from_a_sibling() -> void:
+	var src := "func demo():\n\tif not items.is_empty():\n\t\tvar a = 1\n\tif true:\n\t\tvar b = TARGET\n"
+	assert_false(_opened_by(src, "if not items.is_empty():", "TARGET"),
+		"a needle inside a LATER sibling branch must not read as opened by the earlier guard")
+	var src2 := "func demo():\n\tif true:\n\t\tvar a = 1\n\tif not items.is_empty():\n\t\tvar b = TARGET\n"
+	assert_true(_opened_by(src2, "if not items.is_empty():", "TARGET"),
+		"a needle directly inside the guard's block must read as opened by it")
+	var src3 := "func demo():\n\tif not items.is_empty():\n\t\tvar a = 1\n\tvar b = TARGET\n"
+	assert_false(_opened_by(src3, "if not items.is_empty():", "TARGET"),
+		"a needle AFTER the block, at the guard's own indentation, is outside it")

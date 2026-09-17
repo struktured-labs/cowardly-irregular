@@ -609,6 +609,9 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	If set, overrides volume (used by play_battle_scaled)."""
 	if not _sfx_manifest.has(sound_key):
 		return false
+	## Cleared here, set at the cooldown gate below: `true` from this function means HANDLED, not
+	## HEARD, and the combo ramp needs the difference. See _combo_step.
+	_sfx_suppressed_by_cooldown = false
 
 	# Cooldown: skip if same sound played too recently (prevents pileup at high battle speeds)
 	# LOAD-BEARING BEYOND ITS NAME: this stamp is also the only thing bounding the fallback_to
@@ -618,6 +621,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	var now_ms = Time.get_ticks_msec()
 	var last_played = _sfx_cooldowns.get(sound_key, 0)
 	if now_ms - last_played < SFX_MIN_INTERVAL_MS:
+		_sfx_suppressed_by_cooldown = true
 		return true  # Return true to suppress procedural fallback too
 	_sfx_cooldowns[sound_key] = now_ms
 
@@ -855,15 +859,17 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 	var generic_key = "critical_hit" if is_crit else "attack_hit"
 	# Step 0 yields exactly 1.0, so a non-chained hit is bit-identical to the pre-ramp path.
 	var bias: float = _combo_pitch_bias()
-	_combo_step += 1
 	if not weapon_type.is_empty():
 		var per_weapon_key = "attack_hit_%s%s" % [weapon_type, suffix]
 		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key, NAN, bias):
+			_advance_hit_chain()
 			return
 	if _try_play_sfx_from_manifest(_battle_player, generic_key, NAN, bias):
+		_advance_hit_chain()
 		return
 	if not SOUNDS.has(generic_key):
 		return
+	_combo_step += 1  # procedural path has no cooldown: it always sounds
 	if is_crit:
 		var params = SOUNDS[generic_key].duplicate()
 		params["volume_db"] = 2.0
@@ -879,6 +885,20 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 
 ## Consecutive-hit pitch bias. Reset per ACTION by the caller — an unreset counter would ramp across a whole battle.
 var _combo_step: int = 0
+
+## Set by _try_play_sfx_from_manifest: its `true` means HANDLED, and the cooldown branch returns
+## true without sounding anything. Only the combo ramp needs the distinction.
+var _sfx_suppressed_by_cooldown: bool = false
+
+
+## The ramp counts hits the player HEARD, not play_attack_hit CALLS.
+## A participant striking N targets fires N same-key hits in ONE frame (BattleScene:4025); the
+## per-key cooldown sounds the first and suppresses the rest, which is correct — identical
+## same-frame samples comb-filter. Counting the silent ones drove the bias straight to its cap
+## with nothing audible causing it: measured 5 calls -> 1 play, _combo_step 5, bias 1.12 = CAP.
+func _advance_hit_chain() -> void:
+	if not _sfx_suppressed_by_cooldown:
+		_combo_step += 1
 
 
 func _combo_pitch_bias() -> float:
@@ -1963,6 +1983,11 @@ func play_music(track: String, exact: bool = false) -> void:
 	already holds a manifest key (the Jukebox lists ids, so "danger" there means
 	the bed called danger, not danger_<wherever the player happens to stand>)."""
 	if _current_music == track and _music_playing:
+		## ⛔ SAME EXPOSURE AS play_area_music's, and this one is sharper: the tween kill below
+		## sits AFTER this return, so "already playing" skips the very cleanup this function owns.
+		## Measured 2026-09-17 on the shipped code — play battle_medieval, fade 0.3 s, ask for the
+		## SAME track: playing=true at the call, playing=false 0.6 s on.
+		_cancel_pending_fade()
 		return  # Already playing
 
 	# Capture here, ABOVE the clear below — not at the old site further down,
@@ -2188,6 +2213,27 @@ func stop_music() -> void:
 	_stinger_resume_state = {}
 	if _music_player:
 		_music_player.stop()
+	if _music_player_b:
+		_music_player_b.stop()
+
+
+## Cancel a fade-out that is still running, and put back what it had already taken.
+##
+## ⛔ BOTH "ALREADY PLAYING" EARLY RETURNS NEED THIS. fade_out_music leaves _music_playing
+## TRUE until its callback fires, so during a fade that condition is true of a bed one tween from
+## silence — and both returns skip the stop/kill path that would have cancelled it. A caller
+## asking for a track that is "already playing" wants it to KEEP playing.
+##
+## Restoring the level is not optional: the fade has already pulled volume_db down, so killing the
+## tween alone leaves the bed sounding quietly forever, which reads as a mix bug. B is always the
+## OUTGOING bed, so it is stopped rather than resurrected.
+func _cancel_pending_fade() -> void:
+	if not (_crossfade_tween and _crossfade_tween.is_valid()):
+		return
+	_crossfade_tween.kill()
+	_crossfade_tween = null
+	if _music_player:
+		_music_player.volume_db = _music_base_db
 	if _music_player_b:
 		_music_player_b.stop()
 
@@ -5084,6 +5130,15 @@ func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
 	"""Play appropriate music for an exploration area.
 	Generation is deferred to the next frame so it does not block scene setup."""
 	if _current_area == area_type and _music_playing:
+		## ⛔ A PENDING FADE-OUT OUTLIVES THIS RETURN. fade_out_music's callback stops BOTH
+		## players and clears _current_music, and it leaves _music_playing true until it fires —
+		## so "already playing" is true of a bed that is one tween away from silence. A cutscene
+		## that faded the field bed and then restored the SAME area returned early into that tween
+		## and the bed died a second later, silent until the player changed area.
+		## Measured 2026-09-17: playing=true at the call, playing=false 0.6 s on.
+		## The caller is asking for this area to PLAY, so cancel the fade rather than return into
+		## it — and restore the level the fade had already pulled down.
+		_cancel_pending_fade()
 		return  # Already playing
 
 	# Interior sub-area keys inherit the current (village) bed when their track

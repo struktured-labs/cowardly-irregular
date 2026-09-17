@@ -38,6 +38,7 @@ cd "$(cd "$(dirname "$0")/.." && pwd)"
 # v3.33.349-alpha off the store for hours more -- until it was launched by hand with the gate
 # narrowed. `obs-ffmpeg-mux` is the recording muxer: it exists only while a file is written.
 OWNER_PROCS="${PUBLISH_OWNER_PROCS:-quartus obs-ffmpeg-mux}"
+MUX_PROC="${PUBLISH_MUX_PROC:-obs-ffmpeg-mux}"
 
 # Is OBS LIVE? Recording, streaming and the replay buffer all run an encoder, and only the first
 # has a process of its own -- a stream is an in-process socket, a replay buffer is RAM. OBS
@@ -64,6 +65,38 @@ _obs_live_outputs() {
 }
 
 # Prints one reason per line; empty output means OBS is not a reason to wait.
+# Is the capture actually being WRITTEN? The markers say what OBS last declared; this says what
+# the muxer is doing right now. Prints "growing", "static", or "" when there is nothing to watch.
+#
+# WHY THIS IS CORROBORATION AND NEVER AN OVERRIDE
+# -----------------------------------------------
+# The residual gap in this gate: OBS alive, log says Start with no Stop, encoder actually hung.
+# The markers then say live forever and the store waits on a hold that is false. cowir-main
+# proposed a CPU sample; I declined it, because the only thing a low sample can do is RELEASE a
+# hold the markers justify, and a two-sample delta reads idle during a scene change. A false
+# hold costs an hour; a false launch costs him the broadcast.
+#
+# File growth is the better signal — direct evidence about the thing that matters rather than a
+# proxy for it — and it STILL must not release, for a reason measured 2026-09-17: this OBS logs
+# no pause markers at all (only Recording/Streaming Start/Stop across the whole session). A
+# PAUSED recording and a HUNG one are both a static file, and pausing is something he does on
+# purpose. Nothing available here distinguishes them.
+#
+# So it reports. When the markers and the file DISAGREE, that is the anomaly worth printing —
+# loudly, next to a hold that still holds.
+_capture_growth() {
+    # PUBLISH_CAPTURE_FILE is a seam for the selftest: discovery needs a live muxer, and an arm
+    # that cannot produce the STATIC case would only ever test the half that already works.
+    local f; f="${PUBLISH_CAPTURE_FILE:-$(pgrep -af "$MUX_PROC" 2>/dev/null | command grep -av 'pgrep' \
+                  | command grep -aoE '/[^ ]+\.(mkv|mp4|flv|mov)' | head -1)}"
+    [ -n "$f" ] && [ -r "$f" ] || return 0
+    local a b; a="$(stat -c%s "$f" 2>/dev/null)" || return 0
+    sleep "${CAPTURE_SAMPLE_SECS:-3}"
+    b="$(stat -c%s "$f" 2>/dev/null)" || return 0
+    if [ "${b:-0}" -gt "${a:-0}" ]; then printf 'growing %s' "$(( b - a ))"
+    else printf 'static'; fi
+}
+
 _obs_busy() {
     local pid; pid=$(pgrep -x "$OBS_PROC" 2>/dev/null | head -1)
     [ -n "$pid" ] || return 0                               # not running: nothing to protect
@@ -173,6 +206,16 @@ case "${1:-}" in
                 if [ "$_busy" -gt 0 ] || [ -n "$_obs" ]; then
                     [ "$_busy" -gt 0 ] && echo "[check] HELD: ${_busy} process(es) matching '${OWNER_PROCS}' are running."
                     [ -n "$_obs" ] && printf '[check] HELD: %s\n' "$_obs"
+                    # corroboration, never a verdict — see _capture_growth
+                    _g="$(_capture_growth)"
+                    case "$_g" in
+                        growing*) printf '[check]   corroborated: the capture file is GROWING (+%s bytes in %ss)\n' \
+                                         "${_g#growing }" "${CAPTURE_SAMPLE_SECS:-3}" ;;
+                        static)   echo "[check]   ⚠ ANOMALY: OBS reports live output and the capture file is NOT growing." ;
+                                  echo "[check]     A paused recording and a hung encoder look identical from here — this" ;
+                                  echo "[check]     OBS logs no pause markers — so the hold STANDS and is not released on" ;
+                                  echo "[check]     this signal. Worth a look if it persists." ;;
+                    esac
                     echo "[check] A publish would REFUSE right now. That is struktured's own work on his"
                     echo "[check] own machine; re-run when it is done. Nothing here launches anything."
                     exit 2
@@ -303,6 +346,27 @@ _chk_mode() {  # label want_ec want_text
     chk "$1" "$ec" "$2"
     case "$out" in *"$3"*) chk "  ...and says why" yes yes ;; *) chk "  ...and says why ($3)" "no" "yes" ;; esac
 }
+# ── the capture-growth corroboration: reports, never decides ────────────────────────────
+# Both directions, and the load-bearing pair is that the VERDICT is HELD either way — a signal
+# that could release a hold is the one thing this must not become.
+_grow="$T/cap.mkv"; : > "$_grow"
+_chk_cap() {  # label want_ec want_text   (file prepared by the caller)
+    local out ec
+    out=$(PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="bash" PUBLISH_OBS_LOG_DIR="$O" \
+          PUBLISH_CAPTURE_FILE="$_grow" CAPTURE_SAMPLE_SECS=1 \
+          ./tools/publish_detached.sh --check 2>&1); ec=$?
+    chk "$1" "$ec" "$2"
+    case "$out" in *"$3"*) chk "  ...and says so" yes yes ;; *) chk "  ...and says so ($3)" "no" "yes" ;; esac
+}
+_obslog "$S_START"
+( sleep 0.3; printf 'xxxxxxxxxxxxxxxx' >> "$_grow" ) &
+_chk_cap "a GROWING capture corroborates the hold" 2 "capture file is GROWING"
+wait
+_chk_cap "a STATIC capture is an ANOMALY"          2 "ANOMALY"
+_chk_cap "  ...and the hold STILL stands"          2 "hold STANDS"
+rm -f "$_grow"
+_chk_cap "no capture file at all -> no corroboration line" 2 "OBS is live: Streaming"
+
 _obslog "$S_START";           _chk_mode "--check while streaming -> HELD"        2 "OBS is live: Streaming"
 _obslog "$S_START" "$S_STOP"; _chk_mode "--check with nothing live -> CLEAR"     0 "CLEAR: a publish would start now"
 # ⛔ AND IT MUST NOT HAVE LAUNCHED ANYTHING ON THE WAY TO THAT ANSWER — a check that publishes
