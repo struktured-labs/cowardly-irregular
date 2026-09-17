@@ -233,6 +233,71 @@ func test_a_priority_ability_queued_by_advance_still_goes_first() -> void:
 			"a priority ability queued through ADVANCE did not outrank a faster combatant's ordinary action — the offset is applied on one selection path and not the other")
 
 
+func test_the_advance_fallback_is_unreachable_and_proves_it_arithmetically() -> void:
+	## THE THIRD ability-carrying route, found by @cowir-cutscenes' rule — enumerate from the
+	## DISPATCHER, not from the feature. I had enumerated mine as "single action" and "Advance", which
+	## is my model of the feature; the call sites say EIGHT. One of them is the `else` taken when a
+	## caster cannot afford its queued cost, and it has its own _speed_for call.
+	##
+	## ⛔ IT CANNOT RUN. I wrote a behavioural arm for it first and it reported the ninja selecting
+	## nothing — an indebted caster forfeits the turn before reaching this branch. Rather than hunt an
+	## AP value that makes it fire, the arithmetic says none exists:
+	##   the debt guard forfeits below 0 and then grants +1, so the branch is reached at current_ap >= 1
+	##   _apply_full_bank_rule caps the queue, so the bill is at most ADVANCE_CAP (4), or
+	##   billed_ap(FULL_BANK_AP, FULL_BANK_ACTIONS) = 4 at a full bank
+	##   can_brave is (current_ap - cost) >= -4, and the worst case 1 - 4 = -3 clears it
+	## So this arm asserts the UNREACHABILITY from the live constants instead of asserting a
+	## behaviour. The day a cap rises or the debt floor moves, it reds and asks for the real arm —
+	## which is the point: a dead branch that quietly comes alive is how a route escapes a census.
+	var bm = _res._get_autoload("BattleManager")
+	assert_ne(bm, null, "CONTROL: BattleManager must be reachable, or this arm proves nothing")
+	var cap = bm.get("ADVANCE_CAP")
+	var fb_ap = bm.get("FULL_BANK_AP")
+	var fb_actions = bm.get("FULL_BANK_ACTIONS")
+	assert_ne(str(cap), "<null>", "CONTROL: ADVANCE_CAP is readable")
+	assert_ne(str(fb_ap), "<null>", "CONTROL: FULL_BANK_AP is readable")
+	assert_ne(str(fb_actions), "<null>", "CONTROL: FULL_BANK_ACTIONS is readable")
+	var floor_ap: int = 1
+	var cost_capped: int = int(bm.billed_ap(floor_ap, int(cap)))
+	var cost_full_bank: int = int(bm.billed_ap(int(fb_ap), int(fb_actions)))
+	var prober := _hero("Prober", 5)
+	prober.current_ap = floor_ap
+	var affords_capped: bool = prober.can_brave(cost_capped)
+	prober.current_ap = int(fb_ap)
+	var affords_full_bank: bool = prober.can_brave(cost_full_bank)
+	gut.p("    worst case: ap %d vs cost %d -> %s | full bank: ap %d vs cost %d -> %s" % [
+		floor_ap, cost_capped, affords_capped, int(fb_ap), cost_full_bank, affords_full_bank])
+	assert_true(affords_capped,
+		"the Advance FALLBACK is now reachable at the debt floor (ap %d cannot afford cost %d) — it carries a priority ability and needs a behavioural arm, not this declaration" % [floor_ap, cost_capped])
+	assert_true(affords_full_bank,
+		"the Advance FALLBACK is now reachable at a full bank (ap %d cannot afford cost %d) — same: write the behavioural arm" % [int(fb_ap), cost_full_bank])
+
+
+## Eight, measured from the call sites rather than from my model of the feature. Routes 1-3 and 7
+## carry a confused ATTACK, which has no ability_id and so can never be a priority action; the enemy
+## routes can carry an ability but no monster authors `priority` today (pinned in the reachability
+## arm). The three player ability routes are each driven by an arm above.
+const SPEED_ROUTES_IN_SELECTION := 8
+
+func test_no_selection_route_escapes_this_file_unnoticed() -> void:
+	## ⛔ THE RATCHET THE ROUTE RULE NEEDS. Covering the routes I thought of is what I did the first
+	## time; this makes a NEW one announce itself instead of inheriting the default `.get("speed", 0)`
+	## quietly. It pins a COUNT deliberately — the quantity that must not grow unnoticed IS the number
+	## of routes, so the count is the subject here rather than a coincidence standing in for one.
+	var code: String = GdSource.code_of(GRIND)
+	assert_gt(code.length(), 10000, "CONTROL: the resolver was actually read")
+	var at: int = code.find("func _selection_phase")
+	assert_gt(at, 0, "CONTROL: the selection phase must be locatable")
+	var body: String = code.substr(at, code.find("\nfunc ", at + 10) - at)
+	var in_body: int = body.count("_speed_for(")
+	var everywhere: int = code.count("_speed_for(") - 1   ## minus its own declaration
+	gut.p("    _speed_for call sites: %d in _selection_phase, %d in the file" % [in_body, everywhere])
+	assert_eq(in_body, SPEED_ROUTES_IN_SELECTION,
+		"the number of selection routes changed — drive the new one in an arm here, or raise this count with the reason it cannot carry a priority ability")
+	assert_eq(everywhere, SPEED_ROUTES_IN_SELECTION,
+		"an action is now given a speed OUTSIDE _selection_phase, so this file's route census no longer covers every route: %d vs %d" % [everywhere, in_body])
+
+
 const _FLOOR_ARM_NAME := "test_every_resolver_member_this_file_reaches_still_exists"
 const _PINNED_MEMBERS := ["_ability_has_priority", "_enemy_party", "_get_autoload", "_player_party", "_selection_phase", "_speed_for"]
 
