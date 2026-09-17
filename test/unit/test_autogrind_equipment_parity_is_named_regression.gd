@@ -428,3 +428,35 @@ func test_this_axis_is_invisible_to_the_abilities_ledger() -> void:
 		"a key is authored in BOTH corpora and neither census claims it, so each may assume the other owns it: %s" % str(unnamed))
 	assert_gt(OVERLAP_OWNED.size(), 0,
 		"the overlap has emptied — if no key is shared any more, delete OVERLAP_OWNED deliberately rather than leaving it asserting nothing")
+
+
+## ⚠️ A THIRD CONSTRUCTION FAMILY, and the one this file was BLIND TO: TABLE INDIRECTION.
+## `_apply_equipment_on_hit_status` reads `_sum_equipment_special_effect(attacker, str(entry["key"]))`
+## — there is no literal key at the call site at all. `poison_chance` and `sleep_chance` census as
+## consumed ONLY because ON_HIT_STATUSES spells them in a dict VALUE position, which `_consumer_lines`'
+## `^"key":` data-skip does not recognise as data. TWO ACCIDENTS CANCELLING: refactor the table to
+## build its keys and both would read as inert, with nothing here able to say otherwise.
+## The derived-key arm cannot cover it — that one scans for `+ "suffix"`, and this shape concatenates
+## nothing. So the coverage becomes DECLARED rather than accidental, and a third on-hit status has to
+## be censused instead of arriving silently correct.
+func test_every_on_hit_status_key_is_censused() -> void:
+	var grind: String = GdSource.code_of(GRIND)
+	var start: int = grind.find("const ON_HIT_STATUSES")
+	assert_gt(start, -1,
+		"ON_HIT_STATUSES is gone from the resolver — this arm's subject moved, and a green from it would be about nothing")
+	var close: int = grind.find("]", start)
+	assert_gt(close, start, "could not find the end of the ON_HIT_STATUSES literal — the extraction is broken, not the code")
+	var block: String = grind.substr(start, close - start)
+
+	var keys: Array = []
+	for m in RegEx.create_from_string('"key"\\s*:\\s*"([a-z_]+)"').search_all(block):
+		keys.append(m.get_string(1))
+	assert_gt(keys.size(), 0,
+		"derived ZERO keys from ON_HIT_STATUSES — the extraction broke; every count below would be about an empty set")
+
+	var uncensused: Array = []
+	for k in keys:
+		if not (k in GRIND_MODELS):
+			uncensused.append(k)
+	assert_eq(uncensused, [],
+		"an on-hit status key is read through the table and is NOT in GRIND_MODELS, so this census does not account for it: %s" % str(uncensused))
