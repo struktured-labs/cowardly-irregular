@@ -1,20 +1,26 @@
 extends GutTest
 
-## ⛔ A CALL SITE RE-DERIVED AUDIO AVAILABILITY WITH THE PREDICATE ITS OWNER DOCUMENTS AS WRONG.
-## `BattleScene`'s Limit Break stinger built `res://assets/audio/music/job_%s_special.ogg` itself
-## — duplicating the manifest's knowledge of where the file lives — and gated on
-## `ResourceLoader.exists()`. `SoundManager` says twice, at :1777 and :1846, that the call reports
-## FALSE for resources that ARE present in a web PCK.
+## ⛔ A CALL SITE REBUILT A PATH THE MANIFEST OWNS. `BattleScene`'s Limit Break stinger built
+## `res://assets/audio/music/job_%s_special.ogg` itself — duplicating the manifest's knowledge of
+## where the file lives — and gated it with its own existence check.
 ##
-## So the failure is a FALSE NEGATIVE: the file ships, the check says no, and the Limit Break's
-## job stinger is silent on web while desktop is fine. Handed over by cowir-music, who own the
-## predicate and measured that 0 of the 14 `job_*_special` tracks are dropped from the web build —
-## the file is there, only the question was wrong.
+## ⚠️ THE ORIGINAL REASON FOR THIS FIX WAS WRONG AND IS KEPT HERE AS A RETRACTION RATHER THAN
+## EDITED AWAY, because it was published twice in the fleet channel and a silent edit would let the
+## next reader restore it. I wrote that `SoundManager` documents `ResourceLoader.exists()` TWICE as
+## reporting FALSE for resources present in a web PCK. Traced by cowir-music: that is ONE
+## speculative 2026-03-30 comment ("THIS SHOULD FIX…", no test, no repro) and one later citation of
+## it. Then cowir-main MEASURED it inside a real exported PCK on godot 4.4.1:
 ##
-## ⚠️ SEVERITY IS LOW AND STATED AS SUCH: nobody has reproduced a web PCK false negative from here.
-## The evidence is the owner's own twice-written comment, not a reproduction. What this arm pins is
-## that the call site ASKS THE OWNER rather than re-deriving — which is true regardless of how
-## often the underlying predicate actually misfires.
+##     res://tex.png · res://snd.ogg     exists() TRUE · file_exists() FALSE · load() TRUE
+##
+## `ResourceLoader.exists()` is CORRECT for imported resources — it resolves through the packed
+## `.import` sidecar. `FileAccess.file_exists()` is the predicate that is genuinely wrong for them.
+## The old comment named both and was right about one.
+##
+## ⛔ SO THE FIX STANDS ON THE OTHER HALF, WHICH NEVER DEPENDED ON ANY OF THAT: a call site should
+## not re-derive a path the manifest owns. `music_is_available()` reads the manifest for the path,
+## which is why `BattleScene` now contains no hand-built music path at all. It costs nothing —
+## `_try_play_from_manifest` loads the same path one line later and Godot caches by path.
 
 const GdSourceHelper = preload("res://test/unit/helpers/gd_source.gd")
 const BS_PATH := "res://src/battle/BattleScene.gd"
@@ -32,9 +38,12 @@ func test_the_stinger_asks_the_owner_rather_than_building_a_path() -> void:
 
 
 func test_the_owner_still_uses_load_for_the_reason_this_depends_on() -> void:
-	## ⛔ THE PREMISE ARM. Re-pointing at `music_is_available` is only an improvement while that
-	## function tests with load(). If it is ever changed back to an existence check, this call site
-	## inherits the bug it was moved away from and nothing else would say so.
+	## ⛔ THE PREMISE ARM, AND THE MEASUREMENT CHANGED ITS REASON WITHOUT CHANGING ITS CONTRACT.
+	## It was written because an existence check was thought to be wrong on web. It is not — but
+	## `music_is_available` still owes its caller the AUTHORITATIVE answer, and `load()` is what
+	## gives it: the same load the play path takes one line later, cached by path. cowir-music kept
+	## it for that reason after correcting the comment, and this arm reds if it ever becomes a
+	## cheaper check that answers a different question.
 	var sm: String = GdSourceHelper.code_of(SM_PATH)
 	var at: int = sm.find("func music_is_available(")
 	assert_gt(at, -1, "CONTROL: the owner survives comment stripping")
