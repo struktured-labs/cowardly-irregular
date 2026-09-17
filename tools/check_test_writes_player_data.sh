@@ -47,7 +47,8 @@
 #
 # Usage:   tools/check_test_writes_player_data.sh <name> [<name> ...]
 #          tools/check_test_writes_player_data.sh --selftest      # no live defect required
-#          tools/check_test_writes_player_data.sh --all <substring>   # e.g. autogrind, autobattle
+#          tools/check_test_writes_player_data.sh --all                # every test file; no corpus decision
+#          tools/check_test_writes_player_data.sh --all <substring>    # FILENAME match -- NOT lane coverage
 #          tools/check_test_writes_player_data.sh --all-autogrind        # alias, kept
 # Exit:    0 nothing written · 1 a test left player data · 2 bad invocation
 
@@ -98,13 +99,29 @@ NAMES=()
 case "${1:-}" in
   --all-autogrind) set -- --all autogrind ;;   # kept: the original spelling, now an alias
 esac
+# ⛔ `--all <substring>` SELECTS BY FILENAME, WHICH IS THE CORPUS SHAPE THIS TOOL EXISTS TO
+# REPLACE (@cowir-battle, 2026-09-17). `--all autobattle` would have missed FOUR of the seven
+# writers fixed in that lane -- rule_composer_overlay (named for the composer),
+# escape_always_backs_out (named for the KEY), job_profiles and job_system_regression (which
+# name nothing and reach the autoload through Combatant). The misses are not random: the three
+# it DOES select are the three that say "autobattle" somewhere obvious, and the four it misses
+# are the four that defeated every name-based instrument. So the substring form says out loud
+# what its corpus is, and bare `--all` is the only selector with no corpus decision in it.
 if [ "${1:-}" = "--all" ]; then
   pat="${2:-}"
   for f in test/unit/test_*"$pat"*.gd; do
     [ -e "$f" ] || { echo "$0: no test file matches '*${pat}*'" >&2; exit 2; }
     n="${f##*/test_}"; NAMES+=("${n%.gd}")
   done
-  echo "--- $0: ${#NAMES[@]} file(s) matching '*${pat}*', one process and one virgin sandbox each ---" >&2
+  total=$(ls test/unit/test_*.gd 2>/dev/null | wc -l)
+  if [ -z "$pat" ]; then
+    echo "--- $0: ALL ${#NAMES[@]} test file(s). No corpus decision. ---" >&2
+  else
+    echo "--- $0: ${#NAMES[@]} of $total file(s) whose FILENAME contains '$pat'." >&2
+    echo "    ⛔ THIS IS A FILENAME CORPUS, NOT LANE COVERAGE. A test that reaches your writer" >&2
+    echo "       without naming it is NOT in this set -- that is how today's hardest four hid." >&2
+    echo "       For a claim about a lane, use bare --all and filter the output. ---" >&2
+  fi
 else
   NAMES=("$@")
 fi
