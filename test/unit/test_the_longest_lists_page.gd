@@ -135,3 +135,18 @@ func test_both_footers_advertise_paging_without_naming_a_family_letter() -> void
 			"%s must advertise paging with a derived token, not a literal — found no %%s placeholder beside \": Page\"" % path)
 		assert_true(src.contains("hint_for_action(\"battle_defer\")") and src.contains("hint_for_action(\"battle_advance\")"),
 			"%s must DERIVE both page tokens, never print a family's letter" % path)
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

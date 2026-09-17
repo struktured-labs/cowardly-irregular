@@ -98,3 +98,18 @@ func test_every_control_the_screen_binds_appears_once() -> void:
 	for clause in ["Navigate", "Page", "Play", "Stop"]:
 		assert_eq(footer.count(clause), 1,
 			"'%s' appears %d times in the footer — each control is named exactly once: '%s'" % [clause, footer.count(clause), footer])
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

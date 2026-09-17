@@ -67,3 +67,18 @@ func test_no_footer_freezes_a_shoulder_name() -> void:
 		for frozen in ["[L/R]", "L/R: Page", "L1/R1", "LB/RB"]:
 			assert_false(s.contains(frozen),
 				"%s writes %s literally; that names one family's buttons for every pad" % [p, frozen])
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

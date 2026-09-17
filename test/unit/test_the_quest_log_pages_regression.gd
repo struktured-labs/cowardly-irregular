@@ -104,3 +104,18 @@ func test_the_footer_advertises_the_pager_and_derives_it() -> void:
 	for frozen in ["L1", "LB", "R1", "RB"]:
 		assert_eq(line.find(frozen), -1,
 			"'%s' is one family's name for that shoulder — the footer must not print it" % frozen)
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

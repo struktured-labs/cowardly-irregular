@@ -77,3 +77,18 @@ func test_every_token_used_in_a_hint_body_actually_resolves() -> void:
 			unresolved.append(id)
 	assert_eq(unresolved, [] as Array[String],
 		"hint bodies containing a token the resolver does not know")
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)
