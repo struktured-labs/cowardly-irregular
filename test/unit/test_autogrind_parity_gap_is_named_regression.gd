@@ -433,10 +433,21 @@ const GRIND_PATH_MARKER := {
 ##
 ##   mp_cost         ⛔ A REAL DIVERGENCE, REACHABLE TODAY, and it has no home in either axis — axis 1
 ##                   passes (both engines read it) and axis 2 passes (same arm). It is this header's
-##                   THIRD blind spot: a handler that HARDCODES what the key authors. Live calls
-##                   JobSystem.get_ability_mp_cost(combatant, id), applying PassiveSystem's
-##                   mp_cost_multiplier clamped 0.1-10.0; this file's _get_ability_mp_cost takes no
-##                   combatant and returns ability.get("mp_cost", 0) RAW. `elemental_affinity` (0.75x)
+##                   THIRD blind spot: a handler that HARDCODES what the key authors. Live spends at
+##                   BattleManager._execute_ability via JobSystem.get_ability_mp_cost(combatant, id),
+##                   applying PassiveSystem's mp_cost_multiplier clamped 0.1-10.0; this file spends in
+##                   _resolve_ability with `ability.get("mp_cost", 5)` straight into spend_mp — RAW,
+##                   and through NO helper.
+##                   ⛔ I FIRST NAMED _get_ability_mp_cost AS THE SITE AND THAT WAS WRONG
+##                   (cowir-autogrind caught it, and resolved the call sites rather than reading the
+##                   one I handed them). Its only two callers are :681 and :688, both inside
+##                   _select_enemy_action — it is the ENEMY AI's affordability check, which a player's
+##                   passive cannot reach. A fix applied there would have changed enemy AI and left
+##                   this defect untouched. The conclusion and the direction table survived; the
+##                   pointer did not. ⚠️ Note from the same trace: the lane has TWO mp_cost readers
+##                   with DIFFERENT defaults (`0` at :732, `5` at :1090) and the spend site uses
+##                   neither helper — both defaults are dead today, 0 of 289 abilities lack the key.
+##                   `elemental_affinity` (0.75x)
 ##                   is in summoner's passive_abilities roster in jobs.json, so a build reaches it:
 ##                   the grind is HARSHER on MP than the real game for the 0.75x passives and MORE
 ##                   LENIENT for magic_amplifier (2.5x). Autogrind's loop is MP attrition over long
