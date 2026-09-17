@@ -1,7 +1,9 @@
 extends GutTest
 
 ## A village's hand-chosen cliff palette is OVERRIDDEN the moment its WORLD gets a tile sheet with
-## cliff/overlay art — BaseVillage.gd:272 says so in as many words, and the override is silent.
+## cliff/overlay art — the doc comment on `BaseVillage._get_cliff_sheet_key()` says so in as many
+## words, and the override is silent. (Qualified: 6 villages define that method, 10 define
+## `_get_cliff_palette`; a bare symbol would resolve to the wrong one.)
 ##
 ## Today nothing is overridden, because `medieval` is the only sheet and no medieval village binds
 ## it. That is an OCCUPANCY fact, not a design one: generating the suburban atlas (free, no API
