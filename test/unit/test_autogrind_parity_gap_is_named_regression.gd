@@ -144,6 +144,16 @@ const UNEXAMINED := [
 ## is read off equipment rather than the ability. UNDECIDED, not absolved — a text search cannot tell
 ## "read another way" from "not read", and saying so is the point.
 ##
+## 🔑 `evasion_bonus` NOW HAS AN OWNER, and the gap between the two censuses is the finding. It is
+## authored in BOTH corpora — abilities.json and equipment.json's special_effects — and this file
+## correctly identified that it did not own the key ("read off equipment") at a time when no
+## equipment census existed to pick it up. So it belonged to nobody, and this ledger's ratchet, whose
+## entire job is "a new divergence announces itself", could never fire on it or on the other fourteen
+## gear effects, because equipment.json was never in its corpus.
+## test_autogrind_equipment_parity_is_named_regression owns it now, and its disjointness arm found
+## this overlap on its first run. It stays here as UNDECIDED because that remains true of the
+## ABILITY-side read; the equipment-side one is named there.
+##
 ## Taken from @cowir-sprites' three-state manifest census and @cowir-music's re-measurement of their
 ## own: both had drawn a conclusion from the non-zero side of an instrument they had correctly
 ## labelled trustworthy only on zeroes. Mine did the same thing to a number I put in a channel.
