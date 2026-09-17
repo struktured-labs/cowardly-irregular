@@ -181,3 +181,67 @@ func test_a_zone_change_in_clear_weather_still_updates_the_bed() -> void:
 	ow._update_zone_ambient("coast")
 	assert_eq(SoundManager._current_ambient_key, "ambient_coast",
 		"the zone router stopped working in clear weather -- the deferral is too broad")
+
+
+## ⛔ THE LARGEST BIOME IN WORLD 1 HAD NO BED, AND ENTERING IT STOPPED THE ONE THAT WAS PLAYING.
+##
+## `plains` is reachable from biome char "g" and is handled everywhere else in the pipeline --
+## BIOME_ZONES, _pool_id_map (overworld_plains), the encounter rate map, and the terrain default at
+## `_: return "plains"`. The ambient match was the one table that omitted it, and its fallthrough is
+## `ambient_key == ""` -> stop_ambient(). Measured against the real map image:
+##
+##     data/maps/overworld_w1.png   200x140 = 28,000 tiles
+##     "g" (grass -> plains)        10,089   = 36.0% of the map, the single largest biome
+##
+## The bed was never missing: `ambient_plains` is in the SFX manifest, and `central` and `desert`
+## both already route to it. Only the zone actually CALLED plains did not.
+##
+## 🔑 THE SECOND ARM IS THE POINT. A one-line arm for plains fixes today; deriving the zone
+## vocabulary from BIOME_ZONES and requiring every member to have a bed is what stops the next
+## zone shipping silent. @cowir-sfx's status_paralyze, my WORLD_CLEAR_AMBIENTS and this are one
+## class -- a table naming all-but-one, where the fallthrough is SILENCE rather than an error.
+const OVERWORLD_SRC := "res://src/exploration/OverworldScene.gd"
+
+
+func test_the_largest_biome_has_a_bed() -> void:
+	var ow: Node = await _overworld()
+	GameState.set_weather("clear"); ow._weather.process(0.016)
+	SoundManager.play_ambient("ambient_forest")
+	assert_true(SoundManager._ambient_player.playing, "CONTROL: a bed is playing before the zone change")
+
+	ow._update_zone_ambient("plains")
+	assert_eq(SoundManager._current_ambient_key, "ambient_plains",
+		"walking onto grass silenced the overworld -- plains is 36% of the W1 map and had no ambient arm")
+
+
+func test_every_zone_the_map_can_yield_has_a_bed() -> void:
+	## Derived from BIOME_ZONES rather than hand-listed, so a new biome cannot ship silent.
+	var src: String = FileAccess.get_file_as_string(OVERWORLD_SRC)
+	assert_gt(src.length(), 10000, "CONTROL: read OverworldScene back, %d chars" % src.length())
+
+	var bi: int = src.find("const BIOME_ZONES")
+	assert_gt(bi, -1, "CONTROL: BIOME_ZONES was renamed -- re-derive this guard")
+	var block: String = src.substr(bi, src.find("}", bi) - bi)
+	var zones: Dictionary = {}
+	var zre := RegEx.create_from_string(":\\s*\"([a-z_]+)\"")
+	for m in zre.search_all(block):
+		zones[m.get_string(1)] = true
+	## The `.get(..., "central")` default is part of the vocabulary too.
+	zones["central"] = true
+	assert_gt(zones.size(), 4, "CONTROL: parsed only %d zones from BIOME_ZONES" % zones.size())
+
+	var fi: int = src.find("func _update_zone_ambient")
+	var body: String = src.substr(fi, src.find("\nfunc ", fi + 1) - fi)
+	var arms: Dictionary = {}
+	var are := RegEx.create_from_string("(?m)^\\t\\t\"([a-z_]+)\":")
+	for m in are.search_all(body):
+		arms[m.get_string(1)] = true
+	assert_gt(arms.size(), 4, "CONTROL: parsed only %d arms from the ambient match" % arms.size())
+
+	var silent: Array[String] = []
+	for z in zones.keys():
+		if not arms.has(z):
+			silent.append(str(z))
+	silent.sort()
+	assert_eq(silent.size(), 0,
+		"zones the map can yield with NO ambient arm (%s) — the fallthrough is stop_ambient(), so entering one SILENCES the overworld rather than erroring" % [silent])

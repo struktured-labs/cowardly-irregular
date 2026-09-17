@@ -902,6 +902,7 @@ func _update_zone_ambient(zone: String) -> void:
 		"forest": ambient_key = "ambient_forest"
 		"ice": ambient_key = "ambient_cave"
 		"coast": ambient_key = "ambient_coast"
+		"plains": ambient_key = "ambient_plains"
 		"central": ambient_key = "ambient_plains"
 		"desert": ambient_key = "ambient_plains"
 		"swamp": ambient_key = "ambient_forest"
