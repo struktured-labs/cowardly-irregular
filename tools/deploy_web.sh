@@ -209,7 +209,18 @@ if [ -x tools/seed_gate_saves.sh ]; then
         echo "[deploy] BLOCKED: seeding the gate sandbox was REFUSED — see above." >&2
         exit 2; }
 else
-    echo "[deploy] note: tools/seed_gate_saves.sh missing — the suite's real-save hydration will PEND." >&2
+    # ⛔ BLOCK, do not note. This was the ONLY warn-and-continue among 18 tool-missing
+    # branches across the two deploy scripts, and it is the one whose absence is SILENT:
+    # without the seed the hydration test PENDS, and a pending test reports failing=0, so the
+    # deploy stays green over a file that exercised nothing. That is the exact condition the
+    # comment above describes as the bug being fixed.
+    # Unreachable in a coherent checkout -- the tool and both call sites landed in 3fdcebcc0,
+    # so a tree with this branch and no tool is already broken. A note on stderr is not what
+    # you want in a 45-minute publish log when that happens.
+    echo "[deploy] BLOCKED: tools/seed_gate_saves.sh missing — the suite's real-save hydration" >&2
+    echo "        would PEND, and a pending test reports failing=0. A missing guard is not a" >&2
+    echo "        passing one." >&2
+    exit 2
 fi
 # ── SUITE BUDGET ─────────────────────────────────────────────────────────────
 # run_tests.sh has no timeout of its own, and gate.sh adds none. A suite that HANGS therefore

@@ -480,7 +480,12 @@ case "${_EVIDENCE}" in
                     echo "[${PLAT}] BLOCKED: seeding the gate sandbox was REFUSED — see above." >&2
                     exit 2; }
             else
-                echo "[${PLAT}] note: tools/seed_gate_saves.sh missing — real-save hydration will PEND." >&2
+                # ⛔ BLOCK, do not note — see deploy_web.sh for the full reasoning. The desktop
+                # chain has no downstream hydration assertion (gate 1c is web-only), so a missing
+                # seeder here loses the coverage with nothing else to catch it.
+                echo "[${PLAT}] BLOCKED: tools/seed_gate_saves.sh missing — real-save hydration" >&2
+                echo "          would PEND, and a pending test reports failing=0." >&2
+                exit 2
             fi
             # Budgeted: run_tests.sh has no timeout and gate.sh adds none, so a WEDGE stops
             # this chain silently instead of redding it. See deploy_web.sh's _SUITE_BUDGET_S
