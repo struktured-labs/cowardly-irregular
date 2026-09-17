@@ -82,28 +82,41 @@ func test_the_hold_clamps_at_the_ends() -> void:
 
 ## THE LOAD-BEARING ARM. Each state the press path refuses, the hold path must refuse too — and the
 ## control proves the fixture can move at all, so a still cursor means refusal rather than a dead
-## fixture. Gates DERIVED from _row_nav_blocked's own source, so a ninth gate is covered here
-## without editing this list.
+## fixture. ⛔ THE GATE LIST IS DERIVED FROM _row_nav_blocked AND ITERATED — the first version
+## hand-listed the members and only CHECKED each appeared in the source, which is the opposite
+## direction and left a ninth gate undriven while the header claimed otherwise.
 func test_a_hold_refuses_every_state_the_press_path_refuses() -> void:
 	var live := _editor(20)
 	assert_gt(_hold(live, "ui_down"), 0,
 		"CONTROL: an unblocked editor must move under a hold, or every refusal below is vacuous")
 
-	var body := _blocker_body()
-	assert_ne(body, "", "_row_nav_blocked must be readable as source")
-	for member in ["_keyboard", "_share_picker", "_option_picker", "_simulate_panel",
-			"_rule_composer_overlay"]:
-		assert_true(body.contains(member), "%s must be one of the refusals" % member)
+	var gates := _derived_gates()
+	var nodes: Array = gates["nodes"]
+	var flags: Array = gates["flags"]
+	assert_gt(nodes.size(), 3,
+		"the derivation read %d node gates out of _row_nav_blocked — a short list drives almost "
+		% nodes.size() + "nothing and every refusal below would be vacuous")
+	assert_gt(flags.size(), 0, "the derivation read no flag gates; is_editing at minimum must be there")
+	for member in nodes:
 		var ed := _editor(20)
-		var blocker := Control.new()
+		# ⛔ INSTANTIATE THE DECLARED TYPE. A generic Control assigned into a typed member (e.g.
+		# `var _flash_label: Label`) silently fails, the gate never fires, and the arm reds on
+		# CORRECT code — measured by planting a gate on the one member that is not a Control.
+		var blocker: Node = _new_of_declared_type(member)
+		assert_true(blocker != null,
+			"could not construct a node for %s — the arm cannot drive a gate it cannot populate" % member)
+		if blocker == null:
+			continue
 		add_child_autofree(blocker)
-		blocker.visible = true
+		(blocker as CanvasItem).visible = true
 		ed.set(member, blocker)
+		assert_eq(ed.get(member), blocker,
+			"%s did not accept the node this arm built — a failed typed assignment would leave the "
+			% member + "gate unset and this refusal vacuous")
 		assert_eq(_hold(ed, "ui_down"), 0,
 			"a hold stepped the grid with %s open — the press path refuses it and the poll did not" % member)
 
-	for flag in ["is_editing", "_portrait_focused"]:
-		assert_true(body.contains(flag), "%s must be one of the refusals" % flag)
+	for flag in flags:
 		var ed2 := _editor(20)
 		ed2.set(flag, true)
 		assert_eq(_hold(ed2, "ui_down"), 0,
@@ -115,15 +128,74 @@ func test_a_hold_refuses_every_state_the_press_path_refuses() -> void:
 func test_control_both_paths_gate_on_the_same_members() -> void:
 	var src := FileAccess.get_file_as_string(SRC)
 	assert_ne(src, "", "the editor must be readable as source")
-	var body := _blocker_body()
+	var gates := _derived_gates()
+	var known: Array = gates["nodes"] + gates["flags"]
 	var missing: Array = []
-	for member in ["_keyboard", "_share_picker", "_option_picker", "_simulate_panel",
-			"_rule_composer_overlay", "is_editing", "_portrait_focused"]:
-		if not body.contains(member):
+	# _input's own gates, read out of ITS source — the direction the old version of this arm lacked.
+	for member in _input_gated_members():
+		if not known.has(member):
 			missing.append(member)
+	assert_gt(known.size(), 4, "the blocker derivation found %d members" % known.size())
 	assert_eq(missing, [],
 		"_input gates row navigation on these and _row_nav_blocked does not, so a HELD direction "
 		+ "walks the grid in a state a PRESS refuses: %s" % [missing])
+
+
+## Members _input itself gates on, so the comparison runs SOURCE against SOURCE rather than
+## source against a list someone remembered to update.
+func _input_gated_members() -> Array:
+	var src := FileAccess.get_file_as_string(SRC)
+	var at := src.find("func _input(")
+	if at < 0:
+		return []
+	var end := src.find("\n\tif nav == \"ui_up\"", at)
+	var body := src.substr(at, (end - at) if end > at else 2000)
+	var out: Array = []
+	for line in body.split("\n"):
+		var l: String = str(line).strip_edges()
+		if l.begins_with("if ") and l.contains("is_instance_valid(") and l.contains(".visible"):
+			var name := l.substr(3, l.find(" and ") - 3).strip_edges()
+			if name.begins_with("_") and not out.has(name):
+				out.append(name)
+	return out
+
+
+## A node of whatever type the member is DECLARED as, so a typed assignment cannot silently fail.
+func _new_of_declared_type(member: String) -> Node:
+	var src := FileAccess.get_file_as_string(SRC)
+	var at := src.find("var %s:" % member)
+	if at < 0:
+		return Control.new()
+	var line := src.substr(at, src.find("\n", at) - at)
+	var t := line.split(":")[1].split("=")[0].strip_edges()
+	if t != "" and ClassDB.class_exists(t) and ClassDB.can_instantiate(t):
+		var n = ClassDB.instantiate(t)
+		if n is Node:
+			return n as Node
+	return Control.new()
+
+
+## The members _row_nav_blocked actually gates on, READ OUT OF IT. Node gates carry
+## is_instance_valid; flag gates are bare booleans in the same function.
+func _derived_gates() -> Dictionary:
+	var nodes: Array = []
+	var flags: Array = []
+	for line in _blocker_body().split("\n"):
+		var l: String = str(line).strip_edges()
+		if not l.begins_with("if "):
+			continue
+		if l.contains("is_instance_valid("):
+			var name := l.substr(3, l.find(" and ") - 3).strip_edges()
+			if name.begins_with("_"):
+				nodes.append(name)
+			continue
+		# `if is_editing or _portrait_focused:` — bare booleans, skipping the fixture-level ones.
+		for tok in l.trim_prefix("if ").trim_suffix(":").split(" or "):
+			var t: String = str(tok).strip_edges()
+			if t == "" or t.contains("(") or t.begins_with("not "):
+				continue
+			flags.append(t)
+	return {"nodes": nodes, "flags": flags}
 
 
 func _blocker_body() -> String:
