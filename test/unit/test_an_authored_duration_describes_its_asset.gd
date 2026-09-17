@@ -52,25 +52,47 @@ func test_every_authored_duration_matches_its_file() -> void:
 	assert_gt(sfx.size(), 0, "VOID, not clean: the sfx manifest read back 0 entries")
 	var checked := 0
 	var drifted: Array = []
+	## ⛔ EVERY ENTRY LANDS IN EXACTLY ONE BUCKET AND THEY MUST SUM. These three `continue`s used to
+	## discard into an unnamed void under a single `checked > 100` floor — so 220 of 321 entries
+	## could stop being checked and this arm still passed. A silent skip is a finding.
+	var untimed: Array = []
+	var no_file: Array = []
+	var undecodable: Array = []
 	for k in sfx.keys():
 		var e = sfx[k]
 		if not (e is Dictionary) or not e.has("duration_seconds"):
+			untimed.append(str(k))
 			continue
 		var f: String = str(e.get("file", ""))
 		if f == "":
+			no_file.append(str(k))
 			continue
 		var actual: float = _length_of(f)
 		if actual < 0.0:
+			undecodable.append(str(k))
 			continue
 		checked += 1
 		var delta: float = absf(actual - float(e["duration_seconds"]))
 		if delta > TOLERANCE_SECONDS and not KNOWN_DRIFT.has(str(k)):
 			drifted.append("%s authored %.1f vs %.2f on disk (delta %.2f)" % [str(k), float(e["duration_seconds"]), actual, delta])
-	assert_gt(checked, 100,
-		"CONTROL: only %d entries had both a duration and a decodable file — the reader is broken, not the data" % checked)
+	assert_eq(checked + untimed.size() + no_file.size() + undecodable.size(), sfx.size(),
+		"the buckets do not sum to the manifest — an entry left the partition and is judged by nothing")
+	assert_eq(no_file, [],
+		"manifest entries with a duration and an EMPTY file (%d): %s" % [no_file.size(), no_file])
+	assert_eq(undecodable, [],
+		"manifest entries whose file does not decode (%d) — the duration describes nothing: %s" % [undecodable.size(), undecodable])
+	## The skip is pinned by its REASON, not by its count. An untimed entry is a hand-built asset
+	## (`source_sha`, no generator prompt), so its length is not a generation parameter. A GENERATED
+	## entry missing its duration is the real defect, and it lands here rather than in a bucket of 25.
+	var untimed_without_reason: Array = []
+	for k in untimed:
+		if not (sfx[k] as Dictionary).has("source_sha"):
+			untimed_without_reason.append(k)
+	assert_eq(untimed_without_reason, [],
+		"entries with no duration_seconds and no source_sha (%d) — a generated cue whose length nothing checks: %s" % [untimed_without_reason.size(), untimed_without_reason])
 	assert_eq(drifted, [],
 		"authored durations that do not describe their asset (%d) — regenerating these produces a different length than shipped: %s" % [drifted.size(), drifted])
-	print("[duration-parity] %d authored durations checked, %d declared drift" % [checked, KNOWN_DRIFT.size()])
+	print("[duration-parity] %d of %d checked · %d untimed (hand-built) · %d declared drift" % [checked, sfx.size(), untimed.size(), KNOWN_DRIFT.size()])
 
 
 func test_a_declared_drift_still_drifts() -> void:
