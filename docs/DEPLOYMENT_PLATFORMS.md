@@ -75,9 +75,31 @@ Live at `struktured/cowardly-irregular:web`, currently `v3.33.203-alpha`.
 - 200 MB is itch's **HTML5 embed cap**, per file, not a game-size limit. This is why
   audio is the pressure valve (`tools/make_web_audio.sh`), and why art is never cut:
   the artist reviews sprites on the web build.
-- **Two dead channels are publicly visible:** `html5` and `html5-v2`, both stuck at
-  `v2.2.4-alpha` while `web` is on v3.33.203. Anyone clicking those plays a build
-  from many versions ago. Hiding them is a dashboard action, struktured's call.
+- **Two dead channels exist and NOBODY CAN REACH THEM:** `html5` and `html5-v2`, both
+  frozen at `v2.2.4-alpha`. ⛔ This bullet used to read *"publicly visible ... anyone
+  clicking those plays a build from many versions ago"*, and that was never measured.
+  Measured 2026-09-16, anonymous `curl`, no cookies and no auth:
+
+      struktured.itch.io                       password_page=0  game_links=1
+      struktured.itch.io/cowardly-irregular    password_page=1  game_links=0
+
+  The whole project is **password-gated**: an anonymous visitor gets itch's
+  `game_password_page` form and **zero** upload, download or embed links — so no
+  channel is publicly reachable, dead or live. The profile page is the control: same
+  host, same fetch, no password form, so the marker distinguishes a gated page from
+  how itch renders to `curl` rather than matching everything.
+
+  Hiding the dead channels is still a dashboard action and struktured's call; it is
+  tidiness, not exposure. **The version to compare against is whatever
+  `butler status struktured/cowardly-irregular` reports for `web` — this line used to
+  state it as `v3.33.203` and was 168 releases stale by the time anyone read it.**
+  `v2.2.4-alpha` is safe to write down because those channels are dead: the only thing
+  that can change it is a publish to them, which is the event that retires this bullet.
+
+  **Do not take this paragraph's word for it — `tools/check_store_visibility.sh` asks the
+  page.** It is not in the publish chain (it needs the network, and a publish must not fail
+  because itch is slow), and it refuses rather than guessing when neither marker is present,
+  because an empty response otherwise reads as "public" to a gate-only check.
 
 ## macOS — exportable, but honestly a demo-only path
 

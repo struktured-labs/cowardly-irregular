@@ -54,6 +54,13 @@ const HIDDEN := {
 
 const SRC_DIRS := ["res://src/"]
 
+## A scene can be reachable with ZERO occurrences of its id in src/: QuestSystem:184 is
+## play_cutscene(cs) where cs is a quest's `cutscene_on_complete`, read from JSON. So the reach
+## blob is code AND data. data/cutscenes/ is excluded — one scene naming another inside its own
+## steps is not a dispatch, and including it would read cross-references as callers.
+const DATA_DIRS := ["res://data/"]
+const DATA_EXCLUDE := "res://data/cutscenes/"
+
 
 ## The filter's own terms, parsed out of the line that applies them.
 func _filter_terms() -> Array:
@@ -131,6 +138,75 @@ func _src_code_blob() -> String:
 	return "\n".join(parts)
 
 
+## Every STRING VALUE in data/, minus the cutscene corpus itself — not the raw text.
+##
+## ⛔ A RAW `contains` OVER-REPORTS, which is @cowir-autogrind's direction of the same defect: a
+## literal with no consumer. An id mentioned in a `description` or a quest's dialogue would read as
+## a dispatch, so the guard would call an unreachable scene LIVE and stay green while saying
+## something false. Matching a whole VALUE is field-agnostic and cannot match prose ABOUT the id:
+## a description containing it is not equal to it.
+func _data_values() -> Dictionary:
+	var out: Dictionary = {}
+	var stack: Array = DATA_DIRS.duplicate()
+	while not stack.is_empty():
+		var d: String = str(stack.pop_back())
+		if d.begins_with(DATA_EXCLUDE):
+			continue
+		var dir := DirAccess.open(d)
+		if dir == null:
+			continue
+		dir.list_dir_begin()
+		var f := dir.get_next()
+		while f != "":
+			if dir.current_is_dir():
+				if not f.begins_with("."):
+					stack.append(d + f + "/")
+			elif f.ends_with(".json"):
+				var json := JSON.new()
+				if json.parse(FileAccess.get_file_as_string(d + f)) == OK:
+					_collect_strings(json.data, out)
+			f = dir.get_next()
+		dir.list_dir_end()
+	return out
+
+
+func _collect_strings(node: Variant, out: Dictionary) -> void:
+	if node is String:
+		out[node] = true
+	elif node is Array:
+		for x in node:
+			_collect_strings(x, out)
+	elif node is Dictionary:
+		for k in node:
+			_collect_strings(node[k], out)
+
+
+## Every play_cutscene() argument in src/, comments stripped, as written.
+func _play_cutscene_arguments() -> Array:
+	var out: Array = []
+	for raw in _src_code_blob().split("\n"):
+		var line: String = raw
+		var at := line.find("play_cutscene(")
+		while at >= 0:
+			var start := at + "play_cutscene(".length()
+			var end := start
+			var depth := 0
+			while end < line.length():
+				var ch := line[end]
+				if ch == "(":
+					depth += 1
+				elif ch == ")":
+					if depth == 0:
+						break
+					depth -= 1
+				elif ch == "," and depth == 0:
+					break
+				end += 1
+			out.append(line.substr(start, end - start).strip_edges())
+			at = line.find("play_cutscene(", end)
+	return out
+
+
 ## ANTI-VACUITY: if the line moves or changes shape, every arm below compares empty sets.
 func test_the_filter_terms_are_read_out_of_the_gallery() -> void:
 	var terms := _filter_terms()
@@ -169,13 +245,49 @@ func test_every_status_in_the_roster_still_holds() -> void:
 	assert_gt(blob.length(), 200000, "src/ looks truncated: %d chars of code" % blob.length())
 	assert_true(blob.contains("_get_pending_story_cutscene"), "control: a known src symbol survives the strip")
 
+	var data := _data_values()
+	assert_gt(data.size(), 2000, "data/ string values look truncated: %d collected" % data.size())
+	assert_true(data.has("world1_orrery"),
+		"LIVENESS: a real quest cutscene_on_complete value must be among them, or the route this " +
+		"was added for is unscanned and every UNPLAYED verdict is about src/ alone. An empty " +
+		"collection cannot tell 'no data names it' from 'the walk saw nothing'")
+
 	for id in HIDDEN:
-		var referenced: bool = blob.contains("\"%s\"" % id)
+		# Code OR data: QuestSystem plays an id it reads from JSON, so src/ alone under-reports reach.
+		var referenced: bool = blob.contains("\"%s\"" % id) or data.has(id)
 		if HIDDEN[id] == "LIVE":
 			assert_true(referenced,
-				"%s is declared LIVE but no src/ code names it — if it was unwired, change it to " % id +
-				"UNPLAYED; it is now hidden from the Theater AND unreachable, which nothing else reports")
+				"%s is declared LIVE but neither src/ nor data/ names it — if it was unwired, " % id +
+				"change it to UNPLAYED; it is now hidden from the Theater AND unreachable")
 		else:
 			assert_false(referenced,
-				"%s is declared UNPLAYED but src/ code names it now. If it was wired up, it is a " % id +
-				"scene a player can see and cannot replay — mark it LIVE and raise the roster with struktured")
+				"%s is declared UNPLAYED but src/ or data/ names it now. If it was wired up, it is " % id +
+				"a scene a player can see and cannot replay — mark it LIVE and raise it with struktured")
+
+
+## ⛔ THE VERDICTS ABOVE REST ON EVERY ID BEING WRITTEN OUT. @cowir-battle's DERIVED KEY shape:
+## a reader that builds its key by concatenation is invisible to a text search, and widening the
+## corpus moves you further from the answer rather than closer. CLAUDE.md already records three
+## spellings for a cutscene id — a literal, a loop variable, and a CONST whose name appears once at
+## its declaration and never at the call.
+##
+## 🔑 A VARIABLE OR CONST ARGUMENT IS FINE AND IS NOT WHAT THIS ARM REFUSES: those carry ids that
+## came from data, which the blob above now scans. What breaks the guard is a dispatch site that
+## ASSEMBLES an id from pieces, because then the id exists in neither file as a string. Measured
+## 2026-09-16: zero such sites today — so this arm ratchets a property rather than re-measuring an
+## absence, which is the difference between a verdict that holds and one that happens to be true.
+func test_no_cutscene_id_is_assembled_at_the_dispatch_site() -> void:
+	var args := _play_cutscene_arguments()
+	assert_gt(args.size(), 3,
+		"ANTI-VACUITY: expected several play_cutscene call sites, found %d — a parser that reads " % args.size() +
+		"none would ratchet nothing")
+
+	var assembled: Array = []
+	for a in args:
+		var arg: String = str(a)
+		if arg.contains("+") or arg.contains("%") or arg.contains(".format("):
+			assembled.append(arg)
+	assert_eq(assembled, [],
+		"a cutscene id is being ASSEMBLED at the call, so it exists as a string nowhere and this " +
+		"guard's LIVE/UNPLAYED column cannot see it. Either dispatch a whole id, or teach " +
+		"_data_blob/_src_code_blob about the construction: %s" % [assembled])
