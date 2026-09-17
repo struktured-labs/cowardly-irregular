@@ -46,6 +46,7 @@ tried to fix. Exports now carry a redirect like every other invocation; see tool
 Exit 0 every invocation is sandboxed or declared · 1 something is not · 2 nothing was examined.
 """
 import glob
+import subprocess
 import os
 import re
 import sys
@@ -119,7 +120,13 @@ def _runs_godot(code):
 # Deliberately EMPTY. Kept as a named, greppable place so that adding an exemption is a visible
 # act with a reason attached, rather than a special case buried in the matcher — and so the
 # report keeps a `declared` column that reads 0 instead of silently having no such concept.
-EXEMPT = ()
+EXEMPT = (
+    # launch.sh IS the player's launcher. Its whole purpose is to start the game against
+    # struktured's real profile, so an import prewarm writing user:// there is the intended
+    # behaviour rather than a leak. This is the one case where "runs unsandboxed" is correct,
+    # and it is declared rather than filtered so the next reader sees WHY it is not a finding.
+    ("launch.sh", "the player's own launcher — running against the real profile is its purpose"),
+)
 
 
 def _commands(path):
@@ -162,7 +169,11 @@ def audit(paths):
                and "timeout" not in code and "&&" not in code and not code.strip().startswith("("):
                 if "godot" not in code and not is_editor:
                     continue
-            exempt_reason = next((r for token, r in EXEMPT if token in code), None)
+            # ⚠️ Matched against the PATH as well as the line. The tuple used to be tested only
+            # against `code`, so a declaration naming a FILE could never fire — the first
+            # entry added here (launch.sh) silently did nothing until this was measured.
+            exempt_reason = next((r for token, r in EXEMPT
+                                  if token in code or path == token or path.endswith("/" + token)), None)
             if _redirect_governs(code):
                 ok += 1
             elif exempt_reason:
@@ -232,7 +243,30 @@ def main(argv):
     # the tools that can write user:// are 10, and the one it missed — make_web_stage.sh — runs
     # on EVERY web publish. A neighbour list is a hypothesis about blast radius; a pattern over
     # the tree is a measurement of it (cowir-sprites, 2026-09-16).
-    paths = argv or sorted(glob.glob("tools/*.sh"))
+    # ⛔ THE CORPUS WAS A GLOB. `tools/*.sh` is a FILENAME PATTERN standing in for "everything
+    # that can launch godot", and this guard's whole claim is about that set. It reported
+    # 16 invocations · 16 sandboxed · 0 UNSANDBOXED while test/smoke/run_smoke_tests.sh:12 ran
+    #
+    #     godot --headless -s test/smoke/test_battle_smoke.gd
+    #
+    # with no redirect at all — against struktured's real profile, from outside the glob.
+    # Pointed at that file the predicate flags it immediately: the detector was right and the
+    # corpus was wrong, which is the failure seven lanes measured in their own instruments on
+    # 2026-09-17 and nobody measured in their predicate.
+    #
+    # Derived from the index now, not from a pattern: every tracked *.sh in the repository.
+    if argv:
+        paths = argv
+    else:
+        try:
+            out = subprocess.run(["git", "ls-files", "*.sh"], capture_output=True, text=True, timeout=30)
+            paths = sorted(p for p in out.stdout.split("\n") if p.endswith(".sh"))
+        except Exception:
+            paths = []
+        if not paths:
+            print("[sandbox] BLOCKED: could not derive the script corpus from git. A guard that "
+                  "cannot enumerate its subjects is not a passing one.", file=sys.stderr)
+            return 2
     findings, ok, declared, scanned = audit(paths)
     if scanned == 0:
         print("[sandbox] BLOCKED: examined no files — a check with an empty corpus passes "
@@ -279,6 +313,26 @@ def selftest():
         for var in ("XDG_DATA_HOME", "HOME", "WINEPREFIX"):
             f, o, dec, _ = audit([w("b.sh", f'{var}="$PWD/tmp/x" godot --headless --quit\n')])
             check(f"...and is CLEAN when redirected by {var}", len(f), 0)
+        # ⛔ THE CORPUS ARM. The default corpus was `glob.glob("tools/*.sh")` — a filename
+        # pattern standing in for "everything that can launch godot" — and it missed
+        # test/smoke/run_smoke_tests.sh entirely. A guard whose predicate is right and whose
+        # corpus is a glob reports a clean sweep of the part it looked at.
+        f, o, dec, scanned = audit([w("corpus_a.sh", 'godot --headless --quit\n')])
+        check("a file OUTSIDE tools/ is still audited when named", len(f), 1)
+        # ...and the derived default must reach beyond tools/. Measured on the real index:
+        # 55 files, where the old glob saw 44 — the difference is test/, scripts/ and the root.
+        import subprocess as _sp
+        _all = sorted(x for x in _sp.run(["git", "ls-files", "*.sh"], capture_output=True,
+                                          text=True).stdout.split("\n") if x.endswith(".sh"))
+        _outside = [x for x in _all if not (x.startswith("tools/"))]
+        check("the derived corpus reaches OUTSIDE tools/", len(_outside) > 0, True)
+        check("  ...and it is derived, not a glob", "ls-files" in open(__file__).read(), True)
+
+        # a declaration must be able to name a FILE, not only a line fragment
+        f, o, dec, _ = audit([w("launch.sh", 'godot --headless --import\n')])
+        check("a PATH-named exemption is honoured", dec, 1)
+        check("  ...and it is not counted as a finding", len(f), 0)
+
         # the exported binary, which carries no `godot` at all
         f, o, dec, _ = audit([w("c.sh", '( cd "$OUT" && timeout 240 "./${ARTIFACT}" --headless --quit )\n')])
         check("an EXPORTED BINARY with no redirect is FLAGGED", len(f), 1)
