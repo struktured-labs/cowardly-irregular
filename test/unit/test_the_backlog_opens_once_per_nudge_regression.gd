@@ -125,6 +125,14 @@ func test_one_nudge_scrolls_the_open_log_once() -> void:
 	await _frames(6)
 	assert_true(_box.is_backlog_open(), "precondition: the log is open")
 
+	## ⛔ THE ONLY RUNG-3 REACH IN THIS FILE, so the only silent one. Two asserts have already run by
+	## here, so a rename of _backlog_scroll aborts this arm to Passing/EC=0 — `.366`'s EC=4 derives
+	## from [Risky] names and cannot see an abort after a passing assert (@cowir-sfx's triage axis:
+	## pre-assert reaches are rung 1 and already loud; post-assert ones are the hole). `in` is the
+	## non-aborting existence test — assert_not_null would abort on the read it is checking.
+	assert_true("_backlog_scroll" in _box,
+		"CutsceneDialogue must still expose _backlog_scroll — renamed, this arm aborts AFTER its " +
+		"asserts and scores green with the scroll never measured")
 	var start: int = _box._backlog_scroll.scroll_vertical
 	assert_gt(start, 100,
 		"ANTI-VACUITY: open_backlog scrolls to the end, so there must be range to scroll BACK " +
