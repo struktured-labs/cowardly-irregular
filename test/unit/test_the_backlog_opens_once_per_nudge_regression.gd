@@ -65,6 +65,44 @@ func _two_lines() -> void:
 	_box._advance_dialogue()
 
 
+## ⛔ A DERIVED FLOOR, not one `has_method` per call site. @cowir-autogrind's form: it names every
+## member this file reaches, read out of this file's OWN source, so it cannot fall out of date with
+## the reaches the way a hand-written list does. That matters because the rung of any single reach
+## is decided by whether an assert already ran in ITS arm — so adding a precondition line above a
+## reach silently converts it from rung 1 (Risky, EC=4, loud) to rung 3 (Passing, EC=0, silent).
+## This floor is indifferent to that: it reds on a rename whatever the order.
+func test_every_member_this_file_reaches_still_exists() -> void:
+	var src: String = FileAccess.get_file_as_string(
+		"res://test/unit/test_the_backlog_opens_once_per_nudge_regression.gd")
+	assert_gt(src.length(), 3000, "control: this file must be readable, got %d chars" % src.length())
+
+	var reached: Dictionary = {}
+	for raw in src.split("\n"):
+		var line: String = str(raw).strip_edges()
+		if line.begins_with("#"):
+			continue
+		var at := line.find("_box.")
+		while at >= 0:
+			var start := at + 5
+			var end := start
+			while end < line.length() and (line[end] == "_" or line[end].is_valid_identifier()):
+				end += 1
+			var name := line.substr(start, end - start)
+			if name != "" and name != "has_method":
+				reached[name] = true
+			at = line.find("_box.", end)
+	assert_gt(reached.size(), 8,
+		"ANTI-VACUITY: the scan must find this file's own reaches, found %d" % reached.size())
+
+	var missing: Array = []
+	for m in reached:
+		if not (_box.has_method(m) or m in _box):
+			missing.append(m)
+	assert_eq(missing, [],
+		"CutsceneDialogue no longer exposes members this file drives, so the arms touching them " +
+		"abort — and an abort after a passing assert scores GREEN. Renamed or removed: %s" % [missing])
+
+
 ## ANTI-VACUITY: if the synthetic ramp does not read as a burst, every arm below is asserting
 ## against a single press and would pass on the unconverted code too.
 func test_the_ramp_really_reads_as_a_burst() -> void:
