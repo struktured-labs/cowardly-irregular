@@ -5252,8 +5252,11 @@ func _start_area_music_deferred(area_type: String) -> void:
 			_start_futuristic_music()
 		"overworld_abstract":
 			_start_abstract_music()
-		"village", "harmonia_village":
+		"harmonia_village":
 			_start_village_location_music("harmonia", "medieval")
+		## BaseVillage's default id. It resolved to harmonia's signature bed, so five W1 villages wore the capital's theme.
+		"village":
+			_start_village_world_music(_get_current_world_suffix())
 		"scriptura_village":
 			_start_village_location_music("scriptura", "medieval")
 		"maple_heights_village":
