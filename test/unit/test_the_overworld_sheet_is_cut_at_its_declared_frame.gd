@@ -290,3 +290,119 @@ func test_turning_does_not_move_the_avatar() -> void:
 	assert_gt(drifted, 0,
 		("ANTI-VACUITY: none of the probed jobs was off-centre at all, so the correction was proved "
 		+ "on nothing — 9 of 14 job sheets drifted when this was written, worst 1.75px"))
+
+
+## ⛔ THE PLAYER'S FACING ROWS COME FROM THE DECLARATION, like the roaming monsters'.
+##
+## OverworldPlayer hardcoded [DOWN, LEFT, RIGHT, UP] while RoamingMonster read its rows from the
+## manifest. All 53 shipped sheets use that order today, so nothing renders wrong — the ASYMMETRY
+## is the defect: one consumer deriving and one guessing disagree only for the sheet that would
+## have needed the fix, which is cowir-cutscenes' rule and the reason I went looking.
+func test_the_players_walk_rows_come_from_the_manifest() -> void:
+	var m = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+	assert_true(m is Dictionary, "sprite_manifest.json must parse")
+	var node: Dictionary = (m as Dictionary).get("overworld_player_sheets", {})
+	assert_gt(node.size(), 10, "ANTI-VACUITY: only %d player sheets declared" % node.size())
+
+	var checked := 0
+	for job in node:
+		var anims = (node[job] as Dictionary).get("animations", {})
+		if not (anims is Dictionary) or anims.is_empty():
+			continue
+		var rows: Dictionary = Loader.overworld_player_rows(str(job))
+		for name in anims:
+			if not rows.has(name):
+				continue
+			assert_eq(int(rows[name]), int((anims[name] as Dictionary).get("row", -1)),
+				"%s's %s row must come from its declaration, not from a constant" % [job, name])
+			checked += 1
+	assert_gt(checked, 40, "ANTI-VACUITY: only %d declared rows were compared" % checked)
+
+	# An unregistered job keeps the convention — absence must never refuse a sheet.
+	var fallback: Dictionary = Loader.overworld_player_rows("__no_such_job__")
+	assert_eq(int(fallback["walk_left"]), 1, "an unregistered job keeps the documented row order")
+	assert_eq(int(fallback["walk_up"]), 3, "...including the up row")
+
+
+## ⚠️ AND THE SOURCE HALF, because the accessor being CORRECT does not mean the consumer CALLS it.
+## The behavioural arm above cannot tell the two apart: every shipped sheet declares the same
+## order the constant encoded, so a player still reading the constant passes it. Same shape as the
+## roaming-monster guard — the proof is a PAIR, and this is the half that discriminates.
+func test_the_player_no_longer_carries_a_hardcoded_row_order() -> void:
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+	var code: String = GdSource.code_of("res://src/exploration/OverworldPlayer.gd")
+	assert_gt(code.length(), 1000, "PRECONDITION: OverworldPlayer must be readable and stripped")
+	assert_true(code.contains("HybridSpriteLoader.overworld_player_rows("),
+		"the row order must be read from the manifest owner")
+	assert_false(code.contains("[Direction.DOWN, Direction.LEFT, Direction.RIGHT, Direction.UP]"),
+		"the hardcoded row order is the constant this change replaced")
+
+
+## ⛔ EVERY CONSUMER THAT PICKS A WALK ROW MUST ASK THE MANIFEST — and the corpus is DERIVED, which
+## is the whole point of this arm.
+##
+## I fixed RoamingMonster, then OverworldPlayer, and reported the pattern "consistent across
+## monsters and player". It was not. Deriving the corpus by four different spellings found SIX
+## files picking a sheet row; I had looked at TWO. OverworldNPC carried a hardcoded match, and
+## WanderingNPC was worse than hardcoded — `_current_dir` WAS the row index, coupled by nothing
+## but a trailing comment, at two sites (the frame key and the heavy-top density lookup, which is
+## keyed by row). Fixing one of those two would have nudged the wrong direction's headroom.
+##
+## 🔑 cowir-controller's root cause, arrived at the same evening on menus: THE INSTRUMENT AND THE
+## WORK HAD THE SAME BLIND SPOT, so the instrument could not report it. Their ledger searched for
+## the pattern their conversions used; my search was the two files I was already editing. A
+## hand-listed corpus can only confirm what you already looked at.
+##
+## ⚠️ THE DISCRIMINATOR IS SHEET RESOLUTION, NOT ROW ARITHMETIC. `row * frame_h` also appears in
+## MapleCommunityCenterInterior, which draws a decorative photo wall and consumes no sheet at all.
+## Requiring a file to obtain an overworld sheet PATH keeps it out without naming it.
+func test_every_overworld_sheet_consumer_reads_its_rows_from_the_manifest() -> void:
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+	var resolves := ["npc_overworld_path(", "overworld_frame_size(", "monsters/overworld/"]
+	var owners := ["overworld_walk_rows(", "overworld_player_rows(", "overworld_monster_geometry("]
+
+	var consumers: Array = []
+	var offenders: Array = []
+	var stack: Array[String] = ["res://src"]
+	while not stack.is_empty():
+		var cur: String = stack.pop_back()
+		var d := DirAccess.open(cur)
+		if d == null:
+			continue
+		d.list_dir_begin()
+		var n := d.get_next()
+		while n != "":
+			var full: String = "%s/%s" % [cur, n]
+			if d.current_is_dir():
+				if not n.begins_with("."):
+					stack.append(full)
+			elif n.ends_with(".gd"):
+				var code: String = GdSource.code_of(full)
+				var gets_sheet := false
+				for r in resolves:
+					if code.contains(r):
+						gets_sheet = true
+				# Slicing BY ROW is what makes row order matter; a whole-sheet load does not.
+				var slices := code.contains("_frame.y") or code.contains("FRAME_H") \
+					or code.contains("frame_h") or code.contains("_ARCHETYPE_FRAME_H")
+				if gets_sheet and slices:
+					consumers.append(full)
+					var asks := false
+					for o in owners:
+						if code.contains(o):
+							asks = true
+					if not asks:
+						offenders.append(full)
+			n = d.get_next()
+		d.list_dir_end()
+
+	consumers.sort()
+	offenders.sort()
+	assert_gt(consumers.size(), 2,
+		("ANTI-VACUITY: only %d sheet-slicing consumers were derived. The extraction is broken, and "
+		+ "an empty corpus reports a clean repo: %s") % [consumers.size(), consumers])
+	assert_eq(offenders, [],
+		("a file resolves an overworld sheet and slices it BY ROW without asking the manifest which "
+		+ "row is which. Every shipped sheet uses the same order today, so it renders correctly and "
+		+ "nothing fails — until one declares a different order, at which point this consumer faces "
+		+ "the wrong way while the others do not: %s") % [offenders])

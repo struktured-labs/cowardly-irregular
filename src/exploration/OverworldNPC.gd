@@ -423,6 +423,9 @@ func _portrait_key() -> String:
 ## the first successful sprite load; consumed by _apply_facing whenever
 ## the NPC needs to turn (e.g. on dialogue start, msg 2764 item 1).
 var _archetype_sheet: Image = null
+## The manifest key for the sheet actually loaded — the DIRECTORY name, so a world variant
+## (`blacksmith_suburban`) resolves to its own declaration rather than the base one's.
+var _archetype_id: String = ""
 const _ARCHETYPE_FRAME_W: int = 32
 const _ARCHETYPE_FRAME_H: int = 32
 
@@ -433,6 +436,7 @@ func _try_load_archetype_sprite(archetype: String) -> bool:
 	var path = HybridSpriteLoader.npc_overworld_path(archetype)
 	if not ResourceLoader.exists(path):
 		return false
+	_archetype_id = path.get_base_dir().get_file()
 	var tex = load(path) as Texture2D
 	if not tex:
 		return false
@@ -454,14 +458,18 @@ func _try_load_archetype_sprite(archetype: String) -> bool:
 func _apply_facing() -> void:
 	if _archetype_sheet == null or sprite == null:
 		return
-	# 4×4 grid, 32x32 frames. Row mapping: 0=down, 1=left, 2=right, 3=up.
-	# OverworldNPC.facing_direction uses: 0=down, 1=up, 2=left, 3=right.
-	var sheet_row := 0
+	# Two mappings, and only one of them is this file's to know. facing_direction ->
+	# animation NAME is OverworldNPC's own enum (0=down, 1=up, 2=left, 3=right); name -> ROW
+	# belongs to the sheet and comes from its declaration, as it does for the player and the
+	# roaming monsters. Hardcoding the second is what let one consumer face correctly while
+	# another walked backwards off the same manifest.
+	var anim := "walk_down"
 	match facing_direction:
-		0: sheet_row = 0  # down
-		1: sheet_row = 3  # up
-		2: sheet_row = 1  # left
-		3: sheet_row = 2  # right
+		1: anim = "walk_up"
+		2: anim = "walk_left"
+		3: anim = "walk_right"
+	var rows: Dictionary = HybridSpriteLoader.overworld_walk_rows("overworld_npc_sheets", _archetype_id)
+	var sheet_row := int(rows.get(anim, 0))
 	var region := Rect2i(0, sheet_row * _ARCHETYPE_FRAME_H,
 		_ARCHETYPE_FRAME_W, _ARCHETYPE_FRAME_H)
 	var frame_img := _archetype_sheet.get_region(region)

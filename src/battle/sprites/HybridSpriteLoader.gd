@@ -11,6 +11,7 @@ static var _monster_manifest: Dictionary = {}
 static var _battle_effects: Dictionary = {}
 static var _overworld_player_sheets: Dictionary = {}
 static var _overworld_monster_sheets: Dictionary = {}
+static var _overworld_npc_sheets: Dictionary = {}
 static var _manifest_loaded: bool = false
 
 
@@ -92,6 +93,7 @@ static func _load_manifest() -> void:
 	_battle_effects = json.data.get("battle_effects", {})
 	_overworld_player_sheets = json.data.get("overworld_player_sheets", {})
 	_overworld_monster_sheets = json.data.get("overworld_monster_sheets", {})
+	_overworld_npc_sheets = json.data.get("overworld_npc_sheets", {})
 	print("[SPRITES] Loaded sprite manifest: %d sheets, %d monster sheets, %d battle effects" % [_manifest.size(), _monster_manifest.size(), _battle_effects.size()])
 	_manifest_loaded = true
 
@@ -126,6 +128,66 @@ static func overworld_frame_size(job_id: String) -> Vector2i:
 ##
 ## Returns convention defaults for an unregistered monster — the section is an audit ledger for
 ## art the runtime also reaches by path convention, so absence must not refuse a sheet.
+## The walk-row order DECLARED per job, falling back to the documented convention.
+##
+## OverworldPlayer hardcoded [DOWN, LEFT, RIGHT, UP] while RoamingMonster reads its rows from the
+## manifest. Every shipped sheet agrees with that order today — 53 of 53, pinned by
+## test_a_walk_sheet_declares_the_facing_its_pixels_show — so this is LATENT. The asymmetry is the
+## defect: one consumer deriving and one guessing is worse than both guessing, because the two
+## disagree only for the sheet that would have needed the fix.
+##
+## ⛔ FALLS BACK WHOLESALE, not per key. A declaration that maps two directions onto one row is
+## incoherent rather than partially useful, and half-applying it would face the player two ways at
+## once — worse than the convention it replaced.
+static func overworld_player_rows(job_id: String) -> Dictionary:
+	return overworld_walk_rows("overworld_player_sheets", job_id)
+
+
+## The same question for any overworld section — players, npcs, monsters all declare walk rows.
+##
+## ⛔ ONE OWNER, NOT ONE PER SECTION. A third near-identical copy is how this fleet ended up
+## measuring 18 redundant private comment-strippers in a day; the sections differ by KEY, not by
+## rule.
+## The loaded store for an overworld section, or {} for a name nothing loads.
+##
+## Explicit rather than reflective: a `get(section)` over the raw manifest would silently accept
+## any string and return {} for a typo, which reads exactly like a section with no entries.
+static func _manifest_section(section: String) -> Dictionary:
+	match section:
+		"overworld_player_sheets":
+			return _overworld_player_sheets
+		"overworld_monster_sheets":
+			return _overworld_monster_sheets
+		"overworld_npc_sheets":
+			return _overworld_npc_sheets
+	push_warning("[SPRITES] no loaded store for manifest section '%s'" % section)
+	return {}
+
+
+static func overworld_walk_rows(section: String, id: String) -> Dictionary:
+	_load_manifest()
+	var convention := {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}
+	var store: Dictionary = _manifest_section(section)
+	var entry = store.get(id, {})
+	if not (entry is Dictionary):
+		return convention
+	var anims = (entry as Dictionary).get("animations", {})
+	if not (anims is Dictionary):
+		return convention
+	var out := {}
+	var seen := {}
+	for name in convention:
+		var a = (anims as Dictionary).get(name, {})
+		if not (a is Dictionary) or not (a as Dictionary).has("row"):
+			return convention
+		var row := int((a as Dictionary)["row"])
+		if row < 0 or seen.has(row):
+			return convention
+		seen[row] = true
+		out[name] = row
+	return out
+
+
 static func overworld_monster_geometry(monster_id: String) -> Dictionary:
 	_load_manifest()
 	var out := {"frame": Vector2i(32, 32), "cols": 4, "rows": {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}}

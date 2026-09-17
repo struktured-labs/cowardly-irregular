@@ -122,9 +122,15 @@ func _build_silhouette() -> void:
 		art_sprite.centered = true
 		# Overworld sheets are frame grids; without a region the WHOLE sheet draws as a block of figures
 		art_sprite.region_enabled = true
-		art_sprite.region_rect = Rect2(0, 0, FRAME_W, FRAME_H)
+		# The FRONT-facing frame, asked for by name. Row 0 was hardcoded here: correct for every
+		# shipped sheet and an assumption all the same — a sheet declaring walk_down elsewhere
+		# would show the masterite from BEHIND, with nothing failing.
+		var geo: Dictionary = HybridSpriteLoader.overworld_monster_geometry(monster_id)
+		var frame: Vector2i = geo.get("frame", Vector2i(FRAME_W, FRAME_H))
+		var down_row: int = int((geo.get("rows", {}) as Dictionary).get("walk_down", 0))
+		art_sprite.region_rect = Rect2(0, down_row * frame.y, frame.x, frame.y)
 		# One frame is mob-sized; a masterite fills its own 2x2 trigger so what you see is what you touch
-		art_sprite.scale = Vector2(float(TILE_SIZE * 2) / FRAME_W, float(TILE_SIZE * 2) / FRAME_H)
+		art_sprite.scale = Vector2(float(TILE_SIZE * 2) / float(frame.x), float(TILE_SIZE * 2) / float(frame.y))
 		add_child(art_sprite)
 		return
 	# The procedural fallback reads as "someone is standing in your way" at

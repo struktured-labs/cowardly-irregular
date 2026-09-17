@@ -635,11 +635,21 @@ func _try_load_overworld_sheet() -> Dictionary:
 		return {}
 
 	var cache: Dictionary = {}
-	# Row mapping: 0=down, 1=left, 2=right, 3=up
-	var row_to_dir = [Direction.DOWN, Direction.LEFT, Direction.RIGHT, Direction.UP]
+	# Row mapping comes from the DECLARATION, not from a constant. RoamingMonster already read
+	# its rows from the manifest; this one hardcoded the convention, so a sheet ordering its rows
+	# differently would walk the player backwards while the monsters faced correctly.
+	var declared: Dictionary = HybridSpriteLoader.overworld_player_rows(current_job)
+	var row_to_dir := {
+		int(declared["walk_down"]): Direction.DOWN,
+		int(declared["walk_left"]): Direction.LEFT,
+		int(declared["walk_right"]): Direction.RIGHT,
+		int(declared["walk_up"]): Direction.UP,
+	}
 	var row_centre: Dictionary = {}
 
 	for row in range(4):
+		if not row_to_dir.has(row):
+			continue
 		var dir = row_to_dir[row]
 		for col in range(WALK_FRAMES):
 			var region = Rect2i(col * frame_w, row * frame_h, frame_w, frame_h)

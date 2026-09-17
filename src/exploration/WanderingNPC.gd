@@ -56,6 +56,14 @@ var _facing_right: bool = true
 ## Frame: 0..3 (4-frame walk cycle).
 var _archetype_frames: Dictionary = {}
 var _current_dir: int = 0  # last computed direction (for sheet row pick)
+## direction index -> sheet row, from the sheet's own declaration.
+##
+## ⛔ `_current_dir` USED TO BE THE ROW INDEX ITSELF. That coupling was invisible — no mapping to
+## grep, no constant to update, only a trailing comment — and it appeared at TWO sites: the frame
+## key and the heavy-top density lookup, which is keyed by ROW. Fixing one and not the other would
+## have nudged the wrong direction's headroom. Identity by default, so an undeclared sheet keeps
+## exactly the old behaviour.
+var _dir_to_row: PackedInt32Array = PackedInt32Array([0, 1, 2, 3])
 const ARCHETYPE_FRAME_W: int = 32
 const ARCHETYPE_FRAME_H: int = 32
 
@@ -243,6 +251,7 @@ func _setup_sprite() -> void:
 ## Returns true on success, false if asset missing/malformed.
 func _try_load_archetype() -> bool:
 	var path = HybridSpriteLoader.npc_overworld_path(sprite_archetype)
+	_resolve_dir_to_row(path)
 	if not ResourceLoader.exists(path):
 		return false
 	var tex = load(path) as Texture2D
@@ -273,7 +282,8 @@ func _try_load_archetype() -> bool:
 func _update_archetype_frame() -> void:
 	if _archetype_frames.is_empty():
 		return
-	var key = "%d_%d" % [_current_dir, _anim_frame % 4]
+	var row: int = _dir_to_row[_current_dir] if _current_dir < _dir_to_row.size() else _current_dir
+	var key = "%d_%d" % [row, _anim_frame % 4]
 	if _archetype_frames.has(key):
 		_sprite.texture = _archetype_frames[key]
 		# Disable the procedural-path flip_h since archetype rows already
@@ -283,8 +293,19 @@ func _update_archetype_frame() -> void:
 		# has headroom above the Mode 7 horizon and doesn't get clipped
 		# by the viewport top. Belt-and-suspenders alongside the art fix
 		# tracked by test_archetype_sheet_top_density_ratchet.
-		var top: int = int(_archetype_row_top_density.get(_current_dir, 0))
+		var top: int = int(_archetype_row_top_density.get(row, 0))
 		_sprite.offset.y = HEAVY_TOP_SPRITE_Y_OFFSET if top > HEAVY_TOP_DENSITY else 0.0
+
+
+## Read the sheet's declared walk rows into the direction map. `_current_dir` is this file's own
+## encoding (0=down, 1=left, 2=right, 3=up); the ROW each name sits on belongs to the sheet.
+func _resolve_dir_to_row(path: String) -> void:
+	var id := path.get_base_dir().get_file()
+	var rows: Dictionary = HybridSpriteLoader.overworld_walk_rows("overworld_npc_sheets", id)
+	_dir_to_row = PackedInt32Array([
+		int(rows.get("walk_down", 0)), int(rows.get("walk_left", 1)),
+		int(rows.get("walk_right", 2)), int(rows.get("walk_up", 3)),
+	])
 
 
 func _setup_collision() -> void:
