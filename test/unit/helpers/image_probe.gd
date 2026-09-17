@@ -16,3 +16,11 @@ extends RefCounted
 ## can never abort at all — only the sites with no guarded receiver need this.
 static func image_of(tex: Texture2D) -> Array:
 	return [tex.get_image()]
+
+## The width of one frame of an animation, as a ONE-ELEMENT array.
+##
+## Same contract as image_of: an abort anywhere in the chain -- a null SpriteFrames, an animation
+## that is not there, a frame index past the end -- returns EMPTY rather than a number a caller
+## could mistake for a measurement.
+static func frame_width_of(sf: SpriteFrames, anim: StringName, idx: int) -> PackedFloat32Array:
+	return PackedFloat32Array([sf.get_frame_texture(anim, idx).get_size().x])
