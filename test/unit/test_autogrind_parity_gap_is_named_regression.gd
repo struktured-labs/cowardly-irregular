@@ -308,6 +308,13 @@ const GRIND_PATH_MARKER := {
 	## first marker pointed at a consumer and this arm caught it — the grind's support arm reads the
 	## key exactly where live's support executor does.
 	"next_attack_multiplier": "ability.get(\"next_attack_multiplier\"",
+	## ⛔ DECLARED LATE, and the delay is the point: I wired this key into the physical arm's dodge
+	## gate and shipped without running THIS file, so the guard caught its own author. It moved off
+	## the unexamined backlog by being IMPLEMENTED, and nothing announced the move — which is the
+	## failure mode arm 7 exists for. The marker is the `ability.get` and not `_target_dodges_physical(`
+	## on purpose: that helper is called from _resolve_attack too, and a marker matching a plain
+	## attack would credit the key to an arm live never reads it in.
+	"ignores_evasion": "ability.get(\"ignores_evasion\"",
 	## ⚠️ ALL FOUR secondary_* KEYS, AND THREE OF THEM WERE INVISIBLE TO THIS MAP UNTIL 2026-09-16.
 	## They live in `_apply_secondary_effect`, which `_execute_support_ability` calls — but the old
 	## walk-back skipped past any non-executor function, so a read inside a helper was credited to
