@@ -848,7 +848,9 @@ func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
 	"""Play a battle sound with volume and pitch scaling for power-based effects"""
-	if _try_play_sfx_from_manifest(_battle_player, sound_key, volume_db, pitch_scale):
+	## volume_db is a TRIM on the channel, never the level: its one caller passes lerp(-3,+3) "scale volume based on power", and forwarding it raw made it ABSOLUTE — every elemental impact landed 3-9 dB over the -6 dB battle base and persisted there. 0.0 now means "no trim".
+	var level: float = _battle_level(sound_key) + volume_db
+	if _try_play_sfx_from_manifest(_battle_player, sound_key, level, pitch_scale):
 		return
 	if not SOUNDS.has(sound_key):
 		return
@@ -856,7 +858,7 @@ func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: 
 	pitch_scale = clamp(pitch_scale, 0.1, 10.0)
 	var params = SOUNDS[sound_key].duplicate()
 	# Apply volume scaling
-	params["volume_db"] = volume_db
+	params["volume_db"] = level
 	# Apply pitch scaling to frequency
 	if params.has("freq"):
 		params["freq"] = params["freq"] * pitch_scale
