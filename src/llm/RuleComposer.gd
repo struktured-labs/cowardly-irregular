@@ -808,13 +808,38 @@ func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[Strin
 		return notes
 	var types: Dictionary = domain_system.PARTY_CONDITION_TYPES
 	var nullary: Array = domain_system.NULLARY_CONDITIONS if "NULLARY_CONDITIONS" in domain_system else []
+	var named: Array = domain_system.NAMED_VALUE_CONDITIONS if "NAMED_VALUE_CONDITIONS" in domain_system else []
+	var operators: Dictionary = domain_system.OPERATORS if "OPERATORS" in domain_system else {}
+	for note in _expand_or_conditions(rules, types):
+		notes.append(note)
 	for rule in rules:
 		if typeof(rule) != TYPE_DICTIONARY:
 			continue
 		for c in rule.get("conditions", []):
 			if typeof(c) != TYPE_DICTIONARY:
 				continue
+			## The model writes the TYPE as the KEY: {"always": ""} for {"type":"always"}.
+			## Only when exactly one key is itself a live condition type — anything looser
+			## would rewrite a rule on the strength of a coincidence.
+			if not c.has("type") and c.size() == 1:
+				var only_key: String = str(c.keys()[0])
+				if types.has(only_key):
+					var carried: Variant = c[only_key]
+					c.erase(only_key)
+					c["type"] = only_key
+					if str(carried) != "" and not nullary.has(only_key):
+						c["value"] = carried
+					notes.append("Read {\"%s\": …} as a '%s' condition." % [only_key, only_key])
 			var ctype: String = str(c.get("type", ""))
+			## The mirror of the party_ strip below: the model writes `member_hp_min` for an
+			## aggregate that is spelled party_hp_min. Swapped ONLY when the swapped name is
+			## itself a live type, so this is a lookup in the system's vocabulary.
+			if not types.has(ctype) and ctype.begins_with("member_"):
+				var swapped: String = "party_" + ctype.substr("member_".length())
+				if types.has(swapped):
+					c["type"] = swapped
+					notes.append("Read '%s' as '%s' — that aggregate is party-level." % [ctype, swapped])
+					ctype = swapped
 			if not types.has(ctype) and ctype.begins_with("party_"):
 				var stripped: String = ctype.substr("party_".length())
 				if types.has(stripped):
@@ -826,6 +851,54 @@ func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[Strin
 					if c.has(key) and str(c[key]) == "":
 						c.erase(key)
 						notes.append("Dropped an empty '%s' from '%s' — it takes no payload." % [key, ctype])
+			## A named-value condition asks "does this member HAVE it" — the evaluator never
+			## reads op. validate_rule refuses an unknown one and that discards the whole
+			## composition, so an op it cannot use is dropped rather than paid for.
+			if named.has(ctype) and c.has("op") and not operators.has(str(c["op"])):
+				var bad_op: String = str(c["op"])
+				c.erase("op")
+				notes.append("Dropped op '%s' from '%s' — it asks whether the status is present." % [bad_op, ctype])
+	return notes
+
+
+## The model reaches for boolean composition this grammar does not have — `or` with a
+## nested `options` list, `any_of` with `conditions`. Measured 2 of 20 live compositions,
+## each a total loss. Conditions are AND-chained and first match wins, so OR is spelled as
+## SEPARATE RULES: one rule per branch, carrying every sibling condition and the actions.
+func _expand_or_conditions(rules: Array, types: Dictionary) -> Array[String]:
+	const OR_TYPES := ["or", "any_of", "either", "any"]
+	const BRANCH_KEYS := ["conditions", "options", "any", "branches"]
+	var notes: Array[String] = []
+	var i: int = 0
+	while i < rules.size():
+		var rule = rules[i]
+		i += 1
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		var conds: Array = rule.get("conditions", [])
+		var at: int = -1
+		var branches: Array = []
+		for j in conds.size():
+			var c = conds[j]
+			if typeof(c) != TYPE_DICTIONARY or not OR_TYPES.has(str(c.get("type", ""))):
+				continue
+			for key in BRANCH_KEYS:
+				if typeof(c.get(key)) == TYPE_ARRAY and (c[key] as Array).size() > 0:
+					branches = c[key]
+					at = j
+					break
+			if at != -1:
+				break
+		if at == -1:
+			continue
+		conds.remove_at(at)
+		conds.insert(at, branches[0])
+		notes.append("Split an OR into one rule per branch — in this grammar, rules ARE the or.")
+		for extra in branches.slice(1):
+			var clone: Dictionary = rule.duplicate(true)
+			(clone["conditions"] as Array)[at] = extra
+			rules.insert(i, clone)
+			i += 1
 	return notes
 
 
