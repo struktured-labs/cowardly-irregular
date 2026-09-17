@@ -106,7 +106,9 @@ func test_the_pin_still_has_a_consumer() -> void:
 	## flag becomes decorative and every arm above still passes while nothing is protected.
 	var src: String = FileAccess.get_file_as_string(SUNO)
 	assert_ne(src, "", "CONTROL: suno_api.py must be readable — it is the consumer this guard assumes")
-	assert_true(src.contains('entry.get("pinned")'),
-		"suno_api.py no longer reads the pin when building its queue — the flag is decorative and these %d beds are regenerable" % PROTECTED.size())
-	assert_true(src.contains("pinned_skipped"),
-		"suno_api.py no longer SKIPS pinned tracks — reading the flag is not the same as honouring it")
+	## ⛔ NOT `entry.get("pinned")` — that also appears in the LISTING code, so deleting the
+	## enforcement branch leaves the pattern intact and this arm green. Measured, 2026-09-17.
+	assert_true(src.contains('if entry.get("pinned"):'),
+		"suno_api.py no longer BRANCHES on the pin when building its queue — the flag is decorative and these %d beds are regenerable" % PROTECTED.size())
+	assert_true(src.contains("pinned_skipped += 1"),
+		"suno_api.py no longer counts a pinned skip — reading the flag is not the same as honouring it")
