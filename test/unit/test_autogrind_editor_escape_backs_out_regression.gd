@@ -18,6 +18,8 @@ var _ed: Node = null
 ## Own viewport per test: the shared one latches is_input_handled(), which silently disarms
 ## every _input arm after the first handled press.
 func before_each() -> void:
+	## Escape's arm calls _save_rules -> set_autogrind_rules -> three files under user://autogrind/
+	AutogrindSystem._test_disable_persistence = true
 	_vp = SubViewport.new()
 	_vp.size = Vector2i(1280, 720)
 	add_child_autofree(_vp)
@@ -31,6 +33,7 @@ func after_each() -> void:
 	if _ed and is_instance_valid(_ed):
 		_ed.queue_free()
 	_ed = null
+	AutogrindSystem._test_disable_persistence = false
 
 
 func _action(name: String) -> InputEventAction:

@@ -3253,6 +3253,8 @@ func _delete_last_custom_preset() -> void:
 
 func _persist_custom_presets() -> void:
 	"""Save custom presets to user://"""
+	## The only write site in this lane without this gate; its two callers do not gate either.
+	if AutogrindSystem._test_disable_persistence: return
 	var file = FileAccess.open(CUSTOM_PRESETS_PATH, FileAccess.WRITE)
 	if not file:
 		push_warning("[AUTOGRIND] Could not save custom presets")
