@@ -6678,12 +6678,12 @@
   },
   "_field_provenance": {
     "_why": "Fields with NO runtime reader. The rule this implements (cowir-music/cowir-main, 2026-09-16): an authored key must be READ by the runtime or DECLARED inert with a note naming who holds it — you cannot silence it green, only explain it green. test_a_manifest_field_is_read_or_declared reds on a field that is neither.",
-    "generator": "which tool wrote the sheet. Read by tools/audit_sprite_tiers.py and by a human deciding whether an AI regen may touch it — never by the game.",
+    "generator": "which tool wrote the sheet. Read across tools/ and by a human deciding whether an AI regen may touch it — never by the game.",
     "_note": "prose for the next reader of this file. Never parsed.",
     "flip_h_reason": "why a sheet's flip_h was set against the frame-size convention. The DECISION is flip_h, which the loader reads; this records the argument.",
     "derived_from": "the village whose _get_cliff_palette() a world atlas was recoloured from. Read by test_a_village_palette_is_not_silently_overridden, not by src/ — it is the evidence that an override is a no-op in hue.",
     "derived_palette": "the exact colours used at generation time. Its job is to EXPIRE: if the village's colours change, the guard reds and the atlas is stale.",
-    "tier": "the artist-first pipeline tier (T0 procedural / T1 AI / T2 artist draft / T3 artist final) from CLAUDE.md. Authored on every entry; read by tools/audit_sprite_tiers.py and by the artist deciding what an AI regen may touch — never by src/. The \"tier\" hits in src/ are autogrind's grind tier and ShopScene's spell tier, different data under the same name.",
+    "tier": "the artist-first pipeline tier (T0 procedural / T1 AI / T2 artist draft / T3 artist final) from CLAUDE.md. Authored on every entry; read across tools/ (24 scripts at last sweep — derive it, do not trust this sentence to age) and by the artist deciding what an AI regen may touch — never by src/. The \"tier\" hits in src/ are autogrind's grind tier and ShopScene's spell tier, different data under the same name.",
     "source": "how the sheet was produced — model, prompt or ingest run. Provenance for the artist ledger and for a human judging whether a sheet may be regenerated. The \"source\" hits in src/ are RuleComposer's and AbilityVFX's own provenance strings, not this field."
   },
   "_section_provenance": {
