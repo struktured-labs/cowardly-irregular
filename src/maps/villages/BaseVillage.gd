@@ -705,5 +705,12 @@ func _exit_tree() -> void:
 ## Virtual: the ambient-loop key layered UNDER this village's music, or "" for none.
 ## `ambient_village` is a 144.9s authored bed that had never played — nothing called
 ## play_ambient with it, and villages had no ambient layer at all until 2026-09-16.
+## Same hook the overworld carries: weather clearing must hand the layer back to the village.
+func restore_place_ambient() -> void:
+	var key := _get_ambient_key()
+	if key != "" and SoundManager and SoundManager.has_method("play_ambient"):
+		SoundManager.play_ambient(key)
+
+
 func _get_ambient_key() -> String:
 	return "ambient_village"

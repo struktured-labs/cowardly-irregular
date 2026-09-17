@@ -882,6 +882,12 @@ func _place_ambient_effects() -> void:
 		add_child(smoke)
 
 
+## WeatherSystem hands the ambient layer back here when weather clears and this world has no
+## fair-weather bed. Without it W1 stayed silent until the player crossed a zone boundary.
+func restore_place_ambient() -> void:
+	_update_zone_ambient(_current_zone)
+
+
 func _update_zone_ambient(zone: String) -> void:
 	var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 	if sm == null:
