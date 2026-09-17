@@ -17,6 +17,44 @@ extends GutTest
 ## pad player cannot press. MenuScene's Select legend is converted. Still NOT covered: legends
 ## elsewhere in the game that were never surveyed — this file pins four files, not every legend.
 
+## ⛔ THIS FILE IS HERMETIC ABOUT THE PROFILE, and it was not until 2026-09-17. Three arms ask
+## InputProfileManager for per-family BUTTON NAMES, which it derives from the live InputMap — so
+## they silently inherited whatever `user://input/controls.json` held. A remap test writes a
+## "Custom" profile there; its cleanup is skipped when a run is interrupted, and the file then
+## survives into every later run in that sandbox.
+##
+## Measured: with a stale Custom profile present, `battle_defer` is bound to joypad button 1 (a FACE
+## button, which BUTTON_NAMES deliberately returns "" for) instead of button 9, and three asserts
+## fail expecting L / LB / L1. A FRESH sandbox passes 10/10. It reads as a real binding defect and
+## is not one — project.godot has button 9 and all three profiles map it to 9.
+##
+## ⚠️ THE FAILURE DIRECTION IS WHAT MAKES IT WORTH FIXING RATHER THAN DOCUMENTING: it is a RED that
+## is not a defect, in a lane's own long-lived sandbox, pointing at bindings that are correct. It
+## costs whoever next runs this file an investigation, which is the expensive kind of wrong.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)
+
+
+## CONTROL: the profile this file pins must actually put the shoulders where the arms expect, or
+## every per-family assertion below is asking about a binding the profile never made.
+func test_control_the_pinned_profile_binds_the_shoulders() -> void:
+	assert_eq(InputProfileManager.active_profile, "Standard",
+		"before_all must leave the Standard profile active, or the arms inherit the sandbox again")
+	var bound := InputProfileManager.button_name_for_action("battle_defer", "Xbox Wireless Controller")
+	assert_eq(bound, "LB",
+		"Standard must bind battle_defer to a shoulder; got %s — a FACE button returns \"\" here, "
+		% ("\"\"" if bound == "" else bound) + "which is exactly how a stale Custom profile shows up")
+
+
 const CONVERTED := [
 	"res://src/ui/ItemsMenu.gd",
 	"res://src/ui/LensMenu.gd",
