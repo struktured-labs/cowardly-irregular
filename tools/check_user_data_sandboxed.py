@@ -163,7 +163,7 @@ def audit(paths):
                 if "godot" not in code and not is_editor:
                     continue
             exempt_reason = next((r for token, r in EXEMPT if token in code), None)
-            if any(r in code for r in REDIRECTS):
+            if _redirect_governs(code):
                 ok += 1
             elif exempt_reason:
                 declared += 1
@@ -173,6 +173,59 @@ def audit(paths):
                                  "exported binary" if is_binary and not is_editor else "godot"))
     return findings, ok, declared, scanned
 
+
+
+def _redirect_governs(code):
+    """Does a redirect on this line actually apply to the process the line starts?
+
+    ⛔ WAS: `any(r in code for r in REDIRECTS)` — a SUBSTRING anywhere on the line marked it
+    sandboxed. That is a textual presence standing in for a structural property, and it fails
+    CLEAN on the guard whose whole job is protecting struktured's profile. Demonstrated:
+
+        XDG_DATA_HOME="$SB" ./tools/prep.sh; godot --headless --quit   -> counted SANDBOXED
+        echo "run with XDG_DATA_HOME=<sandbox>" && godot --headless    -> counted SANDBOXED
+
+    In the first, the redirect governs prep.sh and godot runs against the real profile. In the
+    second it is display text. Both would have been certified as protected.
+
+    ✅ LATENT, NOT LIVE when found (2026-09-17): all 14 lines the guard counted as sandboxed
+    genuinely redirect — 13 by command prefix, 1 through `env`. Fixed because the direction is
+    false-CLEAN on the one guard that stands between a deploy and his save files.
+
+    Two legitimate forms, and `env` is why this cannot just reject quotes:
+
+        XDG_DATA_HOME=x godot ...                 a command-prefix assignment
+        env "XDG_DATA_HOME=$x" xvfb-run godot     an argument to env, which applies it
+                                                  (tools/deploy_web.sh:427 — a real line)
+    """
+    for r in REDIRECTS:
+        i = code.find(r)
+        while i >= 0:
+            before, after = code[:i], code[i:]
+            quoted = (before.count('"') % 2 == 1) or (before.count("'") % 2 == 1)
+            # `env "VAR=..."` is the one quoted form that DOES apply. Accept it only when env
+            # is the governing command, not merely present somewhere on the line.
+            via_env = re.search(r'(^|[;&|]|\()\s*(\w+=\S+\s+)*env\s+[^;&|]*$', before) is not None
+            if not quoted or via_env:
+                # Nothing may separate the redirect from what it is supposed to wrap — and
+                # "what it wraps" is THIS line's invocation, which is often not the literal
+                # word `godot`.
+                #
+                # ⚠️ My first version split on "godot" and fell through to the whole tail when
+                # the line ran `"$BIN"` or `wine "./${ARTIFACT}"` instead. The tail then
+                # contained `2>&1 &`, whose `&` characters are a REDIRECTION and a BACKGROUND
+                # operator, not command separators — so it rejected two correctly-sandboxed
+                # lines (deploy_desktop.sh:675 and :678, `HOME=`/`WINEPREFIX=` prefixes).
+                # A guard that reds on correct code gets read as noise and deleted, so the
+                # false positive was the more expensive half of the two.
+                m = re.search(r'(?<!\w)godot(?!\w)|"\./\$\{ARTIFACT\}"|"\$BIN"|"\./\$ARTIFACT"', after)
+                head = after[:m.start()] if m else after
+                # strip redirections before looking for separators: 2>&1, &>, >& are not one
+                head = re.sub(r'\d*>&\d*-?|&>', ' ', head)
+                if not re.search(r';|&&|\|\||(?<![>&])&(?![&])', head):
+                    return True
+            i = code.find(r, i + 1)
+    return False
 
 def main(argv):
     # tools/*.sh, not tools/deploy_*.sh. The first corpus was hand-shaped and covered 4 files;
@@ -231,6 +284,24 @@ def selftest():
         check("an EXPORTED BINARY with no redirect is FLAGGED", len(f), 1)
         f, o, dec, _ = audit([w("d.sh", '( cd "$OUT" && XDG_DATA_HOME="$X" "./${ARTIFACT}" --headless --quit )\n')])
         check("...and is CLEAN when redirected", len(f), 0)
+
+        # ── a redirect must GOVERN the invocation, not merely appear on the line ────────────
+        # The check was `any(r in code for r in REDIRECTS)` — a substring standing in for a
+        # structural property, failing CLEAN on the guard that protects his profile.
+        f, o, dec, _ = audit([w("e.sh", 'XDG_DATA_HOME="$SB" ./tools/prep.sh; godot --headless --quit\n')])
+        check("a redirect on a DIFFERENT command is FLAGGED", len(f), 1)
+        f, o, dec, _ = audit([w("f.sh", 'echo "run with XDG_DATA_HOME=<sandbox>" && godot --headless --quit\n')])
+        check("a redirect inside a STRING is FLAGGED", len(f), 1)
+        # ...and the two forms that legitimately apply must stay clean. `env` is why this
+        # cannot simply reject quoted occurrences (tools/deploy_web.sh:427 is this shape).
+        f, o, dec, _ = audit([w("g.sh", 'CMD=(env "XDG_DATA_HOME=$X" xvfb-run -a timeout 300 godot --headless --quit)\n')])
+        check("...but `env \"VAR=...\"` DOES govern, so it is CLEAN", len(f), 0)
+        # ⚠️ the regression arm: a trailing `2>&1 &` carries `&` characters that are a
+        # REDIRECTION and a BACKGROUND operator, not command separators. My first version of
+        # this fix read them as separators and flagged two correctly-sandboxed real lines
+        # (deploy_desktop.sh:675 and :678). A guard that reds on correct code gets deleted.
+        f, o, dec, _ = audit([w("h2.sh", 'HOME="$SMOKE_HOME" timeout 600 xvfb-run -a "$BIN" -- --battle-smoke > "tmp/x.log" 2>&1 &\n')])
+        check("a trailing `2>&1 &` is NOT a separator", len(f), 0)
         # a continuation: the redirect is on the PREVIOUS physical line
         f, o, dec, _ = audit([w("e.sh", 'WINEPREFIX="$S" timeout 900 xvfb-run -a \\\n    wine "./${ARTIFACT}" -- --battle-smoke\n')])
         check("a redirect on a CONTINUED line still counts", len(f), 0)
