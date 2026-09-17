@@ -48,6 +48,7 @@ import collections
 import hashlib
 import os
 import statistics
+import time
 import struct
 import sys
 
@@ -240,6 +241,36 @@ def main():
             print(f"[tier] NOTE (advisory, not a block): {msg}")
     else:
         print(f"[tier] UNDER the cache line by {(cache_line-file_size)/1048576:.2f} MiB")
+
+    # ── the reference record ────────────────────────────────────────────────────────────
+    # Written ONLY on a pass, because a failing check means these numbers describe a pck that
+    # does not carry the tier it claims — the exact thing a future projection must not inherit.
+    #
+    # WHY IT EXISTS. make_web_audio.sh's size projection needs the NON-MUSIC payload of a real
+    # build. It used to derive that by subtracting a tier DIRECTORY from a reference pck, which
+    # is how it came to subtract a 40k tier from a 48k-era pck for thirteen releases (13.67 MiB
+    # inflation, every publish). The two numbers it actually wants are both measured right here,
+    # from the pck's own file table: the file's size and the bytes its music entries occupy.
+    # Recording them makes the reference EXACT, self-describing, and as fresh as the last
+    # successful publish — no tier on disk, no declared bitrate, no era to mismatch.
+    #
+    # The ratio goes in too: packed bytes are the IMPORTED artifacts and run ~1.06x the staged
+    # tier, so a projection that adds raw tier bytes to a packed-derived payload under-counts.
+    # That term was missing entirely from the old arithmetic.
+    rec = opts.get("record")
+    if rec and not bad:
+        try:
+            os.makedirs(os.path.dirname(rec), exist_ok=True)
+            with open(rec, "w") as fh:
+                fh.write(f"pck_bytes={file_size}\n")
+                fh.write(f"packed_music_bytes={packed_total}\n")
+                fh.write(f"packed_tier_ratio={statistics.median(ratios):.4f}\n" if ratios else "")
+                fh.write(f"tier_dir={os.path.basename(os.path.normpath(tier))}\n")
+                fh.write(f"recorded_at={int(time.time())}\n")
+            print(f"[tier] reference recorded -> {rec}")
+        except OSError as e:
+            print(f"[tier] note: could not write the reference record ({e}) — this run is unaffected",
+                  file=sys.stderr)
 
     for b in bad:
         print(f"[tier] FAIL: {b}", file=sys.stderr)

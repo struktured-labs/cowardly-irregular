@@ -130,7 +130,7 @@ if [ ! -d "$_CACHE_DIR" ]; then
     done
 fi
 python3 - "$src_bytes" "$out_bytes" "$TOTAL" "$BITRATE" "$PCK_LIMIT_MIB" "$CACHE_LIMIT_MIB" <<'PY'
-import sys, os, glob, re
+import sys, os, glob, re, time
 src, out, n, br, limit, cache = int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]), sys.argv[4], int(sys.argv[5]), int(sys.argv[6])
 mib = 1024 * 1024
 print(f"[web-audio] masters   {src/mib:7.1f} MiB  ({n} tracks)")
@@ -214,6 +214,65 @@ else:
     # reference pck's music was encoded at; that tier is what gets subtracted, and the
     # shipped tier is then added back on top. Undeclared is REFUSED, never assumed — the
     # whole defect was an assumption wearing a guard's clothes.
+    # ── PREFERRED: the record the last successful publish left behind ───────────────────
+    # check_web_audio_tier.py writes it from the pck's OWN FILE TABLE after gate 3b passes, so
+    # the non-music payload is measured rather than derived from a tier directory that may be
+    # from a different era. No tier on disk, no declared bitrate, nothing to mismatch — and it
+    # is as fresh as the last release instead of however old the hardcoded pck happens to be.
+    #
+    # The ratio matters and was missing from the old arithmetic entirely: packed bytes are the
+    # IMPORTED artifacts and run ~1.06x the staged tier, so adding raw tier bytes to a
+    # packed-derived payload under-counts by that factor.
+    rec_path = os.environ.get("WEB_REF_RECORD",
+                              os.path.expanduser("~/.cache/cowir_web_audio/reference.txt"))
+    rec = {}
+    try:
+        with open(rec_path) as fh:
+            for line in fh:
+                if "=" in line:
+                    k, v = line.strip().split("=", 1)
+                    rec[k] = v
+    except OSError:
+        pass
+    if {"pck_bytes", "packed_music_bytes"} <= set(rec):
+        ref_bytes = int(rec["pck_bytes"])
+        other = ref_bytes - int(rec["packed_music_bytes"])
+        ratio = float(rec.get("packed_tier_ratio", 1.0))
+        age_d = (time.time() - int(rec.get("recorded_at", 0))) / 86400.0
+        print(f"[web-audio] non-music payload {other/mib:.1f} MiB  (MEASURED from the pck's own "
+              f"table by the last passing publish, {age_d:.1f}d ago)")
+        tot = (out * ratio + other) / mib
+        # ⛔ THE IDENTITY SURVIVES INTO THIS PATH AND I NEARLY SHIPPED IT AGAIN. At the
+        # record's OWN bitrate, out*ratio is just packed_music_bytes re-derived, so
+        # tot = out*ratio + (pck - packed_music) ~= pck — the reference's size wearing a
+        # projection's label, for the third time in this file. The residual (~0.13 MiB on
+        # .374) is the ratio's approximation error, NOT predictive accuracy, and reporting
+        # it as accuracy would be the same mistake one layer over.
+        #
+        # What the record actually buys is a CORRECT `other` (59.59 MiB measured from the
+        # pck's table, against 81.27 MiB when a 40k tier was subtracted from a 48k-era pck)
+        # and honest projections at OTHER bitrates, where `out` moves and `other` does not.
+        rec_br = re.search(r"(\d+)k", rec.get("tier_dir", ""))
+        if rec_br and rec_br.group(1) == str(br):
+            print(f"[web-audio] at {br}k — the bitrate the record was MEASURED at — there is nothing")
+            print(f"[web-audio] to project: out*ratio is packed_music re-derived, so this collapses to")
+            print(f"[web-audio] the recorded build's own size. No ruling on the {limit} MiB itch limit")
+            print(f"[web-audio] or the {cache} MiB cache line; deploy_web.sh gate 3 weighs the real pck.")
+            print(f"[web-audio] Re-run at another bitrate for the deltas, which this does answer.")
+            print("[web-audio] projections only. deploy_web.sh gate 3 measures the real pck.")
+            raise SystemExit(0)
+        print(f"[web-audio] projected pck ~{tot:.2f} MiB vs {limit} MiB itch limit "
+              f"({'FITS' if tot < limit else 'OVER — drop the bitrate'})")
+        print(f"[web-audio]               vs {cache} MiB browser cache line "
+              f"({'CACHEABLE' if tot < cache else 'RE-DOWNLOADED EVERY VISIT'}"
+              f", {abs(cache - tot):.2f} MiB {'spare' if tot < cache else 'over'})")
+        future_out = (src + 69 * mib) * (out / src) * ratio
+        ftot = (future_out + other) / mib
+        print(f"[web-audio] with the ~48 queued monster themes: ~{ftot:.0f} MiB "
+              f"({'FITS' if ftot < limit else 'OVER at ' + str(br) + 'k — needs fewer tracks or a lower bitrate'})")
+        print("[web-audio] projections only. deploy_web.sh gate 3 measures the real pck.")
+        raise SystemExit(0)
+
     ref_br = os.environ.get("WEB_REF_PCK_KBPS")
     if not ref_br:
         print(f"[web-audio] the reference pck's own bitrate is not declared, so the non-music")
