@@ -478,3 +478,57 @@ func test_a_wandering_npc_shows_the_row_its_declaration_names() -> void:
 		assert_eq(got, want,
 			("direction %d must draw row %d as its declaration says, not row %d as the old "
 			+ "dir-IS-the-row coupling gave") % [dir, want, dir])
+
+
+## ⛔ THE SECOND ROUTE. test_turning_does_not_move_the_avatar only exercises the ARTIST path, so
+## it says nothing about the procedural fallback — and a consequence arm is scoped to a ROUTE, not
+## to a feature (cowir-autogrind, whose end-to-end arm covered one of two selection paths).
+##
+## ⚠️ AND NO SHIPPED JOB REACHES THAT FALLBACK. All 14 have jobs/<id>/overworld.png, measured
+## 2026-09-16, so the procedural branch in _generate_all_sprites is unreachable for real content
+## and can only be driven by an id with no sheet. Stated because "untested" and "unreachable" are
+## different claims and the arm below would otherwise read as covering live behaviour.
+##
+## 🔑 THE ROUTE THAT MATTERS IS THE TRANSITION. Procedural frames are generated centred, so a
+## correction derived from artist art must not survive onto them — and `_static_sprite_cache`
+## persists across instances, so a stale offset would misplace a sprite that needs none.
+func test_leaving_the_artist_path_clears_the_registration_offset() -> void:
+	const OWP := preload("res://src/exploration/OverworldPlayer.gd")
+	var player = OWP.new()
+	player.current_job = "time_mage"
+	add_child_autofree(player)
+	var sprite: Sprite2D = player.get_node_or_null("Sprite")
+	assert_not_null(sprite, "PRECONDITION: the player must have built a sprite node")
+
+	var cache: Dictionary = player.get("_sprite_cache")
+	assert_true(cache.has(OWP.OFFSETS_KEY),
+		"PRECONDITION: time_mage must reach the ARTIST path, or this proves nothing about leaving it")
+
+	# ⛔ LEAVE THE SPRITE CARRYING A NON-ZERO OFFSET. Iterating and stopping wherever the dictionary
+	# happens to end left it on a direction whose offset was 0, so the "cleared" assert below was
+	# satisfied by a value that had never been set — the mutation that stops clearing PASSED.
+	var worst_dir = null
+	var biggest := 0.0
+	for dir in (cache[OWP.OFFSETS_KEY] as Dictionary):
+		player.set("current_direction", dir)
+		player.call("_update_sprite")
+		if absf(sprite.offset.x) > biggest:
+			biggest = absf(sprite.offset.x)
+			worst_dir = dir
+	assert_gt(biggest, 0.0,
+		"PRECONDITION: time_mage must apply a non-zero offset, or the clear below is vacuous")
+	player.set("current_direction", worst_dir)
+	player.call("_update_sprite")
+	assert_almost_eq(absf(sprite.offset.x), biggest, 0.001,
+		"PRECONDITION: the sprite must be LEFT carrying that offset, or nothing needs clearing")
+
+	# An id with no sheet is the only way to reach the procedural branch.
+	player.call("set_job", "__no_such_job__")
+	assert_false((player.get("_sprite_cache") as Dictionary).has(OWP.OFFSETS_KEY),
+		"PRECONDITION: an unknown job must fall back to procedural")
+	for dir in 4:
+		player.set("current_direction", dir)
+		player.call("_update_sprite")
+		assert_almost_eq(sprite.offset.x, 0.0, 0.001,
+			("a procedural frame is generated CENTRED, so a correction derived from artist art must "
+			+ "not survive the switch — direction %d still carries %.2fpx") % [dir, sprite.offset.x])
