@@ -1361,14 +1361,20 @@ const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
 ## across 7 pools, and "support" is in UTILITY_ABILITY_TYPES, which the brute and assassin AI both
 ## draw from. Mirroring it into an engine that runs hundreds of unattended battles turns a per-fight
 ## bug into a gold fountain, so the enemy side is declared in the ledger rather than copied.
-## Base rate only: _steal_success_rate also sums an equipment steal_bonus and a passive steal_chance,
-## and this file models NEITHER category at all — a broader gap than steal, declared as its own entry.
+## ⚠️ HALF of live's rate, and the other half is a RULING rather than an omission. Mirrors
+## BattleManager._steal_success_rate:5503 — `clampf(base + equip + passive, 0.0, 1.0)` — with the
+## EQUIPMENT term wired and the PASSIVE term deliberately absent: `steal_chance` is one of the 12
+## stat_mods keys in the 45-passive scoping call, declared and waiting on struktured. Wiring the
+## equipment half alone does not skew the grind the way a half-ported Speculator would, because both
+## terms ADD to the same rate: modelling one moves the number toward live, never past it.
+## RETIREMENT CONDITION: when the passives ruling lands, this composes all three and the note goes.
 func _roll_steal(caster, ability: Dictionary, targets: Array, base_rate: float) -> void:
 	var party_side: bool = _player_party.has(caster)
+	var rate: float = clampf(base_rate + _sum_equipment_special_effect(caster, "steal_bonus"), 0.0, 1.0)
 	for target in targets:
 		if target == null or not is_instance_valid(target) or not target.is_alive:
 			continue
-		if randf() >= base_rate:
+		if randf() >= rate:
 			_log("%s fails to steal from %s" % [caster.combatant_name, target.combatant_name])
 			continue
 		## BattleManager:6147 verbatim. rogue_lockward's first_steal_guaranteed and steal_response are

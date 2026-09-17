@@ -32,7 +32,6 @@ const GRIND_IGNORES := [
 	"dark_damage_bonus", "dark_resistance", "exp_while_dead",
 	"familiar_weight_bonus", "fire_damage_bonus", "fire_resistance", "holy_damage_bonus",
 	"ice_damage_bonus", "lightning_damage_bonus", "poison_chance", "sleep_chance",
-	"steal_bonus",
 ]
 
 ## Modelled by the resolver now, each mirroring live's formula rather than a new one. The set above
@@ -41,7 +40,7 @@ const GRIND_IGNORES := [
 ## silent shrink would leave it reading as still true.
 ## Behaviour is pinned in test_autogrind_a_party_wears_its_gear_regression, not here: this file is a
 ## census and says WHICH keys are modelled, never that they are modelled CORRECTLY.
-const GRIND_MODELS := ["critical_bonus", "evasion_bonus", "status_resistance"]
+const GRIND_MODELS := ["critical_bonus", "evasion_bonus", "status_resistance", "steal_bonus"]
 
 ## ⛔ THE THIRD SHAPE, AND I PUBLISHED A WRONG FINDING BEFORE @cowir-battle CORRECTED IT.
 ## This file first listed seven of the above as INERT_EVERYWHERE — "authored on gear a player can buy,
