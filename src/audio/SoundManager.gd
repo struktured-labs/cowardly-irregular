@@ -941,7 +941,8 @@ func play_ability(ability_id: String) -> void:
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
 	# Try world-specific variant (e.g., "w2_ability_fire" for suburban world)
 	var world_key = _get_world_sfx_prefix() + sound_key
-	if _try_play_sfx_from_manifest(_ability_player, world_key):
+	## Guarded like the other three prefix callers: in W1 the prefix is "" so world_key IS sound_key, and an unguarded first attempt that STAMPS the cooldown then fails leaves the second one answering `true` (HANDLED) off that fresh stamp — skipping the procedural fallback entirely.
+	if world_key != sound_key and _try_play_sfx_from_manifest(_ability_player, world_key):
 		return
 	# Fall back to default (medieval/W1) sound
 	if _try_play_sfx_from_manifest(_ability_player, sound_key):
