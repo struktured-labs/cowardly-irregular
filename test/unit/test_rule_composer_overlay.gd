@@ -10,6 +10,22 @@ extends GutTest
 
 const RuleComposerOverlay := preload("res://src/ui/autobattle/RuleComposerOverlay.gd")
 
+var _saved_persist: bool = false
+
+
+## ⛔ TWO ARMS HERE REACH install_composition_as_new_profile, WHICH PERSISTS to
+## user://autobattle/profiles.json — and the file's own cleanup calls _save_character_profiles()
+## directly. Proven in a virgin sandbox with no runner net: no file before, a file after. 22 sibling
+## autobattle files carry this gate; these were 2 of the 24 that did not. The net in run_tests.sh
+## covers only wrapper runs, and it is a backstop by its own documentation — this is the fix.
+func before_each() -> void:
+	_saved_persist = AutobattleSystem._test_disable_persistence
+	AutobattleSystem._test_disable_persistence = true
+
+
+func after_each() -> void:
+	AutobattleSystem._test_disable_persistence = _saved_persist
+
 
 func test_open_stores_domain_and_character_id() -> void:
 	var overlay = RuleComposerOverlay.new()

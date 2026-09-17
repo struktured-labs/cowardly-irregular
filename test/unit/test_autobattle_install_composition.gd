@@ -8,11 +8,24 @@ var autobattle
 const _TEST_IDS := ["test_pc", "test_pc_2", "test_pc_3"]
 
 
+var _saved_persist: bool = false
+
+
 func before_each() -> void:
 	autobattle = get_node_or_null("/root/AutobattleSystem")
+	## ⛔ THIS FILE WROTE user://autobattle/profiles.json ON EVERY RUN, and the cleanup below is what
+	## did it — `_save_character_profiles()` is the persisting function itself. Proven in a virgin
+	## sandbox with no runner net: no file before, a file after, holding `{"enabled":{},"profiles":{}}`.
+	## `_ready` normally loads the player's store first, so the write-back preserves it — but the
+	## loader has push_warning arms for a malformed file, and on that path memory is EMPTY and this
+	## writes an empty store over the player's scripts. The net in run_tests.sh is a BACKSTOP and
+	## covers only runs that go through the wrapper; the gate is the fix, and 22 sibling files use it.
+	_saved_persist = AutobattleSystem._test_disable_persistence
+	AutobattleSystem._test_disable_persistence = true
 	for cid in _TEST_IDS:
 		if autobattle.character_profiles.has(cid):
 			autobattle.character_profiles.erase(cid)
+	## Now a no-op — kept because the in-memory erase above is the isolation these tests need.
 	autobattle._save_character_profiles()
 
 
@@ -90,3 +103,4 @@ func after_each() -> void:
 		if autobattle.character_profiles.has(cid):
 			autobattle.character_profiles.erase(cid)
 	autobattle._save_character_profiles()
+	AutobattleSystem._test_disable_persistence = _saved_persist
