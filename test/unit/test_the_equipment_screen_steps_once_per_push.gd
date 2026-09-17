@@ -114,6 +114,7 @@ func test_control_at_least_one_ramp_can_see_a_multi_step_on_each_list() -> void:
 
 ## The latch must not strand: a second, separate push has to move the cursor again.
 func test_a_second_push_still_moves_after_the_stick_centres() -> void:
+	# Rung 1 BY PLACEMENT: nothing asserts before the inline _input calls, so an abort scores Risky (measured) — do not hoist a precondition above them.
 	var m := _open(true)
 	Input.action_press("ui_down", 1.0)
 	for v in ODD:
