@@ -194,6 +194,34 @@ def _entry_paths(val: dict) -> list[str]:
             if isinstance(sub, dict) and sub.get("path")]
 
 
+def malformed_entries(manifest: dict) -> list[str]:
+    """Entries whose SHAPE makes their tier unknowable.
+
+    @cowir-music's variant of the shared-denominator bug, one level below the
+    section list: a non-dict entry cannot carry a tier, so it vanishes from any
+    `isinstance(val, dict)` filter — out of the corpus AND out of its total at
+    once, leaving every count balanced. The section floor cannot see it,
+    because the section is present and readable.
+
+    Reported rather than skipped because UNKNOWN IS NOT T1. This file already
+    refuses to write over a sheet whose provenance it cannot read; an entry it
+    cannot parse is the same situation, and concluding "no tier lies" over a
+    corpus that quietly lost a member is the failure it exists to prevent.
+
+    (Unlike music's jukebox, a bare entry is not a supported shape here: the
+    overworld readers absorb it into a convention default, but
+    `HybridSpriteLoader.monster_frame_texture` assigns it to a typed
+    `Dictionary` with no guard, which aborts the function. Malformed, not
+    legal — and an audit must say so either way.)
+    """
+    out = []
+    for section in _tier_sections(manifest):
+        for key, val in sorted(manifest[section].items()):
+            if not isinstance(val, dict):
+                out.append(f"{section}/{key} ({type(val).__name__})")
+    return out
+
+
 def _t1_entries(manifest: dict) -> list[tuple[str, str, dict]]:
     """Every T1 entry the manifest declares, in every section it declares one.
 
@@ -258,6 +286,14 @@ def main() -> int:
               f"not clean.")
         return 2
 
+    bad = malformed_entries(m)
+    if bad:
+        print(f"\nCORPUS UNREADABLE — {len(bad)} entr(ies) are not dictionaries, so "
+              f"their tier cannot be read and they left the corpus silently: "
+              f"{', '.join(bad[:6])}{' …' if len(bad) > 6 else ''}. Unknown is not "
+              f"T1; every result above is VOID, not clean.")
+        return 2
+
     t1 = _t1_entries(m)
     t1_total = len(t1)
     for section, key, val in t1:
@@ -318,6 +354,7 @@ def selftest() -> int:
     three sections wide reported as if it were the manifest.
     """
     fails = []
+    real_m = json.loads(MANIFEST.read_text())
 
     def check(name: str, cond: bool, detail: str = "") -> None:
         print(f"  {'ok  ' if cond else 'FAIL'}  {name}{(' — ' + detail) if detail and not cond else ''}")
@@ -362,7 +399,7 @@ def selftest() -> int:
     narrowed = {"sheets": {}, "monster_sheets": {}, "tile_sheets": {}}
     check("a manifest missing required sections is reported short",
           missing_sections(narrowed) == [], "floor must not invent absent sections")
-    real = json.loads(MANIFEST.read_text())
+    real = real_m
     check("the real manifest reaches every required section it declares",
           missing_sections(real) == [], str(missing_sections(real)))
     declared = [s for s in _REQUIRED_SECTIONS if s in real]
@@ -370,6 +407,17 @@ def selftest() -> int:
           len(declared) >= 8, f"only {len(declared)} required sections present")
     print(f"        floor covers {len(declared)} of {len(_REQUIRED_SECTIONS)} "
           f"required sections, all present in the manifest")
+
+    print("malformed entries (invisible to the section floor)")
+    with_bad = {"monster_sheets": {"ok": {"tier": "T1", "path": "res://a.png"},
+                                   "zz_bare": "res://assets/sprites/monsters/x.png"}}
+    check("a non-dict entry is REPORTED, not filtered away",
+          malformed_entries(with_bad) == ["monster_sheets/zz_bare (str)"],
+          str(malformed_entries(with_bad)))
+    check("it is invisible to the section floor, which is why it needs its own arm",
+          missing_sections(with_bad) == [])
+    check("the real manifest has none", malformed_entries(real_m) == [],
+          str(malformed_entries(real_m)[:4]))
 
     print("wiring against the real manifest")
     m = json.loads(MANIFEST.read_text())
