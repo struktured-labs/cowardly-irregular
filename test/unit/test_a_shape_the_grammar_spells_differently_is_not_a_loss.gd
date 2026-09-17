@@ -18,6 +18,17 @@ extends GutTest
 ##     or {options: [...]}              boolean OR, second spelling
 ##     {"always": ""}                   the type written as the KEY
 ##
+## HOW TO RE-RUN IT, because the number above is the only thing that can find this class
+## and no per-field probe can: capture whole replies from a live sampling run to disk, then
+## drive each one back through compose_async with tools/replay_backend.gd and count how many
+## return source == "llm" rather than the canned draft. Always plant a control reply that
+## MUST be refused — a cleric casting `firaga` — or a clean sweep cannot be distinguished
+## from a harness that has stopped detecting losses.
+##
+## Run against autobattle the same way, 2 intents x 20 replies: 20 of 20 survived both, with
+## the planted control correctly LOST. That side carries more repairs already, so the shape
+## class is a grind-side defect rather than a composer-wide one.
+##
 ## Every repair is a lookup in AutogrindSystem's own vocabulary — PARTY_CONDITION_TYPES,
 ## NULLARY_CONDITIONS, NAMED_VALUE_CONDITIONS, OPERATORS — so none of them is a table of
 ## guesses kept in the composer. Each condition below is VERBATIM from a captured reply.
