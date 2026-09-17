@@ -12,7 +12,7 @@ const TRIPLE := '"""'
 ## whatever the last arm-matching area left there.
 ##
 ## ⛔ Scriptura Plaza is that map. `ScripturaPlaza._get_music_area_id` returns
-## `scriptura_village`, which has an arm in the AREA dispatch (`SoundManager:4948`
+## `scriptura_village`, which has an arm in the AREA dispatch (`SoundManager._start_area_music_deferred`
 ## hardcodes "medieval" there, so the village bed is right) and NO arm here. It reads
 ## as covered because one of the two maps names it.
 ##

@@ -107,8 +107,8 @@ func test_the_captured_state_ACTUALLY_restores_the_bed() -> void:
 ## So they are redundant on the branch EXISTING and jointly blind to what the
 ## branch DOES first. The clear is unpinned by either file, and by anything else
 ## in the lane. Its own comment names the hazard (restoring the area you are
-## nominally still in early-outs at SoundManager:4901) but every takeover that
-## goes through play_music empties _current_area at :1826 before restore is ever
+## nominally still in early-outs on its own `_current_area == area_type` branch) but every takeover that
+## goes through play_music empties _current_area before restore is ever
 ## called, so the sequence that would bite has not been found — which is why
 ## there is no arm here asserting one. Unpinned and possibly unreachable are
 ## different claims; only the first is measured.

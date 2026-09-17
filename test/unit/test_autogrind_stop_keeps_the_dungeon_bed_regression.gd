@@ -133,7 +133,7 @@ func after_each() -> void:
 
 
 ## ⚠️ `_current_music` IS THE WRONG OBSERVABLE HERE and reading it cost a run:
-## play_area_music deliberately CLEARS it (SoundManager:1901 — "play_area_music
+## play_area_music deliberately CLEARS it (SoundManager.play_area_music — "play_area_music
 ## sets _current_area, CLEARS _current_music"), so the probe returned "" for
 ## both ids and reported them identical. The stream on the player is what the
 ## player actually hears.
