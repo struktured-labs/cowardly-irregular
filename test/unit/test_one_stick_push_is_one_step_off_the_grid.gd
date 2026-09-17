@@ -32,6 +32,11 @@ const SURFACES := [
 	# the arm telling the truth about the fixture rather than about the menu.
 	{"name": "RebalanceReviewPanel", "path": "res://src/ui/RebalanceReviewPanel.gd",
 		"cursor": "_selected_idx", "set": {}, "fill": "_entries"},
+	# HORIZONTAL surfaces: these page/focus on ui_left/ui_right, so they are driven on axis 0.
+	{"name": "ReadableProp", "path": "res://src/exploration/ReadableProp.gd",
+		"cursor": "_page", "set": {}, "fill": "_entries", "axis": "x"},
+	{"name": "PartyStatusScreen", "path": "res://src/ui/PartyStatusScreen.gd",
+		"cursor": "focused_index", "set": {}, "fill": "party", "axis": "x"},
 ]
 
 
@@ -39,17 +44,30 @@ func after_each() -> void:
 	_release()
 
 
-func _motion(v: float) -> InputEventJoypadMotion:
+func _motion(v: float, horizontal: bool = false) -> InputEventJoypadMotion:
 	var e := InputEventJoypadMotion.new()
-	e.axis = JOY_AXIS_LEFT_Y
+	e.axis = JOY_AXIS_LEFT_X if horizontal else JOY_AXIS_LEFT_Y
 	e.axis_value = v
 	return e
 
 
+func _is_h(spec: Dictionary) -> bool:
+	return str(spec.get("axis", "y")) == "x"
+
+
+func _action(spec: Dictionary) -> String:
+	return "ui_right" if _is_h(spec) else "ui_down"
+
+
+func _button(spec: Dictionary) -> int:
+	return JOY_BUTTON_DPAD_RIGHT if _is_h(spec) else JOY_BUTTON_DPAD_DOWN
+
+
 func _release() -> void:
-	Input.action_release("ui_down")
-	Input.action_release("ui_up")
+	for a in ["ui_down", "ui_up", "ui_left", "ui_right"]:
+		Input.action_release(a)
 	MenuNav.step(_motion(0.0))
+	MenuNav.step(_motion(0.0, true))
 
 
 func _send(m: Node, ev: InputEvent) -> void:
@@ -72,19 +90,26 @@ func _open(spec: Dictionary) -> Node:
 	var fill: String = str(spec.get("fill", ""))
 	if fill != "" and fill in m:
 		var a = m.get(fill)
-		if a is Array:
+		if a is Array and (a as Array).is_empty():
 			for i in range(12):
-				(a as Array).append({"idx": i, "proposal": {}})
+				(a as Array).append({"idx": i, "proposal": {}, "name": "X%d" % i,
+					"title": "T%d" % i, "body": "B%d" % i, "text": "B%d" % i})
+	# ReadableProp gates on is_open(), which is "_layer is a valid node" and nothing more.
+	if "_layer" in m and m.get("_layer") == null:
+		var layer := CanvasLayer.new()
+		m.add_child(layer)
+		m.set("_layer", layer)
 	return m
 
 
 func _push(spec: Dictionary, ramp: Array) -> int:
 	var m: Node = await _open(spec)
 	var before: int = int(m.get(spec["cursor"]))
-	Input.action_press("ui_down", 1.0)
+	var act := _action(spec)
+	Input.action_press(act, 1.0)
 	for v in ramp:
-		_send(m, _motion(v))
-	Input.action_release("ui_down")
+		_send(m, _motion(v, _is_h(spec)))
+	Input.action_release(act)
 	return int(m.get(spec["cursor"])) - before
 
 
@@ -92,11 +117,12 @@ func _press(spec: Dictionary) -> int:
 	var m: Node = await _open(spec)
 	var before: int = int(m.get(spec["cursor"]))
 	var b := InputEventJoypadButton.new()
-	b.button_index = JOY_BUTTON_DPAD_DOWN
+	b.button_index = _button(spec)
 	b.pressed = true
-	Input.action_press("ui_down", 1.0)
+	var act := _action(spec)
+	Input.action_press(act, 1.0)
 	_send(m, b)
-	Input.action_release("ui_down")
+	Input.action_release(act)
 	return int(m.get(spec["cursor"])) - before
 
 

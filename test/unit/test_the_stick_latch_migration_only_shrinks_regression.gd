@@ -36,9 +36,21 @@ const RAW_READS := [
 ]
 
 ## Measured 2026-09-16. Shrinks only.
+## ⚠️ THE LAST TWO ARE UNMEASURED, NOT CLEAN — and the distinction is one I got wrong on
+## AutogrindUI an hour ago, so it is spelled out rather than implied. Both resist THIS harness for
+## a specific reason, and neither reason is evidence about their behaviour:
+##
+##   RadialPicker      `_input_direction` reads `Input.get_joy_axis(event.device, ...)` — the LIVE
+##                     hardware axis, not the event. A synthetic InputEventJoypadMotion carries the
+##                     value in the event and leaves the device state at zero, so the stick branch
+##                     returns Vector2.ZERO and nothing moves. Its d-pad path DOES drive (measured:
+##                     `_selected` 0 -> 2, a ring slot rather than a step). Needs a real pad or an
+##                     Input-state harness.
+##   HowToPlayOverlay  scrolls a CHILD `_scroll_target`'s v-scroll bar, not a member of its own, so
+##                     a member snapshot sees nothing by construction. I built a ScrollContainer
+##                     fixture and the bar still read 0 on every route including the d-pad, which
+##                     means the fixture is not yet right — an unfinished measurement, not a result.
 const KNOWN_UNCONVERTED := [
-	"res://src/exploration/ReadableProp.gd",
-	"res://src/ui/PartyStatusScreen.gd",
 	"res://src/ui/HowToPlayOverlay.gd",
 	"res://src/ui/RadialPicker.gd",
 ]
@@ -159,6 +171,6 @@ func test_the_scan_finds_both_populations() -> void:
 		"a known converted surface must be found, or the MenuNav probe is wrong")
 	# The exemplar is EXPECTED to move: it names one file so the probe is controlled against a
 	# specific known result, and converting that file must red this line rather than pass quietly.
-	assert_true(scan["raw"].has("res://src/ui/PartyStatusScreen.gd"),
+	assert_true(scan["raw"].has("res://src/ui/RadialPicker.gd"),
 		"a known unconverted surface must be found, or the raw probe is wrong — if this surface was "
 		+ "just converted, re-point the exemplar at another entry of KNOWN_UNCONVERTED")
