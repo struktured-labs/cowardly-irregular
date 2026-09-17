@@ -13,9 +13,16 @@ extends GutTest
 ## 🔑 NOT A SPECULATIVE SHAPE. CutsceneDirector._step_play_music already carried the finding as a
 ## comment and guarded it AT ITS OWN CALL SITE: "An unresolvable id is NOT a no-op: play_music
 ## crossfades the current track out, then warns and plays nothing, leaving the scene in silence."
-## 26 call sites across 10 files reach play_music. TWO carried a pre-check, and they do not check
-## the same thing: CutsceneDirector tests has_music_track AND _cue_is_available, BattleScene:3864
-## tests ResourceLoader.exists on the file it is about to name. 24 had nothing.
+## 26 call sites across 10 files reach play_music. THREE carried a pre-check, in three different
+## files, and NO TWO CHECK THE SAME THING:
+##     CutsceneDirector:881   has_music_track + _cue_is_available
+##     JukeboxMenu:368        music_is_available -- "33 rows are unplayable on web ... and
+##                            play_music fades the old bed out before finding out"
+##     BattleScene:3864       ResourceLoader.exists on the file it is about to name
+## 23 had nothing. Three lanes each found this defect, each papered over it locally, and none
+## fixed the function -- which is the argument for fixing it at the source rather than adding a
+## fourth workaround. (I first published TWO: my rescan dropped music_is_available from the
+## pattern the pass before it had used, so the Jukebox guard did not match its own predicate.)
 ##
 ## ⛔ THE THIRD CONSEQUENCE IS THE WORST AND WAS FOUND BY AN ARM THAT PASSED WHEN IT SHOULD NOT
 ## HAVE. The cache write at the foot of play_music stores `_music_player.stream` under `track`, and
