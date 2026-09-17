@@ -1,4 +1,5 @@
 extends GutTest
+const ImageProbe := preload("res://test/unit/helpers/image_probe.gd")
 
 ## The player's overworld walk sheet was cut at a hardcoded 32 px, guarded only by "is the image
 ## BIG ENOUGH" (`get_width() < 128 or get_height() < 128`). A sheet authored at any other frame
@@ -480,7 +481,12 @@ func test_an_npc_renders_the_row_its_declaration_names() -> void:
 	for facing in cases:
 		npc.set("facing_direction", facing)
 		npc.call("_apply_facing")
-		var drawn: Image = (sprite.texture as Texture2D).get_image()
+		var probe := ImageProbe.image_of(sprite.texture as Texture2D)
+		assert_eq(probe.size(), 1,
+			"reading the rendered frame ABORTED rather than measuring which row was drawn")
+		if probe.is_empty():
+			continue
+		var drawn: Image = probe[0]
 		var got := int(roundf(drawn.get_pixel(0, 0).r * 8.0))
 		assert_eq(got, int(cases[facing]),
 			("facing %d must slice the row its DECLARATION names (%d), not the one the convention "
@@ -514,7 +520,12 @@ func test_a_wandering_npc_shows_the_row_its_declaration_names() -> void:
 	for dir in 4:
 		npc.set("_current_dir", dir)
 		npc.call("_update_archetype_frame")
-		var drawn: Image = (sprite.texture as Texture2D).get_image()
+		var probe := ImageProbe.image_of(sprite.texture as Texture2D)
+		assert_eq(probe.size(), 1,
+			"reading the rendered frame ABORTED rather than measuring which row was drawn")
+		if probe.is_empty():
+			continue
+		var drawn: Image = probe[0]
 		var got := int(roundf(drawn.get_pixel(0, 0).r * 8.0))
 		var want := int(PackedInt32Array([2, 3, 0, 1])[dir])
 		assert_eq(got, want,
