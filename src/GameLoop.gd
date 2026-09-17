@@ -5770,9 +5770,15 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	if victory:
 		for item_id in headless_item_drops:
 			var qty: int = int(headless_item_drops[item_id])
-			if not BattleManager.route_drop_to_equipment_pool(item_id):
-				if party.size() > 0 and party[0].is_alive:
-					party[0].add_item(item_id, qty)
+			## Equipment appends ONE id per call, so a stack needs qty calls. Live calls
+			## _deliver_item once per successful roll; the grind AGGREGATES to {id: qty} first,
+			## and that aggregation — which is what makes consumables correct — silently dropped
+			## qty-1 pieces of gear. Enemies are drawn WITH REPLACEMENT, so a repeat is routine.
+			if BattleManager.route_drop_to_equipment_pool(item_id):
+				for _extra in range(maxi(0, qty - 1)):
+					BattleManager.route_drop_to_equipment_pool(item_id)
+			elif party.size() > 0 and party[0].is_alive:
+				party[0].add_item(item_id, qty)
 		for rd in headless_rare_drops:
 			if PartyChatSystem:
 				PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")
