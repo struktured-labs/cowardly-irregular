@@ -14,9 +14,15 @@ extends GutTest
 ## So paging was DEAD on the analog triggers in ten menus and alive on the two routes anyone tests
 ## with. @cowir-cutscenes found it; the same shape as my world-map arm passing on a two-column grid.
 ##
-## THIS IS A CALL-GRAPH CHECK, NOT A BEHAVIOURAL ARM, and that was forced rather than chosen: every
-## paging menu clamps or wraps, so no single menu's arm can see "the second read differs from the
-## first". The defect is only visible at the call site.
+## THIS IS A CALL-GRAPH CHECK AND IT OWNS THE PROPERTY: that the second read is CONSUMED. No arm
+## can observe that directly — a consumed read returns 0, and so does "not a paging input at all".
+##
+## ⚠️ I first wrote that the defect was therefore invisible to behavioural arms. OVERSTATED, and it
+## would have discouraged the right test: the CONSEQUENCE is plainly visible — the cursor moves 0
+## rows where it should move PAGE_ROWS — as long as the arm drives the MENU'S OWN _input and not
+## the helper. cowir-music wrote exactly that for JukeboxMenu; it reds on main's call site while
+## its shoulder-button control passes. That arm owns the outcome for one menu; this owns the
+## property for all ten. Neither substitutes for the other.
 
 const PAGING_CALL := "MenuPaging.page_delta(event)"
 
