@@ -30,7 +30,7 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 ## This set may SHRINK freely — that is someone closing a gap — but it may not GROW unnamed.
 const GRIND_IGNORES := [
 	"dark_damage_bonus", "dark_resistance", "exp_while_dead",
-	"familiar_weight_bonus", "fire_damage_bonus", "fire_resistance", "holy_damage_bonus",
+	"fire_damage_bonus", "fire_resistance", "holy_damage_bonus",
 	"ice_damage_bonus", "lightning_damage_bonus",
 ]
 
@@ -41,9 +41,20 @@ const GRIND_IGNORES := [
 ## Behaviour is pinned in test_autogrind_a_party_wears_its_gear_regression, not here: this file is a
 ## census and says WHICH keys are modelled, never that they are modelled CORRECTLY.
 const GRIND_MODELS := [
-	"critical_bonus", "evasion_bonus", "poison_chance", "sleep_chance",
-	"status_resistance", "steal_bonus",
+	"critical_bonus", "evasion_bonus", "familiar_weight_bonus", "poison_chance",
+	"sleep_chance", "status_resistance", "steal_bonus",
 ]
+
+## ⛔ THIS CENSUS'S CORPUS IS `special_effects`, AND THAT IS A PREDICATE I CHOSE.
+## @cowir-battle's "the predicate is a corpus" applied to this file found a whole category it cannot
+## see: `familiar_weight_bonus` is a special_effect, but the monster list it gates on —
+## `familiar_weight_static_seed` — is a TOP-LEVEL equipment field. Live reads both (:3123 and :3163).
+## A census keyed on special_effects saw one half of a two-part mechanism and reported the other as
+## absent, which is how the most grind-relevant gear effect in the game stayed unmodelled.
+## Measured 2026-09-17: equipment entries carry 10 distinct fields. `stat_mods` reaches combatant
+## stats at equip time, so the grind inherits it; `weapon_type` has ZERO battle reads;
+## `familiar_weight_static_seed` was the one with behaviour, and it is now wired.
+const NON_SPECIAL_EFFECT_FIELDS_WITH_BEHAVIOUR := ["familiar_weight_static_seed"]
 
 ## ⛔ THE THIRD SHAPE, AND I PUBLISHED A WRONG FINDING BEFORE @cowir-battle CORRECTED IT.
 ## This file first listed seven of the above as INERT_EVERYWHERE — "authored on gear a player can buy,

@@ -823,6 +823,11 @@ func _resolve_attack(attacker, target) -> int:
 		damage *= 1.5
 		_log("Critical hit!")
 
+	## returned_sword's Familiar Weight, mirroring BattleManager:4498 — applied to the PRE-mitigation
+	## damage, exactly where live applies it, because this file's defense formula is quadratic and
+	## scaling `actual` instead would give a different number for the same gear.
+	damage = float(_apply_familiar_weight_bonus(attacker, target, int(damage)))
+
 	var def_val = float(target.get_buffed_stat("defense", target.defense))
 	# Guard divisor (mirrors Combatant.take_damage). attack 0 + defense 0
 	# combinations are reachable: get_buffed_stat returns 0 for base 0
@@ -842,6 +847,67 @@ func _resolve_attack(attacker, target) -> int:
 	## be the axis-2 error this lane's ledger exists to catch — a key read on the wrong executor.
 	_apply_equipment_on_hit_status(attacker, target)
 	return actual
+
+
+## Twin of BattleManager._apply_familiar_weight_bonus (:3120). returned_sword's "Familiar Weight":
+## +10% damage against any enemy the party has SEEN or DEFEATED, or that lives in the item's own
+## static ledger. Live applies it from TWO sites — _execute_attack (:4498) and
+## _execute_physical_ability (:4915) — so this file does too.
+##
+## 🔑 THE MOST GRIND-RELEVANT GEAR EFFECT IN THE GAME, and it was invisible to this lane's gear
+## census because HALF OF IT LIVES OUTSIDE `special_effects`: the bonus is a special_effect, the seed
+## list is a TOP-LEVEL equipment field. A census keyed on special_effects could only ever see one
+## half. Found by applying @cowir-battle's "the predicate is a corpus" to my own census.
+##
+## ⚠️ A grind fills the bestiary faster than any other play, so `bestiary_hit` is true of nearly
+## everything after the first few battles — this is worth MORE in a grind than in a normal fight,
+## which is the opposite of how it reads from the item description.
+func _apply_familiar_weight_bonus(attacker, target, damage: int) -> int:
+	if attacker == null or target == null or damage <= 0:
+		return damage
+	var bonus: float = _sum_equipment_special_effect(attacker, "familiar_weight_bonus")
+	if bonus <= 0.0:
+		return damage
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return damage
+	var mtype: String = str(target.get_meta("monster_type", ""))
+	if mtype == "":
+		return damage
+	var bs = _get_autoload("BestiarySystem")
+	var bestiary_hit: bool = false
+	if bs and bs.has_method("is_seen") and bs.has_method("is_defeated"):
+		bestiary_hit = bs.is_seen(mtype) or bs.is_defeated(mtype)
+	var seed_hit: bool = mtype in _familiar_weight_static_seed(attacker)
+	if not (bestiary_hit or seed_hit):
+		return damage
+	return int(round(damage * (1.0 + bonus)))
+
+
+## Union of the familiar_weight_static_seed arrays on all three slots, mirroring :3144. A TOP-LEVEL
+## equipment field rather than a special_effect, which is exactly why the gear census missed it.
+func _familiar_weight_static_seed(combatant) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	if combatant == null:
+		return out
+	var es = _get_autoload("EquipmentSystem")
+	if es == null:
+		return out
+	for slot in [["equipped_weapon", "get_weapon"], ["equipped_armor", "get_armor"], ["equipped_accessory", "get_accessory"]]:
+		var field: String = str(slot[0])
+		if not (field in combatant):
+			continue
+		var eid: String = str(combatant.get(field))
+		if eid == "" or not es.has_method(str(slot[1])):
+			continue
+		var entry: Dictionary = es.call(str(slot[1]), eid)
+		var raw: Variant = entry.get("familiar_weight_static_seed", [])
+		if not (raw is Array):
+			continue
+		for m in (raw as Array):
+			var mstr: String = str(m)
+			if mstr != "" and not (mstr in out):
+				out.append(mstr)
+	return out
 
 
 ## Twin of BattleManager._target_dodges_physical (:9046), and EXTRACTED for live's own reason: live
@@ -1057,6 +1123,10 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						if _target_dodges_physical(caster, target):
 							continue
 					var base_dmg = int(_scaled_base(caster, ability) * power)
+					## Second call site, mirroring BattleManager:4915. Live applies Familiar Weight to a
+					## physical ABILITY's damage as well as a basic swing, and wiring only one site is
+					## the mistake this file's dodge fix was written for an hour ago.
+					base_dmg = _apply_familiar_weight_bonus(caster, target, base_dmg)
 					## The ability's OWN crit roll, mirroring BattleManager:4795. `backstab` authors 0.3 and
 					## is a Rogue ability, so a grind testing a crit build never saw its signature land.
 					## Default 0.0 — an ability opts IN, exactly as live does, so nothing else starts critting.
