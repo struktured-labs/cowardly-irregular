@@ -186,8 +186,11 @@ func test_every_member_this_guard_drives_by_name_exists() -> void:
 ## An off-centre sprite mirrored IN PLACE lands at the mirrored offset, so walk_left and
 ## walk_right sit at different x inside the cell. `centered = true` pins the CELL to the node, so
 ## that displacement is literal on-screen motion at a position that never changed. Measured
-## 2026-09-16: 44 of the 53 declaring overworld sheets drift, worst snake 4.0px and wolf 3.0px of
-## bounding-box centre on a 32px body.
+## 2026-09-16 on BBOX CENTRE, the body's visible position: 21 of the 53 declaring overworld sheets
+## drift >= 0.5px — monsters 8 of 10 (worst snake 4.0px, wolf 3.0px), players 9 of 14 (worst
+## 1.75px), npcs 4 of 29 (worst 0.75px). On alpha CENTROID the count is 44 of 53; centroid is more
+## sensitive and less visible, and quoting one count beside the other metric's numbers is the
+## mixed-basis error this note exists to not repeat.
 ##
 ## 🔑 THE INVARIANT IS POST-CORRECTION AGREEMENT, not "the offset is non-zero": every row's drawn
 ## centre plus its offset must land on the walk_down row's centre. That is one assertion that

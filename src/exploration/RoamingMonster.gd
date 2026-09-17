@@ -214,10 +214,16 @@ func _apply_frame(row: int, col: int) -> void:
 ## An off-centre sprite mirrored IN PLACE lands at the mirrored offset, so walk_left and
 ## walk_right sit at different x inside the cell — and `centered = true` pins the CELL to the
 ## node, which makes that displacement literal on-screen motion at a position that never changed.
-## Measured 2026-09-16 across the three overworld sections: 44 of 53 sheets drift, worst snake
-## 4.0px and wolf 3.0px of bounding-box centre on a 32px body. `slime` is the one sheet already
-## registered correctly and gets offsets of exactly 0 here, by construction rather than by
-## exception.
+## Measured 2026-09-16 across the three overworld sections, and the two metrics DISAGREE on how
+## many sheets are affected, so both are named rather than mixed:
+##
+##   bbox-centre drift >= 0.5px   21 of 53   the body's visible position
+##   alpha-centroid drift >= 0.5px 44 of 53   mass, more sensitive, less visible
+##
+## By section, on bbox centre: monsters 8 of 10 (worst snake 4.0px, wolf 3.0px) · players 9 of 14
+## (worst 1.75px) · npcs 4 of 29 (worst 0.75px). The severe end is entirely in the monster sheets
+## this file renders. `slime` is the one sheet already registered correctly and gets offsets of
+## exactly 0 here, by construction rather than by exception.
 ##
 ## ⚠️ ANCHORED TO walk_down, NOT TO THE CELL CENTRE. The resting facing is the authored
 ## placement; re-centring every row on the cell would move sheets whose author deliberately sat
