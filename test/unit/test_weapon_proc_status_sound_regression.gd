@@ -87,11 +87,12 @@ func test_sound_fires_after_add_status_and_log_emit() -> void:
 	assert_gt(sfx_idx, log_idx, "sound emit follows log — audio caps the sequence")
 
 
-## ── (3) The dispatch mirrors the ability-side call at BS:3729 ─────────
+## ── (3) The dispatch mirrors the ability-side call in _on_action_executed ─────────
 
 func test_matching_sound_call_shape_at_bs() -> void:
 	# Sanity: the ability-side path uses SoundManager.play_status
-	# too (see BS:3729). Pin the shape so a future SoundManager API
+	# too, in BattleScene._on_action_executed. NAMED, not numbered: this cited
+	# BS:3729, which is now _on_selection_turn_ended. Pin the shape so a future SoundManager API
 	# change (rename, arg reorder) breaks BOTH paths symmetrically
 	# rather than one silently.
 	var bs: String = FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")

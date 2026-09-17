@@ -17,7 +17,10 @@ extends GutTest
 ## handler with each spelling and asserting they differ.
 ##
 ## Observable: `SoundManager._sfx_cooldowns[key]` is stamped only when a manifest cue
-## actually plays (SoundManager:412). A manifest miss provably does not stamp, so the
+## actually plays — the stamp lives in `_try_play_sfx_from_manifest`, below its cooldown gate.
+## NAMED, not numbered: SoundManager.gd is ~7900 lines, so every edit above a citation moves it.
+## This said `SoundManager:412`, which is now mid-comment about meta abilities (2026-09-17).
+## A manifest miss provably does not stamp, so the
 ## same probe distinguishes "played" from "silently did nothing" — failure value is not
 ## success value, which is the trap this whole class lives in.
 
