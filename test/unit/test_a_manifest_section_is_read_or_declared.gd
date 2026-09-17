@@ -241,3 +241,46 @@ func test_the_headers_unpinned_numbers_are_dated() -> void:
 			("an unpinned figure lost the date that makes it readable as an observation rather than a "
 			+ "live claim — `%s` now appears %d time(s), and one of those is this assert: %s")
 			% [needle, src.count(needle), needle])
+
+
+## ⛔ THE PREMISE EVERY "UNREAD" VERDICT ABOVE RESTS ON, AND IT WAS NEVER ENFORCED.
+##
+## This file decides "read" by searching stripped src/ for the LITERAL section name. That is only
+## sound while no consumer BUILDS a section name — @cowir-battle's DERIVED KEY shape, where the
+## read never spells the key (`element + "_resistance"`, zero literal occurrences, fully consumed).
+##
+## 🔑 I MEASURED ZERO CONSTRUCTED SECTION NAMES AND CALLED THE VERDICT SAFE. That proved something
+## about today's corpus, not about this guard — true tonight and kept true by nothing. The cost of
+## being wrong is not a re-check: `npc_sheets` (1326 KB), `weapon_sheets` and `party_sheets` are
+## declared unread, and that declaration is what a RETIRE-OR-WIRE ruling on artist work rests on.
+## A section that gained a concatenated reader would go on reading as unread, silently.
+##
+## ⚠️ LIVENESS, because an empty scan and a clean one are the same result: the patterns must be
+## shown to match a section name that IS built, or "0 constructed" means "the scan saw nothing".
+func test_no_consumer_builds_a_section_name() -> void:
+	var code := _src_code()
+	assert_gt(code.length(), 20000,
+		"ANTI-VACUITY: only %d chars of stripped src/ were read — every check below is void" % code.length())
+
+	var re := RegEx.new()
+	# ⛔ NARROW TO WHAT COULD PRODUCE A SECTION NAME, not to any built string. Every real
+	# section ends in `sheets`, `effects` or `provenance`, so only a construction ending in
+	# one of those can name one. A first version matched any `"..._%s" %` and returned four
+	# hits — "hero_%s", "overworld_walk_%s", "taunted_%s", "thief_%s" — all entry ids and
+	# flags, no section among them. A guard whose red is routinely wrong gets read as noise.
+	re.compile('(\\+\\s*"[a-z_]*(sheets|effects|provenance)")|("[a-z_]*%s[a-z_]*(sheets|effects|provenance)")')
+	var built: Array = []
+	for m in re.search_all(code):
+		built.append(m.get_string(0))
+
+	# LIVENESS: the same patterns, against text that DOES build one.
+	var probe := 'var s = kind + "_sheets"\nvar t = "overworld_%s_sheets" % kind\n'
+	assert_gt(re.search_all(probe).size(), 0,
+		("the construction patterns match NOTHING even in text written to contain one, so a zero "
+		+ "below is the scan failing rather than the corpus being clean"))
+
+	built.sort()
+	assert_eq(built, [],
+		("a section name is BUILT rather than written, so the literal search this file uses can no "
+		+ "longer see that section's reader and every unread verdict above is unsafe — including "
+		+ "the ones a retire-or-wire ruling on artist work rests on: %s") % [built])
