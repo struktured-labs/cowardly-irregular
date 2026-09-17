@@ -147,3 +147,18 @@ func test_options_is_composed_from_the_shoulders_like_the_console() -> void:
 	var console := FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindUI.gd")
 	assert_true("button_name_for_index(JOY_BUTTON_LEFT_SHOULDER" in console,
 		"PRECONDITION: the console composes it that way — if it stops, this hint is describing the wrong control")
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

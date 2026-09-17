@@ -109,3 +109,18 @@ func test_accept_still_edits_and_does_not_close() -> void:
 	_ed.closed.connect(func(): closed[0] = true)
 	_ed._input(_action("ui_accept"))
 	assert_false(closed[0], "A edits a cell; only cancel/Start leave")
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

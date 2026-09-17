@@ -80,3 +80,18 @@ func test_the_renderer_list_names_a_file_that_actually_renders_a_row() -> void:
 	var overlay: String = FileAccess.get_file_as_string("res://src/ui/HowToPlayOverlay.gd")
 	assert_true(overlay.contains("Defer / Party Chat"),
 		"HowToPlayOverlay must actually carry the controls table this guard is defending")
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

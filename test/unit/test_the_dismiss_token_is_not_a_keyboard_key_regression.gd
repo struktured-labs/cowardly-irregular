@@ -106,3 +106,18 @@ func test_the_key_the_legend_names_actually_dismisses() -> void:
 	assert_false(panel._is_dismiss_event(x),
 		"X must NOT dismiss: ui_cancel binds it and closes the whole panel, which is why that arm " +
 		"was removed in .311 — the header docstring promised it until 2026-09-12")
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

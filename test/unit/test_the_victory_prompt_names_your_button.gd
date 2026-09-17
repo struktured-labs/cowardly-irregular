@@ -76,3 +76,18 @@ func test_a_keyboard_player_is_given_a_key_they_have() -> void:
 	assert_ne(hint, "", "with no pad the hint must name a KEY, not render empty")
 	assert_false(hint in ["A", "B", "X", "Y"],
 		"with no pad the prompt must not render a face letter, got '%s'" % hint)
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

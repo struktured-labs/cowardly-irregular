@@ -129,3 +129,18 @@ func test_the_probe_can_tell_a_frozen_diagram_from_a_derived_one() -> void:
 	assert_eq(seen.size(), 3,
 		"three families must print three different letters on the east circle, or the diagram " +
 		"could not have been wrong for anyone")
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

@@ -288,3 +288,18 @@ func test_the_scanner_can_fire_and_can_hold_its_fire() -> void:
 		"X IS ui_cancel on a keyboard — outside the alphabet on purpose")
 	assert_eq(_frozen_captions("\tx.text = \"Attack: 12  Block/Parry\"").size(), 0,
 		"words beginning with A or B are not face letters")
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

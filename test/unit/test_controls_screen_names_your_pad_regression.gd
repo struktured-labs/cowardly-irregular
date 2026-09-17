@@ -165,3 +165,18 @@ func test_the_probe_can_tell_a_frozen_footer_from_a_derived_one() -> void:
 		"…and must NOT report text that is absent")
 	assert_true(_all_face_glyphs().has("Ⓑ") and _all_face_glyphs().has("✕"),
 		"the glyph set must really span families, or the no-pad pin scans for nothing")
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)

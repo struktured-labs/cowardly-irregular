@@ -129,3 +129,18 @@ func test_the_bindings_the_legend_describes_still_exist() -> void:
 			"JOY_BUTTON_RIGHT_SHOULDER", "ui_cancel"]:
 		assert_true(helper.contains(token),
 			"classify_event must still bind %s, or the legend describes a dead control" % token)
+
+## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
+## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
+## and an interrupted run skips its cleanup. Two suites red that way on 2026-09-17 in one sandbox.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)
