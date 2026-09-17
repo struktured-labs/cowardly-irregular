@@ -129,3 +129,55 @@ func test_a_host_that_cannot_restore_still_falls_back_to_silence() -> void:
 	GameState.set_weather("clear"); w.process(0.016)
 	assert_false(SoundManager._ambient_player.playing,
 		"a host with no restore hook must still end at silence, exactly as before")
+
+
+## ⛔ THE MIRROR, and the reason precedence needs BOTH directions. The fix above defines what
+## happens when weather ENDS; this defines what happens when the PLACE changes while weather is on.
+## Measured on the shipped code: rain playing, cross a zone boundary, and the rain is replaced by
+## the new zone's bed while rain is still falling on screen -- and nothing re-asserts until the
+## weather next changes, which is a 60-120 s timer.
+##
+## `_update_zone_ambient` lives only in OverworldScene (medieval); the four per-world overworlds
+## are separate classes with no zone router. Medieval is also the one world whose CLEAR state owns
+## no bed, so in clear weather the router behaves exactly as it always did -- the arm below pins
+## that, because a deferral one notch too broad would freeze the zone beds entirely.
+func _overworld() -> Node:
+	var ow = OVERWORLD.new()
+	add_child_autofree(ow)
+	await get_tree().process_frame
+	return ow
+
+
+func test_a_zone_change_during_rain_keeps_the_rain() -> void:
+	var ow: Node = await _overworld()
+	assert_not_null(ow.get("_weather"), "CONTROL: the overworld built a weather system")
+
+	GameState.set_weather("rain"); ow._weather.process(0.016)
+	assert_eq(SoundManager._current_ambient_key, "weather_rain", "CONTROL: rain owns the layer")
+
+	ow._update_zone_ambient("forest")
+	assert_eq(SoundManager._current_ambient_key, "weather_rain",
+		"crossing a zone boundary replaced the rain with the zone bed, while rain was still falling")
+
+
+func test_when_the_rain_stops_the_bed_is_the_zone_you_are_in_now() -> void:
+	var ow: Node = await _overworld()
+	GameState.set_weather("rain"); ow._weather.process(0.016)
+	ow._current_zone = "forest"
+	ow._update_zone_ambient("forest")
+	assert_eq(SoundManager._current_ambient_key, "weather_rain", "CONTROL: weather still holds it")
+
+	GameState.set_weather("clear"); ow._weather.process(0.016)
+	assert_eq(SoundManager._current_ambient_key, "ambient_forest",
+		"the bed that came back must be the zone the player is in NOW, not the one they left")
+
+
+func test_a_zone_change_in_clear_weather_still_updates_the_bed() -> void:
+	## ⛔ THE DANGEROUS DIRECTION: a deferral that fires in clear weather would freeze the zone beds.
+	var ow: Node = await _overworld()
+	GameState.set_weather("clear"); ow._weather.process(0.016)
+	assert_false(ow._weather.owns_ambient(), "CONTROL: medieval clear owns no bed, so the router must run")
+
+	ow._update_zone_ambient("coast")
+	assert_eq(SoundManager._current_ambient_key, "ambient_coast",
+		"the zone router stopped working in clear weather -- the deferral is too broad")
