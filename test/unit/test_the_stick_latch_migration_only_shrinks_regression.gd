@@ -82,12 +82,16 @@ func _scan() -> Dictionary:
 	var converted: Array = []
 	var mixed: Array = []
 	var scanned := 0
+	var unreadable: Array = []
 	for path in _gd_files("res://src"):
 		if path.ends_with("MenuNav.gd"):
 			continue
-		var code: String = GdSource.code_of(path)
-		if code == "":
+		# An unreadable file used to `continue` — dropping it from the ledger's corpus without
+		# saying so, which is how a surface joins the unconverted set and nothing reports it.
+		if FileAccess.get_file_as_string(path) == "":
+			unreadable.append(path.get_file())
 			continue
+		var code: String = GdSource.code_of(path)
 		scanned += 1
 		var has_raw := false
 		for r in RAW_READS:
@@ -101,11 +105,15 @@ func _scan() -> Dictionary:
 				mixed.append(path)
 		elif has_raw:
 			raw.append(path)
-	return {"raw": raw, "converted": converted, "mixed": mixed, "scanned": scanned}
+	return {"raw": raw, "converted": converted, "mixed": mixed, "scanned": scanned,
+		"unreadable": unreadable}
 
 
 func test_no_new_surface_joins_the_unconverted_set() -> void:
 	var scan := _scan()
+	assert_eq(scan["unreadable"], [],
+		"these src/ files could not be read, so the ledger never judged them — an unconverted "
+		+ "surface hiding in that gap reads exactly like an empty gap: %s" % [scan["unreadable"]])
 	assert_gt(scan["scanned"], 200, "the scan must read the src tree; a short corpus passes vacuously")
 	var newcomers: Array = []
 	for path in scan["raw"]:

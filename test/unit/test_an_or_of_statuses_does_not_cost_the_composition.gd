@@ -15,7 +15,7 @@ extends GutTest
 ## they asked for, and the prompt already says "ONE id from this list — never a list" on
 ## the line above. Prompt pressure closed 41→4 and cannot close the last 4.
 ##
-## Both repairs are lookups in DialoguePrompts.AUTOGRIND_STATUS_VOCABULARY — the same
+## Both repairs are lookups in DialoguePrompts.STATUS_VOCABULARY — the same
 ## table the prompt renders. An array becomes one rule per id because OR is what this
 ## grammar's rule list already means: conditions are AND-chained, first match wins.
 
@@ -122,8 +122,8 @@ func test_the_mapping_is_the_prompts_own_table() -> void:
 	## A second copy here would drift from the list the model is actually shown. Every
 	## spelling the prompt advertises must be one the repair accepts.
 	var rc = _rc()
-	for id in DP.AUTOGRIND_STATUS_VOCABULARY.keys():
-		for word in (DP.AUTOGRIND_STATUS_VOCABULARY[id] as Array):
+	for id in DP.STATUS_VOCABULARY.keys():
+		for word in (DP.STATUS_VOCABULARY[id] as Array):
 			var rules: Array = [_rule(str(word))]
 			rc._normalise_member_status(rules)
 			assert_eq(_statuses(rules), [str(id)],

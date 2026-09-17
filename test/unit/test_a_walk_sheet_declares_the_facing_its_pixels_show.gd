@@ -1,4 +1,5 @@
 extends GutTest
+const ImageProbe := preload("res://test/unit/helpers/image_probe.gd")
 
 ## The geometry ratchet proves a sheet is cut correctly. NOTHING proved the DECLARATION names the
 ## right rows — a sheet sliced perfectly at 32px with walk_left pointing at the up row renders a
@@ -135,7 +136,12 @@ func test_the_mirror_metric_discriminates_before_it_is_believed() -> void:
 	var decisive := 0
 	var flat := 0
 	for s in sheets:
-		var img: Image = (load(s["path"]) as Texture2D).get_image()
+		var probe := ImageProbe.image_of(load(s["path"]) as Texture2D)
+		assert_eq(probe.size(), 1,
+			"%s: reading the sheet ABORTED rather than measuring it" % str(s["path"]))
+		if probe.is_empty():
+			continue
+		var img: Image = probe[0]
 		var e: Dictionary = s["entry"]
 		var fw: int = int(e.get("frame_width", 32))
 		var fh: int = int(e.get("frame_height", 32))
@@ -158,7 +164,12 @@ func test_every_decisive_sheet_declares_the_rows_its_pixels_mirror() -> void:
 	var checked := 0
 	for s in _declaring_sheets():
 		var e: Dictionary = s["entry"]
-		var img: Image = (load(s["path"]) as Texture2D).get_image()
+		var probe := ImageProbe.image_of(load(s["path"]) as Texture2D)
+		assert_eq(probe.size(), 1,
+			"%s: reading the sheet ABORTED rather than measuring it" % str(s["path"]))
+		if probe.is_empty():
+			continue
+		var img: Image = probe[0]
 		var fw: int = int(e.get("frame_width", 32))
 		var fh: int = int(e.get("frame_height", 32))
 		var r := _best_pair(img, fw, fh, img.get_width() / fw, img.get_height() / fh)

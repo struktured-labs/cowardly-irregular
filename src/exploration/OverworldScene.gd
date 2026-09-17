@@ -882,15 +882,27 @@ func _place_ambient_effects() -> void:
 		add_child(smoke)
 
 
+## WeatherSystem hands the ambient layer back here when weather clears and this world has no
+## fair-weather bed. Without it W1 stayed silent until the player crossed a zone boundary.
+func restore_place_ambient() -> void:
+	_update_zone_ambient(_current_zone)
+
+
 func _update_zone_ambient(zone: String) -> void:
 	var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 	if sm == null:
+		return
+	## Weather owns this layer while it is on, and hands it back via restore_place_ambient() when
+	## it clears. Without this a zone boundary crossed during rain replaced the rain with the new
+	## zone's bed, and nothing re-asserted until the weather next changed.
+	if _weather and _weather.has_method("owns_ambient") and _weather.owns_ambient():
 		return
 	var ambient_key = ""
 	match zone:
 		"forest": ambient_key = "ambient_forest"
 		"ice": ambient_key = "ambient_cave"
 		"coast": ambient_key = "ambient_coast"
+		"plains": ambient_key = "ambient_plains"
 		"central": ambient_key = "ambient_plains"
 		"desert": ambient_key = "ambient_plains"
 		"swamp": ambient_key = "ambient_forest"

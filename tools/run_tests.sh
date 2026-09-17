@@ -223,15 +223,17 @@ run_gut() {
   # ZERO on a log that plainly contains the marker. gate.sh greps the ANSI-free `--log-file` and
   # never meets this; RUN_LOG is the stdout capture and does. CLAUDE.md documents the same trap
   # for `[Failed]`, and this implementation walked into it before the probe caught it.
+  # [A-Za-z_0-9]: 191 arms carry an uppercase letter (test_CONTROL_*, test_ANY_*) and a
+  # lowercase-only class made every one of them invisible to this check.
   local _noassert
-  _noassert="$(sed 's/\x1b\[[0-9;]*m//g' "$RUN_LOG" | command grep -aoE '\[Risky\]: +[a-z_0-9]+ did not assert' | sort -u | command grep -c . )"
+  _noassert="$(sed 's/\x1b\[[0-9;]*m//g' "$RUN_LOG" | command grep -aoE '\[Risky\]: +[A-Za-z_0-9]+ did not assert' | sort -u | command grep -c . )"
   if [ "${_noassert:-0}" -gt 0 ]; then
     echo "run_tests.sh: ${_noassert} TEST(S) RAN AND ASSERTED NOTHING — scored Risky, never [Failed]." >&2
     echo "  ⇒ An arm that aborts before its first assert is NOT failing, so EC and Failing are both" >&2
     echo "    clean while the guard defends nothing. Usually the member it names was renamed or" >&2
     echo "    removed and a direct reference raised. An existence arm using get()/has_method()" >&2
     echo "    turns this into a failing assert that says so." >&2
-    sed 's/\x1b\[[0-9;]*m//g' "$RUN_LOG" | command grep -aoE '\[Risky\]: +[a-z_0-9]+ did not assert' | sort -u | sed 's/^/    /' >&2
+    sed 's/\x1b\[[0-9;]*m//g' "$RUN_LOG" | command grep -aoE '\[Risky\]: +[A-Za-z_0-9]+ did not assert' | sort -u | sed 's/^/    /' >&2
     if [ "$ec" = "0" ]; then
       echo "  ⇒ exit 4: this run would otherwise have reported success." >&2
       exit 4

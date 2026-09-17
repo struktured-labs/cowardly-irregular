@@ -1,4 +1,5 @@
 extends GutTest
+const ImageProbe := preload("res://test/unit/helpers/image_probe.gd")
 
 ## ⛔ THE LUNGE STOPPED A GOBLIN-AND-A-HALF SHORT. `_melee_contact_gap` summed FRAME half-widths, which
 ## is padding, not the character — while its own docstring said "stop where the attacker's weapon frame
@@ -57,8 +58,14 @@ func test_the_gap_is_the_two_figures_plus_the_mercy_margin() -> void:
 	var expected: float = absf(AuraScript.figure_rect_in_sprite(fighter).position.x) \
 		+ AuraScript.figure_rect_in_sprite(goblin).end.x + SceneScript.MELEE_CONTACT_MERCY_PX
 	assert_almost_eq(gap, expected, 0.01, "the gap is figure-edge to figure-edge plus the mercy margin")
-	var frame_gap: float = (fighter.sprite_frames.get_frame_texture(&"idle", 0).get_size().x * 0.5 * fighter.scale.x) \
-		+ (goblin.sprite_frames.get_frame_texture(&"idle", 0).get_size().x * 0.5 * goblin.scale.x) + SceneScript.MELEE_CONTACT_MERCY_PX
+	var fw := ImageProbe.frame_width_of(fighter.sprite_frames, &"idle", 0)
+	var gw := ImageProbe.frame_width_of(goblin.sprite_frames, &"idle", 0)
+	assert_eq(fw.size() + gw.size(), 2,
+		"reading a frame size ABORTED rather than measuring it, so the comparison below is free")
+	if fw.is_empty() or gw.is_empty():
+		return
+	var frame_gap: float = (fw[0] * 0.5 * fighter.scale.x) \
+		+ (gw[0] * 0.5 * goblin.scale.x) + SceneScript.MELEE_CONTACT_MERCY_PX
 	assert_lt(gap, frame_gap - 150.0,
 		"and it is far closer than the frame rule it replaced (%.0f vs %.0f) — the live shortfall was 209-221 px" % [gap, frame_gap])
 

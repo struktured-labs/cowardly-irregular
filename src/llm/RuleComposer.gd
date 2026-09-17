@@ -18,6 +18,9 @@ const DOMAIN_AUTOGRIND  := "autogrind"
 
 const _VALID_DOMAINS := [DOMAIN_AUTOBATTLE, DOMAIN_AUTOGRIND]
 
+## ItemSystem.ItemCategory.META — key items and equipment, not usable in a battle.
+const ITEM_CATEGORY_META := 4
+
 const DialoguePromptsScript := preload("res://src/llm/DialoguePrompts.gd")
 
 func _ready() -> void:
@@ -70,6 +73,7 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		if abs_sys != null and abs_sys.has_method("get_deep_check_kit"):
 			kit_context = abs_sys.get_deep_check_kit(character_id)
 			kit_context = _widen_kit_to_what_this_character_knows(kit_context, character_id)
+			kit_context["items"] = _battle_item_ids()
 	elif domain == DOMAIN_AUTOGRIND:
 		kit_context = _party_kit_context()
 	var prompt: String = DialoguePromptsScript.build_rule_composition(
@@ -122,6 +126,14 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# Nil to a typed String aborts the enclosing function in the grid editor.
 	if domain == DOMAIN_AUTOBATTLE:
 		_drop_null_targets(v["rules"])
+		for note in _normalise_autobattle_statuses(v["rules"]):
+			repair_notes.append(note)
+		for note in _normalise_item_ids(v["rules"], kit_context.get("items", [])):
+			repair_notes.append(note)
+		## BEFORE the MP-guard pass below: an action only recognised as an ability AFTER it
+		## never gets the guard the deep check then demands, and the rule is dropped.
+		for note in _normalise_autobattle_shapes(v["rules"], kit_context):
+			repair_notes.append(note)
 
 	if domain == DOMAIN_AUTOBATTLE and bool(kit_context.get("resolved", false)):
 		for note in _supply_missing_mp_guards(v["rules"], kit_context):
@@ -162,8 +174,17 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# Same shape as _drop_null_targets above: drop the offending rule, keep the rest,
 	# and TELL the player. Never empties the set — a zero-rule composition is not a
 	# valid one, it is the save-wiping one, so the caller's refusal path still runs.
+	## The grind domain was left out of this when it shipped, and the asymmetry cost the
+	## same thing it was written to prevent. Measured on 50 captured live replies across
+	## five deliberately messy intents: 4 died on ONE rule each — a null numeric value, a
+	## null operator, an invented `rest` action, and one malformed rule — while the rest of
+	## each set was valid. None of those four is repairable by lookup; dropping the rule is
+	## the only honest move, and it is the move this project already chose for autobattle.
 	if domain == DOMAIN_AUTOBATTLE and character_id != "":
 		for note in _drop_unusable_rules(v["rules"], character_id, domain_system):
+			repair_notes.append(note)
+	elif domain == DOMAIN_AUTOGRIND:
+		for note in _drop_unusable_rules(v["rules"], "", domain_system):
 			repair_notes.append(note)
 
 	# Last, so it orders whatever the other repairs left behind.
@@ -303,7 +324,10 @@ func _drop_unusable_rules(rules: Array, character_id: String, domain_system) -> 
 	var kept: Array = []
 	var dropped: Array[String] = []
 	for r in rules:
-		var errs: Array = domain_system.validate_rule(r, character_id)
+		## autobattle's validate_rule takes the character for its deep check; autogrind's is
+		## party-level and takes the rule alone. Same refusal, different arity.
+		var errs: Array = domain_system.validate_rule(r, character_id) if character_id != "" \
+			else domain_system.validate_rule(r)
 		if errs.is_empty():
 			kept.append(r)
 		else:
@@ -394,6 +418,30 @@ func _widen_kit_to_what_this_character_knows(ctx: Dictionary, character_id: Stri
 ## asks for one: 24 of 24 emitted ids were absent from abilities.json — 'revive' and
 ## 'heal' for the real 'raise' and 'cure'. The engine skips an unknown id with a stdout
 ## print, so the rule silently never fires.
+## The item ids an `item` action may name. The deep check accepts ANY id in items.json, but
+## only the four battle categories are usable in a fight — META is 146 of the 172 and is key
+## items and equipment. Derived from ItemSystem rather than listed here.
+##
+## Measured on live llama3 2026-09-17, an intent needing ids the grammar does not exemplify
+## ("cure blindness with eye drops, use echo herbs the moment someone is silenced"): 19 of 20
+## `item` action ids were unknown — `echo_herb` 14, `echo` 5, against the real `echo_herbs`.
+## The deep check turns each into a grammar error, and one grammar error discards the WHOLE
+## composition. An earlier run with an intent asking for `potion` scored 0 of 19 wrong, which
+## measured the grammar's own example rather than the prompt.
+func _battle_item_ids() -> Array:
+	var sys = get_node_or_null("/root/ItemSystem")
+	if sys == null or not ("items" in sys):
+		return []
+	var out: Array = []
+	for iid in (sys.items as Dictionary):
+		var item: Dictionary = sys.items[iid]
+		if int(item.get("category", -1)) == ITEM_CATEGORY_META:
+			continue
+		out.append(str(iid))
+	out.sort()
+	return out
+
+
 func _party_kit_context() -> Dictionary:
 	var gl = get_node_or_null("/root/GameLoop")
 	var abs_sys = get_node_or_null("/root/AutobattleSystem")
@@ -559,7 +607,7 @@ func _is_catch_all(rule: Dictionary) -> bool:
 ## prompt was given the vocabulary: 3 of 20 compositions put an ARRAY in `value` ("or" spelled
 ## the way the player said it), and a residual English participle survived the instruction.
 ##
-## Both are lookups in DialoguePrompts.AUTOGRIND_STATUS_VOCABULARY, the same table the prompt
+## Both are lookups in DialoguePrompts.STATUS_VOCABULARY, the same table the prompt
 ## renders — not a table of guesses kept here. An array becomes one rule per id because OR is
 ## what this grammar's rule list already means; the conditions are AND-chained, so cloning the
 ## rule preserves every other condition it carried.
@@ -654,12 +702,153 @@ func _normalise_switch_profile(rules: Array, kit_context: Dictionary) -> Array[S
 	return notes
 
 
+## An autobattle condition's `status` field, matched literally by Combatant.has_status.
+## Measured 7 of 19 unmatchable on an intent about being silenced — the model wrote
+## "silenced". Same lookup as the grind's, same table, because it is the same engine call.
+## Three shapes measured across 48 captured live replies, 4 jobs x 12, replayed through the
+## real compose_async. One grammar error discards the whole composition, so each cost a
+## player their entire ruleset:
+##
+##     {"type":"ally_dead","op":"","value":null}      an empty payload on a NULLARY condition
+##     {"type":"ally_hp_percent","op":">=0"}          the operator and value fused
+##     {"type":"lullaby","target":"self"}             an ability id used as the action TYPE
+##
+## Every repair is a lookup in AutobattleSystem's own vocabulary or a parse of the string's
+## own content. The ability rewrite is scoped to THIS character's kit, so it can only
+## produce an action the deep check would already have accepted.
+func _normalise_autobattle_shapes(rules: Array, kit_context: Dictionary) -> Array[String]:
+	var notes: Array[String] = []
+	var domain_system = get_node_or_null("/root/AutobattleSystem")
+	if domain_system == null:
+		return notes
+	var nullary: Array = domain_system.NULLARY_CONDITIONS if "NULLARY_CONDITIONS" in domain_system else []
+	var operators: Dictionary = domain_system.OPERATORS if "OPERATORS" in domain_system else {}
+	var actions_ok: Dictionary = domain_system.ACTION_TYPES if "ACTION_TYPES" in domain_system else {}
+	var kit: Array = kit_context.get("kit", [])
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for c in rule.get("conditions", []):
+			if typeof(c) != TYPE_DICTIONARY:
+				continue
+			var ctype: String = str(c.get("type", ""))
+			## A nullary condition carrying an empty payload — the same repair the autogrind
+			## side has had all along, absent here only because nothing named the set.
+			if nullary.has(ctype):
+				for key in ["op", "value"]:
+					if c.has(key) and (c[key] == null or str(c[key]) == ""):
+						c.erase(key)
+						notes.append("Dropped an empty '%s' from '%s' — it takes no payload." % [key, ctype])
+				continue
+			## The operator and its value fused into one string. Splitting it is a PARSE of
+			## what the model wrote, not a guess — and it is refused when a separate value
+			## is already present and disagrees, because then it IS a guess.
+			var raw_op: String = str(c.get("op", ""))
+			if raw_op == "" or operators.has(raw_op):
+				continue
+			for op in operators.keys():
+				var op_s: String = str(op)
+				if not raw_op.begins_with(op_s):
+					continue
+				var tail: String = raw_op.substr(op_s.length()).strip_edges()
+				if not tail.is_valid_float():
+					continue
+				if c.has("value") and str(c["value"]) != tail:
+					break
+				c["op"] = op_s
+				c["value"] = float(tail) if tail.contains(".") else int(tail)
+				notes.append("Read '%s' as op '%s' with value %s." % [raw_op, op_s, tail])
+				break
+		var acts: Array = rule.get("actions", [])
+		for a in acts:
+			if typeof(a) != TYPE_DICTIONARY:
+				continue
+			var atype: String = str(a.get("type", ""))
+			if actions_ok.has(atype) or not kit.has(atype):
+				continue
+			a["type"] = "ability"
+			a["id"] = atype
+			notes.append("Read '%s' as the ability it names — an ability is an action's id." % atype)
+	return notes
+
+
+func _normalise_autobattle_statuses(rules: Array) -> Array[String]:
+	const STATUS_CONDITIONS := ["has_status", "not_has_status", "ally_has_status",
+		"enemy_has_status", "not_enemy_has_status"]
+	var notes: Array[String] = []
+	var spellings: Dictionary = {}
+	for id in DialoguePromptsScript.STATUS_VOCABULARY:
+		spellings[str(id)] = str(id)
+		for word in (DialoguePromptsScript.STATUS_VOCABULARY[id] as Array):
+			spellings[str(word).to_lower()] = str(id)
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for c in rule.get("conditions", []):
+			if typeof(c) != TYPE_DICTIONARY or not STATUS_CONDITIONS.has(str(c.get("type", ""))):
+				continue
+			var raw: String = str(c.get("status", ""))
+			var key: String = raw.strip_edges().to_lower()
+			if raw == "" or spellings.get(key, "") == raw:
+				continue
+			if not spellings.has(key):
+				continue
+			c["status"] = spellings[key]
+			notes.append("Read '%s' as '%s', the id the engine matches." % [raw, spellings[key]])
+	return notes
+
+
+## An `item` action's id is deep-checked, so a near miss discards the WHOLE composition —
+## `echo_herb` for `echo_herbs` was 14 of 20 on one intent. The match normalises separators
+## and an optional trailing 's', which is a defined rewrite rather than a guess: if two real
+## ids collapse to the same key the id is left alone, because then it IS a guess.
+func _normalise_item_ids(rules: Array, item_ids: Array) -> Array[String]:
+	var notes: Array[String] = []
+	if item_ids.is_empty():
+		return notes
+	var folded: Dictionary = {}
+	for iid in item_ids:
+		var key: String = _fold_item_id(str(iid))
+		folded[key] = "" if folded.has(key) else str(iid)
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for a in rule.get("actions", []):
+			if typeof(a) != TYPE_DICTIONARY or str(a.get("type", "")) != "item":
+				continue
+			var raw: String = str(a.get("id", ""))
+			if raw == "" or item_ids.has(raw):
+				continue
+			var real: String = str(folded.get(_fold_item_id(raw), ""))
+			if real == "":
+				continue
+			a["id"] = real
+			notes.append("Read item '%s' as '%s'." % [raw, real])
+		for c in rule.get("conditions", []):
+			if typeof(c) != TYPE_DICTIONARY or str(c.get("type", "")) != "item_count":
+				continue
+			var raw_c: String = str(c.get("item_id", ""))
+			if raw_c == "" or item_ids.has(raw_c):
+				continue
+			var real_c: String = str(folded.get(_fold_item_id(raw_c), ""))
+			if real_c == "":
+				continue
+			c["item_id"] = real_c
+			notes.append("Read item '%s' as '%s'." % [raw_c, real_c])
+	return notes
+
+
+func _fold_item_id(raw: String) -> String:
+	var flat: String = raw.to_lower().replace("_", "").replace("-", "").replace(" ", "")
+	return flat.trim_suffix("s")
+
+
 func _normalise_member_status(rules: Array) -> Array[String]:
 	var notes: Array[String] = []
 	var spellings: Dictionary = {}
-	for id in DialoguePromptsScript.AUTOGRIND_STATUS_VOCABULARY:
+	for id in DialoguePromptsScript.STATUS_VOCABULARY:
 		spellings[str(id)] = str(id)
-		for word in (DialoguePromptsScript.AUTOGRIND_STATUS_VOCABULARY[id] as Array):
+		for word in (DialoguePromptsScript.STATUS_VOCABULARY[id] as Array):
 			spellings[str(word).to_lower()] = str(id)
 	var i: int = 0
 	while i < rules.size():
@@ -702,13 +891,48 @@ func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[Strin
 		return notes
 	var types: Dictionary = domain_system.PARTY_CONDITION_TYPES
 	var nullary: Array = domain_system.NULLARY_CONDITIONS if "NULLARY_CONDITIONS" in domain_system else []
+	var named: Array = domain_system.NAMED_VALUE_CONDITIONS if "NAMED_VALUE_CONDITIONS" in domain_system else []
+	var operators: Dictionary = domain_system.OPERATORS if "OPERATORS" in domain_system else {}
+	for note in _expand_or_conditions(rules, types):
+		notes.append(note)
 	for rule in rules:
 		if typeof(rule) != TYPE_DICTIONARY:
 			continue
 		for c in rule.get("conditions", []):
 			if typeof(c) != TYPE_DICTIONARY:
 				continue
+			## The model writes the TYPE as the KEY: {"always": ""} for {"type":"always"}.
+			## Only when exactly one key is itself a live condition type — anything looser
+			## would rewrite a rule on the strength of a coincidence.
+			if not c.has("type") and c.size() == 1:
+				var only_key: String = str(c.keys()[0])
+				if types.has(only_key):
+					var carried: Variant = c[only_key]
+					c.erase(only_key)
+					c["type"] = only_key
+					if str(carried) != "" and not nullary.has(only_key):
+						c["value"] = carried
+					notes.append("Read {\"%s\": …} as a '%s' condition." % [only_key, only_key])
 			var ctype: String = str(c.get("type", ""))
+			## The mirror of the party_ strip below: the model writes `member_hp_min` for an
+			## aggregate that is spelled party_hp_min. Swapped ONLY when the swapped name is
+			## itself a live type, so this is a lookup in the system's vocabulary.
+			if not types.has(ctype) and ctype.begins_with("member_"):
+				var swapped: String = "party_" + ctype.substr("member_".length())
+				if types.has(swapped):
+					c["type"] = swapped
+					notes.append("Read '%s' as '%s' — that aggregate is party-level." % [ctype, swapped])
+					ctype = swapped
+			## An aggregate suffix on a live type: `corruption_avg` for `corruption`, measured
+			## 1 of 20 on a second grind intent. Stripped ONLY when the remainder is itself a
+			## live type — and the ORDER matters: member_hp_min strips to the live member_hp,
+			## which is the wrong answer, so the party_ swap above runs first and claims it.
+			if not types.has(ctype) and ctype.contains("_"):
+				var head: String = ctype.substr(0, ctype.rfind("_"))
+				if types.has(head):
+					c["type"] = head
+					notes.append("Read '%s' as '%s' — the comparison already carries the aggregate." % [ctype, head])
+					ctype = head
 			if not types.has(ctype) and ctype.begins_with("party_"):
 				var stripped: String = ctype.substr("party_".length())
 				if types.has(stripped):
@@ -720,6 +944,54 @@ func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[Strin
 					if c.has(key) and str(c[key]) == "":
 						c.erase(key)
 						notes.append("Dropped an empty '%s' from '%s' — it takes no payload." % [key, ctype])
+			## A named-value condition asks "does this member HAVE it" — the evaluator never
+			## reads op. validate_rule refuses an unknown one and that discards the whole
+			## composition, so an op it cannot use is dropped rather than paid for.
+			if named.has(ctype) and c.has("op") and not operators.has(str(c["op"])):
+				var bad_op: String = str(c["op"])
+				c.erase("op")
+				notes.append("Dropped op '%s' from '%s' — it asks whether the status is present." % [bad_op, ctype])
+	return notes
+
+
+## The model reaches for boolean composition this grammar does not have — `or` with a
+## nested `options` list, `any_of` with `conditions`. Measured 2 of 20 live compositions,
+## each a total loss. Conditions are AND-chained and first match wins, so OR is spelled as
+## SEPARATE RULES: one rule per branch, carrying every sibling condition and the actions.
+func _expand_or_conditions(rules: Array, types: Dictionary) -> Array[String]:
+	const OR_TYPES := ["or", "any_of", "either", "any"]
+	const BRANCH_KEYS := ["conditions", "options", "any", "branches"]
+	var notes: Array[String] = []
+	var i: int = 0
+	while i < rules.size():
+		var rule = rules[i]
+		i += 1
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		var conds: Array = rule.get("conditions", [])
+		var at: int = -1
+		var branches: Array = []
+		for j in conds.size():
+			var c = conds[j]
+			if typeof(c) != TYPE_DICTIONARY or not OR_TYPES.has(str(c.get("type", ""))):
+				continue
+			for key in BRANCH_KEYS:
+				if typeof(c.get(key)) == TYPE_ARRAY and (c[key] as Array).size() > 0:
+					branches = c[key]
+					at = j
+					break
+			if at != -1:
+				break
+		if at == -1:
+			continue
+		conds.remove_at(at)
+		conds.insert(at, branches[0])
+		notes.append("Split an OR into one rule per branch — in this grammar, rules ARE the or.")
+		for extra in branches.slice(1):
+			var clone: Dictionary = rule.duplicate(true)
+			(clone["conditions"] as Array)[at] = extra
+			rules.insert(i, clone)
+			i += 1
 	return notes
 
 
