@@ -179,3 +179,64 @@ func test_every_member_this_guard_drives_by_name_exists() -> void:
 		+ "would ABORT INTO A SILENT PASS — EC=0, nothing failing, nothing risky: %s") % [calls["missing"]])
 	assert_eq(props["missing"], [],
 		"this guard reads those private properties by name and the subject no longer has them: %s" % [props["missing"]])
+
+
+## ⛔ TURNING MUST NOT MOVE THE CREATURE, checked through a REAL node rather than in source.
+##
+## An off-centre sprite mirrored IN PLACE lands at the mirrored offset, so walk_left and
+## walk_right sit at different x inside the cell. `centered = true` pins the CELL to the node, so
+## that displacement is literal on-screen motion at a position that never changed. Measured
+## 2026-09-16: 44 of the 53 declaring overworld sheets drift, worst snake 4.0px and wolf 3.0px of
+## bounding-box centre on a 32px body.
+##
+## 🔑 THE INVARIANT IS POST-CORRECTION AGREEMENT, not "the offset is non-zero": every row's drawn
+## centre plus its offset must land on the walk_down row's centre. That is one assertion that
+## covers a sheet needing a big correction and a sheet needing none.
+func test_turning_does_not_move_the_creature() -> void:
+	var drifted := 0
+	for id in ["wolf", "snake", "slime"]:
+		var m = Roamer.new()
+		m.monster_id = id
+		add_child_autofree(m)
+		var sprite: Node = m.get_node_or_null("Sprite")
+		assert_not_null(sprite, "%s must build a Sprite node" % id)
+		var offsets: PackedFloat32Array = m.get("_row_offsets")
+		assert_gt(offsets.size(), 3, "%s: no per-row offsets were computed" % id)
+
+		var img: Image = (sprite.get("texture") as Texture2D).get_image()
+		var frame: Vector2i = m.get("_frame")
+		var cols: int = int(m.get("_cols"))
+		var centres := []
+		for r in offsets.size():
+			var total := 0.0
+			var counted := 0
+			for c in cols:
+				var lo: int = frame.x
+				var hi: int = -1
+				for y in frame.y:
+					for x in frame.x:
+						if img.get_pixel(c * frame.x + x, r * frame.y + y).a > 0.0:
+							lo = mini(lo, x)
+							hi = maxi(hi, x)
+				if hi >= 0:
+					total += float(lo + hi) * 0.5
+					counted += 1
+			centres.append(total / float(counted) if counted > 0 else 0.0)
+
+		# ⛔ DRIVE _apply_frame AND READ THE SPRITE. Reading `_row_offsets` tests the COMPUTATION;
+		# deleting the line that applies it left this arm green — cowir-controller's shape, an arm
+		# that runs, asserts, and is about the wrong subject. The rendered offset is the subject.
+		var anchor: int = int((m.get("_rows") as Dictionary).get("walk_down", 0))
+		var spread := 0.0
+		for r in centres.size():
+			m.call("_apply_frame", r, 0)
+			var applied: float = (sprite.get("offset") as Vector2).x
+			spread = maxf(spread, absf((centres[r] + applied) - centres[anchor]))
+			if absf(centres[r] - centres[anchor]) > 0.5:
+				drifted += 1
+		assert_almost_eq(spread, 0.0, 0.01,
+			("%s: after correction the rows still draw at different x inside the cell, so the "
+			+ "creature slides sideways when it turns while its position is unchanged") % id)
+	assert_gt(drifted, 0,
+		("ANTI-VACUITY: none of the probed sheets is off-centre at all, so the correction above was "
+		+ "proved on nothing — wolf and snake drifted 3.0px and 4.0px when this was written"))

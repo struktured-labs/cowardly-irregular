@@ -19,6 +19,7 @@ const SHEET_COLS: int = 4
 var _frame: Vector2i = Vector2i(FRAME_W, FRAME_H)
 var _cols: int = SHEET_COLS
 var _rows: Dictionary = {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}
+var _row_offsets: PackedFloat32Array = PackedFloat32Array()
 const WANDER_SPEED: float = 90.0
 const CHASE_SPEED: float = 115.0
 const CHASE_RADIUS: float = 96.0
@@ -172,6 +173,7 @@ func _setup_sprite() -> void:
 		# placeholder are both tuned to FRAME_W; deriving the cut and leaving the render native
 		# would make a 48px sheet draw 1.5x with a collider that no longer matches it.
 		_sprite.scale = Vector2(float(FRAME_W) / float(_frame.x), float(FRAME_H) / float(_frame.y))
+		_compute_row_offsets()
 		_apply_frame(0, 0)
 	else:
 		_draw_fallback_sprite()
@@ -203,6 +205,55 @@ func _apply_frame(row: int, col: int) -> void:
 	if not _sheet_loaded:
 		return
 	_sprite.region_rect = Rect2(col * _frame.x, row * _frame.y, _frame.x, _frame.y)
+	if row < _row_offsets.size():
+		_sprite.offset.x = _row_offsets[row]
+
+
+## Per-row horizontal correction, so TURNING does not MOVE the creature.
+##
+## An off-centre sprite mirrored IN PLACE lands at the mirrored offset, so walk_left and
+## walk_right sit at different x inside the cell — and `centered = true` pins the CELL to the
+## node, which makes that displacement literal on-screen motion at a position that never changed.
+## Measured 2026-09-16 across the three overworld sections: 44 of 53 sheets drift, worst snake
+## 4.0px and wolf 3.0px of bounding-box centre on a 32px body. `slime` is the one sheet already
+## registered correctly and gets offsets of exactly 0 here, by construction rather than by
+## exception.
+##
+## ⚠️ ANCHORED TO walk_down, NOT TO THE CELL CENTRE. The resting facing is the authored
+## placement; re-centring every row on the cell would move sheets whose author deliberately sat
+## the body off-centre, which is a different change from the one this fixes.
+##
+## ⛔ ALPHA ONLY, AND THAT IS WHY get_image() IS SAFE HERE. The imported texture is not
+## byte-identical to the PNG — 7196 of 16384 pixels differ on wolf even at compress/mode=0 — but
+## alpha PRESENCE differs on zero pixels, so a bounding box reads the same through either. Exact
+## RGBA through a Texture2D would not.
+func _compute_row_offsets() -> void:
+	_row_offsets = PackedFloat32Array()
+	var img: Image = _sheet.get_image()
+	if img == null or _frame.x <= 0 or _frame.y <= 0:
+		return
+	var n_rows: int = img.get_height() / _frame.y
+	var centres := PackedFloat32Array()
+	for r in n_rows:
+		var total := 0.0
+		var counted := 0
+		for c in _cols:
+			var lo: int = _frame.x
+			var hi: int = -1
+			for y in _frame.y:
+				for x in _frame.x:
+					if img.get_pixel(c * _frame.x + x, r * _frame.y + y).a > 0.0:
+						lo = mini(lo, x)
+						hi = maxi(hi, x)
+			if hi >= 0:
+				total += float(lo + hi) * 0.5
+				counted += 1
+		centres.append(total / float(counted) if counted > 0 else float(_frame.x - 1) * 0.5)
+	var anchor: int = int(_rows.get("walk_down", 0))
+	if anchor < 0 or anchor >= centres.size():
+		return
+	for r in n_rows:
+		_row_offsets.append(centres[anchor] - centres[r])
 
 
 ## Touch radius tuned to ~1.4x the 32px sprite half-width — encounter fires only on actual sprite overlap.
