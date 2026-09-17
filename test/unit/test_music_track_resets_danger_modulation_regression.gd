@@ -46,7 +46,11 @@ func test_the_clean_slate_precedes_branch_dispatch() -> void:
 	var body: String = src.substr(fn, src.find("\nfunc ", fn + 1) - fn)
 	var reset_idx: int = body.find("reset_danger()")
 	var manifest_idx: int = body.find("_try_play_from_manifest")
-	var cache_idx: int = body.find("_music_cache.has(track)")
+	## \u26d4 NOT "_music_cache.has(track)" -- that substring occurs THREE times in play_music
+	## (the refusal guard, this branch, and the write at the foot), so .find() returns whichever
+	## comes first. It named this branch by luck until a guard was added above it, and then the
+	## pin failed against correct code. Use the one spelling only the cache BRANCH has.
+	var cache_idx: int = body.find("_music_player.stream = _music_cache[track]")
 	assert_gt(reset_idx, -1, "play_music must end the danger envelope")
 	assert_gt(manifest_idx, -1)
 	assert_true(reset_idx < manifest_idx and reset_idx < cache_idx,
@@ -55,3 +59,17 @@ func test_the_clean_slate_precedes_branch_dispatch() -> void:
 	var rd_body: String = src.substr(rd, src.find("\nfunc ", rd + 1) - rd)
 	assert_true(rd_body.contains("pitch_scale = 1.0") and rd_body.contains("_music_base_db"),
 		"and reset_danger must actually restore the clean pitch and the user's volume")
+
+
+## The refusal guard returns BEFORE reset_danger(), and that ordering is deliberate: a call that
+## will play nothing leaves the current bed playing, so ending its danger envelope would flatten
+## the pitch and volume of a track that is still going. Every OTHER path still resets first.
+func test_a_refusal_does_not_end_the_envelope_of_the_bed_that_keeps_playing() -> void:
+	var src: String = FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
+	var fn: int = src.find("func play_music")
+	var body: String = src.substr(fn, src.find("\nfunc ", fn + 1) - fn)
+	var guard_idx: int = body.find("music_is_available(track)")
+	var reset_idx: int = body.find("reset_danger()")
+	assert_gt(guard_idx, -1, "play_music must refuse an id it cannot play")
+	assert_true(guard_idx < reset_idx,
+		"the refusal must return before reset_danger(), or it flattens a bed that is still playing")
