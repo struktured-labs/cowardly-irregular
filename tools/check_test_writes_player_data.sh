@@ -47,7 +47,8 @@
 #
 # Usage:   tools/check_test_writes_player_data.sh <name> [<name> ...]
 #          tools/check_test_writes_player_data.sh --selftest      # no live defect required
-#          tools/check_test_writes_player_data.sh --all-autogrind
+#          tools/check_test_writes_player_data.sh --all <substring>   # e.g. autogrind, autobattle
+#          tools/check_test_writes_player_data.sh --all-autogrind        # alias, kept
 # Exit:    0 nothing written · 1 a test left player data · 2 bad invocation
 
 set -u
@@ -88,14 +89,22 @@ if [ "${1:-}" = "--selftest" ]; then
   exit $fail
 fi
 
-[ "$#" -ge 1 ] || { echo "usage: $0 <test-name> [...]  |  --all-autogrind  |  --selftest" >&2; exit 2; }
+[ "$#" -ge 1 ] || { echo "usage: $0 <test-name> [...]  |  --all <substring>  |  --selftest" >&2; exit 2; }
 
+# Selection. `--all <substring>` is the neutral form -- @cowir-battle asked for --all-autobattle
+# and a per-lane flag list is the hand-listed corpus this whole exercise is about. The detector
+# (scan_ud) is lane-agnostic already; only the REACH was autogrind-shaped.
 NAMES=()
-if [ "$1" = "--all-autogrind" ]; then
-  for f in test/unit/test_autogrind*.gd; do
-    [ -e "$f" ] || { echo "$0: no test_autogrind*.gd found" >&2; exit 2; }
+case "${1:-}" in
+  --all-autogrind) set -- --all autogrind ;;   # kept: the original spelling, now an alias
+esac
+if [ "${1:-}" = "--all" ]; then
+  pat="${2:-}"
+  for f in test/unit/test_*"$pat"*.gd; do
+    [ -e "$f" ] || { echo "$0: no test file matches '*${pat}*'" >&2; exit 2; }
     n="${f##*/test_}"; NAMES+=("${n%.gd}")
   done
+  echo "--- $0: ${#NAMES[@]} file(s) matching '*${pat}*', one process and one virgin sandbox each ---" >&2
 else
   NAMES=("$@")
 fi
