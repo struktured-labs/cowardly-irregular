@@ -397,6 +397,26 @@ Full import (autoloads available, catches more issues; ~10s):
 - **Two data sources feeding one surface — one silently wins (2026-07-25)** — a dialogue rewrite can ship, diff clean, review fine, pass the suite, and be a runtime NO-OP because a *second* file overwrites it at `_ready` (`OverworldNPC._setup_persona_data` replaces constructor `dialogue_lines` with the persona JSON's `fallbacks[]`; bit Theron and Boris). Unlike every other trap here, NO git-side check finds it: the other failures are *pointer disagrees with content*, this is **two contents that are both correct where only the consumer's choice is wrong** — findable only by reading the consumer. When editing authored content, confirm which source the runtime actually reads.
   **Which guard is right depends on ONE axis — are the sources supposed to agree, and if not, can the author see which wins?** (a) *Redundant* (`monsters.json` ↔ cutscene `win_condition`): assert AGREEMENT — never model precedence, if both agree the question is moot. (b) *Divergent + invisible at authoring* (`fallbacks[]` ↔ `quest_state_lines`): guard the INVISIBILITY, not the collision — require an annotation naming what outranks it. (c) *Divergent + already documented* (`SOUNDS` ↔ `sfx_manifest`, manifest-wins-by-contract): NO ratchet, comment only.
   **Corollary — a check whose CORRECT case requires a suppression flag is not a check.** 40 allowlist entries on day one, or an `"_shadow_ok": true` that's muscle memory by the second NPC, is rot arriving dressed as diligence. When a guard IS warranted, require the DELIVERABLE (the note explaining precedence), never permission to skip — you can't silence it green, only explain it green, and the explanation is the fix
+- **`git merge-tree` has THREE oracles and only two of them work — and chaining it needs a `commit-tree` wrapper (2026-09-17, hit by 3 lanes independently in one night).** The pre-check that says "will this fold apply" is easy to get silently wrong in both directions. Measured on a purpose-built two-branch conflict:
+
+  | form | conflict signal | verdict |
+  |---|---|---|
+  | `merge-tree --write-tree A B` + `$?` | **ec=1** | ✅ valid |
+  | legacy 3-arg + `$?` | **ec=0** | ⛔ INVALID — exits 0 on a real conflict |
+  | legacy 3-arg + marker count | `+<<<<<<<` | ✅ valid, **but only with ONE `+`** |
+
+  The marker pattern is its own trap: `merge-tree`'s legacy form prints a **unified** diff, so the markers carry a single `+`. A pattern written for `diff --cc` **combined** output (`^++<<<<<<<`) returns **0 on a genuine conflict** — a false clean, from an oracle that was itself proposed as the fix for the false-clean exit code. Count `^+<<<<<<<`, or key on the `changed in both` header line.
+
+  **And `--write-tree` emits a TREE oid, not a commit.** Feeding it back as the next base to chain branch 3 onto branches 1+2 gives `expected commit type, but the object dereferences to tree type` / `not something we can merge` — which **reads as "branch 2 conflicts" and is a type error in your chaining**. Wrap every intermediate:
+  ```bash
+  base=$(git rev-parse origin/main)
+  for b in <branches>; do
+      tree=$(git merge-tree --write-tree "$base" "origin/$b") || { echo "CONFLICT: $b"; break; }
+      base=$(git commit-tree "$tree" -p "$base" -p "origin/$b" -m "synthetic: $b")
+  done
+  ```
+  ⚠️ **Most sibling checks do not need the chain at all** (cowir-controller, 814 calls, never met the trap): *"does my branch conflict with any sibling"* is **pairwise** — `--write-tree HEAD <b>` per branch, no base carried forward. Only *"does this multi-branch FOLD apply in order"* is **cumulative** and needs the wrapper. The trap is reaching for the cumulative form to answer a pairwise question, which is easy because the fold is what you are ultimately worried about. **And the pairwise form has its own misleading number:** 27 of 814 came back CONFLICT, and five sampled were all 364-3807 commits behind and already conflict with `origin/main` itself. **A conflict against an abandoned branch is a fact about that branch, not about your change** — test each conflicter against main before it means anything.
+
 - **Ratchets pinned to a COINCIDENTAL value go red on a correct change and green on a wrong one (2026-07-25)** — e.g. asserting a flame sits at `x=4.5 tiles` (true, but only because that's where the fireplace happened to be) fails a correct relocation while permitting a genuinely misaligned flame. Assert the RELATIONSHIP (flame shares the surround's X, light tracks flame) not the coordinate. Tell: an absolute coordinate or magnitude in an assertion where the relationship is what's being defended
 - **New GDScript files** need `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import` before `class_name` is globally available
 - **Launch godot** with `setsid godot < /dev/null > tmp/godot.stdout 2>&1 &` (fully detached) — bare `godot &` can break Wayland window visibility
