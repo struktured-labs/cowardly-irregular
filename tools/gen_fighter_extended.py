@@ -28,6 +28,10 @@ import sys
 from pathlib import Path
 from PIL import Image
 import numpy as np
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -1007,6 +1011,7 @@ def generate_weapon_variant(weapon_id, out_dir):
     idle_strip = Image.new("RGBA", (FRAME_W * 2, FRAME_H), (0, 0, 0, 0))
     idle_strip.paste(f0, (0, 0))
     idle_strip.paste(f1, (FRAME_W, 0))
+    assert_writable(out_dir / "idle.png")
     idle_strip.save(out_dir / "idle.png")
 
     # Attack: single peak-slash frame (reused from attack pose)
@@ -1036,6 +1041,7 @@ def generate_weapon_variant(weapon_id, out_dir):
     attack_strip.paste(wf0, (0, 0))
     attack_strip.paste(attack_frame, (FRAME_W, 0))
     attack_strip.paste(wf2, (FRAME_W * 2, 0))
+    assert_writable(out_dir / "attack.png")
     attack_strip.save(out_dir / "attack.png")
 
     return idle_strip, attack_strip
@@ -1087,6 +1093,7 @@ def main():
     print("\n[Battle State] Generating ADVANCE (4 frames)...")
     advance_strip = generate_advance()
     advance_path = OUT_DIR / "advance.png"
+    assert_writable(advance_path)
     advance_strip.save(advance_path)
     validate_strip(advance_strip, "advance", 4, FRAME_W * 4)
     check_file_reasonable(advance_path)
@@ -1094,6 +1101,7 @@ def main():
     print("[Battle State] Generating DEFER (4 frames)...")
     defer_strip = generate_defer()
     defer_path = OUT_DIR / "defer.png"
+    assert_writable(defer_path)
     defer_strip.save(defer_path)
     validate_strip(defer_strip, "defer", 4, FRAME_W * 4)
     check_file_reasonable(defer_path)
@@ -1103,6 +1111,7 @@ def main():
     print("\n[Ability] Generating POWER_STRIKE (6 frames)...")
     ps_strip = generate_power_strike()
     ps_path = OUT_DIR / "power_strike.png"
+    assert_writable(ps_path)
     ps_strip.save(ps_path)
     validate_strip(ps_strip, "power_strike", 6, FRAME_W * 6)
     check_file_reasonable(ps_path)
@@ -1110,6 +1119,7 @@ def main():
     print("[Ability] Generating CLEAVE (6 frames)...")
     cleave_strip = generate_cleave()
     cleave_path = OUT_DIR / "cleave.png"
+    assert_writable(cleave_path)
     cleave_strip.save(cleave_path)
     validate_strip(cleave_strip, "cleave", 6, FRAME_W * 6)
     check_file_reasonable(cleave_path)
@@ -1117,6 +1127,7 @@ def main():
     print("[Ability] Generating PROVOKE (4 frames)...")
     provoke_strip = generate_provoke()
     provoke_path = OUT_DIR / "provoke.png"
+    assert_writable(provoke_path)
     provoke_strip.save(provoke_path)
     validate_strip(provoke_strip, "provoke", 4, FRAME_W * 4)
     check_file_reasonable(provoke_path)

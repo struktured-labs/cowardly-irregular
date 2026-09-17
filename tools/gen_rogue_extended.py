@@ -23,6 +23,10 @@ import math
 import os
 import numpy as np
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 OUT_DIR = "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/rogue"
 TMP_DIR = "/home/struktured/projects/cowardly-irregular-sprite-gen/tmp"
@@ -1583,6 +1587,7 @@ def main():
         assert strip.size == (exp_w, exp_h), \
             f"Generated strip size mismatch: {strip.size} != ({exp_w},{exp_h})"
         out_path = os.path.join(OUT_DIR, f"{name}.png")
+        assert_writable(out_path)
         strip.save(out_path, 'PNG')
         print(f"  Saved: {out_path}")
 

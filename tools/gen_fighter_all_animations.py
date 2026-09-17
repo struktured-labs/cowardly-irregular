@@ -26,6 +26,10 @@ import sys
 from pathlib import Path
 from PIL import Image, ImageDraw
 import numpy as np
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 IDLE_PATH  = "/home/struktured/projects/cowardly-irregular/assets/sprites/jobs/fighter/idle.png"
 OUT_DIR    = Path("/home/struktured/projects/cowardly-irregular/assets/sprites/jobs/fighter")
@@ -808,30 +812,35 @@ def main():
     print("Generating IDLE (2 frames)...")
     idle_strip = generate_idle()
     idle_path = OUT_DIR / "idle.png"
+    assert_writable(idle_path)
     idle_strip.save(idle_path)
     validate_strip(idle_strip, "idle", 2, FRAME_W * 2)
 
     print("Generating WALK (6 frames)...")
     walk_strip = generate_walk()
     walk_path = OUT_DIR / "walk.png"
+    assert_writable(walk_path)
     walk_strip.save(walk_path)
     validate_strip(walk_strip, "walk", 6, FRAME_W * 6)
 
     print("Generating ATTACK (6 frames)...")
     attack_strip = generate_attack()
     attack_path = OUT_DIR / "attack.png"
+    assert_writable(attack_path)
     attack_strip.save(attack_path)
     validate_strip(attack_strip, "attack", 6, FRAME_W * 6)
 
     print("Generating HIT (4 frames)...")
     hit_strip = generate_hit()
     hit_path = OUT_DIR / "hit.png"
+    assert_writable(hit_path)
     hit_strip.save(hit_path)
     validate_strip(hit_strip, "hit", 4, FRAME_W * 4)
 
     print("Generating DEAD (4 frames)...")
     dead_strip = generate_dead()
     dead_path = OUT_DIR / "dead.png"
+    assert_writable(dead_path)
     dead_strip.save(dead_path)
     validate_strip(dead_strip, "dead", 4, FRAME_W * 4)
 

@@ -25,6 +25,10 @@ import sys
 from pathlib import Path
 
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 ASEPRITE_SRC = Path(__file__).resolve().parents[1] / "tmp/bard_drop/Bard Base sprite.aseprite"
 GAME_REPO = Path(__file__).resolve().parents[1].parent / "cowardly-irregular"
@@ -98,6 +102,7 @@ def main() -> int:
         backup_existing(anim)
         strip = build_strip(frames, start, end)
         out_path = BARD_DIR / f"{anim}.png"
+        assert_writable(out_path)
         strip.save(out_path)
         n = end - start + 1
         print(f"  -> {anim}.png: {strip.width}x{strip.height} ({n} frames @ {TARGET_FRAME}px)")

@@ -33,6 +33,10 @@ garble goes and the rhythm survives.
 import argparse, importlib.util, io, os, sys
 from pathlib import Path
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 PROJECT = Path(__file__).resolve().parent.parent
 SPRITES_REPO = Path("/home/struktured/projects/cowir-sprites")
@@ -302,6 +306,7 @@ def main() -> int:
         except Exception as e:
             print(f"  FAILED {job}/{world}/{asset}: {e}", file=sys.stderr)
             continue
+        assert_writable(RAW_DIR / f"{job}_{world}_{asset}_raw.png")
         raw.save(RAW_DIR / f"{job}_{world}_{asset}_raw.png")
 
         if asset == "overworld":
@@ -314,6 +319,7 @@ def main() -> int:
                 print(f"  REFUSED {job}/{world}: {bad} -- re-roll this one", file=sys.stderr)
                 refused.append(f"{job}/{world}")
                 continue
+            assert_writable(out)
             sheet.save(out)
             # Raw generation lands at 6-37 diffs; the gate demands <4.
             n = head_lock_to_gate(out)
@@ -323,6 +329,7 @@ def main() -> int:
             frame = _rap.transparent_bg(_rap.downscale(raw, 256))
             strip = Image.new("RGBA", (512, 256), (0, 0, 0, 0))
             strip.paste(frame, (0, 0)); strip.paste(frame, (256, 1))
+            assert_writable(out)
             strip.save(out)
             if base_idle.exists():
                 f, bot = normalize_idle_to_base(out, base_idle)
@@ -376,6 +383,7 @@ def head_lock_to_gate(path: Path) -> int:
                 for x in range(32):
                     px[x + col * 32, row * 32 + y] = px[x, row * 32 + y]
             fixed += 1
+    assert_writable(path)
     im.save(path)
     return fixed
 
@@ -474,6 +482,7 @@ def normalize_idle_to_base(strip: Path, base: Path) -> tuple:
         shifted = Image.new("RGBA", (256, 256), (0, 0, 0, 0))
         shifted.paste(fr, (0, target_bottom - fb[3]))
         out.alpha_composite(shifted, (fi * 256, 0))
+    assert_writable(strip)
     out.save(strip)
     return (target_fill, target_bottom)
 

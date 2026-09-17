@@ -27,6 +27,10 @@ import sys
 from pathlib import Path
 import numpy as np
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 ASSET_DIR = Path("/home/struktured/projects/cowardly-irregular/assets/sprites/jobs/fighter")
 IDLE_PATH = ASSET_DIR / "idle.png"
@@ -1015,36 +1019,43 @@ def main():
 
     print("Generating IDLE (4 frames, 1024x256)...")
     idle = generate_idle()
+    assert_writable(ASSET_DIR / "idle.png")
     idle.save(ASSET_DIR / "idle.png")
     validate_strip(idle, "idle", 4, FRAME_W * 4)
 
     print("Generating WALK (8 frames, 2048x256)...")
     walk = generate_walk()
+    assert_writable(ASSET_DIR / "walk.png")
     walk.save(ASSET_DIR / "walk.png")
     validate_strip(walk, "walk", 8, FRAME_W * 8)
 
     print("Generating ATTACK (8 frames, 2048x256)...")
     attack = generate_attack()
+    assert_writable(ASSET_DIR / "attack.png")
     attack.save(ASSET_DIR / "attack.png")
     validate_strip(attack, "attack", 8, FRAME_W * 8)
 
     print("Generating HIT (6 frames, 1536x256)...")
     hit = generate_hit()
+    assert_writable(ASSET_DIR / "hit.png")
     hit.save(ASSET_DIR / "hit.png")
     validate_strip(hit, "hit", 6, FRAME_W * 6)
 
     print("Generating DEAD (6 frames, 1536x256)...")
     dead = generate_dead()
+    assert_writable(ASSET_DIR / "dead.png")
     dead.save(ASSET_DIR / "dead.png")
     validate_strip(dead, "dead", 6, FRAME_W * 6)
 
     print("Generating CAST (6 frames, 1536x256)...")
     cast = generate_cast()
+    assert_writable(ASSET_DIR / "cast.png")
     cast.save(ASSET_DIR / "cast.png")
     validate_strip(cast, "cast", 6, FRAME_W * 6)
 
     print("Generating VICTORY (6 frames, 1536x256)...")
     victory = generate_victory()
+    assert_writable(ASSET_DIR / "victory.png")
     victory.save(ASSET_DIR / "victory.png")
     validate_strip(victory, "victory", 6, FRAME_W * 6)
 

@@ -70,6 +70,10 @@ from pathlib import Path
 
 import httpx
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 HERE = Path(__file__).resolve().parent
 _spec = importlib.util.spec_from_file_location("_pl", HERE / "gen_overworld_pixellab.py")
@@ -254,6 +258,7 @@ def main() -> int:
 
             _strip, grid = _pl.build_strip_and_grid(frames_by_dir)
             out.parent.mkdir(parents=True, exist_ok=True)
+            assert_writable(out)
             grid.save(out)
             made.append(f"{job}/{world}")
             print(f"  -> {out.relative_to(_gw.GAME_REPO)}  {grid.size[0]}x{grid.size[1]}")
