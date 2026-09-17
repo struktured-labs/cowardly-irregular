@@ -406,3 +406,75 @@ func test_every_overworld_sheet_consumer_reads_its_rows_from_the_manifest() -> v
 		+ "row is which. Every shipped sheet uses the same order today, so it renders correctly and "
 		+ "nothing fails — until one declares a different order, at which point this consumer faces "
 		+ "the wrong way while the others do not: %s") % [offenders])
+
+
+## ⛔ MUTATION 7, ON MY OWN LEDGER. The arm above checks a consumer CALLS the rows owner. Keep the
+## call and DISCARD its answer — `var rows := …` then a hardcoded match — and every guard I had
+## stayed green: 10 · 3 · 7, EC=0. A source arm cannot tell a used answer from an ignored one.
+##
+## 🔑 AND A REAL SHEET CANNOT DISCRIMINATE EITHER, which is why the order is INJECTED. All 53 ship
+## the same order, so a consumer ignoring the declaration renders identically to one obeying it.
+## The proof needs an order no sheet declares — the roaming-monster facing arm's shape.
+##
+## ⚠️ NO TEST-ONLY FIELD. The sliced row is read back out of the PIXELS: each row of the fixture
+## carries its own index as a red value, so the arm observes what was drawn rather than what the
+## node recorded about itself.
+func test_an_npc_renders_the_row_its_declaration_names() -> void:
+	const NPC := preload("res://src/exploration/OverworldNPC.gd")
+	var npc = NPC.new()
+	add_child_autofree(npc)
+	var sprite: Sprite2D = npc.get("sprite")
+	assert_not_null(sprite, "PRECONDITION: the NPC must have built a sprite node")
+
+	# Each row tagged with its own index at the frame's top-left pixel.
+	var sheet := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	for r in 4:
+		sheet.set_pixel(0, r * 32, Color(float(r) / 8.0, 0.0, 0.0, 1.0))
+	npc.set("_archetype_sheet", sheet)
+	# An order NO shipped sheet declares, or a consumer ignoring the declaration would pass.
+	npc.set("_archetype_rows", {"walk_down": 2, "walk_left": 3, "walk_right": 0, "walk_up": 1})
+
+	var cases := {0: 2, 1: 1, 2: 3, 3: 0}  # facing_direction -> the row its declaration names
+	for facing in cases:
+		npc.set("facing_direction", facing)
+		npc.call("_apply_facing")
+		var drawn: Image = (sprite.texture as Texture2D).get_image()
+		var got := int(roundf(drawn.get_pixel(0, 0).r * 8.0))
+		assert_eq(got, int(cases[facing]),
+			("facing %d must slice the row its DECLARATION names (%d), not the one the convention "
+			+ "would give (%d) — a consumer that calls the owner and ignores its answer renders "
+			+ "correctly on every shipped sheet and wrongly on the first one that differs")
+			% [facing, cases[facing], got])
+
+
+## The same proof for the WANDERING npc, whose exposure was the worst of the three: `_current_dir`
+## used to BE the row index, so "uses the declaration" and "ignores it" were the same code.
+func test_a_wandering_npc_shows_the_row_its_declaration_names() -> void:
+	const WNPC := preload("res://src/exploration/WanderingNPC.gd")
+	var npc = WNPC.new()
+	add_child_autofree(npc)
+	var sprite: Sprite2D = npc.get("_sprite")
+	assert_not_null(sprite, "PRECONDITION: the wandering NPC must have built a sprite node")
+
+	# One tagged texture per (row, col), so the drawn frame names its own row.
+	var frames := {}
+	for r in 4:
+		for c in 4:
+			var img := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+			img.fill(Color(float(r) / 8.0, 0.0, 0.0, 1.0))
+			frames["%d_%d" % [r, c]] = ImageTexture.create_from_image(img)
+	npc.set("_archetype_frames", frames)
+	# An order no shipped sheet declares. Index i is this file's direction i (0=down, 1=left,
+	# 2=right, 3=up); the value is the row that direction must draw.
+	npc.set("_dir_to_row", PackedInt32Array([2, 3, 0, 1]))
+	npc.set("_anim_frame", 0)
+
+	for dir in 4:
+		npc.set("_current_dir", dir)
+		npc.call("_update_archetype_frame")
+		var drawn: Image = (sprite.texture as Texture2D).get_image()
+		var got := int(roundf(drawn.get_pixel(0, 0).r * 8.0))
+		var want := int(PackedInt32Array([2, 3, 0, 1])[dir])
+		assert_eq(got, want,
+			("direction %d must draw row %d as its declaration says, not row %d as the old "
+			+ "dir-IS-the-row coupling gave") % [dir, want, dir])

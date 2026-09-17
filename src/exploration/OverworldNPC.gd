@@ -426,6 +426,11 @@ var _archetype_sheet: Image = null
 ## The manifest key for the sheet actually loaded — the DIRECTORY name, so a world variant
 ## (`blacksmith_suburban`) resolves to its own declaration rather than the base one's.
 var _archetype_id: String = ""
+## The sheet's declared walk rows, resolved ONCE at load. Held on the node rather than fetched
+## inside _apply_facing so a guard can inject a non-convention order — every shipped sheet uses
+## the convention, so a consumer that IGNORES the declaration renders identically and only an
+## injected order discriminates.
+var _archetype_rows: Dictionary = {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}
 const _ARCHETYPE_FRAME_W: int = 32
 const _ARCHETYPE_FRAME_H: int = 32
 
@@ -437,6 +442,7 @@ func _try_load_archetype_sprite(archetype: String) -> bool:
 	if not ResourceLoader.exists(path):
 		return false
 	_archetype_id = path.get_base_dir().get_file()
+	_archetype_rows = HybridSpriteLoader.overworld_walk_rows("overworld_npc_sheets", _archetype_id)
 	var tex = load(path) as Texture2D
 	if not tex:
 		return false
@@ -468,8 +474,7 @@ func _apply_facing() -> void:
 		1: anim = "walk_up"
 		2: anim = "walk_left"
 		3: anim = "walk_right"
-	var rows: Dictionary = HybridSpriteLoader.overworld_walk_rows("overworld_npc_sheets", _archetype_id)
-	var sheet_row := int(rows.get(anim, 0))
+	var sheet_row := int(_archetype_rows.get(anim, 0))
 	var region := Rect2i(0, sheet_row * _ARCHETYPE_FRAME_H,
 		_ARCHETYPE_FRAME_W, _ARCHETYPE_FRAME_H)
 	var frame_img := _archetype_sheet.get_region(region)
