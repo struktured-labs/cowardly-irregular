@@ -393,6 +393,49 @@ if [ "${WEB_STAGE:-1}" = "1" ]; then
     exit 2; }
 fi
 
+# gate 3c: every asset this build reads AS RAW BYTES must actually be IN the pack, raw.
+# W2-W6 shipped with no overworld map for months because five map PNGs were importer="texture":
+# the pack could then only carry the imported artifact, and FileAccess.get_file_as_bytes() cannot
+# use one -- the read returns empty and the world draws nothing. Nothing in the repo could have
+# caught it. The editor and the suite read res:// off the WORKING COPY, where the PNG is simply a
+# file and file_exists() is true; the defect does not exist until the project is packed. That is
+# the whole reason this check is here and not in the test suite.
+#
+# It also asserts the artifact rather than the declaration. An .import linter answers "does this
+# say keep" -- this answers "did the bytes ship", which an exclude_filter or a stale .godot/ can
+# falsify on a correctly-declared file.
+_RAW_TOOLS="$(cd "$(dirname "$0")" && pwd)"
+_RAW_CHECK="${_RAW_TOOLS}/check_raw_assets_shipped.py"
+[ -f "$_RAW_CHECK" ] || {
+  echo "[deploy] BLOCKED: ${_RAW_CHECK} missing -- nothing would check that a raw-bytes read has" >&2
+  echo "        bytes to read in the shipped pack. An absent gate takes itself off the deploy." >&2
+  exit 2; }
+# Its OWN arms first, as a subprocess. A guard that is present but not answering correctly is
+# worse than an absent one, because its silence gets published as evidence.
+# ⛔ The second name here is not decoration: measured 2026-09-17, check_web_audio_tier's 22 arms
+# were invoked by NOTHING in this repo -- written, committed, and never run by the pipeline whose
+# verdict depends on them. Both run now.
+# check_web_audio_tier_selftest.py builds its fixtures in the repo's own tmp/ rather than the
+# system one. Earlier lines already create it, but a gate that depends on another line having run
+# is a gate with a precondition nobody states -- so state it here.
+mkdir -p tmp
+for _st in check_raw_assets_shipped_selftest.py check_web_audio_tier_selftest.py; do
+  [ -f "${_RAW_TOOLS}/${_st}" ] || {
+    echo "[deploy] BLOCKED: tools/${_st} is missing -- a guard whose arms cannot run is not a" >&2
+    echo "        guard that passed." >&2
+    exit 2; }
+  if ! _ST_OUT="$(python3 "${_RAW_TOOLS}/${_st}" 2>&1)"; then
+    printf '%s\n' "$_ST_OUT" | tail -20 >&2
+    echo "[deploy] BLOCKED: tools/${_st} FAILED ITS OWN ARMS, so its verdict on this build would" >&2
+    echo "        mean nothing. A present guard is not a working one." >&2
+    exit 2
+  fi
+done
+python3 "$_RAW_CHECK" builds/web/index.pck --src=src || {
+  echo "[deploy] BLOCKED: an asset this build reads as raw bytes is not in the pack." >&2
+  echo "        It reads fine in the editor; in THIS artifact the call returns empty." >&2
+  exit 2; }
+
 echo "[deploy] gate 4/4: render smoke"
 mkdir -p tmp
 # --audio-driver Dummy: xvfb fakes the DISPLAY but not audio — without it the
