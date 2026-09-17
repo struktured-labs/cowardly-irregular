@@ -368,12 +368,16 @@ func test_every_step_field_the_director_reads_is_declared() -> void:
 ## so there is no read to find and it is exempt by construction, not by name.
 func test_the_read_derivation_is_actually_consumed() -> void:
 	var bodies := _director_functions()
+	# The floor must be independent of the loop's own skip predicate. An earlier version
+	# counted "declaring AND has a handler" on both sides, which is the same condition
+	# twice — a tautology that could not fail. This side reads STEP_SCHEMA ALONE, so a
+	# handler going missing moves `scoped` and not `expected`, and the assert reds.
 	var expected := 0
 	for step_type in STEP_SCHEMA:
 		var d: Array = []
 		d.append_array(STEP_SCHEMA[step_type]["required"])
 		d.append_array(STEP_SCHEMA[step_type]["optional"])
-		if not d.is_empty() and bodies.has("_step_%s" % step_type):
+		if not d.is_empty():
 			expected += 1
 
 	var scoped := 0
@@ -394,8 +398,8 @@ func test_the_read_derivation_is_actually_consumed() -> void:
 		if not found:
 			blind.append(step_type)
 
-	# Correspondence, not a magnitude: the arm must reach every declaring type it could.
+	# A floor on the SURVIVORS reaching the verdict, not on the corpus that was read.
 	assert_eq(scoped, expected,
-		"the wiring arm must scope every declaring step type with a handler — reached %d of %d" % [scoped, expected])
+		"every step type declaring fields must reach the wiring check — %d of %d declaring types scoped" % [scoped, expected])
 	assert_eq(blind.size(), 0,
 		"the read derivation yields NO declared field for these handlers, so every check built on it is vacuous: %s" % str(blind))
