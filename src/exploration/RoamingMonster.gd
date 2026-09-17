@@ -214,16 +214,28 @@ func _apply_frame(row: int, col: int) -> void:
 ## An off-centre sprite mirrored IN PLACE lands at the mirrored offset, so walk_left and
 ## walk_right sit at different x inside the cell — and `centered = true` pins the CELL to the
 ## node, which makes that displacement literal on-screen motion at a position that never changed.
-## Measured 2026-09-16 across the three overworld sections, and the two metrics DISAGREE on how
-## many sheets are affected, so both are named rather than mixed:
+## Measured 2026-09-16. THREE definitions give three counts, so each is named with what it asks —
+## an unqualified "N sheets drift" is not a reproducible statement:
 ##
-##   bbox-centre drift >= 0.5px   21 of 53   the body's visible position
-##   alpha-centroid drift >= 0.5px 44 of 53   mass, more sensitive, less visible
+##   difference of per-row MEAN bbox centres   21 of 53   the SYSTEMATIC row offset
+##   MAX over frames of per-frame bbox centres 29 of 53   worst instantaneous difference
+##   alpha centroid                            44 of 53   mass rather than outline
 ##
-## By section, on bbox centre: monsters 8 of 10 (worst snake 4.0px, wolf 3.0px) · players 9 of 14
-## (worst 1.75px) · npcs 4 of 29 (worst 0.75px). The severe end is entirely in the monster sheets
-## this file renders. `slime` is the one sheet already registered correctly and gets offsets of
-## exactly 0 here, by construction rather than by exception.
+## 🔑 THE FIRST IS THE ONE THIS FIX ADDRESSES, and that is not a preference: the correction is one
+## CONSTANT per row, so it can only remove the systematic part. The extra 8 sheets in the max
+## count are frame-to-frame variation inside a row, which is the walk animation moving and must
+## NOT be flattened. Reconciled against cowir-adhoc's independent measurement — their 29 and my 21
+## agree exactly once both definitions are stated; there was never a data disagreement.
+##
+## ⚠️ AND WHICH OUTLINE METRIC IS HONEST DEPENDS ON THE SHEET (cowir-adhoc). On a MIRRORED row the
+## outline and the mass move together and centroid reads larger (wolf bbox 3.00 / centroid 5.00).
+## On a REDRAWN row the outline extent changes while the mass barely moves, so bbox overstates the
+## perceived jump (the five hand-drawn meta-job sheets: bbox 4.00 / centroid ~1.18).
+##
+## By section on the systematic metric: monsters 8 of 10 (worst snake 4.0px, wolf 3.0px) · players
+## 9 of 14 (worst 1.75px) · npcs 4 of 29 (worst 0.75px). The severe end is entirely in the monster
+## sheets this file renders. `slime` is the one sheet already registered correctly and gets offsets
+## of exactly 0 here, by construction rather than by exception.
 ##
 ## ⚠️ ANCHORED TO walk_down, NOT TO THE CELL CENTRE. The resting facing is the authored
 ## placement; re-centring every row on the cell would move sheets whose author deliberately sat
