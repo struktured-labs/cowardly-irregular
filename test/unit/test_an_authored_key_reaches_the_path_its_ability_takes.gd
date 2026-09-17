@@ -41,16 +41,43 @@ const BM_PATH := "res://src/battle/BattleManager.gd"
 const ABILITIES := "res://data/abilities.json"
 const GdSourceHelper = preload("res://test/unit/helpers/gd_source.gd")
 
-## ability type -> the executor _execute_ability dispatches it to. Pinned by a control arm below that
-## reads the dispatcher, so this map cannot quietly stop describing the code.
+## ability type -> the executor(s) _execute_ability dispatches it to. Pinned by a control arm below
+## that reads the dispatcher, so this map cannot quietly stop describing the code.
+## ⛔ IT NAMED SIX OF THE TEN AUTHORED TYPES AND THE OTHER FOUR SKIPPED IN SILENCE — 35 of 289
+## abilities, every `meta` one among them, so the whole meta-job pillar sat outside a guard that
+## reported clean. The omission bit in BOTH directions: the five unnamed executors were not excluded
+## from `_dispatcher_body`, so its helper walk swallowed them and a key only `_execute_meta_ability`
+## reads counted as SHARED — read on the physical path, on the magic path, on every path. One
+## missing entry made the guard blind to 35 abilities and over-generous to the other 254.
+## The corpus floor could not see it: 289 abilities were READ either way.
 const TYPE_EXECUTOR := {
-	"physical": "_execute_physical_ability",
-	"magic": "_execute_magic_ability",
-	"healing": "_execute_healing_ability",
-	"support": "_execute_support_ability",
-	"song": "_execute_support_ability",
-	"status": "_execute_support_ability",
+	"physical": ["_execute_physical_ability"],
+	"magic": ["_execute_magic_ability"],
+	"healing": ["_execute_healing_ability"],
+	"revival": ["_execute_revival_ability"],
+	## the support arm calls _execute_escape_ability itself when guaranteed_escape is authored — that
+	## is smoke_bomb's whole fix, so the escape reader IS on the support path
+	"support": ["_execute_support_ability", "_execute_escape_ability"],
+	"song": ["_execute_support_ability", "_execute_escape_ability"],
+	"status": ["_execute_support_ability", "_execute_escape_ability"],
+	## two-armed: an ally summon goes one way, an eidolon falls to the magic executor
+	"summon": ["_execute_ally_summon", "_execute_magic_ability"],
+	"meta": ["_execute_meta_ability"],
+	"escape": ["_execute_escape_ability"],
+	"mp_restore": ["_execute_mp_restore_ability"],
 }
+
+
+## Every executor named by the map, deduplicated. Derived, so adding a type cannot forget to exclude
+## its executor from the shared dispatcher body — the half of the last omission nobody would have
+## looked for.
+func _all_executors() -> Array:
+	var out: Array = []
+	for type in TYPE_EXECUTOR:
+		for executor in TYPE_EXECUTOR[type]:
+			if not out.has(executor):
+				out.append(executor)
+	return out
 
 ## ⛔ THIS WAS A HAND-LIST OF SIX KEYS AND abilities.json AUTHORS SEVENTY. Everything not on the list
 ## was invisible to the ratchet — including `condition` and `threshold` on the TUTORIAL BOSS's
@@ -130,6 +157,10 @@ const DECLARED_ORPHANS := {
 	"reflect_damage_element:frost_armor": "support; the retaliation itself is unwired and HELD for struktured (lane/frost-armor-bites-back). This key only names the element the retaliation would use, so it cannot be assessed before the retaliation is",
 	"secondary_modifier:subset_drain": "magic; travels with secondary_effect and is read in the same helper. Wiring one without the other is meaningless",
 	"secondary_modifier:toxic_embrace": "physical; see secondary_modifier:subset_drain",
+	## ── surfaced 2026-09-17 when TYPE_EXECUTOR stopped naming six of the ten authored types ──
+	"penalty:warp_to_boss": "meta; the FIRST finding from a type that had never been routed. `penalty: no_dungeon_loot` has no reader, and the arm handling this ability says so in its own comment (BattleManager:6799 — enforcement 'lives in the warp implementation, a future tick'). The warp is itself a pending flag, so the penalty cannot be enforced before the thing it penalises exists. Declared, not held: there is no decision until the warp lands",
+	"damage_multiplier:absorb_meaning": "support; authored 0.0, so a reader and no reader produce the IDENTICAL battle. Decorative — declared so the next census does not read it as a live zero-damage bug",
+	"damage_multiplier:base_case": "support; ⛔ THE ONE WITH A BROKEN PROMISE. 'Terminates its own recursive loop, dealing moderate damage to all enemies' — and _execute_support_ability has no damage path at all, so Recursive Loop spends 10 MP and its turn on nothing. The ability authors NO support key (no effect, no stat_modifier, no duration), so the remedy is a RE-TYPE to magic rather than a wiring. Caster recursive_loop is POOLED in futuristic_overworld, so it makes W5 roaming encounters harder: struktured's call",
 }
 
 
@@ -177,7 +208,7 @@ func _dispatcher_body(code: String) -> String:
 	var seen := {}
 	for m in RegEx.create_from_string("(_[a-z_]+)\\(").search_all(body):
 		var helper: String = m.get_string(1)
-		if TYPE_EXECUTOR.values().has(helper) or helper == "_execute_ability" or seen.has(helper):
+		if _all_executors().has(helper) or helper == "_execute_ability" or seen.has(helper):
 			continue
 		seen[helper] = true
 		body += _function_body(code, helper)
@@ -185,24 +216,45 @@ func _dispatcher_body(code: String) -> String:
 
 
 func _orphans() -> Dictionary:
+	return _census()["orphans"]
+
+
+## ⛔ ONE PASS, EVERY ABILITY IN EXACTLY ONE BUCKET, AND THE BUCKETS MUST SUM. The old loop reached
+## its verdict past a bare `continue` for any type the map did not name, and the only floor was on
+## the corpus — which a skipped ability is counted in. So "289 abilities, 0 new orphans" was true
+## while 35 of them never reached the comparison, and renaming a type in abilities.json would have
+## dropped 68 more with nothing on screen moving. The floor belongs on `routed`, the abilities that
+## REACH the key check, not on the corpus that was read. (cowir-sfx 12682, run against this lane.)
+func _census() -> Dictionary:
 	var code: String = GdSourceHelper.code_of(BM_PATH)
 	var shared: String = _dispatcher_body(code)
 	var bodies := {}
-	for type in TYPE_EXECUTOR.values():
-		bodies[type] = shared + _reachable_body(code, str(type))
+	for executor in _all_executors():
+		bodies[executor] = _reachable_body(code, executor)
 	var out := {}
+	var routed: Array = []
+	var unrouted: Array = []
+	var malformed: Array = []
 	var keys: Array = _mechanical_keys()
-	for id in _abilities():
-		var ability = _abilities()[id]
+	var all: Dictionary = _abilities()
+	for id in all:
+		var ability = all[id]
 		if not (ability is Dictionary):
+			malformed.append(str(id))
 			continue
-		var executor: String = str(TYPE_EXECUTOR.get(str(ability.get("type", "")), ""))
-		if executor == "":
+		var type: String = str(ability.get("type", ""))
+		if not TYPE_EXECUTOR.has(type):
+			unrouted.append("%s (type '%s')" % [id, type])
 			continue
+		routed.append(str(id))
+		var body: String = shared
+		for executor in TYPE_EXECUTOR[type]:
+			body += str(bodies[executor])
 		for key in keys:
-			if ability.has(key) and not str(bodies[executor]).contains('"%s"' % key):
-				out["%s:%s" % [key, id]] = executor
-	return out
+			if ability.has(key) and not body.contains('"%s"' % key):
+				out["%s:%s" % [key, id]] = ", ".join(PackedStringArray(TYPE_EXECUTOR[type]))
+	return {"orphans": out, "routed": routed, "unrouted": unrouted, "malformed": malformed,
+		"corpus": all.size()}
 
 
 func test_the_dispatcher_still_sends_each_type_where_this_guard_thinks() -> void:
@@ -218,10 +270,29 @@ func test_the_dispatcher_still_sends_each_type_where_this_guard_thinks() -> void
 	var body: String = code.substr(at, (next_func - at) if next_func > at else 8000)
 	for type in TYPE_EXECUTOR:
 		assert_true(body.contains('"%s"' % type), "the dispatcher still matches ability type '%s'" % type)
-	for executor in TYPE_EXECUTOR.values():
+	for executor in _all_executors():
 		assert_true(body.contains(executor + "("), "and still dispatches to %s" % executor)
 	assert_true(body.contains('"support", "song", "status":'),
 		"support, song and status share one executor — three of the declared orphans depend on that")
+
+
+func test_every_authored_type_reaches_an_executor_and_the_buckets_sum() -> void:
+	## ⛔ THE ARM THE CORPUS FLOOR COULD NOT BE. An ability whose type this map does not name skips the
+	## key check in silence and is still counted in `abilities.json read back 289 entries`. Every
+	## ability now lands in exactly one bucket and the three must SUM — so a type renamed in the data,
+	## or a new one added, reds here naming itself instead of quietly shrinking the corpus that reaches
+	## the verdict. `status` is in the map and authored by nothing today; that direction is harmless
+	## and the control arm above proves the dispatcher still has its arm.
+	var census: Dictionary = _census()
+	var routed: Array = census["routed"]
+	var unrouted: Array = census["unrouted"]
+	var malformed: Array = census["malformed"]
+	assert_eq(unrouted, [],
+		"an authored ability type reaches no executor in TYPE_EXECUTOR, so these abilities skip the key check entirely. Add the type and the executor _execute_ability dispatches it to: " + str(unrouted))
+	assert_eq(malformed, [], "abilities.json holds a non-Dictionary entry: " + str(malformed))
+	assert_eq(routed.size() + unrouted.size() + malformed.size(), census["corpus"],
+		"the buckets must account for every ability: %d + %d + %d != %d" % [routed.size(), unrouted.size(), malformed.size(), census["corpus"]])
+	assert_gt(routed.size(), 250, "CONTROL: %d abilities reached the key check" % routed.size())
 
 
 func test_every_mechanical_key_is_read_by_some_executor() -> void:
@@ -241,11 +312,14 @@ func test_no_ability_authors_a_key_its_own_path_cannot_read() -> void:
 	## ⛔ FLOOR IN THIS ARM, not in a sibling. An empty abilities.json, or a key set that came back
 	## empty, yields the same zero-orphan answer a clean tree does — and GUT reports per test, so the
 	## sibling that measures the surface cannot vouch for this one (cowir-sfx 11852).
-	assert_gt(_abilities().size(), 100,
-		"VOID, not clean: abilities.json read back %d entries" % _abilities().size())
+	var census: Dictionary = _census()
+	## ⛔ THE FLOOR IS ON WHAT REACHED THE COMPARISON, not on what was read. A corpus floor counts an
+	## ability that skipped one line later, so it certifies the file opened and nothing else.
+	assert_gt((census["routed"] as Array).size(), 250,
+		"VOID, not clean: only %d of %d abilities REACHED the key check" % [(census["routed"] as Array).size(), census["corpus"]])
 	assert_gt(_mechanical_keys().size(), 20,
 		"VOID, not clean: the derived key set is %d wide" % _mechanical_keys().size())
-	var found: Dictionary = _orphans()
+	var found: Dictionary = census["orphans"]
 	var undeclared: Array = []
 	for orphan in found:
 		if not DECLARED_ORPHANS.has(orphan):
