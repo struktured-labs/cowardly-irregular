@@ -958,7 +958,8 @@ static func build_rule_composition(domain: String, prompt_text: String, current_
 		kit_context: Dictionary = {}) -> String:
 	var grammar: String = AUTOBATTLE_GRAMMAR_DESCRIPTION if domain == "autobattle" else AUTOGRIND_GRAMMAR_DESCRIPTION
 	var kit_block: String = _format_rule_kit(kit_context) if domain == "autobattle" \
-		else _format_status_vocabulary() + _format_party_kit(kit_context)
+		else _format_numeric_scales(kit_context) + _format_status_vocabulary() \
+			+ _format_party_kit(kit_context)
 	var current_json: String = JSON.stringify(current_rules) if current_rules.size() > 0 else "[]"
 	return (
 		"You are a rule authoring assistant for a JRPG's autobattle/autogrind system.\n\n"
@@ -1062,6 +1063,28 @@ const STATUS_VOCABULARY := {
 
 ## Rendered from STATUS_VOCABULARY so the grammar above can point at the list
 ## without carrying a second copy of it.
+## What each numeric condition's `value` is MEASURED IN. The grammar said only "op and
+## value", and the model answered in the units it assumed: 3600 for time_elapsed against an
+## evaluator that computes MINUTES, and 10-50 for corruption on a scale where 4.5 ends the
+## session. Both produce rules that validate, deliver, and never fire.
+static func _format_numeric_scales(kit_context: Dictionary) -> String:
+	var scales: Dictionary = kit_context.get("scales", {})
+	if scales.is_empty():
+		return ""
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("\n\nWHAT THE NUMBERS MEAN. A value on the wrong scale validates and then")
+	lines.append("never fires, so these are not hints:")
+	lines.append("  time_elapsed    MINUTES of this session. 30 means half an hour, NOT seconds.")
+	lines.append("  party_hp_min / party_hp_avg / party_mp_avg / member_hp / member_mp")
+	lines.append("                  PERCENT, 0-100.")
+	lines.append("  corruption      a level that starts at 0.0 and rises slowly. This session")
+	lines.append("                  stops itself at %s, so anything above that never fires." % str(scales.get("corruption_limit", 4.5)))
+	lines.append("  efficiency      a multiplier that starts at %s, not a percent." % str(scales.get("efficiency_start", 1.0)))
+	lines.append("  battles_done / win_streak / inventory_items / reached_level / alive_count")
+	lines.append("                  plain counts.")
+	return "\n".join(lines)
+
+
 static func _format_status_vocabulary() -> String:
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("\n\nSTATUS IDS. member_status's \"value\" is ONE id from this list — never a list,")
