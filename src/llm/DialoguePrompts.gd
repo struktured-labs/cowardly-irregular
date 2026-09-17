@@ -1079,8 +1079,7 @@ static func _format_party_kit(kit_context: Dictionary) -> String:
 	if party.is_empty():
 		return ""
 	var lines: PackedStringArray = PackedStringArray()
-	lines.append("\n\nPARTY KITS. member_ability's \"ability\" MUST be one of these, listed under")
-	lines.append("the member who knows it. No other ability id exists:")
+	lines.append("\n\nPARTY KITS. These are the party and the abilities each one knows:")
 	for raw in party:
 		var entry: Dictionary = raw
 		var costs: Dictionary = entry.get("costs", {})
@@ -1089,13 +1088,28 @@ static func _format_party_kit(kit_context: Dictionary) -> String:
 			parts.append("%s (%d MP)" % [str(aid), int(costs.get(str(aid), 0))])
 		lines.append("  %s [%s]: %s" % [
 			str(entry.get("member", "?")), str(entry.get("job_id", "?")), ", ".join(parts)])
+		## member_ability runs BETWEEN fights, and the engine refuses anything without an
+		## authored heal/MP effect. Listing the whole kit above taught the model ids that
+		## cannot run, so the usable set is named separately rather than implied.
+		if entry.has("between_battle"):
+			var usable: Array = entry.get("between_battle", [])
+			if usable.is_empty():
+				lines.append("      member_ability: NOTHING — %s has no ability that works between fights"
+					% str(entry.get("member", "this member")))
+			else:
+				var ups: PackedStringArray = PackedStringArray()
+				for aid in usable:
+					ups.append("%s (%d MP)" % [str(aid), int(costs.get(str(aid), 0))])
+				lines.append("      member_ability: %s" % ", ".join(ups))
 		var profiles: Array = entry.get("profiles", [])
 		if not profiles.is_empty():
 			var slots: PackedStringArray = PackedStringArray()
 			for n in profiles.size():
 				slots.append("%d %s" % [n, str(profiles[n])])
 			lines.append("      switch_profile slots: %s" % ", ".join(slots))
-	lines.append("An id not on this list is DISCARDED and that rule never fires.")
+	lines.append("member_ability's \"ability\" MUST come from that member's own member_ability line.")
+	lines.append("Anything else is DISCARDED and that rule never fires — including an ability the")
+	lines.append("member really knows, if it only works inside a battle.")
 	## The switch_profile guidance lives HERE, not in the grammar, because it points at the
 	## roster above it — in the grammar it would promise a list that an unresolved context
 	## never renders, which is the defect this whole block exists to remove.

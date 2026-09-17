@@ -82,6 +82,24 @@ func _battle_item_ids() -> Array:
 	return out
 
 
+## Mirrors AutogrindSystem.ability_works_between_battles: an authored heal_amount or
+## mp_amount. No autoloads under -s, so it reads the same JSON JobSystem loads.
+func _between_battle_for(kit: Array) -> Array:
+	var f := FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	if f == null:
+		return []
+	var doc = JSON.parse_string(f.get_as_text())
+	if not (doc is Dictionary):
+		return []
+	var ab: Dictionary = doc.get("abilities", doc)
+	var out: Array = []
+	for aid in kit:
+		var a: Dictionary = ab.get(str(aid), {})
+		if int(a.get("heal_amount", 0)) > 0 or int(a.get("mp_amount", 0)) > 0:
+			out.append(str(aid))
+	return out
+
+
 func _profile_names_for(job_id: String) -> Array:
 	var names: Array = ["Default"]
 	var f := FileAccess.open("res://data/autobattle_rule_templates.json", FileAccess.READ)
@@ -108,6 +126,7 @@ func _party_kit_for() -> Dictionary:
 			"member": job_id, "job_id": job_id,
 			"kit": k.get("kit", []), "costs": k.get("costs", {}),
 			"profiles": _profile_names_for(job_id),
+			"between_battle": _between_battle_for(k.get("kit", [])),
 		})
 	if members.is_empty():
 		return {}
