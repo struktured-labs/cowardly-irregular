@@ -2294,6 +2294,7 @@ func _step_battle(step: Dictionary) -> void:
 	while true:
 		# CutsceneDirector (layer 95) + CutsceneDialogue (96) render OVER the BattleScene (layer 0) —
 		# without hiding, the spotlight battle plays under the cutscene UI and the player can't see it.
+		var dialogue_was_visible: bool = _dialogue != null and is_instance_valid(_dialogue) and _dialogue.visible
 		visible = false
 		if _dialogue != null and is_instance_valid(_dialogue):
 			_dialogue.visible = false
@@ -2301,8 +2302,9 @@ func _step_battle(step: Dictionary) -> void:
 		var result: String = await game_loop.start_solo_battle(str(combatants[0]), str(enemies[0]), opts)
 		_battle_in_flight = false
 		visible = true
+		# Restore what was found: all five duel scenes narrate before they fight, so a hardcoded true re-opened the closed box over the win and over the retry sting.
 		if _dialogue != null and is_instance_valid(_dialogue):
-			_dialogue.visible = true
+			_dialogue.visible = dialogue_was_visible
 		if result == "victory":
 			return
 		if result != "defeat":
