@@ -14,7 +14,7 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 ## on-hit path, so the ring protected a player only from their own poison_dagger. Their repair is
 ## live-side. The grind-side question their finding raises is this file: a grinding party's GEAR does
 ## nothing at all, so the grind reports survivability and rewards for a party wearing no equipment
-## effects — measured, it reads 0 of 15.
+## effects — measured, it read 0 of 15 when this file was written. It reads 12 of 15 today.
 ##
 ## ⚠️ INSTRUMENT, STATED, and it cost me two wrong answers before this one.
 ##   (1) My first corpus was BattleManager + the resolver, TWO FILES. `fire_damage_bonus` and
@@ -26,12 +26,12 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 ##       `autobattle_advanced`. The discriminator below is structural: a line of the form
 ##       `"key": value` is a dict-literal ENTRY, never a read.
 
-## Real live behaviour the grind does not model: ALL FIFTEEN gear effects equipment.json authors.
-## This set may SHRINK freely — that is someone closing a gap — but it may not GROW unnamed.
+## Real live behaviour the grind does not model. ONE key remains, down from all fifteen when this
+## file was written on 2026-09-16. The set may SHRINK freely — that is someone closing a gap — but it
+## may not GROW unnamed. (`exp_while_dead` grants EXP to a KO'd member; it is a REWARD key rather
+## than a combat one, so it belongs with the grind's reward accounting rather than the damage path.)
 const GRIND_IGNORES := [
-	"dark_damage_bonus", "dark_resistance", "exp_while_dead",
-	"fire_damage_bonus", "fire_resistance", "holy_damage_bonus",
-	"ice_damage_bonus", "lightning_damage_bonus",
+	"exp_while_dead",
 ]
 
 ## Modelled by the resolver now, each mirroring live's formula rather than a new one. The set above
@@ -41,8 +41,9 @@ const GRIND_IGNORES := [
 ## Behaviour is pinned in test_autogrind_a_party_wears_its_gear_regression, not here: this file is a
 ## census and says WHICH keys are modelled, never that they are modelled CORRECTLY.
 const GRIND_MODELS := [
-	"critical_bonus", "evasion_bonus", "familiar_weight_bonus", "poison_chance",
-	"sleep_chance", "status_resistance", "steal_bonus",
+	"critical_bonus", "dark_damage_bonus", "evasion_bonus", "familiar_weight_bonus",
+	"fire_damage_bonus", "holy_damage_bonus", "ice_damage_bonus", "lightning_damage_bonus",
+	"poison_chance", "sleep_chance", "status_resistance", "steal_bonus",
 ]
 
 ## ⛔ THIS CENSUS'S CORPUS IS `special_effects`, AND THAT IS A PREDICATE I CHOSE.
@@ -75,9 +76,32 @@ const NON_SPECIAL_EFFECT_FIELDS_WITH_BEHAVIOUR := ["familiar_weight_static_seed"
 ## reading the consumer can. The suffix guard below is why this file's GRIND-side zero survives it.
 const DERIVED_KEY_SUFFIXES := ["_damage_bonus", "_resistance"]
 
-## Assessed and deliberately not modelled. Empty today and kept so the next reader has somewhere to
-## put a reason instead of deleting an entry from the list above.
-const DECLARED := {}
+## ⛔ MODELLED BY CONSTRUCTION, NOT BY LITERAL. These five are read as `element + "_damage_bonus"`,
+## mirroring BattleManager:5089 — so they are WIRED and ABSENT from the resolver's text at once,
+## which is the exact combination that made an earlier version of this file publish "inert" about
+## them. An entry here is a PROMISE that the construction exists, and the derived-key arm below
+## verifies the promise rather than taking it.
+const MODELLED_BY_CONSTRUCTION := {
+	"fire_damage_bonus": 'element + "_damage_bonus"',
+	"ice_damage_bonus": 'element + "_damage_bonus"',
+	"holy_damage_bonus": 'element + "_damage_bonus"',
+	"lightning_damage_bonus": 'element + "_damage_bonus"',
+	"dark_damage_bonus": 'element + "_damage_bonus"',
+}
+
+## Assessed and deliberately not modelled, with the reason. You cannot silence an entry here, only
+## explain it — and an explanation that stops being true is a red rather than a quiet drift.
+const DECLARED := {
+	## ⚠️ NOT A GAP — the two engines already AGREE, measured rather than assumed. These are read by
+	## Combatant.take_elemental_damage (:929-985), which live calls ONLY from _tick_summon_followup —
+	## a summon path the parity ledger already declares. Both engines' magic arms call
+	## calculate_elemental_modifier (:914-928), which does NOT consult equipment resistance. Wiring
+	## them into the resolver would make the grind resist where the real game does not.
+	## The neighbouring *_damage_bonus keys look identical and ARE a gap; only reading which Combatant
+	## function each path calls tells them apart.
+	"fire_resistance": "read by Combatant.take_elemental_damage, which live calls only from _tick_summon_followup; both engines' magic arms use calculate_elemental_modifier, which does not consult it — so they agree",
+	"dark_resistance": "see fire_resistance — same reader, same declared summon path",
+}
 
 ## ⛔ KEYS AUTHORED IN BOTH CORPORA, WITH THE OWNER NAMED. The disjointness arm below found this on
 ## its first run, and it is the precise failure it was written to describe: `evasion_bonus` is an
@@ -269,27 +293,50 @@ func test_no_gear_key_is_read_by_a_derived_key_in_the_grind() -> void:
 	## call site spells the key and the census sees it.
 	var grind: String = GdSource.code_of(GRIND)
 	assert_gt(grind.length(), 10000, "CONTROL: the resolver was actually read")
-	var constructed: Array = []
+	## ⚠️ ITS JOB CHANGED AGAIN when the resolver gained a DELIBERATE construction mirroring
+	## BattleManager:5089. Forbidding all concatenation would forbid parity, so the question narrowed
+	## once more: is every construction DECLARED? An undeclared one is what makes the literal census
+	## silently blind; a declared one is a key wired the way live wires it.
+	var declared_forms: Dictionary = {}
+	for k in MODELLED_BY_CONSTRUCTION:
+		declared_forms[str(MODELLED_BY_CONSTRUCTION[k])] = true
+	var undeclared: Array = []
 	for line in grind.split("\n"):
 		var t: String = line.strip_edges()
 		if t.begins_with("#"):
 			continue   ## the helper's own annotation NAMES the shape; that is prose, not a read
 		for suffix in DERIVED_KEY_SUFFIXES:
-			if RegEx.create_from_string('\\+\\s*"%s"' % suffix).search(t) != null:
-				constructed.append(t.substr(0, 70))
-	assert_eq(constructed, [],
-		"a gear key is built by concatenation in the resolver, so this file's literal census is blind to it — the shape that made an earlier version of this file publish a wrong finding: %s" % str(constructed))
+			if RegEx.create_from_string('\\+\\s*"%s"' % suffix).search(t) == null:
+				continue
+			var matched: bool = false
+			for form in declared_forms:
+				if t.contains(str(form)):
+					matched = true
+			if not matched:
+				undeclared.append(t.substr(0, 70))
+	assert_eq(undeclared, [],
+		"a gear key is built by concatenation and is NOT declared in MODELLED_BY_CONSTRUCTION, so this file's literal census is blind to it: %s" % str(undeclared))
+	var empty_promises: Array = []
+	for form in declared_forms:
+		if not grind.contains(str(form)):
+			empty_promises.append(str(form))
+	assert_eq(empty_promises, [],
+		"a construction is DECLARED and the resolver does not contain it — the promise is empty: %s" % str(empty_promises))
 
 
 func test_the_modelled_keys_are_actually_present_in_the_resolver() -> void:
 	## LIVENESS for the list above: a key can be moved into GRIND_MODELS by editing this file alone,
 	## and then the census would claim a gap was closed that nobody closed.
 	var grind: String = GdSource.code_of(GRIND)
+	## ⚠️ A key read by CONSTRUCTION is exempt from the literal check and pays for the exemption by
+	## naming its construction in MODELLED_BY_CONSTRUCTION, which the derived-key arm verifies.
 	var absent: Array = []
 	for k in GRIND_MODELS:
+		if MODELLED_BY_CONSTRUCTION.has(k):
+			continue
 		if not grind.contains('"%s"' % k):
 			absent.append(k)
-	gut.p("    modelled: %s" % str(GRIND_MODELS))
+	gut.p("    modelled: %d — %d literal, %d by construction" % [GRIND_MODELS.size(), GRIND_MODELS.size() - MODELLED_BY_CONSTRUCTION.size(), MODELLED_BY_CONSTRUCTION.size()])
 	assert_eq(absent, [],
 		"a key is listed as modelled and the resolver does not name it — the list moved without the code: %s" % str(absent))
 

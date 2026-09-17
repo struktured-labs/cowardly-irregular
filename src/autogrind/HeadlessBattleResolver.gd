@@ -1114,6 +1114,18 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var variance: float = float(ability.get("damage_variance", 0.0))
 					if variance > 0.0:
 						base_dmg = int(base_dmg * randf_range(0.0, variance))
+					## Equipment element damage bonus, mirroring BattleManager:5089. Live builds the key by
+					## CONCATENATION — `element + "_damage_bonus"` — which is why a literal census of either
+					## engine reports flame_sword's 1.5 as unread: four of the five keys occur ZERO times in
+					## src/. @cowir-battle's derived-key shape, and the reason I retracted a wrong "inert"
+					## finding about exactly these five last night.
+					## ⚠️ MULTIPLIES, it does not add: live writes `multiplier *= elem_bonus`, so flame_sword's
+					## 1.5 is a 1.5x scale rather than +150%. Skipped for element-less abilities, matching
+					## live's "no fire scroll, no fire bonus" intent.
+					if element != "":
+						var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
+						if elem_bonus > 0.0:
+							base_dmg = int(base_dmg * elem_bonus)
 					var elem_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
 					var actual = int(base_dmg * elem_mod)
 					actual = max(1, actual)
