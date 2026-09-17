@@ -55,6 +55,23 @@ const DECLARED := {
 	## 2026-09-16: THREE sites touch the key in all of src/ — two writes in Combatant.gd and one read
 	## in BattleScene.gd. So it is inert to combat math in BOTH engines, and the grind, which renders
 	## nothing, is correct to ignore it. The day a fourth site appears in a math path, this is a lie.
+	## ⛔ THE GRIND HAS NO ESCAPE OUTCOME, so this is not a missing read — it is a missing RESULT.
+	## smoke_bomb (support; rogue@L3 and ninja, so form 2 and genuinely reachable) authors it, and live
+	## wired the escape half recently: the support handler applied the blind while guaranteed_escape was
+	## only read in _execute_escape_ability, which type=support never reached. Measured 2026-09-16: the
+	## resolver's every mention of "escape" and "flee" is in a COMMENT — zero code — and _build_results
+	## has exactly three exits, victory, defeat and stalemate. A fled battle is none of those.
+	## 🔑 So porting it does not add a read, it adds a FOURTH OUTCOME, and that decides how an escape
+	## counts in the session tally a player grades their script against — not a win, not a loss, and
+	## every rate in the Summary has a denominator. That is a grind-accounting ruling, not a repair.
+	"guaranteed_escape": "the grind has no escape OUTCOME — _build_results exits are victory/defeat/stalemate and every escape mention in the resolver is a comment. Porting adds a fourth result and decides how it counts in the session tally; a ruling, not a missing read",
+	## Inherits the summon declaration directly above rather than being assessed separately: max_depth
+	## caps recursive_summon's stacking, and the grind performs no summon at all — HeadlessBattleResolver
+	## says so in its own PER_BATTLE_METAS annotation ("the grind has no summon, no mind-swap and no boss
+	## faces"), and every "summon" in the file is likewise a comment. A cap on a mechanism that does not
+	## exist has nothing to cap, so it closes exactly when summon_id does and by the same decision.
+	"max_depth": "caps recursive_summon, and the grind performs no summon — see summon_id, whose scene-side spawn ruling this closes with. A cap on an absent mechanism has nothing to cap",
+
 	## ⛔ TWENTY-FOUR VALUES, AND THEY ARE NOT ONE GAP. `meta_effect` IS an executor key — live reads
 	## it at BattleManager.gd:6551 inside _execute_meta_ability and matches ~24 ways — so axis 2 applies
 	## and the grind's `meta` arm, a deliberate logged no-op, reads nothing. But "port meta_effect" is
@@ -131,7 +148,7 @@ const CLOSED_PENDING_FOLD := [
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
-	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
+	"element_boost", "element_boost_modifier", "ignores_evasion",
 ]
 
 ## ⛔ THE THIRD STATE, and it exists because I published a backlog number my instrument could not
