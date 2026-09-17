@@ -957,6 +957,12 @@ func play_ambient(sound_key: String) -> void:
 	## does not start — stop_ambient() above has already cleared the slot.
 	if _music_player and _music_player.playing and _music_player.stream \
 			and _music_player.stream.resource_path == path:
+		## ⛔ CLEAR THE KEY ON THE WAY OUT. It was assigned at the top of this function, so
+		## returning here would leave _current_ambient_key naming a bed that is NOT playing —
+		## truthful in the other direction, which calls stop_ambient() and clears it. Readers treat
+		## this field as the record of what is live (test_sound_manager_night_ambience_regression
+		## does exactly that), and a field that lies in one of two paths is the kind nobody checks.
+		_current_ambient_key = ""
 		return
 	_ambient_player.stream = stream
 	_ambient_player.play()
