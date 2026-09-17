@@ -265,34 +265,66 @@ def _pack_start(f):
     return start
 
 
-def pck_entries(path):
-    """Every path inside a Godot pack, whether a .pck or embedded in an executable.
+def pck_table(path):
+    """(base, {packed path: (offset, size)}) for a .pck or an embedded pack.
+
+    ⛔ `base` IS NOT OPTIONAL AND IS NOT THE PACK START. Format v2 carries a `file_base` field
+    and EVERY entry offset is relative to it, so an entry's bytes live at
+    pack_start + file_base + offset. Measured against both real artifacts, with the wrong
+    combinations kept as the control:
+
+        builds/web/index.pck        packstart 0          file_base 286,288
+          off+file_base             [remap] importer="oggvorbisstr"      ✅
+          off+packstart             binary garbage                      ⛔
+        cowardly-irregular.x86_64   packstart 69,688,024 file_base 262,408
+          off+file_base             x86 instructions                    ⛔  <- the tell
+          off+file_base+packstart   [remap] importer="oggvorbisstr"     ✅
+
+    The .pck case cannot distinguish the right formula from one wrong one, because its pack
+    start is 0. Only the embedded artifact separates them.
 
     Raises on anything it cannot honestly enumerate.
     """
-    with open(path, "rb") as f:
-        start = _pack_start(f)
-        f.seek(start + 4)
-        ver = struct.unpack("<I", f.read(4))[0]
-        f.read(12)                                           # godot major/minor/patch
+    f = open(path, "rb")
+    start = _pack_start(f)
+    f.seek(start + 4)
+    ver = struct.unpack("<I", f.read(4))[0]
+    f.read(12)                                               # godot major/minor/patch
+    file_base = 0
+    if ver >= 2:
+        flags = struct.unpack("<I", f.read(4))[0]
+        if flags & 1:
+            raise ValueError("the pack directory is ENCRYPTED; its file table cannot be read, "
+                             "so this check cannot certify anything about it")
+        file_base = struct.unpack("<Q", f.read(8))[0]
+    f.read(16 * 4)                                           # reserved
+    n = struct.unpack("<I", f.read(4))[0]
+    out = {}
+    for _ in range(n):
+        ln = struct.unpack("<I", f.read(4))[0]
+        nm = f.read(ln).rstrip(b"\0").decode("utf-8", "replace")
+        off, size = struct.unpack("<QQ", f.read(16))
+        f.read(16)                                           # md5
         if ver >= 2:
-            flags = struct.unpack("<I", f.read(4))[0]
-            if flags & 1:
-                raise ValueError("the pack directory is ENCRYPTED; its file table cannot be read, "
-                                 "so this check cannot certify anything about it")
-            f.read(8)                                        # file base offset
-        f.read(16 * 4)                                       # reserved
-        n = struct.unpack("<I", f.read(4))[0]
-        out = set()
-        for _ in range(n):
-            ln = struct.unpack("<I", f.read(4))[0]
-            out.add(f.read(ln).rstrip(b"\0").decode("utf-8", "replace"))
-            f.read(8 + 8 + 16)                               # offset, size, md5
-            if ver >= 2:
-                f.read(4)                                    # per-file flags
-        if len(out) == 0 and n != 0:
-            raise ValueError("file table declared %d entries and yielded none" % n)
-        return out
+            f.read(4)                                        # per-file flags
+        out[nm] = (off, size)
+    if len(out) == 0 and n != 0:
+        raise ValueError("file table declared %d entries and yielded none" % n)
+    return f, start + file_base, out
+
+
+def pck_read(f, base, entry):
+    """The bytes of one packed entry. entry is the (offset, size) pair from pck_table."""
+    off, size = entry
+    f.seek(base + off)
+    return f.read(size)
+
+
+def pck_entries(path):
+    """Every path inside a Godot pack, whether a .pck or embedded in an executable."""
+    f, _base, table = pck_table(path)
+    f.close()
+    return set(table)
 
 
 def main(argv):

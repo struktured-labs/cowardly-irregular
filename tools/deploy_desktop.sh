@@ -590,6 +590,30 @@ if ! python3 "$_RAW_CHECK" "$BIN" --src=src; then
     exit 2
 fi
 
+# gate 3d: the MIRROR of 3c. 3c asks whether a raw-bytes reader has raw bytes; this asks
+# whether a load() consumer has an IMPORTED ARTIFACT. The same one-word setting decides both and
+# decides them OPPOSITELY -- importer="keep" is REQUIRED for the overworld maps and FATAL for a
+# sprite sheet, which returns null from load() and falls back to procedural art. Silent both ways.
+# It follows the pointer rather than reading the file table: an imported asset resolves through
+# its packed .import, so "is the png in the pack" is the wrong question in both directions.
+_LOAD_CHECK="${_RAW_TOOLS}/check_loaded_assets_resolve.py"
+_LOAD_SELFTEST="${_RAW_TOOLS}/check_loaded_assets_resolve_selftest.py"
+[ -f "$_LOAD_CHECK" ] && [ -f "$_LOAD_SELFTEST" ] || {
+  echo "[${PLAT}] BLOCKED: check_loaded_assets_resolve.py or its selftest is missing -- nothing" >&2
+  echo "        would check that a loaded asset has an artifact to load." >&2
+  exit 2; }
+if ! _ST_OUT="$(python3 "$_LOAD_SELFTEST" 2>&1)"; then
+  printf '%s\n' "$_ST_OUT" | tail -20 >&2
+  echo "[${PLAT}] BLOCKED: check_loaded_assets_resolve FAILED ITS OWN ARMS, so its verdict on this" >&2
+  echo "        build would mean nothing. A present guard is not a working one." >&2
+  exit 2
+fi
+if ! python3 "$_LOAD_CHECK" "$BIN" --src=src; then
+  echo "[${PLAT}] BLOCKED: an asset this build LOADS has no artifact in the pack." >&2
+  echo "        load() returns null and the caller silently falls back." >&2
+  exit 2
+fi
+
 # ── gate 3: does it actually boot? ───────────────────────────────────────────
 # The gate web cannot have. An export can succeed and still produce something
 # that dies on startup — a missing autoload, an unresolved class_name, a broken
