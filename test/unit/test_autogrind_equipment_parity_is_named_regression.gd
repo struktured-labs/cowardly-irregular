@@ -30,9 +30,10 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 ## file was written on 2026-09-16. The set may SHRINK freely — that is someone closing a gap — but it
 ## may not GROW unnamed. (`exp_while_dead` grants EXP to a KO'd member; it is a REWARD key rather
 ## than a combat one, so it belongs with the grind's reward accounting rather than the damage path.)
-const GRIND_IGNORES := [
-	"exp_while_dead",
-]
+## EMPTY as of 2026-09-17, and the empty list is the point: every gear effect equipment.json authors
+## is now either modelled or declared with a reason. It was all FIFTEEN the day this file was
+## written. Kept rather than deleted so a NEW authored key has somewhere honest to land.
+const GRIND_IGNORES := []
 
 ## Modelled by the resolver now, each mirroring live's formula rather than a new one. The set above
 ## SHRANK into this one, which is the direction this file's ratchet permits silently — but the move
@@ -41,7 +42,7 @@ const GRIND_IGNORES := [
 ## Behaviour is pinned in test_autogrind_a_party_wears_its_gear_regression, not here: this file is a
 ## census and says WHICH keys are modelled, never that they are modelled CORRECTLY.
 const GRIND_MODELS := [
-	"critical_bonus", "dark_damage_bonus", "evasion_bonus", "familiar_weight_bonus",
+	"critical_bonus", "dark_damage_bonus", "evasion_bonus", "exp_while_dead", "familiar_weight_bonus",
 	"fire_damage_bonus", "holy_damage_bonus", "ice_damage_bonus", "lightning_damage_bonus",
 	"poison_chance", "sleep_chance", "status_resistance", "steal_bonus",
 ]
@@ -81,6 +82,17 @@ const DERIVED_KEY_SUFFIXES := ["_damage_bonus", "_resistance"]
 ## which is the exact combination that made an earlier version of this file publish "inert" about
 ## them. An entry here is a PROMISE that the construction exists, and the derived-key arm below
 ## verifies the promise rather than taking it.
+## ⚠️ THE GRIND IS MORE THAN THE RESOLVER, and the liveness arm below scans only the resolver. The
+## reward path lives in AutogrindSystem, so a key read there measures as ABSENT while it is working.
+## Named here instead of widening the scan silently — a wider corpus would also stop the arm noticing
+## a key that moved to a file nobody expected. Each entry names the FILE and the MARKER, because
+## exp_while_dead is read by DELEGATION (BattleManager owns the predicate) and its own literal
+## appears in neither grind file.
+const MODELLED_ELSEWHERE := {
+	"exp_while_dead": ["res://src/autogrind/AutogrindSystem.gd", "earns_exp_while_dead"],
+}
+
+
 const MODELLED_BY_CONSTRUCTION := {
 	"fire_damage_bonus": 'element + "_damage_bonus"',
 	"ice_damage_bonus": 'element + "_damage_bonus"',
@@ -110,7 +122,7 @@ const DECLARED := {
 ## identifying that it did not own the key, at a time when no equipment census existed to pick it up.
 ## So it belonged to nobody. It belongs HERE: the read is equipment-side, and it is in GRIND_IGNORES.
 const OVERLAP_OWNED := {
-	"evasion_bonus": "read off EQUIPMENT, not off the ability — the abilities ledger parks it in UNDECIDED_LIVE_SIDE for exactly that reason, so this file owns it and lists it in GRIND_IGNORES",
+	"evasion_bonus": "read off EQUIPMENT, not off the ability — the abilities ledger parks it in UNDECIDED_LIVE_SIDE for exactly that reason, so this file owns it. Listed in GRIND_MODELS since it was wired; this line said GRIND_IGNORES until 2026-09-17, describing where it sat when the note was written",
 }
 
 
@@ -334,25 +346,47 @@ func test_the_modelled_keys_are_actually_present_in_the_resolver() -> void:
 	for k in GRIND_MODELS:
 		if MODELLED_BY_CONSTRUCTION.has(k):
 			continue
+		if MODELLED_ELSEWHERE.has(k):
+			var where: Array = MODELLED_ELSEWHERE[k]
+			var other: String = GdSource.code_of(str(where[0]))
+			assert_gt(other.length(), 1000, "CONTROL: %s was actually read" % str(where[0]))
+			if not other.contains(str(where[1])):
+				absent.append("%s (expected marker '%s' in %s)" % [k, str(where[1]), str(where[0])])
+			continue
 		if not grind.contains('"%s"' % k):
 			absent.append(k)
-	gut.p("    modelled: %d — %d literal, %d by construction" % [GRIND_MODELS.size(), GRIND_MODELS.size() - MODELLED_BY_CONSTRUCTION.size(), MODELLED_BY_CONSTRUCTION.size()])
+	gut.p("    modelled: %d — %d literal, %d by construction, %d elsewhere" % [GRIND_MODELS.size(), GRIND_MODELS.size() - MODELLED_BY_CONSTRUCTION.size() - MODELLED_ELSEWHERE.size(), MODELLED_BY_CONSTRUCTION.size(), MODELLED_ELSEWHERE.size()])
 	assert_eq(absent, [],
 		"a key is listed as modelled and the resolver does not name it — the list moved without the code: %s" % str(absent))
 
 
-func test_the_grind_side_gap_is_real_and_not_a_bad_pattern() -> void:
-	## The grind reads none of the 15. That is a ZERO, which this file's own instrument note calls the
-	## trustworthy direction — but only once the CONTROL above has shown the pattern can match.
+func test_an_ignored_key_is_really_ignored() -> void:
+	## ⛔ RETIRED AND REPLACED 2026-09-17, by its own demand. This arm used to assert the ignore list
+	## was SHRINKING — `modelled.size() < GRIND_IGNORES.size()` — which is exactly right while a gap
+	## is being closed and cannot hold once it IS closed: at zero it reads `0 < 0` and reds. It fired
+	## the moment exp_while_dead moved out, saying "retire this list deliberately rather than leaving
+	## it asserting nothing". That is the trigger working, not a failure, and this is the retirement.
+	##
+	## The successor keeps the question worth asking and drops the one that expired: a key listed as
+	## IGNORED must genuinely be absent from the grind. True at any list size, including zero, and it
+	## reds on the real mistake — labelling a key ignored while the code models it, which would let
+	## this census under-report its own progress the way it once over-reported the gap.
 	var grind: String = GdSource.code_of(GRIND)
 	assert_gt(grind.length(), 10000, "CONTROL: the resolver was actually read")
-	var modelled: Array = []
+	## ⚠️ THE POSITIVE CONTROL CARRIES THE ARM WHILE THE LIST IS EMPTY. A loop over nothing passes
+	## whatever it asserts, and an empty GRIND_IGNORES is the expected state now — so without this,
+	## a broken pattern and a closed gap produce the same green forever.
+	var probe: String = "critical_bonus"
+	assert_true(GRIND_MODELS.has(probe), "CONTROL: the probe key must be one this file calls modelled")
+	assert_true(grind.contains('"%s"' % probe),
+		"CONTROL: the pattern must be able to MATCH — if it cannot find a key the resolver demonstrably reads, every absence below is an artifact")
+	var mislabelled: Array = []
 	for k in GRIND_IGNORES:
 		if grind.contains('"%s"' % k):
-			modelled.append(k)
-	gut.p("    gear effects the grind now models: %s" % str(modelled))
-	assert_true(modelled.size() < GRIND_IGNORES.size(),
-		"every gear effect is modelled in the grind now — retire this list deliberately rather than leaving it asserting nothing")
+			mislabelled.append(k)
+	gut.p("    ignored keys: %d · of those the grind actually names: %s" % [GRIND_IGNORES.size(), str(mislabelled)])
+	assert_eq(mislabelled, [],
+		"a key is listed as IGNORED and the resolver names it — either it was wired and the list never moved, or the label is wrong: %s" % str(mislabelled))
 
 
 func test_this_axis_is_invisible_to_the_abilities_ledger() -> void:
