@@ -417,6 +417,15 @@ func _update_selection() -> void:
 			bg.color = SELECTED_COLOR if i == selected_slot else PANEL_COLOR
 
 
+## One owner for a slot step.
+func _nav_step(step: int) -> void:
+	if _slot_panels.is_empty():
+		return
+	selected_slot = (selected_slot + step + _slot_panels.size()) % _slot_panels.size()
+	_update_selection()
+	SoundManager.play_ui("menu_move")
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle input"""
 	if not visible:
@@ -437,16 +446,11 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		selected_slot = (selected_slot - 1 + _slot_panels.size()) % _slot_panels.size()
-		_update_selection()
-		SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		selected_slot = (selected_slot + 1) % _slot_panels.size()
-		_update_selection()
-		SoundManager.play_ui("menu_move")
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis (and left/right its X),
+	# and an axis carries no echo flag — so one push used to step the cursor five times.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():

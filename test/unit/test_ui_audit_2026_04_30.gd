@@ -64,11 +64,19 @@ func test_world_map_menu_nav_guards_echo() -> void:
 	assert_string_contains(rest, "if not visible:",
 		"WorldMapMenu _input must early-return when not visible " +
 		"(input bleeds to underlying scene otherwise)")
-	# At least 4 echo guards (one per nav direction)
-	var count = rest.count("not event.is_echo()")
-	assert_gte(count, 4,
-		"WorldMapMenu _input must have at least 4 echo guards " +
-		"(one per nav direction); found %d" % count)
+	# ⛔ WAS: "at least 4 echo guards, one per nav direction". The property is that holding a
+	# direction must not rapid-fire — and an inline echo check could never deliver it here, because
+	# this grid navigates on the left STICK'S two axes as well as the d-pad, and an axis carries no
+	# echo flag. Measured before the conversion: one downward push carried the cursor 0 -> 2 -> 4.
+	# Routing through MenuNav satisfies the original property (its first line refuses echoes) AND
+	# the half four inline guards never had.
+	var nav := _read_file("res://src/ui/MenuNav.gd")
+	assert_string_contains(rest, "MenuNav.step(event)",
+		"WorldMapMenu must navigate through MenuNav — four inline echo guards cannot see an axis")
+	assert_string_contains(nav, "event.is_echo()",
+		"MenuNav must still refuse echo events — the property this arm has always defended")
+	assert_string_contains(nav, "_h_axis_held",
+		"…and must latch the two axes independently, or a held vertical swallows a horizontal step")
 
 
 # Bug: SettingsMenu boss-selected fired start_boss_battle BEFORE closed,

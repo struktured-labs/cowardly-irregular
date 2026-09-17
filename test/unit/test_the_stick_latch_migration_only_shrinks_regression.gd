@@ -35,14 +35,10 @@ const KNOWN_UNCONVERTED := [
 	"res://src/ui/FormationsMenu.gd",
 	"res://src/ui/GameOverScreen.gd",
 	"res://src/ui/HowToPlayOverlay.gd",
-	"res://src/ui/JobMenu.gd",
 	"res://src/ui/LensMenu.gd",
 	"res://src/ui/QuestLog.gd",
 	"res://src/ui/RadialPicker.gd",
 	"res://src/ui/RebalanceReviewPanel.gd",
-	"res://src/ui/SaveScreen.gd",
-	"res://src/ui/TitleScreen.gd",
-	"res://src/ui/WorldMapMenu.gd",
 	"res://src/ui/autobattle/AutobattleGridEditor.gd",
 	"res://src/ui/autogrind/AutogrindGridEditor.gd",
 	"res://src/ui/autogrind/AutogrindUI.gd",
@@ -158,5 +154,5 @@ func test_the_scan_finds_both_populations() -> void:
 	assert_gt(scan["converted"].size(), 0, "the converted set must be non-empty, or nothing uses the helper")
 	assert_true(scan["converted"].has("res://src/ui/EquipmentMenu.gd"),
 		"a known converted surface must be found, or the MenuNav probe is wrong")
-	assert_true(scan["raw"].has("res://src/ui/SaveScreen.gd"),
+	assert_true(scan["raw"].has("res://src/ui/LensMenu.gd"),
 		"a known unconverted surface must be found, or the raw probe is wrong")
