@@ -13,6 +13,8 @@ var _saved_count: int = 0
 
 
 func before_each() -> void:
+	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
+	AutogrindSystem._test_disable_persistence = true
 	_saved_count = TutorialHint._active_count
 	TutorialHint._active_count = 0
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
@@ -24,6 +26,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	AutogrindSystem._test_disable_persistence = false
 	## Static — a leaked non-zero count silently gates every later test's input.
 	TutorialHint._active_count = _saved_count
 

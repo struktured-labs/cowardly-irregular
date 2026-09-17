@@ -21,6 +21,15 @@ extends GutTest
 const AUTOGRIND_UI_PATH := "res://src/ui/autogrind/AutogrindUI.gd"
 
 
+func before_each() -> void:
+	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
+	AutogrindSystem._test_disable_persistence = true
+
+
+func after_each() -> void:
+	AutogrindSystem._test_disable_persistence = false
+
+
 func _read(p: String) -> String:
 	return FileAccess.get_file_as_string(p)
 

@@ -113,3 +113,102 @@ func test_the_offender_scan_can_actually_fire() -> void:
 		"control: a fabricated ungated caller must match the predicate, else the scan cannot detect a real one")
 	assert_false(fake_offender.contains("_test_disable_persistence"),
 		"control: the fabricated offender must lack the flag, else the exclusion is untested")
+
+
+## ⛔ THE ARM ABOVE IS ONE HOP, AND A REAL WRITE GOT THROUGH IT ON 2026-09-17. Its predicate is a
+## literal `AutogrindSystem.<fn>(` in the test's own source, behind a `src.contains("AutogrindSystem")`
+## filter. test_autogrind_editor_escape_backs_out_regression names AutogrindSystem NOWHERE: it loads
+## AutogrindGridEditor and presses ui_cancel, whose arm calls _save_rules -> set_autogrind_rules.
+## Measured in a virgin XDG_DATA_HOME, it wrote profiles.json, learned_patterns.json and csi_data.json
+## while this file sat green. The detector was correct about what it checked and blind to the shape.
+##
+## ⚠️ AND NO REUSED SANDBOX COULD HAVE SHOWN IT: autogrind/ is in run_tests.sh's _NETTED_DIRS and the
+## net restores with `cp -a`, which carries mtime — so the write is invisible to a content hash AND to
+## mtime. Only a sandbox where the dir did not exist pre-run reveals it.
+
+## Scripts that call a persisting AutogrindSystem function on the player's behalf. DERIVED, because a
+## hand-list is what made the hop-1 arm miss this. AutogrindSystem itself is excluded: it reaches its
+## own savers by construction, and including it would flag every guard that reads it as text.
+func _indirect_reachers() -> Array[String]:
+	var persisting := _persisting_functions()
+	var out: Array[String] = []
+	var stack: Array = ["res://src"]
+	while not stack.is_empty():
+		var d: String = str(stack.pop_back())
+		for sub in DirAccess.get_directories_at(d):
+			stack.append("%s/%s" % [d, sub])
+		for f in DirAccess.get_files_at(d):
+			var path: String = "%s/%s" % [d, f]
+			if not path.ends_with(".gd") or path.ends_with("AutogrindSystem.gd"):
+				continue
+			var body: String = FileAccess.get_file_as_string(path)
+			for fn in persisting:
+				if body.contains("AutogrindSystem." + fn + "("):
+					out.append(path)
+					break
+	out.sort()
+	return out
+
+
+## A test is exposed when it names a reacher's res:// path AND instantiates something — reading the
+## file as text is how the source-level guards use it and must not count.
+func _two_hop_offenders() -> Array[String]:
+	var reachers := _indirect_reachers()
+	var out: Array[String] = []
+	for fname in _test_files():
+		var src: String = FileAccess.get_file_as_string(TEST_DIR + "/" + fname)
+		if src == "" or src.contains("_test_disable_persistence"):
+			continue
+		if not (src.contains(".new()") or src.contains(".instantiate()")):
+			continue
+		for r in reachers:
+			if src.contains(r):
+				out.append(fname)
+				break
+	return out
+
+
+## Owned by other lanes, measured 2026-09-17 to write nothing today, reported in-channel. A SUBSET
+## check, not equality: a new exposure reds, and a lane fixing one of theirs never reds mine.
+const OTHER_LANE_KNOWN: Array[String] = [
+	"test_an_empty_grid_has_no_row_minus_one.gd",
+	"test_autobattle_editor_pad_value_dial_regression.gd",
+	"test_battle_captions_are_not_nintendo_only.gd",
+	"test_dial_reached_by_real_axis_routing_regression.gd",
+	"test_input_handling_regression.gd",
+	"test_input_reaches_the_handler_regression.gd",
+	"test_legend_claims_are_wired_regression.gd",
+	"test_low_hp_threshold_single_source_regression.gd",
+	"test_shift_r_rename_is_reachable_regression.gd",
+	"test_the_stick_steps_once_in_the_rule_editors.gd",
+]
+
+
+func test_the_two_hop_scan_can_actually_fire() -> void:
+	# Same control the hop-1 arm carries, for the same reason: "0 offenders" and "the scan never
+	# matched" are the same green. Floor by REASON — AutogrindGridEditor is the script that carried
+	# the real write, so if the derivation stops naming it, every count below is about an empty set.
+	var reachers := _indirect_reachers()
+	assert_gt(reachers.size(), 0, "derived ZERO indirect reachers — the scan is broken, not the code")
+	assert_true("res://src/ui/autogrind/AutogrindGridEditor.gd" in reachers,
+		"control: AutogrindGridEditor reaches set_autogrind_rules via _save_rules and is the script that produced the 2026-09-17 write — its absence means the derivation broke")
+
+
+func test_no_autogrind_test_reaches_a_saver_through_a_ui_node() -> void:
+	var mine: Array[String] = []
+	var theirs: Array[String] = []
+	for f in _two_hop_offenders():
+		if f.begins_with("test_autogrind"):
+			mine.append(f)
+		else:
+			theirs.append(f)
+
+	assert_eq(mine, [],
+		"These autogrind tests instantiate a script that reaches an AutogrindSystem saver, without setting the flag — the shape that wrote three player-data files on 2026-09-17 while the one-hop arm above stayed green. Add `AutogrindSystem._test_disable_persistence = true` in before_each: %s" % str(mine))
+
+	var unknown: Array[String] = []
+	for f in theirs:
+		if not (f in OTHER_LANE_KNOWN):
+			unknown.append(f)
+	assert_eq(unknown, [],
+		"New out-of-lane tests reach an autogrind saver through a UI node: %s — report to the owning lane and add to OTHER_LANE_KNOWN with the measurement" % str(unknown))

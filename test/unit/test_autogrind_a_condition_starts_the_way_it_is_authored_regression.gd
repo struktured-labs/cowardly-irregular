@@ -24,6 +24,8 @@ var _ed: Node = null
 
 
 func before_each() -> void:
+	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
+	AutogrindSystem._test_disable_persistence = true
 	_vp = SubViewport.new()
 	_vp.size = Vector2i(1280, 720)
 	add_child_autofree(_vp)
@@ -34,6 +36,7 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	AutogrindSystem._test_disable_persistence = false
 	if _ed and is_instance_valid(_ed):
 		_ed.queue_free()
 	_ed = null

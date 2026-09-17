@@ -9,6 +9,8 @@ var _ui
 
 
 func before_each() -> void:
+	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
+	AutogrindSystem._test_disable_persistence = true
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
 	add_child_autofree(_ui)
 	var party: Array = []
@@ -22,6 +24,10 @@ func before_each() -> void:
 		add_child_autofree(c)
 		party.append(c)
 	_ui._party = party
+
+
+func after_each() -> void:
+	AutogrindSystem._test_disable_persistence = false
 
 
 func _joined() -> String:
