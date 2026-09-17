@@ -231,6 +231,19 @@ func test_the_rows_a_player_actually_sees_are_unique() -> void:
 	##
 	## So this arm stands the menu up and reads the field the draw loop reads. Add a filter to
 	## _ready and the static arms above stay green while this one follows the rows.
+	##
+	## ⛔ ROUTE COUNT, measured rather than assumed (@cowir-autogrind: a consequence arm is
+	## scoped to a ROUTE, not to a feature). `TRACKS` has exactly ONE write — JukeboxMenu:64 —
+	## so there is one way the list comes to exist and this arm covers it. Their case was two:
+	## the single-action and Advance paths both reach the sort, and their first consequence arm
+	## drove one.
+	##
+	## ⚠️ AND THIS CHECKS TITLES, WHICH IS STRICTER THAN WHAT RENDERS. The row a player reads is
+	## `title   ·   duration` (:291), so two beds sharing a title but differing in length are
+	## visually distinguishable and this arm would still flag them. Deliberate: the Jukebox is a
+	## browsing surface and two rows reading "Raid!" are confusing whatever follows the dot. It
+	## cannot MISS a collision, only over-report one — and the real instance could not be
+	## distinguished anyway, since all five alias rows named ONE file and therefore one duration.
 	var jb: Node = JUKEBOX.new()
 	add_child_autofree(jb)
 	await get_tree().process_frame
