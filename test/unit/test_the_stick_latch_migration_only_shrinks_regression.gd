@@ -39,11 +39,8 @@ const RAW_READS := [
 const KNOWN_UNCONVERTED := [
 	"res://src/exploration/ReadableProp.gd",
 	"res://src/ui/PartyStatusScreen.gd",
-	"res://src/ui/CharacterCreationScreen.gd",
-	"res://src/ui/GameOverScreen.gd",
 	"res://src/ui/HowToPlayOverlay.gd",
 	"res://src/ui/RadialPicker.gd",
-	"res://src/ui/RebalanceReviewPanel.gd",
 ]
 
 
@@ -162,6 +159,6 @@ func test_the_scan_finds_both_populations() -> void:
 		"a known converted surface must be found, or the MenuNav probe is wrong")
 	# The exemplar is EXPECTED to move: it names one file so the probe is controlled against a
 	# specific known result, and converting that file must red this line rather than pass quietly.
-	assert_true(scan["raw"].has("res://src/ui/CharacterCreationScreen.gd"),
+	assert_true(scan["raw"].has("res://src/ui/PartyStatusScreen.gd"),
 		"a known unconverted surface must be found, or the raw probe is wrong — if this surface was "
 		+ "just converted, re-point the exemplar at another entry of KNOWN_UNCONVERTED")
