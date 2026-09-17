@@ -6648,13 +6648,26 @@ func _create_autogrind_overlay() -> void:
 	# Control hints
 	var hints = Label.new()
 	hints.name = "HintsLabel"
-	hints.text = "Y: Turbo    T: Dashboard    P: Pause    %s: Exit" % InputProfileManager.hint_for_action("ui_cancel")
+	hints.text = AutogrindInputHelper.grind_hud_strip()
 	hints.position = Vector2(16, vp_size.y - bar_height + 112)
 	hints.size = Vector2(vp_size.x - 32, 24)
 	hints.add_theme_font_size_override("font_size", 13)
 	hints.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
 	hints.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_autogrind_overlay.add_child(hints)
+	# Built once, and a grind runs for a long time unattended — a pad plugged in or pulled out
+	# mid-session has to re-render this, or it names buttons for a device that is gone.
+	if InputProfileManager and not InputProfileManager.input_device_changed.is_connected(_refresh_autogrind_hints):
+		InputProfileManager.input_device_changed.connect(_refresh_autogrind_hints)
+
+
+## Mirrors BattleScene._refresh_input_hint_bar: the strip is derived, so a device change re-derives it.
+func _refresh_autogrind_hints(_connected: bool = true) -> void:
+	if not is_instance_valid(_autogrind_overlay):
+		return
+	var lbl := _autogrind_overlay.find_child("HintsLabel", true, false)
+	if lbl and lbl is Label:
+		(lbl as Label).text = AutogrindInputHelper.grind_hud_strip()
 
 
 func _update_autogrind_overlay(stats: Dictionary) -> void:

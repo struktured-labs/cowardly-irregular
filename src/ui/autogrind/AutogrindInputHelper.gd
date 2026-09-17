@@ -36,6 +36,11 @@ static func classify_event(event: InputEvent) -> String:
 ## reads from this one table instead of carrying its own literal.
 const ACTION_KEYS := {"pause": "P", "adjust_rules": "R", "tier_cycle": "T", "exit": "X"}
 
+## Keys GameLoop's AUTOGRIND branch owns that classify_event does NOT accept. Kept out of
+## ACTION_KEYS on purpose: that const promises it names only keys this classifier binds, and turbo
+## is dispatched by GameLoop (raw JOY_BUTTON_Y / KEY_Y), never here.
+const BRANCH_KEYS := {"turbo": "Y"}
+
 
 ## The button token a legend should print for one of classify_event's actions, resolved against the
 ## pad in the player's hands. It lives HERE, beside the dispatch table, because both footers named
@@ -113,7 +118,10 @@ static func grind_reference_rows(device_name: String = "") -> String:
 	var tier: String = ("%s+%s" % [l, r]) if l != "" and r != "" else ""
 	var rows: Array = [
 		[_reference_cell(pause), str(ACTION_KEYS["pause"]), "[color=lime]Pause / resume the grind[/color]"],
-		[_reference_cell(tier), str(ACTION_KEYS["tier_cycle"]), "Cycle monster tier"],
+		# "Cycle monster tier" until 2026-09-17 — the one occurrence of that phrase in the tree, and
+		# there is no monster tier: GrindTier is {ACCELERATED, DASHBOARD}. It is what sent me to
+		# "fix" the HUD's correct "Dashboard" label into a wrong one.
+		[_reference_cell(tier), str(ACTION_KEYS["tier_cycle"]), "Toggle the analytics dashboard"],
 		# Keyboard only: the dashboard binds index 6 for this, but at tier 0 no dashboard exists and
 		# the AUTOGRIND branch binds only KEY_R -- so a pad cell here would be dead half the time.
 		[REFERENCE_PAD_NONE, str(ACTION_KEYS["adjust_rules"]), "Adjust rules mid-grind"],
@@ -124,6 +132,28 @@ static func grind_reference_rows(device_name: String = "") -> String:
 	for row in rows:
 		out += "%-*s%-*s%s\n" % [REFERENCE_COL, row[0], REFERENCE_COL, row[1], row[2]]
 	return out
+
+
+## The one-line legend GameLoop's AUTOGRIND overlay prints, and it lives beside grind_reference_rows
+## so the strip and the F1 table cannot name different buttons for the same control.
+##
+## ⛔ PAUSE IS BY ACTION, NOT hint_for("pause"). That path resolves the RAW JOY_BUTTON_BACK, while
+## GameLoop's branch dispatches pause on the battle_toggle_auto ACTION — a raw index keeps printing
+## "Back" after a Controls rebind moves it. Same reasoning grind_reference_rows records.
+## 📌 "Dashboard" IS THE CORRECT LABEL AND I BRIEFLY CHANGED IT TO "Tier", WHICH WAS WRONG.
+## GrindTier is {ACCELERATED, DASHBOARD} and cycle_tier() toggles between the two, so T shows the
+## analytics dashboard — GameLoop logs "Dashboard shown (Tier 2)" at the other end of the same call.
+## There is no monster tier in this path. @cowir-adhoc caught the inversion before it folded.
+static func grind_hud_strip(device_name: String = "") -> String:
+	var ipm := _profile_manager()
+	var pad_ok: bool = ipm != null and (device_name != "" or not Input.get_connected_joypads().is_empty())
+	# button_name_for_index returns "" with no pad BY DESIGN — naming one family's button to a
+	# keyboard player is the defect this file exists to remove, so the key is the honest answer.
+	var turbo: String = str(ipm.button_name_for_index(JOY_BUTTON_Y, device_name)) if pad_ok else str(BRANCH_KEYS["turbo"])
+	var pause: String = str(ipm.hint_for_action("battle_toggle_auto", device_name)) if pad_ok else str(ACTION_KEYS["pause"])
+	var tier: String = hint_for("tier_cycle", device_name)
+	var exit_tok: String = hint_for("exit", device_name)
+	return "%s: Turbo    %s: Dashboard    %s: Pause    %s: Exit" % [turbo, tier, pause, exit_tok]
 
 
 static func _reference_cell(token: String) -> String:
