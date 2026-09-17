@@ -118,8 +118,10 @@ func test_menu_declares_sort_cycle_constant() -> void:
 
 func test_menu_handles_ui_left_to_cycle() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/ui/BestiaryMenu.gd")
-	assert_true(src.contains("is_action_pressed(\"ui_left\")"),
-		"BestiaryMenu must handle ui_left to advance the sort cycle")
+	# Raw read OR the shared latched reader — the cursor step is the fact, not its spelling.
+	var stepped := src.contains("is_action_pressed(\"ui_left\")") \
+		or (src.contains("MenuNav.step(") and src.contains("nav == \"ui_left\""))
+	assert_true(stepped, "BestiaryMenu must handle ui_left to advance the sort cycle")
 	assert_true(src.contains("_sort_mode_idx = (_sort_mode_idx + 1) % _SORT_CYCLE.size()"),
 		"ui_left handler must wrap around the 3-element cycle")
 	assert_true(src.contains("func _re_sort_and_refresh"),
