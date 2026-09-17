@@ -442,6 +442,20 @@ func _detect_formation(alive_party: Array) -> Dictionary:
 	return {}
 
 
+## Live's post-fix form (BattleManager `_living_count` / `_group_scale`, cowir-battle 6b89ecf4b): a
+## pooled strike scales on the LIVING roster, never the rostered one.
+## ⚠️ DEAD CODE IN THIS FILE TODAY, and recorded as such rather than dressed as a repair: both
+## callers pass `alive`, filtered one line above in the same frame, and the blade_storm loop damages
+## ENEMIES — nothing can kill a participant mid-execution. Live's gap is real because its roster is
+## fixed at SELECTION and execution is speed-sorted; this resolver has no such gap.
+## 🔑 ALIGNED ANYWAY because the two engines had started computing DIFFERENTLY, and in OPPOSITE
+## directions: live pre-fix made the strike stronger when a member died, this file makes it weaker
+## (blade_storm CONSUMES a hit on a dead attacker via its `continue`). Two engines disagreeing about
+## the SIGN of an error from one authored formation is the failure this resolver exists to prevent.
+func _living(participants: Array) -> Array:
+	return participants.filter(func(p): return p is Combatant and p.is_alive)
+
+
 func _execute_group_physical(participants: Array, group_type: String) -> Dictionary:
 	"""Execute all-out attack — AoE physical damage to all enemies."""
 	var total_power = 0.0
@@ -450,7 +464,7 @@ func _execute_group_physical(participants: Array, group_type: String) -> Diction
 			p.spend_ap(1)
 			total_power += p.get_buffed_stat("attack", p.attack)
 
-	var scale = pow(participants.size(), 1.5)
+	var scale = pow(maxi(1, _living(participants).size()), 1.5)
 	var alive_enemies = _enemy_party.filter(func(e): return e.is_alive)
 
 	for enemy in alive_enemies:
@@ -473,7 +487,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 		if p is Combatant and p.is_alive:
 			p.spend_ap(ap_cost)
 
-	var scale = pow(participants.size(), 1.5)
+	var scale = pow(maxi(1, _living(participants).size()), 1.5)
 
 	match formation_id:
 		"four_heroes":
@@ -504,10 +518,16 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 			_log("FORMATION: Arcane Tempest — raw magic ignores resistances!")
 
 		"blade_storm":
-			var hit_count = participants.size() * 2
+			## Budget AND selection both from the living roster, mirroring live's post-fix form. Fixing
+			## only the budget left a rostered corpse still selectable, and `continue` then CONSUMED
+			## the hit — six budgeted, four thrown. My own "was the first instance the only one",
+			## failed minutes after writing it down, and caught by the arm's numbers rather than by it
+			## going red: 197 vs 154 inside a tolerance I had set too loose.
+			var storm_living = _living(participants)
+			var hit_count = storm_living.size() * 2
 			for _hit in range(hit_count):
-				var attacker = participants[randi() % participants.size()]
-				if not (attacker is Combatant) or not attacker.is_alive: continue
+				if storm_living.is_empty(): break
+				var attacker = storm_living[randi() % storm_living.size()]
 				if alive_enemies.is_empty(): break
 				var target = alive_enemies[randi() % alive_enemies.size()]
 				if not target.is_alive: continue
