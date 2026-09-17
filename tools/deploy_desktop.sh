@@ -268,7 +268,9 @@ _restore_exports() {
     #   OVERWRITE test_script_share.gd calls export_autogrind_rules() with NO
     #             EXPORT_DIR override, writing test data over the FIXED production
     #             filename autogrind_rules.json — a shipped player action
-    #             (AutogrindUI.gd:1687). Same path, same name, someone else's
+    #             (ScriptShareManager.export_autogrind_rules, which writes it into
+    #             EXPORT_DIR = user://script_exports/ — the old AutogrindUI.gd:1687 pointer is
+    #             a blank line in a file that has since moved). Same path, same name, someone else's
     #             contents, nothing loud. A copy-if-missing restore would "pass"
     #             while leaving that substitution in place.
     # Measured, sandboxed (never probe the live dir — planting a canary there is a
@@ -680,7 +682,9 @@ echo "[${PLAT}] booted to title screen · script errors during boot: ${BOOT_ERRS
 # running on every action of every turn) with no execution in a booted build on
 # any platform.
 #
-# GameLoop.gd:382 has accepted `--battle-smoke` all along and NOTHING used it:
+# GameLoop._maybe_run_battle_smoke has accepted `--battle-smoke` all along and NOTHING used it
+# (the flag is read inside that function; the old `GameLoop.gd:382` pointer drifted onto an
+# unrelated line):
 # 0 references in tools/, .github/ or CLAUDE.md. It fights a real battle in the
 # exported build and writes screenshots.
 #
