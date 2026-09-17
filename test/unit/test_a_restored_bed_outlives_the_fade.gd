@@ -16,10 +16,14 @@ extends GutTest
 ## but NOT `_current_area`, so the next `play_area_music(same)` does work — a player standing still
 ## in the overworld simply has no music until they walk somewhere else.
 ##
-## `play_music` was never exposed: it kills the tween itself at :1981. Only the AREA path routes
-## its kill through `stop_music()`, and only the area path has an early return that can skip it.
+## ⛔ AND `play_music` HAS IT TOO — I claimed otherwise when I shipped the first half. Its kill
+## DOES live in the function, at :1980, and its own "already playing" early return sits at :1965,
+## FIFTEEN LINES ABOVE IT. So it skips the very cleanup it owns. Measured the same way:
+## play battle_medieval, fade 0.3 s, ask for the same track -> playing=true, then false 0.6 s on.
+## Both returns now route through `_cancel_pending_fade()`.
 
 const AREA := "overworld_medieval"
+const BATTLE := "battle_medieval"
 const FADE := 0.3
 
 
@@ -76,3 +80,28 @@ func test_a_different_area_still_takes_the_normal_path() -> void:
 	await _frames(14)
 	assert_eq(SoundManager._current_area, "overworld_suburban",
 		"a real area change must still route through stop_music and start the new bed")
+
+
+func test_play_music_asking_for_the_same_track_mid_fade_keeps_it() -> void:
+	## The second instance, found by asking whether the first was the only one. `play_music`'s
+	## "already playing" return is FIFTEEN LINES above the tween kill it skips — a cutscene that
+	## fades and then requests the track already sounding gets silence a second later.
+	SoundManager.play_music(BATTLE, true)
+	await _frames(12)
+	assert_true(SoundManager._music_player.playing, "CONTROL: the track is playing before the fade")
+
+	SoundManager.fade_out_music(FADE)
+	SoundManager.play_music(BATTLE, true)
+	await get_tree().create_timer(FADE * 2.0).timeout
+	await _frames(8)
+	assert_true(SoundManager._music_player.playing,
+		"play_music skipped its own tween kill via the early return, and the fade stopped the track it was asked to keep")
+
+
+func test_a_different_track_still_takes_the_normal_path() -> void:
+	SoundManager.play_music(BATTLE, true)
+	await _frames(12)
+	SoundManager.play_music("victory", true)
+	await _frames(12)
+	assert_eq(SoundManager._current_music, "victory",
+		"a real track change must still route through the crossfade rather than the cancel")
