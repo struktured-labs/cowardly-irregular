@@ -848,7 +848,42 @@ func _resolve_attack(attacker, target) -> int:
 		actual = actual / 2
 
 	target.take_damage(actual)
+	## Live calls this from _execute_attack ONLY (:4539) — the BASIC attack. Deliberately NOT added to
+	## _resolve_attack_with_power, which is this file's ability-damage path: an ability that happens to
+	## deal physical damage does not proc a weapon's on-hit status in live, and wiring it there would
+	## be the axis-2 error this lane's ledger exists to catch — a key read on the wrong executor.
+	_apply_equipment_on_hit_status(attacker, target)
 	return actual
+
+
+## Twin of BattleManager.ON_HIT_STATUSES (:4574) — same keys, same statuses, same durations.
+## poison_dagger authors poison_chance 0.25, sleep_dagger authors sleep_chance 0.20, and a grinding
+## party's daggers gave their stat bonus while the headline gimmick did nothing.
+## Table-driven for live's reason rather than mine: a new on-hit chance drops in by extending the
+## const, and the two engines stay comparable entry-for-entry instead of by reading two loops.
+const ON_HIT_STATUSES: Array = [
+	{"key": "poison_chance", "status": "poison", "duration": 3},
+	{"key": "sleep_chance", "status": "sleep", "duration": 2},
+]
+
+
+## Mirrors BattleManager._apply_equipment_on_hit_status:4581, called AFTER the damage lands so the
+## status piles on the hit. Each chance rolls independently, and the TARGET's status_resistance is
+## subtracted here exactly as live subtracts it — the same clamp-the-RESULT form, never a cap on the
+## resist itself, which live applies nowhere.
+func _apply_equipment_on_hit_status(attacker, target) -> void:
+	if attacker == null or target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	for entry in ON_HIT_STATUSES:
+		var chance: float = _sum_equipment_special_effect(attacker, str(entry["key"]))
+		if chance <= 0.0:
+			continue
+		var resist: float = _sum_equipment_special_effect(target, "status_resistance")
+		var effective: float = clampf(chance - resist, 0.0, 1.0)
+		if effective <= 0.0 or randf() >= effective:
+			continue
+		target.add_status(str(entry["status"]), int(entry["duration"]))
+		_log("%s inflicts %s on %s (on-hit)" % [attacker.combatant_name, str(entry["status"]), target.combatant_name])
 
 
 ## Canonical effect -> [stat, modifier] pairs, mirroring BattleManager's own names. Only the
@@ -1361,14 +1396,20 @@ const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
 ## across 7 pools, and "support" is in UTILITY_ABILITY_TYPES, which the brute and assassin AI both
 ## draw from. Mirroring it into an engine that runs hundreds of unattended battles turns a per-fight
 ## bug into a gold fountain, so the enemy side is declared in the ledger rather than copied.
-## Base rate only: _steal_success_rate also sums an equipment steal_bonus and a passive steal_chance,
-## and this file models NEITHER category at all — a broader gap than steal, declared as its own entry.
+## ⚠️ HALF of live's rate, and the other half is a RULING rather than an omission. Mirrors
+## BattleManager._steal_success_rate:5503 — `clampf(base + equip + passive, 0.0, 1.0)` — with the
+## EQUIPMENT term wired and the PASSIVE term deliberately absent: `steal_chance` is one of the 12
+## stat_mods keys in the 45-passive scoping call, declared and waiting on struktured. Wiring the
+## equipment half alone does not skew the grind the way a half-ported Speculator would, because both
+## terms ADD to the same rate: modelling one moves the number toward live, never past it.
+## RETIREMENT CONDITION: when the passives ruling lands, this composes all three and the note goes.
 func _roll_steal(caster, ability: Dictionary, targets: Array, base_rate: float) -> void:
 	var party_side: bool = _player_party.has(caster)
+	var rate: float = clampf(base_rate + _sum_equipment_special_effect(caster, "steal_bonus"), 0.0, 1.0)
 	for target in targets:
 		if target == null or not is_instance_valid(target) or not target.is_alive:
 			continue
-		if randf() >= base_rate:
+		if randf() >= rate:
 			_log("%s fails to steal from %s" % [caster.combatant_name, target.combatant_name])
 			continue
 		## BattleManager:6147 verbatim. rogue_lockward's first_steal_guaranteed and steal_response are
