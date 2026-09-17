@@ -59,41 +59,35 @@ const DECLARED := {
 	"ignores_resistance": "EXAMINED 2026-09-16 and UNREACHABLE in a grind, so deliberately not wired. Its two owners (exploit_weakness, fourth_wall_break) are cast only by meta_knight, which is in no enemy pool — and this lane's OWN extra spawn path does not reach it either: _spawn_meta_boss builds a procedural enemy with a generated name, it does not instantiate a monsters.json id. Wiring it would add a mechanism no grind can exercise, and the arm below reds if either caster becomes drawable",
 }
 
+## ⛔ THE FOUR SHAPES A PARITY GAP COMES IN. Kept here rather than lost with the entries that taught
+## them: nine keys were pruned from the list below once they landed on main, and their explanations
+## were the durable half. Someone picking up the backlog should know what they are looking FOR, not
+## only which keys are left.
+##   1. A MISSING READ — the grind never reads the key. What a key census finds, and the only shape
+##      axis 1 can see. drain_percentage, scales_with, countdown, success_rate/steals.
+##   2. A HARDCODE — the grind HAS the arm and wrote its own numbers into it. mp_restore_percent was
+##      25% where inspiring_melody authors 5%, so a grinding Bard's song restored five times what the
+##      game grants; `ap_gain`'s literal agreed with live's default by coincidence, which is exactly
+##      why it looked fine. Axis 1 scores this GREEN — both engines "read" the effect.
+##   3. AN UNCAPPED MECHANISM — already live in the grind and unbounded. absorb_amount: the
+##      unmodelled-effect else added the damage_absorb status, and Combatant.take_damage treats an
+##      absent budget meta as UNLIMITED, so a pooled 8000 HP enemy was immune and self-healing.
+##   4. NOT AN EXECUTOR KEY AT ALL — read at SELECTION time, so it has no executor to be on the wrong
+##      arm of and axis 2 skips it silently. `priority` is the first of these and there is no reason
+##      to think it is the last; selection, targeting and ordering are all outside axis 2's reach.
+##
 ## Fixed and awaiting a fold. Named so arm 4 does not red on them, and asserted by NOTHING ELSE on
 ## purpose: they are transient, and an arm that reds the moment they land would put a red in
 ## cowir-main's fold for work that succeeded. When they land the live-only set simply shrinks, which
 ## arm 4 permits silently.
+##
+## ⚠️ NO ARM KEEPS THIS LIST HONEST, and that is a property of the question rather than an omission.
+## "Has it landed" is a GIT fact — the entry stops being true when main's resolver reads the key —
+## and the suite cannot see main. From inside a run, a landed key and a key fixed locally ten minutes
+## ago are identical. So this list is pruned BY HAND at each fold, against `git show origin/main`,
+## and saying so beats a guard that would quietly answer a different question. Pruned 2026-09-16:
+## nine entries verified present in main's resolver and removed; `priority` is genuinely pending.
 const CLOSED_PENDING_FOLD := [
-	"drain_percentage",
-	"scales_with", "max_multiplier",
-	## cowir-battle's 48a70e4dd — the doom counter. It was dead in BOTH engines until today (its only
-	## setter sat in _execute_support_ability while all three abilities authoring `effect: doom` are
-	## magic or physical), and their fix wires live AND mirrors the grind in the same commit. So it
-	## stops being a gap of mine at the fold rather than becoming one.
-	"countdown",
-	## Both halves of steal, closed together because they are one mechanism authored twice: `steal`
-	## (support) reads success_rate, `mug` (physical) reads it AND `steals`. The grind resolved
-	## neither — it had zero mentions of steal — so a Rogue, whose BASE kit holds both, earned no
-	## steal-gold in a grind and the victim collected a junk status called "steal".
-	"success_rate", "steals",
-	## A DIFFERENT SHAPE from every other entry here: the grind had an arm for this effect and it
-	## HARDCODED both numbers — 25% where inspiring_melody authors 5%, so a grinding Bard's song
-	## restored five times what the game grants. Not a missing read; a read that was never written.
-	## The `ap_gain` literal agreed with live's default by coincidence, which is why it looked fine.
-	"mp_restore_percent", "ap_gain",
-	## THIRD SHAPE. Not a missing read and not a hardcode: the mechanism was ALREADY LIVE in the
-	## grind and UNCAPPED. The unmodelled-effect else added the damage_absorb status, and
-	## Combatant.take_damage treats an absent budget meta as UNLIMITED — so a POOLED 8000 HP enemy
-	## was immune and self-healing for two rounds. Live had the same bug and fixed it 2026-09-10;
-	## the grind never got the fix because it never read the key.
-	"absorb_amount",
-	## ⛔ FOURTH SHAPE, and the one that shows axis 2 has a blind spot rather than a gap. Every entry
-	## above is a key read inside a per-type EXECUTOR. `priority` is read at SELECTION time — live in
-	## _compute_action_speed:2152, the grind now in _speed_for — so it has no executor to be on the
-	## wrong arm of, and axis 2 skips it silently. quick_strike is the only author, is described
-	## "always goes first", and the grind ordered it by ordinary speed: measured, a speed-1 Ninja
-	## scored 9 against a speed-30 attacker's -25 and went LAST. Reachable ONLY by form 2 (jobs.json
-	## -> ninja); no monster authors it. Pinned in test_autogrind_priority_goes_first_regression.
 	"priority",
 ]
 
