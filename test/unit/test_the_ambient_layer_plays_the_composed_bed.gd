@@ -12,6 +12,22 @@ extends GutTest
 ## a 145-214s composed bed in assets/audio/music, a 30-40 KB sting in assets/audio/sfx. Which one
 ## _ambient_player ends up holding IS the feature, and it is one assert away.
 
+## ⚠️ WIRING THESE BEDS MADE ONE WRAP SEAM REACHABLE, AND THAT IS A DECISION @struktured HOLDS
+## RATHER THAN A BUG ANYONE SHOULD FIX UNASKED. Recorded here because the guard that proves the
+## bed plays is where the next reader lands, and the alternative was a channel message.
+##
+##     tools/audit_wrap_seams.py, masters, measured 2026-09-16:
+##       ambient_cave  +11.8 dB @100ms   margin 0.2 dB against the 12 dB threshold
+##     the tool's own note records it CROSSING at 44k (+12.2) and the shipped 40k tier (+12.1)
+##
+## The seam is not new — it has been in that file since March. What is new is that the bed now
+## PLAYS, so an ice-zone player hears a level step every 187 s, on web more than desktop. Before
+## 2026-09-16 the bed was unreachable and the seam was a property of a file nobody heard.
+##
+## ⛔ THE REPAIR IS NOT FREE AND THAT IS WHY IT IS NOT DONE: tools/crossfade_loop.py rewrites the
+## OGG, crossfading the wrap. That edits authored Suno audio, which is his call and not a lane's.
+## The other three wired beds are under the threshold and need nothing.
+
 const MUSIC_DIR := "assets/audio/music/"
 const SFX_DIR := "assets/audio/sfx/"
 const SELF_PATH := "res://test/unit/test_the_ambient_layer_plays_the_composed_bed.gd"
