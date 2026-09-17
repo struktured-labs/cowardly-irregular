@@ -695,11 +695,11 @@ func _input(event: InputEvent) -> void:
 		_nav_step(nav)
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
+	elif nav == "ui_left":
 		_nav_step("ui_left")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		_nav_step("ui_right")
 		get_viewport().set_input_as_handled()
 

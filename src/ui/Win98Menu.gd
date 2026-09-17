@@ -1886,7 +1886,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	# D-pad LEFT = confirm/accept (for left-expanding menus), back (for right-expanding)
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
+	elif nav == "ui_left":
 		if expand_left:
 			var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 			if _queue_is_full():
@@ -1909,7 +1909,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	# D-pad RIGHT = back/cancel (for left-expanding menus), confirm (for right-expanding)
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		if expand_left:
 			# RIGHT = back for left-expanding menus
 			if parent_menu:

@@ -119,3 +119,33 @@ func test_the_title_menu_steps_once_per_stick_push() -> void:
 	_push(m, "ui_down", JOY_AXIS_LEFT_Y, 1.0)
 	assert_eq(m.selected_index, 1,
 		"one push is one row — a ramp used to carry the cursor past every enabled option")
+
+
+## ─────────────────────────────────────────────────────────────────────────────────────────────
+## THE HORIZONTAL AXIS. Every conversion before this one was VERTICAL-ONLY — up/down through
+## MenuNav, left/right still raw — in six menus, and the ledger policing the migration shared the
+## blind spot exactly, because it only ever searched for ui_up/ui_down. @cowir-adhoc found it by
+## classifying every .gd rather than trusting the list.
+##
+## The horizontal half is not cosmetic. On AbilitiesMenu left/right switch TABS, rebuilding the
+## whole UI and firing menu_move per event; on BestiaryMenu left cycles the sort mode; on
+## Win98Menu they expand and back out of submenus; and on SettingsMenu's QUIT confirmation they
+## toggle Yes/No.
+
+## ⛔ NO BEHAVIOURAL ARM FOR THE HORIZONTAL AXIS, and the reason is measured rather than an
+## omission: EVERY candidate masks the burst with its own arithmetic, so an arm here would pass
+## against the unconverted code and discriminate nothing.
+##
+##   AbilitiesMenu   left/right clamp at 2 tabs      -> one step from either end, burst or not
+##   OverworldMenu   character cycles % party.size() -> 5 steps of a 2-party wrap land on 1
+##   BestiaryMenu    re-sorting refills _entries from BestiarySystem, which is EMPTY headless,
+##                   so _input's own early return eats events 2..5. PROBED, not assumed:
+##                       ev pressed=true x5, sort_idx 0 -> 1 -> 1 -> 1 -> 1
+##   Win98Menu       left/right expand submenus; a real battle is a documented headless wall
+##
+## Two such arms were written, passed against the unconverted code, and are NOT kept — a green
+## that cannot go red is worse than no arm, because the next reader counts it as coverage.
+##
+## What DOES discriminate is the ledger's raw-read scan: it searches all four directions, and
+## widening it from two is exactly what surfaced these six half-conversions. The helper's own
+## `test_a_held_vertical_does_not_swallow_a_horizontal_step` covers the latch itself.

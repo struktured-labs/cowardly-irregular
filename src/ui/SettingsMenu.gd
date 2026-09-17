@@ -1160,11 +1160,11 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	# Adjust value - allow echo for left/right to make adjusting sliders easier
-	elif event.is_action_pressed("ui_left"):
+	elif nav == "ui_left":
 		_adjust_setting(-1)
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right"):
+	elif nav == "ui_right":
 		_adjust_setting(1)
 		get_viewport().set_input_as_handled()
 
@@ -2075,7 +2075,10 @@ func _show_quit_confirmation() -> void:
 		# Left/Right toggled selection per echo; holding Enter could call
 		# do_quit/close repeatedly, double-emitting quit_to_title and
 		# double-queue_free'ing the confirm dialog.
-		if (event.is_action_pressed("ui_left") or event.is_action_pressed("ui_right")) and not event.is_echo():
+		# ⛔ THE 2026-04-30 ECHO FIX WAS HALF: ui_left/ui_right also bind the left stick's X axis,
+		# and an axis carries no echo flag — a nudge toggled Yes/No ~5 times on the QUIT dialog.
+		var confirm_nav := MenuNav.step(event)
+		if confirm_nav == "ui_left" or confirm_nav == "ui_right":
 			sel = 1 - sel
 			changed = true
 		elif event.is_action_pressed("ui_accept") and not event.is_echo():
