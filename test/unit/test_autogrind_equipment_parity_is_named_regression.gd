@@ -26,21 +26,33 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 ##       `autobattle_advanced`. The discriminator below is structural: a line of the form
 ##       `"key": value` is a dict-literal ENTRY, never a read.
 
-## Real live behaviour the grind does not model. Each is read in BattleManager through
-## _sum_equipment_special_effect or an equivalent lookup, verified line by line rather than by count.
+## Real live behaviour the grind does not model: ALL FIFTEEN gear effects equipment.json authors.
 ## This set may SHRINK freely — that is someone closing a gap — but it may not GROW unnamed.
 const GRIND_IGNORES := [
-	"critical_bonus", "evasion_bonus", "exp_while_dead", "familiar_weight_bonus",
-	"poison_chance", "sleep_chance", "status_resistance", "steal_bonus",
+	"critical_bonus", "dark_damage_bonus", "dark_resistance", "evasion_bonus", "exp_while_dead",
+	"familiar_weight_bonus", "fire_damage_bonus", "fire_resistance", "holy_damage_bonus",
+	"ice_damage_bonus", "lightning_damage_bonus", "poison_chance", "sleep_chance",
+	"status_resistance", "steal_bonus",
 ]
 
-## Authored on gear a player can buy or find, and consumed by NOTHING anywhere in src/. Not a grind
-## gap — a live one, and the same class as the resist_ring: an authored number with no reader.
-## Pinned so that wiring one reds here and is noticed, rather than silently leaving this list wrong.
-const INERT_EVERYWHERE := [
-	"dark_damage_bonus", "dark_resistance", "fire_damage_bonus", "fire_resistance",
-	"holy_damage_bonus", "ice_damage_bonus", "lightning_damage_bonus",
-]
+## ⛔ THE THIRD SHAPE, AND I PUBLISHED A WRONG FINDING BEFORE @cowir-battle CORRECTED IT.
+## This file first listed seven of the above as INERT_EVERYWHERE — "authored on gear a player can buy,
+## consumed by nothing" — and had an ARM asserting it. The arm passed. It was false.
+##   1. MISSING READ   the key is nowhere. What a literal search finds.
+##   2. DATA COPY      the key appears in a .gd as `"key": value` — EquipmentSystem's hardcoded
+##                     fallback copy of equipment.json. Looks consumed, is not. Discriminator below.
+##   3. DERIVED KEY    the consumer never spells the key:
+##                       BattleManager.gd:5080  _sum_equipment_special_effect(caster, element + "_damage_bonus")
+##                       Combatant.gd:993       var key: String = element + "_resistance"
+##                       BattleScene.gd:111     key.ends_with("_damage_bonus")
+##                     Four of the five *_damage_bonus keys occur ZERO times in src/ and are fully
+##                     consumed. flame_sword/ice_blade/holy_staff/thunder_rod/bone_staff and
+##                     bone_armor/dragon_mail all land their values.
+## 🔑 Shape 3 is the one where WIDENING THE CORPUS MOVES YOU FURTHER FROM THE ANSWER — a bigger sweep
+## adds only more data copies and comments, and the structural discriminator rejects all of them
+## CORRECTLY on its way to the wrong verdict. A literal census cannot answer "is this consumed"; only
+## reading the consumer can. The suffix guard below is why this file's GRIND-side zero survives it.
+const DERIVED_KEY_SUFFIXES := ["_damage_bonus", "_resistance"]
 
 ## Assessed and deliberately not modelled. Empty today and kept so the next reader has somewhere to
 ## put a reason instead of deleting an entry from the list above.
@@ -138,8 +150,6 @@ func test_every_authored_gear_effect_is_named_here() -> void:
 	var known: Dictionary = {}
 	for k in GRIND_IGNORES:
 		known[k] = true
-	for k in INERT_EVERYWHERE:
-		known[k] = true
 	for k in DECLARED:
 		known[k] = true
 	var authored: Array = _authored_effect_keys()
@@ -148,22 +158,29 @@ func test_every_authored_gear_effect_is_named_here() -> void:
 	for k in authored:
 		if not known.has(k):
 			unnamed.append(k)
-	gut.p("    authored gear effects: %d | grind ignores: %d | inert: %d" % [authored.size(), GRIND_IGNORES.size(), INERT_EVERYWHERE.size()])
+	gut.p("    authored gear effects: %d | named here: %d" % [authored.size(), GRIND_IGNORES.size() + DECLARED.size()])
 	assert_eq(unnamed, [],
-		"a gear effect is authored and named nowhere in this file: %s — add it to GRIND_IGNORES, INERT_EVERYWHERE, or DECLARED with a reason" % str(unnamed))
+		"a gear effect is authored and named nowhere in this file: %s — add it to GRIND_IGNORES, or to DECLARED with a reason" % str(unnamed))
 
 
-func test_the_inert_ones_really_have_no_consumer_anywhere() -> void:
-	## A live finding, kept honest. If someone wires one of these, this reds and the entry moves —
-	## which is the point: the list must not quietly become wrong in the direction of "still broken".
-	var files: Array = _gd_files()
-	var now_consumed: Array = []
-	for k in INERT_EVERYWHERE:
-		var hits: Array = _consumer_lines(k, files)
-		if not hits.is_empty():
-			now_consumed.append("%s <- %s" % [k, hits[0]])
-	assert_eq(now_consumed, [],
-		"a gear effect listed as consumed by nothing now has a reader — move it out of INERT_EVERYWHERE: %s" % str(now_consumed))
+func test_the_grind_models_no_gear_effect_even_by_a_derived_key() -> void:
+	## ⛔ THE ARM THAT SURVIVES SHAPE 3. My grind-side claim is a ZERO over literals, and a literal
+	## zero is exactly what a derived-key consumer looks like — which is how I got live's side wrong.
+	## So this checks the grind for the CONSTRUCTION too: no concatenated suffix, no suffix scan.
+	var grind: String = GdSource.code_of(GRIND)
+	assert_gt(grind.length(), 10000, "CONTROL: the resolver was actually read")
+	var derived: Array = []
+	for suffix in DERIVED_KEY_SUFFIXES:
+		if grind.contains('"%s"' % suffix) or grind.contains("_sum_equipment_special_effect"):
+			derived.append(suffix)
+	assert_eq(derived, [],
+		"the resolver now builds a gear-effect key by construction, so the literal census above is blind to it — the same shape that made this file's first version publish a wrong finding: %s" % str(derived))
+	var equipment_reads: Array = []
+	for probe in ["special_effects", "get_weapon(", "get_armor(", "get_accessory("]:
+		if grind.contains(probe):
+			equipment_reads.append(probe)
+	assert_eq(equipment_reads, [],
+		"the resolver now reads equipment somehow — good, but this file's 'models none' claim is stale and must be re-derived rather than left standing: %s" % str(equipment_reads))
 
 
 func test_the_grind_side_gap_is_real_and_not_a_bad_pattern() -> void:
