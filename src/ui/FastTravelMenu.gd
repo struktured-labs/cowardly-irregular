@@ -46,6 +46,16 @@ var current_map_id: String = "overworld"
 var _rows: Array = []              # {id, label, spawn, cost, affordable}
 var _selected: int = 0
 var _highlight_refs: Array = []
+
+## Rows were added to the panel at an absolute y with nothing clipping or scrolling, so past the
+## ~16 that fit they drew OUTSIDE the panel while the cursor walked off with them — and the
+## subtitle advertises L/R paging, which jumps ten rows at a time into exactly that region.
+## 32 crystals are activatable (13 villages + 9 dungeons + 10 overworlds).
+## TeleportMenu renders the same destination list through a ScrollContainer; this is that.
+var _scroll: ScrollContainer
+var _content: Control
+var _row_y: Array = []
+var _viewport_height: float = 0.0
 var _cursor_refs: Array = []
 
 
@@ -140,12 +150,25 @@ func _build_ui() -> void:
 		panel.add_child(empty)
 		return
 
-	var y: float = 60.0
+	_scroll = ScrollContainer.new()
+	_scroll.position = Vector2(16, 60)
+	_scroll.size = Vector2(panel.size.x - 32, panel.size.y - 68)
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	panel.add_child(_scroll)
+	_viewport_height = _scroll.size.y
+
+	_content = Control.new()
+	_content.custom_minimum_size = Vector2(_scroll.size.x, _rows.size() * ROW_HEIGHT)
+	_scroll.add_child(_content)
+
+	_row_y.clear()
+	var y: float = 0.0
 	for i in range(_rows.size()):
 		var row = _rows[i]
 		var item = Control.new()
-		item.position = Vector2(16, y)
-		item.size = Vector2(panel.size.x - 32, ROW_HEIGHT - 2)
+		item.position = Vector2(0, y)
+		item.size = Vector2(_scroll.size.x, ROW_HEIGHT - 2)
 		item.mouse_filter = Control.MOUSE_FILTER_STOP
 
 		var hl = ColorRect.new()
@@ -181,9 +204,10 @@ func _build_ui() -> void:
 		MenuMouseHelper.make_clickable(item, i, int(item.size.x), ROW_HEIGHT - 2,
 			_on_row_click.bind(i), _on_row_hover.bind(i))
 
-		panel.add_child(item)
+		_content.add_child(item)
 		_highlight_refs.append(hl)
 		_cursor_refs.append(cursor)
+		_row_y.append(y)
 		y += ROW_HEIGHT
 
 	_update_selection()
@@ -224,6 +248,23 @@ func _update_selection() -> void:
 	for i in range(_highlight_refs.size()):
 		_highlight_refs[i].color = SELECTED_COLOR if i == _selected else Color.TRANSPARENT
 		_cursor_refs[i].text = "▶ " if i == _selected else "  "
+	_scroll_selection_into_view()
+
+
+## Keep the selected crystal on screen. Without this, L/R paging moves the cursor ten rows into
+## territory the panel does not show.
+func _scroll_selection_into_view() -> void:
+	if _scroll == null or not is_instance_valid(_scroll):
+		return
+	if _selected < 0 or _selected >= _row_y.size():
+		return
+	var row_y: float = _row_y[_selected]
+	var view_top: float = _scroll.scroll_vertical
+	var view_bot: float = view_top + _viewport_height - ROW_HEIGHT
+	if row_y < view_top:
+		_scroll.scroll_vertical = int(row_y)
+	elif row_y > view_bot:
+		_scroll.scroll_vertical = int(row_y - _viewport_height + ROW_HEIGHT)
 
 
 func _pick() -> void:
