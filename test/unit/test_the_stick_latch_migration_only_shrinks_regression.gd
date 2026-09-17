@@ -37,7 +37,6 @@ const RAW_READS := [
 
 ## Measured 2026-09-16. Shrinks only.
 const KNOWN_UNCONVERTED := [
-	"res://src/cutscene/CutsceneDialogue.gd",
 	"res://src/exploration/ReadableProp.gd",
 	"res://src/ui/BossSelectorMenu.gd",
 	"res://src/ui/PartyStatusScreen.gd",
