@@ -52,6 +52,12 @@ static func current_world_suffix() -> String:
 
 
 ## NPC twin of job_asset_path: <archetype>/overworld_<world>.png when it exists, else the base.
+## ⛔ THE PATH IS THE ROUTE; the manifest entry is the LEDGER. 145 overworld_npc_sheets entries
+## exist and the art is live — an archetype renders because its PNG sits at the conventional path,
+## not because it is registered. The section was declared "an audit ledger, not a route" in
+## _section_provenance until 2026-09-16, when overworld_walk_rows() gave it a real reader for the
+## walk-row order and that declaration expired. The durable half is this: registering art here
+## attributes it; putting the file at this path is what makes it appear.
 static func npc_overworld_path(archetype: String) -> String:
 	var suffix := world_suffix()
 	if suffix != "" and suffix != "medieval":
