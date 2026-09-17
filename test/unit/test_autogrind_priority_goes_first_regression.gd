@@ -185,6 +185,54 @@ func test_the_real_selection_path_carries_the_priority_all_the_way() -> void:
 		"through the REAL selection path the priority action did not outrank a faster combatant's — the helper is right and the path is not")
 
 
+func test_a_priority_ability_queued_by_advance_still_goes_first() -> void:
+	## ⛔ THE UNSTATED PRECONDITION, taken from @cowir-music: the sort reads `a.get("speed", 0)`, so a
+	## selection path that appends an action WITHOUT calling _speed_for scores 0 silently and loses its
+	## priority. Four separate lines set it today and no arm mentioned any of them — "correct because
+	## of a property of a line none of them names" is their sentence for it.
+	## The ADVANCE path (raw.size() > 1) is a SECOND route for this feature, and the end-to-end arm
+	## above only drove the first, so this asserts the outcome there and the precondition everywhere.
+	var abs_node = _res._get_autoload("AutobattleSystem")
+	assert_ne(abs_node, null, "CONTROL: AutobattleSystem must be reachable, or this arm proves nothing")
+	abs_node._test_disable_persistence = true
+	var ninja := _hero("Ninja", 1)
+	ninja.learned_abilities.append("quick_strike")
+	ninja.current_ap = 4
+	var speedster := _hero("Speedster", 30)
+	abs_node.set_character_script("ninja", {"rules": [
+		{"conditions": [], "actions": [
+			{"type": "ability", "id": "quick_strike", "target": "lowest_hp_enemy"},
+			{"type": "ability", "id": "quick_strike", "target": "lowest_hp_enemy"},
+		]}
+	]})
+	_res._player_party = [ninja, speedster]
+	_res._enemy_party = [_hero("Foe", 5)]
+	var actions: Array = _res._selection_phase()
+
+	## The precondition, asserted rather than assumed: nothing reaching the sort may lean on its default.
+	var speedless: Array = []
+	for a in actions:
+		if not a.has("speed"):
+			speedless.append(str(a.get("type", "?")))
+	assert_gt(actions.size(), 2, "CONTROL: the ninja must have queued more than one action, or the Advance path never ran")
+	assert_eq(speedless, [],
+		"an action reached the sort with no `speed` key, so it scores 0 from the default and any priority on it is lost: %s" % str(speedless))
+
+	var queued: Array = []
+	for a in actions:
+		if a.get("combatant") == ninja and str(a.get("ability_id", "")) == "quick_strike":
+			queued.append(int(a.get("speed", 0)))
+	var other: int = 0
+	for a in actions:
+		if a.get("combatant") == speedster:
+			other = int(a.get("speed", 0))
+	gut.p("    advance-queued quick_strikes: %s   speedster: %d" % [str(queued), other])
+	assert_gt(queued.size(), 1, "CONTROL: both queued casts must be present, or this is the single-action path again")
+	for q in queued:
+		assert_lt(q, other,
+			"a priority ability queued through ADVANCE did not outrank a faster combatant's ordinary action — the offset is applied on one selection path and not the other")
+
+
 const _FLOOR_ARM_NAME := "test_every_resolver_member_this_file_reaches_still_exists"
 const _PINNED_MEMBERS := ["_ability_has_priority", "_enemy_party", "_get_autoload", "_player_party", "_selection_phase", "_speed_for"]
 
