@@ -159,8 +159,11 @@ func test_every_scene_the_theater_hides_is_declared_here() -> void:
 
 
 ## The reciprocal pin: the status column is only worth having if it cannot quietly become a lie.
-## Comments are stripped first — MapleHeightsVillage.gd names world2_maple_heights_npcs in PROSE,
-## recording a voice migrated off it, and a raw scan counts that as a caller.
+## ⚠️ WHAT EXCLUDES PROSE HERE IS THE QUOTED FORM, NOT THE STRIP. MapleHeightsVillage.gd:323
+## names world2_maple_heights_npcs in a comment, UNQUOTED, recording a voice migrated off it.
+## MEASURED 2026-09-16: swap code_of() for a raw read and all four arms stay green, so the strip
+## is belt-and-braces against a quoted id inside a comment — a shape src/ does not contain today.
+## The first version of this header claimed the strip was what caught it; the mutation said no.
 func test_every_status_in_the_roster_still_holds() -> void:
 	var blob := _src_code_blob()
 	assert_gt(blob.length(), 200000, "src/ looks truncated: %d chars of code" % blob.length())
