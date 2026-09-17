@@ -99,7 +99,11 @@ func test_the_members_this_file_reaches_still_exist() -> void:
 	## (test_sfx_volume_reaches_all_players_regression.gd:158) and it is in a file with no floor. So
 	## this is NOT a defence against a live hazard — it is a precondition that announces itself the
 	## day someone adopts the style here, which costs one assert instead of an alias-aware parser.
-	assert_false(RegEx.create_from_string("(var|const)\\s+\\w+\\s*:?=\\s*SoundManager\\s*$").search(code) != null,
+	## ⛔ `(?m)` IS LOAD-BEARING. Without it `$` anchors at END OF STRING, not end of line, so
+	## this pattern could only ever match an alias on the file's LAST line — the assert was vacuous
+	## and the mutation that should have redded it passed EC=0. Found by planting `var sm :=
+	## SoundManager` rather than by reading the regex.
+	assert_false(RegEx.create_from_string("(?m)^[\\t ]*(var|const)[\\t ]+\\w+[\\t ]*:?=[\\t ]*SoundManager[\\t ]*$").search(code) != null,
 		"this file now binds an alias to SoundManager — the derivation above reads `SoundManager.<name>` only, so reaches through that alias are NOT in the floor and it is quietly guarding less than it claims")
 	assert_gt(methods.size(), 1, "CONTROL: derived %d method reaches" % methods.size())
 	assert_gt(props.size(), 0, "CONTROL: derived %d property reaches" % props.size())
