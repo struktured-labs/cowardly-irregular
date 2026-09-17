@@ -290,3 +290,49 @@ func test_turning_does_not_move_the_avatar() -> void:
 	assert_gt(drifted, 0,
 		("ANTI-VACUITY: none of the probed jobs was off-centre at all, so the correction was proved "
 		+ "on nothing — 9 of 14 job sheets drifted when this was written, worst 1.75px"))
+
+
+## ⛔ THE PLAYER'S FACING ROWS COME FROM THE DECLARATION, like the roaming monsters'.
+##
+## OverworldPlayer hardcoded [DOWN, LEFT, RIGHT, UP] while RoamingMonster read its rows from the
+## manifest. All 53 shipped sheets use that order today, so nothing renders wrong — the ASYMMETRY
+## is the defect: one consumer deriving and one guessing disagree only for the sheet that would
+## have needed the fix, which is cowir-cutscenes' rule and the reason I went looking.
+func test_the_players_walk_rows_come_from_the_manifest() -> void:
+	var m = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+	assert_true(m is Dictionary, "sprite_manifest.json must parse")
+	var node: Dictionary = (m as Dictionary).get("overworld_player_sheets", {})
+	assert_gt(node.size(), 10, "ANTI-VACUITY: only %d player sheets declared" % node.size())
+
+	var checked := 0
+	for job in node:
+		var anims = (node[job] as Dictionary).get("animations", {})
+		if not (anims is Dictionary) or anims.is_empty():
+			continue
+		var rows: Dictionary = Loader.overworld_player_rows(str(job))
+		for name in anims:
+			if not rows.has(name):
+				continue
+			assert_eq(int(rows[name]), int((anims[name] as Dictionary).get("row", -1)),
+				"%s's %s row must come from its declaration, not from a constant" % [job, name])
+			checked += 1
+	assert_gt(checked, 40, "ANTI-VACUITY: only %d declared rows were compared" % checked)
+
+	# An unregistered job keeps the convention — absence must never refuse a sheet.
+	var fallback: Dictionary = Loader.overworld_player_rows("__no_such_job__")
+	assert_eq(int(fallback["walk_left"]), 1, "an unregistered job keeps the documented row order")
+	assert_eq(int(fallback["walk_up"]), 3, "...including the up row")
+
+
+## ⚠️ AND THE SOURCE HALF, because the accessor being CORRECT does not mean the consumer CALLS it.
+## The behavioural arm above cannot tell the two apart: every shipped sheet declares the same
+## order the constant encoded, so a player still reading the constant passes it. Same shape as the
+## roaming-monster guard — the proof is a PAIR, and this is the half that discriminates.
+func test_the_player_no_longer_carries_a_hardcoded_row_order() -> void:
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+	var code: String = GdSource.code_of("res://src/exploration/OverworldPlayer.gd")
+	assert_gt(code.length(), 1000, "PRECONDITION: OverworldPlayer must be readable and stripped")
+	assert_true(code.contains("HybridSpriteLoader.overworld_player_rows("),
+		"the row order must be read from the manifest owner")
+	assert_false(code.contains("[Direction.DOWN, Direction.LEFT, Direction.RIGHT, Direction.UP]"),
+		"the hardcoded row order is the constant this change replaced")

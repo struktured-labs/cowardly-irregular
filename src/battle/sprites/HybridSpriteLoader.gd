@@ -126,6 +126,40 @@ static func overworld_frame_size(job_id: String) -> Vector2i:
 ##
 ## Returns convention defaults for an unregistered monster — the section is an audit ledger for
 ## art the runtime also reaches by path convention, so absence must not refuse a sheet.
+## The walk-row order DECLARED per job, falling back to the documented convention.
+##
+## OverworldPlayer hardcoded [DOWN, LEFT, RIGHT, UP] while RoamingMonster reads its rows from the
+## manifest. Every shipped sheet agrees with that order today — 53 of 53, pinned by
+## test_a_walk_sheet_declares_the_facing_its_pixels_show — so this is LATENT. The asymmetry is the
+## defect: one consumer deriving and one guessing is worse than both guessing, because the two
+## disagree only for the sheet that would have needed the fix.
+##
+## ⛔ FALLS BACK WHOLESALE, not per key. A declaration that maps two directions onto one row is
+## incoherent rather than partially useful, and half-applying it would face the player two ways at
+## once — worse than the convention it replaced.
+static func overworld_player_rows(job_id: String) -> Dictionary:
+	_load_manifest()
+	var convention := {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}
+	var entry = _overworld_player_sheets.get(job_id, {})
+	if not (entry is Dictionary):
+		return convention
+	var anims = (entry as Dictionary).get("animations", {})
+	if not (anims is Dictionary):
+		return convention
+	var out := {}
+	var seen := {}
+	for name in convention:
+		var a = (anims as Dictionary).get(name, {})
+		if not (a is Dictionary) or not (a as Dictionary).has("row"):
+			return convention
+		var row := int((a as Dictionary)["row"])
+		if row < 0 or seen.has(row):
+			return convention
+		seen[row] = true
+		out[name] = row
+	return out
+
+
 static func overworld_monster_geometry(monster_id: String) -> Dictionary:
 	_load_manifest()
 	var out := {"frame": Vector2i(32, 32), "cols": 4, "rows": {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}}
