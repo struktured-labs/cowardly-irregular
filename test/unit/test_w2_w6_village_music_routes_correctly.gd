@@ -105,13 +105,27 @@ func test_manifest_actually_has_each_village_track() -> void:
 			"music_manifest.json must have entry %s — that's the track the village_location helper plays" % manifest_quoted)
 
 
-func test_w1_main_harmonia_village_keeps_default_music() -> void:
-	# Negative pin: the Harmonia village must NOT override
-	# _get_music_area_id. It IS the medieval village; the default
-	# "village" key correctly routes to Harmonia music.
+## INVERTED 2026-09-17. This pinned the OPPOSITE — that Harmonia must NOT override — and its
+## stated reason was "the default 'village' key correctly routes to Harmonia music". That was the
+## defect: ONE dispatcher arm served both "village" and "harmonia_village", so Eldertree,
+## Frosthold, Grimhollow, Ironhaven and Sandrift all wore the capital's theme while the authored
+## village_medieval.ogg was reachable only when harmonia's file was MISSING.
+## The arms are split now, so the relationship is the assertion: the default resolves to the
+## world's generic, and Harmonia names its own. A guard that pinned the old coincidence would
+## keep the capital's bed on five villages that are not the capital.
+func test_harmonia_names_its_own_bed_and_the_default_does_not() -> void:
 	var harmonia := _read("res://src/maps/villages/HarmoniaVillage.gd")
-	assert_false(harmonia.contains("func _get_music_area_id()"),
-		"HarmoniaVillage must NOT override _get_music_area_id — the default 'village' key already maps to Harmonia's medieval music in SoundManager")
+	assert_true(harmonia.contains("func _get_music_area_id()"),
+		"HarmoniaVillage MUST override _get_music_area_id now — the default 'village' resolves to the world's GENERIC bed, so without an override the capital silently loses its signature theme")
+	assert_true(harmonia.contains("\"harmonia_village\""),
+		"HarmoniaVillage's override must return \"harmonia_village\" — the id the dispatcher routes to _start_village_location_music(\"harmonia\", …)")
+
+	## And the two keys must reach DIFFERENT places, or the override is decorative.
+	var sm := _read(SOUND_MANAGER)
+	assert_false(sm.contains("\"village\", \"harmonia_village\":"),
+		"the dispatcher has merged \"village\" and \"harmonia_village\" back onto one arm — that is the original defect, and every non-capital village returns to Harmonia's bed")
+	assert_true(sm.contains("\"harmonia_village\":"),
+		"the dispatcher must carry its own \"harmonia_village\" arm, or HarmoniaVillage's override resolves nowhere")
 
 
 func test_sub_villages_route_to_their_own_theme() -> void:
