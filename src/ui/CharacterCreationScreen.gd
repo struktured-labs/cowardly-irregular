@@ -54,6 +54,10 @@ var _confirm_button: Label = null
 var _skip_button: Label = null
 var _input_blocked: bool = false
 var _name_editing: bool = false
+## What the name was when the grid opened, so clearing it and confirming restores rather than blanks.
+var _name_before_edit: String = ""
+## Last-resort floor when even the prior name was empty (a save authored before this guard).
+const DEFAULT_NAME := "Hero"
 var _name_grid: Control = null
 var _name_cursor_x: int = 0
 var _name_cursor_y: int = 0
@@ -728,6 +732,8 @@ func _find_color_index(color: Color, presets: Array[Color]) -> int:
 
 func _start_name_editing() -> void:
 	"""Start editing name with letter grid (FF-style)"""
+	var _cur = party_customizations[current_character_index] if current_character_index < party_customizations.size() else null
+	_name_before_edit = str(_cur.name) if _cur != null else ""
 	_name_editing = true
 	_name_cursor_x = 0
 	_name_cursor_y = 0
@@ -931,6 +937,12 @@ func _update_name_display_in_grid() -> void:
 
 func _close_name_grid() -> void:
 	"""Close the name editing grid"""
+	# ⛔ A NAME CAN BE BACKSPACED TO NOTHING: both deletion paths guard `length() > 0`, which stops at
+	# zero rather than at one, and _confirm_creation emits with no validation. A nameless PC reaches
+	# AutobattleSystem._get_character_id as "" — and every empty-named PC shares that one id.
+	var current = party_customizations[current_character_index] if current_character_index < party_customizations.size() else null
+	if current != null and str(current.name).strip_edges() == "":
+		current.name = _name_before_edit if _name_before_edit != "" else DEFAULT_NAME
 	_name_editing = false
 	if _name_grid:
 		_name_grid.queue_free()
