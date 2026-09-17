@@ -7,6 +7,18 @@ class_name HeadlessBattleResolver
 const MAX_ROUNDS = 50
 const ACTION_SPEEDS = {"attack": 5, "ability": 10, "item": 8, "defend": 0, "defer": 0}
 
+## Twin of BattleManager.PRIORITY_OFFSET — same name, same value, same meaning: SUBTRACTED from a
+## priority action's speed so it outruns the queue while priority actions still sort against each
+## other. The two are independent declarations BY CONSTRUCTION and must agree in VALUE, not in type:
+## live's is a float on a scale of `base - speed*0.5` plus CTB jitter, this one an int on `base -
+## speed`, which is twice as sensitive to speed — so live's "larger than any reachable speed_value"
+## does NOT transfer and was re-derived here. Measured 2026-09-16: max authored job speed 18 (ninja),
+## max level multiplier 4.92 (Combatant.gd:1634, +4%/level to job_level 99) -> ~88; monsters cap at
+## 30 authored. 1000 keeps a ~10x margin on the grind's own scale.
+## RETIREMENT CONDITION: the day the grind adopts live's speed formula (halved speed + jitter), the
+## two consts collapse into one and this note goes with them.
+const PRIORITY_OFFSET: int = 1000
+
 ## Formation definitions (mirrored from BattleCommandMenu.FORMATIONS)
 const FORMATIONS = [
 	{"id": "four_heroes", "required_jobs": ["fighter", "cleric", "mage", "rogue"], "min_members": 4, "ap_cost": 2},
@@ -355,7 +367,22 @@ func _selection_phase() -> Array[Dictionary]:
 
 func _speed_for(action: Dictionary, combatant) -> int:
 	var base = ACTION_SPEEDS.get(action.get("type", "attack"), 5)
-	return base - combatant.speed
+	var speed_value: int = base - combatant.speed
+	## quick_strike is the only author, is described "always goes first", and the grind sorted it by
+	## ordinary speed — so a grinding Ninja's signature move landed mid-queue.
+	if _ability_has_priority(str(action.get("ability_id", ""))):
+		speed_value -= PRIORITY_OFFSET
+	return speed_value
+
+
+## True when the ability authors `priority` — read at SELECTION time, so it has no executor arm.
+func _ability_has_priority(ability_id: String) -> bool:
+	if ability_id == "":
+		return false
+	var js = _get_autoload("JobSystem")
+	if not js or not js.has_method("get_ability"):
+		return false
+	return bool(js.get_ability(ability_id).get("priority", false))
 
 
 ## Check status effects that skip a combatant's turn.

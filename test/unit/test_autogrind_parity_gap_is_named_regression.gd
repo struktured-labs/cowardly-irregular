@@ -47,6 +47,15 @@ const DECLARED := {
 	"summon_message": "battle-log flavour for a spawn the grind does not perform",
 	"corruption_risk": "SAVE corruption from meta abilities during automated play is a stakes ruling (CLAUDE.md: 'save corruption: actual mechanic, not just flavor'), not a parity repair",
 	"corruption_amount": "see corruption_risk — same stakes ruling",
+	## Same presentation class as `name`/`description`, but it earned a measurement rather than an
+	## assumption: the comment at BattleManager.gd:6219 says it threads through "so BattleScene's
+	## THREAT_CLASS_BUFFS visual can key off it", and that consumer is REAL — BattleScene.gd:278
+	## declares it, :4789 reads it off the buff. Combatant.add_buff stores the tag under "class" and
+	## the stat path (get_buffed_stat, :746) keys on buff["stat"], never on "class". Measured
+	## 2026-09-16: THREE sites touch the key in all of src/ — two writes in Combatant.gd and one read
+	## in BattleScene.gd. So it is inert to combat math in BOTH engines, and the grind, which renders
+	## nothing, is correct to ignore it. The day a fourth site appears in a math path, this is a lie.
+	"threat_class": "presentation only — the stored tag's ONLY reader in src/ is BattleScene's visual (:4789); the stat path keys on buff[\"stat\"], and the grind renders nothing",
 	"ignores_resistance": "EXAMINED 2026-09-16 and UNREACHABLE in a grind, so deliberately not wired. Its two owners (exploit_weakness, fourth_wall_break) are cast only by meta_knight, which is in no enemy pool — and this lane's OWN extra spawn path does not reach it either: _spawn_meta_boss builds a procedural enemy with a generated name, it does not instantiate a monsters.json id. Wiring it would add a mechanism no grind can exercise, and the arm below reds if either caster becomes drawable",
 }
 
@@ -78,14 +87,21 @@ const CLOSED_PENDING_FOLD := [
 	## was immune and self-healing for two rounds. Live had the same bug and fixed it 2026-09-10;
 	## the grind never got the fix because it never read the key.
 	"absorb_amount",
+	## ⛔ FOURTH SHAPE, and the one that shows axis 2 has a blind spot rather than a gap. Every entry
+	## above is a key read inside a per-type EXECUTOR. `priority` is read at SELECTION time — live in
+	## _compute_action_speed:2152, the grind now in _speed_for — so it has no executor to be on the
+	## wrong arm of, and axis 2 skips it silently. quick_strike is the only author, is described
+	## "always goes first", and the grind ordered it by ordinary speed: measured, a speed-1 Ninja
+	## scored 9 against a speed-30 attacker's -25 and went LAST. Reachable ONLY by form 2 (jobs.json
+	## -> ninja); no monster authors it. Pinned in test_autogrind_priority_goes_first_regression.
+	"priority",
 ]
 
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
 	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
-	"meta_effect", "priority", "recoil_pct",
-	"threat_class",
+	"meta_effect", "recoil_pct",
 ]
 
 ## ⛔ THE THIRD STATE, and it exists because I published a backlog number my instrument could not
@@ -260,6 +276,12 @@ const GRIND_PATH_MARKER := {
 	"mp_restore_percent": "ability.get(\"mp_restore_percent\"",
 	"ap_gain": "ability.get(\"ap_gain\"",
 	"absorb_amount": "ability.has(\"absorb_amount\")",
+	## ⚠️ MAPPED BUT OUT OF AXIS 2'S REACH, and recorded here because this map's contract is to cover
+	## every key both engines read. Live reads `priority` in _compute_action_speed, which is not a
+	## per-type executor, so _live_executor_of returns "" and the arm above `continue`s past it. That
+	## is correct — a selection-time key has no executor arm to sit on the wrong one of — but an
+	## absent entry would read as "nobody wired it" rather than "axis 2 does not apply".
+	"priority": "_ability_has_priority(",
 }
 
 ## Read by both engines, live-confined to one executor, and NOT path-assessed by me. They are here
