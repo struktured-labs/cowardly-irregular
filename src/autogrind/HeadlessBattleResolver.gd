@@ -744,6 +744,35 @@ func _execute_action(action: Dictionary) -> void:
 			pass  # Already executed during selection phase
 
 
+## Twin of BattleManager._sum_equipment_special_effect (:5434). Walks the three equipment slots and
+## sums the requested key, returning 0.0 cleanly when the combatant has no gear, the autoload is
+## absent, or the key is unauthored. A grinding party's gear did NOTHING before this: the resolver
+## read 0 of the 15 keys equipment.json authors, so the grind reported survivability and rewards for
+## a party wearing no equipment effects at all.
+## ⚠️ Four of the fifteen keys are read in live by CONSTRUCTION (element + "_damage_bonus"), so a
+## literal census of either engine under-reports them — @cowir-battle's third shape, which is why
+## this helper takes the key as an argument rather than matching names.
+func _sum_equipment_special_effect(combatant, key: String) -> float:
+	if combatant == null or not is_instance_valid(combatant):
+		return 0.0
+	var es = _get_autoload("EquipmentSystem")
+	if es == null:
+		return 0.0
+	var total: float = 0.0
+	for slot in [["equipped_weapon", "get_weapon"], ["equipped_armor", "get_armor"], ["equipped_accessory", "get_accessory"]]:
+		var field: String = str(slot[0])
+		var getter: String = str(slot[1])
+		if not (field in combatant) or str(combatant.get(field)) == "":
+			continue
+		if not es.has_method(getter):
+			continue
+		var piece: Dictionary = es.call(getter, str(combatant.get(field)))
+		var se: Variant = piece.get("special_effects", {})
+		if se is Dictionary:
+			total += float((se as Dictionary).get(key, 0.0))
+	return total
+
+
 func _resolve_attack(attacker, target) -> int:
 	if not target or not target.is_alive:
 		return 0
@@ -778,6 +807,12 @@ func _resolve_attack(attacker, target) -> int:
 	if randf() < miss_chance:
 		_log("%s misses %s!" % [attacker.combatant_name, target.combatant_name])
 		return 0
+	## equipment evasion_bonus is a SEPARATE roll in live (BattleManager:9106), not folded into the
+	## miss chance — elven_cloak plus a passive gives two independent chances to dodge. Same clamp.
+	var equip_dodge: float = clampf(_sum_equipment_special_effect(target, "evasion_bonus"), 0.0, 0.50)
+	if equip_dodge > 0.0 and randf() < equip_dodge:
+		_log("%s evades %s's attack!" % [target.combatant_name, attacker.combatant_name])
+		return 0
 
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
 	## ONE-SHOT, consumed as live consumes it (BattleManager:4374-4377) — a charged strike pays off
@@ -788,7 +823,11 @@ func _resolve_attack(attacker, target) -> int:
 	## SHADOW_STEP on the ATTACKER: a guaranteed crit live (_calculate_crit_chance returns 1.0 up
 	## front). The Ninja's whole setup move is "step into the shadows so the next swing crits", and
 	## in a grind it bought nothing at all.
-	var crit_chance = min(0.50, 0.05 + attacker.speed * 0.01)
+	## equipment critical_bonus, clamped at 0.50 on its own and then folded in UNDER the same total
+	## cap live applies (BattleManager:5423 caps base+speed+passive+equip+buff at 0.50) — added after
+	## the min would let gear exceed a ceiling live never lets it cross.
+	var equip_crit: float = clampf(_sum_equipment_special_effect(attacker, "critical_bonus"), 0.0, 0.50)
+	var crit_chance = min(0.50, 0.05 + attacker.speed * 0.01 + equip_crit)
 	var is_crit = randf() < crit_chance
 	if attacker.has_status("shadow_step"):
 		is_crit = true
@@ -1213,7 +1252,18 @@ func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: Stri
 	if effect == "":
 		return
 	var chance: float = float(ability.get("effect_chance", 1.0 if effect == "random_debuff" else 0.0))
-	if chance <= 0.0 or randf() >= chance:
+	## Equipment status_resistance, mirroring BattleManager:5002 (and :4592, which uses the identical
+	## formula so the two live sites cannot drift). @cowir-battle's resist_ring fix is the live half:
+	## the ring had ONE reader, on the ATTACKER's on-hit path, so it only ever resisted the party's own
+	## daggers. Every status a player actually suffers arrives on this route in both engines.
+	## ⚠️ NOT clamped like its neighbours, and deliberately: evasion_bonus and critical_bonus clamp
+	## their INPUT to 0.50 because live caps those at their own sites. Live caps status_resistance
+	## NOWHERE — it clamps the RESULT to [0,1]. Copying the neighbouring line's shape would invent a
+	## ceiling the real game does not have. Today's only author is resist_ring at 0.3, so an invented
+	## input cap would be unobservable, which is exactly why it is written down here.
+	var resist: float = _sum_equipment_special_effect(target, "status_resistance")
+	var effective: float = clampf(chance - resist, 0.0, 1.0)
+	if effective <= 0.0 or randf() >= effective:
 		return
 	var status_to_add := effect
 	if effect == "random_debuff":
