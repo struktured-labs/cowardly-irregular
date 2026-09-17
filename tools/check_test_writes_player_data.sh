@@ -46,6 +46,7 @@
 # "clean" means NOTHING SURVIVED, never "nothing was written".
 #
 # Usage:   tools/check_test_writes_player_data.sh <name> [<name> ...]
+#          tools/check_test_writes_player_data.sh --selftest      # no live defect required
 #          tools/check_test_writes_player_data.sh --all-autogrind
 # Exit:    0 nothing written · 1 a test left player data · 2 bad invocation
 
@@ -58,7 +59,36 @@ UD_REL='godot/app_userdata/Cowardly Irregular'
 # That bug emptied the file list and the plant control caught it -- kept as the reason.
 IGNORE_RE='^\./(logs/|shader_cache/)'
 
-[ "$#" -ge 1 ] || { echo "usage: $0 <test-name> [...]  |  --all-autogrind" >&2; exit 2; }
+# ONE definition of "what counts as player data", used by the real path AND by --selftest.
+# If these diverged, the selftest would certify a scanner the tool does not use.
+scan_ud() {  # $1 = a user:// root; prints the player-data files under it, one per line
+  [ -d "$1" ] || return 0
+  ( cd "$1" && find . -type f 2>/dev/null | grep -vE "$IGNORE_RE" | sort )
+}
+
+# ⛔ THE LEAK-DIRECTION CONTROL HAS A SHELF LIFE MEASURED IN FOLDS (@cowir-music, 2026-09-17).
+# Pointing it at a real leaker proves the WRITES path -- until someone fixes that leaker, and then
+# the strongest half of the self-test is unreproducible by anyone. So it is fabricated here instead:
+# a synthetic user:// tree exercises both directions forever, with no live defect required.
+if [ "${1:-}" = "--selftest" ]; then
+  t="$PWD/tmp/pdw_selftest_$$"; rm -rf "$t"; mkdir -p "$t/autobattle" "$t/logs"
+  : > "$t/logs/godot.log"                      # engine noise -- MUST be ignored
+  echo '{}' > "$t/autobattle/profiles.json"    # player data -- MUST be reported
+  got="$(scan_ud "$t" | tr '\n' ' ')"
+  rm -rf "$t"
+  fail=0
+  case "$got" in *autobattle/profiles.json*) ;; *) echo "SELFTEST FAIL: player data not reported (got: '$got')" >&2; fail=1;; esac
+  case "$got" in *logs/godot.log*) echo "SELFTEST FAIL: engine log counted as player data" >&2; fail=1;; *) ;; esac
+  t2="$PWD/tmp/pdw_selftest2_$$"; rm -rf "$t2"; mkdir -p "$t2/autobattle"; : > "$t2/logs_placeholder"
+  rm -f "$t2/logs_placeholder"
+  [ -n "$(scan_ud "$t2")" ] && { echo "SELFTEST FAIL: an empty tree reported files" >&2; fail=1; }
+  rm -rf "$t2"
+  [ ! -d "/nonexistent_$$" ] && [ -n "$(scan_ud "/nonexistent_$$")" ] && { echo "SELFTEST FAIL: a missing root reported files" >&2; fail=1; }
+  [ "$fail" -eq 0 ] && echo "selftest OK -- reports player data, ignores engine logs, empty is empty"
+  exit $fail
+fi
+
+[ "$#" -ge 1 ] || { echo "usage: $0 <test-name> [...]  |  --all-autogrind  |  --selftest" >&2; exit 2; }
 
 NAMES=()
 if [ "$1" = "--all-autogrind" ]; then
@@ -87,8 +117,7 @@ for name in "${NAMES[@]}"; do
   dirs=0
   [ -d "$ud" ] && dirs=$(find "$ud" -type d 2>/dev/null | wc -l)
 
-  files=""
-  [ -d "$ud" ] && files="$( cd "$ud" && find . -type f 2>/dev/null | grep -vE "$IGNORE_RE" | sort )"
+  files="$(scan_ud "$ud")"
 
   if [ "$dirs" -eq 0 ]; then
     echo "SKIPPED  $name -- redirect did not fire (EC=$ec). An empty result here is vacuous, not clean." >&2
@@ -106,7 +135,7 @@ for name in "${NAMES[@]}"; do
     # without this, "clean" and "the scan is broken" are the same output.
     mkdir -p "$ud/autobattle"
     : > "$ud/autobattle/.pdw_probe.json"
-    seen="$( cd "$ud" && find . -type f 2>/dev/null | grep -vE "$IGNORE_RE" | wc -l )"
+    seen="$(scan_ud "$ud" | wc -l)"
     rm -f "$ud/autobattle/.pdw_probe.json"
     if [ "$seen" -lt 1 ]; then
       echo "BROKEN   $name -- the scan could not see a planted file; this 'clean' proves nothing." >&2
