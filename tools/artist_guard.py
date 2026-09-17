@@ -39,6 +39,7 @@ Usage in a generating tool, one line before the write:
 
 Exit: refuses via SystemExit, which a tool run from the shell reports as a non-zero exit.
 """
+import os
 import sys
 from pathlib import Path
 
@@ -149,8 +150,13 @@ def is_protected(path, _evidence=None) -> bool:
 
 
 def assert_writable(path, force: bool = False, _evidence=None) -> None:
-    """Refuse to let the caller overwrite artist pixels. `force=True` is the explicit approval."""
-    if force:
+    """Refuse to let the caller overwrite artist pixels. `force=True` is the explicit approval.
+
+    Most of these generators have no argparse at all — running the script IS the act — so
+    `ARTIST_GUARD_FORCE=1` is the override for them. Setting an environment variable is still an
+    explicit decision a person has to make; the default without it is to refuse.
+    """
+    if force or os.environ.get("ARTIST_GUARD_FORCE") == "1":
         return
     if is_protected(path, _evidence=_evidence):
         raise SystemExit(
@@ -231,6 +237,25 @@ def selftest() -> int:
         stray.parent.mkdir(parents=True)
         stray.write_bytes(b"x")
         check("a path under NO sprite root is refused", is_protected(stray, _evidence=no), True)
+
+    # The env override, for the tools with no CLI to carry a --force.
+    with tempfile.TemporaryDirectory() as d3:
+        f3 = Path(d3) / "idle.png"
+        f3.write_bytes(b"x")
+        os.environ["ARTIST_GUARD_FORCE"] = "1"
+        allowed = True
+        try:
+            assert_writable(f3, _evidence=yes)
+        except SystemExit:
+            allowed = False
+        del os.environ["ARTIST_GUARD_FORCE"]
+        check("ARTIST_GUARD_FORCE=1 is an explicit approval", allowed, True)
+        refused_again = False
+        try:
+            assert_writable(f3, _evidence=yes)
+        except SystemExit:
+            refused_again = True
+        check("...and unsetting it restores the refusal", refused_again, True)
 
     # Fail-closed: a broken oracle must refuse, never pass.
     def broken(rel):

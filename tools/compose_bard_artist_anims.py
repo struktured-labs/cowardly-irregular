@@ -39,6 +39,10 @@ import sys
 from pathlib import Path
 
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 GAME_REPO = Path(os.environ.get(
     "GAME_REPO",
@@ -95,6 +99,7 @@ def main() -> int:
         strip = Image.new("RGBA", (FRAME * len(idxs), FRAME), (0, 0, 0, 0))
         for col, fi in enumerate(idxs):
             strip.paste(sources[src][fi], (col * FRAME, 0))
+        assert_writable(target)
         strip.save(target)
         print(f"rebuilt {anim}.png ← {src}{idxs} ({len(idxs)}f)")
     if not args.dry_run:

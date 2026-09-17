@@ -20,6 +20,10 @@ import sys
 from pathlib import Path
 
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 HERE = Path(__file__).resolve().parent
 
@@ -67,11 +71,14 @@ def main() -> int:
                 continue
             spent += gw.COST[args.quality]
             tmp = dest.with_suffix(".candidate.png")
+            assert_writable(tmp)
             grid.save(tmp)
             cand = imbalance(tmp)
             keep = cand < best
             print(f"  attempt {n+1}: imbalance {cand:.2f} -> {'KEEP' if keep else 'discard'}")
             if keep:
+                # the candidate is a new file; THIS is the write that lands on shipped art
+                assert_writable(dest)
                 shutil.move(str(tmp), str(dest))
                 best = cand
             else:
