@@ -73,7 +73,18 @@ _prev_tag() {
 # landed, and omitting it would make the note's list read complete when it is not.
 _merged_branches() {
     local range="$1"
-    git log --merges --format='%h%x09%s' "$range" 2>/dev/null | while IFS=$'\t' read -r sha subj; do
+    # ⛔ --first-parent IS LOAD-BEARING. `git log --merges` walks the WHOLE DAG, so it reaches
+    # every merge that ever rode onto main inside somebody's branch -- including a lane CATCHING
+    # UP, which writes "Merge remote-tracking branch 'origin/main' into <lane>". The parser below
+    # takes the name between the quotes, i.e. the SOURCE, so a catch-up was reported as `main`
+    # landing. Measured on v3.33.385..v3.33.396, the supersession range a held store receives:
+    #     --merges        72 lines, 12 of them `main`, 34 distinct
+    #     --first-parent  59 lines,  0 of them `main`, 32 distinct   <- no real fold lost
+    # A fold onto main has first-parent = the previous main; a lane's catch-up never does.
+    # ⚠️ NOT a `' into '` string rule: an in-lane merge can carry "into" as PROSE
+    # (a28ee4139 "collapse two owners of ... into one"), so a string test misfires both ways.
+    # The distinction is structural. (@cowir-sprites, 2026-09-17)
+    git log --first-parent --merges --format='%h%x09%s' "$range" 2>/dev/null | while IFS=$'\t' read -r sha subj; do
         case "$subj" in
             "Merge remote-tracking branch '"*)
                 local name="${subj#Merge remote-tracking branch \'}"
@@ -217,6 +228,22 @@ gated: cafe1234 scripts=11 tests=111 passing=111 failing=0"
     _has   "the REAL fold subject yields a clean name"  "$outs" "lane/suffixed"
     _hasnt "  ...with no trailing quote"                "$outs" "lane/suffixed'"
     _hasnt "  ...and no merge sha glued to it"          "$outs" "deadbeef)"
+    # ⛔ A CATCH-UP IS NOT A FOLD, and the old fixture could not carry that defect: every merge
+    # it built was on main's first-parent chain, so --merges and --first-parent agreed on it.
+    # This one puts a lane's catch-up merge INSIDE a fold, which is the shape main really produces.
+    local MB; MB="$(cd "$d" && { git show-ref -q --verify refs/heads/main && echo main || echo master; })"
+    (cd "$d" && git checkout -q "$MB" 2>/dev/null
+     git checkout -qb lane/catches-up 2>/dev/null; echo u > u.txt; git add u.txt; git commit -qm u
+     git checkout -q "$MB" 2>/dev/null; echo v > v.txt; git add v.txt; git commit -qm v
+     git checkout -q lane/catches-up 2>/dev/null
+     git merge -q --no-ff "$MB" -m "Merge remote-tracking branch 'origin/main' into lane/catches-up"
+     git checkout -q "$MB" 2>/dev/null
+     git merge -q --no-ff lane/catches-up -m "Merge remote-tracking branch 'origin/lane/catches-up' (feedface)"
+     git tag -a v3.33.105-alpha -m "v3.33.105-alpha") >/dev/null 2>&1
+    local outc; outc="$(cd "$d" && bash "$SELF" v3.33.105-alpha --prev v3.33.104-alpha)"
+    _has   "a caught-up lane's FOLD still appears"       "$outc" "lane/catches-up"
+    _hasnt "  ...and its CATCH-UP is not a merged branch" "$outc" '` main'
+    _has   "  ...and the count excludes the catch-up"    "$outc" "Branches merged (1)"
     _hasnt "a branch that did NOT merge is ABSENT"      "$out" "never-landed"
     _has   "the gate evidence line is carried"          "$out" "scripts=11 tests=111 passing=111 failing=0"
     _hasnt "...and it is THIS tag's, not the previous"  "$out" "scripts=10"
