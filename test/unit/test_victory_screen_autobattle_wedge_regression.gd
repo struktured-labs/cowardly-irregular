@@ -19,6 +19,29 @@ class FakeBattleScene extends Node:
 	var _battle_ended: bool = false
 
 
+var _saved_persist: bool = false
+
+
+## ⛔ THIS FILE WROTE user://autobattle/profiles.json AND NAMES NOTHING THAT COULD PREDICT IT.
+## `GameLoopScript.new()` brings up enough of the loop that a Combatant profile round-trip reaches
+## the autoload BY STRING — `get_node_or_null("/root/AutobattleSystem")` in Combatant.load_profile /
+## save_current_profile — and calls `set_character_script` through a local. So neither the autoload
+## nor its API is a literal in this test OR at the call site, and it scores ZERO on all three source
+## predicates the fleet proposed (autoload name · API name · the flag).
+## ⚠️ It had no before_each at all, which is why a patch that inserted the gate into one skipped it
+## and the file kept writing while its two siblings went clean — a reminder that "fixed the class"
+## is a claim about files, not about the class.
+func before_each() -> void:
+	_saved_persist = AutobattleSystem._test_disable_persistence
+	AutobattleSystem._test_disable_persistence = true
+
+
+## Restores the PRIOR value, never `false`: the flag is a per-process autoload global and a gate that
+## assigns a constant closes its own leak while silencing the next one.
+func after_each() -> void:
+	AutobattleSystem._test_disable_persistence = _saved_persist
+
+
 func _loop_in_battle(scene: Node) -> Node:
 	var gl = GameLoopScript.new()
 	add_child_autofree(gl)

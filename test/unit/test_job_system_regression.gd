@@ -32,7 +32,20 @@ func before_all() -> void:
 		_abilities = {}
 
 
+var _saved_persist: bool = false
+
+
+## ⛔ THIS FILE WROTE user://autobattle/profiles.json AND NAMES NOTHING THAT COULD PREDICT IT.
+## `Combatant.load_profile()` / `save_current_profile()` reach the autoload by STRING —
+## `get_node_or_null("/root/AutobattleSystem")` — then call `set_character_script` through a local,
+## so neither the autoload nor its API appears in this test OR as a literal call in Combatant.gd.
+## Found only by cowir-autogrind's exhaustive sweep (1997 files, one process + one virgin sandbox
+## each); it scores ZERO on every source predicate the fleet proposed: the autoload name, the API
+## name, and the flag. Restores the PRIOR value, never `false` — the flag is a per-process autoload
+## global and a gate that assigns a constant silences the next leaker after it.
 func before_each() -> void:
+	_saved_persist = AutobattleSystem._test_disable_persistence
+	AutobattleSystem._test_disable_persistence = true
 	_combatant = CombatantScript.new()
 	_combatant.combatant_name = "Test Hero"
 	_combatant.max_hp = 100
@@ -282,3 +295,7 @@ func test_profile_preserved_on_job_switch() -> void:
 
 	assert_eq(_combatant.equipped_weapon, "iron_sword",
 		"Loading fighter profile should restore iron_sword")
+
+
+func after_each() -> void:
+	AutobattleSystem._test_disable_persistence = _saved_persist
