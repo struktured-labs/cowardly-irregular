@@ -138,9 +138,15 @@ func _src_code_blob() -> String:
 	return "\n".join(parts)
 
 
-## Every data file that could carry an id to a dispatcher, minus the cutscene corpus itself.
-func _data_blob() -> String:
-	var parts: PackedStringArray = []
+## Every STRING VALUE in data/, minus the cutscene corpus itself — not the raw text.
+##
+## ⛔ A RAW `contains` OVER-REPORTS, which is @cowir-autogrind's direction of the same defect: a
+## literal with no consumer. An id mentioned in a `description` or a quest's dialogue would read as
+## a dispatch, so the guard would call an unreachable scene LIVE and stay green while saying
+## something false. Matching a whole VALUE is field-agnostic and cannot match prose ABOUT the id:
+## a description containing it is not equal to it.
+func _data_values() -> Dictionary:
+	var out: Dictionary = {}
 	var stack: Array = DATA_DIRS.duplicate()
 	while not stack.is_empty():
 		var d: String = str(stack.pop_back())
@@ -156,10 +162,23 @@ func _data_blob() -> String:
 				if not f.begins_with("."):
 					stack.append(d + f + "/")
 			elif f.ends_with(".json"):
-				parts.append(FileAccess.get_file_as_string(d + f))
+				var json := JSON.new()
+				if json.parse(FileAccess.get_file_as_string(d + f)) == OK:
+					_collect_strings(json.data, out)
 			f = dir.get_next()
 		dir.list_dir_end()
-	return "\n".join(parts)
+	return out
+
+
+func _collect_strings(node: Variant, out: Dictionary) -> void:
+	if node is String:
+		out[node] = true
+	elif node is Array:
+		for x in node:
+			_collect_strings(x, out)
+	elif node is Dictionary:
+		for k in node:
+			_collect_strings(node[k], out)
 
 
 ## Every play_cutscene() argument in src/, comments stripped, as written.
@@ -226,15 +245,16 @@ func test_every_status_in_the_roster_still_holds() -> void:
 	assert_gt(blob.length(), 200000, "src/ looks truncated: %d chars of code" % blob.length())
 	assert_true(blob.contains("_get_pending_story_cutscene"), "control: a known src symbol survives the strip")
 
-	var data := _data_blob()
-	assert_gt(data.length(), 100000, "data/ looks truncated: %d chars" % data.length())
-	assert_true(data.contains("world1_orrery"),
-		"control: the data blob must reach a quest's cutscene_on_complete, or the route it was " +
-		"added for is unscanned and every UNPLAYED verdict is about src/ alone")
+	var data := _data_values()
+	assert_gt(data.size(), 2000, "data/ string values look truncated: %d collected" % data.size())
+	assert_true(data.has("world1_orrery"),
+		"LIVENESS: a real quest cutscene_on_complete value must be among them, or the route this " +
+		"was added for is unscanned and every UNPLAYED verdict is about src/ alone. An empty " +
+		"collection cannot tell 'no data names it' from 'the walk saw nothing'")
 
 	for id in HIDDEN:
 		# Code OR data: QuestSystem plays an id it reads from JSON, so src/ alone under-reports reach.
-		var referenced: bool = blob.contains("\"%s\"" % id) or data.contains(id)
+		var referenced: bool = blob.contains("\"%s\"" % id) or data.has(id)
 		if HIDDEN[id] == "LIVE":
 			assert_true(referenced,
 				"%s is declared LIVE but neither src/ nor data/ names it — if it was unwired, " % id +
