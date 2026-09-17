@@ -409,7 +409,21 @@ fi
 # happening — the direction that SHIPS content you meant to drop, and pck size cannot
 # see it (bigger reads as "we added content"). Reported, never enforced: a prophylactic
 # *.jpg legitimately matches nothing and refusing over it would be worse than the bug.
-./tools/check_exclude_patterns.sh || true
+# ⛔ `|| true` DISCARDED EC 2, AND EC 2 MEANS THE AUDIT COULD NOT RUN. deploy_web.sh fixed
+# this on 2026-08-22 and its comment explains why; the same line sat unfixed here. The tool
+# exits 2 from SEVEN distinct "the instrument could not measure" conditions -- a missing or
+# empty export_presets.cfg, a zero-pattern parse, a partial read -- each of which its own
+# source calls "the vacuous-pass shape this script exists to prevent elsewhere". Swallowed by
+# `|| true`, the one signal meaning THE AUDIT DID NOT RUN was indistinguishable from a clean
+# audit, on the chain that ships linux and windows.
+# The NON-BLOCKING part above is correct and stays: EC 0 with findings on stderr does not
+# block, because a prophylactic *.jpg legitimately matches nothing. Only EC 2 blocks.
+./tools/check_exclude_patterns.sh; _PAT_EC=$?
+if [ "$_PAT_EC" -eq 2 ]; then
+    echo "[${PLAT}] BLOCKED: the exclude-pattern audit could not run (exit 2). Not shipping" >&2
+    echo "          on an unaudited exclude_filter — fix the parse or the config first." >&2
+    exit 2
+fi
 
 # TREE IDENTITY — bind the gate's evidence to the bits that get exported.
 #
