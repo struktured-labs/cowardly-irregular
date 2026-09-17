@@ -107,7 +107,7 @@ func _gates() -> Array:
 			continue
 		var base := _indent(line)
 		var scene := ""
-		for j in range(i + 1, mini(i + 8, stop)):
+		for j in range(i + 1, stop):
 			var nxt: String = lines[j]
 			if nxt.strip_edges() == "":
 				continue
@@ -436,7 +436,7 @@ func test_every_blocking_flag_site_is_accounted_for() -> void:
 			continue
 		sites += found.size()
 		var base := _indent(lines[i])
-		for j in range(i + 1, mini(i + 8, stop)):
+		for j in range(i + 1, stop):
 			if lines[j].strip_edges() == "":
 				continue
 			if _indent(lines[j]) <= base and not lines[j].strip_edges().begins_with("and "):

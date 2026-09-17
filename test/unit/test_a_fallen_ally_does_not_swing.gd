@@ -126,3 +126,26 @@ func test_the_log_counts_the_living() -> void:
 	assert_ne(announce, "", "CONTROL: the all-out opener was emitted at all")
 	assert_true(announce.contains("(3 participants)"),
 		"the opener must count who actually swings, not who was rostered: %s" % announce)
+
+func test_blade_storm_throws_one_strike_per_living_blade() -> void:
+	## ⛔ FOUND BY ASKING "WAS THE FIRST INSTANCE THE ONLY ONE" OF MY OWN FIX. The scale was one site;
+	## `blade_storm` budgets its hits from `participants.size() * 2` and then re-filters to
+	## `living_participants` INSIDE the loop to choose each attacker. Four rostered with one dead
+	## threw eight strikes from three blades.
+	var roster: Array = []
+	for i in range(4):
+		roster.append(_member("PC%d" % i))
+	roster[0].is_alive = false
+	var wall := _dummy()
+	BattleManager.player_party.assign(roster as Array[Combatant])
+	BattleManager.enemy_party.assign([wall] as Array[Combatant])
+	## ⚠️ THE COUNTER IS AN ARRAY BECAUSE A GDScript LAMBDA CAPTURES BY VALUE — my first version
+	## incremented an `int` and read back 0, which the CONTROL caught rather than the subject arm.
+	var hits: Array = [0]
+	var cb := func(_t, _d, _c, _e, _m) -> void: hits[0] += 1
+	BattleManager.damage_dealt.connect(cb)
+	BattleManager._execute_formation_special(roster, [wall] as Array[Combatant], "blade_storm")
+	BattleManager.damage_dealt.disconnect(cb)
+	assert_gt(hits[0], 0, "CONTROL: the storm struck at all, so the count means something")
+	assert_eq(hits[0], 6,
+		"three living blades throw 3x2 strikes, not 4x2 — the dead do not swing (%d)" % hits[0])

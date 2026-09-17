@@ -8,6 +8,28 @@ extends GutTest
 ## ui_up is free in this box (the body does not scroll — that is why pagination exists) and the
 ## affordance is DERIVED through hint_for_action, never a printed letter.
 
+## ⛔ HERMETIC ABOUT THE PROFILE. Arms here derive a token or glyph from the LIVE InputMap, so this
+## file inherits whatever `user://input/controls.json` holds. A remap test writes a "Custom" profile
+## there; an interrupted run skips its cleanup, and every later run in that sandbox reads it.
+##
+## Measured 2026-09-17 across all 22 test files that ask InputProfileManager for a name or glyph:
+## one stale profile (shoulders bound to FACE buttons) exposed 3 files; a DIFFERENT one (face
+## buttons swapped) exposed 3 OTHERS, with zero overlap. So "not exposed" is a fact about the
+## artifact you happen to carry, not about the file — which is why the whole corpus is pinned
+## rather than the three that reddened.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)
+
+
 const DialogueScript = preload("res://src/cutscene/CutsceneDialogue.gd")
 
 var _box: Node
