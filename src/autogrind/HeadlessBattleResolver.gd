@@ -1252,7 +1252,18 @@ func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: Stri
 	if effect == "":
 		return
 	var chance: float = float(ability.get("effect_chance", 1.0 if effect == "random_debuff" else 0.0))
-	if chance <= 0.0 or randf() >= chance:
+	## Equipment status_resistance, mirroring BattleManager:5002 (and :4592, which uses the identical
+	## formula so the two live sites cannot drift). @cowir-battle's resist_ring fix is the live half:
+	## the ring had ONE reader, on the ATTACKER's on-hit path, so it only ever resisted the party's own
+	## daggers. Every status a player actually suffers arrives on this route in both engines.
+	## ⚠️ NOT clamped like its neighbours, and deliberately: evasion_bonus and critical_bonus clamp
+	## their INPUT to 0.50 because live caps those at their own sites. Live caps status_resistance
+	## NOWHERE — it clamps the RESULT to [0,1]. Copying the neighbouring line's shape would invent a
+	## ceiling the real game does not have. Today's only author is resist_ring at 0.3, so an invented
+	## input cap would be unobservable, which is exactly why it is written down here.
+	var resist: float = _sum_equipment_special_effect(target, "status_resistance")
+	var effective: float = clampf(chance - resist, 0.0, 1.0)
+	if effective <= 0.0 or randf() >= effective:
 		return
 	var status_to_add := effect
 	if effect == "random_debuff":
