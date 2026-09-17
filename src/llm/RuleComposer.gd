@@ -174,8 +174,17 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# Same shape as _drop_null_targets above: drop the offending rule, keep the rest,
 	# and TELL the player. Never empties the set — a zero-rule composition is not a
 	# valid one, it is the save-wiping one, so the caller's refusal path still runs.
+	## The grind domain was left out of this when it shipped, and the asymmetry cost the
+	## same thing it was written to prevent. Measured on 50 captured live replies across
+	## five deliberately messy intents: 4 died on ONE rule each — a null numeric value, a
+	## null operator, an invented `rest` action, and one malformed rule — while the rest of
+	## each set was valid. None of those four is repairable by lookup; dropping the rule is
+	## the only honest move, and it is the move this project already chose for autobattle.
 	if domain == DOMAIN_AUTOBATTLE and character_id != "":
 		for note in _drop_unusable_rules(v["rules"], character_id, domain_system):
+			repair_notes.append(note)
+	elif domain == DOMAIN_AUTOGRIND:
+		for note in _drop_unusable_rules(v["rules"], "", domain_system):
 			repair_notes.append(note)
 
 	# Last, so it orders whatever the other repairs left behind.
@@ -315,7 +324,10 @@ func _drop_unusable_rules(rules: Array, character_id: String, domain_system) -> 
 	var kept: Array = []
 	var dropped: Array[String] = []
 	for r in rules:
-		var errs: Array = domain_system.validate_rule(r, character_id)
+		## autobattle's validate_rule takes the character for its deep check; autogrind's is
+		## party-level and takes the rule alone. Same refusal, different arity.
+		var errs: Array = domain_system.validate_rule(r, character_id) if character_id != "" \
+			else domain_system.validate_rule(r)
 		if errs.is_empty():
 			kept.append(r)
 		else:
