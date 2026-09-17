@@ -466,7 +466,12 @@ func _create_boss_marker(pos: Vector2) -> Node2D:
 		var h: float = maxf(1.0, float(tex.region.size.y))
 		spr.scale = Vector2.ONE * (TILE_SIZE * 2.0 / h)
 		spr.position = Vector2(0, -TILE_SIZE * 0.35)
-		spr.flip_h = not HybridSpriteLoader.monster_faces_party("cave_rat_king", tex.region.size.y > 128.0)
+		# Same form as BattleScene. The old `not monster_faces_party(id, h > 128.0)` was a
+		# DOUBLE inversion: it cancelled for sheets that rely on the size convention, and did
+		# NOT cancel for one declaring flip_h — a declaration bypasses the conv argument, so
+		# the outer `not` reversed it. cave_rat_king (the only declarer) faced the wrong way
+		# here while facing correctly in battle.
+		spr.flip_h = HybridSpriteLoader.monster_faces_party("cave_rat_king", tex.region.size.y <= 128.0)
 		marker.add_child(spr)
 		pulse_target = spr
 	else:
