@@ -16,10 +16,17 @@ extends GutTest
 const MANIFEST := "res://data/sfx_manifest.json"
 const TOLERANCE_SECONDS := 2.0
 
-## Measured 2026-09-17: authored 5.0, file 8.0. One of the 18 looping ambience beds. Either the
-## generator overshot and the manifest records the REQUEST, or the number is stale — struktured's
-## call, so it is declared with its measurement rather than silently rewritten to match.
-const KNOWN_DRIFT := {"weather_steam": "authored 5.0 vs an 8.0s file; a looping bed, so the loop period changes on regeneration"}
+## Measured 2026-09-17: authored 5.0, file 8.0. CAUSE FOUND (cowir-music, from the entry's own
+## `prompt`): the 5.0 is not a stale measurement of this file, it is the length of the RETIRED
+## ElevenLabs asset. The shipped 8.0s file is a synthesised replacement built by
+## tools/gen_steam_bed.py — periodic by construction, because the original was 3.0s of fade in a
+## 5.0s file with a +53 dB wrap step. So the field and the file describe two different assets,
+## which is why no "is this entry correct" check could resolve it.
+## The regeneration hazard it created is CLOSED at the source (80ab31df3: elevenlabs_sfx.py now
+## refuses any non-elevenlabs `source`, and this entry's is `sox_synth`). The number itself is
+## still wrong and still his call: correct it to 8.0, or keep it as the request that produced the
+## rebuild. Declared, not rewritten — rewriting would erase the only record of why the asset exists.
+const KNOWN_DRIFT := {"weather_steam": "authored 5.0 is the RETIRED ElevenLabs asset's length; the shipped 8.0s file is the sox_synth rebuild — two assets, one field. Regen hazard closed by 80ab31df3"}
 
 
 func _sfx() -> Dictionary:
