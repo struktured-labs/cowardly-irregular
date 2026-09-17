@@ -791,13 +791,7 @@ func _resolve_attack(attacker, target) -> int:
 	## reporting `invisible` as ignored while the code honoured it. A composed writer under a literal
 	## scan is the exact shape that guard exists to catch, so the implementation reads the way the
 	## measurement does.
-	if target.has_status("invisible"):
-		target.remove_status("invisible")
-		_log("%s strikes thin air — %s was invisible!" % [attacker.combatant_name, target.combatant_name])
-		return 0
-	if target.has_status("shadow_step"):
-		target.remove_status("shadow_step")
-		_log("%s strikes thin air — %s had stepped into shadow!" % [attacker.combatant_name, target.combatant_name])
+	if _target_dodges_physical(attacker, target):
 		return 0
 
 	var base_miss: float = 0.10
@@ -806,12 +800,6 @@ func _resolve_attack(attacker, target) -> int:
 	var miss_chance = max(0.02, min(0.60, base_miss - (attacker.speed - target.speed) * 0.05))
 	if randf() < miss_chance:
 		_log("%s misses %s!" % [attacker.combatant_name, target.combatant_name])
-		return 0
-	## equipment evasion_bonus is a SEPARATE roll in live (BattleManager:9106), not folded into the
-	## miss chance — elven_cloak plus a passive gives two independent chances to dodge. Same clamp.
-	var equip_dodge: float = clampf(_sum_equipment_special_effect(target, "evasion_bonus"), 0.0, 0.50)
-	if equip_dodge > 0.0 and randf() < equip_dodge:
-		_log("%s evades %s's attack!" % [target.combatant_name, attacker.combatant_name])
 		return 0
 
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
@@ -854,6 +842,45 @@ func _resolve_attack(attacker, target) -> int:
 	## be the axis-2 error this lane's ledger exists to catch — a key read on the wrong executor.
 	_apply_equipment_on_hit_status(attacker, target)
 	return actual
+
+
+## Twin of BattleManager._target_dodges_physical (:9046), and EXTRACTED for live's own reason: live
+## calls it from TWO sites — _execute_attack (:4391) and _execute_physical_ability (:4853) — so a
+## physical ABILITY can be dodged exactly as a basic swing can. This resolver had the logic inline in
+## _resolve_attack and the physical-ability arm had NO dodge check at all, so a grinding party's
+## power_strike, cleave and slash could never be evaded while the real game's can.
+##
+## ⚠️ SCOPE, stated because it is narrower than live's: this mirrors the three components the grind
+## ALREADY modelled — invisible, shadow_step and equipment evasion_bonus. Live's version also rolls
+## an `evasion` STATUS (0.6) and a monster `phase_out` chance, and this file models NEITHER anywhere
+## (0 mentions of each). Those are a pre-existing gap, declared rather than invented here: porting
+## them means deciding whether the grind models phase_out's monster_database read at all.
+##
+## ⚠️ The speed-based miss chance stays in _resolve_attack and is deliberately NOT moved in. Live
+## keeps it out of this function too: an ability is DODGED, never fumbled — a physical ability that
+## inherited the basic attack's speed-miss would be harder to land in the grind than in the game.
+func _target_dodges_physical(attacker, target) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	## ⚠️ Two LITERAL has_status calls rather than a loop, deliberately. The parity guard derives its
+	## ignored-status set by scanning both engines for has_status("…"), and a loop variable is
+	## invisible to it — the first draft of this fix used one, and the guard went on reporting
+	## `invisible` as ignored while the code honoured it.
+	if target.has_status("invisible"):
+		target.remove_status("invisible")
+		_log("%s strikes thin air — %s was invisible!" % [attacker.combatant_name, target.combatant_name])
+		return true
+	if target.has_status("shadow_step"):
+		target.remove_status("shadow_step")
+		_log("%s strikes thin air — %s had stepped into shadow!" % [attacker.combatant_name, target.combatant_name])
+		return true
+	## equipment evasion_bonus is a SEPARATE roll in live (:9106), not folded into the miss chance —
+	## elven_cloak plus a passive gives two independent chances to dodge. Same clamp.
+	var equip_dodge: float = clampf(_sum_equipment_special_effect(target, "evasion_bonus"), 0.0, 0.50)
+	if equip_dodge > 0.0 and randf() < equip_dodge:
+		_log("%s evades %s's attack!" % [target.combatant_name, attacker.combatant_name])
+		return true
+	return false
 
 
 ## Twin of BattleManager.ON_HIT_STATUSES (:4574) — same keys, same statuses, same durations.
@@ -1022,6 +1049,13 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 		"physical":
 			for target in targets:
 				if target and target.is_alive:
+					## Live gates the dodge on `ignores_evasion` and calls _target_dodges_physical here
+					## (:4853) exactly as it does for a basic swing. Without this the grind's physical
+					## abilities could NEVER be evaded — invisible, shadow_step and an elven_cloak all
+					## worked against an ordinary attack and did nothing against power_strike.
+					if not bool(ability.get("ignores_evasion", false)):
+						if _target_dodges_physical(caster, target):
+							continue
 					var base_dmg = int(_scaled_base(caster, ability) * power)
 					## The ability's OWN crit roll, mirroring BattleManager:4795. `backstab` authors 0.3 and
 					## is a Rogue ability, so a grind testing a crit build never saw its signature land.
