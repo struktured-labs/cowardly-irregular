@@ -503,7 +503,10 @@ func _input(event: InputEvent) -> void:
 	# means min(-1, focused_index + 1) → -1 → _rebuild_detail's
 	# `if focused_index >= party.size()` guard misses (-1 < 0) and
 	# `party[-1]` crashes. Gate both nav paths on a non-empty party.
-	if event.is_action_pressed("ui_left") and not event.is_echo():
+	# MenuNav, not a raw read: the stick's X axis carries no echo flag, so one push moved the focus
+	# across the whole party. Measured on a 4-member party: dpad 1, stick 3 (clamped at the end).
+	var nav: String = MenuNav.step(event)
+	if nav == "ui_left":
 		if party.size() == 0:
 			get_viewport().set_input_as_handled()
 			return
@@ -513,7 +516,7 @@ func _input(event: InputEvent) -> void:
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		if party.size() == 0:
 			get_viewport().set_input_as_handled()
 			return

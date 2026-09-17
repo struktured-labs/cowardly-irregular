@@ -169,10 +169,12 @@ func _input(event: InputEvent) -> void:
 		return
 	if _entries.is_empty():
 		return
-	if event.is_action_pressed("ui_down") or event.is_action_pressed("ui_right"):
+	# MenuNav, not a raw read: the stick's Y axis carries no echo flag, so one push moved the review cursor 5 rows (measured: dpad 1, stick 5).
+	var nav: String = MenuNav.step(event)
+	if nav == "ui_down" or nav == "ui_right":
 		_cycle(1)
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_up") or event.is_action_pressed("ui_left"):
+	elif nav == "ui_up" or nav == "ui_left":
 		_cycle(-1)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
