@@ -56,10 +56,12 @@ func test_every_moving_scroll_branch_chirps() -> void:
 	var body: String = _func_body(src, "func _input(event: InputEvent) -> void:")
 	assert_ne(body, "", "CONTROL: QuestLog._input must be found, or every arm below is vacuous")
 	# Source order: page jump, then ui_up, then ui_down.
+	# The cursor branches read MenuNav.step's result since 2026-09-17; the page jump still reads the
+	# helper directly. Delimiters follow source order, so a chirp cannot be borrowed from a neighbour.
 	var branches := [
-		["MenuPaging.page_delta(event)", "is_action_pressed(\"ui_up\")", "the page jump"],
-		["is_action_pressed(\"ui_up\")", "is_action_pressed(\"ui_down\")", "ui_up"],
-		["is_action_pressed(\"ui_down\")", "", "ui_down"],
+		["MenuPaging.page_delta(event)", "nav == \"ui_up\"", "the page jump"],
+		["nav == \"ui_up\"", "nav == \"ui_down\"", "ui_up"],
+		["nav == \"ui_down\"", "", "ui_down"],
 	]
 	for b in branches:
 		var seg: String = _between(body, b[0], b[1])

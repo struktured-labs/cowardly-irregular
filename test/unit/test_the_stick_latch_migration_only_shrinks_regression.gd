@@ -38,15 +38,10 @@ const RAW_READS := [
 ## Measured 2026-09-16. Shrinks only.
 const KNOWN_UNCONVERTED := [
 	"res://src/exploration/ReadableProp.gd",
-	"res://src/ui/BossSelectorMenu.gd",
 	"res://src/ui/PartyStatusScreen.gd",
 	"res://src/ui/CharacterCreationScreen.gd",
-	"res://src/ui/ControlsMenu.gd",
-	"res://src/ui/FormationsMenu.gd",
 	"res://src/ui/GameOverScreen.gd",
 	"res://src/ui/HowToPlayOverlay.gd",
-	"res://src/ui/LensMenu.gd",
-	"res://src/ui/QuestLog.gd",
 	"res://src/ui/RadialPicker.gd",
 	"res://src/ui/RebalanceReviewPanel.gd",
 	"res://src/ui/autobattle/AutobattleGridEditor.gd",
@@ -168,5 +163,8 @@ func test_the_scan_finds_both_populations() -> void:
 	assert_gt(scan["converted"].size(), 0, "the converted set must be non-empty, or nothing uses the helper")
 	assert_true(scan["converted"].has("res://src/ui/EquipmentMenu.gd"),
 		"a known converted surface must be found, or the MenuNav probe is wrong")
-	assert_true(scan["raw"].has("res://src/ui/LensMenu.gd"),
-		"a known unconverted surface must be found, or the raw probe is wrong")
+	# The exemplar is EXPECTED to move: it names one file so the probe is controlled against a
+	# specific known result, and converting that file must red this line rather than pass quietly.
+	assert_true(scan["raw"].has("res://src/ui/autobattle/AutobattleGridEditor.gd"),
+		"a known unconverted surface must be found, or the raw probe is wrong — if this surface was "
+		+ "just converted, re-point the exemplar at another entry of KNOWN_UNCONVERTED")

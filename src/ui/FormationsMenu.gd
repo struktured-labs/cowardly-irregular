@@ -157,12 +157,15 @@ func _update_selection() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_down"):
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
+	# an axis carries no echo flag — so one stick push stepped this list five rows.
+	var nav := MenuNav.step(event)
+	if nav == "ui_down":
 		_selected = mini(_selected + 1, _rows.size() - 1)
 		_update_selection()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_up"):
+	elif nav == "ui_up":
 		_selected = maxi(_selected - 1, 0)
 		_update_selection()
 		SoundManager.play_ui("menu_move")
