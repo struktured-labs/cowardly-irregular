@@ -38,25 +38,29 @@ const MAX_ACTIONS = 2
 
 ## Condition types for autogrind rules
 const CONDITION_TYPES = [
-	{"id": "party_hp_avg", "label": "Party HP%", "has_value": true, "default_op": "<", "default_value": 30},
-	{"id": "party_hp_min", "label": "Lowest HP%", "has_value": true, "default_op": "<", "default_value": 20},
-	{"id": "party_mp_avg", "label": "Party MP%", "has_value": true, "default_op": "<", "default_value": 20},
-	{"id": "alive_count", "label": "Alive", "has_value": true, "default_op": "<=", "default_value": 2},
-	{"id": "member_dead", "label": "Any Dead", "has_value": false, "default_op": "==", "default_value": 0},
-	{"id": "member_injured", "label": "New Injury", "has_value": false, "default_op": "==", "default_value": 0},
-	{"id": "member_hp", "label": "Member HP%", "has_value": true, "default_op": "<", "default_value": 30},
-	{"id": "member_mp", "label": "Member MP%", "has_value": true, "default_op": "<", "default_value": 20},
-	{"id": "member_status", "label": "Member Status", "has_value": false, "default_op": "==", "default_value": "poison"},
-	{"id": "battles_done", "label": "Battles", "has_value": true, "default_op": ">=", "default_value": 50},
-	{"id": "win_streak", "label": "Win Streak", "has_value": true, "default_op": ">=", "default_value": 20},
-	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 3.0},
-	{"id": "efficiency", "label": "Efficiency", "has_value": true, "default_op": ">=", "default_value": 5.0},
-	{"id": "time_elapsed", "label": "Minutes", "has_value": true, "default_op": ">=", "default_value": 30},
-	{"id": "inventory_items", "label": "Inv Items", "has_value": true, "default_op": ">=", "default_value": 20},
-	{"id": "ability_learned", "label": "New Ability", "has_value": false, "default_op": "==", "default_value": 0},
-	{"id": "reached_level", "label": "Reached Lv", "has_value": true, "default_op": ">=", "default_value": 10},
-	{"id": "rare_item_found", "label": "Rare Drop", "has_value": false, "default_op": "==", "default_value": 0},
-	{"id": "always", "label": "ALWAYS", "has_value": false, "default_op": "==", "default_value": 0},
+	## ⚠️ NO default_op / default_value HERE ANY MORE — AutogrindSystem.CONDITION_DEFAULTS owns them.
+	## They were correct in this table and UNREACHABLE from AutogrindGridEditor, which therefore grew
+	## its own and had six of nine wrong. A correct private copy is how the third consumer gets it
+	## wrong; that is the second time today this lane has moved a fact for exactly that reason.
+	{"id": "party_hp_avg", "label": "Party HP%", "has_value": true},
+	{"id": "party_hp_min", "label": "Lowest HP%", "has_value": true},
+	{"id": "party_mp_avg", "label": "Party MP%", "has_value": true},
+	{"id": "alive_count", "label": "Alive", "has_value": true},
+	{"id": "member_dead", "label": "Any Dead", "has_value": false},
+	{"id": "member_injured", "label": "New Injury", "has_value": false},
+	{"id": "member_hp", "label": "Member HP%", "has_value": true},
+	{"id": "member_mp", "label": "Member MP%", "has_value": true},
+	{"id": "member_status", "label": "Member Status", "has_value": false},
+	{"id": "battles_done", "label": "Battles", "has_value": true},
+	{"id": "win_streak", "label": "Win Streak", "has_value": true},
+	{"id": "corruption", "label": "Corruption", "has_value": true},
+	{"id": "efficiency", "label": "Efficiency", "has_value": true},
+	{"id": "time_elapsed", "label": "Minutes", "has_value": true},
+	{"id": "inventory_items", "label": "Inv Items", "has_value": true},
+	{"id": "ability_learned", "label": "New Ability", "has_value": false},
+	{"id": "reached_level", "label": "Reached Lv", "has_value": true},
+	{"id": "rare_item_found", "label": "Rare Drop", "has_value": false},
+	{"id": "always", "label": "ALWAYS", "has_value": false},
 ]
 
 ## Action types for autogrind rules
@@ -1334,28 +1338,34 @@ func _input(event: InputEvent) -> void:
 	if _options_ring and is_instance_valid(_options_ring):
 		return
 
-	# Navigation - check echo to prevent rapid-fire when holding keys
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	# MenuNav, not a raw read: the stick's Y axis carries no echo flag, so one push stepped five
+	# rows. Measured 2026-09-17 — rules=0: dpad 1 stick 1 (the clamp `min(rules.size() + 1, …)`
+	# bounds BOTH routes at row 1 and hides it); rules=12: dpad 1 stick 5.
+	# Read AFTER the options-ring return above, which owns its own d-pad.
+	var nav: String = MenuNav.step(event)
+
+	# Navigation
+	if nav == "ui_up":
 		cursor_row = max(0, cursor_row - 1)
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		cursor_row = min(rules.size() + 1, cursor_row + 1)  # +1 for start button row
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
+	elif nav == "ui_left":
 		cursor_col = max(0, cursor_col - 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		cursor_col = min(_get_max_col_for_row(cursor_row), cursor_col + 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
@@ -1710,8 +1720,12 @@ func _cycle_condition_type() -> void:
 
 		cond["type"] = new_type["id"]
 		if new_type["has_value"]:
-			cond["op"] = new_type.get("default_op", "<")
-			cond["value"] = new_type.get("default_value", 0)
+			## From AutogrindSystem, which owns the grammar. The per-entry default_op/default_value
+			## that used to sit in CONDITION_TYPES were correct and unreachable from the grid
+			## editor, so the editor grew its own and got six of nine wrong.
+			var _d: Dictionary = AutogrindSystem.condition_defaults_for(str(new_type.get("id", "")))
+			cond["op"] = _d.get("op", "<")
+			cond["value"] = _d.get("value", 0)
 		else:
 			cond.erase("op")
 			cond.erase("value")
@@ -1847,8 +1861,20 @@ func _cursor_member_label() -> String:
 
 ## Afflictions worth stopping a grind for. Every entry is guarded against BattleScene's
 ## STATUS_ICON_CONFIG by test, so the ring can never offer a status the game cannot even show.
+## ⛔ `slow` REMOVED 2026-09-17 — it was a ring position that wrote a rule which could never fire.
+## `member_status` is evaluated with `has_status`, which reads `status_effects`. Nothing in the game
+## ever puts "slow" there: the slowdown is `masterite_slow`, authored `effect: debuff, stat: speed`,
+## which lands in `active_debuffs` via add_debuff("Slow", …). Derived check, not a literal one —
+## statuses are applied through a VARIABLE, so counting add_status("slow") proves nothing: of the ten
+## entries, `slow` is the only one never authored as an `effect` by any ability.
+##
+## ⚠️ THE GUARD THAT SHOULD HAVE CAUGHT IT CHECKED THE WRONG CORPUS, and said so in its own comment:
+## the ring was validated against BattleScene's STATUS_ICON_CONFIG, which HAS a `slow` key — so the
+## entry passed a test of DISPLAYABILITY while failing APPLICABILITY. Found by @cowir-ai; the icon
+## key is dead for the same reason. test_autogrind_the_status_ring_can_be_true_regression now
+## validates against the authored effect set instead.
 const MEMBER_STATUS_RING := [
-	"poison", "burn", "blind", "silence", "stun", "sleep", "confuse", "curse", "charm", "slow",
+	"poison", "burn", "blind", "silence", "stun", "sleep", "confuse", "curse", "charm",
 ]
 
 
@@ -1878,10 +1904,15 @@ func _cursor_ability_label() -> String:
 	return str(d.get("ability", "?"))
 
 
-## What _member_ability_apply can ACTUALLY do between battles: it reads the authored heal_amount /
-## mp_amount and refuses anything else by name at runtime. Measured 2026-09-09, only the Cleric has
-## any (cure / crystal_heal / cura) — fighter, mage, rogue and bard have ZERO between them, so the
-## editor was happily seeding a Fighter's power_strike into a rule that could never fire.
+## What _member_ability_apply can ACTUALLY do between battles: apply an authored heal_amount /
+## mp_amount. It refuses everything else by name at runtime, so the editor was happily seeding a
+## Fighter's power_strike into a rule that could never fire (fixed 2026-09-09).
+## ⛔ NO LIST HERE ON PURPOSE. This said "only the Cleric has any (cure / crystal_heal / cura) —
+## fighter, mage, rogue and bard have ZERO between them", and it was wrong about the MAGE and short
+## by two: `channel` is the Mage's free move and restores 6 MP, `pray` is the Cleric's and does the
+## same, and three more are monster-only. The FILTER was always right because it asks the predicate;
+## only this sentence was frozen. test_autogrind_one_owner_for_what_runs_between_fights DERIVES and
+## prints the live set every run — read that, not a date.
 ## cowir-sfx's placement rule: refuse where the thing is AUTHORED, not in a test on what shipped.
 ## By the time it is a saved rule, "never fires" is indistinguishable from "never triggered".
 func _can_apply_between_battles(ability_id: String) -> bool:
@@ -1890,10 +1921,15 @@ func _can_apply_between_battles(ability_id: String) -> bool:
 	var js = get_tree().root.get_node_or_null("JobSystem") if is_inside_tree() else null
 	if js == null or not js.has_method("get_ability"):
 		return true          # cannot check without the store; do not block authoring on that
-	var a: Dictionary = js.get_ability(ability_id)
-	if a.is_empty():
-		return false
-	return int(a.get("heal_amount", 0)) > 0 or int(a.get("mp_amount", 0)) > 0
+	## ⛔ DELEGATES rather than re-reading the keys. This used to be a private second copy of
+	## AutogrindSystem's refusal — correct, and unreachable from src/llm, so the grind prompt
+	## re-derived it and taught the model whole kits the engine skips. The unavailable policy above
+	## stays HERE and deliberately differs: the engine refuses when it cannot check, the console
+	## must not block authoring over a missing autoload.
+	var ags = get_tree().root.get_node_or_null("AutogrindSystem") if is_inside_tree() else null
+	if ags == null or not ags.has_method("ability_works_between_battles"):
+		return true
+	return bool(ags.ability_works_between_battles(ability_id))
 
 
 ## Members with at least one ability this action can actually execute.

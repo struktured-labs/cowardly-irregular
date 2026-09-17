@@ -1,5 +1,40 @@
 extends GutTest
 
+## ⛔ HERMETIC ABOUT THE PROFILE, for the same reason as its sibling legend file. These arms derive
+## per-family BUTTON NAMES from the live InputMap, so they inherit whatever `user://input/
+## controls.json` holds. A remap test writes a "Custom" profile there and an interrupted run skips
+## its cleanup, after which every later run in that sandbox reads it.
+##
+## Measured on a five-day sandbox carrying that file: Failing 1 here, Passing 11 in a fresh one.
+## The shoulders resolve to FACE GLYPHS (Ⓐ / ○ / Ⓑ) instead of L / L1 / LB, because the stale
+## profile binds them to face buttons and BUTTON_NAMES returns a glyph for those.
+##
+## ⚠️ I fixed the sibling file an hour before this one and did not check for others. One pin
+## repaired one file; the contamination reaches every arm that derives a name from the InputMap.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)
+
+
+## CONTROL: the pinned profile must actually put the shoulders on shoulder buttons, or every
+## per-family assertion below is asking about a binding the profile never made.
+func test_control_the_pinned_profile_binds_the_shoulders() -> void:
+	assert_eq(InputProfileManager.active_profile, "Standard",
+		"before_all must leave Standard active, or these arms inherit the sandbox again")
+	var xb := InputProfileManager.button_name_for_action("battle_defer", "Xbox Wireless Controller")
+	assert_eq(xb, "LB",
+		"Standard must bind battle_defer to a shoulder; got %s — a face button returns a GLYPH here, "
+		% ("empty" if xb == "" else xb) + "which is exactly how a stale Custom profile shows up")
+
+
 ## Three footers named a button off ONE pad family's plastic and froze it for everyone.
 ## Handed over by @cowir-autogrind, who ran this lane's BUTTON_NAMES matcher wider than the lane's
 ## own corpus: 12 files hit, 11 were the WORD "Back" used as an action label beside an already

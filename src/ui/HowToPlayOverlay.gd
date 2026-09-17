@@ -149,10 +149,13 @@ func _input(event: InputEvent) -> void:
 	# Ported verbatim from TitleScreen when this moved out of it: the clamp is a
 	# regression fix (gamepad users could scroll past the end), so it travels WITH
 	# the behaviour rather than being re-derived here.
+	# MenuNav, not a raw read: ui_up/ui_down bind the stick's Y axis and an axis carries no echo
+	# flag, so one push scrolled five steps. Measured: dpad 48 px, odd ramp 240, even ramp 192.
+	var nav: String = MenuNav.step(event)
 	var dy: float = 0.0
-	if event.is_action_pressed("ui_down"):
+	if nav == "ui_down":
 		dy = HELP_SCROLL_STEP_PX
-	elif event.is_action_pressed("ui_up"):
+	elif nav == "ui_up":
 		dy = -HELP_SCROLL_STEP_PX
 	if dy != 0.0:
 		_scroll_help(dy)

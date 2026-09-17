@@ -199,7 +199,11 @@ func _input(event: InputEvent) -> void:
 	if not _active:
 		return
 
-	if event.is_action_pressed("ui_up") or event.is_action_pressed("ui_down"):
+	# MenuNav, not a raw read. This row is a TOGGLE (`1 - _selected_index`), so an odd-length
+	# ramp lands where one press lands and the defect is INVISIBLE: measured dpad 1, odd-ramp 1,
+	# EVEN-ramp 0 — a stick push left the selection wherever the ramp's parity dropped it.
+	var nav: String = MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
 		if _has_save:
 			_selected_index = 1 - _selected_index
 			_update_selection()

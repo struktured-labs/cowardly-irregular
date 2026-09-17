@@ -57,13 +57,15 @@ func test_every_offered_status_is_one_the_game_can_actually_show() -> void:
 func test_a_freshly_typed_member_status_condition_is_not_numeric() -> void:
 	## default_value 0 is what made the condition dead on creation — has_status("0") is false for
 	## every character forever.
-	var types: Array = load(UI).CONDITION_TYPES
-	var entry: Dictionary = {}
-	for t in types:
-		if str((t as Dictionary).get("id", "")) == "member_status":
-			entry = t
-	assert_false(entry.is_empty(), "control: member_status must still be in the console's type table")
-	var dv = entry.get("default_value", 0)
+	## ⚠️ THE FACT MOVED, THE QUESTION DID NOT. The seeded defaults lived in the console's
+	## CONDITION_TYPES until 2026-09-17; they are now AutogrindSystem.CONDITION_DEFAULTS, because the
+	## grid editor could not reach the console's copy and grew its own with six of nine operators
+	## wrong. This arm follows the owner rather than the file it used to sit in — asking the console
+	## for a default it no longer authors would pass on a `.get(…, 0)` fallback, which is the exact
+	## numeric seed the arm exists to forbid.
+	assert_true(AutogrindSystem.PARTY_CONDITION_TYPES.has("member_status"),
+		"control: member_status must still be a condition type the grammar knows")
+	var dv = AutogrindSystem.condition_defaults_for("member_status").get("value", 0)
 	assert_eq(typeof(dv), TYPE_STRING,
 		"a member_status condition seeded with a NUMBER asks has_status('0') and can never fire")
 	assert_true(load(UI).MEMBER_STATUS_RING.has(str(dv)),
@@ -92,11 +94,8 @@ func test_a_console_authored_status_rule_fires_when_the_member_has_it() -> void:
 	var mage := _member("Status Mage", "mage")
 	var party: Array = [cleric, mage]
 
-	var types: Array = load(UI).CONDITION_TYPES
-	var seeded := ""
-	for t in types:
-		if str((t as Dictionary).get("id", "")) == "member_status":
-			seeded = str((t as Dictionary).get("default_value", ""))
+	## From the owner — see the note in the arm above; the console no longer authors this.
+	var seeded := str(AutogrindSystem.condition_defaults_for("member_status").get("value", ""))
 	## The expectation is DERIVED from the table, so it would move with a mutation of that table —
 	## add_status("0") / has_status("0") round-trips happily and this test would pass while the
 	## condition was dead in practice. Pin the value's shape here as well.
@@ -145,7 +144,11 @@ func test_the_ring_row_is_offered_so_the_control_is_reachable() -> void:
 ## defence against a real hazard, and writing it tonight would be shipping it untested. Correct as of
 ## 2026-09-16; if you add an arm that reaches a new member, add it here or derive the set properly.
 const _FLOOR_ARM_NAME := "test_every_autogrind_member_this_file_reaches_still_exists"
-const _PINNED_MEMBERS := ["_evaluate_party_condition"]
+## ⚠️ GREW on 2026-09-17 when the seeded defaults moved from the console's CONDITION_TYPES to
+## AutogrindSystem.CONDITION_DEFAULTS: this file now asks the SYSTEM for the default it used to read
+## off the UI table, so it reaches two more members. The floor red rather than letting the new
+## reaches go uncovered, which is the whole point of deriving it from the file's own source.
+const _PINNED_MEMBERS := ["_evaluate_party_condition", "PARTY_CONDITION_TYPES", "condition_defaults_for"]
 
 func test_every_autogrind_member_this_file_reaches_still_exists() -> void:
 	## @cowir-ai's counter to the snapshot limit above, and it converts the failure mode rather than

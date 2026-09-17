@@ -22,10 +22,15 @@ func test_help_intercept_handles_ui_up_and_ui_down() -> void:
 	var idx := text.find("# Help overlay intercept")
 	assert_gt(idx, -1, "help overlay intercept comment must exist (anchor)")
 	var window := text.substr(idx, 800)
-	assert_true(window.contains("is_action_pressed(\"ui_down\")"),
-		"help overlay must intercept ui_down to scroll the content")
-	assert_true(window.contains("is_action_pressed(\"ui_up\")"),
-		"help overlay must intercept ui_up to scroll the content")
+	# The raw read OR the latched reader — the INTERCEPT is the fact, not its spelling. Converted
+	# 2026-09-17: the stick's Y axis carries no echo flag, so one push scrolled five steps.
+	for dir in ["ui_down", "ui_up"]:
+		var raw: bool = window.contains('is_action_pressed("%s")' % dir)
+		var latched: bool = window.contains('nav == "%s"' % dir) and text.contains("MenuNav.step(")
+		assert_true(raw or latched,
+			"help overlay must intercept %s to scroll the content" % dir)
+	# …and whichever spelling it uses, one push must equal one press — that is behavioural and
+	# lives in test_the_help_overlay_scrolls_once_per_push, not here.
 	assert_true(window.contains("_scroll_help("),
 		"help overlay scrolling must route through _scroll_help so behavior is centralized")
 

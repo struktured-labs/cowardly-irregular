@@ -36,17 +36,24 @@ const RAW_READS := [
 ]
 
 ## Measured 2026-09-16. Shrinks only.
+## ⚠️ THE LAST ENTRY IS MEASURED IMMUNE, NOT UNMEASURED AND NOT UNCHECKED — and the evidence is a
+## behavioural arm rather than this comment, which is the correction to the false exemption I wrote
+## for AutogrindUI and had to remove an hour later.
+##
+##   RadialPicker   selects a slot by the stick's ANGLE, absolutely, instead of stepping a cursor.
+##                  A ramp re-selects the SAME slot every event: d-pad -> 3, odd ramp [3,3,3,3,3],
+##                  even ramp [3,3,3,3]. It stays listed because it DOES read raw; removing it
+##                  would tell this ledger it was converted.
+##                  Guarded by test_the_radial_picker_selects_by_angle_not_by_steps, which reds if
+##                  the selection ever becomes relative. A note cannot do that; an arm can.
+##
+## 🔑 IT TOOK `Input.parse_input_event()` TO MEASURE AT ALL. `_input_direction` reads the LIVE axis
+## via `Input.get_joy_axis()`, not the event, so a synthetic InputEventJoypadMotion leaves the
+## device at zero and three sweeps of mine reported "nothing moved". That is the whole reason this
+## entry said UNMEASURED rather than clean — and HowToPlayOverlay, filed the same way for a
+## different reader bug, turned out to have a real 5x defect.
 const KNOWN_UNCONVERTED := [
-	"res://src/exploration/ReadableProp.gd",
-	"res://src/ui/PartyStatusScreen.gd",
-	"res://src/ui/CharacterCreationScreen.gd",
-	"res://src/ui/GameOverScreen.gd",
-	"res://src/ui/HowToPlayOverlay.gd",
 	"res://src/ui/RadialPicker.gd",
-	"res://src/ui/RebalanceReviewPanel.gd",
-	"res://src/ui/autobattle/AutobattleGridEditor.gd",
-	"res://src/ui/autogrind/AutogrindGridEditor.gd",
-	"res://src/ui/autogrind/AutogrindUI.gd",
 ]
 
 
@@ -75,12 +82,16 @@ func _scan() -> Dictionary:
 	var converted: Array = []
 	var mixed: Array = []
 	var scanned := 0
+	var unreadable: Array = []
 	for path in _gd_files("res://src"):
 		if path.ends_with("MenuNav.gd"):
 			continue
-		var code: String = GdSource.code_of(path)
-		if code == "":
+		# An unreadable file used to `continue` — dropping it from the ledger's corpus without
+		# saying so, which is how a surface joins the unconverted set and nothing reports it.
+		if FileAccess.get_file_as_string(path) == "":
+			unreadable.append(path.get_file())
 			continue
+		var code: String = GdSource.code_of(path)
 		scanned += 1
 		var has_raw := false
 		for r in RAW_READS:
@@ -94,11 +105,15 @@ func _scan() -> Dictionary:
 				mixed.append(path)
 		elif has_raw:
 			raw.append(path)
-	return {"raw": raw, "converted": converted, "mixed": mixed, "scanned": scanned}
+	return {"raw": raw, "converted": converted, "mixed": mixed, "scanned": scanned,
+		"unreadable": unreadable}
 
 
 func test_no_new_surface_joins_the_unconverted_set() -> void:
 	var scan := _scan()
+	assert_eq(scan["unreadable"], [],
+		"these src/ files could not be read, so the ledger never judged them — an unconverted "
+		+ "surface hiding in that gap reads exactly like an empty gap: %s" % [scan["unreadable"]])
 	assert_gt(scan["scanned"], 200, "the scan must read the src tree; a short corpus passes vacuously")
 	var newcomers: Array = []
 	for path in scan["raw"]:
@@ -165,6 +180,6 @@ func test_the_scan_finds_both_populations() -> void:
 		"a known converted surface must be found, or the MenuNav probe is wrong")
 	# The exemplar is EXPECTED to move: it names one file so the probe is controlled against a
 	# specific known result, and converting that file must red this line rather than pass quietly.
-	assert_true(scan["raw"].has("res://src/ui/autobattle/AutobattleGridEditor.gd"),
+	assert_true(scan["raw"].has("res://src/ui/RadialPicker.gd"),
 		"a known unconverted surface must be found, or the raw probe is wrong — if this surface was "
 		+ "just converted, re-point the exemplar at another entry of KNOWN_UNCONVERTED")

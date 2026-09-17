@@ -109,12 +109,20 @@ def generate_sfx(
     # cannot hit a chiptune target. Overwriting one from its prompt silently restores the sound
     # struktured rejected — the same way the heal prompt still said "birdsong" after its asset
     # was fixed. Refuse rather than warn; a warning in a batch run scrolls past.
-    # `source` is a PROVENANCE LABEL on 88 entries (sox_synth, elevenlabs_foley, lmms_sf2_fluidr3...)
-    # and 11 of those are elevenlabs-sourced and legitimately regenerable here. Refuse only when it
-    # names a TOOL PATH, which is unambiguous and cannot collide with a label.
+    # ⛔ THE TOOL-PATH-ONLY PREDICATE LEFT 80 HAND-BUILT ASSETS UNGUARDED (measured 2026-09-17).
+    # `source` is a provenance label on 95 entries and the old rule refused only the 42 spelled as
+    # a tools/ path. The other 53 name a SYNTHESIS METHOD — sox_synth 59, lmms_sf2_fluidr3 15,
+    # ffmpeg_derive 4, lmms_freeboy 2 — and sailed straight through to the generator.
+    # weather_steam is the worked example: source `sox_synth`, an 8.0s PERIODIC steam bed built in
+    # the frequency domain by tools/gen_steam_bed.py precisely because the ElevenLabs asset was
+    # 3.0s of fade in a 5.0s file with a +53 dB wrap step. Its `duration_seconds` is still the DEAD
+    # asset's 5.0, so a regen would have requested five seconds and overwritten a seamless loop
+    # with the one-shot it was built to replace. (cowir-music found the prompt recording this.)
+    # INVERTED: allow-list what is regenerable rather than deny-list what is not. An unrecognised
+    # label now fails CLOSED — the artist-protection direction CLAUDE.md asks for at generation time.
     src = str(entry.get("source", ""))
-    if src.startswith("tools/"):
-        print(f"  REFUSE   {key}: source-locked to `{src}` — run that, not this")
+    if src and not src.startswith("elevenlabs"):
+        print(f"  REFUSE   {key}: source-locked to `{src}` \u2014 not an ElevenLabs asset; run its own tool")
         return False
 
     # A key whose `file` is not named after it writes over ANOTHER cue's asset. 2026-09-10: I ran

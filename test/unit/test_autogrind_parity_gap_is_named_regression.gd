@@ -45,6 +45,8 @@ const DECLARED := {
 	"summon_count": "see summon_id — same scene-side spawn",
 	"summon_duration": "see summon_id — same scene-side spawn",
 	"summon_message": "battle-log flavour for a spawn the grind does not perform",
+	"element_boost": "UNREACHABLE in a grind, measured not assumed: inferno_rage is the only ability authoring it, fire_dragon its only caster, and fire_dragon is not autogrind_spawned (only two monsters are, neither casts it), not in any encounter pool, not in any job kit. Live wired it (BattleManager:5833) after finding it inert; the grind needs it the day a caster becomes reachable, which DECLARED_UNREACHABLE re-measures every run",
+	"element_boost_modifier": "see element_boost — the magnitude half of the same unreachable key",
 	"corruption_risk": "SAVE corruption from meta abilities during automated play is a stakes ruling (CLAUDE.md: 'save corruption: actual mechanic, not just flavor'), not a parity repair",
 	"corruption_amount": "see corruption_risk — same stakes ruling",
 	## Same presentation class as `name`/`description`, but it earned a measurement rather than an
@@ -147,9 +149,22 @@ const CLOSED_PENDING_FOLD := [
 
 ## Today's gap, recorded rather than excused. This set may SHRINK freely — that is someone closing a
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
-const UNEXAMINED := [
-	"element_boost", "element_boost_modifier", "ignores_evasion",
-]
+## EMPTY as of 2026-09-17. `ignores_evasion` left by being IMPLEMENTED (the physical-arm dodge);
+## the other two left by being MEASURED — see DECLARED_UNREACHABLE, which re-derives that measurement
+## from the data files on every run rather than trusting this sentence.
+const UNEXAMINED := []
+
+
+## ⛔ A DECLARATION THAT RESTS ON UNREACHABILITY IS A CLAIM ABOUT DATA, NOT ABOUT CODE, and data is
+## edited by people who will never read this file. `element_boost` is safe to leave unwired only
+## because no grind-reachable monster casts the one ability that authors it — flip one JSON flag and
+## the declaration is false with nothing failing. Each entry names the AUTHORING key and the arm
+## re-derives the reachability itself, so the day someone makes the fire dragon grind-spawnable this
+## reds instead of the grind quietly running a boss whose signature buff does nothing.
+const DECLARED_UNREACHABLE := {
+	"element_boost": "no autogrind_spawned monster, encounter-pool monster or job kit casts an ability authoring it",
+	"element_boost_modifier": "rides on element_boost — same casters, same measurement",
+}
 
 ## ⛔ THE THIRD STATE, and it exists because I published a backlog number my instrument could not
 ## support. Axis 1 calls a key live-only when live CONTAINS it and the grind does not. The grind side
@@ -259,21 +274,69 @@ func test_no_new_divergence_arrives_unnamed() -> void:
 		"a key the live engine reads and the grind does not has appeared unnamed: %s — add it to UNEXAMINED, or to DECLARED with a reason, or close the gap" % str(unnamed))
 
 
-func test_the_ledger_does_not_claim_the_backlog_is_empty() -> void:
-	## A ledger whose UNEXAMINED list has quietly emptied while divergences remain would read as "all
-	## clear". If someone closes them all, this arm reds and asks for the file to be retired honestly
-	## rather than left asserting nothing.
-	var gap: Array = _live_only()
-	var unexamined_still_open: Array = []
-	for k in UNEXAMINED:
-		if gap.has(k):
-			unexamined_still_open.append(k)
-	if unexamined_still_open.is_empty():
-		assert_true(false,
-			"every unexamined divergence has been closed — retire this ledger deliberately rather than leaving an empty list that reads as a clean bill of health")
-	else:
-		gut.p("    still open: %s" % str(unexamined_still_open))
-		assert_gt(unexamined_still_open.size(), 0, "the backlog is real and named")
+func test_a_declaration_resting_on_unreachability_is_re_measured() -> void:
+	## ⛔ RETIRED AND REPLACED 2026-09-17, by its own demand. This arm asserted the UNEXAMINED backlog
+	## was NON-EMPTY, so that an emptied list could not read as a clean bill of health. Correct while
+	## a backlog is being worked and self-contradictory once it is finished: it red the moment the
+	## last two entries were measured, asking to be retired deliberately. This is that retirement.
+	##
+	## The successor guards the thing the empty list now RESTS ON. Every other DECLARED entry is a
+	## claim about CODE — the grind does not model summons, the grind renders nothing — and code that
+	## changes brings its own tests. These two are claims about DATA: element_boost is safe to leave
+	## unwired only because nothing that reaches a grind casts it. That is one JSON flag away from
+	## false, and nothing else in this suite would notice.
+	var ab: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var mon: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var monsters: Dictionary = mon.get("monsters", mon)
+	var jobs_raw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	var jobs: Dictionary = jobs_raw.get("jobs", jobs_raw)
+	var pools_raw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/enemy_pools.json"))
+	var pools: Dictionary = pools_raw.get("pools", pools_raw)
+	assert_gt(monsters.size(), 20, "CONTROL: monsters.json must actually parse, or every absence below is an artifact")
+	assert_gt(ab.size(), 100, "CONTROL: abilities.json must actually parse")
+
+	for key in DECLARED_UNREACHABLE:
+		assert_true(DECLARED.has(key), "%s is declared unreachable but carries no DECLARED reason" % key)
+		## the abilities that author this key at all
+		var authors: Array = []
+		for aid in ab:
+			if (ab[aid] as Dictionary).has(key):
+				authors.append(str(aid))
+		assert_gt(authors.size(), 0,
+			"nothing authors %s any more — the declaration is stale and the key can leave this file entirely" % key)
+		## every monster that can cast one of them
+		var casters: Array = []
+		for mid in monsters:
+			var m: Dictionary = monsters[mid]
+			for a in (m.get("abilities", []) as Array):
+				if authors.has(str(a)) and not casters.has(str(mid)):
+					casters.append(str(mid))
+		## FORM 4: the meta-boss builder draws from autogrind_spawned monsters
+		var reachable: Array = []
+		for mid in casters:
+			if bool((monsters[mid] as Dictionary).get("autogrind_spawned", false)):
+				reachable.append("%s (autogrind_spawned)" % mid)
+		## FORM 1: pooled monsters reach a grind through EncounterSystem
+		for pid in pools:
+			var pd: Variant = pools[pid]
+			var listed: Array = []
+			if pd is Dictionary and (pd as Dictionary).has("monsters"):
+				listed = (pd as Dictionary)["monsters"]
+			elif pd is Array:
+				listed = pd
+			for entry in listed:
+				var name: String = str(entry.get("id", "")) if entry is Dictionary else str(entry)
+				if casters.has(name):
+					reachable.append("%s (pool %s)" % [name, pid])
+		## FORM 2: a job kit puts it in the player's own hands
+		for jid in jobs:
+			var blob: String = JSON.stringify(jobs[jid])
+			for a in authors:
+				if blob.contains('"%s"' % a):
+					reachable.append("%s (job %s)" % [a, jid])
+		gut.p("    %s — authored by %s · casters %s · GRIND-REACHABLE %s" % [key, str(authors), str(casters), str(reachable)])
+		assert_eq(reachable, [],
+			"%s is declared unreachable and something now reaches it in a grind: %s — wire the key or move it out of DECLARED_UNREACHABLE" % [key, str(reachable)])
 
 
 ## A gap that REOPENS needs no arm of its own: it leaves DECLARED / UNEXAMINED / CLOSED_PENDING_FOLD
@@ -308,6 +371,13 @@ const GRIND_PATH_MARKER := {
 	## first marker pointed at a consumer and this arm caught it — the grind's support arm reads the
 	## key exactly where live's support executor does.
 	"next_attack_multiplier": "ability.get(\"next_attack_multiplier\"",
+	## ⛔ DECLARED LATE, and the delay is the point: I wired this key into the physical arm's dodge
+	## gate and shipped without running THIS file, so the guard caught its own author. It moved off
+	## the unexamined backlog by being IMPLEMENTED, and nothing announced the move — which is the
+	## failure mode arm 7 exists for. The marker is the `ability.get` and not `_target_dodges_physical(`
+	## on purpose: that helper is called from _resolve_attack too, and a marker matching a plain
+	## attack would credit the key to an arm live never reads it in.
+	"ignores_evasion": "ability.get(\"ignores_evasion\"",
 	## ⚠️ ALL FOUR secondary_* KEYS, AND THREE OF THEM WERE INVISIBLE TO THIS MAP UNTIL 2026-09-16.
 	## They live in `_apply_secondary_effect`, which `_execute_support_ability` calls — but the old
 	## walk-back skipped past any non-executor function, so a read inside a helper was credited to

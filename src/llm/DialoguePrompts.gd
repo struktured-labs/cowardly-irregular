@@ -343,11 +343,12 @@ Conditions (AND-chained). type is one of:
 Numeric conditions take op ∈ {<, <=, ==, >=, >, !=} and value.
 member_hp / member_mp / member_status / member_dead accept an OPTIONAL "member" (a job id
 such as "cleric", or a character name). With it the condition asks about that character;
-without it, about ANY party member. member_status takes the status name in "value".
+without it, about ANY party member. member_status takes the status NAME in "value";
+the only ids that exist are listed below.
 
 Actions. type is one of:
   stop_grinding, heal_party, restore_mp, flee_battle, switch_profile, member_ability
-switch_profile requires character_id (PC id string) and profile_index (int).
+switch_profile requires character_id (ONE member) and profile_index (int).
 member_ability takes "member" (job id such as "cleric", or a character name), "ability" (an
 ability id that member knows), and an optional "target". A target names ANOTHER MEMBER the same
 way "member" does; omit it, or use "lowest_hp_ally", for the ally who most needs it. Autobattle
@@ -956,7 +957,9 @@ static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -
 static func build_rule_composition(domain: String, prompt_text: String, current_rules: Array,
 		kit_context: Dictionary = {}) -> String:
 	var grammar: String = AUTOBATTLE_GRAMMAR_DESCRIPTION if domain == "autobattle" else AUTOGRIND_GRAMMAR_DESCRIPTION
-	var kit_block: String = _format_rule_kit(kit_context) if domain == "autobattle" else ""
+	var kit_block: String = _format_rule_kit(kit_context) if domain == "autobattle" \
+		else _format_numeric_scales(kit_context) + _format_status_vocabulary() \
+			+ _format_party_kit(kit_context)
 	var current_json: String = JSON.stringify(current_rules) if current_rules.size() > 0 else "[]"
 	return (
 		"You are a rule authoring assistant for a JRPG's autobattle/autogrind system.\n\n"
@@ -1029,6 +1032,116 @@ static func _format_kit_reminder(kit_context: Dictionary) -> String:
 		+ "A rule naming any other ability is discarded, so spend every rule on these.") % ", ".join(ids)
 
 
+## The AUTOGRIND twin of _format_rule_kit. That grammar tells the model member_ability's
+## "ability" is "an ability id that member knows" and, until 2026-09-17, named no abilities
+## anywhere in the prompt — 2,487 chars against autobattle's ~8,076, the kit being the
+## difference. Measured on live llama3 with an intent that asks for one: 24 of 24 emitted
+## ids were absent from abilities.json.
+## The status ids member_status can ever be TRUE for, curated to the afflictions worth
+## interrupting a grind. Measured on live llama3 2026-09-17, 20 samples with an intent that
+## asks for one: 41 of 41 emitted values were English participles — frozen 18, poisoned 17,
+## burned 6 — and Combatant.has_status matches literally, so every one was silently false.
+## test_the_grind_prompt_names_a_status_that_can_be_true derives the applicable set from
+## BattleManager and reds if an entry here stops being reachable.
+## Keyed by the engine's id, valued by the English a player would actually type. Used by BOTH
+## domains: the grind's member_status and autobattle's has_status family match literally. Measured
+## 2026-09-17: naming the ids alone left 28 of 46 values unmatchable, because the intent says
+## "frozen" and NO frozen status exists — BattleManager:5014 applies freeze AS stun, so
+## without the mapping the model has nowhere to put the player's own word.
+const STATUS_VOCABULARY := {
+	"poison": ["poisoned"],
+	"burn": ["burned", "on fire", "burning"],
+	"blind": ["blinded"],
+	"silence": ["silenced", "muted"],
+	"stun": ["stunned", "frozen", "freeze", "paralysed", "paralyzed"],
+	"sleep": ["asleep", "sleeping"],
+	"confuse": ["confused"],
+	"curse": ["cursed"],
+	"charm": ["charmed"],
+}
+
+
+## Rendered from STATUS_VOCABULARY so the grammar above can point at the list
+## without carrying a second copy of it.
+## What each numeric condition's `value` is MEASURED IN. The grammar said only "op and
+## value", and the model answered in the units it assumed: 3600 for time_elapsed against an
+## evaluator that computes MINUTES, and 10-50 for corruption on a scale where 4.5 ends the
+## session. Both produce rules that validate, deliver, and never fire.
+static func _format_numeric_scales(kit_context: Dictionary) -> String:
+	var scales: Dictionary = kit_context.get("scales", {})
+	if scales.is_empty():
+		return ""
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("\n\nWHAT THE NUMBERS MEAN. A value on the wrong scale validates and then")
+	lines.append("never fires, so these are not hints:")
+	lines.append("  time_elapsed    MINUTES of this session. 30 means half an hour, NOT seconds.")
+	lines.append("  party_hp_min / party_hp_avg / party_mp_avg / member_hp / member_mp")
+	lines.append("                  PERCENT, 0-100.")
+	lines.append("  corruption      a level that starts at 0.0 and rises slowly. This session")
+	lines.append("                  stops itself at %s, so anything above that never fires." % str(scales.get("corruption_limit", 4.5)))
+	lines.append("  efficiency      a multiplier that starts at %s, not a percent." % str(scales.get("efficiency_start", 1.0)))
+	lines.append("  battles_done / win_streak / inventory_items / reached_level / alive_count")
+	lines.append("                  plain counts.")
+	return "\n".join(lines)
+
+
+static func _format_status_vocabulary() -> String:
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("\n\nSTATUS IDS. member_status's \"value\" is ONE id from this list — never a list,")
+	lines.append("never an English word. The engine matches the id literally, so \"frozen\" or")
+	lines.append("\"poisoned\" is never true of anyone. Say it the engine's way:")
+	for id in STATUS_VOCABULARY:
+		lines.append("  %s   for %s" % [str(id), ", ".join(STATUS_VOCABULARY[id])])
+	return "\n".join(lines)
+
+
+static func _format_party_kit(kit_context: Dictionary) -> String:
+	if kit_context.is_empty() or not bool(kit_context.get("resolved", false)):
+		return ""
+	var party: Array = kit_context.get("party", [])
+	if party.is_empty():
+		return ""
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("\n\nPARTY KITS. These are the party and the abilities each one knows:")
+	for raw in party:
+		var entry: Dictionary = raw
+		var costs: Dictionary = entry.get("costs", {})
+		var parts: PackedStringArray = PackedStringArray()
+		for aid in (entry.get("kit", []) as Array):
+			parts.append("%s (%d MP)" % [str(aid), int(costs.get(str(aid), 0))])
+		lines.append("  %s [%s]: %s" % [
+			str(entry.get("member", "?")), str(entry.get("job_id", "?")), ", ".join(parts)])
+		## member_ability runs BETWEEN fights, and the engine refuses anything without an
+		## authored heal/MP effect. Listing the whole kit above taught the model ids that
+		## cannot run, so the usable set is named separately rather than implied.
+		if entry.has("between_battle"):
+			var usable: Array = entry.get("between_battle", [])
+			if usable.is_empty():
+				lines.append("      member_ability: NOTHING — %s has no ability that works between fights"
+					% str(entry.get("member", "this member")))
+			else:
+				var ups: PackedStringArray = PackedStringArray()
+				for aid in usable:
+					ups.append("%s (%d MP)" % [str(aid), int(costs.get(str(aid), 0))])
+				lines.append("      member_ability: %s" % ", ".join(ups))
+		var profiles: Array = entry.get("profiles", [])
+		if not profiles.is_empty():
+			var slots: PackedStringArray = PackedStringArray()
+			for n in profiles.size():
+				slots.append("%d %s" % [n, str(profiles[n])])
+			lines.append("      switch_profile slots: %s" % ", ".join(slots))
+	lines.append("member_ability's \"ability\" MUST come from that member's own member_ability line.")
+	lines.append("Anything else is DISCARDED and that rule never fires — including an ability the")
+	lines.append("member really knows, if it only works inside a battle.")
+	## The switch_profile guidance lives HERE, not in the grammar, because it points at the
+	## roster above it — in the grammar it would promise a list that an unresolved context
+	## never renders, which is the defect this whole block exists to remove.
+	lines.append("switch_profile's \"character_id\" is one of the members above and nothing else:")
+	lines.append("there is no \"everyone\", \"all\" or \"*\". To switch the whole party, emit one")
+	lines.append("switch_profile action per member. \"profile_index\" is that member's own slot.")
+	return "\n".join(lines)
+
+
 static func _format_rule_kit(kit_context: Dictionary) -> String:
 	if kit_context.is_empty() or not bool(kit_context.get("resolved", false)):
 		return ""
@@ -1050,6 +1163,21 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 			cheapest_cost = cost
 	lines.append("Anything not on that list — including abilities from other jobs —")
 	lines.append("is rejected and DISCARDS THE WHOLE RULE SET. Prefer 'attack' when unsure.")
+	## An `item` action's id is deep-checked, so one wrong id discards the whole ruleset —
+	## the same cost as a wrong ability, and the grammar named only "potion".
+	var item_ids: Array = kit_context.get("items", [])
+	if not item_ids.is_empty():
+		lines.append("")
+		lines.append("ITEM IDS. An \"item\" action's \"id\" and an item_count's \"item_id\" must be")
+		lines.append("one of these EXACTLY — singular where the list is singular, plural where it")
+		lines.append("is plural. A near miss is rejected and DISCARDS THE WHOLE RULE SET:")
+		lines.append("  " + ", ".join(item_ids))
+	lines.append("")
+	lines.append("STATUS IDS. has_status / not_has_status / ally_has_status / enemy_has_status /")
+	lines.append("not_enemy_has_status take a \"status\" matched LITERALLY — an English word like")
+	lines.append("\"silenced\" or \"poisoned\" is never true of anyone. Say it the engine's way:")
+	for sid in STATUS_VOCABULARY:
+		lines.append("  %s   for %s" % [str(sid), ", ".join(STATUS_VOCABULARY[sid])])
 	# The grammar's worked examples above carry real ability ids, and the model COPIES
 	# them: 'esuna' occurs once in the whole prompt, inside a complete rule, and turned
 	# up in 5 of 10 fighter compositions. Examples teach harder than prohibitions.

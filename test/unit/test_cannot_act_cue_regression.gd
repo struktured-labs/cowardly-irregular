@@ -56,10 +56,24 @@ func test_the_cue_fires_for_skip_types_and_stays_silent_otherwise() -> void:
 	## sound never plays. Calling the real method is what closes that.
 	var scene = load("res://src/battle/BattleScene.gd").new()
 	autofree(scene)
+	## The two calls below land in ONE frame and share a key, so the second was answered by the
+	## SFX cooldown rather than by a play: it returned true having sounded nothing, and this arm
+	## could not fail for the reason it states. play_status_if_authored now reports HEARD, so the
+	## cooldown is cleared between them — the same exemption play_voice makes, for the same reason.
+	var sm: Node = get_node_or_null("/root/SoundManager")
+	assert_not_null(sm, "CONTROL: SoundManager must be present, or both arms below are vacuous")
+	if sm:
+		sm._sfx_cooldowns.clear()
 	assert_true(scene._cue_if_turn_skipped({"type": "stun_skip"}),
 		"a stun_skip must fire the cannot-act cue")
+	if sm:
+		sm._sfx_cooldowns.clear()
 	assert_true(scene._cue_if_turn_skipped({"type": "charm_skip"}),
 		"and so must charm_skip — the suffix is the key, not a hardcoded status list")
+	## Without the clear, a second skip in the same frame is correctly NOT heard. Pinning that here
+	## keeps the two arms above honest: if this ever returns true, the report is back to HANDLED.
+	assert_false(scene._cue_if_turn_skipped({"type": "sleep_skip"}),
+		"a third same-frame skip reported FIRED — the cue is back to reporting handled, not heard")
 	assert_false(scene._cue_if_turn_skipped({"type": "attack"}),
 		"an ordinary attack must NOT fire it")
 	assert_false(scene._cue_if_turn_skipped({}),

@@ -13,6 +13,7 @@ var _rain_emitter: CPUParticles2D
 var _lightning_flash: ColorRect
 var _glitch_flash: ColorRect
 var _player_ref: Node2D
+var _host: Node = null
 var _current_world: String = ""
 
 var _rendered_condition: String = ""
@@ -61,6 +62,7 @@ static func world_id_for(world_num: int) -> String:
 
 func setup(parent: Node, player: Node2D, world_id: String) -> void:
 	_player_ref = player
+	_host = parent
 	_current_world = world_id
 	if world_id == "abstract":
 		return
@@ -153,6 +155,20 @@ func _game_weather() -> String:
 	return "clear"
 
 
+## The ambient key weather is currently driving, or "" when it is driving none. ONE expression,
+## read by the match below AND by owns_ambient() -- a second copy would let the zone router and the
+## player disagree about who owns the layer.
+func _ambient_key_for(condition: String) -> String:
+	var p: Dictionary = RENDER.get(condition, {})
+	return str(p.get("ambient", WORLD_CLEAR_AMBIENTS.get(_current_world, "")))
+
+
+## True while weather owns the ambient layer. The zone router asks before it overrides, and
+## WeatherSystem hands the layer back through the host when this goes false.
+func owns_ambient() -> bool:
+	return _ambient_key_for(_rendered_condition) != ""
+
+
 func _apply_condition(condition: String) -> void:
 	_rendered_condition = condition
 	var params: Dictionary = RENDER.get(condition, {})
@@ -178,14 +194,21 @@ func _apply_condition(condition: String) -> void:
 	if sm and sm.has_method("play_ambient"):
 		# Clear falls back to the world's fair-weather bed (v1 behavior), not silence.
 		# Literal keys per branch so the sfx-orphan audit can see every ambient this plays.
-		match str(params.get("ambient", WORLD_CLEAR_AMBIENTS.get(_current_world, ""))):
+		match _ambient_key_for(condition):
 			"weather_rain": sm.play_ambient("weather_rain")
 			"weather_storm_bed": sm.play_ambient("weather_storm_bed")
 			"weather_steam": sm.play_ambient("weather_steam")
 			"weather_smog": sm.play_ambient("weather_smog")
 			"weather_glitch": sm.play_ambient("weather_glitch")
 			"weather_sunny": sm.play_ambient("weather_sunny")
-			_: if sm.has_method("stop_ambient"): sm.stop_ambient()
+			## No weather bed and no fair-weather bed for this world (medieval, and only medieval):
+			## hand the layer back to the PLACE rather than to silence. Duck-typed because the hosts
+			## share no base class, and a host without the hook still ends at stop_ambient() as before.
+			_:
+				if _host and _host.has_method("restore_place_ambient"):
+					_host.restore_place_ambient()
+				elif sm.has_method("stop_ambient"):
+					sm.stop_ambient()
 
 
 func _flashes_suppressed() -> bool:

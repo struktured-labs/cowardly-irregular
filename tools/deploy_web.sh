@@ -527,7 +527,20 @@ CONFIRM_BUDGET="${CONFIRM_BUDGET:-900}"
 CONFIRMED=0
 _waited=0
 while [ "$_waited" -lt "$CONFIRM_BUDGET" ]; do
-    if "${BUTLER_BIN}" status "${ITCH_TARGET}" 2>/dev/null | grep -q "${VERSION}"; then
+    # ⛔ NOT `butler status | grep -q`. This file's own header (line 38) records that
+    # `git tag | head -1` dies under `set -o pipefail` — head closes the pipe, git takes
+    # SIGPIPE, pipefail propagates 141. `grep -q` does the same thing: it exits the instant it
+    # MATCHES, so a successful confirmation is exactly when the producer gets SIGPIPE.
+    #
+    # Measured 2026-09-17: exit 0, three for three — because butler's output is 1052 bytes and
+    # fits the 64 KiB pipe buffer, so it finishes writing before grep exits. Correct by OUTPUT
+    # SIZE, not by construction. Add channels or a more verbose butler and the confirmation
+    # loop inverts: a successful upload reads as unconfirmed, and the loop burns its full
+    # 900-second budget before reporting a failure that did not happen.
+    #
+    # The same hazard, one line apart in kind, already cost this file a documented fix.
+    _st="$("${BUTLER_BIN}" status "${ITCH_TARGET}" 2>/dev/null)"
+    if printf '%s' "$_st" | grep -q "${VERSION}"; then
         CONFIRMED=1; break
     fi
     sleep 8; _waited=$((_waited+8))

@@ -653,6 +653,17 @@ func create_scaled_enemy_data(base_data: Dictionary) -> Dictionary:
 	return scaled
 
 
+## A KO'd member earns nothing — unless gear or a passive says so (struktured 2026-09-06).
+## Asks LIVE's own predicate instead of growing a third copy of the equipment walk: BattleManager
+## owns both halves (mourners_ledger's accessory key, posthumous_credit's meta_effect) and resolves
+## PassiveSystem from the TREE, which a detached grind Combatant cannot do for itself.
+func _earns_exp_while_dead(member) -> bool:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null or not bm.has_method("earns_exp_while_dead"):
+		return false
+	return bool(bm.earns_exp_while_dead(member))
+
+
 func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 	"""Handle a battle victory during autogrind.
 	Updates stats, CSI, efficiency, checks thresholds."""
@@ -691,9 +702,9 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 		else:
 			total_items_gained[item_id] = quantity
 
-	# Award EXP to party
+	# Award EXP to party — the dead earn nothing without the gear or passive that says otherwise
 	for member in grind_party:
-		if member is Combatant and member.is_alive:
+		if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
 			member.gain_job_exp(adjusted_exp)
 
 	# Derive JP: 1 base JP per battle, scaled by yield and efficiency
@@ -807,6 +818,57 @@ const PARTY_CONDITION_TYPES = {
 	"rare_item_found": "Rare Item Found",
 	"always": "Always"
 }
+
+## The op and value a condition STARTS with when a player picks that type. Lives here, beside
+## PARTY_CONDITION_TYPES, because this file already calls itself the single source of truth for the
+## grammar and the defaults are part of it — the OPERATOR is half the meaning of a condition.
+##
+## ⛔ IT WAS IN THE UI AND THE GRID EDITOR HAD ITS OWN COPY, WHICH WAS WRONG FOR SIX OF NINE.
+## `_cycle_condition_type` wrote `op = "<"` for every numeric type, so cycling to Battles produced
+## `battles_done < 50` — true from battle zero and false forever after — the exact inverse of the
+## only reason anyone adds that condition. Same for Reached Lv, Corrupt, Effic and Inv Items; each
+## fired while the quantity was LOW and stopped once it reached the number the player typed.
+## Found by @cowir-main in a tree-wide sweep.
+const CONDITION_DEFAULTS := {
+	"party_hp_avg": {"op": "<", "value": 30},
+	"party_hp_min": {"op": "<", "value": 20},
+	"party_mp_avg": {"op": "<", "value": 20},
+	"alive_count": {"op": "<=", "value": 2},
+	"member_dead": {"op": "==", "value": 0},
+	"member_injured": {"op": "==", "value": 0},
+	"member_hp": {"op": "<", "value": 30},
+	"member_mp": {"op": "<", "value": 20},
+	"member_status": {"op": "==", "value": "poison"},
+	"battles_done": {"op": ">=", "value": 50},
+	"win_streak": {"op": ">=", "value": 20},
+	"corruption": {"op": ">=", "value": 3.0},
+	"efficiency": {"op": ">=", "value": 5.0},
+	"time_elapsed": {"op": ">=", "value": 30},
+	"inventory_items": {"op": ">=", "value": 20},
+	"ability_learned": {"op": "==", "value": 0},
+	"reached_level": {"op": ">=", "value": 10},
+	"rare_item_found": {"op": "==", "value": 0},
+	"always": {"op": "==", "value": 0},
+}
+
+
+## Party-level condition ids, in PARTY_CONDITION_TYPES order. The grid editor offers these: it has no
+## member picker, so a member_* condition there would sit on a default character forever.
+func party_level_condition_ids() -> Array:
+	var out: Array = []
+	for k in PARTY_CONDITION_TYPES:
+		if not str(k).begins_with("member_"):
+			out.append(str(k))
+	return out
+
+
+## The op/value a freshly-picked condition of this type should carry.
+func condition_defaults_for(type_id: String) -> Dictionary:
+	var d: Variant = CONDITION_DEFAULTS.get(type_id, null)
+	if d == null:
+		return {"op": "<", "value": 0}
+	return {"op": str((d as Dictionary).get("op", "<")), "value": (d as Dictionary).get("value", 0)}
+
 
 ## Operators (shared with autobattle)
 const OPERATORS = {
@@ -1094,7 +1156,9 @@ func _process_battle_results(result: Dictionary) -> void:
 			else:
 				total_items_gained[item_id] = quantity
 
-		# Award EXP to party
+		# Award EXP to party. NOT given the exp_while_dead exception the other two sites carry:
+		# _run_automated_battle, this function's only caller, has ZERO callers of its own. Wiring a
+		# dead path would make the fix look three-for-three while the grind ran two.
 		for member in grind_party:
 			if member is Combatant and member.is_alive:
 				member.gain_job_exp(adjusted_exp)
@@ -1325,7 +1389,7 @@ func on_meta_boss_victory(boss_data: Dictionary) -> void:
 	# Bonus EXP from meta-boss
 	var bonus_exp: int = boss_data.get("exp_reward", 250)
 	for member in grind_party:
-		if member is Combatant and member.is_alive:
+		if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
 			member.gain_job_exp(bonus_exp)
 	total_exp_gained += bonus_exp
 	_grind_stats["total_exp"] += bonus_exp
@@ -1957,6 +2021,41 @@ func _find_restorative_caster(party: Array) -> Dictionary:
 const GENERIC_ALLY_TARGETS := ["lowest_hp_ally", "lowest_hp", "ally", "all", "all_allies", "party", "any"]
 
 
+## Whether member_ability can actually execute an ability between fights, and BY HOW MUCH.
+## Between battles this system applies an authored heal_amount / mp_amount and refuses everything
+## else BY NAME at runtime with a printed skip line, so a consumer has to know before it OFFERS one.
+##
+## ⛔ THE OWNER OF A RULE THAT HAD THREE COPIES, and each of us found a different one. The executor
+## enforced it inline; AutogrindUI carried a private `_can_apply_between_battles` (2026-09-09, after
+## the editor seeded a Fighter's power_strike into a rule that could never fire); and because that
+## copy was PRIVATE, src/llm could not reach it and the grind prompt re-derived the rule, listing
+## each member's WHOLE kit. @cowir-ai measured the cost on live llama3 2026-09-17: 40 of 53
+## member_ability actions named a real ability this refuses — power_strike 20, battle_hymn 19.
+##
+## Returns the AMOUNTS as well as the verdict so the executor reads the keys ONCE. A predicate that
+## answers "can it" while its caller separately re-reads "how much" is still two expressions of one
+## fact, which is the shape this function exists to remove.
+func between_battle_effect_of(ability_id: String) -> Dictionary:
+	var none: Dictionary = {"ok": false, "heal": 0, "mp": 0}
+	if ability_id == "":
+		return none
+	var js = _get_autoload_node("JobSystem")
+	if js == null or not js.has_method("get_ability"):
+		return none
+	var a: Dictionary = js.get_ability(ability_id)
+	if a.is_empty():
+		return none
+	var heal: int = int(a.get("heal_amount", 0))
+	var mp: int = int(a.get("mp_amount", 0))
+	return {"ok": heal > 0 or mp > 0, "heal": heal, "mp": mp}
+
+
+## Verdict-only convenience. @cowir-ai's name is kept deliberately: RuleComposer already calls it in
+## four places, and collapsing two owners should not also move another lane's call sites.
+func ability_works_between_battles(ability_id: String) -> bool:
+	return bool(between_battle_effect_of(ability_id).get("ok", false))
+
+
 func _member_ability_apply(caster, ability_id: String, target_key: String) -> Dictionary:
 	if caster == null:
 		return {"ok": false, "reason": "caster not in party"}
@@ -1992,9 +2091,13 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 			return {"ok": false, "reason": "target '%s' names no party member" % target_key}
 		return {"ok": false, "reason": "no living ally to target"}
 
-	var heal := int(ability.get("heal_amount", 0))
-	var mp_amt := int(ability.get("mp_amount", 0))
-	if heal <= 0 and mp_amt <= 0:
+	## Through the owner, not a second read of the same two keys. Both halves came from one call:
+	## the landed version asked `ability_works_between_battles` and then re-read heal_amount /
+	## mp_amount immediately after, which leaves the duplication this function was written to delete.
+	var effect: Dictionary = between_battle_effect_of(ability_id)
+	var heal := int(effect.get("heal", 0))
+	var mp_amt := int(effect.get("mp", 0))
+	if not bool(effect.get("ok", false)):
 		return {"ok": false, "reason": "'%s' has no between-battle effect this system models" % ability_id}
 
 	caster.current_mp -= cost

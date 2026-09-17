@@ -1027,6 +1027,12 @@ func _input(event: InputEvent) -> void:
 	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay) and _rule_composer_overlay.visible:
 		return
 
+	# MenuNav, not a raw read: the stick's Y axis carries no echo flag, so one push stepped this grid
+	# five rows. Measured on a 12-rule grid: dpad 1, stick 5. Placed AFTER the keyboard and composer
+	# delegations above — step() CONSUMES and its latch is static, so reading it earlier would take
+	# the nav those overlays handle themselves.
+	var nav: String = MenuNav.step(event)
+
 	# Right stick X only — ui_up/ui_down bind axis 1, so a blanket motion return kills navigation
 	if event is InputEventJoypadMotion and event.axis == JOY_AXIS_RIGHT_X:
 		if _handle_value_stick(event):
@@ -1048,27 +1054,27 @@ func _input(event: InputEvent) -> void:
 		return
 
 	# D-Pad navigation - check echo to prevent rapid-fire when holding keys
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	if nav == "ui_up":
 		cursor_row = max(0, cursor_row - 1)
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
+	elif nav == "ui_left":
 		cursor_col = max(0, cursor_col - 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		cursor_col = min(_get_max_col_for_row(cursor_row), cursor_col + 1)
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
@@ -1227,35 +1233,29 @@ func _cycle_condition_type() -> void:
 		return
 
 	var cond = conditions[cursor_col]
-	var types = ["party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count", "battles_done", "corruption", "efficiency", "inventory_items", "ability_learned", "reached_level", "rare_item_found", "always"]
+	## ⛔ FROM AutogrindSystem, WHICH OWNS THE GRAMMAR. This function used to carry its own 12-entry
+	## type list and its own value table, and wrote `op = "<"` for every numeric type. Six of the
+	## nine that take an operator were wrong, five of them INVERTED: cycling to Battles produced
+	## `battles_done < 50`, true from battle zero and false forever after 50 — the exact inverse of
+	## "after 50 battles", which is the only reason anyone adds that condition. Same for Reached Lv,
+	## Corrupt, Effic and Inv Items. The console had the right defaults all along, one file away.
+	## ⚠️ AND IT WAS STICKY, WHICH IS WORSE THAN WRONG-ONCE: the op was written only `if not
+	## cond.has("op")`, so a cell that started life as Party HP% kept `<` through every later type.
+	## The operator belonged to whichever type the cell was FIRST, not the one it shows now.
+	## The private list also omitted win_streak and time_elapsed, which the evaluator supports and
+	## _format_condition already renders — conditions the editor could display and never offer.
+	var types: Array = AutogrindSystem.party_level_condition_ids()
 	var current_type = cond.get("type", "always")
 	var idx = types.find(current_type)
 	idx = (idx + 1) % types.size()
-	cond["type"] = types[idx]
+	var new_type: String = str(types[idx])
+	cond["type"] = new_type
 
-	var value_less_types := ["always", "ability_learned", "rare_item_found"]
-	if not (types[idx] in value_less_types):
-		if not cond.has("op"):
-			cond["op"] = "<"
-		if not cond.has("value"):
-			# Set sensible defaults per type
-			match types[idx]:
-				"party_hp_avg", "party_mp_avg", "party_hp_min":
-					cond["value"] = 50
-				"alive_count":
-					cond["value"] = 3
-				"battles_done":
-					cond["value"] = 50
-				"corruption":
-					cond["value"] = 3.0
-				"efficiency":
-					cond["value"] = 5.0
-				"inventory_items":
-					cond["value"] = 20
-				"reached_level":
-					cond["value"] = 10
-				_:
-					cond["value"] = 50
+	## Reset BOTH on a type change rather than filling only what is absent: the type IS the question,
+	## so an op and value carried over from the previous one are answers to a different one.
+	var defaults: Dictionary = AutogrindSystem.condition_defaults_for(new_type)
+	cond["op"] = defaults.get("op", "<")
+	cond["value"] = defaults.get("value", 0)
 
 	_refresh_grid()
 
