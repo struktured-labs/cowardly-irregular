@@ -713,13 +713,21 @@ func play_ui(sound_key: String) -> void:
 	_play_sound(_ui_player, SOUNDS[sound_key])
 
 
+## The battle channel's level for a cue: its base plus any authored trim. ONE owner, because
+## volume_db PERSISTS on the shared player — a caller passing NAN inherits whatever the previous
+## cue left. Measured 2026-09-17: advance_undo (+6) left every following hit 6 dB LOUD and
+## corruption_ap_flicker (-6) left them 6 dB QUIET, until some other cue set an explicit level.
+func _battle_level(sound_key: String) -> float:
+	return SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+
+
 func play_battle(sound_key: String) -> void:
 	"""Play a battle sound effect — world variant first, then default, else procedural"""
 	# Cycle #13: play_ability was the ONLY prefix-aware path, so an authored
 	# w4_enemy_death could never be reached from the battle side.
 	var world_key: String = _get_world_sfx_prefix() + sound_key
 	# Explicit level on EVERY call, matching play_ui: volume_db persists on the shared player, so one trimmed cue would otherwise quiet every battle sound after it.
-	var level: float = SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	var level: float = _battle_level(sound_key)
 	if world_key != sound_key and _try_play_sfx_from_manifest(_battle_player, world_key, level):
 		return
 	if _try_play_sfx_from_manifest(_battle_player, sound_key, level):
@@ -830,7 +838,7 @@ func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
 	if player == null:
 		play_battle(sound_key)
 		return
-	var level: float = SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	var level: float = _battle_level(sound_key)
 	var world_key: String = _get_world_sfx_prefix() + sound_key
 	if world_key != sound_key and _try_play_sfx_from_manifest(player, world_key, level):
 		return
@@ -840,7 +848,9 @@ func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
 	"""Play a battle sound with volume and pitch scaling for power-based effects"""
-	if _try_play_sfx_from_manifest(_battle_player, sound_key, volume_db, pitch_scale):
+	## volume_db is a TRIM on the channel, never the level: its one caller passes lerp(-3,+3) "scale volume based on power", and forwarding it raw made it ABSOLUTE — every elemental impact landed 3-9 dB over the -6 dB battle base and persisted there. 0.0 now means "no trim".
+	var level: float = _battle_level(sound_key) + volume_db
+	if _try_play_sfx_from_manifest(_battle_player, sound_key, level, pitch_scale):
 		return
 	if not SOUNDS.has(sound_key):
 		return
@@ -848,7 +858,7 @@ func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: 
 	pitch_scale = clamp(pitch_scale, 0.1, 10.0)
 	var params = SOUNDS[sound_key].duplicate()
 	# Apply volume scaling
-	params["volume_db"] = volume_db
+	params["volume_db"] = level
 	# Apply pitch scaling to frequency
 	if params.has("freq"):
 		params["freq"] = params["freq"] * pitch_scale
@@ -865,10 +875,10 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 	var bias: float = _combo_pitch_bias()
 	if not weapon_type.is_empty():
 		var per_weapon_key = "attack_hit_%s%s" % [weapon_type, suffix]
-		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key, NAN, bias):
+		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key, _battle_level(per_weapon_key), bias):
 			_advance_hit_chain()
 			return
-	if _try_play_sfx_from_manifest(_battle_player, generic_key, NAN, bias):
+	if _try_play_sfx_from_manifest(_battle_player, generic_key, _battle_level(generic_key), bias):
 		_advance_hit_chain()
 		return
 	if not SOUNDS.has(generic_key):
@@ -1226,7 +1236,7 @@ func play_footstep(terrain: String = "grass") -> void:
 func play_status(status_name: String) -> void:
 	"""Play sound for a status effect application (poison, sleep, confuse, paralyze, etc.)"""
 	var key = "status_" + status_name.to_lower()
-	if _try_play_sfx_from_manifest(_battle_player, key):
+	if _try_play_sfx_from_manifest(_battle_player, key, _battle_level(key)):
 		return
 	if SOUNDS.has(key):
 		_play_sound(_battle_player, SOUNDS[key])
@@ -1241,7 +1251,7 @@ func play_status_if_authored(sound_key: String) -> bool:
 	## and this return is documented by its caller (BattleScene._cue_if_turn_skipped) as "whether the
 	## cue actually fired, so a test can assert BEHAVIOUR" — a claim the raw return cannot support.
 	## Measured: two skips in one frame both returned true, the second having played nothing.
-	if not _try_play_sfx_from_manifest(_battle_player, sound_key):
+	if not _try_play_sfx_from_manifest(_battle_player, sound_key, _battle_level(sound_key)):
 		return false
 	return not _sfx_suppressed_by_cooldown
 
@@ -1254,13 +1264,24 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 	var duration = params.get("duration", 0.1)
 	var freq = params.get("freq", 440.0)
 	var sound_type = params.get("type", "blip")
-	var volume_db = params.get("volume_db", 0.0)
+	## Default to the PLAYER'S level, not 0.0. volume_db is CHANNEL state — every player is built
+	## at a design-intent base (SFX_UI_BASE_DB -16, SFX_BATTLE_BASE_DB -6, …) and set_sfx_volume
+	## re-asserts those "in case a caller mutated them". _play_sound was that caller: a 0.0 default
+	## overwrote the base, so the six procedural-only UI cues played 16 dB above every menu blip,
+	## and a later file cue passing NAN ("preserve the channel base") inherited 0.0 instead.
+	var volume_db = params.get("volume_db", player.volume_db)
 
 	var generator = AudioStreamGenerator.new()
 	generator.mix_rate = sample_rate
 
 	player.stream = generator
 	player.volume_db = volume_db
+	## Players are SHARED and _try_play_sfx_from_manifest writes pitch_scale on every file cue —
+	## the combo bias plus a ±5% jitter. Without this reset a synth cue inherits the last file
+	## cue's pitch: measured 1.1013 after one biased hit, ~2 semitones sharp and ~10% shorter.
+	## The procedural path biases by FREQUENCY (play_battle_scaled multiplies params.freq), so
+	## an inherited pitch_scale applies the same bias a second time.
+	player.pitch_scale = 1.0
 	player.play()
 	print("[SFX] procedural %s freq=%s dur=%s (%s)" % [sound_type, str(freq), str(duration), player.name])
 
