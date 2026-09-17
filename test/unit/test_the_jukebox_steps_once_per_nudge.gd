@@ -18,7 +18,7 @@ extends GutTest
 const JUKEBOX := preload("res://src/ui/JukeboxMenu.gd")
 
 
-## \u26d4 MenuNav's LATCH IS STATIC, so it outlives a test the way the Input singleton does —
+## ⛔ MenuNav's LATCH IS STATIC, so it outlives a test the way the Input singleton does —
 ## CLAUDE.md's leak class one layer over, in a helper rather than the engine. An arm that ends
 ## mid-push strands it and the NEXT arm's first nudge is swallowed. Measured: arm 2 read 0 steps
 ## because arm 1 left the stick held. Cleared through the PUBLIC seam (release, then one centring
@@ -50,7 +50,7 @@ func _open() -> Node:
 	return jb
 
 
-## \u26d4 THE GLOBAL STATE IS PART OF THE SUBJECT, and my first harness left it out. `MenuNav`
+## ⛔ THE GLOBAL STATE IS PART OF THE SUBJECT, and my first harness left it out. `MenuNav`
 ## self-heals by POLLING `Input.is_action_pressed` — the correct clear for a shared axis — so an
 ## arm that only calls `_input()` leaves the poll reading "nothing held", the heal fires on every
 ## event, and the latch can never hold. Measured: 6 rows on a 6-step ramp, against a fix that works.

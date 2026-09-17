@@ -46,7 +46,7 @@ func test_the_clean_slate_precedes_branch_dispatch() -> void:
 	var body: String = src.substr(fn, src.find("\nfunc ", fn + 1) - fn)
 	var reset_idx: int = body.find("reset_danger()")
 	var manifest_idx: int = body.find("_try_play_from_manifest")
-	## \u26d4 NOT "_music_cache.has(track)" -- that substring occurs THREE times in play_music
+	## ⛔ NOT "_music_cache.has(track)" -- that substring occurs THREE times in play_music
 	## (the refusal guard, this branch, and the write at the foot), so .find() returns whichever
 	## comes first. It named this branch by luck until a guard was added above it, and then the
 	## pin failed against correct code. Use the one spelling only the cache BRANCH has.

@@ -16,8 +16,10 @@ extends GutTest
 ## 26 call sites across 10 files reach play_music. THREE carried a pre-check, in three different
 ## files, and NO TWO CHECK THE SAME THING:
 ##     CutsceneDirector:881   has_music_track + _cue_is_available
-##     JukeboxMenu:368        music_is_available -- "33 rows are unplayable on web ... and
-##                            play_music fades the old bed out before finding out"
+##     JukeboxMenu:368        music_is_available -- "...play_music fades the old bed out before
+##                            finding out". (Its row count is NOT quoted here: the sibling guard
+##                            derives that population and prints it, and every number that ever
+##                            sat in prose about it went stale.)
 ##     BattleScene:3864       ResourceLoader.exists on the file it is about to name
 ## 23 had nothing. Three lanes each found this defect, each papered over it locally, and none
 ## fixed the function -- which is the argument for fixing it at the source rather than adding a
@@ -56,7 +58,18 @@ func after_each() -> void:
 	SoundManager._music_cache.erase(GHOST)
 
 
-## \u26d4 THE CASE THAT ACTUALLY SHIPS, and has_music_track alone does NOT cover it: on web the
+## ⛔ THE CASE I FIRST CALLED "THE ONE THAT ACTUALLY SHIPS", WHICH IT IS NOT -- corrected
+## here rather than quietly, because I put that phrasing in a commit message and two broadcasts.
+## The music exclusions belong to the DIRECT export (WEB_STAGE=0). The PUBLISHED path is
+## make_web_stage.sh (WEB_STAGE=1, the default at deploy_web.sh:326), whose step 3 reads
+## "swap the audio and drop the music exclusions" -- so on the build a player actually gets,
+## every track ships at a reduced bitrate and NO row is unbacked.
+##
+## The sentence correcting me sat in MY OWN other guard's header
+## (test_jukebox_web_availability_regression), written earlier, and I did not re-read it before
+## claiming the stronger thing. What this arm defends is real and narrower: the direct export,
+## and any future build where a track is genuinely absent. has_music_track alone misses it,
+## because on such a build the
 ## preset drops the W4-W6 OGGs, so the manifest LISTS an id whose file is absent from the build.
 ## Membership is true, the load fails, and the function falls through to the same else. This arm
 ## models that by naming a manifest entry whose file does not exist -- the one form of "listed but
@@ -73,7 +86,7 @@ func test_a_manifest_id_whose_file_is_absent_keeps_the_bed() -> void:
 	assert_true(SoundManager._music_player.playing, "CONTROL: the bed is playing")
 	SoundManager.play_music(GHOST)
 	assert_true(SoundManager._music_player.playing,
-		"a manifest id with no file in this build took the bed with it — this is the web case, 21 authored cues")
+		"a manifest id with no file in this build took the bed with it — the direct export drops 42 files, 24 of them with no procedural arm")
 
 
 func test_an_unknown_id_does_not_stop_the_bed_it_cannot_replace() -> void:
@@ -123,7 +136,7 @@ func test_a_real_manifest_bed_still_plays() -> void:
 	assert_true(SoundManager._music_player.playing, "the guard refused a bed that is in the manifest")
 
 
-## \u26d4 THIS ARM PICKS "battle" DELIBERATELY AND MY FIRST VERSION PICKED "title", WHICH IS A
+## ⛔ THIS ARM PICKS "battle" DELIBERATELY AND MY FIRST VERSION PICKED "title", WHICH IS A
 ## MANIFEST KEY — so it was vacuous for its stated purpose and a manifest-only predicate survived
 ## the mutation 6/6 green. "battle" and "boss" are the only two generics absent from the manifest:
 ## play_music rewrites them to battle_<world> / boss_<world> and plays, so a guard that tested
@@ -137,7 +150,7 @@ func test_a_generic_name_the_manifest_does_not_hold_still_routes() -> void:
 	assert_true(SoundManager._music_player.playing, "and nothing is actually playing")
 
 
-## \u26d4 A TWIN, AND NAMED AS ONE: this evaluates the guard's PREDICATE rather than calling
+## ⛔ A TWIN, AND NAMED AS ONE: this evaluates the guard's PREDICATE rather than calling
 ## play_music 165 times. It defends the dangerous direction across every authored id at once --
 ## if either term ever refuses a bed the manifest actually holds, this reds. It does NOT follow a
 ## change to the guard's shape, which is what the behavioural arms above are for.
