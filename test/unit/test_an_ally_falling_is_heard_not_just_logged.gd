@@ -120,6 +120,22 @@ func test_the_branch_bound_excludes_a_sibling_branch() -> void:
 		"the bound ran past the branch to function-body level")
 	assert_eq(_block_under(synthetic, "not_present_anywhere"), "",
 		"a missing needle must yield an EMPTY window, or the arm above would assert against the whole function")
+	## The mechanism must be the one IN USE, not merely present: the arms above both pass if the
+	## branch arm silently reverts to substr, because no line in BattleScene tells the bounds apart
+	## (@cowir-battle). Bounded to that function, so this assert's own text is not the corpus.
+	var own: String = GdSource.code_of("res://test/unit/test_an_ally_falling_is_heard_not_just_logged.gd")
+	assert_ne(own, "", "CONTROL: this file's own source must survive the comment strip")
+	var s: int = own.find("func test_the_moment_that_logs_the_fall_also_sounds_it(")
+	assert_gt(s, -1, "CONTROL: the branch-bound arm was renamed — this pin no longer describes it")
+	var n: int = own.find("\nfunc ", s + 1)
+	var arm: String = own.substr(s, n - s) if n > s else own.substr(s)
+	assert_true(arm.contains("_block_under(body,"),
+		"the branch arm stopped using the indentation bound — whatever replaced it is unproved by the synthetic case above")
+	## `code.substr(` is the LEGITIMATE one — it cuts the function out of the file. The defect is
+	## substr on the function BODY, which cuts the gate to end-of-function and calls it a branch.
+	## A bare `.substr(` here reds on correct code; measured, not reasoned — it did.
+	assert_false(arm.contains("body.substr("),
+		"the branch arm went back to a positional window: body.substr(gate) runs to END OF FUNCTION and is the exact defect this file was repaired for")
 
 
 func test_the_cue_is_pinned_against_a_silent_re_roll() -> void:
