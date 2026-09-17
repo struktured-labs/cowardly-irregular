@@ -164,12 +164,27 @@ func test_the_members_this_file_reaches_still_exist() -> void:
 	## is not.
 	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 	var re := RegEx.create_from_string("SoundManager\\.([A-Za-z_][A-Za-z0-9_]*)(\\()?")
-	for line in GdSource.strip_comments(src).split("\n"):
+	var code: String = GdSource.strip_comments(src)
+	for line in code.split("\n"):
 		for m in re.search_all(str(line)):
 			if m.get_string(2) == "(":
 				methods[m.get_string(1)] = true
 			else:
 				props[m.get_string(1)] = true
+	## ⛔ THE DERIVATION ASSUMES DIRECT NAMING, and that assumption is now ASSERTED rather than
+	## implied. The regex above matches `SoundManager.<name>`; a file that binds an alias — cowir-sfx
+	## write `var sm := SoundManager` and derive from `sm.<name>(` — would have its reaches silently
+	## uncounted, and the floor would report success about a smaller set. That is @cowir-controller's
+	## shape exactly: their ledger searched only `ui_up`/`ui_down`, so a horizontal-only file read as
+	## converted — the instrument and the work shared a blind spot, so the instrument could not
+	## report it.
+	##
+	## Measured 2026-09-17 before writing this: exactly ONE line in the whole corpus binds an alias
+	## (test_sfx_volume_reaches_all_players_regression.gd:158) and it is in a file with no floor. So
+	## this is NOT a defence against a live hazard — it is a precondition that announces itself the
+	## day someone adopts the style here, which costs one assert instead of an alias-aware parser.
+	assert_false(RegEx.create_from_string("(var|const)\\s+\\w+\\s*:?=\\s*SoundManager\\s*$").search(code) != null,
+		"this file now binds an alias to SoundManager — the derivation above reads `SoundManager.<name>` only, so reaches through that alias are NOT in the floor and it is quietly guarding less than it claims")
 	assert_gt(methods.size(), 3, "CONTROL: derived %d method reaches from this file's own source" % methods.size())
 	assert_gt(props.size(), 0, "CONTROL: derived %d property reaches from this file's own source" % props.size())
 	for name in methods:
