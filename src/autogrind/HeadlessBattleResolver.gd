@@ -999,21 +999,42 @@ func _apply_equipment_on_hit_status(attacker, target) -> void:
 		_log("%s inflicts %s on %s (on-hit)" % [attacker.combatant_name, str(entry["status"]), target.combatant_name])
 
 
-## Canonical effect -> [stat, modifier] pairs, mirroring BattleManager's own names. Only the
-## shapes headless actually needs; anything absent is handled as a status or a no-op, never damage.
-func _effect_to_stat(effect: String) -> Array:
+## Canonical effect -> the STAT it moves, mirroring BattleManager's own arm names.
+##
+## ⛔ THE MAGNITUDE IS NOT HERE, AND USED TO BE. This table returned [stat, modifier] with ONE
+## hardcoded number per effect — every down 0.75, every up 1.5 — and the caller OVERWROTE the
+## authored value it had already read one line earlier. abilities.json authors nine distinct
+## magnitudes across these effects, so 25 of the 30 support abilities that reach this function
+## ground at the wrong strength: shell_guard "massively boosting defense" at an authored 2.5 was
+## 1.5 (-40%), web_shot 0.5 was 0.75, and battle_hymn's 1.25 was buffed UP to 1.5. The grind pulled
+## every authored value toward one number, making the strong ones weak and the weak ones strong.
+## @cowir-battle found it; the same hardcode-under-a-reader shape as this file's own MP-drain bug.
+##
+## ⚠️ magic_up / speed_up / magic_down are mapped here and LIVE HAS NO ARM FOR THEM (its 45-arm
+## match has attack/defense/magic_defense/volatility only). Nothing authors them on a support-typed
+## ability today, so the divergence is unreachable rather than fixed — pinned by an arm that reds if
+## anyone authors one, because the grind would buff where the real game push_warnings and fizzles.
+## ⚠️ ONE ARM PER EFFECT, not `"attack_up", "attack_down":` grouped — deliberately, and the same
+## reason `_target_dodges_physical` spells out two literal has_status calls. The inert-ally census
+## DERIVES this map from this function's source with `"([a-z_]+)":\s*return`, so a grouped arm hides
+## every name but the last: grouping these ten made six of them vanish from that census and turned
+## its control red. The implementation reads the way the measurement reads.
+func _effect_to_stat(effect: String) -> String:
 	match effect:
-		"attack_up": return ["attack", 1.5]
-		"defense_up": return ["defense", 1.5]
-		"magic_up": return ["magic", 1.5]
-		"speed_up": return ["speed", 1.5]
-		"magic_defense_up": return ["magic_defense", 1.5]
-		"attack_down": return ["attack", 0.75]
-		"defense_down": return ["defense", 0.75]
-		"magic_down": return ["magic", 0.75]
-		"speed_down": return ["speed", 0.75]
-		"volatility_down": return ["volatility", 0.75]
-	return []
+		"attack_up": return "attack"
+		"defense_up": return "defense"
+		"magic_up": return "magic"
+		"speed_up": return "speed"
+		"magic_defense_up": return "magic_defense"
+		"attack_down": return "attack"
+		"defense_down": return "defense"
+		"magic_down": return "magic"
+		"speed_down": return "speed"
+		## magic_defense_down mirrors live's Soul Sap arm. Unreachable from HERE today (soul_wail is
+		## magic-typed), but its absence made this table the only stat map missing one of live's.
+		"magic_defense_down": return "magic_defense"
+		"volatility_down": return "volatility"
+	return ""
 
 
 ## Same side = both in the player party, or neither. Used to refuse friendly fire from an
@@ -1233,21 +1254,24 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 				var duration = int(ability.get("duration", 3))
 				var effect := str(ability.get("effect", ""))
 				var stat = ability.get("stat", "")
-				var modifier = float(ability.get("modifier", ability.get("stat_modifier", 1.5)))
+				## Live's read, key order and default included (BattleManager:5752). The default was
+				## 1.5 here against live's 1.0 — a phantom buff for an ability authoring neither key.
+				## No ability authors BOTH, measured, so the order is cosmetic and the twin reads alike.
+				var modifier = float(ability.get("stat_modifier", ability.get("modifier", 1.0)))
 				if stat == "" and effect != "":
-					var mapped: Array = _effect_to_stat(effect)
-					if not mapped.is_empty():
-						stat = mapped[0]
-						modifier = float(mapped[1])
+					var mapped: String = _effect_to_stat(effect)
+					if mapped != "":
+						stat = mapped
 					elif effect == "all_stats_down":
 						## Mirrors BattleManager:5887. Four DISTINCT names on purpose — add_debuff
 						## keys on the name and refreshes in place, so one shared name would
 						## debuff a single stat and look like it worked.
-						var mod := float(ability.get("stat_modifier", ability.get("modifier", 0.75)))
-						target.add_debuff("Despair (ATK)", "attack", mod, duration)
-						target.add_debuff("Despair (DEF)", "defense", mod, duration)
-						target.add_debuff("Despair (SPD)", "speed", mod, duration)
-						target.add_debuff("Despair (MAG)", "magic", mod, duration)
+						## `modifier` above, not a third local re-read with a third default: this line
+						## spelled the same lookup with 0.75 where live uses its shared 1.0.
+						target.add_debuff("Despair (ATK)", "attack", modifier, duration)
+						target.add_debuff("Despair (DEF)", "defense", modifier, duration)
+						target.add_debuff("Despair (SPD)", "speed", modifier, duration)
+						target.add_debuff("Despair (MAG)", "magic", modifier, duration)
 						_log("%s uses %s on %s (all stats down)" % [caster.combatant_name, ability_id, target.combatant_name])
 						continue
 					elif effect == "cleanse":
