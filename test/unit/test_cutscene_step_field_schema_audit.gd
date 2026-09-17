@@ -356,3 +356,50 @@ func test_every_step_field_the_director_reads_is_declared() -> void:
 		"every declared step type must be checked — reached %d of %d" % [handlers_seen, STEP_SCHEMA.size()])
 	assert_eq(undeclared.size(), 0,
 		"CutsceneDirector reads step fields STEP_SCHEMA does not declare, so authoring them reds this audit while the engine honours them: %s" % str(undeclared))
+
+
+## The floors on the arm above count HANDLERS, not READS. Measured on the shipped file:
+## stub `_reads_in` to return [] and this script passes 6/6 while checking nothing —
+## handlers_seen still equals STEP_SCHEMA.size(), `unreachable` is still empty, and
+## `undeclared` is empty because there is nothing left to declare. A floor proving the
+## corpus EXISTS says nothing about whether the checks CONSUME it.
+##
+## Scope falls out of the data rather than an allowlist: `stop_music` declares no fields,
+## so there is no read to find and it is exempt by construction, not by name.
+func test_the_read_derivation_is_actually_consumed() -> void:
+	var bodies := _director_functions()
+	# The floor must be independent of the loop's own skip predicate. An earlier version
+	# counted "declaring AND has a handler" on both sides, which is the same condition
+	# twice — a tautology that could not fail. This side reads STEP_SCHEMA ALONE, so a
+	# handler going missing moves `scoped` and not `expected`, and the assert reds.
+	var expected := 0
+	for step_type in STEP_SCHEMA:
+		var d: Array = []
+		d.append_array(STEP_SCHEMA[step_type]["required"])
+		d.append_array(STEP_SCHEMA[step_type]["optional"])
+		if not d.is_empty():
+			expected += 1
+
+	var scoped := 0
+	var blind: Array = []
+	for step_type in STEP_SCHEMA:
+		var declared: Array = []
+		declared.append_array(STEP_SCHEMA[step_type]["required"])
+		declared.append_array(STEP_SCHEMA[step_type]["optional"])
+		var handler := "_step_%s" % step_type
+		if declared.is_empty() or not bodies.has(handler):
+			continue
+		scoped += 1
+		var found := false
+		for field in _reads_reachable(handler, bodies, []):
+			if declared.has(field):
+				found = true
+				break
+		if not found:
+			blind.append(step_type)
+
+	# A floor on the SURVIVORS reaching the verdict, not on the corpus that was read.
+	assert_eq(scoped, expected,
+		"every step type declaring fields must reach the wiring check — %d of %d declaring types scoped" % [scoped, expected])
+	assert_eq(blind.size(), 0,
+		"the read derivation yields NO declared field for these handlers, so every check built on it is vacuous: %s" % str(blind))
