@@ -84,6 +84,48 @@ func _declared() -> Array:
 	return out
 
 
+## Every entry lands in a named bucket, and the DANGEROUS bucket must be empty.
+##
+## _composed() reaches its answer past three bare `continue`s, and a skipped entry is
+## indistinguishable from an absent one: it is simply not in the corpus. The floors have headroom
+## (145 composed against a floor of 100), so ~45 job animations could stop being checked without
+## any asserted count moving. cowir-sfx hit this exact shape in the SFX manifest the same day —
+## three bare continues under one assert_gt(checked, 100) against a real corpus of 321.
+##
+## Pinned by REASON, not count: a `path` that is a DIRECTORY means the loader COMPOSES the
+## filenames, so the entry must supply a list to compose from. A count reds on a legitimate new
+## job and stays green on exactly the drop it exists to catch.
+func test_a_directory_declaration_must_carry_a_list_to_compose() -> void:
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
+	assert_true(parsed is Dictionary, "SCOPE: the manifest did not parse as a Dictionary")
+	if not (parsed is Dictionary):
+		return
+	var literal_png := 0
+	var composed_ok := 0
+	var orphaned: Array = []
+	for sec_name in parsed:
+		var sec = parsed[sec_name]
+		if not (sec is Dictionary):
+			continue
+		for key in sec:
+			var entry = sec[key]
+			if not (entry is Dictionary):
+				continue
+			var base = entry.get("path")
+			if not (base is String) or not str(base).begins_with("res://"):
+				continue
+			if str(base).ends_with(".png"):
+				literal_png += 1
+			elif entry.get("animations") is Array:
+				composed_ok += 1
+			else:
+				orphaned.append("%s/%s" % [sec_name, key])
+	assert_gt(literal_png + composed_ok, 200,
+		"SCOPE: only %d entr(ies) declare a usable res:// path — this arm is no longer reading the manifest's shape" % (literal_png + composed_ok))
+	assert_eq(orphaned.size(), 0,
+		"BUCKET: %d entr(ies) declare a DIRECTORY path with no list of animations, so nothing composes their filenames and they leave the corpus silently: %s" % [orphaned.size(), orphaned])
+
+
 ## The floor. Every arm below reads this corpus, so a manifest that stops declaring sheets would
 ## make all of them vacuously green — which is exactly how a guard outlives the thing it guards.
 func test_the_corpus_is_derived_and_carries_BOTH_shapes() -> void:
