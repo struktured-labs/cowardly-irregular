@@ -71,6 +71,25 @@ func _two_lines() -> void:
 ## is decided by whether an assert already ran in ITS arm — so adding a precondition line above a
 ## reach silently converts it from rung 1 (Risky, EC=4, loud) to rung 3 (Passing, EC=0, silent).
 ## This floor is indifferent to that: it reds on a rename whatever the order.
+##
+## ⚠️ THE DERIVATION IS NOT QUOTE-AWARE, and that is a declared limit rather than an oversight.
+## @cowir-sfx's scanner invented a receiver out of a fixture STRING shaped like a call, so an
+## assert message here containing `_box.something` would add a phantom member. **It fails LOUD** —
+## a phantom does not exist on the subject, so this arm reds and names it — which is the safe
+## direction and why a quote-aware pass is not worth its complexity in a file with no such fixture.
+## If this ever reds on a name that is only ever inside a string, that is the cause.
+##
+## 📌 THE FLOOR COVERS THE RECEIVER ITS DERIVATION NAMES, and this file drives three
+## (@cowir-music's clause — "is this file floored?" can answer YES about a narrower set than the
+## name suggests). Checked per receiver rather than per file, measured:
+##     _box      27 reaches   THIS FLOOR
+##     MenuNav    1 reach     NO FLOOR WARRANTED — a `class_name` static resolves at PARSE TIME, so
+##                            a missing member is not an abort at all: the script never compiles and
+##                            run_tests.sh exits 3, NOTHING RAN. Measured: renaming step() gave
+##                            EC=3. @cowir-controller's discriminator is the CALL SHAPE, not the
+##                            symbol — a floor here could only ever be dead code
+##     Input      6 reaches   engine builtin; a rename is not a change this repo can make
+## So no second floor is warranted here, and that is a measurement rather than an assumption.
 func test_every_member_this_file_reaches_still_exists() -> void:
 	var src: String = FileAccess.get_file_as_string(
 		"res://test/unit/test_the_backlog_opens_once_per_nudge_regression.gd")
