@@ -125,3 +125,58 @@ func test_ruling_cited_in_source_comment() -> void:
 	var block: String = src.substr(block_start, block_end - block_start)
 	assert_true(block.contains("2026-07-01") or block.contains("full-parity ruling") or block.contains("automation isn't cheating"),
 		"cadence #23 comment must cite the 2026-07-01 full-parity ruling — future refactorers need the WHY, not just the WHAT")
+
+
+## ⛔ THE ARMS ABOVE PIN THE SHAPE OF A COMPUTATION THAT CAN ONLY EVER PRODUCE 1.0, and until
+## 2026-09-17 the comment they guard stated the parity as SOLVED. Measured:
+##   reward_multiplier authored by 0 of 106 monsters in monsters.json  -> the mdb read defaults
+##   live's BM._get_battle_reward_multiplier reads enemy.get("_enemy_data") — a property NOTHING
+##   in src/ writes and Combatant does not declare -> live returns 1.0 unconditionally too
+## So both engines agree by accident and the feature is dead end to end. The loop is kept because
+## it is correct the day the data appears; these two arms are the TRIGGERS that say when that day
+## arrives, so the note cannot go quietly stale the way the last one did.
+func test_the_authored_source_is_still_empty() -> void:
+	var raw: String = FileAccess.get_file_as_string("res://data/monsters.json")
+	assert_ne(raw, "", "CONTROL: monsters.json must be readable, or this arm proves nothing")
+	var parsed: Variant = JSON.parse_string(raw)
+	assert_true(parsed is Dictionary or parsed is Array, "CONTROL: monsters.json must parse")
+	var rows: Array = []
+	if parsed is Dictionary:
+		for k in (parsed as Dictionary):
+			var v: Variant = (parsed as Dictionary)[k]
+			if v is Dictionary:
+				rows.append(v)
+	else:
+		rows = parsed as Array
+	assert_gt(rows.size(), 50, "CONTROL: only %d monster rows parsed — too few for this to mean anything" % rows.size())
+	var authors: Array = []
+	for r in rows:
+		if r is Dictionary and (r as Dictionary).has("reward_multiplier"):
+			authors.append(str((r as Dictionary).get("id", "?")))
+	assert_eq(authors, [],
+		("a monster now AUTHORS reward_multiplier, so the headless read above stops being inert: %s. " +
+		"Check it against live before trusting the parity — live reads the SPAWNED record, not this table.") % str(authors))
+
+
+func test_live_still_has_no_writer_for_the_record_it_reads() -> void:
+	## The other trigger. If anything starts WRITING _enemy_data, live's multiplier goes live and
+	## headless — which reads a different source entirely — becomes a real divergence that day.
+	var bm: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	assert_true(bm.contains("_enemy_data"), "CONTROL: live must still read _enemy_data, or this arm watches nothing")
+	var writers: Array = []
+	for path in ["res://src/battle/BattleEnemySpawner.gd", "res://src/battle/Combatant.gd",
+			"res://src/encounters/EncounterSystem.gd", "res://src/GameLoop.gd", "res://src/battle/BattleScene.gd"]:
+		if not ResourceLoader.exists(path):
+			continue
+		for line in FileAccess.get_file_as_string(path).split("\n"):
+			var t: String = line.strip_edges()
+			if t.begins_with("#"):
+				continue
+			## The bare property, not create_scaled_enemy_data / autogrind_enemy_data / _create_enemy_data
+			## — three different identifiers that merely CONTAIN the substring, which is what makes a
+			## casual grep read this as widely used.
+			if RegEx.create_from_string('(set\\("_enemy_data"|set_meta\\("_enemy_data"|\\._enemy_data\\s*=|^var _enemy_data)').search(t) != null:
+				writers.append("%s: %s" % [path.get_file(), t.substr(0, 60)])
+	assert_eq(writers, [],
+		("_enemy_data now has a writer, so live's reward multiplier can finally resolve — headless reads " +
+		"the AUTHORED table instead and will disagree from that moment: %s") % str(writers))

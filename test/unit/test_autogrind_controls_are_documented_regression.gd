@@ -235,6 +235,77 @@ func test_adjust_rules_is_advertised_because_it_is_reachable_now() -> void:
 	assert_eq(rows, 1, "exactly one row documents adjust-rules")
 
 
+## The rows as a PAD PLAYER sees them. `_rows()` goes through HowToPlayOverlay with no device, and
+## the runner has no pad — so every cell there is a dash and any "this cell declines" assert passes
+## because of the ENVIRONMENT rather than the source. The helper's device_name hook exists for this.
+func _rows_for(device_name: String) -> Array:
+	var rows: Array = []
+	for line in AutogrindInputHelper.grind_reference_rows(device_name).split("\n"):
+		if line.strip_edges() == "":
+			continue
+		rows.append([line.substr(0, 18).strip_edges(), line.substr(18, 18).strip_edges(), line.substr(36)])
+	return rows
+
+
+## Does a JOYPAD arm of the live branch reach `handler`? Tracks the event TYPE of the arm it is
+## inside, because the handler name alone appears in the keyboard arm too.
+func _branch_pad_reaches(window: String, handler: String) -> bool:
+	var in_joypad_arm := false
+	for line in window.split("\n"):
+		var t := line.strip_edges()
+		if t.begins_with("if event is InputEvent"):
+			in_joypad_arm = t.contains("InputEventJoypadButton")
+		if in_joypad_arm and t.contains(handler):
+			return true
+	return false
+
+
+## ⛔ THE DECLINING CELL AND THE BRANCH MUST AGREE, AND NEITHER HALF CAN SEE THE OTHER ALONE.
+## `test_adjust_rules_is_advertised…` pins row[0] to the dash, but reads the NO-PAD rendering where
+## every cell is a dash — it would pass unchanged if the source derived a real cell. And a pad-aware
+## render still cannot notice the branch GAINING a pad binding, because the table hardcodes its dash
+## either way. So the claim is the JOIN: the cell declines if and only if no joypad arm reaches the
+## handler. @cowir-controller has a branch binding ui_menu for exactly this; when it folds, this reds
+## and names the row to derive.
+func test_a_declining_pad_cell_agrees_with_the_branch() -> void:
+	var window := _branch_window()
+	## CONTROL on the scanner itself: pause IS reached from a joypad arm, so a detector that can
+	## never say yes would make every verdict below vacuous.
+	assert_true(_branch_pad_reaches(window, "_toggle_autogrind_pause"),
+		"CONTROL: the branch's battle_toggle_auto arm reaches pause — if this reads false the joypad scanner is broken, not the code")
+	assert_false(_branch_pad_reaches(window, "_zzq_no_such_handler"),
+		"CONTROL: the scanner must also be able to say NO")
+
+	var pad_reaches_rules := _branch_pad_reaches(window, "_on_dashboard_adjust_rules")
+	for dev in ["Xbox 360 Controller", "Sony DualSense", "Nintendo Switch Pro Controller"]:
+		var rows := _rows_for(dev)
+		assert_gt(rows.size(), 2, "CONTROL: only %d rows rendered for '%s'" % [rows.size(), dev])
+		var derived := 0
+		var declining: Array = []
+		for row in rows:
+			if str(row[0]) == AutogrindInputHelper.REFERENCE_PAD_NONE:
+				declining.append(str(row[2]).strip_edges())
+			else:
+				derived += 1
+		## Without this the arm is the no-pad case wearing a device name.
+		assert_gt(derived, 2,
+			"CONTROL: with '%s' named, most cells must render a real button — %d did, so the pad path did not run" % [dev, derived])
+
+		var rules_declines := false
+		for d in declining:
+			if str(d).contains("Adjust rules"):
+				rules_declines = true
+		if pad_reaches_rules:
+			assert_false(rules_declines,
+				("the AUTOGRIND branch now reaches adjust-rules from a joypad arm, so the reference must " +
+				"DERIVE that cell instead of printing a dash — a pad player is told the control is keyboard-only " +
+				"while their pad opens it (device '%s')") % dev)
+		else:
+			assert_true(rules_declines,
+				("no joypad arm reaches _on_dashboard_adjust_rules, so the cell must decline rather than " +
+				"name a button that does nothing (device '%s')") % dev)
+
+
 ## The dashboard's legend must stay derived. ⚠️ It describes classify_event, which is a DIFFERENT
 ## surface from the one the F1 rows describe — kept because a frozen word there is wrong on at
 ## most one family either way.
