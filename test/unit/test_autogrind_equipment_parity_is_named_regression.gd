@@ -29,11 +29,19 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 ## Real live behaviour the grind does not model: ALL FIFTEEN gear effects equipment.json authors.
 ## This set may SHRINK freely — that is someone closing a gap — but it may not GROW unnamed.
 const GRIND_IGNORES := [
-	"critical_bonus", "dark_damage_bonus", "dark_resistance", "evasion_bonus", "exp_while_dead",
+	"dark_damage_bonus", "dark_resistance", "exp_while_dead",
 	"familiar_weight_bonus", "fire_damage_bonus", "fire_resistance", "holy_damage_bonus",
 	"ice_damage_bonus", "lightning_damage_bonus", "poison_chance", "sleep_chance",
 	"status_resistance", "steal_bonus",
 ]
+
+## Modelled by the resolver now, each mirroring live's formula rather than a new one. The set above
+## SHRANK into this one, which is the direction this file's ratchet permits silently — but the move
+## must be explicit, because "the grind ignores all fifteen" was this file's headline claim and a
+## silent shrink would leave it reading as still true.
+## Behaviour is pinned in test_autogrind_a_party_wears_its_gear_regression, not here: this file is a
+## census and says WHICH keys are modelled, never that they are modelled CORRECTLY.
+const GRIND_MODELS := ["critical_bonus", "evasion_bonus"]
 
 ## ⛔ THE THIRD SHAPE, AND I PUBLISHED A WRONG FINDING BEFORE @cowir-battle CORRECTED IT.
 ## This file first listed seven of the above as INERT_EVERYWHERE — "authored on gear a player can buy,
@@ -224,6 +232,8 @@ func test_every_authored_gear_effect_is_named_here() -> void:
 	var known: Dictionary = {}
 	for k in GRIND_IGNORES:
 		known[k] = true
+	for k in GRIND_MODELS:
+		known[k] = true
 	for k in DECLARED:
 		known[k] = true
 	var authored: Array = _authored_effect_keys()
@@ -232,29 +242,43 @@ func test_every_authored_gear_effect_is_named_here() -> void:
 	for k in authored:
 		if not known.has(k):
 			unnamed.append(k)
-	gut.p("    authored gear effects: %d | named here: %d" % [authored.size(), GRIND_IGNORES.size() + DECLARED.size()])
+	gut.p("    authored gear effects: %d | ignored %d + modelled %d + declared %d = %d named" % [authored.size(), GRIND_IGNORES.size(), GRIND_MODELS.size(), DECLARED.size(), GRIND_IGNORES.size() + GRIND_MODELS.size() + DECLARED.size()])
 	assert_eq(unnamed, [],
 		"a gear effect is authored and named nowhere in this file: %s — add it to GRIND_IGNORES, or to DECLARED with a reason" % str(unnamed))
 
 
-func test_the_grind_models_no_gear_effect_even_by_a_derived_key() -> void:
-	## ⛔ THE ARM THAT SURVIVES SHAPE 3. My grind-side claim is a ZERO over literals, and a literal
-	## zero is exactly what a derived-key consumer looks like — which is how I got live's side wrong.
-	## So this checks the grind for the CONSTRUCTION too: no concatenated suffix, no suffix scan.
+func test_no_gear_key_is_read_by_a_derived_key_in_the_grind() -> void:
+	## ⛔ THE ARM THAT SURVIVES SHAPE 3, now that the grind legitimately reads equipment. Its first
+	## version asked "does the resolver touch equipment at all", which was the right question while
+	## the answer was no and became useless the moment it was yes — it fired on the helper's own name.
+	## The real question is narrower and stays true: is any gear key assembled by CONCATENATION, which
+	## the literal census in this file would miss? The helper takes its key as an ARGUMENT, so every
+	## call site spells the key and the census sees it.
 	var grind: String = GdSource.code_of(GRIND)
 	assert_gt(grind.length(), 10000, "CONTROL: the resolver was actually read")
-	var derived: Array = []
-	for suffix in DERIVED_KEY_SUFFIXES:
-		if grind.contains('"%s"' % suffix) or grind.contains("_sum_equipment_special_effect"):
-			derived.append(suffix)
-	assert_eq(derived, [],
-		"the resolver now builds a gear-effect key by construction, so the literal census above is blind to it — the same shape that made this file's first version publish a wrong finding: %s" % str(derived))
-	var equipment_reads: Array = []
-	for probe in ["special_effects", "get_weapon(", "get_armor(", "get_accessory("]:
-		if grind.contains(probe):
-			equipment_reads.append(probe)
-	assert_eq(equipment_reads, [],
-		"the resolver now reads equipment somehow — good, but this file's 'models none' claim is stale and must be re-derived rather than left standing: %s" % str(equipment_reads))
+	var constructed: Array = []
+	for line in grind.split("\n"):
+		var t: String = line.strip_edges()
+		if t.begins_with("#"):
+			continue   ## the helper's own annotation NAMES the shape; that is prose, not a read
+		for suffix in DERIVED_KEY_SUFFIXES:
+			if RegEx.create_from_string('\\+\\s*"%s"' % suffix).search(t) != null:
+				constructed.append(t.substr(0, 70))
+	assert_eq(constructed, [],
+		"a gear key is built by concatenation in the resolver, so this file's literal census is blind to it — the shape that made an earlier version of this file publish a wrong finding: %s" % str(constructed))
+
+
+func test_the_modelled_keys_are_actually_present_in_the_resolver() -> void:
+	## LIVENESS for the list above: a key can be moved into GRIND_MODELS by editing this file alone,
+	## and then the census would claim a gap was closed that nobody closed.
+	var grind: String = GdSource.code_of(GRIND)
+	var absent: Array = []
+	for k in GRIND_MODELS:
+		if not grind.contains('"%s"' % k):
+			absent.append(k)
+	gut.p("    modelled: %s" % str(GRIND_MODELS))
+	assert_eq(absent, [],
+		"a key is listed as modelled and the resolver does not name it — the list moved without the code: %s" % str(absent))
 
 
 func test_the_grind_side_gap_is_real_and_not_a_bad_pattern() -> void:
