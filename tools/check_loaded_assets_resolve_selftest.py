@@ -14,6 +14,7 @@ that parse as nothing. Both container shapes are therefore tested against the sa
     tools/check_loaded_assets_resolve_selftest.py      ->  0 all arms as expected, 1 otherwise
 """
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -176,6 +177,37 @@ def main():
         ec, out = run(enc, png)
         arm("an ENCRYPTED directory cannot evaluate", ec, CANNOT)
         arm("  ...and says so rather than reading garbage", "ENCRYPTED" in out, True)
+
+        # ---- THE PARTITION: every attempt lands in a bucket, and the buckets SUM ------------
+        # ⛔ 403 of 478 attempts resolved on the real tree; the other 75 vanished from the
+        # report. A green over a corpus that cannot say what it dropped reads as covering all
+        # 478. Same defect as gate 3c's, same fix.
+        part = write_src(os.path.join(d, "part"), {"P.gd":
+            'extends Node\nfunc f(runtime_path):\n'
+            '\tvar a = load("res://data/plain.json")\n'
+            '\tvar b = load("user://mods/x.tres")\n'
+            '\tvar c = load(runtime_path)\n'})
+        ec, out = run(p_good, part)
+        arm("an UNRESOLVABLE argument is counted, not dropped", "UNRESOLVABLE 1" in out, True)
+        arm("  ...and a user:// path is counted out of scope", "user:// 1" in out, True)
+        arm("  ...and it does not block on their account", ec, PASS)
+        m = re.search(r"resolution attempts (\d+) = res:// (\d+) . user:// (\d+) . "
+                      r"runtime-built (\d+) . UNRESOLVABLE (\d+)", out)
+        arm("  ...and the partition LINE is printed", bool(m), True)
+        if m:
+            tot, r_, u_, t_, n_ = (int(x) for x in m.groups())
+            arm("  ...and the buckets SUM to the attempts", r_ + u_ + t_ + n_, tot)
+
+        # ⛔ ARMING THE SUM CHECK ITSELF. It guards a state a healthy tool never produces, so
+        # a mutation removing it left every arm green -- a guard nobody had watched say yes.
+        # PARTITION_DRIFT_PROBE perturbs the attempt count by one; the check must then refuse.
+        import os as _os
+        _env = dict(_os.environ); _env["PARTITION_DRIFT_PROBE"] = "1"
+        _r = subprocess.run([sys.executable, TOOL, p_good, "--src=" + png],
+                            capture_output=True, text=True, env=_env)
+        arm("a partition that does not SUM is REFUSED", _r.returncode, CANNOT)
+        arm("  ...and says a site fell through",
+            "partition does not sum" in (_r.stdout + _r.stderr), True)
 
         # ---- --quiet changes the volume, never the verdict ----------------------------------
         q_ec, q_out = run(p_orph, png, ["--quiet"])

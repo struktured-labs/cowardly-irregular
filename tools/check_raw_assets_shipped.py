@@ -199,14 +199,41 @@ def find_sinks(files):
 
 
 def derive(src_dir):
-    """res:// path -> set of 'file:line' sites that read it as raw bytes."""
+    """(res:// path -> sites), sinks, and a PARTITION of every resolution attempt.
+
+    ⛔ THE PARTITION MUST SUM, and that is the point of it. This tool used to print
+    "30 asset(s) read as raw bytes" while silently dropping every argument it could not
+    resolve -- measured 2026-09-17: 38 of 77 attempts resolved to a res:// path and the
+    other 39 vanished from the report. A floor on what was READ is not a floor on what
+    reached the VERDICT; a corpus that cannot say what it dropped is a corpus you cannot
+    size. Every attempt now lands in exactly one bucket and main() refuses if they do not
+    add up.
+
+    ⚠️ THE UNIT IS A RESOLUTION ATTEMPT, not a call site: the one-hop pass resolves one
+    argument per (site, sink index), so a line calling two sinks contributes two. Stated
+    here because the number is meaningless without it.
+    """
     files = gd_files(src_dir)
     sinks = find_sinks(files)
     found = {}
+    stats = {"res": 0, "user": 0, "template": 0, "unresolved": 0, "attempts": 0}
 
     def record(path, where):
-        if path and path.startswith("res://"):
+        stats["attempts"] += 1
+        if path is None:
+            stats["unresolved"] += 1
+        elif is_template(path):
+            # Counted here AND still recorded: main() prints these as `skipped`, and a
+            # template that vanishes from the per-asset roll is the silent drop this
+            # partition exists to prevent. (Caught by this file's own arm, which went red
+            # the moment the record stopped happening.)
+            stats["template"] += 1
             found.setdefault(path, set()).add(where)
+        elif path.startswith("res://"):
+            stats["res"] += 1
+            found.setdefault(path, set()).add(where)
+        else:
+            stats["user"] += 1
 
     for path in files:
         lines = read_lines(path)
@@ -223,7 +250,7 @@ def derive(src_dir):
                     for idx in idxs:
                         if idx < len(args):
                             record(resolve(args[idx], consts), "%s:%d" % (rel, i + 1))
-    return found, sinks
+    return found, sinks, stats
 
 
 def _pack_start(f):
@@ -351,7 +378,7 @@ def main(argv):
         print("[raw] BLOCKED: could not read %s: %s" % (pck, exc), file=sys.stderr)
         return 2
 
-    all_found, sinks = derive(src)
+    all_found, sinks, stats = derive(src)
     templates = sorted(p for p in all_found if is_template(p))
     consumers = {p: v for p, v in all_found.items() if not is_template(p)}
     if not consumers:
@@ -382,6 +409,25 @@ def main(argv):
         for res_path in templates:
             print("[raw]   %-9s %s  (built at runtime -- outside what this can check)"
                   % ("skipped", res_path))
+    # ⛔ THE PARTITION MUST ACCOUNT FOR EVERY ATTEMPT. A bucket that stops being reachable,
+    # or a new branch that forgets to record, shows up here as a mismatch rather than as a
+    # quietly smaller corpus.
+    # A test-only seam. The sum check guards a state a healthy tool never produces, so
+    # without this it is a guard nobody has watched say yes -- measured: removing the check
+    # left every arm green. Same shape as this lane's BUTLER= and SEED_REAL_BASE= seams.
+    if os.environ.get("PARTITION_DRIFT_PROBE"):
+        stats["attempts"] += 1
+    _sum = stats["res"] + stats["user"] + stats["template"] + stats["unresolved"]
+    if _sum != stats["attempts"]:
+        print("[raw] BLOCKED: the partition does not sum — %d attempt(s), %d bucketed. A site "
+              "fell through, so the corpus this reports is not the one it read."
+              % (stats["attempts"], _sum), file=sys.stderr)
+        return 2
+    print("[raw] resolution attempts %d = res:// %d · user:// %d · runtime-built %d · "
+          "UNRESOLVABLE %d" % (stats["attempts"], stats["res"], stats["user"],
+                               stats["template"], stats["unresolved"]))
+    print("[raw]   UNRESOLVABLE means a path this cannot see statically (a parameter, or a "
+          "string built at runtime). It is NOT a pass for those sites.")
     print("[raw] %d pck entries · %d sink function(s) · %d asset(s) read as raw bytes · "
           "%d ship raw · %d MISSING · %d skipped as runtime-built"
           % (len(entries), len(sinks), len(consumers), len(consumers) - len(missing),
