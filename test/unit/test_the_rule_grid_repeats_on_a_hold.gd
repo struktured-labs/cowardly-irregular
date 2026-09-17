@@ -5,7 +5,7 @@ extends GutTest
 ## with NO fast route at all:
 ##
 ##     EquipmentMenu          windowed · no paging · HAS hold-to-repeat  (added Aug for this reason)
-##     Abilities/Items/Job/QuestLog   windowed · page · no hold-to-repeat
+##     Abilities/Items/Job/QuestLog   windowed · page · hold-to-repeat added 2026-09-17
 ##     AutobattleGridEditor   windowed · MAX_RULES = 32 · no paging · NO hold-to-repeat
 ##
 ## It cannot page — both shoulders add a condition and an action — so one row per press was the

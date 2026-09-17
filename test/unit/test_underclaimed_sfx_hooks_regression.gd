@@ -58,16 +58,31 @@ func test_every_moving_scroll_branch_chirps() -> void:
 	# Source order: page jump, then ui_up, then ui_down.
 	# The cursor branches read MenuNav.step's result since 2026-09-17; the page jump still reads the
 	# helper directly. Delimiters follow source order, so a chirp cannot be borrowed from a neighbour.
+	#
+	# ⛔ THE ARROW BRANCHES NO LONGER CHIRP IN _input AND THAT IS THE FIX, NOT THE DEFECT. Since
+	# 2026-09-17 they delegate to _scroll_step(), one owner shared with the hold-to-repeat path, so
+	# requiring the literal call inside the branch would force the duplication back. What this arm
+	# defends is unchanged — every moving branch reaches a chirp — so it follows the hop instead of
+	# demanding the text. Requiring BOTH the delegation and the chirp at its destination is strictly
+	# stronger than the old text match: a branch that stops moving the scroll reds either way, and a
+	# _scroll_step that goes silent now reds too, which the old arm could not see.
 	var branches := [
-		["MenuPaging.page_delta(event)", "nav == \"ui_up\"", "the page jump"],
-		["nav == \"ui_up\"", "nav == \"ui_down\"", "ui_up"],
-		["nav == \"ui_down\"", "", "ui_down"],
+		["MenuPaging.page_delta(event)", "nav == \"ui_up\"", "the page jump", "SoundManager.play_ui(\"menu_move\")"],
+		["nav == \"ui_up\"", "nav == \"ui_down\"", "ui_up", "_scroll_step("],
+		["nav == \"ui_down\"", "", "ui_down", "_scroll_step("],
 	]
 	for b in branches:
 		var seg: String = _between(body, b[0], b[1])
 		assert_ne(seg, "", "CONTROL: the %s branch is gone — this arm no longer describes _input" % b[2])
-		assert_true(seg.contains("SoundManager.play_ui(\"menu_move\")"),
-			"%s moves the scroll and does not chirp — a silent move reads as a dead button" % b[2])
+		assert_true(seg.contains(b[3]),
+			"%s moves the scroll and does not reach a chirp — a silent move reads as a dead button" % b[2])
+
+	# The destination of that delegation must itself chirp, or the hop above leads nowhere.
+	var step_body: String = _func_body(src, "func _scroll_step(dir: int) -> void:")
+	assert_ne(step_body, "", "CONTROL: _scroll_step must be found, or the two arms above hop into nothing")
+	assert_true(step_body.contains("SoundManager.play_ui(\"menu_move\")"),
+		"_scroll_step owns the chirp for both arrow branches AND the hold-to-repeat path — silent here "
+		+ "is silent everywhere")
 
 
 func test_fast_travel_menu_portal_whoosh_wired() -> void:
