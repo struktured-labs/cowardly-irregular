@@ -38,6 +38,9 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ## Assessed, with the reason. You cannot silence an entry green here, only explain it green — and an
 ## entry that stops being true reds (arm 2), so a declaration cannot outlive its fact.
 const DECLARED := {
+	## ── the four UNDECIDED_LIVE_SIDE entries, resolved 2026-09-17; see that const for the method ──
+	"multiplier": "NOT an ability-field read: 0 as `ability[\"multiplier\"]`. Four whole-file hits, four different dictionaries — two EXP-bonus dicts (:1062/:1064), a FOLLOWUP dict (:1541), and a dict WRITE (:5367). None reaches an ability",
+	"penalty": "NOT an ability-field read: 0 as `ability[\"penalty\"]`. :1075 reads injury[\"penalty\"] off a permanent injury and :7353 writes a dict key. warp_to_boss authors it and live enforces nothing — BattleManager:6799 says so in its own comment — so both engines ignore it equally",
 	"name": "presentation only — the grind renders nothing",
 	"description": "presentation only — the grind renders nothing",
 	"target_type": "consumed UPSTREAM by AutobattleSystem, which hands _resolve_ability an already-resolved target list",
@@ -189,7 +192,27 @@ const DECLARED_UNREACHABLE := {
 ## Taken from @cowir-sprites' three-state manifest census and @cowir-music's re-measurement of their
 ## own: both had drawn a conclusion from the non-zero side of an instrument they had correctly
 ## labelled trustworthy only on zeroes. Mine did the same thing to a number I put in a channel.
-const UNDECIDED_LIVE_SIDE := ["cost", "evasion_bonus", "multiplier", "penalty"]
+## ⛔ EMPTIED 2026-09-17 — all four RESOLVED, and every one was a false positive of this file's own
+## whole-file search, exactly as the INSTRUMENT note above predicts. The header says a HIT is weak
+## evidence; these four were the hits. Asked with the predicate the question actually needs —
+## `ability["k"]` / `ability.get("k"` / `ability.has("k"` in BattleManager — with a positive control
+## that FIRES (damage_multiplier 6, effect_chance 2, heal_amount 2):
+##   cost            0   shop price; VillageShop, never the engine
+##   evasion_bonus   0   :9179 is _sum_equipment_special_effect(target, "evasion_bonus") — the
+##                       EQUIPMENT field this file already names elsewhere, not an ability field
+##   multiplier      0   :1062/:1064 build EXP-bonus dicts, :1541 reads a FOLLOWUP dict, :5367 WRITES
+##                       a dict key. Four hits, four different dictionaries, none of them an ability
+##   penalty         0   :1075 reads injury["penalty"] (permanent injuries), :7353 writes a dict key
+## **So the grind not reading them is correct rather than a gap** — none is a way autogrind simulates
+## a different game.
+##
+## ⛔ AND THE SPLIT IS NOT 4-0: only `multiplier` and `penalty` are in `_live_only()` at all. I first
+## declared all four and THIS FILE'S OWN ARM red me — *"'cost' is declared as a live-only gap and the
+## grind now reads it"* — because the grind contains both strings too, so they were never a live-only
+## gap in either direction. They are named here and NOWHERE in the known-sets: there is nothing for
+## the ratchet to re-raise. `multiplier` and `penalty` ARE in the gap and so live in DECLARED, which
+## is what stops the ratchet re-asking a question that has been answered.
+const UNDECIDED_LIVE_SIDE := []
 
 
 ## ⚠️ TOP-LEVEL ONLY, and that is correct by the DATA's shape rather than by construction.
