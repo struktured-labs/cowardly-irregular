@@ -83,6 +83,13 @@ func test_the_fixture_reaches_the_input_handler_at_all() -> void:
 	_two_lines()
 	assert_true(_box.visible, "the box must be visible or _input returns before reading anything")
 	assert_gt(_box.backlog_size(), 1, "and the log must have something behind the current line")
+	## ⛔ THE HANDLER IS ASSERTED BEFORE IT IS CALLED, not assumed. @cowir-controller hit this on
+	## LensMenu, which defines _unhandled_input: calling a method that does not exist ABORTS the
+	## test function, so the arms below would stop mid-loop with their earlier asserts already
+	## passed and nothing on screen wrong. A rename is the realistic way this happens.
+	assert_true(_box.has_method("_input"),
+		"CutsceneDialogue must still route through _input — if it moved to _unhandled_input, every " +
+		"arm here aborts at the first call and scores green on the asserts it reached")
 
 
 ## ⛔ THE DEFECT, thinking branch: four bursting events used to toggle FOUR TIMES and land closed.
