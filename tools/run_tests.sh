@@ -139,8 +139,30 @@ require_test_dir() {
 # disk), a parse error that drops the script. Enumerating them is a losing game
 # — three were found in one evening — so assert the OUTCOME instead: a real run
 # always prints a Totals block, and a vacuous one never does.
+# PROVENANCE HEADER -- a log in tmp/ does not say which TREE produced it, and a stale one reads as
+# current. cowir-sfx 2026-09-17: a probe log carried `SCRIPT ERROR: Invalid access to property
+# '_sfx_suppressed_by_cooldown'` naming a member that a commit 21 minutes EARLIER had added -- the
+# branch had been cut off a base predating that fix, so the error was correct about a tree nobody
+# has. A stale GREEN makes you ship something unverified; a stale RED makes you CHANGE WORKING CODE,
+# and the fix passes every test you write for it. The run also scored `1/1 passed`: the error
+# aborted the function AFTER its one assert, so EC=4 (which keys off [Risky] NAMES) cannot see it.
+# `dirty=N` is the count git status reports; N>0 means the SHA does not describe what ran.
+_tree_stamp() {
+  local sha branch dirty
+  sha="$(git rev-parse --short=9 HEAD 2>/dev/null)"
+  branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+  # wc, not `grep -c .`: grep exits 1 on zero matches, so a CLEAN tree would take the error branch.
+  dirty="$(git status --porcelain 2>/dev/null | wc -l | tr -dc '0-9')"
+  [ -n "$sha" ] || { sha="unknown"; branch="unknown"; dirty="?"; }
+  echo "run_tests.sh: TREE ${sha} (${branch}) dirty=${dirty} at $(date -Is)"
+}
+
 run_gut() {
-  "${BASE[@]}" "$@" 2>&1 | tee "$RUN_LOG"
+  # Truncate explicitly, then append: `tee -a` alone would inherit a same-PID log from a previous
+  # boot, which is the same stale-artifact class the header exists to close.
+  : > "$RUN_LOG"
+  _tree_stamp | tee -a "$RUN_LOG" >&2
+  "${BASE[@]}" "$@" 2>&1 | tee -a "$RUN_LOG"
   local ec=${PIPESTATUS[0]}
   # `command grep`: the session grep is a ugrep shim carrying -I, and it SILENTLY skips a file it
   # judges binary. Godot logs can carry NUL bytes, which made a 150KB log read as zero matches —
