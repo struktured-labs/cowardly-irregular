@@ -91,7 +91,7 @@ func test_the_prompt_renders_the_constant_rather_than_a_copy() -> void:
 	## at the vocabulary; only one place spells it.
 	var p: String = _grind_prompt()
 	for id in DP.AUTOGRIND_STATUS_VOCABULARY.keys():
-		assert_true(p.find("%s   for %s" % [str(id), str(DP.AUTOGRIND_STATUS_VOCABULARY[id])]) != -1,
+		assert_true(p.find("%s   for %s" % [str(id), ", ".join(DP.AUTOGRIND_STATUS_VOCABULARY[id])]) != -1,
 			"the rendered row must be the constant's own pair for %s" % id)
 
 

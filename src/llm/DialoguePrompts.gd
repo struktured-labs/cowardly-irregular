@@ -1047,15 +1047,15 @@ static func _format_kit_reminder(kit_context: Dictionary) -> String:
 ## "frozen" and NO frozen status exists — BattleManager:5014 applies freeze AS stun, so
 ## without the mapping the model has nowhere to put the player's own word.
 const AUTOGRIND_STATUS_VOCABULARY := {
-	"poison": "poisoned",
-	"burn": "burned, on fire",
-	"blind": "blinded",
-	"silence": "silenced, muted",
-	"stun": "stunned, frozen, paralysed (freeze is applied AS stun)",
-	"sleep": "asleep, sleeping",
-	"confuse": "confused",
-	"curse": "cursed",
-	"charm": "charmed",
+	"poison": ["poisoned"],
+	"burn": ["burned", "on fire", "burning"],
+	"blind": ["blinded"],
+	"silence": ["silenced", "muted"],
+	"stun": ["stunned", "frozen", "freeze", "paralysed", "paralyzed"],
+	"sleep": ["asleep", "sleeping"],
+	"confuse": ["confused"],
+	"curse": ["cursed"],
+	"charm": ["charmed"],
 }
 
 
@@ -1067,7 +1067,7 @@ static func _format_status_vocabulary() -> String:
 	lines.append("never an English word. The engine matches the id literally, so \"frozen\" or")
 	lines.append("\"poisoned\" is never true of anyone. Say it the engine's way:")
 	for id in AUTOGRIND_STATUS_VOCABULARY:
-		lines.append("  %s   for %s" % [str(id), str(AUTOGRIND_STATUS_VOCABULARY[id])])
+		lines.append("  %s   for %s" % [str(id), ", ".join(AUTOGRIND_STATUS_VOCABULARY[id])])
 	return "\n".join(lines)
 
 
