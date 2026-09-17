@@ -71,6 +71,12 @@ func test_a_declared_drift_still_drifts() -> void:
 	## standing exemption for a fact that stopped being true — which is how allowlists rot.
 	var sfx: Dictionary = _sfx()
 	assert_gt(sfx.size(), 0, "VOID, not clean: the sfx manifest read back 0 entries")
+	## Without this the arm goes VACUOUS exactly when it succeeds: an empty KNOWN_DRIFT means the
+	## loop below never runs and only the manifest floor asserts, so a retired list leaves a guard
+	## that passes about nothing, forever, with nothing telling anyone to remove it.
+	## (cowir-autogrind hit the same shape when their ignore census reached zero.)
+	assert_gt(KNOWN_DRIFT.size(), 0,
+		"KNOWN_DRIFT is empty — every declared drift is resolved, so DELETE THIS ARM with the last entry rather than leaving it asserting nothing")
 	for k in KNOWN_DRIFT.keys():
 		assert_true(sfx.has(k), "KNOWN_DRIFT names %s and the manifest has no such key" % k)
 		var e: Dictionary = sfx[k]
