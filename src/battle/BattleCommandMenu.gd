@@ -312,7 +312,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			# (Added 2026-05-23 after the 90-item additions for monster
 			# drop fixes — without this filter players see every shard,
 			# scale, and token as a "use" option that does nothing.)
-			if item.get("category", -1) == ItemSystem.ItemCategory.META:
+			if not ItemSystem.is_usable_in_battle(item_id):
 				continue
 			var quantity = combatant.inventory[item_id]
 			var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)

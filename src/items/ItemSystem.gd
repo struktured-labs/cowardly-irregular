@@ -550,3 +550,18 @@ func get_item(item_id: String) -> Dictionary:
 	"""Get item data by ID"""
 	return items.get(item_id, {})
 
+
+## Whether an item can be used INSIDE a battle. THE OWNER of a rule that had two copies:
+## BattleCommandMenu filtered META for the player's Use Item list, and the LLM Rule
+## Composer re-derived the same filter for the model — spelling ItemCategory.META as a
+## literal 4 while the enum was reachable.
+##
+## META is boss trophies, key items and lore drops. They stack for the bestiary and the
+## endgame economy and do nothing if used, so they are clutter in the player's list and a
+## rule that never works in a composed one.
+func is_usable_in_battle(item_id: String) -> bool:
+	var item: Dictionary = get_item(item_id)
+	if item.is_empty():
+		return false
+	return int(item.get("category", -1)) != ItemCategory.META
+

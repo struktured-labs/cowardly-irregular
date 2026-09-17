@@ -18,8 +18,6 @@ const DOMAIN_AUTOGRIND  := "autogrind"
 
 const _VALID_DOMAINS := [DOMAIN_AUTOBATTLE, DOMAIN_AUTOGRIND]
 
-## ItemSystem.ItemCategory.META — key items and equipment, not usable in a battle.
-const ITEM_CATEGORY_META := 4
 
 const DialoguePromptsScript := preload("res://src/llm/DialoguePrompts.gd")
 
@@ -422,8 +420,10 @@ func _widen_kit_to_what_this_character_knows(ctx: Dictionary, character_id: Stri
 ## 'heal' for the real 'raise' and 'cure'. The engine skips an unknown id with a stdout
 ## print, so the rule silently never fires.
 ## The item ids an `item` action may name. The deep check accepts ANY id in items.json, but
-## only the four battle categories are usable in a fight — META is 146 of the 172 and is key
-## items and equipment. Derived from ItemSystem rather than listed here.
+## only what can be used in a fight belongs in a rule — ASKED of ItemSystem rather than
+## re-derived here. This function spelled ItemCategory.META as a literal 4 for one commit,
+## beside a battle menu already filtering on the same rule: two copies, and mine hardcoded
+## an enum that was reachable.
 ##
 ## Measured on live llama3 2026-09-17, an intent needing ids the grammar does not exemplify
 ## ("cure blindness with eye drops, use echo herbs the moment someone is silenced"): 19 of 20
@@ -435,10 +435,11 @@ func _battle_item_ids() -> Array:
 	var sys = get_node_or_null("/root/ItemSystem")
 	if sys == null or not ("items" in sys):
 		return []
+	if not sys.has_method("is_usable_in_battle"):
+		return []
 	var out: Array = []
 	for iid in (sys.items as Dictionary):
-		var item: Dictionary = sys.items[iid]
-		if int(item.get("category", -1)) == ITEM_CATEGORY_META:
+		if not sys.is_usable_in_battle(str(iid)):
 			continue
 		out.append(str(iid))
 	out.sort()
