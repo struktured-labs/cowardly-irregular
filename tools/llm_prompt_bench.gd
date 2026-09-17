@@ -130,7 +130,10 @@ func _party_kit_for() -> Dictionary:
 		})
 	if members.is_empty():
 		return {}
-	return {"resolved": true, "party": members}
+	## Mirrors RuleComposer._numeric_scales: the stopping point is AutogrindSystem's own
+	## interrupt_rules default, which a -s script cannot reach.
+	return {"resolved": true, "party": members,
+		"scales": {"corruption_limit": 4.5, "efficiency_start": 1.0}}
 
 
 func _init() -> void:

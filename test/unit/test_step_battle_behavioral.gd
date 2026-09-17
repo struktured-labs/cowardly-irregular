@@ -116,3 +116,62 @@ func test_normal_run_reports_not_aborted() -> void:
 	]}
 	await d.play_cutscene_from_data("test_normal_cutscene", data)
 	assert_false(d.last_finished_was_aborted())
+
+
+## The duel hides the director's UI so the BattleScene (layer 0) is visible under
+## it, then restores. Restoring the dialogue panel to a HARDCODED true re-opens a
+## box the player already closed: every one of the five spotlight cutscenes runs a
+## narration before its battle step, so at duel's end the panel came back holding
+## the pre-fight line — over the victory screen, and over the retry sting that was
+## added because that same gap "read as a glitch".
+func _finished_narration_panel(d: Node) -> Node:
+	var dlg: Node = d._get_or_create_dialogue()
+	dlg.show_dialogue([{"speaker": "", "text": "The skeleton bowed.", "theme": "narrator", "portrait": "narrator"}])
+	# Two accepts, exactly as the player gives them: finish the typewriter, then close.
+	dlg._advance_dialogue()
+	dlg._advance_dialogue()
+	assert_false(dlg.visible, "precondition: a finished narration leaves the panel hidden")
+	return dlg
+
+
+func test_a_closed_dialogue_stays_closed_after_the_duel() -> void:
+	_stub.results = ["victory"]
+	var d: Node = _director()
+	var dlg: Node = _finished_narration_panel(d)
+	await d._step_battle(STEP.duplicate(true))
+	assert_false(dlg.visible,
+		"a dialogue the player already dismissed must not reappear when the duel ends")
+
+
+func test_the_reappearing_panel_would_hold_the_pre_fight_line() -> void:
+	# Why the above matters: _finish_dialogue clears the queue, not the label, so
+	# the box that came back was showing the line from before the battle.
+	var d: Node = _director()
+	var dlg: Node = _finished_narration_panel(d)
+	assert_eq(str(dlg._text_label.text), "The skeleton bowed.",
+		"a finished panel retains its last line — making a spurious re-show a stale box, not a blank one")
+
+
+func test_a_visible_dialogue_is_restored_after_the_duel() -> void:
+	# The other half of the contract: the step restores what it found, so it must
+	# still bring a genuinely-live panel back rather than hiding it for good.
+	_stub.results = ["victory"]
+	var d: Node = _director()
+	var dlg: Node = d._get_or_create_dialogue()
+	dlg.show_dialogue([{"speaker": "", "text": "Still talking.", "theme": "narrator", "portrait": "narrator"}])
+	assert_true(dlg.visible, "precondition: an open panel is visible")
+	await d._step_battle(STEP.duplicate(true))
+	assert_true(dlg.visible,
+		"a panel that was open when the duel started must be restored, not left hidden")
+
+
+func test_the_panel_stays_closed_across_a_retry() -> void:
+	# The defeat path restores, plays the sting, then hides again — so the second
+	# lap must read the state it left, not the state the narration left.
+	_stub.results = ["defeat", "victory"]
+	var d: Node = _director()
+	var dlg: Node = _finished_narration_panel(d)
+	await d._step_battle(STEP.duplicate(true))
+	assert_eq(_stub.calls, 2, "precondition: the duel was retried")
+	assert_false(dlg.visible,
+		"the retry sting must not play under a reopened dialogue box")
