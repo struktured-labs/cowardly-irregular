@@ -4992,7 +4992,16 @@ func _apply_ability_status(caster: Combatant, target: Combatant, ability: Dictio
 		effect_chance = float(ability.get("effect_chance", 1.0))
 	else:
 		effect_chance = float(ability.get("effect_chance", 0.0))
-	if effect == "" or effect_chance <= 0.0 or randf() >= effect_chance:
+	if effect == "" or effect_chance <= 0.0:
+		return
+	## ⛔ status_resistance HAD ONE READER AND THE PLAYER COULD NOT REACH IT. Tick 461 wired
+	## resist_ring into _apply_equipment_on_hit_status, which reads the ATTACKER's equipment for the
+	## proc chance — and monsters carry none, so the ring only ever resisted the party's own two
+	## daggers. Every status a player actually suffers (65 monster abilities author an effect on the
+	## physical/magic routes) arrives here instead. Same formula as that site so there is ONE.
+	var resist: float = _sum_equipment_special_effect(target, "status_resistance")
+	var effective_chance: float = clampf(effect_chance - resist, 0.0, 1.0)
+	if effective_chance <= 0.0 or randf() >= effective_chance:
 		return
 	var status_to_add: String = effect
 	if effect == "random_debuff":
