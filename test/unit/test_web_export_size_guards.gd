@@ -123,5 +123,15 @@ func test_the_tier_projection_reports_the_cache_line_not_just_the_itch_limit() -
 	## every projection 1.82 MiB optimistic (measured 2026-09-12).
 	assert_eq(sh.find("in_pck = sum(os.path.getsize(f) for f in (allm - ex))"), -1,
 		"the projection is deriving music-in-pck from masters minus the fallback exclusion list again. FIX: derive it from the shipped TIER (make_web_stage.sh's default bitrate) and skip the projection if that tier is not on disk, rather than mixing master bytes with a tier-sized pck")
-	assert_gt(sh.find("shipped_tier"), 0,
-		"the projection no longer derives from the shipped tier at all — see the comment block above it for why master bytes are the wrong term")
+	## Pin the PROPERTY, not the variable name. Pinning `shipped_tier` by name went RED on
+	## cfe941e24's correct rename to `ref_tier` and would go GREEN on a master-bytes sum reusing it.
+	assert_gt(sh.find("glob.glob(\"tmp/web_audio/music_%dk/*.ogg\""), 0,
+		"the projection no longer globs a TIER directory for music-in-pck. FIX: derive it from tmp/web_audio/music_<kbps>/, never from masters — the pck holds tier bytes, so a master-byte term is the wrong quantity regardless of which bitrate it names")
+	var sum_re: RegEx = RegEx.create_from_string("in_pck = sum\\(os\\.path\\.getsize\\(f\\) for f in ([a-z_]+)\\)")
+	var m: RegExMatch = sum_re.search(sh)
+	assert_true(m != null,
+		"could not find the `in_pck = sum(os.path.getsize(f) for f in <name>)` line at all — if the projection's arithmetic moved, this arm must move with it rather than pass silently")
+	if m != null:
+		## Whatever the term is called, it must be BOUND from the tier glob.
+		assert_gt(sh.find("%s = glob.glob(\"tmp/web_audio/music_" % m.get_string(1)), 0,
+			"music-in-pck is summed over `%s`, which is not bound from a tier glob — that is the master-bytes term the comment block above rejects, wearing a different name" % m.get_string(1))
