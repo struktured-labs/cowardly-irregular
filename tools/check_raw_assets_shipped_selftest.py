@@ -22,6 +22,7 @@ and a selftest that only covers what you got right is a selftest that agrees wit
     tools/check_raw_assets_shipped_selftest.py      ->  0 all arms as expected, 1 otherwise
 """
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -271,6 +272,43 @@ def main():
         ec, out = run(toobig, direct)
         arm("a footer size larger than the file is REFUSED", ec, CANNOT)
         arm("  ...and says it does not fit", "does not fit in a" in out, True)
+
+        # ---- THE PARTITION: every attempt lands in a bucket, and the buckets SUM ------------
+        # ⛔ This tool used to print its asset count and silently drop every argument it could
+        # not resolve -- 38 of 77 on the real tree, with 39 vanishing. A green over a corpus
+        # that cannot say what it dropped reads as covering everything it looked at.
+        part = write_src(os.path.join(d, "part"), {"P.gd":
+            'extends Node\nconst OK := "res://data/present.json"\n'
+            'func f(runtime_path):\n'
+            '\tvar a := FileAccess.get_file_as_bytes(OK)\n'
+            # ⚠️ A LITERAL, not a const: CONST_RE captures res:// initialisers only, so a
+            # `const X := "user://…"` resolves to NOTHING and lands in UNRESOLVABLE rather
+            # than user://. That is honest -- the tool genuinely cannot see it -- but it
+            # means the user:// bucket is reachable only from literals, and a fixture using
+            # a const would have tested the wrong bucket.
+            '\tvar b := FileAccess.get_file_as_bytes("user://saves/slot.json")\n'
+            '\tvar c := FileAccess.get_file_as_bytes(runtime_path)\n'})
+        ec, out = run(have, part)
+        arm("an UNRESOLVABLE argument is counted, not dropped", "UNRESOLVABLE 1" in out, True)
+        arm("  ...and a user:// path is counted out of scope", "user:// 1" in out, True)
+        arm("  ...and it does not block on their account", ec, PASS)
+        m = re.search(r"resolution attempts (\d+) = res:// (\d+) . user:// (\d+) . "
+                      r"runtime-built (\d+) . UNRESOLVABLE (\d+)", out)
+        arm("  ...and the partition LINE is printed", bool(m), True)
+        if m:
+            tot, r_, u_, t_, n_ = (int(x) for x in m.groups())
+            arm("  ...and the buckets SUM to the attempts", r_ + u_ + t_ + n_, tot)
+
+        # ⛔ ARMING THE SUM CHECK ITSELF. It guards a state a healthy tool never produces, so
+        # a mutation removing it left every arm green -- a guard nobody had watched say yes.
+        # PARTITION_DRIFT_PROBE perturbs the attempt count by one; the check must then refuse.
+        import os as _os
+        _env = dict(_os.environ); _env["PARTITION_DRIFT_PROBE"] = "1"
+        _r = subprocess.run([sys.executable, TOOL, have, "--src=" + direct],
+                            capture_output=True, text=True, env=_env)
+        arm("a partition that does not SUM is REFUSED", _r.returncode, CANNOT)
+        arm("  ...and says a site fell through",
+            "partition does not sum" in (_r.stdout + _r.stderr), True)
 
         # ---- --quiet changes the volume, never the verdict ----------------------------------
         q_ec, q_out = run(lack, direct, ["--quiet"])
