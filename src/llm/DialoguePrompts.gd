@@ -348,7 +348,7 @@ the only ids that exist are listed below.
 
 Actions. type is one of:
   stop_grinding, heal_party, restore_mp, flee_battle, switch_profile, member_ability
-switch_profile requires character_id (PC id string) and profile_index (int).
+switch_profile requires character_id (ONE member) and profile_index (int).
 member_ability takes "member" (job id such as "cleric", or a character name), "ability" (an
 ability id that member knows), and an optional "target". A target names ANOTHER MEMBER the same
 way "member" does; omit it, or use "lowest_hp_ally", for the ally who most needs it. Autobattle
@@ -1088,7 +1088,19 @@ static func _format_party_kit(kit_context: Dictionary) -> String:
 			parts.append("%s (%d MP)" % [str(aid), int(costs.get(str(aid), 0))])
 		lines.append("  %s [%s]: %s" % [
 			str(entry.get("member", "?")), str(entry.get("job_id", "?")), ", ".join(parts)])
+		var profiles: Array = entry.get("profiles", [])
+		if not profiles.is_empty():
+			var slots: PackedStringArray = PackedStringArray()
+			for n in profiles.size():
+				slots.append("%d %s" % [n, str(profiles[n])])
+			lines.append("      switch_profile slots: %s" % ", ".join(slots))
 	lines.append("An id not on this list is DISCARDED and that rule never fires.")
+	## The switch_profile guidance lives HERE, not in the grammar, because it points at the
+	## roster above it — in the grammar it would promise a list that an unresolved context
+	## never renders, which is the defect this whole block exists to remove.
+	lines.append("switch_profile's \"character_id\" is one of the members above and nothing else:")
+	lines.append("there is no \"everyone\", \"all\" or \"*\". To switch the whole party, emit one")
+	lines.append("switch_profile action per member. \"profile_index\" is that member's own slot.")
 	return "\n".join(lines)
 
 

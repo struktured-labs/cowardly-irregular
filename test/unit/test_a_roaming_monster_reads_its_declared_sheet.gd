@@ -206,25 +206,13 @@ func test_turning_does_not_move_the_creature() -> void:
 		var offsets: PackedFloat32Array = m.get("_row_offsets")
 		assert_gt(offsets.size(), 3, "%s: no per-row offsets were computed" % id)
 
-		var img: Image = (sprite.get("texture") as Texture2D).get_image()
-		var frame: Vector2i = m.get("_frame")
-		var cols: int = int(m.get("_cols"))
-		var centres := []
-		for r in offsets.size():
-			var total := 0.0
-			var counted := 0
-			for c in cols:
-				var lo: int = frame.x
-				var hi: int = -1
-				for y in frame.y:
-					for x in frame.x:
-						if img.get_pixel(c * frame.x + x, r * frame.y + y).a > 0.0:
-							lo = mini(lo, x)
-							hi = maxi(hi, x)
-				if hi >= 0:
-					total += float(lo + hi) * 0.5
-					counted += 1
-			centres.append(total / float(counted) if counted > 0 else 0.0)
+		var centres := _row_centres(sprite, m, offsets.size())
+		assert_eq(centres.size(), offsets.size(),
+			("%s: measuring the sheet produced %d of %d row centres. The helper returns [] when it "
+			+ "ABORTS, so this reports a failed MEASUREMENT rather than rows that disagree")
+			% [id, centres.size(), offsets.size()])
+		if centres.size() != offsets.size():
+			continue
 
 		# ⛔ DRIVE _apply_frame AND READ THE SPRITE. Reading `_row_offsets` tests the COMPUTATION;
 		# deleting the line that applies it left this arm green — cowir-controller's shape, an arm
@@ -303,6 +291,35 @@ func test_the_severe_registration_drift_is_in_the_sheets_this_file_renders() -> 
 ## can remove. Max-over-frames also counts variation WITHIN a row, which is the walk animation
 ## moving and must not be flattened. cowir-adhoc measured 29 sheets that way where this measures
 ## 21; both are right and the definitions had simply not travelled with the numbers.
+
+## Per-row mean bbox centre of the sheet this creature actually rendered.
+##
+## ⛔ A HELPER SO THE ABORT IS VISIBLE. `get_image()` on a null texture aborts its ENCLOSING
+## function only. Inlined in the arm it aborted after two passing asserts and the whole run stayed
+## green — measured 2026-09-17 by injecting a typed-null abort: Tests 8, Passing 8, EC 0, nothing
+## red. From here an abort returns [] and the caller's size assert reds by name.
+func _row_centres(sprite: Node, m: Node, rows: int) -> Array:
+	var img: Image = (sprite.get("texture") as Texture2D).get_image()
+	var frame: Vector2i = m.get("_frame")
+	var cols: int = int(m.get("_cols"))
+	var centres := []
+	for r in rows:
+		var total := 0.0
+		var counted := 0
+		for c in cols:
+			var lo: int = frame.x
+			var hi: int = -1
+			for y in frame.y:
+				for x in frame.x:
+					if img.get_pixel(c * frame.x + x, r * frame.y + y).a > 0.0:
+						lo = mini(lo, x)
+						hi = maxi(hi, x)
+			if hi >= 0:
+				total += float(lo + hi) * 0.5
+				counted += 1
+		centres.append(total / float(counted) if counted > 0 else 0.0)
+	return centres
+
 func _mean_bbox_centre(img: Image, fw: int, fh: int, row: int) -> float:
 	var total := 0.0
 	var counted := 0

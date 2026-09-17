@@ -184,7 +184,10 @@ func test_no_party_renders_no_block_and_does_not_crash() -> void:
 	## Headless, tests, and the console opened outside a run. An unresolved context
 	## must render nothing rather than an empty heading the model would answer.
 	var p: String = _grind_prompt({})
-	assert_true(p.find("PARTY KITS") == -1, "an empty context must render no kit heading")
+	## Match the HEADING, not the phrase: the prompt may legitimately mention the block by
+	## name elsewhere, and a bare substring turns that prose into a failure.
+	assert_true(p.find("PARTY KITS. member_ability's") == -1,
+		"an empty context must render no kit heading")
 	assert_gt(p.length(), 500, "CONTROL: the rest of the prompt must still be built")
 
 
@@ -196,7 +199,8 @@ func test_an_autobattle_composition_is_untouched() -> void:
 		"max_mp": 70, "costs": {"fire": 8}})
 	assert_true(p.find("Ability ids you may use, and NOTHING else") != -1,
 		"CONTROL: the per-character kit block must still render for autobattle")
-	assert_true(p.find("PARTY KITS") == -1, "and the party block must not appear beside it")
+	assert_true(p.find("PARTY KITS. member_ability's") == -1,
+		"and the party block must not appear beside it")
 
 
 # ── the other half: the composer must GATHER it ───────────────────────────────

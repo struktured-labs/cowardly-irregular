@@ -60,6 +60,24 @@ func _kit_for(job_id: String) -> Dictionary:
 
 ## Autogrind is party-level: the real composer builds this from GameLoop.party, which a
 ## -s script has no autoloads for. Same hand-rebuild as _kit_for, over the five starters.
+## Mirrors AutobattleSystem._create_default_profiles: slot 0 is the tuned default, then every
+## non-balanced catalog template, padded to three. Same reason as _kit_for — no autoloads under -s.
+func _profile_names_for(job_id: String) -> Array:
+	var names: Array = ["Default"]
+	var f := FileAccess.open("res://data/autobattle_rule_templates.json", FileAccess.READ)
+	if f != null:
+		var doc = JSON.parse_string(f.get_as_text())
+		if doc is Dictionary:
+			for t in (doc.get("templates", []) as Array):
+				var row: Dictionary = t
+				if str(row.get("job_id", "")) != job_id or str(row.get("stance", "")) == "balanced":
+					continue
+				names.append(str(row.get("name", "Preset")))
+	while names.size() < 3:
+		names.append("Custom %d" % names.size())
+	return names
+
+
 func _party_kit_for() -> Dictionary:
 	var members: Array = []
 	for job_id in ["fighter", "cleric", "mage", "rogue", "bard"]:
@@ -69,6 +87,7 @@ func _party_kit_for() -> Dictionary:
 		members.append({
 			"member": job_id, "job_id": job_id,
 			"kit": k.get("kit", []), "costs": k.get("costs", {}),
+			"profiles": _profile_names_for(job_id),
 		})
 	if members.is_empty():
 		return {}

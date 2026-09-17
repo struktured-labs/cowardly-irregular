@@ -36,22 +36,23 @@ const RAW_READS := [
 ]
 
 ## Measured 2026-09-16. Shrinks only.
-## ⚠️ THE LAST TWO ARE UNMEASURED, NOT CLEAN — and the distinction is one I got wrong on
-## AutogrindUI an hour ago, so it is spelled out rather than implied. Both resist THIS harness for
-## a specific reason, and neither reason is evidence about their behaviour:
+## ⚠️ THE LAST ENTRY IS MEASURED IMMUNE, NOT UNMEASURED AND NOT UNCHECKED — and the evidence is a
+## behavioural arm rather than this comment, which is the correction to the false exemption I wrote
+## for AutogrindUI and had to remove an hour later.
 ##
-##   RadialPicker      `_input_direction` reads `Input.get_joy_axis(event.device, ...)` — the LIVE
-##                     hardware axis, not the event. A synthetic InputEventJoypadMotion carries the
-##                     value in the event and leaves the device state at zero, so the stick branch
-##                     returns Vector2.ZERO and nothing moves. Its d-pad path DOES drive (measured:
-##                     `_selected` 0 -> 2, a ring slot rather than a step). Needs a real pad or an
-##                     Input-state harness.
-##   HowToPlayOverlay  scrolls a CHILD `_scroll_target`'s v-scroll bar, not a member of its own, so
-##                     a member snapshot sees nothing by construction. I built a ScrollContainer
-##                     fixture and the bar still read 0 on every route including the d-pad, which
-##                     means the fixture is not yet right — an unfinished measurement, not a result.
+##   RadialPicker   selects a slot by the stick's ANGLE, absolutely, instead of stepping a cursor.
+##                  A ramp re-selects the SAME slot every event: d-pad -> 3, odd ramp [3,3,3,3,3],
+##                  even ramp [3,3,3,3]. It stays listed because it DOES read raw; removing it
+##                  would tell this ledger it was converted.
+##                  Guarded by test_the_radial_picker_selects_by_angle_not_by_steps, which reds if
+##                  the selection ever becomes relative. A note cannot do that; an arm can.
+##
+## 🔑 IT TOOK `Input.parse_input_event()` TO MEASURE AT ALL. `_input_direction` reads the LIVE axis
+## via `Input.get_joy_axis()`, not the event, so a synthetic InputEventJoypadMotion leaves the
+## device at zero and three sweeps of mine reported "nothing moved". That is the whole reason this
+## entry said UNMEASURED rather than clean — and HowToPlayOverlay, filed the same way for a
+## different reader bug, turned out to have a real 5x defect.
 const KNOWN_UNCONVERTED := [
-	"res://src/ui/HowToPlayOverlay.gd",
 	"res://src/ui/RadialPicker.gd",
 ]
 
