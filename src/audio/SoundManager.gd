@@ -609,6 +609,9 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	If set, overrides volume (used by play_battle_scaled)."""
 	if not _sfx_manifest.has(sound_key):
 		return false
+	## Cleared here, set at the cooldown gate below: `true` from this function means HANDLED, not
+	## HEARD, and the combo ramp needs the difference. See _combo_step.
+	_sfx_suppressed_by_cooldown = false
 
 	# Cooldown: skip if same sound played too recently (prevents pileup at high battle speeds)
 	# LOAD-BEARING BEYOND ITS NAME: this stamp is also the only thing bounding the fallback_to
@@ -618,6 +621,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	var now_ms = Time.get_ticks_msec()
 	var last_played = _sfx_cooldowns.get(sound_key, 0)
 	if now_ms - last_played < SFX_MIN_INTERVAL_MS:
+		_sfx_suppressed_by_cooldown = true
 		return true  # Return true to suppress procedural fallback too
 	_sfx_cooldowns[sound_key] = now_ms
 
@@ -855,15 +859,17 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 	var generic_key = "critical_hit" if is_crit else "attack_hit"
 	# Step 0 yields exactly 1.0, so a non-chained hit is bit-identical to the pre-ramp path.
 	var bias: float = _combo_pitch_bias()
-	_combo_step += 1
 	if not weapon_type.is_empty():
 		var per_weapon_key = "attack_hit_%s%s" % [weapon_type, suffix]
 		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key, NAN, bias):
+			_advance_hit_chain()
 			return
 	if _try_play_sfx_from_manifest(_battle_player, generic_key, NAN, bias):
+		_advance_hit_chain()
 		return
 	if not SOUNDS.has(generic_key):
 		return
+	_combo_step += 1  # procedural path has no cooldown: it always sounds
 	if is_crit:
 		var params = SOUNDS[generic_key].duplicate()
 		params["volume_db"] = 2.0
@@ -879,6 +885,20 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 
 ## Consecutive-hit pitch bias. Reset per ACTION by the caller — an unreset counter would ramp across a whole battle.
 var _combo_step: int = 0
+
+## Set by _try_play_sfx_from_manifest: its `true` means HANDLED, and the cooldown branch returns
+## true without sounding anything. Only the combo ramp needs the distinction.
+var _sfx_suppressed_by_cooldown: bool = false
+
+
+## The ramp counts hits the player HEARD, not play_attack_hit CALLS.
+## A participant striking N targets fires N same-key hits in ONE frame (BattleScene:4025); the
+## per-key cooldown sounds the first and suppresses the rest, which is correct — identical
+## same-frame samples comb-filter. Counting the silent ones drove the bias straight to its cap
+## with nothing audible causing it: measured 5 calls -> 1 play, _combo_step 5, bias 1.12 = CAP.
+func _advance_hit_chain() -> void:
+	if not _sfx_suppressed_by_cooldown:
+		_combo_step += 1
 
 
 func _combo_pitch_bias() -> float:
