@@ -55,6 +55,29 @@ const DECLARED := {
 	## 2026-09-16: THREE sites touch the key in all of src/ — two writes in Combatant.gd and one read
 	## in BattleScene.gd. So it is inert to combat math in BOTH engines, and the grind, which renders
 	## nothing, is correct to ignore it. The day a fourth site appears in a math path, this is a lie.
+	## ⛔ TWENTY-FOUR VALUES, AND THEY ARE NOT ONE GAP. `meta_effect` IS an executor key — live reads
+	## it at BattleManager.gd:6551 inside _execute_meta_ability and matches ~24 ways — so axis 2 applies
+	## and the grind's `meta` arm, a deliberate logged no-op, reads nothing. But "port meta_effect" is
+	## not a task. Measured 2026-09-16 by looking for actual MUTATING calls in each arm, not for
+	## keywords: SEVEN touch battle state and seventeen do not.
+	##   recursive_summon   caster.add_buff("Recursive Summon ...")
+	##   boss_control_swap  target.add_status("mind_swap") + set_meta("_mind_swap_controller")
+	##   full_boss_control  target.add_status("controlled")
+	##   mutual_permadeath  caster.add_status("permakilled") AND target's
+	##   force_weak_attack  target.add_debuff("Forced Weak", "attack", ...)
+	##   time_stop          target.add_status("stun")
+	##   permanent_death    target.add_status("permakilled")
+	## The other seventeen write game_constants, SaveSystem or the battle log — a headless battle
+	## resolver is CORRECT to ignore save manipulation, dungeon skips and console readouts.
+	## 🔑 So the remainder is a STAKES ruling, not a repair, and the same one CLAUDE.md already names:
+	## permadeath, boss control and time-stop inside unattended automation is the "real stakes" pillar
+	## deciding how far it reaches. Same disposition as summon_id and recoil_pct.
+	## ⚠️ INSTRUMENT, STATED, because my first two were wrong: a keyword classifier scored
+	## `code_inspection` as battle-affecting off a READ of player_party — it only prints turn order.
+	## The seven above are named from the mutating call in each arm, read individually. A word count
+	## cannot tell a read of the party from a write to it, and that is the whole distinction here.
+	"meta_effect": "not one gap — 24 values, of which SEVEN mutate battle state and 17 write saves, game_constants or the log. The grind's meta arm is inert by design; porting the seven is a stakes ruling (permadeath/boss control/time stop under automation), not a parity repair",
+
 	## ⛔ NOT HALF AN ABILITY — A WHOLE JOB, and the reason this is a scoping call rather than a repair.
 	## @cowir-adhoc raised it naming three Speculator abilities; measured 2026-09-16 the kit is SIX, and
 	## all six are built on the volatility system: leverage_position (volatility_up_self, the recoil_pct
@@ -109,7 +132,6 @@ const CLOSED_PENDING_FOLD := [
 ## gap — but it may not GROW without the new key being named here or in DECLARED.
 const UNEXAMINED := [
 	"element_boost", "element_boost_modifier", "guaranteed_escape", "ignores_evasion", "max_depth",
-	"meta_effect",
 ]
 
 ## ⛔ THE THIRD STATE, and it exists because I published a backlog number my instrument could not
