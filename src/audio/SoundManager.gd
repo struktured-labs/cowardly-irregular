@@ -5084,6 +5084,22 @@ func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
 	"""Play appropriate music for an exploration area.
 	Generation is deferred to the next frame so it does not block scene setup."""
 	if _current_area == area_type and _music_playing:
+		## ⛔ A PENDING FADE-OUT OUTLIVES THIS RETURN. fade_out_music's callback stops BOTH
+		## players and clears _current_music, and it leaves _music_playing true until it fires —
+		## so "already playing" is true of a bed that is one tween away from silence. A cutscene
+		## that faded the field bed and then restored the SAME area returned early into that tween
+		## and the bed died a second later, silent until the player changed area.
+		## Measured 2026-09-17: playing=true at the call, playing=false 0.6 s on.
+		## The caller is asking for this area to PLAY, so cancel the fade rather than return into
+		## it — and restore the level the fade had already pulled down.
+		if _crossfade_tween and _crossfade_tween.is_valid():
+			_crossfade_tween.kill()
+			_crossfade_tween = null
+			if _music_player:
+				_music_player.volume_db = _music_base_db
+			## B is always the OUTGOING bed; cancelling a fade must not resurrect it.
+			if _music_player_b:
+				_music_player_b.stop()
 		return  # Already playing
 
 	# Interior sub-area keys inherit the current (village) bed when their track
