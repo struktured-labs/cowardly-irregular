@@ -125,8 +125,20 @@ func test_the_blind_probe_is_gone_and_stays_gone() -> void:
 	assert_gt(at, -1, "SCOPE control: _start_monster_music was renamed — re-derive this guard")
 	var body: String = src.substr(at, src.find("\nfunc ", at + 1) - at)
 	assert_true(body.contains("_music_cache"), "CONTROL: the stripper left the function's real body intact")
-	assert_false(body.contains("ResourceLoader.exists"),
-		"the hand-built path probe is back — the manifest has already been consulted for this key before this function runs, so the probe cannot change the answer. (It is NOT about ResourceLoader.exists being broken: measured correct inside a real .pck, 2026-09-17.)")
+
+	## \u26d4 BOTH PREDICATES, AND THE FIRST VERSION REFUSED ONLY THE ONE THAT WORKS. The subject
+	## here is a HAND-BUILT PATH PROBE of any spelling: the manifest has already answered for this
+	## key before this function runs, so no existence test can change the answer. It is not about
+	## either predicate being broken.
+	##
+	## But if one of them comes back it matters WHICH, and my first version pinned the wrong one.
+	## cowir-main measured inside a real .pck (godot 4.4.1): ResourceLoader.exists is CORRECT for
+	## imported resources -- it reads the packed .import sidecar -- while FileAccess.file_exists
+	## returns FALSE for a present, loadable one. So the spelling this arm originally permitted is
+	## the actively dangerous one, and the spelling it refused is fine.
+	for probe in ["ResourceLoader.exists", "FileAccess.file_exists"]:
+		assert_false(body.contains(probe),
+			"a hand-built path probe is back in _start_monster_music (%s) — the manifest was already consulted for this key, so the probe cannot change the answer. NOTE: FileAccess.file_exists is additionally WRONG for an imported resource in a pack (measured 2026-09-17), while ResourceLoader.exists is correct; neither belongs here." % probe)
 
 
 ## ⛔ THE SECOND AXIS, AND IT IS THE SAME SENTENCE WITH A DIFFERENT NOUN (@cowir-sfx, 2026-09-17).
