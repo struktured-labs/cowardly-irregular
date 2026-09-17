@@ -51,8 +51,13 @@ func test_restoring_the_same_area_mid_fade_keeps_the_bed() -> void:
 
 	await get_tree().create_timer(FADE * 2.0).timeout
 	await _frames(8)
+	## ⛔ IDENTITY, NOT JUST "SOMETHING IS PLAYING". `playing` alone passes if the bed died and
+	## anything else started — @cowir-autogrind's fixture-is-a-corpus point: an arm that runs out
+	## of, or substitutes, its subject reports the subject as working.
 	assert_true(SoundManager._music_player.playing,
 		"the restored bed was stopped by the fade it was meant to cancel — a cutscene that fades the field bed and returns to the same area leaves the overworld silent until you walk elsewhere")
+	assert_eq(SoundManager._current_area, AREA,
+		"something is playing but it is not the area that was restored (%s)" % SoundManager._current_area)
 
 
 func test_the_restore_puts_the_level_back() -> void:
@@ -96,6 +101,8 @@ func test_play_music_asking_for_the_same_track_mid_fade_keeps_it() -> void:
 	await _frames(8)
 	assert_true(SoundManager._music_player.playing,
 		"play_music skipped its own tween kill via the early return, and the fade stopped the track it was asked to keep")
+	assert_eq(SoundManager._current_music, BATTLE,
+		"something is playing but it is not the track that was asked for (%s)" % SoundManager._current_music)
 
 
 func test_a_different_track_still_takes_the_normal_path() -> void:
