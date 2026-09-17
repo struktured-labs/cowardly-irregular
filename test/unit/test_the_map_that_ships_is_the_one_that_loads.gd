@@ -35,15 +35,15 @@ func _gd_files(dir_path: String, out: Array) -> void:
 	if d == null:
 		return
 	d.list_dir_begin()
-	var name := d.get_next()
-	while name != "":
-		var full := dir_path + "/" + name
+	var entry := d.get_next()
+	while entry != "":
+		var full := dir_path + "/" + entry
 		if d.current_is_dir():
-			if not name.begins_with("."):
+			if not entry.begins_with("."):
 				_gd_files(full, out)
-		elif name.ends_with(".gd"):
+		elif entry.ends_with(".gd"):
 			out.append(full)
-		name = d.get_next()
+		entry = d.get_next()
 	d.list_dir_end()
 
 
@@ -73,8 +73,9 @@ func test_the_corpus_is_derived_and_not_empty() -> void:
 
 func test_every_declared_map_image_ships_its_raw_bytes() -> void:
 	var offenders: Array = []
-	for p in _declared_map_images():
-		var imp := p + ".import"
+	for raw in _declared_map_images():
+		var p: String = str(raw)
+		var imp: String = p + ".import"
 		if not FileAccess.file_exists(imp):
 			offenders.append("%s has NO .import sidecar at all" % p)
 			continue
