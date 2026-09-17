@@ -16,10 +16,15 @@ func after_each() -> void:
 		return
 	_snapshot_taken = false
 	if _had_real_autosave:
-		var f := FileAccess.open(_auto_path, FileAccess.WRITE)
-		if f:
-			f.store_buffer(_real_autosave_backup)
-			f.close()
+		## open(WRITE) truncates BEFORE store_buffer runs, so only reopen his live file when this run actually changed it.
+		if FileAccess.get_file_as_bytes(_auto_path) != _real_autosave_backup:
+			if _real_autosave_backup.is_empty():
+				push_warning("[TEST] refusing to restore an EMPTY snapshot over %s" % _auto_path)
+			else:
+				var f := FileAccess.open(_auto_path, FileAccess.WRITE)
+				if f:
+					f.store_buffer(_real_autosave_backup)
+					f.close()
 	elif SaveSystem and SaveSystem.save_exists(SaveSystem.AUTO_SAVE_SLOT):
 		SaveSystem.delete_save(SaveSystem.AUTO_SAVE_SLOT)
 
