@@ -3859,13 +3859,15 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 				# Play job stinger for party leader on limit break
 				if participants.size() > 0 and participants[0] is Combatant:
 					var job_id = participants[0].job.get("id", "fighter") if participants[0].job else "fighter"
-					## ⛔ ASKED THE OWNER INSTEAD OF RE-DERIVING. This built the path itself — duplicating
-					## the manifest's knowledge of where the file lives — and gated on
-					## ResourceLoader.exists(), which SoundManager documents TWICE (:1777, :1846) as
-					## reporting FALSE for resources that ARE present in a web PCK. A false negative
-					## here is a silent stinger on the Limit Break, desktop unaffected.
-					## music_is_available() is the predicate CutsceneDirector and JukeboxMenu use; it
-					## reads the manifest for the path and tests it with load() for that stated reason.
+					## ⛔ ASKED THE OWNER INSTEAD OF RE-DERIVING. This built the path itself, duplicating
+					## the manifest's knowledge of where the file lives; music_is_available() is the
+					## predicate CutsceneDirector and JukeboxMenu already use, so the manifest stays the
+					## single place that knows. That reason stands on its own and is the whole reason.
+					## ⚠️ The justification here USED to be "ResourceLoader.exists() reports FALSE inside a
+					## web PCK". MEASURED FALSE 2026-09-17 (cowir-main, probe inside a real .pck): it is
+					## correct for imported resources, and FileAccess.file_exists() is the broken one.
+					## SoundManager carries the correction; do not reinstate the claim or cite line
+					## numbers for it — this comment cited two that had already moved.
 					var stinger_key: String = "job_%s_special" % job_id
 					if SoundManager.music_is_available(stinger_key):
 						SoundManager.play_music(stinger_key)
