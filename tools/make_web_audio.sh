@@ -34,6 +34,21 @@ set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 BITRATE="${1:-64}"
+# ⛔ A FLAG MUST NOT BECOME A TIER NAME. This took $1 unvalidated, so any non-numeric argument
+# was used as a bitrate: `make_web_audio.sh --selftest` created tmp/web_audio/music_--selftestk
+# and ran ffmpeg with an invalid rate (measured 2026-09-17, EC=234). It fails, but only after
+# making a directory a later reader could mistake for a tier, and the error names ffmpeg rather
+# than the bad argument. A tool with no --selftest should SAY so, not transcode.
+case "$BITRATE" in
+    ''|*[!0-9]*)
+        echo "[web-audio] REFUSED: bitrate must be a plain integer in kbps, got '${BITRATE}'." >&2
+        echo "            This tool takes a BITRATE, not a flag, and has no --selftest." >&2
+        exit 2 ;;
+esac
+if [ "$BITRATE" -lt 8 ] || [ "$BITRATE" -gt 320 ]; then
+    echo "[web-audio] REFUSED: bitrate ${BITRATE} kbps is outside 8-320 — that is a typo, not a tier." >&2
+    exit 2
+fi
 SRC_DIR="assets/audio/music"
 # BITRATE-SCOPED, and that is load-bearing. The idempotence check below compares
 # mtimes and has no notion of bitrate, so a shared output directory makes
