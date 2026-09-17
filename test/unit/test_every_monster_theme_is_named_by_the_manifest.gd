@@ -6,10 +6,15 @@ extends GutTest
 ##   1. every route in is a play_music match arm, so _try_play_from_manifest("battle_<type>") has
 ##      already run for the SAME key — arriving here means that load failed, and re-testing the
 ##      same path cannot change the answer;
-##   2. it used ResourceLoader.exists(), which SoundManager documents at :1777 and :1846 as
-##      unreliable for IMPORTED resources — an .ogg is remapped to .oggstr, so the original path
-##      can be absent from a PCK while load() still resolves it (cowir-sfx's mechanism, and the
-##      sharper form of my lane's own comment: the rule is about IMPORT, not about web).
+##   2. ⛔ I ORIGINALLY GAVE A SECOND REASON AND IT WAS MEASURED FALSE THE SAME HOUR. I wrote that
+##      ResourceLoader.exists() is unreliable for imported resources, citing SoundManager :1777
+##      and :1846. cowir-main then built a real .pck on godot 4.4.1 and probed INSIDE it:
+##          res://tex.png · res://snd.ogg   exists() TRUE   file_exists() FALSE   load() TRUE
+##      exists() reads the PACKED .import sidecar and is CORRECT for imported resources;
+##      FileAccess.file_exists() is the one that is wrong for them. The 2026-03-30 comment named
+##      both and was right about one, and I repeated the wrong half twice before checking it.
+##      Kept here rather than deleted, because a reason that was published needs a visible
+##      retraction and not a quiet edit.
 ##
 ## 🔑 THIS FILE IS WHAT MAKES THE DELETION SAFE, and it is a ratchet rather than a list. The probe
 ## was a silent fallback for an OGG on disk that NO manifest key names. Zero such files exist for
@@ -89,4 +94,4 @@ func test_the_blind_probe_is_gone_and_stays_gone() -> void:
 	var body: String = src.substr(at, src.find("\nfunc ", at + 1) - at)
 	assert_true(body.contains("_music_cache"), "CONTROL: the stripper left the function's real body intact")
 	assert_false(body.contains("ResourceLoader.exists"),
-		"the hand-built path probe is back — SoundManager documents that predicate as unreliable for imported resources, and the manifest has already been consulted before this function runs")
+		"the hand-built path probe is back — the manifest has already been consulted for this key before this function runs, so the probe cannot change the answer. (It is NOT about ResourceLoader.exists being broken: measured correct inside a real .pck, 2026-09-17.)")

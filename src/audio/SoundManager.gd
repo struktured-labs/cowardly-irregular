@@ -1774,8 +1774,18 @@ func music_is_available(track_id: String) -> bool:
 		return true
 	if not path.begins_with("res://"):
 		path = "res://" + path
-	## load() rather than ResourceLoader.exists(): the latter reports FALSE for
-	## resources that ARE present in a web PCK (see _try_play_from_manifest).
+	## ⛔ THE OLD REASON HERE WAS MEASURED FALSE ON 2026-09-17 AND IS KEPT ONLY AS A WARNING.
+	## It said "ResourceLoader.exists() reports FALSE for resources that ARE present in a web PCK".
+	## cowir-main built a real .pck on godot 4.4.1 and ran the probe INSIDE it:
+	##     res://tex.png  res://snd.ogg     exists() TRUE   file_exists() FALSE   load() TRUE
+	##     res://plain.json                 exists() TRUE   file_exists() TRUE    load() TRUE
+	## exists() RESOLVES THROUGH THE PACKED .import SIDECAR and is correct for imported resources.
+	## `FileAccess.file_exists()` is the one that is genuinely wrong for them. The 2026-03-30
+	## comment below named BOTH and was right about one; six months of citations, including two of
+	## mine today, inherited the wrong half.
+	##
+	## load() stays, because this function wants the authoritative answer and Godot caches by path,
+	## so the check is a hit the caller was going to take anyway -- NOT because exists() is broken.
 	if load(path) != null:
 		return true
 	## Absent from this build. Only ids with a procedural arm still make sound.
@@ -1842,9 +1852,12 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		return false
 	if not path.begins_with("res://"):
 		path = "res://" + path
-	# Skip file existence checks — just try to load directly.
-	# FileAccess.file_exists() and ResourceLoader.exists() can fail in web/PCK exports
-	# even when the resource is actually available via load().
+	## Load directly. `FileAccess.file_exists()` is WRONG for an imported resource in a pack --
+	## measured FALSE for a present, loadable .ogg inside a real .pck (2026-09-17) -- and this
+	## function needs the stream anyway, so there is nothing a pre-check could save.
+	## ⛔ This comment used to say ResourceLoader.exists() fails the same way. It does not:
+	## it reads the packed .import sidecar and answers correctly. That half was never measured and
+	## was cited as fact for six months.
 	var stream = load(path) as AudioStream
 	if not stream:
 		push_warning("[MUSIC] Failed to load audio: %s (track_id: %s)" % [path, track_id])
@@ -4177,10 +4190,11 @@ func _start_monster_music(monster_type: String) -> void:
 	## The blind OGG probe that used to sit here is gone. Every route into this function is a
 	## play_music match arm, so _try_play_from_manifest("battle_<type>") has ALREADY run for the
 	## same key -- reaching here means that load failed, and re-probing the same path cannot help.
-	## It also used ResourceLoader.exists(), which :1777 and :1846 both document as unreliable for
-	## IMPORTED resources: an .ogg is remapped to .oggstr, so the original path can be absent while
-	## load() resolves it (cowir-sfx, 2026-09-17). test_every_monster_theme_is_named_by_the_manifest
-	## pins that the types reaching here are manifest-covered, so nothing is lost by deleting it.
+	## ⛔ IT WAS NOT DELETED BECAUSE ResourceLoader.exists() IS BROKEN -- that claim was measured
+	## FALSE hours after I wrote this line (see music_is_available). The probe is dead on its own
+	## terms: the manifest already answered for the same key.
+	## test_every_monster_theme_is_named_by_the_manifest pins that the types reaching here are
+	## manifest-covered, so nothing is lost by deleting it.
 
 	# Check proc-gen cache
 	if _music_cache.has(monster_type):
