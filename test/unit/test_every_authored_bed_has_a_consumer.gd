@@ -1126,3 +1126,36 @@ func test_the_set_of_unreached_beds_has_not_changed() -> void:
 		"pinned beds that ARE now reached (%s) — they were wired; delete the entries so they are covered like the rest" % [wired])
 	assert_eq(deleted.size(), 0,
 		"pinned beds that are no longer IN THE MANIFEST (%s) — the track was deleted, not wired. Delete the pin here AND check the peer census, the brief in tools/music_prompts.json, and whether the OGG went with it" % [deleted])
+
+
+func test_no_ambient_key_is_built_by_concatenation() -> void:
+	## ⛔ KNOWN_UNREACHED RESTS ON A LITERAL CENSUS, WHICH A DERIVED KEY EVADES. The four
+	## remaining ambient_* entries are declared "no consumer in PLAY" because no play_ambient call
+	## names them. That is a fact about today's source, not a property anything enforced —
+	## `play_ambient("ambient_" + world)` would make all four reachable and leave the declaration
+	## silently false, which is the verdict @struktured would delete 6.91 MB of authored audio on.
+	##
+	## @cowir-battle's third shape (MISSING READ · DATA COPY · DERIVED KEY): the read never spells
+	## the key, so widening a text search only adds comments and moves you further from the answer.
+	## @cowir-autogrind retracted a claim of exactly this kind tonight and named the worst version
+	## — not a wrong message, a wrong message with a GREEN GUARD under it. This is the guard.
+	##
+	## Measured 2026-09-17 before writing: 0 concatenated call sites, 0 `"ambient_" +` anywhere in
+	## src/. The composed families that DO exist are declared in COMPOSED_FAMILIES above and are
+	## world-suffix or location-id patterns; ambient is deliberately not among them, which is what
+	## lets those four read as unreached rather than being blanket-excused.
+	var src: String = _consumer_text()
+	assert_gt(src.length(), 100000,
+		"SCOPE control: the src walk read back %d chars — a zero-hit result below would be vacuous" % src.length())
+	assert_true(src.contains("play_ambient("),
+		"CONTROL: no play_ambient call found at all — the scan cannot detect a concatenated one either")
+
+	var bad: Array[String] = []
+	var re := RegEx.create_from_string("play_ambient\\(\\s*\"[^\"]*\"\\s*\\+")
+	for m in re.search_all(src):
+		bad.append(m.get_string(0))
+	var built := RegEx.create_from_string("\"ambient_?\"\\s*\\+")
+	for m in built.search_all(src):
+		bad.append(m.get_string(0))
+	assert_eq(bad.size(), 0,
+		"an ambient key is built by concatenation (%d): %s — every entry in KNOWN_UNREACHED was declared unreachable on a LITERAL census, so a composed key makes those declarations false without reddening anything else. Either add the family to COMPOSED_FAMILIES with its construction site, or retire the entries it now reaches." % [bad.size(), str(bad)])
