@@ -100,13 +100,42 @@ func test_one_nudge_toggles_the_log_once_while_the_llm_thinks() -> void:
 		"one stick push must toggle the log ONCE — four toggles land closed, which is what a ramp did")
 
 
-## ⛔ AN ARM FOR THE ORDINARY PATH WAS WRITTEN, MEASURED AS NON-DISCRIMINATING, AND REMOVED.
-## It opened the log with a ramp and asserted `scroll_vertical == 0`, i.e. that values 2..4 did not
-## fall through to the modal branch and scroll it. Both of its claims are green against the DEFECT:
-## the log is open either way (event 1 opens it and nothing closes it), and a headless log is
-## shorter than its window, so `scroll_vertical` is 0 whether or not `_scroll_backlog(-40)` ran.
-## Measured against the mutation below, not reasoned. Proving that path needs real scroll geometry;
-## it is not covered here, and a green arm that cannot go red would have implied it was.
+## ⛔ SECOND ROUTE — the MODAL branch, where the log is already open and ui_up/ui_down scroll it.
+## @cowir-autogrind's rule that a consequence arm is scoped to a ROUTE and not to a feature: the
+## toggle arm above covers the thinking branch and says nothing about this one.
+##
+## ⚠️ MY FIRST VERSION OF THIS ARM WAS NON-DISCRIMINATING AND I BLAMED THE WRONG THING. It stayed
+## green under the mutation, and I removed it declaring that headless has no scroll geometry.
+## PROBED INSTEAD OF ASSERTED: geometry is real — 30 backlog entries give max_value 494 against a
+## page of 368, a scrollable range of 126. The arm was blind because MY FIXTURE had two lines and
+## therefore no range, not because the engine cannot show one. The declaration was comfortable and
+## false, which is worse than the arm it justified removing.
+func test_one_nudge_scrolls_the_open_log_once() -> void:
+	_two_lines()
+	for i in 30:
+		_box._record_in_backlog("Speaker%d" % i, "a backlog line, number %d, long enough to wrap" % i)
+	_box.open_backlog()
+	await _frames(6)
+	assert_true(_box.is_backlog_open(), "precondition: the log is open")
+
+	var start: int = _box._backlog_scroll.scroll_vertical
+	assert_gt(start, 100,
+		"ANTI-VACUITY: open_backlog scrolls to the end, so there must be range to scroll BACK " +
+		"through — read %d, and at 0 this arm cannot tell one scroll from four" % start)
+
+	Input.action_press("ui_up")
+	for v in RAMP:
+		_box._input(_motion(v))
+	await _frames(2)
+
+	assert_eq(_box._backlog_scroll.scroll_vertical, start - 40,
+		"one push scrolls the log ONE step — four steps is -160 against a range of ~126, which " +
+		"clamps to 0 and throws the reader to the top of the log")
+
+
+func _frames(n: int) -> void:
+	for i in n:
+		await get_tree().process_frame
 
 
 ## A SECOND genuine push must still work: the latch is released by state, not by the event.
