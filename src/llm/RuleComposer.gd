@@ -140,6 +140,8 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 			repair_notes.append(note)
 		for note in _normalise_member_status(v["rules"]):
 			repair_notes.append(note)
+		for note in _normalise_switch_profile(v["rules"], kit_context):
+			repair_notes.append(note)
 
 	# A heal with no target is sent at the enemy by the evaluator's default.
 	if domain == DOMAIN_AUTOBATTLE:
@@ -408,11 +410,16 @@ func _party_kit_context() -> Dictionary:
 		if not bool(kit.get("resolved", false)):
 			continue
 		kit = _widen_kit_to_what_this_character_knows(kit, cid)
+		var profile_names: Array = []
+		if abs_sys.has_method("get_character_profiles"):
+			for prof in (abs_sys.get_character_profiles(cid) as Array):
+				profile_names.append(str((prof as Dictionary).get("name", "Profile")))
 		members.append({
 			"member": cid,
 			"job_id": str(kit.get("job_id", "")),
 			"kit": kit.get("kit", []),
 			"costs": kit.get("costs", {}),
+			"profiles": profile_names,
 		})
 	if members.is_empty():
 		return {}
@@ -556,6 +563,97 @@ func _is_catch_all(rule: Dictionary) -> bool:
 ## renders — not a table of guesses kept here. An array becomes one rule per id because OR is
 ## what this grammar's rule list already means; the conditions are AND-chained, so cloning the
 ## rule preserves every other condition it carried.
+## switch_profile names ONE member, and validate_rule checks only that the KEY is present —
+## so any string passes. Measured on live llama3 2026-09-17, an intent asking to switch the
+## whole party, 20 samples: 20 of 20 character_ids named nobody.
+##
+##     ""          7    passes validation, then apply_autogrind_actions skips on the != "" test
+##     everyone    4    the model reaching for something the grammar cannot say
+##     *           4
+##     all         3
+##     defensive   1    the profile NAME in the id field
+##     None        1
+##
+## The middle eleven are the damaging ones, and not because they no-op: set_active_profile
+## calls _ensure_character_profiles FIRST, so an invented id CREATES a profile block and
+## _save_character_profiles persists it. Probed: character_profiles["everyone"] created with
+## 3 profiles and active=1, written to user://autobattle/profiles.json in real play.
+##
+## A party word becomes one action per member — the grammar's own way to say it, and exactly
+## what the intent asked for. An id naming nobody is DROPPED, because the alternative is
+## letting it reach the save. Both need the live party, so with no kit context this does
+## nothing: unable to verify is not the same as verified absent.
+func _normalise_switch_profile(rules: Array, kit_context: Dictionary) -> Array[String]:
+	var notes: Array[String] = []
+	if not bool(kit_context.get("resolved", false)):
+		return notes
+	var members: Array = []
+	for raw in (kit_context.get("party", []) as Array):
+		members.append(str((raw as Dictionary).get("member", "")))
+	if members.is_empty():
+		return notes
+	const PARTY_WORDS := ["everyone", "everybody", "all", "*", "party", "the party", "all members"]
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		var actions: Array = rule.get("actions", [])
+		var i: int = 0
+		while i < actions.size():
+			var a = actions[i]
+			i += 1
+			if typeof(a) != TYPE_DICTIONARY or str(a.get("type", "")) != "switch_profile":
+				continue
+			## A scalar slot given an array is the same shape member_status showed: the model
+			## spelling "each of them" as a list. Measured here 3 of 36 for the id and 1 for
+			## the index. An absent key is refused by validate_rule, which discards the WHOLE
+			## composition — dropping the one action is the cheaper loss.
+			if typeof(a.get("profile_index")) == TYPE_ARRAY:
+				var idxs: Array = a["profile_index"]
+				if idxs.size() == 1 and typeof(idxs[0]) == TYPE_INT:
+					a["profile_index"] = idxs[0]
+					notes.append("Read a one-item profile_index list as the slot it holds.")
+			if not a.has("character_id") or not a.has("profile_index"):
+				actions.remove_at(i - 1)
+				i -= 1
+				notes.append("Dropped an incomplete switch_profile — it needs both a member and a slot.")
+				continue
+			if typeof(a.get("character_id")) == TYPE_ARRAY:
+				var named: Array = []
+				for entry in (a["character_id"] as Array):
+					var one: String = str(entry).strip_edges().to_lower()
+					if members.has(one) and not named.has(one):
+						named.append(one)
+				if named.is_empty():
+					actions.remove_at(i - 1)
+					i -= 1
+					notes.append("Dropped a switch_profile — none of the names it listed are in the party.")
+					continue
+				a["character_id"] = named[0]
+				notes.append("Split a list of members into one switch_profile each.")
+				for extra in named.slice(1):
+					var clone_of_list: Dictionary = a.duplicate(true)
+					clone_of_list["character_id"] = extra
+					actions.insert(i, clone_of_list)
+					i += 1
+				continue
+			var cid: String = str(a.get("character_id", "")).strip_edges().to_lower()
+			if members.has(cid):
+				continue
+			if PARTY_WORDS.has(cid):
+				a["character_id"] = members[0]
+				notes.append("Read '%s' as every member — switch_profile names one at a time." % cid)
+				for extra in members.slice(1):
+					var clone: Dictionary = a.duplicate(true)
+					clone["character_id"] = extra
+					actions.insert(i, clone)
+					i += 1
+				continue
+			actions.remove_at(i - 1)
+			i -= 1
+			notes.append("Dropped a switch_profile for '%s' — nobody in the party has that name." % cid)
+	return notes
+
+
 func _normalise_member_status(rules: Array) -> Array[String]:
 	var notes: Array[String] = []
 	var spellings: Dictionary = {}
