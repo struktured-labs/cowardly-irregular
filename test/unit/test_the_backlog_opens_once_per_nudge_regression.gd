@@ -71,6 +71,33 @@ func _two_lines() -> void:
 ## is decided by whether an assert already ran in ITS arm — so adding a precondition line above a
 ## reach silently converts it from rung 1 (Risky, EC=4, loud) to rung 3 (Passing, EC=0, silent).
 ## This floor is indifferent to that: it reds on a rename whatever the order.
+##
+## ⚠️ THE DERIVATION IS NOT QUOTE-AWARE, and that is a declared limit rather than an oversight.
+## @cowir-sfx's scanner invented a receiver out of a fixture STRING shaped like a call, so an
+## assert message here containing `_box.something` would add a phantom member. **It fails LOUD** —
+## a phantom does not exist on the subject, so this arm reds and names it — which is the safe
+## direction and why a quote-aware pass is not worth its complexity in a file with no such fixture.
+## If this ever reds on a name that is only ever inside a string, that is the cause.
+##
+## 📌 THE FLOOR COVERS THE RECEIVER ITS DERIVATION NAMES, and this file drives three
+## (@cowir-music's clause — "is this file floored?" can answer YES about a narrower set than the
+## name suggests). Checked per receiver rather than per file, measured:
+##     _box      27 reaches   THIS FLOOR
+##     MenuNav    1 reach     NO FLOOR WARRANTED — a `class_name` static resolves at PARSE TIME, so
+##                            a missing member is not an abort at all: the script never compiles and
+##                            run_tests.sh exits 3, NOTHING RAN. Measured: renaming step() gave
+##                            EC=3. @cowir-controller's discriminator is the CALL SHAPE, not the
+##                            symbol — a floor here could only ever be dead code
+##     Input      6 reaches   engine builtin; a rename is not a change this repo can make
+## So no second floor is warranted here, and that is a measurement rather than an assumption.
+##
+## ✅ AND THE FLOOR IS LOAD-BEARING RATHER THAN CEREMONY, by @cowir-autogrind's blast-radius column:
+## what a floor is worth is INVERSE to how many other files reach the symbol, because a widely-used
+## API is covered by the corpus screaming. Measured across test/unit — 8 of the 12 members pinned
+## here have TWO OR FEWER other consumers, so nothing else would red for them. `_input` (72 others)
+## and `show_dialogue` (7) are the corpus-covered ones and the floor is near-free weight there.
+## 🔑 `_backlog_scroll` has ZERO other consumers — and it was this file's ONLY silent rung-3 reach.
+## The single hole sat on the single member no other test could ever have caught.
 func test_every_member_this_file_reaches_still_exists() -> void:
 	var src: String = FileAccess.get_file_as_string(
 		"res://test/unit/test_the_backlog_opens_once_per_nudge_regression.gd")
@@ -163,7 +190,15 @@ func test_one_nudge_scrolls_the_open_log_once() -> void:
 	await _frames(6)
 	assert_true(_box.is_backlog_open(), "precondition: the log is open")
 
-	## ⛔ THE ONLY RUNG-3 REACH IN THIS FILE, so the only silent one. Two asserts have already run by
+	## ⛔ ONE OF TWO RUNG-3 REACHES IN THIS FILE — and `.378` shipped this line saying "the ONLY"
+	## one, which my own later measurement falsified. @cowir-sfx's (ARM, SYMBOL) refinement: my
+	## classifier skipped any line starting with `assert`, so every reach INSIDE an assert argument
+	## was invisible to it — and an argument evaluates BEFORE the assert is entered. That hid 4 of 9
+	## reaches and the second silence, `backlog_size`, which no explicit floor covers. The DERIVED
+	## floor does (mutation: rename it, `Failing 1` naming it), so the cover was never wrong — only
+	## my account of it. That is the argument for deriving over hand-picking: it covered a symbol my
+	## own rung analysis had missed, and hand-selecting pins would have chosen from the wrong map.
+	## Two asserts have already run by
 	## here, so a rename of _backlog_scroll aborts this arm to Passing/EC=0 — `.366`'s EC=4 derives
 	## from [Risky] names and cannot see an abort after a passing assert (@cowir-sfx's triage axis:
 	## pre-assert reaches are rung 1 and already loud; post-assert ones are the hole). `in` is the
