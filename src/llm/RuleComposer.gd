@@ -76,6 +76,7 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 			kit_context["items"] = _battle_item_ids()
 	elif domain == DOMAIN_AUTOGRIND:
 		kit_context = _party_kit_context()
+		kit_context["scales"] = _numeric_scales()
 	var prompt: String = DialoguePromptsScript.build_rule_composition(
 		domain, prompt_text, current_rules, kit_context)
 	var svc = get_node_or_null("/root/LLMService")
@@ -442,6 +443,33 @@ func _battle_item_ids() -> Array:
 		out.append(str(iid))
 	out.sort()
 	return out
+
+
+## The SCALE of each numeric condition, read from the engine rather than written down.
+##
+## The grammar says "Numeric conditions take op and value" and names no units at all.
+## Measured on live llama3 2026-09-17 across every captured corpus:
+##
+##     time_elapsed   3600 · 3000 · 1800 emitted against an evaluator that computes MINUTES
+##                    — the model is thinking in SECONDS, 60x off, and the rule never fires
+##     corruption     9 of 17 values were 10/20/30/50 — percent thinking, on a float where
+##                    2.0 starts the corruption effects and 4.5 stops the session
+##     party_hp_*     10-90 throughout, correct: the model infers percent from the name
+##
+## corruption's stopping point is READ from interrupt_rules, so it cannot drift from the
+## number that actually ends a session. time_elapsed's unit is a property of the evaluator
+## and is pinned by a source arm instead.
+func _numeric_scales() -> Dictionary:
+	var grind = get_node_or_null("/root/AutogrindSystem")
+	if grind == null or not ("interrupt_rules" in grind):
+		return {}
+	var rules: Dictionary = grind.interrupt_rules
+	if not rules.has("corruption_limit"):
+		return {}
+	return {
+		"corruption_limit": float(rules["corruption_limit"]),
+		"efficiency_start": float(grind.efficiency_multiplier) if "efficiency_multiplier" in grind else 1.0,
+	}
 
 
 func _party_kit_context() -> Dictionary:
