@@ -15,7 +15,11 @@ extends GutTest
 ## pins only that the authored rectangle is the rectangle the world declares, which is a
 ## property no legitimate map edit ever breaks.
 
+## W1 was ABSENT from this table until 2026-09-17, and it is the world whose PNG was
+## configured correctly — so the one world that could have revealed the packing bug was the
+## one row this five-row table omitted. Five of six again.
 const WORLDS := {
+	"OverworldScene": "res://src/exploration/OverworldScene.gd",
 	"SuburbanOverworld": "res://src/exploration/SuburbanOverworld.gd",
 	"SteampunkOverworld": "res://src/exploration/SteampunkOverworld.gd",
 	"IndustrialOverworld": "res://src/exploration/IndustrialOverworld.gd",
@@ -68,11 +72,16 @@ func test_every_world_map_is_the_rectangle_it_declares() -> void:
 		img_re.compile("const MAP_IMAGE: String = \"(res://[^\"]+)\"")
 		var img_m := img_re.search(src)
 		if img_m != null:
-			var tex = load(img_m.get_string(1))
-			assert_not_null(tex, "%s: MAP_IMAGE %s does not load" % [name, img_m.get_string(1)])
-			if tex != null:
-				var isz: Vector2i = tex.get_image().get_size() if tex is Texture2D else Vector2i.ZERO
-				assert_eq(isz, Vector2i(w, h), "%s: MAP_IMAGE is %s against declared %dx%d" % [name, str(isz), w, h])
+			var png_path: String = img_m.get_string(1)
+			# Read it the way MapImageLoader does. This used load(), which needs an IMPORTED
+			# texture -- so it measured the .ctex and not the bytes the runtime consumes.
+			var bytes := FileAccess.get_file_as_bytes(png_path)
+			assert_gt(bytes.size(), 0, "%s: MAP_IMAGE %s read as ZERO BYTES. MapImageLoader reads raw bytes, so this PNG must carry importer=\"keep\" or it ships only as a .ctex and the world generates no tiles." % [name, png_path])
+			var img := Image.new()
+			var decoded := OK if not bytes.is_empty() and img.load_png_from_buffer(bytes) == OK else FAILED
+			assert_eq(decoded, OK, "%s: MAP_IMAGE %s is not decodable as PNG" % [name, png_path])
+			if decoded == OK:
+				assert_eq(img.get_size(), Vector2i(w, h), "%s: MAP_IMAGE is %s against declared %dx%d" % [name, str(img.get_size()), w, h])
 			checked += 1
 			continue
 		var rows := _rows(src)

@@ -772,6 +772,36 @@ func _execute_action(action: Dictionary) -> void:
 ## ⚠️ Four of the fifteen keys are read in live by CONSTRUCTION (element + "_damage_bonus"), so a
 ## literal census of either engine under-reports them — @cowir-battle's third shape, which is why
 ## this helper takes the key as an argument rather than matching names.
+## Twin of Combatant._has_equipment_resistance. PRESENCE across the three slots, not a sum: live
+## tests `> 0.0` and multiplies by a flat 0.5, and both authoring pieces carry `true`, so a sum
+## would be a second formula that agrees only by accident of the authored values.
+##
+## ⛔ WHY THIS ARRIVED LATE, recorded because the reason is worse than the omission: this lane
+## MEASURED live's callers of take_elemental_damage, reported "only _tick_summon_followup", and
+## DECLARED both resistance keys non-gaps in the gear census on that basis. There are two callers.
+## The magic executor is the other one. The census then counted those two as "declared" and reached
+## zero ignored — a closed census resting on a wrong measurement.
+func _has_equipment_resistance(combatant, element: String) -> bool:
+	if combatant == null or not is_instance_valid(combatant) or element == "":
+		return false
+	var es = _get_autoload("EquipmentSystem")
+	if es == null:
+		return false
+	var key: String = element + "_resistance"
+	for slot in [["equipped_weapon", "get_weapon"], ["equipped_armor", "get_armor"], ["equipped_accessory", "get_accessory"]]:
+		var field: String = str(slot[0])
+		var getter: String = str(slot[1])
+		if not (field in combatant) or str(combatant.get(field)) == "":
+			continue
+		if not es.has_method(getter):
+			continue
+		var piece: Dictionary = es.call(getter, str(combatant.get(field)))
+		var se: Variant = piece.get("special_effects", {})
+		if se is Dictionary and float((se as Dictionary).get(key, 0.0)) > 0.0:
+			return true
+	return false
+
+
 func _sum_equipment_special_effect(combatant, key: String) -> float:
 	if combatant == null or not is_instance_valid(combatant):
 		return 0.0
@@ -1148,6 +1178,16 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						if elem_bonus > 0.0:
 							base_dmg = int(base_dmg * elem_bonus)
 					var elem_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
+					## ⛔ EQUIPMENT RESISTANCE, mirroring Combatant.take_elemental_damage:  live's magic
+					## arm routes through that function (BattleManager:5270) and it does
+					## `elemental_mod *= 0.5` when the target's gear names <element>_resistance. This arm
+					## called calculate_elemental_modifier alone, so dragon_mail and bone_armor did
+					## nothing in a grind while halving the same hit in a real fight.
+					## ⚠️ PRESENCE, NOT MAGNITUDE — live checks `> 0.0` on any slot and applies a flat
+					## 0.5. Both pieces author `true`, so summing the value would be a different
+					## formula that happens to agree today.
+					if element != "" and _has_equipment_resistance(target, element):
+						elem_mod *= 0.5
 					var actual = int(base_dmg * elem_mod)
 					actual = max(1, actual)
 					if target.is_defending:
@@ -1440,6 +1480,39 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 const _RANDOM_DEBUFF_POOL := ["poison", "blind", "burn", "confuse", "fear", "silence", "curse"]
 
 
+## The magic/physical half of stat-down application, mirroring BattleManager._apply_stat_down.
+## Returns true when the effect WAS a stat-down, so the caller falls through to add_status only for
+## real statuses. Names match live's exactly — add_debuff keys on the NAME and refreshes in place,
+## so a different spelling would stack where live refreshes.
+##
+## ⚠️ SEPARATE FROM _effect_to_stat ON PURPOSE. That one serves the SUPPORT arm, where the ability's
+## whole point is the buff; this serves the magic/physical arms, where the stat-down rides on a
+## damaging hit behind an effect_chance roll. Live splits them the same way, and collapsing them
+## would merge two executors that apply the same names under different conditions.
+##
+## ⚠️ `magic_down` IS DELIBERATELY ABSENT, matching live: it has no owner on either path, so giving
+## it one here would invent a debuff name rather than mirror one. corruption_wave still writes a
+## token in BOTH engines, which is agreement rather than a gap. @cowir-battle holds that call.
+func _apply_stat_down(target, effect: String, stat_modifier: float, duration: int) -> bool:
+	match effect:
+		"defense_down":
+			target.add_debuff("Armor Break", "defense", stat_modifier, duration)
+		"magic_defense_down":
+			target.add_debuff("Soul Sap", "magic_defense", stat_modifier, duration)
+		"attack_down":
+			target.add_debuff("Weaken", "attack", stat_modifier, duration)
+		"speed_down":
+			target.add_debuff("Slow", "speed", stat_modifier, duration)
+		"all_stats_down":
+			target.add_debuff("Despair (ATK)", "attack", stat_modifier, duration)
+			target.add_debuff("Despair (DEF)", "defense", stat_modifier, duration)
+			target.add_debuff("Despair (SPD)", "speed", stat_modifier, duration)
+			target.add_debuff("Despair (MAG)", "magic", stat_modifier, duration)
+		_:
+			return false
+	return true
+
+
 func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: String) -> void:
 	if target == null or not target.is_alive:
 		return
@@ -1474,6 +1547,14 @@ func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: Stri
 	if status_to_add == "doom":
 		target.doom_counter = int(ability.get("countdown", 3))
 		_log("%s dooms %s in %d (%s)" % [caster.combatant_name, target.combatant_name, target.doom_counter, ability_id])
+		return
+	## ⛔ A STAT-DOWN IS A DEBUFF, NOT A STATUS TOKEN. Mirrors BattleManager._apply_stat_down, which
+	## @cowir-battle added to live's _apply_ability_status — the twin of THIS function. Before that
+	## both engines wrote an inert token here and AGREED, which I measured and published as "no gap".
+	## Their fix made live right and opened the divergence on the very path I had declared safe.
+	var stat_modifier: float = float(ability.get("stat_modifier", ability.get("modifier", 1.0)))
+	if _apply_stat_down(target, status_to_add, stat_modifier, int(ability.get("duration", 3))):
+		_log("%s applies %s to %s (%s, x%.2f)" % [caster.combatant_name, status_to_add, target.combatant_name, ability_id, stat_modifier])
 		return
 	target.add_status(status_to_add, int(ability.get("duration", 3)))
 	_log("%s inflicts %s on %s (%s)" % [caster.combatant_name, status_to_add, target.combatant_name, ability_id])

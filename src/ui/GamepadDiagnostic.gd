@@ -12,17 +12,18 @@ var _active: bool = false
 static var _cached_actions: Array[String] = []
 
 
+## Actions a gamepad can actually press. Read from InputMap, never from project.godot: the
+## exporter packs the project file as `project.binary`, so `res://project.godot` is ABSENT from
+## every pack and this returned EMPTY in all shipped builds while being correct in the editor.
 static func project_actions() -> Array[String]:
 	if not _cached_actions.is_empty():
 		return _cached_actions
-	var src := FileAccess.get_file_as_string("res://project.godot")
-	var start := src.find("[input]")
-	if start < 0:
-		return _cached_actions
-	var stop := src.find("\n[", start + 1)
-	var body := src.substr(start, (stop - start) if stop > start else -1)
-	for m in RegEx.create_from_string("(?m)^([A-Za-z_][A-Za-z0-9_]*)=\\{").search_all(body):
-		_cached_actions.append(m.get_string(1))
+	for action in InputMap.get_actions():
+		for ev in InputMap.action_get_events(action):
+			if ev is InputEventJoypadButton or ev is InputEventJoypadMotion:
+				_cached_actions.append(String(action))
+				break
+	_cached_actions.sort()
 	return _cached_actions
 
 

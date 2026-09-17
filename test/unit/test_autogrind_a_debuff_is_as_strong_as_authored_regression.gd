@@ -75,6 +75,21 @@ func _live_support_arms() -> Dictionary:
 	return out
 
 
+## Match-arm labels inside one of live's appliers, same two-tab discriminator as _live_support_arms.
+## Returns [] when the function is absent, and the caller's CONTROL catches that — a silently empty
+## applier set would make every effect look grind-only and turn this declaration into noise.
+func _live_applier_arms(fn_signature: String) -> Array:
+	var live: String = GdSource.code_of(LIVE)
+	var at: int = live.find(fn_signature)
+	assert_gt(at, 0, "CONTROL: live must still contain %s — if it was renamed this union is silently short" % fn_signature)
+	var body: String = live.substr(at, live.find("\nfunc ", at + 1) - at)
+	var out: Array = []
+	for m in RegEx.create_from_string('\n\t\t"([a-z_]+)"').search_all(body):
+		out.append(m.get_string(1))
+	assert_gt(out.size(), 2, "CONTROL: %s must yield real arms, or the union below is vacuous" % fn_signature)
+	return out
+
+
 ## Support-family abilities that reach `_effect_to_stat` — no explicit `stat`, mapped `effect`.
 func _reachable() -> Array:
 	var mapped_effects := ["attack_up", "defense_up", "magic_up", "speed_up", "magic_defense_up",
@@ -178,10 +193,26 @@ func test_an_effect_only_the_grind_maps_stays_unauthored() -> void:
 	## grind's table and live has NO arm for any of them — live push_warnings and fizzles. Nothing
 	## authors them on a support-typed ability, so the divergence is unreachable rather than wrong.
 	## The day someone authors one, the grind buffs where the real game does nothing, and this reds.
-	var arms: Dictionary = _live_support_arms()
+	##
+	## ⛔ WIDENED 2026-09-17 FROM THE SUPPORT MATCH TO ALL OF LIVE, after the sibling declaration with
+	## this exact shape failed for real. That one said "the divergence opens when live starts
+	## applying it" and watched _execute_support_ability; live grew the arm in _apply_ability_status
+	## and the guard never fired — fourteen monster abilities diverged behind a green test.
+	## A trigger in CODE has no bounded place, so naming ONE function is naming a guess.
+	## ⚠️ LIVE-SIDE relevance, not hypothetical: @cowir-battle holds an open call on wiring
+	## `magic_down`, and _apply_stat_down is where it would go. Under the old scan that would have
+	## opened a gap here silently.
+	## ⚠️ AND THE WIDENING HAD TO KEEP THE DISCRIMINATOR. My first attempt scanned all of LIVE for
+	## `"<eff>":` and reported live as handling all three — it was matching _SECONDARY_STAT_BUFF_MAP,
+	## a const of a DIFFERENT mechanism, exactly the one-tab-vs-two-tab distinction _live_support_arms
+	## exists to make. Widening a corpus without carrying its discriminator manufactures the finding
+	## it was widened to catch. So: the union of live's APPLIER functions, each parsed as arms.
+	var handled: Dictionary = _live_support_arms()
+	for row in _live_applier_arms("func _apply_stat_down("):
+		handled[row] = true
 	var grind_only: Array = []
 	for eff in ["magic_up", "speed_up", "magic_down"]:
-		if not arms.has(eff):
+		if not handled.has(eff):
 			grind_only.append(eff)
 	assert_eq(grind_only.size(), 3,
 		"live has grown an arm for one of magic_up/speed_up/magic_down — the declaration below is stale and the effect is now a real parity target")

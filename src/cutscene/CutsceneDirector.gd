@@ -1814,6 +1814,9 @@ func _step_branch(step: Dictionary) -> void:
 			if _skipping:
 				break
 			await _execute_step(sub_step)
+	else:
+		# _execute_step warns on an unknown step type; this chain silently ran nothing.
+		push_warning("CutsceneDirector: branch condition '%s' has no handler — no sub-step ran" % str(step.get("condition", "")))
 
 
 func _detect_playstyle() -> String:
