@@ -280,6 +280,13 @@ func test_no_consumer_builds_a_section_name() -> void:
 		+ "below is the scan failing rather than the corpus being clean"))
 
 	built.sort()
+	# ⛔ IF THIS EVER REDS ON CODE THAT IS CORRECT, THE CENSUS IS WHAT CHANGES, NOT THIS PATTERN.
+	# A generic handler building "overworld_%s_sheets" is a legitimate thing to write — and the
+	# moment it exists, every unread verdict above is blind to its reader. Widening the regex to
+	# excuse it silences the alarm and keeps the blindness, which is CLAUDE.md's "you can't
+	# silence it green, only explain it green". The repair is to make _src_code's search see
+	# constructed names. cowir-autogrind's shape: a guard asking the right question today can be
+	# useless the moment the answer changes, and the failure is that someone weakens it instead.
 	assert_eq(built, [],
 		("a section name is BUILT rather than written, so the literal search this file uses can no "
 		+ "longer see that section's reader and every unread verdict above is unsafe — including "
