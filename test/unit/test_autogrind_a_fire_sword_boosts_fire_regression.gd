@@ -124,6 +124,66 @@ func test_an_element_less_spell_gets_nothing() -> void:
 		"a flame_sword boosted an ELEMENT-LESS spell — live gates the lookup on `element != \"\"`")
 
 
+func test_every_authored_element_bonus_lands_on_its_own_element() -> void:
+	## ⛔ THE CORPUS ARM, added after the fact because the arms above exercise ONE of five elements.
+	## The key is CONSTRUCTED (`element + "_damage_bonus"`), so a hardcoded `"fire_damage_bonus"`
+	## satisfies every fire assertion in this file and silently drops ice, holy, lightning and dark.
+	## The census catches that exact mutation by source — its empty-promise arm reds when the
+	## construction string disappears — but a source check cannot see an element computed WRONGLY,
+	## and only a behavioural sweep over the whole authored set can. @cowir-ai's "the corpus was my
+	## intent", one layer over: my corpus was the one element I happened to name in the file title.
+	##
+	## ⚠️ bone_staff authors 1.3 where the other four author 1.5, so this also reds on a hardcoded
+	## magnitude — the authored value is read per piece rather than assumed uniform.
+	var eq: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/equipment.json"))
+	var ab: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	## every gear piece that authors an <element>_damage_bonus, derived not listed
+	var pieces: Array = []
+	for cat in eq:
+		if typeof(eq[cat]) != TYPE_DICTIONARY:
+			continue
+		for item_id in (eq[cat] as Dictionary):
+			var d: Variant = (eq[cat] as Dictionary)[item_id]
+			if typeof(d) != TYPE_DICTIONARY:
+				continue
+			var se: Variant = (d as Dictionary).get("special_effects", {})
+			if typeof(se) != TYPE_DICTIONARY:
+				continue
+			for k in (se as Dictionary):
+				if str(k).ends_with("_damage_bonus"):
+					pieces.append([str(item_id), str(k).trim_suffix("_damage_bonus"), float((se as Dictionary)[k])])
+	assert_gt(pieces.size(), 3, "CONTROL: equipment.json must author several element bonuses, or this sweep is vacuous")
+	var missed: Array = []
+	var seen: Array = []
+	for row in pieces:
+		var item_id: String = str(row[0])
+		var element: String = str(row[1])
+		var authored: float = float(row[2])
+		## a magic ability of that element, single-target, no multi-hit
+		var spell: String = ""
+		for aid in ab:
+			var a: Dictionary = ab[aid]
+			if str(a.get("type", "")) == "magic" and str(a.get("element", "")) == element and not a.has("hits"):
+				spell = str(aid)
+				break
+		if spell == "":
+			continue  ## no spell of that element to drive it; not this arm's failure to report
+		var armed := _caster("Armed_%s" % element)
+		armed.equipped_weapon = item_id
+		var bare := _caster("Bare_%s" % element)
+		var with_gear: float = _median_cast(armed, spell, 60)
+		var without: float = _median_cast(bare, spell, 60)
+		var ratio: float = with_gear / maxf(without, 1.0)
+		seen.append("%s/%s %.2fx (authored %.2f)" % [element, spell, ratio, authored])
+		## band is wide enough for the per-cast roll and narrow enough to separate 1.3 from 1.5
+		if absf(ratio - authored) > 0.18:
+			missed.append("%s via %s: authored %.2f, measured %.2f" % [element, item_id, authored, ratio])
+	gut.p("    %s" % str(seen))
+	assert_gt(seen.size(), 2, "CONTROL: at least three elements must actually have been driven, or a green says nothing")
+	assert_eq(missed, [],
+		"an authored element bonus did not land at its authored strength — a constructed key that works for one element and not the others: %s" % str(missed))
+
+
 func test_equipment_resistance_is_still_absent_on_purpose() -> void:
 	## ⚠️ THE NEIGHBOURING KEYS, declared rather than wired. fire_resistance/dark_resistance are read
 	## by Combatant.take_elemental_damage, which live calls only from _tick_summon_followup. Both
