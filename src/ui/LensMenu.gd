@@ -192,13 +192,17 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	# MenuNav, not a raw read: the stick axis carries no echo flag, so one push stepped three rows
+	# — and on left/right cycled the holder three times.
+	var nav := MenuNav.step(event)
+
+	if nav == "ui_up":
 		_selected = maxi(0, _selected - 1)
 		_play_move()
 		_refresh()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		_selected = mini(_axes.size() - 1, _selected + 1)
 		_play_move()
 		_refresh()
@@ -208,11 +212,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		_try_craft()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
+	elif nav == "ui_left":
 		_cycle_holder(-1)
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		_cycle_holder(1)
 		get_viewport().set_input_as_handled()
 

@@ -68,6 +68,27 @@ func _release() -> void:
 		MenuPaging.page_delta(_motion(axis, 0.0))
 
 
+## Resolved rather than assumed, and this is a DIAGNOSIS fix, not a hole being closed — measured
+## both ways by renaming TeleportMenu's handler:
+##
+##     unhardened   EC=1, "every listed menu must reach the page assertion; 8 of 9 did"
+##     hardened     EC=1, "TeleportMenu defines no input handler this arm can call"
+##
+## Both catch it. A GDScript error aborts its ENCLOSING FUNCTION ONLY, and the call sits inside
+## _assert_live, so the abort kills the helper, which returns false, and the loop continues to the
+## count floor. The sibling stick arm made the same call INLINE in the test body and therefore went
+## silently green on the same shape. Same rung, opposite outcome, decided by where the call sits.
+func _handler(m: Node) -> String:
+	for h in ["_input", "_unhandled_input", "_gui_input"]:
+		if m.has_method(h):
+			return h
+	return ""
+
+
+func _send(m: Node, ev: InputEvent) -> void:
+	m.call(_handler(m), ev)
+
+
 func _row(i: int) -> Dictionary:
 	return {"id": "probe_%d" % i, "name": "Probe %d" % i,
 		"data": {"name": "Probe %d" % i, "type": "item", "category": 0, "mp_cost": 0}}
@@ -94,13 +115,16 @@ func _open(spec: Dictionary) -> Node:
 ## Proves the handler is REACHED and the fixture is sufficient. Without it a still cursor reads as
 ## a paging defect when it is an early return three lines above the paging branch.
 func _assert_live(m: Node, spec: Dictionary) -> bool:
+	assert_ne(_handler(m), "",
+		"%s defines no input handler this arm can call — calling a nonexistent method aborts the "
+		% spec["name"] + "test function and leaves every assert already run reporting green")
 	var start: int = MenuPaging.PAGE_ROWS
 	m.set(spec["sel"], start)
 	var e := InputEventJoypadButton.new()
 	e.button_index = JOY_BUTTON_DPAD_DOWN
 	e.pressed = true
 	Input.action_press("ui_down", 1.0)
-	m._input(e)
+	_send(m, e)
 	Input.action_release("ui_down")
 	var moved: int = absi(int(m.get(spec["sel"])) - start)
 	assert_eq(moved, 1,
@@ -112,7 +136,7 @@ func _assert_live(m: Node, spec: Dictionary) -> bool:
 func _pull(m: Node, action: String, axis: int) -> void:
 	Input.action_press(action, 1.0)
 	for v in RAMP:
-		m._input(_motion(axis, v))
+		_send(m, _motion(axis, v))
 
 
 func test_one_trigger_pull_moves_every_menu_exactly_one_page() -> void:
@@ -159,7 +183,7 @@ func test_the_shoulder_button_route_was_never_broken() -> void:
 		e.button_index = JOY_BUTTON_RIGHT_SHOULDER
 		e.pressed = true
 		Input.action_press("battle_advance", 1.0)
-		m._input(e)
+		_send(m, e)
 		var moved: int = absi(int(m.get(spec["sel"])) - start)
 		assert_eq(moved, MenuPaging.PAGE_ROWS,
 			"%s paged %d rows on the shoulder button, not %d — this route was never broken, so a "

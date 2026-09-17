@@ -837,27 +837,31 @@ func _input(event: InputEvent) -> void:
 		_handle_test_input(event)
 		return
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
+	# MenuNav, not a raw read: the stick's Y axis carries no echo flag, so one push stepped five
+	# rows — and on left/right cycled the profile setting five times.
+	var nav := MenuNav.step(event)
+
+	if nav == "ui_up":
 		selected_index = max(0, selected_index - 1)
 		_update_selection()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
+	elif nav == "ui_down":
 		selected_index = min(_item_count - 1, selected_index + 1)
 		_update_selection()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_left") and not event.is_echo():
+	elif nav == "ui_left":
 		match selected_index:
 			ROW_PROFILE: _cycle_profile(-1)
 			ROW_NINTENDO: _toggle_nintendo_mode()
 		get_viewport().set_input_as_handled()
 
-	elif event.is_action_pressed("ui_right") and not event.is_echo():
+	elif nav == "ui_right":
 		match selected_index:
 			ROW_PROFILE: _cycle_profile(1)
 			ROW_NINTENDO: _toggle_nintendo_mode()
