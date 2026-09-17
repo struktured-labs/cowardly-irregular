@@ -222,12 +222,14 @@ func _input(event: InputEvent) -> void:
 	# its neighbours carry — which granted nothing either way, because is_action_pressed defaults
 	# allow_echo=false. Measured: the arm for it passes against the old code too.
 	var nav := MenuNav.step(event)
+	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
+	var page := MenuPaging.page_delta(event)
 	if nav == "ui_up" or nav == "ui_down":
 		_nav_step(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
-	elif MenuPaging.page_delta(event) != 0:
+	elif page != 0:
 		# The registry carries 44 chats and availability grows all game; clamped, not wrapped, like every other paging menu.
-		_selection = clampi(_selection + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, _row_nodes.size() - 1)
+		_selection = clampi(_selection + page * MenuPaging.PAGE_ROWS, 0, _row_nodes.size() - 1)
 		_highlight()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept"):

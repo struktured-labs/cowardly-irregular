@@ -1147,13 +1147,15 @@ func _input(event: InputEvent) -> void:
 	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
 	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
 	var nav := MenuNav.step(event)
+	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
+	var page := MenuPaging.page_delta(event)
 	if nav == "ui_up" or nav == "ui_down":
 		_nav_step(nav)
 		get_viewport().set_input_as_handled()
 
 	# Page jump — this list is long enough that one-row-at-a-time is a slog (struktured 2026-07-25).
-	elif MenuPaging.page_delta(event) != 0:
-		selected_index = clampi(selected_index + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, _settings_items.size() - 1)
+	elif page != 0:
+		selected_index = clampi(selected_index + page * MenuPaging.PAGE_ROWS, 0, _settings_items.size() - 1)
 		_update_selection()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")

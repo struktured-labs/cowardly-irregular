@@ -43,7 +43,8 @@ func test_both_menus_page_through_the_shared_helper() -> void:
 func test_paging_is_clamped_not_wrapped() -> void:
 	for p in [GALLERY, PARTY_CHAT]:
 		var s := _src(p)
-		var i := s.find("MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS")
+		# The delta may be read inline or hoisted to a local; the scaling and the clamp are the facts.
+		var i := s.find("* MenuPaging.PAGE_ROWS")
 		assert_gt(i, -1, "%s must scale the delta by the page size" % p)
 		var window := s.substr(max(0, i - 200), 260)
 		assert_true(window.contains("clampi("),

@@ -624,13 +624,15 @@ func _input(event: InputEvent) -> void:
 	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
 	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
 	var nav := MenuNav.step(event)
+	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
+	var page := MenuPaging.page_delta(event)
 	if nav == "ui_up" or nav == "ui_down":
 		_nav_step(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
-	elif MenuPaging.page_delta(event) != 0:
+	elif page != 0:
 		## 113 monsters at one row per press. Clamped, not wrapped like the arrows above: a page jump
 		## is "move a screenful", and wrapping from the top to the tail is a different intent.
-		_selected = clampi(_selected + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, _row_nodes.size() - 1)
+		_selected = clampi(_selected + page * MenuPaging.PAGE_ROWS, 0, _row_nodes.size() - 1)
 		_highlight_row()
 		_scroll_to_selected()
 		_refresh_detail()

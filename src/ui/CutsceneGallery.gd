@@ -361,6 +361,8 @@ func _input(event: InputEvent) -> void:
 	# One step per stick push: ui_up/ui_down share the left stick's Y axis and carry no echo flag, so
 	# a nudge past the deadzone reads as ~5 presses. Buttons and keys pass through MenuNav untouched.
 	var nav: String = MenuNav.step(event)
+	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
+	var page := MenuPaging.page_delta(event)
 
 	if nav == "ui_left":
 		_selected_world_idx = (_selected_world_idx - 1 + _world_order.size()) % _world_order.size()
@@ -388,11 +390,11 @@ func _input(event: InputEvent) -> void:
 			_update_display()
 			_play_nav_sfx()
 		get_viewport().set_input_as_handled()
-	elif MenuPaging.page_delta(event) != 0:
+	elif page != 0:
 		# A world can carry 40+ scenes; clamped rather than wrapped, per AbilitiesMenu's rule that a page jump past the end disorients.
 		var world_items: Array = _items_by_world.get(_world_order[_selected_world_idx], [])
 		if not world_items.is_empty():
-			_selected_item_idx = clampi(_selected_item_idx + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, world_items.size() - 1)
+			_selected_item_idx = clampi(_selected_item_idx + page * MenuPaging.PAGE_ROWS, 0, world_items.size() - 1)
 			_update_display()
 			_play_nav_sfx()
 		get_viewport().set_input_as_handled()

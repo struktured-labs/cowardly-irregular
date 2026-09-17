@@ -678,6 +678,8 @@ func _input(event: InputEvent) -> void:
 	# MenuNav, not a raw read. ALL FOUR directions: ui_up/ui_down bind the left stick's Y axis and
 	# ui_left/ui_right its X, and an axis carries no echo flag.
 	var nav := MenuNav.step(event)
+	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
+	var page := MenuPaging.page_delta(event)
 
 	# Tab switching. The 2026-04-30 fix echo-guarded this because holding Left/Right rebuilt the
 	# whole UI per echo and spammed menu_move — and a stick ramp did exactly that anyway, because
@@ -707,11 +709,11 @@ func _input(event: InputEvent) -> void:
 		_nav_step(-1 if nav == "ui_up" else 1, list_size)
 		get_viewport().set_input_as_handled()
 
-	elif MenuPaging.page_delta(event) != 0:
+	elif page != 0:
 		# Ability lists run long on a developed character; clamped rather than wrapped
 		# because a page jump that wraps past the end is disorienting.
 		if list_size > 0:
-			selected_index = clampi(selected_index + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, list_size - 1)
+			selected_index = clampi(selected_index + page * MenuPaging.PAGE_ROWS, 0, list_size - 1)
 			_build_ui()
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
