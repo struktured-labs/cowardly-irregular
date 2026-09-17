@@ -127,3 +127,43 @@ func test_the_blind_probe_is_gone_and_stays_gone() -> void:
 	assert_true(body.contains("_music_cache"), "CONTROL: the stripper left the function's real body intact")
 	assert_false(body.contains("ResourceLoader.exists"),
 		"the hand-built path probe is back — the manifest has already been consulted for this key before this function runs, so the probe cannot change the answer. (It is NOT about ResourceLoader.exists being broken: measured correct inside a real .pck, 2026-09-17.)")
+
+
+## ⛔ THE SECOND AXIS, AND IT IS THE SAME SENTENCE WITH A DIFFERENT NOUN (@cowir-sfx, 2026-09-17).
+## Widening the corpus to src/**.gd bounds WHERE a dispatch can arrive. It does not bound its
+## SHAPE: the derivation above matches `_start_monster_music("literal")` and is blind to
+## `_start_monster_music(monster_type)`. The proof sits in its own corpus -- the declaration line
+## `func _start_monster_music(monster_type: String)` is an occurrence the regex does not match.
+##
+## A census of literals cannot see a computed key, so the ratchet's answer would silently narrow
+## rather than fail. This is my own KNOWN_UNREACHED lesson one function over: that guard refuses a
+## CONCATENATED ambient key for exactly this reason, and this refuses a non-literal dispatch.
+##
+## Measured before writing: 10 call sites, all literal, 0 computed. Latent -- which is when closing
+## it is free, and the same argument I used for the location axis an hour ago.
+func test_no_monster_theme_is_dispatched_by_a_computed_key() -> void:
+	var files: Array[String] = []
+	_gd_files("res://src", files)
+	assert_gt(files.size(), 50, "SCOPE control: %d .gd files walked" % files.size())
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
+	var call_re := RegEx.create_from_string("_start_monster_music\\(([^)]*)\\)")
+	var literal_re := RegEx.create_from_string("^\"[a-z_]+\"$")
+	var seen: int = 0
+	var computed: Array[String] = []
+	for f in files:
+		var code: String = GdSource.strip_comments(FileAccess.get_file_as_string(f))
+		for line in code.split("\n"):
+			if line.find("_start_monster_music(") < 0:
+				continue
+			if line.strip_edges().begins_with("func "):
+				continue          ## the declaration is not a dispatch
+			for m in call_re.search_all(line):
+				seen += 1
+				if literal_re.search(m.get_string(1).strip_edges()) == null:
+					computed.append("%s: %s" % [str(f).get_file(), line.strip_edges()])
+	assert_gt(seen, 5,
+		"CONTROL: found only %d dispatch sites — if this drops to zero the arm below is vacuous" % seen)
+	assert_eq(computed.size(), 0,
+		"a monster theme is dispatched by a computed key (%d): %s — the census above reads LITERALS, so a computed one makes its answer silently narrower instead of failing. Either name it literally, or extend the derivation to cover the construction site." % [computed.size(), computed])
+
