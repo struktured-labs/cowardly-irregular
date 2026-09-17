@@ -135,6 +135,54 @@ def artist_evidence(rel_path: str) -> list[str]:
     return out
 
 
+def _tier_sections(manifest: dict) -> list[str]:
+    """Every entry-declaring section, DERIVED from the manifest, never listed.
+
+    The hardcoded triple this replaced was both the corpus and the denominator,
+    so `examined < t1_total` could not fire for a missing SECTION — the two
+    sides moved together and the run printed "examined 129 of 129" while 31 T1
+    entries in four other sections were never opened. This tool already records
+    a PATH-shape version of that bug; it had a section-shape twin one level up,
+    invisible for the same reason: a floor derived from what it checks agrees
+    with it by construction.
+    """
+    return [s for s, body in manifest.items()
+            if isinstance(body, dict) and not s.startswith("_")]
+
+
+def _entry_paths(val: dict) -> list[str]:
+    """Every path an entry declares, across all THREE declaration shapes.
+
+    A top-level `path` covers two of them (a directory for jobs, a single PNG
+    for monsters and NPCs). weapon_sheets is the third: one nested dict per
+    animation, each carrying its own path, with no top-level path at all — so
+    the old single `val.get("path")` read it as pathless. An entry declaring
+    none is returned empty, and the caller records it SKIPPED rather than
+    counting it clean.
+    """
+    top = str(val.get("path", "")).replace("res://", "")
+    if top:
+        return [top]
+    return [str(sub["path"]).replace("res://", "")
+            for sub in val.values()
+            if isinstance(sub, dict) and sub.get("path")]
+
+
+def _t1_entries(manifest: dict) -> list[tuple[str, str, dict]]:
+    """Every T1 entry the manifest declares, in every section it declares one.
+
+    This is the DENOMINATOR: what exists. `examined` counts what was opened.
+    The two must be able to disagree — that gap is the whole coverage control,
+    and it was dead while both sides read one hardcoded section list.
+    """
+    out = []
+    for section in _tier_sections(manifest):
+        for key, val in sorted(manifest.get(section, {}).items()):
+            if isinstance(val, dict) and val.get("tier") == "T1":
+                out.append((section, key, val))
+    return out
+
+
 def self_check() -> bool:
     """Controls. A classifier nobody has tried to fool is a guess.
 
@@ -174,27 +222,23 @@ def main() -> int:
     findings = []
     examined = 0
     skipped: list[str] = []
-    t1_total = sum(
-        1 for s in ("sheets", "monster_sheets", "overworld_npc_sheets")
-        for v in m.get(s, {}).values()
-        if isinstance(v, dict) and v.get("tier") == "T1"
-    )
-    for section in ("sheets", "monster_sheets", "overworld_npc_sheets"):
-        for key, val in sorted(m.get(section, {}).items()):
-            if not isinstance(val, dict):
-                continue
-            tier = val.get("tier", "?")
-            if tier != "T1":
-                continue
-            rel = str(val.get("path", "")).replace("res://", "")
-            target = GAME / rel
-            if not (target.is_dir() or target.is_file()):
-                skipped.append(f"{section}/{key} (path missing: {rel})")
-                continue
-            examined += 1
-            ev = artist_evidence(rel)
-            if ev:
-                findings.append((section, key, ev))
+    t1 = _t1_entries(m)
+    t1_total = len(t1)
+    for section, key, val in t1:
+        rels = _entry_paths(val)
+        if not rels:
+            skipped.append(f"{section}/{key} (declares no path)")
+            continue
+        missing = [r for r in rels if not (GAME / r).exists()]
+        if missing:
+            skipped.append(f"{section}/{key} (path missing: {missing[0]})")
+            continue
+        examined += 1
+        ev = []
+        for rel in rels:
+            ev.extend(artist_evidence(rel))
+        if ev:
+            findings.append((section, key, ev))
 
     for section, key, ev in findings:
         print(f"\nTIER LIE  {section}/{key} is T1 but holds artist pixels:")
@@ -224,5 +268,81 @@ def main() -> int:
     return 1 if findings else 0
 
 
+def selftest() -> int:
+    """Controls for the CORPUS, beside the ones self_check() has for the classifier.
+
+    A classifier nobody tried to fool is a guess; so is a denominator. The bug
+    these defend was not a wrong answer, it was a right answer about a corpus
+    three sections wide reported as if it were the manifest.
+    """
+    fails = []
+
+    def check(name: str, cond: bool, detail: str = "") -> None:
+        print(f"  {'ok  ' if cond else 'FAIL'}  {name}{(' — ' + detail) if detail and not cond else ''}")
+        if not cond:
+            fails.append(name)
+
+    print("corpus discovery")
+    synthetic = {
+        "_comment": "underscore sections are prose, not entries",
+        "a_section_this_tool_has_never_heard_of": {
+            "newcomer": {"tier": "T1", "path": "res://assets/sprites/x.png"},
+        },
+        "monster_sheets": {"known": {"tier": "T1", "path": "res://assets/sprites/y.png"}},
+    }
+    secs = _tier_sections(synthetic)
+    check("an unknown section is discovered",
+          "a_section_this_tool_has_never_heard_of" in secs, str(secs))
+    check("an underscore section is not an entry section", "_comment" not in secs, str(secs))
+
+    # THE arm. A hardcoded section list passes every other check in this file
+    # and fails this one, which is the only reason the list can stay derived.
+    keys = {k for _, k, _ in _t1_entries(synthetic)}
+    check("a T1 entry in an unknown section is COUNTED", keys == {"newcomer", "known"}, str(keys))
+
+    print("declaration shapes")
+    check("top-level path (monster/NPC single png)",
+          _entry_paths({"path": "res://assets/sprites/m.png"}) == ["assets/sprites/m.png"])
+    check("top-level path (job directory)",
+          _entry_paths({"path": "res://assets/sprites/jobs/fighter", "animations": ["idle"]})
+          == ["assets/sprites/jobs/fighter"])
+    check("nested per-animation paths (weapon_sheets)",
+          _entry_paths({"tier": "T1", "notes": "x",
+                        "idle": {"path": "res://a/idle.png"},
+                        "attack": {"path": "res://a/attack.png"}})
+          == ["a/idle.png", "a/attack.png"])
+    check("an entry declaring NO path yields none, so the caller skips it loudly",
+          _entry_paths({"tier": "T1", "notes": "x"}) == [])
+
+    print("wiring against the real manifest")
+    m = json.loads(MANIFEST.read_text())
+    old_triple = ("sheets", "monster_sheets", "overworld_npc_sheets")
+    found = _t1_entries(m)
+    outside = [(s, k) for s, k, _ in found if s not in old_triple]
+    # Compared against a FIXED reference, not against itself. The obvious
+    # phrasing — "every entry outside the triple is in `found`" — derives
+    # `outside` FROM `found` and is true however narrow the corpus gets.
+    old_count = sum(1 for s in old_triple
+                    for v in m.get(s, {}).values()
+                    if isinstance(v, dict) and v.get("tier") == "T1")
+    check("the corpus is WIDER than the three sections this tool used to read",
+          len(found) > old_count,
+          f"{len(found)} found vs {old_count} in the old triple — re-hardcoded?")
+    print(f"        {len(found)} T1 entries manifest-wide, {len(outside)} of them "
+          f"outside the sections this tool used to read")
+    if not outside:
+        print("        ⚠️ VACUOUS TODAY: no T1 entry sits outside the old triple, so the "
+              "arm above cannot fail — re-check before trusting it")
+
+    print()
+    if fails:
+        print(f"{len(fails)} control(s) FAILED: {', '.join(fails)}")
+        return 1
+    print("all corpus controls pass")
+    return 0
+
+
 if __name__ == "__main__":
+    if "--selftest" in sys.argv:
+        sys.exit(selftest())
     sys.exit(main())
