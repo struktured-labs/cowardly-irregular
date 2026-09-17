@@ -1970,6 +1970,40 @@ func _find_restorative_caster(party: Array) -> Dictionary:
 const GENERIC_ALLY_TARGETS := ["lowest_hp_ally", "lowest_hp", "ally", "all", "all_allies", "party", "any"]
 
 
+## THE ABILITY-INTRINSIC HALF of _member_ability_apply's refusal, public and state-free on purpose.
+## Between battles this system can only apply an authored heal_amount / mp_amount; everything else
+## is refused BY NAME at runtime with a printed skip line. Consumers need to know that BEFORE they
+## offer an ability — the console filters its ring with it, and the LLM prompt needs it so the model
+## is never taught a kit the engine will skip.
+##
+## ⛔ IT IS PUBLIC BECAUSE A PRIVATE COPY ALREADY COST A REGRESSION. The console carried its own
+## `_can_apply_between_battles` (2026-09-09, after the editor seeded a Fighter's power_strike into a
+## rule that could never fire), and being private it could not be reached from src/llm — so the
+## grind prompt re-derived the rule, listed whole kits, and @cowir-ai measured 40 of 53 delivered
+## actions as silent no-ops. Same fact, three places, one of them wrong.
+##
+## Returns the AMOUNTS as well as the verdict so the executor reads the keys ONCE: a predicate that
+## answers "can it" while its caller separately re-reads "how much" is two expressions of one fact.
+func between_battle_effect_of(ability_id: String) -> Dictionary:
+	var none: Dictionary = {"ok": false, "heal": 0, "mp": 0}
+	if ability_id == "":
+		return none
+	var js = _get_autoload_node("JobSystem")
+	if js == null or not js.has_method("get_ability"):
+		return none
+	var a: Dictionary = js.get_ability(ability_id)
+	if a.is_empty():
+		return none
+	var heal: int = int(a.get("heal_amount", 0))
+	var mp: int = int(a.get("mp_amount", 0))
+	return {"ok": heal > 0 or mp > 0, "heal": heal, "mp": mp}
+
+
+## Convenience for callers that only want the verdict.
+func ability_has_between_battle_effect(ability_id: String) -> bool:
+	return bool(between_battle_effect_of(ability_id).get("ok", false))
+
+
 func _member_ability_apply(caster, ability_id: String, target_key: String) -> Dictionary:
 	if caster == null:
 		return {"ok": false, "reason": "caster not in party"}
@@ -2005,9 +2039,12 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 			return {"ok": false, "reason": "target '%s' names no party member" % target_key}
 		return {"ok": false, "reason": "no living ally to target"}
 
-	var heal := int(ability.get("heal_amount", 0))
-	var mp_amt := int(ability.get("mp_amount", 0))
-	if heal <= 0 and mp_amt <= 0:
+	## Through the public predicate, not a second read of the same two keys — the console and the
+	## LLM prompt filter on it, and a local copy here is how those two drift away from the engine.
+	var effect: Dictionary = between_battle_effect_of(ability_id)
+	var heal := int(effect.get("heal", 0))
+	var mp_amt := int(effect.get("mp", 0))
+	if not bool(effect.get("ok", false)):
 		return {"ok": false, "reason": "'%s' has no between-battle effect this system models" % ability_id}
 
 	caster.current_mp -= cost
