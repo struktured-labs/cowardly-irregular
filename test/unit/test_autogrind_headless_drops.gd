@@ -140,6 +140,43 @@ func test_gameloop_sets_monster_type_meta_in_headless_path() -> void:
 		"headless drops must route through the same equipment-vs-consumable split as live battles")
 
 
+## ⛔ `result["enemy_party"]` HANDS OUT FREED OBJECTS, and is safe only because nothing reads it.
+## GameLoop._resolve_headless_battle does `for e in enemies: e.free()` three lines after
+## resolve_battle returns, so the Combatants in that key are invalid by the time any consumer could
+## reach them. Measured 2026-09-17: zero readers in src/ and test/ — it is the one result key of
+## twelve with no consumer at all, and the others average four.
+##
+## ⚠️ NOT A BUG TODAY, WHICH IS WHY IT IS A TRIGGER RATHER THAN A FIX. @cowir-music's distinction:
+## a hazard is a defect only if nothing downstream compensates, and here nothing downstream EXISTS.
+## The first lane to read this key gets freed instances, so the arm fires the moment one appears —
+## which is the moment the reason needs saying, not now.
+func test_nothing_reads_the_result_key_that_holds_freed_enemies() -> void:
+	var readers: Array = []
+	var stack: Array = ["res://src", "res://test/unit"]
+	var scanned: int = 0
+	while not stack.is_empty():
+		var d: String = str(stack.pop_back())
+		for sub in DirAccess.get_directories_at(d):
+			stack.append("%s/%s" % [d, sub])
+		for f in DirAccess.get_files_at(d):
+			if not str(f).ends_with(".gd"):
+				continue
+			var path: String = "%s/%s" % [d, f]
+			if path.ends_with("HeadlessBattleResolver.gd") or path.ends_with(get_script().resource_path.get_file()):
+				continue   ## the producer, and this file's own prose about the key
+			scanned += 1
+			var code: String = GdSource.code_of(path)
+			## The RESULT key, not BattleManager.enemy_party — that is a member var on the live
+			## engine and appears ~12 times in BattleScene alone. Only a dict read counts.
+			if code.contains('get("enemy_party"') or code.contains('["enemy_party"]'):
+				readers.append(path.get_file())
+	assert_gt(scanned, 100,
+		"CONTROL: only %d files scanned — a walk that finds nothing reports 'no readers' for free" % scanned)
+	assert_eq(readers, [],
+		("something now reads result[\"enemy_party\"], whose Combatants GameLoop frees three lines " +
+		"after resolve_battle returns — it will get freed instances: %s") % str(readers))
+
+
 ## ⛔ THE GRIND SILENTLY DISCARDED DUPLICATE EQUIPMENT DROPS (@cowir-adhoc, 2026-09-17).
 ## Live calls _deliver_item ONCE PER SUCCESSFUL ROLL, so three rolls put three pieces in the pool.
 ## The grind AGGREGATES to {item_id: qty} first — which is exactly what makes CONSUMABLES correct,
