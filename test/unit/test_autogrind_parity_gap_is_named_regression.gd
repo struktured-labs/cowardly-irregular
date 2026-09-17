@@ -401,6 +401,8 @@ const GRIND_PATH_MARKER := {
 	## on purpose: that helper is called from _resolve_attack too, and a marker matching a plain
 	## attack would credit the key to an arm live never reads it in.
 	"ignores_evasion": "ability.get(\"ignores_evasion\"",
+	## ── assessed off the axis-2 backlog 2026-09-17 (cowir-battle) ──
+	"stat": "ability.get(\"stat\"",
 	## ⚠️ ALL FOUR secondary_* KEYS, AND THREE OF THEM WERE INVISIBLE TO THIS MAP UNTIL 2026-09-16.
 	## They live in `_apply_secondary_effect`, which `_execute_support_ability` calls — but the old
 	## walk-back skipped past any non-executor function, so a read inside a helper was credited to
@@ -439,7 +441,68 @@ const GRIND_PATH_MARKER := {
 ## anything. Each of these reads differently in the grind by structure rather than by divergence —
 ## `mp_cost` is spent at the top of _resolve_ability BEFORE the match, where live spends it inside an
 ## executor — but "looks structural" is not "checked", and the difference is the whole point of axis 2.
-const AXIS2_UNASSESSED := ["mp_cost", "stat_modifier", "element", "max_multiplier", "stat", "modifier"]
+## ⛔ FIVE OF SIX ASSESSED 2026-09-17 (cowir-battle); `mp_cost` stays here because it is ASSESSED AND
+## OPEN, not unexamined. Axis 2 asks whether a key is read on the path the authoring ability's TYPE
+## takes, in BOTH engines — checked by naming the ENCLOSING FUNCTION of every read on each side.
+##
+##   stat_modifier   ✅ 50 abilities (33 support · 12 magic · 3 physical · 2 song). Live reads it in
+##                   _apply_ability_status (physical+magic) and _execute_support_ability; this file
+##                   mirrors that exactly — _maybe_inflict_status, called from the magic arm and the
+##                   "physical": arm, plus _resolve_ability's inline support handling. _apply_stat_down
+##                   exists on BOTH sides with the same five arms in the same order.
+##   modifier        ✅ 7, all support. Live _apply_ability_status + _execute_support_ability; grind
+##                   _maybe_inflict_status + _resolve_ability. Same pair, same shape.
+##   element · max_multiplier · stat   ✅ now in GRIND_PATH_MARKER, which checks them every run.
+##
+##   mp_cost         ⛔ A REAL DIVERGENCE, REACHABLE TODAY, and it has no home in either axis — axis 1
+##                   passes (both engines read it) and axis 2 passes (same arm). It is this header's
+##                   THIRD blind spot: a handler that HARDCODES what the key authors. Live spends at
+##                   BattleManager._execute_ability via JobSystem.get_ability_mp_cost(combatant, id),
+##                   applying PassiveSystem's mp_cost_multiplier clamped 0.1-10.0; this file spends in
+##                   _resolve_ability with `ability.get("mp_cost", 5)` straight into spend_mp — RAW,
+##                   and through NO helper.
+##                   ⛔ I FIRST NAMED _get_ability_mp_cost AS THE SITE AND THAT WAS WRONG
+##                   (cowir-autogrind caught it, and resolved the call sites rather than reading the
+##                   one I handed them). Its only two callers are :681 and :688, both inside
+##                   _select_enemy_action — it is the ENEMY AI's affordability check, which a player's
+##                   passive cannot reach. A fix applied there would have changed enemy AI and left
+##                   this defect untouched. The conclusion and the direction table survived; the
+##                   pointer did not. ⚠️ Note from the same trace: the lane has TWO mp_cost readers
+##                   with DIFFERENT defaults (`0` at :732, `5` at :1090) and the spend site uses
+##                   neither helper — both defaults are dead today, 0 of 289 abilities lack the key.
+##                   `elemental_affinity` (0.75x)
+##                   is in summoner's passive_abilities roster in jobs.json, so a build reaches it:
+##                   the grind is HARSHER on MP than the real game for the 0.75x passives and MORE
+##                   LENIENT for magic_amplifier (2.5x). Autogrind's loop is MP attrition over long
+##                   sessions and pre_battle_check gates on depletion, so this moves when a session
+##                   stalls. The passive-build note in this file already states the mechanism; what
+##                   was missing is that it is not hypothetical. Reported to cowir-autogrind.
+##   element         ✅ NO DIVERGENCE, and it stays here because a MARKER CANNOT EXPRESS IT. I tried
+##                   to pin it and arm 7 red: *"live reads it in _execute_magic_ability, grind does
+##                   NOT read it in the _execute_magic_ability arm."* True, and not a defect — this
+##                   file HOISTS the read to `var element = ability.get("element", "")` in the shared
+##                   pre-dispatch section, while every USE is inside the "magic": arm (:1176 equipment
+##                   element bonus · :1180 calculate_elemental_modifier · :1189 resistance). Live's 6
+##                   physical authors are flavour BY CONSTRUCTION (test_weapon_strike_element_is_flavour)
+##                   and its 3 summon reach the magic executor through the dispatcher; the 1 support
+##                   instance is storm_gathering, where the element is flavour on a buff whose payload
+##                   is the storm_charging status. ⚠️ THE MARKER MECHANISM LOCATES THE READ, so a
+##                   hoisted read looks like it is on no arm at all — pinning it would have been a
+##                   FALSE red every run, and leaving it unpinned is the honest state, not a backlog.
+##   max_multiplier  ⚠️ LATENT, and unpinnable for the SAME reason as element — the read lives in
+##                   _missing_hp_multiplier, called at :1127 BEFORE the type match, so arm 7 red the
+##                   same way. One ability authors it and it is physical, so both engines apply it
+##                   today. But live reads it INSIDE _execute_physical_ability while this file
+##                   multiplies `power` pre-dispatch, i.e. on every path — the day a MAGIC ability
+##                   authors max_multiplier, the grind applies it and live does not. Nothing reds
+##                   today; recorded so it is not re-derived as new.
+##
+## 🔑 TWO OF THE SIX TURNED OUT TO BE UNPINNABLE RATHER THAN UNASSESSED, and arm 7 is what
+## established that — I tried to pin both and it named the exact mismatch each time. A hoisted read
+## is invisible to a marker that locates reads, so the map would carry a FALSE red every run. The
+## backlog is now three kinds of entry, which is worth saying out loud: one OPEN divergence
+## (mp_cost), and two ASSESSED-AND-UNPINNABLE (element, max_multiplier).
+const AXIS2_UNASSESSED := ["mp_cost", "element", "max_multiplier"]
 
 ## ⛔ HOW A KEY REACHES A GRIND — FOUR FORMS, AND I RANKED THIS BACKLOG ON THREE.
 ## Every reachability judgement in this file rests on "can a grind actually cast this", and I built
