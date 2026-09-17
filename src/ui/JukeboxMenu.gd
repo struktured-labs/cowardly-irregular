@@ -49,7 +49,7 @@ const PLAY_DEBOUNCE_SEC = 0.3
 ## That fix snapshotted `_current_music` — which play_area_music CLEARS, so in
 ## every map it read "" and the close fell through to the fade-to-silence arm
 ## instead. The bug it named survived it everywhere but the title screen.
-## capture_music_state() records the AREA too (SoundManager.capture_music_state).
+## SoundManager.capture_music_state() records the AREA too.
 var _resume_state: Dictionary = {}
 
 ## Node references
