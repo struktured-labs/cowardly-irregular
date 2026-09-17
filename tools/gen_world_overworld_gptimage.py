@@ -32,6 +32,10 @@ import time
 from pathlib import Path
 
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 HERE = Path(__file__).resolve().parent
 
@@ -182,8 +186,10 @@ def main() -> int:
             rejected.append(f"{job}/{world}")
             continue
         total += unit
+        assert_writable(raw_dir / f"{job}_{world}_raw.png")
         raw.save(raw_dir / f"{job}_{world}_raw.png")
         out.parent.mkdir(parents=True, exist_ok=True)
+        assert_writable(out)
         grid.save(out)
         made.append(f"{job}/{world}")
         rc = row_counts(grid)

@@ -23,6 +23,10 @@ import subprocess
 import tempfile
 from pathlib import Path
 from PIL import Image
+import sys as _sys, pathlib as _pl
+_sys.path.insert(0, str(_pl.Path(__file__).resolve().parent.parent))
+from tools.artist_guard import assert_writable  # refuses a write over artist pixels
+
 
 REPO = Path(__file__).resolve().parent.parent
 DRIVE = REPO / "assets" / "sprites" / "drive_archive" / "Game graphics - Characters"
@@ -94,6 +98,7 @@ def deploy(strip: Image.Image, job: str, anim: str, source_desc: str) -> None:
     dest_dir = GAME_JOBS / job
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / f"{anim}.png"
+    assert_writable(dest)
     up.save(dest, optimize=True)
     frames = strip.width // 128
     print(f"OK   {job}/{anim}.png  <- {source_desc}  ({frames}f, {up.size[0]}x{up.size[1]})")

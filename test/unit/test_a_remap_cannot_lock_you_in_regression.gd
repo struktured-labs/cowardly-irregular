@@ -29,12 +29,48 @@ func _ipm():
 	return InputProfileManager
 
 
+## ⛔ set_custom_binding() calls save_config(), which WRITES user://input/controls.json. Two files in
+## this lane already save-and-restore it; this one did not, and the leftover red two unrelated paging
+## suites on 2026-09-17 (measured: pre-pin, stale file present, EC=1 in both run shapes).
+const _CFG := "user://input/controls.json"
+var _cfg_existed: bool = false
+var _cfg_text: String = ""
+var _cfg_profile: String = ""
+var _cfg_custom: Dictionary = {}
+
+
+func _save_input_config() -> void:
+	_cfg_profile = InputProfileManager.active_profile
+	_cfg_custom = InputProfileManager.custom_bindings.duplicate(true)
+	_cfg_existed = FileAccess.file_exists(_CFG)
+	_cfg_text = FileAccess.get_file_as_string(_CFG) if _cfg_existed else ""
+
+
+func _restore_input_config() -> void:
+	InputProfileManager.custom_bindings = _cfg_custom.duplicate(true)
+	InputProfileManager.active_profile = _cfg_profile
+	InputProfileManager.apply_profile(_cfg_profile)
+	# ⛔ open(WRITE) TRUNCATES before store_string runs, so an empty snapshot would write ZERO bytes
+	# over the player's file. Guard on CONTENT, and skip the rewrite entirely when nothing changed.
+	if _cfg_existed and _cfg_text != "":
+		if FileAccess.get_file_as_string(_CFG) != _cfg_text:
+			DirAccess.make_dir_recursive_absolute("user://input")
+			var f := FileAccess.open(_CFG, FileAccess.WRITE)
+			if f:
+				f.store_string(_cfg_text)
+				f.close()
+	elif FileAccess.file_exists(_CFG):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(_CFG))
+
+
 func before_each() -> void:
+	_save_input_config()
 	_ipm().apply_profile("Standard")
 
 
 func after_each() -> void:
 	_ipm().apply_profile("Standard")
+	_restore_input_config()
 
 
 ## Press one pad button on a fresh Controls screen; did it close?
