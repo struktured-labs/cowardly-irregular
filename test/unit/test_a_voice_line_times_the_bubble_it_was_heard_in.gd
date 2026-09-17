@@ -100,6 +100,9 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
 	if sm == null:
 		return
+	## ⚠️ THIS LIST IS A SNAPSHOT, derived once from this file's own sm. reaches and frozen — NOT
+	## a live derivation. Add a new sm. reach to this file and it is NOT covered until you add it
+	## here. The sibling floors in this lane carry the same disclaimer, for the same reason.
 	for method_name in ["play_voice"]:
 		assert_true(sm.has_method(method_name), "SoundManager has no method %s — this file CALLS it" % method_name)
 	## ⛔ TWO MECHANISMS, BECAUSE NEITHER COVERS THIS SET ALONE — measured 2026-09-17, not reasoned.
