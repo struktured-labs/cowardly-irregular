@@ -7,7 +7,7 @@ extends GutTest
 ## :2130 — `if not _pre_cutscene_music.is_empty()`, with no "did anything take the
 ## music?" term. For the ~two thirds of scenes that carry no music step that is
 ## meant to be a no-op: the same bed is still playing, play_area_music sees its own
-## area and early-outs at SoundManager:4901.
+## area and early-outs on its own `_current_area == area_type` branch.
 ##
 ## It did not early-out. restore_music_state cleared _current_area first, so the
 ## early-out could never match, and the restore became stop_music() plus a DEFERRED

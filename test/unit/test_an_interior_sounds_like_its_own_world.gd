@@ -4,7 +4,7 @@ extends GutTest
 ## playing when the player arrived.
 ##
 ## An `interior_*` key with no authored bed inherits whatever is already playing
-## (SoundManager:4910) — correct walking in from the village, which is where the
+## (play_area_music's interior-inherit return) — correct walking in from the village, which is where the
 ## behaviour was designed and where it stays. Wrong on a teleport: TeleportMenu
 ## lists `scriptura_guild` and `scriptura_bookshop` as direct destinations, so
 ## arriving from the World 4 overworld left `overworld_industrial.ogg` playing

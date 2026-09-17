@@ -16,7 +16,7 @@ extends GutTest
 ##
 ## ⚠️ THE VOCABULARY TRAP IS WHY THE MODEL CANNOT BE GUESSED FROM THE WORLD LIST.
 ## CLAUDE.md names six worlds, and "digital" is not among them — but
-## SoundManager:1699 maps the futuristic world's areas to the suffix "digital",
+## SoundManager._get_current_world_suffix maps the futuristic world's areas to the suffix "digital",
 ## so `*_digital` is the live family and `*_futuristic` would be the dead one.
 ## Checked: zero futuristic-keyed tracks exist, so the corpus is already named
 ## for the runtime rather than for the design doc. Do not "fix" that.

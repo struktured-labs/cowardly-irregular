@@ -3,7 +3,7 @@ extends GutTest
 ## Using the Jukebox left the game silent.
 ##
 ## Every map sets its bed with `play_area_music`, which CLEARS `_current_music`
-## (SoundManager:1745). The jukebox snapshotted that field on open, so in every
+## (SoundManager.play_area_music, via stop_music). The jukebox snapshotted that field on open, so in every
 ## map it captured "" — and `_close_menu`'s "there was no prior track, return
 ## them to silence" arm then faded the world out. The overworld stayed silent
 ## until the next area transition, which is verbatim the 2026-04-30 bug the
@@ -18,7 +18,7 @@ extends GutTest
 ## path guessed how to spend it by prefix. Three of 165 rows played a different
 ## bed than the one named — `danger` and `victory` through play_music's
 ## generic->world rewrite, and `overworld_digital` through play_area_music,
-## whose W5 arm is spelled `overworld_futuristic` (SoundManager:1700 returns
+## whose W5 arm is spelled `overworld_futuristic` (SoundManager._get_current_world_suffix returns
 ## "digital" as W5's suffix; the two vocabularies never met).
 
 const MENU := "res://src/ui/JukeboxMenu.gd"
