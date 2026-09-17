@@ -54,9 +54,21 @@ func test_a_real_start_does_name_itself() -> void:
 func test_the_idempotent_return_still_works() -> void:
 	## The top return needs the field to be accurate; with the assignment moved, prove the second
 	## call is still recognised as a repeat rather than restarting the bed.
+	## ⛔ STREAM IDENTITY CANNOT ANSWER THIS, and my first version used it. Godot's `load()`
+	## returns the CACHED resource, so `assert_same(stream, stream_before)` holds whether the bed
+	## returned early or was stopped and restarted from the same file. Measured: delete the early
+	## return entirely and all four arms stayed GREEN — an arm that could not fail for the reason
+	## it states (@cowir-sfx's shape, same hour, one lane over).
+	##
+	## PLAYBACK POSITION is the discriminator: a restart runs stop_ambient() and play(), which
+	## resets it to zero. Position only ever advances on the early-return path.
 	SoundManager.play_ambient(REAL)
+	await get_tree().create_timer(0.4).timeout
 	assert_true(SoundManager._ambient_player.playing, "CONTROL: playing before the repeat")
-	var stream_before: AudioStream = SoundManager._ambient_player.stream
+	var pos_before: float = SoundManager._ambient_player.get_playback_position()
+	assert_gt(pos_before, 0.1,
+		"CONTROL: the bed had advanced to %.2f s — without real playback a reset is indistinguishable from no reset" % pos_before)
+
 	SoundManager.play_ambient(REAL)
-	assert_same(SoundManager._ambient_player.stream, stream_before,
-		"the repeat restarted the bed instead of returning early — the moved assignment broke the idempotence guard")
+	assert_gte(SoundManager._ambient_player.get_playback_position(), pos_before - 0.01,
+		"the repeat RESTARTED the bed (position fell from %.2f to %.2f) instead of returning early — the moved assignment broke the idempotence guard" % [pos_before, SoundManager._ambient_player.get_playback_position()])
