@@ -492,11 +492,15 @@ func _party_kit_context() -> Dictionary:
 		## Two characters can share a name, and the name lookup returns the FIRST match — so the
 		## second was described with the first one's job and kit and their own abilities never
 		## reached the prompt. Their job id resolves through get_deep_check_kit's job-id arm.
+		## An empty id is not merely unresolvable: _member_predicate reads a blank "member" as
+		## ANY party member, so a rule composed for this PC silently becomes a party-wide one.
+		if cid == "":
+			cid = _job_id_of(member)
+			if cid == "":
+				continue
 		var lookup: String = cid
 		if seen_ids.has(cid):
-			var own_job: String = ""
-			if member.job != null and member.job is Dictionary:
-				own_job = str((member.job as Dictionary).get("id", ""))
+			var own_job: String = _job_id_of(member)
 			if own_job != "":
 				lookup = own_job
 		seen_ids[cid] = true
@@ -528,6 +532,13 @@ func _party_kit_context() -> Dictionary:
 	if members.is_empty():
 		return {}
 	return {"resolved": true, "party": members}
+
+## The member's own job id, empty when they have no job dictionary.
+func _job_id_of(member) -> String:
+	if member == null or member.job == null or not (member.job is Dictionary):
+		return ""
+	return str((member.job as Dictionary).get("id", ""))
+
 
 func _live_combatant_for(character_id: String):
 	var gl = get_node_or_null("/root/GameLoop")
