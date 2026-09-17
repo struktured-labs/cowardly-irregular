@@ -95,7 +95,16 @@ func test_settings_roundtrip_preserves_battle_speed_index() -> void:
 	# overwritten with a test-driven value if the harness happens to have one.
 	var settings_path := "user://settings.json"
 	var prior_settings := ""
-	if FileAccess.file_exists(settings_path):
+	## ⛔ THE SNAPSHOT MUST RECORD *ABSENCE* TOO. Guarding the restore on `prior_settings != ""` is
+	## correct against writing an empty file over a real one — and it also means that when there was
+	## NO settings.json, the one ss.save_settings() creates below is never cleaned up. Measured in a
+	## virgin sandbox: this file is the SOLE writer of the two player-data files a full suite leaves
+	## behind (cowir-autogrind's suite-scale inventory, 1995 scripts; bisected here across the five
+	## tests that touch this path). settings.json is caught by run_tests.sh's root-*.json net arm,
+	## which restores with `cp -a` — so on a machine that HAS the file the write is invisible to a
+	## content hash AND to mtime, and on one that does not the net never arms and the file persists.
+	var prior_existed: bool = FileAccess.file_exists(settings_path)
+	if prior_existed:
 		var f := FileAccess.open(settings_path, FileAccess.READ)
 		if f != null:
 			prior_settings = f.get_as_text()
@@ -122,6 +131,10 @@ func test_settings_roundtrip_preserves_battle_speed_index() -> void:
 		if f2 != null:
 			f2.store_string(prior_settings)
 			f2.close()
+	elif not prior_existed and FileAccess.file_exists(settings_path):
+		## Nothing to restore, so anything here is this test's own fixture. Remove it rather than
+		## leave a settings file on the disk of a player who had none.
+		DirAccess.remove_absolute(settings_path)
 	# Reload so the autoload's in-memory state matches whatever was on
 	# disk before the test ran.
 	ss.load_settings()
