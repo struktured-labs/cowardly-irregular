@@ -8,8 +8,18 @@ extends GutTest
 ##     AutobattleGridEditor   dpad 1   stick 5
 ##     AutogrindGridEditor    dpad 1   stick 5
 ##
+##     AutogrindUI            dpad 1   stick 5
+##
 ## ui_up/ui_down bind the left stick's Y axis and an axis carries no echo flag, so every step of an
-## analog ramp reads as a fresh press. AutogrindUI measured 1 and 1 and is deliberately NOT here.
+## analog ramp reads as a fresh press.
+##
+## ⛔ I EXCLUDED AutogrindUI AND WAS WRONG, IN THE SAME SENTENCE THAT EXPLAINS WHY. It measured
+## dpad 1 / stick 1 on an EMPTY rules list and I recorded that as "no defect" — while writing, two
+## paragraphs up, that an empty grid makes both routes look identical. Its clamp is
+## `min(rules.size() + 1, cursor_row + 1)`, so with no rules the bound is row 1 and FIVE steps and
+## ONE step both land there. cowir-autogrind read the clamp and said so; with 12 rules it is 1 and 5
+## like its siblings. I had also written the exemption into the ledger with an arm holding it — a
+## false exemption is worse than none, because it tells the next reader not to look.
 ##
 ## 🔑 THE READ IS THREADED, NOT REPEATED, and that is the risk this file mostly exists for.
 ## `MenuNav.step()` CONSUMES and its latch is static, so the editor reads it ONCE in `_input` and
@@ -28,6 +38,7 @@ const RAMP := [0.55, 0.65, 0.75, 0.85, 0.95]
 const EDITORS := [
 	{"name": "AutobattleGridEditor", "path": "res://src/ui/autobattle/AutobattleGridEditor.gd"},
 	{"name": "AutogrindGridEditor", "path": "res://src/ui/autogrind/AutogrindGridEditor.gd"},
+	{"name": "AutogrindUI", "path": "res://src/ui/autogrind/AutogrindUI.gd"},
 ]
 
 
