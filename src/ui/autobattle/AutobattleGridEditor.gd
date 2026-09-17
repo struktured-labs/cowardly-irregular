@@ -1281,7 +1281,7 @@ func _update_cursor() -> void:
 
 func _get_cell_at_cursor() -> Control:
 	"""Get the cell control at current cursor position"""
-	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
 
@@ -1356,7 +1356,7 @@ func _get_cell_at_cursor() -> Control:
 
 func _get_max_col_for_row(row_idx: int) -> int:
 	"""Get maximum column index for a row"""
-	if row_idx >= rules.size():
+	if row_idx < 0 or row_idx >= rules.size():
 		return 0
 
 	var rule = rules[row_idx]
@@ -1498,7 +1498,7 @@ func _split_action_group() -> void:
 
 func _get_condition_slots_for_row(row_idx: int) -> int:
 	"""Get the number of condition columns (including empty AND slot) for a row"""
-	if row_idx >= rules.size():
+	if row_idx < 0 or row_idx >= rules.size():
 		return 0
 	var rule = rules[row_idx]
 	var conditions = rule.get("conditions", [])
@@ -1553,7 +1553,7 @@ func _on_grid_cell_clicked(cell: Control) -> void:
 
 func _get_action_group_index(row_idx: int, act_start_idx: int) -> int:
 	"""Get the group index for an action at a given start index"""
-	if row_idx >= rules.size():
+	if row_idx < 0 or row_idx >= rules.size():
 		return 0
 	var action_groups = _group_actions(rules[row_idx].get("actions", []))
 	for i in range(action_groups.size()):
@@ -1783,7 +1783,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		cursor_row = min(rules.size() - 1, cursor_row + 1)
+		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
 		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
 		_update_cursor()
 		SoundManager.play_ui("menu_move")
@@ -1955,7 +1955,7 @@ func _edit_current_cell() -> void:
 
 	# If no cell found, try to add AND condition (cursor is past end of conditions)
 	if not cell:
-		var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+		var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 		var conditions = rule.get("conditions", [])
 		if cursor_col == conditions.size() and conditions.size() < MAX_CONDITIONS:
 			_add_and_condition()
@@ -2078,7 +2078,7 @@ func _apply_condition_type(new_type: String) -> void:
 
 func _cycle_condition_operator() -> void:
 	"""Cycle through operators (<, <=, ==, >=, >, !=) - X button"""
-	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
 
 	print("[CYCLE_OP] row=%d col=%d, conditions.size=%d" % [cursor_row, cursor_col, conditions.size()])
@@ -2132,7 +2132,7 @@ func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
 
 func _adjust_condition_value(delta: int) -> void:
 	"""Adjust condition value up/down - used with shoulder buttons"""
-	var rule = rules[cursor_row] if cursor_row < rules.size() else {}
+	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
 
 	if cursor_col < conditions.size():
