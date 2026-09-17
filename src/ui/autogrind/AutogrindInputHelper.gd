@@ -36,6 +36,17 @@ static func classify_event(event: InputEvent) -> String:
 ## reads from this one table instead of carrying its own literal.
 const ACTION_KEYS := {"pause": "P", "adjust_rules": "R", "tier_cycle": "T", "exit": "X"}
 
+## ⛔ THE TIER CONTROL'S PLAYER-FACING NAME, OWNED HERE BECAUSE IT WAS COPIED INTO FIVE SURFACES.
+## The BUTTON was already owned by this file; the LABEL was not, so on 2026-09-17 two surfaces were
+## corrected to "Dashboard" and three kept saying "Tier" for the same key — the HUD strip and the F1
+## table against AutogrindDashboard, AutogrindMonitor and BattleScene's grind console.
+##
+## "Dashboard" is the correct name: GrindTier is {ACCELERATED, DASHBOARD}, cycle_tier() toggles the
+## two, and GameLoop logs "Dashboard shown (Tier 2)" at the other end of the same call. "Tier" names
+## the MECHANISM rather than the outcome, and is what sent one lane to "fix" a correct caption.
+static func tier_control_label() -> String:
+	return "Dashboard"
+
 ## Keys GameLoop's AUTOGRIND branch owns that classify_event does NOT accept. Kept out of
 ## ACTION_KEYS on purpose: that const promises it names only keys this classifier binds, and turbo
 ## is dispatched by GameLoop (raw JOY_BUTTON_Y / KEY_Y), never here.

@@ -306,6 +306,74 @@ func test_a_declining_pad_cell_agrees_with_the_branch() -> void:
 				"name a button that does nothing (device '%s')") % dev)
 
 
+## ⛔ FIVE SURFACES NAME THE TIER CONTROL AND ON 2026-09-17 TWO OF THEM SAID SOMETHING DIFFERENT.
+## The BUTTON was already owned by AutogrindInputHelper; the LABEL was copied. So when the HUD strip
+## and the F1 table were corrected to "Dashboard" (GrindTier is {ACCELERATED, DASHBOARD}; T toggles
+## the analytics dashboard), AutogrindDashboard, AutogrindMonitor and BattleScene kept saying "Tier"
+## — one control, two names, and no guard could see it because each surface was internally correct.
+##
+## The label now has ONE owner, `AutogrindInputHelper.tier_control_label()`, and this arm keeps the
+## copies from coming back. Corpus is DERIVED from src/ rather than the three files I happened to
+## know about — that hand-list is exactly how the fifth surface stayed invisible.
+const TIER_LABEL_DECLARED := {
+	"BattleScene.gd": "cross-lane (_grind_console_controls). Carries its OWN derivation and still says 'Tier'; reported 2026-09-17 — the one-owner fix is BattleScene's to take, not mine to reach into.",
+}
+
+
+func _src_gd_files(root: String) -> Array:
+	var out: Array = []
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var d: String = str(stack.pop_back())
+		for sub in DirAccess.get_directories_at(d):
+			stack.append("%s/%s" % [d, sub])
+		for f in DirAccess.get_files_at(d):
+			if str(f).ends_with(".gd"):
+				out.append("%s/%s" % [d, f])
+	return out
+
+
+func test_one_owner_names_the_tier_control() -> void:
+	var files: Array = _src_gd_files("res://src")
+	assert_gt(files.size(), 50,
+		"CONTROL: the source walk must find the tree, or 'no surface disagrees' is vacuous")
+
+	## A legend literal, not a debug print: the token:label shape. `print("[AUTOGRIND] Dashboard
+	## shown (Tier 2)")` is not a caption and must not match — checked by the control below.
+	var rx := RegEx.create_from_string('"[^"]*%s?[: ]\\s*Tier\\b')
+	var offenders: Array = []
+	for path in files:
+		var code: String = GdSource.code_of(path)
+		for line in code.split("\n"):
+			if not line.contains("Tier"):
+				continue
+			if rx.search(line) == null:
+				continue
+			if line.contains("GrindTier") or line.contains("print("):
+				continue   ## the enum itself, and console logs, are not captions
+			var base: String = path.get_file()
+			if TIER_LABEL_DECLARED.has(base):
+				continue
+			offenders.append("%s: %s" % [base, line.strip_edges().substr(0, 70)])
+	assert_eq(offenders, [],
+		("a surface writes its own name for the tier control instead of AutogrindInputHelper." +
+		"tier_control_label(). Two surfaces already disagreed for a day this way: %s") % str(offenders))
+
+	## CONTROL: the owner must exist and the declared straggler must still be findable, or this arm
+	## passes because the predicate stopped matching rather than because the copies are gone.
+	## No has_method floor here on purpose: tier_control_label is a `class_name` STATIC, so a missing
+	## one is a PARSE error and the file exits 3 — louder than any arm could be (CLAUDE.md call-shape
+	## table). Floor-by-existence would be dead code; the value assert is the live claim.
+	assert_eq(AutogrindInputHelper.tier_control_label(), "Dashboard",
+		"the owner must name the outcome, not the mechanism — 'Tier' is what sent a lane to 'fix' a correct caption")
+	var still_there: int = 0
+	for path in files:
+		if TIER_LABEL_DECLARED.has(path.get_file()) and GdSource.code_of(path).contains("Tier"):
+			still_there += 1
+	assert_eq(still_there, TIER_LABEL_DECLARED.size(),
+		"a declared straggler no longer names the tier control — it was fixed, so remove its declaration rather than carrying a stale exemption")
+
+
 ## The dashboard's legend must stay derived. ⚠️ It describes classify_event, which is a DIFFERENT
 ## surface from the one the F1 rows describe — kept because a frozen word there is wrong on at
 ## most one family either way.
