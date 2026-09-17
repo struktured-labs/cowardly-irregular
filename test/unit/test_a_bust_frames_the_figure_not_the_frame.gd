@@ -13,10 +13,9 @@ const RATIO := 0.55
 
 ## Starters plus the small-figure and large-figure ends of the roster. Not every job dir:
 ## `*_sdxl` / `*_artist` are experiment folders, not sheets any consumer loads.
-const JOBS: Array[String] = [
-	"fighter", "cleric", "mage", "rogue", "bard",
-	"ninja", "speculator", "guardian", "summoner",
-]
+const JobRoster := preload("res://test/unit/helpers/job_roster.gd")
+# Starter + advanced, derived. Meta jobs (type 2) are deliberately out: they have no artist bust.
+var JOBS: Array[String] = JobRoster.of_types([0, 1])
 
 
 func _frame_image(job: String) -> Image:

@@ -91,3 +91,50 @@ func test_get_pending_story_cutscene_still_checks_chapter1_flag() -> void:
 		"chapter1 trigger must still check talked_to_theron")
 	assert_true(body.find("cutscene_flag_chapter1_complete") != -1,
 		"chapter1 trigger must still check cutscene_flag_chapter1_complete")
+
+
+## The arm above hand-lists four W1 ids. The gate returns SIXTY-THREE, and the
+## fragment loop reaches twenty more whose id never appears beside a `return`.
+## So fifty-nine gated cutscenes were defended by nothing, and a new gate added
+## without a flag reds no test — while the symptom is the loop this file exists
+## for. Derived from GameLoop's own source so the corpus cannot fall behind it.
+func _slice(text: String, anchor: String) -> String:
+	var i := text.find(anchor)
+	assert_gt(i, -1, "anchor must exist: %s" % anchor)
+	# Close on "\n}" rather than the first "}" — a brace inside a value or a
+	# comment would otherwise truncate the slice and read as a short corpus.
+	var close := text.find("\n}", i)
+	return text.substr(i, close - i) if close > i else text.substr(i)
+
+
+func _captures(pattern: String, text: String) -> Array:
+	var re := RegEx.create_from_string(pattern)
+	var out: Array = []
+	for m in re.search_all(text):
+		var s := m.get_string(1)
+		if not out.has(s):
+			out.append(s)
+	return out
+
+
+func test_every_gated_cutscene_has_a_completion_flag() -> void:
+	var text := _read("res://src/GameLoop.gd")
+	var flagged := _captures('(?m)^\\s*"([a-z0-9_]+)"\\s*:', _slice(text, "const _CUTSCENE_COMPLETION_FLAGS"))
+	var fragments := _captures('(?m)^\\s*"([a-z0-9_]+)"\\s*:', _slice(text, "const _FRAGMENT_GATES"))
+	var returned := _captures('return\\s+"([a-z0-9_]+)"', _slice(text, "func _get_pending_story_cutscene"))
+
+	# Corpus floors: a mis-anchored slice yields a short list, and a short list
+	# is indistinguishable from a clean one in the assertion below.
+	assert_gt(flagged.size(), 60, "flag map should hold 80+ ids — read %d" % flagged.size())
+	assert_gt(returned.size(), 50, "the gate returns 60+ ids literally — read %d" % returned.size())
+	assert_gt(fragments.size(), 10, "the fragment table holds 20 ids — read %d" % fragments.size())
+
+	var unflagged: Array = []
+	for id in returned:
+		if not flagged.has(id):
+			unflagged.append(id)
+	for id in fragments:
+		if not flagged.has(id):
+			unflagged.append("%s (fragment loop)" % id)
+	assert_eq(unflagged.size(), 0,
+		"these cutscenes are gated but have no _CUTSCENE_COMPLETION_FLAGS entry, so each replays on every gate check (Elder Theron loop): %s" % str(unflagged))

@@ -188,3 +188,48 @@ func test_the_shoulder_button_route_was_never_broken() -> void:
 		assert_eq(moved, MenuPaging.PAGE_ROWS,
 			"%s paged %d rows on the shoulder button, not %d — this route was never broken, so a "
 			% [spec["name"], moved, MenuPaging.PAGE_ROWS] + "red here is a NEW defect")
+
+
+## JOBMENU, added 2026-09-17 with its paging. Not spec-driven like the menus above: its rows come
+## from `_get_available_jobs()` (JobSystem + unlock gates), not from a member this fixture can fill,
+## so the list length is MEASURED at runtime and the assertion is the clamp RELATIONSHIP rather than
+## a row count — a count would go red the day another job unlocks.
+func test_the_job_list_pages_and_clamps() -> void:
+	_release()
+	var m: Node = load("res://src/ui/JobMenu.gd").new()
+	add_child_autofree(m)
+	var c = load("res://src/battle/Combatant.gd").new()
+	add_child_autofree(c)
+	m.character = c
+	m.visible = true
+	m.mode = load("res://src/ui/JobMenu.gd").Mode.JOB_SELECT
+	await get_tree().process_frame
+
+	var jobs: Array = m._get_available_jobs()
+	assert_gt(jobs.size(), 1,
+		"LIVENESS: the fixture produced %d selectable jobs — a page jump on a one-row list is " % jobs.size()
+		+ "indistinguishable from no paging at all")
+	if jobs.size() < 2:
+		return
+
+	m.selected_job_index = 0
+	_pull(m, "battle_advance", JOY_AXIS_TRIGGER_RIGHT)
+	Input.action_release("battle_advance")
+	var after: int = int(m.selected_job_index)
+	var want: int = mini(MenuPaging.PAGE_ROWS, jobs.size() - 1)
+	assert_eq(after, want,
+		"one trigger pull must move a full page, CLAMPED to the last row: %d jobs, expected %d, got %d"
+		% [jobs.size(), want, after])
+	assert_gt(after, 1,
+		"a page jump that moves one row or none is not a page jump — this is the defect the arm exists for")
+
+	# Page UP too: a menu can clamp one direction and not the other, and only the pair says so.
+	# ⛔ NOT a binding check — _pull presses the ACTION directly, so this arm is blind to controls.json
+	# by construction. A stale profile rebinding battle_defer reds the caption suites, never this one.
+	_release()
+	m.selected_job_index = after
+	_pull(m, "battle_defer", JOY_AXIS_TRIGGER_LEFT)
+	Input.action_release("battle_defer")
+	assert_eq(int(m.selected_job_index), maxi(0, after - MenuPaging.PAGE_ROWS),
+		"page UP must move a full page back, clamped at row 0 — from %d it landed on %d"
+		% [after, int(m.selected_job_index)])

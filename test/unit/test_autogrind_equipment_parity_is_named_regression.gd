@@ -42,7 +42,8 @@ const GRIND_IGNORES := []
 ## Behaviour is pinned in test_autogrind_a_party_wears_its_gear_regression, not here: this file is a
 ## census and says WHICH keys are modelled, never that they are modelled CORRECTLY.
 const GRIND_MODELS := [
-	"critical_bonus", "dark_damage_bonus", "evasion_bonus", "exp_while_dead", "familiar_weight_bonus",
+	"critical_bonus", "dark_damage_bonus", "dark_resistance", "evasion_bonus", "exp_while_dead",
+	"familiar_weight_bonus", "fire_resistance",
 	"fire_damage_bonus", "holy_damage_bonus", "ice_damage_bonus", "lightning_damage_bonus",
 	"poison_chance", "sleep_chance", "status_resistance", "steal_bonus",
 ]
@@ -92,6 +93,18 @@ const MODELLED_ELSEWHERE := {
 	"exp_while_dead": ["res://src/autogrind/AutogrindSystem.gd", "earns_exp_while_dead"],
 }
 
+## ⛔ THESE TWO WERE DECLARED NON-GAPS ON A WRONG MEASUREMENT AND THIS FILE COUNTED THEM AS NAMED.
+## The declaration said live reads them "only from _tick_summon_followup". Live calls
+## take_elemental_damage from TWO functions; _execute_magic_ability is the other, so live's magic arm
+## halved an elemental hit for dragon_mail / bone_armor while the grind ignored the gear entirely.
+## Wired 2026-09-17 and moved into GRIND_MODELS. Recorded here rather than silently re-filed,
+## because this census reported "ignored 0" while two of its fifteen rested on that sentence —
+## a closed census is only as good as the weakest declaration inside it.
+const RETRACTED_DECLARATIONS := {
+	"fire_resistance": "declared non-gap on a one-caller measurement; live has two callers — wired",
+	"dark_resistance": "see fire_resistance — same retraction, same fix",
+}
+
 
 const MODELLED_BY_CONSTRUCTION := {
 	"fire_damage_bonus": 'element + "_damage_bonus"',
@@ -99,6 +112,12 @@ const MODELLED_BY_CONSTRUCTION := {
 	"holy_damage_bonus": 'element + "_damage_bonus"',
 	"lightning_damage_bonus": 'element + "_damage_bonus"',
 	"dark_damage_bonus": 'element + "_damage_bonus"',
+	## ⚠️ THE SECOND CONSTRUCTION FAMILY, added when these two moved out of DECLARED. Same shape as
+	## the damage bonuses and the same blindness: a literal census sees neither. That is exactly how
+	## both spent months looking inert — and how the wrong "they agree" declaration survived, since
+	## nothing in this file could see the key either way.
+	"fire_resistance": 'element + "_resistance"',
+	"dark_resistance": 'element + "_resistance"',
 }
 
 ## Assessed and deliberately not modelled, with the reason. You cannot silence an entry here, only
@@ -111,8 +130,6 @@ const DECLARED := {
 	## them into the resolver would make the grind resist where the real game does not.
 	## The neighbouring *_damage_bonus keys look identical and ARE a gap; only reading which Combatant
 	## function each path calls tells them apart.
-	"fire_resistance": "read by Combatant.take_elemental_damage, which live calls only from _tick_summon_followup; both engines' magic arms use calculate_elemental_modifier, which does not consult it — so they agree",
-	"dark_resistance": "see fire_resistance — same reader, same declared summon path",
 }
 
 ## ⛔ KEYS AUTHORED IN BOTH CORPORA, WITH THE OWNER NAMED. The disjointness arm below found this on

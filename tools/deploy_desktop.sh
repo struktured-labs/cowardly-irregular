@@ -560,6 +560,36 @@ else
     exit 2
 fi
 
+# ── does every RAW-BYTES read have bytes to read? ────────────────────────────
+# check_pck_complete.py above asks whether the export dropped content it owed. This asks a
+# different question of the same payload: an asset can be PRESENT as its imported artifact and
+# still be unreadable, because FileAccess.get_file_as_bytes() needs the ORIGINAL file. That is
+# how Worlds 2-6 shipped with no overworld map for months while every count looked right.
+#
+# ⛔ AND THE DESKTOP CHANNELS SHIP NO .pck AT ALL. export_presets.cfg sets
+# binary_format/embed_pck=true for Linux and Windows, so the pack is appended to the executable
+# and the only .pck on disk belongs to web. The web gate covered ONE of the three channels this
+# lane publishes and said nothing about two; this reads the pack out of the binary itself.
+# Measured on both real artifacts: 2758 entries in the .x86_64, 2956 in the .exe.
+_RAW_CHECK="$(cd "$(dirname "$0")" && pwd)/check_raw_assets_shipped.py"
+_RAW_SELFTEST="$(cd "$(dirname "$0")" && pwd)/check_raw_assets_shipped_selftest.py"
+[ -f "$_RAW_CHECK" ] && [ -f "$_RAW_SELFTEST" ] || {
+    echo "[${PLAT}] BLOCKED: check_raw_assets_shipped.py or its selftest is missing -- nothing" >&2
+    echo "        would check that a raw-bytes read has bytes to read in this binary." >&2
+    exit 2; }
+mkdir -p tmp
+if ! _ST_OUT="$(python3 "$_RAW_SELFTEST" 2>&1)"; then
+    printf '%s\n' "$_ST_OUT" | tail -20 >&2
+    echo "[${PLAT}] BLOCKED: check_raw_assets_shipped FAILED ITS OWN ARMS, so its verdict on" >&2
+    echo "        this binary would mean nothing. A present guard is not a working one." >&2
+    exit 2
+fi
+if ! python3 "$_RAW_CHECK" "$BIN" --src=src; then
+    echo "[${PLAT}] BLOCKED: an asset this build reads as raw bytes is not in the embedded pack." >&2
+    echo "        It reads fine in the editor; in THIS binary the call returns empty." >&2
+    exit 2
+fi
+
 # ── gate 3: does it actually boot? ───────────────────────────────────────────
 # The gate web cannot have. An export can succeed and still produce something
 # that dies on startup — a missing autoload, an unresolved class_name, a broken
