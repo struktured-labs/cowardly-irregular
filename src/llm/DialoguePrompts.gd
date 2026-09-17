@@ -343,7 +343,8 @@ Conditions (AND-chained). type is one of:
 Numeric conditions take op ∈ {<, <=, ==, >=, >, !=} and value.
 member_hp / member_mp / member_status / member_dead accept an OPTIONAL "member" (a job id
 such as "cleric", or a character name). With it the condition asks about that character;
-without it, about ANY party member. member_status takes the status name in "value".
+without it, about ANY party member. member_status takes the status NAME in "value";
+the only ids that exist are listed below.
 
 Actions. type is one of:
   stop_grinding, heal_party, restore_mp, flee_battle, switch_profile, member_ability
@@ -956,7 +957,8 @@ static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -
 static func build_rule_composition(domain: String, prompt_text: String, current_rules: Array,
 		kit_context: Dictionary = {}) -> String:
 	var grammar: String = AUTOBATTLE_GRAMMAR_DESCRIPTION if domain == "autobattle" else AUTOGRIND_GRAMMAR_DESCRIPTION
-	var kit_block: String = _format_rule_kit(kit_context) if domain == "autobattle" else _format_party_kit(kit_context)
+	var kit_block: String = _format_rule_kit(kit_context) if domain == "autobattle" \
+		else _format_status_vocabulary() + _format_party_kit(kit_context)
 	var current_json: String = JSON.stringify(current_rules) if current_rules.size() > 0 else "[]"
 	return (
 		"You are a rule authoring assistant for a JRPG's autobattle/autogrind system.\n\n"
@@ -1034,6 +1036,41 @@ static func _format_kit_reminder(kit_context: Dictionary) -> String:
 ## anywhere in the prompt — 2,487 chars against autobattle's ~8,076, the kit being the
 ## difference. Measured on live llama3 with an intent that asks for one: 24 of 24 emitted
 ## ids were absent from abilities.json.
+## The status ids member_status can ever be TRUE for, curated to the afflictions worth
+## interrupting a grind. Measured on live llama3 2026-09-17, 20 samples with an intent that
+## asks for one: 41 of 41 emitted values were English participles — frozen 18, poisoned 17,
+## burned 6 — and Combatant.has_status matches literally, so every one was silently false.
+## test_the_grind_prompt_names_a_status_that_can_be_true derives the applicable set from
+## BattleManager and reds if an entry here stops being reachable.
+## Keyed by the engine's id, valued by the English a player would actually type. Measured
+## 2026-09-17: naming the ids alone left 28 of 46 values unmatchable, because the intent says
+## "frozen" and NO frozen status exists — BattleManager:5014 applies freeze AS stun, so
+## without the mapping the model has nowhere to put the player's own word.
+const AUTOGRIND_STATUS_VOCABULARY := {
+	"poison": "poisoned",
+	"burn": "burned, on fire",
+	"blind": "blinded",
+	"silence": "silenced, muted",
+	"stun": "stunned, frozen, paralysed (freeze is applied AS stun)",
+	"sleep": "asleep, sleeping",
+	"confuse": "confused",
+	"curse": "cursed",
+	"charm": "charmed",
+}
+
+
+## Rendered from AUTOGRIND_STATUS_VOCABULARY so the grammar above can point at the list
+## without carrying a second copy of it.
+static func _format_status_vocabulary() -> String:
+	var lines: PackedStringArray = PackedStringArray()
+	lines.append("\n\nSTATUS IDS. member_status's \"value\" is ONE id from this list — never a list,")
+	lines.append("never an English word. The engine matches the id literally, so \"frozen\" or")
+	lines.append("\"poisoned\" is never true of anyone. Say it the engine's way:")
+	for id in AUTOGRIND_STATUS_VOCABULARY:
+		lines.append("  %s   for %s" % [str(id), str(AUTOGRIND_STATUS_VOCABULARY[id])])
+	return "\n".join(lines)
+
+
 static func _format_party_kit(kit_context: Dictionary) -> String:
 	if kit_context.is_empty() or not bool(kit_context.get("resolved", false)):
 		return ""
