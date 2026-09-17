@@ -1983,6 +1983,11 @@ func play_music(track: String, exact: bool = false) -> void:
 	already holds a manifest key (the Jukebox lists ids, so "danger" there means
 	the bed called danger, not danger_<wherever the player happens to stand>)."""
 	if _current_music == track and _music_playing:
+		## ⛔ SAME EXPOSURE AS play_area_music's, and this one is sharper: the tween kill below
+		## sits AFTER this return, so "already playing" skips the very cleanup this function owns.
+		## Measured 2026-09-17 on the shipped code — play battle_medieval, fade 0.3 s, ask for the
+		## SAME track: playing=true at the call, playing=false 0.6 s on.
+		_cancel_pending_fade()
 		return  # Already playing
 
 	# Capture here, ABOVE the clear below — not at the old site further down,
@@ -2208,6 +2213,27 @@ func stop_music() -> void:
 	_stinger_resume_state = {}
 	if _music_player:
 		_music_player.stop()
+	if _music_player_b:
+		_music_player_b.stop()
+
+
+## Cancel a fade-out that is still running, and put back what it had already taken.
+##
+## ⛔ BOTH "ALREADY PLAYING" EARLY RETURNS NEED THIS. fade_out_music leaves _music_playing
+## TRUE until its callback fires, so during a fade that condition is true of a bed one tween from
+## silence — and both returns skip the stop/kill path that would have cancelled it. A caller
+## asking for a track that is "already playing" wants it to KEEP playing.
+##
+## Restoring the level is not optional: the fade has already pulled volume_db down, so killing the
+## tween alone leaves the bed sounding quietly forever, which reads as a mix bug. B is always the
+## OUTGOING bed, so it is stopped rather than resurrected.
+func _cancel_pending_fade() -> void:
+	if not (_crossfade_tween and _crossfade_tween.is_valid()):
+		return
+	_crossfade_tween.kill()
+	_crossfade_tween = null
+	if _music_player:
+		_music_player.volume_db = _music_base_db
 	if _music_player_b:
 		_music_player_b.stop()
 
@@ -5104,6 +5130,15 @@ func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
 	"""Play appropriate music for an exploration area.
 	Generation is deferred to the next frame so it does not block scene setup."""
 	if _current_area == area_type and _music_playing:
+		## ⛔ A PENDING FADE-OUT OUTLIVES THIS RETURN. fade_out_music's callback stops BOTH
+		## players and clears _current_music, and it leaves _music_playing true until it fires —
+		## so "already playing" is true of a bed that is one tween away from silence. A cutscene
+		## that faded the field bed and then restored the SAME area returned early into that tween
+		## and the bed died a second later, silent until the player changed area.
+		## Measured 2026-09-17: playing=true at the call, playing=false 0.6 s on.
+		## The caller is asking for this area to PLAY, so cancel the fade rather than return into
+		## it — and restore the level the fade had already pulled down.
+		_cancel_pending_fade()
 		return  # Already playing
 
 	# Interior sub-area keys inherit the current (village) bed when their track
