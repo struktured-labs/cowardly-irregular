@@ -66,6 +66,16 @@ EXPORTED_BIN = re.compile(r'"\./\$\{ARTIFACT\}"|"\$BIN"|"\./\$ARTIFACT"')
 RUNNERS = {"timeout", "xvfb-run", "wine", "env", "nice", "setsid", "exec", "sudo", "stdbuf"}
 INSPECTORS = {"[", "test", "stat", "echo", "printf", "ls", "du", "cksum", "cat", "cp", "mv",
               "rm", "file", "dirname", "basename", "wc", "head", "tail"}
+# ⛔ AN INTERPRETER EARLIER IN THE SAME COMMAND MEANS THE BINARY IS AN ARGUMENT.
+# `_in_command_position` takes the LAST non-flag token as the governing word, which for
+#     python3 "$_RAW_CHECK" "$BIN" --src=src
+# is the CHECKER SCRIPT, not `python3` -- so the binary read as a command and both of gate 3c's
+# and gate 3d's desktop wirings were reported UNSANDBOXED. They do not run the binary; they READ
+# it, to parse the pack embedded in it. Measured 2026-09-17: 2 UNSANDBOXED, both mine, both false,
+# and this guard blocks publish_all.sh -- so the next publish would have been stopped by it.
+# ⚠️ SCOPE: this says the binary is not the COMMAND. A python script that goes on to exec it via
+# subprocess is a different line and is still matched there.
+INTERPRETERS = {"python3", "python", "bash", "sh", "perl", "ruby", "node"}
 
 
 def _in_command_position(before):
@@ -95,6 +105,14 @@ def _in_command_position(before):
         break
     if gov in INSPECTORS:
         return False
+    # The command word of THIS simple command: everything after the last separator. An
+    # interpreter there means what follows is an argument list, not a command.
+    seg = before
+    for sep in (";", "&&", "||", "|", "(", "then", "do", "else"):
+        seg = seg.rsplit(sep, 1)[-1]
+    for tok in seg.split():
+        if tok.strip('"\'') in INTERPRETERS:
+            return False
     return True
 
 
@@ -395,6 +413,23 @@ def selftest():
         check("a corpus with no invocations is BLOCKED (2)", rc, 2)
         rc = main([os.path.join(d, "does-not-exist.sh")])
         check("a corpus of missing files is BLOCKED (2)", rc, 2)
+
+    # ⛔ THE INTERPRETER RULE, BOTH DIRECTIONS. This LOOSENS a safety guard, so the arms that
+    # matter are the ones proving it did not stop flagging a real execution. The third is the
+    # one that decides it: an interpreter EARLIER in the line must not exempt a binary that is
+    # a command after a separator.
+    for _code, _want, _label in (
+        ('( cd "$OUT_DIR" && timeout 240 "./${ARTIFACT}" --headless --quit )', True,
+         "the boot gate RUNS the binary"),
+        ('xvfb-run -a "$BIN" --headless', True, "  ...and so does runner + binary"),
+        ('python3 prep.py && "$BIN" --headless', True,
+         "  ...an interpreter then a REAL exec still flags"),
+        ('python3 "$CHECK" "$BIN" --src=src', False,
+         "python3 READING the binary is not running it"),
+        ('[ -s "$BIN" ] || exit 2', False, "  ...nor is test -s"),
+        ('stat -c%s "$BIN"', False, "  ...nor is stat"),
+    ):
+        check(_label, _runs_the_binary(_code), _want)
 
     print(f"\n{'FAILED: ' + ', '.join(fails) if fails else 'all arms as expected'}")
     return 1 if fails else 0
