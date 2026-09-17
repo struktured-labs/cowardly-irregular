@@ -115,13 +115,6 @@ jobs:
           path: build/linux/
           retention-days: 14
 
-      - name: Create release (on tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: build/linux/*
-          generate_release_notes: true
-
   export-windows:
     name: Windows Export
     runs-on: ubuntu-latest
@@ -257,9 +250,52 @@ jobs:
           path: build/windows/
           retention-days: 14
 
-      - name: Create release (on tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+  # ── ONE WRITER. BOTH EXPORT JOBS USED TO CALL action-gh-release ON THE SAME TAG ─────────
+  # Concurrently, from two runners. Each creates a DRAFT for the tag, so two drafts exist;
+  # the loser resolves to the winner's release, deletes its own duplicate, and its upload
+  # then fails. Measured across 2026-09-17's tags: 10 of 20 runs red, and the damage is not
+  # cosmetic -- whichever platform lost the race is MISSING from the release page, and .404
+  # lost the release entirely.
+  #     .409  .exe + .x86_64      .408  .x86_64 only     .407  both
+  #     .406  .exe only           .405  both             .404  NO RELEASE AT ALL
+  # Either platform can lose; it is a race, not a Windows bug. The `main` run for the same
+  # SHA is always green because this step is tag-gated, which is why every gate and every
+  # `gh run list --branch main` read clean while half the releases shipped one binary.
+  #
+  # Serialising the two steps would not fix it -- two writers is the defect, not their
+  # timing. This job is the only writer, it runs after both exports, and it uploads both
+  # artifacts in one call. `needs` also means a failed export cannot produce a half release.
+  release:
+    name: Release (on tag)
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [export-linux, export-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Linux build
+        uses: actions/download-artifact@v4
         with:
-          files: build/windows/*
+          name: linux-build-${{ github.sha }}
+          path: dist/
+
+      - name: Download Windows build
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build-${{ github.sha }}
+          path: dist/
+
+      # A release missing a platform is the bug this job exists to remove, so refuse rather
+      # than publish a partial one. Both names come from the export jobs' own gates above.
+      - name: Both binaries must be present
+        run: |
+          ls -la dist/
+          missing=""
+          test -s "dist/${EXPORT_NAME}.x86_64" || missing="$missing linux"
+          test -s "dist/${EXPORT_NAME}.exe"    || missing="$missing windows"
+          test -z "$missing" || { echo "::error::release would be missing:$missing"; exit 1; }
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/${{ env.EXPORT_NAME }}.x86_64
+            dist/${{ env.EXPORT_NAME }}.exe
           generate_release_notes: true

@@ -527,9 +527,14 @@ mkdir -p tmp
 #      or in CI. A sandboxed profile means the smoke always tests DEFAULTS, which is what a new
 #      player gets.
 #
-# Safe by inspection, checked before changing it: the smoke READS nothing from user:// (no
-# SaveSystem, no has_save, no load_game anywhere in GameLoop.gd:414-610) and only WRITES
-# user://smoke/<name>.png — and nothing downstream in this chain reads those shots back.
+# Safe by inspection, checked before changing it: the smoke READS nothing from user://.
+# ⛔ THIS USED TO CITE `GameLoop.gd:414-610` AND THE CLAIM WENT FALSE WITHOUT THE CLAIM
+# CHANGING. The range was a proxy for the smoke's own code; the file moved and the range
+# grew to cover 2 SaveSystem references, so a reader checking it found the sentence refuted
+# by its own pointer — the worst kind of rot, because it argues for editing a working gate.
+# Re-verified against the SYMBOL, 2026-09-17: inside GameLoop._maybe_run_battle_smoke,
+# SaveSystem|has_save|load_game occurs 0 times and the only user:// it touches is
+# user://smoke — and nothing downstream in this chain reads those shots back.
 #
 # XDG_DATA_HOME rather than HOME: it is the minimal redirect that moves user://, verified in both
 # directions 2026-09-07 (sandboxed -> resolves inside the sandbox, bare -> his real profile). Safe

@@ -126,6 +126,10 @@ static func grind_reference_rows(device_name: String = "") -> String:
 	# By ACTION, so the cell follows a Controls rebind the way the handler does. A raw index here
 	# would keep printing "Back" after the player moved the button.
 	var pause: String = str(ipm.hint_for_action("battle_toggle_auto", device_name)) if pad_ok else ""
+	# From the ACTION, not hint_for("adjust_rules") which resolves the raw JOY_BUTTON_START: the
+	# LIVE grind branch binds ui_menu, so after a rebind the raw form would name the wrong button to
+	# the player reading this. The dashboard keeps the raw index deliberately — it is modal.
+	var rules: String = str(ipm.hint_for_action("ui_menu", device_name)) if pad_ok else ""
 	var tier: String = ("%s+%s" % [l, r]) if l != "" and r != "" else ""
 	var rows: Array = [
 		[_reference_cell(pause), str(ACTION_KEYS["pause"]), "[color=lime]Pause / resume the grind[/color]"],
@@ -133,9 +137,10 @@ static func grind_reference_rows(device_name: String = "") -> String:
 		# there is no monster tier: GrindTier is {ACCELERATED, DASHBOARD}. It is what sent me to
 		# "fix" the HUD's correct "Dashboard" label into a wrong one.
 		[_reference_cell(tier), str(ACTION_KEYS["tier_cycle"]), "Toggle the analytics dashboard"],
-		# Keyboard only: the dashboard binds index 6 for this, but at tier 0 no dashboard exists and
-		# the AUTOGRIND branch binds only KEY_R -- so a pad cell here would be dead half the time.
-		[REFERENCE_PAD_NONE, str(ACTION_KEYS["adjust_rules"]), "Adjust rules mid-grind"],
+		# Was REFERENCE_PAD_NONE with the note "a pad cell here would be dead half the time" -- true
+		# while the AUTOGRIND branch bound only KEY_R. It now binds JOY_BUTTON_START there too, the
+		# same index classify_event maps for the dashboard, so the cell is live on both tiers.
+		[_reference_cell(rules), str(ACTION_KEYS["adjust_rules"]), "Adjust rules mid-grind"],
 		[_reference_cell(turbo), "Y", "Turbo — run it faster"],
 		[_reference_cell(stop), "%s / Esc" % str(ACTION_KEYS["exit"]), "Stop grinding and return"],
 	]

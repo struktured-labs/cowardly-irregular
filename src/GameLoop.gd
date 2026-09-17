@@ -933,6 +933,18 @@ func _input(event: InputEvent) -> void:
 			_on_dashboard_adjust_rules()
 			get_viewport().set_input_as_handled()
 			return
+		# Start does it on a pad. Every other control in this branch has both devices; this one was
+		# keyboard-only, so a pad player could not adjust rules mid-grind at all.
+		# As the ACTION, like the pause binding below. I wrote the raw index first to match
+		# classify_event's dashboard mapping, and test_remap_reaches_every_handler_regression was
+		# right to red it: ui_menu is remappable and bound to START, so a raw handler keeps firing
+		# on the old button after a rebind while the new one does nothing. The dashboard's raw site
+		# is declared in that guard's ledger because it is MODAL and owns the button while open —
+		# this branch is the live grind state and owns nothing.
+		if event is InputEventJoypadButton and event.is_action_pressed("ui_menu"):
+			_on_dashboard_adjust_rules()
+			get_viewport().set_input_as_handled()
+			return
 		# T key (keyboard) cycles tier
 		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
 			if _autogrind_controller and is_instance_valid(_autogrind_controller):
