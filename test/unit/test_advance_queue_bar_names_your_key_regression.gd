@@ -1,5 +1,38 @@
 extends GutTest
 
+## ⛔ HERMETIC ABOUT THE PROFILE. `hint_for_action` derives its token from the LIVE InputMap, so
+## this file inherits whatever `user://input/controls.json` holds. A remap test writes a "Custom"
+## profile there and an interrupted run skips its cleanup, after which every later run in that
+## sandbox reads it — and a Custom profile that binds the shoulders to FACE buttons makes
+## `battle_defer` resolve to a glyph (Ⓐ / Ⓑ / ○) instead of L / LB / L1.
+##
+## Measured on a sandbox carrying that artifact: Failing 1 here, Passing in a fresh one. Third file
+## found with this exposure; the first two were found one at a time, this one by a derived sweep of
+## all 22 test files that ask InputProfileManager for a name or glyph.
+var _saved_profile: String = ""
+
+
+func before_all() -> void:
+	_saved_profile = InputProfileManager.active_profile
+	InputProfileManager.apply_profile("Standard")
+
+
+func after_all() -> void:
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)
+
+
+## CONTROL: the pinned profile must put battle_defer on a shoulder, or the per-family rows below
+## are asking about a binding the profile never made.
+func test_control_the_pinned_profile_binds_the_shoulder() -> void:
+	assert_eq(InputProfileManager.active_profile, "Standard",
+		"before_all must leave Standard active, or these rows inherit the sandbox again")
+	var xb := InputProfileManager.hint_for_action("battle_defer", "Xbox Wireless Controller")
+	assert_eq(xb, "LB",
+		"Standard must bind battle_defer to a shoulder; got %s — a face button resolves to a GLYPH, "
+		% xb + "which is exactly how a stale Custom profile shows up")
+
+
 ## The Advance-queue hint bar rendered "Ⓑ Add+Commit · HOLD L Commit · tap L/Ⓐ Undo" to a player
 ## with NO PAD — two xbox glyphs for a device they do not have, and inverted besides: ui_accept is
 ## the EAST face, which xbox calls B, so the "confirm" glyph was a B and the "undo" glyph an A.
