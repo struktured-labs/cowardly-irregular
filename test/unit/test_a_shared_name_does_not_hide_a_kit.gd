@@ -51,6 +51,12 @@ func test_floor_the_symbols_this_file_drives() -> void:
 
 
 func _party(pairs: Array) -> void:
+	## Replace any earlier stub: a second one is renamed by the engine, so /root/GameLoop keeps
+	## resolving to the FIRST party while player_party holds the second and the two disagree.
+	if _stub != null and is_instance_valid(_stub):
+		get_tree().root.remove_child(_stub)
+		_stub.free()
+		_stub = null
 	var script := GDScript.new()
 	script.source_code = STUB_GAMELOOP
 	script.reload()
@@ -63,7 +69,9 @@ func _party(pairs: Array) -> void:
 		add_child_autofree(c)
 		c.combatant_name = str(p[0])
 		c.job = JobSystem.get_job(str(p[1]))
-		c.job_level = 1
+		c.job_level = 6
+		if p.size() > 2:
+			c.learned_abilities.append(str(p[2]))
 		members.append(c)
 	_stub.party = members
 	get_tree().root.add_child(_stub)
@@ -133,3 +141,30 @@ func test_control_distinct_names_are_untouched() -> void:
 		"CONTROL: the ordinary path must be unchanged - ids still come from names")
 	assert_true(_kit_of_job("cleric").has("cure"),
 		"CONTROL: and a distinctly-named cleric still carries her kit")
+
+
+## The kit is widened by what the character actually LEARNED, and the widener looked the
+## member up by id too. Sourcing the colliding member's kit from their job id fixed WHOSE
+## kit it was and then lost their learned half, because no party member is NAMED "cleric"
+## - a second-order gap in the first repair, found by carrying it one step further.
+func test_a_shared_name_keeps_what_she_learned() -> void:
+	_party([["Bob", "fighter"], ["Bob", "cleric", "cura"]])
+	var kit: Array = _kit_of_job("cleric")
+	assert_true(kit.has("cura"),
+		"her learned cura must reach the prompt, not just the base job kit")
+	assert_true(kit.has("cure"), "and the base kit with it")
+
+
+func test_control_a_distinct_name_widens_the_same_way() -> void:
+	## Pins that the colliding member gets the SAME kit as an uncollided one, rather than
+	## some narrower thing that merely happens to contain cura.
+	_party([["Bob", "fighter"], ["Ann", "cleric", "cura"]])
+	var distinct: Array = _kit_of_job("cleric")
+	assert_true(distinct.has("cura"),
+		"CONTROL: widening must reach a learned ability at all, or the arm above proves nothing")
+	_party([["Bob", "fighter"], ["Bob", "cleric", "cura"]])
+	var collided: Array = _kit_of_job("cleric")
+	distinct.sort()
+	collided.sort()
+	assert_eq(collided, distinct,
+		"a shared name must cost her nothing - the same kit either way")

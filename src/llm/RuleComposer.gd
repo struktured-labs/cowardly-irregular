@@ -387,10 +387,13 @@ func _drop_unusable_rules(rules: Array, character_id: String, domain_system) -> 
 ## No live party (headless, tests, the editor opened outside a run) falls back to
 ## the level-1 kit unchanged — narrower than the validator, which is the safe
 ## direction and exactly today's behaviour.
-func _widen_kit_to_what_this_character_knows(ctx: Dictionary, character_id: String) -> Dictionary:
+func _widen_kit_to_what_this_character_knows(ctx: Dictionary, character_id: String,
+		known_member = null) -> Dictionary:
 	if ctx.is_empty() or not bool(ctx.get("resolved", false)):
 		return ctx
-	var who = _live_combatant_for(character_id)
+	## A caller holding the member passes it: on a shared name the id below reaches the FIRST
+	## match or, when it is a job id, nobody — and an unwidened kit silently drops what they learned.
+	var who = known_member if known_member != null else _live_combatant_for(character_id)
 	if who == null or not who.has_method("knows_ability"):
 		return ctx
 	var kit: Array = (ctx.get("kit", []) as Array).duplicate()
@@ -500,7 +503,7 @@ func _party_kit_context() -> Dictionary:
 		var kit: Dictionary = abs_sys.get_deep_check_kit(lookup)
 		if not bool(kit.get("resolved", false)):
 			continue
-		kit = _widen_kit_to_what_this_character_knows(kit, lookup)
+		kit = _widen_kit_to_what_this_character_knows(kit, lookup, member)
 		var profile_names: Array = []
 		if abs_sys.has_method("get_character_profiles"):
 			for prof in (abs_sys.get_character_profiles(lookup) as Array):
