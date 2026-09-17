@@ -128,6 +128,12 @@ func _ui_scripts(dir_path: String) -> Array:
 ##
 ## 🔑 EXEMPTIONS CARRY A REASON THIS ARM VERIFIES IN THE SOURCE, never a boolean. CLAUDE.md's rule:
 ## you cannot silence it green, only explain it green, and the explanation has to still be true.
+##
+## ⚠️ WHAT A SOURCE CHECK PROVES, EXACTLY: the token is still there. It catches a RENAME (measured)
+## and NOT a handler that keeps its text and becomes unreachable behind a new guard. @cowir-sfx's
+## split — a floor asking the LIVE OBJECT catches a rename, one deriving from the test file's own
+## source catches snapshot staleness, and this one reads the SUBJECT's source, which is a third
+## thing again. Three checks, one word "verify"; the trigger is the part that differs.
 const WINDOWED_WITHOUT_PAGING := [
 	{"path": "res://src/ui/EquipmentMenu.gd", "because": "shoulders_taken"},
 	{"path": "res://src/ui/autobattle/AutobattleGridEditor.gd", "because": "shoulders_taken"},
