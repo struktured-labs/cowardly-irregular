@@ -278,6 +278,47 @@ esac
 # 1b is NOT covered by the tag marker — that vouches for the unit corpus (test/unit), and
 # test/isolated is a separate, deliberately tiny suite. It stays unconditional: it costs
 # seconds, and a skip here would rest on evidence that never described it.
+# gate 1c: the real-save hydration test must have been EXERCISED, not self-skipped.
+# ⛔ THE SEEDING ABOVE DOES NOT ACHIEVE THIS ON THE NORMAL PATH. Measured on v3.33.371-alpha's
+# archived logs -- both lines from the same publish, four apart:
+#     [deploy] gate 1: SKIPPED — already gated by the fold: scripts=1919 … failing=0
+#     [seed]   7 save(s) copied into the gate sandbox — real-save hydration will RUN.
+# `VERDICT=SKIP` is the normal case because the fold gates every tag, so gate 1 skips the suite
+# that reads what gate 1's seeding just copied in. The seeder announced "will RUN" while the
+# thing that runs it was being skipped. Every release since the seeder landed has shipped with
+# aged-save loading unexercised, reporting failing=0 either way -- which is precisely the
+# no-cardinal-can-say-so shape the seeder was written to end.
+# So run that ONE file here, ALWAYS, against the seeded sandbox. ~9s, and it is the only path
+# on which the coverage actually happens.
+# ⛔ NAME THE FILE BEFORE RUNNING IT. run_tests.sh resolves <name> to test/unit/test_<name>.gd,
+# and a name that resolves to nothing exits 3 with NO "not found" message -- indistinguishable,
+# in the log, from an unimported tree or a crashed run. The checker would then block the deploy
+# with "no Totals block", which sends the reader to the wrong cause. Measured while writing this:
+# the first version passed `test_real_saves_hydrate_smoke`, which resolves to
+# test/unit/test_TEST_real_saves_hydrate_smoke.gd and does not exist.
+_HYDRA_SRC=test/unit/test_real_saves_hydrate_smoke.gd
+[ -f "$_HYDRA_SRC" ] || {
+  echo "[deploy] BLOCKED: ${_HYDRA_SRC} is missing — the real-save hydration guard has no" >&2
+  echo "        subject. If it was renamed, update this gate rather than deleting it." >&2
+  exit 2; }
+_HYDRA_LOG=tmp/deploy_hydration.log
+XDG_DATA_HOME="$_GATE_XDG" timeout 300 ./tools/run_tests.sh real_saves_hydrate_smoke \
+    > "$_HYDRA_LOG" 2>&1 || true
+_HYDRA_CHECK="$(cd "$(dirname "$0")" && pwd)/check_hydration_exercised.sh"
+[ -x "$_HYDRA_CHECK" ] || {
+  echo "[deploy] BLOCKED: tools/check_hydration_exercised.sh missing — nothing would check that" >&2
+  echo "        aged-save loading was exercised, and it reports failing=0 either way." >&2
+  exit 2; }
+if ! _HY_ST="$(bash "$_HYDRA_CHECK" --selftest 2>&1)"; then
+  printf '%s\n' "$_HY_ST" | tail -12 >&2
+  echo "[deploy] BLOCKED: check_hydration_exercised.sh FAILED ITS OWN ARMS." >&2
+  exit 2
+fi
+if ! bash "$_HYDRA_CHECK" "$_HYDRA_LOG"; then
+  echo "[deploy] BLOCKED: real-save hydration was not exercised — see ${_HYDRA_LOG}." >&2
+  exit 2
+fi
+
 echo "[deploy] gate 1b: movement-isolation suite (own process — suite-order contamination quarantine 2026-07-15)"
 # Same delegation. test/isolated holds very few files, so an emptied directory would have reported
 # green forever under the old [Failed] count — gate.sh's scripts-run == on-disk check catches that.
