@@ -28,29 +28,29 @@ const STEP_SCHEMA := {
 	"say":           {"required": ["id", "text"], "optional": ["duration", "wait"]},
 
 	# Camera
-	"camera_focus":  {"required": ["target"], "optional": ["duration"]},
-	"camera_restore":{"required": [], "optional": ["duration"]},
+	"camera_focus":  {"required": ["target"], "optional": ["duration", "ease", "trans"]},
+	"camera_restore":{"required": [], "optional": ["duration", "ease", "trans"]},
 
 	# Dialogue / narration
 	"dialogue":      {"required": ["lines"], "optional": []},
 	"narration":     {"required": [], "optional": ["text", "lines"]},  # text OR lines
-	"chapter_title": {"required": ["title"], "optional": ["subtitle"]},
+	"chapter_title": {"required": ["title"], "optional": ["subtitle", "duration"]},
 	"boss_intro":    {"required": ["name"], "optional": ["title"]},
 	"roll_credits":  {"required": ["world"], "optional": ["music"]},
 
 	# Screen fx
 	"fade_to_black":  {"required": [], "optional": ["duration"]},
 	"fade_from_black":{"required": [], "optional": ["duration"]},
-	"letterbox_in":   {"required": [], "optional": ["duration"]},
-	"letterbox_out":  {"required": [], "optional": ["duration"]},
+	"letterbox_in":   {"required": [], "optional": ["duration", "ease", "trans"]},
+	"letterbox_out":  {"required": [], "optional": ["duration", "ease", "trans"]},
 	"screen_shake":   {"required": [], "optional": ["duration", "intensity"]},
-	"screen_flash":   {"required": [], "optional": ["duration"]},
+	"screen_flash":   {"required": [], "optional": ["duration", "color"]},
 	"set_background": {"required": [], "optional": ["color", "top", "bottom"]},
 
 	# Time / flags / items
 	"wait":         {"required": ["duration"], "optional": []},
 	"set_flag":     {"required": ["flag"], "optional": ["value"]},
-	"grant_item":   {"required": ["item"], "optional": ["name", "description"]},
+	"grant_item":   {"required": ["item"], "optional": ["name", "description", "quantity", "sprite_path"]},
 	"give_item":    {"required": ["item"], "optional": ["quantity"]},
 	"update_item":  {"required": ["item", "new_id"], "optional": []},
 	"start_timer":  {"required": ["duration"], "optional": ["flag"]},
@@ -261,3 +261,92 @@ func test_the_audit_actually_reaches_nested_branch_steps() -> void:
 		"sanity: the corpus should contain many branch-nested steps to audit — got %d" % nested)
 	assert_true(seen_types.has("play_music"),
 		"the walker must reach nested play_music steps — the four W6 ending themes live inside branch cases, and they were unvalidated until the walk recursed")
+
+
+## STEP_SCHEMA above is hand-maintained, so it can drift from the engine in two
+## directions and only one of them was ever checked. The JSON-side arms catch an
+## author writing a field the schema does not declare. Nothing caught the schema
+## FORBIDDING a field the director honours — and it was forbidding twelve, across
+## seven step types, including the `ease` / `trans` pan controls the director's own
+## comment documents as authorable. Nobody had used one, which is what a guard that
+## reds on a working field produces: not a bug report, an unused feature.
+##
+## One-way on purpose. A field read in CutsceneDirector.gd is certainly read; a
+## DECLARED field may be read by a receiver in another file — `spawn_actor` hands
+## the whole step to `CutsceneActor.build` — so "declared but not found here" is a
+## limit of this derivation, not a finding, and is deliberately not asserted.
+const DIRECTOR_PATH := "res://src/cutscene/CutsceneDirector.gd"
+
+
+func _director_functions() -> Dictionary:
+	var bodies: Dictionary = {}
+	var name := ""
+	var buf: Array[String] = []
+	for line in FileAccess.get_file_as_string(DIRECTOR_PATH).split("\n"):
+		if line.begins_with("func "):
+			if name != "":
+				bodies[name] = "\n".join(buf)
+			name = line.substr(5).split("(")[0].strip_edges()
+			buf = []
+		elif name != "":
+			buf.append(line)
+	if name != "":
+		bodies[name] = "\n".join(buf)
+	return bodies
+
+
+func _matches(pattern: String, body: String, group: int = 1) -> Array:
+	var re := RegEx.create_from_string(pattern)
+	var out: Array = []
+	for m in re.search_all(body):
+		out.append(m.get_string(group))
+	return out
+
+
+## Fields this body pulls off the step dictionary, by any of the three spellings.
+func _reads_in(body: String) -> Array:
+	var out: Array = []
+	for pat in ['\\bstep\\.get\\(\\s*"(\\w+)"', '\\bstep\\.has\\(\\s*"(\\w+)"', '\\bstep\\[\\s*"(\\w+)"\\s*\\]']:
+		for f in _matches(pat, body):
+			if not out.has(f):
+				out.append(f)
+	return out
+
+
+## A helper that RECEIVES the step dictionary continues the read set.
+func _reads_reachable(fname: String, bodies: Dictionary, seen: Array) -> Array:
+	if seen.has(fname) or not bodies.has(fname):
+		return []
+	seen.append(fname)
+	var body: String = bodies[fname]
+	var out: Array = _reads_in(body)
+	var re := RegEx.create_from_string('(_\\w+)\\(([^()]*)\\)')
+	for m in re.search_all(body):
+		if not RegEx.create_from_string('\\bstep\\b').search(m.get_string(2)):
+			continue
+		for f in _reads_reachable(m.get_string(1), bodies, seen):
+			if not out.has(f):
+				out.append(f)
+	return out
+
+
+func test_every_step_field_the_director_reads_is_declared() -> void:
+	var bodies := _director_functions()
+	var handlers_seen := 0
+	var undeclared: Array = []
+	for step_type in STEP_SCHEMA:
+		var handler := "_step_%s" % step_type
+		if not bodies.has(handler):
+			continue
+		handlers_seen += 1
+		var declared: Array = []
+		declared.append_array(STEP_SCHEMA[step_type]["required"])
+		declared.append_array(STEP_SCHEMA[step_type]["optional"])
+		for field in _reads_reachable(handler, bodies, []):
+			if field != KNOWN_ONLY_SEMANTIC and not declared.has(field):
+				undeclared.append("%s.%s" % [step_type, field])
+	# Corpus floor: the derivation is worthless if it matched no handlers at all.
+	assert_gt(handlers_seen, 30,
+		"derivation must reach the director's step handlers — %d matched" % handlers_seen)
+	assert_eq(undeclared.size(), 0,
+		"CutsceneDirector reads step fields STEP_SCHEMA does not declare, so authoring them reds this audit while the engine honours them: %s" % str(undeclared))
