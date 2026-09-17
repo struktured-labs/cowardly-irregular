@@ -1233,7 +1233,13 @@ func play_status(status_name: String) -> void:
 
 ## Manifest-gated status cue for callers that must stay SILENT when unauthored — the blip above is struktured's ruling-15 "not even close to good", and buffs fire far too often to spend it on them.
 func play_status_if_authored(sound_key: String) -> bool:
-	return _try_play_sfx_from_manifest(_battle_player, sound_key)
+	## HEARD, not HANDLED. _try_play_sfx_from_manifest returns true for a cooldown suppression too,
+	## and this return is documented by its caller (BattleScene._cue_if_turn_skipped) as "whether the
+	## cue actually fired, so a test can assert BEHAVIOUR" — a claim the raw return cannot support.
+	## Measured: two skips in one frame both returned true, the second having played nothing.
+	if not _try_play_sfx_from_manifest(_battle_player, sound_key):
+		return false
+	return not _sfx_suppressed_by_cooldown
 
 
 ## Sound Generation
