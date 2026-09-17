@@ -1125,6 +1125,10 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
+	# One step per stick push: ui_up/ui_down share the left stick's Y axis and carry no echo flag, so
+	# `not is_echo()` does not stop a ramp — one nudge opened the backlog and scrolled it five rows.
+	var nav: String = MenuNav.step(event)
+
 	# Wave C: while the LLM "thinking" indicator is active, swallow advance
 	# input so the player can't blow past the empty box. This is the chokepoint
 	# that pairs with set_thinking(true) elsewhere — DynamicConversation toggles
@@ -1146,7 +1150,7 @@ func _input(event: InputEvent) -> void:
 			return
 		# The backlog is readable while the LLM thinks — it shows only lines already delivered — but
 		# nothing inside it may advance the queue, which the modal branch below already enforces.
-		if event.is_action_pressed("ui_up") and not event.is_echo():
+		if nav == "ui_up":
 			toggle_backlog()
 			get_viewport().set_input_as_handled()
 			return
@@ -1154,11 +1158,11 @@ func _input(event: InputEvent) -> void:
 	# The backlog is MODAL: while it is up, a press that would advance or skip the scene closes it
 	# instead. Anything else would let a player advance a line they cannot see.
 	if is_backlog_open():
-		if event.is_action_pressed("ui_down") and not event.is_echo():
+		if nav == "ui_down":
 			_scroll_backlog(40)
 			get_viewport().set_input_as_handled()
 			return
-		if event.is_action_pressed("ui_up") and not event.is_echo():
+		if nav == "ui_up":
 			_scroll_backlog(-40)
 			get_viewport().set_input_as_handled()
 			return
@@ -1170,7 +1174,7 @@ func _input(event: InputEvent) -> void:
 		return
 
 	# Re-read what already went past. ui_up is free in this box and derived in the hint, never a letter.
-	if event.is_action_pressed("ui_up") and not event.is_echo() and _backlog.size() >= 2:
+	if nav == "ui_up" and _backlog.size() >= 2:
 		open_backlog()
 		get_viewport().set_input_as_handled()
 		return

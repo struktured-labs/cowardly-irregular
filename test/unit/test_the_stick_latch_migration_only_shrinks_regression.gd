@@ -28,7 +28,6 @@ const RAW_DOWN := 'is_action_pressed("ui_down")'
 
 ## Measured 2026-09-16. Shrinks only.
 const KNOWN_UNCONVERTED := [
-	"res://src/cutscene/CutsceneDialogue.gd",
 	"res://src/ui/BossSelectorMenu.gd",
 	"res://src/ui/CharacterCreationScreen.gd",
 	"res://src/ui/ControlsMenu.gd",
