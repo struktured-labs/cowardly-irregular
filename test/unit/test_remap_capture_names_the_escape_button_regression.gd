@@ -134,12 +134,15 @@ func _restore_input_config() -> void:
 	InputProfileManager.custom_bindings = _cfg_custom.duplicate(true)
 	InputProfileManager.active_profile = _cfg_profile
 	InputProfileManager.apply_profile(_cfg_profile)
-	if _cfg_existed:
-		DirAccess.make_dir_recursive_absolute("user://input")
-		var f := FileAccess.open(_CFG, FileAccess.WRITE)
-		if f:
-			f.store_string(_cfg_text)
-			f.close()
+	# ⛔ open(WRITE) TRUNCATES before store_string runs, so an empty snapshot would write ZERO bytes
+	# over the player's file. Guard on CONTENT, and skip the rewrite entirely when nothing changed.
+	if _cfg_existed and _cfg_text != "":
+		if FileAccess.get_file_as_string(_CFG) != _cfg_text:
+			DirAccess.make_dir_recursive_absolute("user://input")
+			var f := FileAccess.open(_CFG, FileAccess.WRITE)
+			if f:
+				f.store_string(_cfg_text)
+				f.close()
 	elif FileAccess.file_exists(_CFG):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(_CFG))
 

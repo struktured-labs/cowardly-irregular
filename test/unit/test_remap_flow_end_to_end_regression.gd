@@ -31,12 +31,15 @@ func after_each() -> void:
 	InputProfileManager.custom_bindings = _saved_custom.duplicate(true)
 	InputProfileManager.active_profile = _saved_profile
 	InputProfileManager.apply_profile(_saved_profile)
-	if _had_config:
-		DirAccess.make_dir_recursive_absolute("user://input")
-		var f := FileAccess.open(CONFIG, FileAccess.WRITE)
-		if f:
-			f.store_string(_saved_config)
-			f.close()
+	# ⛔ open(WRITE) TRUNCATES before store_string runs, so an empty snapshot would write ZERO bytes
+	# over the player's file. Guard on CONTENT, and skip the rewrite entirely when nothing changed.
+	if _had_config and _saved_config != "":
+		if FileAccess.get_file_as_string(CONFIG) != _saved_config:
+			DirAccess.make_dir_recursive_absolute("user://input")
+			var f := FileAccess.open(CONFIG, FileAccess.WRITE)
+			if f:
+				f.store_string(_saved_config)
+				f.close()
 	elif FileAccess.file_exists(CONFIG):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(CONFIG))
 
