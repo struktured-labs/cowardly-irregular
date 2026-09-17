@@ -3990,7 +3990,10 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 
 		"blade_storm":
 			# Multi-hit physical, each can crit
-			var hit_count = participants.size() * 2 if not participants.is_empty() else 0
+			## ⛔ THE SAME COUNT/SUM ASYMMETRY AS THE SCALE, ONE BRANCH DOWN. The hit budget came from the
+			## RAW roster while line 64 re-filters to `living_participants` to pick each attacker — so a
+			## four-strong Blade Storm that loses a member still threw 8 strikes, all from the 3 alive.
+			var hit_count: int = _living_count(participants) * 2
 			for _hit in range(hit_count):
 				# Re-filter alive targets each hit (enemies may die mid-storm)
 				var living_enemies = alive_enemies.filter(func(e): return e.is_alive)
