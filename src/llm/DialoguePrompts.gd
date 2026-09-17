@@ -1042,11 +1042,12 @@ static func _format_kit_reminder(kit_context: Dictionary) -> String:
 ## burned 6 — and Combatant.has_status matches literally, so every one was silently false.
 ## test_the_grind_prompt_names_a_status_that_can_be_true derives the applicable set from
 ## BattleManager and reds if an entry here stops being reachable.
-## Keyed by the engine's id, valued by the English a player would actually type. Measured
+## Keyed by the engine's id, valued by the English a player would actually type. Used by BOTH
+## domains: the grind's member_status and autobattle's has_status family match literally. Measured
 ## 2026-09-17: naming the ids alone left 28 of 46 values unmatchable, because the intent says
 ## "frozen" and NO frozen status exists — BattleManager:5014 applies freeze AS stun, so
 ## without the mapping the model has nowhere to put the player's own word.
-const AUTOGRIND_STATUS_VOCABULARY := {
+const STATUS_VOCABULARY := {
 	"poison": ["poisoned"],
 	"burn": ["burned", "on fire", "burning"],
 	"blind": ["blinded"],
@@ -1059,15 +1060,15 @@ const AUTOGRIND_STATUS_VOCABULARY := {
 }
 
 
-## Rendered from AUTOGRIND_STATUS_VOCABULARY so the grammar above can point at the list
+## Rendered from STATUS_VOCABULARY so the grammar above can point at the list
 ## without carrying a second copy of it.
 static func _format_status_vocabulary() -> String:
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("\n\nSTATUS IDS. member_status's \"value\" is ONE id from this list — never a list,")
 	lines.append("never an English word. The engine matches the id literally, so \"frozen\" or")
 	lines.append("\"poisoned\" is never true of anyone. Say it the engine's way:")
-	for id in AUTOGRIND_STATUS_VOCABULARY:
-		lines.append("  %s   for %s" % [str(id), ", ".join(AUTOGRIND_STATUS_VOCABULARY[id])])
+	for id in STATUS_VOCABULARY:
+		lines.append("  %s   for %s" % [str(id), ", ".join(STATUS_VOCABULARY[id])])
 	return "\n".join(lines)
 
 
@@ -1125,6 +1126,21 @@ static func _format_rule_kit(kit_context: Dictionary) -> String:
 			cheapest_cost = cost
 	lines.append("Anything not on that list — including abilities from other jobs —")
 	lines.append("is rejected and DISCARDS THE WHOLE RULE SET. Prefer 'attack' when unsure.")
+	## An `item` action's id is deep-checked, so one wrong id discards the whole ruleset —
+	## the same cost as a wrong ability, and the grammar named only "potion".
+	var item_ids: Array = kit_context.get("items", [])
+	if not item_ids.is_empty():
+		lines.append("")
+		lines.append("ITEM IDS. An \"item\" action's \"id\" and an item_count's \"item_id\" must be")
+		lines.append("one of these EXACTLY — singular where the list is singular, plural where it")
+		lines.append("is plural. A near miss is rejected and DISCARDS THE WHOLE RULE SET:")
+		lines.append("  " + ", ".join(item_ids))
+	lines.append("")
+	lines.append("STATUS IDS. has_status / not_has_status / ally_has_status / enemy_has_status /")
+	lines.append("not_enemy_has_status take a \"status\" matched LITERALLY — an English word like")
+	lines.append("\"silenced\" or \"poisoned\" is never true of anyone. Say it the engine's way:")
+	for sid in STATUS_VOCABULARY:
+		lines.append("  %s   for %s" % [str(sid), ", ".join(STATUS_VOCABULARY[sid])])
 	# The grammar's worked examples above carry real ability ids, and the model COPIES
 	# them: 'esuna' occurs once in the whole prompt, inside a complete rule, and turned
 	# up in 5 of 10 fighter compositions. Examples teach harder than prohibitions.

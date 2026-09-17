@@ -18,6 +18,9 @@ const DOMAIN_AUTOGRIND  := "autogrind"
 
 const _VALID_DOMAINS := [DOMAIN_AUTOBATTLE, DOMAIN_AUTOGRIND]
 
+## ItemSystem.ItemCategory.META — key items and equipment, not usable in a battle.
+const ITEM_CATEGORY_META := 4
+
 const DialoguePromptsScript := preload("res://src/llm/DialoguePrompts.gd")
 
 func _ready() -> void:
@@ -70,6 +73,7 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 		if abs_sys != null and abs_sys.has_method("get_deep_check_kit"):
 			kit_context = abs_sys.get_deep_check_kit(character_id)
 			kit_context = _widen_kit_to_what_this_character_knows(kit_context, character_id)
+			kit_context["items"] = _battle_item_ids()
 	elif domain == DOMAIN_AUTOGRIND:
 		kit_context = _party_kit_context()
 	var prompt: String = DialoguePromptsScript.build_rule_composition(
@@ -122,6 +126,10 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# Nil to a typed String aborts the enclosing function in the grid editor.
 	if domain == DOMAIN_AUTOBATTLE:
 		_drop_null_targets(v["rules"])
+		for note in _normalise_autobattle_statuses(v["rules"]):
+			repair_notes.append(note)
+		for note in _normalise_item_ids(v["rules"], kit_context.get("items", [])):
+			repair_notes.append(note)
 
 	if domain == DOMAIN_AUTOBATTLE and bool(kit_context.get("resolved", false)):
 		for note in _supply_missing_mp_guards(v["rules"], kit_context):
@@ -394,6 +402,30 @@ func _widen_kit_to_what_this_character_knows(ctx: Dictionary, character_id: Stri
 ## asks for one: 24 of 24 emitted ids were absent from abilities.json — 'revive' and
 ## 'heal' for the real 'raise' and 'cure'. The engine skips an unknown id with a stdout
 ## print, so the rule silently never fires.
+## The item ids an `item` action may name. The deep check accepts ANY id in items.json, but
+## only the four battle categories are usable in a fight — META is 146 of the 172 and is key
+## items and equipment. Derived from ItemSystem rather than listed here.
+##
+## Measured on live llama3 2026-09-17, an intent needing ids the grammar does not exemplify
+## ("cure blindness with eye drops, use echo herbs the moment someone is silenced"): 19 of 20
+## `item` action ids were unknown — `echo_herb` 14, `echo` 5, against the real `echo_herbs`.
+## The deep check turns each into a grammar error, and one grammar error discards the WHOLE
+## composition. An earlier run with an intent asking for `potion` scored 0 of 19 wrong, which
+## measured the grammar's own example rather than the prompt.
+func _battle_item_ids() -> Array:
+	var sys = get_node_or_null("/root/ItemSystem")
+	if sys == null or not ("items" in sys):
+		return []
+	var out: Array = []
+	for iid in (sys.items as Dictionary):
+		var item: Dictionary = sys.items[iid]
+		if int(item.get("category", -1)) == ITEM_CATEGORY_META:
+			continue
+		out.append(str(iid))
+	out.sort()
+	return out
+
+
 func _party_kit_context() -> Dictionary:
 	var gl = get_node_or_null("/root/GameLoop")
 	var abs_sys = get_node_or_null("/root/AutobattleSystem")
@@ -559,7 +591,7 @@ func _is_catch_all(rule: Dictionary) -> bool:
 ## prompt was given the vocabulary: 3 of 20 compositions put an ARRAY in `value` ("or" spelled
 ## the way the player said it), and a residual English participle survived the instruction.
 ##
-## Both are lookups in DialoguePrompts.AUTOGRIND_STATUS_VOCABULARY, the same table the prompt
+## Both are lookups in DialoguePrompts.STATUS_VOCABULARY, the same table the prompt
 ## renders — not a table of guesses kept here. An array becomes one rule per id because OR is
 ## what this grammar's rule list already means; the conditions are AND-chained, so cloning the
 ## rule preserves every other condition it carried.
@@ -654,12 +686,86 @@ func _normalise_switch_profile(rules: Array, kit_context: Dictionary) -> Array[S
 	return notes
 
 
+## An autobattle condition's `status` field, matched literally by Combatant.has_status.
+## Measured 7 of 19 unmatchable on an intent about being silenced — the model wrote
+## "silenced". Same lookup as the grind's, same table, because it is the same engine call.
+func _normalise_autobattle_statuses(rules: Array) -> Array[String]:
+	const STATUS_CONDITIONS := ["has_status", "not_has_status", "ally_has_status",
+		"enemy_has_status", "not_enemy_has_status"]
+	var notes: Array[String] = []
+	var spellings: Dictionary = {}
+	for id in DialoguePromptsScript.STATUS_VOCABULARY:
+		spellings[str(id)] = str(id)
+		for word in (DialoguePromptsScript.STATUS_VOCABULARY[id] as Array):
+			spellings[str(word).to_lower()] = str(id)
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for c in rule.get("conditions", []):
+			if typeof(c) != TYPE_DICTIONARY or not STATUS_CONDITIONS.has(str(c.get("type", ""))):
+				continue
+			var raw: String = str(c.get("status", ""))
+			var key: String = raw.strip_edges().to_lower()
+			if raw == "" or spellings.get(key, "") == raw:
+				continue
+			if not spellings.has(key):
+				continue
+			c["status"] = spellings[key]
+			notes.append("Read '%s' as '%s', the id the engine matches." % [raw, spellings[key]])
+	return notes
+
+
+## An `item` action's id is deep-checked, so a near miss discards the WHOLE composition —
+## `echo_herb` for `echo_herbs` was 14 of 20 on one intent. The match normalises separators
+## and an optional trailing 's', which is a defined rewrite rather than a guess: if two real
+## ids collapse to the same key the id is left alone, because then it IS a guess.
+func _normalise_item_ids(rules: Array, item_ids: Array) -> Array[String]:
+	var notes: Array[String] = []
+	if item_ids.is_empty():
+		return notes
+	var folded: Dictionary = {}
+	for iid in item_ids:
+		var key: String = _fold_item_id(str(iid))
+		folded[key] = "" if folded.has(key) else str(iid)
+	for rule in rules:
+		if typeof(rule) != TYPE_DICTIONARY:
+			continue
+		for a in rule.get("actions", []):
+			if typeof(a) != TYPE_DICTIONARY or str(a.get("type", "")) != "item":
+				continue
+			var raw: String = str(a.get("id", ""))
+			if raw == "" or item_ids.has(raw):
+				continue
+			var real: String = str(folded.get(_fold_item_id(raw), ""))
+			if real == "":
+				continue
+			a["id"] = real
+			notes.append("Read item '%s' as '%s'." % [raw, real])
+		for c in rule.get("conditions", []):
+			if typeof(c) != TYPE_DICTIONARY or str(c.get("type", "")) != "item_count":
+				continue
+			var raw_c: String = str(c.get("item_id", ""))
+			if raw_c == "" or item_ids.has(raw_c):
+				continue
+			var real_c: String = str(folded.get(_fold_item_id(raw_c), ""))
+			if real_c == "":
+				continue
+			c["item_id"] = real_c
+			notes.append("Read item '%s' as '%s'." % [raw_c, real_c])
+	return notes
+
+
+func _fold_item_id(raw: String) -> String:
+	var flat: String = raw.to_lower().replace("_", "").replace("-", "").replace(" ", "")
+	return flat.trim_suffix("s")
+
+
 func _normalise_member_status(rules: Array) -> Array[String]:
 	var notes: Array[String] = []
 	var spellings: Dictionary = {}
-	for id in DialoguePromptsScript.AUTOGRIND_STATUS_VOCABULARY:
+	for id in DialoguePromptsScript.STATUS_VOCABULARY:
 		spellings[str(id)] = str(id)
-		for word in (DialoguePromptsScript.AUTOGRIND_STATUS_VOCABULARY[id] as Array):
+		for word in (DialoguePromptsScript.STATUS_VOCABULARY[id] as Array):
 			spellings[str(word).to_lower()] = str(id)
 	var i: int = 0
 	while i < rules.size():
