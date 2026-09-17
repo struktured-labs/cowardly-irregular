@@ -387,10 +387,13 @@ func _drop_unusable_rules(rules: Array, character_id: String, domain_system) -> 
 ## No live party (headless, tests, the editor opened outside a run) falls back to
 ## the level-1 kit unchanged — narrower than the validator, which is the safe
 ## direction and exactly today's behaviour.
-func _widen_kit_to_what_this_character_knows(ctx: Dictionary, character_id: String) -> Dictionary:
+func _widen_kit_to_what_this_character_knows(ctx: Dictionary, character_id: String,
+		known_member = null) -> Dictionary:
 	if ctx.is_empty() or not bool(ctx.get("resolved", false)):
 		return ctx
-	var who = _live_combatant_for(character_id)
+	## A caller holding the member passes it: on a shared name the id below reaches the FIRST
+	## match or, when it is a job id, nobody — and an unwidened kit silently drops what they learned.
+	var who = known_member if known_member != null else _live_combatant_for(character_id)
 	if who == null or not who.has_method("knows_ability"):
 		return ctx
 	var kit: Array = (ctx.get("kit", []) as Array).duplicate()
@@ -481,17 +484,29 @@ func _party_kit_context() -> Dictionary:
 	if abs_sys == null or not abs_sys.has_method("get_deep_check_kit"):
 		return {}
 	var members: Array = []
+	var seen_ids: Dictionary = {}
 	for member in gl.party:
 		if member == null or not is_instance_valid(member):
 			continue
 		var cid: String = str(member.combatant_name).to_lower().replace(" ", "_")
-		var kit: Dictionary = abs_sys.get_deep_check_kit(cid)
+		## Two characters can share a name, and the name lookup returns the FIRST match — so the
+		## second was described with the first one's job and kit and their own abilities never
+		## reached the prompt. Their job id resolves through get_deep_check_kit's job-id arm.
+		var lookup: String = cid
+		if seen_ids.has(cid):
+			var own_job: String = ""
+			if member.job != null and member.job is Dictionary:
+				own_job = str((member.job as Dictionary).get("id", ""))
+			if own_job != "":
+				lookup = own_job
+		seen_ids[cid] = true
+		var kit: Dictionary = abs_sys.get_deep_check_kit(lookup)
 		if not bool(kit.get("resolved", false)):
 			continue
-		kit = _widen_kit_to_what_this_character_knows(kit, cid)
+		kit = _widen_kit_to_what_this_character_knows(kit, lookup, member)
 		var profile_names: Array = []
 		if abs_sys.has_method("get_character_profiles"):
-			for prof in (abs_sys.get_character_profiles(cid) as Array):
+			for prof in (abs_sys.get_character_profiles(lookup) as Array):
 				profile_names.append(str((prof as Dictionary).get("name", "Profile")))
 		## member_ability runs BETWEEN battles and AutogrindSystem refuses anything without an
 		## authored heal_amount/mp_amount. Offering the whole kit taught the model ids that
