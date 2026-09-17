@@ -1,8 +1,11 @@
 extends GutTest
 
-## Character creation lets a player delete a name to nothing: the DEL guard stops AT zero
-## (CharacterCreationScreen :897 / :911, `length() > 0`) and `_confirm_creation` :994 emits
-## with no validation. That PC reaches the party with combatant_name == "".
+## Character creation could produce a PC with combatant_name == "": the name grid's two
+## deletion paths in CharacterCreationScreen guard on `length() > 0`, which stops AT zero
+## rather than at one, and nothing downstream defaulted it. cowir-controller has since put a
+## floor in `_close_name_grid` (the grid's only exit), so the name cannot be created empty.
+## This file guards the LOAD side, which that floor cannot reach: Combatant.from_dict assigns
+## `combatant_name = data["name"]` unfloored, so a save written before it restores the blank.
 ##
 ## The composer derived its member id from that name, so the roster line carried an EMPTY id -
 ## and an empty id is not merely unresolvable. AutogrindSystem._member_predicate reads a blank
