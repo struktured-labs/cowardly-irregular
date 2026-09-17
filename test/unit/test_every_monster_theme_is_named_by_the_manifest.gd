@@ -31,17 +31,49 @@ func _manifest_keys() -> Dictionary:
 	return (JSON.parse_string(raw) as Dictionary).get("tracks", {})
 
 
-## Derived from the dispatch itself, so a new monster arm cannot be added without being covered.
+## \u26d4 DERIVED FROM THE WHOLE TREE, NOT FROM ONE FILE, AND THAT IS THE POINT. The first version
+## scanned SoundManager.gd alone -- which names a LOCATION while the thing it watches for (a new
+## dispatch) can arrive anywhere. `_start_monster_music` is private BY CONVENTION only; GDScript
+## does not enforce the underscore and SoundManager is an autoload, so any script can call it.
+## Measured when this was written: 0 call sites outside SoundManager.gd, so the gap was latent --
+## which is exactly when it is cheap to close. A declaration naming a future trigger has to name
+## the trigger's LOCATION, and "the tree" is the only location a behaviour cannot escape.
 func _dispatched_types() -> Array[String]:
-	var src: String = FileAccess.get_file_as_string(SM_PATH)
-	assert_gt(src.length(), 10000, "SCOPE control: SoundManager read back %d chars" % src.length())
+	var files: Array[String] = []
+	_gd_files("res://src", files)
+	assert_gt(files.size(), 50,
+		"SCOPE control: the src walk found %d .gd files — a zero-hit result below would be vacuous" % files.size())
+	## Comments STRIPPED: a commented-out dispatch is not a dispatch, and widening the corpus from
+	## one file to the tree multiplies the prose this regex can see. The one-file version had the
+	## same hole and a smaller surface.
+	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+	var joined: String = ""
+	for f in files:
+		joined += GdSource.strip_comments(FileAccess.get_file_as_string(f))
+	assert_gt(joined.length(), 100000, "SCOPE control: the walk read back %d chars" % joined.length())
 	var out: Array[String] = []
 	var re := RegEx.create_from_string("_start_monster_music\\(\"([a-z_]+)\"\\)")
-	for m in re.search_all(src):
+	for m in re.search_all(joined):
 		if not out.has(m.get_string(1)):
 			out.append(m.get_string(1))
 	out.sort()
 	return out
+
+
+func _gd_files(root: String, out: Array[String]) -> void:
+	var d := DirAccess.open(root)
+	if d == null:
+		return
+	d.list_dir_begin()
+	var n: String = d.get_next()
+	while n != "":
+		var p: String = root + "/" + n
+		if d.current_is_dir():
+			_gd_files(p, out)
+		elif n.ends_with(".gd"):
+			out.append(p)
+		n = d.get_next()
+	d.list_dir_end()
 
 
 func test_every_monster_theme_is_named_by_the_manifest() -> void:
