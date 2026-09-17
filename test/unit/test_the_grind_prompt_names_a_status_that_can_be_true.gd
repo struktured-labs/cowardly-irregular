@@ -60,7 +60,7 @@ func test_the_grind_prompt_names_the_status_ids() -> void:
 	var p: String = _grind_prompt()
 	var at: int = p.find("STATUS IDS")
 	assert_gt(at, -1, "the grind prompt must name the status ids it asks for")
-	for id in DP.AUTOGRIND_STATUS_VOCABULARY.keys():
+	for id in DP.STATUS_VOCABULARY.keys():
 		assert_true(p.substr(at).find(str(id)) != -1, "it must name %s" % id)
 
 
@@ -79,7 +79,7 @@ func test_every_id_offered_is_one_has_status_can_be_true_for() -> void:
 	## which has_status cannot see.
 	var applicable: Array = _applicable_statuses()
 	var unreachable: Array = []
-	for id in DP.AUTOGRIND_STATUS_VOCABULARY.keys():
+	for id in DP.STATUS_VOCABULARY.keys():
 		if not applicable.has(str(id)):
 			unreachable.append(str(id))
 	assert_eq(unreachable, [],
@@ -90,8 +90,8 @@ func test_the_prompt_renders_the_constant_rather_than_a_copy() -> void:
 	## Two lists is the drift shape this codebase has fixed repeatedly. The grammar points
 	## at the vocabulary; only one place spells it.
 	var p: String = _grind_prompt()
-	for id in DP.AUTOGRIND_STATUS_VOCABULARY.keys():
-		assert_true(p.find("%s   for %s" % [str(id), ", ".join(DP.AUTOGRIND_STATUS_VOCABULARY[id])]) != -1,
+	for id in DP.STATUS_VOCABULARY.keys():
+		assert_true(p.find("%s   for %s" % [str(id), ", ".join(DP.STATUS_VOCABULARY[id])]) != -1,
 			"the rendered row must be the constant's own pair for %s" % id)
 
 
@@ -107,7 +107,7 @@ func test_every_id_offered_is_one_the_console_also_offers() -> void:
 	## message. The direction that IS asserted is the one this file can be wrong about.
 	var ring: Array = AUTOGRIND_UI.MEMBER_STATUS_RING
 	var absent: Array = []
-	for id in DP.AUTOGRIND_STATUS_VOCABULARY.keys():
+	for id in DP.STATUS_VOCABULARY.keys():
 		if not ring.has(str(id)):
 			absent.append(str(id))
 	assert_eq(absent, [],
@@ -116,13 +116,21 @@ func test_every_id_offered_is_one_the_console_also_offers() -> void:
 
 # ── controls ──────────────────────────────────────────────────────────────────
 
-func test_an_autobattle_composition_does_not_get_this_block() -> void:
-	## Autobattle conditions carry their own status vocabulary through a different editor;
-	## this block is the grind grammar's, and must not leak into the per-character prompt.
-	var p: String = DP.build_rule_composition("autobattle", "burn things", [],
+func test_both_domains_are_taught_the_same_status_vocabulary() -> void:
+	## This arm used to assert the OPPOSITE — that the block was the grind grammar's and
+	## must not leak into the per-character prompt. It went red when autobattle's
+	## has_status family was measured with the same defect (7 of 19 unmatchable, the model
+	## writing "silenced"), and the arm's premise was what was wrong: `has_status` is the
+	## SAME literal Combatant call in both domains, so one vocabulary serves both. Two
+	## tables would be the drift shape; what must be pinned is that they are one.
+	var ab: String = DP.build_rule_composition("autobattle", "burn things", [],
 		{"resolved": true, "job_id": "mage", "kit": ["fire"], "full_kit": ["fire"],
 		"max_mp": 70, "costs": {"fire": 8}})
-	assert_true(p.find("STATUS IDS") == -1, "the grind status block must not reach autobattle")
+	var grind: String = _grind_prompt()
+	for id in DP.STATUS_VOCABULARY.keys():
+		var row: String = "%s   for %s" % [str(id), ", ".join(DP.STATUS_VOCABULARY[id])]
+		assert_true(ab.find(row) != -1, "autobattle must name %s from the shared table" % id)
+		assert_true(grind.find(row) != -1, "and so must the grind prompt")
 
 
 func test_the_grammar_still_asks_for_a_status_name() -> void:

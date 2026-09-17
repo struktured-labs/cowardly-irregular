@@ -55,6 +55,7 @@ func _kit_for(job_id: String) -> Dictionary:
 		"resolved": true, "job_id": job_id, "kit": kit, "full_kit": full_kit,
 		"max_mp": int((job.get("stat_modifiers", {}) as Dictionary).get("max_mp", 1)),
 		"costs": costs,
+		"items": _battle_item_ids(),
 	}
 
 
@@ -62,6 +63,25 @@ func _kit_for(job_id: String) -> Dictionary:
 ## -s script has no autoloads for. Same hand-rebuild as _kit_for, over the five starters.
 ## Mirrors AutobattleSystem._create_default_profiles: slot 0 is the tuned default, then every
 ## non-balanced catalog template, padded to three. Same reason as _kit_for — no autoloads under -s.
+## Mirrors RuleComposer._battle_item_ids: everything except ItemCategory.META. No autoloads
+## under -s, so the categories are read straight from the same JSON ItemSystem loads.
+func _battle_item_ids() -> Array:
+	var f := FileAccess.open("res://data/items.json", FileAccess.READ)
+	if f == null:
+		return []
+	var doc = JSON.parse_string(f.get_as_text())
+	if not (doc is Dictionary):
+		return []
+	var items: Dictionary = doc.get("items", doc)
+	var out: Array = []
+	for iid in items:
+		if int((items[iid] as Dictionary).get("category", -1)) == 4:
+			continue
+		out.append(str(iid))
+	out.sort()
+	return out
+
+
 func _profile_names_for(job_id: String) -> Array:
 	var names: Array = ["Default"]
 	var f := FileAccess.open("res://data/autobattle_rule_templates.json", FileAccess.READ)
