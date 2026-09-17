@@ -582,6 +582,21 @@ func _get_stat_comparison(new_job: Dictionary) -> String:
 	return "  ".join(parts)
 
 
+## One owner per list, so the two cannot drift.
+func _nav_step_slot(step: int) -> void:
+	selected_slot = (selected_slot + step + SLOTS.size()) % SLOTS.size()
+	_build_ui()
+	SoundManager.play_ui("menu_move")
+
+
+func _nav_step_job(step: int, jobs: Array) -> void:
+	if jobs.is_empty():
+		return
+	selected_job_index = (selected_job_index + step + jobs.size()) % jobs.size()
+	_build_ui()
+	SoundManager.play_ui("menu_move")
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle menu input"""
 	if not visible:
@@ -595,16 +610,11 @@ func _input(event: InputEvent) -> void:
 
 func _handle_slot_input(event: InputEvent) -> void:
 	"""Handle input in slot selection mode"""
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		selected_slot = (selected_slot - 1 + SLOTS.size()) % SLOTS.size()
-		_build_ui()
-		SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		selected_slot = (selected_slot + 1) % SLOTS.size()
-		_build_ui()
-		SoundManager.play_ui("menu_move")
+	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis and an axis carries no
+	# echo flag — so one push used to step the cursor five rows.
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step_slot(-1 if nav == "ui_up" else 1)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
@@ -627,18 +637,9 @@ func _handle_job_input(event: InputEvent) -> void:
 	"""Handle input in job selection mode"""
 	var jobs = _get_available_jobs()
 
-	if event.is_action_pressed("ui_up") and not event.is_echo():
-		if jobs.size() > 0:
-			selected_job_index = (selected_job_index - 1 + jobs.size()) % jobs.size()
-			_build_ui()
-			SoundManager.play_ui("menu_move")
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		if jobs.size() > 0:
-			selected_job_index = (selected_job_index + 1) % jobs.size()
-			_build_ui()
-			SoundManager.play_ui("menu_move")
+	var nav := MenuNav.step(event)
+	if nav == "ui_up" or nav == "ui_down":
+		_nav_step_job(-1 if nav == "ui_up" else 1, jobs)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
