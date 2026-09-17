@@ -14,6 +14,32 @@ func _sm() -> Node:
 	return get_node_or_null("/root/SoundManager")
 
 
+## The lines INSIDE the block opened by `needle`, bounded by INDENTATION.
+## substr(gate) takes the gate to end-of-function, which equals the branch only while nothing
+## follows it — true here by layout, kept true by nothing. A sibling branch added after this one
+## would silently join the window, and a cue moved into it would still satisfy the arm.
+func _block_under(body: String, needle: String) -> String:
+	var lines: PackedStringArray = body.split("\n")
+	var gate_i: int = -1
+	var gate_indent: int = 0
+	for i in lines.size():
+		if lines[i].contains(needle):
+			gate_i = i
+			gate_indent = lines[i].length() - lines[i].lstrip("\t").length()
+			break
+	if gate_i < 0:
+		return ""
+	var out: PackedStringArray = PackedStringArray()
+	for i in range(gate_i + 1, lines.size()):
+		var l: String = lines[i]
+		if l.strip_edges() == "":
+			continue
+		if l.length() - l.lstrip("\t").length() <= gate_indent:
+			break
+		out.append(l)
+	return "\n".join(out)
+
+
 func before_each() -> void:
 	var sm: Node = _sm()
 	if sm:
@@ -67,13 +93,33 @@ func test_the_moment_that_logs_the_fall_also_sounds_it() -> void:
 	assert_gt(start, -1, "CONTROL: _on_party_hp_changed is gone — this arm no longer describes the caller")
 	var nxt: int = code.find("\nfunc ", start + 1)
 	var body: String = code.substr(start, nxt - start) if nxt > start else code.substr(start)
-	var gate: int = body.find("new_value <= 0 and old_value > 0")
-	assert_gt(gate, -1, "CONTROL: the KO gate is gone — the cue may now fire on every HP tick")
-	var branch: String = body.substr(gate)
+	assert_gt(body.find("new_value <= 0 and old_value > 0"), -1,
+		"CONTROL: the KO gate is gone — the cue may now fire on every HP tick")
+	var branch: String = _block_under(body, "new_value <= 0 and old_value > 0")
+	assert_ne(branch, "", "CONTROL: the KO branch extracted empty — the bound is broken, not the code")
 	assert_true(branch.contains("play_death(\"%s\")" % CUE),
 		"the ally-KO cue left the branch that announces the fall — the log and the sound are one moment")
 	assert_true(branch.contains("has fallen"),
 		"CONTROL: the 'has fallen' line must still be in this branch, or the pairing above is vacuous")
+	## No line in BattleScene can distinguish "bounded to the branch" from "runs to end of
+	## function" while nothing follows the KO branch — so the bound is proved on synthetic
+	## input instead, in the arm below, rather than asserted against a layout coincidence here.
+
+
+func test_the_branch_bound_excludes_a_sibling_branch() -> void:
+	## The instrument, on input that HAS a sibling — which BattleScene does not, so the arm above
+	## cannot tell a correct bound from a lucky one. Both repairs of that arm stay legal; what is
+	## pinned is that the window stops at the branch.
+	var synthetic := "\tif a:\n\t\tinside_the_branch()\n\tif b:\n\t\tin_a_sibling()\n\tafter_everything()"
+	var block: String = _block_under(synthetic, "if a:")
+	assert_true(block.contains("inside_the_branch()"),
+		"the bound dropped the branch's own body — it is too tight to defend anything")
+	assert_false(block.contains("in_a_sibling()"),
+		"the bound swallowed a SIBLING branch — a cue moved out of the KO branch into a later one would still satisfy the arm above")
+	assert_false(block.contains("after_everything()"),
+		"the bound ran past the branch to function-body level")
+	assert_eq(_block_under(synthetic, "not_present_anywhere"), "",
+		"a missing needle must yield an EMPTY window, or the arm above would assert against the whole function")
 
 
 func test_the_cue_is_pinned_against_a_silent_re_roll() -> void:
