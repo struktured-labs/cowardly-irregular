@@ -119,3 +119,22 @@ func test_no_windowed_menu_renders_from_zero() -> void:
 	assert_true(offenders.is_empty(),
 		"these compute a max_visible window and never offset the render — the selection leaves the "
 		+ "drawn rows and the cursor disappears: %s" % [offenders])
+
+
+## ⛔ MY OWN CHANGE'S EDGE CASE: the offset is STORED, so a list that shrinks under it leaves a
+## stale window pointing past the end. A player who scrolls to row 90 and uses up items until only
+## three remain must not be left staring at an empty panel. MenuScroll clamps `current` to the new
+## limit on entry, which is exactly why the previous offset is an input rather than state it owns —
+## but that is a property of the helper, and this arm is what makes it true of THIS caller.
+func test_the_window_recovers_when_the_list_shrinks() -> void:
+	var m := _menu_with(100, 90)
+	assert_gt(int(m.get("_item_scroll")), 0, "CONTROL: the window must have moved before it can go stale")
+	var short: Array = []
+	for i in range(3):
+		short.append({"data": {"name": "Item %d" % i}, "quantity": 1, "id": "i%d" % i})
+	m.set("_item_list", short)
+	m.set("selected_item_index", 0)
+	m._build_ui()
+	var names := _rendered_names(m)
+	assert_eq(names, ["Item 0", "Item 1", "Item 2"],
+		"after the list shrank the window still points past the end — the panel draws nothing: %s" % [names])
