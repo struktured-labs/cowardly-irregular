@@ -136,3 +136,73 @@ func test_unparseable_text_does_not_crash_the_run() -> void:
 	_backend.next_text = ""
 	var res: Dictionary = await _rc.compose_async(_rc.DOMAIN_AUTOBATTLE, "a", "hero", [])
 	assert_eq(str(res.get("source", "")), "fallback", "an empty reply must fall back cleanly")
+
+
+# ── and the CONSUMER must never hand it an empty READ ─────────────────────────
+#
+# The arm above is the hazard, not a licence: an empty string scores as a fallback,
+# so a capture file that cannot be READ is indistinguishable from a reply the model
+# genuinely botched. FileAccess.get_file_as_string returns "" on failure and
+# ReplayBackend emits it as a SUCCESSFUL reply, so the tool inflates the exact rate
+# it exists to measure, one unreadable file at a time, silently.
+
+const COMPOSE_TOOL := "res://tools/rule_composition_compose.gd"
+
+
+## Source with comment lines removed — prose naming a guard must not satisfy a check for it.
+func _tool_code() -> String:
+	var raw: String = FileAccess.get_file_as_string(COMPOSE_TOOL)
+	var keep: PackedStringArray = PackedStringArray()
+	for line in raw.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			continue
+		keep.append(line)
+	return "\n".join(keep)
+
+
+func test_the_scoring_tool_is_actually_read() -> void:
+	## FLOOR, per-source and inside nothing: the three arms below all derive from one file,
+	## and a moved or renamed tool would make every one of them pass over an empty string.
+	assert_gt(FileAccess.get_file_as_string(COMPOSE_TOOL).length(), 1000,
+		"CONTROL: %s must actually be read, or the arms below assert over ''" % COMPOSE_TOOL)
+
+
+func test_an_unreadable_capture_leaves_the_scored_population() -> void:
+	## The empty check must come BEFORE the assignment — a guard after it has already
+	## paid the cost. Order is the invariant here, not the presence of a token.
+	var code: String = _tool_code()
+	var assign: int = code.find("backend.next_text = captured")
+	var guard: int = code.find("captured == \"\"")
+	assert_gt(assign, -1, "the tool must assign the capture through a named local")
+	assert_gt(guard, -1, "the tool must test that capture for emptiness")
+	assert_lt(guard, assign, "the emptiness check must precede the assignment, or it guards nothing")
+	assert_gt(code.find("unreadable"), -1,
+		"an excluded file must be reported, not dropped in silence")
+
+
+func test_the_rate_denominator_is_what_was_scored() -> void:
+	## A denominator counting files nobody could read reports a plausible, specific,
+	## wrong fallback rate — the same wrong-population error the old bench made twice.
+	var code: String = _tool_code()
+	assert_gt(code.find("var scored: int = reached + fallback"), -1,
+		"the tool must derive a scored population distinct from the file count")
+	## Anchor on the OPERAND LIST, which occurs once each. Two earlier spellings were dead:
+	## a literal spanning the whole format string baked in the prose between `%d/%d` and the
+	## operands, and "REACHES THE PLAYER" finds the PER-FILE line before the summary one.
+	for operand in ["[reached, ", "[fallback, "]:
+		var at: int = code.find(operand)
+		assert_gt(at, -1, "the tool must still report a `%s` rate" % operand)
+		var line: String = code.substr(at, code.find("\n", at) - at)
+		assert_gt(line.find("scored]"), -1,
+			"`%s` must be reported over `scored`, got: %s" % [operand, line.strip_edges()])
+		assert_eq(line.find("names.size()"), -1,
+			"`%s` must NOT be reported over the files on disk: %s" % [operand, line.strip_edges()])
+
+
+func test_a_corpus_that_went_entirely_dark_is_refused() -> void:
+	## scored == 0 makes every rate 0/0, which prints as clean. The floor @cowir-controller's
+	## three-way control names: a corpus member can go dark and take its own defect with it,
+	## and the whole corpus going dark must be louder than a green, not quieter.
+	var code: String = _tool_code()
+	assert_gt(code.find("scored == 0 and names.size() > 0"), -1,
+		"the tool must refuse to publish a rate derived from zero scored captures")
