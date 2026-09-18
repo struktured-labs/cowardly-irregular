@@ -102,9 +102,28 @@ func test_danger_survives_a_corrupted_grind() -> void:
 		"CONTROL: danger must have reached full, or this arm is about a cue that never armed")
 	assert_gt(SoundManager._corruption_intensity, 0.0,
 		"CONTROL: corruption must still be live, or there is no conflict to measure")
+	## ⛔ BOUNDED ON BOTH SIDES. This arm asserted only `gained > danger_lift * 0.5`, which admits a
+	## HALF-LINE to infinity — measured, a danger term 3x too strong gives 0.4392 against a true
+	## 0.1447 and PASSES (@cowir-adhoc's wide-admittance axis, which is independent of whether the
+	## expectation routes through the subject). @cowir-sprites' qualifier is what decides it: a wide
+	## accept-set is correct for a FLOOR and wrong for a CLAIM, and this claims a value.
+	##
+	## ⚠️ A BAND, NOT AN EQUALITY, AND MY FIRST ATTEMPT AT THIS WAS WRONG. I tightened it to
+	## `gained == danger_lift * corr_only`, reasoning that the composition is multiplicative so the
+	## gain is the lift scaled by corruption's own factor. It red on CORRECT code — 0.1260 against an
+	## expected 0.1478 — because `corr_only` and the composed pitch are read at different points in
+	## corruption's 1.5 s tween, so the two never share a factor. Assuming two reads share a state
+	## they do not is the same shared-denominator error as deriving an expectation from the field the
+	## defect corrupts.
+	##
+	## The two factors vary independently over [0.9645, 1.0], so the honest range for the gain is
+	## danger_lift x [0.73, 1.24]. +/-30% covers it, stays free of the subject's constants, and still
+	## rejects the over-application a half-line admitted: a danger term 3x too strong gives 0.4340.
 	var gained: float = SoundManager._music_player.pitch_scale - corr_only
-	assert_gt(gained, danger_lift * 0.5,
+	assert_gt(gained, danger_lift * 0.7,
 		"danger is at %.2f and contributed only %.4f of its own %.4f lift over corruption's %.4f — the critical-HP detune is absent, not diluted, because corruption's longer tween outlived it" % [SoundManager._danger_intensity, gained, danger_lift, corr_only])
+	assert_lt(gained, danger_lift * 1.3,
+		"danger contributed %.4f, MORE than its own %.4f lift — corruption can only scale the composition down, so a larger gain means danger is being over-applied (the half-line this arm used to admit)" % [gained, danger_lift])
 
 
 func test_the_danger_boost_survives_a_corrupted_grind() -> void:
@@ -123,9 +142,14 @@ func test_the_danger_boost_survives_a_corrupted_grind() -> void:
 	SoundManager.set_danger_intensity(1.0)
 	await get_tree().create_timer(0.8).timeout
 	assert_almost_eq(SoundManager._danger_intensity, 1.0, 0.01, "CONTROL: danger at full")
+	## Bounded above as well as below, same reason: `> half` admitted a +9 dB boost as readily as the
+	## true +2.2..+3.0. Corruption's flicker is a per-call randf, so the LOWER bound stays a tolerance
+	## while the upper is exact — danger's own lift is the ceiling, since corruption only subtracts.
 	var lift_now: float = SoundManager._music_player.volume_db - SoundManager._music_base_db
 	assert_gt(lift_now, danger_lift_db * 0.5,
 		"the danger boost is +%.2f dB of its own +%.2f — the cue is gone under corruption (player %.2f, base %.2f)" % [lift_now, danger_lift_db, SoundManager._music_player.volume_db, SoundManager._music_base_db])
+	assert_lt(lift_now, danger_lift_db + 0.01,
+		"the boost is +%.2f dB, ABOVE danger's own +%.2f — corruption can only subtract from it, so a larger lift means the composition is over-applying danger" % [lift_now, danger_lift_db])
 
 
 func test_corruption_still_reaches_the_pitch_under_danger() -> void:

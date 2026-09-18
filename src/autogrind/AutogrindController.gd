@@ -572,8 +572,14 @@ func pause_grind() -> void:
 
 	# If mid-battle, defer pause until battle ends
 	if _state == State.BATTLE_RUNNING:
-		_pause_requested = true
-		print("[AUTOGRIND] Pause queued — will pause after current battle")
+		## ⛔ TOGGLE THE REQUEST, DO NOT RE-SET IT. GameLoop's control is a toggle —
+		## `if is_paused(): resume_grind() else: pause_grind()` — and is_paused() is
+		## `_state == PAUSED`, which is FALSE while a battle runs. So a second press lands back
+		## here, and setting `true` again meant the deferred path could only ever accumulate: the
+		## player changed their mind mid-battle and the grind paused anyway when it ended.
+		## The immediate path below toggles; this one now does too.
+		_pause_requested = not _pause_requested
+		print("[AUTOGRIND] Pause %s" % ("queued — will pause after current battle" if _pause_requested else "request cancelled"))
 		return
 
 	_state_before_pause = _state

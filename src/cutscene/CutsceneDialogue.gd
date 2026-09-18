@@ -1096,7 +1096,9 @@ func _finish_dialogue() -> void:
 ## Forward-compat wrapper: guards on SoundManager autoload presence + method availability so test contexts without the autoload (and pre-fold builds without the API) are clean no-ops. cowir-music branch feature/cowardly-irregular-music @ 6833cc4a folds into v3.33.198.
 func _duck_music_for_dialogue(active: bool) -> void:
 	if SoundManager and SoundManager.has_method("duck_music_for_dialogue"):
-		SoundManager.duck_music_for_dialogue(active)
+		## `self` identifies this instance as the holder: OverworldNPC makes one per NPC and
+		## CutsceneDirector makes another, and without it whichever finished first ended the other's duck.
+		SoundManager.duck_music_for_dialogue(active, self)
 		_ducked_music = active
 
 
