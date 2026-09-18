@@ -296,6 +296,36 @@ func _accounted() -> Array:
 func test_no_write_arrives_in_a_form_this_scan_cannot_see() -> void:
 	var flagged: Array = _accounted()
 
+	## ⛔ THE CONTROL FOR AN INVERTED-BURDEN ARM, AND IT IS THE ONE DIRECTION THE ARM CANNOT FAIL IN
+	## BY ITSELF (@cowir-music). This arm fails SAFE: anything unreadable becomes a candidate, so if
+	## the mode-reading breaks the arm gets LOUDER. The way it goes vacuous is the opposite — if
+	## READABLE_MODES matched too broadly, every function would be "accounted" and this arm would
+	## never fire again, silently. These two always hold a read-only open, so they drop out of
+	## `_accounted()` the moment mode-reading stops working.
+	assert_true("load_config" in flagged,
+		"CONTROL: load_config holds a FileAccess.READ open and must be accounted — if it is not, "
+		+ "READABLE_MODES has stopped matching and this arm is about to call everything a candidate")
+	assert_true("register_user_mappings" in flagged,
+		"CONTROL: …and so does ControllerMappings.register_user_mappings")
+
+	## ⛔ AND THE OTHER DIRECTION, WHICH THE CORPUS CANNOT TEST BECAUSE IT HOLDS NO UNREADABLE OPEN.
+	## The two asserts above prove mode-reading works AT ALL; they pass happily when it matches
+	## EVERYTHING, which is the vacuous failure. Measured: widening READABLE_MODES to ["FileAccess."]
+	## left all three arms green with every function accounted and this arm permanently silent.
+	## So the matcher is exercised on CONSTRUCTED input, where both answers exist.
+	var readable_hits: int = 0
+	var opaque_hits: int = 0
+	for m in READABLE_MODES:
+		if m in 'var f := FileAccess.open(p, FileAccess.READ)':
+			readable_hits += 1
+		if m in 'var f := FileAccess.open(p, mode)':
+			opaque_hits += 1
+	assert_gt(readable_hits, 0, "CONTROL: a literal FileAccess.READ must read as a known mode")
+	assert_eq(opaque_hits, 0,
+		"CONTROL: an open whose mode is a VARIABLE must read as unknown. READABLE_MODES matched it, "
+		+ "so every open now counts as accounted and the arm below can never fire again — the one "
+		+ "way an inverted-burden check goes vacuous, and it fails SILENTLY.")
+
 	var storers: Array = []
 	for path in _lane_scripts():
 		var f := FileAccess.open(path, FileAccess.READ)
