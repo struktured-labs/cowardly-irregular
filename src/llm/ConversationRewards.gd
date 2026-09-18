@@ -134,6 +134,13 @@ static func grant_if_earned(gs: Node, npc_id: String, quest_bucket: String, exch
 
 ## Per-NPC entry falls back to the shared default, never to an empty payout —
 ## an unlisted NPC that passed the gate still owes the player something.
+##
+## ⚠️ RETURNS THE STATIC BY REFERENCE. `_table` is process-wide and a Dictionary is a
+## reference type, so handing an entry out IS handing out write access — a caller that
+## mutates the result corrupts every later lookup in the process, with NO assignment
+## anywhere for anyone to grep. The safety today lives entirely in the one consumer:
+## `_grant` reads `gold`/`items` and writes nothing (verified line by line, 0 writes).
+## A second caller that mutates must `.duplicate(true)` first, or this note is wrong.
 static func _entry_for(npc_id: String) -> Dictionary:
 	_ensure_table()
 	var by_npc: Dictionary = _table.get("by_npc", {}) as Dictionary
