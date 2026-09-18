@@ -244,6 +244,15 @@ func _code_lines(src: String) -> PackedStringArray:
 ## 1051 — 21 lines of docstring removed above it. An offender message that names the wrong line
 ## sends a reader to innocent code, and for THIS guard that reader is chasing a credential leak.
 ## Order is preserved by the split, so one forward cursor resolves duplicates correctly.
+##
+## ⚠️ RESIDUAL, STATED RATHER THAN ENGINEERED AROUND: the mapping assumes ONE code line per raw
+## line. An INLINE `"""…"""` on a line that also carries code splits that line in two
+## (cowir-sprites, 2026-09-18: BattleScene.gd loses 32% of its CHARS and GAINS 45 LINES for
+## exactly this reason) — the cursor has already advanced past the raw line, so the second
+## fragment maps to -1 or, worse, to a later line with the same text.
+## Measured on THIS corpus: all six holder files map 100%, zero -1, so there is no such line
+## today. The -1 case is loud (its own control arm); a later false match would be silent, and
+## that is the part this note exists to hand to the next reader rather than to hide.
 func _numbered_code(src: String) -> Array:
 	var raw: PackedStringArray = src.split("\n")
 	var out: Array = []
@@ -252,12 +261,18 @@ func _numbered_code(src: String) -> Array:
 		var t: String = c.strip_edges()
 		if t == "":
 			continue
-		while cursor < raw.size() and raw[cursor].find(t) == -1:
-			cursor += 1
-		if cursor >= raw.size():
-			break
-		out.append([cursor + 1, c])
-		cursor += 1
+		var probe: int = cursor
+		while probe < raw.size() and raw[probe].find(t) == -1:
+			probe += 1
+		if probe >= raw.size():
+			## ⛔ TOTAL, NOT TRUNCATING. This used to `break`, which silently dropped every
+			## offender BELOW an unmappable line — a false-negative path in a guard whose subject
+			## is a credential leak. A -1 is surfaced by the control arm instead, so a mapping
+			## failure is loud and the scan still sees the rest of the file.
+			out.append([-1, c])
+			continue
+		out.append([probe + 1, c])
+		cursor = probe + 1
 	return out
 
 
@@ -413,6 +428,26 @@ func test_the_alias_scan_can_follow_a_carrier_into_a_local() -> void:
 	assert_true(_aliases_of(fake, carriers).has("cfg"),
 		"control: the alias scan cannot follow a carrier into a local — got %s"
 			% [_aliases_of(fake, carriers)])
+
+
+func test_every_code_line_in_the_corpus_maps_to_a_real_line() -> void:
+	## CONTROL on the mapper. `split()` is NOT line-preserving and the delta is not even one-signed
+	## — measured across this corpus: SettingsMenu.gd 2228 -> 2239 (GROWS), SaveSystem.gd
+	## 1217 -> 1187 (SHRINKS), LLMService.gd unchanged. Three behaviours, one helper, which is why
+	## the mapping is by CONTENT and not by index arithmetic: content is sign-agnostic.
+	## Without this arm an unmappable line is a silent -1 in an offender message.
+	var unmapped: Array[String] = []
+	var checked: int = 0
+	for path in _key_holder_files():
+		for pair in _numbered_code(FileAccess.get_file_as_string(path)):
+			checked += 1
+			if int(pair[0]) == -1:
+				unmapped.append("%s: %s" % [path.get_file(), str(pair[1]).strip_edges()])
+	assert_gt(checked, 100,
+		"CONTROL: the mapper produced %d lines across the whole corpus — it is broken, not the corpus" % checked)
+	assert_eq(unmapped, ([] as Array[String]),
+		("these code lines could not be located in their own file, so any offender on them reports "
+		+ "line -1: %s") % ", ".join(unmapped))
 
 
 func test_the_split_keeps_code_and_drops_both_prose_forms() -> void:
