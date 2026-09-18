@@ -57,6 +57,10 @@ var _auto_advance_regions: bool = true  # Auto-advance to next world when region
 var _next_battle_enemy_boost: float = 0.0
 var _next_battle_exp_bonus: float = 0.0
 var _state_before_pause: State = State.IDLE
+## Separate from _state_before_pause, which is a MEMORY of the pre-pause state and happens to
+## equal BETWEEN_BATTLES after an ordinary pause there — a value on_battle_ended used to read
+## as a pending request, pausing a resumed grind one battle later with nothing asking.
+var _pause_requested: bool = false
 
 func _get_between_battle_delay() -> float:
 	if headless_mode:
@@ -422,6 +426,7 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 		# Continue grinding after a longer delay
 		_state = State.BETWEEN_BATTLES
 		_between_battle_timer = _get_between_battle_delay() * 2.0
+		_activate_deferred_pause()
 		return
 
 	if _current_battle_is_meta_boss:
@@ -444,6 +449,7 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 		_current_meta_boss_data = {}
 		_state = State.BETWEEN_BATTLES
 		_between_battle_timer = _get_between_battle_delay()
+		_activate_deferred_pause()
 		return
 
 	# Normal battle resolution
@@ -462,14 +468,7 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 			# on_battle_defeat may have triggered permadeath and already stopped things
 			stop_grind("Party defeated")
 
-	# Check for deferred pause (requested mid-battle)
-	if _state_before_pause == State.BETWEEN_BATTLES and _state == State.BETWEEN_BATTLES:
-		_state_before_pause = State.IDLE
-		_state = State.PAUSED
-		Engine.time_scale = 1.0
-		AutogrindSystem.set_automation_paused(true)
-		print("[AUTOGRIND] Deferred pause activated after battle end")
-		grind_paused.emit()
+	_activate_deferred_pause()
 
 
 ## Handle region cracked — auto-advance to next world if enabled
@@ -515,6 +514,8 @@ func stop_grind(reason: String = "Manual stop") -> void:
 		return
 
 	_state = State.IDLE
+	_state_before_pause = State.IDLE
+	_pause_requested = false
 	_current_battle_is_meta_boss = false
 	_current_battle_is_collapse_boss = false
 	_current_meta_boss_data = {}
@@ -549,6 +550,21 @@ func stop_grind(reason: String = "Manual stop") -> void:
 	grind_complete.emit(reason)
 
 
+## Apply a pause the player asked for mid-battle. Called from every on_battle_ended exit that
+## lands in BETWEEN_BATTLES — the meta-boss and collapse-boss branches return early, so a request
+## made during one of those fights used to sit until the NEXT ordinary battle ended.
+func _activate_deferred_pause() -> void:
+	if not _pause_requested or _state != State.BETWEEN_BATTLES:
+		return
+	_pause_requested = false
+	_state_before_pause = State.IDLE
+	_state = State.PAUSED
+	Engine.time_scale = 1.0
+	AutogrindSystem.set_automation_paused(true)
+	print("[AUTOGRIND] Deferred pause activated after battle end")
+	grind_paused.emit()
+
+
 ## Pause the grind — freezes state without stopping. Can only pause between battles.
 func pause_grind() -> void:
 	if _state == State.IDLE or _state == State.PAUSED:
@@ -556,7 +572,7 @@ func pause_grind() -> void:
 
 	# If mid-battle, defer pause until battle ends
 	if _state == State.BATTLE_RUNNING:
-		_state_before_pause = State.BETWEEN_BATTLES
+		_pause_requested = true
 		print("[AUTOGRIND] Pause queued — will pause after current battle")
 		return
 
@@ -574,6 +590,8 @@ func resume_grind() -> void:
 		return
 
 	_state = State.BETWEEN_BATTLES
+	_state_before_pause = State.IDLE
+	_pause_requested = false
 	_between_battle_timer = _get_between_battle_delay()
 	AutogrindSystem.set_automation_paused(false)
 
