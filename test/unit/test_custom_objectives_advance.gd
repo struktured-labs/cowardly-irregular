@@ -265,8 +265,16 @@ func test_no_playable_custom_flag_is_absent_from_src_entirely() -> void:
 
 
 ## Comment-stripped .gd corpus — a flag named only in prose is not a wiring.
+##
+## ⛔ PackedStringArray + join, NOT `out += line`. src/ is 286 files / 186,771 lines / 7.3 MB and
+## GDScript's String `+=` reallocates the whole accumulated buffer per append, so the naive form
+## copies ~3.6 MB on average 186,771 times to build one string. Sibling of the same defect in
+## test_passive_effects_have_consumers, which measured >6.5 MINUTES of CPU per run and 4s after
+## this change; this file was the second-slowest in the suite for the same reason. The per-file
+## `text` accumulator above is deliberately left alone — it is scoped INSIDE the file loop, so it
+## is bounded by one file rather than by the corpus.
 func _src_corpus() -> String:
-	var out := ""
+	var parts: PackedStringArray = PackedStringArray()
 	var stack: Array = ["res://src"]
 	while not stack.is_empty():
 		var dir: String = stack.pop_back()
@@ -282,7 +290,7 @@ func _src_corpus() -> String:
 			elif f.ends_with(".gd"):
 				for line in FileAccess.get_file_as_string(p).split("\n"):
 					if not line.strip_edges().begins_with("#"):
-						out += line + "\n"
+						parts.append(line)
 			f = d.get_next()
 		d.list_dir_end()
-	return out
+	return ("\n".join(parts) + "\n") if not parts.is_empty() else ""

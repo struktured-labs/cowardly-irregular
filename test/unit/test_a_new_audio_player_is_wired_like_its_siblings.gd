@@ -78,6 +78,30 @@ func test_every_declared_player_exists_at_runtime_and_is_a_child() -> void:
 	assert_eq(bad, [], "declared players that did not survive to runtime: %s" % str(bad))
 
 
+## A player's `bus` NAME and that bus's ROUTING are two claims, and asserting the first proves
+## nothing about audibility — a bus that sends nowhere reads identically at the player. Measured
+## 2026-09-18 after cowir-music found they had verified a duck amp's volume_db on a chain they had
+## never walked: _battle_player -> SFX -> Master.
+func test_the_sfx_bus_actually_reaches_master() -> void:
+	var sm: Node = _sm()
+	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
+	if sm == null:
+		return
+	var hops: Array[String] = []
+	var name: String = str(sm._battle_player.bus)
+	for _i in range(8):
+		hops.append(name)
+		if name == "Master":
+			break
+		var idx: int = AudioServer.get_bus_index(name)
+		assert_gt(idx, -1, "the chain reaches a bus that does not exist: %s" % " -> ".join(hops))
+		if idx == -1:
+			return
+		name = str(AudioServer.get_bus_send(idx))
+	assert_eq(hops[hops.size() - 1], "Master",
+		"the SFX chain does not reach Master, so every cue is inaudible however correct its level: %s" % " -> ".join(hops))
+
+
 func test_every_sfx_player_rides_the_sfx_bus() -> void:
 	## The bus is what set_sfx_volume attenuates. Music/ambient ride their own chains by design —
 	## derived from the runtime node, so a new SFX player on the wrong bus is named here.
