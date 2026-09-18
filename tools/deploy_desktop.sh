@@ -268,7 +268,9 @@ _restore_exports() {
     #   OVERWRITE test_script_share.gd calls export_autogrind_rules() with NO
     #             EXPORT_DIR override, writing test data over the FIXED production
     #             filename autogrind_rules.json — a shipped player action
-    #             (AutogrindUI.gd:1687). Same path, same name, someone else's
+    #             (ScriptShareManager.export_autogrind_rules, which writes it into
+    #             EXPORT_DIR = user://script_exports/ — the old AutogrindUI.gd:1687 pointer is
+    #             a blank line in a file that has since moved). Same path, same name, someone else's
     #             contents, nothing loud. A copy-if-missing restore would "pass"
     #             while leaving that substitution in place.
     # Measured, sandboxed (never probe the live dir — planting a canary there is a
@@ -409,7 +411,21 @@ fi
 # happening — the direction that SHIPS content you meant to drop, and pck size cannot
 # see it (bigger reads as "we added content"). Reported, never enforced: a prophylactic
 # *.jpg legitimately matches nothing and refusing over it would be worse than the bug.
-./tools/check_exclude_patterns.sh || true
+# ⛔ `|| true` DISCARDED EC 2, AND EC 2 MEANS THE AUDIT COULD NOT RUN. deploy_web.sh fixed
+# this on 2026-08-22 and its comment explains why; the same line sat unfixed here. The tool
+# exits 2 from SEVEN distinct "the instrument could not measure" conditions -- a missing or
+# empty export_presets.cfg, a zero-pattern parse, a partial read -- each of which its own
+# source calls "the vacuous-pass shape this script exists to prevent elsewhere". Swallowed by
+# `|| true`, the one signal meaning THE AUDIT DID NOT RUN was indistinguishable from a clean
+# audit, on the chain that ships linux and windows.
+# The NON-BLOCKING part above is correct and stays: EC 0 with findings on stderr does not
+# block, because a prophylactic *.jpg legitimately matches nothing. Only EC 2 blocks.
+./tools/check_exclude_patterns.sh; _PAT_EC=$?
+if [ "$_PAT_EC" -eq 2 ]; then
+    echo "[${PLAT}] BLOCKED: the exclude-pattern audit could not run (exit 2). Not shipping" >&2
+    echo "          on an unaudited exclude_filter — fix the parse or the config first." >&2
+    exit 2
+fi
 
 # TREE IDENTITY — bind the gate's evidence to the bits that get exported.
 #
@@ -480,7 +496,12 @@ case "${_EVIDENCE}" in
                     echo "[${PLAT}] BLOCKED: seeding the gate sandbox was REFUSED — see above." >&2
                     exit 2; }
             else
-                echo "[${PLAT}] note: tools/seed_gate_saves.sh missing — real-save hydration will PEND." >&2
+                # ⛔ BLOCK, do not note — see deploy_web.sh for the full reasoning. The desktop
+                # chain has no downstream hydration assertion (gate 1c is web-only), so a missing
+                # seeder here loses the coverage with nothing else to catch it.
+                echo "[${PLAT}] BLOCKED: tools/seed_gate_saves.sh missing — real-save hydration" >&2
+                echo "          would PEND, and a pending test reports failing=0." >&2
+                exit 2
             fi
             # Budgeted: run_tests.sh has no timeout and gate.sh adds none, so a WEDGE stops
             # this chain silently instead of redding it. See deploy_web.sh's _SUITE_BUDGET_S
@@ -571,8 +592,16 @@ fi
 # and the only .pck on disk belongs to web. The web gate covered ONE of the three channels this
 # lane publishes and said nothing about two; this reads the pack out of the binary itself.
 # Measured on both real artifacts: 2758 entries in the .x86_64, 2956 in the .exe.
-_RAW_CHECK="$(cd "$(dirname "$0")" && pwd)/check_raw_assets_shipped.py"
-_RAW_SELFTEST="$(cd "$(dirname "$0")" && pwd)/check_raw_assets_shipped_selftest.py"
+# ⛔ _RAW_TOOLS IS DEFINED HERE BECAUSE GATE 3d BELOW USES IT AND THIS FILE NEVER DEFINED IT.
+# Measured on the v3.33.409-alpha publish, the first time either gate ran in a real chain:
+#   ./tools/deploy_desktop.sh: line 599: _RAW_TOOLS: unbound variable
+# Gate 3c passed (29/29 raw assets, all six overworld maps present) and the chain then died
+# under `set -u` on the very next gate, taking the whole publish with it -- 38 tags behind.
+# Cause: one block template applied to two files with different preludes. deploy_web.sh defines
+# _RAW_TOOLS; this file defined _RAW_CHECK inline and nothing else.
+_RAW_TOOLS="$(cd "$(dirname "$0")" && pwd)"
+_RAW_CHECK="${_RAW_TOOLS}/check_raw_assets_shipped.py"
+_RAW_SELFTEST="${_RAW_TOOLS}/check_raw_assets_shipped_selftest.py"
 [ -f "$_RAW_CHECK" ] && [ -f "$_RAW_SELFTEST" ] || {
     echo "[${PLAT}] BLOCKED: check_raw_assets_shipped.py or its selftest is missing -- nothing" >&2
     echo "        would check that a raw-bytes read has bytes to read in this binary." >&2
@@ -680,7 +709,9 @@ echo "[${PLAT}] booted to title screen · script errors during boot: ${BOOT_ERRS
 # running on every action of every turn) with no execution in a booted build on
 # any platform.
 #
-# GameLoop.gd:382 has accepted `--battle-smoke` all along and NOTHING used it:
+# GameLoop._maybe_run_battle_smoke has accepted `--battle-smoke` all along and NOTHING used it
+# (the flag is read inside that function; the old `GameLoop.gd:382` pointer drifted onto an
+# unrelated line):
 # 0 references in tools/, .github/ or CLAUDE.md. It fights a real battle in the
 # exported build and writes screenshots.
 #

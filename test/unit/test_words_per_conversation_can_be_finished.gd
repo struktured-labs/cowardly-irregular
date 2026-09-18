@@ -2,6 +2,7 @@ extends GutTest
 
 ## world4_words_per_conversation was startable and unfinishable: both custom objectives had no emitter.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const QUEST := "world4_words_per_conversation"
 const QUEST_PATH := "res://data/quests/world4_words_per_conversation.json"
 const QUEST_SYSTEM := "res://src/quests/QuestSystem.gd"
@@ -14,6 +15,12 @@ const EXAMINE_OBJ := 2
 
 func _read(p: String) -> String:
 	return FileAccess.get_file_as_string(p)
+
+
+## CODE only, for the .gd reads — a flag name is exactly the kind of token a comment repeats.
+## The quest JSON above must stay RAW: the comment pass would truncate a `#` inside a string.
+func _code(p: String) -> String:
+	return GdSource.code_of(p)
 
 
 func _quest() -> Dictionary:
@@ -38,7 +45,9 @@ func test_the_quest_still_has_the_shape_this_file_assumes() -> void:
 
 func test_the_compression_puzzle_has_a_dialogue_emitter() -> void:
 	var want := _required_flag(DIALOGUE_OBJ)
-	var src := _read(QUEST_SYSTEM)
+	var src := _code(QUEST_SYSTEM)
+	assert_true(src.contains("func _ready"),
+		"CONTROL: QuestSystem's code must survive comment-stripping, or the asserts below pass by erasure")
 	assert_true(src.contains("\"union_rep_w4\""),
 		"QuestSystem.DIALOGUE_EMITTERS lost its union_rep_w4 entry. Objective %d of %s has no other emitter, so the quest stalls one step after accept. Restore the entry naming %s." % [DIALOGUE_OBJ, QUEST, want])
 	assert_true(src.contains(want),
@@ -47,7 +56,9 @@ func test_the_compression_puzzle_has_a_dialogue_emitter() -> void:
 
 func test_the_filing_window_exists_and_is_actually_built() -> void:
 	var want := _required_flag(EXAMINE_OBJ)
-	var src := _read(VILLAGE)
+	var src := _code(VILLAGE)
+	assert_true(src.contains("func _setup_npcs"),
+		"CONTROL: RivetRowVillage's code must survive comment-stripping")
 	assert_true(src.contains("QuestExaminePoint.gd"),
 		"RivetRowVillage lost its QuestExaminePoint load. Objective %d of %s needs the Form 99-Theta filing window; without it the quest stalls at step 3. Restore _setup_quest_points." % [EXAMINE_OBJ, QUEST])
 	assert_true(src.contains(want),
@@ -64,5 +75,5 @@ func test_the_two_flags_are_different_and_both_reach_an_emitter() -> void:
 	var a := _required_flag(DIALOGUE_OBJ)
 	var b := _required_flag(EXAMINE_OBJ)
 	assert_ne(a, b, "the two custom objectives must require DIFFERENT flags, or one emitter satisfies both and the quest skips a step")
-	assert_true(_read(QUEST_SYSTEM).contains(a), "objective %d flag %s must reach the dialogue emitter" % [DIALOGUE_OBJ, a])
-	assert_true(_read(VILLAGE).contains(b), "objective %d flag %s must reach the filing window" % [EXAMINE_OBJ, b])
+	assert_true(_code(QUEST_SYSTEM).contains(a), "objective %d flag %s must reach the dialogue emitter" % [DIALOGUE_OBJ, a])
+	assert_true(_code(VILLAGE).contains(b), "objective %d flag %s must reach the filing window" % [EXAMINE_OBJ, b])
