@@ -105,9 +105,11 @@ func test_the_caller_still_passes_a_relative_trim() -> void:
 	const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 	var code: String = GdSource.code_of("res://src/battle/EffectSystem.gd")
 	assert_ne(code, "", "CONTROL: EffectSystem code must survive the comment strip")
-	assert_true(code.contains("lerp(-3.0, 3.0,"),
+	## Leading `= ` / `.` bracket each symbol: a prefix cannot supply them, because whatever the
+	## prefix is sits between the anchor and the name (cowir-autogrind, measured 2026-09-17).
+	assert_true(code.contains("= lerp(-3.0, 3.0,"),
 		"EffectSystem no longer derives its volume as a symmetric trim around zero — play_battle_scaled adds it to the channel level and would now be wrong")
-	assert_true(code.contains("play_battle_scaled(sound_key, volume_db, pitch)"),
+	assert_true(code.contains(".play_battle_scaled(sound_key, volume_db, pitch)"),
 		"EffectSystem no longer feeds that value to play_battle_scaled — this file guards a path nothing takes")
 
 

@@ -117,6 +117,40 @@ def _sprite_relative(p: Path):
     return None
 
 
+# CLAUDE.md's tier table is the whole vocabulary of a write decision.
+_WRITABLE_TIERS = frozenset({"T0", "T1"})    # procedural placeholder · AI prototype
+_PROTECTED_TIERS = frozenset({"T2", "T3"})   # artist draft · artist final
+
+
+def tier_refusal(tier, subject: str = "this sheet") -> str:
+    """Refuse on an artist tier AND on any tier this table does not recognise.
+
+    `regen_monster_artist_style.artist_write_refusal` tested `tier in ("T2",
+    "T3")` — exact match — and fell through to "" for everything else. So the
+    one function whose other two branches fail CLOSED on unknown provenance,
+    and say so in as many words, failed OPEN on a tier it could not read:
+    "t2", "T2 ", "T2_artist_draft" and a missing field all read as permission.
+
+    Not hypothetical spelling. `weapon_sheets.iron_sword` already carries
+    "T2_artist_draft", so the habit exists in the file this reads; it is out of
+    reach today only because every tier consumer walks monster_sheets. 0
+    instances reachable, and the trigger is authored.
+
+    Three answers, not two: known-writable proceeds, known-protected refuses,
+    and anything else refuses — an unrecognised tier is unknown provenance, and
+    this module's entire stance is that unknown is not permission.
+    """
+    t = tier if isinstance(tier, str) else ""
+    if t in _WRITABLE_TIERS:
+        return ""
+    if t in _PROTECTED_TIERS:
+        return f"{subject} is tier {t} — ARTIST work. Regenerating would overwrite it."
+    known = ", ".join(sorted(_WRITABLE_TIERS | _PROTECTED_TIERS))
+    shown = repr(t) if t else "no tier at all"
+    return (f"{subject} carries {shown}, which is not one of [{known}]. An "
+            f"unrecognised tier is unknown provenance, and unknown is not T1.")
+
+
 def protected_anims(job_id: str, _evidence=None) -> list:
     """Animation names in this job that must survive a regeneration.
 
@@ -180,6 +214,23 @@ def selftest() -> int:
         else:
             print(f"  FAIL  {label}: got {got!r} want {want!r}")
             bad += 1
+
+    # TIER DECISION TABLE. The bug was a fallthrough, so every arm that matters
+    # here is a value the old `tier in ("T2","T3")` test let through as permission.
+    print("  -- tier decisions --")
+    check("T0 procedural is writable", tier_refusal("T0"), "")
+    check("T1 AI prototype is writable", tier_refusal("T1"), "")
+    check("T2 artist draft refuses", bool(tier_refusal("T2")), True)
+    check("T3 artist final refuses", bool(tier_refusal("T3")), True)
+    check("T2 names ARTIST in the reason", "ARTIST" in tier_refusal("T2"), True)
+    # The four shapes that used to return "" and mean "go ahead".
+    check("lowercase 't2' refuses", bool(tier_refusal("t2")), True)
+    check("trailing space 'T2 ' refuses", bool(tier_refusal("T2 ")), True)
+    check("the authored 'T2_artist_draft' refuses", bool(tier_refusal("T2_artist_draft")), True)
+    check("a missing tier refuses", bool(tier_refusal("")), True)
+    check("a non-string tier refuses", bool(tier_refusal(None)), True)
+    check("an unrecognised tier is not called ARTIST work",
+          "ARTIST" in tier_refusal("T2_artist_draft"), False)
 
     with tempfile.TemporaryDirectory() as d:
         real = Path(d) / "idle.png"
