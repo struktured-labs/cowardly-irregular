@@ -1764,10 +1764,15 @@ func get_cutscene_director() -> CutsceneDirector:
 
 func _play_new_game_cutscenes() -> void:
 	"""Play prologue cutscene on new game, then start exploration."""
-	current_state = LoopState.CUTSCENE
 	if not _cutscene_director:
 		_cutscene_director = CutsceneDirector.new()
 		add_child(_cutscene_director)
+	## A refused prologue stranded a NEW GAME in LoopState.CUTSCENE with nothing left to emit — no scene, no input, no way out.
+	if not _cutscene_director.can_play("world1_prologue"):
+		push_warning("[GameLoop] world1_prologue was refused — starting exploration rather than waiting for a scene that never began")
+		_start_exploration()
+		return
+	current_state = LoopState.CUTSCENE
 	_cutscene_director.cutscene_finished.connect(_on_prologue_finished, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene("world1_prologue")
 
@@ -1776,6 +1781,12 @@ func _on_prologue_finished(_cutscene_id: String) -> void:
 	"""After prologue, chain into chapter1 (Elder Theron briefing)."""
 	# This path plays cutscenes DIRECTLY, so it must set the completion flags itself — _play_story_cutscene is the only other place that does, and it isn't involved here (2026-07-25: prologue replayed on every harmonia_village entry forever).
 	_mark_story_cutscene_complete("world1_prologue")
+	## NOT _on_chapter1_finished: that marks chapter1 complete, and a scene that never played must stay replayable.
+	if not _cutscene_director.can_play("world1_chapter1"):
+		push_warning("[GameLoop] world1_chapter1 was refused — completion flag NOT set, gate left open; handing control back")
+		current_state = LoopState.EXPLORATION
+		_start_exploration()
+		return
 	_cutscene_director.cutscene_finished.connect(_on_chapter1_finished, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene("world1_chapter1")
 
@@ -2448,14 +2459,19 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 }
 
 
-func _play_story_cutscene(cutscene_id: String) -> void:
+## Returns false when the director REFUSED — nothing was committed and the gate is still open.
+func _play_story_cutscene(cutscene_id: String) -> bool:
 	"""Play a story cutscene, then resume exploration."""
-	current_state = LoopState.CUTSCENE
-	_cutscene_cooldown = true  # Suppress next check on same map entry
-	_remove_party_chat_indicator()
 	if not _cutscene_director:
 		_cutscene_director = CutsceneDirector.new()
 		add_child(_cutscene_director)
+	## play_cutscene refuses with a bare return, so every line below it used to be committed to a scene that never began: state stuck in CUTSCENE with nothing left to emit, and the one-shot handler surviving to fire on the NEXT scene's finish — marking THIS cutscene complete without it ever playing.
+	if not _cutscene_director.can_play(cutscene_id):
+		push_warning("[GameLoop] '%s' NOT started — the director refused it; nothing committed, gate left open so it replays on the next check" % cutscene_id)
+		return false
+	current_state = LoopState.CUTSCENE
+	_cutscene_cooldown = true  # Suppress next check on same map entry
+	_remove_party_chat_indicator()
 	_cutscene_director.cutscene_finished.connect(func(_id: String):
 		# completing an aborted run would lock the spotlight PC forever (flag blocks the replay)
 		if _cutscene_director.has_method("last_finished_was_aborted") and _cutscene_director.last_finished_was_aborted():
@@ -2506,13 +2522,16 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 		if chained != "":
 			_story_chain_depth += 1
 			print("[CUTSCENE] chaining '%s' after '%s' (depth %d/%d)" % [chained, cutscene_id, _story_chain_depth, _STORY_CHAIN_CAP])
-			_play_story_cutscene(chained)
-			return
+			if _play_story_cutscene(chained):
+				return
+			## A refused chain is the END of the chain — this return used to skip the resume below, leaving the player frozen in CUTSCENE with no scene playing.
+			push_warning("[GameLoop] chained '%s' was refused — resuming exploration instead of waiting for a scene that never started" % chained)
 		_story_chain_depth = 0
 		_resume_exploration_after_cutscene()
 		_flush_chat_toasts()
 	, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene(cutscene_id)
+	return true
 
 
 func _on_title_continue() -> void:
