@@ -337,6 +337,35 @@ _saves_cksum() {
     find "$ud/saves" -maxdepth 1 -type f | sort | while IFS= read -r f; do cksum < "$f"; done | cksum | awk '{print $1}'
 }
 
+# ── THE CHECKSUM IS A WITNESS TO THE ENDPOINTS; THIS IS A WITNESS TO THE INTERVAL ────────────
+# `_saves_cksum` is read once before the channels and once after, so it answers "is his data
+# the same NOW as it was THEN" and is blind BY CONSTRUCTION to anything that wrote his saves
+# and put them back in between. That is not hypothetical bookkeeping: a snapshot/restore with
+# `cp -a`, `rsync -a` or `tar` preserves mtime too, so neither the content nor the modification
+# time would show it. Measured 2026-09-18:
+#
+#     cp -a orig snap; echo tampered > orig; cp -a snap orig
+#     mtime  1782907200.000000000 -> 1782907200.000000000   IDENTICAL  (hides)
+#     ctime  1789725265           -> 1789725266             MOVED      (cannot hide)
+#
+# ctime is not settable from userspace — `touch -r` and `cp -a` set atime and mtime and always
+# bump ctime to now. So it is the one field a well-behaved restore cannot forge.
+#
+# ⚠️ This reports; it does not gate. It runs after the uploads, so its job is to make a
+# touched-and-restored profile VISIBLE rather than to prevent it. A publish-path writer is
+# what would need fixing, and today there is none: check_user_data_sandboxed.py reports
+# 22 invocations that can write user://, 20 sandboxed, 2 declared (launch.sh, the player's
+# own launcher, never on a publish path), 0 UNSANDBOXED.
+_saves_ctime_max() {
+    local ud="${XDG_DATA_HOME:-$HOME/.local/share}/godot/app_userdata/Cowardly Irregular"
+    local newest
+    [ -d "$ud/saves" ] || { echo "NO_SAVES_DIR"; return; }
+    newest="$(find "$ud/saves" -maxdepth 1 -type f -printf '%C@\n' 2>/dev/null | sort -rn | head -1 | cut -d. -f1)"
+    # An EMPTY answer must not read as "0 == 0, nothing moved". Say so instead.
+    [ -n "$newest" ] || { echo "NO_FILES"; return; }
+    echo "$newest"
+}
+
 echo "═══ publish_all: $TAG ═══"
 
 # ── 0. every polling wait in the deploy chain is bounded ─────────────────────
@@ -727,6 +756,7 @@ if [ -x tools/check_tree_unmoved.sh ]; then
 fi
 
 SAVES_BEFORE="$(_saves_cksum)"
+SAVES_CTIME_BEFORE="$(_saves_ctime_max)"
 echo "[pub] his saves before: ${SAVES_BEFORE}"
 
 # ── what the store is superseding ────────────────────────────────────────────────────────────
@@ -955,8 +985,17 @@ else
 fi
 
 SAVES_AFTER="$(_saves_cksum)"
+SAVES_CTIME_AFTER="$(_saves_ctime_max)"
 if [ "$SAVES_AFTER" = "$SAVES_BEFORE" ]; then
-    echo "[pub] his saves: ${SAVES_AFTER} unchanged"
+    if [ "$SAVES_CTIME_AFTER" = "$SAVES_CTIME_BEFORE" ]; then
+        echo "[pub] his saves: ${SAVES_AFTER} unchanged, and untouched during the run"
+    else
+        echo "[pub] ⚠ his saves are IDENTICAL but were TOUCHED during this publish:"
+        echo "      newest ctime ${SAVES_CTIME_BEFORE} -> ${SAVES_CTIME_AFTER}"
+        echo "      Content matches, so nothing was lost — but something on the publish path"
+        echo "      wrote his saves and restored them. The checksum cannot see that; find the"
+        echo "      writer with tools/check_user_data_sandboxed.py before the next release."
+    fi
 else
     echo "[pub] ⚠ his saves CHANGED: ${SAVES_BEFORE} -> ${SAVES_AFTER}"
     echo "      Not necessarily a fault — he may have been playing. Diff against"
