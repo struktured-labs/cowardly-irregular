@@ -230,3 +230,57 @@ func test_no_writer_opens_its_destination_directly() -> void:
 		+ "file, and there is no previous version left:\n  %s\n"
 			% "\n  ".join(offenders)
 		+ "Stage beside the target (`path + \".new\"`) and `DirAccess.rename_absolute` into place.")
+
+
+## ⛔ A NEW WRITE FORM ARRIVING IS INVISIBLE TO EVERY ARM ABOVE, and that is a third mutation class
+## none of my mutations could reach (@cowir-sfx). The arms above answer *did a writer stop being
+## seen* and *did a safe shape leave*. Neither answers **did a writer arrive in a form the detector
+## does not match** — it shrinks no member of MUST_BE_FOUND and adds no row, so everything stays
+## green while the write is audited by nobody.
+##
+##     FileAccess.open(p, FileAccess.WRITE)     matched — the only form the scan knows
+##     var m := FileAccess.WRITE ; open(p, m)   NOT matched: "WRITE" is not on the open line
+##     ResourceSaver.save(res, path)            NOT matched: no open at all
+##
+## 🔑 SO THIS ARM DERIVES FROM WHAT REACHES DISK, NOT FROM THE PATTERN THAT FINDS IT: every function
+## in the corpus that STORES bytes must also be a function the main scan flagged. A store with no
+## matched open is a write arriving by a route this file cannot see.
+const STORES := ["store_string", "store_var", "store_buffer", "store_line", "store_8",
+	"ResourceSaver.save", "save_png", "copy_absolute"]
+
+## Reasons, not exemptions — a name here must say why it stores without an open the scan matches.
+const UNMATCHED_BY_DESIGN := {}
+
+
+func test_no_write_arrives_in_a_form_this_scan_cannot_see() -> void:
+	var flagged: Array = []
+	for row in _write_opens():
+		if not (row[4] in flagged):
+			flagged.append(row[4])
+
+	var storers: Array = []
+	for path in _lane_scripts():
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f == null:
+			continue
+		var lines: PackedStringArray = f.get_as_text().split("\n")
+		f.close()
+		for i in lines.size():
+			var s: String = _strip_comment(str(lines[i])).strip_edges()
+			if s.is_empty():
+				continue
+			for tok in STORES:
+				if tok in s:
+					var fname: String = _enclosing_name(lines, i)
+					var entry: String = "%s.%s" % [str(path).get_file(), fname]
+					if not (fname in flagged) and not (fname in UNMATCHED_BY_DESIGN) \
+							and not (entry in storers):
+						storers.append("%s  ->  %s" % [entry, s.substr(0, 46)])
+					break
+
+	assert_true(storers.is_empty(),
+		"%s store bytes but contain no FileAccess.open(..., WRITE) this scan matches. " % [storers]
+		+ "Either the write arrived in a form the detector cannot see — a hoisted mode variable, "
+		+ "ResourceSaver, a copy — in which case the arms above are green about nothing for that "
+		+ "writer, or it is deliberate and belongs in UNMATCHED_BY_DESIGN with the reason.")
+
