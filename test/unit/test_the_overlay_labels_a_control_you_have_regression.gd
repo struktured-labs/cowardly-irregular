@@ -20,8 +20,13 @@ extends GutTest
 ## context, which is why ludicrous is the only context that can carry the label. And on main the
 ## dashboard's adjust_rules_requested has NO listener (GameLoop connects its pause/exit/tier_cycle
 ## and not that one), so START emits into nothing until @cowir-autogrind's cf0e0135 lands. This
-## guard pins WHERE the label goes, which is right in both states; it does not claim the control
-## works today.
+## guard pins WHERE the label goes; reachability belongs to
+## test_autogrind_adjust_rules_has_a_route_regression, which asserts the connect exists.
+##
+## ⚠️ THIS HEADER SAID "START emits into nothing … until cf0e0135 lands". IT LANDED. The note was
+## true when written and decayed into claiming a working control is dead — the direction that gets
+## an honest label DELETED. Found by grepping this lane's own test headers for parked findings
+## (@cowir-sfx's technique); a deferral naming a SHA is checkable, which is why this one was cheap.
 ## So the label is correct in exactly one of the two places it appears. Deleting it from both, or
 ## keeping it in both, are each wrong in one context.
 ##
@@ -113,9 +118,10 @@ func test_rules_is_labelled_where_the_dashboard_listens_and_nowhere_else() -> vo
 		"tier 0 shows the overlay ALONE (GameLoop:5596) — no dashboard, so START reaches nothing")
 	assert_true(_overlay().autogrind_ludicrous_context().has("start"),
 		"ludicrous shows the dashboard (GameLoop:5592), the only screen that classifies START as " +
-		"adjust_rules — do not delete this one for symmetry with tier 0. NOTE: on main that signal " +
-		"has no listener yet, so the press is inert until cf0e0135 connects it; this arm pins WHERE " +
-		"the label belongs, not that the control works today")
+		"adjust_rules — do not delete this one for symmetry with tier 0. The press is LIVE since " +
+		"cf0e0135: GameLoop:6890 connects adjust_rules_requested, pinned by " +
+		"test_autogrind_adjust_rules_has_a_route_regression. This arm still pins only WHERE the " +
+		"label belongs; reachability is that sibling's job, not a second copy here")
 
 
 ## THE CONTROL. Without it the arms pass on an empty context and an unreadable branch.
