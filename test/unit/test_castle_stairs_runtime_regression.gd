@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Runtime probe for the 2026-07-25 playtest report:
 ## "got stuck in castle harmonia btw, you cant go up or down any labeled place
 ##  in the dungeon/village modes. seems busted tbh."
@@ -140,3 +142,8 @@ func test_stair_sensor_does_not_self_fire_before_the_player_arrives() -> void:
 		"_transitioning must be clear while idle, or every staircase is dead for the session")
 
 	castle.free()
+
+## This file stands up a map or interior, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()
