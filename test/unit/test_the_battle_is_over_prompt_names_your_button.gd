@@ -12,6 +12,7 @@ extends GutTest
 ## for keyboard. So the keyboard player loses nothing and everyone else stops being misdirected.
 
 const BS := "res://src/battle/BattleScene.gd"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 
 func test_the_token_is_the_keyboard_key_when_no_pad_is_connected() -> void:
@@ -40,10 +41,15 @@ func test_the_token_is_derived_rather_than_a_frozen_face_name() -> void:
 	## fragility as a guard passing only because prose used backticks where the assert wanted quotes.
 	## ANTI-VACUITY first: the window must actually CONTAIN both forms, or stripping proves nothing.
 	var ctrl_raw: String = src.substr(src.find("func _get_terrain_battle_track"), 1200)
-	assert_true(ctrl_raw.contains("#"), "ANTI-VACUITY: the control window must hold a # comment")
+	## ⛔ THIS ASSERTED THE DEFECT. It was `assert_false(ctrl.contains("#"))` — absence of the
+	## CHARACTER, not of a comment — so a correct quote-aware stripper reds the day anyone puts a
+	## `[color=#…]` line in this window, while the truncating one it replaced passes. The window
+	## holds no such line today, which is exactly what makes it a coincidental-value ratchet.
+	var prose: String = _first_comment_prose(ctrl_raw)
+	assert_gt(prose.length(), 11, "ANTI-VACUITY: the control window must hold a # comment to remove")
 	assert_true(ctrl_raw.contains("\"\"\""), "ANTI-VACUITY: and a docstring")
 	var ctrl: String = _code_only(ctrl_raw)
-	assert_false(ctrl.contains("#"), "no # comment may survive the strip")
+	assert_false(ctrl.contains(prose), "no # comment may survive the strip: '%s'" % prose)
 	assert_false(ctrl.contains("\"\"\""), "no docstring may survive the strip")
 	assert_true(body.contains("hint_for_action(\"ui_accept\")"),
 		"the token must be derived from the action, not written out per family")
@@ -112,49 +118,72 @@ func test_the_trusted_turn_prompt_names_the_button_that_claims_it() -> void:
 		"the prompt must name the derived button: %s" % line.strip_edges())
 
 
-## Source with BOTH comment forms removed. `#` lines and trailing `#`, AND `"""` blocks — GDScript
-## docstrings are string LITERALS, so a `#`-only strip leaves prose that names a token and a scan
-## reads that prose as the token (cowir-music, msg 10577). Not used on arms that deliberately read
-## a string CONSTANT, where stripping would delete the very thing being checked.
-## 🔑 WHEN IS A BLANKET STRIP SAFE? @cowir-ai's discriminator, which is checkable where my first
-## rule ("strip for code claims, not prose claims") was a judgment call: `"""` means documentation
-## only until someone ASSIGNS it to a name. Measured on the files these guards scan —
-## BattleScene 0 assigned regions, BattleManager 0, DialoguePrompts 2
-## (AUTOBATTLE_GRAMMAR_DESCRIPTION / AUTOGRIND_GRAMMAR_DESCRIPTION, shipping prompt text). So the
-## one file I deliberately do NOT strip is exactly the one where a strip would delete the subject,
-## and that is now a per-file measurement rather than my taste. It is not a language fact: the day
-## someone assigns a triple-quoted region in BattleScene, stripping it there starts deleting content.
+## ⛔ THE DIRECTION NOTHING CHECKED, AND IT IS WHAT MAKES THE SWAP LOAD-BEARING RATHER THAN TIDYING.
+## Every arm above asks that prose be REMOVED; none asked that code be KEPT, so a stripper that cut
+## too much was green in every direction this file could see. The private copy cut each line at the
+## first `#` with no quote awareness and truncated 18 lines across the two files these arms read.
 ##
-## And the assert must stand on CODE, not on a comment that happens to name the needle — counted
-## before and after rather than mutated (@cowir-ai's instrument, cheaper than neutering):
-##   hint_for_action("ui_accept") in _accept_token    raw 1 -> stripped 1   stands on code ✅
-## ⚠️ KNOWN LIMIT, measured not assumed: a triple quote that is neither at the start nor the end of
-## its line — `var s := """x"""` — is NOT dropped, because the branch keys on begins_with. Across the
-## four files these guards scan there are 419 triple-quote lines and ZERO of that shape, so nothing
-## is exposed today; and it fails LOUDLY where it matters, since a survivor inside a control window
-## reds the structural assert rather than passing quietly. The `#` half truncates at the first `#`,
-## so a `#` inside a string literal would cut live code — same measurement, same direction.
+## 📌 Driven on the REAL corpus, not a fixture: BattleScene writes its speed labels as BBCode, so
+## `[color=#88cccc]…%s[/color]" % speed_label` is a line whose `#` must survive and whose TAIL
+## carries the only code on it. A fixture would prove the helper works on a shape I chose; this
+## proves it works on the shape the subject actually contains.
 ##
-## Both halves are verified INDEPENDENTLY (@cowir-overworld's tautology note via @cowir-music, msg
-## 10590): removing only the docstring branch reds "no docstring may survive", removing only the `#`
-## strip reds "no # comment may survive". A pass-through neutering kills both at once and cannot
-## tell a real assert from one that merely restates the implementation.
+## 🔑 Both anti-vacuity asserts are on the INPUT and come first — a needle that appears only where
+## absence is expected validates nothing (@cowir-autogrind, via @cowir-sfx msg 13947).
+func test_a_hash_inside_a_string_literal_survives_the_strip() -> void:
+	var src: String = FileAccess.get_file_as_string(BS)
+	var at: int = src.find("[color=#")
+	assert_gt(at, -1, "ANTI-VACUITY: BattleScene must still write a BBCode colour, or this arm has no corpus")
+	var line_start: int = src.rfind("\n", at) + 1
+	var line: String = src.substr(line_start, src.find("\n", at) - line_start)
+	assert_true(line.contains("#"), "ANTI-VACUITY: the chosen line must carry the # this arm is about")
+	assert_false(line.strip_edges().begins_with("#"),
+		"ANTI-VACUITY: …and must be CODE — a comment line is supposed to vanish, which would invert this")
+
+	var stripped: String = _code_only(line)
+	assert_true(stripped.contains("#"),
+		"a # inside a string literal is not a comment and must survive: '%s' -> '%s'"
+			% [line.strip_edges(), stripped.strip_edges()])
+	assert_eq(stripped.strip_edges(), line.strip_edges(),
+		"…and NOTHING on the line may be lost: the private stripper cut this at `[color=` and dropped "
+		+ "the rest, including the format operand that follows the string")
+
+
+## Source with BOTH comment forms removed, through the lane's shared helper. `GdSource.split`
+## strips `#` comments FIRST and only then parity-splits on `"""` — the order is the whole point,
+## because a `"""` inside a `#` comment otherwise flips parity for the rest of the file and takes
+## real code with it. Not used on arms that deliberately read a string CONSTANT, where stripping
+## would delete the very thing being checked.
+##
+## ⛔ THIS WAS A PRIVATE COPY, AND IT TRUNCATED LIVE CODE. It cut each line at the first `#` with
+## no quote awareness, so every BBCode colour tag lost everything after `[color=`:
+##     src/battle/BattleScene.gd    15 lines — 667-682, 2042-2046, 5529, 6601, 6618
+##     src/battle/BattleManager.gd   3 lines — 6578, 8508, 8956
+##     :2046 lost an entire `_grind_console_controls()` call off the end of the line
+## `GdSource.strip_comments` is quote- AND escape-aware, so a `#` inside a string survives and a
+## `\"` does not close one.
+##
+## ⚠️ LATENT, NOT LIVE — said precisely because the difference is the entire claim. Both windows
+## this is applied to (the `_accept_token` body, and the `_get_terrain_battle_track` control) hold
+## ZERO of those 18 lines today, so no assertion here was ever wrong. What the swap buys is that
+## the next colour tag added inside either window does not silently delete the code beside it.
+##
+## 🔑 The private copy was the 17th in this fleet: `gd_source.gd` carried no `class_name` until
+## `.439`, so sixteen lanes each re-derived one. The sibling guard here was converted in c43365c75.
 func _code_only(src: String) -> String:
-	var out := PackedStringArray()
-	var in_doc := false
-	for line in src.split("\n"):
-		var t := line.strip_edges()
-		if in_doc:
-			if t.ends_with("\"\"\""):
-				in_doc = false
-			continue
-		if t.begins_with("\"\"\""):
-			if not (t.length() > 5 and t.ends_with("\"\"\"")):
-				in_doc = true
-			continue
-		var h: int = line.find("#")
-		out.append(line.substr(0, h) if h >= 0 else line)
-	return "\n".join(out)
+	return str(GdSource.split(src)["code"])
+
+
+## The comment prose currently in a window, derived rather than quoted, so a REWORD cannot quietly
+## make the control vacuous — the expectation always comes from whatever the source says today.
+func _first_comment_prose(win: String) -> String:
+	for line in win.split("\n"):
+		var t: String = str(line).strip_edges()
+		if t.begins_with("#"):
+			var body: String = t.lstrip("#").strip_edges()
+			if body.length() >= 12:
+				return body
+	return ""
 
 ## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
 ## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there
