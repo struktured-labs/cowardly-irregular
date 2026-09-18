@@ -163,7 +163,17 @@ func _write_opens() -> Array:
 			var s: String = _strip_comment(line as String).strip_edges()
 			if s.is_empty():
 				continue
-			if "FileAccess.open" in s and "WRITE" in s:
+			## ⛔ `FileAccess.WRITE`, NOT a bare "WRITE" — Godot has FOUR modes and only two truncate.
+			## `READ_WRITE` does NOT truncate (the file must already exist) and contains the substring
+			## "WRITE", so a bare test flagged a correct in-place patch and told its author the file was
+			## being truncated. A wrong "this is broken" makes someone ACT: the fix it invites is
+			## converting a safe open into a staged write for no reason.
+			##
+			## 🔑 The `FileAccess.` prefix anchors it and dissolves the ordering trap another lane hit
+			## (`READ_WRITE` contains `READ`, so a mode list must test the write forms first):
+			##     "FileAccess.READ_WRITE".contains("FileAccess.WRITE")  ->  false   ✅ not flagged
+			##     "FileAccess.WRITE_READ".contains("FileAccess.WRITE")  ->  true    ✅ truncates
+			if "FileAccess.open" in s and "FileAccess.WRITE" in s:
 				found.append([path, n, s, fn_body, _enclosing_name(all_lines, n - 1)])
 		f.close()
 	return found
@@ -251,12 +261,40 @@ const STORES := ["store_string", "store_var", "store_buffer", "store_line", "sto
 ## Reasons, not exemptions — a name here must say why it stores without an open the scan matches.
 const UNMATCHED_BY_DESIGN := {}
 
+## Every mode this scan can READ. An open carrying one of these is ACCOUNTED FOR — either it
+## truncates and the ratchet above judges it, or it does not and there is nothing to judge.
+##
+## ⛔ AN OPEN WHOSE MODE THIS CANNOT READ IS A WRITE CANDIDATE, NOT A PASS (@cowir-autogrind's
+## inversion). `FileAccess.open(p, mode)` with the mode in a variable proves nothing, so it must
+## fall through to the arm below rather than count as a visible write.
+const READABLE_MODES := ["FileAccess.READ_WRITE", "FileAccess.WRITE_READ",
+	"FileAccess.WRITE", "FileAccess.READ"]
+
+
+## Functions holding an open whose mode this scan can read — truncating or not.
+func _accounted() -> Array:
+	var out: Array = []
+	for path in _lane_scripts():
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f == null:
+			continue
+		var lines: PackedStringArray = f.get_as_text().split("\n")
+		f.close()
+		for i in lines.size():
+			var s: String = _strip_comment(str(lines[i]))
+			if not ("FileAccess.open" in s):
+				continue
+			for m in READABLE_MODES:
+				if m in s:
+					var fname: String = _enclosing_name(lines, i)
+					if not (fname in out):
+						out.append(fname)
+					break
+	return out
+
 
 func test_no_write_arrives_in_a_form_this_scan_cannot_see() -> void:
-	var flagged: Array = []
-	for row in _write_opens():
-		if not (row[4] in flagged):
-			flagged.append(row[4])
+	var flagged: Array = _accounted()
 
 	var storers: Array = []
 	for path in _lane_scripts():
