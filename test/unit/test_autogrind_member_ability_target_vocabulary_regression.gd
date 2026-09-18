@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 ## member_ability was inert for a target the grammar itself describes.
 ##
 ## Found by censusing all six autogrind actions end-to-end through a live controller cycle after
@@ -23,6 +28,7 @@ var _ags: Node = null
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_ags = get_node_or_null("/root/AutogrindSystem")
 	if _ags:
 		_ags._test_disable_persistence = true
@@ -35,6 +41,8 @@ func after_each() -> void:
 	if _ags:
 		_ags.set_autogrind_rules([])
 		_ags.is_grinding = false
+	AutogrindState.restore(_ag_state)
+
 
 
 func _grind(tag: String) -> Array:

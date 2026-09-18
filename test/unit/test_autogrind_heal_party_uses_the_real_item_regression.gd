@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file leaked state a hand-listed teardown cannot name.
+var _ag_state: Dictionary
+
 ## `heal_party` is a PLAYER-AUTHORED autogrind rule action. It consumed a potion and healed a number
 ## written into the code: `[["hi_potion", 200], ["potion", 50]]`. items.json says 2000 and 500.
 ## So the rule granted a TENTH of what the item in the player's bag promises, and nothing failed —
@@ -19,6 +24,7 @@ var _items
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	_sys = AutogrindSystem
 	_items = get_tree().root.get_node_or_null("ItemSystem")
@@ -27,6 +33,8 @@ func before_each() -> void:
 func after_each() -> void:
 	AutogrindSystem._test_disable_persistence = false
 	_sys.grind_party = _party([])
+	AutogrindState.restore(_ag_state)
+
 
 
 func _party(members: Array) -> Array[Combatant]:

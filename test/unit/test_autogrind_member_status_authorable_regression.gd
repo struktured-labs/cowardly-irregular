@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 ## member_status could not be authored in the console, so a console-made rule could never fire.
@@ -35,6 +40,7 @@ func _member(cname: String, job_id: String) -> Combatant:
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 
 
@@ -207,3 +213,7 @@ func test_every_autogrind_member_this_file_reaches_still_exists() -> void:
 	if not AutogrindSystem.has_method("_evaluate_party_condition"): missing.append("_evaluate_party_condition()")
 	assert_eq(missing, [],
 		"AutogrindSystem no longer has these, so the arms above would ABORT into a silent pass: %s" % str(missing))
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

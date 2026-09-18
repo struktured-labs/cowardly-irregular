@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 ## A `stop_grinding` rule did not stop the grind.
 ##
 ## The rule fired, apply_autogrind_actions called stop_autogrind, the system printed
@@ -25,6 +30,7 @@ var _ags: Node = null
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_ags = get_node_or_null("/root/AutogrindSystem")
 	if _ags:
 		_ags._test_disable_persistence = true
@@ -34,6 +40,8 @@ func after_each() -> void:
 	if _ags:
 		_ags.is_grinding = false
 		_ags.set_autogrind_rules([])
+	AutogrindState.restore(_ag_state)
+
 
 
 func _controller_with_party(tag: String) -> Node:

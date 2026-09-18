@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file leaked state a hand-listed teardown cannot name.
+var _ag_state: Dictionary
+
 ## ⛔ A HALF-FIX OF MY OWN, FOUND BY @cowir-adhoc'S PATTERN RATHER THAN BY A TEST.
 ##
 ## `check_fatigue_event` emits "Inventory anomaly — items corrupted" and the controller applies the
@@ -31,12 +36,15 @@ const OLD_FOUR := ["potion", "hi_potion", "ether", "hi_ether"]
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	_sys = AutogrindSystem
 
 
 func after_each() -> void:
 	AutogrindSystem._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 func _member(item_id: String = "", qty: int = 2) -> Combatant:

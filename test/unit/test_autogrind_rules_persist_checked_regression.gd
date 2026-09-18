@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## set_autogrind_rules VALIDATES and refuses invalid input with NO mutation, returning false.
 ## Its docstring tells callers to check. Two of six call sites did not (audit for cowir-main,
 ## 2026-09-06, off cowir-controller's c930ec05):
@@ -18,6 +23,7 @@ var _saved_emitted: int = 0
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_saved_emitted = 0
 	AutogrindSystem._test_disable_persistence = true
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
@@ -106,3 +112,7 @@ func test_a_console_torn_down_before_its_rules_loaded_does_not_wipe_the_saved_se
 	_ui.save_and_close()
 	assert_eq(AutogrindSystem.get_autogrind_rules().size(), 1,
 		"an empty in-memory ruleset must never overwrite the saved one")
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

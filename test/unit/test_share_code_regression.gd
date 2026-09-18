@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## Feature 2026-07-09: clipboard share codes (COWIR1: + base64(gzip(json))) —
 ## the first sharing path that actually leaves a player's machine (Discord/
 ## forum paste) and the only workable one on web, where user://script_exports
@@ -19,6 +24,7 @@ func _valid_script() -> Dictionary:
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	## test_autogrind_share_code_round_trip reaches set_autogrind_rules, which persists to user://autogrind/profiles.json — measured overwriting the player's real profiles on every suite run, with no net covering that directory.
 	AutogrindSystem._test_disable_persistence = true
 	# Both autoloads persist: set_character_script writes user://autobattle/profiles.json too (2026-09-06 real-data leak).
@@ -31,6 +37,8 @@ func after_each() -> void:
 	AutobattleSystem.character_profiles.erase("no_such_char_zzz")
 	AutobattleSystem.autobattle_enabled.erase(CHAR)
 	AutobattleSystem._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 func test_share_code_round_trip() -> void:
