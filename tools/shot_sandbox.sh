@@ -13,10 +13,18 @@
 # BOOT, before any script runs -- measured: a script that refuses with EC=2 still costs a log
 # slot. The redirect has to be set before the engine starts, which is what a wrapper is for.
 #
-# ⛔ AND AN INVALID PATH IS WORSE THAN NONE: `XDG_DATA_HOME=/nonexistent` makes godot ABORT
-# (EC=134) and fall back to the DEFAULT user:// -- his profile -- while you believe you are
-# sandboxed. Measured, at the cost of two more of his log slots. Hence mkdir -p, and a path
-# derived from $PWD rather than typed.
+# ⛔ THE HAZARD IS AN *EMPTY* XDG_DATA_HOME, NOT AN INVALID ONE. I published the opposite
+# and @cowir-adhoc falsified it; re-measured here under a fake HOME so nothing was at risk:
+#     XDG_DATA_HOME=/nonexistent   -> godot ABORTS (EC=134), creates NOTHING. FAIL-CLOSED.
+#     XDG_DATA_HOME=""             -> XDG treats empty as unset; godot writes the REAL
+#                                     profile, EC=0, no warning. FAIL-OPEN and silent.
+# So an unset-or-empty variable is the killer, which is what `${VAR:-}` or a failed command
+# substitution produces. Hence the helper derives the path from $PWD and mkdir -p's it.
+#
+# ⛔ AND THE INVOCATION THAT ACTUALLY TOOK HIS LOG SLOTS WAS `--check-only`. Measured:
+#     HOME=<fake> godot --headless --check-only -s <file>   EC=0, writes logs/godot.log
+# A parse check reads as static and is not: it boots the engine, which opens user://logs/
+# before anything else. Every bare --check-only I ran tonight cost a slot from a ring of five.
 shot_sandbox_run() {
     local _gd="$1"; shift
     [ -f "$_gd" ] || { echo "[shot] no such tool: $_gd" >&2; return 2; }

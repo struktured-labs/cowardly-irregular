@@ -21,13 +21,18 @@
 # THIS WRAPPER is the thing that actually prevents the write, because it sets the redirect
 # before the engine starts.
 #
-# ⛔ AND AN INVALID XDG_DATA_HOME IS WORSE THAN NONE. Measured while testing this very fix:
-#     XDG_DATA_HOME=/nonexistent-outside godot --headless -s ...
-#     -> godot ABORTS (EC=134) and falls back to the DEFAULT user:// -- his real profile.
-# So a typo'd sandbox path writes where you were trying not to, while you believe you are
-# sandboxed. That is why this wrapper mkdir -p's the directory before using it, and why the
-# path is derived from $PWD rather than typed. I burned two more of his five log slots
-# learning that, in the act of fixing the first four.
+# ⛔ THE HAZARD IS AN *EMPTY* XDG_DATA_HOME, NOT AN INVALID ONE. I published the opposite
+# and @cowir-adhoc falsified it; re-measured here under a fake HOME so nothing was at risk:
+#     XDG_DATA_HOME=/nonexistent   -> godot ABORTS (EC=134), creates NOTHING. FAIL-CLOSED.
+#     XDG_DATA_HOME=""             -> XDG treats empty as unset; godot writes the REAL
+#                                     profile, EC=0, no warning. FAIL-OPEN and silent.
+# So an unset-or-empty variable is the killer, which is what `${VAR:-}` or a failed command
+# substitution produces. Hence the helper derives the path from $PWD and mkdir -p's it.
+#
+# ⛔ AND THE INVOCATION THAT ACTUALLY TOOK HIS LOG SLOTS WAS `--check-only`. Measured:
+#     HOME=<fake> godot --headless --check-only -s <file>   EC=0, writes logs/godot.log
+# A parse check reads as static and is not: it boots the engine, which opens user://logs/
+# before anything else. Every bare --check-only I ran tonight cost a slot from a ring of five.
 #
 # Unlike the deploy chain's --export-release, relocating the data root is SAFE here: this
 # runs the project and needs no export_templates, which is the only thing XDG_DATA_HOME breaks.
