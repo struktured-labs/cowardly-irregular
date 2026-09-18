@@ -212,3 +212,94 @@ func test_no_declared_sheet_is_raw_only() -> void:
 		("KEEP: %d declared sheet(s) ship raw instead of imported. load() returns null for these " +
 		"in an exported build while the editor is fine. importer=\"keep\" belongs on assets read " +
 		"with FileAccess.get_file_as_bytes(), not on art the loader load()s : %s") % [kept.size(), kept])
+
+
+## ⛔ "IMPORTABLE" IS A DEV-TREE PROPERTY AND THE ARM ABOVE READS AS A SHIPPING ONE.
+##
+## `ResourceLoader.exists()` answers from THIS checkout. A declaration whose art matches an
+## export exclude_filter imports here and is ABSENT from every shipped build — so the arm above
+## says "importable" about art no player can ever load, which is the opposite of what a reader
+## takes it to mean. Same pcK-semantics gap as the one this file's header is about, one layer out:
+## there the wrong PREDICATE, here the wrong TREE.
+##
+## Four entries match today, all four alternate-art staging rows that no job id reaches
+## (bard_sdxl, mage_sdxl, rogue_sdxl via `jobs/*_sdxl/*`; rogue_artist via `jobs/*_artist/*`).
+## Nothing is broken. The arm exists so a SHIPPING sheet cannot join them silently — you cannot
+## silence it green, only add the id to the list with a reason.
+const EXCLUDED_BY_DESIGN := ["bard_sdxl", "mage_sdxl", "rogue_sdxl", "rogue_artist"]
+
+
+func _exclude_patterns() -> Array:
+	var out: Array = []
+	for line in FileAccess.get_file_as_string("res://export_presets.cfg").split("\n"):
+		var t := line.strip_edges()
+		if not t.begins_with("exclude_filter="):
+			continue
+		for raw in t.split("=", true, 1)[1].strip_edges().trim_prefix("\"").trim_suffix("\"").split(","):
+			var pat := raw.strip_edges()
+			if pat != "" and not out.has(pat):
+				out.append(pat)
+	return out
+
+
+## Builds (id -> declared paths). `_declared()` above returns a FLAT path list, which cannot
+## answer "which entry owns this", and that is what the message below has to name.
+func _declared_by_id() -> Dictionary:
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(MANIFEST))
+	var out: Dictionary = {}
+	if not (parsed is Dictionary):
+		return out
+	for section in (parsed as Dictionary):
+		var body = (parsed as Dictionary)[section]
+		if not (body is Dictionary) or str(section).begins_with("_"):
+			continue
+		for id in (body as Dictionary):
+			var entry = (body as Dictionary)[id]
+			if not (entry is Dictionary):
+				continue
+			var paths: Array = []
+			var top = (entry as Dictionary).get("path", "")
+			var anims = (entry as Dictionary).get("animations", null)
+			if str(top) != "" and anims is Array:
+				for a in (anims as Array):
+					paths.append("%s/%s.png" % [str(top), str(a)])
+			elif str(top) != "":
+				paths.append(str(top))
+			for sub in (entry as Dictionary).values():
+				if sub is Dictionary and str((sub as Dictionary).get("path", "")) != "":
+					paths.append(str((sub as Dictionary)["path"]))
+			if not paths.is_empty():
+				out[str(id)] = paths
+	return out
+
+
+func test_a_declared_sheet_that_ships_is_not_export_excluded() -> void:
+	var patterns := _exclude_patterns()
+	assert_gt(patterns.size(), 5,
+		"SCOPE: parsed %d exclude patterns from export_presets.cfg — a corpus this small means the parse broke, and every result below would be a clean sweep of nothing" % patterns.size())
+
+	var by_id := _declared_by_id()
+	assert_gt(by_id.size(), 20,
+		"SCOPE: only %d declaring entries found — the id walk broke" % by_id.size())
+
+	var offenders: Array[String] = []
+	var matched_known := 0
+	for id in by_id:
+		for raw in by_id[id]:
+			var path: String = str(raw).replace("res://", "")
+			var hit := ""
+			for pat in patterns:
+				if path.match(str(pat)) or path.match("*/" + str(pat)):
+					hit = str(pat)
+					break
+			if hit == "":
+				continue
+			if EXCLUDED_BY_DESIGN.has(str(id)):
+				matched_known += 1
+			else:
+				offenders.append("%s (%s matches %s)" % [str(id), path, hit])
+
+	assert_gt(matched_known, 0,
+		"CONTROL: not one of %s matched an exclude pattern, so the matcher answers NO to everything and the arm below cannot fail" % str(EXCLUDED_BY_DESIGN))
+	assert_eq(offenders.size(), 0,
+		"these sheets are DECLARED in the manifest and EXCLUDED from every export, so they import in this checkout and are absent for every player: %s. Either the art ships or the declaration goes — and if the exclusion is deliberate, add the id to EXCLUDED_BY_DESIGN with the reason" % str(offenders))
