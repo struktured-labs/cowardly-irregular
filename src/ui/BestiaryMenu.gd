@@ -602,6 +602,9 @@ func _load_sprite(monster_id: String) -> void:
 
 
 ## One owner for a row step, so the two directions cannot drift apart.
+## ⛔ THE CUE LIVES HERE. Arrow/stick navigation was SILENT while the page jump in this same file
+## beeped and every sibling menu beeps on move — ItemsMenu, AbilitiesMenu, JobMenu, EquipmentMenu.
+## On a controller-first game the pad path was the one without feedback.
 func _nav_step(step: int) -> void:
 	if _row_nodes.is_empty():
 		return
@@ -609,6 +612,8 @@ func _nav_step(step: int) -> void:
 	_highlight_row()
 	_scroll_to_selected()
 	_refresh_detail()
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
 
 
 func _input(event: InputEvent) -> void:
@@ -651,17 +656,13 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.pressed:
 		# Wheel scroll moves selection; right-click closes
+		# Through the owner, not a third copy of its body: this duplicated the modulo AND the three
+		# refresh calls, so it carried neither the empty guard nor the cue.
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_selected = (_selected - 1 + _row_nodes.size()) % _row_nodes.size()
-			_highlight_row()
-			_scroll_to_selected()
-			_refresh_detail()
+			_nav_step(-1)
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_selected = (_selected + 1) % _row_nodes.size()
-			_highlight_row()
-			_scroll_to_selected()
-			_refresh_detail()
+			_nav_step(1)
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			_close()

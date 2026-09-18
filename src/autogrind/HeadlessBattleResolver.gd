@@ -1949,6 +1949,11 @@ func _build_results(victory: bool, termination_reason: String = "") -> Dictionar
 		"rare_drops": drops["rare_drops"],
 		"log": _battle_log.duplicate(),
 		"player_party": _player_party,
+		## ⛔ DO NOT READ THIS. GameLoop._resolve_headless_battle frees every enemy three lines after
+		## resolve_battle returns (`for e in enemies: e.free()`), so by the time any consumer could
+		## touch this key it holds FREED Combatants. Zero consumers in src/ or test/ today, which is
+		## the only reason it is harmless; test_autogrind_headless_drops reds if one appears.
+		## player_party is safe by contrast — the caller owns those and does not free them.
 		"enemy_party": _enemy_party,
 		"termination_reason": termination_reason,  # cadence #19: "" = normal (victory or fair defeat), "stalemate" = MAX_ROUNDS exhausted
 	}
