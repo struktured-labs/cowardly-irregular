@@ -349,7 +349,14 @@ func _accounted() -> Array:
 			continue
 		var lines: PackedStringArray = f.get_as_text().split("\n")
 		f.close()
+		## ⛔ DOC-AWARE TOO. This was the LAST loop still reading regions, and it is the dangerous
+		## one: a docstring naming `FileAccess.open(p, FileAccess.READ)` bought a function its
+		## ACCOUNTED status, which suppresses the arrival arm on a real unaccounted write.
+		## Measured: a ResourceSaver write with that docstring went P=3 F=0.
+		var in_doc: Array = _doc_region_flags(lines)
 		for i in lines.size():
+			if in_doc[i]:
+				continue
 			var s: String = _strip_comment(str(lines[i]))
 			if not ("FileAccess.open" in s):
 				continue
@@ -402,7 +409,12 @@ func test_no_write_arrives_in_a_form_this_scan_cannot_see() -> void:
 			continue
 		var lines: PackedStringArray = f.get_as_text().split("\n")
 		f.close()
+		## Conservative direction here (a docstring `store_string` would be a false RED), guarded
+		## anyway so all four source loops in this file answer the same way.
+		var in_doc: Array = _doc_region_flags(lines)
 		for i in lines.size():
+			if in_doc[i]:
+				continue
 			var s: String = _strip_comment(str(lines[i])).strip_edges()
 			if s.is_empty():
 				continue
