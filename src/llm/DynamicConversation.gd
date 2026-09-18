@@ -188,6 +188,22 @@ func setup(
 ## Run the full conversation loop and await its completion.
 ## Freezes `player` movement while the conversation is active.
 ## MUST be awaited; returns when the conversation is in State.DONE.
+##
+## ⚠️ ENTRY-LATCH SHAPE, MEASURED AND LEFT — recorded so the next reader does not re-derive it.
+## `_active` is raised and the player FROZEN before a loop containing three awaited steps, and
+## both are undone only at the bottom. An error inside an awaited step strands both: `:if _active`
+## above refuses every later conversation, and the player cannot move.
+##
+## It is NOT fixed here because the recovery already exists and is built for exactly this —
+## `abort()` forces State.DONE, clears `_active`, frees the choice menu and RESTORES movement;
+## `run()` registers with LLMService, and GameLoop calls `abort_all_conversations()` on scene
+## change with a comment naming the frozen player as the reason.
+##
+## ⛔ THE CAVEAT, which is the part worth not re-deriving: that recovery fires on a SCENE CHANGE,
+## and the strand freezes the player — who is normally what causes scene changes. It stays
+## reachable through the menu (`set_can_move(false)` gates movement, not menu input), so a player
+## who thinks to open it recovers. Reasoned from `_can_move()`'s composition, NOT driven; closing
+## that needs a live-input test. A timer-based recovery would not have this dependency at all.
 func run(player: Node) -> void:
 	if _active:
 		return
