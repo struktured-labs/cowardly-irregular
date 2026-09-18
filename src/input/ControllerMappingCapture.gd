@@ -12,6 +12,13 @@ class_name ControllerMappingCapture
 ## Deliberately free of UI and of Input polling so the string generation — the part where a
 ## mistake is silent — is testable without hardware attached.
 
+## ⛔ DELIBERATELY HIGHER THAN GamepadFilter.STICK_DEADZONE (0.2), and the gap is the point.
+## That deadzone asks "is the player steering?" — it must pass a gentle push. This one asks
+## "is the player CLAIMING this control?", and a wrong answer writes a binding the pad keeps.
+## Lowering it to match would let a resting stick claim whichever control the prompt is on.
+const CAPTURE_PUSH_THRESHOLD := 0.5
+
+
 ## SDL's canonical control order. Walked in this sequence so the prompt matches the physical
 ## layout a player scans: faces, shoulders, centre, sticks, then the d-pad.
 const CONTROLS: Array = [
@@ -115,7 +122,7 @@ static func binding_token(event: InputEvent) -> String:
 	if event is InputEventJoypadMotion:
 		var m := event as InputEventJoypadMotion
 		# A resting stick jitters; require a decisive push so noise cannot claim a control.
-		if absf(m.axis_value) < 0.5:
+		if absf(m.axis_value) < CAPTURE_PUSH_THRESHOLD:
 			return ""
 		return "a%d" % m.axis
 	return ""
