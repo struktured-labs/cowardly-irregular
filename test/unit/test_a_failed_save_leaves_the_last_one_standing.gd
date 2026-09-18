@@ -296,7 +296,7 @@ func test_every_open_here_proves_it_is_read_only_or_is_staged() -> void:
 		var t := line.strip_edges()
 		if t.begins_with("#") or not t.contains("FileAccess.open("):
 			continue
-		if _classify_open(t) == "read":
+		if _classify_open(t) == "read_only":
 			read_only += 1
 			continue
 		## a write, or a mode this scan cannot read: it must be opening the staging path
@@ -314,23 +314,42 @@ func test_every_open_here_proves_it_is_read_only_or_is_staged() -> void:
 ## matching EVERYTHING — `READABLE_MODES = ["FileAccess."]` classified every open as safe and the
 ## arm went permanently silent with its control still green.
 ##
-## ⚠️ ORDER IS LOAD-BEARING: READ_WRITE contains READ, so the write forms are tested FIRST.
+## ⛔ THE VERDICTS NAME WHAT WAS MEASURED, NOT "WRITE-NESS" — I had two mechanism claims wrong here
+## and both are corrected from an in-engine probe (write 10 bytes, reopen in each mode, re-read):
+##     FileAccess.WRITE        10 -> 0    TRUNCATES
+##     FileAccess.WRITE_READ   10 -> 0    TRUNCATES
+##     FileAccess.READ_WRITE   10 -> 10   PRESERVES      <- I had pinned this as a truncating write
+## (cowir-autogrind measured it first and corrected their own comment; I re-ran it rather than
+## relaying, and cowir-controller's rule is why it mattered: a wrong "this truncates" is a claim
+## about the MECHANISM, not just the site.)
+##
+## ⛔ AND "ORDER IS LOAD-BEARING" WAS ALSO WRONG. `"FileAccess.READ_WRITE".contains("FileAccess.WRITE")`
+## is FALSE — measured — so READ_WRITE reaches the READ test on its own. The `FileAccess.` PREFIX is
+## what prevents the collision; a bare `"WRITE"` test would mis-sort it. Order is incidental.
+##
+## ⚠️ READ_WRITE IS STILL A CANDIDATE, AND THAT IS DELIBERATE: it does not truncate, and it is not
+## read-only either. An in-place byte overwrite of a save slot is its own hazard, so the arm demands
+## staging for anything that can write at all — the message just must not say "truncates".
 func _classify_open(line: String) -> String:
-	if line.contains("FileAccess.WRITE") or line.contains("READ_WRITE") or line.contains("WRITE_READ"):
-		return "write"
+	if line.contains("FileAccess.WRITE"):
+		return "truncating"
+	if line.contains("FileAccess.READ_WRITE"):
+		return "writable"
 	if line.contains("FileAccess.READ"):
-		return "read"
-	return "unknown"
+		return "read_only"
+	return "unprovable"
 
 
 func test_the_open_classifier_answers_both_ways_on_constructed_input() -> void:
 	## A count over the SAFE class cannot see a classifier that calls everything safe — the failure
 	## mode of an inverted-burden arm is silence, not noise. So both answers are pinned here.
-	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.READ)'), "read",
+	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.READ)'), "read_only",
 		"a literal READ open must classify read-only, or the arm flags every legitimate read in the file")
-	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.WRITE)'), "write",
-		"a literal WRITE open must classify write")
-	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.READ_WRITE)'), "write",
-		"READ_WRITE must classify WRITE — it contains READ, so a read-first classifier calls the widest mode the safest")
-	assert_eq(_classify_open('var w := FileAccess.open(path, mode)'), "unknown",
-		"a HOISTED mode must classify unknown, not read — this is the form that left the whole guard at 6 passing with a live truncating write in the file")
+	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.WRITE)'), "truncating",
+		"a literal WRITE open must classify truncating — measured 10 bytes -> 0")
+	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.WRITE_READ)'), "truncating",
+		"WRITE_READ also truncates — measured 10 -> 0 — and it is caught by the same FileAccess.WRITE prefix")
+	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.READ_WRITE)'), "writable",
+		"READ_WRITE PRESERVES (measured 10 -> 10) so it must not be labelled truncating, and it is not read-only either — it stays a candidate for the in-place-overwrite hazard, under its own name")
+	assert_eq(_classify_open('var w := FileAccess.open(path, mode)'), "unprovable",
+		"a HOISTED mode must be unprovable, not read_only — this is the form that left the whole guard at 6 passing with a live truncating write in the file")
