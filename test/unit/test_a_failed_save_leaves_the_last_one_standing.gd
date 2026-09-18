@@ -165,6 +165,9 @@ func test_no_writer_in_this_file_opens_its_destination() -> void:
 	## delegation with the docstring untouched -> it reds. One line of prose was the whole
 	## difference. Both pins are assert-PRESENT, so a docstring SATISFIES them — the harmful
 	## polarity; the two SCANS above are assert-EMPTY, where the same prose is a false RED instead.
+	## 📌 AND THE STRIP IS LOAD-BEARING, NOT HYGIENE: delegate the write and leave the old call as a
+	## TRAILING comment, and every raw-source arm in this file goes green on the surviving text —
+	## this pin is the only one that reds. Failing 1, and it is this assert.
 	var halves := GdSource.split(src)
 	var code := str(halves["code"])
 	## GdSource's own header puts this obligation on every caller: over-stripping and a correct
