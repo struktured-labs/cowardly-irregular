@@ -96,10 +96,12 @@ func _process(delta: float) -> void:
 
 
 ## Start a grinding session
-func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -> void:
+func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -> bool:
+	## Returns false on refusal. GameLoop commits LoopState.AUTOGRIND before calling, and its only
+	## guard tests whether the session ENDED — a start that never BEGAN needs its own answer.
 	if _state != State.IDLE:
 		print("[AUTOGRIND] Already grinding!")
-		return
+		return false
 
 	# Filter out permadead characters
 	_party = []
@@ -115,7 +117,7 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 
 	if _party.is_empty():
 		print("[AUTOGRIND] No alive party members available!")
-		return
+		return false
 
 	_config = config
 	_terrain = terrain
@@ -133,7 +135,11 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 		if member is Combatant:
 			typed_party.append(member)
 
-	AutogrindSystem.start_autogrind(typed_party, {}, config)
+	if not AutogrindSystem.start_autogrind(typed_party, {}, config):
+		## The force already happened; without this the player keeps autogrind's defaults (see .422).
+		_restore_autobattle_states()
+		print("[AUTOGRIND] System refused the session — controller stands down")
+		return false
 
 	# Set region
 	var region = config.get("region", "")
@@ -166,6 +172,7 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	print("[AUTOGRIND] Controller started, requesting first battle")
 	_state = State.PRE_BATTLE
 	_request_next_battle()
+	return true
 
 
 ## Evaluate autogrind rules between battles and apply any triggered actions
