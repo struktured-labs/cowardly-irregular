@@ -267,7 +267,10 @@ func test_resume_is_reachable_without_a_mouse() -> void:
 func test_the_hud_does_not_reach_for_the_remap_helper() -> void:
 	var offenders: Array = []
 	for path in ["res://src/ui/autogrind/AutogrindUI.gd"]:
-		if FileAccess.get_file_as_string(path).contains("get_button_label("):
+		var code := FileAccess.get_file_as_string(path)
+		## An absence claim over an unread file is green for the wrong reason.
+		assert_gt(code.length(), 1000, "CONTROL: %s must actually be read" % path)
+		if code.contains("get_button_label("):
 			offenders.append(path)
 	assert_eq(offenders, [],
 		"get_button_label is the ControlsMenu helper — a HUD wants button_name_for_index/hint_for_action")

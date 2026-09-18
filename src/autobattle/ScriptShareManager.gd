@@ -56,11 +56,8 @@ static func decode_share_code(code: String) -> Dictionary:
 		_:
 			return {}
 	if not errs.is_empty():
-		## The reason was computed on the line above and thrown away — the same defect the APPLIERS
-		## were fixed for and this layer was not. Both paste paths only see {} and tell the player
-		## "Not a valid share code", which is false: a code using a condition this build does not
-		## have is well-formed and merely newer. That case stopped being hypothetical the day four
-		## conditions were added to the grammar.
+		## Kept for last_import_reason(), which both paste paths show: a code using a condition
+		## this build lacks is well-formed and merely newer, not "not a valid share code".
 		last_import_errors = errs
 		push_warning("[SHARE] Share code rejected — %d invalid rule(s): %s" % [errs.size(), str(errs)])
 		return {}

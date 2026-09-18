@@ -137,8 +137,11 @@ func test_a_rotation_mid_press_does_not_strand_the_action() -> void:
 		"…and the touch map must be dropped: its indices name buttons that are gone")
 
 
+## ⛔ DERIVED, NOT LISTED. This was a hand-list of the ten actions the pad binds today, which is a
+## teardown that silently stops covering the eleventh button somebody adds. The pad is autofreed by
+## now so its own key set is gone — InputMap's action list is the population that outlives it, and
+## releasing an action nobody pressed costs nothing.
 func after_each() -> void:
-	for a in ["ui_accept", "ui_cancel", "ui_up", "ui_down", "ui_left", "ui_right",
-			"battle_defer", "battle_advance", "ui_menu", "battle_toggle_auto"]:
+	for a in InputMap.get_actions():
 		Input.action_release(a)
 	Input.flush_buffered_events()

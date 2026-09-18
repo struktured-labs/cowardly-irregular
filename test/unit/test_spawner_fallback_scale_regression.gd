@@ -160,6 +160,8 @@ func test_no_src_stat_block_sits_an_order_of_magnitude_below_the_corpus() -> voi
 	var seen: int = 0
 	for path in files:
 		var src := FileAccess.get_file_as_string(path)
+		## Per file — any one of the six can go dark and the other five still clear seen > 20.
+		assert_gt(src.length(), 500, "CONTROL: %s must actually be read" % path)
 		for m in re.search_all(src):
 			seen += 1
 			var v: int = int(m.get_string(1))
