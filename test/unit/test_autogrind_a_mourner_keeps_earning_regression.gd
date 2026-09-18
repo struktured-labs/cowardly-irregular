@@ -117,8 +117,18 @@ func test_the_grind_asks_live_rather_than_carrying_its_own_copy() -> void:
 	## ⛔ THE ANTI-TWIN ARM. A local reimplementation would pass every arm above and then drift the
 	## first time live's predicate changes — which is how this lane's magnitude bug was born.
 	var grind: String = GdSource.code_of(GRIND)
-	assert_true(grind.contains("earns_exp_while_dead"),
-		"the grind no longer asks live's predicate")
+	## ⛔ THE RECEIVER DOT IS LOAD-BEARING. This was `contains("earns_exp_while_dead")`, and
+	## AutogrindSystem's own wrapper is `func _earns_exp_while_dead(...)` — whose NAME CONTAINS the
+	## string. Measured: delete the delegation `bm.earns_exp_while_dead(member)` and keep the wrapper
+	## shell, and the bare substring still occurs 4 times, so this arm stayed GREEN.
+	##
+	## ⚠️ AND THIS IS THE ARM THAT HAS TO WORK ALONE. The behavioural arms DID catch that mutation —
+	## but they cannot catch the thing this arm exists for: a local REIMPLEMENTATION behaves
+	## correctly, passes every behavioural arm, and drifts the day live's predicate changes. A twin
+	## is invisible to behaviour by construction. @cowir-music's `_setup_weather()` shape, with the
+	## substring hidden inside a differently-named wrapper rather than its own definition.
+	assert_true(grind.contains(".earns_exp_while_dead("),
+		"the grind no longer DELEGATES to live's predicate — a bare mention is satisfied by this file's own _earns_exp_while_dead wrapper name")
 	assert_false(grind.contains("exp_while_dead\", 0.0"),
 		"AutogrindSystem is reading the exp_while_dead KEY itself — that is a second copy of live's slot walk, and the two will disagree the day either moves")
 	var live: String = GdSource.code_of(LIVE)
