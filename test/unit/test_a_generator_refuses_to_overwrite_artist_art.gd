@@ -73,7 +73,11 @@ func test_an_unreadable_tier_REFUSES_rather_than_falling_through() -> void:
 	var guard := _src(GUARD)
 	assert_true(guard.contains("def tier_refusal("),
 		"OWNER: artist_guard.py no longer defines tier_refusal() — the generator below imports a name that does not exist")
-	assert_true(guard.contains("_PROTECTED_TIERS") and guard.contains("_WRITABLE_TIERS"),
+	## Both membership tests, as STATEMENTS. Naming the two constants only proves they are
+	## DEFINED — cowir-autogrind's shape — and the claim below is about the decision CONSULTING
+	## them. Measured: leaving both defined while consulting one reds 5 selftest arms and left
+	## this one green until it carried `if t in`.
+	assert_true(guard.contains("if t in _WRITABLE_TIERS:") and guard.contains("if t in _PROTECTED_TIERS:"),
 		"OWNER: the tier decision collapsed back to one set. Three answers are the fix: writable proceeds, artist refuses, UNRECOGNISED refuses")
 
 	var regen := _src(REGEN)
