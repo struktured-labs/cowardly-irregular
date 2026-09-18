@@ -44,6 +44,16 @@ PROJECT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT))
 from tools.pipeline.reference_library import refs_for
 
+try:
+    from tools.artist_guard import tier_refusal
+except ImportError as exc:
+    # Fail CLOSED, like every other provenance branch in this file. A generator
+    # that cannot reach the guard must not run, not run unguarded.
+    raise SystemExit(
+        f"artist_guard unavailable ({exc}) — refusing to run a generator that "
+        f"cannot check provenance."
+    )
+
 GAME_REPO = Path(os.environ.get(
     "GAME_REPO",
     "/home/struktured/projects/cowardly-irregular-artist-ship"
@@ -700,11 +710,16 @@ def artist_write_refusal(monster_id: str, allow_override: bool) -> str:
         return (f"'{monster_id}' has a sheet on disk but NO manifest entry, "
                 f"so its provenance is unknown. Register it before "
                 f"regenerating — unknown is not T1.")
-    if tier in ("T2", "T3") and not allow_override:
-        return (f"'{monster_id}' is tier {tier} — ARTIST work. Regenerating "
-                f"would overwrite it. Pass --allow-artist-overwrite only "
-                f"with struktured's explicit approval; the tmp/ backup is "
-                f"gitignored and holds only the first overwrite.")
+    if not allow_override:
+        # Three answers, owned by artist_guard: writable proceeds, artist
+        # refuses, UNRECOGNISED refuses. This used to be `tier in ("T2","T3")`
+        # with a fallthrough to "", so a tier it could not read was permission
+        # — fail-open, in the one function whose other branches fail closed.
+        reason = tier_refusal(tier, f"'{monster_id}'")
+        if reason:
+            return (f"{reason} Pass --allow-artist-overwrite only with "
+                    f"struktured's explicit approval; the tmp/ backup is "
+                    f"gitignored and holds only the first overwrite.")
     return ""
 
 

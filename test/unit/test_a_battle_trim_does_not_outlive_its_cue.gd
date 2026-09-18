@@ -4,8 +4,12 @@ extends GutTest
 ## there. `play_battle` passes an explicit level on every call for exactly this reason — its own
 ## comment says so — and the other `_battle_player` callers passed NAN ("preserve"), inheriting it.
 
+## ⚠️ LOUD_TRIM_CUE IS DRIVEN THROUGH play_battle DIRECTLY AND NO LIVE CALLER DOES THAT: advance_undo
+## reaches _refuse_player via play_advance_state. It is the only POSITIVE trim authored, so it is the
+## only way to cover that direction of play_battle's contract — the quiet arm is the one with live
+## instances (7 of 8 trims reach _battle_player and every one of them is negative).
 const LOUD_TRIM_CUE := "advance_undo"           # +6.0 in _BATTLE_VOLUME_TRIM_DB
-const QUIET_TRIM_CUE := "corruption_ap_flicker" # -6.0
+const QUIET_TRIM_CUE := "corruption_ap_flicker" # -6.0, and play_battle("corruption_ap_flicker") is a real call site
 
 
 func _sm() -> Node:

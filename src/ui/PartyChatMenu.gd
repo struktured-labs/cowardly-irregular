@@ -197,11 +197,15 @@ func _ensure_selection_visible() -> void:
 
 
 ## One owner for a row step.
+## ⛔ THE CUE LIVES HERE. Pad/arrow navigation was SILENT while MOUSE HOVER beeped — the one path
+## with feedback was the one this game does not require. Every sibling menu beeps on move.
 func _nav_step(step: int) -> void:
 	if _row_nodes.is_empty():
 		return
 	_selection = (_selection + step + _row_nodes.size()) % _row_nodes.size()
 	_highlight()
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
 
 
 func _input(event: InputEvent) -> void:
@@ -231,6 +235,8 @@ func _input(event: InputEvent) -> void:
 		# The registry carries 44 chats and availability grows all game; clamped, not wrapped, like every other paging menu.
 		_selection = clampi(_selection + page * MenuPaging.PAGE_ROWS, 0, _row_nodes.size() - 1)
 		_highlight()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept"):
 		_play_selected()
@@ -240,13 +246,12 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.pressed:
 		# Mouse wheel = move selection
+		# Through the owner, not a copy of its body — so it carries the empty guard and the cue.
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_selection = (_selection - 1 + _row_nodes.size()) % _row_nodes.size()
-			_highlight()
+			_nav_step(-1)
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_selection = (_selection + 1) % _row_nodes.size()
-			_highlight()
+			_nav_step(1)
 			get_viewport().set_input_as_handled()
 
 
