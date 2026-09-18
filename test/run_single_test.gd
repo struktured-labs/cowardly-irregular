@@ -1,7 +1,9 @@
 extends SceneTree
 
 ## Run a single test file for quick iteration
-## Usage: godot --headless -s test/run_single_test.gd -- test/unit/test_sprite_generation.gd
+## Usage: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_single_test.gd -- test/unit/test_sprite_generation.gd
+##
+## ⛔ The prefix is load-bearing: a bare run writes the player's real `user://`.
 
 func _init():
 	var gut = load("res://addons/gut/gut.gd").new()
@@ -10,7 +12,7 @@ func _init():
 	# Get the test file from command line args
 	var args = OS.get_cmdline_user_args()
 	if args.size() == 0:
-		print("Usage: godot --headless -s test/run_single_test.gd -- <test_file.gd>")
+		print("Usage: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_single_test.gd -- <test_file.gd>")
 		quit(1)
 		return
 
