@@ -4324,11 +4324,17 @@ func set_sfx_volume(normalized: float) -> void:
 		AudioServer.set_bus_mute(sfx_idx, normalized <= 0.01)
 	# Base levels are set once at construction; re-assert defensively in case a caller
 	# mutated them, but do NOT fold the slider in again or it attenuates twice.
-	if _ui_player:
+	## ⛔ AND NEVER OVER A CUE THAT IS STILL SOUNDING — the write lands on a live stream. Measured
+	## 2026-09-18: corruption_ap_flicker playing at -12.00 jumped to -6.00 mid-cue the moment the
+	## slider moved, a 6 dB step on the sound the player is listening to. set_music_volume documents
+	## the same hazard one function up and repairs it by putting the envelope back; the SFX side has
+	## no envelope to restore, so it declines to flatten instead. A resting player still gets the
+	## defensive re-assert, which is the only state it was ever for.
+	if _ui_player and not _ui_player.playing:
 		_ui_player.volume_db = SFX_UI_BASE_DB
-	if _battle_player:
+	if _battle_player and not _battle_player.playing:
 		_battle_player.volume_db = SFX_BATTLE_BASE_DB
-	if _ability_player:
+	if _ability_player and not _ability_player.playing:
 		_ability_player.volume_db = SFX_ABILITY_BASE_DB
 
 
