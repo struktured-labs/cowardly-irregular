@@ -222,7 +222,35 @@ mkdir -p "$_STAGE_XDG"
 ( cd "$STAGE" && mkdir -p builds/web \
   && XDG_DATA_HOME="$_STAGE_XDG" godot --headless --audio-driver Dummy --import > ../stage_import.log 2>&1 ) &
 IEC=0; wait $! || IEC=$?
-test $IEC -eq 0 || { echo "[stage] BLOCKED: staged import failed — tmp/stage_import.log" >&2; exit 3; }
+
+# ── IS A NON-ZERO IMPORT EXIT ACTUALLY AN IMPORT FAILURE? ────────────────────────────────────
+# It was not on 2026-09-18. `v3.33.422-alpha` red HERE and blocked the web channel while linux
+# and windows were already live, splitting the store. The log said:
+#
+#     reimport: begin: (Re)Importing Assets steps: 1434
+#     reimport: end                                  <- the import COMPLETED
+#     loading_editor_layout: begin … end
+#     handle_crash: Program crashed with signal 11   <- godot died in editor TEARDOWN
+#
+# A sandboxed rebuild of the same stage, same command, came back clean — so nothing was wrong
+# with the tree and `test $IEC -eq 0` had reported a crash-after-success as an import failure.
+#
+# tools/check_import_ok.sh was written for exactly this (observed .254 and .276; .422 is the
+# third), and publish_all.sh:824 has delegated to it since 2026-09-09. THIS SITE NEVER GOT THE
+# REPAIR — the sibling had the answer one file over, which is the shape this repo keeps finding.
+# It is NOT a blanket tolerance: the tool refuses a crash that landed DURING import, and refuses
+# an absent or unreadable log, so a real failure still blocks. Downstream, check_pck_complete.py
+# is unchanged and still gates what the pck actually owes.
+_STAGE_IMPORTED="$(find "$STAGE/.godot/imported" -type f 2>/dev/null | wc -l)"
+if [ -x tools/check_import_ok.sh ]; then
+    ./tools/check_import_ok.sh tmp/stage_import.log "$IEC" 100 "$_STAGE_IMPORTED" || {
+        echo "[stage] BLOCKED: refusing to build the web pck on this import cache — see above." >&2
+        exit 3; }
+else
+    echo "[stage] BLOCKED: tools/check_import_ok.sh missing. Refusing to judge a non-zero import" >&2
+    echo "        exit by its code alone — that is what held the web channel back at .422." >&2
+    exit 3
+fi
 
 # SANDBOXED, with the export templates symlinked in. This was the LAST deploy invocation writing
 # struktured's real profile: v3.33.360-alpha shipped with the boot gate and both imports sandboxed

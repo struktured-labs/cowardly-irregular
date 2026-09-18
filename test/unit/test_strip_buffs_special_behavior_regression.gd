@@ -18,6 +18,29 @@ const BATTLE_MANAGER_PATH := "res://src/battle/BattleManager.gd"
 const COMBATANT_PATH := "res://src/battle/Combatant.gd"
 
 
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
+
+## ⛔ THIS FILE LEFT THE BattleManager AUTOLOAD DIRTY FOR EVERY LATER FILE IN THE PROCESS.
+## Measured 2026-09-18 by a per-script probe over all 2,071 test files: it left FREED Combatants in `player_party` and `enemy_party`. A dangling instance is worse than a
+## stale value: `is` on a freed object is a script error that aborts whichever later function touches it.
+##
+## The derived snapshot/restore covers the whole surface rather than the fields anyone listed, and
+## it restores the PRIOR value — so it cannot mask a leak that arrived from upstream.
+var _bm_guard = null
+
+
+func before_each() -> void:
+	_bm_guard = BattleStateGuard.new()
+	_bm_guard.snapshot()
+
+
+## Restore FIRST: a GDScript error anywhere below aborts this function, and an abort here is a LEAK
+## the file still scores green for. Nothing above it can be skipped if there is nothing above it.
+func after_each() -> void:
+	if _bm_guard != null:
+		_bm_guard.restore()
+
+
 func _read(p: String) -> String:
 	return FileAccess.get_file_as_string(p)
 

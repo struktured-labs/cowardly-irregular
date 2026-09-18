@@ -32,6 +32,29 @@ class _SceneStub extends Node:
 	var _enemy_base_positions: Array[Vector2] = []
 
 
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
+
+## ⛔ THIS FILE LEFT THE BattleManager AUTOLOAD DIRTY FOR EVERY LATER FILE IN THE PROCESS.
+## Measured 2026-09-18 by a per-script probe over all 2,071 test files: it left FREED Combatants in `player_party` and `enemy_party`. A dangling instance is worse than a
+## stale value: `is` on a freed object is a script error that aborts whichever later function touches it.
+##
+## The derived snapshot/restore covers the whole surface rather than the fields anyone listed, and
+## it restores the PRIOR value — so it cannot mask a leak that arrived from upstream.
+var _bm_guard = null
+
+
+func before_each() -> void:
+	_bm_guard = BattleStateGuard.new()
+	_bm_guard.snapshot()
+
+
+## Restore FIRST: a GDScript error anywhere below aborts this function, and an abort here is a LEAK
+## the file still scores green for. Nothing above it can be skipped if there is nothing above it.
+func after_each() -> void:
+	if _bm_guard != null:
+		_bm_guard.restore()
+
+
 func _make_sprite(at_pos: Vector2) -> Node2D:
 	# Node2D stands in for AnimatedSprite2D — the only surface BRD touches
 	# is is_instance_valid + global_position.
