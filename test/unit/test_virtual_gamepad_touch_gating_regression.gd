@@ -15,9 +15,30 @@ func test_detection_drops_the_web_blanket() -> void:
 	assert_true("is_touchscreen_available()" in body, "real detection remains")
 
 
+## ⛔ DRIVEN, NOT GREPPED. This asserted `"_create_buttons()" in body` — the literal call inside
+## `_input` — and went red when that build was hoisted into a single `_build()` helper so the
+## first-touch path and the resize rebuild could not drift apart. The behaviour was identical.
+## A guard pinned to a CALL SITE reds on a correct refactor and passes on a build that produces
+## nothing; feeding the pad a real touch cannot do either.
 func test_first_touch_summons_the_pad() -> void:
-	var src := FileAccess.get_file_as_string("res://src/ui/VirtualGamepad.gd")
-	var i := src.find("func _input(")
-	var body := src.substr(i, 700)
-	assert_true("InputEventScreenTouch" in body and "_create_buttons()" in body,
-		"a real touch on a hidden pad must build + show it (false-negative recovery)")
+	var sv := SubViewport.new()
+	sv.size = Vector2i(800, 480)
+	add_child_autofree(sv)
+	var pad = load("res://src/ui/VirtualGamepad.gd").new()
+	sv.add_child(pad)
+	await get_tree().process_frame
+
+	## Headless has no touchscreen, so _ready leaves it hidden — which is the mis-detected device
+	## this recovery exists for.
+	assert_false(bool(pad._visible), "CONTROL: the pad must start hidden, or there is nothing to recover from")
+	assert_eq(int(pad._buttons.size()), 0, "CONTROL: …and must have built nothing yet")
+
+	var touch := InputEventScreenTouch.new()
+	touch.pressed = true
+	touch.position = Vector2(400, 240)
+	pad._input(touch)
+	await get_tree().process_frame
+
+	assert_true(bool(pad._visible), "a real touch on a hidden pad must show it (false-negative recovery)")
+	assert_gt(int(pad._buttons.size()), 6,
+		"…and must BUILD it: a d-pad, a diamond, shoulders and a centre row, got %d" % pad._buttons.size())
