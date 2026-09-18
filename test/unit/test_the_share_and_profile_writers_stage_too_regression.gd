@@ -16,6 +16,14 @@ const SOURCES := {
 }
 
 
+## ⚠️ COMMENT HANDLING IS LINE-START ONLY, MEASURED AND DELIBERATELY NOT FIXED. A line whose
+## TRAILING comment mentions a write — `var n := 1  # was: FileAccess.open(p, FileAccess.WRITE)` —
+## is scanned and flagged. Verified by planting exactly that: Failing 1, naming the line.
+## ✅ Left alone because the direction is CONSERVATIVE: a false RED puts a human on the line, who
+## sees prose. @cowir-controller's source-level `_strip_comment` is strictly stronger and holds for
+## every matcher at once — but it must be QUOTE-AWARE, and every writer here pushes a warning whose
+## message could carry a `#`, so a naive strip trades a false red for a truncated real line.
+## Zero live instances today; stated so the next reader knows it was measured, not missed.
 func _write_opens(src: String) -> Array:
 	var out: Array = []
 	var n := 0
