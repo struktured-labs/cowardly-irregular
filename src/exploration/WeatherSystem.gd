@@ -223,10 +223,10 @@ func _trigger_lightning() -> void:
 	var tween = _player_ref.create_tween()
 	tween.tween_property(_lightning_flash, "color:a", 0.0, 0.2)
 	var sm: Node = _autoload("SoundManager")
-	if sm and sm.has_method("play_battle"):
+	if sm and sm.has_method("play_weather_oneshot"):
 		# Weather thunder, not the mage's spell: ability_lightning is a cast cue and reads as someone casting Thunder offscreen.
-		## play_BATTLE is deliberate and the asset pays for it: play_ambient would replace the storm BED, so a one-shot voice is required, and the file is mixed 18 dB down (-17.9 dBFS against the bed's +0.3) so the -6 battle channel lands it 3.8 dB over the rain. Re-routing this to play_ui (-16) would drop it 10 dB into inaudibility with nothing to show for it.
-		sm.play_battle("weather_thunder_distant")
+		## A ONE-SHOT VOICE AT THE BATTLE LEVEL, which is what play_battle was reaching for: play_ambient would replace the storm BED, and the file is mixed 18 dB down (-17.9 dBFS against the bed's +0.3) so a -6 channel lands it 3.8 dB over the rain — play_ui (-16) would drop it 10 dB into inaudibility. The level was right and the PLAYER was not: on _battle_player this 4.00s clap was cut by the next corruption sting, level-up or hit.
+		sm.play_weather_oneshot("weather_thunder_distant")
 
 
 func _trigger_glitch() -> void:

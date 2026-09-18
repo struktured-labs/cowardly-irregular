@@ -14,6 +14,7 @@ var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS
 var _pickup_player: AudioStreamPlayer  # dedicated voice: a reward cue always follows the action that earned it, and replaced it on _ui_player (2026-09-12)
 var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replaced advance_flourish_5 in the same frame, every full bank (2026-09-14)
 var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance press lands while the job's 3s fifth rung is still ringing (2026-09-14)
+var _weather_player: AudioStreamPlayer  # dedicated voice: a 4s thunder clap shared the channel every attack hit lands on (2026-09-18)
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
@@ -350,6 +351,16 @@ func _setup_audio_players() -> void:
 	_flash_player.volume_db = SFX_BATTLE_BASE_DB
 	_flash_player.bus = SFX_BUS
 	add_child(_flash_player)
+
+	_weather_player = AudioStreamPlayer.new()
+	_weather_player.name = "WeatherPlayer"
+	## The battle base, not a new number: weather_thunder_distant is mixed 18 dB down (-17.9 dBFS
+	## against the storm bed's +0.3) SO THAT a -6 channel lands it 3.8 dB over the rain. The level
+	## is a property of the asset; only the VOICE was wrong. Defensive rather than load-bearing —
+	## play_weather_oneshot goes through _play_battle_on, which passes an explicit level every call.
+	_weather_player.volume_db = SFX_BATTLE_BASE_DB
+	_weather_player.bus = SFX_BUS
+	add_child(_weather_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
@@ -903,6 +914,14 @@ func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
 		return
 	if not _try_play_sfx_from_manifest(player, sound_key, level) and SOUNDS.has(sound_key):
 		_play_sound(player, _synth_params(sound_key, level))
+
+
+## Ambient WEATHER one-shots — thunder over a storm bed. Its own voice for the usual reason and
+## an unusually stark one: the clap is 4.00s on a channel that sounds every strike, and the two
+## surfaces that fire it (WeatherSystem while walking, BattleScene mid-fight) are exactly the two
+## places _battle_player is busiest. NOT play_ambient — that would stop the 9.50s bed it lands over.
+func play_weather_oneshot(sound_key: String) -> void:
+	_play_battle_on(_weather_player, sound_key)
 
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
