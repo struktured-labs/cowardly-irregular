@@ -33,6 +33,11 @@ var cursor_row: int = 0
 ## since it grew past nine rules; this editor never got it, and it has no cap on rules at all.
 var _scroll_offset: float = 0.0
 
+## Hold-to-repeat. Vertical only: left/right move between CELLS of one rule, and repeating those
+## would thrash its fields. The AUTOBATTLE twin got this when it was "the last long list with no
+## fast route"; this editor has no cap on rules AT ALL and never got it, nor any paging.
+var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
+
 var cursor_col: int = 0
 var is_editing: bool = false
 
@@ -1039,6 +1044,46 @@ func _get_current_action_index() -> int:
 ## INPUT HANDLING
 ## ═══════════════════════════════════════════════════════════════════════
 
+## One owner for a row step, so the press path and the hold path cannot drift apart.
+## CLAMPED, not wrapped — matching what the arms did before, and what a long rule list wants.
+func _nav_step_row(step: int) -> void:
+	if step < 0:
+		cursor_row = maxi(0, cursor_row - 1)
+	else:
+		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
+	cursor_col = mini(cursor_col, _get_max_col_for_row(cursor_row))
+	_update_cursor()
+	SoundManager.play_ui("menu_move")
+
+
+## ⛔ MenuRepeat POLLS Input, so it inherits NONE of _input's early returns. Every refusal below is
+## one _input makes for itself — derived from THIS file, not copied from the autobattle twin, whose
+## gates genuinely differ (it has a share picker and a portrait focus; this one has a reset prompt).
+func _row_nav_blocked() -> bool:
+	if not visible or is_queued_for_deletion():
+		return true
+	if TutorialHint.is_any_active():
+		return true
+	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
+		return true
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay) and _rule_composer_overlay.visible:
+		return true
+	if _reset_confirm and is_instance_valid(_reset_confirm):
+		return true
+	if is_editing:
+		return true
+	return false
+
+
+func _process(delta: float) -> void:
+	if _row_nav_blocked():
+		_nav_repeat.reset()
+		return
+	var action := _nav_repeat.tick(delta)
+	if action != "":
+		_nav_step_row(-1 if action == "ui_up" else 1)
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle input for grid navigation and editing"""
 	if not visible:
@@ -1083,17 +1128,11 @@ func _input(event: InputEvent) -> void:
 
 	# D-Pad navigation - check echo to prevent rapid-fire when holding keys
 	if nav == "ui_up":
-		cursor_row = max(0, cursor_row - 1)
-		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
-		_update_cursor()
-		SoundManager.play_ui("menu_move")
+		_nav_step_row(-1)
 		get_viewport().set_input_as_handled()
 
 	elif nav == "ui_down":
-		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
-		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
-		_update_cursor()
-		SoundManager.play_ui("menu_move")
+		_nav_step_row(1)
 		get_viewport().set_input_as_handled()
 
 	elif nav == "ui_left":

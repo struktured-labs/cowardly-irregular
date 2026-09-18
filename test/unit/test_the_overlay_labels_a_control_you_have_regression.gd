@@ -79,8 +79,17 @@ func test_every_tier0_label_names_a_reachable_control() -> void:
 ## The tier label must say the combo, because pressing ONE shoulder does nothing.
 func test_the_tier_label_says_both_shoulders() -> void:
 	var branch := _autogrind_branch()
-	assert_true(branch.find("Input.is_joy_button_pressed(0, JOY_BUTTON_LEFT_SHOULDER)") > -1,
-		"precondition: tier cycling requires BOTH shoulders held — that is what the label must say")
+	## ⛔ THIS PINNED THE DEVICE LITERAL AND THE CLAIM HAS NOTHING TO DO WITH THE DEVICE.
+	## It was `find("Input.is_joy_button_pressed(0, JOY_BUTTON_LEFT_SHOULDER)")`, so
+	## @cowir-controller's correct fix — polling the pad that SENT the event instead of hardcoding
+	## device 0, which is why a second controller could not cycle the tier at all — red this
+	## precondition. The claim is "BOTH shoulders are required", so that is what it asserts: both
+	## constants, conjoined, whatever device they are polled on.
+	var both := RegEx.create_from_string(
+		"is_joy_button_pressed\\([^)]*JOY_BUTTON_LEFT_SHOULDER\\)[\\s\\\\]*and[\\s\\\\]*[^\\n]*JOY_BUTTON_RIGHT_SHOULDER")
+	assert_true(both.search(branch) != null,
+		("precondition: tier cycling must poll BOTH shoulders in one conjunction — that is what the " +
+		"label must say. Pinning the device index here is what made a device-aware fix look like a regression."))
 	for ctx in [_overlay().autogrind_context(), _overlay().autogrind_ludicrous_context()]:
 		for key in ["l", "r"]:
 			assert_true(str(ctx.get(key, "")).find("L+R") > -1,
