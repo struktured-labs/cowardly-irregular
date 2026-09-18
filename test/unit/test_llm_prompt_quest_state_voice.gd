@@ -189,6 +189,28 @@ func test_reply_prompt_includes_bucket_lines_when_provided() -> void:
 		"lines without the instruction are context without direction")
 
 
+func test_a_reply_prompt_keeps_its_history_block_ahead_of_the_voice_block() -> void:
+	## THE INJECTION POINT SITS BETWEEN `ctx_block` AND Rules, so a change there can displace
+	## the history block ("You previously said…") that the reply prompt is built around.
+	##
+	## ⛔ NOTHING ON MAIN PINNED THIS. Measured 2026-09-18: `You previously said` occurs in one
+	## src/llm file and in ONE other guard, which asserts its ABSENCE for an empty last line —
+	## the opposite property. Guards asserting an ORDER between history and voice: 0.
+	## The arm was written 2026-07-16 on `cowir-ai-milo-v2-inject-reply-mirror` and never landed;
+	## the branch sat two months outside the `llm/` prefix, so a prefix-scoped survey never saw it.
+	var lines: Array = ["Milo mentioned the thesis"]
+	var prompt: String = DP.build_npc_reply(
+		"Milo", "scholar", "Harmonia", [], "prev npc line", "player reply", lines)
+	var history_at: int = prompt.find("You previously said")
+	var voice_at: int = prompt.find("recently said")
+	assert_gt(history_at, -1,
+		"the history block must survive the context injection — the reply prompt is built around it")
+	assert_gt(voice_at, -1,
+		"CONTROL: the voice block must be present, or the ordering assert below compares against nothing")
+	assert_lt(history_at, voice_at,
+		"history must precede voice: context before character-notes, matching ctx_block ordering. Got history@%d voice@%d" % [history_at, voice_at])
+
+
 func test_opening_and_reply_paths_agree_on_the_voice_block() -> void:
 	# The defect this file now guards: build_npc_opening threaded quest_state_lines
 	# and build_combined_reply did not, so an NPC spoke in voice once and generically
