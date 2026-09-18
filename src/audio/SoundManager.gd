@@ -112,6 +112,11 @@ static var _music_manifest: Dictionary = {}
 static var _manifest_loaded: bool = false
 
 # SFX manifest - file-based SFX take priority over procedural generation
+## ⛔ STATIC AND A DICTIONARY OF DICTIONARIES: `_sfx_manifest[key]` hands out the LIVE entry, so a
+## caller that holds one and writes to it corrupts process-wide state with no assignment anywhere
+## to grep for. Six test files break an entry deliberately to force a cue's procedural branch and
+## every one takes `.duplicate(true)` first — the protection is entirely in those callers and this
+## declaration is where the seventh will look. Duplicate before you hold it.
 static var _sfx_manifest: Dictionary = {}
 static var _sfx_manifest_loaded: bool = false
 # Cache loaded AudioStream objects so we only hit disk once per key
