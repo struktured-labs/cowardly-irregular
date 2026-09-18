@@ -84,3 +84,17 @@ func test_a_stranded_system_flag_is_cleared_by_a_stop() -> void:
 	var started: bool = ctrl.start_grind(party, {"headless": true, "auto_advance": false}, "plains")
 	assert_true(started, "a later grind must be able to start once the stranded flag is cleared")
 	ctrl.stop_grind("test cleanup")
+
+
+## GameLoop's refusal teardown frees the controller WITHOUT calling stop_grind (correct — a refusal
+## is not an end, and _stop_autogrind would show a summary for a grind that never ran). So the
+## stop-side recovery never fires on that path: a stranded flag would refuse every later start
+## forever, cleanly. start_grind must clear the desync itself.
+func test_a_stranded_flag_does_not_refuse_the_next_start() -> void:
+	var ctrl := _controller()
+	_ags.is_grinding = true
+	var party: Array = [_member("Recover A", true), _member("Recover B", true)]
+	var started: bool = ctrl.start_grind(party, {"headless": true, "auto_advance": false}, "plains")
+	assert_true(started,
+		"a flag stranded by an aborted start refused a fresh session — and GameLoop's refusal path never calls stop_grind, so nothing clears it")
+	ctrl.stop_grind("test cleanup")
