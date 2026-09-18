@@ -240,7 +240,7 @@ func test_the_console_really_does_drop_them_all_on_close() -> void:
 	## The premise. If _close_ui stopped disconnecting, this whole classification would be
 	## unnecessary — and if it silently stopped, the guard above would be defending nothing.
 	var ui: String = _source(UI)
-	assert_true(ui.contains("_disconnect_autogrind_signals()"),
+	assert_true(ui.contains("\t_disconnect_autogrind_signals()"),
 		"the console must still disconnect on close, or this file's reason for existing has changed")
 	var declared: Array = _declared_signals()
 	var dropped := 0
