@@ -22,11 +22,25 @@ extends GutTest
 const EDITOR := "res://src/ui/autobattle/AutobattleGridEditor.gd"
 
 var _abs
+var _profiles_backup: Dictionary = {}
 
 
 func before_each() -> void:
 	_abs = get_tree().root.get_node_or_null("AutobattleSystem")
 	assert_not_null(_abs, "CONTROL: AutobattleSystem autoload must exist")
+	## Instantiating the editor registers a character profile on the AUTOLOAD, which outlives this
+	## file and reaches every later one in a full-suite run. Measured: one entry left behind per
+	## run. The WHOLE map is restored rather than the keys this file names — a profile created by
+	## the editor is exactly the state I would not think to name.
+	_profiles_backup = (_abs.character_profiles as Dictionary).duplicate(true)
+
+
+func after_each() -> void:
+	if _abs != null:
+		var live: Dictionary = _abs.character_profiles
+		live.clear()
+		for k in _profiles_backup:
+			live[k] = _profiles_backup[k]
 
 
 func _pc(ap: int) -> Combatant:
