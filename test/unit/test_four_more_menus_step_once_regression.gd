@@ -15,6 +15,21 @@ const WorldMapScript = preload("res://src/ui/WorldMapMenu.gd")
 
 const RAMP := [0.55, 0.7, 0.85, 0.95, 1.0]
 
+## ⛔ THIS FILE WRITES SoundManager AND NAMES NONE OF IT. `TitleScript.new()` + `add_child` runs
+## TitleScreen's `_ready`, which starts the title theme three frames down — so the file left
+## `_music_playing=true` and `_current_music=title` for whatever ran next in the process.
+## `_clear()` above covers the Input singleton, which is the state this file is ABOUT, and that is
+## exactly why the omission was invisible: the teardown a reader checks is the one for the subject.
+## Measured with an entry/exit delta, reproduced in a virgin sandbox.
+##
+## 📌 Restores the whole list rather than the two fields that moved — the two that moved are the
+## ones this file happens to trigger today, and a later menu with an ambient bed would add another.
+## Adopt cowir-music's `test/unit/helpers/sound_state.gd` when it reaches main and delete this.
+const SM_FIELDS := ["_current_area", "_current_world_suffix", "_music_playing",
+	"_current_music", "_current_ambient_key"]
+
+var _saved_sm: Dictionary = {}
+
 
 func _motion(axis: int, v: float) -> InputEventJoypadMotion:
 	var ev := InputEventJoypadMotion.new()
@@ -28,6 +43,19 @@ func _clear() -> void:
 		Input.action_release(a)
 	MenuNav.step(_motion(JOY_AXIS_LEFT_Y, 0.0))
 	MenuNav.step(_motion(JOY_AXIS_LEFT_X, 0.0))
+
+
+func before_all() -> void:
+	for f in SM_FIELDS:
+		_saved_sm[f] = SoundManager.get(f)
+
+
+## after_ALL, not after_each: the restore is about what the NEXT FILE inherits, and putting it in
+## after_each would reset state between this file's own arms for no reason.
+func after_all() -> void:
+	SoundManager.stop_music()
+	for f in SM_FIELDS:
+		SoundManager.set(f, _saved_sm[f])
 
 
 func before_each() -> void:
