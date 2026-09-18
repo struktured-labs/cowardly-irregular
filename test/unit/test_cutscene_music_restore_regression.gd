@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Cutscene music restore across BOTH music APIs (2026-07-26).
 ##
 ## CutsceneDirector snapshotted `SoundManager._current_music` before a cutscene
@@ -126,3 +128,8 @@ func test_sound_manager_exposes_the_pair() -> void:
 	var src := _read(SOUND_MANAGER)
 	for fn in ["func capture_music_state", "func restore_music_state"]:
 		assert_true(src.contains(fn), "SoundManager must define %s" % fn)
+
+## Leave the music autoload as a fresh process starts it — `stop_music()` does not cover
+## `_current_area`, `_current_world_suffix` or the player's level, and this file moved them.
+func after_all() -> void:
+	SoundState.restore()

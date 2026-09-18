@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Every DragonCave subclass must route to a music area key SoundManager
 ## actually matches (2026-07-28).
 ##
@@ -288,3 +290,8 @@ func test_w1_dragon_caves_route_to_their_own_theme() -> void:
 			"%s must route to \"%s\"" % [f, expected[f]])
 		assert_true(keys.has(expected[f]),
 			"SoundManager must carry an arm for \"%s\"" % expected[f])
+
+## Leave the music autoload as a fresh process starts it — `stop_music()` does not cover
+## `_current_area`, `_current_world_suffix` or the player's level, and this file moved them.
+func after_all() -> void:
+	SoundState.restore()

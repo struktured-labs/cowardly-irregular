@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## `ReadableProp` was the one interactable class that never learned Mode 7.
 ##
 ## Every sibling widens its zone when `InteractGeometry.is_mode7()` — Signpost 48 -> 128 with the
@@ -215,3 +217,8 @@ func test_the_flat_branch_is_untouched() -> void:
 	assert_true(shape.shape is RectangleShape2D, "flat props keep the rectangle")
 	assert_eq((shape.shape as RectangleShape2D).size, InteractGeometry.READABLE_BOX_FLAT,
 		"and keep the exact size they shipped with")
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()

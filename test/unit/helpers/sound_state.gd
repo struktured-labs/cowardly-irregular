@@ -1,0 +1,41 @@
+extends RefCounted
+
+## Put the music autoload back to the state a fresh process starts in.
+##
+## ⛔ EXISTS BECAUSE `stop_music()` READS AS A FULL RESET AND IS NOT ONE. It clears
+## `_music_playing`, `_current_music`, the crossfade and the stinger resume — and leaves
+## `_current_area` and `_current_world_suffix` exactly where the last area put them, and leaves the
+## player's `volume_db` wherever a fade dragged it. Seven music-subject files leaked through a
+## teardown that looked complete, and one of the seven restored `_current_area` and missed the
+## suffix: a hand-written teardown covers the fields its author happened to think of.
+##
+## 🔑 THE TWO LIVE CONSEQUENCES, both measured 2026-09-17:
+##   a foreign `_current_world_suffix` hands the next file another world's SFX prefix (`w3_`, `w5_`)
+##   `_current_area` + `_music_playing` together satisfy play_area_music's early return, so a later
+##   call for that same area returns before starting anything and its bed never plays
+##
+## Preloaded rather than `class_name` on purpose: no `--import` needed for a lane to use it.
+
+## Every field a test can move, in the order the autoload wants them — reset_danger re-applies a
+## live corruption envelope, so corruption is cleared after it rather than before.
+static func restore() -> void:
+	var loop := Engine.get_main_loop()
+	if loop == null or not (loop is SceneTree):
+		return
+	var sm: Node = (loop as SceneTree).root.get_node_or_null("SoundManager")
+	if sm == null:
+		return
+	if sm.has_method("stop_music"):
+		sm.stop_music()
+	if sm.has_method("stop_ambient"):
+		sm.stop_ambient()
+	if sm.has_method("reset_danger"):
+		sm.reset_danger()
+	if sm.has_method("reset_corruption"):
+		sm.reset_corruption()
+	sm._current_area = ""
+	sm._current_world_suffix = "medieval"
+	## Last, because a completed fade-out leaves the level at -40 and nothing above lifts it.
+	if sm._music_player:
+		sm._music_player.volume_db = sm._music_base_db
+		sm._music_player.pitch_scale = 1.0
