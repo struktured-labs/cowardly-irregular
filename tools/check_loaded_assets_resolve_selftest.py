@@ -191,13 +191,48 @@ def main():
         arm("an UNRESOLVABLE argument is counted, not dropped", "UNRESOLVABLE 1" in out, True)
         arm("  ...and a user:// path is counted out of scope", "user:// 1" in out, True)
         arm("  ...and it does not block on their account", ec, PASS)
+        # PIN THE VALUE, NOT THE SPELLING. This used to assert bool(m) on a regex over
+        # the line's prose, so it went red when a bucket was ADDED -- a correct change --
+        # and would have stayed green if a bucket had reported the wrong number. Parse the
+        # buckets and assert the arithmetic instead: they must sum to the attempts.
         m = re.search(r"resolution attempts (\d+) = res:// (\d+) . user:// (\d+) . "
-                      r"runtime-built (\d+) . UNRESOLVABLE (\d+)", out)
+                      r"uid:// (\d+) . other (\d+) . runtime-built (\d+) . UNRESOLVABLE (\d+)",
+                      out)
         arm("  ...and the partition LINE is printed", bool(m), True)
-        if m:
-            tot, r_, u_, t_, n_ = (int(x) for x in m.groups())
-            arm("  ...and the buckets SUM to the attempts", r_ + u_ + t_ + n_, tot)
+        got = [int(x) for x in m.groups()] if m else [0, 1, 0, 0, 0, 0, 0]
+        arm("  ...and its buckets SUM to the attempts", sum(got[1:]), got[0])
 
+        # ⛔ THE CATCH-ALL WAS NAMED FOR ONE SCHEME. The final `else` filed EVERYTHING that
+        # was not res:// under user:// -- the EXEMPT bucket, because user:// files are not
+        # packed by design. A uid:// load is legal in Godot 4.4, is seen perfectly well
+        # statically, and simply cannot be followed by this tool (it resolves through
+        # .godot/uid_cache.bin, which this does not read). Filing it under a scheme it does
+        # not have turned "I cannot check this" into "this needs no checking".
+        # It measured 0 on the real tree, so only a malformed fixture ever reached it.
+        sch = write_src(os.path.join(d, "sch"), {"S.gd":
+            'extends Node\nfunc f():\n'
+            '\n\tvar z = load("res://data/plain.json")\n'
+            '\n\tvar a = load("user://saves/slot1.tres")\n'
+            '\n\tvar b = load("uid://bges4odyxxuhl")\n'
+            '\n\tvar c = load("assets/no_scheme_at_all.png")\n'})
+        ec, out = run(p_good, sch)
+        arm("a uid:// target gets its OWN bucket", "uid:// 1" in out, True)
+        arm("  ...and a scheme-less target is 'other'", "other 1" in out, True)
+        arm("  ...and user:// is STILL just the one", "user:// 1" in out, True)
+        arm("  ...and both unfollowable sites are NAMED", out.count("CANNOT follow"), 1)
+        arm("  ...naming uid by value", "uid://bges4odyxxuhl" in out, True)
+        arm("  ...naming the scheme-less one by value",
+            "assets/no_scheme_at_all.png" in out, True)
+        arm("  ...and neither blocks the publish", ec, PASS)
+        # THE DISCRIMINATING PARTNER: a real user:// path is exempt BY DESIGN and must not
+        # be dragged into the uncertified list by the fix. Without this, moving everything
+        # into "cannot follow" would pass every arm above.
+        usr = write_src(os.path.join(d, "usr"), {"U.gd":
+            'extends Node\nfunc f():\n\n\tvar z = load("res://data/plain.json")\n\n\tvar a = load("user://saves/slot1.tres")\n'})
+        ec, out = run(p_good, usr)
+        arm("a user:// path alone is NOT called unfollowable",
+            "CANNOT follow" in out, False)
+        arm("  ...and still does not block", ec, PASS)
         # ⛔ ARMING THE SUM CHECK ITSELF. It guards a state a healthy tool never produces, so
         # a mutation removing it left every arm green -- a guard nobody had watched say yes.
         # PARTITION_DRIFT_PROBE perturbs the attempt count by one; the check must then refuse.

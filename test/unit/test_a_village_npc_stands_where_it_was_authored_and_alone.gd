@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Three NPCs were standing somewhere nobody put them, and one of them was sharing a tile.
 ##
 ## `BaseVillage` relocates any body it finds on an impassable cell — half a tile diagonally, with a
@@ -250,3 +252,8 @@ func _router_village_arms() -> int:
 	var re := RegEx.new()
 	re.compile('(?m)^\t\t"([a-z0-9_]+_village)":')
 	return re.search_all(src.substr(at, 9000)).size()
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()

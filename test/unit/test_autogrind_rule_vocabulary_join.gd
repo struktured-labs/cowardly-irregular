@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## Joins the FIVE corpora that define the autogrind rule vocabulary, so a type can never be
 ## accepted by one and ignored by another.
 ##
@@ -42,6 +47,7 @@ var _saved: Dictionary = {}
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_sys = AutogrindSystem
 	_sys._test_disable_persistence = true
 	_saved = {
@@ -56,6 +62,8 @@ func after_each() -> void:
 	_sys._rare_drop_this_session = _saved["rare"]
 	_sys.grind_party.assign(_saved["party"])
 	_saved.clear()
+	AutogrindState.restore(_ag_state)
+
 
 
 func _make(member_name: String) -> Combatant:

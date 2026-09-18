@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 const TRIPLE := '"""'
 
 ## A map whose area id has no arm in `_get_current_world_suffix` keeps the PREVIOUS
@@ -212,3 +214,8 @@ func _raw_resolver_body() -> String:
 	if b < 0:
 		b = src.length()
 	return src.substr(a, b - a)
+
+## Leave the music autoload as a fresh process starts it — `stop_music()` does not cover
+## `_current_area`, `_current_world_suffix` or the player's level, and this file moved them.
+func after_all() -> void:
+	SoundState.restore()

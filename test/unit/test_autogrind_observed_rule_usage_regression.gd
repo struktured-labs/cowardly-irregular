@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## The observed half of the autogrind console's explain preview — sibling of the autobattle one.
 ##
 ## The preview answers "what WOULD these rules do" against sampled party states. Nothing answered
@@ -16,6 +21,7 @@ var _ui
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_ags = get_node_or_null("/root/AutogrindSystem")
 	if _ags:
 		_ags._test_disable_persistence = true
@@ -37,6 +43,8 @@ func after_each() -> void:
 	if _ags:
 		_ags.reset_rule_fire_counts()
 		_ags.set_autogrind_rules([])
+	AutogrindState.restore(_ag_state)
+
 
 
 func _party() -> Array:

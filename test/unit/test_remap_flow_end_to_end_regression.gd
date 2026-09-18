@@ -15,6 +15,10 @@ var _saved_profile: String = ""
 var _saved_custom: Dictionary = {}
 var _saved_config: String = ""
 var _had_config: bool = false
+## ⛔ load_config() SETS profile_chosen_by_user, and nothing ever resets it. Restoring the
+## profile and the bindings looked complete because those are what this file WRITES; the
+## flag is written three calls down, by the loader, and is sticky for the whole process.
+var _saved_chosen: bool = false
 
 
 ## set_custom_binding calls save_config(), which writes user://. Deploy suites run UNSANDBOXED, so
@@ -22,6 +26,7 @@ var _had_config: bool = false
 ## 2026-09-09 and three later suites went red looking like a code defect.
 func before_each() -> void:
 	_saved_profile = InputProfileManager.active_profile
+	_saved_chosen = InputProfileManager.profile_chosen_by_user
 	_saved_custom = InputProfileManager.custom_bindings.duplicate(true)
 	_had_config = FileAccess.file_exists(CONFIG)
 	_saved_config = FileAccess.get_file_as_string(CONFIG) if _had_config else ""
@@ -31,6 +36,9 @@ func after_each() -> void:
 	InputProfileManager.custom_bindings = _saved_custom.duplicate(true)
 	InputProfileManager.active_profile = _saved_profile
 	InputProfileManager.apply_profile(_saved_profile)
+	## A leaked `true` suppresses autodetect on every later pad connection in the process
+	## (InputProfileManager:189), so a hotplug test downstream silently stops detecting.
+	InputProfileManager.profile_chosen_by_user = _saved_chosen
 	# ⛔ open(WRITE) TRUNCATES before store_string runs, so an empty snapshot would write ZERO bytes
 	# over the player's file. Guard on CONTENT, and skip the rewrite entirely when nothing changed.
 	if _had_config and _saved_config != "":

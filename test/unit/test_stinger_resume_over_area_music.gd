@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## A stinger fired over AREA music must put the area back (2026-07-31).
 ##
 ## The resume path saved a bare track id: `_stinger_resume_track = _current_music`.
@@ -132,3 +134,8 @@ func test_positive_control_the_state_pair_is_reachable() -> void:
 	var snap: Dictionary = sm.capture_music_state()
 	assert_true(snap.has("area"), "the captured state must carry the AREA — a track-only capture is the original bug")
 	assert_true(snap.has("track"), "the captured state must carry the track")
+
+## Leave the music autoload as a fresh process starts it — `stop_music()` does not cover
+## `_current_area`, `_current_world_suffix` or the player's level, and this file moved them.
+func after_all() -> void:
+	SoundState.restore()

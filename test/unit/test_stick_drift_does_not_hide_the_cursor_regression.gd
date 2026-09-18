@@ -10,7 +10,15 @@ extends GutTest
 ## play."* The same shape was left on the one input that emits noise without a human touching it.
 ##
 ## And src/input/ already had the answer: GamepadFilter.STICK_DEADZONE = 0.2, used for exactly
-## this on exactly this axis. The two raw-axis readers in the directory now agree.
+## this on exactly this axis. The two STEERING readers in the directory now agree.
+##
+## ⛔ "THE TWO RAW-AXIS READERS" IS WHAT THIS DOCSTRING AND THE SOURCE COMMENT BOTH SAID,
+## AND A CENSUS FOUND THREE. ControllerMappingCapture reads raw axes too, at 0.5, because
+## it asks a different question — not "is the player steering?" but "is the player
+## CLAIMING this control?". The wrong repair is obvious and available: read either comment,
+## find the 0.5, and unify it to 0.2. That would let a resting stick write a binding the
+## pad then keeps. So the arms below pin the RELATIONSHIP (capture > steering) rather than
+## agreement, and DERIVE the reader set from source so a fourth cannot arrive unmeasured.
 ##
 ## ⚠️ WHAT THIS GUARD CANNOT DO, stated because it changes what a green here means.
 ## `Input.set_mouse_mode` is a NO-OP under the headless display server — measured:
@@ -133,9 +141,10 @@ func test_a_button_press_still_hides_without_a_deadzone() -> void:
 		"branch would red both negatives above on entirely correct code")
 
 
-## The two raw-axis readers in src/input/ must agree, or the directory has two deadzones that
-## drift apart — which is the two-sources-one-surface shape CLAUDE.md records.
-func test_the_two_axis_readers_share_one_deadzone() -> void:
+## The two STEERING readers in src/input/ must agree, or the directory has two deadzones that
+## drift apart — which is the two-sources-one-surface shape CLAUDE.md records. Capture is
+## deliberately NOT in this arm; see the arm below for why unifying it would be a defect.
+func test_the_two_steering_readers_share_one_deadzone() -> void:
 	var filter_dz: float = load(FILTER).STICK_DEADZONE
 	assert_eq(_mgr().STICK_DEADZONE, filter_dz,
 		"MouseCursorManager and GamepadFilter both read raw axes and must use the SAME deadzone")
@@ -150,3 +159,49 @@ func test_the_cursor_effect_is_genuinely_unmeasurable_here() -> void:
 		"set_mouse_mode must be a NO-OP here — if this ever FAILS, the display server gained " +
 		"mouse support and these arms should become behavioural instead of reading source")
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+
+
+const CAPTURE := "res://src/input/ControllerMappingCapture.gd"
+
+
+## ⛔ THE RELATIONSHIP, NOT THE NUMBERS. Both comments in src/input/ said "the only two raw-axis
+## readers … they must not disagree", which reads as an instruction to unify every threshold in
+## the directory. A third reader exists at 0.5 and unifying it would be a DEFECT: capture asks
+## "is the player claiming this control?", and at 0.2 a resting stick answers yes and writes a
+## binding the pad keeps. Pinning capture > steering reds that repair and permits any retune.
+func test_a_capture_push_is_not_a_steering_deadzone() -> void:
+	var capture_push: float = load(CAPTURE).CAPTURE_PUSH_THRESHOLD
+	var steering: float = _mgr().STICK_DEADZONE
+	assert_gt(steering, 0.0, "CONTROL: there must BE a steering deadzone to compare against")
+	assert_gt(capture_push, steering,
+		"CAPTURE_PUSH_THRESHOLD (%.2f) must stay ABOVE the steering deadzone (%.2f): a binding " % [capture_push, steering]
+		+ "capture must require a decisive push, or stick drift claims whichever control is prompted")
+
+
+## Derived from src/input/ itself, so a FOURTH raw-axis reader cannot arrive with a bare literal
+## the way the third arrived uncounted. The rule is not "use this number" — the three legitimately
+## differ — it is "name the number", because a named threshold is greppable, testable, and states
+## which question it answers. A magic 0.35 in a fourth file is invisible to every arm above.
+func test_every_raw_axis_reader_names_its_threshold() -> void:
+	var compare := RegEx.create_from_string("[<>]=?")
+	var named := RegEx.create_from_string("[A-Z][A-Z0-9_]{3,}")
+	var readers: Array = []
+	var unnamed: Array = []
+	for file_name in DirAccess.get_files_at("res://src/input"):
+		if not file_name.ends_with(".gd"):
+			continue
+		var path: String = "res://src/input/%s" % file_name
+		for line in GdSource.code_of(path).split("\n"):
+			if line.find("axis_value") == -1 or compare.search(line) == null:
+				continue
+			readers.append("%s: %s" % [file_name, line.strip_edges()])
+			if named.search(line) == null:
+				unnamed.append("%s: %s" % [file_name, line.strip_edges()])
+
+	## CONTROL: the derivation must FIND the readers. An empty corpus satisfies the assert below
+	## perfectly — the shrinking-corpus shape, and the reason the census was wrong to begin with.
+	assert_true(readers.size() >= 3,
+		"CONTROL: expected at least the three known raw-axis readers in src/input/, derived %s" % [readers])
+	assert_true(unnamed.is_empty(),
+		"raw-axis comparison(s) against a bare literal: %s — name the threshold as a const so it " % [unnamed]
+		+ "says which question it answers and the arms above can see it")

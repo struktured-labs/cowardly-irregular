@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## tick 344: AutogrindSystem.load_grind_snapshot push_warns on every
 ## post-existence failure mode instead of silently returning {}.
 ##
@@ -27,6 +32,7 @@ func _read(p: String) -> String:
 # ── Source pin: 4 push_warning calls in load_grind_snapshot ─────────
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 
 
@@ -97,3 +103,7 @@ func test_parse_result_captured_before_close() -> void:
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
 	assert_true(body.contains("var parse_result: int"),
 		"parse_result must be captured to a var so file.close() runs exactly once")
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

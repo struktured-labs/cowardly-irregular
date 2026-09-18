@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 ## "System fatigue spawns unpredictable meta-bosses" is a design pillar, and a player could grind
 ## straight past one without ever learning it happened.
 ##
@@ -21,6 +26,7 @@ var _ags: Node = null
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_ags = get_node_or_null("/root/AutogrindSystem")
 	if _ags:
 		_ags._test_disable_persistence = true
@@ -32,6 +38,8 @@ func after_each() -> void:
 	if _ags:
 		_ags.meta_bosses_spawned = 0
 		_ags.meta_bosses_defeated = 0
+	AutogrindState.restore(_ag_state)
+
 
 
 func test_spawning_a_meta_boss_is_counted() -> void:

@@ -209,3 +209,18 @@ func test_the_grammar_only_advertises_elements_something_is_actually_weak_to() -
 	assert_eq(phantom.size(), 0,
 		"the grammar offers an element NOTHING in the bestiary is weak to, so a rule composed with "
 		+ "it can never fire. " + " · ".join(remedy))
+
+
+## The editor registers a profile on the AutobattleSystem autoload, keyed "" when nothing sets a
+## character_id, and it outlives this file. Restores the whole map — the leaked key is one this
+## file never named, so a key-wise teardown cannot reach it.
+const ABProfiles := preload("res://test/unit/helpers/autobattle_profiles.gd")
+var _ab_profiles_entry: Dictionary = {}
+
+
+func before_all() -> void:
+	_ab_profiles_entry = ABProfiles.snapshot(get_tree().root.get_node_or_null("AutobattleSystem"))
+
+
+func after_all() -> void:
+	ABProfiles.restore(get_tree().root.get_node_or_null("AutobattleSystem"), _ab_profiles_entry)

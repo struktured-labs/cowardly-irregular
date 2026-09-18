@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## `test_overworld_secrets_are_reachable` proves no CHEST is sealed inside terrain. It says nothing
 ## about the door in front of it, and a HiddenPassage is the only thing that makes a chest a secret
 ## rather than a chest.
@@ -121,3 +123,8 @@ func test_the_probe_reports_solid_rock_as_solid() -> void:
 	assert_true(_body_fits(space, Vector2(5 * 2 * 32 + 16, 5 * 2 * 32 + 16)),
 		"CONTROL: cell (5,5) — the alcove the frozen-alcove chest sits in — must fit a body, or the " +
 		"probe says no to everything and the sweep above is vacuous")
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()

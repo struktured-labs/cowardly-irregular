@@ -170,3 +170,18 @@ func test_a_battlefield_rule_is_reported_undecidable_not_guessed() -> void:
 	}])
 	assert_true(str(lines[0]).contains("battlefield"),
 		"a rule reading enemy state must be reported as unsimulatable, not evaluated against an empty field: '%s'" % str(lines[0]))
+
+
+## The editor registers a profile on the AutobattleSystem autoload, keyed "" when nothing sets a
+## character_id, and it outlives this file. Restores the whole map — the leaked key is one this
+## file never named, so a key-wise teardown cannot reach it.
+const ABProfiles := preload("res://test/unit/helpers/autobattle_profiles.gd")
+var _ab_profiles_entry: Dictionary = {}
+
+
+func before_all() -> void:
+	_ab_profiles_entry = ABProfiles.snapshot(get_tree().root.get_node_or_null("AutobattleSystem"))
+
+
+func after_all() -> void:
+	ABProfiles.restore(get_tree().root.get_node_or_null("AutobattleSystem"), _ab_profiles_entry)

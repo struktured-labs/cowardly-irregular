@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Using the Jukebox left the game silent.
 ##
 ## Every map sets its bed with `play_area_music`, which CLEARS `_current_music`
@@ -116,3 +118,8 @@ func test_every_row_plays_the_bed_it_names() -> void:
 		"SCOPE control: walked %d of %d rows — the skipped ones measured nothing" % [checked, menu.TRACKS.size()])
 	assert_eq(wrong.size(), 0,
 		"%d of %d jukebox rows played a bed other than the one they name: %s" % [wrong.size(), checked, wrong])
+
+## Leave the music autoload as a fresh process starts it — `stop_music()` does not cover
+## `_current_area`, `_current_world_suffix` or the player's level, and this file moved them.
+func after_all() -> void:
+	SoundState.restore()
