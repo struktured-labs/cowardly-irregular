@@ -166,6 +166,8 @@ func _lane_files() -> Array[String]:
 ##
 ## So two instruments, because one subject is a NAME and the other is a CONTAINER.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 const KEY_FIELD := "llm_custom_api_key"
 
 ## The walk's roots, in ONE place. `_all_gd()` and the roots floor both read THIS — an earlier
@@ -212,12 +214,65 @@ func _all_gd() -> Array[String]:
 	return out
 
 
-## Source with `#` comments stripped, so a comment naming the key is never an offender.
+## Source with comments stripped, so a comment naming the key is never an offender.
+##
+## ⛔ THIS WAS A PRIVATE `raw.find("#")` AND IT WAS A FALSE-NEGATIVE PATH IN A SECURITY GUARD.
+## A `#` inside a STRING LITERAL truncated the line at that point, so anything after it was
+## invisible to every arm here. Produced, not predicted — planting a real container leak,
+## `print("byok note # dump: %s" % [cfg])`, left this file at 13 passing / EC=0 with the leak in
+## the tree, because the alias sits after the `#`.
+##
+## `GdSource` is quote-aware AND escape-aware, bounded against the spin its own header records,
+## and has 175 consumers. A private copy does not inherit a fix (cowir-controller, 2026-09-18,
+## who found twelve other re-derivations).
+##
+## ⛔ AND `strip_comments` IS THE WRONG HALF — it removes `#` AND NOTHING ELSE. I named it as the
+## delegation target in channel and it left this scan FALSE-REDDING on prose: a docstring merely
+## DESCRIBING a leak — `"""Never do this: print("[BYOK] %s" % GameState.llm_custom_api_key)"""` —
+## was reported as an offender at a line that logs nothing. Conservative direction, and exactly
+## the prose a security guard attracts; this file's own header is full of it.
+## `split()["code"]` is the half that drops `"""` regions too (cowir-battle, 2026-09-18).
 func _code_lines(src: String) -> PackedStringArray:
-	var out := PackedStringArray()
-	for raw in src.split("\n"):
-		var hash_at: int = raw.find("#")
-		out.append(raw if hash_at == -1 else raw.substr(0, hash_at))
+	return (GdSource.split(src)["code"] as String).split("\n")
+
+
+## [[line_no, code_text], …] — code lines paired with their TRUE index in the ORIGINAL file.
+##
+## ⛔ NEEDED BECAUSE `split()` DELETES DOCSTRING REGIONS RATHER THAN BLANKING THEM, so counting
+## lines in the code half reports a number that does not exist in the file. Measured while making
+## this change: the same planted leak was reported at `SaveSystem.gd:1030` where the real line is
+## 1051 — 21 lines of docstring removed above it. An offender message that names the wrong line
+## sends a reader to innocent code, and for THIS guard that reader is chasing a credential leak.
+## Order is preserved by the split, so one forward cursor resolves duplicates correctly.
+##
+## ⚠️ RESIDUAL, STATED RATHER THAN ENGINEERED AROUND: the mapping assumes ONE code line per raw
+## line. An INLINE `"""…"""` on a line that also carries code splits that line in two
+## (cowir-sprites, 2026-09-18: BattleScene.gd loses 32% of its CHARS and GAINS 45 LINES for
+## exactly this reason) — the cursor has already advanced past the raw line, so the second
+## fragment maps to -1 or, worse, to a later line with the same text.
+## Measured on THIS corpus: all six holder files map 100%, zero -1, so there is no such line
+## today. The -1 case is loud (its own control arm); a later false match would be silent, and
+## that is the part this note exists to hand to the next reader rather than to hide.
+func _numbered_code(src: String) -> Array:
+	var raw: PackedStringArray = src.split("\n")
+	var out: Array = []
+	var cursor: int = 0
+	for c in _code_lines(src):
+		var t: String = c.strip_edges()
+		if t == "":
+			continue
+		var probe: int = cursor
+		while probe < raw.size() and raw[probe].find(t) == -1:
+			probe += 1
+		if probe >= raw.size():
+			## ⛔ TOTAL, NOT TRUNCATING. This used to `break`, which silently dropped every
+			## offender BELOW an unmappable line — a false-negative path in a guard whose subject
+			## is a credential leak. A -1 is surfaced by the control arm instead, so a mapping
+			## failure is loud and the scan still sees the rest of the file.
+			out.append([-1, c])
+			continue
+		out.append([probe + 1, c])
+		cursor = probe + 1
 	return out
 
 
@@ -279,11 +334,10 @@ func test_no_log_site_anywhere_in_src_interpolates_the_key() -> void:
 	## the key rather than over one directory.
 	var offenders: Array[String] = []
 	for path in _key_holder_files():
-		var lineno: int = 0
-		for line in _code_lines(FileAccess.get_file_as_string(path)):
-			lineno += 1
+		for pair in _numbered_code(FileAccess.get_file_as_string(path)):
+			var line: String = str(pair[1])
 			if _is_log_site(line) and (line.find("api_key") != -1 or line.find(KEY_FIELD) != -1):
-				offenders.append("%s:%d" % [path.get_file(), lineno])
+				offenders.append("%s:%d" % [path.get_file(), int(pair[0])])
 	assert_eq(offenders, ([] as Array[String]),
 		("these log sites interpolate the API key: %s. Report presence ('<set>'/'<empty>') or drop "
 		+ "the field — GameState:96 marks it SENSITIVE, and user://logs/godot.log persists on disk.")
@@ -301,14 +355,13 @@ func test_no_log_site_prints_a_container_that_holds_the_key() -> void:
 			continue
 		var watched: Array[String] = carriers.duplicate()
 		watched.append_array(_aliases_of(src, carriers))
-		var lineno: int = 0
-		for line in _code_lines(src):
-			lineno += 1
+		for pair in _numbered_code(src):
+			var line: String = str(pair[1])
 			if not _is_log_site(line):
 				continue
 			for w in watched:
 				if line.find(w) != -1:
-					offenders.append("%s:%d logs %s" % [path.get_file(), lineno, w])
+					offenders.append("%s:%d logs %s" % [path.get_file(), int(pair[0]), w])
 					break
 	assert_eq(offenders, ([] as Array[String]),
 		("these log sites print a container holding the API key: %s. The container is the key — "
@@ -375,6 +428,48 @@ func test_the_alias_scan_can_follow_a_carrier_into_a_local() -> void:
 	assert_true(_aliases_of(fake, carriers).has("cfg"),
 		"control: the alias scan cannot follow a carrier into a local — got %s"
 			% [_aliases_of(fake, carriers)])
+
+
+func test_every_code_line_in_the_corpus_maps_to_a_real_line() -> void:
+	## CONTROL on the mapper. `split()` is NOT line-preserving and the delta is not even one-signed
+	## — measured across this corpus: SettingsMenu.gd 2228 -> 2239 (GROWS), SaveSystem.gd
+	## 1217 -> 1187 (SHRINKS), LLMService.gd unchanged. Three behaviours, one helper, which is why
+	## the mapping is by CONTENT and not by index arithmetic: content is sign-agnostic.
+	## Without this arm an unmappable line is a silent -1 in an offender message.
+	var unmapped: Array[String] = []
+	var checked: int = 0
+	for path in _key_holder_files():
+		for pair in _numbered_code(FileAccess.get_file_as_string(path)):
+			checked += 1
+			if int(pair[0]) == -1:
+				unmapped.append("%s: %s" % [path.get_file(), str(pair[1]).strip_edges()])
+	assert_gt(checked, 100,
+		"CONTROL: the mapper produced %d lines across the whole corpus — it is broken, not the corpus" % checked)
+	assert_eq(unmapped, ([] as Array[String]),
+		("these code lines could not be located in their own file, so any offender on them reports "
+		+ "line -1: %s") % ", ".join(unmapped))
+
+
+func test_the_split_keeps_code_and_drops_both_prose_forms() -> void:
+	## THE OBLIGATION `GdSource.split`'s OWN HEADER PUTS ON EVERY CALLER: "over-stripping and a
+	## correct strip are the same green", so a consumer must assert a known CODE SITE SURVIVES.
+	## Floored on BOTH halves — an empty doc side passes by construction, which is the vacuous way
+	## for this to look right.
+	var fake: String = 'var keep := log_it("a")\n' \
+		+ '# api_key in a comment\n' \
+		+ '"""api_key in a docstring"""\n' \
+		+ 'var also := log_it("b")\n'
+	var halves: Dictionary = GdSource.split(fake)
+	var code: String = str(halves.get("code", ""))
+	var doc: String = str(halves.get("doc", ""))
+	assert_true(code.find('log_it("a")') != -1,
+		"MUST-SURVIVE: real code before the docstring was eaten by the split — every zero in this file is then vacuous")
+	assert_true(code.find('log_it("b")') != -1,
+		"MUST-SURVIVE: real code AFTER the docstring was eaten — a parity flip, the two-directional failure the helper warns about")
+	assert_eq(code.find("api_key"), -1,
+		"neither a comment nor a docstring naming the key may reach the code half — got %s" % code)
+	assert_true(doc.find("api_key") != -1,
+		"FLOOR on the doc side: it must actually contain the docstring, or the split returned nothing and the assert above is vacuous")
 
 
 func test_a_comment_naming_the_key_is_not_an_offender() -> void:
