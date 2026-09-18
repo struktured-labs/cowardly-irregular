@@ -56,14 +56,46 @@ func test_a_non_looping_track_is_a_stinger_or_it_ends_in_silence() -> void:
 		"a `loop: false` track is not a stinger, so nothing is armed to follow it: %s — it plays, ends, and the music player stays silent until an unrelated call writes it. Either mark it `\"stinger\": true` (SoundManager arms the resume and force-overrides loop) or give it `\"loop\": true`." % str(orphans))
 
 
-func test_the_override_that_covers_the_other_direction_still_exists() -> void:
-	## This arm's whole premise is that a stinger CANNOT loop because the code forces it. If that
-	## override goes, `stinger: true` stops implying a terminating stream and the arm above is
-	## defending half a property while reading as though it defends the pair.
-	var code: String = str(GdSource.split(FileAccess.get_file_as_string("res://src/audio/SoundManager.gd"))["code"])
-	assert_true(code.contains("func _try_play_from_manifest"),
-		"CONTROL: the strip ate a known code site — the pins below would read an emptied corpus")
-	assert_true(code.contains("should_loop = false"),
-		"the stinger loop override is gone from SoundManager — a `stinger: true` entry authored with `loop: true` would now loop forever and never fire `finished`, which is the 2026-05-02 defect verbatim")
-	assert_true(code.contains("_is_stinger_track"),
-		"nothing decides stinger-ness any more, so neither this file's corpus nor SoundManager's override means what it says")
+## ⛔ DRIVEN, NOT PINNED TO A SPELLING. The first version of this arm asserted the source contained
+## `should_loop = false`. A correct refactor — `should_loop = not is_stinger and entry.get("loop",
+## true)` — reds it, and a loosened `should_loop = ` would be satisfied by the line beside it.
+## cowir-controller produced both halves of that today: a spelling pin red on a correct fix, and
+## its loosened form passing 2/2 with the write DELETED, because a sibling line in the same body
+## matched. Driving the subject has neither failure mode.
+func test_a_stinger_is_forced_not_to_loop_whatever_the_manifest_says() -> void:
+	if SoundManager == null:
+		assert_true(false, "SoundManager autoload unavailable — this arm would prove nothing")
+		return
+	var before_key: String = str(SoundManager._current_music)
+
+	## ⛔ DRIVEN WITH THE MANIFEST ENTRY SAYING `loop: true`, WHICH IS THE ONLY WAY THIS ARM CAN SEE
+	## THE OVERRIDE AT ALL. Measured: with the real entry (`loop: false`) the outcome is correct via
+	## TWO routes, so deleting the override left this GREEN — covered by a different mechanism, not
+	## by the one it names. A stinger authored `loop: true` IS the 2026-05-02 shape.
+	SoundManager._load_music_manifest()
+	var entry = SoundManager._music_manifest.get("stinger_level_up", {})
+	assert_true(entry is Dictionary and not (entry as Dictionary).is_empty(),
+		"SCOPE control: stinger_level_up is not in the loaded manifest, so this arm drives nothing")
+	var authored_loop = (entry as Dictionary).get("loop", true)
+	(entry as Dictionary)["loop"] = true
+	assert_true(SoundManager._try_play_from_manifest("stinger_level_up"),
+		"SCOPE control: stinger_level_up did not play from the manifest, so the assert below is about nothing")
+	var stinger_stream: AudioStream = SoundManager._music_player.stream
+	(entry as Dictionary)["loop"] = authored_loop
+	assert_not_null(stinger_stream, "the stinger produced no stream")
+	if stinger_stream != null:
+		assert_false(bool(stinger_stream.loop),
+			"a stinger authored `loop: true` was left LOOPING — `finished` never fires and the bed it interrupted never comes back, the 2026-05-02 defect verbatim (level up music repeats itself)")
+
+	## The inverse, so "always false" cannot pass the arm above: a bed must still loop.
+	assert_true(SoundManager._try_play_from_manifest("battle_medieval"),
+		"SCOPE control: battle_medieval did not play from the manifest")
+	var bed_stream: AudioStream = SoundManager._music_player.stream
+	assert_not_null(bed_stream, "the bed produced no stream")
+	if bed_stream != null:
+		assert_true(bool(bed_stream.loop),
+			"a looping bed was forced not to loop — the override stopped discriminating and every bed now ends in silence")
+
+	## Teardown: this lane shares one autoload and the next file must not inherit a track.
+	SoundManager.stop_music()
+	SoundManager._current_music = before_key
