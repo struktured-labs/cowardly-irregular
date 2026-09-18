@@ -383,7 +383,10 @@ const FALLBACK_RULE_COMPOSITION: Dictionary = {
 ##   npc_name       — display name of the NPC (e.g. "Elder Theron")
 ##   npc_persona    — short personality blurb (e.g. "wise elder, formal tone")
 ##   location       — current map/area name (e.g. "Verdant Vale Village")
-##   recent_events  — Array[Dictionary] from EventLog.recent(); may be empty
+##   recent_events  — Array[Dictionary] from EventLog.recent_varied(); may be empty.
+##                    NOT recent(): consecutive same-type runs must be collapsed or a
+##                    walk to town fills the whole block with Entered X and buries the
+##                    boss the player just beat. EventLog.recent_varied carries the case.
 ##
 ## Returns a prompt String ready for LLMService.complete_json().
 ## The ONE place the shared context blocks are assembled, in ONE order.
@@ -548,7 +551,7 @@ static func build_npc_sign_off(
 ##   npc_name       — display name of the NPC
 ##   npc_persona    — short personality blurb
 ##   location       — current map/area name
-##   recent_events  — Array[Dictionary] from EventLog.recent(); may be empty
+##   recent_events  — Array[Dictionary] from EventLog.recent_varied(); may be empty
 ##   last_npc_line  — the NPC's previous spoken line (may be "")
 ##   player_line    — the player's chosen response (may be "")
 ##   quest_state_lines / time_of_day / party_state / memory_lines
@@ -664,7 +667,7 @@ static func build_combined_reply(
 ##   npc_name       — who the player is talking to
 ##   npc_line       — the NPC's current/opening line (sets context for player reply)
 ##   num_choices    — how many choices to generate (clamped to [1, MAX_CHOICES])
-##   recent_events  — Array[Dictionary] from EventLog.recent(); may be empty
+##   recent_events  — Array[Dictionary] from EventLog.recent_varied(); may be empty
 ##
 ## Returns a prompt String ready for LLMService.complete_json().
 static func build_player_choices(
