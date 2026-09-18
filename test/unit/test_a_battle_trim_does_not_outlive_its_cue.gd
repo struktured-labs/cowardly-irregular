@@ -1,5 +1,7 @@
 extends GutTest
 
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
 ## `volume_db` PERSISTS on a shared AudioStreamPlayer, so a cue that sets an authored trim leaves it
 ## there. `play_battle` passes an explicit level on every call for exactly this reason — its own
 ## comment says so — and the other `_battle_player` callers passed NAN ("preserve"), inheriting it.
@@ -38,6 +40,8 @@ func after_each() -> void:
 	sm._battle_player.pitch_scale = 1.0
 	sm._battle_player.volume_db = _base(sm)
 	sm._sfx_cooldowns.clear()
+	## Shared players keep their stream after a cue ends; sound_state.gd owns the music surface, not this one.
+	SfxState.release_streams()
 
 
 func test_a_hit_after_a_loud_trim_plays_at_the_channel_level() -> void:

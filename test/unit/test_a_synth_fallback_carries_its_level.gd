@@ -1,5 +1,7 @@
 extends GutTest
 
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
 ## _play_sound defaults to the PLAYER'S level, which is right only where the computed level equals
 ## the player's resting base. Four callers computed something else — a trim, or the death boost —
 ## and passed it to the manifest call only, so the synth branch silently used the wrong level.
@@ -46,6 +48,8 @@ func after_each() -> void:
 	sm._death_player.volume_db = _c(sm, "DEATH_PLAYER_BASE_DB")
 	sm._battle_player.pitch_scale = 1.0
 	sm._death_player.pitch_scale = 1.0
+	## Shared players keep their stream after a cue ends; sound_state.gd owns the music surface, not this one.
+	SfxState.release_streams()
 
 
 func test_the_blip_does_not_inherit_the_previous_cues_trim() -> void:

@@ -1,5 +1,7 @@
 extends GutTest
 
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
 ## play_ui computes SFX_UI_BASE_DB + trim and passed it only to the MANIFEST call. Wherever the
 ## synth path runs — a cue whose file fails to load, or a trim authored for a procedural-only cue —
 ## the level fell back to the bare base and the authored trim was silently dropped.
@@ -57,6 +59,8 @@ func after_each() -> void:
 	sm._sfx_cooldowns.clear()
 	sm._ui_player.volume_db = _ui_base(sm)
 	sm._ui_player.pitch_scale = 1.0
+	## Shared players keep their stream after a cue ends; sound_state.gd owns the music surface, not this one.
+	SfxState.release_streams()
 
 
 func test_this_files_premise_still_holds() -> void:

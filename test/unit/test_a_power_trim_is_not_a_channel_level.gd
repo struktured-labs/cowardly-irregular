@@ -1,5 +1,7 @@
 extends GutTest
 
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
 ## EffectSystem scales an impact by power with `lerp(-3.0, 3.0, ...)` — a TRIM, per its own comment
 ## ("more powerful = slightly louder"). play_battle_scaled forwarded it as volume_db_override, which
 ## _try_play_sfx_from_manifest writes as the player's ABSOLUTE level. Measured 2026-09-17: the
@@ -42,6 +44,8 @@ func after_each() -> void:
 		return
 	sm._sfx_cooldowns.clear()
 	sm._battle_player.volume_db = _base(sm)
+	## Shared players keep their stream after a cue ends; sound_state.gd owns the music surface, not this one.
+	SfxState.release_streams()
 
 
 func test_a_max_power_spell_plays_a_trim_above_the_channel_not_an_absolute_level() -> void:

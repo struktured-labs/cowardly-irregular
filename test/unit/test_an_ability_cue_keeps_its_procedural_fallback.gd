@@ -1,5 +1,7 @@
 extends GutTest
 
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
 ## play_ability was the ONE world-prefix caller without the `world_key != sound_key` guard. In W1
 ## the prefix is "", so it called the manifest helper TWICE with the same key. The helper stamps the
 ## cooldown BEFORE loading, so a first attempt that stamps and then fails leaves the second answering
@@ -63,6 +65,8 @@ func after_each() -> void:
 	## _try_play_sfx_from_manifest leaves it randomized, so a file that plays anything must put it back.
 	sm._ability_player.pitch_scale = 1.0
 	sm._battle_player.pitch_scale = 1.0
+	## Shared players keep their stream after a cue ends; sound_state.gd owns the music surface, not this one.
+	SfxState.release_streams()
 
 
 func test_this_files_scenario_is_the_one_it_claims_to_drive() -> void:
