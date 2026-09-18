@@ -373,7 +373,9 @@ static func monster_frame_texture(monster_id: String, anim: String = "idle") -> 
 	return atlas
 
 
-static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
+## base_id re-times a world costume against the base it dresses. Monster costumes are SEPARATE
+## manifest entries resolved by the caller, so unlike the job path the loader cannot derive it.
+static func load_monster_sprite_frames(monster_id: String, base_id: String = "") -> SpriteFrames:
 	_load_manifest()
 
 	if not _monster_manifest.has(monster_id):
@@ -397,6 +399,13 @@ static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 		return null
 	var fps: float = sheet_data.get("fps", 8)
 	var animations = sheet_data.get("animations", {})
+	var base_anims: Dictionary = {}
+	if base_id != "" and base_id != monster_id and _monster_manifest.has(base_id):
+		var base_entry = _monster_manifest[base_id]
+		if base_entry is Dictionary:
+			var ba = (base_entry as Dictionary).get("animations", {})
+			if ba is Dictionary:
+				base_anims = ba
 
 	var sprite_frames = SpriteFrames.new()
 	# maxi() floors a NARROW sheet at one column; a ZERO declaration is refused above, because this division runs first.
@@ -408,7 +417,14 @@ static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 		var end_frame: int = anim_data.get("end", start_frame)
 
 		sprite_frames.add_animation(anim_name)
-		sprite_frames.set_animation_speed(anim_name, fps)
+		var anim_fps: float = fps
+		if base_anims.has(anim_name):
+			var b = base_anims[anim_name]
+			if b is Dictionary:
+				var b_start: int = (b as Dictionary).get("start", 0)
+				var b_end: int = (b as Dictionary).get("end", b_start)
+				anim_fps = retimed_fps(fps, end_frame - start_frame + 1, b_end - b_start + 1)
+		sprite_frames.set_animation_speed(anim_name, anim_fps)
 		sprite_frames.set_animation_loop(anim_name, anim_name == "idle")
 
 		for frame_idx in range(start_frame, end_frame + 1):
@@ -494,6 +510,13 @@ static func _normalize_suffix(audio_suffix: String) -> String:
 ##
 ## Returns the base fps unchanged whenever there is nothing to match against — an undressed
 ## sheet, an equal frame count, or a base sheet that is not on disk.
+## A costume with fewer frames than its base must take the SAME wall-clock time, not run fast.
+static func retimed_fps(base_fps: float, frames: int, base_frames: int) -> float:
+	if frames <= 0 or base_frames <= 0 or base_frames == frames:
+		return base_fps
+	return base_fps * float(frames) / float(base_frames)
+
+
 static func dressed_fps(base_fps: float, sheet_path: String, base_sheet: String, frames: int, frame_width: int) -> float:
 	if sheet_path == base_sheet or frames <= 0 or frame_width <= 0:
 		return base_fps
@@ -502,10 +525,7 @@ static func dressed_fps(base_fps: float, sheet_path: String, base_sheet: String,
 	var base_tex := load(base_sheet) as Texture2D
 	if base_tex == null:
 		return base_fps
-	var base_frames: int = base_tex.get_width() / frame_width
-	if base_frames <= 0 or base_frames == frames:
-		return base_fps
-	return base_fps * float(frames) / float(base_frames)
+	return retimed_fps(base_fps, frames, base_tex.get_width() / frame_width)
 
 
 static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> SpriteFrames:
