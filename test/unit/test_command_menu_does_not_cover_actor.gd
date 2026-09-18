@@ -13,6 +13,30 @@ const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 ## my read of the screenshot.
 
 const SCENE := "res://src/battle/BattleScene.tscn"
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
+
+## ⛔ THIS FILE LEFT 19 BattleManager FIELDS ON THE AUTOLOAD, INCLUDING FREED OBJECTS. It measures
+## real rects from a CONSTRUCTED battle, which is the right way to test this — and BattleScene's
+## _ready() writes the autoload unconditionally (set_autobattle_script at :477, then
+## _start_test_battle -> _create_default_party + _spawn_enemies), so standing the scene up is
+## sufficient. The test does nothing wrong; the scene does it on the test's behalf.
+##
+## ⚠️ NOTE A BARE `BattleScene.new()` DOES NOT LEAK, AND NOT BECAUSE IT IS SAFER: with no scene
+## tree an @onready node is null, _ready ABORTS on it, and the autoload writes below never run
+## (cowir-autogrind measured this). This file loads the real .tscn, so _ready completes. Anyone
+## making _ready defensive turns every .new() caller into a leaker — the protection is an error,
+## not a design.
+var _guard: RefCounted = null
+
+
+func before_each() -> void:
+	_guard = BattleState.new()
+	_guard.snapshot()
+
+
+func after_each() -> void:
+	if _guard != null:
+		_guard.restore()
 
 
 func _build() -> Node:

@@ -11,11 +11,36 @@ const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 ## so a label could sit nearer the monster below it than the one it names.
 
 const SCENE := "res://src/battle/BattleScene.tscn"
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
 const FRAME := 64
 ## The fixture's figure: inset 10 from the left, 30 from the right (centre +10), ending 20 above the frame bottom.
 const FIG_L := 10
 const FIG_R := 34
 const FIG_BOTTOM := 44
+
+
+## ⛔ THIS FILE LEFT 19 BattleManager FIELDS ON THE AUTOLOAD, INCLUDING FREED OBJECTS in
+## player_party / all_combatants and as _died_callbacks KEYS. It loads the real BattleScene.tscn to
+## measure a label against its monster, which is the right way to test it — and BattleScene._ready()
+## writes the autoload unconditionally (set_autobattle_script at :477, then _start_test_battle ->
+## _create_default_party + _spawn_enemies). Standing the scene up is sufficient; the test does
+## nothing wrong.
+##
+## ⚠️ A BARE `BattleScene.new()` DOES NOT LEAK, AND NOT BECAUSE IT IS SAFER: with no scene tree an
+## @onready node is null, _ready ABORTS on it, and the writes below never run (cowir-autogrind).
+## 24 of the 26 files that stand up a BattleScene measured clean, mostly for that reason. Making
+## _ready defensive would turn every one of them into a leaker — today's protection is an error.
+var _guard: RefCounted = null
+
+
+func before_each() -> void:
+	_guard = BattleState.new()
+	_guard.snapshot()
+
+
+func after_each() -> void:
+	if _guard != null:
+		_guard.restore()
 
 
 func _scene() -> Node:

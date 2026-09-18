@@ -1,5 +1,7 @@
 extends GutTest
 
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
 ## `volume_db` is CHANNEL state, not a per-play argument: every SFX player is built at a
 ## design-intent base and `set_sfx_volume` re-asserts those "in case a caller mutated them".
 ## `_play_sound` was that caller — it defaulted to 0.0 and overwrote the base.
@@ -23,6 +25,12 @@ func before_each() -> void:
 	sm._sfx_cooldowns.clear()
 	sm._ui_player.volume_db = _const(sm, "SFX_UI_BASE_DB")
 	sm._battle_player.volume_db = _const(sm, "SFX_BATTLE_BASE_DB")
+
+
+## This file ESTABLISHES its levels in before_each, so it is immune to what arrives — and that says
+## nothing about what it LEAVES. It drove _ui_player and _battle_player and had no teardown at all.
+func after_each() -> void:
+	SfxState.release_streams()
 
 
 func test_a_procedural_only_cue_plays_at_its_channel_level() -> void:
