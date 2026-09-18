@@ -113,15 +113,23 @@ func test_no_other_log_site_in_the_lane_interpolates_the_key() -> void:
 
 
 func test_the_log_site_scan_can_find_a_log_site() -> void:
-	## POSITIVE CONTROL: the zero above is worth nothing unless the same scan
-	## reports hits on the log calls that really are there.
+	## POSITIVE CONTROL: the zero above is worth nothing unless THE SAME SCAN reports hits on the
+	## log calls that really are there.
+	##
+	## ⛔ IT WAS NOT THE SAME SCAN. This counted `push_warning(` on RAW lines it split itself,
+	## while the arm it certifies runs `_numbered_code` + `_is_log_site` — so it would have passed
+	## with `_numbered_code` returning NOTHING, and a docstring naming `push_warning(` counted
+	## toward its threshold. A control satisfiable by prose, certifying a scan it never called.
+	## Found by cowir-controller's lens, 2026-09-18: "I fixed the hazard" is a claim about the
+	## sites you happened to edit — mine was the third site in this file, after the helper and the
+	## arm that never used it.
 	var found: int = 0
 	for path in _lane_files():
-		for raw in FileAccess.get_file_as_string(path).split("\n"):
-			if raw.find("push_warning(") != -1:
+		for pair in _numbered_code(FileAccess.get_file_as_string(path)):
+			if _is_log_site(str(pair[1])):
 				found += 1
 	assert_gt(found, 5,
-		"the scan finds almost no push_warning in src/llm/ — it is broken, not the lane")
+		"the scan finds almost no log site in src/llm/ — it is broken, not the lane")
 
 
 func _lane_files() -> Array[String]:
