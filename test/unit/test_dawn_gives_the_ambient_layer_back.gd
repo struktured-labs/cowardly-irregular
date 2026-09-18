@@ -95,11 +95,13 @@ func test_night_over_silence_still_returns_to_silence() -> void:
 
 
 func test_a_snapshot_does_not_survive_the_night_it_belongs_to() -> void:
-	## ⛔ TWO CYCLES, because a single one cannot see the clear. Night 1 displaces the place bed and
-	## dawn hands it back; if the snapshot is not dropped at that point, night 2 over SILENCE hands
-	## back a bed from the previous night — a room tone arriving out of nowhere in a place that has
-	## none. My own mutation set missed this until I wrote the arm: every mutation I had moved the
-	## restore, none moved the CLEAR.
+	## Two cycles: night 2 falls over SILENCE and must return to silence, not to night 1's bed.
+	##
+	## ⚠️ AND THE MECHANISM IS NOT THE ONE I WROTE THIS FOR. I added it believing the `_pre_night_…= ""`
+	## clear was what enforced it; mutation says otherwise — deleting that clear leaves this arm GREEN,
+	## because the write on the next night-on overwrites the snapshot anyway. The arm pins a real
+	## behaviour and the clear is defensive. Saying so beats leaving a reader to infer a guard from an
+	## arm that does not test it.
 	SoundManager.play_ambient(PLACE)
 	SoundManager.set_night_ambience(true)
 	SoundManager.set_night_ambience(false)
@@ -110,3 +112,19 @@ func test_a_snapshot_does_not_survive_the_night_it_belongs_to() -> void:
 	SoundManager.set_night_ambience(false)
 	assert_eq(str(SoundManager._current_ambient_key), "",
 		"night 2 fell over silence and dawn produced '%s' — last night's snapshot outlived the night it belonged to" % str(SoundManager._current_ambient_key))
+
+
+func test_a_second_night_call_does_not_snapshot_the_crickets() -> void:
+	## ⛔ THE CLAUSE MY FIRST MUTATION SET COULD NOT SEE. `_start_exploration` calls
+	## set_night_ambience(night and outdoor) on EVERY scene build, so during one night it fires `true`
+	## repeatedly. Without the `!= NIGHT_AMBIENCE_KEY` check the second call snapshots the CRICKETS,
+	## and dawn then hands the crickets back — night that never ends, in daylight.
+	##
+	## Every arm above calls `true` exactly once, so all seven were green with that check deleted.
+	SoundManager.play_ambient(PLACE)
+	SoundManager.set_night_ambience(true)
+	assert_eq(str(SoundManager._current_ambient_key), NIGHT, "CONTROL: night took the layer on the first call")
+	SoundManager.set_night_ambience(true)
+	SoundManager.set_night_ambience(false)
+	assert_eq(str(SoundManager._current_ambient_key), PLACE,
+		"a second night call during the same night snapshotted '%s' — entering a building and coming back out is enough to make dawn hand the crickets back instead of the place bed" % str(SoundManager._current_ambient_key))
