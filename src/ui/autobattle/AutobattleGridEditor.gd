@@ -72,6 +72,20 @@ const MAX_ACTIONS = 5  # Max actions per rule  # fifth slot fires only at a full
 const MAX_RULES = 32  # Cap OR rule rows so scripts stay bounded (still scrollable)
 const GRID_BASE_POS = Vector2(120, 50)  # Anchor for _grid_container before scroll offset
 
+## Numeric conditions whose engine range is NARROWER than the editor's generic 0-100. A value
+## outside it never fires; under `<` it is permanently TRUE, and rules are first-match-wins, so
+## one such condition silently shadows every rule below it.
+const NUMERIC_BOUNDS := {
+	"ap": [-4, 4],                 # Combatant.gd clamps current_ap to this, debt included
+	"volatility_band": [0, 3],     # Stable / Shifting / Unstable / Fractured
+	"ally_count": [0, 5],          # _get_allies_for = alive party INCLUDING self, cap 5
+}
+
+## These share the 0-100 percentage scale, so a number carried BETWEEN them still means what the
+## player set. Carrying one onto any other scale does not.
+const PERCENT_SCALE := ["hp_percent", "mp_percent", "enemy_hp_percent", "ally_hp_percent",
+	"ally_mp_percent"]
+
 ## Character class color schemes (matching Win98Menu exactly)
 ## Maps character_id -> job class style
 const CHARACTER_STYLES = {
@@ -2027,7 +2041,15 @@ func _apply_condition_type(new_type: String) -> void:
 	if cursor_col >= conditions.size():
 		return
 	var cond = conditions[cursor_col]
+	## A number inherited from the PREVIOUS type is on the previous type's scale. Every seed below
+	## is guarded by `if not cond.has(...)`, and a condition always arrives carrying hp_percent's
+	## {"op": "<", "value": 50} from _add_and_condition — so the seeds were dead on the path a
+	## player actually takes, and `AP < 50` (AP caps at 4) matched every turn.
+	var was_type: String = str(cond.get("type", ""))
 	cond["type"] = new_type
+	if was_type != new_type and not (was_type in PERCENT_SCALE and new_type in PERCENT_SCALE):
+		cond.erase("op")
+		cond.erase("value")
 	if new_type == "always":
 		cond.erase("op")
 		cond.erase("value")
@@ -2063,6 +2085,12 @@ func _apply_condition_type(new_type: String) -> void:
 	elif new_type == "setup_complete":
 		cond.erase("op")
 		cond.erase("value")
+	elif new_type == "ap":
+		## AP runs -4..+4, not 0-100. The generic `< 50` below is permanently true here.
+		if not cond.has("op"):
+			cond["op"] = ">="
+		if not cond.has("value"):
+			cond["value"] = 2
 	elif new_type == "volatility_band":
 		## The band is 0..3, not a percentage. The generic numeric default below is `< 50`, which
 		## here is permanently TRUE — and an always-true condition shadows every rule under it.
@@ -2076,6 +2104,10 @@ func _apply_condition_type(new_type: String) -> void:
 			cond["op"] = "<"
 		if not cond.has("value"):
 			cond["value"] = 50
+	## A seed of 50 on a 0..5 scale is the same permanently-true rule as an inherited one.
+	if NUMERIC_BOUNDS.has(new_type) and cond.has("value"):
+		var bounds: Array = NUMERIC_BOUNDS[new_type]
+		cond["value"] = clampi(int(cond["value"]), int(bounds[0]), int(bounds[1]))
 	_refresh_grid()
 
 
@@ -2163,7 +2195,12 @@ func _adjust_condition_value(delta: int) -> void:
 		if cond_type in ["ap", "enemy_count", "ally_count", "turn"]:
 			step = 1
 
-		current_value = clamp(current_value + delta * step, 0, 100)
+		var lo: int = 0
+		var hi: int = 100
+		if NUMERIC_BOUNDS.has(cond_type):
+			lo = int(NUMERIC_BOUNDS[cond_type][0])
+			hi = int(NUMERIC_BOUNDS[cond_type][1])
+		current_value = clamp(current_value + delta * step, lo, hi)
 		cond["value"] = current_value
 
 		_refresh_grid()
