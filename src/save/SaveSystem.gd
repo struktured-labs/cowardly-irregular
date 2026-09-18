@@ -871,19 +871,31 @@ func _write_save_file(slot: int, data: Dictionary) -> bool:
 	"""Write save data to file"""
 	var file_path = _get_save_path(slot)
 
-	var file = FileAccess.open(file_path, FileAccess.WRITE)
+	## Serialized BEFORE any open: FileAccess.WRITE truncates on open, so every line between
+	## the open and the store is a window in which the slot is 0 bytes on disk.
+	var json_string = JSON.stringify(data, "\t")
+
+	## Staged, then renamed into place. A process that dies mid-write leaves the .new file
+	## rather than an empty slot, so the previous save survives until this one is complete.
+	var staged = file_path + ".new"
+	var file = FileAccess.open(staged, FileAccess.WRITE)
 	if not file:
 		## Tick 181: surface save-write failures via push_warning.
 		## Pre-fix print() only — silent failure. SaveSystem returned
 		## false, the save UI sometimes still showed "Saved!" toast
 		## depending on caller. push_warning + FileAccess error code
 		## gives diagnostic surface (perms / disk full / RO FS).
-		push_warning("[SaveSystem] _write_save_file: could not open '%s' for write (error: %s)" % [file_path, FileAccess.get_open_error()])
+		push_warning("[SaveSystem] _write_save_file: could not open '%s' for write (error: %s)" % [staged, FileAccess.get_open_error()])
 		return false
 
-	var json_string = JSON.stringify(data, "\t")
 	file.store_string(json_string)
 	file.close()
+
+	var err := DirAccess.rename_absolute(staged, file_path)
+	if err != OK:
+		push_warning("[SaveSystem] _write_save_file: could not move '%s' into place (error: %d) — the previous save in slot %d is intact and this save did not happen." % [staged, err, slot])
+		DirAccess.remove_absolute(staged)
+		return false
 
 	return true
 
@@ -1036,10 +1048,28 @@ func save_settings() -> void:
 				settings["llm_custom_model"] = GameState.llm_custom_model
 			if "llm_custom_api_key" in GameState:
 				settings["llm_custom_api_key"] = GameState.llm_custom_api_key
-	var file = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(settings, "\t"))
-		file.close()
+	## Same staging as _write_save_file, and for a sharper reason: load_settings' own docstring
+	## records that a crash mid-write has ALREADY left an empty settings.json in the wild.
+	var json_string := JSON.stringify(settings, "\t")
+	var staged := SETTINGS_PATH + ".new"
+	var file = FileAccess.open(staged, FileAccess.WRITE)
+	if file == null:
+		## Was a bare `if file:` with no else — a settings save that could not open said nothing
+		## at all, which is why the truncation it caused was never traced back to this line.
+		push_warning("[SaveSystem] save_settings: could not open '%s' for write (error: %s) — settings NOT saved." % [staged, FileAccess.get_open_error()])
+		return
+	file.store_string(json_string)
+	file.close()
+	var err := DirAccess.rename_absolute(staged, SETTINGS_PATH)
+	if err != OK:
+		## The removal is LOAD-BEARING here and merely tidy in _write_save_file, which is the one
+		## asymmetry the shared idiom does not encode: settings.json holds the BYOK API key.
+		push_warning("[SaveSystem] save_settings: could not move '%s' into place (error: %d) — the previous settings, including any BYOK key, are intact and this save did not happen." % [staged, err])
+		var rm := DirAccess.remove_absolute(staged)
+		if rm != OK:
+			## A same-named staging file IS truncated by the next save — but a player who
+			## configures BYOK once may never trigger another one, so this orphan is unbounded.
+			push_error("[SaveSystem] save_settings: '%s' could NOT be removed (error: %d) and may contain your API key in plaintext. Delete it manually." % [staged, rm])
 
 
 func load_settings() -> void:
