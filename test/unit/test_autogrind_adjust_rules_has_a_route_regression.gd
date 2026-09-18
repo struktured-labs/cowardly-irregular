@@ -119,10 +119,12 @@ func test_a_saved_edit_reaches_the_running_system() -> void:
 ## CONTROL for the whole file: the signal really is emitted, from more than one screen. If these ever
 ## drop to zero the arms above are guarding a signal nobody sends.
 func test_the_signal_really_is_emitted() -> void:
-	var emitters := 0
+	var screens: int = 0
 	for path in ["res://src/ui/autogrind/AutogrindDashboard.gd", "res://src/ui/autogrind/AutogrindMonitor.gd"]:
-		emitters += FileAccess.get_file_as_string(path).count("adjust_rules_requested.emit()")
-	assert_gt(emitters, 1,
-		"CONTROL: only %d emit sites found — the feature's input side must exist" % emitters)
+		## Per SCREEN, not summed — one screen emitting twice clears an aggregate floor alone.
+		var n: int = FileAccess.get_file_as_string(path).count("adjust_rules_requested.emit()")
+		assert_gt(n, 0, "CONTROL: %s emits it 0 times — a renamed screen is silent under a total" % path)
+		screens += 1
+	assert_gt(screens, 1, "CONTROL: the signal must reach more than one screen, got %d" % screens)
 	assert_eq(str(AutogrindInputHelper.ACTION_KEYS.get("adjust_rules", "")), "R",
 		"and the dispatch table must still offer a key for it")

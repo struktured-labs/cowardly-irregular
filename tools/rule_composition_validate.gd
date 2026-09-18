@@ -46,7 +46,10 @@ func _init() -> void:
 
 	var names: Array = []
 	for f in d.get_files():
-		if f.ends_with(".txt"):
+		## `_`-prefixed files are capture METADATA, not replies. This bench shares
+		## res://tmp/replies_<arm> with rule_composition_compose.gd, whose workflow puts _job.txt
+		## there — scoring it as a reply is an EXTRACT-FAIL against the bench's own success rate.
+		if f.ends_with(".txt") and not f.begins_with("_"):
 			names.append(f)
 	names.sort()
 
@@ -58,8 +61,16 @@ func _init() -> void:
 	var bad_rules := 0
 	var err_tally: Dictionary = {}
 
+	var unreadable: PackedStringArray = PackedStringArray()
 	for f in names:
+		## An unreadable capture reads as "" and scores EXTRACT-FAIL — a file nobody could read,
+		## counted against the model in all four rates below. It must leave the SCORED population.
 		var raw: String = FileAccess.get_file_as_string("%s/%s" % [dir_path, f])
+		if raw == "":
+			unreadable.append(f)
+			lines.append("%-10s UNREADABLE — not scored (empty read, err=%d)"
+				% [f, FileAccess.get_open_error()])
+			continue
 		var extracted: Variant = svc._extract_json_from_raw(raw.strip_edges())
 		if not (extracted is Dictionary):
 			lines.append("%-10s EXTRACT-FAIL" % f)
@@ -103,14 +114,26 @@ func _init() -> void:
 				% [f, rules.size(), bad_here, ", ".join(errs).left(120)])
 
 	lines.append("")
-	lines.append("arm=%s  character=%s  samples=%d" % [arm, character_id if character_id != "" else "(shallow)", names.size()])
-	lines.append("  extracted a JSON object      %d/%d" % [n_extract, names.size()])
-	lines.append("  matched the schema           %d/%d" % [n_schema, names.size()])
-	lines.append("  rules_json parsed            %d/%d" % [n_parse, names.size()])
-	lines.append("  COMPOSITION SURVIVES         %d/%d   <- what the player gets" % [n_clean, names.size()])
+	## Every rate is over what was SCORED, never over what was on disk — a denominator counting
+	## files nobody could read reports a plausible, specific, wrong success rate.
+	var scored: int = names.size() - unreadable.size()
+	lines.append("arm=%s  character=%s  files=%d  scored=%d  unreadable=%d"
+		% [arm, character_id if character_id != "" else "(shallow)", names.size(), scored, unreadable.size()])
+	if unreadable.size() > 0:
+		lines.append("  UNREADABLE (excluded)  %s" % ", ".join(unreadable))
+	lines.append("  extracted a JSON object      %d/%d" % [n_extract, scored])
+	lines.append("  matched the schema           %d/%d" % [n_schema, scored])
+	lines.append("  rules_json parsed            %d/%d" % [n_parse, scored])
+	lines.append("  COMPOSITION SURVIVES         %d/%d   <- what the player gets" % [n_clean, scored])
 	lines.append("  rules: %d total, %d rejected" % [total_rules, bad_rules])
 	for e in err_tally.keys():
 		lines.append("    x%d  %s" % [err_tally[e], e])
+	## FLOOR: a corpus that went entirely dark scores 0/0 and every rate reads as clean.
+	if scored == 0 and names.size() > 0:
+		lines.append("FATAL: %d capture(s) present, NONE readable — no rate can be derived" % names.size())
+		_write(arm, lines)
+		quit(2)
+		return
 	_write(arm, lines)
 	quit(0)
 

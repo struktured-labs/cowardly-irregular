@@ -16,6 +16,8 @@ const DEATH_CUE := "enemy_death"               # in SOUNDS and the manifest, so 
 const BROKEN := "assets/audio/sfx/zz_this_file_does_not_exist.ogg"
 
 var _saved: Dictionary = {}
+## cue -> its real manifest entry, for the arms that force the HIT cues to synth.
+var _saved_hits: Dictionary = {}
 
 
 func _sm() -> Node:
@@ -46,6 +48,10 @@ func after_each() -> void:
 		sm._sfx_manifest[DEATH_CUE] = _saved
 		_saved = {}
 	sm._sfx_stream_cache.erase(DEATH_CUE)
+	for k in _saved_hits.keys():
+		sm._sfx_manifest[k] = _saved_hits[k]
+		sm._sfx_stream_cache.erase(k)
+	_saved_hits = {}
 	sm._sfx_cooldowns.clear()
 	sm._battle_player.volume_db = _c(sm, "SFX_BATTLE_BASE_DB")
 	sm._death_player.volume_db = _c(sm, "DEATH_PLAYER_BASE_DB")
@@ -128,3 +134,49 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 	for c in ["SFX_BATTLE_BASE_DB", "DEATH_PLAYER_BASE_DB", "DEATH_CUE_BOOST_DB", "_BATTLE_VOLUME_TRIM_DB"]:
 		assert_true((sm.get_script().get_script_constant_map() as Dictionary).has(c),
 			"%s is gone — this file's arms read it directly" % c)
+
+
+## Points a hit cue's manifest entry at a file that is not there, forcing its procedural branch.
+## Both cues resolve normally in a real build, so that branch is a FALLBACK and the defect it
+## carried was latent — exactly like the three sibling callers fixed alongside it.
+func _force_synth(sm: Node, cue: String) -> void:
+	if not sm._sfx_manifest.has(cue):
+		return
+	_saved_hits[cue] = (sm._sfx_manifest[cue] as Dictionary).duplicate(true)
+	sm._sfx_manifest[cue] = {"file": BROKEN}
+	sm._sfx_stream_cache.erase(cue)
+	sm._sfx_cooldowns.clear()
+
+
+func test_the_procedural_crit_is_a_boost_on_the_channel_not_an_absolute() -> void:
+	var sm: Node = _sm()
+	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")
+	if sm == null:
+		return
+	assert_true(sm._sfx_manifest.has("critical_hit"),
+		"CONTROL: critical_hit must be in the manifest, or _force_synth measures nothing")
+	sm.reset_hit_chain()
+	_force_synth(sm, "critical_hit")
+	sm.play_attack_hit("", true)
+	var expected: float = float(sm._battle_level("critical_hit")) + _c(sm, "CRIT_SYNTH_BOOST_DB")
+	assert_eq(sm._battle_player.volume_db, expected,
+		"the procedural crit played at %.2f, not %.2f — a bare `volume_db = 2.0` is an ABSOLUTE level, while its own manifest sibling plays at _battle_level" % [sm._battle_player.volume_db, expected])
+
+
+func test_a_plain_hit_after_a_procedural_crit_does_not_inherit_its_boost() -> void:
+	## The other half: the non-crit branch carried no level at all, so it took whatever the player was
+	## left at, and a procedural crit immediately before it is the reachable way to leave that non-base.
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	sm.reset_hit_chain()
+	_force_synth(sm, "critical_hit")
+	_force_synth(sm, "attack_hit")
+	sm.play_attack_hit("", true)
+	assert_gt(sm._battle_player.volume_db, float(sm._battle_level("attack_hit")),
+		"CONTROL: the crit must leave the player ABOVE the plain level, or this arm measures nothing")
+	sm._sfx_cooldowns.clear()
+	sm.reset_hit_chain()
+	sm.play_attack_hit("", false)
+	assert_eq(sm._battle_player.volume_db, float(sm._battle_level("attack_hit")),
+		"a plain hit after a procedural crit played at %.2f, inheriting the crit's boost instead of its own channel level" % sm._battle_player.volume_db)

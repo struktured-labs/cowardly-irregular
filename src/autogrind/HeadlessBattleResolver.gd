@@ -891,7 +891,7 @@ func _resolve_attack(attacker, target) -> int:
 		actual = actual / 2
 
 	target.take_damage(actual)
-	## Live calls this from _execute_attack ONLY (:4539) — the BASIC attack. Deliberately NOT added to
+	## Live calls this from _execute_attack ONLY — the BASIC attack. Deliberately NOT added to
 	## _resolve_attack_with_power, which is this file's ability-damage path: an ability that happens to
 	## deal physical damage does not proc a weapon's on-hit status in live, and wiring it there would
 	## be the axis-2 error this lane's ledger exists to catch — a key read on the wrong executor.
