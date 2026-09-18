@@ -22,6 +22,8 @@ const SLOT := 94
 ## arm, and it is deliberate: a derived corpus shrinks silently, a named one reds.
 const PERSISTERS := ["_write_save_file", "save_settings"]
 const SENTINEL := '{"sentinel":"PREVIOUS","keep":true}'
+## The shared stripper. My private one skipped line-start `#` and had never heard of `"""`.
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 
 func _save_system() -> Node:
@@ -156,10 +158,25 @@ func test_no_writer_in_this_file_opens_its_destination() -> void:
 	## suffix rename left this arm silent while the real function was absent from the file.
 	## (cowir-battle's shape: a floor built on a substring accepts a SURVIVOR; one built on an
 	## exact or delimited match does not.)
+	## ⛔ AND THE PINS READ THE CODE HALF, NOT `src`. A `"""` DOCSTRING IS NOT A COMMENT, AND MY
+	## line-start `#` skip had never heard of one — SaveSystem.gd carries 36 docstring lines.
+	## Measured here (cowir-battle's 2c, in my file): delegate the write to a helper AND name
+	## FileAccess.WRITE in _write_save_file's docstring -> the delegation pin stays GREEN; the same
+	## delegation with the docstring untouched -> it reds. One line of prose was the whole
+	## difference. Both pins are assert-PRESENT, so a docstring SATISFIES them — the harmful
+	## polarity; the two SCANS above are assert-EMPTY, where the same prose is a false RED instead.
+	var halves := GdSource.split(src)
+	var code := str(halves["code"])
+	## GdSource's own header puts this obligation on every caller: over-stripping and a correct
+	## strip are the same green, and an empty doc half passes by construction.
+	assert_true(code.contains("DirAccess.rename_absolute"),
+		"CONTROL: the strip ate a known code site — the rename that makes the write atomic is gone from the code half, so every pin below is asserting over a corpus the stripper emptied")
+	assert_gt(str(halves["doc"]).length(), 0,
+		"CONTROL: the doc half is empty, so the split did nothing and these pins are back on raw source — which is the bug they were converted to fix")
 	for fn in PERSISTERS:
-		assert_eq(_declares(src, fn), 1,
+		assert_eq(_declares(code, fn), 1,
 			"PERSISTER %s is not DECLARED exactly once in SaveSystem.gd — renamed, deleted, or surviving only as a comment; this list exists so a disappearance is LOUD rather than a silently smaller corpus" % fn)
-		var body := _code_body(src, fn)
+		var body := _code_body(code, fn)
 		## ⛔ NOT `contains("staged")` — MY FIRST ATTEMPT AT THIS FLOOR, AND IT DID NOT FIRE.
 		## Hoisting the open into a helper leaves `var staged := path + ".new"` in place, so the
 		## token survives while the write leaves. A name satisfied for a reason unrelated to the
@@ -363,12 +380,10 @@ func test_the_open_classifier_answers_both_ways_on_constructed_input() -> void:
 ## floor SILENT while the function was absent. The two SCANS in this file skip `#` lines already, so
 ## comment-awareness was applied to the scans and not to the pin, in the same file.
 ##
-## ⚠️ A LINE-START REQUIREMENT RATHER THAN A COMMENT STRIP, DELIBERATELY. cowir-controller's strip is
-## stronger in general — it deletes prose before any pattern runs — but a naive one truncates any
-## line whose message carries a `#`, and every writer here pushes a warning. For a `func` pin the
-## left bound cannot be defeated by a comment, because the comment's `#` occupies column 0 itself,
-## which is the one case where cowir-sprites' "a comment carries your right bound too" does not
-## reach: it cannot carry column 0.
+## ⚠️ A LINE-START REQUIREMENT AND A STRIPPED CORPUS, NOT ONE OR THE OTHER. The left bound alone
+## defeats a `#` comment — the `#` occupies column 0 itself, the one case where cowir-sprites'
+## "a comment carries your right bound too" cannot reach. It does NOT defeat a `"""` region, whose
+## lines keep their own indentation, so callers pass the code half and the bound covers the rest.
 func _declares(src: String, fn: String) -> int:
 	var n := 0
 	for line in src.split("\n"):
@@ -377,13 +392,16 @@ func _declares(src: String, fn: String) -> int:
 	return n
 
 
-## Code lines only, so a commented-out write cannot satisfy a pin about a live one.
+## One function's lines. ⚠️ PASS THE CODE HALF — this no longer strips anything itself. It used to
+## skip line-start `#`, which is a private stripper that cannot inherit a fix and never saw a
+## docstring; GdSource.split() does both halves and is the sixteenth copy's replacement, not its peer.
+## Index-safe by construction: every assertion over this body is a `contains`, never a line number.
 func _code_body(src: String, fn: String) -> String:
 	var out: Array = []
 	var inside := false
 	for line in src.split("\n"):
 		if line.begins_with("func ") or line.begins_with("static func "):
 			inside = line.begins_with("func " + fn + "(") or line.begins_with("static func " + fn + "(")
-		if inside and not line.strip_edges().begins_with("#"):
+		if inside:
 			out.append(line)
 	return "\n".join(out)
