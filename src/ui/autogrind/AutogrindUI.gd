@@ -156,6 +156,11 @@ const GRIND_PRESETS = {
 
 ## State
 var _is_grinding: bool = false
+
+## Armed by the start branch before it suspends, disarmed by the stop branch. Three writers can
+## lower _is_grinding inside that frame, and a THIRD toggle would re-raise it — so the flag alone
+## cannot tell a live start from one the player already cancelled.
+var _grind_start_pending: bool = false
 var _party: Array = []
 var _region_name: String = "Current Region"
 
@@ -2350,6 +2355,9 @@ func _toggle_grinding() -> void:
 	"""Toggle grind on/off"""
 	if _is_grinding:
 		_is_grinding = false
+		## Disarms a start still suspended between the flag and the emit — the only way to stop
+		## grind_requested landing on the controller after the player has already cancelled it.
+		_grind_start_pending = false
 		grind_stop_requested.emit()
 		_log_message("[color=yellow]Autogrind stopped.[/color]")
 		_hide_monitor()
@@ -2362,11 +2370,17 @@ func _toggle_grinding() -> void:
 			_log_message("[color=red]Rules rejected — fix the highlighted rows before grinding.[/color]")
 			return
 		_is_grinding = true
+		_grind_start_pending = true
 		_log_message("[color=%s]Autogrind started![/color]" % AccessibilityPalette.bonus_bbcode())
 		# Hide config UI FIRST, then start grinding on next frame
 		visible = false
 		var config = _get_grind_config()
 		await get_tree().process_frame
+		## Anything that turned grinding off during the frame wins: a second toggle, an interrupt,
+		## or GameLoop's set_grinding. The latch also keeps a re-start from emitting twice.
+		if not _is_grinding or not _grind_start_pending:
+			return
+		_grind_start_pending = false
 		grind_requested.emit(config)
 
 	_build_ui()
@@ -3263,12 +3277,38 @@ func _persist_custom_presets() -> void:
 	"""Save custom presets to user://"""
 	## The only write site in this lane without this gate; its two callers do not gate either.
 	if AutogrindSystem._test_disable_persistence: return
-	var file = FileAccess.open(CUSTOM_PRESETS_PATH, FileAccess.WRITE)
-	if not file:
-		push_warning("[AUTOGRIND] Could not save custom presets")
-		return
-	file.store_string(JSON.stringify(_custom_presets, "\t"))
+	_write_presets_atomic(CUSTOM_PRESETS_PATH, _custom_presets, "_save_custom_presets")
+
+
+## ⛔ open(…, WRITE) TRUNCATES, so serializing after it put the player's authored presets inside a
+## window where a crash leaves 0 bytes and no previous copy. Stage, verify the bytes, then rename.
+func _write_presets_atomic(path: String, payload: Variant, what: String) -> bool:
+	var json_string: String = JSON.stringify(payload, "\t")
+	var staged: String = path + ".new"
+	var file := FileAccess.open(staged, FileAccess.WRITE)
+	if file == null:
+		push_warning("[AUTOGRIND] %s: could not open %s (error %d) — previous file left intact" % [what, staged, FileAccess.get_open_error()])
+		return false
+	file.store_string(json_string)
+	## store_string returns NOTHING, so a short write is invisible; a rename would carry the
+	## partial file into place just as happily. Checked BEFORE the rename, never after.
+	var werr: int = file.get_error()
 	file.close()
+	var expected: int = json_string.to_utf8_buffer().size()
+	var chk := FileAccess.open(staged, FileAccess.READ)
+	var written: int = chk.get_length() if chk != null else -1
+	if chk != null:
+		chk.close()
+	if werr != OK or written != expected:
+		DirAccess.remove_absolute(staged)
+		push_warning("[AUTOGRIND] %s: short write to %s (%d of %d bytes, error %d) — previous file left intact" % [what, staged, written, expected, werr])
+		return false
+	if DirAccess.rename_absolute(staged, path) != OK:
+		DirAccess.remove_absolute(staged)
+		push_warning("[AUTOGRIND] %s: could not rename %s into place — previous file left intact" % [what, staged])
+		return false
+	return true
+
 
 
 func _load_custom_presets() -> void:

@@ -25,9 +25,20 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 const GRIND_SRC_DIRS := ["res://src/autogrind", "res://src/ui/autogrind"]
 
+## ⛔ A WRITE SITE IS WHERE THE DISK IS REACHED, NOT WHERE FileAccess APPEARS. On 2026-09-18 the six
+## AutogrindSystem savers and AutogrindUI._persist_custom_presets moved their open into a shared
+## staging helper. Every one still carries its own gate — but the open left, so this file stopped
+## seeing them AT ALL: the ungated arm named the helpers and the floor below fired, correctly
+## reporting that a clean result meant nothing. A call to a helper is scored as a write site so the
+## saver set stays derived from the gates rather than from where FileAccess happens to sit.
+const WRITE_HELPERS := ["_write_json_atomic", "_write_presets_atomic"]
+
 ## Write sites that deliberately reach the disk under test, keyed by function -> WHY.
 ## You cannot silence this green, only explain it green: the value is the deliverable.
-const DECLARED_UNGATED := {}
+const DECLARED_UNGATED := {
+	"_write_json_atomic": "Staging helper, reached only through the six savers above, each carrying its own gate. WRITE_HELPERS scores a CALL to it as a write site, so a new UNGATED caller still reds here — the cover moved up a level, it did not go away. Gating the helper itself is refused by test_a_writer_never_opens_its_destination_regression:95: it would collapse every derived saver into one and silently widen what a test may write.",
+	"_write_presets_atomic": "AutogrindUI's copy of the same helper, same reason. Its one caller, _persist_custom_presets, gates.",
+}
 
 ## ⛔ FLOOR BY REASON, NOT BY COUNT. A count reds on a legitimate new writer and stays green on the
 ## drop it exists to catch. These two are known write sites; if the derivation stops finding them,
@@ -70,6 +81,12 @@ func _classify(code: String) -> Array:
 			continue
 		if t.contains("FileAccess.open(") and t.contains("FileAccess.WRITE"):
 			out.append({"func": fn, "gated": gated})
+			continue
+		for helper in WRITE_HELPERS:
+			## The helper's own body is not a call site; `fn == helper` keeps it out of its own count.
+			if fn != helper and t.contains(helper + "("):
+				out.append({"func": fn, "gated": gated})
+				break
 	return out
 
 
@@ -122,6 +139,26 @@ func test_the_classifier_can_say_ungated() -> void:
 	assert_true(bool(got[0]["gated"]), "a preceding _test_disable_persistence guard must read as gated")
 	assert_eq(str(got[1]["func"]), "_bare", "second site is the bare one")
 	assert_false(bool(got[1]["gated"]), "a bare write must read as UNGATED — this is the arm the guard rests on")
+
+
+## Without this, "0 ungated" and "the helper rule never matched" are the same green — the same
+## unfalsifiability the arm above defends against, one mechanism over. A saver that reaches the disk
+## ONLY through a helper must still be classified, and its gate must still count.
+func test_a_helper_call_is_itself_a_write_site() -> void:
+	var synthetic: String = "\n".join([
+		"func _gated_saver() -> void:",
+		"\tif _test_disable_persistence: return",
+		"\t_write_json_atomic(\"user://a.json\", {}, \"a\")",
+		"",
+		"func _bare_saver() -> void:",
+		"\t_write_presets_atomic(\"user://b.json\", {}, \"b\")",
+	])
+	var got: Array = _classify(synthetic)
+	assert_eq(got.size(), 2, "a saver reaching the disk through a helper must still be a write site")
+	assert_eq(str(got[0]["func"]), "_gated_saver", "the gated saver must be seen by name")
+	assert_true(bool(got[0]["gated"]), "its own gate still counts when the open lives one level down")
+	assert_false(bool(got[1]["gated"]),
+		"an UNGATED helper caller is the widening this rule exists to catch — if this passes, the refactor bought silence")
 
 
 ## A gate belonging to a LATER function must not cover an earlier one, or the classifier reports

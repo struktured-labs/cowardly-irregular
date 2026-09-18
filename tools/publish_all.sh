@@ -99,9 +99,29 @@ _archive_evidence() {
     esac
     [ -d tmp ] || return 0
     mkdir -p "$dest" 2>/dev/null || return 0
+    # ⛔ NEVER OVERWRITE AN ARCHIVED LOG. The archive is keyed by TAG, so a second publish of
+    # the same tag lands on the same filenames — and `cp` truncates its destination on open,
+    # so the FIRST run's evidence is gone before the second byte is written.
+    #
+    # That is not hypothetical. v3.33.422-alpha red on web with a godot signal-11 trace, and
+    # when I later rebuilt the stage to test reproducibility that rebuild overwrote the
+    # worktree copy. tmp/_archive/logs/v3.33.422-alpha/stage_import.log was the ONLY surviving
+    # record, and the import-gate fix in .426 was verified against it. Had I re-run the publish
+    # for that tag instead of running the stage directly, this loop would have replaced the
+    # crash log with a clean one and there would have been no ground truth left to test.
+    #
+    # The FIRST archive of a tag is the interesting one: a re-run is usually the clean run.
+    # So the first copy is kept and later runs land beside it. Nothing is lost in either
+    # direction, and this stays best-effort — it never blocks a publish.
     for f in tmp/*.log; do
         [ -f "$f" ] || continue
-        cp -p "$f" "$dest/" 2>/dev/null && n=$((n + 1))
+        _dst="${dest}/$(basename "$f")"
+        if [ -e "$_dst" ]; then
+            _i=2
+            while [ -e "${_dst}.run${_i}" ]; do _i=$((_i + 1)); done
+            _dst="${_dst}.run${_i}"
+        fi
+        cp -p "$f" "$_dst" 2>/dev/null && n=$((n + 1))
     done
     [ "$n" -gt 0 ] && echo "[pub] evidence archived: ${n} log(s) -> ${dest}"
 

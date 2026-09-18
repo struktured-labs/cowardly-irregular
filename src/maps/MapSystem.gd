@@ -55,12 +55,30 @@ func load_map(map_id: String, spawn_point: String = "default") -> void:
 		var map_path = _get_map_path(map_id)
 		if not ResourceLoader.exists(map_path):
 			## Tick 182: surface missing-map failures. Pre-fix print()
-			## only — load_map silently returned with current_map
-			## unchanged. Callers couldn't tell whether the load
-			## succeeded or whether they were still on the old map.
-			## push_error matches the severity of the existing
-			## load-scene-fail path at the next branch.
-			push_error("[MapSystem] load_map: map not found at '%s' — load silently aborted, current_map unchanged" % map_path)
+			## only — callers couldn't tell whether the load succeeded
+			## or whether they were still on the old map.
+			##
+			## ⛔ "current_map unchanged" IS FALSE AND WAS FALSE WHEN IT WAS WRITTEN. unload_current_map()
+			## runs at the top of this function, so by the time either failure branch is reached the old
+			## map has already been queue_free()d, current_map is null and current_map_id is "". A failed
+			## load leaves NO map, not the previous one.
+			##
+			## NOT FIXED, DELIBERATELY — triaged 2026-09-18 and recorded here because the docstring below
+			## invites exactly the caller who would be bitten: load_map is UNREACHABLE. Its only caller is
+			## this file's own transition_to_map, whose only caller is SceneTransition.transition_to_map,
+			## which has ZERO call sites in src/. Three layers, no entry point. (Named rather than
+			## numbered: this comment shifted both line numbers the moment it was added.)
+			## current_map_id is live state (synced
+			## from GameLoop._set_current_map_id and read by BattleScene, BattleManager,
+			## HeadlessBattleResolver, WorldMapMenu, BestiaryMenu) — so wiring a caller here would let a
+			## missing map clear it for all five, which is what the false comment would have reassured
+			## them about.
+			##
+			## Also latent in the same function: loaded_maps caches instances that unload_current_map()
+			## queue_frees without erasing, so a revisit would hand add_child a freed node.
+			##
+			## Resolve BEFORE unloading if this is ever wired up.
+			push_error("[MapSystem] load_map: map not found at '%s' — load aborted; NOTE the old map has already been unloaded by this point, so there is no map at all" % map_path)
 			return
 
 		var map_scene = load(map_path)

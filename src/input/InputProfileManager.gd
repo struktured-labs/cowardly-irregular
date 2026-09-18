@@ -665,12 +665,36 @@ func save_config() -> void:
 	## error toast, no warning) when the write actually failed
 	## (perms, disk full, RO filesystem). Next launch reverts to
 	## defaults — surprise loss of config.
-	var file = FileAccess.open(CONFIG_PATH, FileAccess.WRITE)
+	## ⛔ STAGED, NOT WRITTEN IN PLACE. `FileAccess.open(CONFIG_PATH, WRITE)` TRUNCATES ON OPEN, so
+	## between that call and `store_string` the file IS the 0-byte state — the window is not a race
+	## against another writer, it is a race against this process dying, and what comes back empty is
+	## the player's profile, face convention and every custom binding. Writing beside the target and
+	## renaming into place has no window at all, and a save that cannot be completed now costs the
+	## player nothing instead of costing them the last good config.
+	var staged: String = CONFIG_PATH + ".new"
+	var file = FileAccess.open(staged, FileAccess.WRITE)
 	if file == null:
-		push_warning("[InputProfileManager] Could not open %s for write — custom input bindings will NOT persist across launches (error: %s)" % [CONFIG_PATH, FileAccess.get_open_error()])
+		push_warning("[InputProfileManager] Could not open %s for write — custom input bindings will NOT persist across launches (error: %s). The config already on disk is untouched." % [staged, FileAccess.get_open_error()])
 		return
 	file.store_string(json_str)
+	## Same reason as ControlsMenu's writer: a short write is invisible to `store_string`, and a
+	## rename would put the partial config in place. The last good config is better than half of a
+	## new one.
+	##
+	## 📌 `get_error()` and not a read-back, for the same bought reason as ControlsMenu's writer:
+	## nothing downstream of this destroys anything, so refusing is a complete answer. Only a write
+	## that gates a destructive step needs its contents verified.
+	var werr := file.get_error()
 	file.close()
+	if werr != OK:
+		push_warning("[InputProfileManager] Write to %s was incomplete (error %d) — REFUSING to replace %s. The config already on disk is intact and this change applies to this session only." % [staged, werr, CONFIG_PATH])
+		DirAccess.remove_absolute(staged)
+		return
+	var err := DirAccess.rename_absolute(staged, CONFIG_PATH)
+	if err != OK:
+		push_warning("[InputProfileManager] Could not move %s into place (error %d) — the previous config is intact and this change applies to this session only." % [staged, err])
+		DirAccess.remove_absolute(staged)
+		return
 	print("[InputProfileManager] Config saved")
 
 

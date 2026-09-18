@@ -1673,7 +1673,7 @@ func _open_autobattle_for_character(char_id: String, char_name: String, combatan
 func _save_exists() -> bool:
 	"""Check if a save file exists (new or legacy format)"""
 	# Check for new customization save
-	if FileAccess.file_exists("user://save_data.json"):
+	if FileAccess.file_exists(CUSTOMIZATIONS_PATH):
 		return true
 	# Check for legacy save format
 	if FileAccess.file_exists("user://saves/save_00.json"):
@@ -2755,26 +2755,64 @@ func _create_party_from_customizations(customizations: Array) -> void:
 	_wire_party_level_up_listeners()
 
 
+## The path lived as five separate string literals across GameLoop and TitleScreen; a staged write
+## needs the writer and the reader to agree on it, and a literal cannot be kept in step.
+const CUSTOMIZATIONS_PATH := "user://save_data.json"
+
+
 func _save_customizations(customizations: Array) -> void:
 	"""Save character customizations to file"""
 	var data = []
 	for custom in customizations:
 		data.append(custom.to_dict())
 
-	var file = FileAccess.open("user://save_data.json", FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify({"party_customizations": data}))
-		file.close()
-		print("[SAVE] Saved party customizations")
+	## ⛔ SERIALIZE, STAGE, RENAME — the fleet idiom, not a variant. open(WRITE) TRUNCATES on open
+	## (measured: 34 bytes before, 0 after, before store_string), and the stringify ran inside that
+	## window. This file is BOTH the global customization store AND the legacy single-save whose
+	## existence gates the title screen's Continue button (TitleScreen:446) — a truncated file still
+	## passes file_exists, so Continue appears for a file that parses to nothing.
+	##
+	## The other four instances of this family had a hardened READER and a silent writer. This one
+	## had neither, which is the state the other four started from: a reader goes loud after
+	## somebody is burned on it, and nobody had been burned here.
+	var payload := JSON.stringify({"party_customizations": data})
+	if payload == "":
+		push_warning("[SAVE] party customizations serialized to nothing — the existing file is left intact.")
+		return
+	var staged := CUSTOMIZATIONS_PATH + ".new"
+	var file = FileAccess.open(staged, FileAccess.WRITE)
+	if not file:
+		push_warning("[SAVE] could not open '%s' for write (error %d) — customizations NOT saved; the existing file is intact." % [staged, FileAccess.get_open_error()])
+		return
+	file.store_string(payload)
+	## store_string returns NOTHING, so a short write — full disk, quota — is invisible and a
+	## rename would carry the partial file into place just as happily as a whole one
+	## (cowir-controller/cowir-music). Ask before closing; refuse the rename on non-OK.
+	var werr := file.get_error()
+	file.close()
+	if werr != OK:
+		push_warning("[SAVE] '%s' was not fully written (error %d) — refusing to replace the existing customizations." % [staged, werr])
+		DirAccess.remove_absolute(staged)
+		return
+	var err := DirAccess.rename_absolute(staged, CUSTOMIZATIONS_PATH)
+	if err != OK:
+		push_warning("[SAVE] could not move '%s' into place (error %d) — the previous customizations are intact and this save did NOT land." % [staged, err])
+		DirAccess.remove_absolute(staged)
+		return
+	print("[SAVE] Saved party customizations")
 
 
 func _load_customizations() -> Array:
 	"""Load character customizations from file"""
-	if not FileAccess.file_exists("user://save_data.json"):
+	## FILE MISSING STAYS SILENT — a first-run player legitimately has no save_data.json, the same
+	## call load_settings made at tick 347. Every OTHER path now says so: this reader returned []
+	## on all four failures without a word, which is why the truncating writer above went unseen.
+	if not FileAccess.file_exists(CUSTOMIZATIONS_PATH):
 		return []
 
-	var file = FileAccess.open("user://save_data.json", FileAccess.READ)
+	var file = FileAccess.open(CUSTOMIZATIONS_PATH, FileAccess.READ)
 	if not file:
+		push_warning("[SAVE] '%s' exists but could not be opened (error %d) — party customizations not loaded; characters will come back as defaults." % [CUSTOMIZATIONS_PATH, FileAccess.get_open_error()])
 		return []
 
 	var json_string = file.get_as_text()
@@ -2782,6 +2820,9 @@ func _load_customizations() -> Array:
 
 	var json = JSON.new()
 	if json.parse(json_string) != OK:
+		## The symptom a truncated write produces. Loud, because "characters silently reverted to
+		## defaults" is indistinguishable from a game that never saved them.
+		push_warning("[SAVE] '%s' is not valid JSON (%d bytes) — party customizations not loaded. A file truncated by a crash mid-write looks exactly like this." % [CUSTOMIZATIONS_PATH, json_string.length()])
 		return []
 
 	var data = json.data
@@ -3317,7 +3358,22 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 			if monster_wc is Dictionary and not (monster_wc as Dictionary).is_empty():
 				BattleManager._win_condition = (monster_wc as Dictionary).duplicate()
 				print("[SPOTLIGHT] win_condition from monsters.json fallback: %s" % str(monster_wc))
-	await _start_battle_async([enemy_id], false)
+	## ⛔ DO NOT AWAIT A SIGNAL THAT HAS NO EMITTER. spotlight_battle_ended is emitted at exactly
+	## one site, inside _on_battle_ended, which cannot run if no battle began — so a suppressed
+	## entry left this coroutine suspended forever: the duel cutscene never advanced, the party
+	## stayed the lone duelist, and _win_condition kept the duel's terms with end_battle (its only
+	## clearer) unreachable. Undo what this function committed, in reverse, and report unavailable
+	## — a result _step_battle already handles by aborting the scene rather than retrying.
+	if not await _start_battle_async([enemy_id], false):
+		if BattleManager:
+			BattleManager._win_condition = {}
+		party = _spotlight_saved_party.duplicate()
+		_spotlight_saved_party.clear()
+		AutobattleSystem.set_autobattle_enabled(duel_char_id, _spotlight_saved_autobattle)
+		_pending_spotlight_unlock = ""
+		_spotlight_duel_active = false
+		push_warning("[SPOTLIGHT] battle entry was suppressed — duel not started, party and win_condition restored")
+		return "unavailable"
 	var result: bool = await spotlight_battle_ended
 	party = _spotlight_saved_party.duplicate()
 	_spotlight_saved_party.clear()
@@ -3809,6 +3865,17 @@ func _show_game_over_screen() -> void:
 
 	await game_over.show_game_over(has_save)
 
+	## ⛔ UNBOUNDED IS CORRECT HERE. DO NOT ADD A DEADLINE — triaged 2026-09-18, recorded because
+	## the obvious improvement is the wrong one and nothing in the code said so.
+	## This waits for a HUMAN to pick Retry or Continue. A 25s or 120s ceiling fires on a player
+	## who went to make tea and then picks an outcome on their behalf.
+	## Liveness cannot bound it either: `game_over` is function-local with a single owner — new,
+	## add_child, queue_free, all in this function — so is_instance_valid() can never go false
+	## while the poll runs. A guard that cannot fire is not a guard.
+	## The termination argument lives in GameOverScreen._confirm_selection: its tween targets
+	## _container, a CHILD of game_over, which is freed only after choice_made[0] is true — i.e.
+	## after the emit. process_mode = PROCESS_MODE_ALWAYS (:75) covers a paused tree. So the
+	## emitter cannot be destroyed before it emits.
 	# Wait for player choice
 	while not choice_made[0]:
 		await get_tree().process_frame
@@ -4381,13 +4448,16 @@ func _adopt_monster_win_condition(enemy_ids: Array) -> void:
 			return
 
 
-func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
+## Returns false when battle entry was SUPPRESSED — no battle started, so nothing downstream
+## should wait on a battle signal. start_solo_battle awaited one that has a single emitter inside
+## _on_battle_ended, which cannot run if no battle began.
+func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> bool:
 	"""Start battle using async-loaded scene"""
 	# Mid-dissolve battle kills the transition tween -> emit never runs (2026-08-08 stuck class): drop the unearned encounter, clear the mutex.
 	if InputLockManager and InputLockManager.has_lock("world_transition"):
 		_battle_transition_starting = false
 		push_warning("[BATTLE] entry suppressed — world transition mid-dissolve; encounter dropped")
-		return
+		return false
 	current_state = LoopState.BATTLE
 	_battle_transition_starting = false  # state=BATTLE now owns the mutex vs area transitions
 	if _day_night_overlay:
@@ -4476,6 +4546,7 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 
 	# Connect to battle end
 	BattleManager.battle_ended.connect(_on_battle_ended, CONNECT_ONE_SHOT)
+	return true
 
 
 func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
@@ -4496,6 +4567,20 @@ func _on_settings_teleport_requested(target_map: String, spawn_point: String) ->
 	if _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
 	_on_area_transition(target_map, spawn_point)
+
+
+## ⛔ THE 14 RAW `await <tween>.finished` CALLS BELOW ARE DELIBERATE. Do NOT swap them for
+## BattleTransition._await_tween_safe — triaged 2026-09-18, all 14, and the helper buys nothing
+## here while adding a 6s ceiling to paths that cannot hang.
+## The 2026-09-06 spider wedge is real and the helper is the right fix FOR ITS FILE: those tweens
+## target battle and monster nodes, which are shared, transient, and freeable by a concurrent
+## _cleanup_effects from a second transition.
+## These target either _area_fade_rect — created once at :381 and freed nowhere — or nodes created
+## INSIDE the transition function, which are freed by the cleanup at the end of
+## _on_area_transition, after every await has returned. And a second transition cannot exist to
+## free them early: _on_area_transition refuses re-entry on _transition_in_progress and arms
+## _arm_transition_watchdog on the next line.
+## The question is what the tween TARGETS, not whether the call looks the same.
 
 
 func _area_fade_to_black() -> void:
