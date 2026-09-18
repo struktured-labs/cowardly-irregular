@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## struktured, F12 cap 2026-08-02 09:18: "the battle menu is still obstructing the player
 ## attacking — see the rogue". The command menu is placed at viewport.x * 0.42 with a comment
 ## asserting "party sprites are on the right (~65%+)". PartyArea anchors to the RIGHT edge at
@@ -142,3 +144,10 @@ func test_control_party_column_is_where_the_markers_say() -> void:
 	assert_gt(centers.size(), 2, "CONTROL: a strict-5 party gives 5 centers to compare")
 	assert_true(centers[0] > centers[centers.size() - 1],
 		"CONTROL: the column steps LEFT as index rises (that is what walks member 5 into the menu)")
+
+## This file instantiates BattleScene.tscn, whose `_ready` starts a battle — so the battle flow
+## calls play_music and leaves `_current_music` and `_music_playing` behind, without this file
+## naming either. A `BS.new()` script construction aborts in `_ready` (null @onready) and leaks
+## nothing; instantiating the SCENE lets it run, which is why only the .tscn files are affected.
+func after_all() -> void:
+	SoundState.restore()

@@ -24,6 +24,24 @@ const SRC := "res://src/ui/autobattle/AutobattleGridEditor.gd"
 const PAST_DELAY := 0.5
 
 
+const ABProfiles := preload("res://test/unit/helpers/autobattle_profiles.gd")
+
+## ⛔ STANDING UP A GRID EDITOR REGISTERS A PROFILE ON THE AutobattleSystem AUTOLOAD, and this file
+## never names the field. The write is three calls down — editor -> get_character_script ->
+## _ensure_character_profiles — keyed by whatever character_id the editor holds, "" when nothing
+## sets one. Measured with a whole-surface probe: this file left entries behind for the rest of the
+## process. Restore the CONTAINER, not the keys anyone thought of.
+var _ab_profiles_entry: Dictionary = {}
+
+
+func before_all() -> void:
+	_ab_profiles_entry = ABProfiles.snapshot(get_tree().root.get_node_or_null("AutobattleSystem"))
+
+
+func after_all() -> void:
+	ABProfiles.restore(get_tree().root.get_node_or_null("AutobattleSystem"), _ab_profiles_entry)
+
+
 func after_each() -> void:
 	Input.action_release("ui_up")
 	Input.action_release("ui_down")

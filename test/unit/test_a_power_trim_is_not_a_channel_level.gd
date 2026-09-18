@@ -1,5 +1,7 @@
 extends GutTest
 
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
 ## EffectSystem scales an impact by power with `lerp(-3.0, 3.0, ...)` — a TRIM, per its own comment
 ## ("more powerful = slightly louder"). play_battle_scaled forwarded it as volume_db_override, which
 ## _try_play_sfx_from_manifest writes as the player's ABSOLUTE level. Measured 2026-09-17: the
@@ -37,6 +39,9 @@ func _arm(sm: Node) -> void:
 
 
 func after_each() -> void:
+	## FIRST, not last: a GDScript error in the restores below aborts after_each, and a release that
+	## sits at the bottom is then skipped. Self-contained, so it needs nothing above it.
+	SfxState.release_streams()
 	var sm: Node = _sm()
 	if sm == null:
 		return

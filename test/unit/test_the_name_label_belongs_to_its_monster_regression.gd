@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## The enemy name label is a TARGETING AID (struktured 2026-08-15: "the monster ones are helpful
 ## tho"), so it has to belong to the monster it names. It was seated on the FRAME:
 ##   vertical    frame_h/2 + 6, while the figures' feet sit 6-77px above the frame bottom (114 sheets)
@@ -199,3 +201,10 @@ func test_every_built_enemy_label_sits_on_its_own_figure() -> void:
 		return
 	assert_gt(pads[-1], 4.0,
 		"ANTI-VACUITY: some built enemy's sheet must still pad its frame (%s px of air under the old rule), else the frame rule and the figure rule agree here" % str(pads))
+
+## This file instantiates BattleScene.tscn, whose `_ready` starts a battle — so the battle flow
+## calls play_music and leaves `_current_music` and `_music_playing` behind, without this file
+## naming either. A `BS.new()` script construction aborts in `_ready` (null @onready) and leaks
+## nothing; instantiating the SCENE lets it run, which is why only the .tscn files are affected.
+func after_all() -> void:
+	SoundState.restore()
