@@ -65,6 +65,11 @@ func _get_music_track() -> String:
 	return "interior_office"
 
 
+## Cold start only — a save loaded inside this room has no bed to inherit.
+func _get_music_home_area() -> String:
+	return "maple_heights_village"
+
+
 func _draw_floor_tile(image: Image) -> void:
 	var tile = Color(0.80, 0.76, 0.63)
 	var tile_alt = Color(0.83, 0.79, 0.66)

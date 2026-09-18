@@ -78,6 +78,11 @@ func _get_music_track() -> String:
 	return "interior_chapel"
 
 
+## Cold start only — a save loaded inside this room has no bed to inherit.
+func _get_music_home_area() -> String:
+	return "harmonia_village"
+
+
 func _get_map_width() -> int:
 	return 18
 
