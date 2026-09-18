@@ -32,6 +32,26 @@ func test_the_bench_kit_shape_matches_the_live_one() -> void:
 			% str(missing))
 
 
+func test_the_bench_refuses_a_kit_that_did_not_resolve() -> void:
+	## This file's own premise — "a bench feeding a stale shape would report numbers for a
+	## prompt the game never sends, while looking perfectly healthy" — had no arm for the
+	## DEGRADED case, only for the shape. Every route to an empty kit is a failed read that
+	## says nothing: the three FileAccess.open helpers return [] on null, and _kit_for parses
+	## jobs.json into a typed Dictionary, so an unreadable file yields null and the assignment
+	## ABORTS the function. Measured with jobs.json pointed at a missing path, pre-fix:
+	## EC=0, 9 prompts rendered, 10 files written, fighter_basic.txt 7306 chars against a good
+	## render's ~9280 and naming not one fighter ability.
+	var src: String = FileAccess.get_file_as_string(BENCH_RENDERER)
+	assert_gt(src.length(), 1000,
+		"CONTROL: %s must actually be read, or this arm asserts over ''" % BENCH_RENDERER)
+	var build: int = src.find("DP.build_rule_composition(")
+	var guard: int = src.find("kc.get(\"resolved\", false)")
+	assert_gt(build, -1, "the bench must still render through build_rule_composition")
+	assert_gt(guard, -1, "the bench must check that the kit context resolved")
+	assert_lt(guard, build,
+		"the resolved check must precede the render, or a degraded prompt is written anyway")
+
+
 func test_the_bench_renders_through_dialogue_prompts() -> void:
 	## Not a copy of the prompt text, and not a hand-rolled approximation.
 	var src: String = FileAccess.get_file_as_string(BENCH_RENDERER)
