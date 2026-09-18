@@ -51,6 +51,22 @@ func snapshot() -> void:
 		_saved[n] = v
 
 
+## ⛔ POSITION IN THE TEARDOWN IS LOAD-BEARING AND NOTHING TESTS IT. A GDScript error ABORTS THE
+## ENCLOSING FUNCTION — CLAUDE.md's rule, which is discussed for test BODIES (rung, vacuity) and
+## applies identically to `after_each`, except the consequence is not a vacuous pass but a LEAK, and
+## the file is green either way (cowir-sfx, who found their own release call below the restores it
+## had to outlive).
+##
+## ✅ THIS HELPER IS ORDER-INDEPENDENT: it finds the autoload itself, returns if absent, and needs
+## nothing to have run before it. So CALL IT FIRST and an error further down cannot skip it.
+##
+## ⚠️ THAT ADVICE IS WRONG FOR A TEARDOWN WHOSE OTHER LINES RE-DIRTY THE AUTOLOAD — if your
+## after_each also calls end_battle(), stop_grinding() or assigns fields, the restore must run LAST
+## or those lines undo it, and then it IS abort-exposed with no ordering that fixes it
+## (cowir-autogrind, 39 files in that shape). The repair there is a FILE-SCOPE snapshot in
+## before_all restored in after_all, as a backstop under the per-test restore: abort-proof for the
+## cross-file half, which is the defect class that matters.
+##
 ## Call from after_each / after_all. Ends a battle left running, then puts every field back.
 func restore() -> void:
 	if _bm == null or _saved.is_empty():

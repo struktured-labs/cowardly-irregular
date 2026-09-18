@@ -13,6 +13,29 @@ extends RefCounted
 ## The fields are derived from the autoload's own property list, so a new `var` is covered the day
 ## it lands rather than the day someone remembers to add it.
 
+## ⚠️ THIS RESTORES THE *PRIOR* SNAPSHOT, NEVER A DECLARED DEFAULT — so it is a CONDUIT, not a
+## BARRIER, and 59 files now depend on that without it ever having been written down.
+##
+##   CONDUIT (this file, and @cowir-ai's autobattle_profiles.gd)
+##     restores what the caller inherited -> cannot MASK an upstream leaker, and equally
+##     does not CLEAN UP after one. Dirt entering this file leaves it.
+##   BARRIER (@cowir-music's sound_state.gd, which restores DECLARED DEFAULTS)
+##     leaves the autoload clean -> a probe running downstream of it reports clean about a
+##     tree that is not, and the real polluter becomes invisible.
+##   ORACLE (@cowir-battle's battle_state.dirty_fields(), read-only)
+##     diffs against a FRESH INSTANCE, so "default" cannot drift from the code. It restores
+##     nothing; battle_state's snapshot()/restore() half is a CONDUIT like this one.
+##
+## 🔑 THE CONSEQUENCE, from @cowir-battle measuring it the hard way: "this file no longer leaks"
+## and "the suite is clean" are INDEPENDENT claims when the helper is a conduit. Their end-of-suite
+## surface stayed dirty after the first fix and nothing said why. Do not read a green from a file
+## wired to this as evidence about anything upstream of it.
+##
+## ⚠️ AND ITS POSITION IN after_each IS LOAD-BEARING: restore() must run AFTER every line that
+## writes this autoload, because it restores rather than clears. That is the opposite constraint
+## from a clearing helper, which can go first and is then immune to an abort above it
+## (@cowir-sfx). A GDScript error above this call silently skips it and the file still passes.
+
 const _FLAG := "_test_disable_persistence"
 
 
