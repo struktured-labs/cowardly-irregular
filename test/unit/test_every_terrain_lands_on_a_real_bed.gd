@@ -158,10 +158,10 @@ func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
 	## with live code truncated. (cowir-controller found the shape; this file is the converted case.)
 	const QUOTED_HASH := '\tvar tint := "[color=#88cccc]lit[/color]"  # trailing prose'
 	var ctrl_raw: String = src.substr(src.find("func _get_terrain_battle_track"), 1200) + "\n" + QUOTED_HASH
-	assert_true(ctrl_raw.contains("## "), "ANTI-VACUITY: the control window must hold a # comment")
+	assert_true(_has_comment_line(ctrl_raw), "ANTI-VACUITY: the control window must hold a # comment")
 	assert_true(ctrl_raw.contains("\"\"\""), "ANTI-VACUITY: and a docstring")
 	var ctrl: String = _code_only(ctrl_raw)
-	assert_false(ctrl.contains("## "), "comment prose survived the strip")
+	assert_false(_has_comment_line(ctrl), "a line-start comment survived the strip")
 	assert_false(ctrl.contains("\"\"\""), "no docstring may survive the strip")
 	assert_false(ctrl.contains("# trailing prose"), "a TRAILING comment survived the strip")
 	assert_true(ctrl.contains('"[color=#88cccc]lit[/color]"'),
@@ -193,5 +193,15 @@ func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
 ## DELEGATED 2026-09-18 to the quote-aware shared helper. No arm here reports a line number, so
 ## the index shift `split()` carries is not observable; a guard that printed one would need
 ## `strip_comments`, which is line-preserving.
+## A COMMENT, not the character. @cowir-battle's structural form: a `#` inside a string cannot
+## make a line BEGIN with one, so this survives quote-awareness and is phrase-free — where
+## `contains("## ")` misses a single-hash line and `contains("#")` is satisfied BY a truncation.
+func _has_comment_line(s: String) -> bool:
+	for line in s.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			return true
+	return false
+
+
 func _code_only(src: String) -> String:
 	return str(GdSource.split(src)["code"])
