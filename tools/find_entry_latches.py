@@ -76,6 +76,21 @@ this note says what the 22 ARE rather than pinning them. Do not read it as a gua
 Usage:
     tools/find_entry_latches.py [path ...]     default: src
     tools/find_entry_latches.py --control      prove the detector can say YES before trusting a 0
+    tools/find_entry_latches.py --selftest     the same controls, under the name the tools guard walks
+
+⛔ `--selftest` IS THE LOAD-BEARING SPELLING AND `--control` IS THE ALIAS, NOT THE OTHER WAY ROUND.
+`test_every_tool_selftest_still_passes` discovers tools by reading them for the literal string
+`--selftest` and then runs `python3 tools/<name> --selftest`. This tool shipped with `--control`
+only, so its controls ran NOWHERE — a control block whose whole purpose is "prove the detector can
+say YES before trusting a zero", never once exercised. Found by cowir-sfx hitting the identical
+gap in their own tool an hour after shipping it: two conventions in tools/, and picking the wrong
+one is silent.
+
+WHAT THIS SELFTEST REACHES, stated because that guard's header requires it — `--selftest` is a
+naming convention, not a safety contract, and a `.sh` one carrying that flag once deregistered 133
+worktrees. Transitively: `run_control()` calls `scan_text()` on two in-module string constants.
+No file is opened, no directory walked, no subprocess spawned, no git command run, nothing written.
+The repo cannot be touched by it.
 """
 import os
 import re
@@ -196,7 +211,7 @@ def run_control():
 
 
 def main(argv):
-    if "--control" in argv:
+    if "--control" in argv or "--selftest" in argv:
         return run_control()
     roots = [a for a in argv if not a.startswith("-")] or ["src"]
     files = []
