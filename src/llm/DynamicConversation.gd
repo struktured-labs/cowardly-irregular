@@ -199,6 +199,11 @@ func setup(
 ## `run()` registers with LLMService, and GameLoop calls `abort_all_conversations()` on scene
 ## change with a comment naming the frozen player as the reason.
 ##
+## MEASURED, so the next reader need not re-grep it: `abort_all_conversations()` has EXACTLY ONE
+## caller in all of src/ — GameLoop._on_area_transition. Not "one I found"; one, counted. And
+## `_active_conversations` is an Array, so several conversations can be registered at once and
+## that single call aborts all of them — the recovery scales, the TRIGGER does not.
+##
 ## ⛔ THE CAVEAT, which is the part worth not re-deriving: that recovery fires on a SCENE CHANGE,
 ## and the strand freezes the player — who is normally what causes scene changes. It stays
 ## reachable through the menu (`set_can_move(false)` gates movement, not menu input), so a player
