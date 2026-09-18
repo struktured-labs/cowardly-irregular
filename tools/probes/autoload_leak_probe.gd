@@ -42,6 +42,9 @@ var _baseline: Dictionary = {}
 var _static_baseline: Dictionary = {}
 var _script: Variant = null
 var _armed: bool = false
+var _scripts_seen: int = 0      ## incremented on start_script
+var _scripts_measured: int = 0  ## incremented on end_script — the one that proves a READING happened
+var _dirty_files: int = 0
 
 
 func run() -> void:
@@ -92,6 +95,12 @@ func run() -> void:
 			return
 	gut.start_script.connect(_on_start)
 	gut.end_script.connect(_on_end)
+	## ⛔ ANCHOR THE NULL. This tool's PRODUCT is an absence — "no LEAK lines" is the answer a reader
+	## acts on. Without a denominator, a run where end_script never fired prints ARMED and nothing
+	## else, which is byte-identical to a clean suite. cowir-sfx, 2026-09-18, on a tool whose whole
+	## output is a null: "a 0 from a blind instrument is indistinguishable from health."
+	if gut.has_signal("end_run"):
+		gut.end_run.connect(_on_end_run)
 	if not gut.start_script.is_connected(_on_start) or not gut.end_script.is_connected(_on_end):
 		print("LEAKPROBE FATAL: signals exist but the connection did not take — measuring nothing")
 		return
@@ -121,13 +130,37 @@ func _target() -> Node:
 	return loop.root.get_node_or_null("/root/" + _autoload) if loop else null
 
 
+## Printed at end of run so a zero is reportable rather than merely absent. `scripts=0` means the
+## hook never fired and EVERY clean reading above it is vacuous — say so rather than leaving the
+## reader to infer health from silence.
+func _on_end_run() -> void:
+	if not _armed:
+		return
+	## ⛔ COUNT THE MEASUREMENT, NOT THE ARRIVAL. `_scripts_seen` rises in start_script, so it keeps
+	## counting even when end_script is dead — my first version reported `scripts=1 dirty=0` under a
+	## mutation that measured NOTHING, which is the reassuring reading. The two counters must be
+	## compared: a gap means scripts began and were never read.
+	if _scripts_measured == 0:
+		print("LEAKPROBE DONE %s started=%d MEASURED=0 — THE HOOK NEVER FIRED. This run measured "
+				% [_autoload, _scripts_seen] + "nothing; a clean result above is vacuous, not healthy.")
+		return
+	if _scripts_measured != _scripts_seen:
+		print("LEAKPROBE DONE %s started=%d MEASURED=%d dirty=%d — %d script(s) were never read, so "
+				% [_autoload, _scripts_seen, _scripts_measured, _dirty_files, _scripts_seen - _scripts_measured]
+				+ "this result is PARTIAL.")
+		return
+	print("LEAKPROBE DONE %s scripts=%d dirty=%d" % [_autoload, _scripts_measured, _dirty_files])
+
+
 func _on_start(coll_script) -> void:
 	_cur = str(coll_script.path).get_file()
+	_scripts_seen += 1
 
 
 func _on_end() -> void:
 	if not _armed:
 		return
+	_scripts_measured += 1
 	var node: Node = _target()
 	if node == null:
 		print("LEAK %s :: PROBE BROKEN — the autoload vanished mid-run" % _cur)
@@ -167,6 +200,7 @@ func _on_end() -> void:
 				shown_s = shown_s.substr(0, 70) + "..."
 			diffs.append("static %s=%s" % [n, shown_s])
 	if not diffs.is_empty():
+		_dirty_files += 1
 		print("LEAK %s :: %d :: %s" % [_cur, diffs.size(), "; ".join(diffs)])
 	_reset(node)
 	_reset_statics()
