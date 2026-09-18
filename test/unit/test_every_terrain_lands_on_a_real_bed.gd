@@ -150,12 +150,22 @@ func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
 	## the comment: green because the phrase left, not because the stripper works. That is the same
 	## fragility as a guard passing only because prose used backticks where the assert wanted quotes.
 	## ANTI-VACUITY first: the window must actually CONTAIN both forms, or stripping proves nothing.
-	var ctrl_raw: String = src.substr(src.find("func _get_terrain_battle_track"), 1200)
-	assert_true(ctrl_raw.contains("#"), "ANTI-VACUITY: the control window must hold a # comment")
+	## ⛔ AND THE QUOTED CASE IS A PROPERTY OF THE INPUT, NOT OF BattleScene TODAY. This block used
+	## to assert `not ctrl.contains("#")` — absence of the CHARACTER — which is only true of a
+	## stripper that is NOT quote-aware. GdSource correctly KEEPS a `#` inside a string, so that
+	## assert PINNED THE DEFECT: it reds on the right helper and passed on the truncating one it
+	## replaced. Measured — old control + old stripper + a quoted `#` in the window: EC=0, 3 passing,
+	## with live code truncated. (cowir-controller found the shape; this file is the converted case.)
+	const QUOTED_HASH := '\tvar tint := "[color=#88cccc]lit[/color]"  # trailing prose'
+	var ctrl_raw: String = src.substr(src.find("func _get_terrain_battle_track"), 1200) + "\n" + QUOTED_HASH
+	assert_true(_has_comment_line(ctrl_raw), "ANTI-VACUITY: the control window must hold a # comment")
 	assert_true(ctrl_raw.contains("\"\"\""), "ANTI-VACUITY: and a docstring")
 	var ctrl: String = _code_only(ctrl_raw)
-	assert_false(ctrl.contains("#"), "no # comment may survive the strip")
+	assert_false(_has_comment_line(ctrl), "a line-start comment survived the strip")
 	assert_false(ctrl.contains("\"\"\""), "no docstring may survive the strip")
+	assert_false(ctrl.contains("# trailing prose"), "a TRAILING comment survived the strip")
+	assert_true(ctrl.contains('"[color=#88cccc]lit[/color]"'),
+		"the strip CUT A QUOTED `#` — a colour tag is live code, and truncating there silently shortens every window this guard reads")
 	for pair in [["void", "battle_void"], ["urban", "battle_urban"]]:
 		var bed: String = pair[1]
 		if keys.has(bed):
@@ -183,5 +193,15 @@ func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
 ## DELEGATED 2026-09-18 to the quote-aware shared helper. No arm here reports a line number, so
 ## the index shift `split()` carries is not observable; a guard that printed one would need
 ## `strip_comments`, which is line-preserving.
+## A COMMENT, not the character. @cowir-battle's structural form: a `#` inside a string cannot
+## make a line BEGIN with one, so this survives quote-awareness and is phrase-free — where
+## `contains("## ")` misses a single-hash line and `contains("#")` is satisfied BY a truncation.
+func _has_comment_line(s: String) -> bool:
+	for line in s.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			return true
+	return false
+
+
 func _code_only(src: String) -> String:
 	return str(GdSource.split(src)["code"])
