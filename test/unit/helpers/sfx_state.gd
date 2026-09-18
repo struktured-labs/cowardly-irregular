@@ -55,6 +55,11 @@ static func sfx_players(sm: Node) -> Array:
 ## not thoroughness. volume_db is deliberately NOT touched: each channel has its own base, every
 ## file restores its own, and the probe measured all six already clean. Resetting them here would
 ## need a per-player base map that could go wrong in a direction nothing would notice.
+## ⛔ THIS FUNCTION MUST NOT BE ABLE TO ABORT. Its callers place it FIRST in after_each, so every
+## restore below it now depends on it returning — a line placed first buys abort-immunity for the
+## lines under it only by having none of its own. Every step is total: get_main_loop and
+## get_node_or_null do not throw, `sm.get(name)` yields null for an absent property rather than
+## erroring, and each player is is_instance_valid-guarded before it is touched.
 static func release_streams() -> void:
 	var loop := Engine.get_main_loop()
 	if loop == null or not (loop is SceneTree):
