@@ -91,6 +91,9 @@ const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
 const VOICE_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const PICKUP_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const DEATH_CUE_BOOST_DB: float = 6.0
+## The procedural crit's boost, RELATIVE like DEATH_CUE_BOOST_DB. It was a bare `volume_db = 2.0`
+## from when _play_sound defaulted to 0 dB; as an absolute it sat 8 dB over the battle channel.
+const CRIT_SYNTH_BOOST_DB: float = 2.0
 const DEATH_THUD_FREQ: float = 48.0
 const DEATH_THUD_DURATION: float = 0.28
 ## Combo ramp: a BIAS multiplied onto pitch_scale, so the existing ±5% jitter survives underneath it.
@@ -911,14 +914,16 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 	if not SOUNDS.has(generic_key):
 		return
 	_combo_step += 1  # procedural path has no cooldown: it always sounds
+	var level: float = _battle_level(generic_key)
 	if is_crit:
-		var params = SOUNDS[generic_key].duplicate()
-		params["volume_db"] = 2.0
+		## Its manifest sibling above plays at _battle_level; this branch answered with an absolute.
+		var params = _synth_params(generic_key, level + CRIT_SYNTH_BOOST_DB)
 		if params.has("freq"):
 			params["freq"] = params["freq"] * 1.3 * bias
 		_play_sound(_battle_player, params)
 	else:
-		var plain = SOUNDS[generic_key].duplicate()
+		## Carried no level at all, so a plain hit after the crit above inherited the crit's.
+		var plain = _synth_params(generic_key, level)
 		if plain.has("freq"):
 			plain["freq"] = plain["freq"] * bias
 		_play_sound(_battle_player, plain)
