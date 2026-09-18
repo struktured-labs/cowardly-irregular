@@ -510,10 +510,71 @@ fi
 # depends on them -- the same gap check_web_audio_tier_selftest.py had until gate 3c ran it.
 # The list is the thing that decides, so a tool added to the chain without being added here is
 # silently unchecked; that is why they are adjacent in this file and why this comment is here.
-_SH_SELFTESTS="artifact_identity.sh build_sha.sh check_import_ok.sh check_masters_untouched.sh
-check_profile_untouched.sh check_version_matches_tag.sh pck_cache_report.sh store_status.sh
-tag_gate_evidence.sh verify_store_artifact.sh web_smoke.sh check_tree_unmoved.sh release_note.sh"
-for _t in $_SH_SELFTESTS; do
+# ⛔ THIS LIST USED TO BE HAND-WRITTEN, AND A HAND-WRITTEN CORPUS FAILS SILENT.
+# I widened it 11 -> 13 on 2026-09-17 because check_tree_unmoved.sh and release_note.sh were
+# being INVOKED by this chain with their arms never running. By that evening it was short
+# again: export_sandbox.sh, seed_gate_saves.sh and check_hydration_exercised.sh were all
+# invoked here and all unchecked. Widening a hand-list by hand is the defect with a fresh date.
+#
+# export_sandbox.sh is the one that matters: it builds the redirected data root that keeps
+# --export-release off struktured's live profile. Its arms had never run on a publish.
+#
+# Derived instead, from two properties this chain can compute about itself:
+#   1. the TRANSITIVE CLOSURE of what publish_all.sh invokes
+#   2. AND the tool DISPATCHES on --selftest (not merely mentions it)
+#
+# (2) is not a substring search. make_web_audio.sh contains the string --selftest three times,
+# all of them explaining that it has none -- it takes a bitrate, and says so because passing
+# --selftest once created a tier directory named "music_--selftestk". A corpus built on
+# `grep -l -- --selftest` includes it and blocks every publish on a usage error.
+_ST_CORPUS="$(python3 - <<'PYEOF'
+import os, re, subprocess, sys
+tracked = set(os.path.basename(p) for p in subprocess.run(
+    ["git", "ls-files", "tools/*.sh"], capture_output=True, text=True).stdout.split())
+if not tracked:
+    sys.exit("could not list tracked shell tools")
+# A reference is ANY tracked tool basename in a non-comment line. Anchoring on "tools/"
+# looked tighter and silently lost the entire desktop chain: deploy_linux.sh reaches it as
+#     exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
+# so deploy_desktop.sh and everything it invokes were invisible to the derivation.
+REF = re.compile(r"([A-Za-z0-9_]+\.sh)")
+# DISPATCHES on the flag: a case arm, or a test against $1. Comments excluded.
+DISP = re.compile(r'^[^#]*(--selftest\)|=[ \t]*"?--selftest"?)')
+seen, frontier = set(), ["publish_all.sh"]
+while frontier:
+    b = frontier.pop()
+    if b in seen:
+        continue
+    p = os.path.join("tools", b)
+    if not os.path.isfile(p):
+        continue
+    seen.add(b)
+    for line in open(p, encoding="utf-8", errors="replace"):
+        if line.lstrip().startswith("#"):
+            continue
+        for m in REF.finditer(line):
+            if m.group(1) in tracked and m.group(1) not in seen:
+                frontier.append(m.group(1))
+# STRUCTURAL FLOOR, not a magic number: this chain publishes desktop and web, so a closure
+# that has not reached both channel scripts did not walk the chain. That is exactly the bug
+# the "tools/" anchor caused, and a count-based floor would have passed straight over it.
+for required in ("deploy_desktop.sh", "deploy_web.sh"):
+    if required not in seen:
+        sys.exit("closure never reached %s -- the derivation is broken, not the tree" % required)
+corpus = sorted(
+    b for b in seen - {"publish_all.sh"}
+    if any(DISP.match(l) for l in open(os.path.join("tools", b), encoding="utf-8",
+                                       errors="replace")))
+print(" ".join(corpus))
+PYEOF
+)" || { echo "[pub] BLOCKED: could not derive the selftest corpus: ${_ST_CORPUS}" >&2; exit 4; }
+if [ -z "$_ST_CORPUS" ]; then
+    echo "[pub] BLOCKED: the derived selftest corpus is EMPTY. An empty corpus runs no arms and" >&2
+    echo "      reports the same silence as a corpus that passed." >&2
+    exit 4
+fi
+_ST_N=0
+for _t in $_ST_CORPUS; do
     if [ ! -x "tools/$_t" ]; then
         echo "[pub] BLOCKED: tools/$_t missing or not executable — it is on the publish path" >&2
         echo "      and nothing has checked that it still works. A missing guard is not a" >&2
@@ -528,7 +589,9 @@ for _t in $_SH_SELFTESTS; do
         exit 4
     fi
     echo "[pub] selftest ok: tools/$_t — arms ran and passed"
+    _ST_N=$((_ST_N+1))
 done
+echo "[pub] selftests: $_ST_N tool(s), derived from what this chain invokes (was a hand-list)"
 
 # ── 0d. NO SHELL TOOL MAY EXPAND A VARIABLE IT NEVER ASSIGNS ─────────────────
 # v3.33.409-alpha went RED with nothing published on:
