@@ -133,9 +133,50 @@ func _web_exclude_patterns() -> PackedStringArray:
 	return out
 
 
+## Every `track` this cutscene declares, DERIVED — not EXPECTED. The two corpora differ on purpose:
+## EXPECTED is the authored branch->theme MAPPING and is hand-written for the reason its own comment
+## gives. This arm's subject is "which of this scene's music reaches the web build", which is every
+## track it plays, so deriving it is what makes the claim match the header.
+func _declared_tracks() -> Array:
+	var raw: String = FileAccess.get_file_as_string(CUTSCENE)
+	assert_gt(raw.length(), 200, "SCOPE control: %s read back %d chars" % [CUTSCENE, raw.length()])
+	var parsed = JSON.parse_string(raw)
+	assert_true(parsed is Dictionary, "SCOPE control: %s did not parse as a Dictionary" % CUTSCENE)
+	if not (parsed is Dictionary):
+		return []
+	var found: Array = []
+	var stack: Array = [parsed]
+	while not stack.is_empty():
+		var node = stack.pop_back()
+		if node is Dictionary:
+			for k in node.keys():
+				if k == "track" and node[k] is String and str(node[k]) != "":
+					if not found.has(str(node[k])):
+						found.append(str(node[k]))
+				else:
+					stack.append(node[k])
+		elif node is Array:
+			for v in node:
+				stack.append(v)
+	found.sort()
+	return found
+
+
 func test_the_endings_are_not_excluded_from_the_web_build() -> void:
 	var pats := _web_exclude_patterns()
 	assert_gt(pats.size(), 0, "CONTROL: the Web preset must carry patterns, or nothing below can fail")
+
+	## ⛔ THE CORPUS IS DERIVED, AND THIS ARM USED TO USE `EXPECTED` — four answer themes. The scene
+	## also plays `cutscene_w6_calibrant_question` at step 4, which the stale note this file was
+	## repaired from had named explicitly. The header said "the endings ship on web" and the arm
+	## bought four fifths of it: @cowir-battle's universal-promised / existential-bought shape, in
+	## the guard I wrote to replace a note that decayed.
+	var tracks := _declared_tracks()
+	assert_gt(tracks.size(), EXPECTED.size(),
+		"CONTROL: the derived corpus (%d) must be WIDER than the authored mapping (%d) — if it is not, the derivation has stopped reaching the non-branch steps and this arm is back to four fifths" % [tracks.size(), EXPECTED.size()])
+	for key in EXPECTED:
+		assert_true(tracks.has(EXPECTED[key]),
+			"CONTROL: the derived corpus must contain the authored theme %s, or the two corpora have drifted apart" % EXPECTED[key])
 
 	## POSITIVE CONTROL on the matcher itself, using a pattern read from the real file: W4 IS still
 	## excluded, so a synthetic W4 path must match. Without this a broken glob reports every theme
@@ -149,11 +190,11 @@ func test_the_endings_are_not_excluded_from_the_web_build() -> void:
 		"CONTROL: no Web pattern matches a cutscene_w4 path — either W4 is no longer excluded (then this arm's premise changed) or the glob match is broken and every result below is a false clean")
 
 	var excluded: Array = []
-	for key in EXPECTED:
-		var path: String = "assets/audio/music/%s.ogg" % EXPECTED[key]
+	for track in tracks:
+		var path: String = "assets/audio/music/%s.ogg" % track
 		for pat in pats:
 			if path.match(pat):
-				excluded.append("%s (by %s)" % [EXPECTED[key], pat])
+				excluded.append("%s (by %s)" % [track, pat])
 				break
 	assert_eq(excluded, [],
-		"an ending theme is dropped from the web build, so the ending plays silent where most people play: %s" % str(excluded))
+		"a theme this scene PLAYS is dropped from the web build, so that beat is silent where most people play: %s" % str(excluded))
