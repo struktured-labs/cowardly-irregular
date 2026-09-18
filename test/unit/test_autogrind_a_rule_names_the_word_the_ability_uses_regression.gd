@@ -17,6 +17,7 @@ const AutobattleScript = preload("res://src/autobattle/AutobattleSystem.gd")
 const AutogrindScript = preload("res://src/autogrind/AutogrindSystem.gd")
 const UI_PATH := "res://src/ui/autogrind/AutogrindUI.gd"
 const BM_PATH := "res://src/battle/BattleManager.gd"
+const HBR_PATH := "res://src/autogrind/HeadlessBattleResolver.gd"
 
 var _ab
 var _ag
@@ -109,13 +110,15 @@ func test_resolution_does_not_invent_a_match() -> void:
 		"`slow` lands nowhere and must stay false — it was removed from the ring for that reason")
 
 
-func _applier_aliases() -> Dictionary:
-	## Derived from the APPLIER, which is the authority on what lands.
+func _applier_aliases(path: String = BM_PATH) -> Dictionary:
+	## Derived from an APPLIER, which is the authority on what lands. BOTH engines alias, so the
+	## path is a parameter — pinning the rule side to live alone leaves a grind-side drift invisible,
+	## on a fix whose whole subject is the two engines disagreeing about a key (cowir-battle).
 	var out: Dictionary = {}
 	var guard := RegEx.create_from_string("if\\s+status_to_add\\s*==\\s*\"([a-z_]+)\"\\s*:")
 	var assign := RegEx.create_from_string("^\\s*status_to_add\\s*=\\s*\"([a-z_]+)\"")
 	var pending: String = ""
-	for line in FileAccess.get_file_as_string(BM_PATH).split("\n"):
+	for line in FileAccess.get_file_as_string(path).split("\n"):
 		var l: String = str(line)
 		if l.strip_edges().begins_with("#"):
 			continue
@@ -146,6 +149,23 @@ func test_the_rule_side_table_matches_the_applier() -> void:
 	assert_eq(r_keys, a_keys, "the rule side must know every alias the applier performs")
 	for k in a_keys:
 		assert_eq(str(rules.get(k, "")), str(applier[k]), "both sides must agree on where %s lands" % k)
+
+
+func test_both_engines_alias_alike_and_the_rule_side_knows_it() -> void:
+	## The rule side is ONE table and there are TWO appliers. They agree today and nothing said so.
+	var live: Dictionary = _applier_aliases(BM_PATH)
+	var grind: Dictionary = _applier_aliases(HBR_PATH)
+	assert_gt(grind.size(), 2, "CONTROL: the grind applier's table must be found, or this is vacuous")
+	var g_keys: Array = grind.keys()
+	g_keys.sort()
+	var l_keys: Array = live.keys()
+	l_keys.sort()
+	gut.p("    grind=%s" % str(g_keys))
+	assert_eq(g_keys, l_keys, "the two appliers must alias the same effects")
+	for k in l_keys:
+		assert_eq(str(grind.get(k, "")), str(live[k]), "both appliers must send %s to the same key" % k)
+		assert_eq(str(Combatant.STATUS_ALIASES.get(k, "")), str(grind[k]),
+			"the rule side must agree with the GRIND applier too, not only with live")
 
 
 func test_every_ring_entry_can_be_true_after_resolution() -> void:
