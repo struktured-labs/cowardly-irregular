@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 const GdSource = preload("res://test/unit/helpers/gd_source.gd")
 
 ## Joins the achievement catalog (data/autogrind_achievements.json) to the dict that
@@ -47,6 +52,7 @@ class FakeGameState extends RefCounted:
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindAchievementsScript._reset_cache_for_test()
 	_ctrl = ControllerScript.new()
 	add_child_autofree(_ctrl)
@@ -59,6 +65,8 @@ func after_each() -> void:
 	for field in _saved:
 		AutogrindSystem.set(field, _saved[field])
 	_saved.clear()
+	AutogrindState.restore(_ag_state)
+
 
 
 func test_every_catalog_stat_key_is_emitted_by_the_real_producer() -> void:

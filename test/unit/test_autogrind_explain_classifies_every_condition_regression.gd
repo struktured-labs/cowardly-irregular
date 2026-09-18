@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## The autogrind console's explain preview, held to the same standard as the autobattle Simulate
 ## readout (f72900f7): it must REFUSE what the sampled parties cannot decide, and every condition
 ## in the grammar must be classified so the next one cannot arrive unnoticed.
@@ -18,6 +23,7 @@ var _ui
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
 	add_child_autofree(_ui)
@@ -109,3 +115,7 @@ func test_a_probe_decidable_rule_is_still_answered() -> void:
 	var report := _joined()
 	assert_true(report.contains("fires"),
 		"a probe-decidable threshold must still be answered, not refused: %s" % report)
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

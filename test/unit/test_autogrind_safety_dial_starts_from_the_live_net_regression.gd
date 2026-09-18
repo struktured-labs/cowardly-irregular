@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 ## The console's four safety rows displayed the enforcer and WROTE a private copy of the shipped
 ## defaults that nothing ever hydrated. `_safety_label` reads AutogrindSystem.interrupt_rules — its
 ## own comment says so, "not what this console last set" — while `_safety_rules()` returned four
@@ -39,6 +44,7 @@ var _ui
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_sys = AutogrindSystem
 	_sys._test_disable_persistence = true
 	_sys.set_interrupt_rules(SHIPPED)
@@ -48,6 +54,8 @@ func after_each() -> void:
 	_sys.stop_autogrind()
 	_sys.set_interrupt_rules(SHIPPED)
 	_sys._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 ## Constructed AFTER the restore, which is the real order: settings load at boot, the console opens

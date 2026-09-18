@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 ## I fixed this same bug twice in two hours, so this file fixes the CLASS instead of a third instance.
 ##
 ## Every session-scoped field on AutogrindSystem lives in three places, and the three must agree:
@@ -72,6 +77,7 @@ var _ags: Node = null
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_ags = get_node_or_null("/root/AutogrindSystem")
 	if _ags:
 		_ags._test_disable_persistence = true
@@ -80,6 +86,8 @@ func before_each() -> void:
 func after_each() -> void:
 	if _ags:
 		_ags.is_grinding = false
+	AutogrindState.restore(_ag_state)
+
 
 
 # ── source census ────────────────────────────────────────────────────────────

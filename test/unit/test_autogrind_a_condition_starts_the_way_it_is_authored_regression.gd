@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const ED := "res://src/ui/autogrind/AutogrindGridEditor.gd"
 const UI := "res://src/ui/autogrind/AutogrindUI.gd"
@@ -24,6 +29,7 @@ var _ed: Node = null
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
 	AutogrindSystem._test_disable_persistence = true
 	_vp = SubViewport.new()
@@ -40,6 +46,8 @@ func after_each() -> void:
 	if _ed and is_instance_valid(_ed):
 		_ed.queue_free()
 	_ed = null
+	AutogrindState.restore(_ag_state)
+
 
 
 ## Put one condition cell under the cursor and cycle until its type is `want`.

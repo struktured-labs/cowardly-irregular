@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## tick 131 + tick 135 regression: AutogrindSummary's items-consumed
 ## list delegates through the shared ItemNameResolver.
 
@@ -32,6 +37,7 @@ func _build_ui_body() -> String:
 ## when empty — through the shared formatter that now produces it, plus ONE source assert that the
 ## Summary calls it. The original defect (a raw-id prettifier) is still banned by name.
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 
 
@@ -92,3 +98,7 @@ func test_the_items_used_row_is_still_labelled() -> void:
 	var body := _build_ui_body()
 	assert_true(body.contains("\"label\": \"Items Used\""),
 		"'Items Used' label preserved")
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

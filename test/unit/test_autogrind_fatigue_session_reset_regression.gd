@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file leaked state a hand-listed teardown cannot name.
+var _ag_state: Dictionary
+
 var _gating_battles_before: int = 0
 
 ## Regression: AutogrindSystem.start_autogrind() must reset
@@ -47,6 +52,7 @@ func _read(path: String) -> String:
 # ── Source pin ────────────────────────────────────────────────────────────────
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_gating_battles_before = AutogrindSystem.battles_completed
 	AutogrindSystem._test_disable_persistence = true
 
@@ -110,3 +116,5 @@ func after_each() -> void:
 	## party that could not heal). Captured, not zeroed: 0 is an assumption about a baseline this
 	## file does not own.
 	AutogrindSystem.battles_completed = _gating_battles_before
+	AutogrindState.restore(_ag_state)
+

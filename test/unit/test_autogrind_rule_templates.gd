@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## Regression coverage for the autogrind rule-templates catalog + installer.
 ## Two responsibilities pinned here:
 ##   1) Every catalog rule uses condition/action types the evaluator supports.
@@ -36,6 +41,7 @@ class FakeAutogrindSystem extends RefCounted:
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	AutogrindRuleTemplatesScript._reset_cache_for_test()
 
@@ -169,3 +175,7 @@ func test_gold_farm_has_inventory_stop_rule() -> void:
 						found_inv_stop = true
 	assert_true(found_inv_stop,
 		"Gold Farm must have an inventory_items → stop_grinding rule (task-#6 contract)")
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

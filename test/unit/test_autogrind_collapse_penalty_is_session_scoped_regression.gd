@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 const GdSource = preload("res://test/unit/helpers/gd_source.gd")
 
 ## A system collapse halves the efficiency CAP for 10 battles. Both `max_efficiency` and
@@ -27,6 +32,7 @@ var _saved: Dictionary = {}
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	for f in TOUCHED:
 		_saved[f] = AutogrindSystem.get(f)
@@ -36,6 +42,8 @@ func after_each() -> void:
 	for f in _saved:
 		AutogrindSystem.set(f, _saved[f])
 	_saved.clear()
+	AutogrindState.restore(_ag_state)
+
 
 
 func _party() -> Array[Combatant]:

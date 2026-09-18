@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file leaked state a hand-listed teardown cannot name.
+var _ag_state: Dictionary
+
 ## Regression: the end-of-session summary reported "Time Bonus: 1.0x" for EVERY session.
 ##
 ## get_time_multiplier() gated on `is_grinding`, and the summary is built after the grind
@@ -30,6 +35,7 @@ var _saved: Dictionary = {}
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	_saved = {
 		"is_grinding": AutogrindSystem.is_grinding,
@@ -41,6 +47,8 @@ func after_each() -> void:
 	AutogrindSystem.is_grinding = _saved["is_grinding"]
 	AutogrindSystem._grind_stats = _saved["stats"]
 	_saved.clear()
+	AutogrindState.restore(_ag_state)
+
 
 
 ## Puts the system in "mid-session, started N minutes ago" without a real grind.

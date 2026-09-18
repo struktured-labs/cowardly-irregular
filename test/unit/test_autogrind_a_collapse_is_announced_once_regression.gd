@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 ## The console is the ONLY listener for `system_collapse`, and closing it disconnects the handler, so
 ## a catch-up exists to report collapses missed while it was shut. The baseline it diffed against —
 ## "collapses this console has already told the player about" — lived ON THE CONSOLE, which GameLoop
@@ -31,6 +36,7 @@ var _sys
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_sys = AutogrindSystem
 	_sys._test_disable_persistence = true
 	_sys.collapse_count = 0
@@ -42,6 +48,8 @@ func after_each() -> void:
 	_sys.collapse_count = 0
 	_sys.collapses_announced = 0
 	_sys._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 ## One open: build, connect, read what it owes the player, disconnect. The free is the mechanism, so
