@@ -12,6 +12,18 @@ extends RefCounted
 ##
 ## The fields are derived from the autoload's own property list, so a new `var` is covered the day
 ## it lands rather than the day someone remembers to add it.
+##
+## ⛔ BUT THE SURFACE IS ONE AUTOLOAD, AND A SIGNAL CAN CARRY A WRITE OUTSIDE IT. `restore()` uses
+## `set()`, which does NOT emit — so a test that mutated through an EMITTING door and is restored
+## through this SILENT one leaves every listener holding the old value, and a whole-surface probe
+## on AutogrindSystem still reads clean. That is the `.420` polluter's shape exactly (cowir-adhoc:
+## restore through the same door you mutated through). The live exposure here is
+## `meta_corruption_level`, which GameLoop reads at `_resolve_headless_battle` and
+## `_on_autogrind_battle_ended` and pushes into `SoundManager.set_corruption_intensity()`.
+## Measured 2026-09-18, in-process probe bracketing all 285 lane files, positive control at 0.42:
+## the render is 0.0000 before and after, so NO file trips it today. That is a fact about today's
+## corpus, not a property of this helper — a file that drives either GameLoop path with corruption
+## set needs SoundManager restored too, and this helper will not do it for you.
 
 ## ⚠️ THIS RESTORES THE *PRIOR* SNAPSHOT, NEVER A DECLARED DEFAULT — so it is a CONDUIT, not a
 ## BARRIER, and 59 files now depend on that without it ever having been written down.
