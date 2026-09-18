@@ -96,7 +96,10 @@ const DEATH_CUE_BOOST_DB: float = 6.0
 const CRIT_SYNTH_BOOST_DB: float = 2.0
 const DEATH_THUD_FREQ: float = 48.0
 const DEATH_THUD_DURATION: float = 0.28
-## Combo ramp: a BIAS multiplied onto pitch_scale, so the existing ±5% jitter survives underneath it.
+## Anti-fatigue detune, authored for short repeated IMPACTS so an identical sample never lands
+## twice the same. Named because it is not universal: play_voice opts out (see there).
+const SFX_PITCH_JITTER: float = 0.05
+## Combo ramp: a BIAS multiplied onto pitch_scale, so SFX_PITCH_JITTER survives underneath it.
 const COMBO_PITCH_STEP: float = 0.03
 const COMBO_PITCH_CAP: float = 0.12
 
@@ -619,10 +622,13 @@ static func _load_sfx_manifest() -> void:
 		print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
 
 
-func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db_override: float = NAN, pitch_scale: float = 1.0) -> bool:
+func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db_override: float = NAN, pitch_scale: float = 1.0, pitch_jitter: bool = true) -> bool:
 	"""Try to play a file-based SFX from the manifest. Returns true if successful.
 	volume_db_override: if NAN, preserves the player's channel base volume.
-	If set, overrides volume (used by play_battle_scaled)."""
+	If set, overrides volume (used by play_battle_scaled).
+	pitch_jitter: false plays at exactly pitch_scale — for cues whose pitch is CONTENT
+	(recorded speech) rather than an impact to be varied. Defaults true: everything that
+	had this behaviour before the flag existed keeps it."""
 	if not _sfx_manifest.has(sound_key):
 		return false
 	## Cleared here, set at the cooldown gate below: `true` from this function means HANDLED, not
@@ -655,8 +661,8 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	if not path.begins_with("res://"):
 		path = "res://" + path
 
-	# Subtle pitch randomization (±5%) prevents ear fatigue on repeated sounds
-	var pitch_variation = randf_range(0.95, 1.05)
+	# Subtle pitch randomization across SFX_PITCH_JITTER prevents ear fatigue on repeated sounds
+	var pitch_variation: float = randf_range(1.0 - SFX_PITCH_JITTER, 1.0 + SFX_PITCH_JITTER) if pitch_jitter else 1.0
 	var final_pitch = pitch_scale * pitch_variation
 
 	# Check stream cache first
@@ -672,7 +678,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 			return true
 		var cached_fallback: String = str(entry.get("fallback_to", ""))
 		if cached_fallback != "" and cached_fallback != sound_key and _sfx_manifest.has(cached_fallback):
-			return _try_play_sfx_from_manifest(player, cached_fallback, volume_db_override, pitch_scale)
+			return _try_play_sfx_from_manifest(player, cached_fallback, volume_db_override, pitch_scale, pitch_jitter)
 		return false
 
 	# Try loading directly — skip existence checks that can fail in web/PCK exports
@@ -681,7 +687,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		_sfx_stream_cache[resolved_key] = null
 		var fallback_key: String = str(entry.get("fallback_to", ""))
 		if fallback_key != "" and fallback_key != sound_key and _sfx_manifest.has(fallback_key):
-			return _try_play_sfx_from_manifest(player, fallback_key, volume_db_override, pitch_scale)
+			return _try_play_sfx_from_manifest(player, fallback_key, volume_db_override, pitch_scale, pitch_jitter)
 		push_warning("[SFX] Failed to load: %s (key: %s)" % [path, resolved_key])
 		return false
 	_sfx_stream_cache[resolved_key] = stream
@@ -829,7 +835,13 @@ func play_voice(sound_key: String) -> float:
 	## Lines are not interchangeable with each other — a second one interrupting the first is the
 	## behaviour we are fixing, so never dedupe them against the shared cooldown table.
 	_sfx_cooldowns.erase(sound_key)
-	if not _try_play_sfx_from_manifest(_voice_player, sound_key, VOICE_PLAYER_BASE_DB):
+	## ⛔ NO JITTER, AND IT IS NOT A TASTE CALL EITHER WAY. The ±5% is authored for short repeated
+	## impacts; on recorded speech it is up to 84 cents, redrawn per line, so one character's voice
+	## wanders pitch line to line — measured 81.7 cents over 40 plays, 2026-09-18. And the RETURN
+	## below is a contract: a stream of natural length L at pitch p is audible for L/p seconds, so
+	## a detuned line handed BattleSpeechBubble a length it does not have (10.90s reported against
+	## 11.29s heard at p=0.965). Unity pitch settles both — there is no length to correct.
+	if not _try_play_sfx_from_manifest(_voice_player, sound_key, VOICE_PLAYER_BASE_DB, 1.0, false):
 		return 0.0
 	## The erase above only clears the OUTER key; a fallback_to target can still be cooled, and a
 	## suppressed return leaves the PREVIOUS line's stream on the player for get_length() to time.
