@@ -87,3 +87,49 @@ func test_an_ordinary_numeric_condition_still_dials() -> void:
 	var before: int = int(_cond(e).get("value", -1))
 	e.call("_adjust_condition_value", 1)
 	assert_ne(int(_cond(e).get("value", -1)), before, "hp_percent must still dial")
+
+
+# ── the mirror: switching AWAY left the old type's payload behind ──────────────
+
+func test_switching_type_leaves_no_payload_from_the_old_one() -> void:
+	## Every named payload survived a type change: has_status -> hp_percent left `status: poison`
+	## on an hp_percent condition, and the same for element / stat / item_id / weather. It reaches
+	## the saved script and every share code. Derived over the owner's map — every ordered pair
+	## whose FIELD differs — so a tenth named-payload type is covered the day it lands.
+	var fields: Dictionary = _abs.CONDITION_REQUIRED_FIELD
+	assert_gt(fields.size(), 0, "FLOOR: an empty map makes every pair below vacuous")
+	var stale: Array[String] = []
+	var pairs: int = 0
+	for was in fields.keys():
+		for now in _abs.CONDITION_TYPES.keys():
+			if str(fields.get(was, "")) == str(fields.get(now, "")):
+				continue
+			pairs += 1
+			var e: Node = await _editor()
+			e.call("_apply_condition_type", str(was))
+			e.call("_apply_condition_type", str(now))
+			if _cond(e).has(str(fields[was])):
+				stale.append("%s -> %s kept %s" % [str(was), str(now), str(fields[was])])
+	assert_gt(pairs, 0, "CONTROL: no differing-field pair was driven, so this arm examined nothing")
+	assert_eq(stale.size(), 0, "the old type's payload survived the switch: %s" % [stale])
+
+
+func test_switching_within_a_family_keeps_the_choice() -> void:
+	## ANTI-OVERCORRECTION. The five status types share the "status" field and the two buff types
+	## share "stat", so moving between them must PRESERVE what the player already picked —
+	## erasing on every type change would throw it away.
+	for pair in [["has_status", "ally_has_status"], ["has_buff", "not_has_buff"]]:
+		var e: Node = await _editor()
+		e.call("_apply_condition_type", pair[0])
+		var field: String = str(_abs.CONDITION_REQUIRED_FIELD[pair[0]])
+		## Plant a NON-SEED value. Comparing against the seed cannot discriminate: erase-then-
+		## reseed yields the seed again, so an over-correction that erases on EVERY type change
+		## passes. Measured — that mutation was green until this line. A composer-authored
+		## "sleep" is the real case, since the editor itself can only ever seed "poison".
+		var planted: String = "sleep" if field == "status" else "speed"
+		_cond(e)[field] = planted
+		var chosen: String = str(_cond(e).get(field, ""))
+		assert_eq(chosen, planted, "CONTROL: the plant must take, or this arm proves nothing")
+		e.call("_apply_condition_type", pair[1])
+		assert_eq(str(_cond(e).get(field, "")), chosen,
+			"%s -> %s must keep %s — they are the same field" % [pair[0], pair[1], field])

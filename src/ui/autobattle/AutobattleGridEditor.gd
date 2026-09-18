@@ -2058,6 +2058,15 @@ func _apply_condition_type(new_type: String) -> void:
 	if was_type != new_type and not (was_type in PERCENT_SCALE and new_type in PERCENT_SCALE):
 		cond.erase("op")
 		cond.erase("value")
+	## The OLD type's NAMED payload is meaningless on the new one: switching has_status ->
+	## hp_percent left `status: poison` sitting on an hp_percent condition, in the saved script
+	## and in every share code. Kept when the new type uses the SAME field, so moving within a
+	## family — has_status -> ally_has_status, has_buff -> not_has_buff — preserves the choice
+	## the player already made. Both sides read the owner's map, so there is no list here.
+	var was_field: String = str(AutobattleSystem.CONDITION_REQUIRED_FIELD.get(was_type, ""))
+	var now_field: String = str(AutobattleSystem.CONDITION_REQUIRED_FIELD.get(new_type, ""))
+	if was_field != "" and was_field != now_field:
+		cond.erase(was_field)
 	if new_type == "always":
 		cond.erase("op")
 		cond.erase("value")
