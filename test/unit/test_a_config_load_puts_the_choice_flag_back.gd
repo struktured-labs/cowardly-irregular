@@ -63,6 +63,7 @@ func test_the_manager_still_sets_the_flag_on_load() -> void:
 func test_every_config_loading_test_restores_the_choice_flag() -> void:
 	var callers: Array = []
 	var unrestored: Array = []
+	var unread: Array = []
 	for file_name in DirAccess.get_files_at(TEST_DIR):
 		if not file_name.ends_with(".gd"):
 			continue
@@ -70,6 +71,14 @@ func test_every_config_loading_test_restores_the_choice_flag() -> void:
 		## Cheap reject first: code_of on every file in the directory is wasted work when the
 		## overwhelming majority never mention the call at all.
 		var raw: String = FileAccess.get_file_as_string(path)
+		## ⛔ A FAILED READ IS A SKIP, AND THE SKIP HAPPENS BEFORE THE DEFECT SCAN.
+		## get_file_as_string returns "" on failure, so a file that cannot be read misses CALL,
+		## `continue`s, and never reaches `unrestored` — the leaker drops out of the list of
+		## leakers. Recorded per file rather than floored in aggregate: `callers.size() >= 2`
+		## below is satisfied by two files and cannot see a third go dark.
+		if raw.strip_edges().is_empty():
+			unread.append(file_name)
+			continue
 		if raw.find(CALL) == -1:
 			continue
 		## ⛔ CODE ONLY. A raw scan finds four files here; two of them are source-READING tests
@@ -88,6 +97,9 @@ func test_every_config_loading_test_restores_the_choice_flag() -> void:
 	## perfectly — the shrinking-corpus shape, which is how a derived guard goes quietly vacuous.
 	assert_true(callers.size() >= 2,
 		"CONTROL: expected at least the two known config-loading tests, derived %s" % [callers])
+	assert_true(unread.is_empty(),
+		"%s enumerated but read EMPTY. The cheap-reject above treats an unreadable file as one " % [unread]
+		+ "that does not call load_config, so a leaker would be skipped rather than reported.")
 	assert_true(unrestored.is_empty(),
 		"test file(s) %s call load_config() without ever naming %s — the loader sets it, nothing " % [unrestored, FLAG]
 		+ "resets it, and a leaked `true` silently disables pad autodetection for every later file")
