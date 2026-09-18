@@ -85,6 +85,51 @@ def read(path):
         return fh.read()
 
 
+def code_only(src):
+    """GDScript source with `#` comments and triple-quote regions removed.
+
+    Every lookup here is `"<effect>" in source`, so without this a COMMENT naming an effect
+    reports the grind as handling it. Measured 2026-09-18: all 16 preset-castable effects agree
+    raw vs stripped, so exposure today is ZERO — and selftest() plants a comment that WOULD fool
+    the raw form. Fixed at birth rather than left latent: the resolver is 31% comment by line
+    (1986 -> 1365) and an arm drafted as a comment is exactly what would flip a verdict.
+
+    Not a 17th private stripper. `GdSource` is GDScript and unreachable from Python, and the two
+    quote-aware readers already in tools/ carry SHELL escaping rules for `.sh` files. This is the
+    first GDScript-aware one here. Comments are removed FIRST, because a triple-quote inside a
+    `#` comment otherwise flips parity for the rest of the file — GdSource.split()'s documented
+    order, and the trap cowir-sprites measured in 26 test files including that helper itself.
+    Splitting on the delimiter (rather than toggling per line) also handles a one-line docstring,
+    which a parity counter is blind to because its count is 2 and parity stays even.
+    """
+    out = []
+    for line in src.split("\n"):
+        if line.strip().startswith("#"):
+            continue
+        quote, kept, i = "", "", 0
+        while i < len(line):
+            c = line[i]
+            if quote:
+                if c == "\\":
+                    kept += line[i:i + 2]
+                    i += 2
+                    continue
+                if c == quote:
+                    quote = ""
+                kept += c
+            elif c in "\"'":
+                quote = c
+                kept += c
+            elif c == "#":
+                break
+            else:
+                kept += c
+            i += 1
+        out.append(kept)
+    parts = "\n".join(out).split('\"\"\"')
+    return "\n".join(parts[i] for i in range(0, len(parts), 2))
+
+
 def ability_index():
     raw = json.loads(read(ABILITIES))
     rows = raw if isinstance(raw, dict) else {a.get("id"): a for a in raw}
@@ -161,7 +206,7 @@ def classify(effect, live, grind_src, live_src):
 
 def collect(limit_to_presets=True):
     abilities = ability_index()
-    grind_src, live_src = read(GRIND), read(LIVE)
+    grind_src, live_src = code_only(read(GRIND)), code_only(read(LIVE))
     ids = preset_castable() if limit_to_presets else set(abilities)
     rows = []
     for aid in sorted(ids):
@@ -220,7 +265,7 @@ def selftest():
     # currently a GAP": the grind half of that is being fixed, and a control that reds when a
     # bug is fixed is a control nobody keeps. What must stay true is that the reader can SEE a
     # composed key at all — without this the wrong-key shape is silently filed as a no-op.
-    live_src = read(LIVE)
+    live_src = code_only(read(LIVE))
     good = live_handling(CONTROL_COMPOSED, live_src) == "composes"
     ok &= good
     print(f"  {'PASS' if good else 'FAIL'}  a composed status key is recognised as composed: "
@@ -234,6 +279,21 @@ def selftest():
     good = live_handling(CONTROL_PLAIN, live_src) != "composes"
     ok &= good
     print(f"  {'PASS' if good else 'FAIL'}  a plain status key is NOT read as composed: {CONTROL_PLAIN}")
+
+    # The reader must not see a comment, and must not eat real code. Over-stripping and a
+    # correct strip are the same green, so both directions are pinned — GdSource's obligation on
+    # every caller, which applies to this Python reader for the same reason.
+    planted = read(GRIND) + '\n## a future arm will handle "zz_probe_effect" one day\n'
+    good = ('"zz_probe_effect"' in planted) and ('"zz_probe_effect"' not in code_only(planted))
+    ok &= good
+    print(f"  {'PASS' if good else 'FAIL'}  a comment naming an effect is NOT seen as handling it "
+          f"(raw would say yes)")
+
+    live_code = code_only(read(LIVE))
+    good = 'has_status("barrier")' in live_code and 'func start_battle(' in live_code
+    ok &= good
+    print(f"  {'PASS' if good else 'FAIL'}  real code survives the strip: has_status(\"barrier\") "
+          f"and func start_battle(")
 
     # The reachability filter is the whole instrument — prove it is load-bearing by removing
     # it and watching the population grow. If these match, the filter is doing nothing and
