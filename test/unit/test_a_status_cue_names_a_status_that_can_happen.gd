@@ -23,6 +23,9 @@ const MONSTERS := "res://data/monsters.json"
 ## `status_cured` is reached by an item authoring cure_all_status and by nothing else. Omitting this
 ## file made the arm score that cue reachable off the MAP ROW ALONE — right answer, no basis.
 const ITEMS := "res://data/items.json"
+## A CONST, not the inline literal it was: the corpus-liveness arm derives from the constant map,
+## so a path written inline is read by the guard and invisible to the check that it was read.
+const BATTLE_MANAGER := "res://src/battle/BattleManager.gd"
 
 ## Declared UNREACHABLE with a reason, not suppressed. Retirement trigger below: the day anything
 ## authors this status the entry must go, because the cue starts working and the note becomes a
@@ -52,7 +55,7 @@ func _applicable() -> Dictionary:
 	## anyway) and not harmless the day a comment names a status the data does not.
 	## ⚠️ JSON MUST STAY RAW — the comment pass would truncate at a `#` inside a string value.
 	var src: String = GdSource.code_of(SOUND_MANAGER)
-	var code: String = GdSource.code_of("res://src/battle/BattleManager.gd")
+	var code: String = GdSource.code_of(BATTLE_MANAGER)
 	for m in RegEx.create_from_string('add_status\\(\\s*"([a-z_]+)"').search_all(code):
 		out[m.get_string(1)] = true
 	var authored := {}
