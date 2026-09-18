@@ -14,13 +14,25 @@ mkdir -p tmp/screens
 # Unlike the deploy chain's --export-release (deploy_web.sh:127), relocating the data root is
 # SAFE here: these run the project and need no export_templates, which is the only thing that
 # breaks when XDG_DATA_HOME moves.
+_RENDER_FAILED=0
 _SHOT_XDG="$PWD/tmp/shot_xdg"; mkdir -p "$_SHOT_XDG"
 
 render() {
   local script="$1" floor="$2" x="$3" y="$4"
+  # ⛔ THE EXIT CODE USED TO BE DISCARDED TWICE HERE: `$?` after a pipeline is the LAST
+  # stage's status (grep succeeds whenever it matches), and `|| true` swallowed what was
+  # left. So godot could fail to load the scene, render an empty node, and this returned 0.
+  # Log first, read the log second, decide on the captured code.
+  local log="tmp/screens/$(basename "$script" .gd)_${floor}.log"
+  local ec=0
   XDG_DATA_HOME="$_SHOT_XDG" xvfb-run -a godot --audio-driver Dummy --rendering-driver opengl3 --resolution 1280x720 \
     -s tools/later_world_dungeon_screenshot.gd -- "--script=$script" "--floor=$floor" "--x=$x" "--y=$y" \
-    2>&1 | command grep -a -E "SCREEN|ERROR" || true
+    > "$log" 2>&1 || ec=$?
+  command grep -a -E "SCREEN|ERROR|shot-guard" "$log" || true
+  if [ "$ec" -ne 0 ]; then
+    echo "[shot] BLOCKED: $script floor $floor exited $ec — see $log" >&2
+    _RENDER_FAILED=1
+  fi
 }
 
 render res://src/maps/dungeons/SuburbanUnderground.gd 1 10 7
@@ -48,3 +60,8 @@ render res://src/maps/dungeons/NullChamber.gd 2 9 8
 render res://src/maps/dungeons/NullChamber.gd 3 10 7
 
 ls -la tmp/screens/
+
+if [ "$_RENDER_FAILED" -ne 0 ]; then
+  echo "[shot] BLOCKED: at least one dungeon frame was refused or failed to render." >&2
+  exit 4
+fi

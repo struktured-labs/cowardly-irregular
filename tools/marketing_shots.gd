@@ -1,4 +1,6 @@
 extends SceneTree
+
+const ShotGuard = preload("res://tools/shot_guard.gd")
 ## Marketing screenshots for the itch.io page — clean frames, no HUD furniture.
 ##
 ## The render smoke's 26 frames are DIAGNOSTIC captures and are unusable as store art:
@@ -131,7 +133,8 @@ func _shoot_battle() -> void:
 	await create_timer(2.5).timeout
 
 	var img := root.get_texture().get_image()
-	img.save_png("res://tmp/marketing/battle.png")
+	if not ShotGuard.save_or_refuse(img, "res://tmp/marketing/battle.png"):
+		_fail += 1
 	print("[SHOT] battle (%dx%d)" % [img.get_width(), img.get_height()])
 	_ok += 1
 
@@ -158,7 +161,8 @@ func _shoot_battle() -> void:
 		print("[SHOT] FAIL: battle_advance — identical to the un-queued frame; the aura did not draw")
 		_fail += 1
 		return
-	img_adv.save_png("res://tmp/marketing/battle_advance.png")
+	if not ShotGuard.save_or_refuse(img_adv, "res://tmp/marketing/battle_advance.png"):
+		_fail += 1
 	print("[SHOT] battle_advance (%dx%d) — full bank 5/5, aura drew" % [img_adv.get_width(), img_adv.get_height()])
 	_ok += 1
 
@@ -233,7 +237,8 @@ func _shoot(name: String, paths: Array) -> void:
 
 	var img := root.get_texture().get_image()
 	var out := "res://tmp/marketing/%s.png" % name
-	img.save_png(out)
+	if not ShotGuard.save_or_refuse(img, out):
+		_fail += 1
 	print("[SHOT] %s (%dx%d) from %s" % [name, img.get_width(), img.get_height(), src])
 	_ok += 1
 
