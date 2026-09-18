@@ -16,6 +16,12 @@ extends GutTest
 
 const BM_SRC := "res://src/battle/BattleManager.gd"
 
+## Shared reader, not a private stripper. Mine handled `#` only and start_battle's body carries a
+## `"""` region — so a docstring naming a triaged field would have satisfied the floor. Latent
+## today (that region is "Initialize and start a new battle"), closed structurally.
+## The CODE half is safe here: every offset is computed on the one stripped string and no arm
+## reports a line number, so there is no index to escape (cowir-sprites' discriminator).
+
 ## The fields the eight triaged files were measured leaking (2026-09-18, two full-corpus runs).
 ## Reset by start_battle — the seven the note's safety claim actually covers.
 const TRIAGED_FIELDS: Array[String] = [
@@ -48,26 +54,18 @@ func _has_bounded(haystack: String, needle: String) -> bool:
 
 
 func _start_battle_body() -> String:
-	var src: String = FileAccess.get_file_as_string(BM_SRC)
+	var src: String = GdSource.code_of(BM_SRC)
 	assert_ne(src, "", "CONTROL: BattleManager.gd must be readable or every arm below is vacuous")
 	var start: int = src.find("\nfunc start_battle(")
 	if start == -1:
 		return ""
 	var after: int = src.find("\nfunc ", start + 1)
 	var body: String = src.substr(start, (after - start) if after != -1 else -1)
-	## ⛔ STRIP COMMENTS FIRST. Without this the scan matches `_full_autobattle =` inside a line
-	## someone commented out — which is exactly how a removed reset would look. Caught by mutating a
-	## reset away and watching this arm PASS: the pattern matched the mutation's own comment text.
-	## cowir-controller's "the pattern is not the criterion", inside the guard written to defend a
-	## claim about production code.
-	var kept: PackedStringArray = PackedStringArray()
-	for line in body.split("\n"):
-		var stripped: String = line.strip_edges()
-		if stripped.begins_with("#"):
-			continue
-		var hash_at: int = line.find("#")
-		kept.append(line.substr(0, hash_at) if hash_at != -1 else line)
-	return "\n".join(kept)
+	## Comments AND docstrings are already gone — GdSource.code_of did both. The original reason
+	## stands and is why this is delegated rather than deleted: without stripping, the scan matches
+	## `_full_autobattle =` inside a line someone commented out, which is exactly how a removed reset
+	## would look. Caught by mutating a reset away and watching this arm PASS.
+	return body
 
 
 func test_start_battle_is_findable() -> void:
@@ -126,3 +124,17 @@ func test_the_boundary_rejects_a_suffix_collision() -> void:
 		"a field whose name merely ENDS with a triaged field's name must not satisfy its floor")
 	assert_true(_has_bounded("_full_autobattle = true", needle),
 		"CONTROL: a match at offset 0 has no preceding character and must still count")
+
+
+
+func test_the_reader_leaves_the_real_code_standing() -> void:
+	## GdSource requires this of every caller: over-stripping and a correct strip are the same
+	## green. Both halves floored — an empty doc side passes by construction.
+	var halves: Dictionary = GdSource.split(FileAccess.get_file_as_string(BM_SRC))
+	var code: String = str(halves["code"])
+	assert_gt(code.find("func start_battle("), -1,
+		"CONTROL: the subject function must survive the strip, or every arm above is vacuous")
+	assert_gt(code.find("_full_autobattle"), -1,
+		"CONTROL: a live reset inside it must survive the strip too")
+	assert_gt(str(halves["doc"]).length(), 0,
+		"CONTROL: the doc half must be non-empty, else the split is separating nothing")
