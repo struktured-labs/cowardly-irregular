@@ -2317,6 +2317,13 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 	"""
 	if not _music_playing or not _music_player:
 		return
+	## ⛔ A FADE IS A STOP WITH A RAMP, AND THE RAMP IS THE WINDOW. stop_music disarms the pending
+	## stinger resume ("and do not come back") and this path did not — yet it leaves the player
+	## RUNNING for `duration`, so a stinger with less than that left reaches its own end mid-fade,
+	## replays the bed, and kills this very tween so the quiet callback never fires. Measured:
+	## chest stinger + fade(0.45) -> overworld_medieval back at full volume over the silence.
+	for c in _music_player.finished.get_connections():
+		_music_player.finished.disconnect(c["callable"])
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
 	_crossfade_tween = create_tween()
