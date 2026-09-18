@@ -99,12 +99,19 @@ func test_the_destination_is_never_opened_for_write() -> void:
 	var src := f.get_as_text()
 	f.close()
 
-	var start := src.find("func _write_save_file")
+	## ⚠️ THE WINDOW IS CUT FROM THE CODE HALF. `find`+`substr` on ONE string is index-safe whatever
+	## the strip does to line counts, and nothing below prints a line number — the case where
+	## delegating is free. On RAW source a `"""` region carrying a column-0 `func ` moves the START
+	## or truncates the END, and then the CONTROLS red with a message about the wrong thing.
+	var code := str(GdSource.split(src)["code"])
+	assert_true(code.contains("DirAccess.rename_absolute"),
+		"CONTROL: the strip ate a known code site — the window below would be cut from an emptied corpus")
+	var start := code.find("func _write_save_file")
 	assert_gt(start, -1, "func _write_save_file not found — renamed? this ratchet is now about nothing")
 	if start == -1:
 		return
-	var end := src.find("\nfunc ", start + 1)
-	var body := src.substr(start, (end - start) if end > start else -1)
+	var end := code.find("\nfunc ", start + 1)
+	var body := code.substr(start, (end - start) if end > start else -1)
 
 	var opened_dest: bool = body.contains("FileAccess.open(file_path, FileAccess.WRITE)")
 	assert_false(opened_dest,
@@ -200,12 +207,16 @@ func test_the_settings_writer_reports_a_failure_it_used_to_swallow() -> void:
 		return
 	var src := f.get_as_text()
 	f.close()
-	var start := src.find("func save_settings(")
+	## Same reasoning as the window above: code half, find+substr, no line numbers.
+	var code := str(GdSource.split(src)["code"])
+	assert_true(code.contains("DirAccess.rename_absolute"),
+		"CONTROL: the strip ate a known code site — the window below would be cut from an emptied corpus")
+	var start := code.find("func save_settings(")
 	assert_gt(start, -1, "func save_settings not found — renamed? this ratchet is now about nothing")
 	if start == -1:
 		return
-	var end := src.find("\nfunc ", start + 1)
-	var body := src.substr(start, (end - start) if end > start else -1)
+	var end := code.find("\nfunc ", start + 1)
+	var body := code.substr(start, (end - start) if end > start else -1)
 
 	assert_true(body.contains("push_warning"),
 		"save_settings can fail to open its file and say nothing — the player keeps playing with settings that were never written")

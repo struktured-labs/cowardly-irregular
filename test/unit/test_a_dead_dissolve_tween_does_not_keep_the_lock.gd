@@ -100,7 +100,14 @@ func test_the_dissolves_do_not_await_a_signal_that_can_be_revoked() -> void:
 	assert_eq(offenders, [],
 		"a dissolve awaits a tween signal directly: %s — a tween bound to the player is killed when the player is freed, and a killed tween never emits it" % str(offenders))
 
-	assert_true(src.contains("func _await_dissolve"),
+	## ⚠️ THE CODE HALF, NOT `src`. This is a PIN, so a `## func _await_dissolve` comment satisfies it
+	## and the arm certifies a function that is gone — the same polarity as the offender scan above,
+	## opposite direction. Mode7Overlay.gd carries zero `"""` delimiters, so it is the `#` half that
+	## is occupied here.
+	## ⛔ AND BOUNDED ON THE RIGHT. Without the `(` this is satisfied by `func _await_dissolve_renamed`,
+	## measured: the mutation that was supposed to expose the comment case was absorbed by the
+	## missing paren instead. Same defect as the persister pin in the save guard, same evening.
+	assert_true(GdSource.strip_comments(src).contains("func _await_dissolve("),
 		"CONTROL: the bounded wait must still exist, or this arm is asserting the absence of something nothing replaced")
 
 
