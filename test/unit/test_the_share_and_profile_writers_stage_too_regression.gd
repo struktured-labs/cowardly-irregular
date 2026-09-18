@@ -121,3 +121,35 @@ func test_no_unwatched_writer_has_appeared_in_the_lane() -> void:
 			unwatched.append("%s:%d — %s" % [path, entry[0], entry[1]])
 	assert_eq(unwatched, [],
 		"a file in this lane writes to disk and NOTHING watches its shape — add it to SOURCES with what the player loses if it truncates, or route it through a staged writer: %s" % str(unwatched))
+
+
+## ⛔ THE ARM ABOVE CATCHES A NEW FILE; THIS ONE CATCHES A NEW *FORM*, AND THE SAME MUTATION HABIT
+## HIDES BOTH (@cowir-sfx, 2026-09-18). Every arm in this file keys on `FileAccess.open(…, WRITE)`,
+## so a write through ResourceSaver, store_var/store_buffer or save_png reaches disk while every
+## assertion here stays green — it is not an offender, it is not a missing member, it is invisible.
+## Measured today: my lane uses NO such form, and the same patterns DO find the fleet's four
+## (GameLoop ×2, BaseTileGenerator, FeedbackBundle), so the zero is over a working instrument.
+const OTHER_WRITE_FORMS := [
+	"ResourceSaver.", "store_var(", "store_buffer(", "store_line(", "store_csv_line(",
+	"save_png(", "save_to_file(",
+]
+
+
+func test_no_write_reaches_disk_by_a_form_this_file_cannot_see() -> void:
+	var exotic: Array = []
+	for path in _lane_gd_files():
+		var src: String = FileAccess.get_file_as_string(path)
+		if src == "":
+			continue
+		var n := 0
+		for line in src.split("\n"):
+			n += 1
+			var t: String = line.strip_edges()
+			if t.begins_with("#"):
+				continue
+			for form in OTHER_WRITE_FORMS:
+				if line.contains(form):
+					exotic.append("%s:%d — %s (%s)" % [path, n, t, form])
+					break
+	assert_eq(exotic, [],
+		"this lane now reaches disk by a form none of the arms above can see, so its truncate-on-open exposure is unaudited — either route it through a staged writer or teach this file the form: %s" % str(exotic))
