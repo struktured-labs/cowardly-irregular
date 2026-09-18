@@ -3,10 +3,25 @@ extends GutTest
 ## GameLoop's story path committed current_state, the cooldown and a one-shot completion handler
 ## ABOVE its call to CutsceneDirector.play_cutscene — which refuses with a bare `return` two ways
 ## (a scene already playing, or a cutscene whose JSON will not load) and emits nothing.
-## Five call sites share GameLoop's director (QuestSystem, TallyWall, MasteriteEncounter,
-## DragonCave, CastleHarmonia), so the re-entry refusal is reachable; check_pending_cutscene
-## guarded _active, _start_exploration did not. The surviving one-shot is the expensive half:
-## it fires on the NEXT scene's finish and marks the cutscene that never played complete.
+## The surviving one-shot is the expensive half: it fires on the NEXT scene's finish and marks
+## the cutscene that never played complete — permanently, and without a word.
+##
+## ⚠️ NEITHER REFUSAL HAS A DEMONSTRATED ROUTE TODAY. The commit that added this file claimed one
+## and it was wrong; both halves were measured afterwards rather than before:
+##   re-entry  FALSIFIED. The route named was a duel cutscene's `battle` step returning through
+##             _start_exploration while the outer scene still held the director. GameLoop:3391
+##             short-circuits the exploration return whenever _spotlight_duel_active, precisely so
+##             a battle step cannot re-enter. Every function that route passed through supported
+##             it; the one function it did not read closes it.
+##   load      CLOSED BY THE CORPUS. All 84 ids in _CUTSCENE_COMPLETION_FLAGS and all 63 literal
+##             returns in _get_pending_story_cutscene have a JSON on disk (controls: world1_chapter1
+##             present, zz_nope absent, 197 files). Measured 2026-09-18.
+##
+## So this guard is LATENT, and the load refusal goes live the first time a gate id is authored
+## ahead of its JSON — which is the normal order of content work, not an exotic failure. What it
+## buys at that moment is the difference between "the scene replays on the next check" and "the
+## scene is flagged complete having never played". Do not restore a reachability claim here
+## without a route that survives reading the battle-END path.
 
 const GameLoopScript := preload("res://src/GameLoop.gd")
 const DirectorScript := preload("res://src/cutscene/CutsceneDirector.gd")
