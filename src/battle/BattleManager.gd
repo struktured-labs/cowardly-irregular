@@ -9476,7 +9476,18 @@ func _maybe_boss_phase_bark(combatant: Combatant, action: Dictionary) -> void:
 	for e in enemy_party:
 		if e == null or not is_instance_valid(e) or not e.is_alive:
 			continue
-		var mt: String = str(e.get_meta("monster_type", "")) if e.has_meta("monster_type") else ""
+		## ⛔ RESOLVE THE BOSS KEY THE WAY EVERY OTHER BossDialogue SITE DOES. This read `monster_type`
+		## alone and skipped `llm_persona_id`, the explicit override that `_maybe_emit_boss_insight`
+		## and the jailbreak/opening-line paths all consult first. Exactly four monsters carry one —
+		## the W1 dragons (fire->pyrroth, ice->glacius, lightning->voltharion, shadow->umbraxis) — and
+		## they are authored in boss_dialogue.json under the PERSONA name, so a bark lookup by
+		## `fire_dragon` returns {} and `continue`s silently.
+		## ⚠️ LATENT when fixed: only `the_calibrant` authors phase_barks today (6 faces) and it has no
+		## override, so nothing changes now. The trigger is ordinary content work — author a phase bark
+		## for any dragon and it would never have fired (cowir-ai).
+		var mt: String = str(e.get_meta("llm_persona_id", "")) if e.has_meta("llm_persona_id") else ""
+		if mt == "":
+			mt = str(e.get_meta("monster_type", "")) if e.has_meta("monster_type") else ""
 		if mt == "":
 			continue
 		var barks: Dictionary = boss_dlg.get_phase_barks(mt)
