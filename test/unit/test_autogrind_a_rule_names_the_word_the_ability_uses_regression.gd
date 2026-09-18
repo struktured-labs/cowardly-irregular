@@ -21,6 +21,12 @@ const HBR_PATH := "res://src/autogrind/HeadlessBattleResolver.gd"
 
 var _ab
 var _ag
+## The ally/enemy arm drives BattleManager's SHARED party arrays. Restoring inline is not enough:
+## an error between the swap and the restore aborts the function and strands the autoload holding
+## this file's freed fixtures for every later test in the process.
+var _saved_players: Array = []
+var _saved_enemies: Array = []
+var _parties_taken: bool = false
 
 
 func before_each() -> void:
@@ -31,6 +37,16 @@ func before_each() -> void:
 			sys._test_disable_persistence = true
 	add_child_autofree(_ab)
 	add_child_autofree(_ag)
+
+
+func after_each() -> void:
+	if not _parties_taken:
+		return
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm != null and "player_party" in bm:
+		bm.player_party = _saved_players
+		bm.enemy_party = _saved_enemies
+	_parties_taken = false
 
 
 func _combatant(nm: String) -> Combatant:
@@ -70,8 +86,9 @@ func test_the_ally_and_enemy_forms_resolve_too() -> void:
 	var me := _combatant("Me")
 	var ally := _combatant("Ally")
 	var foe := _combatant("Foe")
-	var saved_players: Array = bm.player_party.duplicate()
-	var saved_enemies: Array = bm.enemy_party.duplicate()
+	_saved_players = bm.player_party.duplicate()
+	_saved_enemies = bm.enemy_party.duplicate()
+	_parties_taken = true
 	## Typed, deliberately: player_party is Array[Combatant] and an untyped literal ABORTS the
 	## assignment, taking every assert below it with it (the file scored Risky, not Failed).
 	var players: Array[Combatant] = [me, ally]
@@ -83,8 +100,6 @@ func test_the_ally_and_enemy_forms_resolve_too() -> void:
 	var ally_hit: bool = _ab._evaluate_grid_condition(me, {"type": "ally_has_status", "status": "burn"})
 	var enemy_hit: bool = _ab._evaluate_grid_condition(me, {"type": "enemy_has_status", "status": "burn"})
 	var enemy_absent: bool = _ab._evaluate_grid_condition(me, {"type": "not_enemy_has_status", "status": "burn"})
-	bm.player_party = saved_players
-	bm.enemy_party = saved_enemies
 	assert_true(ally_hit, "ally_has_status must resolve the authored word")
 	assert_true(enemy_hit, "enemy_has_status must resolve the authored word")
 	assert_false(enemy_absent, "not_enemy_has_status must see the same burn its positive form sees")
@@ -199,3 +214,18 @@ func test_the_landed_derivation_can_actually_say_dead() -> void:
 	assert_eq(str(applier.get("burn", "")), "burning", "and read where it lands")
 	assert_eq(Combatant.resolve_status_alias("slow"), "slow",
 		"CONTROL: an unaliased name resolves to itself, so a dead entry stays dead")
+
+
+func test_zz_the_shared_parties_were_handed_back() -> void:
+	## Declared last so it runs after the arm that swaps them. Without it the strand is invisible:
+	## an aborting arm still scores PASSING on the asserts it reached before the abort.
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null or not ("player_party" in bm):
+		pass_test("BattleManager autoload unavailable")
+		return
+	var mine := ["Me", "Ally", "Foe"]
+	var strays: Array[String] = []
+	for c in bm.player_party + bm.enemy_party:
+		if c != null and is_instance_valid(c) and str(c.combatant_name) in mine:
+			strays.append(str(c.combatant_name))
+	assert_eq(strays.size(), 0, "this file left its fixtures in the shared parties: " + str(strays))
