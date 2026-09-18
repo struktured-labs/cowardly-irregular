@@ -77,6 +77,23 @@ def main():
         code, out, _ = run(["play_widget"], empty)
         check("a corpus with no .gd files exits 3", code == 3, "(got %d)" % code)
 
+        # --new: the deterministic halves. The git walk itself is not covered here — it depends on
+        # repo state, and a selftest that builds a repo to check it would be testing git.
+        code, out, err = run([], corpus)
+        check("no symbol and no --new exits 2, not 0", code == 2, "(got %d)" % code)
+        check("and says what to pass", "--new" in (out + err))
+
+        sys.path.insert(0, os.path.dirname(TOOL))
+        import importlib
+        wg = importlib.import_module("who_guards")
+        probe = os.path.join(tmp, "probe.gd")
+        with open(probe, "w", encoding="utf-8") as fh:
+            fh.write("func t():\n\tsm.play_ambient(\"k\")\n\tassert_eq(a, b)\n\tx.up(1)\n")
+        derived = wg.symbols_from([probe])
+        check("--new derives the receiver method it reaches", "play_ambient" in derived, derived)
+        check("and skips assert_* helpers", "assert_eq" not in derived, derived)
+        check("and skips names too short to be a subject", "up" not in derived, derived)
+
     print()
     if FAILURES:
         print("FAILED: %d arm(s): %s" % (len(FAILURES), FAILURES))
