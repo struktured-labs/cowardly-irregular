@@ -120,7 +120,15 @@ func test_the_dial_still_moves_a_numeric_condition() -> void:
 ## reads") and fixed it there; this is the autogrind half, and the cause is a hand-list beside a
 ## set the grammar already owns.
 func test_dialling_a_nullary_condition_changes_nothing() -> void:
-	for ctype in ["member_dead", "member_injured"]:
+	## ⛔ DRIVE THE WHOLE DECLARED SET, not the two that were broken. @cowir-ai made exactly this
+	## correction to their twin guard: a hand-list here proves only that the types I happened to
+	## name are safe, which is the same failure this commit fixed in the PRODUCT one file over.
+	## CONTROL first, per their shrinking-corpus point — deriving trades a stale list for an
+	## empty one, and an empty loop is green about nothing.
+	var nullary: Array = AutogrindSystem.NULLARY_CONDITIONS
+	assert_gte(nullary.size(), 5,
+		"CONTROL: the grammar's nullary set shrank to %d — this arm would pass over a corpus that cannot contain the defect" % nullary.size())
+	for ctype in nullary:
 		var ed := _editor()
 		ed.rules = [_rule(ctype, 0)]
 		ed.cursor_row = 0
