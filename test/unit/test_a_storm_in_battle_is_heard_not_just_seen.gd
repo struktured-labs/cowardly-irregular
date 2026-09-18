@@ -68,7 +68,12 @@ func test_both_surfaces_that_draw_the_bolt_also_sound_it() -> void:
 	var battle: String = _func_body(BATTLE_SCENE, "func _process_weather_layer(")
 	assert_ne(overworld, "", "CONTROL: WeatherSystem._trigger_lightning is gone — this file's premise is stale")
 	assert_ne(battle, "", "CONTROL: BattleScene._process_weather_layer is gone — this file's premise is stale")
-	assert_true(battle.contains("_storm_bolt("),
+	## ⛔ WORD-BOUNDARIED, NOT `contains`. `contains("_storm_bolt(")` is unbounded on the LEFT, so
+	## `_weather_storm_bolt(` satisfies a control whose subject is gone — and this control is what
+	## separates "drawn silently" from "not drawn at all", which is this file's entire claim. Zero
+	## such identifiers exist in BattleScene today, so it is latent; re-measuring buys until the
+	## next rename and bounding it does not expire (cowir-battle, 2026-09-18).
+	assert_ne(RegEx.create_from_string("\\b_storm_bolt\\(").search(battle), null,
 		"CONTROL: the battle function must still DRAW the bolt, or 'draws it silently' is not the claim")
 	var silent: Array = []
 	if not overworld.contains(THUNDER):
