@@ -126,6 +126,45 @@ func test_the_walk_reaches_every_consumer_not_just_the_overworld() -> void:
 			files.size(), KNOWN_CONSUMERS, files])
 
 
+## Call sites whose argument this file CANNOT resolve, each with the reason it is unresolvable.
+## You cannot silence this green, only explain it green.
+const UNRESOLVABLE_BY_DESIGN := {
+	"_pre_night_ambient_key": "a runtime variable holding a key that ALREADY PLAYED, so it was resolved on its first pass; safe by construction, not by check",
+}
+
+
+func test_no_play_ambient_call_uses_a_form_this_file_cannot_read() -> void:
+	## THE ARRIVAL DIRECTION, and the membership floor below does not cover it (cowir-autogrind,
+	## 2026-09-18). That floor answers "did one of my three extraction paths stop contributing".
+	## It is silent on a FOURTH argument form arriving — a dictionary lookup, a concatenation, a
+	## new helper — which would contribute nothing and shrink no named member.
+	##
+	## So: every play_ambient call site in src/ must be resolvable by one of the three patterns,
+	## or be named above with its reason. Derived from the call sites, not from the patterns.
+	var unresolved: Array = []
+	var call_re := RegEx.create_from_string("play_ambient\\(\\s*([^)]*)\\)")
+	for path in _gd_files("res://src"):
+		var code: String = GdSource.code_of(path)
+		if code == "":
+			continue
+		for m in call_re.search_all(code):
+			var arg: String = m.get_string(1).strip_edges()
+			if arg == "" or arg.begins_with("sound_key"):
+				continue   # the declaration and its own forwarding
+			if arg.begins_with("\""):
+				continue   # LITERAL path
+			if arg == arg.to_upper():
+				continue   # CONST path
+			if UNRESOLVABLE_BY_DESIGN.has(arg):
+				continue
+			if arg in ["ambient_key", "key"]:
+				continue   # VIRTUAL path: the _get_ambient_key() return, read at its declaration
+			unresolved.append("%s: play_ambient(%s)" % [path.replace("res://src/", ""), arg])
+	assert_eq(unresolved, [],
+		"%d play_ambient call site(s) pass an argument form none of this file's three extraction patterns can read — those keys are in NO corpus here and the membership floor below will not notice, because a new FORM shrinks no existing member: %s" % [
+			unresolved.size(), unresolved])
+
+
 func test_every_literal_ambient_key_resolves_to_a_file_on_disk() -> void:
 	var sfx: Dictionary = _manifest(SFX_MANIFEST, ["sfx"])
 	var music: Dictionary = _manifest(MUSIC_MANIFEST, ["tracks", "music"])
