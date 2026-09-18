@@ -1300,7 +1300,10 @@ func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 	(suburban/steampunk/industrial/digital/abstract); base medieval skips
 	the suffix branch since "slime_medieval" isn't registered.
 	(2026-05-07: wire-up for cowir-sprites' feature/slime-world-variants.)"""
-	var world_suffix = SoundManager._get_current_world_suffix()
+	## The sprite owner, not the audio autoload: during a battle play_music clears _current_area,
+	## so audio's resolver falls through to a cache whose only writer is play_area_music.
+	var world_suffix = HybridSpriteLoaderClass.current_world_suffix()
+	## "medieval" is audio's word for world 1; the sheet vocabulary says "". Kept as a belt.
 	if world_suffix != "" and world_suffix != "medieval":
 		var variant_id = "%s_%s" % [monster_id, world_suffix]
 		var variant_frames = HybridSpriteLoaderClass.load_monster_sprite_frames(variant_id, monster_id)

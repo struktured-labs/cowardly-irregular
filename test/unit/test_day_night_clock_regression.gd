@@ -15,7 +15,14 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## ⛔ RESTORE THROUGH THE SAME DOOR THE TEST MUTATED THROUGH (@cowir-adhoc). `_advance_day_phase`
+	## EMITS on a band change; `day_phase` is a plain var, so assigning it back is SILENT. The
+	## dusk->night arm below therefore left SoundManager's night ambience LOOP RUNNING for every later
+	## file, and play_ambient's already-playing return means the next file's own ambient never starts.
+	## In play this is compensated remotely — GameLoop._start_exploration re-derives both night audio
+	## surfaces from a live is_night() on every scene build — and a unit test never builds a scene.
 	GameState.day_phase = _saved_phase
+	GameState.time_of_day_changed.emit(GameState.get_time_of_day_name())
 	GameState.game_constants = _saved_constants.duplicate(true)
 
 

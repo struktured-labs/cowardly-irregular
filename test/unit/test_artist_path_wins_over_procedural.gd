@@ -4,18 +4,23 @@ extends GutTest
 
 const MANIFEST := "res://data/sprite_manifest.json"
 
+const Loader = preload("res://src/battle/sprites/HybridSpriteLoader.gd")
+
 var _saved_area: String = ""
 var _saved_suffix: String = ""
+var _saved_world: int = 1
 
 
 func before_each() -> void:
 	_saved_area = SoundManager._current_area
 	_saved_suffix = SoundManager._current_world_suffix
+	_saved_world = int(GameState.current_world)
 
 
 func after_each() -> void:
 	SoundManager._current_area = _saved_area
 	SoundManager._current_world_suffix = _saved_suffix
+	GameState.current_world = _saved_world
 
 
 func _sheets() -> Dictionary:
@@ -29,11 +34,19 @@ func _declared(sheets: Dictionary, id: String) -> String:
 	return str((sheets.get(id, {}) as Dictionary).get("path", ""))
 
 
-func _pin_world(area: String, want: String) -> void:
-	SoundManager._current_area = area
-	SoundManager._current_world_suffix = want
-	assert_eq(SoundManager._get_current_world_suffix(), want,
+## Pins the SPRITE world and holds AUDIO at a different one on purpose. The picker read
+## SoundManager's suffix until 2026-09-18; that resolver falls through to a play_area_music
+## cache once a battle clears _current_area, which is exactly when a monster sprite is built.
+## The decoy makes this file a discriminator: point the picker back at audio and the delivered
+## sheet is the decoy's, so the assertions below name a wrong world instead of going quiet.
+func _pin_world(world: int, want: String, audio_decoy: String) -> void:
+	GameState.current_world = world
+	SoundManager._current_area = ""
+	SoundManager._current_world_suffix = audio_decoy
+	assert_eq(Loader.current_world_suffix(), want,
 		"CONTROL: the world pin must hold — the resolver's variant branch keys on it, so an ambient world set by an earlier test makes every path below a different question")
+	assert_ne(SoundManager._get_current_world_suffix(), want,
+		"CONTROL: the audio decoy must differ from the pinned world, else this file cannot tell the two sources apart")
 
 
 func _idle_atlas_path(bs, id: String) -> String:
@@ -50,7 +63,7 @@ func _idle_atlas_path(bs, id: String) -> String:
 func test_every_manifest_monster_renders_from_its_own_png() -> void:
 	var sheets := _sheets()
 	assert_gt(sheets.size(), 10, "CONTROL: manifest must carry the monster roster")
-	_pin_world("overworld", "medieval")
+	_pin_world(1, "", "abstract")
 	var bs = load("res://src/battle/BattleScene.gd").new()
 	assert_not_null(bs, "BattleScene must instantiate bare — the resolver is the unit under test")
 	var scanned: Array = []
@@ -75,7 +88,7 @@ func test_per_world_variant_overrides_the_base_sheet() -> void:
 	var sheets := _sheets()
 	assert_true(sheets.has("slime_abstract"), "CONTROL: the variant this test turns on must exist in the manifest")
 	assert_false(sheets.has("ogre_abstract"), "CONTROL: ogre must have NO variant — it is the fall-through case")
-	_pin_world("vertex_village", "abstract")
+	_pin_world(6, "abstract", "industrial")
 	var bs = load("res://src/battle/BattleScene.gd").new()
 	var got_slime := _idle_atlas_path(bs, "slime")
 	var got_ogre := _idle_atlas_path(bs, "ogre")

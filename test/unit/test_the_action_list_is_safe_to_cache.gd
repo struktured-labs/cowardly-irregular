@@ -47,6 +47,17 @@ func after_all() -> void:
 	for action in _saved_bindings:
 		InputProfileManager._replace_joypad_buttons(action, _saved_bindings[action])
 	InputProfileManager.active_profile = _saved_profile
+	## ⛔ RESTORE THROUGH THE SAME DOOR YOU MUTATED THROUGH. This file mutates via apply_profile,
+	## which EMITS bindings_changed; both restore paths above are silent — _replace_joypad_buttons
+	## writes the InputMap directly and active_profile is a plain var. So the number goes back and
+	## every listener keeps the value from the last profile this file applied.
+	##
+	## ⚠️ MEASURED LATENT, NOT LIVE: 0 listeners on bindings_changed at teardown, because today they
+	## are menu instances Godot disconnects when they are freed. The emit is here so that stops
+	## being load-bearing — an autoload-owned surface would inherit the leak with nothing here to
+	## show it. The silent doors STAY: apply_profile cannot reproduce an exact per-action index set,
+	## which is the whole point of snapshotting indices rather than a profile NAME.
+	InputProfileManager.bindings_changed.emit()
 
 
 func _indices(action: String) -> Array:

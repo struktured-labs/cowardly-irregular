@@ -187,7 +187,7 @@ func test_world_sheets_on_disk_are_actually_LOADABLE() -> void:
 	assert_eq(unimported, [],
 		("%d world sheet(s) present on disk but NOT importable — they never render, the " +
 		"lookup silently serves base art, and nothing else in this file can see it. " +
-		"Run: godot --headless --audio-driver Dummy --import  : %s") % [unimported.size(), unimported])
+		"Run: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import  : %s") % [unimported.size(), unimported])
 
 
 ## A world's costume set must be COMPLETE across the playable jobs, or absent entirely.
