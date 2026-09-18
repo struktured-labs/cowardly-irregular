@@ -26,6 +26,32 @@ func _create_wall_body(pos: Vector2, size: Vector2) -> StaticBody2D:
 	return wall
 
 
+## ⛔ THIS FILE DRIVES A REAL CharacterBody2D, AND OverworldPlayer._physics_process READS Input.
+## Every `await _simulate_frames()` hands the player its own physics tick, so an action left HELD
+## by any earlier file in the process steers it: the test sets velocity, the leaked hold adds to
+## it, and the player walks through the wall the assertion is about. CLAUDE.md records this as
+## already measured once (24px drift, 2026-07-18). Reproduced on this file before fixing it:
+##
+##   held ui_down    Failing 1   "[275.0] expected to be < than [264.0]: Player should stop before wall"
+##   held ui_up      Failing 2
+##   held ui_left    Failing 2
+##   held ui_right   PASSES — the test already pushes right, so the leak pushes the same way
+##
+## ⚠️ NOTHING IN THE SUITE LEAKS AN ACTION TODAY — all 41 files that press Input measured clean —
+## so this is prophylactic. It is still the cheap side of the trade: the polluter population grows
+## with every new input test, while the victim set is the four files that drive a physics body.
+func _release_all_actions() -> void:
+	for action in InputMap.get_actions():
+		Input.action_release(action)
+	## parse_input_event QUEUES — measured: a joypad press is invisible to is_joy_button_pressed
+	## until a frame is processed, and flush is the synchronous way to force it.
+	Input.flush_buffered_events()
+
+
+func before_each() -> void:
+	_release_all_actions()
+
+
 func _simulate_frames(count: int) -> void:
 	for _i in range(count):
 		await get_tree().physics_frame
@@ -147,3 +173,31 @@ func test_movement_all_four_directions():
 
 		player.queue_free()
 		await _simulate_frames(1)
+
+
+## The defence driven rather than asserted structurally: arm the exact hazard that broke this file,
+## release it, and require the wall test's own conclusion to survive. Hollowing out
+## _release_all_actions reds this arm, because the hold then steers the player through the wall.
+func test_a_held_direction_does_not_steer_the_player() -> void:
+	Input.action_press("ui_down")
+	Input.flush_buffered_events()
+	assert_true(Input.is_action_pressed("ui_down"),
+		"CONTROL: the hazard must actually be armed, or the release below clears nothing and " +
+		"this arm passes for the wrong reason")
+
+	_release_all_actions()
+	assert_false(Input.is_action_pressed("ui_down"), "the entry release must clear an inherited hold")
+
+	var player = _create_test_player(Vector2(200, 200))
+	add_child_autofree(player)
+	var wall = _create_wall_body(Vector2(264, 200), Vector2(TILE_SIZE, TILE_SIZE * 3))
+	add_child_autofree(wall)
+	await _simulate_frames(2)
+	for _i in range(30):
+		player.velocity = Vector2(150, 0)
+		player.move_and_slide()
+		await get_tree().physics_frame
+
+	assert_lt(player.position.x, 264.0,
+		"a released hold must not steer the player: x=%.1f, wall at 264" % player.position.x)
+	assert_gt(player.position.x, 220.0, "CONTROL: the player must still have walked into the wall")
