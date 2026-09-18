@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## Bug 2026-07-04: _apply_danger_intensity hardcoded volume_db = -12.0
 ## (+ boost) instead of _music_base_db, which is the user's music-volume
 ## slider value. So the moment a party member's HP dropped enough to
@@ -53,10 +55,39 @@ func test_reset_danger_restores_user_base() -> void:
 
 
 func test_no_hardcoded_minus_twelve_in_danger_volume_path() -> void:
-	var src: String = FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
-	var fn: int = src.find("func _apply_danger_intensity")
+	## ⛔ RE-POINTED 2026-09-18, and the reason is worth keeping: the danger volume moved out of
+	## _apply_danger_intensity into _render_music_envelope, because danger and corruption each wrote
+	## pitch_scale and volume_db outright and the last writer won. The CLAIM here never changed — the
+	## boost derives from the user's base, never from the -12.0 default. What broke was a pin on a
+	## LOCAL VARIABLE'S NAME (`volume_boost`), which a correct refactor is free to rename.
+	## 🔑 The three arms above are the real cover: at base -30 they read -30 / -27 / -30, so a
+	## hardcoded -12 reds them immediately. This is belt-and-braces over the owner's identity.
+	## ⛔ COMMENT-STRIPPED, and the absence assert below is why: my own renderer's comment says
+	## "a hardcoded -12.0 clobbered the slider", so a raw read makes this arm red on correct code.
+	## An absence assert takes prose as a hit — the one direction where a comment fails LOUD.
+	var src: String = GdSource.code_of("res://src/audio/SoundManager.gd")
+	var fn: int = src.find("func _render_music_envelope")
+	assert_gt(fn, -1,
+		"CONTROL: _render_music_envelope must exist — it owns the danger volume since the composition fix")
 	var body: String = src.substr(fn, src.find("\nfunc ", fn + 1) - fn)
-	assert_false(body.contains("= -12.0 + volume_boost"),
+	assert_false(body.contains("-12.0"),
 		"the danger volume must derive from _music_base_db, not the -12.0 literal")
-	assert_true(body.contains("_music_base_db + volume_boost"),
+	assert_true(body.contains("_music_base_db + _danger_intensity * 3.0"),
 		"danger boost must be relative to the user's music volume")
+
+
+func test_the_applier_moves_the_meter_and_nothing_else() -> void:
+	## The structural half the old spelling pin could not make. A second absolute writer of these two
+	## properties is exactly how danger and corruption came to overwrite each other — whichever ran
+	## last won, and which one that was depended on call order and the tweens' differing lifetimes.
+	var src: String = FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
+	for fname in ["_apply_danger_intensity", "_apply_corruption_intensity"]:
+		var i: int = src.find("func " + fname)
+		assert_gt(i, -1, "CONTROL: %s must exist" % fname)
+		var body: String = src.substr(i, src.find("\nfunc ", i + 1) - i)
+		assert_false(body.contains("volume_db"),
+			"%s writes volume_db directly — it must move its own meter and defer to _render_music_envelope, or the two envelopes overwrite each other again" % fname)
+		assert_false(body.contains("pitch_scale"),
+			"%s writes pitch_scale directly — same reason" % fname)
+		assert_true(body.contains("_render_music_envelope()"),
+			"%s must hand off to the single renderer" % fname)
