@@ -60,3 +60,27 @@ func test_an_unauthored_room_does_not_inherit_a_dying_bed() -> void:
 		"the room inherited a bed that was already fading — _music_playing dropped %0.2f s after the door closed, and _current_area still says '%s' so nothing re-derives until the player changes area" % [0.45, SoundManager._current_area])
 	assert_true(SoundManager._music_player.playing,
 		"and the player has stopped: the room is silent with no event left to start it")
+
+
+func test_the_inherited_bed_comes_back_to_full_level() -> void:
+	## ⛔ THE OTHER HALF OF THE REPAIR, AND THE MUTATION FOUND IT MISSING. Dropping the level
+	## restore from _cancel_pending_fade left the arm above green: the tween is dead, the player is
+	## still running, and the bed sounds quietly forever — which is exactly what that function's own
+	## comment says the restore exists to prevent. A guard that only checks "still playing" cannot
+	## tell a cancelled fade from a half-finished one.
+	SoundManager.play_area_music(VILLAGE)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var base: float = SoundManager._music_base_db
+	assert_almost_eq(SoundManager._music_player.volume_db, base, 0.01,
+		"CONTROL: the bed must start at the user's level")
+
+	SoundManager.fade_out_music(1.2)
+	await get_tree().create_timer(0.4).timeout
+	assert_lt(SoundManager._music_player.volume_db, base - 1.0,
+		"CONTROL: the fade must have pulled the level down (%.2f vs base %.2f) or there is nothing to restore" % [SoundManager._music_player.volume_db, base])
+
+	SoundManager.play_area_music(UNAUTHORED_ROOM)
+	await get_tree().process_frame
+	assert_almost_eq(SoundManager._music_player.volume_db, base, 0.01,
+		"the room inherited the bed at %.2f dB instead of the user's %.2f — the fade was cancelled but the level it had already taken was not put back, so the village bed plays quietly in the room and nothing lifts it" % [SoundManager._music_player.volume_db, base])
