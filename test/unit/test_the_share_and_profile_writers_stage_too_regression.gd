@@ -171,8 +171,36 @@ func test_no_write_reaches_disk_by_a_form_this_file_cannot_see() -> void:
 ##
 ## 🔑 SO THE BURDEN IS INVERTED HERE: an open must PROVE it is read-only. A mode this file cannot
 ## read is a write candidate, not a pass — the opposite default from the arms above, deliberately.
-func test_every_open_proves_its_mode():
+## The whole verdict, in one place, so a CONTROL can feed it a fabricated line rather than trusting
+## that the branches below still discriminate. READ_WRITE contains "READ", so writes are tested FIRST.
+func _classify_open(line: String) -> String:
+	if line.contains("FileAccess.WRITE") or line.contains("READ_WRITE") or line.contains("WRITE_READ"):
+		return "write"
+	if line.contains("FileAccess.READ"):
+		return "read"
+	return "unprovable"
+
+
+## ⛔ THE COUNTS ALONE DO NOT CLOSE THE VACUITY, MEASURED RATHER THAN ASSUMED. Making the READ branch
+## permissive (`if true`) leaves BOTH counts positive — writes still classify first — while every
+## hoisted-mode open falls through unflagged. So the counts catch a DEAD branch and miss a
+## PERMISSIVE one, which is the failure @cowir-music's mutation is actually about.
+## The only control immune to both is watching the predicate say YES on a known offender.
+func test_the_mode_classifier_can_actually_say_unprovable() -> void:
+	assert_eq(_classify_open('\tvar w := FileAccess.open(path, mode)'), "unprovable",
+		"control: a hoisted-mode open MUST classify unprovable, or the arm below cannot flag the form it exists for")
+	assert_eq(_classify_open('\tvar f := FileAccess.open(p, FileAccess.READ)'), "read",
+		"control: an inline READ must still classify read, or the arm reports every open as an offender")
+	assert_eq(_classify_open('\tvar f := FileAccess.open(p, FileAccess.WRITE)'), "write",
+		"control: an inline WRITE must classify write")
+	assert_eq(_classify_open('\tvar f := FileAccess.open(p, FileAccess.READ_WRITE)'), "write",
+		"control: READ_WRITE must classify WRITE — it contains \"READ\", so order is load-bearing")
+
+
+func test_every_open_proves_its_mode() -> void:
 	var unprovable: Array = []
+	var seen_write := 0
+	var seen_read := 0
 	for path in _lane_gd_files():
 		var src: String = FileAccess.get_file_as_string(path)
 		if src == "":
@@ -183,11 +211,21 @@ func test_every_open_proves_its_mode():
 			var t: String = line.strip_edges()
 			if t.begins_with("#") or not line.contains("FileAccess.open("):
 				continue
-			## READ_WRITE contains "READ", so the write forms are tested FIRST.
-			if line.contains("FileAccess.WRITE") or line.contains("READ_WRITE") or line.contains("WRITE_READ"):
+			var verdict: String = _classify_open(line)
+			if verdict == "write":
+				seen_write += 1
 				continue
-			if line.contains("FileAccess.READ"):
+			if verdict == "read":
+				seen_read += 1
 				continue
 			unprovable.append("%s:%d — %s" % [path, n, t])
+	## ⛔ AN INVERTED-BURDEN ARM FAILS SAFE, SO IT BREAKS BY FINDING NOTHING TO FLAG — and an empty
+	## `unprovable` is what a CORRECT run and a DEAD classifier both produce (@cowir-music). MEASURED
+	## on this arm: forcing every open to classify read-only left it GREEN at 7 passing WITH A LIVE
+	## HOISTED WRITE PLANTED IN THE LANE. Both branches must be watched firing, not assumed.
+	assert_gt(seen_write, 0,
+		"the classifier recognised NO write open in a lane that demonstrably has several — its write branch is dead and the verdict below is vacuous")
+	assert_gt(seen_read, 0,
+		"the classifier recognised NO read-only open — its read branch is dead, so either every open reads as unprovable or none are being seen at all")
 	assert_eq(unprovable, [],
 		"this open's mode is not on the line, so every write arm in this file and the gate ratchet on main are blind to it — name the mode inline (FileAccess.WRITE / FileAccess.READ) rather than hoisting it into a variable: %s" % str(unprovable))
