@@ -52,6 +52,11 @@ func _get_music_track() -> String:
 	return "interior_lounge"
 
 
+## Cold start only — a save loaded inside this room has no bed to inherit.
+func _get_music_home_area() -> String:
+	return "node_prime_village"
+
+
 func _draw_floor_tile(image: Image) -> void:
 	# Raised computer-room floor — square anti-static tiles with a
 	# bluish-black hue and faint cooling-vent grilles at the seams.
