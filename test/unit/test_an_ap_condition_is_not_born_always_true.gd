@@ -150,6 +150,9 @@ func test_a_percentage_number_survives_a_switch_to_another_percentage() -> void:
 	var ed: Node = await _editor_on_a_fresh_condition()
 	_seeded(ed)["value"] = 30
 	ed.call("_apply_condition_type", "mp_percent")
+	## CONTROL: without this the arm passes with _apply_condition_type doing NOTHING — the cell
+	## stays hp_percent, the planted 30 survives, and a switch that never happened looks preserved.
+	assert_eq(str(_seeded(ed).get("type", "")), "mp_percent", "the type change must take")
 	assert_eq(int(_seeded(ed).get("value", -1)), 30,
 		"a percentage number must survive a switch to another percentage condition")
 
