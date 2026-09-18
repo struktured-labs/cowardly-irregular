@@ -39,9 +39,13 @@ func test_dispel_arm_exists() -> void:
 # ── Source pin: arm clears active_buffs + positive statuses ─────────
 
 func test_dispel_arm_clears_buffs_and_statuses() -> void:
+	## The body moved into _dispel_target so the MAGIC route can call the same code — void_breath
+	## and null_touch are typed `magic`, never reach this executor, and were fizzling. This arm now
+	## reads the helper; the behaviour itself is driven by the arm below and by
+	## test_a_dispel_that_never_reached_its_arm_regression.
 	var src := _read(BATTLE_MANAGER_PATH)
-	var arm_idx: int = src.find("\"dispel\":")
-	assert_gt(arm_idx, -1)
+	var arm_idx: int = src.find("func _dispel_target(")
+	assert_gt(arm_idx, -1, "the dispel body must exist as one named owner")
 	var arm_body: String = src.substr(arm_idx, 2500)
 	assert_true(arm_body.contains("active_buffs.clear()"),
 		"dispel arm must clear active_buffs (strip all buffs)")
