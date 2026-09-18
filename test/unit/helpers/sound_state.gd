@@ -14,6 +14,23 @@ extends RefCounted
 ##   `_current_area` + `_music_playing` together satisfy play_area_music's early return, so a later
 ##   call for that same area returns before starting anything and its bed never plays
 ##
+## ⛔ THIS IS A BARRIER, NOT A CONDUIT, AND THE 26 FILES CALLING IT DEPEND ON THAT.
+## It restores DECLARED DEFAULTS (`_current_area = ""`, `_current_world_suffix = "medieval"` —
+## SoundManager.gd's own initialisers), never a snapshot of what the caller inherited. Two
+## consequences a reader needs and neither is visible from the call site:
+##
+##   ✅ nothing to snapshot means no setup line an abort can skip, so it is safe FIRST in a hook
+##      (and every write below is guarded for the same reason — see restore()).
+##   ⛔ a file wired to this CLEANS UP AFTER AN UPSTREAM LEAKER, so a probe running DOWNSTREAM of it
+##      reports clean about a tree that is not. "This file no longer leaks" and "the suite is clean"
+##      are independent claims, and this helper only ever supports the first.
+##
+## Sibling helpers chose differently and a teardown's semantics are not interchangeable:
+## `autobattle_profiles.gd` and `autogrind_state.gd` restore the PRIOR SNAPSHOT (conduits — they
+## cannot mask an upstream leaker and do not clean up after one, and they must run LAST because they
+## restore rather than clear). `battle_state.dirty_fields()` is an ORACLE: read-only, diffed against
+## a fresh instance, for probes. Pick by which claim you need, not by which is nearest.
+##
 ## Preloaded rather than `class_name` on purpose: no `--import` needed for a lane to use it.
 
 ## Every field a test can move, in the order the autoload wants them — reset_danger re-applies a
