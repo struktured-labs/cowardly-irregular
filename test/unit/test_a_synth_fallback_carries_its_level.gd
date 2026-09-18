@@ -104,11 +104,15 @@ func test_the_synth_level_has_one_owner() -> void:
 	assert_ne(code, "", "CONTROL: SoundManager code must survive the comment strip")
 	assert_true(code.contains("func _synth_params("),
 		"the synth-level owner is gone — every caller is folding its own level in again")
-	var raw: int = code.count("_play_sound(_battle_player, SOUNDS[")
-	raw += code.count("_play_sound(_death_player, SOUNDS[")
-	raw += code.count("_play_sound(player, SOUNDS[")
-	assert_eq(raw, 0,
-		"%d synth call(s) still pass the RAW SOUNDS entry, so they take the player's resting level rather than the one their caller computed" % raw)
+	## ⛔ DERIVED, NOT A RECEIVER LIST. This counted three named receivers and its MESSAGE claimed the
+	## population — so three more raw passes (_flourish_player, _pickup_player, _ability_player) sat
+	## uncounted while the arm read as green about all of them. A predicate narrower than the sentence
+	## it supports; the regex matches ANY receiver, so a new player is covered when it is written.
+	var offenders: Array = []
+	for m in RegEx.create_from_string("_play_sound\\(\\s*(\\w+)\\s*,\\s*SOUNDS\\[").search_all(code):
+		offenders.append(m.get_string(1))
+	assert_eq(offenders, [],
+		"%d synth call(s) still pass the RAW SOUNDS entry, so they take the player's resting level rather than the one their caller computed: %s" % [offenders.size(), offenders])
 
 
 func test_every_member_this_file_reaches_for_still_exists() -> void:

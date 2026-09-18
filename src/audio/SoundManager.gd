@@ -802,7 +802,8 @@ func play_flourish(sound_key: String) -> void:
 	if _try_play_sfx_from_manifest(_flourish_player, sound_key, SFX_BATTLE_BASE_DB):
 		return
 	if SOUNDS.has(sound_key):
-		_play_sound(_flourish_player, SOUNDS[sound_key])
+		## Same level the manifest sibling above gets, so a future trim cannot reach one branch only.
+		_play_sound(_flourish_player, _synth_params(sound_key, SFX_BATTLE_BASE_DB))
 
 
 ## Party voice lines on their OWN player, and the caller is told how long the clip is.
@@ -840,7 +841,8 @@ func play_pickup(sound_key: String) -> void:
 		return
 	if not _try_play_sfx_from_manifest(_pickup_player, sound_key, PICKUP_PLAYER_BASE_DB):
 		if SOUNDS.has(sound_key):
-			_play_sound(_pickup_player, SOUNDS[sound_key])
+			## Same level the manifest attempt above gets.
+			_play_sound(_pickup_player, _synth_params(sound_key, PICKUP_PLAYER_BASE_DB))
 
 
 ## Advance-bank cues. Each routes to its OWN voice (_bank_player / _refuse_player) and NOT to _battle_player —
@@ -967,13 +969,14 @@ func play_ability(ability_id: String) -> void:
 	# Try world-specific variant (e.g., "w2_ability_fire" for suburban world)
 	var world_key = _get_world_sfx_prefix() + sound_key
 	## Guarded like the other three prefix callers: in W1 the prefix is "" so world_key IS sound_key, and an unguarded first attempt that STAMPS the cooldown then fails leaves the second one answering `true` (HANDLED) off that fresh stamp — skipping the procedural fallback entirely.
-	if world_key != sound_key and _try_play_sfx_from_manifest(_ability_player, world_key):
+	if world_key != sound_key and _try_play_sfx_from_manifest(_ability_player, world_key, SFX_ABILITY_BASE_DB):
 		return
 	# Fall back to default (medieval/W1) sound
-	if _try_play_sfx_from_manifest(_ability_player, sound_key):
+	if _try_play_sfx_from_manifest(_ability_player, sound_key, SFX_ABILITY_BASE_DB):
 		return
 	if SOUNDS.has(sound_key):
-		_play_sound(_ability_player, SOUNDS[sound_key])
+		## Was the only caller leaving BOTH branches implicit; explicit re-establishes rather than inherits.
+		_play_sound(_ability_player, _synth_params(sound_key, SFX_ABILITY_BASE_DB))
 
 
 func _get_world_sfx_prefix() -> String:
