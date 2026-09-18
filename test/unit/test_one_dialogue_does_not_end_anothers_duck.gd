@@ -117,6 +117,13 @@ func test_the_holder_can_still_release_after_the_other_finishes() -> void:
 	await get_tree().process_frame
 	a.show_dialogue([_line("A")])
 	await _settle(0.45)
+	## ⛔ PRECONDITION, ADDED AFTER @cowir-ai's DEAD-SUBJECT TEST. Stubbing
+	## duck_music_for_dialogue to a bare `return` fired 5 of this file's 6 arms and left THIS one
+	## green: its claim is "the duck came back up", and a duck that never engaged is already up. The
+	## other arms all open by asserting -6.00, which is why they fired. This one asserted only its
+	## end state.
+	assert_almost_eq(_db(), -6.0, 0.35,
+		"PRECONDITION: the duck must have engaged (got %.2f), or 'it released' is true of a subject that never ran" % _db())
 	b.show_dialogue([_line("B")])
 	await get_tree().process_frame
 	b._finish_dialogue()
