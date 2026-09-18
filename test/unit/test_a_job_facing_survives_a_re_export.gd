@@ -63,8 +63,8 @@ func test_a_declaration_outranks_a_re_export_in_both_directions() -> void:
 
 ## WIRING: behaviour nothing calls protects nothing, and the inline `not _is_artist_sheet` is the defect.
 func test_the_party_branch_resolves_facing_through_the_owner() -> void:
-	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	assert_true(src.contains("HybridSpriteLoaderClass.job_faces_enemy(job_id, not _is_artist_sheet)"),
+	var src := _code("res://src/battle/BattleScene.gd")
+	assert_true(src.contains("flip_h = HybridSpriteLoaderClass.job_faces_enemy(job_id, not _is_artist_sheet)"),
 		"WIRING: the party facing site no longer resolves through job_faces_enemy — a sheet's declared flip_h reaches nothing")
 	assert_false(src.contains("sprite.flip_h = not _is_artist_sheet"),
 		"OWNER: the inline size-infers-facing form is back in the party branch. That is the defect: a re-export silently reverses a party member's facing")
@@ -99,3 +99,13 @@ func test_every_party_sheet_is_above_the_exclusive_boundary() -> void:
 	assert_gt(scanned.size(), 10, "CONTROL: scanned only %d sheets — the loop read almost nothing" % scanned.size())
 	assert_eq(at_or_below, [],
 		"UNDECLARED: %s sit at or below the exclusive 128 boundary and declare no flip_h, so the size convention alone decides their facing: %s" % [at_or_below.size(), at_or_below])
+
+
+## Comments leave the corpus before any pin runs: a commented-out line carries every boundary a
+## pattern can put on it (cowir-controller, 2026-09-18). A `#` inside a string truncates that line,
+## which can only cost a false RED.
+static func _code(path: String) -> String:
+	var out := ""
+	for line in FileAccess.get_file_as_string(path).split("\n"):
+		out += line.split("#")[0] + "\n"
+	return out
