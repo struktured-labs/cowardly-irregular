@@ -198,6 +198,11 @@ func _process(_delta: float) -> void:
 func _exit_tree() -> void:
 	if _mode7:
 		_mode7.cleanup()
+	## Stop the outdoor loop so it does not leak into the next scene, the way BaseVillage and
+	## BaseInterior already do. Dungeons never touch the ambient layer, so rain followed the player
+	## underground and played for the whole cave.
+	if SoundManager and SoundManager.has_method("stop_ambient"):
+		SoundManager.stop_ambient()
 
 
 func _setup_scene() -> void:
