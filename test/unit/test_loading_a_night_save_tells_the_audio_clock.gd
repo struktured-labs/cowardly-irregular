@@ -66,8 +66,16 @@ func test_loading_a_night_save_tells_the_audio_clock() -> void:
 	GameState._apply_save_data({"day_phase": NIGHT_PHASE})
 	assert_eq(GameState.get_time_of_day_name(), "night",
 		"CONTROL: the load must actually have moved the clock into night")
-	assert_signal_emitted_with_parameters(GameState, "time_of_day_changed", ["night"],
+	## ⛔ THE PROSE GOES ON ITS OWN ASSERT. GUT's fourth positional argument to
+	## assert_signal_emitted_with_parameters is the signal INDEX, not a message — a string there is
+	## read as an index and the PAYLOAD COMPARISON IS SILENTLY SKIPPED, so this arm used to fail only
+	## on a missing emit and pass on any band at all. Caught by
+	## test_signal_parameter_asserts_are_live at the .421 gate, on a file three mutations had already
+	## red: both of my mutations removed the emit ENTIRELY, so neither could tell me the payload half
+	## was dead. A mutation that only exercises one half of an assert cannot report the other.
+	assert_signal_emitted(GameState, "time_of_day_changed",
 		"loading a night save moved the clock and told nobody — SoundManager's night surfaces are signal-driven, and the only thing that re-derives them is a scene build the quick-load path skips")
+	assert_signal_emitted_with_parameters(GameState, "time_of_day_changed", ["night"])
 
 
 func test_a_load_that_stays_in_the_same_band_says_nothing() -> void:
