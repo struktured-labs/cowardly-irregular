@@ -91,6 +91,9 @@ const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
 const VOICE_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const PICKUP_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const DEATH_CUE_BOOST_DB: float = 6.0
+## The procedural crit's boost, RELATIVE like DEATH_CUE_BOOST_DB. It was a bare `volume_db = 2.0`
+## from when _play_sound defaulted to 0 dB; as an absolute it sat 8 dB over the battle channel.
+const CRIT_SYNTH_BOOST_DB: float = 2.0
 const DEATH_THUD_FREQ: float = 48.0
 const DEATH_THUD_DURATION: float = 0.28
 ## Combo ramp: a BIAS multiplied onto pitch_scale, so the existing ±5% jitter survives underneath it.
@@ -911,14 +914,16 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 	if not SOUNDS.has(generic_key):
 		return
 	_combo_step += 1  # procedural path has no cooldown: it always sounds
+	var level: float = _battle_level(generic_key)
 	if is_crit:
-		var params = SOUNDS[generic_key].duplicate()
-		params["volume_db"] = 2.0
+		## Its manifest sibling above plays at _battle_level; this branch answered with an absolute.
+		var params = _synth_params(generic_key, level + CRIT_SYNTH_BOOST_DB)
 		if params.has("freq"):
 			params["freq"] = params["freq"] * 1.3 * bias
 		_play_sound(_battle_player, params)
 	else:
-		var plain = SOUNDS[generic_key].duplicate()
+		## Carried no level at all, so a plain hit after the crit above inherited the crit's.
+		var plain = _synth_params(generic_key, level)
 		if plain.has("freq"):
 			plain["freq"] = plain["freq"] * bias
 		_play_sound(_battle_player, plain)
@@ -2590,14 +2595,27 @@ func _apply_corruption_intensity(intensity: float) -> void:
 	_render_music_envelope()
 
 
+## Drop the GRIND meter and re-derive. Not "go clean": the save meter is a different fact.
+##
+## ⛔ CLEARING `_corruption_intensity` ALONE LEFT `_grind_corruption` AS A LATCH WITH NOTHING HOLDING
+## IT, and `_apply_corruption_max` renders max() of the two — so the next corruption event ANYWHERE
+## re-raised the old value. NEW GAME is the trigger: reset_game_state emits corruption_changed(0.0),
+## and the emit that means "this save is clean" ran max(stale_grind, 0.0) and tweened back UP.
+## Measured: grind to 0.8, reset, New Game -> target 0.800.
+##
+## ⛔ AND ZEROING BOTH METERS IS THE OTHER BUG, the one reset_danger already carries a comment about
+## ("nothing put it back until corruption moved again"). A rotting save stays audible outside the
+## grind loop by design, so this re-derives from _save_corruption rather than forcing silence.
 func reset_corruption() -> void:
-	"""Reset corruption degradation to clean level"""
 	if _corruption_tween and _corruption_tween.is_valid():
 		_corruption_tween.kill()
-	_corruption_intensity = 0.0
-	if _music_player:
-		_music_player.pitch_scale = 1.0
-		_music_player.volume_db = _music_base_db
+	_corruption_tween = null
+	_grind_corruption = 0.0
+	_corruption_intensity = _save_corruption
+	_corruption_target = _save_corruption
+	## Through the renderer, because the two absolute writes here erased a live danger cue exactly as
+	## the two absolute writers did before the single renderer landed — same family, third site.
+	_render_music_envelope()
 
 
 ## Battle Music - Procedural 16-bit Style Loop
@@ -5342,6 +5360,12 @@ func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
 	if area_type.begins_with("interior_") and inheritable and _music_playing and _current_area != "":
 		_load_music_manifest()
 		if _resolve_interior_track(area_type) == "":
+			## ⛔ THIRD SITE. _cancel_pending_fade's own comment says "BOTH 'already playing' early
+			## returns need this" and there are three: this one leans on _music_playing too, and that
+			## field stays TRUE for the whole of a fade-out. Inheriting a bed that is already ramping
+			## to silence gives a room that goes quiet just after the door closes and STAYS quiet —
+			## _current_area still names the village, so nothing re-derives until the player leaves.
+			_cancel_pending_fade()
 			return
 
 	## ⛔ THE AREA PATH NEVER ENDED THE ENVELOPE. play_music resets it; play_area_music reaches

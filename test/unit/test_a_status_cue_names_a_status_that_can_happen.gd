@@ -23,6 +23,9 @@ const MONSTERS := "res://data/monsters.json"
 ## `status_cured` is reached by an item authoring cure_all_status and by nothing else. Omitting this
 ## file made the arm score that cue reachable off the MAP ROW ALONE — right answer, no basis.
 const ITEMS := "res://data/items.json"
+## A CONST, not the inline literal it was: the corpus-liveness arm derives from the constant map,
+## so a path written inline is read by the guard and invisible to the check that it was read.
+const BATTLE_MANAGER := "res://src/battle/BattleManager.gd"
 
 ## Declared UNREACHABLE with a reason, not suppressed. Retirement trigger below: the day anything
 ## authors this status the entry must go, because the cue starts working and the note becomes a
@@ -52,7 +55,7 @@ func _applicable() -> Dictionary:
 	## anyway) and not harmless the day a comment names a status the data does not.
 	## ⚠️ JSON MUST STAY RAW — the comment pass would truncate at a `#` inside a string value.
 	var src: String = GdSource.code_of(SOUND_MANAGER)
-	var code: String = GdSource.code_of("res://src/battle/BattleManager.gd")
+	var code: String = GdSource.code_of(BATTLE_MANAGER)
 	for m in RegEx.create_from_string('add_status\\(\\s*"([a-z_]+)"').search_all(code):
 		out[m.get_string(1)] = true
 	var authored := {}
@@ -101,6 +104,27 @@ func test_every_status_cue_names_a_status_something_can_apply() -> void:
 	assert_eq(unreachable, [],
 		"status cues nothing can compose (%d) — authored, on disk, and silent forever: %s" % [unreachable.size(), unreachable])
 	print("[status-reach] %d status cues, %d applicable statuses, %d declared unreachable" % [cues.size(), live.size(), KNOWN_UNREACHABLE.size()])
+
+
+func test_every_corpus_file_this_guard_reads_is_actually_there() -> void:
+	## ⛔ BOTH READERS HERE FAIL SILENTLY — _json() returns {} and code_of() returns "" for a path that
+	## is not on disk — so a dead corpus entry contributes ZERO and is indistinguishable from one that
+	## was read and had nothing to say. The aggregate controls elsewhere in this file do NOT catch one
+	## dead path among five: abilities.json alone clears `live.size() > 30`, so a dead MONSTERS or
+	## ITEMS const passes every other arm. Asserts the READ, not file_exists() — the read is the thing
+	## the guard actually does, and file_exists is the one that lies about packed resources.
+	var consts: Dictionary = get_script().get_script_constant_map()
+	var checked: int = 0
+	for cname in consts.keys():
+		var v = consts[cname]
+		if not (v is String) or not str(v).begins_with("res://"):
+			continue
+		checked += 1
+		assert_gt(FileAccess.get_file_as_string(str(v)).length(), 0,
+			"%s names %s, which read back EMPTY — this guard's corpus is silently short one file" % [cname, v])
+	## Derived from the constant map, so a corpus file added tomorrow is covered when it is declared.
+	assert_gt(checked, 3,
+		"CONTROL: only %d res:// consts derived — the derivation is broken, not the corpus" % checked)
 
 
 func test_a_declared_unreachable_status_is_still_unreachable() -> void:
