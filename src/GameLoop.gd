@@ -3824,6 +3824,17 @@ func _show_game_over_screen() -> void:
 
 	await game_over.show_game_over(has_save)
 
+	## ⛔ UNBOUNDED IS CORRECT HERE. DO NOT ADD A DEADLINE — triaged 2026-09-18, recorded because
+	## the obvious improvement is the wrong one and nothing in the code said so.
+	## This waits for a HUMAN to pick Retry or Continue. A 25s or 120s ceiling fires on a player
+	## who went to make tea and then picks an outcome on their behalf.
+	## Liveness cannot bound it either: `game_over` is function-local with a single owner — new,
+	## add_child, queue_free, all in this function — so is_instance_valid() can never go false
+	## while the poll runs. A guard that cannot fire is not a guard.
+	## The termination argument lives in GameOverScreen._confirm_selection: its tween targets
+	## _container, a CHILD of game_over, which is freed only after choice_made[0] is true — i.e.
+	## after the emit. process_mode = PROCESS_MODE_ALWAYS (:75) covers a paused tree. So the
+	## emitter cannot be destroyed before it emits.
 	# Wait for player choice
 	while not choice_made[0]:
 		await get_tree().process_frame
@@ -4515,6 +4526,20 @@ func _on_settings_teleport_requested(target_map: String, spawn_point: String) ->
 	if _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
 	_on_area_transition(target_map, spawn_point)
+
+
+## ⛔ THE 14 RAW `await <tween>.finished` CALLS BELOW ARE DELIBERATE. Do NOT swap them for
+## BattleTransition._await_tween_safe — triaged 2026-09-18, all 14, and the helper buys nothing
+## here while adding a 6s ceiling to paths that cannot hang.
+## The 2026-09-06 spider wedge is real and the helper is the right fix FOR ITS FILE: those tweens
+## target battle and monster nodes, which are shared, transient, and freeable by a concurrent
+## _cleanup_effects from a second transition.
+## These target either _area_fade_rect — created once at :381 and freed nowhere — or nodes created
+## INSIDE the transition function, which are freed by the cleanup at the end of
+## _on_area_transition, after every await has returned. And a second transition cannot exist to
+## free them early: _on_area_transition refuses re-entry on _transition_in_progress and arms
+## _arm_transition_watchdog on the next line.
+## The question is what the tween TARGETS, not whether the call looks the same.
 
 
 func _area_fade_to_black() -> void:
