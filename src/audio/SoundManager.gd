@@ -2399,22 +2399,42 @@ func set_danger_intensity(intensity: float) -> void:
 	_danger_tween.tween_method(_apply_danger_intensity, _danger_intensity, new_intensity, 0.5)
 
 
+## ⛔ TWO METERS, ONE PAIR OF PROPERTIES, AND THEY USED TO WRITE ABSOLUTE VALUES OVER EACH OTHER.
+## Danger and corruption each drive their own tween calling their own applier, and each applier set
+## `pitch_scale` and `volume_db` outright — so the surviving value was whichever wrote last, which
+## depends on call order and on the two tweens' different lifetimes (0.5 s against 1.5 s). Measured
+## 2026-09-18, both meters live, two sequences: one left pitch 0.9855 with `_danger_intensity` at
+## 1.00 (the critical-HP cue absent, not diluted); the other left 1.1500 with corruption at 0.800
+## (the decay cue absent). Whichever the player heard was incidental.
+##
+## The appliers now only move their own METER and hand off to one renderer, so the result is the
+## same whatever order they run in. Each meter alone renders bit-identically to before.
 func _apply_danger_intensity(intensity: float) -> void:
-	"""Apply danger intensity to music playback"""
 	_danger_intensity = intensity
+	_render_music_envelope()
 
+
+## Pitch composes MULTIPLICATIVELY -- two independent detunes, not two opinions about one number --
+## and the volume offsets add, both relative to the user's slider.
+func _render_music_envelope() -> void:
 	if not _music_player:
 		return
-
-	# Pitch shift: normal (1.0) to slightly higher (1.15) as danger increases
-	# Higher pitch = more urgent feeling
-	var pitch_scale = 1.0 + intensity * 0.15
-	_music_player.pitch_scale = pitch_scale
-
-	# Volume boost at high danger (slightly louder, more in-your-face)
-	var volume_boost = intensity * 3.0  # Up to +3dB at max danger
-	# relative to the user's music-volume setting — hardcoded -12.0 clobbered the slider whenever danger rose
-	_music_player.volume_db = _music_base_db + volume_boost
+	## Danger: normal (1.0) to slightly higher (1.15). Higher pitch = more urgent.
+	var pitch: float = 1.0 + _danger_intensity * 0.15
+	## Volume boost at high danger, up to +3 dB. Relative to the user's setting -- a hardcoded -12.0
+	## clobbered the slider whenever danger rose.
+	var db: float = _music_base_db + _danger_intensity * 3.0
+	if _corruption_intensity > 0.0:
+		## Corruption: drifts flat with a slow wobble at high levels. ~half a semitone at full.
+		var flat: float = -_corruption_intensity * 0.03
+		var wobble_depth: float = _corruption_intensity * _corruption_intensity * 0.018  # quadratic -- subtle until high
+		var wobble: float = sin((Time.get_ticks_msec() / 1000.0) * TAU * 0.8) * wobble_depth
+		pitch *= 1.0 + flat + wobble
+		## Volume flicker only above 0.6 (reality destabilizing).
+		if _corruption_intensity > 0.6:
+			db -= randf_range(0.0, (_corruption_intensity - 0.6) * 4.0)
+	_music_player.pitch_scale = pitch
+	_music_player.volume_db = db
 
 
 ## End the danger envelope NOW. Kill-and-zero rather than set_danger_intensity(0.0), which
@@ -2495,26 +2515,11 @@ func _apply_corruption_max() -> void:
 	_corruption_tween.tween_method(_apply_corruption_intensity, _corruption_intensity, new_intensity, 1.5)
 
 
+## Moves only the corruption METER; the shape of the degradation lives in _render_music_envelope so
+## it cannot disagree with the danger envelope about who owns pitch_scale.
 func _apply_corruption_intensity(intensity: float) -> void:
-	"""Apply corruption degradation to the active music player."""
 	_corruption_intensity = intensity
-
-	if not _music_player:
-		return
-
-	# Pitch: starts clean, drifts downward with a slow wobble at high corruption.
-	# At full corruption: ~half-semitone flat with a 0.8 Hz LFO wobble.
-	var flat_offset = -intensity * 0.03
-	var wobble_depth = intensity * intensity * 0.018  # quadratic — subtle until high
-	var wobble_phase = Time.get_ticks_msec() / 1000.0
-	var wobble = sin(wobble_phase * TAU * 0.8) * wobble_depth
-	_music_player.pitch_scale = 1.0 + flat_offset + wobble
-
-	# Volume: subtle flicker at high corruption (reality destabilizing)
-	var vol_noise = 0.0
-	if intensity > 0.6:
-		vol_noise = randf_range(0.0, (intensity - 0.6) * 4.0)
-	_music_player.volume_db = _music_base_db - vol_noise
+	_render_music_envelope()
 
 
 func reset_corruption() -> void:

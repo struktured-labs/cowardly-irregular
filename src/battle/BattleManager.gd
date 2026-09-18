@@ -1760,8 +1760,18 @@ const TRUST_INTERRUPT_WINDOW_SECONDS: float = 0.9
 var _trust_window_pc: Combatant = null
 
 
-## Emit the window signal (BattleScene renders the take-control affordance and
-## captures CANCEL input), then await the timeout.
+## Emit the window signal, then await the timeout.
+## ⚠️ HALF OF WHAT THIS USED TO SAY WAS FALSE, and it was the half a reader would rely on. It read
+## "BattleScene renders the take-control affordance and captures CANCEL input". The CAPTURE is real
+## — BattleScene:4964 routes ui_cancel to request_trust_interrupt() and :3250 has the menu watchdog
+## stand down while the window is open. The RENDER is not: both signal handlers
+## (_on_trust_interrupt_window_opened / _closed) are `pass`. A wired seam, symmetrically connected,
+## with nothing in it.
+## 📌 So the window's only announcement to the player is ONE battle_log_message line in a scrolling
+## log, for TRUST_INTERRUPT_WINDOW_SECONDS. Whether that wants a widget is struktured's call — the
+## two empty handlers are the natural place for one — and this comment now describes what is there
+## rather than what was intended. (cowir-sfx measured it; the audio half is fine, `player_turn`
+## fires 37 lines earlier in the same function.)
 ## If request_trust_interrupt() fired during the window, _trust_window_pc
 ## was cleared and we return without kicking AI — the state is already
 ## PLAYER_SELECTING and BattleScene's normal command-menu path picks up.
@@ -9466,7 +9476,18 @@ func _maybe_boss_phase_bark(combatant: Combatant, action: Dictionary) -> void:
 	for e in enemy_party:
 		if e == null or not is_instance_valid(e) or not e.is_alive:
 			continue
-		var mt: String = str(e.get_meta("monster_type", "")) if e.has_meta("monster_type") else ""
+		## ⛔ RESOLVE THE BOSS KEY THE WAY EVERY OTHER BossDialogue SITE DOES. This read `monster_type`
+		## alone and skipped `llm_persona_id`, the explicit override that `_maybe_emit_boss_insight`
+		## and the jailbreak/opening-line paths all consult first. Exactly four monsters carry one —
+		## the W1 dragons (fire->pyrroth, ice->glacius, lightning->voltharion, shadow->umbraxis) — and
+		## they are authored in boss_dialogue.json under the PERSONA name, so a bark lookup by
+		## `fire_dragon` returns {} and `continue`s silently.
+		## ⚠️ LATENT when fixed: only `the_calibrant` authors phase_barks today (6 faces) and it has no
+		## override, so nothing changes now. The trigger is ordinary content work — author a phase bark
+		## for any dragon and it would never have fired (cowir-ai).
+		var mt: String = str(e.get_meta("llm_persona_id", "")) if e.has_meta("llm_persona_id") else ""
+		if mt == "":
+			mt = str(e.get_meta("monster_type", "")) if e.has_meta("monster_type") else ""
 		if mt == "":
 			continue
 		var barks: Dictionary = boss_dlg.get_phase_barks(mt)

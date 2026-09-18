@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## A treasure chest was authored on a quest NPC's EXACT cell, and it silenced him.
 ##
 ## `maple_heights_chest_3` and the Basement Developer were both placed at
@@ -197,3 +199,8 @@ func test_the_sweep_can_see_a_chest_standing_on_an_npc() -> void:
 		"a chest on the NPC's own cell must take EVERY press (%d of %d still reach him). That is " % [
 			int(after["opens"]), int(after["walkable"]) * 4] +
 		"the shipped defect; if it does not reproduce, the sweep above cannot detect it")
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()

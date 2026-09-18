@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## A room's music must follow the MAP it is in, not the bed that happened to be
 ## playing when the player arrived.
 ##
@@ -135,3 +137,8 @@ func test_an_unauthored_room_inherits_even_when_the_suffix_cache_has_lagged() ->
 
 	assert_eq(SoundManager._current_area, "village",
 		"an unauthored room stopped inheriting because the suffix CACHE named another world — the bed the player is hearing belongs to _current_area, which is what the comparison must resolve")
+
+## Leave the music autoload as a fresh process starts it — `stop_music()` does not cover
+## `_current_area`, `_current_world_suffix` or the player's level, and this file moved them.
+func after_all() -> void:
+	SoundState.restore()

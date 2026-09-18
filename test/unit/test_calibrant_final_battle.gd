@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## The Calibrant used to not exist. GameLoop's W6 closer said so in its own comment: "The
 ## Calibrant 'battle' is elided as narrative ... since no Calibrant arena/dungeon exists" — so
 ## the antagonist of the whole game was never fought, and world6_calibrant_intro (86 authored
@@ -308,3 +310,9 @@ func test_the_arena_is_reachable_from_the_abstract_overworld() -> void:
 		"the player needs a door to the last room in the game")
 	assert_string_contains(ow, "world6_chapter3_complete",
 		"and it must be gated on The Question, so the finale cannot be walked into early")
+
+
+## This file stands up a live BattleScene twice and asserts on SoundManager._current_music, so it
+## leaves _current_music and _music_playing set for whatever runs next.
+func after_all() -> void:
+	SoundState.restore()

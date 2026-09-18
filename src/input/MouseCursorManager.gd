@@ -16,7 +16,12 @@ extends Node
 const HIDE_AFTER_IDLE_SEC := 0.0  # 0 = never hide on idle; raise to e.g. 5.0 to enable
 
 ## Same value as GamepadFilter.STICK_DEADZONE, and deliberately the same NUMBER rather than an
-## import: these are the only two raw-axis readers in src/input/ and they must not disagree.
+## import: both ask "is the player steering?" of a raw axis, and they must not disagree.
+## ⚠️ THERE IS A THIRD RAW-AXIS READER IN src/input/ AND IT MUST NOT BE DRAGGED TO 0.2.
+## ControllerMappingCapture.CAPTURE_PUSH_THRESHOLD is 0.5 because it asks a different
+## question — "is the player CLAIMING this control?" — and equalising them would let a
+## resting stick write a binding. This comment said "the only two readers" until a census
+## found three; the test derives the set from source so it cannot go stale again.
 const STICK_DEADZONE := 0.2
 
 var _last_mouse_activity: float = 0.0
@@ -51,8 +56,8 @@ func _input(event: InputEvent) -> void:
 		# then restored. That is the "toggled the cursor on/off jankily during normal play"
 		# behaviour this file's own docstring says was fixed for KEYBOARD in 2026-05-03 — the
 		# same shape, left on the input that actually emits noise.
-		# 0.2 is GamepadFilter.STICK_DEADZONE, reused rather than invented: one deadzone in
-		# src/input/, not two that can drift apart.
+		# 0.2 is GamepadFilter.STICK_DEADZONE, reused rather than invented: one STEERING
+		# deadzone, not two that can drift apart. Capture's higher threshold is separate.
 		if absf((event as InputEventJoypadMotion).axis_value) > STICK_DEADZONE:
 			_hide_cursor()
 

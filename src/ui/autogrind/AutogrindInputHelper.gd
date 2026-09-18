@@ -14,8 +14,11 @@ static func classify_event(event: InputEvent) -> String:
 			JOY_BUTTON_START:
 				return "adjust_rules"
 			JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER:
-				if Input.is_joy_button_pressed(0, JOY_BUTTON_LEFT_SHOULDER) \
-						and Input.is_joy_button_pressed(0, JOY_BUTTON_RIGHT_SHOULDER):
+				# event.device, not 0: the chord means "both shoulders on the pad that SENT this".
+				# With two pads attached the player's may not be index 0 — GamepadFilter's own
+				# docstring records that happening here, a second pad enumerating first.
+				if Input.is_joy_button_pressed(event.device, JOY_BUTTON_LEFT_SHOULDER) \
+						and Input.is_joy_button_pressed(event.device, JOY_BUTTON_RIGHT_SHOULDER):
 					return "tier_cycle"
 	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		return "exit"
