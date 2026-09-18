@@ -180,8 +180,34 @@ func _ready() -> void:
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 	if not is_inside_tree():
 		return
-	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+	if _modal_open():
 		_pad_change_pending = true
+		return
+	_build_ui()
+	_refresh_grid()
+
+
+## ⛔ EVERY MODAL THIS EDITOR PARENTS TO ITSELF, NOT JUST THE COMPOSER. `_build_ui()` frees EVERY
+## child, and four of these are `add_child`ed onto the editor — so a rebuild under any one of them
+## destroys it. The first version of the pad-change handler guarded `_rule_composer_overlay` alone
+## and would have eaten an open VirtualKeyboard mid-name-entry, plus both pickers:
+##     _option_picker :2521   _keyboard :3199   _share_picker :3278   _rule_composer_overlay :3493
+## ⚠️ `_simulate_panel` WAS MISSING FROM THIS LIST AND MY FIRST DERIVED FLOOR COULD NOT SEE IT —
+## the floor matched member NAMES ending in modal/keyboard/picker/overlay, which is a convention,
+## not the property. `_simulate_panel` is declared "blocks grid input while open" and matches none
+## of them. The floor now derives from `_input`'s OWN early-return set, which is this file's
+## operative definition of a modal: anything input refuses to run under is something a rebuild must
+## not destroy. That cannot be escaped by naming a member differently.
+func _modal_open() -> bool:
+	for m in [_rule_composer_overlay, _keyboard, _share_picker, _option_picker, _simulate_panel, _edit_modal]:
+		if m and is_instance_valid(m):
+			return true
+	return false
+
+
+## Deferred so the rebuild does not free children out from under the event being dispatched.
+func _rebuild_for_pad_change() -> void:
+	if not is_inside_tree() or _modal_open():
 		return
 	_build_ui()
 	_refresh_grid()
@@ -1751,6 +1777,14 @@ func _input(event: InputEvent) -> void:
 	"""Handle input for grid navigation and editing"""
 	if not visible:
 		return
+
+	## A pad change deferred while a modal was open lands at the player's next input. Only the
+	## COMPOSER's cancel path applied it before, so a pad swapped under the keyboard or either
+	## picker left the legend stale for the rest of the session — the defect the defer exists to
+	## avoid, arriving through the defer itself.
+	if _pad_change_pending and not _modal_open():
+		_pad_change_pending = false
+		call_deferred("_rebuild_for_pad_change")
 
 	# F5 must toggle CLOSED too — the modal grid swallowed it, so the documented open key couldn't close
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F5:
