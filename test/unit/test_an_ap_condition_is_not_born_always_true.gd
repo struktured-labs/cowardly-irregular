@@ -148,3 +148,26 @@ func test_a_number_does_not_survive_a_switch_to_another_scale() -> void:
 	ed.call("_apply_condition_type", "ap")
 	assert_lte(int(_seeded(ed).get("value", 999)), 4,
 		"an HP percentage carried onto the AP scale is a permanently-true rule")
+
+
+func test_the_nullary_set_is_derived_and_not_empty() -> void:
+	## FLOOR on the derivation itself. It is read from AutobattleSystem's own list, and an empty
+	## return is indistinguishable from "no type is nullary" — which silently restores the exact
+	## defect this branch removes, with every arm below still green.
+	var ed: Node = await _editor_on_a_fresh_condition()
+	var got: Array = ed.call("_nullary_condition_types")
+	assert_gt(got.size(), 0, "an empty nullary set re-opens the defect and reds nothing")
+	assert_eq(got, _abs.NULLARY_CONDITIONS as Array,
+		"the editor's nullary set must BE the grammar owner's, not a copy of it")
+
+
+func test_a_nullary_condition_keeps_no_operator_or_value() -> void:
+	## ally_dead and is_night are nullary by the owner's list and were absent from the editor's
+	## three hand-lists, so they were seeded `< 50` and the dial edited a number nothing reads.
+	for t in ["ally_dead", "is_night"]:
+		var ed: Node = await _editor_on_a_fresh_condition()
+		ed.call("_apply_condition_type", t)
+		var cond: Dictionary = _seeded(ed)
+		assert_eq(str(cond.get("type", "")), t, "CONTROL: type changed to %s" % t)
+		assert_false(cond.has("op"), "%s is nullary and must carry no op — got %s" % [t, cond])
+		assert_false(cond.has("value"), "%s is nullary and must carry no value — got %s" % [t, cond])

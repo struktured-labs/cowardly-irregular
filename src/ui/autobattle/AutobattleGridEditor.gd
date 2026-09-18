@@ -86,6 +86,14 @@ const NUMERIC_BOUNDS := {
 const PERCENT_SCALE := ["hp_percent", "mp_percent", "enemy_hp_percent", "ally_hp_percent",
 	"ally_mp_percent"]
 
+
+## Conditions whose evaluator reads neither op nor value, DERIVED from the grammar owner. Three
+## functions in this file each carried their own idea of this and all three named only `always`,
+## so the value dial and the operator cycle edited ally_dead / is_night / setup_complete — writing
+## numbers nothing reads. A fifth nullary type cannot leave this behind.
+func _nullary_condition_types() -> Array:
+	return AutobattleSystem.NULLARY_CONDITIONS
+
 ## Character class color schemes (matching Win98Menu exactly)
 ## Maps character_id -> job class style
 const CHARACTER_STYLES = {
@@ -2099,6 +2107,10 @@ func _apply_condition_type(new_type: String) -> void:
 			cond["op"] = ">="
 		if not cond.has("value"):
 			cond["value"] = 2
+	elif _nullary_condition_types().has(new_type):
+		## Nullary by the owner's own list — the evaluator reads neither field.
+		cond.erase("op")
+		cond.erase("value")
 	else:
 		if not cond.has("op"):
 			cond["op"] = "<"
@@ -2123,8 +2135,8 @@ func _cycle_condition_operator() -> void:
 		var cond_type = cond.get("type", "always")
 		print("[CYCLE_OP] cond_type=%s, cond=%s" % [cond_type, cond])
 
-		# ALWAYS conditions don't have operators
-		if cond_type == "always":
+		# Nullary conditions have no operator to cycle
+		if _nullary_condition_types().has(cond_type):
 			SoundManager.play_ui("menu_error")
 			return
 
@@ -2174,8 +2186,8 @@ func _adjust_condition_value(delta: int) -> void:
 		var cond = conditions[cursor_col]
 		var cond_type = cond.get("type", "always")
 
-		# ALWAYS conditions don't have values
-		if cond_type == "always":
+		# Nullary conditions have no number to dial
+		if _nullary_condition_types().has(cond_type):
 			return
 
 		# Weather cycles through the vocabulary (shoulder buttons), not a number
