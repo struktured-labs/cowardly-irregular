@@ -193,3 +193,51 @@ func test_the_settings_writer_reports_a_failure_it_used_to_swallow() -> void:
 	## player who configures it once may never trigger the next save that would truncate an orphan.
 	assert_true(body.contains("push_error"),
 		"a failed remove of the staging file leaves the player's API key in plaintext at settings.json.new and says nothing — it needs its own loud branch naming the path")
+
+
+## ⛔ EVERY ARM ABOVE KEYS ON `FileAccess.open(…, WRITE)`. A write by ANY OTHER MECHANISM is not an
+## offender and not a missing member — it is INVISIBLE (cowir-sfx's fourth-form lens, via
+## cowir-autogrind). This file persists the save slot and the settings, so a future writer using
+## another form would bypass both the staging requirement and every check above it.
+##
+## Zero today, and the zero is over an instrument watched saying YES: the same patterns find the
+## four `save_png` calls that DO exist elsewhere in src/ (GameLoop's two screenshots,
+## BaseTileGenerator's debug atlas, FeedbackBundle's buffer) — none of them player state.
+const OTHER_WRITE_FORMS := [
+	"ResourceSaver.save", "store_var", "store_buffer", "store_line",
+	"save_png", "save_to_file", "open_encrypted", "open_compressed",
+]
+
+
+func test_no_write_reaches_disk_by_a_form_these_arms_cannot_see() -> void:
+	var f := FileAccess.open("res://src/save/SaveSystem.gd", FileAccess.READ)
+	assert_not_null(f, "could not read SaveSystem.gd")
+	if f == null:
+		return
+	var src := f.get_as_text()
+	f.close()
+
+	var offenders: Array = []
+	var line_no := 0
+	for line in src.split("\n"):
+		line_no += 1
+		var t := line.strip_edges()
+		if t.begins_with("#"):
+			continue
+		for form in OTHER_WRITE_FORMS:
+			if t.contains(form):
+				offenders.append("%s:%d %s" % ["SaveSystem.gd", line_no, form])
+	assert_eq(offenders, [],
+		"a write reaches disk by a form the staging arms above cannot see, so it is neither staged nor flagged: %s" % str(offenders))
+
+	## POSITIVE CONTROL — the patterns must find the forms that DO exist in src/, or this zero is
+	## a dead matcher reporting health. save_png is the live one; the other seven are absent
+	## fleet-wide today, which is why only this one can prove the instrument.
+	var probe := FileAccess.open("res://src/GameLoop.gd", FileAccess.READ)
+	assert_not_null(probe, "CONTROL: could not read GameLoop.gd")
+	if probe == null:
+		return
+	var gl := probe.get_as_text()
+	probe.close()
+	assert_true(gl.contains("save_png"),
+		"CONTROL: the form patterns find nothing in GameLoop.gd, which is known to call save_png — the matcher is dead and the zero above means nothing")
