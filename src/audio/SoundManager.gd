@@ -1210,6 +1210,19 @@ func _ensure_music_duck_bus() -> void:
 ## Omitting it keeps the old contract -- an unidentified release lifts the duck unconditionally --
 ## so a caller that does not know who it is behaves exactly as before.
 func duck_music_for_dialogue(active: bool, holder: Object = null) -> void:
+	## ⛔ RESOLVE THE BUS BEFORE CHANGING ANY STATE. This used to append the holder and set
+	## `_duck_active` first and meet the `amp == null` return afterwards — leaving the latch claiming a
+	## duck nobody applied. And because this function is deliberately idempotent, the NEXT real request
+	## then matches the lying latch and returns: that conversation plays at full volume while the
+	## system reports it as ducked. `duck_music_for_kill` already resolves `idx` and `amp` and returns
+	## before touching anything; this is the sibling that had not travelled.
+	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1:
+		_ensure_music_duck_bus()
+		idx = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	var amp = AudioServer.get_bus_effect(idx, 0) if idx != -1 else null
+	if amp == null:
+		return
 	## A holder freed without releasing must not strand the duck; drop it before deciding.
 	var live: Array = []
 	for h in _duck_holders:
@@ -1228,13 +1241,6 @@ func duck_music_for_dialogue(active: bool, holder: Object = null) -> void:
 		return  # idempotent, no thrash
 	active = want
 	_duck_active = want
-	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
-	if idx == -1:
-		_ensure_music_duck_bus()
-		idx = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
-	var amp = AudioServer.get_bus_effect(idx, 0)
-	if amp == null:
-		return
 	if _duck_tween and _duck_tween.is_valid():
 		_duck_tween.kill()
 	_duck_tween = create_tween()
