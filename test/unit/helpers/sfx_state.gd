@@ -21,6 +21,13 @@ extends RefCounted
 ## tautology. The arms a leak disables first are the ones whose job is refusing a vacuum.
 ##
 ## Preloaded rather than `class_name` so a lane can use it with no --import.
+##
+## ⚠️ THIS MAKES ITS CALLERS BARRIERS, AND THAT IS A DELIBERATE TRADE. It releases EVERY sfx player,
+## not just the ones its file drove — so a file wired to it also clears an UPSTREAM leaker's stream,
+## and a probe running after it sees clean while the real polluter stays invisible. Kept because the
+## alternative is a per-file list of players, and a cue routes to players its caller never names
+## (play_battle reaches _flourish_player via the combo path). A derived release that over-cleans
+## beats a hand-list that misses. Hunting a stream leak: probe BEFORE one of these files, not after.
 
 ## _music_player and _ambient_player belong to sound_state.gd. Pinned by
 ## test_a_new_audio_player_is_wired_like_its_siblings so a new music-side player cannot drift in here.

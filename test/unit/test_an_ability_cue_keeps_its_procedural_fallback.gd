@@ -18,7 +18,10 @@ var _saved_entry: Dictionary = {}
 ## correctly, and red the gate. A file must ESTABLISH the state its premise needs, not assert that
 ## someone else left it. Measured: entering at w6_, pre-fix is Failing 3, this is Passing 6.
 var _saved_area: String = ""
-var _saved_suffix: String = ""
+## "medieval", not "" — this is the field's LIVE default, and after_each writes it back
+## unconditionally. A wrong default here is only unreachable because the snapshot sits directly
+## under the null guard; a reorder makes it a restore that CORRUPTS rather than one that skips.
+var _saved_suffix: String = "medieval"
 
 
 func _sm() -> Node:
