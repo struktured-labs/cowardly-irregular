@@ -138,15 +138,20 @@ func test_boss_selector_paging_names_the_shoulders_you_have() -> void:
 ## the derived string is byte-identical to the frozen one. Rendering cannot discriminate here at
 ## all — no pad can be faked headless — so the only falsifiable claim left is that the footer
 ## STATEMENT feeds those two actions through the helper.
+##
+## ⛔ ANCHORED ON THE STRING, NOT ON THE ASSIGNMENT. This pinned `footer.text = "↑↓: Select` and
+## went red when the text moved into a `_footer_text()` helper — a correct refactor, and the claim
+## ("these two actions are derived") was never in question. A site-pin fails on the site; the
+## literal is the smallest thing that must exist wherever the footer is built.
 func test_overworld_leader_row_derives_its_shoulder_tokens() -> void:
 	var src := FileAccess.get_file_as_string(OVERWORLD_MENU_PATH)
-	var at := src.find("footer.text = \"↑↓: Select")
-	assert_gt(at, -1, "the overworld footer statement must still exist")
+	var at := src.find("\"↑↓: Select")
+	assert_gt(at, -1, "the overworld footer string must still exist somewhere in the file")
 	if at < 0:
 		return
 	# Bounded at the statement's own end, never a fixed character window — the fix spans lines.
-	var stop := src.find("footer.position", at)
-	assert_gt(stop, at, "footer.position must follow the text assignment — that is the bound")
+	var stop := src.find("\n\n", at)
+	assert_gt(stop, at, "the footer statement must END — a blank line closes it")
 	var stmt := src.substr(at, stop - at)
 	assert_true(stmt.find("hint_for_action(\"battle_defer\")") > -1,
 		"Leader-back binds battle_defer (OverworldMenu:~703) and must be derived, not written out")

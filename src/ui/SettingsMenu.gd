@@ -101,6 +101,7 @@ var _settings_items: Array = []
 ## selected row stays visible (mirrors TeleportMenu.gd scroll-follow). Without
 ## this, the bottom action rows are unreachable and the cursor goes off-screen.
 var _scroll: ScrollContainer = null
+var _footer: Label = null
 var _controls_submenu_open: bool = false
 var _nav_repeat := MenuRepeat.new()
 var _jukebox_submenu_open: bool = false
@@ -680,7 +681,11 @@ func _build_ui() -> void:
 	# Footer — pinned at the very bottom of the panel, outside the scroll area
 	# so it is always visible regardless of scroll position.
 	var footer = Label.new()
-	footer.text = "←→: Adjust  %s/Click: Select  %s/RClick: Back" % [InputProfileManager.hint_for_action("ui_accept"), InputProfileManager.hint_for_action("ui_cancel")]
+	_footer = footer
+	footer.text = _footer_text()
+	# Built once; ControlsMenu opens as a CHILD of this screen, so a change underneath it left this frozen.
+	if not InputProfileManager.bindings_changed.is_connected(_refresh_footer):
+		InputProfileManager.bindings_changed.connect(_refresh_footer)
 	footer.position = Vector2(16, panel.size.y - FOOTER_H + 18)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -1811,6 +1816,20 @@ func _open_controls_menu() -> void:
 	add_child(controls)
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
+
+
+## ⛔ DERIVED ONCE IS HALF THE JOB. ControlsMenu is opened as a child of this screen (:1808) and
+## this footer names ui_accept/ui_cancel — the exact two actions the Nintendo toggle SWAPS. Left
+## frozen, it named the button that now does the opposite thing.
+func _footer_text() -> String:
+	return "←→: Adjust  %s/Click: Select  %s/RClick: Back" % [
+		InputProfileManager.hint_for_action("ui_accept"),
+		InputProfileManager.hint_for_action("ui_cancel")]
+
+
+func _refresh_footer() -> void:
+	if _footer and is_instance_valid(_footer):
+		_footer.text = _footer_text()
 
 
 func _on_controls_closed() -> void:
