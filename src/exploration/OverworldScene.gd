@@ -79,6 +79,7 @@ func _ready() -> void:
 	_setup_camera()
 	_setup_controller()
 	_setup_monster_spawner()
+	_establish_zone_ambient()
 
 	if mode7_enabled:
 		_mode7 = Mode7Overlay.new()
@@ -198,6 +199,11 @@ func _process(_delta: float) -> void:
 func _exit_tree() -> void:
 	if _mode7:
 		_mode7.cleanup()
+	## Stop the outdoor loop so it does not leak into the next scene, the way BaseVillage and
+	## BaseInterior already do. Dungeons never touch the ambient layer, so rain followed the player
+	## underground and played for the whole cave.
+	if SoundManager and SoundManager.has_method("stop_ambient"):
+		SoundManager.stop_ambient()
 
 
 func _setup_scene() -> void:
@@ -563,6 +569,19 @@ func _setup_monster_spawner() -> void:
 
 
 ## Regional encounter zones based on player position
+## The zone bed on ENTRY. _update_encounter_zone only fires on a zone CHANGE and _current_zone
+## starts at "central", so a spawn resolving to central (the '.', 'B' and 'M' biome chars) never
+## reached the router -- which was masked while the previous scene's bed simply kept playing, and
+## became silence once _exit_tree started stopping it.
+func _establish_zone_ambient() -> void:
+	if player == null:
+		return
+	var tile := Vector2i(int(player.position.x / TILE_SIZE), int(player.position.y / TILE_SIZE))
+	_last_tile_pos = tile
+	_current_zone = _get_zone_for_tile(tile.x, tile.y)
+	_update_zone_ambient(_current_zone)
+
+
 func _update_encounter_zone(pos: Vector2) -> void:
 	var tile_pos = Vector2i(int(pos.x / TILE_SIZE), int(pos.y / TILE_SIZE))
 	if tile_pos == _last_tile_pos:
