@@ -21,12 +21,18 @@ func _holds(player: AudioStreamPlayer, key: String) -> bool:
 ## `advance_queue_full` MISSING for every later file in the process — Win98Menu plays it.
 ## Held here instead, because after_each runs even when the arm aborts (@cowir-music, 2026-09-18).
 var _erased: Dictionary = {}
+var _saved_cooldowns: Dictionary = {}
 const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
 
 
 func before_each() -> void:
 	var sm: Node = _sm()
 	if sm:
+		## Snapshot BEFORE the clear. The clear is deliberate per-arm setup — cues must be able to
+		## fire — but the table is the SHARED autoload's, and this file never put back what it
+		## found. Second strand shape in this file, and not the one the catcher below was built for
+		## (@cowir-music: mutate a catcher against a shape you did NOT design it for).
+		_saved_cooldowns = sm._sfx_cooldowns.duplicate(true)
 		sm._sfx_cooldowns.clear()
 
 
@@ -41,6 +47,8 @@ func after_each() -> void:
 		sm._sfx_manifest[k] = _erased[k]
 	_erased = {}
 	sm._sfx_cooldowns.clear()
+	for k in _saved_cooldowns:
+		sm._sfx_cooldowns[k] = _saved_cooldowns[k]
 
 
 func test_the_bank_has_its_own_voices() -> void:
@@ -131,6 +139,11 @@ func test_the_unleash_handler_routes_through_the_bank_voice() -> void:
 	assert_false(body.contains('play_battle("full_bank_unleash")'), "the unleash is back on _battle_player — it replaces advance_flourish_5 in the same frame")
 
 
+## ⚠️ NO CATCHER FOR THE COOLDOWN TABLE, AND THAT IS STRUCTURAL RATHER THAN AN OMISSION: before_each
+## CLEARS it before every arm, including this one, so by the time any arm could look the table has
+## already been reset for that arm. A strand catcher can only observe state that before_each does
+## not touch. The manifest key qualifies; the dedupe table cannot.
+##
 ## ⛔ DECLARED LAST ON PURPOSE — declaration order is run order, so this is the only arm that can
 ## see a fixture the arms above failed to hand back. Without it the strand and its repair look
 ## IDENTICAL on screen: an arm that aborts after its first assert still reports PASSING (CLAUDE.md's
