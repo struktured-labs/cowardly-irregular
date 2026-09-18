@@ -62,12 +62,27 @@ func _ready() -> void:
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 
 
-## Registers every known mapping. Idempotent - SDL replaces by GUID. Returns the count applied.
+## Registers every known mapping. Idempotent - SDL replaces by GUID. Returns the count APPLIED.
+##
+## ⛔ IT USED TO RETURN `MAPPINGS.size()` UNCONDITIONALLY, WHICH MADE ITS OWN GUARD A TAUTOLOGY:
+## `assert_eq(register_all(), MAPPINGS.size())` compared a constant to itself, so deleting the
+## `add_joy_mapping` call left all 15 arms of test_controller_sdl_mapping_regression GREEN.
+## The count is now earned, so that assert means what it says.
+##
+## And the shipped list is validated like the captured one. This file's header says "an incorrect
+## mapping is worse than none, because it looks authoritative" — the validator existed and was
+## pointed only at the user file, i.e. at the source this file trusts MORE, not less. A typo while
+## editing MAPPINGS is exactly how a verified entry stops being one, and SDL ignores it in silence.
 func register_all() -> int:
+	var applied := 0
 	for mapping in MAPPINGS:
+		if not is_wellformed(mapping):
+			push_warning("[ControllerMappings] SHIPPED mapping is malformed and was NOT applied: %s" % mapping)
+			continue
 		Input.add_joy_mapping(mapping, true)
-	print("[ControllerMappings] Registered %d SDL mapping(s)" % MAPPINGS.size())
-	return MAPPINGS.size()
+		applied += 1
+	print("[ControllerMappings] Registered %d of %d SDL mapping(s)" % [applied, MAPPINGS.size()])
+	return applied
 
 
 ## Loads captured mappings from user://. Every failure is LOUD: a silently-skipped file
@@ -100,13 +115,22 @@ func register_user_mappings() -> int:
 
 ## A mapping needs at least a GUID, a name and one binding, and SDL silently ignores a
 ## malformed string — so validate before handing it over rather than after.
+##
+## ⛔ TWO CHECKS THE CALLERS ALREADY ASSUMED WERE HERE. The GUID test was LENGTH ONLY while its
+## own guard's message read "GUID must be 32 hex chars", so a 32-character non-hex GUID passed;
+## and nothing required a platform clause, which the MAPPINGS docstring above explains is what
+## makes an entry apply at all. Both omissions fail the same way SDL does — silently — which is
+## precisely the failure this function's docstring says it exists to prevent.
 func is_wellformed(mapping: String) -> bool:
 	var parts := mapping.split(",")
 	if parts.size() < 3:
 		return false
-	if parts[0].strip_edges().length() != 32:
+	var guid := parts[0].strip_edges()
+	if guid.length() != 32 or not guid.is_valid_hex_number():
 		return false
 	if parts[1].strip_edges() == "":
+		return false
+	if not mapping.contains("platform:"):
 		return false
 	return mapping.contains(":")
 
