@@ -34,14 +34,15 @@ func before_each() -> void:
 ## pitch_scale PERSISTS on the shared player — the defect 39fe0bded fixed. The ±5% jitter leaves it
 ## randomized, so this file must put it back or it hands the next file a detuned battle player.
 func after_each() -> void:
+	## FIRST, not last: a GDScript error in the restores below aborts after_each, and a release that
+	## sits at the bottom is then skipped. Self-contained, so it needs nothing above it.
+	SfxState.release_streams()
 	var sm: Node = _sm()
 	if sm == null:
 		return
 	sm._battle_player.pitch_scale = 1.0
 	sm._battle_player.volume_db = _base(sm)
 	sm._sfx_cooldowns.clear()
-	## Shared players keep their stream after a cue ends; sound_state.gd owns the music surface, not this one.
-	SfxState.release_streams()
 
 
 func test_a_hit_after_a_loud_trim_plays_at_the_channel_level() -> void:

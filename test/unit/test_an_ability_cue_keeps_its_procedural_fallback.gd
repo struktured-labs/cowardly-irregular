@@ -50,6 +50,9 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## FIRST, not last: a GDScript error in the restores below aborts after_each, and a release that
+	## sits at the bottom is then skipped. Self-contained, so it needs nothing above it.
+	SfxState.release_streams()
 	var sm: Node = _sm()
 	if sm == null:
 		return
@@ -65,8 +68,6 @@ func after_each() -> void:
 	## _try_play_sfx_from_manifest leaves it randomized, so a file that plays anything must put it back.
 	sm._ability_player.pitch_scale = 1.0
 	sm._battle_player.pitch_scale = 1.0
-	## Shared players keep their stream after a cue ends; sound_state.gd owns the music surface, not this one.
-	SfxState.release_streams()
 
 
 func test_this_files_scenario_is_the_one_it_claims_to_drive() -> void:

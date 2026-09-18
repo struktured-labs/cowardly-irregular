@@ -39,13 +39,14 @@ func _arm(sm: Node) -> void:
 
 
 func after_each() -> void:
+	## FIRST, not last: a GDScript error in the restores below aborts after_each, and a release that
+	## sits at the bottom is then skipped. Self-contained, so it needs nothing above it.
+	SfxState.release_streams()
 	var sm: Node = _sm()
 	if sm == null:
 		return
 	sm._sfx_cooldowns.clear()
 	sm._battle_player.volume_db = _base(sm)
-	## Shared players keep their stream after a cue ends; sound_state.gd owns the music surface, not this one.
-	SfxState.release_streams()
 
 
 func test_a_max_power_spell_plays_a_trim_above_the_channel_not_an_absolute_level() -> void:
