@@ -15,6 +15,34 @@ extends GutTest
 ## ambush chime arguably SHOULD win. Recorded so the next reader does not re-derive it.
 
 const REWARD_CUES := ["gold_pickup", "item_obtain"]
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
+## ⛔ THIS FILE HAD NO TEARDOWN AND MUTATES THE AUTOLOAD SEVEN TIMES. `_sfx_cooldowns` is a SHARED
+## dict and a full-suite run is ONE process, so clearing it to observe a cue left the dedupe table
+## wiped for every later file. Every arm here also PLAYS something, and a `stream` persists on the
+## player after the cue ends — the exact leak sfx_state.gd was written for, measured across six of
+## eight guards in this lane. This file was one of the six and I added two more playing arms to it
+## in .442 without noticing (@cowir-music's fixture-strand finding, run against my own work).
+var _saved_cooldowns: Dictionary = {}
+
+
+func before_each() -> void:
+	var sm: Node = _sm()
+	if sm:
+		_saved_cooldowns = sm._sfx_cooldowns.duplicate(true)
+
+
+## ⚠️ RELEASE FIRST, restore second. A GDScript error in the restore below aborts after_each, and a
+## release sitting at the bottom is then skipped — the sibling teardown in this lane carries the
+## same ordering note for the same reason.
+func after_each() -> void:
+	SfxState.release_streams()
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	sm._sfx_cooldowns.clear()
+	for k in _saved_cooldowns:
+		sm._sfx_cooldowns[k] = _saved_cooldowns[k]
 
 
 func _sm() -> Node:
