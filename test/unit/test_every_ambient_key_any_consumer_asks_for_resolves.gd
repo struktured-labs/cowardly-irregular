@@ -140,6 +140,18 @@ func test_every_literal_ambient_key_resolves_to_a_file_on_disk() -> void:
 	var requested: Dictionary = _requested_keys()
 	assert_gt(requested.size(), 10,
 		"SCOPE control: parsed only %d ambient keys from src/ — the patterns are stale and a green would be vacuous" % requested.size())
+	## ⛔ A COUNT FLOOR IS SATISFIED BY A SURVIVOR; A MEMBERSHIP FLOOR IS NOT (cowir-controller,
+	## 2026-09-18). The count above passes with a whole extraction path dead — measured: deleting
+	## the CONST path outright left this file GREEN at 3 passing, and night_crickets_wind simply
+	## left the corpus. Three paths, so three named keys, one per path: a dead path now names the
+	## key it stopped finding instead of shrinking a number that is still over the floor.
+	for probe in [
+		["weather_rain", "the LITERAL-argument path (WeatherSystem's six)"],
+		["ambient_forge", "the _get_ambient_key() VIRTUAL path (villages and interiors)"],
+		["night_crickets_wind", "the CONST-argument path (SoundManager.NIGHT_AMBIENCE_KEY)"],
+	]:
+		assert_true(requested.has(probe[0]),
+			"MEMBERSHIP floor: %s is absent, so %s found nothing — the count above still passes because the other paths carry it" % [probe[0], probe[1]])
 
 	var broken: Array = []
 	for key in requested.keys():
