@@ -1,7 +1,32 @@
 extends GutTest
 
-## Regression tests for async safety bugs
-## Ensures all await statements have proper validity checks
+## Regression tests for async safety bugs.
+##
+## ⛔ THIS FILE DOES NOT ENSURE WHAT ITS HEADER CLAIMED. It said "ensures all await statements
+## have proper validity checks". Every arm below is a FILE-LEVEL PRESENCE COUNT — `content.count(
+## "is_instance_valid(self)") > 0` — which says nothing about any particular await site. Measured
+## 2026-09-18, on the files this file itself names:
+##
+##     SceneTransition.gd   12 awaits ·  1 followed by a validity check
+##     BattleManager.gd     15 awaits · 11 followed by a validity check
+##     ShopScene.gd          4 awaits ·  4 followed by a validity check
+##
+## The SceneTransition arm asserts the file CONTAINS the string. It passes on that one, with
+## eleven unchecked. A green here means "this file mentions validity somewhere", nothing more.
+##
+## ⚠️ AND THE PROPERTY IS NOT EVEN MEANINGFUL FOR THREE OF THE TEN FILES NAMED HERE.
+## BattleManager, SceneTransition and BattleTransition are AUTOLOADS (project.godot:32-34, the
+## singleton list) — `self` is never freed during play, only at tree teardown. An
+## `is_instance_valid(self)` arm over an autoload is asking about a state normal play cannot reach.
+## The seven scene-node files are where it bites, and there `self` genuinely dies with its scene.
+##
+## 🔑 WHY THIS IS A NOTE AND NOT A FIX: repairing 20 arms means deciding, per arm, what the real
+## safety property is, and a per-site rule needs a criterion I could not defend. My first attempt
+## flagged 2 sites in BattleScene.gd; reading them, both were a `queue_free()` inside a deferred
+## LAMBDA on a CHILD node, while the genuine post-await self-call in those same functions
+## (`create_tween()`) went unflagged. A guard whose criterion mis-sorts its own two hits is not
+## ready to ship. Recorded so the numbers are not re-derived; the design call is open.
+##
 ## These are structural tests that verify the codebase follows safe async patterns
 
 

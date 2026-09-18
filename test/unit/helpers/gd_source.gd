@@ -1,3 +1,4 @@
+class_name GdSource
 extends RefCounted
 ## The CODE of a .gd file, with `#` comments and `"""` docstrings removed — for any guard whose
 ## assertion is satisfied by the mere presence of a token.

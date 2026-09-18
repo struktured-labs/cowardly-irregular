@@ -6,7 +6,32 @@ extends GutTest
 ## it (permadead species, profiles, learned patterns, CSI data, resume snapshot, session history),
 ## four of them silent on failure. All six now stage a sibling and rename it into place.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const SYSTEM_PATH := "res://src/autogrind/AutogrindSystem.gd"
+
+
+## ⛔ PROSE CAN SATISFY A DECLARATION PIN. A `"""` region keeps its lines' indentation where a `#`
+## occupies column 0, so `func _write_json_atomic(` surviving only inside a docstring satisfies a
+## `find("func …")` pin while the real declaration is gone (@cowir-music, 2026-09-18). MEASURED
+## here: the pin stayed SILENT under exactly that plant and a SIBLING arm red for its own reason —
+## the file looked red, the pin was blind, and only the message said which arm spoke.
+## ⚠️ NOT `code_of`: it rejoins on `"""` and destroys line numbers. strip_comments IS line-
+## preserving, so strip `#` with the shared helper and blank `"""` regions per line.
+func _code_of(path: String) -> String:
+	var out: PackedStringArray = []
+	var in_doc := false
+	for line in GdSource.strip_comments(FileAccess.get_file_as_string(path)).split("\n"):
+		var l: String = str(line)
+		var fences: int = l.count("\"\"\"")
+		if in_doc:
+			out.append("")
+			if fences % 2 == 1:
+				in_doc = false
+		else:
+			out.append("" if fences > 0 else l)
+			if fences % 2 == 1:
+				in_doc = true
+	return "\n".join(out)
 const PROBE := "user://autogrind_atomic_probe.json"
 
 
@@ -23,7 +48,7 @@ func after_each() -> void:
 func _write_open_lines() -> Array:
 	## DERIVED. A per-function ratchet is what let a second writer sit 170 lines below a fixed one
 	## with the identical shape (@cowir-music, src/save) — so this walks every WRITE open there is.
-	var src: String = FileAccess.get_file_as_string(SYSTEM_PATH)
+	var src: String = _code_of(SYSTEM_PATH)
 	assert_ne(src, "", "CONTROL: could not read AutogrindSystem — every arm below would be vacuous")
 	var out: Array = []
 	var n := 0
@@ -53,7 +78,7 @@ func test_no_writer_opens_its_destination() -> void:
 func test_the_payload_is_serialized_before_anything_is_opened() -> void:
 	## The ordering IS the fix: serializing after the open is what puts the whole payload inside
 	## the truncation window. A staged write with the stringify below the open is no better.
-	var src: String = FileAccess.get_file_as_string(SYSTEM_PATH)
+	var src: String = _code_of(SYSTEM_PATH)
 	var i_fn: int = src.find("func _write_json_atomic(")
 	assert_gt(i_fn, -1, "CONTROL: the atomic helper must exist, or this arm measures nothing")
 	var i_str: int = src.find("JSON.stringify(", i_fn)
@@ -79,7 +104,7 @@ func test_the_gate_still_marks_every_writer() -> void:
 	## The persistence ratchet derives its saver set from `if _test_disable_persistence: return`.
 	## Moving that gate into the shared helper would collapse the derived set to one and silently
 	## widen what tests may write — so each writer keeps its own gate.
-	var src: String = FileAccess.get_file_as_string(SYSTEM_PATH)
+	var src: String = _code_of(SYSTEM_PATH)
 	var savers: Array = []
 	var current := ""
 	for line in src.split("\n"):
@@ -100,7 +125,7 @@ func test_the_writer_verifies_its_bytes_before_renaming() -> void:
 	## `store_string` returns nothing, so a short write is invisible, and staging does NOT cover it
 	## — a rename moves a partial file into place just as happily. Verified before the rename so a
 	## truncated payload never reaches the destination. get_error() is used 0x elsewhere in src/.
-	var src: String = FileAccess.get_file_as_string(SYSTEM_PATH)
+	var src: String = _code_of(SYSTEM_PATH)
 	var i_fn: int = src.find("func _write_json_atomic(")
 	assert_gt(i_fn, -1, "CONTROL: the atomic helper must exist")
 	var i_end: int = src.find("\nfunc ", i_fn + 20)
