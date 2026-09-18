@@ -25,6 +25,18 @@ extends GutTest
 ## Both sides are DERIVED: authored categories from monsters.json, consumed categories from the
 ## literals at the call sites. A hand-list on either side would go stale the first time someone adds
 ## a category, which is the event this exists to catch.
+##
+## ✅ AND IT FAILS SAFE IF EITHER CORPUS GOES DARK — measured, not reasoned, because cowir-controller
+## found two of their own guards where an unreadable file dropped out of the DEFECT LIST rather than
+## just the census, taking its own violation with it silently:
+##
+##     SRC_ROOT points nowhere    EC=1 Failing 2   the control names "physical" as unfound, AND the
+##                                                 main arm reports it as an orphan — a false ALARM
+##     MONSTERS points nowhere    EC=1 Failing 2   the read control fires by name
+##
+## The direction is structural rather than lucky: a dark src walk can only SHRINK `consumed`, and
+## orphans = authored - consumed, so it can only GROW the defect list. A dark corpus here cannot
+## hide a violation, only invent one — which is the direction that costs a re-run instead of a bug.
 
 const MONSTERS := "res://data/monsters.json"
 const SRC_ROOT := "res://src"
