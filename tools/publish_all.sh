@@ -576,47 +576,20 @@ fi
 # all of them explaining that it has none -- it takes a bitrate, and says so because passing
 # --selftest once created a tier directory named "music_--selftestk". A corpus built on
 # `grep -l -- --selftest` includes it and blocks every publish on a usage error.
-_ST_CORPUS="$(python3 - <<'PYEOF'
-import os, re, subprocess, sys
-tracked = set(os.path.basename(p) for p in subprocess.run(
-    ["git", "ls-files", "tools/*.sh"], capture_output=True, text=True).stdout.split())
-if not tracked:
-    sys.exit("could not list tracked shell tools")
-# A reference is ANY tracked tool basename in a non-comment line. Anchoring on "tools/"
-# looked tighter and silently lost the entire desktop chain: deploy_linux.sh reaches it as
-#     exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
-# so deploy_desktop.sh and everything it invokes were invisible to the derivation.
-REF = re.compile(r"([A-Za-z0-9_]+\.sh)")
-# DISPATCHES on the flag: a case arm, or a test against $1. Comments excluded.
-DISP = re.compile(r'^[^#]*(--selftest\)|=[ \t]*"?--selftest"?)')
-seen, frontier = set(), ["publish_all.sh"]
-while frontier:
-    b = frontier.pop()
-    if b in seen:
-        continue
-    p = os.path.join("tools", b)
-    if not os.path.isfile(p):
-        continue
-    seen.add(b)
-    for line in open(p, encoding="utf-8", errors="replace"):
-        if line.lstrip().startswith("#"):
-            continue
-        for m in REF.finditer(line):
-            if m.group(1) in tracked and m.group(1) not in seen:
-                frontier.append(m.group(1))
-# STRUCTURAL FLOOR, not a magic number: this chain publishes desktop and web, so a closure
-# that has not reached both channel scripts did not walk the chain. That is exactly the bug
-# the "tools/" anchor caused, and a count-based floor would have passed straight over it.
-for required in ("deploy_desktop.sh", "deploy_web.sh"):
-    if required not in seen:
-        sys.exit("closure never reached %s -- the derivation is broken, not the tree" % required)
-corpus = sorted(
-    b for b in seen - {"publish_all.sh"}
-    if any(DISP.match(l) for l in open(os.path.join("tools", b), encoding="utf-8",
-                                       errors="replace")))
-print(" ".join(corpus))
-PYEOF
-)" || { echo "[pub] BLOCKED: could not derive the selftest corpus: ${_ST_CORPUS}" >&2; exit 4; }
+# Derivation moved OUT of this file 2026-09-18 -> tools/derive_selftest_corpus.py, so that the
+# guard deciding which OTHER guards get checked could finally have arms of its own. This file
+# is the one script on the path that by convention has no selftest, so anything living inside
+# it is untestable by construction. Contract: stdout = the corpus, nonzero = blocked, reason
+# on stderr.
+#
+# The reason is CAPTURED, not left on the terminal: this BLOCKED line used to interpolate
+# ${_ST_CORPUS}, which on the failure path is EMPTY by definition -- it promised a reason and
+# printed a blank. A label that cannot carry its own content is not reporting.
+mkdir -p tmp
+_ST_ERRF="tmp/derive_selftest_corpus.err"
+_ST_CORPUS="$(python3 tools/derive_selftest_corpus.py 2>"$_ST_ERRF")" || {
+    echo "[pub] BLOCKED: could not derive the selftest corpus: $(cat "$_ST_ERRF" 2>&1)" >&2
+    exit 4; }
 if [ -z "$_ST_CORPUS" ]; then
     echo "[pub] BLOCKED: the derived selftest corpus is EMPTY. An empty corpus runs no arms and" >&2
     echo "      reports the same silence as a corpus that passed." >&2
@@ -624,20 +597,38 @@ if [ -z "$_ST_CORPUS" ]; then
 fi
 _ST_N=0
 for _t in $_ST_CORPUS; do
-    if [ ! -x "tools/$_t" ]; then
-        echo "[pub] BLOCKED: tools/$_t missing or not executable — it is on the publish path" >&2
-        echo "      and nothing has checked that it still works. A missing guard is not a" >&2
-        echo "      passing one." >&2
+    # HOW to run it depends on the convention, and the derivation admits both. A .sh is
+    # executed; a .py is handed to python3, so its executable bit is not the question — asking
+    # for -x on a python tool would BLOCK the publish over a file mode that means nothing here.
+    _st_target="tools/$_t"; _st_kind="exec"
+    case "$_t" in
+        *.py)
+            if [ -f "tools/${_t%.py}_selftest.py" ]; then
+                _st_target="tools/${_t%.py}_selftest.py"; _st_kind="py-sibling"
+            else
+                _st_kind="py-flag"
+            fi ;;
+    esac
+    if [ ! -f "$_st_target" ] || { [ "$_st_kind" = "exec" ] && [ ! -x "$_st_target" ]; }; then
+        echo "[pub] BLOCKED: ${_st_target} missing or not runnable — tools/$_t is on the" >&2
+        echo "      publish path and nothing has checked that it still works. A missing" >&2
+        echo "      guard is not a passing one." >&2
         exit 4
     fi
-    if ! _ST=$(./tools/"$_t" --selftest 2>&1); then
+    case "$_st_kind" in
+        exec)       _ST=$(./"$_st_target" --selftest 2>&1) ;;
+        py-flag)    _ST=$(python3 "$_st_target" --selftest 2>&1) ;;
+        py-sibling) _ST=$(python3 "$_st_target" 2>&1) ;;
+    esac
+    # shellcheck disable=SC2181
+    if [ $? -ne 0 ]; then
         printf '%s\n' "$_ST" | tail -25 >&2
         echo "[pub] BLOCKED: tools/$_t FAILED ITS OWN SELFTEST. It runs on this publish path," >&2
         echo "      so its output cannot be trusted for this build. A present guard is not a" >&2
         echo "      working one." >&2
         exit 4
     fi
-    echo "[pub] selftest ok: tools/$_t — arms ran and passed"
+    echo "[pub] selftest ok: tools/$_t — arms ran and passed (${_st_kind})"
     _ST_N=$((_ST_N+1))
 done
 echo "[pub] selftests: $_ST_N tool(s), derived from what this chain invokes (was a hand-list)"

@@ -77,7 +77,7 @@ func test_every_party_sheet_is_above_the_exclusive_boundary() -> void:
 	var sheets := _sheets()
 	assert_gt(sheets.size(), 10, "CONTROL: the sheets section must carry the job roster, else this arm reads nothing")
 	var at_or_below: Array = []
-	var scanned: int = 0
+	var scanned: Array = []
 	for jid in sheets:
 		var e = sheets[jid]
 		if not (e is Dictionary):
@@ -89,9 +89,13 @@ func test_every_party_sheet_is_above_the_exclusive_boundary() -> void:
 		var tex: Texture2D = load(idle)
 		if tex == null:
 			continue
-		scanned += 1
+		scanned.append(jid)
 		if tex.get_height() <= 128 and not (e is Dictionary and e.has("flip_h")):
 			at_or_below.append("%s (%dpx)" % [jid, tex.get_height()])
-	assert_gt(scanned, 10, "CONTROL: scanned only %d sheets — the loop read almost nothing" % scanned)
+	# named members the scan MUST reach — a count floor passes on the SURVIVORS (17 resolve, floor 10)
+	for must in ["fighter", "cleric", "mage", "rogue", "bard"]:
+		assert_true(scanned.has(must),
+			"CORPUS: the scan never reached %s — it left the corpus and the count floor did not notice" % must)
+	assert_gt(scanned.size(), 10, "CONTROL: scanned only %d sheets — the loop read almost nothing" % scanned.size())
 	assert_eq(at_or_below, [],
 		"UNDECLARED: %s sit at or below the exclusive 128 boundary and declare no flip_h, so the size convention alone decides their facing: %s" % [at_or_below.size(), at_or_below])

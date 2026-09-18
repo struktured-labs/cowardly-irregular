@@ -64,6 +64,12 @@ def main():
         check("a zero-hit search still exits 0", code == 0, "(got %d)" % code)
         check("and SAYS the corpus was searched", "NO PRIOR GUARD" in out,
               "<-- a silent null is indistinguishable from a failed run")
+        # cowir-music's split: a banner naming a CONDITION ("the corpus was searched") is not
+        # anchored; one naming a VALUE moves when the claim goes false. The zero must quote how
+        # many files were actually READ, not how many were discovered.
+        check("and the zero quotes how many files were actually READ",
+              "2 file(s) read" in out, "<-- an unanchored condition-banner prints the same"
+              " sentence after reading nothing")
 
         code, _, err = run(["play_widget"], os.path.join(tmp, "does_not_exist"))
         check("an absent corpus exits 3, not 0", code == 3, "(got %d)" % code)

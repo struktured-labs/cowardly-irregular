@@ -135,6 +135,7 @@ func test_the_precedence_is_unchanged_with_every_cue_present() -> void:
 		hand[m.get_string(1)] = true
 	assert_gt(hand.size(), 5, "CONTROL: the hand map derived empty, so every exemption below is vacuous")
 	var checked: int = 0
+	var seen_elements: Dictionary = {}
 	var offenders: Array = []
 	for aid in _abilities().keys():
 		var e: Variant = _abilities()[aid]
@@ -147,9 +148,31 @@ func test_the_precedence_is_unchanged_with_every_cue_present() -> void:
 		if got == "":
 			continue   # a type with no _TYPE_SFX arm and no element cue never mapped; not this arm's subject
 		checked += 1
+		seen_elements[el] = true
 		if got != str(elements[el]):
 			offenders.append("%s(%s)->%s" % [aid, el, got])
 	assert_gt(checked, 10, "CONTROL: too few elemental abilities swept to tell the orders apart")
+	## ⛔ AND THE COUNT ABOVE IS SATISFIED BY SURVIVORS — measured 2026-09-18 after
+	## @cowir-controller's rule and @cowir-sprites' instance. The 71 checked abilities are wildly
+	## uneven (dark 29 · lightning 12 · fire 10 · ice 10 · poison 6 · earth 2 · holy 1 · wind 1),
+	## so EVERY ONE of the eight families can leave the corpus entirely and `checked` stays over
+	## 10 — dropping dark, the largest, still leaves 42. Drop "wind" from the table above and one
+	## ability silently stops being swept while this arm reports the whole population clean.
+	## ⛔ AND THE FLOOR ITERATES `_ELEMENT_SFX` FROM THE PRODUCT, NOT THE LOCAL `elements` COPY.
+	## My first version looped `elements.keys()` — the very dict the mutation removes an entry
+	## from — so dropping "wind" removed the thing that would have noticed, and BOTH mutations
+	## came back EC=0. The comment already claimed it derived from the product; it did not.
+	## A floor whose reference is the thing under test cannot see that thing shrink.
+	var declared: Dictionary = sm.get_script().get_script_constant_map().get("_ELEMENT_SFX", {})
+	assert_gt(declared.size(), 5,
+		"CONTROL: _ELEMENT_SFX read back %d entries — the floor below would be vacuous" % declared.size())
+	var unswept: Array = []
+	for el in declared.keys():
+		if not seen_elements.has(el):
+			unswept.append(str(el))
+	assert_eq(unswept, [],
+		"%d element family(s) SoundManager declares in _ELEMENT_SFX contributed NO checked ability, so they are unswept while the count floor above passes on the survivors: %s — either this arm's local table lost the element, or abilities.json no longer authors it and its cue is dead weight worth recording" % [
+			unswept.size(), unswept])
 	assert_eq(offenders, [],
 		"%d ability(s) lost their ELEMENT cue — element outranks type by ruling, and reordering the candidates reverses it silently: %s" % [
 			offenders.size(), offenders])
