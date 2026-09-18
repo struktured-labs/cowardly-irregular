@@ -150,8 +150,14 @@ func test_no_writer_in_this_file_opens_its_destination() -> void:
 	## (cowir-controller's rule, cowir-sfx's second instance, this is the third.)
 	assert_gt(staged_writes, 0,
 		"CONTROL: no staged write found in SaveSystem.gd — either the repair is gone or this arm stopped matching it")
+	## ⛔ THE PAREN IS LOAD-BEARING AND I LEARNED THAT IN THIS FILE TONIGHT, FOR `FileAccess.open(`,
+	## AND DID NOT CARRY IT HERE. `find("func " + fn)` is bounded LEFT by "func " and UNBOUNDED
+	## RIGHT, so `func save_settingsX()` satisfies a floor whose subject is gone — measured: a
+	## suffix rename left this arm silent while the real function was absent from the file.
+	## (cowir-battle's shape: a floor built on a substring accepts a SURVIVOR; one built on an
+	## exact or delimited match does not.)
 	for fn in PERSISTERS:
-		var start := src.find("func " + fn)
+		var start := src.find("func " + fn + "(")
 		assert_gt(start, -1,
 			"PERSISTER %s is gone from SaveSystem.gd — if it was renamed, rename it here too; this list exists so a disappearance is LOUD rather than a silently smaller corpus" % fn)
 		if start == -1:
@@ -178,7 +184,7 @@ func test_the_settings_writer_reports_a_failure_it_used_to_swallow() -> void:
 		return
 	var src := f.get_as_text()
 	f.close()
-	var start := src.find("func save_settings")
+	var start := src.find("func save_settings(")
 	assert_gt(start, -1, "func save_settings not found — renamed? this ratchet is now about nothing")
 	if start == -1:
 		return
