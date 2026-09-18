@@ -166,6 +166,8 @@ func _lane_files() -> Array[String]:
 ##
 ## So two instruments, because one subject is a NAME and the other is a CONTAINER.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 const KEY_FIELD := "llm_custom_api_key"
 
 ## The walk's roots, in ONE place. `_all_gd()` and the roots floor both read THIS — an earlier
@@ -212,13 +214,20 @@ func _all_gd() -> Array[String]:
 	return out
 
 
-## Source with `#` comments stripped, so a comment naming the key is never an offender.
+## Source with comments stripped, so a comment naming the key is never an offender.
+##
+## ⛔ THIS WAS A PRIVATE `raw.find("#")` AND IT WAS A FALSE-NEGATIVE PATH IN A SECURITY GUARD.
+## A `#` inside a STRING LITERAL truncated the line at that point, so anything after it was
+## invisible to every arm here. Produced, not predicted — planting a real container leak,
+## `print("byok note # dump: %s" % [cfg])`, left this file at 13 passing / EC=0 with the leak in
+## the tree, because the alias sits after the `#`.
+##
+## `GdSource.strip_comments` is quote-aware AND escape-aware, bounded against the spin its own
+## header records, and has 175 consumers. A private copy does not inherit a fix — which is the
+## whole argument, and the reachable-today count being small is a reason to switch rather than a
+## reason not to (cowir-controller, 2026-09-18, who found twelve other re-derivations).
 func _code_lines(src: String) -> PackedStringArray:
-	var out := PackedStringArray()
-	for raw in src.split("\n"):
-		var hash_at: int = raw.find("#")
-		out.append(raw if hash_at == -1 else raw.substr(0, hash_at))
-	return out
+	return GdSource.strip_comments(src).split("\n")
 
 
 func _is_log_site(line: String) -> bool:
