@@ -735,7 +735,16 @@ func _append_user_mapping(mapping: String) -> bool:
 		push_warning("[ControlsMenu] Could not write %s (error %d) — the captured mapping applies to this session only and will be lost on restart." % [staged, FileAccess.get_open_error()])
 		return false
 	wf.store_string(JSON.stringify(kept, "\t"))
+	## ⛔ ASK BEFORE CLOSING. `store_string` returns nothing, so a full disk or a quota gives a SHORT
+	## write that staging cannot catch — the rename would carry the partial file into place just as
+	## happily as a whole one. Refusing here leaves the previous mappings as the only thing on disk,
+	## which is the right answer when we cannot produce a complete replacement.
+	var werr := wf.get_error()
 	wf.close()
+	if werr != OK:
+		push_warning("[ControlsMenu] Write to %s was incomplete (error %d) — REFUSING to replace %s, so the previously captured pads stay intact. The new mapping applies to this session only." % [staged, werr, path])
+		DirAccess.remove_absolute(staged)
+		return false
 	var err := DirAccess.rename_absolute(staged, path)
 	if err != OK:
 		push_warning("[ControlsMenu] Could not move %s into place (error %d) — the previous mappings are intact and the new one applies to this session only." % [staged, err])
