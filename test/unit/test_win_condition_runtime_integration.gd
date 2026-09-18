@@ -1,5 +1,7 @@
 extends GutTest
 
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
+
 ## Runtime companion to test_win_condition_dispatch_regression.gd
 ## (which is all source pins). These tests drive the tick-472 win_
 ## condition machinery with REAL Combatants through the live
@@ -14,41 +16,29 @@ extends GutTest
 const COMBATANT_PATH := "res://src/battle/Combatant.gd"
 
 var _bm: Node = null
-var _prior_party: Array = []
-var _prior_enemies: Array = []
-var _prior_round: int = 0
-var _prior_wc: Dictionary = {}
-var _prior_state: int = 0
+var _guard: RefCounted = null
 
 
+## ⛔ WAS A FIVE-FIELD HAND-LIST AND LEAKED THREE MORE. This teardown was careful — it restored
+## player_party, enemy_party, current_round, _win_condition and current_state, and its comment
+## correctly warned that `is` on a freed instance aborts after_each. It still left
+## _battle_results, _party_line_cooldowns and _party_line_last_kind on the AUTOLOAD for every file
+## sorting after this one (measured 2026-09-18 by running this file then a surface probe in ONE
+## process). The author thought about the teardown and restored the fields they were reasoning
+## about; a hand-list cannot cover the ones they were not. The helper derives the surface from
+## get_property_list(), keeps the freed-instance guard this file discovered, and restores typed
+## arrays through assign() so a plain-Array assignment cannot abort the loop.
 func before_each() -> void:
 	_bm = Engine.get_main_loop().root.get_node_or_null("BattleManager")
 	if _bm == null:
 		return
-	_prior_party = _bm.player_party.duplicate()
-	_prior_enemies = _bm.enemy_party.duplicate()
-	_prior_round = _bm.current_round
-	_prior_wc = _bm._win_condition.duplicate()
-	_prior_state = _bm.current_state
+	_guard = BattleState.new()
+	_guard.snapshot()
 
 
 func after_each() -> void:
-	if _bm == null:
-		return
-	# is_instance_valid FIRST — `is` on a freed instance is a SCRIPT ERROR that ABORTS after_each, so every restore below silently never ran and the autoload kept this test's parties and _win_condition.
-	var rp: Array[Combatant] = []
-	for c in _prior_party:
-		if is_instance_valid(c) and c is Combatant:
-			rp.append(c)
-	var re: Array[Combatant] = []
-	for c in _prior_enemies:
-		if is_instance_valid(c) and c is Combatant:
-			re.append(c)
-	_bm.player_party = rp
-	_bm.enemy_party = re
-	_bm.current_round = _prior_round
-	_bm._win_condition = _prior_wc.duplicate()
-	_bm.current_state = _prior_state
+	if _guard != null:
+		_guard.restore()
 
 
 func _make(name_str: String) -> Combatant:
