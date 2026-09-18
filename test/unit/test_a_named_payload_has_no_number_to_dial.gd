@@ -73,6 +73,8 @@ func test_item_count_still_dials() -> void:
 	## blocking the whole map would make a working control dead.
 	var e: Node = await _editor()
 	e.call("_apply_condition_type", "item_count")
+	assert_eq(str(_cond(e).get("type", "")), "item_count",
+		"CONTROL: the type change must take — hp_percent also carries a value and would pass below")
 	assert_true(_cond(e).has("value"), "CONTROL: item_count must carry a number to dial")
 	var before: int = int(_cond(e)["value"])
 	e.call("_adjust_condition_value", 1)
@@ -107,7 +109,11 @@ func test_switching_type_leaves_no_payload_from_the_old_one() -> void:
 			pairs += 1
 			var e: Node = await _editor()
 			e.call("_apply_condition_type", str(was))
+			## CONTROL, inside the loop: a no-op _apply_condition_type would leave an hp_percent
+			## condition that never had the old field, and the check below would pass over nothing.
+			assert_eq(str(_cond(e).get("type", "")), str(was), "the first type change must take")
 			e.call("_apply_condition_type", str(now))
+			assert_eq(str(_cond(e).get("type", "")), str(now), "the second type change must take")
 			if _cond(e).has(str(fields[was])):
 				stale.append("%s -> %s kept %s" % [str(was), str(now), str(fields[was])])
 	assert_gt(pairs, 0, "CONTROL: no differing-field pair was driven, so this arm examined nothing")
@@ -121,6 +127,8 @@ func test_switching_within_a_family_keeps_the_choice() -> void:
 	for pair in [["has_status", "ally_has_status"], ["has_buff", "not_has_buff"]]:
 		var e: Node = await _editor()
 		e.call("_apply_condition_type", pair[0])
+		assert_eq(str(_cond(e).get("type", "")), str(pair[0]),
+			"CONTROL: the type change must take, or the plant below lands on hp_percent")
 		var field: String = str(_abs.CONDITION_REQUIRED_FIELD[pair[0]])
 		## Plant a NON-SEED value. Comparing against the seed cannot discriminate: erase-then-
 		## reseed yields the seed again, so an over-correction that erases on EVERY type change
