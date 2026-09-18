@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## The console tells a player which rules fired. The console is exactly what is NOT open during a
 ## grind — that single fact produced three separate defects this session: a stop_grinding rule that
 ## never stopped anything, a SYSTEM COLLAPSE nobody saw, and a meta-boss met and beaten in silence.
@@ -76,3 +81,11 @@ func test_the_summary_renders_the_row() -> void:
 	assert_ne(src, "", "control: the summary source must be readable")
 	assert_true(src.contains("\"Your Rules\""),
 		"the row must exist in the rendered stat list, not merely as a helper nobody calls")
+
+
+func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

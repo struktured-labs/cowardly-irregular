@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## ⛔ THE AUTOGRIND RULE EDITOR NEVER SCROLLED. `_grid_container.position` was set once at build
 ## and never moved, `clip_contents` was false, and there is NO CAP on the number of rules. So past
 ## the ninth rule the rows were still DRAWN — over the footer and off the bottom of the screen —
@@ -131,3 +136,11 @@ func test_both_rule_editors_scroll() -> void:
 			"%s has no scroll owner — its cursor leaves the viewport once the rules outgrow it" % path)
 		assert_true(code.contains("clip_contents = true"),
 			"%s does not clip, so overflow rows draw over the rest of the screen" % path)
+
+
+func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

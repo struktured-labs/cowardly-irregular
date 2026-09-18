@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## Every caption in this lane is derived at BUILD time and nothing re-derived it. Measured before
 ## this fix: 6 lane surfaces call InputProfileManager and ZERO handled joy_connection_changed, while
 ## ControlsMenu — one lane over — already did. So a player who opened the autogrind console and THEN
@@ -21,6 +26,7 @@ var _editor
 ## code), a hidden console rebuilt (same), and — worse — the rebuild arm PASSED, because ids really
 ## had changed. A false green in the arm that defines the feature.
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
 	add_child_autofree(_ui)
@@ -32,6 +38,8 @@ func before_each() -> void:
 
 func after_each() -> void:
 	AutogrindSystem._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 ## Arm 1: both surfaces must actually be listening. This is the arm that would have caught the

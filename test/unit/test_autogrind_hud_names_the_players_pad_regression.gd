@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 const GdSource = preload("res://test/unit/helpers/gd_source.gd")
 
 ## The autogrind console's hint strip rendered "X / West (Nintendo Y)" and "Start / Plus" — that is
@@ -54,6 +59,7 @@ const KEY_HANDLERS := {
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
 	add_child_autofree(_ui)
@@ -61,6 +67,8 @@ func before_each() -> void:
 
 func after_each() -> void:
 	AutogrindSystem._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 func _src() -> String:
