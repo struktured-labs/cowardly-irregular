@@ -53,22 +53,32 @@ TRIAGED 2026-09-18 — all 22 sites in src/ were read. Do not re-derive them:
                                     the tween targets a child of game_over whose only queue_free
                                     is downstream of the choice, and process_mode is ALWAYS.
 
-⛔ ONE ITEM IS OPEN, NOT CLEARED — Mode7Overlay / _on_transition_triggered. OWNER: cowir-music.
-  `_on_transition_triggered` (6 copies: OverworldScene, Abstract, Steampunk, Futuristic, Suburban,
-  Industrial) does:  push_lock("world_transition") -> await _mode7.play_dissolve_out() (1.2s,
-  tween bound to the PLAYER node) -> pop_lock -> area_transition.emit(...).
-  Re-entrancy guard: 0 of 6.
+✅ THE ONE ITEM THAT WAS OPEN IS NOW CLOSED, BY MEASUREMENT RATHER THAN BY A LATCH —
+  Mode7Overlay / _on_transition_triggered (6 copies: OverworldScene, Abstract, Steampunk,
+  Futuristic, Suburban, Industrial). Re-entrancy guard: still 0 of 6, deliberately.
 
-  I first recorded this as "shape present, trigger unreachable" because the scene change is
-  requested AFTER the await, so a single transition cannot kill its own tween. THAT COVERS ONE
-  CASE ONLY, and cowir-main closed exactly that one while leaving the re-entrancy open.
+      push_lock("world_transition") -> await _mode7.play_dissolve_out() (1.2s)
+      -> pop_lock -> area_transition.emit(...)
 
-  ⛔ THE TREE RECORDS THE LEAK HAPPENING. InputLockManager.gd:24-25, verbatim:
-       "_start_battle_async DROPS EVERY ENCOUNTER while has_lock("world_transition") is true,
-        and that guard was added for the mid-dissolve tween death that skips the pop
-        — i.e. the one leak it could not recover from on its own."
-  So the downstream guard exists BECAUSE this upstream leak occurred. v3.33.431 fixed the
-  consequence (the suppressed duel's hung coroutine); the cause is unfixed.
+  The hazard is real if it can be re-entered: `InputLockManager._locks` is a DICT keyed by name,
+  so a second push is a no-op and the FIRST pop unlocks the player mid-dissolve; and
+  AreaTransition._trigger_transition's own comment says "GameLoop's loader is not idempotent
+  under that condition (it could chain into two scene loads)".
+
+  It cannot be re-entered, for two reasons that live in two OTHER files (measured 2026-09-18):
+      21 AreaTransition constructions across the six scenes, ALL require_interaction = true
+         -> the auto body_entered path never reaches the dissolve branch
+      OverworldController._on_interaction_requested picks _pick_nearest_interactable and RETURNS
+         -> one press, one interactable, even with overlapping AABBs (the 2026-07-13 fix)
+
+  That is "covered by a different mechanism", NOT "the handler handles it", so a latch would be
+  dead code and the two facts would rot unwatched. test_a_dissolve_cannot_be_re_entered.gd pins
+  them instead, with the InputLockManager premise pinned as a third arm; 5 mutations, each
+  reds exactly one arm. If one of those arms goes red, add the guard — do not delete the arm.
+
+  ⛔ AND 3 MORE DECLARATIONS EXIST THAT MY FIRST TRIAGE MISSED — BaseVillage, DragonCave and
+  WhisperingCave also define _on_transition_triggered. All three are synchronous: no lock, no
+  await, nothing to strand. 9 declarations, 6 with the shape.
 
 ⚠️ NOTHING HERE RATCHETS. A 23rd site will appear in the output looking exactly like these, and
 this note says what the 22 ARE rather than pinning them. Do not read it as a guard.

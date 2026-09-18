@@ -99,12 +99,19 @@ func test_the_destination_is_never_opened_for_write() -> void:
 	var src := f.get_as_text()
 	f.close()
 
-	var start := src.find("func _write_save_file")
+	## ⚠️ THE WINDOW IS CUT FROM THE CODE HALF. `find`+`substr` on ONE string is index-safe whatever
+	## the strip does to line counts, and nothing below prints a line number — the case where
+	## delegating is free. On RAW source a `"""` region carrying a column-0 `func ` moves the START
+	## or truncates the END, and then the CONTROLS red with a message about the wrong thing.
+	var code := str(GdSource.split(src)["code"])
+	assert_true(code.contains("DirAccess.rename_absolute"),
+		"CONTROL: the strip ate a known code site — the window below would be cut from an emptied corpus")
+	var start := code.find("func _write_save_file")
 	assert_gt(start, -1, "func _write_save_file not found — renamed? this ratchet is now about nothing")
 	if start == -1:
 		return
-	var end := src.find("\nfunc ", start + 1)
-	var body := src.substr(start, (end - start) if end > start else -1)
+	var end := code.find("\nfunc ", start + 1)
+	var body := code.substr(start, (end - start) if end > start else -1)
 
 	var opened_dest: bool = body.contains("FileAccess.open(file_path, FileAccess.WRITE)")
 	assert_false(opened_dest,
@@ -200,12 +207,16 @@ func test_the_settings_writer_reports_a_failure_it_used_to_swallow() -> void:
 		return
 	var src := f.get_as_text()
 	f.close()
-	var start := src.find("func save_settings(")
+	## Same reasoning as the window above: code half, find+substr, no line numbers.
+	var code := str(GdSource.split(src)["code"])
+	assert_true(code.contains("DirAccess.rename_absolute"),
+		"CONTROL: the strip ate a known code site — the window below would be cut from an emptied corpus")
+	var start := code.find("func save_settings(")
 	assert_gt(start, -1, "func save_settings not found — renamed? this ratchet is now about nothing")
 	if start == -1:
 		return
-	var end := src.find("\nfunc ", start + 1)
-	var body := src.substr(start, (end - start) if end > start else -1)
+	var end := code.find("\nfunc ", start + 1)
+	var body := code.substr(start, (end - start) if end > start else -1)
 
 	assert_true(body.contains("push_warning"),
 		"save_settings can fail to open its file and say nothing — the player keeps playing with settings that were never written")
@@ -264,13 +275,20 @@ func test_no_write_reaches_disk_by_a_form_these_arms_cannot_see() -> void:
 		assert_true(OTHER_WRITE_FORMS.has(required),
 			"OTHER_WRITE_FORMS no longer lists %s — this arm reports a clean file by not looking for it, and an emptied list passes with nothing checked" % required)
 
+	## ⚠️ LINE-PRESERVING STRIP, NOT `split()["code"]` — this arm PRINTS `SaveSystem.gd:%d`, and the
+	## code half DELETES doc regions, so every number below it would shift. `strip_comments` emits
+	## one line per input line (quote-aware, so a `#` inside a string is not a comment), which also
+	## closes the trailing-comment false RED `begins_with("#")` could never see.
+	## 📌 THE `"""` HALF IS STILL RAW HERE AND THAT IS STATED RATHER THAN FIXED: measured, SaveSystem.gd
+	## carries 78 doc lines and ZERO naming a write form, and the direction is a false RED (prose
+	## ACCUSES an assert-EMPTY scan, it cannot hide a real write from it). The index-safe repair is a
+	## skip-in-place `code_lines()` on GdSource, which is not mine to add mid-fold.
+	var scan_src := GdSource.strip_comments(src)
 	var offenders: Array = []
 	var line_no := 0
-	for line in src.split("\n"):
+	for line in scan_src.split("\n"):
 		line_no += 1
 		var t := line.strip_edges()
-		if t.begins_with("#"):
-			continue
 		for form in OTHER_WRITE_FORMS:
 			if t.contains(form):
 				offenders.append("%s:%d %s" % ["SaveSystem.gd", line_no, form])
@@ -310,13 +328,22 @@ func test_every_open_here_proves_it_is_read_only_or_is_staged() -> void:
 	var src := f.get_as_text()
 	f.close()
 
+	## ⚠️ LINE-PRESERVING STRIP, NOT `split()["code"]` — this arm PRINTS `SaveSystem.gd:%d`, and the
+	## code half DELETES doc regions, so every number below it would shift. `strip_comments` emits
+	## one line per input line (quote-aware, so a `#` inside a string is not a comment), which also
+	## closes the trailing-comment false RED `begins_with("#")` could never see.
+	## 📌 THE `"""` HALF IS STILL RAW HERE AND THAT IS STATED RATHER THAN FIXED: measured, SaveSystem.gd
+	## carries 78 doc lines and ZERO naming a write form, and the direction is a false RED (prose
+	## ACCUSES an assert-EMPTY scan, it cannot hide a real write from it). The index-safe repair is a
+	## skip-in-place `code_lines()` on GdSource, which is not mine to add mid-fold.
+	var scan_src := GdSource.strip_comments(src)
 	var candidates: Array = []
 	var read_only := 0
 	var line_no := 0
-	for line in src.split("\n"):
+	for line in scan_src.split("\n"):
 		line_no += 1
 		var t := line.strip_edges()
-		if t.begins_with("#") or not t.contains("FileAccess.open("):
+		if not t.contains("FileAccess.open("):
 			continue
 		if _classify_open(t) == "read_only":
 			read_only += 1
