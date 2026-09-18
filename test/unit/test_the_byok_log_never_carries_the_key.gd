@@ -93,20 +93,19 @@ func test_the_line_still_names_the_config_it_is_for() -> void:
 func test_no_other_log_site_in_the_lane_interpolates_the_key() -> void:
 	## A second log site is the other way this leaks, and it would not touch the
 	## function above. Scans every print/warning in src/llm/ for the field name.
+	## ⛔ THIS ARM KEPT ITS OWN `find("#")` UNTIL 2026-09-18 — the 16th private stripper, and it
+	## survived the fix to `_code_lines` because I converted the helper and not the arm that never
+	## used it. Same file, same defect, one function apart. It also duplicated the log-site test.
+	##
+	## ⚠️ NOT redundant with the src/-wide arm below: `_lane_files()` is ALL of src/llm, which
+	## includes files using `api_key` without ever naming `llm_custom_api_key` — HTTPBackend's
+	## Authorization header is the live example, and it is in this corpus and not in that one.
 	var offenders: Array[String] = []
 	for path in _lane_files():
-		var src: String = FileAccess.get_file_as_string(path)
-		var lineno: int = 0
-		for raw in src.split("\n"):
-			lineno += 1
-			var line: String = raw
-			var hash_at: int = line.find("#")
-			if hash_at != -1:
-				line = line.substr(0, hash_at)
-			var logs: bool = line.find("print(") != -1 or line.find("push_warning(") != -1 \
-				or line.find("push_error(") != -1 or line.find("printerr(") != -1
-			if logs and line.find("api_key") != -1:
-				offenders.append("%s:%d" % [path.get_file(), lineno])
+		for pair in _numbered_code(FileAccess.get_file_as_string(path)):
+			var line: String = str(pair[1])
+			if _is_log_site(line) and line.find("api_key") != -1:
+				offenders.append("%s:%d" % [path.get_file(), int(pair[0])])
 	assert_eq(offenders, ([] as Array[String]),
 		("these log sites interpolate api_key: %s. Fix: report presence ('<set>'/'<empty>') "
 		+ "or drop the field. GameState:93 marks it SENSITIVE — never log, never print.")
@@ -114,15 +113,23 @@ func test_no_other_log_site_in_the_lane_interpolates_the_key() -> void:
 
 
 func test_the_log_site_scan_can_find_a_log_site() -> void:
-	## POSITIVE CONTROL: the zero above is worth nothing unless the same scan
-	## reports hits on the log calls that really are there.
+	## POSITIVE CONTROL: the zero above is worth nothing unless THE SAME SCAN reports hits on the
+	## log calls that really are there.
+	##
+	## ⛔ IT WAS NOT THE SAME SCAN. This counted `push_warning(` on RAW lines it split itself,
+	## while the arm it certifies runs `_numbered_code` + `_is_log_site` — so it would have passed
+	## with `_numbered_code` returning NOTHING, and a docstring naming `push_warning(` counted
+	## toward its threshold. A control satisfiable by prose, certifying a scan it never called.
+	## Found by cowir-controller's lens, 2026-09-18: "I fixed the hazard" is a claim about the
+	## sites you happened to edit — mine was the third site in this file, after the helper and the
+	## arm that never used it.
 	var found: int = 0
 	for path in _lane_files():
-		for raw in FileAccess.get_file_as_string(path).split("\n"):
-			if raw.find("push_warning(") != -1:
+		for pair in _numbered_code(FileAccess.get_file_as_string(path)):
+			if _is_log_site(str(pair[1])):
 				found += 1
 	assert_gt(found, 5,
-		"the scan finds almost no push_warning in src/llm/ — it is broken, not the lane")
+		"the scan finds almost no log site in src/llm/ — it is broken, not the lane")
 
 
 func _lane_files() -> Array[String]:

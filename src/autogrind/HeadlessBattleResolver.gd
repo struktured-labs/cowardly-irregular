@@ -1314,6 +1314,20 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						target.add_debuff("Despair (MAG)", "magic", modifier, duration)
 						_log("%s uses %s on %s (all stats down)" % [caster.combatant_name, ability_id, target.combatant_name])
 						continue
+					elif effect == "taunt":
+						## provoke is in a SHIPPED autobattle template and headless had no arm, so it
+						## fell to the generic add_status below and gave the enemy a status literally
+						## named "taunt" — a key live NEVER creates and nothing anywhere reads. Live
+						## composes `taunted_<caster>` (BattleManager:5911) and reads the prefix back in
+						## _find_taunter:2983. Same junk-key shape as the cleanse arm below (cowir-battle).
+						## ⚠️ THE KEY IS NOW LIVE'S; THE TARGETING IS NOT MODELLED. This resolver has no
+						## _find_taunter equivalent, so a taunt still does not redirect an enemy here.
+						## Composing the right key is parity-neutral; honouring it would change which
+						## target an enemy picks, i.e. what a grind PLAYS like — that half is a ruling,
+						## not a port, and is recorded rather than smuggled in under a bug fix.
+						target.add_status("taunted_%s" % caster.combatant_name)
+						_log("%s taunts %s (key only — headless does not model taunt targeting)" % [caster.combatant_name, target.combatant_name])
+						continue
 					elif effect == "cleanse":
 						## Esuna is in the DEFAULT cleric script and two presets, and headless had no
 						## arm for it — so it fell to the generic add_status below and gave the ally a
