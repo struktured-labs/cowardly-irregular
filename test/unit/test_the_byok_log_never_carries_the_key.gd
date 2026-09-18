@@ -13,7 +13,8 @@ extends GutTest
 ## is correct and it was correct before this file existed. **Nothing enforced it.**
 ##
 ## ⚠️ NO CURRENT DEFECT. Measured across the whole lane:
-##     api_key readers in src/llm/     1 — the Authorization header (HTTPBackend:289)
+##     api_key readers in src/llm/     1 — HTTPBackend._build_headers (named, not
+##                                     line-pinned: this said :289 for the :284 line)
 ##     prints/warnings carrying it     0
 ##     api_key or base_url in a prompt 0
 ##     CONTROL  the same scan finds 11 push_warning sites in LLMService
@@ -23,6 +24,14 @@ extends GutTest
 ## written there is leaked for as long as the file exists, and no later fix
 ## un-writes it. The tempting edit is swapping `"<set>"` for the masked helper
 ## "just for debugging" — and a masked key still leaks length and both ends.
+##
+## ⚠️ THE CORPUS FOLLOWS THE VALUE, NOT ONE SPELLING. The secret is `llm_custom_api_key`
+## in GameState and plain `api_key` from LLMService:187 onward, and the file that turns it
+## into `Authorization: Bearer ...` names the first spelling nowhere. Keyed to KEY_FIELD
+## alone the container arm could not see HTTPBackend at all — measured by planting a
+## `print("%s" % [headers])` there: caught now, invisible before. The interpolation arm was
+## never exposed, because `_lane_files()` covers src/llm by DIRECTORY; only the container
+## shape was, and only outside a lane the directory arms happen to include.
 ##
 ## Asserted on the RENDERED LINE rather than the source: a leak can arrive as a
 ## format change, a new field, a different helper, or a second log site, and only
@@ -177,6 +186,12 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 const KEY_FIELD := "llm_custom_api_key"
 
+## THE SECOND NAME THE SECRET TRAVELS UNDER. `LLMService:187` does `http.api_key = str(gs.
+## llm_custom_api_key)`, and from there `HTTPBackend:284` builds `"Authorization: Bearer " +
+## api_key`. That file names KEY_FIELD nowhere, so a corpus keyed to the one literal omits the
+## exact place the secret becomes a wire header. Measured: 6 holder files without this, 7 with.
+const KEY_ALIAS := "api_key"
+
 ## The walk's roots, in ONE place. `_all_gd()` and the roots floor both read THIS — an earlier
 ## version of that floor carried its own copy of the list, so removing `res://tools` from the walk
 ## left the floor green (measured: 13 passing, EC=0, with the root gone). A floor that restates its
@@ -189,7 +204,8 @@ const WALK_ROOTS: Array[String] = ["res://src", "res://tools"]
 func _key_holder_files() -> Array[String]:
 	var out: Array[String] = []
 	for p in _all_gd():
-		if FileAccess.get_file_as_string(p).find(KEY_FIELD) != -1:
+		var text: String = FileAccess.get_file_as_string(p)
+		if text.find(KEY_FIELD) != -1 or text.find(KEY_ALIAS) != -1:
 			out.append(p)
 	out.sort()
 	return out
@@ -305,7 +321,11 @@ func _key_carriers(src: String) -> Array[String]:
 			## just the same — the arrival of a new FORM, which shrinks no named member and so reds
 			## nothing. Found by @cowir-sfx's lens, not by my own mutations: renaming or deleting a
 			## carrier proves the path works, never that the file notices a fourth form appearing.
-			container = line.find("-> Dictionary") != -1 or line.find("-> Array") != -1
+			## FOUR annotated forms, not two. `_build_headers() -> PackedStringArray` holds the
+			## bearer token and matches neither `-> Dictionary` nor `-> Array` — a packed array is
+			## a container the earlier spelling could not name.
+			container = (line.find("-> Dictionary") != -1 or line.find("-> Array") != -1
+				or line.find("-> PackedStringArray") != -1 or line.find("-> PackedByteArray") != -1)
 			current = line.substr(5, line.find("(") - 5).strip_edges()
 		elif current != "":
 			if line.find("api_key") != -1 or line.find(KEY_FIELD) != -1:
@@ -393,6 +413,45 @@ func test_the_holder_scan_reaches_outside_the_llm_lane() -> void:
 			outside += 1
 	assert_gt(outside, 0,
 		"every holder is inside src/llm, so this section is the old scope wearing a new name")
+
+
+func test_the_corpus_reaches_wherever_the_key_becomes_a_wire_header() -> void:
+	## THE HOLE THIS SECTION HAD, and it was invisible because the corpus read as derived: keying
+	## the walk to KEY_FIELD alone omitted `HTTPBackend.gd`, the ONE file that turns the secret
+	## into `Authorization: Bearer ...`. It names KEY_FIELD nowhere, so both offender arms above
+	## skipped the place the key is most exposed.
+	##
+	## Pinned by PROPERTY, not by path. The subject is "files that build the auth header", found
+	## by reading what the code DOES — so moving the builder to a new file moves this arm with it,
+	## where a path literal would go quietly false.
+	var builders: Array[String] = []
+	for p in _all_gd():
+		if FileAccess.get_file_as_string(p).find("Authorization: Bearer ") != -1:
+			builders.append(p)
+	assert_gt(builders.size(), 0,
+		"no file builds an Authorization header — this arm is vacuous, and the two offender scans "
+		+ "above lost the subject they were widened for")
+	var holders: Array[String] = _key_holder_files()
+	for b in builders:
+		assert_true(holders.has(b),
+			("%s builds an Authorization header and the offender scans do not reach it. The key "
+			+ "travels as `%s` there, not as `%s`.") % [b, KEY_ALIAS, KEY_FIELD])
+
+
+func test_the_carrier_scan_knows_a_packed_array_is_a_container() -> void:
+	## The second half of the same hole. `_build_headers() -> PackedStringArray` returns the bearer
+	## token inside a container, and the carrier detector recognised only Dictionary/Array — so
+	## even once the corpus reached the file, the carrier was still unnamed.
+	var probe: String = ("func _build_headers() -> PackedStringArray:\n"
+		+ "\tvar h: PackedStringArray = []\n"
+		+ "\th.append(\"Authorization: Bearer \" + api_key)\n"
+		+ "\treturn h\n")
+	assert_true(_key_carriers(probe).has("_build_headers"),
+		"the carrier scan cannot see a PackedStringArray carrier — got %s" % [_key_carriers(probe)])
+	var live: Array[String] = _key_carriers(
+		FileAccess.get_file_as_string("res://src/llm/HTTPBackend.gd"))
+	assert_true(live.has("_build_headers"),
+		"the LIVE header builder is not recognised as a carrier — got %s" % [live])
 
 
 func test_the_walk_reaches_every_root_it_declares() -> void:
