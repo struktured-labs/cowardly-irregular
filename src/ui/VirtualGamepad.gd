@@ -28,16 +28,56 @@ var _buttons: Dictionary = {}
 var _dpad_center: Vector2 = Vector2.ZERO
 var _active_dpad: String = ""
 var _touch_map: Dictionary = {}  # touch_index -> button_name
+## The viewport size the current layout was computed for. Never the same as "is it built":
+## a rebuild must be able to tell a real resize from a repeated size_changed.
+var _built_for: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
 	layer = 100
+	## ⛔ EVERY POSITION HERE IS BAKED FROM THE VIEWPORT AT BUILD TIME, so a rotation or a browser
+	## resize left the pad anchored to the old screen. Measured 800x480 -> 480x800: the A button
+	## stayed at x=746 in a 480-wide viewport — OFF SCREEN — and the d-pad stayed mid-screen at the
+	## old bottom edge. On a touch device that is the player losing their action buttons.
+	get_viewport().size_changed.connect(_on_viewport_resized)
 	# Auto-detect touch device
 	if _is_touch_device():
-		_visible = true
-		_compute_scale()
-		_create_buttons()
-		_draw_dpad()
+		_build()
+
+
+## One build path, so the first-touch recovery and the resize rebuild cannot drift apart.
+func _build() -> void:
+	_visible = true
+	_compute_scale()
+	_create_buttons()
+	_draw_dpad()
+	_built_for = get_viewport().get_visible_rect().size
+
+
+## ⛔ RELEASES ANY HELD ACTION FIRST. A finger down when the device rotates would otherwise leave
+## that action pressed with no button left to lift it — the same stuck-input shape as a menu closing
+## mid-hold. _touch_map is dropped too: its indices refer to buttons that no longer exist.
+func _teardown() -> void:
+	for idx in _touch_map:
+		_release_action(_touch_map[idx])
+	_touch_map.clear()
+	for child in get_children().duplicate():
+		remove_child(child)
+		child.queue_free()
+	_buttons.clear()
+	_active_dpad = ""
+
+
+func _on_viewport_resized() -> void:
+	if not _visible:
+		return
+	var now: Vector2 = get_viewport().get_visible_rect().size
+	## Rebuilding draws every button pixel by pixel, and size_changed fires repeatedly through a
+	## drag-resize — so skip when the size has not actually moved.
+	if now == _built_for:
+		return
+	_teardown()
+	_build()
 
 
 func _compute_scale() -> void:
@@ -208,10 +248,7 @@ func _input(event: InputEvent) -> void:
 	# non-touch summons the pad immediately (covers touch laptops + web quirks)
 	if not _visible:
 		if event is InputEventScreenTouch and event.pressed:
-			_visible = true
-			_compute_scale()
-			_create_buttons()
-			_draw_dpad()
+			_build()
 		return
 
 	if event is InputEventScreenTouch:
