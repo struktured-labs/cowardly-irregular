@@ -29,6 +29,17 @@ func before_each() -> void:
 	sm.reset_hit_chain()
 
 
+## pitch_scale PERSISTS on the shared player — the defect 39fe0bded fixed. The ±5% jitter leaves it
+## randomized, so this file must put it back or it hands the next file a detuned battle player.
+func after_each() -> void:
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	sm._battle_player.pitch_scale = 1.0
+	sm._battle_player.volume_db = _base(sm)
+	sm._sfx_cooldowns.clear()
+
+
 func test_a_hit_after_a_loud_trim_plays_at_the_channel_level() -> void:
 	var sm: Node = _sm()
 	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")

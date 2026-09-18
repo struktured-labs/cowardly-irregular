@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## Cadence #13 — AutogrindRuleTemplates.install_as_new_profile must honor
 ## set_autogrind_rules' bool (cadence #5 contract). Pre-fix a future template
 ## with a rule type outside the validator's allowlist would install a phantom
@@ -12,11 +17,14 @@ const AutogrindRuleTemplates := preload("res://src/autogrind/AutogrindRuleTempla
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 
 
 func after_each() -> void:
 	AutogrindSystem._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 func test_valid_template_installs_returns_idx() -> void:

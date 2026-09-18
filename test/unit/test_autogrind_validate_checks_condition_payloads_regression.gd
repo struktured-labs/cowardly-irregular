@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## validate_rule is the untested middle surface.
 ##
 ## A rule system has three surfaces — AUTHOR, VALIDATE, EVALUATE — and only the third was ever
@@ -25,6 +30,7 @@ func _rule(cond: Dictionary) -> Dictionary:
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 
 
@@ -107,3 +113,7 @@ func test_every_shipped_ruleset_still_validates() -> void:
 				"shipped preset '%s' rule must still validate: %s  (%s)" % [key, str(errors), JSON.stringify(r)])
 	assert_gt(checked, 0,
 		"the preset sweep must have actually validated rules — zero checked is not a clean bill of health")
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file leaked state a hand-listed teardown cannot name.
+var _ag_state: Dictionary
+
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 ## tick 343: AutogrindSystem.on_battle_victory's item-tracking loop
@@ -31,6 +36,7 @@ func _read(p: String) -> String:
 # ── Source pin: gold filter in the loop ─────────────────────────────
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 
 
@@ -188,3 +194,7 @@ func test_every_autogrind_member_this_file_reaches_still_exists() -> void:
 	if not AutogrindSystem.has_method("on_battle_victory"): missing.append("on_battle_victory()")
 	assert_eq(missing, [],
 		"AutogrindSystem no longer has these, so the arms above would ABORT into a silent pass: %s" % str(missing))
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

@@ -59,6 +59,10 @@ func after_each() -> void:
 	sm._sfx_cooldowns.clear()
 	sm._current_area = _saved_area
 	sm._current_world_suffix = _saved_suffix
+	## pitch_scale PERSISTS on the shared player — the defect 39fe0bded fixed. The ±5% jitter in
+	## _try_play_sfx_from_manifest leaves it randomized, so a file that plays anything must put it back.
+	sm._ability_player.pitch_scale = 1.0
+	sm._battle_player.pitch_scale = 1.0
 
 
 func test_this_files_scenario_is_the_one_it_claims_to_drive() -> void:
