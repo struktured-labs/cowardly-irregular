@@ -178,3 +178,48 @@ func test_a_stranded_latch_heals_itself() -> void:
 	Input.action_press("battle_defer")
 	assert_eq(MenuPaging.page_delta(_button(_bound_button("battle_defer"), true)), -1,
 		"a stale latch must not eat the first page of the next menu")
+
+
+## ⛔ THE FIXTURE EVERY ARM ABOVE SHARES IS "ONE TRIGGER", AND THAT IS WHY THE COLLAPSE SURVIVED.
+## The gate was a SINGLE static shared by both actions, so holding L2 gated R2 as well: measured,
+## a genuine R2 pull returned 0 and that page was lost outright. Eight arms, all mutation-proved,
+## none of which pulls a second trigger — @cowir-sfx's point that mutation proves an arm CAN fail
+## and says nothing about whether its premise is fixture-dependent.
+##
+## The project already had the answer twice: MenuNav keeps one latch per axis pair "so a vertical
+## hold cannot swallow a horizontal step", and Win98Menu gates these same two actions with
+## _defer_axis_held / _advance_axis_held. This file's own header cites the second one.
+func test_holding_one_trigger_does_not_gate_the_other() -> void:
+	Input.action_press("battle_defer")
+	assert_eq(MenuPaging.page_delta(_motion(JOY_AXIS_TRIGGER_LEFT, 0.9)), -1,
+		"CONTROL: the first pull must page, or the assert below passes on a helper that pages nothing")
+
+	# L2 is STILL HELD — the player pulls R2 as well.
+	Input.action_press("battle_advance")
+	assert_eq(MenuPaging.page_delta(_motion(JOY_AXIS_TRIGGER_RIGHT, 0.9)), 1,
+		"the other trigger must page while the first is held — one shared latch swallowed it")
+
+
+## And the gate must still do its job PER trigger while both are down: R2's own ramp is gated by
+## R2's latch, not excused by L2's.
+func test_each_trigger_is_still_gated_by_its_own_ramp() -> void:
+	Input.action_press("battle_defer")
+	Input.action_press("battle_advance")
+	assert_eq(MenuPaging.page_delta(_motion(JOY_AXIS_TRIGGER_RIGHT, 0.9)), 1, "CONTROL: R2 pages once")
+	assert_eq(MenuPaging.page_delta(_motion(JOY_AXIS_TRIGGER_RIGHT, 1.0)), 0,
+		"R2's own ramp is still one page — splitting the latch must not remove the gate")
+	assert_eq(MenuPaging.page_delta(_motion(JOY_AXIS_TRIGGER_LEFT, 0.9)), -1, "…and L2 still has its own")
+	assert_eq(MenuPaging.page_delta(_motion(JOY_AXIS_TRIGGER_LEFT, 1.0)), 0, "…gated by ITS latch")
+
+
+## Releasing one trigger must not arm the other's ramp: the release branch is per-action now, and
+## a shared clear would let L2's release re-open R2's gate mid-hold.
+func test_releasing_one_trigger_does_not_rearm_the_other() -> void:
+	Input.action_press("battle_defer")
+	Input.action_press("battle_advance")
+	assert_eq(MenuPaging.page_delta(_motion(JOY_AXIS_TRIGGER_RIGHT, 0.9)), 1, "CONTROL: R2 paged")
+
+	Input.action_release("battle_defer")
+	MenuPaging.page_delta(_motion(JOY_AXIS_TRIGGER_LEFT, 0.0))
+	assert_eq(MenuPaging.page_delta(_motion(JOY_AXIS_TRIGGER_RIGHT, 1.0)), 0,
+		"R2 is still held, so its ramp must stay gated — L2's release is not R2's")
