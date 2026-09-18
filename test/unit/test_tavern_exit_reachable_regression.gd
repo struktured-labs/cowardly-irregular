@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Regression test for the "trapped in the tavern" playtest bug (struktured
 ## 2026-07-18): the Dancing Tonberry's exit trigger sat on top of the
 ## entrance spawn point, so AreaTransition self-fired the instant the scene
@@ -148,3 +150,8 @@ func test_area_transition_latch_rearms_on_zone_exit() -> void:
 	var body: String = src.substr(i, 500)
 	assert_true("_triggered = false" in body,
 		"body-exit must reset the latch — a permanent one-shot turns any graze into a dead exit")
+
+## This file stands up a map or interior, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()
