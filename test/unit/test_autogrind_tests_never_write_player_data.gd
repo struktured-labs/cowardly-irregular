@@ -29,13 +29,36 @@ extends GutTest
 
 const SYSTEM_PATH: String = "res://src/autogrind/AutogrindSystem.gd"
 const TEST_DIR: String = "res://test/unit"
-const SAVERS: Array[String] = ["_save_autogrind_profiles", "_save_csi_data", "_save_session_history"]
+## ⛔ THIS WAS A HAND-LIST OF THREE AND THERE ARE SIX. Until 2026-09-17 it read
+## ["_save_autogrind_profiles", "_save_csi_data", "_save_session_history"], omitting
+## _save_permadead_characters, _save_learned_patterns and — worst — save_grind_snapshot, which is
+## PUBLIC and writes user://autogrind_snapshot.json. A hand-listed corpus inside the guard whose
+## whole subject is "which functions write player data" is the same defect one level up.
+##
+## DERIVED NOW: the gate IS the marker. A function carrying `if _test_disable_persistence: return`
+## is by definition one that writes, so the list cannot drift behind the code it watches.
+func _savers() -> Array[String]:
+	var src: String = FileAccess.get_file_as_string(SYSTEM_PATH)
+	assert_ne(src, "", "CONTROL: could not read AutogrindSystem — a derived-empty saver set makes every arm below vacuous")
+	var out: Array[String] = []
+	var current: String = ""
+	for line in src.split("\n"):
+		var t: String = line.strip_edges()
+		if t.begins_with("func "):
+			current = t.substr(5, t.find("(") - 5)
+		elif current != "" and t.contains("_test_disable_persistence") and t.begins_with("if "):
+			if not (current in out):
+				out.append(current)
+	return out
 
 
 ## Every AutogrindSystem function whose body reaches a user:// writer, read from source.
 func _persisting_functions() -> Array[String]:
 	var src: String = FileAccess.get_file_as_string(SYSTEM_PATH)
 	assert_ne(src, "", "could not read AutogrindSystem — this check would silently pass on an empty corpus")
+	var savers: Array[String] = _savers()
+	assert_gt(savers.size(), 3,
+		"CONTROL: derived only %d gated writers — the hand-list this replaced had 3 and missed half, so anything at or below that is the same defect returning" % savers.size())
 	var out: Array[String] = []
 	var idx: int = 0
 	while true:
@@ -46,14 +69,62 @@ func _persisting_functions() -> Array[String]:
 		var body: String = src.substr(start, (next - start) if next > 0 else -1)
 		var name: String = body.substr(6, body.find("(") - 6).strip_edges()
 		idx = start + 1
+		## ⛔ A SAVER IS ITSELF A PERSISTING ENTRY POINT WHEN IT IS PUBLIC. The old form skipped every
+		## name beginning with "_save" — correct for the private ones, and it also meant
+		## `save_grind_snapshot` had to be reached INDIRECTLY to count. It is public, two tests call it
+		## straight, and it calls no other saver, so it was in neither set. Savers are now seeded in.
+		if savers.has(name):
+			if not (name in out):
+				out.append(name)
+			continue
 		if name.begins_with("_save"):
 			continue
-		for s in SAVERS:
+		for s in savers:
 			if body.contains(s + "("):
 				if not (name in out):
 					out.append(name)
 				break
 	return out
+
+
+## ⛔ THE FLAG IS NOT THE FIX FOR THESE TWO, AND THAT IS WHY THEY ARE NAMED RATHER THAN GATED.
+## Their SUBJECT is the on-disk roundtrip: `test_save_and_load_roundtrip` asserts
+## save_grind_snapshot() returns true, which the gate makes false. Setting the flag would delete the
+## test's own claim. `SNAPSHOT_PATH` is a const with no per-test seam, so redirection is not
+## available either — the shape CLAUDE.md prefers ("override the path in your own fixture") has
+## nowhere to attach.
+##
+## ⚠️ SO THIS IS A DECLARATION, NOT AN EXEMPTION: both byte-snapshot the player's file and restore
+## it, which memory records as WEAKER than the gate (the restore is itself a write, and an abort in
+## between leaves the file modified). Recorded so the next reader knows the weaker protection is
+## deliberate and bounded, not an oversight — and the arm below reds if a declared file stops
+## calling a saver, so a stale entry cannot outlive its reason.
+const ON_DISK_BY_DESIGN := {
+	"test_autogrind_snapshot.gd": "exercises the real save/load roundtrip; the gate would make save_grind_snapshot return false and void the assertion. Byte-restores the player's file.",
+	"test_autogrind_save_snapshot_loud_failures.gd": "same roundtrip, loud-failure arms. Byte-restores.",
+}
+
+
+func test_a_declared_on_disk_test_still_writes() -> void:
+	## A declaration nobody has watched fire is indistinguishable from a dead entry. Each declared
+	## file must STILL reach a saver — otherwise it was fixed or rewritten and the exemption is stale.
+	var persisting := _persisting_functions()
+	assert_gt(persisting.size(), 3, "CONTROL: the persisting set must be real, or every verdict here is vacuous")
+	var stale: Array = []
+	for fname in ON_DISK_BY_DESIGN:
+		var src: String = FileAccess.get_file_as_string(TEST_DIR + "/" + str(fname))
+		if src == "":
+			stale.append("%s (missing)" % fname)
+			continue
+		var reaches := false
+		for fn in persisting:
+			if src.contains("." + fn + "("):
+				reaches = true
+				break
+		if not reaches:
+			stale.append("%s (no longer calls a saver)" % fname)
+	assert_eq(stale, [],
+		"a file declared as writing on disk by design no longer does — drop the declaration rather than carrying a stale exemption: %s" % str(stale))
 
 
 func _test_files() -> Array[String]:
@@ -89,8 +160,16 @@ func test_no_autogrind_test_persists_to_the_players_user_dir() -> void:
 			continue
 		if src.contains("_test_disable_persistence"):
 			continue
+		## ⛔ RECEIVER-AGNOSTIC, not `AutogrindSystem.<fn>(`. The qualified form misses a call through a
+		## LOCAL — `_system.save_grind_snapshot(...)` — and an instance writes the same user:// path the
+		## autoload does, so the receiver never mattered. Measured before widening: the qualified form
+		## catches 0 ungated tests, the agnostic form catches exactly 2, so this costs no allowlist.
+		## @cowir-controller's point from the controls census: `Receiver.api(` is vulnerable to a local
+		## or a string lookup; `\.api(` is immune by construction.
+		if ON_DISK_BY_DESIGN.has(fname):
+			continue
 		for fn in persisting:
-			if src.contains("AutogrindSystem." + fn + "("):
+			if src.contains("." + fn + "("):
 				offenders.append("%s (calls %s)" % [fname, fn])
 				break
 
@@ -132,7 +211,15 @@ func test_the_offender_scan_can_actually_fire() -> void:
 func _indirect_reachers() -> Array[String]:
 	var persisting := _persisting_functions()
 	var out: Array[String] = []
-	var stack: Array = ["res://src"]
+	## ⛔ SCOPED TO THE LANE'S OWN UI, AND THAT IS A DELIBERATE NARROWING WITH A MEASUREMENT BEHIND IT.
+	## Deriving reachers from ALL of src/ is correct and useless: `save_grind_snapshot` is public and
+	## GameLoop calls it, so every test that instantiates GameLoop becomes a "reacher" — 94 out-of-lane
+	## files on one run, every one of them proven NOT to write by the exhaustive per-file sweep.
+	## A check whose correct case needs 94 declarations is not a check (CLAUDE.md), and the blast-radius
+	## rule says the same thing: a general-purpose object cannot discriminate.
+	## The arm's actual subject is a test driving a GRIND UI NODE into a writer — which is what the
+	## 2026-09-17 leak was — and every such node lives in these two directories.
+	var stack: Array = ["res://src/autogrind", "res://src/ui/autogrind"]
 	while not stack.is_empty():
 		var d: String = str(stack.pop_back())
 		for sub in DirAccess.get_directories_at(d):
