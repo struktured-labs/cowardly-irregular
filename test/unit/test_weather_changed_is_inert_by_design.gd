@@ -41,15 +41,18 @@ func test_the_signal_is_still_declared() -> void:
 
 func test_nothing_connects_it_yet() -> void:
 	## The moment this reds, someone has a consumer and the arm below becomes load-bearing for them.
-	var connections: int = 0
+	## ⛔ COUNTING `connect` LINES IS EVADED BY A TWO-LINE IDIOM — `var s = GameState.weather_changed`
+	## then `s.connect(...)` never matches. So assert the stronger, unambiguous thing: NO file
+	## outside GameState references the signal in CODE at all. Comments are stripped by code_of, so
+	## prose about it is free, and today the count really is zero.
+	var referencing: Array[String] = []
 	for path in _gd_files("res://src"):
-		var body: String = GdSource.code_of(path)
-		if body.contains("weather_changed") and body.contains("connect"):
-			for line in body.split("\n"):
-				if line.contains("weather_changed") and line.contains("connect"):
-					connections += 1
-	assert_eq(connections, 0,
-		"weather_changed now has %d consumer(s) — read the next arm: the LOAD path does not emit, so a restored save will not notify them" % connections)
+		if path.ends_with("/GameState.gd"):
+			continue
+		if GdSource.code_of(path).contains("weather_changed"):
+			referencing.append(path)
+	assert_eq(referencing, [] as Array[String],
+		"weather_changed is now referenced outside GameState (%s) — read the next arm: the LOAD path does not emit, so a restored save will not notify a listener" % [referencing])
 
 
 func test_the_load_path_still_does_not_emit() -> void:
