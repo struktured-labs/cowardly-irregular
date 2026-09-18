@@ -34,15 +34,34 @@ const ASKS := [
 ]
 
 
+## Every data read goes through here. A failed read cannot be signalled by an EMPTY RESULT —
+## between_battle is legitimately empty for a kit with no healing — so the reader records it.
+var _read_failed: bool = false
+
+
+func _require_json(path: String) -> Dictionary:
+	var raw: String = FileAccess.get_file_as_string(path)
+	if raw == "":
+		_read_failed = true
+		push_error("bench could not read %s (err=%d)" % [path, FileAccess.get_open_error()])
+		return {}
+	var doc = JSON.parse_string(raw)
+	if not (doc is Dictionary):
+		_read_failed = true
+		push_error("bench could not parse %s" % path)
+		return {}
+	return doc as Dictionary
+
+
 func _kit_for(job_id: String) -> Dictionary:
 	if job_id == "":
 		return {}
-	var jobs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	var jobs: Dictionary = _require_json("res://data/jobs.json")
 	var job_root: Dictionary = jobs.get("jobs", jobs)
 	if not job_root.has(job_id):
 		return {}
 	var job: Dictionary = job_root[job_id]
-	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var abilities: Dictionary = _require_json("res://data/abilities.json")
 	var ab_root: Dictionary = abilities.get("abilities", abilities)
 	var kit: Array = (job.get("abilities", []) as Array).duplicate()
 	var free_move: Dictionary = job.get("free_move", {})
@@ -70,11 +89,8 @@ func _kit_for(job_id: String) -> Dictionary:
 ## Mirrors RuleComposer._battle_item_ids: everything except ItemCategory.META. No autoloads
 ## under -s, so the categories are read straight from the same JSON ItemSystem loads.
 func _battle_item_ids() -> Array:
-	var f := FileAccess.open("res://data/items.json", FileAccess.READ)
-	if f == null:
-		return []
-	var doc = JSON.parse_string(f.get_as_text())
-	if not (doc is Dictionary):
+	var doc: Dictionary = _require_json("res://data/items.json")
+	if doc.is_empty():
 		return []
 	var items: Dictionary = doc.get("items", doc)
 	var out: Array = []
@@ -89,11 +105,8 @@ func _battle_item_ids() -> Array:
 ## Mirrors AutogrindSystem.ability_works_between_battles: an authored heal_amount or
 ## mp_amount. No autoloads under -s, so it reads the same JSON JobSystem loads.
 func _between_battle_for(kit: Array) -> Array:
-	var f := FileAccess.open("res://data/abilities.json", FileAccess.READ)
-	if f == null:
-		return []
-	var doc = JSON.parse_string(f.get_as_text())
-	if not (doc is Dictionary):
+	var doc: Dictionary = _require_json("res://data/abilities.json")
+	if doc.is_empty():
 		return []
 	var ab: Dictionary = doc.get("abilities", doc)
 	var out: Array = []
@@ -106,15 +119,12 @@ func _between_battle_for(kit: Array) -> Array:
 
 func _profile_names_for(job_id: String) -> Array:
 	var names: Array = ["Default"]
-	var f := FileAccess.open("res://data/autobattle_rule_templates.json", FileAccess.READ)
-	if f != null:
-		var doc = JSON.parse_string(f.get_as_text())
-		if doc is Dictionary:
-			for t in (doc.get("templates", []) as Array):
-				var row: Dictionary = t
-				if str(row.get("job_id", "")) != job_id or str(row.get("stance", "")) == "balanced":
-					continue
-				names.append(str(row.get("name", "Preset")))
+	var doc: Dictionary = _require_json("res://data/autobattle_rule_templates.json")
+	for t in (doc.get("templates", []) as Array):
+		var row: Dictionary = t
+		if str(row.get("job_id", "")) != job_id or str(row.get("stance", "")) == "balanced":
+			continue
+		names.append(str(row.get("name", "Preset")))
 	while names.size() < 3:
 		names.append("Custom %d" % names.size())
 	return names
@@ -154,7 +164,7 @@ func _init() -> void:
 		## prompt with no kit, write it, and print "rendered N chars" exactly as on a good run,
 		## so every measurement taken against it would be about a prompt the game never sends —
 		## which is the one thing this bench exists to prevent.
-		if not bool(kc.get("resolved", false)):
+		if _read_failed or not bool(kc.get("resolved", false)):
 			push_error("kit context for '%s' did not resolve — refusing to render a degraded prompt"
 				% str(ask["key"]))
 			quit(2)

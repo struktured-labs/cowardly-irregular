@@ -52,6 +52,52 @@ func test_the_bench_refuses_a_kit_that_did_not_resolve() -> void:
 		"the resolved check must precede the render, or a degraded prompt is written anyway")
 
 
+func test_every_data_read_goes_through_the_guarded_reader() -> void:
+	## The floor above catches an unresolved KIT, and that was not enough: three helpers
+	## returned [] when FileAccess.open came back null, while _kit_for still reported
+	## resolved=true. Measured before this arm — items.json dark gave EC=0, 9 rendered,
+	## fighter_basic.txt 8726 chars against ~9280, silently missing its item list.
+	## A failed read CANNOT be signalled by an empty result (between_battle is legitimately
+	## empty for a kit with no healing), so the reader records it and the floor reads that.
+	var src: String = FileAccess.get_file_as_string(BENCH_RENDERER)
+	assert_gt(src.length(), 1000,
+		"CONTROL: %s must actually be read, or this arm asserts over ''" % BENCH_RENDERER)
+	var stray: Array = []
+	var at: int = src.find("\"res://data/")
+	while at != -1:
+		## Every data path must be an ARGUMENT to the guarded reader. A literal reached by
+		## FileAccess directly is a read that can fail silently.
+		if src.substr(max(0, at - 15), 15).find("_require_json(") == -1:
+			stray.append(src.substr(at, src.find("\"", at + 1) - at + 1))
+		at = src.find("\"res://data/", at + 1)
+	assert_eq(stray, [],
+		"these data paths bypass _require_json and can fail silently: %s" % str(stray))
+	assert_gt(src.find("_read_failed = true"), -1,
+		"the reader must RECORD a failed read — an empty result cannot signal one")
+	assert_gt(src.find("if _read_failed or"), -1,
+		"the render floor must refuse on a recorded read failure, not only on an unresolved kit")
+
+
+func test_a_documented_invocation_carries_the_sandbox() -> void:
+	## These tools have no wrapper, so the docstring IS the interface. A bare `godot --headless`
+	## resolves user:// to the real profile — that is how a sibling lane rotated the player's
+	## crash logs away tonight, from a tool whose only possible invocation was bare.
+	## Derived over the lane's tools so a fourth one inherits the rule.
+	var offenders: Array = []
+	for tool_path in ["res://tools/rule_composition_compose.gd",
+			"res://tools/rule_composition_validate.gd", "res://tools/llm_prompt_bench.gd"]:
+		var src: String = FileAccess.get_file_as_string(tool_path)
+		assert_gt(src.length(), 500,
+			"CONTROL: %s must actually be read, or this arm skips it" % tool_path)
+		for line in src.split("\n"):
+			if line.find("godot --headless") == -1:
+				continue
+			if line.find("XDG_DATA_HOME") == -1:
+				offenders.append("%s :: %s" % [tool_path.get_file(), line.strip_edges()])
+	assert_eq(offenders, [],
+		"a documented bare godot writes to the player's real user:// — %s" % str(offenders))
+
+
 func test_the_bench_renders_through_dialogue_prompts() -> void:
 	## Not a copy of the prompt text, and not a hand-rolled approximation.
 	var src: String = FileAccess.get_file_as_string(BENCH_RENDERER)
