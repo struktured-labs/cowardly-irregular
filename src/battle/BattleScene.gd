@@ -1937,6 +1937,11 @@ func _process_weather_layer(delta: float) -> void:
 			var flash := create_tween()
 			_weather_overlay.color = Color(0.9, 0.9, 1.0, 0.3)
 			flash.tween_property(_weather_overlay, "color", BATTLE_WEATHER_TINTS["storm"], 0.25)
+			## The overworld thunders on this same event; this surface drew the bolt and played
+			## nothing, so one storm was audible while walking and silent the moment a fight began.
+			var sm_w := get_node_or_null("/root/SoundManager")
+			if sm_w and sm_w.has_method("play_weather_oneshot"):
+				sm_w.play_weather_oneshot("weather_thunder_distant")
 			## A storm with no bolt reads as heavy rain plus a tint pulse. Reuses the ability
 			## storm's builder, deliberately weaker: one thin dim bolt, no trauma or punch_zoom —
 			## ambient weather must never punch the screen the way a cast does.

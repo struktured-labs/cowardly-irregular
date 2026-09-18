@@ -14,6 +14,7 @@ var _voice_player: AudioStreamPlayer  # dedicated voice: party lines are SECONDS
 var _pickup_player: AudioStreamPlayer  # dedicated voice: a reward cue always follows the action that earned it, and replaced it on _ui_player (2026-09-12)
 var _bank_player: AudioStreamPlayer  # dedicated voice: full_bank_unleash replaced advance_flourish_5 in the same frame, every full bank (2026-09-14)
 var _refuse_player: AudioStreamPlayer  # dedicated voice: a refused Advance press lands while the job's 3s fifth rung is still ringing (2026-09-14)
+var _weather_player: AudioStreamPlayer  # dedicated voice: a 4s thunder clap shared the channel every attack hit lands on (2026-09-18)
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
@@ -350,6 +351,16 @@ func _setup_audio_players() -> void:
 	_flash_player.volume_db = SFX_BATTLE_BASE_DB
 	_flash_player.bus = SFX_BUS
 	add_child(_flash_player)
+
+	_weather_player = AudioStreamPlayer.new()
+	_weather_player.name = "WeatherPlayer"
+	## The battle base, not a new number: weather_thunder_distant is mixed 18 dB down (-17.9 dBFS
+	## against the storm bed's +0.3) SO THAT a -6 channel lands it 3.8 dB over the rain. The level
+	## is a property of the asset; only the VOICE was wrong. Defensive rather than load-bearing —
+	## play_weather_oneshot goes through _play_battle_on, which passes an explicit level every call.
+	_weather_player.volume_db = SFX_BATTLE_BASE_DB
+	_weather_player.bus = SFX_BUS
+	add_child(_weather_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
@@ -905,6 +916,14 @@ func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
 		_play_sound(player, _synth_params(sound_key, level))
 
 
+## Ambient WEATHER one-shots — thunder over a storm bed. Its own voice for the usual reason and
+## an unusually stark one: the clap is 4.00s on a channel that sounds every strike, and the two
+## surfaces that fire it (WeatherSystem while walking, BattleScene mid-fight) are exactly the two
+## places _battle_player is busiest. NOT play_ambient — that would stop the 9.50s bed it lands over.
+func play_weather_oneshot(sound_key: String) -> void:
+	_play_battle_on(_weather_player, sound_key)
+
+
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
 	"""Play a battle sound with volume and pitch scaling for power-based effects"""
 	## volume_db is a TRIM on the channel, never the level: its one caller passes lerp(-3,+3) "scale volume based on power", and forwarding it raw made it ABSOLUTE — every elemental impact landed 3-9 dB over the -6 dB battle base and persisted there. 0.0 now means "no trim".
@@ -1027,6 +1046,7 @@ func _get_world_sfx_prefix() -> String:
 
 func play_ambient(sound_key: String) -> void:
 	"""Start a looping ambient sound (weather, environment). Stops previous ambient."""
+	## SILENT BY DESIGN: the bed asked for is the bed already sounding. Restarting it would seam.
 	if sound_key == _current_ambient_key and _ambient_player.playing:
 		return  # Already playing this ambient
 	stop_ambient()
@@ -1049,19 +1069,30 @@ func play_ambient(sound_key: String) -> void:
 	elif _sfx_manifest.has(sound_key):
 		entry = _sfx_manifest[sound_key]
 	else:
+		## ⛔ THE THREE FAILURE RETURNS BELOW USED TO BE SILENT, and _load_sfx_manifest twenty lines
+		## up surfaces every one of ITS failure modes (tick 166) precisely so a gap cannot degrade
+		## to procedural-only audio with nothing on the console. The LOADER was hardened and its
+		## consumer was not: a zone, village or interior naming a typo'd or retired key was
+		## indistinguishable from one deliberately left quiet, which is the hazard
+		## test_overworld_ambient_keys_resolve's header states and could not fix from a test.
+		push_warning("[AMBIENT] '%s' is in neither the music nor the sfx manifest — this area plays no ambient bed" % sound_key)
 		return
 	var path = entry.get("file", "")
 	if path == "":
+		push_warning("[AMBIENT] '%s' resolved to a manifest entry with no `file` field — no bed" % sound_key)
 		return
 	if not path.begins_with("res://"):
 		path = "res://" + path
 	var stream = load(path) as AudioStream
 	if not stream:
+		push_warning("[AMBIENT] '%s' names %s, which failed to load — no bed" % [sound_key, path])
 		return
 	## ⛔ THE SAME RULE IN THE OTHER DIRECTION. The check in _try_play_from_manifest only fires
 	## when MUSIC starts second; this one covers ambient starting second on a bed the music player
 	## already holds. Music is the foreground layer, so it wins both ways and the ambient simply
 	## does not start — stop_ambient() above has already cleared the slot.
+	## SILENT BY DESIGN: music is the foreground layer and already holds this exact bed, so the
+	## ambient copy simply does not start. Not a failure — stop_ambient() above cleared the slot.
 	if _music_player and _music_player.playing and _music_player.stream \
 			and _music_player.stream.resource_path == path:
 		return
