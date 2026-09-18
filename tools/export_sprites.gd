@@ -1,7 +1,10 @@
 extends SceneTree
 
 ## Export procedural SnesPartySprites to PNG sprite sheets for all starter jobs.
-## Usage: godot --headless -s tools/export_sprites.gd
+## Usage: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy \
+##          -s tools/export_sprites.gd
+## The sandbox is not optional: no wrapper invokes this file, so the line above IS the
+## invocation, and a bare one writes saves/ and logs/ into struktured's real user://.
 ##
 ## Produces 80x100-per-frame sprite strips in assets/sprites/jobs/<job_id>/
 ## matching the existing fighter sprite format.
