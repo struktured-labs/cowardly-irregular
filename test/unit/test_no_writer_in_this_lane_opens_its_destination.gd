@@ -33,6 +33,22 @@ extends GutTest
 ## was the only one that could cause one. So do not read "the readers are fine" as evidence about
 ## anything else in the file.
 
+## ⛔ WHAT THIS GUARDS IS SHAPE, NEVER VALUE — AND FOR A NEW WRITER IT IS THE ONLY COVER.
+## It asserts that a rename-into-place or a read-back APPEARS after the write. It cannot tell a
+## correct `rename_absolute(staged, dest)` from one with its arguments swapped, and a value-only
+## change (`var staged = CONFIG_PATH`, still renamed) is invisible to any source-text scan.
+##
+##     the two writers here TODAY     behavioural arms drive the real functions:
+##       _append_user_mapping         test_a_capture_does_not_eat_the_other_pads_mappings   6 arms
+##       save_config                  test_a_failed_config_save_keeps_the_last_good_one     3 arms
+##     a writer added TOMORROW        this file, and nothing else
+##
+## 🔑 SO A GREEN HERE IS NOT EVIDENCE A WRITER WORKS; it is evidence nobody opened a destination.
+## A new writer still needs its own arm that drives it. Stated because the failure it prevents is
+## specific: a guard can watch exactly the right symbol and be checking only that it is SPELLED
+## correctly, while the defect lives inside it (@cowir-battle, `_await_tween_safe` pinned by name
+## while the bug sat in its while-condition).
+
 const INPUT_DIR := "res://src/input"
 const NAMED := ["res://src/ui/ControlsMenu.gd"]
 
