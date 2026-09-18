@@ -14,25 +14,38 @@ extends GutTest
 ## ITSELF for those — so the counter branch fires with no AutogrindSystem learning
 ## and no adaptation_level, at 0.3 x counter_action_chance(2.0) = 0.60.
 ##
-## 🔴 AND THE MEASUREMENT CONTRADICTED THAT TOO. Five of six produce ZERO counters.
-## _get_counter_action is entered, its arm finds nothing it can build an action
-## from, returns empty, and the turn falls through to ordinary AI — indistinguishable
-## from never entering. Pyrroth, 400 rolls each:
+## 🔴 AND THE MEASUREMENT CONTRADICTED THAT TOO — but it was THREE of six, not five,
+## and the two I got wrong were wrong because of MY FIXTURE, not the game. Corrected
+## 2026-09-18 after re-measuring against a real W1 party:
 ##
-##     fire_resist 0.000 · ice_resist 0.000 · lightning_resist 0.000
-##     focus_healer 0.000 · defense_boost 0.000 · rotate_aggro 0.600
+##                      fire_r  ice_r  light_r  focus_healer  defense_boost  rotate
+##     fire_dragon      0.000   0.000  0.000    0.615         0.000          0.590
+##     ice_dragon       0.000   0.000  0.000    0.620         0.640          0.565
+##     mordaine         0.000   0.000  0.000    0.593         0.000          0.585
+##
+## ⛔ `focus_healer` FILTERS THE ENEMY LIST FOR A CLERIC, and this file's victim was
+## a lone `{"id": "fighter"}`. So its 0.000 measured my party, not the intent — and
+## the W1 party ALWAYS carries a Cleric. It works on every boss tested.
+## ⛔ `defense_boost` FILTERS THE BOSS'S OWN KIT for effect `defense_up`. I measured
+## Pyrroth only; Glacius owns `frost_armor` (effect: defense_up) and counters at
+## 0.640. It is boss-dependent, not inert.
+##
+## 🔑 TWO INDEPENDENT NARROWNESSES — one party, one boss — each producing a zero that
+## read as a property of the game. The arm below asserted both as KNOWN_INERT and
+## passed, because the fixture that produced the claim was also the fixture that
+## tested it.
 ##
 ## rotate_aggro at exactly 0.60 is the control that makes the zeroes mean something:
 ## the branch, the bias read and the arithmetic are live, so the other five are a
 ## content gap and not a dead mechanism. The three resist arms filter for an ability
 ## whose id contains "resist" or "shield", and NO BOSS IN THE GAME OWNS ONE.
 ##
-## So the LLM picks from six strategic postures and five do nothing: the boss
+## So the LLM picks from six strategic postures and THREE do nothing: the boss
 ## announces it is guarding against fire, then behaves exactly as with no intent.
 ##
-## ⛔ NOT FIXED HERE. Giving dragons resist abilities, or widening the filter to
-## reach inferno_rage / frost_armor / storm_gathering, changes how five boss fights
-## play. Struktured's call, not a bugfix. Pinned with the population named.
+## ⛔ THE REMAINING THREE ARE NOT FIXED HERE. Giving dragons resist abilities, or
+## widening the filter to reach inferno_rage / storm_gathering, changes how the boss
+## fights play. Struktured's call, not a bugfix. Pinned with the population named.
 
 const BattleManagerScript = preload("res://src/battle/BattleManager.gd")
 const ROLLS := 400
@@ -40,11 +53,13 @@ const ROLLS := 400
 const COUNTER_TAGS := ["fire_resist", "ice_resist", "lightning_resist",
 	"focus_healer", "defense_boost", "rotate_aggro"]
 
-## Measured 2026-09-10. INVERTED PIN: when a boss gains a resist/shield ability or
-## the filter widens, these stop being zero and this reds naming the one that woke
-## up — delete its entry then, do not re-baseline the number.
-const KNOWN_INERT := ["fire_resist", "ice_resist", "lightning_resist",
-	"focus_healer", "defense_boost"]
+## INVERTED PIN: when a boss gains a resist/shield ability or the filter widens,
+## these stop being zero and this reds naming the one that woke up — delete its entry
+## then, do not re-baseline the number.
+## ⚠️ `focus_healer` and `defense_boost` were in this list until 2026-09-18 and BOTH
+## WORK. They are live behaviour now pinned POSITIVELY below; an inverted pin over a
+## working feature is the one that reds on a correct change and passes on a breakage.
+const KNOWN_INERT := ["fire_resist", "ice_resist", "lightning_resist"]
 
 var _bm = null
 
@@ -76,19 +91,27 @@ func _from_data(mid: String) -> Combatant:
 	return c
 
 
-func _victim() -> Combatant:
+func _member(job_id: String) -> Combatant:
 	var c := Combatant.new()
 	autofree(c)
-	c.combatant_name = "Party"
+	c.combatant_name = job_id
 	c.max_hp = 5000; c.current_hp = 5000
-	c.job = {"id": "fighter", "abilities": []}
+	c.job = {"id": job_id, "abilities": []}
 	return c
+
+
+## The W1 party, which ALWAYS carries a Cleric. This was one lone fighter, and
+## `focus_healer` filters the enemy list for `cleric`/`healer` — so the fixture
+## decided the result and the arm that checked it used the same fixture.
+func _party() -> Array:
+	return [_member("fighter"), _member("cleric"), _member("mage"),
+		_member("rogue"), _member("bard")]
 
 
 ## Fraction of turns that took the COUNTER branch, driving the real entry point.
 ## The branch's only externally visible mark is its log line; the action it returns
 ## is an ordinary ability dict, indistinguishable from a normal choice.
-func _counter_rate(mid: String, intent_id: String) -> float:
+func _counter_rate(mid: String, intent_id: String, party: Array = []) -> float:
 	var boss := _from_data(mid)
 	if intent_id != "":
 		boss.set_meta("llm_intent", intent_id)
@@ -103,7 +126,7 @@ func _counter_rate(mid: String, intent_id: String) -> float:
 	# rotate_aggro. Pinning the phase high means no transition, so the intent under
 	# test is the intent that rolls.
 	boss.set_meta("boss_dialogue_phase", 99)
-	var target := _victim()
+	var foes: Array = party if not party.is_empty() else _party()
 	# Array box, not an int: GDScript lambdas capture primitives BY VALUE, so
 	# `counters += 1` in the closure increments a copy and the caller reads 0
 	# forever — a false ALARM, the direction that gets published.
@@ -119,7 +142,7 @@ func _counter_rate(mid: String, intent_id: String) -> float:
 		boss.current_mp = boss.max_mp
 		## NO existence floor here DELIBERATELY: renaming _make_ai_decision makes this file
 		## EC=1 · Failing 1 — rung 2, always visible. Measured 2026-09-16.
-		var action: Dictionary = _bm._make_ai_decision(boss, [boss], [target])
+		var action: Dictionary = _bm._make_ai_decision(boss, [boss], foes)
 		if not action.is_empty():
 			seen_any += 1
 	assert_gt(seen_any, 0, "CONTROL: %s must produce actions at all, or nothing was driven" % mid)
@@ -149,8 +172,57 @@ func test_an_unknown_intent_does_not_force_a_counter() -> void:
 		"an intent outside _COUNTER_INTENT_TAGS must not force the counter path — the LLM must not make a boss counter by naming garbage")
 
 
-func test_five_of_six_counter_intents_do_nothing_for_a_dragon() -> void:
-	## INVERTED. Each SHOULD eventually counter; today none can, because
+func test_focus_healer_is_about_the_PARTY_not_the_boss() -> void:
+	## THE ARM THAT WAS MISSING, and it is a discriminator rather than a threshold:
+	## the SAME boss, the SAME intent, two parties. `focus_healer` filters the enemy
+	## list for a cleric, so a party without one cannot make it fire — which is what
+	## this file measured for eight days and reported as "the intent does nothing".
+	var with_cleric: float = _counter_rate("fire_dragon", "focus_healer", _party())
+	var no_cleric: float = _counter_rate("fire_dragon", "focus_healer",
+		[_member("fighter"), _member("rogue")])
+	gut.p("  focus_healer — with a cleric %.3f · without %.3f" % [with_cleric, no_cleric])
+	assert_gt(with_cleric, 0.4,
+		"focus_healer must counter at ~0.60 against a party holding a Cleric; got %.3f" % with_cleric)
+	assert_lt(no_cleric, 0.05,
+		"focus_healer must find nothing when no Cleric is present (%.3f) — if this rises, the arm stopped filtering and the discriminator above is measuring nothing" % no_cleric)
+
+
+func test_defense_boost_fires_exactly_for_the_bosses_that_can_express_it() -> void:
+	## DERIVED both sides: which W1 bosses own an ability whose effect is `defense_up`
+	## is read from the data, not listed here. I first measured this on Pyrroth alone
+	## and recorded 0.000 as a property of the intent; Glacius owns `frost_armor` and
+	## counters at 0.64. One boss is not the population.
+	var mons: Dictionary = _monsters()
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var abilities: Dictionary = (parsed as Dictionary).get("abilities", parsed)
+	var can: Array[String] = []
+	var cannot: Array[String] = []
+	for bid in ["fire_dragon", "ice_dragon", "chancellor_mordaine"]:
+		var owns: bool = false
+		for aid in (mons.get(bid, {}) as Dictionary).get("abilities", []):
+			var eff: String = str((abilities.get(str(aid), {}) as Dictionary).get("effect", ""))
+			if eff == "defense_up" or str(aid).find("defense") != -1 \
+					or str(aid).find("guard") != -1 or str(aid).find("shield") != -1:
+				owns = true
+				break
+		if owns:
+			can.append(bid)
+		else:
+			cannot.append(bid)
+	assert_gt(can.size(), 0,
+		"CONTROL: no boss owns a defence ability, so this arm proves nothing — the derivation broke or the data changed")
+	assert_gt(cannot.size(), 0,
+		"CONTROL: every boss owns one, so the negative half below is vacuous")
+	for bid in can:
+		var r: float = _counter_rate(bid, "defense_boost", _party())
+		assert_gt(r, 0.4, "%s owns a defence ability so defense_boost must fire; got %.3f" % [bid, r])
+	for bid in cannot:
+		var r2: float = _counter_rate(bid, "defense_boost", _party())
+		assert_lt(r2, 0.05, "%s owns no defence ability so defense_boost cannot build an action; got %.3f" % [bid, r2])
+
+
+func test_three_of_six_counter_intents_do_nothing_for_a_dragon() -> void:
+	## INVERTED. Each SHOULD eventually counter; today none of these can, because
 	## _get_counter_action's arm finds no ability it can use.
 	for tag in KNOWN_INERT:
 		var rate: float = _counter_rate("fire_dragon", tag)

@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## Crit thud + combo pitch ramp (cowir-main slate items 2-3).
 ##
 ## Two properties carry the whole feature:
@@ -75,8 +77,11 @@ func test_the_ramp_is_a_BIAS_so_the_existing_jitter_survives() -> void:
 	## SFX_PITCH_JITTER so play_voice could opt out of it — the jitter was intact, composing
 	## exactly as this arm defends, and the only thing that moved was the spelling. A literal in
 	## an assertion where the relationship is the subject reds on a correct change.
-	var src: String = FileAccess.get_file_as_string(SM_SRC)
-	assert_gt(src.length(), 1000, "SCOPE control: SoundManager.gd read back empty")
+	## ⛔ COMMENT-STRIPPED. A presence assert over RAW source is satisfied by prose ABOUT the code
+	## (gd_source.gd's own header). Measured 2026-09-18 on the sibling arm below: delete the call
+	## and leave it as `# was: <the call>` and the raw pin reports the wiring intact.
+	var src: String = GdSource.code_of(SM_SRC)
+	assert_gt(src.length(), 1000, "SCOPE control: SoundManager.gd read back empty after the comment strip")
 	var band: float = float(SoundManager.get_script().get_script_constant_map().get("SFX_PITCH_JITTER", 0.0))
 	assert_gt(band, 0.0,
 		"the jitter band is gone or zero — the ramp was meant to ride on top of it, not replace it")
@@ -104,7 +109,13 @@ func test_the_ramp_is_a_BIAS_so_the_existing_jitter_survives() -> void:
 
 
 func test_the_chain_is_reset_at_the_action_boundary() -> void:
-	var src: String = FileAccess.get_file_as_string(SCENE_SRC)
+	## ⛔ THIS ARM FALSE-GREENED, PRODUCED NOT PREDICTED (2026-09-18). Replacing the call with
+	## `pass  # was: SoundManager.reset_hit_chain()` left it at EC=0 · Tests 10 · Passing 10 while
+	## its own message says "nothing resets the chain". The comment carries the closing paren, so
+	## no RIGHT bound separates it — only stripping comments, or a left bound naming the statement,
+	## tells code from prose (cowir-sprites, 2026-09-18).
+	var src: String = GdSource.code_of(SCENE_SRC)
+	assert_gt(src.length(), 1000, "SCOPE control: BattleScene.gd read back empty after the comment strip")
 	assert_true(src.contains("SoundManager.reset_hit_chain()"),
 		"nothing resets the chain — the ramp would accumulate across a whole battle and cap permanently")
 
@@ -131,7 +142,7 @@ func test_the_thud_is_LOW_and_trimmed_UNDER_the_hit() -> void:
 
 
 func test_the_thud_only_fires_on_CRITS_at_FULL_behind_its_flag() -> void:
-	var src: String = FileAccess.get_file_as_string(SCENE_SRC)
+	var src: String = GdSource.code_of(SCENE_SRC)
 	var at: int = src.find("play_crit_thud")
 	assert_gt(at, 0, "the crit thud is never called from BattleScene")
 	var window: String = src.substr(maxi(0, at - 300), 300)
@@ -143,7 +154,7 @@ func test_the_thud_only_fires_on_CRITS_at_FULL_behind_its_flag() -> void:
 func test_the_thud_type_is_one_the_generator_actually_HANDLES() -> void:
 	## An unhandled type would fall through the generator's match and emit nothing — shipped,
 	## reachable, and silent, which no listening test would catch in a muted headless run.
-	var src: String = FileAccess.get_file_as_string(SM_SRC)
+	var src: String = GdSource.code_of(SM_SRC)
 	var arms: PackedStringArray = src.split("\n")
 	var handled: bool = false
 	for line in arms:

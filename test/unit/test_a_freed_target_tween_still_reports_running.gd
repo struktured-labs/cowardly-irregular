@@ -56,3 +56,54 @@ func test_a_live_tween_is_still_waited_on() -> void:
 	assert_true(t.is_valid(), "a live tween must read valid, else the new term short-circuits the wait")
 	assert_true(t.is_running(), "and running")
 	t.kill()
+
+
+## ⛔ ARRIVAL, not departure. Everything above notices `is_valid()` LEAVING; nothing noticed a raw
+## `await <tween>.finished` ARRIVING at a new call site, which is the same wedge with no ceiling —
+## `finished` never emits at all, so the transition hangs forever rather than for six seconds.
+##
+## Scoped to THIS FILE on purpose. Measured 2026-09-18: 21 raw-await sites live in six other files
+## and every one is safe by construction — the target is a child of the awaiter (target death
+## implies awaiter death) or a local the awaiting function frees itself AFTER the await. A
+## codebase-wide rule would red 21 correct sites.
+##
+## BattleTransition is the exception because `_cleanup_effects()` frees `_screen_rect` and LEAVES
+## SELF ALIVE, and it has 4 callers — including a second transition arriving on top of a running
+## one, which is precisely the case its own comment at :120 describes.
+func _uncommented(src: String) -> String:
+	var kept: PackedStringArray = PackedStringArray()
+	for line in src.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			continue
+		var h: int = line.find("#")
+		kept.append(line.substr(0, h) if h != -1 else line)
+	return "\n".join(kept)
+
+
+func _raw_tween_awaits(src: String) -> PackedStringArray:
+	var re := RegEx.create_from_string("await\\s+[A-Za-z_][A-Za-z0-9_]*\\.finished")
+	var found: PackedStringArray = PackedStringArray()
+	for m in re.search_all(_uncommented(src)):
+		found.append(m.get_string())
+	return found
+
+
+func test_no_tween_is_awaited_raw_in_battle_transition() -> void:
+	var src: String = FileAccess.get_file_as_string(BT_SRC)
+	assert_ne(src, "", "CONTROL: BattleTransition.gd must be readable")
+	var raw: PackedStringArray = _raw_tween_awaits(src)
+	assert_eq(raw.size(), 0,
+		"a tween here is awaited raw: %s. In THIS file _cleanup_effects() frees _screen_rect and " % str(raw)
+		+ "leaves self alive, so `finished` can never emit and the await hangs with no deadline — "
+		+ "strictly worse than the 6s freeze _await_tween_safe was written for. Route it through "
+		+ "_await_tween_safe(tween) instead.")
+
+
+func test_the_raw_await_detector_can_actually_fire() -> void:
+	# A zero from an unexercised detector is worth nothing — the instrument watched saying YES.
+	assert_eq(_raw_tween_awaits("\tawait tween.finished\n").size(), 1,
+		"CONTROL: the detector must find a raw tween await, or the arm above is vacuous")
+	assert_eq(_raw_tween_awaits("\tawait _await_tween_safe(tween)\n").size(), 0,
+		"CONTROL: the sanctioned helper call must NOT be reported as a raw await")
+	assert_eq(_raw_tween_awaits("\t## await tween.finished in a comment\n").size(), 0,
+		"CONTROL: a comment mentioning the shape is not a call — this file's own :120 comment does")
