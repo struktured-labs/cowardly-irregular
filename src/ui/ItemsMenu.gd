@@ -18,6 +18,9 @@ var selected_item_index: int = 0
 var selected_target_index: int = 0
 var mode: int = 0  # 0 = item list, 1 = target selection
 var _item_list: Array = []  # Array of {id, quantity} for display
+## First visible row of the item window. MenuScroll needs the PREVIOUS offset to decide whether
+## the window must move at all, so this is stored rather than recomputed.
+var _item_scroll: int = 0
 var _item_labels: Array = []
 var _target_labels: Array = []
 
@@ -196,10 +199,15 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 		empty_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(empty_label)
 	else:
-		for i in range(min(_item_list.size(), max_visible)):
+		# WINDOWED. This rendered range(0, max_visible) and highlighted `i == selected_item_index`,
+		# so past the first screenful NO row matched: the cursor vanished and the player was using
+		# items they could not see. 172 items exist; paging reaches the back half in two pulls.
+		_item_scroll = MenuScroll.window_offset(
+			selected_item_index, max_visible, _item_list.size(), _item_scroll)
+		for i in range(_item_scroll, mini(_item_list.size(), _item_scroll + max_visible)):
 			var item = _item_list[i]
 			var item_control = _create_item_row(item, i)
-			item_control.position = Vector2(4, y_offset + i * item_height)
+			item_control.position = Vector2(4, y_offset + (i - _item_scroll) * item_height)
 			item_control.size = Vector2(panel_size.x - 8, item_height)
 			panel.add_child(item_control)
 			_item_labels.append(item_control)
@@ -591,10 +599,12 @@ func _update_selection() -> void:
 			var row = _item_labels[i]
 			var highlight = row.get_node_or_null("Highlight")
 			var cursor = row.get_node_or_null("Cursor")
+			# _item_labels holds the WINDOW; row i is absolute row _item_scroll + i.
+			var absolute: int = _item_scroll + i
 			if highlight:
-				highlight.color = SELECTED_COLOR if i == selected_item_index else Color.TRANSPARENT
+				highlight.color = SELECTED_COLOR if absolute == selected_item_index else Color.TRANSPARENT
 			if cursor:
-				cursor.text = ">" if i == selected_item_index else " "
+				cursor.text = ">" if absolute == selected_item_index else " "
 	else:
 		# Update target selection
 		for i in range(_target_labels.size()):

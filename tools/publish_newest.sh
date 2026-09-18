@@ -51,7 +51,9 @@ run() {
     # tags cut in the same second sort arbitrarily — the selftest's three fixture tags made it
     # return v3.33.371-alpha as "newest" while .373 existed, and every downstream answer
     # inverted from that one line. Version order is a TOTAL order on these names and is what
-    # publish_all.sh:319 already uses (`sort -V | tail -1`); deploy_web.sh:48 still uses
+    # publish_all.sh's _newest_tag_on_origin() already uses (`sort -V | tail -1`); the old
+    # `:319` pointer was WRONG WHEN WRITTEN — the target was three lines below it on the day,
+    # and has since drifted twelve. deploy_web.sh's VERSION= fallback still uses
     # creatordate for its fallback, which is a weaker key for the same question.
     local newest; newest="$(git tag -l 'v3.33.*' --sort=-v:refname | head -1)"
     [ -n "$newest" ] || { echo "[pubnew] no tags on origin" >&2; return 3; }

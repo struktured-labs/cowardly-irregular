@@ -209,7 +209,18 @@ if [ -x tools/seed_gate_saves.sh ]; then
         echo "[deploy] BLOCKED: seeding the gate sandbox was REFUSED — see above." >&2
         exit 2; }
 else
-    echo "[deploy] note: tools/seed_gate_saves.sh missing — the suite's real-save hydration will PEND." >&2
+    # ⛔ BLOCK, do not note. This was the ONLY warn-and-continue among 18 tool-missing
+    # branches across the two deploy scripts, and it is the one whose absence is SILENT:
+    # without the seed the hydration test PENDS, and a pending test reports failing=0, so the
+    # deploy stays green over a file that exercised nothing. That is the exact condition the
+    # comment above describes as the bug being fixed.
+    # Unreachable in a coherent checkout -- the tool and both call sites landed in 3fdcebcc0,
+    # so a tree with this branch and no tool is already broken. A note on stderr is not what
+    # you want in a 45-minute publish log when that happens.
+    echo "[deploy] BLOCKED: tools/seed_gate_saves.sh missing — the suite's real-save hydration" >&2
+    echo "        would PEND, and a pending test reports failing=0. A missing guard is not a" >&2
+    echo "        passing one." >&2
+    exit 2
 fi
 # ── SUITE BUDGET ─────────────────────────────────────────────────────────────
 # run_tests.sh has no timeout of its own, and gate.sh adds none. A suite that HANGS therefore
@@ -527,9 +538,14 @@ mkdir -p tmp
 #      or in CI. A sandboxed profile means the smoke always tests DEFAULTS, which is what a new
 #      player gets.
 #
-# Safe by inspection, checked before changing it: the smoke READS nothing from user:// (no
-# SaveSystem, no has_save, no load_game anywhere in GameLoop.gd:414-610) and only WRITES
-# user://smoke/<name>.png — and nothing downstream in this chain reads those shots back.
+# Safe by inspection, checked before changing it: the smoke READS nothing from user://.
+# ⛔ THIS USED TO CITE `GameLoop.gd:414-610` AND THE CLAIM WENT FALSE WITHOUT THE CLAIM
+# CHANGING. The range was a proxy for the smoke's own code; the file moved and the range
+# grew to cover 2 SaveSystem references, so a reader checking it found the sentence refuted
+# by its own pointer — the worst kind of rot, because it argues for editing a working gate.
+# Re-verified against the SYMBOL, 2026-09-17: inside GameLoop._maybe_run_battle_smoke,
+# SaveSystem|has_save|load_game occurs 0 times and the only user:// it touches is
+# user://smoke — and nothing downstream in this chain reads those shots back.
 #
 # XDG_DATA_HOME rather than HOME: it is the minimal redirect that moves user://, verified in both
 # directions 2026-09-07 (sandboxed -> resolves inside the sandbox, bare -> his real profile). Safe

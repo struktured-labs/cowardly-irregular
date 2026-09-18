@@ -933,6 +933,18 @@ func _input(event: InputEvent) -> void:
 			_on_dashboard_adjust_rules()
 			get_viewport().set_input_as_handled()
 			return
+		# Start does it on a pad. Every other control in this branch has both devices; this one was
+		# keyboard-only, so a pad player could not adjust rules mid-grind at all.
+		# As the ACTION, like the pause binding below. I wrote the raw index first to match
+		# classify_event's dashboard mapping, and test_remap_reaches_every_handler_regression was
+		# right to red it: ui_menu is remappable and bound to START, so a raw handler keeps firing
+		# on the old button after a rebind while the new one does nothing. The dashboard's raw site
+		# is declared in that guard's ledger because it is MODAL and owns the button while open —
+		# this branch is the live grind state and owns nothing.
+		if event is InputEventJoypadButton and event.is_action_pressed("ui_menu"):
+			_on_dashboard_adjust_rules()
+			get_viewport().set_input_as_handled()
+			return
 		# T key (keyboard) cycles tier
 		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_T:
 			if _autogrind_controller and is_instance_valid(_autogrind_controller):
@@ -5770,9 +5782,15 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	if victory:
 		for item_id in headless_item_drops:
 			var qty: int = int(headless_item_drops[item_id])
-			if not BattleManager.route_drop_to_equipment_pool(item_id):
-				if party.size() > 0 and party[0].is_alive:
-					party[0].add_item(item_id, qty)
+			## Equipment appends ONE id per call, so a stack needs qty calls. Live calls
+			## _deliver_item once per successful roll; the grind AGGREGATES to {id: qty} first,
+			## and that aggregation — which is what makes consumables correct — silently dropped
+			## qty-1 pieces of gear. Enemies are drawn WITH REPLACEMENT, so a repeat is routine.
+			if BattleManager.route_drop_to_equipment_pool(item_id):
+				for _extra in range(maxi(0, qty - 1)):
+					BattleManager.route_drop_to_equipment_pool(item_id)
+			elif party.size() > 0 and party[0].is_alive:
+				party[0].add_item(item_id, qty)
 		for rd in headless_rare_drops:
 			if PartyChatSystem:
 				PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")
@@ -5789,15 +5807,19 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 
 	# Track per-character EXP distribution (headless path)
 	if victory and exp_gained > 0:
-		var alive_count = 0
+		## A MOURNER EARNS THIS EXP. BattleManager:1023 and AutogrindSystem's two award sites all
+		## check earns_exp_while_dead; these were the sites that fix did not reach, so a Cleric
+		## carrying posthumous_credit was credited nothing here AND shrank the divisor, inflating
+		## everyone else's share. Derived ONCE so the divisor and the award loop cannot disagree —
+		## two loops sharing a predicate is how they drift apart in the first place.
+		var earners: Array = []
 		for member in party:
-			if member is Combatant and member.is_alive:
-				alive_count += 1
-		if alive_count > 0:
-			var per_char_exp = exp_gained / alive_count
-			for member in party:
-				if member is Combatant and member.is_alive:
-					AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
+			if member is Combatant and (member.is_alive or BattleManager.earns_exp_while_dead(member)):
+				earners.append(member)
+		if earners.size() > 0:
+			var per_char_exp = exp_gained / earners.size()
+			for member in earners:
+				AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
 
 	# Forward to controller with headless-computed EXP + gold (tick 342:
 	# gold was previously dropped — empty items_gained dict meant the

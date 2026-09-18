@@ -29,6 +29,10 @@ signal rules_saved(rules: Array)
 ## Grid state
 var rules: Array = []
 var cursor_row: int = 0
+## Vertical scroll so rules past the viewport follow the cursor. The AUTOBATTLE twin has had this
+## since it grew past nine rules; this editor never got it, and it has no cap on rules at all.
+var _scroll_offset: float = 0.0
+
 var cursor_col: int = 0
 var is_editing: bool = false
 
@@ -53,6 +57,7 @@ const _RuleComposerOverlayScene := preload("res://src/ui/autobattle/RuleComposer
 
 ## Grid layout constants
 const CELL_WIDTH = 120
+const GRID_BASE_POS := Vector2(130, 50)
 const CELL_HEIGHT = 44
 const CELL_PADDING = 16
 const ROW_SPACING = 24
@@ -192,8 +197,11 @@ func _build_ui() -> void:
 
 	# Grid container (shifted right for details panel)
 	_grid_container = Control.new()
-	_grid_container.position = Vector2(130, 50)
+	_grid_container.position = GRID_BASE_POS
 	_grid_container.size = Vector2(size.x - 146, size.y - 100)
+	# Without this the rows past the viewport were still DRAWN — over the footer and off the
+	# bottom of the screen — because nothing clipped and nothing scrolled.
+	_grid_container.clip_contents = true
 	add_child(_grid_container)
 
 	# Cursor
@@ -840,8 +848,28 @@ func _get_profile_name_for(char_id: String, profile_idx: int) -> String:
 ## CURSOR MANAGEMENT
 ## ═══════════════════════════════════════════════════════════════════════
 
+
+## Keep the selected rule row on screen. Ported from AutobattleGridEditor, which solved this for
+## the same hand-positioned (non-ScrollContainer) grid: shift _grid_container.position.y and the
+## cursor follows for free, because _update_cursor derives cell_pos from that same position.
+func _update_scroll_offset() -> void:
+	if not _grid_container or not is_instance_valid(_grid_container):
+		return
+	var row_stride: float = float(CELL_HEIGHT + ROW_SPACING)
+	var cursor_y: float = cursor_row * row_stride
+	var view_h: float = _grid_container.size.y
+	if cursor_y - _scroll_offset < 0.0:
+		_scroll_offset = cursor_y
+	elif cursor_y + CELL_HEIGHT - _scroll_offset > view_h:
+		_scroll_offset = cursor_y + CELL_HEIGHT - view_h
+	# Never past the top: a negative offset would push row 0 down off its anchor.
+	_scroll_offset = maxf(0.0, _scroll_offset)
+	_grid_container.position.y = GRID_BASE_POS.y - _scroll_offset
+
+
 func _update_cursor() -> void:
 	"""Update cursor visual position"""
+	_update_scroll_offset()
 	var target_cell = _get_cell_at_cursor()
 	if not target_cell:
 		_cursor.visible = false
