@@ -3220,7 +3220,7 @@ func _check_boot_canaries() -> void:
 		var script: Variant = load(path)
 		if script == null:
 			failed.append(str(path))
-			push_error("[BOOT-CANARY] failed to load %s — stale class cache? Run: godot --headless --import (or ./launch.sh)" % path)
+			push_error("[BOOT-CANARY] failed to load %s — stale class cache? Run: ./launch.sh, or XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import" % path)
 	if failed.is_empty():
 		return
 	var layer := CanvasLayer.new()
@@ -3238,7 +3238,13 @@ func _check_boot_canaries() -> void:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.85))
 	label.add_theme_font_size_override("font_size", 22)
-	label.text = "ASSETS OUT OF DATE\n\n%d core script(s) failed to compile:\n%s\n\nThis usually means new scripts were merged without reimporting.\nFix: close the game and run  ./launch.sh  (it reimports automatically)\nor:  godot --headless --import" % [failed.size(), "\n".join(failed)]
+	## ⛔ THE SECOND LINE IS AN INSTRUCTION A PANICKING DEVELOPER TYPES, so it carries the sandbox.
+	## A bare `godot --headless --import` is editor-class: it writes user://, rotating the crash
+	## trace it was run to investigate — that is how a real log history was lost on 2026-09-18. The
+	## remedy is unaffected, because --import's product lands in the PROJECT's .godot/ cache, not in
+	## user://; only the incidental writes move. ./launch.sh stays first and stays bare on purpose —
+	## it launches the real game, where the real profile IS the destination.
+	label.text = "ASSETS OUT OF DATE\n\n%d core script(s) failed to compile:\n%s\n\nThis usually means new scripts were merged without reimporting.\nFix: close the game and run  ./launch.sh  (it reimports automatically)\nor:  XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import" % [failed.size(), "\n".join(failed)]
 	layer.add_child(label)
 
 

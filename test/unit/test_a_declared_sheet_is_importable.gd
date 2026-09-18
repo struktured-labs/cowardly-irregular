@@ -191,7 +191,7 @@ func test_every_declared_sheet_is_importable() -> void:
 	assert_eq(unreachable, [],
 		("IMPORTABLE: %d declared sheet(s) that Godot cannot reach. Each is present on disk and " +
 		"invisible to the game: the loader falls back to procedural art and nothing reports it. " +
-		"Run: godot --headless --audio-driver Dummy --import  : %s") % [unreachable.size(), unreachable])
+		"Run: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import  : %s") % [unreachable.size(), unreachable])
 
 
 ## The mirror of the overworld-map fix. Those PNGs are read as RAW BYTES so they carry
