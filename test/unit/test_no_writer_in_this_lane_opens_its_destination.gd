@@ -18,6 +18,21 @@ extends GutTest
 ## in `src/ui/` and this lane does not own that whole directory. A lane-mate adding a writer to some
 ## other `src/ui/` file is NOT covered here, and no arm in this file can honestly claim otherwise.
 
+## 📌 THE READ SIDE WAS SWEPT TOO AND IS CLEAN — recorded here because it is a NULL, and a null is
+## what gets re-derived with every step green. Derived from `FileAccess.open(…READ)` across the same
+## corpus, 2026-09-18: THREE reader functions, all loud.
+##
+##     ControllerMappings.register_user_mappings   4 warnings: open · JSON · root type · per-entry
+##     InputProfileManager.load_config             4 warnings, tick 167
+##     ControlsMenu._append_user_mapping (read-back)  was the silent one — fixed in .432
+##
+## ⚠️ The local shape of the fleet's asymmetry, worth knowing before you go looking: BOTH standalone
+## readers were hardened deliberately, while the writer that CREATES the file they defend against
+## stayed non-atomic, and the one read-back living INSIDE a writer was the silent one. Loudness
+## tracked the FUNCTION'S JOB, not the file — a reader only ever reports a loss, and the read-back
+## was the only one that could cause one. So do not read "the readers are fine" as evidence about
+## anything else in the file.
+
 const INPUT_DIR := "res://src/input"
 const NAMED := ["res://src/ui/ControlsMenu.gd"]
 
