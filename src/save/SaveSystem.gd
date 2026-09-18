@@ -1048,10 +1048,24 @@ func save_settings() -> void:
 				settings["llm_custom_model"] = GameState.llm_custom_model
 			if "llm_custom_api_key" in GameState:
 				settings["llm_custom_api_key"] = GameState.llm_custom_api_key
-	var file = FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify(settings, "\t"))
-		file.close()
+	## Same staging as _write_save_file, and for a sharper reason: load_settings' own docstring
+	## records that a crash mid-write has ALREADY left an empty settings.json in the wild.
+	var json_string := JSON.stringify(settings, "\t")
+	var staged := SETTINGS_PATH + ".new"
+	var file = FileAccess.open(staged, FileAccess.WRITE)
+	if file == null:
+		## Was a bare `if file:` with no else — a settings save that could not open said nothing
+		## at all, which is why the truncation it caused was never traced back to this line.
+		push_warning("[SaveSystem] save_settings: could not open '%s' for write (error: %s) — settings NOT saved." % [staged, FileAccess.get_open_error()])
+		return
+	file.store_string(json_string)
+	file.close()
+	var err := DirAccess.rename_absolute(staged, SETTINGS_PATH)
+	if err != OK:
+		## The removal is not tidiness here: settings.json holds the BYOK API key, so an orphaned
+		## staging file is the player's secret left in plaintext at a path nothing ever rewrites.
+		push_warning("[SaveSystem] save_settings: could not move '%s' into place (error: %d) — the previous settings, including any BYOK key, are intact and this save did not happen." % [staged, err])
+		DirAccess.remove_absolute(staged)
 
 
 func load_settings() -> void:

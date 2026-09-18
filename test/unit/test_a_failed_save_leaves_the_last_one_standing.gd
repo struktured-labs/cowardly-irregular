@@ -114,3 +114,54 @@ func test_the_destination_is_never_opened_for_write() -> void:
 
 	assert_true(body.contains("rename_absolute"),
 		"the staged file must be renamed into place — without it the write is not atomic and a dead process leaves no save")
+
+
+## Derived rather than hand-listed: EVERY writer in this file, so a third one added later is
+## covered without anybody remembering to extend this arm. `_write_save_file` was fixed first and
+## `save_settings` sat 170 lines below it with the identical shape — a per-function ratchet would
+## have passed the whole time.
+func test_no_writer_in_this_file_opens_its_destination() -> void:
+	var f := FileAccess.open("res://src/save/SaveSystem.gd", FileAccess.READ)
+	assert_not_null(f, "could not read SaveSystem.gd")
+	if f == null:
+		return
+	var src := f.get_as_text()
+	f.close()
+
+	var offenders: Array = []
+	var staged_writes := 0
+	for line in src.split("\n"):
+		var t := line.strip_edges()
+		if not t.contains("FileAccess.open(") or not t.contains("FileAccess.WRITE"):
+			continue
+		if t.contains("staged"):
+			staged_writes += 1
+		else:
+			offenders.append(t)
+
+	assert_gt(staged_writes, 0,
+		"CONTROL: no staged write found in SaveSystem.gd — either the repair is gone or this arm stopped matching it")
+	assert_eq(offenders, [],
+		"a writer in SaveSystem.gd opens its real destination with WRITE, which truncates the player's file before the replacement exists: %s" % str(offenders))
+
+
+func test_the_settings_writer_reports_a_failure_it_used_to_swallow() -> void:
+	## `save_settings` returns void and had a bare `if file:` with no else, so a settings save
+	## that could not open was indistinguishable from one that worked — at all six call sites.
+	var f := FileAccess.open("res://src/save/SaveSystem.gd", FileAccess.READ)
+	assert_not_null(f, "could not read SaveSystem.gd")
+	if f == null:
+		return
+	var src := f.get_as_text()
+	f.close()
+	var start := src.find("func save_settings")
+	assert_gt(start, -1, "func save_settings not found — renamed? this ratchet is now about nothing")
+	if start == -1:
+		return
+	var end := src.find("\nfunc ", start + 1)
+	var body := src.substr(start, (end - start) if end > start else -1)
+
+	assert_true(body.contains("push_warning"),
+		"save_settings can fail to open its file and say nothing — the player keeps playing with settings that were never written")
+	assert_true(body.contains("rename_absolute"),
+		"save_settings must stage and rename: load_settings' own docstring records a crash mid-write already emptying settings.json in the wild")
