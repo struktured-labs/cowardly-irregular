@@ -33,9 +33,15 @@ static func restore() -> void:
 		sm.reset_danger()
 	if sm.has_method("reset_corruption"):
 		sm.reset_corruption()
-	sm._current_area = ""
-	sm._current_world_suffix = "medieval"
+	## ⛔ EVERY WRITE GUARDED, BECAUSE THIS CALL IS THE FIRST LINE OF ALL 26 HOOKS THAT USE IT.
+	## A GDScript error aborts its enclosing function, so an abort here skips every teardown line
+	## BELOW it in each of those files — one rename multiplied 26 times, and each file stays green.
+	## @cowir-controller's rule: a teardown line placed first must be one that cannot abort.
+	if "_current_area" in sm:
+		sm._current_area = ""
+	if "_current_world_suffix" in sm:
+		sm._current_world_suffix = "medieval"
 	## Last, because a completed fade-out leaves the level at -40 and nothing above lifts it.
-	if sm._music_player:
+	if "_music_player" in sm and sm._music_player and "_music_base_db" in sm:
 		sm._music_player.volume_db = sm._music_base_db
 		sm._music_player.pitch_scale = 1.0
