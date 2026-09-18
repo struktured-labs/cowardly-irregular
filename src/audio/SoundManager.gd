@@ -718,7 +718,12 @@ func play_ui(sound_key: String) -> void:
 		return
 	if not SOUNDS.has(sound_key):
 		return
-	_play_sound(_ui_player, SOUNDS[sound_key])
+	## The trim reaches BOTH paths, matching play_battle_scaled. Passing it only to the manifest call
+	## dropped it wherever the synth path runs — a cue whose file fails to load, or a trim authored
+	## for a procedural-only cue, played at the bare base with nothing to show the level was lost.
+	var params: Dictionary = (SOUNDS[sound_key] as Dictionary).duplicate()
+	params["volume_db"] = SFX_UI_BASE_DB + trim
+	_play_sound(_ui_player, params)
 
 
 ## The battle channel's level for a cue: its base plus any authored trim. ONE owner, because
