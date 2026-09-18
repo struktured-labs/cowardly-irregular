@@ -435,7 +435,7 @@ static func load_monster_sprite_frames(monster_id: String, base_id: String = "")
 			atlas.region = Rect2(col * frame_width, row * frame_height, frame_width, frame_height)
 			sprite_frames.add_frame(anim_name, atlas)
 
-	if sprite_frames.get_animation_names().size() == 0:
+	if not has_usable_frames(sprite_frames):
 		return null
 
 	print("[SPRITES] Loaded monster sheet for '%s' (%d animations)" % [monster_id, sprite_frames.get_animation_names().size()])
@@ -510,6 +510,16 @@ static func _normalize_suffix(audio_suffix: String) -> String:
 ##
 ## Returns the base fps unchanged whenever there is nothing to match against — an undressed
 ## sheet, an equal frame count, or a base sheet that is not on disk.
+## SpriteFrames.new() ships with a "default" animation, so a NAME count never reaches 0 — ask FRAMES.
+static func has_usable_frames(sf: SpriteFrames) -> bool:
+	if sf == null:
+		return false
+	for anim_name in sf.get_animation_names():
+		if sf.get_frame_count(anim_name) > 0:
+			return true
+	return false
+
+
 ## A costume with fewer frames than its base must take the SAME wall-clock time, not run fast.
 static func retimed_fps(base_fps: float, frames: int, base_frames: int) -> float:
 	if frames <= 0 or base_frames <= 0 or base_frames == frames:
