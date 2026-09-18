@@ -15,6 +15,15 @@ the file was already inside a 32-file regression corpus that had just been run a
 reported as "163 passing" — the name was on screen and the prose was not. A corpus
 assembled by pattern is also the list of everyone who has already worked your subject.
 
+⚠️ AND THE HEADER IS THE FILE'S SUBJECT, WHICH IS NOT ALWAYS WHY IT MATCHED. Measured
+2026-09-18 against another lane's case: searching "TRUNCATES" surfaces
+test_remap_capture_names_the_escape_button_regression, whose header is about a capture
+overlay naming the wrong button — while the truncate-on-open reasoning sits inside
+_restore_input_config, a function body. A reader skimming that header dismisses the file.
+So the MATCHED LINE is printed too. Subject and match coincide for a symbol search and
+diverge for a mechanism search, which is the search you run when you do not yet know
+which symbol owns the idea.
+
 Exit: 0 ran · 2 bad invocation · 3 corpus absent (nothing could have been searched).
 A zero-hit run exits 0 and SAYS SO — a null and a failed run must not look alike.
 """
@@ -52,6 +61,21 @@ def header_of(path, max_lines):
     return out
 
 
+def matching_lines(path, symbol, limit):
+    """Why this file matched — the header is its SUBJECT and need not be the same thing."""
+    out = []
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for num, line in enumerate(fh, 1):
+                if symbol in line:
+                    out.append((num, line.strip()))
+                    if len(out) >= limit:
+                        break
+    except OSError:
+        pass
+    return out
+
+
 def gd_files(root):
     found = []
     for dirpath, _dirnames, filenames in os.walk(root):
@@ -68,6 +92,7 @@ def main():
     ap.add_argument("symbols", nargs="+", help="symbol or substring, e.g. play_ambient")
     ap.add_argument("--corpus", default=CORPUS_DEFAULT, help="directory to search (default: test)")
     ap.add_argument("--lines", type=int, default=4, help="header lines to print per file (default: 4)")
+    ap.add_argument("--hits", type=int, default=2, help="matched lines to print per file (default: 2)")
     args = ap.parse_args()
 
     if not os.path.isdir(args.corpus):
@@ -102,6 +127,8 @@ def main():
                 print("      (no header prose — open it)")
             for line in head:
                 print("      %s" % line)
+            for num, text in matching_lines(path, symbol, args.hits):
+                print("      :%-5d %s" % (num, text[:110]))
         print()
     return 0
 

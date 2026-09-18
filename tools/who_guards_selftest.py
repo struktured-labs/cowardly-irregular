@@ -38,7 +38,9 @@ def main():
                      "## ALPHA HEADER PROSE, the sentence a reader needs.\n"
                      "## second line of it.\n\n"
                      "const X := 1\n\n"
-                     "func test_a():\n\tsm.play_widget(\"k\")\n")
+                     "func test_a():\n"
+                     "\t## REASONING BURIED IN A FUNCTION, not in the header.\n"
+                     "\tsm.play_widget(\"k\")\n")
         with open(os.path.join(corpus, "test_beta.gd"), "w", encoding="utf-8") as fh:
             fh.write("extends GutTest\n\nfunc test_b():\n\tpass\n")
 
@@ -51,6 +53,12 @@ def main():
         check("it prints the file's HEADER PROSE, not just the path",
               "ALPHA HEADER PROSE" in out, "<-- a path-only tool passes every other arm")
         check("it does not name a file that lacks the symbol", "test_beta.gd" not in out)
+        # ⚠️ THE HEADER IS THE FILE'S SUBJECT AND NEED NOT BE WHY IT MATCHED. Measured against
+        # another lane's file whose header is about a capture overlay while the matched reasoning
+        # sits in a function body — a reader skims the header and dismisses a relevant file.
+        check("it shows WHY the file matched, not only what the file is about",
+              "play_widget" in out and ":" in out and "sm.play_widget" in out,
+              "<-- a header-only tool dismisses a match buried in a function")
 
         code, out, _ = run(["zz_no_such_symbol_anywhere"], corpus)
         check("a zero-hit search still exits 0", code == 0, "(got %d)" % code)
