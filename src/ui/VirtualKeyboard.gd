@@ -439,7 +439,9 @@ func _backspace_step() -> void:
 ## Hold-to-repeat. These guards MIRROR _input's, and they have to: MenuRepeat polls Input, so it
 ## inherits none of the refusals the event path makes for itself.
 func _process(delta: float) -> void:
-	if not visible:
+	# is_queued_for_deletion too: none of these hide before queue_free(), so a menu closed
+	# mid-hold stays visible one more frame and the ramped repeat steps a dying node.
+	if not visible or is_queued_for_deletion():
 		_nav_repeat.reset()
 		_backspace_repeat.reset()
 		return
