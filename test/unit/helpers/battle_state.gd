@@ -119,10 +119,24 @@ func _valid_only(a: Array) -> Array:
 ##   execute_next_action_after_battle_end      the above + current_combatant (LIVE, not freed —
 ##                                             checked with is_instance_valid, it is not dangling)
 ##
-## ✅ EVERY ONE OF THOSE FIELDS IS RESET BY `start_battle`, so the next battle cannot inherit them.
+## ✅ SEVEN OF THE EIGHT FIELDS ARE RESET BY `start_battle`, so the next battle cannot inherit them.
 ## They are visible to a later test that READS the field without starting a battle, which is why
 ## they are reported rather than churned — six files whose leak survived `start_battle` were fixed
 ## instead (v3.33.426). Fix one of these only if you have a reader that actually suffers.
+##
+## ⛔ `current_combatant` IS THE EXCEPTION AND I HAD THIS WRONG IN THE FIRST VERSION OF THIS NOTE.
+## It is cleared at `_cleanup_battle:1161`, whose ONLY caller is `end_battle:1121` — so it is NOT
+## reset by `start_battle` and DOES survive into the next battle, until that battle ends. In normal
+## play it is overwritten by `_process_next_selection` as soon as turns begin, so the exposure is
+## the window between `start_battle` and the first selection, holding a combatant from a finished
+## test. The probe reports it as `obj` rather than `<Freed Object>`, i.e. live at measurement time
+## — but nothing keeps it alive, and a later free makes it dangling.
+##
+## 🔑 THE NOTE SAID "every one" AND THE ARM THAT DEFENDS IT — test_the_triaged_leaks_are_still_
+## reset_by_start_battle — RED ON ITS FIRST RUN AND NAMED THIS FIELD. That is the whole argument for
+## giving a breakable clause an arm instead of a paragraph: the triage is a closed decision and a
+## note is right for it, but "start_battle resets these" is a claim about production code and it was
+## already false when written.
 ##
 ## ⚠️ AND THE COUNT IS NOT A RATCHET. Nothing asserts it stays 8; a ninth would appear silently in
 ## the probe output and read exactly like these do. If you want it pinned, pin it — this note only
