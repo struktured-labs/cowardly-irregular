@@ -6787,11 +6787,7 @@ func _show_controller_overlay(context: Dictionary) -> void:
 		add_child(_controller_overlay_layer)
 
 		_controller_overlay = ControllerOverlay.new()
-		var vp_size = get_viewport().get_visible_rect().size
-		if vp_size.x == 0 or vp_size.y == 0:
-			vp_size = Vector2(1280, 720)
-		_controller_overlay.position = Vector2(vp_size.x - 330, vp_size.y - 200)
-		_controller_overlay.size = ControllerOverlay.OVERLAY_SIZE
+		# Placement belongs to the overlay now — it re-anchors on size_changed; this baked it once.
 		_controller_overlay_layer.add_child(_controller_overlay)
 
 	_controller_overlay.set_context(context)

@@ -187,11 +187,20 @@ func test_every_raw_axis_reader_names_its_threshold() -> void:
 	var named := RegEx.create_from_string("[A-Z][A-Z0-9_]{3,}")
 	var readers: Array = []
 	var unnamed: Array = []
+	var unread: Array = []
 	for file_name in DirAccess.get_files_at("res://src/input"):
 		if not file_name.ends_with(".gd"):
 			continue
 		var path: String = "res://src/input/%s" % file_name
-		for line in GdSource.code_of(path).split("\n"):
+		## ⛔ PER FILE, because this arm's whole subject is a CENSUS and a dark file makes it
+		## silently short. code_of returns "" on a failed read, so such a file names no reader and
+		## reports no bare literal — it leaves both lists at once. The stale comment that started
+		## this ("the only two raw-axis readers") is the same failure by hand.
+		var code: String = GdSource.code_of(path)
+		if code.strip_edges().is_empty():
+			unread.append(file_name)
+			continue
+		for line in code.split("\n"):
 			if line.find("axis_value") == -1 or compare.search(line) == null:
 				continue
 			readers.append("%s: %s" % [file_name, line.strip_edges()])
@@ -202,6 +211,9 @@ func test_every_raw_axis_reader_names_its_threshold() -> void:
 	## perfectly — the shrinking-corpus shape, and the reason the census was wrong to begin with.
 	assert_true(readers.size() >= 3,
 		"CONTROL: expected at least the three known raw-axis readers in src/input/, derived %s" % [readers])
+	assert_true(unread.is_empty(),
+		"%s enumerated but read EMPTY — a src/input file that cannot be read names no reader and " % [unread]
+		+ "reports no bare literal, so the census above is short in silence.")
 	assert_true(unnamed.is_empty(),
 		"raw-axis comparison(s) against a bare literal: %s — name the threshold as a const so it " % [unnamed]
 		+ "says which question it answers and the arms above can see it")

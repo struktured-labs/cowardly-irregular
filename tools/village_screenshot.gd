@@ -26,7 +26,12 @@ func _init() -> void:
 	for path in ["res://src/maps/villages/%sVillage.tscn" % stem, "res://src/maps/villages/%s.tscn" % stem,
 			"res://src/maps/villages/%sVillage.gd" % stem, "res://src/maps/villages/%s.gd" % stem,
 			"res://src/maps/dungeons/%s.gd" % stem,
-			"res://src/maps/interiors/%s.gd" % stem]:
+			"res://src/maps/interiors/%s.gd" % stem,
+			# src/ui LAST, deliberately. title_screen is a gallery shot and lives here, but a
+			# name that already resolves under maps/ must keep resolving there -- appending
+			# rather than inserting makes that a property of the ORDER rather than of luck.
+			"res://src/ui/%s.tscn" % stem,
+			"res://src/ui/%s.gd" % stem]:
 		if not ResourceLoader.exists(path):
 			continue
 		var res = load(path)
@@ -42,6 +47,24 @@ func _init() -> void:
 		quit(2)
 		return
 	root.add_child(scene)
+	# ⛔ A UI SCENE ADDED THIS WAY HAS ZERO SIZE, AND IT RENDERS AS ALMOST-NOTHING.
+	# In the game a Control like TitleScreen becomes the CURRENT SCENE and Godot sizes it to
+	# the viewport; root.add_child() does not, so its anchors resolve against a 0x0 rect.
+	# Measured 2026-09-18 on TitleScreen, which is why the gallery's first image had never
+	# been re-capturable:
+	#     bg_tex loaded=true  CompressedTexture2D 960x540    the art was fine
+	#     children=45                                         the UI built completely
+	#     size=(0,0)  viewport=(1280,720)                     the root Control had no size
+	#     TextureRect tex=true visible=true size=(0,0)        so it drew nothing
+	# The frame still carried the vignette bands and the version label, which is why it read
+	# as a half-broken scene rather than an unsized one. shot_guard refused it (18 colours,
+	# floor 32) -- correctly, and that refusal is what sent me looking instead of shipping it.
+	if scene is Control:
+		var _vp: Vector2 = root.get_viewport().get_visible_rect().size
+		scene.set_anchors_preset(Control.PRESET_FULL_RECT)
+		scene.size = _vp
+		scene.position = Vector2.ZERO
+		print("[SCREEN] sized Control scene to viewport %s" % str(_vp))
 	# ⛔ CAPTURES OF THE SAME SCENE WERE NOT REPRODUCIBLE, AND STORE SHOTS COME FROM HERE.
 	# Measured 2026-09-18, two captures of one scene, one tree, one phase:
 	#     frosthold  97.4% of sampled pixels differ   mean signed shift R+18.2 G+16.7 B+12.8

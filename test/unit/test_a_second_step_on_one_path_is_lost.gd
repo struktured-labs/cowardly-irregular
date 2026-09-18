@@ -95,3 +95,23 @@ func test_the_explanation_list_has_no_dead_entries() -> void:
 	assert_true(dead.is_empty(),
 		"%s no longer call step() twice — drop the entry rather than leaving a stale exemption. " % [dead]
 		+ "MenuNav's own docstring named DialogueChoiceMenu long after that file left the tree.")
+
+
+## ⛔ PER-FILE, INSIDE THE WALK. Both floors above are AGGREGATE — `files.size() > 200` and
+## `callers.size() > 20` — and neither can see ONE source go dark. `code_of` returns "" on a failed
+## read, so an unreadable file counts 0 occurrences and drops out of `doubles` silently: the menu
+## that just gained a second call site is precisely the one the guard stops watching.
+## @cowir-ai's measurement, and the whole difference is one indentation level — a floor inside the
+## loop names the offender, the same floor after it reports a clean subset.
+func test_every_enumerated_source_actually_reads() -> void:
+	var files: Array = []
+	_gd_files_under("res://src", files)
+	assert_gt(files.size(), 200, "CONTROL: the walk must reach the tree, got %d" % files.size())
+
+	var unread: Array = []
+	for path in files:
+		if GdSource.code_of(path).strip_edges().is_empty():
+			unread.append(path)
+	assert_true(unread.is_empty(),
+		"%s enumerated but read EMPTY. Every count in this file is derived from code_of, which " % [unread]
+		+ "returns \"\" on a failed read — so these contribute 0 and leave the scan silently short.")
