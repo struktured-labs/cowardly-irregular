@@ -17,6 +17,26 @@ extends GutTest
 
 const MANIFEST_PATH := "res://data/music_manifest.json"
 
+## ⛔ THE FLIP IS UNDONE IN after_each, NOT INLINE. The arm below mutates the SHARED autoload's
+## cached manifest; a GDScript error between the flip and an inline restore aborts the enclosing
+## function and strands `stinger_level_up` as a LOOPING track for every later test in the run.
+## That is this lane's own rule — a guard whose abort strands its own fixture — and I shipped the
+## inline version 40 minutes ago.
+var _flipped_key: String = ""
+var _flipped_prev = null
+
+
+func after_each() -> void:
+	if _flipped_key != "" and SoundManager != null:
+		var e = SoundManager._music_manifest.get(_flipped_key, null)
+		if e is Dictionary:
+			if _flipped_prev == null:
+				(e as Dictionary).erase("loop")
+			else:
+				(e as Dictionary)["loop"] = _flipped_prev
+	_flipped_key = ""
+	_flipped_prev = null
+
 
 func _tracks() -> Dictionary:
 	var raw: String = FileAccess.get_file_as_string(MANIFEST_PATH)
@@ -76,12 +96,12 @@ func test_a_stinger_is_forced_not_to_loop_whatever_the_manifest_says() -> void:
 	var entry = SoundManager._music_manifest.get("stinger_level_up", {})
 	assert_true(entry is Dictionary and not (entry as Dictionary).is_empty(),
 		"SCOPE control: stinger_level_up is not in the loaded manifest, so this arm drives nothing")
-	var authored_loop = (entry as Dictionary).get("loop", true)
+	_flipped_key = "stinger_level_up"
+	_flipped_prev = (entry as Dictionary).get("loop", null)
 	(entry as Dictionary)["loop"] = true
 	assert_true(SoundManager._try_play_from_manifest("stinger_level_up"),
 		"SCOPE control: stinger_level_up did not play from the manifest, so the assert below is about nothing")
 	var stinger_stream: AudioStream = SoundManager._music_player.stream
-	(entry as Dictionary)["loop"] = authored_loop
 	assert_not_null(stinger_stream, "the stinger produced no stream")
 	if stinger_stream != null:
 		assert_false(bool(stinger_stream.loop),
@@ -99,3 +119,18 @@ func test_a_stinger_is_forced_not_to_loop_whatever_the_manifest_says() -> void:
 	## Teardown: this lane shares one autoload and the next file must not inherit a track.
 	SoundManager.stop_music()
 	SoundManager._current_music = before_key
+
+
+## ⛔ THE STRAND CATCHER. Declaration order is run order in GUT, so this runs after the arm above.
+## Without after_each an abort between the flip and an inline restore leaves the key LOOPING for the
+## rest of the process — and every later file that plays a stinger inherits it.
+func test_zz_the_flipped_fixture_came_back() -> void:
+	if SoundManager == null:
+		assert_true(false, "SoundManager autoload unavailable")
+		return
+	SoundManager._load_music_manifest()
+	var e = SoundManager._music_manifest.get("stinger_level_up", {})
+	assert_true(e is Dictionary, "SCOPE control: stinger_level_up is not in the loaded manifest")
+	if e is Dictionary:
+		assert_eq((e as Dictionary).get("loop", true), false,
+			"the manifest fixture was left FLIPPED — stinger_level_up is cached as a looping track for every later test in this process, which is a cross-file poison, not a local failure")
