@@ -81,7 +81,14 @@ const NAMED := [
 ##
 ## `rename_absolute(` means the bytes were put somewhere else and moved into place; `get_as_text()`
 ## in the same function means the write was read back and judged. Both are things the code DOES.
-const SAFE_MARKERS := ["rename_absolute(", "get_as_text()"]
+## ⛔ ANCHORED TO THE EXPRESSION ACTUALLY WRITTEN. These were bare `rename_absolute(` and
+## `get_as_text()`, satisfied by ANY such call after the write — so a writer that truncated its
+## destination and then read an UNRELATED file was exempted. Measured: green, with a live
+## truncating write in it. @cowir-sfx's shape — an exemption granted by a DIFFERENT subject's call.
+##
+## A safe writer must rename THE PATH IT STAGED, or read back THE PATH IT WROTE. Both are now
+## keyed to the first argument of the write open, so another file's call cannot stand in for it.
+const SAFE_FORMS := ["rename_absolute(%s", "open(%s, FileAccess.READ)"]
 
 
 func _lane_scripts() -> Array:
@@ -120,6 +127,17 @@ func _strip_comment(line: String) -> String:
 		elif c == "#":
 			return line.substr(0, i)
 	return line
+
+
+## The FIRST ARGUMENT of a `FileAccess.open(...)` call — the path being opened, verbatim, so the
+## safety check can demand that same expression rather than any call of the right shape.
+func _opened_expr(line: String) -> String:
+	var at: int = line.find("FileAccess.open(")
+	if at < 0:
+		return ""
+	var rest: String = line.substr(at + "FileAccess.open(".length())
+	var comma: int = rest.find(",")
+	return rest.substr(0, comma).strip_edges() if comma > 0 else ""
 
 
 ## The name of the function containing `idx`, for the membership floor above.
@@ -226,11 +244,13 @@ func test_no_writer_opens_its_destination_directly() -> void:
 	for row in _write_opens():
 		var text: String = row[2]
 		var body: String = row[3]
+		var target: String = _opened_expr(text)
 		var safe: bool = false
-		for marker in SAFE_MARKERS:
-			if marker in text or marker in body:
-				safe = true
-				break
+		if target != "":
+			for form in SAFE_FORMS:
+				if (form % target) in body:
+					safe = true
+					break
 		if not safe:
 			offenders.append("%s:%d  %s" % [str(row[0]).replace("res://", ""), row[1], text])
 
