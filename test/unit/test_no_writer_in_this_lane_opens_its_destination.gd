@@ -187,10 +187,19 @@ func _write_opens() -> Array:
 			## being truncated. A wrong "this is broken" makes someone ACT: the fix it invites is
 			## converting a safe open into a staged write for no reason.
 			##
-			## 🔑 The `FileAccess.` prefix anchors it and dissolves the ordering trap another lane hit
-			## (`READ_WRITE` contains `READ`, so a mode list must test the write forms first):
+			## MEASURED IN-ENGINE, not recalled — write 10 bytes, reopen in each mode, re-read length:
+			##     FileAccess.WRITE        10 -> 0    TRUNCATES
+			##     FileAccess.WRITE_READ   10 -> 0    TRUNCATES
+			##     FileAccess.READ_WRITE   10 -> 10   PRESERVES   <- groups with READ
+			##
+			## 🔑 THE `FileAccess.` PREFIX IS WHAT CARRIES THIS, NOT THE ORDER OF THE TESTS:
 			##     "FileAccess.READ_WRITE".contains("FileAccess.WRITE")  ->  false   ✅ not flagged
 			##     "FileAccess.WRITE_READ".contains("FileAccess.WRITE")  ->  true    ✅ truncates
+			## ⚠️ A "test the write forms first" rule circulated for this and was RETRACTED by its
+			## author after they mutated it: dropping either write branch still passed, and only
+			## removing the prefix red. Ordering matters for an UNANCHORED list, where "WRITE" matches
+			## READ_WRITE and "READ" matches WRITE_READ — anchoring removes the need for the rule
+			## rather than satisfying it, which is why this does not depend on the order.
 			if "FileAccess.open" in s and "FileAccess.WRITE" in s:
 				found.append([path, n, s, fn_body, _enclosing_name(all_lines, n - 1)])
 		f.close()
