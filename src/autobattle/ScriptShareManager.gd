@@ -393,17 +393,37 @@ static func _write_export(filename: String, data: Dictionary) -> String:
 		DirAccess.make_dir_recursive_absolute(EXPORT_DIR)
 
 	var path = EXPORT_DIR + filename
-	var file = FileAccess.open(path, FileAccess.WRITE)
+	## ⛔ EXPORT FILENAMES ARE FIXED, not timestamped — re-exporting the same character OVERWRITES
+	## the previous export, so open(dest, WRITE) truncates a file the player may already have
+	## shared. Staged like every other writer; the destination is never the partial state.
+	var staged = path + ".new"
+	var json_string = JSON.stringify(data, "\t")
+	var file = FileAccess.open(staged, FileAccess.WRITE)
 	if not file:
 		## Tick 168: push_warning so the editor + CI surface this.
 		## Export failures matter: the player triggered the export
 		## expecting a file to land. Silent failure breaks the
 		## share workflow (they hand a friend a path that doesn't
 		## exist).
-		push_warning("[SHARE] Could not open %s for write — export will fail (error: %s)" % [path, FileAccess.get_open_error()])
+		push_warning("[SHARE] Could not open %s for write — export will fail (error: %s)" % [staged, FileAccess.get_open_error()])
 		return ""
 
-	file.store_string(JSON.stringify(data, "\t"))
+	file.store_string(json_string)
+	## This function RETURNS the path as its success signal, so a short write hands the player a
+	## path to a truncated file they will give a friend. store_string cannot report one.
+	var werr: int = file.get_error()
 	file.close()
+	var chk = FileAccess.open(staged, FileAccess.READ)
+	var written: int = chk.get_length() if chk != null else -1
+	if chk != null:
+		chk.close()
+	if werr != OK or written != json_string.to_utf8_buffer().size():
+		DirAccess.remove_absolute(staged)
+		push_warning("[SHARE] Short write to %s (%d of %d bytes, error %d) — previous export left intact" % [staged, written, json_string.to_utf8_buffer().size(), werr])
+		return ""
+	if DirAccess.rename_absolute(staged, path) != OK:
+		DirAccess.remove_absolute(staged)
+		push_warning("[SHARE] Could not rename %s into place — previous export left intact" % staged)
+		return ""
 	print("[SHARE] Exported to %s" % path)
 	return path

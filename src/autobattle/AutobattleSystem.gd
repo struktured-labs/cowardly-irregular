@@ -2070,11 +2070,37 @@ func _save_character_profiles() -> void:
 		"enabled": autobattle_enabled
 	}
 
-	var file = FileAccess.open(save_path, FileAccess.WRITE)
-	if file:
-		var json_string = JSON.stringify(data, "\t")
-		file.store_string(json_string)
-		file.close()
+	_write_json_atomic(save_path, data, "_save_character_profiles")
+
+## ⛔ open(…, WRITE) TRUNCATES. This file is the LARGEST player-data file on disk (88 KB measured
+## on struktured's live user:// — 25x the next), so serializing after the open put all of it inside
+## a window where a process death leaves 0 bytes and no previous copy. Serialize, stage, verify, rename.
+func _write_json_atomic(path: String, payload: Variant, what: String) -> bool:
+	var json_string: String = JSON.stringify(payload, "\t")
+	var staged: String = path + ".new"
+	var file := FileAccess.open(staged, FileAccess.WRITE)
+	if file == null:
+		push_warning("[AutobattleSystem] %s: could not open %s (error %d) — previous file left intact" % [what, staged, FileAccess.get_open_error()])
+		return false
+	file.store_string(json_string)
+	## store_string returns NOTHING, so a short write is invisible; a rename would carry the
+	## partial file into place just as happily. Checked BEFORE the rename, never after.
+	var werr: int = file.get_error()
+	file.close()
+	var expected: int = json_string.to_utf8_buffer().size()
+	var chk := FileAccess.open(staged, FileAccess.READ)
+	var written: int = chk.get_length() if chk != null else -1
+	if chk != null:
+		chk.close()
+	if werr != OK or written != expected:
+		DirAccess.remove_absolute(staged)
+		push_warning("[AutobattleSystem] %s: short write to %s (%d of %d bytes, error %d) — previous file left intact" % [what, staged, written, expected, werr])
+		return false
+	if DirAccess.rename_absolute(staged, path) != OK:
+		DirAccess.remove_absolute(staged)
+		push_warning("[AutobattleSystem] %s: could not rename %s into place — previous file left intact" % [what, staged])
+		return false
+	return true
 
 
 func _migrate_old_format_scripts() -> void:
