@@ -230,6 +230,18 @@ func test_no_write_reaches_disk_by_a_form_these_arms_cannot_see() -> void:
 	var src := f.get_as_text()
 	f.close()
 
+	## ⛔ A LIST-DRIVEN ARM IS VACUOUS WHEN THE LIST IS EMPTY, AND MINE WAS: emptying
+	## OTHER_WRITE_FORMS left this file at 7 passing, EC=0. The GameLoop control below proves the
+	## READ works, not that the list has members — two different things, and only one was checked.
+	## (cowir-sprites' case: their protection derivation returns an empty set for `bard` and reports
+	## "nothing is artist work", the one answer that destroys everything while looking green.)
+	##
+	## ⚠️ MEMBERSHIP, NOT A COUNT — a size floor is satisfied by a survivor, which is the hole this
+	## whole file spent the evening closing. Named forms, so removing one is loud.
+	for required in ["ResourceSaver.save", "store_var", "save_png", "open_encrypted"]:
+		assert_true(OTHER_WRITE_FORMS.has(required),
+			"OTHER_WRITE_FORMS no longer lists %s — this arm reports a clean file by not looking for it, and an emptied list passes with nothing checked" % required)
+
 	var offenders: Array = []
 	var line_no := 0
 	for line in src.split("\n"):
@@ -284,10 +296,7 @@ func test_every_open_here_proves_it_is_read_only_or_is_staged() -> void:
 		var t := line.strip_edges()
 		if t.begins_with("#") or not t.contains("FileAccess.open("):
 			continue
-		## write forms first — READ_WRITE contains READ
-		var is_write := t.contains("FileAccess.WRITE") or t.contains("READ_WRITE") or t.contains("WRITE_READ")
-		var is_read := (not is_write) and t.contains("FileAccess.READ")
-		if is_read:
+		if _classify_open(t) == "read":
 			read_only += 1
 			continue
 		## a write, or a mode this scan cannot read: it must be opening the staging path
@@ -298,3 +307,30 @@ func test_every_open_here_proves_it_is_read_only_or_is_staged() -> void:
 		"CONTROL: no read-only open found in SaveSystem.gd — this file demonstrably reads its own save and settings, so the classifier is not reading modes at all and every pass below is vacuous")
 	assert_eq(candidates, [],
 		"an open here neither proves it is read-only nor targets the staging path, so it may truncate the player's file where nothing can see it: %s" % str(candidates))
+
+## Extracted so the classifier can be exercised on CONSTRUCTED input, which is the only place both
+## answers exist: this file holds no open with an unreadable mode, so the corpus cannot test the
+## OVER-MATCH direction. cowir-controller measured that their equivalent control passed while
+## matching EVERYTHING — `READABLE_MODES = ["FileAccess."]` classified every open as safe and the
+## arm went permanently silent with its control still green.
+##
+## ⚠️ ORDER IS LOAD-BEARING: READ_WRITE contains READ, so the write forms are tested FIRST.
+func _classify_open(line: String) -> String:
+	if line.contains("FileAccess.WRITE") or line.contains("READ_WRITE") or line.contains("WRITE_READ"):
+		return "write"
+	if line.contains("FileAccess.READ"):
+		return "read"
+	return "unknown"
+
+
+func test_the_open_classifier_answers_both_ways_on_constructed_input() -> void:
+	## A count over the SAFE class cannot see a classifier that calls everything safe — the failure
+	## mode of an inverted-burden arm is silence, not noise. So both answers are pinned here.
+	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.READ)'), "read",
+		"a literal READ open must classify read-only, or the arm flags every legitimate read in the file")
+	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.WRITE)'), "write",
+		"a literal WRITE open must classify write")
+	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.READ_WRITE)'), "write",
+		"READ_WRITE must classify WRITE — it contains READ, so a read-first classifier calls the widest mode the safest")
+	assert_eq(_classify_open('var w := FileAccess.open(path, mode)'), "unknown",
+		"a HOISTED mode must classify unknown, not read — this is the form that left the whole guard at 6 passing with a live truncating write in the file")
