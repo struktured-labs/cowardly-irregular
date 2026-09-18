@@ -481,8 +481,14 @@ var _item_sounds: Dictionary = {}
 
 
 func play_item(item_id: String) -> void:
-	"""Cue for USING an item. Silent for plain HP potions by design — healing_done already plays
-	`heal`, and a second cue on top of it would just be louder, not clearer."""
+	"""Cue for USING an item, derived from its own effects. Silent only for an item _item_sounds
+	never mapped — 17 of 172 map, the rest are gear and key items with no use-cue.
+
+	⚠️ This said "silent for plain HP potions by design — healing_done already plays `heal`".
+	BOTH halves were false (measured 2026-09-17): `heal_hp` maps to `heal` in _ITEM_EFFECT_SFX, so
+	4 items DO cue here, and `healing_done` plays nothing at all — BattleScene._on_healing_done
+	only calls BattleResultsDisplay, which has zero SoundManager references. There is no doubling
+	to avoid, so do not "restore" a silence that was never the design."""
 	var cue: String = str(_item_sounds.get(item_id, ""))
 	if cue == "":
 		return
