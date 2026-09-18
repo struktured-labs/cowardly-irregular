@@ -1,7 +1,9 @@
 extends SceneTree
 
 ## Smoke test for the battle system end-to-end.
-## Usage: godot --headless -s test/smoke/test_battle_smoke.gd
+## Usage: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/smoke/test_battle_smoke.gd
+##
+## ⛔ The prefix is load-bearing: a bare run writes the player's real `user://`.
 ##
 ## Tests that:
 ## - BattleScene instantiates and initializes without errors

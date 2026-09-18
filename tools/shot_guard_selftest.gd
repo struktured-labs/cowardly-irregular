@@ -42,6 +42,35 @@ func _img(colours: int) -> Image:
 
 
 func _init() -> void:
+	# ⛔ REFUSE TO RUN AGAINST struktured's REAL PROFILE. This file has no .sh wrapper, so it
+	# gets invoked as a bare `godot --headless -s tools/shot_guard_selftest.gd` -- which is
+	# exactly what I did, four times, on 2026-09-18 between 01:45 and 01:50.
+	#
+	# The script writes only res://tmp. The damage is GODOT'S OWN LOG: every launch writes
+	# user://logs/ and the ring holds FIVE. Four launches filled it and rotated away his
+	# 2026-09-17 play session. Saves, settings, autogrind and autobattle were untouched.
+	# This is the SECOND time this lane has done that -- .355-.358 cost the same five slots
+	# by a different route -- and the wrappers beside this file (overworld_screenshot.sh,
+	# village_screenshot.sh, later_world_dungeon_screenshots.sh) each set XDG_DATA_HOME three
+	# times over. They were right and they were not used, because nothing routes here.
+	#
+	# ⛔ THIS CHECK CANNOT PREVENT THE WRITE, AND I MEASURED THAT RATHER THAN ASSUMING IT.
+	# Godot opens user://logs/godot.log at BOOT, before this script runs. A refusing run still
+	# costs a log slot: XDG_DATA_HOME outside the worktree -> refused, EC=2 -> log written anyway.
+	# So this is damage LIMITATION, not prevention: it turns a silent bypass into a loud refusal,
+	# which is what stops someone running it four times without noticing. I ran it four times.
+	# tools/shot_guard_selftest.sh is the thing that actually prevents it, by setting the
+	# redirect before the engine starts -- use that.
+	var _data_root := OS.get_environment("XDG_DATA_HOME")
+	if _data_root == "" or not _data_root.begins_with(ProjectSettings.globalize_path("res://")):
+		printerr("[shot-guard selftest] REFUSED: XDG_DATA_HOME is %s." % (
+			"unset" if _data_root == "" else "'" + _data_root + "', outside this worktree"))
+		printerr("  A bare godot launch writes user://logs/, whose ring holds FIVE files, and")
+		printerr("  rotates away struktured's own play logs. Re-run sandboxed:")
+		printerr("    XDG_DATA_HOME=\"$PWD/tmp/shot_xdg\" xvfb-run -a godot --headless -s %s" % (
+			"tools/shot_guard_selftest.gd"))
+		quit(2)
+		return
 	DirAccess.make_dir_recursive_absolute(DIR)
 	var floor_v: int = ShotGuard.CONTENT_FLOOR
 

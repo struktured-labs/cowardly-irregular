@@ -79,12 +79,19 @@ func test_slime_variants_present_in_manifest() -> void:
 			"sprite_manifest.json monster_sheets must include '%s' (regression: variant removed, picker dormant)" % variant)
 
 
-func test_sound_manager_world_suffix_helper_remains() -> void:
+func test_world_suffix_helper_remains() -> void:
 	"""BattleScene._get_monster_sprite_frames calls
-	SoundManager._get_current_world_suffix() to decide which variant id to
-	try. If that helper is renamed or made private differently, the
-	picker breaks silently (no compile error if the call is in a string-
-	concat expression). Verify the symbol still exists in source."""
-	var text = _read("res://src/audio/SoundManager.gd")
-	assert_true(text.find("func _get_current_world_suffix") != -1,
-		"SoundManager._get_current_world_suffix must remain (regression: per-world sprite picker breaks)")
+	HybridSpriteLoader.current_world_suffix() to decide which variant id to
+	try. If that helper is renamed, the picker breaks silently (no compile
+	error if the call is in a string-concat expression). Verify the symbol
+	still exists in source.
+
+	It read SoundManager._get_current_world_suffix() until 2026-09-18. That
+	resolver falls through to a play_area_music-written cache once a battle
+	has cleared _current_area — which is exactly when a monster sprite is
+	built — so a costume followed the last music transition rather than the
+	player's world. See test_a_costume_follows_the_world_you_are_in.gd,
+	which drives the divergence."""
+	var text = _read("res://src/battle/sprites/HybridSpriteLoader.gd")
+	assert_true(text.find("func current_world_suffix") != -1,
+		"HybridSpriteLoader.current_world_suffix must remain (regression: per-world sprite picker breaks)")
