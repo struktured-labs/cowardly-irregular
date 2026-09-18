@@ -38,7 +38,9 @@ func _make(name_str: String) -> Combatant:
 
 func test_ability_silence_arm_exists() -> void:
 	var src := _read(BATTLE_MANAGER_PATH)
-	var arm_idx: int = src.find("\"ability_silence\":")
+	## Anchored on the INDENTED match arm, not on any occurrence: the aliasing block in
+	## _apply_ability_status also spells "ability_silence": and sits ~880 lines earlier.
+	var arm_idx: int = src.find("\n\t\t\"ability_silence\":")
 	assert_gt(arm_idx, -1, "BattleManager dispatch must have an ability_silence arm")
 	# The arm must apply the existing "silence" status (alias semantics).
 	var window: String = src.substr(arm_idx, 400)
