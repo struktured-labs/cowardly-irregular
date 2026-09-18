@@ -36,6 +36,10 @@ func after_each() -> void:
 	## fields without naming either. Measured: the next file inherits _current_area="overworld".
 	## Benign here (it resolves to medieval, prefix ""), restored anyway because the next file to
 	## do this from a W6 scene would hand the whole suite a "w6_" SFX prefix.
+	## Both halves, in this order: stop_music clears _music_playing (which the scene's own
+	## play_area_music set and which nothing above resets), the two assignments clear what
+	## stop_music does not. Neither line alone leaves the autoload as this file found it.
+	SoundManager.stop_music()
 	SoundManager._current_area = ""
 	SoundManager._current_world_suffix = "medieval"
 
