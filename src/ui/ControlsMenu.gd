@@ -735,7 +735,23 @@ func _append_user_mapping(mapping: String) -> bool:
 		push_warning("[ControlsMenu] Could not write %s (error %d) — the captured mapping applies to this session only and will be lost on restart." % [staged, FileAccess.get_open_error()])
 		return false
 	wf.store_string(JSON.stringify(kept, "\t"))
+	## ⛔ ASK BEFORE CLOSING. `store_string` returns nothing, so a full disk or a quota gives a SHORT
+	## write that staging cannot catch — the rename would carry the partial file into place just as
+	## happily as a whole one. Refusing here leaves the previous mappings as the only thing on disk,
+	## which is the right answer when we cannot produce a complete replacement.
+	##
+	## 📌 DELIBERATELY NOT A READ-BACK HERE, THOUGH `_preserve_unreadable` USES ONE — the asymmetry is
+	## bought, not an oversight, and flattening it is the "fix" a reader will reach for. `get_error()`
+	## is one call; re-reading doubles the I/O of a write the player triggers on every rebind. The
+	## sidecar earns the stronger form because it gates a DESTRUCTIVE step: the caller overwrites the
+	## original the moment it returns true, so an unverified rescue is worse than no rescue. Here the
+	## worst case is a refused save with the previous file intact.
+	var werr := wf.get_error()
 	wf.close()
+	if werr != OK:
+		push_warning("[ControlsMenu] Write to %s was incomplete (error %d) — REFUSING to replace %s, so the previously captured pads stay intact. The new mapping applies to this session only." % [staged, werr, path])
+		DirAccess.remove_absolute(staged)
+		return false
 	var err := DirAccess.rename_absolute(staged, path)
 	if err != OK:
 		push_warning("[ControlsMenu] Could not move %s into place (error %d) — the previous mappings are intact and the new one applies to this session only." % [staged, err])
@@ -759,6 +775,18 @@ func _preserve_unreadable(path: String, raw: String) -> bool:
 		return false
 	bf.store_string(raw)
 	bf.close()
+	## ⛔ VERIFY THE RESCUE BEFORE THE CALLER DESTROYS THE ORIGINAL. `store_string` returns nothing,
+	## so a short write — a full disk, a quota — is undetectable at the call. Unverified, this
+	## returns true, the caller overwrites the file, and the player is left with a PARTIAL backup and
+	## no original. Staging cannot help here: a rename would move the partial copy into place just
+	## as happily. Reading it back is the only thing that distinguishes a rescue from a gesture.
+	var check := FileAccess.open(sidecar, FileAccess.READ)
+	var landed: String = check.get_as_text() if check != null else ""
+	if check != null:
+		check.close()
+	if landed != raw:
+		push_warning("[ControlsMenu] Copy of %s to %s is INCOMPLETE (%d of %d bytes) — REFUSING to overwrite the original, which is still the only copy of those pads." % [path, sidecar, landed.length(), raw.length()])
+		return false
 	push_warning("[ControlsMenu] %s is not valid JSON — its %d byte(s) were moved to %s and the new mapping starts a fresh file. Previously captured pads are recoverable from the sidecar." % [path, raw.length(), sidecar])
 	return true
 

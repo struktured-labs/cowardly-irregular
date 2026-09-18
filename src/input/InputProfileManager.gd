@@ -677,7 +677,19 @@ func save_config() -> void:
 		push_warning("[InputProfileManager] Could not open %s for write — custom input bindings will NOT persist across launches (error: %s). The config already on disk is untouched." % [staged, FileAccess.get_open_error()])
 		return
 	file.store_string(json_str)
+	## Same reason as ControlsMenu's writer: a short write is invisible to `store_string`, and a
+	## rename would put the partial config in place. The last good config is better than half of a
+	## new one.
+	##
+	## 📌 `get_error()` and not a read-back, for the same bought reason as ControlsMenu's writer:
+	## nothing downstream of this destroys anything, so refusing is a complete answer. Only a write
+	## that gates a destructive step needs its contents verified.
+	var werr := file.get_error()
 	file.close()
+	if werr != OK:
+		push_warning("[InputProfileManager] Write to %s was incomplete (error %d) — REFUSING to replace %s. The config already on disk is intact and this change applies to this session only." % [staged, werr, CONFIG_PATH])
+		DirAccess.remove_absolute(staged)
+		return
 	var err := DirAccess.rename_absolute(staged, CONFIG_PATH)
 	if err != OK:
 		push_warning("[InputProfileManager] Could not move %s into place (error %d) — the previous config is intact and this change applies to this session only." % [staged, err])
