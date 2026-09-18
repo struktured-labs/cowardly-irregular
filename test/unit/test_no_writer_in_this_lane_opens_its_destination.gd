@@ -14,9 +14,10 @@ extends GutTest
 ## process dying. Staging beside the target and renaming into place has no window at all.
 ##
 ## ⚠️ SCOPE, STATED BECAUSE A DERIVED CORPUS STILL HAS A BOUNDARY: `src/input/` is globbed, so a NEW
-## FILE there is covered automatically; `ControlsMenu.gd` is named, because the mapping writer lives
-## in `src/ui/` and this lane does not own that whole directory. A lane-mate adding a writer to some
-## other `src/ui/` file is NOT covered here, and no arm in this file can honestly claim otherwise.
+## FILE there is covered automatically; the four `src/ui/` files this lane owns are NAMED, because
+## this lane does not own that whole directory. ⛔ A NEW `src/ui/` FILE added to this lane must be
+## added to NAMED by hand — that is the one place this guard cannot notice its own corpus shrinking
+## relative to the lane, and it is why the list is spelled out rather than globbed.
 
 ## 📌 THE READ SIDE WAS SWEPT TOO AND IS CLEAN — recorded here because it is a NULL, and a null is
 ## what gets re-derived with every step green. Derived from `FileAccess.open(…READ)` across the same
@@ -50,7 +51,19 @@ extends GutTest
 ## while the bug sat in its while-condition).
 
 const INPUT_DIR := "res://src/input"
-const NAMED := ["res://src/ui/ControlsMenu.gd"]
+## ⛔ EVERY `src/ui` FILE THIS LANE OWNS, NOT JUST THE ONE THAT WRITES TODAY. This listed
+## `ControlsMenu.gd` alone — the only one with a write — so a guard named *no writer in THIS LANE*
+## covered one quarter of the lane's UI. Three files had zero writes and were therefore invisible
+## rather than clean, and nothing would have said so when the first one gained a write.
+##
+## 🔑 A CORPUS SCOPED TO WHERE THE SUBJECT IS FOUND TODAY CANNOT SEE IT ARRIVE SOMEWHERE NEW —
+## and the name promised otherwise, which is the half that makes it a defect rather than a choice.
+const NAMED := [
+	"res://src/ui/ControlsMenu.gd",
+	"res://src/ui/ControllerOverlay.gd",
+	"res://src/ui/GamepadDiagnostic.gd",
+	"res://src/ui/VirtualGamepad.gd",
+]
 
 ## ⛔ TWO SAFE SHAPES, NOT ONE, AND THE SECOND IS NOT A CONCESSION. The hazard is truncating a file
 ## whose contents someone still needs before knowing the new ones landed. A STAGED write avoids the
