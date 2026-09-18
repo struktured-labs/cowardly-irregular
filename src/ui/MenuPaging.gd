@@ -17,7 +17,15 @@ const PAGE_ROWS := 10
 ## which reads as pressed, because an axis has no echo flag. Measured: a 6-step pull past the
 ## deadzone returned a page jump FIVE times, i.e. one pull moved 50 rows instead of 10.
 ## Static because page_delta is static; kept honest by the self-heal at the top of the function.
-static var _axis_held: bool = false
+##
+## ⛔ ONE LATCH PER TRIGGER, AND IT WAS ONE SHARED LATCH UNTIL NOW. The triggers are on SEPARATE
+## axes, so holding one must not gate the other — with a single flag, pulling R2 while L2 was held
+## returned 0 and that page was lost outright (measured, not inferred). MenuNav carries two latches
+## for exactly this reason ("so a vertical hold cannot swallow a horizontal step") and Win98Menu
+## gates the same two actions with `_defer_axis_held` / `_advance_axis_held`. This helper — the one
+## ten menus page through — collapsed both into one.
+static var _defer_axis_held: bool = false
+static var _advance_axis_held: bool = false
 
 
 ## -1 = page up, +1 = page down, 0 = not a paging input. PageUp/PageDown, Home/End's neighbours on
@@ -28,12 +36,19 @@ static func page_delta(event: InputEvent) -> int:
 
 	# Self-heal: a release that lands while a menu rebuilds, or a menu closing mid-hold, must not
 	# strand the latch and swallow the next menu's first page. Same shape as EquipmentMenu's.
-	if _axis_held and not Input.is_action_pressed("battle_defer") \
-			and not Input.is_action_pressed("battle_advance"):
-		_axis_held = false
+	if _defer_axis_held and not Input.is_action_pressed("battle_defer"):
+		_defer_axis_held = false
+	if _advance_axis_held and not Input.is_action_pressed("battle_advance"):
+		_advance_axis_held = false
 
-	if event.is_action_released("battle_defer") or event.is_action_released("battle_advance"):
-		_axis_held = false
+	## A release branch is safe HERE and is not in MenuNav: ui_up/ui_down share one axis, so a
+	## positive-Y event reads as releasing one while pressing the other. These two are axis 4 and
+	## axis 5, so a release event means only what it says.
+	if event.is_action_released("battle_defer"):
+		_defer_axis_held = false
+		return 0
+	if event.is_action_released("battle_advance"):
+		_advance_axis_held = false
 		return 0
 
 	# Keyboard paging is not gated: keys carry an echo flag, which the early return above handles.
@@ -51,14 +66,14 @@ static func page_delta(event: InputEvent) -> int:
 	var motion := event is InputEventJoypadMotion
 	if event.is_action_pressed("battle_defer"):
 		if motion:
-			if _axis_held:
+			if _defer_axis_held:
 				return 0
-			_axis_held = true
+			_defer_axis_held = true
 		return -1
 	if event.is_action_pressed("battle_advance"):
 		if motion:
-			if _axis_held:
+			if _advance_axis_held:
 				return 0
-			_axis_held = true
+			_advance_axis_held = true
 		return 1
 	return 0
