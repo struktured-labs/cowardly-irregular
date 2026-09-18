@@ -5,8 +5,12 @@ const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 ## Whole-surface autoload restore — this file left live signal wiring on the autoload.
 var _ag_state: Dictionary
 
-## The console is the ONLY listener for `system_collapse`, and closing it disconnects the handler, so
-## a catch-up exists to report collapses missed while it was shut. The baseline it diffed against —
+## The console is ONE OF TWO listeners for `system_collapse` — GameLoop is the other (:5604,
+## connected in _start_autogrind, never disconnected) and it toasts on a layer the player sees.
+## This header said "the ONLY listener" until 2026-09-18; it went false when the sibling fix in
+## test_the_collapse_announces_itself ADDED that listener, and the claim sat in three places. The
+## catch-up is still warranted: closing the console disconnects THIS handler, so the console's own
+## durable log would otherwise have a hole the transient toast does not fill. The baseline it diffed against —
 ## "collapses this console has already told the player about" — lived ON THE CONSOLE, which GameLoop
 ## FREES on close (:5543) and rebuilds on open (:5477). So the baseline was 0 at every open:
 ##
@@ -31,6 +35,7 @@ const UIScript = preload("res://src/ui/autogrind/AutogrindUI.gd")
 const SystemScript = preload("res://src/autogrind/AutogrindSystem.gd")
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const UI_SRC := "res://src/ui/autogrind/AutogrindUI.gd"
+const GL_SRC := "res://src/GameLoop.gd"
 
 var _sys
 
@@ -140,3 +145,24 @@ func test_the_baseline_does_not_live_on_the_console() -> void:
 		"CONTROL: the console must read the surviving baseline")
 	assert_false(code.contains("_collapses_reported"),
 		"the baseline is back on the console, which is freed at every open — it cannot remember anything")
+
+
+## ⛔ THE PAIR, PINNED — because "the ONLY listener" was written in three places, went false when a
+## sibling fix added the second, and sat wrong until somebody read it. A comment can go stale again;
+## this cannot. Two listeners, two SURFACES: GameLoop toasts on the screen the player is watching,
+## this console keeps the durable record. Delete either believing the other covers it and the player
+## silently loses one. Read through GdSource, so the prose above cannot satisfy the asserts.
+func test_a_collapse_reaches_both_surfaces_not_just_this_one() -> void:
+	var gl: String = GdSource.code_of(GL_SRC)
+	assert_ne(gl, "", "CONTROL: GameLoop source must survive the comment strip")
+	assert_true(gl.contains("system_collapse.connect(_on_autogrind_system_collapse)"),
+		"GameLoop no longer listens for system_collapse — the toast on the surface the player actually watches is gone, and a collapse with this console shut would reach nobody until reopen")
+	assert_true(gl.contains("func _on_autogrind_system_collapse"),
+		"CONTROL: GameLoop's handler must exist, or the connect above names nothing")
+
+	var ui: String = GdSource.code_of(UI_SRC)
+	assert_ne(ui, "", "CONTROL: AutogrindUI source must survive the comment strip")
+	assert_true(ui.contains("system_collapse.connect(_on_system_collapse)"),
+		"this console no longer listens — the durable log the catch-up feeds has no source")
+	assert_true(ui.contains("system_collapse.disconnect(_on_system_collapse)"),
+		"this console no longer disconnects on close — that disconnect is the entire REASON the catch-up in this file exists, so without it the catch-up is dead code")
