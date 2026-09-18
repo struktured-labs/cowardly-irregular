@@ -1385,11 +1385,22 @@ func _adjust_condition_value(delta: int) -> void:
 
 	var cond = conditions[cursor_col]
 	var cond_type = cond.get("type", "always")
-	# ability_learned + rare_item_found are boolean flags — no value to adjust
-	if cond_type == "always" or cond_type == "ability_learned" or cond_type == "rare_item_found":
+	## ⛔ ASK THE GRAMMAR, DO NOT RE-LIST IT. This hand-listed three of NULLARY_CONDITIONS' FIVE, so
+	## dialling Member Dead or Member Injured moved a `value` nothing reads — member_injured returns
+	## check_new_injuries() > 0, and member_dead goes through _member_predicate, which reads `member`.
+	## The grammar already owns the set; a copy beside it drifted the moment the set grew.
+	if AutogrindSystem.NULLARY_CONDITIONS.has(cond_type):
 		return
 
 	var current_value = cond.get("value", 50)
+	## ⛔ A NAMED-VALUE CONDITION HAS NO NUMERIC DIAL. member_status carries a status id ("poison"),
+	## and `current_value + delta * step` below threw "Invalid operands 'String' and 'int'" on EVERY
+	## press — an abort, so the write and _refresh_grid never ran either. The player already saw a
+	## dial that does nothing; this removes the type error behind it rather than changing what they
+	## see. Choosing WHICH status needs a picker this editor does not have, and that half is a scope
+	## call (@cowir-ai measured the same shape across 8 autobattle conditions and routed it up).
+	if not (current_value is int or current_value is float):
+		return
 	var step = 5
 
 	match cond_type:
