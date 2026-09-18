@@ -17,6 +17,8 @@ extends GutTest
 ## text, because a rename should be free and a behaviour change should not be.
 
 const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+const LOADER_SRC := "res://src/battle/sprites/HybridSpriteLoader.gd"
 
 
 func test_world_one_is_UNSUFFIXED_because_it_is_the_artists_own_art() -> void:
@@ -312,26 +314,65 @@ func _jobs_with_base_art() -> Array:
 	return out
 
 
-## THE UNIFICATION, pinned. Two fetch names exist for compatibility — four consumers call
-## current_world_suffix(), this lane's code calls world_suffix() — but there must be exactly
-## ONE source behind them. Today's ledger recorded FOUR independent builds of this mapping
-## (sprites built one and deleted it, music, sfx, main's seam); the map has gravity and
-## everything near it duplicates. Equality is the cheapest thing that makes "don't copy the
-## map" enforceable instead of advisory.
+## Every top-level `func`/`static func` in GDScript starts at column 0 and its body is indented,
+## so a body is "the lines after the signature that are blank or tab-led". Written out rather
+## than reusing the `find("\nfunc ")` window the sibling guards use: every function in
+## HybridSpriteLoader is `static func`, which that window walks straight past — it would have
+## handed this arm the whole rest of the file, WORLD_SUFFIXES included, as a false red.
+func _body_of(src: String, decl: String) -> String:
+	var at: int = src.find(decl)
+	if at < 0:
+		return ""
+	var lines: Array = src.substr(at).split("\n")
+	var out: Array = []
+	for i in range(1, lines.size()):
+		var l: String = str(lines[i])
+		if l.strip_edges() != "" and not l.begins_with("\t"):
+			break
+		out.append(l)
+	return "\n".join(out)
+
+
+## THE UNIFICATION, pinned. Two fetch names exist for compatibility — 23 call sites across six
+## files call current_world_suffix(), the loader's own code calls world_suffix() — but there must
+## be exactly ONE source behind them. Today's ledger recorded FOUR independent builds of this
+## mapping (sprites built one and deleted it, music, sfx, main's seam); the map has gravity and
+## everything near it duplicates.
+##
+## ⛔ AND BEHAVIOURAL EQUALITY CANNOT ASK THIS QUESTION. This arm was
+## assert_eq(current_world_suffix(), world_suffix()) until 2026-09-18 — and current_world_suffix()
+## IS `return world_suffix()`, so it read world_suffix() == world_suffix(): true by construction,
+## in every world, under every mutation of either body. Measured with the map COPIED into
+## current_world_suffix(), which is the exact defect the paragraph above forbids: EC=0, 13 passing,
+## 77 asserts — byte-identical to the clean run. A duplicate AGREES. Equality can only ever catch a
+## duplicate someone ALSO got wrong, and on the day a copy lands it is usually right.
+##
+## 🔑 So the file's behaviour-not-source stance is kept where behaviour can answer and dropped
+## where it cannot. What is pinned is STRUCTURE — how many places BUILD the mapping — not the
+## shape of any body. It does name WORLD_SUFFIXES and world_suffix, and that is NOT free: the
+## first draft of this docstring said "renaming either function stays free", which the third
+## assert makes false. Measured instead: the arms above already call those two symbols at 12
+## sites, so this adds no rename surface the file was not already carrying. Growing a second
+## builder is the only NEW way to red it.
 func test_the_two_fetch_names_share_ONE_source() -> void:
-	var gs := get_node_or_null("/root/GameState")
-	assert_not_null(gs, "GameState autoload required — run via tools/run_tests.sh")
-	if gs == null:
-		return
-	var restore: int = int(gs.current_world)
-	for world in range(1, 7):
-		gs.current_world = world
-		assert_eq(Loader.current_world_suffix(), Loader.world_suffix(),
-			("current_world_suffix() and world_suffix() disagree in world %d — two visual " +
-			"world sources means the party can be dressed for one world while another " +
-			"consumer resolves a different one") % [world])
-	gs.current_world = restore
-	assert_eq(int(gs.current_world), restore, "current_world must be restored")
+	var src := GdSource.code_of(LOADER_SRC)
+	assert_ne(src, "", "HybridSpriteLoader must be readable")
+	assert_true(src.contains("const WORLD_SUFFIXES"),
+		"CONTROL: the stripper ate the map declaration — every count below would be a false zero")
+
+	# ONE build of the mapping: the constant is INDEXED in exactly one place.
+	var lookups: int = src.count("WORLD_SUFFIXES[")
+	assert_eq(lookups, 1,
+		"the world map is indexed in %d places — a SECOND lookup site is a second build of the mapping, and the two names would still agree while doing it" % lookups)
+
+	# ...and the compatibility name delegates instead of resolving for itself.
+	var body := _body_of(src, "func current_world_suffix")
+	assert_ne(body.strip_edges(), "",
+		"CONTROL: current_world_suffix's body came back empty — the two asserts below would pass on nothing")
+	assert_false(body.contains("WORLD_SUFFIXES"),
+		"current_world_suffix reaches the map itself instead of delegating — that IS the copy, and it agrees with world_suffix() in all six worlds while being it")
+	assert_true(body.contains("return world_suffix()"),
+		"current_world_suffix must delegate to the one source — bounded by `return ` so the signature's own `current_world_suffix()` cannot satisfy it")
 
 
 ## ⛔ A COSTUME IS A RESKIN, NOT A RE-TIMING — the seam this file never looked at.
