@@ -147,11 +147,12 @@ func test_unparseable_text_does_not_crash_the_run() -> void:
 # it exists to measure, one unreadable file at a time, silently.
 
 const COMPOSE_TOOL := "res://tools/rule_composition_compose.gd"
+const VALIDATE_TOOL := "res://tools/rule_composition_validate.gd"
 
 
 ## Source with comment lines removed — prose naming a guard must not satisfy a check for it.
-func _tool_code() -> String:
-	var raw: String = FileAccess.get_file_as_string(COMPOSE_TOOL)
+func _code_of(path: String) -> String:
+	var raw: String = FileAccess.get_file_as_string(path)
 	var keep: PackedStringArray = PackedStringArray()
 	for line in raw.split("\n"):
 		if line.strip_edges().begins_with("#"):
@@ -160,11 +161,16 @@ func _tool_code() -> String:
 	return "\n".join(keep)
 
 
-func test_the_scoring_tool_is_actually_read() -> void:
-	## FLOOR, per-source and inside nothing: the three arms below all derive from one file,
-	## and a moved or renamed tool would make every one of them pass over an empty string.
-	assert_gt(FileAccess.get_file_as_string(COMPOSE_TOOL).length(), 1000,
-		"CONTROL: %s must actually be read, or the arms below assert over ''" % COMPOSE_TOOL)
+func _tool_code() -> String:
+	return _code_of(COMPOSE_TOOL)
+
+
+func test_the_scoring_tools_are_actually_read() -> void:
+	## FLOOR, and INSIDE the loop so it is per-source: an aggregate floor over both benches is
+	## cleared by either one alone, and the arms below would assert over '' for the dark one.
+	for path in [COMPOSE_TOOL, VALIDATE_TOOL]:
+		assert_gt(FileAccess.get_file_as_string(path).length(), 1000,
+			"CONTROL: %s must actually be read, or its arms assert over ''" % path)
 
 
 func test_an_unreadable_capture_leaves_the_scored_population() -> void:
@@ -206,3 +212,47 @@ func test_a_corpus_that_went_entirely_dark_is_refused() -> void:
 	var code: String = _tool_code()
 	assert_gt(code.find("scored == 0 and names.size() > 0"), -1,
 		"the tool must refuse to publish a rate derived from zero scored captures")
+
+
+
+# ── the SIBLING bench has the same corpus and had the same two defects ────────
+#
+# tools/rule_composition_validate.gd re-implements the pipeline and reads the SAME
+# res://tmp/replies_<arm> directory. It carried both defects: no `_`-prefix filter at
+# all, so compose's _job.txt scored as a reply, and an empty read counted against the
+# model in all four rates. Measured on one fixture: COMPOSITION SURVIVES 1/4 -> 1/2.
+# Guarded here rather than in its own file so the next sibling is visible from this one.
+
+func test_the_sibling_bench_excludes_capture_metadata() -> void:
+	var code: String = _code_of(VALIDATE_TOOL)
+	assert_gt(code.find("not f.begins_with(\"_\")"), -1,
+		"the validate bench shares the corpus with compose and must skip _-prefixed metadata")
+
+
+func test_the_sibling_bench_drops_an_unreadable_capture() -> void:
+	var code: String = _code_of(VALIDATE_TOOL)
+	var use: int = code.find("svc._extract_json_from_raw")
+	var guard: int = code.find("raw == \"\"")
+	assert_gt(use, -1, "the validate bench must still extract from the capture")
+	assert_gt(guard, -1, "the validate bench must test that capture for emptiness")
+	assert_lt(guard, use, "the emptiness check must precede the extraction, or it guards nothing")
+
+
+func test_the_sibling_benchs_rates_are_over_what_was_scored() -> void:
+	## Four funnel rates, every one of which was over names.size(). The headline
+	## ("COMPOSITION SURVIVES") read 1/4 where the true rate was 1/2.
+	var code: String = _code_of(VALIDATE_TOOL)
+	for operand in ["[n_extract, ", "[n_schema, ", "[n_parse, ", "[n_clean, "]:
+		var at: int = code.find(operand)
+		assert_gt(at, -1, "the validate bench must still report `%s`" % operand)
+		var line: String = code.substr(at, code.find("\n", at) - at)
+		assert_gt(line.find("scored]"), -1,
+			"`%s` must be reported over `scored`, got: %s" % [operand, line.strip_edges()])
+		assert_eq(line.find("names.size()"), -1,
+			"`%s` must NOT be over the files on disk: %s" % [operand, line.strip_edges()])
+
+
+func test_the_sibling_bench_refuses_a_corpus_that_went_dark() -> void:
+	var code: String = _code_of(VALIDATE_TOOL)
+	assert_gt(code.find("scored == 0 and names.size() > 0"), -1,
+		"the validate bench must refuse to publish a rate derived from zero scored captures")
