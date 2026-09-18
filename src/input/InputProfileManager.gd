@@ -172,6 +172,14 @@ var custom_bindings: Dictionary = {}
 ## deriving them is only half the job if the answer is frozen at the moment the screen was built.
 signal input_device_changed(connected: bool)
 
+## ⛔ THE SAME PROBLEM, THE OTHER TRIGGER. The docstring above says a derived caption is only half
+## the job "if the answer is frozen at the moment the screen was built" — and input_device_changed
+## fires ONLY from _on_joy_connection_changed. A profile cycle, a rebind and the Nintendo toggle all
+## change what every caption should say and told nobody, so the screen a player backs out to after
+## changing their controls named the OLD buttons. Worse than wrong: the toggle SWAPS ui_accept and
+## ui_cancel, so the stale caption names the button that now does the opposite thing.
+signal bindings_changed
+
 var profile_chosen_by_user: bool = false
 
 
@@ -257,6 +265,7 @@ func apply_profile(profile_name: String) -> void:
 		_replace_joypad_buttons(action, indices)
 
 	print("[InputProfileManager] Profile applied: %s" % profile_name)
+	bindings_changed.emit()
 
 
 ## Swaps SOUTH<->EAST for confirm/cancel when nintendo_mode is off. Pure, so it is testable
@@ -490,6 +499,7 @@ func set_custom_binding(action: String, button_indices: Array) -> void:
 	custom_bindings[action] = face_convention_indices(action, button_indices)
 	_replace_joypad_buttons(action, button_indices)
 	save_config()
+	bindings_changed.emit()
 
 
 ## ⛔ READS THE LIVE InputMap, NOT THE PROFILE TABLE, AND THE DIFFERENCE IS A COORDINATE SYSTEM.
