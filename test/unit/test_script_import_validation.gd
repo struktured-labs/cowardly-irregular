@@ -10,6 +10,25 @@ extends GutTest
 
 const SSM := preload("res://src/autobattle/ScriptShareManager.gd")
 
+## ⛔ GATED THOUGH IT WRITES NOTHING TODAY — measured clean in a virgin sandbox 2026-09-17.
+## apply_character_script reaches the AUTOLOAD's set_character_script (ScriptShareManager:266)
+## -> _save_character_profiles -> user://autobattle/profiles.json. Every apply arm here feeds
+## INVALID data, so validation returns false before the write. That isolation is CONTINGENT on
+## the inputs rather than structural: the first valid-input arm added here overwrites the
+## player's live profiles, and nothing in the file would say so.
+var _saved_persist: bool = false
+
+
+func before_each() -> void:
+	_saved_persist = AutobattleSystem._test_disable_persistence
+	AutobattleSystem._test_disable_persistence = true
+
+
+## Restores the PRIOR value, never a literal false — the flag is an autoload global, so a setter
+## that walks away silences every leaker running after it in the same process.
+func after_each() -> void:
+	AutobattleSystem._test_disable_persistence = _saved_persist
+
 
 func _valid_script() -> Dictionary:
 	return {"rules": [
