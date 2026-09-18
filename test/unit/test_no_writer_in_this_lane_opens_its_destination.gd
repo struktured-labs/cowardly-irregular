@@ -50,6 +50,14 @@ extends GutTest
 ## correctly, while the defect lives inside it (@cowir-battle, `_await_tween_safe` pinned by name
 ## while the bug sat in its while-condition).
 
+## ⛔ THE LANE'S SHARED STRIPPER, NOT A PRIVATE COPY. I wrote my own quote-aware `_strip_comment`
+## here and only found this by reading another lane's post: 172 test files use `GdSource`, and 12
+## (mine included) had re-derived it. Theirs is quote-aware AND ESCAPE-aware — `\"` does not close
+## a string — which mine was not. Unreachable in this corpus today, and that is the point: a private
+## copy does not inherit a fix, and this helper's own header records a lane having to bound their
+## copy separately for exactly that reason.
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 const INPUT_DIR := "res://src/input"
 ## ⛔ EVERY `src/ui` FILE THIS LANE OWNS, NOT JUST THE ONE THAT WRITES TODAY. This listed
 ## `ControlsMenu.gd` alone — the only one with a write — so a guard named *no writer in THIS LANE*
@@ -120,19 +128,7 @@ func _lane_scripts() -> Array:
 ## ⚠️ Quote-aware, because a bare `find("#")` truncates any line whose MESSAGE contains one — and
 ## every refusal path in these writers pushes a warning.
 func _strip_comment(line: String) -> String:
-	var in_str: bool = false
-	var quote: String = ""
-	for i in line.length():
-		var c: String = line[i]
-		if in_str:
-			if c == quote and (i == 0 or line[i - 1] != "\\"):
-				in_str = false
-		elif c == "\"" or c == "'":
-			in_str = true
-			quote = c
-		elif c == "#":
-			return line.substr(0, i)
-	return line
+	return GdSource.strip_comments(line)
 
 
 ## The FIRST ARGUMENT of a `FileAccess.open(...)` call — the path being opened, verbatim, so the
