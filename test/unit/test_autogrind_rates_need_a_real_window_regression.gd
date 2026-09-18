@@ -18,15 +18,20 @@ extends GutTest
 ## values for the same computation — 0.0001 in AutogrindSystem, 0.01 in the Dashboard and the Summary.
 ## A floor is a claim about when a rate becomes meaningful, and three claims about one thing drift.
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
 var _sys
+var _ag_state: Dictionary
 
 
 func before_each() -> void:
-	AutogrindSystem._test_disable_persistence = true
+	## Snapshot FIRST — this file writes _grind_stats directly and leaked it to every later file.
+	_ag_state = AutogrindState.snapshot_and_isolate()
 	_sys = AutogrindSystem
 
 
 func after_each() -> void:
+	AutogrindState.restore(_ag_state)
 	AutogrindSystem._test_disable_persistence = false
 
 
