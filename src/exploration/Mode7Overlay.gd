@@ -413,13 +413,40 @@ func set_dissolve(progress: float) -> void:
 		_shader_mat.set_shader_parameter("dissolve_progress", dissolve_progress)
 
 
+## Liveness with a wall-clock ceiling, NOT `await tween.finished`. These tweens are bound to
+## `_player_ref` and Godot KILLS a tween whose bound node is freed — a killed tween never emits
+## `finished`, so the awaiting coroutine sleeps forever.
+##
+## ⛔ THAT IS NOT HYPOTHETICAL HERE. `InputLockManager.gd:24` records it: the
+## `has_lock("world_transition")` guard in `_start_battle_async` "was added for the mid-dissolve
+## tween death that skips the pop — i.e. the one leak it could not recover from on its own."
+## Every caller holds that lock across this await and emits `area_transition` after it, so a
+## hang strands the lock AND leaves the player in a fully dissolved world.
+##
+## The ceiling is a stranding net, not a timing mechanism: it is derived from the caller's own
+## duration with 4x headroom, so it cannot fire on a slow frame or a scaled Engine.time_scale.
+func _await_dissolve(tween: Tween, duration: float) -> void:
+	var tree := get_tree()
+	if tree == null:
+		return
+	## ⛔ `is_valid()` IS THE LOAD-BEARING TERM, NOT `is_running()`. Measured: after the bound node
+	## is freed, is_instance_valid(tween)=TRUE and tween.is_running()=TRUE — only is_valid() flips.
+	## A liveness poll on is_running() alone therefore exits via the DEADLINE, not on the spot,
+	## which is a 6s freeze rather than a strand. (kill() is the opposite: is_running() drops
+	## immediately and the tween stays valid one more frame. Two deaths, opposite tells.)
+	var deadline: int = Time.get_ticks_msec() + int(duration * 4000.0) + 2000
+	while is_instance_valid(tween) and tween.is_valid() and tween.is_running() \
+			and Time.get_ticks_msec() < deadline:
+		await tree.process_frame
+
+
 ## Animate dissolve out (world breaking apart). Await this before transitioning.
 func play_dissolve_out(duration: float = 1.2) -> void:
 	if not _shader_mat or not _player_ref:
 		return
 	var tween = _player_ref.create_tween()
 	tween.tween_method(set_dissolve, 0.0, 1.0, duration)
-	await tween.finished
+	await _await_dissolve(tween, duration)
 	_pending_dissolve_in = true
 
 
@@ -430,7 +457,7 @@ func play_dissolve_in(duration: float = 0.8) -> void:
 	set_dissolve(1.0)
 	var tween = _player_ref.create_tween()
 	tween.tween_method(set_dissolve, 1.0, 0.0, duration)
-	await tween.finished
+	await _await_dissolve(tween, duration)
 
 
 func _update_billboards() -> void:
