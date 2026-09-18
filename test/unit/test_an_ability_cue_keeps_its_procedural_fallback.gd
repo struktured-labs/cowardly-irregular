@@ -1,5 +1,7 @@
 extends GutTest
 
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
 ## play_ability was the ONE world-prefix caller without the `world_key != sound_key` guard. In W1
 ## the prefix is "", so it called the manifest helper TWICE with the same key. The helper stamps the
 ## cooldown BEFORE loading, so a first attempt that stamps and then fails leaves the second answering
@@ -16,7 +18,10 @@ var _saved_entry: Dictionary = {}
 ## correctly, and red the gate. A file must ESTABLISH the state its premise needs, not assert that
 ## someone else left it. Measured: entering at w6_, pre-fix is Failing 3, this is Passing 6.
 var _saved_area: String = ""
-var _saved_suffix: String = ""
+## "medieval", not "" — this is the field's LIVE default, and after_each writes it back
+## unconditionally. A wrong default here is only unreachable because the snapshot sits directly
+## under the null guard; a reorder makes it a restore that CORRUPTS rather than one that skips.
+var _saved_suffix: String = "medieval"
 
 
 func _sm() -> Node:
@@ -48,6 +53,9 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	## FIRST, not last: a GDScript error in the restores below aborts after_each, and a release that
+	## sits at the bottom is then skipped. Self-contained, so it needs nothing above it.
+	SfxState.release_streams()
 	var sm: Node = _sm()
 	if sm == null:
 		return
