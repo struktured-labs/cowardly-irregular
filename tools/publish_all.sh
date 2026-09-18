@@ -578,17 +578,26 @@ fi
 # `grep -l -- --selftest` includes it and blocks every publish on a usage error.
 _ST_CORPUS="$(python3 - <<'PYEOF'
 import os, re, subprocess, sys
+# BOTH globs, or REF's language list is decorative: the frontier check below rejects any name
+# not in `tracked`, so listing only *.sh silently vetoed every python tool no matter what REF
+# said. Two places encoded the same scope and only one was widened — caught immediately by the
+# membership floor below, which is the whole reason it is a membership floor and not a count.
 tracked = set(os.path.basename(p) for p in subprocess.run(
-    ["git", "ls-files", "tools/*.sh"], capture_output=True, text=True).stdout.split())
+    ["git", "ls-files", "tools/*.sh", "tools/*.py"], capture_output=True, text=True).stdout.split())
 if not tracked:
     sys.exit("could not list tracked shell tools")
 # A reference is ANY tracked tool basename in a non-comment line. Anchoring on "tools/"
 # looked tighter and silently lost the entire desktop chain: deploy_linux.sh reaches it as
 #     exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
 # so deploy_desktop.sh and everything it invokes were invisible to the derivation.
-REF = re.compile(r"([A-Za-z0-9_]+\.sh)")
-# DISPATCHES on the flag: a case arm, or a test against $1. Comments excluded.
-DISP = re.compile(r'^[^#]*(--selftest\)|=[ \t]*"?--selftest"?)')
+# BOTH LANGUAGES. This was `.sh` only until 2026-09-18, which excluded every PYTHON gate on
+# the publish path BY CONSTRUCTION — a derivation that cannot name a whole language. Measured
+# then: 7 .py gates invoked by this chain, their arms run from THREE separate hand-lists in two
+# files, and check_pck_complete.py — called at deploy_desktop:574, deploy_web:464 and
+# make_web_stage:303, on every desktop AND web publish — had 8 working arms that nothing ran.
+REF = re.compile(r"([A-Za-z0-9_]+\.(?:sh|py))")
+# DISPATCHES on the flag: a case arm, a test against $1, or python's quoted form.
+DISP = re.compile(r'^[^#]*(--selftest\)|=[ \t]*"?--selftest"?|["\']--selftest["\'])')
 seen, frontier = set(), ["publish_all.sh"]
 while frontier:
     b = frontier.pop()
@@ -610,10 +619,27 @@ while frontier:
 for required in ("deploy_desktop.sh", "deploy_web.sh"):
     if required not in seen:
         sys.exit("closure never reached %s -- the derivation is broken, not the tree" % required)
+# TWO CONVENTIONS, and a tool qualifies under either: a --selftest FLAG, or a sibling
+# <base>_selftest.py holding the arms. The sibling files are themselves EXCLUDED — they ARE
+# the arms, not a subject with arms, exactly as the .sh selftest files always were.
+def _has_arms(b):
+    p = os.path.join("tools", b)
+    if any(DISP.match(l) for l in open(p, encoding="utf-8", errors="replace")):
+        return True
+    return b.endswith(".py") and os.path.isfile(os.path.join("tools", b[:-3] + "_selftest.py"))
+
 corpus = sorted(
     b for b in seen - {"publish_all.sh"}
-    if any(DISP.match(l) for l in open(os.path.join("tools", b), encoding="utf-8",
-                                       errors="replace")))
+    if not b.endswith(("_selftest.sh", "_selftest.py")) and _has_arms(b))
+
+# ⛔ MEMBERSHIP FLOOR, NOT A COUNT. A count floor is satisfied by a SURVIVOR: if the REF
+# pattern regressed to .sh-only the corpus would still be 18 tools and still look healthy,
+# which is how the python half was invisible for months. Requiring one member of EACH
+# language makes a whole language going missing LOUD. (cowir-controller, 2026-09-18.)
+if not any(b.endswith(".sh") for b in corpus):
+    sys.exit("derived corpus contains no .sh tool -- the derivation is broken, not the tree")
+if not any(b.endswith(".py") for b in corpus):
+    sys.exit("derived corpus contains no .py tool -- the derivation is broken, not the tree")
 print(" ".join(corpus))
 PYEOF
 )" || { echo "[pub] BLOCKED: could not derive the selftest corpus: ${_ST_CORPUS}" >&2; exit 4; }
@@ -624,20 +650,38 @@ if [ -z "$_ST_CORPUS" ]; then
 fi
 _ST_N=0
 for _t in $_ST_CORPUS; do
-    if [ ! -x "tools/$_t" ]; then
-        echo "[pub] BLOCKED: tools/$_t missing or not executable — it is on the publish path" >&2
-        echo "      and nothing has checked that it still works. A missing guard is not a" >&2
-        echo "      passing one." >&2
+    # HOW to run it depends on the convention, and the derivation admits both. A .sh is
+    # executed; a .py is handed to python3, so its executable bit is not the question — asking
+    # for -x on a python tool would BLOCK the publish over a file mode that means nothing here.
+    _st_target="tools/$_t"; _st_kind="exec"
+    case "$_t" in
+        *.py)
+            if [ -f "tools/${_t%.py}_selftest.py" ]; then
+                _st_target="tools/${_t%.py}_selftest.py"; _st_kind="py-sibling"
+            else
+                _st_kind="py-flag"
+            fi ;;
+    esac
+    if [ ! -f "$_st_target" ] || { [ "$_st_kind" = "exec" ] && [ ! -x "$_st_target" ]; }; then
+        echo "[pub] BLOCKED: ${_st_target} missing or not runnable — tools/$_t is on the" >&2
+        echo "      publish path and nothing has checked that it still works. A missing" >&2
+        echo "      guard is not a passing one." >&2
         exit 4
     fi
-    if ! _ST=$(./tools/"$_t" --selftest 2>&1); then
+    case "$_st_kind" in
+        exec)       _ST=$(./"$_st_target" --selftest 2>&1) ;;
+        py-flag)    _ST=$(python3 "$_st_target" --selftest 2>&1) ;;
+        py-sibling) _ST=$(python3 "$_st_target" 2>&1) ;;
+    esac
+    # shellcheck disable=SC2181
+    if [ $? -ne 0 ]; then
         printf '%s\n' "$_ST" | tail -25 >&2
         echo "[pub] BLOCKED: tools/$_t FAILED ITS OWN SELFTEST. It runs on this publish path," >&2
         echo "      so its output cannot be trusted for this build. A present guard is not a" >&2
         echo "      working one." >&2
         exit 4
     fi
-    echo "[pub] selftest ok: tools/$_t — arms ran and passed"
+    echo "[pub] selftest ok: tools/$_t — arms ran and passed (${_st_kind})"
     _ST_N=$((_ST_N+1))
 done
 echo "[pub] selftests: $_ST_N tool(s), derived from what this chain invokes (was a hand-list)"
