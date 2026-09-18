@@ -46,7 +46,7 @@ func _ready() -> void:
 	_setup_controller()
 	var music_track := _get_music_track()
 	if music_track != "" and SoundManager:
-		SoundManager.play_area_music(music_track)
+		SoundManager.play_area_music(music_track, 0.0, _get_music_home_area())
 	var ambient_key := _get_ambient_key()
 	if ambient_key != "" and SoundManager and SoundManager.has_method("play_ambient"):
 		SoundManager.play_ambient(ambient_key)
@@ -118,6 +118,19 @@ func _init_spawn_points() -> void:
 ## "cave"). Empty string = no music change.
 func _get_music_track() -> String:
 	return "village"
+
+
+## Virtual: the AREA id of the village this room is inside, or "" when it has no single one.
+##
+## ⛔ ONLY A COLD START USES IT. An unauthored `interior_` key INHERITS the bed already playing, which
+## is correct every time the player walked through the door — and a save loaded INSIDE the room has
+## nothing to inherit, so SoundManager degraded by WORLD and the same room had two beds. This is the
+## fact SoundManager cannot derive: it receives `interior_chapel`, never `harmonia_chapel`.
+##
+## "" is right for Inn/Shop/Tavern, which are reused across villages and genuinely have no single
+## owner — the world-level bed is the best answer available to them.
+func _get_music_home_area() -> String:
+	return ""
 
 
 ## Virtual: subclass draws its floor tile palette. Default = plain

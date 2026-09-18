@@ -2472,6 +2472,10 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 ## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head.
 var _pending_resume_position: float = 0.0
 
+## The village an interior belongs to, supplied by BaseInterior. Only a cold start reads it: every
+## other arrival has a bed to inherit, and the inherit path is already correct.
+var _pending_home_area: String = ""
+
 var _danger_intensity: float = 0.0  # 0.0 = safe, 1.0 = critical
 var _danger_tween: Tween = null
 
@@ -5356,7 +5360,7 @@ var _current_area: String = ""
 var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
 
-func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
+func play_area_music(area_type: String, resume_at: float = 0.0, home_area: String = "") -> void:
 	"""Play appropriate music for an exploration area.
 	Generation is deferred to the next frame so it does not block scene setup."""
 	if _current_area == area_type and _music_playing:
@@ -5415,6 +5419,9 @@ func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
 	## mutation to either one survives. `play(-12)` is not harmless — measured, it reports a
 	## playback position of 89,466 s.
 	_pending_resume_position = resume_at
+	## ⛔ WHICH VILLAGE THE ROOM BELONGS TO, WHICH IS THE ONE FACT THIS FILE CANNOT DERIVE. Parked
+	## beside the resume position and consumed by _start_interior_music's COLD START only — see there.
+	_pending_home_area = home_area
 	stop_music()
 
 	call_deferred("_start_area_music_deferred", area_type)
@@ -5585,9 +5592,18 @@ func _start_interior_music(key: String) -> void:
 	_load_music_manifest()
 	_music_playing = true
 	var resolved := _resolve_interior_track(key)
+	var home: String = _pending_home_area
+	_pending_home_area = ""
 	if resolved != "" and _try_play_from_manifest(resolved):
 		return
-	# Cold start only: nothing was playing to inherit, and no track authored yet.
+	## ⛔ COLD START ONLY, AND IT USED TO DEGRADE BY WORLD — so the SAME ROOM had TWO BEDS. Walked into
+	## from the village, an unauthored room INHERITS and you hear village_harmonia; loaded into from a
+	## save there is nothing to inherit and this line played village_medieval. Measured 2026-09-18
+	## across nine rooms; reachable with F2, which quick-saves anywhere but the title and a cutscene.
+	## The room's own village is the answer, and BaseInterior is the only caller that knows it.
+	if home != "":
+		play_area_music(home)
+		return
 	_start_village_world_music(_get_current_world_suffix())
 
 
