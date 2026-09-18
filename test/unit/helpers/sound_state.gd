@@ -65,6 +65,25 @@ static func restore() -> void:
 		sm._current_area = ""
 	if "_current_world_suffix" in sm:
 		sm._current_world_suffix = "medieval"
+	## ⛔ THE DUCK BUS, BECAUSE THE RELEASE IS A TWEEN AND A FILE CAN END BEFORE IT ARRIVES.
+	## `duck_music_for_dialogue(false)` sets the TARGET to 0 and tapers over DUCK_TAPER_TIME, so a
+	## teardown that goes through the right door still hands the next file a bus in motion — measured
+	## -0.33 dB, and every music level read downstream of it is that much low. Both slots are declared
+	## 0.0 in _ensure_music_duck_bus, so zeroing them IS this helper's barrier contract.
+	if "_duck_tween" in sm and sm._duck_tween and sm._duck_tween.is_valid():
+		sm._duck_tween.kill()
+	if "_kill_duck_tween" in sm and sm._kill_duck_tween and sm._kill_duck_tween.is_valid():
+		sm._kill_duck_tween.kill()
+	if "_duck_active" in sm:
+		sm._duck_active = false
+	if "_duck_holders" in sm:
+		sm._duck_holders = []
+	var duck_idx: int = AudioServer.get_bus_index(sm.MUSIC_DUCK_BUS) if "MUSIC_DUCK_BUS" in sm else -1
+	if duck_idx != -1:
+		for slot in range(AudioServer.get_bus_effect_count(duck_idx)):
+			var amp = AudioServer.get_bus_effect(duck_idx, slot)
+			if amp != null and "volume_db" in amp:
+				amp.volume_db = 0.0
 	## Last, because a completed fade-out leaves the level at -40 and nothing above lifts it.
 	if "_music_player" in sm and sm._music_player and "_music_base_db" in sm:
 		sm._music_player.volume_db = sm._music_base_db

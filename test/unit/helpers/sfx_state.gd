@@ -67,6 +67,14 @@ static func release_streams() -> void:
 	var sm: Node = (loop as SceneTree).root.get_node_or_null("SoundManager")
 	if sm == null:
 		return
+	## ⛔ THE RAMP, BEFORE THE PLAYERS. `_combo_step` is the SOURCE the per-play pitch bias derives
+	## from, and resetting `pitch_scale` below clears only what it RENDERED — a helper that is a
+	## barrier for the rendered field and silent about the field feeding it. Reported by cowir-music
+	## 2026-09-18: test_group_attack_cue_survives_its_own_hits ends with get_combo_pitch_bias() at
+	## 1.0300 against a 1.0000 fresh process, and neither barrier cleared it. No victim today — all
+	## three readers reset before their first read — so this closes a latch rather than a defect.
+	if sm.has_method("reset_hit_chain"):
+		sm.reset_hit_chain()
 	for pname in sfx_players(sm):
 		var p = sm.get(pname)
 		if p == null or not is_instance_valid(p):

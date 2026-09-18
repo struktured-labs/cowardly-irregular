@@ -12,6 +12,7 @@ extends GutTest
 ## -6.0, which test_music_duck_bus_regression then reads as a failure. The player-facing
 ## bug is the reason to fix it; the flake was the symptom that surfaced it.
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 const DIALOGUE_SRC := "res://src/cutscene/CutsceneDialogue.gd"
 const LINES := [{"speaker": "Test", "text": "Hi", "theme": "narrator", "portrait": "narrator"}]
 
@@ -49,6 +50,13 @@ func before_each() -> void:
 func after_each() -> void:
 	if _has_duck_api():
 		SoundManager.duck_music_for_dialogue(false)
+
+
+## ⛔ THE RELEASE ABOVE IS A 250 ms TAPER AND THIS FILE ENDS BEFORE IT ARRIVES. Measured: the last arm
+## ducks and after_each asks for 0, and the bus still read -0.33 dB when the next file started. The
+## door was right; the door is just not instantaneous. SoundState brings it to rest synchronously.
+func after_all() -> void:
+	SoundState.restore()
 
 
 func test_control_the_bus_and_api_are_present() -> void:
