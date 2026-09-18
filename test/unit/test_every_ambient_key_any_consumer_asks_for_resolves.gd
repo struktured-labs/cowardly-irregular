@@ -17,6 +17,16 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ##
 ## ⚠️ SoundManager:1196 replays _pre_night_ambient_key, a RUNTIME variable holding a key that
 ## already played. Not a literal and not in this corpus — it is safe by construction, not by check.
+##
+## 🔑 SIBLING, SAME CORPUS, DIFFERENT SUBJECT — READ BOTH BEFORE WIDENING EITHER.
+## test_ambient_corpus_comes_from_the_consumer (cowir-music, 2026-09-11) derives from the consumer
+## for the same reason and states the const blind spot in the same words. Its subject is whether a
+## cue LOOPS; this file's is whether the key RESOLVES. I built this one without finding it and
+## re-derived its corpus insight — measured after the fact, the two differ by exactly six keys:
+##     theirs   7   literal play_ambient args + NIGHT_AMBIENCE_KEY
+##     this    13   + the six _get_ambient_key() overrides in villages and interiors
+## Those six are NOT a gap in theirs: every one begins with `ambient_`, so the naming-convention
+## loop guard already reaches them. Superset here, no hole there, and neither file is redundant.
 
 const SFX_MANIFEST := "res://data/sfx_manifest.json"
 const MUSIC_MANIFEST := "res://data/music_manifest.json"
