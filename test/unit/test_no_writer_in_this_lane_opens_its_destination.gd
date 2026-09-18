@@ -88,7 +88,13 @@ const NAMED := [
 ##
 ## A safe writer must rename THE PATH IT STAGED, or read back THE PATH IT WROTE. Both are now
 ## keyed to the first argument of the write open, so another file's call cannot stand in for it.
-const SAFE_FORMS := ["rename_absolute(%s", "open(%s, FileAccess.READ)"]
+## ⛔ BOUNDED ON BOTH SIDES. `rename_absolute(%s` is bounded on the LEFT by the call and was
+## UNBOUNDED ON THE RIGHT, so `rename_absolute(staged2, …)` satisfied a check for `staged` — a
+## writer that stages one file and renames a DIFFERENT one whose name extends it read as safe.
+## Measured on a plant: EC=0, all three arms green, with the real file never moved.
+## The trailing comma closes it, because the first argument is always followed by one.
+## (`open(%s, FileAccess.READ)` was already bounded on the right by its own suffix.)
+const SAFE_FORMS := ["rename_absolute(%s,", "open(%s, FileAccess.READ)"]
 
 
 func _lane_scripts() -> Array:
