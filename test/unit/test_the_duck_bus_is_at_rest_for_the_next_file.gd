@@ -56,7 +56,19 @@ func test_the_barrier_brings_a_live_duck_to_rest() -> void:
 	var holder := Node.new()
 	add_child_autofree(holder)
 	SoundManager.duck_music_for_dialogue(true, holder)
-	await get_tree().create_timer(0.35, true, false, true).timeout
+	## ⛔ WAIT FOR THE TWEEN, NOT THE CLOCK. This was a fixed 0.35 s wall-clock sleep for a 0.25 s
+	## tween: it passed for this file alone and read -3.60 dB — 60% of the way — when the file ran
+	## inside a ten-file batch. ⚠️ I DID NOT ESTABLISH THE MECHANISM: a leaked `Engine.time_scale`, a
+	## leaked `get_tree().paused` and a double-run of the script were each measured and each ruled out
+	## (1.0, false, and Scripts==10). The wait was the wrong instrument regardless — a wall-clock sleep
+	## cannot be the right way to observe an engine-time tween — so it is gone rather than retuned.
+	## Bounded, because a hung test is killed rather than failed.
+	var spins: int = 0
+	while SoundManager._duck_tween != null and SoundManager._duck_tween.is_valid() \
+			and SoundManager._duck_tween.is_running() and spins < 300:
+		await get_tree().process_frame
+		spins += 1
+	assert_lt(spins, 300, "CONTROL: the duck taper was still running after %d frames" % spins)
 	assert_almost_eq(_amp(0), SoundManager.DUCK_TARGET_DB, 0.01,
 		"CONTROL: the duck must actually have engaged (%.2f dB), or this arm restores nothing" % _amp(0))
 	assert_true(bool(SoundManager.is_music_ducked_for_dialogue()), "CONTROL: and the latch must be set")

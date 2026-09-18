@@ -7,6 +7,30 @@ extends GutTest
 ## targeting swap through the real AI-selection path.
 
 
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
+
+## ⛔ THIS FILE LEFT THE BattleManager AUTOLOAD DIRTY FOR EVERY LATER FILE IN THE PROCESS.
+## Measured 2026-09-18 by a per-script probe over all 2,071 test files: it left `current_state = PROCESSING_ACTION`, so `is_battle_active()` answered TRUE for every later
+## file. Its own inline restore covers player_party/enemy_party/pending_actions — the three fields its
+## author was reasoning about — and misses the six that `_process_ai_selection` also writes.
+##
+## The derived snapshot/restore covers the whole surface rather than the fields anyone listed, and
+## it restores the PRIOR value — so it cannot mask a leak that arrived from upstream.
+var _bm_guard = null
+
+
+func before_each() -> void:
+	_bm_guard = BattleStateGuard.new()
+	_bm_guard.snapshot()
+
+
+## Restore FIRST: a GDScript error anywhere below aborts this function, and an abort here is a LEAK
+## the file still scores green for. Nothing above it can be skipped if there is nothing above it.
+func after_each() -> void:
+	if _bm_guard != null:
+		_bm_guard.restore()
+
+
 func _combatant(cname: String, side_hp: int = 200) -> Combatant:
 	var c := Combatant.new()
 	add_child_autofree(c)
