@@ -23,6 +23,7 @@ extends GutTest
 ## ⛔ NOT "non-medieval worlds get silence": the room inherits, the same path an unauthored
 ## room takes. A shop in W2-W6 keeps the village bed playing without a restart.
 
+const MALFORMED_PROBE := "zzz_malformed_worlds"
 const MANIFEST := "res://data/music_manifest.json"
 
 ## Each world's village area key, so the walk starts where a player's would.
@@ -42,6 +43,9 @@ func before_each() -> void:
 
 func after_each() -> void:
 	SoundManager.stop_music()
+	## Erased HERE not in the arm: the malformed-field abort this arm defends against is
+	## exactly what would skip an inline erase, stranding the key for the whole process.
+	SoundManager._music_manifest.erase(MALFORMED_PROBE)
 	var gs: Node = get_node_or_null("/root/GameState")
 	if gs:
 		gs.set("current_world", _world_before)
@@ -123,10 +127,9 @@ func test_a_bed_that_names_no_world_still_serves_every_one() -> void:
 	assert_true(SoundManager._bed_serves_this_world("zzz_not_a_bed_at_all"),
 		"a key with no entry carries no restriction")
 	## A typo'd field must not take the music down — unreadable means unrestricted, not a crash.
-	SoundManager._music_manifest["zzz_malformed_worlds"] = {"worlds": "medieval"}
-	assert_true(SoundManager._bed_serves_this_world("zzz_malformed_worlds"),
+	SoundManager._music_manifest[MALFORMED_PROBE] = {"worlds": "medieval"}
+	assert_true(SoundManager._bed_serves_this_world(MALFORMED_PROBE),
 		"a worlds field that is not a list must read as no restriction")
-	SoundManager._music_manifest.erase("zzz_malformed_worlds")
 	assert_false(SoundManager._bed_serves_this_world("interior_shop"),
 		"the shop bed names medieval, so it does not serve W5")
 
@@ -137,3 +140,10 @@ func test_a_bed_that_names_no_world_still_serves_every_one() -> void:
 	assert_eq(SoundManager._get_current_world_suffix(), "medieval", "CONTROL: and now in W1")
 	assert_true(SoundManager._bed_serves_this_world("interior_shop"),
 		"and it does serve the world it names")
+
+
+## The teardown, not the arm, is what makes this true — see after_each. A stranded synthetic key
+## is permanent: _load_music_manifest early-returns, so no later file can undo it.
+func test_the_manifest_carries_no_probe_key_into_the_next_file() -> void:
+	assert_false(SoundManager._music_manifest.has(MALFORMED_PROBE),
+		"the malformed-field probe must not survive this file — it would reach every later manifest census as a real bed")
