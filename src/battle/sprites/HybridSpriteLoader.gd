@@ -306,6 +306,27 @@ static func monster_faces_party(monster_id: String, convention_default: bool) ->
 
 
 ## Sizing decision ONLY — small artist drops get the scale bump so they don't read tiny
+## Party twin of monster_faces_party, and it exists for the same reason on the same evidence.
+##
+## The monster path was repaired on 2026-07-26 after chancellor_mordaine's 256px -> 128px
+## re-export silently reversed her facing — "a resolution change is a SIZING decision, and it
+## must not be able to reverse a monster's facing as a side effect". That sentence is just as
+## true of a JOB, and BattleScene kept inferring party facing from `get_height() > 128` inline
+## with nothing to declare against. All 17 party sheets are 256px today, so the trigger is
+## latent — but the boundary is EXCLUSIVE, so a 256 -> 128 re-export lands exactly on the
+## failing side, and that is the operation the monster incident was.
+##
+## Same call shape as the monster twin on purpose: pass the convention already in the right
+## polarity. `not job_faces_enemy(...)` is the double inversion
+## test_a_declared_facing_survives_the_dungeon.gd exists to refuse.
+static func job_faces_enemy(job_id: String, convention_default: bool) -> bool:
+	_load_manifest()
+	var entry = _manifest.get(job_id, {})
+	if entry is Dictionary and entry.has("flip_h"):
+		return bool(entry["flip_h"])
+	return convention_default
+
+
 ## next to 256px proc-gen monsters. Deliberately separate from facing: see monster_faces_party.
 static func monster_needs_scale_bump(frame_height: int, threshold: int) -> bool:
 	return frame_height > 0 and frame_height <= threshold
