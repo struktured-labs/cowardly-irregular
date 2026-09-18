@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## Cadence #10 — ScriptShareManager.apply_autogrind_rules must propagate the
 ## bool that AutogrindSystem.set_autogrind_rules returns (cadence #5). Two
 ## validators today (validate_imported_autogrind_rules + set_autogrind_rules
@@ -10,6 +15,7 @@ const ScriptShareManager := preload("res://src/autobattle/ScriptShareManager.gd"
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	# The AutogrindSystem autoload is the target here — we mutate its rules
 	# through ScriptShareManager, which delegates to the autoload. Isolate by
 	# stashing + restoring the rules array in after_each.
@@ -22,6 +28,8 @@ func after_each() -> void:
 	# _saved_rules came from a validated getter so this always succeeds.
 	AutogrindSystem.set_autogrind_rules(_saved_rules)
 	AutogrindSystem._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 var _saved_rules: Array = []

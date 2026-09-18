@@ -41,6 +41,22 @@ func _init() -> void:
 		quit(2)
 		return
 
+	## A capture is only interpretable against the job it was composed FOR. Replaying a fighter
+	## capture as a mage reports a plausible, specific, WRONG fallback rate — 15 of 48, every
+	## message naming a real fighter ability "not in mage's level-1 kit". The number reads as a
+	## composer defect and is an argument error. If the capture recorded its job, honour it.
+	var recorded: String = ""
+	if FileAccess.file_exists(dir_path + "/_job.txt"):
+		recorded = FileAccess.get_file_as_string(dir_path + "/_job.txt").strip_edges()
+	if recorded != "":
+		if character_id == "":
+			character_id = recorded
+		elif character_id != recorded:
+			lines.append("FATAL: %s was captured for '%s', not '%s' — every 'not in kit' reason below would be about the wrong character" % [arm, recorded, character_id])
+			_write(arm, lines)
+			quit(2)
+			return
+
 	# Install the replay backend exactly as the live-path tests do.
 	var backend := ReplayBackend.new()
 	backend.name = "ReplayBE"
@@ -53,7 +69,10 @@ func _init() -> void:
 
 	var names: Array = []
 	for f in d.get_files():
-		if f.ends_with(".txt"):
+		## `_`-prefixed files are capture METADATA, not replies. Without this, _job.txt is replayed
+		## as a reply, fails to parse, and counts as a fallback — the guard above would have
+		## inflated the very number it exists to protect.
+		if f.ends_with(".txt") and not f.begins_with("_"):
 			names.append(f)
 	names.sort()
 

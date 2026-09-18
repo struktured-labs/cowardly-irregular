@@ -94,6 +94,8 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 		assert_true(sm.get(member_name) != null,
 			"SoundManager has no %s — this file reaches for it directly" % member_name)
 	var consts: Dictionary = sm.get_script().get_script_constant_map()
-	for c in ["SFX_UI_BASE_DB", "SFX_BATTLE_BASE_DB"]:
+	## SOUNDS added 2026-09-17: `sm.SOUNDS.has(...)` at :38 sits AFTER two asserts in its arm, so a
+	## rename aborted it at rung 3 — measured EC=0 · Passing 5 with a SCRIPT ERROR on stderr only.
+	for c in ["SFX_UI_BASE_DB", "SFX_BATTLE_BASE_DB", "SOUNDS"]:
 		assert_true(consts.has(c),
-			"%s is gone — every level in this file is derived from it, so its absence makes the arms vacuous" % c)
+			"%s is gone — this file's arms read it directly, so its absence makes them vacuous" % c)

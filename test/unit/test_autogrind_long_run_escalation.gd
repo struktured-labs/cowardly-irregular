@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file leaked state a hand-listed teardown cannot name.
+var _ag_state: Dictionary
+
 var _gating_battles_before: int = 0
 
 ## Long-run escalation harness — asserts the autogrind danger ladder ESCALATES, not merely
@@ -40,6 +45,7 @@ const _DICTS: Array[String] = [
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_gating_battles_before = AutogrindSystem.battles_completed
 	AutogrindSystem._test_disable_persistence = true
 	for f in _FIELDS:
@@ -78,6 +84,8 @@ func after_each() -> void:
 		AutogrindSystem.set(d, _saved[d])
 	AutogrindSystem.grind_party.assign(_saved["grind_party"])
 	_saved.clear()
+	AutogrindState.restore(_ag_state)
+
 
 
 ## Runs `n` victories and returns a sample of the ladder afterwards.

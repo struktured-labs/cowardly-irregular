@@ -4161,6 +4161,16 @@ func set_music_volume(normalized: float) -> void:
 	_music_base_db = db
 	if _music_player:
 		_music_player.volume_db = db
+	## ⛔ AND PUT BACK THE ENVELOPE THE LINE ABOVE JUST FLATTENED. The danger cue sits +3 dB over the
+	## base; writing the base straight onto the player erased that while leaving the PITCH at 1.15,
+	## and set_danger_intensity's 0.05 deadband means a party that STAYS critical never rewrites it.
+	## The trigger is the cue itself — danger is audibly louder, so reaching for the slider is exactly
+	## what removes the loudness being reacted to. Same clean slate reset_danger already documents for
+	## corruption; corruption last, matching that function's precedence rather than inventing one.
+	if _danger_intensity > 0.0:
+		_apply_danger_intensity(_danger_intensity)
+	if _corruption_intensity > 0.0:
+		_apply_corruption_intensity(_corruption_intensity)
 	# ambient (weather / room tone) sits a fixed offset below music — keep it tracking the slider (cowir-sfx msg 2218)
 	if _ambient_player:
 		_ambient_player.volume_db = db + AMBIENT_OFFSET_DB

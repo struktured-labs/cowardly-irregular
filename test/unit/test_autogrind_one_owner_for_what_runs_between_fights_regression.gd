@@ -109,7 +109,7 @@ func test_the_console_asks_rather_than_re_deriving() -> void:
 	## the console must not block authoring when the autoload is missing — but not its own answer.
 	var ui: String = GdSource.code_of(UI)
 	assert_gt(ui.length(), 10000, "CONTROL: AutogrindUI was actually read")
-	assert_true(ui.contains("ability_works_between_battles("),
+	assert_true(ui.contains(".ability_works_between_battles("),
 		"the console no longer asks AutogrindSystem — it has gone back to deriving the answer itself")
 	assert_false(ui.contains('get("heal_amount"'),
 		"AutogrindUI is reading heal_amount again: a second copy of the engine's refusal, which is what cost the LLM path 40 of 53 actions")

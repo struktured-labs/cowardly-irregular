@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## Two bugs in two hours, one shape: an autogrind event whose ONLY surface was the console.
 ##
 ##   system_collapse    fired to a disconnected handler when the console was closed
@@ -97,6 +102,7 @@ func _declared_signals() -> Array:
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 
 
@@ -240,7 +246,7 @@ func test_the_console_really_does_drop_them_all_on_close() -> void:
 	## The premise. If _close_ui stopped disconnecting, this whole classification would be
 	## unnecessary — and if it silently stopped, the guard above would be defending nothing.
 	var ui: String = _source(UI)
-	assert_true(ui.contains("_disconnect_autogrind_signals()"),
+	assert_true(ui.contains("\t_disconnect_autogrind_signals()"),
 		"the console must still disconnect on close, or this file's reason for existing has changed")
 	var declared: Array = _declared_signals()
 	var dropped := 0
@@ -249,3 +255,7 @@ func test_the_console_really_does_drop_them_all_on_close() -> void:
 			dropped += 1
 	assert_gt(dropped, 3,
 		"control: the console must actually disconnect several signals (found %d) — a zero here would mean the premise is stale" % dropped)
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)
