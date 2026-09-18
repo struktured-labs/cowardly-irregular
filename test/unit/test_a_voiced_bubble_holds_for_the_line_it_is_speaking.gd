@@ -97,3 +97,32 @@ func test_the_voice_is_read_before_the_fade_tween_is_built() -> void:
 	assert_gt(present_at, -1, "the spawn path no longer calls _present(anchor_global_pos ...)")
 	assert_lt(voice_at, present_at,
 		"_play_voice is called AFTER _present, so the fade tween is built from the pre-voice hold and a voiced bubble fades mid-line")
+
+
+func test_the_voice_tail_is_a_tail_and_not_a_second_pause() -> void:
+	## ⚠️ THE ARM ABOVE IS BLIND TO THIS AND I PROVED IT BEFORE WRITING THIS ONE. It asserts
+	## `_hold_time == clip + VOICE_TAIL_S` while the product computes `maxf(_hold_time, clip_len +
+	## VOICE_TAIL_S)` — the SAME constant on both sides, so a wrong tail moves both and the delta
+	## holds. Measured 2026-09-18: 0.3 -> 2.5 leaves all three arms Passing, i.e. every voiced bubble
+	## hanging 2.2s past its line with the guard green. That is the delta-ratchet cost, in the guard
+	## I wrote to defend this hold — the defence and the defect share a reference.
+	##
+	## So this arm judges the constant from OUTSIDE the relationship: a TAIL is the beat after a line
+	## ends, not a second line. The bound is relational rather than a pinned 0.3 — that would be the
+	## coincidental-value ratchet and would red an honest retune.
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	var tail: float = float(BattleSpeechBubble.VOICE_TAIL_S)
+	assert_gt(tail, 0.0, "VOICE_TAIL_S is %.2f — a voiced bubble closes the instant the audio stops" % tail)
+	var b = BattleSpeechBubble.spawn(_parent, Vector2(320, 240), "Bard", "a line", Color.WHITE, BASE_HOLD, VOICED_KEY)
+	assert_not_null(b, "CONTROL: spawn returned null")
+	if b == null or sm._voice_player.stream == null:
+		return
+	## ⛔ FIRST VERSION OF THIS BOUND WAS `clip * 0.5` AND PASSED THE 2.5 IT WAS WRITTEN TO CATCH —
+	## the measured clip is 5.20s, so the bound was 2.60. An arm blind to its own motivating case.
+	## Absolute, because the claim is about the CONTRACT of a tail rather than about this clip: the
+	## bubble lingers a beat after the audio stops. Anything past a second is a pause the player
+	## waits through on every voiced line, and 31 authored lines do not all exceed two seconds.
+	assert_lt(tail, 1.0,
+		"VOICE_TAIL_S is %.2fs — past a second it is a pause the player sits through on every voiced line, not a tail, and the delta arm above cannot see it" % tail)
