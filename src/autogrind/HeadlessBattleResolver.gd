@@ -1556,6 +1556,11 @@ func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: Stri
 		status_to_add = "stun"
 	if status_to_add == "burn":
 		status_to_add = "burning"
+	## Twin of BattleManager:5098 — the authored effect name is not the key Combatant ticks.
+	if status_to_add == "amplify_poison":
+		status_to_add = "festered"
+	if status_to_add == "memory_leak_status":
+		status_to_add = "memory_leak"
 	## doom is a COUNTER, not a status, in both engines: Combatant.doom_counter ticks down and KOs,
 	## and this file already CURES it in the cleanse arm while nothing could ever set it.
 	if status_to_add == "doom":

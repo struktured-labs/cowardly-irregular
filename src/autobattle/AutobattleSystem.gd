@@ -287,7 +287,7 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			return _compare_str(float(bm_node.volatility.global_band), op, value)
 
 		"has_status":
-			var status = condition.get("status", "")
+			var status = Combatant.resolve_status_alias(str(condition.get("status", "")))
 			return status in combatant.status_effects
 
 		## The counterpart of not_has_buff, for effects that land as a STATUS rather than a stat
@@ -296,12 +296,12 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 		## re-casts forever and the rules beneath it never run, which is the same pin that made a
 		## Guardian stand still all fight. not_has_buff cannot cover these — it keys on a STAT.
 		"not_has_status":
-			var absent_status = condition.get("status", "")
+			var absent_status = Combatant.resolve_status_alias(str(condition.get("status", "")))
 			return not (absent_status in combatant.status_effects)
 
 		"ally_has_status":
 			# True if any living ally (including self) has the given status
-			var status = condition.get("status", "")
+			var status = Combatant.resolve_status_alias(str(condition.get("status", "")))
 			var allies = _get_allies_for(combatant)
 			allies.append(combatant)
 			for ally in allies:
@@ -313,7 +313,7 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			# True if any living enemy has the given status — lets rules react to
 			# enemy state (all-out attack a stunned foe, dispel an enemy's regen,
 			# hold fire while a debuff is still ticking).
-			var enemy_status = condition.get("status", "")
+			var enemy_status = Combatant.resolve_status_alias(str(condition.get("status", "")))
 			for enemy in _get_enemies_for(combatant):
 				if enemy_status in enemy.status_effects:
 					return true
@@ -329,7 +329,7 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 		"not_enemy_has_status":
 			## No living enemies: vacuously true. The battle is ending either way, and answering
 			## FALSE here would be a claim that somebody out there has the status.
-			var absent_enemy_status = condition.get("status", "")
+			var absent_enemy_status = Combatant.resolve_status_alias(str(condition.get("status", "")))
 			for enemy in _get_enemies_for(combatant):
 				if absent_enemy_status in enemy.status_effects:
 					return false
@@ -2188,7 +2188,7 @@ func _evaluate_condition(combatant: Combatant, condition: Dictionary) -> bool:
 			return _compare(combatant.current_ap, compare_op, value)
 
 		ConditionType.HAS_STATUS:
-			var status_name = condition.get("status", "")
+			var status_name = Combatant.resolve_status_alias(str(condition.get("status", "")))
 			return status_name in combatant.status_effects
 
 		ConditionType.TARGET_HP_PERCENT:

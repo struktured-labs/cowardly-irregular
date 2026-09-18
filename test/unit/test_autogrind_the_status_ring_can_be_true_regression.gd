@@ -19,7 +19,10 @@ const UI_PATH := "res://src/ui/autogrind/AutogrindUI.gd"
 ## VARIABLE (`add_status(status_to_add, …)`). A literal census over a composed writer is the shape
 ## this fleet has been retracting all night. This arm derives from the AUTHORED effect set instead.
 
-const _ALIASES := {"freeze": "stun", "burn": "burning"}
+## The rule side's own table, not a copy: this was a 2-entry snapshot and the applier had four.
+## test_autogrind_a_rule_names_the_word_the_ability_uses_regression asserts it equals the
+## applier's, so a stale copy here can no longer disagree with what actually lands.
+const _ALIASES := Combatant.STATUS_ALIASES
 
 
 func _authored_effects() -> Dictionary:

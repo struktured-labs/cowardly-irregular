@@ -628,6 +628,22 @@ func remove_status(status: String) -> void:
 		status_removed.emit(status)
 
 
+## Authored effect names that LAND under a different key — BattleManager aliases these at apply.
+## A rule names the authored word (the ability says Burn), so the rule side must resolve before it
+## matches, or the rule can never fire. Parity with the applier is asserted by test.
+const STATUS_ALIASES := {
+	"freeze": "stun",
+	"burn": "burning",
+	"amplify_poison": "festered",
+	"memory_leak_status": "memory_leak",
+}
+
+
+## Resolve a rule-supplied status name to the key the engine actually stores.
+static func resolve_status_alias(status_name: String) -> String:
+	return str(STATUS_ALIASES.get(status_name, status_name))
+
+
 func has_status(status: String) -> bool:
 	return status in status_effects
 

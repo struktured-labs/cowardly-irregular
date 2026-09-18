@@ -2230,7 +2230,7 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 			return _member_predicate(party, condition, func(c): return _compare_op(c.get_mp_percentage(), op, value))
 
 		"member_status":
-			var want_status := str(condition.get("value", ""))
+			var want_status := Combatant.resolve_status_alias(str(condition.get("value", "")))
 			return _member_predicate(party, condition, func(c): return c.has_status(want_status))
 
 		"member_injured":
