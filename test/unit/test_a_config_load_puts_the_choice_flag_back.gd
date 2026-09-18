@@ -1,8 +1,16 @@
 extends GutTest
 
-## `InputProfileManager.load_config()` sets `profile_chosen_by_user = true` (InputProfileManager:665)
-## and NOTHING ever sets it back. It is not self-healing the way a pitch or a binding is — the next
-## call does not overwrite it, so once a test file turns it on it stays on for the whole process.
+## `InputProfileManager.load_config()` ASSIGNS `profile_chosen_by_user` and NOTHING ever sets it
+## back. It is not self-healing the way a pitch or a binding is — the next call does not overwrite
+## it, so once a test file turns it on it stays on for the whole process.
+##
+## ⚠️ THE PREMISE ARM USED TO PIN THE LITERAL `= true`, AND A CORRECT FIX RED IT. The loader now
+## reads the flag from the config rather than inferring it from the profile's presence, because a
+## SAVED profile is not a CHOSEN one — three of four `save_config` callers are not profile choices,
+## so toggling one setting permanently disabled pad autodetection. The leak this file defends is
+## unchanged: the loader still writes the flag, so a test that calls it still pollutes the process.
+## Only the SPELLING moved, which is exactly the shape this lane spent the day removing — the arm
+## now asserts the loader ASSIGNS the flag, which is the property that makes a leak possible.
 ##
 ## ⛔ WHAT A LEAKED `true` COSTS: `_on_joy_connection_changed` runs autodetect only
 ## `if connected and not profile_chosen_by_user` (:189). A later file that connects a pad and
@@ -40,21 +48,59 @@ func _func_body(src: String, header: String) -> String:
 	return src.substr(at, stop - at) if stop > at else src.substr(at)
 
 
+## ⛔ THE PREMISE, DRIVEN RATHER THAN SCANNED — AND IT WENT VACUOUS AS A SCAN, TWICE, THE SAME WAY.
+## v1 searched the whole file and `cycle_profile`'s `= true` satisfied it. v2 scoped to
+## `load_config`'s body and pinned the literal `= true` — which red on a CORRECT change, because
+## the loader now reads the flag from the config instead of inferring it. Loosening that to
+## `= ` went vacuous immediately: the v1-migration line `profile_chosen_by_user = false` lives in
+## the same body, so deleting the real write left it satisfying the assert. Measured — the arm
+## passed 2/2 against a loader that no longer wrote the flag at all.
+##
+## ✅ So it is driven. Calling the loader against a config that SAYS false and one that SAYS true
+## proves the loader assigns the flag, in both directions, which is the entire premise this file
+## rests on — and it cannot be satisfied by a neighbouring line, a rename, or a reword.
 func test_the_manager_still_sets_the_flag_on_load() -> void:
-	## ⛔ THE PREMISE, ASSERTED RATHER THAN ASSUMED. Every arm below defends against a write that
-	## this line proves still happens. If the loader stops setting the flag, this guard becomes a
-	## rule about nothing and should be deleted — it must say so instead of passing quietly.
+	var had: bool = FileAccess.file_exists(InputProfileManager.CONFIG_PATH)
+	var raw: String = FileAccess.get_file_as_string(InputProfileManager.CONFIG_PATH) if had else ""
+	var saved_flag: bool = InputProfileManager.profile_chosen_by_user
+	var saved_profile: String = InputProfileManager.active_profile
+
+	for want in [false, true]:
+		var cfg := {
+			"version": 2,
+			"active_profile": "8BitDo SN30",
+			"nintendo_mode": InputProfileManager.nintendo_mode,
+			"custom_bindings": {},
+			"profile_chosen_by_user": want,
+		}
+		var f := FileAccess.open(InputProfileManager.CONFIG_PATH, FileAccess.WRITE)
+		assert_not_null(f, "CONTROL: the fixture config must be writable")
+		f.store_string(JSON.stringify(cfg, "\t"))
+		f.close()
+		InputProfileManager.profile_chosen_by_user = not want
+		InputProfileManager.load_config()
+		assert_eq(InputProfileManager.profile_chosen_by_user, want,
+			"premise: load_config must ASSIGN %s — it read a config saying %s and left the flag at %s. "
+				% [FLAG, want, InputProfileManager.profile_chosen_by_user]
+			+ "Without that write there is nothing to leak and nothing to restore, and this whole "
+			+ "file is a rule about nothing.")
+
+	if had:
+		var w := FileAccess.open(InputProfileManager.CONFIG_PATH, FileAccess.WRITE)
+		if w:
+			w.store_string(raw)
+			w.close()
+	else:
+		DirAccess.remove_absolute(InputProfileManager.CONFIG_PATH)
+	InputProfileManager.apply_profile(saved_profile)
+	InputProfileManager.profile_chosen_by_user = saved_flag
+
+
+## The consequence path, still a source claim because it is about a GATE rather than a write: if
+## autodetect stops consulting the flag, a leaked `true` is harmless and this file is obsolete.
+func test_the_leak_still_costs_something() -> void:
 	var src: String = GdSource.code_of("res://src/input/InputProfileManager.gd")
 	assert_gt(src.length(), 0, "CONTROL: must be able to read the manager's source")
-	## ⛔ SCOPED TO load_config's OWN BODY. My first version searched the whole file, and
-	## `cycle_profile` writes `%s = true` too — so deleting the loader's write left the
-	## other occurrence satisfying the assert and the premise arm passed on the mutation.
-	var body: String = _func_body(src, "func load_config(")
-	assert_gt(body.length(), 0, "CONTROL: load_config must still exist to have a body")
-	assert_true(body.contains("%s = true" % FLAG),
-		"premise: load_config must still SET %s — without that write there is nothing to restore" % FLAG)
-	## The consequence path. If autodetect stops consulting the flag, a leaked `true` is harmless
-	## and this whole file is obsolete — it must say that out loud rather than keep passing.
 	assert_true(src.contains("connected and not %s" % FLAG),
 		"premise: pad-connection autodetect must still be gated on %s — that gate is the reason " % FLAG
 		+ "a leaked `true` costs anything")
