@@ -390,7 +390,28 @@ else
   _EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
     echo "[deploy] BLOCKED: could not build the export sandbox — see above." >&2
     exit 2; }
-  XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --export-release "Web" builds/web/index.html 2>&1 | tail -3
+  # ⛔ KEEP THE LOG. This used to pipe straight into `tail -3`, which threw the export log away
+  # and left this path with nothing to audit. make_web_stage.sh:275 runs check_pck_complete.py
+  # against tmp/stage_export.log on the DEFAULT path, so a staged publish proves its payload is
+  # whole — and this opt-out branch, which also publishes, proved nothing.
+  XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --export-release "Web" builds/web/index.html \
+      > tmp/web_export.log 2>&1
+  tail -3 tmp/web_export.log
+  # ⛔ AND AUDIT IT, for the reason check_pck_complete.py's own header gives about THIS chain:
+  # "make_web_stage.sh gates the pck on size, and only in one direction ... A build that LOST
+  # content shrinks, so it passes with MORE headroom and reports a better number." The size
+  # gates below (PCK_LIMIT / PCK_WARN) cannot tell a clean build from one that dropped content;
+  # they reward the dropout. The staged path has had this check since it was written; this one
+  # never did, so WEB_STAGE=0 published on the size gates alone.
+  if [ ! -f tools/check_pck_complete.py ]; then
+    echo "[deploy] BLOCKED: tools/check_pck_complete.py missing. Refusing to publish a pck" >&2
+    echo "        whose payload nothing has checked." >&2
+    exit 2
+  fi
+  if ! python3 tools/check_pck_complete.py . tmp/web_export.log "Web"; then
+    echo "[deploy] BLOCKED: the direct web export is missing content it owed — see above." >&2
+    exit 2
+  fi
 fi
 # An export that reported success and produced nothing would otherwise reach the pck
 # gate as a stat error rather than a named failure.
