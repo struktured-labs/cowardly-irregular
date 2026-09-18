@@ -99,6 +99,11 @@ func test_a_documented_invocation_carries_the_sandbox() -> void:
 			var tail: String = line.substr(g + len("godot "))
 			if not tail.begins_with("-"):
 				continue
+			## `project.godot -> the .tscn root` clears BOTH earlier halves: the trailing space
+			## defeats the .godot/ substring test, and the next token starts with "-" because it
+			## is an ARROW. Found by a sibling lane in a docstring, not by me.
+			if tail.begins_with("->"):
+				continue
 			## PRESENCE IS NOT ENOUGH. Measured by a sibling lane after this arm shipped:
 			## an INVALID sandbox path fails CLOSED (godot aborts, EC=134, nothing written),
 			## but an EMPTY XDG_DATA_HOME is treated as unset per the XDG spec — godot writes
