@@ -1539,7 +1539,22 @@ func _write_json_atomic(path: String, payload: Variant, what: String) -> bool:
 		push_warning("[AUTOGRIND] %s: could not open %s (error %d) — previous file left intact" % [what, staged, FileAccess.get_open_error()])
 		return false
 	file.store_string(json_string)
+	## ⛔ store_string RETURNS NOTHING, so a short write (full disk, quota) is invisible — and
+	## staging does NOT cover it: a rename moves a partial file into place just as happily
+	## (@cowir-controller). get_error() is used 0 times in src/, so all 14 writers share this.
+	var werr: int = file.get_error()
 	file.close()
+	## Checked BEFORE the rename, so a truncated payload never reaches the destination at all.
+	var expected: int = json_string.to_utf8_buffer().size()
+	var chk := FileAccess.open(staged, FileAccess.READ)
+	var written: int = chk.get_length() if chk != null else -1
+	if chk != null:
+		chk.close()
+	if werr != OK or written != expected:
+		if DirAccess.remove_absolute(staged) != OK:
+			push_warning("[AUTOGRIND] %s: short write AND %s could not be removed — partial sibling left on disk" % [what, staged])
+		push_warning("[AUTOGRIND] %s: short write to %s (%d of %d bytes, error %d) — previous file left intact" % [what, staged, written, expected, werr])
+		return false
 	if DirAccess.rename_absolute(staged, path) != OK:
 		## Eager, and loud if it also fails: a stale sibling self-heals only on the NEXT successful
 		## save, which for a file written once may never come (@cowir-controller/@cowir-ai).

@@ -94,3 +94,22 @@ func test_the_gate_still_marks_every_writer() -> void:
 		"the gate must still mark each writer individually — the ratchet's saver set derives from it: %s" % str(savers))
 	assert_false("_write_json_atomic" in savers,
 		"the shared helper must NOT carry the gate, or every writer collapses into one derived saver")
+
+
+func test_the_writer_verifies_its_bytes_before_renaming() -> void:
+	## `store_string` returns nothing, so a short write is invisible, and staging does NOT cover it
+	## — a rename moves a partial file into place just as happily. Verified before the rename so a
+	## truncated payload never reaches the destination. get_error() is used 0x elsewhere in src/.
+	var src: String = FileAccess.get_file_as_string(SYSTEM_PATH)
+	var i_fn: int = src.find("func _write_json_atomic(")
+	assert_gt(i_fn, -1, "CONTROL: the atomic helper must exist")
+	var i_end: int = src.find("\nfunc ", i_fn + 20)
+	var body: String = src.substr(i_fn, i_end - i_fn)
+	var i_check: int = body.find("get_length()")
+	var i_rename: int = body.find("rename_absolute")
+	assert_gt(i_check, -1, "the writer must read back what it wrote — store_string cannot report a short write")
+	assert_gt(i_rename, -1, "CONTROL: the writer must rename")
+	assert_lt(i_check, i_rename,
+		"the byte check must run BEFORE the rename, else a partial file is renamed into place")
+	assert_true(body.contains("get_error()"),
+		"the writer must consult get_error() — it is the only signal store_string leaves behind")
