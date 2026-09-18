@@ -16,10 +16,31 @@ func _holds(player: AudioStreamPlayer, key: String) -> bool:
 	return player != null and player.stream != null and str(player.stream.resource_path).contains(key)
 
 
+## ⛔ THE ERASE BELOW TAKES A REAL CUE OUT OF A SHARED AUTOLOAD. It was restored INLINE two lines
+## later, so a GDScript error in play_advance_state aborts the arm between the two and leaves
+## `advance_queue_full` MISSING for every later file in the process — Win98Menu plays it.
+## Held here instead, because after_each runs even when the arm aborts (@cowir-music, 2026-09-18).
+var _erased: Dictionary = {}
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
+
 func before_each() -> void:
 	var sm: Node = _sm()
 	if sm:
 		sm._sfx_cooldowns.clear()
+
+
+## ⚠️ RELEASE FIRST, restore second: an error in the restore aborts after_each, and a release
+## sitting at the bottom is then skipped. Same ordering note as the sibling teardowns in this lane.
+func after_each() -> void:
+	SfxState.release_streams()
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	for k in _erased:
+		sm._sfx_manifest[k] = _erased[k]
+	_erased = {}
+	sm._sfx_cooldowns.clear()
 
 
 func test_the_bank_has_its_own_voices() -> void:
@@ -91,10 +112,10 @@ func test_an_absent_cue_is_silent_not_a_fallback() -> void:
 		return
 	var saved = sm._sfx_manifest.get("advance_queue_full")
 	assert_not_null(saved, "CONTROL: the cue must be authored, or erasing it proves nothing")
+	_erased["advance_queue_full"] = saved
 	sm._sfx_manifest.erase("advance_queue_full")
 	sm._refuse_player.stream = null
 	sm.play_advance_state("advance_queue_full")
-	sm._sfx_manifest["advance_queue_full"] = saved
 	assert_null(sm._refuse_player.stream, "an absent advance cue still played something")
 
 
@@ -108,3 +129,15 @@ func test_the_unleash_handler_routes_through_the_bank_voice() -> void:
 	var body := code.substr(at, (end - at) if end > at else -1)
 	assert_true(body.contains('play_advance_state("full_bank_unleash")'), "the unleash no longer plays through the bank voice")
 	assert_false(body.contains('play_battle("full_bank_unleash")'), "the unleash is back on _battle_player — it replaces advance_flourish_5 in the same frame")
+
+
+## ⛔ DECLARED LAST ON PURPOSE — declaration order is run order, so this is the only arm that can
+## see a fixture the arms above failed to hand back. Without it the strand and its repair look
+## IDENTICAL on screen: an arm that aborts after its first assert still reports PASSING (CLAUDE.md's
+## rung 3), so the erase above could go unrestored with every cardinal clean.
+func test_zz_the_manifest_fixture_was_handed_back() -> void:
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	assert_true(sm._sfx_manifest.has("advance_queue_full"),
+		"advance_queue_full was left ERASED from the shared manifest — every later file in this process now sees the cue as unauthored, and Win98Menu plays it")
