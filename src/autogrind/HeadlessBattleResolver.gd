@@ -1837,7 +1837,24 @@ func _build_results(victory: bool, termination_reason: String = "") -> Dictionar
 	if EncounterSystem and not EncounterSystem.monster_database.is_empty():
 		mdb = EncounterSystem.monster_database
 	if victory:
-		# Cadence #23: reward_multiplier parity with BM._get_battle_reward_multiplier (line 968) — max across the enemy party's monster_data.reward_multiplier. Pre-fix rare-encounter monsters gave bonus rewards in live but flat rate in headless, a hidden yield tax on ludicrous-tier grinders (violates struktured's 2026-07-01 full-parity ruling: "automation isn't cheating — it's enlightenment"; ludicrous/headless MUST receive the same yields as live). Read from mdb (authored source) to match the existing exp_reward/gold_reward lookup pattern in this same loop.
+		## Cadence #23 — reward_multiplier parity with BM._get_battle_reward_multiplier, under
+		## struktured's 2026-07-01 full-parity ruling ("automation isn't cheating — it's
+		## enlightenment"; ludicrous/headless MUST receive the same yields as live).
+		##
+		## ⛔ THIS COMPUTES 1.0 AND ALWAYS HAS. Corrected 2026-09-17 — the note here used to state the
+		## parity as FIXED, which told every reader it works.
+		## `reward_multiplier` is authored by ZERO of the 106 monsters in monsters.json, so the mdb
+		## lookup below can only ever return its default. The single author in the tree is
+		## EncounterSystem's hand-built Hero Mimic dict (2.5x), which never enters monsters.json.
+		##
+		## ⚠️ AND THERE IS NO DIVERGENCE TO FIX: live's BM._get_battle_reward_multiplier reads
+		## `enemy.get("_enemy_data")`, a property NOTHING in src/ ever writes and Combatant does not
+		## declare — so live returns 1.0 unconditionally too. Both engines agree by accident while the
+		## feature is dead end to end. Reported to the BattleManager/EncounterSystem owner; the live
+		## half is not this file's to fix.
+		##
+		## Kept rather than deleted: the loop is correct the day a monster authors the field, and
+		## test_hbr_reward_multiplier_parity pins BOTH triggers so this note cannot go quietly stale.
 		var reward_multiplier: float = 1.0
 		for enemy in _enemy_party:
 			var mt_key: String = str(enemy.get_meta("monster_type", "")) if enemy.has_method("get_meta") and enemy.has_meta("monster_type") else ""

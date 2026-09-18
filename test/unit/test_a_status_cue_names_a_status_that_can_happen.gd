@@ -15,6 +15,7 @@ extends GutTest
 ## status are indistinguishable from the key name alone, so this arm checks BOTH corpora.
 
 const MANIFEST := "res://data/sfx_manifest.json"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const SOUND_MANAGER := "res://src/audio/SoundManager.gd"
 const ABILITIES := "res://data/abilities.json"
 const MONSTERS := "res://data/monsters.json"
@@ -44,8 +45,14 @@ func _json(path: String) -> Dictionary:
 ## scan, so authored data is the larger half of this corpus.
 func _applicable() -> Dictionary:
 	var out := {}
-	var src: String = FileAccess.get_file_as_string(SOUND_MANAGER)
-	var code: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	## ⛔ COMMENTS STRIPPED on the .gd reads, RAW on the JSON below. Both are scraped for VALUES, and
+	## a comment does not merely satisfy an assert here — it FEEDS the scraper an answer. Measured
+	## 2026-09-17: raw BattleManager yields 16 statuses, code-only 15; `speed_down` enters from a
+	## prose note at :4996 describing a historical fix. Harmless today (the data sources author it
+	## anyway) and not harmless the day a comment names a status the data does not.
+	## ⚠️ JSON MUST STAY RAW — the comment pass would truncate at a `#` inside a string value.
+	var src: String = GdSource.code_of(SOUND_MANAGER)
+	var code: String = GdSource.code_of("res://src/battle/BattleManager.gd")
 	for m in RegEx.create_from_string('add_status\\(\\s*"([a-z_]+)"').search_all(code):
 		out[m.get_string(1)] = true
 	var authored := {}
