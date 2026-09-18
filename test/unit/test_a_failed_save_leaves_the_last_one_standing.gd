@@ -18,6 +18,9 @@ extends GutTest
 ## until the new one is complete on disk, and a failed rename reports false rather than lying.
 
 const SLOT := 94
+## The functions in this file that persist player data. The one hand-list in an otherwise derived
+## arm, and it is deliberate: a derived corpus shrinks silently, a named one reds.
+const PERSISTERS := ["_write_save_file", "save_settings"]
 const SENTINEL := '{"sentinel":"PREVIOUS","keep":true}'
 
 
@@ -139,8 +142,29 @@ func test_no_writer_in_this_file_opens_its_destination() -> void:
 		else:
 			offenders.append(t)
 
+	## ⛔ A COUNT FLOOR IS SATISFIED BY A SURVIVOR. This was `staged_writes > 0`, and it passed with
+	## BOTH writers gone: planting the .434 refactor — hoist each open into a shared `_write_staged`
+	## helper — left one staged write (the helper's) above the floor, offenders empty, arm GREEN.
+	## Every subject had left the derivation and the only thing that red was the per-function arm.
+	## So the floor is MEMBERSHIP, by name: each persister must carry its own staged write.
+	## (cowir-controller's rule, cowir-sfx's second instance, this is the third.)
 	assert_gt(staged_writes, 0,
 		"CONTROL: no staged write found in SaveSystem.gd — either the repair is gone or this arm stopped matching it")
+	for fn in PERSISTERS:
+		var start := src.find("func " + fn)
+		assert_gt(start, -1,
+			"PERSISTER %s is gone from SaveSystem.gd — if it was renamed, rename it here too; this list exists so a disappearance is LOUD rather than a silently smaller corpus" % fn)
+		if start == -1:
+			continue
+		var end := src.find("\nfunc ", start + 1)
+		var body := src.substr(start, (end - start) if end > start else -1)
+		## ⛔ NOT `contains("staged")` — MY FIRST ATTEMPT AT THIS FLOOR, AND IT DID NOT FIRE.
+		## Hoisting the open into a helper leaves `var staged := path + ".new"` in place, so the
+		## token survives while the write leaves. A name satisfied for a reason unrelated to the
+		## property, committed inside the fix for exactly that. The arm's corpus is
+		## `FileAccess...WRITE` lines, so the floor must assert what the corpus can SEE.
+		assert_true(body.contains("FileAccess.WRITE"),
+			"%s no longer performs its own write — it may be correct (a helper can stage and rename just as well), but this arm derives its corpus from FileAccess...WRITE lines and can no longer see it, so a file with every writer delegated would report ZERO offenders and a clean bill. Inline it, or extend this arm to follow the delegate." % fn)
 	assert_eq(offenders, [],
 		"a writer in SaveSystem.gd opens its real destination with WRITE, which truncates the player's file before the replacement exists: %s" % str(offenders))
 
