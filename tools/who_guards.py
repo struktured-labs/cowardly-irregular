@@ -10,6 +10,7 @@ THING YOU NEED TO READ rather than a list of paths that gets skipped.
     tools/who_guards.py play_ambient
     tools/who_guards.py _sfx_manifest volume_db --lines 6
     tools/who_guards.py --new          # derive the subject from test files git has not seen
+    tools/who_guards.py play_ambient --corpus ~/.../memory --ext .md    # prior art in PROSE
 
 ⛔ It prints each test file's HEADER, not its name. The third instance shipped because
 the file was already inside a 32-file regression corpus that had just been run and
@@ -24,6 +25,16 @@ _restore_input_config, a function body. A reader skimming that header dismisses 
 So the MATCHED LINE is printed too. Subject and match coincide for a symbol search and
 diverge for a mechanism search, which is the search you run when you do not yet know
 which symbol owns the idea.
+
+⚠️ AND `test/` IS NOT THE ONLY PLACE PRIOR ART LIVES (cowir-sprites, 2026-09-18). The memory
+directory became a git-backed, greppable corpus at 05:44 that same day, and five lanes write
+their rules into it — so a tool named "who already guards this" was excluded from where the
+reasoning is kept, by its own default corpus. That is the scope-narrower-than-its-name shape
+on the tool built to prevent it. `--ext` makes any prose corpus searchable; for `.md` the
+header is the frontmatter, and a `description:` line is a one-line summary per file, which is
+closer to what a MECHANISM search wants than a test header is.
+⚠️ NOT a widened default, deliberately: a wider corpus makes the match harder to see, which is
+this tool's own subject-vs-match finding pointed at itself. Opt in when a symbol search fails.
 
 ⚠️ WHAT THIS DOES NOT FIX, stated because the limit is real (cowir-controller, 2026-09-18):
 it still has to be REMEMBERED, which is the property it was built to escape. Their own
@@ -62,7 +73,27 @@ CODE_LINE = re.compile(r"^\s*(extends|class_name|const|var|func|@)")
 
 
 def header_of(path, max_lines):
-    """The file's own prose: comment lines above the first real declaration."""
+    """The file's own prose: comment lines above the first real declaration.
+
+    For a MARKDOWN corpus the header is the YAML frontmatter, and `description:` is the line
+    worth reading — one authored summary per file, which is what a mechanism search wants."""
+    if path.endswith(".md"):
+        out = []
+        try:
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                for line in fh:
+                    t = line.rstrip("\n").strip()
+                    if t.startswith("description:"):
+                        out.append(t)
+                    elif t.startswith("name:"):
+                        out.append(t)
+                    if len(out) >= max_lines:
+                        break
+                    if t == "---" and out:
+                        break
+        except OSError as exc:
+            return ["<unreadable: %s>" % exc]
+        return out
     out = []
     try:
         with open(path, encoding="utf-8", errors="replace") as fh:
@@ -139,11 +170,11 @@ def symbols_from(paths):
     return [n for n, _c in sorted(found.items(), key=lambda kv: -kv[1])]
 
 
-def gd_files(root):
+def gd_files(root, ext=".gd"):
     found = []
     for dirpath, _dirnames, filenames in os.walk(root):
         for name in filenames:
-            if name.endswith(".gd"):
+            if name.endswith(ext):
                 found.append(os.path.join(dirpath, name))
     # bfs/os.walk order is not guaranteed stable across runs; sort so two runs of this
     # tool on one tree are diffable.
@@ -159,6 +190,7 @@ def main():
     ap.add_argument("--selftest", action="store_true", help="run who_guards_selftest.py and exit")
     ap.add_argument("--corpus", default=CORPUS_DEFAULT, help="directory to search (default: test)")
     ap.add_argument("--lines", type=int, default=4, help="header lines to print per file (default: 4)")
+    ap.add_argument("--ext", default=".gd", help="file extension to search (default: .gd; use .md for a prose corpus)")
     ap.add_argument("--hits", type=int, default=2, help="matched lines to print per file (default: 2)")
     args = ap.parse_args()
 
@@ -190,9 +222,9 @@ def main():
         print("who_guards: corpus '%s' is not a directory — nothing was searched" % args.corpus, file=sys.stderr)
         return 3
 
-    files = gd_files(args.corpus)
+    files = gd_files(args.corpus, args.ext)
     if not files:
-        print("who_guards: corpus '%s' holds no .gd files — nothing was searched" % args.corpus, file=sys.stderr)
+        print("who_guards: corpus '%s' holds no %s files — nothing was searched" % (args.corpus, args.ext), file=sys.stderr)
         return 3
 
     for symbol in symbols:
