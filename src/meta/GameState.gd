@@ -502,12 +502,27 @@ func _serialize_save_history() -> Array:
 	return out
 
 
+## ⛔ A FIELD WITH A SIGNAL MUST BE RESTORED THROUGH THE SIGNAL. `time_of_day_changed` is fired ONLY
+## by _advance_day_phase, so the day_phase write below crossed bands and told nobody. SoundManager's
+## night ambience and the MusicNight low-pass are signal-driven after _ready, and the only thing that
+## re-derives them is GameLoop._start_exploration — so a load that does not rebuild the scene leaves
+## both on the old band. Narrow and self-healing today (F3 on the post-battle screen — BATTLE state
+## with no active battle is the one route past the guards); the point is that a fourth route inherits
+## the notification rather than the gap. corruption_level already pairs its write with an emit here.
+##
+## ⚠️ Keep additions inside this function SHORT: test_save_audit_part2_regression pins
+## `macro_volatility = ...` within `src.substr(idx, 1500)` of the declaration, so a comment block in
+## the body pushes a later line out of the window and reds a behaviourally-correct change.
 func _apply_save_data(save_data: Dictionary) -> void:
 	"""Apply loaded save data to game state"""
 	if save_data.has("playtime"):
 		playtime_seconds = save_data["playtime"]
 	if save_data.has("day_phase"):
+		## The listener, not just the number — same pairing corruption_level has below. See the header.
+		var band_before: String = get_time_of_day_name()
 		day_phase = clampf(float(save_data["day_phase"]), 0.0, 1.0)
+		if get_time_of_day_name() != band_before:
+			time_of_day_changed.emit(get_time_of_day_name())
 	if save_data.has("weather_condition"):
 		weather_condition = str(save_data["weather_condition"])
 		weather_timer = maxf(float(save_data.get("weather_timer", 0.0)), 0.0)
@@ -1144,6 +1159,11 @@ func reset_game_state() -> void:
 	_weather_world = 0
 	corruption_level = 0.0
 	corruption_changed.emit(corruption_level)
+	## The clock write above stays SILENT on purpose: this function has exactly one caller
+	## (GameLoop._on_title_new_game) and it goes straight to _start_exploration, which re-derives both
+	## night audio surfaces from a live is_night(). An emit here would be a defensive line with no
+	## reachable window AND no safe arm — driving reset_game_state() in a unit test wipes the party
+	## state the whole suite shares, which is why test_day_night_clock_regression pins it by source.
 	macro_volatility = 0.0
 	party_gold = 500
 	player_party.clear()
