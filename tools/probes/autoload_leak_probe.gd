@@ -93,10 +93,15 @@ func _on_end() -> void:
 	for n in _baseline:
 		var live_v: Variant = node.get(str(n))
 		var base_v: Variant = _baseline[n]
-		## Objects compare by reference, so only the null/non-null transition is meaningful — and a
-		## FREED instance still reads non-null here, which is exactly the case worth naming.
+		## Objects compare by reference, so the null/non-null transition is the only value signal —
+		## but a FREED instance also reads non-null, and that is the case worth naming loudest. An
+		## Array renders its dead members as `<Freed Object>`; a SCALAR Object field renders as
+		## nothing at all, so without this arm a dangling `current_combatant` is invisible while the
+		## same dangling instance inside `player_party` is not. Same defect, two spellings.
 		if typeof(live_v) == TYPE_OBJECT or typeof(base_v) == TYPE_OBJECT:
-			if (live_v == null) != (base_v == null):
+			if live_v != null and not is_instance_valid(live_v):
+				diffs.append("%s=<Freed Object>" % n)
+			elif (live_v == null) != (base_v == null):
 				diffs.append("%s=%s" % [n, "obj" if live_v != null else "null"])
 			continue
 		if live_v != base_v:
