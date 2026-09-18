@@ -158,6 +158,8 @@ static func overworld_player_rows(job_id: String) -> Dictionary:
 ##
 ## Explicit rather than reflective: a `get(section)` over the raw manifest would silently accept
 ## any string and return {} for a typo, which reads exactly like a section with no entries.
+## ⛔ Returns the LIVE static by reference, not a copy — a caller that mutates it corrupts every
+## later lookup process-wide, having never assigned the static. Read-only callers only.
 static func _manifest_section(section: String) -> Dictionary:
 	match section:
 		"overworld_player_sheets":
