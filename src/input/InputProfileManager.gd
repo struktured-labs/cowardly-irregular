@@ -350,7 +350,10 @@ func button_name_for_action(action: String, device_name: String = "") -> String:
 	var bindings := get_profile_bindings(active_profile)
 	if not bindings.has(action):
 		return ""
-	var indices: Array = bindings[action]
+	## ⛔ THE CONVENTION, LIKE ITS TWIN glyph_for_action DIRECTLY ABOVE. The table stores
+	## PRE-convention indices; without this the name is the button the player would press only
+	## while nintendo_mode is on. Two siblings reading one table, one of them applying the swap.
+	var indices: Array = face_convention_indices(action, bindings[action])
 	if indices.is_empty():
 		return ""
 	var table: Dictionary = BUTTON_NAMES[face_family_for_device(name)]
@@ -461,16 +464,33 @@ func set_custom_binding(action: String, button_indices: Array) -> void:
 		# bindings silently revert — an SN30 player rebinding one button would lose the rest.
 		custom_bindings = get_profile_bindings(active_profile).duplicate(true)
 		active_profile = "Custom"
-	custom_bindings[action] = button_indices
+	## ⛔ THE CAPTURED INDEX IS PHYSICAL; THE TABLE HOLDS PRE-CONVENTION INDICES. Storing the raw
+	## capture put two coordinate systems in one dictionary: the binding worked immediately and then
+	## MOVED on the next apply_profile, because that swaps ui_accept/ui_cancel while nintendo_mode is
+	## off. Measured — rebind Confirm to physical 1, reload, it is on 0. The swap is its own inverse,
+	## so converting on the way IN is what makes the round-trip stable.
+	custom_bindings[action] = face_convention_indices(action, button_indices)
 	_replace_joypad_buttons(action, button_indices)
 	save_config()
 
 
+## ⛔ READS THE LIVE InputMap, NOT THE PROFILE TABLE, AND THE DIFFERENCE IS A COORDINATE SYSTEM.
+## The table stores PRE-convention indices — `apply_profile` runs them through
+## `face_convention_indices`, which swaps SOUTH<->EAST for ui_accept/ui_cancel while
+## `nintendo_mode` is off. So with the Xbox/PlayStation convention on, the table said Confirm was
+## on button 1 while the pad had it on button 0, and everything downstream of this function
+## inherited that: the trap guard compared a captured PHYSICAL button against RAW indices and
+## permitted binding Confirm onto Cancel's button; the Controls screen named the wrong one.
+## "Current" can only mean what is bound right now, and that is the map.
 func get_current_button_indices(action: String) -> Array:
-	var bindings = get_profile_bindings(active_profile)
-	if bindings.has(action):
-		return bindings[action]
-	return []
+	if not InputMap.has_action(action):
+		return []
+	var out: Array = []
+	for e in InputMap.action_get_events(action):
+		if e is InputEventJoypadButton:
+			out.append((e as InputEventJoypadButton).button_index)
+	out.sort()
+	return out
 
 
 func get_button_label(button_index: int) -> String:
@@ -541,15 +561,17 @@ func get_action_mouse_label(action: String) -> String:
 	return " / ".join(labels) if labels.size() > 0 else "—"
 
 
+## Compares what is ACTUALLY bound, for the same reason get_current_button_indices does: reading the
+## pre-convention table reported no conflict while two actions genuinely shared a physical button.
 func detect_conflicts() -> Array:
-	var bindings = get_profile_bindings(active_profile)
 	var conflicts = []
 	var button_to_actions: Dictionary = {}
 
 	for action in REMAPPABLE_ACTIONS:
-		if not bindings.has(action):
+		var live: Array = get_current_button_indices(action)
+		if live.is_empty():
 			continue
-		for btn_index in bindings[action]:
+		for btn_index in live:
 			if not button_to_actions.has(btn_index):
 				button_to_actions[btn_index] = []
 			button_to_actions[btn_index].append(action)
