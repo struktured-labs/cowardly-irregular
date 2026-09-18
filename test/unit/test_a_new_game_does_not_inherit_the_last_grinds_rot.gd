@@ -81,6 +81,12 @@ func test_a_reset_does_not_flatten_a_live_danger_cue() -> void:
 	SoundManager._apply_danger_intensity(1.0)
 	var lift: float = SoundManager._music_player.pitch_scale - 1.0
 	assert_gt(lift, 0.01, "CONTROL: danger must lift the pitch (%.4f) or there is nothing to flatten" % lift)
+	SoundManager.set_corruption_intensity(ROT)
 	SoundManager.reset_corruption()
+	## ⛔ CONTROL, BECAUSE THIS ARM'S SUBJECT IS AN ABSENCE. "danger survived" is also what a subject
+	## that never ran gives — measured: stubbing reset_corruption to a bare `return` red the other
+	## three arms and left this one green. Loading the grind meter first makes the reset observable.
+	assert_almost_eq(SoundManager._grind_corruption, 0.0, 0.0001,
+		"CONTROL: reset_corruption must actually have run (grind meter %.3f)" % SoundManager._grind_corruption)
 	assert_almost_eq(SoundManager._music_player.pitch_scale, 1.0 + lift, 0.0001,
 		"clearing corruption dropped the critical-HP detune from %.4f to %.4f — danger is still at %.2f" % [1.0 + lift, SoundManager._music_player.pitch_scale, SoundManager._danger_intensity])
