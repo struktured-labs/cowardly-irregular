@@ -680,6 +680,10 @@ func save_config() -> void:
 	## Same reason as ControlsMenu's writer: a short write is invisible to `store_string`, and a
 	## rename would put the partial config in place. The last good config is better than half of a
 	## new one.
+	##
+	## 📌 `get_error()` and not a read-back, for the same bought reason as ControlsMenu's writer:
+	## nothing downstream of this destroys anything, so refusing is a complete answer. Only a write
+	## that gates a destructive step needs its contents verified.
 	var werr := file.get_error()
 	file.close()
 	if werr != OK:

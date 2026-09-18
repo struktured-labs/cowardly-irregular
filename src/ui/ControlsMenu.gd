@@ -739,6 +739,13 @@ func _append_user_mapping(mapping: String) -> bool:
 	## write that staging cannot catch — the rename would carry the partial file into place just as
 	## happily as a whole one. Refusing here leaves the previous mappings as the only thing on disk,
 	## which is the right answer when we cannot produce a complete replacement.
+	##
+	## 📌 DELIBERATELY NOT A READ-BACK HERE, THOUGH `_preserve_unreadable` USES ONE — the asymmetry is
+	## bought, not an oversight, and flattening it is the "fix" a reader will reach for. `get_error()`
+	## is one call; re-reading doubles the I/O of a write the player triggers on every rebind. The
+	## sidecar earns the stronger form because it gates a DESTRUCTIVE step: the caller overwrites the
+	## original the moment it returns true, so an unverified rescue is worse than no rescue. Here the
+	## worst case is a refused save with the previous file intact.
 	var werr := wf.get_error()
 	wf.close()
 	if werr != OK:
