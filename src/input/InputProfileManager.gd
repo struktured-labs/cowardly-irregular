@@ -316,17 +316,35 @@ func glyph_for_action(action: String, device_name: String = "") -> String:
 	return table.get(indices[0], "?")
 
 
-## The glyph printed on a RAW button index, for bindings that are a button rather than an action.
-## No convention swap here: a raw JOY_BUTTON_* binding fires from that physical position always.
-## Device-appropriate label for an on-screen legend: the live pad family's glyph when a pad is
-## connected, the keyboard key when it is not. Hardcoded "[A] Confirm [B] Cancel" legends are wrong
-## twice over — they name a pad button to keyboard players, and this game puts Confirm on the EAST
-## face, so Ⓐ/Ⓑ are INVERTED on Xbox and PlayStation. Returns "" when neither is known, so callers
-## can keep their own wording rather than printing a placeholder.
-## The printed NAME of a non-face button for the live pad family. Empty when the index is a face
-## button (use the glyph) or one no profile binds.
-## The family's name for a RAW button index. BUTTON_LABELS is the REMAP-SCREEN vocabulary
-## ("Back / Select / Minus" — every family at once, correct there); this is the one a HUD wants.
+## What the live pad's family PRINTS on a raw button index: the glyph for a face button (0-3), the
+## name for a non-face one (4/6/7/9/10), and "" for anything neither table covers.
+##
+## ⛔ NO CONVENTION SWAP, DELIBERATELY. A raw JOY_BUTTON_* binding fires from that physical position
+## whatever `nintendo_mode` says — callers here are naming a BUTTON, not resolving an ACTION. The
+## action-shaped readers (glyph_for_action, button_name_for_action) do apply the swap.
+##
+## ⛔ "" WITH NO PAD IS THE CONTRACT, NOT A FAILURE. Naming one family's button to a keyboard player
+## is the Win98Menu defect; the caller names the KEY instead. Three call sites say so in their own
+## comments. And hardcoded "[A] Confirm [B] Cancel" legends are wrong twice over — they name a pad
+## button to keyboard players, and this game puts Confirm on the EAST face, so Ⓐ/Ⓑ are INVERTED on
+## Xbox and PlayStation.
+##
+## BUTTON_LABELS is the REMAP-SCREEN vocabulary ("Back / Select / Minus" — every family at once,
+## correct there); this is the one a HUD wants.
+##
+## 📌 FOUR STACKED DOCSTRINGS SAT HERE AND TWO CONTRADICTED THE CODE: one promised "the keyboard key
+## when no pad is connected" (it returns ""), and one promised "empty when the index is a face
+## button" (it returns the glyph — which is what all 30-odd call sites want, several passing
+## JOY_BUTTON_X/Y). A reader cannot tell which paragraph describes the function, and the wrong one
+## is as authoritative as the right one.
+##
+## ⛔ THE MECHANISM IS ACCRETION, AND ONE CLAIM WAS FALSE THE DAY IT WAS WRITTEN — measured in git,
+## after I had guessed "merged functions" and was wrong. Three commits on 2026-09-11 each ADDED a
+## paragraph above this function and none removed or reconciled the earlier ones. The face-button
+## claim arrived in 530da5fd0, describing the non-face NAME branch that commit was adding; the
+## FACE_GLYPHS fallback it contradicts was already there, added by eeb260aff, which CREATED the
+## function. So each author documented THEIR BRANCH in the place a reader takes for the FUNCTION's
+## contract. No refactor is needed for this to happen — three fixes to one function is enough.
 func button_name_for_index(button_index: int, device_name: String = "") -> String:
 	var name := device_name
 	if name == "":
