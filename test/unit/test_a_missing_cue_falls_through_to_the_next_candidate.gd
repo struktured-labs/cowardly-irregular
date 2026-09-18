@@ -166,6 +166,24 @@ func test_the_precedence_is_unchanged_with_every_cue_present() -> void:
 	var declared: Dictionary = sm.get_script().get_script_constant_map().get("_ELEMENT_SFX", {})
 	assert_gt(declared.size(), 5,
 		"CONTROL: _ELEMENT_SFX read back %d entries — the floor below would be vacuous" % declared.size())
+	## ⛔ AND THE TWO TABLES MUST AGREE, BOTH DIRECTIONS. Pointing the floor at the PRODUCT fixed the
+	## case where my LOCAL table shrinks — but the reference can now shrink from the other side:
+	## drop "wind" from _ELEMENT_SFX and the floor iterates seven, notices nothing, and wind
+	## abilities stop being swept. cowir-ai's v2, 2026-09-18: a floor whose reference is the thing
+	## under test cannot see that thing shrink, and which side is "the thing" depends on who edits.
+	## The local table is the hand-list — its staleness is the intended cost, per their v3.
+	var only_product: Array = []
+	var only_local: Array = []
+	for el in declared.keys():
+		if not elements.has(el):
+			only_product.append(str(el))
+	for el in elements.keys():
+		if not declared.has(el):
+			only_local.append(str(el))
+	assert_eq(only_product, [],
+		"SoundManager routes element(s) this arm does not know about: %s — add them here with the cue they should take, or the sweep silently skips every ability carrying them" % [only_product])
+	assert_eq(only_local, [],
+		"this arm expects element(s) SoundManager no longer routes: %s — the product dropped them, so their abilities now fall to _TYPE_SFX and this arm would keep reporting the population clean" % [only_local])
 	var unswept: Array = []
 	for el in declared.keys():
 		if not seen_elements.has(el):

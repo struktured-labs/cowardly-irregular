@@ -41,6 +41,9 @@ var _baseline: Dictionary = {}
 ## that covers nothing.
 var _static_baseline: Dictionary = {}
 var _script: Variant = null
+## Field names the SUBJECT'S OWN SOURCE marks sensitive. Derived, never hand-listed: this tool
+## retargets to any autoload, so a list written for BattleManager protects nothing elsewhere.
+var _redacted: Dictionary = {}
 var _armed: bool = false
 var _scripts_seen: int = 0      ## incremented on start_script
 var _scripts_measured: int = 0  ## incremented on end_script — the one that proves a READING happened
@@ -80,6 +83,7 @@ func run() -> void:
 		var v: Variant = node.get(n)
 		_baseline[n] = v.duplicate(true) if (v is Array or v is Dictionary) else v
 	_script = script
+	_arm_redactions(script_path)
 	_arm_statics(script_path, script)
 	if _baseline.is_empty() and _static_baseline.is_empty():
 		print("LEAKPROBE FATAL: %s exposes no script variables — nothing to measure" % _autoload)
@@ -105,7 +109,7 @@ func run() -> void:
 		print("LEAKPROBE FATAL: signals exist but the connection did not take — measuring nothing")
 		return
 	_armed = true
-	print("LEAKPROBE ARMED %s fields=%d statics=%d" % [_autoload, _baseline.size(), _static_baseline.size()])
+	print("LEAKPROBE ARMED %s fields=%d statics=%d redacted=%d" % [_autoload, _baseline.size(), _static_baseline.size(), _redacted.size()])
 
 
 ## Static names come from the SOURCE, because no reflection API lists them. Their value is then
@@ -123,6 +127,26 @@ func _arm_statics(script_path: String, script: Variant) -> void:
 		var n: String = m.get_string(1)
 		var v: Variant = script.get(n)
 		_static_baseline[n] = v.duplicate(true) if (v is Array or v is Dictionary) else v
+
+
+## ⛔ THIS TOOL PRINTS FIELD VALUES, AND `print()` PERSISTS TO user://logs/godot.log EVEN WITH
+## `debug/file_logging/enable_file_logging` READING false — measured in-engine by cowir-ai,
+## 2026-09-18, on a NORMAL BOOT as well as under -s. So a diff on a credential field would write
+## that credential to a file no later fix un-writes.
+##
+## GameState:96 is the live case: `var llm_custom_api_key: String = ""  ## SENSITIVE — never log,
+## never print`. Nothing stopped `LEAK_PROBE_AUTOLOAD=GameState` from printing it, in a tool whose
+## usage block advertises retargeting.
+##
+## The convention is the project's own, so the derivation is too: a `var` whose declaration line
+## carries SENSITIVE reports its CHANGED/UNCHANGED state and never its value.
+func _arm_redactions(script_path: String) -> void:
+	var src: String = FileAccess.get_file_as_string(script_path)
+	if src == "":
+		return
+	var re := RegEx.create_from_string("(?m)^(?:static )?var ([A-Za-z_][A-Za-z0-9_]*)[^\\n]*SENSITIVE")
+	for m in re.search_all(src):
+		_redacted[m.get_string(1)] = true
 
 
 func _target() -> Node:
@@ -181,6 +205,9 @@ func _on_end() -> void:
 				diffs.append("%s=%s" % [n, "obj" if live_v != null else "null"])
 			continue
 		if live_v != base_v:
+			if _redacted.has(str(n)):
+				diffs.append("%s=<REDACTED: declared SENSITIVE> (changed)" % n)
+				continue
 			var shown: String = str(live_v)
 			if shown.length() > 70:
 				shown = shown.substr(0, 70) + "..."
@@ -195,6 +222,9 @@ func _on_end() -> void:
 				diffs.append("static %s=%s" % [n, "obj" if live_s != null else "null"])
 			continue
 		if live_s != base_s:
+			if _redacted.has(str(n)):
+				diffs.append("static %s=<REDACTED: declared SENSITIVE> (changed)" % n)
+				continue
 			var shown_s: String = str(live_s)
 			if shown_s.length() > 70:
 				shown_s = shown_s.substr(0, 70) + "..."

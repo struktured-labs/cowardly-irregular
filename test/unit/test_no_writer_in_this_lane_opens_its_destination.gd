@@ -81,7 +81,14 @@ const NAMED := [
 ##
 ## `rename_absolute(` means the bytes were put somewhere else and moved into place; `get_as_text()`
 ## in the same function means the write was read back and judged. Both are things the code DOES.
-const SAFE_MARKERS := ["rename_absolute(", "get_as_text()"]
+## ⛔ ANCHORED TO THE EXPRESSION ACTUALLY WRITTEN. These were bare `rename_absolute(` and
+## `get_as_text()`, satisfied by ANY such call after the write — so a writer that truncated its
+## destination and then read an UNRELATED file was exempted. Measured: green, with a live
+## truncating write in it. @cowir-sfx's shape — an exemption granted by a DIFFERENT subject's call.
+##
+## A safe writer must rename THE PATH IT STAGED, or read back THE PATH IT WROTE. Both are now
+## keyed to the first argument of the write open, so another file's call cannot stand in for it.
+const SAFE_FORMS := ["rename_absolute(%s", "open(%s, FileAccess.READ)"]
 
 
 func _lane_scripts() -> Array:
@@ -120,6 +127,17 @@ func _strip_comment(line: String) -> String:
 		elif c == "#":
 			return line.substr(0, i)
 	return line
+
+
+## The FIRST ARGUMENT of a `FileAccess.open(...)` call — the path being opened, verbatim, so the
+## safety check can demand that same expression rather than any call of the right shape.
+func _opened_expr(line: String) -> String:
+	var at: int = line.find("FileAccess.open(")
+	if at < 0:
+		return ""
+	var rest: String = line.substr(at + "FileAccess.open(".length())
+	var comma: int = rest.find(",")
+	return rest.substr(0, comma).strip_edges() if comma > 0 else ""
 
 
 ## The name of the function containing `idx`, for the membership floor above.
@@ -169,10 +187,19 @@ func _write_opens() -> Array:
 			## being truncated. A wrong "this is broken" makes someone ACT: the fix it invites is
 			## converting a safe open into a staged write for no reason.
 			##
-			## 🔑 The `FileAccess.` prefix anchors it and dissolves the ordering trap another lane hit
-			## (`READ_WRITE` contains `READ`, so a mode list must test the write forms first):
+			## MEASURED IN-ENGINE, not recalled — write 10 bytes, reopen in each mode, re-read length:
+			##     FileAccess.WRITE        10 -> 0    TRUNCATES
+			##     FileAccess.WRITE_READ   10 -> 0    TRUNCATES
+			##     FileAccess.READ_WRITE   10 -> 10   PRESERVES   <- groups with READ
+			##
+			## 🔑 THE `FileAccess.` PREFIX IS WHAT CARRIES THIS, NOT THE ORDER OF THE TESTS:
 			##     "FileAccess.READ_WRITE".contains("FileAccess.WRITE")  ->  false   ✅ not flagged
 			##     "FileAccess.WRITE_READ".contains("FileAccess.WRITE")  ->  true    ✅ truncates
+			## ⚠️ A "test the write forms first" rule circulated for this and was RETRACTED by its
+			## author after they mutated it: dropping either write branch still passed, and only
+			## removing the prefix red. Ordering matters for an UNANCHORED list, where "WRITE" matches
+			## READ_WRITE and "READ" matches WRITE_READ — anchoring removes the need for the rule
+			## rather than satisfying it, which is why this does not depend on the order.
 			if "FileAccess.open" in s and "FileAccess.WRITE" in s:
 				found.append([path, n, s, fn_body, _enclosing_name(all_lines, n - 1)])
 		f.close()
@@ -226,11 +253,13 @@ func test_no_writer_opens_its_destination_directly() -> void:
 	for row in _write_opens():
 		var text: String = row[2]
 		var body: String = row[3]
+		var target: String = _opened_expr(text)
 		var safe: bool = false
-		for marker in SAFE_MARKERS:
-			if marker in text or marker in body:
-				safe = true
-				break
+		if target != "":
+			for form in SAFE_FORMS:
+				if (form % target) in body:
+					safe = true
+					break
 		if not safe:
 			offenders.append("%s:%d  %s" % [str(row[0]).replace("res://", ""), row[1], text])
 
