@@ -14,9 +14,10 @@ extends GutTest
 ## process dying. Staging beside the target and renaming into place has no window at all.
 ##
 ## ⚠️ SCOPE, STATED BECAUSE A DERIVED CORPUS STILL HAS A BOUNDARY: `src/input/` is globbed, so a NEW
-## FILE there is covered automatically; `ControlsMenu.gd` is named, because the mapping writer lives
-## in `src/ui/` and this lane does not own that whole directory. A lane-mate adding a writer to some
-## other `src/ui/` file is NOT covered here, and no arm in this file can honestly claim otherwise.
+## FILE there is covered automatically; the four `src/ui/` files this lane owns are NAMED, because
+## this lane does not own that whole directory. ⛔ A NEW `src/ui/` FILE added to this lane must be
+## added to NAMED by hand — that is the one place this guard cannot notice its own corpus shrinking
+## relative to the lane, and it is why the list is spelled out rather than globbed.
 
 ## 📌 THE READ SIDE WAS SWEPT TOO AND IS CLEAN — recorded here because it is a NULL, and a null is
 ## what gets re-derived with every step green. Derived from `FileAccess.open(…READ)` across the same
@@ -33,8 +34,36 @@ extends GutTest
 ## was the only one that could cause one. So do not read "the readers are fine" as evidence about
 ## anything else in the file.
 
+## ⛔ WHAT THIS GUARDS IS SHAPE, NEVER VALUE — AND FOR A NEW WRITER IT IS THE ONLY COVER.
+## It asserts that a rename-into-place or a read-back APPEARS after the write. It cannot tell a
+## correct `rename_absolute(staged, dest)` from one with its arguments swapped, and a value-only
+## change (`var staged = CONFIG_PATH`, still renamed) is invisible to any source-text scan.
+##
+##     the two writers here TODAY     behavioural arms drive the real functions:
+##       _append_user_mapping         test_a_capture_does_not_eat_the_other_pads_mappings   6 arms
+##       save_config                  test_a_failed_config_save_keeps_the_last_good_one     3 arms
+##     a writer added TOMORROW        this file, and nothing else
+##
+## 🔑 SO A GREEN HERE IS NOT EVIDENCE A WRITER WORKS; it is evidence nobody opened a destination.
+## A new writer still needs its own arm that drives it. Stated because the failure it prevents is
+## specific: a guard can watch exactly the right symbol and be checking only that it is SPELLED
+## correctly, while the defect lives inside it (@cowir-battle, `_await_tween_safe` pinned by name
+## while the bug sat in its while-condition).
+
 const INPUT_DIR := "res://src/input"
-const NAMED := ["res://src/ui/ControlsMenu.gd"]
+## ⛔ EVERY `src/ui` FILE THIS LANE OWNS, NOT JUST THE ONE THAT WRITES TODAY. This listed
+## `ControlsMenu.gd` alone — the only one with a write — so a guard named *no writer in THIS LANE*
+## covered one quarter of the lane's UI. Three files had zero writes and were therefore invisible
+## rather than clean, and nothing would have said so when the first one gained a write.
+##
+## 🔑 A CORPUS SCOPED TO WHERE THE SUBJECT IS FOUND TODAY CANNOT SEE IT ARRIVE SOMEWHERE NEW —
+## and the name promised otherwise, which is the half that makes it a defect rather than a choice.
+const NAMED := [
+	"res://src/ui/ControlsMenu.gd",
+	"res://src/ui/ControllerOverlay.gd",
+	"res://src/ui/GamepadDiagnostic.gd",
+	"res://src/ui/VirtualGamepad.gd",
+]
 
 ## ⛔ TWO SAFE SHAPES, NOT ONE, AND THE SECOND IS NOT A CONCESSION. The hazard is truncating a file
 ## whose contents someone still needs before knowing the new ones landed. A STAGED write avoids the
@@ -69,6 +98,39 @@ func _lane_scripts() -> Array:
 	return out
 
 
+## ⛔ A COMMENT IS NOT EVIDENCE THAT A WRITE LANDED. Both scans below read raw source, so a
+## `# TODO: use rename_absolute() here` under a direct write made the write read as SAFE — measured
+## on a planted writer, which the ratchet passed. That is a FALSE NEGATIVE in the one direction a
+## guard must never fail, and the sibling guard in this lane already stripped comments; I fixed it
+## there and not here.
+##
+## ⚠️ Quote-aware, because a bare `find("#")` truncates any line whose MESSAGE contains one — and
+## every refusal path in these writers pushes a warning.
+func _strip_comment(line: String) -> String:
+	var in_str: bool = false
+	var quote: String = ""
+	for i in line.length():
+		var c: String = line[i]
+		if in_str:
+			if c == quote and (i == 0 or line[i - 1] != "\\"):
+				in_str = false
+		elif c == "\"" or c == "'":
+			in_str = true
+			quote = c
+		elif c == "#":
+			return line.substr(0, i)
+	return line
+
+
+## The name of the function containing `idx`, for the membership floor above.
+func _enclosing_name(lines: PackedStringArray, idx: int) -> String:
+	for i in range(idx, -1, -1):
+		var l: String = str(lines[i])
+		if l.begins_with("func "):
+			return l.substr(5, l.find("(") - 5)
+	return ""
+
+
 ## The enclosing function's body FROM THE WRITE ONWARD — per-function rather than per-line, but
 ## forward-only.
 ##
@@ -82,7 +144,7 @@ func _body_after(lines: PackedStringArray, idx: int) -> String:
 	for i in range(idx, lines.size()):
 		if i > idx and str(lines[i]).begins_with("func "):
 			break
-		out += str(lines[i]) + "\n"
+		out += _strip_comment(str(lines[i])) + "\n"
 	return out
 
 
@@ -98,13 +160,27 @@ func _write_opens() -> Array:
 		for line in all_lines:
 			n += 1
 			var fn_body: String = _body_after(all_lines, n - 1)
-			var s: String = (line as String).strip_edges()
-			if s.begins_with("#"):
+			var s: String = _strip_comment(line as String).strip_edges()
+			if s.is_empty():
 				continue
 			if "FileAccess.open" in s and "WRITE" in s:
-				found.append([path, n, s, fn_body])
+				found.append([path, n, s, fn_body, _enclosing_name(all_lines, n - 1)])
 		f.close()
 	return found
+
+
+## ⛔ THE PERSISTERS THIS LANE HAS, PINNED BY NAME — the ONE hand-list here, and it is deliberate.
+## Everything else in this file is derived; this exists so a DISAPPEARANCE is loud.
+##
+## Measured 2026-09-18, after `.434` went red for exactly this: cowir-autogrind moved their opens
+## into shared staging helpers, and a ratchet deriving write sites from `FileAccess.open` stopped
+## seeing those writers AT ALL and reported green. I planted the same refactor here — both writers
+## calling an out-of-corpus `AtomicWriter.begin()` — and this file stayed **2 passing**. The
+## `opens.size() > 0` control did not save it: `_preserve_unreadable`'s sidecar write survived and
+## satisfied the floor while both real subjects had vanished.
+##
+## 🔑 A COUNT FLOOR IS SATISFIED BY A SURVIVOR; A MEMBERSHIP FLOOR IS NOT.
+const MUST_BE_FOUND := ["save_config", "_append_user_mapping"]
 
 
 ## ⛔ THE CONTROL, and it has to come first: if the corpus is empty or contains no write at all,
@@ -118,6 +194,20 @@ func test_there_are_real_writers_in_this_lane_to_reason_about() -> void:
 	assert_gt(opens.size(), 0,
 		"CONTROL: the lane must contain at least one FileAccess.open(..., WRITE), or the arm below "
 		+ "passes without looking at anything")
+
+	var seen: Array = []
+	for row in opens:
+		if not (row[4] in seen):
+			seen.append(row[4])
+	var missing: Array = []
+	for fname in MUST_BE_FOUND:
+		if not (fname in seen):
+			missing.append(fname)
+	assert_true(missing.is_empty(),
+		"%s no longer contain a FileAccess.open(..., WRITE) that this scan can see — found %s. " % [missing, seen]
+		+ "If their write moved into a shared helper, THIS GUARD IS NOW BLIND TO THEM and its green "
+		+ "means nothing: a call to a write helper is itself a write site. Either teach the scan to "
+		+ "follow the helper, or declare it here with the reason. Do NOT simply drop the name.")
 
 
 ## ⛔ THE INVARIANT. Derived, so a writer added tomorrow is covered without anyone remembering this.

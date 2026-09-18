@@ -29,14 +29,21 @@ func _write_opens(src: String) -> Array:
 	return out
 
 
-func test_the_scan_can_actually_fire() -> void:
-	# Control: "0 offenders" and "the scan matched nothing" are the same green.
-	var total := 0
+## ⛔ MEMBERSHIP, NOT A COUNT — AND THE AGGREGATE VERSION SHIPPED HERE THIS MORNING.
+## A count floor is satisfied by a SURVIVOR (@cowir-controller, 2026-09-18). Measured on this very
+## file: removing the staged open from TWO of these three writers left it GREEN at 3 passing, because
+## the third still had one and the summed floor never noticed. A count answers "did the scan run at
+## all"; only per-source membership answers "is EACH writer still being watched".
+func test_every_named_writer_is_still_present() -> void:
+	var missing: Array = []
 	for path in SOURCES:
 		var src: String = FileAccess.get_file_as_string(path)
-		assert_ne(src, "", "CONTROL: could not read %s — its verdict below would be vacuous" % path)
-		total += _write_opens(src).size()
-	assert_gt(total, 0, "derived ZERO WRITE opens across three known writers — the scan is broken")
+		if src == "":
+			missing.append("%s (unreadable — its verdict below would be vacuous)" % path)
+		elif _write_opens(src).is_empty():
+			missing.append("%s (no WRITE open at all — %s)" % [path, SOURCES[path]])
+	assert_eq(missing, [],
+		"a writer this file exists to watch has no WRITE open left — it was moved, renamed or deleted, and the offender scan below is silently no longer about it: %s" % str(missing))
 
 
 func test_no_writer_opens_its_destination() -> void:

@@ -121,9 +121,24 @@ func _play_encounter_flash() -> void:
 ## coroutine hung forever and leaked GameLoop._battle_transition_starting, so every later
 ## encounter printed BLOCKED while the touched monster still faded (19 blocks in the live log).
 ## Await liveness with a wall-clock ceiling instead — no state can strand this layer.
+##
+## ⛔ `is_running()` IS BLIND TO THE VERY DEATH THIS HELPER EXISTS FOR. Measured 2026-09-18 on a
+## real engine (cowir-music found it; probe re-run independently here):
+##
+##     bound node FREED mid-flight   is_instance_valid TRUE · is_running TRUE  · is_valid FALSE
+##     tween KILLED                  is_instance_valid TRUE · is_running FALSE · is_valid FALSE
+##     live, mid-tween               is_instance_valid TRUE · is_running TRUE  · is_valid TRUE
+##     finished naturally            is_instance_valid TRUE · is_running FALSE · is_valid TRUE
+##
+## So a freed-target tween — the 2026-09-06 spider wedge described above — keeps reporting
+## `is_running() == true` forever, and the loop exited only on the 6 s deadline. The ceiling meant
+## it always terminated, so this was never a wedge; it was SIX SECONDS OF FROZEN TRANSITION on
+## exactly the path the comment was written for. `is_valid()` is the only tell, and the last two
+## rows are the control: adding it cannot shorten a healthy wait.
 func _await_tween_safe(tween: Tween, max_wall_ms: int = 6000) -> void:
 	var deadline := Time.get_ticks_msec() + max_wall_ms
-	while is_instance_valid(tween) and tween.is_running() and Time.get_ticks_msec() < deadline:
+	while is_instance_valid(tween) and tween.is_valid() and tween.is_running() \
+			and Time.get_ticks_msec() < deadline:
 		await get_tree().process_frame
 
 

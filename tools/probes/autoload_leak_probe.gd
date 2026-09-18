@@ -81,10 +81,22 @@ func run() -> void:
 	if _baseline.is_empty() and _static_baseline.is_empty():
 		print("LEAKPROBE FATAL: %s exposes no script variables — nothing to measure" % _autoload)
 		return
-	_armed = true
-	print("LEAKPROBE ARMED %s fields=%d statics=%d" % [_autoload, _baseline.size(), _static_baseline.size()])
+	## ⛔ CONNECT BEFORE ANNOUNCING. This printed ARMED and then wired itself, so a renamed or removed
+	## GUT signal left a reassuring banner above a hook that never fires — the probe would report a
+	## CLEAN suite while measuring nothing. That is the exact failure this file exists to catch, in
+	## the file itself. A banner is a claim about state; print it after the state is true.
+	for sig in ["start_script", "end_script"]:
+		if not gut.has_signal(sig):
+			print("LEAKPROBE FATAL: GutMain has no signal `%s` — this hook cannot fire, and a silent "
+					% sig + "pass here would read as a clean suite. Check the GUT version.")
+			return
 	gut.start_script.connect(_on_start)
 	gut.end_script.connect(_on_end)
+	if not gut.start_script.is_connected(_on_start) or not gut.end_script.is_connected(_on_end):
+		print("LEAKPROBE FATAL: signals exist but the connection did not take — measuring nothing")
+		return
+	_armed = true
+	print("LEAKPROBE ARMED %s fields=%d statics=%d" % [_autoload, _baseline.size(), _static_baseline.size()])
 
 
 ## Static names come from the SOURCE, because no reflection API lists them. Their value is then
