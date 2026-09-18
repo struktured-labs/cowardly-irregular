@@ -15,6 +15,16 @@ static var _cached_actions: Array[String] = []
 ## Actions a gamepad can actually press. Read from InputMap, never from project.godot: the
 ## exporter packs the project file as `project.binary`, so `res://project.godot` is ABSENT from
 ## every pack and this returned EMPTY in all shipped builds while being correct in the editor.
+##
+## ⛔ RETURNS THE LIVE STATIC, NOT A COPY — TREAT IT AS READ-ONLY. An Array is a reference, so
+## `project_actions().sort()` or `.append(...)` mutates process-wide state that nothing ever
+## invalidates, and no assignment exists anywhere for the next person to grep. Both callers today
+## only iterate or read `.size()`.
+##
+## ⚠️ NOT `.duplicate()`, DELIBERATELY: `_process` calls this EVERY FRAME while the overlay is
+## open, and avoiding that allocation is the entire reason the cache exists. Where a copy would
+## defeat the design, this note is the only protection there is — which is why it sits at the
+## definition rather than beside the one caller that happens to be safe.
 static func project_actions() -> Array[String]:
 	if not _cached_actions.is_empty():
 		return _cached_actions
