@@ -208,9 +208,12 @@ func test_the_offender_scan_can_actually_fire() -> void:
 ## Measured in a virgin XDG_DATA_HOME, it wrote profiles.json, learned_patterns.json and csi_data.json
 ## while this file sat green. The detector was correct about what it checked and blind to the shape.
 ##
-## ⚠️ AND NO REUSED SANDBOX COULD HAVE SHOWN IT: autogrind/ is in run_tests.sh's _NETTED_DIRS and the
-## net restores with `cp -a`, which carries mtime — so the write is invisible to a content hash AND to
-## mtime. Only a sandbox where the dir did not exist pre-run reveals it.
+## ⚠️ autogrind/ is in run_tests.sh's _NETTED_DIRS and the net restores with `cp -a`, so the write is
+## invisible to a content hash AND to mtime — reverting TO baseline IS the baseline hash.
+## ⛔ "Only a virgin sandbox reveals it" was TOO STRONG (@cowir-controller corrected it 2026-09-18):
+## a restore is an inode write and no cp flag preserves `ctime`, so ctime is a witness. Its limits:
+## one stamp per inode (so "a run touched this", never "N runs"), and the net's `[ -d ] || continue`
+## never protects an ABSENT dir — that class still needs an XDG_DATA_HOME where it did not exist.
 
 ## Scripts that call a persisting AutogrindSystem function on the player's behalf. DERIVED, because a
 ## hand-list is what made the hop-1 arm miss this. AutogrindSystem itself is excluded: it reaches its
@@ -237,7 +240,12 @@ func _indirect_reachers() -> Array[String]:
 				continue
 			var body: String = FileAccess.get_file_as_string(path)
 			for fn in persisting:
-				if body.contains("AutogrindSystem." + fn + "("):
+				## ⛔ RECEIVER-AGNOSTIC, for the reason the hop-1 arm already gives: the qualified
+				## form cannot see a call through a PARAMETER. AutogrindRuleTemplates takes the
+				## system as an argument and drives four writers off it, so the qualified scan left
+				## it out of the reacher set entirely. Measured 2026-09-18: agnostic adds exactly
+				## that one file and loses none, so it costs no allowlist.
+				if body.contains("." + fn + "("):
 					out.append(path)
 					break
 	out.sort()
@@ -286,6 +294,10 @@ func test_the_two_hop_scan_can_actually_fire() -> void:
 	assert_gt(reachers.size(), 0, "derived ZERO indirect reachers — the scan is broken, not the code")
 	assert_true("res://src/ui/autogrind/AutogrindGridEditor.gd" in reachers,
 		"control: AutogrindGridEditor reaches set_autogrind_rules via _save_rules and is the script that produced the 2026-09-17 write — its absence means the derivation broke")
+	## The parameter-receiver case, pinned separately: it is invisible to a qualified scan, so a
+	## revert to `AutogrindSystem.<fn>(` reds HERE rather than going quietly green.
+	assert_true("res://src/autogrind/AutogrindRuleTemplates.gd" in reachers,
+		"control: AutogrindRuleTemplates drives 4 persisting functions through its autogrind_system PARAMETER — if it drops out, the scan has narrowed back to qualified calls and a template-install test can write player data unseen")
 
 
 func test_no_autogrind_test_reaches_a_saver_through_a_ui_node() -> void:
