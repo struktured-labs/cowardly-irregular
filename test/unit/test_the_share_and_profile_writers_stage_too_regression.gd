@@ -72,3 +72,52 @@ func test_every_writer_verifies_its_bytes_before_renaming() -> void:
 			missing.append("%s (byte check runs AFTER the rename)" % path)
 	assert_eq(missing, [],
 		"each writer must consult get_error() AND read its bytes back BEFORE renaming: %s" % str(missing))
+
+
+## ⛔ SOURCES IS A HAND-LIST OF THE WRITERS THAT EXIST TODAY, AND A CORPUS SCOPED TO WHERE THE
+## SUBJECT IS FOUND TODAY CANNOT SEE IT ARRIVE SOMEWHERE NEW (@cowir-controller, 2026-09-18: their
+## ratchet named the one src/ui file that writes, so three siblings were INVISIBLE, not clean).
+## The arms above ask "did a known writer stop being watched"; this pair asks "did an unwatched
+## writer appear". Derived from the lane's directories, so a new FILE is covered with no edit here.
+const LANE_DIRS := ["res://src/autogrind", "res://src/ui/autogrind", "res://src/autobattle"]
+
+## Covered by its own guard (test_a_writer_never_opens_its_destination_regression), NOT exempt —
+## a second report here would be noise. Its absence from SOURCES is coverage, not a hole.
+const COVERED_ELSEWHERE := "AutogrindSystem.gd"
+
+
+func _lane_gd_files() -> Array:
+	var out: Array = []
+	var stack: Array = LANE_DIRS.duplicate()
+	while not stack.is_empty():
+		var d: String = str(stack.pop_back())
+		for sub in DirAccess.get_directories_at(d):
+			stack.append("%s/%s" % [d, sub])
+		for f in DirAccess.get_files_at(d):
+			if f.ends_with(".gd"):
+				out.append("%s/%s" % [d, f])
+	out.sort()
+	return out
+
+
+func test_the_lane_scan_can_actually_fire() -> void:
+	## Control: a derived-empty file list makes the arm below vacuously green, which is the shape
+	## that let a batch go red today — a green over a corpus that could not contain the defect.
+	var files := _lane_gd_files()
+	assert_gt(files.size(), 5, "derived implausibly few lane files — the directory walk is broken, not the code")
+	assert_true("res://src/autobattle/ScriptShareManager.gd" in files,
+		"control: a known writer must appear in the walk, else the arm below is scanning the wrong tree")
+
+
+func test_no_unwatched_writer_has_appeared_in_the_lane() -> void:
+	var unwatched: Array = []
+	for path in _lane_gd_files():
+		if path.ends_with(COVERED_ELSEWHERE) or SOURCES.has(path):
+			continue
+		var src: String = FileAccess.get_file_as_string(path)
+		if src == "":
+			continue
+		for entry in _write_opens(src):
+			unwatched.append("%s:%d — %s" % [path, entry[0], entry[1]])
+	assert_eq(unwatched, [],
+		"a file in this lane writes to disk and NOTHING watches its shape — add it to SOURCES with what the player loses if it truncates, or route it through a staged writer: %s" % str(unwatched))
