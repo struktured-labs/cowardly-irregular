@@ -75,3 +75,22 @@ func test_the_builder_asks_for_frames_not_names() -> void:
 		"the name-count guard is back. It reads as protection and cannot fire, because 'default' keeps the count at 1")
 	assert_true(src.contains("return sprite_frames if loaded_any else null"),
 		"SIBLING: the JOB builder's own guard is gone. It is a different spelling of the same intent and it works — do not converge them by deleting this one")
+
+
+## The same "default" that made the guard vacuous also inflated the load log by exactly one, on
+## every monster sheet, for the life of the file: slime reported 5 animations and has 4. A
+## diagnostic is what somebody reads while debugging sprites, so it counts authored poses now.
+func test_the_load_log_counts_authored_poses_not_the_builtin() -> void:
+	var frames := HybridSpriteLoader.load_monster_sprite_frames("slime")
+	assert_not_null(frames, "SCOPE: slime did not load")
+	var names := frames.get_animation_names()
+	assert_true(names.has("default"),
+		"SCOPE: the built-in pose is no longer present, so there is nothing to over-count and this arm is moot")
+	assert_eq(HybridSpriteLoader.usable_animation_count(frames), names.size() - 1,
+		"the count must exclude the one built-in pose that carries no frames — relationship, not the literal 4, so authoring a new slime animation does not red this")
+	assert_gt(HybridSpriteLoader.usable_animation_count(frames), 0, "SCOPE: a real sheet must count above zero")
+	## WIRING. The arms above exercise the COUNTER; reverting the log line to count names leaves
+	## every one of them green — measured, the mutation did not fire until this arm existed. The
+	## log is the artifact a person reads, so something has to pin that it consults the counter.
+	assert_true(_src(LOADER).contains("% [monster_id, usable_animation_count(sprite_frames)]"),
+		"WIRING: the load log counts animation NAMES again, so it reports one authored pose more than the sheet has — the counter is correct and unconsulted")

@@ -438,7 +438,7 @@ static func load_monster_sprite_frames(monster_id: String, base_id: String = "")
 	if not has_usable_frames(sprite_frames):
 		return null
 
-	print("[SPRITES] Loaded monster sheet for '%s' (%d animations)" % [monster_id, sprite_frames.get_animation_names().size()])
+	print("[SPRITES] Loaded monster sheet for '%s' (%d animations)" % [monster_id, usable_animation_count(sprite_frames)])
 	return sprite_frames
 
 
@@ -510,14 +510,20 @@ static func _normalize_suffix(audio_suffix: String) -> String:
 ##
 ## Returns the base fps unchanged whenever there is nothing to match against — an undressed
 ## sheet, an equal frame count, or a base sheet that is not on disk.
-## SpriteFrames.new() ships with a "default" animation, so a NAME count never reaches 0 — ask FRAMES.
-static func has_usable_frames(sf: SpriteFrames) -> bool:
+## SpriteFrames.new() ships with a "default" animation, so a NAME count is always at least 1 and
+## counts a pose nobody authored. Every caller wants animations that HAVE FRAMES; this is the owner.
+static func usable_animation_count(sf: SpriteFrames) -> int:
 	if sf == null:
-		return false
+		return 0
+	var n: int = 0
 	for anim_name in sf.get_animation_names():
 		if sf.get_frame_count(anim_name) > 0:
-			return true
-	return false
+			n += 1
+	return n
+
+
+static func has_usable_frames(sf: SpriteFrames) -> bool:
+	return usable_animation_count(sf) > 0
 
 
 ## A costume with fewer frames than its base must take the SAME wall-clock time, not run fast.
