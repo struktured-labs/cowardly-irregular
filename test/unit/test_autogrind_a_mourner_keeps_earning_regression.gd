@@ -126,6 +126,37 @@ func test_the_grind_asks_live_rather_than_carrying_its_own_copy() -> void:
 		"CONTROL: live must still own the predicate this file delegates to")
 
 
+## ⛔ MY CORPUS WAS ONE FILE, AND THAT IS HOW A FOURTH AWARD SITE SURVIVED THIS GUARD.
+## Every arm above reads AutogrindSystem. The per-character EXP attribution for a HEADLESS grind
+## lives in GameLoop._resolve_headless_battle, so it kept a bare `is_alive` while this file reported
+## the class closed and its own declaration arm named a THIRD site as the last one.
+##
+## It failed twice over: a mourner was credited nothing, AND the same bare predicate shrank the
+## divisor, inflating every living member's share of the same pot.
+func test_the_headless_path_credits_a_mourner_too() -> void:
+	## Reachability as a CHECK rather than prose — if nothing rosters the passive this is latent and
+	## the arm's urgency is stale. `cleric` is a STARTER job, so an ordinary W1 party can carry it.
+	var jobs: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	assert_true(jobs is Dictionary, "CONTROL: jobs.json must parse, or the reachability claim is vacuous")
+	var cleric_passives: String = str((jobs as Dictionary).get("cleric", {}).get("passive_abilities", []))
+	assert_true(cleric_passives.contains("posthumous_credit"),
+		"CONTROL: no starter job rosters posthumous_credit any more — this defect is latent, not live, and this arm's framing needs revisiting")
+
+	var gl: String = GdSource.code_of("res://src/GameLoop.gd")
+	assert_ne(gl, "", "CONTROL: GameLoop source must survive the comment strip")
+	var at: int = gl.find("func _resolve_headless_battle")
+	assert_gt(at, -1, "CONTROL: _resolve_headless_battle must exist")
+	var stop: int = gl.find("\nfunc ", at + 20)
+	var body: String = gl.substr(at, (stop - at) if stop > 0 else -1)
+	assert_true(body.contains("track_character_exp"),
+		"CONTROL: the per-character attribution must be inside the extracted range, or this arm reads the wrong function")
+
+	assert_true(body.contains("earns_exp_while_dead"),
+		("the headless grind attributes EXP by a bare is_alive. A Cleric carrying posthumous_credit " +
+		"EARNS that exp — AutogrindSystem's two award sites and BattleManager:1023 all say so — and " +
+		"is credited none here, while the shrunken divisor inflates everyone else's share."))
+
+
 func test_the_third_award_site_is_still_unreachable() -> void:
 	## ⚠️ THE DECLARATION. A third award site exists and did NOT get the exception, deliberately:
 	## _process_battle_results is called only by _run_automated_battle, which has NO callers. If

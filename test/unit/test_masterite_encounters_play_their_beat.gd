@@ -2,6 +2,7 @@ extends GutTest
 
 ## Each W1 masterite trigger plays its authored pre-fight beat. Three were placed with no route at all.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const ENCOUNTER_SCRIPT := "res://src/exploration/MasteriteEncounter.gd"
 const TALLY_WALL := "res://src/exploration/TallyWall.gd"
 const CUTSCENE_DIR := "res://data/cutscenes"
@@ -19,8 +20,10 @@ const OWNED_ELSEWHERE := {
 }
 
 
+## CODE only — every assert below is satisfied by the mere presence of a token, and MasteriteEncounter's
+## own header names cutscene_id, boss_cutscene_id and battle_triggered in prose.
 func _read(path: String) -> String:
-	return FileAccess.get_file_as_string(path)
+	return GdSource.code_of(path)
 
 
 func _village(name: String) -> String:
@@ -31,7 +34,8 @@ func test_the_scan_can_see_the_villages_at_all() -> void:
 	var total := WIRED.size() + OWNED_ELSEWHERE.size()
 	assert_eq(total, 4, "W1 places exactly four masterite triggers")
 	for name in WIRED:
-		assert_gt(_village(name).length(), 0, "CONTROL: %s must load" % name)
+		assert_true(_village(name).contains("func _setup_npcs"),
+			"CONTROL: %s must survive comment-stripping — an over-strip and a correct strip are the same green" % name)
 		assert_true(_village(name).contains("MasteriteEncounter.gd"),
 			"CONTROL: %s must still place a MasteriteEncounter, or this file is pinning a dead placement" % name)
 	assert_false(_village("EldertreeVillage.gd").contains("zzz_not_a_real_symbol"),
@@ -40,7 +44,8 @@ func test_the_scan_can_see_the_villages_at_all() -> void:
 
 func test_the_trigger_can_play_a_beat_at_all() -> void:
 	var src := _read(ENCOUNTER_SCRIPT)
-	assert_gt(src.length(), 0, "CONTROL: MasteriteEncounter must load")
+	assert_true(src.contains("func _on_body_entered"),
+		"CONTROL: MasteriteEncounter's code must survive comment-stripping, or every assert below is green by erasure")
 	assert_true(src.contains("@export var cutscene_id"),
 		"MasteriteEncounter lost its cutscene_id export — the three W1 beats it routes have no other dispatch, so they go dark. Restore the export and the await in _on_body_entered.")
 	assert_true(src.contains("await _play_encounter_beat()"),
@@ -77,5 +82,7 @@ func test_the_warden_beat_is_owned_by_the_tally_wall_not_the_trigger() -> void:
 		+ "If the TallyWall route is being retired, move the beat here in the same change rather than "
 		+ "setting both: " + ", ".join(wrong)) % [])
 	var tally := _read(TALLY_WALL)
+	assert_true(tally.contains("func _ready() -> void:"),
+		"CONTROL: TallyWall's code must survive comment-stripping")
 	assert_true(tally.contains("world1_warden_encounter"),
 		"TallyWall stopped playing world1_warden_encounter, so Sandrift is now the only possible route for it — set cutscene_id on the Warden placement in the same change that removed this")

@@ -2,6 +2,7 @@ extends GutTest
 
 ## Intro-side counterpart to test_defeat_cutscene_names_the_boss_that_triggered_it_regression: the aftermath side was repaired, the intro side was never asked.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const DUNGEON_DIR := "res://src/maps/dungeons"
 const CUTSCENE_DIR := "res://data/cutscenes"
 const MONSTERS_PATH := "res://data/monsters.json"
@@ -35,7 +36,7 @@ func _dungeons() -> Dictionary:
 	for f in dir.get_files():
 		if not f.ends_with(".gd"):
 			continue
-		var src := FileAccess.get_file_as_string("%s/%s" % [DUNGEON_DIR, f])
+		var src := GdSource.code_of("%s/%s" % [DUNGEON_DIR, f])
 		var bid := _quoted_after(src, "boss_id")
 		var cid := _quoted_after(src, "boss_cutscene_id")
 		if bid != "" and cid != "":
@@ -88,6 +89,12 @@ func test_the_dungeon_scan_finds_real_dungeons() -> void:
 	assert_gt(d.size(), 8, "CONTROL: the dungeon scrape should find most of the dungeon scripts, found %d" % d.size())
 	assert_true(d.has("RootProcess.gd"), "CONTROL: a known dungeon with both fields must be found")
 	assert_false(d.has("ZzzNotADungeon.gd"), "CONTROL: a fabricated dungeon must not be found")
+	## DragonCave and WhisperingCave are the only dungeon scripts carrying `\"\"\"` fences, so they are the
+	## only two where the strip does region parity rather than a line pass — floor them by name.
+	assert_true(GdSource.code_of("%s/DragonCave.gd" % DUNGEON_DIR).contains("func _ready"),
+		"CONTROL: DragonCave's code must survive comment-stripping")
+	assert_true(GdSource.code_of("%s/WhisperingCave.gd" % DUNGEON_DIR).contains("func _transition_to_floor"),
+		"CONTROL: WhisperingCave's code must survive comment-stripping — 26 docstring fences, so parity is live here")
 	for f in d:
 		assert_true(_scene(d[f]["cutscene"]).has("steps"),
 			"%s dispatches '%s' but that scene did not parse" % [f, d[f]["cutscene"]])
@@ -103,7 +110,7 @@ func test_the_scraper_covers_every_script_that_declares_a_boss() -> void:
 	for f in dir.get_files():
 		if not f.ends_with(".gd") or scraped.has(f):
 			continue
-		if FileAccess.get_file_as_string("%s/%s" % [DUNGEON_DIR, f]).contains("boss_id"):
+		if GdSource.code_of("%s/%s" % [DUNGEON_DIR, f]).contains("boss_id"):
 			unscraped.append(f)
 	unscraped.sort()
 	var excused: Array = NOT_A_DUNGEON_INSTANCE.keys()
