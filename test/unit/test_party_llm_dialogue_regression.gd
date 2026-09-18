@@ -176,6 +176,55 @@ func test_party_personas_trigger_voices_present_for_each_event() -> void:
 				"%s.trigger_voices.%s must be authored (LLM-off fallback)" % [job, ev])
 
 
+## ⛔ THIS FILE STARTED A BATTLE ON THE AUTOLOAD AND NEVER ENDED IT — measured 2026-09-18.
+## test_cooldown_dictionary_clears_on_battle_start drives the real BattleManager.start_battle to
+## prove the cooldown dict is cleared, which is the right test; it just never put the engine back.
+## BattleManager is an AUTOLOAD, so the battle stayed live for the ~1000 test files that sort after
+## this one. Measured by running this file then a surface probe in ONE process:
+##
+##     current_state = 5 (EXECUTION_PHASE)   -> is_battle_active() TRUE for the rest of the run
+##     current_round = 1 · volatility = obj · _execution_phase_count = 1
+##     _wd_armed = true                      -> the stall watchdog left ARMED
+##
+## At the end of a full suite the state was still non-INACTIVE, because every OTHER file that
+## touches current_state correctly saves and restores the PRIOR value — so a well-behaved file
+## faithfully propagates this one's pollution rather than clearing it.
+##
+## ⚠️ SNAPSHOT/RESTORE OF THE WHOLE SURFACE, DERIVED, not a hand-listed set of fields.
+## _cleanup_battle() alone is not enough: it resets current_state and volatility but not
+## current_round, _execution_phase_count, or the watchdog pair (_wd_armed is cleared by
+## end_battle, which this test must not call — empty parties through the victory/defeat chain).
+## A teardown covers the fields its author thought of; get_property_list() covers the ones they
+## did not. Restores the PRIOR value rather than a fresh default, so this file cannot mask a
+## leaker that ran before it.
+var _bm_snapshot: Dictionary = {}
+
+
+func before_each() -> void:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null:
+		return
+	_bm_snapshot.clear()
+	for prop in bm.get_property_list():
+		if not (int(prop["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE):
+			continue
+		var n: String = str(prop["name"])
+		var v: Variant = bm.get(n)
+		if v is Array or v is Dictionary:
+			v = v.duplicate(true)
+		_bm_snapshot[n] = v
+
+
+func after_each() -> void:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null or _bm_snapshot.is_empty():
+		return
+	if bm.current_state != bm.BattleState.INACTIVE:
+		bm._cleanup_battle()
+	for n in _bm_snapshot:
+		bm.set(str(n), _bm_snapshot[n])
+
+
 # ── BattleManager gating ─────────────────────────────────────────────────────
 
 func test_maybe_fire_party_line_no_op_when_flag_off() -> void:
