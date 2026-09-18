@@ -3317,7 +3317,22 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 			if monster_wc is Dictionary and not (monster_wc as Dictionary).is_empty():
 				BattleManager._win_condition = (monster_wc as Dictionary).duplicate()
 				print("[SPOTLIGHT] win_condition from monsters.json fallback: %s" % str(monster_wc))
-	await _start_battle_async([enemy_id], false)
+	## ⛔ DO NOT AWAIT A SIGNAL THAT HAS NO EMITTER. spotlight_battle_ended is emitted at exactly
+	## one site, inside _on_battle_ended, which cannot run if no battle began — so a suppressed
+	## entry left this coroutine suspended forever: the duel cutscene never advanced, the party
+	## stayed the lone duelist, and _win_condition kept the duel's terms with end_battle (its only
+	## clearer) unreachable. Undo what this function committed, in reverse, and report unavailable
+	## — a result _step_battle already handles by aborting the scene rather than retrying.
+	if not await _start_battle_async([enemy_id], false):
+		if BattleManager:
+			BattleManager._win_condition = {}
+		party = _spotlight_saved_party.duplicate()
+		_spotlight_saved_party.clear()
+		AutobattleSystem.set_autobattle_enabled(duel_char_id, _spotlight_saved_autobattle)
+		_pending_spotlight_unlock = ""
+		_spotlight_duel_active = false
+		push_warning("[SPOTLIGHT] battle entry was suppressed — duel not started, party and win_condition restored")
+		return "unavailable"
 	var result: bool = await spotlight_battle_ended
 	party = _spotlight_saved_party.duplicate()
 	_spotlight_saved_party.clear()
@@ -4381,13 +4396,16 @@ func _adopt_monster_win_condition(enemy_ids: Array) -> void:
 			return
 
 
-func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
+## Returns false when battle entry was SUPPRESSED — no battle started, so nothing downstream
+## should wait on a battle signal. start_solo_battle awaited one that has a single emitter inside
+## _on_battle_ended, which cannot run if no battle began.
+func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> bool:
 	"""Start battle using async-loaded scene"""
 	# Mid-dissolve battle kills the transition tween -> emit never runs (2026-08-08 stuck class): drop the unearned encounter, clear the mutex.
 	if InputLockManager and InputLockManager.has_lock("world_transition"):
 		_battle_transition_starting = false
 		push_warning("[BATTLE] entry suppressed — world transition mid-dissolve; encounter dropped")
-		return
+		return false
 	current_state = LoopState.BATTLE
 	_battle_transition_starting = false  # state=BATTLE now owns the mutex vs area transitions
 	if _day_night_overlay:
@@ -4476,6 +4494,7 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 
 	# Connect to battle end
 	BattleManager.battle_ended.connect(_on_battle_ended, CONNECT_ONE_SHOT)
+	return true
 
 
 func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
