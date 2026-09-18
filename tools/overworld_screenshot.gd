@@ -1,4 +1,6 @@
 extends SceneTree
+
+const ShotGuard = preload("res://tools/shot_guard.gd")
 ## Render an overworld at a chosen world position, and report where the player actually stops when
 ## he walks north. Built to settle the Mode 7 "water/mountain edge is a bit off" question with a
 ## FRAME rather than with shader arithmetic. Needs a real renderer (xvfb-run).
@@ -96,9 +98,9 @@ func _init() -> void:
 	var img := root.get_texture().get_image()
 	DirAccess.make_dir_recursive_absolute("res://tmp/screens")
 	var out := "res://tmp/screens/overworld_%s_%s.png" % [world, tag]
-	img.save_png(out)
+	ShotGuard.save_or_refuse(img, out)
 	print("[SHOT] world=%s start=%s stopped=%s  cell=%s  wrote %s (%dx%d)" % [
 		world, str(at), str(stopped),
 		str(Vector2i(int(stopped.x) / 32, int(stopped.y) / 32)),
 		out, img.get_width(), img.get_height()])
-	quit(0)
+	quit(3 if ShotGuard.refused > 0 else 0)

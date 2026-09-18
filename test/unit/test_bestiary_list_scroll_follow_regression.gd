@@ -88,23 +88,66 @@ func test_scroll_helper_uses_ensure_control_visible() -> void:
 		"_scroll_to_selected must guard against freed row nodes")
 
 
+## ⛔ WAS A CALL COUNT (`calls >= 7`), AND IT WENT RED ON A CORRECT CHANGE. The comment enumerated
+## PATHS — "ui_up + ui_down + wheel_up + wheel_down + hover + click" — while the assert counted
+## SITES, and the two coincided only because each path had its own copy of the body. Routing the
+## wheel through `_nav_step` (which calls the helper) removed two SITES and removed no PATH: the
+## count fell to 5 and the wiring got strictly better.
+##
+## That is the coincidental-value ratchet CLAUDE.md names — red on a correct change, and green on a
+## wrong one, because a seventh call added anywhere in the file would satisfy it while a nav path
+## stayed unwired. It now asserts the property the comment always claimed: every selection-moving
+## path REACHES the helper, directly or through the owner it delegates to.
 func test_nav_handlers_call_scroll_to_selected() -> void:
-	# Every selection-moving path (keyboard up/down, wheel up/down, hover,
-	# click) must scroll the new selection into view.
 	var text = _read(BESTIARY_MENU_PATH)
-	# Count occurrences of the helper call inside the input/nav paths.
-	var calls := 0
-	var from := 0
-	while true:
-		var hit = text.find("_scroll_to_selected()", from)
-		if hit == -1:
-			break
-		calls += 1
-		from = hit + 1
-	# 1 deferred initial call + ui_up + ui_down + wheel_up + wheel_down +
-	# hover + click = 7 minimum.
-	assert_true(calls >= 7,
-		"Expected _scroll_to_selected() wired into every nav path (>=7 calls), found %d" % calls)
+	assert_ne(text, "", "CONTROL: BestiaryMenu source must be readable")
+
+	# The owner both keyboard and wheel delegate to must reach the helper itself.
+	var owner_at: int = text.find("func _nav_step(")
+	assert_gt(owner_at, -1, "CONTROL: _nav_step must exist, or the paths below delegate to nothing")
+	var owner_rest: String = text.substr(owner_at + 5)
+	var owner_end: int = owner_rest.find("\nfunc ")
+	var owner_body: String = owner_rest.substr(0, owner_end) if owner_end > -1 else owner_rest
+	assert_true(owner_body.contains("_scroll_to_selected()"),
+		"_nav_step moves the selection and never scrolls it into view — every path delegating to it "
+		+ "inherits that")
+
+	# Each selection-moving path either scrolls itself or delegates to the owner.
+	var paths := {
+		"keyboard up/down": "_nav_step(-1 if nav == \"ui_up\" else 1)",
+		"page jump": "page * MenuPaging.PAGE_ROWS",
+		"wheel up": "MOUSE_BUTTON_WHEEL_UP",
+		"wheel down": "MOUSE_BUTTON_WHEEL_DOWN",
+		"hover": "func _on_row_hover",
+		"click": "func _on_row_click",
+	}
+	# ⛔ LINES, NOT A CHARACTER WINDOW. A 320-char window cut off inside _on_row_click, whose scroll
+	# call is its last statement — and reported a correctly wired path as unwired. An arbitrary
+	# width is the same coincidental cutoff the call count was.
+	var lines: PackedStringArray = text.split("\n")
+	var unwired: Array = []
+	for label in paths:
+		var needle: String = str(paths[label])
+		var start: int = -1
+		for i in range(lines.size()):
+			if str(lines[i]).contains(needle):
+				start = i
+				break
+		if start < 0:
+			unwired.append("%s (path not found)" % label)
+			continue
+		var seg := ""
+		for i in range(start, mini(lines.size(), start + 20)):
+			var l: String = str(lines[i])
+			# stop at the next top-level function, so one path cannot borrow the next one's wiring
+			if i > start and l.begins_with("func "):
+				break
+			seg += l + "\n"
+		if not (seg.contains("_scroll_to_selected()") or seg.contains("_nav_step(")):
+			unwired.append(label)
+	assert_true(unwired.is_empty(),
+		"these selection-moving paths neither scroll nor delegate to the owner that does, so the "
+		+ "cursor can leave the viewport: %s" % [unwired])
 
 
 ## The property is "holding a direction must not rapid-fire _refresh_detail -> _load_sprite". It

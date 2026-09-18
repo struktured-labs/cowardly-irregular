@@ -1,4 +1,6 @@
 extends SceneTree
+
+const ShotGuard = preload("res://tools/shot_guard.gd")
 ## The village elevator, photographed MID-RIDE.
 ##
 ## WHY THIS WAS OWED AND PREVIOUSLY DROPPED
@@ -148,7 +150,7 @@ func _init() -> void:
 			var img := root.get_texture().get_image()
 			DirAccess.make_dir_recursive_absolute("res://tmp/marketing")
 			var path := "res://tmp/marketing/elevator_midride_%s.png" % village
-			img.save_png(path)
+			ShotGuard.save_or_refuse(img, path)
 			var fa := FileAccess.open(path, FileAccess.READ)
 			var sz := fa.get_length() if fa else 0
 			if fa:
@@ -167,7 +169,7 @@ func _init() -> void:
 			_die("the car appeared but was never inside the %.2f-%.2f window (highest progress seen: %.2f). Writing the frame anyway would ship a picture of something else."
 				% [PROGRESS_LO, PROGRESS_HI, best_progress])
 		return
-	quit(0)
+	quit(3 if ShotGuard.refused > 0 else 0)
 
 
 func _find_elevator(n: Node) -> Node:
