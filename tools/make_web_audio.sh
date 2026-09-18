@@ -131,9 +131,24 @@ done
 
 echo "[web-audio] transcoded ${transcoded}, reused ${reused}"
 
-# POPULATE ONLY A COMPLETE, VERIFIED TIER. The loop above aborts on an empty output, so reaching
-# here means every track exists and is non-empty; writing the cache before that check would
-# persist a broken tier for every future publish.
+# ── DOES IT ACTUALLY DECODE? ─────────────────────────────────────────────────────────────────
+# "Exists and is non-empty" was the whole floor here, and it is not one. A TRUNCATED OGG
+# DECODES WITH EXIT 0 AND NO STDERR (measured 2026-09-18) — ffmpeg plays what is there and
+# stops — so a short write, a full disk or an interrupted encode produces a file that passes
+# every size, count and header test downstream.
+#
+# THIS RUNS ON THE CACHE-RESTORE PATH TOO, WHICH IS THE ONE THAT HAD NO CHECK AT ALL: a cache
+# hit is accepted on a FILE COUNT and then reused by every future publish, so one bad track
+# caches once and ships forever. It must therefore sit ABOVE the cache write — the tier earns
+# the cache by decoding, exactly as the note below always claimed it did.
+#
+# 14.5s for 161 tracks at -P 8, against the 108s encode it guards.
+"$(dirname "$0")/check_audio_decodes.sh" "$OUT_DIR" "$SRC_DIR" || {
+    echo "[web-audio] tier failed the decode gate — NOT caching, NOT publishing" >&2
+    exit 4
+}
+
+# POPULATE ONLY A COMPLETE, VERIFIED TIER — and now "verified" means decoded, not non-empty.
 if [ ! -d "$_CACHE_DIR" ]; then
     mkdir -p "$_CACHE_DIR" && cp -a "$OUT_DIR/." "$_CACHE_DIR/" \
         && echo "[web-audio] cached this tier for the next build" \
