@@ -59,7 +59,11 @@ func test_the_costume_builder_is_told_which_base_it_dresses() -> void:
 	assert_true(src.contains("func load_monster_sprite_frames(monster_id: String, base_id: String = \"\")"),
 		"WIRING: the monster builder no longer accepts a base id, so it cannot re-time anything")
 	var scene := _src(SCENE)
-	assert_true(scene.contains("load_monster_sprite_frames(variant_id, monster_id)"),
+	## The receiver dot is load-bearing: the bare call is a substring of
+	## `_load_monster_sprite_frames(variant_id, monster_id)`, so a differently-named local twin
+	## satisfies it. A prefix cannot supply the leading `.` because it would sit between the dot
+	## and the name (cowir-autogrind).
+	assert_true(scene.contains("HybridSpriteLoaderClass.load_monster_sprite_frames(variant_id, monster_id)"),
 		"WIRING: BattleScene resolves the costume and then does not say what it dresses — the parameter alone re-times nothing")
 	## The arm that discriminates. Accepting the base id proves nothing about USING it, and the
 	## behavioural arm below cannot tell: today every costume matches its base, so dropping this
