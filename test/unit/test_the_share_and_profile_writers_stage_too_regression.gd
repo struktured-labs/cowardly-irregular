@@ -172,12 +172,30 @@ func test_no_write_reaches_disk_by_a_form_this_file_cannot_see() -> void:
 ## 🔑 SO THE BURDEN IS INVERTED HERE: an open must PROVE it is read-only. A mode this file cannot
 ## read is a write candidate, not a pass — the opposite default from the arms above, deliberately.
 ## The whole verdict, in one place, so a CONTROL can feed it a fabricated line rather than trusting
-## that the branches below still discriminate. READ_WRITE contains "READ", so writes are tested FIRST.
+## that the branches below still discriminate.
+##
+## ⛔ THE VERDICTS NAME WHAT WAS MEASURED, NOT "WRITE-NESS" — @cowir-controller flagged a sibling
+## guard calling READ_WRITE truncating, which is wrong about the MECHANISM and not just the site.
+## Probed in-engine 2026-09-18 (write 10 bytes, reopen in each mode, re-read the length):
+##   FileAccess.WRITE        10 -> 0   TRUNCATES
+##   FileAccess.WRITE_READ   10 -> 0   TRUNCATES
+##   FileAccess.READ_WRITE   10 -> 10  PRESERVES   <- groups with READ here, deliberately
+## ⚠️ THE TWO COMPOUND BRANCHES ARE REDUNDANT TODAY AND I AM SAYING SO RATHER THAN CLAIMING THEY
+## ARE LOAD-BEARING — I wrote "match order is load-bearing", then mutated it and both cases PASSED.
+## The `FileAccess.` PREFIX is what actually decides it:
+##   "FileAccess.READ_WRITE".contains("FileAccess.WRITE")  false -> falls through to the READ test
+##   "FileAccess.WRITE_READ".contains("FileAccess.WRITE")  true  -> already caught
+## So each compound branch restates an answer the fallthrough gives anyway. They are kept because
+## they become load-bearing the moment anyone drops the prefix to match a bare "WRITE" — which is
+## precisely the shape @cowir-controller shipped and had to correct. A redundant branch that is
+## documented as redundant is cheap; one documented as essential is a claim nothing tests.
 func _classify_open(line: String) -> String:
-	if line.contains("FileAccess.WRITE") or line.contains("READ_WRITE") or line.contains("WRITE_READ"):
-		return "write"
+	if line.contains("READ_WRITE"):
+		return "non_truncating"
+	if line.contains("FileAccess.WRITE") or line.contains("WRITE_READ"):
+		return "truncating"
 	if line.contains("FileAccess.READ"):
-		return "read"
+		return "non_truncating"
 	return "unprovable"
 
 
@@ -189,12 +207,14 @@ func _classify_open(line: String) -> String:
 func test_the_mode_classifier_can_actually_say_unprovable() -> void:
 	assert_eq(_classify_open('\tvar w := FileAccess.open(path, mode)'), "unprovable",
 		"control: a hoisted-mode open MUST classify unprovable, or the arm below cannot flag the form it exists for")
-	assert_eq(_classify_open('\tvar f := FileAccess.open(p, FileAccess.READ)'), "read",
-		"control: an inline READ must still classify read, or the arm reports every open as an offender")
-	assert_eq(_classify_open('\tvar f := FileAccess.open(p, FileAccess.WRITE)'), "write",
-		"control: an inline WRITE must classify write")
-	assert_eq(_classify_open('\tvar f := FileAccess.open(p, FileAccess.READ_WRITE)'), "write",
-		"control: READ_WRITE must classify WRITE — it contains \"READ\", so order is load-bearing")
+	assert_eq(_classify_open('\tvar f := FileAccess.open(p, FileAccess.READ)'), "non_truncating",
+		"control: an inline READ must classify non_truncating, or the arm reports every open as an offender")
+	assert_eq(_classify_open('\tvar f := FileAccess.open(p, FileAccess.WRITE)'), "truncating",
+		"control: an inline WRITE must classify truncating")
+	assert_eq(_classify_open('\tvar f := FileAccess.open(p, FileAccess.WRITE_READ)'), "truncating",
+		"control: WRITE_READ truncates too — probed in-engine, 10 bytes to 0")
+	assert_eq(_classify_open('\tvar f := FileAccess.open(p, FileAccess.READ_WRITE)'), "non_truncating",
+		"control: READ_WRITE PRESERVES (probed: 10 bytes to 10) and contains \"WRITE\", so it must be tested BEFORE the bare WRITE match or it is mislabelled as truncating")
 
 
 func test_every_open_proves_its_mode() -> void:
@@ -212,10 +232,10 @@ func test_every_open_proves_its_mode() -> void:
 			if t.begins_with("#") or not line.contains("FileAccess.open("):
 				continue
 			var verdict: String = _classify_open(line)
-			if verdict == "write":
+			if verdict == "truncating":
 				seen_write += 1
 				continue
-			if verdict == "read":
+			if verdict == "non_truncating":
 				seen_read += 1
 				continue
 			unprovable.append("%s:%d — %s" % [path, n, t])
