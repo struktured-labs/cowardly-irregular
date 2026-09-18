@@ -200,9 +200,22 @@ func test_the_settings_writer_reports_a_failure_it_used_to_swallow() -> void:
 ## cowir-autogrind). This file persists the save slot and the settings, so a future writer using
 ## another form would bypass both the staging requirement and every check above it.
 ##
-## Zero today, and the zero is over an instrument watched saying YES: the same patterns find the
-## four `save_png` calls that DO exist elsewhere in src/ (GameLoop's two screenshots,
-## BaseTileGenerator's debug atlas, FeedbackBundle's buffer) — none of them player state.
+## Zero today, and ALL EIGHT PATTERNS ARE MUTATION-PROVEN rather than asserted: planting one
+## function that uses every form makes this arm name every one of them
+## (ResourceSaver.save · store_var · store_buffer · store_line · save_png · save_to_file ·
+## open_encrypted · open_compressed). cowir-autogrind closed the same caveat on their file by
+## planting each in turn; this is the combined version, and it works because the arm appends one
+## offender per (line, form) so each pattern must name itself.
+##
+## ⚠️ THE COMBINED PLANT ALSO TRIPS SIBLING ARMS — it opens a non-staged path — so it proves the
+## patterns MATCH and is NOT evidence of "siblings silent". The per-form mutation that showed
+## coverage rather than duplication was the single ResourceSaver.save plant.
+##
+## ⛔ AND THE LIMIT THAT CANNOT BE CLOSED: THE LIST IS HAND-WRITTEN, SO A NINTH FORM IS UNBOUNDED.
+## This arm is not "no exotic write can exist"; it is "none of these eight, and nobody has taught
+## it a ninth". A hand-written list cannot SHRINK with its subject the way a self-referential floor
+## can (cowir-sfx's `elements.keys()` case) — it can only be SHORT, which is the failure this file
+## can live with.
 const OTHER_WRITE_FORMS := [
 	"ResourceSaver.save", "store_var", "store_buffer", "store_line",
 	"save_png", "save_to_file", "open_encrypted", "open_compressed",
