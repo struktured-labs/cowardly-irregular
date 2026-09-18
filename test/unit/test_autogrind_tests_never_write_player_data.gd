@@ -44,8 +44,14 @@ func _savers() -> Array[String]:
 	var current: String = ""
 	for line in src.split("\n"):
 		var t: String = line.strip_edges()
-		if t.begins_with("func "):
-			current = t.substr(5, t.find("(") - 5)
+		## ⛔ BOTH FORMS. Keying on "func " alone DROPS every `static func` — @cowir-battle found that
+		## hole in this guard's autobattle twin, where it hid two exposed reachers and reported a
+		## CLEAN tree, which is the direction that costs a defect rather than a deletion. Measured
+		## here 2026-09-18: 13 static funcs across the scanned autogrind sources, ZERO of them
+		## writers, so this lane's version is latent. Closed before a static writer arrives.
+		if t.begins_with("func ") or t.begins_with("static func "):
+			var head: int = t.find("func ") + 5
+			current = t.substr(head, t.find("(") - head)
 		elif current != "" and t.contains("_test_disable_persistence") and t.begins_with("if "):
 			if not (current in out):
 				out.append(current)
@@ -60,15 +66,16 @@ func _persisting_functions() -> Array[String]:
 	assert_gt(savers.size(), 3,
 		"CONTROL: derived only %d gated writers — the hand-list this replaced had 3 and missed half, so anything at or below that is the same defect returning" % savers.size())
 	var out: Array[String] = []
-	var idx: int = 0
-	while true:
-		var start: int = src.find("\nfunc ", idx)
-		if start < 0:
-			break
-		var next: int = src.find("\nfunc ", start + 1)
+	## Same both-forms scan as _savers above: find("\nfunc ") cannot see a `static func`.
+	var starts: Array = []
+	for m in RegEx.create_from_string("(?m)^(?:static )?func ([A-Za-z_][A-Za-z_0-9]*)\\(").search_all(src):
+		starts.append([m.get_start(), m.get_string(1)])
+	assert_gt(starts.size(), 20, "CONTROL: the function scan must find the autoload's functions")
+	for i in range(starts.size()):
+		var start: int = int(starts[i][0])
+		var next: int = int(starts[i + 1][0]) if i + 1 < starts.size() else -1
 		var body: String = src.substr(start, (next - start) if next > 0 else -1)
-		var name: String = body.substr(6, body.find("(") - 6).strip_edges()
-		idx = start + 1
+		var name: String = str(starts[i][1])
 		## ⛔ A SAVER IS ITSELF A PERSISTING ENTRY POINT WHEN IT IS PUBLIC. The old form skipped every
 		## name beginning with "_save" — correct for the private ones, and it also meant
 		## `save_grind_snapshot` had to be reached INDIRECTLY to count. It is public, two tests call it

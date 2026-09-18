@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## struktured, live playtest 2026-08-22: "village inn purcahsde flow is still awkward".
 ## "Still" — it had been raised before and the prior pass didn't land it.
 ##
@@ -31,6 +33,7 @@ func before_all() -> void:
 
 
 func after_all() -> void:
+	SoundState.restore()
 	if _saved_profile != "":
 		InputProfileManager.apply_profile(_saved_profile)
 
