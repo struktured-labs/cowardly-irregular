@@ -64,7 +64,7 @@ func test_a_declaration_outranks_a_re_export_in_both_directions() -> void:
 ## WIRING: behaviour nothing calls protects nothing, and the inline `not _is_artist_sheet` is the defect.
 func test_the_party_branch_resolves_facing_through_the_owner() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	assert_true(src.contains("HybridSpriteLoaderClass.job_faces_enemy(job_id, not _is_artist_sheet)"),
+	assert_true(src.contains("flip_h = HybridSpriteLoaderClass.job_faces_enemy(job_id, not _is_artist_sheet)"),
 		"WIRING: the party facing site no longer resolves through job_faces_enemy — a sheet's declared flip_h reaches nothing")
 	assert_false(src.contains("sprite.flip_h = not _is_artist_sheet"),
 		"OWNER: the inline size-infers-facing form is back in the party branch. That is the defect: a re-export silently reverses a party member's facing")

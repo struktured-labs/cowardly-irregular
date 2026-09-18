@@ -74,5 +74,5 @@ func test_the_battle_picker_resolves_the_world_through_the_sprite_owner() -> voi
 
 	assert_false(body.contains("SoundManager._get_current_world_suffix()"),
 		"OWNER: the monster costume picker reads the AUDIO autoload's private suffix again. During a battle that resolves to a cache whose only writer is play_area_music, so a costume follows the last music transition instead of the player's world")
-	assert_true(body.contains("HybridSpriteLoaderClass.current_world_suffix()"),
+	assert_true(body.contains("= HybridSpriteLoaderClass.current_world_suffix()"),
 		"WIRING: the picker no longer sources its world from the sprite owner — the four other sprite surfaces all do")
