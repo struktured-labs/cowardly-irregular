@@ -24,6 +24,8 @@ extends GutTest
 ## BattleManager._execute_next_action(), whose cannot_act consumer (BattleManager
 ## ~:1649) skips the boss's queued attack.
 
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
+
 const BOSS_ID: String = "chancellor_mordaine"
 ## Directive proven by data/boss_dialogue.json to trip appeal_old_loyalty →
 ## skip_turn (keyword "loyalty"). Verified inline in the first test below.
@@ -33,12 +35,17 @@ const NEUTRAL_DIRECTIVE: String = "hello there nothing meaningful at all"
 var _bm: Node = null
 var _dlg: Node = null
 var _gs: Node = null
+var _bm_guard = null
 
 
 func before_each() -> void:
 	_bm = Engine.get_main_loop().root.get_node_or_null("BattleManager")
 	_dlg = Engine.get_main_loop().root.get_node_or_null("BossDialogue")
 	_gs = Engine.get_main_loop().root.get_node_or_null("GameState")
+	## Snapshot BEFORE the turbo_mode write below, so the restore puts back the value this file
+	## inherited rather than a default.
+	_bm_guard = BattleStateGuard.new()
+	_bm_guard.snapshot()
 	# Turbo so the negative-case attack continuation uses process_frame, not a
 	# wall-clock timer — keeps the test fast/deterministic. (We assert on HP
 	# synchronously right after the call regardless.)
@@ -46,15 +53,20 @@ func before_each() -> void:
 		_bm.turbo_mode = true
 
 
+## ⛔ THE HAND-WRITTEN TEARDOWN THIS REPLACES SAID "Leave BattleManager in a clean INACTIVE state for
+## sibling tests" AND NEVER RESTORED `turbo_mode` — the one field before_each sets, five lines above
+## it. `turbo_mode` is one of twelve BattleManager fields that NEITHER start_battle NOR
+## _cleanup_battle resets, so `true` survived into every later battle in the process; BattleManager
+## consumes it at three sites. Measured 2026-09-18 by a per-script probe over all 2,071 test files,
+## which also caught this file leaking `_jailbreak_landed_this_battle = true` and two freed
+## Combatants in `selection_order` — neither in the six fields the old teardown cleared.
+##
+## The point is not that the author was careless: they reasoned about siblings, wrote a teardown FOR
+## siblings, and missed the field they had just written themselves. That is what a derived
+## whole-surface restore is for.
 func after_each() -> void:
-	# Leave BattleManager in a clean INACTIVE state for sibling tests.
-	if _bm and _bm.has_method("_cleanup_battle"):
-		_bm.current_state = _bm.BattleState.INACTIVE
-		_bm.enemy_party.clear()
-		_bm.player_party.clear()
-		_bm.all_combatants.clear()
-		_bm.execution_order.clear()
-		_bm.pending_actions.clear()
+	if _bm_guard != null:
+		_bm_guard.restore()
 
 
 # ── Combatant builders (no JobSystem dependency — surgical) ──────────────────
