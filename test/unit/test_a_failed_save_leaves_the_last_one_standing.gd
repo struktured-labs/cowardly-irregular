@@ -241,3 +241,47 @@ func test_no_write_reaches_disk_by_a_form_these_arms_cannot_see() -> void:
 	probe.close()
 	assert_true(gl.contains("save_png"),
 		"CONTROL: the form patterns find nothing in GameLoop.gd, which is known to call save_png — the matcher is dead and the zero above means nothing")
+
+
+## ⛔ THE BURDEN IS INVERTED HERE ON PURPOSE: AN OPEN MUST PROVE IT IS READ-ONLY.
+## Every other arm asks "is this line a write?" and so requires `FileAccess.WRITE` on the open
+## line. A hoisted mode defeats all of them — `var mode := FileAccess.WRITE` then
+## `FileAccess.open(path, mode)` — and I verified it: planting that in this file left the whole
+## guard at 6 passing, EC=0, with a live truncating write to a user path (cowir-autogrind, who
+## planted the same form and found two guards blind at once). So a mode this scan cannot read as
+## read-only is a write CANDIDATE, not a pass.
+##
+## ⚠️ ORDER IS LOAD-BEARING: `READ_WRITE` CONTAINS `READ`, so the write forms are tested FIRST or
+## the widest mode reads as the safest.
+## ⚠️ AND THE PAREN IS LOAD-BEARING: `:1091` says "FileAccess.open failed" inside a push_warning
+## STRING. Requiring `FileAccess.open(` keeps prose out of a source scan.
+func test_every_open_here_proves_it_is_read_only_or_is_staged() -> void:
+	var f := FileAccess.open("res://src/save/SaveSystem.gd", FileAccess.READ)
+	assert_not_null(f, "could not read SaveSystem.gd")
+	if f == null:
+		return
+	var src := f.get_as_text()
+	f.close()
+
+	var candidates: Array = []
+	var read_only := 0
+	var line_no := 0
+	for line in src.split("\n"):
+		line_no += 1
+		var t := line.strip_edges()
+		if t.begins_with("#") or not t.contains("FileAccess.open("):
+			continue
+		## write forms first — READ_WRITE contains READ
+		var is_write := t.contains("FileAccess.WRITE") or t.contains("READ_WRITE") or t.contains("WRITE_READ")
+		var is_read := (not is_write) and t.contains("FileAccess.READ")
+		if is_read:
+			read_only += 1
+			continue
+		## a write, or a mode this scan cannot read: it must be opening the staging path
+		if not t.contains("staged"):
+			candidates.append("SaveSystem.gd:%d %s" % [line_no, t])
+
+	assert_gt(read_only, 0,
+		"CONTROL: no read-only open found in SaveSystem.gd — this file demonstrably reads its own save and settings, so the classifier is not reading modes at all and every pass below is vacuous")
+	assert_eq(candidates, [],
+		"an open here neither proves it is read-only nor targets the staging path, so it may truncate the player's file where nothing can see it: %s" % str(candidates))
