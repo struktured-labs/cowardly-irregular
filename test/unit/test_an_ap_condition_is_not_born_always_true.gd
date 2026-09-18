@@ -68,6 +68,14 @@ func _editor_on_a_fresh_condition() -> Node:
 	return ed
 
 
+## The engine's own AP ceiling, ASKED rather than written down: gain_ap clamps, so push past any
+## plausible bound and read back what it kept. A literal here would red on a correct design change.
+func _engine_ap_max() -> int:
+	var c := _pc(0)
+	c.gain_ap(999)
+	return c.current_ap
+
+
 func _seeded(ed: Node) -> Dictionary:
 	return ((ed.get("rules") as Array)[0] as Dictionary)["conditions"][0] as Dictionary
 
@@ -112,8 +120,14 @@ func test_an_ap_value_the_engine_can_never_reach_is_not_offered() -> void:
 	for _i in range(120):
 		ed.call("_adjust_condition_value", 1)
 	var reached: int = int(_seeded(ed).get("value", -999))
-	assert_lte(reached, 4,
-		"stepping up 120 times reached AP %d, and the engine clamps current_ap to +4 — every value above 4 is a condition that can never be true" % reached)
+	## EQUALITY, not `<= 4`. An inequality admits a half-line: a bound wrongly NARROWED to +2
+	## reaches 2, and `2 <= 4` passes — so the arm could not tell "capped at the engine's
+	## ceiling" from "capped too low", and the editor silently under-offering is the residual
+	## this file previously named and did not guard. The ceiling is ASKED of the engine rather
+	## than written down, so widening the design moves both sides together.
+	var cap: int = _engine_ap_max()
+	assert_eq(reached, cap,
+		"stepping up 120 times reached AP %d; the engine holds up to +%d, so the editor must offer exactly that — higher can never be true, lower is a rule the player cannot write" % [reached, cap])
 
 
 # ── controls ──────────────────────────────────────────────────────────────────
