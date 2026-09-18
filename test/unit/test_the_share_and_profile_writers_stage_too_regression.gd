@@ -153,3 +153,33 @@ func test_no_write_reaches_disk_by_a_form_this_file_cannot_see() -> void:
 					break
 	assert_eq(exotic, [],
 		"this lane now reaches disk by a form none of the arms above can see, so its truncate-on-open exposure is unaudited — either route it through a staged writer or teach this file the form: %s" % str(exotic))
+
+
+## ⛔ EVERY ARM ABOVE REQUIRES THE MODE TO BE ON THE OPEN LINE, SO A HOISTED MODE DEFEATS THEM ALL
+## (@cowir-controller, 2026-09-18): `var mode := FileAccess.WRITE` then `FileAccess.open(p, mode)`
+## carries no "WRITE" where the scan looks. MEASURED by planting exactly that in
+## AutogrindAchievements: this file stayed GREEN at 6 passing AND the gate ratchet on main stayed
+## GREEN at 5 — a live, ungated, truncating write to user://autogrind/ach.json, invisible to both.
+##
+## 🔑 SO THE BURDEN IS INVERTED HERE: an open must PROVE it is read-only. A mode this file cannot
+## read is a write candidate, not a pass — the opposite default from the arms above, deliberately.
+func test_every_open_proves_its_mode():
+	var unprovable: Array = []
+	for path in _lane_gd_files():
+		var src: String = FileAccess.get_file_as_string(path)
+		if src == "":
+			continue
+		var n := 0
+		for line in src.split("\n"):
+			n += 1
+			var t: String = line.strip_edges()
+			if t.begins_with("#") or not line.contains("FileAccess.open("):
+				continue
+			## READ_WRITE contains "READ", so the write forms are tested FIRST.
+			if line.contains("FileAccess.WRITE") or line.contains("READ_WRITE") or line.contains("WRITE_READ"):
+				continue
+			if line.contains("FileAccess.READ"):
+				continue
+			unprovable.append("%s:%d — %s" % [path, n, t])
+	assert_eq(unprovable, [],
+		"this open's mode is not on the line, so every write arm in this file and the gate ratchet on main are blind to it — name the mode inline (FileAccess.WRITE / FileAccess.READ) rather than hoisting it into a variable: %s" % str(unprovable))
