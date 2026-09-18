@@ -718,7 +718,12 @@ func play_ui(sound_key: String) -> void:
 		return
 	if not SOUNDS.has(sound_key):
 		return
-	_play_sound(_ui_player, SOUNDS[sound_key])
+	## The trim reaches BOTH paths, matching play_battle_scaled. Passing it only to the manifest call
+	## dropped it wherever the synth path runs — a cue whose file fails to load, or a trim authored
+	## for a procedural-only cue, played at the bare base with nothing to show the level was lost.
+	var params: Dictionary = (SOUNDS[sound_key] as Dictionary).duplicate()
+	params["volume_db"] = SFX_UI_BASE_DB + trim
+	_play_sound(_ui_player, params)
 
 
 ## The battle channel's level for a cue: its base plus any authored trim. ONE owner, because
@@ -730,6 +735,15 @@ func play_ui(sound_key: String) -> void:
 ## comment above play_advance_state says so — so the loud direction is guarded, not observed.
 func _battle_level(sound_key: String) -> float:
 	return SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+
+
+## SOUNDS[key] with an explicit level folded in. _play_sound defaults to the PLAYER'S level, which
+## is right only when the computed level equals the player's resting base — so a trim or a boost was
+## dropped wherever the synth path ran. One owner, so the next caller cannot forget it.
+func _synth_params(sound_key: String, level: float) -> Dictionary:
+	var params: Dictionary = (SOUNDS[sound_key] as Dictionary).duplicate()
+	params["volume_db"] = level
+	return params
 
 
 func play_battle(sound_key: String) -> void:
@@ -745,7 +759,7 @@ func play_battle(sound_key: String) -> void:
 		return
 	if not SOUNDS.has(sound_key):
 		return
-	_play_sound(_battle_player, SOUNDS[sound_key])
+	_play_sound(_battle_player, _synth_params(sound_key, level))
 
 
 ## Death cries on their OWN voice — on the shared _battle_player the 1s scorch was stomped by the killing blow's hit sound, then (post-fix) by the NEXT action's sounds at 2x+ speed. Never audible either way (struktured 2026-08-15 + 2026-08-18).
@@ -764,7 +778,7 @@ func play_death(sound_key: String) -> void:
 	if _try_play_sfx_from_manifest(_death_player, sound_key, boosted_db):
 		return
 	if SOUNDS.has(sound_key):
-		_play_sound(_death_player, SOUNDS[sound_key])
+		_play_sound(_death_player, _synth_params(sound_key, boosted_db))
 
 
 ## The group-attack flourish on its OWN player — a group attack's own hits were cutting it.
@@ -854,7 +868,7 @@ func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
 	if world_key != sound_key and _try_play_sfx_from_manifest(player, world_key, level):
 		return
 	if not _try_play_sfx_from_manifest(player, sound_key, level) and SOUNDS.has(sound_key):
-		_play_sound(player, SOUNDS[sound_key])
+		_play_sound(player, _synth_params(sound_key, level))
 
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
@@ -1248,13 +1262,17 @@ func play_footstep(terrain: String = "grass") -> void:
 func play_status(status_name: String) -> void:
 	"""Play sound for a status effect application (poison, sleep, confuse, paralyze, etc.)"""
 	var key = "status_" + status_name.to_lower()
-	if _try_play_sfx_from_manifest(_battle_player, key, _battle_level(key)):
+	var level: float = _battle_level(key)
+	if _try_play_sfx_from_manifest(_battle_player, key, level):
 		return
 	if SOUNDS.has(key):
-		_play_sound(_battle_player, SOUNDS[key])
+		_play_sound(_battle_player, _synth_params(key, level))
 	else:
 		# Fallback: generic descending blip for unknown statuses
-		_play_sound(_battle_player, {"freq": 350, "duration": 0.2, "type": "descending"})
+		## The generic blip is the DESIGNED fallback for an unauthored status, so it is the most
+		## reachable of these — measured 2026-09-18: after corruption_ap_flicker (-6) it played at
+		## -12.00 instead of -6.00, inheriting whatever the previous battle cue left.
+		_play_sound(_battle_player, {"freq": 350, "duration": 0.2, "type": "descending", "volume_db": level})
 
 
 ## Manifest-gated status cue for callers that must stay SILENT when unauthored — the blip above is struktured's ruling-15 "not even close to good", and buffs fire far too often to spend it on them.
@@ -1923,17 +1941,7 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		stream.loop = should_loop
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
-	## ⛔ CONSUMED ONCE, AND CLAMPED. A parked position outlives its own start otherwise, and
-	## seeking past the end of a shorter bed plays nothing at all — silence that reads as a missing
-	## file. Anything within 1 s of the end restarts instead: resuming there is a wrap the player
-	## hears as a stutter.
-	var resume_at: float = _pending_resume_position
-	_pending_resume_position = 0.0
-	var length: float = stream.get_length()
-	if resume_at > 0.0 and length > 0.0 and resume_at < length - 1.0:
-		_music_player.play(resume_at)
-	else:
-		_music_player.play()
+	_play_parked_position()
 	_music_playing = true
 	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
 	# Resume whatever was playing once the stinger ends. Restores through the
@@ -2034,6 +2042,25 @@ func _is_stinger_track(track_id: String) -> bool:
 	_load_music_manifest()
 	var e: Dictionary = _music_manifest.get(track_id, {})
 	return bool(e.get("stinger", track_id.begins_with("stinger_")))
+
+
+## The ONE place a parked resume position is applied. Both the manifest branch and the cache branch
+## start a stream, and duplicating the clamp would be two sources for one rule.
+##
+## ⛔ CONSUMED ONCE, AND CLAMPED. A parked position outlives its own start otherwise, and seeking
+## past the end of a shorter bed plays nothing at all — silence that reads as a missing file.
+## Anything within 1 s of the end restarts instead: resuming there is a wrap the player hears as a
+## stutter.
+func _play_parked_position() -> void:
+	if _music_player == null:
+		return
+	var resume_at: float = _pending_resume_position
+	_pending_resume_position = 0.0
+	var length: float = _music_player.stream.get_length() if _music_player.stream else 0.0
+	if resume_at > 0.0 and length > 0.0 and resume_at < length - 1.0:
+		_music_player.play(resume_at)
+	else:
+		_music_player.play()
 
 
 func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> void:
@@ -2143,7 +2170,19 @@ func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> v
 	if _music_cache.has(track):
 		_music_player.stream = _music_cache[track]
 		_music_playing = true
-		_music_player.play()
+		## ⛔ THIRD SITE OF THE SAME FIX. "A restore without a position RESTARTS THE BED" was repaired
+		## for the manifest branch and then for restore_music_state's track branch; this one kept the
+		## bare play(). Measured: asked to resume at 40.0 s, played from 0.003 s, where the manifest
+		## branch gives 40.003. Latent on the shipped build -- every manifest key has a file on disk,
+		## so nothing reaches here with a position -- and live under WEB_STAGE=0, where the W4-W6
+		## exclusions make _try_play_from_manifest fail and a procedural bed gets cached instead.
+		##
+		## ⛔ AND IT MUST PARK THE POSITION ITSELF. `resume_at` is parked only INSIDE the manifest
+		## block above (deliberately -- "park the resume only around the attempt that consumes it"),
+		## so calling the owner without this line reads a zero. My first version of this fix did
+		## exactly that and the guard caught it: still 0.093 s instead of 40.0.
+		_pending_resume_position = resume_at
+		_play_parked_position()
 		return
 
 	match track:

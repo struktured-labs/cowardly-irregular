@@ -28,9 +28,11 @@ var _ag_state: Dictionary
 
 var _sys
 
-## Every restorative in items.json, so this reds if the data grows a kind the effect cannot see.
-const RESTORATIVES := ["potion", "hi_potion", "ether", "hi_ether", "elixir", "mega_potion",
-	"x_potion", "megalixir", "phoenix_down", "mega_ether", "tent"]
+## ⛔ THE COMMENT HERE CLAIMED THE OPPOSITE OF WHAT THE CODE DID: "Every restorative in items.json,
+## so this reds if the data grows a kind the effect cannot see" — above a HAND-LIST, which is
+## precisely what does NOT red when the data grows. Derived now, so the sentence becomes true.
+## No save_point_only exclusion, unlike the HP-gate guard: corruption can take a tent like anything
+## else, so that sibling's exclusion is about ITS consumer and not about the item.
 ## The four the pre-fix effect knew about.
 const OLD_FOUR := ["potion", "hi_potion", "ether", "hi_ether"]
 
@@ -63,6 +65,7 @@ func _party(members: Array) -> Array:
 ## THE ARM THAT WOULD HAVE CAUGHT IT: every restorative must be corruptible on its own.
 func test_every_restorative_can_be_corrupted() -> void:
 	var blind: Array = []
+	var RESTORATIVES: Array = _restoratives()
 	for item_id in RESTORATIVES:
 		var m := _member(item_id)
 		var taken: String = _sys.corrupt_one_restorative(_party([m]))
@@ -71,8 +74,9 @@ func test_every_restorative_can_be_corrupted() -> void:
 	gut.p("  checked %d restoratives; invisible to the effect: %s" % [RESTORATIVES.size(), blind])
 	assert_eq(blind, [],
 		"the fatigue event says these were corrupted and the effect cannot see them: %s" % [blind])
-	## A floor, not ==: items.json may gain restoratives and this must not need editing to stay true.
-	assert_gte(RESTORATIVES.size(), 11, "CONTROL: the corpus shrank — re-derive it from items.json")
+	## A REAL floor: it judges the DERIVED set against what items.json shipped when this was written.
+	assert_gte(RESTORATIVES.size(), 11,
+		"CONTROL: items.json now ships fewer than 11 restoratives — the data shrank, got %s" % str(RESTORATIVES))
 	for k in OLD_FOUR:
 		assert_true(RESTORATIVES.has(k), "CONTROL: the pre-fix four must remain in the corpus, missing %s" % k)
 
@@ -134,3 +138,22 @@ func test_corruption_does_not_count_as_consumption() -> void:
 		"a corrupted item was recorded as consumed — it inflates the items-used stat with a heal that never happened")
 	assert_eq(_sys.battles_without_heal, 7,
 		"corruption broke the Iron Vigil streak, which tracks items the player USED")
+
+
+## Every id in items.json whose effects restore HP or MP. The fatigue effect can corrupt any of
+## them, so nothing is excluded here.
+func _restoratives() -> Array:
+	var raw: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items.json"))
+	assert_true(raw is Dictionary, "CONTROL: items.json must parse, or the derived corpus is empty and the arm above is vacuous")
+	var out: Array = []
+	for iid in (raw as Dictionary):
+		var rec: Variant = (raw as Dictionary)[iid]
+		if not (rec is Dictionary):
+			continue
+		var eff: Dictionary = (rec as Dictionary).get("effects", {})
+		for k in ["heal_hp", "heal_hp_percent", "heal_mp", "heal_mp_percent"]:
+			if eff.has(k):
+				out.append(str(iid))
+				break
+	out.sort()
+	return out

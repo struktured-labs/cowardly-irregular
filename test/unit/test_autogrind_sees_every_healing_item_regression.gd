@@ -17,8 +17,12 @@ extends GutTest
 
 var _sys
 
-## Every id in items.json whose effects restore HP, and the one that cannot be used mid-grind.
-const HP_RESTORATIVES := ["potion", "hi_potion", "mega_potion", "x_potion", "elixir", "megalixir", "phoenix_down"]
+## ⛔ DERIVED, NOT LISTED. This was a hand-list and a THIRD copy of one set — items.json, the
+## product's bare-instance fallback in _is_battle_hp_restorative, and here. A restorative added to
+## items.json is covered by the product's live path automatically and was silently never DRIVEN by
+## this guard, which is the half that matters: the corpus stops containing the defect.
+## The floor below compared the const to its OWN length, so it could only fail if someone edited the
+## line above it. Its message already asked for this repair: "re-derive it from items.json".
 const SAVE_POINT_ONLY := "tent"
 ## Restores MP, not HP. Must NOT satisfy the gate — a party holding only Ethers cannot stay alive.
 const MP_ONLY := ["ether", "hi_ether"]
@@ -59,6 +63,7 @@ func _member_holding(item_id: String, qty: int = 5) -> Combatant:
 ## THE ARM THAT WOULD HAVE CAUGHT IT. Every HP restorative must satisfy the gate on its own.
 func test_any_hp_restorative_keeps_the_grind_running() -> void:
 	var blocked: Array = []
+	var HP_RESTORATIVES: Array = _hp_restoratives()
 	for item_id in HP_RESTORATIVES:
 		_sys.grind_party = _party([_member_holding(item_id)])
 		var reason: String = _sys._check_interrupt_conditions()
@@ -67,8 +72,12 @@ func test_any_hp_restorative_keeps_the_grind_running() -> void:
 	gut.p("  checked %d HP restoratives; blocked: %s" % [HP_RESTORATIVES.size(), blocked])
 	assert_eq(blocked, [],
 		"a party holding these could heal, and the grind refused to run: %s" % [blocked])
-	## A floor, not ==: items.json may gain restoratives and this must not need editing to stay true.
-	assert_gte(HP_RESTORATIVES.size(), 7, "CONTROL: the corpus shrank; re-derive it from items.json")
+	## A REAL floor now: it judges the DERIVED set against the count items.json shipped when this was
+	## written, so a restorative being dropped from the data reds here rather than passing silently.
+	assert_gte(HP_RESTORATIVES.size(), 7,
+		"CONTROL: items.json now ships fewer than 7 usable HP restoratives — the data shrank, got %s" % str(HP_RESTORATIVES))
+	assert_false(HP_RESTORATIVES.has(SAVE_POINT_ONLY),
+		"CONTROL: the derivation must still EXCLUDE %s — it is save_point_only, so a grinding party cannot use it, and the product excludes it for the same reason" % SAVE_POINT_ONLY)
 	assert_true(HP_RESTORATIVES.has("x_potion") and HP_RESTORATIVES.has("elixir"),
 		"CONTROL: the two ids the shipped bug was reported against must be in the corpus")
 
@@ -136,3 +145,23 @@ func test_the_predicate_is_data_driven_not_a_hardcoded_list() -> void:
 		"_is_battle_hp_restorative does not ask ItemSystem — a longer hardcoded list is the same defect with more entries")
 	assert_true(body.contains("save_point_only"),
 		"the predicate does not exclude save_point_only, so a Tent counts as reachable healing")
+
+
+## Every id in items.json whose effects restore HP and that a grinding party can actually use.
+## `save_point_only` is excluded for the product's own stated reason — tent works only beside a save
+## crystal, so it cannot keep a grind alive.
+func _hp_restoratives() -> Array:
+	var raw: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items.json"))
+	assert_true(raw is Dictionary, "CONTROL: items.json must parse, or the derived corpus is empty and every arm above is vacuous")
+	var out: Array = []
+	for iid in (raw as Dictionary):
+		var rec: Variant = (raw as Dictionary)[iid]
+		if not (rec is Dictionary):
+			continue
+		var eff: Dictionary = (rec as Dictionary).get("effects", {})
+		if bool(eff.get("save_point_only", false)):
+			continue
+		if eff.has("heal_hp") or eff.has("heal_hp_percent"):
+			out.append(str(iid))
+	out.sort()
+	return out

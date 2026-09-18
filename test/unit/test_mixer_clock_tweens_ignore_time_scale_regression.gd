@@ -14,6 +14,8 @@ extends GutTest
 ##   set_danger_intensity 0.5 -> 2.0s wall   BattleScene:1600
 ##   set_corruption_intensity -> 6.0s wall   autogrind, which sets Engine.time_scale itself
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 const SM_SRC: String = "res://src/audio/SoundManager.gd"
 
 ## Every function in SoundManager that builds a Tween, and whether it must opt out of game
@@ -100,6 +102,57 @@ func test_CONTROL_the_dialogue_duck_is_deliberately_NOT_opted_out() -> void:
 	assert_true(found.has("duck_music_for_dialogue"), "PREMISE: the dialogue duck no longer builds a tween")
 	assert_false(bool(found.get("duck_music_for_dialogue", true)),
 		"the dialogue duck opted out of game time. That is not wrong on its face, but it is UNCLASSIFIED: if a battle-context caller was added, move it to CLASSIFIED[true] on purpose and say why here, rather than letting this control rot into agreement.")
+
+
+func test_the_dialogue_ducks_premise_is_CHECKED_not_asserted() -> void:
+	## ⛔ THE CONTROL ABOVE RESTS ON A PROSE PREMISE — "reachable ONLY from CutsceneDialogue, which
+	## never runs at a battle time scale" — and a prose premise goes false silently. 2026-09-18 I
+	## measured the dialogue duck taking 4x as long at engine 0.25 (-0.58 / -1.20 / -1.82 / -2.44 dB
+	## over 0.4 s where -6.0 is due by 0.25 s), wrote the fix, and only then found this file. The
+	## measurement was right and the REACHABILITY was the thing I had not checked. The fix was a
+	## no-op that would have rotted this control into agreement, so it was reverted — and the premise
+	## is derived here instead, so the next person gets a red rather than a reasoned mistake.
+	var sm: String = FileAccess.get_file_as_string(SM_SRC)
+	assert_true(sm.contains("func duck_music_for_dialogue"), "PREMISE: the dialogue duck must exist")
+
+	## Half one: every caller lives in CutsceneDialogue. Derived from src/, comment-stripped so a
+	## mention in prose cannot pass for a call.
+	var callers: Array[String] = []
+	for f in _gd_files_under("res://src"):
+		if f.ends_with("/SoundManager.gd"):
+			continue
+		var code: String = GdSource.code_of(f)
+		if code.contains("duck_music_for_dialogue"):
+			callers.append(f)
+	assert_gt(callers.size(), 0,
+		"CONTROL: no caller found at all — the scan is broken, and a green below would be vacuous")
+	for f in callers:
+		assert_true(f.ends_with("/CutsceneDialogue.gd"),
+			"%s calls duck_music_for_dialogue. This control assumes CutsceneDialogue is the only caller; if this one can run at a battle time scale, move the entry to CLASSIFIED[true] and say why" % f)
+
+	## Half two: nothing reachable inside a battle drives CutsceneDialogue. BattleScene names it
+	## once, in a docstring, saying bubbles are PREFERRED over it for mid-battle interrupts — so the
+	## comment strip is what makes this arm mean anything.
+	var bs: String = GdSource.code_of("res://src/battle/BattleScene.gd")
+	assert_gt(bs.length(), 10000, "CONTROL: BattleScene read back %d chars" % bs.length())
+	assert_false(bs.contains("CutsceneDialogue"),
+		"BattleScene now uses CutsceneDialogue, so the dialogue duck IS reachable at a battle time scale and its 0.25 s taper costs 1.0 s of wall clock at the shipped 1x rung — move duck_music_for_dialogue to CLASSIFIED[true]")
+
+
+func _gd_files_under(root: String) -> Array[String]:
+	var out: Array[String] = []
+	var dirs: Array[String] = [root]
+	while not dirs.is_empty():
+		var d: String = dirs.pop_back()
+		var da := DirAccess.open(d)
+		if da == null:
+			continue
+		for sub in da.get_directories():
+			dirs.append(d + "/" + sub)
+		for f in da.get_files():
+			if f.ends_with(".gd"):
+				out.append(d + "/" + f)
+	return out
 
 
 func _drive_danger_at(scale: float) -> Dictionary:

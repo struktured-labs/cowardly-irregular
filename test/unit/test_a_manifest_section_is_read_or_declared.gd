@@ -174,7 +174,7 @@ func test_no_declaration_names_a_section_that_is_gone() -> void:
 ##
 ## What makes `npcs/` different is that ONE DIRECTORY CARRIES TWO MEANINGS: a flat `<name>.png` is
 ## a talking sheet, `<name>/overworld.png` is a walk sheet, and nothing distinguishes them.
-## CutsceneDialogue:1271 records a lane having to correct a portrait registered against the
+## CutsceneDialogue's PORTRAIT_SPRITES map records a lane having to correct a portrait registered against the
 ## directory form believing it was portrait art. So the ambiguity is measured, not anticipated.
 func test_every_flat_npc_sheet_is_visible_to_the_census() -> void:
 	var dir := DirAccess.open("res://assets/sprites/npcs")
