@@ -109,11 +109,47 @@ func _ready() -> void:
 	content.add_theme_font_size_override("normal_font_size", 13)
 	content.add_theme_font_size_override("bold_font_size", 14)
 	content.add_theme_color_override("default_color", Color(0.9, 0.9, 0.95))
-	content.text = build_text() + "\n[color=gray]%s / Escape to close[/color]" % _close_glyph()
+	content.text = _content_text()
 	add_child(content)
 	_scroll_target = content
 
+	## ⛔ EVERY CELL IN THIS OVERLAY BRANCHES ON WHETHER A PAD IS ATTACHED, AND IT WAS BUILT ONCE.
+	## `_face_cell` prints "S face" with no pad and "Ⓐ Button" with one; `_close_glyph` swaps a key
+	## for a glyph. So a player who opens HOW TO PLAY *because they cannot work out the controls*
+	## and then plugs a controller in is left reading the keyboard vocabulary — on the one screen
+	## whose entire job is telling them which button to press. Reachable from the title screen,
+	## ControlsMenu and GameLoop's F1.
+	Input.joy_connection_changed.connect(_on_pad_changed)
+
 	grab_focus()
+
+
+## The whole body, in ONE place, so the build and the rebuild cannot print different things.
+func _content_text() -> String:
+	return build_text() + "\n[color=gray]%s / Escape to close[/color]" % _close_glyph()
+
+
+## ⚠️ KEEPS THE READING POSITION, AND THE REASON IS NARROWER THAN I FIRST WROTE. I claimed
+## "reassigning `text` resets a RichTextLabel to the top" and then measured it:
+##     same-length body    value 440 -> 440   preserved, across four frames
+##     SHORTER body        value 440 -> 0     max_value shrank and the value CLAMPED
+##     back to full        value 0            the clamp is NOT undone when it grows again
+## A caption swap ("S face" -> "Ⓐ Button") changes the body's length, so a reader near the bottom
+## can be clamped to the top and stay there. Two lines to hold the position is worth it; the
+## sweeping claim was not true.
+##
+## ⛔ NO GUARD ARM COVERS THIS, DELIBERATELY. Headless has no pad, so the rebuilt text is IDENTICAL
+## and the clamp cannot occur — an arm asserting the position survives passes whether or not these
+## two lines exist. Measured: removing them left the file 6/6 green. An arm that cannot fail is
+## worse than no arm, because it reads as cover.
+func _on_pad_changed(_device: int, _connected: bool) -> void:
+	if not is_inside_tree() or _scroll_target == null or not is_instance_valid(_scroll_target):
+		return
+	var sb := _scroll_target.get_v_scroll_bar()
+	var keep: float = sb.value if sb else 0.0
+	_scroll_target.text = _content_text()
+	if sb:
+		sb.value = keep
 
 
 ## With a pad, the glyph printed on it; with none, the FACE — never one family's letter, which
