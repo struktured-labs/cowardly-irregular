@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## PROBE (fail-first evidence, kept as the regression arm): BattleScene picks a monster's world
 ## costume from SoundManager's suffix, which during a battle resolves through the `_:` fallthrough
 ## to a CACHE whose only writer is play_area_music. Every other sprite surface resolves from
@@ -66,7 +68,7 @@ func test_both_sides_of_the_divergence_are_real_sheets() -> void:
 ## private resolver is the whole defect; `current_world_suffix()` is the loader's documented
 ## single fetch site and reads GameState, which changes on every map load.
 func test_the_battle_picker_resolves_the_world_through_the_sprite_owner() -> void:
-	var src := _code("res://src/battle/BattleScene.gd")
+	var src := GdSource.code_of("res://src/battle/BattleScene.gd")
 	var at := src.find("func _get_monster_sprite_frames")
 	assert_gt(at, -1, "SCOPE: _get_monster_sprite_frames is gone — this arm no longer describes a live picker")
 	var next := src.find("\nfunc ", at + 1)
@@ -77,12 +79,3 @@ func test_the_battle_picker_resolves_the_world_through_the_sprite_owner() -> voi
 	assert_true(body.contains("= HybridSpriteLoaderClass.current_world_suffix()"),
 		"WIRING: the picker no longer sources its world from the sprite owner — the four other sprite surfaces all do")
 
-
-## Comments leave the corpus before any pin runs: a commented-out line carries every boundary a
-## pattern can put on it (cowir-controller, 2026-09-18). A `#` inside a string truncates that line,
-## which can only cost a false RED.
-static func _code(path: String) -> String:
-	var out := ""
-	for line in FileAccess.get_file_as_string(path).split("\n"):
-		out += line.split("#")[0] + "\n"
-	return out
