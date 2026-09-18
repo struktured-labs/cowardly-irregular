@@ -139,3 +139,33 @@ func test_a_freed_holder_still_releases() -> void:
 	await _settle(0.55)
 	assert_almost_eq(_db(), 0.0, 0.35,
 		"a holder freed mid-line must release its own duck (got %.2f), or the bed stays down for the session" % _db())
+
+
+func test_a_holder_freed_without_exit_tree_cannot_strand_the_duck() -> void:
+	## ⛔ THE ARM THE PRUNE NEEDED. Removing the `is_instance_valid` prune left all five other arms
+	## GREEN — an uncovered line in the one direction I rejected a refcount for, so it had to be
+	## either covered or deleted.
+	##
+	## `_exit_tree` is what normally releases a holder, and it cannot fire for a node that was never
+	## IN the tree. Driven: holders 1 -> 2, orphan.free(), holders still 2 (the entry is dead), and
+	## the prune is the only thing that drops it. Without it `want` stays true forever and the bed
+	## never comes back.
+	##
+	## ⚠️ Production adds every CutsceneDialogue to the tree, so this is defence rather than a live
+	## path — but it is defence against "ducked for the rest of the session", which is why it stays
+	## and why it is pinned rather than trusted.
+	var keeper := _dialogue()
+	await get_tree().process_frame
+	keeper.show_dialogue([_line("keeper is talking")])
+	await _settle(0.45)
+	assert_almost_eq(_db(), -6.0, 0.35, "CONTROL: the keeper ducked (got %.2f)" % _db())
+
+	var orphan = CD.new()
+	assert_false(orphan.is_inside_tree(), "CONTROL: the orphan must never enter the tree, or _exit_tree would release it")
+	SoundManager.duck_music_for_dialogue(true, orphan)
+	orphan.free()
+
+	keeper._finish_dialogue()
+	await _settle(0.55)
+	assert_almost_eq(_db(), 0.0, 0.35,
+		"a freed holder stranded the duck at %.2f dB — the keeper released and a dead entry kept it down for the rest of the session" % _db())
