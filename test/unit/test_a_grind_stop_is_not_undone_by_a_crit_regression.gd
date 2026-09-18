@@ -5,7 +5,7 @@ const BS := preload("res://src/battle/BattleScene.gd")
 ## Stop or pause a grind in the 80ms after a critical hit and the engine goes back to the battle
 ## speed on its own. `_begin_hitlag(0.008)` drops `Engine.time_scale` to 0.1 and schedules a restore
 ## to the captured pre-hitlag value; at 0.1 that 8ms of SCALED time is ~80ms of wall clock, which is
-## several frames of button window. GameLoop._stop_autogrind:5687 and AutogrindController's pause /
+## several frames of button window. GameLoop._stop_autogrind and AutogrindController's pause /
 ## stop / resume all write `Engine.time_scale` DIRECTLY, so the pending restore lands afterwards and
 ## reinstates the battle speed the player just left.
 ##

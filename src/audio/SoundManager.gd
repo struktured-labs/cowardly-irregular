@@ -1941,17 +1941,7 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		stream.loop = should_loop
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
-	## ⛔ CONSUMED ONCE, AND CLAMPED. A parked position outlives its own start otherwise, and
-	## seeking past the end of a shorter bed plays nothing at all — silence that reads as a missing
-	## file. Anything within 1 s of the end restarts instead: resuming there is a wrap the player
-	## hears as a stutter.
-	var resume_at: float = _pending_resume_position
-	_pending_resume_position = 0.0
-	var length: float = stream.get_length()
-	if resume_at > 0.0 and length > 0.0 and resume_at < length - 1.0:
-		_music_player.play(resume_at)
-	else:
-		_music_player.play()
+	_play_parked_position()
 	_music_playing = true
 	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
 	# Resume whatever was playing once the stinger ends. Restores through the
@@ -2052,6 +2042,25 @@ func _is_stinger_track(track_id: String) -> bool:
 	_load_music_manifest()
 	var e: Dictionary = _music_manifest.get(track_id, {})
 	return bool(e.get("stinger", track_id.begins_with("stinger_")))
+
+
+## The ONE place a parked resume position is applied. Both the manifest branch and the cache branch
+## start a stream, and duplicating the clamp would be two sources for one rule.
+##
+## ⛔ CONSUMED ONCE, AND CLAMPED. A parked position outlives its own start otherwise, and seeking
+## past the end of a shorter bed plays nothing at all — silence that reads as a missing file.
+## Anything within 1 s of the end restarts instead: resuming there is a wrap the player hears as a
+## stutter.
+func _play_parked_position() -> void:
+	if _music_player == null:
+		return
+	var resume_at: float = _pending_resume_position
+	_pending_resume_position = 0.0
+	var length: float = _music_player.stream.get_length() if _music_player.stream else 0.0
+	if resume_at > 0.0 and length > 0.0 and resume_at < length - 1.0:
+		_music_player.play(resume_at)
+	else:
+		_music_player.play()
 
 
 func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> void:
@@ -2161,7 +2170,19 @@ func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> v
 	if _music_cache.has(track):
 		_music_player.stream = _music_cache[track]
 		_music_playing = true
-		_music_player.play()
+		## ⛔ THIRD SITE OF THE SAME FIX. "A restore without a position RESTARTS THE BED" was repaired
+		## for the manifest branch and then for restore_music_state's track branch; this one kept the
+		## bare play(). Measured: asked to resume at 40.0 s, played from 0.003 s, where the manifest
+		## branch gives 40.003. Latent on the shipped build -- every manifest key has a file on disk,
+		## so nothing reaches here with a position -- and live under WEB_STAGE=0, where the W4-W6
+		## exclusions make _try_play_from_manifest fail and a procedural bed gets cached instead.
+		##
+		## ⛔ AND IT MUST PARK THE POSITION ITSELF. `resume_at` is parked only INSIDE the manifest
+		## block above (deliberately -- "park the resume only around the attempt that consumes it"),
+		## so calling the owner without this line reads a zero. My first version of this fix did
+		## exactly that and the guard caught it: still 0.093 s instead of 40.0.
+		_pending_resume_position = resume_at
+		_play_parked_position()
 		return
 
 	match track:

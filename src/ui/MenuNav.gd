@@ -29,12 +29,16 @@ static var _h_axis_held: bool = false
 ## as a side effect, so calling it TWICE for one event returns "" the second time and that step is
 ## silently dropped. Call it ONCE per event, per handler.
 ##
-## Five menus already have two call sites — JobMenu, ItemsMenu and EquipmentMenu have one per mode
-## handler; SettingsMenu's quit-confirm and DialogueChoiceMenu dispatch before the main chain is
-## reached. All are mutually exclusive, so exactly one runs per event and they are correct today —
-## but that is a property of where their early returns sit, not of this helper. A menu that reads a
-## direction in two places on ONE path loses the second, and no guard would see it.
-## (@cowir-adhoc, 2026-09-17, checking the consumers this migration created.)
+## FOUR menus have two call sites, and each is safe for a reason that lives in THAT file, not here:
+## JobMenu, ItemsMenu and EquipmentMenu have one per mode handler; SettingsMenu dispatches to the
+## quit-confirm's own handler and RETURNS before its main chain. All four are mutually exclusive, so
+## exactly one runs per event — but that is a property of where their early returns sit.
+##
+## ⛔ THIS SAID "Five menus … and DialogueChoiceMenu", A FILE THAT NO LONGER EXISTS IN THE TREE. The
+## count and the membership both went stale the ordinary way: a sibling change moved the world under
+## a sentence nobody re-reads because it reads as settled. "A menu that reads a direction in two
+## places on ONE path loses the second, and no guard would see it" — that part was TRUE, and it is
+## why `test_a_second_step_on_one_path_is_lost` now derives this set instead of asserting it here.
 ##
 ## The direction this event steps, or "" for nothing. Buttons and keys pass straight through;
 ## an analog push steps ONCE until it returns past the deadzone.
