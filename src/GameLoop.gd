@@ -5615,7 +5615,28 @@ func _start_autogrind(config: Dictionary) -> void:
 		AutogrindSystem.post_collapse_penalty_expired.connect(_on_autogrind_post_collapse_expired)
 
 	# Start grinding
-	_autogrind_controller.start_grind(party, config, _current_terrain)
+	## start_grind now ANSWERS: it refuses an empty/all-dead party or an already-running session.
+	## A refusal is not an end — the guard below tests whether the session ENDED, and a start that
+	## never BEGAN leaves all of its conditions true, so GameLoop played the autogrind bed and raised
+	## the overlay for a session with no battles while the console sat hidden. _stop_autogrind is the
+	## wrong teardown here: it shows a summary for a grind that never ran. Undo what THIS function
+	## committed above, in reverse, and hand the console back.
+	if not _autogrind_controller.start_grind(party, config, _current_terrain):
+		_is_autogrinding = false
+		if _autogrind_controller and is_instance_valid(_autogrind_controller):
+			_autogrind_controller.queue_free()
+			_autogrind_controller = null
+		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+			_autogrind_ui.set_grinding(false)
+		_destroy_autogrind_overlay()
+		_destroy_controller_overlay()
+		Engine.time_scale = 1.0
+		current_state = LoopState.EXPLORATION
+		InputLockManager.pop_all()
+		if _exploration_scene and is_instance_valid(_exploration_scene) and _exploration_scene.has_method("resume"):
+			_exploration_scene.resume()
+		print("[AUTOGRIND] start_grind REFUSED — session not started, console restored")
+		return
 
 	# struktured 2026-09-07 "cant exit autogrind again": a party already under the HP stop threshold makes start_grind stop SYNCHRONOUSLY — grind_complete freed the controller and restored exploration before this line, so everything below was a null deref that aborted here and left the autogrind bed playing.
 	if not _is_autogrinding or _autogrind_controller == null or not is_instance_valid(_autogrind_controller):
