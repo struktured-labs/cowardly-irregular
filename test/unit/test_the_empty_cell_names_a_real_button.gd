@@ -12,25 +12,33 @@ extends GutTest
 ## decide what the author meant: it is that naming the thing added is right under BOTH readings.
 
 const GE := "res://src/ui/autobattle/AutobattleGridEditor.gd"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 
 ## Source with comments removed — a placeholder discussed in prose is not a placeholder rendered.
+## Through the lane's shared helper: `GdSource.split` strips `#` FIRST, quote- and escape-aware,
+## then parity-splits on `"""`. The private copy this replaces cut every line at the first `#`
+## with no quote awareness, so a `#` inside a string literal truncated live code.
+##
+## ⚠️ NO SURVIVAL ARM HERE, AND THE REASON IS A MEASUREMENT RATHER THAN AN OVERSIGHT:
+## `AutobattleGridEditor.gd` holds ZERO lines whose `#` sits inside a string — 3,575 lines, none —
+## so there is no real corpus in this subject to drive one. A fixture would only prove the helper
+## works on a shape I chose. The quote-awareness is pinned on the REAL corpus in the sibling guard
+## `test_the_battle_is_over_prompt_names_your_button`, against BattleScene's BBCode colour tags.
 func _code_only(src: String) -> String:
-	var out := PackedStringArray()
-	var in_doc := false
-	for line in src.split("\n"):
-		var t := line.strip_edges()
-		if in_doc:
-			if t.ends_with("\"\"\""):
-				in_doc = false
-			continue
-		if t.begins_with("\"\"\""):
-			if not (t.length() > 5 and t.ends_with("\"\"\"")):
-				in_doc = true
-			continue
-		var h: int = line.find("#")
-		out.append(line.substr(0, h) if h >= 0 else line)
-	return "\n".join(out)
+	return str(GdSource.split(src)["code"])
+
+
+## The comment prose currently in a window, derived rather than quoted, so a REWORD cannot quietly
+## make the control vacuous — the expectation always comes from whatever the source says today.
+func _first_comment_prose(win: String) -> String:
+	for line in win.split("\n"):
+		var t: String = str(line).strip_edges()
+		if t.begins_with("#"):
+			var body: String = t.lstrip("#").strip_edges()
+			if body.length() >= 12:
+				return body
+	return ""
 
 
 func _hint_body(fn: String) -> String:
@@ -47,8 +55,14 @@ func test_the_stripper_actually_strips() -> void:
 	var raw: String = FileAccess.get_file_as_string(GE)
 	var idx: int = raw.find("func _create_empty_action_hint")
 	var window: String = raw.substr(idx, raw.find("\nfunc ", idx + 10) - idx)
-	assert_true(window.contains("#"), "ANTI-VACUITY: the window must hold a # comment to strip")
-	assert_false(_code_only(window).contains("#"), "no # comment may survive the strip")
+	## ⛔ THIS ASSERTED THE DEFECT. It was `assert_false(_code_only(window).contains("#"))` — absence
+	## of the CHARACTER, not of a comment. `GdSource` correctly KEEPS a `#` inside a string, so that
+	## control reds on the right helper and passes on the truncating one, the day anyone puts a
+	## `[color=#…]` line in this window. It holds today only because the window contains none.
+	var prose: String = _first_comment_prose(window)
+	assert_gt(prose.length(), 11, "ANTI-VACUITY: the window must hold a # comment to strip")
+	assert_false(_code_only(window).contains(prose),
+		"no # comment may survive the strip: '%s'" % prose)
 
 
 func test_the_empty_action_cell_names_what_it_adds() -> void:

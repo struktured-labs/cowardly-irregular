@@ -686,6 +686,9 @@ func _build_ui() -> void:
 	# Built once; ControlsMenu opens as a CHILD of this screen, so a change underneath it left this frozen.
 	if not InputProfileManager.bindings_changed.is_connected(_refresh_footer):
 		InputProfileManager.bindings_changed.connect(_refresh_footer)
+	# …and a pad LEAVING changes the caption without changing a binding, so both signals refresh it.
+	if not InputProfileManager.input_device_changed.is_connected(_refresh_footer.unbind(1)):
+		InputProfileManager.input_device_changed.connect(_refresh_footer.unbind(1))
 	footer.position = Vector2(16, panel.size.y - FOOTER_H + 18)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)

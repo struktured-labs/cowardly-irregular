@@ -54,13 +54,40 @@ func _build() -> void:
 	_built_for = get_viewport().get_visible_rect().size
 
 
+## ⛔ LIFTS EVERY FINGER THE PAD IS STILL HOLDING. A release only ever arrives as a touch-UP event,
+## so any path that ends a hold without one leaves the action pressed with nothing able to lift it.
+func _release_all_touches() -> void:
+	for idx in _touch_map:
+		_release_action(_touch_map[idx])
+	_touch_map.clear()
+
+
+## ⛔ THE APP GOING AWAY MID-PRESS IS THAT PATH, AND NOTHING COVERED IT. Backgrounding a tab or an
+## app with a finger down delivers no touch-up at all, so the action stayed pressed for the rest of
+## the session — the player returns to a character walking into a wall, or a menu repeating.
+##
+## Measured before the fix, on a real pad instance:
+##     touch-down                     pressed true   _touch_map { 0: "ui_accept" }
+##     APPLICATION_FOCUS_OUT          pressed TRUE   _touch_map { 0: "ui_accept" }
+##     WM_WINDOW_FOCUS_OUT            pressed TRUE
+##
+## ⚠️ RELEASES ONLY — it does NOT tear the pad down. `_teardown` frees every button, and nothing
+## rebuilds on focus RETURN (`_build` is reached from `_ready` and the resize path, neither of which
+## fires here), so tearing down would hand the returning player a screen with no buttons on it.
+## All three notifications are the same hazard on the three targets that can raise it: mobile
+## background, desktop/web window blur, mobile pause.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT \
+			or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT \
+			or what == NOTIFICATION_APPLICATION_PAUSED:
+		_release_all_touches()
+
+
 ## ⛔ RELEASES ANY HELD ACTION FIRST. A finger down when the device rotates would otherwise leave
 ## that action pressed with no button left to lift it — the same stuck-input shape as a menu closing
 ## mid-hold. _touch_map is dropped too: its indices refer to buttons that no longer exist.
 func _teardown() -> void:
-	for idx in _touch_map:
-		_release_action(_touch_map[idx])
-	_touch_map.clear()
+	_release_all_touches()
 	for child in get_children().duplicate():
 		remove_child(child)
 		child.queue_free()
