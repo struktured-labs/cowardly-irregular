@@ -360,6 +360,10 @@ func _play_selected() -> void:
 		_refresh_list()
 		return
 
+	## Cleared BEFORE the calls that can abort. The latch exists to cover the two awaits above;
+	## an error inside play_music would strand it true, and :333 then refuses every later play
+	## while the input guard swallows up/down/accept, leaving Back as the only working control.
+	_generating = false
 	if SoundManager:
 		## Every row IS a manifest key, so name it exactly. The old prefix guess
 		## sent "danger"/"victory" through the generic->world rewrite and
@@ -368,7 +372,6 @@ func _play_selected() -> void:
 		SoundManager.play_music(track_id, true)
 		SoundManager.play_ui("menu_select")
 
-	_generating = false
 	_now_playing_label.add_theme_color_override("font_color", PLAYING_COLOR)
 	_refresh_now_playing()
 	_refresh_list()
