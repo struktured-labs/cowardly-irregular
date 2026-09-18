@@ -18,11 +18,6 @@ extends GutTest
 
 const EDITOR := "res://src/ui/autobattle/AutobattleGridEditor.gd"
 
-## Named-payload types whose seed erases op/value. item_count is deliberately absent: it is in
-## the same owner map and keeps a real number.
-const NAMED_NO_NUMBER := ["has_status", "not_has_status", "ally_has_status",
-	"enemy_has_status", "not_enemy_has_status", "enemy_weak_to", "has_buff", "not_has_buff"]
-
 var _abs
 
 
@@ -48,27 +43,29 @@ func _cond(e: Node) -> Dictionary:
 	return ((e.get("rules") as Array)[0] as Dictionary)["conditions"][0] as Dictionary
 
 
-func test_the_named_payload_set_is_derived_and_not_empty() -> void:
-	## FLOOR. Every type below must be one the OWNER calls named-payload, or the arms are
-	## asserting about a set this file invented.
-	assert_gt(NAMED_NO_NUMBER.size(), 0, "an empty list makes every arm below vacuous")
-	for t in NAMED_NO_NUMBER:
-		assert_true(_abs.CONDITION_REQUIRED_FIELD.has(t),
-			"%s must be in CONDITION_REQUIRED_FIELD, or this file is pinning its own opinion" % t)
-
-
-func test_dialling_a_named_payload_condition_invents_no_number() -> void:
-	## THE ARM.
-	for t in NAMED_NO_NUMBER:
+func test_dialling_never_invents_a_number_for_any_condition_type() -> void:
+	## THE ARM, and it needs NO list: for EVERY type the grammar defines, one press must not
+	## ADD a `value` key that was not already there. That is the invariant — a hand-list of the
+	## eight named-payload types would be a second copy of a set AutobattleSystem already owns,
+	## and would drift the day a ninth lands (cowir-autogrind hit exactly that in the twin).
+	var types: Array = _abs.CONDITION_TYPES.keys()
+	assert_gt(types.size(), 0, "FLOOR: an empty grammar makes this arm vacuous")
+	var invented: Array[String] = []
+	var valueless: int = 0
+	for t in types:
 		var e: Node = await _editor()
-		e.call("_apply_condition_type", t)
-		assert_false(_cond(e).has("value"),
-			"CONTROL: %s must start with no value, or the arm below proves nothing" % t)
-		for _i in range(5):
-			e.call("_adjust_condition_value", 1)
-			e.call("_adjust_condition_value", -1)
-		assert_false(_cond(e).has("value"),
-			"%s gained a number the dial invented: %s" % [t, _cond(e)])
+		e.call("_apply_condition_type", str(t))
+		var had: bool = _cond(e).has("value")
+		if not had:
+			valueless += 1
+		e.call("_adjust_condition_value", 1)
+		if not had and _cond(e).has("value"):
+			invented.append("%s -> %s" % [str(t), _cond(e)])
+	## CONTROL: if every type seeded a value, the check above passed over an empty population.
+	assert_gt(valueless, 0,
+		"no condition type seeds WITHOUT a value, so this arm examined nothing — re-derive it")
+	assert_eq(invented.size(), 0,
+		"one press invented a number for a condition that carries none: %s" % [invented])
 
 
 func test_item_count_still_dials() -> void:
