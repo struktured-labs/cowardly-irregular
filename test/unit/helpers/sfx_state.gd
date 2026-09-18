@@ -10,9 +10,15 @@ extends RefCounted
 ## reasoning about and not the third. One file already nulled a stream by hand, which is why the
 ## others' omission was invisible: the defence lived in the victim.
 ##
-## The live consequence is an arm that proves a manifest hit by `stream != null` passing off the
-## PREVIOUS file's stream — the same shape as play_voice timing a stale clip, which this lane fixed
-## in the product and then reproduced in its own tests.
+## ⛔ THE CONSEQUENCE IS MEASURED, NOT HYPOTHETICAL, AND IT LANDS ON `CONTROL:` ARMS. Stubbing
+## `play_attack_hit` to a bare `return` and running [polluter, victim] in one process:
+##     without this helper   Failing 1   every victim CONTROL green, subject dead
+##     with it               Failing 3   test_the_weapon_hit_no_longer_replaces_the_weakness_stinger
+##                                       test_the_element_no_longer_replaces_the_weapon_hit
+## Neither victim resets the stream — one clears cooldowns only, the other has no before_each — and
+## both read `assert_true(_battle_player.stream != null, "CONTROL: ...")`. A leaked stream satisfies
+## that exactly as a real cue does, so it turns every bare-presence control in the process into a
+## tautology. The arms a leak disables first are the ones whose job is refusing a vacuum.
 ##
 ## Preloaded rather than `class_name` so a lane can use it with no --import.
 
