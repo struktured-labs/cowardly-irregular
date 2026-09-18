@@ -9,13 +9,18 @@ const ForgeScript := preload("res://src/maps/interiors/BlacksmithInterior.gd")
 ## it routes to `_start_village_world_music("medieval")` and plays `village_medieval.ogg` over the
 ## `village_harmonia.ogg` the player was just listening to.
 ##
-## 🔑 EVERY OTHER HARMONIA INTERIOR GETS THIS RIGHT AND THAT IS WHY IT IS INVISIBLE. Chapel, library
-## and cartographer return `interior_chapel` / `interior_library` / `harmonia_village` — the first two
-## are unauthored, so play_area_music's interior-inherit path keeps the bed playing untouched, and the
-## third hits the "already playing" return. The forge is the one door in the capital that restarts the
-## music, and its own comment explains why: "no smithy-specific music key exists yet, so 'village' is
-## the only real fallback SoundManager recognizes". An `interior_` key is the fallback — an UNAUTHORED
-## one inherits, which is exactly what the room wants, and authoring `interior_smithy` later just works.
+## 🔑 EVERY OTHER HARMONIA INTERIOR GETS THIS RIGHT AND THAT IS WHY IT IS INVISIBLE. The forge was the
+## one door in the capital that RESTARTED the music, and its own comment explained why: "no
+## smithy-specific music key exists yet, so 'village' is the only real fallback SoundManager
+## recognizes".
+##
+## ⚠️ I FIXED IT TWICE, AND THE FIRST REPAIR WAS HALF-RIGHT. It pointed the forge at `interior_smithy`,
+## an unauthored room key, which INHERITS when walked into. Measured an hour later: a save loaded
+## INSIDE the room has nothing to inherit, and `_start_interior_music` cold-starts BY WORLD — so the
+## room was back to village_medieval, by a different route, and chapel/library/arcade/office/lounge/
+## union-hall/bookshop/scriptorium had the same split all along. The village id is the answer that is
+## right in BOTH arrival modes; `test_a_room_sounds_the_same_however_you_arrived` pins that over the
+## whole population so neither convention can drift back to one-mode-correct.
 ##
 ## Derived from the two scripts rather than from literals, so a renamed id reds here instead of
 ## quietly making this file about nothing.

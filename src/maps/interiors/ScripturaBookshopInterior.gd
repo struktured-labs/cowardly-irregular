@@ -92,6 +92,11 @@ func _get_music_track() -> String:
 	return "interior_library"
 
 
+## Cold start only — a save loaded inside this room has no bed to inherit.
+func _get_music_home_area() -> String:
+	return "scriptura_village"
+
+
 func _draw_floor_tile(image: Image) -> void:
 	# Honey-warm worn floorboards — lighter and cozier than the
 	# library's dark aged oak, scuffed from decades of browsing feet.

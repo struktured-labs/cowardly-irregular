@@ -19,6 +19,7 @@ extends GutTest
 ## request shapes, one question. Deriving the REQUEST rather than the file type is what makes the
 ## floors below land on the cases that can actually be wrong.
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 const INTERIOR_DIR := "res://src/maps/interiors"
 const OWNER_DIRS: Array = ["res://src/maps/villages", "res://src/exploration", "res://src/maps/dungeons"]
 const BASE_VILLAGE := "res://src/maps/villages/BaseVillage.gd"
@@ -133,5 +134,146 @@ func test_a_room_asks_for_its_own_bed_or_its_villages() -> void:
 	## total corpus failure (a renamed accessor, an empty directory) and are structurally unable to see
 	## one room go dark. Both are needed and they answer different questions.
 	assert_gt(requesters, 20, "FLOOR: only %d rooms request an area bed at all" % requesters)
-	assert_gt(self_named, 5, "FLOOR: only %d self-named (interior_) requests — the convention this arm rests on has moved" % self_named)
+	## ⚠️ WAS `> 5`, AND IT FIRED ON A DELIBERATE CHANGE RATHER THAN ON DRIFT — which is the floor doing
+	## its job. Ten single-village rooms moved from a room key to their village id on 2026-09-18,
+	## because an unauthored room key is correct only when WALKED INTO (see the arrival-mode arm
+	## below). The three that remain are Inn/Shop/Tavern, which are reused across villages and have no
+	## single owning village, so a room key is the right answer for them and the branch stays live.
+	assert_gt(self_named, 2, "FLOOR: only %d self-named (interior_) requests — the interior_ branch this arm accepts is no longer exercised by anything" % self_named)
 	assert_gt(checked_against_a_door, 10, "FLOOR: only %d requests were judged against a real door" % checked_against_a_door)
+
+
+## ⛔ THE SAME ROOM MUST NOT HAVE TWO BEDS. Measured 2026-09-18 across the nine unauthored rooms:
+##
+##   walked in from the village   village_harmonia.ogg     (the interior_ key INHERITS)
+##   loaded into from a save      village_medieval.ogg     (cold start has nothing to inherit, and
+##                                                          _start_interior_music falls back BY WORLD)
+##
+## 🔑 REACHABLE WITH F2: quick-save works everywhere except the title and a cutscene, so a save taken
+## inside a room and loaded back plays a different bed than walking through the door does.
+##
+## ⚠️ THIS ARM DELIBERATELY DOES NOT LEGISLATE THE CONVENTION. Naming the village fixes it because the
+## village id is right in both modes; authoring the room's own bed fixes it too. The claim is the
+## RELATIONSHIP — a coincidental pin on either spelling would red the other correct answer, which is
+## exactly what the arm above already avoids.
+##
+## Rooms reused across villages (Inn, Shop, Tavern) are EXCLUDED and the exclusion is the point: they
+## have no single owning village, so the world-level fallback is the best answer available to them.
+## They are excluded by the derivation — no single door — not by name.
+func test_a_room_sounds_the_same_however_you_arrived() -> void:
+	var base_village_area: String = _first_return(_code(BASE_VILLAGE), "_get_music_area_id")
+	var base_interior_track: String = _first_return(_code(BASE_INTERIOR), "_get_music_track")
+	var doors: Dictionary = {}
+	var target := RegEx.create_from_string('target_map\\s*=\\s*"([^"]+)"')
+	var helper := RegEx.create_from_string('_add_interior_door\\(\\s*"[^"]*"\\s*,\\s*"([^"]+)"')
+	for dir in OWNER_DIRS:
+		for path in _gd_files(dir):
+			var code: String = _code(path)
+			var aid: String = _first_return(code, "_get_music_area_id")
+			if aid == "" and dir.ends_with("villages"):
+				aid = base_village_area
+			for arr in [target.search_all(code), helper.search_all(code)]:
+				for m in arr:
+					var t: String = m.get_string(1)
+					if not doors.has(t):
+						doors[t] = []
+					doors[t].append(aid)
+
+	var area_suffix: Dictionary = _area_world_suffix()
+	assert_gt(area_suffix.size(), 20,
+		"FLOOR: only %d area->suffix pairs read from the resolver — the arm cannot put GameState in the right world" % area_suffix.size())
+	var world_for: Dictionary = {}
+	for w in WeatherSystem.WORLD_IDS.keys():
+		world_for[str(WeatherSystem.WORLD_IDS[w])] = int(w)
+	var saved_world: int = int(GameState.current_world)
+
+	var checked: int = 0
+	for path in _gd_files(INTERIOR_DIR):
+		if path == BASE_INTERIOR:
+			continue
+		var code: String = _code(path)
+		var area_id: String = _first_return(code, "_get_area_id")
+		var asks: Array = _requested_ids(code, base_interior_track)
+		if area_id == "" or asks.size() != 1 or not doors.has(area_id) or doors[area_id].size() != 1:
+			continue
+		var village: String = str(doors[area_id][0])
+		if village == "":
+			continue
+
+		SoundState.restore()
+		GameState.current_world = world_for.get(str(area_suffix.get(village, "medieval")), 1)
+		SoundManager.play_area_music(village)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		assert_not_null(SoundManager._music_player.stream,
+			"FLOOR: %s's village '%s' loaded no bed, so both sides of this comparison are empty" % [path.get_file(), village])
+		SoundManager.play_area_music(str(asks[0]))
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var walked: String = SoundManager._music_player.stream.resource_path.get_file() if SoundManager._music_player.stream else "<walked:none>"
+
+		## ⛔ DRIVEN THE WAY BaseInterior._ready DRIVES IT, third argument included. An arm that calls
+		## play_area_music with one argument is not simulating a cold start, it is simulating a caller
+		## that does not exist. No floor on the home area: a room whose village answers to the generic
+		## `village` id already agrees in both modes and needs none, so demanding one everywhere would
+		## red nine correct rooms. The comparison is the claim.
+		var home: String = _first_return(code, "_get_music_home_area")
+		SoundState.restore()
+		GameState.current_world = world_for.get(str(area_suffix.get(village, "medieval")), 1)
+		SoundManager.play_area_music(str(asks[0]), 0.0, home)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var cold: String = SoundManager._music_player.stream.resource_path.get_file() if SoundManager._music_player.stream else "<cold:none>"
+
+		checked += 1
+		assert_eq(cold, walked,
+			"%s asks for '%s': walking in from %s gives %s, loading a save inside it gives %s — the same room with two beds, and which one you hear depends on how you got there" % [path.get_file(), str(asks[0]), village, walked, cold])
+
+	GameState.current_world = saved_world
+	assert_gt(checked, 8,
+		"FLOOR: only %d single-village rooms were driven — the door derivation or the request derivation has narrowed" % checked)
+
+
+## Village AREA id -> world suffix, read from _get_current_world_suffix's own `match _current_area:`.
+## The arm below must put GameState in the world the village is in, the way walking there does —
+## without it `_interior_world_suffix()` answers from a stale `current_world` and the two arrival
+## modes are compared under different worlds. My first version of the arm did exactly that and
+## reported a room as inconsistent when the fixture was.
+func _area_world_suffix() -> Dictionary:
+	var code: String = _code("res://src/audio/SoundManager.gd")
+	var i: int = code.find("\tmatch _current_area:")
+	var out: Dictionary = {}
+	if i < 0:
+		return out
+	var pending: Array = []
+	for line in code.substr(i, 1800).split("\n"):
+		var t: String = line.strip_edges()
+		if t.begins_with("\"") and t.ends_with(":"):
+			pending = []
+			for m in RegEx.create_from_string('"([^"]+)"').search_all(t):
+				pending.append(m.get_string(1))
+		elif t.begins_with("return \"") and not pending.is_empty():
+			var suf: String = t.substr(8, t.length() - 9)
+			for a in pending:
+				out[a] = suf
+			pending = []
+		elif t.begins_with("_:"):
+			break
+	return out
+
+
+## ⛔ THE WIRING, BECAUSE THE BEHAVIOURAL ARM ABOVE CANNOT SEE IT. That arm reproduces BaseInterior's
+## call by hand — so deleting the third argument FROM BaseInterior leaves it green, measured. Driving
+## the real `_ready` is not an option: it builds a tilemap, NPCs, transitions and a camera.
+##
+## A source pin, deliberately, and the same choice `test_interior_music_routing` already makes for the
+## standalone rooms' direct calls. Anchored on the two SYMBOLS rather than on a rendering of the line,
+## so reformatting cannot red it and a renamed accessor can.
+func test_base_interior_hands_the_room_its_village() -> void:
+	var code: String = _code(BASE_INTERIOR)
+	assert_gt(code.length(), 200, "FLOOR: BaseInterior.gd must read as source")
+	var i: int = code.find("play_area_music(")
+	assert_gt(i, -1, "FLOOR: BaseInterior must still call play_area_music at all")
+	var call: String = code.substr(i, 120)
+	assert_true(call.contains("_get_music_home_area()"),
+		"BaseInterior calls play_area_music without the room's village: %s — every unauthored room then cold-starts by WORLD again, and the behavioural arm above cannot see it because it passes the argument itself" % call.get_slice("\n", 0))

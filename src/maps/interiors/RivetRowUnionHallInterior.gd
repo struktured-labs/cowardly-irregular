@@ -52,6 +52,11 @@ func _get_music_track() -> String:
 	return "interior_union_hall"
 
 
+## Cold start only — a save loaded inside this room has no bed to inherit.
+func _get_music_home_area() -> String:
+	return "rivet_row_village"
+
+
 func _draw_floor_tile(image: Image) -> void:
 	# Diamond-plate steel floor with safety yellow striping near edges.
 	# Reads as 'we expect spills here, deal with it'.

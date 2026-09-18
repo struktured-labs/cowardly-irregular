@@ -94,6 +94,11 @@ func _get_music_track() -> String:
 	return "interior_smithy"
 
 
+## Cold start only — a save loaded inside this room has no bed to inherit.
+func _get_music_home_area() -> String:
+	return "harmonia_village"
+
+
 func _get_ambient_key() -> String:
 	return "ambient_forge"
 

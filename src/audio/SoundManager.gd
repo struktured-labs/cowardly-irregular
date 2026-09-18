@@ -1115,14 +1115,40 @@ func play_weakness_flash() -> void:
 	_try_play_sfx_from_manifest(_flash_player if _flash_player != null else _battle_player, "weakness_flash")
 
 
+## What night displaced, so dawn can hand it back. A SNAPSHOT rather than a re-derivation: only this
+## records whether the WEATHER bed or the PLACE bed owned the layer, and a host asked to re-derive can
+## be wrong about that where a snapshot cannot. Empty means night took silence.
+var _pre_night_ambient_key: String = ""
+
+
 ## Public: start/stop the night ambience loop; mirror of set_night_music_effects.
+##
+## ⛔ NIGHT USED TO TAKE THIS LAYER AND NEVER GIVE IT BACK. Enabling reaches play_ambient, which stops
+## whatever was there; disabling called stop_ambient() and stopped. Measured 2026-09-18: village bed →
+## night → dawn left `_current_ambient_key` empty with the player NOT playing, and rain → night → day
+## lost the storm. The layer then stayed silent until a zone crossing, a weather change or a scene
+## rebuild happened to write it, and a 24-minute cycle crosses dawn while the player stands still.
+##
+## ⛔ AND IT MAY ONLY GIVE BACK WHAT IT STILL HOLDS. If the weather starts DURING the night it stomps
+## the crickets itself — night no longer owns the layer, so the key check below is what stops dawn
+## restoring a stale snapshot over live rain.
+##
+## This is NOT the ownership question (whether night should outrank rain while it IS night, which is
+## struktured's and stays registered). "Night ends and nothing hands the layer back" is wrong under
+## every answer to that one.
 func set_night_ambience(enabled: bool) -> void:
 	if enabled:
+		if _current_ambient_key != NIGHT_AMBIENCE_KEY:
+			_pre_night_ambient_key = _current_ambient_key
 		if _sfx_manifest.has(NIGHT_AMBIENCE_KEY):
 			play_ambient(NIGHT_AMBIENCE_KEY)
 	else:
 		if _current_ambient_key == NIGHT_AMBIENCE_KEY:
-			stop_ambient()
+			if _pre_night_ambient_key != "":
+				play_ambient(_pre_night_ambient_key)
+			else:
+				stop_ambient()
+		_pre_night_ambient_key = ""
 
 
 func _setup_night_ambience_listener() -> void:
@@ -2445,6 +2471,10 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 ## Where the next AREA bed should pick up. Set by play_area_music, consumed by the first
 ## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head.
 var _pending_resume_position: float = 0.0
+
+## The village an interior belongs to, supplied by BaseInterior. Only a cold start reads it: every
+## other arrival has a bed to inherit, and the inherit path is already correct.
+var _pending_home_area: String = ""
 
 var _danger_intensity: float = 0.0  # 0.0 = safe, 1.0 = critical
 var _danger_tween: Tween = null
@@ -5324,7 +5354,7 @@ var _current_area: String = ""
 var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
 
-func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
+func play_area_music(area_type: String, resume_at: float = 0.0, home_area: String = "") -> void:
 	"""Play appropriate music for an exploration area.
 	Generation is deferred to the next frame so it does not block scene setup."""
 	if _current_area == area_type and _music_playing:
@@ -5383,6 +5413,9 @@ func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
 	## mutation to either one survives. `play(-12)` is not harmless — measured, it reports a
 	## playback position of 89,466 s.
 	_pending_resume_position = resume_at
+	## ⛔ WHICH VILLAGE THE ROOM BELONGS TO, WHICH IS THE ONE FACT THIS FILE CANNOT DERIVE. Parked
+	## beside the resume position and consumed by _start_interior_music's COLD START only — see there.
+	_pending_home_area = home_area
 	stop_music()
 
 	call_deferred("_start_area_music_deferred", area_type)
@@ -5553,9 +5586,18 @@ func _start_interior_music(key: String) -> void:
 	_load_music_manifest()
 	_music_playing = true
 	var resolved := _resolve_interior_track(key)
+	var home: String = _pending_home_area
+	_pending_home_area = ""
 	if resolved != "" and _try_play_from_manifest(resolved):
 		return
-	# Cold start only: nothing was playing to inherit, and no track authored yet.
+	## ⛔ COLD START ONLY, AND IT USED TO DEGRADE BY WORLD — so the SAME ROOM had TWO BEDS. Walked into
+	## from the village, an unauthored room INHERITS and you hear village_harmonia; loaded into from a
+	## save there is nothing to inherit and this line played village_medieval. Measured 2026-09-18
+	## across nine rooms; reachable with F2, which quick-saves anywhere but the title and a cutscene.
+	## The room's own village is the answer, and BaseInterior is the only caller that knows it.
+	if home != "":
+		play_area_music(home)
+		return
 	_start_village_world_music(_get_current_world_suffix())
 
 

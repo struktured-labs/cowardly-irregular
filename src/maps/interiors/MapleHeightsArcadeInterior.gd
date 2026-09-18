@@ -53,6 +53,11 @@ func _get_music_track() -> String:
 	return "interior_arcade"
 
 
+## Cold start only — a save loaded inside this room has no bed to inherit.
+func _get_music_home_area() -> String:
+	return "maple_heights_village"
+
+
 func _draw_floor_tile(image: Image) -> void:
 	# Black-and-white checkerboard floor — classic 80s arcade vibe.
 	# Slightly worn with scuff marks from decades of foot traffic.

@@ -104,7 +104,7 @@ func _make_combatant(name: String) -> Combatant:
 ## 2026-09-06: this file's fixture characters leaked into struktured's REAL profiles.json via an
 ## unsandboxed deploy suite (set_character_script persists). Persistence is now OFF for the file
 ## and the fixture keys are erased from both serialized dicts — the per-test net, not the backstop.
-const FIXTURE_IDS := ["testrestoredcharacter", "testrealscriptcharacter"]
+const FIXTURE_IDS := ["testrestoredcharacter", "testrealscriptcharacter", "testabortedstartcharacter"]
 var _saved_persistence: bool = false
 
 
@@ -198,5 +198,40 @@ func test_real_pre_grind_script_is_not_touched() -> void:
 	assert_eq(after.get("version", -1), 1,
 		"authored real script must still be in place after restore (and not silently re-baked)")
 	# Cleanup.
+	if prior_script is Dictionary:
+		abs.set_character_script(char_id, prior_script)
+
+
+## Every behavioural arm above calls _restore_autobattle_states() DIRECTLY, so none of them reaches
+## stop_grind's `if _state == State.IDLE: return` — the gate that decides whether the restore runs.
+func test_a_start_that_aborted_still_gives_the_players_script_back() -> void:
+	var abs := _abs()
+	if abs == null:
+		pending("AutobattleSystem autoload unavailable")
+		return
+	var name := "TestAbortedStartCharacter"
+	var char_id: String = name.to_lower()
+	var prior_script: Variant = abs.get_character_script(char_id)
+	abs.set_character_script(char_id, {})
+	abs.set_autobattle_enabled(char_id, false)
+	var AGCScript: GDScript = load(AUTOGRIND_CONTROLLER_PATH)
+	var ctrl: Node = AGCScript.new()
+	add_child_autofree(ctrl)
+	ctrl._party = [_make_combatant(name)]
+	## Exactly what start_grind does before _state leaves IDLE; an abort after this stops here.
+	ctrl._save_autobattle_states()
+	ctrl._force_autobattle_on()
+	assert_false((abs.get_character_script(char_id) as Dictionary).is_empty(),
+		"CONTROL: the force must actually have replaced the player's empty draft")
+	assert_true(abs.is_autobattle_enabled(char_id),
+		"CONTROL: the force must actually have turned autobattle ON")
+	assert_eq(ctrl._state, ctrl.State.IDLE,
+		"CONTROL: an aborted start never leaves IDLE — that is what makes this reachable")
+	ctrl.stop_grind("aborted start")
+	var after: Variant = abs.get_character_script(char_id)
+	assert_true(after is Dictionary and (after as Dictionary).is_empty(),
+		"stop_grind kept autogrind's default script — the player's draft is gone for good")
+	assert_false(abs.is_autobattle_enabled(char_id),
+		"stop_grind left autobattle forced ON after a start that never began")
 	if prior_script is Dictionary:
 		abs.set_character_script(char_id, prior_script)
