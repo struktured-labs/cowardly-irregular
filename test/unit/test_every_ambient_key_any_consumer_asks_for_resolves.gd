@@ -150,6 +150,12 @@ func test_no_play_ambient_call_uses_a_form_this_file_cannot_read() -> void:
 	## So: every play_ambient call site in src/ must be resolvable by one of the three patterns,
 	## or be named above with its reason. Derived from the call sites, not from the patterns.
 	var unresolved: Array = []
+	## ⛔ THIS ARM IS INVERTED-BURDEN — everything it cannot read becomes an offender — so the way
+	## it breaks is by examining NOTHING and reporting a clean sweep (cowir-music's MUT B, 2026-09-18).
+	## `GdSource.code_of` returning "" skips a file silently; if it did so for all of them the arm
+	## passes having looked at zero call sites. A control over what was EXAMINED, by membership
+	## rather than by count, because a count is satisfied by survivors.
+	var examined: Array = []
 	var call_re := RegEx.create_from_string("play_ambient\\(\\s*([^)]*)\\)")
 	for path in _gd_files("res://src"):
 		var code: String = GdSource.code_of(path)
@@ -157,6 +163,7 @@ func test_no_play_ambient_call_uses_a_form_this_file_cannot_read() -> void:
 			continue
 		for m in call_re.search_all(code):
 			var arg: String = m.get_string(1).strip_edges()
+			examined.append("%s|%s" % [path.replace("res://src/", ""), arg])
 			if arg == "" or arg.begins_with("sound_key"):
 				continue   # the declaration and its own forwarding
 			if arg.begins_with("\""):
@@ -182,6 +189,14 @@ func test_no_play_ambient_call_uses_a_form_this_file_cannot_read() -> void:
 			if RegEx.create_from_string("\\b%s\\s*:?=\\s*\"[a-z_0-9]+\"" % arg).search(code) != null:
 				continue
 			unresolved.append("%s: play_ambient(%s)" % [path.replace("res://src/", ""), arg])
+	for must in [
+		"exploration/OverworldScene.gd|ambient_key",
+		"exploration/WeatherSystem.gd|\"weather_rain\"",
+		"audio/SoundManager.gd|NIGHT_AMBIENCE_KEY",
+		"maps/villages/BaseVillage.gd|key",
+	]:
+		assert_true(examined.has(must),
+			"CONTROL: the walk never EXAMINED `%s` — this arm reports a clean sweep of whatever it managed to read, and an unreadable file is skipped in silence" % must)
 	assert_eq(unresolved, [],
 		"%d play_ambient call site(s) pass an argument form none of this file's three extraction patterns can read — those keys are in NO corpus here and the membership floor below will not notice, because a new FORM shrinks no existing member: %s" % [
 			unresolved.size(), unresolved])
