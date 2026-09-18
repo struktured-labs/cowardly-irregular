@@ -225,6 +225,7 @@ func _trigger_lightning() -> void:
 	var sm: Node = _autoload("SoundManager")
 	if sm and sm.has_method("play_battle"):
 		# Weather thunder, not the mage's spell: ability_lightning is a cast cue and reads as someone casting Thunder offscreen.
+		## play_BATTLE is deliberate and the asset pays for it: play_ambient would replace the storm BED, so a one-shot voice is required, and the file is mixed 18 dB down (-17.9 dBFS against the bed's +0.3) so the -6 battle channel lands it 3.8 dB over the rain. Re-routing this to play_ui (-16) would drop it 10 dB into inaudibility with nothing to show for it.
 		sm.play_battle("weather_thunder_distant")
 
 
