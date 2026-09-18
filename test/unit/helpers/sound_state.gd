@@ -58,6 +58,9 @@ static func restore() -> void:
 	## A GDScript error aborts its enclosing function, so an abort here skips every teardown line
 	## BELOW it in each of those files — one rename multiplied 26 times, and each file stays green.
 	## @cowir-controller's rule: a teardown line placed first must be one that cannot abort.
+	## Night's private snapshot of the layer it displaced — a latch, so a barrier clears it.
+	if "_pre_night_ambient_key" in sm:
+		sm._pre_night_ambient_key = ""
 	if "_current_area" in sm:
 		sm._current_area = ""
 	if "_current_world_suffix" in sm:

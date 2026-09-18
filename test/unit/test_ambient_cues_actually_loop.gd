@@ -172,12 +172,21 @@ func _const_re() -> RegEx:
 	return r
 
 
-## The call sites this scan CANNOT resolve — a local var or a method result. Every key they can
-## reach today is ambient_*-prefixed and therefore in the corpus by the other half; this pins the
-## SITES so a new unresolvable one fails here instead of quietly shrinking what the guard defends.
+## The call sites this scan CANNOT resolve — a local var or a method result. This pins the SITES so a
+## new unresolvable one fails here instead of quietly shrinking what the guard defends.
+##
+## Three of the four are covered by the same argument: every key they can reach is ambient_*-prefixed
+## and therefore in the corpus by the other half.
+##
+## ⛔ SoundManager's IS COVERED BY A DIFFERENT ARGUMENT AND THE PREFIX RULE DOES NOT APPLY TO IT.
+## `set_night_ambience` restores `_pre_night_ambient_key`, the key night displaced — which may be a
+## `weather_*` bed, not only an `ambient_*` one. It is covered because it is a RESTORE: the variable can
+## only ever hold a value some LITERAL call already put in `_current_ambient_key`, so it cannot
+## introduce a key this guard has not already scanned at that literal site. Stated rather than waved
+## at, because "add the file here" without the reason is how a pinned-sites list becomes an allowlist.
 func test_unresolvable_play_ambient_sites_are_known() -> void:
-	var known := ["src/exploration/OverworldScene.gd", "src/maps/interiors/BaseInterior.gd",
-		"src/maps/villages/BaseVillage.gd"]
+	var known := ["src/audio/SoundManager.gd", "src/exploration/OverworldScene.gd",
+		"src/maps/interiors/BaseInterior.gd", "src/maps/villages/BaseVillage.gd"]
 	var found: Array[String] = []
 	var re := RegEx.new()
 	re.compile("play_ambient\\(\\s*([a-z_][a-zA-Z0-9_]*)\\s*\\)")

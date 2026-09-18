@@ -199,10 +199,19 @@ func test_the_rate_denominator_is_what_was_scored() -> void:
 		var at: int = code.find(operand)
 		assert_gt(at, -1, "the tool must still report a `%s` rate" % operand)
 		var line: String = code.substr(at, code.find("\n", at) - at)
-		assert_gt(line.find("scored]"), -1,
-			"`%s` must be reported over `scored`, got: %s" % [operand, line.strip_edges()])
-		assert_eq(line.find("names.size()"), -1,
-			"`%s` must NOT be reported over the files on disk: %s" % [operand, line.strip_edges()])
+		## THE DENOMINATOR IS THE SECOND OPERAND — assert exactly that, nothing looser or
+		## stricter. Two earlier spellings were both wrong and in OPPOSITE directions:
+		##   `scored]`          required scored to be LAST -> red a correct "%d/%d of %d files"
+		##   scored appears     too loose -> [reached, names.size(), scored] passed, and that
+		##                      is the defect wearing a third operand
+		## `line` already STARTS at `at`, so the operand sits at offset 0 within it — using the
+		## file-level index here read past the end and yielded "" on the CORRECT baseline.
+		var ops: PackedStringArray = line.substr(operand.length()).split(",")
+		assert_gt(ops.size(), 0, "`%s` must carry a denominator: %s" % [operand, line.strip_edges()])
+		var denominator: String = ops[0].replace("]", "").replace(")", "").strip_edges()
+		assert_eq(denominator, "scored",
+			"`%s` denominator must be `scored`, got `%s` in: %s"
+				% [operand, denominator, line.strip_edges()])
 
 
 func test_a_corpus_that_went_entirely_dark_is_refused() -> void:

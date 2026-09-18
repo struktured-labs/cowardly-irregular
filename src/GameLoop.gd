@@ -5185,9 +5185,8 @@ func _quick_load_with_toast() -> void:
 		Toast.show_warning(self, "Save data could not restore party")
 		return
 	Toast.show_success(self, "Loaded slot %d" % slot)
-	# If we're already exploring, restart exploration to teleport the player
-	# to the saved position. If not (e.g. in autogrind UI), do nothing more —
-	# the next exploration entry picks up the loaded state.
+	# Restart exploration to teleport the player to the saved position. AUTOGRIND returns above,
+	# so the state that skips this is BATTLE after VICTORY/DEFEAT — is_battle_active() is false there.
 	if current_state == LoopState.EXPLORATION:
 		_start_exploration()
 

@@ -123,19 +123,56 @@ func test_the_overworld_footer_is_rebuilt_after_a_controls_change() -> void:
 		+ "only the face-convention case.")
 
 
+## Every key the InputMap binds to an action — an INDEPENDENT path to the answer the caption
+## should carry. Headless has no pad, so the caption is a key name, and InputMap can supply it
+## without going through the resolver the footer itself uses.
+func _bound_key_names(action: String) -> Array:
+	var out: Array = []
+	for e in InputMap.action_get_events(action):
+		if e is InputEventKey:
+			out.append(OS.get_keycode_string((e as InputEventKey).keycode))
+	return out
+
+
+## The token the footer prints immediately before a given separator, e.g. "Z" in "…  Z/Click: Select".
+func _token_before(text: String, sep: String) -> String:
+	var at := text.find(sep)
+	if at < 0:
+		return ""
+	var head: String = text.substr(0, at).strip_edges()
+	var parts: PackedStringArray = head.split(" ")
+	return str(parts[parts.size() - 1]) if parts.size() > 0 else ""
+
+
 ## …and a rebuild must re-derive, not merely overwrite with something. A refresh that wrote a
 ## constant would satisfy the sentinel arms above while telling the player nothing true.
+##
+## ⛔ THE EXPECTATION DOES NOT COME FROM THE SUBJECT'S OWN RESOLVER, AND IT DID. This arm asserted
+## `footer.text.contains(hint_for_action("ui_accept"))` — but the footer is BUILT with
+## hint_for_action, so both sides moved together. Measured: stub the resolver to a constant "ZZ"
+## and this arm PASSED with it completely broken; only the convention control noticed.
+##
+## ⚠️ AND `contains` IS THE WRONG OPERATOR EVEN WITH AN INDEPENDENT EXPECTATION: "ZZ" CONTAINS "Z",
+## so a substring test would still have passed that same stub. The token is compared for EQUALITY
+## against the set of keys the InputMap actually binds.
 func test_the_rebuilt_footer_names_the_current_binding() -> void:
 	var m = await _menu_in_tree("res://src/ui/SettingsMenu.gd")
 	var footer: Label = _footer_of(m, "RClick: Back")
 	assert_not_null(footer, "CONTROL: the footer must exist")
 
+	var accept_keys: Array = _bound_key_names("ui_accept")
+	var cancel_keys: Array = _bound_key_names("ui_cancel")
+	assert_gt(accept_keys.size(), 0, "CONTROL: ui_accept must bind a key, or there is nothing to name")
+	assert_gt(cancel_keys.size(), 0, "CONTROL: ui_cancel must bind a key")
+
 	footer.text = SENTINEL
 	InputProfileManager.set_nintendo_mode(not InputProfileManager.nintendo_mode)
 	await get_tree().process_frame
 
-	var accept: String = InputProfileManager.hint_for_action("ui_accept")
-	var cancel: String = InputProfileManager.hint_for_action("ui_cancel")
-	assert_true(footer.text.contains(accept) and footer.text.contains(cancel),
-		"after the change the footer must name the CURRENT accept (%s) and cancel (%s): '%s'"
-			% [accept, cancel, footer.text])
+	var shown_accept: String = _token_before(footer.text, "/Click: Select")
+	var shown_cancel: String = _token_before(footer.text, "/RClick: Back")
+	assert_true(shown_accept in accept_keys,
+		"the footer prints '%s' for Select; the keys actually bound to ui_accept are %s — full text: '%s'"
+			% [shown_accept, accept_keys, footer.text])
+	assert_true(shown_cancel in cancel_keys,
+		"the footer prints '%s' for Back; ui_cancel binds %s" % [shown_cancel, cancel_keys])
