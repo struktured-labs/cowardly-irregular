@@ -39,8 +39,14 @@ func after_each() -> void:
 	SfxState.release_streams()
 	## static, so it outlives this file — a stale entry counts against MAX_CONCURRENT for everyone.
 	BattleSpeechBubble._live.clear()
+	## free(), not queue_free(): the queued form defers past the end of the test, so the bubbles and
+	## every Control _present builds under them survive as ORPHANS for the rest of the run. Measured
+	## 2026-09-18 with a residue probe: 24 orphan nodes after this file, 0 at baseline; free() takes it
+	## to 2. _live and the scene tree both read clean — orphan count is a third surface and nothing else
+	## here measures it. The residual 2 is NOT same-speaker eviction inside spawn(): distinct speakers
+	## in every arm still measured 2, so that hypothesis is disproven and the source is unidentified.
 	if _parent and is_instance_valid(_parent):
-		_parent.queue_free()
+		_parent.free()
 		_parent = null
 	Engine.time_scale = _saved_scale
 	var sm: Node = _sm()
