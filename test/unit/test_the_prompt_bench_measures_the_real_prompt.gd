@@ -116,6 +116,42 @@ func test_a_documented_invocation_carries_the_sandbox() -> void:
 		"a documented bare godot writes to the player's real user:// — %s" % str(offenders))
 
 
+func test_the_bench_scales_match_the_live_ones() -> void:
+	## The kit-shape arm above compares KEYS. The autogrind prompt also carries a `scales`
+	## block, which the bench HARDCODES because a -s script has no autoloads — and nothing
+	## held it to the live source. If AutogrindSystem's interrupt_rules default moves, the
+	## bench keeps rendering the old number and every measurement is about a prompt the game
+	## no longer sends, which is this file's whole premise.
+	##
+	## Both sides are DERIVED — no literal here — so a deliberate rebalance moves them together
+	## and only a DRIFT reds. Pinning 4.5 would fail a correct change and pass a stale bench.
+	var rc = get_tree().root.get_node_or_null("RuleComposer")
+	assert_not_null(rc, "CONTROL: RuleComposer autoload must exist")
+	var live: Dictionary = rc._numeric_scales()
+	assert_false(live.is_empty(),
+		"CONTROL: the live scales must resolve, or this arm compares against nothing")
+
+	var src: String = FileAccess.get_file_as_string(BENCH_RENDERER)
+	assert_gt(src.length(), 1000,
+		"CONTROL: %s must actually be read" % BENCH_RENDERER)
+	var at: int = src.find("\"scales\":")
+	assert_gt(at, -1, "the bench must still carry a scales block")
+	var open_brace: int = src.find("{", at)
+	var close_brace: int = src.find("}", open_brace)
+	var parsed = JSON.parse_string(src.substr(open_brace, close_brace - open_brace + 1))
+	assert_true(parsed is Dictionary,
+		"the bench's scales literal must parse, got: %s" % src.substr(open_brace, 80))
+	var bench: Dictionary = parsed as Dictionary
+
+	var live_keys: Array = live.keys(); live_keys.sort()
+	var bench_keys: Array = bench.keys(); bench_keys.sort()
+	assert_eq(bench_keys, live_keys,
+		"the bench's scales keys must BE the live ones — %s vs %s" % [bench_keys, live_keys])
+	for k in live_keys:
+		assert_almost_eq(float(bench[k]), float(live[k]), 0.0001,
+			"scale '%s' drifted: bench renders %s, the game sends %s" % [k, bench[k], live[k]])
+
+
 func test_the_bench_renders_through_dialogue_prompts() -> void:
 	## Not a copy of the prompt text, and not a hand-rolled approximation.
 	var src: String = FileAccess.get_file_as_string(BENCH_RENDERER)
