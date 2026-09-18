@@ -3,14 +3,27 @@
 #
 # WHY THIS EXISTS
 # ---------------
-# 5 of the 19 tags cut on 2026-09-18 (.411 .416 .419 .420 .421) carry a prose annotation with
-# NO `gated:` evidence line. Measured, not recalled: a 40-hex match against each tag's own
-# commit across .410-.428.
+# My tag flow ran `tools/tag_gate_evidence.sh` AFTER `git push origin <tag>`. The check was real
+# and it sat downstream of the step it was meant to guard; tags are not re-cut here, so a refusal
+# arriving after the push and no refusal at all cost exactly the same.
 #
-# Nothing was wrong with those builds. The cost is that the evidence line is the only thing
-# that lets the publisher SKIP a redundant full suite — `tag_gate_evidence.sh` answers RUN
-# without it — so an omission spends ~8 minutes per channel proving something the fold already
-# proved, and it does that silently, in a lane that is not the one that dropped the line.
+# ⛔ THE COMMIT THAT ADDED THIS FILE CITED "5 of 19 tags carry no `gated:` line". THAT WAS FALSE,
+# and the correction is worth more than the tool. All 19 of .410-.428 carry a well-formed marker
+# naming their own commit — re-audited with the consumer's own accessor (`git cat-file tag`,
+# anchored `^gated: [0-9a-f]{40} `): marker 19/19, sha match 19/19, failing=0 19/19, and
+# @cowir-deploy confirmed independently that .421 printed VERDICT=SKIP in its real publish run,
+# so no redundant suite was ever paid either.
+#
+# The five were an artefact of reading annotations through `git tag -n30`, which renders the
+# annotation MESSAGE — the tag object minus its 5 header lines — so a marker at cat-file line
+# >= 36 falls outside the window. Measured boundary: visible max 35, invisible min 36, and the
+# invisible set is EXACTLY the five reported. `-n30` is `head -30` wearing a git flag, and I did
+# not think of it as a window at all.
+#
+# So this tool defends an ORDERING that was genuinely wrong, and NOT a defect that had ever
+# fired. That is worth having on its own — an irreversible step whose verification is downstream
+# is worth fixing whether or not it has cost anything yet — but it has never caught a real
+# omission, and nothing in .410-.428 needs re-cutting or distrusting.
 #
 # THE ACTUAL DEFECT WAS ORDERING, NOT A MISSING TOOL
 # --------------------------------------------------

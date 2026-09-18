@@ -5694,6 +5694,11 @@ func _stop_autogrind(reason: String) -> void:
 		return
 
 	_is_autogrinding = false
+	## RESTORED HERE, NOT AT THE BOTTOM: these two are GLOBAL and the line above is the gate that
+	## refuses a retry, so an abort between them stranded both with no way back. Both are plain
+	## autoload assignments that depend on nothing, and nothing below reads either.
+	BattleManager.turbo_mode = false
+	Engine.time_scale = 1.0
 
 	# Capture stats before controller is stopped and freed
 	var final_stats = {}
@@ -5717,9 +5722,6 @@ func _stop_autogrind(reason: String) -> void:
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
 		_autogrind_ui.set_grinding(false)
 
-	# Reset turbo mode
-	BattleManager.turbo_mode = false
-
 	# Clean up dashboard
 	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
 		_autogrind_dashboard.queue_free()
@@ -5728,9 +5730,6 @@ func _stop_autogrind(reason: String) -> void:
 	# Clean up compact overlay
 	_destroy_autogrind_overlay()
 	_destroy_controller_overlay()
-
-	# Reset engine speed
-	Engine.time_scale = 1.0
 
 	# Restore clean audio state and resume area music
 	SoundManager.reset_corruption()
@@ -6188,6 +6187,10 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 func _on_grind_complete(reason: String) -> void:
 	"""Handle autogrind session completion"""
 	_is_autogrinding = false
+	## Same hoist as _stop_autogrind: this entry reaches the identical stranded state by its own
+	## route, so fixing only the other one leaves this one live.
+	BattleManager.turbo_mode = false
+	Engine.time_scale = 1.0
 	current_state = LoopState.EXPLORATION
 	InputLockManager.pop_all()  # Clear any leaked locks
 
@@ -6214,11 +6217,6 @@ func _on_grind_complete(reason: String) -> void:
 	_destroy_autogrind_overlay()
 	_destroy_controller_overlay()
 
-	# Reset turbo mode
-	BattleManager.turbo_mode = false
-
-	# Reset engine speed
-	Engine.time_scale = 1.0
 
 	# Update UI state (hidden in background during a session)
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
