@@ -157,13 +157,9 @@ func test_no_writer_in_this_file_opens_its_destination() -> void:
 	## (cowir-battle's shape: a floor built on a substring accepts a SURVIVOR; one built on an
 	## exact or delimited match does not.)
 	for fn in PERSISTERS:
-		var start := src.find("func " + fn + "(")
-		assert_gt(start, -1,
-			"PERSISTER %s is gone from SaveSystem.gd — if it was renamed, rename it here too; this list exists so a disappearance is LOUD rather than a silently smaller corpus" % fn)
-		if start == -1:
-			continue
-		var end := src.find("\nfunc ", start + 1)
-		var body := src.substr(start, (end - start) if end > start else -1)
+		assert_eq(_declares(src, fn), 1,
+			"PERSISTER %s is not DECLARED exactly once in SaveSystem.gd — renamed, deleted, or surviving only as a comment; this list exists so a disappearance is LOUD rather than a silently smaller corpus" % fn)
+		var body := _code_body(src, fn)
 		## ⛔ NOT `contains("staged")` — MY FIRST ATTEMPT AT THIS FLOOR, AND IT DID NOT FIRE.
 		## Hoisting the open into a helper leaves `var staged := path + ".new"` in place, so the
 		## token survives while the write leaves. A name satisfied for a reason unrelated to the
@@ -340,3 +336,34 @@ func test_the_open_classifier_answers_both_ways_on_constructed_input() -> void:
 		"READ_WRITE must classify WRITE — it contains READ, so a read-first classifier calls the widest mode the safest")
 	assert_eq(_classify_open('var w := FileAccess.open(path, mode)'), "unknown",
 		"a HOISTED mode must classify unknown, not read — this is the form that left the whole guard at 6 passing with a live truncating write in the file")
+
+## A declaration line, not a substring anywhere in the file. ⛔ THIS IS A PIN (assert-PRESENT), so a
+## comment SATISFIES it and the failure is a FALSE GREEN — the harmful polarity (cowir-autogrind).
+## Measured: deleting `save_settings` and leaving `# was: func save_settings() -> void:` left the
+## floor SILENT while the function was absent. The two SCANS in this file skip `#` lines already, so
+## comment-awareness was applied to the scans and not to the pin, in the same file.
+##
+## ⚠️ A LINE-START REQUIREMENT RATHER THAN A COMMENT STRIP, DELIBERATELY. cowir-controller's strip is
+## stronger in general — it deletes prose before any pattern runs — but a naive one truncates any
+## line whose message carries a `#`, and every writer here pushes a warning. For a `func` pin the
+## left bound cannot be defeated by a comment, because the comment's `#` occupies column 0 itself,
+## which is the one case where cowir-sprites' "a comment carries your right bound too" does not
+## reach: it cannot carry column 0.
+func _declares(src: String, fn: String) -> int:
+	var n := 0
+	for line in src.split("\n"):
+		if line.begins_with("func " + fn + "(") or line.begins_with("static func " + fn + "("):
+			n += 1
+	return n
+
+
+## Code lines only, so a commented-out write cannot satisfy a pin about a live one.
+func _code_body(src: String, fn: String) -> String:
+	var out: Array = []
+	var inside := false
+	for line in src.split("\n"):
+		if line.begins_with("func ") or line.begins_with("static func "):
+			inside = line.begins_with("func " + fn + "(") or line.begins_with("static func " + fn + "(")
+		if inside and not line.strip_edges().begins_with("#"):
+			out.append(line)
+	return "\n".join(out)
