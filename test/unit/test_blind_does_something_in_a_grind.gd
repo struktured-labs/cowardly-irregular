@@ -102,7 +102,6 @@ const GRIND_IGNORES_BUT_ABILITIES_INFLICT := [
 	"physical_reflect",    # port_block
 	"prismatic_reflect",   # prismatic_reflect
 	"reflect",             # magic_reflect
-	"silence",             # void_pulse
 ]
 
 func test_the_ignored_status_list_is_still_exactly_this() -> void:
