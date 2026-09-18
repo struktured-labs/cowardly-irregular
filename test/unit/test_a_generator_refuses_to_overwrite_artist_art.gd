@@ -83,7 +83,10 @@ func test_an_unreadable_tier_REFUSES_rather_than_falling_through() -> void:
 	var regen := _src(REGEN)
 	assert_true(regen.contains("from tools.artist_guard import tier_refusal"),
 		"WIRING: %s no longer sources its tier decision from the shared owner" % REGEN)
-	assert_true(regen.contains("tier_refusal(tier"),
+	## The leading `= ` is load-bearing: bare `tier_refusal(tier` is a substring of
+	## `my_tier_refusal(tier`, so a differently-named local twin satisfies it. A delimiter before
+	## the symbol closes the prefix side — cowir-autogrind's receiver dot, same mechanism.
+	assert_true(regen.contains("= tier_refusal(tier"),
 		"WIRING: artist_write_refusal no longer calls tier_refusal — the import alone refuses nothing")
 	assert_false(regen.contains('tier in ("T2", "T3")'),
 		"OWNER: the two-way membership test has forked back into the generator. That test is the defect: it answers 'writable' for every tier it does not recognise")
