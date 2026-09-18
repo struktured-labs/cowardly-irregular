@@ -2587,14 +2587,27 @@ func _apply_corruption_intensity(intensity: float) -> void:
 	_render_music_envelope()
 
 
+## Drop the GRIND meter and re-derive. Not "go clean": the save meter is a different fact.
+##
+## ⛔ CLEARING `_corruption_intensity` ALONE LEFT `_grind_corruption` AS A LATCH WITH NOTHING HOLDING
+## IT, and `_apply_corruption_max` renders max() of the two — so the next corruption event ANYWHERE
+## re-raised the old value. NEW GAME is the trigger: reset_game_state emits corruption_changed(0.0),
+## and the emit that means "this save is clean" ran max(stale_grind, 0.0) and tweened back UP.
+## Measured: grind to 0.8, reset, New Game -> target 0.800.
+##
+## ⛔ AND ZEROING BOTH METERS IS THE OTHER BUG, the one reset_danger already carries a comment about
+## ("nothing put it back until corruption moved again"). A rotting save stays audible outside the
+## grind loop by design, so this re-derives from _save_corruption rather than forcing silence.
 func reset_corruption() -> void:
-	"""Reset corruption degradation to clean level"""
 	if _corruption_tween and _corruption_tween.is_valid():
 		_corruption_tween.kill()
-	_corruption_intensity = 0.0
-	if _music_player:
-		_music_player.pitch_scale = 1.0
-		_music_player.volume_db = _music_base_db
+	_corruption_tween = null
+	_grind_corruption = 0.0
+	_corruption_intensity = _save_corruption
+	_corruption_target = _save_corruption
+	## Through the renderer, because the two absolute writes here erased a live danger cue exactly as
+	## the two absolute writers did before the single renderer landed — same family, third site.
+	_render_music_envelope()
 
 
 ## Battle Music - Procedural 16-bit Style Loop
