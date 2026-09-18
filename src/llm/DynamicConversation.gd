@@ -204,6 +204,12 @@ func setup(
 ## `_active_conversations` is an Array, so several conversations can be registered at once and
 ## that single call aborts all of them — the recovery scales, the TRIGGER does not.
 ##
+## PRIOR WORK, cited because I re-derived half of this before finding it:
+## `test/unit/test_llm_conversation_registry_regression.gd` already states WHY abort() exists —
+## "before this fix nothing called abort() so the choice menu + frozen player could remain on
+## screen after the player walked through an area transition". It drives a DummyConv, so it pins
+## the REGISTRY rather than the real freeze/restore, and the caveat below is unaddressed there.
+##
 ## ⛔ THE CAVEAT, which is the part worth not re-deriving: that recovery fires on a SCENE CHANGE,
 ## and the strand freezes the player — who is normally what causes scene changes. It stays
 ## reachable through the menu (`set_can_move(false)` gates movement, not menu input), so a player
