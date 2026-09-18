@@ -81,7 +81,14 @@ const NAMED := [
 ##
 ## `rename_absolute(` means the bytes were put somewhere else and moved into place; `get_as_text()`
 ## in the same function means the write was read back and judged. Both are things the code DOES.
-const SAFE_MARKERS := ["rename_absolute(", "get_as_text()"]
+## ⛔ ANCHORED TO THE EXPRESSION ACTUALLY WRITTEN. These were bare `rename_absolute(` and
+## `get_as_text()`, satisfied by ANY such call after the write — so a writer that truncated its
+## destination and then read an UNRELATED file was exempted. Measured: green, with a live
+## truncating write in it. @cowir-sfx's shape — an exemption granted by a DIFFERENT subject's call.
+##
+## A safe writer must rename THE PATH IT STAGED, or read back THE PATH IT WROTE. Both are now
+## keyed to the first argument of the write open, so another file's call cannot stand in for it.
+const SAFE_FORMS := ["rename_absolute(%s", "open(%s, FileAccess.READ)"]
 
 
 func _lane_scripts() -> Array:
@@ -120,6 +127,17 @@ func _strip_comment(line: String) -> String:
 		elif c == "#":
 			return line.substr(0, i)
 	return line
+
+
+## The FIRST ARGUMENT of a `FileAccess.open(...)` call — the path being opened, verbatim, so the
+## safety check can demand that same expression rather than any call of the right shape.
+func _opened_expr(line: String) -> String:
+	var at: int = line.find("FileAccess.open(")
+	if at < 0:
+		return ""
+	var rest: String = line.substr(at + "FileAccess.open(".length())
+	var comma: int = rest.find(",")
+	return rest.substr(0, comma).strip_edges() if comma > 0 else ""
 
 
 ## The name of the function containing `idx`, for the membership floor above.
@@ -163,7 +181,26 @@ func _write_opens() -> Array:
 			var s: String = _strip_comment(line as String).strip_edges()
 			if s.is_empty():
 				continue
-			if "FileAccess.open" in s and "WRITE" in s:
+			## ⛔ `FileAccess.WRITE`, NOT a bare "WRITE" — Godot has FOUR modes and only two truncate.
+			## `READ_WRITE` does NOT truncate (the file must already exist) and contains the substring
+			## "WRITE", so a bare test flagged a correct in-place patch and told its author the file was
+			## being truncated. A wrong "this is broken" makes someone ACT: the fix it invites is
+			## converting a safe open into a staged write for no reason.
+			##
+			## MEASURED IN-ENGINE, not recalled — write 10 bytes, reopen in each mode, re-read length:
+			##     FileAccess.WRITE        10 -> 0    TRUNCATES
+			##     FileAccess.WRITE_READ   10 -> 0    TRUNCATES
+			##     FileAccess.READ_WRITE   10 -> 10   PRESERVES   <- groups with READ
+			##
+			## 🔑 THE `FileAccess.` PREFIX IS WHAT CARRIES THIS, NOT THE ORDER OF THE TESTS:
+			##     "FileAccess.READ_WRITE".contains("FileAccess.WRITE")  ->  false   ✅ not flagged
+			##     "FileAccess.WRITE_READ".contains("FileAccess.WRITE")  ->  true    ✅ truncates
+			## ⚠️ A "test the write forms first" rule circulated for this and was RETRACTED by its
+			## author after they mutated it: dropping either write branch still passed, and only
+			## removing the prefix red. Ordering matters for an UNANCHORED list, where "WRITE" matches
+			## READ_WRITE and "READ" matches WRITE_READ — anchoring removes the need for the rule
+			## rather than satisfying it, which is why this does not depend on the order.
+			if "FileAccess.open" in s and "FileAccess.WRITE" in s:
 				found.append([path, n, s, fn_body, _enclosing_name(all_lines, n - 1)])
 		f.close()
 	return found
@@ -216,11 +253,13 @@ func test_no_writer_opens_its_destination_directly() -> void:
 	for row in _write_opens():
 		var text: String = row[2]
 		var body: String = row[3]
+		var target: String = _opened_expr(text)
 		var safe: bool = false
-		for marker in SAFE_MARKERS:
-			if marker in text or marker in body:
-				safe = true
-				break
+		if target != "":
+			for form in SAFE_FORMS:
+				if (form % target) in body:
+					safe = true
+					break
 		if not safe:
 			offenders.append("%s:%d  %s" % [str(row[0]).replace("res://", ""), row[1], text])
 
@@ -230,3 +269,115 @@ func test_no_writer_opens_its_destination_directly() -> void:
 		+ "file, and there is no previous version left:\n  %s\n"
 			% "\n  ".join(offenders)
 		+ "Stage beside the target (`path + \".new\"`) and `DirAccess.rename_absolute` into place.")
+
+
+## ⛔ A NEW WRITE FORM ARRIVING IS INVISIBLE TO EVERY ARM ABOVE, and that is a third mutation class
+## none of my mutations could reach (@cowir-sfx). The arms above answer *did a writer stop being
+## seen* and *did a safe shape leave*. Neither answers **did a writer arrive in a form the detector
+## does not match** — it shrinks no member of MUST_BE_FOUND and adds no row, so everything stays
+## green while the write is audited by nobody.
+##
+##     FileAccess.open(p, FileAccess.WRITE)     matched — the only form the scan knows
+##     var m := FileAccess.WRITE ; open(p, m)   NOT matched: "WRITE" is not on the open line
+##     ResourceSaver.save(res, path)            NOT matched: no open at all
+##
+## 🔑 SO THIS ARM DERIVES FROM WHAT REACHES DISK, NOT FROM THE PATTERN THAT FINDS IT: every function
+## in the corpus that STORES bytes must also be a function the main scan flagged. A store with no
+## matched open is a write arriving by a route this file cannot see.
+const STORES := ["store_string", "store_var", "store_buffer", "store_line", "store_8",
+	"ResourceSaver.save", "save_png", "copy_absolute"]
+
+## Reasons, not exemptions — a name here must say why it stores without an open the scan matches.
+const UNMATCHED_BY_DESIGN := {}
+
+## Every mode this scan can READ. An open carrying one of these is ACCOUNTED FOR — either it
+## truncates and the ratchet above judges it, or it does not and there is nothing to judge.
+##
+## ⛔ AN OPEN WHOSE MODE THIS CANNOT READ IS A WRITE CANDIDATE, NOT A PASS (@cowir-autogrind's
+## inversion). `FileAccess.open(p, mode)` with the mode in a variable proves nothing, so it must
+## fall through to the arm below rather than count as a visible write.
+const READABLE_MODES := ["FileAccess.READ_WRITE", "FileAccess.WRITE_READ",
+	"FileAccess.WRITE", "FileAccess.READ"]
+
+
+## Functions holding an open whose mode this scan can read — truncating or not.
+func _accounted() -> Array:
+	var out: Array = []
+	for path in _lane_scripts():
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f == null:
+			continue
+		var lines: PackedStringArray = f.get_as_text().split("\n")
+		f.close()
+		for i in lines.size():
+			var s: String = _strip_comment(str(lines[i]))
+			if not ("FileAccess.open" in s):
+				continue
+			for m in READABLE_MODES:
+				if m in s:
+					var fname: String = _enclosing_name(lines, i)
+					if not (fname in out):
+						out.append(fname)
+					break
+	return out
+
+
+func test_no_write_arrives_in_a_form_this_scan_cannot_see() -> void:
+	var flagged: Array = _accounted()
+
+	## ⛔ THE CONTROL FOR AN INVERTED-BURDEN ARM, AND IT IS THE ONE DIRECTION THE ARM CANNOT FAIL IN
+	## BY ITSELF (@cowir-music). This arm fails SAFE: anything unreadable becomes a candidate, so if
+	## the mode-reading breaks the arm gets LOUDER. The way it goes vacuous is the opposite — if
+	## READABLE_MODES matched too broadly, every function would be "accounted" and this arm would
+	## never fire again, silently. These two always hold a read-only open, so they drop out of
+	## `_accounted()` the moment mode-reading stops working.
+	assert_true("load_config" in flagged,
+		"CONTROL: load_config holds a FileAccess.READ open and must be accounted — if it is not, "
+		+ "READABLE_MODES has stopped matching and this arm is about to call everything a candidate")
+	assert_true("register_user_mappings" in flagged,
+		"CONTROL: …and so does ControllerMappings.register_user_mappings")
+
+	## ⛔ AND THE OTHER DIRECTION, WHICH THE CORPUS CANNOT TEST BECAUSE IT HOLDS NO UNREADABLE OPEN.
+	## The two asserts above prove mode-reading works AT ALL; they pass happily when it matches
+	## EVERYTHING, which is the vacuous failure. Measured: widening READABLE_MODES to ["FileAccess."]
+	## left all three arms green with every function accounted and this arm permanently silent.
+	## So the matcher is exercised on CONSTRUCTED input, where both answers exist.
+	var readable_hits: int = 0
+	var opaque_hits: int = 0
+	for m in READABLE_MODES:
+		if m in 'var f := FileAccess.open(p, FileAccess.READ)':
+			readable_hits += 1
+		if m in 'var f := FileAccess.open(p, mode)':
+			opaque_hits += 1
+	assert_gt(readable_hits, 0, "CONTROL: a literal FileAccess.READ must read as a known mode")
+	assert_eq(opaque_hits, 0,
+		"CONTROL: an open whose mode is a VARIABLE must read as unknown. READABLE_MODES matched it, "
+		+ "so every open now counts as accounted and the arm below can never fire again — the one "
+		+ "way an inverted-burden check goes vacuous, and it fails SILENTLY.")
+
+	var storers: Array = []
+	for path in _lane_scripts():
+		var f := FileAccess.open(path, FileAccess.READ)
+		if f == null:
+			continue
+		var lines: PackedStringArray = f.get_as_text().split("\n")
+		f.close()
+		for i in lines.size():
+			var s: String = _strip_comment(str(lines[i])).strip_edges()
+			if s.is_empty():
+				continue
+			for tok in STORES:
+				if tok in s:
+					var fname: String = _enclosing_name(lines, i)
+					var entry: String = "%s.%s" % [str(path).get_file(), fname]
+					if not (fname in flagged) and not (fname in UNMATCHED_BY_DESIGN) \
+							and not (entry in storers):
+						storers.append("%s  ->  %s" % [entry, s.substr(0, 46)])
+					break
+
+	assert_true(storers.is_empty(),
+		"%s store bytes but contain no FileAccess.open(..., WRITE) this scan matches. " % [storers]
+		+ "Either the write arrived in a form the detector cannot see — a hoisted mode variable, "
+		+ "ResourceSaver, a copy — in which case the arms above are green about nothing for that "
+		+ "writer, or it is deliberate and belongs in UNMATCHED_BY_DESIGN with the reason.")
+

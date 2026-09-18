@@ -274,6 +274,27 @@ if [ "${1:-}" != "--selftest" ]; then
         "$0" "$@" > "'"$LOGDIR"'/publish.log" 2>&1
         echo $? > "'"$LOGDIR"'/publish.ec"
     ' "$CMD" "$TAG" "$@" < /dev/null > /dev/null 2>&1 &
+
+    # ⛔ "launched" IS A CLAIM ABOUT STATE, SO DO NOT PRINT IT UNTIL THE STATE IS TRUE.
+    # This used to be an unconditional echo directly after the `&`. If setsid itself fails,
+    # no subshell runs, no publish.log is ever created and no publish.ec is ever written —
+    # and the operator reads "launched publish_all for <tag>" and then waits forever on a
+    # sentinel that nothing will write. The banner sat where it could not be wrong about
+    # itself. (cowir-battle, 2026-09-18: a probe that announced ARMED and then wired itself.)
+    #
+    # The subshell's FIRST act is the redirect, so publish.log existing is exactly the
+    # evidence that the launch took — it appears even for a command that then fails, which
+    # is correct: a doomed command DID launch and its .ec will say so. This distinguishes
+    # "never started" from "started and failed", which the sentinel design cannot.
+    _lw=0
+    until [ -e "${LOGDIR}/publish.log" ] || [ "$_lw" -ge 50 ]; do sleep 0.1; _lw=$((_lw + 1)); done
+    if [ ! -e "${LOGDIR}/publish.log" ]; then
+        echo "[detached] BLOCKED: the launch did not take — ${LOGDIR}/publish.log was never" >&2
+        echo "           created, so the detached subshell never ran. Nothing is publishing." >&2
+        echo "           This is NOT a publish that failed; it is one that never started, and" >&2
+        echo "           no publish.ec will ever appear to say so." >&2
+        exit 3
+    fi
     echo "[detached] launched publish_all for ${TAG}"
     echo "[detached]   log: ${LOGDIR}/publish.log"
     echo "[detached]   ec:  ${LOGDIR}/publish.ec   (written when it finishes)"

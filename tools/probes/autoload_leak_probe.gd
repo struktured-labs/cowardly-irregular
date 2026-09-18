@@ -41,7 +41,13 @@ var _baseline: Dictionary = {}
 ## that covers nothing.
 var _static_baseline: Dictionary = {}
 var _script: Variant = null
+## Field names the SUBJECT'S OWN SOURCE marks sensitive. Derived, never hand-listed: this tool
+## retargets to any autoload, so a list written for BattleManager protects nothing elsewhere.
+var _redacted: Dictionary = {}
 var _armed: bool = false
+var _scripts_seen: int = 0      ## incremented on start_script
+var _scripts_measured: int = 0  ## incremented on end_script — the one that proves a READING happened
+var _dirty_files: int = 0
 
 
 func run() -> void:
@@ -77,6 +83,7 @@ func run() -> void:
 		var v: Variant = node.get(n)
 		_baseline[n] = v.duplicate(true) if (v is Array or v is Dictionary) else v
 	_script = script
+	_arm_redactions(script_path)
 	_arm_statics(script_path, script)
 	if _baseline.is_empty() and _static_baseline.is_empty():
 		print("LEAKPROBE FATAL: %s exposes no script variables — nothing to measure" % _autoload)
@@ -92,11 +99,17 @@ func run() -> void:
 			return
 	gut.start_script.connect(_on_start)
 	gut.end_script.connect(_on_end)
+	## ⛔ ANCHOR THE NULL. This tool's PRODUCT is an absence — "no LEAK lines" is the answer a reader
+	## acts on. Without a denominator, a run where end_script never fired prints ARMED and nothing
+	## else, which is byte-identical to a clean suite. cowir-sfx, 2026-09-18, on a tool whose whole
+	## output is a null: "a 0 from a blind instrument is indistinguishable from health."
+	if gut.has_signal("end_run"):
+		gut.end_run.connect(_on_end_run)
 	if not gut.start_script.is_connected(_on_start) or not gut.end_script.is_connected(_on_end):
 		print("LEAKPROBE FATAL: signals exist but the connection did not take — measuring nothing")
 		return
 	_armed = true
-	print("LEAKPROBE ARMED %s fields=%d statics=%d" % [_autoload, _baseline.size(), _static_baseline.size()])
+	print("LEAKPROBE ARMED %s fields=%d statics=%d redacted=%d" % [_autoload, _baseline.size(), _static_baseline.size(), _redacted.size()])
 
 
 ## Static names come from the SOURCE, because no reflection API lists them. Their value is then
@@ -116,18 +129,62 @@ func _arm_statics(script_path: String, script: Variant) -> void:
 		_static_baseline[n] = v.duplicate(true) if (v is Array or v is Dictionary) else v
 
 
+## ⛔ THIS TOOL PRINTS FIELD VALUES, AND `print()` PERSISTS TO user://logs/godot.log EVEN WITH
+## `debug/file_logging/enable_file_logging` READING false — measured in-engine by cowir-ai,
+## 2026-09-18, on a NORMAL BOOT as well as under -s. So a diff on a credential field would write
+## that credential to a file no later fix un-writes.
+##
+## GameState:96 is the live case: `var llm_custom_api_key: String = ""  ## SENSITIVE — never log,
+## never print`. Nothing stopped `LEAK_PROBE_AUTOLOAD=GameState` from printing it, in a tool whose
+## usage block advertises retargeting.
+##
+## The convention is the project's own, so the derivation is too: a `var` whose declaration line
+## carries SENSITIVE reports its CHANGED/UNCHANGED state and never its value.
+func _arm_redactions(script_path: String) -> void:
+	var src: String = FileAccess.get_file_as_string(script_path)
+	if src == "":
+		return
+	var re := RegEx.create_from_string("(?m)^(?:static )?var ([A-Za-z_][A-Za-z0-9_]*)[^\\n]*SENSITIVE")
+	for m in re.search_all(src):
+		_redacted[m.get_string(1)] = true
+
+
 func _target() -> Node:
 	var loop: MainLoop = Engine.get_main_loop()
 	return loop.root.get_node_or_null("/root/" + _autoload) if loop else null
 
 
+## Printed at end of run so a zero is reportable rather than merely absent. `scripts=0` means the
+## hook never fired and EVERY clean reading above it is vacuous — say so rather than leaving the
+## reader to infer health from silence.
+func _on_end_run() -> void:
+	if not _armed:
+		return
+	## ⛔ COUNT THE MEASUREMENT, NOT THE ARRIVAL. `_scripts_seen` rises in start_script, so it keeps
+	## counting even when end_script is dead — my first version reported `scripts=1 dirty=0` under a
+	## mutation that measured NOTHING, which is the reassuring reading. The two counters must be
+	## compared: a gap means scripts began and were never read.
+	if _scripts_measured == 0:
+		print("LEAKPROBE DONE %s started=%d MEASURED=0 — THE HOOK NEVER FIRED. This run measured "
+				% [_autoload, _scripts_seen] + "nothing; a clean result above is vacuous, not healthy.")
+		return
+	if _scripts_measured != _scripts_seen:
+		print("LEAKPROBE DONE %s started=%d MEASURED=%d dirty=%d — %d script(s) were never read, so "
+				% [_autoload, _scripts_seen, _scripts_measured, _dirty_files, _scripts_seen - _scripts_measured]
+				+ "this result is PARTIAL.")
+		return
+	print("LEAKPROBE DONE %s scripts=%d dirty=%d" % [_autoload, _scripts_measured, _dirty_files])
+
+
 func _on_start(coll_script) -> void:
 	_cur = str(coll_script.path).get_file()
+	_scripts_seen += 1
 
 
 func _on_end() -> void:
 	if not _armed:
 		return
+	_scripts_measured += 1
 	var node: Node = _target()
 	if node == null:
 		print("LEAK %s :: PROBE BROKEN — the autoload vanished mid-run" % _cur)
@@ -148,6 +205,9 @@ func _on_end() -> void:
 				diffs.append("%s=%s" % [n, "obj" if live_v != null else "null"])
 			continue
 		if live_v != base_v:
+			if _redacted.has(str(n)):
+				diffs.append("%s=<REDACTED: declared SENSITIVE> (changed)" % n)
+				continue
 			var shown: String = str(live_v)
 			if shown.length() > 70:
 				shown = shown.substr(0, 70) + "..."
@@ -162,11 +222,15 @@ func _on_end() -> void:
 				diffs.append("static %s=%s" % [n, "obj" if live_s != null else "null"])
 			continue
 		if live_s != base_s:
+			if _redacted.has(str(n)):
+				diffs.append("static %s=<REDACTED: declared SENSITIVE> (changed)" % n)
+				continue
 			var shown_s: String = str(live_s)
 			if shown_s.length() > 70:
 				shown_s = shown_s.substr(0, 70) + "..."
 			diffs.append("static %s=%s" % [n, shown_s])
 	if not diffs.is_empty():
+		_dirty_files += 1
 		print("LEAK %s :: %d :: %s" % [_cur, diffs.size(), "; ".join(diffs)])
 	_reset(node)
 	_reset_statics()

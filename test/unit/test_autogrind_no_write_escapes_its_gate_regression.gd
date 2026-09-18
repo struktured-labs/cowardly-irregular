@@ -33,6 +33,17 @@ const GRIND_SRC_DIRS := ["res://src/autogrind", "res://src/ui/autogrind"]
 ## saver set stays derived from the gates rather than from where FileAccess happens to sit.
 const WRITE_HELPERS := ["_write_json_atomic", "_write_presets_atomic"]
 
+## ⛔ AN OPEN MUST PROVE IT IS READ-ONLY. Every arm here used to require FileAccess.WRITE on the
+## SAME LINE as the open, so cowir-autogrind's planted `var mode := FileAccess.WRITE` followed by
+## `FileAccess.open(path, mode)` was a live, ungated, truncating write to player data that this file
+## and its sibling both scored green. A mode the scan cannot read is now a write CANDIDATE — the
+## opposite default from every other arm, deliberately, because the two errors do not cost the same:
+## a false offender is explained in DECLARED_UNGATED, a missed one eats a save.
+## ⚠️ ORDER IS LOAD-BEARING: READ_WRITE contains READ, so the write forms must be ruled out FIRST or
+## the widest mode reads as the safest one.
+const WRITE_MODES := ["FileAccess.READ_WRITE", "FileAccess.WRITE_READ", "FileAccess.WRITE"]
+const READ_ONLY_PROOF := "FileAccess.READ"
+
 ## Write sites that deliberately reach the disk under test, keyed by function -> WHY.
 ## You cannot silence this green, only explain it green: the value is the deliverable.
 const DECLARED_UNGATED := {
@@ -64,6 +75,15 @@ func _gd_files_under(root: String) -> Array:
 ## One entry per write site: which function holds it, and whether a _test_disable_persistence
 ## statement precedes it INSIDE that function. Reports the SYMBOL, never a line number — the
 ## stripped source does not share line numbers with the file, and a symbol cannot drift.
+## An open is read-only only if it SAYS so. A hoisted mode variable, a computed flag, or a mode this
+## cannot parse is a write candidate. See WRITE_MODES for why the order of those checks matters.
+func _opens_read_only(line: String) -> bool:
+	for m in WRITE_MODES:
+		if line.contains(m):
+			return false
+	return line.contains(READ_ONLY_PROOF)
+
+
 func _classify(code: String) -> Array:
 	var out: Array = []
 	var fn: String = "<file scope>"
@@ -79,8 +99,9 @@ func _classify(code: String) -> Array:
 		if t.contains("_test_disable_persistence") and (t.begins_with("if ") or t.begins_with("elif ")):
 			gated = true
 			continue
-		if t.contains("FileAccess.open(") and t.contains("FileAccess.WRITE"):
-			out.append({"func": fn, "gated": gated})
+		if t.contains("FileAccess.open("):
+			if not _opens_read_only(t):
+				out.append({"func": fn, "gated": gated})
 			continue
 		for helper in WRITE_HELPERS:
 			## The helper's own body is not a call site; `fn == helper` keeps it out of its own count.
@@ -159,6 +180,56 @@ func test_a_helper_call_is_itself_a_write_site() -> void:
 	assert_true(bool(got[0]["gated"]), "its own gate still counts when the open lives one level down")
 	assert_false(bool(got[1]["gated"]),
 		"an UNGATED helper caller is the widening this rule exists to catch — if this passes, the refactor bought silence")
+
+
+## The arm the inversion rests on. A hoisted mode puts NOTHING on the open line, which is exactly
+## what the old rule required, so this synthetic scored ZERO write sites before today — measured, on
+## a real plant in AutogrindAchievements: old rule offenders [], new rule names the function.
+func test_an_open_must_prove_it_is_read_only() -> void:
+	var synthetic: String = "\n".join([
+		"func _reads() -> void:",
+		"\tvar f = FileAccess.open(\"user://a.json\", FileAccess.READ)",
+		"",
+		"func _hoists_its_mode() -> void:",
+		"\tvar mode = FileAccess.WRITE",
+		"\tvar f = FileAccess.open(\"user://b.json\", mode)",
+	])
+	var got: Array = _classify(synthetic)
+	assert_eq(got.size(), 1,
+		"exactly one write site: the declared READ open is not one, the hoisted-mode open is — got %s" % str(got))
+	assert_eq(str(got[0]["func"]), "_hoists_its_mode",
+		"the hoisted-mode open is the write site; naming the reader instead means the modes are read backwards")
+	assert_false(bool(got[0]["gated"]), "and it is UNGATED — the live defect shape this inversion exists to catch")
+
+
+## ⚠️ READ_WRITE CONTAINS READ. Rule the write forms out first or the widest mode reads as the
+## safest. NOTE the claim is "writable", not "truncating" — READ_WRITE does not truncate, and this
+## guard's subject is a write escaping the gate, not truncation (cowir-controller, 2026-09-18).
+func test_a_writable_mode_is_a_write_even_though_it_contains_read() -> void:
+	for mode in ["FileAccess.READ_WRITE", "FileAccess.WRITE_READ"]:
+		var got: Array = _classify("func _rw() -> void:\n\tvar f = FileAccess.open(\"user://a\", %s)\n" % mode)
+		assert_eq(got.size(), 1, "%s opens a writable handle and must be a write site" % mode)
+
+
+## CONTROL. An inverted-burden rule fails SAFE by design — anything unreadable becomes a candidate —
+## so the way it breaks is by calling EVERYTHING read-only, and then "0 ungated" is silence, not
+## health (cowir-music's MUT B). Both directions are exercised on CONSTRUCTED input, because the
+## corpus holds no open with an unreadable mode and therefore cannot test the over-match direction
+## from inside itself (cowir-controller).
+func test_the_scan_still_recognises_a_read_only_open() -> void:
+	assert_true(_opens_read_only("var f = FileAccess.open(\"user://a\", FileAccess.READ)"),
+		"a declared READ open must read as read-only, or every reader in the corpus becomes a false offender")
+	assert_false(_opens_read_only("var f = FileAccess.open(\"user://a\", mode)"),
+		"an unreadable mode must NOT read as read-only — this is the over-match direction that makes the guard silent")
+	var reads: int = 0
+	for d in GRIND_SRC_DIRS:
+		for path in _gd_files_under(d):
+			for raw in GdSource.code_of(path).split("\n"):
+				var t: String = str(raw).strip_edges()
+				if t.contains("FileAccess.open(") and _opens_read_only(t):
+					reads += 1
+	assert_gt(reads, 0,
+		"the corpus has read-only opens and the scan found none — it is classifying everything as a write, or reading no source at all")
 
 
 ## A gate belonging to a LATER function must not cover an earlier one, or the classifier reports
