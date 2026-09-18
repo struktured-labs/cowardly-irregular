@@ -646,6 +646,8 @@ func save_config() -> void:
 	var data = {
 		"version": CONFIG_VERSION,
 		"active_profile": active_profile,
+		# Persisted because a SAVED profile is not a CHOSEN one — see load_config.
+		"profile_chosen_by_user": profile_chosen_by_user,
 		"nintendo_mode": nintendo_mode,
 		"custom_bindings": {},
 	}
@@ -736,7 +738,22 @@ func load_config() -> void:
 
 	if data.has("active_profile") and data["active_profile"] in PROFILE_NAMES:
 		active_profile = data["active_profile"]
-		profile_chosen_by_user = true
+		## ⛔ A SAVED PROFILE IS NOT A CHOSEN ONE, AND READING IT AS ONE PERMANENTLY DISABLED
+		## AUTODETECT. `save_config` persists `active_profile` unconditionally, and it is called by
+		## `set_nintendo_mode`, `set_custom_binding` and `reset_custom_to_preset` — none of which is
+		## a profile choice. Only `cycle_profile` is. Measured:
+		##     autodetect picks "8BitDo SN30"        chosen=false
+		##     player toggles the face convention    persisted, with no record of a choice
+		##     next boot                             chosen=TRUE
+		##     -> plug in a different pad family     autodetect never runs again
+		## So toggling one setting froze the player on whatever pad they happened to own that day.
+		##
+		## ⚠️ ABSENT KEY DEFAULTS TO `true`, WHICH IS TODAY'S BEHAVIOUR AND IS THE CONSERVATIVE
+		## DIRECTION. A config written before this fix cannot say whether the choice was real, and
+		## silently overriding a deliberate Settings choice is the worse of the two errors — the
+		## same reasoning as the unrecognised-profile warning above. Presence of the key IS the
+		## discriminator, so no version bump is needed: absent means pre-fix.
+		profile_chosen_by_user = bool(data.get("profile_chosen_by_user", true))
 		# v1 hardcoded "8BitDo Ultimate Pro 2" as the startup default, so a persisted copy of it is indistinguishable from a real choice — treat it as unset so autodetect can correct the L/R inversion it carries.
 		var cfg_version: int = int(data.get("version", 1))
 		if cfg_version < 2 and active_profile == "8BitDo Ultimate Pro 2":
