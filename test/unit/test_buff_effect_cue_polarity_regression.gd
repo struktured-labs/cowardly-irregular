@@ -183,6 +183,27 @@ func test_a_beneficial_effect_with_no_polarity_TWIN_still_avoids_the_blip() -> v
 		"ANTI-OVERCORRECTION: the catch-all must still send ENEMY-targeted effects to play_status — routing everything to the buff cue is the same defect wearing the other sign")
 
 
+func test_an_ally_TARGETED_but_ally_HOSTILE_effect_keeps_the_debuff_cue() -> void:
+	## ⛔ THE LIMIT OF THE DERIVATION ABOVE, PINNED BY VALUE SO IT CANNOT BE QUIETLY REMOVED.
+	## target_type answers WHO IS AIMED AT, not WHO IS HELPED, and those diverge in exactly one
+	## shipped row (measured 2026-09-18, all 22 ally-targeted catch-all effects read against their
+	## BattleManager handlers): `dispel_and_self_buff` is target_type single_ally and STRIPS that
+	## ally's buffs — BattleManager's own comment calls it "(sacrifice)" and logs it in
+	## penalty_bbcode. Its base effect `dispel` is already in the debuff arm, so the codebase had
+	## ruled on this event; the composed name escaped the literal match.
+	##
+	## Caught by @cowir-adhoc against the branch, BEFORE the fold — the target_type fix would have
+	## played the ASCENDING buff cue while the player's buffs were being stripped, which is the
+	## original defect wearing the other sign.
+	##
+	## Two others tripped a hostility scan and are NOT hostile — read, not counted:
+	## break_mind_swap logs cyan "breaks the mind swap!" (freeing yourself) and random_stat_change
+	## is a 50/50 self-gamble emitting bonus_bbcode on the up-roll.
+	var routed: Dictionary = _routed_effects()
+	assert_eq(str(routed.get("dispel_and_self_buff", "<unrouted>")), "debuff",
+		"Reduce Overhead strips a party member's buffs. It is aimed AT an ally and hostile TO them, so target_type routes it to the buff cue — an ascending fanfare over the player losing every buff they had")
+
+
 func test_the_four_repaired_effects_route_to_the_BUFF_cue() -> void:
 	## Pins VALUES, not presence. "the effect is routed somewhere" was true of the bug —
 	## `_:` is a route. Only naming the expected cue catches a beneficial effect wired to
