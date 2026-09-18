@@ -34,6 +34,13 @@ const DEFAULT_SCRIPT := "res://src/battle/BattleManager.gd"
 var _autoload: String = ""
 var _cur: String = ""
 var _baseline: Dictionary = {}
+## ⛔ SEPARATE, because a static is NOT in get_property_list(). Reflection sees instance members
+## only, so a subject with `static var`s reports CLEAN for every one of them — silently. Measured
+## 2026-09-18: 3 of 30 autoloads declare statics, and SoundManager (6) is the one this file's own
+## usage block advertises. A tool that names an example it cannot actually cover is worse than one
+## that covers nothing.
+var _static_baseline: Dictionary = {}
+var _script: Variant = null
 var _armed: bool = false
 
 
@@ -54,23 +61,47 @@ func run() -> void:
 	if script == null:
 		print("LEAKPROBE FATAL: could not load %s for an in-process baseline" % script_path)
 		return
-	## In-process, never a hand-written default list: a literal baseline drifts from the code the
-	## first time someone changes an initializer, and drifts silently in the clean direction.
-	var fresh: Node = script.new()
-	for prop in fresh.get_property_list():
+	## ⛔ BASELINE FROM THE LIVE AUTOLOAD AT ARM TIME, NOT FROM A FRESH INSTANCE. A pre-run hook runs
+	## before any test script, so arm time IS the clean between-files state — which is the thing this
+	## tool compares against. A `script.new()` baseline instead measures "differs from the DECLARED
+	## default", and for any subject whose _ready() populates fields that is permanently non-zero:
+	## measured on SoundManager, 16 AudioStreamPlayers and 3 dictionaries built in _ready() reported
+	## as dirty on every single file, burying the one real finding in the same line. BattleManager
+	## does not populate in _ready(), so the two agree there and the noise never showed up in my own
+	## lane — which is exactly why a tool wants a second subject before it ships.
+	## The property NAMES still come from reflection, so nothing is hand-listed.
+	for prop in node.get_property_list():
 		if not (int(prop["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE):
 			continue
 		var n: String = str(prop["name"])
-		var v: Variant = fresh.get(n)
+		var v: Variant = node.get(n)
 		_baseline[n] = v.duplicate(true) if (v is Array or v is Dictionary) else v
-	fresh.free()
-	if _baseline.is_empty():
+	_script = script
+	_arm_statics(script_path, script)
+	if _baseline.is_empty() and _static_baseline.is_empty():
 		print("LEAKPROBE FATAL: %s exposes no script variables — nothing to measure" % _autoload)
 		return
 	_armed = true
-	print("LEAKPROBE ARMED %s fields=%d" % [_autoload, _baseline.size()])
+	print("LEAKPROBE ARMED %s fields=%d statics=%d" % [_autoload, _baseline.size(), _static_baseline.size()])
 	gut.start_script.connect(_on_start)
 	gut.end_script.connect(_on_end)
+
+
+## Static names come from the SOURCE, because no reflection API lists them. Their value is then
+## read off the SCRIPT object — `script.get(name)` works for statics (verified against
+## SoundManager._sfx_manifest). The baseline is whatever they hold at arm time, not a pristine
+## default: a static is process-wide, so there is no "fresh" state to compare against once the
+## engine has booted. That makes this half a CONDUIT and the instance half a barrier, deliberately.
+func _arm_statics(script_path: String, script: Variant) -> void:
+	var src: String = FileAccess.get_file_as_string(script_path)
+	if src == "":
+		print("LEAKPROBE WARNING: could not read %s to enumerate statics — any `static var` on this subject is UNMEASURED" % script_path)
+		return
+	var re := RegEx.create_from_string("(?m)^static var ([A-Za-z_][A-Za-z0-9_]*)")
+	for m in re.search_all(src):
+		var n: String = m.get_string(1)
+		var v: Variant = script.get(n)
+		_static_baseline[n] = v.duplicate(true) if (v is Array or v is Dictionary) else v
 
 
 func _target() -> Node:
@@ -109,9 +140,24 @@ func _on_end() -> void:
 			if shown.length() > 70:
 				shown = shown.substr(0, 70) + "..."
 			diffs.append("%s=%s" % [n, shown])
+	for n in _static_baseline:
+		var live_s: Variant = _script.get(str(n))
+		var base_s: Variant = _static_baseline[n]
+		if typeof(live_s) == TYPE_OBJECT or typeof(base_s) == TYPE_OBJECT:
+			if live_s != null and not is_instance_valid(live_s):
+				diffs.append("static %s=<Freed Object>" % n)
+			elif (live_s == null) != (base_s == null):
+				diffs.append("static %s=%s" % [n, "obj" if live_s != null else "null"])
+			continue
+		if live_s != base_s:
+			var shown_s: String = str(live_s)
+			if shown_s.length() > 70:
+				shown_s = shown_s.substr(0, 70) + "..."
+			diffs.append("static %s=%s" % [n, shown_s])
 	if not diffs.is_empty():
 		print("LEAK %s :: %d :: %s" % [_cur, diffs.size(), "; ".join(diffs)])
 	_reset(node)
+	_reset_statics()
 
 
 func _reset(node: Node) -> void:
@@ -141,3 +187,9 @@ func _reset(node: Node) -> void:
 					lived[k] = bv.duplicate(true) if (bv is Array or bv is Dictionary) else bv
 				continue
 		node.set(str(n), base_v)
+
+
+func _reset_statics() -> void:
+	for n in _static_baseline:
+		var base_v: Variant = _static_baseline[n]
+		_script.set(str(n), base_v.duplicate(true) if (base_v is Array or base_v is Dictionary) else base_v)
