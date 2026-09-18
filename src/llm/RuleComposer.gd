@@ -654,50 +654,6 @@ func _is_catch_all(rule: Dictionary) -> bool:
 	return true
 
 
-## Two autogrind shapes that cost the player the WHOLE ruleset, both normalisations.
-##
-## Autogrind has no per-rule rescue — one bad rule and the composition falls back — so a
-## near-miss name is a total loss. Measured on 24 live llama3 autogrind compositions:
-##
-##   party_corruption                       2 of 24, each the composition's ONLY rule
-##   {"type":"always","op":"","value":""}   1 of 24, beside two valid rules
-##
-## 1. `party_corruption` is the model generalising from its own siblings — the grammar
-##    lists party_hp_min / party_hp_avg / party_mp_avg beside a bare `corruption`. The
-##    prefix is stripped ONLY when the remainder is itself a live condition type, so this
-##    is a lookup in the system's own vocabulary, not a table of guesses kept here.
-## 2. `always` takes no payload, and validate_rule rejects a PRESENT `op` that is empty
-##    rather than ignoring it. Erasing an empty payload key from a nullary condition
-##    changes nothing the rule asks — the same shape as _drop_null_targets.
-## member_status carries ONE status id, and validate_rule refuses anything else — which
-## discards the WHOLE composition, not the rule. Measured on live llama3 2026-09-17, after the
-## prompt was given the vocabulary: 3 of 20 compositions put an ARRAY in `value` ("or" spelled
-## the way the player said it), and a residual English participle survived the instruction.
-##
-## Both are lookups in DialoguePrompts.STATUS_VOCABULARY, the same table the prompt
-## renders — not a table of guesses kept here. An array becomes one rule per id because OR is
-## what this grammar's rule list already means; the conditions are AND-chained, so cloning the
-## rule preserves every other condition it carried.
-## switch_profile names ONE member, and validate_rule checks only that the KEY is present —
-## so any string passes. Measured on live llama3 2026-09-17, an intent asking to switch the
-## whole party, 20 samples: 20 of 20 character_ids named nobody.
-##
-##     ""          7    passes validation, then apply_autogrind_actions skips on the != "" test
-##     everyone    4    the model reaching for something the grammar cannot say
-##     *           4
-##     all         3
-##     defensive   1    the profile NAME in the id field
-##     None        1
-##
-## The middle eleven are the damaging ones, and not because they no-op: set_active_profile
-## calls _ensure_character_profiles FIRST, so an invented id CREATES a profile block and
-## _save_character_profiles persists it. Probed: character_profiles["everyone"] created with
-## 3 profiles and active=1, written to user://autobattle/profiles.json in real play.
-##
-## A party word becomes one action per member — the grammar's own way to say it, and exactly
-## what the intent asked for. An id naming nobody is DROPPED, because the alternative is
-## letting it reach the save. Both need the live party, so with no kit context this does
-## nothing: unable to verify is not the same as verified absent.
 ## A member_ability the engine cannot run between fights.
 ##
 ## Measured on live llama3 2026-09-17, an intent naming three members' abilities: 40 of 53
@@ -758,6 +714,26 @@ func _drop_unrunnable_member_abilities(rules: Array, domain_system) -> Array[Str
 	return notes
 
 
+## switch_profile names ONE member, and validate_rule checks only that the KEY is present —
+## so any string passes. Measured on live llama3 2026-09-17, an intent asking to switch the
+## whole party, 20 samples: 20 of 20 character_ids named nobody.
+##
+##     ""          7    passes validation, then apply_autogrind_actions skips on the != "" test
+##     everyone    4    the model reaching for something the grammar cannot say
+##     *           4
+##     all         3
+##     defensive   1    the profile NAME in the id field
+##     None        1
+##
+## The middle eleven are the damaging ones, and not because they no-op: set_active_profile
+## calls _ensure_character_profiles FIRST, so an invented id CREATES a profile block and
+## _save_character_profiles persists it. Probed: character_profiles["everyone"] created with
+## 3 profiles and active=1, written to user://autobattle/profiles.json in real play.
+##
+## A party word becomes one action per member — the grammar's own way to say it, and exactly
+## what the intent asked for. An id naming nobody is DROPPED, because the alternative is
+## letting it reach the save. Both need the live party, so with no kit context this does
+## nothing: unable to verify is not the same as verified absent.
 func _normalise_switch_profile(rules: Array, kit_context: Dictionary) -> Array[String]:
 	var notes: Array[String] = []
 	if not bool(kit_context.get("resolved", false)):
@@ -1012,6 +988,30 @@ func _normalise_member_status(rules: Array) -> Array[String]:
 	return notes
 
 
+## Two autogrind shapes that cost the player the WHOLE ruleset, both normalisations.
+##
+## Autogrind has no per-rule rescue — one bad rule and the composition falls back — so a
+## near-miss name is a total loss. Measured on 24 live llama3 autogrind compositions:
+##
+##   party_corruption                       2 of 24, each the composition's ONLY rule
+##   {"type":"always","op":"","value":""}   1 of 24, beside two valid rules
+##
+## 1. `party_corruption` is the model generalising from its own siblings — the grammar
+##    lists party_hp_min / party_hp_avg / party_mp_avg beside a bare `corruption`. The
+##    prefix is stripped ONLY when the remainder is itself a live condition type, so this
+##    is a lookup in the system's own vocabulary, not a table of guesses kept here.
+## 2. `always` takes no payload, and validate_rule rejects a PRESENT `op` that is empty
+##    rather than ignoring it. Erasing an empty payload key from a nullary condition
+##    changes nothing the rule asks — the same shape as _drop_null_targets.
+## member_status carries ONE status id, and validate_rule refuses anything else — which
+## discards the WHOLE composition, not the rule. Measured on live llama3 2026-09-17, after the
+## prompt was given the vocabulary: 3 of 20 compositions put an ARRAY in `value` ("or" spelled
+## the way the player said it), and a residual English participle survived the instruction.
+##
+## Both are lookups in DialoguePrompts.STATUS_VOCABULARY, the same table the prompt
+## renders — not a table of guesses kept here. An array becomes one rule per id because OR is
+## what this grammar's rule list already means; the conditions are AND-chained, so cloning the
+## rule preserves every other condition it carried.
 func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[String]:
 	var notes: Array[String] = []
 	if domain_system == null or not ("PARTY_CONDITION_TYPES" in domain_system):
