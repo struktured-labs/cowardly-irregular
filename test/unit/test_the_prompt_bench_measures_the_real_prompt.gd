@@ -52,6 +52,106 @@ func test_the_bench_refuses_a_kit_that_did_not_resolve() -> void:
 		"the resolved check must precede the render, or a degraded prompt is written anyway")
 
 
+func test_every_data_read_goes_through_the_guarded_reader() -> void:
+	## The floor above catches an unresolved KIT, and that was not enough: three helpers
+	## returned [] when FileAccess.open came back null, while _kit_for still reported
+	## resolved=true. Measured before this arm — items.json dark gave EC=0, 9 rendered,
+	## fighter_basic.txt 8726 chars against ~9280, silently missing its item list.
+	## A failed read CANNOT be signalled by an empty result (between_battle is legitimately
+	## empty for a kit with no healing), so the reader records it and the floor reads that.
+	var src: String = FileAccess.get_file_as_string(BENCH_RENDERER)
+	assert_gt(src.length(), 1000,
+		"CONTROL: %s must actually be read, or this arm asserts over ''" % BENCH_RENDERER)
+	var stray: Array = []
+	var at: int = src.find("\"res://data/")
+	while at != -1:
+		## Every data path must be an ARGUMENT to the guarded reader. A literal reached by
+		## FileAccess directly is a read that can fail silently.
+		if src.substr(max(0, at - 15), 15).find("_require_json(") == -1:
+			stray.append(src.substr(at, src.find("\"", at + 1) - at + 1))
+		at = src.find("\"res://data/", at + 1)
+	assert_eq(stray, [],
+		"these data paths bypass _require_json and can fail silently: %s" % str(stray))
+	assert_gt(src.find("_read_failed = true"), -1,
+		"the reader must RECORD a failed read — an empty result cannot signal one")
+	assert_gt(src.find("if _read_failed or"), -1,
+		"the render floor must refuse on a recorded read failure, not only on an unresolved kit")
+
+
+func test_a_documented_invocation_carries_the_sandbox() -> void:
+	## These tools have no wrapper, so the docstring IS the interface. A bare `godot --headless`
+	## resolves user:// to the real profile — that is how a sibling lane rotated the player's
+	## crash logs away tonight, from a tool whose only possible invocation was bare.
+	## Derived over the lane's tools so a fourth one inherits the rule.
+	var offenders: Array = []
+	for tool_path in ["res://tools/rule_composition_compose.gd",
+			"res://tools/rule_composition_validate.gd", "res://tools/llm_prompt_bench.gd"]:
+		var src: String = FileAccess.get_file_as_string(tool_path)
+		assert_gt(src.length(), 500,
+			"CONTROL: %s must actually be read, or this arm skips it" % tool_path)
+		for line in src.split("\n"):
+			## ANY godot invocation, not just `--headless`. The screenshot tools document
+			## `xvfb-run -a godot --rendering-driver opengl3 ...` with no --headless at all, and
+			## a predicate keyed on that flag sails straight past them — verified by planting one.
+			var g: int = line.find("godot ")
+			if g == -1:
+				continue
+			var tail: String = line.substr(g + len("godot "))
+			if not tail.begins_with("-"):
+				continue
+			## PRESENCE IS NOT ENOUGH. Measured by a sibling lane after this arm shipped:
+			## an INVALID sandbox path fails CLOSED (godot aborts, EC=134, nothing written),
+			## but an EMPTY XDG_DATA_HOME is treated as unset per the XDG spec — godot writes
+			## the player's REAL profile at EC=0 with no warning. So require a value.
+			var at: int = line.find("XDG_DATA_HOME=")
+			if at == -1:
+				offenders.append("%s :: no sandbox :: %s" % [tool_path.get_file(), line.strip_edges()])
+				continue
+			var rest: String = line.substr(at + len("XDG_DATA_HOME="))
+			var value: String = rest.split(" ")[0].replace("\"", "").replace("'", "")
+			if value == "":
+				offenders.append("%s :: EMPTY sandbox (fails OPEN onto the real profile) :: %s"
+					% [tool_path.get_file(), line.strip_edges()])
+	assert_eq(offenders, [],
+		"a documented bare godot writes to the player's real user:// — %s" % str(offenders))
+
+
+func test_the_bench_scales_match_the_live_ones() -> void:
+	## The kit-shape arm above compares KEYS. The autogrind prompt also carries a `scales`
+	## block, which the bench HARDCODES because a -s script has no autoloads — and nothing
+	## held it to the live source. If AutogrindSystem's interrupt_rules default moves, the
+	## bench keeps rendering the old number and every measurement is about a prompt the game
+	## no longer sends, which is this file's whole premise.
+	##
+	## Both sides are DERIVED — no literal here — so a deliberate rebalance moves them together
+	## and only a DRIFT reds. Pinning 4.5 would fail a correct change and pass a stale bench.
+	var rc = get_tree().root.get_node_or_null("RuleComposer")
+	assert_not_null(rc, "CONTROL: RuleComposer autoload must exist")
+	var live: Dictionary = rc._numeric_scales()
+	assert_false(live.is_empty(),
+		"CONTROL: the live scales must resolve, or this arm compares against nothing")
+
+	var src: String = FileAccess.get_file_as_string(BENCH_RENDERER)
+	assert_gt(src.length(), 1000,
+		"CONTROL: %s must actually be read" % BENCH_RENDERER)
+	var at: int = src.find("\"scales\":")
+	assert_gt(at, -1, "the bench must still carry a scales block")
+	var open_brace: int = src.find("{", at)
+	var close_brace: int = src.find("}", open_brace)
+	var parsed = JSON.parse_string(src.substr(open_brace, close_brace - open_brace + 1))
+	assert_true(parsed is Dictionary,
+		"the bench's scales literal must parse, got: %s" % src.substr(open_brace, 80))
+	var bench: Dictionary = parsed as Dictionary
+
+	var live_keys: Array = live.keys(); live_keys.sort()
+	var bench_keys: Array = bench.keys(); bench_keys.sort()
+	assert_eq(bench_keys, live_keys,
+		"the bench's scales keys must BE the live ones — %s vs %s" % [bench_keys, live_keys])
+	for k in live_keys:
+		assert_almost_eq(float(bench[k]), float(live[k]), 0.0001,
+			"scale '%s' drifted: bench renders %s, the game sends %s" % [k, bench[k], live[k]])
+
+
 func test_the_bench_renders_through_dialogue_prompts() -> void:
 	## Not a copy of the prompt text, and not a hand-rolled approximation.
 	var src: String = FileAccess.get_file_as_string(BENCH_RENDERER)
