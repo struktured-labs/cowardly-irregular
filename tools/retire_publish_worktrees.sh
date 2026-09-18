@@ -96,7 +96,25 @@ run() {
         if [ "$tag" = "$newest" ]; then
             printf '  KEEP     %-10s %s — the newest tag\n' "$b" "$tag"; kept=$((kept+1)); continue
         fi
-        if [ ! -d "tmp/_archive/logs/${tag}" ]; then
+        # ⛔ WHERE THE EVIDENCE ACTUALLY IS. publish_all.sh derives the archive root by
+        # stripping at the FIRST "/tmp/" in the publish worktree's own path:
+        #     */tmp/*) dest="${here%%/tmp/*}/tmp/_archive/logs/${TAG}"
+        # This looked under LANE_ROOT instead. Those are the same directory ONLY when the lane
+        # worktree is not itself under a /tmp/ path -- and on this box it is
+        # (cowir-deploy-wt/tmp/wt-raw), so the archiver wrote one level OUT and this looked one
+        # level IN. Measured 2026-09-18 after publishing v3.33.411-alpha: pub409 refused as
+        # "no archived evidence" with TEN archived files sitting in the directory it never read.
+        # It fails closed, so nothing is ever deleted wrongly -- but nothing is ever reclaimed
+        # either, which is the entire purpose of the tool. The disk was 98% full.
+        # Derived from the WORKTREE with the archiver's own rule so the two cannot drift apart;
+        # the LANE_ROOT-relative path is still accepted so older archives keep working.
+        local _abs _eviroot
+        _abs="$(cd "$d" && pwd)"
+        case "$_abs" in
+            */tmp/*) _eviroot="${_abs%%/tmp/*}" ;;
+            *)       _eviroot="$LANE_ROOT" ;;
+        esac
+        if [ ! -d "${_eviroot}/tmp/_archive/logs/${tag}" ] && [ ! -d "tmp/_archive/logs/${tag}" ]; then
             printf '  REFUSE   %-10s %s — no archived evidence; this worktree is the only record\n' "$b" "$tag"
             refused=$((refused+1)); continue
         fi
@@ -167,6 +185,33 @@ selftest() {
     (cd "$lane" && git tag -a v3.33.353-alpha -m "v3.33.353-alpha" >/dev/null 2>&1)
     out="$(RETIRE_LANE_ROOT="$lane" bash "$SELF" --store-version=v3.33.351-alpha 2>&1)"
     case "$out" in *"REFUSE   pub352"*"no archived evidence"*) _eq "no archived evidence is REFUSED" yes yes ;; *) _eq "no archived evidence is REFUSED" no yes ;; esac
+
+    # rule 3 again, for the shape that broke it: a lane worktree that is ITSELF under a
+    # /tmp/ path. The archiver strips at the FIRST "/tmp/", so evidence lands OUTSIDE the lane.
+    # Every fixture above has the lane at the top level, where both derivations agree -- which
+    # is exactly why the bug survived a selftest that already covered "no archived evidence".
+    local nest="$d/outer/tmp/lane"
+    mkdir -p "$nest"
+    git init -q "$nest"
+    (cd "$nest" && git config user.email t@t && git config user.name t \
+        && mkdir -p tools && echo ORIGINAL > tools/f.gd && printf 'tmp/\n' > .gitignore \
+        && git add tools/f.gd .gitignore && git commit -qm one \
+        && git remote add origin "$origin" \
+        && git tag -a v3.33.350-alpha -m x >/dev/null 2>&1 \
+        && git tag -a v3.33.351-alpha -m x >/dev/null 2>&1 \
+        && git tag -a v3.33.352-alpha -m x >/dev/null 2>&1 \
+        && git worktree add -q --detach tmp/pub350 v3.33.350-alpha 2>/dev/null)
+    # the archiver's location: strip at the first /tmp/ in ".../outer/tmp/lane/tmp/pub350"
+    mkdir -p "$d/outer/tmp/_archive/logs/v3.33.350-alpha"
+    out="$(RETIRE_LANE_ROOT="$nest" bash "$SELF" --store-version=v3.33.351-alpha 2>&1)"
+    case "$out" in *"would    pub350"*) _eq "evidence OUTSIDE a nested lane is found" yes yes ;;
+                   *) _eq "evidence OUTSIDE a nested lane is found" no yes ;; esac
+    # THE DISCRIMINATING PARTNER: remove that archive and the same nested lane must refuse.
+    # Without it, a fix that simply stopped checking would pass the arm above.
+    rm -rf "$d/outer/tmp/_archive/logs/v3.33.350-alpha"
+    out="$(RETIRE_LANE_ROOT="$nest" bash "$SELF" --store-version=v3.33.351-alpha 2>&1)"
+    case "$out" in *"REFUSE   pub350"*"no archived evidence"*) _eq "  ...and its ABSENCE still refuses" yes yes ;;
+                   *) _eq "  ...and its ABSENCE still refuses" no yes ;; esac
 
     # rule 4: a tracked change that is NOT on main -> refuse; one that IS -> allowed.
     echo "UNMERGED" > "$lane/tmp/pub350/tools/f.gd"

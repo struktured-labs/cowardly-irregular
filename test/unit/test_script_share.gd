@@ -1,5 +1,12 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+## File-scope too: the persistence flag is set in before_all, BEFORE before_each can snapshot it.
+var _ag_state_all: Dictionary
+
 ## Tests for ScriptShareManager — autobattle script export/import
 ##
 ## Writes autogrind_rules.json and reads it back, at a FIXED name in a directory
@@ -23,6 +30,7 @@ var _prior_export_dir: String = ""
 
 
 func before_all() -> void:
+	_ag_state_all = AutogrindState.snapshot()
 	_prior_export_dir = ScriptShareManager.EXPORT_DIR
 	ScriptShareManager.EXPORT_DIR = "user://script_share_test_%d/" % OS.get_process_id()
 	## The EXPORT_DIR redirect above covers script_exports; set_autogrind_rules ALSO writes user://autogrind/profiles.json, which had no net — measured overwriting the player's real profiles on every suite run.
@@ -39,6 +47,8 @@ func after_all() -> void:
 		for fname in DirAccess.get_files_at(mine):
 			DirAccess.remove_absolute(mine + fname)
 		DirAccess.remove_absolute(mine)
+	## Last: the persistence flag is set in before_all, so before_each's snapshot already sees it true.
+	AutogrindState.restore(_ag_state_all)
 
 
 func test_script_share_manager_class_exists() -> void:
@@ -124,3 +134,11 @@ func test_get_export_summary_autogrind() -> void:
 func test_get_export_summary_invalid_file() -> void:
 	var summary = ScriptShareManager.get_export_summary("no_such_file.json")
 	assert_eq(summary, "Invalid file", "Should return 'Invalid file' for missing files")
+
+
+func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

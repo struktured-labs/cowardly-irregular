@@ -15,15 +15,21 @@ const SRC := "res://src/ui/autogrind/AutogrindGridEditor.gd"
 ## Past MenuRepeat.INITIAL_DELAY, so one tick arms the hold and the next fires.
 const PAST_DELAY := 0.5
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
 var _saved_persist: bool = false
+## File scope, matching the flag above: the editor writes autogrind_profiles, which outlived this file.
+var _ag_state: Dictionary
 
 
 func before_all() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_saved_persist = AutogrindSystem._test_disable_persistence
 	AutogrindSystem._test_disable_persistence = true
 
 
 func after_all() -> void:
+	AutogrindState.restore(_ag_state)
 	AutogrindSystem._test_disable_persistence = _saved_persist
 
 

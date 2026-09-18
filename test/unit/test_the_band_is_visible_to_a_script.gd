@@ -167,3 +167,18 @@ func test_simulate_refuses_it_rather_than_answering_from_the_last_fight() -> voi
 	add_child_autofree(ge)
 	var why: String = ge._undecidable_reason({"conditions": [{"type": "volatility_band", "op": ">=", "value": 2}]})
 	assert_ne(why, "", "Simulate must report it as undecidable rather than reading a stale band")
+
+
+## The editor registers a profile on the AutobattleSystem autoload, keyed "" when nothing sets a
+## character_id, and it outlives this file. Restores the whole map — the leaked key is one this
+## file never named, so a key-wise teardown cannot reach it.
+const ABProfiles := preload("res://test/unit/helpers/autobattle_profiles.gd")
+var _ab_profiles_entry: Dictionary = {}
+
+
+func before_all() -> void:
+	_ab_profiles_entry = ABProfiles.snapshot(get_tree().root.get_node_or_null("AutobattleSystem"))
+
+
+func after_all() -> void:
+	ABProfiles.restore(get_tree().root.get_node_or_null("AutobattleSystem"), _ab_profiles_entry)

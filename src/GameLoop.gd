@@ -965,7 +965,8 @@ func _input(event: InputEvent) -> void:
 		# L+R shoulder together cycles tier
 		if event is InputEventJoypadButton and event.pressed:
 			if event.button_index == JOY_BUTTON_LEFT_SHOULDER or event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
-				if Input.is_joy_button_pressed(0, JOY_BUTTON_LEFT_SHOULDER) and Input.is_joy_button_pressed(0, JOY_BUTTON_RIGHT_SHOULDER):
+				# event.device, not 0 — see AutogrindInputHelper.classify_event for why.
+				if Input.is_joy_button_pressed(event.device, JOY_BUTTON_LEFT_SHOULDER) and Input.is_joy_button_pressed(event.device, JOY_BUTTON_RIGHT_SHOULDER):
 					if _autogrind_controller and is_instance_valid(_autogrind_controller):
 						_autogrind_controller.cycle_tier()
 					get_viewport().set_input_as_handled()

@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## struktured's open item, 2026-09-06: the autogrind console outlives a scene swap.
 ##
 ## THE SHAPE, which is why this fix is at a seam and not at a symptom: four sites had each
@@ -21,6 +26,7 @@ var _saved_rules: Array = []
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_gl = load(GL_SRC).new()
 	if AutogrindSystem:
 		AutogrindSystem._test_disable_persistence = true
@@ -33,6 +39,8 @@ func after_each() -> void:
 		_gl = null
 	if AutogrindSystem:
 		AutogrindSystem.set_autogrind_rules(_saved_rules)
+	AutogrindState.restore(_ag_state)
+
 
 
 func _attach_console() -> Node:

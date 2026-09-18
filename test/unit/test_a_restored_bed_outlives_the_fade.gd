@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## A cutscene faded the field bed, ended, restored the SAME area — and the bed died a second later.
 ##
 ## ⛔ `play_area_music` opens with `if _current_area == area_type and _music_playing: return`.
@@ -112,3 +114,8 @@ func test_a_different_track_still_takes_the_normal_path() -> void:
 	await _frames(12)
 	assert_eq(SoundManager._current_music, "victory",
 		"a real track change must still route through the crossfade rather than the cancel")
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()

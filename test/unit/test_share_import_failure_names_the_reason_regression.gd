@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## A refused share code told the player "Share code valid but could not apply."
 ##
 ## That sentence asserts the code is valid AND that it did not apply, in one breath, and gives
@@ -17,6 +22,7 @@ const SSM := preload("res://src/autobattle/ScriptShareManager.gd")
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	SSM.last_import_errors = []
 	var abs_node := get_node_or_null("/root/AutobattleSystem")
 	if abs_node:
@@ -31,6 +37,8 @@ func after_each() -> void:
 	var abs_node := get_node_or_null("/root/AutobattleSystem")
 	if abs_node:
 		abs_node.character_profiles.erase("share_reason_probe")
+	AutogrindState.restore(_ag_state)
+
 
 
 func test_a_refused_autobattle_import_reports_which_rule_and_field() -> void:

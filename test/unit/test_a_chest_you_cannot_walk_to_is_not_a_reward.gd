@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Harmonia's legend has declared `e = hedge (impassable decorative border)` since the village was
 ## written. TileGenerator carries the whole tile — palette, `_draw_village_hedge`, atlas slot 34, and
 ## an entry in `_get_impassable_types()` — and a comment stating it "is used in HarmoniaVillage's
@@ -239,3 +241,8 @@ func test_flora_still_points_at_the_gap() -> void:
 	# CONTROL: the slice must really be her lines and not the whole file.
 	assert_true(block.contains("La la la~"), "CONTROL: the slice must contain Flora's opening line")
 	assert_false(block.contains("Dr. Temporal"), "CONTROL: the slice must stop before the next NPC")
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()

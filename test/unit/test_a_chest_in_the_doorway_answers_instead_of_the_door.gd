@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## A 500-gold chest was authored ON the Ironhaven village door, and W1 doors need a press.
 ##
 ## Every overworld transition is built with `require_interaction = true` ("Press A to enter"), so a
@@ -207,3 +209,8 @@ func test_the_arm_can_see_a_chest_in_a_doorway() -> void:
 	assert_gt(stolen, 0,
 		"a chest planted 45px from the door must take faced presses from it — at the distance " +
 		"w1_iron_gold actually sat. If it does not, the real arm passes for free")
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()

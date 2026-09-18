@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## A controller could pick a condition's TYPE (A) and its OPERATOR (Y) but never its VALUE.
 ## _adjust_condition_value was bound to W/S only — keyboard. So a pad player could build
 ## "party HP avg <" and was stuck with whatever number it defaulted to, which is the part of a
@@ -18,6 +23,7 @@ var _ed: Node = null
 
 ## Own viewport per test — the shared one latches is_input_handled() and disarms later arms.
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
 	AutogrindSystem._test_disable_persistence = true
 	_vp = SubViewport.new()
@@ -34,6 +40,8 @@ func after_each() -> void:
 	if _ed and is_instance_valid(_ed):
 		_ed.queue_free()
 	_ed = null
+	AutogrindState.restore(_ag_state)
+
 
 
 func _stick(axis: int, value: float) -> InputEventJoypadMotion:

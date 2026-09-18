@@ -390,7 +390,28 @@ else
   _EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
     echo "[deploy] BLOCKED: could not build the export sandbox — see above." >&2
     exit 2; }
-  XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --export-release "Web" builds/web/index.html 2>&1 | tail -3
+  # ⛔ KEEP THE LOG. This used to pipe straight into `tail -3`, which threw the export log away
+  # and left this path with nothing to audit. make_web_stage.sh:275 runs check_pck_complete.py
+  # against tmp/stage_export.log on the DEFAULT path, so a staged publish proves its payload is
+  # whole — and this opt-out branch, which also publishes, proved nothing.
+  XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --export-release "Web" builds/web/index.html \
+      > tmp/web_export.log 2>&1
+  tail -3 tmp/web_export.log
+  # ⛔ AND AUDIT IT, for the reason check_pck_complete.py's own header gives about THIS chain:
+  # "make_web_stage.sh gates the pck on size, and only in one direction ... A build that LOST
+  # content shrinks, so it passes with MORE headroom and reports a better number." The size
+  # gates below (PCK_LIMIT / PCK_WARN) cannot tell a clean build from one that dropped content;
+  # they reward the dropout. The staged path has had this check since it was written; this one
+  # never did, so WEB_STAGE=0 published on the size gates alone.
+  if [ ! -f tools/check_pck_complete.py ]; then
+    echo "[deploy] BLOCKED: tools/check_pck_complete.py missing. Refusing to publish a pck" >&2
+    echo "        whose payload nothing has checked." >&2
+    exit 2
+  fi
+  if ! python3 tools/check_pck_complete.py . tmp/web_export.log "Web"; then
+    echo "[deploy] BLOCKED: the direct web export is missing content it owed — see above." >&2
+    exit 2
+  fi
 fi
 # An export that reported success and produced nothing would otherwise reach the pck
 # gate as a stat error rather than a named failure.
@@ -553,6 +574,22 @@ mkdir -p tmp
 # needs the templates that live under the real XDG_DATA_HOME (see the ⛔ note above).
 _SMOKE_XDG="$PWD/tmp/smoke_xdg"
 mkdir -p "$_SMOKE_XDG"
+# ⛔ PROVE THE REDIRECT HELD, PER RUN. The sandbox above is the FIX; this is the CHECK, and
+# until now only the desktop chain had one. deploy_desktop.sh takes a signature of his real
+# profile before its boot smoke and verifies it after (:737/:753); the web smoke redirected
+# and then trusted the redirect on the strength of a one-time manual verification from
+# 2026-09-07, recorded in the comment above. A one-time check is not a per-run check, and
+# this gate boots the real game and fights real battles on every publish.
+# ⚠️ NOT $_UD: that is defined with ${XDG_DATA_HOME:-...}, so it would resolve to the SANDBOX
+# whenever the caller already exported XDG_DATA_HOME -- i.e. it would compare the sandbox with
+# itself and pass. His real profile is the unconditional path, as deploy_desktop.sh:200 has it.
+_REAL_UD="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular"
+if [ ! -x tools/check_profile_untouched.sh ]; then
+  echo "[deploy] BLOCKED: tools/check_profile_untouched.sh missing. Refusing to boot the game" >&2
+  echo "        for the render smoke without a way to prove his saves survived it." >&2
+  exit 3
+fi
+_REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$_REAL_UD")"
 SMOKE_CMD=(env "XDG_DATA_HOME=$_SMOKE_XDG" xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke)
 if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
   cp tmp/deploy_smoke.log tmp/deploy_smoke.attempt1.log
@@ -560,6 +597,14 @@ if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
   if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
     echo "[deploy] BLOCKED: render smoke failed TWICE — see tmp/deploy_smoke.log (+ attempt1)" >&2; exit 3
   fi
+fi
+# Isolation first: a leak matters more than a failed smoke. The sandbox is passed so a RED can
+# tell "he was playing during the deploy" from "the redirect did not work" — a smoke that ran
+# and left an EMPTY sandbox did not have a working XDG_DATA_HOME.
+if ! ./tools/check_profile_untouched.sh --verify "$_REAL_UD" "$_REAL_SIG_BEFORE" "$_SMOKE_XDG"; then
+  echo "[deploy] BLOCKED: the render smoke touched struktured's real profile. Refusing to" >&2
+  echo "        keep running the game against his live save data." >&2
+  exit 3
 fi
 grep "VERDICT" tmp/deploy_smoke.log
 

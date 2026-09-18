@@ -664,7 +664,9 @@ func _nav_step(action: String) -> void:
 ## Hold-to-repeat. These guards MIRROR _input's — without them a hold would keep stepping
 ## the menu underneath an open submenu or during the fade-in, which _input explicitly refuses.
 func _process(delta: float) -> void:
-	if not visible or modulate.a < 1.0 or _submenu_open or party.is_empty():
+	# is_queued_for_deletion too: none of these hide before queue_free(), so a menu closed
+	# mid-hold stays visible one more frame and the ramped repeat steps a dying node.
+	if not visible or is_queued_for_deletion() or modulate.a < 1.0 or _submenu_open or party.is_empty():
 		_nav_repeat.reset()
 		return
 	var action := _nav_repeat.tick(delta)
