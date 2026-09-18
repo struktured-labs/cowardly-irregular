@@ -457,12 +457,19 @@ func _press_key() -> void:
 	var layout = _get_current_layout()
 	var key_char = layout[cursor_row][cursor_col]
 
+	## ⛔ EVERY REFUSAL SAYS SO. At max_length a keypress did nothing and made no sound, and so did
+	## backspace on an empty field — the player presses, the field does not move, and nothing tells
+	## them why. `menu_error` is the established answer elsewhere (ItemsMenu on an empty list,
+	## JobMenu on an unavailable job); this keyboard had a cue for every ACCEPTED press and none for
+	## a refused one.
 	match key_char:
 		"⌫":  # Backspace
 			if input_text.length() > 0:
 				input_text = input_text.substr(0, input_text.length() - 1)
 				_refresh_display()
 				SoundManager.play_ui("menu_cancel")
+			else:
+				SoundManager.play_ui("menu_error")
 		"⇧":  # Shift/Case toggle
 			char_set = (char_set + 1) % 3
 			_refresh_keys()
@@ -474,11 +481,15 @@ func _press_key() -> void:
 				input_text += " "
 				_refresh_display()
 				SoundManager.play_ui("menu_select")
+			else:
+				SoundManager.play_ui("menu_error")
 		_:  # Regular character
 			if input_text.length() < max_length:
 				input_text += key_char
 				_refresh_display()
 				SoundManager.play_ui("menu_select")
+			else:
+				SoundManager.play_ui("menu_error")
 
 
 func _submit_text() -> void:
