@@ -511,6 +511,9 @@ func _on_system_stopped(results: Dictionary) -> void:
 
 func stop_grind(reason: String = "Manual stop") -> void:
 	if _state == State.IDLE:
+		## A start that aborted after _force_autobattle_on never left IDLE; this is the only way back.
+		if not _saved_autobattle_states.is_empty() or not _autogrind_authored_scripts.is_empty():
+			_restore_autobattle_states()
 		return
 
 	_state = State.IDLE
