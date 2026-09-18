@@ -225,7 +225,12 @@ func test_zz_the_shared_parties_were_handed_back() -> void:
 		return
 	var mine := ["Me", "Ally", "Foe"]
 	var strays: Array[String] = []
+	## ⛔ A FREED fixture is the dangerous case and the obvious check SKIPS it: add_child_autofree
+	## frees these at arm end, so a strand leaves INVALID instances, not named ones. Guarding the
+	## name lookup behind is_instance_valid made this arm pass under the very abort it defends.
 	for c in bm.player_party + bm.enemy_party:
-		if c != null and is_instance_valid(c) and str(c.combatant_name) in mine:
+		if c == null or not is_instance_valid(c):
+			strays.append("<freed>")
+		elif str(c.combatant_name) in mine:
 			strays.append(str(c.combatant_name))
 	assert_eq(strays.size(), 0, "this file left its fixtures in the shared parties: " + str(strays))
