@@ -4553,7 +4553,8 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 				"defense_up", "attack_up", "volatility_up_self", "volatility_down", "magic_defense_up", "regen", "barrier", "cleanse", "buff":
 					SoundManager.play_battle("buff")
 				# stat reductions share the generic debuff cue (cowir-sfx rec) — bespoke cues reserved for the scary/unique statuses
-				"defense_down", "volatility_up", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "pacify", "amplify_poison", "debuff":
+				# dispel_and_self_buff is target_type single_ally and HOSTILE to that ally (BattleManager strips their buffs, logged in penalty_bbcode) — it sits here with its base effect `dispel` because the target_type rule below would send it to the buff cue
+				"defense_down", "volatility_up", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "dispel_and_self_buff", "pacify", "amplify_poison", "debuff":
 					SoundManager.play_battle("debuff")
 				"ability_silence", "silence":
 					SoundManager.play_status("silence")
@@ -4561,7 +4562,14 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 					pass
 				# every other status (poison/sleep/doom/curse/stun/burn/freeze/...) — play_status does status_<name> manifest lookup with a generic fallback, so F1-activated effects can't land silently again
 				_:
-					SoundManager.play_status(effect)
+					# DERIVED, not a third hand-list: the buff arm was extended once for four effects and 22 more ally-targeted ones arrived behind it, each drawing the DESCENDING blip over its own cast cue
+					# ⚠️ target_type answers WHO IS AIMED AT, not WHO IS HELPED. They diverge in one shipped row — dispel_and_self_buff, listed in the debuff arm above. A second divergence belongs there too, with its reason
+					if str(ability.get("target_type", "")) in ["self", "ally", "single_ally", "all_allies", "party"]:
+						# an authored status_<effect> still wins — this only replaces the wrong-polarity procedural fallback
+						if not SoundManager.play_status_if_authored("status_" + effect.to_lower()):
+							SoundManager.play_battle("buff")
+					else:
+						SoundManager.play_status(effect)
 
 
 ## A phase_faces boss (the Calibrant) swaps its visible body when a face lands. The spawn path
