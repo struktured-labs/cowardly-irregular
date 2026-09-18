@@ -1,6 +1,7 @@
 extends GutTest
 
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
 
 ## The Calibrant used to not exist. GameLoop's W6 closer said so in its own comment: "The
 ## Calibrant 'battle' is elided as narrative ... since no Calibrant arena/dungeon exists" — so
@@ -15,6 +16,8 @@ const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 ## the kit and the elemental profile, so a single autobattle script cannot ride the whole fight.
 
 const GameLoopScript = preload("res://src/GameLoop.gd")
+
+var _bm_guard: RefCounted = null
 const CALIBRANT := "the_calibrant"
 
 
@@ -314,5 +317,23 @@ func test_the_arena_is_reachable_from_the_abstract_overworld() -> void:
 
 ## This file stands up a live BattleScene twice and asserts on SoundManager._current_music, so it
 ## leaves _current_music and _music_playing set for whatever runs next.
+##
+## ⛔ AND IT LEFT NINETEEN BattleManager FIELDS BEHIND, INCLUDING FREED OBJECTS, WHICH THE
+## SoundManager FIX ABOVE COULD NOT SEE. Measured 2026-09-18 by running this file then a surface
+## probe in ONE process: current_state = 3 (PLAYER_SELECTING, so is_battle_active() stayed TRUE for
+## the ~1400 files sorting after this one), plus player_party / all_combatants / _died_callbacks
+## holding <Freed Object> entries — dangling references in a live autoload, not merely stale data.
+##
+## 🔑 THE POINT WORTH KEEPING: this file was ALREADY FIXED TONIGHT, for SoundManager, by a probe
+## that measured SoundManager's fields. A second autoload's leak was invisible to it. "This file is
+## fixed" is a claim about the SURFACE that was measured, never about the file — which is the same
+## whole-surface lesson the fleet reached from five other directions today.
+func before_all() -> void:
+	_bm_guard = BattleState.new()
+	_bm_guard.snapshot()
+
+
 func after_all() -> void:
 	SoundState.restore()
+	if _bm_guard != null:
+		_bm_guard.restore()
