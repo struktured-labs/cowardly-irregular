@@ -97,6 +97,12 @@ func test_entry_does_not_depend_on_the_spawn_zone_differing() -> void:
 	## The precise mechanism, so a future refactor cannot reintroduce it: the establishment must not
 	## be a zone CHANGE. Pin that _ready reaches the helper, and that the helper sets the zone from
 	## the player's own tile rather than comparing against the initial value.
+	##
+	## ⛔ THIS ARM IS NOT REDUNDANT WITH THE BEHAVIOURAL ONE ABOVE, AND MUTATION SAYS SO: deleting
+	## the _ready call reds THIS arm only. The default spawn resolves to 'forest', which differs
+	## from the initial "central", so the zone-change path establishes a bed anyway and the
+	## behavioural arm passes. It can only fail in an environment whose spawn lands on a '.', 'B'
+	## or 'M' tile — which is the reachable case and not the one a test harness gets.
 	var src: String = FileAccess.get_file_as_string("res://src/exploration/OverworldScene.gd")
 	var ready_body: String = _body_of(src, "func _ready")
 	assert_ne(ready_body, "", "CONTROL: OverworldScene must declare _ready")
