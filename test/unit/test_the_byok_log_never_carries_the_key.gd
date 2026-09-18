@@ -222,12 +222,43 @@ func _all_gd() -> Array[String]:
 ## `print("byok note # dump: %s" % [cfg])`, left this file at 13 passing / EC=0 with the leak in
 ## the tree, because the alias sits after the `#`.
 ##
-## `GdSource.strip_comments` is quote-aware AND escape-aware, bounded against the spin its own
-## header records, and has 175 consumers. A private copy does not inherit a fix — which is the
-## whole argument, and the reachable-today count being small is a reason to switch rather than a
-## reason not to (cowir-controller, 2026-09-18, who found twelve other re-derivations).
+## `GdSource` is quote-aware AND escape-aware, bounded against the spin its own header records,
+## and has 175 consumers. A private copy does not inherit a fix (cowir-controller, 2026-09-18,
+## who found twelve other re-derivations).
+##
+## ⛔ AND `strip_comments` IS THE WRONG HALF — it removes `#` AND NOTHING ELSE. I named it as the
+## delegation target in channel and it left this scan FALSE-REDDING on prose: a docstring merely
+## DESCRIBING a leak — `"""Never do this: print("[BYOK] %s" % GameState.llm_custom_api_key)"""` —
+## was reported as an offender at a line that logs nothing. Conservative direction, and exactly
+## the prose a security guard attracts; this file's own header is full of it.
+## `split()["code"]` is the half that drops `"""` regions too (cowir-battle, 2026-09-18).
 func _code_lines(src: String) -> PackedStringArray:
-	return GdSource.strip_comments(src).split("\n")
+	return (GdSource.split(src)["code"] as String).split("\n")
+
+
+## [[line_no, code_text], …] — code lines paired with their TRUE index in the ORIGINAL file.
+##
+## ⛔ NEEDED BECAUSE `split()` DELETES DOCSTRING REGIONS RATHER THAN BLANKING THEM, so counting
+## lines in the code half reports a number that does not exist in the file. Measured while making
+## this change: the same planted leak was reported at `SaveSystem.gd:1030` where the real line is
+## 1051 — 21 lines of docstring removed above it. An offender message that names the wrong line
+## sends a reader to innocent code, and for THIS guard that reader is chasing a credential leak.
+## Order is preserved by the split, so one forward cursor resolves duplicates correctly.
+func _numbered_code(src: String) -> Array:
+	var raw: PackedStringArray = src.split("\n")
+	var out: Array = []
+	var cursor: int = 0
+	for c in _code_lines(src):
+		var t: String = c.strip_edges()
+		if t == "":
+			continue
+		while cursor < raw.size() and raw[cursor].find(t) == -1:
+			cursor += 1
+		if cursor >= raw.size():
+			break
+		out.append([cursor + 1, c])
+		cursor += 1
+	return out
 
 
 func _is_log_site(line: String) -> bool:
@@ -288,11 +319,10 @@ func test_no_log_site_anywhere_in_src_interpolates_the_key() -> void:
 	## the key rather than over one directory.
 	var offenders: Array[String] = []
 	for path in _key_holder_files():
-		var lineno: int = 0
-		for line in _code_lines(FileAccess.get_file_as_string(path)):
-			lineno += 1
+		for pair in _numbered_code(FileAccess.get_file_as_string(path)):
+			var line: String = str(pair[1])
 			if _is_log_site(line) and (line.find("api_key") != -1 or line.find(KEY_FIELD) != -1):
-				offenders.append("%s:%d" % [path.get_file(), lineno])
+				offenders.append("%s:%d" % [path.get_file(), int(pair[0])])
 	assert_eq(offenders, ([] as Array[String]),
 		("these log sites interpolate the API key: %s. Report presence ('<set>'/'<empty>') or drop "
 		+ "the field — GameState:96 marks it SENSITIVE, and user://logs/godot.log persists on disk.")
@@ -310,14 +340,13 @@ func test_no_log_site_prints_a_container_that_holds_the_key() -> void:
 			continue
 		var watched: Array[String] = carriers.duplicate()
 		watched.append_array(_aliases_of(src, carriers))
-		var lineno: int = 0
-		for line in _code_lines(src):
-			lineno += 1
+		for pair in _numbered_code(src):
+			var line: String = str(pair[1])
 			if not _is_log_site(line):
 				continue
 			for w in watched:
 				if line.find(w) != -1:
-					offenders.append("%s:%d logs %s" % [path.get_file(), lineno, w])
+					offenders.append("%s:%d logs %s" % [path.get_file(), int(pair[0]), w])
 					break
 	assert_eq(offenders, ([] as Array[String]),
 		("these log sites print a container holding the API key: %s. The container is the key — "
@@ -384,6 +413,28 @@ func test_the_alias_scan_can_follow_a_carrier_into_a_local() -> void:
 	assert_true(_aliases_of(fake, carriers).has("cfg"),
 		"control: the alias scan cannot follow a carrier into a local — got %s"
 			% [_aliases_of(fake, carriers)])
+
+
+func test_the_split_keeps_code_and_drops_both_prose_forms() -> void:
+	## THE OBLIGATION `GdSource.split`'s OWN HEADER PUTS ON EVERY CALLER: "over-stripping and a
+	## correct strip are the same green", so a consumer must assert a known CODE SITE SURVIVES.
+	## Floored on BOTH halves — an empty doc side passes by construction, which is the vacuous way
+	## for this to look right.
+	var fake: String = 'var keep := log_it("a")\n' \
+		+ '# api_key in a comment\n' \
+		+ '"""api_key in a docstring"""\n' \
+		+ 'var also := log_it("b")\n'
+	var halves: Dictionary = GdSource.split(fake)
+	var code: String = str(halves.get("code", ""))
+	var doc: String = str(halves.get("doc", ""))
+	assert_true(code.find('log_it("a")') != -1,
+		"MUST-SURVIVE: real code before the docstring was eaten by the split — every zero in this file is then vacuous")
+	assert_true(code.find('log_it("b")') != -1,
+		"MUST-SURVIVE: real code AFTER the docstring was eaten — a parity flip, the two-directional failure the helper warns about")
+	assert_eq(code.find("api_key"), -1,
+		"neither a comment nor a docstring naming the key may reach the code half — got %s" % code)
+	assert_true(doc.find("api_key") != -1,
+		"FLOOR on the doc side: it must actually contain the docstring, or the split returned nothing and the assert above is vacuous")
 
 
 func test_a_comment_naming_the_key_is_not_an_offender() -> void:
