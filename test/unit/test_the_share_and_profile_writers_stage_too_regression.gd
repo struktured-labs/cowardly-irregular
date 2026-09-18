@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## The truncate-on-open family, for the three writers outside AutogrindSystem. `open(dest, WRITE)`
 ## truncates, so serializing after it puts the payload inside a window where a process death leaves
 ## 0 bytes and no previous copy. All three overwrite something the player owns:
@@ -16,14 +18,17 @@ const SOURCES := {
 }
 
 
-## ⚠️ COMMENT HANDLING IS LINE-START ONLY, MEASURED AND DELIBERATELY NOT FIXED. A line whose
-## TRAILING comment mentions a write — `var n := 1  # was: FileAccess.open(p, FileAccess.WRITE)` —
-## is scanned and flagged. Verified by planting exactly that: Failing 1, naming the line.
-## ✅ Left alone because the direction is CONSERVATIVE: a false RED puts a human on the line, who
-## sees prose. @cowir-controller's source-level `_strip_comment` is strictly stronger and holds for
-## every matcher at once — but it must be QUOTE-AWARE, and every writer here pushes a warning whose
-## message could carry a `#`, so a naive strip trades a false red for a truncated real line.
-## Zero live instances today; stated so the next reader knows it was measured, not missed.
+## ✅ FIXED, AND MY REASON FOR NOT FIXING IT WAS FALSE. I recorded this as "deliberately left" on
+## the grounds that the failure direction is conservative (a false RED puts a human on the line)
+## AND that a quote-aware stripper is ~12 lines of machinery. The second half was wrong:
+## GdSource.strip_comments already existed, 181 files use it, and adopting it cost one preload.
+## ⛔ @cowir-controller re-derived that same helper privately this evening and caught it; a private
+## copy does not inherit a fix, and theirs was quote-aware where GdSource is ALSO escape-aware.
+## Four forms planted rather than argued, arm totals 9/9 on every run:
+##   trailing comment carrying a write      was a FALSE POSITIVE -> now not flagged
+##   whole line commented out                                    -> not flagged
+##   real write + `#` inside a push_warning  the truncation hazard -> still FLAGGED
+##   control: real write, no comment                              -> FLAGGED
 func _write_opens(src: String) -> Array:
 	var out: Array = []
 	var n := 0
@@ -45,7 +50,7 @@ func _write_opens(src: String) -> Array:
 func test_every_named_writer_is_still_present() -> void:
 	var missing: Array = []
 	for path in SOURCES:
-		var src: String = FileAccess.get_file_as_string(path)
+		var src: String = _code_of(path)
 		if src == "":
 			missing.append("%s (unreadable — its verdict below would be vacuous)" % path)
 		elif _write_opens(src).is_empty():
@@ -57,7 +62,7 @@ func test_every_named_writer_is_still_present() -> void:
 func test_no_writer_opens_its_destination() -> void:
 	var offenders: Array = []
 	for path in SOURCES:
-		var src: String = FileAccess.get_file_as_string(path)
+		var src: String = _code_of(path)
 		for entry in _write_opens(src):
 			if not str(entry[1]).contains("FileAccess.open(staged,"):
 				offenders.append("%s:%d — %s (%s)" % [path, entry[0], entry[1], SOURCES[path]])
@@ -70,7 +75,7 @@ func test_every_writer_verifies_its_bytes_before_renaming() -> void:
 	## a rename carries a partial file into place just as happily. Checked before the rename.
 	var missing: Array = []
 	for path in SOURCES:
-		var src: String = FileAccess.get_file_as_string(path)
+		var src: String = _code_of(path)
 		var i_check: int = src.find("get_length()")
 		var i_err: int = src.find("get_error()")
 		var i_rename: int = src.find("rename_absolute")
@@ -122,7 +127,7 @@ func test_no_unwatched_writer_has_appeared_in_the_lane() -> void:
 	for path in _lane_gd_files():
 		if path.ends_with(COVERED_ELSEWHERE) or SOURCES.has(path):
 			continue
-		var src: String = FileAccess.get_file_as_string(path)
+		var src: String = _code_of(path)
 		if src == "":
 			continue
 		for entry in _write_opens(src):
@@ -171,7 +176,7 @@ func test_the_form_list_still_holds_every_proven_form() -> void:
 func test_no_write_reaches_disk_by_a_form_this_file_cannot_see() -> void:
 	var exotic: Array = []
 	for path in _lane_gd_files():
-		var src: String = FileAccess.get_file_as_string(path)
+		var src: String = _code_of(path)
 		if src == "":
 			continue
 		var n := 0
@@ -247,7 +252,7 @@ func test_every_open_proves_its_mode() -> void:
 	var seen_write := 0
 	var seen_read := 0
 	for path in _lane_gd_files():
-		var src: String = FileAccess.get_file_as_string(path)
+		var src: String = _code_of(path)
 		if src == "":
 			continue
 		var n := 0
