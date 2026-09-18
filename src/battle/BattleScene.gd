@@ -5320,7 +5320,15 @@ func _end_hitlag() -> void:
 		return
 	_hitlag_depth -= 1
 	if _hitlag_depth == 0:
-		Engine.time_scale = _hitlag_base_scale
+		## ⛔ A PRESENTATION EFFECT MUST NOT OUTRANK AN INTENT EXPRESSED WHILE IT WAS RUNNING.
+		## _set_battle_time_scale retargets this for the speed key ("else pressing X mid-crit reverts
+		## to the old speed 80ms later") — but every EXTERNAL writer goes straight to Engine, and the
+		## grind has five: GameLoop._stop_autogrind and the controller's start/stop/pause/resume.
+		## Stop a grind inside the ~80ms wall-clock window after a crit and this put the battle speed
+		## back on an engine the player had just returned to normal. If the scale is no longer ours,
+		## somebody said something newer and it wins.
+		if is_equal_approx(Engine.time_scale, HITLAG_SCALE):
+			Engine.time_scale = _hitlag_base_scale
 
 
 func _begin_hitlag(scaled_duration: float) -> void:
