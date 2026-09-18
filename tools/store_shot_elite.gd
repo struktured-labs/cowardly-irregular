@@ -1,4 +1,6 @@
 extends SceneTree
+
+const ShotGuard = preload("res://tools/shot_guard.gd")
 ## The field-ELITE store shot: aura + the purple "It is watching you." tell.
 ##
 ## ⚠️ THE CONFIG IS OVERRIDDEN IN MEMORY. cowir-main's list said to set
@@ -191,7 +193,7 @@ func _init() -> void:
 
 	var img := root.get_texture().get_image()
 	var path := "res://tmp/marketing/field_elite_%s.png" % world
-	img.save_png(path)
+	ShotGuard.save_or_refuse(img, path)
 	var fa := FileAccess.open(path, FileAccess.READ)
 	var sz := fa.get_length() if fa else 0
 	if fa:
@@ -216,7 +218,7 @@ func _init() -> void:
 	# that the game would not. Driving real contact would additionally exercise the collision
 	# path, which this shot does not claim to cover.
 	if not _wants_prompt(user_args):
-		quit(0)
+		quit(3 if ShotGuard.refused > 0 else 0)
 		return
 	if not elite.has_method("_present_elite_prompt"):
 		_die("RoamingMonster._present_elite_prompt absent — the choice entry point moved")
@@ -248,14 +250,14 @@ func _init() -> void:
 
 	var img2 := root.get_texture().get_image()
 	var path2 := "res://tmp/marketing/field_elite_prompt_%s.png" % world
-	img2.save_png(path2)
+	ShotGuard.save_or_refuse(img2, path2)
 	var fa2 := FileAccess.open(path2, FileAccess.READ)
 	var sz2 := fa2.get_length() if fa2 else 0
 	if fa2:
 		fa2.close()
 	print("[SHOT] field_elite_prompt_%s %d B (%dx%d)%s" % [world, sz2, img2.get_width(), img2.get_height(),
 		"  ⚠ SUSPECT: likely an empty void" if sz2 < VOID_BYTES else ""])
-	quit(0)
+	quit(3 if ShotGuard.refused > 0 else 0)
 
 
 func _find_elite(sp) -> Node:
