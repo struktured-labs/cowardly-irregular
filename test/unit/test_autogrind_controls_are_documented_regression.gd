@@ -235,6 +235,145 @@ func test_adjust_rules_is_advertised_because_it_is_reachable_now() -> void:
 	assert_eq(rows, 1, "exactly one row documents adjust-rules")
 
 
+## The rows as a PAD PLAYER sees them. `_rows()` goes through HowToPlayOverlay with no device, and
+## the runner has no pad — so every cell there is a dash and any "this cell declines" assert passes
+## because of the ENVIRONMENT rather than the source. The helper's device_name hook exists for this.
+func _rows_for(device_name: String) -> Array:
+	var rows: Array = []
+	for line in AutogrindInputHelper.grind_reference_rows(device_name).split("\n"):
+		if line.strip_edges() == "":
+			continue
+		rows.append([line.substr(0, 18).strip_edges(), line.substr(18, 18).strip_edges(), line.substr(36)])
+	return rows
+
+
+## Does a JOYPAD arm of the live branch reach `handler`? Tracks the event TYPE of the arm it is
+## inside, because the handler name alone appears in the keyboard arm too.
+func _branch_pad_reaches(window: String, handler: String) -> bool:
+	var in_joypad_arm := false
+	for line in window.split("\n"):
+		var t := line.strip_edges()
+		if t.begins_with("if event is InputEvent"):
+			in_joypad_arm = t.contains("InputEventJoypadButton")
+		if in_joypad_arm and t.contains(handler):
+			return true
+	return false
+
+
+## ⛔ THE DECLINING CELL AND THE BRANCH MUST AGREE, AND NEITHER HALF CAN SEE THE OTHER ALONE.
+## `test_adjust_rules_is_advertised…` pins row[0] to the dash, but reads the NO-PAD rendering where
+## every cell is a dash — it would pass unchanged if the source derived a real cell. And a pad-aware
+## render still cannot notice the branch GAINING a pad binding, because the table hardcodes its dash
+## either way. So the claim is the JOIN: the cell declines if and only if no joypad arm reaches the
+## handler. @cowir-controller has a branch binding ui_menu for exactly this; when it folds, this reds
+## and names the row to derive.
+func test_a_declining_pad_cell_agrees_with_the_branch() -> void:
+	var window := _branch_window()
+	## CONTROL on the scanner itself: pause IS reached from a joypad arm, so a detector that can
+	## never say yes would make every verdict below vacuous.
+	assert_true(_branch_pad_reaches(window, "_toggle_autogrind_pause"),
+		"CONTROL: the branch's battle_toggle_auto arm reaches pause — if this reads false the joypad scanner is broken, not the code")
+	assert_false(_branch_pad_reaches(window, "_zzq_no_such_handler"),
+		"CONTROL: the scanner must also be able to say NO")
+
+	var pad_reaches_rules := _branch_pad_reaches(window, "_on_dashboard_adjust_rules")
+	for dev in ["Xbox 360 Controller", "Sony DualSense", "Nintendo Switch Pro Controller"]:
+		var rows := _rows_for(dev)
+		assert_gt(rows.size(), 2, "CONTROL: only %d rows rendered for '%s'" % [rows.size(), dev])
+		var derived := 0
+		var declining: Array = []
+		for row in rows:
+			if str(row[0]) == AutogrindInputHelper.REFERENCE_PAD_NONE:
+				declining.append(str(row[2]).strip_edges())
+			else:
+				derived += 1
+		## Without this the arm is the no-pad case wearing a device name.
+		assert_gt(derived, 2,
+			"CONTROL: with '%s' named, most cells must render a real button — %d did, so the pad path did not run" % [dev, derived])
+
+		var rules_declines := false
+		for d in declining:
+			if str(d).contains("Adjust rules"):
+				rules_declines = true
+		if pad_reaches_rules:
+			assert_false(rules_declines,
+				("the AUTOGRIND branch now reaches adjust-rules from a joypad arm, so the reference must " +
+				"DERIVE that cell instead of printing a dash — a pad player is told the control is keyboard-only " +
+				"while their pad opens it (device '%s')") % dev)
+		else:
+			assert_true(rules_declines,
+				("no joypad arm reaches _on_dashboard_adjust_rules, so the cell must decline rather than " +
+				"name a button that does nothing (device '%s')") % dev)
+
+
+## ⛔ FIVE SURFACES NAME THE TIER CONTROL AND ON 2026-09-17 TWO OF THEM SAID SOMETHING DIFFERENT.
+## The BUTTON was already owned by AutogrindInputHelper; the LABEL was copied. So when the HUD strip
+## and the F1 table were corrected to "Dashboard" (GrindTier is {ACCELERATED, DASHBOARD}; T toggles
+## the analytics dashboard), AutogrindDashboard, AutogrindMonitor and BattleScene kept saying "Tier"
+## — one control, two names, and no guard could see it because each surface was internally correct.
+##
+## The label now has ONE owner, `AutogrindInputHelper.tier_control_label()`, and this arm keeps the
+## copies from coming back. Corpus is DERIVED from src/ rather than the three files I happened to
+## know about — that hand-list is exactly how the fifth surface stayed invisible.
+const TIER_LABEL_DECLARED := {
+	"BattleScene.gd": "cross-lane (_grind_console_controls). Carries its OWN derivation and still says 'Tier'; reported 2026-09-17 — the one-owner fix is BattleScene's to take, not mine to reach into.",
+}
+
+
+func _src_gd_files(root: String) -> Array:
+	var out: Array = []
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var d: String = str(stack.pop_back())
+		for sub in DirAccess.get_directories_at(d):
+			stack.append("%s/%s" % [d, sub])
+		for f in DirAccess.get_files_at(d):
+			if str(f).ends_with(".gd"):
+				out.append("%s/%s" % [d, f])
+	return out
+
+
+func test_one_owner_names_the_tier_control() -> void:
+	var files: Array = _src_gd_files("res://src")
+	assert_gt(files.size(), 50,
+		"CONTROL: the source walk must find the tree, or 'no surface disagrees' is vacuous")
+
+	## A legend literal, not a debug print: the token:label shape. `print("[AUTOGRIND] Dashboard
+	## shown (Tier 2)")` is not a caption and must not match — checked by the control below.
+	var rx := RegEx.create_from_string('"[^"]*%s?[: ]\\s*Tier\\b')
+	var offenders: Array = []
+	for path in files:
+		var code: String = GdSource.code_of(path)
+		for line in code.split("\n"):
+			if not line.contains("Tier"):
+				continue
+			if rx.search(line) == null:
+				continue
+			if line.contains("GrindTier") or line.contains("print("):
+				continue   ## the enum itself, and console logs, are not captions
+			var base: String = path.get_file()
+			if TIER_LABEL_DECLARED.has(base):
+				continue
+			offenders.append("%s: %s" % [base, line.strip_edges().substr(0, 70)])
+	assert_eq(offenders, [],
+		("a surface writes its own name for the tier control instead of AutogrindInputHelper." +
+		"tier_control_label(). Two surfaces already disagreed for a day this way: %s") % str(offenders))
+
+	## CONTROL: the owner must exist and the declared straggler must still be findable, or this arm
+	## passes because the predicate stopped matching rather than because the copies are gone.
+	## No has_method floor here on purpose: tier_control_label is a `class_name` STATIC, so a missing
+	## one is a PARSE error and the file exits 3 — louder than any arm could be (CLAUDE.md call-shape
+	## table). Floor-by-existence would be dead code; the value assert is the live claim.
+	assert_eq(AutogrindInputHelper.tier_control_label(), "Dashboard",
+		"the owner must name the outcome, not the mechanism — 'Tier' is what sent a lane to 'fix' a correct caption")
+	var still_there: int = 0
+	for path in files:
+		if TIER_LABEL_DECLARED.has(path.get_file()) and GdSource.code_of(path).contains("Tier"):
+			still_there += 1
+	assert_eq(still_there, TIER_LABEL_DECLARED.size(),
+		"a declared straggler no longer names the tier control — it was fixed, so remove its declaration rather than carrying a stale exemption")
+
+
 ## The dashboard's legend must stay derived. ⚠️ It describes classify_event, which is a DIFFERENT
 ## surface from the one the F1 rows describe — kept because a frozen word there is wrong on at
 ## most one family either way.

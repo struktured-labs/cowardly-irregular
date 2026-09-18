@@ -1,5 +1,7 @@
 extends GutTest
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## Hidden passages (2026-07-01, cowir-main brief msg 2080).
 ##
 ## Pins the "secrets" group contract that content_radar's show_secrets
@@ -56,9 +58,14 @@ func test_w1_overworld_places_passages_with_pocket_chests() -> void:
 
 
 func test_dragon_cave_parses_h_markers_into_passages() -> void:
-	var src: String = FileAccess.get_file_as_string("res://src/maps/dungeons/DragonCave.gd")
-	assert_true(src.contains("_place_hidden_passages"),
-		"DragonCave must place passages from H markers")
+	## ⛔ A BARE SYMBOL MATCHED ITS OWN DEFINITION. Deleting the CALL — so no dungeon places any
+	## H-marker passage and every dungeon secret is unreachable — left this GREEN. Measured 2026-09-17.
+	var src: String = GdSource.code_of("res://src/maps/dungeons/DragonCave.gd")
+	assert_ne(src, "", "CONTROL: DragonCave.gd must read back as code")
+	var setup_body: String = _body_of(src, "func _setup_transitions_for_floor")
+	assert_ne(setup_body, "", "CONTROL: DragonCave must declare _setup_transitions_for_floor")
+	assert_true(setup_body.contains("_place_hidden_passages("),
+		"_setup_transitions_for_floor must CALL _place_hidden_passages() — without the call the H markers parse and no passage is ever placed")
 	assert_true(src.contains("secret_%d"),
 		"H markers register secret_ spawn keys (mirror of treasure_)")
 	for cave in ["FireDragonCave", "IceDragonCave"]:
@@ -67,3 +74,13 @@ func test_dragon_cave_parses_h_markers_into_passages() -> void:
 		var re := RegEx.new()
 		re.compile("\"[M.TBUDX]*H[M.TBUDX]*\"")
 		assert_not_null(re.search(cave_src), "%s layout rows must contain an H marker" % cave)
+
+
+## The body of `header`'s function, or "" when absent — a whole-file `contains` cannot tell a CALL
+## from the DEFINITION it is named after.
+func _body_of(src: String, header: String) -> String:
+	var i: int = src.find(header)
+	if i < 0:
+		return ""
+	var j: int = src.find("\nfunc ", i + 1)
+	return src.substr(i, (j - i) if j > i else -1)

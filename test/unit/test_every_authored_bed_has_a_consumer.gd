@@ -90,6 +90,14 @@ func _manifest_ids() -> Array[String]:
 		if tracks[k] is Dictionary:
 			out.append(str(k))
 	out.sort()
+	## ⛔ THE FILTER MUST DROP NOTHING, or the bucket partition below cannot see what it dropped.
+	## A non-Dictionary entry is LEGAL — JukeboxMenu falls back to _titlecase(id) for one — so a
+	## bare-string track would leave this corpus and sit outside BOTH the bucket sum and its own
+	## total, which move together. That is the shape that hid 31 T1 sheets from the sprite tier
+	## audit (cowir-sprites, 2026-09-17): a denominator derived from the same subset as its
+	## numerator cannot report a subset that is missing.
+	assert_eq(out.size(), tracks.size(),
+		"%d of %d manifest tracks are not Dictionaries and left the corpus silently — every verdict below is about the %d that remain" % [tracks.size() - out.size(), tracks.size(), out.size()])
 	return out
 
 
@@ -1181,8 +1189,13 @@ func test_no_ambient_key_is_built_by_concatenation() -> void:
 	var src: String = _consumer_text()
 	assert_gt(src.length(), 100000,
 		"SCOPE control: the src walk read back %d chars — a zero-hit result below would be vacuous" % src.length())
-	assert_true(src.contains("play_ambient("),
-		"CONTROL: no play_ambient call found at all — the scan cannot detect a concatenated one either")
+	## ⛔ COUNT CALLS, NOT OCCURRENCES. `play_ambient(` matches its own DEFINITION, so a corpus that
+	## had lost every call site would still satisfy a bare `contains` — and this is a CONTROL, whose
+	## whole job is to fail when the scan cannot see a call. 11 call sites across 5 files today.
+	var pa_all: int = src.count("play_ambient(")
+	var pa_defs: int = src.count("func play_ambient(")
+	assert_gt(pa_all - pa_defs, 0,
+		"CONTROL: %d play_ambient occurrence(s) and %d of them are definitions — the scan sees no CALL, so it cannot detect a concatenated one either" % [pa_all, pa_defs])
 
 	var bad: Array[String] = []
 	var re := RegEx.create_from_string("play_ambient\\(\\s*\"[^\"]*\"\\s*\\+")

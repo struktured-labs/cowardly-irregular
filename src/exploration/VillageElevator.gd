@@ -8,6 +8,10 @@ const TILE_SIZE := 32
 const RIDE_TIME := 0.35
 const LOCK_ID := "village_elevator"
 
+## Released on teardown too: the ride is an awaited tween, and a car freed mid-ride (map change)
+## would otherwise leave the lock held into the next scene.
+var _holds_lock: bool = false
+
 @export var style: int = Style.BRASS
 @export var bottom_position: Vector2 = Vector2.ZERO
 @export var top_position: Vector2 = Vector2.ZERO
@@ -101,6 +105,7 @@ func interact(player: Node2D) -> void:
 	var origin: Vector2 = bottom_position if to_bottom <= to_top else top_position
 	var destination: Vector2 = top_position if to_bottom <= to_top else bottom_position
 	InputLockManager.push_lock(LOCK_ID)
+	_holds_lock = true
 	if SoundManager:
 		SoundManager.play_ui(sfx_key)
 	var car := Sprite2D.new()
@@ -115,5 +120,13 @@ func interact(player: Node2D) -> void:
 		player.teleport(destination)
 	else:
 		player.global_position = destination
-	InputLockManager.pop_lock(LOCK_ID)
+	if _holds_lock:
+		InputLockManager.pop_lock(LOCK_ID)
+	_holds_lock = false
 	_busy = false
+
+
+func _exit_tree() -> void:
+	if _holds_lock and InputLockManager:
+		InputLockManager.pop_lock(LOCK_ID)
+	_holds_lock = false
