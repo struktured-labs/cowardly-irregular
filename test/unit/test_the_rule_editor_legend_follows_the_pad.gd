@@ -87,6 +87,18 @@ func test_the_editor_listens_for_a_pad_change() -> void:
 		+ "had this since the same defect was fixed there.")
 
 
+## ⚠️ THERE IS NO "A REBUILD MUST NOT DOUBLE-CONNECT" ARM, AND THAT IS A MEASUREMENT. I wrote one —
+## the handler rebuilds, so moving the connect from `_ready` into `_build_ui` looked like a refactor
+## that would add a listener per pad change. Mutated it: the arm stayed GREEN (6/6) and the engine
+## printed **11 "already connected" lines**. Godot REFUSES a duplicate connect and keeps the first
+## binding, so the handler still fires exactly once — the refactor is NOISY, not broken, and there
+## is no defect for an arm to catch.
+##
+## 📌 That is the opposite of the connection hazard this lane does guard elsewhere: a connection
+## OUTLIVING its object is real and `ControllerOverlay`'s guard pins it. A DUPLICATE is prevented by
+## the engine. Same signal, same file, two hazards, and only one of them exists.
+
+
 ## ⛔ THE DEFECT — AND IT IS SENTINEL-DRIVEN BECAUSE "THE LEGEND IS STILL THERE" IS TRUE WHETHER
 ## OR NOT ANYTHING REBUILT. Asserting a label count is satisfied by the ORIGINAL build, so it
 ## measures nothing; the arm has to fail when no rebuild happens. `_build_ui()` frees every child,
