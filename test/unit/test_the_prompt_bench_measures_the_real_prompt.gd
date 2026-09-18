@@ -90,7 +90,14 @@ func test_a_documented_invocation_carries_the_sandbox() -> void:
 		assert_gt(src.length(), 500,
 			"CONTROL: %s must actually be read, or this arm skips it" % tool_path)
 		for line in src.split("\n"):
-			if line.find("godot --headless") == -1:
+			## ANY godot invocation, not just `--headless`. The screenshot tools document
+			## `xvfb-run -a godot --rendering-driver opengl3 ...` with no --headless at all, and
+			## a predicate keyed on that flag sails straight past them — verified by planting one.
+			var g: int = line.find("godot ")
+			if g == -1:
+				continue
+			var tail: String = line.substr(g + len("godot "))
+			if not tail.begins_with("-"):
 				continue
 			## PRESENCE IS NOT ENOUGH. Measured by a sibling lane after this arm shipped:
 			## an INVALID sandbox path fails CLOSED (godot aborts, EC=134, nothing written),
