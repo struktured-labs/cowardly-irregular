@@ -19,6 +19,7 @@ extends GutTest
 const SCENE_SRC: String = "res://src/battle/BattleScene.gd"
 const ABILITIES: String = "res://data/abilities.json"
 const ANCHOR: String = "func _on_action_executed"
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 
 ## Extracts effect -> cue for every match arm in _on_action_executed.
@@ -179,12 +180,21 @@ func test_a_beneficial_effect_with_no_polarity_TWIN_still_avoids_the_blip() -> v
 	assert_gt(unrouted.size(), 0,
 		"ANTI-VACUITY: every ally-targeted effect now has an explicit arm, so the catch-all pin below defends nothing. If that is deliberate, delete this arm and say why.")
 
-	var src: String = FileAccess.get_file_as_string(SCENE_SRC)
-	var at: int = src.find("func _on_action_executed")
-	var body: String = src.substr(at, src.find("\nfunc ", at + 1) - at)
-	assert_true(body.contains("target_type"),
-		"%d ally-targeted effect(s) reach the `_:` catch-all and it does not consult target_type, so each draws the DESCENDING debuff blip over its own cast cue: %s" % [unrouted.size(), unrouted])
-	assert_true(body.contains("play_status(effect)"),
+	## ⛔ THE CODE HALF, AND A CALL SHAPE RATHER THAN A BARE TOKEN. Both asserts below read RAW
+	## source and matched `target_type` in the first draft — which my OWN comment in that function
+	## names twice, so the pin was satisfied by my prose. PRODUCED 2026-09-18: swap the live
+	## `ability.get("target_type", ...)` for a different field, leave the comment, and this arm
+	## returned EC=0 · 8 passing with the mechanism gone (@cowir-deploy's *what it argued vs what
+	## it pinned*; @cowir-controller's *a source guard keyed to a token certifies spelling*).
+	var code: String = GdSource.code_of(SCENE_SRC)
+	assert_ne(code, "", "CONTROL: BattleScene code must survive the comment strip")
+	var at: int = code.find("func _on_action_executed")
+	assert_gt(at, -1, "CONTROL: the handler must survive the strip, or both asserts below read nothing")
+	var nxt: int = code.find("\nfunc ", at + 1)
+	var body: String = code.substr(at, nxt - at) if nxt > at else code.substr(at)
+	assert_true(body.contains("ability.get(\"target_type\""),
+		"%d ally-targeted effect(s) reach the `_:` catch-all and it does not READ target_type off the ability, so each draws the DESCENDING debuff blip over its own cast cue: %s" % [unrouted.size(), unrouted])
+	assert_true(body.contains("SoundManager.play_status(effect)"),
 		"ANTI-OVERCORRECTION: the catch-all must still send ENEMY-targeted effects to play_status — routing everything to the buff cue is the same defect wearing the other sign")
 
 
