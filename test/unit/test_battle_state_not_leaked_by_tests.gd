@@ -37,6 +37,26 @@ extends GutTest
 ##
 ## This guard still defends a DIFFERENT, real leak, and the runtime assertion below
 ## only proves the state is clean AT THIS FILE'S POSITION.
+##
+## ✅ THAT LIMIT IS NOW ANSWERABLE — `tools/probes/autoload_leak_probe.gd` (v3.33.426) diffs the
+## whole autoload after EVERY test script in one suite run and resets between them, so it reports
+## per FILE rather than at one position. Run it before concluding anything from a green here:
+##
+##     XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy \
+##       -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit \
+##       -gpre_run_script=res://tools/probes/autoload_leak_probe.gd | grep LEAK
+##
+## ⛔ AND THE DISTINCTION MATTERS IN THE DIRECTION THAT FLATTERS THIS FILE: an end-of-suite or
+## single-position reading is CLEAN whenever a later file happens to restore what an earlier one
+## leaked. Measured 2026-09-18 — 14 files left the autoload dirty while the suite-end state was
+## clean, including one leaving current_state = PROCESSING_ACTION, which is precisely the value
+## this header spent its length chasing. Six were fixed; the other eight are triaged in
+## test/unit/helpers/battle_state.gd with the reason each was left.
+##
+## 📌 One of those eight is `test_execute_next_action_after_battle_end_regression` — the regression
+## test named above as this incident's fix. It leaks six fields of its own, all reset by
+## start_battle bar `current_combatant`. Not a defect in it; worth knowing the file that closed
+## this loop is itself in the triaged list.
 
 const TEST_DIR := "res://test/unit"
 const ASSIGN := "BattleManager.current_state = "
