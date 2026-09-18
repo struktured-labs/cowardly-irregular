@@ -1062,10 +1062,14 @@ func save_settings() -> void:
 	file.close()
 	var err := DirAccess.rename_absolute(staged, SETTINGS_PATH)
 	if err != OK:
-		## The removal is not tidiness here: settings.json holds the BYOK API key, so an orphaned
-		## staging file is the player's secret left in plaintext at a path nothing ever rewrites.
+		## The removal is LOAD-BEARING here and merely tidy in _write_save_file, which is the one
+		## asymmetry the shared idiom does not encode: settings.json holds the BYOK API key.
 		push_warning("[SaveSystem] save_settings: could not move '%s' into place (error: %d) — the previous settings, including any BYOK key, are intact and this save did not happen." % [staged, err])
-		DirAccess.remove_absolute(staged)
+		var rm := DirAccess.remove_absolute(staged)
+		if rm != OK:
+			## A same-named staging file IS truncated by the next save — but a player who
+			## configures BYOK once may never trigger another one, so this orphan is unbounded.
+			push_error("[SaveSystem] save_settings: '%s' could NOT be removed (error: %d) and may contain your API key in plaintext. Delete it manually." % [staged, rm])
 
 
 func load_settings() -> void:

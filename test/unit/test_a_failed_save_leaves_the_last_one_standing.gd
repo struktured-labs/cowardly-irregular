@@ -165,3 +165,7 @@ func test_the_settings_writer_reports_a_failure_it_used_to_swallow() -> void:
 		"save_settings can fail to open its file and say nothing — the player keeps playing with settings that were never written")
 	assert_true(body.contains("rename_absolute"),
 		"save_settings must stage and rename: load_settings' own docstring records a crash mid-write already emptying settings.json in the wild")
+	## The cleanup is load-bearing for THIS writer only — settings.json holds the BYOK key, and a
+	## player who configures it once may never trigger the next save that would truncate an orphan.
+	assert_true(body.contains("push_error"),
+		"a failed remove of the staging file leaves the player's API key in plaintext at settings.json.new and says nothing — it needs its own loud branch naming the path")
