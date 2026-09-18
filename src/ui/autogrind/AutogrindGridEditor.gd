@@ -1385,8 +1385,11 @@ func _adjust_condition_value(delta: int) -> void:
 
 	var cond = conditions[cursor_col]
 	var cond_type = cond.get("type", "always")
-	# ability_learned + rare_item_found are boolean flags — no value to adjust
-	if cond_type == "always" or cond_type == "ability_learned" or cond_type == "rare_item_found":
+	## ⛔ ASK THE GRAMMAR, DO NOT RE-LIST IT. This hand-listed three of NULLARY_CONDITIONS' FIVE, so
+	## dialling Member Dead or Member Injured moved a `value` nothing reads — member_injured returns
+	## check_new_injuries() > 0, and member_dead goes through _member_predicate, which reads `member`.
+	## The grammar already owns the set; a copy beside it drifted the moment the set grew.
+	if AutogrindSystem.NULLARY_CONDITIONS.has(cond_type):
 		return
 
 	var current_value = cond.get("value", 50)

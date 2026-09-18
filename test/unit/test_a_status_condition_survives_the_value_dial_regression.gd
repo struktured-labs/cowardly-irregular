@@ -109,3 +109,37 @@ func test_the_dial_still_moves_a_numeric_condition() -> void:
 	gut.p("    numeric dial: 3 -> %s" % str(got))
 	assert_ne(str(got), "3",
 		"CONTROL: the dial no longer moves a numeric condition — the fix over-reached and disabled the feature")
+
+
+## ⛔ THE DIAL HAND-LISTS 3 OF THE GRAMMAR'S 5 NULLARY CONDITIONS.
+## NULLARY_CONDITIONS is ["member_dead", "member_injured", "ability_learned", "rare_item_found",
+## "always"]; the early return names only the last three. So dialling on Member Dead or Member
+## Injured moves a `value` NOTHING READS — member_injured returns `check_new_injuries() > 0` and
+## member_dead goes through _member_predicate, which reads `member` and never `value`.
+## @cowir-ai measured the same thing in the autobattle twin ("the dial edits a number nothing
+## reads") and fixed it there; this is the autogrind half, and the cause is a hand-list beside a
+## set the grammar already owns.
+func test_dialling_a_nullary_condition_changes_nothing() -> void:
+	for ctype in ["member_dead", "member_injured"]:
+		var ed := _editor()
+		ed.rules = [_rule(ctype, 0)]
+		ed.cursor_row = 0
+		ed.cursor_col = 0
+		ed._adjust_condition_value(1)
+		var got = ed.rules[0]["conditions"][0]["value"]
+		gut.p("    %s after dial: value=%s" % [ctype, str(got)])
+		assert_eq(str(got), "0",
+			"%s is a NULLARY condition — its evaluator never reads `value`, so the dial moved a number that decides nothing and the player sees the cell change with no effect" % ctype)
+
+
+## The guard must DERIVE the nullary set, so a sixth one is covered the day the grammar gains it.
+func test_the_dial_derives_its_nullary_set_from_the_grammar() -> void:
+	var src: String = GdSource.code_of(EDITOR_SRC)
+	var at: int = src.find("func _adjust_condition_value(")
+	var stop: int = src.find("\nfunc ", at + 1)
+	var body: String = src.substr(at, (stop - at) if stop > at else -1)
+	assert_true(body.contains("NULLARY_CONDITIONS"),
+		"the dial hand-lists which conditions have no value instead of asking the grammar — " +
+		"NULLARY_CONDITIONS already owns that set, and a hand-list beside it covered 3 of 5")
+	assert_gte(AutogrindSystem.NULLARY_CONDITIONS.size(), 5,
+		"CONTROL: the grammar must still declare the nullary set this guard defers to")
