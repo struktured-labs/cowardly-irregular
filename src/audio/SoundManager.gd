@@ -5352,6 +5352,12 @@ func play_area_music(area_type: String, resume_at: float = 0.0) -> void:
 	if area_type.begins_with("interior_") and inheritable and _music_playing and _current_area != "":
 		_load_music_manifest()
 		if _resolve_interior_track(area_type) == "":
+			## ⛔ THIRD SITE. _cancel_pending_fade's own comment says "BOTH 'already playing' early
+			## returns need this" and there are three: this one leans on _music_playing too, and that
+			## field stays TRUE for the whole of a fade-out. Inheriting a bed that is already ramping
+			## to silence gives a room that goes quiet just after the door closes and STAYS quiet —
+			## _current_area still names the village, so nothing re-derives until the player leaves.
+			_cancel_pending_fade()
 			return
 
 	## ⛔ THE AREA PATH NEVER ENDED THE ENVELOPE. play_music resets it; play_area_music reaches
