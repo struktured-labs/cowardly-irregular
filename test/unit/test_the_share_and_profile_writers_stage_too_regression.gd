@@ -37,7 +37,26 @@ const SOURCES := {
 ## it, it is quote-aware AND escape-aware, and a private copy does not inherit a fix. Line count is
 ## preserved, so the line numbers these arms report still hold.
 func _code_of(path: String) -> String:
-	return GdSource.code_of(path)
+	## ⛔ NOT `code_of`. It splits on `\"\"\"` and JOINS the code segments with "\n", inserting a
+	## newline per docstring boundary — so line numbers are destroyed cumulatively, not shifted.
+	## Measured across the files this guard reads: 6 of them move, AutogrindUI by 52 lines.
+	## Every arm here prints a line number, so that is a wrong-location defect (@cowir-controller
+	## hit the same and skips doc regions instead). `strip_comments` IS line-preserving, so:
+	## strip `#` with the shared helper, then drop `\"\"\"` regions per line, keeping the count.
+	var out: PackedStringArray = []
+	var in_doc := false
+	for line in GdSource.strip_comments(FileAccess.get_file_as_string(path)).split("\n"):
+		var l: String = str(line)
+		var fences: int = l.count("\"\"\"")
+		if in_doc:
+			out.append("")
+			if fences % 2 == 1:
+				in_doc = false
+		else:
+			out.append("" if fences > 0 else l)
+			if fences % 2 == 1:
+				in_doc = true
+	return "\n".join(out)
 
 
 func _write_opens(src: String) -> Array:
