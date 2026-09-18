@@ -1,4 +1,6 @@
 extends SceneTree
+
+const ShotGuard = preload("res://tools/shot_guard.gd")
 ## Loads The Backwards Warren, jumps to a floor, renders and writes tmp/screens/backwards_warren_f<N>.png. Needs xvfb-run. Modeled on village_screenshot.gd.
 
 func _init() -> void:
@@ -28,6 +30,6 @@ func _init() -> void:
 	var img := root.get_texture().get_image()
 	DirAccess.make_dir_recursive_absolute("res://tmp/screens")
 	var out := "res://tmp/screens/backwards_warren_f%d.png" % target_floor
-	img.save_png(out)
+	ShotGuard.save_or_refuse(img, out)
 	print("[SCREEN] wrote %s (%dx%d)" % [out, img.get_width(), img.get_height()])
-	quit(0)
+	quit(3 if ShotGuard.refused > 0 else 0)

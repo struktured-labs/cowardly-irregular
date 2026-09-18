@@ -17,6 +17,7 @@ extends GutTest
 const GUARD := "res://tools/artist_guard.py"
 const GENERATOR := "res://tools/gen_sprite_sdxl.py"
 const SWEEP := "res://tools/gen_full_sweep.py"
+const REGEN := "res://tools/regen_monster_artist_style.py"
 
 
 func _src(path: String) -> String:
@@ -62,3 +63,23 @@ func test_unavailable_provenance_REFUSES_rather_than_returning_empty() -> void:
 	var first: String = src.substr(nl + 1, line_end - nl - 1).strip_edges()
 	assert_true(first.begins_with("raise SystemExit"),
 		"FAILOPEN: the first statement of the unavailable-provenance handler is `%s`, not a raise. Returning an empty protected set there reports 'nothing is artist work', which is the one answer that destroys everything while looking green" % first)
+
+
+## A tier the guard cannot read is unknown provenance, and this generator used to treat it as
+## permission: `tier in ("T2", "T3")` is exact-match, and everything else fell through to "".
+## Measured against a synthetic manifest before the fix — lowercase "t2", the already-authored
+## "T2_artist_draft" and a missing tier field all PROCEEDED over artist pixels.
+func test_an_unreadable_tier_REFUSES_rather_than_falling_through() -> void:
+	var guard := _src(GUARD)
+	assert_true(guard.contains("def tier_refusal("),
+		"OWNER: artist_guard.py no longer defines tier_refusal() — the generator below imports a name that does not exist")
+	assert_true(guard.contains("_PROTECTED_TIERS") and guard.contains("_WRITABLE_TIERS"),
+		"OWNER: the tier decision collapsed back to one set. Three answers are the fix: writable proceeds, artist refuses, UNRECOGNISED refuses")
+
+	var regen := _src(REGEN)
+	assert_true(regen.contains("from tools.artist_guard import tier_refusal"),
+		"WIRING: %s no longer sources its tier decision from the shared owner" % REGEN)
+	assert_true(regen.contains("tier_refusal(tier"),
+		"WIRING: artist_write_refusal no longer calls tier_refusal — the import alone refuses nothing")
+	assert_false(regen.contains('tier in ("T2", "T3")'),
+		"OWNER: the two-way membership test has forked back into the generator. That test is the defect: it answers 'writable' for every tier it does not recognise")

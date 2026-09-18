@@ -1,4 +1,6 @@
 extends SceneTree
+
+const ShotGuard = preload("res://tools/shot_guard.gd")
 ## Loads a W1 depth-pass dungeon and renders every requested floor to tmp/screens/<id>_f<N>.png.
 ## Usage: --dungeon=res://src/maps/dungeons/FireDragonCave.gd --floors=1,2,3,4,5 [--vantage=10,7;10,12;...]. Needs xvfb-run.
 
@@ -39,6 +41,6 @@ func _init() -> void:
 			await process_frame
 		var img := root.get_texture().get_image()
 		var out := "res://tmp/screens/%s_f%d.png" % [scene.cave_id, target_floor]
-		img.save_png(out)
+		ShotGuard.save_or_refuse(img, out)
 		print("[SCREEN] wrote %s (%dx%d)" % [out, img.get_width(), img.get_height()])
-	quit(0)
+	quit(3 if ShotGuard.refused > 0 else 0)
