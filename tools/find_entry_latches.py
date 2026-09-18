@@ -53,6 +53,23 @@ TRIAGED 2026-09-18 — all 22 sites in src/ were read. Do not re-derive them:
                                     the tween targets a child of game_over whose only queue_free
                                     is downstream of the choice, and process_mode is ALWAYS.
 
+⛔ ONE ITEM IS OPEN, NOT CLEARED — Mode7Overlay / _on_transition_triggered. OWNER: cowir-music.
+  `_on_transition_triggered` (6 copies: OverworldScene, Abstract, Steampunk, Futuristic, Suburban,
+  Industrial) does:  push_lock("world_transition") -> await _mode7.play_dissolve_out() (1.2s,
+  tween bound to the PLAYER node) -> pop_lock -> area_transition.emit(...).
+  Re-entrancy guard: 0 of 6.
+
+  I first recorded this as "shape present, trigger unreachable" because the scene change is
+  requested AFTER the await, so a single transition cannot kill its own tween. THAT COVERS ONE
+  CASE ONLY, and cowir-main closed exactly that one while leaving the re-entrancy open.
+
+  ⛔ THE TREE RECORDS THE LEAK HAPPENING. InputLockManager.gd:24-25, verbatim:
+       "_start_battle_async DROPS EVERY ENCOUNTER while has_lock("world_transition") is true,
+        and that guard was added for the mid-dissolve tween death that skips the pop
+        — i.e. the one leak it could not recover from on its own."
+  So the downstream guard exists BECAUSE this upstream leak occurred. v3.33.431 fixed the
+  consequence (the suppressed duel's hung coroutine); the cause is unfixed.
+
 ⚠️ NOTHING HERE RATCHETS. A 23rd site will appear in the output looking exactly like these, and
 this note says what the 22 ARE rather than pinning them. Do not read it as a guard.
 
