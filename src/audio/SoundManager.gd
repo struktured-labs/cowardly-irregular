@@ -533,8 +533,11 @@ func _derive_item_sounds_from_data() -> void:
 		for pair in _ITEM_EFFECT_SFX:
 			if not (effects as Dictionary).has(pair[0]):
 				continue
+			## CONTINUE, NOT BREAK. A cue missing from the manifest abandoned the whole priority
+			## list, so an elixir lost its HP cue because the MP cue ABOVE it was gone — the same
+			## give-up-instead-of-fall-through the ability derivation carried one function down.
 			if not _sfx_manifest.has(pair[1]):
-				break
+				continue
 			_item_sounds[str(iid)] = str(pair[1])
 			derived += 1
 			break
@@ -577,10 +580,19 @@ func _derive_ability_sounds_from_data() -> void:
 		var ability_type: String = str(entry.get("type", ""))
 		if ability_type != "magic" and not _TYPE_SFX.has(ability_type):
 			continue
-		var cue: String = str(_ELEMENT_SFX.get(str(entry.get("element", "")).to_lower(), ""))
+		## ⛔ THE LOSER OF THE PRECEDENCE IS STILL A CANDIDATE. Element outranks type — a DELIBERATE
+		## ruling, pinned by name in test_song_summon_revive_cues_regression: summon_ifrit should
+		## read as fire, not as a generic summon. That order is unchanged here. What was wrong is
+		## what happened when the WINNER had no manifest entry: the id was abandoned outright, so a
+		## spell went silent with its other cue sitting right there. Try each in order instead.
+		var element_cue: String = str(_ELEMENT_SFX.get(str(entry.get("element", "")).to_lower(), ""))
+		var type_cue: String = str(_TYPE_SFX.get(ability_type, ""))
+		var cue: String = ""
+		for c in [element_cue, type_cue]:
+			if c != "" and _sfx_manifest.has(c):
+				cue = str(c)
+				break
 		if cue == "":
-			cue = str(_TYPE_SFX.get(ability_type, ""))
-		if cue == "" or not _sfx_manifest.has(cue):
 			continue
 		_ability_sounds[ability_id] = cue
 		derived += 1
