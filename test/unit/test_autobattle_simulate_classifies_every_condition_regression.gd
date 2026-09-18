@@ -111,3 +111,18 @@ func test_ally_dead_is_refused_like_the_other_battlefield_conditions() -> void:
 	for line in lines:
 		assert_true(str(line).contains("battlefield"),
 			"ally_dead reads the live party and must be refused, not answered from whatever the parties happen to hold: %s" % str(line))
+
+
+## The editor registers a profile on the AutobattleSystem autoload, keyed "" when nothing sets a
+## character_id, and it outlives this file. Restores the whole map — the leaked key is one this
+## file never named, so a key-wise teardown cannot reach it.
+const ABProfiles := preload("res://test/unit/helpers/autobattle_profiles.gd")
+var _ab_profiles_entry: Dictionary = {}
+
+
+func before_all() -> void:
+	_ab_profiles_entry = ABProfiles.snapshot(get_tree().root.get_node_or_null("AutobattleSystem"))
+
+
+func after_all() -> void:
+	ABProfiles.restore(get_tree().root.get_node_or_null("AutobattleSystem"), _ab_profiles_entry)
