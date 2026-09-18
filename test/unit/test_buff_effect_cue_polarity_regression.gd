@@ -129,6 +129,60 @@ func test_polarity_pairs_are_routed_to_OPPOSITE_cues() -> void:
 		"%d polarity pair(s) route asymmetrically. One direction of a stat pair has a cue and its opposite does not, which means a buff is falling to `_:` and drawing the DESCENDING procedural blip on top of its own cast cue: %s" % [broken.size(), broken])
 
 
+## effect -> [ability ids] for abilities whose own target_type says they help the caster's side.
+func _ally_targeted_effects() -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ABILITIES))
+	if not (parsed is Dictionary):
+		return {}
+	var abilities: Variant = parsed.get("abilities", parsed)
+	var ally: Array[String] = ["self", "ally", "single_ally", "all_allies", "party"]
+	var out: Dictionary = {}
+	for aid in abilities.keys():
+		var a: Variant = abilities[aid]
+		if not (a is Dictionary):
+			continue
+		var e: String = str(a.get("effect", ""))
+		if e.is_empty() or not (str(a.get("target_type", "")) in ally):
+			continue
+		out[e] = out.get(e, []) + [str(aid)]
+	return out
+
+
+func test_a_beneficial_effect_with_no_polarity_TWIN_still_avoids_the_blip() -> void:
+	## SECOND CORPUS, SAME DEFECT, AND THIS FILE WAS GREEN ACROSS IT THE WHOLE TIME.
+	## The pair arm above can only see an effect that HAS an X_up/X_down twin. Measured
+	## 2026-09-18: 24 beneficial effects have no twin — mp_restore_and_ap (Inspiring Melody),
+	## reflect (Magic Reflect), invisible (Vanish), evasion (Burrow), brave_actions (Brave),
+	## damage_absorb (Fill the Void) — so they fall straight to `_:` -> play_status -> manifest
+	## miss -> the DESCENDING blip, on top of their own cast cue. Fourteen are literally
+	## animation:"buff". A guard installed FOR this defect, passing on its next instance.
+	##
+	## ⛔ NOT A THIRD HAND-LIST. The buff arm was hand-extended once for four effects and 24
+	## more arrived behind it; the file's own header predicted that ("would go stale silently
+	## the same way") and then picked a derivation — polarity pairs — that this corpus escapes.
+	## target_type is the ability's OWN statement of who it helps, so a buff authored tomorrow
+	## is covered without editing anything here.
+	var routed: Dictionary = _routed_effects()
+	var ally: Dictionary = _ally_targeted_effects()
+	assert_gt(ally.size(), 5,
+		"PREMISE: only %d ally-targeted effects parsed — every assert below would be vacuous" % ally.size())
+
+	var unrouted: Array[String] = []
+	for e in ally.keys():
+		if not routed.has(e):
+			unrouted.append("%s (%s)" % [e, str(ally[e][0])])
+	assert_gt(unrouted.size(), 0,
+		"ANTI-VACUITY: every ally-targeted effect now has an explicit arm, so the catch-all pin below defends nothing. If that is deliberate, delete this arm and say why.")
+
+	var src: String = FileAccess.get_file_as_string(SCENE_SRC)
+	var at: int = src.find("func _on_action_executed")
+	var body: String = src.substr(at, src.find("\nfunc ", at + 1) - at)
+	assert_true(body.contains("target_type"),
+		"%d ally-targeted effect(s) reach the `_:` catch-all and it does not consult target_type, so each draws the DESCENDING debuff blip over its own cast cue: %s" % [unrouted.size(), unrouted])
+	assert_true(body.contains("play_status(effect)"),
+		"ANTI-OVERCORRECTION: the catch-all must still send ENEMY-targeted effects to play_status — routing everything to the buff cue is the same defect wearing the other sign")
+
+
 func test_the_four_repaired_effects_route_to_the_BUFF_cue() -> void:
 	## Pins VALUES, not presence. "the effect is routed somewhere" was true of the bug —
 	## `_:` is a route. Only naming the expected cue catches a beneficial effect wired to

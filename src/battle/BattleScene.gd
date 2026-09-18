@@ -4561,7 +4561,13 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 					pass
 				# every other status (poison/sleep/doom/curse/stun/burn/freeze/...) — play_status does status_<name> manifest lookup with a generic fallback, so F1-activated effects can't land silently again
 				_:
-					SoundManager.play_status(effect)
+					# DERIVED, not a third hand-list: the buff arm was extended once for four effects and 22 more ally-targeted ones arrived behind it, each drawing the DESCENDING blip over its own cast cue
+					if str(ability.get("target_type", "")) in ["self", "ally", "single_ally", "all_allies", "party"]:
+						# an authored status_<effect> still wins — this only replaces the wrong-polarity procedural fallback
+						if not SoundManager.play_status_if_authored("status_" + effect.to_lower()):
+							SoundManager.play_battle("buff")
+					else:
+						SoundManager.play_status(effect)
 
 
 ## A phase_faces boss (the Calibrant) swaps its visible body when a face lands. The spawn path
