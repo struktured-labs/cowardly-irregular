@@ -135,6 +135,10 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 		if member is Combatant:
 			typed_party.append(member)
 
+	## Controller IDLE + system grinding is a desync left by an aborted start — one controller exists
+	## per session, so the pair has no other reading, and GameLoop's refusal path never calls stop_grind.
+	if AutogrindSystem.is_grinding:
+		AutogrindSystem.stop_autogrind("Stale session flag from an aborted start")
 	if not AutogrindSystem.start_autogrind(typed_party, {}, config):
 		## The force already happened; without this the player keeps autogrind's defaults (see .422).
 		_restore_autobattle_states()
@@ -521,6 +525,10 @@ func stop_grind(reason: String = "Manual stop") -> void:
 		## A start that aborted after _force_autobattle_on never left IDLE; this is the only way back.
 		if not _saved_autobattle_states.is_empty() or not _autogrind_authored_scripts.is_empty():
 			_restore_autobattle_states()
+		## The same abort strands is_grinding on the AUTOLOAD, whose only clearer is stop_autogrind.
+		## Controller IDLE + system grinding is always a desync: one controller exists per session.
+		if AutogrindSystem.is_grinding:
+			AutogrindSystem.stop_autogrind("Controller idle — clearing a stranded session flag")
 		return
 
 	_state = State.IDLE
