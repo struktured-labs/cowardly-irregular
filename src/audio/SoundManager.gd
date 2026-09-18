@@ -1046,6 +1046,7 @@ func _get_world_sfx_prefix() -> String:
 
 func play_ambient(sound_key: String) -> void:
 	"""Start a looping ambient sound (weather, environment). Stops previous ambient."""
+	## SILENT BY DESIGN: the bed asked for is the bed already sounding. Restarting it would seam.
 	if sound_key == _current_ambient_key and _ambient_player.playing:
 		return  # Already playing this ambient
 	stop_ambient()
@@ -1068,19 +1069,30 @@ func play_ambient(sound_key: String) -> void:
 	elif _sfx_manifest.has(sound_key):
 		entry = _sfx_manifest[sound_key]
 	else:
+		## ⛔ THE THREE FAILURE RETURNS BELOW USED TO BE SILENT, and _load_sfx_manifest twenty lines
+		## up surfaces every one of ITS failure modes (tick 166) precisely so a gap cannot degrade
+		## to procedural-only audio with nothing on the console. The LOADER was hardened and its
+		## consumer was not: a zone, village or interior naming a typo'd or retired key was
+		## indistinguishable from one deliberately left quiet, which is the hazard
+		## test_overworld_ambient_keys_resolve's header states and could not fix from a test.
+		push_warning("[AMBIENT] '%s' is in neither the music nor the sfx manifest — this area plays no ambient bed" % sound_key)
 		return
 	var path = entry.get("file", "")
 	if path == "":
+		push_warning("[AMBIENT] '%s' resolved to a manifest entry with no `file` field — no bed" % sound_key)
 		return
 	if not path.begins_with("res://"):
 		path = "res://" + path
 	var stream = load(path) as AudioStream
 	if not stream:
+		push_warning("[AMBIENT] '%s' names %s, which failed to load — no bed" % [sound_key, path])
 		return
 	## ⛔ THE SAME RULE IN THE OTHER DIRECTION. The check in _try_play_from_manifest only fires
 	## when MUSIC starts second; this one covers ambient starting second on a bed the music player
 	## already holds. Music is the foreground layer, so it wins both ways and the ambient simply
 	## does not start — stop_ambient() above has already cleared the slot.
+	## SILENT BY DESIGN: music is the foreground layer and already holds this exact bed, so the
+	## ambient copy simply does not start. Not a failure — stop_ambient() above cleared the slot.
 	if _music_player and _music_player.playing and _music_player.stream \
 			and _music_player.stream.resource_path == path:
 		return
