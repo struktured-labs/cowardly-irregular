@@ -24,6 +24,7 @@ import os, shutil, subprocess, sys, tempfile
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPT = os.path.join(REPO, "tools", "derive_selftest_corpus.py")
 
+TQ3 = chr(34) * 3   # built with chr() so script-driven edits cannot collide with it
 ARMS_SH = 'case "$1" in\n    --selftest) echo ok ;;\nesac\n'   # dispatches -> has arms
 ARMS_PY = 'import sys\nif "--selftest" in sys.argv:\n    print("ok")\n'
 BARE_SH = 'echo no arms here\n'
@@ -116,6 +117,22 @@ arm("code AFTER a one-line docstring is not swallowed",
 
 arm("code AFTER a closed multi-line docstring is not swallowed",
     variant(**{"proser.py": '"""opens\ncloses\n"""\nX = "secret_tool.sh"\n'}),
+    corpus="gate_one.sh gate_two.py secret_tool.sh")
+
+# --- parity: a """ inside a '#' comment must NOT open a doc region --------------------------
+# cowir-ai, 2026-09-18: four lanes audited with hand-rolled PARITY splitters, and a `"""` sitting
+# inside a comment flips the count for the whole rest of the file -- so real code after it reads
+# as docstring and vanishes. Their instrument silently dropped the two files whose comments
+# DESCRIBE that trap. This stripper is immune because it is a line-START state machine, not a
+# counter, but nothing pinned that: a later "simplification" to counting delimiters would pass
+# every other arm here and lose code silently. Direction matters -- over-deletion is the blind
+# direction for a derivation, because fewer members runs fewer arms and still prints success.
+arm("a \"\"\" inside a '#' comment does not flip parity (code after it survives)",
+    variant(**{"proser.py": '# parity note: a %s region is not line-addressable\nX = "secret_tool.sh"\n' % TQ3}),
+    corpus="gate_one.sh gate_two.py secret_tool.sh")
+
+arm("...and the same with the comment AFTER the code",
+    variant(**{"proser.py": 'X = "secret_tool.sh"\n# parity note: %s regions\n' % TQ3}),
     corpus="gate_one.sh gate_two.py secret_tool.sh")
 
 arm("a '#' comment is still stripped (old behaviour survives)",
