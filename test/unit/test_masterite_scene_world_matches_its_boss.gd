@@ -2,6 +2,7 @@ extends GutTest
 
 ## A masterite scene's `world` field must name the world of the boss its TRIGGER names — the filename is one world below and is not the authority.
 
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const CUTSCENE_DIR := "res://data/cutscenes"
 
 ## monsters.json's world vocabulary, which is what a trigger spells. Differs from
@@ -104,8 +105,10 @@ func test_no_masterite_scene_shows_the_world_below_its_boss() -> void:
 
 
 func test_the_gallery_still_reads_this_field() -> void:
-	var src := FileAccess.get_file_as_string("res://src/ui/CutsceneGallery.gd")
-	assert_gt(src.length(), 0, "CONTROL: the gallery source must load")
+	## CODE only — `_items_by_world` is exactly the sort of name a comment repeats.
+	var src := GdSource.code_of("res://src/ui/CutsceneGallery.gd")
+	assert_true(src.contains("func _ready"),
+		"CONTROL: the gallery's code must survive comment-stripping, or both asserts below pass by erasure")
 	assert_true(src.contains("data.get(\"world\", 0)"),
 		"CutsceneGallery must still read `world` from the scene JSON — if it stopped, this whole file is pinning a field nothing consumes and should be re-justified or deleted")
 	assert_true(src.contains("_items_by_world"),

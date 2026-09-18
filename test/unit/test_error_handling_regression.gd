@@ -258,8 +258,17 @@ func test_battle_scene_popup_cleanup() -> void:
 		"BattleScene should track popup reference")
 	assert_true(content.contains("func _cleanup_popup()"),
 		"BattleScene should have _cleanup_popup method")
-	assert_true(content.contains("_cleanup_popup()"),
-		"BattleScene should call _cleanup_popup in appropriate places")
+	## ⛔ THE CALL ARM USED TO BE `contains("_cleanup_popup()")`, WHICH ITS OWN DEFINITION SATISFIES.
+	## `func _cleanup_popup()` contains the bare symbol, so deleting every CALL SITE — leaving a popup
+	## that is created and never cleaned up — left this GREEN. Measured: 6 occurrences in the subject,
+	## 1 definition and 5 calls; the old arm needed only the 1 it could never lose.
+	## Counting is what separates them: a definition is exactly one occurrence, so >1 means at least
+	## one real call, and the arm now fails the moment the last one goes.
+	## (Found by cowir-music's decidable predicate for this shape — a bare symbol pinned against a
+	## subject that declares `func <symbol>` and contains it more than once.)
+	var cleanup_calls: int = content.count("_cleanup_popup()") - 1
+	assert_gt(cleanup_calls, 0,
+		"BattleScene should CALL _cleanup_popup, not merely define it — %d call site(s) besides the definition" % cleanup_calls)
 
 
 ## Array Bounds Checking Tests (MenuScene and SaveScreen)
