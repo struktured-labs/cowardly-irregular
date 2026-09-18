@@ -483,8 +483,14 @@ var _item_sounds: Dictionary = {}
 
 
 func play_item(item_id: String) -> void:
-	"""Cue for USING an item. Silent for plain HP potions by design — healing_done already plays
-	`heal`, and a second cue on top of it would just be louder, not clearer."""
+	"""Cue for USING an item, derived from its own effects. Silent only for an item _item_sounds
+	never mapped — 17 of 172 map, the rest are gear and key items with no use-cue.
+
+	⚠️ This said "silent for plain HP potions by design — healing_done already plays `heal`".
+	BOTH halves were false (measured 2026-09-17): `heal_hp` maps to `heal` in _ITEM_EFFECT_SFX, so
+	4 items DO cue here, and `healing_done` plays nothing at all — BattleScene._on_healing_done
+	only calls BattleResultsDisplay, which has zero SoundManager references. There is no doubling
+	to avoid, so do not "restore" a silence that was never the design."""
 	var cue: String = str(_item_sounds.get(item_id, ""))
 	if cue == "":
 		return
@@ -717,8 +723,11 @@ func play_ui(sound_key: String) -> void:
 
 ## The battle channel's level for a cue: its base plus any authored trim. ONE owner, because
 ## volume_db PERSISTS on the shared player — a caller passing NAN inherits whatever the previous
-## cue left. Measured 2026-09-17: advance_undo (+6) left every following hit 6 dB LOUD and
-## corruption_ap_flicker (-6) left them 6 dB QUIET, until some other cue set an explicit level.
+## cue left. Measured 2026-09-17: SEVEN of the eight authored trims reach THIS player and all seven
+## are NEGATIVE (corruption_gain_* -3, round_ap_gain -5, corruption_ap_flicker -6), so a trimmed cue
+## left every following hit up to 6 dB QUIET until some other cue set an explicit level. The one
+## POSITIVE trim (advance_undo +6) routes to _refuse_player and never arrives here — the advance-bank
+## comment above play_advance_state says so — so the loud direction is guarded, not observed.
 func _battle_level(sound_key: String) -> float:
 	return SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
 
@@ -943,7 +952,8 @@ func play_ability(ability_id: String) -> void:
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
 	# Try world-specific variant (e.g., "w2_ability_fire" for suburban world)
 	var world_key = _get_world_sfx_prefix() + sound_key
-	if _try_play_sfx_from_manifest(_ability_player, world_key):
+	## Guarded like the other three prefix callers: in W1 the prefix is "" so world_key IS sound_key, and an unguarded first attempt that STAMPS the cooldown then fails leaves the second one answering `true` (HANDLED) off that fresh stamp — skipping the procedural fallback entirely.
+	if world_key != sound_key and _try_play_sfx_from_manifest(_ability_player, world_key):
 		return
 	# Fall back to default (medieval/W1) sound
 	if _try_play_sfx_from_manifest(_ability_player, sound_key):
@@ -2529,7 +2539,7 @@ func _start_battle_music() -> void:
 	var suffix = _get_current_world_suffix()
 	if _try_play_from_manifest("battle_" + suffix):
 		return
-	## battle_<suffix> is web-excluded in W4-W6; generating is 8.5s on the main thread.
+	## NOT because W4-W6 are excluded — the default publish ships every track (WEB_STAGE=1 stages a transcoded tier and strips the music exclusions). The reason is COST: generating is 8.5s on the main thread.
 	if suffix != "medieval" and _try_play_from_manifest("battle_medieval"):
 		return
 
@@ -3244,7 +3254,7 @@ func _start_boss_music() -> void:
 	var suffix = _get_current_world_suffix()
 	if _try_play_from_manifest("boss_" + suffix):
 		return
-	## boss_<suffix> is web-excluded in W4-W6; generating is 2.1s on the main thread.
+	## NOT the exclusion — the default publish ships these. The reason is COST: generating is 2.1s on the main thread.
 	if suffix != "medieval" and _try_play_from_manifest("boss_medieval"):
 		return
 
@@ -6637,7 +6647,7 @@ func _start_industrial_music() -> void:
 	print("[MUSIC] Playing industrial theme")
 	if _play_area_wav_cached("industrial"):
 		return
-	## overworld_industrial is web-excluded; generating the fallback is 1.9s of main-thread GDScript.
+	## NOT the exclusion — the default publish ships overworld_industrial. The reason is COST: generating is 1.9s of main-thread GDScript.
 	if _try_play_from_manifest("overworld_medieval"):
 		return
 
@@ -6763,7 +6773,7 @@ func _start_futuristic_music() -> void:
 	print("[MUSIC] Playing futuristic digital theme")
 	if _play_area_wav_cached("futuristic"):
 		return
-	## overworld_digital is web-excluded; generating the fallback is 3.8s of main-thread GDScript.
+	## NOT the exclusion — the default publish ships overworld_digital. The reason is COST: generating is 3.8s of main-thread GDScript.
 	if _try_play_from_manifest("overworld_medieval"):
 		return
 
@@ -7190,7 +7200,7 @@ func _start_industrial_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_industrial"):
 		return
-	## web-excluded; generating is 1.6s on the main thread.
+	## NOT the exclusion — the default publish ships this. The reason is COST: generating is 1.6s on the main thread.
 	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing industrial battle theme")
@@ -7391,7 +7401,7 @@ func _start_digital_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_digital"):
 		return
-	## web-excluded; generating is 1.4s on the main thread.
+	## NOT the exclusion — the default publish ships this. The reason is COST: generating is 1.4s on the main thread.
 	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing digital battle theme")
@@ -7598,7 +7608,7 @@ func _start_void_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_abstract"):
 		return
-	## battle_abstract is web-excluded and battle_void is not in the manifest, so on web BOTH tiers above miss and generating is 1.3s of main-thread GDScript.
+	## battle_void is not in the manifest, so the tier above can miss; generating is 1.3s of main-thread GDScript. (battle_abstract itself SHIPS on the default publish — the old 'web-excluded' half of this note is obsolete.)
 	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing void battle theme")
@@ -7777,7 +7787,7 @@ func _start_abstract_music() -> void:
 	print("[MUSIC] Playing abstract void theme")
 	if _play_area_wav_cached("abstract"):
 		return
-	## overworld_abstract is web-excluded; generating the fallback is 19.9s of main-thread GDScript.
+	## ⛔ DO NOT DELETE THIS FALLBACK. Not the exclusion — the default publish ships overworld_abstract. The reason is COST: generating is 19.9s of main-thread GDScript, and this is the freeze 2f847cf02 fixed ("entering the World 6 overworld froze the web build for ~20 seconds").
 	if _try_play_from_manifest("overworld_medieval"):
 		return
 

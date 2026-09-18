@@ -1,4 +1,6 @@
 extends SceneTree
+
+const ShotGuard = preload("res://tools/shot_guard.gd")
 ## Store screenshots for cowir-main's .225 list (msg 8474). Companion to
 ## tools/marketing_shots.gd, which covers the villages/interiors/battle baseline; this one
 ## covers the shots that need STATE — a specific dungeon floor, a weather condition — rather
@@ -63,7 +65,8 @@ func _init() -> void:
 func _capture(name: String) -> void:
 	var img := root.get_texture().get_image()
 	var path := "res://tmp/marketing/%s.png" % name
-	img.save_png(path)
+	if not ShotGuard.save_or_refuse(img, path):
+		_fail += 1
 	var fa := FileAccess.open(path, FileAccess.READ)
 	var sz := fa.get_length() if fa else 0
 	if fa:
