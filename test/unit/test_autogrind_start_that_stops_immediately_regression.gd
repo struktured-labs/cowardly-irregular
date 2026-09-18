@@ -5,6 +5,19 @@ const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 ## Whole-surface autoload restore — this file leaked state a hand-listed teardown cannot name.
 var _ag_state: Dictionary
 
+## ⛔ SoundManager TOO, and this file never writes it by name — it instantiates GameLoop and the
+## autogrind UI, and `_ready` reaches play_* three frames down (@cowir-music's mechanism). Measured
+## 2026-09-17: it left `_current_music=title` and `_music_playing=true` for every later file in the
+## process. The one SoundManager line here is a READ in an assert, so a name scan reports it covered.
+## 📌 Adopt @cowir-music's `test/unit/helpers/sound_state.gd` when that lands on main — this list is
+## the shape they are correctly arguing against, kept only because the helper is not in this tree yet.
+const _SM_ROUTING_FIELDS := [
+	"_current_area", "_current_world_suffix", "_current_music",
+	"_current_ambient_key", "_music_playing",
+]
+
+var _saved_sm: Dictionary = {}
+
 ## struktured 2026-09-07, on .228: "cant exit autogrind again! got stuck after it stopped".
 ## His party was already under the 20% HP stop threshold, so start_grind stopped SYNCHRONOUSLY:
 ## grind_complete freed the controller and restored exploration INSIDE the start call, and
@@ -22,6 +35,9 @@ var _ui: Control = null
 
 func before_each() -> void:
 	_ag_state = AutogrindState.snapshot()
+	_saved_sm.clear()
+	for f in _SM_ROUTING_FIELDS:
+		_saved_sm[f] = SoundManager.get(f)
 	AutogrindSystem._test_disable_persistence = true
 	if AutogrindSystem.is_grinding:
 		AutogrindSystem.stop_autogrind("test reset")
@@ -51,6 +67,9 @@ func after_each() -> void:
 		AutogrindSystem.stop_autogrind("test teardown")
 	Engine.time_scale = 1.0
 	AutogrindState.restore(_ag_state)
+	SoundManager.stop_music()
+	for f in _SM_ROUTING_FIELDS:
+		SoundManager.set(f, _saved_sm[f])
 
 
 
