@@ -132,3 +132,47 @@ func before_each() -> void:
 
 func after_each() -> void:
 	AutogrindState.restore(_ag_state)
+
+
+# ── the block cannot fall behind the engine's list ─────────────────────────────
+
+func test_every_numeric_condition_is_given_a_unit() -> void:
+	## time_elapsed and corruption were each named only AFTER the model had already
+	## guessed their scale wrong. The block is hand-written and NUMERIC_CONDITIONS is
+	## engine-owned, so a fourteenth entry gets no unit and the guess happens a third
+	## time — silently, because a wrong scale validates, delivers, and never fires.
+	var sys = _sys()
+	var nums: Array = sys.NUMERIC_CONDITIONS
+	assert_gte(nums.size(), 13, "FLOOR: an empty list would make the loop below vacuous")
+	var p: String = _grind({"corruption_limit": 4.5, "efficiency_start": 1.0})
+	var at: int = p.find("WHAT THE NUMBERS MEAN")
+	assert_gt(at, -1, "the scale block must render")
+	## Sliced to the block. The grammar above lists every type by NAME, so the same
+	## search run against the whole prompt is satisfied with no units rendered at all.
+	var block: String = p.substr(at)
+	var ends: int = block.find("STATUS IDS")
+	if ends > -1:
+		block = block.substr(0, ends)
+	var unnamed: Array[String] = []
+	for c in nums:
+		if block.find(str(c)) == -1:
+			unnamed.append(str(c))
+	assert_eq(unnamed.size(), 0,
+		"every numeric condition needs its unit stated; these carry none: %s" % [unnamed])
+
+
+func test_the_grammar_names_every_numeric_so_a_prompt_wide_search_is_vacuous() -> void:
+	## CONTROL for the arm above, and the reason it slices. Every numeric condition is
+	## named in the grammar's own type list, so a prompt with the units block ABSENT
+	## still contains all 13 names — the naive check reports full coverage of nothing.
+	var sys = _sys()
+	var nums: Array = sys.NUMERIC_CONDITIONS
+	assert_gte(nums.size(), 13, "FLOOR")
+	var without: String = _grind({})
+	assert_eq(without.find("WHAT THE NUMBERS MEAN"), -1, "CONTROL: no scales, no block")
+	var found_anyway: int = 0
+	for c in nums:
+		if without.find(str(c)) != -1:
+			found_anyway += 1
+	assert_eq(found_anyway, nums.size(),
+		"the grammar list alone names every numeric condition — %d of %d, which is why the arm above slices to the block" % [found_anyway, nums.size()])

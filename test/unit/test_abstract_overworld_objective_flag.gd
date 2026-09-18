@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## tick 277: AbstractOverworld's _get_objective_position now reads
 ## the real Calibrant-defeat completion flag instead of a story_flag
 ## that nothing in the game ever set.
@@ -89,3 +91,8 @@ func test_calibrant_flag_in_cutscene_completion_map() -> void:
 	# fix above also breaks (flag would never be set).
 	assert_true(gl.contains("\"world6_calibrant_defeat\":") and gl.contains("\"cutscene_flag_world6_calibrant_defeat_complete\""),
 		"GameLoop's _CUTSCENE_COMPLETION_FLAGS must map world6_calibrant_defeat → cutscene_flag_world6_calibrant_defeat_complete")
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()

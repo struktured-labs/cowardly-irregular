@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Two World 1 destinations had a working transition and **no signpost anywhere**: Scriptura Plaza
 ## and the Backwards Warren. Neither is hidden by design — Scriptura is the capital, and it holds the
 ## Guild scholar that `world1_thirty_seven`'s step 2 sends you to talk to. A player who never walks
@@ -210,3 +212,8 @@ func test_an_exemption_that_stopped_being_true_must_be_deleted() -> void:
 	stale.sort()
 	assert_eq(stale, [],
 		"an exemption stopped being true — it reads as coverage this guard no longer has: %s" % str(stale))
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()

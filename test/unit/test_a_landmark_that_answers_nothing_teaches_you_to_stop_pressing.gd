@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## W1 draws nine overworld landmarks and, until the Survey Stone, pressed back with exactly none.
 ##
 ## That is not a missing feature, it is an anti-feature: the first three inert landmarks TEACH the
@@ -367,3 +369,8 @@ func test_pressing_a_placed_landmark_actually_opens_it() -> void:
 	assert_eq(dead, [],
 		"a landmark labels itself, answers the probe, and opens nothing when pressed — the " +
 		"loudest possible promise attached to the quietest possible failure: %s" % ", ".join(dead))
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()
