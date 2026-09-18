@@ -209,18 +209,34 @@ func test_the_level_up_flourish_is_not_cut_by_a_loot_chip() -> void:
 		return
 	assert_true(sm._sfx_manifest.has("levelup_flourish"), "CONTROL: the flourish must exist to be cut")
 	assert_true(sm._sfx_manifest.has("loot_pop"), "CONTROL: the item cue must exist to do the cutting")
+	## ⛔ DRIVES THE METHOD THE OVERLAY ACTUALLY CALLS, not the one the fix chose. The first
+	## version of this arm called play_flourish directly — so it passed on the shipped fix AND
+	## on a revert of it, because the test, not the overlay, picked the voice. It proved the two
+	## voices are separate and nothing about the routing (@cowir-music 2026-09-18: a driven arm
+	## is not load-bearing unless it drives the case where the mechanisms disagree).
+	var vo_src := FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
+	var m := RegEx.create_from_string("SoundManager\\.(\\w+)\\(\"levelup_flourish\"\\)").search(vo_src)
+	assert_ne(m, null, "CONTROL: VictoryOverlay must still cue levelup_flourish, or this arm tests nothing")
+	if m == null:
+		return
+	var cue_method: String = m.get_string(1)
+	var voice: String = str({"play_battle": "_battle_player", "play_flourish": "_flourish_player",
+		"play_ui": "_ui_player", "play_death": "_death_player", "play_pickup": "_pickup_player"}.get(cue_method, ""))
+	assert_ne(voice, "",
+		"the overlay cues the level-up through %s and this arm does not know its voice — add it, do not delete the assert" % cue_method)
+	if voice == "":
+		return
+	assert_true(sm.has_method(cue_method), "SoundManager has no method %s — the overlay calls it" % cue_method)
 	sm._sfx_cooldowns.clear()
-	sm.play_flourish("levelup_flourish")
-	var flourish = sm._flourish_player.stream
-	assert_not_null(flourish, "CONTROL: the flourish must have loaded")
+	sm.call(cue_method, "levelup_flourish")
+	var flourish = sm.get(voice).stream
+	assert_not_null(flourish, "CONTROL: the flourish must have loaded on %s" % voice)
 	if flourish == null:
 		return
 	sm._sfx_cooldowns.clear()
 	sm.play_battle("loot_pop")
-	assert_eq(sm._flourish_player.stream, flourish,
-		"an item chip replaced the level-up flourish — the loudest moment on the victory screen, cut 0.41s in")
-	assert_ne(sm._battle_player.stream, flourish,
-		"CONTROL: loot_pop must genuinely have played somewhere, or the assert above is vacuous")
+	assert_eq(sm.get(voice).stream, flourish,
+		"an item chip replaced the level-up flourish on %s — the loudest moment on the victory screen, cut 0.41s in" % voice)
 
 
 func test_the_victory_overlay_routes_the_level_up_through_its_own_voice() -> void:
