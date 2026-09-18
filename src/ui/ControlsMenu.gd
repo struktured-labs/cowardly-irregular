@@ -548,9 +548,13 @@ func _handle_test_input(event: InputEvent) -> void:
 		if raw:
 			# Show which action this maps to in the active profile, if any
 			var mapped_actions = []
+			## ⛔ ASKS WHAT IS BOUND, NOT WHAT THE TABLE STORES. `btn` is the PHYSICAL button the
+			## player just pressed; the profile table holds PRE-convention indices, so with the
+			## Xbox/PlayStation convention on this overlay named the wrong action for Confirm and
+			## Cancel — on the screen whose entire job is telling the player what a button does.
 			var bindings = InputProfileManager.get_profile_bindings(InputProfileManager.active_profile)
 			for action in bindings:
-				if btn in bindings[action]:
+				if btn in InputProfileManager.get_current_button_indices(action):
 					var action_label = InputProfileManager.ACTION_LABELS.get(action, action)
 					mapped_actions.append(action_label)
 			if mapped_actions.is_empty():
