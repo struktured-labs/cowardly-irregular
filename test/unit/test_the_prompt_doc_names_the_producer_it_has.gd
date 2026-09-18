@@ -61,14 +61,32 @@ func test_the_doc_names_the_producer_the_caller_uses() -> void:
 
 
 ## Without this the arm above passes if the two readers are the same function.
+##
+## Asserted BEHAVIOURALLY. This arm used to pin `body.contains("while") or "type"` — a proxy
+## satisfied by any loop or type mention in that function, which is not the property. The
+## property is that a run of same-type entries collapses, so the test feeds one and reads both.
 func test_control_the_two_readers_are_genuinely_different() -> void:
-	var log: String = _stripped(LOG)
-	assert_true(log.contains("func recent_varied("), "CONTROL: recent_varied must exist")
-	assert_true(log.contains("func recent("), "CONTROL: recent must exist")
-	var at: int = log.find("func recent_varied(")
-	var body: String = log.substr(at, log.find("\nfunc ", at + 1) - at)
-	assert_true(body.contains("while") or body.contains("type"),
-		"CONTROL: recent_varied must actually collapse runs, or naming it buys nothing")
+	var log := EventLog.new()
+	## The recorded defect's own shape: beat the boss, THEN walk to town.
+	log.record("boss_defeat", "Felled the Cave Rat King")
+	log.record("area_entered", "Entered the shop door")
+	log.record("area_entered", "Entered the market")
+	log.record("area_entered", "Entered town")
+	var plain: Array = log.recent(3)
+	var varied: Array = log.recent_varied(3)
+	assert_eq(plain.size(), 3, "CONTROL: recent must return the window it was asked for")
+	var plain_types: Array = []
+	for e in plain:
+		plain_types.append(str((e as Dictionary).get("type", "")))
+	var varied_types: Array = []
+	for e in varied:
+		varied_types.append(str((e as Dictionary).get("type", "")))
+	assert_ne(varied_types, plain_types,
+		"CONTROL: the two readers must differ on a run, or naming one buys nothing")
+	assert_true(varied_types.has("boss_defeat"),
+		"recent_varied must surface the boss behind the walk — the defect it exists for")
+	assert_false(plain_types.has("boss_defeat"),
+		"CONTROL: and plain recent must NOT, or the scenario does not exercise the difference")
 
 
 ## No doc anywhere in the file may still name the reader the caller does NOT use.
