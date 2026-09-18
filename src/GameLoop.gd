@@ -1673,7 +1673,7 @@ func _open_autobattle_for_character(char_id: String, char_name: String, combatan
 func _save_exists() -> bool:
 	"""Check if a save file exists (new or legacy format)"""
 	# Check for new customization save
-	if FileAccess.file_exists("user://save_data.json"):
+	if FileAccess.file_exists(CUSTOMIZATIONS_PATH):
 		return true
 	# Check for legacy save format
 	if FileAccess.file_exists("user://saves/save_00.json"):
@@ -2755,26 +2755,64 @@ func _create_party_from_customizations(customizations: Array) -> void:
 	_wire_party_level_up_listeners()
 
 
+## The path lived as five separate string literals across GameLoop and TitleScreen; a staged write
+## needs the writer and the reader to agree on it, and a literal cannot be kept in step.
+const CUSTOMIZATIONS_PATH := "user://save_data.json"
+
+
 func _save_customizations(customizations: Array) -> void:
 	"""Save character customizations to file"""
 	var data = []
 	for custom in customizations:
 		data.append(custom.to_dict())
 
-	var file = FileAccess.open("user://save_data.json", FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify({"party_customizations": data}))
-		file.close()
-		print("[SAVE] Saved party customizations")
+	## ⛔ SERIALIZE, STAGE, RENAME — the fleet idiom, not a variant. open(WRITE) TRUNCATES on open
+	## (measured: 34 bytes before, 0 after, before store_string), and the stringify ran inside that
+	## window. This file is BOTH the global customization store AND the legacy single-save whose
+	## existence gates the title screen's Continue button (TitleScreen:446) — a truncated file still
+	## passes file_exists, so Continue appears for a file that parses to nothing.
+	##
+	## The other four instances of this family had a hardened READER and a silent writer. This one
+	## had neither, which is the state the other four started from: a reader goes loud after
+	## somebody is burned on it, and nobody had been burned here.
+	var payload := JSON.stringify({"party_customizations": data})
+	if payload == "":
+		push_warning("[SAVE] party customizations serialized to nothing — the existing file is left intact.")
+		return
+	var staged := CUSTOMIZATIONS_PATH + ".new"
+	var file = FileAccess.open(staged, FileAccess.WRITE)
+	if not file:
+		push_warning("[SAVE] could not open '%s' for write (error %d) — customizations NOT saved; the existing file is intact." % [staged, FileAccess.get_open_error()])
+		return
+	file.store_string(payload)
+	## store_string returns NOTHING, so a short write — full disk, quota — is invisible and a
+	## rename would carry the partial file into place just as happily as a whole one
+	## (cowir-controller/cowir-music). Ask before closing; refuse the rename on non-OK.
+	var werr := file.get_error()
+	file.close()
+	if werr != OK:
+		push_warning("[SAVE] '%s' was not fully written (error %d) — refusing to replace the existing customizations." % [staged, werr])
+		DirAccess.remove_absolute(staged)
+		return
+	var err := DirAccess.rename_absolute(staged, CUSTOMIZATIONS_PATH)
+	if err != OK:
+		push_warning("[SAVE] could not move '%s' into place (error %d) — the previous customizations are intact and this save did NOT land." % [staged, err])
+		DirAccess.remove_absolute(staged)
+		return
+	print("[SAVE] Saved party customizations")
 
 
 func _load_customizations() -> Array:
 	"""Load character customizations from file"""
-	if not FileAccess.file_exists("user://save_data.json"):
+	## FILE MISSING STAYS SILENT — a first-run player legitimately has no save_data.json, the same
+	## call load_settings made at tick 347. Every OTHER path now says so: this reader returned []
+	## on all four failures without a word, which is why the truncating writer above went unseen.
+	if not FileAccess.file_exists(CUSTOMIZATIONS_PATH):
 		return []
 
-	var file = FileAccess.open("user://save_data.json", FileAccess.READ)
+	var file = FileAccess.open(CUSTOMIZATIONS_PATH, FileAccess.READ)
 	if not file:
+		push_warning("[SAVE] '%s' exists but could not be opened (error %d) — party customizations not loaded; characters will come back as defaults." % [CUSTOMIZATIONS_PATH, FileAccess.get_open_error()])
 		return []
 
 	var json_string = file.get_as_text()
@@ -2782,6 +2820,9 @@ func _load_customizations() -> Array:
 
 	var json = JSON.new()
 	if json.parse(json_string) != OK:
+		## The symptom a truncated write produces. Loud, because "characters silently reverted to
+		## defaults" is indistinguishable from a game that never saved them.
+		push_warning("[SAVE] '%s' is not valid JSON (%d bytes) — party customizations not loaded. A file truncated by a crash mid-write looks exactly like this." % [CUSTOMIZATIONS_PATH, json_string.length()])
 		return []
 
 	var data = json.data
