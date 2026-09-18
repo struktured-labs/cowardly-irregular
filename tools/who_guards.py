@@ -33,6 +33,20 @@ about that on its own: it removes the need to DECIDE what to search for, so the 
 action costs one word. The trigger itself — "I am about to author a guard" — is free only
 if something else fires it, and nothing here does.
 
+SELFTEST, and why the flag is here rather than only the sibling file: `who_guards_selftest.py`
+existed for an hour and ran NOWHERE. `test_every_tool_selftest_still_passes.gd` walks `.py`
+tools in tools/ whose source contains "--selftest"; the separate-file convention (5 of them)
+needs an explicit runner in deploy_web.sh or publish_all.sh, and mine had none. That is the
+exact defect that guard was written to fix, one convention over, in a tool I shipped to stop
+myself repeating work.
+
+⚠️ THE FLAG IS A NAMING CONVENTION, NOT A SAFETY CONTRACT — that guard's own words, after a
+`.sh` selftest deregistered 133 worktrees. Its real rule is READ WHAT IT REACHES, TRANSITIVELY.
+Vetting for this one, stated so it is checkable rather than assumed: the selftest builds every
+fixture inside `tempfile.TemporaryDirectory()`, and the only subprocess it launches is THIS
+tool, which opens files for reading, walks directories and prints. No repo path is written, no
+git command runs, and nothing survives the temp dir.
+
 Exit: 0 ran · 2 bad invocation · 3 corpus absent (nothing could have been searched).
 A zero-hit run exits 0 and SAYS SO — a null and a failed run must not look alike.
 """
@@ -142,10 +156,15 @@ def main():
     ap.add_argument("--new", action="store_true",
                     help="derive symbols from test files git has not seen yet")
     ap.add_argument("--top", type=int, default=5, help="with --new, how many symbols to check")
+    ap.add_argument("--selftest", action="store_true", help="run who_guards_selftest.py and exit")
     ap.add_argument("--corpus", default=CORPUS_DEFAULT, help="directory to search (default: test)")
     ap.add_argument("--lines", type=int, default=4, help="header lines to print per file (default: 4)")
     ap.add_argument("--hits", type=int, default=2, help="matched lines to print per file (default: 2)")
     args = ap.parse_args()
+
+    if args.selftest:
+        here = os.path.dirname(os.path.abspath(__file__))
+        return subprocess.call([sys.executable, os.path.join(here, "who_guards_selftest.py")])
 
     symbols = list(args.symbols)
     if args.new:
