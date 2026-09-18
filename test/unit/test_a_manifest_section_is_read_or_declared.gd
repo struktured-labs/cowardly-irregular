@@ -19,7 +19,9 @@ extends GutTest
 ##   overworld_npc_sheets  145 entries whose ART IS LIVE — reached by path convention, never through
 ##                         the manifest. An audit ledger, not a route, and the opposite error to the
 ##                         one above: a zero here is not unreachable art.
-##   weapon_sheets         4 T2_artist_draft weapons, declared in hour 10.
+##   weapon_sheets         4 weapons, declared in hour 10 — ONE T2_artist_draft (iron_sword),
+##                         THREE T1. This line and the manifest's own note BOTH said all four
+##                         were artist draft until 2026-09-18; two copies, wrong together.
 ##   party_sheets          empty, and empty on purpose.
 ##
 ## 🔑 THE TWO ZEROES MEAN OPPOSITE THINGS AND NO COUNT SEPARATES THEM. `npc_sheets` unread means the
@@ -291,3 +293,31 @@ func test_no_consumer_builds_a_section_name() -> void:
 		("a section name is BUILT rather than written, so the literal search this file uses can no "
 		+ "longer see that section's reader and every unread verdict above is unsafe — including "
 		+ "the ones a retire-or-wire ruling on artist work rests on: %s") % [built])
+
+
+## The weapon_sheets declaration carried a TIER attribution and nothing checked it. It said all
+## four sheets were T2_artist_draft; one is. The direction matters more than the count: it credits
+## the artist for three AI-generated sheets, which is the half CLAUDE.md principle 5 exists for —
+## the artist always knows what is AI versus hand-drawn. That note had been corrected twice for
+## SIZE (132 KB -> 44 KB) and audited for tier exactly never.
+##
+## Pins the DATA, not the prose. If a weapon's tier legitimately changes, this reds and names the
+## two places that describe it — you cannot silence it green, only update them.
+func test_the_weapon_declaration_gets_its_tiers_right() -> void:
+	var weapons: Dictionary = _manifest().get("weapon_sheets", {})
+	assert_eq(weapons.size(), 4, "SCOPE: weapon_sheets no longer holds four entries — the declaration and this arm both describe a section that changed")
+	var by_tier: Dictionary = {}
+	for id in weapons:
+		var entry = weapons[id]
+		if entry is Dictionary:
+			var t := str((entry as Dictionary).get("tier", "<none>"))
+			by_tier[t] = int(by_tier.get(t, 0)) + 1
+	assert_eq(by_tier, {"T2_artist_draft": 1, "T1": 3},
+		"weapon_sheets tiers are now %s. Update BOTH descriptions — this file's header and the manifest's own _section_provenance.weapon_sheets — because they have already been wrong together once, and the error direction (crediting the artist for AI sheets) is the one the artist ledger cares about" % str(by_tier))
+
+	var declaration := str(_manifest().get("_section_provenance", {}).get("weapon_sheets", ""))
+	## The ATTRIBUTION phrase, not the bare id: "iron_sword" also occurs in this note's own
+	## correction paragraph, so a bare contains() is satisfied with the claim stripped out —
+	## measured, the mutation did not fire until this pinned the phrase.
+	assert_true(declaration.contains("T2_artist_draft (iron_sword)"),
+		"the declaration no longer attributes the artist draft to a NAMED sheet, so it is back to a bare count that cannot be checked against the data")

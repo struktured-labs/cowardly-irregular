@@ -1112,7 +1112,9 @@ func _nav_step(action: String) -> void:
 ## trigger that. Refusing to repeat in an edge case is safe; repeating under a live submenu
 ## is not, so this errs toward silence.
 func _process(delta: float) -> void:
-	if not visible \
+	# is_queued_for_deletion too: none of these hide before queue_free(), so a menu closed
+	# mid-hold stays visible one more frame and the ramped repeat steps a dying node.
+	if not visible or is_queued_for_deletion() \
 			or get_node_or_null("QuitConfirmDialog") != null \
 			or _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open \
 			or _teleport_submenu_open or _rebalance_review_open or _byok_config_open \
