@@ -695,6 +695,17 @@ func _smoke_enter_map(map_id: String) -> void:
 	var before_id: int = current_scene.get_instance_id() if is_instance_valid(current_scene) else 0
 	_set_current_map_id(map_id)
 	await _start_exploration()
+	# ⛔ QUIET THE FRESH SPAWNER HERE, NOT AT THE NEXT SHOT. _smoke_quiet_the_roamers() had exactly one
+	# call site — the top of _smoke_shot() — and its own comment already said why that is wrong:
+	# "every map leg builds a fresh scene with a fresh spawner". Entering a map builds that spawner
+	# ENABLED, and nothing disabled it until the next picture was taken. The walk legs hold that
+	# window open longest because the player is deliberately moved through it:
+	#   _smoke_enter_map("overworld") -> 1.5s -> action_press(dir) -> 0.7s -> _smoke_shot()
+	# i.e. ~2.2s of live roamers with the player walking into them. Measured on .443's web RED:
+	# encounters_enabled was FALSE throughout (the random path was shut), yet a battle started
+	# between the walk shots and the village shot and every later leg bailed — the roamer path,
+	# which consults no flag. Same signature this file's :717 comment recorded at .265.
+	_smoke_quiet_the_roamers()
 	if BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
 		print("[SMOKE] FAIL: '%s' leg bailed — a live battle owns the screen, this shot is the previous frame" % map_id)
 		_smoke_failed = true
