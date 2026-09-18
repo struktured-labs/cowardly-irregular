@@ -43,6 +43,7 @@ var _page: int = 0
 var _layer: CanvasLayer = null
 var _label: Label = null
 var _player_nearby: bool = false
+var _holds_lock: bool = false  # only THIS instance's lock may be released on teardown
 var _prompt_layer: CanvasLayer = null
 var _body_label: Label = null
 var _heading_label: Label = null
@@ -212,6 +213,17 @@ func _open_panel() -> void:
 	_render_page()
 	if InputLockManager:
 		InputLockManager.push_lock(LOCK_NAME)
+		_holds_lock = true
+
+
+## The panel closes on a keypress, so the lock is held for as long as the player reads — and the
+## prop can be freed under it. A roaming monster touching the player starts a battle, GameLoop frees
+## the overworld, `_close_panel` never runs, and the lock survives into the next scene:
+## `OverworldPlayer._can_move()` then refuses to move until the 10s stale reaper fires.
+func _exit_tree() -> void:
+	if _holds_lock and InputLockManager:
+		InputLockManager.pop_lock(LOCK_NAME)
+	_holds_lock = false
 
 
 func _render_page() -> void:
@@ -227,8 +239,9 @@ func _render_page() -> void:
 
 
 func _close_panel() -> void:
-	if InputLockManager:
+	if InputLockManager and _holds_lock:
 		InputLockManager.pop_lock(LOCK_NAME)
+	_holds_lock = false
 	if _layer and is_instance_valid(_layer):
 		_layer.queue_free()
 	_layer = null
