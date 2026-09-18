@@ -8,7 +8,7 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ## with a typo'd or retired key is indistinguishable from a zone deliberately left quiet."
 ##
 ## Measured 2026-09-18: play_ambient has FIVE consumer files and that guard reaches one of them.
-##   OverworldScene:931        7 zone keys          <- covered there
+##   OverworldScene:931        7 zone keys          <- NOW READ HERE TOO (see the 4th pattern)
 ##   WeatherSystem:198-203     6 literal keys       <- uncovered
 ##   BaseVillage:101,712       _get_ambient_key()   <- uncovered
 ##   BaseInterior:52           _get_ambient_key()   <- uncovered, 7 rooms override it
@@ -56,6 +56,12 @@ func _requested_keys() -> Dictionary:
 	## pattern reports the night bed as UNAUDITED while looking like a clean sweep. Resolved against
 	## the same file's own declaration, so a const in any future consumer is covered too.
 	var const_call_re := RegEx.create_from_string("play_ambient\\(\\s*([A-Z][A-Z_0-9]+)\\s*\\)")
+	## ⛔ FOURTH FORM, AND MY THREE PATTERNS NEVER READ IT. OverworldScene assigns its seven zone
+	## keys as `ambient_key = "ambient_forest"` inside a match, then calls play_ambient(ambient_key)
+	## — so this file, named for EVERY consumer, held none of them. The sibling guard covers them
+	## and my header said so; that made the omission look deliberate rather than unread. Surfaced
+	## only when the arrival arm's exemption moved from a NAME to a PROVENANCE check.
+	var assigned_re := RegEx.create_from_string("\\bambient_key\\s*=\\s*\"([a-z_0-9]+)\"")
 	for path in _gd_files("res://src"):
 		var code: String = GdSource.code_of(path)
 		if code == "":
@@ -63,6 +69,8 @@ func _requested_keys() -> Dictionary:
 		for m in call_re.search_all(code):
 			_add(out, m.get_string(1), path)
 		for m in ret_re.search_all(code):
+			_add(out, m.get_string(1), path)
+		for m in assigned_re.search_all(code):
 			_add(out, m.get_string(1), path)
 		for m in const_call_re.search_all(code):
 			var decl := RegEx.create_from_string("const %s[^=\\n]*=\\s*\"([a-z_0-9]+)\"" % m.get_string(1))
@@ -126,6 +134,74 @@ func test_the_walk_reaches_every_consumer_not_just_the_overworld() -> void:
 			files.size(), KNOWN_CONSUMERS, files])
 
 
+## Call sites whose argument this file CANNOT resolve, each with the reason it is unresolvable.
+## You cannot silence this green, only explain it green.
+const UNRESOLVABLE_BY_DESIGN := {
+	"_pre_night_ambient_key": "a runtime variable holding a key that ALREADY PLAYED, so it was resolved on its first pass; safe by construction, not by check",
+}
+
+
+func test_no_play_ambient_call_uses_a_form_this_file_cannot_read() -> void:
+	## THE ARRIVAL DIRECTION, and the membership floor below does not cover it (cowir-autogrind,
+	## 2026-09-18). That floor answers "did one of my three extraction paths stop contributing".
+	## It is silent on a FOURTH argument form arriving — a dictionary lookup, a concatenation, a
+	## new helper — which would contribute nothing and shrink no named member.
+	##
+	## So: every play_ambient call site in src/ must be resolvable by one of the three patterns,
+	## or be named above with its reason. Derived from the call sites, not from the patterns.
+	var unresolved: Array = []
+	## ⛔ THIS ARM IS INVERTED-BURDEN — everything it cannot read becomes an offender — so the way
+	## it breaks is by examining NOTHING and reporting a clean sweep (cowir-music's MUT B, 2026-09-18).
+	## `GdSource.code_of` returning "" skips a file silently; if it did so for all of them the arm
+	## passes having looked at zero call sites. A control over what was EXAMINED, by membership
+	## rather than by count, because a count is satisfied by survivors.
+	var examined: Array = []
+	var call_re := RegEx.create_from_string("play_ambient\\(\\s*([^)]*)\\)")
+	for path in _gd_files("res://src"):
+		var code: String = GdSource.code_of(path)
+		if code == "":
+			continue
+		for m in call_re.search_all(code):
+			var arg: String = m.get_string(1).strip_edges()
+			examined.append("%s|%s" % [path.replace("res://src/", ""), arg])
+			if arg == "" or arg.begins_with("sound_key"):
+				continue   # the declaration and its own forwarding
+			if arg.begins_with("\""):
+				continue   # LITERAL path
+			if arg == arg.to_upper():
+				continue   # CONST path
+			if UNRESOLVABLE_BY_DESIGN.has(arg):
+				continue
+			## ⛔ THE VIRTUAL EXEMPTION IS BY PROVENANCE, NOT BY NAME. It was `arg in ["ambient_key",
+			## "key"]` for an hour — a name exemption, so `var key := some_dict[x]` followed by
+			## play_ambient(key) passed silently while contributing nothing to the corpus. Same
+			## class as everything else tonight: an exemption satisfied for a reason unrelated to
+			## the property. The local must actually be assigned from _get_ambient_key() in THIS
+			## file, which is the only form the virtual extraction can read.
+			## ⛔ WORD-BOUNDARY, NOT `contains`. This was `code.contains("%s := _get_ambient_key()")`
+			## and BaseVillage holds BOTH `var ambient_key := _get_ambient_key()` and `var key :=
+			## …`, so the substring for `key` is satisfied by `ambient_KEY` — the exemption for one
+			## local was granted by a DIFFERENT local's declaration. Measured: the mutation that
+			## should have red it passed EC=0 with the edit confirmed in the file.
+			if RegEx.create_from_string("\\b%s\\s*:?=\\s*_get_ambient_key\\(\\)" % arg).search(code) != null:
+				continue
+			## The ASSIGNED-LITERAL path: the local must actually take a literal in this file.
+			if RegEx.create_from_string("\\b%s\\s*:?=\\s*\"[a-z_0-9]+\"" % arg).search(code) != null:
+				continue
+			unresolved.append("%s: play_ambient(%s)" % [path.replace("res://src/", ""), arg])
+	for must in [
+		"exploration/OverworldScene.gd|ambient_key",
+		"exploration/WeatherSystem.gd|\"weather_rain\"",
+		"audio/SoundManager.gd|NIGHT_AMBIENCE_KEY",
+		"maps/villages/BaseVillage.gd|key",
+	]:
+		assert_true(examined.has(must),
+			"CONTROL: the walk never EXAMINED `%s` — this arm reports a clean sweep of whatever it managed to read, and an unreadable file is skipped in silence" % must)
+	assert_eq(unresolved, [],
+		"%d play_ambient call site(s) pass an argument form none of this file's three extraction patterns can read — those keys are in NO corpus here and the membership floor below will not notice, because a new FORM shrinks no existing member: %s" % [
+			unresolved.size(), unresolved])
+
+
 func test_every_literal_ambient_key_resolves_to_a_file_on_disk() -> void:
 	var sfx: Dictionary = _manifest(SFX_MANIFEST, ["sfx"])
 	var music: Dictionary = _manifest(MUSIC_MANIFEST, ["tracks", "music"])
@@ -140,6 +216,19 @@ func test_every_literal_ambient_key_resolves_to_a_file_on_disk() -> void:
 	var requested: Dictionary = _requested_keys()
 	assert_gt(requested.size(), 10,
 		"SCOPE control: parsed only %d ambient keys from src/ — the patterns are stale and a green would be vacuous" % requested.size())
+	## ⛔ A COUNT FLOOR IS SATISFIED BY A SURVIVOR; A MEMBERSHIP FLOOR IS NOT (cowir-controller,
+	## 2026-09-18). The count above passes with a whole extraction path dead — measured: deleting
+	## the CONST path outright left this file GREEN at 3 passing, and night_crickets_wind simply
+	## left the corpus. Three paths, so three named keys, one per path: a dead path now names the
+	## key it stopped finding instead of shrinking a number that is still over the floor.
+	for probe in [
+		["weather_rain", "the LITERAL-argument path (WeatherSystem's six)"],
+		["ambient_forge", "the _get_ambient_key() VIRTUAL path (villages and interiors)"],
+		["night_crickets_wind", "the CONST-argument path (SoundManager.NIGHT_AMBIENCE_KEY)"],
+		["ambient_coast", "the ASSIGNED-LITERAL path (OverworldScene's seven zone keys)"],
+	]:
+		assert_true(requested.has(probe[0]),
+			"MEMBERSHIP floor: %s is absent, so %s found nothing — the count above still passes because the other paths carry it" % [probe[0], probe[1]])
 
 	var broken: Array = []
 	for key in requested.keys():

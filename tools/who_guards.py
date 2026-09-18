@@ -197,19 +197,30 @@ def main():
 
     for symbol in symbols:
         hits = []
+        read_ok = 0
         for path in files:
             try:
                 with open(path, encoding="utf-8", errors="replace") as fh:
-                    if symbol in fh.read():
-                        hits.append(path)
+                    body = fh.read()
             except OSError:
                 continue
+            read_ok += 1
+            if symbol in body:
+                hits.append(path)
         print("=" * 72)
         print("%s — %d of %d file(s) in %s/ already reach it" % (symbol, len(hits), len(files), args.corpus))
         print("=" * 72)
         if not hits:
-            # Said explicitly: a null is an answer, and must not read like a failed run.
-            print("  NO PRIOR GUARD. The corpus was searched and holds nothing naming this.\n")
+            ## ⛔ THE ZERO-HIT BANNER QUOTES HOW MANY FILES WERE ACTUALLY READ, not just how many
+            ## were discovered. It used to assert "the corpus was searched" — a claim about a
+            ## CONDITION with nothing anchoring it, so a run where every open() raised OSError
+            ## printed the same reassuring sentence having read nothing. cowir-music's split
+            ## (2026-09-18): a banner naming VALUES is self-anchoring, one naming a CONDITION is
+            ## not. This one now names the value that would move if the claim went false.
+            if read_ok < len(files):
+                print("  ⚠️  ONLY %d of %d file(s) could be READ — %d failed to open, so this zero is"
+                      " over an incomplete corpus." % (read_ok, len(files), len(files) - read_ok))
+            print("  NO PRIOR GUARD. %d file(s) read, none name this.\n" % read_ok)
             continue
         for path in hits:
             print("\n  %s" % path)
