@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Component regression for VillageElevator (2026-09-06, struktured's live scope add:
 ## "elevator would be cool too in the villages"). Verifies interact() rides the player to the
 ## FAR endpoint, InputLockManager is pushed then popped around the ride, and — using the three
@@ -95,3 +97,8 @@ func test_authored_elevators_have_walkable_endpoints_on_different_tiers() -> voi
 			assert_ne(HeightGridScript.height_at(v._height_grid, bc), HeightGridScript.height_at(v._height_grid, tc),
 				"%s endpoints %s/%s must sit on different tiers" % [b.name, bc, tc])
 	assert_eq(checked, 3, "control: all three new villages must carry exactly one elevator each")
+
+## This file stands up a map or interior, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()
