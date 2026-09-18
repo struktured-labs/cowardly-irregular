@@ -1,5 +1,18 @@
 extends GutTest
 
+## ⛔ CORPUS LIMIT, MEASURED 2026-09-18: THIS READS CALLS THAT PASS A QUOTED LITERAL. Fifteen call
+## sites in src/ pass a VARIABLE and are invisible to it — the header below says "keys called from
+## src/", which is more corpus than the pattern reads. The gap is not closable here (a key built at
+## runtime cannot be resolved statically), so it is stated rather than patched, and two of the
+## fifteen are covered elsewhere on purpose:
+##   play_ambient(ambient_key) x3   -> test_every_ambient_key_any_consumer_asks_for_resolves,
+##                                     which extracts through FOUR paths incl. non-literals
+##   play_ability(ability_id)       -> the element/type cue-derivation chain, pinned by
+##                                     test_a_missing_cue_falls_through_to_the_next_candidate
+##   play_attack_hit(weapon_type)   -> its argument is not a key at all; see the note below
+##   the rest (play_ui(sfx), play_battle(key), play_battle_scaled(sound_key), ...) are UNCHECKED
+##   by any static audit, and a new orphan reachable only through one of them lands silently.
+##
 ## Audit: cross-reference sfx keys called from src/ (play_ui /
 ## play_battle / play_battle_scaled / play_ability / play_attack_hit /
 ## play_sfx) AND from cutscene JSONs (play_sfx step.sfx field) against
