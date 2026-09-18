@@ -111,9 +111,20 @@ func _valid_only(a: Array) -> Array:
 static func dirty_fields(exclude: Array = []) -> Array[String]:
 	var bm: Node = Engine.get_main_loop().root.get_node_or_null("/root/BattleManager")
 	var out: Array[String] = []
+	## ⛔ REPORTS ITS OWN FAILURE AS A FINDING, NEVER AS CLEAN. Returning `[]` when the subject cannot
+	## be found is the silent direction: every caller asserts `dirty_fields(...) == []`, so an oracle
+	## that lost its autoload — or its script — would read as a clean tree rather than a broken probe.
+	## cowir-sfx found the same shape as a path a guard READ but nothing checked was read; here the
+	## unchecked read is the baseline itself. A sentinel makes the caller's existing assert fire and
+	## name the cause, with no new arm for anyone to remember to write.
 	if bm == null:
+		out.append("PROBE BROKEN: no /root/BattleManager autoload — this is not a clean tree")
 		return out
-	var fresh: Node = load("res://src/battle/BattleManager.gd").new()
+	var script: Variant = load("res://src/battle/BattleManager.gd")
+	if script == null:
+		out.append("PROBE BROKEN: could not load BattleManager.gd for an in-process baseline")
+		return out
+	var fresh: Node = script.new()
 	for prop in fresh.get_property_list():
 		if not (int(prop["usage"]) & PROPERTY_USAGE_SCRIPT_VARIABLE):
 			continue

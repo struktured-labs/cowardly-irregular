@@ -136,3 +136,123 @@ func test_unparseable_text_does_not_crash_the_run() -> void:
 	_backend.next_text = ""
 	var res: Dictionary = await _rc.compose_async(_rc.DOMAIN_AUTOBATTLE, "a", "hero", [])
 	assert_eq(str(res.get("source", "")), "fallback", "an empty reply must fall back cleanly")
+
+
+# ── and the CONSUMER must never hand it an empty READ ─────────────────────────
+#
+# The arm above is the hazard, not a licence: an empty string scores as a fallback,
+# so a capture file that cannot be READ is indistinguishable from a reply the model
+# genuinely botched. FileAccess.get_file_as_string returns "" on failure and
+# ReplayBackend emits it as a SUCCESSFUL reply, so the tool inflates the exact rate
+# it exists to measure, one unreadable file at a time, silently.
+
+const COMPOSE_TOOL := "res://tools/rule_composition_compose.gd"
+const VALIDATE_TOOL := "res://tools/rule_composition_validate.gd"
+
+
+## Source with comment lines removed — prose naming a guard must not satisfy a check for it.
+func _code_of(path: String) -> String:
+	var raw: String = FileAccess.get_file_as_string(path)
+	var keep: PackedStringArray = PackedStringArray()
+	for line in raw.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			continue
+		keep.append(line)
+	return "\n".join(keep)
+
+
+func _tool_code() -> String:
+	return _code_of(COMPOSE_TOOL)
+
+
+func test_the_scoring_tools_are_actually_read() -> void:
+	## FLOOR, and INSIDE the loop so it is per-source: an aggregate floor over both benches is
+	## cleared by either one alone, and the arms below would assert over '' for the dark one.
+	for path in [COMPOSE_TOOL, VALIDATE_TOOL]:
+		assert_gt(FileAccess.get_file_as_string(path).length(), 1000,
+			"CONTROL: %s must actually be read, or its arms assert over ''" % path)
+
+
+func test_an_unreadable_capture_leaves_the_scored_population() -> void:
+	## The empty check must come BEFORE the assignment — a guard after it has already
+	## paid the cost. Order is the invariant here, not the presence of a token.
+	var code: String = _tool_code()
+	var assign: int = code.find("backend.next_text = captured")
+	var guard: int = code.find("captured == \"\"")
+	assert_gt(assign, -1, "the tool must assign the capture through a named local")
+	assert_gt(guard, -1, "the tool must test that capture for emptiness")
+	assert_lt(guard, assign, "the emptiness check must precede the assignment, or it guards nothing")
+	assert_gt(code.find("unreadable"), -1,
+		"an excluded file must be reported, not dropped in silence")
+
+
+func test_the_rate_denominator_is_what_was_scored() -> void:
+	## A denominator counting files nobody could read reports a plausible, specific,
+	## wrong fallback rate — the same wrong-population error the old bench made twice.
+	var code: String = _tool_code()
+	assert_gt(code.find("var scored: int = reached + fallback"), -1,
+		"the tool must derive a scored population distinct from the file count")
+	## Anchor on the OPERAND LIST, which occurs once each. Two earlier spellings were dead:
+	## a literal spanning the whole format string baked in the prose between `%d/%d` and the
+	## operands, and "REACHES THE PLAYER" finds the PER-FILE line before the summary one.
+	for operand in ["[reached, ", "[fallback, "]:
+		var at: int = code.find(operand)
+		assert_gt(at, -1, "the tool must still report a `%s` rate" % operand)
+		var line: String = code.substr(at, code.find("\n", at) - at)
+		assert_gt(line.find("scored]"), -1,
+			"`%s` must be reported over `scored`, got: %s" % [operand, line.strip_edges()])
+		assert_eq(line.find("names.size()"), -1,
+			"`%s` must NOT be reported over the files on disk: %s" % [operand, line.strip_edges()])
+
+
+func test_a_corpus_that_went_entirely_dark_is_refused() -> void:
+	## scored == 0 makes every rate 0/0, which prints as clean. The floor @cowir-controller's
+	## three-way control names: a corpus member can go dark and take its own defect with it,
+	## and the whole corpus going dark must be louder than a green, not quieter.
+	var code: String = _tool_code()
+	assert_gt(code.find("scored == 0 and names.size() > 0"), -1,
+		"the tool must refuse to publish a rate derived from zero scored captures")
+
+
+
+# ── the SIBLING bench has the same corpus and had the same two defects ────────
+#
+# tools/rule_composition_validate.gd re-implements the pipeline and reads the SAME
+# res://tmp/replies_<arm> directory. It carried both defects: no `_`-prefix filter at
+# all, so compose's _job.txt scored as a reply, and an empty read counted against the
+# model in all four rates. Measured on one fixture: COMPOSITION SURVIVES 1/4 -> 1/2.
+# Guarded here rather than in its own file so the next sibling is visible from this one.
+
+func test_the_sibling_bench_excludes_capture_metadata() -> void:
+	var code: String = _code_of(VALIDATE_TOOL)
+	assert_gt(code.find("not f.begins_with(\"_\")"), -1,
+		"the validate bench shares the corpus with compose and must skip _-prefixed metadata")
+
+
+func test_the_sibling_bench_drops_an_unreadable_capture() -> void:
+	var code: String = _code_of(VALIDATE_TOOL)
+	var use: int = code.find("svc._extract_json_from_raw")
+	var guard: int = code.find("raw == \"\"")
+	assert_gt(use, -1, "the validate bench must still extract from the capture")
+	assert_gt(guard, -1, "the validate bench must test that capture for emptiness")
+	assert_lt(guard, use, "the emptiness check must precede the extraction, or it guards nothing")
+
+
+func test_the_sibling_benchs_rates_are_over_what_was_scored() -> void:
+	## Four funnel rates, every one of which was over names.size(). The headline
+	## ("COMPOSITION SURVIVES") read 1/4 where the true rate was 1/2.
+	var code: String = _code_of(VALIDATE_TOOL)
+	for operand in ["[n_extract, ", "[n_schema, ", "[n_parse, ", "[n_clean, "]:
+		var at: int = code.find(operand)
+		assert_gt(at, -1, "the validate bench must still report `%s`" % operand)
+		var line: String = code.substr(at, code.find("\n", at) - at)
+		assert_gt(line.find("scored]"), -1,
+			"`%s` must be reported over `scored`, got: %s" % [operand, line.strip_edges()])
+		assert_eq(line.find("names.size()"), -1,
+			"`%s` must NOT be over the files on disk: %s" % [operand, line.strip_edges()])
+
+
+func test_the_sibling_bench_refuses_a_corpus_that_went_dark() -> void:
+	var code: String = _code_of(VALIDATE_TOOL)
+	assert_gt(code.find("scored == 0 and names.size() > 0"), -1,
+		"the validate bench must refuse to publish a rate derived from zero scored captures")

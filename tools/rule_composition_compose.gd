@@ -78,9 +78,21 @@ func _init() -> void:
 
 	var reached := 0
 	var fallback := 0
+	var unreadable: PackedStringArray = PackedStringArray()
 	var err_tally: Dictionary = {}
 	for f in names:
-		backend.next_text = FileAccess.get_file_as_string("%s/%s" % [dir_path, f])
+		## An unreadable capture reads as "" and ReplayBackend emits it as a SUCCESSFUL empty
+		## reply, so it fails to parse and lands in `fallback` — inflating the exact number this
+		## tool exists to measure, one file at a time, with nothing on screen saying so. Same
+		## mechanism the `_`-prefix filter above already guards for metadata; a file that goes
+		## unreadable reaches it by a different route and must leave the SCORED population.
+		var captured: String = FileAccess.get_file_as_string("%s/%s" % [dir_path, f])
+		if captured == "":
+			unreadable.append(f)
+			lines.append("%-10s UNREADABLE — not scored (empty read, err=%d)"
+				% [f, FileAccess.get_open_error()])
+			continue
+		backend.next_text = captured
 		var res: Dictionary = await rc.compose_async(
 			rc.DOMAIN_AUTOBATTLE, "replayed capture", character_id, [])
 		var src: String = str(res.get("source", "?"))
@@ -97,11 +109,24 @@ func _init() -> void:
 			lines.append("%-10s fallback (%s)  %s" % [f, src, ", ".join(errs).left(110)])
 
 	lines.append("")
-	lines.append("arm=%s  character=%s  samples=%d" % [arm, character_id, names.size()])
-	lines.append("  REACHES THE PLAYER   %d/%d   <- compose_async's own verdict" % [reached, names.size()])
-	lines.append("  fallback             %d/%d" % [fallback, names.size()])
+	var scored: int = reached + fallback
+	## The rates are over what was SCORED, never over what was on disk — a denominator counting
+	## files nobody could read reports a plausible, specific, wrong fallback rate.
+	lines.append("arm=%s  character=%s  files=%d  scored=%d  unreadable=%d"
+		% [arm, character_id, names.size(), scored, unreadable.size()])
+	if unreadable.size() > 0:
+		lines.append("  UNREADABLE (excluded)  %s" % ", ".join(unreadable))
+	lines.append("  REACHES THE PLAYER   %d/%d   <- compose_async's own verdict" % [reached, scored])
+	lines.append("  fallback             %d/%d" % [fallback, scored])
 	for e in err_tally.keys():
 		lines.append("    x%d  %s" % [err_tally[e], e])
+	## FLOOR: a corpus that went entirely dark scores 0/0 and every rate reads as a clean 100%.
+	## Refuse rather than publish a number derived from nothing.
+	if scored == 0 and names.size() > 0:
+		lines.append("FATAL: %d capture(s) present, NONE readable — no rate can be derived" % names.size())
+		_write(arm, lines)
+		quit(2)
+		return
 	_write(arm, lines)
 	quit(0)
 

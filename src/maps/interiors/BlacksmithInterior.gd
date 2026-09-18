@@ -85,9 +85,13 @@ func _get_map_height() -> int:
 	return MAP_H
 
 
-## No smithy-specific music key exists yet, so "village" is the only real fallback SoundManager recognizes.
+## An UNAUTHORED interior_ key is the fallback, not "village". "village" is an AREA id: it routes to
+## _start_village_world_music and played village_medieval over the capital's own village_harmonia, so
+## the one rear door in Harmonia restarted the music while chapel, library and cartographer kept it.
+## An interior_ key with no manifest entry takes play_area_music's inherit path and leaves the bed
+## alone — and authoring interior_smithy later needs no change here.
 func _get_music_track() -> String:
-	return "village"
+	return "interior_smithy"
 
 
 func _get_ambient_key() -> String:

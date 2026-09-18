@@ -219,6 +219,27 @@ func test_the_derived_sets_are_not_empty() -> void:
 	assert_gt(_test_files().size(), 100, "derived implausibly few test files — the directory scan is broken")
 
 
+## ⛔ A FILE THAT LISTS BUT READS EMPTY DROPS OUT OF THE *OFFENDER LIST*, NOT JUST THE CENSUS.
+## Three scans below open every test file and `continue` on `src == ""` — correct, and it means an
+## unreadable file can never be reported as an offender. It takes its own violation with it, in
+## silence. cowir-controller measured this on two of their guards with a three-way control: same
+## violation, same guard, one `chmod` apart — readable EC=1, unreadable EC=0 Passing 7.
+##
+## ⚠️ AND THE FLOOR ABOVE CANNOT SEE IT: `_test_files().size()` counts DIRECTORY ENTRIES, so a file
+## that lists and reads empty still counts toward the 100. That is cowir-sfx's aggregate floor and
+## cowir-ai's indentation point — a floor OUTSIDE the loop answers "is the corpus there", never "did
+## every member arrive". This arm asserts the READ, which is what the scans actually depend on.
+func test_every_listed_file_actually_read() -> void:
+	var dark: Array[String] = []
+	for fname in _test_files():
+		if FileAccess.get_file_as_string(TEST_DIR + "/" + fname) == "":
+			dark.append(fname)
+	assert_eq(dark, [],
+		"these files are in the directory listing but read as empty, so all three scans below skip them "
+		+ "on `src == \"\"` and they can never be reported as offenders — a violation in one of them is "
+		+ "invisible, not absent. Fix the read or drop the file: %s" % str(dark))
+
+
 ## ⛔ THE CONTROL THAT WOULD HAVE CAUGHT MY OWN FIRST DERIVATION. A splitter keying on `func `
 ## drops static functions, reports zero exposed files, and reads as a clean tree. Pin a STATIC
 ## reacher by name so the hole cannot come back silently.

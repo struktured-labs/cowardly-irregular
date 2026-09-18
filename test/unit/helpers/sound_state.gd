@@ -48,6 +48,10 @@ static func restore() -> void:
 		sm.stop_ambient()
 	if sm.has_method("reset_danger"):
 		sm.reset_danger()
+	## Before reset_corruption, which now re-DERIVES from this meter rather than forcing silence —
+	## a leaked save-corruption level would otherwise survive the teardown it is named for.
+	if "_save_corruption" in sm:
+		sm._save_corruption = 0.0
 	if sm.has_method("reset_corruption"):
 		sm.reset_corruption()
 	## ⛔ EVERY WRITE GUARDED, BECAUSE THIS CALL IS THE FIRST LINE OF ALL 26 HOOKS THAT USE IT.
