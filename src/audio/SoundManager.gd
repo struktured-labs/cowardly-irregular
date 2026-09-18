@@ -1115,14 +1115,40 @@ func play_weakness_flash() -> void:
 	_try_play_sfx_from_manifest(_flash_player if _flash_player != null else _battle_player, "weakness_flash")
 
 
+## What night displaced, so dawn can hand it back. A SNAPSHOT rather than a re-derivation: only this
+## records whether the WEATHER bed or the PLACE bed owned the layer, and a host asked to re-derive can
+## be wrong about that where a snapshot cannot. Empty means night took silence.
+var _pre_night_ambient_key: String = ""
+
+
 ## Public: start/stop the night ambience loop; mirror of set_night_music_effects.
+##
+## ⛔ NIGHT USED TO TAKE THIS LAYER AND NEVER GIVE IT BACK. Enabling reaches play_ambient, which stops
+## whatever was there; disabling called stop_ambient() and stopped. Measured 2026-09-18: village bed →
+## night → dawn left `_current_ambient_key` empty with the player NOT playing, and rain → night → day
+## lost the storm. The layer then stayed silent until a zone crossing, a weather change or a scene
+## rebuild happened to write it, and a 24-minute cycle crosses dawn while the player stands still.
+##
+## ⛔ AND IT MAY ONLY GIVE BACK WHAT IT STILL HOLDS. If the weather starts DURING the night it stomps
+## the crickets itself — night no longer owns the layer, so the key check below is what stops dawn
+## restoring a stale snapshot over live rain.
+##
+## This is NOT the ownership question (whether night should outrank rain while it IS night, which is
+## struktured's and stays registered). "Night ends and nothing hands the layer back" is wrong under
+## every answer to that one.
 func set_night_ambience(enabled: bool) -> void:
 	if enabled:
+		if _current_ambient_key != NIGHT_AMBIENCE_KEY:
+			_pre_night_ambient_key = _current_ambient_key
 		if _sfx_manifest.has(NIGHT_AMBIENCE_KEY):
 			play_ambient(NIGHT_AMBIENCE_KEY)
 	else:
 		if _current_ambient_key == NIGHT_AMBIENCE_KEY:
-			stop_ambient()
+			if _pre_night_ambient_key != "":
+				play_ambient(_pre_night_ambient_key)
+			else:
+				stop_ambient()
+		_pre_night_ambient_key = ""
 
 
 func _setup_night_ambience_listener() -> void:
