@@ -373,7 +373,9 @@ static func monster_frame_texture(monster_id: String, anim: String = "idle") -> 
 	return atlas
 
 
-static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
+## base_id re-times a world costume against the base it dresses. Monster costumes are SEPARATE
+## manifest entries resolved by the caller, so unlike the job path the loader cannot derive it.
+static func load_monster_sprite_frames(monster_id: String, base_id: String = "") -> SpriteFrames:
 	_load_manifest()
 
 	if not _monster_manifest.has(monster_id):
@@ -397,6 +399,13 @@ static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 		return null
 	var fps: float = sheet_data.get("fps", 8)
 	var animations = sheet_data.get("animations", {})
+	var base_anims: Dictionary = {}
+	if base_id != "" and base_id != monster_id and _monster_manifest.has(base_id):
+		var base_entry = _monster_manifest[base_id]
+		if base_entry is Dictionary:
+			var ba = (base_entry as Dictionary).get("animations", {})
+			if ba is Dictionary:
+				base_anims = ba
 
 	var sprite_frames = SpriteFrames.new()
 	# maxi() floors a NARROW sheet at one column; a ZERO declaration is refused above, because this division runs first.
@@ -408,7 +417,14 @@ static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 		var end_frame: int = anim_data.get("end", start_frame)
 
 		sprite_frames.add_animation(anim_name)
-		sprite_frames.set_animation_speed(anim_name, fps)
+		var anim_fps: float = fps
+		if base_anims.has(anim_name):
+			var b = base_anims[anim_name]
+			if b is Dictionary:
+				var b_start: int = (b as Dictionary).get("start", 0)
+				var b_end: int = (b as Dictionary).get("end", b_start)
+				anim_fps = retimed_fps(fps, end_frame - start_frame + 1, b_end - b_start + 1)
+		sprite_frames.set_animation_speed(anim_name, anim_fps)
 		sprite_frames.set_animation_loop(anim_name, anim_name == "idle")
 
 		for frame_idx in range(start_frame, end_frame + 1):
@@ -419,10 +435,10 @@ static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 			atlas.region = Rect2(col * frame_width, row * frame_height, frame_width, frame_height)
 			sprite_frames.add_frame(anim_name, atlas)
 
-	if sprite_frames.get_animation_names().size() == 0:
+	if not has_usable_frames(sprite_frames):
 		return null
 
-	print("[SPRITES] Loaded monster sheet for '%s' (%d animations)" % [monster_id, sprite_frames.get_animation_names().size()])
+	print("[SPRITES] Loaded monster sheet for '%s' (%d animations)" % [monster_id, usable_animation_count(sprite_frames)])
 	return sprite_frames
 
 
@@ -494,6 +510,29 @@ static func _normalize_suffix(audio_suffix: String) -> String:
 ##
 ## Returns the base fps unchanged whenever there is nothing to match against — an undressed
 ## sheet, an equal frame count, or a base sheet that is not on disk.
+## SpriteFrames.new() ships with a "default" animation, so a NAME count is always at least 1 and
+## counts a pose nobody authored. Every caller wants animations that HAVE FRAMES; this is the owner.
+static func usable_animation_count(sf: SpriteFrames) -> int:
+	if sf == null:
+		return 0
+	var n: int = 0
+	for anim_name in sf.get_animation_names():
+		if sf.get_frame_count(anim_name) > 0:
+			n += 1
+	return n
+
+
+static func has_usable_frames(sf: SpriteFrames) -> bool:
+	return usable_animation_count(sf) > 0
+
+
+## A costume with fewer frames than its base must take the SAME wall-clock time, not run fast.
+static func retimed_fps(base_fps: float, frames: int, base_frames: int) -> float:
+	if frames <= 0 or base_frames <= 0 or base_frames == frames:
+		return base_fps
+	return base_fps * float(frames) / float(base_frames)
+
+
 static func dressed_fps(base_fps: float, sheet_path: String, base_sheet: String, frames: int, frame_width: int) -> float:
 	if sheet_path == base_sheet or frames <= 0 or frame_width <= 0:
 		return base_fps
@@ -502,10 +541,7 @@ static func dressed_fps(base_fps: float, sheet_path: String, base_sheet: String,
 	var base_tex := load(base_sheet) as Texture2D
 	if base_tex == null:
 		return base_fps
-	var base_frames: int = base_tex.get_width() / frame_width
-	if base_frames <= 0 or base_frames == frames:
-		return base_fps
-	return base_fps * float(frames) / float(base_frames)
+	return retimed_fps(base_fps, frames, base_tex.get_width() / frame_width)
 
 
 static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> SpriteFrames:

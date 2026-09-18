@@ -1303,7 +1303,7 @@ func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 	var world_suffix = SoundManager._get_current_world_suffix()
 	if world_suffix != "" and world_suffix != "medieval":
 		var variant_id = "%s_%s" % [monster_id, world_suffix]
-		var variant_frames = HybridSpriteLoaderClass.load_monster_sprite_frames(variant_id)
+		var variant_frames = HybridSpriteLoaderClass.load_monster_sprite_frames(variant_id, monster_id)
 		if variant_frames:
 			return variant_frames
 
