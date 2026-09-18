@@ -529,6 +529,9 @@ func stop_grind(reason: String = "Manual stop") -> void:
 		## Controller IDLE + system grinding is always a desync: one controller exists per session.
 		if AutogrindSystem.is_grinding:
 			AutogrindSystem.stop_autogrind("Controller idle — clearing a stranded session flag")
+		## start_grind raises the clock a few lines before _state leaves IDLE; GameLoop's own
+		## resets sit below its gate flag, so this is the only path that can lower it.
+		Engine.time_scale = 1.0
 		return
 
 	_state = State.IDLE

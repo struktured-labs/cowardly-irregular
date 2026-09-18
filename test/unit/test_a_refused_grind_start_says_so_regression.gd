@@ -98,3 +98,17 @@ func test_a_stranded_flag_does_not_refuse_the_next_start() -> void:
 	assert_true(started,
 		"a flag stranded by an aborted start refused a fresh session — and GameLoop's refusal path never calls stop_grind, so nothing clears it")
 	ctrl.stop_grind("test cleanup")
+
+
+## The abort that strands is_grinding also strands Engine.time_scale: start_grind raises it
+## (BATTLE_SPEEDS or 2.0) a few lines before _state leaves IDLE, and the IDLE branch of stop_grind
+## restored the autobattle conduit and the system flag but not the clock. GameLoop's own resets are
+## all `= 1.0` and sit BELOW its gate flag, so they cannot rescue it either.
+func test_a_stranded_time_scale_is_reset_by_a_stop() -> void:
+	var ctrl := _controller()
+	## Exactly what an aborted start leaves: the clock raised, the controller never out of IDLE.
+	Engine.time_scale = 2.0
+	assert_eq(ctrl._state, ctrl.State.IDLE, "CONTROL: the controller must be IDLE for this to be the abort shape")
+	ctrl.stop_grind("aborted start")
+	assert_almost_eq(Engine.time_scale, 1.0, 0.001,
+		"stop_grind left Engine.time_scale raised — the whole game runs at grind speed until something else resets it")
