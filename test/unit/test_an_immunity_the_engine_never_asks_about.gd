@@ -44,8 +44,13 @@ func _monsters() -> Dictionary:
 ## Every distinct category named in any monster's `immunities`.
 func _authored_categories() -> Array[String]:
 	var out: Array[String] = []
-	for mid in _monsters():
-		var m: Variant = _monsters()[mid]
+	## ⛔ HOISTED. `_monsters()` does get_file_as_string + JSON.parse_string on EVERY call, so reading
+	## it inside the loop re-parses monsters.json once per monster. Exactly the defect I fixed in
+	## test_passive_effects_have_consumers tonight (46 parses of passives.json), written straight back
+	## into a new file an hour later — the accessor READS like a property, which is what makes it easy.
+	var all_monsters: Dictionary = _monsters()
+	for mid in all_monsters:
+		var m: Variant = all_monsters[mid]
 		if not (m is Dictionary):
 			continue
 		var im: Variant = m.get("immunities", [])
