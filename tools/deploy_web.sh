@@ -371,14 +371,67 @@ echo "[deploy] gate 2/4: web export"
 # belong — there is no restore step to skip. That matters because a gate crossing a
 # harness timeout dies by SIGTERM, which is the normal case here, not the edge case.
 #
-# WEB_STAGE=0 falls back to the direct export (faster, no endings) for a quick
-# non-publishing check. Publishing on that path ships less content than was measured,
-# so it is deliberately NOT the default.
+# WEB_STAGE=0 falls back to the direct export for a quick non-publishing check.
+# Publishing on that path ships less content than was measured, so it is deliberately
+# NOT the default.
+#
+# ⛔ THESE MESSAGES USED TO SAY "W4-W6 endings EXCLUDED". That was wrong about its own
+# subject AND understated the loss by an order of magnitude (cowir-music found the naming
+# error 2026-09-18; deriving it here found the scale). Matching the Web preset's 48
+# exclude patterns against every music master:
+#
+#     42 masters, 54.1 MiB excluded, of which:
+#       7  cutscene beds     3 W4 + 4 W5 — MID-GAME story, not endings
+#       35 world beds        ambient/battle/boss/danger/dungeon/overworld/victory/village
+#                            for *abstract*, *digital*, *industrial* — the late-game worlds
+#     9  cutscene_w6_*       SHIPPED, 13 MiB — the endings, incl. epilogue + all answer_*
+#
+# So the endings are the one thing this path does NOT drop, while entire worlds lose their
+# score. Nothing in `cutscene_w6_*` matches "abstract", so the world patterns cannot reach
+# them. The endings were excluded ONCE, before struktured ruled 2026-07-30 "ship them,
+# compress to fit"; the filter was updated for that ruling and the PROSE never was.
+#
+# ⚠️ AND THE CUTSCENE-ONLY READING IS THE TRAP: the report that prompted this was about
+# cutscenes, so both of us scoped our check to `cutscene_*` and got 7 files / 8 MiB. The
+# corpus came from the QUESTION. The derivation below reads every music master and is the
+# only reason the 35 world beds are in this comment at all.
+#
+# So the description is DERIVED from export_presets.cfg now rather than written down again.
+# A hand-written list is what drifted: the filter moved and the sentence stayed. If the
+# derivation fails the message degrades to naming its source instead of guessing.
 mkdir -p builds/web
+
+_WEB_DROPS="$(python3 - <<'PYDROPS' 2>/dev/null || true
+import re, glob, os, fnmatch, collections
+txt = open('export_presets.cfg').read()
+pats = []
+for b in re.split(r'\n(?=\[preset\.\d+\])', txt):
+    nm = re.search(r'^name="([^"]+)"', b, re.M)
+    ex = re.search(r'^exclude_filter="([^"]*)"', b, re.M)
+    if nm and ex and nm.group(1).strip().lower().startswith('web'):
+        pats = [p.strip() for p in ex.group(1).split(',') if p.strip()]
+if not pats:
+    raise SystemExit(1)
+dropped, by = [], collections.Counter()
+for f in sorted(glob.glob('assets/audio/music/*.ogg')):
+    b = os.path.basename(f)
+    if any(fnmatch.fnmatch(b, p) or fnmatch.fnmatch(f, p) for p in pats):
+        dropped.append(f)
+        m = re.match(r'cutscene_(w\d)', b)
+        by[m.group(1).upper() if m else 'other'] += 1
+if not dropped:
+    print("nothing — the Web preset excludes no music master")
+    raise SystemExit(0)
+mib = sum(os.path.getsize(f) for f in dropped) / 1048576
+where = ", ".join(f"{n} {k}" for k, n in sorted(by.items()))
+print(f"{len(dropped)} music master(s), {mib:.1f} MiB ({where})")
+PYDROPS
+)"
+[ -n "$_WEB_DROPS" ] || _WEB_DROPS="the masters matched by export_presets.cfg's Web exclude_filter"
 if [ "${WEB_STAGE:-1}" = "1" ]; then
   ./tools/make_web_stage.sh "$WEB_AUDIO_KBPS" || {
     echo "[deploy] BLOCKED: staged web build failed — see its own BLOCKED line above." >&2
-    echo "        WEB_STAGE=0 exports directly, but ships WITHOUT the W4-W6 endings." >&2
+    echo "        WEB_STAGE=0 exports directly, but then ships without ${_WEB_DROPS}." >&2
     exit 2; }
   # Downstream gates, both smokes and the butler push all read builds/web. Move the
   # staged artifact there rather than re-pointing five call sites.
@@ -386,7 +439,7 @@ if [ "${WEB_STAGE:-1}" = "1" ]; then
   cp -a tmp/web_stage/builds/web/. builds/web/
   echo "[deploy] staged build in place (${WEB_AUDIO_KBPS} kbps tier, endings included)"
 else
-  echo "[deploy] WEB_STAGE=0 — direct export, W4-W6 endings EXCLUDED"
+  echo "[deploy] WEB_STAGE=0 — direct export, EXCLUDING ${_WEB_DROPS}"
   _EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
     echo "[deploy] BLOCKED: could not build the export sandbox — see above." >&2
     exit 2; }

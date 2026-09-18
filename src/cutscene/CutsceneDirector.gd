@@ -311,6 +311,12 @@ func is_active() -> bool:
 	return _active
 
 
+## play_cutscene's two refusals, asked BEFORE a caller commits state to a play that will not happen.
+## GameLoop's story path set current_state, the cooldown and a one-shot completion handler above the call.
+func can_play(cutscene_id: String) -> bool:
+	return not _active and not _load_cutscene_data(cutscene_id).is_empty()
+
+
 func play_cutscene(cutscene_id: String, replay: bool = false) -> void:
 	"""Load and play a cutscene from data/cutscenes/<cutscene_id>.json"""
 	# Re-entry guard: a second play mid-scene stacked a second step-runner over the first — hidden dialogue typing (phantom blips), repeats, desync (struktured 2026-07-11).

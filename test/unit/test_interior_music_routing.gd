@@ -13,6 +13,8 @@ extends GutTest
 ##    call play_area_music with it directly.
 
 const SOUND_MANAGER := "res://src/audio/SoundManager.gd"
+## Every synthetic manifest key this file plants shares this prefix, so the teardown needs no record.
+const PROBE_PREFIX := "interior_zz_probe"
 
 ## BaseInterior subclasses: [file, expected _get_music_track return]
 const OVERRIDE_ROOMS: Array[Array] = [
@@ -43,6 +45,17 @@ func _read(p: String) -> String:
 	var t: String = FileAccess.get_file_as_string(p)
 	assert_ne(t, "", "Expected %s to be readable" % p)
 	return t
+
+
+## Erased HERE not in the arm: an abort mid-arm strands the probe process-wide, and
+## _load_music_manifest early-returns on _manifest_loaded so nothing later removes it.
+func after_each() -> void:
+	var sm: Node = _sound_manager()
+	if sm == null or not ("_music_manifest" in sm):
+		return
+	for k in sm._music_manifest.keys():
+		if str(k).begins_with(PROBE_PREFIX):
+			sm._music_manifest.erase(k)
 
 
 func test_inherit_on_missing_keeps_current_area() -> void:
@@ -83,13 +96,11 @@ func test_world_variant_outranks_base_key() -> void:
 	if sm == null:
 		assert_not_null(sm, "SoundManager autoload unavailable in this context — a skip here reports GREEN having tested nothing")
 		return
-	var probe_base := "interior_zz_probe"
+	var probe_base: String = PROBE_PREFIX
 	var probe_variant: String = probe_base + "_" + str(sm._get_current_world_suffix())
 	sm._music_manifest[probe_base] = {"file": "x"}
 	sm._music_manifest[probe_variant] = {"file": "x"}
 	var resolved: String = sm._resolve_interior_track(probe_base)
-	sm._music_manifest.erase(probe_base)
-	sm._music_manifest.erase(probe_variant)
 	assert_eq(resolved, probe_variant,
 		"per-world variant (monster-sheet pattern) must outrank the base interior key")
 
@@ -178,3 +189,17 @@ func test_wired_interior_keys_without_tracks_are_known() -> void:
 				"'%s' now has an authored track — remove it from this pending list so the list stays honest" % key)
 	assert_true(tracks.has("interior_shop"),
 		"interior_shop is the one authored interior track ('The Merchant's Welcome') — the inherit path must keep working for the other 9 until they are generated")
+
+
+## Same claim as the shop guard's trailing arm: the teardown owns this, not the planting arm.
+func test_the_manifest_carries_no_probe_key_into_the_next_file() -> void:
+	var sm := _sound_manager()
+	assert_not_null(sm, "SoundManager autoload unavailable — a skip here reports GREEN having tested nothing")
+	if sm == null:
+		return
+	var stranded: Array = []
+	for k in sm._music_manifest.keys():
+		if str(k).begins_with(PROBE_PREFIX):
+			stranded.append(str(k))
+	assert_eq(stranded, [],
+		"probe keys survived into the next file: %s — every later manifest census reads them as real beds" % str(stranded))
