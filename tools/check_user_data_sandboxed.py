@@ -414,6 +414,19 @@ def selftest():
         rc = main([os.path.join(d, "does-not-exist.sh")])
         check("a corpus of missing files is BLOCKED (2)", rc, 2)
 
+    # ⛔ A DECLARATION NOBODY HAS WATCHED FIRE IS INDISTINGUISHABLE FROM A DEAD ENTRY.
+    # This file already lost one to that: the EXEMPT tuple was tested only against `code`, so an
+    # entry naming a FILE could never match, and launch.sh silently declared nothing until it was
+    # measured. That bug was fixed; the CLASS was not. If launch.sh is sandboxed, renamed, or stops
+    # invoking godot, its declaration becomes a permanent silent exemption with nothing to say so.
+    # So: every EXEMPT token must still produce a `declared` row on the REAL tree.
+    import io as _io
+    _out = _sp.run([sys.executable, __file__], capture_output=True, text=True, timeout=120).stdout
+    for _token, _reason in EXEMPT:
+        _fired = any(line.startswith("  declared ") and _token in line for line in _out.splitlines())
+        check("EXEMPT '%s' still fires — else DROP it, do not carry a stale exemption" % _token,
+              _fired, True)
+
     # ⛔ THE INTERPRETER RULE, BOTH DIRECTIONS. This LOOSENS a safety guard, so the arms that
     # matter are the ones proving it did not stop flagging a real execution. The third is the
     # one that decides it: an interpreter EARLIER in the line must not exempt a binary that is
