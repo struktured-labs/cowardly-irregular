@@ -143,6 +143,23 @@ const OTHER_WRITE_FORMS := [
 ]
 
 
+## ⛔ AN EMPTY LIST MAKES THE FORM ARM PERMANENTLY GREEN, AND A SIZE FLOOR WOULD BE SATISFIED BY A
+## SURVIVOR — the hole this whole file spent the evening closing, one level in (@cowir-music).
+## MEASURED: emptying OTHER_WRITE_FORMS left 8 passing WITH A LIVE ResourceSaver WRITE in the lane.
+## ⚠️ THE DUPLICATE LIST IS THE POINT, NOT AN OVERSIGHT: a floor whose reference IS the thing under
+## test cannot see that thing shrink (@cowir-sfx's `elements.keys()`). Two independent copies means
+## deleting a form from one is caught by the other; one copy would delete the witness with it.
+func test_the_form_list_still_holds_every_proven_form() -> void:
+	var proven := ["ResourceSaver.", "store_var(", "store_buffer(", "store_line(",
+		"store_csv_line(", "save_png(", "save_to_file("]
+	var missing: Array = []
+	for f in proven:
+		if not (f in OTHER_WRITE_FORMS):
+			missing.append(f)
+	assert_eq(missing, [],
+		"a write form this file has MUTATION-PROVEN it can catch was removed from OTHER_WRITE_FORMS, so that form now reaches disk unwatched — restore it, or delete its proof from the header too: %s" % str(missing))
+
+
 func test_no_write_reaches_disk_by_a_form_this_file_cannot_see() -> void:
 	var exotic: Array = []
 	for path in _lane_gd_files():
