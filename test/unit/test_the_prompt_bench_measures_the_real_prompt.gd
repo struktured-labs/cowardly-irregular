@@ -92,8 +92,19 @@ func test_a_documented_invocation_carries_the_sandbox() -> void:
 		for line in src.split("\n"):
 			if line.find("godot --headless") == -1:
 				continue
-			if line.find("XDG_DATA_HOME") == -1:
-				offenders.append("%s :: %s" % [tool_path.get_file(), line.strip_edges()])
+			## PRESENCE IS NOT ENOUGH. Measured by a sibling lane after this arm shipped:
+			## an INVALID sandbox path fails CLOSED (godot aborts, EC=134, nothing written),
+			## but an EMPTY XDG_DATA_HOME is treated as unset per the XDG spec — godot writes
+			## the player's REAL profile at EC=0 with no warning. So require a value.
+			var at: int = line.find("XDG_DATA_HOME=")
+			if at == -1:
+				offenders.append("%s :: no sandbox :: %s" % [tool_path.get_file(), line.strip_edges()])
+				continue
+			var rest: String = line.substr(at + len("XDG_DATA_HOME="))
+			var value: String = rest.split(" ")[0].replace("\"", "").replace("'", "")
+			if value == "":
+				offenders.append("%s :: EMPTY sandbox (fails OPEN onto the real profile) :: %s"
+					% [tool_path.get_file(), line.strip_edges()])
 	assert_eq(offenders, [],
 		"a documented bare godot writes to the player's real user:// — %s" % str(offenders))
 
