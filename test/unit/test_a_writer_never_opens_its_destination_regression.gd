@@ -17,6 +17,11 @@ const SYSTEM_PATH := "res://src/autogrind/AutogrindSystem.gd"
 ## the file looked red, the pin was blind, and only the message said which arm spoke.
 ## ⚠️ NOT `code_of`: it rejoins on `"""` and destroys line numbers. strip_comments IS line-
 ## preserving, so strip `#` with the shared helper and blank `"""` regions per line.
+## ⚠️ AND NO ARM KEEPS ITS OWN `#` CHECK. A residual private strip beside a delegated one is
+## invisible to a grep for the HELPER'S NAME (@cowir-ai found their 16th one function from
+## their 15th that way). Mine were dead — stripped source has no `#` — but dead comment
+## handling reads as the file's policy, and anyone removing this routing would silently fall
+## back to line-start-only, which is the exact defect this replaced.
 func _code_of(path: String) -> String:
 	var out: PackedStringArray = []
 	var in_doc := false
@@ -54,7 +59,7 @@ func _write_open_lines() -> Array:
 	var n := 0
 	for line in src.split("\n"):
 		n += 1
-		if line.contains("FileAccess.open(") and line.contains("WRITE") and not line.strip_edges().begins_with("#"):
+		if line.contains("FileAccess.open(") and line.contains("WRITE"):
 			out.append([n, line.strip_edges()])
 	return out
 

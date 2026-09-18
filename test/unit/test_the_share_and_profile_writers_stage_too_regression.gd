@@ -36,6 +36,11 @@ const SOURCES := {
 ## it false-RED this file (@cowir-battle's 2c row). GdSource is the SHARED helper — 181 files use
 ## it, it is quote-aware AND escape-aware, and a private copy does not inherit a fix. Line count is
 ## preserved, so the line numbers these arms report still hold.
+## ⚠️ AND NO ARM KEEPS ITS OWN `#` CHECK. A residual private strip beside a delegated one is
+## invisible to a grep for the HELPER'S NAME (@cowir-ai found their 16th one function from
+## their 15th that way). Mine were dead — stripped source has no `#` — but dead comment
+## handling reads as the file's policy, and anyone removing this routing would silently fall
+## back to line-start-only, which is the exact defect this replaced.
 func _code_of(path: String) -> String:
 	## ⛔ NOT `code_of`. It splits on `\"\"\"` and JOINS the code segments with "\n", inserting a
 	## newline per docstring boundary — so line numbers are destroyed cumulatively, not shifted.
@@ -65,8 +70,6 @@ func _write_opens(src: String) -> Array:
 	for line in src.split("\n"):
 		n += 1
 		var t: String = line.strip_edges()
-		if t.begins_with("#") or t.begins_with("##"):
-			continue
 		if line.contains("FileAccess.open(") and line.contains("WRITE"):
 			out.append([n, t])
 	return out
@@ -213,8 +216,6 @@ func test_no_write_reaches_disk_by_a_form_this_file_cannot_see() -> void:
 		for line in src.split("\n"):
 			n += 1
 			var t: String = line.strip_edges()
-			if t.begins_with("#"):
-				continue
 			for form in OTHER_WRITE_FORMS:
 				if line.contains(form):
 					exotic.append("%s:%d — %s (%s)" % [path, n, t, form])
@@ -289,7 +290,7 @@ func test_every_open_proves_its_mode() -> void:
 		for line in src.split("\n"):
 			n += 1
 			var t: String = line.strip_edges()
-			if t.begins_with("#") or not line.contains("FileAccess.open("):
+			if not line.contains("FileAccess.open("):
 				continue
 			var verdict: String = _classify_open(line)
 			if verdict == "truncating":
