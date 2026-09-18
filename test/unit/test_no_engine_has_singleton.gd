@@ -114,25 +114,19 @@ func _scan_file(path: String, violations: Array) -> void:
 	var basename: String = path.get_file()
 	var allowed_list: Array = ALLOWED_OCCURRENCES.get(basename, [])
 
+	## strip_comments is LINE-PRESERVING, which this arm requires: it reports path:line_no, so the
+	## index must still address the real file. code_of would also drop docstrings and shift it.
+	## The private `find("#")` this replaces cut on a hash inside a string literal, hiding any
+	## violation after it — an assert-EMPTY scan goes silent on that rather than red.
 	var lines_split: PackedStringArray = content.split("\n")
+	var code_split: PackedStringArray = GdSource.strip_comments(content).split("\n")
 	for i in lines_split.size():
 		var raw_line: String = lines_split[i]
-		if not raw_line.contains(VIOLATION_NEEDLE):
-			continue
-
-		# Skip comments — both leading "#" and trailing comments only count if the
-		# needle appears before any "#" on the line.
-		var stripped: String = raw_line.strip_edges()
-		if stripped.begins_with("#"):
-			continue
-		var hash_idx: int = raw_line.find("#")
-		var needle_idx: int = raw_line.find(VIOLATION_NEEDLE)
-		if hash_idx != -1 and hash_idx < needle_idx:
-			# The needle text is inside a trailing comment.
+		if i >= code_split.size() or not code_split[i].contains(VIOLATION_NEEDLE):
 			continue
 
 		# Check allowlist.
-		if _is_allowed(raw_line, allowed_list):
+		if _is_allowed(code_split[i], allowed_list):
 			continue
 
 		violations.append({
@@ -205,14 +199,7 @@ func _needle_is_live(content: String, needle: String) -> bool:
 	## is not an occurrence, so a retired call surviving in prose does not excuse itself.
 	if needle == "":
 		return false
-	for raw_line in content.split("\n"):
-		if not raw_line.contains(needle):
-			continue
-		if raw_line.strip_edges().begins_with("#"):
-			continue
-		var hash_idx: int = raw_line.find("#")
-		var needle_idx: int = raw_line.find(needle)
-		if hash_idx != -1 and hash_idx < needle_idx:
-			continue
-		return true
+	for code_line in GdSource.strip_comments(content).split("\n"):
+		if code_line.contains(needle):
+			return true
 	return false

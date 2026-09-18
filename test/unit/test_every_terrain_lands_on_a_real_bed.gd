@@ -170,30 +170,18 @@ func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
 ## docstrings are string LITERALS, so a `#`-only strip leaves prose that names a token and a scan
 ## reads that prose as the token (cowir-music, msg 10577). Not used on arms that deliberately read
 ## a string CONSTANT, where stripping would delete the very thing being checked.
-## ⚠️ KNOWN LIMIT, measured not assumed: a triple quote that is neither at the start nor the end of
-## its line — `var s := """x"""` — is NOT dropped, because the branch keys on begins_with. Across the
-## four files these guards scan there are 419 triple-quote lines and ZERO of that shape, so nothing
-## is exposed today; and it fails LOUDLY where it matters, since a survivor inside a control window
-## reds the structural assert rather than passing quietly. The `#` half truncates at the first `#`,
-## so a `#` inside a string literal would cut live code — same measurement, same direction.
+## ⚠️ THE KNOWN-LIMIT PARAGRAPH THAT STOOD HERE DESCRIBED A `begins_with` BRANCH THIS FUNCTION NO
+## LONGER HAS, so it is gone rather than amended — a comment narrating a deleted mechanism reads as
+## a property of the current code. Its second half was the real defect: the private `#` pass cut at
+## the first `#` even inside a string literal, which truncates LIVE code. On an assert-EMPTY scan
+## that is silence, not a red, so nothing here could have reported it.
 ##
 ## Both halves are verified INDEPENDENTLY (@cowir-overworld's tautology note via @cowir-music, msg
 ## 10590): removing only the docstring branch reds "no docstring may survive", removing only the `#`
 ## strip reds "no # comment may survive". A pass-through neutering kills both at once and cannot
 ## tell a real assert from one that merely restates the implementation.
+## DELEGATED 2026-09-18 to the quote-aware shared helper. No arm here reports a line number, so
+## the index shift `split()` carries is not observable; a guard that printed one would need
+## `strip_comments`, which is line-preserving.
 func _code_only(src: String) -> String:
-	var out := PackedStringArray()
-	var in_doc := false
-	for line in src.split("\n"):
-		var t := line.strip_edges()
-		if in_doc:
-			if t.ends_with("\"\"\""):
-				in_doc = false
-			continue
-		if t.begins_with("\"\"\""):
-			if not (t.length() > 5 and t.ends_with("\"\"\"")):
-				in_doc = true
-			continue
-		var h: int = line.find("#")
-		out.append(line.substr(0, h) if h >= 0 else line)
-	return "\n".join(out)
+	return str(GdSource.split(src)["code"])

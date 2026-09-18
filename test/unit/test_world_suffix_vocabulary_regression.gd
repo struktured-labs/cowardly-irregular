@@ -1,6 +1,5 @@
 extends GutTest
 
-const TRIPLE := '"""'
 
 ## The world vocabulary is ONE function and three lanes now read it (2026-08-06).
 ##
@@ -259,33 +258,13 @@ func test_the_word_futuristic_IS_in_the_body_which_is_why_grep_lies() -> void:
 ## docstring hid a DELETED arm from the scans here — the source assert fired 0
 ## times with it and 2 times without, and only a behavioural arm caught it.
 ##
-## Drops the WHOLE line on a triple quote, which can also drop code sharing that
-## line. That errs toward reporting an arm MISSING (a loud red) rather than
-## present (a silent green), which is the direction a guard should fail in.
-## Measured 2026-09-12, for whoever widens the scanned window later — this is the
-## note that matters then, and it will not be in tonight's log:
-##   SoundManager.gd     164 triple-quote lines · 0 that neither start nor end a line
-##                       · 80 with two on one line (single-line docstrings)
-##   audit_wrap_seams.py   7 · 0 · 1
-## `find(TRIPLE)` rather than `begins_with` is why the 80 are handled: a line holding
-## an opened AND closed docstring is dropped without arming in_doc. The one shape that
-## would slip a begins_with version — a triple quote mid-line — occurs nowhere in
-## either file, and @cowir-battle measured 0 of it across four more.
+## DELEGATED 2026-09-18 — the paragraphs that stood here narrated an `in_doc` line scanner this
+## function no longer contains. The mechanism was also wrong: `split("#")[0]` is not quote-aware,
+## so a `#` inside a string literal dropped the rest of the line. On an assert-EMPTY scan that is
+## SILENCE, not a red. No arm here reports a line number, so `split()`'s index shift is invisible;
+## an arm that printed one would need the line-preserving `strip_comments` instead.
 static func _code_only(body: String) -> String:
-	var out: PackedStringArray = []
-	var in_doc: bool = false
-	for raw in body.split("\n"):
-		if in_doc:
-			if raw.contains(TRIPLE):
-				in_doc = false
-			continue
-		var q: int = raw.find(TRIPLE)
-		if q >= 0:
-			if raw.find(TRIPLE, q + 3) < 0:
-				in_doc = true
-			continue
-		out.append(raw.split("#")[0])
-	return "\n".join(out)
+	return str(GdSource.split(body)["code"])
 
 
 ## ⛔ A CONTROL THAT PROVES THE STRIPPER, because the stripper is what every source
