@@ -5,8 +5,8 @@ const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
 ## Whole-surface autoload restore — this file left live signal wiring on the autoload.
 var _ag_state: Dictionary
 
-## The console is ONE OF TWO listeners for `system_collapse` — GameLoop is the other (:5604,
-## connected in _start_autogrind, never disconnected) and it toasts on a layer the player sees.
+## The console is ONE OF TWO listeners for `system_collapse` — GameLoop is the other (connected in
+## _start_autogrind, never disconnected) and it toasts on a layer the player sees.
 ## This header said "the ONLY listener" until 2026-09-18; it went false when the sibling fix in
 ## test_the_collapse_announces_itself ADDED that listener, and the claim sat in three places. The
 ## catch-up is still warranted: closing the console disconnects THIS handler, so the console's own

@@ -8,7 +8,7 @@ const COMBATANT := "res://src/battle/Combatant.gd"
 
 ## ⛔ LUDICROUS SPEED MAKES THE PARTY IMMUNE TO PERMANENT INJURIES, AND NOTHING SAYS SO.
 ## `AutogrindUI` toggles `ludicrous_speed`, the controller turns that into `headless_mode`
-## (AutogrindController:124), and the headless resolver replaces BattleManager for every battle.
+## (AutogrindController.start_grind), and the headless resolver replaces BattleManager per battle.
 ## BattleManager.end_battle rolls 25% per KO'd member and calls apply_permanent_injury; the headless
 ## resolver never does — `apply_permanent_injury` has exactly ONE caller in all of src/.
 ##

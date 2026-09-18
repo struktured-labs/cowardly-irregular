@@ -312,14 +312,14 @@ func _connect_autogrind_signals() -> void:
 	AutogrindSystem.system_collapse.connect(_on_system_collapse)
 	## ⛔ THIS SAID "this UI is the ONLY listener for system_collapse" AND "announced itself to
 	## nobody". BOTH WENT FALSE when test_the_collapse_announces_itself's fix added a GameLoop
-	## listener — GameLoop:5604 connects in _start_autogrind and NEVER disconnects, and
+	## listener — GameLoop._start_autogrind connects it and NEVER disconnects, and
 	## _on_autogrind_system_collapse toasts "SYSTEM COLLAPSE #N" on its own CanvasLayer, ungated by
 	## console visibility. A collapse with the console shut IS announced.
 	##
 	## The catch-up below is still right, for a different reason than the one written here: the two
 	## are DIFFERENT SURFACES. GameLoop's is a transient toast on the screen the player watches; this
 	## is the durable console record, and its message says "while this console was closed", which
-	## stays true. Closing the console still disconnects this handler (:347), so without the
+	## stays true. Closing the console still disconnects this handler in _disconnect_autogrind_signals,
 	## catch-up the console's own log would have a hole. Pinned by an arm in
 	## test_autogrind_a_collapse_is_announced_once_regression so the pair cannot be tidied into one.
 	var seen_now: int = AutogrindSystem.collapse_count
