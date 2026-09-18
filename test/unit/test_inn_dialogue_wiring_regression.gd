@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## data/inn_dialogue.json — 11 villages x 7 lines, authored 2026-04-21 and loaded by NOTHING
 ## until 2026-08-23. Wiring it introduces a second source for text INNKEEPERS already supplies,
 ## so these pin the precedence (authored wins, generic is the fallback) and pin that the
@@ -23,6 +25,7 @@ func before_all() -> void:
 
 
 func after_all() -> void:
+	SoundState.restore()
 	if _saved_profile != "":
 		InputProfileManager.apply_profile(_saved_profile)
 
