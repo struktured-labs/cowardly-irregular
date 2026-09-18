@@ -597,13 +597,28 @@ func _emit_touch_and_maybe_fade() -> void:
 ## contact to decide to fight it". Declining leaves it standing exactly where it was; the
 ## player walks away and body_entered only re-fires on a fresh entry, so there is no
 ## re-prompt loop while they stand in it.
+## Released on teardown too: the prompt is awaited, and a monster freed mid-await (scene change,
+## battle start, deactivate) would otherwise leave 'elite_prompt' held into the next scene.
+var _holds_prompt_lock: bool = false
+
+
+func _exit_tree() -> void:
+	if not _holds_prompt_lock:
+		return
+	var lock: Node = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if lock and lock.has_method("pop_lock"):
+		lock.pop_lock("elite_prompt")
+	_holds_prompt_lock = false
+
 func _ask_then_fight() -> void:
 	var lock: Node = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 	if lock and lock.has_method("push_lock"):
 		lock.push_lock("elite_prompt")
+		_holds_prompt_lock = true
 	var choice: String = await _present_elite_prompt()
-	if lock and lock.has_method("pop_lock"):
+	if lock and lock.has_method("pop_lock") and _holds_prompt_lock:
 		lock.pop_lock("elite_prompt")
+	_holds_prompt_lock = false
 	_prompt_open = false
 	if not _active or _fading:
 		return

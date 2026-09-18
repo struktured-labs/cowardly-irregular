@@ -29,6 +29,15 @@ signal rules_saved(rules: Array)
 ## Grid state
 var rules: Array = []
 var cursor_row: int = 0
+## Vertical scroll so rules past the viewport follow the cursor. The AUTOBATTLE twin has had this
+## since it grew past nine rules; this editor never got it, and it has no cap on rules at all.
+var _scroll_offset: float = 0.0
+
+## Hold-to-repeat. Vertical only: left/right move between CELLS of one rule, and repeating those
+## would thrash its fields. The AUTOBATTLE twin got this when it was "the last long list with no
+## fast route"; this editor has no cap on rules AT ALL and never got it, nor any paging.
+var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
+
 var cursor_col: int = 0
 var is_editing: bool = false
 
@@ -53,6 +62,7 @@ const _RuleComposerOverlayScene := preload("res://src/ui/autobattle/RuleComposer
 
 ## Grid layout constants
 const CELL_WIDTH = 120
+const GRID_BASE_POS := Vector2(130, 50)
 const CELL_HEIGHT = 44
 const CELL_PADDING = 16
 const ROW_SPACING = 24
@@ -192,8 +202,11 @@ func _build_ui() -> void:
 
 	# Grid container (shifted right for details panel)
 	_grid_container = Control.new()
-	_grid_container.position = Vector2(130, 50)
+	_grid_container.position = GRID_BASE_POS
 	_grid_container.size = Vector2(size.x - 146, size.y - 100)
+	# Without this the rows past the viewport were still DRAWN — over the footer and off the
+	# bottom of the screen — because nothing clipped and nothing scrolled.
+	_grid_container.clip_contents = true
 	add_child(_grid_container)
 
 	# Cursor
@@ -840,8 +853,28 @@ func _get_profile_name_for(char_id: String, profile_idx: int) -> String:
 ## CURSOR MANAGEMENT
 ## ═══════════════════════════════════════════════════════════════════════
 
+
+## Keep the selected rule row on screen. Ported from AutobattleGridEditor, which solved this for
+## the same hand-positioned (non-ScrollContainer) grid: shift _grid_container.position.y and the
+## cursor follows for free, because _update_cursor derives cell_pos from that same position.
+func _update_scroll_offset() -> void:
+	if not _grid_container or not is_instance_valid(_grid_container):
+		return
+	var row_stride: float = float(CELL_HEIGHT + ROW_SPACING)
+	var cursor_y: float = cursor_row * row_stride
+	var view_h: float = _grid_container.size.y
+	if cursor_y - _scroll_offset < 0.0:
+		_scroll_offset = cursor_y
+	elif cursor_y + CELL_HEIGHT - _scroll_offset > view_h:
+		_scroll_offset = cursor_y + CELL_HEIGHT - view_h
+	# Never past the top: a negative offset would push row 0 down off its anchor.
+	_scroll_offset = maxf(0.0, _scroll_offset)
+	_grid_container.position.y = GRID_BASE_POS.y - _scroll_offset
+
+
 func _update_cursor() -> void:
 	"""Update cursor visual position"""
+	_update_scroll_offset()
 	var target_cell = _get_cell_at_cursor()
 	if not target_cell:
 		_cursor.visible = false
@@ -1011,6 +1044,46 @@ func _get_current_action_index() -> int:
 ## INPUT HANDLING
 ## ═══════════════════════════════════════════════════════════════════════
 
+## One owner for a row step, so the press path and the hold path cannot drift apart.
+## CLAMPED, not wrapped — matching what the arms did before, and what a long rule list wants.
+func _nav_step_row(step: int) -> void:
+	if step < 0:
+		cursor_row = maxi(0, cursor_row - 1)
+	else:
+		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
+	cursor_col = mini(cursor_col, _get_max_col_for_row(cursor_row))
+	_update_cursor()
+	SoundManager.play_ui("menu_move")
+
+
+## ⛔ MenuRepeat POLLS Input, so it inherits NONE of _input's early returns. Every refusal below is
+## one _input makes for itself — derived from THIS file, not copied from the autobattle twin, whose
+## gates genuinely differ (it has a share picker and a portrait focus; this one has a reset prompt).
+func _row_nav_blocked() -> bool:
+	if not visible or is_queued_for_deletion():
+		return true
+	if TutorialHint.is_any_active():
+		return true
+	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
+		return true
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay) and _rule_composer_overlay.visible:
+		return true
+	if _reset_confirm and is_instance_valid(_reset_confirm):
+		return true
+	if is_editing:
+		return true
+	return false
+
+
+func _process(delta: float) -> void:
+	if _row_nav_blocked():
+		_nav_repeat.reset()
+		return
+	var action := _nav_repeat.tick(delta)
+	if action != "":
+		_nav_step_row(-1 if action == "ui_up" else 1)
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle input for grid navigation and editing"""
 	if not visible:
@@ -1055,17 +1128,11 @@ func _input(event: InputEvent) -> void:
 
 	# D-Pad navigation - check echo to prevent rapid-fire when holding keys
 	if nav == "ui_up":
-		cursor_row = max(0, cursor_row - 1)
-		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
-		_update_cursor()
-		SoundManager.play_ui("menu_move")
+		_nav_step_row(-1)
 		get_viewport().set_input_as_handled()
 
 	elif nav == "ui_down":
-		cursor_row = clampi(cursor_row + 1, 0, maxi(0, rules.size() - 1))
-		cursor_col = min(cursor_col, _get_max_col_for_row(cursor_row))
-		_update_cursor()
-		SoundManager.play_ui("menu_move")
+		_nav_step_row(1)
 		get_viewport().set_input_as_handled()
 
 	elif nav == "ui_left":

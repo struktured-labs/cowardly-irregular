@@ -1,5 +1,7 @@
 extends SceneTree
 
+const ShotGuard = preload("res://tools/shot_guard.gd")
+
 ## Visual proof for the Advance aura: a real battle, the real handler, counts 1-5, three ways.
 ##
 ##   XDG_DATA_HOME=$PWD/tmp/shot_xdg xvfb-run -a godot --audio-driver Dummy --rendering-driver opengl3 \
@@ -237,11 +239,14 @@ func _pinned_with_layers(tag: String) -> Dictionary:
 		full = root.get_texture().get_image()
 	var slide: float = _sprite.position.x - float(_sprite.get_meta("home_position", _sprite.position).x)
 	paused = false
-	full.save_png("%s/%s.png" % [OUT, tag])
+	if not ShotGuard.save_or_refuse(full, "%s/%s.png" % [OUT, tag]):
+		_fail += 1
 	var crop := full.get_region(_clamped(centre - CROP / 2, CROP, full))
-	crop.save_png("%s/%s_crop.png" % [OUT, tag])
+	if not ShotGuard.save_or_refuse(crop, "%s/%s_crop.png" % [OUT, tag]):
+		_fail += 1
 	var wide := full.get_region(_clamped(Vector2i(0, centre.y - WIDE.y / 2), WIDE, full))
-	wide.save_png("%s/%s_wide.png" % [OUT, tag])
+	if not ShotGuard.save_or_refuse(wide, "%s/%s_wide.png" % [OUT, tag]):
+		_fail += 1
 	if aura == null or not aura.is_active():
 		print("[SHOT] FAIL: %s — no active aura on the actor" % tag)
 		_fail += 1
@@ -399,10 +404,12 @@ func _wait_bubbles_clear() -> int:
 
 func _capture(tag: String, note: String) -> Image:
 	var img := root.get_texture().get_image()
-	img.save_png("%s/%s.png" % [OUT, tag])
+	if not ShotGuard.save_or_refuse(img, "%s/%s.png" % [OUT, tag]):
+		_fail += 1
 	var at := Vector2i(_sprite.get_global_transform_with_canvas().origin)
 	var crop := img.get_region(_clamped(at - CROP / 2, CROP, img))
-	crop.save_png("%s/%s_crop.png" % [OUT, tag])
+	if not ShotGuard.save_or_refuse(crop, "%s/%s_crop.png" % [OUT, tag]):
+		_fail += 1
 	var aura = _aura()
 	if aura == null or not aura.is_active():
 		print("[SHOT] FAIL: %s — no active aura on the actor" % tag)
@@ -417,14 +424,16 @@ func _stack(images: Array[Image], name: String) -> void:
 	var strip := Image.create(size.x, size.y * images.size(), false, Image.FORMAT_RGBA8)
 	for i in images.size():
 		strip.blit_rect(images[i], Rect2i(Vector2i.ZERO, size), Vector2i(0, size.y * i))
-	strip.save_png("%s/%s.png" % [OUT, name])
+	if not ShotGuard.save_or_refuse(strip, "%s/%s.png" % [OUT, name]):
+		_fail += 1
 
 
 func _strip(crops: Array[Image], name: String) -> void:
 	var strip := Image.create(CROP.x * crops.size(), CROP.y, false, Image.FORMAT_RGBA8)
 	for i in crops.size():
 		strip.blit_rect(crops[i], Rect2i(Vector2i.ZERO, CROP), Vector2i(CROP.x * i, 0))
-	strip.save_png("%s/%s.png" % [OUT, name])
+	if not ShotGuard.save_or_refuse(strip, "%s/%s.png" % [OUT, name]):
+		_fail += 1
 
 
 func _find_battle_scene(node: Node) -> Node:

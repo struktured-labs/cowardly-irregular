@@ -23,6 +23,8 @@ var _strike_player: AudioStreamPlayer  # dedicated voice: the elemental strike v
 var _flash_player: AudioStreamPlayer  # dedicated voice: the weakness stinger fires same-frame with the hit by design, so the hit always replaced it (2026-09-16)
 var _current_ambient_key: String = ""
 var _crossfade_tween: Tween = null
+## The SAME tween when a fade-OUT owns it, so "is the bed on its way to silence" is derived from a live object rather than latched in a bool every kill() site would have to clear.
+var _fade_out_tween: Tween = null
 
 # Music state
 var _music_playing: bool = false
@@ -481,8 +483,14 @@ var _item_sounds: Dictionary = {}
 
 
 func play_item(item_id: String) -> void:
-	"""Cue for USING an item. Silent for plain HP potions by design — healing_done already plays
-	`heal`, and a second cue on top of it would just be louder, not clearer."""
+	"""Cue for USING an item, derived from its own effects. Silent only for an item _item_sounds
+	never mapped — 17 of 172 map, the rest are gear and key items with no use-cue.
+
+	⚠️ This said "silent for plain HP potions by design — healing_done already plays `heal`".
+	BOTH halves were false (measured 2026-09-17): `heal_hp` maps to `heal` in _ITEM_EFFECT_SFX, so
+	4 items DO cue here, and `healing_done` plays nothing at all — BattleScene._on_healing_done
+	only calls BattleResultsDisplay, which has zero SoundManager references. There is no doubling
+	to avoid, so do not "restore" a silence that was never the design."""
 	var cue: String = str(_item_sounds.get(item_id, ""))
 	if cue == "":
 		return
@@ -713,13 +721,24 @@ func play_ui(sound_key: String) -> void:
 	_play_sound(_ui_player, SOUNDS[sound_key])
 
 
+## The battle channel's level for a cue: its base plus any authored trim. ONE owner, because
+## volume_db PERSISTS on the shared player — a caller passing NAN inherits whatever the previous
+## cue left. Measured 2026-09-17: SEVEN of the eight authored trims reach THIS player and all seven
+## are NEGATIVE (corruption_gain_* -3, round_ap_gain -5, corruption_ap_flicker -6), so a trimmed cue
+## left every following hit up to 6 dB QUIET until some other cue set an explicit level. The one
+## POSITIVE trim (advance_undo +6) routes to _refuse_player and never arrives here — the advance-bank
+## comment above play_advance_state says so — so the loud direction is guarded, not observed.
+func _battle_level(sound_key: String) -> float:
+	return SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+
+
 func play_battle(sound_key: String) -> void:
 	"""Play a battle sound effect — world variant first, then default, else procedural"""
 	# Cycle #13: play_ability was the ONLY prefix-aware path, so an authored
 	# w4_enemy_death could never be reached from the battle side.
 	var world_key: String = _get_world_sfx_prefix() + sound_key
 	# Explicit level on EVERY call, matching play_ui: volume_db persists on the shared player, so one trimmed cue would otherwise quiet every battle sound after it.
-	var level: float = SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	var level: float = _battle_level(sound_key)
 	if world_key != sound_key and _try_play_sfx_from_manifest(_battle_player, world_key, level):
 		return
 	if _try_play_sfx_from_manifest(_battle_player, sound_key, level):
@@ -830,7 +849,7 @@ func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
 	if player == null:
 		play_battle(sound_key)
 		return
-	var level: float = SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	var level: float = _battle_level(sound_key)
 	var world_key: String = _get_world_sfx_prefix() + sound_key
 	if world_key != sound_key and _try_play_sfx_from_manifest(player, world_key, level):
 		return
@@ -840,7 +859,9 @@ func _play_battle_on(player: AudioStreamPlayer, sound_key: String) -> void:
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
 	"""Play a battle sound with volume and pitch scaling for power-based effects"""
-	if _try_play_sfx_from_manifest(_battle_player, sound_key, volume_db, pitch_scale):
+	## volume_db is a TRIM on the channel, never the level: its one caller passes lerp(-3,+3) "scale volume based on power", and forwarding it raw made it ABSOLUTE — every elemental impact landed 3-9 dB over the -6 dB battle base and persisted there. 0.0 now means "no trim".
+	var level: float = _battle_level(sound_key) + volume_db
+	if _try_play_sfx_from_manifest(_battle_player, sound_key, level, pitch_scale):
 		return
 	if not SOUNDS.has(sound_key):
 		return
@@ -848,7 +869,7 @@ func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: 
 	pitch_scale = clamp(pitch_scale, 0.1, 10.0)
 	var params = SOUNDS[sound_key].duplicate()
 	# Apply volume scaling
-	params["volume_db"] = volume_db
+	params["volume_db"] = level
 	# Apply pitch scaling to frequency
 	if params.has("freq"):
 		params["freq"] = params["freq"] * pitch_scale
@@ -865,10 +886,10 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 	var bias: float = _combo_pitch_bias()
 	if not weapon_type.is_empty():
 		var per_weapon_key = "attack_hit_%s%s" % [weapon_type, suffix]
-		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key, NAN, bias):
+		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key, _battle_level(per_weapon_key), bias):
 			_advance_hit_chain()
 			return
-	if _try_play_sfx_from_manifest(_battle_player, generic_key, NAN, bias):
+	if _try_play_sfx_from_manifest(_battle_player, generic_key, _battle_level(generic_key), bias):
 		_advance_hit_chain()
 		return
 	if not SOUNDS.has(generic_key):
@@ -931,7 +952,8 @@ func play_ability(ability_id: String) -> void:
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
 	# Try world-specific variant (e.g., "w2_ability_fire" for suburban world)
 	var world_key = _get_world_sfx_prefix() + sound_key
-	if _try_play_sfx_from_manifest(_ability_player, world_key):
+	## Guarded like the other three prefix callers: in W1 the prefix is "" so world_key IS sound_key, and an unguarded first attempt that STAMPS the cooldown then fails leaves the second one answering `true` (HANDLED) off that fresh stamp — skipping the procedural fallback entirely.
+	if world_key != sound_key and _try_play_sfx_from_manifest(_ability_player, world_key):
 		return
 	# Fall back to default (medieval/W1) sound
 	if _try_play_sfx_from_manifest(_ability_player, sound_key):
@@ -1226,7 +1248,7 @@ func play_footstep(terrain: String = "grass") -> void:
 func play_status(status_name: String) -> void:
 	"""Play sound for a status effect application (poison, sleep, confuse, paralyze, etc.)"""
 	var key = "status_" + status_name.to_lower()
-	if _try_play_sfx_from_manifest(_battle_player, key):
+	if _try_play_sfx_from_manifest(_battle_player, key, _battle_level(key)):
 		return
 	if SOUNDS.has(key):
 		_play_sound(_battle_player, SOUNDS[key])
@@ -1241,7 +1263,7 @@ func play_status_if_authored(sound_key: String) -> bool:
 	## and this return is documented by its caller (BattleScene._cue_if_turn_skipped) as "whether the
 	## cue actually fired, so a test can assert BEHAVIOUR" — a claim the raw return cannot support.
 	## Measured: two skips in one frame both returned true, the second having played nothing.
-	if not _try_play_sfx_from_manifest(_battle_player, sound_key):
+	if not _try_play_sfx_from_manifest(_battle_player, sound_key, _battle_level(sound_key)):
 		return false
 	return not _sfx_suppressed_by_cooldown
 
@@ -1254,13 +1276,24 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 	var duration = params.get("duration", 0.1)
 	var freq = params.get("freq", 440.0)
 	var sound_type = params.get("type", "blip")
-	var volume_db = params.get("volume_db", 0.0)
+	## Default to the PLAYER'S level, not 0.0. volume_db is CHANNEL state — every player is built
+	## at a design-intent base (SFX_UI_BASE_DB -16, SFX_BATTLE_BASE_DB -6, …) and set_sfx_volume
+	## re-asserts those "in case a caller mutated them". _play_sound was that caller: a 0.0 default
+	## overwrote the base, so the six procedural-only UI cues played 16 dB above every menu blip,
+	## and a later file cue passing NAN ("preserve the channel base") inherited 0.0 instead.
+	var volume_db = params.get("volume_db", player.volume_db)
 
 	var generator = AudioStreamGenerator.new()
 	generator.mix_rate = sample_rate
 
 	player.stream = generator
 	player.volume_db = volume_db
+	## Players are SHARED and _try_play_sfx_from_manifest writes pitch_scale on every file cue —
+	## the combo bias plus a ±5% jitter. Without this reset a synth cue inherits the last file
+	## cue's pitch: measured 1.1013 after one biased hit, ~2 semitones sharp and ~10% shorter.
+	## The procedural path biases by FREQUENCY (play_battle_scaled multiplies params.freq), so
+	## an inherited pitch_scale applies the same bias a second time.
+	player.pitch_scale = 1.0
 	player.play()
 	print("[SFX] procedural %s freq=%s dur=%s (%s)" % [sound_type, str(freq), str(duration), player.name])
 
@@ -2216,8 +2249,21 @@ func capture_music_state() -> Dictionary:
 	## overworld at 1.21 s, one battle, back at 0.09 s. overworld_medieval is 198 s and a W1
 	## encounter lands every ~30 s, so a player heard the first half-minute of a three-minute
 	## track for the whole game and never once reached the rest of it.
+	## ⛔ A STINGER IS NEVER A RESUME TARGET, AND play_music GUARDED ONLY ITS OWN CAPTURE. The
+	## jukebox, the pause menu and CutsceneDirector all call this directly: open a chest, press
+	## Start, close -- the 5 s one-shot came back AS THE BED and ended in silence. Hand back what
+	## the stinger itself will resume to, which is empty when nothing was playing before it.
+	if _is_stinger_track(_current_music):
+		return _stinger_resume_state.duplicate()
 	var pos: float = _music_player.get_playback_position() if _music_player and _music_player.playing else 0.0
-	return {"track": _current_music, "area": _current_area, "playing": _music_playing, "position": pos}
+	## ⛔ _music_playing IS TRUE THROUGHOUT A FADE-OUT -- it only drops in the callback, `duration`
+	## seconds on. Reporting it raw hands every caller a bed one tween from silence, and the restore
+	## kills the tween, so the quiet never arrives. Same lying field the two "already playing" early
+	## returns were repaired for; this was the third reader and the one nobody had patched.
+	## is_running(), not is_valid() alone: measured, kill() leaves a tween VALID for one more frame
+	## and only is_running() drops on the spot — which is what makes this derived rather than latched.
+	var fading_out: bool = _fade_out_tween != null and _fade_out_tween.is_valid() and _fade_out_tween.is_running()
+	return {"track": _current_music, "area": _current_area, "playing": _music_playing and not fading_out, "position": pos}
 
 
 ## Put back a state captured by capture_music_state(). Safe to call with an
@@ -2290,9 +2336,17 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 	"""
 	if not _music_playing or not _music_player:
 		return
+	## ⛔ A FADE IS A STOP WITH A RAMP, AND THE RAMP IS THE WINDOW. stop_music disarms the pending
+	## stinger resume ("and do not come back") and this path did not — yet it leaves the player
+	## RUNNING for `duration`, so a stinger with less than that left reaches its own end mid-fade,
+	## replays the bed, and kills this very tween so the quiet callback never fires. Measured:
+	## chest stinger + fade(0.45) -> overworld_medieval back at full volume over the silence.
+	for c in _music_player.finished.get_connections():
+		_music_player.finished.disconnect(c["callable"])
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
 	_crossfade_tween = create_tween()
+	_fade_out_tween = _crossfade_tween
 	# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
 	_crossfade_tween.set_ignore_time_scale(true)
 	_crossfade_tween.set_parallel(true)
@@ -2485,7 +2539,7 @@ func _start_battle_music() -> void:
 	var suffix = _get_current_world_suffix()
 	if _try_play_from_manifest("battle_" + suffix):
 		return
-	## battle_<suffix> is web-excluded in W4-W6; generating is 8.5s on the main thread.
+	## NOT because W4-W6 are excluded — the default publish ships every track (WEB_STAGE=1 stages a transcoded tier and strips the music exclusions). The reason is COST: generating is 8.5s on the main thread.
 	if suffix != "medieval" and _try_play_from_manifest("battle_medieval"):
 		return
 
@@ -3200,7 +3254,7 @@ func _start_boss_music() -> void:
 	var suffix = _get_current_world_suffix()
 	if _try_play_from_manifest("boss_" + suffix):
 		return
-	## boss_<suffix> is web-excluded in W4-W6; generating is 2.1s on the main thread.
+	## NOT the exclusion — the default publish ships these. The reason is COST: generating is 2.1s on the main thread.
 	if suffix != "medieval" and _try_play_from_manifest("boss_medieval"):
 		return
 
@@ -6583,7 +6637,7 @@ func _start_industrial_music() -> void:
 	print("[MUSIC] Playing industrial theme")
 	if _play_area_wav_cached("industrial"):
 		return
-	## overworld_industrial is web-excluded; generating the fallback is 1.9s of main-thread GDScript.
+	## NOT the exclusion — the default publish ships overworld_industrial. The reason is COST: generating is 1.9s of main-thread GDScript.
 	if _try_play_from_manifest("overworld_medieval"):
 		return
 
@@ -6709,7 +6763,7 @@ func _start_futuristic_music() -> void:
 	print("[MUSIC] Playing futuristic digital theme")
 	if _play_area_wav_cached("futuristic"):
 		return
-	## overworld_digital is web-excluded; generating the fallback is 3.8s of main-thread GDScript.
+	## NOT the exclusion — the default publish ships overworld_digital. The reason is COST: generating is 3.8s of main-thread GDScript.
 	if _try_play_from_manifest("overworld_medieval"):
 		return
 
@@ -7136,7 +7190,7 @@ func _start_industrial_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_industrial"):
 		return
-	## web-excluded; generating is 1.6s on the main thread.
+	## NOT the exclusion — the default publish ships this. The reason is COST: generating is 1.6s on the main thread.
 	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing industrial battle theme")
@@ -7337,7 +7391,7 @@ func _start_digital_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_digital"):
 		return
-	## web-excluded; generating is 1.4s on the main thread.
+	## NOT the exclusion — the default publish ships this. The reason is COST: generating is 1.4s on the main thread.
 	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing digital battle theme")
@@ -7544,7 +7598,7 @@ func _start_void_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_abstract"):
 		return
-	## battle_abstract is web-excluded and battle_void is not in the manifest, so on web BOTH tiers above miss and generating is 1.3s of main-thread GDScript.
+	## battle_void is not in the manifest, so the tier above can miss; generating is 1.3s of main-thread GDScript. (battle_abstract itself SHIPS on the default publish — the old 'web-excluded' half of this note is obsolete.)
 	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing void battle theme")
@@ -7723,7 +7777,7 @@ func _start_abstract_music() -> void:
 	print("[MUSIC] Playing abstract void theme")
 	if _play_area_wav_cached("abstract"):
 		return
-	## overworld_abstract is web-excluded; generating the fallback is 19.9s of main-thread GDScript.
+	## ⛔ DO NOT DELETE THIS FALLBACK. Not the exclusion — the default publish ships overworld_abstract. The reason is COST: generating is 19.9s of main-thread GDScript, and this is the freeze 2f847cf02 fixed ("entering the World 6 overworld froze the web build for ~20 seconds").
 	if _try_play_from_manifest("overworld_medieval"):
 		return
 
