@@ -69,6 +69,30 @@ func _lane_scripts() -> Array:
 	return out
 
 
+## ⛔ A COMMENT IS NOT EVIDENCE THAT A WRITE LANDED. Both scans below read raw source, so a
+## `# TODO: use rename_absolute() here` under a direct write made the write read as SAFE — measured
+## on a planted writer, which the ratchet passed. That is a FALSE NEGATIVE in the one direction a
+## guard must never fail, and the sibling guard in this lane already stripped comments; I fixed it
+## there and not here.
+##
+## ⚠️ Quote-aware, because a bare `find("#")` truncates any line whose MESSAGE contains one — and
+## every refusal path in these writers pushes a warning.
+func _strip_comment(line: String) -> String:
+	var in_str: bool = false
+	var quote: String = ""
+	for i in line.length():
+		var c: String = line[i]
+		if in_str:
+			if c == quote and (i == 0 or line[i - 1] != "\\"):
+				in_str = false
+		elif c == "\"" or c == "'":
+			in_str = true
+			quote = c
+		elif c == "#":
+			return line.substr(0, i)
+	return line
+
+
 ## The enclosing function's body FROM THE WRITE ONWARD — per-function rather than per-line, but
 ## forward-only.
 ##
@@ -82,7 +106,7 @@ func _body_after(lines: PackedStringArray, idx: int) -> String:
 	for i in range(idx, lines.size()):
 		if i > idx and str(lines[i]).begins_with("func "):
 			break
-		out += str(lines[i]) + "\n"
+		out += _strip_comment(str(lines[i])) + "\n"
 	return out
 
 
@@ -98,8 +122,8 @@ func _write_opens() -> Array:
 		for line in all_lines:
 			n += 1
 			var fn_body: String = _body_after(all_lines, n - 1)
-			var s: String = (line as String).strip_edges()
-			if s.begins_with("#"):
+			var s: String = _strip_comment(line as String).strip_edges()
+			if s.is_empty():
 				continue
 			if "FileAccess.open" in s and "WRITE" in s:
 				found.append([path, n, s, fn_body])
