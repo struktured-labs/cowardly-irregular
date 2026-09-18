@@ -933,6 +933,19 @@ for CH in linux windows web; do
         esac
         grep -a 'BLOCKED\|VERDICT\|FAIL' "tmp/publish_all_${CH}.log" | tail -5 >&2
         echo "[pub] his saves after: $(_saves_cksum)  (before: ${SAVES_BEFORE})" >&2
+        # "Published so far: linux windows" above is an EVENT — how far THIS RUN got. What the
+        # operator has to act on is the STATE: whether the store is serving two different
+        # releases right now. v3.33.422-alpha did exactly that (linux+windows .422, web .421)
+        # and the line that said so was indistinguishable from a progress report.
+        #
+        # ⚠️ REPORTS, NEVER GATES, and the `|| true` is deliberate rather than sloppy: this runs
+        # on a path that is ALREADY exiting non-zero for a real reason, and a reporter that
+        # failed must not replace that verdict with its own. "A missing guard is not a passing
+        # one" is the rule for GUARDS; converting a channel RED into a reporter RED would lose
+        # the diagnosis the operator actually needs.
+        if [ "$DRY_RUN" -eq 0 ] && [ -x tools/report_split_store.sh ]; then
+            ./tools/report_split_store.sh "$TAG" "$PUBLISHED" >&2 || true
+        fi
         exit 1
     fi
     PUBLISHED="${PUBLISHED}${PUBLISHED:+ }${CH}"
