@@ -10,6 +10,20 @@ extends RefCounted
 ## The autoload is passed IN rather than resolved here: an autoload read from a `static func`
 ## aborts and yields the return type's default, which for this would be an empty map — silently
 ## restoring nothing while every arm stays green.
+##
+## ⚠️ RESTORE TARGET: the PRIOR SNAPSHOT, not a declared default. That makes this a CONDUIT —
+## it does not mask an upstream leaker, and it gives a wired file no immunity of its own. A
+## sibling helper restoring to DECLARED DEFAULTS is a BARRIER instead: it cleans up whoever
+## leaked before it, so anything probing downstream sees clean and the real polluter is
+## invisible. Neither is wrong; they answer different questions, and a probe run after a wired
+## file means different things under each. Stated because the fleet wrote three teardown helpers
+## in one night with three restore targets and none of them said which.
+##
+## POSITION: both calls are safe anywhere in their hook BECAUSE they cannot abort — the null
+## guards above return rather than throwing. That matters: a restore placed LAST is skipped
+## entirely if any line above it errors, and a snapshot placed below one captures nothing and
+## then writes an empty baseline over live state. Placing either first is only available when
+## nothing after it writes character_profiles; it is not a general rule.
 
 
 static func snapshot(abs_sys) -> Dictionary:
