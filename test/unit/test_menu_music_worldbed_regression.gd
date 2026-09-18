@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Regression: entering/exiting the overworld menu in a W2+ overworld restored the wrong
 ## music (struktured, in-play report 2026-08-08). Root cause was the two-API hazard:
 ## GameLoop snapshotted the RAW SoundManager._current_music STRING, which is empty for
@@ -64,3 +66,8 @@ func test_gameloop_menu_path_uses_state_api() -> void:
 		"menu teardown must restore via restore_music_state()")
 	assert_false(src.contains("_pre_menu_music_track"),
 		"the raw-string snapshot must be GONE — it cannot carry area beds")
+
+## Leave the music autoload as a fresh process starts it — `stop_music()` does not cover
+## `_current_area`, `_current_world_suffix` or the player's level, and this file moved them.
+func after_all() -> void:
+	SoundState.restore()
