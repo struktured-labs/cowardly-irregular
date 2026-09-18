@@ -151,7 +151,12 @@ func _ally_targeted_effects() -> Dictionary:
 func test_a_beneficial_effect_with_no_polarity_TWIN_still_avoids_the_blip() -> void:
 	## SECOND CORPUS, SAME DEFECT, AND THIS FILE WAS GREEN ACROSS IT THE WHOLE TIME.
 	## The pair arm above can only see an effect that HAS an X_up/X_down twin. Measured
-	## 2026-09-18: 24 beneficial effects have no twin — mp_restore_and_ap (Inspiring Melody),
+	## ⛔ NO COUNT PINNED HERE ON PURPOSE — the assert below DERIVES it and prints it on failure.
+	## The first draft of this comment said "24", which was ability ROWS; distinct EFFECTS were 22,
+	## and the correction that moved dispel_and_self_buff to the debuff arm made it 21 the same
+	## hour. Three figures for one fact, in prose, inside a file whose arms were correct throughout
+	## (@cowir-music's third rung, 2026-09-18). Examples, which is what prose is for:
+	## mp_restore_and_ap (Inspiring Melody),
 	## reflect (Magic Reflect), invisible (Vanish), evasion (Burrow), brave_actions (Brave),
 	## damage_absorb (Fill the Void) — so they fall straight to `_:` -> play_status -> manifest
 	## miss -> the DESCENDING blip, on top of their own cast cue. Fourteen are literally
@@ -186,7 +191,7 @@ func test_a_beneficial_effect_with_no_polarity_TWIN_still_avoids_the_blip() -> v
 func test_an_ally_TARGETED_but_ally_HOSTILE_effect_keeps_the_debuff_cue() -> void:
 	## ⛔ THE LIMIT OF THE DERIVATION ABOVE, PINNED BY VALUE SO IT CANNOT BE QUIETLY REMOVED.
 	## target_type answers WHO IS AIMED AT, not WHO IS HELPED, and those diverge in exactly one
-	## shipped row (measured 2026-09-18, all 22 ally-targeted catch-all effects read against their
+	## shipped row (measured 2026-09-18, every ally-targeted catch-all effect read against its
 	## BattleManager handlers): `dispel_and_self_buff` is target_type single_ally and STRIPS that
 	## ally's buffs — BattleManager's own comment calls it "(sacrifice)" and logs it in
 	## penalty_bbcode. Its base effect `dispel` is already in the debuff arm, so the codebase had
