@@ -1,5 +1,8 @@
 extends GutTest
 
+## Shared stripper: the pins below are assert-PRESENT, so prose naming the symbol satisfies them.
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
+
 ## Overworld reachability framework (2026-07-13 — Castle Harmonia was
 ## unreachable because its AreaTransition collision box overlapped
 ## CaveEntrance by 2 tiles wide; cave sibling registered first, stole every
@@ -131,11 +134,18 @@ func test_interaction_router_uses_nearest_hit_selection() -> void:
 	# physics query results. Even with the geometry-reachability test above,
 	# a code regression that flips back to first-hit-wins would re-open the
 	# whole class. Pin the routing shape.
-	var src := FileAccess.get_file_as_string("res://src/exploration/OverworldController.gd")
-	assert_true("_pick_nearest_interactable" in src,
+	# ⛔ THE CODE HALF, AND A RIGHT BOUND ON BOTH PINS. They read RAW source and carried no paren,
+	# so `## kept: func _pick_nearest_interactable selects by distance` beside a renamed
+	# `_pick_closest_thing` left this arm at EC=0 / Passing 3 with nearest-hit selection GONE
+	# (measured 2026-09-18). find+substr on ONE string and no line numbers printed, so the strip
+	# is free here. Found by cowir-music running who_guards.py for prior art on the same fact.
+	var src := str(GdSource.split(FileAccess.get_file_as_string("res://src/exploration/OverworldController.gd"))["code"])
+	assert_true("intersect_point" in src,
+		"CONTROL: the strip ate a known code site in OverworldController — every pin below would be asserting over an emptied corpus")
+	assert_true("_pick_nearest_interactable(" in src,
 		"OverworldController must use nearest-hit selection for overlapping-transition disambiguation — first-hit iteration order lets earlier siblings steal every ui_accept in shared cells")
 	# The helper must actually pick by distance (guard against a rename-only refactor that reintroduces first-hit).
-	var i := src.find("func _pick_nearest_interactable")
+	var i := src.find("func _pick_nearest_interactable(")
 	assert_gt(i, -1, "helper must exist as its own function")
 	var body := src.substr(i, 600)
 	assert_true("distance_squared_to" in body,
