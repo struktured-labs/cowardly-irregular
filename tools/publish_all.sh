@@ -576,73 +576,20 @@ fi
 # all of them explaining that it has none -- it takes a bitrate, and says so because passing
 # --selftest once created a tier directory named "music_--selftestk". A corpus built on
 # `grep -l -- --selftest` includes it and blocks every publish on a usage error.
-_ST_CORPUS="$(python3 - <<'PYEOF'
-import os, re, subprocess, sys
-# BOTH globs, or REF's language list is decorative: the frontier check below rejects any name
-# not in `tracked`, so listing only *.sh silently vetoed every python tool no matter what REF
-# said. Two places encoded the same scope and only one was widened — caught immediately by the
-# membership floor below, which is the whole reason it is a membership floor and not a count.
-tracked = set(os.path.basename(p) for p in subprocess.run(
-    ["git", "ls-files", "tools/*.sh", "tools/*.py"], capture_output=True, text=True).stdout.split())
-if not tracked:
-    sys.exit("could not list tracked shell tools")
-# A reference is ANY tracked tool basename in a non-comment line. Anchoring on "tools/"
-# looked tighter and silently lost the entire desktop chain: deploy_linux.sh reaches it as
-#     exec env PLAT=linux "$(dirname "$0")/deploy_desktop.sh" "$@"
-# so deploy_desktop.sh and everything it invokes were invisible to the derivation.
-# BOTH LANGUAGES. This was `.sh` only until 2026-09-18, which excluded every PYTHON gate on
-# the publish path BY CONSTRUCTION — a derivation that cannot name a whole language. Measured
-# then: 7 .py gates invoked by this chain, their arms run from THREE separate hand-lists in two
-# files, and check_pck_complete.py — called at deploy_desktop:574, deploy_web:464 and
-# make_web_stage:303, on every desktop AND web publish — had 8 working arms that nothing ran.
-REF = re.compile(r"([A-Za-z0-9_]+\.(?:sh|py))")
-# DISPATCHES on the flag: a case arm, a test against $1, or python's quoted form.
-DISP = re.compile(r'^[^#]*(--selftest\)|=[ \t]*"?--selftest"?|["\']--selftest["\'])')
-seen, frontier = set(), ["publish_all.sh"]
-while frontier:
-    b = frontier.pop()
-    if b in seen:
-        continue
-    p = os.path.join("tools", b)
-    if not os.path.isfile(p):
-        continue
-    seen.add(b)
-    for line in open(p, encoding="utf-8", errors="replace"):
-        if line.lstrip().startswith("#"):
-            continue
-        for m in REF.finditer(line):
-            if m.group(1) in tracked and m.group(1) not in seen:
-                frontier.append(m.group(1))
-# STRUCTURAL FLOOR, not a magic number: this chain publishes desktop and web, so a closure
-# that has not reached both channel scripts did not walk the chain. That is exactly the bug
-# the "tools/" anchor caused, and a count-based floor would have passed straight over it.
-for required in ("deploy_desktop.sh", "deploy_web.sh"):
-    if required not in seen:
-        sys.exit("closure never reached %s -- the derivation is broken, not the tree" % required)
-# TWO CONVENTIONS, and a tool qualifies under either: a --selftest FLAG, or a sibling
-# <base>_selftest.py holding the arms. The sibling files are themselves EXCLUDED — they ARE
-# the arms, not a subject with arms, exactly as the .sh selftest files always were.
-def _has_arms(b):
-    p = os.path.join("tools", b)
-    if any(DISP.match(l) for l in open(p, encoding="utf-8", errors="replace")):
-        return True
-    return b.endswith(".py") and os.path.isfile(os.path.join("tools", b[:-3] + "_selftest.py"))
-
-corpus = sorted(
-    b for b in seen - {"publish_all.sh"}
-    if not b.endswith(("_selftest.sh", "_selftest.py")) and _has_arms(b))
-
-# ⛔ MEMBERSHIP FLOOR, NOT A COUNT. A count floor is satisfied by a SURVIVOR: if the REF
-# pattern regressed to .sh-only the corpus would still be 18 tools and still look healthy,
-# which is how the python half was invisible for months. Requiring one member of EACH
-# language makes a whole language going missing LOUD. (cowir-controller, 2026-09-18.)
-if not any(b.endswith(".sh") for b in corpus):
-    sys.exit("derived corpus contains no .sh tool -- the derivation is broken, not the tree")
-if not any(b.endswith(".py") for b in corpus):
-    sys.exit("derived corpus contains no .py tool -- the derivation is broken, not the tree")
-print(" ".join(corpus))
-PYEOF
-)" || { echo "[pub] BLOCKED: could not derive the selftest corpus: ${_ST_CORPUS}" >&2; exit 4; }
+# Derivation moved OUT of this file 2026-09-18 -> tools/derive_selftest_corpus.py, so that the
+# guard deciding which OTHER guards get checked could finally have arms of its own. This file
+# is the one script on the path that by convention has no selftest, so anything living inside
+# it is untestable by construction. Contract: stdout = the corpus, nonzero = blocked, reason
+# on stderr.
+#
+# The reason is CAPTURED, not left on the terminal: this BLOCKED line used to interpolate
+# ${_ST_CORPUS}, which on the failure path is EMPTY by definition -- it promised a reason and
+# printed a blank. A label that cannot carry its own content is not reporting.
+mkdir -p tmp
+_ST_ERRF="tmp/derive_selftest_corpus.err"
+_ST_CORPUS="$(python3 tools/derive_selftest_corpus.py 2>"$_ST_ERRF")" || {
+    echo "[pub] BLOCKED: could not derive the selftest corpus: $(cat "$_ST_ERRF" 2>&1)" >&2
+    exit 4; }
 if [ -z "$_ST_CORPUS" ]; then
     echo "[pub] BLOCKED: the derived selftest corpus is EMPTY. An empty corpus runs no arms and" >&2
     echo "      reports the same silence as a corpus that passed." >&2
