@@ -636,6 +636,7 @@ const STATUS_ALIASES := {
 	"burn": "burning",
 	"amplify_poison": "festered",
 	"memory_leak_status": "memory_leak",
+	"ability_silence": "silence",
 }
 
 

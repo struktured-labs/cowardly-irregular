@@ -5095,6 +5095,9 @@ func _apply_ability_status(caster: Combatant, target: Combatant, ability: Dictio
 	# burn aliases to burning — 5 fire abilities AND the random-debuff pool author "burn", but the 8%/turn DoT in Combatant ticks only "burning". Measured: burn 100->100, burning 100->92. Aliasing at apply (not widening the tick) also gets burn into the cleanse and negative-status lists, which already say "burning".
 	if status_to_add == "burn":
 		status_to_add = "burning"
+	## null_field authors ability_silence and is type "magic", so it lands HERE, never at _execute_support_ability's arm for it — and the gate is has_status("silence") (JobSystem:721, BattleManager:4669/7767).
+	if status_to_add == "ability_silence":
+		status_to_add = "silence"
 	## amplify_poison and memory_leak_status name the EFFECT; Combatant:784/:842 read "festered"/"memory_leak". Same alias class as freeze and burn above — fester and memory_leak are type "magic", so they arrive HERE and never at _execute_support_ability's arms for those effects.
 	if status_to_add == "amplify_poison":
 		status_to_add = "festered"
