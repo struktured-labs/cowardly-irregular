@@ -1,4 +1,6 @@
 extends SceneTree
+
+const ShotGuard = preload("res://tools/shot_guard.gd")
 ## Loads a W2-W6 dungeon, jumps to a floor, renders and writes tmp/screens/<cave_id>_f<N>.png. Needs xvfb-run. Modeled on contrarian_depths_screenshot.gd.
 
 func _init() -> void:
@@ -31,6 +33,6 @@ func _init() -> void:
 	var img := root.get_texture().get_image()
 	DirAccess.make_dir_recursive_absolute("res://tmp/screens")
 	var out := "res://tmp/screens/%s_f%d.png" % [str(scene.cave_id), target_floor]
-	img.save_png(out)
+	ShotGuard.save_or_refuse(img, out)
 	print("[SCREEN] wrote %s (%dx%d) at floor %d" % [out, img.get_width(), img.get_height(), scene.current_floor])
-	quit(0)
+	quit(3 if ShotGuard.refused > 0 else 0)
