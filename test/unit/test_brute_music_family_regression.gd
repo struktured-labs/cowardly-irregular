@@ -58,7 +58,7 @@ func _route_and_get_path(track: String) -> String:
 	## An EMPTY resource_path means the stream loaded but carries no path — the signature of
 	## a stale import cache, not of a routing bug. Naming it here because the old message
 	## read "routed to , not the brute theme", which cost cowir-ai a diagnosis on 2026-08-22.
-	return "<empty resource_path — STALE IMPORT CACHE? run: godot --headless --audio-driver Dummy --import>" if path.is_empty() else path
+	return "<empty resource_path — STALE IMPORT CACHE? run: XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import>" if path.is_empty() else path
 
 func test_every_brute_key_routes_to_the_brute_theme() -> void:
 	## CONVERTED from a source pin on the match arm. Pinning the arm text asserts a
