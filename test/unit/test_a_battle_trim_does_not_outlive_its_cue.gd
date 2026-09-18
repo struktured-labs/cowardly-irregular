@@ -97,6 +97,32 @@ func test_the_level_owner_is_one_function() -> void:
 		"base+trim is computed inline %d times outside the owner — that is how play_battle and play_attack_hit disagreed" % inline)
 
 
+func test_the_level_owner_computes_base_plus_trim() -> void:
+	## ⚠️ EVERY OTHER ARM IN THIS FILE, and all six in the power-trim guard next door, take
+	## _battle_level's OUTPUT as their reference — so an error INSIDE it moves both sides of those
+	## asserts and cannot be seen. Measured 2026-09-18 with `base + trim*2.0`: 11 of 12 arms across
+	## the two files pass, and this one is the 12th. A sign flip and a wrong .get() default ARE caught
+	## elsewhere (the two CONTROL arms above red on both); magnitude is the direction nothing else had.
+	## The constants are read here directly because they are the one reference the owner cannot move.
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	var consts: Dictionary = sm.get_script().get_script_constant_map()
+	var base: float = float(consts["SFX_BATTLE_BASE_DB"])
+	var trims: Dictionary = consts["_BATTLE_VOLUME_TRIM_DB"]
+	assert_gt(trims.size(), 0, "CONTROL: the trim table is empty — this arm would judge nothing")
+	## Derived over the WHOLE table, so a trim authored tomorrow is covered without editing this file.
+	for key in trims.keys():
+		var got: float = float(sm._battle_level(str(key)))
+		assert_eq(got, base + float(trims[key]),
+			"_battle_level(%s) = %.2f, not %.2f + %.2f — the owner's arithmetic drifted from the table it reads" % [key, got, base, float(trims[key])])
+	## The .get() default is the other half of the contract: an UNTRIMMED cue must land on the bare
+	## channel base, not inherit a neighbour's correction.
+	var untrimmed: float = float(sm._battle_level("zz_no_such_cue_exists"))
+	assert_eq(untrimmed, base,
+		"an untrimmed cue resolved to %.2f instead of the %.2f channel base" % [untrimmed, base])
+
+
 func test_every_member_this_file_reaches_for_still_exists() -> void:
 	var sm: Node = _sm()
 	assert_not_null(sm, "CONTROL: SoundManager autoload must be present")

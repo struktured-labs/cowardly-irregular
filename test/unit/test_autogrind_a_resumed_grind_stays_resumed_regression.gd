@@ -92,3 +92,37 @@ func test_stopping_discards_a_queued_pause() -> void:
 	_c.stop_grind("test")
 	assert_false(_c._pause_requested,
 		"a queued pause survived stop_grind — the next session would pause itself after its first battle")
+
+
+## ⛔ THE MIRROR ORDER, WHICH MY OWN FIX DID NOT COVER. @cowir-music: a design that handles one
+## order and breaks its mirror is only found by tracing both. GameLoop's control is a TOGGLE —
+## `if is_paused(): resume_grind() else: pause_grind()` — and `is_paused()` is `_state == PAUSED`,
+## which is FALSE while a battle runs. So a second press during the same battle does not cancel the
+## queued pause, it re-requests it: the player changes their mind and the grind pauses anyway when
+## the battle ends. The immediate path toggles; the deferred path only ever accumulates.
+func test_pressing_pause_twice_in_one_battle_cancels_the_queued_pause() -> void:
+	_c._state = _c.State.BATTLE_RUNNING
+	_c.pause_grind()
+	assert_true(_c._pause_requested, "CONTROL: the first press must queue a pause")
+
+	## The same control, pressed again, with the battle still running. GameLoop routes this back to
+	## pause_grind because is_paused() is false.
+	_c.pause_grind()
+	assert_false(_c._pause_requested,
+		"a second press during the same battle re-queued the pause instead of cancelling it — the " +
+		"player changed their mind and the grind still stops when the battle ends")
+
+	_c.on_battle_ended(true, 0, {})
+	assert_false(_c.is_paused(),
+		"the cancelled pause still fired at battle end")
+
+
+## And a third press must queue it again — cancelling must not disable the feature.
+func test_a_third_press_queues_the_pause_again() -> void:
+	_c._state = _c.State.BATTLE_RUNNING
+	_c.pause_grind()
+	_c.pause_grind()
+	_c.pause_grind()
+	assert_true(_c._pause_requested, "CONTROL: pause/cancel/pause must end queued, or the toggle is one-way")
+	_c.on_battle_ended(true, 0, {})
+	assert_true(_c.is_paused(), "the re-queued pause must still activate at battle end")

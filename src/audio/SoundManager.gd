@@ -1136,6 +1136,14 @@ func _on_time_of_day_changed_for_ambience(band: String) -> void:
 ## step would be audibly obvious.
 var _duck_tween: Tween = null
 var _duck_active: bool = false
+## Every object currently holding the dialogue duck. A BOOL could not serve more than one holder:
+## OverworldNPC:1226 creates its own NPCDialogue per NPC (each with its own CutsceneDialogue) and
+## CutsceneDirector creates another, so the second one's release ended the first one's duck.
+## ⛔ A SET, NOT A COUNT. A refcount fails toward "ducked forever" when a holder leaks; a set is
+## idempotent per holder, so a double release cannot over-decrement, and the prune below drops a
+## holder freed without releasing. Correct in BOTH orders -- my first sketch tracked a single OWNER
+## and still released early when the owner finished first.
+var _duck_holders: Array = []
 
 
 func _ensure_music_duck_bus() -> void:
@@ -1164,10 +1172,28 @@ func _ensure_music_duck_bus() -> void:
 ## Scope per cowir-main msg 2700: CutsceneDialogue + NPCDialogue only.
 ## Battle speech bubbles must NOT call this (they're seasoning, not
 ## conversation — ducking on every quip would exhaust the player).
-func duck_music_for_dialogue(active: bool) -> void:
-	if active == _duck_active:
+## `holder` identifies the caller so two simultaneous conversations cannot end each other's duck.
+## Omitting it keeps the old contract -- an unidentified release lifts the duck unconditionally --
+## so a caller that does not know who it is behaves exactly as before.
+func duck_music_for_dialogue(active: bool, holder: Object = null) -> void:
+	## A holder freed without releasing must not strand the duck; drop it before deciding.
+	var live: Array = []
+	for h in _duck_holders:
+		if h != null and is_instance_valid(h):
+			live.append(h)
+	_duck_holders = live
+	if holder != null:
+		if active:
+			if not _duck_holders.has(holder):
+				_duck_holders.append(holder)
+		else:
+			_duck_holders.erase(holder)
+	## Ducked while ANYONE still holds it. An unidentified caller still decides outright.
+	var want: bool = active if holder == null else not _duck_holders.is_empty()
+	if want == _duck_active:
 		return  # idempotent, no thrash
-	_duck_active = active
+	active = want
+	_duck_active = want
 	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
 	if idx == -1:
 		_ensure_music_duck_bus()
