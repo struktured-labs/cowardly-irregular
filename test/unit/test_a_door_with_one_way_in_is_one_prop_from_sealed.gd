@@ -1,5 +1,7 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+
 ## Village interior doors need a PRESS, and in a dense village everything competes for it.
 ##
 ## `BaseVillage._setup_transitions` sets `require_interaction = true` on every interior door (the
@@ -193,3 +195,8 @@ func test_a_door_that_answers_nothing_is_reported() -> void:
 		"opens == 0, so if that state is unreachable the offender branch never runs")
 	assert_gt(int(after["walkable"]), 0,
 		"and it must still have walkable cells beside it, or the main arm skips it as a different defect")
+
+## This file stands up a map, whose `_ready` calls `play_area_music` — so it writes
+## `_current_area`, `_current_world_suffix` and `_music_playing` without naming any of them.
+func after_all() -> void:
+	SoundState.restore()
