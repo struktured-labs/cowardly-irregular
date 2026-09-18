@@ -39,6 +39,7 @@ Usage in a generating tool, one line before the write:
 
 Exit: refuses via SystemExit, which a tool run from the shell reports as a non-zero exit.
 """
+import json
 import os
 import sys
 from pathlib import Path
@@ -117,7 +118,23 @@ def _sprite_relative(p: Path):
     return None
 
 
+def _declared_tier(job_id: str) -> str:
+    """The manifest tier declared for a party job sheet, or "" when nothing declares one."""
+    for root in _sprite_roots():
+        mf = Path(root) / "data" / "sprite_manifest.json"
+        if not mf.is_file():
+            continue
+        try:
+            entry = json.loads(mf.read_text()).get("sheets", {}).get(job_id, {})
+        except (OSError, ValueError):
+            continue
+        if isinstance(entry, dict) and entry.get("tier"):
+            return str(entry["tier"])
+    return ""
+
+
 # CLAUDE.md's tier table is the whole vocabulary of a write decision.
+ARTIST_BASELINE_TAG_NOTE = "the artist baseline tag"
 _WRITABLE_TIERS = frozenset({"T0", "T1"})    # procedural placeholder · AI prototype
 _PROTECTED_TIERS = frozenset({"T2", "T3"})   # artist draft · artist final
 
@@ -151,7 +168,7 @@ def tier_refusal(tier, subject: str = "this sheet") -> str:
             f"unrecognised tier is unknown provenance, and unknown is not T1.")
 
 
-def protected_anims(job_id: str, _evidence=None) -> list:
+def protected_anims(job_id: str, _evidence=None, _tier=None) -> list:
     """Animation names in this job that must survive a regeneration.
 
     Union of what git can prove and what the legacy list asserts, because the two have
@@ -159,7 +176,22 @@ def protected_anims(job_id: str, _evidence=None) -> list:
     """
     evidence = _evidence or _artist_evidence()
     derived = {line.split(".png")[0] for line in evidence(f"assets/sprites/jobs/{job_id}")}
-    return sorted(derived | set(_LEGACY_PROTECTED.get(job_id, [])))
+    out = sorted(derived | set(_LEGACY_PROTECTED.get(job_id, [])))
+    # An EMPTY set for artist-tier work is the one answer that destroys everything while looking
+    # green -- the rule this module already applies to an unimportable oracle, applied to an oracle
+    # that answers nothing. Evidence is byte-identity with ONE tag, so any delivery after it has
+    # none, and the legacy floor covers two jobs.
+    if not out:
+        tier = _tier if _tier is not None else _declared_tier(job_id)
+        if tier in _PROTECTED_TIERS:
+            raise SystemExit(
+                f"[artist_guard] REFUSING: '{job_id}' is manifest tier {tier} (ARTIST work) and the "
+                f"provenance oracle proved NOTHING about it, so every animation would regenerate "
+                f"unprotected. Evidence is byte-identity with {ARTIST_BASELINE_TAG_NOTE}; art "
+                f"delivered or revised after it has none. Add '{job_id}' to _LEGACY_PROTECTED with "
+                f"the animations that must survive, or re-anchor the baseline."
+            )
+    return out
 
 
 def is_protected(path, _evidence=None) -> bool:
@@ -231,6 +263,33 @@ def selftest() -> int:
     check("a non-string tier refuses", bool(tier_refusal(None)), True)
     check("an unrecognised tier is not called ARTIST work",
           "ARTIST" in tier_refusal("T2_artist_draft"), False)
+
+    # AN EMPTY PROTECTED SET IS THE DESTROY-EVERYTHING ANSWER. The import path already refuses on
+    # it; the DERIVATION path returned [] silently, and gen_full_sweep consults nothing else.
+    # Measured 2026-09-18: protected_anims("bard") == [] with 62 artist files on disk at tier T2.
+    print("  -- an empty protected set for artist-tier work --")
+
+    def _raises(fn):
+        try:
+            fn()
+            return False
+        except SystemExit:
+            return True
+
+    none_ = lambda _p: []
+    some_ = lambda _p: ["idle.png", "cast.png"]
+    check("empty oracle + T2 REFUSES",
+          _raises(lambda: protected_anims("zz_probe", _evidence=none_, _tier="T2")), True)
+    check("empty oracle + T3 REFUSES",
+          _raises(lambda: protected_anims("zz_probe", _evidence=none_, _tier="T3")), True)
+    check("empty oracle + T1 proceeds (AI art is regenerable)",
+          protected_anims("zz_probe", _evidence=none_, _tier="T1"), [])
+    check("empty oracle + unknown tier proceeds (protected_anims is not the tier gate)",
+          protected_anims("zz_probe", _evidence=none_, _tier=""), [])
+    check("oracle answers + T2 proceeds, no refusal",
+          protected_anims("zz_probe", _evidence=some_, _tier="T2"), ["cast", "idle"])
+    check("a LEGACY job survives an empty oracle",
+          protected_anims("fighter", _evidence=none_, _tier="T2") != [], True)
 
     with tempfile.TemporaryDirectory() as d:
         real = Path(d) / "idle.png"
