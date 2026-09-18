@@ -18,6 +18,9 @@ extends GutTest
 ## until the new one is complete on disk, and a failed rename reports false rather than lying.
 
 const SLOT := 94
+## The functions in this file that persist player data. The one hand-list in an otherwise derived
+## arm, and it is deliberate: a derived corpus shrinks silently, a named one reds.
+const PERSISTERS := ["_write_save_file", "save_settings"]
 const SENTINEL := '{"sentinel":"PREVIOUS","keep":true}'
 
 
@@ -139,8 +142,29 @@ func test_no_writer_in_this_file_opens_its_destination() -> void:
 		else:
 			offenders.append(t)
 
+	## ⛔ A COUNT FLOOR IS SATISFIED BY A SURVIVOR. This was `staged_writes > 0`, and it passed with
+	## BOTH writers gone: planting the .434 refactor — hoist each open into a shared `_write_staged`
+	## helper — left one staged write (the helper's) above the floor, offenders empty, arm GREEN.
+	## Every subject had left the derivation and the only thing that red was the per-function arm.
+	## So the floor is MEMBERSHIP, by name: each persister must carry its own staged write.
+	## (cowir-controller's rule, cowir-sfx's second instance, this is the third.)
 	assert_gt(staged_writes, 0,
 		"CONTROL: no staged write found in SaveSystem.gd — either the repair is gone or this arm stopped matching it")
+	for fn in PERSISTERS:
+		var start := src.find("func " + fn)
+		assert_gt(start, -1,
+			"PERSISTER %s is gone from SaveSystem.gd — if it was renamed, rename it here too; this list exists so a disappearance is LOUD rather than a silently smaller corpus" % fn)
+		if start == -1:
+			continue
+		var end := src.find("\nfunc ", start + 1)
+		var body := src.substr(start, (end - start) if end > start else -1)
+		## ⛔ NOT `contains("staged")` — MY FIRST ATTEMPT AT THIS FLOOR, AND IT DID NOT FIRE.
+		## Hoisting the open into a helper leaves `var staged := path + ".new"` in place, so the
+		## token survives while the write leaves. A name satisfied for a reason unrelated to the
+		## property, committed inside the fix for exactly that. The arm's corpus is
+		## `FileAccess...WRITE` lines, so the floor must assert what the corpus can SEE.
+		assert_true(body.contains("FileAccess.WRITE"),
+			"%s no longer performs its own write — it may be correct (a helper can stage and rename just as well), but this arm derives its corpus from FileAccess...WRITE lines and can no longer see it, so a file with every writer delegated would report ZERO offenders and a clean bill. Inline it, or extend this arm to follow the delegate." % fn)
 	assert_eq(offenders, [],
 		"a writer in SaveSystem.gd opens its real destination with WRITE, which truncates the player's file before the replacement exists: %s" % str(offenders))
 
@@ -169,3 +193,144 @@ func test_the_settings_writer_reports_a_failure_it_used_to_swallow() -> void:
 	## player who configures it once may never trigger the next save that would truncate an orphan.
 	assert_true(body.contains("push_error"),
 		"a failed remove of the staging file leaves the player's API key in plaintext at settings.json.new and says nothing — it needs its own loud branch naming the path")
+
+
+## ⛔ EVERY ARM ABOVE KEYS ON `FileAccess.open(…, WRITE)`. A write by ANY OTHER MECHANISM is not an
+## offender and not a missing member — it is INVISIBLE (cowir-sfx's fourth-form lens, via
+## cowir-autogrind). This file persists the save slot and the settings, so a future writer using
+## another form would bypass both the staging requirement and every check above it.
+##
+## Zero today, and ALL EIGHT PATTERNS ARE MUTATION-PROVEN rather than asserted: planting one
+## function that uses every form makes this arm name every one of them
+## (ResourceSaver.save · store_var · store_buffer · store_line · save_png · save_to_file ·
+## open_encrypted · open_compressed). cowir-autogrind closed the same caveat on their file by
+## planting each in turn; this is the combined version, and it works because the arm appends one
+## offender per (line, form) so each pattern must name itself.
+##
+## ⚠️ THE COMBINED PLANT ALSO TRIPS SIBLING ARMS — it opens a non-staged path — so it proves the
+## patterns MATCH and is NOT evidence of "siblings silent". The per-form mutation that showed
+## coverage rather than duplication was the single ResourceSaver.save plant.
+##
+## ⛔ AND THE LIMIT THAT CANNOT BE CLOSED: THE LIST IS HAND-WRITTEN, SO A NINTH FORM IS UNBOUNDED.
+## This arm is not "no exotic write can exist"; it is "none of these eight, and nobody has taught
+## it a ninth". A hand-written list cannot SHRINK with its subject the way a self-referential floor
+## can (cowir-sfx's `elements.keys()` case) — it can only be SHORT, which is the failure this file
+## can live with.
+const OTHER_WRITE_FORMS := [
+	"ResourceSaver.save", "store_var", "store_buffer", "store_line",
+	"save_png", "save_to_file", "open_encrypted", "open_compressed",
+]
+
+
+func test_no_write_reaches_disk_by_a_form_these_arms_cannot_see() -> void:
+	var f := FileAccess.open("res://src/save/SaveSystem.gd", FileAccess.READ)
+	assert_not_null(f, "could not read SaveSystem.gd")
+	if f == null:
+		return
+	var src := f.get_as_text()
+	f.close()
+
+	## ⛔ A LIST-DRIVEN ARM IS VACUOUS WHEN THE LIST IS EMPTY, AND MINE WAS: emptying
+	## OTHER_WRITE_FORMS left this file at 7 passing, EC=0. The GameLoop control below proves the
+	## READ works, not that the list has members — two different things, and only one was checked.
+	## (cowir-sprites' case: their protection derivation returns an empty set for `bard` and reports
+	## "nothing is artist work", the one answer that destroys everything while looking green.)
+	##
+	## ⚠️ MEMBERSHIP, NOT A COUNT — a size floor is satisfied by a survivor, which is the hole this
+	## whole file spent the evening closing. Named forms, so removing one is loud.
+	for required in ["ResourceSaver.save", "store_var", "save_png", "open_encrypted"]:
+		assert_true(OTHER_WRITE_FORMS.has(required),
+			"OTHER_WRITE_FORMS no longer lists %s — this arm reports a clean file by not looking for it, and an emptied list passes with nothing checked" % required)
+
+	var offenders: Array = []
+	var line_no := 0
+	for line in src.split("\n"):
+		line_no += 1
+		var t := line.strip_edges()
+		if t.begins_with("#"):
+			continue
+		for form in OTHER_WRITE_FORMS:
+			if t.contains(form):
+				offenders.append("%s:%d %s" % ["SaveSystem.gd", line_no, form])
+	assert_eq(offenders, [],
+		"a write reaches disk by a form the staging arms above cannot see, so it is neither staged nor flagged: %s" % str(offenders))
+
+	## POSITIVE CONTROL — the patterns must find the forms that DO exist in src/, or this zero is
+	## a dead matcher reporting health. save_png is the live one; the other seven are absent
+	## fleet-wide today, which is why only this one can prove the instrument.
+	var probe := FileAccess.open("res://src/GameLoop.gd", FileAccess.READ)
+	assert_not_null(probe, "CONTROL: could not read GameLoop.gd")
+	if probe == null:
+		return
+	var gl := probe.get_as_text()
+	probe.close()
+	assert_true(gl.contains("save_png"),
+		"CONTROL: the form patterns find nothing in GameLoop.gd, which is known to call save_png — the matcher is dead and the zero above means nothing")
+
+
+## ⛔ THE BURDEN IS INVERTED HERE ON PURPOSE: AN OPEN MUST PROVE IT IS READ-ONLY.
+## Every other arm asks "is this line a write?" and so requires `FileAccess.WRITE` on the open
+## line. A hoisted mode defeats all of them — `var mode := FileAccess.WRITE` then
+## `FileAccess.open(path, mode)` — and I verified it: planting that in this file left the whole
+## guard at 6 passing, EC=0, with a live truncating write to a user path (cowir-autogrind, who
+## planted the same form and found two guards blind at once). So a mode this scan cannot read as
+## read-only is a write CANDIDATE, not a pass.
+##
+## ⚠️ ORDER IS LOAD-BEARING: `READ_WRITE` CONTAINS `READ`, so the write forms are tested FIRST or
+## the widest mode reads as the safest.
+## ⚠️ AND THE PAREN IS LOAD-BEARING: `:1091` says "FileAccess.open failed" inside a push_warning
+## STRING. Requiring `FileAccess.open(` keeps prose out of a source scan.
+func test_every_open_here_proves_it_is_read_only_or_is_staged() -> void:
+	var f := FileAccess.open("res://src/save/SaveSystem.gd", FileAccess.READ)
+	assert_not_null(f, "could not read SaveSystem.gd")
+	if f == null:
+		return
+	var src := f.get_as_text()
+	f.close()
+
+	var candidates: Array = []
+	var read_only := 0
+	var line_no := 0
+	for line in src.split("\n"):
+		line_no += 1
+		var t := line.strip_edges()
+		if t.begins_with("#") or not t.contains("FileAccess.open("):
+			continue
+		if _classify_open(t) == "read":
+			read_only += 1
+			continue
+		## a write, or a mode this scan cannot read: it must be opening the staging path
+		if not t.contains("staged"):
+			candidates.append("SaveSystem.gd:%d %s" % [line_no, t])
+
+	assert_gt(read_only, 0,
+		"CONTROL: no read-only open found in SaveSystem.gd — this file demonstrably reads its own save and settings, so the classifier is not reading modes at all and every pass below is vacuous")
+	assert_eq(candidates, [],
+		"an open here neither proves it is read-only nor targets the staging path, so it may truncate the player's file where nothing can see it: %s" % str(candidates))
+
+## Extracted so the classifier can be exercised on CONSTRUCTED input, which is the only place both
+## answers exist: this file holds no open with an unreadable mode, so the corpus cannot test the
+## OVER-MATCH direction. cowir-controller measured that their equivalent control passed while
+## matching EVERYTHING — `READABLE_MODES = ["FileAccess."]` classified every open as safe and the
+## arm went permanently silent with its control still green.
+##
+## ⚠️ ORDER IS LOAD-BEARING: READ_WRITE contains READ, so the write forms are tested FIRST.
+func _classify_open(line: String) -> String:
+	if line.contains("FileAccess.WRITE") or line.contains("READ_WRITE") or line.contains("WRITE_READ"):
+		return "write"
+	if line.contains("FileAccess.READ"):
+		return "read"
+	return "unknown"
+
+
+func test_the_open_classifier_answers_both_ways_on_constructed_input() -> void:
+	## A count over the SAFE class cannot see a classifier that calls everything safe — the failure
+	## mode of an inverted-burden arm is silence, not noise. So both answers are pinned here.
+	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.READ)'), "read",
+		"a literal READ open must classify read-only, or the arm flags every legitimate read in the file")
+	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.WRITE)'), "write",
+		"a literal WRITE open must classify write")
+	assert_eq(_classify_open('var f = FileAccess.open(p, FileAccess.READ_WRITE)'), "write",
+		"READ_WRITE must classify WRITE — it contains READ, so a read-first classifier calls the widest mode the safest")
+	assert_eq(_classify_open('var w := FileAccess.open(path, mode)'), "unknown",
+		"a HOISTED mode must classify unknown, not read — this is the form that left the whole guard at 6 passing with a live truncating write in the file")
