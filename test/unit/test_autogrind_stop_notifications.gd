@@ -45,7 +45,7 @@ func test_show_notification_called_from_manual_stop_path() -> void:
 	if stop_end < 0:
 		stop_end = src.length()
 	var body := src.substr(stop_start, stop_end - stop_start)
-	assert_true(body.contains("_show_grind_stop_notification"),
+	assert_true(body.contains("\t_show_grind_stop_notification("),
 		"_stop_autogrind must call _show_grind_stop_notification(reason) — otherwise tabbed-out players get no notice on interrupt stops")
 
 
@@ -59,7 +59,7 @@ func test_show_notification_called_from_grind_complete_path() -> void:
 	if complete_end < 0:
 		complete_end = src.length()
 	var body := src.substr(complete_start, complete_end - complete_start)
-	assert_true(body.contains("_show_grind_stop_notification"),
+	assert_true(body.contains("\t_show_grind_stop_notification("),
 		"_on_grind_complete must call _show_grind_stop_notification(reason) — otherwise the natural end-of-session doesn't alert")
 
 
@@ -89,7 +89,7 @@ func test_notification_requests_window_attention() -> void:
 	if helper_end < 0:
 		helper_end = src.length()
 	var body := src.substr(helper_start, helper_end - helper_start)
-	assert_true(body.contains("window_request_attention"),
+	assert_true(body.contains("DisplayServer.window_request_attention"),
 		"Notification helper must call DisplayServer.window_request_attention — that's the OS-level piece that flashes the taskbar / bounces the dock icon when the game is tabbed out")
 
 

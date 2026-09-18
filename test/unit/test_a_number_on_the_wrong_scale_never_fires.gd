@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## The grind grammar said "Numeric conditions take op ∈ {…} and value" and named no UNITS,
 ## so the model answered in the units it assumed. A value on the wrong scale validates
 ## clean, reaches the player, and never fires.
@@ -119,6 +124,14 @@ func test_the_autobattle_prompt_does_not_get_the_grind_scales() -> void:
 		{"resolved": true, "job_id": "mage", "kit": ["fire"], "full_kit": ["fire"],
 		"max_mp": 70, "costs": {"fire": 8}})
 	assert_true(p.find("WHAT THE NUMBERS MEAN") == -1, "the grind scale block must not leak")
+
+
+func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)
 
 
 # ── the block cannot fall behind the engine's list ─────────────────────────────

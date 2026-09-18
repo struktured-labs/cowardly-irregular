@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file leaked state a hand-listed teardown cannot name.
+var _ag_state: Dictionary
+
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 ## AutogrindSystem.check_fatigue_event authors SIX descriptions — "Inventory anomaly — items
@@ -75,6 +80,7 @@ var _battles_before: int = 0
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	_sys = AutogrindSystem
 	_battles_before = AutogrindSystem.battles_completed
@@ -84,6 +90,8 @@ func before_each() -> void:
 func after_each() -> void:
 	AutogrindSystem._test_disable_persistence = false
 	AutogrindSystem.battles_completed = _battles_before
+	AutogrindState.restore(_ag_state)
+
 
 
 ## THE ARM THAT WOULD HAVE CAUGHT IT: the signal must reach somebody, and carry the real text.

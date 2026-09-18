@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## Third and last editor with Leo's wedge (2026-08-30: "Everytime i hit Esc, the thing gets
 ## stuck in the pause menu"). AutobattleGridEditor was fixed then; AutogrindGridEditor was not.
 ##
@@ -18,6 +23,7 @@ var _ed: Node = null
 ## Own viewport per test: the shared one latches is_input_handled(), which silently disarms
 ## every _input arm after the first handled press.
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	## Escape's arm calls _save_rules -> set_autogrind_rules -> three files under user://autogrind/
 	AutogrindSystem._test_disable_persistence = true
 	_vp = SubViewport.new()
@@ -34,6 +40,8 @@ func after_each() -> void:
 		_ed.queue_free()
 	_ed = null
 	AutogrindSystem._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 func _action(name: String) -> InputEventAction:

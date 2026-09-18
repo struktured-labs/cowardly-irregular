@@ -31,6 +31,15 @@ func before_each() -> void:
 
 func after_each() -> void:
 	SoundManager.stop_music()
+	## ⛔ AND PUT THE LEVEL BACK BY HAND. These arms let a fade RUN TO COMPLETION, and its callback
+	## stops the player without restoring volume_db -- so the next file inherits -40 against a base of
+	## -12. Measured. `_cancel_pending_fade()` cannot do this job: it returns early unless the tween is
+	## still valid, and by teardown the tween that did the damage has already finished.
+	## Harmless in the PRODUCT because reset_danger() sits above every branch of play_music and
+	## play_area_music and rewrites the level (pinned by test_music_track_resets_danger_modulation);
+	## a test file has no such backstop, and a later file asserting on volume_db reads the -40.
+	if SoundManager._music_player:
+		SoundManager._music_player.volume_db = SoundManager._music_base_db
 
 
 func _armed() -> int:

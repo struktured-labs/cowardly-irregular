@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## Regression coverage for AutogrindHistoryScreen — headless-friendly checks on data
 ## flow (get_session_history -> _entries reversed) and per-row formatting. Actual
 ## visual layout is tested in-project when a UI screenshot pass runs; here we pin
@@ -38,6 +43,7 @@ func _sample_entry(overrides: Dictionary = {}) -> Dictionary:
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 
 
@@ -116,3 +122,7 @@ func test_entries_field_shape_matches_record_session_output() -> void:
 			"collapses", "permadeaths", "items_consumed"]:
 		assert_true(record_body.contains('"%s"' % viewer_field),
 			"AutogrindSystem._record_session no longer writes '%s' — the history viewer will silently show a blank for it. Fix the viewer or update this test." % viewer_field)
+
+
+func after_each() -> void:
+	AutogrindState.restore(_ag_state)

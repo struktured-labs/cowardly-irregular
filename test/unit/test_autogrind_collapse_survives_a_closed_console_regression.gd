@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## A SYSTEM COLLAPSE that fired while the console was closed announced itself to nobody.
 ##
 ## AutogrindUI is the ONLY listener for AutogrindSystem.system_collapse, and _close_ui() calls
@@ -28,6 +33,7 @@ var _ui
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_ags = get_node_or_null("/root/AutogrindSystem")
 	if _ags:
 		_ags._test_disable_persistence = true
@@ -43,6 +49,8 @@ func after_each() -> void:
 	if _ags:
 		_ags.collapse_count = 0
 		_ags.collapses_announced = 0
+	AutogrindState.restore(_ag_state)
+
 
 
 func _log_text() -> String:
