@@ -12,8 +12,13 @@ func test_semver_matches_deployed_release_line() -> void:
 	# Ratchet vs the stale-const failure mode: SEMVER must be >= the
 	# highest local release tag (bump at deploy time). Tag-aware so
 	# continuous-deploy sessions (2026-07-02) can't outrun the const.
+	## --merged HEAD, not every tag: worktrees SHARE one .git, so an unfiltered list is every tag
+	## in the repo. cowir-main cutting a tag then reds this in every tree not rebased that minute —
+	## 131 of 140 worktrees, measured — and a pinned publish worktree can never pass, because
+	## check_tree_unmoved.sh exists to stop it moving. Reachability is the claim that was meant:
+	## a tree is stale only against releases ITS OWN HISTORY contains.
 	var out: Array = []
-	if OS.execute("git", ["-C", ProjectSettings.globalize_path("res://"), "tag", "--list", "v*-alpha"], out) != 0 or out.is_empty():
+	if OS.execute("git", ["-C", ProjectSettings.globalize_path("res://"), "tag", "--list", "v*-alpha", "--merged", "HEAD"], out) != 0 or out.is_empty():
 		pass_test("no git tags available in this environment")
 		return
 	var best: Array = [0, 0, 0]
@@ -28,7 +33,7 @@ func test_semver_matches_deployed_release_line() -> void:
 	var cur_parts: Array = Version.SEMVER.trim_suffix("-alpha").split(".")
 	var cur: Array = [int(cur_parts[0]), int(cur_parts[1]), int(cur_parts[2])]
 	assert_true(cur >= best,
-		"Version.SEMVER (%s) is behind the highest release tag v%d.%d.%d-alpha — bump it at deploy time" % [Version.SEMVER, best[0], best[1], best[2]])
+		"Version.SEMVER (%s) is behind v%d.%d.%d-alpha, a release IN THIS TREE'S OWN HISTORY — cowir-main bumps at deploy time; a lane rebases onto main" % [Version.SEMVER, best[0], best[1], best[2]])
 
 
 func test_display_embeds_dev_hash_in_source_checkouts() -> void:
