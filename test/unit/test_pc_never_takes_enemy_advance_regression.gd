@@ -22,6 +22,29 @@ extends GutTest
 const TRIALS: int = 400
 
 
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
+
+## ⛔ THIS FILE LEFT THE BattleManager AUTOLOAD DIRTY FOR EVERY LATER FILE IN THE PROCESS.
+## Measured 2026-09-18 by a per-script probe over all 2,071 test files: it leaked `previous_round_actions`, which `start_battle` does NOT reset — so it survived
+## into every later battle, not just every later read.
+##
+## The derived snapshot/restore covers the whole surface rather than the fields anyone listed, and
+## it restores the PRIOR value — so it cannot mask a leak that arrived from upstream.
+var _bm_guard = null
+
+
+func before_each() -> void:
+	_bm_guard = BattleStateGuard.new()
+	_bm_guard.snapshot()
+
+
+## Restore FIRST: a GDScript error anywhere below aborts this function, and an abort here is a LEAK
+## the file still scores green for. Nothing above it can be skipped if there is nothing above it.
+func after_each() -> void:
+	if _bm_guard != null:
+		_bm_guard.restore()
+
+
 func _pc(name_str: String) -> Combatant:
 	var c := Combatant.new()
 	c.combatant_name = name_str
