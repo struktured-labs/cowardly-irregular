@@ -2200,6 +2200,15 @@ func _adjust_condition_value(delta: int) -> void:
 			_refresh_grid()
 			return
 
+		## A condition the grammar gives a NAMED payload — status / element / stat — carries no
+		## number: _apply_condition_type erases op and value for it deliberately. The `.get(…, 50)`
+		## below INVENTED one and the line after wrote it back, so dialling a has_status condition
+		## left `value: 55` on it that no evaluator reads, in the saved script and in share codes.
+		## item_count is in the same map and DOES keep op/value, so it must keep dialling; the
+		## discriminator is the condition's own shape, not a second list to maintain.
+		if AutobattleSystem.CONDITION_REQUIRED_FIELD.has(cond_type) and not cond.has("value"):
+			return
+
 		var current_value = cond.get("value", 50)
 		var step = 5  # Adjust by 5 for percentages, 1 for counts
 
