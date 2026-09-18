@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## "Adjust rules mid-grind" was advertised on the F1 controls reference, bound in the dispatch table
 ## with its own key, classified by two screens, and emitted by three call sites. It was reachable
 ## from NONE of them.
@@ -18,6 +23,7 @@ var _ui
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
 	add_child_autofree(_ui)
@@ -26,6 +32,8 @@ func before_each() -> void:
 func after_each() -> void:
 	AutogrindSystem.stop_autogrind()
 	AutogrindSystem._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 ## Combatant.new() takes no args — initialize() carries the stats.

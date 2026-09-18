@@ -60,7 +60,8 @@ def loader_consumers(src_dir):
     corpus you cannot size, and a green here would have been read as covering all 478.
     """
     found = {}
-    stats = {"res": 0, "user": 0, "template": 0, "unresolved": 0, "attempts": 0}
+    stats = {"res": 0, "user": 0, "uid": 0, "other": 0, "template": 0,
+             "unresolved": 0, "attempts": 0, "uncertified": []}
     for path in raw.gd_files(src_dir):
         lines = raw.read_lines(path)
         consts = raw.file_consts(lines)
@@ -79,8 +80,19 @@ def loader_consumers(src_dir):
                 elif v.startswith("res://"):
                     stats["res"] += 1
                     found.setdefault(v, set()).add("%s:%d" % (rel, i + 1))
-                else:
+                elif v.startswith("user://"):
                     stats["user"] += 1
+                elif v.startswith("uid://"):
+                    # LEGAL AND UNFOLLOWABLE. Godot 4.4 resolves uid:// through
+                    # .godot/uid_cache.bin, which this tool does not read, so it
+                    # cannot say whether the target is in the pack. That is a
+                    # different answer from "exempt" and must not share a bucket
+                    # with user://, whose files are not packed BY DESIGN.
+                    stats["uid"] += 1
+                    stats["uncertified"].append(("%s:%d" % (rel, i + 1), v))
+                else:
+                    stats["other"] += 1
+                    stats["uncertified"].append(("%s:%d" % (rel, i + 1), v))
     return found, stats
 
 
@@ -165,17 +177,31 @@ def main(argv):
     # left every arm green. Same shape as this lane's BUTLER= and SEED_REAL_BASE= seams.
     if os.environ.get("PARTITION_DRIFT_PROBE"):
         stats["attempts"] += 1
-    _sum = stats["res"] + stats["user"] + stats["template"] + stats["unresolved"]
+    _sum = (stats["res"] + stats["user"] + stats["uid"] + stats["other"]
+            + stats["template"] + stats["unresolved"])
     if _sum != stats["attempts"]:
         print("[load] BLOCKED: the partition does not sum — %d attempt(s), %d bucketed. A site "
               "fell through, so the corpus this reports is not the one it read."
               % (stats["attempts"], _sum), file=sys.stderr)
         return 2
-    print("[load] resolution attempts %d = res:// %d · user:// %d · runtime-built %d · "
-          "UNRESOLVABLE %d" % (stats["attempts"], stats["res"], stats["user"],
-                               stats["template"], stats["unresolved"]))
+    print("[load] resolution attempts %d = res:// %d · user:// %d · uid:// %d · other %d · "
+          "runtime-built %d · UNRESOLVABLE %d"
+          % (stats["attempts"], stats["res"], stats["user"], stats["uid"],
+             stats["other"], stats["template"], stats["unresolved"]))
     print("[load]   UNRESOLVABLE means a path this cannot see statically. It is NOT a pass "
           "for those sites.")
+    # uid:// and other USED TO LAND IN THE user:// BUCKET, which is the exempt one --
+    # `user://` files are not packed by design, so anything filed there is waved through.
+    # A uid:// load is legal, is seen perfectly well statically, and simply cannot be
+    # followed by this tool; filing it under a scheme it does not have turned "I cannot
+    # check this" into "this needs no checking". Measured 0 on the tree the day this was
+    # written, which is why it was invisible: the catch-all was only ever exercised by a
+    # malformed fixture of my own.
+    if stats["uncertified"]:
+        print("[load]   %d site(s) name a target this tool CANNOT follow. NOT a pass:"
+              % len(stats["uncertified"]))
+        for site, val in stats["uncertified"][:20]:
+            print("[load]     %s  %s" % (site, val))
     print("[load] %d pack entries · %d asset(s) loaded · %d resolve · %d BROKEN"
           % (len(table), len(consumers), len(consumers) - len(broken), len(broken)))
     return 5 if broken else 0

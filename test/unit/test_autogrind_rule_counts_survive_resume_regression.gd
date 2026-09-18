@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 ## Two bugs in one mechanism, and the second only exists because I fixed the first badly.
 ##
 ## The rule-fire counters reset ONLY on a rule edit. So:
@@ -23,6 +28,7 @@ var _ags: Node = null
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_ags = get_node_or_null("/root/AutogrindSystem")
 	if _ags:
 		_ags._test_disable_persistence = true
@@ -33,6 +39,8 @@ func after_each() -> void:
 	if _ags:
 		_ags.reset_rule_fire_counts()
 		_ags.is_grinding = false
+	AutogrindState.restore(_ag_state)
+
 
 
 func _party() -> Array:
