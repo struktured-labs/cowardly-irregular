@@ -83,6 +83,21 @@ def main():
         code, out, _ = run(["play_widget"], empty)
         check("a corpus with no .gd files exits 3", code == 3, "(got %d)" % code)
 
+        # A PROSE corpus: the header is the frontmatter, and `description:` is the authored
+        # one-line summary — closer to what a MECHANISM search wants than a test header.
+        prose = os.path.join(tmp, "prose")
+        os.makedirs(prose)
+        with open(os.path.join(prose, "note.md"), "w", encoding="utf-8") as fh:
+            fh.write("---\nname: a-note\ndescription: \"THE AUTHORED SUMMARY LINE\"\n---\n\n"
+                     "body mentioning play_widget once.\n")
+        code, out, _ = run(["play_widget", "--ext", ".md"], prose)
+        check("a .md corpus is searchable", code == 0 and "note.md" in out, "(got %d)" % code)
+        check("and its header is the frontmatter description",
+              "THE AUTHORED SUMMARY LINE" in out,
+              "<-- for prose the description IS the header a reader needs")
+        code, _, err = run(["play_widget", "--ext", ".md"], corpus)
+        check("an --ext with no matching files exits 3", code == 3, "(got %d)" % code)
+
         # --new: the deterministic halves. The git walk itself is not covered here — it depends on
         # repo state, and a selftest that builds a repo to check it would be testing git.
         code, out, err = run([], corpus)
