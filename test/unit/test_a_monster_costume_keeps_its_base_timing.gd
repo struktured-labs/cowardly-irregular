@@ -4,7 +4,7 @@ extends GutTest
 ##
 ## `dressed_fps` was written for exactly this and had ONE call site — `_load_external_sheet`, the
 ## JOB builder. `load_monster_sprite_frames` read `sheet_data.get("fps", 8)` raw, and the monster
-## path IS a costume path: BattleScene:1305 builds "%s_%s" % [monster_id, world_suffix] and loads
+## path IS a costume path: BattleScene builds `"%s_%s" % [monster_id, world_suffix]` and loads
 ## the variant through that builder.
 ##
 ## The two costume mechanisms are structurally different, which is why this was not a one-line
