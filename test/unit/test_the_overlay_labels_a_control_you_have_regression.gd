@@ -79,25 +79,17 @@ func test_every_tier0_label_names_a_reachable_control() -> void:
 ## The tier label must say the combo, because pressing ONE shoulder does nothing.
 func test_the_tier_label_says_both_shoulders() -> void:
 	var branch := _autogrind_branch()
-	# ⛔ DEVICE-AGNOSTIC. This pinned the literal `is_joy_button_pressed(0, …)`, so it red when the
-	# poll was corrected to follow event.device — the index is incidental to this arm's claim and
-	# the CHORD is not. A player's pad is not always device 0.
-	# Each shoulder must appear INSIDE a poll — the bare name also occurs in the button_index test
-	# one line up, so `branch.find(shoulder)` alone cannot tell "both polled" from "both mentioned".
-	for shoulder in ["JOY_BUTTON_LEFT_SHOULDER", "JOY_BUTTON_RIGHT_SHOULDER"]:
-		var polled := false
-		var from: int = 0
-		while true:
-			var at: int = branch.find("is_joy_button_pressed(", from)
-			if at < 0:
-				break
-			if branch.substr(at, 72).contains(shoulder):
-				polled = true
-				break
-			from = at + 1
-		assert_true(polled,
-			"precondition: tier cycling requires BOTH shoulders HELD — %s never appears inside an "
-			% shoulder + "is_joy_button_pressed() call, and holding both is what the label must say")
+	## ⛔ THIS PINNED THE DEVICE LITERAL AND THE CLAIM HAS NOTHING TO DO WITH THE DEVICE.
+	## It was `find("Input.is_joy_button_pressed(0, JOY_BUTTON_LEFT_SHOULDER)")`, so
+	## @cowir-controller's correct fix — polling the pad that SENT the event instead of hardcoding
+	## device 0, which is why a second controller could not cycle the tier at all — red this
+	## precondition. The claim is "BOTH shoulders are required", so that is what it asserts: both
+	## constants, conjoined, whatever device they are polled on.
+	var both := RegEx.create_from_string(
+		"is_joy_button_pressed\\([^)]*JOY_BUTTON_LEFT_SHOULDER\\)[\\s\\\\]*and[\\s\\\\]*[^\\n]*JOY_BUTTON_RIGHT_SHOULDER")
+	assert_true(both.search(branch) != null,
+		("precondition: tier cycling must poll BOTH shoulders in one conjunction — that is what the " +
+		"label must say. Pinning the device index here is what made a device-aware fix look like a regression."))
 	for ctx in [_overlay().autogrind_context(), _overlay().autogrind_ludicrous_context()]:
 		for key in ["l", "r"]:
 			assert_true(str(ctx.get(key, "")).find("L+R") > -1,
