@@ -109,6 +109,15 @@ func _strip_comment(line: String) -> String:
 	return line
 
 
+## The name of the function containing `idx`, for the membership floor above.
+func _enclosing_name(lines: PackedStringArray, idx: int) -> String:
+	for i in range(idx, -1, -1):
+		var l: String = str(lines[i])
+		if l.begins_with("func "):
+			return l.substr(5, l.find("(") - 5)
+	return ""
+
+
 ## The enclosing function's body FROM THE WRITE ONWARD — per-function rather than per-line, but
 ## forward-only.
 ##
@@ -142,9 +151,23 @@ func _write_opens() -> Array:
 			if s.is_empty():
 				continue
 			if "FileAccess.open" in s and "WRITE" in s:
-				found.append([path, n, s, fn_body])
+				found.append([path, n, s, fn_body, _enclosing_name(all_lines, n - 1)])
 		f.close()
 	return found
+
+
+## ⛔ THE PERSISTERS THIS LANE HAS, PINNED BY NAME — the ONE hand-list here, and it is deliberate.
+## Everything else in this file is derived; this exists so a DISAPPEARANCE is loud.
+##
+## Measured 2026-09-18, after `.434` went red for exactly this: cowir-autogrind moved their opens
+## into shared staging helpers, and a ratchet deriving write sites from `FileAccess.open` stopped
+## seeing those writers AT ALL and reported green. I planted the same refactor here — both writers
+## calling an out-of-corpus `AtomicWriter.begin()` — and this file stayed **2 passing**. The
+## `opens.size() > 0` control did not save it: `_preserve_unreadable`'s sidecar write survived and
+## satisfied the floor while both real subjects had vanished.
+##
+## 🔑 A COUNT FLOOR IS SATISFIED BY A SURVIVOR; A MEMBERSHIP FLOOR IS NOT.
+const MUST_BE_FOUND := ["save_config", "_append_user_mapping"]
 
 
 ## ⛔ THE CONTROL, and it has to come first: if the corpus is empty or contains no write at all,
@@ -158,6 +181,20 @@ func test_there_are_real_writers_in_this_lane_to_reason_about() -> void:
 	assert_gt(opens.size(), 0,
 		"CONTROL: the lane must contain at least one FileAccess.open(..., WRITE), or the arm below "
 		+ "passes without looking at anything")
+
+	var seen: Array = []
+	for row in opens:
+		if not (row[4] in seen):
+			seen.append(row[4])
+	var missing: Array = []
+	for fname in MUST_BE_FOUND:
+		if not (fname in seen):
+			missing.append(fname)
+	assert_true(missing.is_empty(),
+		"%s no longer contain a FileAccess.open(..., WRITE) that this scan can see — found %s. " % [missing, seen]
+		+ "If their write moved into a shared helper, THIS GUARD IS NOW BLIND TO THEM and its green "
+		+ "means nothing: a call to a write helper is itself a write site. Either teach the scan to "
+		+ "follow the helper, or declare it here with the reason. Do NOT simply drop the name.")
 
 
 ## ⛔ THE INVARIANT. Derived, so a writer added tomorrow is covered without anyone remembering this.
