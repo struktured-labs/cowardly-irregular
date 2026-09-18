@@ -54,7 +54,12 @@ func test_constant_modification_actually_turns_a_dial() -> void:
 			GameState.game_constants[d] = before[d]
 	assert_eq(changed.size(), 1, "exactly ONE dial turns per cast (got %s)" % str(changed))
 	assert_gt(GameState.corruption_level, prev_corruption, "the modification corrupts")
+	## ⛔ RESTORE THROUGH THE SAME DOOR THE CAST MUTATED THROUGH. constant_modification reaches
+	## GameState.add_corruption, which EMITS; `corruption_level` is a plain var with no setter, so
+	## assigning it back is SILENT and SoundManager keeps rendering the 0.11 detune. Measured paired
+	## with test_corruption_audio_both_meters_regression: 0.110 left on the autoload.
 	GameState.corruption_level = prev_corruption
+	GameState.corruption_changed.emit(GameState.corruption_level)
 	assert_true(_log_lines.any(func(l): return "reaches into the constants" in str(l)),
 		"the log names the dial and the change")
 

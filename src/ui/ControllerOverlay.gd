@@ -13,6 +13,10 @@ const LABEL_COLOR = Color(1.0, 1.0, 0.4)  # Bright yellow for action labels
 const LINE_COLOR = Color(0.5, 0.8, 0.5, 0.4)  # Green connecting lines
 const HINT_COLOR = Color(0.5, 0.5, 0.6)
 const BUTTON_RADIUS = 10.0
+
+## Gap from the viewport's bottom-right corner. Matches GameLoop's old inline 330/200 exactly
+## (OVERLAY_SIZE is 320x190), so this is the same placement, recomputed instead of baked.
+const SCREEN_MARGIN := 10.0
 const DPAD_SIZE = 12.0
 
 const BODY_CENTER = Vector2(160, 105)
@@ -45,12 +49,44 @@ const LABEL_OFFSETS = {
 }
 
 
+## ⛔ WATCHES BOTH THINGS IT IS DERIVED FROM, AND WATCHED NEITHER. The corner was computed once by
+## GameLoop at creation and this overlay is cached for a whole autogrind session, so a resize
+## stranded it: measured 1280x720 -> 640x480, position (950, 520) unchanged, right edge 1270 and
+## bottom 710 — the whole thing off screen on both axes. And every face letter is resolved per pad
+## in _draw, while queue_redraw was reachable only from set_context, so a pad plugged in mid-session
+## never reached the letters. Six other files already listen for joy_connection_changed; the one
+## surface that draws the buttons was outside that convention.
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	size = OVERLAY_SIZE
+	Input.joy_connection_changed.connect(_on_pad_changed)
+	get_viewport().size_changed.connect(_reanchor)
+	_reanchor()
 	var show = true
 	if has_node("/root/GameState") and "show_controller_overlay" in GameState:
 		show = GameState.show_controller_overlay
 	visible = show
+
+
+## Bottom-right with a uniform margin — the same corner GameLoop computed inline, moved here so one
+## owner both places the overlay and can re-place it.
+##
+## ⚠️ CLAMPED, because a viewport narrower than the overlay would otherwise anchor it to a NEGATIVE
+## corner, which is off screen exactly as much as the bug this replaces. A zero-sized viewport is
+## left alone rather than given a hardcoded 1280x720 fallback: size_changed re-anchors it the moment
+## the real size arrives, and a baked guess is the defect above in miniature.
+func _reanchor() -> void:
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+	if vp.x <= 0.0 or vp.y <= 0.0:
+		return
+	position = Vector2(
+		maxf(0.0, vp.x - OVERLAY_SIZE.x - SCREEN_MARGIN),
+		maxf(0.0, vp.y - OVERLAY_SIZE.y - SCREEN_MARGIN))
+
+
+## A pad arriving or leaving changes every face letter _draw resolves, and nothing else asks.
+func _on_pad_changed(_device: int, _connected: bool) -> void:
+	queue_redraw()
 
 
 func set_context(context: Dictionary) -> void:

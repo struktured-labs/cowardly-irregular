@@ -8,7 +8,7 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 ## weapon's headline gimmick. A grinding party got the stat bonus and none of the proc.
 ##
 ## 🔑 THE AXIS-2 DISTINCTION IS THE EASY MISTAKE HERE, and it is why this file exists as much as the
-## proc does. Live calls _apply_equipment_on_hit_status from _execute_attack ONLY (:4539) — the BASIC
+## proc does. Live calls _apply_equipment_on_hit_status from _execute_attack ONLY — the BASIC
 ## attack. This resolver has TWO damage entry points, `_resolve_attack` (basic) and
 ## `_resolve_attack_with_power` (ability damage), and they end in identical lines. Wiring both would
 ## make a grinding Rogue's power_strike proc poison where the real game's does not — the exact shape

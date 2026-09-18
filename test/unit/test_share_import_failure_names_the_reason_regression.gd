@@ -103,3 +103,36 @@ func test_multiple_bad_rules_are_summarised_not_truncated_silently() -> void:
 	var why: String = SSM.last_import_reason()
 	assert_true(why.contains("more"),
 		"with several bad rules the player must learn there are others, not just the first: %s" % why)
+
+
+## The manager computing a reason and the UI SHOWING it are two claims; every arm above tests the
+## first. Derived rather than hand-listed: the scope is expressible — a file that decodes a share
+## code is a paste path, whoever adds the next one.
+func test_every_paste_path_can_say_why_it_refused() -> void:
+	var checked: int = 0
+	var mute: Array = []
+	for path in _ui_files():
+		var code: String = FileAccess.get_file_as_string(path)
+		## Per file — a dark read decodes nothing and would leave this arm silently empty.
+		assert_gt(code.length(), 50, "CONTROL: %s must actually be read" % path)
+		if not code.contains("decode_share_code("):
+			continue
+		checked += 1
+		if not code.contains("last_import_reason()"):
+			mute.append(str(path).get_file())
+	assert_gt(checked, 1, "CONTROL: expected more than one paste path, found %d" % checked)
+	assert_eq(mute, [], "these decode a share code and cannot tell the player why one was refused: %s"
+		% str(mute))
+
+
+func _ui_files() -> Array:
+	var out: Array = []
+	var stack: Array = ["res://src/ui"]
+	while not stack.is_empty():
+		var dir: String = str(stack.pop_back())
+		for d in DirAccess.get_directories_at(dir):
+			stack.append(dir + "/" + str(d))
+		for f in DirAccess.get_files_at(dir):
+			if str(f).ends_with(".gd"):
+				out.append(dir + "/" + str(f))
+	return out
