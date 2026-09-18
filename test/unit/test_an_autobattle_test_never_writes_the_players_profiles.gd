@@ -289,6 +289,19 @@ func test_the_two_hop_scan_can_actually_fire() -> void:
 		"save_current_profile only READS (get_character_script) — if it appears here the derivation has stopped distinguishing reads from writes, and the corpus jumps from 2 files to 146")
 
 
+## ⛔ ANY inner class, not `class Fake` specifically — that spelling was a FIXTURE DEPENDENCE, not a
+## property. Renaming the double to `StubAutobattleSystem` is a correct change and the old predicate
+## red on it, which is CLAUDE.md's coincidental-value ratchet: red on a right change, green on a
+## wrong one. Mutation testing cannot find this — every mutation I wrote preserved the name. The
+## question that finds it is "does a RIGHT change red this?", which needs an authored change rather
+## than a broken one (@cowir-sfx's trim, @cowir-autogrind's speed 2.0, @cowir-sprites' animation).
+func _declares_an_inner_class(src: String) -> bool:
+	for line in src.split("\n"):
+		if line.begins_with("class ") and line.strip_edges().ends_with(":"):
+			return true
+	return false
+
+
 func test_a_declared_double_still_drives_the_entry() -> void:
 	# A declaration nobody has watched fire is indistinguishable from a dead entry.
 	var flagged: Array[String] = []
@@ -301,7 +314,7 @@ func test_a_declared_double_still_drives_the_entry() -> void:
 			stale.append("%s (missing)" % fname)
 		elif not (str(fname) in flagged):
 			stale.append("%s (no longer reaches a saver)" % fname)
-		elif not src.contains("class Fake"):
+		elif not _declares_an_inner_class(src):
 			stale.append("%s (no local double — the stated reason for the declaration is gone)" % fname)
 	assert_eq(stale, [],
 		"a file declared as isolated by a test double no longer matches that description — drop the declaration or gate the file, rather than carrying a stale one: %s" % str(stale))
