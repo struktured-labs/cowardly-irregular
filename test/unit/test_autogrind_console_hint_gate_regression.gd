@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## AutogrindUI and AutogrindGridEditor were the only two _input consumers in src/ not gating on
 ## TutorialHint.is_any_active() — 19 other files do. They were protected only by tree ordering
 ## (a hint parented to the console is a child, and children consume first), which is incidental,
@@ -13,6 +18,7 @@ var _saved_count: int = 0
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	## Drives a UI node that reaches AutogrindSystem's savers; the one-hop ratchet cannot see it
 	AutogrindSystem._test_disable_persistence = true
 	_saved_count = TutorialHint._active_count
@@ -29,6 +35,8 @@ func after_each() -> void:
 	AutogrindSystem._test_disable_persistence = false
 	## Static — a leaked non-zero count silently gates every later test's input.
 	TutorialHint._active_count = _saved_count
+	AutogrindState.restore(_ag_state)
+
 
 
 func _press(action: String) -> InputEvent:

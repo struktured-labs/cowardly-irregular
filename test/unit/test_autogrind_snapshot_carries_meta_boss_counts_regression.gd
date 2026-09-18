@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## I added meta_bosses_spawned / meta_bosses_defeated last night, wired them through the stats dict
 ## to the session Summary, and did not add them to the grind SNAPSHOT.
 ##
@@ -18,6 +23,7 @@ var _ags: Node = null
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_ags = get_node_or_null("/root/AutogrindSystem")
 	if _ags:
 		_ags._test_disable_persistence = true
@@ -31,6 +37,8 @@ func after_each() -> void:
 		_ags.meta_bosses_spawned = 0
 		_ags.meta_bosses_defeated = 0
 		_ags.collapse_count = 0
+	AutogrindState.restore(_ag_state)
+
 
 
 func test_the_counters_survive_a_snapshot_round_trip() -> void:

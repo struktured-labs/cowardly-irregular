@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 ## The console's PERMADEATH panel read a console-side copy while AutogrindDashboard read the system.
 ## GameLoop FREES the console on close (:5543) and builds a fresh one on open (:5477), so the copy was
 ## false at every open — and nothing ever clears the system flag: stop_autogrind leaves it set, and
@@ -29,6 +34,7 @@ var _sys
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_sys = AutogrindSystem
 	_sys._test_disable_persistence = true
 	_sys.enable_permadeath_staking(false)
@@ -38,6 +44,8 @@ func after_each() -> void:
 	_sys.stop_autogrind()
 	_sys.enable_permadeath_staking(false)
 	_sys._test_disable_persistence = false
+	AutogrindState.restore(_ag_state)
+
 
 
 ## A console the player just opened. Fresh, because GameLoop frees the old one — that is the whole

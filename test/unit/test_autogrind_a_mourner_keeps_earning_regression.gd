@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file leaked state a hand-listed teardown cannot name.
+var _ag_state: Dictionary
+
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const GRIND := "res://src/autogrind/AutogrindSystem.gd"
 const LIVE := "res://src/battle/BattleManager.gd"
@@ -22,6 +27,7 @@ var _saved_region: String
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_saved_persist = AutogrindSystem._test_disable_persistence
 	AutogrindSystem._test_disable_persistence = true
 	_saved_party = AutogrindSystem.grind_party.duplicate()
@@ -33,6 +39,8 @@ func after_each() -> void:
 	AutogrindSystem.grind_party = _saved_party
 	AutogrindSystem.current_region_id = _saved_region
 	AutogrindSystem._test_disable_persistence = _saved_persist
+	AutogrindState.restore(_ag_state)
+
 
 
 func _member(name: String, alive: bool) -> Combatant:
