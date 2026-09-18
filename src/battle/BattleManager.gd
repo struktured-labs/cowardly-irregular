@@ -5047,6 +5047,40 @@ func _apply_stat_down(target: Combatant, effect: String, stat_modifier: float, d
 ## _execute_physical_ability and _execute_magic_ability, so every rule it carries — the random_debuff
 ## 1.0 default, the freeze->stun and burn->burning aliases — had to be written twice to be true, and
 ## `doom` was written into neither.
+
+## Strips every active buff and any positive STATUS from one target; returns how many it cleared.
+## "Positive" is an inclusion list, not an exclusion, so a new debuff can never make dispel remove it.
+const _POSITIVE_STATUSES_DISPELLABLE := [
+	"barrier", "invisible", "evasion", "reflect",
+	"physical_reflect", "prismatic_reflect", "magic_block",
+	"regen",
+]
+
+
+func _dispel_target(target) -> int:
+	var cleared_count: int = 0
+	if "active_buffs" in target:
+		cleared_count += target.active_buffs.size()
+		target.active_buffs.clear()
+	for s in _POSITIVE_STATUSES_DISPELLABLE:
+		if target.has_status(s):
+			target.remove_status(s)
+			cleared_count += 1
+	if cleared_count > 0 and target.has_method("recalculate_stats"):
+		target.recalculate_stats()
+	return cleared_count
+
+
+## The dispel plus its battle-log line — both routes say the same thing to the player.
+func _dispel_target_and_log(target) -> int:
+	var cleared: int = _dispel_target(target)
+	if cleared > 0:
+		battle_log_message.emit("[color=%s]%s's enhancements stripped away![/color] (%d cleared)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, cleared])
+	else:
+		battle_log_message.emit("[color=gray]%s had nothing to dispel.[/color]" % target.combatant_name)
+	return cleared
+
+
 func _apply_ability_status(caster: Combatant, target: Combatant, ability: Dictionary) -> void:
 	## ⛔ THE DEAD ARE NOT AFFLICTED. This apply runs AFTER the damage, so a killing blow also poisoned,
 	## blinded or stunned the corpse and the log announced it — and revival exists, so the ally came
@@ -5103,6 +5137,12 @@ func _apply_ability_status(caster: Combatant, target: Combatant, ability: Dictio
 		status_to_add = "festered"
 	if status_to_add == "memory_leak_status":
 		status_to_add = "memory_leak"
+	## erase/dispel is an ACTION, not a status token. Its arm lives in _execute_support_ability,
+	## which a `magic`-typed ability never reaches — so void_breath and null_touch landed an inert
+	## "dispel"/"erase" key here while the executor holding the real behaviour was unreachable.
+	if status_to_add == "erase" or status_to_add == "dispel":
+		_dispel_target_and_log(target)
+		return
 	## doom is a COUNTER, not a status — see _inflict_doom.
 	if status_to_add == "doom":
 		_inflict_doom(target, int(ability.get("countdown", 3)))
@@ -6302,41 +6342,15 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		## exactly. Sharing the case label drops both effect names into
 		## the same code path with no behavioral divergence.
 		"erase", "dispel":
-			# Tick 353: strips active_buffs + positive statuses from the
-			# target. Used by 7 abilities (masterite_dispel, cardinality_
-			# zero, garbage_collect_all, intersection_null, optimize_away,
-			# undefine, void_breath) — all of which silently fizzled
-			# pre-fix because no arm matched. Symptom: a W5/W6 boss casts
-			# a defensive buff stack and the player's dispel does NOTHING
-			# to remove it.
-			#
-			# Implementation: clear active_buffs (all of them — dispel is
-			# the strong version; dispel_one would remove a single random
-			# one) and remove any positive statuses from status_effects.
-			# Defining "positive" via an inclusion list rather than
-			# exclusion so adding a new debuff later doesn't accidentally
-			# make dispel start removing it.
-			const _POSITIVE_STATUSES_DISPELLABLE := [
-				"barrier", "invisible", "evasion", "reflect",
-				"physical_reflect", "prismatic_reflect", "magic_block",
-				"regen",
-			]
+			## Tick 353 gave dispel an arm here and named 7 abilities. SIX of them are typed `support`
+			## and reach it; `void_breath` (Umbraxis, 28 MP, all_enemies) is typed `magic` and routes to
+			## _apply_ability_status instead, as does `null_touch`'s `erase`. Both were still fizzling.
+			## The body now lives in _dispel_target so the other route calls the same code, not a copy.
 			for target in targets:
 				if target == null or not is_instance_valid(target) or not target.is_alive:
 					continue
-				var cleared_count: int = 0
-				if "active_buffs" in target:
-					cleared_count += target.active_buffs.size()
-					target.active_buffs.clear()
-				for s in _POSITIVE_STATUSES_DISPELLABLE:
-					if target.has_status(s):
-						target.remove_status(s)
-						cleared_count += 1
-				if cleared_count > 0:
-					target.recalculate_stats() if target.has_method("recalculate_stats") else null
-					battle_log_message.emit("[color=%s]%s's enhancements stripped away![/color] (%d cleared)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, cleared_count])
-				else:
-					battle_log_message.emit("[color=gray]%s had nothing to dispel.[/color]" % target.combatant_name)
+				_dispel_target_and_log(target)
+
 		"mp_restore_and_ap":
 			# Tick 352: Bard's inspiring_melody (abilities.json line ~437)
 			# uses this effect to restore MP + grant AP to all allies.
