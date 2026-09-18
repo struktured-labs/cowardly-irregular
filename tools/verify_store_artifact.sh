@@ -188,9 +188,40 @@ fetch_and_compare() {
     # shellcheck disable=SC2064
     trap "rm -rf '$out'" RETURN
     echo "[store-verify] fetching ${TARGET}:${channel} (this downloads the whole build)"
-    if ! butler fetch "${TARGET}:${channel}" "$out" >/dev/null 2>&1; then
+    # ⛔ KEEP BUTLER'S OWN ERROR. This used to be `>/dev/null 2>&1`, so every failure read
+    # exactly "butler fetch failed" and nothing else. On 2026-09-18 that cost two hours:
+    # four blocked read-backs in a row, and the tool could not distinguish
+    #
+    #     a transient itch API timeout   -> retry in a few minutes        (what it actually was)
+    #     an expired/absent credential   -> escalate, do not retry
+    #     a channel that does not exist  -> a publish problem, not a read problem
+    #
+    # Three causes, three different responses, one message. I learned the real one by running
+    # `butler fetch` by hand and reading `context deadline exceeded` off api.itch.io — which is
+    # CLAUDE.md's own rule (`don't 2>/dev/null a measurement command — it deletes the warning
+    # and keeps the wrong number`) broken inside the tool whose entire job is the authoritative
+    # read. The classification below is a HINT, never a verdict: the raw butler text is printed
+    # regardless, so an unrecognised failure is still fully visible.
+    local ferr; ferr="${out}.fetch.log"
+    if ! butler fetch "${TARGET}:${channel}" "$out" > "$ferr" 2>&1; then
         echo "[store-verify] BLOCKED: butler fetch failed for ${channel}. A failed read is not" >&2
         echo "               evidence the store is correct." >&2
+        if [ -s "$ferr" ]; then
+            echo "[store-verify] butler said:" >&2
+            tail -5 "$ferr" | sed 's/^/               /' >&2
+            case "$(tr -d '\n' < "$ferr")" in
+                *"context deadline exceeded"*|*"timeout"*|*"no such host"*|*"connection refused"*)
+                    echo "[store-verify] looks like a NETWORK/API failure — the store is probably" >&2
+                    echo "               fine and the READ is what failed. Retry before acting." >&2 ;;
+                *"401"*|*"403"*|*"invalid key"*|*"not authorized"*|*"login"*)
+                    echo "[store-verify] looks like a CREDENTIAL failure — do not retry in a loop." >&2 ;;
+                *"404"*|*"no such channel"*|*"not found"*)
+                    echo "[store-verify] looks like a MISSING CHANNEL — that is a publish problem," >&2
+                    echo "               not a read problem. Check what was pushed." >&2 ;;
+            esac
+        else
+            echo "[store-verify] butler produced no output at all — that is itself the finding." >&2
+        fi
         return 2
     fi
     compare "$local_dir" "$out" "local" "store"

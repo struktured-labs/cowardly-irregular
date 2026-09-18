@@ -28,6 +28,20 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ## break" (3 consumer sites). So that 800 is decoration in live, and the grind models barrier not at
 ## all. Both are real and neither is this file's: the first is @cowir-battle's data question, the
 ## second needs the grind's damage paths, which is a wider change than one arm.
+##
+## ⛔ DELIVERED 2026-09-18 to @cowir-battle (intercom 13664). It sat here from 2026-09-10 naming an
+## owner IN PROSE, in a file they have no reason to open — a note naming an owner is not a hand-off.
+##
+## 🔑 THE MECHANISM, which is the general finding and not an ability bug: PLACEMENT ALONE DECIDES
+## GRIND PARITY, and both effects look identical in abilities.json.
+##   damage_absorb  handled in Combatant.take_damage (SHARED)   -> the grind inherits it for free
+##   barrier        handled in BattleManager x3 (4509/4932/5238) -> the grind never runs that code
+## So the repair is moving barrier beside damage_absorb in the shared function, NOT teaching the
+## resolver: it calls take_damage at ~16 sites, and 16 edits drift from live immediately.
+##
+## ⚠️ LATENT, not live: guardian_wall is on Guardian (job type 1, debug-gated) and NO monster
+## authors it. But it IS authored in three data/autobattle_rule_templates.json entries and at
+## AutobattleSystem.gd:1603, so it goes live the day Guardian unlocks normally.
 
 const ResolverScript = preload("res://src/autogrind/HeadlessBattleResolver.gd")
 
@@ -214,3 +228,18 @@ func test_every_resolver_member_this_file_reaches_still_exists() -> void:
 	if not _res.has_method("_resolve_ability"): missing.append("_resolve_ability()")
 	assert_eq(missing, [],
 		"the resolver no longer has these, so the arms above would ABORT into a silent pass: %s" % str(missing))
+
+
+## ⛔ THIS ARM EXISTS TO MAKE THE HEADER'S PARKED NOTE DECAY LOUDLY RATHER THAN SILENTLY.
+## A deferral that goes quietly false points the next reader the wrong way (@cowir-controller's
+## DECAYED-deferral class). The note above says barrier lives only in BattleManager; the day it
+## moves into the shared Combatant.take_damage, the grind inherits it and the note is CLOSED.
+## A mention in a comment counts deliberately — either way somebody touched it and the note needs
+## re-reading. Drop this arm and the note together; do not silence it.
+func test_the_barrier_parity_note_has_not_gone_stale() -> void:
+	var shared: String = FileAccess.get_file_as_string("res://src/battle/Combatant.gd")
+	assert_ne(shared, "", "CONTROL: could not read Combatant.gd — this arm would pass vacuously")
+	assert_true(shared.contains("damage_absorb"),
+		"CONTROL: the SHARED function must still handle damage_absorb, the sibling this note contrasts against")
+	assert_false(shared.contains("barrier"),
+		"barrier now appears in the SHARED Combatant.gd, so the grind inherits it and this file's header note about the parity gap is CLOSED — update the header and delete this arm rather than leaving a deferral that reads as still-open")

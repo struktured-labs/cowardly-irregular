@@ -220,10 +220,12 @@ static func autogrind_context() -> Dictionary:
 ## Rules belongs where the DASHBOARD is up, because its classify_event maps JOY_BUTTON_START ->
 ## adjust_rules. The dashboard appears in ludicrous (GameLoop:5593) and at tier 1 (:6236); the
 ## overlay has no tier-1 context, so ludicrous is the only context here that can carry the label.
-## ⚠️ NOT REACHABLE ON MAIN TODAY — GameLoop connects the dashboard's pause/exit/tier_cycle signals
-## and NOT adjust_rules_requested, so START emits into nothing (@cowir-autogrind, measured). Their
-## cf0e0135 connects it. The label is placed correctly for the fixed state and this note says so
-## rather than sending the next reader hunting a listener that is not there yet.
+## ✅ REACHABLE AND GUARDED since cf0e0135 landed: `GameLoop:6890` connects the dashboard's
+## `adjust_rules_requested` to `_on_dashboard_adjust_rules`, which opens the rules editor. This note
+## used to say the opposite — correctly, when written — and a note that decays into claiming a
+## WORKING control is dead is worse than none: the next reader deletes an honest label.
+## `test_autogrind_adjust_rules_has_a_route_regression.test_the_live_dashboard_signal_is_connected`
+## pins the connection, so this stays true without a second guard here.
 static func autogrind_ludicrous_context() -> Dictionary:
 	return {
 		"b": "Exit",
