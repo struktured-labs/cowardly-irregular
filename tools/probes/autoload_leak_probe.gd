@@ -42,7 +42,8 @@ var _baseline: Dictionary = {}
 var _static_baseline: Dictionary = {}
 var _script: Variant = null
 var _armed: bool = false
-var _scripts_seen: int = 0
+var _scripts_seen: int = 0      ## incremented on start_script
+var _scripts_measured: int = 0  ## incremented on end_script — the one that proves a READING happened
 var _dirty_files: int = 0
 
 
@@ -135,11 +136,20 @@ func _target() -> Node:
 func _on_end_run() -> void:
 	if not _armed:
 		return
-	if _scripts_seen == 0:
-		print("LEAKPROBE DONE %s scripts=0 — THE HOOK NEVER FIRED. This run measured nothing; a "
-				% _autoload + "clean result above is vacuous, not healthy.")
+	## ⛔ COUNT THE MEASUREMENT, NOT THE ARRIVAL. `_scripts_seen` rises in start_script, so it keeps
+	## counting even when end_script is dead — my first version reported `scripts=1 dirty=0` under a
+	## mutation that measured NOTHING, which is the reassuring reading. The two counters must be
+	## compared: a gap means scripts began and were never read.
+	if _scripts_measured == 0:
+		print("LEAKPROBE DONE %s started=%d MEASURED=0 — THE HOOK NEVER FIRED. This run measured "
+				% [_autoload, _scripts_seen] + "nothing; a clean result above is vacuous, not healthy.")
 		return
-	print("LEAKPROBE DONE %s scripts=%d dirty=%d" % [_autoload, _scripts_seen, _dirty_files])
+	if _scripts_measured != _scripts_seen:
+		print("LEAKPROBE DONE %s started=%d MEASURED=%d dirty=%d — %d script(s) were never read, so "
+				% [_autoload, _scripts_seen, _scripts_measured, _dirty_files, _scripts_seen - _scripts_measured]
+				+ "this result is PARTIAL.")
+		return
+	print("LEAKPROBE DONE %s scripts=%d dirty=%d" % [_autoload, _scripts_measured, _dirty_files])
 
 
 func _on_start(coll_script) -> void:
@@ -150,6 +160,7 @@ func _on_start(coll_script) -> void:
 func _on_end() -> void:
 	if not _armed:
 		return
+	_scripts_measured += 1
 	var node: Node = _target()
 	if node == null:
 		print("LEAK %s :: PROBE BROKEN — the autoload vanished mid-run" % _cur)
