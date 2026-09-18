@@ -30,6 +30,14 @@ func before_each() -> void:
 func after_each() -> void:
 	SoundManager.stop_ambient()
 	GameState.set_weather("clear")
+	## ⛔ stop_music() LOOKS LIKE CLEANUP AND IS NOT: it clears _current_music and leaves
+	## _current_area and _current_world_suffix exactly where the last area put them. Instantiating
+	## OverworldScene runs its _ready, which calls play_area_music -- so this file writes both
+	## fields without naming either. Measured: the next file inherits _current_area="overworld".
+	## Benign here (it resolves to medieval, prefix ""), restored anyway because the next file to
+	## do this from a W6 scene would hand the whole suite a "w6_" SFX prefix.
+	SoundManager._current_area = ""
+	SoundManager._current_world_suffix = "medieval"
 
 
 func test_leaving_the_overworld_stops_the_outdoor_loop() -> void:
