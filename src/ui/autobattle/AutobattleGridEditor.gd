@@ -192,10 +192,14 @@ func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 ## destroys it. The first version of the pad-change handler guarded `_rule_composer_overlay` alone
 ## and would have eaten an open VirtualKeyboard mid-name-entry, plus both pickers:
 ##     _option_picker :2521   _keyboard :3199   _share_picker :3278   _rule_composer_overlay :3493
-## `test_a_pad_change_must_not_eat_an_open_modal` DERIVES this member set from this file's own
-## source and reds if a new modal is declared without being consulted here.
+## ⚠️ `_simulate_panel` WAS MISSING FROM THIS LIST AND MY FIRST DERIVED FLOOR COULD NOT SEE IT —
+## the floor matched member NAMES ending in modal/keyboard/picker/overlay, which is a convention,
+## not the property. `_simulate_panel` is declared "blocks grid input while open" and matches none
+## of them. The floor now derives from `_input`'s OWN early-return set, which is this file's
+## operative definition of a modal: anything input refuses to run under is something a rebuild must
+## not destroy. That cannot be escaped by naming a member differently.
 func _modal_open() -> bool:
-	for m in [_rule_composer_overlay, _keyboard, _share_picker, _option_picker, _edit_modal]:
+	for m in [_rule_composer_overlay, _keyboard, _share_picker, _option_picker, _simulate_panel, _edit_modal]:
 		if m and is_instance_valid(m):
 			return true
 	return false

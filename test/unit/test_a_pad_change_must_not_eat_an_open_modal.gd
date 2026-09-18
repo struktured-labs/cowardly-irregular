@@ -42,16 +42,30 @@ func _editor() -> Node:
 	return ed
 
 
-## Every `Control` member this editor parents to itself as a modal, read off its own source.
+## Every member this editor treats as a MODAL, derived from `_input`'s own early-return set.
+##
+## ⛔ THIS DERIVED FROM MEMBER NAMES FIRST — `modal|keyboard|picker|overlay` — AND MISSED ONE.
+## `_simulate_panel` is a modal ("blocks grid input while open") whose name matches none of those,
+## so the floor written to stop the guard going stale was itself blind to a member that already
+## existed. A naming convention is not the property.
+##
+## ✅ `_input` REFUSING TO RUN UNDER SOMETHING IS THIS FILE'S OPERATIVE DEFINITION OF A MODAL, and
+## it is the same property the rebuild must respect: if input is blocked while it is open, then a
+## rebuild that frees it destroys something the player is using. It cannot be escaped by renaming.
 func _declared_modals() -> Array:
 	var code: String = GdSource.code_of(EDITOR_PATH)
+	var at: int = code.find("func _input(")
+	if at < 0:
+		return []
+	var stop: int = code.find("\nfunc ", at + 10)
+	var body: String = code.substr(at, stop - at) if stop > at else code.substr(at)
 	var out: Array = []
 	var re := RegEx.new()
-	re.compile("^var (_[A-Za-z0-9_]*(?:modal|keyboard|picker|overlay))\\s*:")
-	for line in code.split("\n"):
-		var m := re.search(str(line).strip_edges())
-		if m:
-			out.append(m.get_string(1))
+	re.compile("is_instance_valid\\((_[A-Za-z0-9_]+)\\)")
+	for m in re.search_all(body):
+		var name: String = m.get_string(1)
+		if not (name in out):
+			out.append(name)
 	return out
 
 
@@ -63,6 +77,8 @@ func test_the_editor_declares_several_modals() -> void:
 		"CONTROL: the editor declares several modal members; derived %s" % [mods])
 	assert_true("_keyboard" in mods, "CONTROL: the on-screen keyboard must be among them")
 	assert_true("_rule_composer_overlay" in mods, "CONTROL: …and the composer")
+	assert_true("_simulate_panel" in mods,
+		"CONTROL: …and the simulate readout, which a NAME-based derivation missed entirely")
 
 
 ## ⛔ THE GUARD MUST CONSULT EVERY ONE OF THEM. This is the arm that reds when somebody adds a fifth
