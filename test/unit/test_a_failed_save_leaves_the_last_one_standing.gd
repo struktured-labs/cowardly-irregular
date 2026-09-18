@@ -264,13 +264,20 @@ func test_no_write_reaches_disk_by_a_form_these_arms_cannot_see() -> void:
 		assert_true(OTHER_WRITE_FORMS.has(required),
 			"OTHER_WRITE_FORMS no longer lists %s — this arm reports a clean file by not looking for it, and an emptied list passes with nothing checked" % required)
 
+	## ⚠️ LINE-PRESERVING STRIP, NOT `split()["code"]` — this arm PRINTS `SaveSystem.gd:%d`, and the
+	## code half DELETES doc regions, so every number below it would shift. `strip_comments` emits
+	## one line per input line (quote-aware, so a `#` inside a string is not a comment), which also
+	## closes the trailing-comment false RED `begins_with("#")` could never see.
+	## 📌 THE `"""` HALF IS STILL RAW HERE AND THAT IS STATED RATHER THAN FIXED: measured, SaveSystem.gd
+	## carries 78 doc lines and ZERO naming a write form, and the direction is a false RED (prose
+	## ACCUSES an assert-EMPTY scan, it cannot hide a real write from it). The index-safe repair is a
+	## skip-in-place `code_lines()` on GdSource, which is not mine to add mid-fold.
+	var scan_src := GdSource.strip_comments(src)
 	var offenders: Array = []
 	var line_no := 0
-	for line in src.split("\n"):
+	for line in scan_src.split("\n"):
 		line_no += 1
 		var t := line.strip_edges()
-		if t.begins_with("#"):
-			continue
 		for form in OTHER_WRITE_FORMS:
 			if t.contains(form):
 				offenders.append("%s:%d %s" % ["SaveSystem.gd", line_no, form])
@@ -310,13 +317,22 @@ func test_every_open_here_proves_it_is_read_only_or_is_staged() -> void:
 	var src := f.get_as_text()
 	f.close()
 
+	## ⚠️ LINE-PRESERVING STRIP, NOT `split()["code"]` — this arm PRINTS `SaveSystem.gd:%d`, and the
+	## code half DELETES doc regions, so every number below it would shift. `strip_comments` emits
+	## one line per input line (quote-aware, so a `#` inside a string is not a comment), which also
+	## closes the trailing-comment false RED `begins_with("#")` could never see.
+	## 📌 THE `"""` HALF IS STILL RAW HERE AND THAT IS STATED RATHER THAN FIXED: measured, SaveSystem.gd
+	## carries 78 doc lines and ZERO naming a write form, and the direction is a false RED (prose
+	## ACCUSES an assert-EMPTY scan, it cannot hide a real write from it). The index-safe repair is a
+	## skip-in-place `code_lines()` on GdSource, which is not mine to add mid-fold.
+	var scan_src := GdSource.strip_comments(src)
 	var candidates: Array = []
 	var read_only := 0
 	var line_no := 0
-	for line in src.split("\n"):
+	for line in scan_src.split("\n"):
 		line_no += 1
 		var t := line.strip_edges()
-		if t.begins_with("#") or not t.contains("FileAccess.open("):
+		if not t.contains("FileAccess.open("):
 			continue
 		if _classify_open(t) == "read_only":
 			read_only += 1

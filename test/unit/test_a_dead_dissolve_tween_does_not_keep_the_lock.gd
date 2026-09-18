@@ -18,6 +18,8 @@ extends GutTest
 ## open. Bounding the await defangs it: both dissolves now terminate, so the pop and the emit run.
 
 const MODE7 := "res://src/exploration/Mode7Overlay.gd"
+## The shared stripper. A private `begins_with("#")` sees whole comment lines and nothing else.
+const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 
 func _overlay() -> Node:
@@ -79,6 +81,10 @@ func test_the_dissolves_do_not_await_a_signal_that_can_be_revoked() -> void:
 	## Source ratchet on CODE only. ⚠️ The file's own docstring names `await tween.finished` to
 	## explain what it replaced, so a naive text scan matches the cure and reports the disease —
 	## the same inversion that made three throwaway classifiers flag correct code today.
+	## 📌 THE STRIP IS SHARED, NOT `begins_with("#")`: that only ever saw a WHOLE comment line, so a
+	## TRAILING `# was: await tween.finished` accused a correct file. Measured: Mode7Overlay.gd has
+	## ZERO `"""` delimiters today, so the docstring half of the hazard is absent rather than handled
+	## — `strip_comments` is line-preserving and covers the half that is occupied.
 	var f := FileAccess.open(MODE7, FileAccess.READ)
 	assert_not_null(f, "could not read Mode7Overlay.gd")
 	if f == null:
@@ -87,10 +93,8 @@ func test_the_dissolves_do_not_await_a_signal_that_can_be_revoked() -> void:
 	f.close()
 
 	var offenders: Array = []
-	for line in src.split("\n"):
+	for line in GdSource.strip_comments(src).split("\n"):
 		var t := line.strip_edges()
-		if t.begins_with("#"):
-			continue
 		if t.contains("await ") and t.contains(".finished"):
 			offenders.append(t)
 	assert_eq(offenders, [],
