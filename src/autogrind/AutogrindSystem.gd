@@ -1524,10 +1524,45 @@ func _save_permadead_characters() -> void:
 	if dir and not dir.dir_exists("autogrind"):
 		dir.make_dir("autogrind")
 
-	var file := FileAccess.open("user://autogrind/permadead.json", FileAccess.WRITE)
-	if file:
-		file.store_string(JSON.stringify({"permadead": permadead_characters}, "\t"))
-		file.close()
+	_write_json_atomic("user://autogrind/permadead.json", {"permadead": permadead_characters}, "_save_permadead_characters")
+
+
+## ⛔ SERIALIZE BEFORE OPENING ANYTHING. `FileAccess.open(…, WRITE)` TRUNCATES on open, so a crash
+## between the open and the store leaves the player a 0-byte file and no previous copy — the window
+## is a race against this process dying, not against another writer (@cowir-controller, 2026-09-18).
+## Writes a sibling and renames it into place, so the destination is never the partial state.
+func _write_json_atomic(path: String, payload: Variant, what: String) -> bool:
+	var json_string: String = JSON.stringify(payload, "\t")
+	var staged: String = path + ".new"
+	var file := FileAccess.open(staged, FileAccess.WRITE)
+	if file == null:
+		push_warning("[AUTOGRIND] %s: could not open %s (error %d) — previous file left intact" % [what, staged, FileAccess.get_open_error()])
+		return false
+	file.store_string(json_string)
+	## ⛔ store_string RETURNS NOTHING, so a short write (full disk, quota) is invisible — and
+	## staging does NOT cover it: a rename moves a partial file into place just as happily
+	## (@cowir-controller). get_error() is used 0 times in src/, so all 14 writers share this.
+	var werr: int = file.get_error()
+	file.close()
+	## Checked BEFORE the rename, so a truncated payload never reaches the destination at all.
+	var expected: int = json_string.to_utf8_buffer().size()
+	var chk := FileAccess.open(staged, FileAccess.READ)
+	var written: int = chk.get_length() if chk != null else -1
+	if chk != null:
+		chk.close()
+	if werr != OK or written != expected:
+		if DirAccess.remove_absolute(staged) != OK:
+			push_warning("[AUTOGRIND] %s: short write AND %s could not be removed — partial sibling left on disk" % [what, staged])
+		push_warning("[AUTOGRIND] %s: short write to %s (%d of %d bytes, error %d) — previous file left intact" % [what, staged, written, expected, werr])
+		return false
+	if DirAccess.rename_absolute(staged, path) != OK:
+		## Eager, and loud if it also fails: a stale sibling self-heals only on the NEXT successful
+		## save, which for a file written once may never come (@cowir-controller/@cowir-ai).
+		if DirAccess.remove_absolute(staged) != OK:
+			push_warning("[AUTOGRIND] %s: rename failed AND %s could not be removed — stale sibling left on disk" % [what, staged])
+		push_warning("[AUTOGRIND] %s: could not rename %s into place — previous file left intact" % [what, staged])
+		return false
+	return true
 
 
 func _load_permadead_characters() -> void:
@@ -2706,11 +2741,7 @@ func _save_autogrind_profiles() -> void:
 	if dir and not dir.dir_exists("autogrind"):
 		dir.make_dir("autogrind")
 
-	var file = FileAccess.open(save_path, FileAccess.WRITE)
-	if file:
-		var json_string = JSON.stringify(autogrind_profiles, "\t")
-		file.store_string(json_string)
-		file.close()
+	_write_json_atomic(save_path, autogrind_profiles, "_save_autogrind_profiles")
 
 	# Also save learned patterns and CSI data
 	_save_learned_patterns()
@@ -2726,11 +2757,7 @@ func _save_learned_patterns() -> void:
 	if dir and not dir.dir_exists("autogrind"):
 		dir.make_dir("autogrind")
 
-	var file = FileAccess.open(save_path, FileAccess.WRITE)
-	if file:
-		var json_string = JSON.stringify(learned_patterns, "\t")
-		file.store_string(json_string)
-		file.close()
+	_write_json_atomic(save_path, learned_patterns, "_save_learned_patterns")
 
 
 func _load_learned_patterns() -> void:
@@ -2773,11 +2800,7 @@ func _save_csi_data() -> void:
 		"automation_affinity": _automation_affinity
 	}
 
-	var file = FileAccess.open(save_path, FileAccess.WRITE)
-	if file:
-		var json_string = JSON.stringify(data, "\t")
-		file.store_string(json_string)
-		file.close()
+	_write_json_atomic(save_path, data, "_save_csi_data")
 
 
 func _load_csi_data() -> void:
@@ -2916,12 +2939,8 @@ func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 		"system": build_snapshot_system_block(elapsed),
 	}
 
-	var file = FileAccess.open(SNAPSHOT_PATH, FileAccess.WRITE)
-	if not file:
-		push_warning("[AUTOGRIND] save_grind_snapshot: FileAccess.open failed for %s (error %d) — resume next session will be unavailable" % [SNAPSHOT_PATH, FileAccess.get_open_error()])
+	if not _write_json_atomic(SNAPSHOT_PATH, snapshot, "save_grind_snapshot"):
 		return false
-	file.store_string(JSON.stringify(snapshot, "\t"))
-	file.close()
 	print("[AUTOGRIND] Grind snapshot saved (%d battles, %d EXP)" % [battles_completed, total_exp_gained])
 	return true
 
@@ -3083,12 +3102,7 @@ func get_session_history() -> Array:
 func _save_session_history() -> void:
 	"""Persist session history to file."""
 	if _test_disable_persistence: return
-	var file = FileAccess.open(SESSION_HISTORY_PATH, FileAccess.WRITE)
-	if not file:
-		print("[AUTOGRIND] Warning: could not save session history")
-		return
-	file.store_string(JSON.stringify(session_history, "\t"))
-	file.close()
+	_write_json_atomic(SESSION_HISTORY_PATH, session_history, "_save_session_history")
 
 
 func _load_session_history() -> void:

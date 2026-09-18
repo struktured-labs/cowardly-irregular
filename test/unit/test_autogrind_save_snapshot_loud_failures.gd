@@ -66,9 +66,13 @@ func test_source_ratchet_not_grinding_uses_push_warning() -> void:
 	assert_true(fn_start >= 0, "save_grind_snapshot must exist")
 	var fn_end: int = src.find("\nfunc ", fn_start + 20)
 	var body: String = src.substr(fn_start, fn_end - fn_start)
-	# Isolate the not-grinding block: everything up to the first FileAccess call.
-	var pre_file: int = body.find("FileAccess.open")
-	assert_true(pre_file > 0)
+	## Isolate the not-grinding block: everything up to the first WRITE. The delimiter used to be
+	## `FileAccess.open`, which was incidental — the open moved into the shared atomic writer and
+	## this arm failed on a correct change. Anchor on whichever writer the function actually uses.
+	var pre_file: int = body.find("_write_json_atomic")
+	if pre_file < 0:
+		pre_file = body.find("FileAccess.open")
+	assert_true(pre_file > 0, "CONTROL: save_grind_snapshot must reach a writer, else `head` is the whole function and this arm cannot fail")
 	var head: String = body.substr(0, pre_file)
 	assert_true(head.contains("push_warning") and head.contains("not grinding"),
 		"save_grind_snapshot's not-grinding path must push_warning so silent caller-bugs surface (cadence #14, mirrors tick 344 on the load path)")
@@ -82,10 +86,19 @@ func test_source_ratchet_file_open_failure_uses_push_warning_with_error_code() -
 	var fn_start: int = src.find("func save_grind_snapshot")
 	var fn_end: int = src.find("\nfunc ", fn_start + 20)
 	var body: String = src.substr(fn_start, fn_end - fn_start)
-	# Find the "if not file:" branch — must be within a few lines after FileAccess.open.
-	var file_pos: int = body.find("FileAccess.open")
-	assert_true(file_pos > 0)
-	var post_file: String = body.substr(file_pos, 400)
+	## ⛔ THE DIAGNOSTIC FOLLOWS THE WRITER, NOT THE FUNCTION. save_grind_snapshot no longer opens
+	## anything itself — it routes through the shared atomic writer, so reading only this function's
+	## body reported a missing guarantee that had simply moved. Derive the callee and read THAT.
+	var writer: String = "_write_json_atomic"
+	assert_true(body.contains(writer + "("),
+		"save_grind_snapshot must route its write through %s — if it opens a destination directly it is back to truncating the player's snapshot" % writer)
+	var w_start: int = src.find("func " + writer + "(")
+	assert_true(w_start > 0, "CONTROL: the atomic writer must exist, else every assertion below is vacuous")
+	var w_end: int = src.find("\nfunc ", w_start + 20)
+	var w_body: String = src.substr(w_start, w_end - w_start)
+	var file_pos: int = w_body.find("FileAccess.open")
+	assert_true(file_pos > 0, "CONTROL: the writer must open a file")
+	var post_file: String = w_body.substr(file_pos, 400)
 	assert_true(post_file.contains("push_warning") and post_file.contains("get_open_error"),
 		"FileAccess.open failure must push_warning + include get_open_error() code (parity with load_grind_snapshot line 2361) — else 'save silently didn't happen' is un-debuggable (cadence #14)")
 
