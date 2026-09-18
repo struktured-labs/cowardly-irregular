@@ -488,10 +488,10 @@ func _level_up_flare(card: PanelContainer, fill: ColorRect, idx: int) -> void:
 		flash.tween_property(fill, "color", Color(1.0, 0.9, 0.2), 0.12)
 		flash.tween_property(fill, "color", Color(0.2, 0.8, 0.5), 0.18)
 	if SoundManager._sfx_manifest.has("levelup_flourish"):
-		SoundManager.play_battle("levelup_flourish")
+		SoundManager.play_flourish("levelup_flourish")
 	else:
 		SoundManager.play_music("stinger_level_up")
-		SoundManager.play_battle("level_up")
+		SoundManager.play_flourish("level_up")
 	# Burst at the sprite + replay its victory pose — the celebration belongs to the CHARACTER
 	if _scene and idx < _scene.party_sprite_nodes.size():
 		var sprite = _scene.party_sprite_nodes[idx]

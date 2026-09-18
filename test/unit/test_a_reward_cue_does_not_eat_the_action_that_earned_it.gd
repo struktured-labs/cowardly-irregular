@@ -197,6 +197,48 @@ func test_the_victory_overlay_calls_the_pickup_path() -> void:
 		"loot_pop left the battle player. That may well be right — consecutive item chips clip each other by 0.03s and nobody has ruled on whether they should layer. Update this pin with the reason; it is here so the change is deliberate, not because the current routing is known correct")
 
 
+func test_the_level_up_flourish_is_not_cut_by_a_loot_chip() -> void:
+	## THIRD instance in this strip, and a different victim from the coins. .327 moved gold to
+	## _pickup_player; the level-up flourish stayed on _battle_player beside loot_pop and nothing
+	## looked. _level_up_flare fires at 0.5 + i*0.15 + 0.15 + steps*0.04 + 0.35 — about 1.56s for
+	## the first card — and item chips land at 1.5 + 0.25 + li*0.22. The flourish is 0.88s, so a
+	## chip at 1.97 replaces it 0.41s in, on any victory with a level-up AND an item drop.
+	## PRODUCED before fixing: play_battle both ways left two different streams on the player.
+	var sm: Node = _sm()
+	if sm == null:
+		return
+	assert_true(sm._sfx_manifest.has("levelup_flourish"), "CONTROL: the flourish must exist to be cut")
+	assert_true(sm._sfx_manifest.has("loot_pop"), "CONTROL: the item cue must exist to do the cutting")
+	sm._sfx_cooldowns.clear()
+	sm.play_flourish("levelup_flourish")
+	var flourish = sm._flourish_player.stream
+	assert_not_null(flourish, "CONTROL: the flourish must have loaded")
+	if flourish == null:
+		return
+	sm._sfx_cooldowns.clear()
+	sm.play_battle("loot_pop")
+	assert_eq(sm._flourish_player.stream, flourish,
+		"an item chip replaced the level-up flourish — the loudest moment on the victory screen, cut 0.41s in")
+	assert_ne(sm._battle_player.stream, flourish,
+		"CONTROL: loot_pop must genuinely have played somewhere, or the assert above is vacuous")
+
+
+func test_the_victory_overlay_routes_the_level_up_through_its_own_voice() -> void:
+	## The load-bearing half: the arm above only proves the two voices are SEPARATE. This proves
+	## the overlay uses the separate one. Same shape as the coins pin directly above.
+	## levelup_flourish carries no _BATTLE_VOLUME_TRIM_DB entry and play_flourish passes
+	## SFX_BATTLE_BASE_DB, so this moves the CHANNEL without moving the mix level.
+	var raw := FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
+	var src := _code_only(raw, "func _level_up_flare")
+	assert_gt(src.length(), 10000, "CONTROL: VictoryOverlay CODE read back %d chars" % src.length())
+	assert_true(src.contains('play_flourish("levelup_flourish")'),
+		"the level-up flourish is back on the shared battle player, where the next loot chip replaces it 0.41s in")
+	assert_false(src.contains('play_battle("levelup_flourish")'),
+		"the level-up flourish is back on the shared battle player, where the next loot chip replaces it 0.41s in")
+	assert_false(src.contains('play_battle("level_up")'),
+		"the FALLBACK level-up cue is on the battle player too — it is unreachable while levelup_flourish ships, so it would rot there unnoticed")
+
+
 func test_every_member_this_file_reaches_for_still_exists() -> void:
 	## A direct `sm._x` on a RENAMED member raises at runtime and ABORTS the arm. An abort after
 	## that arm's last assert scores PASSING — measured 2026-09-16: renaming the dedicated voice
@@ -219,7 +261,7 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 	## what a rename commit writes — becomes a listed member that never existed, and the floor then
 	## REDS ON CORRECT CODE. cowir-music demonstrated that false red in their own floors 2026-09-16.
 	## This list is ghost-free only because no such comment existed when it was generated.
-	for method_name in ["play_battle", "play_pickup", "play_ui"]:
+	for method_name in ["play_battle", "play_flourish", "play_pickup", "play_ui"]:
 		assert_true(sm.has_method(method_name),
 			"SoundManager has no method %s — this file CALLS it, and whether that shows as Risky or as a silent pass is decided by arm ORDER, not by care" % method_name)
 	## ⚠️ get() CANNOT DISTINGUISH ABSENT FROM LEGITIMATELY NULL (@cowir-sprites): it returns null
@@ -227,7 +269,7 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 	## _ready has run — so the check is sound HERE. If you add a nullable member to this list
 	## (_crossfade_tween and the other _*_tween members are EXAMPLES, not an exhaustive list — check
 	## the declaration), switch to get_property_list(), which answers about existence rather than value.
-	for member_name in ["_battle_player", "_pickup_player", "_sfx_cooldowns", "_sfx_manifest", "_ui_player"]:
+	for member_name in ["_battle_player", "_flourish_player", "_pickup_player", "_sfx_cooldowns", "_sfx_manifest", "_ui_player"]:
 		## assert_true on an explicit `!= null`: assert_ne deep-compares, and three of these members
 		## are Dictionaries, which it refuses with "Only Arrays and Dictionaries are supported".
 		assert_true(sm.get(member_name) != null,
