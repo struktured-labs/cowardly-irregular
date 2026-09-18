@@ -34,7 +34,9 @@ func _make(name_str: String) -> Combatant:
 
 func test_arm_exists() -> void:
 	var src := _read(BATTLE_MANAGER_PATH)
-	var arm_idx: int = src.find("\"memory_leak_status\":")
+	## Anchored on the INDENTED match arm, not on any occurrence: the aliasing block in
+	## _apply_ability_status also spells "memory_leak_status": and sits 1000 lines earlier.
+	var arm_idx: int = src.find("\n\t\t\"memory_leak_status\":")
 	assert_gt(arm_idx, -1, "BattleManager dispatch must have a memory_leak_status arm")
 	var window: String = src.substr(arm_idx, 400)
 	assert_true(window.contains("add_status(\"memory_leak\""),
