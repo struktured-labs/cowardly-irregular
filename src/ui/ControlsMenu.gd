@@ -710,10 +710,16 @@ func _append_user_mapping(mapping: String) -> bool:
 	var entries: Array = []
 	if FileAccess.file_exists(path):
 		var rf := FileAccess.open(path, FileAccess.READ)
-		if rf:
-			var parsed = JSON.parse_string(rf.get_as_text())
-			if parsed is Array:
-				entries = parsed
+		if rf == null:
+			push_warning("[ControlsMenu] %s exists but could not be opened (error %d) — REFUSING to overwrite it, because its contents are the pads captured before this one and cannot be read back to preserve them." % [path, FileAccess.get_open_error()])
+			return false
+		var raw: String = rf.get_as_text()
+		rf.close()
+		var parsed = JSON.parse_string(raw)
+		if parsed is Array:
+			entries = parsed
+		elif raw.strip_edges() != "" and not _preserve_unreadable(path, raw):
+			return false
 	var guid: String = mapping.split(",")[0]
 	var kept: Array = []
 	for e in entries:
@@ -723,12 +729,37 @@ func _append_user_mapping(mapping: String) -> bool:
 	var dir := DirAccess.open("user://")
 	if dir and not dir.dir_exists("input"):
 		dir.make_dir("input")
-	var wf := FileAccess.open(path, FileAccess.WRITE)
+	var staged: String = path + ".new"
+	var wf := FileAccess.open(staged, FileAccess.WRITE)
 	if wf == null:
-		push_warning("[ControlsMenu] Could not write %s (error %d) — the captured mapping applies to this session only and will be lost on restart." % [path, FileAccess.get_open_error()])
+		push_warning("[ControlsMenu] Could not write %s (error %d) — the captured mapping applies to this session only and will be lost on restart." % [staged, FileAccess.get_open_error()])
 		return false
 	wf.store_string(JSON.stringify(kept, "\t"))
 	wf.close()
+	var err := DirAccess.rename_absolute(staged, path)
+	if err != OK:
+		push_warning("[ControlsMenu] Could not move %s into place (error %d) — the previous mappings are intact and the new one applies to this session only." % [staged, err])
+		DirAccess.remove_absolute(staged)
+		return false
+	return true
+
+
+## Copies bytes we could not parse to a sidecar BEFORE the caller overwrites the file, so an
+## unreadable mappings file costs the player a manual recovery rather than every pad they ever
+## captured. Returns false when even the copy fails, which is the caller's signal to refuse.
+##
+## ⚠️ An EMPTY file is deliberately not routed here: 0 bytes hold no mappings, so there is nothing
+## to preserve and a sidecar would be litter. The destructive case is bytes we cannot READ, not
+## bytes that are absent.
+func _preserve_unreadable(path: String, raw: String) -> bool:
+	var sidecar: String = path + ".unreadable"
+	var bf := FileAccess.open(sidecar, FileAccess.WRITE)
+	if bf == null:
+		push_warning("[ControlsMenu] %s is not valid JSON and could not be copied to %s (error %d) — REFUSING to overwrite it rather than discarding the pads it holds." % [path, sidecar, FileAccess.get_open_error()])
+		return false
+	bf.store_string(raw)
+	bf.close()
+	push_warning("[ControlsMenu] %s is not valid JSON — its %d byte(s) were moved to %s and the new mapping starts a fresh file. Previously captured pads are recoverable from the sidecar." % [path, raw.length(), sidecar])
 	return true
 
 

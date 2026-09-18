@@ -67,15 +67,40 @@ func test_reset_returns_the_chain_to_inert() -> void:
 
 
 func test_the_ramp_is_a_BIAS_so_the_existing_jitter_survives() -> void:
-	## The ±5% variation is applied as `pitch_scale * randf_range(0.95, 1.05)`. If someone
+	## The variation is applied as `pitch_scale * <a draw across the authored band>`. If someone
 	## reworks the ramp into an assignment rather than a multiply, the jitter silently dies
 	## and hits become mechanically uniform — audible, and invisible to a value test.
+	## ⛔ THE BAND IS READ FROM THE CONSTANT, NOT MATCHED AS A LITERAL. This arm pinned the exact
+	## text `randf_range(0.95, 1.05)` and went red on 2026-09-18 when that band was named
+	## SFX_PITCH_JITTER so play_voice could opt out of it — the jitter was intact, composing
+	## exactly as this arm defends, and the only thing that moved was the spelling. A literal in
+	## an assertion where the relationship is the subject reds on a correct change.
 	var src: String = FileAccess.get_file_as_string(SM_SRC)
 	assert_gt(src.length(), 1000, "SCOPE control: SoundManager.gd read back empty")
-	assert_true(src.contains("randf_range(0.95, 1.05)"),
-		"the ±5%% jitter is gone — the ramp was meant to ride on top of it, not replace it")
+	var band: float = float(SoundManager.get_script().get_script_constant_map().get("SFX_PITCH_JITTER", 0.0))
+	assert_gt(band, 0.0,
+		"the jitter band is gone or zero — the ramp was meant to ride on top of it, not replace it")
 	assert_true(src.contains("pitch_scale * pitch_variation"),
 		"final pitch is no longer the PRODUCT of the passed scale and the jitter, so the ramp is not composing with it")
+	## And the same claim behaviourally, which no rename can move: divide the pitch the player was
+	## actually set to by the bias that hit carried, and the quotient must land inside the authored
+	## band. An assignment in place of the multiply leaves it at 1/bias, outside it.
+	## ⛔ THE BIAS IS READ BEFORE THE MEASURED HIT, not after. _advance_hit_chain runs at the END of
+	## play_attack_hit, so reading it afterwards is one step too high — and one step (0.03) is
+	## smaller than the band (0.05), which makes the error a FLAKE rather than a failure.
+	SoundManager.reset_hit_chain()
+	for i in range(4):
+		SoundManager._sfx_cooldowns.clear()
+		SoundManager.play_attack_hit("", false)
+	var bias: float = SoundManager.get_combo_pitch_bias()
+	assert_gt(bias, 1.0, "control: the chain must actually have ramped, or the product is unobservable")
+	SoundManager._sfx_cooldowns.clear()
+	SoundManager.play_attack_hit("", false)
+	var drawn: float = SoundManager._battle_player.pitch_scale / bias
+	assert_between(drawn, 1.0 - band, 1.0 + band,
+		"the hit sounded at %.4f against a bias of %.4f — the jitter is not riding on the ramp" % [
+			SoundManager._battle_player.pitch_scale, bias])
+	SoundManager.reset_hit_chain()
 
 
 func test_the_chain_is_reset_at_the_action_boundary() -> void:
