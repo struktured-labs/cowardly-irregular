@@ -204,12 +204,32 @@ func test_every_copy_of_an_equipment_drop_reaches_the_pool() -> void:
 	assert_true(body.contains("add_item(item_id, qty)"),
 		"CONTROL: the consumable fallback must be in the extracted body, or this arm read the wrong range")
 
-	assert_gt(body.count("route_drop_to_equipment_pool"), 1,
-		("the equipment router is called ONCE while consumables honour qty — it appends one id per " +
-		"call, so a stack of qty leaves qty-1 pieces of gear on the floor. Live delivers one call " +
-		"per roll; the grind's aggregation must be undone for equipment."))
-	assert_true(body.contains("qty - 1"),
-		"the extra routing calls must be bounded by the rolled quantity, not a constant")
+	## ⛔ THIS PAIR COUNTED SITES AND PINNED MY ARITHMETIC, AND WAS WRONG IN BOTH DIRECTIONS.
+	## It was `count("route_drop_to_equipment_pool") > 1` plus `contains("qty - 1")`. A correct
+	## refactor to `for _i in range(qty): route(item_id)` is ONE site with no "qty - 1" and would
+	## have RED both arms; a duplicated call with qty ignored is two sites and would have PASSED.
+	## @cowir-controller's shape from the nav-sound ratchet: the comment enumerated PATHS and the
+	## assert counted SITES, and they agreed only because each path carried its own copy.
+	##
+	## The CLAIM is that the equipment branch iterates the rolled quantity. Assert that relationship.
+	## ⛔ ANCHOR ON THE DELIVERY BLOCK, NOT ON THE ROUTER CALL. Anchoring at the router excludes any
+	## loop that PRECEDES it — which is the shape a correct refactor takes — so the arm red on the
+	## very refactor it exists to permit. Caught by the must-stay-green mutation, not by reading.
+	var eq_at: int = body.find("var qty")
+	assert_gt(eq_at, -1, "the delivery block must still derive a per-id quantity")
+	var stop_at: int = body.find("add_item(item_id, qty)", eq_at)
+	assert_gt(stop_at, eq_at, "CONTROL: the consumable fallback must follow the equipment branch, or the slice is inverted")
+	var eq_branch: String = body.substr(eq_at, stop_at - eq_at)
+	assert_gt(eq_branch.length(), 20,
+		"CONTROL: the equipment branch must be locatable between the quantity and the consumable fallback")
+
+	var loops := RegEx.create_from_string("for\\s+\\w+\\s+in\\s+[^\\n]*qty").search(eq_branch) != null
+	assert_true(loops,
+		("the equipment branch does not iterate the rolled quantity. The router appends ONE id per " +
+		"call, so a stack of qty leaves qty-1 pieces of gear on the floor — live delivers one call " +
+		"per successful roll and the grind's aggregation has to be undone for equipment."))
+	assert_true(eq_branch.count("route_drop_to_equipment_pool") >= 1,
+		"CONTROL: a loop bounded by qty means nothing if the router is not inside the branch it bounds")
 
 
 func test_gameloop_merges_drops_into_items_gained() -> void:
