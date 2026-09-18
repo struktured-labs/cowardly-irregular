@@ -129,6 +129,14 @@ func test_no_unwatched_writer_has_appeared_in_the_lane() -> void:
 ## assertion here stays green — it is not an offender, it is not a missing member, it is invisible.
 ## Measured today: my lane uses NO such form, and the same patterns DO find the fleet's four
 ## (GameLoop ×2, BaseTileGenerator, FeedbackBundle), so the zero is over a working instrument.
+## ✅ ALL SEVEN ARE MUTATION-PROVEN, not asserted: each was planted in turn and each reds THIS arm
+## and only this arm. @cowir-music flagged the opposite state in their copy — "proven for one form
+## and asserted for seven" — because only `save_png` has a live positive anywhere in `src/`, so the
+## other six are absent fleet-wide and a pattern that never matches is a pattern never tested.
+## ⚠️ WHAT REMAINS AND CANNOT BE CLOSED HERE: THE LIST IS HAND-WRITTEN, SO AN EIGHTH FORM IS
+## UNBOUNDED. This arm is not "no exotic write can exist"; it is "none of these seven, and nobody
+## has taught it an eighth". @cowir-music's framing of the asymmetry is the right one — this list
+## cannot SHRINK with its subject the way a self-referential floor can, it can only be SHORT.
 const OTHER_WRITE_FORMS := [
 	"ResourceSaver.", "store_var(", "store_buffer(", "store_line(", "store_csv_line(",
 	"save_png(", "save_to_file(",
