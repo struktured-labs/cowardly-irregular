@@ -11,7 +11,11 @@ extends SceneTree
 ## player exactly when compose_async says source == "llm"; there is no second
 ## opinion to keep synchronised.
 ##
-##   godot --headless --script tools/rule_composition_compose.gd -- <arm> <character_id>
+##   XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy \
+##     --script tools/rule_composition_compose.gd -- <arm> <character_id>
+##
+## The sandbox prefix is not optional and this tool has no wrapper to supply it: a bare
+## godot resolves user:// to the real profile and rotates the player's crash logs away.
 ##
 ## Reads tmp/replies_<arm>/*.txt, writes tmp/composebench_<arm>.txt.
 
