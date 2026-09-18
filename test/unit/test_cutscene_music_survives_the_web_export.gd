@@ -16,17 +16,31 @@ extends GutTest
 ## plays dead. That is strictly better than the 8.5s main-thread hang the
 ## generator tier caused, and it is still wrong.
 ##
-## Measured 2026-09-11: 21 of the 42 music ids referenced by data/cutscenes/*
-## are dropped by the Web preset's exclude_filter, including every world
-## epilogue's credits roll and world6_ending — the campaign ending rolls its
-## credits in silence on web.
+## ⛔ THE 2026-09-11 MEASUREMENT THAT STOOD HERE IS STALE, AND IT SENT ME TO REGISTER A DECISION
+## STRUKTURED DID NOT NEED. It said *21 of the 42 cutscene music ids are dropped by the Web
+## preset, including every world epilogue's credits roll and world6_ending — the campaign ending
+## rolls its credits in silence on web*. Re-measured 2026-09-18:
 ##
-## ⚠️ WHAT THIS TEST DOES NOT DO IS PICK A REPLACEMENT. Substituting
-## credits_medieval for credits_abstract plays the WRONG music instead of none,
-## and which bed stands in for a missing one is @struktured's call, not a
-## defect I get to fix quietly. The pin records the set and its reason; it goes
-## RED when the set GROWS, so a newly authored W4-W6 cutscene cue cannot join
-## it unnoticed, and RED when it SHRINKS, so the pin cannot outlive the fix.
+##     cutscene music ids                        37   (was 42)
+##     dropped by the Web exclude_filter          9   (was 21) == SILENT_ON_THE_FALLBACK_EXPORT
+##     `credits_*` among them                     0   <- the claim above, now false
+##
+## `fa64fe39a` removed the `cutscene_w6` pattern, and no `credits_*` pattern was ever authored:
+## the 28 audio patterns are prefix-scoped (`ambient_*`, `battle_*`, `boss*`, `danger*`,
+## `dungeon_*`, `overworld_*`, `victory_*`, `village_*`), so a credits roll matches none of them.
+##
+## 🔑 AND THE 9 THAT REMAIN ARE NOT IN THE PUBLISHED BUILD EITHER: `deploy_web.sh` defaults
+## `WEB_STAGE=1` and `make_web_stage.sh` drops every music exclusion that globs a real master
+## before exporting. The constants below say so in their own names — FALLBACK, not published —
+## and `test_the_published_path_drops_these_exclusions_entirely` asserts it. The ARMS were current
+## the whole time; only this paragraph had moved on.
+##
+## ⚠️ WHAT THIS TEST STILL DOES NOT DO IS PICK A REPLACEMENT, and that stays true for the
+## WEB_STAGE=0 fallback: substituting one bed for a missing one plays the WRONG music instead of
+## none. The pin records the set and its reason; it goes RED when the set GROWS, so a newly
+## authored W4-W6 cutscene cue cannot join it unnoticed, and RED when it SHRINKS, so the pin
+## cannot outlive the fix. ⛔ DO NOT SOURCE AN ASK FROM THIS PARAGRAPH WITHOUT RE-MEASURING — I
+## did, cited `credits_abstract` as web-excluded, and it is not.
 
 const MANIFEST := "res://data/music_manifest.json"
 const PRESETS := "res://export_presets.cfg"
