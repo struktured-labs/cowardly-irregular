@@ -143,7 +143,13 @@ func test_nav_handlers_call_scroll_to_selected() -> void:
 			if i > start and l.begins_with("func "):
 				break
 			seg += l + "\n"
-		if not (seg.contains("_scroll_to_selected()") or seg.contains("_nav_step(")):
+		# ⛔ BRACKETED ON THE LEFT. A bare `_nav_step(` is satisfied by `_do_nav_step(` — measured:
+		# pointing the wheel at a prefix-named twin left this suite GREEN at 6 passing while the
+		# real owner was never called. Any delimiter before the symbol closes that side; for a
+		# self-call it is the indentation tab, the way a receiver dot does it for a method.
+		# (The sibling pin in test_the_grind_rule_editor_scrolls needs no such fix — its
+		# behavioural arms red on the same twin, so that hazard fails LOUD.)
+		if not (seg.contains("\t_scroll_to_selected()") or seg.contains("\t_nav_step(")):
 			unwired.append(label)
 	assert_true(unwired.is_empty(),
 		"these selection-moving paths neither scroll nor delegate to the owner that does, so the "
