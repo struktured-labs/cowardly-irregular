@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left autoload state for every later file.
+var _ag_state: Dictionary
+
 ## Cadence #11 — is_snapshot_loadable() gates the UI Resume button. A file
 ## that exists but fails validation (corrupt JSON, wrong version, non-dict
 ## root, missing keys) used to pass has_grind_snapshot() → ghost "RESUME (0
@@ -14,6 +19,7 @@ var _pre_bytes: PackedByteArray = PackedByteArray()
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	_pre_existed = FileAccess.file_exists(SNAP_PATH)
 	if _pre_existed:
@@ -33,6 +39,8 @@ func after_each() -> void:
 		if f != null:
 			f.store_buffer(_pre_bytes)
 			f.close()
+	AutogrindState.restore(_ag_state)
+
 
 
 func _write(path: String, contents: String) -> void:

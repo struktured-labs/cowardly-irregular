@@ -28,7 +28,10 @@ func has_lock(lock_id: String) -> bool:
 	return _locks.has(lock_id)
 
 
-## One reaper, so a new reader cannot be added without the backstop. Returns the ids it expired.
+## The one reaper. ⛔ It is CENTRALISED, not AUTOMATIC — every reader must still CALL it, and
+## this comment claiming otherwise is why the third one went unnoticed for five days. The
+## test derives the reader set from this file, so a fourth cannot be added silently.
+## Returns the ids it expired.
 func _reap_stale() -> Array:
 	if _locks.is_empty():
 		return []
@@ -57,5 +60,10 @@ func is_locked() -> bool:
 	return not _locks.is_empty()
 
 
+## ⛔ REAPS FIRST — the THIRD reader. ab93b8265 ("the stale-lock backstop reaches both readers,
+## not one") fixed has_lock and named its own scope as complete; there were three, and this one
+## sat four lines below it returning the dict raw. A diagnostic that answers "what is held?"
+## with locks the backstop already expired is the one reader that most needs to be honest.
 func get_active_locks() -> Array:
+	_reap_stale()
 	return _locks.keys()

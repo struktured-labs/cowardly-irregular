@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 ## AutogrindSystem has enforced five interrupt rules since it shipped — hp_threshold, party_death,
 ## item_depleted, corruption_limit, max_battles — and NO src/ui/ file ever set one. Measured before
 ## this fix: all five keys occurred only in AutogrindSystem.gd, at their own declaration and at the
@@ -21,6 +26,7 @@ const DEFAULTS := {"hp_threshold": 20.0, "party_death": true, "item_depleted": t
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	_sys = AutogrindSystem
 	_sys.set_interrupt_rules(DEFAULTS)
@@ -41,6 +47,8 @@ func after_each() -> void:
 	_sys.stop_autogrind()
 	AutogrindSystem._test_disable_persistence = false
 	_sys.set_interrupt_rules(DEFAULTS)
+	AutogrindState.restore(_ag_state)
+
 
 
 ## Combatant.new() takes no args — initialize() carries the stats (the idiom in test_autogrind.gd).

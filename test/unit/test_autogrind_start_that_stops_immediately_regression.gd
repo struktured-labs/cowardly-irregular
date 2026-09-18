@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file leaked state a hand-listed teardown cannot name.
+var _ag_state: Dictionary
+
 ## struktured 2026-09-07, on .228: "cant exit autogrind again! got stuck after it stopped".
 ## His party was already under the 20% HP stop threshold, so start_grind stopped SYNCHRONOUSLY:
 ## grind_complete freed the controller and restored exploration INSIDE the start call, and
@@ -16,6 +21,7 @@ var _ui: Control = null
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	if AutogrindSystem.is_grinding:
 		AutogrindSystem.stop_autogrind("test reset")
@@ -44,6 +50,8 @@ func after_each() -> void:
 	if AutogrindSystem.is_grinding:
 		AutogrindSystem.stop_autogrind("test teardown")
 	Engine.time_scale = 1.0
+	AutogrindState.restore(_ag_state)
+
 
 
 func test_the_fixture_actually_stops_on_start() -> void:

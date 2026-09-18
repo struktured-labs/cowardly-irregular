@@ -1,5 +1,10 @@
 extends GutTest
 
+const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+
+## Whole-surface autoload restore — this file left live signal wiring on the autoload.
+var _ag_state: Dictionary
+
 var _gating_battles_before: int = 0
 
 const GdSource = preload("res://test/unit/helpers/gd_source.gd")
@@ -42,6 +47,7 @@ class FakeGameState extends RefCounted:
 
 
 func before_each() -> void:
+	_ag_state = AutogrindState.snapshot()
 	_gating_battles_before = AutogrindSystem.battles_completed
 	AchievementsScript._reset_cache_for_test()
 	AutogrindSystem._test_disable_persistence = true
@@ -65,6 +71,8 @@ func after_each() -> void:
 	for f in _saved:
 		AutogrindSystem.set(f, _saved[f])
 	_saved.clear()
+	AutogrindState.restore(_ag_state)
+
 
 
 # ── The award no longer needs a screen ───────────────────────────────────────

@@ -83,6 +83,16 @@ assets/sprites/**/*.pre_normalize.png
 assets/sprites/**/*.pre_palette.png
 assets/sprites/**/*.pre_chromakey.png
 assets/sprites/**/*.pre_artist_style.png
+# ...and their .import sidecars, ONE RULE PER PNG RULE ABOVE rather than a
+# *.pre_* glob. 6630ab186 untracked the PNGs and left their 202 sidecars
+# tracked, so every clone carried sidecars for files it does not have. The
+# glob is wrong here: *.pre_artist.png is TRACKED art (11 files, the state
+# before an artist drop) and is deliberately not in the list above, so a
+# broad rule would strip sidecars from files the repo does ship.
+assets/sprites/**/*.pre_normalize.png.import
+assets/sprites/**/*.pre_palette.png.import
+assets/sprites/**/*.pre_chromakey.png.import
+assets/sprites/**/*.pre_artist_style.png.import
 *.bak
 
 # Scraped third-party sprite sets used as LoRA training input — NEVER commit.
