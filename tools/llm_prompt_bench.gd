@@ -147,6 +147,18 @@ func _init() -> void:
 	for ask in ASKS:
 		var kc: Dictionary = _party_kit_for() if str(ask["domain"]) == "autogrind" \
 			else _kit_for(str(ask["job"]))
+		## FLOOR. Every route to an empty kit here is a READ that failed, and none of them say
+		## so: the three FileAccess.open helpers return [] on null, and _kit_for parses
+		## jobs.json straight into a typed Dictionary — an unreadable file yields null, the
+		## assignment ABORTS the function, and {} comes back. The bench would then render a
+		## prompt with no kit, write it, and print "rendered N chars" exactly as on a good run,
+		## so every measurement taken against it would be about a prompt the game never sends —
+		## which is the one thing this bench exists to prevent.
+		if not bool(kc.get("resolved", false)):
+			push_error("kit context for '%s' did not resolve — refusing to render a degraded prompt"
+				% str(ask["key"]))
+			quit(2)
+			return
 		var prompt: String = DP.build_rule_composition(
 			str(ask["domain"]), str(ask["text"]), [], kc)
 		var path: String = "%s/%s.txt" % [OUT, str(ask["key"])]
