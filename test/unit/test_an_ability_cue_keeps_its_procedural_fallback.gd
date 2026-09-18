@@ -11,6 +11,12 @@ const PROBE_ABILITY := "zz_probe_ability_cue"
 const BROKEN_FILE := "assets/audio/sfx/zz_this_file_does_not_exist.ogg"
 
 var _saved_entry: Dictionary = {}
+## ⛔ The world suffix lives on the AUTOLOAD and persists for the whole GUT run. This file drove it
+## as a PRECONDITION and a prior file in the .412 batch left "abstract" there — the control refused,
+## correctly, and red the gate. A file must ESTABLISH the state its premise needs, not assert that
+## someone else left it. Measured: entering at w6_, pre-fix is Failing 3, this is Passing 6.
+var _saved_area: String = ""
+var _saved_suffix: String = ""
 
 
 func _sm() -> Node:
@@ -30,6 +36,11 @@ func before_each() -> void:
 	var sm: Node = _sm()
 	if sm == null:
 		return
+	_saved_area = str(sm._current_area)
+	_saved_suffix = str(sm._current_world_suffix)
+	## W1 defaults, which are exactly what make _get_world_sfx_prefix() return "" — the premise.
+	sm._current_area = ""
+	sm._current_world_suffix = "medieval"
 	sm._sfx_cooldowns.clear()
 	sm._sfx_stream_cache.erase(KEY)
 	sm._ability_sounds[PROBE_ABILITY] = KEY
@@ -46,6 +57,8 @@ func after_each() -> void:
 	sm._sfx_stream_cache.erase(KEY)
 	sm._ability_sounds.erase(PROBE_ABILITY)
 	sm._sfx_cooldowns.clear()
+	sm._current_area = _saved_area
+	sm._current_world_suffix = _saved_suffix
 
 
 func test_this_files_scenario_is_the_one_it_claims_to_drive() -> void:
@@ -56,7 +69,7 @@ func test_this_files_scenario_is_the_one_it_claims_to_drive() -> void:
 	if sm == null:
 		return
 	assert_eq(sm._get_world_sfx_prefix(), "",
-		"CONTROL: the world prefix is not empty, so world_key != sound_key and this file drives nothing")
+		"CONTROL: before_each did not establish the W1 world state — the prefix is not empty, so world_key != sound_key and this file drives nothing")
 	assert_true(sm._sfx_manifest.has(KEY), "CONTROL: %s must be authored" % KEY)
 	var sounds: Dictionary = sm.get_script().get_script_constant_map()["SOUNDS"]
 	assert_true(sounds.has(KEY),
@@ -126,5 +139,9 @@ func test_every_member_this_file_reaches_for_still_exists() -> void:
 	for member_name in ["_ability_player", "_battle_player", "_ability_sounds", "_sfx_cooldowns", "_sfx_manifest", "_sfx_stream_cache"]:
 		assert_true(sm.get(member_name) != null,
 			"SoundManager has no %s — this file reaches for it directly" % member_name)
+	## The fixture WRITES these two; a rename would silently stop the file establishing its premise.
+	for world_member in ["_current_area", "_current_world_suffix"]:
+		assert_true(sm.get(world_member) != null,
+			"SoundManager has no %s — before_each writes it to establish this file's premise" % world_member)
 	assert_true(sm.get_script().get_script_constant_map().has("SOUNDS"),
 		"SOUNDS is gone — the procedural fallback this whole file is about")
