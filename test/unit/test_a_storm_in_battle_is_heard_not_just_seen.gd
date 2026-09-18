@@ -51,7 +51,19 @@ func after_each() -> void:
 
 func test_both_surfaces_that_draw_the_bolt_also_sound_it() -> void:
 	## A RELATIONSHIP between the two renderers of one event, not a literal in either — so moving
-	## the cue, renaming it or adding a third surface is what this has to survive.
+	## the cue or renaming it is what this has to survive.
+	##
+	## ⚠️ "TWO SURFACES" IS TWO CODE PATHS, NOT TWO PLACES IN THE GAME, and the distinction runs the
+	## generous way. Measured 2026-09-18: `_trigger_lightning` lives once in WeatherSystem and is
+	## hosted SIX times — OverworldScene plus the suburban/steampunk/industrial/futuristic
+	## overworlds, and BaseVillage — so the fix reaches village storms too, which the commit did
+	## not say. BattleScene._process_weather_layer is the only renderer outside that function.
+	##
+	## ⛔ AND WHAT THIS ARM DOES NOT DO, said rather than implied: the pair is HAND-NAMED. A THIRD
+	## renderer would not red here. I checked for one (`_storm_bolt` has two callers, the other
+	## being the ability storm this borrows its builder from) and found none — but "none today"
+	## is the claim, not "none possible". Deriving the set would need a signature for "renders a
+	## weather strike" that does not exist in the code, so a floor would be fiction.
 	var overworld: String = _func_body(WEATHER_SYSTEM, "func _trigger_lightning(")
 	var battle: String = _func_body(BATTLE_SCENE, "func _process_weather_layer(")
 	assert_ne(overworld, "", "CONTROL: WeatherSystem._trigger_lightning is gone — this file's premise is stale")
