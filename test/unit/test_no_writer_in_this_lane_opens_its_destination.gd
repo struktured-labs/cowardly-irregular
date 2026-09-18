@@ -131,6 +131,27 @@ func _strip_comment(line: String) -> String:
 	return GdSource.strip_comments(line)
 
 
+## ⛔ `strip_comments` REMOVES `#` AND NOTHING ELSE — the `"""` handling lives in `GdSource.split()`
+## / `code_of`, and several lanes (me included) named the wrong half when delegating. Measured, on a
+## writer whose only claimed rename sat in a docstring AFTER the write: P=3 F=0, a FALSE GREEN with
+## a real unstaged write in the file (@cowir-battle's row 2c).
+##
+## ⚠️ AND `code_of` IS NOT A DROP-IN HERE: it PARTITIONS lines into code/doc, so indices shift, and
+## every message this file prints carries a line number. So the regions are SKIPPED rather than
+## removed — same effect on matching, indices preserved.
+func _doc_region_flags(lines: PackedStringArray) -> Array:
+	var out: Array = []
+	var inside: bool = false
+	for l in lines:
+		var s: String = str(l)
+		var fences: int = s.count("\"\"\"")
+		## A line opening AND closing a region is entirely doc; one fence toggles for what follows.
+		out.append(inside or fences > 0)
+		if fences % 2 == 1:
+			inside = not inside
+	return out
+
+
 ## The FIRST ARGUMENT of a `FileAccess.open(...)` call — the path being opened, verbatim, so the
 ## safety check can demand that same expression rather than any call of the right shape.
 func _opened_expr(line: String) -> String:
@@ -161,10 +182,12 @@ func _enclosing_name(lines: PackedStringArray, idx: int) -> String:
 ## cannot precede the write.
 func _body_after(lines: PackedStringArray, idx: int) -> String:
 	var out: String = ""
+	var in_doc: Array = _doc_region_flags(lines)
 	for i in range(idx, lines.size()):
 		if i > idx and str(lines[i]).begins_with("func "):
 			break
-		out += _strip_comment(str(lines[i])) + "\n"
+		if not in_doc[i]:
+			out += _strip_comment(str(lines[i])) + "\n"
 	return out
 
 
@@ -176,9 +199,12 @@ func _write_opens() -> Array:
 		if f == null:
 			continue
 		var all_lines: PackedStringArray = f.get_as_text().split("\n")
+		var in_doc: Array = _doc_region_flags(all_lines)
 		var n: int = 0
 		for line in all_lines:
 			n += 1
+			if in_doc[n - 1]:
+				continue
 			var fn_body: String = _body_after(all_lines, n - 1)
 			var s: String = _strip_comment(line as String).strip_edges()
 			if s.is_empty():
