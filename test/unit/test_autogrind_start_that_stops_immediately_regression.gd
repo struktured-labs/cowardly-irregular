@@ -18,6 +18,19 @@ const _SM_ROUTING_FIELDS := [
 
 var _saved_sm: Dictionary = {}
 
+## ⛔ A THIRD AUTOLOAD. @cowir-controller measured this file leaving +1 entry in
+## AutobattleSystem.character_profiles (key "wounded") — my SoundManager fix did not touch it, and
+## neither single-subject probe named it. The WHOLE map is restored, not the keys this file wrote:
+## @cowir-ai's finding is that the leaked key is one the file never wrote, registered three calls
+## down by a keyed `_ensure_*`. Adopt their helpers/autobattle_profiles.gd once it is on main.
+var _saved_profiles: Dictionary = {}
+
+
+static func _autobattle():
+	var loop := Engine.get_main_loop()
+	var root = loop.root if loop is SceneTree else null
+	return root.get_node_or_null("/root/AutobattleSystem") if root != null else null
+
 ## struktured 2026-09-07, on .228: "cant exit autogrind again! got stuck after it stopped".
 ## His party was already under the 20% HP stop threshold, so start_grind stopped SYNCHRONOUSLY:
 ## grind_complete freed the controller and restored exploration INSIDE the start call, and
@@ -38,6 +51,8 @@ func before_each() -> void:
 	_saved_sm.clear()
 	for f in _SM_ROUTING_FIELDS:
 		_saved_sm[f] = SoundManager.get(f)
+	var ab = _autobattle()
+	_saved_profiles = (ab.character_profiles as Dictionary).duplicate(true) if ab != null else {}
 	AutogrindSystem._test_disable_persistence = true
 	if AutogrindSystem.is_grinding:
 		AutogrindSystem.stop_autogrind("test reset")
@@ -70,6 +85,11 @@ func after_each() -> void:
 	SoundManager.stop_music()
 	for f in _SM_ROUTING_FIELDS:
 		SoundManager.set(f, _saved_sm[f])
+	var ab2 = _autobattle()
+	if ab2 != null:
+		var cp: Dictionary = ab2.character_profiles
+		cp.clear()
+		cp.merge(_saved_profiles)
 
 
 

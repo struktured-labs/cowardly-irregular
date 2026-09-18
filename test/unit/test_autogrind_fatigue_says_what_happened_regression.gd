@@ -237,7 +237,32 @@ func test_every_announced_event_is_applied_or_justified() -> void:
 ## (file, field) pairs the class scan returns are NOT pinned here, because a field nothing gates on
 ## cannot poison a later file that sets what it reads. If another field is ever shown to gate a
 ## shared path, add it to GATING_FIELDS — the list is the claim, not a convenience.
-const GATING_FIELDS := ["battles_completed"]
+## ⛔ DERIVED, NOT LISTED — and the list was RIGHT BY ITS OWN RULE AND WRONG BY ITS OWN MEASUREMENT.
+## The rule above is exact: a field nothing gates on cannot poison a later file. But the gate is
+## `_check_interrupt_conditions`, and reading it shows it consults FOUR autoload fields, not one:
+## battles_completed, grind_party, interrupt_rules, meta_corruption_level. Two of the three that
+## were unwatched were measured leaking by real files on 2026-09-17 (the gold pair leave
+## meta_corruption_level; the fatigue-session file left a FREED Combatant in grind_party).
+## So this derives the set from the gate's own source: add a field to the gate and it is watched the
+## day it lands, rather than the day someone remembers this const exists.
+const GATING_SOURCE := "res://src/autogrind/AutogrindSystem.gd"
+
+
+## The autoload fields `_check_interrupt_conditions` actually reads, intersected with its top-level
+## `var` declarations so a local name cannot enter the set.
+func _gating_fields() -> Array:
+	var code: String = GdSource.code_of(GATING_SOURCE)
+	var at: int = code.find("func _check_interrupt_conditions(")
+	if at < 0:
+		return []
+	var stop: int = code.find("\nfunc ", at + 1)
+	var body: String = code.substr(at, (stop - at) if stop > at else -1)
+	var out: Array = []
+	for m in RegEx.create_from_string("(?m)^var ([A-Za-z_][A-Za-z_0-9]*)").search_all(code):
+		var name: String = m.get_string(1)
+		if RegEx.create_from_string("(?<![\\w.])" + name + "\\b").search(body) != null:
+			out.append(name)
+	return out
 
 
 func test_no_autogrind_test_leaves_a_gating_field_dirty() -> void:
@@ -245,6 +270,15 @@ func test_no_autogrind_test_leaves_a_gating_field_dirty() -> void:
 	assert_not_null(dir, "CONTROL: the test directory must be readable")
 	var names: PackedStringArray = dir.get_files()
 	assert_gt(names.size(), 50, "CONTROL: read a real corpus (%d files)" % names.size())
+
+	## CONTROL on the derivation itself: a broken slice would return [] and every arm below would
+	## pass over an empty corpus — @cowir-sfx's shrinking-corpus shape.
+	var gating: Array = _gating_fields()
+	gut.p("    gating fields derived from _check_interrupt_conditions: %s" % str(gating))
+	assert_true("battles_completed" in gating,
+		"CONTROL: the derivation must still find the measured gating field, or it is reading the wrong function")
+	assert_gt(gating.size(), 1,
+		"CONTROL: the gate consults several autoload fields; a set of one means the slice failed")
 
 	var offenders: Array = []
 	var checked: int = 0
@@ -267,11 +301,20 @@ func test_no_autogrind_test_leaves_a_gating_field_dirty() -> void:
 		var code: String = GdSource.code_of("res://test/unit/%s" % fname)
 		if code == "":
 			continue
-		for field in GATING_FIELDS:
+		for field in gating:
 			if not code.contains(field):
 				continue
 			checked += 1
-			var sets_it: bool = code.contains("." + field + " =")
+			## ⛔ THE AUTOLOAD RECEIVER IS LOAD-BEARING. This was `.` + field + ` =`, which matches ANY
+			## receiver — and eight files in this lane build their OWN instance
+			## (`preload("…AutogrindSystem.gd").new()` + `add_child_autofree`) and set fields on THAT.
+			## A private instance is freed with the test and cannot poison anybody. Measured
+			## 2026-09-17: the receiver-agnostic form reported 14 offenders and the empirical
+			## entry/exit probe reported ZERO across the same 149 files — all 14 were local instances.
+			## ⚠️ LIMIT, recorded rather than papered over: an ALIASED autoload (`var s = AutogrindSystem`
+			## then `s.field = …`) is invisible to this. The in-process probe is what covers that; this
+			## arm is the cheap backstop, not the authority.
+			var sets_it: bool = code.contains("AutogrindSystem." + field + " =")
 			if not sets_it:
 				continue
 			## A restore is that field assigned inside after_each/after_all. Slice from the teardown
@@ -283,7 +326,14 @@ func test_no_autogrind_test_leaves_a_gating_field_dirty() -> void:
 					continue
 				var nxt: int = code.find("\nfunc ", at + 1)
 				var body: String = code.substr(at, (nxt - at) if nxt > at else 2000)
-				if body.contains("." + field + " ="):
+				## A whole-surface restore covers every field WITHOUT NAMING ONE — which is the whole
+				## point of it, and a name-matching check would red every file that does it right.
+				## ⛔ ALIAS-AGNOSTIC. This matched the literal `AutogrindState.restore(`, and the const name
+				## is the CALLER's choice — one file preloads the same helper as `State`, restores
+				## correctly, and was reported as an offender. Match the CALL plus proof the file
+				## preloads that helper, so a rename of anyone's const cannot make a correct file red.
+				var uses_helper: bool = code.contains("helpers/autogrind_state.gd") and body.contains(".restore(")
+				if body.contains("AutogrindSystem." + field + " =") or uses_helper:
 					restored = true
 			if not restored:
 				offenders.append("%s sets %s and never restores it" % [fname, field])
