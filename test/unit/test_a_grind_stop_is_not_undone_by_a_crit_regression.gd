@@ -1,6 +1,7 @@
 extends GutTest
 
 const BS := preload("res://src/battle/BattleScene.gd")
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
 
 ## Stop or pause a grind in the 80ms after a critical hit and the engine goes back to the battle
 ## speed on its own. `_begin_hitlag(0.008)` drops `Engine.time_scale` to 0.1 and schedules a restore
@@ -28,13 +29,25 @@ const BS := preload("res://src/battle/BattleScene.gd")
 
 var _saved_scale: float = 1.0
 
+## ⛔ CLEAN BY CONSTRUCTION, NOT BY ACCIDENT. This file stands up a BattleScene, and
+## BattleScene._ready() writes to the BattleManager AUTOLOAD unconditionally
+## (set_autobattle_script at :477, _start_test_battle at :480) — @cowir-battle measured that
+## standing one up is sufficient, across 26 files. Probed today: this file leaks NOTHING, but only
+## because `_ready` ABORTS first — `BS.new()` has no scene tree, so an @onready node is null and
+## "Cannot call method 'add_theme_font_size_override' on a null value" kills the frame before it
+## reaches either write. Make `_ready` defensive — an ordinary improvement — and this file starts
+## dirtying the autoload with freed combatants. Snapshot/restore removes the dependence on an error.
+var _bm_state = BattleState.new()
+
 
 func before_each() -> void:
 	_saved_scale = Engine.time_scale
+	_bm_state.snapshot()
 
 
 func after_each() -> void:
 	Engine.time_scale = _saved_scale
+	_bm_state.restore()
 
 
 func _scene() -> Node:
