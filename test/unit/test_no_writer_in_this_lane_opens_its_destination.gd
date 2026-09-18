@@ -164,8 +164,19 @@ func _opened_expr(line: String) -> String:
 
 
 ## The name of the function containing `idx`, for the membership floor above.
+## ⛔ A `"""` REGION'S LINES KEEP THEIR OWN INDENTATION, so `func foo(` at column 0 inside one looks
+## exactly like a declaration — which a `#` comment can never do, because the `#` occupies column 0
+## itself (@cowir-music). Measured: a decoy declaration inside a docstring DISPLACED
+## `_append_user_mapping` as the enclosing name and the membership floor fired, reporting that a
+## real writer's write had vanished into a helper. Conservative direction, and still a defect: the
+## message sends a reader hunting something that is not there.
+##
+## The doc flags guarded the CONTENT and not the BOUNDARY DETECTION — the two need it separately.
 func _enclosing_name(lines: PackedStringArray, idx: int) -> String:
+	var in_doc: Array = _doc_region_flags(lines)
 	for i in range(idx, -1, -1):
+		if in_doc[i]:
+			continue
 		var l: String = str(lines[i])
 		if l.begins_with("func "):
 			return l.substr(5, l.find("(") - 5)
@@ -184,7 +195,8 @@ func _body_after(lines: PackedStringArray, idx: int) -> String:
 	var out: String = ""
 	var in_doc: Array = _doc_region_flags(lines)
 	for i in range(idx, lines.size()):
-		if i > idx and str(lines[i]).begins_with("func "):
+		## The boundary check is guarded too: a docstring `func` is not the next function.
+		if i > idx and not in_doc[i] and str(lines[i]).begins_with("func "):
 			break
 		if not in_doc[i]:
 			out += _strip_comment(str(lines[i])) + "\n"
