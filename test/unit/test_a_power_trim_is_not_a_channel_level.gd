@@ -20,6 +20,15 @@ func _base(sm: Node) -> float:
 	return float(sm.get_script().get_script_constant_map()["SFX_BATTLE_BASE_DB"])
 
 
+## The channel level for THIS cue, from the product's own owner. Asserting against the bare base
+## would be a coincidence: it equals the level only while the cue carries no _BATTLE_VOLUME_TRIM_DB
+## entry, so an authored trim — a legitimate mix change — would red these arms on correct code.
+## What the fix actually claims is a RELATIONSHIP: the power value is ADDED to whatever the channel
+## level is. Asserting the delta says that and survives any retune of the base or the trim.
+func _level(sm: Node, cue: String) -> float:
+	return float(sm._battle_level(cue))
+
+
 ## Park the player somewhere no cue would leave it: if the cue never sounds, the asserts below read
 ## SENTINEL and say so, instead of finding the base already there and passing for the wrong reason.
 func _arm(sm: Node) -> void:
@@ -45,9 +54,9 @@ func test_a_max_power_spell_plays_a_trim_above_the_channel_not_an_absolute_level
 	sm.play_battle_scaled(FILE_CUE, MAX_POWER_TRIM, 1.0)
 	assert_ne(sm._battle_player.volume_db, SENTINEL,
 		"CONTROL: %s never sounded, so this arm measured nothing" % FILE_CUE)
-	assert_eq(sm._battle_player.volume_db, base + MAX_POWER_TRIM,
-		"the strongest spell played at %.2f dB; the channel level plus its trim is %.2f dB (a raw override lands at %.2f, %.2f dB hot)" % [
-			sm._battle_player.volume_db, base + MAX_POWER_TRIM, MAX_POWER_TRIM, MAX_POWER_TRIM - base])
+	assert_eq(sm._battle_player.volume_db - _level(sm, FILE_CUE), MAX_POWER_TRIM,
+		"the strongest spell sits %.2f dB from its channel level; the power value is a TRIM so it must be exactly %+.2f (a raw override lands at %.2f absolute, ignoring the level entirely)" % [
+			sm._battle_player.volume_db - _level(sm, FILE_CUE), MAX_POWER_TRIM, sm._battle_player.volume_db])
 
 
 func test_a_min_power_spell_lands_below_the_channel_level() -> void:
@@ -63,8 +72,8 @@ func test_a_min_power_spell_lands_below_the_channel_level() -> void:
 	assert_lt(sm._battle_player.volume_db, base,
 		"the weakest spell played at %.2f dB, at or above the %.2f dB channel level — a negative trim must go DOWN from the channel, not up from zero" % [
 			sm._battle_player.volume_db, base])
-	assert_eq(sm._battle_player.volume_db, base + MIN_POWER_TRIM,
-		"the weakest spell played at %.2f dB instead of %.2f dB" % [sm._battle_player.volume_db, base + MIN_POWER_TRIM])
+	assert_eq(sm._battle_player.volume_db - _level(sm, FILE_CUE), MIN_POWER_TRIM,
+		"the weakest spell sits %.2f dB from its channel level, not %+.2f" % [sm._battle_player.volume_db - _level(sm, FILE_CUE), MIN_POWER_TRIM])
 
 
 func test_the_default_volume_means_no_trim() -> void:
@@ -73,12 +82,11 @@ func test_the_default_volume_means_no_trim() -> void:
 	var sm: Node = _sm()
 	if sm == null:
 		return
-	var base: float = _base(sm)
 	_arm(sm)
 	sm.play_battle_scaled(FILE_CUE)
 	assert_ne(sm._battle_player.volume_db, SENTINEL, "CONTROL: %s never sounded" % FILE_CUE)
-	assert_eq(sm._battle_player.volume_db, base,
-		"an untrimmed scaled cue played at %.2f dB instead of the %.2f dB channel level" % [sm._battle_player.volume_db, base])
+	assert_eq(sm._battle_player.volume_db - _level(sm, FILE_CUE), 0.0,
+		"an untrimmed scaled cue sits %.2f dB from its channel level instead of ON it" % [sm._battle_player.volume_db - _level(sm, FILE_CUE)])
 
 
 func test_the_procedural_fallback_takes_the_same_level() -> void:
@@ -93,9 +101,9 @@ func test_the_procedural_fallback_takes_the_same_level() -> void:
 	_arm(sm)
 	sm.play_battle_scaled(PROCEDURAL_CUE, MAX_POWER_TRIM, 1.0)
 	assert_ne(sm._battle_player.volume_db, SENTINEL, "CONTROL: %s never sounded" % PROCEDURAL_CUE)
-	assert_eq(sm._battle_player.volume_db, base + MAX_POWER_TRIM,
-		"the procedural branch played at %.2f dB instead of %.2f dB — only the manifest branch was fixed" % [
-			sm._battle_player.volume_db, base + MAX_POWER_TRIM])
+	assert_eq(sm._battle_player.volume_db - _level(sm, PROCEDURAL_CUE), MAX_POWER_TRIM,
+		"the procedural branch sits %.2f dB from its channel level, not %+.2f — only the manifest branch was fixed" % [
+			sm._battle_player.volume_db - _level(sm, PROCEDURAL_CUE), MAX_POWER_TRIM])
 
 
 func test_the_caller_still_passes_a_relative_trim() -> void:

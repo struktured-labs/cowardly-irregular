@@ -35,7 +35,10 @@ func after_each() -> void:
 
 
 func test_control_danger_alone_is_unchanged() -> void:
-	## The margin this repair must not move.
+	## ⚠️ DELIBERATELY LITERAL, unlike the conflict arms below. Its whole job is "the composition
+	## refactor did not move the solo value", so the authored numbers ARE the claim. That makes it
+	## fixture-dependent BY DESIGN: authoring a new danger curve reds it, and updating the literal is
+	## the deliberate act this arm exists to force. Say which you did in the commit.
 	SoundManager._apply_danger_intensity(1.0)
 	assert_almost_eq(SoundManager._music_player.pitch_scale, 1.15, 0.0001,
 		"danger alone must still reach exactly 1.15")
@@ -45,13 +48,22 @@ func test_control_danger_alone_is_unchanged() -> void:
 
 func test_control_corruption_alone_is_unchanged() -> void:
 	SoundManager._apply_corruption_intensity(0.5)
-	## flat offset only at 0.5 — the wobble term is time-dependent, so bound it rather than pin it.
+	## Bounded rather than pinned because the wobble term is time-dependent — but the bounds are
+	## still today's authored constants, on purpose, for the same reason as the danger arm above.
 	assert_lt(SoundManager._music_player.pitch_scale, 0.9901,
-		"corruption alone at 0.5 must still detune to about -1.5%% (got %.4f)" % SoundManager._music_player.pitch_scale)
+		"corruption alone at 0.5 must still detune to about -1.5%% (got %.4f). If you AUTHORED a new detune, update this bound and the one below — this arm is a deliberate value pin on the solo envelope, and a correct mix change is meant to land here" % SoundManager._music_player.pitch_scale)
 	assert_gt(SoundManager._music_player.pitch_scale, 0.9799,
-		"and not further than its own wobble allows (got %.4f)" % SoundManager._music_player.pitch_scale)
+		"and not further than its own wobble allows (got %.4f). Same note: an authored detune change updates this bound; a COMPOSITION change must not reach it at all" % SoundManager._music_player.pitch_scale)
 	assert_almost_eq(SoundManager._music_player.volume_db, SoundManager._music_base_db, 0.0001,
 		"corruption below 0.6 must not touch the level")
+
+
+## Reset both meters and prove the player is clean before an arm leans on a reference value.
+func _clean_slate() -> void:
+	SoundManager.reset_danger()
+	SoundManager.reset_corruption()
+	assert_almost_eq(SoundManager._music_player.pitch_scale, 1.0, 0.0001,
+		"PRECONDITION: the player must start this measurement at pitch 1.0, not %.4f" % SoundManager._music_player.pitch_scale)
 
 
 func test_danger_survives_a_corrupted_grind() -> void:
@@ -60,6 +72,26 @@ func test_danger_survives_a_corrupted_grind() -> void:
 	## a direct call writes both properties, so whichever is called last wins and danger looked fine.
 	## The defect is TEMPORAL: danger's tween is 0.5 s, corruption's is 1.5 s, so danger stops
 	## writing a second before corruption does and the final state is corruption's alone.
+	##
+	## ⛔ AND THE THRESHOLD IS MEASURED, NOT LITERAL. This arm first asserted `pitch > 1.10`, which
+	## encoded today's constants with a margin of 0.0092 against a wobble term of ±0.0115 — and
+	## authoring corruption's flat offset at -0.08 instead of -0.03 would have red it on a CORRECT
+	## change. What the arm actually claims is a RELATIONSHIP: danger contributes most of its own
+	## lift on top of whatever corruption is doing. So both solo values are measured first and the
+	## composed one is judged against them (@cowir-sfx's coincidental-fixture shape, on my own arm).
+	_clean_slate()
+	SoundManager._apply_corruption_intensity(0.8)
+	var corr_only: float = SoundManager._music_player.pitch_scale
+
+	_clean_slate()
+	SoundManager._apply_danger_intensity(1.0)
+	var danger_lift: float = SoundManager._music_player.pitch_scale - 1.0
+	assert_gt(danger_lift, 0.01,
+		"CONTROL: danger must lift the pitch at all (%.4f) or there is nothing for corruption to erase" % danger_lift)
+	assert_lt(corr_only, 1.0,
+		"CONTROL: corruption must lower the pitch (%.4f), so the two pull opposite ways" % corr_only)
+
+	_clean_slate()
 	SoundManager.set_corruption_intensity(0.8)
 	await get_tree().process_frame
 	SoundManager.set_danger_intensity(1.0)
@@ -70,19 +102,30 @@ func test_danger_survives_a_corrupted_grind() -> void:
 		"CONTROL: danger must have reached full, or this arm is about a cue that never armed")
 	assert_gt(SoundManager._corruption_intensity, 0.0,
 		"CONTROL: corruption must still be live, or there is no conflict to measure")
-	assert_gt(SoundManager._music_player.pitch_scale, 1.10,
-		"danger is at %.2f and the pitch is %.4f — the +15%% critical-HP detune is absent, not diluted, because corruption's longer tween outlived it" % [SoundManager._danger_intensity, SoundManager._music_player.pitch_scale])
+	var gained: float = SoundManager._music_player.pitch_scale - corr_only
+	assert_gt(gained, danger_lift * 0.5,
+		"danger is at %.2f and contributed only %.4f of its own %.4f lift over corruption's %.4f — the critical-HP detune is absent, not diluted, because corruption's longer tween outlived it" % [SoundManager._danger_intensity, gained, danger_lift, corr_only])
 
 
 func test_the_danger_boost_survives_a_corrupted_grind() -> void:
-	## The volume half, same temporal window.
+	## The volume half, same temporal window and the same measured-reference discipline. The old
+	## literal here was `> base + 2.0` against a worst case of base + 2.20 — a 0.2 dB margin on a
+	## `randf_range` flicker.
+	_clean_slate()
+	SoundManager._apply_danger_intensity(1.0)
+	var danger_lift_db: float = SoundManager._music_player.volume_db - SoundManager._music_base_db
+	assert_gt(danger_lift_db, 0.5,
+		"CONTROL: danger must raise the level at all (+%.2f dB)" % danger_lift_db)
+
+	_clean_slate()
 	SoundManager.set_corruption_intensity(0.8)
 	await get_tree().process_frame
 	SoundManager.set_danger_intensity(1.0)
 	await get_tree().create_timer(0.8).timeout
 	assert_almost_eq(SoundManager._danger_intensity, 1.0, 0.01, "CONTROL: danger at full")
-	assert_gt(SoundManager._music_player.volume_db, SoundManager._music_base_db + 2.0,
-		"the +3 dB danger boost is gone: player at %.2f against base %.2f" % [SoundManager._music_player.volume_db, SoundManager._music_base_db])
+	var lift_now: float = SoundManager._music_player.volume_db - SoundManager._music_base_db
+	assert_gt(lift_now, danger_lift_db * 0.5,
+		"the danger boost is +%.2f dB of its own +%.2f — the cue is gone under corruption (player %.2f, base %.2f)" % [lift_now, danger_lift_db, SoundManager._music_player.volume_db, SoundManager._music_base_db])
 
 
 func test_corruption_still_reaches_the_pitch_under_danger() -> void:

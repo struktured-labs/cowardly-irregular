@@ -15,9 +15,9 @@ const STICK_DEADZONE: float = 0.2
 ## PRIMARY pad and the Hyperkin Cadet is a backup, so USB enumeration order must not decide which one
 ## steers the camera when both are attached. Unlisted pads still work; they just rank last.
 ##
-## ⚠️ SCOPE, measured 2026-07-29 — this ranking currently steers NOTHING LIVE. `preferred_device`'s
-## only consumers are `right_stick_x` and `shoulder_rotate` below, and both are the input half of
-## Mode 7 camera rotation, which `Mode7Overlay.gd:334` deliberately disables ("deferred to future
+## ⚠️ SCOPE, measured 2026-07-29 — this ranking currently steers NOTHING LIVE. `preferred_device` is
+## read by `_process` (the shoulder fallback) and by `_input` (the right stick); together they are the
+## input half of Mode 7 camera rotation, which `Mode7Overlay.gd` deliberately disables ("deferred to future
 ## release"). Verified against the strong dead-code rule: zero readers in src/ outside this file,
 ## zero in test/, zero string dispatch, zero scene/data refs — the ONLY mention of GamepadFilter
 ## anywhere else is a comment in InputProfileManager.
@@ -42,10 +42,19 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event is InputEventJoypadMotion:
-		var e = event as InputEventJoypadMotion
-		if e.axis == RIGHT_STICK_X_AXIS:
-			right_stick_x = e.axis_value if absf(e.axis_value) > STICK_DEADZONE else 0.0
+	if not (event is InputEventJoypadMotion):
+		return
+	var e = event as InputEventJoypadMotion
+	if e.axis != RIGHT_STICK_X_AXIS:
+		return
+	## ⛔ THE RANKING EXISTS TO DECIDE WHICH PAD STEERS, AND THIS — THE PRIMARY CAMERA AXIS — READ
+	## EVERY PAD. `_process` gated the shoulder fallback on `preferred_device` and this did not, so
+	## a backup pad's right stick steered the camera whatever the ranking said. The file's stated
+	## reason for existing ("USB enumeration order must not decide which one steers the camera when
+	## both are attached") was true of the fallback and false of the main input.
+	if preferred_device < 0 or e.device != preferred_device:
+		return
+	right_stick_x = e.axis_value if absf(e.axis_value) > STICK_DEADZONE else 0.0
 
 
 func _process(_delta: float) -> void:
@@ -76,6 +85,10 @@ func preference_rank(device_name: String) -> int:
 
 func _scan_controllers() -> void:
 	var connected = Input.get_connected_joypads()
+	## ⛔ A HELD STICK LEAVES ITS LAST VALUE BEHIND. `_input` only hears the pad that is still
+	## attached, so unplugging mid-push means no centring event ever arrives and the camera would
+	## rotate forever. Re-selecting a device invalidates whatever the previous one last said.
+	right_stick_x = 0.0
 	preferred_device = -1
 	var best_rank := PREFERRED_NAMES.size() + 1
 

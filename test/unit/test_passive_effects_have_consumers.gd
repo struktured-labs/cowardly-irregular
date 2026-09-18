@@ -121,8 +121,21 @@ func _passives() -> Dictionary:
 
 
 ## Every .gd under src/, flattened once — the corpus a consumer would have to live in.
+##
+## ⛔ BUILT WITH PackedStringArray + join, NOT `out += line`, AND CACHED. src/ is 286 files /
+## 186,771 lines / 7.3 MB, and String `+=` reallocates the whole accumulated buffer per append —
+## so the naive form copies ~3.6 MB on average 186,771 times to build one string. Two arms call
+## this (`_unwired` and the declaration-echo arm), so the file paid it TWICE per run.
+## Measured: this single test file burned >5 MINUTES of CPU, in a suite every lane runs before
+## every fold and that CLAUDE.md already warns takes 5-10 minutes. The scan's SEMANTICS are
+## unchanged — same lines kept, same lines stripped; only the concatenation is linear now.
+var _src_cache: String = ""
+
+
 func _src_text() -> String:
-	var out := ""
+	if _src_cache != "":
+		return _src_cache
+	var parts: PackedStringArray = PackedStringArray()
 	var stack: Array = ["res://src"]
 	while not stack.is_empty():
 		var dir: String = stack.pop_back()
@@ -155,18 +168,23 @@ func _src_text() -> String:
 					## CONTROLS below prove real reads still resolve.
 					if t.begins_with("\"") and t.contains("\":"):
 						continue
-					out += line + "\n"
+					parts.append(line)
 			f = d.get_next()
 		d.list_dir_end()
-	return out
+	_src_cache = ("\n".join(parts) + "\n") if not parts.is_empty() else ""
+	return _src_cache
 
 
 ## passive id -> its effect keys that appear nowhere in src/.
 func _unwired() -> Dictionary:
 	var src := _src_text()
 	var out := {}
-	for pid in _passives():
-		var v = _passives()[pid]
+	## ⛔ HOISTED. `_passives()` does FileAccess.get_file_as_string + JSON.parse_string on every
+	## call, and reading it inside the loop re-parsed passives.json once per passive — 46 parses
+	## of the same file to answer one question.
+	var all_passives: Dictionary = _passives()
+	for pid in all_passives:
+		var v = all_passives[pid]
 		if not (v is Dictionary):
 			continue
 		var dead: Array = []

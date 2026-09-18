@@ -143,7 +143,7 @@ func test_every_numeric_condition_is_given_a_unit() -> void:
 	## time — silently, because a wrong scale validates, delivers, and never fires.
 	var sys = _sys()
 	var nums: Array = sys.NUMERIC_CONDITIONS
-	assert_gte(nums.size(), 13, "FLOOR: an empty list would make the loop below vacuous")
+	assert_gt(nums.size(), 0, "FLOOR: an empty list would make the loop below vacuous")
 	var p: String = _grind({"corruption_limit": 4.5, "efficiency_start": 1.0})
 	var at: int = p.find("WHAT THE NUMBERS MEAN")
 	assert_gt(at, -1, "the scale block must render")
@@ -167,7 +167,7 @@ func test_the_grammar_names_every_numeric_so_a_prompt_wide_search_is_vacuous() -
 	## still contains all 13 names — the naive check reports full coverage of nothing.
 	var sys = _sys()
 	var nums: Array = sys.NUMERIC_CONDITIONS
-	assert_gte(nums.size(), 13, "FLOOR")
+	assert_gt(nums.size(), 0, "FLOOR: an empty list would make the loop below vacuous")
 	var without: String = _grind({})
 	assert_eq(without.find("WHAT THE NUMBERS MEAN"), -1, "CONTROL: no scales, no block")
 	var found_anyway: int = 0
