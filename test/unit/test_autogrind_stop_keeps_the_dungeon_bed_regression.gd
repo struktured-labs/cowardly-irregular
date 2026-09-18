@@ -115,21 +115,34 @@ func test_stop_autogrind_asks_the_scene_not_the_map_id() -> void:
 ## Everything above reads source. This one drives the real SoundManager, because
 ## a source-shaped guard cannot tell you the two ids SOUND different — and that
 ## is the whole claim.
-var _saved_area: String = ""
-var _saved_music: String = ""
+## ⛔ THE WHOLE ROUTING SURFACE, NOT THE TWO FIELDS THIS FILE NAMES. `_resolve` calls
+## play_area_music, which sets `_current_world_suffix` as a side effect — a field this file never
+## mentions — so restoring the two it does mention left the suffix on `abstract` and handed every
+## later file in the process a `w6_` SFX prefix. Measured 2026-09-17: medieval -> abstract,
+## prefix "" -> "w6_". @cowir-sfx found it; the `.412` gate red was this shape from another file.
+## ⚠️ And `stop_music()` is NOT a reset — it clears `_music_playing` and `_current_music` and
+## leaves `_current_area` and `_current_world_suffix` exactly where the last area put them
+## (@cowir-music). A teardown that reads as complete is why nobody looked.
+const _SM_ROUTING_FIELDS := [
+	"_current_area", "_current_world_suffix", "_current_music",
+	"_current_ambient_key", "_music_playing",
+]
+
+var _saved_sm: Dictionary = {}
 
 
 func before_each() -> void:
-	_saved_area = SoundManager._current_area
-	_saved_music = SoundManager._current_music
+	_saved_sm.clear()
+	for f in _SM_ROUTING_FIELDS:
+		_saved_sm[f] = SoundManager.get(f)
 
 
 func after_each() -> void:
 	## SoundManager is an autoload shared by the whole suite; leaving it pointed
 	## at a dungeon bed would follow later tests around.
 	SoundManager.stop_music()
-	SoundManager._current_area = _saved_area
-	SoundManager._current_music = _saved_music
+	for f in _SM_ROUTING_FIELDS:
+		SoundManager.set(f, _saved_sm[f])
 
 
 ## ⚠️ `_current_music` IS THE WRONG OBSERVABLE HERE and reading it cost a run:
