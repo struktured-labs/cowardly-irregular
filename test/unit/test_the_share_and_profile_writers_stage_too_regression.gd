@@ -31,11 +31,13 @@ const SOURCES := {
 ##   control: real write, no comment                              -> FLAGGED
 ## ⛔ STRIP AT THE SOURCE LAYER, NOT PER-PATTERN. A bound asks each matcher to tell code from prose;
 ## stripping deletes the prose before ANY matcher runs, so it covers every arm here and every one
-## added later (@cowir-controller's layer argument). GdSource is the SHARED helper — 181 files use
+## added later (@cowir-controller's layer argument). ⛔ `code_of`, NOT `strip_comments`: the latter
+## removes `#` and NOTHING ELSE, so a """ docstring naming a write still reaches the scan — measured,
+## it false-RED this file (@cowir-battle's 2c row). GdSource is the SHARED helper — 181 files use
 ## it, it is quote-aware AND escape-aware, and a private copy does not inherit a fix. Line count is
 ## preserved, so the line numbers these arms report still hold.
 func _code_of(path: String) -> String:
-	return GdSource.strip_comments(FileAccess.get_file_as_string(path))
+	return GdSource.code_of(path)
 
 
 func _write_opens(src: String) -> Array:
