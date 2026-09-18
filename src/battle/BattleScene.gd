@@ -1039,7 +1039,9 @@ func _create_battle_sprites() -> void:
 			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
 				var _ft = sprite.sprite_frames.get_frame_texture(&"idle", 0)
 				_is_artist_sheet = _ft != null and _ft.get_height() > 128
-		sprite.flip_h = not _is_artist_sheet
+		# FACING decision — manifest "flip_h" wins; frame size is only the fallback convention.
+		# Same seam as monster_faces_party: a re-export must not be able to reverse a job's facing.
+		sprite.flip_h = HybridSpriteLoaderClass.job_faces_enemy(job_id, not _is_artist_sheet)
 		sprite.play("idle")
 		party_sprites.add_child(sprite)
 		party_sprite_nodes.append(sprite)
