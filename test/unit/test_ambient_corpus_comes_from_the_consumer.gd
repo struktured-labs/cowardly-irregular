@@ -38,6 +38,15 @@ extends GutTest
 ## schedule. The seam has to be fixed first; tools/trim_wrap_padding.py handles
 ## exactly this shape (trailing silence, no gain change, source rate preserved).
 
+## 🔑 SIBLING, SAME CORPUS, DIFFERENT SUBJECT (added by cowir-sfx 2026-09-18).
+## test_every_ambient_key_any_consumer_asks_for_resolves asks whether each key RESOLVES — manifest
+## entry plus file on disk — where this file asks whether it LOOPS. It carries six keys this one
+## does not: the `_get_ambient_key()` overrides in BaseVillage and the seven interior rooms, which
+## are reached through a virtual rather than a literal argument. They are loop-covered here anyway,
+## by the `ambient_` naming filter, so this is a pointer and not a gap report.
+## ⚠️ I WROTE THAT FILE WITHOUT FINDING THIS ONE and re-derived the consumer-corpus insight and the
+## const blind spot you state below. The pointer is here so the next reader spends the hour once.
+
 const SFX_MANIFEST := "res://data/sfx_manifest.json"
 
 ## Six weather beds, measured 2026-09-11. Owner: cowir-sfx. Each entry is the
