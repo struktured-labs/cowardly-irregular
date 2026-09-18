@@ -168,12 +168,37 @@ func _lane_files() -> Array[String]:
 
 const KEY_FIELD := "llm_custom_api_key"
 
+## The walk's roots, in ONE place. `_all_gd()` and the roots floor both read THIS — an earlier
+## version of that floor carried its own copy of the list, so removing `res://tools` from the walk
+## left the floor green (measured: 13 passing, EC=0, with the root gone). A floor that restates its
+## subject instead of reading it proves the ENGINE can walk there, not that THIS guard does.
+const WALK_ROOTS: Array[String] = ["res://src", "res://tools"]
+
 
 ## Every .gd under res://src that names the key field — the key's real blast radius, DERIVED by a
 ## recursive walk rather than a directory list, so a new holder in any subsystem enters by itself.
 func _key_holder_files() -> Array[String]:
 	var out: Array[String] = []
-	var stack: Array[String] = ["res://src"]
+	for p in _all_gd():
+		if FileAccess.get_file_as_string(p).find(KEY_FIELD) != -1:
+			out.append(p)
+	out.sort()
+	return out
+
+
+## Every .gd under WALK_ROOTS. Separated from the filter above so the roots floor can assert on
+## what the walk REACHED rather than on a restatement of where it was told to look.
+##
+## ⚠️ `res://tools` is in scope and was the same defect one directory over: a tool runs in this
+## engine and its `print` persists to the same log. `tools/probes/autoload_leak_probe.gd`
+## enumerated GameState's properties and wrote the key to disk (cowir-battle, 2026-09-18, fixed).
+## No tool holds the key today, so that root is a RATCHET, proven by an ARRIVAL mutation rather
+## than by a current offender.
+## `res://test` is deliberately OUT: fixtures hold fake keys by design, and a guard that reds on
+## its own FAKE_KEY earns an allowlist within a week.
+func _all_gd() -> Array[String]:
+	var out: Array[String] = []
+	var stack: Array[String] = WALK_ROOTS.duplicate()
 	while not stack.is_empty():
 		var dir_path: String = stack.pop_back()
 		var d := DirAccess.open(dir_path)
@@ -182,12 +207,8 @@ func _key_holder_files() -> Array[String]:
 		for sub in d.get_directories():
 			stack.append("%s/%s" % [dir_path, sub])
 		for f in d.get_files():
-			if not f.ends_with(".gd"):
-				continue
-			var p: String = "%s/%s" % [dir_path, f]
-			if FileAccess.get_file_as_string(p).find(KEY_FIELD) != -1:
-				out.append(p)
-	out.sort()
+			if f.ends_with(".gd"):
+				out.append("%s/%s" % [dir_path, f])
 	return out
 
 
@@ -312,6 +333,28 @@ func test_the_holder_scan_reaches_outside_the_llm_lane() -> void:
 			outside += 1
 	assert_gt(outside, 0,
 		"every holder is inside src/llm, so this section is the old scope wearing a new name")
+
+
+func test_the_walk_reaches_every_root_it_declares() -> void:
+	## FLOOR on the ROOTS. The reference is LITERAL and deliberately NOT `WALK_ROOTS` — two earlier
+	## versions of this arm were decorative for opposite reasons, both measured:
+	##   a private copy of the walk  -> proved the ENGINE can reach tools/, not that THIS guard does
+	##   `for root in WALK_ROOTS`    -> the mutation SHRINKS that const, so dropping a root also
+	##                                  drops its own check. 13 passing with the root gone.
+	## A floor whose reference is the thing under test cannot see that thing shrink. So the roots
+	## are named here, by hand, and this list going stale is the intended cost of that.
+	var required: Array[String] = ["res://src", "res://tools"]
+	var reached: Array[String] = _all_gd()
+	assert_gt(reached.size(), 100, "the walk reached %d .gd files — it is broken" % reached.size())
+	for root in required:
+		assert_true(WALK_ROOTS.has(root),
+			"WALK_ROOTS no longer declares %s — a log site there is invisible to every arm above" % root)
+		var hit: bool = false
+		for f in reached:
+			if f.begins_with(root + "/"):
+				hit = true
+				break
+		assert_true(hit, "the walk declares %s but reached no .gd under it" % root)
 
 
 func test_the_carrier_scan_can_find_a_carrier() -> void:
