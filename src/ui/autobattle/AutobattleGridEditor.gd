@@ -51,6 +51,7 @@ var _stats_panel: Control
 var _share_picker: Control = null  # Import file-picker overlay (acts as a submenu; blocks grid input while open)
 var _option_picker: Control = null # Generic option-picker overlay (condition/action/item/target)
 var _rule_composer_overlay: Control = null # RuleComposerOverlay instance; blocks grid input while open
+var _pad_change_pending: bool = false # a pad changed under the composer; rebuild when it closes
 var _simulate_panel: Control = null # Simulate readout; blocks grid input while open
 var _splash_shown: bool = false    # Latches the empty-grid composer splash to once per setup() call
 var _flash_label: Label = null     # Transient status flash for export/import feedback
@@ -161,6 +162,29 @@ func _ready() -> void:
 	_build_ui()
 	# Don't refresh grid here - wait for setup() to be called with character data
 	# _refresh_grid() will be called in setup() after rules are loaded
+	## ⛔ EVERY LEGEND HERE IS DERIVED AT BUILD TIME, AND THIS IS A SCREEN THE PLAYER SITS ON.
+	## A pad arriving mid-edit left the keyboard legend up; unplugging left pad names for a device
+	## that is gone. The autogrind grid editor fixed exactly this and its own comment says the two
+	## editors must not drift apart — this is the sibling it was not applied to. Godot drops the
+	## Input connection when this editor is freed.
+	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+
+
+## ⚠️ REBUILD AND REFRESH, NOT REBUILD ALONE — AND THIS IS WHERE THE SIBLING'S FIX DOES NOT
+## TRANSFER VERBATIM. `_build_ui()` frees every child and does NOT repopulate the grid here; only
+## `setup()` and the composer-install path pair it with `_refresh_grid()`. Rebuilding alone would
+## hand the player an empty grid where their rules were, which is worse than the stale legend.
+##
+## ⛔ AND THE COMPOSER OVERLAY IS A CHILD, so a rebuild under it destroys an in-progress
+## composition. Defer to the CANCEL path: installing already rebuilds on its own.
+func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
+	if not is_inside_tree():
+		return
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+		_pad_change_pending = true
+		return
+	_build_ui()
+	_refresh_grid()
 
 
 func _exit_tree() -> void:
@@ -3506,6 +3530,13 @@ func _on_composer_cancelled() -> void:
 		cursor_row = 0
 		cursor_col = 0
 		_scroll_offset = 0.0
+		_pad_change_pending = false
+		_build_ui()
+		_refresh_grid()
+	elif _pad_change_pending:
+		## Cancelling performs no action, so nothing else would rebuild and a pad that changed
+		## under the composer would leave the legend stale for the rest of the session.
+		_pad_change_pending = false
 		_build_ui()
 		_refresh_grid()
 	else:
