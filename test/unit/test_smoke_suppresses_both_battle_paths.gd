@@ -33,6 +33,26 @@ func test_the_roamer_gate_runs_on_every_shot_not_once_at_startup() -> void:
 		"the suppression must run per shot, not once at startup")
 
 
+func test_the_roamer_gate_runs_at_MAP_ENTRY_not_only_at_the_next_shot() -> void:
+	## ⛔ .443 web RED. The arm above says "per shot, not once at startup" and its docstring gives
+	## the right reason -- "each map leg builds a fresh scene with a fresh spawner" -- then pins
+	## _smoke_shot. PER-SHOT IS NOT PER-MAP-ENTRY, and the gap between them is where the spawner is
+	## alive and enabled:
+	##     _smoke_enter_map("overworld") -> 1.5s -> action_press(dir) -> 0.7s -> _smoke_shot()
+	## ~2.2s of live roamers with the player deliberately walked into them. Measured on the failing
+	## log: encounters_enabled was FALSE the whole run (the random path was shut, and the only writer
+	## that sets it true ran 30 log lines AFTER the first bail), yet a battle started between the walk
+	## shots and the village shot and all 13 later legs bailed. The other arm was green throughout.
+	var src := FileAccess.get_file_as_string(GL_SRC)
+	var at: int = src.find("func _smoke_enter_map")
+	assert_gt(at, -1, "CONTROL: the map-entry helper exists")
+	var next: int = src.find("\nfunc ", at + 1)
+	var body := src.substr(at, next - at)
+	assert_true(body.contains("_smoke_quiet_the_roamers()"),
+		"a freshly built map must have its spawner quieted AT ENTRY -- waiting for the next shot " +
+		"leaves a live-roamer window that no flag closes")
+
+
 func test_the_gate_uses_the_spawners_own_api_and_survives_its_absence() -> void:
 	var src := FileAccess.get_file_as_string(GL_SRC)
 	var i: int = src.find("func _smoke_quiet_the_roamers")
