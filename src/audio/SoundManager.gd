@@ -2485,7 +2485,7 @@ func _start_battle_music() -> void:
 	var suffix = _get_current_world_suffix()
 	if _try_play_from_manifest("battle_" + suffix):
 		return
-	## battle_<suffix> is web-excluded in W4-W6; generating is 8.5s on the main thread.
+	## NOT because W4-W6 are excluded — the default publish ships every track (WEB_STAGE=1 stages a transcoded tier and strips the music exclusions). The reason is COST: generating is 8.5s on the main thread.
 	if suffix != "medieval" and _try_play_from_manifest("battle_medieval"):
 		return
 
@@ -3200,7 +3200,7 @@ func _start_boss_music() -> void:
 	var suffix = _get_current_world_suffix()
 	if _try_play_from_manifest("boss_" + suffix):
 		return
-	## boss_<suffix> is web-excluded in W4-W6; generating is 2.1s on the main thread.
+	## NOT the exclusion — the default publish ships these. The reason is COST: generating is 2.1s on the main thread.
 	if suffix != "medieval" and _try_play_from_manifest("boss_medieval"):
 		return
 
@@ -6583,7 +6583,7 @@ func _start_industrial_music() -> void:
 	print("[MUSIC] Playing industrial theme")
 	if _play_area_wav_cached("industrial"):
 		return
-	## overworld_industrial is web-excluded; generating the fallback is 1.9s of main-thread GDScript.
+	## NOT the exclusion — the default publish ships overworld_industrial. The reason is COST: generating is 1.9s of main-thread GDScript.
 	if _try_play_from_manifest("overworld_medieval"):
 		return
 
@@ -6709,7 +6709,7 @@ func _start_futuristic_music() -> void:
 	print("[MUSIC] Playing futuristic digital theme")
 	if _play_area_wav_cached("futuristic"):
 		return
-	## overworld_digital is web-excluded; generating the fallback is 3.8s of main-thread GDScript.
+	## NOT the exclusion — the default publish ships overworld_digital. The reason is COST: generating is 3.8s of main-thread GDScript.
 	if _try_play_from_manifest("overworld_medieval"):
 		return
 
@@ -7136,7 +7136,7 @@ func _start_industrial_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_industrial"):
 		return
-	## web-excluded; generating is 1.6s on the main thread.
+	## NOT the exclusion — the default publish ships this. The reason is COST: generating is 1.6s on the main thread.
 	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing industrial battle theme")
@@ -7337,7 +7337,7 @@ func _start_digital_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_digital"):
 		return
-	## web-excluded; generating is 1.4s on the main thread.
+	## NOT the exclusion — the default publish ships this. The reason is COST: generating is 1.4s on the main thread.
 	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing digital battle theme")
@@ -7544,7 +7544,7 @@ func _start_void_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_abstract"):
 		return
-	## battle_abstract is web-excluded and battle_void is not in the manifest, so on web BOTH tiers above miss and generating is 1.3s of main-thread GDScript.
+	## battle_void is not in the manifest, so the tier above can miss; generating is 1.3s of main-thread GDScript. (battle_abstract itself SHIPS on the default publish — the old 'web-excluded' half of this note is obsolete.)
 	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing void battle theme")
@@ -7723,7 +7723,7 @@ func _start_abstract_music() -> void:
 	print("[MUSIC] Playing abstract void theme")
 	if _play_area_wav_cached("abstract"):
 		return
-	## overworld_abstract is web-excluded; generating the fallback is 19.9s of main-thread GDScript.
+	## ⛔ DO NOT DELETE THIS FALLBACK. Not the exclusion — the default publish ships overworld_abstract. The reason is COST: generating is 19.9s of main-thread GDScript, and this is the freeze 2f847cf02 fixed ("entering the World 6 overworld froze the web build for ~20 seconds").
 	if _try_play_from_manifest("overworld_medieval"):
 		return
 
