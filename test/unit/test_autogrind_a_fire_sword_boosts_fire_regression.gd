@@ -224,8 +224,17 @@ func test_resistant_armour_halves_an_elemental_hit() -> void:
 	var armoured_dmg: float = float(rolls[rolls.size() / 2]) if rolls.size() > 0 else 0.0
 	gut.p("    fire on plain %.0f · on dragon_mail %.0f (expect ~half)" % [plain_dmg, armoured_dmg])
 	assert_gt(plain_dmg, 0.0, "CONTROL: the unarmoured case must take damage")
-	assert_lt(armoured_dmg, plain_dmg * 0.75,
+	## ⛔ A BAND, NOT A HALF-LINE. This was `< plain * 0.75` alone, and the claim above it is
+	## "expect ~half" — so the accept-set admitted a 90% reduction, i.e. armour OVER-applying, which
+	## is a defect in the other direction and would have read as a pass. @cowir-adhoc's axis: the
+	## accept-set must be as narrow as the CLAIM, and this one was wider on the low side.
+	## The width that remains is for measurement noise, not for the claim — and it is generous:
+	## the median is deterministic in practice (115 -> 55, ratio 0.478, identical on 3 runs), so
+	## 0.35-0.65 leaves room without admitting either failure.
+	assert_lt(armoured_dmg, plain_dmg * 0.65,
 		"dragon_mail did not reduce a fire hit — live halves the elemental modifier for it (Combatant.take_elemental_damage) and this engine ignored the gear")
+	assert_gt(armoured_dmg, plain_dmg * 0.35,
+		"dragon_mail reduced a fire hit far MORE than halving the modifier should — the gear is over-applying, which the old one-sided `< 0.75` admitted silently")
 
 
 func test_live_still_applies_it_on_the_magic_path() -> void:
