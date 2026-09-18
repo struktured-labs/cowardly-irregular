@@ -14,6 +14,14 @@ extends GutTest
 const OVERWORLD := preload("res://src/exploration/OverworldScene.gd")
 const WEATHER_BED := "weather_rain"
 
+## Mirrors OverworldScene._update_zone_ambient's arms. A SECOND copy on purpose: derived from the
+## router it checks, this arm could only ever agree with itself.
+const ZONE_BEDS := {
+	"forest": "ambient_forest", "ice": "ambient_cave", "coast": "ambient_coast",
+	"plains": "ambient_plains", "central": "ambient_plains", "desert": "ambient_plains",
+	"swamp": "ambient_forest", "volcanic": "ambient_dungeon",
+}
+
 
 func before_each() -> void:
 	SoundManager.stop_ambient()
@@ -21,6 +29,7 @@ func before_each() -> void:
 
 func after_each() -> void:
 	SoundManager.stop_ambient()
+	GameState.set_weather("clear")
 
 
 func test_leaving_the_overworld_stops_the_outdoor_loop() -> void:
@@ -82,13 +91,36 @@ func test_entering_the_overworld_establishes_its_own_bed() -> void:
 	## into silence. Entry must establish the bed regardless of which zone the spawn lands in.
 	SoundManager.stop_ambient()
 	assert_eq(SoundManager._current_ambient_key, "", "CONTROL: the layer starts silent")
+	## ⛔ PIN THE WEATHER, OR THIS ARM IS A RACE. Measured: with weather active the layer holds the
+	## ZONE bed on frame 1 and WEATHER's bed from frame 2 — both correct, and which one you see
+	## depends on frame pacing. Clear weather makes the zone bed the stable answer, which is the
+	## thing this arm is actually about.
+	GameState.set_weather("clear")
 
 	var ow = OVERWORLD.new()
 	add_child(ow)
 	await get_tree().process_frame
+	await get_tree().process_frame
 
 	assert_ne(SoundManager._current_ambient_key, "",
 		"entering the overworld left the ambient layer SILENT — _exit_tree now stops it, so nothing re-establishes the zone bed")
+
+	## ⛔ NON-EMPTY IS NOT CORRECT. Resolving the wrong zone — always "central", say — leaves the
+	## layer loud and every wiring arm green: the call exists, the helper reaches the router, a bed
+	## plays. Only the VALUE separates "established" from "established RIGHT", and the bug this
+	## guard exists for is a bed that does not match where the player stands.
+	## ⛔ DERIVE THE EXPECTED ZONE FROM THE PLAYER'S TILE, NOT FROM `ow._current_zone`. That field is
+	## what a wrong resolution CORRUPTS, so reading it here would make expected and actual agree by
+	## construction — the shared-denominator shape, in the arm rather than the subject.
+	var tile := Vector2i(int(ow.player.position.x / ow.TILE_SIZE), int(ow.player.position.y / ow.TILE_SIZE))
+	var biome: String = ow.biome_char_at(tile.x, tile.y)
+	var independent_zone: String = String(ow.BIOME_ZONES.get(biome, "central"))
+	var expected: String = ZONE_BEDS.get(independent_zone, "")
+	assert_ne(expected, "",
+		"CONTROL: zone '%s' (biome '%s') is not in this guard's table — add it, or the arm below compares against nothing" % [independent_zone, biome])
+	assert_eq(SoundManager._current_ambient_key, expected,
+		"the entry bed does not match the zone the player is standing in (tile %s is biome '%s' = zone '%s', wants '%s', got '%s')" % [tile, biome, independent_zone, expected, SoundManager._current_ambient_key])
+
 	ow.free()
 	await get_tree().process_frame
 
