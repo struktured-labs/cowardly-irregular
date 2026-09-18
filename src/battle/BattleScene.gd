@@ -4562,7 +4562,7 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 					pass
 				# every other status (poison/sleep/doom/curse/stun/burn/freeze/...) — play_status does status_<name> manifest lookup with a generic fallback, so F1-activated effects can't land silently again
 				_:
-					# DERIVED, not a third hand-list: the buff arm was extended once for four effects and 22 more ally-targeted ones arrived behind it, each drawing the DESCENDING blip over its own cast cue
+					# DERIVED, not a third hand-list: the buff arm was hand-extended once and more ally-targeted effects kept arriving behind it, each drawing the DESCENDING blip over its own cast cue — test_buff_effect_cue_polarity_regression derives the live count rather than pinning one here
 					# ⚠️ target_type answers WHO IS AIMED AT, not WHO IS HELPED. They diverge in one shipped row — dispel_and_self_buff, listed in the debuff arm above. A second divergence belongs there too, with its reason
 					if str(ability.get("target_type", "")) in ["self", "ally", "single_ally", "all_allies", "party"]:
 						# an authored status_<effect> still wins — this only replaces the wrong-polarity procedural fallback
