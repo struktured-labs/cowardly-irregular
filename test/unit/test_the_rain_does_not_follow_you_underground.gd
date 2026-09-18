@@ -73,3 +73,36 @@ func _body_of(src: String, header: String) -> String:
 		return ""
 	var j: int = src.find("\nfunc ", i + 1)
 	return src.substr(i, (j - i) if j > i else -1)
+
+
+func test_entering_the_overworld_establishes_its_own_bed() -> void:
+	## ⛔ THE OTHER HALF OF THE EXIT FIX. _update_encounter_zone fires only on a zone CHANGE, and
+	## _current_zone starts at "central" — so a spawn resolving to central never reached the router.
+	## That was invisible while the previous scene's bed kept playing; stopping on exit turns it
+	## into silence. Entry must establish the bed regardless of which zone the spawn lands in.
+	SoundManager.stop_ambient()
+	assert_eq(SoundManager._current_ambient_key, "", "CONTROL: the layer starts silent")
+
+	var ow = OVERWORLD.new()
+	add_child(ow)
+	await get_tree().process_frame
+
+	assert_ne(SoundManager._current_ambient_key, "",
+		"entering the overworld left the ambient layer SILENT — _exit_tree now stops it, so nothing re-establishes the zone bed")
+	ow.free()
+	await get_tree().process_frame
+
+
+func test_entry_does_not_depend_on_the_spawn_zone_differing() -> void:
+	## The precise mechanism, so a future refactor cannot reintroduce it: the establishment must not
+	## be a zone CHANGE. Pin that _ready reaches the helper, and that the helper sets the zone from
+	## the player's own tile rather than comparing against the initial value.
+	var src: String = FileAccess.get_file_as_string("res://src/exploration/OverworldScene.gd")
+	var ready_body: String = _body_of(src, "func _ready")
+	assert_ne(ready_body, "", "CONTROL: OverworldScene must declare _ready")
+	assert_true(ready_body.contains("_establish_zone_ambient()"),
+		"_ready must CALL _establish_zone_ambient() — without it entry depends on the spawn zone differing from 'central'")
+	var helper: String = _body_of(src, "func _establish_zone_ambient")
+	assert_ne(helper, "", "CONTROL: the helper must exist")
+	assert_true(helper.contains("_update_zone_ambient("),
+		"the helper must reach the zone router, or it establishes nothing")
