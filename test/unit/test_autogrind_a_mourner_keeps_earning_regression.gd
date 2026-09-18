@@ -179,12 +179,37 @@ func test_the_third_award_site_is_still_unreachable() -> void:
 	## ⚠️ THE DECLARATION. A third award site exists and did NOT get the exception, deliberately:
 	## _process_battle_results is called only by _run_automated_battle, which has NO callers. If
 	## someone wires that path up, it starts paying the dead by the OLD rule and this arm says so.
+	## ⛔ THE CORPUS WAS THREE HAND-LISTED PATHS FOR A CLAIM ABOUT ALL OF src/, and one of the three
+	## ("res://GameLoop.gd") DOES NOT EXIST — guarded by ResourceLoader.exists, so it silently
+	## contributed 0 and read as a checked file. A caller added anywhere else was invisible.
+	## @cowir-sfx hit the same shape in a guard they had held up as the derived one: a predicate
+	## naming receivers under a message claiming a population. Walked now, so a new caller in a new
+	## file reds the day it lands.
 	var grind: String = GdSource.code_of(GRIND)
 	var callers: int = grind.count("_run_automated_battle(") - grind.count("func _run_automated_battle(")
 	var elsewhere: int = 0
-	for path in ["res://src/autogrind/AutogrindController.gd", "res://GameLoop.gd", "res://src/GameLoop.gd"]:
-		if ResourceLoader.exists(path):
-			elsewhere += GdSource.code_of(path).count("_run_automated_battle(")
-	gut.p("    _run_automated_battle callers — in-file %d · outside %d" % [callers, elsewhere])
+	var scanned: int = 0
+	for path in _src_files():
+		if path == GRIND:
+			continue
+		scanned += 1
+		elsewhere += GdSource.code_of(path).count("_run_automated_battle(")
+	assert_gt(scanned, 100, "CONTROL: the src walk must reach a real corpus, got %d files" % scanned)
+	gut.p("    _run_automated_battle callers — in-file %d · across %d other src files %d" % [callers, scanned, elsewhere])
 	assert_eq(callers + elsewhere, 0,
 		"_run_automated_battle has a caller now, so its award site is live and still reads a bare is_alive — give it the exception the other two carry")
+
+
+## Every .gd under res://src, recursively. Same walk as
+## test_autogrind_no_invented_key_reaches_the_disk_regression's, rather than a tenth private copy.
+func _src_files() -> Array:
+	var out: Array = []
+	var stack: Array = ["res://src"]
+	while not stack.is_empty():
+		var d: String = str(stack.pop_back())
+		for sub in DirAccess.get_directories_at(d):
+			stack.append("%s/%s" % [d, sub])
+		for f in DirAccess.get_files_at(d):
+			if str(f).ends_with(".gd"):
+				out.append("%s/%s" % [d, str(f)])
+	return out
