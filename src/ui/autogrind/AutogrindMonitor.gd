@@ -462,7 +462,7 @@ func _build_footer(vp_size: Vector2) -> void:
 	var btn_data = [
 		{"text": "%s: Pause" % AutogrindInputHelper.hint_for("pause"), "action": "pause", "x": 0},
 		{"text": "%s: Adjust Rules" % AutogrindInputHelper.hint_for("adjust_rules"), "action": "adjust", "x": 1},
-		{"text": "%s: Tier" % AutogrindInputHelper.hint_for("tier_cycle"), "action": "tier", "x": 2},
+		{"text": "%s: %s" % [AutogrindInputHelper.hint_for("tier_cycle"), AutogrindInputHelper.tier_control_label()], "action": "tier", "x": 2},
 		{"text": "%s: Exit" % AutogrindInputHelper.hint_for("exit"), "action": "exit", "x": 3},
 	]
 

@@ -530,6 +530,76 @@ for _t in $_SH_SELFTESTS; do
     echo "[pub] selftest ok: tools/$_t — arms ran and passed"
 done
 
+# ── 0d. NO SHELL TOOL MAY EXPAND A VARIABLE IT NEVER ASSIGNS ─────────────────
+# v3.33.409-alpha went RED with nothing published on:
+#     ./tools/deploy_desktop.sh: line 599: _RAW_TOOLS: unbound variable
+# I wrote one gate block and pasted it into two files with different preludes.
+# deploy_web.sh defined _RAW_TOOLS; deploy_desktop.sh defined _RAW_CHECK inline
+# and never _RAW_TOOLS. Under `set -u` that is fatal, and NOTHING above could
+# see it: `bash -n` parses fine because an unbound expansion is a RUNTIME error,
+# the selftests exercise the python guards rather than their shell call sites,
+# and my own extraction harness SET _RAW_TOOLS in its preamble -- the test
+# supplied the precondition the file lacked. It was reachable only on a real
+# publish, after the builds were made and past every check on this page.
+# So the check has to be static, it has to run here, and it has to cover every
+# tool -- the defect is in the CALL SITE, not in the guard being called.
+_UV_DIR="$(cd "$(dirname "$0")" && pwd)"
+_UV_CHECK="${_UV_DIR}/check_unbound_vars.py"
+_UV_SELFTEST="${_UV_DIR}/check_unbound_vars_selftest.py"
+if [ ! -f "$_UV_CHECK" ] || [ ! -f "$_UV_SELFTEST" ]; then
+    echo "[pub] BLOCKED: tools/check_unbound_vars.py or its selftest is missing. The bug that" >&2
+    echo "      killed .409 is invisible to every other check on this page; absence of the" >&2
+    echo "      detector is not absence of the defect." >&2
+    exit 4
+fi
+if ! _UV_ST=$(python3 "$_UV_SELFTEST" 2>&1); then
+    printf '%s\n' "$_UV_ST" | tail -30 >&2
+    echo "[pub] BLOCKED: check_unbound_vars.py FAILED ITS OWN SELFTEST." >&2
+    exit 4
+fi
+echo "[pub] selftest ok: tools/check_unbound_vars.py — $(printf '%s\n' "$_UV_ST" | command grep -oE '[0-9]+ arm\(s\), [0-9]+ refereed by bash' | tail -1)"
+# TRACKED files, not a glob. A glob scans whatever happens to be sitting in
+# tools/ -- a scratch copy, a half-written probe -- and lets an untracked file
+# block a publish. Measured: a truncated probe left in tools/ took this gate to
+# exit 4 on a clean tree. git ls-files is also the stronger corpus, because a
+# tool that is committed is a tool the chain can invoke.
+_UV_REPO="$(cd "$_UV_DIR/.." && pwd)"
+_UV_LIST="$(cd "$_UV_REPO" && git ls-files 'tools/*.sh' 2>/dev/null)"
+if [ -z "$_UV_LIST" ]; then
+    echo "[pub] BLOCKED: could not list tracked shell tools (git ls-files returned nothing)." >&2
+    echo "      An empty corpus scans clean, which is the failure this gate exists to stop." >&2
+    exit 4
+fi
+case "$_UV_LIST" in
+    *" "*) echo "[pub] BLOCKED: a tracked tool path contains a space; this gate splits on" >&2
+           echo "      whitespace and would scan the wrong files." >&2; exit 4 ;;
+esac
+_UV_OUT=""; _UV_EC=0
+# shellcheck disable=SC2086
+_UV_OUT=$(cd "$_UV_REPO" && python3 "$_UV_CHECK" $_UV_LIST 2>&1) || _UV_EC=$?
+if [ "$_UV_EC" -ne 0 ]; then
+    printf '%s\n' "$_UV_OUT" | command grep -E 'UNBOUND' >&2
+    echo "[pub] BLOCKED: a shell tool expands a variable it never assigns. Under set -u that" >&2
+    echo "      aborts the moment the line is REACHED, which on this chain is after the" >&2
+    echo "      builds are made — exactly how .409 published nothing." >&2
+    exit 4
+fi
+# COVERAGE, not a printed number. The first version of this line counted with a
+# pattern that never matched and announced "0 shell tool(s) scanned" beside a
+# PASS -- an empty corpus scanning clean, which is the exact failure the
+# git ls-files guard above refuses, reproduced in the success message. The two
+# counts come from different places on purpose: the denominator from the file
+# list, the numerator from the tool's own output. A shared source would move
+# them together and could not detect a scan that quietly did nothing.
+_UV_WANT=$(printf '%s\n' "$_UV_LIST" | command grep -c .)
+_UV_GOT=$(printf '%s\n' "$_UV_OUT" | command grep -c '^\[unbound-vars\] ')
+if [ "$_UV_GOT" -ne "$_UV_WANT" ]; then
+    echo "[pub] BLOCKED: the unbound-vars scan reported on $_UV_GOT tool(s) but $_UV_WANT are" >&2
+    echo "      tracked. A file that was not examined cannot have been found clean." >&2
+    exit 4
+fi
+echo "[pub] unbound-vars: $_UV_GOT of $_UV_WANT tracked shell tool(s) scanned, 0 expand a name they never assign"
+
 # ── 1. tag evidence ──────────────────────────────────────────────────────────
 # The token is required. Absence of a SKIP is NOT a failure here — it means the chains will
 # run the suite sandboxed, which is correct and merely slower. Only report it.
