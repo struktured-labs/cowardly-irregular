@@ -1,5 +1,7 @@
 extends GutTest
 
+const SfxState := preload("res://test/unit/helpers/sfx_state.gd")
+
 ## `volume_db` PERSISTS on a shared AudioStreamPlayer, so a cue that sets an authored trim leaves it
 ## there. `play_battle` passes an explicit level on every call for exactly this reason — its own
 ## comment says so — and the other `_battle_player` callers passed NAN ("preserve"), inheriting it.
@@ -32,6 +34,9 @@ func before_each() -> void:
 ## pitch_scale PERSISTS on the shared player — the defect 39fe0bded fixed. The ±5% jitter leaves it
 ## randomized, so this file must put it back or it hands the next file a detuned battle player.
 func after_each() -> void:
+	## FIRST, not last: a GDScript error in the restores below aborts after_each, and a release that
+	## sits at the bottom is then skipped. Self-contained, so it needs nothing above it.
+	SfxState.release_streams()
 	var sm: Node = _sm()
 	if sm == null:
 		return

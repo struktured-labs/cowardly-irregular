@@ -333,7 +333,17 @@ func before_all() -> void:
 	_bm_guard.snapshot()
 
 
+## ⛔ ORDER IS LOAD-BEARING AND NOTHING TESTS IT. A GDScript error ABORTS THE ENCLOSING FUNCTION, and
+## that rule applies to a TEARDOWN exactly as it does to a test body — except the consequence is not
+## a vacuous pass, it is a LEAK, and the file is green either way (cowir-sfx, who found their own
+## release call sitting below the restores it had to outlive).
+##
+## The BattleManager restore goes FIRST because its failure is the worse one: 19 fields including
+## freed objects in a live autoload, against SoundState's four music fields. Sequential calls cannot
+## protect both, so the order encodes which loss is worse rather than pretending the question does
+## not exist. Both helpers are self-contained — each finds its own autoload and returns if absent —
+## so neither depends on the other having run.
 func after_all() -> void:
-	SoundState.restore()
 	if _bm_guard != null:
 		_bm_guard.restore()
+	SoundState.restore()
