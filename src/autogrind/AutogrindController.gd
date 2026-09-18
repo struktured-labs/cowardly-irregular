@@ -521,6 +521,10 @@ func stop_grind(reason: String = "Manual stop") -> void:
 		## A start that aborted after _force_autobattle_on never left IDLE; this is the only way back.
 		if not _saved_autobattle_states.is_empty() or not _autogrind_authored_scripts.is_empty():
 			_restore_autobattle_states()
+		## The same abort strands is_grinding on the AUTOLOAD, whose only clearer is stop_autogrind.
+		## Controller IDLE + system grinding is always a desync: one controller exists per session.
+		if AutogrindSystem.is_grinding:
+			AutogrindSystem.stop_autogrind("Controller idle — clearing a stranded session flag")
 		return
 
 	_state = State.IDLE

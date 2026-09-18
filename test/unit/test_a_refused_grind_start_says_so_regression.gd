@@ -66,3 +66,21 @@ func test_a_live_party_still_starts_and_says_so() -> void:
 	assert_true(started, "CONTROL: a live party must still start — otherwise the refusal arms prove nothing")
 	assert_ne(ctrl._state, ctrl.State.IDLE, "CONTROL: an accepted start must leave IDLE")
 	ctrl.stop_grind("test cleanup")
+
+
+## And the refusal must be RECOVERABLE. is_grinding lives on the autoload, has exactly one clearer
+## (stop_autogrind), and start_autogrind refuses while it is set. An abort in start_grind after the
+## system accepted strands it: the controller is IDLE, so stop_grind takes the .422 IDLE branch and
+## returns without stopping the system — and every later session refuses for the rest of the process.
+func test_a_stranded_system_flag_is_cleared_by_a_stop() -> void:
+	var ctrl := _controller()
+	## Exactly the desync an abort leaves: system grinding, controller never left IDLE.
+	_ags.is_grinding = true
+	assert_eq(ctrl._state, ctrl.State.IDLE, "CONTROL: the controller must be IDLE for this to be the desync")
+	ctrl.stop_grind("aborted start")
+	assert_false(_ags.is_grinding,
+		"stop_grind left is_grinding set on the autoload — every later start_autogrind refuses for the session")
+	var party: Array = [_member("After A", true), _member("After B", true)]
+	var started: bool = ctrl.start_grind(party, {"headless": true, "auto_advance": false}, "plains")
+	assert_true(started, "a later grind must be able to start once the stranded flag is cleared")
+	ctrl.stop_grind("test cleanup")
