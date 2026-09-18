@@ -243,3 +243,24 @@ func test_the_barrier_parity_note_has_not_gone_stale() -> void:
 		"CONTROL: the SHARED function must still handle damage_absorb, the sibling this note contrasts against")
 	assert_false(shared.contains("barrier"),
 		"barrier now appears in the SHARED Combatant.gd, so the grind inherits it and this file's header note about the parity gap is CLOSED — update the header and delete this arm rather than leaving a deferral that reads as still-open")
+
+
+## ⛔ provoke IS IN A SHIPPED AUTOBATTLE TEMPLATE AND HEADLESS HAD NO ARM, so it fell to the generic
+## add_status and gave the enemy a status literally named "taunt" — a key live NEVER creates and
+## nothing anywhere reads (cowir-battle, 2026-09-18). Live composes `taunted_<caster>` at
+## BattleManager:5911 and reads the prefix back in _find_taunter:2983. Same junk-key shape as cleanse.
+## ⚠️ PINS THE KEY, NOT THE BEHAVIOUR: this resolver has no _find_taunter, so a taunt still does not
+## redirect an enemy here. Composing live's key is parity-neutral; honouring it would change which
+## target an enemy picks, which is a ruling rather than a port — see the header note.
+func test_a_taunt_composes_the_key_live_reads() -> void:
+	var src: String = FileAccess.get_file_as_string("res://src/autogrind/HeadlessBattleResolver.gd")
+	assert_ne(src, "", "CONTROL: could not read the resolver — every assertion below would be vacuous")
+	assert_true(src.contains('add_status("taunted_%s" % caster.combatant_name)'),
+		"the resolver must compose live's taunted_<caster> key, or a grinding party's provoke writes a status nothing reads")
+	assert_false(src.contains('add_status("taunt"'),
+		"the resolver creates a bare \"taunt\" status — live never creates that key and _find_taunter cannot read it")
+	var live: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	assert_true(live.contains('add_status("taunted_%s" % caster.combatant_name)'),
+		"CONTROL: live must still compose this key — if it changed, the parity claim above is about nothing")
+	assert_true(live.contains('status.begins_with("taunted_")'),
+		"CONTROL: _find_taunter must still read the prefix, else the key is decoration on both engines")
