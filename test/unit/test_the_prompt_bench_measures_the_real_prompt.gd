@@ -90,19 +90,28 @@ func test_a_documented_invocation_carries_the_sandbox() -> void:
 		assert_gt(src.length(), 500,
 			"CONTROL: %s must actually be read, or this arm skips it" % tool_path)
 		for line in src.split("\n"):
-			## ANY godot invocation, not just `--headless`. The screenshot tools document
-			## `xvfb-run -a godot --rendering-driver opengl3 ...` with no --headless at all, and
-			## a predicate keyed on that flag sails straight past them — verified by planting one.
-			var g: int = line.find("godot ")
-			if g == -1:
-				continue
-			var tail: String = line.substr(g + len("godot "))
-			if not tail.begins_with("-"):
-				continue
-			## `project.godot -> the .tscn root` clears BOTH earlier halves: the trailing space
-			## defeats the .godot/ substring test, and the next token starts with "-" because it
-			## is an ARROW. Found by a sibling lane in a docstring, not by me.
-			if tail.begins_with("->"):
+			## EVERY occurrence on the line, not the first. find() returns match 1, so a line whose
+			## first `godot ` is benign prose ("your .godot cache is cold") is judged entirely on
+			## that and a real instruction 80 chars later is never examined — a false NEGATIVE,
+			## and the benign-looking first hit is exactly what camouflages it. The other three
+			## defeats are false positives; this one fails CLOSED, which is the direction nobody
+			## re-checks. Found by a sibling lane on a 402-char assert message.
+			var found_bare: bool = false
+			var scan: int = 0
+			while true:
+				var g: int = line.find("godot ", scan)
+				if g == -1:
+					break
+				scan = g + 1
+				var tail: String = line.substr(g + len("godot "))
+				## Must be an INVOCATION: the next token is a flag. Rejects `project.godot must
+				## declare…` and `.godot cache is cold`. And `->` is an arrow, not a flag —
+				## `project.godot -> the .tscn root` clears both of the tests above it.
+				if not tail.begins_with("-") or tail.begins_with("->"):
+					continue
+				found_bare = true
+				break
+			if not found_bare:
 				continue
 			## PRESENCE IS NOT ENOUGH. Measured by a sibling lane after this arm shipped:
 			## an INVALID sandbox path fails CLOSED (godot aborts, EC=134, nothing written),
