@@ -759,6 +759,18 @@ func _preserve_unreadable(path: String, raw: String) -> bool:
 		return false
 	bf.store_string(raw)
 	bf.close()
+	## ⛔ VERIFY THE RESCUE BEFORE THE CALLER DESTROYS THE ORIGINAL. `store_string` returns nothing,
+	## so a short write — a full disk, a quota — is undetectable at the call. Unverified, this
+	## returns true, the caller overwrites the file, and the player is left with a PARTIAL backup and
+	## no original. Staging cannot help here: a rename would move the partial copy into place just
+	## as happily. Reading it back is the only thing that distinguishes a rescue from a gesture.
+	var check := FileAccess.open(sidecar, FileAccess.READ)
+	var landed: String = check.get_as_text() if check != null else ""
+	if check != null:
+		check.close()
+	if landed != raw:
+		push_warning("[ControlsMenu] Copy of %s to %s is INCOMPLETE (%d of %d bytes) — REFUSING to overwrite the original, which is still the only copy of those pads." % [path, sidecar, landed.length(), raw.length()])
+		return false
 	push_warning("[ControlsMenu] %s is not valid JSON — its %d byte(s) were moved to %s and the new mapping starts a fresh file. Previously captured pads are recoverable from the sidecar." % [path, raw.length(), sidecar])
 	return true
 
