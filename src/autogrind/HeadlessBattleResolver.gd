@@ -1087,6 +1087,14 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 		_log("%s: unknown ability '%s' — no effect" % [caster.combatant_name, ability_id])
 		return
 
+	## ⛔ THE GRIND IGNORED SILENCE ENTIRELY — this file never called JobSystem.can_use_ability, so a
+	## silenced character kept casting while live refuses at BattleManager:4669. Mirrors live exactly,
+	## including that the TURN IS CONSUMED and no MP is spent: live logs and returns before its own
+	## spend. Checked here rather than at selection because this is the one point every cast passes.
+	if caster.has_status("silence"):
+		_log("%s is silenced — %s won't come out" % [caster.combatant_name, ability_id])
+		return
+
 	var mp_cost = ability.get("mp_cost", 5)
 	if not caster.spend_mp(mp_cost):
 		_log("%s has no MP for %s" % [caster.combatant_name, ability_id])

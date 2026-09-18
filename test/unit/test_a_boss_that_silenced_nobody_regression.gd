@@ -10,10 +10,11 @@ extends GutTest
 ## each time: an arm composing the right key exists in _execute_support_ability, and no shipped
 ## ability authoring these effects is typed support/song/status, so it is unreachable.
 ##
-## ⚠️ NOT fixed here and measured, not assumed: THE GRIND DOES NOT ENFORCE SILENCE AT ALL.
-## HeadlessBattleResolver never calls JobSystem.can_use_ability — its only "silence" is the
-## random-debuff pool. So this repair makes the key correct on both engines and restores the
-## ability in LIVE battle only. The grind's enforcement gap is a separate, wider change.
+## ⚠️ This fix made the KEY correct on both engines; the grind still IGNORED silence when it
+## landed, so the divergence only became observable here. Closed separately — see
+## test_a_grind_ignored_silence_regression, which gates _resolve_ability the way live gates
+## _execute_ability. The declared-gap arm that lived here was deleted when that shipped, as its
+## own comment instructed.
 
 const ResolverScript = preload("res://src/autogrind/HeadlessBattleResolver.gd")
 
@@ -108,13 +109,3 @@ func test_the_support_arm_stays_and_stays_unreachable() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	assert_gt(src.find("\n\t\t\"ability_silence\":"), -1,
 		"the support arm must remain for anything later typed support/song/status")
-
-
-func test_the_grind_still_does_not_enforce_silence() -> void:
-	## Declared, not defended. This arm exists so the gap is visible rather than implied by silence,
-	## and it reds the day somebody wires enforcement — at which point delete it and say so.
-	var src: String = FileAccess.get_file_as_string("res://src/autogrind/HeadlessBattleResolver.gd")
-	assert_false(src.contains("can_use_ability"),
-		"the grind now calls can_use_ability — silence may be enforced there; re-scope this file")
-	assert_true(src.contains("\"silence\""),
-		"CONTROL: the resolver does mention silence (its random-debuff pool), so the scan can see the file")
