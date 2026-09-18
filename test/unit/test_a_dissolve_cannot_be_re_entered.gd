@@ -105,6 +105,10 @@ func test_one_press_still_dispatches_exactly_one_interactable() -> void:
 		"CONTROL: no `.interact(player)` call found — the dispatch changed shape and this arm stopped measuring it")
 	assert_eq(unreturned, [],
 		"a dispatch in _on_interaction_requested is not followed by `return`: %s — one press would reach every overlapping interactable, and two overworld portals then emit two transitions into a handler with no re-entrancy guard" % str(unreturned))
+	## 📌 NOT A DUPLICATE OF `test_overworld_reachability_framework`, WHICH RATCHETS THE SAME SYMBOL:
+	## that one pins the DEFINITION (it exists, and its body does distance math); this pins that the
+	## DISPATCHER still uses it, which is the half my re-entrancy argument rests on. Its two pins read
+	## raw source and false-greened on a comment — measured and fixed separately.
 	assert_true(body.contains("_pick_nearest_interactable"),
 		"nearest-wins selection is gone from _on_interaction_requested — first-hit-wins was the 2026-07-13 defect (Castle Harmonia stole CaveEntrance's press), and it is also what keeps one press to one transition")
 
