@@ -26,6 +26,36 @@ No recovery classifier is included BECAUSE MINE WAS WRONG: I keyed on `create_ti
 clear, and JukeboxMenu's `create_timer(0.05)` is an await for pacing. The instrument called the
 one file I owned SAFE while it held the live bug. Read the site; do not let a column decide.
 
+TRIAGED 2026-09-18 — all 22 sites in src/ were read. Do not re-derive them:
+
+    6  MEMO            0 clears in their own file; never cleared IS the end state
+    3  MEMO IN EFFECT  only clear is reload() / reset_for_test() / reset_table_cache(),
+                       i.e. an out-of-band hook no runtime path reaches
+    1  SIBLING RECOVERY  AreaTransition._triggered, cleared in _on_body_exited — walking
+                       out of the trigger re-arms it (CLAUDE.md documents this)
+    2  NO AWAIT, NO RAISE in the flagged function — a strand needs an error, not a hang
+   10  GENUINE latches -> 2 defects, both fixed:
+          GameLoop._stop_autogrind        (+ _on_grind_complete)   v3.33.430
+          ui/JukeboxMenu._play_selected                            v3.33.430
+
+  The eight genuine-but-safe ones, each for a DIFFERENT reason — that is the normal result:
+    GameLoop._on_area_transition    worst gap in the codebase (128 lines) and SAFE:
+                                    _arm_transition_watchdog() on the next line, clears at 20s
+    DynamicConversation.run         abort() is armed; reachable via the menu, not automatic
+    AutogrindSystem.stop_autogrind  everything after the flag is re-established by start_autogrind
+    BYOKConfigPanel._on_test_pressed  gated (wedges, not degrades) but no live trigger: both
+                                    called methods exist, _await_probe returns 0 or 3 elements,
+                                    timeout handled, panel rebuilt per open
+    VillageElevator.interact        released the instant the await window closes
+    RuleComposerOverlay.compose     same — both already do what the jukebox fix introduced
+    GameOverScreen._input / _on_retry_input   the worst-LOOKING site: _active cleared on accept,
+                                    then an awaited tween carries the only emit. Cannot strand —
+                                    the tween targets a child of game_over whose only queue_free
+                                    is downstream of the choice, and process_mode is ALWAYS.
+
+⚠️ NOTHING HERE RATCHETS. A 23rd site will appear in the output looking exactly like these, and
+this note says what the 22 ARE rather than pinning them. Do not read it as a guard.
+
 Usage:
     tools/find_entry_latches.py [path ...]     default: src
     tools/find_entry_latches.py --control      prove the detector can say YES before trusting a 0
