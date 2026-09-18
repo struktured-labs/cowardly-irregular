@@ -332,11 +332,19 @@ func glyph_for_action(action: String, device_name: String = "") -> String:
 ## BUTTON_LABELS is the REMAP-SCREEN vocabulary ("Back / Select / Minus" — every family at once,
 ## correct there); this is the one a HUD wants.
 ##
-## 📌 FOUR STACKED DOCSTRINGS SAT HERE, FROM FUNCTIONS THAT WERE MERGED INTO THIS ONE, AND TWO OF
-## THEM CONTRADICTED IT: one promised "the keyboard key when no pad is connected" (it returns ""),
-## and one promised "empty when the index is a face button" (it returns the glyph — which is what
-## all 30-odd call sites actually want, several passing JOY_BUTTON_X/Y). A reader cannot tell which
-## paragraph describes the function, and the wrong one is as authoritative as the right one.
+## 📌 FOUR STACKED DOCSTRINGS SAT HERE AND TWO CONTRADICTED THE CODE: one promised "the keyboard key
+## when no pad is connected" (it returns ""), and one promised "empty when the index is a face
+## button" (it returns the glyph — which is what all 30-odd call sites want, several passing
+## JOY_BUTTON_X/Y). A reader cannot tell which paragraph describes the function, and the wrong one
+## is as authoritative as the right one.
+##
+## ⛔ THE MECHANISM IS ACCRETION, AND ONE CLAIM WAS FALSE THE DAY IT WAS WRITTEN — measured in git,
+## after I had guessed "merged functions" and was wrong. Three commits on 2026-09-11 each ADDED a
+## paragraph above this function and none removed or reconciled the earlier ones. The face-button
+## claim arrived in 530da5fd0, describing the non-face NAME branch that commit was adding; the
+## FACE_GLYPHS fallback it contradicts was already there, added by eeb260aff, which CREATED the
+## function. So each author documented THEIR BRANCH in the place a reader takes for the FUNCTION's
+## contract. No refactor is needed for this to happen — three fixes to one function is enough.
 func button_name_for_index(button_index: int, device_name: String = "") -> String:
 	var name := device_name
 	if name == "":
