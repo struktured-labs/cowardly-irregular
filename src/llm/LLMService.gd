@@ -213,7 +213,7 @@ func _log_byok_applied(http: LLMBackend) -> void:
 ## The BYOK config line, built rather than printed, so the one property that
 ## matters can be asserted on the TEXT instead of read in the source.
 ##
-## `llm_custom_api_key` is SENSITIVE — never log, never print (GameState:93,
+## `llm_custom_api_key` is SENSITIVE — never log, never print (`GameState.llm_custom_api_key`'s SENSITIVE marker,
 ## struktured's standing rule). This reports the key's PRESENCE and never its
 ## value, not even masked: a masked key still leaks length and both ends, and
 ## `user://logs/godot.log` persists on disk where a config line does not expire.

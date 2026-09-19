@@ -3,7 +3,7 @@ extends GutTest
 ## The BYOK log line is one token away from writing a player's API key to disk.
 ##
 ## `GameState.llm_custom_api_key` is marked **SENSITIVE — never log, never print**
-## (GameState:93). BYOK is desktop-only and the key persists in settings.json; the
+## (its `SENSITIVE` marker in GameState). BYOK is desktop-only and the key persists in settings.json; the
 ## one place it could escape into a *log* is the config line LLMService emits when
 ## a custom endpoint is applied:
 ##
@@ -26,7 +26,7 @@ extends GutTest
 ## "just for debugging" — and a masked key still leaks length and both ends.
 ##
 ## ⚠️ THE CORPUS FOLLOWS THE VALUE, NOT ONE SPELLING. The secret is `llm_custom_api_key`
-## in GameState and plain `api_key` from LLMService:187 onward, and the file that turns it
+## in GameState and plain `api_key` from LLMService's BYOK apply onward, and the file that turns it
 ## into `Authorization: Bearer ...` names the first spelling nowhere. Keyed to KEY_FIELD
 ## alone the container arm could not see HTTPBackend at all — measured by planting a
 ## `print("%s" % [headers])` there: caught now, invisible before. The interpolation arm was
@@ -117,7 +117,7 @@ func test_no_other_log_site_in_the_lane_interpolates_the_key() -> void:
 				offenders.append("%s:%d" % [path.get_file(), int(pair[0])])
 	assert_eq(offenders, ([] as Array[String]),
 		("these log sites interpolate api_key: %s. Fix: report presence ('<set>'/'<empty>') "
-		+ "or drop the field. GameState:93 marks it SENSITIVE — never log, never print.")
+		+ "or drop the field. GameState marks it SENSITIVE — never log, never print.")
 			% ", ".join(offenders))
 
 
@@ -186,8 +186,8 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 
 const KEY_FIELD := "llm_custom_api_key"
 
-## THE SECOND NAME THE SECRET TRAVELS UNDER. `LLMService:187` does `http.api_key = str(gs.
-## llm_custom_api_key)`, and from there `HTTPBackend:284` builds `"Authorization: Bearer " +
+## THE SECOND NAME THE SECRET TRAVELS UNDER. `LLMService` does `http.api_key = str(gs.
+## llm_custom_api_key)`, and from there `HTTPBackend._build_headers` builds `"Authorization: Bearer " +
 ## api_key`. That file names KEY_FIELD nowhere, so a corpus keyed to the one literal omits the
 ## exact place the secret becomes a wire header. Measured: 6 holder files without this, 7 with.
 const KEY_ALIAS := "api_key"
@@ -367,7 +367,7 @@ func test_no_log_site_anywhere_in_src_interpolates_the_key() -> void:
 				offenders.append("%s:%d" % [path.get_file(), int(pair[0])])
 	assert_eq(offenders, ([] as Array[String]),
 		("these log sites interpolate the API key: %s. Report presence ('<set>'/'<empty>') or drop "
-		+ "the field — GameState:96 marks it SENSITIVE, and user://logs/godot.log persists on disk.")
+		+ "the field — GameState marks it SENSITIVE, and user://logs/godot.log persists on disk.")
 			% ", ".join(offenders))
 
 
@@ -539,7 +539,7 @@ func test_the_split_keeps_code_and_drops_both_prose_forms() -> void:
 
 
 func test_a_comment_naming_the_key_is_not_an_offender() -> void:
-	## NEGATIVE CONTROL. GameState:96 and this file's own header both name the field in prose; a
+	## NEGATIVE CONTROL. GameState's SENSITIVE marker and this file's own header both name the field in prose; a
 	## scan that flagged them would be silenced by an allowlist within a week.
 	var commented: String = "\tprint(\"hello\")  # api_key is deliberately absent here\n"
 	var lines: PackedStringArray = _code_lines(commented)
