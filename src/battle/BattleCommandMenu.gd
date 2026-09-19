@@ -572,7 +572,9 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 	var ability = JobSystem.get_ability(ability_id)
 	if ability.is_empty():
 		return {}
-	var mp_cost: int = ability.get("mp_cost", 0)
+	## Tick 374 routed the ENGINE and can_use_ability through this resolver and missed the menu,
+	## so a passive's mp_cost_multiplier moved what was charged and not what was quoted or gated.
+	var mp_cost: int = JobSystem.get_ability_mp_cost(combatant, ability_id)
 	var can_afford: bool = combatant.current_mp >= mp_cost
 	var target_type: String = ability.get("target_type", "single_enemy")
 
