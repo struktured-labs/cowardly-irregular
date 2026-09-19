@@ -26,8 +26,10 @@ THE TWO SHAPES WORTH A HUMAN
 1. WRONG KEY — live composes a status name the grind does not. `provoke` authored effect
    `taunt`; live writes `taunted_<caster>` and reads that prefix back in `_find_taunter`,
    while the fall-through wrote a status literally called "taunt" that nothing anywhere
-   read. Found 2026-09-18; cowir-autogrind's fix is queued for .440, so this tool still
-   reports it as a GAP against main and will flip to `both` when that lands.
+   read. Found 2026-09-18; cowir-autogrind's fix LANDED and this row now reads `both`, which
+   is the prediction this paragraph made coming back true rather than a stale note. The shape is
+   kept as the worked example of defect #1 — it is how the category was found, and the tool would
+   no longer demonstrate it from live data alone.
 2. LIVE CONSUMES, GRIND ABSENT — `guardian_wall`/`barrier`: live does
    `has_status("barrier")` then `remove_status("barrier")` at three damage sites, the
    grind has zero references. A grinding player gets no ward; the same party in a manual
@@ -47,6 +49,19 @@ is exactly how `taunted_<name>` stayed hidden.
 
 WHAT THIS DOES NOT ANSWER
 -------------------------
+THE CORPUS IS THE CATALOG ON DISK, AND THERE IS A SECOND CONSTRUCTION PATH
+`preset_castable()` reads data/autobattle_rule_templates.json. Two more presets — "Aggressive" and
+"Defensive" — are built IN CODE by AutobattleSystem._create_default_scripts, which runs whenever
+user://autobattle_scripts.json is absent, i.e. for every new player. They are not in the JSON and
+this tool cannot see them. Worse for a reader: they would read as ZERO rather than as an error,
+because their actions carry `ability_id` where the catalog carries `id`, and an int ActionType where
+the catalog carries a string. A key mismatch is silence, not a crash.
+
+Measured 2026-09-18: those two cast exactly one ability, `power_strike`, which is ALREADY in the
+JSON corpus and carries no `effect` — so every number this tool prints is unaffected today. The gap
+is in the instrument, not in the answer, and the two are separate claims. If a future in-code preset
+casts an ability the catalog does not, this tool goes quietly short by one.
+
 Castable is not cast. A preset rule sits behind conditions, and whether a given party ever
 satisfies them is a different question. Nor does "the grind models it" mean the two engines
 agree on MAGNITUDE — same-key, different-number is invisible here and is its own audit.
