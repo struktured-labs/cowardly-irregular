@@ -6495,8 +6495,9 @@ func _on_advance_queue_changed(count: int, max_size: int) -> void:
 		## Direct form, never through a helper taking the key as a variable: this cue is manifest-guarded
 		## and fails SILENT, so a typo would play nothing — and test_sfx_key_orphan_audit only sees a key
 		## written literally at a play_advance_state call (cowir-sfx). The wrapper hid it.
-		if SoundManager.has_method("play_advance_state"):
-			SoundManager.play_advance_state("full_bank_charged")
+		## The has_method shim here waited for this API to land (fd76239b1, 2026-09-14). It landed;
+		## SoundManager has one definition and no test doubles, so the guard could never be false.
+		SoundManager.play_advance_state("full_bank_charged")
 
 
 ## One aura per battle, re-parented to whichever PC is queueing. A child of the sprite so it follows
