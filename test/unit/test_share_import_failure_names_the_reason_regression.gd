@@ -136,3 +136,92 @@ func _ui_files() -> Array:
 			if str(f).ends_with(".gd"):
 				out.append(dir + "/" + str(f))
 	return out
+
+
+## ⛔ THE SAME DEFECT ONE BRANCH OVER, FOUND 2026-09-19 BY BORROWING cowir-ai's LENS (an `or` the
+## composer could not expand discarded the player's whole set). The mechanism there was *a diagnosis
+## computed and thrown away*, which is this file's own thesis — so I ran it on my own surface.
+##
+## `apply_character_script` has TWO branches. The `autobattle_script` branch stores the errors at
+## :260; the `autobattle_bundle` branch computes the identical `errs`, hands them to push_warning,
+## and returns a bare false. A party bundle whose slice for YOUR character is bad therefore refuses
+## with nothing to act on — the precise sentence this file was written to delete.
+func test_a_refused_BUNDLE_import_reports_its_reason_too() -> void:
+	var bad := {"rules": [
+		{"conditions": [{"type": "has_status"}],
+		 "actions": [{"type": "attack", "target": "lowest_hp_enemy"}], "enabled": true},
+	]}
+	var applied: bool = SSM.apply_character_script("share_reason_probe", {
+		"type": "autobattle_bundle",
+		"scripts": {"share_reason_probe": bad},
+	})
+	assert_false(applied, "precondition: the bundle's slice is invalid, so it must be refused")
+	var why: String = SSM.last_import_reason()
+	assert_ne(why, "",
+		"a refused BUNDLE must carry a reason too — the errors are computed at the bundle branch "
+		+ "and handed to push_warning, which is the log the player never reads")
+	assert_true(why.contains("rule 0"),
+		"the bundle reason must name WHICH rule, exactly as the single-script branch does: %s" % why)
+
+
+## ⛔ AND A BUNDLE REFUSAL MUST NOT INHERIT THE PREVIOUS IMPORT'S REASON. The single-script branch
+## clears at :256 before validating; the bundle branch never clears, so without this the refusal
+## above could be "explained" by an older failure — the confident wrong answer decode_share_code's
+## own comment says is worse than saying nothing.
+func test_a_bundle_refusal_does_not_inherit_an_older_reason() -> void:
+	SSM.last_import_errors = ["rule 9: a stale reason from an earlier import"]
+	SSM.apply_character_script("share_reason_probe", {
+		"type": "autobattle_bundle",
+		"scripts": {"share_reason_probe": {"rules": [
+			{"conditions": [{"type": "has_status"}],
+			 "actions": [{"type": "attack", "target": "lowest_hp_enemy"}], "enabled": true},
+		]}},
+	})
+	assert_false(SSM.last_import_reason().contains("rule 9"),
+		"the bundle branch reported a PREVIOUS import's reason: %s" % SSM.last_import_reason())
+
+
+## ⛔ THE UI HALF, AND THE REASON THE ARM ABOVE IT WAS NOT ENOUGH. `test_every_paste_path_can_say_why
+## _it_refused` derives its corpus from `decode_share_code(` — a FILE import never decodes, so the
+## file path is `continue`d out of that corpus and the arm is green without it. Same shape as the
+## guard it sits beside: scope narrower than its name.
+##
+## Added as its OWN arm rather than by widening theirs, so no existing cover is re-triaged.
+## ⛔ PER FUNCTION *OR ITS CALLER*, AND SCOPED TO THE AUTOBATTLE SHARE SURFACE. Three corrections
+## to my own first draft, each of which had it passing or failing for the wrong reason:
+##   per FILE      -> green: AutobattleGridEditor holds last_import_reason() for its PASTE path,
+##                    so the file-import path beside it was invisible. An arm that cannot fail.
+##   per FUNCTION  -> red on correct code: the apply sits in a helper and the message in its
+##                    caller, which is a legitimate split, so one frame is the wrong unit.
+##   whole src/ui  -> named AutogrindUI::_import_scripts, which is a BULK loop over every export
+##                    file that continues past failures and reports COUNTS. Different population;
+##                    "name the refusal" is not obviously its contract. Not my call to make.
+func test_every_APPLY_path_can_say_why_it_refused() -> void:
+	var checked: int = 0
+	var mute: Array = []
+	for path in _ui_files():
+		if not str(path).contains("/autobattle/"):
+			continue
+		var code: String = FileAccess.get_file_as_string(path)
+		assert_gt(code.length(), 50, "CONTROL: %s must actually be read" % path)
+		if not code.contains("apply_character_script("):
+			continue
+		var chunks: PackedStringArray = code.split("\nfunc ")
+		for chunk in chunks:
+			if not chunk.contains("apply_character_script("):
+				continue
+			checked += 1
+			if chunk.contains("last_import_reason()"):
+				continue
+			## The reason may legitimately live one frame up, where the message is flashed.
+			var fname: String = chunk.split("(")[0].strip_edges()
+			var covered: bool = false
+			for other in chunks:
+				if other != chunk and other.contains(fname + "(") and other.contains("last_import_reason()"):
+					covered = true
+					break
+			if not covered:
+				mute.append("%s::%s" % [str(path).get_file(), fname])
+	assert_gt(checked, 0, "CONTROL: expected at least one applying function, found %d" % checked)
+	assert_eq(mute, [], "these apply an imported script and neither they nor their caller can tell "
+		+ "the player why one was refused: %s" % str(mute))

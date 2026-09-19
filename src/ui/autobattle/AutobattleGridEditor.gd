@@ -3438,7 +3438,13 @@ func _apply_share_selection() -> void:
 		_flash_status("Imported %s" % filename, Color.LIME)
 		SoundManager.play_ui("menu_select")
 	else:
-		_flash_status("Could not apply %s to %s" % [filename, character_name], Color.YELLOW)
+		## The reason exists for a rule-level refusal; say it. "Could not apply" alone is the same
+		## unactionable sentence the paste path stopped giving in 530de5d5.
+		var why := ScriptShareManager.last_import_reason()
+		if why != "":
+			_flash_status("Could not apply %s: %s" % [filename, why], Color.YELLOW)
+		else:
+			_flash_status("Could not apply %s to %s" % [filename, character_name], Color.YELLOW)
 		SoundManager.play_ui("menu_error")
 
 
