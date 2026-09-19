@@ -740,12 +740,26 @@ func _extract_json_from_raw(raw: String) -> Variant:
 		if parsed is Dictionary:
 			return parsed
 
-	# 3. Find first '{' … last '}' in the raw string.
+	# 3. Try each COMPLETE brace-balanced object in the raw string, last one first.
+	#
+	# This used to be one slice from the first '{' to the last '}', which assumes the
+	# reply contains exactly one object and nothing brace-shaped around it. Two
+	# measured shapes defeat that, and both leave the player's composition unparsed:
+	#   "Here is {your} result: {…}"   a prose brace ahead of the object
+	#   "{\"thinking\":true} {…}"       a preamble object ahead of the answer
+	# In each case first-to-last spans BOTH and parses as neither.
+	#
+	# LAST-FIRST because a preamble precedes the answer — the model's real reply is
+	# the last complete object it emitted. Taking the first parseable candidate would
+	# return the preamble and be wrong SILENTLY, which is worse than failing.
+	#
+	# Cannot regress step 3's old successes: if first-to-last parsed, that span was a
+	# single balanced object, so it is also the last candidate this scan finds.
 	var brace_open: int = raw.find("{")
-	var brace_close: int = raw.rfind("}")
-	if brace_open != -1 and brace_close > brace_open:
-		var json_slice: String = raw.substr(brace_open, brace_close - brace_open + 1)
-		parsed = JSON.parse_string(json_slice)
+	var spans: Array = _balanced_object_spans(raw)
+	for i in range(spans.size() - 1, -1, -1):
+		var span: Array = spans[i]
+		parsed = JSON.parse_string(raw.substr(int(span[0]), int(span[1]) - int(span[0]) + 1))
 		if parsed is Dictionary:
 			return parsed
 
@@ -808,6 +822,44 @@ func _repair_mangled_operator(raw: String) -> String:
 ## Append the closers a truncated JSON fragment is missing, or "" if it is not
 ## repairable that way. Tracks string state so a brace inside a string value
 ## (the rules_json contract nests an encoded array) is never counted.
+## Every COMPLETE top-level {…} region in `raw`, as [start, end_inclusive] pairs in
+## source order. String- and escape-aware, so a brace inside a JSON string value is
+## not a nesting event — the same walk _close_unbalanced_json does, reporting spans
+## instead of repairing one. A dangling unclosed '{' yields no span and is left to
+## step 4, whose job is truncation.
+func _balanced_object_spans(raw: String) -> Array:
+	var spans: Array = []
+	var depth: int = 0
+	var start: int = -1
+	var in_string: bool = false
+	var escaped: bool = false
+	for i in range(raw.length()):
+		var ch: String = raw[i]
+		if escaped:
+			escaped = false
+			continue
+		if ch == "\\":
+			escaped = true
+			continue
+		if ch == '"':
+			in_string = not in_string
+			continue
+		if in_string:
+			continue
+		if ch == "{":
+			if depth == 0:
+				start = i
+			depth += 1
+		elif ch == "}":
+			if depth == 0:
+				continue  # a stray closer; nothing open to match it
+			depth -= 1
+			if depth == 0 and start != -1:
+				spans.append([start, i])
+				start = -1
+	return spans
+
+
 func _close_unbalanced_json(fragment: String) -> String:
 	var stack: PackedStringArray = PackedStringArray()
 	var in_string: bool = false
