@@ -30,14 +30,21 @@ func before_each() -> void:
 ## ⛔ REMOVES THE EFFECTS, NOT THE BUS. Deleting and re-adding the bus would change its index and its
 ## name-based routing (`MusicNight` sends into it), so the teardown could leave the chain altered for
 ## every later file. Stripping the effects reproduces `amp == null` with the bus identity untouched.
+## ⛔ UNDER `AudioServer.lock()`. Removing every effect from a LIVE bus mutates the graph the audio
+## thread is reading, and this file wedged 2 of 3 full-suite runs (.461, .463) with main blocked and a
+## non-main thread at 100% — never in isolation, 8/8. Mechanism UNCONFIRMED (no per-thread backtrace),
+## but lock/unlock is the documented way to touch audio state from main and costs nothing if it is not
+## the cause. A scratch bus cannot substitute: the subject resolves MUSIC_DUCK_BUS by name.
 func _strip_effects() -> int:
 	var idx: int = AudioServer.get_bus_index(SoundManager.MUSIC_DUCK_BUS)
 	if idx == -1:
 		return -1
 	_saved.clear()
+	AudioServer.lock()
 	while AudioServer.get_bus_effect_count(idx) > 0:
 		_saved.append(AudioServer.get_bus_effect(idx, 0))
 		AudioServer.remove_bus_effect(idx, 0)
+	AudioServer.unlock()
 	return idx
 
 
@@ -45,9 +52,11 @@ func _restore_effects() -> void:
 	var idx: int = AudioServer.get_bus_index(SoundManager.MUSIC_DUCK_BUS)
 	if idx == -1 or _saved.is_empty():
 		return
+	AudioServer.lock()
 	for e in _saved:
 		AudioServer.add_bus_effect(idx, e)
 		AudioServer.set_bus_effect_enabled(idx, AudioServer.get_bus_effect_count(idx) - 1, true)
+	AudioServer.unlock()
 	_saved.clear()
 
 
