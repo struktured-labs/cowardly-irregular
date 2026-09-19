@@ -24,6 +24,28 @@ extends GutTest
 ## value intact. GameLoop._restore_party_from_save_data then reads the
 ## correct value and routes to the right scene.
 
+## ⚠️ NET, not a replacement. Two arms call `_apply_save_data`, which writes
+## MapSystem.current_map_id, and each restores it INLINE six lines later. A GDScript
+## error in that window aborts the arm's frame and the restore never runs — and the
+## arm still reports PASSING, because an assert already ran ahead of it, so there is
+## no [Risky] and no EC=4 to notice. Produced: an abort planted between the write and
+## the restore left current_map_id at "fire_dragon_cave" for the whole process, with
+## the file green. 23 src readers and 7 other test files read that value.
+##
+## The inline restores stay and still mean what they say; this hook is idempotent with
+## them and covers only the abort.
+func before_all() -> void:
+	_map_id_at_start = MapSystem.current_map_id if MapSystem != null else ""
+
+
+func after_each() -> void:
+	if MapSystem != null:
+		MapSystem.current_map_id = _map_id_at_start
+
+
+var _map_id_at_start: String = ""
+
+
 const SAVE_SYSTEM_PATH := "res://src/save/SaveSystem.gd"
 const GAME_LOOP_PATH := "res://src/GameLoop.gd"
 
