@@ -3,7 +3,7 @@
 #
 # WHY THESE WRAPPERS EXIST
 # ------------------------
-# On 2026-09-18 tools/shot_guard_selftest.gd had no .sh, so it was invoked bare four times
+# On 2026-09-18 a shot-tool selftest had no .sh, so it was invoked bare four times
 # and godot wrote user://logs/ in struktured's REAL profile. That ring holds five files; his
 # 2026-09-17 play session rotated out. @cowir-autogrind then enumerated the population: 12 of
 # the 20 .gd tools have no invocation anywhere in the repo, so a bare `godot -s` is the only
