@@ -2203,6 +2203,16 @@ func explain_rules_report() -> Array:
 			out.append("(inventory rules answered from your party's current bag: %d distinct item%s)"
 				% [_probe_unique_item_count(), "" if _probe_unique_item_count() == 1 else "s"])
 			break
+	## A rule can fire and still do nothing. Reported per rule, after the states, because the rule is
+	## NOT blocked — it matches, it runs, and its action is refused by name where nobody can see it.
+	for i in range(rules.size()):
+		var r: Dictionary = rules[i] as Dictionary
+		if not bool(r.get("enabled", true)):
+			continue
+		for a in r.get("actions", []):
+			var refusal: String = _explain_action_refusal(a as Dictionary)
+			if refusal != "":
+				out.append("  rule %d fires but its action %s" % [i + 1, refusal])
 	out.append_array(_observed_rules_report(winners))
 	return out
 
@@ -2275,6 +2285,37 @@ func _rule_trigger_rows() -> Dictionary:
 		## Numbered so two identical rules stay two rows, and so the row matches the preview's "rule N".
 		out["%d. %s" % [i + 1, _rule_one_line(rule)]] = int(fired.get(i, 0))
 	return out
+
+
+## An action that can NEVER execute is invisible today: the rule fires, `_member_ability_apply`
+## refuses BY NAME, and the reason goes to a print() the player never sees — and the preview renders
+## the action's label either way, so a dead rule reads exactly like a working one.
+## ⛔ AUTHORING ERRORS ONLY. A downed caster, an empty MP bar and "no living ally" are TRANSIENT —
+## a healthy grind hits them routinely, and reporting them here would make the preview cry wolf.
+## Order mirrors _member_ability_apply's own refusals so the message names what would actually stop it.
+func _explain_action_refusal(action: Dictionary) -> String:
+	if str(action.get("type", "")) != "member_ability":
+		return ""
+	var who := str(action.get("member", ""))
+	var caster = AutogrindSystem._resolve_member(_party, who) if who != "" else null
+	if who != "" and caster == null:
+		return "'%s' names no one in your party" % who
+	var ability := str(action.get("ability", ""))
+	if ability == "":
+		return "names no ability — it can never execute"
+	## Unknown id and known-but-inapplicable need different fixes, so they are asked separately.
+	var js = get_tree().root.get_node_or_null("JobSystem") if is_inside_tree() else null
+	if js != null and js.has_method("get_ability") and (js.get_ability(ability) as Dictionary).is_empty():
+		return "no ability called '%s' exists — it can never execute" % ability
+	if not _can_apply_between_battles(ability):
+		return "'%s' does nothing between battles — it can never execute" % ability
+	if caster != null and caster.has_method("knows_ability") and not caster.knows_ability(ability):
+		return "%s does not know '%s' yet — learn or equip it first" % [who, ability]
+	var target := str(action.get("target", ""))
+	if target != "" and not target.to_lower() in AutogrindSystem.GENERIC_ALLY_TARGETS \
+			and AutogrindSystem._resolve_member(_party, target) == null:
+		return "targets '%s', who is not in your party" % target
+	return ""
 
 
 func _explain_actions(rule: Dictionary) -> String:
