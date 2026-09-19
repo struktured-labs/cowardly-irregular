@@ -1995,10 +1995,6 @@ func autogrind_console_log(text: String) -> void:
 		_autogrind_console.append_text(text + "\n")
 
 
-## The grind console's own control line. Every token was frozen in Nintendo spelling and two named
-## the wrong button outright: turbo is raw JOY_BUTTON_Y (north — Ⓧ on a Switch pad, not Ⓨ), exit is
-## ui_cancel (south — Ⓐ on Xbox, ✕ on PlayStation, and X/Esc on a keyboard, never B), and tier is
-## L+R together on a pad, which the line never mentioned. Pause exists (P) and was omitted entirely.
 ## The post-battle prompt named "A", which is the EAST face only on a Nintendo pad — `ui_accept` is
 ## button index 1, so an Xbox player was told to press Ⓐ when the button that continues is Ⓑ. It
 ## also offered "Click", and _process_post_battle gates on ui_accept alone: the mouse did nothing.
@@ -2010,6 +2006,10 @@ func _accept_token() -> String:
 	return tok if tok != "" else "Z"
 
 
+## The grind console's own control line. Every token was frozen in Nintendo spelling and two named
+## the wrong button outright: turbo is raw JOY_BUTTON_Y (north — Ⓧ on a Switch pad, not Ⓨ), exit is
+## ui_cancel (south — Ⓐ on Xbox, ✕ on PlayStation, and X/Esc on a keyboard, never B), and tier is
+## L+R together on a pad, which the line never mentioned. Pause exists (P) and was omitted entirely.
 func _grind_console_controls() -> String:
 	var ipm = Engine.get_main_loop().root.get_node_or_null("InputProfileManager")
 	if ipm == null:

@@ -377,18 +377,6 @@ const FALLBACK_RULE_COMPOSITION: Dictionary = {
 
 # ── Prompt builders: NPC opening ──────────────────────────────────────────────
 
-## Build a prompt asking the LLM to generate a single NPC opening statement.
-##
-## Parameters:
-##   npc_name       — display name of the NPC (e.g. "Elder Theron")
-##   npc_persona    — short personality blurb (e.g. "wise elder, formal tone")
-##   location       — current map/area name (e.g. "Verdant Vale Village")
-##   recent_events  — Array[Dictionary] from EventLog.recent_varied(); may be empty.
-##                    NOT recent(): consecutive same-type runs must be collapsed or a
-##                    walk to town fills the whole block with Entered X and buries the
-##                    boss the player just beat. EventLog.recent_varied carries the case.
-##
-## Returns a prompt String ready for LLMService.complete_json().
 ## The ONE place the shared context blocks are assembled, in ONE order.
 ##
 ## Three features drifted between build_npc_opening and build_combined_reply
@@ -416,6 +404,18 @@ static func _context_blocks(
 	)
 
 
+## Build a prompt asking the LLM to generate a single NPC opening statement.
+##
+## Parameters:
+##   npc_name       — display name of the NPC (e.g. "Elder Theron")
+##   npc_persona    — short personality blurb (e.g. "wise elder, formal tone")
+##   location       — current map/area name (e.g. "Verdant Vale Village")
+##   recent_events  — Array[Dictionary] from EventLog.recent_varied(); may be empty.
+##                    NOT recent(): consecutive same-type runs must be collapsed or a
+##                    walk to town fills the whole block with Entered X and buries the
+##                    boss the player just beat. EventLog.recent_varied carries the case.
+##
+## Returns a prompt String ready for LLMService.complete_json().
 static func build_npc_opening(
 	npc_name: String,
 	npc_persona: String,

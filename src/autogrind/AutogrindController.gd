@@ -695,6 +695,15 @@ func get_grind_stats() -> Dictionary:
 		"battles_won": AutogrindSystem.battles_completed,
 		"total_exp": AutogrindSystem.total_exp_gained,
 		"total_gold": sys_stats.get("total_gold", 0),
+		## ⛔ THE DASHBOARD READ THESE AND THIS DICT NEVER CARRIED THEM. It is a 28-key LITERAL built
+		## beside `sys_stats` rather than from it, so AutogrindSystem computed csi/yield every refresh
+		## and they were discarded here: AutogrindDashboard:742 rendered `stats.get("csi", 0.0)` as a
+		## flat 0% and :744 rendered yield as a flat 100%, for the whole session. Not merged wholesale —
+		## the two dicts disagree on `total_exp` (this one reads total_exp_gained), so a merge would
+		## silently move a different number.
+		"csi": sys_stats.get("csi", 0.0),
+		"yield_multiplier": sys_stats.get("yield_multiplier", 1.0),
+		"automation_affinity": sys_stats.get("automation_affinity", 0.0),
 		"total_items": _count_total_items(),
 		"collapse_count": AutogrindSystem.collapse_count,
 		"rule_checks": AutogrindSystem.get_rule_eval_count(),

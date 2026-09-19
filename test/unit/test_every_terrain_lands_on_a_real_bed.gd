@@ -176,6 +176,16 @@ func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
 				"%s is not a manifest key, so an arm naming it promises a bed nothing can play" % bed)
 
 
+## A COMMENT, not the character. @cowir-battle's structural form: a `#` inside a string cannot
+## make a line BEGIN with one, so this survives quote-awareness and is phrase-free — where
+## `contains("## ")` misses a single-hash line and `contains("#")` is satisfied BY a truncation.
+func _has_comment_line(s: String) -> bool:
+	for line in s.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			return true
+	return false
+
+
 ## Source with BOTH comment forms removed. `#` lines and trailing `#`, AND `"""` blocks — GDScript
 ## docstrings are string LITERALS, so a `#`-only strip leaves prose that names a token and a scan
 ## reads that prose as the token (cowir-music, msg 10577). Not used on arms that deliberately read
@@ -193,15 +203,5 @@ func test_the_dropped_arms_stay_dropped_while_their_beds_do_not_exist() -> void:
 ## DELEGATED 2026-09-18 to the quote-aware shared helper. No arm here reports a line number, so
 ## the index shift `split()` carries is not observable; a guard that printed one would need
 ## `strip_comments`, which is line-preserving.
-## A COMMENT, not the character. @cowir-battle's structural form: a `#` inside a string cannot
-## make a line BEGIN with one, so this survives quote-awareness and is phrase-free — where
-## `contains("## ")` misses a single-hash line and `contains("#")` is satisfied BY a truncation.
-func _has_comment_line(s: String) -> bool:
-	for line in s.split("\n"):
-		if line.strip_edges().begins_with("#"):
-			return true
-	return false
-
-
 func _code_only(src: String) -> String:
 	return str(GdSource.split(src)["code"])

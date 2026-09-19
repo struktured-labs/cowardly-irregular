@@ -161,7 +161,11 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 		else:
 			_csi_bar_fill.color = CSI_COLOR_HIGH
 
-	var yield_mult = stats.get("yield_multiplier", stats.get("efficiency", 1.0))
+	## ⛔ THE FALLBACK SHOWED `efficiency` UNDER THE YIELD LABEL — a different quantity, not a
+	## default, so an absent key rendered a plausible wrong number instead of nothing. Mirrors the
+	## CSI line above: ask the system, which is the same source the stats dict is built from.
+	var yield_mult = stats.get("yield_multiplier",
+		AutogrindSystem.get_yield_multiplier(region_id) if region_id != "" else 1.0)
 	if _yield_label:
 		_yield_label.text = "%.0f%%" % (yield_mult * 100.0)
 		if yield_mult >= 0.8:
