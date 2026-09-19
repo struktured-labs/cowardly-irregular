@@ -2072,8 +2072,6 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		should_loop = entry.get("loop", true)
 	if stream is AudioStreamOggVorbis:
 		stream.loop = should_loop
-		## Set UNCONDITIONALLY. loop_offset lives on the shared cached resource, so an absent field must WRITE 0.0 rather than inherit the last key's value.
-		stream.loop_offset = float(entry.get("loop_offset", 0.0))
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
 	_play_parked_position()
