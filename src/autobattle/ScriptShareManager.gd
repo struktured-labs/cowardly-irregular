@@ -167,12 +167,6 @@ static func import_file(filename: String) -> Dictionary:
 	return data
 
 
-## Apply an imported autobattle script to a character.
-## Validate an imported script's rules against the engine's grammar (shallow —
-## structure + registered condition/target types, NOT fizzle/kit checks, since a
-## shared script may have been authored for a different character/job). Returns
-## the flattened error list ([] = clean). Guards against a hand-edited, malformed,
-## or newer-version shared script silently misbehaving at runtime once applied.
 ## Why the last import was refused, for the UI to show. The appliers return bool and pushed the
 ## real reason to push_warning — the log the player never reads — so both paste paths said
 ## "Share code valid but could not apply", which is self-contradictory AND actionless while the
@@ -196,6 +190,11 @@ static func last_import_reason() -> String:
 	return first
 
 
+## Validate an imported script's rules against the engine's grammar (shallow —
+## structure + registered condition/target types, NOT fizzle/kit checks, since a
+## shared script may have been authored for a different character/job). Returns
+## the flattened error list ([] = clean). Guards against a hand-edited, malformed,
+## or newer-version shared script silently misbehaving at runtime once applied.
 static func validate_imported_script(script: Dictionary) -> Array:
 	var errors: Array = []
 	if not script.has("rules"):
@@ -248,6 +247,7 @@ static func last_import_advisory_text() -> String:
 	return first
 
 
+## Apply an imported autobattle script to a character.
 static func apply_character_script(character_id: String, data: Dictionary) -> bool:
 	if data.get("type") == "autobattle_script":
 		var script = data.get("script", {})

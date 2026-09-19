@@ -567,6 +567,14 @@ func get_deep_check_kit(character_id: String) -> Dictionary:
 	}
 
 
+## Reachability-only slice, for UNTRUSTED imports. The MP-guard arm below is an authoring-STYLE
+## rule — deliberately strict for LLM output — and it fires on ordinary hand-written rules like
+## "hp < 50 -> cure". Surfacing it on every shared code would train players to ignore advisories,
+## so an import asks only "can this rule fire for this character AT ALL".
+func deep_check_reachability(rule: Dictionary, character_id: String) -> Array[String]:
+	return _deep_check_rule(rule, character_id, true)
+
+
 ## Item 13 fast-follow (cowir-ai convergence, msg 2038): fizzle-correctness
 ## deep-check for one rule against one character. Catches what grammar can't:
 ## hallucinated ability/item ids, abilities outside the character's level-1
@@ -579,14 +587,6 @@ func get_deep_check_kit(character_id: String) -> Dictionary:
 ## it, because their catch-all is protected by a 0-MP rule ABOVE it that this
 ## scope cannot see. That whole-script lint used to be named here and exist
 ## nowhere; it is now test_a_preset_can_always_afford_its_last_rule.
-## Reachability-only slice, for UNTRUSTED imports. The MP-guard arm below is an authoring-STYLE
-## rule — deliberately strict for LLM output — and it fires on ordinary hand-written rules like
-## "hp < 50 -> cure". Surfacing it on every shared code would train players to ignore advisories,
-## so an import asks only "can this rule fire for this character AT ALL".
-func deep_check_reachability(rule: Dictionary, character_id: String) -> Array[String]:
-	return _deep_check_rule(rule, character_id, true)
-
-
 func _deep_check_rule(rule: Dictionary, character_id: String, reachability_only: bool = false) -> Array[String]:
 	var errors: Array[String] = []
 	var ctx: Dictionary = get_deep_check_kit(character_id)
