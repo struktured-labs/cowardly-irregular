@@ -445,9 +445,15 @@ func _try_load_archetype_sprite(archetype: String) -> bool:
 	_archetype_rows = HybridSpriteLoader.overworld_walk_rows("overworld_npc_sheets", _archetype_id)
 	var tex = load(path) as Texture2D
 	if not tex:
+		# The file EXISTS, so somebody meant it to load — silence hands the artist a chibi and no
+		# reason. Absence above stays silent for a different reason: it is guarded by
+		# `archetype != ""` and all 27 resolvable archetypes have art, so it fires only for an
+		# archetype whose sheet has not landed yet, which is a legitimate work-in-progress state.
+		push_warning("[OverworldNPC] '%s' exists at %s but did not load as a Texture2D — falling back to procedural" % [archetype, path])
 		return false
 	var img = tex.get_image()
 	if not img or img.get_width() < 128 or img.get_height() < 128:
+		push_warning("[OverworldNPC] '%s' sheet is %s, under the 128x128 floor for a 4x4 grid of 32x32 frames — falling back to procedural" % [archetype, ("unreadable" if not img else "%dx%d" % [img.get_width(), img.get_height()])])
 		return false
 	_archetype_sheet = img
 	_apply_facing()
