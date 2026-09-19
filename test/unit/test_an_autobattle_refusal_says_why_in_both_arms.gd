@@ -4,9 +4,10 @@ extends GutTest
 ## every turn with nothing in the log. `_convert_autobattle_action`'s caller swaps a bare `{}` for a
 ## defer, so a refusal here is indistinguishable from the player scripting a defer.
 ##
-## The ability arm 30 lines up already reports all three of its refusals — including the ROUTINE one
-## (insufficient MP) — while the item arm beside it reported none. An asymmetry between two arms of
-## ONE function, against the author's own established convention.
+## The ability arm 36 lines up has FOUR refusals and reports three of them — including the ROUTINE
+## one, insufficient MP — staying silent only on the deliberate empty-`targets` case below. The item
+## arm has THREE and reported none, including the two that are its exact counterparts. An asymmetry
+## between two arms of ONE function, against the author's own established convention.
 ##
 ## ⛔ THE INVARIANT IS A RELATIONSHIP, NOT A LIST OF APPROVED SITES. Exactly one refusal kind is
 ## allowed to stay silent: the explicit empty-`targets` case, which is silent in BOTH arms BY DESIGN
