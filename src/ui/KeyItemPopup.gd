@@ -40,7 +40,12 @@ func dismiss() -> void:
 
 
 ## "Press A" named the wrong cap on every Nintendo-family pad (8BitDo confirm sits under Ⓑ); resolve the physical cap like the dialogue boxes do.
+## ⛔ NO PAD, NO CAP. `glyph_for_action` answers an EMPTY device name out of the xbox table, so a
+## keyboard-only player was told "Press Ⓑ / Z" — a glyph for hardware they do not have, in a
+## family they may not own. Same guard as `DialogueChoiceMenu.pad_token` one file over.
 static func continue_hint_text(device_name: String = "") -> String:
+	if device_name == "" and Input.get_connected_joypads().is_empty():
+		return "Press Z to continue"
 	var cap := "A"
 	if InputProfileManager:
 		cap = InputProfileManager.glyph_for_action("ui_accept", device_name)

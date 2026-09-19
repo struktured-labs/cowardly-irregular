@@ -74,3 +74,19 @@ func test_no_literal_cap_survives_in_either_surface() -> void:
 	assert_eq(menu_src.find("\"[A/"), -1, "DialogueChoiceMenu: literal '[A/' hint came back")
 	assert_eq(menu_src.find("[B/Esc"), -1, "DialogueChoiceMenu: literal '[B/Esc' hint came back")
 	assert_eq(popup_src.find("\"Press A /"), -1, "KeyItemPopup: literal 'Press A /' hint came back")
+
+
+## ⛔ THE SAME NO-PAD HOLE, IN THE SIBLING SURFACE. `continue_hint_text()` took the xbox table for
+## an empty device name, so every key-item reveal told a keyboard-only player "Press Ⓑ / Z to
+## continue". `DialogueChoiceMenu.pad_token` one file over has carried the guard since it was
+## written; the popup beside it never got it. Measured 2026-09-19.
+func test_the_popup_names_no_cap_when_no_pad_is_attached() -> void:
+	if not Input.get_connected_joypads().is_empty():
+		pass_test("a pad is attached here, so the no-pad case is unreachable — not evidence either way")
+		return
+	assert_eq(KeyItemPopup.continue_hint_text(), "Press Z to continue",
+		"with no pad the popup must name the KEY alone; a family glyph is hardware the player does not have")
+	assert_eq(KeyItemPopup.continue_hint_text(XBOX), "Press %s / Z to continue" % _confirm_caps()[XBOX],
+		"control: an explicitly NAMED device still gets its cap, so the guard is keyed to pad ABSENCE and not to the argument being omitted")
+	assert_eq(DialogueChoiceMenu.hint_text(true), "[Enter/Click] Confirm    [Esc/RClick] Cancel    (↑↓/D-pad)",
+		"control: the choice menu beside it already drops its cap with no pad — this is the shape the popup now matches")
