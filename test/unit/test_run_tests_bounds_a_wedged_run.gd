@@ -44,9 +44,15 @@ func _probe_with_base(replacement: String) -> String:
 	return path
 
 
+## ⛔ NO TEST-FILE ARGUMENT, DELIBERATELY. This used to pass a real suite file by name, and that
+## coupled these arms to a file this lane does not own: when the duck-latch guard was quarantined
+## to test/isolated an hour later, run_tests.sh correctly refused with "no such test file" (EC=2)
+## and the timeout arm was never reached — a RED gate whose cause was my fixture, not my subject.
+## The no-argument form runs the full-suite path, whose BASE is the sleeper we patched in, so it
+## exercises the bound while depending on no particular file existing anywhere.
 func _run(path: String, env: String) -> Dictionary:
 	var out: Array = []
-	var code := OS.execute("bash", ["-c", "%s bash '%s' the_duck_latch_waits_for_the_bus" % [env, path]], out, true)
+	var code := OS.execute("bash", ["-c", "%s bash '%s'" % [env, path]], out, true)
 	return {"code": code, "text": "\n".join(out)}
 
 
