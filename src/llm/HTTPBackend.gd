@@ -13,7 +13,11 @@
 ##   api_format   — "ollama" | "openai"
 ##   model        — model name string passed to the API
 ##   api_key      — Authorization bearer token (empty = omit header)
-##   default_timeout_sec — applied to every HTTPRequest; 0 = HTTPRequest default
+##   default_timeout_sec — applied to every HTTPRequest. 0 does NOT mean unbounded:
+##                        HTTPBackend's own `submit` floors it at 30s (Wave F B15), so a
+##                        hung server cannot leak HTTPRequest nodes for a whole session.
+##                        (`submit` is declared in three backends — the qualifier is
+##                        load-bearing, not habit.)
 ##
 ## Threading invariant: all methods run on the main thread.  HTTPRequest nodes
 ## use Godot's built-in async HTTP — no Thread or WorkerThreadPool required.
