@@ -5043,15 +5043,8 @@ func _apply_stat_down(target: Combatant, effect: String, stat_modifier: float, d
 	return true
 
 
-## ⛔ ONE OWNER FOR THE POST-DAMAGE STATUS APPLY. This block lived VERBATIM in BOTH
-## _execute_physical_ability and _execute_magic_ability, so every rule it carries — the random_debuff
-## 1.0 default, the freeze->stun and burn->burning aliases — had to be written twice to be true, and
-## `doom` was written into neither.
-
 ## Strips every active buff and any positive STATUS from one target; returns how many it cleared.
 ## "Positive" is an inclusion list, not an exclusion, so a new debuff can never make dispel remove it.
-
-
 ## Delegates to Combatant.dispel — the grind needs the same behaviour and a twin here would drift.
 func _dispel_target(target) -> int:
 	return int(target.dispel()) if target.has_method("dispel") else 0
@@ -5067,6 +5060,10 @@ func _dispel_target_and_log(target) -> int:
 	return cleared
 
 
+## ⛔ ONE OWNER FOR THE POST-DAMAGE STATUS APPLY. This block lived VERBATIM in BOTH
+## _execute_physical_ability and _execute_magic_ability, so every rule it carries — the random_debuff
+## 1.0 default, the freeze->stun and burn->burning aliases — had to be written twice to be true, and
+## `doom` was written into neither.
 func _apply_ability_status(caster: Combatant, target: Combatant, ability: Dictionary) -> void:
 	## ⛔ THE DEAD ARE NOT AFFLICTED. This apply runs AFTER the damage, so a killing blow also poisoned,
 	## blinded or stunned the corpse and the log announced it — and revival exists, so the ally came
