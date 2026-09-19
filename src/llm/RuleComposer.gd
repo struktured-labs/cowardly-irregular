@@ -124,6 +124,12 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# returns null rather than the default when the key is present, and assigning
 	# Nil to a typed String aborts the enclosing function in the grid editor.
 	if domain == DOMAIN_AUTOBATTLE:
+		## FIRST, because splitting changes the rule list every later pass walks. The
+		## grind domain reaches this via _normalise_autogrind_conditions; autobattle
+		## had no route to it, so an `or` survived to validate_rule and the resulting
+		## grammar error discarded the player's WHOLE composition, not one rule.
+		for note in _expand_or_conditions(v["rules"], {}):
+			repair_notes.append(note)
 		_drop_null_targets(v["rules"])
 		for note in _normalise_autobattle_statuses(v["rules"]):
 			repair_notes.append(note)
@@ -147,6 +153,10 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# Autogrind refuses the whole ruleset for one bad rule, so a near-miss name is a
 	# total loss. Both of these are normalisations against the system's own vocabulary.
 	if domain == DOMAIN_AUTOGRIND:
+		## Same key, same pass, same argument as the autobattle block: absence is a
+		## defined state, so erasing it changes nothing the rule DOES. A present null
+		## defeats `.get("target", "")` and reaches AutogrindSystem as "<null>".
+		_drop_null_targets(v["rules"])
 		for note in _normalise_autogrind_conditions(v["rules"], domain_system):
 			repair_notes.append(note)
 		for note in _normalise_member_status(v["rules"]):
@@ -794,9 +804,6 @@ func _normalise_switch_profile(rules: Array, kit_context: Dictionary) -> Array[S
 	return notes
 
 
-## An autobattle condition's `status` field, matched literally by Combatant.has_status.
-## Measured 7 of 19 unmatchable on an intent about being silenced — the model wrote
-## "silenced". Same lookup as the grind's, same table, because it is the same engine call.
 ## Three shapes measured across 48 captured live replies, 4 jobs x 12, replayed through the
 ## real compose_async. One grammar error discards the whole composition, so each cost a
 ## player their entire ruleset:
@@ -864,6 +871,9 @@ func _normalise_autobattle_shapes(rules: Array, kit_context: Dictionary) -> Arra
 	return notes
 
 
+## An autobattle condition's `status` field, matched literally by Combatant.has_status.
+## Measured 7 of 19 unmatchable on an intent about being silenced — the model wrote
+## "silenced". Same lookup as the grind's, same table, because it is the same engine call.
 func _normalise_autobattle_statuses(rules: Array) -> Array[String]:
 	const STATUS_CONDITIONS := ["has_status", "not_has_status", "ally_has_status",
 		"enemy_has_status", "not_enemy_has_status"]
