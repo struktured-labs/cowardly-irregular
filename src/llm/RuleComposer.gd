@@ -124,6 +124,12 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# returns null rather than the default when the key is present, and assigning
 	# Nil to a typed String aborts the enclosing function in the grid editor.
 	if domain == DOMAIN_AUTOBATTLE:
+		## FIRST, because splitting changes the rule list every later pass walks. The
+		## grind domain reaches this via _normalise_autogrind_conditions; autobattle
+		## had no route to it, so an `or` survived to validate_rule and the resulting
+		## grammar error discarded the player's WHOLE composition, not one rule.
+		for note in _expand_or_conditions(v["rules"], {}):
+			repair_notes.append(note)
 		_drop_null_targets(v["rules"])
 		for note in _normalise_autobattle_statuses(v["rules"]):
 			repair_notes.append(note)
