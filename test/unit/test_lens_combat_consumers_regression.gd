@@ -105,10 +105,14 @@ func test_warden_floor_precedes_death_resistance() -> void:
 
 ## ── (3) Arbiter — execute bonus ──────────────────────────────────────
 
+## Slices `lens_execute_multiplier`, not `_apply_lens_execute_bonus`: the logic moved there so the
+## MENU could quote the bonus without inheriting the executor's battle_log emit (cowir-battle,
+## 2026-09-19). These arms pinned the old ADDRESS and red on an extraction that weakened nothing —
+## the delegation arm below is what makes the pair survive the next move.
 func test_arbiter_execute_helper_reads_both_meta_keys() -> void:
 	var src: String = FileAccess.get_file_as_string(BM_PATH)
-	var idx: int = src.find("func _apply_lens_execute_bonus(")
-	assert_gt(idx, -1, "the Arbiter execute helper must exist")
+	var idx: int = src.find("func lens_execute_multiplier(")
+	assert_gt(idx, -1, "the Arbiter execute multiplier must exist")
 	var next: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, (next - idx) if next > -1 else 1800)
 	assert_string_contains(body, "lens_execute_threshold",
@@ -117,12 +121,28 @@ func test_arbiter_execute_helper_reads_both_meta_keys() -> void:
 		"must read the bonus")
 
 
+## The chain the two string arms depend on: executor -> shared multiplier. Without this, moving the
+## logic again re-points the slices at whatever function happens to hold those strings next.
+func test_the_execute_bonus_delegates_to_the_shared_multiplier() -> void:
+	var src: String = FileAccess.get_file_as_string(BM_PATH)
+	var idx: int = src.find("func _apply_lens_execute_bonus(")
+	assert_gt(idx, -1, "the executor-side helper must still exist — it owns the battle-log emit")
+	var next: int = src.find("\nfunc ", idx + 1)
+	var body: String = src.substr(idx, (next - idx) if next > -1 else 1800)
+	assert_string_contains(body, "lens_execute_multiplier(",
+		"the executor must DELEGATE to the multiplier the menu also reads, or the quote and the "
+		+ "charge are two copies of the threshold again")
+	assert_string_contains(body, "battle_log_message.emit",
+		"and the emit must stay on the executor side: the menu builds a row per enemy per ability")
+
+
 func test_arbiter_threshold_reads_hp_before_the_hit() -> void:
 	# "Finish the wounded", not "reward whatever this hit happened to
 	# leave behind". Reading post-hit HP would make every killing blow
 	# an execute, which is a different (and much stronger) mechanic.
 	var src: String = FileAccess.get_file_as_string(BM_PATH)
-	var idx: int = src.find("func _apply_lens_execute_bonus(")
+	var idx: int = src.find("func lens_execute_multiplier(")
+	assert_gt(idx, -1, "FLOOR: the multiplier must exist, or the slice below is about nothing")
 	var next: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, (next - idx) if next > -1 else 1800)
 	assert_string_contains(body, "float(target.current_hp) / float(target.max_hp) > threshold",

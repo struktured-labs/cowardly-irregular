@@ -5454,7 +5454,13 @@ func estimate_attack_breakdown(attacker: Combatant, target: Combatant) -> Dictio
 	var def_val = target.get_buffed_stat("defense", target.defense)
 	var raw = int((atk * atk) / float(max(1, atk + def_val)))
 	var dmg: int = max(1, raw)
-	return {"damage": dmg, "formula": "ATK %d² ÷ (ATK %d + DEF %d) = %d, then ×variance ×crit" % [atk, atk, def_val, dmg]}
+	var formula: String = "ATK %d² ÷ (ATK %d + DEF %d) = %d" % [atk, atk, def_val, dmg]
+	## _apply_lens_execute_bonus runs on this path too, and it fires exactly when [KILL] is being read.
+	var lens: float = lens_execute_multiplier(attacker, target)
+	if not is_equal_approx(lens, 1.0):
+		dmg = max(1, int(dmg * lens))
+		formula += " ×execute %.2f = %d" % [lens, dmg]
+	return {"damage": dmg, "formula": formula + ", then ×variance ×crit"}
 
 
 func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Dictionary) -> int:
@@ -5489,6 +5495,12 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 	# preview matches reality (0.0x immune, 1.5x weak, 0.5x resist). Immunity
 	# returns a truthful 0, bypassing the min-1 floor, so an "Immune: Ice" enemy
 	# never previews phantom damage the swing won't actually deal.
+	## Both executors apply this before terrain, and it fires exactly when [KILL] is being read.
+	var lens_mod: float = lens_execute_multiplier(attacker, target)
+	if not is_equal_approx(lens_mod, 1.0):
+		mitigated = int(mitigated * lens_mod)
+		formula += " ×execute %.2f = %d" % [lens_mod, mitigated]
+
 	## Magic-only and terrain/weather first, both mirroring _execute_magic_ability: its physical twin reads no element at all.
 	var element_val = ability.get("element")
 	if is_magical and element_val != null and str(element_val) != "":
@@ -5790,21 +5802,29 @@ func _apply_lens_mp_tithe(spender: Combatant) -> void:
 
 
 ## Arbiter Lens execute bonus (msg 3179). The axis fingerprint showed Arbiter is THRESHOLD damage, not flat damage — its identity ability is masterite_execution at 3.0x gated on wounded targets, which is why the doc's flat +8% ATK became +5% plus this. Applies to physical AND magic so a Mage holding the Arbiter Lens finishes the same way a Fighter does; the Lens describes the holder's approach, not their weapon.
-func _apply_lens_execute_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
+## The multiplier with no side effect, so the menu can quote Final Word without logging a line per row.
+func lens_execute_multiplier(attacker: Combatant, target: Combatant) -> float:
 	if attacker == null or target == null or not is_instance_valid(target) or target.max_hp <= 0:
-		return damage
+		return 1.0
 	if LensSystem == null:
-		return damage
+		return 1.0
 	var me: Dictionary = LensSystem.get_lens_meta_effects(attacker.combatant_name.to_lower().replace(" ", "_"))
 	var threshold: float = float(me.get("lens_execute_threshold", 0.0))
 	var bonus: float = float(me.get("lens_execute_bonus", 0.0))
 	if threshold <= 0.0 or bonus <= 0.0:
-		return damage
+		return 1.0
 	# Threshold reads the hp fraction BEFORE this hit lands — "finish the wounded", not "reward whatever this hit leaves behind".
 	if float(target.current_hp) / float(target.max_hp) > threshold:
+		return 1.0
+	return 1.0 + bonus
+
+
+func _apply_lens_execute_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
+	var mult: float = lens_execute_multiplier(attacker, target)
+	if is_equal_approx(mult, 1.0):
 		return damage
 	battle_log_message.emit("[color=orange]%s moves to finish it.[/color]" % attacker.combatant_name)
-	return int(damage * (1.0 + bonus))
+	return int(damage * mult)
 
 
 func _apply_market_sense(combatant: Combatant, damage: int) -> int:
