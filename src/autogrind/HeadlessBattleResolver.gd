@@ -701,6 +701,11 @@ func _find_heal_ability(combatant) -> String:
 	for ability_id in combatant.learned_abilities:
 		var ability = js.get_ability(ability_id) if js.has_method("get_ability") else {}
 		# `type` is the field abilities author (289/289); `category` is authored by NONE, so this read was constant "" and no enemy ever healed in a headless battle.
+		## The `category` fallback is orphaned — 0 of 289 in abilities.json and 0 in JobSystem's
+		## hardcoded table author it; all 289 author `type`. Harmless to keep and safe to drop,
+		## unlike the `power` inversion below where the FALLBACK is the live read. Same three
+		## sites here (:704 :718 :1121); stat_modifier/modifier in BattleManager IS real (50/7),
+		## which is why these are indistinguishable by eye.
 		if str(ability.get("type", ability.get("category", ""))) == "healing":
 			return ability_id
 	return ""
@@ -717,6 +722,11 @@ func _find_attack_ability(combatant) -> String:
 		# Both keys were dead: `category` authored 0/289 (the field is `type`) and `power` 0/289 (it is `damage_multiplier`), so the guard never passed and this returned "" on every call — enemies fell through to a basic attack for the whole battle.
 		var cat := str(ability.get("type", ability.get("category", "")))
 		if cat in ["magic", "physical"]:
+			## ⛔ INVERTED: `power` is authored by NOTHING — 0 of 289 in abilities.json and 0 in
+			## JobSystem._create_default_abilities. `damage_multiplier` carries all 161. The fallback
+			## is the ONLY live read; deleting it as legacy zeroes every damage number in this engine.
+			## BattleManager.estimate_ability_breakdown found this first and fixed its own site; it
+			## also divides `power` by 10, so the four sites disagree on SCALE as well as order.
 			var power := float(ability.get("power", ability.get("damage_multiplier", 0.0)))
 			if power > best_power:
 				best_power = power
