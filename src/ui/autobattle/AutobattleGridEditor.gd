@@ -70,6 +70,16 @@ const CONNECTOR_COLOR = Color(0.6, 0.6, 0.7)
 const CURSOR_COLOR = Color(1.0, 1.0, 0.3)
 const MAX_CONDITIONS = 3  # Max AND conditions per rule
 const MAX_ACTIONS = 5  # Max actions per rule  # fifth slot fires only at a full bank (+4 AP); truncated to 4 below it
+## A UI-ADD BUDGET, NOT A DATA INVARIANT — do not clamp the data path to it.
+## Enforced at the two manual-add sites only (_add_or_row, _insert_row_after). Every other
+## writer reaches AutobattleSystem.set_character_script uncapped: the LLM composer, COWIR1:
+## imports, save load, autogrind restore. A 33-rule script installs and WORKS — rendering and
+## navigation are bounded by rules.size(), never by this const, which is what "still scrollable"
+## below has always meant.
+## ⛔ CLAMPING AT set_character_script IS THE OBVIOUS FIX AND IT LOSES DATA BOTH WAYS: truncating
+## drops rules the player composed, and rejecting discards the whole script — which is the exact
+## failure cowir-ai fixed in .455, where one bad condition cost the player the entire set.
+## Raising the number is the cheap move if a real bound is ever needed; a clamp is not.
 const MAX_RULES = 32  # Cap OR rule rows so scripts stay bounded (still scrollable)
 const GRID_BASE_POS = Vector2(120, 50)  # Anchor for _grid_container before scroll offset
 
