@@ -162,8 +162,46 @@ run_gut() {
   # boot, which is the same stale-artifact class the header exists to close.
   : > "$RUN_LOG"
   _tree_stamp | tee -a "$RUN_LOG" >&2
-  "${BASE[@]}" "$@" 2>&1 | tee -a "$RUN_LOG"
+  # ⛔ BOUND THE RUN. A wedged godot is not a slow one and does not end on its own: the .461 gate
+  # spun 1h57m at 100% on ONE thread with its log frozen for 1h49m, and nothing in this script or
+  # in gate.sh would ever have stopped it. Measured suites are 268-689s, so 1800s is ~2.6x the
+  # worst observed and cannot cut a healthy run.
+  local _budget="${RUN_TESTS_TIMEOUT:-1800}" _t0 _elapsed
+  _t0=$SECONDS
+  timeout --signal=TERM --kill-after=60 "$_budget" "${BASE[@]}" "$@" 2>&1 | tee -a "$RUN_LOG"
   local ec=${PIPESTATUS[0]}
+  _elapsed=$(( SECONDS - _t0 ))
+  # ⛔ DO NOT TEST FOR 124 ALONE. A TIMEOUT HAS FOUR EXIT CODES HERE AND THE FLAGS PICK WHICH.
+  # Measured on this box (uutils 0.2.2), 3/3 each, confirmed independently by 3 lanes:
+  #   timeout N CMD                                  -> 124
+  #   timeout --signal=TERM N CMD                    -> 124
+  #   timeout --kill-after=K N CMD                   -> 125   <- --kill-after alone does it
+  #   --signal=TERM --kill-after=K, child TRAPS TERM -> 137   <- 128+9, the REAL wedge case
+  # I first wrote this off as uutils-vs-GNU. It is not: it is `--kill-after`, on one
+  # implementation, on one box. And `sleep` dies on TERM, so every easy measurement samples the
+  # COOPERATIVE case — a wedge is by definition the process that does NOT answer TERM, which is
+  # why --kill-after is here at all and why the code it yields is the kill signal, not a timeout
+  # code. Worse, 125 is GNU's code for "timeout ITSELF failed", so a handler written from the man
+  # page reads a wedge as broken tooling. ELAPSED TIME is the only stable signal: only a run that
+  # actually reached the budget was cut by it. The code corroborates, it does not decide, and the
+  # normalisation to 124 below is load-bearing rather than a courtesy.
+  # This arm sits ABOVE the vacuity checks on purpose — a killed run prints no Totals, so without
+  # it a wedge exits 3 and reports itself as "NO TESTS RAN", which is a different defect entirely.
+  # (Measured: that is exactly what the first version of this arm did.)
+  case "$ec" in
+    124|125|137|143)
+      if [ "$_elapsed" -ge "$_budget" ]; then
+        echo "run_tests.sh: WEDGED — no exit after ${_budget}s (ran ${_elapsed}s, EC=$ec); killed, not failed." >&2
+        echo "  A hang is not a red: judge a long godot run by CPU TIME, not log growth. A spinning" >&2
+        echo "  NON-main thread means the GDScript is not the cause — we author no threads." >&2
+        echo "  per-thread CPU, no ptrace needed:  for t in /proc/<pid>/task/*; do ...; done" >&2
+        echo "  last file the log reached:" >&2
+        sed 's/\x1b\[[0-9;]*m//g' "$RUN_LOG" | command grep -aE '^res://' | tail -1 | sed 's/^/    /' >&2
+        echo "  logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
+        exit 124
+      fi
+      ;;
+  esac
   # `command grep`: the session grep is a ugrep shim carrying -I, and it SILENTLY skips a file it
   # judges binary. Godot logs can carry NUL bytes, which made a 150KB log read as zero matches —
   # a false zero on the artifact this assertion depends on.
