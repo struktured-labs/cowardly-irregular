@@ -153,6 +153,10 @@ func compose_async(domain: String, prompt_text: String, character_id: String = "
 	# Autogrind refuses the whole ruleset for one bad rule, so a near-miss name is a
 	# total loss. Both of these are normalisations against the system's own vocabulary.
 	if domain == DOMAIN_AUTOGRIND:
+		## Same key, same pass, same argument as the autobattle block: absence is a
+		## defined state, so erasing it changes nothing the rule DOES. A present null
+		## defeats `.get("target", "")` and reaches AutogrindSystem as "<null>".
+		_drop_null_targets(v["rules"])
 		for note in _normalise_autogrind_conditions(v["rules"], domain_system):
 			repair_notes.append(note)
 		for note in _normalise_member_status(v["rules"]):
