@@ -5419,6 +5419,13 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 
 ## An ability's damage weight for "pick the strongest" comparisons. `power` is a legacy key 0 of 288 abilities author, so reading it alone made every such comparison constant; damage_multiplier is the field the data and the execution path both use.
 func _ability_power(ability: Dictionary) -> float:
+	## ⛔ INVERTED — nothing authors `power` (0 of 289 in abilities.json, 0 in JobSystem's
+	## hardcoded table); `damage_multiplier` carries all 161. The fallback is the only live read.
+	## PRIOR ART: estimate_ability_breakdown below already found this (its comment records 0 of
+	## 288) and fixed ITS site only — preferring `power` made every preview assume 1.0x.
+	## ⚠️ DO NOT UNIFY THE SITES BY COPYING THAT EXPRESSION: it treats the keys as different
+	## UNITS, dividing `power` by 10 where these three read them interchangeably. Precedence and
+	## scale are separate questions here. See test_the_primary_read_is_the_authored_key.
 	return float(ability.get("power", ability.get("damage_multiplier", 0.0)))
 
 

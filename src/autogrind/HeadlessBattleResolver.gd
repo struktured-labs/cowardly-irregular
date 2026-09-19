@@ -717,6 +717,11 @@ func _find_attack_ability(combatant) -> String:
 		# Both keys were dead: `category` authored 0/289 (the field is `type`) and `power` 0/289 (it is `damage_multiplier`), so the guard never passed and this returned "" on every call — enemies fell through to a basic attack for the whole battle.
 		var cat := str(ability.get("type", ability.get("category", "")))
 		if cat in ["magic", "physical"]:
+			## ⛔ INVERTED: `power` is authored by NOTHING — 0 of 289 in abilities.json and 0 in
+			## JobSystem._create_default_abilities. `damage_multiplier` carries all 161. The fallback
+			## is the ONLY live read; deleting it as legacy zeroes every damage number in this engine.
+			## BattleManager.estimate_ability_breakdown found this first and fixed its own site; it
+			## also divides `power` by 10, so the four sites disagree on SCALE as well as order.
 			var power := float(ability.get("power", ability.get("damage_multiplier", 0.0)))
 			if power > best_power:
 				best_power = power
