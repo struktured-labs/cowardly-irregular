@@ -138,6 +138,14 @@ func _gate_roots() -> Dictionary:
 				continue
 			if line.length() - line.lstrip("\t").length() <= depth:
 				break
+			## A COMMENT NAMING A PASS IS NOT A CALL. Without this, "## runs before
+			## _supply_missing_mp_guards(...)" inside a gate registers a phantom root — and a
+			## phantom root makes _reachable() report a pass as reaching a domain it does not,
+			## which SILENCES a real defect. Zero instances today; the existing comments simply
+			## lack the "(" this regex needs, which is a coincidence and not a guarantee.
+			if line.strip_edges().begins_with("#"):
+				j += 1
+				continue
 			for c in call.search_all(line):
 				if funcs.has(c.get_string(1)):
 					(out[dom] as Dictionary)[c.get_string(1)] = true
