@@ -2161,7 +2161,11 @@ func _evaluate_rule(combatant: Combatant, rule: Dictionary) -> bool:
 		return true  # No conditions = always match
 
 	var conditions = rule["conditions"]
-	var logic = rule.get("logic", "AND")  # AND or OR
+	## ⛔ "OR" IS NOT SUPPORTED AND THIS FUNCTION IS DEAD — `_evaluate_grid_rule` is the live path
+	## and hard-ANDs its conditions. `validate_rule` whitelists no rule-level key, so a rule
+	## carrying logic:"OR" VALIDATES, shares, and then runs as AND — silently inverted, not
+	## rejected. `.455` ships a pass that expands OR into separate rules because of this.
+	var logic = rule.get("logic", "AND")
 
 	var results = []
 	for condition in conditions:
