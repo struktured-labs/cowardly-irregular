@@ -32,8 +32,6 @@ const ACTION_LABELS = {
 ## this derives the other convention, so there is one table instead of two that can drift.
 var nintendo_mode: bool = true
 
-## Face glyphs keyed by BUTTON INDEX (position) — SDL numbers by position, the silkscreen
-## differs per family. All verified to render through FontFallbacks; squared 🅰/🅱 are tofu.
 ## NON-FACE buttons have no glyph — FACE_GLYPHS only covers 0-3 — so glyph_for_action returns "?"
 ## for Select, Start, L3 and the shoulders, and a legend that fell back to the keyboard key then
 ## showed "Tab" to a pad player. These are the five indices the profiles actually bind.
@@ -43,6 +41,8 @@ const BUTTON_NAMES := {
 	"playstation": {4: "Share", 6: "Options", 7: "L3", 9: "L1", 10: "R1"},
 }
 
+## Face glyphs keyed by BUTTON INDEX (position) — SDL numbers by position, the silkscreen
+## differs per family. All verified to render through FontFallbacks; squared 🅰/🅱 are tofu.
 const FACE_GLYPHS := {
 	"nintendo": {0: "Ⓑ", 1: "Ⓐ", 2: "Ⓨ", 3: "Ⓧ"},
 	"xbox": {0: "Ⓐ", 1: "Ⓑ", 2: "Ⓧ", 3: "Ⓨ"},
