@@ -295,7 +295,7 @@ func test_costume_resolution_is_IMMUNE_to_folding_the_audio_accessor() -> void:
 	#
 	# It would also have been the WRONG source. Verified in the source, not assumed:
 	#   GameState.current_world  written in _set_current_map_id(), the setter for EVERY map
-	#                            change (GameLoop:141)
+	#                            change (GameLoop.gd)
 	#   audio's cached suffix    written at ONE site, behind an early `return` for interiors
 	#                            with no resolved track, by an AUDIO function
 	# Audio deliberately clears _current_area during battle so its cache keeps battle music
