@@ -20,6 +20,31 @@ const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 const LOADER_SRC := "res://src/battle/sprites/HybridSpriteLoader.gd"
 
+## GameState.current_world is read by 18 src files and 68 other guards, and every arm below drives
+## it through all six worlds. The arms restore inline and say so — but an error between the last
+## write and that line strands it: measured 2026-09-18 on this file, an abort mid-loop left it at
+## 6 (abstract) against a baseline of 1, with the file still reporting 13 of 14 passing. The inline
+## restores stay and still mean what they say; after_each is a NET that covers only the abort.
+##
+## The catcher's baseline is taken ONCE in before_all. Taken per-test it would compare the value
+## against a re-read of itself — green under every strand, which is the over-determined arm this
+## lane fixed in f35ace44b.
+var _pre_world: int = -1
+var _saved_world: int = -1
+
+
+func before_all() -> void:
+	_pre_world = int(GameState.current_world)
+
+
+func before_each() -> void:
+	_saved_world = int(GameState.current_world)
+
+
+func after_each() -> void:
+	GameState.current_world = _saved_world
+
+
 
 func test_world_one_is_UNSUFFIXED_because_it_is_the_artists_own_art() -> void:
 	# The base sheets ARE the artist's medieval art. If world 1 ever gained a suffix,
@@ -492,3 +517,9 @@ func test_every_job_sheet_authors_the_geometry_the_loader_would_otherwise_defaul
 	assert_eq(int(fighter.get("frame_width", 32)), 256,
 		"the artist's frame is 256 where the loader's default is 32 — if those ever agree, an "
 		+ "omitted key stops being visible and this arm is no longer the thing protecting it")
+
+## Declared LAST — declaration order is run order, and an aborting arm still reports PASSING, so
+## the teardown above is an unfalsifiable claim without an arm that can see the strand.
+func test_zz_current_world_was_handed_back() -> void:
+	assert_eq(int(GameState.current_world), _pre_world,
+		"STRAND: current_world left at %d, was %d before this file ran — 18 src files and 68 other guards resolve art through it" % [int(GameState.current_world), _pre_world])
