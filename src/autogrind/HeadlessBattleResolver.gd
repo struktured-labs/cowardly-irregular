@@ -387,8 +387,6 @@ func _ability_has_priority(ability_id: String) -> bool:
 	return bool(js.get_ability(ability_id).get("priority", false))
 
 
-## Check status effects that skip a combatant's turn.
-## Returns "" if no skip, "skip" to skip silently, "confuse_attack" for confusion.
 ## ═══════════════════════════════════════════════════════════════════════
 ## GROUP ATTACKS
 ## ═══════════════════════════════════════════════════════════════════════
@@ -611,6 +609,8 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 	return {"type": "group_done", "combatant": participants[0], "speed": -99}
 
 
+## Check status effects that skip a combatant's turn.
+## Returns "" if no skip, "skip" to skip silently, "confuse_attack" for confusion.
 func _check_status_skip(combatant) -> String:
 	if combatant.has_status("stun"):
 		combatant.remove_status("stun")
@@ -774,14 +774,6 @@ func _execute_action(action: Dictionary) -> void:
 			pass  # Already executed during selection phase
 
 
-## Twin of BattleManager._sum_equipment_special_effect (:5434). Walks the three equipment slots and
-## sums the requested key, returning 0.0 cleanly when the combatant has no gear, the autoload is
-## absent, or the key is unauthored. A grinding party's gear did NOTHING before this: the resolver
-## read 0 of the 15 keys equipment.json authors, so the grind reported survivability and rewards for
-## a party wearing no equipment effects at all.
-## ⚠️ Four of the fifteen keys are read in live by CONSTRUCTION (element + "_damage_bonus"), so a
-## literal census of either engine under-reports them — @cowir-battle's third shape, which is why
-## this helper takes the key as an argument rather than matching names.
 ## Twin of Combatant._has_equipment_resistance. PRESENCE across the three slots, not a sum: live
 ## tests `> 0.0` and multiplies by a flat 0.5, and both authoring pieces carry `true`, so a sum
 ## would be a second formula that agrees only by accident of the authored values.
@@ -812,6 +804,14 @@ func _has_equipment_resistance(combatant, element: String) -> bool:
 	return false
 
 
+## Twin of BattleManager._sum_equipment_special_effect (:5434). Walks the three equipment slots and
+## sums the requested key, returning 0.0 cleanly when the combatant has no gear, the autoload is
+## absent, or the key is unauthored. A grinding party's gear did NOTHING before this: the resolver
+## read 0 of the 15 keys equipment.json authors, so the grind reported survivability and rewards for
+## a party wearing no equipment effects at all.
+## ⚠️ Four of the fifteen keys are read in live by CONSTRUCTION (element + "_damage_bonus"), so a
+## literal census of either engine under-reports them — @cowir-battle's third shape, which is why
+## this helper takes the key as an argument rather than matching names.
 func _sum_equipment_special_effect(combatant, key: String) -> float:
 	if combatant == null or not is_instance_valid(combatant):
 		return 0.0

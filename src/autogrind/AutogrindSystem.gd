@@ -2014,9 +2014,6 @@ func _resolve_member(party: Array, member_key: String):
 	return null
 
 
-## Coarse/fine split shared by every member_* type, mirroring member_dead: with a "member" the
-## predicate is asked of that character, without one it is asked of ANY. Both shapes must work —
-## the picker and the LLM composer build a rule from the type table alone, with no member.
 ## A living party member holding a healing ability they can currently afford. Reads `type` with
 ## `category` as fallback and `power` with `damage_multiplier` — both fields are authored one way
 ## and read the other elsewhere in this engine; HeadlessBattleResolver documents the same trap.
@@ -2047,10 +2044,6 @@ func _find_restorative_caster(party: Array) -> Dictionary:
 	return {}
 
 
-## Apply one ability from one named party member, between battles. Reads the AUTHORED amount
-## (heal_amount / mp_amount) — reading `power` is the field-mismatch class this engine has now hit
-## three times. Returns a reason rather than failing silently: a rule that never fires is the
-## hardest kind to debug from the console.
 ## Target words that mean "the ally who most needs it" rather than naming a member. Anything else
 ## is a member key and still fails LOUDLY, so a typo'd member name is not silently swallowed.
 const GENERIC_ALLY_TARGETS := ["lowest_hp_ally", "lowest_hp", "ally", "all", "all_allies", "party", "any"]
@@ -2091,6 +2084,10 @@ func ability_works_between_battles(ability_id: String) -> bool:
 	return bool(between_battle_effect_of(ability_id).get("ok", false))
 
 
+## Apply one ability from one named party member, between battles. Reads the AUTHORED amount
+## (heal_amount / mp_amount) — reading `power` is the field-mismatch class this engine has now hit
+## three times. Returns a reason rather than failing silently: a rule that never fires is the
+## hardest kind to debug from the console.
 func _member_ability_apply(caster, ability_id: String, target_key: String) -> Dictionary:
 	if caster == null:
 		return {"ok": false, "reason": "caster not in party"}
@@ -2166,6 +2163,9 @@ func on_battle_stalemate() -> void:
 	stop_autogrind("Battle timed out — this encounter cannot be resolved (the enemy out-heals your party). Try a different region, or a stronger party.")
 
 
+## Coarse/fine split shared by every member_* type, mirroring member_dead: with a "member" the
+## predicate is asked of that character, without one it is asked of ANY. Both shapes must work —
+## the picker and the LLM composer build a rule from the type table alone, with no member.
 func _member_predicate(party: Array, condition: Dictionary, pred: Callable) -> bool:
 	var who := str(condition.get("member", ""))
 	if who != "":
@@ -2582,10 +2582,6 @@ const RESTORE_MP_ITEM_ORDER := ["hi_ether", "ether"]
 const _HP_RESTORE_KEYS := ["heal_hp", "heal_hp_percent", "revive"]
 
 
-## Can this item restore HP IN a grind? Effects-driven, so a new restorative in items.json works with
-## zero code change — the same contract _is_healing_item states for the Iron Vigil streak.
-## ⛔ save_point_only is excluded: a Tent heals 50% and cannot be used mid-grind, so counting it says
-## "you can still heal" about an item the player cannot reach. Effect keys alone do not separate them.
 ## Consumes one `item_id` from `member` and applies its REAL effects. Returns false having consumed
 ## nothing when the item cannot be applied, so a caller can try the next one.
 ## Mirrors _resolve_item: inventory removal is ours, effects are ItemSystem's.
@@ -2604,6 +2600,10 @@ func _apply_item_to(member, item_id: String, caller: String = "heal_party") -> b
 	return true
 
 
+## Can this item restore HP IN a grind? Effects-driven, so a new restorative in items.json works with
+## zero code change — the same contract _is_healing_item states for the Iron Vigil streak.
+## ⛔ save_point_only is excluded: a Tent heals 50% and cannot be used mid-grind, so counting it says
+## "you can still heal" about an item the player cannot reach. Effect keys alone do not separate them.
 func _is_battle_hp_restorative(item_id: String) -> bool:
 	var item_system: Node = _get_autoload_node("ItemSystem")
 	if item_system == null or not item_system.has_method("get_item"):

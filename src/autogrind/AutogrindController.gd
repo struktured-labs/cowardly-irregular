@@ -510,7 +510,6 @@ func _on_region_cracked(region_id: String, crack_level: int) -> void:
 	print("[AUTOGRIND] Auto-advancing to %s (World %d)" % [next["name"], next["world"]])
 
 
-## Stop the grind session
 ## The system stopped itself; bring the loop down with it. Re-entrant by construction: this calls
 ## stop_grind, which sets _state to IDLE before calling stop_autogrind, and stop_autogrind returns
 ## immediately when is_grinding is already false.
@@ -520,6 +519,7 @@ func _on_system_stopped(results: Dictionary) -> void:
 	stop_grind(str(results.get("stop_reason", "Autogrind system stopped")))
 
 
+## Stop the grind session
 func stop_grind(reason: String = "Manual stop") -> void:
 	if _state == State.IDLE:
 		## A start that aborted after _force_autobattle_on never left IDLE; this is the only way back.
