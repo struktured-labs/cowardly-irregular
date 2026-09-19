@@ -586,6 +586,17 @@ func _get_sellable_inventory() -> Array:
 	return sellable
 
 
+## One predicate for "already has it": the LIVE Combatant's knows_ability (kit ∪ learned ∪ purchased ∪ level ∪ free move) when reachable, else the snapshot's learned list.
+func _member_knows(char_index: int, spell_id: String, snapshot_learned: Array) -> bool:
+	if spell_id in snapshot_learned:
+		return true
+	var live: Array = _resolve_live_party()
+	if char_index < live.size() and live[char_index] != null and is_instance_valid(live[char_index]) \
+			and live[char_index].has_method("knows_ability"):
+		return bool(live[char_index].knows_ability(spell_id))
+	return false
+
+
 ## Tick 314: resolve the LIVE party (Array[Combatant]) so shop writes
 ## land on the source-of-truth inventory. Pre-fix shop only mutated
 ## game_state.player_party (the serialized snapshot dict). On the next
@@ -598,17 +609,6 @@ func _get_sellable_inventory() -> Array:
 ## Falls back to null in test envs without a GameLoop in the tree —
 ## callers handle null by writing only to the snapshot (legacy behavior),
 ## which keeps the existing unit tests passing.
-## One predicate for "already has it": the LIVE Combatant's knows_ability (kit ∪ learned ∪ purchased ∪ level ∪ free move) when reachable, else the snapshot's learned list.
-func _member_knows(char_index: int, spell_id: String, snapshot_learned: Array) -> bool:
-	if spell_id in snapshot_learned:
-		return true
-	var live: Array = _resolve_live_party()
-	if char_index < live.size() and live[char_index] != null and is_instance_valid(live[char_index]) \
-			and live[char_index].has_method("knows_ability"):
-		return bool(live[char_index].knows_ability(spell_id))
-	return false
-
-
 func _resolve_live_party() -> Array:
 	var tree: SceneTree = get_tree()
 	if tree == null or tree.root == null:
