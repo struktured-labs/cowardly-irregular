@@ -191,7 +191,11 @@ func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 ## child, and four of these are `add_child`ed onto the editor — so a rebuild under any one of them
 ## destroys it. The first version of the pad-change handler guarded `_rule_composer_overlay` alone
 ## and would have eaten an open VirtualKeyboard mid-name-entry, plus both pickers:
-##     _option_picker :2521   _keyboard :3199   _share_picker :3278   _rule_composer_overlay :3493
+##     _option_picker · _keyboard · _share_picker · _rule_composer_overlay
+## ⛔ NO LINE NUMBERS HERE, DELIBERATELY. This block once cited four, and they were wrong the
+## instant it landed — the commit that WROTE it inserted these two functions above every site it
+## pointed at, so the citations shifted as the comment appeared. A comment naming lines below
+## itself invalidates them by existing. `grep -n` finds them; the member names do not rot.
 ## ⚠️ `_simulate_panel` WAS MISSING FROM THIS LIST AND MY FIRST DERIVED FLOOR COULD NOT SEE IT —
 ## the floor matched member NAMES ending in modal/keyboard/picker/overlay, which is a convention,
 ## not the property. `_simulate_panel` is declared "blocks grid input while open" and matches none
