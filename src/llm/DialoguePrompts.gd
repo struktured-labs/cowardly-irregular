@@ -695,6 +695,18 @@ static func build_player_choices(
 	)
 
 
+## Build the prompt asked of the LLM at each boss phase transition.
+##
+## ctx is a BossIntentContext (passed as Dictionary via to_dict()) so this
+## function stays decoupled from the class. The LLM picks ONE of
+## ctx.available_intents and writes a short in-character taunt for the
+## moment the new posture lands.
+##
+## Parameters:
+##   display_name — boss display name (e.g. "Chancellor Mordaine")
+##   ctx          — Dictionary from BossIntentContext.to_dict()
+##
+## Returns a prompt String ready for LLMService.complete_json().
 static func build_boss_intent(
 	display_name: String,
 	ctx: Dictionary,
@@ -997,17 +1009,6 @@ static func build_rule_composition(domain: String, prompt_text: String, current_
 
 
 
-## Render the character's real kit and MP pool for the rule-composition prompt.
-##
-## The grammar tells the model its abilities must be in "THIS character's level-1
-## kit" and that costed rules need an mp_percent guard covering the summed cost.
-## Without this block it was told neither which character nor what anything costs,
-## so both rules were unfollowable: measured 0 of 10 compositions surviving the
-## deep check for cleric, fighter and mage alike, losing to guessed ability ids
-## (`cure` on a fighter, a `heal` that exists in no job) and to missing guards.
-##
-## Comes from AutobattleSystem.get_deep_check_kit — the validator's own view — so
-## the prompt cannot teach a kit the validator will reject.
 ## The kit ids again, immediately before the answer.
 ##
 ## `_format_rule_kit` already says "and NOTHING else" and already warns that the
@@ -1147,6 +1148,17 @@ static func _format_party_kit(kit_context: Dictionary) -> String:
 	return "\n".join(lines)
 
 
+## Render the character's real kit and MP pool for the rule-composition prompt.
+##
+## The grammar tells the model its abilities must be in "THIS character's level-1
+## kit" and that costed rules need an mp_percent guard covering the summed cost.
+## Without this block it was told neither which character nor what anything costs,
+## so both rules were unfollowable: measured 0 of 10 compositions surviving the
+## deep check for cleric, fighter and mage alike, losing to guessed ability ids
+## (`cure` on a fighter, a `heal` that exists in no job) and to missing guards.
+##
+## Comes from AutobattleSystem.get_deep_check_kit — the validator's own view — so
+## the prompt cannot teach a kit the validator will reject.
 static func _format_rule_kit(kit_context: Dictionary) -> String:
 	if kit_context.is_empty() or not bool(kit_context.get("resolved", false)):
 		return ""
