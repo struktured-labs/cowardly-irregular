@@ -819,9 +819,6 @@ func _repair_mangled_operator(raw: String) -> String:
 	return re.sub(raw, '"op":"$1"', true)
 
 
-## Append the closers a truncated JSON fragment is missing, or "" if it is not
-## repairable that way. Tracks string state so a brace inside a string value
-## (the rules_json contract nests an encoded array) is never counted.
 ## The inner content of every ``` fenced block in `raw`, LAST BLOCK FIRST, with an
 ## opening language tag ("json") dropped. An unterminated final fence yields no block
 ## and is left to the brace scan, whose job is a reply that stopped mid-stream.
@@ -884,6 +881,9 @@ func _balanced_object_spans(raw: String) -> Array:
 	return spans
 
 
+## Append the closers a truncated JSON fragment is missing, or "" if it is not
+## repairable that way. Tracks string state so a brace inside a string value
+## (the rules_json contract nests an encoded array) is never counted.
 func _close_unbalanced_json(fragment: String) -> String:
 	var stack: PackedStringArray = PackedStringArray()
 	var in_string: bool = false
