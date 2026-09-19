@@ -888,6 +888,25 @@ func _exchange_cap() -> int:
 	return mini(cap, MAX_EXCHANGES_CEILING)
 
 
+## A party entry's job, treating an EMPTY value as ABSENT.
+##
+## `Combatant.to_dict` writes `data["job"] = data.get("job_id", "")` UNCONDITIONALLY, so an
+## entry serialized before a job was assigned carries `job: ""` and NO `job_id`. The plain
+## chain `get("job_id", get("job", "adventurer"))` then returns "" — the middle key is
+## PRESENT, so the final default is structurally unreachable for any save-loaded party — and
+## `_format_party_state` renders the row as "  - Kai the , unhurt".
+##
+## Found because a `git log -S '"job":'` of mine returned a false zero: the writer is an
+## INDEXED assignment, which no dict-literal pattern can match (cowir-adhoc, who read his
+## actual saves: 30 of 30 party members carry `job`).
+static func _party_job(entry: Dictionary) -> String:
+	for key in ["job_id", "job"]:
+		var v: String = str(entry.get(key, "")).strip_edges()
+		if v != "":
+			return v
+	return "adventurer"
+
+
 ## Snapshot live party state for the prompt. Every read is guarded — a shape
 ## change in GameState must degrade to a thinner prompt, never break dialogue.
 func _resolve_party_state() -> Dictionary:
@@ -908,7 +927,7 @@ func _resolve_party_state() -> Dictionary:
 			distress = true
 		members.append({
 			"name": str(entry.get("name", "?")),
-			"job": str(entry.get("job_id", entry.get("job", "adventurer"))),
+			"job": _party_job(entry),
 			"condition": DialoguePrompts.describe_condition(cur, mx, alive),
 		})
 		var inv: Variant = entry.get("inventory", {})

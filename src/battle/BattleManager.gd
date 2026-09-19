@@ -5419,6 +5419,13 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 
 ## An ability's damage weight for "pick the strongest" comparisons. `power` is a legacy key 0 of 288 abilities author, so reading it alone made every such comparison constant; damage_multiplier is the field the data and the execution path both use.
 func _ability_power(ability: Dictionary) -> float:
+	## ⛔ INVERTED — nothing authors `power` (0 of 289 in abilities.json, 0 in JobSystem's
+	## hardcoded table); `damage_multiplier` carries all 161. The fallback is the only live read.
+	## PRIOR ART: estimate_ability_breakdown below already found this (its comment records 0 of
+	## 288) and fixed ITS site only — preferring `power` made every preview assume 1.0x.
+	## ⚠️ DO NOT UNIFY THE SITES BY COPYING THAT EXPRESSION: it treats the keys as different
+	## UNITS, dividing `power` by 10 where these three read them interchangeably. Precedence and
+	## scale are separate questions here. See test_the_primary_read_is_the_authored_key.
 	return float(ability.get("power", ability.get("damage_multiplier", 0.0)))
 
 
@@ -7755,7 +7762,7 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			}
 
 		"ability":
-			# AutobattleSystem uses "ability_id", also check "id" for backwards compat
+			## Every action here came from _action_def_to_action, which reads the catalog's "id" and emits "ability_id" — so this fallback is UNREACHABLE HERE (measured 2026-09-18: 0 producers reaching THIS function, 0 test drivers). The catalog does author "id" — RuleComposer:1150 reads it as the PRIMARY, upstream of the translator — so neither spelling is legacy; they are the shapes either side of _action_def_to_action. Kept, not deleted: a hand-built action costs it nothing, and deleting an unreachable guard is the risky direction.
 			var ability_id = action_data.get("ability_id", action_data.get("id", ""))
 			if ability_id.is_empty():
 				print("[AUTOBATTLE] No ability_id found in action: %s" % action_data)
@@ -7791,7 +7798,7 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			}
 
 		"item":
-			# Check both "item_id" and "id" for backwards compat
+			## Same as the ability arm above: the only producer emits "item_id", so the "id" fallback never fires today.
 			var item_id = action_data.get("item_id", action_data.get("id", ""))
 			if item_id.is_empty():
 				return {}
