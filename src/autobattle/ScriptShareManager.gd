@@ -137,6 +137,10 @@ static func export_autogrind_rules() -> String:
 ## a parsed-but-non-Dict root would crash on the typed assignment
 ## `var data: Dictionary = json.data` at the next line).
 static func import_file(filename: String) -> Dictionary:
+	## Clear FIRST, as decode_share_code does: a file that fails to OPEN has no rule errors, and
+	## without this the caller would caption it with the previous import's reason.
+	last_import_errors = []
+	last_import_advisories = []
 	var path = EXPORT_DIR + filename
 	if not FileAccess.file_exists(path):
 		push_warning("[SHARE] Import file not found: %s" % path)
@@ -249,12 +253,16 @@ static func last_import_advisory_text() -> String:
 
 ## Apply an imported autobattle script to a character.
 static func apply_character_script(character_id: String, data: Dictionary) -> bool:
+	## Clear at ENTRY, not per branch: this function has FOUR `return false` exits and only one of
+	## them used to clear. An empty script (:is_empty), a bundle not containing you, and an unknown
+	## type all returned with the PREVIOUS import's reason still loaded — specific, plausible, and
+	## about a different file. Placement is cowir-autogrind's; clearing per branch closed one exit.
+	last_import_errors = []
+	last_import_advisories = []
 	if data.get("type") == "autobattle_script":
 		var script = data.get("script", {})
 		if script.is_empty():
 			return false
-		last_import_errors = []
-		last_import_advisories = []
 		var errs := validate_imported_script(script)
 		if not errs.is_empty():
 			last_import_errors = errs
@@ -271,8 +279,11 @@ static func apply_character_script(character_id: String, data: Dictionary) -> bo
 	if data.get("type") == "autobattle_bundle":
 		var scripts = data.get("scripts", {})
 		if scripts.has(character_id):
+			## This branch computed the errors and gave them only to push_warning, so a bundle
+			## refusal reached the player as "no reason reported" while the reason existed.
 			var errs := validate_imported_script(scripts[character_id])
 			if not errs.is_empty():
+				last_import_errors = errs
 				push_warning("[SHARE] Rejected bundled import for %s — %d invalid rule(s): %s" % [character_id, errs.size(), str(errs)])
 				return false
 			AutobattleSystem.set_character_script(character_id, scripts[character_id])
@@ -318,12 +329,17 @@ static func validate_imported_autogrind_rules(rules) -> Array:
 
 ## Apply imported autogrind rules (validated — untrusted imports never apply raw).
 static func apply_autogrind_rules(data: Dictionary) -> bool:
+	## Clear at ENTRY, matching apply_character_script. Two exits below sat ABOVE the old clear.
+	## LATENT, not live: both callers (decode_share_code, import_file) already clear before they
+	## get here, so nothing reaches these carrying a stale reason today — this removes the
+	## dependence on every caller remembering, which nothing in the function stated.
+	last_import_errors = []
+	last_import_advisories = []
 	if data.get("type") != "autogrind_rules":
 		return false
 	var rules = data.get("rules", [])
 	if rules.is_empty():
 		return false
-	last_import_errors = []
 	var errs := validate_imported_autogrind_rules(rules)
 	if not errs.is_empty():
 		last_import_errors = errs
