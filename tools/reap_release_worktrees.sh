@@ -35,6 +35,13 @@
 #         tools/reap_release_worktrees.sh --keep 4 --apply
 #         tools/reap_release_worktrees.sh --selftest
 # Env:    REAP_PREFIX  (default "tmp/rel-")   REAP_ARCHIVE (default "tmp/_archive")
+#         REAP_SCAN    (default "tmp/")       REAP_ROOT    (default this checkout)
+#
+#         REAP_ROOT points the LOOKING at another checkout's worktrees. It widens nothing:
+#         every refusal is per-worktree and none of them reads the root. Needed because
+#         this script cd's to its own repo on startup, so without it the reaper can only
+#         see its own tmp/ — however the caller invokes it.
+#           REAP_ROOT=/home/struktured/projects/cowir-deploy-wt tools/reap_release_worktrees.sh
 # Exit:   0 ok · 2 usage/precondition
 
 set -uo pipefail
@@ -44,6 +51,15 @@ PREFIX="${REAP_PREFIX:-tmp/rel-}"
 # What we LOOK at. Detached worktrees must still sit under PREFIX; SCAN only widens the scan so
 # branch worktrees can be CONSIDERED under --merged-branches. Never widen SCAN past tmp/.
 SCAN="${REAP_SCAN:-tmp/}"
+# ⛔ WHERE we look. This used to be an implicit `$PWD`, which the startup cd has already forced to THIS
+# script's own checkout — so the reaper could only ever see its own tmp/, whatever the caller did.
+# On 2026-09-18 that put the box at 100% used with 49 release worktrees one level up in
+# cowir-deploy-wt/tmp/, which is the same shape that red .431 on ENOSPC: the reaper reported
+# "3.4G reclaimed, headroom fine" about two directories while fifty sat outside its reach.
+# REAP_ROOT moves the LOOKING only. Every refusal below is per-worktree and reads none of this.
+ROOT="${REAP_ROOT:-$PWD}"
+ROOT="$(cd "$ROOT" 2>/dev/null && pwd)" || {
+    echo "[reap] REAP_ROOT is not a directory: ${REAP_ROOT-}" >&2; exit 2; }
 MERGED_BRANCHES=0
 ARCHIVE="${REAP_ARCHIVE:-tmp/_archive}"
 KEEP=2
@@ -71,7 +87,7 @@ _candidates() {
         | awk '/^worktree /{w=$2} /^detached/{print w" DETACHED"} /^branch /{print w" "$2}' \
         | while read -r p state; do
               case "$p" in
-                  "$PWD/$SCAN"*) printf '%s\t%s\n' "$p" "$state" ;;
+                  "$ROOT/$SCAN"*) printf '%s\t%s\n' "$p" "$state" ;;
               esac
           done | sort -V
 }
@@ -82,7 +98,15 @@ reap() {
 
     local rows; rows="$(_candidates)"
     if [ -z "$rows" ]; then
-        echo "[reap] no worktrees under ${PREFIX}"
+        # ⛔ SAY WHAT WAS LOOKED AT, NOT JUST THAT NOTHING WAS FOUND. The old line named PREFIX
+        # while the filter is ROOT/SCAN, so a run rooted at the wrong tree printed a clean-looking
+        # "no worktrees" that is indistinguishable from a tidy box — which is exactly how 49
+        # worktrees accumulated while the tool reported success. A zero is only information once
+        # it says which population it is a zero over.
+        local registered; registered="$(git worktree list --porcelain 2>/dev/null \
+            | command grep -ac '^worktree ' || true)"
+        echo "[reap] no worktrees under ${ROOT}/${SCAN} — 0 of ${registered:-0} registered worktree(s) are under this root"
+        [ "${registered:-0}" -gt 1 ] && echo "[reap] if the population you meant lives elsewhere, set REAP_ROOT=<dir>"
         return 0
     fi
     total="$(printf '%s\n' "$rows" | wc -l)"
@@ -92,7 +116,7 @@ reap() {
     # branch worktree occupy one of the protected slots and push a release tree out of them —
     # that would silently weaken the rule this line exists to enforce.
     local protected
-    protected="$(printf '%s\n' "$rows" | awk -F'\t' -v pfx="$PWD/$PREFIX" \
+    protected="$(printf '%s\n' "$rows" | awk -F'\t' -v pfx="$ROOT/$PREFIX" \
         '$2=="DETACHED" && index($1,pfx)==1 {print $1}' | tail -n "$KEEP")"
 
     printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r p state; do
@@ -126,12 +150,12 @@ reap() {
         fi
         # Belt and braces: never act on a path outside the expected prefix, whatever git said.
         case "$p" in
-            "$PWD/$SCAN"*) : ;;
+            "$ROOT/$SCAN"*) : ;;
             *) reason="path outside ${SCAN} — refusing on principle" ;;
         esac
         if [ "$state" = "DETACHED" ]; then
             case "$p" in
-                "$PWD/$PREFIX"*) : ;;
+                "$ROOT/$PREFIX"*) : ;;
                 *) reason="detached outside ${PREFIX} — its commit may be referenced by nothing else" ;;
             esac
         fi
@@ -278,6 +302,45 @@ selftest() {
     for d in "${pfx}1" "${pfx}8"; do [ -d "$d" ] && git worktree remove --force "$d" >/dev/null 2>&1; done
     git branch -D reaptest/unmerged >/dev/null 2>&1
     [ -n "$mb" ] && { git rev-parse --verify -q "$mb" >/dev/null && pass=$((pass+1)) && printf '  ok    the derived branch itself survived removal of its worktree\n'; }
+
+    # ── REAP_ROOT: the LOOKING moves, the REFUSALS do not ────────────────────────────────
+    # These fixtures sit outside the default ROOT/SCAN combination. Before REAP_ROOT the filter
+    # was "$PWD/tmp/"* with $PWD forced to this script's own checkout by the startup cd, so a
+    # population under any other checkout was unreachable however the tool was invoked — which is
+    # how 49 release worktrees accumulated while the reaper reported "headroom fine".
+    local nest="tmp/reaproot-nest"
+    local firsttag; firsttag="$(printf '%s\n' $tags | head -1)"
+    # Fixtures sit at <nest>/tmp/rel-… so the DEFAULT SCAN and PREFIX apply unchanged at the new
+    # root — the same shape as cowir-deploy-wt/tmp/. Note ${REAP_SCAN:-tmp/} substitutes on EMPTY
+    # as well as unset, so REAP_SCAN="" cannot be used to flatten the scan.
+    mkdir -p "$nest/tmp"
+    git worktree add --detach "${nest}/tmp/rel-9001" "$firsttag" >/dev/null 2>&1 || true
+    git worktree add -b reaptest/rootbranch "${nest}/tmp/other-9002" HEAD >/dev/null 2>&1 || true
+
+    # A zero must name the population it is a zero over. The old message said "no worktrees under
+    # ${PREFIX}" while the filter is ROOT/SCAN, so a run rooted at the wrong tree was indistinguishable
+    # from a tidy box — the false-clean that cost the disk.
+    out="$(REAP_SCAN="reaptest-no-such-dir/" "$self" --keep 1 2>&1)"
+    chk "an empty scan names the population, not a bare zero" "0 of [0-9]* registered worktree" 0
+
+    out="$(REAP_ROOT="$PWD/$nest" "$self" --keep 0 2>&1)"
+    chk "REAP_ROOT reaches a population outside this checkout"  "rel-9001"                    0
+    # ⛔ THE SAFETY CLAIM. Widening WHERE we look must buy no removal the rules would refuse. The
+    # branch fixture is refused for being on a branch at the new root exactly as at the old one —
+    # if a widened root ever let a refusal lapse, this is the arm that reds.
+    chk "a branch worktree is still refused at a widened root"  "KEEP.*other-9002.*branch"    0
+    chk "a widened root still removes nothing on a dry run"     "DRY RUN"                     0
+
+    # A bogus root must fail LOUDLY. Scanning nothing silently is the defect, not the fallback.
+    out="$(REAP_ROOT="$PWD/${nest}/definitely-absent" "$self" --keep 1 2>&1)"; local rootec=$?
+    if [ "$rootec" -eq 2 ]; then pass=$((pass+1)); printf '  ok    a bogus REAP_ROOT exits 2 rather than scanning nothing\n'
+    else fail=$((fail+1)); printf '  FAIL  a bogus REAP_ROOT exits %s, want 2\n' "$rootec"; fi
+
+    for d in "${nest}/tmp/rel-9001" "${nest}/tmp/other-9002"; do
+        [ -d "$d" ] && git worktree remove --force "$d" >/dev/null 2>&1
+    done
+    git branch -D reaptest/rootbranch >/dev/null 2>&1
+    rm -rf "$nest"
 
     # cleanup fixtures
     ( cd "${pfx}2" 2>/dev/null && git reset -q HEAD REAPTEST_DIRTY.md 2>/dev/null; rm -f REAPTEST_DIRTY.md )
