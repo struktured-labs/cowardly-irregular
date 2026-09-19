@@ -892,7 +892,8 @@
       "model": "suno-v4",
       "duration": 128.9,
       "loop": true,
-      "generated_at": "2026-04-13"
+      "generated_at": "2026-04-13",
+      "loop_offset": 0.059
     },
     "cutscene_w2_portal_arrival": {
       "file": "assets/audio/music/cutscene_w2_portal_arrival.ogg",
@@ -1036,7 +1037,8 @@
       "model": "suno-v4",
       "duration": 168.0,
       "loop": true,
-      "generated_at": "2026-04-13"
+      "generated_at": "2026-04-13",
+      "loop_offset": 0.068
     },
     "cutscene_w6_no_one_speaks": {
       "file": "assets/audio/music/cutscene_w6_no_one_speaks.ogg",
@@ -1430,7 +1432,8 @@
       "model": "suno-v4",
       "duration": 187.52,
       "loop": true,
-      "generated_at": "2026-04-14"
+      "generated_at": "2026-04-14",
+      "loop_offset": 0.052
     },
     "dungeon_digital": {
       "file": "assets/audio/music/dungeon_digital.ogg",
@@ -1454,7 +1457,8 @@
       "model": "suno-v4",
       "duration": 181.4,
       "loop": true,
-      "generated_at": "2026-04-14"
+      "generated_at": "2026-04-14",
+      "loop_offset": 0.164
     },
     "job_fighter_special": {
       "file": "assets/audio/music/job_fighter_special.ogg",
@@ -1795,7 +1799,8 @@
       "model": "suno-v4",
       "duration": 165.76,
       "loop": true,
-      "generated_at": "2026-04-18"
+      "generated_at": "2026-04-18",
+      "loop_offset": 1.21
     },
     "credits_digital": {
       "file": "assets/audio/music/credits_digital.ogg",
@@ -1819,7 +1824,8 @@
       "model": "suno-v4",
       "duration": 156.2,
       "loop": true,
-      "generated_at": "2026-04-18"
+      "generated_at": "2026-04-18",
+      "loop_offset": 0.265
     },
     "boss_phase2_warden": {
       "file": "assets/audio/music/boss_phase2_warden.ogg",
