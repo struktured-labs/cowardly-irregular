@@ -93,7 +93,7 @@ func test_the_suburban_village_bed_never_returns() -> void:
 	GameState.set_weather("clear"); w.process(0.016)
 	assert_eq(SoundManager._current_ambient_key, "weather_sunny",
 		"clearing restores the WORLD bed, so a shower does not give the village its bed back either")
-	assert_eq(pair[0].restored, 0, "restore_place_ambient is unreachable in this world -- BaseVillage:709 is dead code for W2-W5")
+	assert_eq(pair[0].restored, 0, "BaseVillage.restore_place_ambient is unreachable in this world -- dead code for W2-W5. NOT the same-named OverworldScene.restore_place_ambient, which WeatherSystem reaches duck-typed via has_method")
 
 
 func test_the_affected_worlds_are_exactly_the_ones_the_table_names() -> void:
