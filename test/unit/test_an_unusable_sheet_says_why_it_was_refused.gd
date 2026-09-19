@@ -2,9 +2,13 @@ extends GutTest
 
 ## `_try_load_archetype_sprite` has THREE refusal branches and they are not the same kind.
 ##
-## ⛔ ABSENCE IS THE NORMAL PATH AND MUST STAY SILENT: 116 of 145 NPCs carry no archetype sheet
-## and fall back to procedural by design, so a warning on `not ResourceLoader.exists` would fire
-## on the majority of NPCs in the game and train everyone to ignore the channel.
+## ⛔ ABSENCE STAYS SILENT, AND MY FIRST VERSION OF THIS HEADER GOT THE REASON WRONG. It said
+## "116 of 145 NPCs carry no archetype sheet" — that figure is from another guard entirely and
+## counts sheets DECLARING NO ROW ORDER, a different fact about a different thing. Measured:
+## the loader is guarded by `archetype != ""` in OverworldNPC's _generate_sprite, and all 27 resolvable
+## archetypes have art on disk, so the absence branch is currently UNREACHABLE. It stays silent
+## because it can only fire for an archetype whose sheet has not landed yet — a legitimate
+## work-in-progress state, not a busy designed path.
 ##
 ## ✅ THE OTHER TWO MEAN SOMEBODY PUT A FILE THERE ON PURPOSE AND IT DID NOT WORK — a texture that
 ## will not load, or a sheet under the 128x128 floor a 4x4 grid of 32x32 frames needs. Before

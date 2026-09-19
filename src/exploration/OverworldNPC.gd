@@ -445,9 +445,10 @@ func _try_load_archetype_sprite(archetype: String) -> bool:
 	_archetype_rows = HybridSpriteLoader.overworld_walk_rows("overworld_npc_sheets", _archetype_id)
 	var tex = load(path) as Texture2D
 	if not tex:
-		# The file EXISTS, so somebody meant it to load — silence here hands the artist a chibi
-		# and no reason. Absence above is NOT warned: 116 of 145 NPCs use the procedural fallback
-		# by design, so warning there would be noise on the normal path.
+		# The file EXISTS, so somebody meant it to load — silence hands the artist a chibi and no
+		# reason. Absence above stays silent for a different reason: it is guarded by
+		# `archetype != ""` and all 27 resolvable archetypes have art, so it fires only for an
+		# archetype whose sheet has not landed yet, which is a legitimate work-in-progress state.
 		push_warning("[OverworldNPC] '%s' exists at %s but did not load as a Texture2D — falling back to procedural" % [archetype, path])
 		return false
 	var img = tex.get_image()
