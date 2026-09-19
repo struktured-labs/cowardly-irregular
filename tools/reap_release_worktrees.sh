@@ -344,6 +344,17 @@ selftest() {
     out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
     chk "an UNTRACKED-only worktree is kept"      "KEEP.*reaptest-rel-3.*UNTRACKED"   0
     chk "  ...and is NOT called a tracked mod"    "reaptest-rel-3.*tracked modification" 1
+    # ⛔ THE COMBINED CASE HAD NO ARM AND I FOUND IT BY MUTATING MY OWN FIX. Disabling the
+    # `d != 0 && u != 0` branch outright left the selftest at 28/28 green -- so the message
+    # that names BOTH counts had never been produced by a test. The two pure branches were
+    # covered (their mutations red); the one that exists because a worktree can be dirty AND
+    # carry unbacked files was a clause that never ran. That is the defect family this whole
+    # fix belongs to, sitting inside the fix.
+    printf 'scratch\n' > "${pfx}2/REAPTEST_UNTRACKED.md" 2>/dev/null
+    out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
+    chk "tracked AND untracked names BOTH"       "reaptest-rel-2.*tracked modification.*and.*UNTRACKED" 0
+    chk "  ...and still refuses to remove it"    "would remove reaptest-rel-2"      1
+    rm -f "${pfx}2/REAPTEST_UNTRACKED.md"
     chk "a branch worktree is kept"          "KEEP.*reaptest-rel-0.*branch"     0
     chk "the newest is kept by position"     "KEEP.*among the 1 newest"         0
     chk "at least one is reapable"           "would remove"                     0
