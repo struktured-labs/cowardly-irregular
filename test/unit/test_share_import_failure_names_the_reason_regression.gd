@@ -255,3 +255,26 @@ func test_a_bundle_without_your_character_reports_no_reason() -> void:
 	assert_eq(SSM.last_import_reason(), "",
 		"a bundle that simply does not include you is not a failure with a reason — it inherited "
 		+ "one: %s" % SSM.last_import_reason())
+
+
+## The SIBLING of the function above, found by asking whether the first instance was the only one.
+## `apply_autogrind_rules` had the identical shape: two `return false`s ABOVE its clear.
+##
+## ⚠️ LATENT, NOT LIVE, AND THE ARMS SAY SO. Both callers (decode_share_code, import_file) clear
+## before reaching it, so nothing arrives here carrying a stale reason today. What these pin is that
+## the function no longer DEPENDS on every caller remembering — a third caller would have re-opened
+## it silently, and nothing in the function said the contract existed.
+func test_an_autogrind_type_mismatch_does_not_inherit_a_reason() -> void:
+	SSM.last_import_errors = ["rule 7: a reason belonging to an earlier import"]
+	assert_false(SSM.apply_autogrind_rules({"type": "autobattle_script", "rules": []}),
+		"precondition: the wrong type must be refused")
+	assert_eq(SSM.last_import_reason(), "",
+		"a type-mismatch refusal carried an older reason: %s" % SSM.last_import_reason())
+
+
+func test_an_empty_autogrind_rule_set_does_not_inherit_a_reason() -> void:
+	SSM.last_import_errors = ["rule 7: a reason belonging to an earlier import"]
+	assert_false(SSM.apply_autogrind_rules({"type": "autogrind_rules", "rules": []}),
+		"precondition: an empty rule set must be refused")
+	assert_eq(SSM.last_import_reason(), "",
+		"an empty-rules refusal carried an older reason: %s" % SSM.last_import_reason())

@@ -329,12 +329,17 @@ static func validate_imported_autogrind_rules(rules) -> Array:
 
 ## Apply imported autogrind rules (validated — untrusted imports never apply raw).
 static func apply_autogrind_rules(data: Dictionary) -> bool:
+	## Clear at ENTRY, matching apply_character_script. Two exits below sat ABOVE the old clear.
+	## LATENT, not live: both callers (decode_share_code, import_file) already clear before they
+	## get here, so nothing reaches these carrying a stale reason today — this removes the
+	## dependence on every caller remembering, which nothing in the function stated.
+	last_import_errors = []
+	last_import_advisories = []
 	if data.get("type") != "autogrind_rules":
 		return false
 	var rules = data.get("rules", [])
 	if rules.is_empty():
 		return false
-	last_import_errors = []
 	var errs := validate_imported_autogrind_rules(rules)
 	if not errs.is_empty():
 		last_import_errors = errs
