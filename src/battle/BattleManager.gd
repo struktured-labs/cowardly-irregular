@@ -5050,25 +5050,11 @@ func _apply_stat_down(target: Combatant, effect: String, stat_modifier: float, d
 
 ## Strips every active buff and any positive STATUS from one target; returns how many it cleared.
 ## "Positive" is an inclusion list, not an exclusion, so a new debuff can never make dispel remove it.
-const _POSITIVE_STATUSES_DISPELLABLE := [
-	"barrier", "invisible", "evasion", "reflect",
-	"physical_reflect", "prismatic_reflect", "magic_block",
-	"regen",
-]
 
 
+## Delegates to Combatant.dispel — the grind needs the same behaviour and a twin here would drift.
 func _dispel_target(target) -> int:
-	var cleared_count: int = 0
-	if "active_buffs" in target:
-		cleared_count += target.active_buffs.size()
-		target.active_buffs.clear()
-	for s in _POSITIVE_STATUSES_DISPELLABLE:
-		if target.has_status(s):
-			target.remove_status(s)
-			cleared_count += 1
-	if cleared_count > 0 and target.has_method("recalculate_stats"):
-		target.recalculate_stats()
-	return cleared_count
+	return int(target.dispel()) if target.has_method("dispel") else 0
 
 
 ## The dispel plus its battle-log line — both routes say the same thing to the player.
