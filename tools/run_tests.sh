@@ -264,6 +264,26 @@ run_gut() {
   fi
 
   if [ -n "$_gdir" ] && [ -d "$_gdir" ]; then
+    # ⛔ A test_*.gd in a SUBDIRECTORY of $_gdir is invisible to BOTH numbers below and never runs.
+    # GUT's include_subdirs defaults to false (addons/gut/gut_config.gd:29) and nothing in tools/
+    # passes -ginclude_subdirs, so such a file is not LOADED; _authored globs one level, so it is
+    # not COUNTED either. Neither the < nor the > branch can fire: Scripts == authored stays
+    # satisfied while those files contribute nothing. That is the one false-GREEN path in an
+    # invariant whose every other failure mode is a false red, so it gets its own arm.
+    local _nested _nested_list
+    _nested_list="$(find "$_gdir" -mindepth 2 -name 'test_*.gd' -type f 2>/dev/null | sort)"
+    _nested="$(printf '%s' "$_nested_list" | command grep -c . || true)"
+    if [ "${_nested:-0}" -gt 0 ]; then
+      echo "run_tests.sh: ${_nested} test file(s) SIT BELOW $_gdir AND DID NOT RUN." >&2
+      printf '%s\n' "$_nested_list" | head -10 | sed 's/^/    /' >&2
+      echo "  ⇒ DISCARD THIS RUN. GUT's include_subdirs is false and nothing passes" >&2
+      echo "    -ginclude_subdirs, so these were never loaded; the authored count globs one" >&2
+      echo "    level, so they were never counted. Scripts == authored is SATISFIED and silent" >&2
+      echo "    about every test in them." >&2
+      echo "  Move them up beside the others, or pass -ginclude_subdirs deliberately." >&2
+      exit 3
+    fi
+
     local _authored _executed
     _authored="$(ls "$_gdir"/test_*.gd 2>/dev/null | command grep -c .)"   # grep -c PRINTS 0; no ||
     _executed="$(command grep -aoE '^[[:space:]]*Scripts[[:space:]]+[0-9]+' "$RUN_LOG" | tail -1 | tr -dc '0-9')"

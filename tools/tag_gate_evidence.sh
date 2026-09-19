@@ -186,6 +186,15 @@ ${named}"
     [ "$gscripts" -eq "$ondisk" ] \
         || run "the ${tag} marker covers ${gscripts} scripts but ${ondisk} test files are on disk — the evidence does not cover this corpus"
 
+    # 10b. ...and `ls` globs ONE level while GUT does not recurse either (include_subdirs is false,
+    #      addons/gut/gut_config.gd:29). So a test_*.gd below test/unit is absent from BOTH sides of
+    #      the equality above: never loaded, never counted, and the check passes. That is the only
+    #      way this gate goes falsely GREEN rather than falsely red, so it is asked separately.
+    local nested
+    nested="$(find test/unit -mindepth 2 -name 'test_*.gd' -type f 2>/dev/null | sort | command grep -c . || true)"
+    [ "${nested:-0}" -eq 0 ] \
+        || run "${nested} test file(s) sit BELOW test/unit — GUT never loaded them and the corpus count never saw them, so the ${tag} evidence is silent about every test in them: $(find test/unit -mindepth 2 -name 'test_*.gd' -type f 2>/dev/null | sort | head -3 | tr '\n' ' ')"
+
     echo "VERDICT=SKIP ${tag} @ ${gsha:0:8} already gated by the fold: scripts=${gscripts} tests=${gtests} passing=${gpassing} failing=0; worktree clean and at the tag; corpus matches (${ondisk} on disk)"
     exit 0
 }
