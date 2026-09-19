@@ -7801,8 +7801,11 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			## Same as the ability arm above: the only producer emits "item_id", so the "id" fallback never fires today.
 			var item_id = action_data.get("item_id", action_data.get("id", ""))
 			if item_id.is_empty():
+				print("[AUTOBATTLE] No item_id found in action: %s" % action_data)
 				return {}
 			if not combatant.has_item(item_id):
+				## Routine (the player ran out), but the ability arm logs its routine MP case too.
+				print("[AUTOBATTLE] Item not held: %s" % item_id)
 				return {}
 			# Tick 111: same empty-targets handling as ability — if the
 			# autobattle rule explicitly produced an empty targets list,
