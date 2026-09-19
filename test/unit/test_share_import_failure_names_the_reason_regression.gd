@@ -225,3 +225,33 @@ func test_every_APPLY_path_can_say_why_it_refused() -> void:
 	assert_gt(checked, 0, "CONTROL: expected at least one applying function, found %d" % checked)
 	assert_eq(mute, [], "these apply an imported script and neither they nor their caller can tell "
 		+ "the player why one was refused: %s" % str(mute))
+
+
+## ⛔ THE OTHER TWO EXITS, WHICH NEITHER MY FIRST PROPOSAL NOR THE BUNDLE FIX REACHED.
+## `apply_character_script` has FOUR `return false`s and exactly one used to clear. cowir-autogrind
+## counted them; my "hoist above is_empty()" would have closed one of the three uncleared. The clear
+## lives at function entry now, so every exit is downstream of it.
+##
+## A stale reason is worse than no reason: it is specific, plausible, and about a different import.
+func test_an_empty_script_refusal_does_not_inherit_a_reason() -> void:
+	SSM.last_import_errors = ["rule 4: a reason belonging to an earlier import"]
+	var applied: bool = SSM.apply_character_script("share_reason_probe", {
+		"type": "autobattle_script", "script": {},
+	})
+	assert_false(applied, "precondition: an empty script must be refused")
+	assert_eq(SSM.last_import_reason(), "",
+		"an empty-script refusal carried the previous import's reason: %s" % SSM.last_import_reason())
+
+
+## The fourth exit: an unrecognised type, and — the case worth naming — a BUNDLE THAT SIMPLY DOES
+## NOT CONTAIN YOU. That is not an error, it is "nothing here for you", so the right answer is no
+## reason at all rather than a manufactured one. Silence is correct here; it is the designed path.
+func test_a_bundle_without_your_character_reports_no_reason() -> void:
+	SSM.last_import_errors = ["rule 4: a reason belonging to an earlier import"]
+	var applied: bool = SSM.apply_character_script("share_reason_probe", {
+		"type": "autobattle_bundle", "scripts": {"somebody_else": {"rules": []}},
+	})
+	assert_false(applied, "precondition: a bundle without your character cannot apply")
+	assert_eq(SSM.last_import_reason(), "",
+		"a bundle that simply does not include you is not a failure with a reason — it inherited "
+		+ "one: %s" % SSM.last_import_reason())

@@ -253,12 +253,16 @@ static func last_import_advisory_text() -> String:
 
 ## Apply an imported autobattle script to a character.
 static func apply_character_script(character_id: String, data: Dictionary) -> bool:
+	## Clear at ENTRY, not per branch: this function has FOUR `return false` exits and only one of
+	## them used to clear. An empty script (:is_empty), a bundle not containing you, and an unknown
+	## type all returned with the PREVIOUS import's reason still loaded — specific, plausible, and
+	## about a different file. Placement is cowir-autogrind's; clearing per branch closed one exit.
+	last_import_errors = []
+	last_import_advisories = []
 	if data.get("type") == "autobattle_script":
 		var script = data.get("script", {})
 		if script.is_empty():
 			return false
-		last_import_errors = []
-		last_import_advisories = []
 		var errs := validate_imported_script(script)
 		if not errs.is_empty():
 			last_import_errors = errs
@@ -275,11 +279,8 @@ static func apply_character_script(character_id: String, data: Dictionary) -> bo
 	if data.get("type") == "autobattle_bundle":
 		var scripts = data.get("scripts", {})
 		if scripts.has(character_id):
-			## Clear FIRST, then keep — same contract as the single-script branch above. This branch
-			## computed the errors and gave them only to push_warning, so a bundle refusal reached
-			## the player as "no reason reported" while the reason existed.
-			last_import_errors = []
-			last_import_advisories = []
+			## This branch computed the errors and gave them only to push_warning, so a bundle
+			## refusal reached the player as "no reason reported" while the reason existed.
 			var errs := validate_imported_script(scripts[character_id])
 			if not errs.is_empty():
 				last_import_errors = errs
