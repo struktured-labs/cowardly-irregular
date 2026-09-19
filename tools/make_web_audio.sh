@@ -148,6 +148,58 @@ echo "[web-audio] transcoded ${transcoded}, reused ${reused}"
     exit 4
 }
 
+# ⛔ THE SHIPPED TIER WAS MEASURED BY NOTHING. `audit_wrap_seams.py` runs in the SUITE against
+# `assets/audio/music` -- the MASTERS -- and the web build ships a reduced-bitrate transcode of
+# them. Nothing in the publish path ever ran it: `grep -rn audit_wrap_seams tools/` found five
+# hits, every one a COMMENT in another tool, and zero callers. The guard's own test says so in
+# its failure message: "it can only measure the masters, and the web build ships a
+# reduced-bitrate transcode of them."
+#
+# It is not hypothetical. @cowir-music measured a dose-response across three staged tiers
+# (2026-09-19), one bed crossing the project's own 12 dB gate only after transcoding:
+#     masters +11.8 dB   48k +11.7   44k +12.2 *** NEW ***   40k +12.1 *** NEW ***
+# `ambient_cave` passes on everything we test and fails on the only thing we ship.
+#
+# THIS SITS BESIDE THE DECODE GATE ON PURPOSE -- above the cache write, so it runs on the
+# CACHE-RESTORE PATH TOO. A cached tier is reused by every future publish; a check that only
+# ran on a cache miss would go quiet exactly when the tier stopped being rebuilt.
+#
+# ⚠️ A CROSSING WARNS, IT DOES NOT BLOCK -- and the two outcomes are NOT the same word:
+#   exit 1  a bed crossed. 0.1 dB over a 12.0 dB policy line should not hold a release, and
+#           the number is printed so the decision is made rather than defaulted into.
+#   exit 2  REFUSED -- fewer than MIN_CORPUS=50 beds measurable against a real corpus of ~146.
+#           That is NOT "no jumps", it is "nothing was measured", and it BLOCKS. A guard whose
+#           measurement did not happen is untrustworthy, not absent -- the same distinction
+#           verify_store_artifact.sh draws between 5 (the store differs) and 2 (nothing was
+#           compared), and the one that cost this lane an EC=4 disk block to learn.
+SEAM_AUDIT="${SEAM_AUDIT:-}"
+if [ -z "$SEAM_AUDIT" ]; then
+    if [ -x /home/struktured/.local/bin/uv ]; then
+        SEAM_AUDIT="/home/struktured/.local/bin/uv run tools/audit_wrap_seams.py"
+    else
+        SEAM_AUDIT="python3 tools/audit_wrap_seams.py"
+    fi
+fi
+_seam_out="$(mktemp)"
+# shellcheck disable=SC2086
+$SEAM_AUDIT --from "$OUT_DIR" > "$_seam_out" 2>&1; _seam_ec=$?
+case "$_seam_ec" in
+    0) echo "[web-audio] wrap seams: every bed clears the 12 dB gate ON THE SHIPPED TIER" ;;
+    1) echo "[web-audio] ⚠ WRAP SEAM WARNING on the tier we actually ship:" >&2
+       command grep -aE 'NEW jumps not pinned|PINNED entries that now loop|\*\*\* NEW \*\*\*|digital silence at the wrap' "$_seam_out" >&2
+       echo "[web-audio]   measured on ${BITRATE}k. The masters can pass while the transcode does not." >&2
+       echo "[web-audio]   NOT blocking: publishing continues." >&2 ;;
+    2) echo "[web-audio] ⛔ BLOCKED: the seam audit REFUSED — it measured too few beds to be a" >&2
+       echo "[web-audio]   corpus at all. This is not 'no jumps found', it is 'nothing was" >&2
+       echo "[web-audio]   measured', and the tier must not be cached or published on it." >&2
+       command grep -aE 'REFUSED' "$_seam_out" >&2
+       rm -f "$_seam_out"; exit 5 ;;
+    *) echo "[web-audio] ⛔ BLOCKED: the seam audit exited ${_seam_ec}, which it does not define." >&2
+       tail -5 "$_seam_out" >&2
+       rm -f "$_seam_out"; exit 5 ;;
+esac
+rm -f "$_seam_out"
+
 # POPULATE ONLY A COMPLETE, VERIFIED TIER — and now "verified" means decoded, not non-empty.
 if [ ! -d "$_CACHE_DIR" ]; then
     mkdir -p "$_CACHE_DIR" && cp -a "$OUT_DIR/." "$_CACHE_DIR/" \
