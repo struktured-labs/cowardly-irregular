@@ -301,17 +301,6 @@ func _rule_ability_label(rule: Dictionary) -> String:
 	return "costed"
 
 
-## Remove `"target": null` from actions, in place. Returns how many were dropped.
-##
-## ONLY target, deliberately. Absent is a documented, defined state for it — the
-## action falls back to its own default — so dropping the key changes nothing
-## about what the rule DOES, which is why this emits no player-facing note.
-##
-## Every OTHER null is left for the validator to reject. A condition carrying
-## "value": null is genuinely broken: the model failed to state a threshold, and
-## stripping that key would manufacture a rule that validates and then compares
-## against a default nobody chose. Refusing it is the honest outcome; recovering
-## it would be exactly the plausible-looking artifact that is worse than a refusal.
 ## Drop rules the deep check refuses, keeping the ones that pass. Returns notes.
 ##
 ## Refusing a whole ruleset for one bad rule is the difference between the player
@@ -1220,6 +1209,17 @@ func _drop_target_shaped_conditions(rules: Array, domain_system) -> Array[String
 	return notes
 
 
+## Remove `"target": null` from actions, in place. Returns how many were dropped.
+##
+## ONLY target, deliberately. Absent is a documented, defined state for it — the
+## action falls back to its own default — so dropping the key changes nothing
+## about what the rule DOES, which is why this emits no player-facing note.
+##
+## Every OTHER null is left for the validator to reject. A condition carrying
+## "value": null is genuinely broken: the model failed to state a threshold, and
+## stripping that key would manufacture a rule that validates and then compares
+## against a default nobody chose. Refusing it is the honest outcome; recovering
+## it would be exactly the plausible-looking artifact that is worse than a refusal.
 func _drop_null_targets(rules: Array) -> int:
 	var dropped: int = 0
 	for rule in rules:
