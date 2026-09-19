@@ -17,6 +17,27 @@ extends GutTest
 
 const MANIFEST := "res://data/music_manifest.json"
 const MONSTERS := "res://data/monsters.json"
+const SM := "res://src/audio/SoundManager.gd"
+
+
+## ⛔ THERE ARE **TWO** VALID RESOLUTIONS AND MY FIRST VERSION MODELLED ONE. A track listed in
+## `PROCEDURAL_BATTLE_TRACKS` is EXEMPT from the unknown-battle_* rewrite (:2292) and is played by a
+## synth path, so it is legitimate without a manifest entry. 7 of the 12 declared themes are in that
+## list today, so this is the majority of my own corpus, not an edge case. DERIVED from the const
+## rather than hand-listed: a copy here would go stale exactly when the list grows.
+func _procedural_tracks() -> Dictionary:
+	var src: String = FileAccess.get_file_as_string(SM)
+	var start: int = src.find("const PROCEDURAL_BATTLE_TRACKS")
+	assert_gt(start, -1, "CONTROL: PROCEDURAL_BATTLE_TRACKS must exist, or this exemption is unmodelled")
+	var body: String = src.substr(start, src.find("]", start) - start)
+	var re := RegEx.new()
+	re.compile("\"([a-z_0-9]+)\"")
+	var out: Dictionary = {}
+	for m in re.search_all(body):
+		out[m.get_string(1)] = true
+	assert_gt(out.size(), 3,
+		"CONTROL: derived only %d procedural tracks — the const changed shape and the exemption is now blind" % out.size())
+	return out
 
 
 func _manifest_keys() -> Dictionary:
@@ -59,15 +80,16 @@ func test_every_declared_monster_theme_is_a_manifest_key() -> void:
 	## ANTI-VACUITY: with no declared themes the arm passes by finding nothing to check.
 	assert_gt(themes.size(), 5,
 		"ANTI-VACUITY: only %d monsters declare music_track (%s) — either the field was renamed or this walk stopped matching, and an empty corpus cannot fail" % [themes.size(), str(themes.keys())])
+	var procedural := _procedural_tracks()
 	var liars: Array = []
 	for id in themes.keys():
 		var track: String = str(themes[id])
-		if not keys.has(track):
+		if not keys.has(track) and not procedural.has(track):
 			liars.append("%s declares music_track '%s'" % [id, track])
 	assert_eq(liars.size(), 0,
 		"a monster names a bed the manifest does not have. play_music rewrites an unknown battle_* to battle_<world suffix>, so this plays the generic world bed and nothing says so — the 2026-08-29 goblin defect verbatim: "
 		+ " · ".join(liars)
-		+ " — either author the key in data/music_manifest.json, or drop music_track and let the monster use the world bed deliberately")
+		+ " — author the key in data/music_manifest.json, add it to SoundManager.PROCEDURAL_BATTLE_TRACKS if a synth path owns it, or drop music_track and let the monster use the world bed deliberately")
 
 
 ## ⛔ THE OTHER DIRECTION, because a theme that resolves is not the same as a theme that is REACHED.
