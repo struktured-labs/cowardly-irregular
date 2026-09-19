@@ -2561,9 +2561,6 @@ func _track_item_consumed(item_id: String) -> void:
 
 const _HEAL_EFFECT_KEYS := ["heal_hp", "heal_mp", "heal_hp_percent", "heal_mp_percent", "revive"]
 
-## HP only, and NOT _HEAL_EFFECT_KEYS. That set includes heal_mp, and an Ether does not keep a party
-## alive — reusing it would let a party holding nothing but Ethers pass the depletion gate, which is
-## a different wrong answer. `revive` counts: a Phoenix Down is what saves a run.
 ## ⚠️ UNCHANGED ORDER, ON PURPOSE. heal_party has always tried hi_potion before potion, and five
 ## other restoratives (mega_potion, x_potion, elixir, megalixir, phoenix_down) have never been
 ## eligible at all. Widening this is a BALANCE ruling, not a bug fix: strongest-first burns a
@@ -2579,6 +2576,9 @@ const HEAL_PARTY_ITEM_ORDER := ["hi_potion", "potion"]
 const RESTORE_MP_ITEM_ORDER := ["hi_ether", "ether"]
 
 
+## HP only, and NOT _HEAL_EFFECT_KEYS. That set includes heal_mp, and an Ether does not keep a party
+## alive — reusing it would let a party holding nothing but Ethers pass the depletion gate, which is
+## a different wrong answer. `revive` counts: a Phoenix Down is what saves a run.
 const _HP_RESTORE_KEYS := ["heal_hp", "heal_hp_percent", "revive"]
 
 
