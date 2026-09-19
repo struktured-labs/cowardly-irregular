@@ -2544,6 +2544,10 @@ var _pending_resume_position: float = 0.0
 ## other arrival has a bed to inherit, and the inherit path is already correct.
 var _pending_home_area: String = ""
 
+## Danger intensity system - modulates music when party is hurt
+## Lost as collateral in c9b57d6f6, which deleted the neighbouring dead getter
+## get_danger_intensity; the same commit deleted get_corruption_intensity and that
+## var kept its block, which is what shows the removal was incidental.
 var _danger_intensity: float = 0.0  # 0.0 = safe, 1.0 = critical
 var _danger_tween: Tween = null
 
