@@ -205,3 +205,57 @@ func _has_comment_line(s: String) -> bool:
 ## `strip_comments`, which is line-preserving.
 func _code_only(src: String) -> String:
 	return str(GdSource.split(src)["code"])
+
+
+## `play_music` rewrites FOUR generic ids onto the current world, not one. The arm above pins
+## `battle_` only, so `boss` / `danger` / `victory` were defended by nothing — 6 of 24 cells.
+## Latent-zero today; this is the class that already shipped once, when battle_goblin.ogg was
+## recast as battle_brute.ogg and no key replaced it, so the rewrite silently sent the goblin to
+## the world bed. DERIVED from play_music's own match block, so a fifth arm is covered on the day
+## it is authored rather than whenever someone remembers this file.
+func test_every_generic_rewrite_lands_on_a_real_bed() -> void:
+	var keys := _manifest_keys()
+	var sm: String = FileAccess.get_file_as_string(SM)
+	var start: int = sm.find("func play_music")
+	assert_gt(start, -1, "CONTROL: play_music exists")
+	var body: String = _code_only(sm.substr(start, sm.find("\nfunc ", start + 10) - start))
+	var re := RegEx.new()
+	re.compile("\"([a-z_]+)\":\\s*\\n\\s*manifest_track_id = \"([a-z_]+)\" \\+ _current_world_suffix")
+	var arms: Dictionary = {}
+	for m in re.search_all(body):
+		arms[m.get_string(1)] = m.get_string(2)
+	## ANTI-VACUITY: a derivation that matches nothing passes by finding nothing to check.
+	assert_gt(arms.size(), 3,
+		"ANTI-VACUITY: derived only %d generic rewrite arms from play_music (%s) — the match block "
+		% [arms.size(), str(arms.keys())] + "changed shape and this arm is now about nothing")
+	assert_true(arms.has("battle"), "CONTROL: 'battle' must be among the derived arms")
+
+	var suffixes := _world_suffixes()
+	var missing: Array = []
+	for generic in arms.keys():
+		for s in suffixes:
+			var key: String = str(arms[generic]) + s
+			if not keys.has(key):
+				missing.append("play_music(\"%s\") in world '%s' -> %s" % [generic, s, key])
+	assert_eq(missing.size(), 0,
+		"a generic music request rewrites onto a key the manifest does not have, so it resolves to "
+		+ "nothing and the bed that was playing stays: " + " · ".join(missing)
+		+ " — author the bed in data/music_manifest.json, or drop that arm from play_music")
+
+
+## Shared by both generic-path arms. Was inline in the battle-only arm, which is why the other
+## three rewrites never got a corpus.
+func _world_suffixes() -> Array:
+	var sm: String = FileAccess.get_file_as_string(SM)
+	var start: int = sm.find("func _get_current_world_suffix")
+	assert_gt(start, -1, "CONTROL: the world-suffix function exists")
+	var body: String = sm.substr(start, sm.find("\nfunc ", start + 10) - start)
+	var re := RegEx.new()
+	re.compile("return \"([a-z]+)\"")
+	var out: Dictionary = {}
+	for m in re.search_all(body):
+		out[m.get_string(1)] = true
+	var list: Array = out.keys()
+	list.sort()
+	assert_gt(list.size(), 3, "CONTROL: world suffixes read non-empty (%s)" % str(list))
+	return list
