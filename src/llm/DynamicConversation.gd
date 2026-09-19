@@ -51,7 +51,6 @@ const EXCHANGE_BONUS_QUEST_VOICE: int = 2
 ## Extra cycles granted when the party is visibly in trouble — there is something to talk about.
 const EXCHANGE_BONUS_PARTY_DISTRESS: int = 2
 
-## Sentinel value returned by DialogueChoiceMenu when the player cancels.
 ## Choices to REQUEST from the model. One slot of MAX_CHOICES is reserved for the
 ## exit that _ensure_farewell fills.
 ##
@@ -66,6 +65,7 @@ const EXCHANGE_BONUS_PARTY_DISTRESS: int = 2
 ## and every line the model writes now survives to the screen.
 const REQUESTED_CHOICES: int = DialoguePrompts.MAX_CHOICES - 1
 
+## Sentinel value returned by DialogueChoiceMenu when the player cancels.
 const CHOICE_CANCELLED: String = ""
 
 ## Fallback sign-off line used when the exchange limit is reached.
