@@ -2,7 +2,7 @@ extends GutTest
 
 ## `music_manifest.json` lets several keys name ONE file — `battle_brute.ogg` is named by five under
 ## the monster-family ruling. `load()` returns ONE cached AudioStream per path, so
-## `SoundManager:2067`'s `stream.loop = should_loop` writes an object every one of those keys shares,
+## `_try_play_from_manifest`'s `stream.loop = should_loop` writes an object every one of those keys shares,
 ## and that any player already holding it is playing.
 ##
 ## ⛔ SO A LOOP FLAG IS A PROPERTY OF THE FILE AT RUNTIME WHILE THE MANIFEST AUTHORS IT PER KEY.
