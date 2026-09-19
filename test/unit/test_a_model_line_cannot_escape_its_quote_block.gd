@@ -87,7 +87,7 @@ func test_a_dirty_reply_is_flattened() -> void:
 
 
 func test_a_dirty_opening_is_flattened() -> void:
-	## The opening becomes last_npc_line at DynamicConversation:304 — the same
+	## The opening becomes last_npc_line in DynamicConversation's `_do_opening` — the same
 	## round-trip as a reply, and it had the same bare strip_edges().
 	var v: Dictionary = DP.validate_npc_opening({"line": DIRTY})
 	assert_eq(str(v["line"]).find("\n"), -1, "an opening round-trips and must be flattened")

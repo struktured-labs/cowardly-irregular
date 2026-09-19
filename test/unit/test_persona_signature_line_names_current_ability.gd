@@ -7,8 +7,8 @@ extends GutTest
 ## carefully synced its two known second sources (JobSystem's fallback table, BattleManager's
 ## buff labels) and pinned both. It did not reach `data/job_personas.json`, whose Cleric line
 ## read "Cure is just polite negotiation with the damage formula" — naming an ability that
-## no longer exists. The line IS reachable: BattleManager:6849 fires the
-## `used_signature_ability` trigger and DialoguePrompts:721 renders it.
+## no longer exists. The line IS reachable: BattleManager's `_log_player_action` fires the
+## `used_signature_ability` trigger and DialoguePrompts' `_party_line_event_hint` renders it.
 ##
 ## Four of the five jobs describe the EFFECT instead of naming the ability
 ## ("Clean strike. No flourish.") and are drift-proof by construction. Only the Cleric
