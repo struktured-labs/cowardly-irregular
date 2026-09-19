@@ -2503,52 +2503,52 @@ func _load_saved_scripts() -> void:
 
 
 func _create_default_scripts() -> void:
-	"""Create some default autobattle scripts as examples"""
-	# Simple aggressive script
-	var aggressive = create_script("Aggressive")
-	aggressive["description"] = "Always attack, use abilities when MP available"
-
-	add_rule(aggressive, create_rule(
-		"Use Power Strike if MP >= 15",
-		[create_condition(ConditionType.MP_PERCENT, CompareOp.GREATER_EQUAL, 30)],
-		ActionType.ABILITY,
-		{"ability_id": "power_strike", "target_type": "lowest_hp_enemy"}
-	))
-
-	add_rule(aggressive, create_rule(
-		"Attack lowest HP enemy",
-		[create_condition(ConditionType.ALWAYS, CompareOp.EQUAL, 0)],
-		ActionType.ATTACK,
-		{"target_type": "lowest_hp_enemy"}
-	))
-
+	"""Create the two named preset scripts the autobattle menu offers.
+	##
+	## ⛔ BUILT AS LITERALS, NOT THROUGH create_condition/create_rule. Those emit the ENUM shape —
+	## {"type": <int>, "compare_op": <int>, "action_type": <int>} — and the live evaluator reads
+	## condition.get("type") as a STRING against 24 string ids and condition.get("op"), a different
+	## KEY. So every condition in both presets fell through to `push_warning + return false`:
+	## pressing Aggressive or Defensive in the menu applied a script that could never fire, and on the
+	## next boot _migrate_old_format_scripts detected the numeric types and silently reset the
+	## character to their job default, discarding the player's choice.
+	##
+	## This is the shape data/autobattle_rule_templates.json authors and _create_fighter_default_script
+	## and its siblings already emit — string ids, `op`, and an `actions` array."""
+	var aggressive := {
+		"name": "Aggressive",
+		"description": "Always attack, use abilities when MP available",
+		"rules": [
+			{
+				"conditions": [{"type": "mp_percent", "op": ">=", "value": 30}],
+				"actions": [{"type": "ability", "id": "power_strike", "target": "lowest_hp_enemy"}]
+			},
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
 	saved_scripts["Aggressive"] = aggressive
 
-	# Defensive/healing script
-	var defensive = create_script("Defensive")
-	defensive["description"] = "Heal when low, defend when healthy"
-
-	add_rule(defensive, create_rule(
-		"Use potion if HP < 40%",
-		[create_condition(ConditionType.HP_PERCENT, CompareOp.LESS_THAN, 40)],
-		ActionType.ITEM,
-		{"item_id": "potion", "target_type": "self"}
-	))
-
-	add_rule(defensive, create_rule(
-		"Default if HP < 60%",
-		[create_condition(ConditionType.HP_PERCENT, CompareOp.LESS_THAN, 60)],
-		ActionType.DEFAULT,
-		{}
-	))
-
-	add_rule(defensive, create_rule(
-		"Attack otherwise",
-		[create_condition(ConditionType.ALWAYS, CompareOp.EQUAL, 0)],
-		ActionType.ATTACK,
-		{"target_type": "lowest_hp_enemy"}
-	))
-
+	var defensive := {
+		"name": "Defensive",
+		"description": "Heal when low, defend when healthy",
+		"rules": [
+			{
+				"conditions": [{"type": "hp_percent", "op": "<", "value": 40}],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			{
+				"conditions": [{"type": "hp_percent", "op": "<", "value": 60}],
+				"actions": [{"type": "defer"}]
+			},
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
 	saved_scripts["Defensive"] = defensive
 
 	print("Created %d default autobattle scripts" % saved_scripts.size())
