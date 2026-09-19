@@ -13,6 +13,13 @@ extends GutTest
 ##
 ## Zero violations today: 161 distinct files, 1 named by more than one key, all 5 keys agreeing.
 ## This is the guard for the authoring step, not a report of a live defect.
+##
+## 🔑 THE CORPUS IS THE FILE ON DISK, AND THAT IS ONLY THE RIGHT CORPUS BECAUSE THE RUNTIME KEY SET
+## IS THE SAME SET. Measured, because a corpus keyed to where data LIVES cannot answer a question
+## about how it COMES INTO EXISTENCE: `_music_manifest` has ONE writer (`= parsed["tracks"]`, a
+## verbatim assignment), `_load_music_manifest` synthesizes no keys, there are zero reflection
+## writes to it, and nothing in `src/` mutates an entry. Runtime ids built by concatenation
+## (`"village_" + suffix`) must already be in the manifest to play, so they are a subset.
 
 const MANIFEST_PATH := "res://data/music_manifest.json"
 
