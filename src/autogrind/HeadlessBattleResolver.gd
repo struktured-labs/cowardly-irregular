@@ -1848,19 +1848,18 @@ func _take_charged_multiplier(combatant) -> float:
 func _apply_lens_execute_bonus(attacker, target, damage: int) -> int:
 	if attacker == null or target == null or not is_instance_valid(target) or target.max_hp <= 0:
 		return damage
-	var ls: Object = _get_autoload("LensSystem")
-	if ls == null or not ls.has_method("get_lens_meta_effects"):
+	## DELEGATES rather than reimplementing. @cowir-battle extracted live's arithmetic into
+	## lens_execute_multiplier so the preview could quote the bonus without inheriting the executor's
+	## emit; my port predated that and held a second copy of one authored number. One table, one
+	## formula — the same choice made for terrain, and the reason neither can drift.
+	if not BattleManager.has_method("lens_execute_multiplier"):
 		return damage
-	var key: String = str(attacker.combatant_name).to_lower().replace(" ", "_")
-	var me: Dictionary = ls.get_lens_meta_effects(key)
-	var threshold: float = float(me.get("lens_execute_threshold", 0.0))
-	var bonus: float = float(me.get("lens_execute_bonus", 0.0))
-	if threshold <= 0.0 or bonus <= 0.0:
+	var mult: float = float(BattleManager.lens_execute_multiplier(attacker, target))
+	if mult <= 1.0:
 		return damage
-	if float(target.current_hp) / float(target.max_hp) > threshold:
-		return damage
+	## The emit stays on THIS side, exactly as it does in live's executor.
 	_log("%s moves to finish it." % attacker.combatant_name)
-	return int(damage * (1.0 + bonus))
+	return int(damage * mult)
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:

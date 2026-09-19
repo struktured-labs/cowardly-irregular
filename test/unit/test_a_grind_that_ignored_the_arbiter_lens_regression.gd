@@ -151,12 +151,13 @@ func test_the_bonus_matches_what_the_lens_authors() -> void:
 		% [threshold, bonus, _res._apply_lens_execute_bonus(attacker, wounded, 100)])
 
 
-## ⚠️ SELF-ARMING, AND DELIBERATELY NOT A DEPENDENCY. @cowir-battle is extracting live's threshold
-## arithmetic into BattleManager.lens_execute_multiplier (on their branch at :5803, NOT on main as
-## of this commit). When it lands, live and this engine will hold TWO implementations of one
-## authored number — the twin-formula shape that "happens to agree today". This arm is inert while
-## the helper is absent and starts comparing the moment it exists, so the reconciliation cannot be
-## forgotten. It asserts AGREEMENT, never absence, so it can never red somebody else's fold.
+## ⚠️ ITS ORIGINAL JOB IS DONE AND IT NOW TESTS SOMETHING WEAKER — SAYING SO RATHER THAN LEAVING THE
+## OLD CLAIM IN PLACE. It was written self-arming, while lens_execute_multiplier existed only on
+## @cowir-battle's branch, to catch two copies of one authored number drifting apart. The helper
+## landed, the arm armed (live x1.50 -> 300), and the grind now DELEGATES to it — so both sides of
+## this comparison call one function and the formula can no longer disagree with itself.
+## What it still catches is the resolver mis-applying the multiplier it is handed: the int
+## truncation and the `mult <= 1.0` early return. That is a real but much smaller claim.
 func test_the_grind_agrees_with_lives_multiplier_once_that_helper_exists() -> void:
 	var bm: Node = get_node_or_null("/root/BattleManager")
 	if bm == null or not bm.has_method("lens_execute_multiplier"):
