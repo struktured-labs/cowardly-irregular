@@ -986,7 +986,8 @@ var _sfx_suppressed_by_cooldown: bool = false
 
 
 ## The ramp counts hits the player HEARD, not play_attack_hit CALLS.
-## A participant striking N targets fires N same-key hits in ONE frame (BattleScene:4025); the
+## A participant striking N targets fires N same-key hits in ONE frame
+## (BattleScene._on_group_attack_executing); the
 ## per-key cooldown sounds the first and suppresses the rest, which is correct — identical
 ## same-frame samples comb-filter. Counting the silent ones drove the bias straight to its cap
 ## with nothing audible causing it: measured 5 calls -> 1 play, _combo_step 5, bias 1.12 = CAP.
@@ -1231,7 +1232,7 @@ func _on_time_of_day_changed_for_ambience(band: String) -> void:
 var _duck_tween: Tween = null
 var _duck_active: bool = false
 ## Every object currently holding the dialogue duck. A BOOL could not serve more than one holder:
-## OverworldNPC:1226 creates its own NPCDialogue per NPC (each with its own CutsceneDialogue) and
+## OverworldNPC._start_dialogue creates its own NPCDialogue per NPC (each with its own CutsceneDialogue) and
 ## CutsceneDirector creates another, so the second one's release ended the first one's duck.
 ## ⛔ A SET, NOT A COUNT. A refcount fails toward "ducked forever" when a holder leaks; a set is
 ## idempotent per holder, so a double release cannot over-decrement, and the prune below drops a
@@ -2097,7 +2098,7 @@ func get_current_world_suffix() -> String:
 ## Returns "" when the world is not knowable, which preserves the older
 ## inherit-whatever-is-playing behaviour rather than guessing.
 func _interior_world_suffix() -> String:
-	## get_node_or_null, matching :946 and :2143 — a bare autoload identifier is a
+	## get_node_or_null, matching _setup_night_ambience_listener and _connect_corruption_source — a bare autoload identifier is a
 	## COMPILE error when absent, not null, so the null branch below would be dead
 	## and this file would hard-fail instead of declining (@cowir-adhoc, msg 10533).
 	var gs: Node = get_node_or_null("/root/GameState")
