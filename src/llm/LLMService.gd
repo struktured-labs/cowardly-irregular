@@ -726,17 +726,17 @@ func _extract_json_from_raw(raw: String) -> Variant:
 		return parsed
 
 	# 2. Strip ``` fences.
-	var stripped: String = raw
-	var fence_start: int = raw.find("```")
-	if fence_start != -1:
-		var fence_end: int = raw.find("```", fence_start + 3)
-		if fence_end != -1:
-			stripped = raw.substr(fence_start + 3, fence_end - fence_start - 3)
-			# Strip optional language tag on the opening fence.
-			var nl: int = stripped.find("\n")
-			if nl != -1 and nl < 20:
-				stripped = stripped.substr(nl + 1).strip_edges()
-		parsed = JSON.parse_string(stripped.strip_edges())
+	# Every fenced block, tried LAST first — same rule as step 3 and for the same
+	# reason. This used to take the FIRST ``` and the next one, so a reply that fences
+	# its reasoning and then fences its answer returned the reasoning:
+	#
+	#     ```json\n{"thinking":true}\n```\n```json\n{"rules":[…]}\n```
+	#
+	# and it returned it SUCCESSFULLY — a Dictionary, so step 3 never ran and no
+	# caller could tell. Measured: with the old strip that reply yielded the preamble;
+	# deleting the whole stage outright made it work, which is how it surfaced.
+	for block in _fenced_blocks(raw):
+		parsed = JSON.parse_string(block)
 		if parsed is Dictionary:
 			return parsed
 
@@ -819,9 +819,30 @@ func _repair_mangled_operator(raw: String) -> String:
 	return re.sub(raw, '"op":"$1"', true)
 
 
-## Append the closers a truncated JSON fragment is missing, or "" if it is not
-## repairable that way. Tracks string state so a brace inside a string value
-## (the rules_json contract nests an encoded array) is never counted.
+## The inner content of every ``` fenced block in `raw`, LAST BLOCK FIRST, with an
+## opening language tag ("json") dropped. An unterminated final fence yields no block
+## and is left to the brace scan, whose job is a reply that stopped mid-stream.
+func _fenced_blocks(raw: String) -> Array[String]:
+	var out: Array[String] = []
+	var i: int = raw.find("```")
+	while i != -1:
+		var close: int = raw.find("```", i + 3)
+		if close == -1:
+			break  # unterminated — not a block
+		var inner: String = raw.substr(i + 3, close - i - 3)
+		## Drop an opening language tag, but only when it really is one: a short first
+		## line. A bare fence whose JSON starts on the same line has no tag to drop.
+		var nl: int = inner.find("\n")
+		if nl != -1 and nl < 20:
+			inner = inner.substr(nl + 1)
+		inner = inner.strip_edges()
+		if inner != "":
+			out.append(inner)
+		i = raw.find("```", close + 3)
+	out.reverse()
+	return out
+
+
 ## Every COMPLETE top-level {…} region in `raw`, as [start, end_inclusive] pairs in
 ## source order. String- and escape-aware, so a brace inside a JSON string value is
 ## not a nesting event — the same walk _close_unbalanced_json does, reporting spans
@@ -860,6 +881,9 @@ func _balanced_object_spans(raw: String) -> Array:
 	return spans
 
 
+## Append the closers a truncated JSON fragment is missing, or "" if it is not
+## repairable that way. Tracks string state so a brace inside a string value
+## (the rules_json contract nests an encoded array) is never counted.
 func _close_unbalanced_json(fragment: String) -> String:
 	var stack: PackedStringArray = PackedStringArray()
 	var in_string: bool = false
