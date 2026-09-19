@@ -6,7 +6,8 @@ extends GutTest
 ## with `_cancel_pending_fade()`; `capture_music_state()` reads the same lying field and was not.
 ##
 ## ⛔ SO A SNAPSHOT TAKEN INSIDE THE RAMP RECORDS `playing: true`, AND EVERY CALLER RESTORES FROM
-## IT -- JukeboxMenu:71, GameLoop:1401 (pause menu), CutsceneDirector:359. The restore calls
+## IT -- JukeboxMenu's `_resume_state = SoundManager.capture_music_state()`, GameLoop's
+## `_pre_menu_music_state =` (pause menu), CutsceneDirector's `_pre_cutscene_music =`. The restore calls
 ## play_music, which kills the fade tween, so the callback that would have left things quiet never
 ## runs and the bed is back at full volume for good. Measured before the fix: captured
 ## {playing: true} one frame into a 1.2 s fade, restored, and the bed was still at -12.0 dB
