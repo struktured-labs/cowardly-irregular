@@ -102,8 +102,14 @@ func test_silence_does_not_block_a_basic_attack() -> void:
 	var hp_before: int = target.current_hp
 	_res._player_party = [attacker]
 	_res._enemy_party = [target]
-	_res._resolve_attack(attacker, target)
-	assert_lt(target.current_hp, hp_before, "silence must not stop a basic attack")
+	## ⛔ SWUNG REPEATEDLY, DELIBERATELY. _resolve_attack rolls a MISS: with both combatants at
+	## speed 10 the chance is exactly 0.10, and the formula floors at 0.02 for ANY speed advantage —
+	## so a single-swing assert on damage is a 10% FLAKE, not a test. It passed alone and red inside
+	## a 147-file corpus run on identical code, which is what a coin flip looks like.
+	for _i in range(12):
+		_res._resolve_attack(attacker, target)
+	assert_lt(target.current_hp, hp_before,
+		"silence must not stop a basic attack — 12 swings, all missing is ~1e-12")
 
 
 func test_live_still_gates_the_same_way() -> void:
