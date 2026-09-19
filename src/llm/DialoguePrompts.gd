@@ -1052,7 +1052,7 @@ static func _format_kit_reminder(kit_context: Dictionary) -> String:
 ## Keyed by the engine's id, valued by the English a player would actually type. Used by BOTH
 ## domains: the grind's member_status and autobattle's has_status family match literally. Measured
 ## 2026-09-17: naming the ids alone left 28 of 46 values unmatchable, because the intent says
-## "frozen" and NO frozen status exists — BattleManager:5014 applies freeze AS stun, so
+## "frozen" and NO frozen status exists — BattleManager._apply_ability_status applies freeze AS stun, so
 ## without the mapping the model has nowhere to put the player's own word.
 const STATUS_VOCABULARY := {
 	"poison": ["poisoned"],
