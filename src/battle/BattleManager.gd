@@ -5276,9 +5276,12 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 
 		# Apply terrain + weather modifiers for elemental damage
 		var terrain_mod = 1.0
+		## Hoisted from the line below so the battle-log caption can name it; the product is unchanged.
+		var weather_mod := 1.0
 		if element:
 			terrain_mod = get_terrain_damage_modifier(element)
-			damage = int(damage * terrain_mod * get_weather_damage_modifier(element))
+			weather_mod = get_weather_damage_modifier(element)
+			damage = int(damage * terrain_mod * weather_mod)
 
 		# Barrier nullifies the next hit (magic counts).
 		if target.has_status("barrier"):
@@ -5367,14 +5370,22 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			_record_first_damage()
 
 		var elem_text = element if element else "magic"
+		## The hit is terrain x weather, so a caption naming terrain alone reported half of a
+		## rain-in-a-cave reduction and nothing at all for a storm's +25% on plains.
+		var env_mod: float = terrain_mod * weather_mod
+		var env_label := "terrain"
+		if not is_equal_approx(terrain_mod, 1.0) and not is_equal_approx(weather_mod, 1.0):
+			env_label = "terrain/weather"
+		elif is_equal_approx(terrain_mod, 1.0):
+			env_label = "weather"
 		var terrain_text = ""
-		if terrain_mod > 1.0:
-			terrain_text = " [color=%s](terrain +%d%%)[/color]" % [AccessibilityPalette.bonus_bbcode(), int((terrain_mod - 1.0) * 100)]
-		elif terrain_mod < 1.0:
-			terrain_text = " [color=gray](terrain -%d%%)[/color]" % int((1.0 - terrain_mod) * 100)
+		if env_mod > 1.0:
+			terrain_text = " [color=%s](%s +%d%%)[/color]" % [AccessibilityPalette.bonus_bbcode(), env_label, int(round((env_mod - 1.0) * 100.0))]
+		elif env_mod < 1.0:
+			terrain_text = " [color=gray](%s -%d%%)[/color]" % [env_label, int(round((1.0 - env_mod) * 100.0))]
 		var log_msg = "  → [color=%s]%s[/color] takes [color=cyan]%d[/color] %s damage!%s" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, actual_damage, elem_text, terrain_text]
 		battle_log_message.emit(log_msg)
-		print("  → %s takes %d %s damage! (terrain: %.2fx)" % [target.combatant_name, actual_damage, elem_text, terrain_mod])
+		print("  → %s takes %d %s damage! (terrain %.2fx weather %.2fx)" % [target.combatant_name, actual_damage, elem_text, terrain_mod, weather_mod])
 
 		if drain_pct > 0:
 			## heal() returns what LANDED — clamped at max_hp, halved by curse, and zero on a caster

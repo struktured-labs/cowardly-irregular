@@ -87,6 +87,6 @@ func test_the_popup_names_no_cap_when_no_pad_is_attached() -> void:
 	assert_eq(KeyItemPopup.continue_hint_text(), "Press Z to continue",
 		"with no pad the popup must name the KEY alone; a family glyph is hardware the player does not have")
 	assert_eq(KeyItemPopup.continue_hint_text(XBOX), "Press %s / Z to continue" % _confirm_caps()[XBOX],
-		"control: an explicitly NAMED device still gets its cap, so the guard is keyed to pad ABSENCE and not to the argument being omitted")
+		"control: the POPUP still gets its cap for an explicitly NAMED device, so the guard is keyed to pad ABSENCE and not to the argument being omitted")
 	assert_eq(DialogueChoiceMenu.hint_text(true), "[Enter/Click] Confirm    [Esc/RClick] Cancel    (↑↓/D-pad)",
 		"control: the choice menu beside it already drops its cap with no pad — this is the shape the popup now matches")

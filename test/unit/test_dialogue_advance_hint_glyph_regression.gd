@@ -30,7 +30,7 @@ func test_cutscene_box_hint_is_built_from_the_helper() -> void:
 	add_child_autofree(box)
 	assert_not_null(box._advance_hint, "the dialogue box must build its advance hint at _ready")
 	assert_eq(box._advance_hint.text, CutsceneDialogue.advance_hint_text(),
-		"_ready must build the hint from advance_hint_text, not a literal")
+		"the CUTSCENE box's _ready must build the hint from advance_hint_text, not a literal")
 
 
 func test_battle_box_hint_is_built_from_the_helper() -> void:
@@ -38,7 +38,7 @@ func test_battle_box_hint_is_built_from_the_helper() -> void:
 	add_child_autofree(box)
 	assert_not_null(box._advance_hint, "the battle dialogue box must build its advance hint at _ready")
 	assert_eq(box._advance_hint.text, BattleDialogue.advance_hint_text(),
-		"_ready must build the hint from advance_hint_text, not a literal")
+		"the BATTLE box's _ready must build the hint from advance_hint_text, not a literal")
 
 
 func test_no_literal_a_prompt_survives_in_either_box() -> void:

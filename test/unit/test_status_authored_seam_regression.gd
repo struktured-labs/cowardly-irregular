@@ -42,7 +42,7 @@ func test_unauthored_key_is_SILENT_not_a_blip() -> void:
 	## not stamp, so an unstamped key means nothing was emitted on that channel.
 	var sm: Node = _sm()
 	sm._sfx_cooldowns.erase(UNAUTHORED)
-	assert_false(sm._sfx_cooldowns.has(UNAUTHORED), "control: key must start unstamped")
+	assert_false(sm._sfx_cooldowns.has(UNAUTHORED), "control: the UNAUTHORED key %s must start unstamped" % UNAUTHORED)
 	var played: bool = sm.play_status_if_authored(UNAUTHORED)
 	assert_false(played,
 		"play_status_if_authored('%s') returned true for a key that is not in the manifest" % UNAUTHORED)
@@ -55,7 +55,7 @@ func test_authored_key_still_plays() -> void:
 	## the silence test would pass and the feature would never work.
 	var sm: Node = _sm()
 	sm._sfx_cooldowns.erase(AUTHORED)
-	assert_false(sm._sfx_cooldowns.has(AUTHORED), "control: key must start unstamped")
+	assert_false(sm._sfx_cooldowns.has(AUTHORED), "control: the AUTHORED key %s must start unstamped" % AUTHORED)
 	var played: bool = sm.play_status_if_authored(AUTHORED)
 	assert_true(played,
 		"play_status_if_authored('%s') returned false for a key that IS in the manifest — the seam is inert" % AUTHORED)
