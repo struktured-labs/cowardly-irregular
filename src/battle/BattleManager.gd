@@ -232,11 +232,14 @@ const STEAL_GOLD_HP_DIVISOR: float = 500.0
 ## Rules per PC sent to the boss-intent prompt — 5 PCs, so this is a token budget.
 const BOSS_INTENT_RULES_PER_PC: int = 4
 
-## Tick 416: removed dead `autobattle_toggled` signal that was never
-## emitted from BattleManager — the live signal of the same name
-## lives on AutobattleToggleUI (src/ui/autobattle/AutobattleToggleUI.gd)
-## where the toggle UI emits it. Keeping a same-named no-op signal
-## here caused confusion when readers tried to trace toggle events.
+## Tick 416 removed a dead `autobattle_toggled` signal from here, correctly — it was never
+## emitted. ⛔ BUT THE REASON GIVEN WAS WRONG AND SENT READERS SOMEWHERE WORSE: it said "the live
+## signal of the same name lives on AutobattleToggleUI where the toggle UI emits it".
+## AutobattleToggleUI IS NEVER INSTANTIATED — 0 `.new()`, 0 `.tscn`, 0 `add_child` anywhere; the
+## only trace is an unassigned `var _autobattle_toggle_ui` at BattleScene:227. It emits to nobody,
+## so no toggle event has ever flowed through it.
+## ✅ The LIVE per-character path is `AutobattleSystem.toggle_autobattle(character_id)`, called from
+## MenuScene:1261 and AutobattleGridEditor:2006. Trace toggles there.
 
 ## One-shot tracking
 ## Tick 406: per-battle last ability cast by ANY combatant. Reads
