@@ -182,8 +182,28 @@ reap() {
             fi
         fi
         if [ -z "$reason" ]; then
-            local d; d="$(cd "$p" 2>/dev/null && git status --porcelain 2>/dev/null | wc -l)"
-            [ "$d" -ne 0 ] && reason="${d} tracked modification(s)"
+            # ⛔ `git status --porcelain` COUNTS UNTRACKED FILES, so a single count reported as
+            # "tracked modification(s)" is wrong whenever the dirt is untracked -- and untracked
+            # is the case that matters most here. Measured 2026-09-19: three worktrees under
+            # cowir-deploy-wt/tmp/ reported "1-3 tracked modification(s)" with `git diff
+            # --shortstat` EMPTY; the dirt was three untracked `tools/store_shot_*.gd` files,
+            # one of which (`store_shot_storm.gd`, 207 lines) had never been committed anywhere
+            # and carried a measured finding. The refusal was right and its SENTENCE was not:
+            # it sent the reader to a diff that shows nothing.
+            #
+            # The distinction is load-bearing for a tool that removes directories. A tracked
+            # modification is recoverable from the tag; an untracked file exists on this disk
+            # and nowhere else, so it is the stronger reason to refuse, and it should say so.
+            local d u
+            d="$(cd "$p" 2>/dev/null && git status --porcelain 2>/dev/null | awk '!/^\?\?/{n++} END{print n+0}')"
+            u="$(cd "$p" 2>/dev/null && git status --porcelain 2>/dev/null | awk '/^\?\?/{n++} END{print n+0}')"
+            if [ "${d:-0}" -ne 0 ] && [ "${u:-0}" -ne 0 ]; then
+                reason="${d} tracked modification(s) and ${u} UNTRACKED file(s) — the untracked ones exist nowhere else"
+            elif [ "${d:-0}" -ne 0 ]; then
+                reason="${d} tracked modification(s)"
+            elif [ "${u:-0}" -ne 0 ]; then
+                reason="${u} UNTRACKED file(s) — unbacked, and removing this worktree destroys them"
+            fi
         fi
         if [ -z "$reason" ] && [ -n "$newest_tag" ]; then
             local h t; h="$(cd "$p" 2>/dev/null && git rev-parse HEAD 2>/dev/null)"
@@ -316,6 +336,25 @@ selftest() {
     }
     chk "dry run removes nothing"            "DRY RUN"                          0
     chk "a dirty worktree is kept"           "KEEP.*reaptest-rel-2.*modification" 0
+    # ⛔ AN UNTRACKED-ONLY WORKTREE MUST SAY "UNTRACKED", NOT "tracked modification(s)".
+    # The rel-2 fixture above is `git add`ed, so it exercises only the tracked half and
+    # passed happily while the label was wrong for every untracked case. This arm is the
+    # untracked half, and it asserts the WORD because the count was never the defect.
+    printf 'scratch\n' > "${pfx}3/REAPTEST_UNTRACKED.md" 2>/dev/null
+    out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
+    chk "an UNTRACKED-only worktree is kept"      "KEEP.*reaptest-rel-3.*UNTRACKED"   0
+    chk "  ...and is NOT called a tracked mod"    "reaptest-rel-3.*tracked modification" 1
+    # ⛔ THE COMBINED CASE HAD NO ARM AND I FOUND IT BY MUTATING MY OWN FIX. Disabling the
+    # `d != 0 && u != 0` branch outright left the selftest at 28/28 green -- so the message
+    # that names BOTH counts had never been produced by a test. The two pure branches were
+    # covered (their mutations red); the one that exists because a worktree can be dirty AND
+    # carry unbacked files was a clause that never ran. That is the defect family this whole
+    # fix belongs to, sitting inside the fix.
+    printf 'scratch\n' > "${pfx}2/REAPTEST_UNTRACKED.md" 2>/dev/null
+    out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
+    chk "tracked AND untracked names BOTH"       "reaptest-rel-2.*tracked modification.*and.*UNTRACKED" 0
+    chk "  ...and still refuses to remove it"    "would remove reaptest-rel-2"      1
+    rm -f "${pfx}2/REAPTEST_UNTRACKED.md"
     chk "a branch worktree is kept"          "KEEP.*reaptest-rel-0.*branch"     0
     chk "the newest is kept by position"     "KEEP.*among the 1 newest"         0
     chk "at least one is reapable"           "would remove"                     0
