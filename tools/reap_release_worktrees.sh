@@ -313,7 +313,10 @@ selftest() {
     # was "$PWD/tmp/"* with $PWD forced to this script's own checkout by the startup cd, so a
     # population under any other checkout was unreachable however the tool was invoked — which is
     # how 49 release worktrees accumulated while the reaper reported "headroom fine".
-    local nest="tmp/reaproot-nest"
+    # ⛔ THE NEST MUST SIT OUTSIDE $PWD/$SCAN OR THESE ARMS CANNOT FAIL. First version put it at
+    # tmp/reaproot-nest/, which still matches the BUGGY "$PWD/tmp/"* filter — so reverting the fix
+    # left every new arm green. A fixture inside the defective corpus tests nothing.
+    local nest=".reaptest-nest"
     local firsttag; firsttag="$(printf '%s\n' $tags | head -1)"
     # Fixtures sit at <nest>/tmp/rel-… so the DEFAULT SCAN and PREFIX apply unchanged at the new
     # root — the same shape as cowir-deploy-wt/tmp/. Note ${REAP_SCAN:-tmp/} substitutes on EMPTY
@@ -329,7 +332,11 @@ selftest() {
     chk "an empty scan names the population, not a bare zero" "0 of [0-9]* registered worktree" 0
 
     out="$(REAP_ROOT="$PWD/$nest" "$self" --keep 0 2>&1)"
-    chk "REAP_ROOT reaches a population outside this checkout"  "rel-9001"                    0
+    # ⛔ ASSERT THE AFFIRMATIVE OUTCOME, NOT MERE PRESENCE. "rel-9001" appears under a broken root
+    # too — as `KEEP rel-9001 path outside` — so a presence pin passes on the defect it names.
+    # "would remove" is reached only when the candidate scan, the belt-and-braces check and the
+    # detached-under-PREFIX check ALL agree at the widened root.
+    chk "REAP_ROOT reaches a population outside this checkout"  "would remove rel-9001"       0
     # ⛔ THE SAFETY CLAIM. Widening WHERE we look must buy no removal the rules would refuse. The
     # branch fixture is refused for being on a branch at the new root exactly as at the old one —
     # if a widened root ever let a refusal lapse, this is the arm that reds.
