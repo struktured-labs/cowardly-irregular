@@ -63,7 +63,7 @@ func test_every_raw_music_play_is_reached_only_through_a_reset() -> void:
 	## A LOOSE structural floor, deliberately. Its job is "the splitter still returns functions",
 	## not "SoundManager has N" — a tight count is a coincidental-value ratchet that reds on any
 	## correct refactor. Measured 193 today; 100 cannot be reached by a broken split.
-	assert_gt(bodies.size(), 100, "ANTI-VACUITY: derived only %d functions — the splitter stopped matching" % bodies.size())
+	assert_gt(bodies.size(), 100, "ANTI-VACUITY: split %s into only %d functions — the splitter stopped matching" % [SM_PATH, bodies.size()])
 
 	var raw: Array[String] = []
 	var resetters: Array[String] = []
