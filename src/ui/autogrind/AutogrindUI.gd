@@ -222,10 +222,6 @@ var _pad_change_pending: bool = false
 ## Region ID for CSI lookups (derived from _region_name)
 var _region_id: String = ""
 
-## Rule trigger counts for monitor display
-var _rule_trigger_counts: Dictionary = {}
-
-
 
 ## "Any" vs a named member — the coarse/fine split must be visible on the cell, or two rules
 ## that read identically on screen behave differently.
@@ -2254,6 +2250,33 @@ func _observed_rules_report(preview_winners: Dictionary = {}) -> Array:
 	return out
 
 
+## One line: the monitor row is a single Label, and _format_condition embeds newlines for grid cells.
+func _rule_one_line(rule: Dictionary) -> String:
+	var parts: Array = []
+	for c in rule.get("conditions", []):
+		parts.append(_format_condition(c as Dictionary).replace("\n", " "))
+	var lhs := " AND ".join(PackedStringArray(parts)) if not parts.is_empty() else "ALWAYS"
+	return "%s -> %s" % [lhs, _explain_actions(rule)]
+
+
+## The monitor's RULE TRIGGERS rows, keyed by description because that is what update_rule_triggers takes.
+func _rule_trigger_rows() -> Dictionary:
+	var out: Dictionary = {}
+	## A zero needs its denominator -- before any check every rule reads dead and none is.
+	if AutogrindSystem.get_rule_eval_count() <= 0:
+		return out
+	## The system's own array, not our copy: the counts are keyed by ITS indices.
+	var live: Array = AutogrindSystem.get_autogrind_rules()
+	var fired: Dictionary = AutogrindSystem.get_rule_fire_counts()
+	for i in range(live.size()):
+		var rule: Dictionary = live[i] as Dictionary
+		if not bool(rule.get("enabled", true)):
+			continue
+		## Numbered so two identical rules stay two rows, and so the row matches the preview's "rule N".
+		out["%d. %s" % [i + 1, _rule_one_line(rule)]] = int(fired.get(i, 0))
+	return out
+
+
 func _explain_actions(rule: Dictionary) -> String:
 	var parts: Array = []
 	for a in rule.get("actions", []):
@@ -3108,9 +3131,10 @@ func update_stats(stats: Dictionary) -> void:
 	if _monitor and is_instance_valid(_monitor) and _monitor.visible:
 		_monitor.refresh(stats, _region_id)
 
-		# Track rule triggers and forward to monitor
-		if not _rule_trigger_counts.is_empty():
-			_monitor.update_rule_triggers(_rule_trigger_counts)
+		## Rebuilt from the system's live counts every refresh -- the dict this replaced had zero writes.
+		var triggers: Dictionary = _rule_trigger_rows()
+		if not triggers.is_empty():
+			_monitor.update_rule_triggers(triggers)
 
 		# Auto-generate highlights for notable events
 		_check_and_emit_highlights(stats)
