@@ -240,7 +240,12 @@ selftest() {
         git worktree add --detach "${pfx}${i}" "$t" >/dev/null 2>&1 || true
         i=$((i+1))
     done
-    git worktree add -b reaptest/branch "${pfx}0" HEAD >/dev/null 2>&1 || true
+    # ⛔ CUT FROM origin/main, NOT HEAD. This fixture exists to exercise the UNPUSHED rule, and
+    # the ladder checks merged-into-origin/main FIRST. From HEAD the arm only reaches the
+    # unpushed check when HEAD happens to BE origin/main — so the moment you run --selftest on a
+    # branch carrying one local commit it reds on "NOT merged" and reads as a regression you
+    # caused. The arm was passing on where HEAD sat rather than on the rule it names.
+    git worktree add -b reaptest/branch "${pfx}0" origin/main >/dev/null 2>&1 || true
     echo "scratch" > "${pfx}2/REAPTEST_DIRTY.md" 2>/dev/null
     ( cd "${pfx}2" && git add REAPTEST_DIRTY.md >/dev/null 2>&1 )
 

@@ -126,3 +126,4 @@ tmp-xdg/
 tmp-*/
 **/app_userdata/
 itch-assets/
+.reaptest-nest/
