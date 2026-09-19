@@ -701,6 +701,11 @@ func _find_heal_ability(combatant) -> String:
 	for ability_id in combatant.learned_abilities:
 		var ability = js.get_ability(ability_id) if js.has_method("get_ability") else {}
 		# `type` is the field abilities author (289/289); `category` is authored by NONE, so this read was constant "" and no enemy ever healed in a headless battle.
+		## The `category` fallback is orphaned — 0 of 289 in abilities.json and 0 in JobSystem's
+		## hardcoded table author it; all 289 author `type`. Harmless to keep and safe to drop,
+		## unlike the `power` inversion below where the FALLBACK is the live read. Same three
+		## sites here (:704 :718 :1121); stat_modifier/modifier in BattleManager IS real (50/7),
+		## which is why these are indistinguishable by eye.
 		if str(ability.get("type", ability.get("category", ""))) == "healing":
 			return ability_id
 	return ""
