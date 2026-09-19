@@ -45,6 +45,20 @@ func before_each() -> void:
 		AutogrindSystem._test_disable_persistence = true
 
 
+## Full-line comments removed before any `contains` below. These pins assert against a WHOLE FILE,
+## and this lane writes dense ## blocks about exactly these keys — @cowir-battle's sub-variant: a
+## sliced pin can only be satisfied from inside its subject, a whole-file pin from anywhere in it.
+## Only lines whose first non-space character is `#` are dropped, so no code can be cut; a trailing
+## comment survives, which is the direction that fails toward a false GREEN and is recorded here
+## rather than silently over-stripped ([[an_over_deleting_stripper_blinds_an_offender_scan]]).
+func _code_only(path: String) -> String:
+	var out: Array[String] = []
+	for line in GdSource.code_of(path).split("\n"):
+		if not line.strip_edges().begins_with("#"):
+			out.append(line)
+	return "\n".join(out)
+
+
 func _authored_keys() -> Array:
 	var f := FileAccess.open("res://data/lenses.json", FileAccess.READ)
 	if f == null:
@@ -94,7 +108,7 @@ func test_no_status_names_a_key_that_no_lens_authors() -> void:
 ## lens_execute_multiplier) would have red THIS file next, by my own hand. So: the key is ported if
 ## the resolver reads it directly OR routes to the shared helper that reads it.
 func test_the_ported_keys_are_reachable_from_the_resolver() -> void:
-	var code: String = GdSource.code_of(RESOLVER)
+	var code: String = _code_only(RESOLVER)
 	assert_gt(code.length(), 5000, "CONTROL: the resolver was actually read")
 	## ⛔ QUOTED, because the unquoted form is satisfied by the FUNCTION'S OWN NAME: the resolver
 	## declares _apply_lens_execute_bonus, so a bare contains("lens_execute_bonus") stays true with
@@ -112,7 +126,7 @@ func test_the_ported_keys_are_reachable_from_the_resolver() -> void:
 
 
 func test_the_inherited_keys_are_in_the_class_both_engines_share() -> void:
-	var code: String = GdSource.code_of(COMBATANT)
+	var code: String = _code_only(COMBATANT)
 	assert_gt(code.length(), 5000, "CONTROL: Combatant was actually read")
 	## QUOTED for the same reason as the ported arm, and this one was measured failing: renaming
 	## lens_lethal_floor -> lens_lethal_floor_MOVED left `contains(k)` TRUE, because the longer name
