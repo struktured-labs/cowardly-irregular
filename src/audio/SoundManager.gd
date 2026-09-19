@@ -1939,10 +1939,8 @@ func _generate_glitch(playback: AudioStreamGeneratorPlayback, samples: int, freq
 ## Replace _generate_battle_music() internals with file loading when real
 ## music assets are available (e.g., load("res://assets/audio/battle.ogg"))
 
-## True when play_music(track) will actually produce audio — a manifest entry
-## or a procedural arm. play_music crossfades the CURRENT track out before it
-## resolves, so an unknown id leaves the scene silent rather than unchanged;
-## callers that would rather keep the existing music check this first.
+## Whether an id can sound IN THIS BUILD: unlike has_music_track below, this `load()`s the
+## file, so an id the manifest lists but the export dropped answers FALSE here and TRUE there.
 ## The Web preset drops 54 music files while the manifest that lists them ships intact.
 func music_is_available(track_id: String) -> bool:
 	_load_music_manifest()
@@ -1973,6 +1971,10 @@ func music_is_available(track_id: String) -> bool:
 	return track_id.begins_with("battle_") or track_id.begins_with("boss")
 
 
+## True when play_music(track) will actually produce audio — a manifest entry
+## or a procedural arm. play_music crossfades the CURRENT track out before it
+## resolves, so an unknown id leaves the scene silent rather than unchanged;
+## callers that would rather keep the existing music check this first.
 static func has_music_track(track: String) -> bool:
 	if track == "":
 		return false
