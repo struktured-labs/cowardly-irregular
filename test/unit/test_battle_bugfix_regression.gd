@@ -83,7 +83,7 @@ func test_defense_buff_reduces_damage_taken() -> void:
 
 func test_buff_expires_after_duration() -> void:
 	_combatant.add_buff("Protect", "defense", 2.0, 2)
-	assert_eq(_combatant.active_buffs.size(), 1, "Should have 1 buff")
+	assert_eq(_combatant.active_buffs.size(), 1, "a buff must be present before the duration is ticked down")
 
 	# Tick once — 1 turn remaining
 	_combatant.update_buff_durations()
@@ -96,7 +96,7 @@ func test_buff_expires_after_duration() -> void:
 
 func test_debuff_expires_after_duration() -> void:
 	_combatant.add_debuff("Armor Break", "defense", 0.5, 1)
-	assert_eq(_combatant.active_debuffs.size(), 1, "Should have 1 debuff")
+	assert_eq(_combatant.active_debuffs.size(), 1, "a debuff must be present before the duration is ticked down")
 
 	# Tick once — should expire immediately (duration 1)
 	_combatant.update_buff_durations()
@@ -203,7 +203,7 @@ func test_all_jobs_have_evolution_block() -> void:
 
 func test_duplicate_buff_refreshes_instead_of_stacking() -> void:
 	_combatant.add_buff("Protect", "defense", 2.0, 3)
-	assert_eq(_combatant.active_buffs.size(), 1, "Should have 1 buff")
+	assert_eq(_combatant.active_buffs.size(), 1, "a duplicate buff must REFRESH, not stack into a second entry")
 
 	# Adding same effect again should refresh, not stack
 	_combatant.add_buff("Protect", "defense", 2.0, 5)
@@ -215,7 +215,7 @@ func test_duplicate_buff_refreshes_instead_of_stacking() -> void:
 
 func test_duplicate_debuff_refreshes_instead_of_stacking() -> void:
 	_combatant.add_debuff("Armor Break", "defense", 0.5, 2)
-	assert_eq(_combatant.active_debuffs.size(), 1, "Should have 1 debuff")
+	assert_eq(_combatant.active_debuffs.size(), 1, "a duplicate debuff must REFRESH, not stack into a second entry")
 
 	_combatant.add_debuff("Armor Break", "defense", 0.5, 4)
 	assert_eq(_combatant.active_debuffs.size(), 1,
@@ -686,7 +686,7 @@ func test_multiple_statuses_coexist() -> void:
 	_combatant.add_status("poison", 3)
 	_combatant.add_status("blind", 2)
 	_combatant.add_status("confuse", 4)
-	assert_true(_combatant.has_status("poison"), "Should have poison")
+	assert_true(_combatant.has_status("poison"), "poison must be present alongside the other statuses")
 	assert_true(_combatant.has_status("blind"), "Should have blind")
 	assert_true(_combatant.has_status("confuse"), "Should have confuse")
 	assert_eq(_combatant.status_effects.size(), 3, "Should have 3 active statuses")
@@ -834,7 +834,7 @@ func test_script_error_has_gold_reward() -> void:
 
 func test_esuna_cleanse_removes_poison() -> void:
 	_combatant.add_status("poison", 3)
-	assert_true(_combatant.has_status("poison"), "Should have poison")
+	assert_true(_combatant.has_status("poison"), "poison must be present before esuna is cast")
 
 	# Simulate cleanse (same logic as BattleManager "cleanse" effect)
 	var negative = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm"]
@@ -842,7 +842,7 @@ func test_esuna_cleanse_removes_poison() -> void:
 		if _combatant.has_status(status):
 			_combatant.remove_status(status)
 
-	assert_false(_combatant.has_status("poison"), "Poison should be cleansed")
+	assert_false(_combatant.has_status("poison"), "esuna must REMOVE poison")
 
 
 func test_esuna_cleanse_removes_multiple_statuses() -> void:
@@ -868,7 +868,7 @@ func test_esuna_cleanse_preserves_regen() -> void:
 		if _combatant.has_status(status):
 			_combatant.remove_status(status)
 
-	assert_false(_combatant.has_status("poison"), "Poison should be cleansed")
+	assert_false(_combatant.has_status("poison"), "esuna must remove poison while leaving regen alone")
 	assert_true(_combatant.has_status("regen"), "Regen should NOT be cleansed (positive status)")
 
 
