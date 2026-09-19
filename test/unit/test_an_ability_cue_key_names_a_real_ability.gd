@@ -105,4 +105,4 @@ func test_the_meta_cue_note_has_not_gone_stale() -> void:
 	## where the current figure lives. Do not copy it back up there.
 	print("[meta-cue] %d of %d meta-typed abilities are mapped; %d fall through to ability_physical" % [metas.size() - unmapped.size(), metas.size(), unmapped.size()])
 	assert_gt(unmapped.size(), 0,
-		"every meta-typed ability now has a cue — the note at SoundManager:409 describes nothing and must be DELETED")
+		"every meta-typed ability now has a cue — SoundManager's _TYPE_SFX note (\"physical/support/meta are deliberately absent\") describes nothing and must be DELETED")

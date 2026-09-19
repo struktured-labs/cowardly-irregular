@@ -124,7 +124,7 @@ func test_control_the_consumer_walk_finds_the_known_call_sites() -> void:
 	assert_gt(keys.size(), 4,
 		"SCOPE control: only %d play_ambient keys found — the walk is broken" % keys.size())
 	assert_true(keys.has("weather_rain"),
-		"CONTROL FAILED: weather_rain not found, but WeatherSystem:182 passes it literally — the regex has drifted off the call shape")
+		"CONTROL FAILED: weather_rain not found, but WeatherSystem passes it literally as play_ambient(\"weather_rain\") — the regex has drifted off the call shape")
 	assert_true(keys.has("night_crickets_wind"),
 		"CONTROL FAILED: the NIGHT_AMBIENCE_KEY constant was not resolved — that is the blind spot this file exists to close, so missing it makes the rest hollow")
 
