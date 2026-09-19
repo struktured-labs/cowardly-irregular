@@ -328,9 +328,27 @@ case "$_avail_mb" in
             echo "[pub] BLOCKED: ${_avail_mb} MB free where a publish needs ${PUBLISH_MIN_FREE_MB} MB." >&2
             echo "[pub]   Derived: a completed release worktree is ~3.4 GB (checkout + build/ +" >&2
             echo "[pub]   builds/ + .godot), plus the web stage and the audio tier when uncached." >&2
-            echo "[pub]   NOTHING has been built or uploaded. Reclaim space and re-run:" >&2
+            echo "[pub]   NOTHING has been built or uploaded." >&2
+            echo "[pub]" >&2
+            # ⛔ DO NOT SEND THE READER STRAIGHT AT THIS LANE. Measured 2026-09-19: the whole
+            # cowir fleet was 35G of a 3.4T disk -- about 1% -- while single unrelated projects
+            # of struktured's held hundreds of gigabytes. Seven lanes each audited their own
+            # tmp/ and three broke a standing directive to prune rounding errors, because the
+            # question "am I full?" was answered by whoever was asked rather than by where the
+            # mass was. An instruction to reap THIS lane, printed at the moment someone is
+            # blocked and hurrying, is exactly how that happens again.
+            echo "[pub]   FIRST, find out whose bytes these are. This lane is usually not the cause:" >&2
+            echo "[pub]     du -sh ~/projects/*/tmp | sort -rh | head -20" >&2
+            echo "[pub]   ⚠ That glob expands to ~120 directories and SOME ARE SYMLINKS to each" >&2
+            echo "[pub]     other, so du walks one tree twice and the sum double-counts. Confirm" >&2
+            echo "[pub]     any big row is a real directory before believing it:  readlink <path>" >&2
+            echo "[pub]" >&2
+            echo "[pub]   ONLY IF THIS LANE IS ACTUALLY HOLDING THE SPACE:" >&2
             echo "[pub]     tools/reap_release_worktrees.sh            # dry run, names what it would remove" >&2
             echo "[pub]     tools/reap_release_worktrees.sh --apply    # only trees rebuildable from a tag on origin" >&2
+            echo "[pub]" >&2
+            echo "[pub]   ⛔ Do NOT delete outside this lane. Those are struktured's other projects" >&2
+            echo "[pub]     and the standing directive is: delete nothing of his." >&2
             echo "[pub]   Override with PUBLISH_MIN_FREE_MB=<mb> if you know better than this number." >&2
             exit 4
         fi
