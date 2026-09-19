@@ -1000,6 +1000,10 @@ func _describe_action_for_llm(a: Dictionary) -> String:
 	return out
 
 
+## THE CHOKE POINT FOR EVERY SCRIPT WRITE — editor, LLM composer, COWIR1: import, save load,
+## autogrind restore. It deliberately does NOT clamp to the grid's MAX_RULES: that 32 is a
+## UI-ADD budget, a >32 script renders and runs fine, and both clamp shapes lose player data.
+## See the const's own note in AutobattleGridEditor.
 func set_character_script(character_id: String, script: Dictionary) -> void:
 	"""Set active autobattle script for a character"""
 	_ensure_character_profiles(character_id)
