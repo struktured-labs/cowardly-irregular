@@ -114,8 +114,12 @@ func test_the_ported_keys_are_reachable_from_the_resolver() -> void:
 func test_the_inherited_keys_are_in_the_class_both_engines_share() -> void:
 	var code: String = GdSource.code_of(COMBATANT)
 	assert_gt(code.length(), 5000, "CONTROL: Combatant was actually read")
+	## QUOTED for the same reason as the ported arm, and this one was measured failing: renaming
+	## lens_lethal_floor -> lens_lethal_floor_MOVED left `contains(k)` TRUE, because the longer name
+	## contains the shorter. Only the behavioural warden arm caught that mutation. I fixed the twin
+	## of this line an hour ago and left this one — the sibling-shape blindness, on my own repair.
 	for k in INHERITED_VIA_COMBATANT:
-		assert_true(code.contains(k),
+		assert_true(code.contains('"%s"' % k),
 			"%s is listed as inherited via Combatant and is not there — it may have moved to BattleManager, which would make it a real grind gap" % k)
 
 
