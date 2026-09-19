@@ -695,6 +695,18 @@ static func build_player_choices(
 	)
 
 
+## Build the prompt asked of the LLM at each boss phase transition.
+##
+## ctx is a BossIntentContext (passed as Dictionary via to_dict()) so this
+## function stays decoupled from the class. The LLM picks ONE of
+## ctx.available_intents and writes a short in-character taunt for the
+## moment the new posture lands.
+##
+## Parameters:
+##   display_name — boss display name (e.g. "Chancellor Mordaine")
+##   ctx          — Dictionary from BossIntentContext.to_dict()
+##
+## Returns a prompt String ready for LLMService.complete_json().
 static func build_boss_intent(
 	display_name: String,
 	ctx: Dictionary,
