@@ -23,10 +23,38 @@ func _src(p: String) -> String:
 	return s
 
 
+## ⛔ THE FLAG AND THE PROFILE COME BACK IN A TEARDOWN, NOT AT THE END OF THE ARM. The arm below
+## sets `profile_chosen_by_user` and drives the real connection handler, which can apply a profile.
+## Restoring at the end means an error anywhere above leaves both moved for the rest of the
+## process — and a leaked `profile_chosen_by_user` silently disables pad autodetection for every
+## later file, which is the defect this lane shipped a fix for today.
+##
+## 📌 The baseline for the catcher is taken ONCE, in `before_all`. A per-arm baseline is re-read
+## after the damage and compares a polluted value with itself — measured green under a live strand
+## in this lane's sibling guard.
+var _saved_chosen: bool = false
+var _saved_profile: String = ""
+var _pristine_chosen: bool = false
+var _pristine_profile: String = ""
+
+
+func before_all() -> void:
+	_pristine_chosen = InputProfileManager.profile_chosen_by_user
+	_pristine_profile = InputProfileManager.active_profile
+
+
+func before_each() -> void:
+	_saved_chosen = InputProfileManager.profile_chosen_by_user
+	_saved_profile = InputProfileManager.active_profile
+
+
+func after_each() -> void:
+	InputProfileManager.profile_chosen_by_user = _saved_chosen
+	InputProfileManager.active_profile = _saved_profile
+
+
 ## THE SIGNAL, observed rather than read: drive the real handler and watch it fire.
 func test_a_device_change_announces_itself() -> void:
-	var chosen: bool = InputProfileManager.profile_chosen_by_user
-	var profile: String = InputProfileManager.active_profile
 	InputProfileManager.profile_chosen_by_user = true   # don't let the probe re-detect a profile
 	watch_signals(InputProfileManager)
 	InputProfileManager._on_joy_connection_changed(0, true)
@@ -36,8 +64,7 @@ func test_a_device_change_announces_itself() -> void:
 	InputProfileManager._on_joy_connection_changed(0, false)
 	assert_signal_emit_count(InputProfileManager, "input_device_changed", 2,
 		"a pad LEAVING must announce too — that is the wireless-pad-sleeps case the Toast exists for")
-	InputProfileManager.profile_chosen_by_user = chosen
-	InputProfileManager.active_profile = profile
+
 
 
 ## THE ARTIFACT: the bar's TEXT must change, not merely the connection exist. Builds the real
@@ -105,3 +132,14 @@ func test_the_player_is_still_told() -> void:
 	assert_true(src.contains("Controller disconnected"),
 		"the disconnect Toast must survive — the caption refresh complements it, not replaces it")
 	assert_true(src.contains("input_device_changed.emit"), "and the signal must be emitted")
+
+
+## ⛔ THE STRAND CATCHER, DECLARED LAST — declaration order is run order, and an aborting arm
+## reports PASSING, so without this the teardown above is an unfalsifiable claim.
+func test_zz_the_profile_state_was_handed_back() -> void:
+	assert_eq(InputProfileManager.profile_chosen_by_user, _pristine_chosen,
+		"profile_chosen_by_user is %s and started this file at %s — an earlier arm left it moved, "
+			% [InputProfileManager.profile_chosen_by_user, _pristine_chosen]
+		+ "and a leaked `true` disables pad autodetection for every later file in this process.")
+	assert_eq(InputProfileManager.active_profile, _pristine_profile,
+		"active_profile is '%s' and started at '%s'" % [InputProfileManager.active_profile, _pristine_profile])

@@ -151,6 +151,46 @@ func test_no_raw_handler_shadows_a_remappable_binding() -> void:
 ## The mechanism the source guard is a proxy for: a rebind rewrites the InputMap, so an
 ## action-based handler follows the new button AND stops answering the old one. A raw
 ## button_index comparison does neither. Restores the binding — InputMap leaks across tests.
+## ⛔ THE REBIND ARM RESTORES INLINE, AND ITS OWN LAST ASSERT SAYS WHY — "a leaked InputMap drags
+## into later tests". The ordering is careful: results are captured BEFORE the restore so the
+## asserts cannot abort above it. What the ordering cannot cover is an error in the middle block.
+##
+## 🔑 PRODUCED, NOT ARGUED. Abort planted between the erase and the restore:
+##     with the abort     battle_toggle_auto keeps [3]  = JOY_BUTTON_Y, the rebound one
+##     without it                              [4]  = JOY_BUTTON_BACK, the real binding
+## and the aborting arm reported **Passing 4** — rung-3 silence, so nothing on screen says the
+## process now has a wrong binding for every later file.
+##
+## ✅ The hooks are a NET, not a replacement: the arm's inline restore still runs and its final
+## assert still means what it says. `after_each` is idempotent with it and covers the abort.
+const REBIND_ACTION := "battle_toggle_auto"
+
+var _saved_events: Array[InputEvent] = []
+var _pristine_indices: Array = []
+
+
+## The baseline is taken ONCE. A per-arm baseline is re-read after the damage and compares a
+## polluted value with itself — measured green under a live strand in this lane's sibling guard.
+func before_all() -> void:
+	for e in InputMap.action_get_events(REBIND_ACTION):
+		if e is InputEventJoypadButton:
+			_pristine_indices.append(int((e as InputEventJoypadButton).button_index))
+	_pristine_indices.sort()
+
+
+func before_each() -> void:
+	_saved_events = []
+	for e in InputMap.action_get_events(REBIND_ACTION):
+		_saved_events.append(e)
+
+
+func after_each() -> void:
+	for e in InputMap.action_get_events(REBIND_ACTION):
+		InputMap.action_erase_event(REBIND_ACTION, e)
+	for e in _saved_events:
+		InputMap.action_add_event(REBIND_ACTION, e)
+
+
 func test_a_rebind_moves_the_action_off_the_old_button() -> void:
 	var action := "battle_toggle_auto"
 	assert_true(InputMap.has_action(action), "control: the action must exist before rebinding it")
@@ -210,3 +250,17 @@ func test_every_exemption_still_describes_a_real_raw_site() -> void:
 			stale.append("%s: reason too short to be an argument" % key)
 	stale.sort()
 	assert_eq(stale, [] as Array[String], "stale exemptions: %s" % str(stale))
+
+
+## ⛔ THE STRAND CATCHER, DECLARED LAST — declaration order is run order. Without it "the teardown
+## restores the InputMap" is unfalsifiable, because an aborting arm reports PASSING.
+func test_zz_the_inputmap_was_handed_back() -> void:
+	var now: Array = []
+	for e in InputMap.action_get_events(REBIND_ACTION):
+		if e is InputEventJoypadButton:
+			now.append(int((e as InputEventJoypadButton).button_index))
+	now.sort()
+	assert_eq(now, _pristine_indices,
+		"%s is bound to %s and started this file bound to %s — an earlier arm left the InputMap "
+			% [REBIND_ACTION, now, _pristine_indices]
+		+ "rebound, and every later test in this process now reads the wrong button.")

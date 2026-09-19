@@ -14,6 +14,38 @@ const STATUS_MENU := "res://src/ui/StatusMenu.gd"
 const CUTSCENE_DIALOGUE := "res://src/cutscene/CutsceneDialogue.gd"
 
 
+## ⛔ `GameState.text_size_scale` IS A SHARED AUTOLOAD FIELD AND THE ARMS BELOW MOVE IT, RESTORING
+## INLINE AT THE END OF EACH ARM. A GDScript error above the restore strands the moved value for
+## every later file in the process.
+##
+## 🔑 PRODUCED, AND THE PLACEMENT IS THE MEASUREMENT: an abort above the FIRST reset produces
+## nothing, because a later arm resets it anyway — this file heals itself right up until its LAST
+## touch. Abort above the last reset in `test_text_scale_util_extraction`:
+##	 text_size_scale left at 0.8, and the file reported EC=0 · Passing 16.
+## Silent, and every later file then renders at that scale.
+##
+## 📌 The catcher's baseline is taken ONCE in `before_all`. A per-arm baseline is re-read after the
+## damage and compares a polluted value with itself — measured green under a live strand elsewhere
+## in this tree today.
+var _pristine_text_size_scale: float = 1.0
+var _saved_text_size_scale: float = 1.0
+
+
+func before_all() -> void:
+	if GameState:
+		_pristine_text_size_scale = GameState.text_size_scale
+
+
+func before_each() -> void:
+	if GameState:
+		_saved_text_size_scale = GameState.text_size_scale
+
+
+func after_each() -> void:
+	if GameState:
+		GameState.text_size_scale = _saved_text_size_scale
+
+
 func _read(p: String) -> String:
 	var t: String = FileAccess.get_file_as_string(p)
 	assert_ne(t, "", "Expected %s to be readable" % p)
@@ -170,3 +202,15 @@ func test_settings_menu_text_size_setting_preserved() -> void:
 		"tick 222 TEXT_SIZE_PRESETS preserved")
 	assert_true(src.contains("func _save_text_size_scale"),
 		"tick 222 _save_text_size_scale helper preserved")
+
+
+## ⛔ THE STRAND CATCHER, DECLARED LAST — declaration order is run order, and an aborting arm
+## reports PASSING, so without this the teardown above is an unfalsifiable claim.
+func test_zz_the_shared_text_size_scale_was_handed_back() -> void:
+	if not GameState:
+		pending("GameState autoload missing")
+		return
+	assert_eq(GameState.text_size_scale, _pristine_text_size_scale,
+		"GameState.text_size_scale is %s and started this file at %s — an earlier arm left it moved, and "
+			% [GameState.text_size_scale, _pristine_text_size_scale]
+		+ "every later file in this process inherits it.")

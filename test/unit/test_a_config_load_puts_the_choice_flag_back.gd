@@ -38,6 +38,54 @@ const CALL := "InputProfileManager.load_config("
 const FLAG := "profile_chosen_by_user"
 
 
+## ⛔ THE RESTORE LIVES IN A TEARDOWN, NOT AT THE END OF THE ARM — AND IT DID NOT, UNTIL I RAN THIS
+## LANE'S OWN FIXTURE-STRAND LENS AGAINST MY OWN FILE. The driven arm below writes a fixture
+## `controls.json`, calls `load_config()`, and moves `profile_chosen_by_user` and `active_profile`.
+## Restoring those at the END of the arm means a GDScript error anywhere above the restore strands
+## all three for every later test in the process.
+##
+## 🔑 AND THE STRANDED THING IS THE SUBJECT OF THIS VERY FILE: a leaked `profile_chosen_by_user`
+## silently disables pad autodetection for every file that runs after. I wrote a guard about that
+## leak whose own repair could cause it.
+var _had_config: bool = false
+var _config_raw: String = ""
+var _saved_flag: bool = false
+var _saved_profile: String = ""
+
+## ⛔ THE CATCHER'S BASELINE IS CAPTURED ONCE, NOT PER ARM, AND MY FIRST VERSION GOT THIS WRONG.
+## `before_each` runs before the CATCHER too, so comparing against it re-snapshots whatever the
+## pollution left and the arm compares a polluted value with itself. Measured: with the teardown
+## removed and an abort planted, the catcher stayed GREEN. A pristine `before_all` baseline cannot
+## be refreshed by the damage it is meant to detect.
+var _pristine_flag: bool = false
+var _pristine_had_config: bool = false
+
+
+func before_all() -> void:
+	_pristine_flag = InputProfileManager.profile_chosen_by_user
+	_pristine_had_config = FileAccess.file_exists(InputProfileManager.CONFIG_PATH)
+
+
+func before_each() -> void:
+	_had_config = FileAccess.file_exists(InputProfileManager.CONFIG_PATH)
+	_config_raw = FileAccess.get_file_as_string(InputProfileManager.CONFIG_PATH) if _had_config else ""
+	_saved_flag = InputProfileManager.profile_chosen_by_user
+	_saved_profile = InputProfileManager.active_profile
+
+
+func after_each() -> void:
+	if _had_config:
+		var w := FileAccess.open(InputProfileManager.CONFIG_PATH, FileAccess.WRITE)
+		if w:
+			w.store_string(_config_raw)
+			w.close()
+	elif FileAccess.file_exists(InputProfileManager.CONFIG_PATH):
+		DirAccess.remove_absolute(InputProfileManager.CONFIG_PATH)
+	if _saved_profile != "":
+		InputProfileManager.apply_profile(_saved_profile)
+	InputProfileManager.profile_chosen_by_user = _saved_flag
+
+
 ## One function's body, bounded by the next top-level `func` rather than by a character count —
 ## a fixed width is the coincidental-value shape, and load_config is long enough to be cut by one.
 func _func_body(src: String, header: String) -> String:
@@ -60,11 +108,6 @@ func _func_body(src: String, header: String) -> String:
 ## proves the loader assigns the flag, in both directions, which is the entire premise this file
 ## rests on — and it cannot be satisfied by a neighbouring line, a rename, or a reword.
 func test_the_manager_still_sets_the_flag_on_load() -> void:
-	var had: bool = FileAccess.file_exists(InputProfileManager.CONFIG_PATH)
-	var raw: String = FileAccess.get_file_as_string(InputProfileManager.CONFIG_PATH) if had else ""
-	var saved_flag: bool = InputProfileManager.profile_chosen_by_user
-	var saved_profile: String = InputProfileManager.active_profile
-
 	for want in [false, true]:
 		var cfg := {
 			"version": 2,
@@ -85,15 +128,7 @@ func test_the_manager_still_sets_the_flag_on_load() -> void:
 			+ "Without that write there is nothing to leak and nothing to restore, and this whole "
 			+ "file is a rule about nothing.")
 
-	if had:
-		var w := FileAccess.open(InputProfileManager.CONFIG_PATH, FileAccess.WRITE)
-		if w:
-			w.store_string(raw)
-			w.close()
-	else:
-		DirAccess.remove_absolute(InputProfileManager.CONFIG_PATH)
-	InputProfileManager.apply_profile(saved_profile)
-	InputProfileManager.profile_chosen_by_user = saved_flag
+
 
 
 ## The consequence path, still a source claim because it is about a GATE rather than a write: if
@@ -149,3 +184,17 @@ func test_every_config_loading_test_restores_the_choice_flag() -> void:
 	assert_true(unrestored.is_empty(),
 		"test file(s) %s call load_config() without ever naming %s — the loader sets it, nothing " % [unrestored, FLAG]
 		+ "resets it, and a leaked `true` silently disables pad autodetection for every later file")
+
+
+## ⛔ THE STRAND CATCHER, DECLARED LAST BECAUSE DECLARATION ORDER IS RUN ORDER. Without it "I moved
+## the restore into a teardown" is unfalsifiable: an arm that aborts still reports PASSING, so the
+## hazard and its repair look identical on screen (cowir-music, 2026-09-18). This arm runs after the
+## driving arm and asserts the shared state came back.
+func test_zz_the_shared_config_state_was_handed_back() -> void:
+	assert_eq(InputProfileManager.profile_chosen_by_user, _pristine_flag,
+		"%s was left at %s by an earlier arm — the teardown did not run, and every later file in "
+			% [FLAG, InputProfileManager.profile_chosen_by_user]
+		+ "this process now inherits it. That is the exact leak this file exists to guard.")
+	assert_eq(FileAccess.file_exists(InputProfileManager.CONFIG_PATH), _pristine_had_config,
+		"the fixture config was left on disk (or the real one deleted) — %s existed at file start: %s"
+			% [InputProfileManager.CONFIG_PATH, _pristine_had_config])
