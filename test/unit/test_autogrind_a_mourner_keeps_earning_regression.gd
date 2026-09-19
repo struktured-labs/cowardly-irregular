@@ -92,7 +92,7 @@ func test_a_mourners_ledger_keeps_a_corpse_earning() -> void:
 	var earned: int = _exp_from_one_victory(wearer)
 	gut.p("    KO'd wearing mourners_ledger: %d" % earned)
 	assert_gt(earned, 0,
-		"a KO'd mourners_ledger wearer earned nothing in a grind — live pays them (BattleManager:1023) and the accessory's whole text is that it keeps paying while KO'd")
+		"a KO'd mourners_ledger wearer earned nothing in a grind — live pays them (BattleManager.earns_exp_while_dead) and the accessory's whole text is that it keeps paying while KO'd")
 
 
 func test_the_posthumous_credit_passive_does_it_too() -> void:
@@ -171,7 +171,7 @@ func test_the_headless_path_credits_a_mourner_too() -> void:
 
 	assert_true(body.contains("earns_exp_while_dead"),
 		("the headless grind attributes EXP by a bare is_alive. A Cleric carrying posthumous_credit " +
-		"EARNS that exp — AutogrindSystem's two award sites and BattleManager:1023 all say so — and " +
+		"EARNS that exp — AutogrindSystem's two award sites and BattleManager.earns_exp_while_dead all say so — and " +
 		"is credited none here, while the shrunken divisor inflates everyone else's share."))
 
 

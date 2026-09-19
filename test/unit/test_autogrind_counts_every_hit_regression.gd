@@ -211,4 +211,4 @@ func test_the_resolver_reads_the_key_the_live_engine_reads() -> void:
 	var code: String = GdSource.code_of(SRC)
 	assert_gt(code.length(), 5000, "CONTROL: the resolver was actually read")
 	assert_true(code.contains('ability.get("hits", 1)'),
-		"the resolver must read the same authored key BattleManager:4854 reads")
+		"the resolver must read the same authored key BattleManager reads, spelled get(\"hits\", 1) there too")

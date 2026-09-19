@@ -115,11 +115,11 @@ func test_rules_is_labelled_where_the_dashboard_listens_and_nowhere_else() -> vo
 		"precondition: the dashboard must be shown somewhere, or ludicrous has no listener either")
 
 	assert_false(_overlay().autogrind_context().has("start"),
-		"tier 0 shows the overlay ALONE (GameLoop:5596) — no dashboard, so START reaches nothing")
+		"tier 0 shows the overlay ALONE (GameLoop's ControllerOverlay.autogrind_context() call) — no dashboard, so START reaches nothing")
 	assert_true(_overlay().autogrind_ludicrous_context().has("start"),
-		"ludicrous shows the dashboard (GameLoop:5592), the only screen that classifies START as " +
+		"ludicrous shows the dashboard (GameLoop's ControllerOverlay.autogrind_ludicrous_context() call), the only screen that classifies START as " +
 		"adjust_rules — do not delete this one for symmetry with tier 0. The press is LIVE since " +
-		"cf0e0135: GameLoop:6890 connects adjust_rules_requested, pinned by " +
+		"cf0e0135: GameLoop's `adjust_rules_requested.connect` wires it, pinned by " +
 		"test_autogrind_adjust_rules_has_a_route_regression. This arm still pins only WHERE the " +
 		"label belongs; reachability is that sibling's job, not a second copy here")
 

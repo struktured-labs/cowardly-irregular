@@ -68,7 +68,7 @@ func test_an_indebted_combatant_recovers_one_ap_not_two() -> void:
 	_res._selection_phase()
 	gut.p("    AP: -2 -> %d after round start -> %d after selection" % [after_tick, hero.current_ap])
 	assert_eq(hero.current_ap, -1,
-		"live pays AP debt ONCE per round (BattleManager:1604) — the grind paid at round start AND granted the natural +1")
+		"live pays AP debt ONCE per round (BattleManager._process_next_selection) — the grind paid at round start AND granted the natural +1")
 
 
 func test_an_indebted_combatant_forfeits_its_turn() -> void:
