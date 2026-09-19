@@ -3944,6 +3944,14 @@ func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], 
 			combo_name, enemy.combatant_name, final_damage])
 
 
+## The AP BattleCommandMenu gated the row on, so the debit cannot drift from the gate
+func _formation_ap_cost(formation_id: String) -> int:
+	for f in BattleCommandMenu.FORMATIONS:
+		if str(f.get("id", "")) == formation_id:
+			return int(f.get("ap_cost", 2))
+	return 2
+
+
 func _execute_formation_special(participants: Array, alive_enemies: Array[Combatant], formation_id: String) -> void:
 	"""Execute a Formation Special — unique effect based on party job composition"""
 	## Tick 175: announce that a formation special is starting.
@@ -3954,8 +3962,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 	## name in both lines read as duplicate logging. The opener
 	## now signals the dramatic moment WITHOUT redundancy.
 	battle_log_message.emit("[color=gold]✦ FORMATION SPECIAL ✦[/color]")
-	# Spend AP (2 per participant for most formations, 3 for arcane_tempest/chaos_theory)
-	var ap_cost = 3 if formation_id in ["arcane_tempest", "chaos_theory"] else 2
+	# Spend the price the menu gated this row on, not a second copy of it
+	var ap_cost: int = _formation_ap_cost(formation_id)
 	for p in participants:
 		if p is Combatant and p.is_alive:
 			p.spend_ap(ap_cost)
@@ -4106,7 +4114,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 
 		_:
 			# Unknown formation — fallback to physical group
-			_execute_physical_group(participants, alive_enemies, "all_out_attack", ap_cost)
+			## AP is already spent above; a second debit here would charge this id twice
+			_execute_physical_group(participants, alive_enemies, "all_out_attack", 0)
 			battle_log_message.emit("[color=orange]★ Formation attack! ★[/color]")
 
 
