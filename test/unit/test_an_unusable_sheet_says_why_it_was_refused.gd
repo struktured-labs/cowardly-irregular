@@ -51,6 +51,18 @@ func _body_of(src: String, decl: String) -> String:
 	return "\n".join(out)
 
 
+func test_the_stripper_actually_stripped() -> void:
+	# THE INERT-FILTER CONTROL (cowir-autogrind, 2026-09-19): every arm below reads a body with
+	# comments removed, and a stripper that silently returned RAW source would look identical —
+	# my count arms survive it only because no comment here happens to contain "push_warning(".
+	# That is luck, not design. Assert the filter REMOVED something before trusting what it left.
+	for src in LOADERS:
+		var raw: String = FileAccess.get_file_as_string(str(src))
+		var code: String = GdSource.code_of(str(src))
+		assert_gt(raw.length(), code.length(),
+			"%s: the comment stripper must have removed something — equal lengths mean it is inert" % src)
+
+
 func test_both_loaders_are_still_here() -> void:
 	# CONTROL: every arm below reads these bodies, so a rename would make them all pass
 	# vacuously on an empty string rather than fail.
