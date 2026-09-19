@@ -1,30 +1,31 @@
 extends GutTest
 
-## ⛔ THE AP A FORMATION SPECIAL *CHARGES* IS NOT THE AP THE MENU *CHECKED*, AND THE RATCHET THAT
+## ⛔ THE AP A FORMATION SPECIAL *CHARGES* MUST BE THE AP THE MENU *CHECKED*, AND THE RATCHET THAT
 ## EXISTS FOR THIS CANNOT SEE IT. `test_formation_definitions_in_sync` compares
 ## `BattleCommandMenu.FORMATIONS` against `HeadlessBattleResolver.FORMATIONS` — ap_cost included —
-## and is green. Neither table is what debits a live player. There are THREE copies of the number:
+## and is green. Neither table is what debits a live player. There were THREE copies of the number:
 ##
 ##   BattleCommandMenu   group_ap_shortfall("formation", row.ap_cost)              <- GATES the row
 ##   HeadlessBattleResolver   _execute_group_formation spends the row's own ap_cost   <- grind spends
-##   BattleManager   `ap_cost = 3 if formation_id in [...]`                          <- LIVE spends
+##   BattleManager   `ap_cost = 3 if formation_id in [...]`                          <- LIVE spent
 ##
-## `BattleManager` holds ZERO references to either FORMATIONS. So the ratchet pins the two that
-## agree and is structurally blind to the third, which is the one that takes the AP — a test named
+## `BattleManager` held ZERO references to either FORMATIONS, so the ratchet pinned the two that
+## agree and was structurally blind to the third, which is the one that takes the AP — a test named
 ## for the defect passing, asking a different question.
 ##
-## The three agree TODAY. The trigger is a SEVENTH formation or a rebalance, and both directions bite:
+## ✅ FIXED: `_formation_ap_cost` reads BattleCommandMenu.FORMATIONS, so the gate and the debit are
+## one number and a SEVENTH formation is priced the day it is authored. Both directions had bitten:
 ##   engine charges MORE than the gate checked -> spend_ap can hit the -4 floor and REFUSE, and its
 ##     bool return is discarded at _execute_formation_special's `p.spend_ap(ap_cost)`, so the special fires FOR FREE
 ##   engine charges LESS -> live and grind disagree on price, which the sync ratchet's own comment
 ##     says it exists to prevent ("never secretly cheaper/costlier")
 ##
-## ⛔ AND AN ID WITH NO `match` ARM IS CHARGED TWICE: the `_:` fallback re-enters
-## `_execute_physical_group(participants, alive_enemies, "all_out_attack", ap_cost)`, which spends
-## again in ITS own `p.spend_ap(ap_cost)`. Measured below
-## rather than read — it doubles as the control proving this instrument can say NO.
+## ⛔ AND AN ID WITH NO `match` ARM WAS CHARGED TWICE: the `_:` fallback re-entered
+## `_execute_physical_group(participants, alive_enemies, "all_out_attack", ap_cost)`, which spent
+## again in ITS own `p.spend_ap(ap_cost)`. It now passes 0 because the debit above already happened;
+## the arm below measures that rather than reading it.
 ##
-## Measured at the DEBIT, not in the source. `3 if … else 2` is one refactor away from any pattern;
+## Measured at the DEBIT, not in the source. `3 if … else 2` was one refactor away from any pattern;
 ## "what did the party actually pay" survives every rewrite of it.
 
 const MENU := preload("res://src/battle/BattleCommandMenu.gd")
@@ -63,8 +64,8 @@ func _member(name_str: String) -> Combatant:
 	c.attack = 40
 	c.magic = 40
 	c.defense = 0
-	## 4 AP so no cost up to 3 — doubled to 6 by the fall-through — can be refused by the -4 floor.
-	## A refusal would read as "charged less", which is the other defect's signature.
+	## 4 AP so no cost this file can provoke is refused by the -4 floor — a refusal would read as
+	## "charged less", which is the price-drift defect's signature.
 	c.current_ap = 4
 	c.is_alive = true
 	return c
@@ -126,23 +127,21 @@ func test_every_formation_charges_what_the_menu_gated_on() -> void:
 		else:
 			wrong.append("%s: the menu gated the row on %d AP, live debited %d" % [fid, promised, paid])
 	assert_eq(wrong, [],
-		"BattleManager's `ap_cost = 3 if formation_id in [...]` computes formation AP from a hardcoded "
-		+ "list and reads neither "
-		+ "FORMATIONS table. It has drifted from the one the menu gates on: %s" % str(wrong))
+		"formation AP must come from BattleCommandMenu.FORMATIONS via _formation_ap_cost — the same "
+		+ "table the menu gates the row on. The live debit has drifted from that gate: %s" % str(wrong))
 
 
-func test_a_formation_id_with_no_arm_is_charged_twice() -> void:
-	## The instrument watched saying NO — and the measurement behind this file's second claim.
-	## An unknown id is charged once by _execute_formation_special and again by the fallback's
-## _execute_physical_group.
-	assert_eq(_charged("zz_not_a_formation"), 4,
-		"the `_:` fallback must still double-charge, or the arm above can no longer tell a missing "
-		+ "`match` arm from a price drift")
+func test_a_formation_id_with_no_arm_is_charged_once() -> void:
+	## An id with no `match` arm is debited once here and the `_:` fallback re-enters
+	## _execute_physical_group with 0, which must not debit it a second time.
+	assert_eq(_charged("zz_not_a_formation"), 2,
+		"an id with no `match` arm must pay exactly once: _execute_formation_special debits, then "
+		+ "the `_:` fallback re-enters _execute_physical_group, which must receive 0")
 
 ## ⛔ NO FLOOR ARM, AND THAT IS MEASURED RATHER THAN ASSUMED. This file reaches
 ## `_execute_formation_special` on ANOTHER object, which CLAUDE.md's call-shape table scores as
 ## runtime-resolved and therefore floor-worthy. It is not, because the DEFINITION has a self-caller:
-## `_execute_group_action` calls it by bare name at :3779, so a rename gives
+## `_execute_group_action` calls it by bare name, so a rename gives
 ## `Parse Error: Function "_execute_formation_special()" not found in base self` and BattleManager.gd
 ## does not LOAD — the autoload is null for the whole run and every arm here dies with it.
 ## Measured: a floor declared FIRST still scored [Risky] and never printed its message, because the
