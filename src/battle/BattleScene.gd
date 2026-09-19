@@ -2829,8 +2829,16 @@ func _on_bide_pressed() -> void:
 ## that signal carries (character_id, enabled), so this one-arg handler could never have bound to
 ## it. Its `BattleManager.toggle_autobattle` call is the sole writer of the LEGACY GLOBAL
 ## `is_autobattle_enabled`, which is therefore permanently false (GameLoop:1742 resets it). That is
-## harmless only because every read of it is an OR term beside the live per-character flag
-## (BattleManager:1749 · :1752 · :8040 · :8280). Kept, not deleted: see
+## harmless only because all four reads are vacuous under false, in three shapes, ALL IN
+## BattleManager.gd: a plain OR term, a NEGATED AND (`and not is_autobattle_enabled`), and a negated
+## OR (`not (is_autobattle_enabled or`) — the De Morgan duals are equally vacuous but are not
+## literally ORs (@cowir-battle, whose file that is; their own first pass named one of the two).
+## ⚠️ Grep those two shapes and you get TWO files — BattleManager.gd and THIS ONE, because this
+## comment quotes them. The file qualifier above is what disambiguates; a quoted shape cannot be
+## globally unique, since the citation is itself an instance of it.
+## ⚠️ CITED BY SYMBOL, NOT BY LINE, DELIBERATELY. This note first cited :1749/:1752/:8040/:8280 and
+## the commit that wrote it added lines ABOVE those reads, so they were stale on arrival. Correcting
+## the numbers is the same defect with a later expiry (@cowir-music); grep the shapes instead. Kept, not deleted: see
 ## project_decisions_awaiting_struktured.md — wiring the panel needs an input binding.
 func _on_autobattle_toggled(enabled: bool) -> void:
 	"""Handle autobattle toggle"""
