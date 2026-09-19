@@ -183,13 +183,19 @@ def protected_anims(job_id: str, _evidence=None, _tier=None) -> list:
     # none, and the legacy floor covers two jobs.
     if not out:
         tier = _tier if _tier is not None else _declared_tier(job_id)
-        if tier in _PROTECTED_TIERS:
+        # THREE ANSWERS, NOT TWO -- tier_refusal's rule, applied 30 lines below the docstring
+        # that states it. `tier in _PROTECTED_TIERS` is the exact-match test that docstring
+        # condemns, and here its fallthrough returns [] == "no artist work to protect".
+        # ABSENT still proceeds: creating new art is the normal case, and "" is not a claim.
+        # A NON-EMPTY tier this table cannot read is unknown provenance, and unknown is not T1.
+        if tier and tier not in _WRITABLE_TIERS:
             raise SystemExit(
-                f"[artist_guard] REFUSING: '{job_id}' is manifest tier {tier} (ARTIST work) and the "
-                f"provenance oracle proved NOTHING about it, so every animation would regenerate "
-                f"unprotected. Evidence is byte-identity with {ARTIST_BASELINE_TAG_NOTE}; art "
-                f"delivered or revised after it has none. Add '{job_id}' to _LEGACY_PROTECTED with "
-                f"the animations that must survive, or re-anchor the baseline."
+                f"[artist_guard] REFUSING to regenerate '{job_id}': "
+                f"{tier_refusal(tier, 'this sheet')} The provenance oracle also proved NOTHING "
+                f"about it, so every animation would regenerate unprotected. Evidence is "
+                f"byte-identity with {ARTIST_BASELINE_TAG_NOTE}; art delivered or revised after "
+                f"it has none. Add '{job_id}' to _LEGACY_PROTECTED with the animations that must "
+                f"survive, or re-anchor the baseline."
             )
     return out
 
@@ -276,6 +282,13 @@ def selftest() -> int:
         except SystemExit:
             return True
 
+    def _refusal_text(fn) -> str:
+        try:
+            fn()
+            return ""
+        except SystemExit as exc:
+            return str(exc)
+
     none_ = lambda _p: []
     some_ = lambda _p: ["idle.png", "cast.png"]
     check("empty oracle + T2 REFUSES",
@@ -284,8 +297,25 @@ def selftest() -> int:
           _raises(lambda: protected_anims("zz_probe", _evidence=none_, _tier="T3")), True)
     check("empty oracle + T1 proceeds (AI art is regenerable)",
           protected_anims("zz_probe", _evidence=none_, _tier="T1"), [])
-    check("empty oracle + unknown tier proceeds (protected_anims is not the tier gate)",
+    # ABSENT vs UNRECOGNISED are two facts and this arm used to test the first under the second's
+    # name: _tier="" with the label "unknown tier". An absent tier is not a claim about provenance
+    # -- a job with no manifest entry is new art -- so it still proceeds.
+    check("empty oracle + ABSENT tier proceeds (new art is the normal case)",
           protected_anims("zz_probe", _evidence=none_, _tier=""), [])
+    # The authored value already in this repo's own manifest (weapon_sheets.iron_sword). It is
+    # not in _PROTECTED_TIERS, so the exact-match test returned [] and a regen proceeded over
+    # something whose own tier string says "artist draft".
+    check("empty oracle + authored 'T2_artist_draft' REFUSES",
+          _raises(lambda: protected_anims("zz_probe", _evidence=none_, _tier="T2_artist_draft")), True)
+    check("empty oracle + unreadable tier REFUSES (unknown is not permission)",
+          _raises(lambda: protected_anims("zz_probe", _evidence=none_, _tier="t2")), True)
+    # ANTI-VACUITY: the naive form is `"ARTIST" in text == False`, which also passes when the
+    # guard FAILS OPEN and there is no text at all -- measured, it survived the mutation that
+    # reds the two arms above. Assert the refusal HAPPENED and then what it does not say.
+    _unk = _refusal_text(lambda: protected_anims("zz_probe", _evidence=none_,
+                                                 _tier="T2_artist_draft"))
+    check("an unrecognised tier refuses WITHOUT calling it ARTIST work",
+          (bool(_unk), "ARTIST" in _unk), (True, False))
     check("oracle answers + T2 proceeds, no refusal",
           protected_anims("zz_probe", _evidence=some_, _tier="T2"), ["cast", "idle"])
     check("a LEGACY job survives an empty oracle",
