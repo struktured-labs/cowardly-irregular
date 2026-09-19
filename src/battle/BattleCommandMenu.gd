@@ -537,16 +537,16 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	return items
 
 
-## " [KILL]" when the estimated hit meets or exceeds the target's current HP —
-## the highest-value targeting cue (finish this enemy). Empty otherwise. The
-## estimate is approximate (note the "~"), but est >= HP is the honest lethal
-## signal; immune targets estimate 0 dmg so they never earn the tag.
 ## Formula Sight — the Scriptweaver's `show_formulas` meta_effect. The row keeps its "~N dmg"; the
 ## tooltip under it shows the arithmetic BattleManager just did to get that N.
 func _sees_formulas(combatant: Combatant) -> bool:
 	return PassiveSystem.has_meta_effect(combatant, "show_formulas")
 
 
+## " [KILL]" when the estimated hit meets or exceeds the target's current HP —
+## the highest-value targeting cue (finish this enemy). Empty otherwise. The
+## estimate is approximate (note the "~"), but est >= HP is the honest lethal
+## signal; immune targets estimate 0 dmg so they never earn the tag.
 func _lethal_tag(est_dmg: int, current_hp: int) -> String:
 	return " [KILL]" if current_hp > 0 and est_dmg >= current_hp else ""
 
