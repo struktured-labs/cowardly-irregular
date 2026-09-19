@@ -137,7 +137,25 @@ _LOCK_PRE=0; [ -e "$_LOCK" ] && _LOCK_PRE=1
 # the expected path"; the unsandboxed control emits no such line. Sandbox the PREWARM,
 # never the EXPORT.
 mkdir -p tmp/prewarm_xdg
-XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
+# ⛔ BOUNDED via tools/bounded_godot.sh. A wedge here is not a RED, it is NO VERDICT, and it
+# never ends. The runner owns the log so its verdict lands OUTSIDE the caller's redirection,
+# and it speaks on the passing arm too — see that file's header for the measurements (uutils
+# timeout cannot deliver SIGKILL; the verdict is ELAPSED, never the exit code).
+#
+# ⚠️ THE `|| true` SURVIVES AND THE WEDGE DOES NOT, AND THAT IS THE WHOLE POINT. This prewarm is
+# deliberately tolerant of a FAILED import — gate 1 re-imports and judges. It was never tolerant
+# of one that does not return; it simply had no way to tell the difference, because a hang has
+# no exit code to forgive. It also threw its log away, so there was nothing to read afterwards.
+_PREWARM_EC=0
+XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" ./tools/bounded_godot.sh \
+    --label "web prewarm import" --budget "${DEPLOY_IMPORT_BUDGET:-1800}" --log tmp/web_prewarm.log -- \
+    godot --headless --audio-driver Dummy --import --quit || _PREWARM_EC=$?
+if [ "$_PREWARM_EC" -eq 124 ]; then
+  echo "[deploy] BLOCKED: no verdict on the prewarm import (see above) — it never returned." >&2
+  echo "        A failed prewarm is forgiven here; one that does not finish cannot be." >&2
+  echo "        Raise it with DEPLOY_IMPORT_BUDGET=<seconds> if the box is genuinely slow." >&2
+  exit 2
+fi
 if [ "$_LOCK_PRE" -eq 0 ] && [ -e "$_LOCK" ]; then
   rm -f "$_LOCK"
   echo "[deploy] gate 0: removed the .recovery_mode_lock this prewarm created (none before)"
@@ -447,8 +465,19 @@ else
   # and left this path with nothing to audit. make_web_stage.sh:275 runs check_pck_complete.py
   # against tmp/stage_export.log on the DEFAULT path, so a staged publish proves its payload is
   # whole — and this opt-out branch, which also publishes, proved nothing.
-  XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --export-release "Web" builds/web/index.html \
-      > tmp/web_export.log 2>&1
+  # ⛔ BOUNDED via tools/bounded_godot.sh. A wedge here is not a RED, it is NO VERDICT, and it
+  # never ends. The runner owns the log so its verdict lands OUTSIDE the caller's redirection,
+  # and it speaks on the passing arm too — see that file's header for the measurements (uutils
+  # timeout cannot deliver SIGKILL; the verdict is ELAPSED, never the exit code).
+  _WEB_EXPORT_EC=0
+  XDG_DATA_HOME="$_EXPORT_XDG" ./tools/bounded_godot.sh \
+      --label "web export" --budget "${DEPLOY_EXPORT_BUDGET:-1800}" --log tmp/web_export.log -- \
+      godot --headless --export-release "Web" builds/web/index.html || _WEB_EXPORT_EC=$?
+  if [ "$_WEB_EXPORT_EC" -eq 124 ]; then
+    echo "[deploy] BLOCKED: no verdict on the web export (see above) — builds/web may be PARTIAL." >&2
+    echo "        Raise it with DEPLOY_EXPORT_BUDGET=<seconds> if the box is genuinely slow." >&2
+    exit 2
+  fi
   tail -3 tmp/web_export.log
   # ⛔ AND AUDIT IT, for the reason check_pck_complete.py's own header gives about THIS chain:
   # "make_web_stage.sh gates the pck on size, and only in one direction ... A build that LOST

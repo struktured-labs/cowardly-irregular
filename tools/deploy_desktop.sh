@@ -174,8 +174,18 @@ echo "[${PLAT}] gate 0/4: import prewarm"
 # prewarm nothing; deploy_web.sh:140 has done exactly this since 2026-09-07 with the arms to
 # prove the prewarm's purpose survives.
 mkdir -p tmp/prewarm_xdg
-XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" godot --headless --audio-driver Dummy --import --quit > tmp/${PLAT}_import.log 2>&1 &
+# ⛔ BOUNDED via tools/bounded_godot.sh. A wedge here is not a RED, it is NO VERDICT, and it
+# never ends. The runner owns the log so its verdict lands OUTSIDE the caller's redirection,
+# and it speaks on the passing arm too — see that file's header for the measurements (uutils
+# timeout cannot deliver SIGKILL; the verdict is ELAPSED, never the exit code).
+XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" ./tools/bounded_godot.sh \
+    --label "${PLAT} import" --budget "${DEPLOY_IMPORT_BUDGET:-1800}" --log "tmp/${PLAT}_import.log" -- \
+    godot --headless --audio-driver Dummy --import --quit &
 EC=0; wait $! || EC=$?
+test $EC -ne 124 || { echo "[${PLAT}] BLOCKED: no verdict on the import (see above). Nothing was judged." >&2
+                      echo "        Raise it with DEPLOY_IMPORT_BUDGET=<seconds> if the box is genuinely slow." >&2
+                      echo "        The import cache is now PARTIAL — the next run re-imports, but do not" >&2
+                      echo "        treat this tree as gated until one finishes." >&2; exit 1; }
 test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: asset import failed — see tmp/${PLAT}_import.log" >&2; exit 1; }
 
 # ── gate 0b: protect the player's exported scripts ──────────────────────────
@@ -557,8 +567,16 @@ echo "[${PLAT}] gate 2/4: export (tree unchanged since gate 1)"
 _EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
     echo "[${PLAT}] BLOCKED: could not build the export sandbox — see above." >&2
     exit 2; }
-XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --audio-driver Dummy --export-release "$PRESET" "$BIN" > tmp/${PLAT}_export.log 2>&1 &
+# ⛔ BOUNDED via tools/bounded_godot.sh. A wedge here is not a RED, it is NO VERDICT, and it
+# never ends. The runner owns the log so its verdict lands OUTSIDE the caller's redirection,
+# and it speaks on the passing arm too — see that file's header for the measurements (uutils
+# timeout cannot deliver SIGKILL; the verdict is ELAPSED, never the exit code).
+XDG_DATA_HOME="$_EXPORT_XDG" ./tools/bounded_godot.sh \
+    --label "${PLAT} export" --budget "${DEPLOY_EXPORT_BUDGET:-1800}" --log "tmp/${PLAT}_export.log" -- \
+    godot --headless --audio-driver Dummy --export-release "$PRESET" "$BIN" &
 EC=0; wait $! || EC=$?
+test $EC -ne 124 || { echo "[${PLAT}] BLOCKED: no verdict on the export (see above). ${BIN} may be PARTIAL." >&2
+                      echo "        Raise it with DEPLOY_EXPORT_BUDGET=<seconds> if the box is genuinely slow." >&2; exit 2; }
 test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: export failed — see tmp/${PLAT}_export.log" >&2; exit 2; }
 [ -s "$BIN" ] || { echo "[${PLAT}] BLOCKED: export reported success but produced no binary" >&2; exit 2; }
 echo "[${PLAT}] binary: $(( $(stat -c%s "$BIN") / 1048576 )) MiB"
