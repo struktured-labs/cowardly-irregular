@@ -59,13 +59,42 @@ func _get_music_area_id() -> String:
 	return "abstract_dungeon"
 
 
+## ⛔ HANDS BACK ONLY WHAT IT TOOK. `_exit_tree` used to write `true` unconditionally, so leaving
+## this room re-enabled encounters for a caller that had asked for them OFF — the render smoke
+## disables them at startup and this handed them back mid-run (cowir-deploy/cowir-main, 2026-09-18).
+## `_exit_tree` has no knowledge of who disabled them, so it must not answer for them.
+##
+## 🔑 THE CLAIM IS GATED ON "THEY ARE CURRENTLY ON", WHICH MAKES THE LITERAL CORRECT BY
+## CONSTRUCTION AND NEEDS NO SNAPSHOT: `_suppressed_encounters` can only be true if they WERE on,
+## so `true` is the right value for every state that can reach the restore. cowir-music's
+## `_hidden_by_submenu` shape — membership IS the capture — simplified from my own two-member
+## version by cowir-battle.
+##
+## ⚠️ IT ALSO COVERS RE-ENTRY FOR FREE, WHICH A NAIVE SAVE/RESTORE GETS WRONG IN THE OPPOSITE
+## DIRECTION: a second `_ready` without an intervening `_exit_tree` finds them already false, does
+## not claim, and cannot overwrite anything. An ungated `_prev = encounters_enabled` would store
+## the ALREADY-FALSE value and disable encounters permanently — silent, and worse than this bug.
+##
+## 📌 LATENT TODAY, STATED SO IT IS NOT READ AS LIVE: the smoke is the only other writer, so
+## nothing in normal play disables encounters for this room to re-enable. It goes live the day a
+## cutscene, a scripted sequence, or another smoke leg does.
+var _suppressed_encounters: bool = false
+
+
 func _ready() -> void:
 	super._ready()
 	# Nothing random happens in this room.
-	if EncounterSystem:
+	if EncounterSystem and EncounterSystem.encounters_enabled:
 		EncounterSystem.encounters_enabled = false
+		_suppressed_encounters = true
 
 
+## ⚠️ NO "DID SOMEBODY RE-ENABLE THEM WHILE WE WERE HERE" CHECK, AND THAT IS MEASURED. I wrote one
+## — `and not EncounterSystem.encounters_enabled` — and mutating it away red NOTHING: if they were
+## re-enabled inside, they are already `true`, so the write is a no-op. The clause could not change
+## an outcome, and the arm I wrote for it could not fail.
 func _exit_tree() -> void:
-	if EncounterSystem:
+	## Only hand them back if we took them.
+	if EncounterSystem and _suppressed_encounters:
 		EncounterSystem.encounters_enabled = true
+	_suppressed_encounters = false
