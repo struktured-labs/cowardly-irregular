@@ -8,7 +8,8 @@ extends GutTest
 ## Measured: MAX_RULES is enforced at exactly two sites, `_add_or_row` and `_insert_row_after`,
 ## both manual adds. The executor's loop, every editor render, the COWIR1 codec and save all bound
 ## on `rules.size()`, so a 33-rule script installs, renders, navigates and runs. Nothing downstream
-## assumes 32 — the two other `32`s in those files are layout pixels.
+## assumes 32 — the four other bare `32`s are all layout pixels (`Vector2` components at :407,
+## :521, :528, :1085), and all four are in the EDITOR; `AutobattleSystem` contains no `32` at all.
 ##
 ## Notes at the const and at `set_character_script` record that decision. A COMMENT CANNOT GO RED,
 ## which is the whole reason this file exists: it fails if anyone clamps the choke point.
