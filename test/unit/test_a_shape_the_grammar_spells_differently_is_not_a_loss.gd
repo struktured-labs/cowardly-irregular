@@ -110,7 +110,7 @@ func test_an_aggregate_suffix_is_stripped_when_the_head_is_a_type() -> void:
 	var notes: Array = _rc()._normalise_autogrind_conditions(rules, _sys())
 	assert_eq(_types(rules), ["corruption"], "the head is the condition")
 	assert_eq(_errors(rules), [], "and it validates")
-	assert_gt(notes.size(), 0, "and it is reported")
+	assert_gt(notes.size(), 0, "and the aggregate suffix repair is reported")
 
 
 func test_the_party_swap_claims_member_hp_min_before_the_strip_can() -> void:
@@ -211,7 +211,7 @@ func test_a_type_written_as_the_key_is_read_as_the_type() -> void:
 	var notes: Array = _rc()._normalise_autogrind_conditions(rules, _sys())
 	assert_eq(_types(rules), ["always"], "the key names the condition")
 	assert_eq(_errors(rules), [], "and it validates")
-	assert_gt(notes.size(), 0, "and it is reported")
+	assert_gt(notes.size(), 0, "and the type-as-key repair is reported")
 
 
 func test_only_a_lone_key_that_is_a_live_type_is_read_that_way() -> void:
@@ -234,7 +234,7 @@ func test_an_unusable_op_on_a_status_condition_is_dropped() -> void:
 	assert_false(rules[0]["conditions"][0].has("op"), "the op it cannot use is gone")
 	assert_eq(rules[0]["conditions"][0]["value"], "poison", "and the status it asked for is kept")
 	assert_eq(_errors(rules), [], "so the rule validates")
-	assert_gt(notes.size(), 0, "and it is reported")
+	assert_gt(notes.size(), 0, "and the unusable op repair is reported")
 
 
 func test_a_valid_op_is_kept_and_a_numeric_conditions_bad_op_is_not_touched() -> void:
