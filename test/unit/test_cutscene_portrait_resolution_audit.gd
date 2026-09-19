@@ -13,9 +13,9 @@ extends GutTest
 
 const CUTSCENE_DIALOGUE := "res://src/cutscene/CutsceneDialogue.gd"
 
-## Expression suffixes are stripped by _show_entry (CutsceneDialogue:676) via
-## EXPRESSION_TINTS.keys(), then applied as a modulate tint — NOT by
-## _create_portrait, which the old comment here claimed.
+## Expression suffixes are stripped by CutsceneDialogue's _show_current_line via
+## EXPRESSION_TINTS.keys(), then applied as a modulate tint. Its _create_portrait
+## ALSO strips now, as a fallback rung added 2026-09-12 — both paths are live.
 ##
 ## This audit used to hardcode its own copy of that list. Two hand-maintained
 ## sources for one contract, agreeing today only by luck: drop an expression
@@ -146,10 +146,11 @@ func test_every_cutscene_portrait_resolves() -> void:
 ## correction has to live where the claim did: I first reported
 ## world1_prologue's lead_job/bard case as a live defect, on the grounds that
 ## `portrait: "bard_happy"` matched no registry. It is NOT a defect.
-## _show_entry (CutsceneDialogue:676) strips expression suffixes via
+## CutsceneDialogue's _show_current_line strips expression suffixes via
 ## EXPRESSION_TINTS and applies the emotion as a modulate tint, then resolves
 ## the base key. I had read _create_portrait, found no stripping there, and
-## concluded there was none anywhere — the stripping is in the CALLER.
+## concluded there was none anywhere — the stripping was in the CALLER alone.
+## It is in BOTH since 2026-09-12, when _create_portrait gained a fallback rung.
 ##
 ## test_cutscene_dialogue_theme_registration_audit, a guard in this same lane,
 ## already documented exactly this ("that's the emotion feature working, not

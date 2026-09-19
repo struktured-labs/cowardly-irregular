@@ -2,7 +2,7 @@ extends GutTest
 
 ## msg 2724 cowir-sprites' proc-gen audit surfaced 5 finished battle-terrain
 ## backdrops in assets/sprites/backgrounds/ without BACKDROP_PATHS entries
-## in BattleBackground.gd:240 — battles on COAST/DESERT/ICE/SWAMP/VOLCANIC
+## in BattleBackground's BACKDROP_PATHS — battles on COAST/DESERT/ICE/SWAMP/VOLCANIC
 ## rendered procedural despite the finished PNGs sitting on disk.
 ##
 ## This cycle wired all 5. This ratchet catches the NEXT orphan of the

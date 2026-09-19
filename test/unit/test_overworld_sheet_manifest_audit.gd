@@ -72,7 +72,7 @@ const FLAT_LAYOUT_SECTIONS := {
 ## (cowir-cutscenes). So the claim is pinned by an arm below rather than left as a sentence.
 ##
 ## The game resolves overworld monster art by COMPOSED PATH:
-##   RoamingMonster:147 / MasteriteEncounter:113   "res://assets/sprites/monsters/overworld/%s.png" % monster_id
+##   RoamingMonster / MasteriteEncounter   "res://assets/sprites/monsters/overworld/%s.png" % monster_id
 ## So the audit above proves provenance, NOT reachability, and a reader is entitled to assume it
 ## proves both. This arm checks the property that actually decides whether a player sees the art:
 ## the FILENAME must match a monster id, because that is the whole contract. 85 of 85 reachable at
