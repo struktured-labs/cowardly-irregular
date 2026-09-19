@@ -32,6 +32,14 @@ extends GutTest
 
 const COMPOSER_PATH := "res://src/llm/RuleComposer.gd"
 
+## EVERY table that names a type id, not the two that were obvious. TARGET_TYPES belongs
+## here because the model writes target names INTO the type field — that is the whole
+## reason _drop_target_shaped_conditions exists. Omitting it made a legitimately
+## autobattle-specific pass classify as a model artifact, which would red this guard on a
+## correct change. A registry cannot report a table it never opens (cowir-autogrind).
+const AUTOBATTLE_TABLES := ["CONDITION_TYPES", "ACTION_TYPES", "TARGET_TYPES"]
+const AUTOGRIND_TABLES := ["PARTY_CONDITION_TYPES", "AUTOGRIND_ACTION_TYPES"]
+
 var _rc = null
 var _ab = null
 var _ag = null
@@ -169,10 +177,21 @@ func test_the_derivation_is_not_empty_in_any_of_its_four_parts() -> void:
 	## sets, so an empty derivation scores GREEN having checked nothing. The first version
 	## of this file did exactly that — its extractor missed the const-array form, so the
 	## one pass it exists to watch derived zero filter types and the file passed.
-	var ab: Dictionary = _vocabulary(_ab, ["CONDITION_TYPES", "ACTION_TYPES"])
-	var ag: Dictionary = _vocabulary(_ag, ["PARTY_CONDITION_TYPES", "AUTOGRIND_ACTION_TYPES"])
+	var ab: Dictionary = _vocabulary(_ab, AUTOBATTLE_TABLES)
+	var ag: Dictionary = _vocabulary(_ag, AUTOGRIND_TABLES)
 	assert_gt(ab.size(), 0, "derived ZERO autobattle types — a const table was renamed")
 	assert_gt(ag.size(), 0, "derived ZERO autogrind types — a const table was renamed")
+	## EVERY NAMED TABLE MUST ACTUALLY OPEN. A renamed table silently shrinks the
+	## vocabulary, and a shrunken vocabulary makes grammar-specific passes look like
+	## model artifacts — a FALSE RED on correct code. The union being non-empty cannot
+	## see that; only a per-table check can.
+	for pair in [[_ab, AUTOBATTLE_TABLES], [_ag, AUTOGRIND_TABLES]]:
+		for tname in (pair[1] as Array):
+			var one: Dictionary = _vocabulary(pair[0], [tname])
+			assert_gt(one.size(), 0,
+				("the const table %s contributed ZERO keys — renamed or moved. The guard "
+				+ "below would then classify its vocabulary as model artifacts and red a "
+				+ "correct change.") % tname)
 	var roots: Dictionary = _gate_roots()
 	assert_gt((roots["autobattle"] as Dictionary).size(), 0, "no autobattle-gated passes found")
 	assert_gt((roots["autogrind"] as Dictionary).size(), 0, "no autogrind-gated passes found")
@@ -188,8 +207,8 @@ func test_every_model_artifact_repair_reaches_both_domains() -> void:
 	## THE DEFECT CLASS, and it shipped twice. A pass whose filter types are in NEITHER
 	## grammar repairs something the MODEL invented, not something a grammar defines — so
 	## it is domain-independent, and reaching only one domain leaves the other holding it.
-	var ab: Dictionary = _vocabulary(_ab, ["CONDITION_TYPES", "ACTION_TYPES"])
-	var ag: Dictionary = _vocabulary(_ag, ["PARTY_CONDITION_TYPES", "AUTOGRIND_ACTION_TYPES"])
+	var ab: Dictionary = _vocabulary(_ab, AUTOBATTLE_TABLES)
+	var ag: Dictionary = _vocabulary(_ag, AUTOGRIND_TABLES)
 	var roots: Dictionary = _gate_roots()
 	var reach_ab: Dictionary = _reachable(roots["autobattle"])
 	var reach_ag: Dictionary = _reachable(roots["autogrind"])
@@ -227,8 +246,8 @@ func test_a_gated_pass_never_filters_only_the_other_domains_vocabulary() -> void
 	## The other direction: a pass gated to one domain that only matches the OTHER domain's
 	## vocabulary can never fire at all — dead code that reads as coverage.
 	var vocab: Dictionary = {
-		"autobattle": _vocabulary(_ab, ["CONDITION_TYPES", "ACTION_TYPES"]),
-		"autogrind": _vocabulary(_ag, ["PARTY_CONDITION_TYPES", "AUTOGRIND_ACTION_TYPES"]),
+		"autobattle": _vocabulary(_ab, AUTOBATTLE_TABLES),
+		"autogrind": _vocabulary(_ag, AUTOGRIND_TABLES),
 	}
 	var roots: Dictionary = _gate_roots()
 	var wrong: Array = []

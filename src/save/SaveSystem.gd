@@ -889,7 +889,17 @@ func _write_save_file(slot: int, data: Dictionary) -> bool:
 		return false
 
 	file.store_string(json_string)
+	## ⛔ STAGING DOES NOT COVER A SHORT WRITE. `rename` is METADATA and SUCCEEDS on a full disk,
+	## so a truncated payload is moved over the previous good save and this returns true.
+	## The open-guard above names "disk full" and cannot see it: creating an empty file costs no
+	## blocks — the failure lands here, at store_string. Checked BEFORE the rename so a partial
+	## save never reaches the slot. Same idiom as the seven other staged writers in src/.
+	var werr: int = file.get_error()
 	file.close()
+	if werr != OK:
+		push_warning("[SaveSystem] _write_save_file: write to '%s' FAILED (error: %d) — disk full or quota. The previous save in slot %d is intact and this save did not happen." % [staged, werr, slot])
+		DirAccess.remove_absolute(staged)
+		return false
 
 	var err := DirAccess.rename_absolute(staged, file_path)
 	if err != OK:
@@ -1059,7 +1069,16 @@ func save_settings() -> void:
 		push_warning("[SaveSystem] save_settings: could not open '%s' for write (error: %s) — settings NOT saved." % [staged, FileAccess.get_open_error()])
 		return
 	file.store_string(json_string)
+	## Same short-write hole as _write_save_file: the rename succeeds on a full disk and moves a
+	## truncated settings.json into place. Load-bearing here for the reason the removal below is —
+	## this file holds the BYOK API key, and a half-written one is what load_settings' docstring
+	## already records seeing in the wild.
+	var werr: int = file.get_error()
 	file.close()
+	if werr != OK:
+		push_warning("[SaveSystem] save_settings: write to '%s' FAILED (error: %d) — disk full or quota. The previous settings, including any BYOK key, are intact and this save did not happen." % [staged, werr])
+		DirAccess.remove_absolute(staged)
+		return
 	var err := DirAccess.rename_absolute(staged, SETTINGS_PATH)
 	if err != OK:
 		## The removal is LOAD-BEARING here and merely tidy in _write_save_file, which is the one
