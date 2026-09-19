@@ -49,9 +49,19 @@ def threads(pid):
         # after comm: state=0 ppid=1 pgrp=2 session=3 tty=4 tpgid=5 flags=6
         #             minflt=7 cminflt=8 majflt=9 cmajflt=10 utime=11 stime=12
         try:
-            out[tid] = (comm, int(fields[11]) + int(fields[12]))
+            ticks = int(fields[11]) + int(fields[12])
         except (IndexError, ValueError):
             continue
+        state = fields[0] if fields else "?"
+        # wchan names the kernel function a sleeping thread is parked in. It is what
+        # separates "blocked on a lock" from "spinning in userspace", and it is
+        # world-readable — cowir-sprites' column, from their independent build.
+        try:
+            with open(f"/proc/{pid}/task/{tid}/wchan") as fh:
+                wchan = fh.read().strip() or "-"
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            wchan = "?"
+        out[tid] = (comm, ticks, state, wchan)
     return out
 
 
@@ -73,18 +83,25 @@ def main():
         return 2
 
     rows = []
-    for tid, (comm, end) in second.items():
+    for tid, (comm, end, state, wchan) in second.items():
         if tid not in first:
             continue
         delta = end - first[tid][1]
-        rows.append((delta / CLK / window * 100.0, tid, comm))
+        rows.append((delta / CLK / window * 100.0, tid, comm, state, wchan))
     rows.sort(reverse=True)
 
     print(f"pid {pid} · {len(second)} threads · {window:g}s window")
-    print(f"{'%CPU':>7}  {'tid':>8}  comm")
-    for pct, tid, comm in rows[:12]:
+    print(f"{'%CPU':>7}  {'tid':>8}  {'S':1}  {'comm':22}  wchan")
+    for pct, tid, comm, state, wchan in rows[:12]:
         mark = "  <-- SPINNING" if pct > 80 else ""
-        print(f"{pct:7.1f}  {tid:>8}  {comm}{mark}")
+        print(f"{pct:7.1f}  {tid:>8}  {state:1}  {comm:22}  {wchan}{mark}")
+
+    main_row = next((r for r in rows if r[1] == str(pid)), None)
+    if main_row is not None:
+        blocked = main_row[3] != "R" and main_row[4] not in ("-", "?")
+        print(f"\nmain thread {main_row[1]}: {main_row[0]:.1f}% "
+              f"state={main_row[3]} wchan={main_row[4]}"
+              + ("   <-- BLOCKED (not spinning; waiting on something)" if blocked else ""))
 
     busy = [r for r in rows if r[0] > 80]
     total = sum(r[0] for r in rows)
