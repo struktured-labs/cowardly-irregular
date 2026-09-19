@@ -26,8 +26,9 @@ extends GutTest
 ## "just for debugging" — and a masked key still leaks length and both ends.
 ##
 ## ⚠️ THE CORPUS FOLLOWS THE VALUE, NOT ONE SPELLING. The secret is `llm_custom_api_key`
-## in GameState and plain `api_key` from LLMService's BYOK apply onward, and the file that turns it
-## into `Authorization: Bearer ...` names the first spelling nowhere. Keyed to KEY_FIELD
+## in GameState and plain `api_key` from `LLMService.apply_byok_config` onward — it assigns
+## `http.api_key` from the GameState field — and the file that turns it into
+## `Authorization: Bearer ...` names the first spelling nowhere. Keyed to KEY_FIELD
 ## alone the container arm could not see HTTPBackend at all — measured by planting a
 ## `print("%s" % [headers])` there: caught now, invisible before. The interpolation arm was
 ## never exposed, because `_lane_files()` covers src/llm by DIRECTORY; only the container
