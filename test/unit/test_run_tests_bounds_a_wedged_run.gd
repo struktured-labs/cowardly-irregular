@@ -44,9 +44,15 @@ func _probe_with_base(replacement: String) -> String:
 	return path
 
 
+## ⛔ NO TEST-FILE ARGUMENT, DELIBERATELY. This used to pass a real suite file by name, and that
+## coupled these arms to a file this lane does not own: when the duck-latch guard was quarantined
+## to test/isolated an hour later, run_tests.sh correctly refused with "no such test file" (EC=2)
+## and the timeout arm was never reached — a RED gate whose cause was my fixture, not my subject.
+## The no-argument form runs the full-suite path, whose BASE is the sleeper we patched in, so it
+## exercises the bound while depending on no particular file existing anywhere.
 func _run(path: String, env: String) -> Dictionary:
 	var out: Array = []
-	var code := OS.execute("bash", ["-c", "%s bash '%s' the_duck_latch_waits_for_the_bus" % [env, path]], out, true)
+	var code := OS.execute("bash", ["-c", "%s bash '%s'" % [env, path]], out, true)
 	return {"code": code, "text": "\n".join(out)}
 
 
@@ -76,11 +82,16 @@ func test_a_wedge_is_not_reported_as_nothing_ran() -> void:
 
 
 func test_a_runner_that_ignores_term_is_still_bounded() -> void:
-	# ⛔ THE ARM THAT SAMPLES THE ACTUAL WEDGE. `sleep` DIES on TERM, so the arms above exercise the
-	# COOPERATIVE case and the timeout exits 125. A wedge is by definition the process that does not
-	# answer TERM: --kill-after then SIGKILLs it and the code is 137, a number no handler written
-	# from the GNU man page recognises. Three lanes measured the flag; only one measured this case.
-	# It must still normalise to 124, which is the whole point of not deciding on the code.
+	# ⛔ THE ARM THAT SAMPLES THE UNCOOPERATIVE CASE. `sleep` DIES on TERM, so the arms above only
+	# exercise the cooperative one. ⚠️ AND BE HONEST ABOUT WHAT THIS PROVES: under plain `timeout`
+	# a TERM-ignoring child is NOT killed — measured, `timeout 1` against a child sleeping 6s
+	# returns EC=124 at elapsed 6008ms, i.e. it WAITS for the child. `--kill-after` does not help
+	# either, because this binary cannot deliver SIGKILL at all. So on this box such a child is
+	# unbounded in wall-clock whichever form you use.
+	# What this arm therefore pins is the REPORTING, which is the part we control: however long it
+	# took, a run that reached its budget is named WEDGED and normalised to 124 rather than falling
+	# through to a vacuity 3. That is exactly why the decision is elapsed and not the exit code.
+	# It does not bite us: godot has the DEFAULT SIGTERM disposition, so TERM reaps it at the budget.
 	var path := _probe_with_base("bash -c 'trap \"\" TERM; sleep 30'")
 	var r := _run(path, "RUN_TESTS_TIMEOUT=1")
 	assert_eq(int(r["code"]), 124,
