@@ -149,11 +149,6 @@ static func overworld_player_rows(job_id: String) -> Dictionary:
 	return overworld_walk_rows("overworld_player_sheets", job_id)
 
 
-## The same question for any overworld section — players, npcs, monsters all declare walk rows.
-##
-## ⛔ ONE OWNER, NOT ONE PER SECTION. A third near-identical copy is how this fleet ended up
-## measuring 18 redundant private comment-strippers in a day; the sections differ by KEY, not by
-## rule.
 ## The loaded store for an overworld section, or {} for a name nothing loads.
 ##
 ## Explicit rather than reflective: a `get(section)` over the raw manifest would silently accept
@@ -172,6 +167,11 @@ static func _manifest_section(section: String) -> Dictionary:
 	return {}
 
 
+## The same question for any overworld section — players, npcs, monsters all declare walk rows.
+##
+## ⛔ ONE OWNER, NOT ONE PER SECTION. A third near-identical copy is how this fleet ended up
+## measuring 18 redundant private comment-strippers in a day; the sections differ by KEY, not by
+## rule.
 static func overworld_walk_rows(section: String, id: String) -> Dictionary:
 	_load_manifest()
 	var convention := {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}
@@ -522,17 +522,6 @@ static func _normalize_suffix(audio_suffix: String) -> String:
 	return audio_suffix if audio_suffix in WORLD_SUFFIXES else ""
 
 
-## A world costume is a RESKIN, not a re-timing. `fps` is authored per SHEET, so a dressed
-## sheet with fewer frames than the artist's base runs the same animation in less time:
-## measured 2026-09-16, the cleric's 7-frame idle breathes once every 0.875 s in world 1 and
-## its 2-frame costume every 0.250 s in worlds 2-6 — the same character, 3.5x faster.
-##
-## It is not only cosmetic. Action sheets play once and BattleAnimator sequences combat on
-## `animation_finished`, so a dressed attack with fewer frames would finish early and move the
-## beat a fight lands on. Only idles are dressed today; this keeps the seam honest either way.
-##
-## Returns the base fps unchanged whenever there is nothing to match against — an undressed
-## sheet, an equal frame count, or a base sheet that is not on disk.
 ## SpriteFrames.new() ships with a "default" animation, so a NAME count is always at least 1 and
 ## counts a pose nobody authored. Every caller wants animations that HAVE FRAMES; this is the owner.
 static func usable_animation_count(sf: SpriteFrames) -> int:
@@ -556,6 +545,17 @@ static func retimed_fps(base_fps: float, frames: int, base_frames: int) -> float
 	return base_fps * float(frames) / float(base_frames)
 
 
+## A world costume is a RESKIN, not a re-timing. `fps` is authored per SHEET, so a dressed
+## sheet with fewer frames than the artist's base runs the same animation in less time:
+## measured 2026-09-16, the cleric's 7-frame idle breathes once every 0.875 s in world 1 and
+## its 2-frame costume every 0.250 s in worlds 2-6 — the same character, 3.5x faster.
+##
+## It is not only cosmetic. Action sheets play once and BattleAnimator sequences combat on
+## `animation_finished`, so a dressed attack with fewer frames would finish early and move the
+## beat a fight lands on. Only idles are dressed today; this keeps the seam honest either way.
+##
+## Returns the base fps unchanged whenever there is nothing to match against — an undressed
+## sheet, an equal frame count, or a base sheet that is not on disk.
 static func dressed_fps(base_fps: float, sheet_path: String, base_sheet: String, frames: int, frame_width: int) -> float:
 	if sheet_path == base_sheet or frames <= 0 or frame_width <= 0:
 		return base_fps
