@@ -8258,7 +8258,8 @@ func _build_boss_intent_context(
 		if not (entry_dict is Dictionary):
 			continue
 		ctx.push_recent({
-			"kind":       "party_action",
+			# The action's own type — the prompt's only discriminating tag.
+			"kind":       str(entry_dict.get("action_type", "party_action")),
 			"actor":      str(entry_dict.get("character_id", "?")),
 			"ability_id": str(entry_dict.get("ability_id", "")),
 			"target":     str(entry_dict.get("target_type", "")),
