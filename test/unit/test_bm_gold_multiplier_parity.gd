@@ -1,8 +1,8 @@
 extends GutTest
 
 ## Cadence #22 — BattleManager live-battle gold path applies
-## game_constants["gold_multiplier"] to match HBR:813 + GameLoop
-## _on_autogrind_battle_ended:5075. Pre-fix a Scriptweaver-set
+## game_constants["gold_multiplier"] to match HeadlessBattleResolver's _build_results
+## and GameLoop's _on_autogrind_battle_ended. Pre-fix a Scriptweaver-set
 ## gold_multiplier of 2.0 doubled autogrind gold but had ZERO effect on
 ## live regular battles — violates the no-hidden-yield-tax pillar
 ## cowir-main highlighted in msg 2744.
@@ -35,8 +35,9 @@ func test_gold_block_reads_game_constants_multiplier() -> void:
 
 
 func test_gold_block_applies_defensive_clamp() -> void:
-	# The clamp must be [0.1, 10.0] to match HBR:811, GameLoop:5060, and
-	# the exp_multiplier consumer at BM:839 — the three-way parity band
+	# The clamp must be [0.1, 10.0] to match _build_results in HeadlessBattleResolver,
+	# _on_autogrind_battle_ended in GameLoop, and the exp_multiplier consumer in
+	# BattleManager's end_battle — the three-way parity band
 	# tick 341 established.
 	var body: String = _get_gold_block()
 	assert_true(body.contains("clampf(") and body.contains("0.1, 10.0"),
@@ -61,7 +62,7 @@ func test_defensive_gate_on_missing_gamestate() -> void:
 	# Pattern from tick 338/341: guard `if GameState and "game_constants"
 	# in GameState:` so bare-instance tests without autoloads don't crash.
 	# Confirms the multiplier read is behind the correct defensive gate,
-	# same shape as the exp_multiplier consumer at BM:837.
+	# same shape as the exp_multiplier consumer in BattleManager's end_battle.
 	var body: String = _get_gold_block()
 	assert_true(body.contains("if GameState and \"game_constants\" in GameState"),
 		"gold_multiplier read must be gated on GameState existence + game_constants presence — same defensive pattern as the exp_multiplier consumer, else instance-tests crash")
