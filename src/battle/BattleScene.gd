@@ -2824,6 +2824,14 @@ func _on_bide_pressed() -> void:
 	_update_ui()
 
 
+## ⛔ ORPHANED, AND IT LOOKS EXACTLY LIKE THE RECEIVER IT IS NOT. Nothing connects this: the only
+## `autobattle_toggled` in the project is AutobattleToggleUI's, which is never instantiated — and
+## that signal carries (character_id, enabled), so this one-arg handler could never have bound to
+## it. Its `BattleManager.toggle_autobattle` call is the sole writer of the LEGACY GLOBAL
+## `is_autobattle_enabled`, which is therefore permanently false (GameLoop:1742 resets it). That is
+## harmless only because every read of it is an OR term beside the live per-character flag
+## (BattleManager:1749 · :1752 · :8040 · :8280). Kept, not deleted: see
+## project_decisions_awaiting_struktured.md — wiring the panel needs an input binding.
 func _on_autobattle_toggled(enabled: bool) -> void:
 	"""Handle autobattle toggle"""
 	BattleManager.toggle_autobattle(enabled)
