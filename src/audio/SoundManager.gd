@@ -7312,6 +7312,8 @@ func play_piano_melody() -> void:
 	wav.data = data
 
 	# Use ability player for one-shot sounds
+	## Pitch is CONTENT here, and this is the third writer of a SHARED player: every ability file cue leaves pitch_scale jittered (_try_play_sfx_from_manifest), and only _play_sound resets it.
+	_ability_player.pitch_scale = 1.0
 	_ability_player.stream = wav
 	_ability_player.play()
 
