@@ -1,28 +1,21 @@
 extends GutTest
 
-## ⛔ QUARANTINED FROM test/unit BY cowir-main 2026-09-19 — THIS FILE WEDGES THE FULL SUITE.
-## NOT a judgement on the guard, which is correct and defends a real defect. It is quarantined
-## because it hangs the FLEET'S GATE, and a hang is worse than a red: it is not a verdict at all.
+## 📌 WAS QUARANTINED TO test/isolated 2026-09-19 AND IS BACK, ON MEASURED EVIDENCE.
+## It wedged the full suite in 2 of 3 fold gates (.461 hung 1h57m before anyone noticed; .462
+## passed clean with it included and told us NOTHING; .463 hung again, killed at 726s by the
+## then-new bound). Signature both times: one NON-MAIN thread at 100%, main thread BLOCKED.
+## @cowir-music's repair puts both graph mutations inside AudioServer.lock()/unlock() — the
+## tree's first such pair — with the arms byte-identical.
 ##
-## Measured, twice, identically:
-##   .461 gate  wedged here, 1h57m before a human noticed  (nothing bounded the run then)
-##   .462 gate  PASSED — 13,018 tests green, this file included
-##   .463 gate  wedged here again, killed at 726s by the new bound
-## => ~2 of 3 full-suite runs. In ISOLATION it is clean: 8/8 consecutive single-file runs.
+## RELEASED AFTER 3 CONSECUTIVE CLEAN FULL SUITES with this file in test/unit: 557s / 567s /
+## 562s, EC=0, 13,036 passing, no wedge. At the observed ~67% rate one clean run is ~1-in-3 by
+## luck — which is exactly what .462 was — and three is ~1-in-27. Its author refused to let it
+## out on the single pass, and that refusal is why the number means anything.
 ##
-## The signature is identical both times and rules out this file's own GDScript:
-##   one NON-MAIN thread at 100% CPU, main thread BLOCKED (S), log frozen, 31 threads.
-## GUT runs tests on main, and the fleet authors no threads at all (`Thread.new` /
-## `WorkerThreadPool` = 0 files; `HTTPRequest.use_threads` false; no threaded ResourceLoader).
-## So the spinner is engine-internal — consistent with main blocked on the AudioServer lock while
-## the audio thread spins, which is what `_strip_effects()` below provokes by removing every
-## effect from a LIVE bus mid-run. @cowir-music flagged runtime bus-graph mutation independently.
-## UNCONFIRMED: a per-thread backtrace needs ptrace privileges not taken during a live capture.
-##
-## TO BRING IT BACK: make the arms not mutate a live AudioServer bus graph — a scratch bus, or
-## AudioServer.lock()/unlock() around the strip — then move the file back to test/unit. Do NOT
-## simply move it back; two of three gates is not flake, it is a blocker with a 67% rate.
-## Owner: @cowir-music. Quarantine is reversible and nothing here was weakened.
+## ⚠️ THE MECHANISM WAS NEVER CONFIRMED. No per-thread backtrace (ptrace declined during a live
+## capture), and @cowir-sfx measured the bare strip on a SCRATCH bus in a clean process as safe,
+## so the trigger was never isolated to remove_bus_effect alone. This bounds RECURRENCE, not
+## cause. If the suite wedges here again, quarantine it and say so — the evidence is a rate.
 
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 
@@ -44,6 +37,9 @@ const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 ## @cowir-autogrind's `.422` shape, in audio: a mutation performed before the thing that authorises it.
 
 var _saved: Array = []
+## The send target MusicNight had before we made the duck bus a leaf. Captured, not assumed:
+## :1128 chooses MUSIC_DUCK_BUS or "Master" depending on whether the duck bus existed.
+var _saved_send: String = ""
 
 
 func before_each() -> void:
@@ -64,6 +60,14 @@ func _strip_effects() -> int:
 	if idx == -1:
 		return -1
 	_saved.clear()
+	## ⛔ MAKE IT A LEAF FIRST. MusicDuck is MID-CHAIN: _music_player outputs to MusicNight (:379),
+	## which sends INTO MusicDuck (:1128-1132). @cowir-sfx measured `remove_bus_effect` on a LEAF live
+	## bus as clean in 3s; this file strips one with an inbound send carrying live music. Redirecting
+	## that send for the duration reproduces the topology their probe validated.
+	var night_idx: int = AudioServer.get_bus_index(SoundManager.MUSIC_NIGHT_BUS)
+	if night_idx != -1:
+		_saved_send = str(AudioServer.get_bus_send(night_idx))
+		AudioServer.set_bus_send(night_idx, "Master")
 	AudioServer.lock()
 	while AudioServer.get_bus_effect_count(idx) > 0:
 		_saved.append(AudioServer.get_bus_effect(idx, 0))
@@ -72,16 +76,25 @@ func _strip_effects() -> int:
 	return idx
 
 
+## ⛔ THE SEND IS RESTORED UNCONDITIONALLY, BELOW NO EARLY RETURN. My first version restored it
+## inside the effects branch, under `if idx == -1 or _saved.is_empty(): return` — so a strip that
+## found an already-empty bus would leave MusicNight pointed at Master for every later file in the
+## process. That is this lane's own rule (a latch released below abortable work) in a teardown.
 func _restore_effects() -> void:
 	var idx: int = AudioServer.get_bus_index(SoundManager.MUSIC_DUCK_BUS)
-	if idx == -1 or _saved.is_empty():
-		return
-	AudioServer.lock()
-	for e in _saved:
-		AudioServer.add_bus_effect(idx, e)
-		AudioServer.set_bus_effect_enabled(idx, AudioServer.get_bus_effect_count(idx) - 1, true)
-	AudioServer.unlock()
+	if idx != -1 and not _saved.is_empty():
+		AudioServer.lock()
+		for e in _saved:
+			AudioServer.add_bus_effect(idx, e)
+			AudioServer.set_bus_effect_enabled(idx, AudioServer.get_bus_effect_count(idx) - 1, true)
+		AudioServer.unlock()
 	_saved.clear()
+	## Effects back BEFORE the send, so the chain is never re-pointed at an empty bus.
+	if _saved_send != "":
+		var night_idx: int = AudioServer.get_bus_index(SoundManager.MUSIC_NIGHT_BUS)
+		if night_idx != -1:
+			AudioServer.set_bus_send(night_idx, _saved_send)
+		_saved_send = ""
 
 
 func after_each() -> void:
@@ -129,3 +142,20 @@ func test_the_bus_still_carries_a_duck_after_the_failure() -> void:
 	SoundManager.duck_music_for_dialogue(true, holder)
 	assert_true(bool(SoundManager.is_music_ducked_for_dialogue()),
 		"after the bus came back, a duck request must take effect — a poisoned latch makes it a no-op forever")
+
+
+## ⛔ THE STRAND CATCHER. Declaration order is run order in GUT, so this runs last. The arms above
+## redirect MusicNight's send to make the duck bus a leaf; if that is ever left pointing at Master,
+## every later file in the process mixes music around the duck bus and nothing says so — the duck
+## simply stops being audible while `is_music_ducked_for_dialogue()` keeps returning true.
+func test_zz_the_night_bus_still_sends_into_the_duck_bus() -> void:
+	var night_idx: int = AudioServer.get_bus_index(SoundManager.MUSIC_NIGHT_BUS)
+	assert_gt(night_idx, -1, "SCOPE control: the night bus must exist for its send to mean anything")
+	if night_idx == -1:
+		return
+	var duck_idx: int = AudioServer.get_bus_index(SoundManager.MUSIC_DUCK_BUS)
+	assert_gt(duck_idx, -1, "SCOPE control: the duck bus must exist, or the send below cannot target it")
+	assert_eq(str(AudioServer.get_bus_send(night_idx)), SoundManager.MUSIC_DUCK_BUS,
+		"MusicNight is left sending to '%s' instead of %s — a redirect from this file was not restored, so music now bypasses the duck bus for every later test in the process" % [str(AudioServer.get_bus_send(night_idx)), SoundManager.MUSIC_DUCK_BUS])
+	assert_gt(AudioServer.get_bus_effect_count(duck_idx), 0,
+		"the duck bus carries no effects after this file ran — the strip was not undone")

@@ -66,7 +66,7 @@ func test_a_strike_on_the_fallback_voice_plays_at_the_channel_level() -> void:
 	sm.play_battle(TRIMMED_CUE)
 	## CONTROL: without a non-base level here the assert below passes for the wrong reason.
 	assert_ne(sm._battle_player.volume_db, base,
-		"CONTROL: %s must leave a trim on _battle_player, or this arm measures nothing" % TRIMMED_CUE)
+		"CONTROL: %s must leave a trim before the STRIKE fallback, or this arm measures nothing" % TRIMMED_CUE)
 	sm._sfx_cooldowns.clear()
 	sm._strike_player = null  # force the documented fallback
 	sm.play_strike_element(STRIKE_ELEMENT)
@@ -82,7 +82,7 @@ func test_a_weakness_flash_on_the_fallback_voice_plays_at_the_channel_level() ->
 	var base: float = _base(sm)
 	sm.play_battle(TRIMMED_CUE)
 	assert_ne(sm._battle_player.volume_db, base,
-		"CONTROL: %s must leave a trim on _battle_player, or this arm measures nothing" % TRIMMED_CUE)
+		"CONTROL: %s must leave a trim before the WEAKNESS-FLASH fallback, or this arm measures nothing" % TRIMMED_CUE)
 	sm._sfx_cooldowns.clear()
 	sm._flash_player = null  # force the documented fallback
 	sm.play_weakness_flash()

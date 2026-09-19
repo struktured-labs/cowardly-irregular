@@ -144,7 +144,7 @@ func test_a_viewport_smaller_than_the_overlay_does_not_go_negative() -> void:
 	await get_tree().process_frame
 
 	assert_gte(o.position.x, 0.0, "a viewport narrower than the overlay must clamp, not go negative: %s" % [o.position])
-	assert_gte(o.position.y, 0.0, "…on both axes")
+	assert_gte(o.position.y, 0.0, "…on both axes: Y must clamp too, not go negative")
 
 
 ## With no pad attached the position initial is the only true answer — face_glyph_for_index would
@@ -178,4 +178,4 @@ func test_the_overlay_places_itself_without_being_told() -> void:
 	assert_true(_fully_inside(o, sv.get_visible_rect().size),
 		"nobody set a position: the overlay must anchor itself on entry, got %s" % [o.position])
 	assert_gt(o.position.x, float(BIG.x) * 0.5, "…bottom-right, not the top-left default")
-	assert_gt(o.position.y, float(BIG.y) * 0.5, "…on both axes")
+	assert_gt(o.position.y, float(BIG.y) * 0.5, "…on both axes: Y must anchor bottom, not stay at the top-left default")
