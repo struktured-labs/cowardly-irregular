@@ -54,4 +54,4 @@ func test_the_roll_names_no_cap_when_no_pad_is_attached() -> void:
 	assert_eq(CreditsSequence.skip_hint_text(), "Esc: Skip",
 		"with no pad the roll must name the KEY alone; a family glyph is hardware the player does not have")
 	assert_eq(CreditsSequence.skip_hint_text(XBOX), "%s / Esc: Skip" % _cancel_caps()[XBOX],
-		"control: an explicitly NAMED device still gets its cap, so the guard is keyed to pad ABSENCE and not to the argument being omitted")
+		"control: the ROLL still gets its cap for an explicitly NAMED device, so the guard is keyed to pad ABSENCE and not to the argument being omitted")
