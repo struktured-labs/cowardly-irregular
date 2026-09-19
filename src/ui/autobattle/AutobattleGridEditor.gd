@@ -282,8 +282,6 @@ func setup(char_id: String, char_name: String, char_combatant: Combatant = null,
 		call_deferred("_refresh_grid")
 
 
-## "Del" plus the pad button when one is connected; "Del" alone otherwise. Keeps the keyboard
-## reading honest instead of leaving a dangling separator.
 ## Auto and Save are PAD-ONLY arms, so with no pad the token goes rather than render a key the
 ## chain gives to something else — the KEY_TAB arm toggles the ROW, the ui_accept arm edits a cell.
 func _pad_only_token(action: String, label: String) -> String:
@@ -299,6 +297,8 @@ func _cycle_token() -> String:
 	return "%s/" % pad if pad != "" else ""
 
 
+## "Del" plus the pad button when one is connected; "Del" alone otherwise. Keeps the keyboard
+## reading honest instead of leaving a dangling separator.
 func _delete_token() -> String:
 	var pad := InputProfileManager.button_name_for_index(JOY_BUTTON_Y)
 	return "Del/%s" % pad if pad != "" else "Del"
@@ -2668,9 +2668,6 @@ func _apply_option_picker_selection() -> void:
 	SoundManager.play_ui("menu_select")
 
 
-## The single commit seam for BOTH pickers. The list overlay and the radial picker are two
-## presentations of the same choice, so the dispatch lives here rather than being duplicated —
-## a second copy is how one picker silently stops handling a kind the other gained.
 ## Pad parity for the verbs the legend advertises but only a keyboard could reach.
 ## Each id dispatches to the SAME handler the key binding calls — no duplicated behaviour.
 func _open_more_actions() -> void:
@@ -2715,6 +2712,9 @@ func _commit_more_action(chosen_id: String) -> void:
 			_open_rename_profile()
 
 
+## The single commit seam for BOTH pickers. The list overlay and the radial picker are two
+## presentations of the same choice, so the dispatch lives here rather than being duplicated —
+## a second copy is how one picker silently stops handling a kind the other gained.
 func _commit_option_choice(kind: String, chosen_id: String, ctx: Dictionary) -> void:
 	match kind:
 		"more_actions":
