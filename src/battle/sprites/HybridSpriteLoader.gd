@@ -219,6 +219,15 @@ static func overworld_monster_geometry(monster_id: String) -> Dictionary:
 	return out
 
 
+## Load a battle-effect texture registered under manifest.battle_effects — returns null if the key
+## is absent or the texture load fails, so callers can fall back gracefully.
+##
+## ⛔ THIS LOADER IS THE SINGLE SOURCE; no direct load() bypass. Re-verified 2026-09-19: direct
+## load() of a battle_effects path outside this file, 0 sites. The line saying so was removed as
+## collateral in c9b57d6f6 ("remove dead code, batch 4 — 36 functions"), which deleted 36 functions
+## and kept this one — so the docstring went with the batch while its subject stayed live. Its one
+## caller (BattleScene's threat sigil) still carries the same provenance in a comment, which is why
+## the knowledge survived at the call site and not at the definition.
 static func load_battle_effect_texture(key: String) -> Texture2D:
 	_load_manifest()
 	if not _battle_effects.has(key):
