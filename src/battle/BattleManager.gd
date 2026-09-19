@@ -7755,7 +7755,7 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			}
 
 		"ability":
-			# AutobattleSystem uses "ability_id", also check "id" for backwards compat
+			## Every action here came from _action_def_to_action, which reads the catalog's "id" and emits "ability_id" — so this fallback is UNREACHABLE HERE (measured 2026-09-18: 0 producers reaching THIS function, 0 test drivers). The catalog does author "id" — RuleComposer:1150 reads it as the PRIMARY, upstream of the translator — so neither spelling is legacy; they are the shapes either side of _action_def_to_action. Kept, not deleted: a hand-built action costs it nothing, and deleting an unreachable guard is the risky direction.
 			var ability_id = action_data.get("ability_id", action_data.get("id", ""))
 			if ability_id.is_empty():
 				print("[AUTOBATTLE] No ability_id found in action: %s" % action_data)
@@ -7791,7 +7791,7 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			}
 
 		"item":
-			# Check both "item_id" and "id" for backwards compat
+			## Same as the ability arm above: the only producer emits "item_id", so the "id" fallback never fires today.
 			var item_id = action_data.get("item_id", action_data.get("id", ""))
 			if item_id.is_empty():
 				return {}
