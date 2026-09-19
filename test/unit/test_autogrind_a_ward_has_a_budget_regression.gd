@@ -241,8 +241,12 @@ func test_the_barrier_parity_note_has_not_gone_stale() -> void:
 	assert_ne(shared, "", "CONTROL: could not read Combatant.gd — this arm would pass vacuously")
 	assert_true(shared.contains("damage_absorb"),
 		"CONTROL: the SHARED function must still handle damage_absorb, the sibling this note contrasts against")
-	assert_false(shared.contains("barrier"),
-		"barrier now appears in the SHARED Combatant.gd, so the grind inherits it and this file's header note about the parity gap is CLOSED — update the header and delete this arm rather than leaving a deferral that reads as still-open")
+	## ⚠️ KEYED ON THE HANDLING, NOT THE WORD. This was `shared.contains("barrier")` and a const
+	## LISTING barrier as dispellable satisfied it — the grind gained nothing, and the arm reported the
+	## parity gap closed. The property is that the SHARED damage path READS the status, which is how
+	## damage_absorb is handled one line above.
+	assert_false(shared.contains("has_status(\"barrier\")"),
+		"the SHARED Combatant now READS barrier, so the grind inherits it and this file's header note about the parity gap is CLOSED — update the header and delete this arm rather than leaving a deferral that reads as still-open")
 
 
 ## ⛔ provoke IS IN A SHIPPED AUTOBATTLE TEMPLATE AND HEADLESS HAD NO ARM, so it fell to the generic
