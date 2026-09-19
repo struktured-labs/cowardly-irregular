@@ -222,10 +222,6 @@ var _pad_change_pending: bool = false
 ## Region ID for CSI lookups (derived from _region_name)
 var _region_id: String = ""
 
-## Rule trigger counts for monitor display
-var _rule_trigger_counts: Dictionary = {}
-
-
 
 ## "Any" vs a named member — the coarse/fine split must be visible on the cell, or two rules
 ## that read identically on screen behave differently.
@@ -2254,6 +2250,33 @@ func _observed_rules_report(preview_winners: Dictionary = {}) -> Array:
 	return out
 
 
+## One line: the monitor row is a single Label, and _format_condition embeds newlines for grid cells.
+func _rule_one_line(rule: Dictionary) -> String:
+	var parts: Array = []
+	for c in rule.get("conditions", []):
+		parts.append(_format_condition(c as Dictionary).replace("\n", " "))
+	var lhs := " AND ".join(PackedStringArray(parts)) if not parts.is_empty() else "ALWAYS"
+	return "%s -> %s" % [lhs, _explain_actions(rule)]
+
+
+## The monitor's RULE TRIGGERS rows, keyed by description because that is what update_rule_triggers takes.
+func _rule_trigger_rows() -> Dictionary:
+	var out: Dictionary = {}
+	## A zero needs its denominator -- before any check every rule reads dead and none is.
+	if AutogrindSystem.get_rule_eval_count() <= 0:
+		return out
+	## The system's own array, not our copy: the counts are keyed by ITS indices.
+	var live: Array = AutogrindSystem.get_autogrind_rules()
+	var fired: Dictionary = AutogrindSystem.get_rule_fire_counts()
+	for i in range(live.size()):
+		var rule: Dictionary = live[i] as Dictionary
+		if not bool(rule.get("enabled", true)):
+			continue
+		## Numbered so two identical rules stay two rows, and so the row matches the preview's "rule N".
+		out["%d. %s" % [i + 1, _rule_one_line(rule)]] = int(fired.get(i, 0))
+	return out
+
+
 func _explain_actions(rule: Dictionary) -> String:
 	var parts: Array = []
 	for a in rule.get("actions", []):
@@ -2650,6 +2673,13 @@ func _paste_rules_share_code() -> void:
 		SoundManager.play_ui("menu_error")
 
 
+## The refusal reason ScriptShareManager recorded, as a sentence tail, or "" when it recorded
+## none — its non-rule-error exits (empty payload, choke-point reject) leave it unset.
+func _refusal_suffix() -> String:
+	var why := str(ScriptShareManager.last_import_reason())
+	return " — " + why if why != "" else " (no reason recorded)"
+
+
 func _import_scripts() -> void:
 	"""Import autobattle scripts and autogrind rules from export files."""
 	if _is_grinding:
@@ -2661,31 +2691,57 @@ func _import_scripts() -> void:
 		_log_message("[color=yellow]No export files found. Export first with [E].[/color]")
 		return
 
+	## ⛔ EVERY FILE HERE CAME FROM list_exports(), SO NO REFUSAL ON THIS PATH IS A DESIGNED
+	## FALLBACK — each one is a file the player can see, asked to import, and was told nothing
+	## about. Reporting a refusal that the design EXPECTS is how a diagnostic becomes noise
+	## (cowir-sprites, 116 of 145 NPCs on the sprite-absence path); that is not this loop.
 	var imported = 0
+	var refused = 0
 	for filename in files:
 		var data = ScriptShareManager.import_file(filename)
 		if data.is_empty():
+			refused += 1
+			_log_message("[color=yellow]%s could not be read — not valid export JSON.[/color]" % filename)
 			continue
 		match data.get("type", ""):
 			"autobattle_bundle":
 				var count = ScriptShareManager.apply_script_bundle(data)
-				if count > 0:
+				if count == 0:
+					refused += 1
+					_log_message("[color=yellow]%s: no script in the bundle could be applied.[/color]" % filename)
+				else:
 					imported += count
 					_log_message("[color=%s]Imported %d autobattle scripts from %s[/color]" % [AccessibilityPalette.bonus_bbcode(), count, filename])
 			"autobattle_script":
 				var char_id = data.get("character_id", "")
-				if char_id != "" and ScriptShareManager.apply_character_script(char_id, data):
+				## char_id == "" SHORT-CIRCUITS, so apply is never called and last_import_reason()
+				## would still hold the PREVIOUS file's reason. Name this one ourselves.
+				if char_id == "":
+					refused += 1
+					_log_message("[color=yellow]%s names no character.[/color]" % filename)
+				elif not ScriptShareManager.apply_character_script(char_id, data):
+					refused += 1
+					_log_message("[color=yellow]%s refused for %s%s[/color]"
+						% [filename, char_id, _refusal_suffix()])
+				else:
 					imported += 1
 					_log_message("[color=%s]Imported script for %s[/color]" % [AccessibilityPalette.bonus_bbcode(), char_id])
 			"autogrind_rules":
-				if ScriptShareManager.apply_autogrind_rules(data):
+				if not ScriptShareManager.apply_autogrind_rules(data):
+					refused += 1
+					_log_message("[color=yellow]%s: autogrind rules refused%s[/color]"
+						% [filename, _refusal_suffix()])
+				else:
 					imported += 1
 					rules = AutogrindSystem.get_autogrind_rules()
 					_log_message("[color=%s]Imported autogrind rules from %s[/color]" % [AccessibilityPalette.bonus_bbcode(), filename])
 
-	if imported == 0:
+	## ⛔ WAS UNCONDITIONAL ON imported == 0, WHICH IS AFFIRMATIVELY WRONG AFTER A REFUSAL: the
+	## file WAS compatible and was rejected for a reason this UI already knows how to print.
+	## Only say it when nothing was refused — otherwise the per-file lines above are the answer.
+	if imported == 0 and refused == 0:
 		_log_message("[color=yellow]No compatible files to import.[/color]")
-	else:
+	elif imported > 0:
 		_build_ui()
 
 	SoundManager.play_ui("menu_select")
@@ -3075,9 +3131,10 @@ func update_stats(stats: Dictionary) -> void:
 	if _monitor and is_instance_valid(_monitor) and _monitor.visible:
 		_monitor.refresh(stats, _region_id)
 
-		# Track rule triggers and forward to monitor
-		if not _rule_trigger_counts.is_empty():
-			_monitor.update_rule_triggers(_rule_trigger_counts)
+		## Rebuilt from the system's live counts every refresh -- the dict this replaced had zero writes.
+		var triggers: Dictionary = _rule_trigger_rows()
+		if not triggers.is_empty():
+			_monitor.update_rule_triggers(triggers)
 
 		# Auto-generate highlights for notable events
 		_check_and_emit_highlights(stats)
