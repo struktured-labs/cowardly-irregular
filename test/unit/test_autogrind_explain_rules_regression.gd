@@ -136,12 +136,32 @@ func test_reached_level_is_ANSWERED_not_excluded() -> void:
 		"a level-20 probe party must satisfy >= 10: %s" % report)
 
 
-func test_an_unmodelled_condition_says_what_is_actually_true() -> void:
-	## inventory_items IS party-derived, but the probe carries no inventory. The reason must name
-	## THAT rather than claim session scope — a false reason can never expire.
+func test_inventory_is_ANSWERED_not_excluded() -> void:
+	## Same move as reached_level above, and for the same reason. The reason was stated truthfully
+	## ("the probe carries no inventory") precisely so it COULD expire, and it has: the probe copies
+	## the party's own bag. A rule withheld under first-match-wins blocks every rule below it.
+	_ui._party[0].inventory = {"potion": 2}
 	_ui.rules = [{
 		"conditions": [{"type": "inventory_items", "op": ">=", "value": 1}],
 		"actions": [{"type": "heal_party"}], "enabled": true
 	}]
-	assert_true(_joined().contains("not shown here"),
-		"an unmodelled condition must still be reported as unshowable")
+	var report := _joined()
+	assert_false(report.contains("not shown here"),
+		"inventory is modelled now — withholding the rule blocks everything under it: %s" % report)
+	assert_true(report.contains("rule 1 fires"),
+		"one distinct item satisfies >= 1: %s" % report)
+
+
+func test_the_probe_does_not_share_the_live_bag() -> void:
+	## The hazard the copy introduces: an unduplicated Dictionary is SHARED, so anything the preview
+	## did to a probe's bag would reach the real party. Asserted on identity, not on contents —
+	## contents agree either way, which is what makes the aliasing invisible.
+	_ui._party[0].inventory = {"potion": 2}
+	var probe: Array = _ui._explain_probe_party({"hp_pct": 1.0, "mp_pct": 1.0, "down": 0})
+	assert_gt(probe.size(), 0, "CONTROL: the probe must build a party")
+	probe[0].inventory["potion"] = 99
+	assert_eq(int(_ui._party[0].inventory.get("potion", 0)), 2,
+		"the probe shares the live party's inventory Dictionary — a preview can now edit the real bag")
+	for c in probe:
+		if c != null:
+			c.free()
