@@ -1393,6 +1393,11 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						## (BattleManager:5609's local), NOT mug's 0.5; `steal` authors 0.5 explicitly either way.
 						_roll_steal(caster, ability, [target], float(ability.get("success_rate", 1.0)))
 						continue
+					elif effect == "erase" or effect == "dispel":
+						## Live's support executor has an arm for these; the grind's else would add an inert key.
+						var dispelled: int = target.dispel()
+						_log("%s strips %s's enhancements (%d cleared)" % [caster.combatant_name, target.combatant_name, dispelled])
+						continue
 					elif effect == "regen":
 						## Combatant.end_turn ticks "regen" and reads an authored override off
 						## `_regen_per_turn`, falling back to 5% of max HP when absent — so adding the
@@ -1564,6 +1569,13 @@ func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: Stri
 		status_to_add = "stun"
 	if status_to_add == "burn":
 		status_to_add = "burning"
+	## ⛔ THE GRIND MODELLED DISPEL NOT AT ALL, so void_breath (Umbraxis, 28 MP, all enemies) and
+	## null_touch (null_entity, POOLED in abstract_overworld) stripped nothing here after live was
+	## fixed. An ACTION, not a status token — same shape as doom, and it returns like live does.
+	if status_to_add == "erase" or status_to_add == "dispel":
+		var cleared: int = target.dispel()
+		_log("%s strips %s's enhancements (%d cleared)" % [caster.combatant_name, target.combatant_name, cleared])
+		return
 	## ability_silence lands as "silence" — the key both engines' gates read.
 	if status_to_add == "ability_silence":
 		status_to_add = "silence"

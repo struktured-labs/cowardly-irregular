@@ -640,6 +640,29 @@ const STATUS_ALIASES := {
 }
 
 
+## Strips every active buff and any positive STATUS; returns how many it cleared. Lives here
+## because this class owns both, so BOTH engines call one definition instead of keeping twins.
+## "Positive" is an inclusion list, never an exclusion — a new debuff cannot make dispel remove it.
+const DISPELLABLE_POSITIVE_STATUSES := [
+	"barrier", "invisible", "evasion", "reflect",
+	"physical_reflect", "prismatic_reflect", "magic_block",
+	"regen",
+]
+
+
+func dispel() -> int:
+	var cleared: int = 0
+	cleared += active_buffs.size()
+	active_buffs.clear()
+	for st in DISPELLABLE_POSITIVE_STATUSES:
+		if has_status(st):
+			remove_status(st)
+			cleared += 1
+	if cleared > 0:
+		recalculate_stats()
+	return cleared
+
+
 ## Resolve a rule-supplied status name to the key the engine actually stores.
 static func resolve_status_alias(status_name: String) -> String:
 	return str(STATUS_ALIASES.get(status_name, status_name))
