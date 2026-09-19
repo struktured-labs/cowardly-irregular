@@ -31,7 +31,7 @@ const BM_PATH: String = "res://src/battle/BattleManager.gd"
 func test_weapon_proc_fires_play_status() -> void:
 	# The whole point. Without this line, poison_dagger's status
 	# applies silently, breaking parity with ability-caused statuses
-	# that DO fire the sound at BS:3729.
+	# that DO fire the sound in BattleScene._on_action_executed.
 	var src: String = FileAccess.get_file_as_string(BM_PATH)
 	var idx: int = src.find("func _apply_equipment_on_hit_status(attacker: Combatant")
 	assert_gt(idx, -1, "the on-hit status applier must exist")
@@ -49,7 +49,7 @@ func test_weapon_proc_fires_play_status() -> void:
 	## test_weapon_proc_actually_plays_a_status_cue below, which drives the real
 	## BattleManager and observes a cue resolving.
 	assert_string_contains(body, "play_status(",
-		"weapon-proc status must fire SoundManager.play_status — parity with the ability-caused status sound at BS:3729")
+		"weapon-proc status must fire SoundManager.play_status — parity with the ability-caused status sound in BattleScene._on_action_executed")
 
 
 func test_weapon_proc_sound_is_null_guarded() -> void:
@@ -92,12 +92,13 @@ func test_sound_fires_after_add_status_and_log_emit() -> void:
 func test_matching_sound_call_shape_at_bs() -> void:
 	# Sanity: the ability-side path uses SoundManager.play_status
 	# too, in BattleScene._on_action_executed. NAMED, not numbered: this cited
-	# BS:3729, which is now _on_selection_turn_ended. Pin the shape so a future SoundManager API
+	# BS:3729 — an abbreviation no check can resolve, and the line has since drifted
+	# into _on_selection_turn_started. Pin the shape so a future SoundManager API
 	# change (rename, arg reorder) breaks BOTH paths symmetrically
 	# rather than one silently.
 	var bs: String = FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	assert_string_contains(bs, "SoundManager.play_status(effect)",
-		"the ability-side call at BS:_on_action_executed must keep the same play_status shape — proc-side and ability-side must stay symmetric")
+		"the ability-side call in BattleScene._on_action_executed must keep the same play_status shape — proc-side and ability-side must stay symmetric")
 
 
 ## ── (4) Every ON_HIT_STATUSES entry has a status_<name> manifest key ──
@@ -105,7 +106,9 @@ func test_matching_sound_call_shape_at_bs() -> void:
 func test_on_hit_status_entries_have_named_status_sounds() -> void:
 	# Weakness-check: today's ON_HIT_STATUSES is [poison, sleep]. If
 	# a future confuse_chance / burn_chance / freeze_chance lands
-	# (per BM:3999-4001's stated extensibility), SoundManager.play_
+	# (per BattleManager's ON_HIT_STATUSES note: "New on-hit chances
+	# (e.g. confuse_chance, burn_chance) drop in by extending the const
+	# without touching the loop"), SoundManager.play_
 	# status(<name>) needs a matching manifest entry, else the sound
 	# call falls through to whatever play_status does on unknown key
 	# (usually silence).
