@@ -290,6 +290,72 @@ if [ -z "$TAG" ]; then
     exit 2
 fi
 
+# ── DISK, BEFORE ANYTHING EXPENSIVE ──────────────────────────────────────────────────────
+# ⛔ 2026-09-19: v3.33.458-alpha died at EC=4 with `OSError: [Errno 28] No space left on
+# device`, and the message the operator got was:
+#
+#     BLOCKED: tools/check_web_audio_tier.py FAILED ITS OWN SELFTEST.
+#
+# That is TRUE and it names the wrong subject. The guard was fine; the filesystem was full at
+# 958 MB of 3.6 TB. A reader starts on check_web_audio_tier.py -- and the refusal that ran is
+# the LAST one in a chain, so the name you get is whichever guard happened to touch the disk
+# first, not the thing that is wrong. I reclaimed 14 GB and the same run passed untouched.
+#
+# The refusal was still CORRECT as a decision: a guard whose selftest cannot run is
+# untrustworthy, not absent. What was wrong was the NOUN. So this does not replace that guard,
+# it arrives before it and names the fact.
+#
+# THE NUMBER IS DERIVED, NOT GUESSED. A completed release worktree measured 2026-09-19:
+#     tmp/pub458 total 3.4G   =  checkout ~2.3G + build/ 634M + builds/ 190M + .godot 238M
+#   plus the web stage (tmp/web_stage, 563M) and a 40k audio tier (~83M) when uncached.
+# Call it 4.5G consumed by a clean run; 5G is that plus a slim margin. Below this a publish
+# does not fail fast -- it fails ten minutes in, having uploaded nothing, blaming a gate.
+#
+# ⚠️ This measures the filesystem holding THIS WORKTREE, because that is where the export,
+# the stage and the .godot cache are written. On this box it is the same device as $HOME, and
+# that is a fact about the box rather than a guarantee.
+PUBLISH_MIN_FREE_MB="${PUBLISH_MIN_FREE_MB:-5000}"
+_avail_mb="$(df --output=avail -m . 2>/dev/null | tail -1 | tr -d ' ')"
+case "$_avail_mb" in
+    ''|*[!0-9]*)
+        # Refusing to guess. An unreadable df is not "plenty of room".
+        echo "[pub] BLOCKED: could not read free space for $(pwd -P) — df returned '${_avail_mb}'." >&2
+        echo "[pub]   This check cannot be skipped by failing to run: a publish that fills the" >&2
+        echo "[pub]   disk mid-flight blames whichever guard touches it first." >&2
+        exit 4 ;;
+    *)
+        if [ "$_avail_mb" -lt "$PUBLISH_MIN_FREE_MB" ]; then
+            echo "[pub] BLOCKED: ${_avail_mb} MB free where a publish needs ${PUBLISH_MIN_FREE_MB} MB." >&2
+            echo "[pub]   Derived: a completed release worktree is ~3.4 GB (checkout + build/ +" >&2
+            echo "[pub]   builds/ + .godot), plus the web stage and the audio tier when uncached." >&2
+            echo "[pub]   NOTHING has been built or uploaded." >&2
+            echo "[pub]" >&2
+            # ⛔ DO NOT SEND THE READER STRAIGHT AT THIS LANE. Measured 2026-09-19: the whole
+            # cowir fleet was 35G of a 3.4T disk -- about 1% -- while single unrelated projects
+            # of struktured's held hundreds of gigabytes. Seven lanes each audited their own
+            # tmp/ and three broke a standing directive to prune rounding errors, because the
+            # question "am I full?" was answered by whoever was asked rather than by where the
+            # mass was. An instruction to reap THIS lane, printed at the moment someone is
+            # blocked and hurrying, is exactly how that happens again.
+            echo "[pub]   FIRST, find out whose bytes these are. This lane is usually not the cause:" >&2
+            echo "[pub]     du -sh ~/projects/*/tmp | sort -rh | head -20" >&2
+            echo "[pub]   ⚠ That glob expands to ~120 directories and SOME ARE SYMLINKS to each" >&2
+            echo "[pub]     other, so du walks one tree twice and the sum double-counts. Confirm" >&2
+            echo "[pub]     any big row is a real directory before believing it:  readlink <path>" >&2
+            echo "[pub]" >&2
+            echo "[pub]   ONLY IF THIS LANE IS ACTUALLY HOLDING THE SPACE:" >&2
+            echo "[pub]     tools/reap_release_worktrees.sh            # dry run, names what it would remove" >&2
+            echo "[pub]     tools/reap_release_worktrees.sh --apply    # only trees rebuildable from a tag on origin" >&2
+            echo "[pub]" >&2
+            echo "[pub]   ⛔ Do NOT delete outside this lane. Those are struktured's other projects" >&2
+            echo "[pub]     and the standing directive is: delete nothing of his." >&2
+            echo "[pub]   Override with PUBLISH_MIN_FREE_MB=<mb> if you know better than this number." >&2
+            exit 4
+        fi
+        echo "[pub] disk: ${_avail_mb} MB free (floor ${PUBLISH_MIN_FREE_MB} MB)"
+        ;;
+esac
+
 # ── --rollback refuses HERE, with the reason, not three guards deep ──────────────────────
 # MEASURED 2026-09-11, both horns. --rollback cannot be used for its purpose from ANY tree:
 #

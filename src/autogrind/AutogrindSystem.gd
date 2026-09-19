@@ -526,8 +526,12 @@ const MIN_RATE_WINDOW_MINUTES: float = 1.0 / 60.0
 
 func get_grind_stats() -> Dictionary:
 	"""Get grind session statistics with per-minute rates.
-	Returns {exp_per_min, gold_per_min, jp_per_min, encounters_per_min,
-	         total_exp, total_gold, total_encounters, elapsed_seconds}"""
+	⛔ NO KEY LIST HERE ON PURPOSE. This listed EIGHT of the nineteen keys below, and a caller who
+	trusts it cannot see csi, yield_multiplier, automation_affinity, items_consumed,
+	per_character_exp, save_corruption or the rest. AutogrindController's stats block once dropped
+	csi / yield_multiplier / automation_affinity, and all three are among the eleven this list
+	omitted — a correlation, not a proven cause, but the cheapest thing to remove either way.
+	Read the return statement below; it is the only source that cannot drift."""
 	var elapsed: float = _grind_stats["elapsed_seconds"]
 	if is_grinding and _grind_stats["start_time"] > 0.0:
 		elapsed = Time.get_unix_time_from_system() - _grind_stats["start_time"]

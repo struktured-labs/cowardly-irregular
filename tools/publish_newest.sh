@@ -29,9 +29,22 @@ set -uo pipefail
 
 LANE_ROOT="${PUBNEW_LANE_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
 GO=0
+# ⛔ THE READ-BACK IS ON BY DEFAULT, AND IT WAS OPT-IN WITH NOBODY OPTING IN.
+# publish_all.sh has carried a --read-back flag and a working implementation since 2026-09-11.
+# Nothing in this lane ever passed it. So every publish through this entry point uploaded to
+# three channels, printed "⚠ STORE READ-BACK NOT PERFORMED", and exited 0 -- a success code
+# covering every gate EXCEPT the only one that crosses the CDN and asks what the store SERVES.
+# Measured on .455 and .456: both exited 0 with the read-back unrun; I ran it by hand afterwards
+# both times and it passed, which is exactly why nobody noticed the default was wrong.
+#
+# ⚠️ A REMEMBERED MANUAL STEP IS NOT A GATE. It held because I was watching. The standing
+# instruction for this lane is continuous deployment and that main publishes if I am
+# unresponsive -- i.e. the case where nobody is watching is the case it is FOR.
+READ_BACK=1
 for a in "$@"; do
     case "$a" in
         --go) GO=1 ;;
+        --no-read-back) READ_BACK=0 ;;
         --selftest) ;;
         *) echo "unknown argument: $a" >&2; exit 2 ;;
     esac
@@ -87,7 +100,16 @@ run() {
         *) echo "[pubnew] REFUSING: the tag gate did not return SKIP. RED is an absolute stop." >&2; return 3 ;;
     esac
 
-    (cd "$wt" && bash tools/publish_detached.sh "$newest")
+    # Forward --read-back so publish_all crosses the CDN before calling the publish a success.
+    # publish_detached.sh takes "<tag> [extra publish_all args...]" and forwards them verbatim.
+    local extra=""
+    [ "${READ_BACK:-1}" = "1" ] && extra="--read-back"
+    if [ -n "$extra" ]; then
+        (cd "$wt" && bash tools/publish_detached.sh "$newest" "$extra")
+    else
+        echo "[pubnew] ⚠ --no-read-back: this publish will NOT verify what the store serves." >&2
+        (cd "$wt" && bash tools/publish_detached.sh "$newest")
+    fi
     return $?
 }
 
@@ -136,7 +158,7 @@ selftest() {
     # 5. --go with a gate that does NOT say SKIP must refuse before launching
     (cd "$lane" && mkdir -p tools
      printf '#!/usr/bin/env bash\necho "VERDICT=RUN fixture says red"\n' > tools/tag_gate_evidence.sh
-     printf '#!/usr/bin/env bash\necho LAUNCHED > "%s/launched"\n' "$d" > tools/publish_detached.sh
+     printf '#!/usr/bin/env bash\nprintf "LAUNCHED %%s\\n" "$*" > "%s/launched"\n' "$d" > tools/publish_detached.sh
      chmod +x tools/tag_gate_evidence.sh tools/publish_detached.sh
      git add tools; git commit -qm tools >/dev/null
      sleep 0.05; git tag -a v3.33.375-alpha -m "v3.33.375-alpha" >/dev/null 2>&1)
@@ -152,6 +174,25 @@ selftest() {
      git tag -a v3.33.376-alpha -m "v3.33.376-alpha" >/dev/null 2>&1)
     out="$(PUBNEW_LANE_ROOT="$lane" PUBNEW_NO_FETCH=1 PUBNEW_STORE_VERSION=v3.33.371-alpha bash "$SELF" --go 2>&1)"; ec=$?
     _eq "  ...but a SKIP verdict DOES launch"           "$([ -f "$d/launched" ] && echo launched || echo no)" "launched"
+
+    # ⛔ 7. THE FLAG MUST REACH publish_all, AND IT NEVER DID. publish_all.sh has carried a
+    #    working --read-back since 2026-09-11 and nothing in this lane passed it, so every
+    #    publish exited 0 having never asked what the store SERVES. Asserting the LAUNCH
+    #    ARGUMENT, not the tool's own prose: a message saying it will read back is not the
+    #    flag arriving. publish_detached.sh forwards "<tag> [extra publish_all args...]"
+    #    verbatim -- verified end to end against a stubbed publish_all, both directions.
+    _has "the launch carries --read-back BY DEFAULT"    "$(cat "$d/launched" 2>/dev/null)" "--read-back"
+    _has "  ...and names the tag it resolved"           "$(cat "$d/launched" 2>/dev/null)" "v3.33.376-alpha"
+
+    # 8. CONTROL: --no-read-back must actually suppress it, or arm 7 passes on a hardcoded flag.
+    rm -f "$d/launched"
+    (cd "$lane" && sleep 0.05 && git tag -a v3.33.377-alpha -m "v3.33.377-alpha" >/dev/null 2>&1)
+    out="$(PUBNEW_LANE_ROOT="$lane" PUBNEW_NO_FETCH=1 PUBNEW_STORE_VERSION=v3.33.371-alpha bash "$SELF" --go --no-read-back 2>&1)"
+    case "$(cat "$d/launched" 2>/dev/null)" in
+        *--read-back*) _eq "--no-read-back SUPPRESSES the flag"  "present" "absent" ;;
+        *)             _eq "--no-read-back SUPPRESSES the flag"  "absent"  "absent" ;;
+    esac
+    _has "  ...and warns that the store is unverified"  "$out" "will NOT verify what the store serves"
 
     cd /; rm -rf "$d"
     printf '\nselftest: %s passed, %s failed\n' "$pass" "$fail"
