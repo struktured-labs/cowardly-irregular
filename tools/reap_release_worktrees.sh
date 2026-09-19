@@ -342,6 +342,12 @@ selftest() {
     # if a widened root ever let a refusal lapse, this is the arm that reds.
     chk "a branch worktree is still refused at a widened root"  "KEEP.*other-9002.*branch"    0
     chk "a widened root still removes nothing on a dry run"     "DRY RUN"                     0
+    # ⛔ THE KEEP-NEWEST RULE AT A WIDENED ROOT. `protected` is computed against ROOT/PREFIX, and
+    # at --keep 0 that computation is unreachable — so without this arm the substitution there is
+    # untested and a widened root would reap the NEWEST release worktree, which is the one copy of
+    # what players are running. Needs its own invocation because the arms above use --keep 0.
+    out="$(REAP_ROOT="$PWD/$nest" "$self" --keep 1 2>&1)"
+    chk "the newest is still protected at a widened root"       "KEEP.*rel-9001.*newest"      0
 
     # A bogus root must fail LOUDLY. Scanning nothing silently is the defect, not the fallback.
     out="$(REAP_ROOT="$PWD/${nest}/definitely-absent" "$self" --keep 1 2>&1)"; local rootec=$?
