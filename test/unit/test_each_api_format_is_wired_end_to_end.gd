@@ -16,10 +16,10 @@ extends GutTest
 ## Ollama" and went looking for an Ollama body would not find one.
 ##
 ## ⛔ UNREACHABLE TODAY, AND THAT IS MEASURED — this is a ratchet, not a live bug.
-## Every writer of the value is constrained: `SaveSystem:1177` clamps a
+## Every writer of the value is constrained: `SaveSystem`'s `load_settings` clamps a
 ## hand-edited settings.json (`fmt if fmt in ["openai", "ollama"] else "openai"`),
 ## `BYOKConfigPanel` writes one of two literals from a two-entry OptionButton,
-## `LLMService:195` writes the literal "ollama", and no scene file sets it. So
+## `LLMService.apply_byok_config` writes the literal "ollama", and no scene file sets it. So
 ## nothing a player can do reaches the unknown arm.
 ##
 ## It matters because of the edit that WILL come. Adding a third format is a

@@ -53,7 +53,7 @@ extends GutTest
 ## ⚠️ AND THE WALK HAS A BLIND POPULATION. `_walk` collects nodes with `get_npc_id`.
 ## `WanderingNPC` extends Area2D, has NO such method, and carries its own `dynamic` / `persona`
 ## exports plus a live `ConversationRewards.resolve_npc_id("", npc_name)` call
-## (WanderingNPC:487). No wanderer is dynamic today -- measured, the only three `dynamic = true`
+## (WanderingNPC's `_run_dynamic_conversation`). No wanderer is dynamic today -- measured, the only three `dynamic = true`
 ## assignments in src/ are HarmoniaVillage's -- but one flipped in the editor would reach the
 ## reward path INVISIBLY to this file. The arm below pins that population at zero rather than
 ## leaving the walk quietly short.
@@ -185,7 +185,7 @@ func test_no_npc_on_the_reward_path_answers_to_two_ids() -> void:
 	assert_gt(divergent_anywhere.size(), 0,
 		"the two id derivations now agree everywhere — unify them for real and DELETE this test, it guards nothing")
 
-	## THE BLIND POPULATION. These reach ConversationRewards.resolve_npc_id (WanderingNPC:487)
+	## THE BLIND POPULATION. These reach ConversationRewards.resolve_npc_id (WanderingNPC's `_run_dynamic_conversation`)
 	## and expose no get_npc_id, so the comparison above cannot see them at all. Pinned at zero
 	## rather than left as a silent short-fall in the walk.
 	for node in blind_nodes:
