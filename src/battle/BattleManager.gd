@@ -5486,11 +5486,17 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 	# preview matches reality (0.0x immune, 1.5x weak, 0.5x resist). Immunity
 	# returns a truthful 0, bypassing the min-1 floor, so an "Immune: Ice" enemy
 	# never previews phantom damage the swing won't actually deal.
+	## Magic-only and terrain/weather first, both mirroring _execute_magic_ability: its physical twin reads no element at all.
 	var element_val = ability.get("element")
-	if element_val != null and str(element_val) != "":
-		var elem_mod: float = target.calculate_elemental_modifier(str(element_val))
+	if is_magical and element_val != null and str(element_val) != "":
+		var el: String = str(element_val)
+		var env_mod: float = get_terrain_damage_modifier(el) * get_weather_damage_modifier(el)
+		if not is_equal_approx(env_mod, 1.0):
+			mitigated = int(mitigated * env_mod)
+			formula += " ×terrain/weather %.2f = %d" % [env_mod, mitigated]
+		var elem_mod: float = target.calculate_elemental_modifier(el)
 		mitigated = int(mitigated * elem_mod)
-		formula += " ×%s %.2f = %d" % [str(element_val), elem_mod, mitigated]
+		formula += " ×%s %.2f = %d" % [el, elem_mod, mitigated]
 		if elem_mod <= 0.0:
 			return {"damage": 0, "formula": formula + " (immune)"}
 
