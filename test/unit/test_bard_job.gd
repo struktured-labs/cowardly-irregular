@@ -217,7 +217,7 @@ func test_riff_inflicts_a_real_implemented_status_at_high_odds() -> void:
 	## The status must be one the engine CONSUMES. "slow" has 0 references in src/ and
 	## "silence"'s only has_status() occurrence is inside a comment — both would be inert.
 	var effect := str(_abilities["riff"].get("effect", ""))
-	assert_eq(effect, "blind", "blind is consumed at BattleManager:4048 (+40% miss)")
+	assert_eq(effect, "blind", "blind is consumed in BattleManager's _execute_attack (+40% miss)")
 	assert_gt(float(_abilities["riff"].get("effect_chance", 0.0)), 0.5, "HIGH chance, per the ruling")
 	var mgr := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	assert_true('has_status("%s")' % effect in mgr, "the status is actually read somewhere")
