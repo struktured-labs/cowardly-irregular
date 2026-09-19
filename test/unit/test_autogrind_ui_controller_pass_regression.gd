@@ -98,8 +98,10 @@ func test_ludicrous_and_permadeath_are_ring_rows_with_live_state() -> void:
 	assert_has(ids, "ludicrous", "ludicrous must be a menu row, not only an undocumented JOY_X")
 	assert_has(ids, "permadeath", "permadeath must be a menu row — it was KEY_P only, pad-unreachable")
 	var joined := " | ".join(labels)
-	assert_true(joined.contains("Ludicrous: O"), "the row must show live ON/OFF, got: %s" % joined)
-	assert_true(joined.contains("Permadeath: O"), "the row must show live ON/OFF, got: %s" % joined)
+	## Named per row: both arms shared one sentence AND one `joined`, so they rendered byte-identically
+	## and a Failing 1 could not say which row lost its state. Found by cowir-controller's widened sweep.
+	assert_true(joined.contains("Ludicrous: O"), "the LUDICROUS row must show live ON/OFF, got: %s" % joined)
+	assert_true(joined.contains("Permadeath: O"), "the PERMADEATH row must show live ON/OFF, got: %s" % joined)
 
 
 ## Enumerate from the OTHER side: every id offered must reach a method that exists. A renamed
