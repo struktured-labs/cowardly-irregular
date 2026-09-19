@@ -215,3 +215,103 @@ func test_the_directory_forms_are_guarded_too() -> void:
 		"POSITIVE CONTROL: both -gdir forms must be found — got %d, so the scan missed one and the assertions above never ran on it" % guarded)
 	assert_true(src.contains("-gdir=res://test/unit"), "the full-suite form must still exist")
 	assert_true(src.contains("-gdir=res://test/isolated"), "the --isolated form must still exist")
+
+
+func test_prose_at_column_zero_cannot_stand_in_for_a_totals_row() -> void:
+	# A Totals row is a KEY, WHITESPACE, A NUMBER and nothing else. The extractions
+	# were unanchored at the end and took `tail -1`, so game prose printed at column 0
+	# — which comes AFTER the Totals block — won. `Tests 0` plus a later
+	# "Tests 7 of the ward fired" yielded 7, and the vacuity guard never fired.
+	# cowir-deploy found the same shape in check_hydration_exercised.sh first.
+	var root := ProjectSettings.globalize_path("res://")
+	var src := FileAccess.get_file_as_string(root + "tools/run_tests.sh")
+	assert_ne(src, "", "PRECONDITION: run_tests.sh must be readable")
+	assert_true(src.contains("BASE=(godot"),
+		"PRECONDITION: the runner array must exist verbatim, or the probe is the unmodified script")
+
+	# Plant a log that is vacuous (Tests 0) and carries column-0 prose after the block.
+	# Substituting BASE drives the REAL extraction over a controlled log.
+	var log_path := root + "tmp/rt_prose_probe_input.log"
+	var lf := FileAccess.open(log_path, FileAccess.WRITE)
+	assert_not_null(lf, "PRECONDITION: planted log must be writable")
+	lf.store_string("---- Totals ----\nScripts           0\nTests             0\n  Passing         0\nTests 7 of the ward fired and none were blocked\nScripts 9 were loaded from the archive\n")
+	lf.close()
+
+	# Replace the WHOLE array line. A prefix patch leaves the original `)` commented
+	# out and the array unterminated, which fails loudly for the wrong reason.
+	var lines := src.split("\n")
+	var hit := 0
+	for i in lines.size():
+		if lines[i].begins_with("BASE=(godot"):
+			# `"$@"` is appended by run_gut, so a bare `cat <path>` receives the
+			# suite selector as a SECOND file and errors. The bash -c form swallows it.
+			lines[i] = "BASE=(bash -c 'cat \"$1\"' _ \"%s\")" % log_path
+			hit += 1
+	assert_eq(hit, 1, "PRECONDITION: exactly one BASE=(godot line, got %d" % hit)
+	var patched := "\n".join(lines)
+	assert_ne(patched, src, "PRECONDITION: the patch must change something")
+
+	var probe_path := root + "tmp/rt_prose_probe.sh"
+	var pf := FileAccess.open(probe_path, FileAccess.WRITE)
+	assert_not_null(pf, "PRECONDITION: probe must be writable")
+	pf.store_string(patched)
+	pf.close()
+
+	var out: Array = []
+	var code := OS.execute("bash", [probe_path], out, true)
+	var text := "\n".join(out)
+	assert_eq(code, 3,
+		"a run reporting `Tests 0` must exit 3 even when prose at column 0 also starts with `Tests` — got %d. Unanchored, the prose wins tail -1 and a run that executed NOTHING exits 0: %s" % [code, text])
+	# DISCRIMINATING: unanchored, `_tests_ran` takes the prose's 7, this guard is
+	# skipped, and the exit 3 arrives later from the Scripts vacuity check with a
+	# DIFFERENT message. Asserting the exit code alone cannot tell them apart.
+	assert_true(text.contains("NO TESTS RAN"),
+		"the `Tests 0` guard must be what refuses this, not a downstream one: %s" % text)
+	assert_false(text.contains("NOT ALL TEST FILES RAN"),
+		"exit 3 came from the Scripts check, so the Tests extraction took the prose: %s" % text)
+
+	DirAccess.remove_absolute(probe_path)
+	DirAccess.remove_absolute(log_path)
+
+
+func test_prose_alone_is_not_a_totals_block() -> void:
+	# Companion to the arm above, and the WIDER hole: the "no Totals block" check
+	# was `grep -q '^Tests'` — no number required at all, so ANY column-0 line
+	# beginning with `Tests` satisfied it. A run that printed no Totals block
+	# whatever then exited 0. The arm above cannot reach this one: it plants a
+	# real `Tests 0` row, so the earlier guard refuses first.
+	var root := ProjectSettings.globalize_path("res://")
+	var src := FileAccess.get_file_as_string(root + "tools/run_tests.sh")
+	assert_ne(src, "", "PRECONDITION: run_tests.sh must be readable")
+
+	var log_path := root + "tmp/rt_prose_only_input.log"
+	var lf := FileAccess.open(log_path, FileAccess.WRITE)
+	assert_not_null(lf, "PRECONDITION: planted log must be writable")
+	# No Totals block. Prose only, at column 0, beginning with the key.
+	lf.store_string("Tests 7 of the ward fired and none were blocked\nScripts 9 were loaded from the archive\n")
+	lf.close()
+
+	var lines := src.split("\n")
+	var hit := 0
+	for i in lines.size():
+		if lines[i].begins_with("BASE=(godot"):
+			lines[i] = "BASE=(bash -c 'cat \"$1\"' _ \"%s\")" % log_path
+			hit += 1
+	assert_eq(hit, 1, "PRECONDITION: exactly one BASE=(godot line, got %d" % hit)
+
+	var probe_path := root + "tmp/rt_prose_only_probe.sh"
+	var pf := FileAccess.open(probe_path, FileAccess.WRITE)
+	assert_not_null(pf, "PRECONDITION: probe must be writable")
+	pf.store_string("\n".join(lines))
+	pf.close()
+
+	var out: Array = []
+	var code := OS.execute("bash", [probe_path], out, true)
+	var text := "\n".join(out)
+	assert_eq(code, 3,
+		"a run that printed NO Totals block must exit 3 — prose beginning with `Tests` is not a Totals row. got %d: %s" % [code, text])
+	assert_true(text.contains("no Totals block"),
+		"the refusal must name the missing block, got: %s" % text)
+
+	DirAccess.remove_absolute(probe_path)
+	DirAccess.remove_absolute(log_path)

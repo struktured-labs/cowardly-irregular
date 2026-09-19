@@ -176,7 +176,7 @@ run_gut() {
   # which reads as "my mutation didn't land" and invites reverting a change that was correct.
   # Enumerating causes is the losing game this block already rejects — so assert the outcome
   # one level deeper: a real run reports Tests > 0.
-  _tests_ran="$(command grep -aE '^Tests[[:space:]]+[0-9]+' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+  _tests_ran="$(command grep -aE '^Tests[[:space:]]+[0-9]+$' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
   if [ -n "$_tests_ran" ] && [ "$_tests_ran" -eq 0 ]; then
     echo "run_tests.sh: NO TESTS RAN — Totals reported 'Tests 0'." >&2
     echo "  a named test whose script fails to parse, or a -gtest name that does not exist," >&2
@@ -213,7 +213,7 @@ run_gut() {
   # instrument WARNS, it never becomes a zero that fires the alarm.
   if [ -z "$_gdir" ] && [ -n "${_REQUESTED:-}" ] && [ "${_REQUESTED}" -gt 0 ]; then
     local _sel_exec
-    _sel_exec="$(command grep -aoE '^[[:space:]]*Scripts[[:space:]]+[0-9]+' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+    _sel_exec="$(command grep -aoE '^[[:space:]]*Scripts[[:space:]]+[0-9]+$' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
     if [ -z "$_sel_exec" ]; then
       echo "run_tests.sh: WARNING — no 'Scripts N' line; selection completeness NOT checked." >&2
     elif [ "$_sel_exec" -lt "$_REQUESTED" ]; then
@@ -286,7 +286,7 @@ run_gut() {
 
     local _authored _executed
     _authored="$(ls "$_gdir"/test_*.gd 2>/dev/null | command grep -c .)"   # grep -c PRINTS 0; no ||
-    _executed="$(command grep -aoE '^[[:space:]]*Scripts[[:space:]]+[0-9]+' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+    _executed="$(command grep -aoE '^[[:space:]]*Scripts[[:space:]]+[0-9]+$' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
     if [ -z "$_executed" ]; then
       # THREE-STATE: the instrument could not measure. That must be its own loud outcome,
       # never folded into a verdict about the suite.
@@ -313,7 +313,7 @@ run_gut() {
       echo "  directly in $_gdir. The authored count may be mis-scoped; not failing on it." >&2
     fi
   fi
-  if ! command grep -q '^Tests' "$RUN_LOG"; then
+  if ! command grep -qE '^Tests[[:space:]]+[0-9]+$' "$RUN_LOG"; then
     echo "run_tests.sh: NO TESTS RAN — no Totals block in the output." >&2
     command grep -aiE 'have not been imported|Failed to load script|Parse Error|does not extend GutTest' "$RUN_LOG" | head -3 | sed 's/^/  /' >&2
     echo "  fresh worktree? godot --headless --audio-driver Dummy --import" >&2
