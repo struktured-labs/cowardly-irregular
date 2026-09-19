@@ -1287,7 +1287,8 @@ func duck_music_for_dialogue(active: bool, holder: Object = null) -> void:
 	if idx == -1:
 		_ensure_music_duck_bus()
 		idx = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
-	var amp = AudioServer.get_bus_effect(idx, 0) if idx != -1 else null
+	## COUNT-GUARDED like get_kill_duck_db: get_bus_effect errors on an empty bus BEFORE returning null.
+	var amp = AudioServer.get_bus_effect(idx, 0) if idx != -1 and AudioServer.get_bus_effect_count(idx) > 0 else null
 	if amp == null:
 		return
 	## A holder freed without releasing must not strand the duck; drop it before deciding.
@@ -1345,7 +1346,8 @@ func _ensure_kill_duck_effect() -> int:
 ## One-shot punctuation duck for a kill. Tier-gated by the CALLER (BattleScene owns turbo/autogrind); this only owns the bus math.
 func duck_music_for_kill() -> void:
 	var idx: int = _ensure_kill_duck_effect()
-	if idx == -1:
+	## COUNT-GUARDED like get_kill_duck_db: get_bus_effect errors on a short bus BEFORE returning null.
+	if idx == -1 or AudioServer.get_bus_effect_count(idx) <= KILL_DUCK_EFFECT_SLOT:
 		return
 	var amp = AudioServer.get_bus_effect(idx, KILL_DUCK_EFFECT_SLOT)
 	if amp == null:
