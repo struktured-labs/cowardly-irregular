@@ -23,6 +23,31 @@ extends GutTest
 const BM_SRC := "res://src/battle/BattleManager.gd"
 const ABILITIES := "res://data/abilities.json"
 
+var _saved_weather: String = ""
+var _saved_weather_timer: float = 0.0
+
+
+## The `executed` value below is a REPLICA of the multiplier path, not a call into the executor, so
+## every other factor must sit at identity or the comparison drifts. Terrain does already — a fresh
+## _bm() is `plains` — but weather comes from the GameState AUTOLOAD, which rolls on a timer, and
+## _execute_magic_ability scales elemental damage by it. Unpinned, this file failed on whichever
+## element the roll happened to favour: fire x0.75 under rain, lightning x1.25 under storm, clean
+## under clear (measured 2026-09-19, three consecutive runs, three different answers).
+func before_each() -> void:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs != null and "weather_condition" in gs:
+		_saved_weather = str(gs.weather_condition)
+		_saved_weather_timer = float(gs.weather_timer)
+		gs.weather_condition = "clear"
+		gs.weather_timer = 100000.0
+
+
+func after_each() -> void:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs != null and _saved_weather != "" and "weather_condition" in gs:
+		gs.weather_condition = _saved_weather
+		gs.weather_timer = _saved_weather_timer
+
 
 func _bm() -> Node:
 	var bm: Node = load(BM_SRC).new()
