@@ -162,8 +162,53 @@ run_gut() {
   # boot, which is the same stale-artifact class the header exists to close.
   : > "$RUN_LOG"
   _tree_stamp | tee -a "$RUN_LOG" >&2
-  "${BASE[@]}" "$@" 2>&1 | tee -a "$RUN_LOG"
+  # ⛔ BOUND THE RUN. A wedged godot is not a slow one and does not end on its own: the .461 gate
+  # spun 1h57m at 100% on ONE thread with its log frozen for 1h49m, and nothing in this script or
+  # in gate.sh would ever have stopped it. Measured suites are 268-689s, so 1800s is ~2.6x the
+  # worst observed and cannot cut a healthy run.
+  local _budget="${RUN_TESTS_TIMEOUT:-1800}" _t0 _elapsed
+  _t0=$SECONDS
+  # ⛔ PLAIN `timeout`, DELIBERATELY — NO `--kill-after`. THIS BINARY CANNOT DELIVER SIGKILL.
+  # Measured five lanes independently, identical cooperative child, only the signal varying:
+  #   --signal=TERM / INT / HUP / 15   fire AT the budget
+  #   --signal=KILL / 9                NEVER fire; the child runs to completion
+  # `--kill-after` escalates to SIGKILL, so it is the one path this binary cannot take — which is
+  # why four lanes' TERM-ignoring children all survived it. It bought us nothing here except
+  # turning a clean 124 into a 125, so it is gone. Godot has the DEFAULT SIGTERM disposition
+  # (SigIgn=0, bit 0x4000 clear in SigIgn and SigCgt, read off a live gate), so plain TERM reaps
+  # it and no escalation is needed. ⚠️ A CONSEQUENCE WORTH MORE THAN THIS CALL SITE:
+  # `timeout --signal=KILL N CMD` is a SILENT NO-OP as a bound — it returns 124 on schedule while
+  # the command runs on. Never reach for KILL as "the forceful option".
+  timeout "$_budget" "${BASE[@]}" "$@" 2>&1 | tee -a "$RUN_LOG"
   local ec=${PIPESTATUS[0]}
+  _elapsed=$(( SECONDS - _t0 ))
+  # ⛔ DO NOT TEST FOR 124 ALONE — THE CODE IS SET BY THE FLAGS, NOT BY THE IMPLEMENTATION.
+  # Plain / --signal=TERM -> 124; --kill-after -> 125. I first wrote this off as uutils-vs-GNU;
+  # it is not. And the code can name a signal that was NEVER SENT: a TERM-ignoring child under
+  # --kill-after returned EC=137 ("killed by SIGKILL") at elapsed 8007ms against a 2s budget —
+  # it ran to completion and exited on its own. A lane retracted that exact row as a measurement
+  # error when it was a true observation of a lying instrument.
+  # ELAPSED TIME is the only stable signal: only a run that actually reached the budget was cut
+  # by it. The code corroborates, it does not decide, and the normalisation to 124 below is
+  # load-bearing rather than a courtesy. The 125/137/143 arms are kept so a hand-rolled wrapper
+  # or a future fixed binary still lands here.
+  # This arm sits ABOVE the vacuity checks on purpose — a killed run prints no Totals, so without
+  # it a wedge exits 3 and reports itself as "NO TESTS RAN", which is a different defect entirely.
+  # (Measured: that is exactly what the first version of this arm did.)
+  case "$ec" in
+    124|125|137|143)
+      if [ "$_elapsed" -ge "$_budget" ]; then
+        echo "run_tests.sh: WEDGED — no exit after ${_budget}s (ran ${_elapsed}s, EC=$ec); killed, not failed." >&2
+        echo "  A hang is not a red: judge a long godot run by CPU TIME, not log growth. A spinning" >&2
+        echo "  NON-main thread means the GDScript is not the cause — we author no threads." >&2
+        echo "  per-thread CPU, no ptrace needed:  for t in /proc/<pid>/task/*; do ...; done" >&2
+        echo "  last file the log reached:" >&2
+        sed 's/\x1b\[[0-9;]*m//g' "$RUN_LOG" | command grep -aE '^res://' | tail -1 | sed 's/^/    /' >&2
+        echo "  logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
+        exit 124
+      fi
+      ;;
+  esac
   # `command grep`: the session grep is a ugrep shim carrying -I, and it SILENTLY skips a file it
   # judges binary. Godot logs can carry NUL bytes, which made a 150KB log read as zero matches —
   # a false zero on the artifact this assertion depends on.

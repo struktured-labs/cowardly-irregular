@@ -58,6 +58,13 @@ var _player_party: Array = []
 var _enemy_party: Array = []
 var _current_round: int = 0
 var _battle_log: Array[String] = []
+## The grind battle's terrain, set by the caller. Live gets one via BattleScene.set_terrain; this
+## engine was handed the same string and dropped it, so a cave grind scaled nothing.
+var terrain: String = "plains"
+## SNAPSHOT, not a live read. GameState._advance_weather ROLLS RANDOMLY during _process, so asking
+## it per cast made this engine's damage move between runs — measured, it broke a sibling's ratchet.
+## "clear" carries no modifier, so every existing caller stays exactly as deterministic as before.
+var weather: String = "clear"
 ## BattleManager:230. Steal gold scales with the victim's max HP on both sides of the port.
 const STEAL_GOLD_HP_DIVISOR: float = 500.0
 var _stolen_gold: int = 0
@@ -1183,6 +1190,15 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var variance: float = float(ability.get("damage_variance", 0.0))
 					if variance > 0.0:
 						base_dmg = int(base_dmg * randf_range(0.0, variance))
+					## TERRAIN + WEATHER, mirroring BattleManager:5274-5278 — live's ONLY application of
+					## either, in its magic executor, right here after the variance roll. The grind was
+					## handed a terrain by GameLoop and never read it: a cave grind fired fire at full
+					## strength while the same party in the same cave took 0.75x one speed setting away.
+					## Asked with an explicit terrain so live's cached battle state is never consulted.
+					if element != "":
+						base_dmg = int(base_dmg
+							* BattleManager.get_terrain_damage_modifier(element, terrain)
+							* BattleManager.get_weather_damage_modifier(element, weather))
 					## Equipment element damage bonus, mirroring BattleManager:5089. Live builds the key by
 					## CONCATENATION — `element + "_damage_bonus"` — which is why a literal census of either
 					## engine reports flame_sword's 1.5 as unread: four of the five keys occur ZERO times in

@@ -647,7 +647,7 @@ static func _load_sfx_manifest() -> void:
 
 func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db_override: float = NAN, pitch_scale: float = 1.0, pitch_jitter: bool = true) -> bool:
 	"""Try to play a file-based SFX from the manifest. Returns true if successful.
-	volume_db_override: if NAN, preserves the player's channel base volume.
+	volume_db_override: if NAN, leaves volume_db UNTOUCHED — the channel base only on a player nothing re-levels.
 	If set, overrides volume (used by play_battle_scaled).
 	pitch_jitter: false plays at exactly pitch_scale — for cues whose pitch is CONTENT
 	(recorded speech) rather than an impact to be varied. Defaults true: everything that
@@ -1167,13 +1167,15 @@ func play_strike_element(element: String) -> void:
 	if element == "":
 		return
 	# Own voice: this is a layer over the weapon hit, not a replacement for it.
-	_try_play_sfx_from_manifest(_strike_player if _strike_player != null else _battle_player, "strike_" + element.to_lower())
+	## Explicit level: the _battle_player fallback would otherwise inherit the last cue's trim.
+	_try_play_sfx_from_manifest(_strike_player if _strike_player != null else _battle_player, "strike_" + element.to_lower(), SFX_BATTLE_BASE_DB)
 
 
 ## Public: play weakness-hit stinger (msg 2789 axis D + cowir-battle msg 2787 visual).
 func play_weakness_flash() -> void:
 	# Own voice: BattleScene fires this in the same frame as the hit it accents.
-	_try_play_sfx_from_manifest(_flash_player if _flash_player != null else _battle_player, "weakness_flash")
+	## Explicit level: the _battle_player fallback would otherwise inherit the last cue's trim.
+	_try_play_sfx_from_manifest(_flash_player if _flash_player != null else _battle_player, "weakness_flash", SFX_BATTLE_BASE_DB)
 
 
 ## What night displaced, so dawn can hand it back. A SNAPSHOT rather than a re-derivation: only this

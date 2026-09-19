@@ -1,5 +1,29 @@
 extends GutTest
 
+## ⛔ QUARANTINED FROM test/unit BY cowir-main 2026-09-19 — THIS FILE WEDGES THE FULL SUITE.
+## NOT a judgement on the guard, which is correct and defends a real defect. It is quarantined
+## because it hangs the FLEET'S GATE, and a hang is worse than a red: it is not a verdict at all.
+##
+## Measured, twice, identically:
+##   .461 gate  wedged here, 1h57m before a human noticed  (nothing bounded the run then)
+##   .462 gate  PASSED — 13,018 tests green, this file included
+##   .463 gate  wedged here again, killed at 726s by the new bound
+## => ~2 of 3 full-suite runs. In ISOLATION it is clean: 8/8 consecutive single-file runs.
+##
+## The signature is identical both times and rules out this file's own GDScript:
+##   one NON-MAIN thread at 100% CPU, main thread BLOCKED (S), log frozen, 31 threads.
+## GUT runs tests on main, and the fleet authors no threads at all (`Thread.new` /
+## `WorkerThreadPool` = 0 files; `HTTPRequest.use_threads` false; no threaded ResourceLoader).
+## So the spinner is engine-internal — consistent with main blocked on the AudioServer lock while
+## the audio thread spins, which is what `_strip_effects()` below provokes by removing every
+## effect from a LIVE bus mid-run. @cowir-music flagged runtime bus-graph mutation independently.
+## UNCONFIRMED: a per-thread backtrace needs ptrace privileges not taken during a live capture.
+##
+## TO BRING IT BACK: make the arms not mutate a live AudioServer bus graph — a scratch bus, or
+## AudioServer.lock()/unlock() around the strip — then move the file back to test/unit. Do NOT
+## simply move it back; two of three gates is not flake, it is a blocker with a 67% rate.
+## Owner: @cowir-music. Quarantine is reversible and nothing here was weakened.
+
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 
 ## ⛔ `duck_music_for_dialogue` COMMITS ITS STATE BEFORE IT KNOWS THE BUS CAN CARRY IT. The holder is
@@ -30,14 +54,21 @@ func before_each() -> void:
 ## ⛔ REMOVES THE EFFECTS, NOT THE BUS. Deleting and re-adding the bus would change its index and its
 ## name-based routing (`MusicNight` sends into it), so the teardown could leave the chain altered for
 ## every later file. Stripping the effects reproduces `amp == null` with the bus identity untouched.
+## ⛔ UNDER `AudioServer.lock()`. Removing every effect from a LIVE bus mutates the graph the audio
+## thread is reading, and this file wedged 2 of 3 full-suite runs (.461, .463) with main blocked and a
+## non-main thread at 100% — never in isolation, 8/8. Mechanism UNCONFIRMED (no per-thread backtrace),
+## but lock/unlock is the documented way to touch audio state from main and costs nothing if it is not
+## the cause. A scratch bus cannot substitute: the subject resolves MUSIC_DUCK_BUS by name.
 func _strip_effects() -> int:
 	var idx: int = AudioServer.get_bus_index(SoundManager.MUSIC_DUCK_BUS)
 	if idx == -1:
 		return -1
 	_saved.clear()
+	AudioServer.lock()
 	while AudioServer.get_bus_effect_count(idx) > 0:
 		_saved.append(AudioServer.get_bus_effect(idx, 0))
 		AudioServer.remove_bus_effect(idx, 0)
+	AudioServer.unlock()
 	return idx
 
 
@@ -45,9 +76,11 @@ func _restore_effects() -> void:
 	var idx: int = AudioServer.get_bus_index(SoundManager.MUSIC_DUCK_BUS)
 	if idx == -1 or _saved.is_empty():
 		return
+	AudioServer.lock()
 	for e in _saved:
 		AudioServer.add_bus_effect(idx, e)
 		AudioServer.set_bus_effect_enabled(idx, AudioServer.get_bus_effect_count(idx) - 1, true)
+	AudioServer.unlock()
 	_saved.clear()
 
 

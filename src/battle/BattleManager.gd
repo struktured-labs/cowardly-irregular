@@ -388,11 +388,13 @@ func _get_terrain_modifiers(terrain: String) -> Dictionary:
 			return {"boost": [], "reduce": []}
 
 
-func get_terrain_damage_modifier(element: String) -> float:
+## `terrain` overrides the cached battle terrain for callers with no battle running (the grind resolver).
+func get_terrain_damage_modifier(element: String, terrain: String = "") -> float:
 	"""Get the damage modifier for an element based on current terrain"""
-	if element in _terrain_modifiers["boost"]:
+	var mods: Dictionary = _terrain_modifiers if terrain == "" else _get_terrain_modifiers(terrain)
+	if element in mods["boost"]:
 		return 1.0 + TERRAIN_MODIFIER_VALUE
-	elif element in _terrain_modifiers["reduce"]:
+	elif element in mods["reduce"]:
 		return 1.0 - TERRAIN_MODIFIER_VALUE
 	return 1.0
 
@@ -407,10 +409,11 @@ const WEATHER_DAMAGE_MODIFIERS: Dictionary = {
 const WEATHER_MISS_BONUS: Dictionary = {"fog": 0.15, "smog": 0.15}
 
 
-func get_weather_damage_modifier(element: String) -> float:
+## `weather` overrides the live rolling condition, for callers that must not read a global that moves.
+func get_weather_damage_modifier(element: String, weather: String = "") -> float:
 	if element == "":
 		return 1.0
-	var mods: Dictionary = WEATHER_DAMAGE_MODIFIERS.get(_current_weather(), {})
+	var mods: Dictionary = WEATHER_DAMAGE_MODIFIERS.get(_current_weather() if weather == "" else weather, {})
 	return float(mods.get(element, 1.0))
 
 
@@ -5451,7 +5454,13 @@ func estimate_attack_breakdown(attacker: Combatant, target: Combatant) -> Dictio
 	var def_val = target.get_buffed_stat("defense", target.defense)
 	var raw = int((atk * atk) / float(max(1, atk + def_val)))
 	var dmg: int = max(1, raw)
-	return {"damage": dmg, "formula": "ATK %d² ÷ (ATK %d + DEF %d) = %d, then ×variance ×crit" % [atk, atk, def_val, dmg]}
+	var formula: String = "ATK %d² ÷ (ATK %d + DEF %d) = %d" % [atk, atk, def_val, dmg]
+	## _apply_lens_execute_bonus runs on this path too, and it fires exactly when [KILL] is being read.
+	var lens: float = lens_execute_multiplier(attacker, target)
+	if not is_equal_approx(lens, 1.0):
+		dmg = max(1, int(dmg * lens))
+		formula += " ×execute %.2f = %d" % [lens, dmg]
+	return {"damage": dmg, "formula": formula + ", then ×variance ×crit"}
 
 
 func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Dictionary) -> int:
@@ -5486,11 +5495,23 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 	# preview matches reality (0.0x immune, 1.5x weak, 0.5x resist). Immunity
 	# returns a truthful 0, bypassing the min-1 floor, so an "Immune: Ice" enemy
 	# never previews phantom damage the swing won't actually deal.
+	## Both executors apply this before terrain, and it fires exactly when [KILL] is being read.
+	var lens_mod: float = lens_execute_multiplier(attacker, target)
+	if not is_equal_approx(lens_mod, 1.0):
+		mitigated = int(mitigated * lens_mod)
+		formula += " ×execute %.2f = %d" % [lens_mod, mitigated]
+
+	## Magic-only and terrain/weather first, both mirroring _execute_magic_ability: its physical twin reads no element at all.
 	var element_val = ability.get("element")
-	if element_val != null and str(element_val) != "":
-		var elem_mod: float = target.calculate_elemental_modifier(str(element_val))
+	if is_magical and element_val != null and str(element_val) != "":
+		var el: String = str(element_val)
+		var env_mod: float = get_terrain_damage_modifier(el) * get_weather_damage_modifier(el)
+		if not is_equal_approx(env_mod, 1.0):
+			mitigated = int(mitigated * env_mod)
+			formula += " ×terrain/weather %.2f = %d" % [env_mod, mitigated]
+		var elem_mod: float = target.calculate_elemental_modifier(el)
 		mitigated = int(mitigated * elem_mod)
-		formula += " ×%s %.2f = %d" % [str(element_val), elem_mod, mitigated]
+		formula += " ×%s %.2f = %d" % [el, elem_mod, mitigated]
 		if elem_mod <= 0.0:
 			return {"damage": 0, "formula": formula + " (immune)"}
 
@@ -5781,21 +5802,29 @@ func _apply_lens_mp_tithe(spender: Combatant) -> void:
 
 
 ## Arbiter Lens execute bonus (msg 3179). The axis fingerprint showed Arbiter is THRESHOLD damage, not flat damage — its identity ability is masterite_execution at 3.0x gated on wounded targets, which is why the doc's flat +8% ATK became +5% plus this. Applies to physical AND magic so a Mage holding the Arbiter Lens finishes the same way a Fighter does; the Lens describes the holder's approach, not their weapon.
-func _apply_lens_execute_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
+## The multiplier with no side effect, so the menu can quote Final Word without logging a line per row.
+func lens_execute_multiplier(attacker: Combatant, target: Combatant) -> float:
 	if attacker == null or target == null or not is_instance_valid(target) or target.max_hp <= 0:
-		return damage
+		return 1.0
 	if LensSystem == null:
-		return damage
+		return 1.0
 	var me: Dictionary = LensSystem.get_lens_meta_effects(attacker.combatant_name.to_lower().replace(" ", "_"))
 	var threshold: float = float(me.get("lens_execute_threshold", 0.0))
 	var bonus: float = float(me.get("lens_execute_bonus", 0.0))
 	if threshold <= 0.0 or bonus <= 0.0:
-		return damage
+		return 1.0
 	# Threshold reads the hp fraction BEFORE this hit lands — "finish the wounded", not "reward whatever this hit leaves behind".
 	if float(target.current_hp) / float(target.max_hp) > threshold:
+		return 1.0
+	return 1.0 + bonus
+
+
+func _apply_lens_execute_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
+	var mult: float = lens_execute_multiplier(attacker, target)
+	if is_equal_approx(mult, 1.0):
 		return damage
 	battle_log_message.emit("[color=orange]%s moves to finish it.[/color]" % attacker.combatant_name)
-	return int(damage * (1.0 + bonus))
+	return int(damage * mult)
 
 
 func _apply_market_sense(combatant: Combatant, damage: int) -> int:
