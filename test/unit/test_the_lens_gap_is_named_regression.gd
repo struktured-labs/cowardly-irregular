@@ -87,12 +87,28 @@ func test_no_status_names_a_key_that_no_lens_authors() -> void:
 	assert_eq(stale, [], "this file classifies keys no lens authors any more: %s" % str(stale))
 
 
-func test_the_ported_keys_are_actually_in_the_resolver() -> void:
+## ⛔ PINS THE CHAIN, NOT AN ADDRESS. The obvious form — "the resolver must contain the literal
+## lens_execute_bonus" — certifies LOCATION, and an EXTRACTION is a correct change that moves the
+## address without weakening anything. @cowir-battle red the .464 gate with exactly that shape an
+## hour ago, and the reconciliation I have already announced (the grind delegating to live's
+## lens_execute_multiplier) would have red THIS file next, by my own hand. So: the key is ported if
+## the resolver reads it directly OR routes to the shared helper that reads it.
+func test_the_ported_keys_are_reachable_from_the_resolver() -> void:
 	var code: String = GdSource.code_of(RESOLVER)
 	assert_gt(code.length(), 5000, "CONTROL: the resolver was actually read")
+	## ⛔ QUOTED, because the unquoted form is satisfied by the FUNCTION'S OWN NAME: the resolver
+	## declares _apply_lens_execute_bonus, so a bare contains("lens_execute_bonus") stays true with
+	## the body gutted to `return damage` — a clause that cannot fail, keyed to its own subject.
+	## Measured: gutting the helper left that key at 5 occurrences and lens_execute_threshold at 0,
+	## so one arm was load-bearing and its twin could never have spoken. A real read is `me.get("k")`.
+	var delegates: bool = code.contains("lens_execute_multiplier")
 	for k in IMPLEMENTED_IN_THE_GRIND:
-		assert_true(code.contains(k),
-			"%s is listed as ported and the resolver does not name it" % k)
+		assert_true(code.contains('"%s"' % k) or delegates,
+			"%s is listed as ported and the resolver neither reads it nor delegates to live's shared helper" % k)
+	## And the port must still REACH the engine, whichever form it takes — a helper nobody calls is
+	## the dead-feature shape this lane's ledger exists to catch.
+	assert_true(code.contains("_apply_lens_execute_bonus(caster") and code.contains("_apply_lens_execute_bonus(attacker"),
+		"the execute bonus is defined but no longer applied on both the ability and attack paths")
 
 
 func test_the_inherited_keys_are_in_the_class_both_engines_share() -> void:
