@@ -91,6 +91,25 @@ static func build_json() -> String:
 
 # ── Internal builders ─────────────────────────────────────────────────────────
 
+## A party member's job, preferring the STABLE key and treating an empty value as absent.
+##
+## Two hazards in one read, both from `Combatant.to_dict`:
+##   `job_id` is the only key stable across runs (its own comment says so) and this built
+##   the row from `job`, the DERIVED one — written as `data["job"] = data.get("job_id", "")`
+##   UNCONDITIONALLY, so a member serialized before a job was assigned carries `job: ""`.
+## A plain `get("job", "?")` then returns "" and the "?" default cannot fire.
+##
+## Sibling of the same defect in DynamicConversation, found by sweeping this lane for reads
+## of a DERIVED key after cowir-controller bounded the class: a derived key always exists,
+## so its absence can never signal anything.
+static func _member_job(d: Dictionary) -> String:
+	for key in ["job_id", "job"]:
+		var v: String = str(d.get(key, "")).strip_edges()
+		if v != "":
+			return v
+	return "?"
+
+
 static func _build_party(gs: Object) -> Array:
 	var raw_party: Variant = gs.get("player_party")
 	var party_list: Array = []
@@ -109,7 +128,7 @@ static func _build_party(gs: Object) -> Array:
 		hp_pct = clampi(hp_pct, 0, 100)
 		party_list.append({
 			"name": str(d.get("name", "?")),
-			"job":  str(d.get("job",  "?")),
+			"job":  _member_job(d),
 			"lv":   int(d.get("level", 1)),
 			"hp_pct": hp_pct,
 		})

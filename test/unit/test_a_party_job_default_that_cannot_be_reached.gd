@@ -78,3 +78,27 @@ func test_to_dict_really_writes_job_unconditionally() -> void:
 	assert_true(src.contains('data["job"] = data.get("job_id"'),
 		("Combatant.to_dict no longer writes `job` from `job_id` unconditionally. The empty-"
 		+ "middle-key premise these arms are built on has changed."))
+
+
+# ── the sibling: LLMContext reads the DERIVED key and never the stable one ────
+
+const CTX := preload("res://src/llm/LLMContext.gd")
+
+
+func test_the_context_builder_has_the_same_hole() -> void:
+	## SIBLING, found by sweeping this lane for reads of a key `Combatant.to_dict` DERIVES
+	## rather than stores. Same empty-middle-key shape, different default.
+	assert_eq(CTX._member_job({"name": "Kai", "job": ""}), "?",
+		"an empty derived job must fall through to the context builder's own default")
+
+
+func test_the_context_builder_prefers_the_stable_key() -> void:
+	## AND THE SECOND HALF, which the original site did not have: this read `job` ONLY.
+	## `job_id` is the key Combatant documents as the one stable across runs.
+	assert_eq(CTX._member_job({"job_id": "mage", "job": "stale"}), "mage",
+		"the context builder must prefer job_id — it reads the derived key otherwise")
+
+
+func test_the_context_builder_still_accepts_a_real_job() -> void:
+	assert_eq(CTX._member_job({"job": "bard"}), "bard",
+		"a real job value was discarded by the sibling fix")

@@ -888,8 +888,6 @@ func _exchange_cap() -> int:
 	return mini(cap, MAX_EXCHANGES_CEILING)
 
 
-## Snapshot live party state for the prompt. Every read is guarded — a shape
-## change in GameState must degrade to a thinner prompt, never break dialogue.
 ## A party entry's job, treating an EMPTY value as ABSENT.
 ##
 ## `Combatant.to_dict` writes `data["job"] = data.get("job_id", "")` UNCONDITIONALLY, so an
@@ -909,6 +907,8 @@ static func _party_job(entry: Dictionary) -> String:
 	return "adventurer"
 
 
+## Snapshot live party state for the prompt. Every read is guarded — a shape
+## change in GameState must degrade to a thinner prompt, never break dialogue.
 func _resolve_party_state() -> Dictionary:
 	var gs: Node = get_node_or_null("/root/GameState")
 	if gs == null or not ("player_party" in gs):
