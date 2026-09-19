@@ -288,9 +288,6 @@ var _battle_action_log: Array[Dictionary] = []  # Log every player action per ba
 ## listeners, and emitting it from end_battle just computed the
 ## summary a second time per battle for no reader.
 
-## Action speed modifiers (lower = faster)
-## Subtracted from a priority action's speed. Larger than any reachable speed_value, so a priority
-## action outruns the whole queue while priority actions still sort against each other.
 ## ⛔ start_battle CLEARED FIELDS AND NEVER METAS, and the party's Combatants are REUSED objects
 ## (GameLoop holds them across every battle), so a per-battle meta outlived the fight that set it.
 ## The measured leak: a Summoner's `_summon_followup` holds `remaining_turns` and is removed only
@@ -324,6 +321,9 @@ const PER_BATTLE_METAS: Array[String] = [
 	"_bark_adv_", "_bark_auto_",
 ]
 
+## Action speed modifiers (lower = faster)
+## Subtracted from a priority action's speed. Larger than any reachable speed_value, so a priority
+## action outruns the whole queue while priority actions still sort against each other.
 const PRIORITY_OFFSET: float = 1000.0
 
 ## The ability types an archetype's UTILITY slot may select, in ONE place — three filters carried
