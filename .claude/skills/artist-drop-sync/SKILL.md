@@ -1,6 +1,6 @@
 ---
 name: artist-drop-sync
-description: Pull new artist sprite drops from Google Drive and integrate them into the game. Covers rclone paths, aseprite tag conventions, the 128px magic number, facing, manifest wiring, and the artist-canon rules. Use when the artist drops a sprite, when checking for new drops, or when integrating any .aseprite into the game.
+description: "Pull new artist sprite drops from Google Drive and integrate them into the game. INVOKE THE MOMENT anyone says a sprite/animation 'dropped', 'just landed', 'is in drive', 'suck it in', 'pull it in', 'ingest it', or names a job/monster plus a new pose — the art is ALREADY on Drive under the space-prefixed \" cowir\" remote and nothing checks automatically, so searching the repo first finds nothing and looks like there is no drop. Covers rclone paths, the leading-space gotcha, aseprite tag conventions and tag-shift, the 128px magic number, facing, manifest wiring, the artist sprite ledger, and the artist-canon rules."
 ---
 
 # Artist Drop → Game Sprite Sync
@@ -25,10 +25,19 @@ and wiring it in without silently breaking it.**
 
 > ⚠️ **The Drive root folder is literally named `" cowir"` — LEADING SPACE.**
 > `gdrive:cowir/...` fails with `directory not found`. Use
-> `rclone lsl "gdrive: cowir"`. The hourly
-> `check_for_new_artist_sprites.sh` has the pre-space path baked in and has
-> been silently finding nothing — a 646KB Mordaine drop sat unnoticed for
-> two days.
+> `rclone lsl "gdrive: cowir"`. Re-verified 2026-09-19: the bare form still
+> errors, the spaced form still works.
+>
+> 🛑 **NOTHING CHECKS FOR DROPS AUTOMATICALLY. DO NOT WAIT TO BE TOLD.**
+> Corrected 2026-09-19: `tools/check_for_new_artist_sprites.sh` **does** have
+> the spaced path (line 15) — that half of this warning was stale. The reason
+> drops go unnoticed is that **its cron entry is COMMENTED OUT** (since
+> 2026-06-14, *"embed script no longer covers enemies, manual ingest for now"*)
+> and points at `cowardly-irregular-sprite-gen`, a different checkout.
+> So a drop can sit for days with no signal at all — the 2026-09-18 Bard
+> Celebration drop sat ~21 hours until struktured mentioned it in chat.
+> **When anyone says a sprite "dropped", assume it is already on Drive and
+> LOOK, rather than searching the repo and reporting nothing found.**
 
 ```bash
 rclone lsl "gdrive: cowir" | sort -k2,3 -r | head -30   # newest first
@@ -53,6 +62,23 @@ Tag names are **not standardized**:
 |---|---|
 | fighter | `IDLE`, `Attack`, `Dash` |
 | Mordaine (2026-07-23) | `Idle`, `summon 1` — case differs, boss-specific verb |
+| bard (2026-09-18) | `Idle`, `Celebration`, `Dead`, `Weak`, `ATK` |
+
+**`Celebration` is the artist's word for the VICTORY pose.** Their label, the
+engine's slot name, and the manifest keeps both — the same way `Dead`/`Weak`
+were kept when they split the downed state. Map it, do not rename their tag.
+
+🛑 **A NEW TAG SHIFTS EVERY LATER TAG'S FRAME RANGE.** Inserting `Celebration`
+at frame 4 moved `Dead` 4-8 → 15-20, `Weak` 9-13 → 21-25, `ATK` 14-22 → 26-34.
+Any hardcoded range silently slices the wrong animation — this is why
+`ingest_tagged_aseprite_drop.py` reads ranges from the file, and why it
+superseded a predecessor that hardcoded them. **Never carry ranges between
+drops.**
+
+📌 **RE-EXPORT EVERYTHING, THEN READ `git status` TO SEE WHAT THE DROP ACTUALLY
+CHANGED.** The 09-18 bard drop re-exported idle/weak/cast/attack byte-identical;
+only `victory` (new) and `dead` (5→6 frames) moved. The diff is the honest
+answer to "what did the artist change", and it costs nothing.
 
 `--list-tags` alone prints only names. For **frame ranges** you must add
 `--data`:
@@ -175,6 +201,28 @@ godot --headless --audio-driver Dummy --import --quit
 > A test reading a sprite through `load()` sees the cached `.ctex`, not the
 > PNG. A file `git hash-object` proves identical to main can still measure
 > stale pixels. **Always `--import` before trusting an asset test.**
+
+## 7b. 🛑 THE ARTIST SPRITE LEDGER WILL BLOCK YOU — THAT IS ITS JOB
+
+`test_artist_sprite_ledger_regression` pins the bytes of every artist sprite.
+Any ingest changes those bytes, so the guard **fails by design** and names each
+file:
+
+```
+assets/sprites/jobs/bard/victory.png: content changed without a ledger update
+```
+
+It is not a regression and it is not the drop being wrong. If the change is
+deliberate — an ingest always is — regenerate the ledger and commit the diff:
+
+```bash
+uv run python tools/update_artist_ledger.py     # writes data/artist_sprite_ledger.json
+```
+
+⛔ **Do NOT skip, exempt, or weaken the guard to get green.** It exists so that a
+fold which silently regresses artist pixels is loud, and today it correctly
+caught both files a real ingest touched. Re-run the corpus after the ledger
+update; it should go green with no other change.
 
 ## 8. Ship
 
