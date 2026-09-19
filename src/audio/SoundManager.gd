@@ -1203,6 +1203,10 @@ func set_night_ambience(enabled: bool) -> void:
 			_pre_night_ambient_key = _current_ambient_key
 		if _sfx_manifest.has(NIGHT_AMBIENCE_KEY):
 			play_ambient(NIGHT_AMBIENCE_KEY)
+			## play_ambient stops the old bed BEFORE any of its four failure returns, so a night that cannot start leaves the layer silent with nothing armed to hand it back -- the dawn branch below keys on night being current and never fires. Restore here instead of waiting for it.
+			if _current_ambient_key != NIGHT_AMBIENCE_KEY and _pre_night_ambient_key != "":
+				play_ambient(_pre_night_ambient_key)
+				_pre_night_ambient_key = ""
 	else:
 		if _current_ambient_key == NIGHT_AMBIENCE_KEY:
 			if _pre_night_ambient_key != "":
