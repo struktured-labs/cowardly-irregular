@@ -11,7 +11,10 @@ extends GutTest
 ## not contradictions, and they belong to struktured:
 ##   speed term   live divides by the target's speed (a RATIO); headless uses the RAW difference,
 ##                so a fast attacker reaches the 2% floor far sooner in a grind
-##   weather      live adds get_weather_miss_bonus(); the headless resolver has no weather at all
+##   weather      the ACCURACY half only. live adds get_weather_miss_bonus() and the resolver still
+##                does not — a balance call. Its DAMAGE half was a different thing and is CLOSED:
+##                the resolver now scales elemental damage by terrain and weather like live does,
+##                because that one was a two-engines-disagree defect rather than a tuning choice.
 ## Pinned below so they cannot drift further while nobody is looking.
 
 const RESOLVER := "res://src/autogrind/HeadlessBattleResolver.gd"
@@ -68,8 +71,10 @@ func test_the_two_KNOWN_divergences_have_not_grown() -> void:
 		"the headless resolver still uses the RAW speed difference — if this changed, the grind was retuned")
 	assert_true(live.contains("get_weather_miss_bonus()"),
 		"live still applies a weather miss bonus")
-	assert_eq(head.count("weather"), 0,
-		"the headless resolver still has no weather concept — if it gained one, the parity note needs rewriting")
+	## Narrowed from `count("weather") == 0` when the resolver gained weather DAMAGE. This file is
+	## about the miss path, and that is the half still open — a bare "weather" count conflated them.
+	assert_eq(head.count("get_weather_miss_bonus"), 0,
+		"the headless resolver gained a weather MISS bonus — that was struktured's balance call to make")
 
 
 ## ── the rest of the gap, enumerated so it cannot grow quietly ─────────────────────────────────
