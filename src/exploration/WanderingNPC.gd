@@ -256,9 +256,15 @@ func _try_load_archetype() -> bool:
 		return false
 	var tex = load(path) as Texture2D
 	if not tex:
+		# Same treatment as OverworldNPC's _try_load_archetype_sprite: the file EXISTS, so it was
+		# meant to load, and silence hands the artist a chibi with no reason. Absence above stays
+		# silent — guarded by `sprite_archetype != ""` with 0 of 7 overrides missing, so it can
+		# only fire for an archetype whose sheet has not landed yet.
+		push_warning("[WanderingNPC] '%s' exists at %s but did not load as a Texture2D — falling back to procedural" % [sprite_archetype, path])
 		return false
 	var img = tex.get_image()
 	if not img or img.get_width() < 128 or img.get_height() < 128:
+		push_warning("[WanderingNPC] '%s' sheet is %s, under the 128x128 floor for a 4x4 grid of 32x32 frames — falling back to procedural" % [sprite_archetype, ("unreadable" if not img else "%dx%d" % [img.get_width(), img.get_height()])])
 		return false
 	# 4×4 grid, 32x32 frames. Sheet rows: 0=down, 1=left, 2=right, 3=up.
 	for row in range(4):
