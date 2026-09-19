@@ -151,6 +151,37 @@ func test_the_bonus_matches_what_the_lens_authors() -> void:
 		% [threshold, bonus, _res._apply_lens_execute_bonus(attacker, wounded, 100)])
 
 
+## ⚠️ SELF-ARMING, AND DELIBERATELY NOT A DEPENDENCY. @cowir-battle is extracting live's threshold
+## arithmetic into BattleManager.lens_execute_multiplier (on their branch at :5803, NOT on main as
+## of this commit). When it lands, live and this engine will hold TWO implementations of one
+## authored number — the twin-formula shape that "happens to agree today". This arm is inert while
+## the helper is absent and starts comparing the moment it exists, so the reconciliation cannot be
+## forgotten. It asserts AGREEMENT, never absence, so it can never red somebody else's fold.
+func test_the_grind_agrees_with_lives_multiplier_once_that_helper_exists() -> void:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null or not bm.has_method("lens_execute_multiplier"):
+		pass_test("live has no lens_execute_multiplier yet — nothing to reconcile")
+		return
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null:
+		pass_test("GameState autoload unavailable")
+		return
+	var keep: Dictionary = (gs.lens_assignments as Dictionary).duplicate()
+	var attacker := _combatant("Arbiter Holder", 9999)
+	if not _equip("Arbiter Holder", "arbiter"):
+		gs.lens_assignments = keep
+		pass_test("arbiter lens unavailable")
+		return
+	for hp in [1000, 9000]:
+		var target := _combatant("Victim", hp)
+		var live_mult: float = float(bm.lens_execute_multiplier(attacker, target))
+		var mine: int = _res._apply_lens_execute_bonus(attacker, target, 200)
+		gut.p("    hp %d: live x%.2f -> %d, grind -> %d" % [hp, live_mult, int(200.0 * live_mult), mine])
+		assert_eq(mine, int(200.0 * live_mult),
+			"the grind's execute arithmetic diverged from live's shared helper at hp %d — two copies of one authored number, and they no longer agree" % hp)
+	gs.lens_assignments = keep
+
+
 ## Derived from this file's own source: every symbol reached on the resolver must exist on it.
 func test_every_resolver_symbol_this_file_reaches_exists() -> void:
 	var mine: String = GdSource.code_of(get_script().resource_path)
