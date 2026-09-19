@@ -270,10 +270,25 @@ if [ "${1:-}" != "--selftest" ]; then
     # PUBLISH_CMD exists so the selftest can exercise THIS launcher rather than a copy of it.
     # A copied launcher proves nothing about the shipped one. Default is fixed.
     CMD="${PUBLISH_CMD:-./tools/publish_all.sh}"
+    # EXTRAS GO BEFORE THE TAG. publish_all's option loop ends at the first positional
+    # (`*) break ;;`) and its usage is explicit: [--check|--dry-run|--rollback|--read-back]
+    # <tag>. This launch line used to read `"$CMD" "$TAG" "$@"`, so the "[extra publish_all
+    # args...]" this file documents had NEVER worked for any flag -- they arrived in argv at a
+    # position the parser cannot reach.
+    #
+    # Measured with an invalid tag, so nothing could publish:
+    #     publish_all.sh --bogusflag <tag>  -> "unknown option: --bogusflag"  EC=2  SEEN
+    #     publish_all.sh <tag> --bogusflag  -> no error whatever              EC=4  IGNORED
+    #
+    # This shipped once as inert: publish_newest.sh started passing --read-back and
+    # v3.33.457-alpha still printed "STORE READ-BACK NOT PERFORMED". The test that missed it
+    # stubbed publish_all with a script that echoed its arguments, proving ARRIVAL while the
+    # broken thing was EFFECT -- a stub with no parser cannot drop a flag the way every real
+    # parser does.
     setsid bash -c '
         "$0" "$@" > "'"$LOGDIR"'/publish.log" 2>&1
         echo $? > "'"$LOGDIR"'/publish.ec"
-    ' "$CMD" "$TAG" "$@" < /dev/null > /dev/null 2>&1 &
+    ' "$CMD" "$@" "$TAG" < /dev/null > /dev/null 2>&1 &
 
     # ⛔ "launched" IS A CLAIM ABOUT STATE, SO DO NOT PRINT IT UNTIL THE STATE IS TRUE.
     # This used to be an unconditional echo directly after the `&`. If setsid itself fails,
@@ -448,6 +463,36 @@ _obslog "$R_START"
 PUBLISH_CMD="$T/ok.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="__absent__" \
   PUBLISH_OBS_LOG_DIR="$O" ./tools/publish_detached.sh ZZ-obsgone >/dev/null 2>&1
 chk "stale 'Recording Start' with obs NOT running -> launch" "$?" "0"
+
+# ⛔ 8 — EXTRA ARGS MUST LAND WHERE THE REAL PARSER READS THEM. Not "were they forwarded" --
+# they always were. The question is whether publish_all can SEE them, and only the real
+# publish_all can answer it: its option loop ends at the first positional, so a flag placed
+# after the tag is silently ignored. A stub cannot exhibit that, which is exactly how the
+# inert version of this fix passed its own end-to-end test.
+#
+# The probe is a DELIBERATELY INVALID flag against an INVALID tag: the real publish_all must
+# reject it with "unknown option" before doing anything. Nothing can publish -- the tag does
+# not exist -- and the error only appears if the parser reached the flag at all.
+_probe_log="$(_logdir ZZ-argpos)/publish.log"
+rm -rf "$(_logdir ZZ-argpos)"
+PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="__absent__" \
+  ./tools/publish_detached.sh ZZ-argpos --zzz-probe-unknown >/dev/null 2>&1
+_w=0; while [ $_w -lt 40 ] && [ ! -f "$(_logdir ZZ-argpos)/publish.ec" ]; do sleep 0.25; _w=$((_w+1)); done
+case "$(cat "$_probe_log" 2>/dev/null)" in
+    *"unknown option: --zzz-probe-unknown"*)
+        chk "an extra flag REACHES publish_all's parser" "seen" "seen" ;;
+    *)  chk "an extra flag REACHES publish_all's parser" "ignored — extras land after the tag" "seen" ;;
+esac
+# CONTROL: with NO extra flag the same probe must NOT report an unknown option, or the arm
+# above passes on a publish_all that rejects everything.
+rm -rf "$(_logdir ZZ-argnone)"
+PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="__absent__" \
+  ./tools/publish_detached.sh ZZ-argnone >/dev/null 2>&1
+_w=0; while [ $_w -lt 40 ] && [ ! -f "$(_logdir ZZ-argnone)/publish.ec" ]; do sleep 0.25; _w=$((_w+1)); done
+case "$(cat "$(_logdir ZZ-argnone)/publish.log" 2>/dev/null)" in
+    *"unknown option"*) chk "  ...and a clean launch reports no unknown option" "reported" "quiet" ;;
+    *)                  chk "  ...and a clean launch reports no unknown option" "quiet" "quiet" ;;
+esac
 
 # 6/7 — --status is BOUNDED and reports the recorded code rather than hanging.
 ./tools/publish_detached.sh --status "$(_logdir ZZ-bad)" 30 >/dev/null 2>&1
