@@ -93,7 +93,7 @@ func test_a_cave_grind_boosts_ice_like_the_live_engine_does() -> void:
 	var plains: int = _damage_on("plains", "blizzard")
 	var cave: int = _damage_on("cave", "blizzard")
 	gut.p("    ice: plains %d -> cave %d" % [plains, cave])
-	assert_gt(plains, 0, "CONTROL: the spell must land at all")
+	assert_gt(plains, 0, "CONTROL: blizzard must land at all (ice arm)")
 	assert_gt(cave, plains,
 		"the cave boosts ice in live and the grind reported the plains number")
 
@@ -137,7 +137,7 @@ func test_the_engine_reads_its_own_weather_not_the_worlds() -> void:
 	gs.set_weather("rain")
 	var wet: int = _damage_on("plains", "fire")
 	gut.p("    world weather clear %d -> rain %d (engine must not move)" % [calm, wet])
-	assert_gt(calm, 0, "CONTROL: the spell must land at all")
+	assert_gt(calm, 0, "CONTROL: fire must land at all under clear world weather (snapshot arm)")
 	assert_eq(wet, calm,
 		"the world's weather moved this engine's damage — it is reading the rolling global again")
 	_res.weather = "rain"

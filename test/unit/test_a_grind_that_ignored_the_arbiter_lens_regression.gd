@@ -104,7 +104,7 @@ func test_the_arbiter_finishes_a_wounded_enemy_on_every_damage_path() -> void:
 		var r: Array = _pair(path, 1000)   # 10% of max_hp, under the 0.25 threshold
 		gut.p("    %-6s wounded: bare %d -> arbiter %d" % [path, r[0], r[1]])
 		assert_ne(r[1], -1, "CONTROL: the lens must actually equip, or this arm measures nothing")
-		assert_gt(r[0], 0, "CONTROL: %s must deal damage at all" % path)
+		assert_gt(r[0], 0, "CONTROL: %s must deal damage to a wounded target at all" % path)
 		assert_gt(r[1], r[0],
 			"%s ignored the Arbiter Lens — live adds 50%% against a target under the threshold" % path)
 
@@ -117,7 +117,7 @@ func test_a_healthy_enemy_is_untouched_by_the_arbiter() -> void:
 	for path in ["attack", "power", "magic"]:
 		var r: Array = _pair(path, 9000)   # 90% of max_hp, well above the threshold
 		gut.p("    %-6s healthy: bare %d -> arbiter %d" % [path, r[0], r[1]])
-		assert_gt(r[0], 0, "CONTROL: %s must deal damage at all" % path)
+		assert_gt(r[0], 0, "CONTROL: %s must deal damage to a healthy target at all" % path)
 		assert_eq(r[1], r[0],
 			"%s applied the execute bonus to a HEALTHY target — the threshold is not being read" % path)
 
