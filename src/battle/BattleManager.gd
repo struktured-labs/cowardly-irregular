@@ -3772,8 +3772,8 @@ func _execute_group_action(action: Dictionary) -> void:
 	print("[GROUP] Executing %s with %d participants vs %d enemies" % [
 		group_type, participants.size(), alive_enemies.size()])
 
-	# Determine AP cost per participant
-	var ap_cost: int = 4 if group_type == "limit_break" else (2 if group_type == "combo_magic" else 1)
+	# The same table the command menu gates these rows on, not a second copy of its numbers
+	var ap_cost: int = int(GROUP_AP_COST.get(group_type, 1))
 
 	if group_type == "combo_magic":
 		_execute_combo_magic(participants, alive_enemies, ap_cost)
