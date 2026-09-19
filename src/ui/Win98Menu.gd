@@ -1424,11 +1424,8 @@ func _queue_is_full() -> bool:
 ## the press that FILLED the queue committed it — so a full queue never needed a refusal.
 func _refuse_advance_full() -> void:
 	var root = _get_root_menu()
-	# cowir-sfx ships SoundManager.play_advance_state (manifest-guarded); fall back until it lands.
-	if SoundManager.has_method("play_advance_state"):
-		SoundManager.play_advance_state("advance_queue_full")
-	else:
-		SoundManager.play_ui("menu_error")
+	# It landed in fd76239b1 (2026-09-14); the has_method shim it replaced could never be false.
+	SoundManager.play_advance_state("advance_queue_full")
 	root._shake_queue_readout()
 	var label := _find_hint_label()
 	if label:
