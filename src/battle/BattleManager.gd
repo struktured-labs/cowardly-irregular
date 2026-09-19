@@ -388,11 +388,13 @@ func _get_terrain_modifiers(terrain: String) -> Dictionary:
 			return {"boost": [], "reduce": []}
 
 
-func get_terrain_damage_modifier(element: String) -> float:
+## `terrain` overrides the cached battle terrain for callers with no battle running (the grind resolver).
+func get_terrain_damage_modifier(element: String, terrain: String = "") -> float:
 	"""Get the damage modifier for an element based on current terrain"""
-	if element in _terrain_modifiers["boost"]:
+	var mods: Dictionary = _terrain_modifiers if terrain == "" else _get_terrain_modifiers(terrain)
+	if element in mods["boost"]:
 		return 1.0 + TERRAIN_MODIFIER_VALUE
-	elif element in _terrain_modifiers["reduce"]:
+	elif element in mods["reduce"]:
 		return 1.0 - TERRAIN_MODIFIER_VALUE
 	return 1.0
 
@@ -407,10 +409,11 @@ const WEATHER_DAMAGE_MODIFIERS: Dictionary = {
 const WEATHER_MISS_BONUS: Dictionary = {"fog": 0.15, "smog": 0.15}
 
 
-func get_weather_damage_modifier(element: String) -> float:
+## `weather` overrides the live rolling condition, for callers that must not read a global that moves.
+func get_weather_damage_modifier(element: String, weather: String = "") -> float:
 	if element == "":
 		return 1.0
-	var mods: Dictionary = WEATHER_DAMAGE_MODIFIERS.get(_current_weather(), {})
+	var mods: Dictionary = WEATHER_DAMAGE_MODIFIERS.get(_current_weather() if weather == "" else weather, {})
 	return float(mods.get(element, 1.0))
 
 

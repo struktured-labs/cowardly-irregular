@@ -5876,6 +5876,11 @@ func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
 
 func _resolve_headless_battle(enemy_data: Array) -> void:
 	var resolver = HeadlessBattleResolver.new()
+	## _on_grind_battle_requested stored the terrain one frame up; only the live branch was reading it.
+	resolver.terrain = _current_terrain
+	## Snapshotted here rather than read inside the resolver, so the engine has no moving global.
+	if GameState and GameState.has_method("get_weather"):
+		resolver.weather = GameState.get_weather()
 
 	var enemies: Array = []
 	for data in enemy_data:
