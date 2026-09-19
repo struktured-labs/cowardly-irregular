@@ -217,11 +217,22 @@ echo "[stage] 4/4 import + export (first run builds a fresh cache, ~minutes)"
 # 2026-09-16, and this comment used to say so as if it were permanent.
 # Found 2026-09-16 by widening check_user_data_sandboxed.py's corpus from tools/deploy_*.sh to
 # tools/*.sh — the hand-shaped glob covered 4 files and this one was not among them.
+_REPO="$PWD"   # the subshells below `cd "$STAGE"`, so the runner needs an absolute path
 _STAGE_XDG="$PWD/tmp/stage_xdg"
 mkdir -p "$_STAGE_XDG"
+# ⛔ BOUNDED via tools/bounded_godot.sh. A wedge here is not a RED, it is NO VERDICT, and it
+# never ends. The runner owns the log so its verdict lands OUTSIDE the caller's redirection,
+# and it speaks on the passing arm too — see that file's header for the measurements (uutils
+# timeout cannot deliver SIGKILL; the verdict is ELAPSED, never the exit code).
+# The log path is unchanged (../stage_import.log relative to $STAGE) because check_import_ok.sh
+# and the arms below read it by that name.
 ( cd "$STAGE" && mkdir -p builds/web \
-  && XDG_DATA_HOME="$_STAGE_XDG" godot --headless --audio-driver Dummy --import > ../stage_import.log 2>&1 ) &
+  && XDG_DATA_HOME="$_STAGE_XDG" "$_REPO/tools/bounded_godot.sh" \
+       --label "stage import" --budget "${STAGE_IMPORT_BUDGET:-1800}" --log ../stage_import.log -- \
+       godot --headless --audio-driver Dummy --import ) &
 IEC=0; wait $! || IEC=$?
+test $IEC -ne 124 || { echo "[stage] BLOCKED: no verdict on the staged import (see above)." >&2
+                       echo "        Raise it with STAGE_IMPORT_BUDGET=<seconds> if the box is genuinely slow." >&2; exit 3; }
 
 # ── IS A NON-ZERO IMPORT EXIT ACTUALLY AN IMPORT FAILURE? ────────────────────────────────────
 # It was not on 2026-09-18. `v3.33.422-alpha` red HERE and blocked the web channel while linux
@@ -262,9 +273,16 @@ fi
 _EXPORT_XDG="$(./tools/export_sandbox.sh "$PWD/tmp/export_xdg")" || {
     echo "[stage] BLOCKED: could not build the export sandbox — see above." >&2
     exit 3; }
-( cd "$STAGE" && XDG_DATA_HOME="$_EXPORT_XDG" godot --headless --audio-driver Dummy \
-    --export-release "Web" builds/web/index.html > ../stage_export.log 2>&1 ) &
+# ⛔ BOUNDED via tools/bounded_godot.sh. A wedge here is not a RED, it is NO VERDICT, and it
+# never ends. The runner owns the log so its verdict lands OUTSIDE the caller's redirection,
+# and it speaks on the passing arm too — see that file's header for the measurements (uutils
+# timeout cannot deliver SIGKILL; the verdict is ELAPSED, never the exit code).
+( cd "$STAGE" && XDG_DATA_HOME="$_EXPORT_XDG" "$_REPO/tools/bounded_godot.sh" \
+    --label "stage export" --budget "${STAGE_EXPORT_BUDGET:-1800}" --log ../stage_export.log -- \
+    godot --headless --audio-driver Dummy --export-release "Web" builds/web/index.html ) &
 EEC=0; wait $! || EEC=$?
+test $EEC -ne 124 || { echo "[stage] BLOCKED: no verdict on the staged export (see above) — the pck may be PARTIAL." >&2
+                       echo "        Raise it with STAGE_EXPORT_BUDGET=<seconds> if the box is genuinely slow." >&2; exit 3; }
 test $EEC -eq 0 || { echo "[stage] BLOCKED: staged export failed — tmp/stage_export.log" >&2; exit 3; }
 
 PCK="$STAGE/builds/web/index.pck"

@@ -500,6 +500,36 @@ else
     exit 4
 fi
 
+# ── 0a-1b. every godot invocation on the publish path runs under a clock ────
+# The sibling of 0a-1, and it exists because the hazard 0a-1 guards against had a twin nobody
+# had swept for. 2026-09-19: SEVEN godot invocations on this path, EXACTLY ONE bounded. A wedge
+# in any of the other six is worse than an unbounded `until` loop, because this publish runs
+# DETACHED — no publish.ec is ever written and `--status` waits on that file forever. A release
+# that simply never happens, with no RED, no exit code and no log line.
+#
+# It BLOCKS on the publish path and INVENTORIES the rest (the fleet's test runner and four
+# screenshot tools are genuinely unbounded and are not this lane's to bound tonight); the
+# out-of-scope count is printed every run so it is a stated scope rather than a blind spot.
+if [ -f tools/check_godot_bounded.py ]; then
+    if ! _ST=$(python3 tools/check_godot_bounded.py --selftest 2>&1); then
+        printf '%s\n' "$_ST" | tail -25 >&2
+        echo "[pub] BLOCKED: tools/check_godot_bounded.py FAILED ITS OWN SELFTEST — the unbounded-godot" >&2
+        echo "      detector is not answering correctly, so its verdict on this tree means" >&2
+        echo "      nothing. A present guard is not a working one." >&2
+        exit 4
+    fi
+    echo "[pub] selftest ok: tools/check_godot_bounded.py (unbounded-godot detector) — arms ran and passed"
+    if ! python3 tools/check_godot_bounded.py; then
+        echo "[pub] BLOCKED: a godot invocation on the publish path has no clock on it — see above." >&2
+        echo "      Refusing to start a detached batch that can hang instead of failing." >&2
+        exit 4
+    fi
+else
+    echo "[pub] BLOCKED: tools/check_godot_bounded.py missing — nothing has checked that this" >&2
+    echo "      chain can still time out around godot. A missing guard is not a passing one." >&2
+    exit 4
+fi
+
 # ── 0a-2. every invocation that can write user:// redirects it ───────────────
 # 2026-09-16: struktured's live profile took five log rotations from this chain in one day, each
 # three seconds before this lane's own archived boot log for .355 · .356 · .357 · .358. Godot
@@ -918,29 +948,19 @@ mkdir -p tmp/prewarm_xdg
 # launched DETACHED, so a wedge writes no publish.ec, and `publish_detached.sh --status` waits
 # on that file. A hang would present as a release that simply never happens.
 #
-# THE PLAIN FORM IS DELIBERATE. Measured on this box tonight, four lanes agreeing:
-#   uutils timeout 0.2.2 CANNOT DELIVER SIGKILL — `--signal=KILL` runs to completion and
-#   still reports 124. So `--kill-after` buys nothing here but a changed exit code, and
-#   `--signal=KILL` is a SILENT NO-OP as a bound. TERM delivers; every other signal delivers.
-#   godot honours TERM: /proc/<pid>/status SigIgn=0, bit 0x4000 clear, read off this lane's
-#   own `godot --headless --import` run, identified by exe rather than by pattern.
-# So: plain `timeout`, TERM at the budget, and do NOT "harden" this with --kill-after.
-#
-# ⚠️ AND THE VERDICT IS ELAPSED, NEVER THE CODE. The same measurements showed `timeout`
-# reporting 124 for a command that ran 6x its budget untouched, and 137 — "killed by SIGKILL" —
-# for a process that exited normally. The code names events that did not happen; the clock does
-# not. 1800s is ~10x the observed import time (161s worst case across nine releases).
+# ⚠️ THIS WAS AN INLINE `timeout` BLOCK FOR ONE HOUR AND THE INLINE FORM HAD TWO DEFECTS OF ITS
+# OWN — it named elapsed and budget when it blocked and said NOTHING when it passed, and its
+# message would have landed inside the caller's redirection at the five sibling sites. Both are
+# fixed in tools/bounded_godot.sh, which also carries the measurements (uutils timeout cannot
+# deliver SIGKILL; the verdict is ELAPSED, never the exit code) in ONE place rather than six.
+# 1800s is ~10x the observed import time (161s worst case across nine releases).
 PUBLISH_IMPORT_BUDGET="${PUBLISH_IMPORT_BUDGET:-1800}"
-_t0=$(date +%s)
-XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" timeout "$PUBLISH_IMPORT_BUDGET" \
-    godot --headless --audio-driver Dummy --import --quit \
-    > tmp/publish_all_import.log 2>&1
-IMPORT_EC=$?
-_elapsed=$(( $(date +%s) - _t0 ))
-if [ "$_elapsed" -ge "$PUBLISH_IMPORT_BUDGET" ]; then
-    echo "[pub] BLOCKED: the import WEDGED — ran ${_elapsed}s against a ${PUBLISH_IMPORT_BUDGET}s budget." >&2
-    echo "[pub]   This is not a failed import, it is NO VERDICT: the run never finished, so the" >&2
-    echo "[pub]   tree is unjudged. Re-run before concluding anything about the tree." >&2
+IMPORT_EC=0
+XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" ./tools/bounded_godot.sh \
+    --label "publish import" --budget "$PUBLISH_IMPORT_BUDGET" --log tmp/publish_all_import.log -- \
+    godot --headless --audio-driver Dummy --import --quit || IMPORT_EC=$?
+if [ "$IMPORT_EC" -eq 124 ]; then
+    echo "[pub] BLOCKED: no verdict on the import (see above) — the tree is UNJUDGED, not red." >&2
     echo "[pub]   Raise it with PUBLISH_IMPORT_BUDGET=<seconds> if the box is genuinely slow." >&2
     exit 4
 fi
