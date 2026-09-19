@@ -2829,8 +2829,12 @@ func _on_bide_pressed() -> void:
 ## that signal carries (character_id, enabled), so this one-arg handler could never have bound to
 ## it. Its `BattleManager.toggle_autobattle` call is the sole writer of the LEGACY GLOBAL
 ## `is_autobattle_enabled`, which is therefore permanently false (GameLoop:1742 resets it). That is
-## harmless only because every read of it is an OR term beside the live per-character flag
-## (BattleManager:1749 · :1752 · :8040 · :8280). Kept, not deleted: see
+## harmless only because every read is vacuous under false: an OR term at BattleManager:1755 · :8043,
+## a NEGATED AND term at :1752, and a negated OR at :8283 — the De Morgan duals are equally vacuous
+## but are not literally ORs (precision from @cowir-battle, whose file this is).
+## ⚠️ Those four numbers are POST-EDIT. The commit that wrote this note added lines to BattleManager
+## above them, so the :1749/:1752/:8040/:8280 it originally cited were already stale when it landed —
+## a line-number citation is invalidated by its own commit. Re-derive, do not trust. Kept, not deleted: see
 ## project_decisions_awaiting_struktured.md — wiring the panel needs an input binding.
 func _on_autobattle_toggled(enabled: bool) -> void:
 	"""Handle autobattle toggle"""
