@@ -3,7 +3,13 @@ extends GutTest
 ## Four consumers fall back to the IDENTITY row order when a sheet declares none —
 ## `WanderingNPC`'s `_resolve_dir_to_row` spells it out as `walk_down 0, walk_left 1, walk_right 2, walk_up 3`.
 ## 116 of the 145 `overworld_npc_sheets` declare no order at all, so that fallback is what
-## actually decides which way 116 NPCs face.
+## actually decides facing for every NPC drawn from those sheets.
+## ⛔ NOT "116 NPCs" — this line said that until 2026-09-19 and the two are different
+## populations: one archetype sheet serves many placed NPCs (158 literal `_create_npc` sites
+## against 145 sheets), so the NPC count is neither 116 nor measured anywhere. The slide from
+## SHEETS to NPCs inside one sentence is how the figure escaped this file and came back as
+## "116 of 145 NPCs carry no archetype sheet" in an unrelated guard — a claim about a
+## different branch entirely, retracted the same day.
 ##
 ## 🔑 THE FALLBACK IS SAFE ONLY BECAUSE THE CORPUS AGREES WITH IT: every sheet that DOES declare
 ## an order declares (0,1,2,3) — 53 of 53 across all three overworld sections, no exceptions.
