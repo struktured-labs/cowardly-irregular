@@ -189,6 +189,10 @@ func current_radius() -> float:
 	return float(p["radius"]) * _breathe(p)
 
 
+## The outline's alpha as applied this frame — ranges [a x (1 - OUTLINE_ALPHA_PULSE), a], where `a` is
+## this layer count's OUTLINE_ALPHA entry (an Array since f93d8ed89, not the scalar the lost line named).
+## Restored 2026-09-19: that commit's restructure dropped this block as collateral, so its absence was
+## never a decision about this function — nothing else documents the pulse range.
 func current_outline_alpha() -> float:
 	var p: Dictionary = params_for(count, full_bank)
 	return float(p["outline_alpha"]) * (1.0 - OUTLINE_ALPHA_PULSE * 0.5 * (1.0 - sin(TAU * float(p["pulse_hz"]) * _t)))
