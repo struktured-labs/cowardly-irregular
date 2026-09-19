@@ -43,7 +43,8 @@ static func job_asset_path(job_id: String, base_name: String, world_suffix: Stri
 ## and play_music CLEARS _current_area for battle — which is where sprites resolve.
 ## current_world is written in _set_current_map_id(), the setter for every map change.
 ##
-## The interior hole that made audio look better is CLOSED on this tree: GameLoop:144 derives
+## The interior hole that made audio look better is CLOSED on this tree: GameLoop's
+## `_set_current_map_id` derives
 ## a shared interior's world from _village_origin_id, so current_world no longer zeroes to W1
 ## in a Brasston inn. That fix landing is what makes this a correct unification rather than a
 ## trade — before it, each source was right only where the other was wrong.
@@ -487,7 +488,8 @@ const WORLD_SUFFIXES := ["", "suburban", "steampunk", "industrial", "digital", "
 ## version deferred to it; cowir-sfx flagged the hazard and the source confirms it:
 ##
 ##   GameState.current_world     written in _set_current_map_id(), the setter for EVERY map
-##                               change, derived from the map id (GameLoop:141)
+##                               change, derived from the map id
+##                               (GameLoop's `_set_current_map_id`)
 ##   audio's cached suffix       written at ONE site, behind an early `return` for interiors
 ##                               with no resolved track — and by an AUDIO function, so it
 ##                               tracks music state, not player location
