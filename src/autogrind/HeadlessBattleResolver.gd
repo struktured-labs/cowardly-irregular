@@ -890,6 +890,9 @@ func _resolve_attack(attacker, target) -> int:
 		damage *= 1.5
 		_log("Critical hit!")
 
+	## Pre-mitigation and BEFORE the line below, mirroring live's order in _execute_attack.
+	damage = float(_apply_lens_execute_bonus(attacker, target, int(damage)))
+
 	## returned_sword's Familiar Weight, mirroring BattleManager:4498 — applied to the PRE-mitigation
 	## damage, exactly where live applies it, because this file's defense formula is quadratic and
 	## scaling `actual` instead would give a different number for the same gear.
@@ -1190,6 +1193,8 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var variance: float = float(ability.get("damage_variance", 0.0))
 					if variance > 0.0:
 						base_dmg = int(base_dmg * randf_range(0.0, variance))
+					## Before terrain, mirroring live's order in _execute_magic_ability.
+					base_dmg = _apply_lens_execute_bonus(caster, target, base_dmg)
 					## TERRAIN + WEATHER, mirroring BattleManager:5274-5278 — live's ONLY application of
 					## either, in its magic executor, right here after the variance roll. The grind was
 					## handed a terrain by GameLoop and never read it: a cave grind fired fire at full
@@ -1835,11 +1840,35 @@ func _take_charged_multiplier(combatant) -> float:
 	return stored
 
 
+## Arbiter's Final Word, mirroring BattleManager._apply_lens_execute_bonus — +bonus damage against a
+## target ALREADY below the threshold. Live reads the HP fraction BEFORE this hit lands ("finish the
+## wounded", not "reward whatever this hit leaves behind"), and so does this.
+## Live applies it on all three damage paths; this engine applied it on none, so an equipped Arbiter
+## did nothing in a grind while adding 50% to the same swing in a real fight.
+func _apply_lens_execute_bonus(attacker, target, damage: int) -> int:
+	if attacker == null or target == null or not is_instance_valid(target) or target.max_hp <= 0:
+		return damage
+	## DELEGATES rather than reimplementing. @cowir-battle extracted live's arithmetic into
+	## lens_execute_multiplier so the preview could quote the bonus without inheriting the executor's
+	## emit; my port predated that and held a second copy of one authored number. One table, one
+	## formula — the same choice made for terrain, and the reason neither can drift.
+	if not BattleManager.has_method("lens_execute_multiplier"):
+		return damage
+	var mult: float = float(BattleManager.lens_execute_multiplier(attacker, target))
+	if mult <= 1.0:
+		return damage
+	## The emit stays on THIS side, exactly as it does in live's executor.
+	_log("%s moves to finish it." % attacker.combatant_name)
+	return int(damage * mult)
+
+
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
 	if not target or not target.is_alive:
 		return 0
+	## Live's _execute_physical_ability applies it to the pre-mitigation damage; this file's defense
+	## formula is quadratic, so scaling the mitigated number would not be the same port.
 	var def_val = float(target.get_buffed_stat("defense", target.defense))
-	var dmg = float(base_damage)
+	var dmg = float(_apply_lens_execute_bonus(attacker, target, base_damage))
 	# Same divisor guard as _resolve_attack — see comment there.
 	var denom = maxf(1.0, dmg + def_val)
 	var actual = int((dmg * dmg) / denom)
