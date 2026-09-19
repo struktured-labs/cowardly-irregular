@@ -99,7 +99,7 @@ func test_a_doom_counter_does_not_follow_the_party_into_the_next_battle() -> voi
 	hero.doom_counter = 2
 	_res.resolve_battle([hero], [_chaff()])
 	assert_eq(hero.doom_counter, -1,
-		"doom must reset to the -1 sentinel, not 0 — 0 is a live counter and Combatant.gd:84 documents -1 as 'not doomed'")
+		"doom must reset to the -1 sentinel, not 0 — 0 is a live counter and Combatant's `doom_counter: int = -1` declaration documents -1 as 'not doomed'")
 
 
 func test_the_clear_does_not_wipe_what_live_keeps() -> void:
