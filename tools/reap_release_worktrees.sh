@@ -80,6 +80,38 @@ _newest_tag_on_origin() {
         | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##' | sort -V | tail -1
 }
 
+_origin_tags() {
+    git ls-remote --tags origin 'refs/tags/*' 2>/dev/null \
+        | grep -v '\^{}' | awk '{print $2}' | sed 's#refs/tags/##'
+}
+
+# Reconstructible: HEAD is pointed at by a tag that EXISTS ON ORIGIN, so
+#     git worktree add --detach <path> <tag>
+# rebuilds the tree byte-identically. THAT is the property `tmp/rel-` was standing in for.
+# A path prefix is a naming convention, and the publish flow's `tmp/pub<N>` trees are every
+# bit as reconstructible as a `rel-` one -- they were refused for their NAME, not for
+# anything true about their commit. Measured 2026-09-18 on the live lane: pub442..445 all
+# sat on tags `git ls-remote --tags origin` lists, and all four were kept as "may be
+# referenced by nothing else".
+#
+# NOTE this does NOT widen PREFIX. publish_all.sh is explicit that widening the prefix is the
+# wrong repair, and it is right for the reason it gives. This asks the safety question
+# directly instead of by naming convention.
+#
+# WARNING fails CLOSED. An unreachable origin yields an empty tag list, so nothing is
+# reconstructible and every detached tree outside PREFIX is kept exactly as it was before
+# this check existed. A network failure can only ever keep more, never remove more.
+_recon_tag() {
+    local wt="$1" tags="$2" h t
+    [ -n "$tags" ] || return 0
+    h="$(git -C "$wt" rev-parse HEAD 2>/dev/null)" || return 0
+    [ -n "$h" ] || return 0
+    for t in $(git tag --points-at "$h" 2>/dev/null); do
+        if printf '%s\n' "$tags" | grep -Fxq -- "$t"; then printf '%s\n' "$t"; return 0; fi
+    done
+    return 0
+}
+
 # Worktrees under PREFIX, newest-numeric last. A rel-<sha> name has no ordinal, so it sorts
 # before every numbered one and is therefore never mistaken for recent.
 _candidates() {
@@ -95,6 +127,8 @@ _candidates() {
 reap() {
     local newest_tag total=0 kept=0 removed=0 refused=0
     newest_tag="$(_newest_tag_on_origin)"
+    local origin_tags; origin_tags="$(_origin_tags)"
+    [ -z "$origin_tags" ] && echo "[reap] note: no tags readable from origin — every detached worktree outside ${PREFIX} will be kept" >&2
 
     local rows; rows="$(_candidates)"
     if [ -z "$rows" ]; then
@@ -116,8 +150,16 @@ reap() {
     # branch worktree occupy one of the protected slots and push a release tree out of them —
     # that would silently weaken the rule this line exists to enforce.
     local protected
-    protected="$(printf '%s\n' "$rows" | awk -F'\t' -v pfx="$ROOT/$PREFIX" \
-        '$2=="DETACHED" && index($1,pfx)==1 {print $1}' | tail -n "$KEEP")"
+    # ⛔ The ADMITTED set feeds the protected slots, not the prefix. If a reconstructible
+    # tree can be REMOVED it must also be able to be PROTECTED -- otherwise admitting it
+    # strips the newest-KEEP guard from exactly the trees this change started reaping, which
+    # is the failure the note above warns about arriving by the other door. With nothing
+    # reconstructible outside PREFIX this yields precisely the old awk's list.
+    protected="$(printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r _p _s; do
+        [ "$_s" = "DETACHED" ] || continue
+        case "$_p" in "$ROOT/$PREFIX"*) printf '%s\n' "$_p"; continue ;; esac
+        [ -n "$(_recon_tag "$_p" "$origin_tags")" ] && printf '%s\n' "$_p"
+    done | tail -n "$KEEP")"
 
     printf '%s\n' "$rows" | while IFS="$(printf '\t')" read -r p state; do
         local n; n="$(basename "$p")"
@@ -156,7 +198,12 @@ reap() {
         if [ "$state" = "DETACHED" ]; then
             case "$p" in
                 "$ROOT/$PREFIX"*) : ;;
-                *) reason="detached outside ${PREFIX} — its commit may be referenced by nothing else" ;;
+                *)
+                    local rt; rt="$(_recon_tag "$p" "$origin_tags")"
+                    if [ -z "$rt" ]; then
+                        reason="detached outside ${PREFIX} and not at a tag on origin — its commit may be referenced by nothing else"
+                    fi
+                    ;;
             esac
         fi
 
@@ -215,7 +262,16 @@ _drop_fixture() {
 }
 
 selftest() {
-    local pass=0 fail=0 pfx="tmp/reaptest-rel-" tags t self
+    # SELFTEST FIXTURES LIVE UNDER THEIR OWN SCAN ROOT, AND THAT IS LOAD-BEARING.
+    # This selftest calls --apply. While admission was decided by a path PREFIX, real
+    # worktrees outside it were unreachable BY CONSTRUCTION and scanning tmp/ was safe --
+    # a safety nobody had written down, because nothing needed it. Admission now also asks
+    # whether a commit is RECONSTRUCTIBLE, which is a property of the COMMIT, so a real
+    # publish worktree parked in tmp/ qualifies. Measured 2026-09-18: a --selftest run
+    # removed pub442/443/444 before this was caught (recoverable, tags on origin, logs
+    # already archived, and not the point). Confining SCAN is what makes the destructive
+    # arms safe; the decoy fixture below is what keeps it confined.
+    local pass=0 fail=0 scan="tmp/reapself/" pfx="tmp/reapself/reaptest-rel-" tags t self
     self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 
     tags="$(git tag -l 'v3.33.*' | sort -V | tail -6 | head -4)"
@@ -224,6 +280,7 @@ selftest() {
         return 2
     fi
 
+    mkdir -p "$scan"
     for _d in "${pfx}"*; do [ -e "$_d" ] && _drop_fixture "$_d"; done
     # a crashed earlier run can leave an admin entry with no directory; clear ONLY ours
     for _e in "$(git rev-parse --git-common-dir)/worktrees/"$(basename "$pfx")*; do
@@ -250,7 +307,7 @@ selftest() {
     ( cd "${pfx}2" && git add REAPTEST_DIRTY.md >/dev/null 2>&1 )
 
     local out
-    out="$(REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
+    out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
 
     chk() { # name, pattern, want(0=present,1=absent)
         if printf '%s' "$out" | grep -q "$2"; then [ "$3" -eq 0 ] && { pass=$((pass+1)); printf '  ok    %s\n' "$1"; return; }
@@ -265,7 +322,7 @@ selftest() {
     chk "real rel- worktrees untouched"      "would remove rel-"                1
 
     # now actually apply, and confirm the protected ones survive
-    out="$(REAP_PREFIX="$pfx" "$self" --keep 1 --apply 2>&1)"
+    out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 --apply 2>&1)"
     chk "apply removes something"            "removed"                          0
     [ -d "${pfx}2" ] && { pass=$((pass+1)); printf '  ok    dirty worktree survived --apply\n'; } \
                      || { fail=$((fail+1)); printf '  FAIL  dirty worktree was destroyed\n'; }
@@ -291,7 +348,7 @@ selftest() {
         git worktree add "${pfx}8" "$mb" >/dev/null 2>&1 || true
     fi
 
-    out="$(REAP_PREFIX="$pfx" "$self" --keep 1 --merged-branches 2>&1)"
+    out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 --merged-branches 2>&1)"
     chk "unmerged branch refused EVEN WITH the flag"  "KEEP.*reaptest-rel-1.*NOT merged"        0
     chk "unpushed branch refused EVEN WITH the flag"  "KEEP.*reaptest-rel-0.*not on origin"     0
     if [ -n "$mb" ]; then
@@ -301,7 +358,7 @@ selftest() {
     fi
     # ⛔ Without the flag the same tree must be refused — otherwise the flag is decorative and
     # these arms would pass against a build that reaps branch worktrees unconditionally.
-    out="$(REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
+    out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
     chk "…and refused again with the flag absent"     "would remove reaptest-rel-8"             1
 
     for d in "${pfx}1" "${pfx}8"; do [ -d "$d" ] && git worktree remove --force "$d" >/dev/null 2>&1; done
@@ -360,10 +417,58 @@ selftest() {
     git branch -D reaptest/rootbranch >/dev/null 2>&1
     rm -rf "$nest"
 
+    # -- reconstructibility: a detached tree outside PREFIX is judged by its COMMIT ---------
+    # Three fixtures differing ONLY in what their HEAD is reachable from. Same shape, same
+    # scan root, all outside PREFIX -- so an arm passing for a reason other than
+    # reconstructibility would have to pass for all three, and they disagree.
+    local rtag="" c u1="" u2=""
+    for t in $tags; do
+        git ls-remote --exit-code --tags origin "$t" >/dev/null 2>&1 && rtag="$t"
+    done
+    for c in $(git rev-list --max-count=60 origin/main 2>/dev/null); do
+        [ -n "$(git tag --points-at "$c" 2>/dev/null)" ] && continue
+        if   [ -z "$u1" ]; then u1="$c"
+        elif [ -z "$u2" ]; then u2="$c"; break; fi
+    done
+    if [ -z "$rtag" ] || [ -z "$u1" ] || [ -z "$u2" ]; then
+        fail=$((fail+1)); printf '  FAIL  could not build the reconstructibility fixtures (rtag=%s u1=%s u2=%s)\n' "${rtag:-none}" "${u1:-none}" "${u2:-none}"
+    else
+        git tag reaptest-localonly "$u1" >/dev/null 2>&1 || true
+        git worktree add --detach "${scan}"reaptest-recon-9    "$rtag"            >/dev/null 2>&1 || true
+        git worktree add --detach "${scan}"reaptest-localtag-9 reaptest-localonly >/dev/null 2>&1 || true
+        git worktree add --detach "${scan}"reaptest-scratch-9  "$u2"              >/dev/null 2>&1 || true
+
+        out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
+        chk "at a tag ON ORIGIN outside PREFIX is reapable" "would remove reaptest-recon-9"                      0
+        chk "a LOCAL-ONLY tag is NOT reconstructible"       "KEEP.*reaptest-localtag-9.*not at a tag on origin"  0
+        chk "an untagged detached tree is kept"             "KEEP.*reaptest-scratch-9.*not at a tag on origin"   0
+
+        # DECOY: reconstructible, detached, at a tag on origin -- identical in every respect
+        # to a real publish worktree, and parked OUTSIDE the fixture scan. If a selftest run
+        # ever names it, the confinement has failed and the destructive arms are pointed at
+        # this lane's real worktrees again.
+        git worktree add --detach tmp/reaptest-decoy-9 "$rtag" >/dev/null 2>&1 || true
+
+        # The protected slots must cover the ADMITTED set, not the prefix. With a prefix that
+        # matches nothing, every position-based KEEP has to come from reconstructibility --
+        # empty output under the old prefix-only awk, non-empty under the new loop.
+        # Dry run only: it must never remove anything.
+        out="$(REAP_SCAN="$scan" REAP_PREFIX=tmp/nosuchprefix- "$self" --keep 1 2>&1)"
+        chk "reconstructible trees can hold a protected slot" "KEEP.*among the 1 newest"  0
+        chk "...and that dry run still removed nothing"       "DRY RUN"                   0
+        chk "a reconstructible tree OUTSIDE the scan is unreachable" "reaptest-decoy-9"   1
+
+        for d in "${scan}"reaptest-recon-9 "${scan}"reaptest-localtag-9 "${scan}"reaptest-scratch-9 tmp/reaptest-decoy-9; do
+            [ -e "$d" ] && _drop_fixture "$d"
+        done
+        git tag -d reaptest-localonly >/dev/null 2>&1
+    fi
+
     # cleanup fixtures
     ( cd "${pfx}2" 2>/dev/null && git reset -q HEAD REAPTEST_DIRTY.md 2>/dev/null; rm -f REAPTEST_DIRTY.md )
     for d in "${pfx}"*; do [ -e "$d" ] && _drop_fixture "$d"; done
     git branch -D reaptest/branch >/dev/null 2>&1
+    rmdir "$scan" 2>/dev/null || true
 
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
