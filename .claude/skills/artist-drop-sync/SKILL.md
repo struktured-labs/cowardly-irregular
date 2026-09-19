@@ -48,11 +48,16 @@ rclone lsl "gdrive: cowir" | sort -k2,3 -r | head -30   # newest first
 Trees: `Game graphics - Characters` (party jobs, `enemies/`, `Samples/`)
 and `Game graphics - NPCs` (20 overworld archetypes).
 
-Pull only the new subtree:
+Pull only the new subtree — **into gitignored `tmp/`, never into `assets/`**:
 ```bash
-rclone copy "gdrive: cowir/assets/sprites/Game graphics - Characters/enemies/<Name>" \
-            "assets/sprites/drive_archive/Game graphics - Characters/enemies/<Name>" -P
+rclone copy "gdrive: cowir/assets/sprites/Game graphics - Characters/<NAME>" \
+            "tmp/artist_drops/<NAME>" -P
 ```
+> ⛔ **CORRECTED 2026-09-19 — this used to say `assets/sprites/drive_archive/`.
+> That path does NOT exist and is NOT gitignored**, so the pull creates an
+> untracked tree inside `assets/` and §8's `git add assets/...` then commits the
+> artist's `.aseprite` SOURCE into the repo. `tmp/` is gitignored
+> (`.gitignore:64`); the Drive copy is canonical and the local copy is scratch.
 
 ## 2. Probe tags — never assume names
 
@@ -87,8 +92,16 @@ aseprite -b --list-tags "f.aseprite" --data probe.json --format json-array --she
 ```
 Read `meta.frameTags[].from/to` (0-indexed, inclusive).
 
-> **Gotcha:** `--sheet-pack` silently DROPS `frameTags`. Never combine it
-> with a tag probe.
+> **Gotcha — RE-MEASURED 2026-09-19 AND IT NO LONGER REPRODUCES.** This said
+> `--sheet-pack` silently DROPS `frameTags`. Tested verbatim on the 09-18 bard
+> file with `Aseprite 1.x-dev`: **5 frameTags returned WITH `--sheet-pack`.** Either the
+> build changed or the original was a different flag combination.
+>
+> ✅ **The gotcha that DOES still hold is `--list-tags` itself:** omit it and the
+> export succeeds, writes a valid JSON, and reports **zero** tags — a silent
+> empty rather than an error. `ingest_tagged_aseprite_drop.read_tags()` raises
+> on zero tags for exactly this reason. **Always pass `--list-tags`, and assert
+> you got a non-empty list before using any range.**
 
 ## 3. ⚠️ 128px is a MAGIC NUMBER — do not upscale monster sheets
 
@@ -138,6 +151,13 @@ Precedent — **slime**, the shipped T2 reference:
 ```
 i.e. artist frames **reused** for un-authored anims.
 
+> ⚠️ **`animations` HAS TWO SHAPES IN THIS MANIFEST AND BOTH ARE LIVE** —
+> measured 2026-09-19: **dict in 173 entries, list in 18**. Monsters use the
+> dict-of-ranges above; party job sheets (`sheets/bard`) use a flat LIST of
+> animation names, with frame counts implied by the exported strip width.
+> **Code that assumes either shape crashes on the other** — check
+> `isinstance(..., dict)` before `.get()`.
+
 When the artist didn't author `hit`/`dead`, in order of preference:
 1. **Reuse an artist sub-range** (slime precedent; free, always on-model)
 2. **Ask the artist** — for reaction poses this is the real answer, see below
@@ -173,9 +193,27 @@ are different facts and only the first is machine-visible.
 
 ## 6. Export + wire
 
+### 6a. PARTY JOBS (tag-driven) — `ingest_tagged_aseprite_drop.py`
+
+This is the path for bard/mage/fighter/rogue/cleric. It reads ranges from the
+file, so a tag shift cannot mis-slice it, and it backs up what it replaces to
+`<anim>.pre_artist.png` (a TRACKED convention — commit those too).
+
+```bash
+export DROP_DIR="$PWD/tmp/artist_drops/<NAME>"       # dir holding the .aseprite
+uv run python tools/ingest_tagged_aseprite_drop.py --target bard --dry-run
+uv run python tools/ingest_tagged_aseprite_drop.py --target bard
+```
+A NEW artist tag needs one line in that file's `map` for the target — e.g.
+`"victory": ("Celebration", 0, 0)`. `(tag, 0, 0)` = the whole tag;
+`(tag, lo, hi)` = a tag-relative sub-range. **Dry-run first and read the
+printed ranges against §2's probe.**
+
+### 6b. MONSTERS — `export_artist_monster.py`
+
 ```bash
 uv run python tools/export_artist_monster.py \
-  --aseprite "assets/sprites/drive_archive/.../<file>.aseprite" \
+  --aseprite "tmp/artist_drops/<NAME>/<file>.aseprite" \
   --monster-id <id> --map idle=<Tag> --map attack=<Tag> \
   --map "hit=<Tag>:0-0" --map "dead=<Tag>:0-0" \
   --scale 1 --tier T2 --write-manifest
@@ -194,9 +232,17 @@ sub-range (the reuse case). `--dry-run` prints the plan.
 ## 7. Reimport, then verify
 
 ```bash
-godot --headless --audio-driver Dummy --import --quit
-./tools/run_tests.sh
+XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import --quit
+XDG_DATA_HOME=$PWD/tmp/xdg ./tools/run_tests.sh <name> [<name>...]
 ```
+> 🛑 **`XDG_DATA_HOME` IS THE CALLER'S JOB.** `run_tests.sh` *honours* it
+> (`:45`) but does not SET it — unsandboxed, `user://` resolves by APPLICATION
+> NAME, so every worktree shares one real path and a run can write over
+> struktured's live save data.
+>
+> ✅ `run_tests.sh` now bounds its own godot (`:182`, plain `timeout`, no
+> `--kill-after` — this binary cannot deliver SIGKILL). Passing test NAMES runs
+> them in ONE godot process; the bare form runs everything.
 
 > A test reading a sprite through `load()` sees the cached `.ctex`, not the
 > PNG. A file `git hash-object` proves identical to main can still measure
@@ -227,8 +273,10 @@ update; it should go green with no other change.
 ## 8. Ship
 
 ```bash
-git checkout -b feature/<name>-artist-drop origin/main   # fresh off main, never rebase a folded branch
-git add assets/... data/sprite_manifest.json
+git checkout -b lane/<what-changed> origin/main   # fresh off main, never rebase a folded branch
+git add assets/sprites/jobs/<job>/ data/sprite_manifest.json data/artist_sprite_ledger.json
+#  ^ name the DIRS you changed. A bare `git add assets/...` after a mis-targeted
+#    pull stages the artist's .aseprite source (see §1).
 git push origin HEAD                                     # explicit refspec, never bare push
 ```
 
@@ -236,8 +284,9 @@ git push origin HEAD                                     # explicit refspec, nev
 
 ```bash
 rclone lsl "gdrive: cowir" | sort -k2,3 -r | head -30
-aseprite -b --list-tags "f.aseprite" --data /tmp/p.json --format json-array --sheet /tmp/p.png
+aseprite -b --list-tags "f.aseprite" --data tmp/p.json --format json-array --sheet tmp/p.png
 uv run python tools/export_artist_monster.py --aseprite "..." --monster-id <id> \
     --map idle=<Tag> --map attack=<Tag> --scale 1 --tier T2 --write-manifest
-godot --headless --audio-driver Dummy --import --quit && ./tools/run_tests.sh
+XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import --quit \
+  && XDG_DATA_HOME=$PWD/tmp/xdg ./tools/run_tests.sh <names>
 ```
