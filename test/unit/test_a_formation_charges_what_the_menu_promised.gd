@@ -5,9 +5,9 @@ extends GutTest
 ## `BattleCommandMenu.FORMATIONS` against `HeadlessBattleResolver.FORMATIONS` — ap_cost included —
 ## and is green. Neither table is what debits a live player. There are THREE copies of the number:
 ##
-##   BattleCommandMenu:431            group_ap_shortfall("formation", row.ap_cost)   <- GATES the row
-##   HeadlessBattleResolver:483-488   spends the row's own ap_cost                   <- grind spends
-##   BattleManager:3955               3 if id in ["arcane_tempest","chaos_theory"] else 2  <- LIVE spends
+##   BattleCommandMenu   group_ap_shortfall("formation", row.ap_cost)              <- GATES the row
+##   HeadlessBattleResolver   _execute_group_formation spends the row's own ap_cost   <- grind spends
+##   BattleManager   `ap_cost = 3 if formation_id in [...]`                          <- LIVE spends
 ##
 ## `BattleManager` holds ZERO references to either FORMATIONS. So the ratchet pins the two that
 ## agree and is structurally blind to the third, which is the one that takes the AP — a test named
@@ -15,12 +15,13 @@ extends GutTest
 ##
 ## The three agree TODAY. The trigger is a SEVENTH formation or a rebalance, and both directions bite:
 ##   engine charges MORE than the gate checked -> spend_ap can hit the -4 floor and REFUSE, and its
-##     bool return is discarded at :3958, so the special fires FOR FREE
+##     bool return is discarded at _execute_formation_special's `p.spend_ap(ap_cost)`, so the special fires FOR FREE
 ##   engine charges LESS -> live and grind disagree on price, which the sync ratchet's own comment
 ##     says it exists to prevent ("never secretly cheaper/costlier")
 ##
 ## ⛔ AND AN ID WITH NO `match` ARM IS CHARGED TWICE: the `_:` fallback re-enters
-## `_execute_physical_group(..., ap_cost)` at :4106, which spends again at :3847. Measured below
+## `_execute_physical_group(participants, alive_enemies, "all_out_attack", ap_cost)`, which spends
+## again in ITS own `p.spend_ap(ap_cost)`. Measured below
 ## rather than read — it doubles as the control proving this instrument can say NO.
 ##
 ## Measured at the DEBIT, not in the source. `3 if … else 2` is one refactor away from any pattern;
@@ -82,7 +83,7 @@ func _dummy() -> Combatant:
 
 ## What one participant actually paid. Four members satisfies every table `min_members`.
 ## Called through a helper deliberately: if a later branch of the special aborts, the abort dies in
-## ITS frame, and the debit — the first thing the function does, at :3958 — is already in the delta.
+## ITS frame, and the debit — its first statement, `p.spend_ap(ap_cost)` — is already in the delta.
 func _charged(formation_id: String) -> int:
 	var roster: Array = []
 	for i in range(4):
@@ -125,13 +126,15 @@ func test_every_formation_charges_what_the_menu_gated_on() -> void:
 		else:
 			wrong.append("%s: the menu gated the row on %d AP, live debited %d" % [fid, promised, paid])
 	assert_eq(wrong, [],
-		"BattleManager:3955 computes formation AP from its own hardcoded list and reads neither "
+		"BattleManager's `ap_cost = 3 if formation_id in [...]` computes formation AP from a hardcoded "
+		+ "list and reads neither "
 		+ "FORMATIONS table. It has drifted from the one the menu gates on: %s" % str(wrong))
 
 
 func test_a_formation_id_with_no_arm_is_charged_twice() -> void:
 	## The instrument watched saying NO — and the measurement behind this file's second claim.
-	## An unknown id costs 2 at :3958 and 2 again inside the fallback's _execute_physical_group.
+	## An unknown id is charged once by _execute_formation_special and again by the fallback's
+## _execute_physical_group.
 	assert_eq(_charged("zz_not_a_formation"), 4,
 		"the `_:` fallback must still double-charge, or the arm above can no longer tell a missing "
 		+ "`match` arm from a price drift")
