@@ -186,6 +186,15 @@ ${named}"
     [ "$gscripts" -eq "$ondisk" ] \
         || run "the ${tag} marker covers ${gscripts} scripts but ${ondisk} test files are on disk — the evidence does not cover this corpus"
 
+    # 10b. ...and `ls` globs ONE level while GUT does not recurse either (include_subdirs is false,
+    #      addons/gut/gut_config.gd:29). So a test_*.gd below test/unit is absent from BOTH sides of
+    #      the equality above: never loaded, never counted, and the check passes. That is the only
+    #      way this gate goes falsely GREEN rather than falsely red, so it is asked separately.
+    local nested
+    nested="$(find test/unit -mindepth 2 -name 'test_*.gd' -type f 2>/dev/null | sort | command grep -c . || true)"
+    [ "${nested:-0}" -eq 0 ] \
+        || run "${nested} test file(s) sit BELOW test/unit — GUT never loaded them and the corpus count never saw them, so the ${tag} evidence is silent about every test in them: $(find test/unit -mindepth 2 -name 'test_*.gd' -type f 2>/dev/null | sort | head -3 | tr '\n' ' ')"
+
     echo "VERDICT=SKIP ${tag} @ ${gsha:0:8} already gated by the fold: scripts=${gscripts} tests=${gtests} passing=${gpassing} failing=0; worktree clean and at the tag; corpus matches (${ondisk} on disk)"
     exit 0
 }
@@ -259,6 +268,31 @@ gated: ${sha:0:8} scripts=3 tests=9 passing=9 failing=0")
     (cd "$sandbox" && git tag -a miscount -m "rel
 gated: ${sha} scripts=99 tests=9 passing=9 failing=0")
     check "corpus count mismatch"           RUN  miscount
+
+    # ⛔ THE FALSE-GREEN ONE, and the fixture has to be DISCRIMINATING or the arm is vacuous.
+    # A nested test is absent from both sides of the corpus equality (GUT never loads it,
+    # `ls` never globs it), so without its own check the tag SKIPs while the evidence is silent
+    # about every test in it. The fixture therefore commits the file AND re-tags at the new HEAD:
+    # clean tree, HEAD at the tag, marker honest about the 3 top-level scripts — so every OTHER
+    # refusal is satisfied and only the nested check can speak. First version of this arm just
+    # committed and reused `good`, which RUNs on "HEAD not at the tag"; it passed with the nested
+    # check neutered.
+    mkdir -p "$sandbox/test/unit/nested"
+    printf 'extends GutTest\nfunc test_a() -> void:\n\tassert_true(true)\n' \
+        > "$sandbox/test/unit/nested/test_below.gd"
+    local nsha nout
+    nsha="$( cd "$sandbox" && git add -A >/dev/null 2>&1 && git commit -qm "nested test" >/dev/null 2>&1 && git rev-parse HEAD )"
+    ( cd "$sandbox" && git tag -a nested -m "rel
+gated: ${nsha} scripts=3 tests=9 passing=9 failing=0" )
+    check "committed test below test/unit"  RUN  nested
+    nout="$( cd "$sandbox" && "$SELF" nested 2>&1 )"
+    if printf '%s' "$nout" | command grep -qa 'sit BELOW test/unit'; then
+        pass=$((pass+1)); printf '  ok      %-32s yes\n' "...for the nested reason"
+    else
+        fail=$((fail+1)); printf '  FAIL    %-32s %s\n' "...for the nested reason" "$nout"
+    fi
+    ( cd "$sandbox" && git rm -rq test/unit/nested && git commit -qm "drop nested" >/dev/null 2>&1 \
+        && git tag -d nested >/dev/null 2>&1 )
 
     # dirty tree — same honest tag that produced SKIP above must now RUN
     echo "scratch" > "$sandbox/test/unit/test_4.gd"
