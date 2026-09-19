@@ -123,17 +123,6 @@ static func overworld_frame_size(job_id: String) -> Vector2i:
 	return Vector2i(int(entry.get("frame_width", 32)), int(entry.get("frame_height", 32)))
 
 
-## The roaming-monster walk sheet's geometry, DECLARED per monster in overworld_monster_sheets:
-## frame size, columns per row, and WHICH ROW IS WHICH FACING.
-##
-## RoamingMonster hardcoded all three — FRAME_W/FRAME_H 32, SHEET_COLS 4, and rows 0=down 1=left
-## 2=right 3=up written into _update_row_from_move_dir — while the manifest declared each of them
-## and nothing read the section. A sheet that ordered its rows differently would walk facing the
-## wrong way; one at another frame size would be mis-sliced. All 10 are 128x128 / 32px / that row
-## order today, which is the uniformity that hides it, same as the player's sheet one hour ago.
-##
-## Returns convention defaults for an unregistered monster — the section is an audit ledger for
-## art the runtime also reaches by path convention, so absence must not refuse a sheet.
 ## The walk-row order DECLARED per job, falling back to the documented convention.
 ##
 ## OverworldPlayer hardcoded [DOWN, LEFT, RIGHT, UP] while RoamingMonster reads its rows from the
@@ -196,6 +185,17 @@ static func overworld_walk_rows(section: String, id: String) -> Dictionary:
 	return out
 
 
+## The roaming-monster walk sheet's geometry, DECLARED per monster in overworld_monster_sheets:
+## frame size, columns per row, and WHICH ROW IS WHICH FACING.
+##
+## RoamingMonster hardcoded all three — FRAME_W/FRAME_H 32, SHEET_COLS 4, and rows 0=down 1=left
+## 2=right 3=up written into _update_row_from_move_dir — while the manifest declared each of them
+## and nothing read the section. A sheet that ordered its rows differently would walk facing the
+## wrong way; one at another frame size would be mis-sliced. All 10 are 128x128 / 32px / that row
+## order today, which is the uniformity that hides it, same as the player's sheet one hour ago.
+##
+## Returns convention defaults for an unregistered monster — the section is an audit ledger for
+## art the runtime also reaches by path convention, so absence must not refuse a sheet.
 static func overworld_monster_geometry(monster_id: String) -> Dictionary:
 	_load_manifest()
 	var out := {"frame": Vector2i(32, 32), "cols": 4, "rows": {"walk_down": 0, "walk_left": 1, "walk_right": 2, "walk_up": 3}}
