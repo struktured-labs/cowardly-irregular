@@ -912,9 +912,38 @@ fi
 # consecutive kills on 2026-09-09.
 echo "[pub] prebuild: import cache"
 mkdir -p tmp/prewarm_xdg
-XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" godot --headless --audio-driver Dummy --import --quit \
+# ⛔ BOUNDED, BECAUSE A WEDGE HERE IS NOT A RED — IT IS NO VERDICT AT ALL AND IT NEVER ENDS.
+# 2026-09-19: @cowir-main's fold gate spun 1h57m at 100% on one non-main thread with the log
+# frozen, because nothing bounded the godot run. The same shape here is worse: this publish is
+# launched DETACHED, so a wedge writes no publish.ec, and `publish_detached.sh --status` waits
+# on that file. A hang would present as a release that simply never happens.
+#
+# THE PLAIN FORM IS DELIBERATE. Measured on this box tonight, four lanes agreeing:
+#   uutils timeout 0.2.2 CANNOT DELIVER SIGKILL — `--signal=KILL` runs to completion and
+#   still reports 124. So `--kill-after` buys nothing here but a changed exit code, and
+#   `--signal=KILL` is a SILENT NO-OP as a bound. TERM delivers; every other signal delivers.
+#   godot honours TERM: /proc/<pid>/status SigIgn=0, bit 0x4000 clear, read off this lane's
+#   own `godot --headless --import` run, identified by exe rather than by pattern.
+# So: plain `timeout`, TERM at the budget, and do NOT "harden" this with --kill-after.
+#
+# ⚠️ AND THE VERDICT IS ELAPSED, NEVER THE CODE. The same measurements showed `timeout`
+# reporting 124 for a command that ran 6x its budget untouched, and 137 — "killed by SIGKILL" —
+# for a process that exited normally. The code names events that did not happen; the clock does
+# not. 1800s is ~10x the observed import time (161s worst case across nine releases).
+PUBLISH_IMPORT_BUDGET="${PUBLISH_IMPORT_BUDGET:-1800}"
+_t0=$(date +%s)
+XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" timeout "$PUBLISH_IMPORT_BUDGET" \
+    godot --headless --audio-driver Dummy --import --quit \
     > tmp/publish_all_import.log 2>&1
 IMPORT_EC=$?
+_elapsed=$(( $(date +%s) - _t0 ))
+if [ "$_elapsed" -ge "$PUBLISH_IMPORT_BUDGET" ]; then
+    echo "[pub] BLOCKED: the import WEDGED — ran ${_elapsed}s against a ${PUBLISH_IMPORT_BUDGET}s budget." >&2
+    echo "[pub]   This is not a failed import, it is NO VERDICT: the run never finished, so the" >&2
+    echo "[pub]   tree is unjudged. Re-run before concluding anything about the tree." >&2
+    echo "[pub]   Raise it with PUBLISH_IMPORT_BUDGET=<seconds> if the box is genuinely slow." >&2
+    exit 4
+fi
 IMPORTED="$(find .godot/imported -type f 2>/dev/null | wc -l)"
 if [ "$IMPORTED" -lt 100 ]; then
     echo "[pub] BLOCKED: import produced only ${IMPORTED} files (exit ${IMPORT_EC}) — see tmp/publish_all_import.log" >&2
