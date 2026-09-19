@@ -1,21 +1,28 @@
 extends GutTest
 
-## 📌 WAS QUARANTINED TO test/isolated 2026-09-19 AND IS BACK, ON MEASURED EVIDENCE.
-## It wedged the full suite in 2 of 3 fold gates (.461 hung 1h57m before anyone noticed; .462
-## passed clean with it included and told us NOTHING; .463 hung again, killed at 726s by the
-## then-new bound). Signature both times: one NON-MAIN thread at 100%, main thread BLOCKED.
-## @cowir-music's repair puts both graph mutations inside AudioServer.lock()/unlock() — the
-## tree's first such pair — with the arms byte-identical.
+## ⛔ RE-QUARANTINED 2026-09-19. THE LEAF REPAIR DID NOT HOLD — IT WEDGES TOO.
+## Released from quarantine on 3 clean full suites of the LOCK-only repair, then the LEAF
+## repair superseded it and the evidence did not travel with the code. Ledger:
+##   lock repair  3 clean FULL suites (cowir-main: 557s / 567s / 562s)
+##   leaf repair  1 clean FULL suite  (cowir-main, .466 gate)
+##                2 WEDGES            (cowir-music, 232-file corpus, 20 min apart)
+## Both wedges died at the SAME arm2->arm3 boundary as .461 and .463, and this time the
+## spinning thread is NAMED rather than inferred: one NON-MAIN tid at 98.8% R, wchan 0,
+## main thread S, 31 threads — via tools/which_thread_is_spinning.py, in one command, for
+## a diagnosis that cost .461 one hour and fifty-seven minutes.
 ##
-## RELEASED AFTER 3 CONSECUTIVE CLEAN FULL SUITES with this file in test/unit: 557s / 567s /
-## 562s, EC=0, 13,036 passing, no wedge. At the observed ~67% rate one clean run is ~1-in-3 by
-## luck — which is exactly what .462 was — and three is ~1-in-27. Its author refused to let it
-## out on the single pass, and that refusal is why the number means anything.
+## 🔑 MY ERROR, NOT THE REPAIR'S AUTHOR'S: I UNQUARANTINED ON EVIDENCE FOR CODE THAT WAS
+## THEN REPLACED. Three clean suites certified the lock version; the leaf version shipped in
+## the very next release with zero. A better-reasoned fix inherits none of the prior fix's
+## runs, and I folded it saying exactly that and unquarantined anyway.
 ##
-## ⚠️ THE MECHANISM WAS NEVER CONFIRMED. No per-thread backtrace (ptrace declined during a live
-## capture), and @cowir-sfx measured the bare strip on a SCRATCH bus in a clean process as safe,
-## so the trigger was never isolated to remove_bus_effect alone. This bounds RECURRENCE, not
-## cause. If the suite wedges here again, quarantine it and say so — the evidence is a rate.
+## ⚠️ THE MECHANISM IS STILL UNPROVEN. No backtrace — ptrace was declined during a live
+## capture. @cowir-sfx measured the bare strip on a SCRATCH bus in a clean process as safe,
+## so the trigger needs the real MusicDuck bus, its send chain, or suite-accumulated state.
+## Arm 3 has NEVER run in a wedged suite; every hang kills the process before it.
+##
+## TO RELEASE IT AGAIN: the evidence must be for THE CODE THAT SHIPS, not its predecessor.
+## 3+ consecutive clean FULL suites of the exact repair in test/unit, and say which repair.
 
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 
