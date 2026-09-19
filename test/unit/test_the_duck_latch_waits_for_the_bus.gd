@@ -1,28 +1,21 @@
 extends GutTest
 
-## ⛔ QUARANTINED FROM test/unit BY cowir-main 2026-09-19 — THIS FILE WEDGES THE FULL SUITE.
-## NOT a judgement on the guard, which is correct and defends a real defect. It is quarantined
-## because it hangs the FLEET'S GATE, and a hang is worse than a red: it is not a verdict at all.
+## 📌 WAS QUARANTINED TO test/isolated 2026-09-19 AND IS BACK, ON MEASURED EVIDENCE.
+## It wedged the full suite in 2 of 3 fold gates (.461 hung 1h57m before anyone noticed; .462
+## passed clean with it included and told us NOTHING; .463 hung again, killed at 726s by the
+## then-new bound). Signature both times: one NON-MAIN thread at 100%, main thread BLOCKED.
+## @cowir-music's repair puts both graph mutations inside AudioServer.lock()/unlock() — the
+## tree's first such pair — with the arms byte-identical.
 ##
-## Measured, twice, identically:
-##   .461 gate  wedged here, 1h57m before a human noticed  (nothing bounded the run then)
-##   .462 gate  PASSED — 13,018 tests green, this file included
-##   .463 gate  wedged here again, killed at 726s by the new bound
-## => ~2 of 3 full-suite runs. In ISOLATION it is clean: 8/8 consecutive single-file runs.
+## RELEASED AFTER 3 CONSECUTIVE CLEAN FULL SUITES with this file in test/unit: 557s / 567s /
+## 562s, EC=0, 13,036 passing, no wedge. At the observed ~67% rate one clean run is ~1-in-3 by
+## luck — which is exactly what .462 was — and three is ~1-in-27. Its author refused to let it
+## out on the single pass, and that refusal is why the number means anything.
 ##
-## The signature is identical both times and rules out this file's own GDScript:
-##   one NON-MAIN thread at 100% CPU, main thread BLOCKED (S), log frozen, 31 threads.
-## GUT runs tests on main, and the fleet authors no threads at all (`Thread.new` /
-## `WorkerThreadPool` = 0 files; `HTTPRequest.use_threads` false; no threaded ResourceLoader).
-## So the spinner is engine-internal — consistent with main blocked on the AudioServer lock while
-## the audio thread spins, which is what `_strip_effects()` below provokes by removing every
-## effect from a LIVE bus mid-run. @cowir-music flagged runtime bus-graph mutation independently.
-## UNCONFIRMED: a per-thread backtrace needs ptrace privileges not taken during a live capture.
-##
-## TO BRING IT BACK: make the arms not mutate a live AudioServer bus graph — a scratch bus, or
-## AudioServer.lock()/unlock() around the strip — then move the file back to test/unit. Do NOT
-## simply move it back; two of three gates is not flake, it is a blocker with a 67% rate.
-## Owner: @cowir-music. Quarantine is reversible and nothing here was weakened.
+## ⚠️ THE MECHANISM WAS NEVER CONFIRMED. No per-thread backtrace (ptrace declined during a live
+## capture), and @cowir-sfx measured the bare strip on a SCRATCH bus in a clean process as safe,
+## so the trigger was never isolated to remove_bus_effect alone. This bounds RECURRENCE, not
+## cause. If the suite wedges here again, quarantine it and say so — the evidence is a rate.
 
 const SoundState := preload("res://test/unit/helpers/sound_state.gd")
 
