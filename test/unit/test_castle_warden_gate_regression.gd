@@ -18,11 +18,49 @@ func _mons() -> Dictionary:
 	return d if d is Dictionary else {}
 
 
-func _saved_flags() -> Dictionary:
-	return {
-		"warden": GameState.is_story_flag_set("castle_warden_defeated"),
-		"mordaine": GameState.is_story_flag_set("world1_mordaine_defeated"),
-	}
+## The two SHARED flags this file writes. `world1_mordaine_defeated` is read by 10 src files and
+## 22 other guards; `castle_warden_defeated` by 2 and 1. Both are real keys, so a strand crosses
+## files rather than sitting latent (cowir-music's reachability discriminator, 2026-09-18).
+const GATED_FLAGS: Array[String] = ["castle_warden_defeated", "world1_mordaine_defeated"]
+
+## PRESENCE and VALUE, separately: `is_story_flag_set()` returns a bool and cannot tell an absent
+## key from a false one, so restoring through it would leave a key behind that was never there.
+var _pre: Dictionary = {}
+var _saved: Dictionary = {}
+
+
+func _snapshot() -> Dictionary:
+	var out: Dictionary = {}
+	for k in GATED_FLAGS:
+		out[k] = [GameState.story_flags.has(k), GameState.story_flags.get(k, null)]
+	return out
+
+
+func _restore(snap: Dictionary) -> void:
+	for k in GATED_FLAGS:
+		var rec: Array = snap.get(k, [false, null])
+		if bool(rec[0]):
+			GameState.story_flags[k] = rec[1]
+		else:
+			GameState.story_flags.erase(k)
+
+
+## The baseline for the catcher is taken ONCE, before any arm runs. Taking it in before_each would
+## make the catcher compare a value against itself re-read — green under every strand, which is the
+## over-determined arm this lane fixed in f35ace44b on the same day.
+func before_all() -> void:
+	_pre = _snapshot()
+
+
+func before_each() -> void:
+	_saved = _snapshot()
+
+
+## The restore lives HERE and not at the end of the arm. Measured on this file 2026-09-18: with the
+## old inline restore and an abort planted between the last mutation and it, `world1_mordaine_defeated`
+## was left SET for the rest of the process — and the six sibling tests still reported PASSING.
+func after_each() -> void:
+	_restore(_saved)
 
 
 func test_the_warden_exists_and_every_reference_resolves() -> void:
@@ -48,7 +86,6 @@ func test_the_warden_has_a_sprite_and_a_bestiary_page() -> void:
 
 
 func test_warden_defeated_logic_and_the_mordaine_grandfather() -> void:
-	var saved := _saved_flags()
 	var castle = load(CASTLE).new()
 	GameState.story_flags["castle_warden_defeated"] = false
 	GameState.story_flags["world1_mordaine_defeated"] = false
@@ -60,8 +97,6 @@ func test_warden_defeated_logic_and_the_mordaine_grandfather() -> void:
 	assert_true(castle._warden_defeated(),
 		"GRANDFATHER: a save already past Mordaine must never be walled off by a flag added later")
 	castle.free()
-	GameState.story_flags["castle_warden_defeated"] = saved["warden"]
-	GameState.story_flags["world1_mordaine_defeated"] = saved["mordaine"]
 
 
 func test_the_stair_override_gates_the_throne_ascent_specifically() -> void:
@@ -98,3 +133,17 @@ func test_quest_log_telegraphs_the_full_spine() -> void:
 	assert_gt(main_idx, -1, "dragons must still be listed, in the MAIN quest lines")
 	assert_lt(main_idx, src.find('"world1_mordaine_defeated"'),
 		"and they must appear before the Mordaine objective — the order players read is the order they play")
+
+
+## Declared LAST because declaration order is run order. An arm that aborts mid-mutation still
+## reports PASSING, so "I added a teardown" is an unfalsifiable claim without an arm that can see
+## the strand (cowir-music 2026-09-18). Compares against the before_all baseline, never against a
+## re-read of the state it is checking.
+func test_zz_the_story_flags_were_handed_back() -> void:
+	for k in GATED_FLAGS:
+		var pre: Array = _pre[k]
+		assert_eq(GameState.story_flags.has(k), bool(pre[0]),
+			"STRAND: '%s' presence changed — this file writes it and something did not hand it back; 22 other guards read world1_mordaine_defeated" % k)
+		if bool(pre[0]):
+			assert_eq(GameState.story_flags.get(k, null), pre[1],
+				"STRAND: '%s' left as %s, was %s before this file ran" % [k, str(GameState.story_flags.get(k, null)), str(pre[1])])
