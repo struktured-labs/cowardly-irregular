@@ -51,7 +51,7 @@ func _gd_files(root: String, acc: Array[String]) -> void:
 func _produced_ids() -> Dictionary:
 	var files: Array[String] = []
 	_gd_files(SRC_ROOT, files)
-	assert_gt(files.size(), 100, "FLOOR: walked only %d .gd files under src/" % files.size())
+	assert_gt(files.size(), 100, "FLOOR: walked only %d .gd files under %s" % [files.size(), SRC_ROOT])
 	var out: Dictionary = {}
 	var re := RegEx.new()
 	re.compile("return\\s+\"([a-z0-9_]+)\"")
@@ -72,7 +72,7 @@ func _produced_ids() -> Dictionary:
 func _arms() -> Array[String]:
 	var code: String = GdSource.code_of(SM_PATH)
 	var at: int = code.find("\tmatch _current_area:")
-	assert_gt(at, -1, "FLOOR: the resolver's `match _current_area:` was not found")
+	assert_gt(at, -1, "FLOOR: _arms() found no `match _current_area:` in %s" % SM_PATH)
 	var seg: String = code.substr(at, 2200)
 	var out: Array[String] = []
 	var re := RegEx.new()
@@ -130,7 +130,7 @@ const BASE_VILLAGE_DEFAULT := "village"
 func _world_prefixes(code: String) -> Array:
 	## GameLoop's id->world table. Sorted longest-first so a specific prefix beats a shorter one.
 	var at: int = code.find("[\"futuristic_\", 5]")
-	assert_gt(at, -1, "FLOOR: GameLoop's world-prefix table was not found")
+	assert_gt(at, -1, "FLOOR: no world-prefix table (`[\"futuristic_\", 5]`) in %s" % GAMELOOP)
 	var seg: String = code.substr(max(0, at - 900), 1500)
 	var out: Array = []
 	for m in RegEx.create_from_string("\\[\"([a-z0-9_]+)\",\\s*(\\d)\\]").search_all(seg):
@@ -149,7 +149,7 @@ func _world_of(map_id: String, prefixes: Array) -> int:
 ## arm -> suffix, walking the resolver's match and attaching each `return "x"` to the ids above it.
 func _arm_suffixes(code: String) -> Dictionary:
 	var at: int = code.find("\tmatch _current_area:")
-	assert_gt(at, -1, "FLOOR: the resolver's `match _current_area:` was not found")
+	assert_gt(at, -1, "FLOOR: _arm_suffixes() found no `match _current_area:` in %s" % SM_PATH)
 	var out: Dictionary = {}
 	var pending: Array[String] = []
 	var ids := RegEx.create_from_string("\"([a-z0-9_]+)\"")
@@ -195,7 +195,7 @@ func test_every_loadable_village_sounds_like_its_own_world() -> void:
 	var arm_suffix: Dictionary = _arm_suffixes(sm)
 	var world_suffix: Dictionary = _world_suffixes(arm_suffix, prefixes)
 
-	assert_gt(prefixes.size(), 15, "FLOOR: only %d world prefixes derived" % prefixes.size())
+	assert_gt(prefixes.size(), 15, "FLOOR: derived only %d world prefixes from %s" % [prefixes.size(), GAMELOOP])
 	assert_eq(world_suffix.size(), 6,
 		"FLOOR: derived a suffix for %d worlds, not 6 (%s) — a world with no canonical overworld arm cannot be checked" % [world_suffix.size(), str(world_suffix)])
 
@@ -211,7 +211,7 @@ func test_every_loadable_village_sounds_like_its_own_world() -> void:
 	## What each village's script declares, or BaseVillage's default when it declares nothing.
 	var declared: Dictionary = {}
 	var dir := DirAccess.open("res://src/maps/villages")
-	assert_not_null(dir, "FLOOR: the villages directory did not open")
+	assert_not_null(dir, "FLOOR: res://src/maps/villages did not open, so no village declares anything")
 	var inherited: int = 0
 	for file in dir.get_files():
 		if not file.ends_with(".gd"):
