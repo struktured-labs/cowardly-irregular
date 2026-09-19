@@ -2046,10 +2046,11 @@ const SESSION_SCOPED_CONDITIONS := [
 	"ability_learned", "rare_item_found", "member_injured",
 ]
 
-## Party-derived, answerable in principle, but the probe carries no inventory — copying one is a
-## bigger change than this feature warrants. Stated as what it IS rather than as session scope,
-## so the reason is true and CAN expire when someone models it.
-const PROBE_UNMODELLED_CONDITIONS := ["inventory_items", "member_status"]
+## Deliberately EMPTY. It held inventory_items and member_status, withheld because the probe
+## carried neither — "a bigger change than this feature warrants", which expired: the inventory is
+## one duplicate() and the statuses are a sampled state. The bucket stays so the next unmodelled
+## condition has a home and the classification guard keeps covering the grammar.
+const PROBE_UNMODELLED_CONDITIONS := []
 
 ## Everything the sampled parties CAN answer. The three lists together must cover
 ## PARTY_CONDITION_TYPES exactly — a type in none of them is one this preview answers from a probe
@@ -2058,17 +2059,42 @@ const PROBE_UNMODELLED_CONDITIONS := ["inventory_items", "member_status"]
 const PROBE_DECIDABLE_CONDITIONS := [
 	"party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count",
 	"member_dead", "member_hp", "member_mp", "reached_level", "always",
+	"inventory_items", "member_status",
 ]
 
 
 ## Sampled party situations, so a player sees their own thresholds fire rather than one snapshot.
+## The afflicted state is DERIVED from the ruleset: a status rule asks about a future affliction, so
+## answering it from a party that is not afflicted right now would report "no rule matches" and be
+## technically true about the wrong question. Only statuses the rules NAME are sampled.
 func _explain_states() -> Array:
-	return [
+	var states: Array = [
 		{"label": "full party, healthy", "hp_pct": 1.0, "mp_pct": 1.0, "down": 0},
 		{"label": "party at 50% HP", "hp_pct": 0.5, "mp_pct": 0.6, "down": 0},
 		{"label": "party at 25% HP", "hp_pct": 0.25, "mp_pct": 0.3, "down": 0},
 		{"label": "one member down", "hp_pct": 0.6, "mp_pct": 0.5, "down": 1},
 	]
+	var named: Array = _statuses_the_rules_name()
+	if not named.is_empty():
+		states.append({"label": "afflicted (%s)" % ", ".join(PackedStringArray(named)),
+			"hp_pct": 0.6, "mp_pct": 0.5, "down": 0, "statuses": named})
+	return states
+
+
+## Statuses any member_status rule asks about, through the same alias table the evaluator uses —
+## a rule saying `freeze` is stored as `stun`, and sampling the authored word would never fire.
+func _statuses_the_rules_name() -> Array:
+	var seen: Dictionary = {}
+	for rule in rules:
+		for c in (rule as Dictionary).get("conditions", []):
+			if str((c as Dictionary).get("type", "")) != "member_status":
+				continue
+			var want := str((c as Dictionary).get("value", "")).strip_edges()
+			if want != "":
+				seen[Combatant.resolve_status_alias(want)] = true
+	var out: Array = seen.keys()
+	out.sort()
+	return out
 
 
 ## A scratch party at the sampled state. NEVER the live one.
@@ -2088,6 +2114,12 @@ func _explain_probe_party(state: Dictionary) -> Array:
 		## probe rather than excluded with a false reason.
 		if src != null and "job_level" in src:
 			c.job_level = src.job_level
+		## The party's REAL bag. inventory_items is a present fact the player controls, not a
+		## hypothetical, so the honest answer uses what they are actually carrying.
+		if src != null and "inventory" in src:
+			c.inventory = src.inventory.duplicate()
+		for st in state.get("statuses", []):
+			c.add_status(str(st), 3)
 		c.current_hp = int(1000.0 * float(state.get("hp_pct", 1.0)))
 		c.current_mp = int(100.0 * float(state.get("mp_pct", 1.0)))
 		if i < int(state.get("down", 0)):
@@ -2107,6 +2139,10 @@ func _explain_blocked_reason(rule: Dictionary) -> String:
 			return "needs session progress (battles, corruption, time) — not shown here"
 		if PROBE_UNMODELLED_CONDITIONS.has(t):
 			return "depends on %s, which this preview does not model — not shown here" % t
+		## A status rule naming no status asks has_status("") and can never fire. Reporting it as
+		## "no rule matches" is true of the sampled states and hides that the rule is unfireable.
+		if t == "member_status" and str((c as Dictionary).get("value", "")).strip_edges() == "":
+			return "names no status — it can never fire"
 	return ""
 
 
@@ -2160,8 +2196,29 @@ func explain_rules_report() -> Array:
 		for c in probe:
 			if c != null:
 				c.free()
+	## An inventory rule now answers from the real bag, so "no rule matches" can mean "your bag is
+	## empty" rather than "your rule is wrong" — say which, or the player debugs the wrong half.
+	for rule in rules:
+		var reads_inventory: bool = false
+		for c in (rule as Dictionary).get("conditions", []):
+			if str((c as Dictionary).get("type", "")) == "inventory_items":
+				reads_inventory = true
+		if reads_inventory:
+			out.append("(inventory rules answered from your party's current bag: %d distinct item%s)"
+				% [_probe_unique_item_count(), "" if _probe_unique_item_count() == 1 else "s"])
+			break
 	out.append_array(_observed_rules_report(winners))
 	return out
+
+
+## Distinct items across the live party, which is what inventory_items compares against.
+func _probe_unique_item_count() -> int:
+	var seen: Dictionary = {}
+	for m in _party:
+		if m is Combatant:
+			for item_id in m.inventory:
+				seen[item_id] = true
+	return seen.size()
 
 
 ## What the rules ACTUALLY did, beside what the sampled states predict. A grind rule can look right

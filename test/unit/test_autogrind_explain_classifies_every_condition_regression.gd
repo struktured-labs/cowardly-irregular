@@ -9,12 +9,19 @@ var _ag_state: Dictionary
 ## readout (f72900f7): it must REFUSE what the sampled parties cannot decide, and every condition
 ## in the grammar must be classified so the next one cannot arrive unnoticed.
 ##
-## Measured before fixing: a rule reading "if the cleric has poison, stop grinding" reported
+## Measured before the first fix: a rule reading "if the cleric has poison, stop grinding" reported
 ##   full party, healthy  ->  no rule matches — the grind continues
 ## in all four sampled states, because _explain_probe_party builds fresh Combatants whose
 ## status_effects are [] and stay []. A confident answer from a probe that cannot hold the state.
+## That was repaired by REFUSING both it and inventory_items with an honest reason.
 ##
-## And the withheld-rule line said one thing for two different facts. The constants were split so
+## ⚠️ THE REFUSAL WAS THE HALF-WAY HOUSE AND ITS OWN COMMENT SAID SO — "CAN expire when someone
+## models it". Both are modelled now and the refusals are gone: the bag is one duplicate(), and the
+## statuses are a DERIVED sampled state carrying what the rules name. So the arms below assert the
+## opposite of what they asserted at f72900f7, and the standard is unchanged — what moved is which
+## conditions the probe can decide. PROBE_UNMODELLED_CONDITIONS is empty and still classified.
+##
+## The withheld-rule line also said one thing for two different facts. The constants were split so
 ## the reason would be TRUE — the file's own comment says so — but both still rendered "needs
 ## session progress (battles, corruption, time)", so an inventory_items rule was told it needed
 ## battles and time. The list was honest; the sentence the player reads was not.
@@ -67,30 +74,54 @@ func test_every_grammar_condition_is_classified_in_both_directions() -> void:
 		"these are classified for the preview but are not grammar conditions any more — delete them: %s" % str(stale))
 
 
-func test_a_status_rule_is_refused_rather_than_reported_as_never_firing() -> void:
+func test_a_status_rule_is_answered_from_an_afflicted_sample() -> void:
+	## WAS a refusal, because the probe carried no statuses "and never can". It can: the sampled
+	## states now include one afflicted with the statuses the rules NAME. A status rule asks about a
+	## future affliction, so answering from the party's present (unafflicted) state would report
+	## "no rule matches" — true of the sample and false about the question.
+	_ui.rules = [{
+		"conditions": [{"type": "member_status", "member": "cleric", "value": "poison"}],
+		"actions": [{"type": "stop_grinding"}], "enabled": true
+	}]
+	var report := _joined()
+	assert_true(report.contains("afflicted"),
+		"the preview must sample a state where the status the rule names is present: %s" % report)
+	assert_true(report.contains("fires"),
+		"and the rule must FIRE there — otherwise the player cannot tell a working rule from a dead one: %s" % report)
+
+
+func test_a_status_rule_naming_no_status_is_called_unfireable() -> void:
+	## `status` is not the key the evaluator reads — it reads `value`. Such a rule asks
+	## has_status("") and can never fire; reporting "no rule matches" hides that.
 	_ui.rules = [{
 		"conditions": [{"type": "member_status", "member": "cleric", "status": "poison"}],
 		"actions": [{"type": "stop_grinding"}], "enabled": true
 	}]
 	var report := _joined()
 	assert_false(report.contains("no rule matches"),
-		"the preview must not tell the player their status rule never fires — the probe carries no statuses and never can: %s" % report)
-	assert_true(report.contains("member_status"),
-		"the refusal must NAME what it cannot model, or it reads as the tool being broken: %s" % report)
+		"an unfireable rule must not be reported as merely not matching: %s" % report)
+	assert_true(report.contains("never fire"),
+		"it must say the rule can never fire: %s" % report)
 
 
-func test_an_unmodelled_rule_is_not_blamed_on_session_progress() -> void:
-	## inventory_items is party-derived and answerable in principle — it is withheld because the
-	## probe carries no inventory, which is a different fact from needing battles and time.
+func test_an_inventory_rule_is_answered_from_the_real_bag() -> void:
+	## WAS withheld ("the probe carries no inventory"). It carries the party's own bag now — one
+	## duplicate() — so the rule is answered, and the report names the basis: an empty bag and a
+	## wrong rule both read as "no rule matches" otherwise, and they need different fixes.
+	_ui._party[0].inventory = {"potion": 3, "ether": 1}
 	_ui.rules = [{
-		"conditions": [{"type": "inventory_items", "item_id": "potion", "op": ">", "value": 0}],
+		"conditions": [{"type": "inventory_items", "op": ">", "value": 0}],
 		"actions": [{"type": "stop_grinding"}], "enabled": true
 	}]
 	var report := _joined()
 	assert_false(report.contains("needs session progress"),
 		"an inventory rule does not need battles, corruption or time — that reason is false: %s" % report)
-	assert_true(report.contains("does not model"),
-		"it must say the preview does not model it: %s" % report)
+	assert_false(report.contains("does not model"),
+		"the preview models inventory now and must not claim otherwise: %s" % report)
+	assert_true(report.contains("fires"),
+		"with 2 distinct items in the bag, `inventory_items > 0` must fire: %s" % report)
+	assert_true(report.contains("current bag: 2 distinct items"),
+		"the report must name the basis it answered from: %s" % report)
 
 
 func test_a_genuinely_session_scoped_rule_still_says_session_progress() -> void:
@@ -115,6 +146,20 @@ func test_a_probe_decidable_rule_is_still_answered() -> void:
 	var report := _joined()
 	assert_true(report.contains("fires"),
 		"a probe-decidable threshold must still be answered, not refused: %s" % report)
+
+
+func test_a_rule_naming_an_alias_is_sampled_under_its_stored_key() -> void:
+	## An ability authors `freeze`; Combatant stores it as `stun`. Sampling the AUTHORED word would
+	## afflict the probe with a status has_status() never finds, so the rule would never fire and the
+	## preview would blame the player's rule for the engine's alias.
+	assert_eq(Combatant.resolve_status_alias("freeze"), "stun", "CONTROL: freeze is stored as stun")
+	_ui.rules = [{
+		"conditions": [{"type": "member_status", "value": "freeze"}],
+		"actions": [{"type": "stop_grinding"}], "enabled": true
+	}]
+	var report := _joined()
+	assert_true(report.contains("fires"),
+		"a rule naming an alias must still fire in the afflicted sample: %s" % report)
 
 
 func after_each() -> void:
