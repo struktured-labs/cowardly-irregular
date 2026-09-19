@@ -1067,8 +1067,6 @@ const STATUS_VOCABULARY := {
 }
 
 
-## Rendered from STATUS_VOCABULARY so the grammar above can point at the list
-## without carrying a second copy of it.
 ## What each numeric condition's `value` is MEASURED IN. The grammar said only "op and
 ## value", and the model answered in the units it assumed: 3600 for time_elapsed against an
 ## evaluator that computes MINUTES, and 10-50 for corruption on a scale where 4.5 ends the
@@ -1091,6 +1089,8 @@ static func _format_numeric_scales(kit_context: Dictionary) -> String:
 	return "\n".join(lines)
 
 
+## Rendered from STATUS_VOCABULARY so the grammar above can point at the list
+## without carrying a second copy of it.
 static func _format_status_vocabulary() -> String:
 	var lines: PackedStringArray = PackedStringArray()
 	lines.append("\n\nSTATUS IDS. member_status's \"value\" is ONE id from this list — never a list,")
@@ -1632,7 +1632,6 @@ static func _format_quest_state_voice(quest_state_lines: Array) -> String:
 	return "\nThis character has recently said things like:\n" + "\n".join(quoted) + "\nEcho this mood and voice.\n"
 
 
-## Live party state as prose — an NPC that can't see a downed PC isn't in the world.
 ## Frames memory as the NPC's own recollection, and asks for a glance rather than
 ## a recap — an NPC that quotes you back verbatim reads as a database, not a person.
 static func _format_memory(memory_lines: Array) -> String:
@@ -1657,6 +1656,7 @@ static func _format_memory(memory_lines: Array) -> String:
 	)
 
 
+## Live party state as prose — an NPC that can't see a downed PC isn't in the world.
 static func _format_party_state(party_state: Dictionary) -> String:
 	if party_state.is_empty():
 		return ""

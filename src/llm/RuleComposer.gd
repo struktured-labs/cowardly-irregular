@@ -804,9 +804,6 @@ func _normalise_switch_profile(rules: Array, kit_context: Dictionary) -> Array[S
 	return notes
 
 
-## An autobattle condition's `status` field, matched literally by Combatant.has_status.
-## Measured 7 of 19 unmatchable on an intent about being silenced — the model wrote
-## "silenced". Same lookup as the grind's, same table, because it is the same engine call.
 ## Three shapes measured across 48 captured live replies, 4 jobs x 12, replayed through the
 ## real compose_async. One grammar error discards the whole composition, so each cost a
 ## player their entire ruleset:
@@ -874,6 +871,9 @@ func _normalise_autobattle_shapes(rules: Array, kit_context: Dictionary) -> Arra
 	return notes
 
 
+## An autobattle condition's `status` field, matched literally by Combatant.has_status.
+## Measured 7 of 19 unmatchable on an intent about being silenced — the model wrote
+## "silenced". Same lookup as the grind's, same table, because it is the same engine call.
 func _normalise_autobattle_statuses(rules: Array) -> Array[String]:
 	const STATUS_CONDITIONS := ["has_status", "not_has_status", "ally_has_status",
 		"enemy_has_status", "not_enemy_has_status"]
