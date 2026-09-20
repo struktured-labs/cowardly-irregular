@@ -447,6 +447,30 @@ func test_dressed_fps_matches_the_period_and_declines_when_it_cannot() -> void:
 	assert_eq(Loader.dressed_fps(8.0, DRESSED, BASE, 2, 0), 8.0, "a zero frame width must not divide")
 
 
+func test_victory_fps_gives_an_11_frame_flourish_time_to_read() -> void:
+	# Rogue/bard Celebration is 11 frames. At the sheet's 8 fps that's 1.375s —
+	# a blink, and the F12 cap never caught the swing. Floor the duration.
+	var fps: float = Loader.victory_fps(11, 8.0)
+	assert_lte(fps, 11.0 / 2.4 + 0.01, "11 frames must take at least 2.4s (got fps=%s, duration=%s)" % [fps, 11.0 / fps])
+	assert_eq(Loader.victory_fps(4, 8.0), 8.0, "short T1 victory strips keep sheet fps — do not slow them")
+	assert_eq(Loader.victory_fps(0, 8.0), 8.0, "zero frames must not divide")
+	var src: String = FileAccess.get_file_as_string(LOADER_SRC)
+	assert_true("victory_fps(" in src.substr(src.find("func _load_external_sheet")),
+		"_load_external_sheet must CALL victory_fps, or the helper is dead")
+
+
+func test_rogue_victory_is_the_11_frame_celebration_and_takes_time_to_read() -> void:
+	var frames: SpriteFrames = Loader.load_sprite_frames(null, "rogue")
+	assert_not_null(frames, "rogue artist sheet must load")
+	assert_true(frames.has_animation("victory"), "rogue sheet must carry victory")
+	var n: int = frames.get_frame_count("victory")
+	assert_eq(n, 11, "rogue victory must be the 11-frame Celebration, not the 4-frame T1 fill")
+	var fps: float = frames.get_animation_speed("victory")
+	assert_gt(fps, 0.0, "floor: fps")
+	assert_gte(float(n) / fps, 2.35,
+		"11-frame flourish at fps=%s lasts %ss — the F12 cap never caught the swing" % [fps, float(n) / fps])
+
+
 ## ⛔ END TO END, through the real loader in a real world. The arm above passes on a helper
 ## nothing calls; this one reads the period the player would actually see.
 func test_a_job_breathes_at_the_same_rate_in_every_world() -> void:

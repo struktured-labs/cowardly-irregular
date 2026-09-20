@@ -61,6 +61,30 @@ func test_gameloop_first_press_completes_not_dismisses() -> void:
 	assert_true("await _wait_for_confirm_victory()" in src, "victory branch routes through the victory-aware wait")
 
 
+func test_exp_cards_are_translucent_and_stand_off_the_sprite() -> void:
+	# Opaque 0.92 cards 36px left of the sprite sit ON the victory flourish
+	# (party faces left). Translucent + a wider gap lets the pose read through.
+	var src: String = FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
+	var make: int = src.find("func _make_card")
+	assert_gt(make, -1, "floor: _make_card exists")
+	var make_body: String = src.substr(make, src.find("\nfunc ", make + 1) - make)
+	assert_true("0.55" in make_body or "0.50" in make_body or "0.45" in make_body,
+		"card panel bg must be translucent (alpha ~0.5), not the old 0.92 wall")
+	assert_false("0.92" in make_body,
+		"0.92 opaque card fill must be gone — that is what hid the pose")
+	var pos_body: String = src.substr(src.find("func _card_position"), 900)
+	assert_true("CARD_SPRITE_GAP" in pos_body,
+		"the stand-off from the sprite must be a named gap, not a magic 36/80")
+	var gap_idx: int = src.find("const CARD_SPRITE_GAP")
+	assert_gt(gap_idx, -1, "floor: CARD_SPRITE_GAP exists")
+	var gap_line: String = src.substr(gap_idx, src.find("\n", gap_idx) - gap_idx)
+	var gap: float = float(gap_line.substr(gap_line.find("=") + 1).strip_edges().trim_suffix(".0"))
+	# Artist party frames display at ~315px and are CENTRED on the slot, so the
+	# flourish reaches ~157px left of origin. A gap under that sits ON the blade.
+	assert_gte(gap, 180.0,
+		"CARD_SPRITE_GAP=%s is inside the ~157px flourish — the F12 cap had the swing under the EXP card" % gap)
+
+
 func test_overlay_keeps_the_victoryresults_node_name() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleResultsDisplay.gd")
 	var idx := src.find('overlay.name = "VictoryResults"')

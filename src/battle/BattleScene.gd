@@ -112,8 +112,10 @@ func _weapon_element_for(pc: Combatant) -> String:
 			return key.trim_suffix("_damage_bonus")
 	return ""
 
-## Horizontal shift for the ONE-SHOT!/AUTO-BATTLE! victory banners so they clear the BattleResultsDisplay panel (msg 2595). Panel sits at x=200-600 via PRESET_CENTER_LEFT (BRD:171-172); banner is 400 wide with PRESET_CENTER offsets ±200, so it renders x=440-840 by default (overlaps panel at x=440-600). Shifting right by 200 puts the banner at x=640-1040 — clear of the panel with a 40px margin on the left and a 240px margin on the right at the fixed 1280 viewport. Viewport stretch=viewport + aspect=keep pins the coord system at 1280 regardless of window size, so this offset is safe across all real screens.
-const VICTORY_BANNER_X_SHIFT: int = 200
+## EXP-boost banners: negative X clears the party (old +200 sat on victory poses), Y lifts above the figures, alpha lets leftover overlap read through.
+const VICTORY_BANNER_X_SHIFT: int = -120
+const VICTORY_BANNER_Y_SHIFT: int = -160
+const VICTORY_BANNER_ALPHA := 0.72
 
 ## Party status UI
 @onready var char1_name: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/Name
@@ -4093,6 +4095,8 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 ## idle so monsters (or players) can't get stuck frozen at the attack
 ## frame/position when the return tween was interrupted.
 func _reset_attacker_home(combatant: Combatant) -> void:
+	if _battle_victory:
+		return
 	if not combatant or not is_instance_valid(combatant):
 		return
 	var sprite = _get_combatant_sprite(combatant)
@@ -4104,6 +4108,9 @@ func _reset_attacker_home(combatant: Combatant) -> void:
 
 ## Timer-safe helpers: bound methods auto-disconnect when self frees, so battle teardown can't fire them with freed captures (smoke-log engine-error class, 2026-07-11).
 func _delayed_snap_and_idle(sprite, animator) -> void:
+	# F12 2026-09-20: this snap fired after play_victory and froze the rogue on idle.
+	if _battle_victory:
+		return
 	if sprite and is_instance_valid(sprite) and sprite.has_meta("home_position"):
 		var home = sprite.get_meta("home_position")
 		if sprite.position.distance_to(home) > 2.0:
@@ -5681,6 +5688,7 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	flash_container.name = "OneShotFlash"
 	flash_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	flash_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.modulate.a = VICTORY_BANNER_ALPHA
 	add_child(flash_container)
 
 	# Screen flash effect (brief white overlay)
@@ -5701,9 +5709,8 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	one_shot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	one_shot_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	one_shot_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	one_shot_label.offset_top = -60
-	one_shot_label.offset_bottom = 0
-	# msg 2595: shift right of the victory results panel (x=200-600) to prevent the banner from rendering under it.
+	one_shot_label.offset_top = -60 + VICTORY_BANNER_Y_SHIFT
+	one_shot_label.offset_bottom = 0 + VICTORY_BANNER_Y_SHIFT
 	one_shot_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	one_shot_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	one_shot_label.add_theme_font_size_override("font_size", TextScale.scaled(48))
@@ -5723,8 +5730,8 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rank_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	rank_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	rank_label.offset_top = 0
-	rank_label.offset_bottom = 40
+	rank_label.offset_top = 0 + VICTORY_BANNER_Y_SHIFT
+	rank_label.offset_bottom = 40 + VICTORY_BANNER_Y_SHIFT
 	rank_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	rank_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	rank_label.add_theme_font_size_override("font_size", TextScale.scaled(28))
@@ -5745,8 +5752,8 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bonus_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	bonus_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	bonus_label.offset_top = 40
-	bonus_label.offset_bottom = 75
+	bonus_label.offset_top = 40 + VICTORY_BANNER_Y_SHIFT
+	bonus_label.offset_bottom = 75 + VICTORY_BANNER_Y_SHIFT
 	bonus_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	bonus_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	bonus_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
@@ -5796,6 +5803,7 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	flash_container.name = "AutobattleFlash"
 	flash_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	flash_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.modulate.a = VICTORY_BANNER_ALPHA
 	add_child(flash_container)
 
 	# Screen flash effect (cyan tint) — skip if one-shot already flashing
@@ -5815,9 +5823,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	auto_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	auto_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	auto_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	auto_label.offset_top = -60 + y_offset
-	auto_label.offset_bottom = 0 + y_offset
-	# msg 2595: shift right of the victory results panel (x=200-600) to prevent the banner from rendering under it.
+	auto_label.offset_top = -60 + y_offset + VICTORY_BANNER_Y_SHIFT
+	auto_label.offset_bottom = 0 + y_offset + VICTORY_BANNER_Y_SHIFT
 	auto_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	auto_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	auto_label.add_theme_font_size_override("font_size", TextScale.scaled(42))
@@ -5837,8 +5844,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	turns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	turns_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	turns_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	turns_label.offset_top = 0 + y_offset
-	turns_label.offset_bottom = 35 + y_offset
+	turns_label.offset_top = 0 + y_offset + VICTORY_BANNER_Y_SHIFT
+	turns_label.offset_bottom = 35 + y_offset + VICTORY_BANNER_Y_SHIFT
 	turns_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	turns_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	turns_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
@@ -5858,8 +5865,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bonus_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	bonus_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	bonus_label.offset_top = 35 + y_offset
-	bonus_label.offset_bottom = 70 + y_offset
+	bonus_label.offset_top = 35 + y_offset + VICTORY_BANNER_Y_SHIFT
+	bonus_label.offset_bottom = 70 + y_offset + VICTORY_BANNER_Y_SHIFT
 	bonus_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	bonus_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	bonus_label.add_theme_font_size_override("font_size", TextScale.scaled(22))

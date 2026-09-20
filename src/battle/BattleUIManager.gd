@@ -338,6 +338,17 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	return box
 
 
+## BBCode color for an AP readout. +4 (full bank) is gold so a maxed bar is not more lime.
+func _ap_bbcode(ap: int) -> String:
+	if ap >= BattleManager.FULL_BANK_AP:
+		return "#ffd94d"
+	if ap > 0:
+		return "lime"
+	if ap < 0:
+		return "red"
+	return "white"
+
+
 func _update_member_status(idx: int, member: Combatant) -> void:
 	"""Update a single party member's status display"""
 	if idx >= _party_status_boxes.size():
@@ -441,11 +452,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 	# Update AP and status - try both RichTextLabel and regular Label
 	var ap_label = box.get_node_or_null("AP")
 	if ap_label:
-		var ap_color = "white"
-		if member.current_ap > 0:
-			ap_color = "lime"
-		elif member.current_ap < 0:
-			ap_color = "red"
+		var ap_color = _ap_bbcode(member.current_ap)
 
 		var ap_value = member.current_ap
 
@@ -496,7 +503,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				var billed = BattleManager.billed_ap(ap_value, queued_count)
 				var new_ap = ap_value - billed
 				var new_color = "yellow" if new_ap >= 0 else "orange"
-				var bank_tag = " [color=#ffd94d]★[/color]" if billed < queued_count else ""
+				var bank_tag = (" [color=%s]★[/color]" % _ap_bbcode(BattleManager.FULL_BANK_AP)) if billed < queued_count else ""
 				status_text = "[color=%s]AP: %+d[/color][color=%s]→%+d[/color] [color=aqua][%d][/color]%s" % [ap_color, ap_value, new_color, new_ap, queued_count, bank_tag]
 			elif is_deferring:
 				# Deferring keeps +1 natural gain: "AP: +1 (+1)"
@@ -748,11 +755,7 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 	# Update AP and status effects
 	var ap_label = box.get_node_or_null("AP")
 	if ap_label and ap_label is RichTextLabel:
-		var ap_color = "white"
-		if enemy.current_ap > 0:
-			ap_color = "lime"
-		elif enemy.current_ap < 0:
-			ap_color = "red"
+		var ap_color = _ap_bbcode(enemy.current_ap)
 
 		if is_dead:
 			ap_label.text = "[color=gray]---[/color]"
