@@ -291,7 +291,21 @@ selftest() {
     # removed pub442/443/444 before this was caught (recoverable, tags on origin, logs
     # already archived, and not the point). Confining SCAN is what makes the destructive
     # arms safe; the decoy fixture below is what keeps it confined.
-    local pass=0 fail=0 scan="tmp/reapself/" pfx="tmp/reapself/reaptest-rel-" tags t self
+    # ⛔ EVERY GLOBAL NAME THIS SELFTEST CREATES IS NAMESPACED BY $$, AND THAT IS NOT HYGIENE.
+    # 2026-09-20: this selftest failed 2, then 4, then 12 arms on three consecutive runs --
+    # different arms each time -- and blocked the v3.33.469-alpha publish (EC=4). The cause is
+    # that BRANCHES AND TAGS ARE REPO-GLOBAL while the fixture names were CONSTANTS. Two
+    # overlapping runs (two lanes publishing, or the fork chain that was live that night) each
+    # create `reaptest/branch-${sfx}` and each DELETE it at cleanup, so one run tears down the ref the
+    # other is still asserting on. The four arms that failed were all BRANCH arms, every time.
+    #
+    # ⚠️ I FIRST BLAMED THE WORKTREE REGISTRY AND THAT WAS WRONG -- measured here: adding two
+    # worktrees with the SAME basename in different directories both return 0, and git creates
+    # admin entries `dupname` and `dupname1`. Worktree names were never the collision; the
+    # global refs were. Same class as the run_tests.sh NUL-hole (shared mutable state keyed by
+    # nothing) and the same cure ($$), but a different shared object than the one I named.
+    local sfx="$$"
+    local pass=0 fail=0 scan="tmp/reapself-${sfx}/" pfx="tmp/reapself-${sfx}/reaptest-rel-" tags t self
     self="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 
     tags="$(git tag -l 'v3.33.*' | sort -V | tail -6 | head -4)"
@@ -322,7 +336,7 @@ selftest() {
     # unpushed check when HEAD happens to BE origin/main — so the moment you run --selftest on a
     # branch carrying one local commit it reds on "NOT merged" and reads as a regression you
     # caused. The arm was passing on where HEAD sat rather than on the rule it names.
-    git worktree add -b reaptest/branch "${pfx}0" origin/main >/dev/null 2>&1 || true
+    git worktree add -b reaptest/branch-${sfx} "${pfx}0" origin/main >/dev/null 2>&1 || true
     echo "scratch" > "${pfx}2/REAPTEST_DIRTY.md" 2>/dev/null
     ( cd "${pfx}2" && git add REAPTEST_DIRTY.md >/dev/null 2>&1 )
 
@@ -372,20 +386,29 @@ selftest() {
     # Fixtures for the three branch states. The reapable one is DERIVED — any local branch
     # already merged into origin/main, present on origin, and not checked out anywhere — so
     # this arm cannot quietly become a skip if one hardcoded branch is ever deleted.
-    git worktree add -b reaptest/unmerged "${pfx}1" HEAD >/dev/null 2>&1 || true
+    git worktree add -b reaptest/unmerged-${sfx} "${pfx}1" HEAD >/dev/null 2>&1 || true
     ( cd "${pfx}1" && git commit --allow-empty -qm "reaptest: not in origin/main" >/dev/null 2>&1 )
 
+    # ⛔ THIS FIXTURE NEEDS A *REAL* BRANCH -- merged into origin/main, pushed, and not already
+    # checked out -- so it cannot be namespaced like the others. It is therefore the one arm
+    # that races on a SHARED resource: a branch this repo genuinely has. Picking the first
+    # candidate and hoping is what made it flaky -- measured 2026-09-20, two concurrent
+    # selftests, the loser's `git worktree add` failed under `|| true` and its arm reported a
+    # defect that did not exist. This repo carries 70+ worktrees across every lane, so another
+    # lane holding the branch produces the identical false failure with no concurrency at all.
+    #
+    # So: TRY candidates until one is actually checked out, rather than testing the first and
+    # assuming. The `|| continue` is the whole fix -- a failed add now costs the next candidate
+    # instead of the arm.
     local mb="" b
     for b in $(git for-each-ref --format='%(refname:short)' refs/heads/ 2>/dev/null); do
         case "$b" in reaptest/*) continue ;; esac
         git merge-base --is-ancestor "$b" origin/main 2>/dev/null || continue
         git ls-remote --exit-code --heads origin "$b" >/dev/null 2>&1 || continue
         git worktree list --porcelain 2>/dev/null | grep -qx "branch refs/heads/$b" && continue
+        git worktree add "${pfx}8" "$b" >/dev/null 2>&1 || continue
         mb="$b"; break
     done
-    if [ -n "$mb" ]; then
-        git worktree add "${pfx}8" "$mb" >/dev/null 2>&1 || true
-    fi
 
     out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 --merged-branches 2>&1)"
     chk "unmerged branch refused EVEN WITH the flag"  "KEEP.*reaptest-rel-1.*NOT merged"        0
@@ -401,7 +424,7 @@ selftest() {
     chk "…and refused again with the flag absent"     "would remove reaptest-rel-8"             1
 
     for d in "${pfx}1" "${pfx}8"; do [ -d "$d" ] && git worktree remove --force "$d" >/dev/null 2>&1; done
-    git branch -D reaptest/unmerged >/dev/null 2>&1
+    git branch -D reaptest/unmerged-${sfx} >/dev/null 2>&1
     [ -n "$mb" ] && { git rev-parse --verify -q "$mb" >/dev/null && pass=$((pass+1)) && printf '  ok    the derived branch itself survived removal of its worktree\n'; }
 
     # ── REAP_ROOT: the LOOKING moves, the REFUSALS do not ────────────────────────────────
@@ -412,14 +435,17 @@ selftest() {
     # ⛔ THE NEST MUST SIT OUTSIDE $PWD/$SCAN OR THESE ARMS CANNOT FAIL. First version put it at
     # tmp/reaproot-nest/, which still matches the BUGGY "$PWD/tmp/"* filter — so reverting the fix
     # left every new arm green. A fixture inside the defective corpus tests nothing.
-    local nest=".reaptest-nest"
+    # Namespaced for the same reason as the refs above: the widened-root arms deliberately
+    # scan a BROADER directory, so with a constant name two concurrent runs see each other's
+    # fixtures and the population assertions ("the newest is still protected") break.
+    local nest=".reaptest-nest-${sfx}"
     local firsttag; firsttag="$(printf '%s\n' $tags | head -1)"
     # Fixtures sit at <nest>/tmp/rel-… so the DEFAULT SCAN and PREFIX apply unchanged at the new
     # root — the same shape as cowir-deploy-wt/tmp/. Note ${REAP_SCAN:-tmp/} substitutes on EMPTY
     # as well as unset, so REAP_SCAN="" cannot be used to flatten the scan.
     mkdir -p "$nest/tmp"
     git worktree add --detach "${nest}/tmp/rel-9001" "$firsttag" >/dev/null 2>&1 || true
-    git worktree add -b reaptest/rootbranch "${nest}/tmp/other-9002" HEAD >/dev/null 2>&1 || true
+    git worktree add -b reaptest/rootbranch-${sfx} "${nest}/tmp/other-9002" HEAD >/dev/null 2>&1 || true
 
     # A zero must name the population it is a zero over. The old message said "no worktrees under
     # ${PREFIX}" while the filter is ROOT/SCAN, so a run rooted at the wrong tree was indistinguishable
@@ -453,7 +479,7 @@ selftest() {
     for d in "${nest}/tmp/rel-9001" "${nest}/tmp/other-9002"; do
         [ -d "$d" ] && git worktree remove --force "$d" >/dev/null 2>&1
     done
-    git branch -D reaptest/rootbranch >/dev/null 2>&1
+    git branch -D reaptest/rootbranch-${sfx} >/dev/null 2>&1
     rm -rf "$nest"
 
     # -- reconstructibility: a detached tree outside PREFIX is judged by its COMMIT ---------
@@ -472,9 +498,9 @@ selftest() {
     if [ -z "$rtag" ] || [ -z "$u1" ] || [ -z "$u2" ]; then
         fail=$((fail+1)); printf '  FAIL  could not build the reconstructibility fixtures (rtag=%s u1=%s u2=%s)\n' "${rtag:-none}" "${u1:-none}" "${u2:-none}"
     else
-        git tag reaptest-localonly "$u1" >/dev/null 2>&1 || true
+        git tag reaptest-localonly-${sfx} "$u1" >/dev/null 2>&1 || true
         git worktree add --detach "${scan}"reaptest-recon-9    "$rtag"            >/dev/null 2>&1 || true
-        git worktree add --detach "${scan}"reaptest-localtag-9 reaptest-localonly >/dev/null 2>&1 || true
+        git worktree add --detach "${scan}"reaptest-localtag-9 reaptest-localonly-${sfx} >/dev/null 2>&1 || true
         git worktree add --detach "${scan}"reaptest-scratch-9  "$u2"              >/dev/null 2>&1 || true
 
         out="$(REAP_SCAN="$scan" REAP_PREFIX="$pfx" "$self" --keep 1 2>&1)"
@@ -500,13 +526,13 @@ selftest() {
         for d in "${scan}"reaptest-recon-9 "${scan}"reaptest-localtag-9 "${scan}"reaptest-scratch-9 tmp/reaptest-decoy-9; do
             [ -e "$d" ] && _drop_fixture "$d"
         done
-        git tag -d reaptest-localonly >/dev/null 2>&1
+        git tag -d reaptest-localonly-${sfx} >/dev/null 2>&1
     fi
 
     # cleanup fixtures
     ( cd "${pfx}2" 2>/dev/null && git reset -q HEAD REAPTEST_DIRTY.md 2>/dev/null; rm -f REAPTEST_DIRTY.md )
     for d in "${pfx}"*; do [ -e "$d" ] && _drop_fixture "$d"; done
-    git branch -D reaptest/branch >/dev/null 2>&1
+    git branch -D reaptest/branch-${sfx} >/dev/null 2>&1
     rmdir "$scan" 2>/dev/null || true
 
     echo
