@@ -161,8 +161,21 @@ func test_a_warden_survives_a_killing_blow_inside_the_grind() -> void:
 		gs.lens_assignments = keep
 		pass_test("warden authors no lethal floor")
 		return
-	holder.current_hp = 40
-	res._resolve_attack(attacker, holder)
+	## ⛔ RETRIED, because _resolve_attack CAN MISS and a miss applies no damage at all. The formula
+	## is max(0.02, 0.10 - speed_delta * 0.05), so the 0.02 floor means NO fixture can make a single
+	## swing certain — equal speeds gave exactly 0.10 and red the .467 gate at 1-in-6 observed.
+	## A miss leaves hp at the starting 40, which reads as "the floor did not fire" and is a failure
+	## upstream of the thing this arm defends. The floor is one-shot per combatant (_lens_floor_used),
+	## so retries cannot mask it: once a swing lands, the next assert is about the floor and nothing else.
+	var landed := false
+	for _attempt in 25:
+		holder.current_hp = 40
+		res._resolve_attack(attacker, holder)
+		if holder.current_hp != 40:
+			landed = true
+			break
+	assert_true(landed,
+		"25 consecutive swings all MISSED — this arm never reached the lethal floor, so its verdict is about the miss roll, not the Warden")
 	gut.p("    warden after a %d-attack killing blow: hp %d" % [attacker.attack, holder.current_hp])
 	assert_eq(holder.current_hp, 1,
 		"the Warden's lethal floor did not fire through the grind's own damage call — the inherited classification is wrong and it is a real gap")
