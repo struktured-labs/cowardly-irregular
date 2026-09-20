@@ -17,6 +17,7 @@ echo "== pid $pid: $(tr '\0' ' ' < "/proc/$pid/cmdline" | cut -c1-90)"
 echo "== sampling ${secs}s, CLK_TCK=$hz, threads=$(ls /proc/$pid/task 2>/dev/null | wc -l)"
 
 declare -A t0
+f=()
 for t in /proc/$pid/task/*; do
     tid=${t##*/}
     # ⛔ /proc/<tid>/stat field 2 is `(comm)` and comm CAN CONTAIN SPACES AND PARENS --
