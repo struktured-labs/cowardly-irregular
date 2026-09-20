@@ -247,7 +247,11 @@ DROPS_20260830 = {
         "src": "Bard Base sprite.aseprite",
         "dir": "assets/sprites/jobs/bard",
         "backup": True,
+        # "Celebration" is the ARTIST's label for the victory pose; the engine's
+        # animation slot is "victory". Their word is kept in the manifest source note,
+        # the same way "Dead"/"Weak" were when they split the downed state.
         "map": {"idle": ("Idle", 0, 0), "dead": ("Dead", 0, 0), "weak": ("Weak", 0, 0),
+                "victory": ("Celebration", 0, 0),
                 "cast": ("ATK", 0, 3), "attack": ("ATK", 4, 99)},
     },
     "mage": {
