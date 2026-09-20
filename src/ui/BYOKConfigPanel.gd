@@ -40,6 +40,7 @@ var _format_picker: OptionButton
 var _save_btn: Button
 var _cancel_btn: Button
 var _model_field: LineEdit
+var _model_picker: OptionButton
 var _api_key_field: LineEdit
 var _status_label: Label
 var _test_btn: Button
@@ -50,14 +51,32 @@ var _testing: bool = false
 ## Bearer-auth providers only — _build_headers sends no x-api-key, so
 ## Anthropic's native endpoint cannot work here and is deliberately absent.
 const PROVIDER_PRESETS := [
-	{"label": "Custom / manual", "base_url": "", "format": "openai", "model": ""},
-	{"label": "OpenAI", "base_url": "https://api.openai.com", "format": "openai", "model": "gpt-4o-mini"},
-	{"label": "OpenRouter", "base_url": "https://openrouter.ai/api", "format": "openai", "model": "openai/gpt-4o-mini"},
-	{"label": "Groq", "base_url": "https://api.groq.com/openai", "format": "openai", "model": "llama-3.1-8b-instant"},
-	{"label": "DeepSeek", "base_url": "https://api.deepseek.com", "format": "openai", "model": "deepseek-chat"},
-	{"label": "Together AI", "base_url": "https://api.together.xyz", "format": "openai", "model": "meta-llama/Llama-3-8b-chat-hf"},
-	{"label": "Ollama (local, no key)", "base_url": "http://localhost:11434", "format": "ollama", "model": "llama3"},
+	{"label": "Custom / manual", "base_url": "", "format": "openai", "models": []},
+	{"label": "OpenAI", "base_url": "https://api.openai.com", "format": "openai", "models": [
+		"gpt-4o-mini", "gpt-4o", "gpt-4.1-mini", "gpt-4.1", "gpt-4.1-nano",
+		"o4-mini", "o3-mini", "gpt-4-turbo", "gpt-3.5-turbo"]},
+	{"label": "OpenRouter", "base_url": "https://openrouter.ai/api", "format": "openai", "models": [
+		"openai/gpt-4o-mini", "openai/gpt-4o", "anthropic/claude-3.5-haiku",
+		"anthropic/claude-3.5-sonnet", "google/gemini-flash-1.5", "meta-llama/llama-3.1-8b-instruct",
+		"meta-llama/llama-3.3-70b-instruct", "mistralai/mistral-nemo", "deepseek/deepseek-chat",
+		"qwen/qwen-2.5-72b-instruct"]},
+	{"label": "Groq", "base_url": "https://api.groq.com/openai", "format": "openai", "models": [
+		"llama-3.1-8b-instant", "llama-3.3-70b-versatile", "llama3-8b-8192", "llama3-70b-8192",
+		"mixtral-8x7b-32768", "gemma2-9b-it"]},
+	{"label": "DeepSeek", "base_url": "https://api.deepseek.com", "format": "openai", "models": [
+		"deepseek-chat", "deepseek-reasoner"]},
+	{"label": "Together AI", "base_url": "https://api.together.xyz", "format": "openai", "models": [
+		"meta-llama/Llama-3-8b-chat-hf", "meta-llama/Llama-3-70b-chat-hf",
+		"meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo", "mistralai/Mistral-7B-Instruct-v0.3",
+		"mistralai/Mixtral-8x7B-Instruct-v0.1", "Qwen/Qwen2.5-7B-Instruct-Turbo"]},
+	{"label": "Ollama (local, no key)", "base_url": "http://localhost:11434", "format": "ollama", "models": [
+		"llama3", "llama3.1", "llama3.2", "mistral", "qwen2.5", "gemma2", "phi3",
+		"codellama", "deepseek-r1"]},
 ]
+
+## Appended after every provider's list. Free text is the LAST RESORT, not the
+## default — picking this is what makes the Custom model field meaningful.
+const CUSTOM_MODEL_LABEL := "Custom…"
 
 const PROBE_PROMPT := "Reply with exactly: PONG"
 
@@ -158,7 +177,16 @@ func _build_ui() -> void:
 	row_y += row_h
 
 	_add_label("Model", form_x, row_y, label_w)
-	_model_field = _add_field(ctrl_x, row_y, ctrl_w, "gpt-4o-mini")
+	_model_picker = OptionButton.new()
+	_model_picker.position = Vector2(ctrl_x, row_y)
+	_model_picker.size = Vector2(ctrl_w, 30)
+	_model_picker.item_selected.connect(_on_model_selected)
+	add_child(_model_picker)
+	row_y += row_h
+
+	_add_label("Custom model", form_x, row_y, label_w)
+	_model_field = _add_field(ctrl_x, row_y, ctrl_w, "only needed for Custom…")
+	_model_field.text_changed.connect(_on_model_text_changed)
 	add_child(_model_field)
 	row_y += row_h
 
@@ -219,7 +247,7 @@ func _build_ui() -> void:
 ## Vertical spine top-to-bottom with wrap; Tab mirrors it; buttons row is
 ## horizontal. LineEdits consume left/right (caret) but pass up/down.
 func _wire_focus_chain() -> void:
-	var spine: Array = [_provider_picker, _base_url_field, _format_picker, _model_field, _api_key_field, _test_btn]
+	var spine: Array = [_provider_picker, _base_url_field, _format_picker, _model_picker, _model_field, _api_key_field, _test_btn]
 	for i in spine.size():
 		var up: Control = spine[i - 1] if i > 0 else _save_btn
 		var down: Control = spine[i + 1] if i + 1 < spine.size() else _save_btn
@@ -265,10 +293,52 @@ func _on_provider_selected(idx: int) -> void:
 		return
 	var preset: Dictionary = PROVIDER_PRESETS[idx]
 	_base_url_field.text = str(preset["base_url"])
-	_model_field.text = str(preset["model"])
 	_format_picker.selected = 1 if str(preset["format"]) == "ollama" else 0
+	_populate_models(idx)
 	if SoundManager:
 		SoundManager.play_ui("menu_move")
+
+
+## Refill the model dropdown for a provider and select its first entry, which
+## is the provider's cheap default. Custom… is always last.
+func _populate_models(provider_idx: int) -> void:
+	_model_picker.clear()
+	var models: Array = []
+	if provider_idx > 0 and provider_idx < PROVIDER_PRESETS.size():
+		models = PROVIDER_PRESETS[provider_idx].get("models", [])
+	for m in models:
+		_model_picker.add_item(str(m))
+	_model_picker.add_item(CUSTOM_MODEL_LABEL)
+	if models.size() > 0:
+		_model_picker.selected = 0
+		_model_field.text = str(models[0])
+	else:
+		_model_picker.selected = 0
+
+
+## Choosing a listed model writes it to the authoritative field; Custom… leaves
+## the field alone and hands the player the keyboard.
+func _on_model_selected(idx: int) -> void:
+	if _model_picker.get_item_text(idx) == CUSTOM_MODEL_LABEL:
+		_model_field.grab_focus()
+		return
+	_model_field.text = _model_picker.get_item_text(idx)
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
+
+
+## Hand-editing the field means the player left the list — say so rather than
+## showing a dropdown entry that no longer describes what will be sent.
+func _on_model_text_changed(new_text: String) -> void:
+	_select_model_in_picker(new_text)
+
+
+func _select_model_in_picker(model: String) -> void:
+	for i in _model_picker.item_count:
+		if _model_picker.get_item_text(i) == model:
+			_model_picker.selected = i
+			return
+	_model_picker.selected = max(0, _model_picker.item_count - 1)
 
 
 ## Index of the preset whose base_url matches, else 0 (Custom).
@@ -293,6 +363,10 @@ func _load_from_game_state() -> void:
 	if "llm_custom_model" in GameState:
 		_model_field.text = str(GameState.llm_custom_model)
 	_provider_picker.selected = _match_preset(_base_url_field.text)
+	_populate_models(_provider_picker.selected)
+	if "llm_custom_model" in GameState:
+		_model_field.text = str(GameState.llm_custom_model)
+		_select_model_in_picker(_model_field.text)
 	if "llm_custom_api_key" in GameState:
 		# Pre-populate with the REAL key so the user can edit it. The
 		# LineEdit's secret=true keeps it rendered as dots, but the

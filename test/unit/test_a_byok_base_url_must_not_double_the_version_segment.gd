@@ -126,7 +126,12 @@ func test_every_preset_reaches_a_well_formed_endpoint() -> void:
 		var preset: Dictionary = presets[i]
 		var label: String = str(preset["label"])
 		assert_ne(str(preset["base_url"]), "", "preset '%s' has no base_url" % label)
-		assert_ne(str(preset["model"]), "", "preset '%s' has no default model" % label)
+		var models: Array = preset.get("models", [])
+		assert_gt(models.size(), 0,
+			("preset '%s' offers no models, so its Model dropdown is just Custom… — "
+			+ "free text is the last resort, not the default") % label)
+		for m in models:
+			assert_ne(str(m).strip_edges(), "", "preset '%s' lists an empty model name" % label)
 		var b: Node = _backend(str(preset["base_url"]), str(preset["format"]))
 		var url: String = b._endpoint_url(false)
 		var probe: String = b._probe_url()
@@ -149,8 +154,8 @@ func test_choosing_a_preset_fills_the_three_fields_it_exists_to_fill() -> void:
 		var preset: Dictionary = presets[i]
 		assert_eq(p._base_url_field.text, str(preset["base_url"]),
 			"preset '%s' did not fill base_url" % str(preset["label"]))
-		assert_eq(p._model_field.text, str(preset["model"]),
-			"preset '%s' did not fill model" % str(preset["label"]))
+		assert_eq(p._model_field.text, str(preset["models"][0]),
+			"preset '%s' did not fill model with its first listed option" % str(preset["label"]))
 		var want_fmt: int = 1 if str(preset["format"]) == "ollama" else 0
 		assert_eq(p._format_picker.selected, want_fmt,
 			"preset '%s' did not set the api_format picker" % str(preset["label"]))
@@ -178,3 +183,65 @@ func test_a_saved_config_reselects_its_preset_including_the_v1_spelling() -> voi
 	assert_eq(p._match_preset("https://api.openai.com/v1"), 1, "the /v1 spelling did not match")
 	assert_eq(p._match_preset("https://api.openai.com/v1/"), 1, "the /v1/ spelling did not match")
 	assert_eq(p._match_preset("https://something.else"), 0, "an unknown host must fall to Custom")
+
+
+# ── the model dropdown ────────────────────────────────────────────────────────
+
+func test_every_provider_offers_a_model_list_ending_in_custom() -> void:
+	## struktured 2026-09-19: "free text is bad, thats the last resort 'custom',
+	## instead off most 10 common options or so". So the dropdown must carry real
+	## options AND always keep an escape hatch — a list with no Custom… traps a
+	## player whose model is not on it.
+	var p = _make_panel()
+	for i in range(1, PanelScript.PROVIDER_PRESETS.size()):
+		p._on_provider_selected(i)
+		var label: String = str(PanelScript.PROVIDER_PRESETS[i]["label"])
+		assert_gt(p._model_picker.item_count, 1,
+			"provider '%s' shows only Custom… — the dropdown offers nothing" % label)
+		assert_eq(p._model_picker.get_item_text(p._model_picker.item_count - 1),
+			PanelScript.CUSTOM_MODEL_LABEL,
+			"provider '%s' has no Custom… escape hatch as its last entry" % label)
+
+
+func test_picking_a_listed_model_writes_it_to_the_authoritative_field() -> void:
+	## _model_field is what Save and the Test probe read, so a dropdown that does
+	## not write through is a control that appears to work and changes nothing.
+	var p = _make_panel()
+	p._on_provider_selected(1)
+	var last_real: int = p._model_picker.item_count - 2
+	assert_gt(last_real, 0, "provider 1 has fewer than two listed models — arm proves little")
+	p._model_picker.selected = last_real
+	p._on_model_selected(last_real)
+	assert_eq(p._model_field.text, p._model_picker.get_item_text(last_real),
+		"choosing a model from the dropdown did not reach _model_field")
+
+
+func test_choosing_custom_does_not_overwrite_what_the_player_typed() -> void:
+	var p = _make_panel()
+	p._on_provider_selected(1)
+	p._model_field.text = "my-finetune:v3"
+	var custom_idx: int = p._model_picker.item_count - 1
+	p._on_model_selected(custom_idx)
+	assert_eq(p._model_field.text, "my-finetune:v3",
+		"selecting Custom… clobbered the model the player had typed")
+
+
+func test_typing_an_unlisted_model_moves_the_picker_to_custom() -> void:
+	## Otherwise the dropdown keeps naming a model that is not what gets sent.
+	var p = _make_panel()
+	p._on_provider_selected(1)
+	p._model_field.text = "some-unlisted-model"
+	p._on_model_text_changed("some-unlisted-model")
+	assert_eq(p._model_picker.get_item_text(p._model_picker.selected),
+		PanelScript.CUSTOM_MODEL_LABEL,
+		"hand-typing an unlisted model left the dropdown naming a different one")
+
+
+func test_typing_a_listed_model_snaps_the_picker_back_to_it() -> void:
+	var p = _make_panel()
+	p._on_provider_selected(1)
+	var wanted: String = p._model_picker.get_item_text(0)
+	p._model_field.text = wanted
+	p._on_model_text_changed(wanted)
+	assert_eq(p._model_picker.get_item_text(p._model_picker.selected), wanted,
+		"typing a model that IS on the list should re-select it, not fall to Custom…")
