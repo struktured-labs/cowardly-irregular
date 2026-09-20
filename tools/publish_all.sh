@@ -570,6 +570,37 @@ else
     exit 4
 fi
 
+# ── 0a-1c. no `set -e` script captures an exit code it can never read ───────
+# THIS GATE EXISTS BECAUSE ITS ABSENCE COST EIGHT RELEASES. v3.33.466-alpha would not publish:
+# make_web_audio.sh:185 read `$SEAM_AUDIT … ; _seam_ec=$?` under `set -euo pipefail`, so a
+# non-zero audit killed the script BEFORE the assignment and the whole `case` below it was
+# unreachable. The audit returned 1 -- "a bed crossed the 12 dB line" -- which the comment three
+# lines above it declares NON-BLOCKING, and it blocked every release instead. exit 2's BLOCKED
+# message was equally dead. Only the exit-0 path ever ran, so the change was green in testing.
+#
+# The publish reported "audio tier build failed" with an EMPTY reason, because the gate's own
+# output never printed. Three sites existed; two more were in deploy_desktop.sh and deploy_web.sh,
+# both documenting "only EC 2 blocks" while unable to print their own BLOCKED diagnostic.
+if [ -f tools/check_exit_capture.py ]; then
+    if ! _ST=$(python3 tools/check_exit_capture.py --selftest 2>&1); then
+        printf '%s\n' "$_ST" | tail -25 >&2
+        echo "[pub] BLOCKED: tools/check_exit_capture.py FAILED ITS OWN SELFTEST — the dead-arm" >&2
+        echo "      detector is not answering correctly, so its verdict on this tree means" >&2
+        echo "      nothing. A present guard is not a working one." >&2
+        exit 4
+    fi
+    echo "[pub] selftest ok: tools/check_exit_capture.py (dead exit-capture detector) — arms ran and passed"
+    if ! python3 tools/check_exit_capture.py; then
+        echo "[pub] BLOCKED: a guard in this chain captures an exit code it can never read — see above." >&2
+        echo "      Refusing to publish behind a case whose non-zero arms are dead code." >&2
+        exit 4
+    fi
+else
+    echo "[pub] BLOCKED: tools/check_exit_capture.py missing — nothing has checked that this" >&2
+    echo "      chain's error arms are reachable. A missing guard is not a passing one." >&2
+    exit 4
+fi
+
 # ── 0a-2. every invocation that can write user:// redirects it ───────────────
 # 2026-09-16: struktured's live profile took five log rotations from this chain in one day, each
 # three seconds before this lane's own archived boot log for .355 · .356 · .357 · .358. Godot
