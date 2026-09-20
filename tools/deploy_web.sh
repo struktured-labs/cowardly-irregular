@@ -192,7 +192,10 @@ fi
 # EC 2 = the instrument could not measure. On a PUBLISH path that blocks: you do not ship
 # when a safety check was unable to run. EC 0 with warnings on stderr stays non-blocking —
 # a preset with no exclude_filter is loud but the pck size gate catches its consequence.
-./tools/check_exclude_patterns.sh; _PAT_EC=$?
+# `|| _PAT_EC=$?` -- see make_web_audio.sh: under `set -e` the `;` form dies on any non-zero
+# and never reaches the test below, so the BLOCKED diagnostic could never print.
+_PAT_EC=0
+./tools/check_exclude_patterns.sh || _PAT_EC=$?
 if [ "$_PAT_EC" -eq 2 ]; then
   echo "[deploy] BLOCKED: the exclude-pattern audit could not run (exit 2). Not shipping" >&2
   echo "         on an unaudited exclude_filter — fix the parse or the config first." >&2
