@@ -857,6 +857,7 @@
     },
     "critical_hit": {
       "file": "assets/audio/sfx/critical_hit.ogg",
+      "source": "ffmpeg_derive",
       "prompt": "Generic crit fallback (= attack_hit_sword_crit). Used when no weapon_type is provided. Crispy sword crit with sustained ring.",
       "duration_seconds": 0.6,
       "prompt_influence": 0.7
