@@ -442,6 +442,10 @@ func cancel_all(reason: String = "scene_change") -> void:
 	if _active_backend != null:
 		_active_backend.cancel_all()
 
+	## The response cache is scene-scoped by contract — _get_cache's own severity
+	## note says so, and until this line nothing made it true.
+	clear_cache()
+
 	_draining = false
 	print("[LLMService] cancel_all: %s" % reason)
 
@@ -950,8 +954,10 @@ func _get_cache(key: String) -> Variant:
 	# and costs one request. Third and mildest instance of the signed-threshold
 	# class found in this lane today — the other two (conversation-reward backstop,
 	# rebalance cadence) read from PERSISTED state and disabled whole features;
-	# this cache is in-memory and cleared on scene change, so it only costs
-	# freshness.
+	# this cache is in-memory and cleared on scene change (cancel_all), so it
+	# only costs freshness. NOTE: eviction is read-driven — an entry whose key is
+	# never queried again is never visited, so the TTL bounds staleness and the
+	# cancel_all clear is what bounds memory.
 	if age < 0.0 or age > CACHE_TTL_SECONDS:
 		_cache.erase(key)
 		return null
