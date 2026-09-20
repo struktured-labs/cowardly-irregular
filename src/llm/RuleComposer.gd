@@ -1098,12 +1098,14 @@ func _expand_or_conditions(rules: Array, _types: Dictionary) -> Array[String]:
 	const MAX_PASSES := 4096
 	var notes: Array[String] = []
 	var capped: bool = false
+	var capped_reason: String = ""
 	var passes: int = 0
 	var i: int = 0
 	while i < rules.size():
 		passes += 1
 		if passes > MAX_PASSES:
 			capped = true
+			capped_reason = "after %d passes" % MAX_PASSES
 			break
 		var rule = rules[i]
 		if typeof(rule) != TYPE_DICTIONARY:
@@ -1128,6 +1130,8 @@ func _expand_or_conditions(rules: Array, _types: Dictionary) -> Array[String]:
 			continue
 		if rules.size() + branches.size() - 1 > MAX_EXPANDED_RULES:
 			capped = true
+			if capped_reason == "":
+				capped_reason = "at %d rules" % MAX_EXPANDED_RULES
 			i += 1
 			continue
 		conds.remove_at(at)
@@ -1142,9 +1146,10 @@ func _expand_or_conditions(rules: Array, _types: Dictionary) -> Array[String]:
 			ins += 1
 		## DELIBERATELY NOT ADVANCING i — the same rule may carry another OR, and
 		## the old loop skipped past every clone it inserted so only the first was
-		## ever expanded. Each pass strictly removes one OR, so this terminates.
+		## ever expanded. Each pass removes one OR, which terminates for ACYCLIC
+		## input only; MAX_PASSES above is what makes that unconditional.
 	if capped:
-		notes.append("Stopped splitting ORs at %d rules — the rest were left as written." % MAX_EXPANDED_RULES)
+		notes.append("Stopped splitting ORs %s — the rest were left as written." % capped_reason)
 	return notes
 
 

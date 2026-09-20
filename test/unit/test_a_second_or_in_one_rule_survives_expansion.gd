@@ -123,5 +123,29 @@ func test_a_self_referencing_branch_cannot_spin_forever() -> void:
 	var c: Dictionary = {"type": "or"}
 	c["conditions"] = [c]
 	var rules: Array = [{"conditions": [c], "actions": [{"type": "attack"}], "enabled": true}]
-	_rc._expand_or_conditions(rules, {})
+	var notes: Array = _rc._expand_or_conditions(rules, {})
 	assert_true(true, "returned — a cyclic branch no longer spins the composer")
+	## The note must name the limit that ACTUALLY fired. There are two caps and
+	## they are reached for different reasons; reporting the rule cap for a pass
+	## timeout tells the player to simplify the wrong thing.
+	var joined: String = "|".join(PackedStringArray(notes))
+	assert_true(joined.contains("passes"),
+		("a cyclic input trips the PASS bound, but the note said: %s. The rule cap "
+		+ "was not what stopped it.") % [joined])
+
+
+func test_the_rule_cap_note_names_the_rule_cap() -> void:
+	## The other half of the same message: when growth is what stopped expansion,
+	## the note must say rules, not passes.
+	var conds: Array = []
+	for i in range(12):
+		conds.append({"type": "or", "conditions": [
+			{"type": "hp_percent", "operator": "<", "value": 10 + i},
+			{"type": "hp_percent", "operator": "<", "value": 50 + i}]})
+	var rules: Array = [{"conditions": conds, "actions": [{"type": "attack"}], "enabled": true}]
+	var notes: Array = _rc._expand_or_conditions(rules, {})
+	var joined: String = "|".join(PackedStringArray(notes))
+	assert_true(joined.contains("rules"),
+		"expansion stopped on the RULE cap but the note said: %s" % [joined])
+	assert_false(joined.contains("passes"),
+		"the rule cap fired but the note blamed the pass bound: %s" % [joined])
