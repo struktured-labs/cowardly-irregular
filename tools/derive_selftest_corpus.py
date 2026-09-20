@@ -92,9 +92,36 @@ def _has_arms(b):
         return True
     return b.endswith(".py") and os.path.isfile(os.path.join("tools", b[:-3] + "_selftest.py"))
 
+# ⛔ LAUNCHERS NEVER ENTER THE CORPUS, AND THIS IS NOT TIDINESS -- IT IS RECURSION CONTROL.
+# 2026-09-20: publish_detached.sh entered the derived corpus, so every publish ran
+# `publish_detached.sh --selftest`, whose arms LAUNCH A REAL DETACHED publish_all (tag
+# ZZ-argnone). That publish_all ran this corpus, which ran publish_detached --selftest, which
+# launched another. A self-sustaining fork chain: 9 live generations, ~30-90s apart, still
+# spawning 10 minutes later, and it broke reap_release_worktrees.sh's selftest by colliding on
+# its fixed-name fixtures -- which is what BLOCKED the v3.33.469-alpha publish (EC=4).
+#
+# The old hand-list excluded it for a weaker reason ("19.32s, and it has already done its job
+# before this runs"). The real reason is that a tool which launches a publish cannot have its
+# selftest run BY a publish.
+#
+# ⚠️ HOW IT GOT ADMITTED IS THE PART WORTH KEEPING: a reference is any tracked tool BASENAME on
+# a non-comment line, and tools/check_godot_bounded.py carries a PUBLISH_PATH list naming the
+# deploy scripts as DATA. A list of filenames is not an invocation, and the pattern cannot tell
+# the difference -- the over-admission hazard this repo already recorded, except this time the
+# extra member was not inert. Excluding by NAME here, rather than teaching the pattern to read
+# intent, because the deny-list is short, explicit, and says why.
+LAUNCHERS = {"publish_detached.sh", "publish_newest.sh"}
+
 corpus = sorted(
-    b for b in seen - {"publish_all.sh"}
+    b for b in seen - {"publish_all.sh"} - LAUNCHERS
     if not b.endswith(("_selftest.sh", "_selftest.py")) and _has_arms(b))
+
+# A launcher slipping back in is the failure this guard exists to prevent, so SAY SO rather
+# than filtering silently -- a silent filter and a correct derivation look identical.
+_leaked = sorted(LAUNCHERS & seen)
+if _leaked:
+    print("derivation: excluded launcher(s) %s -- their selftests launch a publish"
+          % ", ".join(_leaked), file=sys.stderr)
 
 # ⛔ MEMBERSHIP FLOOR, NOT A COUNT. A count floor is satisfied by a SURVIVOR: if the REF
 # pattern regressed to .sh-only the corpus would still be 18 tools and still look healthy,
