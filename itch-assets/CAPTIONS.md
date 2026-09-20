@@ -10,6 +10,22 @@ elites, `grimhollow_spiral` and `battle_storm` are still `.225`/`.239` captures 
 themselves have not changed materially, but they are older frames and `battle_storm` in
 particular carries the caveat below.
 
+**`title_screen` is the exception and is NEWER than everything else: re-shot at
+`v3.33.468-alpha` (`e2c65092`) on 2026-09-20.** The old frame displayed
+`v3.33.215-alpha (62a1a2d6)` in its bottom-right corner while the store served `.468` — the
+store page's primary image naming a build 253 releases old. Re-shot from a worktree AT the
+shipped tag so the frame depicts what players actually download; the superseded frame is kept
+at `capture-history/shots-62a1a2d6/title_screen.png`.
+
+⚠️ **The art did NOT change, and that is the load-bearing half for the other nineteen.** Old vs
+new, same 1280x720 frame: 898 of 921,600 pixels differ (0.1%), of which 656 are inside the
+version-label box and 242 are everywhere else. `tools/store_shot_staleness.py` reports
+`title_screen` as CHANGED because `src/ui/TitleScreen.gd` moved between the tags — correct, and
+its own caveat is the important part: *"changed -> a candidate for a re-shoot, NOT proof the
+image is wrong."* Here the script moved and the rendered frame did not. **A script-level signal
+over-predicts frame change, so the standing "11 of 20 depict a scene script that changed" is a
+CANDIDATE list, not a work list — diff the frames before re-shooting anything.**
+
 Order below is the recommended gallery order: itch shows the first image largest, so the
 battle leads.
 
