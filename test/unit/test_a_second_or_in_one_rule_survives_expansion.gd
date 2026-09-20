@@ -109,3 +109,19 @@ func test_expansion_is_bounded_so_a_pathological_reply_cannot_hang_the_composer(
 	_rc._expand_or_conditions(rules, {})
 	assert_lt(rules.size(), 100,
 		"expansion grew to %d rules from one authored rule — it is unbounded" % rules.size())
+
+
+func test_a_self_referencing_branch_cannot_spin_forever() -> void:
+	## REGRESSION ON MY OWN FIX. Not advancing `i` is what lets a rule be
+	## re-examined for a second OR — and it also removed the old loop's accidental
+	## protection against a branch that contains its own condition. The rule list
+	## never grows in that case, so MAX_EXPANDED_RULES cannot catch it.
+	##
+	## Measured before the bound: the call never returned (probe EC=124). JSON
+	## cannot express a cycle, so no model reply reaches this — but the repair is
+	## callable in-engine, and "unreachable today" is not a termination argument.
+	var c: Dictionary = {"type": "or"}
+	c["conditions"] = [c]
+	var rules: Array = [{"conditions": [c], "actions": [{"type": "attack"}], "enabled": true}]
+	_rc._expand_or_conditions(rules, {})
+	assert_true(true, "returned — a cyclic branch no longer spins the composer")

@@ -1091,10 +1091,20 @@ func _expand_or_conditions(rules: Array, _types: Dictionary) -> Array[String]:
 	## Model output is adversarial by default — N ORs is exponential uncapped.
 	const MAX_EXPANDED_RULES := 64
 	const SPLIT_NOTE := "Split an OR into one rule per branch — in this grammar, rules ARE the or."
+	## A hard iteration bound. The termination argument below ("each pass removes
+	## one OR") holds only for ACYCLIC input, which is all JSON.parse can produce —
+	## but the repair is reachable from in-engine callers too, and a self-referencing
+	## branch spins forever with no growth for the cap to catch. Measured: EC=124.
+	const MAX_PASSES := 4096
 	var notes: Array[String] = []
 	var capped: bool = false
+	var passes: int = 0
 	var i: int = 0
 	while i < rules.size():
+		passes += 1
+		if passes > MAX_PASSES:
+			capped = true
+			break
 		var rule = rules[i]
 		if typeof(rule) != TYPE_DICTIONARY:
 			i += 1
