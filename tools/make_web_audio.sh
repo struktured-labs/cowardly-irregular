@@ -182,7 +182,18 @@ if [ -z "$SEAM_AUDIT" ]; then
 fi
 _seam_out="$(mktemp)"
 # shellcheck disable=SC2086
-$SEAM_AUDIT --from "$OUT_DIR" > "$_seam_out" 2>&1; _seam_ec=$?
+# ⛔ `|| _seam_ec=$?`, NEVER `; _seam_ec=$?`. This file runs `set -euo pipefail`, and under
+# `set -e` a non-zero command is FATAL BEFORE the next statement runs -- so `cmd; ec=$?` never
+# reaches the assignment, let alone the case. Shipped 2026-09-19 in the `;` form and it took
+# down the v3.33.466-alpha publish: the audit returned 1 (ambient_cave crossing, the exact bed
+# the comment above predicts), `set -e` killed this script, and publish_all reported only
+# "audio tier build failed" with an EMPTY reason -- the seam gate's own output never printed.
+# THE WARNING ARM, WHICH EXISTS PRECISELY SO A 0.1 dB CROSSING DOES NOT HOLD A RELEASE, WAS
+# THE ARM THAT HELD EVERY RELEASE. Both non-zero arms were dead: exit 2's BLOCKED message
+# could not print either. Only the exit-0 path worked, which is why every test I ran passed.
+_seam_ec=0   # MUST be initialised: with `set -u`, the `||` arm does not run on success,
+             # so an uninitialised $_seam_ec would kill this script on the PASSING path.
+$SEAM_AUDIT --from "$OUT_DIR" > "$_seam_out" 2>&1 || _seam_ec=$?
 case "$_seam_ec" in
     0) echo "[web-audio] wrap seams: every bed clears the 12 dB gate ON THE SHIPPED TIER" ;;
     1) echo "[web-audio] ⚠ WRAP SEAM WARNING on the tier we actually ship:" >&2

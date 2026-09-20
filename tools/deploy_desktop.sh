@@ -430,7 +430,10 @@ fi
 # audit, on the chain that ships linux and windows.
 # The NON-BLOCKING part above is correct and stays: EC 0 with findings on stderr does not
 # block, because a prophylactic *.jpg legitimately matches nothing. Only EC 2 blocks.
-./tools/check_exclude_patterns.sh; _PAT_EC=$?
+# `|| _PAT_EC=$?` -- see make_web_audio.sh: under `set -e` the `;` form dies on any non-zero
+# and never reaches the test below, so the BLOCKED diagnostic could never print.
+_PAT_EC=0
+./tools/check_exclude_patterns.sh || _PAT_EC=$?
 if [ "$_PAT_EC" -eq 2 ]; then
     echo "[${PLAT}] BLOCKED: the exclude-pattern audit could not run (exit 2). Not shipping" >&2
     echo "          on an unaudited exclude_filter — fix the parse or the config first." >&2

@@ -343,9 +343,49 @@ case "$_avail_mb" in
             echo "[pub]     other, so du walks one tree twice and the sum double-counts. Confirm" >&2
             echo "[pub]     any big row is a real directory before believing it:  readlink <path>" >&2
             echo "[pub]" >&2
-            echo "[pub]   ONLY IF THIS LANE IS ACTUALLY HOLDING THE SPACE:" >&2
-            echo "[pub]     tools/reap_release_worktrees.sh            # dry run, names what it would remove" >&2
-            echo "[pub]     tools/reap_release_worktrees.sh --apply    # only trees rebuildable from a tag on origin" >&2
+            # ⛔ ASK THE REAPER WHETHER IT COULD HELP, RATHER THAN OFFERING IT AND HOPING.
+            # 2026-09-19, 22:2x: the disk was 909 MB against a 5000 MB floor -- a 4091 MB
+            # shortfall -- and the reaper had ZERO candidates. The block still printed its two
+            # commands, so a reader in a hurry would have run a destructive tool that frees
+            # nothing, deleted the publish evidence under _archive, and still been blocked.
+            # An instruction that cannot work is worse than no instruction, because following
+            # it feels like progress and the second attempt starts from less.
+            #
+            # `would remove` is the reaper's CONTRACT, not incidental formatting -- its own
+            # selftest arms assert that exact string in both directions. Counted from a real
+            # file, never a pipeline, because $? across a pipe has bitten this file before.
+            _short_mb=$(( PUBLISH_MIN_FREE_MB - _avail_mb ))
+            _reap_log="tmp/reap_probe.$$.log"
+            mkdir -p tmp
+            _reap_ec=0
+            timeout 120 ./tools/reap_release_worktrees.sh > "$_reap_log" 2>&1 || _reap_ec=$?
+            _cands=0
+            if [ -f "$_reap_log" ]; then
+                _cands=$(command grep -ac 'would remove' "$_reap_log" || true)
+            fi
+            case "$_cands" in ''|*[!0-9]*) _cands=0 ;; esac
+            if [ "$_reap_ec" -ne 0 ] && [ "$_reap_ec" -ne 1 ]; then
+                # Could not ask. Say so and fall back to the old advice rather than inventing
+                # a verdict -- "the reaper cannot help" is a CLAIM and an unrunnable probe
+                # does not support it.
+                echo "[pub]   COULD NOT ASK THE REAPER (exit ${_reap_ec}) whether cleanup here could help." >&2
+                echo "[pub]   Treat the next two lines as unverified:" >&2
+                echo "[pub]     tools/reap_release_worktrees.sh            # dry run, names what it would remove" >&2
+                echo "[pub]     tools/reap_release_worktrees.sh --apply    # only trees rebuildable from a tag on origin" >&2
+            elif [ "$_cands" -eq 0 ]; then
+                echo "[pub]   ⛔ CLEANUP HERE CANNOT CLEAR THIS FLOOR, SO DO NOT START ONE." >&2
+                echo "[pub]     The reaper has 0 removable trees; it would free 0 MB against a" >&2
+                echo "[pub]     ${_short_mb} MB shortfall. It is the ONLY cleanup this lane is" >&2
+                echo "[pub]     permitted to do, so there is nothing here to reclaim. The space" >&2
+                echo "[pub]     is held outside this lane and freeing it is struktured's call." >&2
+                echo "[pub]     Probe: ${_reap_log}" >&2
+            else
+                echo "[pub]   The reaper names ${_cands} removable tree(s) against a ${_short_mb} MB" >&2
+                echo "[pub]   shortfall. Whether that is ENOUGH is not known until you read the" >&2
+                echo "[pub]   dry run -- the count is trees, not megabytes:" >&2
+                echo "[pub]     cat ${_reap_log}                          # what it would remove, already measured" >&2
+                echo "[pub]     tools/reap_release_worktrees.sh --apply    # only trees rebuildable from a tag on origin" >&2
+            fi
             echo "[pub]" >&2
             echo "[pub]   ⛔ Do NOT delete outside this lane. Those are struktured's other projects" >&2
             echo "[pub]     and the standing directive is: delete nothing of his." >&2
