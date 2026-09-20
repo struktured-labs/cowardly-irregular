@@ -35,6 +35,7 @@ const FIELD_BG := Color(0.20, 0.20, 0.26)
 const FIELD_FOCUS := Color(0.30, 0.30, 0.40)
 
 var _base_url_field: LineEdit
+var _provider_picker: OptionButton
 var _format_picker: OptionButton
 var _save_btn: Button
 var _cancel_btn: Button
@@ -43,6 +44,20 @@ var _api_key_field: LineEdit
 var _status_label: Label
 var _test_btn: Button
 var _testing: bool = false
+
+## Provider presets. Entry 0 is "Custom" and fills nothing; the rest fill
+## base_url + format + a starting model so only the key is left to paste.
+## Bearer-auth providers only — _build_headers sends no x-api-key, so
+## Anthropic's native endpoint cannot work here and is deliberately absent.
+const PROVIDER_PRESETS := [
+	{"label": "Custom / manual", "base_url": "", "format": "openai", "model": ""},
+	{"label": "OpenAI", "base_url": "https://api.openai.com", "format": "openai", "model": "gpt-4o-mini"},
+	{"label": "OpenRouter", "base_url": "https://openrouter.ai/api", "format": "openai", "model": "openai/gpt-4o-mini"},
+	{"label": "Groq", "base_url": "https://api.groq.com/openai", "format": "openai", "model": "llama-3.1-8b-instant"},
+	{"label": "DeepSeek", "base_url": "https://api.deepseek.com", "format": "openai", "model": "deepseek-chat"},
+	{"label": "Together AI", "base_url": "https://api.together.xyz", "format": "openai", "model": "meta-llama/Llama-3-8b-chat-hf"},
+	{"label": "Ollama (local, no key)", "base_url": "http://localhost:11434", "format": "ollama", "model": "llama3"},
+]
 
 const PROBE_PROMPT := "Reply with exactly: PONG"
 
@@ -118,8 +133,18 @@ func _build_ui() -> void:
 	var row_y: float = panel_y + 86
 	var row_h: float = 38
 
+	_add_label("Provider", form_x, row_y, label_w)
+	_provider_picker = OptionButton.new()
+	for i in PROVIDER_PRESETS.size():
+		_provider_picker.add_item(str(PROVIDER_PRESETS[i]["label"]), i)
+	_provider_picker.position = Vector2(ctrl_x, row_y)
+	_provider_picker.size = Vector2(ctrl_w, 30)
+	_provider_picker.item_selected.connect(_on_provider_selected)
+	add_child(_provider_picker)
+	row_y += row_h
+
 	_add_label("Base URL", form_x, row_y, label_w)
-	_base_url_field = _add_field(ctrl_x, row_y, ctrl_w, "https://api.openai.com/v1")
+	_base_url_field = _add_field(ctrl_x, row_y, ctrl_w, "https://api.openai.com")
 	add_child(_base_url_field)
 	row_y += row_h
 
@@ -194,7 +219,7 @@ func _build_ui() -> void:
 ## Vertical spine top-to-bottom with wrap; Tab mirrors it; buttons row is
 ## horizontal. LineEdits consume left/right (caret) but pass up/down.
 func _wire_focus_chain() -> void:
-	var spine: Array = [_base_url_field, _format_picker, _model_field, _api_key_field, _test_btn]
+	var spine: Array = [_provider_picker, _base_url_field, _format_picker, _model_field, _api_key_field, _test_btn]
 	for i in spine.size():
 		var up: Control = spine[i - 1] if i > 0 else _save_btn
 		var down: Control = spine[i + 1] if i + 1 < spine.size() else _save_btn
@@ -204,14 +229,14 @@ func _wire_focus_chain() -> void:
 		spine[i].focus_previous = spine[i].get_path_to(up)
 	# bottom row: Test ↔ Save ↔ Cancel, up returns to the key field, down wraps to the top
 	_test_btn.focus_neighbor_right = _test_btn.get_path_to(_save_btn)
-	for pair in [[_save_btn, _test_btn, _cancel_btn], [_cancel_btn, _save_btn, _base_url_field]]:
+	for pair in [[_save_btn, _test_btn, _cancel_btn], [_cancel_btn, _save_btn, _provider_picker]]:
 		pair[0].focus_neighbor_left = pair[0].get_path_to(pair[1])
 		pair[0].focus_neighbor_right = pair[0].get_path_to(pair[2])
 		pair[0].focus_neighbor_top = pair[0].get_path_to(_api_key_field)
-		pair[0].focus_neighbor_bottom = pair[0].get_path_to(_base_url_field)
+		pair[0].focus_neighbor_bottom = pair[0].get_path_to(_provider_picker)
 		pair[0].focus_next = pair[0].get_path_to(pair[2])
 		pair[0].focus_previous = pair[0].get_path_to(pair[1])
-	_base_url_field.grab_focus.call_deferred()
+	_provider_picker.grab_focus.call_deferred()
 
 
 func _add_label(text: String, x: float, y: float, w: float) -> void:
@@ -233,6 +258,30 @@ func _add_field(x: float, y: float, w: float, placeholder: String) -> LineEdit:
 	return le
 
 
+## Filling is one-way: picking a preset overwrites the three fields, and editing
+## a field afterwards silently drops the picker back to Custom via _match_preset.
+func _on_provider_selected(idx: int) -> void:
+	if idx <= 0 or idx >= PROVIDER_PRESETS.size():
+		return
+	var preset: Dictionary = PROVIDER_PRESETS[idx]
+	_base_url_field.text = str(preset["base_url"])
+	_model_field.text = str(preset["model"])
+	_format_picker.selected = 1 if str(preset["format"]) == "ollama" else 0
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
+
+
+## Index of the preset whose base_url matches, else 0 (Custom).
+func _match_preset(base_url: String) -> int:
+	var norm: String = base_url.strip_edges().rstrip("/")
+	if norm.ends_with("/v1"):
+		norm = norm.substr(0, norm.length() - 3).rstrip("/")
+	for i in range(1, PROVIDER_PRESETS.size()):
+		if str(PROVIDER_PRESETS[i]["base_url"]) == norm:
+			return i
+	return 0
+
+
 func _load_from_game_state() -> void:
 	if not GameState:
 		return
@@ -243,6 +292,7 @@ func _load_from_game_state() -> void:
 		_format_picker.selected = 1 if fmt == "ollama" else 0
 	if "llm_custom_model" in GameState:
 		_model_field.text = str(GameState.llm_custom_model)
+	_provider_picker.selected = _match_preset(_base_url_field.text)
 	if "llm_custom_api_key" in GameState:
 		# Pre-populate with the REAL key so the user can edit it. The
 		# LineEdit's secret=true keeps it rendered as dots, but the

@@ -109,9 +109,9 @@ func _start_probe() -> void:
 func _probe_url() -> String:
 	match api_format:
 		"ollama":
-			return base_url.rstrip("/") + "/api/tags"
+			return _base() + "/api/tags"
 		"openai", _:
-			return base_url.rstrip("/") + "/v1/models"
+			return _base() + "/v1/models"
 
 
 func _probe_method() -> int:
@@ -271,15 +271,24 @@ func cancel_all() -> void:
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
 
+## Every provider's docs call "https://host/v1" the base URL, and we append the
+## version ourselves — so accept both spellings rather than 404 on the common one.
+func _base() -> String:
+	var b: String = base_url.rstrip("/")
+	if b.ends_with("/v1"):
+		b = b.substr(0, b.length() - 3)
+	return b.rstrip("/")
+
+
 func _endpoint_url(json_mode: bool) -> String:
 	match api_format:
 		"ollama":
-			return base_url.rstrip("/") + "/api/generate"
+			return _base() + "/api/generate"
 		"openai":
-			return base_url.rstrip("/") + "/v1/chat/completions"
+			return _base() + "/v1/chat/completions"
 		_:
 			push_warning("[HTTPBackend] Unknown api_format '%s'; using OpenAI-compatible requests." % api_format)
-			return base_url.rstrip("/") + "/v1/chat/completions"
+			return _base() + "/v1/chat/completions"
 
 
 func _build_headers() -> PackedStringArray:
