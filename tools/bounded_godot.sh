@@ -21,6 +21,16 @@
 # godot honours TERM (SigIgn=0, bit 0x4000 clear, read off this lane's own `--headless --import`
 # run, identified by `readlink /proc/<pid>/exe` rather than by pgrep pattern — `timeout`'s own
 # command line contains its child's entire argv, so `pgrep -f godot` matches the WRAPPER).
+#
+# ⛔ AND `exe` ALONE IS NOT ENOUGH ON THIS BOX, WHICH THIS COMMENT USED TO IMPLY. `exe` solves
+# PARENT-vs-CHILD; it does NOT solve MINE-vs-YOURS. ~12 lanes run godot here and `exe` is
+# /usr/bin/godot for every one of them, so a probe bound only by `exe` admits the whole fleet.
+# @cowir-main hit this 2026-09-20 while four lanes probed godot at once: their liveness check
+# reported "control godot pid=345394 elapsed=21s" against a log that was already 1 MB — 21
+# seconds cannot write 1 MB, and the internal contradiction is the only thing that caught it.
+# The survivor probe below has always bound on BOTH `exe` AND `cwd`; this note exists because
+# the comment credited only the half that does not separate lanes, and a comment narrower than
+# its code is what the next reader inherits.
 # `--kill-after` only changes 124 into 125 and makes a normally-exiting TERM-ignoring child
 # report 137.
 #
