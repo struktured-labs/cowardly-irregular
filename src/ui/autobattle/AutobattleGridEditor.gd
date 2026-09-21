@@ -169,6 +169,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	add_to_group("autobattle_grid_editor")
 	_build_ui()
 	# Don't refresh grid here - wait for setup() to be called with character data
 	# _refresh_grid() will be called in setup() after rules are loaded
@@ -2632,6 +2633,11 @@ func _build_option_picker() -> void:
 func _handle_option_picker_input(event: InputEvent, nav: String = "") -> void:
 	"""Self-contained input for the generic picker (mirrors _handle_share_picker_input)."""
 	if not _option_picker or not is_instance_valid(_option_picker):
+		return
+	# The ring owns _unhandled_input; get_meta("spec") is the list picker's storage and aborts on the ring.
+	if _option_picker is RadialPicker:
+		return
+	if not _option_picker.has_meta("spec"):
 		return
 	var spec: Dictionary = _option_picker.get_meta("spec")
 	var options: Array = spec.get("options", [])
