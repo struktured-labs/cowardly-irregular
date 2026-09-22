@@ -23,21 +23,16 @@ const GdSource := preload("res://test/unit/helpers/gd_source.gd")
 ## MAX_ROUNDS and terminates "stalemate", spending real session time and skewing the win rate the
 ## Dashboard reports.
 ##
-## NOT fixed here, measured and declared: `guardian_wall` authors absorb_amount 800 with
-## effect "barrier", and LIVE NEVER READS IT — live's barrier is "nullify one hit outright, then
-## break" (3 consumer sites). So that 800 is decoration in live, and the grind models barrier not at
-## all. Both are real and neither is this file's: the first is @cowir-battle's data question, the
-## second needs the grind's damage paths, which is a wider change than one arm.
+## `guardian_wall` authors absorb_amount 800 with effect "barrier", and LIVE NEVER READS that 800 —
+## barrier nullifies one hit outright, then breaks (3 consumer sites). The grind now does the same
+## at those three executor sites. The 800 is still decoration on both engines.
 ##
-## ⛔ DELIVERED 2026-09-18 to @cowir-battle (intercom 13664). It sat here from 2026-09-10 naming an
-## owner IN PROSE, in a file they have no reason to open — a note naming an owner is not a hand-off.
-##
-## 🔑 THE MECHANISM, which is the general finding and not an ability bug: PLACEMENT ALONE DECIDES
-## GRIND PARITY, and both effects look identical in abilities.json.
-##   damage_absorb  handled in Combatant.take_damage (SHARED)   -> the grind inherits it for free
-##   barrier        handled in BattleManager x3 (4509/4932/5238) -> the grind never runs that code
-## So the repair is moving barrier beside damage_absorb in the shared function, NOT teaching the
-## resolver: it calls take_damage at ~16 sites, and 16 edits drift from live immediately.
+## 🔑 PLACEMENT still decides parity, and the shared-function repair this note used to recommend
+## would have been the wrong one. damage_absorb lives in Combatant.take_damage, so the grind
+## inherits it. barrier does not: group attacks call take_damage on both engines and neither
+## consults it. A check inside take_damage would make a grind Limit Break bounce off a ward that
+## a live Limit Break still lands. The resolver's three sites are the port. The arm at the bottom
+## reds if Combatant starts reading barrier anyway.
 ##
 ## ⚠️ LATENT, not live: guardian_wall is on Guardian (job type 1, debug-gated) and NO monster
 ## authors it. But it IS authored in three data/autobattle_rule_templates.json entries and at
@@ -230,12 +225,10 @@ func test_every_resolver_member_this_file_reaches_still_exists() -> void:
 		"the resolver no longer has these, so the arms above would ABORT into a silent pass: %s" % str(missing))
 
 
-## ⛔ THIS ARM EXISTS TO MAKE THE HEADER'S PARKED NOTE DECAY LOUDLY RATHER THAN SILENTLY.
-## A deferral that goes quietly false points the next reader the wrong way (@cowir-controller's
-## DECAYED-deferral class). The note above says barrier lives only in BattleManager; the day it
-## moves into the shared Combatant.take_damage, the grind inherits it and the note is CLOSED.
-## A mention in a comment counts deliberately — either way somebody touched it and the note needs
-## re-reading. Drop this arm and the note together; do not silence it.
+## ⛔ THIS ARM KEEPS barrier OUT of the shared damage function.
+## The resolver now honours it at live's three executor sites. Combatant.take_damage must not
+## grow the same check: group attacks call that function on both engines, and live does not ward
+## them. A mention of the call in Combatant — comment or code — means the note above is stale.
 func test_the_barrier_parity_note_has_not_gone_stale() -> void:
 	var shared: String = FileAccess.get_file_as_string("res://src/battle/Combatant.gd")
 	assert_ne(shared, "", "CONTROL: could not read Combatant.gd — this arm would pass vacuously")
