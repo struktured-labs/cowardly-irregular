@@ -1033,11 +1033,11 @@ func _attempt_equip(choice: String) -> void:
 
 	var slot: String = _equip_slot_for_item(pending_equip_id)
 	var replaced: String = _equipped_name_in_slot(member, slot)
+	## equip_weapon only writes the slot. The purchase is already one pool entry; wearing it that way left the entry in the bag and never returned the piece it replaced.
 	var success: bool = false
-	match slot:
-		"weapon": success = equipment_system.equip_weapon(member, pending_equip_id)
-		"armor": success = equipment_system.equip_armor(member, pending_equip_id)
-		"accessory": success = equipment_system.equip_accessory(member, pending_equip_id)
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl != null and gl.has_method("equip_from_pool") and slot != "":
+		success = gl.equip_from_pool(member, slot, pending_equip_id)
 
 	if not success:
 		SoundManager.play_ui("menu_error")
