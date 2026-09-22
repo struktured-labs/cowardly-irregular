@@ -101,13 +101,13 @@ func test_the_two_KNOWN_divergences_have_not_grown() -> void:
 const GRIND_IGNORES_BUT_ABILITIES_INFLICT := [
 	"barrier",             # guardian_wall — and all three GUARDIAN PRESETS cast it in rule 0
 	"charm",               # puppy_eyes
-	"evasion",             # burrow
 	"magic_block",         # access_denied
 	"pacify",              # peace_sign
 	"physical_reflect",    # port_block
 	"prismatic_reflect",   # prismatic_reflect
 	"reflect",             # magic_reflect
 ]
+## evasion left this list: _target_dodges_physical now rolls live's 60% and does not consume the status.
 
 func test_the_ignored_status_list_is_still_exactly_this() -> void:
 	## Derived from both engines, not from the list above — the list is the CLAIM and the scan is
