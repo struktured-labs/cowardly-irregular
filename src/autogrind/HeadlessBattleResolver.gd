@@ -1272,7 +1272,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 
 		"physical":
 			## MP is already spent. Live still rolls mug's steal after the fizzle, because that roll sits outside the executor.
-			var pacified_strike := caster.has_status("pacify")
+			var pacified_strike: bool = bool(caster.has_status("pacify"))
 			if pacified_strike:
 				_log("%s is pacified and cannot strike!" % caster.combatant_name)
 			for target in targets:
