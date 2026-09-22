@@ -620,7 +620,12 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 ## Returns "" if no skip, "skip" to skip silently, "confuse_attack" for confusion.
 func _check_status_skip(combatant) -> String:
 	if combatant.has_status("stun"):
-		combatant.remove_status("stun")
+		# Same clock as BattleManager: one skipped action per authored point, then clear.
+		var remaining: int = int(combatant.status_durations.get("stun", 1))
+		if remaining <= 1:
+			combatant.remove_status("stun")
+		else:
+			combatant.status_durations["stun"] = remaining - 1
 		_log("%s is stunned and cannot act!" % combatant.combatant_name)
 		return "skip"
 
