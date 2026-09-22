@@ -246,9 +246,7 @@ func test_the_barrier_parity_note_has_not_gone_stale() -> void:
 ## add_status and gave the enemy a status literally named "taunt" — a key live NEVER creates and
 ## nothing anywhere reads (cowir-battle, 2026-09-18). Live composes `taunted_<caster>` at
 ## BattleManager:5911 and reads the prefix back in _find_taunter:2983. Same junk-key shape as cleanse.
-## ⚠️ PINS THE KEY, NOT THE BEHAVIOUR: this resolver has no _find_taunter, so a taunt still does not
-## redirect an enemy here. Composing live's key is parity-neutral; honouring it would change which
-## target an enemy picks, which is a ruling rather than a port — see the header note.
+## The key is what _find_taunter reads. _select_enemy_action locks a taunted enemy onto that caster.
 func test_a_taunt_composes_the_key_live_reads() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/autogrind/HeadlessBattleResolver.gd")
 	assert_ne(src, "", "CONTROL: could not read the resolver — every assertion below would be vacuous")
