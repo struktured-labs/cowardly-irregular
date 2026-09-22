@@ -116,7 +116,7 @@ func _build_passives_list() -> void:
 	for passive_id in PassiveSystem.passives:
 		var passive_data = PassiveSystem.get_passive(passive_id)
 		var is_equipped = passive_id in character.equipped_passives
-		var is_learned = passive_id in character.learned_passives or true  # Assume all available for now
+		var is_learned = passive_id in character.learned_passives
 
 		_passives_list.append({
 			"id": passive_id,
@@ -549,7 +549,10 @@ func _create_passive_row(passive: Dictionary, index: int) -> Control:
 	name_label.text = data.get("name", str(passive["id"]).replace("_", " ").capitalize())
 	name_label.position = Vector2(44, 4)
 	name_label.add_theme_font_size_override("font_size", 11)
-	name_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED if passive["equipped"] else PASSIVE_AVAILABLE)
+	var name_color = PASSIVE_EQUIPPED
+	if not passive["equipped"]:
+		name_color = PASSIVE_AVAILABLE if passive.get("learned", false) else DISABLED_COLOR
+	name_label.add_theme_color_override("font_color", name_color)
 	row.add_child(name_label)
 
 	# Mouse click overlay
@@ -601,7 +604,12 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 
 	# Status
 	var status_label = Label.new()
-	status_label.text = "EQUIPPED" if passive["equipped"] else "Available"
+	if passive["equipped"]:
+		status_label.text = "EQUIPPED"
+	elif passive.get("learned", false):
+		status_label.text = "Available"
+	else:
+		status_label.text = "Not learned"
 	status_label.position = Vector2(12, 48)
 	status_label.add_theme_font_size_override("font_size", 10)
 	status_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED if passive["equipped"] else DISABLED_COLOR)
@@ -764,6 +772,11 @@ func _toggle_passive() -> void:
 			Toast.show_warning(self, "Unequip failed")
 	else:
 		# Equip (check slot availability)
+		if not (passive_id in character.learned_passives):
+			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, "Passive not learned")
+			return
+
 		if character.equipped_passives.size() >= character.max_passive_slots:
 			SoundManager.play_ui("menu_error")
 			Toast.show_warning(self, "All passive slots full (%d/%d)" % [character.equipped_passives.size(), character.max_passive_slots])
