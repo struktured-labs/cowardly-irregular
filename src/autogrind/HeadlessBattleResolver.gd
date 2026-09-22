@@ -919,6 +919,20 @@ func _resolve_attack(attacker, target) -> int:
 	## scaling `actual` instead would give a different number for the same gear.
 	damage = float(_apply_familiar_weight_bonus(attacker, target, int(damage)))
 
+	## guardian_wall nullifies this one swing and breaks. Checked after the number exists, before
+	## take_damage, and the on-hit riders below do not run — same place live returns.
+	if target.has_status("barrier"):
+		target.remove_status("barrier")
+		_log("%s's Barrier absorbs the attack!" % target.combatant_name)
+		return 0
+
+	## reflect and physical_reflect bounce the pre-defense swing onto the attacker. Live does not
+	## remove them here; the duration tick does. A spell is not bounced — that is prismatic_reflect.
+	if target.has_status("reflect") or target.has_status("physical_reflect"):
+		var bounced: int = attacker.take_damage(int(damage), false)
+		_log("%s's Reflect bounces %d damage back to %s!" % [target.combatant_name, bounced, attacker.combatant_name])
+		return 0
+
 	var def_val = float(target.get_buffed_stat("defense", target.defense))
 	# Guard divisor (mirrors Combatant.take_damage). attack 0 + defense 0
 	# combinations are reachable: get_buffed_stat returns 0 for base 0
@@ -1208,6 +1222,11 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			var total_for_recoil: int = 0
 			for target in targets:
 				if target and target.is_alive:
+					## access_denied cancels this one spell and breaks, before the roll. A swing is not a spell.
+					if target.has_status("magic_block"):
+						target.remove_status("magic_block")
+						_log("%s's Magic Block cancels the spell!" % target.combatant_name)
+						continue
 					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power)
 					## Doubles, mirroring BattleManager:5054 — live's own comment calls it "a rough
 					## compensation for take_damage's defense formula" rather than a true-damage path, and
@@ -1245,6 +1264,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
 						if elem_bonus > 0.0:
 							base_dmg = int(base_dmg * elem_bonus)
+					## Same one-hit ward as the basic swing. A blocked spell does not reach elemental math.
+					if target.has_status("barrier"):
+						target.remove_status("barrier")
+						_log("%s's Barrier absorbs the spell!" % target.combatant_name)
+						continue
+					## prismatic_reflect bounces this spell onto the caster and stays up. Live sends it
+					## to the caster, not to a random combatant, and does not bounce a physical swing.
+					if target.has_status("prismatic_reflect"):
+						var bounced: int = caster.take_damage(base_dmg, true)
+						_log("%s's Prismatic Reflect bounces %d magic damage to %s!" % [target.combatant_name, bounced, caster.combatant_name])
+						continue
 					var elem_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
 					## ⛔ EQUIPMENT RESISTANCE, mirroring Combatant.take_elemental_damage:  live's magic
 					## arm routes through that function (BattleManager:5270) and it does
@@ -1318,6 +1348,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					if randf() < float(ability.get("crit_chance", 0.0)):
 						base_dmg = int(base_dmg * 1.5)
 						_log("%s crits with %s" % [caster.combatant_name, ability_id])
+					## One barrier eats the whole ability, including a multi-hit, then breaks. Live checks
+					## once before the hits loop, so this does too.
+					if target.has_status("barrier"):
+						target.remove_status("barrier")
+						_log("%s's Barrier absorbs the hit!" % target.combatant_name)
+						continue
+					## One bounce of the pre-defense hit, not one per `hits`. The status is not spent.
+					if target.has_status("reflect") or target.has_status("physical_reflect"):
+						var bounced: int = caster.take_damage(base_dmg, false)
+						_log("%s's Reflect bounces %d damage to %s!" % [target.combatant_name, bounced, caster.combatant_name])
+						continue
 					## HP DELTA, not the helper's return: _resolve_attack_with_power returns its computed
 					## figure and take_damage then applies the defense formula AGAIN, so the return runs
 					## high. Live drains a share of what was ACTUALLY dealt, and the log should say so too.
