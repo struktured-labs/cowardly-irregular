@@ -945,7 +945,9 @@ func _resolve_attack(attacker, target) -> int:
 	if target.is_defending:
 		actual = actual / 2
 
-	target.take_damage(actual)
+	var dealt: int = target.take_damage(actual)
+	## the_absence authors heals_from_damage. Live heals from the number that landed, after the hit.
+	_maybe_heal_from_damage(target, dealt, "")
 	## Live calls this from _execute_attack ONLY — the BASIC attack. Deliberately NOT added to
 	## _resolve_attack_with_power, which is this file's ability-damage path: an ability that happens to
 	## deal physical damage does not proc a weapon's on-hit status in live, and wiring it there would
@@ -1298,6 +1300,8 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## PER TARGET and gated on damage landing, mirroring BattleManager:5085-5090 — so
 					## memory_drain (all_enemies) stacks its restore across the party exactly as live does.
 					_siphon_mp(caster, ability, dealt, ability_id)
+					## Same conversion as the basic swing. Holy skips inside the helper, matching live.
+					_maybe_heal_from_damage(target, dealt, str(element))
 					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dealt])
 					total_for_recoil += dealt
 					_maybe_inflict_status(caster, target, ability, ability_id)
@@ -1362,12 +1366,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## HP DELTA, not the helper's return: _resolve_attack_with_power returns its computed
 					## figure and take_damage then applies the defense formula AGAIN, so the return runs
 					## high. Live drains a share of what was ACTUALLY dealt, and the log should say so too.
-					var hp_before: int = target.current_hp
+					## Per hit, then heal, then sum the GROSS deltas. A heal after the loop would
+					## shrink the logged total, and a non-absorbing target must keep today's number.
+					var dmg: int = 0
 					for _h in hits:
 						if not target.is_alive:
 							break
+						var hit_before: int = target.current_hp
 						_resolve_attack_with_power(caster, target, base_dmg)
-					var dmg: int = hp_before - target.current_hp
+						var hit_dealt: int = hit_before - target.current_hp
+						dmg += hit_dealt
+						_maybe_heal_from_damage(target, hit_dealt, "")
 					## NO DRAIN HERE, deliberately: live reads drain_percentage only in _execute_magic_ability, so
 					## dark_slash (physical, 30%) heals its caster in NEITHER engine. Draining here would make the
 					## grind heal bone_warden and shadow_knight where the game does not (@cowir-battle 2d14d92d).
@@ -1940,6 +1949,43 @@ func _apply_lens_execute_bonus(attacker, target, damage: int) -> int:
 	## The emit stays on THIS side, exactly as it does in live's executor.
 	_log("%s moves to finish it." % attacker.combatant_name)
 	return int(damage * mult)
+
+
+## Twin of BattleManager._maybe_heal_from_damage. the_absence authors
+## special_behavior.heals_from_damage (30%) and sits in abstract_overworld, a pool
+## the grind draws. Live converts a share of the damage that landed into healing;
+## holy skips. Not inside take_damage — a group attack calls that on both engines
+## and neither one asks, so a Limit Break still lands in full.
+func _maybe_heal_from_damage(target, damage_amount: int, element: String) -> void:
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	if damage_amount <= 0:
+		return
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return
+	var mtype := str(target.get_meta("monster_type", ""))
+	if mtype == "":
+		return
+	var enc = _get_autoload("EncounterSystem")
+	if enc == null or not ("monster_database" in enc):
+		return
+	var db: Variant = enc.monster_database
+	if not (db is Dictionary) or not (db as Dictionary).has(mtype):
+		return
+	var sb: Variant = (db[mtype] as Dictionary).get("special_behavior", {})
+	if not (sb is Dictionary) or not bool((sb as Dictionary).get("heals_from_damage", false)):
+		return
+	if element == "holy":
+		return
+	var pct: float = clampf(float((sb as Dictionary).get("heal_percentage", 0.3)), 0.0, 1.0)
+	if pct <= 0.0:
+		return
+	var heal_amount: int = int(round(float(damage_amount) * pct))
+	if heal_amount <= 0:
+		return
+	var healed: int = target.heal(heal_amount)
+	if healed > 0:
+		_log("%s absorbs the impact — heals %d HP!" % [target.combatant_name, healed])
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
