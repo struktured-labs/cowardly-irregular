@@ -888,6 +888,9 @@ func _resolve_attack(attacker, target) -> int:
 		return 0
 
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
+	## A feared swing that was not skipped still happens, at half. Live halves the base stat before variance.
+	if attacker.has_status("fear"):
+		damage = float(int(damage * 0.5))
 	## ONE-SHOT, consumed as live consumes it (BattleManager:4374-4377) — a charged strike pays off
 	## once, not on every swing for the rest of the battle.
 	damage *= _take_charged_multiplier(attacker)
@@ -1286,7 +1289,11 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					if not bool(ability.get("ignores_evasion", false)):
 						if _target_dodges_physical(caster, target):
 							continue
-					var base_dmg = int(_scaled_base(caster, ability) * power)
+					## Same half as the basic swing, on the base stat before power. Magic is not halved in live.
+					var scaled: int = _scaled_base(caster, ability)
+					if caster.has_status("fear"):
+						scaled = int(scaled * 0.5)
+					var base_dmg = int(scaled * power)
 					## Second call site, mirroring BattleManager:4915. Live applies Familiar Weight to a
 					## physical ABILITY's damage as well as a basic swing, and wiring only one site is
 					## the mistake this file's dodge fix was written for an hour ago.
