@@ -100,7 +100,6 @@ func test_the_two_KNOWN_divergences_have_not_grown() -> void:
 
 const GRIND_IGNORES_BUT_ABILITIES_INFLICT := [
 	"barrier",             # guardian_wall — and all three GUARDIAN PRESETS cast it in rule 0
-	"charm",               # puppy_eyes
 	"evasion",             # burrow
 	"magic_block",         # access_denied
 	"pacify",              # peace_sign
@@ -108,6 +107,7 @@ const GRIND_IGNORES_BUT_ABILITIES_INFLICT := [
 	"prismatic_reflect",   # prismatic_reflect
 	"reflect",             # magic_reflect
 ]
+## charm left this list: _check_status_skip now mirrors live (35% break free, otherwise skip).
 
 func test_the_ignored_status_list_is_still_exactly_this() -> void:
 	## Derived from both engines, not from the list above — the list is the CLAIM and the scan is
