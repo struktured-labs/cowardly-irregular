@@ -857,6 +857,11 @@ func _resolve_attack(attacker, target) -> int:
 	if not target or not target.is_alive:
 		return 0
 
+	## peace_sign applies pacify. Live refuses the swing and leaves the status; the grind was hitting anyway.
+	if attacker.has_status("pacify"):
+		_log("%s is pacified and cannot attack!" % attacker.combatant_name)
+		return 0
+
 	## BLIND: the live engine adds 0.40 to the miss rate (BattleManager's attack miss check) and this
 	## resolver applied the status and then ignored it — the Bard's Riff inflicts blind on a 70% roll,
 	## so his signature disruption did nothing in a grind while doing its job in a live fight.
@@ -1188,6 +1193,10 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					_log("%s heals %s for %d" % [caster.combatant_name, target.combatant_name, healed])
 
 		"magic":
+			## Same gate as the basic swing, after the MP spend above — live charges the spell and then fizzles it.
+			if caster.has_status("pacify"):
+				_log("%s is pacified — the spell fizzles!" % caster.combatant_name)
+				return
 			## BEFORE the loop and ONCE, mirroring BattleManager:4969 — an AoE gets the boosted
 			## multiplier on every target and the charge clears a single time, not per target.
 			power = float(power) * _take_charged_multiplier(caster)
@@ -1262,7 +1271,13 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			_recoil_to(caster, ability, total_for_recoil, ability_id)
 
 		"physical":
+			## MP is already spent. Live still rolls mug's steal after the fizzle, because that roll sits outside the executor.
+			var pacified_strike: bool = bool(caster.has_status("pacify"))
+			if pacified_strike:
+				_log("%s is pacified and cannot strike!" % caster.combatant_name)
 			for target in targets:
+				if pacified_strike:
+					break
 				if target and target.is_alive:
 					## Live gates the dodge on `ignores_evasion` and calls _target_dodges_physical here
 					## (:4853) exactly as it does for a basic swing. Without this the grind's physical
