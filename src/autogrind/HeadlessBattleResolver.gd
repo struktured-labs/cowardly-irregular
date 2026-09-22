@@ -878,6 +878,11 @@ func _resolve_attack(attacker, target) -> int:
 	## measurement does.
 	if _target_dodges_physical(attacker, target):
 		return 0
+	## null_entity authors immunities=["physical"] and is in the abstract grind pool. Live returns
+	## here, before the miss roll and before barrier, so a swing deals 0 and does not break the ward.
+	if _monster_immune_to_category(target, "physical"):
+		_log("%s is immune to physical — %s's attack passes through!" % [target.combatant_name, attacker.combatant_name])
+		return 0
 
 	var base_miss: float = 0.10
 	if attacker.has_status("blind"):
@@ -1013,6 +1018,30 @@ func _familiar_weight_static_seed(combatant) -> PackedStringArray:
 			if mstr != "" and not (mstr in out):
 				out.append(mstr)
 	return out
+
+
+## Twin of BattleManager._monster_immune_to_category. monsters.json `immunities` is a damage class,
+## not an element: null_entity authors ["physical"] and live deals 0 on a swing and on a physical
+## ability. Not inside take_damage — a group attack calls that on both engines and neither one
+## asks, so a Limit Break still lands.
+func _monster_immune_to_category(target, category: String) -> bool:
+	if target == null or not is_instance_valid(target) or category == "":
+		return false
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return false
+	var mtype := str(target.get_meta("monster_type", ""))
+	if mtype == "":
+		return false
+	var enc = _get_autoload("EncounterSystem")
+	if enc == null or not ("monster_database" in enc):
+		return false
+	var db: Variant = enc.monster_database
+	if not (db is Dictionary) or not (db as Dictionary).has(mtype):
+		return false
+	var immunities: Variant = (db[mtype] as Dictionary).get("immunities", [])
+	if not (immunities is Array):
+		return false
+	return category in immunities
 
 
 ## Twin of BattleManager._target_dodges_physical (:9046), and EXTRACTED for live's own reason: live
@@ -1319,6 +1348,10 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					if not bool(ability.get("ignores_evasion", false)):
 						if _target_dodges_physical(caster, target):
 							continue
+					## Same gate as the basic swing. A physical ability is not a spell, so magic still lands.
+					if _monster_immune_to_category(target, "physical"):
+						_log("%s is immune to physical — %s's strike passes through!" % [target.combatant_name, caster.combatant_name])
+						continue
 					## Same half as the basic swing, on the base stat before power. Magic is not halved in live.
 					var scaled: int = _scaled_base(caster, ability)
 					if caster.has_status("fear"):
