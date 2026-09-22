@@ -1011,7 +1011,7 @@ func _familiar_weight_static_seed(combatant) -> PackedStringArray:
 func _target_dodges_physical(attacker, target) -> bool:
 	if target == null or not is_instance_valid(target):
 		return false
-	## ⚠️ Two LITERAL has_status calls rather than a loop, deliberately. The parity guard derives its
+	## ⚠️ LITERAL has_status calls rather than a loop, deliberately. The parity guard derives its
 	## ignored-status set by scanning both engines for has_status("…"), and a loop variable is
 	## invisible to it — the first draft of this fix used one, and the guard went on reporting
 	## `invisible` as ignored while the code honoured it.
@@ -1022,6 +1022,10 @@ func _target_dodges_physical(attacker, target) -> bool:
 	if target.has_status("shadow_step"):
 		target.remove_status("shadow_step")
 		_log("%s strikes thin air — %s had stepped into shadow!" % [attacker.combatant_name, target.combatant_name])
+		return true
+	## Burrow's evasion is a 60% physical dodge in live and was only a badge in the grind. Not consumed on a swing — duration ticks it off.
+	if target.has_status("evasion") and randf() < 0.6:
+		_log("%s evades %s's attack!" % [target.combatant_name, attacker.combatant_name])
 		return true
 	## equipment evasion_bonus is a SEPARATE roll in live (:9106), not folded into the miss chance —
 	## elven_cloak plus a passive gives two independent chances to dodge. Same clamp.
