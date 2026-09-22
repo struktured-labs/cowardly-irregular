@@ -65,9 +65,17 @@ func test_a_physical_ability_deals_zero_and_a_spell_does_not() -> void:
 	_cast(caster, "power_strike", immune)
 	assert_eq(immune.current_hp, hp_before,
 		"power_strike hit null_entity — live gates physical abilities on the same immunity")
-	_cast(caster, "fire", immune)
-	assert_lt(immune.current_hp, hp_before,
-		"fire must still damage null_entity — the immunity is physical, and live does not ask about magic")
+	## phase_out misses 20% of spells. The immunity claim is that a spell which connects still hurts.
+	var spell_landed := false
+	for s in range(1, 40):
+		immune.current_hp = immune.max_hp
+		seed(s)
+		_cast(caster, "fire", immune)
+		if immune.current_hp < immune.max_hp:
+			spell_landed = true
+			break
+	assert_true(spell_landed,
+		"fire must still damage null_entity once a phase-out miss is excluded — the immunity is physical, and live does not ask about magic")
 
 
 func test_a_monster_without_the_field_still_takes_the_hit() -> void:

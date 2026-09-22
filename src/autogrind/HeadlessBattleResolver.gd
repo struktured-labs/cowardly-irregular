@@ -702,16 +702,41 @@ func _select_enemy_action(enemy) -> Dictionary:
 			if enemy.current_mp >= mp_cost:
 				return {"type": "ability", "ability_id": heal_ability, "targets": [enemy]}
 
+	## A self-heal is not an attack, so taunt does not replace it. Offensive picks lock first.
+	var focus = _find_taunter(enemy, alive_players)
+	if focus == null:
+		alive_players.sort_custom(func(a, b): return a.current_hp < b.current_hp)
+		focus = alive_players[0]
+
 	if enemy.current_mp > 0:
 		var atk_ability = _find_attack_ability(enemy)
 		if atk_ability != "":
 			var mp_cost = _get_ability_mp_cost(atk_ability)
 			if enemy.current_mp >= mp_cost:
-				alive_players.sort_custom(func(a, b): return a.current_hp < b.current_hp)
-				return {"type": "ability", "ability_id": atk_ability, "targets": [alive_players[0]]}
+				return {"type": "ability", "ability_id": atk_ability, "targets": [focus]}
 
-	alive_players.sort_custom(func(a, b): return a.current_hp < b.current_hp)
-	return {"type": "attack", "target": alive_players[0]}
+	return {"type": "attack", "target": focus}
+
+
+## Twin of BattleManager._find_taunter. provoke writes `taunted_<caster>` onto the victim and live's
+## _choose_target locks the victim's next offensive action onto that caster. The grind wrote the key
+## and still picked lowest HP, so a shipped Provoke template did nothing in a grind. A dead or
+## absent name falls through to the next status, then to the ordinary pick.
+func _find_taunter(attacker, targets: Array):
+	if attacker == null or not is_instance_valid(attacker):
+		return null
+	if not ("status_effects" in attacker):
+		return null
+	for status in attacker.status_effects:
+		if typeof(status) != TYPE_STRING:
+			continue
+		if not status.begins_with("taunted_"):
+			continue
+		var taunter_name: String = status.substr(len("taunted_"))
+		for t in targets:
+			if is_instance_valid(t) and t.is_alive and t.combatant_name == taunter_name:
+				return t
+	return null
 
 
 func _find_heal_ability(combatant) -> String:
@@ -1046,17 +1071,41 @@ func _monster_immune_to_category(target, category: String) -> bool:
 	return category in immunities
 
 
+## Twin of BattleManager._monster_phase_out_check. null_entity authors phase_out at 20% and sits in
+## the abstract pool the grind draws. Live misses the swing and the spell; a grind always connected.
+## Not consumed, and not inside take_damage — a group attack calls that on both engines and neither asks.
+func _monster_phase_out_check(target) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	if not target.has_method("get_meta"):
+		return false
+	var mtype := str(target.get_meta("monster_type", ""))
+	if mtype == "":
+		return false
+	var enc = _get_autoload("EncounterSystem")
+	if enc == null or not ("monster_database" in enc):
+		return false
+	var db: Variant = enc.monster_database
+	if not (db is Dictionary) or not (db as Dictionary).has(mtype):
+		return false
+	var sb: Variant = (db[mtype] as Dictionary).get("special_behavior", {})
+	if not (sb is Dictionary):
+		return false
+	var behavior := sb as Dictionary
+	if not bool(behavior.get("phase_out", false)):
+		return false
+	var chance: float = clampf(float(behavior.get("phase_out_chance", 0.2)), 0.0, 1.0)
+	return randf() < chance
+
+
 ## Twin of BattleManager._target_dodges_physical (:9046), and EXTRACTED for live's own reason: live
 ## calls it from TWO sites — _execute_attack (:4391) and _execute_physical_ability (:4853) — so a
 ## physical ABILITY can be dodged exactly as a basic swing can. This resolver had the logic inline in
 ## _resolve_attack and the physical-ability arm had NO dodge check at all, so a grinding party's
 ## power_strike, cleave and slash could never be evaded while the real game's can.
 ##
-## ⚠️ SCOPE, stated because it is narrower than live's: this mirrors the three components the grind
-## ALREADY modelled — invisible, shadow_step and equipment evasion_bonus. Live's version also rolls
-## an `evasion` STATUS (0.6) and a monster `phase_out` chance, and this file models NEITHER anywhere
-## (0 mentions of each). Those are a pre-existing gap, declared rather than invented here: porting
-## them means deciding whether the grind models phase_out's monster_database read at all.
+## Evasion status (0.6, not consumed) and phase_out both live here, so a physical ability and a basic
+## swing miss for the same reasons. Passive evasion is still absent — that is the passives ruling.
 ##
 ## ⚠️ The speed-based miss chance stays in _resolve_attack and is deliberately NOT moved in. Live
 ## keeps it out of this function too: an ability is DODGED, never fumbled — a physical ability that
@@ -1079,6 +1128,11 @@ func _target_dodges_physical(attacker, target) -> bool:
 	## Burrow's evasion is a 60% physical dodge in live and was only a badge in the grind. Not consumed on a swing — duration ticks it off.
 	if target.has_status("evasion") and randf() < 0.6:
 		_log("%s evades %s's attack!" % [target.combatant_name, attacker.combatant_name])
+		return true
+	## After the evasion status and before gear, matching live: a phase-out is a miss, not a dodge
+	## that spends a status. null_entity authors 0.2. A monster without the flag never rolls.
+	if _monster_phase_out_check(target):
+		_log("%s phases out — %s's attack passes through nothing!" % [target.combatant_name, attacker.combatant_name])
 		return true
 	## equipment evasion_bonus is a SEPARATE roll in live (:9106), not folded into the miss chance —
 	## elven_cloak plus a passive gives two independent chances to dodge. Same clamp.
@@ -1253,6 +1307,10 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			var total_for_recoil: int = 0
 			for target in targets:
 				if target and target.is_alive:
+					## Before Magic Block, matching live: a phase-out misses the spell and leaves the ward up.
+					if _monster_phase_out_check(target):
+						_log("%s phases out — %s's spell finds nothing!" % [target.combatant_name, caster.combatant_name])
+						continue
 					## access_denied cancels this one spell and breaks, before the roll. A swing is not a spell.
 					if target.has_status("magic_block"):
 						target.remove_status("magic_block")
@@ -1481,13 +1539,11 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						## named "taunt" — a key live NEVER creates and nothing anywhere reads. Live
 						## composes `taunted_<caster>` (BattleManager:5911) and reads the prefix back in
 						## _find_taunter:2983. Same junk-key shape as the cleanse arm below (cowir-battle).
-						## ⚠️ THE KEY IS NOW LIVE'S; THE TARGETING IS NOT MODELLED. This resolver has no
-						## _find_taunter equivalent, so a taunt still does not redirect an enemy here.
-						## Composing the right key is parity-neutral; honouring it would change which
-						## target an enemy picks, i.e. what a grind PLAYS like — that half is a ruling,
-						## not a port, and is recorded rather than smuggled in under a bug fix.
+						## _select_enemy_action reads this key back through _find_taunter, the grind's twin of
+						## live's _choose_target lock. Player scripts do not retarget: live's autobattle
+						## resolver does not consult taunt either.
 						target.add_status("taunted_%s" % caster.combatant_name)
-						_log("%s taunts %s (key only — headless does not model taunt targeting)" % [caster.combatant_name, target.combatant_name])
+						_log("%s taunts %s into focusing on them!" % [caster.combatant_name, target.combatant_name])
 						continue
 					elif effect == "cleanse":
 						## Esuna is in the DEFAULT cleric script and two presets, and headless had no
