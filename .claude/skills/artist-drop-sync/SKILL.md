@@ -53,11 +53,12 @@ Pull only the new subtree — **into gitignored `tmp/`, never into `assets/`**:
 rclone copy "gdrive: cowir/assets/sprites/Game graphics - Characters/<NAME>" \
             "tmp/artist_drops/<NAME>" -P
 ```
-> ⛔ **CORRECTED 2026-09-19 — this used to say `assets/sprites/drive_archive/`.
-> That path does NOT exist and is NOT gitignored**, so the pull creates an
-> untracked tree inside `assets/` and §8's `git add assets/...` then commits the
-> artist's `.aseprite` SOURCE into the repo. `tmp/` is gitignored
-> (`.gitignore:64`); the Drive copy is canonical and the local copy is scratch.
+> Both `tmp/` (`.gitignore:64`) and the older `assets/sprites/drive_archive/`
+> (`.gitignore:116`, since 2026-04-24) are gitignored, so either is safe; `tmp/`
+> keeps scratch out of the asset tree. The Drive copy is canonical and the local
+> copy is scratch. ⚠️ An earlier version of this note claimed `drive_archive/`
+> was NOT ignored and would commit the artist's source — that was false when
+> written; check with `git check-ignore -v <path>`, not from memory.
 
 ## 2. Probe tags — never assume names
 

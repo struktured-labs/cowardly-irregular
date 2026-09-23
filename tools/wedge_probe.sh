@@ -30,8 +30,7 @@ for t in /proc/$pid/task/*; do
 done
 sleep "$secs"
 
-printf '%-9s %7s  %-18s %-7s %s\n' TID "CPU%" NAME STATE WCHAN
-for t in /proc/$pid/task/*; do
+rows=$(for t in /proc/$pid/task/*; do
     tid=${t##*/}
     line=$(cat "$t/stat" 2>/dev/null) || continue
     read -r -a f <<< "${line##*) }"
@@ -45,7 +44,28 @@ for t in /proc/$pid/task/*; do
     wchan=$(cat "$t/wchan" 2>/dev/null || echo '?')
     [ -z "$wchan" ] && wchan='(userspace)'
     printf '%-9s %7s  %-18s %-7s %s\n' "$tid" "$pct" "$name" "$state" "$wchan"
-done | sort -k2 -rn | head -14
+done)
+
+printf '%-9s %7s  %-18s %-7s %s\n' TID "CPU%" NAME STATE WCHAN
+printf '%s\n' "$rows" | sort -k2 -rn | head -14
+
+# ⛔ MAIN IS PRINTED HERE, OUTSIDE THE RANKING, BECAUSE THE RANKING DELETED IT.
+# On 2026-09-20 this script read a wedged gate: 31 threads, main at 0.0%, and
+# `sort -k2 -rn | head -14` dropped main's row. Three published readings then
+# carried "main was blocked" -- inferred from the ABSENCE, never measured, while
+# the line below promised "both halves name the mechanism". The wchan was read
+# out of /proc and thrown away by this script's own pipeline.
 echo
-echo "== the spinner is the R thread with ~100% and wchan (userspace); a 0% thread in S"
-echo "== with a futex wchan is the BLOCKED main thread. Both halves name the mechanism."
+main_row=$(printf '%s\n' "$rows" | awk -v p="$pid" '$1 == p')
+if [ -z "$main_row" ]; then
+    echo "== main thread $pid: NOT SAMPLED -- it exited during the window."
+    echo "== (an absent line is a gap, not a clean bill; that is what went wrong here)"
+else
+    echo "== main thread, unconditionally:"
+    printf '   %s\n' "$main_row"
+    echo "== its STATE ALONE CANNOT SAY 'blocked': a healthy main is S + hrtimer_nanosleep"
+    echo "== whenever it is idle. Only WCHAN separates that from S + futex_* (waiting on"
+    echo "== the spinner). For the four-way verdict run the tool that owns it -- this one"
+    echo "== deliberately does not carry a second copy of the table:"
+    echo "==   tools/which_thread_is_spinning.py $pid $secs"
+fi
