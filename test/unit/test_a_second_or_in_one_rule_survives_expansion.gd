@@ -109,3 +109,43 @@ func test_expansion_is_bounded_so_a_pathological_reply_cannot_hang_the_composer(
 	_rc._expand_or_conditions(rules, {})
 	assert_lt(rules.size(), 100,
 		"expansion grew to %d rules from one authored rule — it is unbounded" % rules.size())
+
+
+func test_a_self_referencing_branch_cannot_spin_forever() -> void:
+	## REGRESSION ON MY OWN FIX. Not advancing `i` is what lets a rule be
+	## re-examined for a second OR — and it also removed the old loop's accidental
+	## protection against a branch that contains its own condition. The rule list
+	## never grows in that case, so MAX_EXPANDED_RULES cannot catch it.
+	##
+	## Measured before the bound: the call never returned (probe EC=124). JSON
+	## cannot express a cycle, so no model reply reaches this — but the repair is
+	## callable in-engine, and "unreachable today" is not a termination argument.
+	var c: Dictionary = {"type": "or"}
+	c["conditions"] = [c]
+	var rules: Array = [{"conditions": [c], "actions": [{"type": "attack"}], "enabled": true}]
+	var notes: Array = _rc._expand_or_conditions(rules, {})
+	assert_true(true, "returned — a cyclic branch no longer spins the composer")
+	## The note must name the limit that ACTUALLY fired. There are two caps and
+	## they are reached for different reasons; reporting the rule cap for a pass
+	## timeout tells the player to simplify the wrong thing.
+	var joined: String = "|".join(PackedStringArray(notes))
+	assert_true(joined.contains("passes"),
+		("a cyclic input trips the PASS bound, but the note said: %s. The rule cap "
+		+ "was not what stopped it.") % [joined])
+
+
+func test_the_rule_cap_note_names_the_rule_cap() -> void:
+	## The other half of the same message: when growth is what stopped expansion,
+	## the note must say rules, not passes.
+	var conds: Array = []
+	for i in range(12):
+		conds.append({"type": "or", "conditions": [
+			{"type": "hp_percent", "operator": "<", "value": 10 + i},
+			{"type": "hp_percent", "operator": "<", "value": 50 + i}]})
+	var rules: Array = [{"conditions": conds, "actions": [{"type": "attack"}], "enabled": true}]
+	var notes: Array = _rc._expand_or_conditions(rules, {})
+	var joined: String = "|".join(PackedStringArray(notes))
+	assert_true(joined.contains("rules"),
+		"expansion stopped on the RULE cap but the note said: %s" % [joined])
+	assert_false(joined.contains("passes"),
+		"the rule cap fired but the note blamed the pass bound: %s" % [joined])

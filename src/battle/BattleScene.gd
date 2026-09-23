@@ -593,12 +593,20 @@ func _create_battle_background() -> void:
 
 func set_command_menu_visible(visible: bool) -> void:
 	"""Public method to show/hide the command menu (called by GameLoop for autobattle editor)"""
+	if visible:
+		if active_win98_menu and is_instance_valid(active_win98_menu):
+			print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
+			active_win98_menu.visible = true
+			active_win98_menu.grab_focus()
+		return
+	# Submenus are SIBLINGS of the root; hiding only the root left a live-battle ability list taking confirm.
 	if active_win98_menu and is_instance_valid(active_win98_menu):
 		print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
-		active_win98_menu.visible = visible
-		# Restore focus when making visible again
-		if visible:
-			active_win98_menu.grab_focus()
+		var sub = active_win98_menu.submenu
+		if sub and is_instance_valid(sub):
+			sub.force_close()
+			active_win98_menu.submenu = null
+		active_win98_menu.visible = false
 
 
 ## Hold-A detection for autobattle editor

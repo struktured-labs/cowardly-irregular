@@ -27,6 +27,8 @@ class ReentrantController extends Node:
 
 var _saved_persist: bool = false
 var _saved_sm: Dictionary = {}
+## GameLoop here is off-tree, so a summary it shows pushes a lock that no _exit_tree can pop.
+var _saved_locks: Dictionary = {}
 
 const _SM_FIELDS := [
 	"_current_area", "_current_world_suffix", "_current_music",
@@ -39,6 +41,7 @@ func before_each() -> void:
 	if AutogrindSystem and "_test_disable_persistence" in AutogrindSystem:
 		_saved_persist = bool(AutogrindSystem._test_disable_persistence)
 		AutogrindSystem._test_disable_persistence = true
+	_saved_locks = InputLockManager._locks.duplicate()
 	_saved_sm.clear()
 	for f in _SM_FIELDS:
 		_saved_sm[f] = SoundManager.get(f)
@@ -60,6 +63,7 @@ func after_each() -> void:
 	SoundManager.reset_danger()
 	for f in _SM_FIELDS:
 		SoundManager.set(f, _saved_sm[f])
+	InputLockManager._locks = _saved_locks.duplicate()
 
 
 func _loop() -> Node:
