@@ -912,9 +912,11 @@ func update_buff_durations() -> void:
 		if current_hp <= 0:
 			die()
 
-	# Tick down status effect durations
+	# Tick down status effect durations. Stun is excluded: the skip consumer spends one point per skipped action.
 	var expired_statuses: Array[String] = []
 	for status in status_durations:
+		if status == "stun":
+			continue
 		if status_durations[status] > 0:  # -1 = permanent
 			status_durations[status] -= 1
 			if status_durations[status] <= 0:

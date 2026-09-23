@@ -34,6 +34,12 @@ func test_equip_failure_toasts_with_reason() -> void:
 		"equip-failed Toast must name the most-likely cause (requirements) — gives the player something to look at")
 
 
+func test_unlearned_passive_toasts() -> void:
+	var src := _read(ABILITIES_MENU)
+	assert_true(src.contains("Passive not learned"),
+		"unlearned-equip Toast must exist — otherwise the learned gate fails silently")
+
+
 func test_unequip_failure_toasts() -> void:
 	var src := _read(ABILITIES_MENU)
 	assert_true(src.contains("Unequip failed"),

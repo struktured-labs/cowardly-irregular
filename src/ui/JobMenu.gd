@@ -700,17 +700,7 @@ func _assign_selected_job() -> void:
 	if job_id == "__none__":
 		character.secondary_job = null
 		character.secondary_job_id = ""
-		var new_key = character.get_profile_key()
-		if character.job_profiles.has(new_key):
-			character.load_profile(new_key)
-		else:
-			character.fork_profile(old_key, new_key)
-		# load_profile recalculates; fork_profile does NOT. Dropping a
-		# secondary must give back the stats it lent
-		# (Combatant.SECONDARY_JOB_STAT_FRACTION) on BOTH arms, or the first
-		# time you clear a secondary on a never-used profile key you keep the
-		# boost until some unrelated equip triggers a recalc.
-		character.recalculate_stats()
+		_adopt_job_profile(old_key)
 		job_changed.emit(character, "", true)
 		SoundManager.play_ui("menu_select")
 		mode = Mode.SLOT_SELECT
@@ -723,17 +713,23 @@ func _assign_selected_job() -> void:
 		success = JobSystem.assign_secondary_job(character, job_id)
 
 	if success:
-		var new_key = character.get_profile_key()
-		if character.job_profiles.has(new_key):
-			character.load_profile(new_key)
-		else:
-			character.fork_profile(old_key, new_key)
+		_adopt_job_profile(old_key)
 		job_changed.emit(character, job_id, selected_slot == 1)
 		SoundManager.play_ui("menu_select")
 		mode = Mode.SLOT_SELECT
 		_build_ui()
 	else:
 		SoundManager.play_ui("menu_error")
+
+
+## One owner for the profile swap. load_profile recalculates; fork_profile does not, so every arm recalcs after the swap.
+func _adopt_job_profile(old_key: String) -> void:
+	var new_key := character.get_profile_key()
+	if character.job_profiles.has(new_key):
+		character.load_profile(new_key)
+	else:
+		character.fork_profile(old_key, new_key)
+	character.recalculate_stats()
 
 
 func _on_job_slot_click(slot_index: int) -> void:

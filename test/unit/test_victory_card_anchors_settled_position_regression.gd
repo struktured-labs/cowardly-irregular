@@ -1,7 +1,7 @@
 extends GutTest
 
 ## Regression: struktured cap 2026-08-31 — "cleric shows +72 exp after battle and its way too
-## far away from her." Four cards matched the formation math (marker - CARD_W - 36) to the
+## far away from her." Four cards matched the formation math (marker - CARD_W - gap) to the
 ## pixel; the Cleric's alone sat ~246px further left: her sprite was mid-return from a heal
 ## lunge when the cards were placed, then settled home, stranding the card at the transient
 ## spot. Same class + same fix as the bubble anchor (bda760e6): apply the settled-minus-current

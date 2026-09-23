@@ -1084,15 +1084,20 @@ func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[Strin
 ## nested `options` list, `any_of` with `conditions`. Measured 2 of 20 live compositions,
 ## each a total loss. Conditions are AND-chained and first match wins, so OR is spelled as
 ## SEPARATE RULES: one rule per branch, carrying every sibling condition and the actions.
-func _expand_or_conditions(rules: Array, types: Dictionary) -> Array[String]:
+## `types` is unused and kept only so the two call sites keep their shape.
+func _expand_or_conditions(rules: Array, _types: Dictionary) -> Array[String]:
 	const OR_TYPES := ["or", "any_of", "either", "any"]
 	const BRANCH_KEYS := ["conditions", "options", "any", "branches"]
+	## Model output is adversarial by default — N ORs is exponential uncapped.
+	const MAX_EXPANDED_RULES := 64
+	const SPLIT_NOTE := "Split an OR into one rule per branch — in this grammar, rules ARE the or."
 	var notes: Array[String] = []
+	var capped: bool = false
 	var i: int = 0
 	while i < rules.size():
 		var rule = rules[i]
-		i += 1
 		if typeof(rule) != TYPE_DICTIONARY:
+			i += 1
 			continue
 		var conds: Array = rule.get("conditions", [])
 		var at: int = -1
@@ -1109,15 +1114,27 @@ func _expand_or_conditions(rules: Array, types: Dictionary) -> Array[String]:
 			if at != -1:
 				break
 		if at == -1:
+			i += 1
+			continue
+		if rules.size() + branches.size() - 1 > MAX_EXPANDED_RULES:
+			capped = true
+			i += 1
 			continue
 		conds.remove_at(at)
 		conds.insert(at, branches[0])
-		notes.append("Split an OR into one rule per branch — in this grammar, rules ARE the or.")
+		if not notes.has(SPLIT_NOTE):
+			notes.append(SPLIT_NOTE)
+		var ins: int = i + 1
 		for extra in branches.slice(1):
 			var clone: Dictionary = rule.duplicate(true)
 			(clone["conditions"] as Array)[at] = extra
-			rules.insert(i, clone)
-			i += 1
+			rules.insert(ins, clone)
+			ins += 1
+		## DELIBERATELY NOT ADVANCING i — the same rule may carry another OR, and
+		## the old loop skipped past every clone it inserted so only the first was
+		## ever expanded. Each pass strictly removes one OR, so this terminates.
+	if capped:
+		notes.append("Stopped splitting ORs at %d rules — the rest were left as written." % MAX_EXPANDED_RULES)
 	return notes
 
 

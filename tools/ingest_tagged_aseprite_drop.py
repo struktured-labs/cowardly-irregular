@@ -247,7 +247,11 @@ DROPS_20260830 = {
         "src": "Bard Base sprite.aseprite",
         "dir": "assets/sprites/jobs/bard",
         "backup": True,
+        # "Celebration" is the ARTIST's label for the victory pose; the engine's
+        # animation slot is "victory". Their word is kept in the manifest source note,
+        # the same way "Dead"/"Weak" were when they split the downed state.
         "map": {"idle": ("Idle", 0, 0), "dead": ("Dead", 0, 0), "weak": ("Weak", 0, 0),
+                "victory": ("Celebration", 0, 0),
                 "cast": ("ATK", 0, 3), "attack": ("ATK", 4, 99)},
     },
     "mage": {
@@ -334,11 +338,13 @@ DROPS_20260903 = {
     "rogue": {
         "src": "Rogue Main design.aseprite",
         "dir": "assets/sprites/jobs/rogue",
-        # dead only: the prior source carried NO tags at all, so dead.png was never artist-authored
-        "backup_anims": {"dead"},
+        # dead: prior source carried NO tags. victory: T1 procedural until the Celebration tag landed.
+        "backup_anims": {"dead", "victory"},
         # the artist left an opaque "Layer 1" background visible in this drop
         "ignore_layers": ["Layer 1"],
+        # "Celebration" is the ARTIST's label for the victory pose; the engine's slot is "victory".
         "map": {"idle": ("Idle", 0, 0), "weak": ("Weak", 0, 0), "dead": ("Dead", 0, 0),
+                "victory": ("Celebration", 0, 0),
                 "attack": ("ATK", 0, 0), "stab": ("ATK", 0, 0)},
     },
     "cleric": {

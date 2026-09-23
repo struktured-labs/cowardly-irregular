@@ -536,13 +536,35 @@ func _best_known_tier(family: String) -> int:
 	return best
 
 
+## Live inventories when a party is in the tree; otherwise the snapshot dicts. Menu-open and pre-save are the only snapshot writers, and walking into a shop does not save, so a potion used in the field menu or picked up from a chest in this area is on the Combatant only.
+func _inventory_sources() -> Array:
+	var live: Array = _resolve_live_party()
+	var sources: Array = []
+	var saw_live := false
+	for member in live:
+		if member == null or not is_instance_valid(member) or not ("inventory" in member):
+			continue
+		var inv = member.inventory
+		if inv is Dictionary:
+			sources.append(inv)
+			saw_live = true
+	if saw_live or game_state == null:
+		return sources
+	for member_data in game_state.player_party:
+		if member_data is Dictionary:
+			var snap: Variant = member_data.get("inventory", {})
+			if snap is Dictionary:
+				sources.append(snap)
+	return sources
+
+
 func _get_owned_count(item_id: String) -> int:
 	"""Get how many of this item the party owns"""
 	if shop_type == ShopType.ITEM:
-		if game_state.player_party.size() > 0:
-			var party_leader = game_state.player_party[0]
-			var inventory = party_leader.get("inventory", {})
-			return inventory.get(item_id, 0)
+		var sources: Array = _inventory_sources()
+		if sources.is_empty():
+			return 0
+		return int(sources[0].get(item_id, 0))
 	elif _is_magic_shop():
 		# Count party members who have learned this spell
 		var count = 0
@@ -559,11 +581,10 @@ func _get_sellable_inventory() -> Array:
 	var sellable: Array = []
 	var counted: Dictionary = {}
 
-	# Collect items from all party members
-	for member_data in game_state.player_party:
-		var inventory = member_data.get("inventory", {})
+	# Live stock when the party is in the tree. The snapshot still lists a potion the field menu already used, and it misses a chest drop until the next menu open.
+	for inventory in _inventory_sources():
 		for item_id in inventory:
-			var quantity = inventory[item_id]
+			var quantity = int(inventory[item_id])
 			if quantity > 0:
 				counted[item_id] = counted.get(item_id, 0) + quantity
 
@@ -679,28 +700,40 @@ func _add_item_to_inventory(item_id: String) -> bool:
 	return false
 
 
+## Live stock is authoritative when a party is in the tree. Selling the snapshot paid gold for a potion the field menu had already used (the live remove's false was ignored) and refused a drop that existed only on the Combatant.
 func _remove_item_from_inventory(item_id: String) -> bool:
-	"""Remove item from party inventory (returns false if not found).
-
-	Tick 314: removes from BOTH the snapshot dict (where the sell menu
-	reads quantities) AND the LIVE Combatant.inventory (source of truth).
-	Pre-fix the snapshot-only decrement was overwritten on the next sync,
-	so the player got the sell-price gold while keeping the item — a
-	free-money exploit triggered every time a sell was confirmed."""
-	# Find first party member with this item in the snapshot.
 	var live_party: Array = _resolve_live_party()
+	var live_authoritative := false
+	for i in range(live_party.size()):
+		var member = live_party[i]
+		if member == null or not is_instance_valid(member) or not member.has_method("remove_item"):
+			continue
+		live_authoritative = true
+		if not member.remove_item(item_id, 1):
+			continue
+		_decrement_snapshot_inventory(i, item_id)
+		return true
+	if live_authoritative or game_state == null:
+		return false
 	for i in range(game_state.player_party.size()):
-		var member_data: Dictionary = game_state.player_party[i]
-		var inventory: Dictionary = member_data.get("inventory", {})
-		if inventory.has(item_id) and inventory[item_id] > 0:
-			inventory[item_id] -= 1
-			if inventory[item_id] == 0:
-				inventory.erase(item_id)
-			# Tick 314: mirror on the matching live Combatant.
-			if i < live_party.size() and live_party[i] and live_party[i].has_method("remove_item"):
-				live_party[i].remove_item(item_id, 1)
+		if _decrement_snapshot_inventory(i, item_id):
 			return true
 	return false
+
+
+func _decrement_snapshot_inventory(index: int, item_id: String) -> bool:
+	if game_state == null or index < 0 or index >= game_state.player_party.size():
+		return false
+	var member_data: Dictionary = game_state.player_party[index]
+	if not member_data.has("inventory") or not (member_data["inventory"] is Dictionary):
+		return false
+	var inventory: Dictionary = member_data["inventory"]
+	if not inventory.has(item_id) or int(inventory[item_id]) <= 0:
+		return false
+	inventory[item_id] = int(inventory[item_id]) - 1
+	if inventory[item_id] == 0:
+		inventory.erase(item_id)
+	return true
 
 
 func _update_description_for_item(item_id: String) -> void:
