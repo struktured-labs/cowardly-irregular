@@ -17,9 +17,8 @@ const GRIND := "res://src/autogrind/HeadlessBattleResolver.gd"
 ## whether my other gear ports had the same one-site-vs-two question turned up evasion_bonus with two
 ## live call sites and one grind site. The near-miss was the finding.
 ##
-## ⚠️ SCOPE: mirrors the three components the grind already modelled — invisible, shadow_step,
-## equipment evasion_bonus. Live's version also rolls an `evasion` STATUS and a monster `phase_out`
-## chance, and this file models NEITHER anywhere. Declared, not invented.
+## Evasion status and phase_out now live in the shared _target_dodges_physical this file calls,
+## so a physical ability burrow-dodges and phases the way a basic swing does.
 
 var _res
 

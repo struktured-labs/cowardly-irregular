@@ -1775,6 +1775,11 @@ func _nav_is_blocked() -> bool:
 	# If submenu is open, let it handle input instead
 	if submenu and is_instance_valid(submenu):
 		return true
+	# Autobattle editor (inline or F5 CanvasLayer) — a sibling submenu that survived hide still has _input.
+	if is_inside_tree():
+		for n in get_tree().get_nodes_in_group("autobattle_grid_editor"):
+			if is_instance_valid(n) and n.visible:
+				return true
 	return false
 
 

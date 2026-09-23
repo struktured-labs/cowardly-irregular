@@ -1084,15 +1084,32 @@ func _normalise_autogrind_conditions(rules: Array, domain_system) -> Array[Strin
 ## nested `options` list, `any_of` with `conditions`. Measured 2 of 20 live compositions,
 ## each a total loss. Conditions are AND-chained and first match wins, so OR is spelled as
 ## SEPARATE RULES: one rule per branch, carrying every sibling condition and the actions.
-func _expand_or_conditions(rules: Array, types: Dictionary) -> Array[String]:
+## `types` is unused and kept only so the two call sites keep their shape.
+func _expand_or_conditions(rules: Array, _types: Dictionary) -> Array[String]:
 	const OR_TYPES := ["or", "any_of", "either", "any"]
 	const BRANCH_KEYS := ["conditions", "options", "any", "branches"]
+	## Model output is adversarial by default — N ORs is exponential uncapped.
+	const MAX_EXPANDED_RULES := 64
+	const SPLIT_NOTE := "Split an OR into one rule per branch — in this grammar, rules ARE the or."
+	## A hard iteration bound. The termination argument below ("each pass removes
+	## one OR") holds only for ACYCLIC input, which is all JSON.parse can produce —
+	## but the repair is reachable from in-engine callers too, and a self-referencing
+	## branch spins forever with no growth for the cap to catch. Measured: EC=124.
+	const MAX_PASSES := 4096
 	var notes: Array[String] = []
+	var capped: bool = false
+	var capped_reason: String = ""
+	var passes: int = 0
 	var i: int = 0
 	while i < rules.size():
+		passes += 1
+		if passes > MAX_PASSES:
+			capped = true
+			capped_reason = "after %d passes" % MAX_PASSES
+			break
 		var rule = rules[i]
-		i += 1
 		if typeof(rule) != TYPE_DICTIONARY:
+			i += 1
 			continue
 		var conds: Array = rule.get("conditions", [])
 		var at: int = -1
@@ -1109,15 +1126,30 @@ func _expand_or_conditions(rules: Array, types: Dictionary) -> Array[String]:
 			if at != -1:
 				break
 		if at == -1:
+			i += 1
+			continue
+		if rules.size() + branches.size() - 1 > MAX_EXPANDED_RULES:
+			capped = true
+			if capped_reason == "":
+				capped_reason = "at %d rules" % MAX_EXPANDED_RULES
+			i += 1
 			continue
 		conds.remove_at(at)
 		conds.insert(at, branches[0])
-		notes.append("Split an OR into one rule per branch — in this grammar, rules ARE the or.")
+		if not notes.has(SPLIT_NOTE):
+			notes.append(SPLIT_NOTE)
+		var ins: int = i + 1
 		for extra in branches.slice(1):
 			var clone: Dictionary = rule.duplicate(true)
 			(clone["conditions"] as Array)[at] = extra
-			rules.insert(i, clone)
-			i += 1
+			rules.insert(ins, clone)
+			ins += 1
+		## DELIBERATELY NOT ADVANCING i — the same rule may carry another OR, and
+		## the old loop skipped past every clone it inserted so only the first was
+		## ever expanded. Each pass removes one OR, which terminates for ACYCLIC
+		## input only; MAX_PASSES above is what makes that unconditional.
+	if capped:
+		notes.append("Stopped splitting ORs %s — the rest were left as written." % capped_reason)
 	return notes
 
 

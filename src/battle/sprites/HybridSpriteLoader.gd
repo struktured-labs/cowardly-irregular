@@ -567,6 +567,14 @@ static func retimed_fps(base_fps: float, frames: int, base_frames: int) -> float
 ##
 ## Returns the base fps unchanged whenever there is nothing to match against — an undressed
 ## sheet, an equal frame count, or a base sheet that is not on disk.
+## Long Celebration strips (11 frames at sheet 8 fps = 1.375s) must take ≥2.4s so the flourish is readable.
+static func victory_fps(frame_count: int, base_fps: float) -> float:
+	const MIN_SEC := 2.4
+	if frame_count < 8:
+		return base_fps
+	return minf(base_fps, float(frame_count) / MIN_SEC)
+
+
 static func dressed_fps(base_fps: float, sheet_path: String, base_sheet: String, frames: int, frame_width: int) -> float:
 	if sheet_path == base_sheet or frames <= 0 or frame_width <= 0:
 		return base_fps
@@ -609,8 +617,10 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 		var frame_count = texture.get_width() / frame_width
 
 		sprite_frames.add_animation(anim_name)
-		sprite_frames.set_animation_speed(anim_name,
-			dressed_fps(float(sheet_data.get("fps", 8)), sheet_path, base_sheet, int(frame_count), int(frame_width)))
+		var fps: float = dressed_fps(float(sheet_data.get("fps", 8)), sheet_path, base_sheet, int(frame_count), int(frame_width))
+		if anim_name == "victory":
+			fps = victory_fps(int(frame_count), fps)
+		sprite_frames.set_animation_speed(anim_name, fps)
 		# Rest poses loop (weak breathes like idle); action anims play once so animation_finished fires
 		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "victory", "weak"])
 

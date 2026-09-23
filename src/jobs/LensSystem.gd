@@ -11,10 +11,10 @@ extends Node
 ##
 ## Pipeline: defeat a masterite of axis X -> recipe X unlocks -> gather materials -> craft -> equip.
 ##
-## Deliberately NOT stored in passives.json. AbilitiesMenu.gd:116 stubs its learned check with
-## `or true`, so every passive listed there is equippable by anyone with no gate — which would
-## hand out Lenses for free. Lenses keep their own inventory and their own equip surface, and
-## expose mods in PassiveSystem's exact vocabulary so battle code can compose the two.
+## Deliberately NOT stored in passives.json. Lenses keep their own craft-gated inventory and
+## their own equip surface, and expose mods in PassiveSystem's exact vocabulary so battle
+## code can compose the two. Riding the passives catalog would still be the wrong acquisition
+## model even after AbilitiesMenu honors learned_passives.
 
 signal recipe_unlocked(axis: String)
 signal lens_crafted(axis: String)

@@ -44,15 +44,11 @@ const DURATION_CLAIM := "(?i)for (\\d+|one|two|three|multiple) turns?|\\ball inc
 ## Admits the charge is spent once.
 const SINGLE_USE := "(?i)\\bnext\\b|\\bone (hit|spell|attack)\\b|\\bonce\\b|\\bfirst\\b|\\bsingle\\b|\\boutright\\b"
 
-## stun is consumed-on-use too, and time_stop (duration 2) / infinite_loop
-## (duration 3) both advertise multiple turns. NOT rewritten and NOT guarded:
-## unlike barrier/magic_block/invisible — each of which has a comment stating the
-## single-use intent — stun clears with no tick-down and no justification, while
-## `cannot_act` twelve lines below it explicitly consumes one unit of duration per
-## turn skipped. That reads as a mechanical defect, not a design choice. Editing
-## the prose to "one turn" would launder a probable bug into canon and erase the
-## evidence. cowir-battle owns whether stun should honour duration.
-const UNRESOLVED := ["stun"]
+## stun used to clear on the first skipped turn, so time_stop (duration 2) and
+## infinite_loop (duration 3) advertised turns they did not deliver. The skip
+## consumer now ticks status_durations, so those claims are true and stun is not
+## in the consumed set. If it goes back to an immediate clear, the guard below
+## fails on those two descriptions — do not carve it out again.
 
 
 func _abilities() -> Dictionary:
@@ -74,8 +70,12 @@ func _consumed_statuses() -> Dictionary:
 		var window := ""
 		for j in range(i, mini(i + 8, lines.size())):
 			window += lines[j] + "\n"
-		if window.contains("remove_status(\"%s\")" % s):
-			out[s] = true
+		if not window.contains("remove_status(\"%s\")" % s):
+			continue
+		# A duration tick in the same block is timed, not spent on first use.
+		if window.contains("status_durations.get(\"%s\"" % s) or window.contains("status_durations[\"%s\"]" % s):
+			continue
+		out[s] = true
 	return out
 
 
@@ -87,6 +87,7 @@ func test_control_both_sides_are_non_empty() -> void:
 	assert_gt(consumed.size(), 4, "must derive consumed-on-use statuses from BattleManager — 0 makes the guard vacuous: %s" % [consumed.keys()])
 	for s in ["barrier", "magic_block", "invisible"]:
 		assert_true(consumed.has(s), "%s must still be consumed-on-use — if it now ticks down, its abilities may advertise duration again" % s)
+	assert_false(consumed.has("stun"), "stun ticks authored duration on each skipped turn — an immediate clear makes time_stop and infinite_loop lie")
 
 	var ab := _abilities()
 	assert_gt(ab.size(), 50, "abilities.json must parse with a real corpus")
@@ -150,7 +151,7 @@ func test_consumed_effects_do_not_advertise_duration_alone() -> void:
 		if not (v is Dictionary):
 			continue
 		var e: String = str(v.get("effect", ""))
-		if not consumed.has(e) or e in UNRESOLVED:
+		if not consumed.has(e):
 			continue
 		var d: String = str(v.get("description", ""))
 		if dur.search(d) != null and single.search(d) == null:
@@ -161,12 +162,18 @@ func test_consumed_effects_do_not_advertise_duration_alone() -> void:
 		+ "budgets MP against it. Say what one charge buys: %s" % [liars])
 
 
-## SELF-DESTRUCTING EXCLUSION. The moment stun honours its duration, this fails and
-## whoever fixed it must delete the exclusion — so the carve-out cannot outlive its
-## reason, and cannot be quietly widened.
-func test_stun_exclusion_still_has_a_reason() -> void:
-	assert_eq(UNRESOLVED, ["stun"], "the carve-out is one status with a written reason — "
-		+ "adding another means editing this assertion and saying why")
-	assert_true(_consumed_statuses().has("stun"), "stun now ticks down instead of clearing on the "
-		+ "first skipped turn, so time_stop's \"2 turns\" and infinite_loop's \"multiple turns\" "
-		+ "became TRUE. Remove \"stun\" from UNRESOLVED and let the guard cover it.")
+## These two descriptions are the reason the guard must see stun. They claim turns
+## and do not admit single use, so an immediate clear would land them in the liar list.
+func test_stun_duration_claims_are_what_the_guard_watches() -> void:
+	var dur := RegEx.new()
+	assert_eq(dur.compile(DURATION_CLAIM), OK)
+	var single := RegEx.new()
+	assert_eq(single.compile(SINGLE_USE), OK)
+	var ab := _abilities()
+	for id in ["time_stop", "infinite_loop"]:
+		var v: Dictionary = ab[id]
+		var d: String = str(v.get("description", ""))
+		assert_eq(str(v.get("effect", "")), "stun", "%s must still apply stun" % id)
+		assert_true(dur.search(d) != null, "%s must still advertise a multi-turn stun: %s" % [id, d])
+		assert_null(single.search(d), "%s must not also admit single use, or a one-shot clear would pass the guard: %s" % [id, d])
+	assert_false(_consumed_statuses().has("stun"), "stun ticks its duration, so those claims are true and the guard stays green")

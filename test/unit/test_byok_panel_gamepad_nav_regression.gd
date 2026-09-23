@@ -24,26 +24,31 @@ func test_initial_focus_lands_on_first_field() -> void:
 	# Deferred grab races GUT's own UI focus under load (flaked 2026-07-18) — poll up to 10 frames; still fails loud if the panel never grabs.
 	for i in range(10):
 		await get_tree().process_frame
-		if get_viewport().gui_get_focus_owner() == p._base_url_field:
+		if get_viewport().gui_get_focus_owner() == p._provider_picker:
 			break
-	assert_eq(get_viewport().gui_get_focus_owner(), p._base_url_field,
-		"opening the panel must focus the Base URL field — gamepad users need a starting point")
+	assert_eq(get_viewport().gui_get_focus_owner(), p._provider_picker,
+		"opening the panel must focus the Provider picker — it is the first row and "
+		+ "the one that fills the three fields below it")
 
 
 func test_vertical_spine_is_wired_with_wrap() -> void:
 	var p = _make_panel()
+	assert_true(_resolves(p._provider_picker, p._provider_picker.focus_neighbor_bottom, p._base_url_field),
+		"provider ↓ base_url")
 	assert_true(_resolves(p._base_url_field, p._base_url_field.focus_neighbor_bottom, p._format_picker),
 		"base_url ↓ format")
-	assert_true(_resolves(p._format_picker, p._format_picker.focus_neighbor_bottom, p._model_field),
-		"format ↓ model")
+	assert_true(_resolves(p._format_picker, p._format_picker.focus_neighbor_bottom, p._model_picker),
+		"format ↓ model picker")
+	assert_true(_resolves(p._model_picker, p._model_picker.focus_neighbor_bottom, p._model_field),
+		"model picker ↓ custom model")
 	assert_true(_resolves(p._model_field, p._model_field.focus_neighbor_bottom, p._api_key_field),
 		"model ↓ api_key")
 	assert_true(_resolves(p._api_key_field, p._api_key_field.focus_neighbor_bottom, p._test_btn),
 		"api_key ↓ test")
-	assert_true(_resolves(p._base_url_field, p._base_url_field.focus_neighbor_top, p._save_btn),
-		"base_url ↑ wraps to save")
-	assert_true(_resolves(p._cancel_btn, p._cancel_btn.focus_neighbor_bottom, p._base_url_field),
-		"cancel ↓ wraps to base_url")
+	assert_true(_resolves(p._provider_picker, p._provider_picker.focus_neighbor_top, p._save_btn),
+		"provider ↑ wraps to save")
+	assert_true(_resolves(p._cancel_btn, p._cancel_btn.focus_neighbor_bottom, p._provider_picker),
+		"cancel ↓ wraps to provider")
 
 
 func test_button_row_is_wired_horizontally() -> void:
@@ -56,6 +61,6 @@ func test_button_row_is_wired_horizontally() -> void:
 
 func test_all_interactive_controls_accept_focus() -> void:
 	var p = _make_panel()
-	for c in [p._base_url_field, p._format_picker, p._model_field, p._api_key_field, p._test_btn, p._save_btn, p._cancel_btn]:
+	for c in [p._provider_picker, p._base_url_field, p._format_picker, p._model_picker, p._model_field, p._api_key_field, p._test_btn, p._save_btn, p._cancel_btn]:
 		assert_eq(c.focus_mode, Control.FOCUS_ALL,
 			"%s must accept keyboard+gamepad focus" % c.get_class())

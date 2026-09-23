@@ -510,9 +510,9 @@ func test_status_added_signal_fires() -> void:
 func test_status_removed_signal_fires() -> void:
 	var removed_status = [""]
 	_combatant.status_removed.connect(func(s): removed_status[0] = s)
-	_combatant.add_status("stun", 1)
+	_combatant.add_status("blind", 1)
 	_combatant.update_buff_durations()
-	assert_eq(removed_status[0], "stun", "status_removed signal should fire when status expires")
+	assert_eq(removed_status[0], "blind", "status_removed signal should fire when status expires")
 
 
 # ---- No duplicate statuses ----
@@ -553,14 +553,13 @@ func test_zero_damage_does_not_wake_sleeper() -> void:
 		"Even minimum damage (1) should wake a sleeper")
 
 
-# ---- Stun: removed after one skipped turn ----
+# ---- Stun: an explicit duration is what gets stored ----
 
 func test_stun_is_one_turn_status() -> void:
 	_combatant.add_status("stun", 1)
 	assert_true(_combatant.has_status("stun"), "Should have stun")
-	# Stun is removed by BattleManager when it skips the turn
-	# At the Combatant level, verify duration is 1
-	assert_eq(_combatant.status_durations.get("stun", 0), 1, "Stun should be 1 turn")
+	# Storage only. How many skips that buys is the skip consumer's job.
+	assert_eq(_combatant.status_durations.get("stun", 0), 1, "add_status(stun, 1) stores one point")
 
 
 # ---- Burning DOT: 8% max HP per turn ----
@@ -693,11 +692,11 @@ func test_multiple_statuses_coexist() -> void:
 
 
 func test_statuses_expire_independently() -> void:
-	_combatant.add_status("stun", 1)
+	_combatant.add_status("blind", 1)
 	_combatant.add_status("poison", 3)
 
 	_combatant.update_buff_durations()
-	assert_false(_combatant.has_status("stun"), "Stun (1 turn) should expire")
+	assert_false(_combatant.has_status("blind"), "Blind (1 turn) should expire")
 	assert_true(_combatant.has_status("poison"), "Poison (3 turns) should persist")
 
 

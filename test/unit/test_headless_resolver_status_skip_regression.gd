@@ -29,8 +29,45 @@ func test_stun_skips_the_turn_and_is_consumed() -> void:
 	var resolver = HeadlessBattleResolver.new()
 	var c = _make_combatant("Stunned")
 	c.add_status("stun")
+	assert_eq(int(c.status_durations.get("stun", 0)), 3, "add_status default duration is 3")
 	assert_eq(resolver._check_status_skip(c), "skip", "Stun must skip the turn")
-	assert_false(c.has_status("stun"), "Stun is consumed by the check, not left to re-fire next round")
+	assert_true(c.has_status("stun"), "Default stun lasts 3 skips — one skip decrements, it does not clear")
+	assert_eq(int(c.status_durations.get("stun", 0)), 2, "One skip spends one point of a 3-point stun")
+
+
+func test_stun_duration_one_clears_on_the_first_skip() -> void:
+	var resolver = HeadlessBattleResolver.new()
+	var c = _make_combatant("Stunned")
+	c.add_status("stun", 1)
+	assert_eq(resolver._check_status_skip(c), "skip", "Duration 1 still skips the turn")
+	assert_false(c.has_status("stun"), "Duration 1 is spent by the skip that uses it")
+	assert_false(c.status_durations.has("stun"), "Removing stun clears its duration entry")
+
+
+func test_stun_duration_two_survives_one_skip_then_clears() -> void:
+	var resolver = HeadlessBattleResolver.new()
+	var c = _make_combatant("Stunned")
+	c.add_status("stun", 2)
+	assert_eq(resolver._check_status_skip(c), "skip")
+	assert_true(c.has_status("stun"), "Duration 2 survives the first skip")
+	assert_eq(int(c.status_durations.get("stun", 0)), 1)
+	assert_eq(resolver._check_status_skip(c), "skip", "Still stunned on the second action")
+	assert_false(c.has_status("stun"), "The second skip spends the last point")
+
+
+func test_round_start_end_turn_does_not_spend_a_stun_point() -> void:
+	# Live rounds call end_turn before the skip. If that tick also spent stun,
+	# duration 2 would collapse back to a single skip.
+	var resolver = HeadlessBattleResolver.new()
+	var c = _make_combatant("Stunned")
+	c.add_status("stun", 2)
+	c.end_turn()
+	assert_eq(int(c.status_durations.get("stun", 0)), 2, "end_turn ticks other statuses; stun's clock is the skip")
+	assert_eq(resolver._check_status_skip(c), "skip")
+	assert_eq(int(c.status_durations.get("stun", 0)), 1)
+	c.end_turn()
+	assert_eq(resolver._check_status_skip(c), "skip")
+	assert_false(c.has_status("stun"), "Duration 2 is two skips even with a round boundary between them")
 
 
 func test_confusion_never_returns_a_silent_skip() -> void:

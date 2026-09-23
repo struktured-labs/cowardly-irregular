@@ -1751,6 +1751,9 @@ func _on_title_new_game() -> void:
 	BattleSceneScript._battle_speed_index = 0
 	if SaveSystem and SaveSystem.has_method("save_settings"):
 		SaveSystem.save_settings()
+	## A latched grind meter survives the clean emit: the renderer takes max(stale_grind, 0) and tweens the new game back up.
+	if SoundManager and SoundManager.has_method("reset_corruption"):
+		SoundManager.reset_corruption()
 	# Wipe persistent GameState so a fresh playthrough doesn't inherit
 	# story flags / unlocked worlds / meta features from the prior session.
 	# Bug fix (2026-04-30): pre-fix, New Game on a save where you'd beaten
@@ -5808,10 +5811,13 @@ func _stop_autogrind(reason: String) -> void:
 	if BattleManager.battle_ended.is_connected(_on_autogrind_battle_ended):
 		BattleManager.battle_ended.disconnect(_on_autogrind_battle_ended)
 
-	# Stop controller
+	# Stop controller. grind_complete runs re-entrantly and nulls this field; queue_free on the null aborts the rest, including the bed restore.
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
-		_autogrind_controller.stop_grind(reason)
-		_autogrind_controller.queue_free()
+		var controller := _autogrind_controller
+		controller.stop_grind(reason)
+		if _autogrind_controller == null or not is_instance_valid(_autogrind_controller):
+			return
+		controller.queue_free()
 		_autogrind_controller = null
 
 	# Update UI state
@@ -6292,6 +6298,11 @@ func _on_grind_complete(reason: String) -> void:
 	## route, so fixing only the other one leaves this one live.
 	BattleManager.turbo_mode = false
 	Engine.time_scale = 1.0
+	## Hoisted with the globals: stop_grind emits this synchronously, then _stop_autogrind's own restore sits past a null deref and never runs. Natural ends (HP, wipe, collapse) never entered _stop_autogrind at all, so the autogrind bed and its detune stayed up.
+	if SoundManager:
+		SoundManager.reset_corruption()
+		var area_key: String = _derive_current_scene_music_key()
+		SoundManager.play_area_music(area_key if area_key != "" else _current_map_id)
 	current_state = LoopState.EXPLORATION
 	InputLockManager.pop_all()  # Clear any leaked locks
 

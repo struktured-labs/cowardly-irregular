@@ -88,7 +88,9 @@ LIVE = "src/battle/BattleManager.gd"
 # live and absent from the grind. If either reads the wrong way the reader is broken and no
 # result is printed — a table that cannot distinguish these two says nothing.
 CONTROL_BOTH = "lullaby"
-CONTROL_GAP = "guardian_wall"
+# A gap BY CONSTRUCTION, not a current one: pinning `guardian_wall` as a live gap red the selftest
+# the day the grind learned `barrier` (76394cfd5) — a control that reds when a bug is fixed.
+CONTROL_GAP_EFFECT = "barrier"
 # Effects, not abilities: the composed-key reader is pinned on live's side alone, so these stay
 # true whichever way the grind half is resolved.
 CONTROL_COMPOSED = "taunt"   # live writes `taunted_<caster>`, not `taunt`
@@ -265,10 +267,15 @@ def selftest():
     ok &= good
     print(f"  {'PASS' if good else 'FAIL'}  an effect both engines name reads `both`: {CONTROL_BOTH}")
 
-    gap = rows.get(CONTROL_GAP)
-    good = gap is not None and gap[3].startswith("GAP")
+    # Real live reader, real classifier, a grind with the effect stripped: a gap by construction.
+    live_src_g = code_only(read(LIVE))
+    grind_minus = code_only(read(GRIND)).replace(f'"{CONTROL_GAP_EFFECT}"', "")
+    live_g = live_handling(CONTROL_GAP_EFFECT, live_src_g)
+    verdict = classify(CONTROL_GAP_EFFECT, live_g, grind_minus, live_src_g)
+    good = live_g == "consumes" and verdict.startswith("GAP")
     ok &= good
-    print(f"  {'PASS' if good else 'FAIL'}  live-consumes/grind-absent reads as a GAP: {CONTROL_GAP}")
+    print(f"  {'PASS' if good else 'FAIL'}  live-consumes/grind-absent reads as a GAP: "
+          f"{CONTROL_GAP_EFFECT} (live={live_g}, grind stripped -> {verdict[:24]})")
 
     # Negative: an id no preset casts must not appear. Synthesised, because the corpus may
     # one day cast everything and a check that cannot return a positive is not a check.

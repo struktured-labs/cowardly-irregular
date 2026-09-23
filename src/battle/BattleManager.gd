@@ -3508,7 +3508,12 @@ func _execute_next_action() -> void:
 
 	# Status effect behavioral checks
 	if combatant.has_status("stun"):
-		combatant.remove_status("stun")
+		# One skipped action per authored point. Round-start end_turn does not also spend stun.
+		var remaining: int = int(combatant.status_durations.get("stun", 1))
+		if remaining <= 1:
+			combatant.remove_status("stun")
+		else:
+			combatant.status_durations["stun"] = remaining - 1
 		battle_log_message.emit("[color=yellow]%s[/color] is [color=orange]stunned[/color] and cannot act!" % combatant.combatant_name)
 		action_executing.emit(combatant, {"type": "stun_skip"})
 		_execute_next_action()
@@ -7009,7 +7014,7 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_debuff("Forced Weak", "attack", fw_mod, fw_dur)
 					battle_log_message.emit("[color=magenta]✦ %s forces %s into a weak attack![/color] (ATK -%d%% for %d turns)" % [caster.combatant_name, target.combatant_name, int((1.0 - fw_mod) * 100), fw_dur])
-		## Tick 396: time_stop — applies stun to all targets for 1 turn.
+		## Tick 396: time_stop — applies stun for the ability's duration (time_stop authors 2).
 		## Time Mage's time_stop ability uses this. Stun status already
 		## has engine support (CC arm in support effects).
 		"time_stop":
