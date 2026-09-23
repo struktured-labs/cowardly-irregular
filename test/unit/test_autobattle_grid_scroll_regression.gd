@@ -129,6 +129,30 @@ func test_grid_container_position_tracks_scroll() -> void:
 		+ "and the cursor shift together")
 
 
+func test_the_selected_card_sits_above_the_legend() -> void:
+	# F12 2026-09-20: 10th rule clipped to a sliver by the help strip; yellow cursor
+	# was a stub. Scroll kept the cell inside _grid_container.size.y, but that rect
+	# ends at size.y-50 and the legend starts at size.y-48 — 2px of air, and a
+	# 10-row script's last card was truncated. The selected card's SCREEN bottom
+	# must clear the legend, not merely the clip rect.
+	var editor = _make_editor()
+	_fill_rules(editor, 10)
+	editor.cursor_row = 9
+	editor.cursor_col = 0
+	editor._update_cursor()
+	var row_stride: float = editor.CELL_HEIGHT + editor.ROW_SPACING
+	# Cells keep their local y; the container moves. Do not subtract scroll twice.
+	var screen_bottom: float = editor._grid_container.position.y + 9.0 * row_stride + editor.CELL_HEIGHT
+	var screen_top: float = editor._grid_container.position.y + 9.0 * row_stride
+	var legend_top: float = VIEW_H - 48.0
+	assert_gt(editor._scroll_offset, 0.0,
+		"10 rows at 720p overflow the grid; the last row must scroll, not sit in the 8px sliver")
+	assert_lte(screen_bottom, legend_top - 8.0,
+		"selected card bottom %s must clear the legend at %s by ≥8px (F12: cards truncated into the help strip)" % [screen_bottom, legend_top])
+	assert_gte(screen_top, editor.GRID_BASE_POS.y,
+		"selected card top must stay below the title, not scroll off the top")
+
+
 func test_max_rules_caps_or_row_growth() -> void:
 	"""_add_or_row / _insert_row_after must refuse to grow past MAX_RULES so a
 	script can't balloon unbounded. (Scrolling handles everything below the
