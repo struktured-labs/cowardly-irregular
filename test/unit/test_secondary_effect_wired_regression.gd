@@ -143,8 +143,10 @@ func test_runtime_unknown_effect_routes_to_add_status() -> void:
 		return
 	var caster: Combatant = _make("Wolf")
 	var target: Combatant = _make("Enemy")
-	# Force enemy_party so all_enemies resolution finds the target.
+	# Caster is on the player side, so all_enemies is the enemy party.
+	var players: Array[Combatant] = [caster]
 	var enemies: Array[Combatant] = [target]
+	bm.player_party = players
 	bm.enemy_party = enemies
 	var ability: Dictionary = {
 		"id": "howl_test",
