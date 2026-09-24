@@ -28,6 +28,10 @@ func test_the_piano_plays_at_its_own_pitch_whatever_ran_before() -> void:
 	assert_ne(SoundManager._ability_player.pitch_scale, 1.0,
 		"SCOPE control: the plant did not take, so the assert below cannot fail")
 	SoundManager.play_piano_melody()
+	if SoundManager.mixer_is_wedged():
+		assert_false(SoundManager.mixer_is_wedged(),
+			"mixer wedged before the piano could commit its PCM — playback never advanced, so this arm did not reach the pitch reset. The WAV commit was refused so AudioServer.lock cannot hang the suite.")
+		return
 	assert_eq(SoundManager._ability_player.pitch_scale, 1.0,
 		"the piano inherited the pitch the previous ability cue left on the shared player — it is a melody, so a stale pitch_scale detunes the tune itself, not just its colour")
 

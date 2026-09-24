@@ -1,7 +1,7 @@
 extends GutTest
 
 ## Esuna is in the DEFAULT cleric autobattle script (AutobattleSystem, three sites) and in two
-## preset templates. In a LIVE battle it clears ten ailments (BattleManager's "cleanse" arm). In a
+## preset templates. In a LIVE battle it clears the ailments in LIVE_AILMENTS (BattleManager's "cleanse" arm). In a
 ## GRIND the resolver had no arm for it, so it fell through to the generic unmodelled-effect
 ## fallback — `target.add_status(effect, duration)` — and the cleric spent 10 MP to give the ally
 ## a junk status literally named "cleanse" while the blind it was cast to cure stayed on.
@@ -11,9 +11,9 @@ extends GutTest
 ## merely no-op — it writes a status name no consumer anywhere recognises.
 
 const ResolverScript := preload("res://src/autogrind/HeadlessBattleResolver.gd")
-## BattleManager's list, duplicated deliberately: if live grows an ailment and headless does not,
-## the divergence should red HERE rather than be quietly inherited from a shared constant.
-const LIVE_AILMENTS := ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom"]
+## Expected membership of BattleManager.ESUNA_AILMENTS, the one list both engines read.
+## A shrink of that const, or a buff added to it, reds here instead of passing quietly.
+const LIVE_AILMENTS: Array[String] = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom", "silence", "pacify", "static", "memory_leak", "festered"]
 
 var _resolver: HeadlessBattleResolver
 
@@ -104,3 +104,13 @@ func test_the_grind_can_actually_inflict_what_esuna_cures() -> void:
 			inflicted.append(ailment)
 	assert_gt(inflicted.size(), 2,
 		"the grind expires fewer ailments than expected — re-check that Esuna has work to do: %s" % str(inflicted))
+
+func test_both_engines_read_one_cleanse_list() -> void:
+	assert_eq(BattleManager.ESUNA_AILMENTS, LIVE_AILMENTS,
+		"ESUNA_AILMENTS drifted from the ailments this file pins")
+	var src: String = FileAccess.get_file_as_string("res://src/autogrind/HeadlessBattleResolver.gd")
+	assert_true(src.contains("for ailment in BattleManager.ESUNA_AILMENTS"),
+		"the grind grew its own cleanse list again")
+	for buff in ["regen", "haste", "barrier", "reflect", "evasion", "invisible"]:
+		assert_false(BattleManager.ESUNA_AILMENTS.has(buff),
+			"cleanse list names a positive status: %s" % buff)

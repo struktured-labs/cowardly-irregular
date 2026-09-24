@@ -41,6 +41,7 @@ func _frames(n: int = 6) -> void:
 func _advance_ms(ms: int) -> void:
 	var deadline: int = Time.get_ticks_msec() + ms
 	while Time.get_ticks_msec() < deadline:
+		SoundManager.note_mixer_progress()
 		await get_tree().process_frame
 
 
