@@ -2078,6 +2078,10 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		stream.loop = should_loop
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
+	## A crossfade-looped bed's opening is the ending mixed over the head. Enter after that blend; the wrap still seeks to 0.
+	var blend: float = float(entry.get("loop_blend_seconds", 0.0))
+	if blend > 0.0 and _pending_resume_position < blend:
+		_pending_resume_position = blend
 	_play_parked_position()
 	_music_playing = true
 	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
@@ -2546,7 +2550,8 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 
 
 ## Where the next AREA bed should pick up. Set by play_area_music, consumed by the first
-## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head.
+## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head,
+## except one that declares loop_blend_seconds, which enters after that mix.
 var _pending_resume_position: float = 0.0
 
 ## The village an interior belongs to, supplied by BaseInterior. Only a cold start reads it: every

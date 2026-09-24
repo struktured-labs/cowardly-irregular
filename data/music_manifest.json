@@ -485,6 +485,7 @@
       "model": "suno-v4",
       "duration": 56.2,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-05-05",
       "pinned": true
     },
