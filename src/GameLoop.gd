@@ -5941,8 +5941,8 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 			if BattleManager.route_drop_to_equipment_pool(item_id):
 				for _extra in range(maxi(0, qty - 1)):
 					BattleManager.route_drop_to_equipment_pool(item_id)
-			elif party.size() > 0 and party[0].is_alive:
-				party[0].add_item(item_id, qty)
+			else:
+				BattleManager.deliver_consumable_drop(party, item_id, qty)
 		for rd in headless_rare_drops:
 			if PartyChatSystem:
 				PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")

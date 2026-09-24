@@ -9148,8 +9148,7 @@ func _deliver_item(item_id: String, item_drops: Array) -> void:
 	# leaving equipment as unusable lore items.
 	var routed_as_equipment = _route_drop_to_equipment_pool(item_id)
 	if not routed_as_equipment:
-		if player_party.size() > 0 and player_party[0].is_alive:
-			player_party[0].add_item(item_id)
+		deliver_consumable_drop(player_party, item_id)
 	# Track for display via shared resolver (tick 135).
 	var item_name = ItemNameResolver.resolve(item_id)
 	# Merge duplicates
@@ -9158,6 +9157,12 @@ func _deliver_item(item_id: String, item_drops: Array) -> void:
 			existing["qty"] += 1
 			return
 	item_drops.append({"item": item_id, "name": item_name, "qty": 1})
+
+
+## The leader holds the party's bag whether KO'd or not. An alive-gate here dropped every consumable, one-shot key items included, won while the leader was down, and the victory screen still listed it.
+func deliver_consumable_drop(party: Array, item_id: String, qty: int = 1) -> void:
+	if party.size() > 0 and party[0] != null and is_instance_valid(party[0]) and qty > 0:
+		party[0].add_item(item_id, qty)
 
 
 func _route_drop_to_equipment_pool(item_id: String) -> bool:
