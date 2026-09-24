@@ -5883,6 +5883,28 @@ func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
 	await _start_autogrind_battle(enemies)
 
 
+func _combatant_for_headless(data: Dictionary) -> Combatant:
+	var enemy := Combatant.new()
+	var stats: Dictionary = data.get("stats", {})
+	enemy.initialize({
+		"name": data.get("name", "Enemy"),
+		"max_hp": stats.get("max_hp", 50),
+		"max_mp": stats.get("max_mp", 20),
+		"attack": stats.get("attack", 10),
+		"defense": stats.get("defense", 8),
+		"magic": stats.get("magic", 5),
+		# Codex prints magic_defense; dropping the key makes the fight use defense/2.
+		"magic_defense": stats.get("magic_defense", int(stats.get("defense", 8) * 0.5)),
+		"speed": stats.get("speed", 8)
+	})
+	# Live spawns (BattleEnemySpawner) always set this; its absence here silently
+	# no-opped bestiary defeat-credit AND drop lookup for the whole ludicrous path.
+	var mtype: String = str(data.get("id", ""))
+	if mtype != "":
+		enemy.set_meta("monster_type", mtype)
+	return enemy
+
+
 func _resolve_headless_battle(enemy_data: Array) -> void:
 	var resolver = HeadlessBattleResolver.new()
 	## _on_grind_battle_requested stored the terrain one frame up; only the live branch was reading it.
@@ -5893,23 +5915,7 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 
 	var enemies: Array = []
 	for data in enemy_data:
-		var enemy = Combatant.new()
-		var stats = data.get("stats", {})
-		enemy.initialize({
-			"name": data.get("name", "Enemy"),
-			"max_hp": stats.get("max_hp", 50),
-			"max_mp": stats.get("max_mp", 20),
-			"attack": stats.get("attack", 10),
-			"defense": stats.get("defense", 8),
-			"magic": stats.get("magic", 5),
-			"speed": stats.get("speed", 8)
-		})
-		# Live spawns (BattleEnemySpawner) always set this; its absence here silently
-		# no-opped bestiary defeat-credit AND drop lookup for the whole ludicrous path.
-		var mtype: String = str(data.get("id", ""))
-		if mtype != "":
-			enemy.set_meta("monster_type", mtype)
-		enemies.append(enemy)
+		enemies.append(_combatant_for_headless(data))
 
 	var result = resolver.resolve_battle(party, enemies)
 	## cowir-autogrind: the resolver has set termination_reason since cadence #19 and nothing read it.
