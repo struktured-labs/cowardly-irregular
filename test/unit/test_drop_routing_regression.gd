@@ -62,8 +62,8 @@ func test_drop_routing_called_before_add_item_fallback() -> void:
 	var src = _src(BM_PATH)
 	# Find the routing block — must check equipment FIRST, fall back to add_item.
 	var route_idx = src.find("_route_drop_to_equipment_pool(item_id)")
-	var add_idx = src.find("player_party[0].add_item(item_id)")
+	var add_idx = src.find("deliver_consumable_drop(player_party, item_id)")
 	assert_gt(route_idx, -1, "Drop routing must call _route_drop_to_equipment_pool")
-	assert_gt(add_idx, -1, "Drop routing must still have an add_item fallback for consumables")
+	assert_gt(add_idx, -1, "Drop routing must still have a consumable fallback (deliver_consumable_drop)")
 	assert_lt(route_idx, add_idx,
 		"Equipment routing must be CHECKED before falling back to add_item (else equipment lands in inventory dict)")
