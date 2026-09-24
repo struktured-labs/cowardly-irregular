@@ -95,12 +95,19 @@ func test_a_failed_attempt_does_not_park_a_position_for_the_next_track() -> void
 	## manifest attempt CONSUMES it. So the leak lands inside the same call, as a fallback bed
 	## that starts 30 s in. Measured with the clear removed: pos 30.00 against 0.00 shipped.
 	assert_true(SoundManager._music_player.playing, "CONTROL: the fallback bed is playing at all")
-	assert_lt(SoundManager._music_player.get_playback_position(), 1.0,
+	## The fallback is the world battle bed. Its own loop_blend_seconds (4s on battle_medieval)
+	## is an entry offset, not the 30s this attempt parked. The leak lands at that 30.
+	assert_lt(SoundManager._music_player.get_playback_position(), 8.0,
 		"the fallback bed started at %.2f s — a failed attempt's parked resume position was eaten by the track that replaced it" % SoundManager._music_player.get_playback_position())
 
 
 func test_a_plain_call_still_starts_at_the_beginning() -> void:
+	SoundManager._load_music_manifest()
+	var blend: float = float((SoundManager._music_manifest[BED] as Dictionary).get("loop_blend_seconds", 0.0))
 	SoundManager.play_music(BED)
 	await get_tree().process_frame
-	assert_lt(SoundManager._music_player.get_playback_position(), 0.5,
-		"play_music with no resume_at must start at 0")
+	var pos: float = SoundManager._music_player.get_playback_position()
+	assert_gte(pos, blend - 0.05,
+		"play_music with no resume_at opened at %.2f s, before the bed's entry %.1f" % [pos, blend])
+	assert_lt(pos, blend + 0.5,
+		"play_music with no resume_at must start at the bed's entry (%.1f), got %.2f" % [blend, pos])

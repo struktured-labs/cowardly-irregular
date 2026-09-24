@@ -11,6 +11,7 @@
       "model": "suno-v4",
       "duration": 182.4,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21",
       "pinned": true
     },
@@ -37,6 +38,7 @@
       "model": "suno-v4",
       "duration": 121.9,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21",
       "pinned": true
     },
@@ -50,6 +52,7 @@
       "model": "suno-v4",
       "duration": 103.8,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21",
       "pinned": true
     },
@@ -63,6 +66,7 @@
       "model": "suno-v4",
       "duration": 141.5,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21"
     },
     "boss_rat_king": {
@@ -75,6 +79,7 @@
       "model": "suno-v4",
       "duration": 119.7,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-08-26"
     },
     "overworld_suburban": {
@@ -138,6 +143,7 @@
       "model": "suno-v4",
       "duration": 136.7,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21",
       "pinned": true
     },
@@ -151,6 +157,7 @@
       "model": "suno-v4",
       "duration": 116.9,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21",
       "pinned": true
     },
@@ -164,6 +171,7 @@
       "model": "suno-v4",
       "duration": 158.0,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21"
     },
     "village_steampunk": {
@@ -176,6 +184,7 @@
       "model": "suno-v4",
       "duration": 76.1,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21",
       "pinned": true
     },
@@ -241,6 +250,7 @@
       "model": "suno-v4",
       "duration": 140.3,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21"
     },
     "overworld_digital": {
@@ -266,6 +276,7 @@
       "model": "suno-v4",
       "duration": 132.3,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21",
       "pinned": true
     },
@@ -304,6 +315,7 @@
       "model": "suno-v4",
       "duration": 134.1,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21",
       "pinned": true
     },
@@ -330,6 +342,7 @@
       "model": "suno-v4",
       "duration": 192.0,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21"
     },
     "victory": {
@@ -485,6 +498,7 @@
       "model": "suno-v4",
       "duration": 56.2,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-05-05",
       "pinned": true
     },
@@ -524,6 +538,7 @@
       "model": "suno-v4",
       "duration": 138.0,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-03-21",
       "pinned": true
     },
@@ -676,6 +691,7 @@
       "model": "suno-v4",
       "duration": 92.7,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "boss_curator_suburban": {
@@ -688,6 +704,7 @@
       "model": "suno-v4",
       "duration": 70.4,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "boss_warden_steampunk": {
@@ -700,6 +717,7 @@
       "model": "suno-v4",
       "duration": 131.9,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "boss_tempo_steampunk": {
@@ -712,6 +730,7 @@
       "model": "suno-v4",
       "duration": 102.3,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "boss_warden_industrial": {
@@ -724,6 +743,7 @@
       "model": "suno-v4",
       "duration": 117.6,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "boss_arbiter_industrial": {
@@ -736,6 +756,7 @@
       "model": "suno-v4",
       "duration": 82.1,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "boss_tempo_industrial": {
@@ -748,6 +769,7 @@
       "model": "suno-v4",
       "duration": 147.6,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "boss_curator_industrial": {
@@ -772,6 +794,7 @@
       "model": "suno-v4",
       "duration": 156.4,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "boss_arbiter_digital": {
@@ -784,6 +807,7 @@
       "model": "suno-v4",
       "duration": 96.0,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "boss_tempo_digital": {
@@ -808,6 +832,7 @@
       "model": "suno-v4",
       "duration": 125.4,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "boss_warden_abstract": {
@@ -856,6 +881,7 @@
       "model": "suno-v4",
       "duration": 81.5,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "cutscene_w1_conscription": {
@@ -868,6 +894,7 @@
       "model": "suno-v4",
       "duration": 105.0,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "cutscene_w1_warden_farewell": {
@@ -880,6 +907,7 @@
       "model": "suno-v4",
       "duration": 151.6,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "cutscene_w1_mordaine_dissolution": {
@@ -904,6 +932,7 @@
       "model": "suno-v4",
       "duration": 55.0,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "cutscene_w2_coordinator_memo": {
@@ -928,6 +957,7 @@
       "model": "suno-v4",
       "duration": 105.1,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "cutscene_w3_calibrant_revealed": {
@@ -988,6 +1018,7 @@
       "model": "suno-v4",
       "duration": 157.5,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-13"
     },
     "cutscene_w5_deprecated_goblin": {
@@ -1120,6 +1151,7 @@
       "model": "suno-v4",
       "duration": 140.0,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-14"
     },
     "cutscene_w6_epilogue": {
@@ -1132,6 +1164,7 @@
       "model": "suno-v4",
       "duration": 200.9,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-14"
     },
     "cutscene_alt_witness_lament": {
@@ -1156,6 +1189,7 @@
       "model": "suno-v4",
       "duration": 120.3,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-14"
     },
     "ambient_cave": {
@@ -1240,6 +1274,7 @@
       "model": "suno-v4",
       "duration": 192.9,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-14"
     },
     "stinger_level_up": {
@@ -1369,6 +1404,7 @@
       "model": "suno-v4",
       "duration": 117.3,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-08",
       "pinned": true
     },
@@ -1699,6 +1735,7 @@
       "model": "suno-v4",
       "duration": 81.5,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-18"
     },
     "village_brasston": {
@@ -1771,6 +1808,7 @@
       "model": "suno-v4",
       "duration": 136.7,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-18"
     },
     "credits_steampunk": {
@@ -1783,6 +1821,7 @@
       "model": "suno-v4",
       "duration": 109.6,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-18"
     },
     "credits_industrial": {
@@ -1807,6 +1846,7 @@
       "model": "suno-v4",
       "duration": 78.1,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-18"
     },
     "credits_abstract": {
@@ -1843,6 +1883,7 @@
       "model": "suno-v4",
       "duration": 123.0,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-04-18"
     },
     "boss_phase2_tempo": {
@@ -2019,6 +2060,7 @@
       "model": "suno-v4",
       "duration": 159.0,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-08-27"
     },
     "battle_new_age_retro_hippie": {
@@ -2055,6 +2097,7 @@
       "model": "suno-v4",
       "duration": 74.6,
       "loop": true,
+      "loop_blend_seconds": 4.0,
       "generated_at": "2026-08-27"
     },
     "battle_skate_punk": {

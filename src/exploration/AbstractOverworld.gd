@@ -464,6 +464,8 @@ func _generate_map() -> void:
 	spawn_points["from_futuristic"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 32 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from The Vertex village (center, near The Question)
 	spawn_points["vertex_entrance"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	# VertexApex.overworld_exit_spawn is "apex". A missing key left the player on the south entrance.
+	spawn_points["apex"] = Vector2(16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 4 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:

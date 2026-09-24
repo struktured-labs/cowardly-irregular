@@ -46,6 +46,8 @@ func test_first_primary_job_fork_uses_full_recalc_not_raw_caps() -> void:
 		"the fork must carry the equipped weapon into the new combo")
 	var oracle := _oracle("mage", "rogue")
 	_assert_oracle_beats_raw_and_ablations(oracle, "mage", "rogue")
+	# Setup assign now equips the job's passive roster, and the fork restores that bar.
+	_match_equipped_passives(oracle, c)
 	_assert_stats(c, oracle)
 	assert_ne(c.magic_defense, stale_mdf,
 		"magic_defense was left on the previous job — _apply_job_stats never writes it, only recalculate_stats does")
@@ -71,6 +73,8 @@ func test_first_secondary_job_fork_keeps_lend_and_does_not_heal() -> void:
 	assert_true(c.job_profiles.has("fighter:mage"), "first secondary must fork")
 	var oracle := _oracle("fighter", "mage")
 	_assert_oracle_beats_raw_and_ablations(oracle, "fighter", "mage")
+	# Setup assign now equips the job's passive roster, and the fork restores that bar.
+	_match_equipped_passives(oracle, c)
 	_assert_stats(c, oracle)
 	assert_eq(c.current_hp, wounded_hp, "secondary assign must not heal HP")
 	assert_eq(c.current_mp, wounded_mp, "secondary assign must not heal MP")
@@ -90,6 +94,8 @@ func test_first_secondary_clear_fork_drops_the_lent_stats() -> void:
 	assert_true(c.job_profiles.has("fighter:"), "clearing onto a new key must fork")
 	var oracle := _oracle("fighter", "")
 	_assert_oracle_beats_raw_and_ablations(oracle, "fighter", "")
+	# Setup assign now equips the job's passive roster, and the fork restores that bar.
+	_match_equipped_passives(oracle, c)
 	_assert_stats(c, oracle)
 	assert_lt(c.magic, lent_magic, "clearing the secondary must give back the magic it lent")
 	assert_eq(c.current_hp, wounded_hp, "clearing a secondary must not heal")
@@ -138,6 +144,11 @@ func _assert_oracle_beats_raw_and_ablations(oracle: Combatant, primary_id: Strin
 	if secondary_id != "":
 		var solo: Combatant = _oracle(primary_id, "", LEVEL, WEAPON)
 		assert_gt(oracle.magic, solo.magic, "oracle magic is missing the secondary lend")
+
+
+func _match_equipped_passives(oracle: Combatant, subject: Combatant) -> void:
+	oracle.equipped_passives = subject.equipped_passives.duplicate()
+	oracle.recalculate_stats()
 
 
 func _assert_stats(c: Combatant, oracle: Combatant) -> void:

@@ -14,9 +14,10 @@ extends GutTest
 ## and for every pause-menu open and cutscene that captures and restores.
 ##
 ## ⛔ AREA BEDS ONLY, AND THAT IS THE DESIGN RATHER THAN A LIMIT. A battle or victory track must
-## start at its head — those are dramatic cues, not a place you were. The position is parked by
-## `play_area_music` and consumed by the first manifest start after it, so `play_music` never sees
-## one.
+## start at its own entry, not at the field's position — those are dramatic cues, not a place you
+## were. A bed that declares loop_blend_seconds enters after that mix; that offset is its entry,
+## and it is not the parked field position. The position is parked by `play_area_music` and
+## consumed by the first manifest start after it, so `play_music` never sees one.
 
 const AREA := "overworld"
 const SELF_PATH := "res://test/unit/test_the_field_bed_picks_up_where_it_left_off.gd"
@@ -98,10 +99,17 @@ func test_a_battle_bed_still_starts_at_its_head() -> void:
 	assert_gt(SoundManager._music_player.get_playback_position(), 0.3,
 		"CONTROL: the restore resumed, so a position was parked AND consumed")
 
+	var area_pos: float = float(state.get("position", 0.0))
 	SoundManager.play_music("battle_medieval")
 	await _frames(10)
-	assert_lt(SoundManager._music_player.get_playback_position(), 0.5,
-		"the battle bed opened at %.2f s — a parked area position leaked into a dramatic cue" % SoundManager._music_player.get_playback_position())
+	var opened: float = SoundManager._music_player.get_playback_position()
+	var blend: float = float((SoundManager._music_manifest["battle_medieval"] as Dictionary).get("loop_blend_seconds", 0.0))
+	assert_gt(area_pos, blend + 0.4,
+		"CONTROL: the field was at %.2f s, past battle_medieval's own entry %.1f — a leak and a fold start must not look the same" % [area_pos, blend])
+	assert_gte(opened, blend - 0.05,
+		"the battle bed opened at %.2f s, before its own entry %.1f" % [opened, blend])
+	assert_lt(opened, blend + 0.5,
+		"the battle bed opened at %.2f s — a parked area position (%.2f) leaked into a dramatic cue" % [opened, area_pos])
 
 
 func test_a_resume_at_the_wrap_restarts_instead_of_stuttering() -> void:
@@ -129,8 +137,12 @@ func test_a_negative_position_never_reaches_the_player() -> void:
 	SoundManager.play_area_music(AREA, -12.0)
 	await _frames(14)
 	assert_true(SoundManager._music_player.playing, "a negative position must start the bed at its head, not refuse to play")
-	assert_lt(SoundManager._music_player.get_playback_position(), 2.0,
-		"the player reports %.2f s — a negative seek reached AudioStreamPlayer.play()" % SoundManager._music_player.get_playback_position())
+	var opened: float = SoundManager._music_player.get_playback_position()
+	var blend: float = float((SoundManager._music_manifest["overworld_medieval"] as Dictionary).get("loop_blend_seconds", 0.0))
+	assert_gte(opened, blend - 0.05,
+		"a negative seek opened at %.2f s, before the bed's entry %.1f" % [opened, blend])
+	assert_lt(opened, blend + 2.0,
+		"the player reports %.2f s — a negative seek reached AudioStreamPlayer.play()" % opened)
 
 func test_the_members_this_file_reaches_still_exist() -> void:
 	## THE FILE IS LOUD ON A RENAME BY ARM ORDER, NOT BY CONSTRUCTION. Measured 2026-09-16,
