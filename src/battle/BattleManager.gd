@@ -280,6 +280,8 @@ var _all_out_attack_this_battle: bool = false    # The party used a pooled group
 
 ## Battle results (populated in end_battle before signal, cleared on next battle)
 var _battle_results: Dictionary = {}  # {exp_per_char: int, bonuses: Array, char_results: Array}
+## Visual autogrind records EXP and gold here but does not pay them — on_battle_victory is that battle's payer. One-shot; end_battle clears it.
+var defer_victory_payout: bool = false
 
 ## Permanent injury tracking — party members who were KO'd during battle
 var _ko_this_battle: Array[Combatant] = []
@@ -540,6 +542,8 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# Reset autobattle tracking
 	_full_autobattle = true
 	_autobattle_player_turns = 0
+	# A leftover defer from a grind that never reached end_battle must not skip a normal fight's pay.
+	defer_victory_payout = false
 	_manual_player_turns = 0
 	_c3_nonbasic_used = false
 	_c3_clutch_crit = false
@@ -780,9 +784,33 @@ func _c3_underleveled_win() -> bool:
 	return max_enemy > 0 and float(max_enemy) - avg_party >= 3.0
 
 
+## True when on_battle_victory will pay this win. No GameLoop honors the flag alone; a stopped or disconnected grind pays here so the fight is not lost.
+func _defer_victory_payout() -> bool:
+	if not defer_victory_payout:
+		return false
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl == null:
+		return true
+	if not ("_is_autogrinding" in gl) or not bool(gl._is_autogrinding):
+		return false
+	if not gl.has_method("_on_autogrind_battle_ended"):
+		return false
+	if not battle_ended.is_connected(gl._on_autogrind_battle_ended):
+		return false
+	var ctrl: Variant = gl.get("_autogrind_controller")
+	if ctrl == null or not is_instance_valid(ctrl):
+		return false
+	if "_current_battle_is_meta_boss" in ctrl and bool(ctrl._current_battle_is_meta_boss):
+		return false
+	return true
+
+
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
 	_wd_armed = false
+	# Read before clearing. A grind that stopped mid-fight must still be paid here — its settler is gone.
+	var defer_payout: bool = victory and _defer_victory_payout()
+	defer_victory_payout = false
 	## Tick 472: clear the custom win_condition BEFORE any downstream
 	## work so a subsequent normal battle starts with default "all
 	## enemies dead" behavior. Set once per battle by GameLoop.
@@ -911,7 +939,7 @@ func end_battle(victory: bool) -> void:
 				# gold as a regular encounter." Aligns with line 441's EXP
 				# formula where reward_multiplier IS applied.
 				total_gold += int(gold * one_shot_gold_bonus * reward_multiplier * gold_multiplier)
-		if total_gold > 0:
+		if total_gold > 0 and not defer_payout:
 			GameState.add_gold(total_gold)
 			print("Party earned %d gold!" % total_gold)
 
@@ -1037,7 +1065,8 @@ func end_battle(victory: bool) -> void:
 			# The dead learn nothing — unless a passive/accessory says otherwise (struktured 2026-09-06).
 			if combatant.is_alive or earns_exp_while_dead(combatant):
 				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier)
-				combatant.gain_job_exp(exp_gained)
+				if not defer_payout:
+					combatant.gain_job_exp(exp_gained)
 			if combatant.has_signal("ability_learned") and combatant.ability_learned.is_connected(_collect_learned):
 				combatant.ability_learned.disconnect(_collect_learned)
 			var leveled_up = combatant.job_level > old_level
@@ -1064,7 +1093,7 @@ func end_battle(victory: bool) -> void:
 				"learned_abilities": learned_abilities,
 				"is_alive": combatant.is_alive
 			})
-			if exp_gained > 0:
+			if exp_gained > 0 and not defer_payout:
 				print("%s gained %d job EXP (Level: %d, EXP: %d/%d)%s" % [
 					combatant.combatant_name, exp_gained,
 					combatant.job_level, combatant.job_exp, combatant.job_level * 100,
