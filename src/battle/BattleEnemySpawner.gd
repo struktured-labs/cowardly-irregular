@@ -493,16 +493,42 @@ func spawn_forced_enemies() -> void:
 	_scene._update_ui()
 
 
+## "<species>@elite" is not a catalog key. The base species is. Empty when this id is not that marker.
+func _encounter_base_id(enemy_id: String, monsters_data: Dictionary) -> String:
+	if EncounterSystem == null:
+		return ""
+	var suffix := str(EncounterSystem.ELITE_SUFFIX)
+	if suffix == "" or not enemy_id.ends_with(suffix):
+		return ""
+	var base_id := enemy_id.substr(0, enemy_id.length() - suffix.length())
+	if monsters_data.has(base_id):
+		return base_id
+	return ""
+
+
+## Flagged species already scale inside _create_enemy_data; a spawn marker must not scale them again.
+func _scaled_field_elite_data(base_id: String) -> Dictionary:
+	if EncounterSystem == null or not EncounterSystem.has_method("_create_enemy_data"):
+		return {}
+	var data: Dictionary = EncounterSystem._create_enemy_data(base_id)
+	if bool(data.get("field_elite", false)):
+		return data
+	if EncounterSystem.has_method("_apply_field_elite_scaling"):
+		return EncounterSystem._apply_field_elite_scaling(data)
+	return data
+
+
 func spawn_encounter_enemies() -> void:
 	"""Spawn enemies from encounter_enemies IDs (world-specific random encounters)"""
 	var monsters_data = load_monsters_data()
 
 	var valid_ids: Array = []
 	for eid in _scene.encounter_enemies:
-		if monsters_data.has(eid):
-			valid_ids.append(eid)
+		var key := str(eid)
+		if monsters_data.has(key) or _encounter_base_id(key, monsters_data) != "":
+			valid_ids.append(key)
 		else:
-			push_warning("Unknown encounter enemy ID: %s — skipping" % eid)
+			push_warning("Unknown encounter enemy ID: %s — skipping" % key)
 
 	# Fall back to hardcoded MONSTER_TYPES if no valid IDs found
 	if valid_ids.is_empty():
@@ -515,21 +541,41 @@ func spawn_encounter_enemies() -> void:
 	var enemy_names: Dictionary = {}
 
 	for i in range(max_enemies):
-		var enemy_id = valid_ids[i]
-		var monster_data = monsters_data[enemy_id]
+		var enemy_id: String = str(valid_ids[i])
+		var base_id := _encounter_base_id(enemy_id, monsters_data)
+		var elite_data: Dictionary = {}
+		if base_id != "":
+			elite_data = _scaled_field_elite_data(base_id)
+		else:
+			base_id = enemy_id
+		var monster_data: Dictionary = monsters_data[base_id]
 		var enemy = Combatant.new()
 
-		var stats = {
-			"name": monster_data.get("name", enemy_id.replace("_", " ").capitalize()),
-			"max_hp": monster_data["stats"].get("max_hp", 100),
-			"max_mp": monster_data["stats"].get("max_mp", 0),
-			"attack": monster_data["stats"].get("attack", 10),
-			"defense": monster_data["stats"].get("defense", 5),
-			"magic": monster_data["stats"].get("magic", 5),
-			# Codex prints magic_defense; dropping the key makes the fight use defense/2.
-			"magic_defense": monster_data["stats"].get("magic_defense", int(monster_data["stats"].get("defense", 5) * 0.5)),
-			"speed": monster_data["stats"].get("speed", 10)
-		}
+		var stats: Dictionary
+		if not elite_data.is_empty():
+			var catalog_stats: Dictionary = monster_data.get("stats", {})
+			stats = {
+				"name": elite_data.get("name", monster_data.get("name", base_id.replace("_", " ").capitalize())),
+				"max_hp": elite_data.get("max_hp", catalog_stats.get("max_hp", 100)),
+				"max_mp": elite_data.get("max_mp", catalog_stats.get("max_mp", 0)),
+				"attack": elite_data.get("attack", catalog_stats.get("attack", 10)),
+				"defense": elite_data.get("defense", catalog_stats.get("defense", 5)),
+				"magic": elite_data.get("magic", catalog_stats.get("magic", 5)),
+				"magic_defense": elite_data.get("magic_defense", catalog_stats.get("magic_defense", int(catalog_stats.get("defense", 5) * 0.5))),
+				"speed": elite_data.get("speed", catalog_stats.get("speed", 10)),
+			}
+		else:
+			stats = {
+				"name": monster_data.get("name", enemy_id.replace("_", " ").capitalize()),
+				"max_hp": monster_data["stats"].get("max_hp", 100),
+				"max_mp": monster_data["stats"].get("max_mp", 0),
+				"attack": monster_data["stats"].get("attack", 10),
+				"defense": monster_data["stats"].get("defense", 5),
+				"magic": monster_data["stats"].get("magic", 5),
+				# Codex prints magic_defense; dropping the key makes the fight use defense/2.
+				"magic_defense": monster_data["stats"].get("magic_defense", int(monster_data["stats"].get("defense", 5) * 0.5)),
+				"speed": monster_data["stats"].get("speed", 10)
+			}
 
 		# Count duplicates for suffixing (e.g., Clockwork Sentinel A, B, C)
 		var same_type_count = 0
@@ -546,23 +592,33 @@ func spawn_encounter_enemies() -> void:
 		enemy.initialize(stats)
 		_scene.add_child(enemy)
 
-		# Store monster type ID for sprite selection
-		enemy.set_meta("monster_type", enemy_id)
+		# Base species id: sprites, bestiary credit, and the catalog drop table all key on it.
+		enemy.set_meta("monster_type", base_id)
+		if not elite_data.is_empty():
+			enemy.set_meta("exp_reward", int(elite_data.get("exp_reward", 0)))
+			enemy.set_meta("gold_reward", int(elite_data.get("gold_reward", 0)))
 
 		# Set abilities from monster data so AI can use them
-		if monster_data.has("abilities"):
-			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id.replace("_", " ").capitalize())}
+		var ability_source: Dictionary = elite_data if not elite_data.is_empty() else monster_data
+		if ability_source.has("abilities"):
+			enemy.job = {"abilities": ability_source["abilities"], "name": str(stats.get("name", base_id))}
 
 		# Store Masterite metadata for specialized AI
 		if monster_data.get("masterite", false):
 			enemy.set_meta("masterite", true)
 			enemy.set_meta("masterite_type", monster_data.get("masterite_type", ""))
 
-		# Add weaknesses/resistances from monster data
-		for weakness in monster_data.get("weaknesses", []):
-			enemy.elemental_weaknesses.append(weakness)
-		for resistance in monster_data.get("resistances", []):
-			enemy.elemental_resistances.append(resistance)
+		# Elite data renames the catalog's weaknesses/resistances to elemental_*.
+		if not elite_data.is_empty():
+			for weakness in elite_data.get("elemental_weaknesses", []):
+				enemy.elemental_weaknesses.append(str(weakness))
+			for resistance in elite_data.get("elemental_resistances", []):
+				enemy.elemental_resistances.append(str(resistance))
+		else:
+			for weakness in monster_data.get("weaknesses", []):
+				enemy.elemental_weaknesses.append(weakness)
+			for resistance in monster_data.get("resistances", []):
+				enemy.elemental_resistances.append(resistance)
 
 		# Connect signals
 		enemy.hp_changed.connect(_scene._on_enemy_hp_changed.bind(i))
