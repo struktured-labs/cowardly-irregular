@@ -74,6 +74,9 @@ var _submenu_open: bool = false
 var _hidden_by_submenu: Array[Control] = []
 var _nav_repeat := MenuRepeat.new()
 var _ui_built: bool = false
+# Axis-only: an L2/R2 ramp has no echo flag, so one pull used to lap a 5-person party.
+var _defer_axis_held: bool = false
+var _advance_axis_held: bool = false
 
 ## Cached node references for fast updates
 var _highlight_refs: Array = []
@@ -680,9 +683,37 @@ func _nav_step(action: String) -> void:
 	SoundManager.play_ui("menu_move")
 
 
+## True when this press should move the leader. A trigger ramp is many presses; only the first counts.
+func _leader_axis_step(event: InputEvent, which: String) -> bool:
+	if not (event is InputEventJoypadMotion):
+		return true
+	if which == "defer":
+		if _defer_axis_held:
+			return false
+		_defer_axis_held = true
+	else:
+		if _advance_axis_held:
+			return false
+		_advance_axis_held = true
+	return true
+
+
+func _cycle_leader(delta: int) -> void:
+	GameState.cycle_party_leader(delta)
+	_ui_built = false
+	call_deferred("_build_ui")
+	SoundManager.play_ui("menu_move")
+	party_leader_changed.emit(GameState.party_leader_index)
+
+
 ## Hold-to-repeat. These guards MIRROR _input's — without them a hold would keep stepping
 ## the menu underneath an open submenu or during the fade-in, which _input explicitly refuses.
 func _process(delta: float) -> void:
+	# Before the early return: a release during a submenu or fade must still clear the latch.
+	if _defer_axis_held and not Input.is_action_pressed("battle_defer"):
+		_defer_axis_held = false
+	if _advance_axis_held and not Input.is_action_pressed("battle_advance"):
+		_advance_axis_held = false
 	# is_queued_for_deletion too: none of these hide before queue_free(), so a menu closed
 	# mid-hold stays visible one more frame and the ramped repeat steps a dying node.
 	if not visible or is_queued_for_deletion() or modulate.a < 1.0 or _submenu_open or party.is_empty():
@@ -726,22 +757,21 @@ func _input(event: InputEvent) -> void:
 		_nav_step("ui_right")
 		get_viewport().set_input_as_handled()
 
-	# L shoulder / battle_defer = cycle leader backward
+	elif event.is_action_released("battle_defer"):
+		_defer_axis_held = false
+	elif event.is_action_released("battle_advance"):
+		_advance_axis_held = false
+
+	# L shoulder / battle_defer = cycle leader backward. Buttons stay unlatched: one press, one step.
 	elif event.is_action_pressed("battle_defer") and not event.is_echo():
-		GameState.cycle_party_leader(-1)
-		_ui_built = false
-		call_deferred("_build_ui")
-		SoundManager.play_ui("menu_move")
-		party_leader_changed.emit(GameState.party_leader_index)
+		if _leader_axis_step(event, "defer"):
+			_cycle_leader(-1)
 		get_viewport().set_input_as_handled()
 
-	# R shoulder / battle_advance = cycle leader forward
+	# R shoulder / battle_advance = cycle leader forward. Same axis gate as defer.
 	elif event.is_action_pressed("battle_advance") and not event.is_echo():
-		GameState.cycle_party_leader(1)
-		_ui_built = false
-		call_deferred("_build_ui")
-		SoundManager.play_ui("menu_move")
-		party_leader_changed.emit(GameState.party_leader_index)
+		if _leader_axis_step(event, "advance"):
+			_cycle_leader(1)
 		get_viewport().set_input_as_handled()
 
 	# Confirm
