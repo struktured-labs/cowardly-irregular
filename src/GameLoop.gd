@@ -2474,6 +2474,12 @@ func _play_story_cutscene(cutscene_id: String) -> bool:
 	if not _cutscene_director.can_play(cutscene_id):
 		push_warning("[GameLoop] '%s' NOT started — the director refused it; nothing committed, gate left open so it replays on the next check" % cutscene_id)
 		return false
+	## A duel whose PC left the party (the Jobs menu swaps any starter) narrated up to its battle step and aborted — on every floor change once the abort resumed play.
+	if _cutscene_director.has_method("battle_duelists"):
+		for job_id in _cutscene_director.battle_duelists(cutscene_id):
+			if _party_member_with_job(str(job_id)) == null:
+				push_warning("[GameLoop] '%s' NOT started — no party member is a %s, so its duel cannot run; gate left open until one is" % [cutscene_id, job_id])
+				return false
 	current_state = LoopState.CUTSCENE
 	_cutscene_cooldown = true  # Suppress next check on same map entry
 	_remove_party_chat_indicator()
@@ -3315,6 +3321,16 @@ func _check_boot_canaries() -> void:
 	layer.add_child(label)
 
 
+## The duelist lookup, shared by start_solo_battle and the story gate so "can this duel run" and "run it" cannot disagree.
+func _party_member_with_job(job_id: String) -> Combatant:
+	for m in party:
+		if m == null or not is_instance_valid(m):
+			continue
+		if m.job is Dictionary and str((m.job as Dictionary).get("id", "")) == job_id:
+			return m
+	return null
+
+
 ## Tick 471: enter a solo-duel battle for the Spotlight Duels step
 ## type. Benches all but the spotlight PC (looked up by job id), fires
 ## the standard _start_battle_async pipeline, awaits our own
@@ -3328,16 +3344,7 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
 		push_warning("GameLoop.start_solo_battle: refused — a battle is already active (state %d)" % BattleManager.current_state)
 		return "unavailable"
-	var spotlight_pc: Combatant = null
-	for m in party:
-		if m == null or not is_instance_valid(m):
-			continue
-		var m_job_id: String = ""
-		if m.job is Dictionary:
-			m_job_id = str((m.job as Dictionary).get("id", ""))
-		if m_job_id == job_id:
-			spotlight_pc = m
-			break
+	var spotlight_pc: Combatant = _party_member_with_job(job_id)
 	if spotlight_pc == null:
 		# "defeat" would retry forever — "unavailable" tells the cutscene to abort
 		push_warning("GameLoop.start_solo_battle: no party member with job '%s' — cutscene battle skipped" % job_id)

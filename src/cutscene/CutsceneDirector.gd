@@ -2145,6 +2145,24 @@ func last_finished_was_aborted() -> bool:
 	return _last_finished_aborted
 
 
+## The PC job of every battle step in the scene, however nested — what GameLoop must field before starting it.
+func battle_duelists(cutscene_id: String) -> Array:
+	var out: Array = []
+	_collect_duelists(_load_cutscene_data(cutscene_id), out)
+	return out
+
+
+func _collect_duelists(node: Variant, out: Array) -> void:
+	if node is Dictionary:
+		if str(node.get("type", "")) == "battle" and node.get("combatants", []) is Array and not (node["combatants"] as Array).is_empty():
+			out.append(str(node["combatants"][0]))
+		for v in (node as Dictionary).values():
+			_collect_duelists(v, out)
+	elif node is Array:
+		for v in node:
+			_collect_duelists(v, out)
+
+
 ## A player skip tears the scene down in one frame — backdrop, puppets and dialogue vanish at once. Dip through black across the cut so the snap reads as intentional.
 const SKIP_DIP_OUT_SEC: float = 0.12
 const SKIP_DIP_IN_SEC: float = 0.25
