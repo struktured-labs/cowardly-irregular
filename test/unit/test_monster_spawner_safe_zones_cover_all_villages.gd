@@ -1,35 +1,21 @@
 extends GutTest
 
-## tick 83 regression: MonsterSpawner.SAFE_ZONE_RECTS must protect
-## every world's village entrance, not just W1 Harmonia. Pre-fix,
-## the rects covered ONLY Harmonia's coords [0,21,12,10] +
-## [20,22,16,10] — roaming monsters could spawn ON or adjacent to
-## W2 Maple Heights, W4 Rivet Row, W5 Node Prime, W6 Vertex
-## entrances in those worlds (W3 Brasston was coincidentally inside
-## the W1 rect).
-##
-## MonsterSpawner is shared by all 6 overworld scenes (W1 OverworldScene,
-## W2 SuburbanOverworld, W3 SteampunkOverworld, W4 IndustrialOverworld,
-## W5 FuturisticOverworld, W6 AbstractOverworld), so the const lives
-## in MonsterSpawner and must cover all of them.
+## Roaming monsters must not spawn on a town gate. SAFE_ZONE_RECTS is a tile rect
+## on the LIVE map. The 2026-08-22 resize multiplied every entrance by MAP_SCALE
+## (W1's gate moved with the PNG) and left these rects on the old grid, so the
+## test that copied the old numbers stayed green while the door was unprotected.
+## This file reads the entrance the player stands on and requires a rect around it.
 
 const MONSTER_SPAWNER := preload("res://src/exploration/MonsterSpawner.gd")
+const MAP_LOADER := preload("res://src/exploration/MapImageLoader.gd")
 
-
-## Every village entrance position (in tile coords) the spawner must protect.
-## Pull from the spawn_points["<village>_entrance"] assignments in each
-## overworld script:
-##   W2 SuburbanOverworld:     maple_heights_entrance @ (38, 3)
-##   W3 SteampunkOverworld:    brasston_entrance      @ (5, 26)
-##   W4 IndustrialOverworld:   rivet_row_entrance     @ (55, 17)
-##   W5 FuturisticOverworld:   node_prime_entrance    @ (50, 20)
-##   W6 AbstractOverworld:     vertex_entrance        @ (19, 16)
-const VILLAGE_ENTRANCE_TILES: Array[Array] = [
-	[38, 3,  "W2 Maple Heights"],
-	[5,  26, "W3 Brasston"],
-	[55, 17, "W4 Rivet Row"],
-	[50, 20, "W5 Node Prime"],
-	[19, 16, "W6 Vertex"],
+## script path, spawn_points key, label. The tile is (cell * MAP_SCALE) from that line.
+const SCALED_ENTRANCES: Array[Array] = [
+	["res://src/exploration/SuburbanOverworld.gd", "maple_heights_entrance", "W2 Maple Heights"],
+	["res://src/exploration/SteampunkOverworld.gd", "brasston_entrance", "W3 Brasston"],
+	["res://src/exploration/IndustrialOverworld.gd", "rivet_row_entrance", "W4 Rivet Row"],
+	["res://src/exploration/FuturisticOverworld.gd", "node_prime_entrance", "W5 Node Prime"],
+	["res://src/exploration/AbstractOverworld.gd", "vertex_entrance", "W6 Vertex"],
 ]
 
 
@@ -44,40 +30,59 @@ func _tile_in_any_rect(tx: int, ty: int, rects: Array) -> bool:
 	return false
 
 
-func test_every_village_entrance_tile_is_inside_a_safe_zone() -> void:
-	# Pin: each village entrance tile must fall inside at least one
-	# SAFE_ZONE_RECTS entry. A future world or relocated entrance must
-	# update the const.
+func _map_scale(src: String) -> int:
+	var re := RegEx.new()
+	re.compile("const MAP_SCALE: int = (\\d+)")
+	var m := re.search(src)
+	if m == null:
+		return 0
+	return int(m.get_string(1))
+
+
+## The standing tile is the cell written next to MAP_SCALE, times that file's MAP_SCALE.
+## + TILE_SIZE / 2 keeps the point inside that same tile.
+func _scaled_entrance_tile(script_path: String, key: String) -> Vector2i:
+	var src := FileAccess.get_file_as_string(script_path)
+	var scale := _map_scale(src)
+	var re := RegEx.new()
+	re.compile("spawn_points\\[\"%s\"\\] = Vector2\\((\\d+) \\* MAP_SCALE \\* TILE_SIZE[^,]*,\\s*(\\d+) \\* MAP_SCALE" % key)
+	var m := re.search(src)
+	if m == null or scale <= 0:
+		return Vector2i(-1, -1)
+	return Vector2i(int(m.get_string(1)) * scale, int(m.get_string(2)) * scale)
+
+
+func _w1_landmark_tile(ch: String) -> Vector2i:
+	var rows: Array = MAP_LOADER.load_rows("res://data/maps/overworld_w1.png", "medieval")
+	for y in range(rows.size()):
+		var row := str(rows[y])
+		var x := row.find(ch)
+		if x >= 0:
+			return Vector2i(x, y)
+	return Vector2i(-1, -1)
+
+
+func test_every_live_village_entrance_is_inside_a_safe_zone() -> void:
 	var rects: Array = MONSTER_SPAWNER.SAFE_ZONE_RECTS
-	for entry in VILLAGE_ENTRANCE_TILES:
-		var tx: int = int(entry[0])
-		var ty: int = int(entry[1])
-		var label: String = String(entry[2])
-		assert_true(_tile_in_any_rect(tx, ty, rects),
-			"village entrance for %s @ tile (%d, %d) must be inside a SAFE_ZONE_RECTS entry — otherwise roaming monsters can spawn on the player's entry point" % [label, tx, ty])
+	var harmonia := _w1_landmark_tile("V")
+	assert_ne(harmonia, Vector2i(-1, -1), "W1 map must contain the Harmonia gate marker V")
+	assert_true(_tile_in_any_rect(harmonia.x, harmonia.y, rects),
+		"Harmonia gate at tile (%d, %d) must sit inside a safe zone — roamers spawn on the door otherwise" % [harmonia.x, harmonia.y])
+	for entry in SCALED_ENTRANCES:
+		var tile := _scaled_entrance_tile(str(entry[0]), str(entry[1]))
+		var label := str(entry[2])
+		assert_ne(tile, Vector2i(-1, -1), "could not read %s entrance from its overworld script" % label)
+		assert_true(_tile_in_any_rect(tile.x, tile.y, rects),
+			"%s entrance at tile (%d, %d) must sit inside a safe zone — the rect is still on the pre-resize grid" % [label, tile.x, tile.y])
 
 
-func test_w1_harmonia_safe_zone_still_present() -> void:
-	# Don't regress the original W1 coverage while adding W2-W6.
+func test_safe_zone_rects_cover_one_town_gate_each() -> void:
 	var rects: Array = MONSTER_SPAWNER.SAFE_ZONE_RECTS
-	# W1 village area centroid ~ tile (5, 26)
-	assert_true(_tile_in_any_rect(5, 26, rects),
-		"W1 Harmonia village area tile (5, 26) must still be protected — was the original safe zone")
-
-
-func test_safe_zone_rects_has_at_least_six_entries() -> void:
-	# At minimum: 2 W1 rects + 4 new W2/W4/W5/W6 rects = 6.
-	# A future refactor that condenses them is OK, but reducing
-	# coverage below the 6-village count is not.
-	var rects: Array = MONSTER_SPAWNER.SAFE_ZONE_RECTS
-	assert_gt(rects.size(), 5,
-		"SAFE_ZONE_RECTS must have at least 6 entries — 2 W1 rects + 4 new W2/W4/W5/W6 entrance rects. Coincidental W3 coverage by the W1 rect is fine but not guaranteed.")
+	assert_gte(rects.size(), 6,
+		"one safe rect per town gate the spawner is responsible for: Harmonia, Maple Heights, Brasston, Rivet Row, Node Prime, Vertex")
 
 
 func test_each_rect_well_formed() -> void:
-	# Defensive: each rect must be [int, int, int, int] with
-	# positive dimensions. _in_safe_zone reads index 0..3 as ints,
-	# so a malformed entry would crash at runtime.
 	var rects: Array = MONSTER_SPAWNER.SAFE_ZONE_RECTS
 	for i in range(rects.size()):
 		var r: Array = rects[i]
