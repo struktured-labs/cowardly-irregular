@@ -3202,6 +3202,14 @@ func _simulate_report(rules: Array) -> Array[String]:
 
 ## A scratch Combatant at the sampled state. Never the live one — mutating the edited
 ## character's HP to answer a UI question is the two-writers class.
+## The edited character's party bag, reached through GameLoop: the probe must stay off the live battle state.
+func _probe_bag() -> Dictionary:
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl != null and "party" in gl and combatant in gl.party:
+		return ItemSystem.party_inventory(gl.party)
+	return combatant.inventory.duplicate()
+
+
 func _simulate_probe(state: Dictionary) -> Combatant:
 	var c: Combatant = Combatant.new()
 	if combatant:
@@ -3217,11 +3225,10 @@ func _simulate_probe(state: Dictionary) -> Combatant:
 		c.purchased_abilities = combatant.purchased_abilities.duplicate()
 		c.job_level = combatant.job_level
 		c.secondary_job = combatant.secondary_job
-		## item_count reads the CASTER's bag. Without this the probe carried none, so every
-		## "hp < 30 AND potions > 0 -> use potion" rule read as never-firing with a full bag —
-		## and 12 of the 15 shipped templates gate on item_count.
-		for item_id in combatant.inventory.keys():
-			c.inventory[item_id] = combatant.inventory[item_id]
+		## item_count reads the party's one bag, as battle has since .482; the probe must carry that bag, not the caster's own.
+		var bag: Dictionary = _probe_bag()
+		for item_id in bag.keys():
+			c.inventory[item_id] = bag[item_id]
 	else:
 		c.combatant_name = character_name
 		c.max_hp = 100
