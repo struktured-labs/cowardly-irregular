@@ -50,9 +50,11 @@ func _probe_with_base(replacement: String) -> String:
 ## and the timeout arm was never reached — a RED gate whose cause was my fixture, not my subject.
 ## The no-argument form runs the full-suite path, whose BASE is the sleeper we patched in, so it
 ## exercises the bound while depending on no particular file existing anywhere.
-func _run(path: String, env: String) -> Dictionary:
+func _run(path: String, env: String, extra: String = "") -> Dictionary:
 	var out: Array = []
-	var code := OS.execute("bash", ["-c", "%s bash '%s'" % [env, path]], out, true)
+	# extra is a real test-file name so the named-file path is taken. The no-arg path
+	# compares Scripts against every file in test/unit and exits 3 on a one-line fake.
+	var code := OS.execute("bash", ["-c", "%s bash '%s' %s" % [env, path, extra]], out, true)
 	return {"code": code, "text": "\n".join(out)}
 
 
@@ -111,4 +113,78 @@ func test_a_runner_that_exits_promptly_is_not_called_wedged() -> void:
 		"a runner that exited at once must NOT be called wedged — the bound is elapsed>=budget, not merely a non-zero code. got %d: %s" % [int(r["code"]), r["text"]])
 	assert_false(str(r["text"]).contains("WEDGED"),
 		"no WEDGED message for a prompt exit, got: %s" % r["text"])
+	DirAccess.remove_absolute(path)
+
+
+const _FAIL_HANG := "bash -c 'printf \"%s\\n\" \"---- Totals ----\" \"Scripts           1\" \"Tests             4\" \"  Passing         2\" \"  Failing         2\"; sleep 30'"
+const _PASS_HANG := "bash -c 'printf \"%s\\n\" \"---- Totals ----\" \"Scripts           1\" \"Tests             4\" \"  Passing         4\"; sleep 30'"
+const _FAIL_137 := "bash -c 'printf \"%s\\n\" \"---- Totals ----\" \"Scripts           1\" \"Tests             4\" \"  Passing         1\" \"  Failing         3\"; exit 137'"
+const _PASS_137 := "bash -c 'printf \"%s\\n\" \"---- Totals ----\" \"Scripts           1\" \"Tests             4\" \"  Passing         4\"; exit 137'"
+const _FAIL_ZERO := "bash -c 'printf \"%s\\n\" \"---- Totals ----\" \"Scripts           1\" \"Tests             4\" \"  Passing         2\" \"  Failing         2\"; exit 0'"
+
+
+func test_a_shutdown_kill_after_failing_totals_stays_a_failure() -> void:
+	# The mix thread dies with SIGKILL once totals are on the page. Exit 137 must not
+	# read as "wedged, re-run, the red does not count."
+	var path := _probe_with_base(_FAIL_137)
+	var r := _run(path, "RUN_TESTS_TIMEOUT=30", "run_tests_bounds_a_wedged_run")
+	assert_eq(int(r["code"]), 1,
+		"137 after Failing 3 must be exit 1, got %d: %s" % [int(r["code"]), r["text"]])
+	assert_true(str(r["text"]).contains("SHUTDOWN KILLED AFTER TOTALS"),
+		"the kill must be named, got: %s" % r["text"])
+	assert_true(str(r["text"]).contains("Failing 3"),
+		"the message must carry the failing count, got: %s" % r["text"])
+	assert_false(str(r["text"]).contains("WEDGED"),
+		"a judged totals block is not a wedge, got: %s" % r["text"])
+	DirAccess.remove_absolute(path)
+
+
+func test_a_shutdown_kill_after_clean_totals_counts_as_a_pass() -> void:
+	var path := _probe_with_base(_PASS_137)
+	var r := _run(path, "RUN_TESTS_TIMEOUT=30", "run_tests_bounds_a_wedged_run")
+	assert_eq(int(r["code"]), 0,
+		"137 after a clean totals block must be a pass, got %d: %s" % [int(r["code"]), r["text"]])
+	assert_true(str(r["text"]).contains("SHUTDOWN KILLED AFTER TOTALS"),
+		"the kill must still be reported, got: %s" % r["text"])
+	assert_true(str(r["text"]).contains("Failing 0"),
+		"the pass must say the totals had no failures, got: %s" % r["text"])
+	assert_false(str(r["text"]).contains("WEDGED"),
+		"a clean totals block is not a wedge, got: %s" % r["text"])
+	DirAccess.remove_absolute(path)
+
+
+func test_a_quiet_log_after_failing_totals_is_killed_and_stays_red() -> void:
+	# The backstop: totals printed, then the process sits there. kill(1), then the totals.
+	var path := _probe_with_base(_FAIL_HANG)
+	var r := _run(path, "RUN_TESTS_TIMEOUT=60 RUN_TESTS_POLL_S=1 RUN_TESTS_QUIET_AFTER_TOTALS=2", "run_tests_bounds_a_wedged_run")
+	assert_eq(int(r["code"]), 1,
+		"a hang after Failing 2 must be exit 1, not 137 or 124, got %d: %s" % [int(r["code"]), r["text"]])
+	assert_true(str(r["text"]).contains("SHUTDOWN KILLED AFTER TOTALS"),
+		"the quiet-log kill must be named, got: %s" % r["text"])
+	assert_true(str(r["text"]).contains("Failing 2"),
+		"the failing count has to be in the verdict, got: %s" % r["text"])
+	assert_false(str(r["text"]).contains("WEDGED"),
+		"killing shutdown after totals is not an unjudged wedge, got: %s" % r["text"])
+	DirAccess.remove_absolute(path)
+
+
+func test_a_quiet_log_after_clean_totals_is_killed_and_counts_as_a_pass() -> void:
+	var path := _probe_with_base(_PASS_HANG)
+	var r := _run(path, "RUN_TESTS_TIMEOUT=60 RUN_TESTS_POLL_S=1 RUN_TESTS_QUIET_AFTER_TOTALS=2", "run_tests_bounds_a_wedged_run")
+	assert_eq(int(r["code"]), 0,
+		"a hang after a clean totals block must be a pass, got %d: %s" % [int(r["code"]), r["text"]])
+	assert_true(str(r["text"]).contains("SHUTDOWN KILLED AFTER TOTALS"),
+		"the kill must be reported on the pass too, got: %s" % r["text"])
+	assert_false(str(r["text"]).contains("WEDGED"),
+		"got: %s" % r["text"])
+	DirAccess.remove_absolute(path)
+
+
+func test_an_exit_zero_with_failures_in_the_totals_is_not_a_pass() -> void:
+	var path := _probe_with_base(_FAIL_ZERO)
+	var r := _run(path, "RUN_TESTS_TIMEOUT=30", "run_tests_bounds_a_wedged_run")
+	assert_eq(int(r["code"]), 1,
+		"Failing 2 with process exit 0 must still be exit 1, got %d: %s" % [int(r["code"]), r["text"]])
+	assert_true(str(r["text"]).contains("refusing to call this a pass"),
+		"the refusal must be explicit, got: %s" % r["text"])
 	DirAccess.remove_absolute(path)
