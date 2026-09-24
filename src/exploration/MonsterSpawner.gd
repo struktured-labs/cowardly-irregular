@@ -45,29 +45,25 @@ func set_map_size(w: int, h: int) -> void:
 ## Safe-zone rectangles in TILE coordinates: [tile_x, tile_y, width, height].
 ## Spawner walks every rect and refuses to spawn monsters inside any of them.
 ##
-## Tick 83: extended from W1-Harmonia-only to cover every world's village
-## entrance. Pre-fix, the rects only protected W1 Harmonia coords; roaming
-## monsters could spawn ON or adjacent to W2 (Maple Heights), W4 (Rivet Row),
-## W5 (Node Prime), W6 (Vertex) entrances. W3 Brasston @ (5, 26) was
-## coincidentally inside the W1 rect [0,21,12,10] so happened to be protected.
-##
-## A single global list (rather than per-world setter) means W2 coords are
-## technically "safe" while in W1, but at tile positions that don't matter
-## to W1's map layout — harmless extra coverage. Cheaper than threading
-## per-world rects through five overworld scripts.
+## Each rect is a 10x8 buffer whose origin is the live entrance tile minus (4, 4).
+## The 2026-08-22 resize multiplied every authored cell by MAP_SCALE (W1's gate
+## moved with the PNG, to tile (8, 50)) and these rects stayed on the pre-resize
+## grid, so roamers spawned on the door the list claimed to protect. W3 was only
+## covered by coincidence with a W1 rect that no longer contains Brasston.
+## A single global list means one world's rect is also "safe" in the others.
 const SAFE_ZONE_RECTS: Array = [
-	# W1 Harmonia village area — rows 21-29, cols 0-10 approx
-	[0, 21, 12, 10],
-	# W1 Harmonia gate tile region
-	[20, 22, 16, 10],
-	# W2 Maple Heights entrance @ tile (38, 3) — 10x8 buffer
-	[34, 0, 10, 8],
-	# W4 Rivet Row entrance @ tile (55, 17) — 10x8 buffer
-	[51, 13, 10, 8],
-	# W5 Node Prime entrance @ tile (50, 20) — 10x8 buffer
-	[46, 16, 10, 8],
-	# W6 Vertex Threshold entrance @ tile (19, 16) — 10x8 buffer
-	[15, 12, 10, 8],
+	# W1 Harmonia — PNG landmark V at (8, 50)
+	[4, 46, 10, 8],
+	# W2 Maple Heights — (43, 9) * MAP_SCALE 3
+	[125, 23, 10, 8],
+	# W3 Brasston — (11, 26) * MAP_SCALE 3
+	[29, 74, 10, 8],
+	# W4 Rivet Row — (52, 16) * MAP_SCALE 3
+	[152, 44, 10, 8],
+	# W5 Node Prime — (49, 20) * MAP_SCALE 3
+	[143, 56, 10, 8],
+	# W6 Vertex — (19, 16) * MAP_SCALE 2
+	[34, 28, 10, 8],
 ]
 
 var _player: Node2D = null
