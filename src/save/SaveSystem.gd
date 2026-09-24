@@ -347,6 +347,9 @@ func load_game(slot: int) -> bool:
 
 	# Apply save data
 	_apply_save_data(save_data)
+	## The file has no playback position. A fight after the save must not seek the restored visit.
+	if SoundManager and SoundManager.has_method("discard_interrupted_area_bed"):
+		SoundManager.discard_interrupted_area_bed()
 
 	current_save_slot = slot
 	load_completed.emit(slot)

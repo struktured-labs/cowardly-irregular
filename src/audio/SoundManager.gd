@@ -2339,6 +2339,9 @@ func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> v
 	# The rebuilt map calls play_area_music with no position, so a battle then a victory bed used to restart the field theme at its loop entry.
 	if _current_area != "" and _music_playing and _music_player and _music_player.playing:
 		_interrupted_area_bed = {"area": _current_area, "position": _music_player.get_playback_position()}
+	# The title screen is a different visit. The next new game must not seek to where the last one was interrupted.
+	if track == "title":
+		discard_interrupted_area_bed()
 
 	# Clear area tracking so play_area_music() doesn't skip after battle/victory
 	_current_area = ""
@@ -2583,11 +2586,12 @@ func stop_music() -> void:
 	_current_music = ""
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
-	## stop means "and do not come back": a pending stinger resume would otherwise fire on the NEXT track's finish.
+	## stop means "and do not come back": a pending stinger resume would otherwise fire on the NEXT track's finish, and a parked field position would seek a later visit.
 	if _music_player:
 		for c in _music_player.finished.get_connections():
 			_music_player.finished.disconnect(c["callable"])
 	_stinger_resume_state = {}
+	discard_interrupted_area_bed()
 	if _music_player:
 		_music_player.stop()
 	if _music_player_b:
@@ -5569,8 +5573,11 @@ func _generate_game_over_buffer(rate: int, duration: float, bpm: float) -> Packe
 var _current_area: String = ""
 var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
-## Where the field bed was when play_music took it over. Empty area does not overwrite it, so victory/game-over keep the park until the map asks for that area again.
+## Where the field bed was when play_music took it over. Victory and game-over leave it; stop, the title, and a loaded save drop it.
 var _interrupted_area_bed: Dictionary = {}
+
+func discard_interrupted_area_bed() -> void:
+	_interrupted_area_bed = {}
 
 func play_area_music(area_type: String, resume_at: float = 0.0, home_area: String = "") -> void:
 	"""Play appropriate music for an exploration area.
