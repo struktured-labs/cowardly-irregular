@@ -7,6 +7,7 @@ var value: int = 0
 var is_heal: bool = false
 var is_critical: bool = false
 var is_miss: bool = false
+var banner_text: String = ""
 
 var _label: Label = null
 var _lifetime: float = 1.2
@@ -40,6 +41,13 @@ func setup_miss() -> void:
 	value = 0
 
 
+## Immunity and a ward are not misses. The banner is the word that floats where MISS would.
+func setup_banner(text: String) -> void:
+	banner_text = text
+	is_miss = false
+	value = 0
+
+
 func _create_label() -> void:
 	_label = Label.new()
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -49,7 +57,12 @@ func _create_label() -> void:
 	var base_size = 24
 	var color: Color
 
-	if is_miss:
+	if banner_text != "":
+		_label.text = banner_text
+		base_size = 24
+		color = Color(0.45, 0.9, 1.0) if banner_text == "BLOCK" else Color(0.78, 0.78, 0.82)
+		_lifetime = 0.9
+	elif is_miss:
 		_label.text = "MISS"
 		base_size = 24
 		color = Color(0.65, 0.65, 0.65)
@@ -89,9 +102,10 @@ func _create_label() -> void:
 	_label.add_theme_constant_override("outline_size", 5)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 
-	# Center the label
-	_label.position = Vector2(-50, -10)
-	_label.custom_minimum_size = Vector2(100, 20)
+	# Center the label. A banner word is wider than a number, so the box grows with it.
+	var label_w := 140 if banner_text != "" else 100
+	_label.position = Vector2(-label_w / 2.0, -10)
+	_label.custom_minimum_size = Vector2(label_w, 20)
 
 	add_child(_label)
 
