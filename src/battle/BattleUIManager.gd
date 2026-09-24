@@ -397,7 +397,8 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		if _scene._tier() == BattleJuice.Tier.OFF or not BattleJuice.flag("chip_hp_bars") or absf(hp_bar.value - member.current_hp) < 0.5:
 			hp_bar.value = member.current_hp
 		else:
-			var prev = hp_bar.get_meta("hp_tween", null)
+			## get_meta(key, null) still logs an engine error on a miss — the shipped build logged one per bar.
+			var prev = hp_bar.get_meta("hp_tween") if hp_bar.has_meta("hp_tween") else null
 			if prev is Tween and prev.is_valid():
 				prev.kill()
 			var hp_tween = _scene.create_tween()
