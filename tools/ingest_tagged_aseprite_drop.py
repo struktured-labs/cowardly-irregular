@@ -348,7 +348,13 @@ DROPS_20260830 = {
         # current mage sheets are ALREADY artist art from this same source; a .pre_artist
         # backup would file artist pixels under a pre-artist name. git history holds the prior.
         "backup": False,
+        # ...EXCEPT victory: until the 2026-09-23 drop it was April LoRA art (v3.1 sweep), not
+        # the artist's, so the file it replaces IS pre-artist and gets the backup.
+        "backup_anims": {"victory"},
+        # 2026-09-23 drop added "Celebration" (16 frames) between Weak and Atk 1; Atk 1 and Dead
+        # shifted +16 and stayed byte-identical. Their word, our slot -- same as bard and rogue.
         "map": {"idle": ("IDLE", 0, 0), "weak": ("Weak", 0, 0), "dead": ("Dead", 0, 0),
+                "victory": ("Celebration", 0, 0),
                 "cast": ("Atk 1", 0, 0), "attack": ("Atk 1", 0, 0)},
     },
 }
@@ -374,7 +380,7 @@ def ingest_drop(name: str, dry: bool) -> None:
             if dry:
                 continue
             out = out_dir / f"{anim}.png"
-            if cfg["backup"]:
+            if cfg["backup"] or anim in cfg.get("backup_anims", ()):
                 backup(out)
             save_png(build_strip(frames, (a, b), False, 2.0, 0, 0), out)
             print(f"      -> {out.name}")

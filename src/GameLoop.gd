@@ -854,8 +854,8 @@ func _on_llm_inference_succeeded(_mode: String) -> void:
 ## the fade-out. The 'area_transition_fade' InputLockManager lock
 ## only covers fade-OUT (tick 77 — pushed after _start_exploration's
 ## pop_all), so fade-IN previously slipped past callers that only
-## checked InputLockManager. Now F5/F6/Select autobattle inputs are
-## blocked across the entire fade window, not just fade-out.
+## checked InputLockManager. F5/F6/Select and Start → settings use it,
+## so those inputs are blocked across the whole fade, not just fade-out.
 func _in_exploration_transition() -> bool:
 	if current_state != LoopState.EXPLORATION:
 		return false
@@ -1068,7 +1068,8 @@ func _input(event: InputEvent) -> void:
 				# transition await in _on_exploration_battle_triggered, so
 				# raw state-check leaves a ~0.5s window where Start would
 				# open settings UNDER the loading battle scene).
-				if InputLockManager and InputLockManager.is_locked():
+				# Fade-in holds no lock yet; the helper also reads _transition_in_progress.
+				if _in_exploration_transition():
 					get_viewport().set_input_as_handled()
 					return
 				_open_settings_menu()
