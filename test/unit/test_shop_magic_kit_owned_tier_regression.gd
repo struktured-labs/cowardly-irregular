@@ -63,17 +63,17 @@ func _combatant(job: Dictionary) -> Object:
 	return live
 
 
-func _magic_shop():
-	var shop = ShopScript.new()
+func _magic_shop() -> ShopScene:
+	var shop := ShopScript.new()
 	add_child_autofree(shop)
 	shop.shop_type = ShopScript.ShopType.BLACK_MAGIC
 	return shop
 
 
-func _row(shop, item_id: String) -> Dictionary:
+func _row(shop: ShopScene, item_id: String) -> Dictionary:
 	for row in shop.current_menu.menu_items:
 		if str(row.get("id", "")) == item_id:
-			return row
+			return row as Dictionary
 	return {}
 
 
