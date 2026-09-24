@@ -1074,17 +1074,8 @@ func _input(event: InputEvent) -> void:
 				_open_settings_menu()
 				get_viewport().set_input_as_handled()
 
-	# X key or gamepad X/Y button = Open overworld menu (only in exploration mode)
-	# Note: JOY_BUTTON_X=2 (Xbox X), JOY_BUTTON_Y=3 (Xbox Y) - support both for different controllers
-	var x_pressed = false
-	if event is InputEventKey and event.pressed and event.keycode == KEY_X:
-		x_pressed = true
-	elif event is InputEventJoypadButton and event.pressed and event.button_index in [JOY_BUTTON_X, JOY_BUTTON_Y]:
-		x_pressed = true
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		x_pressed = true
-	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		x_pressed = true
+	# Open the overworld menu (exploration only); the buttons live in OverworldMenu.is_toggle_event
+	var x_pressed := OverworldMenu.is_toggle_event(event)
 
 	if x_pressed:
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
