@@ -5799,6 +5799,7 @@ func _stop_autogrind(reason: String) -> void:
 	## refuses a retry, so an abort between them stranded both with no way back. Both are plain
 	## autoload assignments that depend on nothing, and nothing below reads either.
 	BattleManager.turbo_mode = false
+	BattleManager.defer_victory_payout = false
 	Engine.time_scale = 1.0
 
 	# Capture stats before controller is stopped and freed
@@ -6097,6 +6098,12 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 
 	add_child(battle_scene)
 	current_scene = battle_scene
+	# Connect before the first resumed frame. A one-action turbo fight can end on that frame, and the settler has to be attached or the deferred payout is never paid.
+	if not BattleManager.battle_ended.is_connected(_on_autogrind_battle_ended):
+		BattleManager.battle_ended.connect(_on_autogrind_battle_ended, CONNECT_ONE_SHOT)
+	# Meta-boss battles keep BattleManager's payout; their settler only adds a bonus on top.
+	var meta_boss_battle: bool = _autogrind_controller != null and is_instance_valid(_autogrind_controller) and bool(_autogrind_controller._current_battle_is_meta_boss)
+	BattleManager.defer_victory_payout = not meta_boss_battle
 
 	# Set turbo mode based on tier
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
@@ -6118,10 +6125,6 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 	# Show current stats block
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		battle_scene.update_autogrind_console_stats(_autogrind_controller.get_grind_stats())
-
-	# Connect to battle end with autogrind handler
-	BattleManager.battle_ended.connect(_on_autogrind_battle_ended, CONNECT_ONE_SHOT)
-
 
 func _on_autogrind_battle_ended(victory: bool) -> void:
 	"""Handle battle end during autogrind"""
@@ -6299,6 +6302,7 @@ func _on_grind_complete(reason: String) -> void:
 	## Same hoist as _stop_autogrind: this entry reaches the identical stranded state by its own
 	## route, so fixing only the other one leaves this one live.
 	BattleManager.turbo_mode = false
+	BattleManager.defer_victory_payout = false
 	Engine.time_scale = 1.0
 	## Hoisted with the globals: stop_grind emits this synchronously, then _stop_autogrind's own restore sits past a null deref and never runs. Natural ends (HP, wipe, collapse) never entered _stop_autogrind at all, so the autogrind bed and its detune stayed up.
 	if SoundManager:
