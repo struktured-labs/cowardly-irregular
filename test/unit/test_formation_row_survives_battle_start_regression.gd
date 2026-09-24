@@ -47,6 +47,8 @@ func _plant_leftovers(c: Combatant) -> void:
 
 
 func _begin(members: Array, formation: int) -> void:
+	if _started and BattleManager and BattleManager.has_method("_cleanup_battle"):
+		BattleManager._cleanup_battle()
 	var scene: GDScript = load(BS_PATH)
 	scene.current_formation = formation
 	var party: Array[Combatant] = []
@@ -70,6 +72,15 @@ func _mod(c: Combatant, effect: String) -> float:
 			if str(entry.get("effect", "")) == effect:
 				return float(entry.get("modifier", 0.0))
 	return -1.0
+
+
+func _count(c: Combatant, effect: String) -> int:
+	var n := 0
+	for bucket in [c.active_buffs, c.active_debuffs]:
+		for entry in bucket:
+			if str(entry.get("effect", "")) == effect:
+				n += 1
+	return n
 
 
 func test_front_line_comes_back_after_the_buff_wipe() -> void:
@@ -119,3 +130,162 @@ func test_a_row_with_no_stat_line_stays_unmodified() -> void:
 	assert_eq(_mod(pc, "protect"), -1.0)
 	assert_eq(pc.get_buffed_stat("attack", pc.attack), pc.attack,
 		"and the swing is the unmodified attack")
+
+
+func test_diamond_and_spread_keep_no_stat_line() -> void:
+	var scene: GDScript = load(BS_PATH)
+	var checked := 0
+	for formation in [scene.PartyFormation.DIAMOND, scene.PartyFormation.SPREAD]:
+		var pc := _member(true)
+		pc.attack = 200
+		_plant_leftovers(pc)
+		_begin([pc], formation)
+		assert_eq(_mod(pc, "formation_atk"), -1.0,
+			"Diamond and Spread have no attack line — the planted 2.0x must not survive the wipe")
+		assert_eq(_mod(pc, "formation_def"), -1.0)
+		assert_eq(_mod(pc, "protect"), -1.0,
+			"and Protect is still cleared — the row reapply did not replace the buff wipe")
+		assert_eq(pc.get_buffed_stat("attack", pc.attack), pc.attack)
+		checked += 1
+	assert_eq(checked, 2, "both formations were actually driven")
+
+
+func test_the_row_does_not_stack_across_battles() -> void:
+	var scene: GDScript = load(BS_PATH)
+	var pc := _member(true)
+	pc.attack = 200
+	_plant_leftovers(pc)
+	_begin([pc], scene.PartyFormation.FRONT_LINE)
+	assert_eq(_count(pc, "formation_atk"), 1)
+	_begin([pc], scene.PartyFormation.FRONT_LINE)
+	assert_eq(_count(pc, "formation_atk"), 1,
+		"a second battle replaces the row; it must not leave two formation_atk entries")
+	assert_almost_eq(_mod(pc, "formation_atk"), 1.1, 0.001)
+	assert_eq(_count(pc, "formation_def"), 1)
+	assert_almost_eq(_mod(pc, "formation_def"), 0.9, 0.001)
+	assert_eq(pc.get_buffed_stat("attack", pc.attack), int(float(pc.attack) * 1.1),
+		"two battles of Front Line are +10% once, not +21%")
+
+
+func test_changing_formation_and_back_does_not_double() -> void:
+	var scene: GDScript = load(BS_PATH)
+	var pc := _member(true)
+	pc.attack = 200
+	pc.defense = 100
+	scene.current_formation = scene.PartyFormation.FRONT_LINE
+	scene.apply_persisted_formation([pc])
+	scene.current_formation = scene.PartyFormation.BACK_ROW
+	scene.apply_persisted_formation([pc])
+	scene.current_formation = scene.PartyFormation.FRONT_LINE
+	scene.apply_persisted_formation([pc])
+	assert_eq(_count(pc, "formation_atk"), 1,
+		"Front, then Back, then Front again is one attack modifier")
+	assert_eq(_count(pc, "formation_def"), 1)
+	assert_almost_eq(_mod(pc, "formation_atk"), 1.1, 0.001)
+	assert_almost_eq(_mod(pc, "formation_def"), 0.9, 0.001)
+	assert_eq(pc.get_buffed_stat("attack", pc.attack), int(float(pc.attack) * 1.1))
+	assert_eq(pc.get_buffed_stat("defense", pc.defense), int(float(pc.defense) * 0.9))
+
+
+func test_revive_follows_the_mid_fight_rule() -> void:
+	var scene: GDScript = load(BS_PATH)
+	var fallen := _member(false)
+	_plant_leftovers(fallen)
+	_begin([fallen], scene.PartyFormation.FRONT_LINE)
+	assert_eq(_mod(fallen, "formation_atk"), -1.0,
+		"a KO at battle start is not in the line")
+	assert_eq(_mod(fallen, "protect"), -1.0)
+	fallen.revive(40)
+	assert_true(fallen.is_alive)
+	assert_eq(_mod(fallen, "formation_atk"), -1.0,
+		"revive() does not grant the row — a mid-fight raise never did")
+	scene.apply_persisted_formation([fallen])
+	assert_eq(_count(fallen, "formation_atk"), 1)
+	assert_almost_eq(_mod(fallen, "formation_atk"), 1.1, 0.001,
+		"the next apply, which is what changing formation does, includes them once they are standing")
+	fallen.current_hp = 0
+	fallen.is_alive = false
+	fallen.revive(40)
+	_begin([fallen], scene.PartyFormation.FRONT_LINE)
+	assert_eq(_count(fallen, "formation_atk"), 1,
+		"a member raised before the next battle is alive at the reapply and gets the row once")
+	assert_almost_eq(_mod(fallen, "formation_atk"), 1.1, 0.001)
+
+
+func test_a_save_roundtrip_keeps_one_row() -> void:
+	var scene: GDScript = load(BS_PATH)
+	var pc := _member(true)
+	pc.attack = 200
+	_plant_leftovers(pc)
+	_begin([pc], scene.PartyFormation.FRONT_LINE)
+	var parsed: Variant = JSON.parse_string(JSON.stringify(pc.to_dict()))
+	assert_true(parsed is Dictionary, "the combatant save must round-trip through JSON")
+	var loaded := Combatant.new()
+	add_child_autofree(loaded)
+	loaded.from_dict(parsed)
+	assert_almost_eq(_mod(loaded, "formation_atk"), 1.1, 0.001,
+		"the row buff is in the save")
+	assert_eq(_mod(loaded, "protect"), -1.0,
+		"Protect was wiped before the snapshot and must not come back from the file")
+	_begin([loaded], scene.PartyFormation.FRONT_LINE)
+	assert_eq(_count(loaded, "formation_atk"), 1,
+		"loading the buff and starting a battle reapplies the row once — the saved 1.1 must not stack")
+	assert_almost_eq(_mod(loaded, "formation_atk"), 1.1, 0.001)
+	assert_eq(_mod(loaded, "protect"), -1.0)
+	assert_eq(loaded.get_buffed_stat("attack", loaded.attack), int(float(loaded.attack) * 1.1))
+
+
+func test_headless_grind_reapplies_the_same_row() -> void:
+	var scene: GDScript = load(BS_PATH)
+	var resolver = load("res://src/autogrind/HeadlessBattleResolver.gd").new()
+	var hero := _member(true)
+	hero.combatant_name = "Formation Grind Probe"
+	hero.attack = 200
+	hero.defense = 100
+	hero.max_hp = 500
+	hero.current_hp = 500
+	hero.speed = 30
+	_plant_leftovers(hero)
+	var fallen := _member(false)
+	_plant_leftovers(fallen)
+	scene.current_formation = scene.PartyFormation.FRONT_LINE
+	resolver.resolve_battle([hero, fallen], [_chaff()])
+	assert_eq(_count(hero, "formation_atk"), 1,
+		"a headless battle is still a battle — Front Line's +10% ATK has to be there")
+	assert_almost_eq(_mod(hero, "formation_atk"), 1.1, 0.001)
+	assert_eq(_count(hero, "formation_def"), 1)
+	assert_almost_eq(_mod(hero, "formation_def"), 0.9, 0.001)
+	assert_eq(_mod(hero, "protect"), -1.0,
+		"the grind wipe still drops Protect; the row is put back, the leftover is not")
+	assert_eq(hero.get_buffed_stat("attack", hero.attack), int(float(hero.attack) * 1.1))
+	assert_eq(_mod(fallen, "formation_atk"), -1.0,
+		"a KO'd member is skipped on the grind path too")
+	assert_eq(_mod(fallen, "protect"), -1.0)
+	resolver.resolve_battle([hero, fallen], [_chaff()])
+	assert_eq(_count(hero, "formation_atk"), 1,
+		"a second grind battle must not stack the row on the buff the first one left behind")
+	assert_almost_eq(_mod(hero, "formation_atk"), 1.1, 0.001)
+	assert_eq(hero.get_buffed_stat("attack", hero.attack), int(float(hero.attack) * 1.1))
+	scene.current_formation = scene.PartyFormation.V_FORMATION
+	hero.add_buff("formation_atk", "attack", 2.0, 999)
+	hero.add_buff("protect", "defense", 1.5, 5)
+	assert_almost_eq(_mod(hero, "formation_atk"), 2.0, 0.001,
+		"precondition: the leftover row is stronger than Front Line, so a refresh-in-place would keep 2.0x")
+	assert_almost_eq(_mod(hero, "protect"), 1.5, 0.001)
+	resolver.resolve_battle([hero], [_chaff()])
+	assert_eq(_mod(hero, "formation_atk"), -1.0,
+		"V-Formation still has no attack line on the grind — the planted 2.0x must not survive")
+	assert_eq(_mod(hero, "protect"), -1.0)
+
+
+func _chaff() -> Combatant:
+	var foe := Combatant.new()
+	foe.combatant_name = "Row Chaff"
+	foe.max_hp = 1
+	foe.current_hp = 1
+	foe.attack = 1
+	foe.defense = 0
+	foe.speed = 1
+	foe.is_alive = true
+	add_child_autofree(foe)
+	return foe
