@@ -221,6 +221,14 @@ func _ready() -> void:
 
 ## 2026-08-14 silent-death class (struktured: music+SFX stopped mid-battle, zero errors, YT fine): frozen playback position while playing == game mixer dead; advancing position while silent == stream corked below the game
 var _liveness_last_pos: float = -1.0
+## Latched once a playing bed sits still longer than one dummy-driver callback. Never cleared:
+## the mix thread is already inside an unbounded mix and will not notice a later stop().
+var _audio_mixer_wedged: bool = false
+var _mixer_watch_pos: float = -1.0
+var _mixer_watch_msec: int = 0
+## Dummy mixes 4096 frames then sleeps ~93ms (Godot 4.4.1). Two quiet callbacks is still healthy;
+## a third with the same position is the preroll that never moved (128/48000 = 0.00266666663811).
+const _MIXER_STALL_MSEC: int = 300
 
 func audio_liveness_check() -> void:
 	var p: AudioStreamPlayer = _music_player_b if (_music_player_b and _music_player_b.playing and not _music_player.playing) else _music_player
@@ -231,6 +239,55 @@ func audio_liveness_check() -> void:
 		_liveness_last_pos = pos
 	else:
 		_liveness_last_pos = -1.0
+	note_mixer_progress()
+
+
+func _process(_delta: float) -> void:
+	note_mixer_progress()
+
+
+## Public so a test waiting on playback can sample between frames. _process does the same.
+func note_mixer_progress() -> void:
+	if _audio_mixer_wedged:
+		return
+	var p: AudioStreamPlayer = _live_bed()
+	if p == null:
+		_mixer_watch_pos = -1.0
+		return
+	var pos: float = p.get_playback_position()
+	var now: int = Time.get_ticks_msec()
+	if _mixer_watch_pos < 0.0 or absf(pos - _mixer_watch_pos) >= 0.01:
+		_mixer_watch_pos = pos
+		_mixer_watch_msec = now
+		return
+	if now - _mixer_watch_msec >= _MIXER_STALL_MSEC:
+		_audio_mixer_wedged = true
+		push_warning("[AUDIO] playback position frozen at %.5fs for %dms — mix thread is not advancing; refusing PCM commits so AudioServer.lock cannot wedge the process" % [pos, now - _mixer_watch_msec])
+
+
+func mixer_is_wedged() -> bool:
+	return _audio_mixer_wedged
+
+
+func _live_bed() -> AudioStreamPlayer:
+	if _music_player and _music_player.playing and not _music_player.stream_paused:
+		return _music_player
+	if _music_player_b and _music_player_b.playing and not _music_player_b.stream_paused:
+		return _music_player_b
+	if _ambient_player and _ambient_player.playing and not _ambient_player.stream_paused:
+		return _ambient_player
+	return null
+
+
+## AudioStreamWAV.set_data takes the driver mutex and waits until the current mix callback
+## returns. A wedged mix never returns, so this is the call that hangs the suite (tavern piano).
+func _commit_wav_pcm(wav: AudioStreamWAV, data: PackedByteArray) -> bool:
+	note_mixer_progress()
+	if _audio_mixer_wedged:
+		push_warning("[AUDIO] skipped WAV commit (%d bytes) — mixer is wedged" % data.size())
+		return false
+	wav.data = data
+	return true
 
 
 func _exit_tree() -> void:
@@ -2784,7 +2841,9 @@ func _start_battle_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_cache["battle_generic"] = wav
 	_music_player.stream = wav
 	_music_player.play()
@@ -3182,7 +3241,9 @@ func _start_victory_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -3489,7 +3550,9 @@ func _start_boss_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -3725,7 +3788,9 @@ func _start_rat_king_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -3930,7 +3995,9 @@ func _start_danger_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -4491,6 +4558,9 @@ func _start_monster_music(monster_type: String) -> void:
 
 	# Generate and cache if no OGG and not cached
 	var wav = _generate_and_cache_music(monster_type)
+	if wav == null:
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -4524,7 +4594,8 @@ func _generate_and_cache_music(monster_type: String) -> AudioStreamWAV:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		return null
 	_music_cache[monster_type] = wav
 	return wav
 
@@ -5339,7 +5410,9 @@ func _start_game_over_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -5871,7 +5944,9 @@ func _create_and_play_looping_wav(buffer: PackedVector2Array, sample_rate: int, 
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 
 	if area_cache_key != "":
 		_area_wav_cache[area_cache_key] = wav
@@ -7297,6 +7372,11 @@ func _generate_autogrind_music(rate: int, duration: float, bpm: float) -> Packed
 ## Piano melody for tavern interaction
 func play_piano_melody() -> void:
 	"""Play a procedural piano melody for the tavern piano"""
+	## The PCM commit takes AudioServer's lock. If the mix thread is already wedged, that call never returns.
+	note_mixer_progress()
+	if _audio_mixer_wedged:
+		push_warning("[AUDIO] skipped tavern piano — mixer is wedged")
+		return
 	var sample_rate = 22050
 	var duration = 3.0
 	var buffer = _generate_piano_melody(sample_rate, duration)
@@ -7317,7 +7397,8 @@ func play_piano_melody() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		return
 
 	# Use ability player for one-shot sounds
 	## Pitch is CONTENT here, and this is the third writer of a SHARED player: every ability file cue leaves pitch_scale jittered (_try_play_sfx_from_manifest), and only _play_sound resets it.
