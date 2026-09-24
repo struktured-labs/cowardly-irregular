@@ -842,13 +842,12 @@ func _update_description_for_item(item_id: String) -> void:
 					var delta: int = int(comparison.get(stat, 0))
 					if value == 0 and delta == 0:
 						continue
-					var stat_name: String = StatNames.display_name(str(stat))
 					if delta > 0:
-						desc += "  %s: %+d  (+%d)\n" % [stat_name, value, delta]
+						desc += "  %s: %+d  (+%d)\n" % [StatNames.display_name(stat), value, delta]
 					elif delta < 0:
-						desc += "  %s: %+d  (%d)\n" % [stat_name, value, delta]
+						desc += "  %s: %+d  (%d)\n" % [StatNames.display_name(stat), value, delta]
 					elif value != 0:
-						desc += "  %s: %+d  (=)\n" % [stat_name, value]
+						desc += "  %s: %+d  (=)\n" % [StatNames.display_name(stat), value]
 
 	# Show MP cost for magic
 	if _is_magic_shop():
