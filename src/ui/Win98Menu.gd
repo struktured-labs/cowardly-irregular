@@ -229,6 +229,10 @@ const MENU_SCREEN_MARGIN = 24
 const COST_COLOR := Color(0.65, 0.78, 0.95, 0.85)
 const COST_COLOR_UNAFFORDABLE := Color(0.92, 0.45, 0.45, 0.95)
 const COST_COLUMN_WIDTH = 46
+## Row copy is drawn at these sizes (TextScale.scaled). Width used to be measured at a hardcoded 11.
+const ROW_LABEL_FONT := 16
+const COST_LABEL_FONT := 10
+var _cost_column_width: int = COST_COLUMN_WIDTH
 
 ## struktured 2026-08-22: "the main battle menu for ap layer can prob be more translucent
 ## not just prev ones, unclear though we need to play test it" — he flagged it as UNCERTAIN,
@@ -665,6 +669,38 @@ func setup(title: String, items: Array, pos: Vector2, character_class: String = 
 		_build_menu()
 
 
+func _row_label_font_size() -> int:
+	return TextScale.scaled(ROW_LABEL_FONT)
+
+
+func _cost_label_font_size() -> int:
+	return TextScale.scaled(COST_LABEL_FONT)
+
+
+func _menu_font() -> Font:
+	if is_inside_tree():
+		var themed := get_theme_font(&"font")
+		if themed:
+			return themed
+	return ThemeDB.fallback_font
+
+
+func _text_px(text: String, font_size: int) -> int:
+	var font := _menu_font()
+	if font == null:
+		return 0
+	return ceili(font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+
+
+## At the default text size a 16px glyph is 23px tall and the 24px row already clears it. Larger settings draw past that and clip_text cuts the line off.
+func _row_height() -> int:
+	var font := _menu_font()
+	var glyph := _row_label_font_size()
+	if font:
+		glyph = maxi(glyph, ceili(font.get_height(glyph)))
+	return maxi(ITEM_HEIGHT, glyph)
+
+
 func _build_menu() -> void:
 	"""Build the retro pixel-tile menu"""
 	# Clear existing children
@@ -674,34 +710,41 @@ func _build_menu() -> void:
 	if menu_items.size() == 0:
 		return
 
-	# Calculate menu width dynamically based on item label lengths
+	# Measured at the drawn size. The old 11px measure ellipsized "~N dmg [KILL]" on a target row.
 	var content_padding = MENU_PADDING * 2 + TILE_SIZE * 2 + 20  # borders + cursor + gap
-	var max_label_width = 0
-	var font = ThemeDB.fallback_font
+	var row_font := _row_label_font_size()
+	var cost_font := _cost_label_font_size()
+	var cost_column := COST_COLUMN_WIDTH
 	for item in menu_items:
-		var label_text = item.get("label", "Item")
+		if item.has("cost"):
+			cost_column = maxi(cost_column, _text_px("%d MP" % int(item["cost"]), cost_font) + 8)
+	_cost_column_width = cost_column
+	var max_label_width := 0
+	for item in menu_items:
+		var label_text := str(item.get("label", "Item"))
 		if item.has("submenu"):
 			label_text += " >"
-		var text_width = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		var text_width := _text_px(label_text, row_font)
 		if item.has("cost"):
-			text_width += COST_COLUMN_WIDTH  # the cost column sits to the right of the name
-		max_label_width = max(max_label_width, text_width)
+			text_width += cost_column
+		max_label_width = maxi(max_label_width, text_width)
 	var viewport_width = 1280
 	if is_inside_tree():
 		viewport_width = int(get_viewport_rect().size.x)
-	var menu_width = clampi(max(210, int(max_label_width) + content_padding), 210, viewport_width / 2)
+	var menu_width = clampi(max(210, max_label_width + content_padding), 210, viewport_width / 2)
 
+	var row_h := _row_height()
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
 	var chrome_height = MENU_PADDING * 2 + TILE_SIZE * 2 + ap_label_height
 	var viewport_height = 720
 	if is_inside_tree():
 		viewport_height = int(get_viewport_rect().size.y)
 	var room_for_rows = viewport_height - MENU_SCREEN_MARGIN * 2 - chrome_height
-	_max_visible_rows = maxi(1, room_for_rows / ITEM_HEIGHT)
+	_max_visible_rows = maxi(1, room_for_rows / row_h)
 	if menu_items.size() <= _max_visible_rows:
 		_max_visible_rows = 0  # fits; no scrolling
 	var shown_rows = menu_items.size() if _max_visible_rows == 0 else _max_visible_rows
-	var menu_height = chrome_height + shown_rows * ITEM_HEIGHT
+	var menu_height = chrome_height + shown_rows * row_h
 
 	# Create the menu texture with pixel borders
 	var menu_panel = _create_retro_panel(menu_width, menu_height)
@@ -839,8 +882,9 @@ func _create_retro_panel(w: int, h: int) -> Control:
 
 func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -> Control:
 	"""Create a single menu item row"""
+	var row_h := _row_height()
 	var row = Control.new()
-	row.custom_minimum_size = Vector2(content_width, ITEM_HEIGHT)
+	row.custom_minimum_size = Vector2(content_width, row_h)
 	row.name = "Item%d" % index
 
 	# Selection highlight border (top line)
@@ -857,7 +901,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	highlight.name = "Highlight"
 	highlight.color = style.highlight_bg.lightened(0.1)
 	highlight.position = Vector2(-4, 1)
-	highlight.size = Vector2(content_width + 8, ITEM_HEIGHT - 2)
+	highlight.size = Vector2(content_width + 8, row_h - 2)
 	highlight.visible = false
 	row.add_child(highlight)
 
@@ -865,7 +909,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	var highlight_bottom = ColorRect.new()
 	highlight_bottom.name = "HighlightBottom"
 	highlight_bottom.color = style.cursor.darkened(0.2)
-	highlight_bottom.position = Vector2(-4, ITEM_HEIGHT - 1)
+	highlight_bottom.position = Vector2(-4, row_h - 1)
 	highlight_bottom.size = Vector2(content_width + 8, 1)
 	highlight_bottom.visible = false
 	row.add_child(highlight_bottom)
@@ -887,7 +931,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	var text_label = Label.new()
 	text_label.name = "Label"
 	text_label.position = Vector2(10, 0)
-	text_label.size = Vector2(content_width - 14, ITEM_HEIGHT)
+	text_label.size = Vector2(content_width - 14, row_h)
 	text_label.clip_text = true
 	text_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if has_submenu:
@@ -898,15 +942,15 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	# Cost as a separate right-aligned span so it can carry its own colour AND its own
 	# affordability tint, independent of the row's disabled state.
 	if item.has("cost"):
-		text_label.size.x -= COST_COLUMN_WIDTH
+		text_label.size.x -= _cost_column_width
 		var cost_label = Label.new()
 		cost_label.name = "Cost"
 		cost_label.text = "%d MP" % int(item["cost"])
 		cost_label.position = Vector2(10 + text_label.size.x, 0)
-		cost_label.size = Vector2(COST_COLUMN_WIDTH - 4, ITEM_HEIGHT)
+		cost_label.size = Vector2(_cost_column_width - 4, row_h)
 		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		cost_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		cost_label.add_theme_font_size_override("font_size", _cost_label_font_size())
 		var affordable: bool = bool(item.get("cost_affordable", true))
 		cost_label.add_theme_color_override("font_color", COST_COLOR if affordable else COST_COLOR_UNAFFORDABLE)
 		row.add_child(cost_label)
@@ -919,14 +963,14 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	else:
 		text_label.add_theme_color_override("font_color", style.text)
 
-	text_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
+	text_label.add_theme_font_size_override("font_size", _row_label_font_size())
 	row.add_child(text_label)
 
 	# Make clickable
 	var button = Button.new()
 	button.flat = true
 	button.position = Vector2(0, 0)
-	button.size = Vector2(content_width, ITEM_HEIGHT)
+	button.size = Vector2(content_width, row_h)
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(_on_item_pressed.bind(index))
 	button.mouse_entered.connect(_on_item_hover.bind(index))
@@ -1056,7 +1100,7 @@ func _scroll_selection_into_view(container: VBoxContainer) -> void:
 	elif selected_index > last_visible:
 		_scroll_offset = selected_index - _max_visible_rows + 1
 	_scroll_offset = clampi(_scroll_offset, 0, maxi(0, menu_items.size() - _max_visible_rows))
-	container.position.y = _items_base_y - float(_scroll_offset * ITEM_HEIGHT)
+	container.position.y = _items_base_y - float(_scroll_offset * _row_height())
 
 
 func _get_items_container() -> VBoxContainer:
@@ -1080,13 +1124,14 @@ func _do_open_submenu(parent_index: int, item: Dictionary) -> void:
 func _open_submenu(parent_index: int, item: Dictionary) -> void:
 	"""Open a submenu with slide animation - expands UP and LEFT (tree style)"""
 	var submenu_items = item.get("submenu", [])
-	var submenu_height = MENU_PADDING * 2 + submenu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2
+	var row_h := _row_height()
+	var submenu_height = MENU_PADDING * 2 + submenu_items.size() * row_h + TILE_SIZE * 2
 
 	var submenu_pos: Vector2
 	var start_offset: Vector2
 
 	# Calculate position - expand LEFT and UP from the selected item
-	var item_y = parent_index * ITEM_HEIGHT + TILE_SIZE + MENU_PADDING
+	var item_y = parent_index * row_h + TILE_SIZE + MENU_PADDING
 	if expand_left:
 		# Position to the left of current menu
 		submenu_pos.x = global_position.x - size.x - 6  # Menu width + gap
@@ -1095,7 +1140,7 @@ func _open_submenu(parent_index: int, item: Dictionary) -> void:
 
 	if expand_up:
 		# Align bottom of submenu with current item, expand upward
-		submenu_pos.y = global_position.y + item_y - submenu_height + ITEM_HEIGHT
+		submenu_pos.y = global_position.y + item_y - submenu_height + row_h
 	else:
 		submenu_pos.y = global_position.y + item_y
 
