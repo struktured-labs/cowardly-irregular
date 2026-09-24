@@ -32,7 +32,9 @@ func _open(items: Array) -> Win98Menu:
 	var menu = Win98MenuScript.new()
 	add_child_autofree(menu)
 	menu.setup("Attack", items, Vector2(40, 40), "fighter")
-	await get_tree().process_frame
+	# setup() builds the rows, then awaits a frame and two short timers before it goes idle.
+	# Freeing the menu in the middle of that leaves it as a child of the test.
+	await get_tree().create_timer(0.25, true, false, true).timeout
 	return menu
 
 
