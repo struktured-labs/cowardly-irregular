@@ -2237,13 +2237,23 @@ func _on_ability_selected(idx: int, ability_ids: Array) -> void:
 
 func _execute_ability(ability_id: String, target: Combatant, target_all: bool = false) -> void:
 	"""Queue ability (animation plays during execution phase)"""
-	var targets = []
-	if target_all:
-		targets = _get_alive_enemies()
-	else:
-		targets = [target]
-
+	var targets: Array = _targets_for_queued_ability(ability_id, target, target_all)
 	BattleManager.player_use_ability(ability_id, targets)
+
+
+## Both menus pass one focus and set target_all only for all_enemies, so an all_allies spell buffed the caster alone.
+func _targets_for_queued_ability(ability_id: String, focus: Combatant, hit_all_enemies: bool) -> Array:
+	if hit_all_enemies:
+		return _get_alive_enemies()
+	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
+	if str(ability.get("target_type", "")) == "all_allies":
+		var allies: Array = []
+		for m in party_members:
+			if is_instance_valid(m) and m.is_alive:
+				allies.append(m)
+		if not allies.is_empty():
+			return allies
+	return [focus]
 
 
 ## Accepts the ability DICT (preferred) or a bare id — the dict is what carries element/vfx into
