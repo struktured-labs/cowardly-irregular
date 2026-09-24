@@ -831,17 +831,24 @@ func _update_description_for_item(item_id: String) -> void:
 						desc += "  %s: %+d\n" % [StatNames.display_name(stat), value]
 			else:
 				desc += "Stats (vs equipped):\n"
+				# Union, not just the new piece: a robe that omits Max HP still drops Iron Armor's +250.
+				var shown: Dictionary = {}
 				for stat in stat_mods:
-					var value = stat_mods[stat]
-					if value == 0 and not comparison.has(stat):
+					shown[str(stat)] = true
+				for stat in comparison:
+					shown[str(stat)] = true
+				for stat in shown:
+					var value: int = int(stat_mods.get(stat, 0))
+					var delta: int = int(comparison.get(stat, 0))
+					if value == 0 and delta == 0:
 						continue
-					var delta: int = comparison.get(stat, 0)
+					var stat_name: String = StatNames.display_name(str(stat))
 					if delta > 0:
-						desc += "  %s: %+d  (+%d)\n" % [StatNames.display_name(stat), value, delta]
+						desc += "  %s: %+d  (+%d)\n" % [stat_name, value, delta]
 					elif delta < 0:
-						desc += "  %s: %+d  (%d)\n" % [StatNames.display_name(stat), value, delta]
+						desc += "  %s: %+d  (%d)\n" % [stat_name, value, delta]
 					elif value != 0:
-						desc += "  %s: %+d  (=)\n" % [StatNames.display_name(stat), value]
+						desc += "  %s: %+d  (=)\n" % [stat_name, value]
 
 	# Show MP cost for magic
 	if _is_magic_shop():
@@ -907,12 +914,15 @@ func _compare_equipment(item_id: String, item_data: Dictionary) -> Dictionary:
 			current_data = equipment_system.accessories[current_id]
 		current_mods = current_data.get("stat_mods", {})
 
-	# Calculate delta: new - current
-	var delta: Dictionary = {}
+	# Both sides. A stat only the worn piece has is still a change (Iron Armor's HP, its speed penalty).
+	var stats: Dictionary = {}
 	for stat in new_mods:
-		var new_val: int = new_mods.get(stat, 0)
-		var cur_val: int = current_mods.get(stat, 0)
-		delta[stat] = new_val - cur_val
+		stats[str(stat)] = true
+	for stat in current_mods:
+		stats[str(stat)] = true
+	var delta: Dictionary = {}
+	for stat in stats:
+		delta[stat] = int(new_mods.get(stat, 0)) - int(current_mods.get(stat, 0))
 	return delta
 
 
