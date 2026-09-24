@@ -781,6 +781,14 @@ func _use_selected_item() -> void:
 			PartyChatSystem.fire_event_flag("event_flag_tent_blocked")
 		return
 
+	# A full-HP potion, a cure with nothing to cure, a Smoke Bomb on the field: use_item still returns true and the item was spent. Refuse first and say which.
+	if ItemSystem:
+		var noop := ItemSystem.ineffective_use_reason(item.get("id", ""), targets)
+		if noop != "":
+			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, noop)
+			return
+
 	# Use the item
 	if party.is_empty():
 		return
@@ -818,9 +826,7 @@ func _use_selected_item() -> void:
 			_build_ui()
 	else:
 		SoundManager.play_ui("menu_error")
-		# ItemSystem.use_item returns false for various reasons (target
-		# already at full HP for heal, status-clear with no matching status,
-		# etc). Without a Toast the player hears the beep but can't tell why.
+		# Unknown id or an item with no effects field. A heal that changes nothing is refused above, before this call.
 		Toast.show_warning(self, "Item had no effect")
 
 
