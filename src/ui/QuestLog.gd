@@ -107,6 +107,17 @@ func _ready() -> void:
 	call_deferred("_build_ui")
 
 
+## Glyph height at the current text-size preset. A Label will not shrink below font.get_height(), and that extra leading is not ink, so the pitch follows the drawn glyph.
+func _glyph_px(base: int) -> float:
+	var font_size := TextScale.scaled(base)
+	var font: Font = get_theme_font(&"font") if is_inside_tree() else null
+	if font == null:
+		font = ThemeDB.fallback_font
+	if font == null:
+		return float(font_size)
+	return font.get_string_size("Ag", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).y
+
+
 func setup() -> void:
 	pass
 
@@ -125,20 +136,22 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	# Title bar
+	# Title bar. 30px held an 18px glyph; Text Size 150% and 200% draw past the separator into the Next line.
+	var title_h := maxf(30.0, _glyph_px(18))
 	var title = Label.new()
 	title.text = "QUEST LOG"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.position = Vector2(0, 12)
-	title.size = Vector2(vp_size.x, 30)
+	title.size = Vector2(vp_size.x, title_h)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", HEADER_COLOR)
 	add_child(title)
 
-	# Separator line
+	# Separator line. 12 + title + 2px gap was y=44 when the title box was 30.
+	var sep_y := 14.0 + title_h
 	var sep = ColorRect.new()
 	sep.color = BORDER_LIGHT
-	sep.position = Vector2(20, 44)
+	sep.position = Vector2(20, sep_y)
 	sep.size = Vector2(vp_size.x - 40, 1)
 	add_child(sep)
 
@@ -149,27 +162,33 @@ func _build_ui() -> void:
 	# complete or none are unlocked.
 	var next_text = _find_active_objective_text()
 	var banner_h: float = 0.0
+	var banner_top := sep_y + 8.0
+	var next_label_h := maxf(20.0, _glyph_px(13))
 	if next_text != "":
+		var next_bg_h := next_label_h + 8.0
 		var next_bg = ColorRect.new()
 		next_bg.name = "NextBannerBG"
 		next_bg.color = Color(0.14, 0.16, 0.22, 0.92)
-		next_bg.position = Vector2(20, 52)
-		next_bg.size = Vector2(vp_size.x - 40, 28)
+		next_bg.position = Vector2(20, banner_top)
+		next_bg.size = Vector2(vp_size.x - 40, next_bg_h)
 		add_child(next_bg)
 		var next_label = Label.new()
 		next_label.name = "NextBanner"
 		next_label.text = "▶ Next: " + next_text
-		next_label.position = Vector2(32, 56)
-		next_label.size = Vector2(vp_size.x - 64, 20)
+		next_label.position = Vector2(32, banner_top + 4.0)
+		next_label.size = Vector2(vp_size.x - 64, next_label_h)
 		next_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		next_label.add_theme_color_override("font_color", ACTIVE_COLOR)
 		add_child(next_label)
-		banner_h = 36.0
+		banner_h = next_bg_h + 8.0
 
-	# Quest content area
-	var content_y: float = 56.0 + banner_h
-	var content_h: float = vp_size.y - 100.0 - banner_h
-	var line_height: float = 20.0
+	# Quest content area. Chapter headers are the tallest body line (base 15). A fixed 20px pitch is shorter than that glyph, and a larger Text Size stacks the next objective through it.
+	var content_y: float = banner_top + 4.0 + banner_h if next_text != "" else sep_y + 12.0
+	var footer_h := maxf(20.0, _glyph_px(12))
+	var footer_y: float = float(vp_size.y) - 8.0 - footer_h
+	var content_bottom: float = footer_y - 16.0
+	var content_h: float = content_bottom - content_y
+	var line_height: float = maxf(20.0, _glyph_px(15))
 	_max_visible_lines = int(content_h / line_height)
 
 	var lines: Array = _build_quest_lines()
@@ -216,7 +235,7 @@ func _build_ui() -> void:
 	if _scroll_offset + _max_visible_lines < _total_lines:
 		var dn_arrow = Label.new()
 		dn_arrow.text = "▼ More"
-		dn_arrow.position = Vector2(vp_size.x - 80, vp_size.y - 44)
+		dn_arrow.position = Vector2(vp_size.x - 80, content_bottom)
 		dn_arrow.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		dn_arrow.add_theme_color_override("font_color", LOCKED_COLOR)
 		add_child(dn_arrow)
@@ -231,8 +250,8 @@ func _build_ui() -> void:
 		InputProfileManager.hint_for_action("battle_advance"),
 		InputProfileManager.hint_for_action("ui_cancel")]
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer.position = Vector2(0, vp_size.y - 28)
-	footer.size = Vector2(vp_size.x, 20)
+	footer.position = Vector2(0, footer_y)
+	footer.size = Vector2(vp_size.x, footer_h)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", LOCKED_COLOR)
 	add_child(footer)
