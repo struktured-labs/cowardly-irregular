@@ -530,6 +530,8 @@ func assign_job(combatant: Combatant, job_id: String) -> bool:
 	# mage convert gets tier-appropriate spells), and new characters
 	# (level 1 grants nothing). Idempotent via learn_ability dedupe.
 	learn_abilities_for_level(combatant, combatant.job_level)
+	# The roster's passive_abilities are part of the job the same way its spells are.
+	_grant_roster_passives(combatant, job)
 	job_changed.emit(combatant, old_job, job)
 	return true
 
@@ -571,6 +573,27 @@ func learn_abilities_for_level(combatant: Combatant, new_level: int) -> Array:
 	return granted
 
 
+## First meeting learns each passive_abilities id and equips it when a slot is free.
+## Already-learned ids are left alone, so an unequip and every later Continue stay put.
+func _grant_roster_passives(combatant: Combatant, job: Dictionary) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	var ids: Variant = job.get("passive_abilities", [])
+	if not (ids is Array):
+		return
+	var passive_system: Node = get_node_or_null("/root/PassiveSystem")
+	for raw in ids:
+		var passive_id: String = str(raw)
+		if passive_id == "":
+			continue
+		if passive_id in combatant.learned_passives:
+			continue
+		if combatant.has_method("learn_passive"):
+			combatant.learn_passive(passive_id)
+		if passive_system != null and passive_system.has_method("equip_passive"):
+			passive_system.equip_passive(combatant, passive_id)
+
+
 ## Item 18 dev toggle: ON grants every level-gated ability to the
 ## party (test without grinding); OFF strips exactly the unlocks
 ## ABOVE each member's current level — legitimately-earned spells
@@ -604,6 +627,8 @@ func assign_secondary_job(combatant: Combatant, job_id: String) -> bool:
 		return false
 	combatant.secondary_job = jobs[job_id]
 	combatant.secondary_job_id = job_id
+	# A secondary lends its passive roster the same way it lends its base ability kit.
+	_grant_roster_passives(combatant, jobs[job_id])
 	# Same omission class as tick 328: setting the field is not applying it.
 	# The lent stats live in recalculate_stats, so without this call they
 	# only appeared the next time something ELSE recalculated (an equip, a
