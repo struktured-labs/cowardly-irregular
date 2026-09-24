@@ -483,7 +483,8 @@ func _attempt_sell(item_id: String, item_data: Dictionary) -> void:
 	var sell_price = int(cost * 0.5)
 
 	# Check if we have the item
-	if not _remove_item_from_inventory(item_id):
+	var removed: bool = _remove_from_equipment_pool(item_id) if shop_type == ShopType.BLACKSMITH else _remove_item_from_inventory(item_id)
+	if not removed:
 		SoundManager.play_ui("menu_error")
 		description_label.text = "You don't have that item!"
 		return
@@ -513,7 +514,11 @@ func _get_item_data(item_id: String) -> Dictionary:
 			var weapon = equipment_system.weapons.get(item_id, {})
 			if not weapon.is_empty():
 				return weapon
-			return equipment_system.armors.get(item_id, {})
+			var armor = equipment_system.armors.get(item_id, {})
+			if not armor.is_empty():
+				return armor
+			## The shelf stocks no accessories, but the pool it buys back from holds them.
+			return equipment_system.accessories.get(item_id, {})
 	return {}
 
 
@@ -581,12 +586,20 @@ func _get_sellable_inventory() -> Array:
 	var sellable: Array = []
 	var counted: Dictionary = {}
 
-	# Live stock when the party is in the tree. The snapshot still lists a potion the field menu already used, and it misses a chest drop until the next menu open.
-	for inventory in _inventory_sources():
-		for item_id in inventory:
-			var quantity = int(inventory[item_id])
-			if quantity > 0:
-				counted[item_id] = counted.get(item_id, 0) + quantity
+	## Gear never enters a party inventory — purchases, chests and drops all land in the pool — so the blacksmith listed nothing to sell.
+	if shop_type == ShopType.BLACKSMITH:
+		var pool: Dictionary = _live_equipment_pool()
+		for key in pool:
+			if pool[key] is Array:
+				for item_id in pool[key]:
+					counted[str(item_id)] = counted.get(str(item_id), 0) + 1
+	else:
+		# Live stock when the party is in the tree. The snapshot still lists a potion the field menu already used, and it misses a chest drop until the next menu open.
+		for inventory in _inventory_sources():
+			for item_id in inventory:
+				var quantity = int(inventory[item_id])
+				if quantity > 0:
+					counted[item_id] = counted.get(item_id, 0) + quantity
 
 	# Convert to array, excluding key/quest items and worthless junk.
 	for item_id in counted:
@@ -615,6 +628,46 @@ func _member_knows(char_index: int, spell_id: String, snapshot_learned: Array) -
 	if char_index < live.size() and live[char_index] != null and is_instance_valid(live[char_index]) \
 			and live[char_index].has_method("knows_ability"):
 		return bool(live[char_index].knows_ability(spell_id))
+	return false
+
+
+func _has_live_equipment_pool() -> bool:
+	if not is_inside_tree():
+		return false
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop")
+	return gl != null and "equipment_pool" in gl
+
+
+## GameLoop.equipment_pool is the live store of unequipped gear; an empty dict when there is none.
+func _live_equipment_pool() -> Dictionary:
+	if not _has_live_equipment_pool():
+		return {}
+	return get_tree().root.get_node("GameLoop").equipment_pool
+
+
+## weapons / armors / accessories by catalog lookup, "" for an id the catalog does not know.
+func _equipment_pool_key(item_id: String) -> String:
+	var eq = get_node_or_null("/root/EquipmentSystem")
+	if eq == null:
+		return ""
+	if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
+		return "weapons"
+	if eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
+		return "armors"
+	if eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
+		return "accessories"
+	return ""
+
+
+## Catalog slot first, then any slot: an old save can hold a piece the pre-fix chest heuristic filed under the wrong key, and the sell list counts every key.
+func _remove_from_equipment_pool(item_id: String) -> bool:
+	var pool: Dictionary = _live_equipment_pool()
+	var keys: Array = [_equipment_pool_key(item_id)]
+	keys.append_array(pool.keys())
+	for key in keys:
+		if pool.get(key, null) is Array and (pool[key] as Array).has(item_id):
+			(pool[key] as Array).erase(item_id)
+			return true
 	return false
 
 
@@ -674,24 +727,12 @@ func _add_item_to_inventory(item_id: String) -> bool:
 		# dict (per the BattleManager._route_drop_to_equipment_pool
 		# pattern at line ~4979). Without this the same overwrite class
 		# applies to blacksmith purchases.
-		var tree: SceneTree = get_tree()
-		if tree != null and tree.root != null:
-			var gl: Node = tree.root.get_node_or_null("GameLoop")
-			if gl != null and "equipment_pool" in gl:
-				var pool: Dictionary = gl.equipment_pool
-				var eq = get_node_or_null("/root/EquipmentSystem")
-				if eq != null:
-					var key: String = ""
-					if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
-						key = "weapons"
-					elif eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
-						key = "armors"
-					elif eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
-						key = "accessories"
-					if key != "":
-						if not pool.has(key):
-							pool[key] = []
-						pool[key].append(item_id)
+		var pool: Dictionary = _live_equipment_pool()
+		var key: String = _equipment_pool_key(item_id)
+		if key != "" and _has_live_equipment_pool():
+			if not pool.has(key):
+				pool[key] = []
+			pool[key].append(item_id)
 		return true
 	# Magic purchases handled separately in _attempt_magic_purchase. Any
 	# other shop_type values reaching here are an authoring error — refuse
