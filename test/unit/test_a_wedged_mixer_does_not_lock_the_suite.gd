@@ -142,7 +142,8 @@ func test_a_paused_bed_does_not_latch() -> void:
 	await _require_bed("battle_medieval")
 	SoundManager._music_player.stream_paused = true
 	assert_true(SoundManager._music_player.stream_paused, "CONTROL: the pause took")
-	assert_true(SoundManager._music_player.playing, "CONTROL: pause leaves the player marked playing")
+	# Godot 4.4 reports playing=false while stream_paused is set, so the bed leaves the live set.
+	assert_null(SoundManager._live_bed(), "a paused bed must leave the live set")
 	SoundManager._audio_mixer_wedged = false
 	SoundManager._mixer_watch_msec = Time.get_ticks_msec() - 1000
 	await _wait_ms(400)
