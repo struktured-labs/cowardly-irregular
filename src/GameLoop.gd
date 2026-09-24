@@ -3564,9 +3564,14 @@ func _on_battle_ended(victory: bool) -> void:
 			GameState.game_constants["meta_auto_rewind_pending"] = false
 			if GameState.rewind_to_previous_save():
 				print("[META] temporal_shield auto-rewind consumed — wipe averted")
-				# Skip game-over flow entirely; the save data has been
-				# restored to a pre-wipe state.
-				return
+				# Rewind writes GameState only. Rebuild the wiped party and leave the battle.
+				if "game_constants" in GameState:
+					GameState.game_constants["meta_auto_rewind_pending"] = false
+				if _restore_party_from_save_data():
+					GameState.pending_boss_defeat = {}
+					await _return_to_exploration(true)
+					return
+				push_warning("[META] temporal shield rewound the save but the party could not be rebuilt")
 			else:
 				print("[META] temporal_shield auto-rewind failed — rewind not enabled or no history; falling through to game over")
 
