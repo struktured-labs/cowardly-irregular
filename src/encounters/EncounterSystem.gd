@@ -371,6 +371,8 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 			"attack": stats.get("attack", 10),
 			"defense": stats.get("defense", 8),
 			"magic": stats.get("magic", 5),
+			# Codex prints magic_defense; dropping the key makes the fight use defense/2.
+			"magic_defense": stats.get("magic_defense", int(stats.get("defense", 8) * 0.5)),
 			"speed": stats.get("speed", 8),
 			"elemental_weaknesses": db_entry.get("weaknesses", []),
 			"elemental_resistances": db_entry.get("resistances", []),

@@ -132,7 +132,15 @@ func test_gameloop_sets_monster_type_meta_in_headless_path() -> void:
 	if fn_end < 0:
 		fn_end = src.length()
 	var body := src.substr(fn_start, fn_end - fn_start)
-	assert_true(body.contains('set_meta("monster_type"'),
+	assert_true(body.contains("_combatant_for_headless"),
+		"headless resolution must build each enemy through _combatant_for_headless")
+	var build_start := src.find("func _combatant_for_headless")
+	assert_true(build_start >= 0, "_combatant_for_headless must exist")
+	var build_end := src.find("\nfunc ", build_start + 20)
+	if build_end < 0:
+		build_end = src.length()
+	var build := src.substr(build_start, build_end - build_start)
+	assert_true(build.contains('set_meta("monster_type"'),
 		"headless Combatant build must set monster_type meta — without it bestiary credit AND drop lookup silently no-op for the whole ludicrous path")
 	assert_true(body.contains("notify_rare_drop"),
 		"headless path must notify rare drops so rare_item_found interrupts work in ludicrous mode")
