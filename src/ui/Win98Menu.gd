@@ -883,7 +883,6 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	# Item label
 	var label = item.get("label", "Item")
 	var has_submenu = item.has("submenu")
-	var disabled = item.get("disabled", false)
 
 	var text_label = Label.new()
 	text_label.name = "Label"
@@ -912,7 +911,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 		cost_label.add_theme_color_override("font_color", COST_COLOR if affordable else COST_COLOR_UNAFFORDABLE)
 		row.add_child(cost_label)
 
-	if disabled:
+	if _row_unavailable(item):
 		text_label.add_theme_color_override("font_color", style.text.darkened(0.5))
 	elif item.get("text_color", null) is Color:
 		# Optional per-row tint (shop affordability/owned cues) — row stays selectable, unlike disabled.
@@ -968,8 +967,7 @@ func _update_selection() -> void:
 			label.add_theme_color_override("font_color", style.highlight_text)
 		elif label:
 			var item = menu_items[i] if i < menu_items.size() else {}
-			var disabled = item.get("disabled", false)
-			if disabled:
+			if _row_unavailable(item):
 				label.add_theme_color_override("font_color", style.text.darkened(0.5))
 			elif item.get("text_color", null) is Color:
 				label.add_theme_color_override("font_color", item["text_color"])
@@ -994,7 +992,7 @@ func _on_item_pressed(index: int) -> void:
 
 	var item = menu_items[index]
 
-	if item.get("disabled", false):
+	if _row_unavailable(item):
 		_reject_selection(item)
 		return
 
@@ -1276,7 +1274,7 @@ func _handle_advance_input() -> void:
 			_do_open_submenu(selected_index, current_item)
 		return
 
-	if current_item.get("disabled", false):
+	if _row_unavailable(current_item):
 		_reject_selection(current_item)
 		return
 
@@ -1475,7 +1473,7 @@ func _submit_actions() -> void:
 		return
 	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
-	if current_item.get("disabled", false):
+	if _row_unavailable(current_item):
 		_reject_selection(current_item)
 		return
 
@@ -1613,10 +1611,18 @@ var _hint_showing_reason: bool = false
 ## struktured 2026-08-22: "a wasted action because of insufficient resources - mp, ap, etc,
 ## should have a noise and/or text to indicate it". menu_error is the canonical key
 ## (cowir-sfx, 21 existing call sites, falls back to menu_cancel if the asset ever fails).
+## disabled rows are skipped by the cursor. reject_reason rows stay landable: the player can move onto a full-HP ally and hear why confirm did nothing.
+func _row_unavailable(item: Dictionary) -> bool:
+	return bool(item.get("disabled", false)) or str(item.get("reject_reason", "")) != ""
+
+
 func _reject_selection(item: Dictionary) -> void:
 	SoundManager.play_ui("menu_error")
 	var reason := "Can't use that right now"
-	if item.has("cost") and not bool(item.get("cost_affordable", true)):
+	var custom := str(item.get("reject_reason", ""))
+	if custom != "":
+		reason = custom
+	elif item.has("cost") and not bool(item.get("cost_affordable", true)):
 		reason = "Not enough MP (%d needed)" % int(item.get("cost", 0))
 	elif item.has("ap_cost"):
 		reason = "Not enough AP"
@@ -1851,6 +1857,8 @@ func _input(event: InputEvent) -> void:
 		var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 		if _queue_is_full():
 			_commit_queue_exactly()
+		elif _row_unavailable(current_item) and not current_item.has("submenu"):
+			_reject_selection(current_item)
 		elif current_item.has("submenu"):
 			_play_expand_sound()
 			if not submenu:
@@ -1893,6 +1901,8 @@ func _input(event: InputEvent) -> void:
 			var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 			if _queue_is_full():
 				_commit_queue_exactly()
+			elif _row_unavailable(current_item) and not current_item.has("submenu"):
+				_reject_selection(current_item)
 			elif current_item.has("submenu"):
 				# Item has submenu - expand it
 				_play_expand_sound()
@@ -1940,6 +1950,8 @@ func _input(event: InputEvent) -> void:
 			var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 			if _queue_is_full():
 				_commit_queue_exactly()
+			elif _row_unavailable(current_item) and not current_item.has("submenu"):
+				_reject_selection(current_item)
 			elif current_item.has("submenu"):
 				_play_expand_sound()
 				if not submenu:
