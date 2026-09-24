@@ -253,8 +253,9 @@ func test_cost_renders_as_its_own_span_not_glued_to_the_name() -> void:
 	var container = m._get_items_container()
 	assert_not_null(container, "CONTROL: the menu built its rows")
 	var row_a = container.get_child(0)
-	var name_a = row_a.get_node_or_null("Label")
-	var cost_a = row_a.get_node_or_null("Cost")
+	# Label and Cost sit under a clip, because a Label will not shrink below font.get_height().
+	var name_a = row_a.find_child("Label", true, false)
+	var cost_a = row_a.find_child("Cost", true, false)
 	assert_not_null(cost_a, "the cost is its OWN node, not concatenated into the name")
 	assert_eq(name_a.text, "Firebolt", "the name span carries the name ALONE")
 	assert_true("6" in cost_a.text, "the cost span carries the cost")
@@ -267,8 +268,8 @@ func test_an_unaffordable_cost_is_tinted_differently_from_an_affordable_one() ->
 		{"id": "b", "label": "Meteor", "cost": 99, "cost_affordable": false},
 	])
 	var container = m._get_items_container()
-	var ok = container.get_child(0).get_node_or_null("Cost")
-	var bad = container.get_child(1).get_node_or_null("Cost")
+	var ok = container.get_child(0).find_child("Cost", true, false)
+	var bad = container.get_child(1).find_child("Cost", true, false)
 	assert_not_null(ok)
 	assert_not_null(bad)
 	var c_ok: Color = ok.get_theme_color("font_color")
