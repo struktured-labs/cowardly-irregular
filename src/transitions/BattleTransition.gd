@@ -612,7 +612,12 @@ func _generate_monster_sound(profile: Dictionary, transition_type: TransitionTyp
 		# Convert to 8-bit unsigned
 		data[i] = int(clamp((sample * 0.4 + 0.5) * 255, 0, 255))
 
-	audio.data = data
+	# set_data takes the driver mutex. A wedged mix never returns it (issue #224).
+	if SoundManager != null:
+		if not SoundManager._commit_wav_pcm(audio, data):
+			return null
+	else:
+		audio.data = data
 	if _sound_cache.size() >= 50:
 		_sound_cache.clear()
 	_sound_cache[cache_key] = audio
