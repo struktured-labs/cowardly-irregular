@@ -15,6 +15,9 @@ const ROBE := "cloth_robe"
 const POWER := "power_ring"
 const MAGIC := "magic_ring"
 const MISSING := "flame_sword"
+const SCYTHE := "piano_scythe"
+const AMULET := "mp_amulet"
+const KEY_SWORD := "returned_sword"
 
 var _saved_persist: bool = false
 var _gl: Node = null
@@ -138,6 +141,233 @@ func test_a_spare_copy_stays_in_the_bag_when_the_loadout_already_wears_one() -> 
 	assert_eq(_bag()["weapons"].count(SWORD), 1)
 
 
+func test_three_copies_lose_only_the_one_the_loadout_takes() -> void:
+	var c := _hero()
+	_wear(c, STAFF, ROBE, MAGIC)
+	c.job = JobSystem.get_job("fighter").duplicate(true)
+	_wear(c, SWORD, LEATHER, POWER)
+	c.save_current_profile()
+	c.job = JobSystem.get_job("mage").duplicate(true)
+	_wear(c, STAFF, ROBE, MAGIC)
+	c.recalculate_stats()
+	_bag()["weapons"] = [SWORD, SWORD, SWORD]
+	_bag()["armors"] = []
+	_bag()["accessories"] = []
+	assert_eq(_owned(c, SWORD), 3)
+	_assign(c, "fighter")
+	assert_eq(c.equipped_weapon, SWORD, "one of the three swords is the one that comes back")
+	assert_eq(c.equipped_armor, ROBE, "leather is not in the bag, so the robe stays worn")
+	assert_eq(_bag()["weapons"].count(SWORD), 2)
+	assert_eq(_bag()["weapons"].count(STAFF), 1, "the staff that was worn comes back once")
+	assert_eq(_owned(c, SWORD), 3)
+	assert_eq(_owned(c, STAFF), 1)
+	assert_eq(_owned(c, ROBE), 1)
+	assert_eq(_bag()["armors"].count(ROBE), 0)
+
+
+func test_an_empty_slot_moves_one_piece_and_mints_nothing() -> void:
+	var c := _hero()
+	_wear(c, SWORD, LEATHER, POWER)
+	c.save_current_profile()
+	_seed_profile(c, "mage:", "", "", "")
+	_bag()["weapons"] = []
+	_bag()["armors"] = []
+	_bag()["accessories"] = []
+	_assign(c, "mage")
+	assert_eq(c.equipped_weapon, "")
+	assert_eq(c.equipped_armor, "")
+	assert_eq(c.equipped_accessory, "")
+	assert_eq(_bag()["weapons"].count(SWORD), 1)
+	assert_eq(_bag()["armors"].count(LEATHER), 1)
+	assert_eq(_bag()["accessories"].count(POWER), 1)
+	assert_eq(_owned(c, SWORD), 1)
+	_seed_profile(c, "fighter:", STAFF, ROBE, MAGIC)
+	_bag()["weapons"].append(STAFF)
+	_bag()["armors"].append(ROBE)
+	_bag()["accessories"].append(MAGIC)
+	_assign(c, "fighter")
+	assert_eq(c.equipped_weapon, STAFF)
+	assert_eq(c.equipped_armor, ROBE)
+	assert_eq(c.equipped_accessory, MAGIC)
+	assert_eq(_bag()["weapons"].count(STAFF), 0)
+	assert_eq(_bag()["weapons"].count(SWORD), 1, "the sword parked by the empty loadout is still there")
+	assert_eq(_owned(c, STAFF), 1)
+	assert_eq(_owned(c, SWORD), 1)
+
+
+func test_a_second_member_cannot_take_or_clone_gear_the_first_is_wearing() -> void:
+	var a := _hero()
+	a.combatant_name = "Ada"
+	var b := _hero()
+	b.combatant_name = "Bea"
+	_wear(a, SWORD, LEATHER, POWER)
+	_wear(b, STAFF, ROBE, MAGIC)
+	b.job = JobSystem.get_job("mage").duplicate(true)
+	b.save_current_profile()
+	_seed_profile(b, "fighter:", SWORD, LEATHER, POWER)
+	_bag()["weapons"] = []
+	_bag()["armors"] = []
+	_bag()["accessories"] = []
+	_assign(b, "fighter")
+	assert_eq(b.equipped_weapon, STAFF, "the only sword is on Ada, so Bea keeps the staff")
+	assert_eq(b.equipped_armor, ROBE)
+	assert_eq(b.equipped_accessory, MAGIC)
+	assert_eq(a.equipped_weapon, SWORD)
+	assert_eq(a.equipped_armor, LEATHER)
+	assert_eq(a.equipped_accessory, POWER)
+	assert_eq(_owned_party([a, b], SWORD), 1)
+	assert_eq(_owned_party([a, b], STAFF), 1)
+	assert_eq(_owned_party([a, b], LEATHER), 1)
+	assert_eq(_owned_party([a, b], ROBE), 1)
+	assert_eq(_bag()["weapons"].count(SWORD), 0)
+	assert_eq(_bag()["weapons"].count(STAFF), 0)
+
+
+func test_two_members_wearing_the_same_sword_do_not_eat_the_spare_in_the_bag() -> void:
+	var a := _hero()
+	a.combatant_name = "Ada"
+	var b := _hero()
+	b.combatant_name = "Bea"
+	_wear(a, SWORD, LEATHER, POWER)
+	_wear(b, SWORD, LEATHER, POWER)
+	_bag()["weapons"] = [SWORD, STAFF]
+	_bag()["armors"] = [ROBE]
+	_bag()["accessories"] = [MAGIC]
+	assert_eq(_owned_party([a, b], SWORD), 3)
+	_assign(b, "mage")
+	assert_eq(b.equipped_weapon, SWORD, "first visit to mage records the sword and leaves the bag alone")
+	_wear_from_bag(b, "weapon", STAFF)
+	_wear_from_bag(b, "armor", ROBE)
+	_wear_from_bag(b, "accessory", MAGIC)
+	assert_eq(_owned_party([a, b], SWORD), 3)
+	assert_eq(a.equipped_weapon, SWORD)
+	_assign(b, "fighter")
+	assert_eq(b.equipped_weapon, SWORD)
+	assert_eq(a.equipped_weapon, SWORD)
+	assert_eq(_bag()["weapons"].count(SWORD), 1, "the spare sword stays in the bag")
+	assert_eq(_bag()["weapons"].count(STAFF), 1)
+	assert_eq(_owned_party([a, b], SWORD), 3)
+	assert_eq(_owned_party([a, b], STAFF), 1)
+	assert_eq(_owned_party([a, b], LEATHER), 2)
+	assert_eq(_owned_party([a, b], ROBE), 1)
+
+
+func test_a_key_sword_is_not_minted_and_a_stacked_key_item_is_not_touched() -> void:
+	var c := _hero()
+	_wear(c, STAFF, ROBE, MAGIC)
+	c.save_current_profile()
+	_seed_profile(c, "mage:", KEY_SWORD, LEATHER, POWER)
+	c.add_item(KEY_SWORD, 1)
+	_bag()["weapons"] = []
+	_bag()["armors"] = []
+	_bag()["accessories"] = []
+	assert_false(EquipmentSystem.get_weapon(KEY_SWORD).is_empty(), "returned_sword is real gear")
+	assert_eq(int(c.inventory.get(KEY_SWORD, 0)), 1)
+	_assign(c, "mage")
+	assert_eq(c.equipped_weapon, STAFF, "a key sword that is not in the bag must not appear in the hands")
+	assert_eq(_owned(c, KEY_SWORD), 0, "the equipment bag and worn slots must not gain a copy")
+	assert_eq(int(c.inventory.get(KEY_SWORD, 0)), 1, "the inventory stack is not the equipment bag")
+	_bag()["weapons"] = [KEY_SWORD]
+	_seed_profile(c, "fighter:", KEY_SWORD, ROBE, MAGIC)
+	_assign(c, "fighter")
+	assert_eq(c.equipped_weapon, KEY_SWORD)
+	assert_eq(_bag()["weapons"].count(KEY_SWORD), 0)
+	assert_eq(_bag()["weapons"].count(STAFF), 1)
+	assert_eq(_owned(c, KEY_SWORD), 1)
+	assert_eq(int(c.inventory.get(KEY_SWORD, 0)), 1)
+
+
+func test_save_and_load_right_after_a_job_change_keeps_the_bag() -> void:
+	var c := _hero()
+	_wear(c, SWORD, LEATHER, POWER)
+	_bag()["weapons"] = [STAFF, SWORD]
+	_bag()["armors"] = [ROBE]
+	_bag()["accessories"] = [MAGIC]
+	c.add_item("potion", 3)
+	_assign(c, "mage")
+	_wear_from_bag(c, "weapon", STAFF)
+	_wear_from_bag(c, "armor", ROBE)
+	_wear_from_bag(c, "accessory", MAGIC)
+	_assign(c, "fighter")
+	assert_eq(c.equipped_weapon, SWORD)
+	assert_eq(_bag()["weapons"].count(SWORD), 1)
+	assert_eq(_bag()["weapons"].count(STAFF), 1)
+	var blob := JSON.stringify({"pool": _bag().duplicate(true), "who": c.to_dict()})
+	var parsed: Variant = JSON.parse_string(blob)
+	assert_true(parsed is Dictionary)
+	var data: Dictionary = parsed
+	var pool: Dictionary = data["pool"]
+	for key in ["weapons", "armors", "accessories"]:
+		var restored: Array = []
+		for entry in pool[key]:
+			restored.append(str(entry))
+		_bag()[key] = restored
+	var again := Combatant.new()
+	add_child_autofree(again)
+	again.from_dict(data["who"])
+	assert_eq(again.equipped_weapon, SWORD)
+	assert_eq(again.equipped_armor, LEATHER)
+	assert_eq(again.equipped_accessory, POWER)
+	assert_eq(_bag()["weapons"].count(SWORD), 1, "the spare sword survives the save")
+	assert_eq(_bag()["weapons"].count(STAFF), 1, "the staff that was taken off is still in the bag")
+	assert_eq(_bag()["armors"].count(ROBE), 1)
+	assert_eq(_bag()["armors"].count(LEATHER), 0)
+	assert_eq(_owned(again, SWORD), 2)
+	assert_eq(_owned(again, STAFF), 1)
+	assert_eq(int(again.inventory.get("potion", 0)), 3)
+
+
+func test_a_secondary_change_does_not_clamp_hp_when_the_remembered_armor_is_missing() -> void:
+	var c := _hero()
+	_wear(c, SWORD, LEATHER, AMULET)
+	c.recalculate_stats()
+	c.current_hp = c.max_hp
+	c.current_mp = c.max_mp
+	var hp_before := c.current_hp
+	var mp_before := c.current_mp
+	assert_gt(int(EquipmentSystem.get_armor(LEATHER).get("stat_mods", {}).get("max_hp", 0)), 0)
+	assert_gt(int(EquipmentSystem.get_accessory(AMULET).get("stat_mods", {}).get("max_mp", 0)), 0)
+	assert_eq(int(EquipmentSystem.get_armor(ROBE).get("stat_mods", {}).get("max_hp", 0)), 0)
+	_seed_profile(c, "fighter:mage", SWORD, ROBE, POWER)
+	_bag()["armors"] = []
+	_bag()["accessories"] = []
+	_assign(c, "mage", 1)
+	assert_eq(c.secondary_job_id, "mage")
+	assert_eq(c.equipped_armor, LEATHER, "cloth is not in the bag, so the leather stays")
+	assert_eq(c.equipped_accessory, AMULET)
+	assert_gte(c.max_hp, hp_before, "kept leather must still be in the max")
+	assert_gte(c.max_mp, mp_before, "kept amulet must still be in the max")
+	assert_eq(c.current_hp, hp_before, "refusing the missing robe must not spend the HP the leather was providing")
+	assert_eq(c.current_mp, mp_before, "refusing the missing ring must not spend the MP the amulet was providing")
+	_assert_matches_worn_gear(c)
+
+
+func test_a_bard_saved_weapon_does_not_deposit_the_join_gift_in_the_bag() -> void:
+	var c := _hero()
+	_wear(c, "", "", "")
+	c.save_current_profile()
+	_seed_profile(c, "bard:", STAFF, "", "")
+	_bag()["weapons"] = [STAFF]
+	_assign(c, "bard")
+	assert_eq(c.equipped_weapon, STAFF)
+	assert_eq(_bag()["weapons"].count(STAFF), 0)
+	assert_eq(_bag()["weapons"].count(SCYTHE), 0, "the scythe gifted to an empty hand must not become a bag item")
+	assert_eq(_owned(c, SCYTHE), 0)
+	assert_eq(_owned(c, STAFF), 1)
+
+
+func test_a_bard_whose_profile_names_the_scythe_keeps_the_gift() -> void:
+	var c := _hero()
+	_wear(c, "", "", "")
+	c.save_current_profile()
+	_seed_profile(c, "bard:", SCYTHE, "", "")
+	_bag()["weapons"] = []
+	_assign(c, "bard")
+	assert_eq(c.equipped_weapon, SCYTHE, "the join gift is what this profile wears, and the bag does not have one to take")
+	assert_eq(_bag()["weapons"].count(SCYTHE), 0)
+	assert_eq(_owned(c, SCYTHE), 1)
+
+
 func _hero() -> Combatant:
 	var c := Combatant.new()
 	add_child_autofree(c)
@@ -225,11 +455,11 @@ func _oracle(c: Combatant, weapon_id: String, armor_id: String, accessory_id: St
 	return o
 
 
-func _assign(c: Combatant, job_id: String) -> void:
+func _assign(c: Combatant, job_id: String, slot: int = 0) -> void:
 	var menu := JobMenu.new()
 	add_child_autofree(menu)
 	menu.character = c
-	menu.selected_slot = 0
+	menu.selected_slot = slot
 	var jobs: Array = menu._get_available_jobs()
 	var idx: int = jobs.find(job_id)
 	assert_ne(idx, -1, "job %s missing from the menu (%s)" % [job_id, str(jobs)])
@@ -237,3 +467,27 @@ func _assign(c: Combatant, job_id: String) -> void:
 		return
 	menu.selected_job_index = idx
 	menu._assign_selected_job()
+
+
+func _owned_party(members: Array, item_id: String) -> int:
+	var n := 0
+	for key in ["weapons", "armors", "accessories"]:
+		n += (_bag().get(key, []) as Array).count(item_id)
+	for member in members:
+		var c := member as Combatant
+		if c.equipped_weapon == item_id:
+			n += 1
+		if c.equipped_armor == item_id:
+			n += 1
+		if c.equipped_accessory == item_id:
+			n += 1
+	return n
+
+
+func _seed_profile(c: Combatant, key: String, weapon_id: String, armor_id: String, accessory_id: String) -> void:
+	c.job_profiles[key] = {
+		"weapon": weapon_id,
+		"armor": armor_id,
+		"accessory": accessory_id,
+		"passives": c.equipped_passives.duplicate(),
+	}

@@ -695,12 +695,14 @@ func _assign_selected_job() -> void:
 	# Save current profile before any job change
 	var old_key = character.get_profile_key()
 	character.save_current_profile()
+	# Gear the player actually owns. assign_job may gift a Bard an empty-hand scythe after this; that gift is not a bag item.
+	var owned_gear := _equipped_gear_snapshot()
 
 	# Handle removing secondary job
 	if job_id == "__none__":
 		character.secondary_job = null
 		character.secondary_job_id = ""
-		_adopt_job_profile(old_key)
+		_adopt_job_profile(old_key, owned_gear)
 		job_changed.emit(character, "", true)
 		SoundManager.play_ui("menu_select")
 		mode = Mode.SLOT_SELECT
@@ -713,7 +715,7 @@ func _assign_selected_job() -> void:
 		success = JobSystem.assign_secondary_job(character, job_id)
 
 	if success:
-		_adopt_job_profile(old_key)
+		_adopt_job_profile(old_key, owned_gear)
 		job_changed.emit(character, job_id, selected_slot == 1)
 		SoundManager.play_ui("menu_select")
 		mode = Mode.SLOT_SELECT
@@ -723,13 +725,12 @@ func _assign_selected_job() -> void:
 
 
 ## One owner for the profile swap. load_profile recalculates; fork_profile does not, so every arm recalcs after the swap.
-func _adopt_job_profile(old_key: String) -> void:
+func _adopt_job_profile(old_key: String, owned_gear: Dictionary) -> void:
 	var new_key := character.get_profile_key()
-	var before := _equipped_gear_snapshot()
 	if character.job_profiles.has(new_key):
+		# Resolve the trade before load_profile equips anything, so a missing piece is never worn for a recalc.
+		_exchange_profile_gear_with_pool(new_key, owned_gear, _equipped_gear_snapshot())
 		character.load_profile(new_key)
-		# Profile ids are a memory of a loadout, not extra copies. Exchange with the bag.
-		_exchange_profile_gear_with_pool(before)
 	else:
 		character.fork_profile(old_key, new_key)
 	character.recalculate_stats()
@@ -743,57 +744,42 @@ func _equipped_gear_snapshot() -> Dictionary:
 	}
 
 
-func _gear_id(slot_name: String) -> String:
-	match slot_name:
-		"weapon":
-			return character.equipped_weapon
-		"armor":
-			return character.equipped_armor
-		"accessory":
-			return character.equipped_accessory
-	return ""
-
-
-func _set_gear_id(slot_name: String, item_id: String) -> void:
-	match slot_name:
-		"weapon":
-			character.equipped_weapon = item_id
-		"armor":
-			character.equipped_armor = item_id
-		"accessory":
-			character.equipped_accessory = item_id
-
-
 func _pool_key_for_slot(slot_name: String) -> String:
 	if slot_name == "accessory":
 		return "accessories"
 	return slot_name + "s"
 
 
-## Take returning pieces out of the bag and put displaced pieces back, once. A remembered piece the bag does not hold stays off — wearing it would mint a copy, and dropping the current piece with nowhere to put it would delete it.
-func _exchange_profile_gear_with_pool(before: Dictionary) -> void:
+## Trade each saved slot with the bag once, before load_profile wears it. A piece the bag does not hold stays out of the profile. Owned gear is the player's, taken before this change; a same-call gift (Bard scythe) is worn but is not returned to the bag when a saved loadout replaces it.
+func _exchange_profile_gear_with_pool(profile_key: String, owned_gear: Dictionary, worn_gear: Dictionary) -> void:
+	var raw_profile: Variant = character.job_profiles.get(profile_key, null)
+	if not (raw_profile is Dictionary):
+		return
+	var profile: Dictionary = raw_profile
 	var gl := _game_loop()
 	if gl == null or not ("equipment_pool" in gl):
 		return
 	var pool: Dictionary = gl.equipment_pool
 	for slot_name in ["weapon", "armor", "accessory"]:
 		var slot := str(slot_name)
-		var old_id := str(before.get(slot, ""))
-		var new_id := _gear_id(slot)
-		if new_id == old_id:
+		var desired := str(profile.get(slot, ""))
+		var worn_id := str(worn_gear.get(slot, ""))
+		var owned_id := str(owned_gear.get(slot, ""))
+		if desired == worn_id:
 			continue
 		var raw: Variant = pool.get(_pool_key_for_slot(slot), null)
 		if not (raw is Array):
-			_set_gear_id(slot, old_id)
+			profile[slot] = worn_id
 			continue
 		var bag: Array = raw
-		if new_id != "" and not bag.has(new_id):
-			_set_gear_id(slot, old_id)
+		if desired != "" and not bag.has(desired):
+			profile[slot] = worn_id
 			continue
-		if new_id != "":
-			bag.erase(new_id)
-		if old_id != "":
-			bag.append(old_id)
+		if desired != "":
+			bag.erase(desired)
+		if owned_id != "" and owned_id != desired:
+			bag.append(owned_id)
+		profile[slot] = desired
 
 
 func _game_loop() -> Node:
