@@ -3046,11 +3046,28 @@ func _delete_current_cell() -> void:
 ## read zero live state (measured), so pure evaluation gives the same answer with nothing to
 ## restore and nothing to race.
 func _open_simulate() -> void:
-	var rules: Array = AutobattleSystem.get_character_script(character_id).get("rules", [])
+	## `rules` is the grid on screen. A local of that name used to shadow it and read the last save.
 	var lines: Array[String] = _simulate_report(rules)
-	lines.append_array(_observed_report(rules))
+	lines.append_array(_observed_for_open_grid())
 	_simulate_panel = _build_simulate_panel(lines)
 	add_child(_simulate_panel)
+
+
+## Fight counts are keyed by rule index on the script that was actually fought, which is the save.
+## Lining them up under an edited grid attributes those fires to different rules.
+func _observed_for_open_grid() -> Array[String]:
+	if AutobattleSystem.get_rule_eval_count(character_id) > 0:
+		var saved: Array = AutobattleSystem.get_character_script(character_id).get("rules", [])
+		if not _rule_lists_match(rules, saved):
+			var held: Array[String] = []
+			held.append("")
+			held.append("OBSERVED — unsaved edits, so fight counts are not lined up with this grid.")
+			return held
+	return _observed_report(rules)
+
+
+func _rule_lists_match(a: Array, b: Array) -> bool:
+	return var_to_str(a) == var_to_str(b)
 
 
 ## What actually happened, beside what Simulate predicts. A rule can look perfect in simulation
