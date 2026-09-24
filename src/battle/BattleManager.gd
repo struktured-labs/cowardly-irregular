@@ -5582,8 +5582,10 @@ func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Di
 func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability: Dictionary) -> Dictionary:
 	# `power` is a legacy key NO ability authors (0 of 288); damage_multiplier is, and it is what execution reads — preferring power made every preview assume 1.0x, understating a 5.0x ability by 5x and suppressing its [KILL] tag.
 	var power = float(ability.get("damage_multiplier", float(ability.get("power", 10)) / 10.0)) * 10.0
-	var ability_type = ability.get("type", "physical")
-	var is_magical = ability_type == "magic"
+	var ability_type := str(ability.get("type", "physical"))
+	# Eidolon summons execute through _execute_magic_ability; ally spawns carry summon_id and are not this hit.
+	var is_eidolon := ability_type == "summon" and str(ability.get("summon_id", "")) == "" and float(ability.get("damage_multiplier", 0.0)) > 0.0
+	var is_magical := ability_type == "magic" or is_eidolon
 
 	var stat_val: int
 	var stat_name: String
