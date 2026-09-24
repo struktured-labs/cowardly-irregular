@@ -529,15 +529,25 @@ func _is_spell_upgrade(spell_data: Dictionary) -> bool:
 	return int(spell_data["tier"]) > _best_known_tier(str(spell_data["family"]))
 
 
+## Highest tier anyone already has in this family. "Already has it" is _member_knows: the snapshot learned list or, when that slot is reachable, live knows_ability.
 func _best_known_tier(family: String) -> int:
 	var best := 0
-	if game_state == null or job_system == null:
+	if game_state == null or job_system == null or game_state.player_party.is_empty():
 		return best
-	for member_data in game_state.player_party:
-		for aid in member_data.get("learned_abilities", []):
-			var data: Dictionary = job_system.get_ability(str(aid))
-			if str(data.get("family", "")) == family:
-				best = maxi(best, int(data.get("tier", 0)))
+	var rungs: Array = []
+	for aid in job_system.abilities.keys():
+		var data: Dictionary = job_system.get_ability(str(aid))
+		if str(data.get("family", "")) != family:
+			continue
+		rungs.append({"id": str(aid), "tier": int(data.get("tier", 0))})
+	for i in range(game_state.player_party.size()):
+		var learned: Array = _snapshot_learned(game_state.player_party[i])
+		for rung in rungs:
+			var tier: int = int(rung["tier"])
+			if tier <= best:
+				continue
+			if _member_knows(i, str(rung["id"]), learned):
+				best = tier
 	return best
 
 
@@ -571,11 +581,13 @@ func _get_owned_count(item_id: String) -> int:
 			return 0
 		return int(sources[0].get(item_id, 0))
 	elif _is_magic_shop():
-		# Count party members who have learned this spell
-		var count = 0
-		for member_data in game_state.player_party:
-			var learned = member_data.get("learned_abilities", [])
-			if item_id in learned:
+		# Members who already have this spell — same rule as character select, not the snapshot list alone.
+		if game_state == null:
+			return 0
+		var count := 0
+		for i in range(game_state.player_party.size()):
+			var learned: Array = _snapshot_learned(game_state.player_party[i])
+			if _member_knows(i, item_id, learned):
 				count += 1
 		return count
 	return 0
@@ -620,7 +632,18 @@ func _get_sellable_inventory() -> Array:
 	return sellable
 
 
-## One predicate for "already has it": the LIVE Combatant's knows_ability (kit ∪ learned ∪ purchased ∪ level ∪ free move) when reachable, else the snapshot's learned list.
+## Snapshot learned list for one party slot, copied into an untyped Array. Empty when the slot isn't a dict or the field isn't an array.
+func _snapshot_learned(member_data) -> Array:
+	var out: Array = []
+	if member_data is Dictionary:
+		var raw = member_data.get("learned_abilities", [])
+		if raw is Array:
+			for aid in raw:
+				out.append(aid)
+	return out
+
+
+## One predicate for "already has it": the LIVE Combatant's knows_ability (kit ∪ learned ∪ purchased ∪ level ∪ free move) when reachable, else the snapshot's learned list. Character select, the purchase guard, magic owned-counts, and upgrade tiers all use it.
 func _member_knows(char_index: int, spell_id: String, snapshot_learned: Array) -> bool:
 	if spell_id in snapshot_learned:
 		return true

@@ -41,7 +41,7 @@ func test_upgrade_is_data_driven_not_a_name_guess() -> void:
 	var j := s.find("func _best_known_tier")
 	assert_gt(j, -1)
 	var jb := s.substr(j, s.find("\nfunc ", j + 1) - j)
-	assert_true('"learned_abilities"' in jb, "best-known walks what the party has actually learned")
+	assert_true("_member_knows(" in jb, "best-known tier uses the same already-has-it helper as character select")
 
 
 func test_tier_ranking_semantics() -> void:
