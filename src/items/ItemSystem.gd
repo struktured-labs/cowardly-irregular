@@ -598,3 +598,153 @@ func is_usable_in_battle(item_id: String) -> bool:
 		return false
 	return int(item.get("category", -1)) != ItemCategory.META
 
+
+## "" when this use would change something. Otherwise the sentence a menu should show — and the caller must not spend the item. use_item itself still returns true for a 0 HP heal; the waste happens at the menu, which used to treat that true as success.
+func ineffective_use_reason(item_id: String, targets: Array, in_battle: bool = false) -> String:
+	var item := get_item(item_id)
+	if item.is_empty():
+		return ""
+	var effects = item.get("effects", {})
+	if typeof(effects) != TYPE_DICTIONARY:
+		return ""
+	var name := str(item.get("name", "That item"))
+	for key in effects.keys():
+		if not is_effect_key_handled(str(key)):
+			return ""
+	if effects.has("add_buff") or effects.has("damage") or effects.has("repel_steps"):
+		return ""
+	var heals_hp := _effect_amount(effects, "heal_hp") > 0 or _effect_amount(effects, "heal_hp_percent") > 0
+	var heals_mp := _effect_amount(effects, "heal_mp") > 0 or _effect_amount(effects, "heal_mp_percent") > 0
+	var cures_all := bool(effects.get("cure_all_status", false))
+	var cure_list: Array = effects.get("cure_status", []) if effects.get("cure_status", []) is Array else []
+	var cures_listed := not cure_list.is_empty()
+	var revives := bool(effects.get("revive", false))
+	if not heals_hp and not heals_mp and not cures_all and not cures_listed and not revives:
+		if bool(effects.get("escape_battle", false)):
+			if in_battle:
+				return ""
+			return "%s only works in battle" % name
+		return "%s can't be used" % name
+	if revives:
+		# _execute_item keeps only KO'd targets for a revival item, so a living ally fizzles after the turn is queued. Menus that pass in_battle must refuse first. Outside battle the bundled heal still counts below, because use_item applies it.
+		var standing := _living_revive_reason(targets)
+		if standing == "":
+			for t in targets:
+				if _is_item_target(t) and not t.is_alive:
+					return ""
+		elif in_battle:
+			return standing
+	var seen := 0
+	var living := 0
+	var who := ""
+	var missing_hp := false
+	var missing_mp := false
+	var has_ailment := false
+	for t in targets:
+		if not _is_item_target(t):
+			continue
+		seen += 1
+		who = str(t.combatant_name)
+		if t.is_alive:
+			living += 1
+			if t.current_hp < t.max_hp:
+				missing_hp = true
+			if t.current_mp < t.max_mp:
+				missing_mp = true
+		if cures_all and t.status_effects.size() > 0:
+			has_ailment = true
+		elif cures_listed:
+			for status_id in cure_list:
+				if t.has_status(str(status_id)):
+					has_ailment = true
+					break
+	if seen == 0:
+		return ""
+	if (heals_hp and missing_hp) or (heals_mp and missing_mp) or ((cures_listed or cures_all) and has_ailment):
+		return ""
+	var many := seen > 1
+	if who == "":
+		who = "They"
+	if not revives and living == 0 and (heals_hp or heals_mp) and not cures_listed and not cures_all:
+		if many:
+			return "No one left to heal"
+		return "%s is knocked out" % who
+	if (cures_listed or cures_all) and not heals_hp and not heals_mp:
+		if cures_listed and cure_list.size() == 1 and not cures_all:
+			var word := _ailment_word(str(cure_list[0]))
+			if many:
+				return "No one is %s" % word
+			return "%s isn't %s" % [who, word]
+		if many:
+			return "No one has a status to cure"
+		return "%s has no status to cure" % who
+	if heals_hp and heals_mp:
+		if many:
+			return "The party is already at full HP and MP"
+		return "%s is already at full HP and MP" % who
+	if heals_hp:
+		if many:
+			return "The party is already at full HP"
+		return "%s is already at full HP" % who
+	if heals_mp:
+		if many:
+			return "The party is already at full MP"
+		return "%s is already at full MP" % who
+	if revives:
+		var standing := _living_revive_reason(targets)
+		if standing != "":
+			return standing
+		return "Cannot revive — no KO'd target"
+	if many:
+		return "It wouldn't help anyone"
+	return "It wouldn't help %s" % who
+
+
+## "" when someone in targets is KO'd (the revive can help) or no target could be read. Otherwise who isn't knocked out.
+func _living_revive_reason(targets: Array) -> String:
+	var n := 0
+	var who := ""
+	for t in targets:
+		if not _is_item_target(t):
+			continue
+		if not t.is_alive:
+			return ""
+		n += 1
+		who = str(t.combatant_name)
+	if n == 0:
+		return ""
+	if n > 1:
+		return "No one is knocked out"
+	if who == "":
+		who = "They"
+	return "%s isn't knocked out" % who
+
+
+func _effect_amount(effects: Dictionary, key: String) -> int:
+	var v = effects.get(key, 0)
+	if typeof(v) != TYPE_INT and typeof(v) != TYPE_FLOAT:
+		return 0
+	return int(v)
+
+
+func _is_item_target(t) -> bool:
+	return t != null and is_instance_valid(t) and ("is_alive" in t) and ("current_hp" in t) and t.has_method("has_status")
+
+
+func _ailment_word(status_id: String) -> String:
+	var known := {
+		"poison": "poisoned",
+		"silence": "silenced",
+		"blind": "blinded",
+		"petrify": "petrified",
+		"stun": "stunned",
+		"sleep": "asleep",
+		"confuse": "confused",
+		"paralysis": "paralyzed",
+		"curse": "cursed",
+		"burn": "burning",
+		"freeze": "frozen",
+	}
+	var id := status_id.to_lower()
+	return str(known[id]) if known.has(id) else id.replace("_", " ")
+

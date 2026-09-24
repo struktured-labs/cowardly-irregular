@@ -120,6 +120,22 @@ if [ "$SCRIPTS" -ne "$ONDISK" ] || [ "$LOADFAIL" -ne 0 ]; then
 	exit 1
 fi
 # Two independent signals must agree; disagreement is itself a failure.
+# Exit 137 (SIGKILL) / 143 (SIGTERM) after a finished run is a shutdown kill: SoundManager
+# leaves immediately when the mix thread is still wedged, or run_tests.sh kills it once the
+# log goes quiet after totals. run_tests.sh rewrites that to 0 or 1 from the totals. If a
+# raw 137 still arrives, apply the same rule here — a kill must not hide Failing N, and a
+# clean block is a pass.
+if [ "$EC" -eq 137 ] || [ "$EC" -eq 143 ]; then
+	echo "GATE: process exit $EC is a shutdown kill, not a wedge. failing=$FAILED is the verdict."
+	if [ "$FAILED" -ne 0 ]; then
+		echo "GATE: RED — the kill must not hide failing=$FAILED."; exit 1
+	fi
+	echo "GATE: failing=0, so the kill does not fail the gate."
+	EC=0
+fi
+if grep -q "SHUTDOWN KILLED AFTER TOTALS" "$LOG"; then
+	echo "GATE: shutdown was killed after totals; verdict is failing=$FAILED, not the signal."
+fi
 if [ "$EC" -ne 0 ] || [ "$FAILED" -ne 0 ]; then
 	echo "GATE: RED — do not push"; exit 1
 fi

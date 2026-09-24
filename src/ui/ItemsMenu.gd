@@ -769,7 +769,13 @@ func _use_selected_item() -> void:
 				break
 		if not valid_target:
 			SoundManager.play_ui("menu_error")
-			Toast.show_warning(self, "Cannot revive — no KO'd target")
+			# Same sentence as the battle item row. The percent on Phoenix Down is the HP they stand up with; this menu does not spend it on someone still standing.
+			var why := "Cannot revive — no KO'd target"
+			if ItemSystem:
+				var specific := str(ItemSystem.ineffective_use_reason(item.get("id", ""), targets, true))
+				if specific != "":
+					why = specific
+			Toast.show_warning(self, why)
 			return
 
 	# F3: save_point_only items refuse deep-dungeon use (fine at crystals and outside dungeons).
@@ -780,6 +786,14 @@ func _use_selected_item() -> void:
 		if PartyChatSystem:
 			PartyChatSystem.fire_event_flag("event_flag_tent_blocked")
 		return
+
+	# A full-HP potion, a cure with nothing to cure, a Smoke Bomb on the field: use_item still returns true and the item was spent. Refuse first and say which.
+	if ItemSystem:
+		var noop := ItemSystem.ineffective_use_reason(item.get("id", ""), targets)
+		if noop != "":
+			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, noop)
+			return
 
 	# Use the item
 	if party.is_empty():
@@ -818,9 +832,7 @@ func _use_selected_item() -> void:
 			_build_ui()
 	else:
 		SoundManager.play_ui("menu_error")
-		# ItemSystem.use_item returns false for various reasons (target
-		# already at full HP for heal, status-clear with no matching status,
-		# etc). Without a Toast the player hears the beep but can't tell why.
+		# Unknown id or an item with no effects field. A heal that changes nothing is refused above, before this call.
 		Toast.show_warning(self, "Item had no effect")
 
 

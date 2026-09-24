@@ -417,6 +417,7 @@ func _ready() -> void:
 	BattleManager.round_ended.connect(_on_round_ended)
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
+	BattleManager.hit_negated.connect(_on_hit_negated)
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.mp_restored.connect(_on_mp_restored)
 	BattleManager.ap_granted.connect(_on_ap_granted)
@@ -517,6 +518,8 @@ func _exit_tree() -> void:
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
+	if BattleManager.hit_negated.is_connected(_on_hit_negated):
+		BattleManager.hit_negated.disconnect(_on_hit_negated)
 	if BattleManager.healing_done.is_connected(_on_healing_done):
 		BattleManager.healing_done.disconnect(_on_healing_done)
 	if BattleManager.mp_restored.is_connected(_on_mp_restored):
@@ -5316,6 +5319,13 @@ func _on_attack_missed(target: Combatant) -> void:
 	# Dodge quip from the target (if party member dodged an enemy attack)
 	if target in BattleManager.player_party:
 		_try_combat_quip(DODGE_QUIPS, target)
+
+
+func _on_hit_negated(target: Combatant, banner: String) -> void:
+	if not is_instance_valid(_results_display):
+		return
+	_results_display.on_hit_negated(target, banner)
+	SoundManager.play_battle("attack_miss")
 
 
 func _on_healing_done(target: Combatant, amount: int) -> void:

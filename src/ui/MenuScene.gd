@@ -1050,6 +1050,12 @@ func _on_item_use_pressed(item_id: String) -> void:
 			if PartyChatSystem:
 				PartyChatSystem.fire_event_flag("event_flag_tent_blocked")
 			return
+		# Same no-op gate as ItemsMenu: a full-HP potion must not be spent for 0 HP.
+		var noop := ItemSystem.ineffective_use_reason(item_id, [member])
+		if noop != "":
+			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, noop)
+			return
 		# Tick 190: only consume on successful use — pre-fix unknown-id / no-effects items got consumed for no benefit.
 		if ItemSystem.use_item(source_member, item_id, [member]):
 			source_member.remove_item(item_id, 1)
