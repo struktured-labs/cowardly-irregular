@@ -1,4 +1,4 @@
-itch-assets/CAPTIONS.md 2327865064 23721
+itch-assets/CAPTIONS.md 285729800 24801
 itch-assets/PROVENANCE.md 1913063857 14435
 itch-assets/capture-history/shoot-prep/backwards_warren.png 3215387116 248241
 itch-assets/capture-history/shoot-prep/battle.png 4233415631 155720
@@ -132,6 +132,7 @@ itch-assets/capture-history/shots-356/sandrift_village.png 1100108851 77331
 itch-assets/capture-history/shots-356/shop_interior.png 2164681579 61430
 itch-assets/capture-history/shots-356/tavern_interior.png 1078110151 142123
 itch-assets/capture-history/shots-356/whispering_cave.png 1779972582 230988
+itch-assets/capture-history/shots-468-source/title_screen.png 1468773959 869835
 itch-assets/capture-history/shots-62a1a2d6/battle.png 423882489 154437
 itch-assets/capture-history/shots-62a1a2d6/eldertree_village.png 3283097348 59819
 itch-assets/capture-history/shots-62a1a2d6/frosthold_village.png 3780829946 79385
@@ -181,7 +182,7 @@ itch-assets/screenshots/ironhaven_village.png 890957105 70197
 itch-assets/screenshots/sandrift_village.png 3865774190 75778
 itch-assets/screenshots/shop_interior.png 165626735 61195
 itch-assets/screenshots/tavern_interior.png 300156710 148815
-itch-assets/screenshots/title_screen.png 1468773959 869835
+itch-assets/screenshots/title_screen.png 4257718575 755212
 itch-assets/screenshots/warren_lever_portals.png 2869565719 235895
 itch-assets/screenshots/warren_wrap_field.png 1730422479 252147
 itch-assets/screenshots/whispering_cave.png 1927031894 230968
