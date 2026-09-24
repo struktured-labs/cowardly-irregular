@@ -306,6 +306,8 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 				"attack": data.get("attack", 10),
 				"defense": data.get("defense", 10),
 				"magic": data.get("magic", 10),
+				# Codex prints magic_defense; dropping the key makes the fight use defense/2.
+				"magic_defense": data.get("magic_defense", int(data.get("defense", 10) * 0.5)),
 				"speed": data.get("speed", 8)
 			}
 
@@ -412,6 +414,8 @@ func spawn_forced_enemies() -> void:
 			"attack": monster_data["stats"].get("attack", 10),
 			"defense": monster_data["stats"].get("defense", 5),
 			"magic": monster_data["stats"].get("magic", 5),
+			# Codex prints magic_defense; dropping the key makes the fight use defense/2.
+			"magic_defense": monster_data["stats"].get("magic_defense", int(monster_data["stats"].get("defense", 5) * 0.5)),
 			"speed": monster_data["stats"].get("speed", 10)
 		}
 		enemy.initialize(stats)
@@ -522,6 +526,8 @@ func spawn_encounter_enemies() -> void:
 			"attack": monster_data["stats"].get("attack", 10),
 			"defense": monster_data["stats"].get("defense", 5),
 			"magic": monster_data["stats"].get("magic", 5),
+			# Codex prints magic_defense; dropping the key makes the fight use defense/2.
+			"magic_defense": monster_data["stats"].get("magic_defense", int(monster_data["stats"].get("defense", 5) * 0.5)),
 			"speed": monster_data["stats"].get("speed", 10)
 		}
 
