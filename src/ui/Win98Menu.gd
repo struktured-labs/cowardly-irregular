@@ -229,6 +229,12 @@ const MENU_SCREEN_MARGIN = 24
 const COST_COLOR := Color(0.65, 0.78, 0.95, 0.85)
 const COST_COLOR_UNAFFORDABLE := Color(0.92, 0.45, 0.45, 0.95)
 const COST_COLUMN_WIDTH = 46
+## Row copy is drawn at these sizes (TextScale.scaled). Width used to be measured at a hardcoded 11.
+const ROW_LABEL_FONT := 16
+const COST_LABEL_FONT := 10
+var _cost_column_width: int = COST_COLUMN_WIDTH
+## 0 = half the viewport. A submenu sets this so it can sit left of its parent without covering the enemy panel.
+var _width_cap: int = 0
 
 ## struktured 2026-08-22: "the main battle menu for ap layer can prob be more translucent
 ## not just prev ones, unclear though we need to play test it" — he flagged it as UNCERTAIN,
@@ -665,6 +671,48 @@ func setup(title: String, items: Array, pos: Vector2, character_class: String = 
 		_build_menu()
 
 
+func _row_label_font_size() -> int:
+	return TextScale.scaled(ROW_LABEL_FONT)
+
+
+func _cost_label_font_size() -> int:
+	return TextScale.scaled(COST_LABEL_FONT)
+
+
+func _menu_font() -> Font:
+	if is_inside_tree():
+		var themed := get_theme_font(&"font")
+		if themed:
+			return themed
+	return ThemeDB.fallback_font
+
+
+func _text_px(text: String, font_size: int) -> int:
+	var font := _menu_font()
+	if font == null:
+		return 0
+	return ceili(font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x)
+
+
+## Height of the line a Label draws. get_height() adds leading the row does not use (34px at 16px, which would grow the default 24px row).
+func _drawn_line_height(font_size: int) -> int:
+	var font := _menu_font()
+	if font == null:
+		return font_size
+	return ceili(font.get_string_size("Ag", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).y)
+
+
+func _row_height() -> int:
+	return maxi(ITEM_HEIGHT, _drawn_line_height(_row_label_font_size()))
+
+
+func _effective_width_cap(viewport_width: int) -> int:
+	var half := maxi(210, int(viewport_width / 2.0))
+	if _width_cap <= 0:
+		return half
+	return clampi(_width_cap, 210, half)
+
+
 func _build_menu() -> void:
 	"""Build the retro pixel-tile menu"""
 	# Clear existing children
@@ -674,34 +722,41 @@ func _build_menu() -> void:
 	if menu_items.size() == 0:
 		return
 
-	# Calculate menu width dynamically based on item label lengths
+	# Measured at the drawn size. The old 11px measure ellipsized "~N dmg [KILL]" on a target row.
 	var content_padding = MENU_PADDING * 2 + TILE_SIZE * 2 + 20  # borders + cursor + gap
-	var max_label_width = 0
-	var font = ThemeDB.fallback_font
+	var row_font := _row_label_font_size()
+	var cost_font := _cost_label_font_size()
+	var cost_column := COST_COLUMN_WIDTH
 	for item in menu_items:
-		var label_text = item.get("label", "Item")
+		if item.has("cost"):
+			cost_column = maxi(cost_column, _text_px("%d MP" % int(item["cost"]), cost_font) + 8)
+	_cost_column_width = cost_column
+	var max_label_width := 0
+	for item in menu_items:
+		var label_text := str(item.get("label", "Item"))
 		if item.has("submenu"):
 			label_text += " >"
-		var text_width = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		var text_width := _text_px(label_text, row_font)
 		if item.has("cost"):
-			text_width += COST_COLUMN_WIDTH  # the cost column sits to the right of the name
-		max_label_width = max(max_label_width, text_width)
+			text_width += cost_column
+		max_label_width = maxi(max_label_width, text_width)
 	var viewport_width = 1280
 	if is_inside_tree():
 		viewport_width = int(get_viewport_rect().size.x)
-	var menu_width = clampi(max(210, int(max_label_width) + content_padding), 210, viewport_width / 2)
+	var menu_width = clampi(max(210, max_label_width + content_padding), 210, _effective_width_cap(viewport_width))
 
+	var row_h := _row_height()
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
 	var chrome_height = MENU_PADDING * 2 + TILE_SIZE * 2 + ap_label_height
 	var viewport_height = 720
 	if is_inside_tree():
 		viewport_height = int(get_viewport_rect().size.y)
 	var room_for_rows = viewport_height - MENU_SCREEN_MARGIN * 2 - chrome_height
-	_max_visible_rows = maxi(1, room_for_rows / ITEM_HEIGHT)
+	_max_visible_rows = maxi(1, room_for_rows / row_h)
 	if menu_items.size() <= _max_visible_rows:
 		_max_visible_rows = 0  # fits; no scrolling
 	var shown_rows = menu_items.size() if _max_visible_rows == 0 else _max_visible_rows
-	var menu_height = chrome_height + shown_rows * ITEM_HEIGHT
+	var menu_height = chrome_height + shown_rows * row_h
 
 	# Create the menu texture with pixel borders
 	var menu_panel = _create_retro_panel(menu_width, menu_height)
@@ -839,8 +894,9 @@ func _create_retro_panel(w: int, h: int) -> Control:
 
 func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -> Control:
 	"""Create a single menu item row"""
+	var row_h := _row_height()
 	var row = Control.new()
-	row.custom_minimum_size = Vector2(content_width, ITEM_HEIGHT)
+	row.custom_minimum_size = Vector2(content_width, row_h)
 	row.name = "Item%d" % index
 
 	# Selection highlight border (top line)
@@ -857,7 +913,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	highlight.name = "Highlight"
 	highlight.color = style.highlight_bg.lightened(0.1)
 	highlight.position = Vector2(-4, 1)
-	highlight.size = Vector2(content_width + 8, ITEM_HEIGHT - 2)
+	highlight.size = Vector2(content_width + 8, row_h - 2)
 	highlight.visible = false
 	row.add_child(highlight)
 
@@ -865,7 +921,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	var highlight_bottom = ColorRect.new()
 	highlight_bottom.name = "HighlightBottom"
 	highlight_bottom.color = style.cursor.darkened(0.2)
-	highlight_bottom.position = Vector2(-4, ITEM_HEIGHT - 1)
+	highlight_bottom.position = Vector2(-4, row_h - 1)
 	highlight_bottom.size = Vector2(content_width + 8, 1)
 	highlight_bottom.visible = false
 	row.add_child(highlight_bottom)
@@ -884,32 +940,50 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	var label = item.get("label", "Item")
 	var has_submenu = item.has("submenu")
 
+	var label_w := content_width - 14
+	if item.has("cost"):
+		label_w -= _cost_column_width
 	var text_label = Label.new()
 	text_label.name = "Label"
-	text_label.position = Vector2(10, 0)
-	text_label.size = Vector2(content_width - 14, ITEM_HEIGHT)
 	text_label.clip_text = true
 	text_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	text_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	text_label.add_theme_font_size_override("font_size", _row_label_font_size())
+	text_label.size = Vector2(label_w, row_h)
 	if has_submenu:
 		text_label.text = label + " >"
 	else:
 		text_label.text = label
+	# A Label will not shrink below font.get_height(), which includes leading the glyph does not use. The clip is the visible row.
+	var label_clip := Control.new()
+	label_clip.name = "LabelClip"
+	label_clip.position = Vector2(10, 0)
+	label_clip.size = Vector2(label_w, row_h)
+	label_clip.clip_contents = true
+	label_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label_clip.add_child(text_label)
+	row.add_child(label_clip)
 
 	# Cost as a separate right-aligned span so it can carry its own colour AND its own
 	# affordability tint, independent of the row's disabled state.
 	if item.has("cost"):
-		text_label.size.x -= COST_COLUMN_WIDTH
 		var cost_label = Label.new()
 		cost_label.name = "Cost"
 		cost_label.text = "%d MP" % int(item["cost"])
-		cost_label.position = Vector2(10 + text_label.size.x, 0)
-		cost_label.size = Vector2(COST_COLUMN_WIDTH - 4, ITEM_HEIGHT)
+		cost_label.add_theme_font_size_override("font_size", _cost_label_font_size())
+		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		cost_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		cost_label.size = Vector2(_cost_column_width - 4, row_h)
 		var affordable: bool = bool(item.get("cost_affordable", true))
 		cost_label.add_theme_color_override("font_color", COST_COLOR if affordable else COST_COLOR_UNAFFORDABLE)
-		row.add_child(cost_label)
+		var cost_clip := Control.new()
+		cost_clip.name = "CostClip"
+		cost_clip.position = Vector2(10 + label_w, 0)
+		cost_clip.size = Vector2(_cost_column_width - 4, row_h)
+		cost_clip.clip_contents = true
+		cost_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cost_clip.add_child(cost_label)
+		row.add_child(cost_clip)
 
 	if _row_unavailable(item):
 		text_label.add_theme_color_override("font_color", style.text.darkened(0.5))
@@ -919,14 +993,11 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	else:
 		text_label.add_theme_color_override("font_color", style.text)
 
-	text_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
-	row.add_child(text_label)
-
 	# Make clickable
 	var button = Button.new()
 	button.flat = true
 	button.position = Vector2(0, 0)
-	button.size = Vector2(content_width, ITEM_HEIGHT)
+	button.size = Vector2(content_width, row_h)
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(_on_item_pressed.bind(index))
 	button.mouse_entered.connect(_on_item_hover.bind(index))
@@ -952,7 +1023,7 @@ func _update_selection() -> void:
 		var highlight_top = row.get_node_or_null("HighlightTop")
 		var highlight_bottom = row.get_node_or_null("HighlightBottom")
 		var cursor = row.get_node_or_null("Cursor")
-		var label = row.get_node_or_null("Label")
+		var label = row.find_child("Label", true, false)
 
 		if highlight:
 			highlight.visible = is_selected
@@ -1056,7 +1127,7 @@ func _scroll_selection_into_view(container: VBoxContainer) -> void:
 	elif selected_index > last_visible:
 		_scroll_offset = selected_index - _max_visible_rows + 1
 	_scroll_offset = clampi(_scroll_offset, 0, maxi(0, menu_items.size() - _max_visible_rows))
-	container.position.y = _items_base_y - float(_scroll_offset * ITEM_HEIGHT)
+	container.position.y = _items_base_y - float(_scroll_offset * _row_height())
 
 
 func _get_items_container() -> VBoxContainer:
@@ -1077,46 +1148,67 @@ func _do_open_submenu(parent_index: int, item: Dictionary) -> void:
 	_open_submenu(parent_index, item)
 
 
+func _submenu_width_cap() -> int:
+	var viewport_width := 1280
+	if is_inside_tree():
+		viewport_width = int(get_viewport_rect().size.x)
+	var half := maxi(210, int(viewport_width / 2.0))
+	if not expand_left or not is_inside_tree():
+		return half
+	# Leave the enemy status panel uncovered. A target row wider than this gap ellipsizes instead of covering it or the command menu.
+	var left := float(MENU_SCREEN_MARGIN)
+	var panel := get_tree().root.find_child("EnemyStatusPanel", true, false) as Control
+	if panel and is_instance_valid(panel) and panel.is_visible_in_tree():
+		left = maxf(left, panel.get_global_rect().end.x + 8.0)
+	var room := int(floor(global_position.x - 6.0 - left))
+	if room < 210:
+		return half
+	return mini(half, room)
+
+
+func _submenu_rest_position(parent_index: int, submenu_size: Vector2) -> Vector2:
+	var row_h := _row_height()
+	var visual := parent_index - _scroll_offset
+	var item_y := visual * row_h + TILE_SIZE + MENU_PADDING
+	var pos := Vector2()
+	if expand_left:
+		pos.x = global_position.x - submenu_size.x - 6.0
+	else:
+		pos.x = global_position.x + size.x + 6.0
+	if expand_up:
+		pos.y = global_position.y + item_y - submenu_size.y + row_h
+	else:
+		pos.y = global_position.y + item_y
+	var vp := get_viewport_rect().size if is_inside_tree() else Vector2(1280, 720)
+	pos.x = clampf(pos.x, 10.0, maxf(10.0, vp.x - submenu_size.x - 10.0))
+	pos.y = clampf(pos.y, 10.0, maxf(10.0, vp.y - submenu_size.y - 10.0))
+	return pos
+
+
 func _open_submenu(parent_index: int, item: Dictionary) -> void:
 	"""Open a submenu with slide animation - expands UP and LEFT (tree style)"""
 	var submenu_items = item.get("submenu", [])
-	var submenu_height = MENU_PADDING * 2 + submenu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2
-
-	var submenu_pos: Vector2
-	var start_offset: Vector2
-
-	# Calculate position - expand LEFT and UP from the selected item
-	var item_y = parent_index * ITEM_HEIGHT + TILE_SIZE + MENU_PADDING
-	if expand_left:
-		# Position to the left of current menu
-		submenu_pos.x = global_position.x - size.x - 6  # Menu width + gap
-	else:
-		submenu_pos.x = global_position.x + size.x + 6
-
-	if expand_up:
-		# Align bottom of submenu with current item, expand upward
-		submenu_pos.y = global_position.y + item_y - submenu_height + ITEM_HEIGHT
-	else:
-		submenu_pos.y = global_position.y + item_y
-
-	# Animation offset
-	start_offset = Vector2(20 if expand_left else -20, 10 if expand_up else -10)
+	var start_offset := Vector2(20 if expand_left else -20, 10 if expand_up else -10)
 
 	submenu = Win98Menu.new()
 	submenu.parent_menu = self
 	submenu.expand_left = expand_left
 	submenu.expand_up = expand_up
 	submenu.z_index = z_index + 1
+	submenu._width_cap = _submenu_width_cap()
 
 	# Start with offset and transparent for animation
 	submenu.modulate.a = 0.0
 	get_parent().add_child(submenu)
+	# setup() measures and sets size before its first await, so the rest position can use the real box.
 	submenu.setup(
 		item.get("label", "Submenu"),
 		submenu_items,
-		submenu_pos + start_offset,
+		global_position + start_offset,
 		_get_character_class_from_style()
 	)
+	var submenu_pos := _submenu_rest_position(parent_index, submenu.size)
+	submenu.position = submenu_pos + start_offset
 
 	# Pass submenu memory for nested command memory
 	var item_id = item.get("id", "")
