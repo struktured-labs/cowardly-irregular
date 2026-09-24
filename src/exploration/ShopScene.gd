@@ -981,6 +981,52 @@ func _get_eligible_jobs_for_school(school: String) -> Array:
 	return []
 
 
+## Primary or secondary job. Live Combatant wins when that slot is in the tree; otherwise snapshot job + secondary_job_id.
+func _member_can_learn_school(char_index: int, snapshot: Dictionary, eligible_jobs: Array) -> bool:
+	for job_id in _member_job_ids(char_index, snapshot):
+		if job_id in eligible_jobs:
+			return true
+	return false
+
+
+func _member_job_ids(char_index: int, snapshot: Dictionary) -> Array:
+	var live: Array = _resolve_live_party()
+	if char_index < live.size() and live[char_index] != null and is_instance_valid(live[char_index]):
+		return _job_ids_on_live(live[char_index])
+	return _job_ids_on_snapshot(snapshot)
+
+
+func _job_ids_on_live(member) -> Array:
+	var ids: Array = []
+	if "job" in member:
+		_append_job_id(ids, _job_id_of(member.job))
+	if "secondary_job_id" in member:
+		_append_job_id(ids, _job_id_of(member.secondary_job_id))
+	if "secondary_job" in member:
+		_append_job_id(ids, _job_id_of(member.secondary_job))
+	return ids
+
+
+func _job_ids_on_snapshot(snapshot: Dictionary) -> Array:
+	var ids: Array = []
+	_append_job_id(ids, _job_id_of(snapshot.get("job", "")))
+	_append_job_id(ids, _job_id_of(snapshot.get("secondary_job_id", "")))
+	return ids
+
+
+func _append_job_id(ids: Array, job_id: String) -> void:
+	if job_id != "" and not ids.has(job_id):
+		ids.append(job_id)
+
+
+func _job_id_of(job_field) -> String:
+	if job_field is Dictionary:
+		return str(job_field.get("id", ""))
+	if job_field is String:
+		return job_field
+	return ""
+
+
 func _open_character_select(spell_id: String, spell_data: Dictionary) -> void:
 	"""Open character selection for magic spell purchase"""
 	current_mode = ShopMode.CHAR_SELECT
@@ -995,11 +1041,10 @@ func _open_character_select(spell_id: String, spell_data: Dictionary) -> void:
 	for i in range(game_state.player_party.size()):
 		var member = game_state.player_party[i]
 		var member_name = member.get("name", "???")
-		var member_job = member.get("job", "")
 		var learned = member.get("learned_abilities", [])
 
-		# Only show characters with an eligible job
-		if member_job not in eligible_jobs:
+		# Primary or secondary, live Combatant first — same reach as _member_knows.
+		if not _member_can_learn_school(i, member, eligible_jobs):
 			continue
 
 		# Check if already knows the spell — provenance-blind (struktured 2026-09-06: the Mage bought Ignis, which is in his starting KIT, because this only read the snapshot's learned list).
