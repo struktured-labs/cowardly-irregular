@@ -3568,6 +3568,7 @@ func _on_battle_ended(victory: bool) -> void:
 				if "game_constants" in GameState:
 					GameState.game_constants["meta_auto_rewind_pending"] = false
 				if _restore_party_from_save_data():
+					GameState.pending_boss_defeat = {}
 					await _return_to_exploration(true)
 					return
 				push_warning("[META] temporal shield rewound the save but the party could not be rebuilt")

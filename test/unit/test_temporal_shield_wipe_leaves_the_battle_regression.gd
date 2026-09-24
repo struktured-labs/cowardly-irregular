@@ -45,6 +45,7 @@ func after_each() -> void:
 	for entry in _history_backup:
 		restored.append(entry)
 	GameState.save_history = restored
+	GameState.pending_boss_defeat = {}
 	_backup = {}
 
 
@@ -64,6 +65,7 @@ func _arm_rewind(loop: ShieldLoop, member: Combatant) -> void:
 	GameState.llm_rebalance_enabled = false
 	GameState.party_gold = 500
 	GameState.quests = {"field_notes": {"state": "active", "objective_index": 0}}
+	GameState.story_flags["rewind_checkpoint_kept"] = true
 	var typed: Array[Dictionary] = []
 	typed.append(member.to_dict())
 	GameState.player_party = typed
@@ -73,6 +75,8 @@ func _arm_rewind(loop: ShieldLoop, member: Combatant) -> void:
 	GameState.record_history_checkpoint(true)
 	GameState.party_gold = 11
 	GameState.quests = {"field_notes": {"state": "complete", "objective_index": 1}}
+	GameState.story_flags["rewind_checkpoint_kept"] = false
+	GameState.story_flags["rewind_spent_in_fight"] = true
 	GameState.record_history_checkpoint(true)
 	loop.party.append(member)
 	loop.add_child(member)
@@ -83,6 +87,10 @@ func _arm_rewind(loop: ShieldLoop, member: Combatant) -> void:
 	loop.current_state = GameLoopScript.LoopState.BATTLE
 	loop._spotlight_duel_active = false
 	GameState.game_constants["meta_auto_rewind_pending"] = true
+	GameState.pending_boss_defeat = {
+		"story_flags": ["shield_wipe_must_not_credit_the_boss"],
+		"dungeon_flag": "shield_wipe_boss",
+	}
 
 
 func test_shielded_wipe_restores_the_party_and_leaves_the_battle() -> void:
@@ -106,8 +114,15 @@ func test_shielded_wipe_restores_the_party_and_leaves_the_battle() -> void:
 	assert_eq(GameState.party_gold, 500, "gold spent after the checkpoint comes back")
 	assert_eq(str(GameState.quests.get("field_notes", {}).get("state", "")), "active",
 		"a quest turned in during the wiped fight is active again")
+	assert_true(bool(GameState.story_flags.get("rewind_checkpoint_kept", false)),
+		"a story flag set at the checkpoint comes back with it")
+	assert_false(bool(GameState.story_flags.get("rewind_spent_in_fight", false)),
+		"a story flag set after the checkpoint does not survive the rewind")
 	assert_false(bool(GameState.game_constants.get("meta_auto_rewind_pending", false)),
 		"the shield is one shot — the snapshot must not re-arm it")
+	assert_true(GameState.pending_boss_defeat.is_empty(),
+		"leaving the wiped fight forfeits the boss spec — the next win must not inherit it")
+	assert_false(bool(GameState.story_flags.get("shield_wipe_must_not_credit_the_boss", false)))
 
 
 func test_an_unshielded_wipe_still_reaches_game_over() -> void:
@@ -121,3 +136,67 @@ func test_an_unshielded_wipe_still_reaches_game_over() -> void:
 	assert_false(loop.left_the_battle)
 	assert_false(loop.party[0].is_alive)
 	assert_eq(int(loop.party[0].inventory.get("potion", 0)), 0)
+
+
+func test_a_single_checkpoint_falls_through_to_game_over() -> void:
+	var loop := ShieldLoop.new()
+	add_child_autofree(loop)
+	var member := _fighter()
+	_arm_rewind(loop, member)
+	# rewind_to_previous_save refuses a ring of one. Keep the older snapshot
+	# so a mistaken apply would move gold and the quest, which a refusal must not.
+	while GameState.save_history.size() > 1:
+		GameState.save_history.pop_back()
+	GameState.game_constants["meta_auto_rewind_pending"] = true
+	await loop._on_battle_ended(false)
+	assert_true(loop.showed_game_over, "one checkpoint is not a rewind target — the wipe is a normal game over")
+	assert_false(loop.left_the_battle, "a refused rewind must not leave the defeat screen half-torn-down")
+	assert_false(loop.party[0].is_alive)
+	assert_eq(GameState.party_gold, 11)
+	assert_eq(str(GameState.quests.get("field_notes", {}).get("state", "")), "complete")
+	assert_false(bool(GameState.game_constants.get("meta_auto_rewind_pending", false)),
+		"the shield is spent even when rewind cannot run, so the next wipe is not a loop")
+
+
+func test_one_rewind_does_not_chain_into_a_second() -> void:
+	var loop := ShieldLoop.new()
+	add_child_autofree(loop)
+	var member := _fighter()
+	GameState.save_history.clear()
+	GameState.meta_features["rewind_enabled"] = true
+	GameState.llm_rebalance_enabled = false
+	var typed: Array[Dictionary] = []
+	typed.append(member.to_dict())
+	GameState.player_party = typed
+	GameState.party_gold = 100
+	GameState.game_constants["meta_auto_rewind_pending"] = true
+	GameState.record_history_checkpoint(true)
+	GameState.party_gold = 200
+	GameState.record_history_checkpoint(true)
+	GameState.party_gold = 300
+	GameState.record_history_checkpoint(true)
+	GameState.party_gold = 400
+	GameState.record_history_checkpoint(true)
+	loop.party.append(member)
+	loop.add_child(member)
+	member.die()
+	loop.current_state = GameLoopScript.LoopState.BATTLE
+	loop._spotlight_duel_active = false
+	GameState.game_constants["meta_auto_rewind_pending"] = true
+	await loop._on_battle_ended(false)
+	assert_true(loop.left_the_battle)
+	assert_false(loop.showed_game_over)
+	assert_eq(GameState.party_gold, 300, "one wipe rewinds one checkpoint, not two")
+	assert_false(bool(GameState.game_constants.get("meta_auto_rewind_pending", false)))
+	assert_gte(GameState.save_history.size(), 2,
+		"history can still rewind — the spent shield is what has to refuse the second wipe")
+	GameState.party_gold = 77
+	var back: Combatant = loop.party[0]
+	back.die()
+	loop.left_the_battle = false
+	loop.showed_game_over = false
+	loop.current_state = GameLoopScript.LoopState.BATTLE
+	await loop._on_battle_ended(false)
+	assert_true(loop.showed_game_over, "the spent shield does not avert a second wipe")
+	assert_false(loop.left_the_battle)
+	assert_eq(GameState.party_gold, 77, "the second wipe must not rewind")
