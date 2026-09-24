@@ -769,7 +769,13 @@ func _use_selected_item() -> void:
 				break
 		if not valid_target:
 			SoundManager.play_ui("menu_error")
-			Toast.show_warning(self, "Cannot revive — no KO'd target")
+			# Same sentence as the battle item row. The percent on Phoenix Down is the HP they stand up with; this menu does not spend it on someone still standing.
+			var why := "Cannot revive — no KO'd target"
+			if ItemSystem:
+				var specific := str(ItemSystem.ineffective_use_reason(item.get("id", ""), targets, true))
+				if specific != "":
+					why = specific
+			Toast.show_warning(self, why)
 			return
 
 	# F3: save_point_only items refuse deep-dungeon use (fine at crystals and outside dungeons).
