@@ -1805,15 +1805,8 @@ func _step_branch(step: Dictionary) -> void:
 				break
 			await _execute_step(sub_step)
 	elif step.get("condition", "") == "lead_job":
-		# Lead-job branching: pick steps based on the party leader's job_id.
-		# Used by W1 spotlight cutscenes to swap trope-demonstrating beats
-		# based on who the player picked as lead. Falls back to "default"
-		# case if leader's job has no explicit case or no leader is set.
-		var lead_job = ""
-		if GameState:
-			var leader = GameState.get_party_leader()
-			if leader is Dictionary:
-				lead_job = leader.get("job_id", "")
+		# Live job. get_party_leader() is the menu/save snapshot, so a job change that has not been saved still reads as the old lead — the Orrery then grants the charm instead of the chord.
+		var lead_job := _lead_job_id()
 		var cases = step.get("cases", {})
 		var branch_steps = cases.get(lead_job, cases.get("default", []))
 		for sub_step in branch_steps:
@@ -1823,6 +1816,20 @@ func _step_branch(step: Dictionary) -> void:
 	else:
 		# _execute_step warns on an unknown step type; this chain silently ran nothing.
 		push_warning("CutsceneDirector: branch condition '%s' has no handler — no sub-step ran" % str(step.get("condition", "")))
+
+
+## The job the player is leading with now. party_for_queries prefers GameLoop.party and falls back to the snapshot when no live roster is in the tree.
+func _lead_job_id() -> String:
+	if GameState == null or not GameState.has_method("party_for_queries"):
+		return ""
+	var rows: Array = GameState.party_for_queries()
+	if rows.is_empty():
+		return ""
+	var idx: int = clampi(int(GameState.party_leader_index), 0, rows.size() - 1)
+	var row: Variant = rows[idx]
+	if row is Dictionary:
+		return str(row.get("job_id", ""))
+	return ""
 
 
 func _detect_playstyle() -> String:

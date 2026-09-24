@@ -22,8 +22,8 @@ func test_step_branch_handles_lead_job_condition() -> void:
 	var text = _read("res://src/cutscene/CutsceneDirector.gd")
 	assert_true(text.find("condition\", \"\") == \"lead_job\"") > -1,
 		"_step_branch must have a 'lead_job' condition case")
-	assert_true(text.find("GameState.get_party_leader()") > -1,
-		"lead_job branch must read the leader from GameState.get_party_leader()")
+	assert_true(text.find("_lead_job_id()") > -1,
+		"lead_job branch must read the live leader via _lead_job_id(), not the save snapshot")
 	assert_true(text.find("job_id") > -1,
 		"lead_job branch must extract job_id from the leader dict")
 
@@ -45,10 +45,9 @@ func test_step_branch_lead_job_falls_back_to_default() -> void:
 
 
 func test_get_party_leader_returns_dict_with_job_id() -> void:
-	# GameState.get_party_leader() is the source of truth for lead_job.
-	# If it ever changes shape (e.g. returns a Combatant instead of a
-	# Dictionary), the lead_job branch silently breaks and all spotlight
-	# scenes fall through to default.
+	# get_party_leader() still returns the save snapshot. The lead_job branch
+	# does not read it (that snapshot lags a job change). Other callers do.
+	# If the return type stops being a Dictionary, those callers break.
 	var text = _read("res://src/meta/GameState.gd")
 	var idx = text.find("func get_party_leader()")
 	assert_gt(idx, -1, "GameState must expose get_party_leader()")
