@@ -35,12 +35,13 @@ func test_start_handler_checks_input_lock_before_opening_settings() -> void:
 	# Anchor on the EXPLORATION branch of the Start-key dispatcher.
 	var block := _block_around(src, "elif current_state == LoopState.EXPLORATION:\n\t\t\t# Escape belongs to the overworld menu", 800)
 	assert_ne(block, "", "EXPLORATION branch must have the transition-block guard")
-	assert_true(block.contains("InputLockManager.is_locked()"),
-		"Start→settings must consult InputLockManager.is_locked() before opening")
-	# Must also guard the manager reference — InputLockManager autoload
-	# could be absent on a boot-edge path.
-	assert_true(block.contains("InputLockManager and"),
-		"the is_locked() check must be guarded against missing InputLockManager")
+	assert_true(block.contains("_in_exploration_transition()"),
+		"Start→settings must use _in_exploration_transition() — is_locked() alone misses fade-in, when no lock is held yet")
+	var helper := _block_around(src, "func _in_exploration_transition()", 600)
+	assert_true(helper.contains("_transition_in_progress"),
+		"the helper must treat fade-in as a transition")
+	assert_true(helper.contains("InputLockManager"),
+		"the helper must still consult InputLockManager for encounter and fade-out locks")
 
 
 func test_encounter_transition_lock_is_actually_pushed() -> void:
