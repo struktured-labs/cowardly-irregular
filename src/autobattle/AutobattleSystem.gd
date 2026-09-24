@@ -1081,13 +1081,15 @@ func _resolve_job_for_character(character_id: String) -> String:
 	return character_id
 
 
-## Reads the job the character actually has right now. Party entries are Combatant.to_dict(),
-## which carries job_id; matched on the same name→id derivation _get_character_id uses.
+## Reads the job the character actually has right now. The save snapshot lags a job
+## change until the next menu open, so this prefers the live roster. Matched on the
+## same name→id derivation _get_character_id uses.
 func _live_job_id_for(character_id: String) -> String:
 	var game_state = get_node_or_null("/root/GameState") if is_inside_tree() else null
 	if game_state == null or not ("player_party" in game_state):
 		return ""
-	for entry in game_state.player_party:
+	var rows: Array = game_state.party_for_queries() if game_state.has_method("party_for_queries") else game_state.player_party
+	for entry in rows:
 		if not (entry is Dictionary):
 			continue
 		if str(entry.get("name", "")).to_lower().replace(" ", "_") != character_id:

@@ -876,13 +876,14 @@ func add_corruption(amount: float) -> void:
 ## member has the passive equipped. Reads the dict-shaped party
 ## (saves keep Dictionaries, not Combatant instances).
 func _party_corruption_resistance() -> float:
-	if player_party.is_empty():
+	var rows := party_for_queries()
+	if rows.is_empty():
 		return 0.0
 	var ps: Node = get_node_or_null("/root/PassiveSystem")
 	if ps == null or not ps.has_method("get_passive"):
 		return 0.0
 	var best: float = 0.0
-	for member in player_party:
+	for member in rows:
 		if not (member is Dictionary):
 			continue
 		var ep: Variant = member.get("equipped_passives", [])
@@ -1120,6 +1121,52 @@ func activate_crystal(map_id: String) -> void:
 
 func is_crystal_activated(map_id: String) -> bool:
 	return activated_crystals.get(map_id, false)
+
+
+## Live Combatants when GameLoop has a party; otherwise the save snapshot, which only updates when the pause menu opens or the game saves.
+func party_for_queries() -> Array:
+	var live := _live_party_rows()
+	if not live.is_empty():
+		return live
+	var saved: Array = []
+	for entry in player_party:
+		if entry is Dictionary:
+			saved.append(entry)
+	return saved
+
+
+func _live_party_rows() -> Array:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null or tree.root == null:
+		return []
+	var gl := tree.root.get_node_or_null("GameLoop")
+	if gl == null or not ("party" in gl):
+		return []
+	var roster: Variant = gl.party
+	# A spotlight duel replaces party with the duelist. The full roster is the one these queries mean.
+	if "_spotlight_duel_active" in gl and bool(gl._spotlight_duel_active) and "_spotlight_saved_party" in gl:
+		var saved_roster: Variant = gl._spotlight_saved_party
+		if saved_roster is Array and not (saved_roster as Array).is_empty():
+			roster = saved_roster
+	if not (roster is Array):
+		return []
+	var rows: Array = []
+	for member in roster:
+		if not is_instance_valid(member) or not (member is Combatant):
+			continue
+		var job_id := ""
+		if member.job is Dictionary:
+			job_id = str((member.job as Dictionary).get("id", ""))
+		rows.append({
+			"name": member.combatant_name,
+			"job_id": job_id,
+			"secondary_job_id": str(member.secondary_job_id),
+			"job_level": member.job_level,
+			"current_hp": member.current_hp,
+			"is_alive": member.is_alive,
+			"equipped_passives": member.equipped_passives,
+		})
+	return rows
 
 
 ## Party leader methods
