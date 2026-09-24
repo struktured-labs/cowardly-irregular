@@ -715,12 +715,14 @@ func _create_dialogue_system() -> void:
 
 func _on_dialogue_finished() -> void:
 	"""Handle dialogue completion - resume battle"""
+	# Only the pre-battle intro sets this. low_hp and defeat share the signal and must not call start_battle.
+	var start_fight: bool = _waiting_for_dialogue
 	_waiting_for_dialogue = false
 	# Re-show the command menu the dialogue hid — only mid-selection (never resurrect it over a victory screen).
 	if BattleManager and BattleManager.is_selecting():
 		set_command_menu_visible(true)
-	# Now actually start the battle
-	_start_battle_after_dialogue()
+	if start_fight:
+		_start_battle_after_dialogue()
 
 
 ## Boss speech owns the screen: hide the command menu so A unambiguously advances the dialogue (struktured 2026-08-15, mage duel vs Prismatic Construct).
