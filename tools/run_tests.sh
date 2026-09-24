@@ -7,6 +7,7 @@
 #   tools/run_tests.sh                 # full unit suite
 #   tools/run_tests.sh <name> [<name>...]  # one or more files, in ONE godot process
 #   tools/run_tests.sh --isolated      # the quarantined suite (own process by design)
+#   RUN_TESTS_SEE_PADS=1 tools/run_tests.sh ...  # let godot see plugged-in controllers (hidden by default)
 #
 # Exit codes:  0 pass · 1 test failures · 2 bad invocation · 3 nothing ran · 4 a test did not assert
 set -uo pipefail
@@ -22,6 +23,36 @@ mkdir -p tmp
 GUT_LOG="tmp/gut_manual_godot.$$.log"
 RUN_LOG="tmp/run_tests_last.$$.log"
 BASE=(godot --headless --audio-driver Dummy --log-file "$GUT_LOG" -s addons/gut/gut_cmdln.gd -gprefix=test_ -gsuffix=.gd -gexit)
+
+# HIDE THE HOST'S CONTROLLERS. Headless godot enumerates a plugged-in pad, and every "no pad attached"
+# arm then goes RED: 17 across 10 files of one 92-file corpus with struktured's 8BitDo awake
+# (2026-09-23, identical at unmodified main), 40 in cowir-main's first .474 gate. A live press also
+# reached a test process and freed an editor mid-arm. What is plugged into the box is not the tree,
+# so every run gets an EMPTY /dev/input. Measured on the real child before relying on it: a 90-frame
+# probe counts 1 pad bare / 0 jailed; exit codes pass through; a spinning godot under `timeout 3` is
+# still cut at 3.0s with EC=124 and nothing left running. ⚠️ No `--die-with-parent`: measured, it
+# does NOT reap a TERM-ignoring child, so it would read as a backstop and be none (the --kill-after
+# trap below). The bound still rests on godot honouring the TERM that bwrap forwards.
+# The reported state is MEASURED from the /dev/input godot will see, not inferred from whether this
+# jail applied: under an OUTER jail (cowir-main gates that way) a nested bwrap is refused, and the
+# first version then printed VISIBLE over a run whose pads were already hidden.
+PAD_JAIL=(bwrap --dev-bind / / --tmpfs /dev/input)
+_input_nodes() { if [ -d /dev/input ]; then ls -A /dev/input | wc -l; else echo 0; fi; }
+_jail_err=""
+if [ "${RUN_TESTS_SEE_PADS:-0}" != "1" ] && command -v bwrap > /dev/null; then
+  if _jail_err="$("${PAD_JAIL[@]}" true 2>&1)"; then
+    BASE=("${PAD_JAIL[@]}" "${BASE[@]}")
+  fi
+fi
+if [ "${BASE[0]}" = "bwrap" ]; then
+  PAD_STATE="hidden (empty /dev/input)"
+elif [ "$(_input_nodes)" -eq 0 ]; then
+  PAD_STATE="hidden (/dev/input already empty here)"
+elif [ "${RUN_TESTS_SEE_PADS:-0}" = "1" ]; then
+  PAD_STATE="VISIBLE (RUN_TESTS_SEE_PADS=1)"
+else
+  PAD_STATE="VISIBLE ($([ -n "$_jail_err" ] && echo "${_jail_err%%,*}" || echo "no bwrap on PATH")) — 'no pad' arms red if a controller is plugged in"
+fi
 
 # PLAYER-DATA NET — HERE, not in gate.sh, because THIS is the documented command.
 # The suite writes test data over user://script_exports/ under fixed filenames, which are the same
@@ -162,6 +193,7 @@ run_gut() {
   # boot, which is the same stale-artifact class the header exists to close.
   : > "$RUN_LOG"
   _tree_stamp | tee -a "$RUN_LOG" >&2
+  echo "run_tests.sh: host controllers ${PAD_STATE}" | tee -a "$RUN_LOG" >&2
   # ⛔ BOUND THE RUN. A wedged godot is not a slow one and does not end on its own: the .461 gate
   # spun 1h57m at 100% on ONE thread with its log frozen for 1h49m, and nothing in this script or
   # in gate.sh would ever have stopped it. Measured suites are 268-689s, so 1800s is ~2.6x the
