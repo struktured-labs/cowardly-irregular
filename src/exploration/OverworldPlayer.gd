@@ -1769,7 +1769,7 @@ func _party_movement_speed_bonus() -> float:
 	if ps == null or not ps.has_method("get_passive"):
 		return 1.0
 	var best: float = 1.0
-	for member in gs.player_party:
+	for member in gs.party_for_queries():
 		if not (member is Dictionary):
 			continue
 		var ep: Variant = member.get("equipped_passives", [])
@@ -1794,7 +1794,7 @@ func _party_movement_speed_bonus() -> float:
 	## max-wins lane as the speedrun_mode passive.
 	var js: Node = get_node_or_null("/root/JobSystem")
 	if js != null and js.has_method("get_job"):
-		for member in gs.player_party:
+		for member in gs.party_for_queries():
 			if not (member is Dictionary):
 				continue
 			for slot_key in ["job_id", "secondary_job_id"]:
@@ -1862,7 +1862,7 @@ func _party_auto_save_interval() -> float:
 	if ps == null or not ps.has_method("get_passive"):
 		return 0.0
 	var best: float = 0.0
-	for member in gs.player_party:
+	for member in gs.party_for_queries():
 		if not (member is Dictionary):
 			continue
 		var ep: Variant = member.get("equipped_passives", [])
@@ -1991,7 +1991,7 @@ func _party_wants_show_timer() -> bool:
 	var ps: Node = get_node_or_null("/root/PassiveSystem")
 	if ps == null or not ps.has_method("get_passive"):
 		return false
-	for member in gs.player_party:
+	for member in gs.party_for_queries():
 		if not (member is Dictionary):
 			continue
 		var ep: Variant = member.get("equipped_passives", [])
@@ -2019,7 +2019,7 @@ func _party_wants_show_treasure() -> bool:
 	var ps: Node = get_node_or_null("/root/PassiveSystem")
 	if ps == null or not ps.has_method("get_passive"):
 		return false
-	for member in gs.player_party:
+	for member in gs.party_for_queries():
 		if not (member is Dictionary):
 			continue
 		var ep: Variant = member.get("equipped_passives", [])
@@ -2048,7 +2048,7 @@ func _party_wants_show_secrets() -> bool:
 	var ps: Node = get_node_or_null("/root/PassiveSystem")
 	if ps == null or not ps.has_method("get_passive"):
 		return false
-	for member in gs.player_party:
+	for member in gs.party_for_queries():
 		if not (member is Dictionary):
 			continue
 		var ep: Variant = member.get("equipped_passives", [])

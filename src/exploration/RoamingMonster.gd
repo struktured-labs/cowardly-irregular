@@ -360,7 +360,7 @@ func _is_outmatched() -> bool:
 	var gs: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
 	if gs == null:
 		return false
-	var party = gs.get("player_party")
+	var party = gs.party_for_queries() if gs.has_method("party_for_queries") else gs.get("player_party")
 	if party == null or not (party is Array) or party.is_empty():
 		return false
 	var total := 0.0
