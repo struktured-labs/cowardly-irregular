@@ -247,7 +247,7 @@ const FORMATION_DESCRIPTIONS = [
 	"Tank absorbs hits",
 	"Resist AoE attacks",
 ]
-static var current_formation: int = PartyFormation.V_FORMATION  # Persists across battles
+static var current_formation: int = PartyFormation.V_FORMATION  # Persists across battles; start_battle reapplies the row's stats after the buff wipe
 
 ## Dialogue system
 var _battle_dialogue: BattleDialogueClass = null
@@ -3525,30 +3525,31 @@ func cycle_formation() -> void:
 
 
 func _apply_formation_stats() -> void:
-	"""Apply stat modifiers based on current formation"""
-	# Clear previous formation buffs and debuffs
-	for member in party_members:
+	apply_persisted_formation(party_members)
+
+
+## Shared by cycle_formation and the next battle's start. The row index already survived; this is the attack and defense the buff wipe used to drop.
+static func apply_persisted_formation(members: Array) -> void:
+	for member in members:
 		if not is_instance_valid(member):
 			continue
 		for buff_idx in range(member.active_buffs.size() - 1, -1, -1):
-			if member.active_buffs[buff_idx].get("effect", "").begins_with("formation_"):
+			if str(member.active_buffs[buff_idx].get("effect", "")).begins_with("formation_"):
 				member.active_buffs.remove_at(buff_idx)
 		for debuff_idx in range(member.active_debuffs.size() - 1, -1, -1):
-			if member.active_debuffs[debuff_idx].get("effect", "").begins_with("formation_"):
+			if str(member.active_debuffs[debuff_idx].get("effect", "")).begins_with("formation_"):
 				member.active_debuffs.remove_at(debuff_idx)
-
 	match current_formation:
 		PartyFormation.FRONT_LINE:
-			for member in party_members:
+			for member in members:
 				if is_instance_valid(member) and member.is_alive:
 					member.add_buff("formation_atk", "attack", 1.1, 999)
 					member.add_debuff("formation_def", "defense", 0.9, 999)
 		PartyFormation.BACK_ROW:
-			for member in party_members:
+			for member in members:
 				if is_instance_valid(member) and member.is_alive:
 					member.add_buff("formation_def", "defense", 1.1, 999)
 					member.add_debuff("formation_atk", "attack", 0.9, 999)
-		# V_FORMATION, DIAMOND, SPREAD: no flat stat modifiers (effects are situational)
 
 
 func _process_idle_animations(delta: float) -> void:

@@ -170,6 +170,11 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 		for c in _enemy_party:
 			bm.enemy_party.append(c)
 
+	## Live's start_battle puts Front Line / Back Row back after this same wipe. One apply, same 1.1 / 0.9, and a KO is skipped.
+	var scene_script: GDScript = load("res://src/battle/BattleScene.gd") as GDScript
+	if scene_script != null:
+		scene_script.apply_persisted_formation(_player_party)
+
 	while _current_round < MAX_ROUNDS:
 		_current_round += 1
 		if bm:
