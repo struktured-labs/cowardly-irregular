@@ -36,7 +36,7 @@ func _ready() -> void:
 	pass
 
 
-## The cap printed on the pad's cancel button; "B" was wrong on every Nintendo-family pad (8BitDo cancel sits under Ⓐ) — every world ending showed it.
+## The cap printed on the pad's cancel button, resolved per device by InputProfileManager — a frozen "B" is true on one pad family and every world ending showed it to the rest.
 ## ⛔ NO PAD, NO CAP. `glyph_for_action` answers an EMPTY device name out of the xbox table, so
 ## with zero pads attached every ending printed "Ⓐ / Esc: Skip" to a keyboard-only player. Esc
 ## already names the whole control; same guard as `CutsceneDirector._cancel_pad_segment`.
