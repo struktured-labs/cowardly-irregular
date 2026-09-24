@@ -121,7 +121,7 @@ func test_mp_status_revive_and_battle_only_items_each_say_why() -> void:
 		"Phoenix Down's bundled heal is real on a living ally, and a no-op when they are already full")
 	var scratched := _person("Theron", 10, 80)
 	assert_eq(sys.ineffective_use_reason("phoenix", [scratched]), "",
-		"a living hurt ally still receives Phoenix Down's heal in battle")
+		"a living hurt ally still receives Phoenix Down's heal when use_item runs; the battle menu passes in_battle and refuses")
 	assert_eq(sys.ineffective_use_reason("smoke", [full]), "Smoke Bomb only works in battle")
 	assert_eq(sys.ineffective_use_reason("smoke", [full], true), "",
 		"the same Smoke Bomb is a real action once a battle is underway")
