@@ -626,9 +626,14 @@ func ineffective_use_reason(item_id: String, targets: Array, in_battle: bool = f
 			return "%s only works in battle" % name
 		return "%s can't be used" % name
 	if revives:
-		for t in targets:
-			if _is_item_target(t) and not t.is_alive:
-				return ""
+		# _execute_item keeps only KO'd targets for a revival item, so a living ally fizzles after the turn is queued. Menus that pass in_battle must refuse first. Outside battle the bundled heal still counts below, because use_item applies it.
+		var standing := _living_revive_reason(targets)
+		if standing == "":
+			for t in targets:
+				if _is_item_target(t) and not t.is_alive:
+					return ""
+		elif in_battle:
+			return standing
 	var seen := 0
 	var living := 0
 	var who := ""
@@ -686,10 +691,33 @@ func ineffective_use_reason(item_id: String, targets: Array, in_battle: bool = f
 			return "The party is already at full MP"
 		return "%s is already at full MP" % who
 	if revives:
+		var standing := _living_revive_reason(targets)
+		if standing != "":
+			return standing
 		return "Cannot revive — no KO'd target"
 	if many:
 		return "It wouldn't help anyone"
 	return "It wouldn't help %s" % who
+
+
+## "" when someone in targets is KO'd (the revive can help) or no target could be read. Otherwise who isn't knocked out.
+func _living_revive_reason(targets: Array) -> String:
+	var n := 0
+	var who := ""
+	for t in targets:
+		if not _is_item_target(t):
+			continue
+		if not t.is_alive:
+			return ""
+		n += 1
+		who = str(t.combatant_name)
+	if n == 0:
+		return ""
+	if n > 1:
+		return "No one is knocked out"
+	if who == "":
+		who = "They"
+	return "%s isn't knocked out" % who
 
 
 func _effect_amount(effects: Dictionary, key: String) -> int:
