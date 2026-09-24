@@ -32,8 +32,20 @@ import time
 CLK = os.sysconf("SC_CLK_TCK")
 
 
+def parse_vcs(status_text):
+    """voluntary_ctxt_switches from a /proc/<tid>/status body, matched by EXACT KEY.
+
+    The same file carries nonvoluntary_ctxt_switches; a substring match reads that one
+    too, and which you get then depends on line order rather than on the key."""
+    for line in status_text.splitlines():
+        key, _, val = line.partition(":")
+        if key == "voluntary_ctxt_switches":
+            return int(val.strip())
+    return 0
+
+
 def threads(pid):
-    """{tid: (comm, utime+stime in ticks)} — skips threads that exit mid-walk."""
+    """{tid: (comm, ticks, state, wchan, vcs)} — skips threads that exit mid-walk."""
     out = {}
     try:
         tids = os.listdir(f"/proc/{pid}/task")
@@ -66,7 +78,14 @@ def threads(pid):
                 wchan = fh.read().strip() or "-"
         except (FileNotFoundError, ProcessLookupError, PermissionError):
             wchan = "?"
-        out[tid] = (comm, ticks, state, wchan)
+        # Every godot thread is named "godot", so HOW OFTEN a thread chooses to sleep is
+        # the only identity /proc gives without ptrace. See the cadence note in main().
+        try:
+            with open(f"/proc/{pid}/task/{tid}/status") as fh:
+                vcs = parse_vcs(fh.read())
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            vcs = 0
+        out[tid] = (comm, ticks, state, wchan, vcs)
     return out
 
 
@@ -144,6 +163,18 @@ def selftest():
          "uninterruptible sleep is neither of the two branches"),
     ]
     bad = 0
+    # parse_vcs must take the EXACT key -- the nonvoluntary line comes FIRST here on purpose,
+    # so a substring match or a first-hit match returns 99 and fails.
+    parse_cases = [
+        ("nonvoluntary_ctxt_switches:\t99\nvoluntary_ctxt_switches:\t1234\n", 1234, "nonvoluntary FIRST"),
+        ("voluntary_ctxt_switches:\t1234\nnonvoluntary_ctxt_switches:\t99\n", 1234, "real /proc order"),
+        ("Name:\tgodot\nState:\tS (sleeping)\n", 0, "field absent -> 0, never a neighbour's value"),
+    ]
+    for text, want, note in parse_cases:
+        got = parse_vcs(text)
+        ok = got == want
+        bad += not ok
+        print(f"{'ok  ' if ok else 'FAIL'} parse_vcs {note:44} -> {got} (want {want})")
     for state, wchan, want, note in cases:
         got, why = main_thread_verdict(state, wchan)
         ok = got == want
@@ -163,7 +194,7 @@ def selftest():
         print("FAIL a lock wait and a timed sleep must not share a verdict -- "
               "that collapse IS the bug this replaced")
         bad += 1
-    print(f"\n{len(cases)} cases, {bad} failed")
+    print(f"\n{len(cases) + len(parse_cases)} checks, {bad} failed")
     return 1 if bad else 0
 
 
@@ -176,29 +207,53 @@ def main():
     pid = sys.argv[1]
     window = float(sys.argv[2]) if len(sys.argv) > 2 else 5.0
 
+    # ⛔ Divide by the MEASURED window, not the requested one. The shell twin of this tool
+    # divided by the nominal seconds and printed 102.2% / 104.4% for ONE thread in two wedge
+    # captures -- impossible, and the same bias inflated every rate. Both walks run the same
+    # code, so the monotonic gap between their starts is each thread's real window.
+    t_first = time.monotonic()
     first = threads(pid)
     if first is None:
         print(f"no such process: {pid}")
         return 1
     time.sleep(window)
+    t_second = time.monotonic()
     second = threads(pid)
+    elapsed = t_second - t_first
     if second is None:
         print(f"process {pid} vanished during the sample")
         return 2
 
     rows = []
-    for tid, (comm, end, state, wchan) in second.items():
+    for tid, (comm, end, state, wchan, vcs) in second.items():
         if tid not in first:
             continue
         delta = end - first[tid][1]
-        rows.append((delta / CLK / window * 100.0, tid, comm, state, wchan))
+        slp = (vcs - first[tid][4]) / elapsed
+        rows.append((delta / CLK / elapsed * 100.0, tid, comm, state, wchan, slp))
     rows.sort(reverse=True)
 
-    print(f"pid {pid} · {len(second)} threads · {window:g}s window")
-    print(f"{'%CPU':>7}  {'tid':>8}  {'S':1}  {'comm':22}  wchan")
-    for pct, tid, comm, state, wchan in rows[:12]:
+    print(f"pid {pid} · {len(second)} threads · measured window {elapsed:.3f}s (asked {window:g}s)")
+    print(f"{'%CPU':>7}  {'slp/s':>7}  {'tid':>8}  {'S':1}  {'comm':22}  wchan")
+    for pct, tid, comm, state, wchan, slp in rows[:12]:
         mark = "  <-- SPINNING" if pct > 80 else ""
-        print(f"{pct:7.1f}  {tid:>8}  {state:1}  {comm:22}  {wchan}{mark}")
+        print(f"{pct:7.1f}  {slp:7.1f}  {tid:>8}  {state:1}  {comm:22}  {wchan}{mark}")
+
+    # ⛔ PERIODIC SLEEPERS IN FULL: they sit at 0.0% CPU, so the top-12 above drops them.
+    # Measured 2026-09-24, godot 4.4.1 + this project + Dummy at 44.1k, 31 threads: four
+    # periodic workers at 20.0 · 99.7 · 10.7 · 1.0 /s. The 10.7 one is the AUDIO MIX thread,
+    # proven by varying audio/driver/mix_rate (11025 -> 2.7, 88200 -> 21.3; nothing else moved).
+    # --audio-output-latency moves NOTHING (Dummy uses a fixed 4096-frame buffer). A spinner
+    # stops sleeping, so its cadence VANISHES while the survivors keep theirs: the missing one
+    # of the four names the spinner. Re-measure after an engine bump.
+    # ⚠️ Listed if it slept AT ALL (> 0), not >= 1/s: the 1/s thread wakes only 2-4 times in a
+    # 3s window, and a >= 1 cutoff dropped it from a HEALTHY run -- a false "missing".
+    # Parked futex workers never wake, so > 0 still separates them. Use a window >= 5s.
+    sleepers = sorted((r for r in rows if r[5] > 0), key=lambda r: -r[5])
+    print("\nthreads that slept at all in the window (periodic workers), all of them:")
+    for pct, tid, comm, state, wchan, slp in sleepers:
+        print(f"  {slp:7.1f}/s  {tid:>8}  {state:1}  {wchan}")
+    print("healthy fingerprint (4.4.1, Dummy, 44.1k): 20.0 · 99.7 · 10.7 (AUDIO MIX) · 1.0 /s")
 
     main_row = next((r for r in rows if r[1] == str(pid)), None)
     verdict = None
@@ -209,7 +264,7 @@ def main():
     else:
         verdict, why = main_thread_verdict(main_row[3], main_row[4])
         print(f"\nmain thread {main_row[1]}: {main_row[0]:.1f}% "
-              f"state={main_row[3]} wchan={main_row[4]}")
+              f"state={main_row[3]} wchan={main_row[4]} sleeps={main_row[5]:.1f}/s")
         print(f"  -> {verdict}: {why}")
 
     busy = [r for r in rows if r[0] > 80]
