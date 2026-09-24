@@ -225,15 +225,15 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	panel.add_child(secondary_title)
 	y_offset += 18
 
-	# Get passive mods for secondary stats
+	# Combat reads the full chance. These lines used to print only the passive bonus, and "%.0f" rounded 1.25 and 0.6 both to 1.
 	var passive_mods = PassiveSystem.get_passive_mods(character)
 
 	var secondary_stats = [
-		{"name": "Crit Chance", "value": "%.0f%%" % (passive_mods.get("crit_chance", 0) * 100)},
-		{"name": "Evasion", "value": "%.0f%%" % (passive_mods.get("evasion", 0) * 100)},
-		{"name": "Attack Mult", "value": "%.0fx" % passive_mods.get("attack_multiplier", 1.0)},
-		{"name": "Magic Mult", "value": "%.0fx" % passive_mods.get("magic_multiplier", 1.0)},
-		{"name": "Defense Mult", "value": "%.0fx" % passive_mods.get("defense_multiplier", 1.0)},
+		{"name": "Crit Chance", "value": format_percent(_standing_crit_chance())},
+		{"name": "Evasion", "value": format_percent(_standing_evasion_chance(passive_mods))},
+		{"name": "Attack Mult", "value": format_multiplier(float(passive_mods.get("attack_multiplier", 1.0)))},
+		{"name": "Magic Mult", "value": format_multiplier(float(passive_mods.get("magic_multiplier", 1.0)))},
+		{"name": "Defense Mult", "value": format_multiplier(float(passive_mods.get("defense_multiplier", 1.0)))},
 	]
 
 	for sec_stat in secondary_stats:
@@ -454,6 +454,36 @@ static func _exp_display(job_level: int, job_exp: int) -> String:
 	if job_level >= 99:
 		return "EXP: MAX"
 	return "EXP: %d / %d" % [job_exp, job_level * 100]
+
+
+## 1.0 stays "1x". 1.2 stays "1.2x". 1.25 stays "1.25x". "%.0f" turned every one of those into a different number.
+static func format_multiplier(value: float) -> String:
+	var hundredths := snappedf(value, 0.01)
+	if is_equal_approx(hundredths, roundf(hundredths)):
+		return "%dx" % int(roundf(hundredths))
+	if is_equal_approx(hundredths * 10.0, roundf(hundredths * 10.0)):
+		return "%.1fx" % hundredths
+	return "%.2fx" % hundredths
+
+
+static func format_percent(chance: float) -> String:
+	return "%d%%" % int(roundf(clampf(chance, 0.0, 1.0) * 100.0))
+
+
+## BattleManager._calculate_crit_chance: 5% base + 1% per speed + passive + gear critical_bonus, capped.
+func _standing_crit_chance() -> float:
+	if character == null or BattleManager == null or not BattleManager.has_method("_calculate_crit_chance"):
+		return 0.0
+	return float(BattleManager._calculate_crit_chance(character))
+
+
+## Passive dodge, then equipment dodge — two rolls in _target_dodges_physical, so the chance of either is p + (1-p)*e.
+func _standing_evasion_chance(passive_mods: Dictionary) -> float:
+	var passive := clampf(float(passive_mods.get("evasion", 0.0)), 0.0, 0.50)
+	var equip := 0.0
+	if character != null and BattleManager != null and BattleManager.has_method("_sum_equipment_special_effect"):
+		equip = clampf(float(BattleManager._sum_equipment_special_effect(character, "evasion_bonus")), 0.0, 0.50)
+	return passive + (1.0 - passive) * equip
 
 
 func _create_equip_row(slot_name: String, item_name: String, color: Color, y_pos: int) -> Control:
