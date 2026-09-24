@@ -1752,6 +1752,8 @@ func _on_title_new_game() -> void:
 	# (since cutscene_flag_prologue_complete persisted in story_flags).
 	if GameState and GameState.has_method("reset_game_state"):
 		GameState.reset_game_state()
+	## The Equipment menu reads this live pool. reset_game_state only empties the save bucket, and the next menu sync copies last run's gear back.
+	_init_equipment_pool()
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
 	# Go straight to exploration — prologue triggers on first Theron interaction
