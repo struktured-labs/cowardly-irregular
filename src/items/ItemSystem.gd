@@ -551,6 +551,39 @@ func get_item(item_id: String) -> Dictionary:
 	return items.get(item_id, {})
 
 
+## The party shares one bag in battle. Every grant lands on the leader, so reading each member's own
+## inventory left four of five PCs with no Item command and made every preset's potion rule dead.
+func party_item_count(party: Array, item_id: String) -> int:
+	var total := 0
+	for m in party:
+		if m != null and is_instance_valid(m) and m.has_method("get_item_count"):
+			total += int(m.get_item_count(item_id))
+	return total
+
+
+## item_id -> total quantity across the party, for a menu that lists the shared bag.
+func party_inventory(party: Array) -> Dictionary:
+	var out := {}
+	for m in party:
+		if m == null or not is_instance_valid(m) or not ("inventory" in m) or not (m.inventory is Dictionary):
+			continue
+		for id in m.inventory:
+			var q := int(m.inventory[id])
+			if q > 0:
+				out[id] = int(out.get(id, 0)) + q
+	return out
+
+
+## Spend one from the user's own stock first, then from the first other member holding it.
+func take_party_item(user, party: Array, item_id: String) -> bool:
+	if user != null and is_instance_valid(user) and user.has_method("get_item_count") and int(user.get_item_count(item_id)) > 0:
+		return user.remove_item(item_id, 1)
+	for m in party:
+		if m != null and is_instance_valid(m) and m != user and m.has_method("get_item_count") and int(m.get_item_count(item_id)) > 0:
+			return m.remove_item(item_id, 1)
+	return false
+
+
 ## Whether an item can be used INSIDE a battle. THE OWNER of a rule that had two copies:
 ## BattleCommandMenu filtered META for the player's Use Item list, and the LLM Rule
 ## Composer re-derived the same filter for the model — spelling ItemCategory.META as a

@@ -299,9 +299,11 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			})
 
 	# Items submenu
-	if not combatant.inventory.is_empty():
+	## The party's one bag, read from the same party _execute_item spends from.
+	var bag: Dictionary = ItemSystem.party_inventory(BattleManager.player_party if combatant in BattleManager.player_party else [combatant])
+	if not bag.is_empty():
 		var item_items = []
-		for item_id in combatant.inventory.keys():
+		for item_id in bag.keys():
 			var item = ItemSystem.get_item(item_id)
 			if item.is_empty():
 				continue
@@ -314,7 +316,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			# scale, and token as a "use" option that does nothing.)
 			if not ItemSystem.is_usable_in_battle(item_id):
 				continue
-			var quantity = combatant.inventory[item_id]
+			var quantity = bag[item_id]
 			var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
 
 			# For SINGLE_ALLY items, add party member target submenu.

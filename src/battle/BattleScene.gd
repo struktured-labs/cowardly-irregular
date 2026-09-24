@@ -2720,12 +2720,17 @@ func _on_item_pressed() -> void:
 	if not current:
 		return
 
-	if current.inventory.is_empty():
+	if _item_bag(current).is_empty():
 		log_message("No items in inventory!")
 		return
 
 	# Show item selection menu
 	_show_item_menu()
+
+
+## The party's one bag, the same stock BattleCommandMenu lists and _execute_item spends.
+func _item_bag(current) -> Dictionary:
+	return ItemSystem.party_inventory(BattleManager.player_party if current in BattleManager.player_party else [current])
 
 
 func _show_item_menu() -> void:
@@ -2741,12 +2746,13 @@ func _show_item_menu() -> void:
 	var item_ids = []
 	var idx = 0
 
-	for item_id in current.inventory.keys():
+	var bag: Dictionary = _item_bag(current)
+	for item_id in bag.keys():
 		var item = ItemSystem.get_item(item_id)
 		if item.is_empty():
 			continue
 
-		var quantity = current.inventory[item_id]
+		var quantity = bag[item_id]
 		var label = "%s x%d" % [item["name"], quantity]
 
 		popup.add_item(label, idx)
