@@ -3883,7 +3883,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 
 func _limit_break_cleanse(participants: Array) -> void:
 	## Limit Break post-effect: cleanse negative statuses from all participants.
-	var cleansable: Array[String] = ["poison", "burning", "blind", "fear", "sleep", "stun", "curse", "charm", "pacify", "silence"]
+	var cleansable: Array[String] = ["poison", "burning", "blind", "fear", "sleep", "stun", "curse", "charm", "pacify", "silence", "static", "memory_leak", "festered"]
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
 			continue
@@ -6454,7 +6454,10 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					var cleansed: Array[String] = []
-					var negative_statuses = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom"]
+					## silence / pacify / static / memory_leak / festered are ailments enemies land
+					## (void_pulse, peace_sign, static_field, memory_leak, fester). They were
+					## absent here, so Purgatio reported nothing to cleanse and left them on.
+					var negative_statuses = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom", "silence", "pacify", "static", "memory_leak", "festered"]
 					for status in negative_statuses:
 						if target.has_status(status):
 							cleansed.append(status)

@@ -1549,11 +1549,11 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						## Esuna is in the DEFAULT cleric script and two presets, and headless had no
 						## arm for it — so it fell to the generic add_status below and gave the ally a
 						## junk status called "cleanse" while the blind it was cast to cure stayed on.
-						## The ailment list is BattleManager:6104 verbatim — that array is the parity
+						## The ailment list matches BattleManager's cleanse arm verbatim — that array is the parity
 						## anchor, NOT the has_status call, which takes a loop variable on both sides
 						## and is invisible to a literal `has_status("x")` scan either way.
 						var cleansed: Array[String] = []
-						for ailment in ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom"]:
+						for ailment in ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom", "silence", "pacify", "static", "memory_leak", "festered"]:
 							if target.has_status(ailment):
 								cleansed.append(ailment)
 								target.remove_status(ailment)

@@ -1,7 +1,7 @@
 extends GutTest
 
 ## Esuna is in the DEFAULT cleric autobattle script (AutobattleSystem, three sites) and in two
-## preset templates. In a LIVE battle it clears ten ailments (BattleManager's "cleanse" arm). In a
+## preset templates. In a LIVE battle it clears the ailments in LIVE_AILMENTS (BattleManager's "cleanse" arm). In a
 ## GRIND the resolver had no arm for it, so it fell through to the generic unmodelled-effect
 ## fallback — `target.add_status(effect, duration)` — and the cleric spent 10 MP to give the ally
 ## a junk status literally named "cleanse" while the blind it was cast to cure stayed on.
@@ -13,7 +13,7 @@ extends GutTest
 const ResolverScript := preload("res://src/autogrind/HeadlessBattleResolver.gd")
 ## BattleManager's list, duplicated deliberately: if live grows an ailment and headless does not,
 ## the divergence should red HERE rather than be quietly inherited from a shared constant.
-const LIVE_AILMENTS := ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom"]
+const LIVE_AILMENTS := ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom", "silence", "pacify", "static", "memory_leak", "festered"]
 
 var _resolver: HeadlessBattleResolver
 
