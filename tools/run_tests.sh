@@ -10,6 +10,9 @@
 #   RUN_TESTS_SEE_PADS=1 tools/run_tests.sh ...  # let godot see plugged-in controllers (hidden by default)
 #
 # Exit codes:  0 pass · 1 test failures · 2 bad invocation · 3 nothing ran · 4 a test did not assert
+#              124 wedged (no Totals block — the run was never judged)
+# A shutdown SIGKILL (137) or SIGTERM (143) AFTER a real Totals block is not 124 and not a pass
+# by itself. The totals are the verdict: Failing N stays exit 1; a block with no failures is exit 0.
 set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p tmp
@@ -222,21 +225,25 @@ run_gut() {
   # the command runs on. Never reach for KILL as "the forceful option".
   # Totals are printed before engine shutdown. A wedged mix thread then never joins,
   # so the process sits forever with the results already in the log. `timeout --signal=KILL`
-  # cannot deliver SIGKILL on this box; kill(1) can. 30s of silence AFTER a real Totals
-  # block means shutdown is stuck, not that a test is still thinking.
+  # cannot deliver SIGKILL on this box; kill(1) can. Silence AFTER a real Totals block means
+  # shutdown is stuck, not that a test is still thinking. Default 30s; tests shrink it.
+  local _poll="${RUN_TESTS_POLL_S:-1}" _quiet="${RUN_TESTS_QUIET_AFTER_TOTALS:-30}"
+  case "$_poll" in ''|*[!0-9]*) _poll=1 ;; esac
+  case "$_quiet" in ''|*[!0-9]*) _quiet=30 ;; esac
   timeout "$_budget" "${BASE[@]}" "$@" > >(tee -a "$RUN_LOG") 2>&1 &
-  local _tp=$! _last_size=0 _still=0 _sz
+  local _tp=$! _last_size=0 _still=0 _sz _killed_after_totals=0
   while kill -0 "$_tp" 2>/dev/null; do
-    sleep 5
+    sleep "$_poll"
     _sz=$(wc -c < "$RUN_LOG" 2>/dev/null | tr -dc '0-9')
     if [ -z "$_sz" ] || [ "$_sz" != "$_last_size" ]; then
       _last_size=${_sz:-0}
       _still=0
       continue
     fi
-    _still=$((_still + 5))
-    if [ "$_still" -ge 30 ] && command grep -aE '^Tests[[:space:]]+[0-9]+$' "$RUN_LOG" >/dev/null; then
+    _still=$((_still + _poll))
+    if [ "$_still" -ge "$_quiet" ] && command grep -aE '^Tests[[:space:]]+[0-9]+$' "$RUN_LOG" >/dev/null; then
       echo "run_tests.sh: totals are in and the log has been still for ${_still}s — killing a mix thread that will not join" >&2
+      _killed_after_totals=1
       _kill_pid_tree "$_tp"
       break
     fi
@@ -244,6 +251,37 @@ run_gut() {
   wait "$_tp"
   local ec=$?
   _elapsed=$(( SECONDS - _t0 ))
+  # A signal exit that already has a Totals block was judged. 137 is our SIGKILL (or
+  # SoundManager's OS.kill at headless shutdown). It must not fall through to WEDGED,
+  # and it must not count as a pass while Failing N is on the page.
+  local _totals_present=0 _failing_n=0 _passing_n=0 _tests_n=0 _shutdown_raw=0 _signal_exit=0
+  if command grep -aE '^Tests[[:space:]]+[0-9]+$' "$RUN_LOG" >/dev/null; then
+    _totals_present=1
+    _tests_n="$(command grep -aE '^Tests[[:space:]]+[0-9]+$' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+    _passing_n="$(command grep -aE '^[[:space:]]+Passing[[:space:]]+[0-9]+$' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+    _failing_n="$(command grep -aE '^[[:space:]]+Failing[[:space:]]+[0-9]+$' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+    _passing_n="${_passing_n:-0}"
+    _failing_n="${_failing_n:-0}"
+  fi
+  case "$ec" in
+    124|125|137|143) _signal_exit=1 ;;
+  esac
+  if [ "$_killed_after_totals" -eq 1 ]; then
+    _signal_exit=1
+  fi
+  if [ "$_totals_present" -eq 1 ] && [ "$_signal_exit" -eq 1 ]; then
+    _shutdown_raw=$ec
+    echo "run_tests.sh: SHUTDOWN KILLED AFTER TOTALS (process exit ${_shutdown_raw})." >&2
+    echo "  Tests ${_tests_n}  Passing ${_passing_n}  Failing ${_failing_n}." >&2
+    echo "  The signal is not the verdict. A run passes only when the totals show no failures." >&2
+    if [ "$_failing_n" -gt 0 ]; then
+      echo "  Failing ${_failing_n} — this stays a failure (exit 1). The kill must not hide it." >&2
+      ec=1
+    else
+      echo "  Failing 0 — the totals are clean. Exit 0 unless a later vacuity check refuses the run." >&2
+      ec=0
+    fi
+  fi
   # ⛔ DO NOT TEST FOR 124 ALONE — THE CODE IS SET BY THE FLAGS, NOT BY THE IMPLEMENTATION.
   # Plain / --signal=TERM -> 124; --kill-after -> 125. I first wrote this off as uutils-vs-GNU;
   # it is not. And the code can name a signal that was NEVER SENT: a TERM-ignoring child under
@@ -257,6 +295,8 @@ run_gut() {
   # This arm sits ABOVE the vacuity checks on purpose — a killed run prints no Totals, so without
   # it a wedge exits 3 and reports itself as "NO TESTS RAN", which is a different defect entirely.
   # (Measured: that is exactly what the first version of this arm did.)
+  # 137/143 that already carried a Totals block were rewritten above. Reaching this arm
+  # with those codes means there is no totals block: the run was never judged.
   case "$ec" in
     124|125|137|143)
       if [ "$_elapsed" -ge "$_budget" ]; then
@@ -426,6 +466,12 @@ run_gut() {
     echo "  fresh worktree? godot --headless --audio-driver Dummy --import" >&2
     echo "  logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
     exit 3
+  fi
+  # GUT's own exit can be 0 while the totals name failures (a kill we rewrote, or a
+  # runner that returned before -gexit). A pass is the totals, not the signal.
+  if [ "${_failing_n:-0}" -gt 0 ] && [ "$ec" -eq 0 ]; then
+    echo "run_tests.sh: totals show Failing ${_failing_n} but the runner exited 0 — refusing to call this a pass." >&2
+    ec=1
   fi
   # Keep both logs when the run FAILED — that is exactly when someone needs the evidence — and
   # clean up when it passed, or per-process naming turns into per-process litter.

@@ -227,6 +227,10 @@ var _liveness_last_pos: float = -1.0
 var _audio_mixer_wedged: bool = false
 var _mixer_watch_pos: float = -1.0
 var _mixer_watch_msec: int = 0
+## -1 follows the runtime, 0 never arms, 1 always arms. Tests pin both sides.
+var _mixer_stall_watch_force: int = -1
+## Test hook. Negative reads the live player so a test can freeze the sample.
+var _mixer_pos_override: float = -1.0
 ## Dummy mixes 4096 frames then sleeps ~93ms (Godot 4.4.1). Two quiet callbacks is still healthy;
 ## a third with the same position is the preroll that never moved (128/48000 = 0.00266666663811).
 const _MIXER_STALL_MSEC: int = 300
@@ -249,13 +253,18 @@ func _process(_delta: float) -> void:
 
 ## Public so a test waiting on playback can sample between frames. _process does the same.
 func note_mixer_progress() -> void:
+	# Real devices freeze position while paused, unfocused, or on a 4s fold entry. Only headless/Dummy arms.
+	if not _mixer_stall_watch_active():
+		return
 	var p: AudioStreamPlayer = _live_bed()
 	if p == null:
 		_mixer_watch_pos = -1.0
 		return
 	var pos: float = p.get_playback_position()
+	if _mixer_pos_override >= 0.0:
+		pos = _mixer_pos_override
 	var now: int = Time.get_ticks_msec()
-	# A first sample after silence is a baseline, not proof the mixer recovered.
+	# First sample after silence is a baseline. A bed opening at loop_blend_seconds (4s) is that sample, not a stall.
 	if _mixer_watch_pos < 0.0:
 		_mixer_watch_pos = pos
 		_mixer_watch_msec = now
@@ -270,6 +279,32 @@ func note_mixer_progress() -> void:
 	if not _audio_mixer_wedged and now - _mixer_watch_msec >= _MIXER_STALL_MSEC:
 		_audio_mixer_wedged = true
 		push_warning("[AUDIO] playback position frozen at %.5fs for %dms — mix thread is not advancing; refusing PCM commits so AudioServer.lock cannot wedge the process" % [pos, now - _mixer_watch_msec])
+
+
+## Headless or the Dummy driver only. A windowed Pulse/WASAPI/CoreAudio/Web run never arms.
+func _mixer_stall_watch_active() -> bool:
+	if _mixer_stall_watch_force == 0:
+		return false
+	if _mixer_stall_watch_force == 1:
+		return true
+	if DisplayServer.get_name() == "headless" or OS.has_feature("headless"):
+		return true
+	return _cmdline_audio_driver_is_dummy()
+
+
+func _cmdline_audio_driver_is_dummy() -> bool:
+	var args: PackedStringArray = OS.get_cmdline_args()
+	for i in args.size():
+		var arg := str(args[i])
+		if arg == "--audio-driver" and i + 1 < args.size() and str(args[i + 1]).to_lower() == "dummy":
+			return true
+		if arg.to_lower().begins_with("--audio-driver="):
+			return arg.get_slice("=", 1).to_lower() == "dummy"
+	return str(ProjectSettings.get_setting("audio/driver/driver", "")).to_lower() == "dummy"
+
+
+func _pcm_commit_blocked() -> bool:
+	return _audio_mixer_wedged and _mixer_stall_watch_active()
 
 
 func mixer_is_wedged() -> bool:
@@ -290,7 +325,7 @@ func _live_bed() -> AudioStreamPlayer:
 ## returns. A wedged mix never returns, so this is the call that hangs the suite (tavern piano).
 func _commit_wav_pcm(wav: AudioStreamWAV, data: PackedByteArray) -> bool:
 	note_mixer_progress()
-	if _audio_mixer_wedged:
+	if _pcm_commit_blocked():
 		push_warning("[AUDIO] skipped WAV commit (%d bytes) — mixer is wedged" % data.size())
 		return false
 	wav.data = data
@@ -7391,7 +7426,7 @@ func play_piano_melody() -> void:
 	"""Play a procedural piano melody for the tavern piano"""
 	## The PCM commit takes AudioServer's lock. If the mix thread is already wedged, that call never returns.
 	note_mixer_progress()
-	if _audio_mixer_wedged:
+	if _pcm_commit_blocked():
 		push_warning("[AUDIO] skipped tavern piano — mixer is wedged")
 		return
 	var sample_rate = 22050
