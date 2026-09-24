@@ -696,6 +696,16 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	## the HP/weakness reveal is the high-leverage half.
 	_maybe_emit_boss_insight()
 	_start_new_round()
+	# Opening round already ticked and stripped buffs. The row is reapplied after that, or Front Line draws forward with no +10% ATK.
+	_reapply_persisted_row()
+
+
+## Front Line / Back Row live on BattleScene.current_formation, which start_battle's buff wipe does not touch. Sprites and the menu already follow that static; this puts the attack and defense back on.
+func _reapply_persisted_row() -> void:
+	var scene_script: GDScript = load("res://src/battle/BattleScene.gd") as GDScript
+	if scene_script == null:
+		return
+	scene_script.apply_persisted_formation(player_party)
 
 
 ## Milo's thesis-quest emitters (spec: world1_chapter_three.json _wiring_notes); active-only, notify re-fires per occurrence
