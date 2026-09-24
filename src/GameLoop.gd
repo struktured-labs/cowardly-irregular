@@ -2482,6 +2482,8 @@ func _play_story_cutscene(cutscene_id: String) -> bool:
 		if _cutscene_director.has_method("last_finished_was_aborted") and _cutscene_director.last_finished_was_aborted():
 			push_warning("[GameLoop] '%s' was ABORTED — completion flag skipped; it will replay when runnable" % cutscene_id)
 			_story_chain_depth = 0
+			## The flag stays unset so the gate can replay, but current_state was already CUTSCENE. Returning here left the map up with no button that resumes play.
+			_resume_exploration_after_cutscene()
 			return
 		# Mark this story cutscene complete so it won't replay.
 		# (Bug 2026-05-20: chapter1_complete was never set, so Elder
