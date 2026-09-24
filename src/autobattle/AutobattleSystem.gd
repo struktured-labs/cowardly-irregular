@@ -887,6 +887,10 @@ func _get_character_id(combatant: Combatant) -> String:
 
 func _get_item_count(combatant: Combatant, item_id: String) -> int:
 	"""Get count of an item in inventory"""
+	## A PC counts the party's one bag, the stock _execute_item spends from; headless mirrors its party into player_party.
+	var bm = get_node_or_null("/root/BattleManager")
+	if bm != null and combatant in bm.player_party:
+		return ItemSystem.party_item_count(bm.player_party, item_id)
 	# Check if combatant has get_item_count method
 	if combatant.has_method("get_item_count"):
 		return combatant.get_item_count(item_id)
@@ -2222,7 +2226,7 @@ func _evaluate_condition(combatant: Combatant, condition: Dictionary) -> bool:
 
 		ConditionType.ITEM_COUNT:
 			var item_id = condition.get("item_id", "")
-			var count = combatant.get_item_count(item_id) if combatant.has_method("get_item_count") else 0
+			var count = _get_item_count(combatant, item_id)
 			return _compare(count, compare_op, value)
 
 		ConditionType.ALWAYS:

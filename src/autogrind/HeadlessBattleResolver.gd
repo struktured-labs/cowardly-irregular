@@ -2095,9 +2095,11 @@ func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
 
 
 func _resolve_item(user, item_id: String, target) -> void:
-	if not user.has_item(item_id):
+	## Same one-bag rule as BattleManager._execute_item, so a grind spends what a live battle would.
+	var bag: Array = _player_party if user in _player_party else [user]
+	if ItemSystem.party_item_count(bag, item_id) <= 0:
 		return
-	user.remove_item(item_id)
+	ItemSystem.take_party_item(user, bag, item_id)
 
 	## Tick 394: route through ItemSystem.use_item so autogrind item
 	## use matches live battle exactly. Pre-fix hardcoded handlers

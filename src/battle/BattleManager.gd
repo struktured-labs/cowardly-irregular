@@ -7109,7 +7109,9 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	"""Execute item use (costs 1 AP)"""
 	if user in player_party:
 		_c3_nonbasic_used = true
-	if not user.has_item(item_id):
+	## A PC draws on the party's one bag, an enemy on its own inventory.
+	var bag: Array = player_party if user in player_party else [user]
+	if ItemSystem.party_item_count(bag, item_id) <= 0:
 		## Tick 184: surface to battle_log when user doesn't have
 		## the item. Common scenarios: autobattle script targets a
 		## consumable that ran out mid-grind, or save-state drift
@@ -7178,7 +7180,7 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	action_executing.emit(user, {"type": "item", "item_id": item_id, "targets": retargeted})
 
 	if ItemSystem and ItemSystem.use_item(user, item_id, retargeted):
-		user.remove_item(item_id, 1)
+		ItemSystem.take_party_item(user, bag, item_id)
 		if wants_escape:
 			print("  → %s escaped successfully!" % user.combatant_name)
 			battle_log_message.emit("[color=%s]%s escaped successfully![/color]" % [AccessibilityPalette.bonus_bbcode(), user.combatant_name])
@@ -7857,7 +7859,7 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			if item_id.is_empty():
 				print("[AUTOBATTLE] No item_id found in action: %s" % action_data)
 				return {}
-			if not combatant.has_item(item_id):
+			if ItemSystem.party_item_count(player_party if combatant in player_party else [combatant], item_id) <= 0:
 				## Routine (the player ran out), but the ability arm logs its routine MP case too.
 				print("[AUTOBATTLE] Item not held: %s" % item_id)
 				return {}
