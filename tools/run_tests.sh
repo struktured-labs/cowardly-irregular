@@ -188,6 +188,15 @@ _tree_stamp() {
   echo "run_tests.sh: TREE ${sha} (${branch}) dirty=${dirty} at $(date -Is)"
 }
 
+# kill(1) delivers SIGKILL. `timeout --signal=KILL` on this box does not.
+_kill_pid_tree() {
+  local _p="$1" _c
+  for _c in $(ps -o pid= --ppid "$_p" 2>/dev/null); do
+    _kill_pid_tree "$_c"
+  done
+  kill -9 "$_p" 2>/dev/null || true
+}
+
 run_gut() {
   # Truncate explicitly, then append: `tee -a` alone would inherit a same-PID log from a previous
   # boot, which is the same stale-artifact class the header exists to close.
@@ -211,8 +220,29 @@ run_gut() {
   # it and no escalation is needed. ⚠️ A CONSEQUENCE WORTH MORE THAN THIS CALL SITE:
   # `timeout --signal=KILL N CMD` is a SILENT NO-OP as a bound — it returns 124 on schedule while
   # the command runs on. Never reach for KILL as "the forceful option".
-  timeout "$_budget" "${BASE[@]}" "$@" 2>&1 | tee -a "$RUN_LOG"
-  local ec=${PIPESTATUS[0]}
+  # Totals are printed before engine shutdown. A wedged mix thread then never joins,
+  # so the process sits forever with the results already in the log. `timeout --signal=KILL`
+  # cannot deliver SIGKILL on this box; kill(1) can. 30s of silence AFTER a real Totals
+  # block means shutdown is stuck, not that a test is still thinking.
+  timeout "$_budget" "${BASE[@]}" "$@" > >(tee -a "$RUN_LOG") 2>&1 &
+  local _tp=$! _last_size=0 _still=0 _sz
+  while kill -0 "$_tp" 2>/dev/null; do
+    sleep 5
+    _sz=$(wc -c < "$RUN_LOG" 2>/dev/null | tr -dc '0-9')
+    if [ -z "$_sz" ] || [ "$_sz" != "$_last_size" ]; then
+      _last_size=${_sz:-0}
+      _still=0
+      continue
+    fi
+    _still=$((_still + 5))
+    if [ "$_still" -ge 30 ] && command grep -aE '^Tests[[:space:]]+[0-9]+$' "$RUN_LOG" >/dev/null; then
+      echo "run_tests.sh: totals are in and the log has been still for ${_still}s — killing a mix thread that will not join" >&2
+      _kill_pid_tree "$_tp"
+      break
+    fi
+  done
+  wait "$_tp"
+  local ec=$?
   _elapsed=$(( SECONDS - _t0 ))
   # ⛔ DO NOT TEST FOR 124 ALONE — THE CODE IS SET BY THE FLAGS, NOT BY THE IMPLEMENTATION.
   # Plain / --signal=TERM -> 124; --kill-after -> 125. I first wrote this off as uutils-vs-GNU;

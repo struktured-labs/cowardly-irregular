@@ -298,6 +298,11 @@ func _commit_wav_pcm(wav: AudioStreamWAV, data: PackedByteArray) -> bool:
 
 
 func _exit_tree() -> void:
+	# A wedged mix thread never returns, and AudioServer.finish joins it. Headless runs (the suite)
+	# would sit there after the totals are already printed. Leave before that join.
+	if _audio_mixer_wedged and (DisplayServer.get_name() == "headless" or OS.has_feature("headless")):
+		print("[AUDIO] mixer still wedged at shutdown — leaving immediately so a stuck mix thread cannot keep the process open")
+		OS.kill(OS.get_process_id())
 	# Cleanup tweens to prevent callbacks on freed nodes
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
