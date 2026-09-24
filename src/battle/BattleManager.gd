@@ -337,6 +337,13 @@ const PRIORITY_OFFSET: float = 1000.0
 ## the way `debuff`/`status` were mistaken for years (test_the_debuffer_archetype_is_unreachable).
 const UTILITY_ABILITY_TYPES: Array[String] = ["support", "song", "summon", "buff", "defensive"]
 
+## Ailments Purgatio (effect "cleanse") removes. HeadlessBattleResolver reads this same const.
+## Regen, haste, barrier, reflect, and buffs such as protect and shell are absent on purpose.
+const ESUNA_AILMENTS: Array[String] = [
+	"poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom",
+	"silence", "pacify", "static", "memory_leak", "festered",
+]
+
 ## FULL BANK (struktured 2026-09-10, design B): at +4 AP an Advance takes FIVE actions for four AP —
 ## a full bank covers the full party. Fixes the stranded fifth member AND the dead fourth defer,
 ## which until now bought nothing but debt-avoidance. Players only for now; enemies keep their cap.
@@ -3882,8 +3889,8 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 
 
 func _limit_break_cleanse(participants: Array) -> void:
-	## Limit Break post-effect: cleanse negative statuses from all participants.
-	var cleansable: Array[String] = ["poison", "burning", "blind", "fear", "sleep", "stun", "curse", "charm", "pacify", "silence", "static", "memory_leak", "festered"]
+	## Named statuses only. The Group-menu tooltip calls this an ultimate assault and promises no full cleanse.
+	var cleansable: Array[String] = ["poison", "burning", "blind", "fear", "sleep", "stun", "curse", "charm", "pacify", "silence"]
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
 			continue
@@ -6454,11 +6461,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					var cleansed: Array[String] = []
-					## silence / pacify / static / memory_leak / festered are ailments enemies land
-					## (void_pulse, peace_sign, static_field, memory_leak, fester). They were
-					## absent here, so Purgatio reported nothing to cleanse and left them on.
-					var negative_statuses = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom", "silence", "pacify", "static", "memory_leak", "festered"]
-					for status in negative_statuses:
+					for status in ESUNA_AILMENTS:
 						if target.has_status(status):
 							cleansed.append(status)
 							target.remove_status(status)
