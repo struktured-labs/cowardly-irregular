@@ -90,6 +90,23 @@ const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 
 
+## The pad button that toggles the overworld menu: the NORTH face, this game's "X". The west
+## face was accepted too and is `dash`, so every dash opened the menu.
+const TOGGLE_PAD_BUTTON := JOY_BUTTON_Y
+
+
+## The input that opens the overworld menu from exploration. One definition, so the
+## opener in GameLoop and the pad close path in _input read the same button.
+static func is_toggle_event(event: InputEvent) -> bool:
+	if event is InputEventKey and event.pressed:
+		return event.keycode == KEY_X or event.keycode == KEY_ESCAPE
+	if event is InputEventJoypadButton and event.pressed:
+		return event.button_index == TOGGLE_PAD_BUTTON
+	if event is InputEventMouseButton and event.pressed:
+		return event.button_index == MOUSE_BUTTON_RIGHT
+	return false
+
+
 func _ready() -> void:
 	# Defer UI build to ensure size is set
 	call_deferred("_build_ui")
@@ -744,6 +761,11 @@ func _input(event: InputEvent) -> void:
 
 	# X button also closes
 	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_X:
+		_close_menu()
+		get_viewport().set_input_as_handled()
+
+	# The pad button that opened the menu closes it, as keyboard X does
+	elif event is InputEventJoypadButton and is_toggle_event(event):
 		_close_menu()
 		get_viewport().set_input_as_handled()
 

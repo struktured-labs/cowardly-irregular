@@ -27,9 +27,15 @@ func test_escape_is_excluded_from_the_settings_branch() -> void:
 		"the KEY_ESCAPE guard must come BEFORE _open_settings_menu — else Escape double-opens")
 
 
+## Behavioural, not a text search. This used to grep for "KEY_ESCAPE" between `var x_pressed`
+## and the opener call — which went red when the check moved into OverworldMenu.is_toggle_event
+## while Escape kept opening the menu. It measured where a word sat, not what a key does.
 func test_escape_still_reaches_the_overworld_menu() -> void:
+	var esc := InputEventKey.new()
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	assert_true(OverworldMenu.is_toggle_event(esc),
+		"Escape must still count as the overworld-menu toggle so the menu opens on it")
 	var src := FileAccess.get_file_as_string(GL_PATH)
-	var xp := src.find("var x_pressed")
-	var block := src.substr(xp, src.find("_open_overworld_menu()", xp) - xp + 30)
-	assert_true("KEY_ESCAPE" in block,
-		"x_pressed must still accept Escape so the overworld menu opens on it")
+	assert_true(src.contains("OverworldMenu.is_toggle_event(event)"),
+		"GameLoop's opener must ask the predicate — else this arm proves a function nothing calls")
