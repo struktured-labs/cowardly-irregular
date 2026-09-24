@@ -1,9 +1,9 @@
 extends GutTest
 
 ## Regression: the advance hint on every dialogue line — cutscene box AND battle box —
-## was the literal "Z / A / Click". On Nintendo-family pads (8BitDo, SN30, Switch Pro)
-## confirm fires from the cap printed Ⓑ, so the most-seen prompt in the game named the
-## wrong button. Both boxes now resolve the physical cap through InputProfileManager
+## was the literal "Z / A / Click". A frozen letter names Confirm on one pad family only
+## (InputProfileManager decides which), so on the rest the most-seen prompt in the game named
+## the wrong button. Both boxes now resolve the physical cap through InputProfileManager
 ## and re-resolve each time the hint is shown, so a pad plugged in mid-scene is honoured.
 
 const XBOX := "Xbox Wireless Controller"

@@ -1,8 +1,8 @@
 extends GutTest
 
 ## Regression: the cutscene skip prompt and the readable-prop footer hardcoded "B" —
-## on every Nintendo-family pad (8BitDo, SN30, Switch Pro) the cancel action fires
-## from the cap printed Ⓐ, so the on-screen instruction named a button that did
+## a frozen letter names Cancel on one pad family only (InputProfileManager decides
+## which), so on the rest the on-screen instruction named a button that did
 ## nothing. Both prompts now resolve the PHYSICAL cap through InputProfileManager,
 ## the same way HowToPlayOverlay and AutogrindUI already do.
 

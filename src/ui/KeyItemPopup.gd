@@ -39,7 +39,7 @@ func dismiss() -> void:
 	_dismiss()
 
 
-## "Press A" named the wrong cap on every Nintendo-family pad (8BitDo confirm sits under Ⓑ); resolve the physical cap like the dialogue boxes do.
+## A frozen "Press A" is true on one pad family and names another button on the rest; resolve the physical cap through InputProfileManager like the dialogue boxes do.
 ## ⛔ NO PAD, NO CAP. `glyph_for_action` answers an EMPTY device name out of the xbox table, so a
 ## keyboard-only player was told "Press Ⓑ / Z" — a glyph for hardware they do not have, in a
 ## family they may not own. Same guard as `DialogueChoiceMenu.pad_token` one file over.

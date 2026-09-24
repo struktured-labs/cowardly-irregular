@@ -79,7 +79,7 @@ const SKIP_PILL_PAD: float = 12.0
 const SKIP_PILL_HEIGHT: float = 48.0
 
 
-## The prompt names the PHYSICAL cancel cap: "Hold B" was wrong on every Nintendo-family pad (8BitDo/SN30 cancel sits under the Ⓐ cap).
+## The prompt names the PHYSICAL cancel cap, resolved per device by InputProfileManager — a frozen "Hold B" is true on one pad family and names another button on the rest.
 static func skip_prompt_text(device_name: String = "") -> String:
 	return "Hold %sEsc to skip..." % _cancel_pad_segment(device_name)
 
