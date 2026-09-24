@@ -44,23 +44,10 @@ func _advance_ms(ms: int) -> void:
 		await get_tree().process_frame
 
 
-## A frozen bed cannot prove a resume. Fail here, before any later PCM commit, and leave the
-## position asserts for the runs where playback actually moved.
-func _bail_if_mixer_wedged(where: String) -> bool:
-	if not SoundManager.mixer_is_wedged():
-		return false
-	var stuck: float = SoundManager._music_player.get_playback_position()
-	assert_false(SoundManager.mixer_is_wedged(),
-		"mixer wedged: %s playback frozen at %.5fs — the driver stopped advancing, so this arm cannot measure a resume. PCM commits are refused so the suite cannot hang on AudioServer.lock." % [where, stuck])
-	return true
-
-
 func test_the_state_carries_where_the_bed_had_reached() -> void:
 	SoundManager.play_area_music(AREA)
 	await _frames(10)
 	await _advance_ms(900)
-	if _bail_if_mixer_wedged("field bed"):
-		return
 	var live: float = SoundManager._music_player.get_playback_position()
 	assert_gt(live, 0.3, "CONTROL: the bed reached %.2f s — without real playback this file measures nothing" % live)
 
@@ -74,8 +61,6 @@ func test_a_battle_no_longer_restarts_the_field_music() -> void:
 	SoundManager.play_area_music(AREA)
 	await _frames(10)
 	await _advance_ms(900)
-	if _bail_if_mixer_wedged("field bed before the battle"):
-		return
 	var before: float = SoundManager._music_player.get_playback_position()
 	assert_gt(before, 0.3, "CONTROL: the bed was at %.2f s before the battle" % before)
 	var state: Dictionary = SoundManager.capture_music_state()
@@ -102,8 +87,6 @@ func test_a_battle_bed_still_starts_at_its_head() -> void:
 	SoundManager.play_area_music(AREA)
 	await _frames(10)
 	await _advance_ms(900)
-	if _bail_if_mixer_wedged("field bed before the victory cue"):
-		return
 	var state: Dictionary = SoundManager.capture_music_state()
 	assert_gt(float(state.get("position", 0.0)), 0.3, "CONTROL: there is a real position to leak")
 

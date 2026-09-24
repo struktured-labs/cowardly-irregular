@@ -73,11 +73,6 @@ func test_the_idempotent_return_still_works() -> void:
 	## resets it to zero. Position only ever advances on the early-return path.
 	SoundManager.play_ambient(REAL)
 	await _wait_ms(400)
-	if SoundManager.mixer_is_wedged():
-		var stuck: float = SoundManager._ambient_player.get_playback_position()
-		assert_false(SoundManager.mixer_is_wedged(),
-			"mixer wedged: ambient playback frozen at %.5fs — the driver stopped advancing, so a restart and an early return are indistinguishable. PCM commits are refused so the suite cannot hang on AudioServer.lock." % stuck)
-		return
 	assert_true(SoundManager._ambient_player.playing, "CONTROL: playing before the repeat")
 	var pos_before: float = SoundManager._ambient_player.get_playback_position()
 	assert_gt(pos_before, 0.1,

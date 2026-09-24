@@ -221,8 +221,9 @@ func _ready() -> void:
 
 ## 2026-08-14 silent-death class (struktured: music+SFX stopped mid-battle, zero errors, YT fine): frozen playback position while playing == game mixer dead; advancing position while silent == stream corked below the game
 var _liveness_last_pos: float = -1.0
-## Latched once a playing bed sits still longer than one dummy-driver callback. Never cleared:
-## the mix thread is already inside an unbounded mix and will not notice a later stop().
+## Latched while a playing bed sits still longer than one dummy-driver callback.
+## Cleared again when a later sample moves: a transient stall is not a dead mix thread.
+## A thread stuck inside an unbounded mix never moves, so that latch stays set.
 var _audio_mixer_wedged: bool = false
 var _mixer_watch_pos: float = -1.0
 var _mixer_watch_msec: int = 0
@@ -248,19 +249,25 @@ func _process(_delta: float) -> void:
 
 ## Public so a test waiting on playback can sample between frames. _process does the same.
 func note_mixer_progress() -> void:
-	if _audio_mixer_wedged:
-		return
 	var p: AudioStreamPlayer = _live_bed()
 	if p == null:
 		_mixer_watch_pos = -1.0
 		return
 	var pos: float = p.get_playback_position()
 	var now: int = Time.get_ticks_msec()
-	if _mixer_watch_pos < 0.0 or absf(pos - _mixer_watch_pos) >= 0.01:
+	# A first sample after silence is a baseline, not proof the mixer recovered.
+	if _mixer_watch_pos < 0.0:
 		_mixer_watch_pos = pos
 		_mixer_watch_msec = now
 		return
-	if now - _mixer_watch_msec >= _MIXER_STALL_MSEC:
+	if absf(pos - _mixer_watch_pos) >= 0.01:
+		_mixer_watch_pos = pos
+		_mixer_watch_msec = now
+		if _audio_mixer_wedged:
+			_audio_mixer_wedged = false
+			push_warning("[AUDIO] playback resumed at %.5fs — mixer is accepting PCM commits again" % pos)
+		return
+	if not _audio_mixer_wedged and now - _mixer_watch_msec >= _MIXER_STALL_MSEC:
 		_audio_mixer_wedged = true
 		push_warning("[AUDIO] playback position frozen at %.5fs for %dms — mix thread is not advancing; refusing PCM commits so AudioServer.lock cannot wedge the process" % [pos, now - _mixer_watch_msec])
 
