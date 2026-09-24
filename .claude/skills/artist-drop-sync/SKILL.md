@@ -28,16 +28,21 @@ and wiring it in without silently breaking it.**
 > `rclone lsl "gdrive: cowir"`. Re-verified 2026-09-19: the bare form still
 > errors, the spaced form still works.
 >
-> 🛑 **NOTHING CHECKS FOR DROPS AUTOMATICALLY. DO NOT WAIT TO BE TOLD.**
-> Corrected 2026-09-19: `tools/check_for_new_artist_sprites.sh` **does** have
-> the spaced path (line 15) — that half of this warning was stale. The reason
-> drops go unnoticed is that **its cron entry is COMMENTED OUT** (since
-> 2026-06-14, *"embed script no longer covers enemies, manual ingest for now"*)
-> and points at `cowardly-irregular-sprite-gen`, a different checkout.
-> So a drop can sit for days with no signal at all — the 2026-09-18 Bard
-> Celebration drop sat ~21 hours until struktured mentioned it in chat.
-> **When anyone says a sprite "dropped", assume it is already on Drive and
-> LOOK, rather than searching the repo and reporting nothing found.**
+> 🔔 **A DETECT-ONLY WATCHER RUNS HOURLY (installed 2026-09-23, struktured's call).**
+> `tools/check_for_new_artist_sprites.sh`, installed as
+> `~/.local/bin/cowir-artist-drop-watch`, cron `15 * * * *`. It lists `" cowir"`,
+> diffs against `~/.local/state/cowir-artist-drop-watch/snapshot.tsv`, and sends a
+> KDE notification naming each NEW/UPDATED/REMOVED file. **It never downloads,
+> ingests, commits or pushes** — ingest is still this skill, done by a person.
+> It also notifies (at most daily) when it CANNOT read Drive, so silence means
+> "nothing changed", not "the watcher is dead". Log: `watch.log` beside the snapshot.
+> ⚠️ It sees only `" cowir"`. A file the artist shares from their OWN Drive shows
+> up under `rclone lsl gdrive: --drive-shared-with-me`, which it does not poll.
+> ⚠️ The old version auto-ran a superseded embed script and pushed; its cron line
+> was commented out 2026-06-14 and drops then sat unnoticed (bard ~21h). Do not
+> resurrect that behaviour — detection is automated, ingestion is not.
+> **When anyone says a sprite "dropped", still LOOK rather than trusting that no
+> notification arrived** — a notification can be missed or land mid-stream.
 
 ```bash
 rclone lsl "gdrive: cowir" | sort -k2,3 -r | head -30   # newest first
