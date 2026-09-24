@@ -27,6 +27,8 @@ signal round_started(round_num: int)
 signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
 signal attack_missed(target: Combatant)
+## A hit that never connected for a reason other than a miss. Banner is the sprite text: "IMMUNE" or "BLOCK".
+signal hit_negated(target: Combatant, banner: String)
 signal healing_done(target: Combatant, amount: int)
 ## struktured 2026-09-07: MP gains and ability AP grants get their own popups (purple / red) — never healing_done's green.
 signal mp_restored(target: Combatant, amount: int)
@@ -4456,7 +4458,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	## (already spent above). Doesn't burn turn-on-hit hooks
 	## (counter, debuff_on_attack) because those expect a real hit.
 	if _monster_immune_to_category(actual_target, "physical"):
-		attack_missed.emit(actual_target)
+		_announce_negated_hit(actual_target, "IMMUNE")
 		battle_log_message.emit("[color=cyan]%s is IMMUNE to physical — %s's attack passes through nothing![/color]" % [actual_target.combatant_name, attacker.combatant_name])
 		return
 
@@ -4529,6 +4531,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	if actual_target.has_status("barrier"):
 		actual_target.remove_status("barrier")
 		battle_log_message.emit("[color=cyan]%s's Barrier absorbs the attack![/color]" % actual_target.combatant_name)
+		_announce_negated_hit(actual_target, "BLOCK")
 		# Counter-on-hit hook fires even on nullified hits — boss reads it
 		# as a tactical pressure event (the boss WAS attacked).
 		_trigger_monster_counter(actual_target, attacker)
@@ -4621,6 +4624,13 @@ func _monster_immune_to_category(target: Combatant, category: String) -> bool:
 	if not (immunities is Array):
 		return false
 	return category in immunities
+
+
+## Sprite text for a hit that was stopped. A miss stays on attack_missed; this is immunity or a ward.
+func _announce_negated_hit(target: Combatant, banner: String) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	hit_negated.emit(target, banner)
 
 
 ## Tick 461: on-hit status apply driven by equipment special_effects.
@@ -4914,7 +4924,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		## every physical ability (Slash, Whirlwind, etc.) should
 		## be a no-op against it.
 		if _monster_immune_to_category(target, "physical"):
-			attack_missed.emit(target)
+			_announce_negated_hit(target, "IMMUNE")
 			battle_log_message.emit("[color=cyan]%s is IMMUNE to physical — %s's strike passes through nothing![/color]" % [target.combatant_name, caster.combatant_name])
 			continue
 
@@ -4952,6 +4962,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		if target.has_status("barrier"):
 			target.remove_status("barrier")
 			battle_log_message.emit("[color=cyan]%s's Barrier absorbs the hit![/color]" % target.combatant_name)
+			_announce_negated_hit(target, "BLOCK")
 			_trigger_monster_counter(target, caster)
 			continue
 
@@ -5261,6 +5272,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if target.has_status("magic_block"):
 			target.remove_status("magic_block")
 			battle_log_message.emit("[color=cyan]%s's Magic Block cancels the spell![/color]" % target.combatant_name)
+			_announce_negated_hit(target, "BLOCK")
 			_trigger_monster_counter(target, caster)
 			continue
 
@@ -5292,6 +5304,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if target.has_status("barrier"):
 			target.remove_status("barrier")
 			battle_log_message.emit("[color=cyan]%s's Barrier absorbs the spell![/color]" % target.combatant_name)
+			_announce_negated_hit(target, "BLOCK")
 			_trigger_monster_counter(target, caster)
 			continue
 

@@ -107,6 +107,12 @@ func on_attack_missed(target: Combatant) -> void:
 		spawn_miss_number(pos)
 
 
+func on_hit_negated(target: Combatant, banner: String) -> void:
+	var pos = _get_combatant_sprite_position(target)
+	if pos != Vector2.ZERO:
+		spawn_banner(pos, banner)
+
+
 func spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: bool, kind: String = "hp") -> void:
 	"""Spawn a floating damage/heal number"""
 	var dmg_num = DamageNumber.new()
@@ -122,6 +128,14 @@ func spawn_miss_number(pos: Vector2) -> void:
 	var dmg_num = DamageNumber.new()
 	dmg_num.setup_miss()
 	# Tick 208: same stagger logic as damage popups — multiple misses on one target (e.g., blind) shouldn't overlap.
+	var stagger_y: float = _count_recent_popups_near(pos) * STAGGER_STEP
+	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30 - stagger_y)
+	_scene.add_child(dmg_num)
+
+
+func spawn_banner(pos: Vector2, banner: String) -> void:
+	var dmg_num = DamageNumber.new()
+	dmg_num.setup_banner(banner)
 	var stagger_y: float = _count_recent_popups_near(pos) * STAGGER_STEP
 	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30 - stagger_y)
 	_scene.add_child(dmg_num)
