@@ -6656,16 +6656,19 @@ func _apply_secondary_effect(caster: Combatant, ability: Dictionary, primary_tar
 	var sec_chance: float = clampf(float(ability.get("secondary_chance", 1.0)), 0.0, 1.0)
 	if sec_chance <= 0.0:
 		return
-	# Resolve secondary target group.
+	# Sides are the caster's. A fixed enemy_party makes a wolf's howl frighten its own pack.
 	var sec_target_tag: String = str(ability.get("secondary_target", ""))
 	var sec_targets: Array = []
+	var caster_is_player: bool = caster != null and caster in player_party
+	var foes: Array = enemy_party if caster_is_player else player_party
+	var allies: Array = player_party if caster_is_player else enemy_party
 	match sec_target_tag:
 		"all_enemies":
-			for e in enemy_party:
+			for e in foes:
 				if e is Combatant and e.is_alive:
 					sec_targets.append(e)
 		"all_allies":
-			for a in player_party:
+			for a in allies:
 				if a is Combatant and a.is_alive:
 					sec_targets.append(a)
 		"self":
