@@ -874,7 +874,7 @@
     "level": 7,
     "stats": {
       "max_hp": 2600,
-      "max_mp": 10,
+      "max_mp": 12,
       "attack": 520,
       "defense": 230,
       "magic": 40,
@@ -2407,7 +2407,7 @@
     "level": 6,
     "stats": {
       "max_hp": 2400,
-      "max_mp": 10,
+      "max_mp": 12,
       "attack": 360,
       "defense": 300,
       "magic": 50,
