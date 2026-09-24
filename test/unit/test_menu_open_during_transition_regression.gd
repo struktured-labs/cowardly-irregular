@@ -50,5 +50,5 @@ func test_settings_open_still_checks_lock() -> void:
 	var src := _read(GAME_LOOP_PATH)
 	var block := _body_after(src, "elif current_state == LoopState.EXPLORATION:\n\t\t\t# Escape belongs to the overworld menu", 800)
 	assert_ne(block, "", "Start → settings transition guard from tick 15 must still be in place")
-	assert_true(block.contains("InputLockManager.is_locked()"),
-		"Start → settings must still consult InputLockManager.is_locked()")
+	assert_true(block.contains("_in_exploration_transition()"),
+		"Start → settings must use _in_exploration_transition(), which covers the lock and fade-in")
