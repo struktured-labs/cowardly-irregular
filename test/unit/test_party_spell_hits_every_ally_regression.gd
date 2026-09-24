@@ -78,7 +78,8 @@ func _queued_targets(ability_id: String) -> Array:
 func _names(targets: Array) -> Array:
 	var out: Array = []
 	for t in targets:
-		if t is Combatant:
+		## is_instance_valid first: `is` on a freed instance aborts the function.
+		if is_instance_valid(t) and t is Combatant:
 			out.append(t.combatant_name)
 	out.sort()
 	return out
