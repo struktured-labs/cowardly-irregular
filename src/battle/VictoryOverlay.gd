@@ -214,9 +214,12 @@ func _spawn_ring(at: Vector2, tint: Color, delay: float, grade: int) -> void:
 	ring.position = at - ring.pivot_offset
 	ring.scale = Vector2(0.2, 0.2)
 	add_child(ring)
+	## A WeakRef, not the node: the ring frees itself at the tween's end, and calling a lambda that captured it logs an engine error.
+	var ring_ref: WeakRef = weakref(ring)
 	_snaps.append(func() -> void:
-		if is_instance_valid(ring):
-			ring.queue_free())
+		var r: Object = ring_ref.get_ref()
+		if r != null:
+			r.queue_free())
 	var t := _track(create_tween())
 	t.tween_interval(delay)
 	t.tween_property(ring, "scale", Vector2(1.6 + 0.5 * grade, 1.6 + 0.5 * grade), 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -269,9 +272,12 @@ func _build_letterbox(vp: Vector2, grade: int, flourish: bool) -> void:
 		var hidden := Vector2(0.0, -h if edge == 0.0 else vp.y)
 		bar.position = hidden if flourish else hidden
 		add_child(bar)
+		## Same as the ring: the bar frees itself, so the snap must not hold it.
+		var bar_ref: WeakRef = weakref(bar)
 		_snaps.append(func() -> void:
-			if is_instance_valid(bar):
-				bar.queue_free())
+			var b: Object = bar_ref.get_ref()
+			if b != null:
+				b.queue_free())
 		if not flourish:
 			continue
 		var t := _track(create_tween())
