@@ -201,7 +201,7 @@ func test_every_copy_of_an_equipment_drop_reaches_the_pool() -> void:
 
 	## CONTROL: we found the delivery block, not merely the function. Without this the arms below
 	## are about whatever text happened to be in range.
-	assert_true(body.contains("add_item(item_id, qty)"),
+	assert_true(body.contains("deliver_consumable_drop(party, item_id, qty)"),
 		"CONTROL: the consumable fallback must be in the extracted body, or this arm read the wrong range")
 
 	## ⛔ THIS PAIR COUNTED SITES AND PINNED MY ARITHMETIC, AND WAS WRONG IN BOTH DIRECTIONS.
@@ -217,7 +217,7 @@ func test_every_copy_of_an_equipment_drop_reaches_the_pool() -> void:
 	## very refactor it exists to permit. Caught by the must-stay-green mutation, not by reading.
 	var eq_at: int = body.find("var qty")
 	assert_gt(eq_at, -1, "the delivery block must still derive a per-id quantity")
-	var stop_at: int = body.find("add_item(item_id, qty)", eq_at)
+	var stop_at: int = body.find("deliver_consumable_drop(party, item_id, qty)", eq_at)
 	assert_gt(stop_at, eq_at, "CONTROL: the consumable fallback must follow the equipment branch, or the slice is inverted")
 	var eq_branch: String = body.substr(eq_at, stop_at - eq_at)
 	assert_gt(eq_branch.length(), 20,
