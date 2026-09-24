@@ -2517,14 +2517,16 @@ func _ai_healer(combatant: Combatant, abilities: Array, alive_allies: Array, ali
 	var support_abilities = abilities.filter(func(a): return a.get("type", "") in ["buff", "support"])
 	if support_abilities.size() > 0 and randf() < 0.4:
 		var buff = support_abilities[randi() % support_abilities.size()]
-		var ally = alive_allies[randi() % alive_allies.size()]
-		return {
-			"type": "ability",
-			"combatant": combatant,
-			"ability_id": buff.get("id", ""),
-			"targets": [ally],
-			"speed": _compute_action_speed(combatant, "ability", buff)
-		}
+		## Bad Vibes and Peace Sign are enemy-facing. This branch used to pick a random ally.
+		var targets: Array = _utility_targets(combatant, buff, alive_allies, alive_enemies)
+		if not targets.is_empty():
+			return {
+				"type": "ability",
+				"combatant": combatant,
+				"ability_id": buff.get("id", ""),
+				"targets": targets,
+				"speed": _compute_action_speed(combatant, "ability", buff)
+			}
 
 	## The docstring says "attack only when no one needs healing" and the attack was a BASIC one, so
 	## a healer's own offensive kit was decoration: elder_mushroom never released a spore in its life.
@@ -2634,6 +2636,32 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
 
 
+## Foe rows are single_enemy and all_enemies. "all_enemies" does not contain the substring "enemy".
+## self stays on the caster. all_allies is every living ally. Any other row keeps the old rule: the most wounded ally under half HP, else the caster.
+func _utility_targets(combatant: Combatant, ability: Dictionary, alive_allies: Array, alive_enemies: Array) -> Array:
+	var target_type := str(ability.get("target_type", "self"))
+	if target_type == "all_enemies":
+		return alive_enemies.duplicate()
+	if target_type == "single_enemy":
+		if alive_enemies.is_empty():
+			return []
+		var foe: Combatant = _choose_target(combatant, alive_enemies, ability)
+		if foe == null:
+			return []
+		return [foe]
+	if target_type == "self":
+		return [combatant]
+	if target_type == "all_allies":
+		if alive_allies.is_empty():
+			return [combatant]
+		return alive_allies.duplicate()
+	var low_hp_allies: Array = alive_allies.filter(func(a): return a != null and a.get_hp_percentage() < 50.0)
+	if low_hp_allies.size() > 0:
+		low_hp_allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+		return [low_hp_allies[0]]
+	return [combatant]
+
+
 ## Shared utility slot. _ai_tank had one; assassin, brute and caster did not, so 25 monsters
 ## carried support abilities no archetype they reach could ever select — including Voltharion's
 ## storm_gathering, whose own comment says "without this the telegraph never lands", and two
@@ -2650,20 +2678,18 @@ func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: A
 	if utility.is_empty() or randf() >= chance:
 		return {}
 	var pick: Dictionary = utility[randi() % utility.size()]
+	## These three archetypes are handed enemies, not allies. A foe row goes to the party;
+	## a self-buff stays on the caster. Passing alive_enemies in as allies aimed a self-buff at the party.
+	var targets: Array = _utility_targets(combatant, pick, [combatant], alive_enemies)
+	if targets.is_empty():
+		return {}
 	spent[str(pick.get("id", ""))] = true
 	combatant.set_meta("_utility_spent", spent)
-	## These three archetypes are handed enemies, not allies. An enemy-facing debuff goes to an
-	## enemy; anything else — self-buff, ally-buff with no ally list here, summon — goes to the
-	## caster. I first passed alive_enemies into a parameter named alive_allies, which would have
-	## aimed a self-buff at the party.
-	var target: Combatant = combatant
-	if str(pick.get("target_type", "self")).contains("enemy") and not alive_enemies.is_empty():
-		target = alive_enemies[randi() % alive_enemies.size()]
 	return {
 		"type": "ability",
 		"combatant": combatant,
 		"ability_id": pick.get("id", ""),
-		"targets": [target],
+		"targets": targets,
 		"speed": _compute_action_speed(combatant, "ability", pick)
 	}
 
@@ -2704,19 +2730,16 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 	# Use defensive/buff ability if available (40% chance)
 	if defensive_abilities.size() > 0 and randf() < 0.4:
 		var buff = defensive_abilities[randi() % defensive_abilities.size()]
-		# Buff self or lowest-HP ally
-		var target = combatant
-		var low_hp_allies = alive_allies.filter(func(a): return a.get_hp_percentage() < 50.0)
-		if low_hp_allies.size() > 0:
-			low_hp_allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
-			target = low_hp_allies[0]
-		return {
-			"type": "ability",
-			"combatant": combatant,
-			"ability_id": buff.get("id", ""),
-			"targets": [target],
-			"speed": _compute_action_speed(combatant, "ability", buff)
-		}
+		## Lure, Infinite Loop, and Performance Review were aimed at the caster or a wounded ally.
+		var targets: Array = _utility_targets(combatant, buff, alive_allies, alive_enemies)
+		if not targets.is_empty():
+			return {
+				"type": "ability",
+				"combatant": combatant,
+				"ability_id": buff.get("id", ""),
+				"targets": targets,
+				"speed": _compute_action_speed(combatant, "ability", buff)
+			}
 
 	# Use strongest physical ability (50% chance)
 	if physical_abilities.size() > 0 and randf() < 0.5:
