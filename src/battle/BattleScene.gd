@@ -1935,7 +1935,8 @@ func _process_weather_layer(delta: float) -> void:
 	if _weather_overlay == null:
 		return
 	var condition := "clear"
-	if not autogrind_console_mode and GameState.has_method("get_weather"):
+	## Visual autogrind still scales spells by live weather; blanking this layer showed a dry field over a wet spell.
+	if GameState.has_method("get_weather"):
 		condition = str(GameState.get_weather())
 	if condition != _weather_rendered:
 		_weather_rendered = condition
