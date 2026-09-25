@@ -5779,10 +5779,11 @@ func _award_stolen_gold(caster: Combatant, target: Combatant, verb: String = "st
 		battle_log_message.emit("[color=gray]%s rifles through %s's pack and comes up empty.[/color]" % [
 			caster.combatant_name, target.combatant_name])
 		return
-	GameState.add_gold(gold_amount)
-	print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])
+	## The log names the coins add_gold credited. The drop-rate dial is already inside that return.
+	var credited: int = int(GameState.add_gold(gold_amount))
+	print("  → Stole %d gold from %s!" % [credited, target.combatant_name])
 	battle_log_message.emit("[color=yellow]%s %s %d gold from %s![/color]" % [
-		caster.combatant_name, verb, gold_amount, target.combatant_name])
+		caster.combatant_name, verb, credited, target.combatant_name])
 
 
 ## The ONE place a steal rate is composed. Two paths roll for a steal — the pure Steal handler and Mug's physical branch — and each grew its own inline clamp, so tick 462 wired thiefs_glove into one and the steal_boost passive reached one. A Rogue equipping a passive promising "+30% steal success" got it on Steal and not on Mug, which reads as randomness rather than as a bug.

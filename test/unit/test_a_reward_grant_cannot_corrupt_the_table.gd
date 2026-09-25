@@ -23,8 +23,9 @@ class FakeGameState:
 	var game_constants: Dictionary = {}
 	var battles_won: int = 0
 	var gold: int = 0
-	func add_gold(amount: int) -> void:
+	func add_gold(amount: int) -> int:
 		gold += amount
+		return amount
 
 
 const NPC := "elder_theron"

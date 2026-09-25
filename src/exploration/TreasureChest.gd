@@ -446,7 +446,6 @@ func _open_chest(player: Node2D) -> void:
 	var contents_text = ""
 	match contents_type:
 		"gold":
-			contents_text = "Found %d Gold!" % gold_amount
 			# Actually add the gold to the party. Pre-fix the comment said
 			# "(if implemented)" and the call was never wired — players saw
 			# "Found 100 Gold!" but party_gold stayed unchanged. Silent
@@ -454,8 +453,10 @@ func _open_chest(player: Node2D) -> void:
 			# touches GameState, and PartyStatusScreen's gold display
 			# showed stale values. Routes through GameState.add_gold so
 			# the gold_multiplier game_constant still applies.
+			var credited: int = gold_amount
 			if GameState and GameState.has_method("add_gold"):
-				GameState.add_gold(gold_amount)
+				credited = int(GameState.add_gold(gold_amount))
+			contents_text = "Found %d Gold!" % credited
 		"item":
 			var item_name = _resolve_display_name(contents_id)
 			contents_text = "Found %s x%d!" % [item_name, contents_amount]

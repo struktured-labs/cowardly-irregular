@@ -1910,9 +1910,23 @@ func _roll_steal(caster, ability: Dictionary, targets: Array, base_rate: float) 
 		## NOT ported: it is the only monster authoring either, and it is neither pooled nor
 		## autogrind_spawned, so no grind can field it by any of the four spawn forms.
 		var amount: int = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
+		var shown: int = amount
 		if party_side:
+			var before: int = _stolen_gold
 			_stolen_gold += amount
-		_log("%s steals %d gold from %s" % [caster.combatant_name, amount, target.combatant_name])
+			shown = _steal_share(before, _stolen_gold)
+		_log("%s steals %d gold from %s" % [caster.combatant_name, shown, target.combatant_name])
+
+
+## One steal's share of the batch _build_results credits for _stolen_gold. The lines add up to that batch.
+func _steal_share(before_base: int, after_base: int) -> int:
+	var gs: Object = null
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		gs = tree.root.get_node_or_null("GameState")
+	if gs != null and gs.has_method("gold_to_credit"):
+		return int(gs.gold_to_credit(after_base)) - int(gs.gold_to_credit(before_base))
+	return after_base - before_base
 
 
 func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array, ability_id: String) -> void:
