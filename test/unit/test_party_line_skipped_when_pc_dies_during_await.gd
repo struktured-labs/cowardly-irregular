@@ -80,7 +80,7 @@ func test_scripted_fallback_path_not_guarded_for_off_branch() -> void:
 	# would just be confusing.
 	var body := _run_async_body()
 	# Find the LLM-off branch (right after llm_dialogue_on check).
-	var off_branch_idx: int = body.find("if not llm_dialogue_on:")
+	var off_branch_idx: int = body.find("if not _party_line_wants_llm(llm_dialogue_on, voice_test):")
 	var return_idx: int = body.find("return", off_branch_idx + 1)
 	assert_gt(off_branch_idx, -1, "llm-off branch must exist")
 	var off_block: String = body.substr(off_branch_idx, return_idx - off_branch_idx + 10)

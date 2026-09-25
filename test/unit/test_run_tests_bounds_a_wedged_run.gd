@@ -88,8 +88,13 @@ func test_a_runner_that_ignores_term_is_still_bounded() -> void:
 	# exercise the cooperative one. ⚠️ AND BE HONEST ABOUT WHAT THIS PROVES: under plain `timeout`
 	# a TERM-ignoring child is NOT killed — measured, `timeout 1` against a child sleeping 6s
 	# returns EC=124 at elapsed 6008ms, i.e. it WAITS for the child. `--kill-after` does not help
-	# either, because this binary cannot deliver SIGKILL at all. So on this box such a child is
-	# unbounded in wall-clock whichever form you use.
+	# either, because this binary cannot deliver SIGKILL at all. So on this box `timeout` alone
+	# leaves such a child unbounded in wall-clock. run_tests.sh's own poll loop now SIGKILLs it at
+	# budget + grace with kill(1) — pinned by test_a_term_ignoring_direct_child_is_sigkilled_past_the_grace.
+	# ⚠️ UNDER THE PAD JAIL it is different again: TERM kills bwrap, `timeout` returns at once, and
+	# the TERM-ignoring grandchild is ORPHANED, not waited on (measured: run_tests.sh exited in
+	# 1056ms while the sleeper lived on under the subreaper). That leak is not bounded by anything
+	# here; godot's default TERM disposition is what keeps it from happening to a real run.
 	# What this arm therefore pins is the REPORTING, which is the part we control: however long it
 	# took, a run that reached its budget is named WEDGED and normalised to 124 rather than falling
 	# through to a vacuity 3. That is exactly why the decision is elapsed and not the exit code.
@@ -177,6 +182,52 @@ func test_a_quiet_log_after_clean_totals_is_killed_and_counts_as_a_pass() -> voi
 		"the kill must be reported on the pass too, got: %s" % r["text"])
 	assert_false(str(r["text"]).contains("WEDGED"),
 		"got: %s" % r["text"])
+	DirAccess.remove_absolute(path)
+
+
+## Regression: .486 was BLOCKED at prebuild — check_polling_bounded found `while kill -0 "$_tp"`,
+## a loop with no bound of its own. The cap is budget + RUN_TESTS_KILL_GRACE_S, then kill(1).
+## RUN_TESTS_SEE_PADS=1 skips bwrap so the TERM-ignoring child is `timeout`'s DIRECT child — the
+## shape an outer-jailed gate runs, and the one `timeout` waits on. Measured with a 23s child:
+## .486 returned at 23168ms, the capped loop at 3127ms. The child here sleeps 30s, so an elapsed
+## under 20s can only come from the kill, never from the child ending on its own.
+func test_a_term_ignoring_direct_child_is_sigkilled_past_the_grace() -> void:
+	var path := _probe_with_base("bash -c 'trap \"\" TERM; sleep 30'")
+	var t0 := Time.get_ticks_msec()
+	var r := _run(path, "RUN_TESTS_SEE_PADS=1 RUN_TESTS_TIMEOUT=1 RUN_TESTS_KILL_GRACE_S=2")
+	var elapsed := Time.get_ticks_msec() - t0
+	assert_lt(elapsed, 20000,
+		"a child that ignores TERM must be SIGKILLed at budget+grace (~3s), not waited out (30s). took %dms: %s" % [elapsed, r["text"]])
+	assert_eq(int(r["code"]), 124,
+		"the capped kill is still an unjudged wedge and must normalise to 124, got %d: %s" % [int(r["code"]), r["text"]])
+	assert_true(str(r["text"]).contains("SIGKILL via kill(1)"),
+		"the backstop must say it fired, got: %s" % r["text"])
+	DirAccess.remove_absolute(path)
+
+
+## NEGATIVE CONTROL for the arm above: when TERM works, the backstop must stay silent. A cap that
+## fired on every wedge would read as working in the positive arm and be wrong here.
+func test_the_sigkill_backstop_is_silent_when_term_works() -> void:
+	var path := _probe_with_base(_SLEEPER)
+	var r := _run(path, "RUN_TESTS_SEE_PADS=1 RUN_TESTS_TIMEOUT=1 RUN_TESTS_KILL_GRACE_S=2")
+	assert_eq(int(r["code"]), 124, "a cooperative wedge is still 124, got %d: %s" % [int(r["code"]), r["text"]])
+	assert_false(str(r["text"]).contains("SIGKILL via kill(1)"),
+		"timeout's TERM ended this one; the backstop must not claim it, got: %s" % r["text"])
+	DirAccess.remove_absolute(path)
+
+
+## RUN_TESTS_POLL_S=0 used to be honoured: `sleep 0` spun, `_still` advanced by 0, and the
+## quiet-after-totals kill never fired — measured 37.1s vs 3.1s against a 37s hang. It is refused now.
+func test_a_zero_poll_is_refused_so_the_quiet_kill_still_fires() -> void:
+	var path := _probe_with_base(_PASS_HANG)
+	var t0 := Time.get_ticks_msec()
+	var r := _run(path, "RUN_TESTS_TIMEOUT=60 RUN_TESTS_POLL_S=0 RUN_TESTS_QUIET_AFTER_TOTALS=2", "run_tests_bounds_a_wedged_run")
+	var elapsed := Time.get_ticks_msec() - t0
+	assert_lt(elapsed, 20000,
+		"POLL_S=0 must fall back to 1s so the quiet kill fires (~3s), not wait out the 30s hang. took %dms: %s" % [elapsed, r["text"]])
+	assert_true(str(r["text"]).contains("SHUTDOWN KILLED AFTER TOTALS"),
+		"the quiet-log kill must fire with a zero poll, got: %s" % r["text"])
+	assert_eq(int(r["code"]), 0, "clean totals after the kill are a pass, got %d: %s" % [int(r["code"]), r["text"]])
 	DirAccess.remove_absolute(path)
 
 

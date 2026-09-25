@@ -175,6 +175,29 @@ func test_the_headless_path_credits_a_mourner_too() -> void:
 		"is credited none here, while the shrunken divisor inflates everyone else's share."))
 
 
+## The visual grind is a different function. _resolve_headless_battle was the site this file
+## closed; _on_autogrind_battle_ended still divided by the standing count. A KO'd Cleric with
+## posthumous_credit still gains the job EXP, and the session bar and Summary both read
+## per_character_exp — so the mourner shows no share and everyone else is shown a larger one.
+func test_the_live_visual_path_credits_a_mourner_too() -> void:
+	var gl: String = GdSource.code_of("res://src/GameLoop.gd")
+	assert_ne(gl, "", "CONTROL: GameLoop source must survive the comment strip")
+	var at: int = gl.find("func _on_autogrind_battle_ended")
+	assert_gt(at, -1, "CONTROL: _on_autogrind_battle_ended must exist")
+	var stop: int = gl.find("\nfunc ", at + 20)
+	var body: String = gl.substr(at, (stop - at) if stop > 0 else -1)
+	assert_true(body.contains("track_character_exp"),
+		"CONTROL: the per-character attribution must be inside the extracted range, or this arm reads the wrong function")
+	assert_false(body.contains("func _resolve_headless_battle"),
+		"CONTROL: the slice must not include the headless function, or a fixed sibling greens a live bug")
+	assert_true(body.contains("BattleManager.earns_exp_while_dead("),
+		("the visual autogrind attributes session EXP by a bare is_alive. A KO'd Cleric carrying " +
+		"posthumous_credit still gains that job EXP, but the live bar and the Summary omit them " +
+		"and divide the pot by the standing count, so everyone else is shown a larger share."))
+	assert_false(body.contains("alive_count"),
+		"the visual path still sizes the EXP divisor from the living count alone")
+
+
 func test_the_third_award_site_is_still_unreachable() -> void:
 	## ⚠️ THE DECLARATION. A third award site exists and did NOT get the exception, deliberately:
 	## _process_battle_results is called only by _run_automated_battle, which has NO callers. If
