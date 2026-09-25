@@ -558,6 +558,8 @@ func _exit_tree() -> void:
 
 	# Reset engine time scale in case battle speed was altered
 	Engine.time_scale = 1.0
+	## The voice player is an autoload, so a victory bark would otherwise follow the player onto the map.
+	SoundManager.stop_voice()
 
 	# Explicitly free victory results overlay to prevent persistence across scenes
 	var victory_overlay = get_node_or_null("VictoryResults")

@@ -20,8 +20,14 @@
 					"They moved. Now I move.",
 					"No speeches. Just the next swing.",
 					"Plant the feet. Pick a target.",
-					"Mage is still counting. I'm not.",
-					"Bard's humming again. Noted. Ignored."
+					{
+						"line": "Mage is still counting. I'm not.",
+						"when": "ally_alive:mage"
+					},
+					{
+						"line": "Bard's humming again. Noted. Ignored.",
+						"when": "ally_alive:bard"
+					}
 				],
 				"low_hp": [
 					"Bleeding. Manageable. Shield arm still answers.",
@@ -29,7 +35,10 @@
 					"Hurts. Doesn't matter. Hold the line.",
 					"Low. Not out.",
 					"Shield's dented. Arm isn't.",
-					"Cleric. When you're ready. No rush.",
+					{
+						"line": "Cleric. When you're ready. No rush.",
+						"when": "ally_alive:cleric"
+					},
 					"I've stood up from worse. Once.",
 					"Breathe. Grip. Stand.",
 					"Bleeding on the good boots. Fine.",
@@ -60,16 +69,25 @@
 					"Wind up. Follow through. Done."
 				],
 				"victory": [
-					"Done. Sheathe. Tell the Bard to keep the song short.",
+					{
+						"line": "Done. Sheathe. Tell the Bard to keep the song short.",
+						"when": "ally_alive:bard"
+					},
 					"Done. Wipe the blade.",
 					"Clean. Next.",
 					"Stand down. Good work.",
-					"Nobody fell. That's the win.",
+					{
+						"line": "Nobody fell. That's the win.",
+						"when": "none_down"
+					},
 					"Shield's dented. Worth it.",
 					"Quiet again. Good.",
 					"That's the fight. Check the packs.",
 					"Honest work. Honest win.",
-					"Bard. No victory song. ...Fine. One verse."
+					{
+						"line": "Bard. No victory song. ...Fine. One verse.",
+						"when": "ally_alive:bard"
+					}
 				]
 			}
 		},
@@ -83,12 +101,24 @@
 			],
 			"trigger_voices": {
 				"turn_start": [
-					"Let me see the ledger of injuries. Right. The singed sleeve first, then the new limp.",
+					{
+						"line": "Let me see the ledger of injuries. Right. The singed sleeve first, then the new limp.",
+						"when": [
+							"ally_alive:mage",
+							"ally_alive:rogue"
+						]
+					},
 					"A new verse. Let me read it slowly.",
 					"Turn counted. Bead moved. Proceed.",
-					"The bruised shoulder first. Then the rest.",
+					{
+						"line": "The bruised shoulder first. Then the rest.",
+						"when": "ally_alive:fighter"
+					},
 					"Who is bleeding? Show me. Don't be brave.",
-					"Hold still, singed sleeve. I see you.",
+					{
+						"line": "Hold still, singed sleeve. I see you.",
+						"when": "ally_alive:mage"
+					},
 					"The Loop turns. So do I.",
 					"Another bead. The prayer continues.",
 					"Staff in both hands. Eyes on the wounded.",
@@ -211,15 +241,24 @@
 					"Sanatio, with feeling."
 				],
 				"victory": [
-					"Verse complete. Wounds tallied, breaths counted, all party members returned to maximum. The Loop is pleased.",
-					"Verse complete. Everyone accounted for.",
+					{
+						"line": "Verse complete. Wounds tallied, breaths counted, all party members returned to maximum. The Loop is pleased.",
+						"when": "none_down"
+					},
+					{
+						"line": "Verse complete. Everyone accounted for.",
+						"when": "none_down"
+					},
 					"Amen. Now, let me see those cuts.",
 					"The Loop closes. Gently, this time.",
 					"Wounds tallied. None of them mortal.",
 					"Rest. The next verse is already written.",
 					"A kind ending. They are rarer than you think.",
 					"Blessed be the turn order.",
-					"The new limp. Sit down. You're next.",
+					{
+						"line": "The new limp. Sit down. You're next.",
+						"when": "ally_alive:rogue"
+					},
 					"Well fought. Poorly dodged. Forgiven.",
 					"Verse ended. Blessedly.",
 					"Rest now. The Loop will call again.",
@@ -261,10 +300,16 @@
 					"Hypothesis: I cast. Result: they suffer."
 				],
 				"low_hp": [
-					"HP at twenty-three percent. Statistically I am one bad d20 from a memorial cutscene. Cleric. Cleric. Please.",
+					{
+						"line": "HP at twenty-three percent. Statistically I am one bad d20 from a memorial cutscene. Cleric. Cleric. Please.",
+						"when": "ally_alive:cleric"
+					},
 					"Health critical. This violates my projections.",
 					"Glass cannon. Emphasis on glass.",
-					"Cleric. The singed sleeve requests a patch.",
+					{
+						"line": "Cleric. The singed sleeve requests a patch.",
+						"when": "ally_alive:cleric"
+					},
 					"Retreat is a valid stat allocation.",
 					"I am one bad roll from a footnote.",
 					"Recalculating. The answer is: ouch.",
@@ -304,7 +349,10 @@
 					"Math won. You're welcome.",
 					"Combat complete. Peer review pending.",
 					"Documented. Reproducible. Done.",
-					"Fighter, you swung out of spec. It worked. Annoying.",
+					{
+						"line": "Fighter, you swung out of spec. It worked. Annoying.",
+						"when": "ally_alive:fighter"
+					},
 					"Loot table, I'm ready. Be generous.",
 					"And the gods still haven't commented their code."
 				]
@@ -329,19 +377,77 @@
 					"Relax. I've done this heist before.",
 					"Oh good. Something to stab.",
 					"Queue's mine. Try to keep up.",
-					"Watch the third frame. It always tells."
+					"Watch the third frame. It always tells.",
+					"Mine. Obviously.",
+					"Let's make this quick. I have plans.",
+					"Heist's on. Try to look natural.",
+					"Found the gap. Walking through it.",
+					"Don't blink. You'll miss the good part.",
+					"Hitbox is on frame two. Noted.",
+					"Somebody's about to lose a pocket.",
+					"Casing the room. Rude lighting. Fine.",
+					"I'll be quick. I'm always quick.",
+					"Wake me when it's hard.",
+					"Everyone's got a tell. Yours is breathing.",
+					"Knives out. Metaphorically. And literally.",
+					"Relax. I do this professionally.",
+					"Speed's a stat. I spent it well.",
+					"Look over there. No, really.",
+					"Shadows are nice this time of turn.",
+					"In and out. Nobody gets hurt. Well. Somebody.",
+					"Taking the scenic route. Behind you.",
+					"Bored. Fixing that now.",
+					"Who scripted this encounter? Amateur.",
+					"Nice formation. Be a shame to ruin it.",
+					"My move. Your problem.",
+					"Pockets empty. Opportunities full.",
+					"Quiet feet. Loud results.",
+					"Is it my turn? It's always my turn.",
+					"Easy mark. Almost insulting.",
+					"Loose guard. Loose pockets. Loose ends.",
+					"Checking exits. Old habit.",
+					"Smile. It's a robbery.",
+					"Timing's everything. Mine's perfect.",
+					"Keep monologuing. I'll wait. I won't.",
+					"Shh.",
+					"Watch the hands. Not those. These.",
+					"Lucky for you, I'm bored.",
+					"Next trick. Nobody clap.",
+					"Faster than the turn order likes.",
+					"Rules are suggestions. I've read them.",
+					"Pick a card. Any card. Wrong.",
+					"One clean job. Then snacks.",
+					"Business as usual. Crime, mostly."
 				],
 				"low_hp": [
 					"Twenty-five percent is just dramatic pacing. Relax.",
 					"Bleeding. Stylishly, though.",
-					"Fine. This is fine. Cleric?",
+					{
+						"line": "Fine. This is fine. Cleric?",
+						"when": "ally_alive:cleric"
+					},
 					"Low. Still faster than you.",
 					"I'd call this a setback. Briefly.",
 					"Not dying. Too much unfinished business.",
 					"Hm. That's more red than I budgeted.",
 					"Somebody patch me before I get bored.",
 					"Nobody look. I'm fine. Mostly.",
-					"Close call. I live for those. Hopefully."
+					"Close call. I live for those. Hopefully.",
+					"Cutting it close. My favorite.",
+					"Ow. Keep that between us.",
+					"Not great. Still charming.",
+					"This is a flesh wound. A big one.",
+					"I've had worse nights. Fewer, though.",
+					"Tactical bleeding. All part of the plan.",
+					"Exit strategy? Working on it.",
+					"Fine. I'll just be dramatic about it.",
+					"Running on spite. Works fine.",
+					"I'd lie down, but it's a bad look.",
+					"Somewhere, a healer is judging me.",
+					"One more hit and I'm taking it personally.",
+					"Rough job. Still getting paid.",
+					"Low health. Great story, though.",
+					"Hm. The odds got worse. I like odds."
 				],
 				"big_hit_taken": [
 					"Okay. Okay. Someone read MY tells. Rude.",
@@ -353,7 +459,22 @@
 					"Noted. Filed under revenge.",
 					"Okay. You get one.",
 					"Fine. Now it's personal. Mildly.",
-					"Who scripted that? We should talk."
+					"Who scripted that? We should talk.",
+					"Hey. Watch the face.",
+					"Rude. Also, missed my good side.",
+					"That's going on your tab.",
+					"Fine. That was good. Don't gloat.",
+					"Ow. I'm billing you.",
+					"Didn't see it coming. Hate that.",
+					"Right in the dignity.",
+					"Cheap shot. Respect.",
+					"You'll want to run now.",
+					"I'll remember your face. And your pockets.",
+					"Ow. Rude. Continuing.",
+					"Hm. That one had intent.",
+					"Hit me again. I dare you. Please don't.",
+					"Oof. Recalibrating my smugness.",
+					"Walked right into that. Walking out now."
 				],
 				"used_signature_ability": [
 					"Three-frame window. Slid right through it. Tip your writers.",
@@ -365,7 +486,17 @@
 					"Hi. Bye.",
 					"Knife goes where the guard isn't.",
 					"You were looking the wrong way. Always.",
-					"Clean in, clean out. Heist rules."
+					"Clean in, clean out. Heist rules.",
+					"Surprise.",
+					"Found your blind spot. Moved in.",
+					"Knife says hello.",
+					"Wrong way, friend.",
+					"Should've turned around.",
+					"Right where it counts.",
+					"Quick and quiet. Like I promised.",
+					"They never hear the second step.",
+					"Point of entry: you.",
+					"Nothing personal. Mostly."
 				],
 				"victory": [
 					"Loot phase. I called it first, so legally it's mine.",
@@ -377,7 +508,22 @@
 					"That's a wrap. Check your pockets.",
 					"Bored now. Good fight, though.",
 					"Winning suits me. Everything does.",
-					"Lights up. Nobody move. I'm counting coins."
+					"Lights up. Nobody move. I'm counting coins.",
+					"Wrapped. Tidy. Profitable.",
+					"Pockets heavier. Mood lighter.",
+					"That was fun. Don't tell anyone.",
+					"Another one for the memoir.",
+					"Well. Someone had to win. Me.",
+					"Clean exit. My favorite kind.",
+					"Loot's divided. My way.",
+					"Nice work. Mostly mine.",
+					"Bored again. Great.",
+					"Somebody count the coins. Not you.",
+					"That's a clean sweep. Pockets included.",
+					"Show's over. Exit through the gift shop.",
+					"Perfect heist. Shame about the lighting.",
+					"Easy money. The best kind.",
+					"Take a bow. I already did."
 				]
 			}
 		},
@@ -390,11 +536,164 @@
 				"Verse two, with feeling!"
 			],
 			"trigger_voices": {
-				"turn_start": "Cue the bard — and a one, and a two, and a try not to die on beat.",
-				"low_hp": "Folks, the protagonist is bleeding! Dramatically convenient! Cleric, this is your cue, sweetheart.",
-				"big_hit_taken": "OOF — note to self, work that bridge into the eulogy. Still standing. Still in key.",
-				"used_signature_ability": "And THAT, dear audience, is why they put me in the party. Buff stack, baby. Encore later.",
-				"victory": "Scene! Curtain! And someone get the loot — bards do NOT collect, we DISTRIBUTE the proceeds."
+				"turn_start": [
+					"Cue the bard — and a one, and a two, and a try not to die on beat.",
+					"My turn! Try to keep the beat.",
+					"Ooh, a solo. Don't mind if I do.",
+					"Smile, everyone. This part's going in the book.",
+					"And a one, and a two... eh, let's just go.",
+					"Taking requests. Not from you.",
+					"Stage is mine. Lighting's awful. Love it.",
+					"Places, everyone! Well. Places-ish.",
+					"Strings are tight. Mood is bright. Let's go.",
+					"Big smile. Sharp strings. Here we go.",
+					"Curtain up! Look alive.",
+					"New verse, same villains. Love a sequel.",
+					"Opening number! Try to keep up.",
+					"Let's give them something to remember. Briefly.",
+					"Ready for my close-up.",
+					"Tonight's show: violence, with harmony.",
+					"Hands on strings. Heart on sleeve.",
+					"Cue the music. Cue the menace.",
+					"Every fight needs a narrator. Lucky you.",
+					"A little tune before the chaos.",
+					"Ooh, a tough crowd. Perfect.",
+					"Let's make this a ballad, not an obituary.",
+					"Key of victory. Tempo: urgent.",
+					"Warm-up's over. Main act time.",
+					"Heckler at twelve o'clock. Let's roast.",
+					"I'll narrate. You bleed. Wait. They bleed.",
+					"New page. Fresh ink. Let's write.",
+					"Somebody give me a beat. I'll make one.",
+					"Tragedy or comedy? Let's find out.",
+					"Tuning complete. Mostly.",
+					"Chin up. Strings tight. Go.",
+					"The audience is waiting. Probably.",
+					"Improvising. It's what I do best.",
+					"Smile for the chronicle.",
+					"Same as last turn? No. Something new.",
+					"Big number coming. Stand back.",
+					"Plot twist: I'm dangerous.",
+					"Bridge section. Things get interesting.",
+					"Mood: optimistic. Weapon: sharp.",
+					"Let me set the scene. There. Violent.",
+					"Oh, I've got a song for this.",
+					"One, two, three, and... chaos.",
+					"Hold the applause. I'm working.",
+					"Cheer up. We're the protagonists.",
+					"Mark this down: I was fabulous.",
+					"Music is mostly timing. So is stabbing.",
+					"Here comes the hook.",
+					"Every hero needs a theme. Here's mine.",
+					"Strings sing. Enemies wince.",
+					"Let's give the critics something to write about."
+				],
+				"low_hp": [
+					{
+						"line": "Folks, the protagonist is bleeding! Dramatically convenient! Cleric, this is your cue, sweetheart.",
+						"when": "ally_alive:cleric"
+					},
+					"Still singing. Barely. But in key.",
+					"Ow. Okay. Minor key it is.",
+					"I've played rougher rooms than this.",
+					"Little help? Anyone? Asking musically.",
+					"Low on health. High on spirits. Mostly spirits.",
+					"Don't worry. Tragedies sell better anyway.",
+					"Just a dramatic pause. Stay in your seats.",
+					"Not the ending I wrote. Rewriting.",
+					"Still smiling. Please don't ask how.",
+					"Bit of a low note. Recovering.",
+					"The show must go on. Ow.",
+					"Bruised, not muted.",
+					"Plot armor, don't fail me now.",
+					"Smiling through it. It's a skill.",
+					"I've survived worse reviews.",
+					"Every good ballad has a sad verse.",
+					"Not the finale. Not yet.",
+					"Tempo's slowing. Picking it back up.",
+					"Hurts. Writing it into the bridge.",
+					"Keep smiling. It confuses them.",
+					"Dark verse. Bright chorus coming.",
+					"Deep breath. Sing through it.",
+					"Rough set. Great material, though.",
+					"Still here. Still humming."
+				],
+				"big_hit_taken": [
+					"OOF — note to self, work that bridge into the eulogy. Still standing. Still in key.",
+					"Ow! Rude. I'm writing that down.",
+					"That hit a sour note.",
+					"Oof. Off the beat, but effective.",
+					"Heckler. Noted. Remembered.",
+					"Okay, that gets a verse. Not a nice one.",
+					"Still standing. Still smiling. Mostly standing.",
+					"Ha! Is that all? Kidding. That hurt.",
+					"Great timing. Terrible manners.",
+					"You'll regret that in the second chorus.",
+					"Heckler got a good one in.",
+					"Ouch! Off-key and uncalled for.",
+					"That's going in the villain's verse.",
+					"Rude! I was mid-lyric.",
+					"Bravo. Now watch me take it personally.",
+					"Oof. My strings felt that.",
+					"Tough crowd. Tougher punches.",
+					"Hey! No touching the talent.",
+					"That hit had rhythm. I'll allow it.",
+					"Cute. Now it's my turn to be cute.",
+					"Ow! Okay. Minor setback. Major grudge.",
+					"Still smiling. Teeth gritted, but smiling.",
+					"That'll be a great scar story.",
+					"Ooh, dramatic. I respect it.",
+					"Missed the beat, hit the bard."
+				],
+				"used_signature_ability": [
+					"And THAT, dear audience, is why they put me in the party. Buff stack, baby. Encore later.",
+					"Everybody, on the beat! Feel that?",
+					"This one's a crowd-pleaser.",
+					"Hear that? That's morale. You're welcome.",
+					"Chin up. Shoulders back. One more move.",
+					"A little tune to make you dangerous.",
+					"Extra beat, on the house. Spend it loud.",
+					"Sing along. Or just fight better. Either works.",
+					"I believe in you. Musically.",
+					"Crowd's warmed up. Now go wreck them.",
+					"Chorus, everyone! Feel the lift?",
+					"A little extra for the whole show.",
+					"Feel that? That's a second wind.",
+					"Buff incoming. Try not to swoon.",
+					"Tempo up! Go, go, go.",
+					"This song buys you one more move. Use it.",
+					"Energy, on the house.",
+					"Let the music do the heavy lifting.",
+					"Hear the hook? That's your cue.",
+					"Morale boost, fresh from the lute."
+				],
+				"victory": [
+					"Scene! Curtain! And someone get the loot — bards do NOT collect, we DISTRIBUTE the proceeds.",
+					"And scene! Take a bow, everyone.",
+					"That's going in the book. Chapter: we won.",
+					"Encore? No? Fine. Loot, then.",
+					"Standing ovation. From me. For us.",
+					"Another verse survived. I love this job.",
+					"Happy ending! Don't get used to it.",
+					"Tip your bard. Gold and applause accepted.",
+					"Curtain down. Five stars. Would fight again.",
+					"Well. That was a banger.",
+					"Bravo! Bravo! Oh, that's me. Bravo.",
+					"What a show. Tickets were free, too.",
+					"Scene complete. Onto the next act.",
+					"Curtain call! Try to look humble.",
+					"Chronicle updated. We were magnificent.",
+					"Another happy ending. I'm on a streak.",
+					"That one's getting a sequel.",
+					"Rave reviews. I wrote them.",
+					"Ah, victory. It suits the soundtrack.",
+					"Cue the fanfare. I'll hum it.",
+					"Loot, then lunch, then a new song.",
+					"History's written. Nicely, too.",
+					"And the crowd goes wild. The crowd is me.",
+					"Sweet ending. Don't ruin it by talking.",
+					"That was pitch perfect."
+				]
 			}
 		}
 	}

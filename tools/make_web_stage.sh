@@ -42,6 +42,11 @@ STAGE="tmp/web_stage"
 
 BITRATE="${1:-48}"
 TIER="tmp/web_audio/music_${BITRATE}k"
+# VOICE: $2 = kbps, $3 = sample rate (deploy_web.sh's WEB_VOICE_KBPS / WEB_VOICE_AR). 0 = no voice
+# tier: the stage keeps the voice masters, byte-for-byte what shipped before this existed.
+VOICE_KBPS="${2:-0}"
+VOICE_AR="${3:-24000}"
+case "$VOICE_KBPS" in ''|*[!0-9]*) echo "[stage] REFUSED: voice kbps must be an integer (0 = off), got '${VOICE_KBPS}'." >&2; exit 2 ;; esac
 PCK_LIMIT=199000000   # itch refuses an HTML5 embed containing any file >= 200 MB
 
 # ── 1. the compressed tier ──────────────────────────────────────────────────
@@ -70,6 +75,27 @@ SRC_N=$(find assets/audio/music -name '*.ogg' | wc -l)
     echo "        Refusing to stage a tier that does not cover the masters." >&2; exit 2; }
 echo "[stage]     ${TIER_N}/${SRC_N} tracks"
 
+# ── 1b. the voice tier (web only; tools/make_web_voice.sh has the why) ─────────
+VOICE_TIER=""
+# The tier dir deploy_web.sh's gate 3b checks the pck against. Written by THIS script from the
+# path make_web_voice.sh printed, so no second spelling of the path exists to drift. Removed
+# first, so a run with the tier OFF can never leave a previous run's dir for the gate to find.
+VOICE_TIER_FILE="tmp/web_stage.voice_tier"
+rm -f "$VOICE_TIER_FILE"
+if [ "$VOICE_KBPS" -ne 0 ]; then
+    echo "[stage] 1b voice tier @ ${VOICE_KBPS} kbps / ${VOICE_AR} Hz"
+    VOICE_TIER="$(./tools/make_web_voice.sh "$VOICE_KBPS" "$VOICE_AR" | tail -1)"
+    V_TIER_N=$(find "$VOICE_TIER" -name '*.ogg' | wc -l)
+    V_SRC_N=$(find assets/audio/sfx -maxdepth 1 -name 'voice_*.ogg' ! -name 'voice_blip_*' | wc -l)
+    [ "$V_TIER_N" -gt 0 ] && [ "$V_TIER_N" -eq "$V_SRC_N" ] || {
+        echo "[stage] BLOCKED: voice tier ${VOICE_TIER:-<none>} has ${V_TIER_N} clips, masters have ${V_SRC_N}." >&2
+        exit 2; }
+    echo "[stage]     ${V_TIER_N}/${V_SRC_N} voice clips"
+    printf '%s' "$VOICE_TIER" > "$VOICE_TIER_FILE"
+else
+    echo "[stage] 1b voice tier: OFF (WEB_VOICE_KBPS=0) — voice ships at master quality"
+fi
+
 # ── 2. the copy ─────────────────────────────────────────────────────────────
 # RESUMABLE. The copy plus the stage's first import is ~15 minutes, and the whole of it
 # used to be discarded by any interruption. Measured 2026-09-09: five consecutive memory
@@ -94,10 +120,12 @@ echo "[stage]     ${TIER_N}/${SRC_N} tracks"
 # be packed into the exported project.
 STAGE_ID_FILE="tmp/web_stage.id"
 _stage_id() {
-    printf '%s %s %s' \
+    # The voice encode is IN the id: a reused stage keeps whatever voice files it was built with,
+    # so switching the tier off or changing it must force a fresh copy from the masters.
+    printf '%s %s %s %s' \
         "$(git rev-parse HEAD 2>/dev/null || echo nogit)" \
         "$(git status --porcelain 2>/dev/null | sort | md5sum | cut -d' ' -f1)" \
-        "$BITRATE"
+        "$BITRATE" "voice=${VOICE_KBPS}k@${VOICE_AR}"
 }
 WANT_ID="$(_stage_id)"
 REUSE=0
@@ -133,6 +161,13 @@ fi
 echo "[stage] 3/4 swapping audio + deriving the exclusion list"
 rm -f "$STAGE"/assets/audio/music/*.ogg
 cp "$TIER"/*.ogg "$STAGE/assets/audio/music/"
+if [ -n "$VOICE_TIER" ]; then
+    # Baselined the same way as music, and verified at the end: the voice masters live beside
+    # every other sfx, so the WHOLE sfx dir is signed. No rm here — sfx holds 300+ files that are
+    # not voice; each tier clip overwrites its same-named master IN THE STAGE only.
+    SFX_BASELINE="$(./tools/check_masters_untouched.sh --sig assets/audio/sfx)"
+    cp "$VOICE_TIER"/*.ogg "$STAGE/assets/audio/sfx/"
+fi
 
 python3 - "$STAGE" <<'PY'
 import sys, glob, os
@@ -334,6 +369,10 @@ fi
 # transcoded to 48k in place leaves the COUNT identical.
 if ! ./tools/check_masters_untouched.sh --verify assets/audio/music "$MASTERS_BASELINE"; then
     echo "[stage] BLOCKED: desktop masters did not survive staging — see above." >&2
+    exit 4
+fi
+if [ -n "$VOICE_TIER" ] && ! ./tools/check_masters_untouched.sh --verify assets/audio/sfx "$SFX_BASELINE"; then
+    echo "[stage] BLOCKED: the sfx/voice masters did not survive staging — see above." >&2
     exit 4
 fi
 echo "[stage] artifact: ${STAGE}/builds/web/  — nothing published."

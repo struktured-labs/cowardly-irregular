@@ -99,6 +99,8 @@ var all_combatants: Array[Combatant] = []
 var selection_order: Array[Combatant] = []  # Order for action selection
 var selection_index: int = 0
 var current_combatant: Combatant = null
+## Y-repeat is filling the party members who have not chosen yet. Enemies still select after them.
+var _filling_repeat: bool = false
 
 ## Action queue for execution
 var pending_actions: Array[Dictionary] = []  # All selected actions before execution
@@ -1171,6 +1173,9 @@ func end_battle(victory: bool) -> void:
 	# Boss gloat — fire-and-forget; scripted ships now, async LLM re-narration may replace it.
 	_dispatch_boss_gloat(victory)
 
+	## An in-fight bark would keep talking over the results. Stop it before the victory line starts.
+	SoundManager.stop_voice()
+
 	# Party line on victory — one PC speaks first; cooldown still applies.
 	if victory:
 		_dispatch_victory_party_line()
@@ -1229,6 +1234,7 @@ func _cleanup_battle() -> void:
 	execution_order.clear()
 	selection_index = 0
 	current_combatant = null
+	_filling_repeat = false
 	volatility = null
 	# state stuck at VICTORY/DEFEAT forever without this — every != INACTIVE gate (toasts, spotlight reconcile) read "in battle" for the rest of the session
 	current_state = BattleState.INACTIVE
@@ -1756,6 +1762,7 @@ func _process_next_selection() -> void:
 
 	# Check if selection is complete
 	if selection_index >= selection_order.size():
+		_filling_repeat = false
 		_start_execution_phase()
 		return
 
@@ -1779,6 +1786,15 @@ func _process_next_selection() -> void:
 		current_state = BattleState.PLAYER_SELECTING
 	else:
 		current_state = BattleState.ENEMY_SELECTING
+
+	# Later allies get their AP above, then the remembered action; the first enemy clears this and selects.
+	if _filling_repeat:
+		if current_combatant in player_party:
+			_queue_repeated_action(current_combatant)
+			selection_index += 1
+			_process_next_selection()
+			return
+		_filling_repeat = false
 
 	selection_turn_started.emit(current_combatant)
 
@@ -3433,7 +3449,7 @@ func _save_previous_actions() -> void:
 
 
 func repeat_previous_actions() -> bool:
-	"""Queue previous round's actions for all players. Returns true if successful."""
+	"""Fill remembered actions for party members still choosing, then let the rest of the round select. Returns true if successful."""
 	_track_manual_player_turn()  # Repeat is a manual action, not autobattle
 
 	if previous_round_actions.is_empty():
@@ -3444,84 +3460,80 @@ func repeat_previous_actions() -> bool:
 		print("[REPEAT] Can only repeat during selection phase")
 		return false
 
-	print("[REPEAT] Repeating previous round's actions for all players")
+	if current_combatant == null or not (current_combatant in player_party):
+		print("[REPEAT] Can only repeat on a party member's turn")
+		return false
 
-	# Queue actions for all players who haven't selected yet
-	var repeated_any = false
-	for combatant in selection_order:
-		if combatant not in player_party:
-			continue
+	print("[REPEAT] Repeating previous round's actions for players still choosing")
+	# Menu is already open, so this character's AP was granted. Later allies are filled after theirs.
+	_filling_repeat = true
+	_queue_repeated_action(current_combatant)
+	_end_selection_turn()
+	return true
 
-		var combatant_id = combatant.combatant_name.to_lower()
-		if not previous_round_actions.has(combatant_id):
-			var alive = _get_alive_enemies()
-			_queue_action({
-				"combatant": combatant,
-				"type": "attack",
-				"target": alive[0] if alive.size() > 0 else null,
-				"speed": _compute_action_speed(combatant, "attack")
-			})
-			print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
-			repeated_any = true
-			continue
 
-		# Replay all actions for this combatant
-		var actions = previous_round_actions[combatant_id]
-		for saved_action in actions:
-			var action = saved_action.duplicate()
-			action["combatant"] = combatant
+## One combatant's remembered actions, or a basic attack when none were stored.
+func _queue_repeated_action(combatant: Combatant) -> void:
+	var combatant_id = combatant.combatant_name.to_lower()
+	var actions: Array = previous_round_actions.get(combatant_id, [])
+	if actions.is_empty():
+		var alive = _get_alive_enemies()
+		_queue_action({
+			"combatant": combatant,
+			"type": "attack",
+			"target": alive[0] if alive.size() > 0 else null,
+			"speed": _compute_action_speed(combatant, "attack")
+		})
+		print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
+		return
 
-			# Validity check MUST happen before `is Combatant` — a freed
-			# reference makes `is` error with 'Left operand of is is a
-			# previously freed instance' (Godot 4 behaviour, seen in log
-			# during Y-button repeat across battles).
-			if action.has("target"):
-				var target = action["target"]
-				var target_valid: bool = is_instance_valid(target)
-				var is_stale = (target_valid
+	for saved_action in actions:
+		var action = saved_action.duplicate()
+		action["combatant"] = combatant
+
+		# Validity check MUST happen before `is Combatant` — a freed
+		# reference makes `is` error with 'Left operand of is is a
+		# previously freed instance' (Godot 4 behaviour, seen in log
+		# during Y-button repeat across battles).
+		if action.has("target"):
+			var target = action["target"]
+			var target_valid: bool = is_instance_valid(target)
+			var is_stale = (target_valid
+				and target is Combatant
+				and target.is_alive
+				and target not in player_party
+				and target not in enemy_party)
+			var target_dead: bool = target_valid and target is Combatant and not target.is_alive
+			# 2026-07-14: revive-capable actions EXPECT dead targets — don't invalidate them (cowir-music msg 2539). Phoenix Down + revival-type abilities carried this trap.
+			var _revives: bool = _action_revives(action)
+			if not target_valid or is_stale or (target_dead and not _revives):
+				var alive_enemies = _get_alive_enemies()
+				action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
+
+		# Retarget for abilities/items
+		if action.has("targets"):
+			var new_targets = []
+			var revives: bool = _action_revives(action)
+			for target in action["targets"]:
+				var is_alive_in_battle = (is_instance_valid(target)
 					and target is Combatant
 					and target.is_alive
-					and target not in player_party
-					and target not in enemy_party)
-				var target_dead: bool = target_valid and target is Combatant and not target.is_alive
-				# 2026-07-14: revive-capable actions EXPECT dead targets — don't invalidate them (cowir-music msg 2539). Phoenix Down + revival-type abilities carried this trap.
-				var _revives: bool = _action_revives(action)
-				if not target_valid or is_stale or (target_dead and not _revives):
+					and (target in player_party or target in enemy_party))
+				var is_dead_ally_in_battle = (is_instance_valid(target)
+					and target is Combatant
+					and not target.is_alive
+					and target in player_party)
+				if is_alive_in_battle or (revives and is_dead_ally_in_battle):
+					new_targets.append(target)
+				else:
+					# Replace dead/freed/stale targets with first alive enemy
 					var alive_enemies = _get_alive_enemies()
-					action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
+					if alive_enemies.size() > 0:
+						new_targets.append(alive_enemies[0])
+			action["targets"] = new_targets
 
-			# Retarget for abilities/items
-			if action.has("targets"):
-				var new_targets = []
-				var revives: bool = _action_revives(action)
-				for target in action["targets"]:
-					var is_alive_in_battle = (is_instance_valid(target)
-						and target is Combatant
-						and target.is_alive
-						and (target in player_party or target in enemy_party))
-					var is_dead_ally_in_battle = (is_instance_valid(target)
-						and target is Combatant
-						and not target.is_alive
-						and target in player_party)
-					if is_alive_in_battle or (revives and is_dead_ally_in_battle):
-						new_targets.append(target)
-					else:
-						# Replace dead/freed/stale targets with first alive enemy
-						var alive_enemies = _get_alive_enemies()
-						if alive_enemies.size() > 0:
-							new_targets.append(alive_enemies[0])
-				action["targets"] = new_targets
-
-			_queue_action(action)
-			print("[REPEAT] %s: queued %s" % [combatant.combatant_name, action["type"]])
-			repeated_any = true
-
-	if repeated_any:
-		# Skip remaining selections and start execution
-		selection_index = selection_order.size()
-		_process_next_selection()
-
-	return repeated_any
+		_queue_action(action)
+		print("[REPEAT] %s: queued %s" % [combatant.combatant_name, action["type"]])
 
 
 ## 2026-07-14 (cowir-music msg 2539): a repeated action against a KO'd ally was routed to the first alive enemy — Phoenix Down + Raise-family abilities EXPECT dead targets. True when the action revives.
@@ -4360,6 +4372,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 			return
 
 	# Execute all actions in sequence (each will spend 1 AP)
+	var executed: int = 0
 	for action in actions:
 		if not combatant.is_alive:
 			break
@@ -4384,6 +4397,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		_log_player_action(combatant, action)
 		action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 		_wd_bump()
+		executed += 1
 		if turbo_mode:
 			await get_tree().process_frame
 		else:
@@ -4394,7 +4408,9 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 
 	## The fifth action was spent like the other four (each executor charges 1); refund it here
 	## so a full-bank Advance nets 4 AP. After, not before: gain_ap at the +4 cap is a no-op.
-	if full_bank and is_instance_valid(combatant) and combatant.is_alive:
+	## Dying on that swing still paid — the refund is the free action, not a survival bonus.
+	## An earlier KO breaks the loop, so unplayed swings are not refunded.
+	if full_bank and executed == actions.size() and is_instance_valid(combatant):
 		combatant.gain_ap(1)
 
 	# Continue to next action — same double-scaling fix as the inner loop above.
@@ -9021,10 +9037,12 @@ static func _party_line_wants_llm(llm_dialogue_on: bool, voice_test: bool) -> bo
 func _run_party_line_async(combatant: Combatant, event_kind: String, event_data: Dictionary) -> void:
 	var pp = get_node_or_null("/root/PartyPersonas")
 	var job_id: String = _resolve_party_job_id(combatant)
+	## Built first: tag eligibility needs it on every branch, LLM off included.
+	var ctx := _build_party_line_context(combatant, event_kind, event_data)
 	var fallback: String = ""
 	var fallback_key: String = event_kind
 	if pp != null and pp.has_method("pick_trigger_voice"):
-		var picked: Dictionary = pp.pick_trigger_voice(job_id, event_kind)
+		var picked: Dictionary = pp.pick_trigger_voice(job_id, event_kind, ctx)
 		fallback = str(picked.get("line", ""))
 		fallback_key = str(picked.get("voice_key", event_kind))
 	elif pp != null and pp.has_method("get_trigger_voice"):
@@ -9051,7 +9069,6 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
-	var ctx := _build_party_line_context(combatant, event_kind, event_data)
 	if ctx == null:
 		if not fallback.is_empty():
 			_emit_party_line(combatant, fallback, fallback_key)
@@ -9064,6 +9081,24 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	if persona.is_empty():
 		if not fallback.is_empty():
 			_emit_party_line(combatant, fallback, fallback_key)
+		return
+
+	## Authored lines exist: the LLM chooses among the eligible ones, so the line stays voiced.
+	var options: Array = pp.eligible_trigger_entries(job_id, event_kind, ctx) if pp != null and pp.has_method("eligible_trigger_entries") else []
+	if not options.is_empty():
+		var labels: Array[String] = VoiceLines.choice_labels(options.size())
+		var fb_label: String = "1"
+		for i in options.size():
+			if VoiceLines.variant_key(event_kind, int(options[i]["index"])) == fallback_key:
+				fb_label = labels[i]
+		var choice_prompt: String = DialoguePrompts.build_party_line_choice(persona, sig, ctx.to_dict(), options.map(func(e): return e["line"]))
+		var label: String = await llm.choose(choice_prompt, labels, fb_label)
+		if not is_instance_valid(combatant) or not combatant.is_alive:
+			return
+		var chosen: Dictionary = VoiceLines.entry_for_choice(options, label)
+		if chosen.is_empty():
+			chosen = VoiceLines.entry_for_choice(options, fb_label)
+		_emit_party_line(combatant, str(chosen["line"]), VoiceLines.variant_key(event_kind, int(chosen["index"])))
 		return
 
 	var DialoguePromptsScript = load("res://src/llm/DialoguePrompts.gd")
