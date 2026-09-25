@@ -4675,20 +4675,9 @@ func _get_transition_type(map_id: String) -> String:
 	return "generic"
 
 
+## Same lookup the save slot uses, so the banner and the slot cannot disagree.
 func _get_location_display_name(map_id: String) -> String:
-	"""Return the human-readable name from locations.json, or a formatted fallback."""
-	var file = FileAccess.open("res://data/locations.json", FileAccess.READ)
-	if file:
-		var json = JSON.new()
-		if json.parse(file.get_as_text()) == OK:
-			var data = json.data
-			if data is Dictionary:
-				for key in data:
-					var entry = data[key]
-					if entry is Dictionary and entry.get("map_id", key) == map_id:
-						return entry.get("name", map_id.replace("_", " ").capitalize())
-		file.close()
-	return map_id.replace("_", " ").capitalize()
+	return SaveSystem.location_display_name(map_id)
 
 
 func _make_location_label(text: String, layer: CanvasLayer) -> Label:
