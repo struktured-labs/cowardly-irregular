@@ -18,7 +18,7 @@ var _gold: int
 var _mult: Variant
 var _hearth: bool
 var _party: Array
-var _summary: String
+var _reward_summary: String
 
 
 func before_each() -> void:
@@ -26,7 +26,7 @@ func before_each() -> void:
 	_mult = GameState.game_constants.get("gold_multiplier", null)
 	_hearth = bool(GameState.get_story_flag(FireplaceSecret.SECRET_FLAG))
 	_party = BattleManager.player_party.duplicate()
-	_summary = QuestSystem._last_reward_summary
+	_reward_summary = QuestSystem._last_reward_summary
 
 
 func after_each() -> void:
@@ -37,7 +37,7 @@ func after_each() -> void:
 	else:
 		GameState.game_constants["gold_multiplier"] = _mult
 	GameState.set_story_flag(FireplaceSecret.SECRET_FLAG, _hearth)
-	QuestSystem._last_reward_summary = _summary
+	QuestSystem._last_reward_summary = _reward_summary
 	BattleManager.player_party.assign(_alive(_party))
 
 
