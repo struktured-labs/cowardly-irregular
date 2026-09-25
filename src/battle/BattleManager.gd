@@ -3628,12 +3628,8 @@ func _execute_next_action() -> void:
 	# normally, silently dropping the mechanical effect of every landed
 	# jailbreak that maps to skip_turn.
 	if combatant.has_status("cannot_act"):
-		# Tick down — we consume one unit of duration per turn skipped.
-		var remaining: int = int(combatant.status_durations.get("cannot_act", 1))
-		if remaining <= 1:
-			combatant.remove_status("cannot_act")
-		else:
-			combatant.status_durations["cannot_act"] = remaining - 1
+		# One skipped action per authored point. Round-start end_turn does not also spend cannot_act.
+		combatant.spend_action_clock("cannot_act")
 		battle_log_message.emit("[color=yellow]%s[/color] cannot act!" % combatant.combatant_name)
 		action_executing.emit(combatant, {"type": "cannot_act_skip"})
 		_execute_next_action()
@@ -3646,6 +3642,7 @@ func _execute_next_action() -> void:
 			battle_log_message.emit("[color=yellow]%s[/color] woke up!" % combatant.combatant_name)
 		else:
 			battle_log_message.emit("[color=yellow]%s[/color] is [color=cyan]asleep[/color]..." % combatant.combatant_name)
+			combatant.spend_action_clock("sleep")
 			action_executing.emit(combatant, {"type": "sleep_skip"})
 			_execute_next_action()
 			return
@@ -3656,6 +3653,8 @@ func _execute_next_action() -> void:
 			combatant.remove_status("confuse")
 			battle_log_message.emit("[color=yellow]%s[/color] snapped out of confusion!" % combatant.combatant_name)
 		else:
+			# One confused action per authored point. Snapping out clears the rest; the round tick does not.
+			combatant.spend_action_clock("confuse")
 			# Attack a random target (could be ally or enemy)
 			var all_alive = []
 			for p in player_party:
@@ -3668,6 +3667,7 @@ func _execute_next_action() -> void:
 				var random_target = all_alive[randi() % all_alive.size()]
 				battle_log_message.emit("[color=yellow]%s[/color] is [color=purple]confused[/color] and attacks wildly!" % combatant.combatant_name)
 				_execute_attack(combatant, random_target)
+				combatant.spend_restriction_clocks()
 				# Continue the execution chain — without this the battle halts
 				# after a confused character attacks (action_executed fires but
 				# nothing schedules _execute_next_action).
@@ -3683,6 +3683,7 @@ func _execute_next_action() -> void:
 			else:
 				# No valid targets — skip turn like other status blocks
 				action_executing.emit(combatant, {"type": "confuse_skip"})
+				combatant.spend_restriction_clocks()
 				_execute_next_action()
 				return
 
@@ -3693,6 +3694,7 @@ func _execute_next_action() -> void:
 			battle_log_message.emit("[color=yellow]%s[/color] overcame their fear!" % combatant.combatant_name)
 		elif randf() < 0.5:
 			battle_log_message.emit("[color=yellow]%s[/color] is [color=gray]paralyzed with fear[/color]!" % combatant.combatant_name)
+			combatant.spend_action_clock("fear")
 			action_executing.emit(combatant, {"type": "fear_skip"})
 			_execute_next_action()
 			return
@@ -3741,6 +3743,10 @@ func _execute_next_action() -> void:
 			# A stray unknown action must not freeze the whole battle.
 			_execute_next_action()
 			return
+
+	# Silence and pacify were read inside the action. A fear that did not skip halved the swing there too.
+	if is_instance_valid(combatant):
+		combatant.spend_restriction_clocks()
 
 	# Log player action for adaptive AI pattern detection
 	_log_player_action(combatant, action)
@@ -4389,10 +4395,13 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		match action.get("type", ""):
 			"attack":
 				_execute_attack(combatant, action.get("target"))
+				combatant.spend_restriction_clocks()
 			"ability":
 				_execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
+				combatant.spend_restriction_clocks()
 			"item":
 				_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
+				combatant.spend_restriction_clocks()
 			_:
 				# Shared/imported autobattle scripts are player-editable
 				# JSON — a typo'd sub-action type was silently eaten
@@ -8665,8 +8674,7 @@ func _on_boss_jailbreak_succeeded(boss_id: String, vulnerability_id: String, con
 
 	match ctype:
 		"skip_turn":
-			# Apply a "cannot_act" status for the configured duration. The
-			# Combatant's existing add_status hooks handle round expiry.
+			# One skipped action per authored point. The skip spends it; round start does not.
 			var dur: int = int(params.get("duration", 1))
 			boss.add_status("cannot_act", dur)
 			battle_log_message.emit("[color=yellow]%s falters![/color]" % boss.combatant_name)
