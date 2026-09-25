@@ -4273,9 +4273,10 @@ func _swallow_return_tile_triggers(scene: Node, body: Node2D) -> void:
 	if tree == null:
 		scene._transitioning = false
 		return
-	# body_entered is deferred to the idle between physics frames, so the flag has to still be up then.
-	await tree.physics_frame
-	await tree.physics_frame
+	# The enter signal is deferred to idle, after physics_frame. Stay latched through that idle.
+	for _i in 4:
+		await tree.physics_frame
+	await tree.process_frame
 	if is_instance_valid(scene):
 		scene._transitioning = false
 
