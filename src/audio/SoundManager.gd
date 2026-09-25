@@ -88,8 +88,8 @@ const CRIT_THUD_DURATION: float = 0.18
 const CRIT_THUD_TRIM_DB: float = -4.0
 ## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The authored cue is a gentle scorch ("no bass no tones") measured at the SAME mean level as a plain hit (-22.8 vs -21.8 dB) — it cannot read as a climax. Boost the cue and give it the low body it was authored without.
 const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
-## Spoken lines sit where UI blips did, not louder — the defect was being CUT, not being quiet.
-const VOICE_PLAYER_BASE_DB: float = -4.0  # battle quips do not duck music: voice -18.3 LUFS here vs music -14.7 at -10 dB, so -4 puts dialogue ~2.4 dB over the bed (was -16, 9.6 dB under)
+## Battle quips do not duck music, so voice sits ~2.4 dB over the bed (voice -18.3 LUFS vs music -14.7 at -10 dB); at -16 it was 9.6 dB under (struktured 2026-09-24).
+const VOICE_PLAYER_BASE_DB: float = -4.0
 const PICKUP_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const DEATH_CUE_BOOST_DB: float = 6.0
 ## The procedural crit's boost, RELATIVE like DEATH_CUE_BOOST_DB. It was a bare `volume_db = 2.0`
