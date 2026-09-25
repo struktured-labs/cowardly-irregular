@@ -87,7 +87,9 @@ WEB_AUDIO_KBPS="${WEB_AUDIO_KBPS:-40}"
 # 0 = OFF — voice ships at master quality, as it always has. The encoding is @cowir-sfx's call;
 # it is set HERE and nowhere else. Measured on 211 clips: 24000 Hz at 32 or 40 kbps decode clean;
 # 32000/48000 Hz at 48 kbps put bad granule positions in 11-13 clips and are refused by the tool.
-WEB_VOICE_KBPS="${WEB_VOICE_KBPS:-0}"
+# ON since this commit: @cowir-sfx's pick, 2026-09-25 — 24 kHz / 40 kbps (codec SNR 21.9 dB vs the
+# master, worst 21.0; the Chatterbox engine outputs 24 kHz, so nothing above 12 kHz exists to keep).
+WEB_VOICE_KBPS="${WEB_VOICE_KBPS:-40}"
 WEB_VOICE_AR="${WEB_VOICE_AR:-24000}"
 # Gate 3b-voice's bands: packed .oggvorbisstr bytes / staged tier bytes, per clip and median.
 # MEASURED, not borrowed from music: a real stage export of .490 with a 32 kbps / 24 kHz tier gave

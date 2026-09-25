@@ -50,7 +50,7 @@ func test_start_battle_clears_status_effects() -> void:
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
 	var body = text.substr(idx, 7000)
-	assert_true(body.find("status_effects.clear()") != -1,
+	assert_true(body.find("clear_transient_statuses()") != -1,
 		"start_battle must clear status_effects")
 
 
@@ -58,7 +58,7 @@ func test_start_battle_clears_status_durations() -> void:
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
 	var body = text.substr(idx, 7000)
-	assert_true(body.find("status_durations.clear()") != -1,
+	assert_true(body.find("clear_transient_statuses()") != -1,
 		"start_battle must clear status_durations")
 
 

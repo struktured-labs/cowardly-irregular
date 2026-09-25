@@ -628,6 +628,16 @@ func remove_status(status: String) -> void:
 		status_removed.emit(status)
 
 
+## Drop per-battle ailments. Permadeath stays, at duration -1, so the next fight's Raise still refuses.
+func clear_transient_statuses() -> void:
+	var keep_permadeath := has_status("permakilled")
+	status_effects.clear()
+	status_durations.clear()
+	if keep_permadeath:
+		status_effects.append("permakilled")
+		status_durations["permakilled"] = -1
+
+
 ## Authored effect names that LAND under a different key — BattleManager aliases these at apply.
 ## A rule names the authored word (the ability says Burn), so the rule side must resolve before it
 ## matches, or the rule can never fire. Parity with the applier is asserted by test.
