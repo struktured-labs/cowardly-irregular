@@ -2742,6 +2742,20 @@ func restore_music_state(state: Dictionary) -> void:
 		play_music(track, false, float(state.get("position", 0.0)))
 
 
+## Jukebox previews call this. A stinger's finished hook would resume the bed while the menu is still open.
+func disarm_stinger_resume() -> void:
+	if _music_player:
+		for c in _music_player.finished.get_connections():
+			_music_player.finished.disconnect(c["callable"])
+	_stinger_resume_state = {}
+	if _music_player and _is_stinger_track(_current_music):
+		var preview := _current_music
+		_music_player.finished.connect(func() -> void:
+			if _current_music == preview:
+				_music_playing = false
+		, CONNECT_ONE_SHOT)
+
+
 func stop_music() -> void:
 	"""Stop currently playing music"""
 	_music_playing = false
