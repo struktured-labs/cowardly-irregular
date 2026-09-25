@@ -243,6 +243,12 @@ For a speaker + trigger + `PartyCombatLineContext`:
 5. **LLM off** → random among eligible, no immediate repeat.
 6. For steps 4–5 the chosen index `n` maps to clip `voice_<speaker>_<trigger>_<n>`.
 
+**Corpus size (struktured, 2026-09-24): weighted, 145 lines per job, 725 in total**:
+`turn_start` 50 · `low_hp` 25 · `big_hit_taken` 25 · `used_signature_ability` 20 ·
+`victory` 25, plus situational lines. The largest list (50) is sent to `choose()` whole; at
+~38–74 characters per line that is 2–4K characters, within budget without pre-filtering.
+Past ~50 options per trigger, eligible lines would be pre-filtered before the LLM sees them.
+
 ### 2a.2 Tags
 
 Every tag is a pure predicate over `PartyCombatLineContext`:
@@ -297,7 +303,9 @@ ahead of their moment**:
   member name, or enemy name is discarded before synthesis. This is 2a's duel defect again,
   one level over, and the prompt alone isn't trusted to prevent it.
 - Idle fill: when no LLM or TTS request is in flight, fill one empty slot. **Never a burst at
-  battle start**; the GPU is shared with the local LLM.
+  battle start**; the GPU is shared with the local LLM. Empty slots are filled in order of
+  how often their trigger fires, so `turn_start` (every party turn) refills before `victory`
+  (once per battle).
 - The pool persists to `user://voice_cache/pool.json`, so a new session starts warm.
 - Empty slot at trigger time → steps 4–5 of 2a.1 (shipped clip). A battle never waits on
   synthesis.
