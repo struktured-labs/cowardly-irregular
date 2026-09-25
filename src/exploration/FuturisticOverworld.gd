@@ -371,6 +371,9 @@ func _process(delta: float) -> void:
 func _exit_tree() -> void:
 	if _mode7:
 		_mode7.cleanup()
+	## Dungeons never touch this layer, so the outdoor weather bed would play for the whole cave.
+	if SoundManager and SoundManager.has_method("stop_ambient"):
+		SoundManager.stop_ambient()
 
 
 func _setup_scene() -> void:
