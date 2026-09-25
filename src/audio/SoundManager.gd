@@ -229,6 +229,8 @@ var _mixer_watch_pos: float = -1.0
 var _mixer_watch_msec: int = 0
 ## -1 follows the runtime, 0 never arms, 1 always arms. Tests pin both sides.
 var _mixer_stall_watch_force: int = -1
+## Whether this runtime is headless or Dummy: fixed at boot, so it is decided once, not scanned every frame. -1 = not yet decided.
+var _mixer_stall_watch_runtime: int = -1
 ## Test hook. Negative reads the live player so a test can freeze the sample.
 var _mixer_pos_override: float = -1.0
 ## Dummy mixes 4096 frames then sleeps ~93ms (Godot 4.4.1). Two quiet callbacks is still healthy;
@@ -287,9 +289,10 @@ func _mixer_stall_watch_active() -> bool:
 		return false
 	if _mixer_stall_watch_force == 1:
 		return true
-	if DisplayServer.get_name() == "headless" or OS.has_feature("headless"):
-		return true
-	return _cmdline_audio_driver_is_dummy()
+	if _mixer_stall_watch_runtime < 0:
+		var headless: bool = DisplayServer.get_name() == "headless" or OS.has_feature("headless")
+		_mixer_stall_watch_runtime = 1 if (headless or _cmdline_audio_driver_is_dummy()) else 0
+	return _mixer_stall_watch_runtime == 1
 
 
 func _cmdline_audio_driver_is_dummy() -> bool:
