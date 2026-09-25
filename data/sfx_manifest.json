@@ -1854,36 +1854,46 @@
       "file": "assets/audio/sfx/voice_bard_big_hit_taken.ogg",
       "description": "Bard party voice line — big hit taken",
       "source_sha": "457037eefb862068",
-      "voice": "Laura - Enthusiast, Quirky Attitude (FGY2WhTYpPnrIDTdsKH5)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 189388509
     },
     "voice_bard_low_hp": {
       "file": "assets/audio/sfx/voice_bard_low_hp.ogg",
       "description": "Bard party voice line — low hp",
       "source_sha": "3e531210c17b1171",
-      "voice": "Laura - Enthusiast, Quirky Attitude (FGY2WhTYpPnrIDTdsKH5)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1323679902
     },
     "voice_bard_turn_start": {
       "file": "assets/audio/sfx/voice_bard_turn_start.ogg",
       "description": "Bard party voice line — turn start",
       "source_sha": "5d9fe0e133d5ab45",
-      "voice": "Laura - Enthusiast, Quirky Attitude (FGY2WhTYpPnrIDTdsKH5)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1191469898
     },
     "voice_bard_used_signature_ability": {
       "file": "assets/audio/sfx/voice_bard_used_signature_ability.ogg",
       "description": "Bard party voice line — used signature ability",
       "source_sha": "b1b5016e3680c9fe",
-      "voice": "Laura - Enthusiast, Quirky Attitude (FGY2WhTYpPnrIDTdsKH5)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 824708338
     },
     "voice_bard_victory": {
       "file": "assets/audio/sfx/voice_bard_victory.ogg",
       "description": "Bard party voice line — victory",
       "source_sha": "547e1f6414605f33",
-      "voice": "Laura - Enthusiast, Quirky Attitude (FGY2WhTYpPnrIDTdsKH5)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 819597381
     },
     "voice_blip_bard": {
       "file": "assets/audio/sfx/voice_blip_bard.ogg",
@@ -4562,6 +4572,1266 @@
       "voice_gender": "ambiguous",
       "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.55 cfg 0.4",
       "seed": 960356062
+    },
+    "voice_bard_turn_start_1": {
+      "description": "Bard party voice line — turn start (variant 1)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_1.ogg",
+      "source_sha": "aaaefb90403f02d4",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 172915927
+    },
+    "voice_bard_turn_start_2": {
+      "description": "Bard party voice line — turn start (variant 2)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_2.ogg",
+      "source_sha": "5baa94ec21fdefe9",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1558215739
+    },
+    "voice_bard_turn_start_3": {
+      "description": "Bard party voice line — turn start (variant 3)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_3.ogg",
+      "source_sha": "23c3a1a8eb9d601b",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1031454414
+    },
+    "voice_bard_turn_start_4": {
+      "description": "Bard party voice line — turn start (variant 4)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_4.ogg",
+      "source_sha": "189e304d8cdd9ac2",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1869243624
+    },
+    "voice_bard_turn_start_5": {
+      "description": "Bard party voice line — turn start (variant 5)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_5.ogg",
+      "source_sha": "f3875a2ad8e435cb",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 249007398
+    },
+    "voice_bard_turn_start_6": {
+      "description": "Bard party voice line — turn start (variant 6)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_6.ogg",
+      "source_sha": "94d9e211db72fd66",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 343241777
+    },
+    "voice_bard_turn_start_7": {
+      "description": "Bard party voice line — turn start (variant 7)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_7.ogg",
+      "source_sha": "0031b8ecdf4c75a9",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1194487397
+    },
+    "voice_bard_turn_start_8": {
+      "description": "Bard party voice line — turn start (variant 8)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_8.ogg",
+      "source_sha": "89d29a6c125351a3",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2059568284
+    },
+    "voice_bard_turn_start_9": {
+      "description": "Bard party voice line — turn start (variant 9)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_9.ogg",
+      "source_sha": "1980560a4e33bc77",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 376368321
+    },
+    "voice_bard_turn_start_10": {
+      "description": "Bard party voice line — turn start (variant 10)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_10.ogg",
+      "source_sha": "02a4cb2bcdb6d1bb",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 493892323
+    },
+    "voice_bard_turn_start_11": {
+      "description": "Bard party voice line — turn start (variant 11)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_11.ogg",
+      "source_sha": "629c0aebc688adfc",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2103635476
+    },
+    "voice_bard_turn_start_12": {
+      "description": "Bard party voice line — turn start (variant 12)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_12.ogg",
+      "source_sha": "de8db62e190d43ab",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1153883394
+    },
+    "voice_bard_turn_start_13": {
+      "description": "Bard party voice line — turn start (variant 13)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_13.ogg",
+      "source_sha": "953dc8799bbb095a",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1855904869
+    },
+    "voice_bard_turn_start_14": {
+      "description": "Bard party voice line — turn start (variant 14)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_14.ogg",
+      "source_sha": "1615911eb2bcf99a",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 729909155
+    },
+    "voice_bard_turn_start_15": {
+      "description": "Bard party voice line — turn start (variant 15)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_15.ogg",
+      "source_sha": "b5693d7f839f01b8",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1465402911
+    },
+    "voice_bard_turn_start_16": {
+      "description": "Bard party voice line — turn start (variant 16)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_16.ogg",
+      "source_sha": "781a4e421a2c2ba8",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 211504798
+    },
+    "voice_bard_turn_start_17": {
+      "description": "Bard party voice line — turn start (variant 17)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_17.ogg",
+      "source_sha": "32c08fb4b47c0881",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 319685822
+    },
+    "voice_bard_turn_start_18": {
+      "description": "Bard party voice line — turn start (variant 18)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_18.ogg",
+      "source_sha": "404868c6cccb683a",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1348831132
+    },
+    "voice_bard_turn_start_19": {
+      "description": "Bard party voice line — turn start (variant 19)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_19.ogg",
+      "source_sha": "875eed5b9046a8df",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 229783007
+    },
+    "voice_bard_turn_start_20": {
+      "description": "Bard party voice line — turn start (variant 20)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_20.ogg",
+      "source_sha": "0bb8e42178b860bb",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 511814579
+    },
+    "voice_bard_turn_start_21": {
+      "description": "Bard party voice line — turn start (variant 21)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_21.ogg",
+      "source_sha": "adb6d5cfc6cba520",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1171744869
+    },
+    "voice_bard_turn_start_22": {
+      "description": "Bard party voice line — turn start (variant 22)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_22.ogg",
+      "source_sha": "8b223c03c88e78c0",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1751841787
+    },
+    "voice_bard_turn_start_23": {
+      "description": "Bard party voice line — turn start (variant 23)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_23.ogg",
+      "source_sha": "0334a821857925e2",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 961262704
+    },
+    "voice_bard_turn_start_24": {
+      "description": "Bard party voice line — turn start (variant 24)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_24.ogg",
+      "source_sha": "8253407a561c1ebd",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 65261924
+    },
+    "voice_bard_turn_start_25": {
+      "description": "Bard party voice line — turn start (variant 25)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_25.ogg",
+      "source_sha": "f054b62be98be165",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1946147031
+    },
+    "voice_bard_turn_start_26": {
+      "description": "Bard party voice line — turn start (variant 26)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_26.ogg",
+      "source_sha": "6cdfd4d25820af07",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1930517671
+    },
+    "voice_bard_turn_start_27": {
+      "description": "Bard party voice line — turn start (variant 27)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_27.ogg",
+      "source_sha": "f207dba27b8c5267",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 198697921
+    },
+    "voice_bard_turn_start_28": {
+      "description": "Bard party voice line — turn start (variant 28)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_28.ogg",
+      "source_sha": "9c212bfdc085db96",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1961645548
+    },
+    "voice_bard_turn_start_29": {
+      "description": "Bard party voice line — turn start (variant 29)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_29.ogg",
+      "source_sha": "37ea81fe2d83980c",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 332023724
+    },
+    "voice_bard_turn_start_30": {
+      "description": "Bard party voice line — turn start (variant 30)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_30.ogg",
+      "source_sha": "a5f89b1b23ea58c4",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1010041419
+    },
+    "voice_bard_turn_start_31": {
+      "description": "Bard party voice line — turn start (variant 31)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_31.ogg",
+      "source_sha": "5f742c70703deddb",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 833973043
+    },
+    "voice_bard_turn_start_32": {
+      "description": "Bard party voice line — turn start (variant 32)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_32.ogg",
+      "source_sha": "756db4953442a84c",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 545916820
+    },
+    "voice_bard_turn_start_33": {
+      "description": "Bard party voice line — turn start (variant 33)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_33.ogg",
+      "source_sha": "990abb271e7a0465",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1626720164
+    },
+    "voice_bard_turn_start_34": {
+      "description": "Bard party voice line — turn start (variant 34)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_34.ogg",
+      "source_sha": "c28ab7d5228d46b6",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1317518968
+    },
+    "voice_bard_turn_start_35": {
+      "description": "Bard party voice line — turn start (variant 35)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_35.ogg",
+      "source_sha": "613037c5ad456e09",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 462208116
+    },
+    "voice_bard_turn_start_36": {
+      "description": "Bard party voice line — turn start (variant 36)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_36.ogg",
+      "source_sha": "4d16c1cd6c16f256",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1479561185
+    },
+    "voice_bard_turn_start_37": {
+      "description": "Bard party voice line — turn start (variant 37)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_37.ogg",
+      "source_sha": "c6cc0f920cb42014",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2005664781
+    },
+    "voice_bard_turn_start_38": {
+      "description": "Bard party voice line — turn start (variant 38)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_38.ogg",
+      "source_sha": "8a01a08274f5c4be",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1607848883
+    },
+    "voice_bard_turn_start_39": {
+      "description": "Bard party voice line — turn start (variant 39)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_39.ogg",
+      "source_sha": "27be898115a8a7f5",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 981584158
+    },
+    "voice_bard_turn_start_40": {
+      "description": "Bard party voice line — turn start (variant 40)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_40.ogg",
+      "source_sha": "b25597b8c4983eed",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 706526054
+    },
+    "voice_bard_turn_start_41": {
+      "description": "Bard party voice line — turn start (variant 41)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_41.ogg",
+      "source_sha": "d4dc727ebc3639cd",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1343614758
+    },
+    "voice_bard_turn_start_42": {
+      "description": "Bard party voice line — turn start (variant 42)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_42.ogg",
+      "source_sha": "8b8a705686ef1a24",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 124985732
+    },
+    "voice_bard_turn_start_43": {
+      "description": "Bard party voice line — turn start (variant 43)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_43.ogg",
+      "source_sha": "db9744596c5c6ec4",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1991712032
+    },
+    "voice_bard_turn_start_44": {
+      "description": "Bard party voice line — turn start (variant 44)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_44.ogg",
+      "source_sha": "8a228c1e3c199e76",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1140451884
+    },
+    "voice_bard_turn_start_45": {
+      "description": "Bard party voice line — turn start (variant 45)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_45.ogg",
+      "source_sha": "c39f9183bcbb8ebc",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1499029024
+    },
+    "voice_bard_turn_start_46": {
+      "description": "Bard party voice line — turn start (variant 46)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_46.ogg",
+      "source_sha": "417deb7496b26f14",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1668299724
+    },
+    "voice_bard_turn_start_47": {
+      "description": "Bard party voice line — turn start (variant 47)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_47.ogg",
+      "source_sha": "b4f4f681b00f9de7",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 717786398
+    },
+    "voice_bard_turn_start_48": {
+      "description": "Bard party voice line — turn start (variant 48)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_48.ogg",
+      "source_sha": "844599e44c4f07b9",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1872726765
+    },
+    "voice_bard_turn_start_49": {
+      "description": "Bard party voice line — turn start (variant 49)",
+      "file": "assets/audio/sfx/voice_bard_turn_start_49.ogg",
+      "source_sha": "e0ed25ab7a92aae3",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1119939754
+    },
+    "voice_bard_low_hp_1": {
+      "description": "Bard party voice line — low hp (variant 1)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_1.ogg",
+      "source_sha": "47f9cdefcb678028",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 143236796
+    },
+    "voice_bard_low_hp_2": {
+      "description": "Bard party voice line — low hp (variant 2)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_2.ogg",
+      "source_sha": "e4ba625c6104f343",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1619306291
+    },
+    "voice_bard_low_hp_3": {
+      "description": "Bard party voice line — low hp (variant 3)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_3.ogg",
+      "source_sha": "53f870d46538290b",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 688385920
+    },
+    "voice_bard_low_hp_4": {
+      "description": "Bard party voice line — low hp (variant 4)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_4.ogg",
+      "source_sha": "bad11c2a9ccb6749",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1876043994
+    },
+    "voice_bard_low_hp_5": {
+      "description": "Bard party voice line — low hp (variant 5)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_5.ogg",
+      "source_sha": "4c118b8ce573dae5",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1898535110
+    },
+    "voice_bard_low_hp_6": {
+      "description": "Bard party voice line — low hp (variant 6)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_6.ogg",
+      "source_sha": "5e7ea6c030c1d5b9",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2019596181
+    },
+    "voice_bard_low_hp_7": {
+      "description": "Bard party voice line — low hp (variant 7)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_7.ogg",
+      "source_sha": "5149af10c7cc9712",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 569522970
+    },
+    "voice_bard_low_hp_8": {
+      "description": "Bard party voice line — low hp (variant 8)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_8.ogg",
+      "source_sha": "5457b2abd011e57e",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 276813759
+    },
+    "voice_bard_low_hp_9": {
+      "description": "Bard party voice line — low hp (variant 9)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_9.ogg",
+      "source_sha": "279e85975ebebb42",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1004592088
+    },
+    "voice_bard_low_hp_10": {
+      "description": "Bard party voice line — low hp (variant 10)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_10.ogg",
+      "source_sha": "7d3b3b4721d248ac",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 315227211
+    },
+    "voice_bard_low_hp_11": {
+      "description": "Bard party voice line — low hp (variant 11)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_11.ogg",
+      "source_sha": "c0e64b29f4639e05",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 995597480
+    },
+    "voice_bard_low_hp_12": {
+      "description": "Bard party voice line — low hp (variant 12)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_12.ogg",
+      "source_sha": "29bd3f62125989cc",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1760386291
+    },
+    "voice_bard_low_hp_13": {
+      "description": "Bard party voice line — low hp (variant 13)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_13.ogg",
+      "source_sha": "55ddcaf3405c71af",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 709306765
+    },
+    "voice_bard_low_hp_14": {
+      "description": "Bard party voice line — low hp (variant 14)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_14.ogg",
+      "source_sha": "a9bfaba11bb10890",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1286869825
+    },
+    "voice_bard_low_hp_15": {
+      "description": "Bard party voice line — low hp (variant 15)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_15.ogg",
+      "source_sha": "c8f35be398bbb606",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1810014382
+    },
+    "voice_bard_low_hp_16": {
+      "description": "Bard party voice line — low hp (variant 16)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_16.ogg",
+      "source_sha": "bff0dcd6c0fe014f",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1360691793
+    },
+    "voice_bard_low_hp_17": {
+      "description": "Bard party voice line — low hp (variant 17)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_17.ogg",
+      "source_sha": "eed269c41372e828",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2106106659
+    },
+    "voice_bard_low_hp_18": {
+      "description": "Bard party voice line — low hp (variant 18)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_18.ogg",
+      "source_sha": "0a1da9c64a5025ae",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1637545871
+    },
+    "voice_bard_low_hp_19": {
+      "description": "Bard party voice line — low hp (variant 19)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_19.ogg",
+      "source_sha": "055dd7bbf5524d4d",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 283380474
+    },
+    "voice_bard_low_hp_20": {
+      "description": "Bard party voice line — low hp (variant 20)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_20.ogg",
+      "source_sha": "1b9a172c50375963",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1404386088
+    },
+    "voice_bard_low_hp_21": {
+      "description": "Bard party voice line — low hp (variant 21)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_21.ogg",
+      "source_sha": "dc31d0b357beae45",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 653345733
+    },
+    "voice_bard_low_hp_22": {
+      "description": "Bard party voice line — low hp (variant 22)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_22.ogg",
+      "source_sha": "4c69af69f1dca203",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1261287264
+    },
+    "voice_bard_low_hp_23": {
+      "description": "Bard party voice line — low hp (variant 23)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_23.ogg",
+      "source_sha": "8115ab1e023f7e20",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2090302062
+    },
+    "voice_bard_low_hp_24": {
+      "description": "Bard party voice line — low hp (variant 24)",
+      "file": "assets/audio/sfx/voice_bard_low_hp_24.ogg",
+      "source_sha": "812d6ef8bf0ccf4f",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 8174606
+    },
+    "voice_bard_big_hit_taken_1": {
+      "description": "Bard party voice line — big hit taken (variant 1)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_1.ogg",
+      "source_sha": "103ab31597328736",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 811768527
+    },
+    "voice_bard_big_hit_taken_2": {
+      "description": "Bard party voice line — big hit taken (variant 2)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_2.ogg",
+      "source_sha": "4d33beb3eb7d4944",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1414241343
+    },
+    "voice_bard_big_hit_taken_3": {
+      "description": "Bard party voice line — big hit taken (variant 3)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_3.ogg",
+      "source_sha": "0c618ab5b15822a9",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1953978944
+    },
+    "voice_bard_big_hit_taken_4": {
+      "description": "Bard party voice line — big hit taken (variant 4)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_4.ogg",
+      "source_sha": "838f000ff5ec59ba",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1359921695
+    },
+    "voice_bard_big_hit_taken_5": {
+      "description": "Bard party voice line — big hit taken (variant 5)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_5.ogg",
+      "source_sha": "8e9ad09b99b17493",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1472198428
+    },
+    "voice_bard_big_hit_taken_6": {
+      "description": "Bard party voice line — big hit taken (variant 6)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_6.ogg",
+      "source_sha": "5c39f46601a75a9e",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 597991631
+    },
+    "voice_bard_big_hit_taken_7": {
+      "description": "Bard party voice line — big hit taken (variant 7)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_7.ogg",
+      "source_sha": "3b577eca2d98c9e0",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 199516012
+    },
+    "voice_bard_big_hit_taken_8": {
+      "description": "Bard party voice line — big hit taken (variant 8)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_8.ogg",
+      "source_sha": "e72e9d6a40b1ea96",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 4351193
+    },
+    "voice_bard_big_hit_taken_9": {
+      "description": "Bard party voice line — big hit taken (variant 9)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_9.ogg",
+      "source_sha": "9f00a0478ce65a42",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 677480435
+    },
+    "voice_bard_big_hit_taken_10": {
+      "description": "Bard party voice line — big hit taken (variant 10)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_10.ogg",
+      "source_sha": "9359794ae7c2d5a3",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1870468330
+    },
+    "voice_bard_big_hit_taken_11": {
+      "description": "Bard party voice line — big hit taken (variant 11)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_11.ogg",
+      "source_sha": "d8d848a4f0131d0e",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1023096416
+    },
+    "voice_bard_big_hit_taken_12": {
+      "description": "Bard party voice line — big hit taken (variant 12)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_12.ogg",
+      "source_sha": "f58badd9d5076be6",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1673143583
+    },
+    "voice_bard_big_hit_taken_13": {
+      "description": "Bard party voice line — big hit taken (variant 13)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_13.ogg",
+      "source_sha": "bbd68e056e4cdd6e",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 279706794
+    },
+    "voice_bard_big_hit_taken_14": {
+      "description": "Bard party voice line — big hit taken (variant 14)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_14.ogg",
+      "source_sha": "1c3f932023776c52",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1158323453
+    },
+    "voice_bard_big_hit_taken_15": {
+      "description": "Bard party voice line — big hit taken (variant 15)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_15.ogg",
+      "source_sha": "ed3c883634c19006",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 887477150
+    },
+    "voice_bard_big_hit_taken_16": {
+      "description": "Bard party voice line — big hit taken (variant 16)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_16.ogg",
+      "source_sha": "087febc4ef944209",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1332803228
+    },
+    "voice_bard_big_hit_taken_17": {
+      "description": "Bard party voice line — big hit taken (variant 17)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_17.ogg",
+      "source_sha": "389b9c85b571e44e",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 179497610
+    },
+    "voice_bard_big_hit_taken_18": {
+      "description": "Bard party voice line — big hit taken (variant 18)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_18.ogg",
+      "source_sha": "10064e38270a6e8b",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 921685215
+    },
+    "voice_bard_big_hit_taken_19": {
+      "description": "Bard party voice line — big hit taken (variant 19)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_19.ogg",
+      "source_sha": "9094b3f4a032a1c1",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 843861655
+    },
+    "voice_bard_big_hit_taken_20": {
+      "description": "Bard party voice line — big hit taken (variant 20)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_20.ogg",
+      "source_sha": "80b7d57231cc8abd",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 171923540
+    },
+    "voice_bard_big_hit_taken_21": {
+      "description": "Bard party voice line — big hit taken (variant 21)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_21.ogg",
+      "source_sha": "d5b3b16741ee2622",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1510096917
+    },
+    "voice_bard_big_hit_taken_22": {
+      "description": "Bard party voice line — big hit taken (variant 22)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_22.ogg",
+      "source_sha": "85f9b8676069fcd4",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1238743721
+    },
+    "voice_bard_big_hit_taken_23": {
+      "description": "Bard party voice line — big hit taken (variant 23)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_23.ogg",
+      "source_sha": "ec982a3dd642ae30",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1561339836
+    },
+    "voice_bard_big_hit_taken_24": {
+      "description": "Bard party voice line — big hit taken (variant 24)",
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken_24.ogg",
+      "source_sha": "d6883f57d1185041",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 566498738
+    },
+    "voice_bard_used_signature_ability_1": {
+      "description": "Bard party voice line — used signature ability (variant 1)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_1.ogg",
+      "source_sha": "40e04df686b2227d",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 884747913
+    },
+    "voice_bard_used_signature_ability_2": {
+      "description": "Bard party voice line — used signature ability (variant 2)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_2.ogg",
+      "source_sha": "d536992a83ca27ae",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 480465101
+    },
+    "voice_bard_used_signature_ability_3": {
+      "description": "Bard party voice line — used signature ability (variant 3)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_3.ogg",
+      "source_sha": "cfa49ab934fd5f5c",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 510475404
+    },
+    "voice_bard_used_signature_ability_4": {
+      "description": "Bard party voice line — used signature ability (variant 4)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_4.ogg",
+      "source_sha": "92b0cd35b68b8643",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1178572437
+    },
+    "voice_bard_used_signature_ability_5": {
+      "description": "Bard party voice line — used signature ability (variant 5)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_5.ogg",
+      "source_sha": "eb8814c727a00a49",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1851286016
+    },
+    "voice_bard_used_signature_ability_6": {
+      "description": "Bard party voice line — used signature ability (variant 6)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_6.ogg",
+      "source_sha": "69dd206a0db95b92",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 898609619
+    },
+    "voice_bard_used_signature_ability_7": {
+      "description": "Bard party voice line — used signature ability (variant 7)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_7.ogg",
+      "source_sha": "f1ae4ca1b602ff0e",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1945221375
+    },
+    "voice_bard_used_signature_ability_8": {
+      "description": "Bard party voice line — used signature ability (variant 8)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_8.ogg",
+      "source_sha": "06f323990d6ca31b",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 835440297
+    },
+    "voice_bard_used_signature_ability_9": {
+      "description": "Bard party voice line — used signature ability (variant 9)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_9.ogg",
+      "source_sha": "0c17bfadbee2bac4",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 244813561
+    },
+    "voice_bard_used_signature_ability_10": {
+      "description": "Bard party voice line — used signature ability (variant 10)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_10.ogg",
+      "source_sha": "28819cb5b9a83317",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 616567644
+    },
+    "voice_bard_used_signature_ability_11": {
+      "description": "Bard party voice line — used signature ability (variant 11)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_11.ogg",
+      "source_sha": "c63e41248437696e",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1209444019
+    },
+    "voice_bard_used_signature_ability_12": {
+      "description": "Bard party voice line — used signature ability (variant 12)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_12.ogg",
+      "source_sha": "91b1e05eef4c500a",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2034106059
+    },
+    "voice_bard_used_signature_ability_13": {
+      "description": "Bard party voice line — used signature ability (variant 13)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_13.ogg",
+      "source_sha": "59ce71acceb2b80d",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 976996812
+    },
+    "voice_bard_used_signature_ability_14": {
+      "description": "Bard party voice line — used signature ability (variant 14)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_14.ogg",
+      "source_sha": "a0b950eb6881afa3",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 100529315
+    },
+    "voice_bard_used_signature_ability_15": {
+      "description": "Bard party voice line — used signature ability (variant 15)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_15.ogg",
+      "source_sha": "8dacef85d179e965",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1760579884
+    },
+    "voice_bard_used_signature_ability_16": {
+      "description": "Bard party voice line — used signature ability (variant 16)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_16.ogg",
+      "source_sha": "6e5f7080d9a9b406",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 489516389
+    },
+    "voice_bard_used_signature_ability_17": {
+      "description": "Bard party voice line — used signature ability (variant 17)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_17.ogg",
+      "source_sha": "612818d7746b31cd",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 888857124
+    },
+    "voice_bard_used_signature_ability_18": {
+      "description": "Bard party voice line — used signature ability (variant 18)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_18.ogg",
+      "source_sha": "3b0d609cfedc3924",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1587215760
+    },
+    "voice_bard_used_signature_ability_19": {
+      "description": "Bard party voice line — used signature ability (variant 19)",
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability_19.ogg",
+      "source_sha": "d1f7c48bab7cd968",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1905700543
+    },
+    "voice_bard_victory_1": {
+      "description": "Bard party voice line — victory (variant 1)",
+      "file": "assets/audio/sfx/voice_bard_victory_1.ogg",
+      "source_sha": "2f7ae8198748b7a6",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1760080641
+    },
+    "voice_bard_victory_2": {
+      "description": "Bard party voice line — victory (variant 2)",
+      "file": "assets/audio/sfx/voice_bard_victory_2.ogg",
+      "source_sha": "92e8094474eeda62",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1355129025
+    },
+    "voice_bard_victory_3": {
+      "description": "Bard party voice line — victory (variant 3)",
+      "file": "assets/audio/sfx/voice_bard_victory_3.ogg",
+      "source_sha": "68ed17c6c67dc302",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1636558603
+    },
+    "voice_bard_victory_4": {
+      "description": "Bard party voice line — victory (variant 4)",
+      "file": "assets/audio/sfx/voice_bard_victory_4.ogg",
+      "source_sha": "5108b275cdd134aa",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 217630741
+    },
+    "voice_bard_victory_5": {
+      "description": "Bard party voice line — victory (variant 5)",
+      "file": "assets/audio/sfx/voice_bard_victory_5.ogg",
+      "source_sha": "cd0d910a09781ca6",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1954378343
+    },
+    "voice_bard_victory_6": {
+      "description": "Bard party voice line — victory (variant 6)",
+      "file": "assets/audio/sfx/voice_bard_victory_6.ogg",
+      "source_sha": "637bfa67f89b6dcc",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 520920229
+    },
+    "voice_bard_victory_7": {
+      "description": "Bard party voice line — victory (variant 7)",
+      "file": "assets/audio/sfx/voice_bard_victory_7.ogg",
+      "source_sha": "69f470ff87168018",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2046443380
+    },
+    "voice_bard_victory_8": {
+      "description": "Bard party voice line — victory (variant 8)",
+      "file": "assets/audio/sfx/voice_bard_victory_8.ogg",
+      "source_sha": "23c1e000273b2962",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2002802601
+    },
+    "voice_bard_victory_9": {
+      "description": "Bard party voice line — victory (variant 9)",
+      "file": "assets/audio/sfx/voice_bard_victory_9.ogg",
+      "source_sha": "938301656f3fb2cb",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 20043885
+    },
+    "voice_bard_victory_10": {
+      "description": "Bard party voice line — victory (variant 10)",
+      "file": "assets/audio/sfx/voice_bard_victory_10.ogg",
+      "source_sha": "886e056203b80be3",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1414563459
+    },
+    "voice_bard_victory_11": {
+      "description": "Bard party voice line — victory (variant 11)",
+      "file": "assets/audio/sfx/voice_bard_victory_11.ogg",
+      "source_sha": "f1faad1981c65d64",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 62228239
+    },
+    "voice_bard_victory_12": {
+      "description": "Bard party voice line — victory (variant 12)",
+      "file": "assets/audio/sfx/voice_bard_victory_12.ogg",
+      "source_sha": "17062b29f5592851",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 920593756
+    },
+    "voice_bard_victory_13": {
+      "description": "Bard party voice line — victory (variant 13)",
+      "file": "assets/audio/sfx/voice_bard_victory_13.ogg",
+      "source_sha": "2804150929059840",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1155195345
+    },
+    "voice_bard_victory_14": {
+      "description": "Bard party voice line — victory (variant 14)",
+      "file": "assets/audio/sfx/voice_bard_victory_14.ogg",
+      "source_sha": "a4a79482724842fc",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1809345536
+    },
+    "voice_bard_victory_15": {
+      "description": "Bard party voice line — victory (variant 15)",
+      "file": "assets/audio/sfx/voice_bard_victory_15.ogg",
+      "source_sha": "06959d15f74baae1",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1161871098
+    },
+    "voice_bard_victory_16": {
+      "description": "Bard party voice line — victory (variant 16)",
+      "file": "assets/audio/sfx/voice_bard_victory_16.ogg",
+      "source_sha": "afc7c97d1ddb453a",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1184593868
+    },
+    "voice_bard_victory_17": {
+      "description": "Bard party voice line — victory (variant 17)",
+      "file": "assets/audio/sfx/voice_bard_victory_17.ogg",
+      "source_sha": "f2b0366987c07b1e",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1057900918
+    },
+    "voice_bard_victory_18": {
+      "description": "Bard party voice line — victory (variant 18)",
+      "file": "assets/audio/sfx/voice_bard_victory_18.ogg",
+      "source_sha": "0fb9137ee45eb951",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 2105047947
+    },
+    "voice_bard_victory_19": {
+      "description": "Bard party voice line — victory (variant 19)",
+      "file": "assets/audio/sfx/voice_bard_victory_19.ogg",
+      "source_sha": "83867eaecbb8ab8f",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1994503538
+    },
+    "voice_bard_victory_20": {
+      "description": "Bard party voice line — victory (variant 20)",
+      "file": "assets/audio/sfx/voice_bard_victory_20.ogg",
+      "source_sha": "411c8e23f3eea8cc",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 824682169
+    },
+    "voice_bard_victory_21": {
+      "description": "Bard party voice line — victory (variant 21)",
+      "file": "assets/audio/sfx/voice_bard_victory_21.ogg",
+      "source_sha": "d140965a308e10b9",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 285051440
+    },
+    "voice_bard_victory_22": {
+      "description": "Bard party voice line — victory (variant 22)",
+      "file": "assets/audio/sfx/voice_bard_victory_22.ogg",
+      "source_sha": "7e48d102b7783cea",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1973689298
+    },
+    "voice_bard_victory_23": {
+      "description": "Bard party voice line — victory (variant 23)",
+      "file": "assets/audio/sfx/voice_bard_victory_23.ogg",
+      "source_sha": "4ff93143efbf5ca3",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 1992958964
+    },
+    "voice_bard_victory_24": {
+      "description": "Bard party voice line — victory (variant 24)",
+      "file": "assets/audio/sfx/voice_bard_victory_24.ogg",
+      "source_sha": "8697ae807f4f422e",
+      "voice": "Chatterbox clone of LibriTTS-R speakers 3575 (+2.5 st) + 4507 blend (CC BY 4.0), voice_refs/bard.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
+      "seed": 538260475
     }
   }
 }
