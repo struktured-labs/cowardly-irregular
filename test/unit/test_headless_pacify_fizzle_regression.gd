@@ -48,7 +48,7 @@ func test_a_pacified_basic_attack_deals_nothing_and_keeps_the_status() -> void:
 	for _i in 12:
 		assert_eq(_res._resolve_attack(attacker, target), 0, "a pacified swing must fizzle")
 	assert_eq(target.current_hp, hp_before, "twelve pacified swings must not chip the target")
-	assert_true(attacker.has_status("pacify"), "fizzling must not consume pacify — duration ticks it off")
+	assert_true(attacker.has_status("pacify"), "the inner swing must not spend pacify — the turn's action clock does, and this call is not a turn")
 
 
 func test_an_unpacified_swing_still_lands() -> void:
