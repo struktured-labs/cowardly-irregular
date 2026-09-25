@@ -58,9 +58,11 @@ static func entry_for_choice(entries: Array, label: String) -> Dictionary:
 	return entries[i] if i >= 0 and i < entries.size() else {}
 
 
-## The entries offered to the LLM: shuffled, minus the line spoken last time while two or more remain.
-static func choice_pool(entries: Array, last_index: int) -> Array:
-	var pool: Array = entries.filter(func(e): return int(e["index"]) != last_index)
+## Offered to the LLM: shuffled, minus the last half-pool of lines spoken (`recent` oldest first), so a model's favourite cannot return every other turn.
+static func choice_pool(entries: Array, recent: Array) -> Array:
+	var window: int = mini(floori(entries.size() / 2.0), recent.size())
+	var excluded: Array = recent.slice(recent.size() - window)
+	var pool: Array = entries.filter(func(e): return not (int(e["index"]) in excluded))
 	if pool.is_empty():
 		pool = entries.duplicate()
 	pool.shuffle()

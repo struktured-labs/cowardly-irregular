@@ -9039,8 +9039,6 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	var job_id: String = _resolve_party_job_id(combatant)
 	## Built first: tag eligibility needs it on every branch, LLM off included.
 	var ctx := _build_party_line_context(combatant, event_kind, event_data)
-	## Read before pick_trigger_voice, which overwrites it with the fallback's index.
-	var last_spoken: int = pp.last_spoken_index(job_id, event_kind) if pp != null and pp.has_method("last_spoken_index") else -1
 	var fallback: String = ""
 	var fallback_key: String = event_kind
 	if pp != null and pp.has_method("pick_trigger_voice"):
@@ -9086,7 +9084,7 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 		return
 
 	## Authored lines exist: the LLM chooses among the eligible ones, so the line stays voiced.
-	var options: Array = VoiceLines.choice_pool(pp.eligible_trigger_entries(job_id, event_kind, ctx), last_spoken) if pp != null and pp.has_method("eligible_trigger_entries") else []
+	var options: Array = VoiceLines.choice_pool(pp.eligible_trigger_entries(job_id, event_kind, ctx), pp.recent_spoken(job_id, event_kind)) if pp != null and pp.has_method("eligible_trigger_entries") else []
 	if not options.is_empty():
 		var labels: Array[String] = VoiceLines.choice_labels(options.size())
 		var fb_label: String = "1"

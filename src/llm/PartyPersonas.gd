@@ -100,14 +100,23 @@ func pick_trigger_voice(job_id: String, event_kind: String, ctx: PartyCombatLine
 	return {"line": str(e["line"]), "voice_key": VoiceLines.variant_key(event_kind, int(e["index"]))}
 
 
-## The ORIGINAL index spoken last for this job + trigger, or -1.
-func last_spoken_index(job_id: String, event_kind: String) -> int:
-	return int(_last_variant.get(job_id + "|" + event_kind, -1))
+const RECENT_SPOKEN_CAP := 32
+var _recent_spoken: Dictionary = {}
+
+## The ORIGINAL indices the LLM path spoke for this job + trigger, oldest first.
+func recent_spoken(job_id: String, event_kind: String) -> Array:
+	return (_recent_spoken.get(job_id + "|" + event_kind, []) as Array).duplicate()
 
 
 ## Records the line actually spoken, so the no-repeat memory follows the LLM's pick and not the fallback it replaced.
 func mark_spoken(job_id: String, event_kind: String, index: int) -> void:
-	_last_variant[job_id + "|" + event_kind] = index
+	var key: String = job_id + "|" + event_kind
+	_last_variant[key] = index
+	var r: Array = _recent_spoken.get(key, [])
+	r.append(index)
+	if r.size() > RECENT_SPOKEN_CAP:
+		r.pop_front()
+	_recent_spoken[key] = r
 
 
 ## One entry at random, avoiding the ORIGINAL index spoken last time for this key.

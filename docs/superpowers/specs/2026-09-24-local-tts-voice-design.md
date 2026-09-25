@@ -244,10 +244,12 @@ For a speaker + trigger + `PartyCombatLineContext`:
    own synthesized audio and has no list index.
 4. **LLM on** → `LLMService.choose(prompt, eligible_texts, fallback, {"cache": false})` (its
    first production caller). `choose` already guarantees the result is one of the options.
-   The options are **shuffled per call** and **exclude the line spoken last** (while 2+
-   remain), and the pick is recorded as spoken. Measured on llama3 before this: every
-   trigger said ONE line 50/50 times — `choose` cached the prompt for 5 minutes, and the
-   model picked option 1 30/30 even uncached.
+   The options are **shuffled per call** and **exclude the lines spoken in the last
+   half-pool turns** (`VoiceLines.choice_pool`), and the pick is recorded as spoken. Measured
+   on llama3, 50 turns: as first shipped, every trigger said ONE line 50/50 times (`choose`
+   cached the prompt for 5 minutes, and the model picked option 1 30/30 even uncached);
+   excluding only the last line still let the model's favourite play 25/50, every other
+   turn; with the half-pool window, the most frequent line is 8/50 (Fighter, 10 lines).
 5. **LLM off** → random among eligible, no immediate repeat.
 6. For steps 4–5 the chosen index `n` maps to clip `voice_<speaker>_<trigger>_<n>`.
 
