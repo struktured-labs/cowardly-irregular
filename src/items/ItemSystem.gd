@@ -436,13 +436,9 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 				BattleManager.battle_log_message.emit("  → [color=white]%s[/color] is cured of [color=cyan]%s[/color]!" % [target.combatant_name, status])
 			print("  → %s cured of %s" % [target.combatant_name, status])
 
-	# Cure all status effects
-	# Clear both arrays to avoid stale status_durations entries that would
-	# tick down indefinitely without ever being removed (remove_status()
-	# short-circuits when the status isn't in status_effects).
+	# Cure every ailment. Permadeath is not one — the battle-start helper keeps that marker, so a Remedy cannot unwrite it and let a later Raise land.
 	if effects.has("cure_all_status") and effects["cure_all_status"]:
-		target.status_effects.clear()
-		target.status_durations.clear()
+		target.clear_transient_statuses()
 		if BattleManager:
 			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] is cured of [color=cyan]all status effects[/color]!" % target.combatant_name)
 		print("  → %s cured of all status effects" % target.combatant_name)
@@ -654,8 +650,12 @@ func ineffective_use_reason(item_id: String, targets: Array, in_battle: bool = f
 				missing_hp = true
 			if t.current_mp < t.max_mp:
 				missing_mp = true
-		if cures_all and t.status_effects.size() > 0:
-			has_ailment = true
+		# The permadeath marker is not an ailment this tonic can lift. Counting it would spend a Remedy on a no-op, or — before the clear spared it — on a revive loophole.
+		if cures_all:
+			for status_id in t.status_effects:
+				if str(status_id) != "permakilled":
+					has_ailment = true
+					break
 		elif cures_listed:
 			for status_id in cure_list:
 				if t.has_status(str(status_id)):
