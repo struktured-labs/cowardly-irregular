@@ -248,6 +248,8 @@ func equip_lens(char_id: String, axis: String) -> bool:
 		lens_unequipped.emit(char_id, displaced)
 	GameState.lens_assignments[char_id] = axis
 	lens_equipped.emit(char_id, axis)
+	_refresh_holder_stats(previous)
+	_refresh_holder_stats(char_id)
 	return true
 
 
@@ -257,7 +259,22 @@ func unequip_lens(char_id: String) -> bool:
 	var axis := get_equipped(char_id)
 	GameState.lens_assignments.erase(char_id)
 	lens_unequipped.emit(char_id, axis)
+	_refresh_holder_stats(char_id)
 	return true
+
+
+## Defense, max HP, and attack are baked in recalculate_stats. The assignment alone left them stale until an unrelated recalc.
+func _refresh_holder_stats(char_id: String) -> void:
+	if char_id == "":
+		return
+	for member in _party():
+		if member == null or not is_instance_valid(member) or not (member is Node):
+			continue
+		if not member.is_inside_tree() or not member.has_method("recalculate_stats"):
+			continue
+		if str(member.combatant_name).to_lower().replace(" ", "_") != char_id:
+			continue
+		member.recalculate_stats()
 
 
 # ── Effects ─────────────────────────────────────────────────────────
