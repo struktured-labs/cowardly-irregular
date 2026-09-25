@@ -3705,6 +3705,8 @@ func _execute_next_action() -> void:
 			battle_log_message.emit("[color=yellow]%s[/color] broke free from charm!" % combatant.combatant_name)
 		else:
 			battle_log_message.emit("[color=yellow]%s[/color] is [color=pink]charmed[/color] and won't act!" % combatant.combatant_name)
+			# Duration is spent HERE, not at round start. Puppy Eyes is 1 turn and lands after the party has acted, so the old round-start tick erased it before this skip.
+			combatant.spend_action_clock("charm")
 			action_executing.emit(combatant, {"type": "charm_skip"})
 			_execute_next_action()
 			return

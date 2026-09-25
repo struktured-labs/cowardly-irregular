@@ -704,6 +704,17 @@ func has_status(status: String) -> bool:
 	return status in status_effects
 
 
+## One point of a status whose clock is the action it stops. Charm uses this; stun inlines the same arithmetic.
+func spend_action_clock(status: String) -> void:
+	if not has_status(status):
+		return
+	var remaining: int = int(status_durations.get(status, 1))
+	if remaining <= 1:
+		remove_status(status)
+	else:
+		status_durations[status] = remaining - 1
+
+
 ## Tick 439: sum a passive meta_effect across equipped_passives.
 ## Used by take_damage's death_resistance check (death_resist_chance
 ## meta_effect) but designed generically so future passive
@@ -944,10 +955,10 @@ func update_buff_durations() -> void:
 		if current_hp <= 0:
 			die()
 
-	# Tick down status effect durations. Stun is excluded: the skip consumer spends one point per skipped action.
+	# Tick down status effect durations. Stun and charm are excluded: the skip spends one point, and this tick runs BEFORE the next action — a 1-turn charm (Puppy Eyes) was gone before it could stop anyone.
 	var expired_statuses: Array[String] = []
 	for status in status_durations:
-		if status == "stun":
+		if status == "stun" or status == "charm":
 			continue
 		if status_durations[status] > 0:  # -1 = permanent
 			status_durations[status] -= 1
