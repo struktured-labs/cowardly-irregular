@@ -2505,19 +2505,20 @@ func _full_render_storm(color: Color, to: Vector2, power: float) -> void:
 	var core_w: float = 7.0 * clampf(power, 1.0, 1.8)
 	var vp: Vector2 = get_viewport_rect().size
 
-	## The sky drops first so the bolts land on a dark stage rather than a lit one.
-	var sky := ColorRect.new()
-	sky.color = Color(0.05, 0.06, 0.14, 0.0)
-	sky.anchors_preset = Control.PRESET_FULL_RECT
-	sky.size = vp
-	sky.z_index = 3
-	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(sky)
-	var skt := create_tween()
-	skt.tween_property(sky, "color:a", 0.55, 0.10)
-	skt.tween_interval(0.10 + 0.09 * strikes)
-	skt.tween_property(sky, "color:a", 0.0, 0.22)
-	skt.tween_callback(sky.queue_free)
+	## Dark sky so the bolts read. It is a full-screen pulse, so Reduce Flashes skips it; bolts still strike.
+	if not _flashes_suppressed():
+		var sky := ColorRect.new()
+		sky.color = Color(0.05, 0.06, 0.14, 0.0)
+		sky.anchors_preset = Control.PRESET_FULL_RECT
+		sky.size = vp
+		sky.z_index = 3
+		sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(sky)
+		var skt := create_tween()
+		skt.tween_property(sky, "color:a", 0.55, 0.10)
+		skt.tween_interval(0.10 + 0.09 * strikes)
+		skt.tween_property(sky, "color:a", 0.0, 0.22)
+		skt.tween_callback(sky.queue_free)
 
 	for s in range(strikes):
 		var delay: float = 0.06 + s * 0.09
@@ -3246,6 +3247,8 @@ func _on_battle_ended(victory: bool) -> void:
 			else:
 				SoundManager.play_music("victory")
 			_show_victory_results()
+	elif _lost_battle_is_escape():
+		log_message("\n[color=%s]=== ESCAPED ===[/color]" % AccessibilityPalette.bonus_bbcode())
 	else:
 		# Tick 239: penalty BBCode (defeat header).
 		log_message("\n[color=%s]=== DEFEAT ===[/color]" % AccessibilityPalette.penalty_bbcode())
@@ -3265,6 +3268,11 @@ func _on_battle_ended(victory: bool) -> void:
 	_update_ui()
 	_battle_ended = true
 	_battle_victory = victory
+
+
+## Flee and Smoke Bomb end through end_battle(false) like a wipe; any PC still standing makes it an escape, the same rule GameLoop routes by.
+func _lost_battle_is_escape() -> bool:
+	return party_members.any(func(m): return is_instance_valid(m) and m.is_alive)
 
 
 func _process(delta: float) -> void:
@@ -5151,7 +5159,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	# real state. With no menu, this ran, and the keyboard did the opposite of the bar.
 	#
 	# Now on the ACTIONS, so a pad's L/R and L2/R2 reach them too and a Controls rebind follows.
+	# The tail of an L2/R2 pull reaches here once defer has closed the menu; sharing Win98Menu's static latch makes one pull one press.
+	if event.is_action_released("battle_defer"):
+		Win98Menu._defer_axis_held = false
+	if event.is_action_released("battle_advance"):
+		Win98Menu._advance_axis_held = false
 	if is_player_selecting and current and event.is_action_pressed("battle_defer") and not event.is_echo():
+		if not _claim_shoulder("battle_defer"):
+			get_viewport().set_input_as_handled()
+			return
 		_close_win98_menu()
 		## Tick 174: defer log emit moved into BattleManager.player_defer so every caller path gets
 		## it once. Don't re-emit here.
@@ -5162,6 +5178,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Advance queues through the menu, so reopen it rather than printing an instruction. Pressing
 	# the Advance control and being told to press the Advance control is the shape he reported.
 	if is_player_selecting and current and event.is_action_pressed("battle_advance") and not event.is_echo():
+		if not _claim_shoulder("battle_advance"):
+			get_viewport().set_input_as_handled()
+			return
 		if use_win98_menus and (not active_win98_menu or not is_instance_valid(active_win98_menu)):
 			_show_win98_command_menu(current)
 		get_viewport().set_input_as_handled()
@@ -5179,6 +5198,18 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _show_win98_command_menu(combatant: Combatant) -> void:
 	_command_menu.show_win98_command_menu(combatant)
+
+
+## One L2/R2 pull is one press across every battle handler: Win98Menu's static latch is the only latch. False = this event is the tail of a pull already acted on.
+static func _claim_shoulder(action: String) -> bool:
+	var held: bool = Win98Menu._defer_axis_held if action == "battle_defer" else Win98Menu._advance_axis_held
+	if held and Input.is_action_pressed(action):
+		return false
+	if action == "battle_defer":
+		Win98Menu._defer_axis_held = true
+	else:
+		Win98Menu._advance_axis_held = true
+	return true
 
 
 func _close_win98_menu() -> void:
@@ -5728,17 +5759,16 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	flash_container.modulate.a = VICTORY_BANNER_ALPHA
 	add_child(flash_container)
 
-	# Screen flash effect (brief white overlay)
-	var flash_bg = ColorRect.new()
-	flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	flash_bg.color = Color(1.0, 1.0, 0.8, 0.6)
-	flash_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash_container.add_child(flash_bg)
-
-	# Flash out quickly
-	var flash_tween = create_tween()
-	flash_tween.tween_property(flash_bg, "color:a", 0.0, 0.4)
-	flash_tween.tween_callback(func(): flash_bg.queue_free())
+	# Pale-yellow full-screen flash. Reduce Flashes skips the overlay; the banner still plays.
+	if not _flashes_suppressed():
+		var flash_bg = ColorRect.new()
+		flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		flash_bg.color = Color(1.0, 1.0, 0.8, 0.6)
+		flash_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		flash_container.add_child(flash_bg)
+		var flash_tween = create_tween()
+		flash_tween.tween_property(flash_bg, "color:a", 0.0, 0.4)
+		flash_tween.tween_callback(func(): flash_bg.queue_free())
 
 	# "ONE-SHOT!" text label
 	var one_shot_label = Label.new()
@@ -5843,8 +5873,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	flash_container.modulate.a = VICTORY_BANNER_ALPHA
 	add_child(flash_container)
 
-	# Screen flash effect (cyan tint) — skip if one-shot already flashing
-	if not has_one_shot:
+	# Cyan full-screen flash. Skip when one-shot is already flashing, or Reduce Flashes is on.
+	if not has_one_shot and not _flashes_suppressed():
 		var flash_bg = ColorRect.new()
 		flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		flash_bg.color = Color(0.4, 0.8, 1.0, 0.5)

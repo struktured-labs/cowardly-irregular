@@ -6266,17 +6266,17 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 			if member.is_alive and member.current_mp < member.max_mp * 0.5:
 				_autogrind_restore_mp(member)
 
-	# Track per-character EXP distribution
+	# Track per-character EXP distribution (same earner set as the headless path)
 	if victory and exp_gained > 0:
-		var alive_count = 0
+		## KO'd mourners earn; a living-only divisor skips them and inflates everyone else's share.
+		var earners: Array = []
 		for member in party:
-			if member is Combatant and member.is_alive:
-				alive_count += 1
-		if alive_count > 0:
-			var per_char_exp = exp_gained / alive_count
-			for member in party:
-				if member is Combatant and member.is_alive:
-					AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
+			if member is Combatant and (member.is_alive or BattleManager.earns_exp_while_dead(member)):
+				earners.append(member)
+		if earners.size() > 0:
+			var per_char_exp = exp_gained / earners.size()
+			for member in earners:
+				AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
 
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
