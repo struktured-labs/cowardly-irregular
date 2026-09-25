@@ -955,7 +955,8 @@ func end_battle(victory: bool) -> void:
 				# formula where reward_multiplier IS applied.
 				total_gold += int(gold * one_shot_gold_bonus * reward_multiplier * gold_multiplier)
 		if total_gold > 0 and not defer_payout:
-			GameState.add_gold(total_gold)
+			# total_gold already includes gold_multiplier; add_gold would apply the dial again.
+			GameState.party_gold += total_gold
 			print("Party earned %d gold!" % total_gold)
 
 		# Roll item drops from defeated enemies' drop tables.
@@ -9039,10 +9040,12 @@ static func _party_line_wants_llm(llm_dialogue_on: bool, voice_test: bool) -> bo
 func _run_party_line_async(combatant: Combatant, event_kind: String, event_data: Dictionary) -> void:
 	var pp = get_node_or_null("/root/PartyPersonas")
 	var job_id: String = _resolve_party_job_id(combatant)
+	## Built first: tag eligibility needs it on every branch, LLM off included.
+	var ctx := _build_party_line_context(combatant, event_kind, event_data)
 	var fallback: String = ""
 	var fallback_key: String = event_kind
 	if pp != null and pp.has_method("pick_trigger_voice"):
-		var picked: Dictionary = pp.pick_trigger_voice(job_id, event_kind)
+		var picked: Dictionary = pp.pick_trigger_voice(job_id, event_kind, ctx)
 		fallback = str(picked.get("line", ""))
 		fallback_key = str(picked.get("voice_key", event_kind))
 	elif pp != null and pp.has_method("get_trigger_voice"):
@@ -9069,7 +9072,6 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
-	var ctx := _build_party_line_context(combatant, event_kind, event_data)
 	if ctx == null:
 		if not fallback.is_empty():
 			_emit_party_line(combatant, fallback, fallback_key)
@@ -9082,6 +9084,25 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	if persona.is_empty():
 		if not fallback.is_empty():
 			_emit_party_line(combatant, fallback, fallback_key)
+		return
+
+	## Authored lines exist: the LLM chooses among the eligible ones, so the line stays voiced.
+	var options: Array = VoiceLines.choice_pool(pp.eligible_trigger_entries(job_id, event_kind, ctx), pp.recent_spoken(job_id, event_kind)) if pp != null and pp.has_method("eligible_trigger_entries") else []
+	if not options.is_empty():
+		var labels: Array[String] = VoiceLines.choice_labels(options.size())
+		var fb_label: String = "1"
+		for i in options.size():
+			if VoiceLines.variant_key(event_kind, int(options[i]["index"])) == fallback_key:
+				fb_label = labels[i]
+		var choice_prompt: String = DialoguePrompts.build_party_line_choice(persona, sig, ctx.to_dict(), options.map(func(e): return e["line"]))
+		var label: String = await llm.choose(choice_prompt, labels, fb_label, {"cache": false})
+		if not is_instance_valid(combatant) or not combatant.is_alive:
+			return
+		var chosen: Dictionary = VoiceLines.entry_for_choice(options, label)
+		if chosen.is_empty():
+			chosen = VoiceLines.entry_for_choice(options, fb_label)
+		pp.mark_spoken(job_id, event_kind, int(chosen["index"]))
+		_emit_party_line(combatant, str(chosen["line"]), VoiceLines.variant_key(event_kind, int(chosen["index"])))
 		return
 
 	var DialoguePromptsScript = load("res://src/llm/DialoguePrompts.gd")

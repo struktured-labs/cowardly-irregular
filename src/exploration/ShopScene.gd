@@ -441,7 +441,7 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 	if game_state.spend_gold(cost):
 		var added: bool = _add_item_to_inventory(item_id)
 		if not added:
-			game_state.add_gold(cost)  # Refund the failed transaction.
+			_credit_exact_gold(cost)  # Refund the coins spend_gold took. add_gold would scale them by the drop-rate dial.
 			SoundManager.play_ui("menu_error")
 			_update_gold_display()
 			description_label.text = "No party to receive item — gold refunded."
@@ -472,6 +472,13 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 		_open_buy_menu()
 
 
+## Sticker gold. Drops, quest rewards and chests go through add_gold, which multiplies by the drop-rate dial. A shop price is the number already on screen.
+func _credit_exact_gold(amount: int) -> void:
+	if amount <= 0 or game_state == null or not ("party_gold" in game_state):
+		return
+	game_state.party_gold += amount
+
+
 func _attempt_sell(item_id: String, item_data: Dictionary) -> void:
 	"""Attempt to sell an item"""
 	# Defense-in-depth: even if a META/0-cost row leaks into the menu, refuse the sale (permanent quest-item loss)
@@ -489,8 +496,8 @@ func _attempt_sell(item_id: String, item_data: Dictionary) -> void:
 		description_label.text = "You don't have that item!"
 		return
 
-	# Sell successful
-	game_state.add_gold(sell_price)
+	# Sell successful. The line on screen is the sticker; add_gold would pay that times gold_multiplier.
+	_credit_exact_gold(sell_price)
 	SoundManager.play_ui("menu_select")
 	_update_gold_display()
 

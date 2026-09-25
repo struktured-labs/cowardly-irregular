@@ -652,13 +652,7 @@ func setup(title: String, items: Array, pos: Vector2, character_class: String = 
 	menu_title = title
 	menu_items = items
 	anchor_position = pos
-	selected_index = 0
-	# Don't open with the cursor resting on a leading disabled row (skip-disabled).
-	# Bounded scan; if every item is disabled, fall back to index 0.
-	for i in range(menu_items.size()):
-		if not menu_items[i].get("disabled", false):
-			selected_index = i
-			break
+	selected_index = _opening_index()
 
 	# Tick 293: now covers all 14 jobs; fighter remains the
 	# defensive default for unknown / modded job ids.
@@ -669,6 +663,22 @@ func setup(title: String, items: Array, pos: Vector2, character_class: String = 
 
 	if is_inside_tree():
 		_build_menu()
+
+
+## Opening cursor: first enabled row that is a real use. A leading full-HP potion target is skipped when a later ally can still be helped; an all-no-op list stays on the first enabled row so confirm can say why.
+func _opening_index() -> int:
+	var fallback := 0
+	var have_fallback := false
+	for i in range(menu_items.size()):
+		var item: Dictionary = menu_items[i]
+		if bool(item.get("disabled", false)):
+			continue
+		if not have_fallback:
+			fallback = i
+			have_fallback = true
+		if str(item.get("reject_reason", "")) == "":
+			return i
+	return fallback
 
 
 func _row_label_font_size() -> int:

@@ -28,7 +28,7 @@ func _init() -> void:
 	# boss — skipping the W3 narrative closer entirely.
 	defeat_cutscene_flags = ["cutscene_flag_tempo_steampunk_defeated"]
 	total_floors = 4
-	overworld_exit_spawn = "plaza"
+	overworld_exit_spawn = "from_mechanism"
 	overworld_exit_map = "steampunk_overworld"
 	unlock_story_flag = "w3_dungeon_cleared"
 

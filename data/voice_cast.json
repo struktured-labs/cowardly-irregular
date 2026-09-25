@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "_comment": "Speaker id -> voice name the TTS server knows (its predefined voices dir). Bump rev on any change to a voice's reference or tuning: the live-voice cache key includes it. Only speakers cast on the free engine are listed; fighter/cleric/mage are not cast yet. References + attribution: voice_refs/.",
+  "voices": {
+    "rogue": {"voice": "rogue.wav", "rev": 1},
+    "bard": {"voice": "bard.wav", "rev": 1}
+  }
+}

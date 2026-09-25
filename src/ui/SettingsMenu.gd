@@ -110,6 +110,7 @@ var _boss_submenu_open: bool = false
 var _teleport_submenu_open: bool = false
 var _rebalance_review_open: bool = false  ## tick 49
 var _byok_config_open: bool = false  ## tick 50
+var _live_voice_config_open: bool = false
 var _rebalance_history_open: bool = false  ## tick 54
 ## When true, hides the "Quit to Title" action (we're already on the title screen)
 var from_title: bool = false
@@ -669,6 +670,11 @@ func _build_ui() -> void:
 			"Configure BYOK",
 			"URL + model + API key for a custom LLM backend",
 			"byok_config")
+	if not OS.has_feature("web"):
+		add_action.call(
+			"Configure Live Voice",
+			"A local speech server voices lines the game writes (desktop)",
+			"live_voice_config")
 	# tick 54: Rebalance History — shown only when there's something
 	# in the applied[] log. Read-only diegetic surface.
 	var history_count: int = _get_rebalance_applied_count()
@@ -1139,7 +1145,7 @@ func _process(delta: float) -> void:
 	if not visible or is_queued_for_deletion() \
 			or get_node_or_null("QuitConfirmDialog") != null \
 			or _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open \
-			or _teleport_submenu_open or _rebalance_review_open or _byok_config_open \
+			or _teleport_submenu_open or _rebalance_review_open or _byok_config_open or _live_voice_config_open \
 			or _rebalance_history_open:
 		_nav_repeat.reset()
 		return
@@ -1156,7 +1162,7 @@ func _input(event: InputEvent) -> void:
 	if confirm_dialog and confirm_dialog.has_meta("_input_func"):
 		confirm_dialog.get_meta("_input_func").call(event)
 		return
-	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open or _teleport_submenu_open or _rebalance_review_open or _byok_config_open or _rebalance_history_open:
+	if _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open or _teleport_submenu_open or _rebalance_review_open or _byok_config_open or _live_voice_config_open or _rebalance_history_open:
 		# Failsafe: if any submenu flag is set but NO actual submenu child
 		# exists in the tree, the flag is stale (script load failed, signal
 		# never fired, dialog freed by a different path). Reset all flags
@@ -1705,6 +1711,8 @@ func _activate_setting() -> void:
 			_test_llm_connection()
 		elif item["id"] == "byok_config":
 			_open_byok_config()
+		elif item["id"] == "live_voice_config":
+			_open_live_voice_config()
 		elif item["id"] == "rebalance_history":
 			_open_rebalance_history()
 		elif item["id"] == "quit_to_title":
@@ -1787,6 +1795,26 @@ func _open_byok_config() -> void:
 
 func _on_byok_config_closed() -> void:
 	_byok_config_open = false
+
+
+func _open_live_voice_config() -> void:
+	if OS.has_feature("web"):
+		return
+	_live_voice_config_open = true
+	var PanelScript = load("res://src/ui/LiveVoicePanel.gd")
+	if not PanelScript:
+		_live_voice_config_open = false
+		return
+	var panel = PanelScript.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.closed.connect(_on_live_voice_config_closed)
+	add_child(panel)
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
+
+
+func _on_live_voice_config_closed() -> void:
+	_live_voice_config_open = false
 
 
 ## tick 49: open the rebalance review panel. Reads pending NEEDS_REVIEW
@@ -1989,6 +2017,7 @@ func _has_live_submenu_child() -> bool:
 				or path.ends_with("TeleportMenu.gd") \
 				or path.ends_with("RebalanceHistoryPanel.gd") \
 				or path.ends_with("BYOKConfigPanel.gd") \
+				or path.ends_with("LiveVoicePanel.gd") \
 				or path.ends_with("RebalanceReviewPanel.gd"):
 			return true
 	if get_node_or_null("QuitConfirmDialog") != null:
@@ -2007,6 +2036,7 @@ func _reset_submenu_flags() -> void:
 	_teleport_submenu_open = false
 	_rebalance_review_open = false
 	_byok_config_open = false
+	_live_voice_config_open = false
 	_rebalance_history_open = false
 
 

@@ -71,7 +71,7 @@ func test_all_three_beats_fire_on_the_success_path_only() -> void:
 
 	# The refund guard returns early ABOVE all of these. If any beat ever
 	# migrates above that return, a failed purchase would celebrate.
-	var refund_pos := body.find("game_state.add_gold(cost)")
+	var refund_pos := body.find("_credit_exact_gold(cost)")
 	assert_gt(refund_pos, 0, "refund path still present (atomicity guard from tick 257)")
 	assert_lt(refund_pos, sound_pos, "refund/early-return sits ABOVE the celebration beats")
 	assert_lt(refund_pos, flash_pos, "refund/early-return sits ABOVE the gold flash")

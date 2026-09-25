@@ -112,7 +112,19 @@ func test_every_authored_entry_is_a_line_or_a_list_of_lines() -> void:
 			if e is Array:
 				assert_gt((e as Array).size(), 0, "%s.%s is an empty list" % [job_id, trig])
 				for l in e:
-					assert_true(l is String and str(l) != "", "%s.%s holds a non-line: %s" % [job_id, trig, l])
+					assert_true(_is_line(l), "%s.%s holds a non-line: %s" % [job_id, trig, l])
 			else:
 				assert_true(e is String and str(e) != "", "%s.%s must be a line or a list of lines" % [job_id, trig])
 	assert_gte(checked, 25, "the scan found the trigger entries at all")
+
+
+## A line is a non-empty string, or {"line", "when"} with a non-empty line; which tags are legal is test_every_voice_line_tag_is_one_the_picker_knows's job.
+func _is_line(l: Variant) -> bool:
+	if l is String:
+		return str(l) != ""
+	if not (l is Dictionary):
+		return false
+	for k in (l as Dictionary).keys():
+		if not (k in ["line", "when"]):
+			return false
+	return (l as Dictionary).get("line") is String and VoiceLines.text_of(l) != ""

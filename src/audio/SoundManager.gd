@@ -221,8 +221,7 @@ func _ready() -> void:
 
 ## 2026-08-14 silent-death class (struktured: music+SFX stopped mid-battle, zero errors, YT fine): frozen playback position while playing == game mixer dead; advancing position while silent == stream corked below the game
 var _liveness_last_pos: float = -1.0
-## Latched while a playing bed sits still longer than one dummy-driver callback.
-## Cleared again when a later sample moves: a transient stall is not a dead mix thread.
+## Latched while a playing bed sits still longer than a slow start. Cleared when a later sample moves.
 ## A thread stuck inside an unbounded mix never moves, so that latch stays set.
 var _audio_mixer_wedged: bool = false
 var _mixer_watch_pos: float = -1.0
@@ -233,9 +232,24 @@ var _mixer_stall_watch_force: int = -1
 var _mixer_stall_watch_runtime: int = -1
 ## Test hook. Negative reads the live player so a test can freeze the sample.
 var _mixer_pos_override: float = -1.0
-## Dummy mixes 4096 frames then sleeps ~93ms (Godot 4.4.1). Two quiet callbacks is still healthy;
-## a third with the same position is the preroll that never moved (128/48000 = 0.00266666663811).
-const _MIXER_STALL_MSEC: int = 300
+## Dummy mixes 4096 frames then sleeps ~93ms (Godot 4.4.1). A 44.1 kHz line sat at the 128-sample preroll (0.00290s) for 312ms and then played; 300ms latched that slow start (issue #224 follow-up).
+## Many quiet callbacks of the same position are still a slow start. Past this window the playhead is stuck, not late.
+const _MIXER_STALL_MSEC: int = 2000
+## load_from_buffer waits on the driver mutex. On the main thread a dead mix never returns, so _process cannot arm the latch (the first-decode hole).
+## Headless decodes on a worker and gives up here. A healthy set_data waits out one mix callback, not seconds.
+const _VOICE_DECODE_BOUND_MSEC: int = 2500
+const _VOICE_DECODE_GRACE_MSEC: int = 200
+## 0 = production bound. Tests shorten it so a simulated stall does not wait out the real window.
+var _voice_decode_bound_override_msec: int = 0
+## 0 = call load_from_buffer. Above 0 the worker sleeps instead, standing in for a decode that does not return.
+var _voice_decode_test_block_msec: int = 0
+var _voice_decode_mutex: Mutex = Mutex.new()
+var _voice_decode_sem: Semaphore = Semaphore.new()
+var _voice_decode_gen: int = 0
+var _voice_decode_done_gen: int = -1
+var _voice_decode_abandoned: bool = false
+var _voice_decode_stream: AudioStreamWAV
+var _orphaned_voice_decodes: Array[Thread] = []
 
 func audio_liveness_check() -> void:
 	var p: AudioStreamPlayer = _music_player_b if (_music_player_b and _music_player_b.playing and not _music_player.playing) else _music_player
@@ -255,6 +269,8 @@ func _process(_delta: float) -> void:
 
 ## Public so a test waiting on playback can sample between frames. _process does the same.
 func note_mixer_progress() -> void:
+	if not _orphaned_voice_decodes.is_empty():
+		_reap_voice_decode_threads()
 	# Real devices freeze position while paused, unfocused, or on a 4s fold entry. Only headless/Dummy arms.
 	if not _mixer_stall_watch_active():
 		return
@@ -310,6 +326,12 @@ func _pcm_commit_blocked() -> bool:
 	return _audio_mixer_wedged and _mixer_stall_watch_active()
 
 
+## Headless/Dummy only. The next WAV set_data, play, or stop would wait forever on the mix thread (issue #224).
+func wav_commit_refused() -> bool:
+	note_mixer_progress()
+	return _pcm_commit_blocked()
+
+
 func mixer_is_wedged() -> bool:
 	return _audio_mixer_wedged
 
@@ -321,6 +343,9 @@ func _live_bed() -> AudioStreamPlayer:
 		return _music_player_b
 	if _ambient_player and _ambient_player.playing and not _ambient_player.stream_paused:
 		return _ambient_player
+	# Voice is the bed the live-voice tests play; a frozen line is the same preroll stall.
+	if _voice_player and _voice_player.playing and not _voice_player.stream_paused:
+		return _voice_player
 	return null
 
 
@@ -335,10 +360,118 @@ func _commit_wav_pcm(wav: AudioStreamWAV, data: PackedByteArray) -> bool:
 	return true
 
 
+## Headless/Dummy only once the watch is on. A windowed, web, or mobile run decodes on the caller and cannot arm the latch.
+func decode_voice_wav(bytes: PackedByteArray) -> AudioStreamWAV:
+	if wav_commit_refused():
+		push_warning("[AUDIO] skipped voice WAV decode (%d bytes) — mixer is wedged" % bytes.size())
+		return null
+	if not _mixer_stall_watch_active():
+		return AudioStreamWAV.load_from_buffer(bytes)
+	return _decode_voice_wav_bounded(bytes)
+
+
+func _decode_voice_wav_bounded(bytes: PackedByteArray) -> AudioStreamWAV:
+	_reap_voice_decode_threads()
+	while _voice_decode_sem.try_wait():
+		pass
+	_voice_decode_mutex.lock()
+	_voice_decode_gen += 1
+	var gen := _voice_decode_gen
+	_voice_decode_abandoned = false
+	_voice_decode_done_gen = -1
+	_voice_decode_stream = null
+	var block_msec := _voice_decode_test_block_msec
+	_voice_decode_mutex.unlock()
+	var thread := Thread.new()
+	var err := thread.start(_voice_decode_worker.bind(bytes, gen, block_msec))
+	if err != OK:
+		push_warning("[AUDIO] voice decode thread did not start (%s) — refusing the lock" % error_string(err))
+		_audio_mixer_wedged = true
+		return null
+	var bound := _VOICE_DECODE_BOUND_MSEC if _voice_decode_bound_override_msec <= 0 else _voice_decode_bound_override_msec
+	if _wait_for_voice_decode(gen, bound) or _wait_for_voice_decode(gen, _VOICE_DECODE_GRACE_MSEC):
+		thread.wait_to_finish()
+		return _voice_decode_stream
+	# The worker is still inside load_from_buffer (or the test stand-in). Arm the latch here, on the main thread, which is not the one holding the driver lock.
+	_voice_decode_mutex.lock()
+	_voice_decode_abandoned = true
+	_voice_decode_mutex.unlock()
+	var reap_until := Time.get_ticks_msec() + 400
+	while thread.is_alive() and Time.get_ticks_msec() < reap_until:
+		OS.delay_msec(10)
+	if thread.is_alive():
+		_orphaned_voice_decodes.append(thread)
+	else:
+		while _voice_decode_sem.try_wait():
+			pass
+		thread.wait_to_finish()
+	_audio_mixer_wedged = true
+	push_warning("[AUDIO] voice decode held the driver lock for %dms — refusing further PCM commits so the suite can continue" % bound)
+	return null
+
+
+func _voice_decode_worker(bytes: PackedByteArray, gen: int, block_msec: int) -> void:
+	var stream: AudioStreamWAV = null
+	var finished := false
+	if block_msec > 0:
+		var t0 := Time.get_ticks_msec()
+		while Time.get_ticks_msec() - t0 < block_msec:
+			_voice_decode_mutex.lock()
+			var stop := _voice_decode_abandoned or _voice_decode_gen != gen
+			_voice_decode_mutex.unlock()
+			if stop:
+				break
+			OS.delay_msec(10)
+	else:
+		stream = AudioStreamWAV.load_from_buffer(bytes)
+		finished = true
+	_voice_decode_mutex.lock()
+	if finished and gen == _voice_decode_gen and not _voice_decode_abandoned:
+		_voice_decode_stream = stream
+		_voice_decode_done_gen = gen
+	_voice_decode_mutex.unlock()
+	_voice_decode_sem.post()
+
+
+func _wait_for_voice_decode(gen: int, budget_msec: int) -> bool:
+	var t0 := Time.get_ticks_msec()
+	while true:
+		if _voice_decode_sem.try_wait():
+			_voice_decode_mutex.lock()
+			var done := _voice_decode_done_gen == gen
+			_voice_decode_mutex.unlock()
+			if done:
+				return true
+			continue
+		if Time.get_ticks_msec() - t0 >= budget_msec:
+			return false
+		OS.delay_msec(10)
+	return false
+
+
+func _reap_voice_decode_threads() -> void:
+	var i := _orphaned_voice_decodes.size() - 1
+	while i >= 0:
+		var t: Thread = _orphaned_voice_decodes[i]
+		if t != null and t.is_started() and not t.is_alive():
+			t.wait_to_finish()
+			_orphaned_voice_decodes.remove_at(i)
+		i -= 1
+
+
+func _voice_decode_still_running() -> bool:
+	for t in _orphaned_voice_decodes:
+		if t != null and t.is_started() and t.is_alive():
+			return true
+	return false
+
+
 func _exit_tree() -> void:
 	# A wedged mix thread never returns, and AudioServer.finish joins it. Headless runs (the suite)
 	# would sit there after the totals are already printed. Leave before that join.
-	if _audio_mixer_wedged and (DisplayServer.get_name() == "headless" or OS.has_feature("headless")):
+	# An orphaned decode worker is the same hang: it is stuck in load_from_buffer and must not be joined.
+	var headless := DisplayServer.get_name() == "headless" or OS.has_feature("headless")
+	if headless and (_audio_mixer_wedged or _voice_decode_still_running()):
 		print("[AUDIO] mixer still wedged at shutdown — leaving immediately so a stuck mix thread cannot keep the process open")
 		OS.kill(OS.get_process_id())
 	# Cleanup tweens to prevent callbacks on freed nodes
@@ -982,10 +1115,30 @@ func play_voice(sound_key: String) -> float:
 	return _voice_player.stream.get_length()
 
 
+## A synthesized line on play_voice's player, level and unity pitch; returns its length so the bubble's hold holds.
+func play_voice_stream(stream: AudioStream) -> float:
+	if _voice_player == null or stream == null:
+		return 0.0
+	# Assigning the stream and play() take the driver mutex. A wedged mix never returns it (issue #224).
+	if wav_commit_refused():
+		push_warning("[AUDIO] skipped voice stream — mixer is wedged")
+		return 0.0
+	_voice_player.stream = stream
+	_voice_player.volume_db = VOICE_PLAYER_BASE_DB
+	_voice_player.pitch_scale = 1.0
+	_voice_player.play()
+	return stream.get_length()
+
+
 ## The voice player lives on this autoload, so freeing the battle scene does not stop a line.
 func stop_voice() -> void:
-	if _voice_player != null and _voice_player.playing:
-		_voice_player.stop()
+	if _voice_player == null or not _voice_player.playing:
+		return
+	# stop() takes the same driver mutex as set_data. The live-voice teardown used to wait there forever.
+	if wav_commit_refused():
+		push_warning("[AUDIO] skipped stop_voice — mixer is wedged")
+		return
+	_voice_player.stop()
 
 
 ## Reward cues (coins, key items) on their OWN player. They are always a CONSEQUENCE of the
@@ -2587,6 +2740,20 @@ func restore_music_state(state: Dictionary) -> void:
 		## against the area branch's 0.37 -> 0.38. Reachable by pausing during a battle: play_music
 		## clears _current_area, so a battle/boss/victory bed restores through HERE.
 		play_music(track, false, float(state.get("position", 0.0)))
+
+
+## Jukebox previews call this. A stinger's finished hook would resume the bed while the menu is still open.
+func disarm_stinger_resume() -> void:
+	if _music_player:
+		for c in _music_player.finished.get_connections():
+			_music_player.finished.disconnect(c["callable"])
+	_stinger_resume_state = {}
+	if _music_player and _is_stinger_track(_current_music):
+		var preview := _current_music
+		_music_player.finished.connect(func() -> void:
+			if _current_music == preview:
+				_music_playing = false
+		, CONNECT_ONE_SHOT)
 
 
 func stop_music() -> void:

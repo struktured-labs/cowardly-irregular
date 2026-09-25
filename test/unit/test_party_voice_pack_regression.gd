@@ -33,7 +33,7 @@ func _variants(job_id: String, trig: String, entry: Variant) -> Array:
 	var out: Array = []
 	for n in lines.size():
 		var key := "voice_%s_%s" % [job_id, trig] if n == 0 else "voice_%s_%s_%d" % [job_id, trig, n]
-		out.append([key, str(lines[n])])
+		out.append([key, VoiceLines.text_of(lines[n])])
 	return out
 
 
