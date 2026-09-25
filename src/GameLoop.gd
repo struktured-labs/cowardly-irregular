@@ -1526,13 +1526,12 @@ func _ensure_party_chat_indicator() -> void:
 	var IndicatorScript = load("res://src/ui/PartyChatIndicator.gd")
 	_party_chat_indicator = IndicatorScript.new()
 	_party_chat_indicator_layer.add_child(_party_chat_indicator)
-	## Tick 470: mouse-click on the indicator opens the chat menu,
-	## mirroring the party_chat action (L key / gamepad button). Gated
-	## the same way as the input path so a click with no available
-	## chats is a no-op instead of an empty menu.
+	## Tick 470: mouse-click opens the menu. Same gates as the L-key path — a transition still reports EXPLORATION and the chip stays up, so an unguarded click opened the menu over the fade and swallowed input.
 	if _party_chat_indicator.has_signal("clicked"):
 		_party_chat_indicator.clicked.connect(func():
 			if current_state == LoopState.EXPLORATION and not _party_chat_menu and not _overworld_menu \
+					and not (InputLockManager and InputLockManager.is_locked()) \
+					and not _transition_in_progress \
 					and PartyChatSystem and PartyChatSystem.has_available_chats():
 				_open_party_chat_menu())
 
