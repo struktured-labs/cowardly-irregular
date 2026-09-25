@@ -233,13 +233,21 @@ For a speaker + trigger + `PartyCombatLineContext`:
 1. **Eligible lines** = untagged lines + tagged lines whose `when` condition holds now.
    Conditions are evaluated **by code**, never by the LLM, so the LLM can only ever choose
    among lines that are true.
-2. **A tagged line is eligible** → it wins over generic lines: written for this moment, it is
-   more apt than anything generic, including a live pooled line (2b). Choose among the
-   eligible tagged lines by step 4 or 5.
+2. **A line tagged with a MOMENT that holds** → it wins over generic lines: written for this
+   moment, it is more apt than anything generic, including a live pooled line (2b). Choose
+   among the eligible moment lines by step 4 or 5. **Precondition tags never win** — they only
+   decide whether a line may play (see 2a.2). *Corrected 2026-09-25:* this step first said
+   "a tagged line", so `ally_alive:mage` — true in almost every fight — made the Fighter's
+   two ally-naming lines crowd out all eight generic `turn_start` lines. Measured with
+   cowir-story's 17 tags on: 9 of 25 job×trigger pairs shrank, Fighter `low_hp` to one line.
 3. **Live voice ready and the pool has a line** (2b) → play the pooled line. It carries its
    own synthesized audio and has no list index.
-4. **LLM on** → `LLMService.choose(prompt, eligible_texts, fallback)` (its first production
-   caller). `choose` already guarantees the result is one of the options.
+4. **LLM on** → `LLMService.choose(prompt, eligible_texts, fallback, {"cache": false})` (its
+   first production caller). `choose` already guarantees the result is one of the options.
+   The options are **shuffled per call** and **exclude the line spoken last** (while 2+
+   remain), and the pick is recorded as spoken. Measured on llama3 before this: every
+   trigger said ONE line 50/50 times — `choose` cached the prompt for 5 minutes, and the
+   model picked option 1 30/30 even uncached.
 5. **LLM off** → random among eligible, no immediate repeat.
 6. For steps 4–5 the chosen index `n` maps to clip `voice_<speaker>_<trigger>_<n>`.
 
@@ -251,19 +259,22 @@ Past ~50 options per trigger, eligible lines would be pre-filtered before the LL
 
 ### 2a.2 Tags
 
-Every tag is a pure predicate over `PartyCombatLineContext`:
+Every tag is a pure predicate over `PartyCombatLineContext`. **Preconditions** say when a line
+MAY play and hold in most fights, so they filter and never outrank; **moments** are rare enough
+that a line written for one wins (2a.1 step 2). A line carrying both is a moment line.
 
-| Tag | True when |
-|---|---|
-| `ally_alive:<job>` | a party member with that `job_id` is present **and** alive (parameterised) |
-| `none_down` | no party member has `is_alive == false` |
-| `ally_down` | another party member is KO'd |
-| `ally_low` | another party member is below 30% HP |
-| `last_standing` | the speaker is the only party member alive |
-| `enemy_last` | exactly one enemy remains |
-| `enemy_nearly_dead` | an enemy is below 20% HP |
-| `many_enemies` | three or more enemies |
-| `self_status` | the speaker has any status effect |
+| Tag | Kind | True when |
+|---|---|---|
+| `ally_alive:<job>` | precondition | another party member with that `job_id` is present **and** alive (parameterised) |
+| `none_down` | precondition | a party of 2+, nobody with `is_alive == false` |
+| `all_full` | precondition | `none_down`, and every member at 100% HP |
+| `ally_down` | moment | another party member is KO'd |
+| `ally_low` | moment | another party member is below 30% HP |
+| `last_standing` | moment | the speaker is the only party member alive |
+| `enemy_last` | moment | exactly one enemy remains |
+| `enemy_nearly_dead` | moment | an enemy is below 20% HP |
+| `many_enemies` | moment | three or more enemies |
+| `self_status` | moment | the speaker has any status effect |
 
 `ally_alive:<job>` and `none_down` are what cowir-story's 17 waiting lines need (e.g. *"The
 singed sleeve first, then the new limp"* → `["ally_alive:mage", "ally_alive:rogue"]`;

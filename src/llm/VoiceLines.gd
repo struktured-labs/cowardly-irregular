@@ -56,3 +56,12 @@ static func entry_for_choice(entries: Array, label: String) -> Dictionary:
 		return {}
 	var i: int = int(label) - 1
 	return entries[i] if i >= 0 and i < entries.size() else {}
+
+
+## The entries offered to the LLM: shuffled, minus the line spoken last time while two or more remain.
+static func choice_pool(entries: Array, last_index: int) -> Array:
+	var pool: Array = entries.filter(func(e): return int(e["index"]) != last_index)
+	if pool.is_empty():
+		pool = entries.duplicate()
+	pool.shuffle()
+	return pool

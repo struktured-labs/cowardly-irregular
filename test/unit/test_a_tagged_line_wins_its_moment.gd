@@ -1,6 +1,6 @@
 extends GutTest
 
-## Eligible tagged lines outrank generic ones; with no context, tagged lines are never guessed at.
+## Eligible MOMENT lines outrank generic ones (preconditions only filter); with no context, tagged lines are never guessed at.
 
 var _saved_rogue: Dictionary = {}
 var _saved_last: Dictionary = {}
@@ -44,11 +44,11 @@ func test_in_a_duel_the_ally_line_never_plays() -> void:
 
 
 func test_when_its_moment_comes_the_tagged_line_wins() -> void:
-	_rogue_says(LINES)
+	_rogue_says(["Generic one.", "Generic two.", {"line": "Just me, then.", "when": "last_standing"}])
 	var party := _ctx([{"name": "Vex", "job_id": "rogue", "hp_pct": 20.0, "is_alive": true},
-		{"name": "Mira", "job_id": "cleric", "hp_pct": 90.0, "is_alive": true}])
+		{"name": "Mira", "job_id": "cleric", "hp_pct": 0.0, "is_alive": false}])
 	var p: Dictionary = PartyPersonas.pick_trigger_voice("rogue", "low_hp", party)
-	assert_eq(p["line"], "Cleric, now.", "an eligible line written for this moment must outrank the generic ones")
+	assert_eq(p["line"], "Just me, then.", "an eligible line written for this moment must outrank the generic ones")
 	assert_eq(p["voice_key"], "low_hp_2", "and it keeps its own clip, index 2")
 
 

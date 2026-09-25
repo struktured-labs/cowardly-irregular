@@ -81,14 +81,14 @@ func get_trigger_voice(job_id: String, event_kind: String) -> String:
 
 var _last_variant: Dictionary = {}
 
-## The entries to pick among: eligible tagged lines if any hold, else untagged ones; no context means untagged only.
+## Every line true now; lines for a MOMENT that holds win outright, preconditions only filter. No context means untagged only.
 func eligible_trigger_entries(job_id: String, event_kind: String, ctx: PartyCombatLineContext) -> Array:
 	var entries: Array = get_trigger_entries(job_id, event_kind)
-	var untagged: Array = entries.filter(func(e): return (e["tags"] as Array).is_empty())
 	if ctx == null:
-		return untagged
-	var tagged: Array = entries.filter(func(e): return not (e["tags"] as Array).is_empty() and VoiceLineTags.is_eligible(e["tags"], ctx))
-	return tagged if not tagged.is_empty() else untagged
+		return entries.filter(func(e): return (e["tags"] as Array).is_empty())
+	var eligible: Array = entries.filter(func(e): return VoiceLineTags.is_eligible(e["tags"], ctx))
+	var moments: Array = eligible.filter(func(e): return (e["tags"] as Array).any(func(t): return VoiceLineTags.is_moment_tag(str(t))))
+	return moments if not moments.is_empty() else eligible
 
 
 ## {"line", "voice_key"}: a random eligible entry, never the same one twice running.
@@ -98,6 +98,16 @@ func pick_trigger_voice(job_id: String, event_kind: String, ctx: PartyCombatLine
 		return {"line": "", "voice_key": ""}
 	var e: Dictionary = _pick_no_repeat(job_id + "|" + event_kind, entries)
 	return {"line": str(e["line"]), "voice_key": VoiceLines.variant_key(event_kind, int(e["index"]))}
+
+
+## The ORIGINAL index spoken last for this job + trigger, or -1.
+func last_spoken_index(job_id: String, event_kind: String) -> int:
+	return int(_last_variant.get(job_id + "|" + event_kind, -1))
+
+
+## Records the line actually spoken, so the no-repeat memory follows the LLM's pick and not the fallback it replaced.
+func mark_spoken(job_id: String, event_kind: String, index: int) -> void:
+	_last_variant[job_id + "|" + event_kind] = index
 
 
 ## One entry at random, avoiding the ORIGINAL index spoken last time for this key.
