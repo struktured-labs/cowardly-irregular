@@ -982,6 +982,17 @@ func play_voice(sound_key: String) -> float:
 	return _voice_player.stream.get_length()
 
 
+## A synthesized line on play_voice's player, level and unity pitch; returns its length so the bubble's hold holds.
+func play_voice_stream(stream: AudioStream) -> float:
+	if _voice_player == null or stream == null:
+		return 0.0
+	_voice_player.stream = stream
+	_voice_player.volume_db = VOICE_PLAYER_BASE_DB
+	_voice_player.pitch_scale = 1.0
+	_voice_player.play()
+	return stream.get_length()
+
+
 ## The voice player lives on this autoload, so freeing the battle scene does not stop a line.
 func stop_voice() -> void:
 	if _voice_player != null and _voice_player.playing:

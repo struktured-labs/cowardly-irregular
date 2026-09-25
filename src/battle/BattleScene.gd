@@ -3698,14 +3698,19 @@ func _restart_battle() -> void:
 		_ui_manager._enemy_status_boxes.clear()
 		_ui_manager._revealed_enemies.clear()
 
-	# Reset party HP/MP
+	# Reset party HP/MP. A permadeath marker stays, and that ally stays down — a full heal here used to erase the marker and stand them up.
 	for member in party_members:
-		member.current_hp = member.max_hp
+		var erased := member.has_method("has_status") and member.has_status("permakilled")
 		member.current_mp = member.max_mp
 		member.current_ap = 0
-		member.is_alive = true
 		member.is_defending = false
-		member.status_effects.clear()
+		if not erased:
+			member.current_hp = member.max_hp
+			member.is_alive = true
+		if member.has_method("clear_transient_statuses"):
+			member.clear_transient_statuses()
+		else:
+			member.status_effects.clear()
 
 	# Reset party sprite visibility
 	for sprite in party_sprite_nodes:

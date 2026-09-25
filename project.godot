@@ -49,6 +49,7 @@ LLMService="*res://src/llm/LLMService.gd"
 RuleComposer="*res://src/llm/RuleComposer.gd"
 BossDialogue="*res://src/llm/BossDialogue.gd"
 PartyPersonas="*res://src/llm/PartyPersonas.gd"
+VoiceService="*res://src/llm/VoiceService.gd"
 
 [display]
 
