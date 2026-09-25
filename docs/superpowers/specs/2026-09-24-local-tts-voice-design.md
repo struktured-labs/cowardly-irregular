@@ -43,6 +43,10 @@ Split by *what is said*, *how it sounds*, and *when and which*.
    string to an object at the same index (adding a tag) does not stale its clip and costs no
    re-render. Every reader of these lists, including the signature guard that today does
    `PackedStringArray(entry)`, accepts both element shapes before cowir-story writes objects.
+   **The voice-pack guard violates this today:** its `_variants` does `str(lines[n])`, which
+   hashes the whole element, so a string→object conversion would stale every tagged clip
+   (found by cowir-sfx). `_variants` extracts `"line"` from a Dictionary **in the same commit
+   that introduces the object format** (piece 2a), never after.
 2. **Wire protocol (ai → sfx).** OpenAI-compatible `POST /v1/audio/speech` with
    `{"model", "input", "voice", "response_format": "wav"}`; response is WAV bytes.
    `GET /v1/audio/voices` lists server voices. Default server: `http://127.0.0.1:8004`.
@@ -54,10 +58,16 @@ Split by *what is said*, *how it sounds*, and *when and which*.
    tuning changes; it is part of the cache key, so a recast can never replay stale audio.
 4. **Delivery parameters stay server-side.** The client never sends exaggeration, cfg,
    temperature, or seed. Stock devnen applies these as *global* defaults on
-   `/v1/audio/speech` (verified in its `server.py`). cowir-sfx is choosing between
-   (a) patching per-voice parameters into the server and (c) accepting one global delivery.
-   **The client is identical under (a) and (c)**, so this does not block piece 1. Only
-   option (b), calling devnen's non-standard `/tts`, would change the client.
+   `/v1/audio/speech` (verified in its `server.py`), so every voice would share one delivery.
+   **Decided by cowir-sfx (2026-09-24): their patch makes `/v1/audio/speech` look these up
+   per voice**, from a per-voice config keyed by voice name. The endpoint stays standard and
+   the client is unchanged.
+5. **The supported server is the patched one, not stock devnen.** Stock devnen is wrong for
+   us on three counts, each verified by cowir-sfx: it hard-clips (`np.clip` before int16),
+   it defaults to **chatterbox-turbo**, a different engine from the one struktured approved
+   by ear, and it binds `0.0.0.0`. Supported = devnen `915ae28` + the cowir-sfx patch, with
+   `repo_id: chatterbox` and `host: 127.0.0.1`. Verified end to end: five theatrical lines
+   all peak at exactly −1.00 dBFS (29,195/32,767), none at the rail, 24 kHz.
 
 ## Architecture
 
@@ -345,11 +355,34 @@ Guides a player from nothing to working local AI and voice, and can be re-opened
    | Off | nothing | shipped lines; fully playable |
 
 3. **Install and launch** through cowir-sfx's launcher (non-interactive, meaningful exit
-   codes, `--check` returning JSON). Ollama is detected by its readiness probe; if absent,
-   the wizard links to its installer rather than silently installing system software.
+   codes, `--check` returning JSON). The launcher installs the **supported** server
+   (contract 5): the patch, `repo_id: chatterbox`, `host: 127.0.0.1`. "Install devnen" alone
+   gets none of the three right. Ollama is detected by its readiness probe; if absent, the
+   wizard links to its installer rather than silently installing system software.
 4. **Test** via `VoiceService.status()` and the LLM backend's readiness, then hand back.
 
 Shown once on first run (a `GameState` flag). All four tiers leave the game playable.
+
+### 4.1 Security: the local server must not be reachable from the player's browser
+
+devnen's admin endpoints (`/save_settings`, `/restart_server`, `/upload_reference`,
+`/upload_predefined_voice`) are **unauthenticated**. Binding `127.0.0.1` keeps the LAN out
+but **not a web page open in the player's browser**, which can send requests to `localhost`
+(and, via DNS rebinding, can even defeat a naive host check). A malicious site could
+reconfigure the server, upload files, or spend the player's GPU. The server the wizard
+installs must therefore:
+
+- **Expose only the two endpoints the game uses**, `POST /v1/audio/speech` and
+  `GET /v1/audio/voices`; everything else is disabled.
+- **Reject any request carrying an `Origin` header.** Browsers attach one to cross-origin
+  requests; Godot's `HTTPRequest` does not, so the game is unaffected. Ollama does the same
+  by default (its `OLLAMA_ORIGINS` allowlist).
+- **Reject any `Host` header other than `127.0.0.1:<port>` or `localhost:<port>`**, which
+  defeats DNS rebinding.
+
+This is a requirement on the installed server (cowir-sfx's patch and launcher); piece 4's
+tests verify it against the running server. The web tier (piece 5) never talks to a local
+server, so the `Origin` rule costs it nothing.
 
 ---
 
