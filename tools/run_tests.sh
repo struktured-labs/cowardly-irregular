@@ -227,13 +227,26 @@ run_gut() {
   # so the process sits forever with the results already in the log. `timeout --signal=KILL`
   # cannot deliver SIGKILL on this box; kill(1) can. Silence AFTER a real Totals block means
   # shutdown is stuck, not that a test is still thinking. Default 30s; tests shrink it.
-  local _poll="${RUN_TESTS_POLL_S:-1}" _quiet="${RUN_TESTS_QUIET_AFTER_TOTALS:-30}"
-  case "$_poll" in ''|*[!0-9]*) _poll=1 ;; esac
+  # ⛔ POLL 0 IS REFUSED, not honoured: `sleep 0` spins a core, and `_still` would advance by 0 so
+  # the quiet-after-totals kill could never fire. A leading 0 is refused too — `$(( x + 08 ))` is an
+  # octal error. Grace may be 0 (SIGKILL at the budget itself), but not 0-prefixed.
+  local _poll="${RUN_TESTS_POLL_S:-1}" _quiet="${RUN_TESTS_QUIET_AFTER_TOTALS:-30}" _grace="${RUN_TESTS_KILL_GRACE_S:-60}"
+  case "$_poll" in ''|*[!0-9]*|0*) _poll=1 ;; esac
   case "$_quiet" in ''|*[!0-9]*) _quiet=30 ;; esac
+  case "$_grace" in ''|*[!0-9]*|0?*) _grace=60 ;; esac
   timeout "$_budget" "${BASE[@]}" "$@" > >(tee -a "$RUN_LOG") 2>&1 &
   local _tp=$! _last_size=0 _still=0 _sz _killed_after_totals=0
-  while kill -0 "$_tp" 2>/dev/null; do
+  # ⛔ THIS LOOP IS BOUNDED BY ITS OWN CLOCK, NOT ONLY BY `timeout`. `timeout` ends the run only if
+  # its TERM ends the child, and a child that outlives TERM (test_a_runner_that_ignores_term_is_still_bounded —
+  # measured: `timeout 1` waited out a TERM-ignoring 6s child) kept `kill -0` true for as long as it
+  # liked. The quiet-after-totals kill below cannot help: a wedge BEFORE Totals never arms it.
+  # So at budget + grace this loop stops polling and SIGKILLs the tree with kill(1), the one path
+  # that delivers SIGKILL on this box. Without the cap, tools/check_polling_bounded.py blocks every
+  # publish (it blocked .486), and it was right to.
+  local _cap=$(( _budget + _grace )) _waited=0
+  while [ "$_waited" -lt "$_cap" ] && kill -0 "$_tp" 2>/dev/null; do
     sleep "$_poll"
+    _waited=$(( SECONDS - _t0 ))
     _sz=$(wc -c < "$RUN_LOG" 2>/dev/null | tr -dc '0-9')
     if [ -z "$_sz" ] || [ "$_sz" != "$_last_size" ]; then
       _last_size=${_sz:-0}
@@ -248,6 +261,10 @@ run_gut() {
       break
     fi
   done
+  if [ "$_killed_after_totals" -eq 0 ] && kill -0 "$_tp" 2>/dev/null; then
+    echo "run_tests.sh: still running ${_waited}s in, ${_grace}s past the ${_budget}s budget — timeout's TERM did not end it. SIGKILL via kill(1)." >&2
+    _kill_pid_tree "$_tp"
+  fi
   wait "$_tp"
   local ec=$?
   _elapsed=$(( SECONDS - _t0 ))
