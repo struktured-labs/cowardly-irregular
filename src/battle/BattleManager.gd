@@ -4369,6 +4369,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 			return
 
 	# Execute all actions in sequence (each will spend 1 AP)
+	var executed: int = 0
 	for action in actions:
 		if not combatant.is_alive:
 			break
@@ -4393,6 +4394,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		_log_player_action(combatant, action)
 		action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 		_wd_bump()
+		executed += 1
 		if turbo_mode:
 			await get_tree().process_frame
 		else:
@@ -4403,7 +4405,9 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 
 	## The fifth action was spent like the other four (each executor charges 1); refund it here
 	## so a full-bank Advance nets 4 AP. After, not before: gain_ap at the +4 cap is a no-op.
-	if full_bank and is_instance_valid(combatant) and combatant.is_alive:
+	## Dying on that swing still paid — the refund is the free action, not a survival bonus.
+	## An earlier KO breaks the loop, so unplayed swings are not refunded.
+	if full_bank and executed == actions.size() and is_instance_valid(combatant):
 		combatant.gain_ap(1)
 
 	# Continue to next action — same double-scaling fix as the inner loop above.
