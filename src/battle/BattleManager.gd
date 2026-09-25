@@ -9018,10 +9018,13 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	var pp = get_node_or_null("/root/PartyPersonas")
 	var job_id: String = _resolve_party_job_id(combatant)
 	var fallback: String = ""
-	if pp != null and pp.has_method("get_trigger_voice"):
+	var fallback_key: String = event_kind
+	if pp != null and pp.has_method("pick_trigger_voice"):
+		var picked: Dictionary = pp.pick_trigger_voice(job_id, event_kind)
+		fallback = str(picked.get("line", ""))
+		fallback_key = str(picked.get("voice_key", event_kind))
+	elif pp != null and pp.has_method("get_trigger_voice"):
 		fallback = str(pp.get_trigger_voice(job_id, event_kind))
-	if fallback.is_empty():
-		fallback = ""
 
 	# Tick 120: party_llm_dialogue_enabled gates the LLM call but NOT
 	# the scripted fallback. When the toggle is off (default), we
@@ -9035,19 +9038,19 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 			and bool(GameState.game_constants.get("dev_voice_every_line", false))
 	if not _party_line_wants_llm(llm_dialogue_on, voice_test):
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback, event_kind)
+			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
 	var llm = get_node_or_null("/root/LLMService")
 	if llm == null or not llm.has_method("is_available") or not llm.is_available():
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback, event_kind)
+			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
 	var ctx := _build_party_line_context(combatant, event_kind, event_data)
 	if ctx == null:
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback, event_kind)
+			_emit_party_line(combatant, fallback, fallback_key)
 		return
 	var persona: String = ""
 	var sig: Array = []
@@ -9056,13 +9059,13 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 		sig = pp.get_signature_phrases(job_id)
 	if persona.is_empty():
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback, event_kind)
+			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
 	var DialoguePromptsScript = load("res://src/llm/DialoguePrompts.gd")
 	if DialoguePromptsScript == null:
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback, event_kind)
+			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
 	var prompt: String = DialoguePromptsScript.build_party_line(persona, sig, ctx.to_dict())
@@ -9089,7 +9092,7 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	if line.is_empty():
 		return
 	# msg 2105: deterministic trigger_voices lines get voice; LLM lines stay text-only.
-	var vt: String = event_kind if (not fallback.is_empty() and line == fallback) else ""
+	var vt: String = fallback_key if (not fallback.is_empty() and line == fallback) else ""
 	_emit_party_line(combatant, line, vt)
 
 

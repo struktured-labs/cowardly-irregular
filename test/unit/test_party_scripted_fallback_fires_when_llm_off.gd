@@ -9,6 +9,10 @@ extends GutTest
 const BATTLE_MANAGER := "res://src/battle/BattleManager.gd"
 
 
+## The scripted-vs-LLM branch; the Dev: Voice Every Line override lives in the predicate.
+const OFF_BRANCH := "if not _party_line_wants_llm(llm_dialogue_on, voice_test):"
+
+
 func _read(p: String) -> String:
 	var t: String = FileAccess.get_file_as_string(p)
 	assert_ne(t, "", "Expected %s to be readable" % p)
@@ -49,21 +53,21 @@ func test_run_async_now_checks_llm_toggle() -> void:
 	var body := _run_async_body()
 	assert_true(body.contains("var llm_dialogue_on: bool = gs != null and (\"party_llm_dialogue_enabled\" in gs) and gs.party_llm_dialogue_enabled"),
 		"_run_party_line_async must check party_llm_dialogue_enabled to decide LLM-vs-scripted")
-	assert_true(body.contains("if not llm_dialogue_on:"),
-		"_run_party_line_async must branch on the flag")
+	assert_true(body.contains(OFF_BRANCH), "_run_party_line_async must branch on the flag")
+	assert_false(BattleManager._party_line_wants_llm(false, false), "and the flag off must choose the scripted line")
 
 
 func test_off_branch_emits_scripted_fallback() -> void:
 	# When LLM toggle is OFF, the scripted fallback path must run.
 	# Specifically: emit the fallback if non-empty, then return.
 	var body := _run_async_body()
-	var idx: int = body.find("if not llm_dialogue_on:")
+	var idx: int = body.find(OFF_BRANCH)
 	assert_gt(idx, -1, "off branch must exist")
 	# Look forward ~150 chars for the emit + return.
 	var window: String = body.substr(idx, 200)
 	assert_true(window.contains("if not fallback.is_empty():"),
 		"off branch must guard on fallback non-empty before emitting")
-	assert_true(window.contains("_emit_party_line(combatant, fallback, event_kind)"),
+	assert_true(window.contains("_emit_party_line(combatant, fallback, fallback_key)"),
 		"off branch must emit the scripted fallback line")
 
 
@@ -73,7 +77,7 @@ func test_llm_off_branch_precedes_llm_availability_check() -> void:
 	# fail to bind in tests / on web) blocks the scripted path
 	# for flag-off players unnecessarily.
 	var body := _run_async_body()
-	var flag_idx: int = body.find("if not llm_dialogue_on:")
+	var flag_idx: int = body.find(OFF_BRANCH)
 	var llm_idx: int = body.find("if llm == null or not llm.has_method(\"is_available\")")
 	assert_gt(flag_idx, -1, "flag check must exist")
 	assert_gt(llm_idx, -1, "LLM availability check must exist")
