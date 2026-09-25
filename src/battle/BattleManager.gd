@@ -1173,6 +1173,9 @@ func end_battle(victory: bool) -> void:
 	# Boss gloat — fire-and-forget; scripted ships now, async LLM re-narration may replace it.
 	_dispatch_boss_gloat(victory)
 
+	## An in-fight bark would keep talking over the results. Stop it before the victory line starts.
+	SoundManager.stop_voice()
+
 	# Party line on victory — one PC speaks first; cooldown still applies.
 	if victory:
 		_dispatch_victory_party_line()
