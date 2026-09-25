@@ -153,6 +153,37 @@ const MINIBOSS_TYPES = [
 ]
 
 
+## Group banners and the bestiary kill toast share this. A bare +"s" said "2 Wolfs" and "2 Glitch Entitys".
+static func pluralize_monster_name(monster_name: String) -> String:
+	if monster_name.is_empty():
+		return monster_name
+	var lower: String = monster_name.to_lower()
+	# -y after a consonant → -ies (Lady → Ladies, Entity → Entities). Y after a vowel stays (Monkey → Monkeys).
+	if lower.ends_with("y") and lower.length() >= 2:
+		var penultimate: String = lower.substr(lower.length() - 2, 1)
+		if not (penultimate in ["a", "e", "i", "o", "u"]):
+			return monster_name.substr(0, monster_name.length() - 1) + "ies"
+	# -s, -sh, -ch, -x, -z → -es (Process → Processes, Mailbox → Mailboxes).
+	if lower.ends_with("sh") or lower.ends_with("ch") or lower.ends_with("s") or lower.ends_with("x") or lower.ends_with("z"):
+		return monster_name + "es"
+	# Wolf / Ice Wolf only. A general -f → -ves rule turns "Optimization Itself" into "Itselves".
+	if lower.ends_with("wolf"):
+		return monster_name.substr(0, monster_name.length() - 1) + "ves"
+	return monster_name + "s"
+
+
+## "2 Wolves and 1 Slime" — the text inside the "appeared!" banner. Same counts dictionary every spawn path builds.
+static func encounter_count_phrase(counts: Dictionary) -> String:
+	var msg_parts: PackedStringArray = []
+	for enemy_name in counts:
+		var count: int = int(counts[enemy_name])
+		var label: String = str(enemy_name)
+		if count > 1:
+			label = pluralize_monster_name(label)
+		msg_parts.append("%d %s" % [count, label])
+	return " and ".join(msg_parts)
+
+
 func _init(scene) -> void:
 	_scene = scene
 
@@ -274,15 +305,7 @@ func spawn_enemies() -> void:
 		else:
 			enemy_names[monster_type["name"]] = 1
 
-	# Build encounter message
-	var msg_parts: Array = []
-	for enemy_name in enemy_names:
-		var count = enemy_names[enemy_name]
-		if count > 1:
-			msg_parts.append("%d %s" % [count, enemy_name + "s"])
-		else:
-			msg_parts.append("1 %s" % enemy_name)
-	_scene.log_message("[color=gray]%s appeared![/color]" % " and ".join(msg_parts))
+	_scene.log_message("[color=gray]%s appeared![/color]" % encounter_count_phrase(enemy_names))
 
 	_scene._update_ui()
 
@@ -369,15 +392,7 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 		else:
 			enemy_names[type_name] = 1
 
-	# Build encounter message
-	var msg_parts: Array = []
-	for enemy_name in enemy_names:
-		var count = enemy_names[enemy_name]
-		if count > 1:
-			msg_parts.append("%d %s" % [count, enemy_name + "s"])
-		else:
-			msg_parts.append("1 %s" % enemy_name)
-	_scene.log_message("[color=gray]%s appeared![/color]" % " and ".join(msg_parts))
+	_scene.log_message("[color=gray]%s appeared![/color]" % encounter_count_phrase(enemy_names))
 
 	_scene._update_ui()
 
@@ -638,15 +653,7 @@ func spawn_encounter_enemies() -> void:
 		else:
 			enemy_names[display_name] = 1
 
-	# Build encounter message
-	var msg_parts: Array = []
-	for enemy_name in enemy_names:
-		var count = enemy_names[enemy_name]
-		if count > 1:
-			msg_parts.append("%d %s" % [count, enemy_name + "s"])
-		else:
-			msg_parts.append("1 %s" % enemy_name)
-	_scene.log_message("[color=gray]%s appeared![/color]" % " and ".join(msg_parts))
+	_scene.log_message("[color=gray]%s appeared![/color]" % encounter_count_phrase(enemy_names))
 
 	_scene._update_ui()
 
