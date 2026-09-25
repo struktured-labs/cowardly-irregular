@@ -380,6 +380,8 @@ func _build_side_quest_lines() -> Array:
 				var fp: Vector2i = qs.fetch_progress(objectives[idx])
 				if fp.y > 0:
 					desc += "  [%d/%d]" % [fp.x, fp.y]
+			# Roundup tally is saved flags, not a fetch. Prefix it so clip_text cannot eat the count.
+			desc = QuestChicken.annotate_objective(desc, objectives[idx])
 			lines.append({"text": "      (%d/%d) %s" % [idx + 1, objectives.size(), desc], "indent": 48.0, "size": 13, "color": TEXT_COLOR})
 		var giver_name: String = str(q.get("giver", {}).get("display_name", ""))
 		if giver_name != "":
