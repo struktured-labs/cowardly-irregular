@@ -114,7 +114,8 @@ func test_both_directions_sit_inside_the_web_gate() -> void:
 	for fn in ["func save_settings", "func load_settings"]:
 		var at: int = src.find(fn)
 		assert_gt(at, -1, "%s must exist" % fn)
-		var body: String = src.substr(at, src.find("\nfunc ", at + 1) - at)
+		var end: int = src.find("\nfunc ", at + 1)
+		var body: String = src.substr(at, (end if end != -1 else src.length()) - at)
 		var gate: int = body.find("if not OS.has_feature(\"web\"):")
 		assert_gt(gate, -1, "%s must gate on web" % fn)
 		for f in FIELDS:
