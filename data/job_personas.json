@@ -20,8 +20,14 @@
 					"They moved. Now I move.",
 					"No speeches. Just the next swing.",
 					"Plant the feet. Pick a target.",
-					"Mage is still counting. I'm not.",
-					"Bard's humming again. Noted. Ignored."
+					{
+						"line": "Mage is still counting. I'm not.",
+						"when": "ally_alive:mage"
+					},
+					{
+						"line": "Bard's humming again. Noted. Ignored.",
+						"when": "ally_alive:bard"
+					}
 				],
 				"low_hp": [
 					"Bleeding. Manageable. Shield arm still answers.",
@@ -29,7 +35,10 @@
 					"Hurts. Doesn't matter. Hold the line.",
 					"Low. Not out.",
 					"Shield's dented. Arm isn't.",
-					"Cleric. When you're ready. No rush.",
+					{
+						"line": "Cleric. When you're ready. No rush.",
+						"when": "ally_alive:cleric"
+					},
 					"I've stood up from worse. Once.",
 					"Breathe. Grip. Stand.",
 					"Bleeding on the good boots. Fine.",
@@ -60,16 +69,25 @@
 					"Wind up. Follow through. Done."
 				],
 				"victory": [
-					"Done. Sheathe. Tell the Bard to keep the song short.",
+					{
+						"line": "Done. Sheathe. Tell the Bard to keep the song short.",
+						"when": "ally_alive:bard"
+					},
 					"Done. Wipe the blade.",
 					"Clean. Next.",
 					"Stand down. Good work.",
-					"Nobody fell. That's the win.",
+					{
+						"line": "Nobody fell. That's the win.",
+						"when": "none_down"
+					},
 					"Shield's dented. Worth it.",
 					"Quiet again. Good.",
 					"That's the fight. Check the packs.",
 					"Honest work. Honest win.",
-					"Bard. No victory song. ...Fine. One verse."
+					{
+						"line": "Bard. No victory song. ...Fine. One verse.",
+						"when": "ally_alive:bard"
+					}
 				]
 			}
 		},
@@ -83,12 +101,24 @@
 			],
 			"trigger_voices": {
 				"turn_start": [
-					"Let me see the ledger of injuries. Right. The singed sleeve first, then the new limp.",
+					{
+						"line": "Let me see the ledger of injuries. Right. The singed sleeve first, then the new limp.",
+						"when": [
+							"ally_alive:mage",
+							"ally_alive:rogue"
+						]
+					},
 					"A new verse. Let me read it slowly.",
 					"Turn counted. Bead moved. Proceed.",
-					"The bruised shoulder first. Then the rest.",
+					{
+						"line": "The bruised shoulder first. Then the rest.",
+						"when": "ally_alive:fighter"
+					},
 					"Who is bleeding? Show me. Don't be brave.",
-					"Hold still, singed sleeve. I see you.",
+					{
+						"line": "Hold still, singed sleeve. I see you.",
+						"when": "ally_alive:mage"
+					},
 					"The Loop turns. So do I.",
 					"Another bead. The prayer continues.",
 					"Staff in both hands. Eyes on the wounded.",
@@ -131,15 +161,24 @@
 					"Mended. Say thank you. Or don't. Mended."
 				],
 				"victory": [
-					"Verse complete. Wounds tallied, breaths counted, all party members returned to maximum. The Loop is pleased.",
-					"Verse complete. Everyone accounted for.",
+					{
+						"line": "Verse complete. Wounds tallied, breaths counted, all party members returned to maximum. The Loop is pleased.",
+						"when": "none_down"
+					},
+					{
+						"line": "Verse complete. Everyone accounted for.",
+						"when": "none_down"
+					},
 					"Amen. Now, let me see those cuts.",
 					"The Loop closes. Gently, this time.",
 					"Wounds tallied. None of them mortal.",
 					"Rest. The next verse is already written.",
 					"A kind ending. They are rarer than you think.",
 					"Blessed be the turn order.",
-					"The new limp. Sit down. You're next.",
+					{
+						"line": "The new limp. Sit down. You're next.",
+						"when": "ally_alive:rogue"
+					},
 					"Well fought. Poorly dodged. Forgiven."
 				]
 			}
@@ -166,10 +205,16 @@
 					"Hypothesis: I cast. Result: they suffer."
 				],
 				"low_hp": [
-					"HP at twenty-three percent. Statistically I am one bad d20 from a memorial cutscene. Cleric. Cleric. Please.",
+					{
+						"line": "HP at twenty-three percent. Statistically I am one bad d20 from a memorial cutscene. Cleric. Cleric. Please.",
+						"when": "ally_alive:cleric"
+					},
 					"Health critical. This violates my projections.",
 					"Glass cannon. Emphasis on glass.",
-					"Cleric. The singed sleeve requests a patch.",
+					{
+						"line": "Cleric. The singed sleeve requests a patch.",
+						"when": "ally_alive:cleric"
+					},
 					"Retreat is a valid stat allocation.",
 					"I am one bad roll from a footnote.",
 					"Recalculating. The answer is: ouch.",
@@ -209,7 +254,10 @@
 					"Math won. You're welcome.",
 					"Combat complete. Peer review pending.",
 					"Documented. Reproducible. Done.",
-					"Fighter, you swung out of spec. It worked. Annoying.",
+					{
+						"line": "Fighter, you swung out of spec. It worked. Annoying.",
+						"when": "ally_alive:fighter"
+					},
 					"Loot table, I'm ready. Be generous.",
 					"And the gods still haven't commented their code."
 				]
@@ -279,7 +327,10 @@
 				"low_hp": [
 					"Twenty-five percent is just dramatic pacing. Relax.",
 					"Bleeding. Stylishly, though.",
-					"Fine. This is fine. Cleric?",
+					{
+						"line": "Fine. This is fine. Cleric?",
+						"when": "ally_alive:cleric"
+					},
 					"Low. Still faster than you.",
 					"I'd call this a setback. Briefly.",
 					"Not dying. Too much unfinished business.",
@@ -443,7 +494,10 @@
 					"Let's give the critics something to write about."
 				],
 				"low_hp": [
-					"Folks, the protagonist is bleeding! Dramatically convenient! Cleric, this is your cue, sweetheart.",
+					{
+						"line": "Folks, the protagonist is bleeding! Dramatically convenient! Cleric, this is your cue, sweetheart.",
+						"when": "ally_alive:cleric"
+					},
 					"Still singing. Barely. But in key.",
 					"Ow. Okay. Minor key it is.",
 					"I've played rougher rooms than this.",
