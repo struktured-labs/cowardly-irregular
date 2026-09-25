@@ -224,11 +224,66 @@
 				"You're broadcasting, friend."
 			],
 			"trigger_voices": {
-				"turn_start": "Speed stat says I'm up. Try to look surprised.",
-				"low_hp": "Twenty-five percent is just dramatic pacing. Relax.",
-				"big_hit_taken": "Okay. Okay. Someone read MY tells. Rude.",
-				"used_signature_ability": "Three-frame window. Slid right through it. Tip your writers.",
-				"victory": "Loot phase. I called it first, so legally it's mine."
+				"turn_start": [
+					"Speed stat says I'm up. Try to look surprised.",
+					"My turn. Nobody panic. Especially them.",
+					"Lights are rude. Work's the same.",
+					"In fast. Out faster. Obviously.",
+					"Already picked a target. Don't tell it.",
+					"They telegraphed. I noticed. My move.",
+					"Relax. I've done this heist before.",
+					"Oh good. Something to stab.",
+					"Queue's mine. Try to keep up.",
+					"Watch the third frame. It always tells."
+				],
+				"low_hp": [
+					"Twenty-five percent is just dramatic pacing. Relax.",
+					"Bleeding. Stylishly, though.",
+					"Fine. This is fine. Cleric?",
+					"Low. Still faster than you.",
+					"I'd call this a setback. Briefly.",
+					"Not dying. Too much unfinished business.",
+					"Hm. That's more red than I budgeted.",
+					"Somebody patch me before I get bored.",
+					"Nobody look. I'm fine. Mostly.",
+					"Close call. I live for those. Hopefully."
+				],
+				"big_hit_taken": [
+					"Okay. Okay. Someone read MY tells. Rude.",
+					"Rude. Accurate, but rude.",
+					"Ow. You'll regret that. Eventually.",
+					"Didn't see it. Won't happen twice.",
+					"Lucky roll. Enjoy it.",
+					"That was a tell. I missed a tell. Embarrassing.",
+					"Noted. Filed under revenge.",
+					"Okay. You get one.",
+					"Fine. Now it's personal. Mildly.",
+					"Who scripted that? We should talk."
+				],
+				"used_signature_ability": [
+					"Three-frame window. Slid right through it. Tip your writers.",
+					"Behind you. Obviously.",
+					"They never check behind them.",
+					"Right between the tells.",
+					"Found the soft spot. Used it.",
+					"Early crit. As usual.",
+					"Hi. Bye.",
+					"Knife goes where the guard isn't.",
+					"You were looking the wrong way. Always.",
+					"Clean in, clean out. Heist rules."
+				],
+				"victory": [
+					"Loot phase. I called it first, so legally it's mine.",
+					"And that's the heist. The split's uneven.",
+					"Done. Pockets first, questions later.",
+					"Too easy. Next time, bring a challenge.",
+					"Loot's mine. I checked the rules. I wrote them.",
+					"Clean job. Nobody saw anything. Right?",
+					"That's a wrap. Check your pockets.",
+					"Bored now. Good fight, though.",
+					"Winning suits me. Everything does.",
+					"Lights up. Nobody move. I'm counting coins."
+				]
 			}
 		},
 		"bard": {
