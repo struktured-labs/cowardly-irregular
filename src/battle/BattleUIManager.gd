@@ -805,7 +805,9 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 func _enemy_intel_hint(enemy: Combatant) -> String:
 	if enemy == null or not enemy.has_meta("monster_type"):
 		return ""
-	if enemy.elemental_weaknesses.is_empty() and enemy.elemental_immunities.is_empty() \
+	# Catalog immunities (null_entity: physical) are never copied onto the combatant.
+	var immunities: Array = _displayed_immunities(enemy)
+	if enemy.elemental_weaknesses.is_empty() and immunities.is_empty() \
 			and enemy.elemental_resistances.is_empty():
 		return ""
 	# Revealed by a prior defeat (bestiary) OR a Scan cast this battle.
@@ -816,10 +818,29 @@ func _enemy_intel_hint(enemy: Combatant) -> String:
 	var out: String = ""
 	if not enemy.elemental_weaknesses.is_empty():
 		out += " · [color=orange]Weak: %s[/color]" % ", ".join(_capitalized(enemy.elemental_weaknesses))
-	if not enemy.elemental_immunities.is_empty():
-		out += " · [color=#88aaff]Immune: %s[/color]" % ", ".join(_capitalized(enemy.elemental_immunities))
+	if not immunities.is_empty():
+		out += " · [color=#88aaff]Immune: %s[/color]" % ", ".join(_capitalized(immunities))
 	if not enemy.elemental_resistances.is_empty():
 		out += " · [color=#bbbb77]Resist: %s[/color]" % ", ".join(_capitalized(enemy.elemental_resistances))
+	return out
+
+
+## Union the combatant's elemental_immunities with monsters.json immunities, once each.
+func _displayed_immunities(enemy: Combatant) -> Array:
+	var out: Array = []
+	var seen_keys: Dictionary = {}
+	var catalog: Array = []
+	if BestiarySystem:
+		var raw: Variant = BestiarySystem.get_monster_data(str(enemy.get_meta("monster_type", ""))).get("immunities", [])
+		if raw is Array:
+			catalog = raw
+	for source in [enemy.elemental_immunities, catalog]:
+		for element in source:
+			var key := str(element)
+			if key == "" or seen_keys.has(key):
+				continue
+			seen_keys[key] = true
+			out.append(key)
 	return out
 
 
