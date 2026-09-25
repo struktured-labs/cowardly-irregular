@@ -53,7 +53,7 @@ func _signature_line(job_id: String) -> String:
 	var job: Dictionary = _jobs().get(job_id, {})
 	var voices: Dictionary = job.get("trigger_voices", {})
 	var entry: Variant = voices.get("used_signature_ability", "")
-	return "\n".join(PackedStringArray(entry)) if entry is Array else str(entry)
+	return "\n".join(PackedStringArray((entry as Array).map(func(e): return VoiceLines.text_of(e)))) if entry is Array else VoiceLines.text_of(entry)
 
 
 ## Every display name authored in abilities.json, longest first so a multi-word name

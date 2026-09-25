@@ -348,6 +348,7 @@ func complete_json(prompt: String, schema: Dictionary, fallback: Variant, opts: 
 ## Choice selection: returns a string guaranteed to be in `valid_options`,
 ## or `fallback` if the LLM fails or returns an unrecognised value.
 ## `fallback` MUST be a member of `valid_options` (asserted in debug builds).
+## `opts.cache = false` asks the model every call; a repeated prompt otherwise replays one answer for CACHE_TTL_SECONDS.
 ## MUST be awaited.
 func choose(prompt: String, valid_options: Array[String], fallback: String, opts: Dictionary = {}) -> String:
 	assert(fallback in valid_options,
@@ -360,8 +361,9 @@ func choose(prompt: String, valid_options: Array[String], fallback: String, opts
 		inference_failed.emit(MODE_CHOICE, "no ready backend")
 		return fallback
 
+	var use_cache: bool = bool(opts.get("cache", true))
 	var cache_key: String = _cache_key(MODE_CHOICE, prompt, opts)
-	var cached = _get_cache(cache_key)
+	var cached = _get_cache(cache_key) if use_cache else null
 	if cached != null and (cached as String) in valid_options:
 		return cached as String
 
@@ -374,7 +376,8 @@ func choose(prompt: String, valid_options: Array[String], fallback: String, opts
 	if guarded == fallback and not (str(raw).strip_edges() in valid_options):
 		inference_failed.emit(MODE_CHOICE, "guard rejected response")
 	else:
-		_set_cache(cache_key, guarded)
+		if use_cache:
+			_set_cache(cache_key, guarded)
 		inference_succeeded.emit(MODE_CHOICE)
 	return guarded
 
@@ -664,9 +667,9 @@ func _guard_choice(raw: String, valid_options: Array[String], fallback: String) 
 		var pattern: String = opt.to_lower()
 		var idx: int = lower.find(pattern)
 		while idx != -1:
-			var before_ok: bool = (idx == 0) or not lower[idx - 1].unicode_at(0) in range(97, 123)
+			var before_ok: bool = (idx == 0) or not _is_word_char(lower[idx - 1])
 			var after_idx: int = idx + pattern.length()
-			var after_ok: bool = (after_idx >= lower.length()) or not lower[after_idx].unicode_at(0) in range(97, 123)
+			var after_ok: bool = (after_idx >= lower.length()) or not _is_word_char(lower[after_idx])
 			if before_ok and after_ok:
 				if not (opt in matches):
 					matches.append(opt)
@@ -689,6 +692,12 @@ func _guard_choice(raw: String, valid_options: Array[String], fallback: String) 
 					return opt
 
 	return fallback
+
+
+## Letters and digits both continue a word, so option "1" is not found inside "17".
+static func _is_word_char(ch: String) -> bool:
+	var c: int = ch.unicode_at(0)
+	return (c >= 97 and c <= 122) or (c >= 48 and c <= 57)
 
 
 ## JSON guard: extract JSON from raw → parse → schema validate → fallback.
