@@ -84,6 +84,7 @@ var llm_custom_backend_enabled: bool = false  # tick 40: BYOK master switch (opt
 var llm_rebalance_enabled: bool = false  # tick 42: LLM-guided rebalance daemon (opt-in)
 var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates; only visible when debug_log_enabled
 var dev_full_kits: bool = false  # Item 18: grant all level-gated abilities to the party (testing)
+var dev_voice_every_line: bool = false  # Every party-line trigger speaks, no cooldown (testing the voice pack)
 
 
 ## Persist + apply the dev kit grant/strip to the live party.
@@ -188,6 +189,7 @@ func _ready() -> void:
 			debug_all_pcs_unlocked = GameState.debug_all_pcs_unlocked
 		if "game_constants" in GameState:
 			dev_full_kits = bool(GameState.game_constants.get("dev_full_kits", false))
+			dev_voice_every_line = bool(GameState.game_constants.get("dev_voice_every_line", false))
 	_build_ui()
 	_play_open_animation()
 
@@ -592,6 +594,18 @@ func _build_ui() -> void:
 	_settings_items.append({"control": dev_kits_item, "type": "toggle", "id": "dev_full_kits"})
 	MenuMouseHelper.make_clickable(dev_kits_item, dev_kits_idx, 400, 60,
 		_on_setting_click.bind(dev_kits_idx), _on_setting_hover.bind(dev_kits_idx))
+
+	var dev_voice_idx: int = _settings_items.size()
+	var dev_voice_item = _create_toggle_setting(
+		"Dev: Voice Every Line",
+		"Every party voice trigger speaks, no cooldown (testing the voice pack)",
+		dev_voice_every_line,
+		dev_voice_idx
+	)
+	vbox.add_child(dev_voice_item)
+	_settings_items.append({"control": dev_voice_item, "type": "toggle", "id": "dev_voice_every_line"})
+	MenuMouseHelper.make_clickable(dev_voice_item, dev_voice_idx, 400, 60,
+		_on_setting_click.bind(dev_voice_idx), _on_setting_hover.bind(dev_voice_idx))
 
 	# ── Action buttons ───────────────────────────────────────────────────
 	# Stacked in their own VBoxContainer inside the scroll area so any
@@ -1297,6 +1311,13 @@ func _adjust_setting(delta: int) -> void:
 		debug_all_pcs_unlocked = not debug_all_pcs_unlocked
 		_update_toggle_display(selected_index, debug_all_pcs_unlocked)
 		_save_debug_all_pcs_unlocked_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+	elif item["id"] == "dev_voice_every_line":
+		dev_voice_every_line = not dev_voice_every_line
+		_update_toggle_display(selected_index, dev_voice_every_line)
+		if GameState and "game_constants" in GameState:
+			GameState.game_constants["dev_voice_every_line"] = dev_voice_every_line
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 	elif item["id"] == "dev_full_kits":

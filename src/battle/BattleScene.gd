@@ -5151,7 +5151,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	# real state. With no menu, this ran, and the keyboard did the opposite of the bar.
 	#
 	# Now on the ACTIONS, so a pad's L/R and L2/R2 reach them too and a Controls rebind follows.
+	# The tail of an L2/R2 pull reaches here once defer has closed the menu; sharing Win98Menu's static latch makes one pull one press.
+	if event.is_action_released("battle_defer"):
+		Win98Menu._defer_axis_held = false
+	if event.is_action_released("battle_advance"):
+		Win98Menu._advance_axis_held = false
 	if is_player_selecting and current and event.is_action_pressed("battle_defer") and not event.is_echo():
+		if not _claim_shoulder("battle_defer"):
+			get_viewport().set_input_as_handled()
+			return
 		_close_win98_menu()
 		## Tick 174: defer log emit moved into BattleManager.player_defer so every caller path gets
 		## it once. Don't re-emit here.
@@ -5162,6 +5170,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Advance queues through the menu, so reopen it rather than printing an instruction. Pressing
 	# the Advance control and being told to press the Advance control is the shape he reported.
 	if is_player_selecting and current and event.is_action_pressed("battle_advance") and not event.is_echo():
+		if not _claim_shoulder("battle_advance"):
+			get_viewport().set_input_as_handled()
+			return
 		if use_win98_menus and (not active_win98_menu or not is_instance_valid(active_win98_menu)):
 			_show_win98_command_menu(current)
 		get_viewport().set_input_as_handled()
@@ -5179,6 +5190,18 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _show_win98_command_menu(combatant: Combatant) -> void:
 	_command_menu.show_win98_command_menu(combatant)
+
+
+## One L2/R2 pull is one press across every battle handler: Win98Menu's static latch is the only latch. False = this event is the tail of a pull already acted on.
+static func _claim_shoulder(action: String) -> bool:
+	var held: bool = Win98Menu._defer_axis_held if action == "battle_defer" else Win98Menu._advance_axis_held
+	if held and Input.is_action_pressed(action):
+		return false
+	if action == "battle_defer":
+		Win98Menu._defer_axis_held = true
+	else:
+		Win98Menu._advance_axis_held = true
+	return true
 
 
 func _close_win98_menu() -> void:

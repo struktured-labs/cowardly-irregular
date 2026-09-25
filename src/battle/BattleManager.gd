@@ -8980,7 +8980,10 @@ func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data
 	# unreachable for PARTY_LINE_COOLDOWN_ROUNDS, which is most of a battle.
 	var held_by_ambient: bool = str(_party_line_last_kind.get(name_key, "")) in AMBIENT_PARTY_LINE_EVENTS
 	var preempts: bool = held_by_ambient and not (event_kind in AMBIENT_PARTY_LINE_EVENTS)
-	if event_kind != "victory" and not preempts \
+	## Settings -> "Dev: Voice Every Line" lifts the cooldown so every trigger speaks (testing the voice pack).
+	var every_line: bool = GameState != null and "game_constants" in GameState \
+			and bool(GameState.game_constants.get("dev_voice_every_line", false))
+	if not every_line and event_kind != "victory" and not preempts \
 			and current_round - last_round < PARTY_LINE_COOLDOWN_ROUNDS:
 		return
 	_party_line_cooldowns[name_key] = current_round
