@@ -648,17 +648,16 @@ func _maybe_run_battle_smoke() -> void:
 			if m and is_instance_valid(m):
 				m.current_hp = 1
 		await _start_battle_async(["shadow_dragon"], true)
-		_gwait = 0.0
 		var game_over_node: Node = null
-		while game_over_node == null and _gwait < 30.0:
+		while game_over_node == null and Time.get_ticks_msec() < SMOKE_WIPE_DEADLINE_MS:
 			await get_tree().create_timer(0.5).timeout
-			_gwait += 0.5
 			for c in get_children():
 				if c is GameOverScreen:
 					game_over_node = c
 					break
 		if game_over_node == null:
-			print("[SMOKE] game_over screen never appeared within 30s")
+			var fighting: bool = BattleManager.current_state != BattleManager.BattleState.INACTIVE
+			print("[SMOKE] game_over screen never appeared by %.0fs process age (%s)" % [Time.get_ticks_msec() / 1000.0, "battle still running" if fighting else "battle ended without a game over"])
 			_smoke_failed = true
 		else:
 			await get_tree().create_timer(1.0).timeout
@@ -668,6 +667,8 @@ func _maybe_run_battle_smoke() -> void:
 	get_tree().quit(1 if _smoke_failed else 0)
 
 
+## The wipe waits on wall clock up to this process age: a loaded box took 73-95s where 30 game-seconds sufficed quiet; kept inside deploy_web.sh's `timeout 300`.
+const SMOKE_WIPE_DEADLINE_MS := 280000
 var _smoke_failed: bool = false
 
 
@@ -3433,7 +3434,11 @@ static func _restore_duelist(pc: Combatant) -> void:
 		return
 	if not pc.is_alive and pc.has_method("revive"):
 		pc.revive(pc.max_hp)
-	pc.current_hp = pc.max_hp
+	# revive() refuses a permakilled ally, so topping HP off afterwards fills a corpse's bar.
+	if pc.is_alive:
+		pc.current_hp = pc.max_hp
+	else:
+		pc.current_hp = 0
 	pc.current_mp = pc.max_mp
 	if "status_effects" in pc:
 		for s in (pc.status_effects as Array).duplicate():
