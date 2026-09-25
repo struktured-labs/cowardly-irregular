@@ -196,6 +196,13 @@ func _open_chest(dial: float) -> Dictionary:
 	return {"text": text, "paid": GameState.party_gold - before, "shown": _int_in(text, "Found (\\d+) Gold!")}
 
 
+func _grant_talk(dial: float) -> Dictionary:
+	_set_dial(dial)
+	var before: int = GameState.party_gold
+	var text: String = ConversationRewards._grant(GameState, {"gold": TALK_GOLD})
+	return {"text": text, "paid": GameState.party_gold - before, "shown": _int_in(text, "(\\d+) gold")}
+
+
 func _grant_quest(dial: float) -> Dictionary:
 	_set_dial(dial)
 	QuestSystem._last_reward_summary = ""
