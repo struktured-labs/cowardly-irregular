@@ -83,6 +83,20 @@ PCK_CACHE_LINE=167772160
 # A variable rather than a literal: the previous code passed 48 in one place and PRINTED "48 kbps
 # tier" in another, two spellings of one number that a change updates separately.
 WEB_AUDIO_KBPS="${WEB_AUDIO_KBPS:-40}"
+# The web-only VOICE tier (tools/make_web_voice.sh): party voice lines re-encoded for the web pck.
+# 0 = OFF — voice ships at master quality, as it always has. The encoding is @cowir-sfx's call;
+# it is set HERE and nowhere else. Measured on 211 clips: 24000 Hz at 32 or 40 kbps decode clean;
+# 32000/48000 Hz at 48 kbps put bad granule positions in 11-13 clips and are refused by the tool.
+# ON since this commit: @cowir-sfx's pick, 2026-09-25 — 24 kHz / 40 kbps (codec SNR 21.9 dB vs the
+# master, worst 21.0; the Chatterbox engine outputs 24 kHz, so nothing above 12 kHz exists to keep).
+WEB_VOICE_KBPS="${WEB_VOICE_KBPS:-40}"
+WEB_VOICE_AR="${WEB_VOICE_AR:-24000}"
+# Gate 3b-voice's bands: packed .oggvorbisstr bytes / staged tier bytes, per clip and median.
+# MEASURED, not borrowed from music: a real stage export of .490 with a 32 kbps / 24 kHz tier gave
+# 205 clips at min 1.102 · median 1.113 · max 1.134 (music at 40k: median 1.064). The stage-vs-tier
+# md5 check is the exact arm; these are the backstop. A 40k tier mislabelled 32k would read ~1.35.
+VOICE_RATIO_BAND="1.00,1.30"
+VOICE_MEDIAN_BAND="1.05,1.20"
 # Overridable so the post-push confirmation path is testable without touching itch,
 # matching deploy_desktop.sh.
 BUTLER_BIN="${BUTLER_BIN:-$(command -v butler || echo ./butler-bin/butler)}"
@@ -450,7 +464,7 @@ PYDROPS
 )"
 [ -n "$_WEB_DROPS" ] || _WEB_DROPS="the masters matched by export_presets.cfg's Web exclude_filter"
 if [ "${WEB_STAGE:-1}" = "1" ]; then
-  ./tools/make_web_stage.sh "$WEB_AUDIO_KBPS" || {
+  ./tools/make_web_stage.sh "$WEB_AUDIO_KBPS" "$WEB_VOICE_KBPS" "$WEB_VOICE_AR" || {
     echo "[deploy] BLOCKED: staged web build failed — see its own BLOCKED line above." >&2
     echo "        WEB_STAGE=0 exports directly, but then ships without ${_WEB_DROPS}." >&2
     exit 2; }
@@ -549,6 +563,21 @@ if [ "${WEB_STAGE:-1}" = "1" ]; then
           --record="${WEB_REF_RECORD:-$HOME/.cache/cowir_web_audio/reference.txt}" || {
     echo "[deploy] BLOCKED: the shipped pck does not carry the ${WEB_AUDIO_KBPS} kbps tier." >&2
     exit 2; }
+  # GATE 3b-VOICE: the same identity check for the voice tier, when it is on. The tier dir comes
+  # from the marker make_web_stage.sh wrote — never re-derived here. No --record: that file is
+  # the MUSIC reference and the checker refuses to let another corpus overwrite it.
+  if [ "$WEB_VOICE_KBPS" != "0" ]; then
+    _VOICE_TIER="$(cat tmp/web_stage.voice_tier 2>/dev/null || true)"
+    [ -n "$_VOICE_TIER" ] && [ -d "$_VOICE_TIER" ] || {
+      echo "[deploy] BLOCKED: WEB_VOICE_KBPS=${WEB_VOICE_KBPS} but the stage recorded no voice tier" >&2
+      echo "        (tmp/web_stage.voice_tier) — nothing says which voice audio the pck should carry." >&2
+      exit 2; }
+    python3 "$_TIER_CHECK" builds/web/index.pck "$_VOICE_TIER" \
+            --stage=tmp/web_stage --subdir=assets/audio/sfx --cache-line="$PCK_CACHE_LINE" \
+            --ratio-band="$VOICE_RATIO_BAND" --median-band="$VOICE_MEDIAN_BAND" || {
+      echo "[deploy] BLOCKED: the shipped pck does not carry the ${WEB_VOICE_KBPS} kbps voice tier." >&2
+      exit 2; }
+  fi
 fi
 
 # gate 3c: every asset this build reads AS RAW BYTES must actually be IN the pack, raw.

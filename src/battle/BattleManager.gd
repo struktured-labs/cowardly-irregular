@@ -563,6 +563,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# Clear per-battle combatant state: buffs/debuffs/status effects don't
 	# persist across encounters (was a leak — GameLoop reuses party Combatant
 	# instances, so Protect/Shell/Armor Break etc. carried over if untouched).
+	# permakilled is the exception — clear_transient_statuses keeps that marker.
 	# HP/MP are deliberately NOT reset here — those come from the previous
 	# battle / inn / item usage.
 	#
@@ -577,10 +578,8 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 			combatant.active_buffs.clear()
 		if "active_debuffs" in combatant:
 			combatant.active_debuffs.clear()
-		if "status_effects" in combatant:
-			combatant.status_effects.clear()
-		if "status_durations" in combatant:
-			combatant.status_durations.clear()
+		if combatant.has_method("clear_transient_statuses"):
+			combatant.clear_transient_statuses()
 		if "is_defending" in combatant:
 			combatant.is_defending = false
 		if "doom_counter" in combatant:
@@ -1172,6 +1171,9 @@ func end_battle(victory: bool) -> void:
 
 	# Boss gloat — fire-and-forget; scripted ships now, async LLM re-narration may replace it.
 	_dispatch_boss_gloat(victory)
+
+	## An in-fight bark would keep talking over the results. Stop it before the victory line starts.
+	SoundManager.stop_voice()
 
 	# Party line on victory — one PC speaks first; cooldown still applies.
 	if victory:

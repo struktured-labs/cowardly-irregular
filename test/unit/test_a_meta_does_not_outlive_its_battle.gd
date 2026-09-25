@@ -145,7 +145,7 @@ func test_start_battle_actually_walks_that_list() -> void:
 		"and honour the prefix convention, or every composed key silently survives the boundary")
 	assert_true(body.contains("combatant.get_meta_list()"),
 		"which needs the live meta list, not the declared name")
-	assert_true(body.contains("combatant.status_effects.clear()"),
+	assert_true(body.contains("combatant.clear_transient_statuses()"),
 		"CONTROL: the FIELD clear this sits beside is still here — the metas are an addition, not a replacement")
 
 
