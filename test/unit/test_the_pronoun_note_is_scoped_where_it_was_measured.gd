@@ -77,6 +77,8 @@ const EXEMPT: Dictionary = {
 		"returns an intent enum and posture — the boss's choice, never a spoken line",
 	"build_rule_composition":
 		"returns autobattle rules; its inputs are ability ids and the player's own rule text",
+	"build_party_line_choice":
+		"returns an option number (choose() guards it to the labels); the spoken line is authored text, never generated",
 }
 
 

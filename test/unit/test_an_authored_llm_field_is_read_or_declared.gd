@@ -28,16 +28,17 @@ const BOSS_DATA := "res://data/boss_dialogue.json"
 const JOB_PERSONAS := "res://data/job_personas.json"
 const NPC_PERSONAS := "res://data/cutscenes/npc_showcase_personas.json"
 const CONVERSATION_REWARDS := "res://data/conversation_rewards.json"
+const VOICE_CAST := "res://data/voice_cast.json"
 
 ## EVERY authored file this lane's code loads. The first version of this census listed
 ## three and read as complete — `conversation_rewards.json` was missed, and a census with
 ## a hole reads exactly like a census without one (@cowir-autogrind, 11607, whose filtered
 ## key view hid thirty). Derived below rather than trusted: an arm greps src/llm for
 ## res://data paths and fails if one is not in this list.
-const AUTHORED_FILES := [BOSS_DATA, JOB_PERSONAS, NPC_PERSONAS, CONVERSATION_REWARDS]
+const AUTHORED_FILES := [BOSS_DATA, JOB_PERSONAS, NPC_PERSONAS, CONVERSATION_REWARDS, VOICE_CAST]
 
 ## Keys whose CHILDREN are entry ids rather than fields, at any depth.
-const ID_MAP_KEYS := ["bosses", "jobs", "npcs", "by_npc"]
+const ID_MAP_KEYS := ["bosses", "jobs", "npcs", "by_npc", "voices"]
 
 ## Files whose ROOT is itself an id map — boss ids and npc display names sit at the top
 ## level, beside prose keys. Measured from the four files rather than assumed: the other

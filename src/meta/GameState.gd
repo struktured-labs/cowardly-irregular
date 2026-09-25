@@ -94,6 +94,10 @@ var llm_custom_base_url: String = ""
 var llm_custom_api_format: String = "openai"  ## "openai" | "ollama"
 var llm_custom_model: String = ""
 var llm_custom_api_key: String = ""  ## SENSITIVE — never log, never print
+## Live voice (local TTS server): desktop only, SaveSystem skips these on web like llm_custom_*.
+var tts_live_enabled: bool = false
+var tts_server_url: String = "http://127.0.0.1:8004"
+var tts_model: String = "chatterbox"
 
 
 ## ── LLM Rebalance Daemon ───────────────────────────────────────────

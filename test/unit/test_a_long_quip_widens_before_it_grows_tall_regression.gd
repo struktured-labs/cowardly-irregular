@@ -46,7 +46,7 @@ func _scripted_lines() -> Array:
 			var entry = tv[trig]
 			var items: Array = entry if entry is Array else [entry]
 			for ln in items:
-				out.append({"who": "%s/%s" % [job, trig], "text": '"%s"' % str(ln)})
+				out.append({"who": "%s/%s" % [job, trig], "text": '"%s"' % VoiceLines.text_of(ln)})
 	return out
 
 

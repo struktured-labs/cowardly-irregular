@@ -1086,6 +1086,9 @@ func save_settings() -> void:
 				settings["llm_custom_model"] = GameState.llm_custom_model
 			if "llm_custom_api_key" in GameState:
 				settings["llm_custom_api_key"] = GameState.llm_custom_api_key
+			for f in ["tts_live_enabled", "tts_server_url", "tts_model"]:
+				if f in GameState:
+					settings[f] = GameState.get(f)
 	## Same staging as _write_save_file, and for a sharper reason: load_settings' own docstring
 	## records that a crash mid-write has ALREADY left an empty settings.json in the wild.
 	var json_string := JSON.stringify(settings, "\t")
@@ -1259,5 +1262,11 @@ func load_settings() -> void:
 				GameState.llm_custom_model = str(settings["llm_custom_model"])
 			if settings.has("llm_custom_api_key") and "llm_custom_api_key" in GameState:
 				GameState.llm_custom_api_key = str(settings["llm_custom_api_key"])
+			if settings.has("tts_live_enabled") and "tts_live_enabled" in GameState:
+				GameState.tts_live_enabled = bool(settings["tts_live_enabled"])
+			if settings.has("tts_server_url") and "tts_server_url" in GameState and str(settings["tts_server_url"]).strip_edges() != "":
+				GameState.tts_server_url = str(settings["tts_server_url"]).strip_edges()
+			if settings.has("tts_model") and "tts_model" in GameState and str(settings["tts_model"]).strip_edges() != "":
+				GameState.tts_model = str(settings["tts_model"]).strip_edges()
 
 	print("[SAVE] Settings loaded")
