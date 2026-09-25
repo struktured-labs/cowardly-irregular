@@ -4,6 +4,10 @@ extends GutTest
 
 func test_it_plays_on_the_voice_player_at_unity_pitch_and_returns_its_length() -> void:
 	var s := VoiceAudio.decode(WavFixture.tone(0.5, 20000))
+	if SoundManager.mixer_is_wedged():
+		assert_false(SoundManager.mixer_is_wedged(),
+			"headless mixer wedged — voice WAV decode was refused so AudioServer.lock cannot hang the suite (issue #224).")
+		return
 	SoundManager._voice_player.pitch_scale = 0.9
 	SoundManager._voice_player.volume_db = -30.0
 	var got: float = SoundManager.play_voice_stream(s)

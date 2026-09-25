@@ -43,4 +43,9 @@ func test_two_pinned_runs_are_clipping_and_one_is_a_peak() -> void:
 
 func test_the_supported_servers_minus_1_dbfs_output_is_not_clipping() -> void:
 	var w := VoiceAudio.decode(WavFixture.tone(1.0, 29196))
+	if SoundManager != null and SoundManager.mixer_is_wedged():
+		assert_false(SoundManager.mixer_is_wedged(),
+			"headless mixer wedged — voice WAV decode was refused so AudioServer.lock cannot hang the suite (issue #224).")
+		return
+	assert_not_null(w, "a whole -1 dBFS line must decode")
 	assert_eq(VoiceAudio.pinned_runs(w), 0, "peak-normalised to -1 dBFS never reaches the rail")
