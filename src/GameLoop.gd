@@ -2925,6 +2925,9 @@ func _restore_party_from_save_data() -> bool:
 				push_warning("[GameLoop] _restore_party_from_save_data: assign_secondary_job('%s') failed for %s — leaving secondary unset" % [sec_id, c.combatant_name])
 		# Re-apply equipment so stat mods attach; tick 189 warns on equip failure (unknown id, removed item). Empty is valid — no fallback.
 		var w = entry.get("equipped_weapon", "")
+		# assign_job gifts a Bard a piano_scythe into an empty hand. That gift is a join; on load the save already said the hand was empty, and leaving the gift on mints a second scythe beside the one in the bag.
+		if w == "":
+			c.equipped_weapon = ""
 		if w != "" and not EquipmentSystem.equip_weapon(c, w):
 			push_warning("[GameLoop] _restore_party_from_save_data: equip_weapon('%s') failed for %s — slot left empty" % [w, c.combatant_name])
 		var a = entry.get("equipped_armor", "")
