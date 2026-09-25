@@ -4403,6 +4403,25 @@ func _prewarm_area_sprites() -> void:
 		_prewarm_battle_sprites(enemy_data)
 
 
+## Mirrors the early returns below, plus the world_transition suppress inside _start_battle_async. MimicChest will not spend itself when this is true.
+func battle_trigger_would_be_dropped() -> bool:
+	if current_state != LoopState.EXPLORATION:
+		return true
+	if _overworld_menu and is_instance_valid(_overworld_menu):
+		return true
+	if _autogrind_ui_open():
+		return true
+	if _autobattle_editor and is_instance_valid(_autobattle_editor):
+		return true
+	if _battle_transition_starting:
+		return true
+	if _transition_in_progress:
+		return true
+	if InputLockManager and InputLockManager.has_lock("world_transition"):
+		return true
+	return false
+
+
 func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> void:
 	"""Handle battle triggered from exploration"""
 	print("[GAMELOOP] _on_exploration_battle_triggered called! state=%s enemies=%s" % [current_state, enemies])
@@ -7318,30 +7337,9 @@ func _flush_chat_toasts() -> void:
 	_pending_chat_toasts.clear()
 
 
-## Tick 264: visible feedback for bestiary kill milestones (10/50/100
-## /500 of one monster). Pluralization handled with a naive +s — fine
-## for current monster names ("Slime"/"Bat"/"Goblin"); add a real
-## pluralizer if monster names start ending in y/s/x.
-## Tick 358: simple English pluralization that handles the most common
-## non-trivial endings monsters.json names hit: Entity → Entities,
-## Process → Processes, Lady → Ladies. Pre-fix the bare `%ss` append
-## produced "Entitys", "Processs", "Ladys" toast text on milestone
-## hits. Only covers the rules the actual monster name set needs;
-## extend the helper as new data lands rather than pulling in a full
-## inflection lib for a polish nit.
+## Banners and this toast must agree. The rules live on BattleEnemySpawner so a third copy cannot drift back to +"s".
 func _pluralize_monster_name(name: String) -> String:
-	if name.is_empty():
-		return name
-	var lower: String = name.to_lower()
-	# -y after a consonant → -ies (Lady → Ladies, Entity → Entities)
-	if lower.ends_with("y") and lower.length() >= 2:
-		var penultimate: String = lower.substr(lower.length() - 2, 1)
-		if not (penultimate in ["a", "e", "i", "o", "u"]):
-			return name.substr(0, name.length() - 1) + "ies"
-	# -s, -sh, -ch, -x, -z → -es (Process → Processes, Wretch → Wretches)
-	if lower.ends_with("sh") or lower.ends_with("ch") or lower.ends_with("s") or lower.ends_with("x") or lower.ends_with("z"):
-		return name + "es"
-	return name + "s"
+	return BattleEnemySpawner.pluralize_monster_name(name)
 
 
 func _on_bestiary_kill_milestone(_monster_id: String, monster_name: String, count: int) -> void:
