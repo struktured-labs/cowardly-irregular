@@ -632,6 +632,12 @@ func _check_status_skip(combatant) -> String:
 		_log("%s is stunned and cannot act!" % combatant.combatant_name)
 		return "skip"
 
+	# Jailbreak skip_turn. Live spends one point per skipped action; round-start end_turn does not.
+	if combatant.has_status("cannot_act"):
+		combatant.spend_action_clock("cannot_act")
+		_log("%s cannot act!" % combatant.combatant_name)
+		return "skip"
+
 	if combatant.has_status("sleep"):
 		if randf() < 0.3:
 			combatant.remove_status("sleep")
@@ -639,6 +645,7 @@ func _check_status_skip(combatant) -> String:
 			return ""
 		else:
 			_log("%s is asleep..." % combatant.combatant_name)
+			combatant.spend_action_clock("sleep")
 			return "skip"
 
 	if combatant.has_status("confuse"):
@@ -648,6 +655,7 @@ func _check_status_skip(combatant) -> String:
 			return ""
 		else:
 			_log("%s is confused and attacks wildly!" % combatant.combatant_name)
+			combatant.spend_action_clock("confuse")
 			return "confuse_attack"
 
 	if combatant.has_status("fear"):
@@ -656,6 +664,7 @@ func _check_status_skip(combatant) -> String:
 			_log("%s overcame their fear!" % combatant.combatant_name)
 		elif randf() < 0.5:
 			_log("%s is paralyzed with fear!" % combatant.combatant_name)
+			combatant.spend_action_clock("fear")
 			return "skip"
 
 	## puppy_eyes applies charm; live skips the turn unless randf() < 0.35 breaks it. The skip spends one point; round-start end_turn does not.
@@ -796,31 +805,39 @@ func _execute_action(action: Dictionary) -> void:
 	if not combatant or not combatant.is_alive:
 		return
 
+	var acted := false
 	match action.get("type", "attack"):
 		"attack":
+			acted = true
 			var target = action.get("target")
 			if target and target.is_alive:
 				var dmg = _resolve_attack(combatant, target)
 				_log("%s attacks %s for %d" % [combatant.combatant_name, target.combatant_name, dmg])
 
 		"ability":
+			acted = true
 			var ability_id = action.get("ability_id", "")
 			var targets = action.get("targets", [])
 			if ability_id != "" and targets.size() > 0:
 				_resolve_ability(combatant, ability_id, targets)
 
 		"item":
+			acted = true
 			var item_id = action.get("item_id", "")
 			var targets = action.get("targets", [])
 			if item_id != "" and targets.size() > 0:
 				_resolve_item(combatant, item_id, targets[0])
 
 		"defer":
+			acted = true
 			combatant.is_defending = true
 			_log("%s defers" % combatant.combatant_name)
 
 		"group_done":
 			pass  # Already executed during selection phase
+	# Silence and pacify were read inside the action. A fear swing that was not skipped was halved there too.
+	if acted and is_instance_valid(combatant):
+		combatant.spend_restriction_clocks()
 
 
 ## Twin of Combatant._has_equipment_resistance. PRESENCE across the three slots, not a sum: live
