@@ -213,8 +213,10 @@ func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 ## blocks every rule beneath it, forever. Guardian Default pinned on an `iron_guard` rule (a
 ## brass_golem ability no player job has) guarded by `not_has_buff defense`: the buff could never
 ## land, so the condition stayed true and taunt/protect/attack were unreachable for the whole fight.
-## Scoped to knows_ability — a STRUCTURAL impossibility. Transient blocks (MP, silence) still match,
-## so the player's authored priority is honoured and the battle log still names the reason.
+## Same pin for a revive: Raise and Phoenix Down call Combatant.revive, which refuses a permakilled
+## ally, and that corpse stays down for the campaign so ally_dead never goes false. The attack
+## under the rule never ran. Transient blocks (MP, silence, an empty bag) still match, so the
+## player's authored priority is honoured and the battle log still names the reason.
 func _rule_is_performable(combatant: Combatant, rule: Dictionary) -> bool:
 	## UNDECIDABLE IS NOT EMPTY. The grid editor's Simulate probe is a scratch Combatant, and with
 	## no character open it carries no job at all — knows_ability would then answer "no" to every
@@ -230,12 +232,70 @@ func _rule_is_performable(combatant: Combatant, rule: Dictionary) -> bool:
 	if acts.is_empty():
 		return true
 	for action_def in acts:
-		var ad: Dictionary = action_def
-		if str(ad.get("type", "")) != "ability":
-			return true
-		if _combatant_has_learned(combatant, _resolve_ability_upgrade(combatant, ad)):
+		if _action_can_be_attempted(combatant, action_def):
 			return true
 	return false
+
+
+## One action the character can land. An ability they have never learned cannot. A revival with
+## nobody left that revive() will accept cannot either — and that is structural, not a dry MP bar.
+## An empty bag stays a match: the log's "has no Phoenix Down left" is the reason the player needs.
+func _action_can_be_attempted(combatant: Combatant, ad: Dictionary) -> bool:
+	var kind: String = str(ad.get("type", ""))
+	if kind == "ability":
+		var ability_id: String = _resolve_ability_upgrade(combatant, ad)
+		if not _combatant_has_learned(combatant, ability_id):
+			return false
+		if _revival_target_is_decidable(combatant) and _ability_is_revival(ability_id):
+			return not _get_revivable_allies(combatant).is_empty()
+		return true
+	if kind == "item" and _revival_target_is_decidable(combatant) and _item_revives(str(ad.get("id", ""))):
+		return not _get_revivable_allies(combatant).is_empty()
+	return true
+
+
+## Simulate's probe is not in either party, and outside a fight there is no roster to read.
+## "Nobody to revive" is only a fact when this combatant is actually in the battle.
+func _revival_target_is_decidable(combatant: Combatant) -> bool:
+	if combatant == null:
+		return false
+	var bm = get_node_or_null("/root/BattleManager")
+	if bm == null:
+		return false
+	return combatant in bm.player_party or combatant in bm.enemy_party
+
+
+func _ability_is_revival(ability_id: String) -> bool:
+	var js = get_node_or_null("/root/JobSystem")
+	if js == null or not js.has_method("get_ability"):
+		return false
+	var ability = js.get_ability(ability_id)
+	if not (ability is Dictionary) or (ability as Dictionary).is_empty():
+		return false
+	return str((ability as Dictionary).get("type", "")) == "revival"
+
+
+func _item_revives(item_id: String) -> bool:
+	if item_id == "":
+		return false
+	var its = get_node_or_null("/root/ItemSystem")
+	if its == null or not its.has_method("get_item"):
+		return false
+	var item = its.get_item(item_id)
+	if not (item is Dictionary) or (item as Dictionary).is_empty():
+		return false
+	var effects = (item as Dictionary).get("effects", {})
+	return effects is Dictionary and bool((effects as Dictionary).get("revive", false))
+
+
+## Corpses revive() will accept. Permakilled allies stay in the party and stay dead; they are
+## not a Raise or Phoenix Down target. Undo Death does not use this list — it is not type revival.
+func _get_revivable_allies(combatant: Combatant) -> Array[Combatant]:
+	var out: Array[Combatant] = []
+	for ally in _get_dead_allies_for(combatant):
+		if ally != null and is_instance_valid(ally) and not ally.has_status("permakilled"):
+			out.append(ally)
+	return out
 
 
 func _evaluate_grid_rule(combatant: Combatant, rule: Dictionary) -> bool:
@@ -706,6 +766,19 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 
 		"item":
 			var item_id = action_def.get("id", "")
+			## The grid editor stores every item as target "self" (potions, antidotes). Phoenix Down
+			## is a revive: self is the living caster, battle drops that target, and the turn fizzles
+			## while the KO'd ally stays down. Aim at an ally revive() will accept instead.
+			if _item_revives(str(item_id)):
+				var fallen: Array[Combatant] = _get_revivable_allies(combatant)
+				var picked: Array = []
+				if fallen.size() > 0:
+					picked.append(fallen[0])
+				return {
+					"type": "item",
+					"item_id": item_id,
+					"targets": picked
+				}
 			return {
 				"type": "item",
 				"item_id": item_id,
@@ -850,8 +923,13 @@ func _resolve_ability_targets(combatant: Combatant, ability_id: String, target_t
 			## helpers — _get_allies_for filters is_alive, so lowest_hp_ally can never return a
 			## corpse and every revival rule aimed itself at a living member. Live skips living
 			## targets (BattleManager:5473), so raise was inert in BOTH engines.
+			## Revival additionally skips permakilled: revive() refuses them, and the first corpse
+			## in party order was often that one, so the ordinary KO behind them stayed down.
+			## Undo Death is type meta and still receives the permakilled ally.
 			if ab_target == "dead_ally":
 				var fallen: Array[Combatant] = _get_dead_allies_for(combatant)
+				if str(ability.get("type", "")) == "revival":
+					fallen = _get_revivable_allies(combatant)
 				var one: Array[Combatant] = []
 				if fallen.size() > 0:
 					one.append(fallen[0])

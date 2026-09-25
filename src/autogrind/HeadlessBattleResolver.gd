@@ -2110,10 +2110,37 @@ func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
 	return actual
 
 
+func _grind_item_revives(item_id: String) -> bool:
+	var its = _get_autoload("ItemSystem")
+	if its == null or not its.has_method("get_item"):
+		return false
+	var item = its.get_item(item_id)
+	if not (item is Dictionary) or (item as Dictionary).is_empty():
+		return false
+	var effects = (item as Dictionary).get("effects", {})
+	return effects is Dictionary and bool((effects as Dictionary).get("revive", false))
+
+
 func _resolve_item(user, item_id: String, target) -> void:
 	## Same one-bag rule as BattleManager._execute_item, so a grind spends what a live battle would.
 	var bag: Array = _player_party if user in _player_party else [user]
 	if ItemSystem.party_item_count(bag, item_id) <= 0:
+		return
+	## A revive used to be taken here and then thrown away, because the next guard returned on
+	## every dead target. The feather left the bag and the KO stayed down. A permakilled corpse
+	## is not a spend either — revive() refuses them, same as a live battle that never queues one.
+	if _grind_item_revives(item_id):
+		if target == null or not is_instance_valid(target) or not (target is Combatant) or target.is_alive:
+			return
+		if target.has_method("has_status") and target.has_status("permakilled"):
+			return
+		var its_revive = _get_autoload("ItemSystem")
+		if its_revive != null and its_revive.has_method("use_item"):
+			var corpse: Combatant = target
+			var revive_targets: Array[Combatant] = [corpse]
+			if its_revive.use_item(user, item_id, revive_targets):
+				ItemSystem.take_party_item(user, bag, item_id)
+				_log("%s uses %s on %s" % [user.combatant_name, item_id, corpse.combatant_name])
 		return
 	ItemSystem.take_party_item(user, bag, item_id)
 
