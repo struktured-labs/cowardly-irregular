@@ -7,8 +7,12 @@
 #   tools/run_tests.sh                 # full unit suite
 #   tools/run_tests.sh <name> [<name>...]  # one or more files, in ONE godot process
 #   tools/run_tests.sh --isolated      # the quarantined suite (own process by design)
+#   RUN_TESTS_SEE_PADS=1 tools/run_tests.sh ...  # let godot see plugged-in controllers (hidden by default)
 #
 # Exit codes:  0 pass · 1 test failures · 2 bad invocation · 3 nothing ran · 4 a test did not assert
+#              124 wedged (no Totals block — the run was never judged)
+# A shutdown SIGKILL (137) or SIGTERM (143) AFTER a real Totals block is not 124 and not a pass
+# by itself. The totals are the verdict: Failing N stays exit 1; a block with no failures is exit 0.
 set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p tmp
@@ -22,6 +26,36 @@ mkdir -p tmp
 GUT_LOG="tmp/gut_manual_godot.$$.log"
 RUN_LOG="tmp/run_tests_last.$$.log"
 BASE=(godot --headless --audio-driver Dummy --log-file "$GUT_LOG" -s addons/gut/gut_cmdln.gd -gprefix=test_ -gsuffix=.gd -gexit)
+
+# HIDE THE HOST'S CONTROLLERS. Headless godot enumerates a plugged-in pad, and every "no pad attached"
+# arm then goes RED: 17 across 10 files of one 92-file corpus with struktured's 8BitDo awake
+# (2026-09-23, identical at unmodified main), 40 in cowir-main's first .474 gate. A live press also
+# reached a test process and freed an editor mid-arm. What is plugged into the box is not the tree,
+# so every run gets an EMPTY /dev/input. Measured on the real child before relying on it: a 90-frame
+# probe counts 1 pad bare / 0 jailed; exit codes pass through; a spinning godot under `timeout 3` is
+# still cut at 3.0s with EC=124 and nothing left running. ⚠️ No `--die-with-parent`: measured, it
+# does NOT reap a TERM-ignoring child, so it would read as a backstop and be none (the --kill-after
+# trap below). The bound still rests on godot honouring the TERM that bwrap forwards.
+# The reported state is MEASURED from the /dev/input godot will see, not inferred from whether this
+# jail applied: under an OUTER jail (cowir-main gates that way) a nested bwrap is refused, and the
+# first version then printed VISIBLE over a run whose pads were already hidden.
+PAD_JAIL=(bwrap --dev-bind / / --tmpfs /dev/input)
+_input_nodes() { if [ -d /dev/input ]; then ls -A /dev/input | wc -l; else echo 0; fi; }
+_jail_err=""
+if [ "${RUN_TESTS_SEE_PADS:-0}" != "1" ] && command -v bwrap > /dev/null; then
+  if _jail_err="$("${PAD_JAIL[@]}" true 2>&1)"; then
+    BASE=("${PAD_JAIL[@]}" "${BASE[@]}")
+  fi
+fi
+if [ "${BASE[0]}" = "bwrap" ]; then
+  PAD_STATE="hidden (empty /dev/input)"
+elif [ "$(_input_nodes)" -eq 0 ]; then
+  PAD_STATE="hidden (/dev/input already empty here)"
+elif [ "${RUN_TESTS_SEE_PADS:-0}" = "1" ]; then
+  PAD_STATE="VISIBLE (RUN_TESTS_SEE_PADS=1)"
+else
+  PAD_STATE="VISIBLE ($([ -n "$_jail_err" ] && echo "${_jail_err%%,*}" || echo "no bwrap on PATH")) — 'no pad' arms red if a controller is plugged in"
+fi
 
 # PLAYER-DATA NET — HERE, not in gate.sh, because THIS is the documented command.
 # The suite writes test data over user://script_exports/ under fixed filenames, which are the same
@@ -157,11 +191,21 @@ _tree_stamp() {
   echo "run_tests.sh: TREE ${sha} (${branch}) dirty=${dirty} at $(date -Is)"
 }
 
+# kill(1) delivers SIGKILL. `timeout --signal=KILL` on this box does not.
+_kill_pid_tree() {
+  local _p="$1" _c
+  for _c in $(ps -o pid= --ppid "$_p" 2>/dev/null); do
+    _kill_pid_tree "$_c"
+  done
+  kill -9 "$_p" 2>/dev/null || true
+}
+
 run_gut() {
   # Truncate explicitly, then append: `tee -a` alone would inherit a same-PID log from a previous
   # boot, which is the same stale-artifact class the header exists to close.
   : > "$RUN_LOG"
   _tree_stamp | tee -a "$RUN_LOG" >&2
+  echo "run_tests.sh: host controllers ${PAD_STATE}" | tee -a "$RUN_LOG" >&2
   # ⛔ BOUND THE RUN. A wedged godot is not a slow one and does not end on its own: the .461 gate
   # spun 1h57m at 100% on ONE thread with its log frozen for 1h49m, and nothing in this script or
   # in gate.sh would ever have stopped it. Measured suites are 268-689s, so 1800s is ~2.6x the
@@ -179,9 +223,82 @@ run_gut() {
   # it and no escalation is needed. ⚠️ A CONSEQUENCE WORTH MORE THAN THIS CALL SITE:
   # `timeout --signal=KILL N CMD` is a SILENT NO-OP as a bound — it returns 124 on schedule while
   # the command runs on. Never reach for KILL as "the forceful option".
-  timeout "$_budget" "${BASE[@]}" "$@" 2>&1 | tee -a "$RUN_LOG"
-  local ec=${PIPESTATUS[0]}
+  # Totals are printed before engine shutdown. A wedged mix thread then never joins,
+  # so the process sits forever with the results already in the log. `timeout --signal=KILL`
+  # cannot deliver SIGKILL on this box; kill(1) can. Silence AFTER a real Totals block means
+  # shutdown is stuck, not that a test is still thinking. Default 30s; tests shrink it.
+  # ⛔ POLL 0 IS REFUSED, not honoured: `sleep 0` spins a core, and `_still` would advance by 0 so
+  # the quiet-after-totals kill could never fire. A leading 0 is refused too — `$(( x + 08 ))` is an
+  # octal error. Grace may be 0 (SIGKILL at the budget itself), but not 0-prefixed.
+  local _poll="${RUN_TESTS_POLL_S:-1}" _quiet="${RUN_TESTS_QUIET_AFTER_TOTALS:-30}" _grace="${RUN_TESTS_KILL_GRACE_S:-60}"
+  case "$_poll" in ''|*[!0-9]*|0*) _poll=1 ;; esac
+  case "$_quiet" in ''|*[!0-9]*) _quiet=30 ;; esac
+  case "$_grace" in ''|*[!0-9]*|0?*) _grace=60 ;; esac
+  timeout "$_budget" "${BASE[@]}" "$@" > >(tee -a "$RUN_LOG") 2>&1 &
+  local _tp=$! _last_size=0 _still=0 _sz _killed_after_totals=0
+  # ⛔ THIS LOOP IS BOUNDED BY ITS OWN CLOCK, NOT ONLY BY `timeout`. `timeout` ends the run only if
+  # its TERM ends the child, and a child that outlives TERM (test_a_runner_that_ignores_term_is_still_bounded —
+  # measured: `timeout 1` waited out a TERM-ignoring 6s child) kept `kill -0` true for as long as it
+  # liked. The quiet-after-totals kill below cannot help: a wedge BEFORE Totals never arms it.
+  # So at budget + grace this loop stops polling and SIGKILLs the tree with kill(1), the one path
+  # that delivers SIGKILL on this box. Without the cap, tools/check_polling_bounded.py blocks every
+  # publish (it blocked .486), and it was right to.
+  local _cap=$(( _budget + _grace )) _waited=0
+  while [ "$_waited" -lt "$_cap" ] && kill -0 "$_tp" 2>/dev/null; do
+    sleep "$_poll"
+    _waited=$(( SECONDS - _t0 ))
+    _sz=$(wc -c < "$RUN_LOG" 2>/dev/null | tr -dc '0-9')
+    if [ -z "$_sz" ] || [ "$_sz" != "$_last_size" ]; then
+      _last_size=${_sz:-0}
+      _still=0
+      continue
+    fi
+    _still=$((_still + _poll))
+    if [ "$_still" -ge "$_quiet" ] && command grep -aE '^Tests[[:space:]]+[0-9]+$' "$RUN_LOG" >/dev/null; then
+      echo "run_tests.sh: totals are in and the log has been still for ${_still}s — killing a mix thread that will not join" >&2
+      _killed_after_totals=1
+      _kill_pid_tree "$_tp"
+      break
+    fi
+  done
+  if [ "$_killed_after_totals" -eq 0 ] && kill -0 "$_tp" 2>/dev/null; then
+    echo "run_tests.sh: still running ${_waited}s in, ${_grace}s past the ${_budget}s budget — timeout's TERM did not end it. SIGKILL via kill(1)." >&2
+    _kill_pid_tree "$_tp"
+  fi
+  wait "$_tp"
+  local ec=$?
   _elapsed=$(( SECONDS - _t0 ))
+  # A signal exit that already has a Totals block was judged. 137 is our SIGKILL (or
+  # SoundManager's OS.kill at headless shutdown). It must not fall through to WEDGED,
+  # and it must not count as a pass while Failing N is on the page.
+  local _totals_present=0 _failing_n=0 _passing_n=0 _tests_n=0 _shutdown_raw=0 _signal_exit=0
+  if command grep -aE '^Tests[[:space:]]+[0-9]+$' "$RUN_LOG" >/dev/null; then
+    _totals_present=1
+    _tests_n="$(command grep -aE '^Tests[[:space:]]+[0-9]+$' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+    _passing_n="$(command grep -aE '^[[:space:]]+Passing[[:space:]]+[0-9]+$' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+    _failing_n="$(command grep -aE '^[[:space:]]+Failing[[:space:]]+[0-9]+$' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+    _passing_n="${_passing_n:-0}"
+    _failing_n="${_failing_n:-0}"
+  fi
+  case "$ec" in
+    124|125|137|143) _signal_exit=1 ;;
+  esac
+  if [ "$_killed_after_totals" -eq 1 ]; then
+    _signal_exit=1
+  fi
+  if [ "$_totals_present" -eq 1 ] && [ "$_signal_exit" -eq 1 ]; then
+    _shutdown_raw=$ec
+    echo "run_tests.sh: SHUTDOWN KILLED AFTER TOTALS (process exit ${_shutdown_raw})." >&2
+    echo "  Tests ${_tests_n}  Passing ${_passing_n}  Failing ${_failing_n}." >&2
+    echo "  The signal is not the verdict. A run passes only when the totals show no failures." >&2
+    if [ "$_failing_n" -gt 0 ]; then
+      echo "  Failing ${_failing_n} — this stays a failure (exit 1). The kill must not hide it." >&2
+      ec=1
+    else
+      echo "  Failing 0 — the totals are clean. Exit 0 unless a later vacuity check refuses the run." >&2
+      ec=0
+    fi
+  fi
   # ⛔ DO NOT TEST FOR 124 ALONE — THE CODE IS SET BY THE FLAGS, NOT BY THE IMPLEMENTATION.
   # Plain / --signal=TERM -> 124; --kill-after -> 125. I first wrote this off as uutils-vs-GNU;
   # it is not. And the code can name a signal that was NEVER SENT: a TERM-ignoring child under
@@ -195,6 +312,8 @@ run_gut() {
   # This arm sits ABOVE the vacuity checks on purpose — a killed run prints no Totals, so without
   # it a wedge exits 3 and reports itself as "NO TESTS RAN", which is a different defect entirely.
   # (Measured: that is exactly what the first version of this arm did.)
+  # 137/143 that already carried a Totals block were rewritten above. Reaching this arm
+  # with those codes means there is no totals block: the run was never judged.
   case "$ec" in
     124|125|137|143)
       if [ "$_elapsed" -ge "$_budget" ]; then
@@ -364,6 +483,12 @@ run_gut() {
     echo "  fresh worktree? godot --headless --audio-driver Dummy --import" >&2
     echo "  logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
     exit 3
+  fi
+  # GUT's own exit can be 0 while the totals name failures (a kill we rewrote, or a
+  # runner that returned before -gexit). A pass is the totals, not the signal.
+  if [ "${_failing_n:-0}" -gt 0 ] && [ "$ec" -eq 0 ]; then
+    echo "run_tests.sh: totals show Failing ${_failing_n} but the runner exited 0 — refusing to call this a pass." >&2
+    ec=1
   fi
   # Keep both logs when the run FAILED — that is exactly when someone needs the evidence — and
   # clean up when it passed, or per-process naming turns into per-process litter.

@@ -354,6 +354,7 @@ XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd          # Run 
     tools/run_tests.sh > log 2>&1; echo $?                              # expect 1 · Failing 2
     ```
   - It is a **subset** of main (157 commits behind, 14 fewer test files). Valid as a detector control; it certifies **nothing** about main's corpus. Self-consistent is not current.
+- **`run_tests.sh` hides the host's controllers** — godot runs under `bwrap --tmpfs /dev/input`, because a plugged-in pad reds every "no pad attached" arm (17 in one 92-file corpus, 40 in a `.474` gate, all identical at an unmodified base). Every run prints `host controllers hidden…` or `VISIBLE (<why>)` above its output; `RUN_TESTS_SEE_PADS=1` opts out. **The raw command below does NOT do this** — prefix it with `bwrap --dev-bind / / --tmpfs /dev/input` yourself.
 - Raw equivalent if the wrapper is unavailable (add `--log-file tmp/gut.log`):
   ```bash
   XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --log-file tmp/gut.log -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit

@@ -30,6 +30,8 @@ func test_guard_precedes_party_scan() -> void:
 	assert_gt(fn, -1)
 	var body: String = src.substr(fn, 900)
 	var guard: int = body.find("BattleManager.current_state != BattleManager.BattleState.INACTIVE")
-	var scan: int = body.find("for m in party")
+	var scan: int = body.find("_party_member_with_job(")
 	assert_gt(guard, -1, "active-battle guard must exist in start_solo_battle")
+	## A missing scan used to read as "guard out of order" (guard < -1) — pin its presence separately.
+	assert_gt(scan, -1, "start_solo_battle must still look its duelist up through _party_member_with_job")
 	assert_true(guard < scan, "guard must run before the party scan or an active battle still gets torn down")

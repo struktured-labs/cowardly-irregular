@@ -958,7 +958,7 @@ func _party_wants_auto_save_before_boss() -> bool:
 	var ps: Node = get_node_or_null("/root/PassiveSystem")
 	if ps == null or not ps.has_method("get_passive"):
 		return false
-	for member in gs.player_party:
+	for member in gs.party_for_queries():
 		if not (member is Dictionary):
 			continue
 		var ep: Variant = member.get("equipped_passives", [])

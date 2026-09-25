@@ -79,7 +79,7 @@ func crossroads_fire() -> Array:
 		return pages
 	var won: int = int(gs.battles_won)
 	var standing: int = 0
-	for m in gs.player_party:
+	for m in gs.party_for_queries():
 		if m is Dictionary and int(m.get("current_hp", 1)) > 0:
 			standing += 1
 	if won <= 0:

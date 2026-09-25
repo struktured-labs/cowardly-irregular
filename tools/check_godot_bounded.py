@@ -73,6 +73,40 @@ CAND = re.compile(r"(?<![\w/.\-])godot\s+-|\$\{?GODOT\b")
 # A line that PRINTS the word godot is not a line that RUNS it. run_tests.sh tells a human
 # "Run: godot --headless --audio-driver Dummy --import --quit" and that is not an invocation.
 PRINTS = re.compile(r"^\s*(echo|printf)\b")
+# A DEFINITION IS NOT AN INVOCATION. `BASE=(godot --headless ...)` builds an array; the run
+# happens later, where the array is EXPANDED -- and in run_tests.sh that expansion is
+# `timeout "$_budget" "${BASE[@]}"`, i.e. BOUNDED. Flagging line 24 made this gate print
+# "run_tests.sh:24 unbounded" on every publish while the run it names has carried a 1800s
+# bound since .462 -- the bound that made the .471 wedge legible as EC=124 instead of a
+# mystery. Found 2026-09-20 because @cowir-main's incident report contradicted my output.
+#
+# ⚠️ The distinction is WHERE the `godot` token sits, not whether the line starts with `VAR=`:
+#     BASE=(godot --headless ...)          definition -- godot is inside the parens
+#     CMD="godot --headless"               definition -- godot is inside the quotes
+#     XDG_DATA_HOME=x godot --headless     INVOCATION -- godot is outside, after the prefix
+ASSIGN_ARRAY = re.compile(r"^\s*(?:local\s+|declare\s+|readonly\s+|export\s+)?[A-Za-z_]\w*=\(")
+ASSIGN_HEAD = re.compile(r"^\s*(?:local\s+|declare\s+|readonly\s+|export\s+)?[A-Za-z_]\w*=")
+
+
+def is_definition(line, pos):
+    """True when the godot token at `pos` sits inside an assignment's right-hand side.
+
+    Two shapes, and the discriminator is WHERE the token sits, never that the line begins
+    with `VAR=` -- an env prefix begins that way too and IS an invocation:
+      BASE=(godot ...)        inside unclosed parens after `=`   -> definition
+      CMD="godot ..."         inside an unclosed quote after `=` -> definition
+      VAR=x godot ...         outside both                       -> INVOCATION
+    Quote parity is an approximation (it cannot see an escaped quote); no tools/*.sh assigns
+    one, and the arms pin both shapes in each direction.
+    """
+    m = ASSIGN_ARRAY.match(line)
+    if m and pos >= m.end() and ")" not in line[m.end():pos]:
+        return True
+    if ASSIGN_HEAD.match(line):
+        prefix = line[:pos]
+        if prefix.count('"') % 2 == 1 or prefix.count("'") % 2 == 1:
+            return True
+    return False
 # The chain a publish actually executes. Named, not globbed: a glob would silently acquire the
 # fleet's test runner the day someone renames it, and acquiring subjects by accident is the
 # defect this lane keeps finding (harden-one-writer-miss-the-rest, widening-admission-escapes).
@@ -107,7 +141,8 @@ def logical_lines(text):
 
 def findings(text):
     return [(n, line.strip()) for n, line in logical_lines(text)
-            if CAND.search(line) and not PRINTS.match(line) and not BOUND.search(line)]
+            if (lambda m: m and not PRINTS.match(line) and not is_definition(line, m.start())
+                and not BOUND.search(line))(CAND.search(line))]
 
 
 def _selftest():
@@ -143,6 +178,16 @@ def _selftest():
          'echo "  Run: godot --headless --audio-driver Dummy --import --quit" >&2', 0),
         ("  ...and the CONTROL: the same text as a real command IS a defect",
          'XDG_DATA_HOME=x godot --headless --audio-driver Dummy --import --quit >&2', 1),
+        ("an ARRAY DEFINITION is not an invocation",
+         'BASE=(godot --headless --audio-driver Dummy -s x.gd)', 0),
+        ("  ...and the CONTROL: an env PREFIX still is",
+         'XDG_DATA_HOME=x godot --headless --import', 1),
+        ("a QUOTED definition is not an invocation",
+         'CMD="godot --headless --import"', 0),
+        # STATED LIMIT: the expansion site carries no literal `godot`, so this gate cannot see
+        # whether it is bounded. run_tests.sh's IS (`timeout "$_budget" "${BASE[@]}"`).
+        ("blind spot: an UNBOUNDED expansion of a definition is NOT seen",
+         'BASE=(godot --headless)\n"${BASE[@]}"', 0),
         ("blind spot: a non-option first argument is NOT seen",
          'godot res://main.tscn', 0),
     ]
@@ -166,9 +211,16 @@ def main(argv):
 
     def count(fp):
         text = fp.read_text(errors="replace")
-        n = sum(1 for _, line in logical_lines(text)
-                if CAND.search(line) and not PRINTS.match(line))
-        return n, findings(text)
+        n = d = 0
+        for _, line in logical_lines(text):
+            m = CAND.search(line)
+            if not m or PRINTS.match(line):
+                continue
+            if is_definition(line, m.start()):
+                d += 1
+            else:
+                n += 1
+        return n, findings(text), d
 
     # VACUITY CONTROL, and a stronger one than a file count: every named publish-path file must
     # be present. A renamed deploy script would otherwise shrink the corpus to a clean green.
@@ -179,9 +231,10 @@ def main(argv):
               file=sys.stderr)
         return 2
 
-    total = bad = 0
+    total = bad = defs = 0
     for name in PUBLISH_PATH:
-        n_here, hits = count(root / name)
+        n_here, hits, d_here = count(root / name)
+        defs += d_here
         total += n_here
         for ln, line in hits:
             bad += 1
@@ -191,7 +244,7 @@ def main(argv):
     o_total = o_bad = 0
     o_names = []
     for fp in others:
-        n_here, hits = count(fp)
+        n_here, hits, _d = count(fp)
         o_total += n_here
         for ln, _ in hits:
             o_bad += 1
@@ -203,6 +256,15 @@ def main(argv):
         return 2
     print(f"[godot-bound] publish path: {total} godot invocations across {len(PUBLISH_PATH)} "
           f"files, {total} bounded, 0 unbounded.")
+    # DEFINITIONS ARE REPORTED, NOT DROPPED. A `VAR=(godot ...)` is not an invocation, but the
+    # expansion that runs it carries no literal `godot`, so this gate cannot judge it either
+    # way. deploy_web.sh's SMOKE_CMD is one, and it DOES carry `timeout 300` -- saying "0
+    # unbounded" while silently ignoring it would be the same absent-subject defect this lane
+    # keeps finding. State the count so the blind spot is in the output, not just the source.
+    if defs:
+        print(f"[godot-bound] plus {defs} godot COMMAND DEFINITION(S) on the publish path — "
+              "not invocations, and this gate cannot see whether their expansion is bounded. "
+              "deploy_web.sh's SMOKE_CMD is one and carries `timeout 300` at its definition.")
     print(f"[godot-bound] outside the publish path: {o_bad} of {o_total} unbounded across "
           f"{len(others)} files — NOT blocked here, and NOT claimed by anyone: "
           f"{', '.join(o_names) if o_names else 'none'}")

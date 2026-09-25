@@ -25,6 +25,15 @@ func after_each() -> void:
 	SoundManager.stop_music()
 
 
+## Wall-clock bound. Samples the mixer each frame so a frozen bed latches while it is still playing;
+## stop_ambient() in after_each hides the stall, and the next WAV commit would then block forever.
+func _wait_ms(ms: int) -> void:
+	var deadline: int = Time.get_ticks_msec() + ms
+	while Time.get_ticks_msec() < deadline:
+		SoundManager.note_mixer_progress()
+		await get_tree().process_frame
+
+
 func test_a_key_in_neither_manifest_leaves_no_name_behind() -> void:
 	SoundManager.play_ambient("zzq_absent_from_both_stores")
 	assert_false(SoundManager._ambient_player.playing, "CONTROL: nothing is playing after an unknown key")
@@ -63,7 +72,7 @@ func test_the_idempotent_return_still_works() -> void:
 	## PLAYBACK POSITION is the discriminator: a restart runs stop_ambient() and play(), which
 	## resets it to zero. Position only ever advances on the early-return path.
 	SoundManager.play_ambient(REAL)
-	await get_tree().create_timer(0.4).timeout
+	await _wait_ms(400)
 	assert_true(SoundManager._ambient_player.playing, "CONTROL: playing before the repeat")
 	var pos_before: float = SoundManager._ambient_player.get_playback_position()
 	assert_gt(pos_before, 0.1,

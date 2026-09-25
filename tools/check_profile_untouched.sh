@@ -220,6 +220,33 @@ selftest() {
         pass=$((pass+1)); printf '  ok    %-50s\n' "the two diagnoses differ"
     else fail=$((fail+1)); printf '  FAIL  %-50s (a verdict that cannot vary)\n' "the two diagnoses are identical"; fi
 
+    # ⛔ THE DIAGNOSTIC MUST NAME THE FILE, AND NOTHING ASSERTED THAT. `_changed_files` runs at
+    # the ONE moment anyone needs it -- beneath a signature MISMATCH, to say WHICH of his files
+    # moved -- and every arm above tests the VERDICT, not the sentence under it. A predicate that
+    # silently matched nothing would leave the gate blocking correctly above an EMPTY list, which
+    # reads as a confused tool rather than a broken one, and invites someone to override it.
+    #
+    # ⚠️ These arms exist because I convinced myself that had already happened. Measuring by hand,
+    # `-newermt '-2 hours'` returned 0 and printed `bfs: error: Invalid timestamp` -- so I nearly
+    # "fixed" a gate that was never broken. An AGENT SHELL resolves `find` through a shell FUNCTION
+    # to bfs 4.1.1; a SCRIPT gets /usr/bin/find, GNU findutils 4.10.0, which accepts that syntax and
+    # returns the file. CLAUDE.md's "`find` is bfs, not GNU find" is true of the terminal and FALSE
+    # of every tool in this directory -- the same interactive-only asymmetry it already documents
+    # for grep. The predicate is left EXACTLY as it was; only these arms are new.
+    printf 'freshly written\n' > "$P/saves/slot_recent.json"
+    local changed; changed="$(_changed_files "$P")"
+    case "$changed" in
+        *slot_recent.json*) pass=$((pass+1)); printf '  ok    %-50s\n' "the diagnostic NAMES a just-written file" ;;
+        *) fail=$((fail+1)); printf '  FAIL  %-50s (got: %s)\n' "the diagnostic names a just-written file" "${changed:-<empty>}" ;;
+    esac
+    # CONTROL: it must NOT name a file that has not moved, or the arm above passes on anything.
+    touch -d '3 days ago' "$P/saves/slot1.json"
+    case "$(_changed_files "$P")" in
+        *slot1.json*) fail=$((fail+1)); printf '  FAIL  %-50s\n' "a 3-day-old file is NOT named" ;;
+        *) pass=$((pass+1)); printf '  ok    %-50s\n' "a 3-day-old file is NOT named" ;;
+    esac
+    rm -f "$P/saves/slot_recent.json"
+
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
     if [ "$saw0" -ne 1 ] || [ "$saw3" -ne 1 ]; then

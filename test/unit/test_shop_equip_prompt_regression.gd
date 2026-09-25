@@ -124,7 +124,7 @@ func test_skip_declines_without_equipping() -> void:
 	var next := src.find("\nfunc ", i + 1)
 	var body: String = src.substr(i, next - i) if next > 0 else src.substr(i)
 	var skip_at := body.find("if choice == \"skip\":")
-	var equip_at := body.find("equipment_system.equip_weapon")
+	var equip_at := body.find("equip_from_pool")
 	assert_gt(skip_at, -1, "'Not now' is handled")
 	assert_gt(equip_at, skip_at,
 		"the skip branch returns before any equip call — declining must not equip anything")

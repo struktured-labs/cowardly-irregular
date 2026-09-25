@@ -24,7 +24,7 @@ var _accept_hold: float = 0.0
 var _ff_line_timer: float = 0.0
 
 
-## The cap printed on the pad's confirm button; "A" was wrong on every Nintendo-family pad (8BitDo/SN30 confirm sits under Ⓑ).
+## The cap printed on the pad's confirm button, resolved per device by InputProfileManager — a frozen "A" is true on one pad family and names another button on the rest.
 static func confirm_glyph(device_name: String = "") -> String:
 	if InputProfileManager:
 		return InputProfileManager.glyph_for_action("ui_accept", device_name)

@@ -82,6 +82,8 @@ const MAX_ACTIONS = 5  # Max actions per rule  # fifth slot fires only at a full
 ## Raising the number is the cheap move if a real bound is ever needed; a clamp is not.
 const MAX_RULES = 32  # Cap OR rule rows so scripts stay bounded (still scrollable)
 const GRID_BASE_POS = Vector2(120, 50)  # Anchor for _grid_container before scroll offset
+const LEGEND_H := 48.0
+const GRID_BOTTOM_GAP := 24.0  # F12 2026-09-20: 2px of air left the selected card truncated into the help strip
 
 ## Numeric conditions whose engine range is NARROWER than the editor's generic 0-100. A value
 ## outside it never fires; under `<` it is permanently TRUE, and rules are first-match-wins, so
@@ -169,6 +171,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	add_to_group("autobattle_grid_editor")
 	_build_ui()
 	# Don't refresh grid here - wait for setup() to be called with character data
 	# _refresh_grid() will be called in setup() after rules are loaded
@@ -362,7 +365,7 @@ func _build_ui() -> void:
 	# Grid container (shifted right to make room for stats)
 	_grid_container = Control.new()
 	_grid_container.position = GRID_BASE_POS
-	_grid_container.size = Vector2(size.x - 136, size.y - 100)
+	_grid_container.size = Vector2(size.x - 136, _grid_view_h())
 	# Clip scrolled-out rows so they don't bleed over the stats panel / legend strip
 	_grid_container.clip_contents = true
 	add_child(_grid_container)
@@ -375,8 +378,8 @@ func _build_ui() -> void:
 	# Button legend at bottom (two lines for clarity)
 	var legend_bg = ColorRect.new()
 	legend_bg.color = Color(0.0, 0.0, 0.0, 0.5)
-	legend_bg.position = Vector2(8, size.y - 48)
-	legend_bg.size = Vector2(size.x - 16, 44)
+	legend_bg.position = Vector2(8, size.y - LEGEND_H)
+	legend_bg.size = Vector2(size.x - 16, LEGEND_H - 4.0)
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
@@ -1251,6 +1254,17 @@ func _short_target(target: String) -> String:
 			return target
 
 
+func _grid_view_h() -> float:
+	return maxf(float(CELL_HEIGHT + 8), size.y - GRID_BASE_POS.y - LEGEND_H - GRID_BOTTOM_GAP)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED and _grid_container and is_instance_valid(_grid_container):
+		_grid_container.size = Vector2(maxf(100.0, size.x - 136.0), _grid_view_h())
+		if not _portrait_focused:
+			_update_scroll_offset()
+
+
 func _update_scroll_offset() -> void:
 	"""Scroll the grid container vertically so the selected rule row stays on-screen.
 
@@ -1264,13 +1278,14 @@ func _update_scroll_offset() -> void:
 
 	var row_stride = CELL_HEIGHT + ROW_SPACING
 	var cursor_y = cursor_row * row_stride
-	var view_h = _grid_container.size.y
+	var view_h = _grid_view_h()
+	const CURSOR_BORDER := 4.0
 
-	# Clamp the selected row into the visible viewport.
-	if cursor_y - _scroll_offset < 0:
-		_scroll_offset = cursor_y
-	elif cursor_y + CELL_HEIGHT - _scroll_offset > view_h:
-		_scroll_offset = cursor_y + CELL_HEIGHT - view_h
+	# Clamp the selected row into the visible viewport, with air so the card is not flush-clipped.
+	if cursor_y - _scroll_offset < CURSOR_BORDER:
+		_scroll_offset = cursor_y - CURSOR_BORDER
+	elif cursor_y + CELL_HEIGHT + CURSOR_BORDER - _scroll_offset > view_h:
+		_scroll_offset = cursor_y + CELL_HEIGHT + CURSOR_BORDER - view_h
 
 	# Never scroll past the top (negative offset would push row 0 down off the anchor).
 	_scroll_offset = max(0.0, _scroll_offset)
@@ -2633,6 +2648,11 @@ func _handle_option_picker_input(event: InputEvent, nav: String = "") -> void:
 	"""Self-contained input for the generic picker (mirrors _handle_share_picker_input)."""
 	if not _option_picker or not is_instance_valid(_option_picker):
 		return
+	# The ring owns _unhandled_input; get_meta("spec") is the list picker's storage and aborts on the ring.
+	if _option_picker is RadialPicker:
+		return
+	if not _option_picker.has_meta("spec"):
+		return
 	var spec: Dictionary = _option_picker.get_meta("spec")
 	var options: Array = spec.get("options", [])
 	var selected: int = spec.get("selected", 0)
@@ -3026,11 +3046,28 @@ func _delete_current_cell() -> void:
 ## read zero live state (measured), so pure evaluation gives the same answer with nothing to
 ## restore and nothing to race.
 func _open_simulate() -> void:
-	var rules: Array = AutobattleSystem.get_character_script(character_id).get("rules", [])
+	## `rules` is the grid on screen. A local of that name used to shadow it and read the last save.
 	var lines: Array[String] = _simulate_report(rules)
-	lines.append_array(_observed_report(rules))
+	lines.append_array(_observed_for_open_grid())
 	_simulate_panel = _build_simulate_panel(lines)
 	add_child(_simulate_panel)
+
+
+## Fight counts are keyed by rule index on the script that was actually fought, which is the save.
+## Lining them up under an edited grid attributes those fires to different rules.
+func _observed_for_open_grid() -> Array[String]:
+	if AutobattleSystem.get_rule_eval_count(character_id) > 0:
+		var saved: Array = AutobattleSystem.get_character_script(character_id).get("rules", [])
+		if not _rule_lists_match(rules, saved):
+			var held: Array[String] = []
+			held.append("")
+			held.append("OBSERVED — unsaved edits, so fight counts are not lined up with this grid.")
+			return held
+	return _observed_report(rules)
+
+
+func _rule_lists_match(a: Array, b: Array) -> bool:
+	return var_to_str(a) == var_to_str(b)
 
 
 ## What actually happened, beside what Simulate predicts. A rule can look perfect in simulation
@@ -3182,6 +3219,14 @@ func _simulate_report(rules: Array) -> Array[String]:
 
 ## A scratch Combatant at the sampled state. Never the live one — mutating the edited
 ## character's HP to answer a UI question is the two-writers class.
+## The edited character's party bag, reached through GameLoop: the probe must stay off the live battle state.
+func _probe_bag() -> Dictionary:
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl != null and "party" in gl and combatant in gl.party:
+		return ItemSystem.party_inventory(gl.party)
+	return combatant.inventory.duplicate()
+
+
 func _simulate_probe(state: Dictionary) -> Combatant:
 	var c: Combatant = Combatant.new()
 	if combatant:
@@ -3197,11 +3242,10 @@ func _simulate_probe(state: Dictionary) -> Combatant:
 		c.purchased_abilities = combatant.purchased_abilities.duplicate()
 		c.job_level = combatant.job_level
 		c.secondary_job = combatant.secondary_job
-		## item_count reads the CASTER's bag. Without this the probe carried none, so every
-		## "hp < 30 AND potions > 0 -> use potion" rule read as never-firing with a full bag —
-		## and 12 of the 15 shipped templates gate on item_count.
-		for item_id in combatant.inventory.keys():
-			c.inventory[item_id] = combatant.inventory[item_id]
+		## item_count reads the party's one bag, as battle has since .482; the probe must carry that bag, not the caster's own.
+		var bag: Dictionary = _probe_bag()
+		for item_id in bag.keys():
+			c.inventory[item_id] = bag[item_id]
 	else:
 		c.combatant_name = character_name
 		c.max_hp = 100

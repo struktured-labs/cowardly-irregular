@@ -367,10 +367,10 @@ func test_hook_party_wipe_data_schema() -> void:
 		 "enemy_types": ["slime", "goblin"], "world": 1}
 	)
 	var data: Dictionary = _log.by_type(EventLog.TYPE_PARTY_WIPE)[0].get("data", {})
-	assert_eq(data.get("map_id",     ""), "overworld", "map_id preserved")
+	assert_eq(data.get("map_id",     ""), "overworld", "party_wipe: map_id preserved")
 	assert_eq(data.get("survivors",  -1), 1,           "survivors preserved")
 	assert_eq(data.get("party_size", -1), 4,           "party_size preserved")
-	assert_eq(data.get("world",      -1), 1,           "world preserved")
+	assert_eq(data.get("world",      -1), 1,           "party_wipe: world preserved")
 	var enemy_types: Array = data.get("enemy_types", [])
 	assert_eq(enemy_types.size(), 2, "enemy_types array should have 2 entries")
 
@@ -423,9 +423,9 @@ func test_hook_area_entered_data_schema() -> void:
 		{"map_id": "fire_dragon_cave", "spawn_point": "entrance", "world": 2}
 	)
 	var data: Dictionary = _log.by_type(EventLog.TYPE_AREA_ENTERED)[0].get("data", {})
-	assert_eq(data.get("map_id",      ""), "fire_dragon_cave", "map_id preserved")
+	assert_eq(data.get("map_id",      ""), "fire_dragon_cave", "area_entered: map_id preserved")
 	assert_eq(data.get("spawn_point", ""), "entrance",         "spawn_point preserved")
-	assert_eq(data.get("world",       -1), 2,                  "world preserved")
+	assert_eq(data.get("world",       -1), 2,                  "area_entered: world preserved")
 
 
 ## Multiple area transitions accumulate in visit order.

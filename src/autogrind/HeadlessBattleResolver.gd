@@ -170,6 +170,11 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 		for c in _enemy_party:
 			bm.enemy_party.append(c)
 
+	## Live's start_battle puts Front Line / Back Row back after this same wipe. One apply, same 1.1 / 0.9, and a KO is skipped.
+	var scene_script: GDScript = load("res://src/battle/BattleScene.gd") as GDScript
+	if scene_script != null:
+		scene_script.apply_persisted_formation(_player_party)
+
 	while _current_round < MAX_ROUNDS:
 		_current_round += 1
 		if bm:
@@ -620,7 +625,12 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 ## Returns "" if no skip, "skip" to skip silently, "confuse_attack" for confusion.
 func _check_status_skip(combatant) -> String:
 	if combatant.has_status("stun"):
-		combatant.remove_status("stun")
+		# Same clock as BattleManager: one skipped action per authored point, then clear.
+		var remaining: int = int(combatant.status_durations.get("stun", 1))
+		if remaining <= 1:
+			combatant.remove_status("stun")
+		else:
+			combatant.status_durations["stun"] = remaining - 1
 		_log("%s is stunned and cannot act!" % combatant.combatant_name)
 		return "skip"
 
@@ -646,9 +656,17 @@ func _check_status_skip(combatant) -> String:
 		if randf() < 0.25:
 			combatant.remove_status("fear")
 			_log("%s overcame their fear!" % combatant.combatant_name)
-			return ""
 		elif randf() < 0.5:
 			_log("%s is paralyzed with fear!" % combatant.combatant_name)
+			return "skip"
+
+	## puppy_eyes applies charm; live skips the turn unless randf() < 0.35 breaks it. Fear falls through into this check, matching live's order.
+	if combatant.has_status("charm"):
+		if randf() < 0.35:
+			combatant.remove_status("charm")
+			_log("%s broke free from charm!" % combatant.combatant_name)
+		else:
+			_log("%s is charmed and won't act!" % combatant.combatant_name)
 			return "skip"
 
 	return ""
@@ -689,16 +707,41 @@ func _select_enemy_action(enemy) -> Dictionary:
 			if enemy.current_mp >= mp_cost:
 				return {"type": "ability", "ability_id": heal_ability, "targets": [enemy]}
 
+	## A self-heal is not an attack, so taunt does not replace it. Offensive picks lock first.
+	var focus = _find_taunter(enemy, alive_players)
+	if focus == null:
+		alive_players.sort_custom(func(a, b): return a.current_hp < b.current_hp)
+		focus = alive_players[0]
+
 	if enemy.current_mp > 0:
 		var atk_ability = _find_attack_ability(enemy)
 		if atk_ability != "":
 			var mp_cost = _get_ability_mp_cost(atk_ability)
 			if enemy.current_mp >= mp_cost:
-				alive_players.sort_custom(func(a, b): return a.current_hp < b.current_hp)
-				return {"type": "ability", "ability_id": atk_ability, "targets": [alive_players[0]]}
+				return {"type": "ability", "ability_id": atk_ability, "targets": [focus]}
 
-	alive_players.sort_custom(func(a, b): return a.current_hp < b.current_hp)
-	return {"type": "attack", "target": alive_players[0]}
+	return {"type": "attack", "target": focus}
+
+
+## Twin of BattleManager._find_taunter. provoke writes `taunted_<caster>` onto the victim and live's
+## _choose_target locks the victim's next offensive action onto that caster. The grind wrote the key
+## and still picked lowest HP, so a shipped Provoke template did nothing in a grind. A dead or
+## absent name falls through to the next status, then to the ordinary pick.
+func _find_taunter(attacker, targets: Array):
+	if attacker == null or not is_instance_valid(attacker):
+		return null
+	if not ("status_effects" in attacker):
+		return null
+	for status in attacker.status_effects:
+		if typeof(status) != TYPE_STRING:
+			continue
+		if not status.begins_with("taunted_"):
+			continue
+		var taunter_name: String = status.substr(len("taunted_"))
+		for t in targets:
+			if is_instance_valid(t) and t.is_alive and t.combatant_name == taunter_name:
+				return t
+	return null
 
 
 func _find_heal_ability(combatant) -> String:
@@ -844,6 +887,11 @@ func _resolve_attack(attacker, target) -> int:
 	if not target or not target.is_alive:
 		return 0
 
+	## peace_sign applies pacify. Live refuses the swing and leaves the status; the grind was hitting anyway.
+	if attacker.has_status("pacify"):
+		_log("%s is pacified and cannot attack!" % attacker.combatant_name)
+		return 0
+
 	## BLIND: the live engine adds 0.40 to the miss rate (BattleManager's attack miss check) and this
 	## resolver applied the status and then ignored it — the Bard's Riff inflicts blind on a 70% roll,
 	## so his signature disruption did nothing in a grind while doing its job in a live fight.
@@ -860,6 +908,11 @@ func _resolve_attack(attacker, target) -> int:
 	## measurement does.
 	if _target_dodges_physical(attacker, target):
 		return 0
+	## null_entity authors immunities=["physical"] and is in the abstract grind pool. Live returns
+	## here, before the miss roll and before barrier, so a swing deals 0 and does not break the ward.
+	if _monster_immune_to_category(target, "physical"):
+		_log("%s is immune to physical — %s's attack passes through!" % [target.combatant_name, attacker.combatant_name])
+		return 0
 
 	var base_miss: float = 0.10
 	if attacker.has_status("blind"):
@@ -870,6 +923,9 @@ func _resolve_attack(attacker, target) -> int:
 		return 0
 
 	var damage = float(attacker.get_buffed_stat("attack", attacker.attack))
+	## A feared swing that was not skipped still happens, at half. Live halves the base stat before variance.
+	if attacker.has_status("fear"):
+		damage = float(int(damage * 0.5))
 	## ONE-SHOT, consumed as live consumes it (BattleManager:4374-4377) — a charged strike pays off
 	## once, not on every swing for the rest of the battle.
 	damage *= _take_charged_multiplier(attacker)
@@ -898,6 +954,20 @@ func _resolve_attack(attacker, target) -> int:
 	## scaling `actual` instead would give a different number for the same gear.
 	damage = float(_apply_familiar_weight_bonus(attacker, target, int(damage)))
 
+	## guardian_wall nullifies this one swing and breaks. Checked after the number exists, before
+	## take_damage, and the on-hit riders below do not run — same place live returns.
+	if target.has_status("barrier"):
+		target.remove_status("barrier")
+		_log("%s's Barrier absorbs the attack!" % target.combatant_name)
+		return 0
+
+	## reflect and physical_reflect bounce the pre-defense swing onto the attacker. Live does not
+	## remove them here; the duration tick does. A spell is not bounced — that is prismatic_reflect.
+	if target.has_status("reflect") or target.has_status("physical_reflect"):
+		var bounced: int = attacker.take_damage(int(damage), false)
+		_log("%s's Reflect bounces %d damage back to %s!" % [target.combatant_name, bounced, attacker.combatant_name])
+		return 0
+
 	var def_val = float(target.get_buffed_stat("defense", target.defense))
 	# Guard divisor (mirrors Combatant.take_damage). attack 0 + defense 0
 	# combinations are reachable: get_buffed_stat returns 0 for base 0
@@ -910,7 +980,9 @@ func _resolve_attack(attacker, target) -> int:
 	if target.is_defending:
 		actual = actual / 2
 
-	target.take_damage(actual)
+	var dealt: int = target.take_damage(actual)
+	## the_absence authors heals_from_damage. Live heals from the number that landed, after the hit.
+	_maybe_heal_from_damage(target, dealt, "")
 	## Live calls this from _execute_attack ONLY — the BASIC attack. Deliberately NOT added to
 	## _resolve_attack_with_power, which is this file's ability-damage path: an ability that happens to
 	## deal physical damage does not proc a weapon's on-hit status in live, and wiring it there would
@@ -980,17 +1052,65 @@ func _familiar_weight_static_seed(combatant) -> PackedStringArray:
 	return out
 
 
+## Twin of BattleManager._monster_immune_to_category. monsters.json `immunities` is a damage class,
+## not an element: null_entity authors ["physical"] and live deals 0 on a swing and on a physical
+## ability. Not inside take_damage — a group attack calls that on both engines and neither one
+## asks, so a Limit Break still lands.
+func _monster_immune_to_category(target, category: String) -> bool:
+	if target == null or not is_instance_valid(target) or category == "":
+		return false
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return false
+	var mtype := str(target.get_meta("monster_type", ""))
+	if mtype == "":
+		return false
+	var enc = _get_autoload("EncounterSystem")
+	if enc == null or not ("monster_database" in enc):
+		return false
+	var db: Variant = enc.monster_database
+	if not (db is Dictionary) or not (db as Dictionary).has(mtype):
+		return false
+	var immunities: Variant = (db[mtype] as Dictionary).get("immunities", [])
+	if not (immunities is Array):
+		return false
+	return category in immunities
+
+
+## Twin of BattleManager._monster_phase_out_check. null_entity authors phase_out at 20% and sits in
+## the abstract pool the grind draws. Live misses the swing and the spell; a grind always connected.
+## Not consumed, and not inside take_damage — a group attack calls that on both engines and neither asks.
+func _monster_phase_out_check(target) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	if not target.has_method("get_meta"):
+		return false
+	var mtype := str(target.get_meta("monster_type", ""))
+	if mtype == "":
+		return false
+	var enc = _get_autoload("EncounterSystem")
+	if enc == null or not ("monster_database" in enc):
+		return false
+	var db: Variant = enc.monster_database
+	if not (db is Dictionary) or not (db as Dictionary).has(mtype):
+		return false
+	var sb: Variant = (db[mtype] as Dictionary).get("special_behavior", {})
+	if not (sb is Dictionary):
+		return false
+	var behavior := sb as Dictionary
+	if not bool(behavior.get("phase_out", false)):
+		return false
+	var chance: float = clampf(float(behavior.get("phase_out_chance", 0.2)), 0.0, 1.0)
+	return randf() < chance
+
+
 ## Twin of BattleManager._target_dodges_physical (:9046), and EXTRACTED for live's own reason: live
 ## calls it from TWO sites — _execute_attack (:4391) and _execute_physical_ability (:4853) — so a
 ## physical ABILITY can be dodged exactly as a basic swing can. This resolver had the logic inline in
 ## _resolve_attack and the physical-ability arm had NO dodge check at all, so a grinding party's
 ## power_strike, cleave and slash could never be evaded while the real game's can.
 ##
-## ⚠️ SCOPE, stated because it is narrower than live's: this mirrors the three components the grind
-## ALREADY modelled — invisible, shadow_step and equipment evasion_bonus. Live's version also rolls
-## an `evasion` STATUS (0.6) and a monster `phase_out` chance, and this file models NEITHER anywhere
-## (0 mentions of each). Those are a pre-existing gap, declared rather than invented here: porting
-## them means deciding whether the grind models phase_out's monster_database read at all.
+## Evasion status (0.6, not consumed) and phase_out both live here, so a physical ability and a basic
+## swing miss for the same reasons. Passive evasion is still absent — that is the passives ruling.
 ##
 ## ⚠️ The speed-based miss chance stays in _resolve_attack and is deliberately NOT moved in. Live
 ## keeps it out of this function too: an ability is DODGED, never fumbled — a physical ability that
@@ -998,7 +1118,7 @@ func _familiar_weight_static_seed(combatant) -> PackedStringArray:
 func _target_dodges_physical(attacker, target) -> bool:
 	if target == null or not is_instance_valid(target):
 		return false
-	## ⚠️ Two LITERAL has_status calls rather than a loop, deliberately. The parity guard derives its
+	## ⚠️ LITERAL has_status calls rather than a loop, deliberately. The parity guard derives its
 	## ignored-status set by scanning both engines for has_status("…"), and a loop variable is
 	## invisible to it — the first draft of this fix used one, and the guard went on reporting
 	## `invisible` as ignored while the code honoured it.
@@ -1009,6 +1129,15 @@ func _target_dodges_physical(attacker, target) -> bool:
 	if target.has_status("shadow_step"):
 		target.remove_status("shadow_step")
 		_log("%s strikes thin air — %s had stepped into shadow!" % [attacker.combatant_name, target.combatant_name])
+		return true
+	## Burrow's evasion is a 60% physical dodge in live and was only a badge in the grind. Not consumed on a swing — duration ticks it off.
+	if target.has_status("evasion") and randf() < 0.6:
+		_log("%s evades %s's attack!" % [target.combatant_name, attacker.combatant_name])
+		return true
+	## After the evasion status and before gear, matching live: a phase-out is a miss, not a dodge
+	## that spends a status. null_entity authors 0.2. A monster without the flag never rolls.
+	if _monster_phase_out_check(target):
+		_log("%s phases out — %s's attack passes through nothing!" % [target.combatant_name, attacker.combatant_name])
 		return true
 	## equipment evasion_bonus is a SEPARATE roll in live (:9106), not folded into the miss chance —
 	## elven_cloak plus a passive gives two independent chances to dodge. Same clamp.
@@ -1171,6 +1300,10 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					_log("%s heals %s for %d" % [caster.combatant_name, target.combatant_name, healed])
 
 		"magic":
+			## Same gate as the basic swing, after the MP spend above — live charges the spell and then fizzles it.
+			if caster.has_status("pacify"):
+				_log("%s is pacified — the spell fizzles!" % caster.combatant_name)
+				return
 			## BEFORE the loop and ONCE, mirroring BattleManager:4969 — an AoE gets the boosted
 			## multiplier on every target and the charge clears a single time, not per target.
 			power = float(power) * _take_charged_multiplier(caster)
@@ -1179,6 +1312,15 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 			var total_for_recoil: int = 0
 			for target in targets:
 				if target and target.is_alive:
+					## Before Magic Block, matching live: a phase-out misses the spell and leaves the ward up.
+					if _monster_phase_out_check(target):
+						_log("%s phases out — %s's spell finds nothing!" % [target.combatant_name, caster.combatant_name])
+						continue
+					## access_denied cancels this one spell and breaks, before the roll. A swing is not a spell.
+					if target.has_status("magic_block"):
+						target.remove_status("magic_block")
+						_log("%s's Magic Block cancels the spell!" % target.combatant_name)
+						continue
 					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power)
 					## Doubles, mirroring BattleManager:5054 — live's own comment calls it "a rough
 					## compensation for take_damage's defense formula" rather than a true-damage path, and
@@ -1216,6 +1358,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
 						if elem_bonus > 0.0:
 							base_dmg = int(base_dmg * elem_bonus)
+					## Same one-hit ward as the basic swing. A blocked spell does not reach elemental math.
+					if target.has_status("barrier"):
+						target.remove_status("barrier")
+						_log("%s's Barrier absorbs the spell!" % target.combatant_name)
+						continue
+					## prismatic_reflect bounces this spell onto the caster and stays up. Live sends it
+					## to the caster, not to a random combatant, and does not bounce a physical swing.
+					if target.has_status("prismatic_reflect"):
+						var bounced: int = caster.take_damage(base_dmg, true)
+						_log("%s's Prismatic Reflect bounces %d magic damage to %s!" % [target.combatant_name, bounced, caster.combatant_name])
+						continue
 					var elem_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
 					## ⛔ EQUIPMENT RESISTANCE, mirroring Combatant.take_elemental_damage:  live's magic
 					## arm routes through that function (BattleManager:5270) and it does
@@ -1239,13 +1392,21 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## PER TARGET and gated on damage landing, mirroring BattleManager:5085-5090 — so
 					## memory_drain (all_enemies) stacks its restore across the party exactly as live does.
 					_siphon_mp(caster, ability, dealt, ability_id)
+					## Same conversion as the basic swing. Holy skips inside the helper, matching live.
+					_maybe_heal_from_damage(target, dealt, str(element))
 					_log("%s casts %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dealt])
 					total_for_recoil += dealt
 					_maybe_inflict_status(caster, target, ability, ability_id)
 			_recoil_to(caster, ability, total_for_recoil, ability_id)
 
 		"physical":
+			## MP is already spent. Live still rolls mug's steal after the fizzle, because that roll sits outside the executor.
+			var pacified_strike: bool = bool(caster.has_status("pacify"))
+			if pacified_strike:
+				_log("%s is pacified and cannot strike!" % caster.combatant_name)
 			for target in targets:
+				if pacified_strike:
+					break
 				if target and target.is_alive:
 					## Live gates the dodge on `ignores_evasion` and calls _target_dodges_physical here
 					## (:4853) exactly as it does for a basic swing. Without this the grind's physical
@@ -1254,7 +1415,15 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					if not bool(ability.get("ignores_evasion", false)):
 						if _target_dodges_physical(caster, target):
 							continue
-					var base_dmg = int(_scaled_base(caster, ability) * power)
+					## Same gate as the basic swing. A physical ability is not a spell, so magic still lands.
+					if _monster_immune_to_category(target, "physical"):
+						_log("%s is immune to physical — %s's strike passes through!" % [target.combatant_name, caster.combatant_name])
+						continue
+					## Same half as the basic swing, on the base stat before power. Magic is not halved in live.
+					var scaled: int = _scaled_base(caster, ability)
+					if caster.has_status("fear"):
+						scaled = int(scaled * 0.5)
+					var base_dmg = int(scaled * power)
 					## Second call site, mirroring BattleManager:4915. Live applies Familiar Weight to a
 					## physical ABILITY's damage as well as a basic swing, and wiring only one site is
 					## the mistake this file's dodge fix was written for an hour ago.
@@ -1279,15 +1448,31 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					if randf() < float(ability.get("crit_chance", 0.0)):
 						base_dmg = int(base_dmg * 1.5)
 						_log("%s crits with %s" % [caster.combatant_name, ability_id])
+					## One barrier eats the whole ability, including a multi-hit, then breaks. Live checks
+					## once before the hits loop, so this does too.
+					if target.has_status("barrier"):
+						target.remove_status("barrier")
+						_log("%s's Barrier absorbs the hit!" % target.combatant_name)
+						continue
+					## One bounce of the pre-defense hit, not one per `hits`. The status is not spent.
+					if target.has_status("reflect") or target.has_status("physical_reflect"):
+						var bounced: int = caster.take_damage(base_dmg, false)
+						_log("%s's Reflect bounces %d damage to %s!" % [target.combatant_name, bounced, caster.combatant_name])
+						continue
 					## HP DELTA, not the helper's return: _resolve_attack_with_power returns its computed
 					## figure and take_damage then applies the defense formula AGAIN, so the return runs
 					## high. Live drains a share of what was ACTUALLY dealt, and the log should say so too.
-					var hp_before: int = target.current_hp
+					## Per hit, then heal, then sum the GROSS deltas. A heal after the loop would
+					## shrink the logged total, and a non-absorbing target must keep today's number.
+					var dmg: int = 0
 					for _h in hits:
 						if not target.is_alive:
 							break
+						var hit_before: int = target.current_hp
 						_resolve_attack_with_power(caster, target, base_dmg)
-					var dmg: int = hp_before - target.current_hp
+						var hit_dealt: int = hit_before - target.current_hp
+						dmg += hit_dealt
+						_maybe_heal_from_damage(target, hit_dealt, "")
 					## NO DRAIN HERE, deliberately: live reads drain_percentage only in _execute_magic_ability, so
 					## dark_slash (physical, 30%) heals its caster in NEITHER engine. Draining here would make the
 					## grind heal bone_warden and shadow_knight where the game does not (@cowir-battle 2d14d92d).
@@ -1359,23 +1544,20 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						## named "taunt" — a key live NEVER creates and nothing anywhere reads. Live
 						## composes `taunted_<caster>` (BattleManager:5911) and reads the prefix back in
 						## _find_taunter:2983. Same junk-key shape as the cleanse arm below (cowir-battle).
-						## ⚠️ THE KEY IS NOW LIVE'S; THE TARGETING IS NOT MODELLED. This resolver has no
-						## _find_taunter equivalent, so a taunt still does not redirect an enemy here.
-						## Composing the right key is parity-neutral; honouring it would change which
-						## target an enemy picks, i.e. what a grind PLAYS like — that half is a ruling,
-						## not a port, and is recorded rather than smuggled in under a bug fix.
+						## _select_enemy_action reads this key back through _find_taunter, the grind's twin of
+						## live's _choose_target lock. Player scripts do not retarget: live's autobattle
+						## resolver does not consult taunt either.
 						target.add_status("taunted_%s" % caster.combatant_name)
-						_log("%s taunts %s (key only — headless does not model taunt targeting)" % [caster.combatant_name, target.combatant_name])
+						_log("%s taunts %s into focusing on them!" % [caster.combatant_name, target.combatant_name])
 						continue
 					elif effect == "cleanse":
 						## Esuna is in the DEFAULT cleric script and two presets, and headless had no
 						## arm for it — so it fell to the generic add_status below and gave the ally a
 						## junk status called "cleanse" while the blind it was cast to cure stayed on.
-						## The ailment list is BattleManager:6104 verbatim — that array is the parity
-						## anchor, NOT the has_status call, which takes a loop variable on both sides
-						## and is invisible to a literal `has_status("x")` scan either way.
+						## One list, BattleManager.ESUNA_AILMENTS. The has_status call takes a loop
+						## variable, so a literal has_status("x") scan cannot see membership.
 						var cleansed: Array[String] = []
-						for ailment in ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom"]:
+						for ailment in BattleManager.ESUNA_AILMENTS:
 							if target.has_status(ailment):
 								cleansed.append(ailment)
 								target.remove_status(ailment)
@@ -1862,6 +2044,43 @@ func _apply_lens_execute_bonus(attacker, target, damage: int) -> int:
 	return int(damage * mult)
 
 
+## Twin of BattleManager._maybe_heal_from_damage. the_absence authors
+## special_behavior.heals_from_damage (30%) and sits in abstract_overworld, a pool
+## the grind draws. Live converts a share of the damage that landed into healing;
+## holy skips. Not inside take_damage — a group attack calls that on both engines
+## and neither one asks, so a Limit Break still lands in full.
+func _maybe_heal_from_damage(target, damage_amount: int, element: String) -> void:
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	if damage_amount <= 0:
+		return
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return
+	var mtype := str(target.get_meta("monster_type", ""))
+	if mtype == "":
+		return
+	var enc = _get_autoload("EncounterSystem")
+	if enc == null or not ("monster_database" in enc):
+		return
+	var db: Variant = enc.monster_database
+	if not (db is Dictionary) or not (db as Dictionary).has(mtype):
+		return
+	var sb: Variant = (db[mtype] as Dictionary).get("special_behavior", {})
+	if not (sb is Dictionary) or not bool((sb as Dictionary).get("heals_from_damage", false)):
+		return
+	if element == "holy":
+		return
+	var pct: float = clampf(float((sb as Dictionary).get("heal_percentage", 0.3)), 0.0, 1.0)
+	if pct <= 0.0:
+		return
+	var heal_amount: int = int(round(float(damage_amount) * pct))
+	if heal_amount <= 0:
+		return
+	var healed: int = target.heal(heal_amount)
+	if healed > 0:
+		_log("%s absorbs the impact — heals %d HP!" % [target.combatant_name, healed])
+
+
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
 	if not target or not target.is_alive:
 		return 0
@@ -1880,9 +2099,11 @@ func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
 
 
 func _resolve_item(user, item_id: String, target) -> void:
-	if not user.has_item(item_id):
+	## Same one-bag rule as BattleManager._execute_item, so a grind spends what a live battle would.
+	var bag: Array = _player_party if user in _player_party else [user]
+	if ItemSystem.party_item_count(bag, item_id) <= 0:
 		return
-	user.remove_item(item_id)
+	ItemSystem.take_party_item(user, bag, item_id)
 
 	## Tick 394: route through ItemSystem.use_item so autogrind item
 	## use matches live battle exactly. Pre-fix hardcoded handlers

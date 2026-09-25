@@ -50,6 +50,18 @@ func test_face_family_detection() -> void:
 		"unknown pads default to xbox glyphs — the Windows-demo default")
 
 
+## struktured's own pad, by the name Godot reports for it. He read the printed caps to us directly,
+## twice, on 2026-09-23 — X top, A right, B bottom, Y left — after a relay called it Xbox-labelled
+## and urged carving it out of the 8BitDo rule. Every other 8BitDo pin here is an SN30, which that
+## carve-out would leave green; this arm is the one that reds.
+func test_his_8bitdo_ultimate_2_is_nintendo_labelled() -> void:
+	_ipm.nintendo_mode = true
+	var his := "8BitDo Ultimate 2 Wireless Controller"
+	assert_eq(_ipm.face_family_for_device(his), "nintendo")
+	assert_eq(_ipm.glyph_for_action("ui_accept", his), "Ⓐ", "Confirm is the cap he reads as A (right face)")
+	assert_eq(_ipm.glyph_for_action("ui_cancel", his), "Ⓑ", "Cancel is the cap he reads as B (bottom face)")
+
+
 func test_glyph_follows_the_plastic_not_the_position() -> void:
 	_ipm.nintendo_mode = true
 	# Same physical button (EAST) in every case; only the silkscreen differs.

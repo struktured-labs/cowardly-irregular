@@ -551,6 +551,39 @@ func get_item(item_id: String) -> Dictionary:
 	return items.get(item_id, {})
 
 
+## The party shares one bag in battle. Every grant lands on the leader, so reading each member's own
+## inventory left four of five PCs with no Item command and made every preset's potion rule dead.
+func party_item_count(party: Array, item_id: String) -> int:
+	var total := 0
+	for m in party:
+		if m != null and is_instance_valid(m) and m.has_method("get_item_count"):
+			total += int(m.get_item_count(item_id))
+	return total
+
+
+## item_id -> total quantity across the party, for a menu that lists the shared bag.
+func party_inventory(party: Array) -> Dictionary:
+	var out := {}
+	for m in party:
+		if m == null or not is_instance_valid(m) or not ("inventory" in m) or not (m.inventory is Dictionary):
+			continue
+		for id in m.inventory:
+			var q := int(m.inventory[id])
+			if q > 0:
+				out[id] = int(out.get(id, 0)) + q
+	return out
+
+
+## Spend one from the user's own stock first, then from the first other member holding it.
+func take_party_item(user, party: Array, item_id: String) -> bool:
+	if user != null and is_instance_valid(user) and user.has_method("get_item_count") and int(user.get_item_count(item_id)) > 0:
+		return user.remove_item(item_id, 1)
+	for m in party:
+		if m != null and is_instance_valid(m) and m != user and m.has_method("get_item_count") and int(m.get_item_count(item_id)) > 0:
+			return m.remove_item(item_id, 1)
+	return false
+
+
 ## Whether an item can be used INSIDE a battle. THE OWNER of a rule that had two copies:
 ## BattleCommandMenu filtered META for the player's Use Item list, and the LLM Rule
 ## Composer re-derived the same filter for the model — spelling ItemCategory.META as a
@@ -564,4 +597,197 @@ func is_usable_in_battle(item_id: String) -> bool:
 	if item.is_empty():
 		return false
 	return int(item.get("category", -1)) != ItemCategory.META
+
+
+## "" when this use would change something. Otherwise the sentence a menu should show — and the caller must not spend the item. use_item itself still returns true for a 0 HP heal; the waste happens at the menu, which used to treat that true as success.
+func ineffective_use_reason(item_id: String, targets: Array, in_battle: bool = false) -> String:
+	var item := get_item(item_id)
+	if item.is_empty():
+		return ""
+	var effects = item.get("effects", {})
+	if typeof(effects) != TYPE_DICTIONARY:
+		return ""
+	var name := str(item.get("name", "That item"))
+	for key in effects.keys():
+		if not is_effect_key_handled(str(key)):
+			return ""
+	if effects.has("add_buff") or effects.has("damage") or effects.has("repel_steps"):
+		return ""
+	var heals_hp := _effect_amount(effects, "heal_hp") > 0 or _effect_amount(effects, "heal_hp_percent") > 0
+	var heals_mp := _effect_amount(effects, "heal_mp") > 0 or _effect_amount(effects, "heal_mp_percent") > 0
+	var cures_all := bool(effects.get("cure_all_status", false))
+	var cure_list: Array = effects.get("cure_status", []) if effects.get("cure_status", []) is Array else []
+	var cures_listed := not cure_list.is_empty()
+	var revives := bool(effects.get("revive", false))
+	if not heals_hp and not heals_mp and not cures_all and not cures_listed and not revives:
+		if bool(effects.get("escape_battle", false)):
+			if in_battle:
+				return ""
+			return "%s only works in battle" % name
+		return "%s can't be used" % name
+	if revives:
+		# Permakilled revive() does nothing, so that corpse is not a reason to spend the item; a normal KO still is. Outside battle a bundled heal on a living ally in the same list falls through.
+		if _someone_can_be_revived(targets):
+			return ""
+		var blocked := _permakill_block_reason(targets)
+		if blocked != "":
+			if in_battle or not _living_heal_would_land(targets, heals_hp, heals_mp):
+				return blocked
+		elif in_battle:
+			var standing := _living_revive_reason(targets)
+			if standing != "":
+				return standing
+	var seen := 0
+	var living := 0
+	var who := ""
+	var missing_hp := false
+	var missing_mp := false
+	var has_ailment := false
+	for t in targets:
+		if not _is_item_target(t):
+			continue
+		seen += 1
+		who = str(t.combatant_name)
+		if t.is_alive:
+			living += 1
+			if t.current_hp < t.max_hp:
+				missing_hp = true
+			if t.current_mp < t.max_mp:
+				missing_mp = true
+		if cures_all and t.status_effects.size() > 0:
+			has_ailment = true
+		elif cures_listed:
+			for status_id in cure_list:
+				if t.has_status(str(status_id)):
+					has_ailment = true
+					break
+	if seen == 0:
+		return ""
+	if (heals_hp and missing_hp) or (heals_mp and missing_mp) or ((cures_listed or cures_all) and has_ailment):
+		return ""
+	var many := seen > 1
+	if who == "":
+		who = "They"
+	if not revives and living == 0 and (heals_hp or heals_mp) and not cures_listed and not cures_all:
+		if many:
+			return "No one left to heal"
+		return "%s is knocked out" % who
+	if (cures_listed or cures_all) and not heals_hp and not heals_mp:
+		if cures_listed and cure_list.size() == 1 and not cures_all:
+			var word := _ailment_word(str(cure_list[0]))
+			if many:
+				return "No one is %s" % word
+			return "%s isn't %s" % [who, word]
+		if many:
+			return "No one has a status to cure"
+		return "%s has no status to cure" % who
+	if heals_hp and heals_mp:
+		if many:
+			return "The party is already at full HP and MP"
+		return "%s is already at full HP and MP" % who
+	if heals_hp:
+		if many:
+			return "The party is already at full HP"
+		return "%s is already at full HP" % who
+	if heals_mp:
+		if many:
+			return "The party is already at full MP"
+		return "%s is already at full MP" % who
+	if revives:
+		var standing := _living_revive_reason(targets)
+		if standing != "":
+			return standing
+		return "Cannot revive — no KO'd target"
+	if many:
+		return "It wouldn't help anyone"
+	return "It wouldn't help %s" % who
+
+
+## "" when someone in targets is KO'd (the revive can help) or no target could be read. Otherwise who isn't knocked out.
+func _living_revive_reason(targets: Array) -> String:
+	var n := 0
+	var who := ""
+	for t in targets:
+		if not _is_item_target(t):
+			continue
+		if not t.is_alive:
+			return ""
+		n += 1
+		who = str(t.combatant_name)
+	if n == 0:
+		return ""
+	if n > 1:
+		return "No one is knocked out"
+	if who == "":
+		who = "They"
+	return "%s isn't knocked out" % who
+
+
+## True when a KO'd target would actually stand back up. Permakilled revive() returns without changing HP.
+func _someone_can_be_revived(targets: Array) -> bool:
+	for t in targets:
+		if _is_item_target(t) and not t.is_alive and not t.has_status("permakilled"):
+			return true
+	return false
+
+
+## "" when no target is a permakilled corpse. Otherwise the sentence for a revive that revive() will refuse.
+func _permakill_block_reason(targets: Array) -> String:
+	var n := 0
+	var who := ""
+	for t in targets:
+		if not _is_item_target(t) or t.is_alive or not t.has_status("permakilled"):
+			continue
+		n += 1
+		who = str(t.combatant_name)
+	if n == 0:
+		return ""
+	if n > 1:
+		return "No one can be revived"
+	if who == "":
+		who = "They"
+	return "%s can't be revived" % who
+
+
+## True when a living ally in this list would gain HP or MP from the bundled heal. use_item still applies that outside battle.
+func _living_heal_would_land(targets: Array, heals_hp: bool, heals_mp: bool) -> bool:
+	if not heals_hp and not heals_mp:
+		return false
+	for t in targets:
+		if not _is_item_target(t) or not t.is_alive:
+			continue
+		if heals_hp and t.current_hp < t.max_hp:
+			return true
+		if heals_mp and t.current_mp < t.max_mp:
+			return true
+	return false
+
+
+func _effect_amount(effects: Dictionary, key: String) -> int:
+	var v = effects.get(key, 0)
+	if typeof(v) != TYPE_INT and typeof(v) != TYPE_FLOAT:
+		return 0
+	return int(v)
+
+
+func _is_item_target(t) -> bool:
+	return t != null and is_instance_valid(t) and ("is_alive" in t) and ("current_hp" in t) and t.has_method("has_status")
+
+
+func _ailment_word(status_id: String) -> String:
+	var known := {
+		"poison": "poisoned",
+		"silence": "silenced",
+		"blind": "blinded",
+		"petrify": "petrified",
+		"stun": "stunned",
+		"sleep": "asleep",
+		"confuse": "confused",
+		"paralysis": "paralyzed",
+		"curse": "cursed",
+		"burn": "burning",
+		"freeze": "frozen",
+	}
+	var id := status_id.to_lower()
+	return str(known[id]) if known.has(id) else id.replace("_", " ")
 

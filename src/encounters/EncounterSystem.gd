@@ -136,7 +136,7 @@ func _party_encounter_rate_reduction() -> float:
 	if js == null or not js.has_method("get_job"):
 		return 1.0
 	var best: float = 1.0
-	for member in gs.player_party:
+	for member in gs.party_for_queries():
 		if not (member is Dictionary):
 			continue
 		for slot_key in ["job_id", "secondary_job_id"]:
@@ -169,7 +169,7 @@ func _party_encounter_skip_chance() -> float:
 	if ps == null or not ps.has_method("get_passive"):
 		return 0.0
 	var max_chance: float = 0.0
-	for member in gs.player_party:
+	for member in gs.party_for_queries():
 		if not (member is Dictionary):
 			continue
 		var ep: Variant = member.get("equipped_passives", [])
@@ -371,6 +371,8 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 			"attack": stats.get("attack", 10),
 			"defense": stats.get("defense", 8),
 			"magic": stats.get("magic", 5),
+			# Codex prints magic_defense; dropping the key makes the fight use defense/2.
+			"magic_defense": stats.get("magic_defense", int(stats.get("defense", 8) * 0.5)),
 			"speed": stats.get("speed", 8),
 			"elemental_weaknesses": db_entry.get("weaknesses", []),
 			"elemental_resistances": db_entry.get("resistances", []),
@@ -673,13 +675,14 @@ func _load_field_elite_cfg() -> Dictionary:
 
 
 ## The party average at the moment the fight starts, not the monster's authored level.
-## Returns -1 when there is no party to measure (tests, boot), which the caller reads as
-## "scale from the authored level instead" rather than as level zero.
+## Live roster when GameLoop has one — player_party is only refreshed on menu open and save,
+## so a level earned since then must still pin the elite. Returns -1 when there is no party
+## to measure (tests, boot), which the caller reads as "scale from the authored level".
 func _party_average_level() -> float:
 	var gs: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
 	if gs == null:
 		return -1.0
-	var party = gs.get("player_party")
+	var party = gs.party_for_queries() if gs.has_method("party_for_queries") else gs.get("player_party")
 	if party == null or not (party is Array) or party.is_empty():
 		return -1.0
 	var total := 0.0

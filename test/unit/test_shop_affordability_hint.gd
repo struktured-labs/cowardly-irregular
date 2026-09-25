@@ -73,12 +73,17 @@ func test_win98_menu_honors_text_color_without_breaking_disabled() -> void:
 	var src := FileAccess.get_file_as_string("res://src/ui/Win98Menu.gd")
 	assert_gte(src.count('item.get("text_color", null) is Color'), 2,
 		"both render paths (row build + selection repaint) honor the per-row tint")
-	# disabled grey must outrank the tint in both paths (tint is an elif after it)
+	# Grey outranks the tint. _row_unavailable still treats disabled as grey; a no-op item row is landable and greys the same way.
+	var fn := src.find("func _row_unavailable")
+	assert_gt(fn, -1, "_row_unavailable must be the shared grey/reject check")
+	var fn_body := src.substr(fn, src.find("\nfunc ", fn + 1) - fn)
+	assert_true('get("disabled", false)' in fn_body,
+		"a disabled row must still grey out — the tint is not allowed to paint over it")
 	var i := 0
 	while true:
 		i = src.find('item.get("text_color", null) is Color', i + 1)
 		if i < 0:
 			break
 		var before := src.substr(maxi(0, i - 220), 220)
-		assert_true("disabled" in before,
-			"the tint branch must sit AFTER the disabled check — disabled grey outranks it")
+		assert_true("_row_unavailable" in before,
+			"the tint branch must sit AFTER the unavailable check — grey outranks it")

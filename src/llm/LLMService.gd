@@ -423,14 +423,16 @@ func cancel_all(reason: String = "scene_change") -> void:
 	var in_id: String = _inflight_id
 	_inflight_id = ""
 	if in_id != "":
-		_cancelled_ids[in_id] = true
+		## No _cancelled_ids entry: an in-flight id is never in _queue, so
+		## _process_queue — the only reader — can never see it.
 		_resolve_box(in_id, null)
 		_pending_boxes.erase(in_id)
 
 	# Drain the queue — resolve each box with null so awaiting callers unblock.
+	## No _cancelled_ids entries: _queue is cleared below, so nothing marked
+	## here could ever reach the reader.
 	for item in _queue:
 		var id: String = item["id"]
-		_cancelled_ids[id] = true
 		_resolve_box(id, null)
 		_pending_boxes.erase(id)
 	_queue.clear()
@@ -441,6 +443,10 @@ func cancel_all(reason: String = "scene_change") -> void:
 	# it would no-op.
 	if _active_backend != null:
 		_active_backend.cancel_all()
+
+	## The response cache is scene-scoped by contract — _get_cache's own severity
+	## note says so, and until this line nothing made it true.
+	clear_cache()
 
 	_draining = false
 	print("[LLMService] cancel_all: %s" % reason)
@@ -468,8 +474,8 @@ func _submit_and_wait(prompt: String, opts: Dictionary) -> Variant:
 		if _queue.size() >= QUEUE_CAP:
 			# Drop-oldest: evict the front of the queue.
 			var dropped: Dictionary = _queue.pop_front()
+			## No _cancelled_ids entry: the id is already out of the queue.
 			var dropped_id: String = dropped["id"]
-			_cancelled_ids[dropped_id] = true
 			_resolve_box(dropped_id, null)
 			push_warning("[LLMService] Queue overflow — dropped request '%s'." % dropped_id)
 
@@ -950,8 +956,10 @@ func _get_cache(key: String) -> Variant:
 	# and costs one request. Third and mildest instance of the signed-threshold
 	# class found in this lane today — the other two (conversation-reward backstop,
 	# rebalance cadence) read from PERSISTED state and disabled whole features;
-	# this cache is in-memory and cleared on scene change, so it only costs
-	# freshness.
+	# this cache is in-memory and cleared on scene change (cancel_all), so it
+	# only costs freshness. NOTE: eviction is read-driven — an entry whose key is
+	# never queried again is never visited, so the TTL bounds staleness and the
+	# cancel_all clear is what bounds memory.
 	if age < 0.0 or age > CACHE_TTL_SECONDS:
 		_cache.erase(key)
 		return null

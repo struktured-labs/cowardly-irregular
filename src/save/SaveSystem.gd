@@ -323,12 +323,31 @@ func _is_cutscene_active() -> bool:
 	return int(gl.current_state) == 4
 
 
-## Best-effort human-readable name for the currently loaded map, used
-## in the save slot summary. Defaults to "Unknown" when no map is loaded.
+## Place name from locations.json, else a title-cased map id. The area banner uses this too.
+static func location_display_name(map_id: String) -> String:
+	var fallback := map_id.replace("_", " ").capitalize()
+	if map_id == "":
+		return fallback
+	var file := FileAccess.open("res://data/locations.json", FileAccess.READ)
+	if file == null:
+		return fallback
+	var json := JSON.new()
+	var parsed := json.parse(file.get_as_text())
+	file.close()
+	if parsed != OK or not (json.data is Dictionary):
+		return fallback
+	var data: Dictionary = json.data
+	for key in data:
+		var entry: Variant = data[key]
+		if entry is Dictionary and str((entry as Dictionary).get("map_id", key)) == map_id:
+			return str((entry as Dictionary).get("name", fallback))
+	return fallback
+
+
+## Best-effort human-readable name for the currently loaded map, used in the save slot summary.
 func _current_location_display_name() -> String:
 	if MapSystem and MapSystem.current_map_id:
-		# Convert snake_case map id to Title Case ("harmonia_village" -> "Harmonia Village").
-		return MapSystem.current_map_id.capitalize()
+		return location_display_name(str(MapSystem.current_map_id))
 	return "Unknown"
 
 
@@ -347,6 +366,9 @@ func load_game(slot: int) -> bool:
 
 	# Apply save data
 	_apply_save_data(save_data)
+	## The file has no playback position. A fight after the save must not seek the restored visit.
+	if SoundManager and SoundManager.has_method("discard_interrupted_area_bed"):
+		SoundManager.discard_interrupted_area_bed()
 
 	current_save_slot = slot
 	load_completed.emit(slot)
@@ -436,13 +458,19 @@ func get_save_info(slot: int) -> Dictionary:
 		return {}
 
 	var save_data = _read_save_file(slot)
-	var info: Dictionary = save_data.get("metadata", {})
+	var raw_info: Variant = save_data.get("metadata", {})
+	var info: Dictionary = (raw_info as Dictionary).duplicate() if raw_info is Dictionary else {}
+	# Baked location_name is the title-cased map id ("Vertex Village"). The map id is the truth.
+	var map_data: Variant = save_data.get("map", {})
+	if map_data is Dictionary:
+		var map_id := str((map_data as Dictionary).get("current_map_id", "")).strip_edges()
+		if map_id != "":
+			info["location_name"] = location_display_name(map_id)
 	# Rebuild the party preview from the file's live party — pre-fix saves BAKED an all-fighter summary (job stored as string, read as dict; struktured cap 2026-07-16), so the stored metadata can't be trusted
 	var gs_data: Variant = save_data.get("game_state", {})
 	if gs_data is Dictionary:
 		var party: Variant = (gs_data as Dictionary).get("player_party", [])
 		if party is Array and not (party as Array).is_empty():
-			info = info.duplicate()
 			info["party_summary"] = summarize_party(party)
 	return info
 

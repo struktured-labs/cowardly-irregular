@@ -887,6 +887,10 @@ func _get_character_id(combatant: Combatant) -> String:
 
 func _get_item_count(combatant: Combatant, item_id: String) -> int:
 	"""Get count of an item in inventory"""
+	## A PC counts the party's one bag, the stock _execute_item spends from; headless mirrors its party into player_party.
+	var bm = get_node_or_null("/root/BattleManager")
+	if bm != null and combatant in bm.player_party:
+		return ItemSystem.party_item_count(bm.player_party, item_id)
 	# Check if combatant has get_item_count method
 	if combatant.has_method("get_item_count"):
 		return combatant.get_item_count(item_id)
@@ -1077,13 +1081,15 @@ func _resolve_job_for_character(character_id: String) -> String:
 	return character_id
 
 
-## Reads the job the character actually has right now. Party entries are Combatant.to_dict(),
-## which carries job_id; matched on the same name→id derivation _get_character_id uses.
+## Reads the job the character actually has right now. The save snapshot lags a job
+## change until the next menu open, so this prefers the live roster. Matched on the
+## same name→id derivation _get_character_id uses.
 func _live_job_id_for(character_id: String) -> String:
 	var game_state = get_node_or_null("/root/GameState") if is_inside_tree() else null
 	if game_state == null or not ("player_party" in game_state):
 		return ""
-	for entry in game_state.player_party:
+	var rows: Array = game_state.party_for_queries() if game_state.has_method("party_for_queries") else game_state.player_party
+	for entry in rows:
 		if not (entry is Dictionary):
 			continue
 		if str(entry.get("name", "")).to_lower().replace(" ", "_") != character_id:
@@ -2222,7 +2228,7 @@ func _evaluate_condition(combatant: Combatant, condition: Dictionary) -> bool:
 
 		ConditionType.ITEM_COUNT:
 			var item_id = condition.get("item_id", "")
-			var count = combatant.get_item_count(item_id) if combatant.has_method("get_item_count") else 0
+			var count = _get_item_count(combatant, item_id)
 			return _compare(count, compare_op, value)
 
 		ConditionType.ALWAYS:

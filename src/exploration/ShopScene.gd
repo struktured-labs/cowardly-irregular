@@ -483,7 +483,8 @@ func _attempt_sell(item_id: String, item_data: Dictionary) -> void:
 	var sell_price = int(cost * 0.5)
 
 	# Check if we have the item
-	if not _remove_item_from_inventory(item_id):
+	var removed: bool = _remove_from_equipment_pool(item_id) if shop_type == ShopType.BLACKSMITH else _remove_item_from_inventory(item_id)
+	if not removed:
 		SoundManager.play_ui("menu_error")
 		description_label.text = "You don't have that item!"
 		return
@@ -513,7 +514,11 @@ func _get_item_data(item_id: String) -> Dictionary:
 			var weapon = equipment_system.weapons.get(item_id, {})
 			if not weapon.is_empty():
 				return weapon
-			return equipment_system.armors.get(item_id, {})
+			var armor = equipment_system.armors.get(item_id, {})
+			if not armor.is_empty():
+				return armor
+			## The shelf stocks no accessories, but the pool it buys back from holds them.
+			return equipment_system.accessories.get(item_id, {})
 	return {}
 
 
@@ -524,31 +529,65 @@ func _is_spell_upgrade(spell_data: Dictionary) -> bool:
 	return int(spell_data["tier"]) > _best_known_tier(str(spell_data["family"]))
 
 
+## Highest tier anyone already has in this family. "Already has it" is _member_knows: the snapshot learned list or, when that slot is reachable, live knows_ability.
 func _best_known_tier(family: String) -> int:
 	var best := 0
-	if game_state == null or job_system == null:
+	if game_state == null or job_system == null or game_state.player_party.is_empty():
 		return best
-	for member_data in game_state.player_party:
-		for aid in member_data.get("learned_abilities", []):
-			var data: Dictionary = job_system.get_ability(str(aid))
-			if str(data.get("family", "")) == family:
-				best = maxi(best, int(data.get("tier", 0)))
+	var rungs: Array = []
+	for aid in job_system.abilities.keys():
+		var data: Dictionary = job_system.get_ability(str(aid))
+		if str(data.get("family", "")) != family:
+			continue
+		rungs.append({"id": str(aid), "tier": int(data.get("tier", 0))})
+	for i in range(game_state.player_party.size()):
+		var learned: Array = _snapshot_learned(game_state.player_party[i])
+		for rung in rungs:
+			var tier: int = int(rung["tier"])
+			if tier <= best:
+				continue
+			if _member_knows(i, str(rung["id"]), learned):
+				best = tier
 	return best
+
+
+## Live inventories when a party is in the tree; otherwise the snapshot dicts. Menu-open and pre-save are the only snapshot writers, and walking into a shop does not save, so a potion used in the field menu or picked up from a chest in this area is on the Combatant only.
+func _inventory_sources() -> Array:
+	var live: Array = _resolve_live_party()
+	var sources: Array = []
+	var saw_live := false
+	for member in live:
+		if member == null or not is_instance_valid(member) or not ("inventory" in member):
+			continue
+		var inv = member.inventory
+		if inv is Dictionary:
+			sources.append(inv)
+			saw_live = true
+	if saw_live or game_state == null:
+		return sources
+	for member_data in game_state.player_party:
+		if member_data is Dictionary:
+			var snap: Variant = member_data.get("inventory", {})
+			if snap is Dictionary:
+				sources.append(snap)
+	return sources
 
 
 func _get_owned_count(item_id: String) -> int:
 	"""Get how many of this item the party owns"""
 	if shop_type == ShopType.ITEM:
-		if game_state.player_party.size() > 0:
-			var party_leader = game_state.player_party[0]
-			var inventory = party_leader.get("inventory", {})
-			return inventory.get(item_id, 0)
+		var sources: Array = _inventory_sources()
+		if sources.is_empty():
+			return 0
+		return int(sources[0].get(item_id, 0))
 	elif _is_magic_shop():
-		# Count party members who have learned this spell
-		var count = 0
-		for member_data in game_state.player_party:
-			var learned = member_data.get("learned_abilities", [])
-			if item_id in learned:
+		# Members who already have this spell — same rule as character select, not the snapshot list alone.
+		if game_state == null:
+			return 0
+		var count := 0
+		for i in range(game_state.player_party.size()):
+			var learned: Array = _snapshot_learned(game_state.player_party[i])
+			if _member_knows(i, item_id, learned):
 				count += 1
 		return count
 	return 0
@@ -559,13 +598,20 @@ func _get_sellable_inventory() -> Array:
 	var sellable: Array = []
 	var counted: Dictionary = {}
 
-	# Collect items from all party members
-	for member_data in game_state.player_party:
-		var inventory = member_data.get("inventory", {})
-		for item_id in inventory:
-			var quantity = inventory[item_id]
-			if quantity > 0:
-				counted[item_id] = counted.get(item_id, 0) + quantity
+	## Gear never enters a party inventory — purchases, chests and drops all land in the pool — so the blacksmith listed nothing to sell.
+	if shop_type == ShopType.BLACKSMITH:
+		var pool: Dictionary = _live_equipment_pool()
+		for key in pool:
+			if pool[key] is Array:
+				for item_id in pool[key]:
+					counted[str(item_id)] = counted.get(str(item_id), 0) + 1
+	else:
+		# Live stock when the party is in the tree. The snapshot still lists a potion the field menu already used, and it misses a chest drop until the next menu open.
+		for inventory in _inventory_sources():
+			for item_id in inventory:
+				var quantity = int(inventory[item_id])
+				if quantity > 0:
+					counted[item_id] = counted.get(item_id, 0) + quantity
 
 	# Convert to array, excluding key/quest items and worthless junk.
 	for item_id in counted:
@@ -586,7 +632,18 @@ func _get_sellable_inventory() -> Array:
 	return sellable
 
 
-## One predicate for "already has it": the LIVE Combatant's knows_ability (kit ∪ learned ∪ purchased ∪ level ∪ free move) when reachable, else the snapshot's learned list.
+## Snapshot learned list for one party slot, copied into an untyped Array. Empty when the slot isn't a dict or the field isn't an array.
+func _snapshot_learned(member_data) -> Array:
+	var out: Array = []
+	if member_data is Dictionary:
+		var raw = member_data.get("learned_abilities", [])
+		if raw is Array:
+			for aid in raw:
+				out.append(aid)
+	return out
+
+
+## One predicate for "already has it": the LIVE Combatant's knows_ability (kit ∪ learned ∪ purchased ∪ level ∪ free move) when reachable, else the snapshot's learned list. Character select, the purchase guard, magic owned-counts, and upgrade tiers all use it.
 func _member_knows(char_index: int, spell_id: String, snapshot_learned: Array) -> bool:
 	if spell_id in snapshot_learned:
 		return true
@@ -594,6 +651,46 @@ func _member_knows(char_index: int, spell_id: String, snapshot_learned: Array) -
 	if char_index < live.size() and live[char_index] != null and is_instance_valid(live[char_index]) \
 			and live[char_index].has_method("knows_ability"):
 		return bool(live[char_index].knows_ability(spell_id))
+	return false
+
+
+func _has_live_equipment_pool() -> bool:
+	if not is_inside_tree():
+		return false
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop")
+	return gl != null and "equipment_pool" in gl
+
+
+## GameLoop.equipment_pool is the live store of unequipped gear; an empty dict when there is none.
+func _live_equipment_pool() -> Dictionary:
+	if not _has_live_equipment_pool():
+		return {}
+	return get_tree().root.get_node("GameLoop").equipment_pool
+
+
+## weapons / armors / accessories by catalog lookup, "" for an id the catalog does not know.
+func _equipment_pool_key(item_id: String) -> String:
+	var eq = get_node_or_null("/root/EquipmentSystem")
+	if eq == null:
+		return ""
+	if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
+		return "weapons"
+	if eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
+		return "armors"
+	if eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
+		return "accessories"
+	return ""
+
+
+## Catalog slot first, then any slot: an old save can hold a piece the pre-fix chest heuristic filed under the wrong key, and the sell list counts every key.
+func _remove_from_equipment_pool(item_id: String) -> bool:
+	var pool: Dictionary = _live_equipment_pool()
+	var keys: Array = [_equipment_pool_key(item_id)]
+	keys.append_array(pool.keys())
+	for key in keys:
+		if pool.get(key, null) is Array and (pool[key] as Array).has(item_id):
+			(pool[key] as Array).erase(item_id)
+			return true
 	return false
 
 
@@ -653,24 +750,12 @@ func _add_item_to_inventory(item_id: String) -> bool:
 		# dict (per the BattleManager._route_drop_to_equipment_pool
 		# pattern at line ~4979). Without this the same overwrite class
 		# applies to blacksmith purchases.
-		var tree: SceneTree = get_tree()
-		if tree != null and tree.root != null:
-			var gl: Node = tree.root.get_node_or_null("GameLoop")
-			if gl != null and "equipment_pool" in gl:
-				var pool: Dictionary = gl.equipment_pool
-				var eq = get_node_or_null("/root/EquipmentSystem")
-				if eq != null:
-					var key: String = ""
-					if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
-						key = "weapons"
-					elif eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
-						key = "armors"
-					elif eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
-						key = "accessories"
-					if key != "":
-						if not pool.has(key):
-							pool[key] = []
-						pool[key].append(item_id)
+		var pool: Dictionary = _live_equipment_pool()
+		var key: String = _equipment_pool_key(item_id)
+		if key != "" and _has_live_equipment_pool():
+			if not pool.has(key):
+				pool[key] = []
+			pool[key].append(item_id)
 		return true
 	# Magic purchases handled separately in _attempt_magic_purchase. Any
 	# other shop_type values reaching here are an authoring error — refuse
@@ -679,28 +764,40 @@ func _add_item_to_inventory(item_id: String) -> bool:
 	return false
 
 
+## Live stock is authoritative when a party is in the tree. Selling the snapshot paid gold for a potion the field menu had already used (the live remove's false was ignored) and refused a drop that existed only on the Combatant.
 func _remove_item_from_inventory(item_id: String) -> bool:
-	"""Remove item from party inventory (returns false if not found).
-
-	Tick 314: removes from BOTH the snapshot dict (where the sell menu
-	reads quantities) AND the LIVE Combatant.inventory (source of truth).
-	Pre-fix the snapshot-only decrement was overwritten on the next sync,
-	so the player got the sell-price gold while keeping the item — a
-	free-money exploit triggered every time a sell was confirmed."""
-	# Find first party member with this item in the snapshot.
 	var live_party: Array = _resolve_live_party()
+	var live_authoritative := false
+	for i in range(live_party.size()):
+		var member = live_party[i]
+		if member == null or not is_instance_valid(member) or not member.has_method("remove_item"):
+			continue
+		live_authoritative = true
+		if not member.remove_item(item_id, 1):
+			continue
+		_decrement_snapshot_inventory(i, item_id)
+		return true
+	if live_authoritative or game_state == null:
+		return false
 	for i in range(game_state.player_party.size()):
-		var member_data: Dictionary = game_state.player_party[i]
-		var inventory: Dictionary = member_data.get("inventory", {})
-		if inventory.has(item_id) and inventory[item_id] > 0:
-			inventory[item_id] -= 1
-			if inventory[item_id] == 0:
-				inventory.erase(item_id)
-			# Tick 314: mirror on the matching live Combatant.
-			if i < live_party.size() and live_party[i] and live_party[i].has_method("remove_item"):
-				live_party[i].remove_item(item_id, 1)
+		if _decrement_snapshot_inventory(i, item_id):
 			return true
 	return false
+
+
+func _decrement_snapshot_inventory(index: int, item_id: String) -> bool:
+	if game_state == null or index < 0 or index >= game_state.player_party.size():
+		return false
+	var member_data: Dictionary = game_state.player_party[index]
+	if not member_data.has("inventory") or not (member_data["inventory"] is Dictionary):
+		return false
+	var inventory: Dictionary = member_data["inventory"]
+	if not inventory.has(item_id) or int(inventory[item_id]) <= 0:
+		return false
+	inventory[item_id] = int(inventory[item_id]) - 1
+	if inventory[item_id] == 0:
+		inventory.erase(item_id)
+	return true
 
 
 func _update_description_for_item(item_id: String) -> void:
@@ -734,11 +831,17 @@ func _update_description_for_item(item_id: String) -> void:
 						desc += "  %s: %+d\n" % [StatNames.display_name(stat), value]
 			else:
 				desc += "Stats (vs equipped):\n"
+				# Union, not just the new piece: a robe that omits Max HP still drops Iron Armor's +250.
+				var shown: Dictionary = {}
 				for stat in stat_mods:
-					var value = stat_mods[stat]
-					if value == 0 and not comparison.has(stat):
+					shown[str(stat)] = true
+				for stat in comparison:
+					shown[str(stat)] = true
+				for stat in shown:
+					var value: int = int(stat_mods.get(stat, 0))
+					var delta: int = int(comparison.get(stat, 0))
+					if value == 0 and delta == 0:
 						continue
-					var delta: int = comparison.get(stat, 0)
 					if delta > 0:
 						desc += "  %s: %+d  (+%d)\n" % [StatNames.display_name(stat), value, delta]
 					elif delta < 0:
@@ -810,12 +913,15 @@ func _compare_equipment(item_id: String, item_data: Dictionary) -> Dictionary:
 			current_data = equipment_system.accessories[current_id]
 		current_mods = current_data.get("stat_mods", {})
 
-	# Calculate delta: new - current
-	var delta: Dictionary = {}
+	# Both sides. A stat only the worn piece has is still a change (Iron Armor's HP, its speed penalty).
+	var stats: Dictionary = {}
 	for stat in new_mods:
-		var new_val: int = new_mods.get(stat, 0)
-		var cur_val: int = current_mods.get(stat, 0)
-		delta[stat] = new_val - cur_val
+		stats[str(stat)] = true
+	for stat in current_mods:
+		stats[str(stat)] = true
+	var delta: Dictionary = {}
+	for stat in stats:
+		delta[stat] = int(new_mods.get(stat, 0)) - int(current_mods.get(stat, 0))
 	return delta
 
 
@@ -907,6 +1013,52 @@ func _get_eligible_jobs_for_school(school: String) -> Array:
 	return []
 
 
+## Primary or secondary job. Live Combatant wins when that slot is in the tree; otherwise snapshot job + secondary_job_id.
+func _member_can_learn_school(char_index: int, snapshot: Dictionary, eligible_jobs: Array) -> bool:
+	for job_id in _member_job_ids(char_index, snapshot):
+		if job_id in eligible_jobs:
+			return true
+	return false
+
+
+func _member_job_ids(char_index: int, snapshot: Dictionary) -> Array:
+	var live: Array = _resolve_live_party()
+	if char_index < live.size() and live[char_index] != null and is_instance_valid(live[char_index]):
+		return _job_ids_on_live(live[char_index])
+	return _job_ids_on_snapshot(snapshot)
+
+
+func _job_ids_on_live(member) -> Array:
+	var ids: Array = []
+	if "job" in member:
+		_append_job_id(ids, _job_id_of(member.job))
+	if "secondary_job_id" in member:
+		_append_job_id(ids, _job_id_of(member.secondary_job_id))
+	if "secondary_job" in member:
+		_append_job_id(ids, _job_id_of(member.secondary_job))
+	return ids
+
+
+func _job_ids_on_snapshot(snapshot: Dictionary) -> Array:
+	var ids: Array = []
+	_append_job_id(ids, _job_id_of(snapshot.get("job", "")))
+	_append_job_id(ids, _job_id_of(snapshot.get("secondary_job_id", "")))
+	return ids
+
+
+func _append_job_id(ids: Array, job_id: String) -> void:
+	if job_id != "" and not ids.has(job_id):
+		ids.append(job_id)
+
+
+func _job_id_of(job_field) -> String:
+	if job_field is Dictionary:
+		return str(job_field.get("id", ""))
+	if job_field is String:
+		return job_field
+	return ""
+
+
 func _open_character_select(spell_id: String, spell_data: Dictionary) -> void:
 	"""Open character selection for magic spell purchase"""
 	current_mode = ShopMode.CHAR_SELECT
@@ -921,11 +1073,10 @@ func _open_character_select(spell_id: String, spell_data: Dictionary) -> void:
 	for i in range(game_state.player_party.size()):
 		var member = game_state.player_party[i]
 		var member_name = member.get("name", "???")
-		var member_job = member.get("job", "")
 		var learned = member.get("learned_abilities", [])
 
-		# Only show characters with an eligible job
-		if member_job not in eligible_jobs:
+		# Primary or secondary, live Combatant first — same reach as _member_knows.
+		if not _member_can_learn_school(i, member, eligible_jobs):
 			continue
 
 		# Check if already knows the spell — provenance-blind (struktured 2026-09-06: the Mage bought Ignis, which is in his starting KIT, because this only read the snapshot's learned list).
@@ -1033,11 +1184,11 @@ func _attempt_equip(choice: String) -> void:
 
 	var slot: String = _equip_slot_for_item(pending_equip_id)
 	var replaced: String = _equipped_name_in_slot(member, slot)
+	## equip_weapon only writes the slot. The purchase is already one pool entry; wearing it that way left the entry in the bag and never returned the piece it replaced.
 	var success: bool = false
-	match slot:
-		"weapon": success = equipment_system.equip_weapon(member, pending_equip_id)
-		"armor": success = equipment_system.equip_armor(member, pending_equip_id)
-		"accessory": success = equipment_system.equip_accessory(member, pending_equip_id)
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl != null and gl.has_method("equip_from_pool") and slot != "":
+		success = gl.equip_from_pool(member, slot, pending_equip_id)
 
 	if not success:
 		SoundManager.play_ui("menu_error")

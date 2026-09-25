@@ -371,6 +371,9 @@ func _process(delta: float) -> void:
 func _exit_tree() -> void:
 	if _mode7:
 		_mode7.cleanup()
+	## Dungeons never touch this layer, so the outdoor weather bed would play for the whole cave.
+	if SoundManager and SoundManager.has_method("stop_ambient"):
+		SoundManager.stop_ambient()
 
 
 func _setup_scene() -> void:
@@ -488,11 +491,11 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Back portal to W2 Suburban
+	# Back portal to W2. from_industrial is beside the east portal; "entrance" is the W1 arrival, a map away.
 	var back_portal = AreaTransitionScript.new()
 	back_portal.name = "BackPortal"
 	back_portal.target_map = "suburban_overworld"
-	back_portal.target_spawn = "entrance"
+	back_portal.target_spawn = "from_industrial"
 	back_portal.require_interaction = true
 	back_portal.indicator_text = "Return to the Mundane Sprawl"
 	back_portal.position = spawn_points.get("steampunk_portal", Vector2(864, 48))

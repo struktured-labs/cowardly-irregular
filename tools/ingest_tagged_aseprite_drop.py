@@ -14,6 +14,7 @@ Usage:
     uv run python tools/ingest_tagged_aseprite_drop.py --target rat  --dry-run
     uv run python tools/ingest_tagged_aseprite_drop.py --target bard --dry-run
     uv run python tools/ingest_tagged_aseprite_drop.py --target all
+    uv run python tools/ingest_tagged_aseprite_drop.py --selftest
 """
 
 from __future__ import annotations
@@ -34,6 +35,86 @@ ASEPRITE = os.environ.get("ASEPRITE_BIN", str(Path.home() / ".local/bin/aseprite
 DROP = Path(os.environ.get("DROP_DIR", REPO / "tmp/drop_20260827"))
 SRC_FRAME = 128
 TARGET_FRAME = 256
+
+
+# Every .png this run wrote. Checked at the end -- see report_missing_sidecars().
+WROTE: list[Path] = []
+
+
+def sidecar_for(png: Path) -> Path:
+    """The Godot .import sidecar for a png: APPEND the suffix, never replace it.
+
+    ⛔ `Path.with_suffix(".import")` is the obvious call and it is WRONG here --
+    it replaces the last suffix, so victory.pre_artist.png becomes
+    victory.pre_artist.import. Godot's name is <full filename>.import.
+    """
+    return png.with_name(png.name + ".import")
+
+
+def save_png(img: Image.Image, out: Path) -> None:
+    """Write a sheet and remember it, so the sidecar check at the end sees it."""
+    img.save(out)
+    WROTE.append(out)
+
+
+def report_missing_sidecars() -> None:
+    """Name every png this run wrote that Godot has no .import for.
+
+    ⛔ WHY THIS EXISTS: on 2026-09-18 this tool wrote victory.pre_artist.png and
+    weak.pre_artist.png, both TRACKED art, and neither got a sidecar. All 11
+    *.pre_artist.png that already shipped have one; .gitignore:86 says the
+    exclusion list deliberately omits them because they are tracked. The cost is
+    the one .gitignore:120 already records -- Godot imports an unsidecar'd png
+    anyway and mints a fresh uid per worktree ("measured: 4 worktrees, 4 uids"),
+    so every tree carries its own churn until someone notices. Nobody noticed for
+    two days, because nothing in this tool ever mentioned the sidecar.
+    """
+    missing = [q for q in WROTE if not sidecar_for(q).exists()]
+    if not missing:
+        if WROTE:
+            print(f"\n  sidecars: all {len(WROTE)} written sheet(s) have a .import")
+        return
+    print(f"\n  ⛔ {len(missing)} of {len(WROTE)} written sheet(s) have NO .import sidecar:")
+    for q in missing:
+        try:
+            print(f"       {q.relative_to(REPO)}")
+        except ValueError:
+            print(f"       {q}")
+    print("  These are TRACKED art. Without a sidecar every worktree mints its own uid.")
+    print("  Generate and commit them:")
+    print("       XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy \\")
+    print("            --import --quit")
+    print("       git add assets/sprites/**/*.png.import")
+
+
+def selftest() -> int:
+    """sidecar_for() only. Pure: builds paths, opens nothing, runs nothing."""
+    cases = [
+        ("assets/sprites/jobs/bard/victory.png",
+         "assets/sprites/jobs/bard/victory.png.import",
+         "an ordinary sheet"),
+        ("assets/sprites/jobs/bard/victory.pre_artist.png",
+         "assets/sprites/jobs/bard/victory.pre_artist.png.import",
+         "TWO suffixes -- with_suffix() would eat .png and produce .pre_artist.import"),
+        ("assets/sprites/monsters/cave_rat.idle.strip.png",
+         "assets/sprites/monsters/cave_rat.idle.strip.png.import",
+         "three suffixes; append is still the rule"),
+    ]
+    bad = 0
+    for src, want, note in cases:
+        got = str(sidecar_for(Path(src)))
+        ok = got == want
+        bad += not ok
+        print(f"{'ok  ' if ok else 'FAIL'} {Path(src).name:34} -> {Path(got).name:42} {note}")
+    # CONTROL: prove with_suffix() -- the wrong call -- actually differs on the
+    # dotted name. If it ever agreed, these cases would pass either way.
+    dotted = Path("a/b/victory.pre_artist.png")
+    if str(sidecar_for(dotted)) == str(dotted.with_suffix(".import")):
+        print("FAIL the control is vacuous: append and with_suffix agree here, so "
+              "these cases cannot tell the right call from the wrong one")
+        bad += 1
+    print(f"\n{len(cases)} cases, {bad} failed")
+    return 1 if bad else 0
 
 
 def export_frames(src: Path, out_dir: Path, ignore_layers: list[str] | None = None) -> list[Path]:
@@ -142,6 +223,7 @@ def backup(path: Path) -> None:
     bak = path.with_suffix(".pre_artist.png")
     if path.exists() and not bak.exists():
         shutil.copy2(path, bak)
+        WROTE.append(bak)
         print(f"    backup {path.name} -> {bak.name}")
     elif bak.exists():
         print(f"    backup {bak.name} already exists — left untouched (holds pre-artist art)")
@@ -177,7 +259,7 @@ def ingest_rat(dry: bool) -> None:
             return
         backup(out)
         full = build_strip(frames, (0, len(frames) - 1), True, scale, dx, dy)
-        full.save(out)
+        save_png(full, out)
         print(f"    -> {out.name}: {full.width}x{full.height} ({len(frames)} frames @{TARGET_FRAME})")
 
 
@@ -210,7 +292,7 @@ def ingest_bard(dry: bool) -> None:
             out = bard_dir / f"{anim}.png"
             backup(out)
             strip = build_strip(frames, rng, False, 2.0, 0, 0)
-            strip.save(out)
+            save_png(strip, out)
             print(f"      -> {out.name}: {strip.width}x{strip.height}")
 
 
@@ -218,7 +300,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--target", choices=["rat", "bard", "mage", "fighter", "rogue", "cleric", "drop30", "drop03", "all"], default="all")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--selftest", action="store_true",
+                    help="check sidecar_for() and exit; opens nothing, needs no aseprite")
     a = ap.parse_args()
+    if a.selftest:
+        return selftest()
     if not Path(ASEPRITE).exists():
         print(f"ERROR: aseprite not at {ASEPRITE}", file=sys.stderr)
         return 1
@@ -236,6 +322,8 @@ def main() -> int:
     else:
         for k in DROPS_20260830:
             ingest_drop(k, a.dry_run)
+    if not a.dry_run:
+        report_missing_sidecars()
     return 0
 
 
@@ -247,7 +335,11 @@ DROPS_20260830 = {
         "src": "Bard Base sprite.aseprite",
         "dir": "assets/sprites/jobs/bard",
         "backup": True,
+        # "Celebration" is the ARTIST's label for the victory pose; the engine's
+        # animation slot is "victory". Their word is kept in the manifest source note,
+        # the same way "Dead"/"Weak" were when they split the downed state.
         "map": {"idle": ("Idle", 0, 0), "dead": ("Dead", 0, 0), "weak": ("Weak", 0, 0),
+                "victory": ("Celebration", 0, 0),
                 "cast": ("ATK", 0, 3), "attack": ("ATK", 4, 99)},
     },
     "mage": {
@@ -256,7 +348,13 @@ DROPS_20260830 = {
         # current mage sheets are ALREADY artist art from this same source; a .pre_artist
         # backup would file artist pixels under a pre-artist name. git history holds the prior.
         "backup": False,
+        # ...EXCEPT victory: until the 2026-09-23 drop it was April LoRA art (v3.1 sweep), not
+        # the artist's, so the file it replaces IS pre-artist and gets the backup.
+        "backup_anims": {"victory"},
+        # 2026-09-23 drop added "Celebration" (16 frames) between Weak and Atk 1; Atk 1 and Dead
+        # shifted +16 and stayed byte-identical. Their word, our slot -- same as bard and rogue.
         "map": {"idle": ("IDLE", 0, 0), "weak": ("Weak", 0, 0), "dead": ("Dead", 0, 0),
+                "victory": ("Celebration", 0, 0),
                 "cast": ("Atk 1", 0, 0), "attack": ("Atk 1", 0, 0)},
     },
 }
@@ -282,9 +380,9 @@ def ingest_drop(name: str, dry: bool) -> None:
             if dry:
                 continue
             out = out_dir / f"{anim}.png"
-            if cfg["backup"]:
+            if cfg["backup"] or anim in cfg.get("backup_anims", ()):
                 backup(out)
-            build_strip(frames, (a, b), False, 2.0, 0, 0).save(out)
+            save_png(build_strip(frames, (a, b), False, 2.0, 0, 0), out)
             print(f"      -> {out.name}")
 
 
@@ -325,7 +423,7 @@ def ingest_drop2(name: str, dry: bool) -> None:
             out = out_dir / f"{anim}.png"
             if anim in cfg["backup_anims"]:
                 backup(out)
-            build_strip(frames, (a, b), False, 2.0, 0, 0).save(out)
+            save_png(build_strip(frames, (a, b), False, 2.0, 0, 0), out)
             print(f"      -> {out.name}")
 
 
@@ -334,11 +432,13 @@ DROPS_20260903 = {
     "rogue": {
         "src": "Rogue Main design.aseprite",
         "dir": "assets/sprites/jobs/rogue",
-        # dead only: the prior source carried NO tags at all, so dead.png was never artist-authored
-        "backup_anims": {"dead"},
+        # dead: prior source carried NO tags. victory: T1 procedural until the Celebration tag landed.
+        "backup_anims": {"dead", "victory"},
         # the artist left an opaque "Layer 1" background visible in this drop
         "ignore_layers": ["Layer 1"],
+        # "Celebration" is the ARTIST's label for the victory pose; the engine's slot is "victory".
         "map": {"idle": ("Idle", 0, 0), "weak": ("Weak", 0, 0), "dead": ("Dead", 0, 0),
+                "victory": ("Celebration", 0, 0),
                 "attack": ("ATK", 0, 0), "stab": ("ATK", 0, 0)},
     },
     "cleric": {
@@ -372,7 +472,7 @@ def ingest_drop3(name: str, dry: bool) -> None:
             out = out_dir / f"{anim}.png"
             if anim in cfg["backup_anims"]:
                 backup(out)
-            build_strip(frames, (a, b), False, 2.0, 0, 0).save(out)
+            save_png(build_strip(frames, (a, b), False, 2.0, 0, 0), out)
             print(f"      -> {out.name}")
 
 

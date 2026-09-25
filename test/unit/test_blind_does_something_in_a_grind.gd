@@ -89,25 +89,23 @@ func test_the_two_KNOWN_divergences_have_not_grown() -> void:
 ##                             the crit roll. Both are cast by SHIPPED presets: ninja_defensive
 ##                             spends 12 MP on vanish, balanced and aggressive 8 on shadow_step,
 ##                             and in a grind all of it bought nothing.
-## ⛔ `barrier` is still NOT fixed, and still for scope rather than doubt: it nullifies a hit at two
-## live sites and the grind has six-plus take_damage paths. That is a core damage-loop change with
-## balance consequences for every grind — struktured's call. It matters more than it did: all three
-## GUARDIAN presets AND the guardian default script cast guardian_wall, 15 MP of a 35 pool each
-## time, so a Guardian in a grind is the worst-affected character in the game.
+## The five wards that closed this list are honoured at the executor sites live uses, and not inside
+## take_damage. Group attacks, formations and combo magic call take_damage on both engines and
+## neither one consults a ward there — putting the check in the shared function would make a grind
+## Limit Break bounce off a barrier that a live Limit Break still lands.
 ##
 ## What this arm does is hold the LIST. Implement one and it reds, so the note gets updated instead
 ## of the list quietly meaning less than it says. A new ignored status also reds.
 
-const GRIND_IGNORES_BUT_ABILITIES_INFLICT := [
-	"barrier",             # guardian_wall — and all three GUARDIAN PRESETS cast it in rule 0
-	"charm",               # puppy_eyes
-	"evasion",             # burrow
-	"magic_block",         # access_denied
-	"pacify",              # peace_sign
-	"physical_reflect",    # port_block
-	"prismatic_reflect",   # prismatic_reflect
-	"reflect",             # magic_reflect
-]
+const GRIND_IGNORES_BUT_ABILITIES_INFLICT := []
+## charm left this list: _check_status_skip now mirrors live (35% break free, otherwise skip).
+## evasion left this list: _target_dodges_physical now rolls live's 60% and does not consume the status.
+## pacify left this list: offensive swings and spells fizzle; heals still land, and the status stays.
+## barrier left this list: one hit on a basic attack, a physical ability or a spell, then removed.
+## magic_block left this list: one spell, then removed. A swing is not a spell.
+## reflect and physical_reflect left this list: a physical hit bounces onto the attacker and the
+## status stays. Live does not bounce `reflect` on a spell, so a grind does not either.
+## prismatic_reflect left this list: a spell bounces onto the caster and the status stays.
 
 func test_the_ignored_status_list_is_still_exactly_this() -> void:
 	## Derived from both engines, not from the list above — the list is the CLAIM and the scan is
@@ -143,11 +141,9 @@ func test_the_ignored_status_list_is_still_exactly_this() -> void:
 	assert_eq(found, claimed,
 		"the set of statuses an ability can inflict and the grind ignores has CHANGED — if one was implemented, drop it from the list and say so; if one appeared, it is a new instance of the blind defect: " + str(found))
 
-func test_the_guardian_presets_still_cast_the_inert_one() -> void:
-	## The reason this is not a curiosity. I shipped three Guardian presets whose rule 0 casts
-	## guardian_wall for 15 MP; it inflicts `barrier`, which the grind ignores — so the presets spend
-	## a turn and the MP on nothing, in the mode the presets exist for. If barrier is ever honoured,
-	## this arm reds and the note above it stops being true, which is the outcome to want.
+func test_the_guardian_presets_still_cast_guardian_wall() -> void:
+	## The three Guardian presets still open on guardian_wall. The ward is honoured now, so that
+	## 15 MP buys a one-hit nullify instead of nothing. This arm only pins that they still cast it.
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/autobattle_rule_templates.json"))
 	assert_not_null(parsed, "CONTROL: the template catalog parses")
 	var casters: Array = []

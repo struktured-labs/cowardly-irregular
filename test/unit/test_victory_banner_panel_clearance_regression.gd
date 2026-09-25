@@ -1,22 +1,14 @@
 extends GutTest
 
-## msg 2595: ONE-SHOT!/AUTO-BATTLE! celebration banners rendered center-
-## screen at x=440-840 (PRESET_CENTER + offset_left/right=±200) while the
-## BattleResultsDisplay victory panel occupies x=200-600 (BRD:171-172
-## PRESET_CENTER_LEFT + offset_left=200 / offset_right=200+panel_width=600).
-## Banners overlapped the panel across x=440-600 (160px) for the ~1-2s
-## between panel appearance and banner fade — visible in the smoke's
-## post_battle_return.png cap.
+## msg 2595 originally shoved ONE-SHOT!/AUTO-BATTLE! banners RIGHT
+## (SHIFT=+200 → x=640-1040) to clear a center-left results panel that the
+## 2026-08-18 overlay revamp deleted. That parked the EXP-boost popups on
+## the party (PartyArea left edge x=800) for the whole victory pose.
 ##
-## Fix: horizontal shift on ALL banner labels via a named const
-## VICTORY_BANNER_X_SHIFT so both the ONE-SHOT!/rank/EXP triplet AND the
-## AUTO-BATTLE!/turns/EXP triplet clear the panel with a small right
-## margin. Viewport stretch=viewport + aspect=keep pins the coord system
-## at 1280 regardless of window size, so the shift is safe across all
-## real screens.
-##
-## cowir-main fixed the parallel speech-bubble half in v3.33.185; this
-## closes the banner half.
+## Fix: SHIFT is NEGATIVE so the 400px banner sits in the open center
+## (enemy panel right=180, party left=800). A named Y lift + hold-alpha
+## < 1 keeps leftover overlap from hiding the flourish. Viewport
+## stretch=viewport + aspect=keep pins coords at 1280.
 
 const BS_PATH: String = "res://src/battle/BattleScene.gd"
 
@@ -24,34 +16,28 @@ const BS_PATH: String = "res://src/battle/BattleScene.gd"
 ## ── The named shift const exists + is the right magnitude ─────────────
 
 func test_victory_banner_x_shift_declared() -> void:
-	# Named const so a future refactor can tune the shift without hunting
-	# through 6 offset pairs.
 	var src: String = FileAccess.get_file_as_string(BS_PATH)
-	assert_string_contains(src, "const VICTORY_BANNER_X_SHIFT: int = 200",
-		"named const must exist so all banner offset pairs share the same tunable shift")
+	assert_true("const VICTORY_BANNER_X_SHIFT: int =" in src,
+		"named X shift must exist so all banner offset pairs share one tunable")
 
 
-func test_shift_clears_the_victory_panel_at_1280_viewport() -> void:
-	# The math the const encodes: viewport center is 640, panel right edge
-	# is 600 (BRD:172, offset_right = 200 + 400 panel_width), banner is
-	# 400 wide. Shifted banner left edge = 640 + (-200 + SHIFT). For
-	# clearance we need >= 600. So SHIFT >= 160. Const chose 200 for a
-	# comfortable 40px margin.
-	# If someone tunes the shift below 160, the collision returns.
+func _shift_value() -> int:
 	var src: String = FileAccess.get_file_as_string(BS_PATH)
 	var idx: int = src.find("const VICTORY_BANNER_X_SHIFT: int = ")
-	assert_gt(idx, -1)
-	var line_end: int = src.find("\n", idx)
-	var line: String = src.substr(idx, line_end - idx)
-	# Extract the integer value from the const declaration.
-	var eq_idx: int = line.find("= ")
-	var value_str: String = line.substr(eq_idx + 2).strip_edges()
-	var shift_value: int = int(value_str)
-	# Panel right edge = 200 (offset_left in BRD) + 400 (panel_width) = 600.
-	# Banner left edge post-shift = 640 (viewport center) + (-200 + shift).
-	# Clearance needed: (640 + (-200 + shift)) >= 600 → shift >= 160.
-	assert_gte(shift_value, 160,
-		"shift must be >= 160 to clear the victory panel's right edge — computed from viewport center 640, panel right 600, banner half-width 200")
+	assert_gt(idx, -1, "floor: X shift const must exist or the next line is vacuous")
+	var line: String = src.substr(idx, src.find("\n", idx) - idx)
+	return int(line.substr(line.find("= ") + 2).strip_edges())
+
+
+func test_shift_clears_the_party_poses_at_1280_viewport() -> void:
+	# Banner occupies [440+SHIFT, 840+SHIFT]. PartyArea left = 1280-480 = 800.
+	# Right edge must stay left of the party: 840+SHIFT <= 800 → SHIFT <= -40.
+	# Left edge must stay right of the enemy panel (180): 440+SHIFT >= 190 → SHIFT >= -250.
+	var shift_value: int = _shift_value()
+	assert_lte(shift_value, -40,
+		"SHIFT=%d parks the banner on the party (right edge %d >= 800) — victory poses get covered" % [shift_value, 840 + shift_value])
+	assert_gte(shift_value, -250,
+		"SHIFT=%d walks the banner into the enemy panel (left edge %d)" % [shift_value, 440 + shift_value])
 
 
 ## ── Every banner offset pair uses the shift const ─────────────────────
@@ -98,13 +84,30 @@ func test_shift_const_used_at_all_six_label_sites() -> void:
 		"expected ≥ 13 references to VICTORY_BANNER_X_SHIFT (1 declaration + 12 offset pair uses across 6 labels) — got %d" % count)
 
 
-## ── Panel geometry the shift depends on hasn't drifted ────────────────
+func test_banner_is_lifted_and_translucent() -> void:
+	var src: String = FileAccess.get_file_as_string(BS_PATH)
+	assert_true("const VICTORY_BANNER_Y_SHIFT: int =" in src,
+		"Y lift must be a named const — raw offset_top tweaks on 6 labels will drift")
+	var y_idx: int = src.find("const VICTORY_BANNER_Y_SHIFT: int = ")
+	assert_gt(y_idx, -1, "floor: Y const exists")
+	var y_line: String = src.substr(y_idx, src.find("\n", y_idx) - y_idx)
+	var y_shift: int = int(y_line.substr(y_line.find("= ") + 2).strip_edges())
+	assert_lte(y_shift, -80,
+		"Y shift %d does not lift the triplet above the figures (need <= -80)" % y_shift)
+	assert_true("const VICTORY_BANNER_ALPHA" in src,
+		"hold-alpha must be named so the fade-in cannot silently return to opaque")
+	assert_true("VICTORY_BANNER_ALPHA" in src.substr(src.find("func _on_one_shot_achieved")),
+		"one-shot flash must actually APPLY the alpha, not just declare it")
+	assert_true("VICTORY_BANNER_ALPHA" in src.substr(src.find("func _on_autobattle_victory")),
+		"autobattle flash must apply the same alpha")
 
-func test_victory_panel_geometry_still_matches_shift_assumption() -> void:
-	# 2026-08-18 revamp: the x=200-600 panel is gone; cards hang LEFT of the party
-	# sprites with a log-clearance clamp. The shifted banners (x>=640) now share the
-	# right half with the CARDS — flagged as a watch-item for the next victory cap;
-	# banners fire mid-battle and fade before cards normally appear.
-	var vo_src: String = FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
-	assert_string_contains(vo_src, "LOG_CLEAR_X := 190",
-		"card left-clamp keeps the log clear — the geometry rule the shift const originally defended")
+
+func test_party_area_left_edge_still_at_800() -> void:
+	# The SHIFT math above is 840+SHIFT vs PartyArea left. If the tscn moves
+	# the party, the const needs a retune — pin the input, not a coincidental x.
+	var tscn: String = FileAccess.get_file_as_string("res://src/battle/BattleScene.tscn")
+	var idx: int = tscn.find("[node name=\"PartyArea\"")
+	assert_gt(idx, -1, "PartyArea node exists")
+	var block: String = tscn.substr(idx, 400)
+	assert_true("offset_left = -480.0" in block,
+		"PartyArea offset_left=-480 at a 1280 viewport is x=800 — the edge SHIFT clears")

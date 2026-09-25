@@ -189,7 +189,20 @@ def _read_targets(code):
         while j < len(toks):
             t = toks[j]
             if t.startswith('-'):
-                j += 2 if (len(t) == 2 and t[1] in argflags) else 1
+                if len(t) == 2 and t[1] in argflags:
+                    # ⛔ `read -a NAME` ASSIGNS the array NAME -- the consumed token IS a target.
+                    # Every other arg-taking flag (-d DELIM, -t SECS, -u FD, -n COUNT, -p PROMPT)
+                    # consumes a token that is NOT a variable, which is why `a` sat in this set
+                    # and why its argument was thrown away. That made `read -r -a f` report `$f`
+                    # as assigned nowhere, and the gate BLOCKED v3.33.484-alpha on
+                    # tools/wedge_probe.sh:29 -- almost certainly .471 too, same message. bash runs
+                    # it clean under set -u; the checker was wrong, not the tool.
+                    if cmd == 'read' and t[1] == 'a' and j + 1 < len(toks) \
+                            and re.fullmatch(NAME, toks[j + 1]):
+                        names.append(toks[j + 1])
+                    j += 2
+                else:
+                    j += 1
                 continue
             if re.fullmatch(NAME, t):
                 names.append(t)

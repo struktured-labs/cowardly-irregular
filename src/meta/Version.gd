@@ -20,7 +20,7 @@ class_name Version
 ## OS.execute at all) so they fall back to the clean semver; deploys are
 ## already tagged via butler --userversion.
 
-const SEMVER := "3.33.470-alpha"
+const SEMVER := "3.33.489-alpha"
 
 static var _dev_hash_cached: bool = false
 static var _dev_hash: String = ""
@@ -52,6 +52,8 @@ static func _git_short_hash() -> String:
 	if OS.has_feature("web"):
 		return _dev_hash
 	var proj: String = ProjectSettings.globalize_path("res://")
+	if not _should_ask_git(OS.has_feature("editor"), proj):
+		return _dev_hash
 	var out: Array = []
 	var code: int = OS.execute("git", ["-C", proj, "rev-parse", "--short=8", "HEAD"], out)
 	if code == 0 and out.size() > 0:
@@ -59,3 +61,8 @@ static func _git_short_hash() -> String:
 		if h.length() >= 7 and h.is_valid_hex_number():
 			_dev_hash = h
 	return _dev_hash
+
+
+## Only an editor-build source run has a repo to ask; an export globalizes res:// to "" and ran git in the player's cwd.
+static func _should_ask_git(is_editor: bool, proj: String) -> bool:
+	return is_editor and proj != ""

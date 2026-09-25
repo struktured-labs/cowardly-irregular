@@ -299,9 +299,11 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			})
 
 	# Items submenu
-	if not combatant.inventory.is_empty():
+	## The party's one bag, read from the same party _execute_item spends from.
+	var bag: Dictionary = ItemSystem.party_inventory(BattleManager.player_party if combatant in BattleManager.player_party else [combatant])
+	if not bag.is_empty():
 		var item_items = []
-		for item_id in combatant.inventory.keys():
+		for item_id in bag.keys():
 			var item = ItemSystem.get_item(item_id)
 			if item.is_empty():
 				continue
@@ -314,7 +316,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			# scale, and token as a "use" option that does nothing.)
 			if not ItemSystem.is_usable_in_battle(item_id):
 				continue
-			var quantity = combatant.inventory[item_id]
+			var quantity = bag[item_id]
 			var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
 
 			# For SINGLE_ALLY items, add party member target submenu.
@@ -334,11 +336,12 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						if is_instance_valid(s):
 							target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
 					var hp_label: String = "KO'd" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
-					ally_targets.append({
+					# Landable even when the item would do nothing, so confirm can say why instead of spending it.
+					ally_targets.append(_with_item_reject({
 						"id": "item_" + item_id + "_ally_" + str(i),
 						"label": "%s (%s)" % [member.combatant_name, hp_label],
 						"data": {"item_id": item_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
-					})
+					}, item_id, [member]))
 				if ally_targets.size() > 0:
 					item_items.append({
 						"id": "item_menu_" + item_id,
@@ -355,11 +358,11 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						var s = _scene.enemy_sprite_nodes[enemy_idx]
 						if is_instance_valid(s):
 							target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
-					enemy_targets.append({
+					enemy_targets.append(_with_item_reject({
 						"id": "item_" + item_id + "_enemy_" + str(enemy_idx),
 						"label": "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp],
 						"data": {"item_id": item_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
-					})
+					}, item_id, [enemy]))
 				item_items.append({
 					"id": "item_menu_" + item_id,
 					"label": "%s x%d" % [item["name"], quantity],
@@ -367,11 +370,11 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				})
 			else:
 				# Other target types (ALL_ALLIES, ALL_ENEMIES, SELF) don't need submenu
-				item_items.append({
+				item_items.append(_with_item_reject({
 					"id": "item_" + item_id,
 					"label": "%s x%d" % [item["name"], quantity],
 					"data": {"item_id": item_id}
-				})
+				}, item_id, _targets_for_item_without_picker(item, combatant, alive_enemies)))
 		if item_items.size() > 0:
 			items.append({
 				"id": "item_menu",
@@ -860,6 +863,37 @@ func _free_move_hint(ability: Dictionary) -> String:
 			return symbol
 
 
+## Whole-party and self items have no target submenu. The targets here are the ones confirm will pass to player_item.
+func _targets_for_item_without_picker(item: Dictionary, combatant, alive_enemies: Array) -> Array:
+	var target_type: int = int(item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY))
+	var targets: Array = []
+	match target_type:
+		ItemSystem.TargetType.SINGLE_ENEMY:
+			if alive_enemies.size() > 0:
+				targets = [alive_enemies[0]]
+		ItemSystem.TargetType.ALL_ENEMIES:
+			targets = alive_enemies
+		ItemSystem.TargetType.ALL_ALLIES:
+			# Mega Potion / Mega Ether / Megalixir / Tent — the whole alive party, not the leader alone.
+			for m in _scene.party_members:
+				if is_instance_valid(m) and m.is_alive:
+					targets.append(m)
+		ItemSystem.TargetType.SINGLE_ALLY, ItemSystem.TargetType.SELF:
+			var it_target = combatant if combatant else (_scene.party_members[0] if _scene.party_members.size() > 0 else null)
+			if it_target:
+				targets = [it_target]
+	return targets
+
+
+func _with_item_reject(row: Dictionary, item_id: String, targets: Array) -> Dictionary:
+	if ItemSystem == null:
+		return row
+	var why := str(ItemSystem.ineffective_use_reason(item_id, targets, true))
+	if why != "":
+		row["reject_reason"] = why
+	return row
+
+
 func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 	"""Handle Win98 menu item selection"""
 	# Force close menu first before processing action
@@ -1070,29 +1104,9 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 				_scene.log_message("Target no longer valid!")
 			return
 
-		# Fallback: no pre-selected target
+		# Fallback: no pre-selected target. Same target set the menu used when it decided the row was worth confirming.
 		var item = ItemSystem.get_item(i_id)
-		var targets = []
-		var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
-
-		match target_type:
-			ItemSystem.TargetType.SINGLE_ENEMY:
-				if alive_enemies.size() > 0:
-					targets = [alive_enemies[0]]
-			ItemSystem.TargetType.ALL_ENEMIES:
-				targets = alive_enemies
-			ItemSystem.TargetType.ALL_ALLIES:
-				# Mega Potion / Mega Ether / Megalixir / Tent — expand to the
-				# whole alive party. Was collapsed into the single-ally arm
-				# pre-fix, so a 400g Mega Potion healed only the leader
-				# (regression test_battle_all_allies_item_regression.gd).
-				for m in _scene.party_members:
-					if is_instance_valid(m) and m.is_alive:
-						targets.append(m)
-			ItemSystem.TargetType.SINGLE_ALLY, ItemSystem.TargetType.SELF:
-				var it_target = current if current else (_scene.party_members[0] if _scene.party_members.size() > 0 else null)
-				if it_target:
-					targets = [it_target]
+		var targets = _targets_for_item_without_picker(item, current, alive_enemies)
 
 		if targets.size() > 0:
 			BattleManager.player_item(i_id, targets)

@@ -631,14 +631,7 @@ func _handle_slot_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
-		var items = _get_available_items_for_slot()
-		if items.size() > 0:
-			mode = Mode.ITEM_SELECT
-			selected_item_index = 0
-			_build_ui()
-			SoundManager.play_ui("menu_select")
-		else:
-			SoundManager.play_ui("menu_error")
+		_try_open_selected_slot()
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
@@ -849,14 +842,29 @@ func _on_slot_click(slot_index: int) -> void:
 	if mode != Mode.SLOT_SELECT:
 		return
 	selected_slot = slot_index
-	var items = _get_available_items_for_slot()
+	_try_open_selected_slot()
+
+
+## Confirm used to buzz and stay on the stats panel. "No items available" is drawn only on the list that never opens, so the player heard an error and saw nothing change.
+func _try_open_selected_slot() -> void:
+	var items := _get_available_items_for_slot()
 	if items.size() > 0:
 		mode = Mode.ITEM_SELECT
 		selected_item_index = 0
 		_build_ui()
 		SoundManager.play_ui("menu_select")
-	else:
-		SoundManager.play_ui("menu_error")
+		return
+	_build_ui()
+	SoundManager.play_ui("menu_error")
+	Toast.show_warning(self, _empty_slot_message())
+
+
+func _empty_slot_message() -> String:
+	match selected_slot:
+		0: return "No weapons to equip"
+		1: return "No armor to equip"
+		2: return "No accessories to equip"
+	return "Nothing to equip"
 
 
 func _on_slot_hover(slot_index: int) -> void:

@@ -132,7 +132,15 @@ func test_gameloop_sets_monster_type_meta_in_headless_path() -> void:
 	if fn_end < 0:
 		fn_end = src.length()
 	var body := src.substr(fn_start, fn_end - fn_start)
-	assert_true(body.contains('set_meta("monster_type"'),
+	assert_true(body.contains("_combatant_for_headless"),
+		"headless resolution must build each enemy through _combatant_for_headless")
+	var build_start := src.find("func _combatant_for_headless")
+	assert_true(build_start >= 0, "_combatant_for_headless must exist")
+	var build_end := src.find("\nfunc ", build_start + 20)
+	if build_end < 0:
+		build_end = src.length()
+	var build := src.substr(build_start, build_end - build_start)
+	assert_true(build.contains('set_meta("monster_type"'),
 		"headless Combatant build must set monster_type meta — without it bestiary credit AND drop lookup silently no-op for the whole ludicrous path")
 	assert_true(body.contains("notify_rare_drop"),
 		"headless path must notify rare drops so rare_item_found interrupts work in ludicrous mode")
@@ -201,7 +209,7 @@ func test_every_copy_of_an_equipment_drop_reaches_the_pool() -> void:
 
 	## CONTROL: we found the delivery block, not merely the function. Without this the arms below
 	## are about whatever text happened to be in range.
-	assert_true(body.contains("add_item(item_id, qty)"),
+	assert_true(body.contains("deliver_consumable_drop(party, item_id, qty)"),
 		"CONTROL: the consumable fallback must be in the extracted body, or this arm read the wrong range")
 
 	## ⛔ THIS PAIR COUNTED SITES AND PINNED MY ARITHMETIC, AND WAS WRONG IN BOTH DIRECTIONS.
@@ -217,7 +225,7 @@ func test_every_copy_of_an_equipment_drop_reaches_the_pool() -> void:
 	## very refactor it exists to permit. Caught by the must-stay-green mutation, not by reading.
 	var eq_at: int = body.find("var qty")
 	assert_gt(eq_at, -1, "the delivery block must still derive a per-id quantity")
-	var stop_at: int = body.find("add_item(item_id, qty)", eq_at)
+	var stop_at: int = body.find("deliver_consumable_drop(party, item_id, qty)", eq_at)
 	assert_gt(stop_at, eq_at, "CONTROL: the consumable fallback must follow the equipment branch, or the slice is inverted")
 	var eq_branch: String = body.substr(eq_at, stop_at - eq_at)
 	assert_gt(eq_branch.length(), 20,

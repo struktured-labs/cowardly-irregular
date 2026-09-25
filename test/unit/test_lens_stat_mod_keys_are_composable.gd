@@ -16,8 +16,9 @@ extends GutTest
 ## So the passive author's intuition — "add a stat_mod key and read it downstream" —
 ## is correct for passives and silently wrong for Lenses. Nothing in the code says
 ## so. The rule is documented only in data/lenses.json's `_stat_mod_vocabulary`
-## prose field, which is a data file no code reads: the same place a six-month-old
-## known defect (AbilitiesMenu's `or true`) sat undiscovered until 2026-07-30.
+## prose field, which is a data file no code reads — the same class of hiding
+## place that kept AbilitiesMenu's `or true` learned-check stub invisible until
+## 2026-07-30 (that stub is gone; this guard is about the silent-drop, not it).
 ##
 ## All 4 shipped Lenses are fine today (attack/defense/max_hp multipliers). This
 ## guard exists so the FIFTH one cannot ship inert.

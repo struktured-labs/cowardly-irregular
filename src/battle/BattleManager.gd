@@ -27,6 +27,8 @@ signal round_started(round_num: int)
 signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
 signal attack_missed(target: Combatant)
+## A hit that never connected for a reason other than a miss. Banner is the sprite text: "IMMUNE" or "BLOCK".
+signal hit_negated(target: Combatant, banner: String)
 signal healing_done(target: Combatant, amount: int)
 ## struktured 2026-09-07: MP gains and ability AP grants get their own popups (purple / red) — never healing_done's green.
 signal mp_restored(target: Combatant, amount: int)
@@ -97,6 +99,8 @@ var all_combatants: Array[Combatant] = []
 var selection_order: Array[Combatant] = []  # Order for action selection
 var selection_index: int = 0
 var current_combatant: Combatant = null
+## Y-repeat is filling the party members who have not chosen yet. Enemies still select after them.
+var _filling_repeat: bool = false
 
 ## Action queue for execution
 var pending_actions: Array[Dictionary] = []  # All selected actions before execution
@@ -278,6 +282,8 @@ var _all_out_attack_this_battle: bool = false    # The party used a pooled group
 
 ## Battle results (populated in end_battle before signal, cleared on next battle)
 var _battle_results: Dictionary = {}  # {exp_per_char: int, bonuses: Array, char_results: Array}
+## Visual autogrind records EXP and gold here but does not pay them — on_battle_victory is that battle's payer. One-shot; end_battle clears it.
+var defer_victory_payout: bool = false
 
 ## Permanent injury tracking — party members who were KO'd during battle
 var _ko_this_battle: Array[Combatant] = []
@@ -334,6 +340,13 @@ const PRIORITY_OFFSET: float = 1000.0
 ## kept and LABELLED rather than deleted, so the next reader cannot mistake them for live vocabulary
 ## the way `debuff`/`status` were mistaken for years (test_the_debuffer_archetype_is_unreachable).
 const UTILITY_ABILITY_TYPES: Array[String] = ["support", "song", "summon", "buff", "defensive"]
+
+## Ailments Purgatio (effect "cleanse") removes. HeadlessBattleResolver reads this same const.
+## Regen, haste, barrier, reflect, and buffs such as protect and shell are absent on purpose.
+const ESUNA_AILMENTS: Array[String] = [
+	"poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom",
+	"silence", "pacify", "static", "memory_leak", "festered",
+]
 
 ## FULL BANK (struktured 2026-09-10, design B): at +4 AP an Advance takes FIVE actions for four AP —
 ## a full bank covers the full party. Fixes the stranded fifth member AND the dead fourth defer,
@@ -531,6 +544,8 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# Reset autobattle tracking
 	_full_autobattle = true
 	_autobattle_player_turns = 0
+	# A leftover defer from a grind that never reached end_battle must not skip a normal fight's pay.
+	defer_victory_payout = false
 	_manual_player_turns = 0
 	_c3_nonbasic_used = false
 	_c3_clutch_crit = false
@@ -694,6 +709,16 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	## the HP/weakness reveal is the high-leverage half.
 	_maybe_emit_boss_insight()
 	_start_new_round()
+	# Opening round already ticked and stripped buffs. The row is reapplied after that, or Front Line draws forward with no +10% ATK.
+	_reapply_persisted_row()
+
+
+## Front Line / Back Row live on BattleScene.current_formation, which start_battle's buff wipe does not touch. Sprites and the menu already follow that static; this puts the attack and defense back on.
+func _reapply_persisted_row() -> void:
+	var scene_script: GDScript = load("res://src/battle/BattleScene.gd") as GDScript
+	if scene_script == null:
+		return
+	scene_script.apply_persisted_formation(player_party)
 
 
 ## Milo's thesis-quest emitters (spec: world1_chapter_three.json _wiring_notes); active-only, notify re-fires per occurrence
@@ -771,9 +796,33 @@ func _c3_underleveled_win() -> bool:
 	return max_enemy > 0 and float(max_enemy) - avg_party >= 3.0
 
 
+## True when on_battle_victory will pay this win. No GameLoop honors the flag alone; a stopped or disconnected grind pays here so the fight is not lost.
+func _defer_victory_payout() -> bool:
+	if not defer_victory_payout:
+		return false
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl == null:
+		return true
+	if not ("_is_autogrinding" in gl) or not bool(gl._is_autogrinding):
+		return false
+	if not gl.has_method("_on_autogrind_battle_ended"):
+		return false
+	if not battle_ended.is_connected(gl._on_autogrind_battle_ended):
+		return false
+	var ctrl: Variant = gl.get("_autogrind_controller")
+	if ctrl == null or not is_instance_valid(ctrl):
+		return false
+	if "_current_battle_is_meta_boss" in ctrl and bool(ctrl._current_battle_is_meta_boss):
+		return false
+	return true
+
+
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
 	_wd_armed = false
+	# Read before clearing. A grind that stopped mid-fight must still be paid here — its settler is gone.
+	var defer_payout: bool = victory and _defer_victory_payout()
+	defer_victory_payout = false
 	## Tick 472: clear the custom win_condition BEFORE any downstream
 	## work so a subsequent normal battle starts with default "all
 	## enemies dead" behavior. Set once per battle by GameLoop.
@@ -806,10 +855,12 @@ func end_battle(victory: bool) -> void:
 		## Tick 146: mark each enemy as defeated in the bestiary.
 		## Pre-fix mark_seen happened at battle start, but there was
 		## no notion of "killed" — encountered ≠ defeated. This loop
-		## iterates the original enemy roster (not just survivors)
-		## because we need to credit each unique monster_type the
-		## party brought down. Routes through BestiarySystem which
-		## auto-mark_seen as well (defeat implies seen invariant).
+		## walks the whole roster (KO does not remove them) and credits
+		## only those who went down. A survive / sway / withhold win
+		## leaves the rest standing — The Grinding Wound cannot be
+		## defeated, only outlasted — and counting them made Monsters
+		## Slain and the bestiary lie. Routes through BestiarySystem
+		## which auto-mark_seen (defeat implies seen).
 		# Tick 260: capture current map id once for the kill loop so
 		# the "Last seen: <location>" hint reflects where the kill
 		# happened (encounter location often matters more to the
@@ -819,6 +870,8 @@ func end_battle(victory: bool) -> void:
 			defeat_loc = str(MapSystem.current_map_id)
 		for enemy in enemy_party:
 			if not is_instance_valid(enemy):
+				continue
+			if enemy.is_alive:
 				continue
 			if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
 				var mtype: String = str(enemy.get_meta("monster_type", ""))
@@ -891,9 +944,9 @@ func end_battle(victory: bool) -> void:
 				float(GameState.game_constants.get("gold_multiplier", 1.0)),
 				0.1, 10.0)
 		for enemy in enemy_party:
-			var mt = enemy.get_meta("monster_type", "")
-			if mt in monsters_data:
-				var gold = monsters_data[mt].get("gold_reward", 0)
+			# Field elites carry scaled gold on the combatant. The catalog row is the ordinary species.
+			var gold := _authored_reward(enemy, monsters_data, "gold_reward", 0)
+			if gold > 0:
 				# Tick 338: factor reward_multiplier into gold (was EXP-only).
 				# Pre-fix rare-encounter monsters (Hero Mimics et al with
 				# data.reward_multiplier > 1.0) gave extra EXP but ZERO extra
@@ -902,7 +955,7 @@ func end_battle(victory: bool) -> void:
 				# gold as a regular encounter." Aligns with line 441's EXP
 				# formula where reward_multiplier IS applied.
 				total_gold += int(gold * one_shot_gold_bonus * reward_multiplier * gold_multiplier)
-		if total_gold > 0:
+		if total_gold > 0 and not defer_payout:
 			GameState.add_gold(total_gold)
 			print("Party earned %d gold!" % total_gold)
 
@@ -996,8 +1049,8 @@ func end_battle(victory: bool) -> void:
 		for enemy in enemy_party:
 			if not is_instance_valid(enemy):
 				continue
-			var mt: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
-			base_exp += int(monsters_db.get(mt, {}).get("exp_reward", 25))
+			# Same override as gold: a field elite's exp_reward meta is the scaled rare, not the catalog row.
+			base_exp += _authored_reward(enemy, monsters_db, "exp_reward", 25)
 		if base_exp <= 0:
 			base_exp = 50
 		var exp_multiplier: float = 1.0
@@ -1028,7 +1081,8 @@ func end_battle(victory: bool) -> void:
 			# The dead learn nothing — unless a passive/accessory says otherwise (struktured 2026-09-06).
 			if combatant.is_alive or earns_exp_while_dead(combatant):
 				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier)
-				combatant.gain_job_exp(exp_gained)
+				if not defer_payout:
+					combatant.gain_job_exp(exp_gained)
 			if combatant.has_signal("ability_learned") and combatant.ability_learned.is_connected(_collect_learned):
 				combatant.ability_learned.disconnect(_collect_learned)
 			var leveled_up = combatant.job_level > old_level
@@ -1055,7 +1109,7 @@ func end_battle(victory: bool) -> void:
 				"learned_abilities": learned_abilities,
 				"is_alive": combatant.is_alive
 			})
-			if exp_gained > 0:
+			if exp_gained > 0 and not defer_payout:
 				print("%s gained %d job EXP (Level: %d, EXP: %d/%d)%s" % [
 					combatant.combatant_name, exp_gained,
 					combatant.job_level, combatant.job_exp, combatant.job_level * 100,
@@ -1127,6 +1181,18 @@ func end_battle(victory: bool) -> void:
 	_cleanup_battle()
 
 
+## Catalog reward, unless the spawn stamped a scaled override (field elites).
+func _authored_reward(enemy, monsters_data: Dictionary, key: String, missing_fallback: int) -> int:
+	if not is_instance_valid(enemy):
+		return missing_fallback
+	if enemy.has_meta(key):
+		return int(enemy.get_meta(key))
+	var mt := str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+	if monsters_data.has(mt):
+		return int((monsters_data[mt] as Dictionary).get(key, missing_fallback))
+	return missing_fallback
+
+
 func _get_battle_reward_multiplier() -> float:
 	"""Get reward multiplier from defeated enemies (for rare encounters)"""
 	var max_multiplier = 1.0
@@ -1165,6 +1231,7 @@ func _cleanup_battle() -> void:
 	execution_order.clear()
 	selection_index = 0
 	current_combatant = null
+	_filling_repeat = false
 	volatility = null
 	# state stuck at VICTORY/DEFEAT forever without this — every != INACTIVE gate (toasts, spotlight reconcile) read "in battle" for the rest of the session
 	current_state = BattleState.INACTIVE
@@ -1692,6 +1759,7 @@ func _process_next_selection() -> void:
 
 	# Check if selection is complete
 	if selection_index >= selection_order.size():
+		_filling_repeat = false
 		_start_execution_phase()
 		return
 
@@ -1715,6 +1783,15 @@ func _process_next_selection() -> void:
 		current_state = BattleState.PLAYER_SELECTING
 	else:
 		current_state = BattleState.ENEMY_SELECTING
+
+	# Later allies get their AP above, then the remembered action; the first enemy clears this and selects.
+	if _filling_repeat:
+		if current_combatant in player_party:
+			_queue_repeated_action(current_combatant)
+			selection_index += 1
+			_process_next_selection()
+			return
+		_filling_repeat = false
 
 	selection_turn_started.emit(current_combatant)
 
@@ -2469,14 +2546,16 @@ func _ai_healer(combatant: Combatant, abilities: Array, alive_allies: Array, ali
 	var support_abilities = abilities.filter(func(a): return a.get("type", "") in ["buff", "support"])
 	if support_abilities.size() > 0 and randf() < 0.4:
 		var buff = support_abilities[randi() % support_abilities.size()]
-		var ally = alive_allies[randi() % alive_allies.size()]
-		return {
-			"type": "ability",
-			"combatant": combatant,
-			"ability_id": buff.get("id", ""),
-			"targets": [ally],
-			"speed": _compute_action_speed(combatant, "ability", buff)
-		}
+		## Bad Vibes and Peace Sign are enemy-facing. This branch used to pick a random ally.
+		var targets: Array = _utility_targets(combatant, buff, alive_allies, alive_enemies)
+		if not targets.is_empty():
+			return {
+				"type": "ability",
+				"combatant": combatant,
+				"ability_id": buff.get("id", ""),
+				"targets": targets,
+				"speed": _compute_action_speed(combatant, "ability", buff)
+			}
 
 	## The docstring says "attack only when no one needs healing" and the attack was a BASIC one, so
 	## a healer's own offensive kit was decoration: elder_mushroom never released a spore in its life.
@@ -2586,6 +2665,32 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
 
 
+## Foe rows are single_enemy and all_enemies. "all_enemies" does not contain the substring "enemy".
+## self stays on the caster. all_allies is every living ally. Any other row keeps the old rule: the most wounded ally under half HP, else the caster.
+func _utility_targets(combatant: Combatant, ability: Dictionary, alive_allies: Array, alive_enemies: Array) -> Array:
+	var target_type := str(ability.get("target_type", "self"))
+	if target_type == "all_enemies":
+		return alive_enemies.duplicate()
+	if target_type == "single_enemy":
+		if alive_enemies.is_empty():
+			return []
+		var foe: Combatant = _choose_target(combatant, alive_enemies, ability)
+		if foe == null:
+			return []
+		return [foe]
+	if target_type == "self":
+		return [combatant]
+	if target_type == "all_allies":
+		if alive_allies.is_empty():
+			return [combatant]
+		return alive_allies.duplicate()
+	var low_hp_allies: Array = alive_allies.filter(func(a): return a != null and a.get_hp_percentage() < 50.0)
+	if low_hp_allies.size() > 0:
+		low_hp_allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+		return [low_hp_allies[0]]
+	return [combatant]
+
+
 ## Shared utility slot. _ai_tank had one; assassin, brute and caster did not, so 25 monsters
 ## carried support abilities no archetype they reach could ever select — including Voltharion's
 ## storm_gathering, whose own comment says "without this the telegraph never lands", and two
@@ -2602,20 +2707,18 @@ func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: A
 	if utility.is_empty() or randf() >= chance:
 		return {}
 	var pick: Dictionary = utility[randi() % utility.size()]
+	## These three archetypes are handed enemies, not allies. A foe row goes to the party;
+	## a self-buff stays on the caster. Passing alive_enemies in as allies aimed a self-buff at the party.
+	var targets: Array = _utility_targets(combatant, pick, [combatant], alive_enemies)
+	if targets.is_empty():
+		return {}
 	spent[str(pick.get("id", ""))] = true
 	combatant.set_meta("_utility_spent", spent)
-	## These three archetypes are handed enemies, not allies. An enemy-facing debuff goes to an
-	## enemy; anything else — self-buff, ally-buff with no ally list here, summon — goes to the
-	## caster. I first passed alive_enemies into a parameter named alive_allies, which would have
-	## aimed a self-buff at the party.
-	var target: Combatant = combatant
-	if str(pick.get("target_type", "self")).contains("enemy") and not alive_enemies.is_empty():
-		target = alive_enemies[randi() % alive_enemies.size()]
 	return {
 		"type": "ability",
 		"combatant": combatant,
 		"ability_id": pick.get("id", ""),
-		"targets": [target],
+		"targets": targets,
 		"speed": _compute_action_speed(combatant, "ability", pick)
 	}
 
@@ -2656,19 +2759,16 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 	# Use defensive/buff ability if available (40% chance)
 	if defensive_abilities.size() > 0 and randf() < 0.4:
 		var buff = defensive_abilities[randi() % defensive_abilities.size()]
-		# Buff self or lowest-HP ally
-		var target = combatant
-		var low_hp_allies = alive_allies.filter(func(a): return a.get_hp_percentage() < 50.0)
-		if low_hp_allies.size() > 0:
-			low_hp_allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
-			target = low_hp_allies[0]
-		return {
-			"type": "ability",
-			"combatant": combatant,
-			"ability_id": buff.get("id", ""),
-			"targets": [target],
-			"speed": _compute_action_speed(combatant, "ability", buff)
-		}
+		## Lure, Infinite Loop, and Performance Review were aimed at the caster or a wounded ally.
+		var targets: Array = _utility_targets(combatant, buff, alive_allies, alive_enemies)
+		if not targets.is_empty():
+			return {
+				"type": "ability",
+				"combatant": combatant,
+				"ability_id": buff.get("id", ""),
+				"targets": targets,
+				"speed": _compute_action_speed(combatant, "ability", buff)
+			}
 
 	# Use strongest physical ability (50% chance)
 	if physical_abilities.size() > 0 and randf() < 0.5:
@@ -3346,7 +3446,7 @@ func _save_previous_actions() -> void:
 
 
 func repeat_previous_actions() -> bool:
-	"""Queue previous round's actions for all players. Returns true if successful."""
+	"""Fill remembered actions for party members still choosing, then let the rest of the round select. Returns true if successful."""
 	_track_manual_player_turn()  # Repeat is a manual action, not autobattle
 
 	if previous_round_actions.is_empty():
@@ -3357,84 +3457,80 @@ func repeat_previous_actions() -> bool:
 		print("[REPEAT] Can only repeat during selection phase")
 		return false
 
-	print("[REPEAT] Repeating previous round's actions for all players")
+	if current_combatant == null or not (current_combatant in player_party):
+		print("[REPEAT] Can only repeat on a party member's turn")
+		return false
 
-	# Queue actions for all players who haven't selected yet
-	var repeated_any = false
-	for combatant in selection_order:
-		if combatant not in player_party:
-			continue
+	print("[REPEAT] Repeating previous round's actions for players still choosing")
+	# Menu is already open, so this character's AP was granted. Later allies are filled after theirs.
+	_filling_repeat = true
+	_queue_repeated_action(current_combatant)
+	_end_selection_turn()
+	return true
 
-		var combatant_id = combatant.combatant_name.to_lower()
-		if not previous_round_actions.has(combatant_id):
-			var alive = _get_alive_enemies()
-			_queue_action({
-				"combatant": combatant,
-				"type": "attack",
-				"target": alive[0] if alive.size() > 0 else null,
-				"speed": _compute_action_speed(combatant, "attack")
-			})
-			print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
-			repeated_any = true
-			continue
 
-		# Replay all actions for this combatant
-		var actions = previous_round_actions[combatant_id]
-		for saved_action in actions:
-			var action = saved_action.duplicate()
-			action["combatant"] = combatant
+## One combatant's remembered actions, or a basic attack when none were stored.
+func _queue_repeated_action(combatant: Combatant) -> void:
+	var combatant_id = combatant.combatant_name.to_lower()
+	var actions: Array = previous_round_actions.get(combatant_id, [])
+	if actions.is_empty():
+		var alive = _get_alive_enemies()
+		_queue_action({
+			"combatant": combatant,
+			"type": "attack",
+			"target": alive[0] if alive.size() > 0 else null,
+			"speed": _compute_action_speed(combatant, "attack")
+		})
+		print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
+		return
 
-			# Validity check MUST happen before `is Combatant` — a freed
-			# reference makes `is` error with 'Left operand of is is a
-			# previously freed instance' (Godot 4 behaviour, seen in log
-			# during Y-button repeat across battles).
-			if action.has("target"):
-				var target = action["target"]
-				var target_valid: bool = is_instance_valid(target)
-				var is_stale = (target_valid
+	for saved_action in actions:
+		var action = saved_action.duplicate()
+		action["combatant"] = combatant
+
+		# Validity check MUST happen before `is Combatant` — a freed
+		# reference makes `is` error with 'Left operand of is is a
+		# previously freed instance' (Godot 4 behaviour, seen in log
+		# during Y-button repeat across battles).
+		if action.has("target"):
+			var target = action["target"]
+			var target_valid: bool = is_instance_valid(target)
+			var is_stale = (target_valid
+				and target is Combatant
+				and target.is_alive
+				and target not in player_party
+				and target not in enemy_party)
+			var target_dead: bool = target_valid and target is Combatant and not target.is_alive
+			# 2026-07-14: revive-capable actions EXPECT dead targets — don't invalidate them (cowir-music msg 2539). Phoenix Down + revival-type abilities carried this trap.
+			var _revives: bool = _action_revives(action)
+			if not target_valid or is_stale or (target_dead and not _revives):
+				var alive_enemies = _get_alive_enemies()
+				action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
+
+		# Retarget for abilities/items
+		if action.has("targets"):
+			var new_targets = []
+			var revives: bool = _action_revives(action)
+			for target in action["targets"]:
+				var is_alive_in_battle = (is_instance_valid(target)
 					and target is Combatant
 					and target.is_alive
-					and target not in player_party
-					and target not in enemy_party)
-				var target_dead: bool = target_valid and target is Combatant and not target.is_alive
-				# 2026-07-14: revive-capable actions EXPECT dead targets — don't invalidate them (cowir-music msg 2539). Phoenix Down + revival-type abilities carried this trap.
-				var _revives: bool = _action_revives(action)
-				if not target_valid or is_stale or (target_dead and not _revives):
+					and (target in player_party or target in enemy_party))
+				var is_dead_ally_in_battle = (is_instance_valid(target)
+					and target is Combatant
+					and not target.is_alive
+					and target in player_party)
+				if is_alive_in_battle or (revives and is_dead_ally_in_battle):
+					new_targets.append(target)
+				else:
+					# Replace dead/freed/stale targets with first alive enemy
 					var alive_enemies = _get_alive_enemies()
-					action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
+					if alive_enemies.size() > 0:
+						new_targets.append(alive_enemies[0])
+			action["targets"] = new_targets
 
-			# Retarget for abilities/items
-			if action.has("targets"):
-				var new_targets = []
-				var revives: bool = _action_revives(action)
-				for target in action["targets"]:
-					var is_alive_in_battle = (is_instance_valid(target)
-						and target is Combatant
-						and target.is_alive
-						and (target in player_party or target in enemy_party))
-					var is_dead_ally_in_battle = (is_instance_valid(target)
-						and target is Combatant
-						and not target.is_alive
-						and target in player_party)
-					if is_alive_in_battle or (revives and is_dead_ally_in_battle):
-						new_targets.append(target)
-					else:
-						# Replace dead/freed/stale targets with first alive enemy
-						var alive_enemies = _get_alive_enemies()
-						if alive_enemies.size() > 0:
-							new_targets.append(alive_enemies[0])
-				action["targets"] = new_targets
-
-			_queue_action(action)
-			print("[REPEAT] %s: queued %s" % [combatant.combatant_name, action["type"]])
-			repeated_any = true
-
-	if repeated_any:
-		# Skip remaining selections and start execution
-		selection_index = selection_order.size()
-		_process_next_selection()
-
-	return repeated_any
+		_queue_action(action)
+		print("[REPEAT] %s: queued %s" % [combatant.combatant_name, action["type"]])
 
 
 ## 2026-07-14 (cowir-music msg 2539): a repeated action against a KO'd ally was routed to the first alive enemy — Phoenix Down + Raise-family abilities EXPECT dead targets. True when the action revives.
@@ -3508,7 +3604,12 @@ func _execute_next_action() -> void:
 
 	# Status effect behavioral checks
 	if combatant.has_status("stun"):
-		combatant.remove_status("stun")
+		# One skipped action per authored point. Round-start end_turn does not also spend stun.
+		var remaining: int = int(combatant.status_durations.get("stun", 1))
+		if remaining <= 1:
+			combatant.remove_status("stun")
+		else:
+			combatant.status_durations["stun"] = remaining - 1
 		battle_log_message.emit("[color=yellow]%s[/color] is [color=orange]stunned[/color] and cannot act!" % combatant.combatant_name)
 		action_executing.emit(combatant, {"type": "stun_skip"})
 		_execute_next_action()
@@ -3875,7 +3976,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 
 
 func _limit_break_cleanse(participants: Array) -> void:
-	## Limit Break post-effect: cleanse negative statuses from all participants.
+	## Named statuses only. The Group-menu tooltip calls this an ultimate assault and promises no full cleanse.
 	var cleansable: Array[String] = ["poison", "burning", "blind", "fear", "sleep", "stun", "curse", "charm", "pacify", "silence"]
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
@@ -4451,7 +4552,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	## (already spent above). Doesn't burn turn-on-hit hooks
 	## (counter, debuff_on_attack) because those expect a real hit.
 	if _monster_immune_to_category(actual_target, "physical"):
-		attack_missed.emit(actual_target)
+		_announce_negated_hit(actual_target, "IMMUNE")
 		battle_log_message.emit("[color=cyan]%s is IMMUNE to physical — %s's attack passes through nothing![/color]" % [actual_target.combatant_name, attacker.combatant_name])
 		return
 
@@ -4524,6 +4625,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	if actual_target.has_status("barrier"):
 		actual_target.remove_status("barrier")
 		battle_log_message.emit("[color=cyan]%s's Barrier absorbs the attack![/color]" % actual_target.combatant_name)
+		_announce_negated_hit(actual_target, "BLOCK")
 		# Counter-on-hit hook fires even on nullified hits — boss reads it
 		# as a tactical pressure event (the boss WAS attacked).
 		_trigger_monster_counter(actual_target, attacker)
@@ -4616,6 +4718,13 @@ func _monster_immune_to_category(target: Combatant, category: String) -> bool:
 	if not (immunities is Array):
 		return false
 	return category in immunities
+
+
+## Sprite text for a hit that was stopped. A miss stays on attack_missed; this is immunity or a ward.
+func _announce_negated_hit(target: Combatant, banner: String) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	hit_negated.emit(target, banner)
 
 
 ## Tick 461: on-hit status apply driven by equipment special_effects.
@@ -4909,7 +5018,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		## every physical ability (Slash, Whirlwind, etc.) should
 		## be a no-op against it.
 		if _monster_immune_to_category(target, "physical"):
-			attack_missed.emit(target)
+			_announce_negated_hit(target, "IMMUNE")
 			battle_log_message.emit("[color=cyan]%s is IMMUNE to physical — %s's strike passes through nothing![/color]" % [target.combatant_name, caster.combatant_name])
 			continue
 
@@ -4947,6 +5056,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		if target.has_status("barrier"):
 			target.remove_status("barrier")
 			battle_log_message.emit("[color=cyan]%s's Barrier absorbs the hit![/color]" % target.combatant_name)
+			_announce_negated_hit(target, "BLOCK")
 			_trigger_monster_counter(target, caster)
 			continue
 
@@ -5256,6 +5366,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if target.has_status("magic_block"):
 			target.remove_status("magic_block")
 			battle_log_message.emit("[color=cyan]%s's Magic Block cancels the spell![/color]" % target.combatant_name)
+			_announce_negated_hit(target, "BLOCK")
 			_trigger_monster_counter(target, caster)
 			continue
 
@@ -5287,6 +5398,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if target.has_status("barrier"):
 			target.remove_status("barrier")
 			battle_log_message.emit("[color=cyan]%s's Barrier absorbs the spell![/color]" % target.combatant_name)
+			_announce_negated_hit(target, "BLOCK")
 			_trigger_monster_counter(target, caster)
 			continue
 
@@ -5483,8 +5595,10 @@ func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Di
 func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability: Dictionary) -> Dictionary:
 	# `power` is a legacy key NO ability authors (0 of 288); damage_multiplier is, and it is what execution reads — preferring power made every preview assume 1.0x, understating a 5.0x ability by 5x and suppressing its [KILL] tag.
 	var power = float(ability.get("damage_multiplier", float(ability.get("power", 10)) / 10.0)) * 10.0
-	var ability_type = ability.get("type", "physical")
-	var is_magical = ability_type == "magic"
+	var ability_type := str(ability.get("type", "physical"))
+	# Eidolon summons execute through _execute_magic_ability; ally spawns carry summon_id and are not this hit.
+	var is_eidolon := ability_type == "summon" and str(ability.get("summon_id", "")) == "" and float(ability.get("damage_multiplier", 0.0)) > 0.0
+	var is_magical := ability_type == "magic" or is_eidolon
 
 	var stat_val: int
 	var stat_name: String
@@ -6451,8 +6565,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					var cleansed: Array[String] = []
-					var negative_statuses = ["poison", "blind", "sleep", "stun", "burning", "curse", "confuse", "fear", "charm", "doom"]
-					for status in negative_statuses:
+					for status in ESUNA_AILMENTS:
 						if target.has_status(status):
 							cleansed.append(status)
 							target.remove_status(status)
@@ -6666,16 +6779,19 @@ func _apply_secondary_effect(caster: Combatant, ability: Dictionary, primary_tar
 	var sec_chance: float = clampf(float(ability.get("secondary_chance", 1.0)), 0.0, 1.0)
 	if sec_chance <= 0.0:
 		return
-	# Resolve secondary target group.
+	# Sides are the caster's. A fixed enemy_party makes a wolf's howl frighten its own pack.
 	var sec_target_tag: String = str(ability.get("secondary_target", ""))
 	var sec_targets: Array = []
+	var caster_is_player: bool = caster != null and caster in player_party
+	var foes: Array = enemy_party if caster_is_player else player_party
+	var allies: Array = player_party if caster_is_player else enemy_party
 	match sec_target_tag:
 		"all_enemies":
-			for e in enemy_party:
+			for e in foes:
 				if e is Combatant and e.is_alive:
 					sec_targets.append(e)
 		"all_allies":
-			for a in player_party:
+			for a in allies:
 				if a is Combatant and a.is_alive:
 					sec_targets.append(a)
 		"self":
@@ -7024,7 +7140,7 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_debuff("Forced Weak", "attack", fw_mod, fw_dur)
 					battle_log_message.emit("[color=magenta]✦ %s forces %s into a weak attack![/color] (ATK -%d%% for %d turns)" % [caster.combatant_name, target.combatant_name, int((1.0 - fw_mod) * 100), fw_dur])
-		## Tick 396: time_stop — applies stun to all targets for 1 turn.
+		## Tick 396: time_stop — applies stun for the ability's duration (time_stop authors 2).
 		## Time Mage's time_stop ability uses this. Stun status already
 		## has engine support (CC arm in support effects).
 		"time_stop":
@@ -7119,7 +7235,9 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	"""Execute item use (costs 1 AP)"""
 	if user in player_party:
 		_c3_nonbasic_used = true
-	if not user.has_item(item_id):
+	## A PC draws on the party's one bag, an enemy on its own inventory.
+	var bag: Array = player_party if user in player_party else [user]
+	if ItemSystem.party_item_count(bag, item_id) <= 0:
 		## Tick 184: surface to battle_log when user doesn't have
 		## the item. Common scenarios: autobattle script targets a
 		## consumable that ran out mid-grind, or save-state drift
@@ -7188,7 +7306,7 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	action_executing.emit(user, {"type": "item", "item_id": item_id, "targets": retargeted})
 
 	if ItemSystem and ItemSystem.use_item(user, item_id, retargeted):
-		user.remove_item(item_id, 1)
+		ItemSystem.take_party_item(user, bag, item_id)
 		if wants_escape:
 			print("  → %s escaped successfully!" % user.combatant_name)
 			battle_log_message.emit("[color=%s]%s escaped successfully![/color]" % [AccessibilityPalette.bonus_bbcode(), user.combatant_name])
@@ -7867,7 +7985,7 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			if item_id.is_empty():
 				print("[AUTOBATTLE] No item_id found in action: %s" % action_data)
 				return {}
-			if not combatant.has_item(item_id):
+			if ItemSystem.party_item_count(player_party if combatant in player_party else [combatant], item_id) <= 0:
 				## Routine (the player ran out), but the ability arm logs its routine MP case too.
 				print("[AUTOBATTLE] Item not held: %s" % item_id)
 				return {}
@@ -8890,7 +9008,10 @@ func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data
 	# unreachable for PARTY_LINE_COOLDOWN_ROUNDS, which is most of a battle.
 	var held_by_ambient: bool = str(_party_line_last_kind.get(name_key, "")) in AMBIENT_PARTY_LINE_EVENTS
 	var preempts: bool = held_by_ambient and not (event_kind in AMBIENT_PARTY_LINE_EVENTS)
-	if event_kind != "victory" and not preempts \
+	## Settings -> "Dev: Voice Every Line" lifts the cooldown so every trigger speaks (testing the voice pack).
+	var every_line: bool = GameState != null and "game_constants" in GameState \
+			and bool(GameState.game_constants.get("dev_voice_every_line", false))
+	if not every_line and event_kind != "victory" and not preempts \
 			and current_round - last_round < PARTY_LINE_COOLDOWN_ROUNDS:
 		return
 	_party_line_cooldowns[name_key] = current_round
@@ -8916,14 +9037,22 @@ func _dispatch_victory_party_line() -> void:
 
 
 ## Awaitable producer — kicks off the LLM call OR ships the scripted fallback line.
+## LLM lines are text-only, so the voice-pack test (Dev: Voice Every Line) must stay on the scripted, voiced line.
+static func _party_line_wants_llm(llm_dialogue_on: bool, voice_test: bool) -> bool:
+	return llm_dialogue_on and not voice_test
+
+
 func _run_party_line_async(combatant: Combatant, event_kind: String, event_data: Dictionary) -> void:
 	var pp = get_node_or_null("/root/PartyPersonas")
 	var job_id: String = _resolve_party_job_id(combatant)
 	var fallback: String = ""
-	if pp != null and pp.has_method("get_trigger_voice"):
+	var fallback_key: String = event_kind
+	if pp != null and pp.has_method("pick_trigger_voice"):
+		var picked: Dictionary = pp.pick_trigger_voice(job_id, event_kind)
+		fallback = str(picked.get("line", ""))
+		fallback_key = str(picked.get("voice_key", event_kind))
+	elif pp != null and pp.has_method("get_trigger_voice"):
 		fallback = str(pp.get_trigger_voice(job_id, event_kind))
-	if fallback.is_empty():
-		fallback = ""
 
 	# Tick 120: party_llm_dialogue_enabled gates the LLM call but NOT
 	# the scripted fallback. When the toggle is off (default), we
@@ -8932,21 +9061,24 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	# below.
 	var gs = get_node_or_null("/root/GameState")
 	var llm_dialogue_on: bool = gs != null and ("party_llm_dialogue_enabled" in gs) and gs.party_llm_dialogue_enabled
-	if not llm_dialogue_on:
+	## Dev: Voice Every Line tests the voice pack, and only scripted lines carry a clip (LLM lines stay text-only), so it takes the scripted line.
+	var voice_test: bool = GameState != null and "game_constants" in GameState \
+			and bool(GameState.game_constants.get("dev_voice_every_line", false))
+	if not _party_line_wants_llm(llm_dialogue_on, voice_test):
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback, event_kind)
+			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
 	var llm = get_node_or_null("/root/LLMService")
 	if llm == null or not llm.has_method("is_available") or not llm.is_available():
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback, event_kind)
+			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
 	var ctx := _build_party_line_context(combatant, event_kind, event_data)
 	if ctx == null:
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback, event_kind)
+			_emit_party_line(combatant, fallback, fallback_key)
 		return
 	var persona: String = ""
 	var sig: Array = []
@@ -8955,13 +9087,13 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 		sig = pp.get_signature_phrases(job_id)
 	if persona.is_empty():
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback, event_kind)
+			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
 	var DialoguePromptsScript = load("res://src/llm/DialoguePrompts.gd")
 	if DialoguePromptsScript == null:
 		if not fallback.is_empty():
-			_emit_party_line(combatant, fallback, event_kind)
+			_emit_party_line(combatant, fallback, fallback_key)
 		return
 
 	var prompt: String = DialoguePromptsScript.build_party_line(persona, sig, ctx.to_dict())
@@ -8988,7 +9120,7 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	if line.is_empty():
 		return
 	# msg 2105: deterministic trigger_voices lines get voice; LLM lines stay text-only.
-	var vt: String = event_kind if (not fallback.is_empty() and line == fallback) else ""
+	var vt: String = fallback_key if (not fallback.is_empty() and line == fallback) else ""
 	_emit_party_line(combatant, line, vt)
 
 
@@ -9156,8 +9288,7 @@ func _deliver_item(item_id: String, item_drops: Array) -> void:
 	# leaving equipment as unusable lore items.
 	var routed_as_equipment = _route_drop_to_equipment_pool(item_id)
 	if not routed_as_equipment:
-		if player_party.size() > 0 and player_party[0].is_alive:
-			player_party[0].add_item(item_id)
+		deliver_consumable_drop(player_party, item_id)
 	# Track for display via shared resolver (tick 135).
 	var item_name = ItemNameResolver.resolve(item_id)
 	# Merge duplicates
@@ -9166,6 +9297,12 @@ func _deliver_item(item_id: String, item_drops: Array) -> void:
 			existing["qty"] += 1
 			return
 	item_drops.append({"item": item_id, "name": item_name, "qty": 1})
+
+
+## The leader holds the party's bag whether KO'd or not. An alive-gate here dropped every consumable, one-shot key items included, won while the leader was down, and the victory screen still listed it.
+func deliver_consumable_drop(party: Array, item_id: String, qty: int = 1) -> void:
+	if party.size() > 0 and party[0] != null and is_instance_valid(party[0]) and qty > 0:
+		party[0].add_item(item_id, qty)
 
 
 func _route_drop_to_equipment_pool(item_id: String) -> bool:

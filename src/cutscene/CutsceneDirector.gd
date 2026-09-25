@@ -79,7 +79,7 @@ const SKIP_PILL_PAD: float = 12.0
 const SKIP_PILL_HEIGHT: float = 48.0
 
 
-## The prompt names the PHYSICAL cancel cap: "Hold B" was wrong on every Nintendo-family pad (8BitDo/SN30 cancel sits under the Ⓐ cap).
+## The prompt names the PHYSICAL cancel cap, resolved per device by InputProfileManager — a frozen "Hold B" is true on one pad family and names another button on the rest.
 static func skip_prompt_text(device_name: String = "") -> String:
 	return "Hold %sEsc to skip..." % _cancel_pad_segment(device_name)
 
@@ -1805,15 +1805,8 @@ func _step_branch(step: Dictionary) -> void:
 				break
 			await _execute_step(sub_step)
 	elif step.get("condition", "") == "lead_job":
-		# Lead-job branching: pick steps based on the party leader's job_id.
-		# Used by W1 spotlight cutscenes to swap trope-demonstrating beats
-		# based on who the player picked as lead. Falls back to "default"
-		# case if leader's job has no explicit case or no leader is set.
-		var lead_job = ""
-		if GameState:
-			var leader = GameState.get_party_leader()
-			if leader is Dictionary:
-				lead_job = leader.get("job_id", "")
+		# Live job. get_party_leader() is the menu/save snapshot, so a job change that has not been saved still reads as the old lead — the Orrery then grants the charm instead of the chord.
+		var lead_job := _lead_job_id()
 		var cases = step.get("cases", {})
 		var branch_steps = cases.get(lead_job, cases.get("default", []))
 		for sub_step in branch_steps:
@@ -1823,6 +1816,20 @@ func _step_branch(step: Dictionary) -> void:
 	else:
 		# _execute_step warns on an unknown step type; this chain silently ran nothing.
 		push_warning("CutsceneDirector: branch condition '%s' has no handler — no sub-step ran" % str(step.get("condition", "")))
+
+
+## The job the player is leading with now. party_for_queries prefers GameLoop.party and falls back to the snapshot when no live roster is in the tree.
+func _lead_job_id() -> String:
+	if GameState == null or not GameState.has_method("party_for_queries"):
+		return ""
+	var rows: Array = GameState.party_for_queries()
+	if rows.is_empty():
+		return ""
+	var idx: int = clampi(int(GameState.party_leader_index), 0, rows.size() - 1)
+	var row: Variant = rows[idx]
+	if row is Dictionary:
+		return str(row.get("job_id", ""))
+	return ""
 
 
 func _detect_playstyle() -> String:
@@ -2143,6 +2150,24 @@ func abort_current(reason: String) -> void:
 
 func last_finished_was_aborted() -> bool:
 	return _last_finished_aborted
+
+
+## The PC job of every battle step in the scene, however nested — what GameLoop must field before starting it.
+func battle_duelists(cutscene_id: String) -> Array:
+	var out: Array = []
+	_collect_duelists(_load_cutscene_data(cutscene_id), out)
+	return out
+
+
+func _collect_duelists(node: Variant, out: Array) -> void:
+	if node is Dictionary:
+		if str(node.get("type", "")) == "battle" and node.get("combatants", []) is Array and not (node["combatants"] as Array).is_empty():
+			out.append(str(node["combatants"][0]))
+		for v in (node as Dictionary).values():
+			_collect_duelists(v, out)
+	elif node is Array:
+		for v in node:
+			_collect_duelists(v, out)
 
 
 ## A player skip tears the scene down in one frame — backdrop, puppets and dialogue vanish at once. Dip through black across the cut so the snap reads as intentional.

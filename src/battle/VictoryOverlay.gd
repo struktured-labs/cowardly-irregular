@@ -31,6 +31,8 @@ var spotlight_duelist: String = ""
 const CARD_W := 210.0
 const CARD_H := 58.0
 const CARD_GAP := 8.0
+## Artist party frames display ~315px centred on the slot; a left flourish reaches ~157px past origin (F12 2026-09-20).
+const CARD_SPRITE_GAP := 200.0
 const LOG_CLEAR_X := 190.0
 const STRIP_BOTTOM_MARGIN := 64.0
 
@@ -212,9 +214,12 @@ func _spawn_ring(at: Vector2, tint: Color, delay: float, grade: int) -> void:
 	ring.position = at - ring.pivot_offset
 	ring.scale = Vector2(0.2, 0.2)
 	add_child(ring)
+	## A WeakRef, not the node: the ring frees itself at the tween's end, and calling a lambda that captured it logs an engine error.
+	var ring_ref: WeakRef = weakref(ring)
 	_snaps.append(func() -> void:
-		if is_instance_valid(ring):
-			ring.queue_free())
+		var r: Object = ring_ref.get_ref()
+		if r != null:
+			r.queue_free())
 	var t := _track(create_tween())
 	t.tween_interval(delay)
 	t.tween_property(ring, "scale", Vector2(1.6 + 0.5 * grade, 1.6 + 0.5 * grade), 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
@@ -267,9 +272,12 @@ func _build_letterbox(vp: Vector2, grade: int, flourish: bool) -> void:
 		var hidden := Vector2(0.0, -h if edge == 0.0 else vp.y)
 		bar.position = hidden if flourish else hidden
 		add_child(bar)
+		## Same as the ring: the bar frees itself, so the snap must not hold it.
+		var bar_ref: WeakRef = weakref(bar)
 		_snaps.append(func() -> void:
-			if is_instance_valid(bar):
-				bar.queue_free())
+			var b: Object = bar_ref.get_ref()
+			if b != null:
+				b.queue_free())
 		if not flourish:
 			continue
 		var t := _track(create_tween())
@@ -305,8 +313,7 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 		_animate_card_content(card, cr, i, delay, flourish)
 
 
-## Card hangs LEFT of its sprite toward mid-screen; clamped clear of the log
-## (x>=190) and inside the viewport. Sprite gone/mispositioned → column fallback.
+## Card hangs LEFT of its sprite (party faces left). CARD_SPRITE_GAP clears the centred 315px flourish.
 func _card_position(i: int, count: int, vp: Vector2) -> Vector2:
 	var y_fallback := vp.y * 0.18 + i * (CARD_H + CARD_GAP)
 	var pos := Vector2(vp.x * 0.42, y_fallback)
@@ -321,7 +328,7 @@ func _card_position(i: int, count: int, vp: Vector2) -> Vector2:
 				var home = sprite.get_meta("home_position")
 				if home is Vector2:
 					sp += (home - sprite.position)
-			pos = Vector2(sp.x - CARD_W - 36.0, sp.y - CARD_H / 2.0)
+			pos = Vector2(sp.x - CARD_W - CARD_SPRITE_GAP, sp.y - CARD_H / 2.0)
 	pos.x = clampf(pos.x, LOG_CLEAR_X, vp.x - CARD_W - 8.0)
 	pos.y = clampf(pos.y, 56.0, vp.y - STRIP_BOTTOM_MARGIN - CARD_H)
 	return pos
@@ -332,7 +339,7 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	card.custom_minimum_size = Vector2(CARD_W, CARD_H)
 	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.06, 0.15, 0.92)
+	style.bg_color = Color(0.08, 0.06, 0.15, 0.50)
 	style.border_color = Color(0.6, 0.5, 0.2) if cr.get("is_alive", true) else Color(0.35, 0.3, 0.3)
 	style.set_border_width_all(2)
 	style.set_corner_radius_all(4)

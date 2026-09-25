@@ -10,6 +10,36 @@ elites, `grimhollow_spiral` and `battle_storm` are still `.225`/`.239` captures 
 themselves have not changed materially, but they are older frames and `battle_storm` in
 particular carries the caveat below.
 
+**`title_screen` is the exception and is NEWER than everything else: captured from the
+EXPORTED `v3.33.483-alpha` binary, fetched from the store with `butler fetch`, on 2026-09-24.**
+It reads `v3.33.483-alpha` with NO hash suffix — exactly what a player sees.
+
+It took two attempts, and the first was wrong in a way worth recording. The original frame showed
+`v3.33.215-alpha (62a1a2d6)`, 253 releases stale. On 2026-09-20 I re-shot it at `.468` from a
+worktree AT the tag — correct version, but still a **source** run (`godot -s`), and it showed
+`v3.33.468-alpha (e2c65092)`. That `(e2c65092)` is `Version.display()`'s dev-only short hash: it
+runs `git` at runtime, which works in a source checkout and **never in an exported build**
+(cowir-main, 2026-09-24; `.483` makes exports skip git outright). So the store's primary image
+carried a suffix no player ever sees. **"Shot at the shipped tag" is not "shot from the shipped
+build"** — a source run and an export share the art and differ in exactly the runtime behaviour a
+screenshot of a version label depicts.
+
+Captured sandboxed (`XDG_DATA_HOME` redirected; the sandbox populated, his saves checksum
+`1172108561` unchanged before/after) under `xvfb-run` at 1280x720. The art is unchanged from both
+earlier frames: vs the `.468` source shot, 668 differing pixels sit in the version-label box and
+0.026% of the frame elsewhere. Superseded frames are kept at
+`capture-history/shots-62a1a2d6/title_screen.png` (`.215`) and
+`capture-history/shots-468-source/title_screen.png` (`.468`, source run, dev suffix).
+
+⚠️ **The art did NOT change, and that is the load-bearing half for the other nineteen.** Old vs
+new, same 1280x720 frame: 898 of 921,600 pixels differ (0.1%), of which 656 are inside the
+version-label box and 242 are everywhere else. `tools/store_shot_staleness.py` reports
+`title_screen` as CHANGED because `src/ui/TitleScreen.gd` moved between the tags — correct, and
+its own caveat is the important part: *"changed -> a candidate for a re-shoot, NOT proof the
+image is wrong."* Here the script moved and the rendered frame did not. **A script-level signal
+over-predicts frame change, so the standing "11 of 20 depict a scene script that changed" is a
+CANDIDATE list, not a work list — diff the frames before re-shooting anything.**
+
 Order below is the recommended gallery order: itch shows the first image largest, so the
 battle leads.
 

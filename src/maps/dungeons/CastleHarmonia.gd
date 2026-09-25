@@ -223,13 +223,16 @@ func _on_floor_changed(new_floor: int) -> void:
 		_maybe_play_throne_approach()
 
 
-## Fires world1_throne_room_approach once — the "the doors open onto a
-## room that has forgotten which end is the top" beat. The cutscene sets
-## its own completion flag; we gate on it so re-entering F4 doesn't
-## replay. Missing JSON = graceful no-op (writes the flag so the boss
-## trigger still fires cleanly on the next tick).
+## Fires world1_throne_room_approach once. The cutscene's set_flag stores
+## game_constants["cutscene_flag_<bare>"] and story_flags["<bare>"]; the
+## missing-JSON fallback stores story_flags[THRONE_APPROACH_FLAG]. A
+## get_story_flag on that prefixed const sees neither of the cutscene's
+## writes, so F4 replayed the scene on every entry and on load.
+## is_story_flag_set reads both stores, and the fallback key too.
+## Missing JSON = graceful no-op (writes the flag so the boss trigger
+## still fires cleanly on the next tick).
 func _maybe_play_throne_approach() -> void:
-	if GameState == null or GameState.get_story_flag(THRONE_APPROACH_FLAG):
+	if GameState == null or GameState.is_story_flag_set(THRONE_APPROACH_FLAG):
 		return
 	var game_loop = get_node_or_null("/root/GameLoop")
 	if game_loop == null or not game_loop.has_method("get_cutscene_director"):

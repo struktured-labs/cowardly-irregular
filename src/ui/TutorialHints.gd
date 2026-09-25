@@ -43,7 +43,7 @@ const HINTS = {
 	},
 	"quest_log": {
 		"title": "Quest Log",
-		"body": "Lost? Open the menu ({menu}) and check Quest Log for your current objective. The minimap also shows a pulsing gold dot at your destination.",
+		"body": "Lost? Open the menu ({field_menu}) and check Quest Log for your current objective. The minimap also shows a pulsing gold dot at your destination.",
 	},
 	"autogrind": {
 		"title": "Autogrind",
@@ -218,6 +218,7 @@ static func resolve_tokens(text: String) -> String:
 	out = out.replace("{cancel}", _control_name(ipm, "ui_cancel", "X"))
 	out = out.replace("{move}", "D-pad, left stick or the arrow keys")
 	out = out.replace("{menu}", _control_name(ipm, "ui_menu", "Enter"))
+	out = out.replace("{field_menu}", _field_menu_name(ipm))
 	out = out.replace("{defer}", _control_name(ipm, "battle_defer", "L"))
 	out = out.replace("{advance}", _control_name(ipm, "battle_advance", "R"))
 	out = out.replace("{auto}", _control_name(ipm, "battle_toggle_auto", "Tab"))
@@ -250,6 +251,20 @@ static func _options_name(ipm) -> String:
 	if l == "" or r == "":
 		return generic
 	return "%s/%s or the O key" % [l, r]
+
+
+## The OVERWORLD menu (Quest Log, Party, Items) — not {menu}, which is ui_menu and opens SETTINGS
+## in the field. The quest-log hint used {menu} and sent a lost player to a menu with no Quest Log.
+## The opener reads a raw index, so it is named by index like {options}; `device_name` is the same
+## test seam hint_for_action has.
+static func _field_menu_name(ipm, device_name: String = "") -> String:
+	var key := "X"
+	if ipm == null or not ipm.has_method("face_glyph_for_index"):
+		return key
+	if device_name == "" and Input.get_connected_joypads().is_empty():
+		return key
+	var pad: String = str(ipm.face_glyph_for_index(OverworldMenu.TOGGLE_PAD_BUTTON, device_name))
+	return "%s / %s" % [pad, key] if pad != "" and pad != "?" else key
 
 
 ## Pad button beside the key when a pad is attached, the key ALONE when none is.

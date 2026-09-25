@@ -5,6 +5,7 @@ class_name MimicChest
 
 var cave_ref: Node = null
 var mimic_monster_id: String = "treasure_mimic"
+var _ambush_started: bool = false
 
 const _TELLS := [
 	"The GM's notes, found later: 'chest, contains: teeth.'",
@@ -14,7 +15,9 @@ const _TELLS := [
 
 
 func _open_chest(_player: Node2D) -> void:
-	GameState.set_story_flag("chest_" + chest_id)
+	if _ambush_started:
+		return
+	_ambush_started = true
 	if SoundManager:
 		SoundManager.play_ui("chest_open")
 	name_label.text = "?!"
@@ -29,5 +32,9 @@ func _open_chest(_player: Node2D) -> void:
 	if not is_instance_valid(self):
 		return
 	dialogue_box.visible = false
+	# Spend the chest only once a battle is actually emitted — a floor change during this line used to delete it with no fight.
 	if cave_ref and is_instance_valid(cave_ref) and cave_ref.has_signal("battle_triggered"):
+		GameState.set_story_flag("chest_" + chest_id)
 		cave_ref.battle_triggered.emit([mimic_monster_id])
+		return
+	_ambush_started = false

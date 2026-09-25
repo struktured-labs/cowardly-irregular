@@ -88,8 +88,8 @@ const CRIT_THUD_DURATION: float = 0.18
 const CRIT_THUD_TRIM_DB: float = -4.0
 ## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The authored cue is a gentle scorch ("no bass no tones") measured at the SAME mean level as a plain hit (-22.8 vs -21.8 dB) — it cannot read as a climax. Boost the cue and give it the low body it was authored without.
 const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
-## Spoken lines sit where UI blips did, not louder — the defect was being CUT, not being quiet.
-const VOICE_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
+## Battle quips do not duck music, so voice sits ~2.4 dB over the bed (voice -18.3 LUFS vs music -14.7 at -10 dB); at -16 it was 9.6 dB under (struktured 2026-09-24).
+const VOICE_PLAYER_BASE_DB: float = -4.0
 const PICKUP_PLAYER_BASE_DB: float = SFX_UI_BASE_DB
 const DEATH_CUE_BOOST_DB: float = 6.0
 ## The procedural crit's boost, RELATIVE like DEATH_CUE_BOOST_DB. It was a bare `volume_db = 2.0`
@@ -221,6 +221,21 @@ func _ready() -> void:
 
 ## 2026-08-14 silent-death class (struktured: music+SFX stopped mid-battle, zero errors, YT fine): frozen playback position while playing == game mixer dead; advancing position while silent == stream corked below the game
 var _liveness_last_pos: float = -1.0
+## Latched while a playing bed sits still longer than one dummy-driver callback.
+## Cleared again when a later sample moves: a transient stall is not a dead mix thread.
+## A thread stuck inside an unbounded mix never moves, so that latch stays set.
+var _audio_mixer_wedged: bool = false
+var _mixer_watch_pos: float = -1.0
+var _mixer_watch_msec: int = 0
+## -1 follows the runtime, 0 never arms, 1 always arms. Tests pin both sides.
+var _mixer_stall_watch_force: int = -1
+## Whether this runtime is headless or Dummy: fixed at boot, so it is decided once, not scanned every frame. -1 = not yet decided.
+var _mixer_stall_watch_runtime: int = -1
+## Test hook. Negative reads the live player so a test can freeze the sample.
+var _mixer_pos_override: float = -1.0
+## Dummy mixes 4096 frames then sleeps ~93ms (Godot 4.4.1). Two quiet callbacks is still healthy;
+## a third with the same position is the preroll that never moved (128/48000 = 0.00266666663811).
+const _MIXER_STALL_MSEC: int = 300
 
 func audio_liveness_check() -> void:
 	var p: AudioStreamPlayer = _music_player_b if (_music_player_b and _music_player_b.playing and not _music_player.playing) else _music_player
@@ -231,9 +246,101 @@ func audio_liveness_check() -> void:
 		_liveness_last_pos = pos
 	else:
 		_liveness_last_pos = -1.0
+	note_mixer_progress()
+
+
+func _process(_delta: float) -> void:
+	note_mixer_progress()
+
+
+## Public so a test waiting on playback can sample between frames. _process does the same.
+func note_mixer_progress() -> void:
+	# Real devices freeze position while paused, unfocused, or on a 4s fold entry. Only headless/Dummy arms.
+	if not _mixer_stall_watch_active():
+		return
+	var p: AudioStreamPlayer = _live_bed()
+	if p == null:
+		_mixer_watch_pos = -1.0
+		return
+	var pos: float = p.get_playback_position()
+	if _mixer_pos_override >= 0.0:
+		pos = _mixer_pos_override
+	var now: int = Time.get_ticks_msec()
+	# First sample after silence is a baseline. A bed opening at loop_blend_seconds (4s) is that sample, not a stall.
+	if _mixer_watch_pos < 0.0:
+		_mixer_watch_pos = pos
+		_mixer_watch_msec = now
+		return
+	if absf(pos - _mixer_watch_pos) >= 0.01:
+		_mixer_watch_pos = pos
+		_mixer_watch_msec = now
+		if _audio_mixer_wedged:
+			_audio_mixer_wedged = false
+			push_warning("[AUDIO] playback resumed at %.5fs — mixer is accepting PCM commits again" % pos)
+		return
+	if not _audio_mixer_wedged and now - _mixer_watch_msec >= _MIXER_STALL_MSEC:
+		_audio_mixer_wedged = true
+		push_warning("[AUDIO] playback position frozen at %.5fs for %dms — mix thread is not advancing; refusing PCM commits so AudioServer.lock cannot wedge the process" % [pos, now - _mixer_watch_msec])
+
+
+## Headless or the Dummy driver only. A windowed Pulse/WASAPI/CoreAudio/Web run never arms.
+func _mixer_stall_watch_active() -> bool:
+	if _mixer_stall_watch_force == 0:
+		return false
+	if _mixer_stall_watch_force == 1:
+		return true
+	if _mixer_stall_watch_runtime < 0:
+		var headless: bool = DisplayServer.get_name() == "headless" or OS.has_feature("headless")
+		_mixer_stall_watch_runtime = 1 if (headless or _cmdline_audio_driver_is_dummy()) else 0
+	return _mixer_stall_watch_runtime == 1
+
+
+func _cmdline_audio_driver_is_dummy() -> bool:
+	var args: PackedStringArray = OS.get_cmdline_args()
+	for i in args.size():
+		var arg := str(args[i])
+		if arg == "--audio-driver" and i + 1 < args.size() and str(args[i + 1]).to_lower() == "dummy":
+			return true
+		if arg.to_lower().begins_with("--audio-driver="):
+			return arg.get_slice("=", 1).to_lower() == "dummy"
+	return str(ProjectSettings.get_setting("audio/driver/driver", "")).to_lower() == "dummy"
+
+
+func _pcm_commit_blocked() -> bool:
+	return _audio_mixer_wedged and _mixer_stall_watch_active()
+
+
+func mixer_is_wedged() -> bool:
+	return _audio_mixer_wedged
+
+
+func _live_bed() -> AudioStreamPlayer:
+	if _music_player and _music_player.playing and not _music_player.stream_paused:
+		return _music_player
+	if _music_player_b and _music_player_b.playing and not _music_player_b.stream_paused:
+		return _music_player_b
+	if _ambient_player and _ambient_player.playing and not _ambient_player.stream_paused:
+		return _ambient_player
+	return null
+
+
+## AudioStreamWAV.set_data takes the driver mutex and waits until the current mix callback
+## returns. A wedged mix never returns, so this is the call that hangs the suite (tavern piano).
+func _commit_wav_pcm(wav: AudioStreamWAV, data: PackedByteArray) -> bool:
+	note_mixer_progress()
+	if _pcm_commit_blocked():
+		push_warning("[AUDIO] skipped WAV commit (%d bytes) — mixer is wedged" % data.size())
+		return false
+	wav.data = data
+	return true
 
 
 func _exit_tree() -> void:
+	# A wedged mix thread never returns, and AudioServer.finish joins it. Headless runs (the suite)
+	# would sit there after the totals are already printed. Leave before that join.
+	if _audio_mixer_wedged and (DisplayServer.get_name() == "headless" or OS.has_feature("headless")):
+		print("[AUDIO] mixer still wedged at shutdown — leaving immediately so a stuck mix thread cannot keep the process open")
+		OS.kill(OS.get_process_id())
 	# Cleanup tweens to prevent callbacks on freed nodes
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
@@ -2078,6 +2185,10 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		stream.loop = should_loop
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
+	## A crossfade-looped bed's opening is the ending mixed over the head. Enter after that blend; the wrap still seeks to 0.
+	var blend: float = float(entry.get("loop_blend_seconds", 0.0))
+	if blend > 0.0 and _pending_resume_position < blend:
+		_pending_resume_position = blend
 	_play_parked_position()
 	_music_playing = true
 	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
@@ -2227,6 +2338,13 @@ func play_music(track: String, exact: bool = false, resume_at: float = 0.0) -> v
 	## played as the bed and the battle music never came back.
 	if not _is_stinger_track(_current_music):
 		_stinger_resume_state = capture_music_state()
+
+	# The rebuilt map calls play_area_music with no position, so a battle then a victory bed used to restart the field theme at its loop entry.
+	if _current_area != "" and _music_playing and _music_player and _music_player.playing:
+		_interrupted_area_bed = {"area": _current_area, "position": _music_player.get_playback_position()}
+	# The title screen is a different visit. The next new game must not seek to where the last one was interrupted.
+	if track == "title":
+		discard_interrupted_area_bed()
 
 	# Clear area tracking so play_area_music() doesn't skip after battle/victory
 	_current_area = ""
@@ -2471,11 +2589,12 @@ func stop_music() -> void:
 	_current_music = ""
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
-	## stop means "and do not come back": a pending stinger resume would otherwise fire on the NEXT track's finish.
+	## stop means "and do not come back": a pending stinger resume would otherwise fire on the NEXT track's finish, and a parked field position would seek a later visit.
 	if _music_player:
 		for c in _music_player.finished.get_connections():
 			_music_player.finished.disconnect(c["callable"])
 	_stinger_resume_state = {}
+	discard_interrupted_area_bed()
 	if _music_player:
 		_music_player.stop()
 	if _music_player_b:
@@ -2546,7 +2665,8 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 
 
 ## Where the next AREA bed should pick up. Set by play_area_music, consumed by the first
-## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head.
+## _try_play_from_manifest after it, zero otherwise — a battle bed always starts at its head,
+## except one that declares loop_blend_seconds, which enters after that mix.
 var _pending_resume_position: float = 0.0
 
 ## The village an interior belongs to, supplied by BaseInterior. Only a cold start reads it: every
@@ -2784,7 +2904,9 @@ func _start_battle_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_cache["battle_generic"] = wav
 	_music_player.stream = wav
 	_music_player.play()
@@ -3182,7 +3304,9 @@ func _start_victory_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -3489,7 +3613,9 @@ func _start_boss_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -3725,7 +3851,9 @@ func _start_rat_king_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -3930,7 +4058,9 @@ func _start_danger_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -4491,6 +4621,9 @@ func _start_monster_music(monster_type: String) -> void:
 
 	# Generate and cache if no OGG and not cached
 	var wav = _generate_and_cache_music(monster_type)
+	if wav == null:
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -4524,7 +4657,8 @@ func _generate_and_cache_music(monster_type: String) -> AudioStreamWAV:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		return null
 	_music_cache[monster_type] = wav
 	return wav
 
@@ -5339,7 +5473,9 @@ func _start_game_over_music() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 	_music_player.stream = wav
 	_music_player.play()
 
@@ -5440,6 +5576,11 @@ func _generate_game_over_buffer(rate: int, duration: float, bpm: float) -> Packe
 var _current_area: String = ""
 var _current_world_suffix: String = "medieval"
 var _pending_music_area: String = ""
+## Where the field bed was when play_music took it over. Victory and game-over leave it; stop, the title, and a loaded save drop it.
+var _interrupted_area_bed: Dictionary = {}
+
+func discard_interrupted_area_bed() -> void:
+	_interrupted_area_bed = {}
 
 func play_area_music(area_type: String, resume_at: float = 0.0, home_area: String = "") -> void:
 	"""Play appropriate music for an exploration area.
@@ -5454,6 +5595,8 @@ func play_area_music(area_type: String, resume_at: float = 0.0, home_area: Strin
 		## The caller is asking for this area to PLAY, so cancel the fade rather than return into
 		## it — and restore the level the fade had already pulled down.
 		_cancel_pending_fade()
+		if str(_interrupted_area_bed.get("area", "")) == area_type:
+			_interrupted_area_bed = {}
 		return  # Already playing
 
 	# Interior sub-area keys inherit the current (village) bed when their track
@@ -5499,7 +5642,12 @@ func play_area_music(area_type: String, resume_at: float = 0.0, home_area: Strin
 	## Not clamped here: the `> 0.0` at the use site is the single guard, and two would mean a
 	## mutation to either one survives. `play(-12)` is not harmless — measured, it reports a
 	## playback position of 89,466 s.
-	_pending_resume_position = resume_at
+	## An explicit resume wins. A bare call (every scene _ready) picks up the bed play_music interrupted, and only when the area matches — a town must not open mid-phrase.
+	var resume_from: float = resume_at
+	if resume_from <= 0.0 and str(_interrupted_area_bed.get("area", "")) == area_type:
+		resume_from = float(_interrupted_area_bed.get("position", 0.0))
+	_interrupted_area_bed = {}
+	_pending_resume_position = resume_from
 	## ⛔ WHICH VILLAGE THE ROOM BELONGS TO, WHICH IS THE ONE FACT THIS FILE CANNOT DERIVE. Parked
 	## beside the resume position and consumed by _start_interior_music's COLD START only — see there.
 	_pending_home_area = home_area
@@ -5871,7 +6019,9 @@ func _create_and_play_looping_wav(buffer: PackedVector2Array, sample_rate: int, 
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		_music_playing = false
+		return
 
 	if area_cache_key != "":
 		_area_wav_cache[area_cache_key] = wav
@@ -7297,6 +7447,11 @@ func _generate_autogrind_music(rate: int, duration: float, bpm: float) -> Packed
 ## Piano melody for tavern interaction
 func play_piano_melody() -> void:
 	"""Play a procedural piano melody for the tavern piano"""
+	## The PCM commit takes AudioServer's lock. If the mix thread is already wedged, that call never returns.
+	note_mixer_progress()
+	if _pcm_commit_blocked():
+		push_warning("[AUDIO] skipped tavern piano — mixer is wedged")
+		return
 	var sample_rate = 22050
 	var duration = 3.0
 	var buffer = _generate_piano_melody(sample_rate, duration)
@@ -7317,7 +7472,8 @@ func play_piano_melody() -> void:
 		data.append(right & 0xFF)
 		data.append((right >> 8) & 0xFF)
 
-	wav.data = data
+	if not _commit_wav_pcm(wav, data):
+		return
 
 	# Use ability player for one-shot sounds
 	## Pitch is CONTENT here, and this is the third writer of a SHARED player: every ability file cue leaves pitch_scale jittered (_try_play_sfx_from_manifest), and only _play_sound resets it.

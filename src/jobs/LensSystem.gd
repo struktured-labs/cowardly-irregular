@@ -11,10 +11,10 @@ extends Node
 ##
 ## Pipeline: defeat a masterite of axis X -> recipe X unlocks -> gather materials -> craft -> equip.
 ##
-## Deliberately NOT stored in passives.json. AbilitiesMenu.gd:116 stubs its learned check with
-## `or true`, so every passive listed there is equippable by anyone with no gate — which would
-## hand out Lenses for free. Lenses keep their own inventory and their own equip surface, and
-## expose mods in PassiveSystem's exact vocabulary so battle code can compose the two.
+## Deliberately NOT stored in passives.json. Lenses keep their own craft-gated inventory and
+## their own equip surface, and expose mods in PassiveSystem's exact vocabulary so battle
+## code can compose the two. Riding the passives catalog would still be the wrong acquisition
+## model even after AbilitiesMenu honors learned_passives.
 
 signal recipe_unlocked(axis: String)
 signal lens_crafted(axis: String)
@@ -248,6 +248,8 @@ func equip_lens(char_id: String, axis: String) -> bool:
 		lens_unequipped.emit(char_id, displaced)
 	GameState.lens_assignments[char_id] = axis
 	lens_equipped.emit(char_id, axis)
+	_refresh_holder_stats(previous)
+	_refresh_holder_stats(char_id)
 	return true
 
 
@@ -257,7 +259,22 @@ func unequip_lens(char_id: String) -> bool:
 	var axis := get_equipped(char_id)
 	GameState.lens_assignments.erase(char_id)
 	lens_unequipped.emit(char_id, axis)
+	_refresh_holder_stats(char_id)
 	return true
+
+
+## Defense, max HP, and attack are baked in recalculate_stats. The assignment alone left them stale until an unrelated recalc.
+func _refresh_holder_stats(char_id: String) -> void:
+	if char_id == "":
+		return
+	for member in _party():
+		if member == null or not is_instance_valid(member) or not (member is Node):
+			continue
+		if not member.is_inside_tree() or not member.has_method("recalculate_stats"):
+			continue
+		if str(member.combatant_name).to_lower().replace(" ", "_") != char_id:
+			continue
+		member.recalculate_stats()
 
 
 # ── Effects ─────────────────────────────────────────────────────────

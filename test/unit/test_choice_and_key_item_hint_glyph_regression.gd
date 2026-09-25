@@ -3,7 +3,7 @@ extends GutTest
 ## The choice menu's hint row ("[A/Enter/Click] Confirm    [B/Esc/RClick] Cancel") and the
 ## key-item popup's "Press A / Z to continue" were the last two literal button caps on the
 ## cutscene lane's surfaces — the class tasks 1-2 fixed on the skip prompt and the dialogue
-## advance hint. On a Nintendo-family pad (8BitDo) confirm fires from the cap printed Ⓑ, so both
+## advance hint. A frozen letter names Confirm on one pad family only, so on the others both
 ## named a button that does the other thing. Both now resolve the physical cap through
 ## InputProfileManager each time they are shown.
 

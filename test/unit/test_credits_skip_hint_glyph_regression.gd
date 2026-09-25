@@ -1,7 +1,7 @@
 extends GutTest
 
-## The credits roll's skip hint was the literal "B / Esc: Skip". On a Nintendo-family pad (his
-## 8BitDo) cancel fires from the cap printed Ⓐ, so every world ending named a button that does
+## The credits roll's skip hint was the literal "B / Esc: Skip". "B" names Cancel on one pad family
+## only (InputProfileManager decides which), so on the rest every world ending named a button that does
 ## nothing — the same class as the skip prompt, the dialogue advance hint, the choice menu and the
 ## key-item popup, which all resolve the physical cap through InputProfileManager. Now the credits
 ## do too, per roll.

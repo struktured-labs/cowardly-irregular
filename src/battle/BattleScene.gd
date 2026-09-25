@@ -112,8 +112,10 @@ func _weapon_element_for(pc: Combatant) -> String:
 			return key.trim_suffix("_damage_bonus")
 	return ""
 
-## Horizontal shift for the ONE-SHOT!/AUTO-BATTLE! victory banners so they clear the BattleResultsDisplay panel (msg 2595). Panel sits at x=200-600 via PRESET_CENTER_LEFT (BRD:171-172); banner is 400 wide with PRESET_CENTER offsets ±200, so it renders x=440-840 by default (overlaps panel at x=440-600). Shifting right by 200 puts the banner at x=640-1040 — clear of the panel with a 40px margin on the left and a 240px margin on the right at the fixed 1280 viewport. Viewport stretch=viewport + aspect=keep pins the coord system at 1280 regardless of window size, so this offset is safe across all real screens.
-const VICTORY_BANNER_X_SHIFT: int = 200
+## EXP-boost banners: negative X clears the party (old +200 sat on victory poses), Y lifts above the figures, alpha lets leftover overlap read through.
+const VICTORY_BANNER_X_SHIFT: int = -120
+const VICTORY_BANNER_Y_SHIFT: int = -160
+const VICTORY_BANNER_ALPHA := 0.72
 
 ## Party status UI
 @onready var char1_name: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/Name
@@ -245,7 +247,7 @@ const FORMATION_DESCRIPTIONS = [
 	"Tank absorbs hits",
 	"Resist AoE attacks",
 ]
-static var current_formation: int = PartyFormation.V_FORMATION  # Persists across battles
+static var current_formation: int = PartyFormation.V_FORMATION  # Persists across battles; start_battle reapplies the row's stats after the buff wipe
 
 ## Dialogue system
 var _battle_dialogue: BattleDialogueClass = null
@@ -415,6 +417,7 @@ func _ready() -> void:
 	BattleManager.round_ended.connect(_on_round_ended)
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
+	BattleManager.hit_negated.connect(_on_hit_negated)
 	BattleManager.healing_done.connect(_on_healing_done)
 	BattleManager.mp_restored.connect(_on_mp_restored)
 	BattleManager.ap_granted.connect(_on_ap_granted)
@@ -515,6 +518,8 @@ func _exit_tree() -> void:
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
+	if BattleManager.hit_negated.is_connected(_on_hit_negated):
+		BattleManager.hit_negated.disconnect(_on_hit_negated)
 	if BattleManager.healing_done.is_connected(_on_healing_done):
 		BattleManager.healing_done.disconnect(_on_healing_done)
 	if BattleManager.mp_restored.is_connected(_on_mp_restored):
@@ -591,12 +596,20 @@ func _create_battle_background() -> void:
 
 func set_command_menu_visible(visible: bool) -> void:
 	"""Public method to show/hide the command menu (called by GameLoop for autobattle editor)"""
+	if visible:
+		if active_win98_menu and is_instance_valid(active_win98_menu):
+			print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
+			active_win98_menu.visible = true
+			active_win98_menu.grab_focus()
+		return
+	# Submenus are SIBLINGS of the root; hiding only the root left a live-battle ability list taking confirm.
 	if active_win98_menu and is_instance_valid(active_win98_menu):
 		print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
-		active_win98_menu.visible = visible
-		# Restore focus when making visible again
-		if visible:
-			active_win98_menu.grab_focus()
+		var sub = active_win98_menu.submenu
+		if sub and is_instance_valid(sub):
+			sub.force_close()
+			active_win98_menu.submenu = null
+		active_win98_menu.visible = false
 
 
 ## Hold-A detection for autobattle editor
@@ -702,12 +715,14 @@ func _create_dialogue_system() -> void:
 
 func _on_dialogue_finished() -> void:
 	"""Handle dialogue completion - resume battle"""
+	# Only the pre-battle intro sets this. low_hp and defeat share the signal and must not call start_battle.
+	var start_fight: bool = _waiting_for_dialogue
 	_waiting_for_dialogue = false
 	# Re-show the command menu the dialogue hid — only mid-selection (never resurrect it over a victory screen).
 	if BattleManager and BattleManager.is_selecting():
 		set_command_menu_visible(true)
-	# Now actually start the battle
-	_start_battle_after_dialogue()
+	if start_fight:
+		_start_battle_after_dialogue()
 
 
 ## Boss speech owns the screen: hide the command menu so A unambiguously advances the dialogue (struktured 2026-08-15, mage duel vs Prismatic Construct).
@@ -2224,13 +2239,23 @@ func _on_ability_selected(idx: int, ability_ids: Array) -> void:
 
 func _execute_ability(ability_id: String, target: Combatant, target_all: bool = false) -> void:
 	"""Queue ability (animation plays during execution phase)"""
-	var targets = []
-	if target_all:
-		targets = _get_alive_enemies()
-	else:
-		targets = [target]
-
+	var targets: Array = _targets_for_queued_ability(ability_id, target, target_all)
 	BattleManager.player_use_ability(ability_id, targets)
+
+
+## Both menus pass one focus and set target_all only for all_enemies, so an all_allies spell buffed the caster alone.
+func _targets_for_queued_ability(ability_id: String, focus: Combatant, hit_all_enemies: bool) -> Array:
+	if hit_all_enemies:
+		return _get_alive_enemies()
+	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
+	if str(ability.get("target_type", "")) == "all_allies":
+		var allies: Array = []
+		for m in party_members:
+			if is_instance_valid(m) and m.is_alive:
+				allies.append(m)
+		if not allies.is_empty():
+			return allies
+	return [focus]
 
 
 ## Accepts the ability DICT (preferred) or a bare id — the dict is what carries element/vfx into
@@ -2480,19 +2505,20 @@ func _full_render_storm(color: Color, to: Vector2, power: float) -> void:
 	var core_w: float = 7.0 * clampf(power, 1.0, 1.8)
 	var vp: Vector2 = get_viewport_rect().size
 
-	## The sky drops first so the bolts land on a dark stage rather than a lit one.
-	var sky := ColorRect.new()
-	sky.color = Color(0.05, 0.06, 0.14, 0.0)
-	sky.anchors_preset = Control.PRESET_FULL_RECT
-	sky.size = vp
-	sky.z_index = 3
-	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(sky)
-	var skt := create_tween()
-	skt.tween_property(sky, "color:a", 0.55, 0.10)
-	skt.tween_interval(0.10 + 0.09 * strikes)
-	skt.tween_property(sky, "color:a", 0.0, 0.22)
-	skt.tween_callback(sky.queue_free)
+	## Dark sky so the bolts read. It is a full-screen pulse, so Reduce Flashes skips it; bolts still strike.
+	if not _flashes_suppressed():
+		var sky := ColorRect.new()
+		sky.color = Color(0.05, 0.06, 0.14, 0.0)
+		sky.anchors_preset = Control.PRESET_FULL_RECT
+		sky.size = vp
+		sky.z_index = 3
+		sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(sky)
+		var skt := create_tween()
+		skt.tween_property(sky, "color:a", 0.55, 0.10)
+		skt.tween_interval(0.10 + 0.09 * strikes)
+		skt.tween_property(sky, "color:a", 0.0, 0.22)
+		skt.tween_callback(sky.queue_free)
 
 	for s in range(strikes):
 		var delay: float = 0.06 + s * 0.09
@@ -2710,12 +2736,17 @@ func _on_item_pressed() -> void:
 	if not current:
 		return
 
-	if current.inventory.is_empty():
+	if _item_bag(current).is_empty():
 		log_message("No items in inventory!")
 		return
 
 	# Show item selection menu
 	_show_item_menu()
+
+
+## The party's one bag, the same stock BattleCommandMenu lists and _execute_item spends.
+func _item_bag(current) -> Dictionary:
+	return ItemSystem.party_inventory(BattleManager.player_party if current in BattleManager.player_party else [current])
 
 
 func _show_item_menu() -> void:
@@ -2731,12 +2762,13 @@ func _show_item_menu() -> void:
 	var item_ids = []
 	var idx = 0
 
-	for item_id in current.inventory.keys():
+	var bag: Dictionary = _item_bag(current)
+	for item_id in bag.keys():
 		var item = ItemSystem.get_item(item_id)
 		if item.is_empty():
 			continue
 
-		var quantity = current.inventory[item_id]
+		var quantity = bag[item_id]
 		var label = "%s x%d" % [item["name"], quantity]
 
 		popup.add_item(label, idx)
@@ -3215,6 +3247,8 @@ func _on_battle_ended(victory: bool) -> void:
 			else:
 				SoundManager.play_music("victory")
 			_show_victory_results()
+	elif _lost_battle_is_escape():
+		log_message("\n[color=%s]=== ESCAPED ===[/color]" % AccessibilityPalette.bonus_bbcode())
 	else:
 		# Tick 239: penalty BBCode (defeat header).
 		log_message("\n[color=%s]=== DEFEAT ===[/color]" % AccessibilityPalette.penalty_bbcode())
@@ -3234,6 +3268,11 @@ func _on_battle_ended(victory: bool) -> void:
 	_update_ui()
 	_battle_ended = true
 	_battle_victory = victory
+
+
+## Flee and Smoke Bomb end through end_battle(false) like a wipe; any PC still standing makes it an escape, the same rule GameLoop routes by.
+func _lost_battle_is_escape() -> bool:
+	return party_members.any(func(m): return is_instance_valid(m) and m.is_alive)
 
 
 func _process(delta: float) -> void:
@@ -3506,30 +3545,31 @@ func cycle_formation() -> void:
 
 
 func _apply_formation_stats() -> void:
-	"""Apply stat modifiers based on current formation"""
-	# Clear previous formation buffs and debuffs
-	for member in party_members:
+	apply_persisted_formation(party_members)
+
+
+## Shared by cycle_formation and the next battle's start. The row index already survived; this is the attack and defense the buff wipe used to drop.
+static func apply_persisted_formation(members: Array) -> void:
+	for member in members:
 		if not is_instance_valid(member):
 			continue
 		for buff_idx in range(member.active_buffs.size() - 1, -1, -1):
-			if member.active_buffs[buff_idx].get("effect", "").begins_with("formation_"):
+			if str(member.active_buffs[buff_idx].get("effect", "")).begins_with("formation_"):
 				member.active_buffs.remove_at(buff_idx)
 		for debuff_idx in range(member.active_debuffs.size() - 1, -1, -1):
-			if member.active_debuffs[debuff_idx].get("effect", "").begins_with("formation_"):
+			if str(member.active_debuffs[debuff_idx].get("effect", "")).begins_with("formation_"):
 				member.active_debuffs.remove_at(debuff_idx)
-
 	match current_formation:
 		PartyFormation.FRONT_LINE:
-			for member in party_members:
+			for member in members:
 				if is_instance_valid(member) and member.is_alive:
 					member.add_buff("formation_atk", "attack", 1.1, 999)
 					member.add_debuff("formation_def", "defense", 0.9, 999)
 		PartyFormation.BACK_ROW:
-			for member in party_members:
+			for member in members:
 				if is_instance_valid(member) and member.is_alive:
 					member.add_buff("formation_def", "defense", 1.1, 999)
 					member.add_debuff("formation_atk", "attack", 0.9, 999)
-		# V_FORMATION, DIAMOND, SPREAD: no flat stat modifiers (effects are situational)
 
 
 func _process_idle_animations(delta: float) -> void:
@@ -4093,6 +4133,8 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 ## idle so monsters (or players) can't get stuck frozen at the attack
 ## frame/position when the return tween was interrupted.
 func _reset_attacker_home(combatant: Combatant) -> void:
+	if _battle_victory:
+		return
 	if not combatant or not is_instance_valid(combatant):
 		return
 	var sprite = _get_combatant_sprite(combatant)
@@ -4104,6 +4146,9 @@ func _reset_attacker_home(combatant: Combatant) -> void:
 
 ## Timer-safe helpers: bound methods auto-disconnect when self frees, so battle teardown can't fire them with freed captures (smoke-log engine-error class, 2026-07-11).
 func _delayed_snap_and_idle(sprite, animator) -> void:
+	# F12 2026-09-20: this snap fired after play_victory and froze the rogue on idle.
+	if _battle_victory:
+		return
 	if sprite and is_instance_valid(sprite) and sprite.has_meta("home_position"):
 		var home = sprite.get_meta("home_position")
 		if sprite.position.distance_to(home) > 2.0:
@@ -5114,7 +5159,15 @@ func _unhandled_input(event: InputEvent) -> void:
 	# real state. With no menu, this ran, and the keyboard did the opposite of the bar.
 	#
 	# Now on the ACTIONS, so a pad's L/R and L2/R2 reach them too and a Controls rebind follows.
+	# The tail of an L2/R2 pull reaches here once defer has closed the menu; sharing Win98Menu's static latch makes one pull one press.
+	if event.is_action_released("battle_defer"):
+		Win98Menu._defer_axis_held = false
+	if event.is_action_released("battle_advance"):
+		Win98Menu._advance_axis_held = false
 	if is_player_selecting and current and event.is_action_pressed("battle_defer") and not event.is_echo():
+		if not _claim_shoulder("battle_defer"):
+			get_viewport().set_input_as_handled()
+			return
 		_close_win98_menu()
 		## Tick 174: defer log emit moved into BattleManager.player_defer so every caller path gets
 		## it once. Don't re-emit here.
@@ -5125,6 +5178,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Advance queues through the menu, so reopen it rather than printing an instruction. Pressing
 	# the Advance control and being told to press the Advance control is the shape he reported.
 	if is_player_selecting and current and event.is_action_pressed("battle_advance") and not event.is_echo():
+		if not _claim_shoulder("battle_advance"):
+			get_viewport().set_input_as_handled()
+			return
 		if use_win98_menus and (not active_win98_menu or not is_instance_valid(active_win98_menu)):
 			_show_win98_command_menu(current)
 		get_viewport().set_input_as_handled()
@@ -5142,6 +5198,18 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _show_win98_command_menu(combatant: Combatant) -> void:
 	_command_menu.show_win98_command_menu(combatant)
+
+
+## One L2/R2 pull is one press across every battle handler: Win98Menu's static latch is the only latch. False = this event is the tail of a pull already acted on.
+static func _claim_shoulder(action: String) -> bool:
+	var held: bool = Win98Menu._defer_axis_held if action == "battle_defer" else Win98Menu._advance_axis_held
+	if held and Input.is_action_pressed(action):
+		return false
+	if action == "battle_defer":
+		Win98Menu._defer_axis_held = true
+	else:
+		Win98Menu._advance_axis_held = true
+	return true
 
 
 func _close_win98_menu() -> void:
@@ -5295,6 +5363,13 @@ func _on_attack_missed(target: Combatant) -> void:
 	# Dodge quip from the target (if party member dodged an enemy attack)
 	if target in BattleManager.player_party:
 		_try_combat_quip(DODGE_QUIPS, target)
+
+
+func _on_hit_negated(target: Combatant, banner: String) -> void:
+	if not is_instance_valid(_results_display):
+		return
+	_results_display.on_hit_negated(target, banner)
+	SoundManager.play_battle("attack_miss")
 
 
 func _on_healing_done(target: Combatant, amount: int) -> void:
@@ -5681,19 +5756,19 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	flash_container.name = "OneShotFlash"
 	flash_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	flash_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.modulate.a = VICTORY_BANNER_ALPHA
 	add_child(flash_container)
 
-	# Screen flash effect (brief white overlay)
-	var flash_bg = ColorRect.new()
-	flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	flash_bg.color = Color(1.0, 1.0, 0.8, 0.6)
-	flash_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash_container.add_child(flash_bg)
-
-	# Flash out quickly
-	var flash_tween = create_tween()
-	flash_tween.tween_property(flash_bg, "color:a", 0.0, 0.4)
-	flash_tween.tween_callback(func(): flash_bg.queue_free())
+	# Pale-yellow full-screen flash. Reduce Flashes skips the overlay; the banner still plays.
+	if not _flashes_suppressed():
+		var flash_bg = ColorRect.new()
+		flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		flash_bg.color = Color(1.0, 1.0, 0.8, 0.6)
+		flash_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		flash_container.add_child(flash_bg)
+		var flash_tween = create_tween()
+		flash_tween.tween_property(flash_bg, "color:a", 0.0, 0.4)
+		flash_tween.tween_callback(func(): flash_bg.queue_free())
 
 	# "ONE-SHOT!" text label
 	var one_shot_label = Label.new()
@@ -5701,9 +5776,8 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	one_shot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	one_shot_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	one_shot_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	one_shot_label.offset_top = -60
-	one_shot_label.offset_bottom = 0
-	# msg 2595: shift right of the victory results panel (x=200-600) to prevent the banner from rendering under it.
+	one_shot_label.offset_top = -60 + VICTORY_BANNER_Y_SHIFT
+	one_shot_label.offset_bottom = 0 + VICTORY_BANNER_Y_SHIFT
 	one_shot_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	one_shot_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	one_shot_label.add_theme_font_size_override("font_size", TextScale.scaled(48))
@@ -5723,8 +5797,8 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	rank_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	rank_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	rank_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	rank_label.offset_top = 0
-	rank_label.offset_bottom = 40
+	rank_label.offset_top = 0 + VICTORY_BANNER_Y_SHIFT
+	rank_label.offset_bottom = 40 + VICTORY_BANNER_Y_SHIFT
 	rank_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	rank_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	rank_label.add_theme_font_size_override("font_size", TextScale.scaled(28))
@@ -5745,8 +5819,8 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bonus_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	bonus_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	bonus_label.offset_top = 40
-	bonus_label.offset_bottom = 75
+	bonus_label.offset_top = 40 + VICTORY_BANNER_Y_SHIFT
+	bonus_label.offset_bottom = 75 + VICTORY_BANNER_Y_SHIFT
 	bonus_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	bonus_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	bonus_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
@@ -5796,10 +5870,11 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	flash_container.name = "AutobattleFlash"
 	flash_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	flash_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash_container.modulate.a = VICTORY_BANNER_ALPHA
 	add_child(flash_container)
 
-	# Screen flash effect (cyan tint) — skip if one-shot already flashing
-	if not has_one_shot:
+	# Cyan full-screen flash. Skip when one-shot is already flashing, or Reduce Flashes is on.
+	if not has_one_shot and not _flashes_suppressed():
 		var flash_bg = ColorRect.new()
 		flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		flash_bg.color = Color(0.4, 0.8, 1.0, 0.5)
@@ -5815,9 +5890,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	auto_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	auto_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	auto_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	auto_label.offset_top = -60 + y_offset
-	auto_label.offset_bottom = 0 + y_offset
-	# msg 2595: shift right of the victory results panel (x=200-600) to prevent the banner from rendering under it.
+	auto_label.offset_top = -60 + y_offset + VICTORY_BANNER_Y_SHIFT
+	auto_label.offset_bottom = 0 + y_offset + VICTORY_BANNER_Y_SHIFT
 	auto_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	auto_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	auto_label.add_theme_font_size_override("font_size", TextScale.scaled(42))
@@ -5837,8 +5911,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	turns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	turns_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	turns_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	turns_label.offset_top = 0 + y_offset
-	turns_label.offset_bottom = 35 + y_offset
+	turns_label.offset_top = 0 + y_offset + VICTORY_BANNER_Y_SHIFT
+	turns_label.offset_bottom = 35 + y_offset + VICTORY_BANNER_Y_SHIFT
 	turns_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	turns_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	turns_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
@@ -5858,8 +5932,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	bonus_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	bonus_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	bonus_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	bonus_label.offset_top = 35 + y_offset
-	bonus_label.offset_bottom = 70 + y_offset
+	bonus_label.offset_top = 35 + y_offset + VICTORY_BANNER_Y_SHIFT
+	bonus_label.offset_bottom = 70 + y_offset + VICTORY_BANNER_Y_SHIFT
 	bonus_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
 	bonus_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	bonus_label.add_theme_font_size_override("font_size", TextScale.scaled(22))

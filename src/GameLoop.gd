@@ -854,8 +854,8 @@ func _on_llm_inference_succeeded(_mode: String) -> void:
 ## the fade-out. The 'area_transition_fade' InputLockManager lock
 ## only covers fade-OUT (tick 77 — pushed after _start_exploration's
 ## pop_all), so fade-IN previously slipped past callers that only
-## checked InputLockManager. Now F5/F6/Select autobattle inputs are
-## blocked across the entire fade window, not just fade-out.
+## checked InputLockManager. F5/F6/Select and Start → settings use it,
+## so those inputs are blocked across the whole fade, not just fade-out.
 func _in_exploration_transition() -> bool:
 	if current_state != LoopState.EXPLORATION:
 		return false
@@ -1068,23 +1068,15 @@ func _input(event: InputEvent) -> void:
 				# transition await in _on_exploration_battle_triggered, so
 				# raw state-check leaves a ~0.5s window where Start would
 				# open settings UNDER the loading battle scene).
-				if InputLockManager and InputLockManager.is_locked():
+				# Fade-in holds no lock yet; the helper also reads _transition_in_progress.
+				if _in_exploration_transition():
 					get_viewport().set_input_as_handled()
 					return
 				_open_settings_menu()
 				get_viewport().set_input_as_handled()
 
-	# X key or gamepad X/Y button = Open overworld menu (only in exploration mode)
-	# Note: JOY_BUTTON_X=2 (Xbox X), JOY_BUTTON_Y=3 (Xbox Y) - support both for different controllers
-	var x_pressed = false
-	if event is InputEventKey and event.pressed and event.keycode == KEY_X:
-		x_pressed = true
-	elif event is InputEventJoypadButton and event.pressed and event.button_index in [JOY_BUTTON_X, JOY_BUTTON_Y]:
-		x_pressed = true
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		x_pressed = true
-	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		x_pressed = true
+	# Open the overworld menu (exploration only); the buttons live in OverworldMenu.is_toggle_event
+	var x_pressed := OverworldMenu.is_toggle_event(event)
 
 	if x_pressed:
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
@@ -1534,13 +1526,12 @@ func _ensure_party_chat_indicator() -> void:
 	var IndicatorScript = load("res://src/ui/PartyChatIndicator.gd")
 	_party_chat_indicator = IndicatorScript.new()
 	_party_chat_indicator_layer.add_child(_party_chat_indicator)
-	## Tick 470: mouse-click on the indicator opens the chat menu,
-	## mirroring the party_chat action (L key / gamepad button). Gated
-	## the same way as the input path so a click with no available
-	## chats is a no-op instead of an empty menu.
+	## Tick 470: mouse-click opens the menu. Same gates as the L-key path — a transition still reports EXPLORATION and the chip stays up, so an unguarded click opened the menu over the fade and swallowed input.
 	if _party_chat_indicator.has_signal("clicked"):
 		_party_chat_indicator.clicked.connect(func():
 			if current_state == LoopState.EXPLORATION and not _party_chat_menu and not _overworld_menu \
+					and not (InputLockManager and InputLockManager.is_locked()) \
+					and not _transition_in_progress \
 					and PartyChatSystem and PartyChatSystem.has_available_chats():
 				_open_party_chat_menu())
 
@@ -1751,6 +1742,9 @@ func _on_title_new_game() -> void:
 	BattleSceneScript._battle_speed_index = 0
 	if SaveSystem and SaveSystem.has_method("save_settings"):
 		SaveSystem.save_settings()
+	## A latched grind meter survives the clean emit: the renderer takes max(stale_grind, 0) and tweens the new game back up.
+	if SoundManager and SoundManager.has_method("reset_corruption"):
+		SoundManager.reset_corruption()
 	# Wipe persistent GameState so a fresh playthrough doesn't inherit
 	# story flags / unlocked worlds / meta features from the prior session.
 	# Bug fix (2026-04-30): pre-fix, New Game on a save where you'd beaten
@@ -1758,8 +1752,14 @@ func _on_title_new_game() -> void:
 	# (since cutscene_flag_prologue_complete persisted in story_flags).
 	if GameState and GameState.has_method("reset_game_state"):
 		GameState.reset_game_state()
+	## The Equipment menu reads this live pool. reset_game_state only empties the save bucket, and the next menu sync copies last run's gear back.
+	_init_equipment_pool()
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
+	# Quit to Title keeps the last door, the battle-return tile, and the cave floor; exploration would place the new party there.
+	_spawn_point = "default"
+	_player_position = Vector2.ZERO
+	_current_cave_floor = 1
 	# Go straight to exploration — prologue triggers on first Theron interaction
 	_set_current_map_id("overworld")
 	_start_exploration()
@@ -2480,6 +2480,12 @@ func _play_story_cutscene(cutscene_id: String) -> bool:
 	if not _cutscene_director.can_play(cutscene_id):
 		push_warning("[GameLoop] '%s' NOT started — the director refused it; nothing committed, gate left open so it replays on the next check" % cutscene_id)
 		return false
+	## A duel whose PC left the party (the Jobs menu swaps any starter) narrated up to its battle step and aborted — on every floor change once the abort resumed play.
+	if _cutscene_director.has_method("battle_duelists"):
+		for job_id in _cutscene_director.battle_duelists(cutscene_id):
+			if _party_member_with_job(str(job_id)) == null:
+				push_warning("[GameLoop] '%s' NOT started — no party member is a %s, so its duel cannot run; gate left open until one is" % [cutscene_id, job_id])
+				return false
 	current_state = LoopState.CUTSCENE
 	_cutscene_cooldown = true  # Suppress next check on same map entry
 	_remove_party_chat_indicator()
@@ -2488,6 +2494,8 @@ func _play_story_cutscene(cutscene_id: String) -> bool:
 		if _cutscene_director.has_method("last_finished_was_aborted") and _cutscene_director.last_finished_was_aborted():
 			push_warning("[GameLoop] '%s' was ABORTED — completion flag skipped; it will replay when runnable" % cutscene_id)
 			_story_chain_depth = 0
+			## The flag stays unset so the gate can replay, but current_state was already CUTSCENE. Returning here left the map up with no button that resumes play.
+			_resume_exploration_after_cutscene()
 			return
 		# Mark this story cutscene complete so it won't replay.
 		# (Bug 2026-05-20: chapter1_complete was never set, so Elder
@@ -3319,6 +3327,16 @@ func _check_boot_canaries() -> void:
 	layer.add_child(label)
 
 
+## The duelist lookup, shared by start_solo_battle and the story gate so "can this duel run" and "run it" cannot disagree.
+func _party_member_with_job(job_id: String) -> Combatant:
+	for m in party:
+		if m == null or not is_instance_valid(m):
+			continue
+		if m.job is Dictionary and str((m.job as Dictionary).get("id", "")) == job_id:
+			return m
+	return null
+
+
 ## Tick 471: enter a solo-duel battle for the Spotlight Duels step
 ## type. Benches all but the spotlight PC (looked up by job id), fires
 ## the standard _start_battle_async pipeline, awaits our own
@@ -3332,16 +3350,7 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
 		push_warning("GameLoop.start_solo_battle: refused — a battle is already active (state %d)" % BattleManager.current_state)
 		return "unavailable"
-	var spotlight_pc: Combatant = null
-	for m in party:
-		if m == null or not is_instance_valid(m):
-			continue
-		var m_job_id: String = ""
-		if m.job is Dictionary:
-			m_job_id = str((m.job as Dictionary).get("id", ""))
-		if m_job_id == job_id:
-			spotlight_pc = m
-			break
+	var spotlight_pc: Combatant = _party_member_with_job(job_id)
 	if spotlight_pc == null:
 		# "defeat" would retry forever — "unavailable" tells the cutscene to abort
 		push_warning("GameLoop.start_solo_battle: no party member with job '%s' — cutscene battle skipped" % job_id)
@@ -3375,7 +3384,11 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	## stayed the lone duelist, and _win_condition kept the duel's terms with end_battle (its only
 	## clearer) unreachable. Undo what this function committed, in reverse, and report unavailable
 	## — a result _step_battle already handles by aborting the scene rather than retrying.
+	# Random battles save this before teardown; a duel freed the map and rebuilt it at the entrance marker.
+	var remember_return: bool = _capture_duel_return_position()
 	if not await _start_battle_async([enemy_id], false):
+		if remember_return:
+			_player_position = Vector2.ZERO
 		if BattleManager:
 			BattleManager._win_condition = {}
 		party = _spotlight_saved_party.duplicate()
@@ -3396,6 +3409,19 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 		_cutscene_cooldown = true  # skip pending-story re-fire from _start_exploration
 		await _return_to_exploration(true)  # force: BattleManager is still VICTORY inside this emit stack
 	return "victory" if result else "defeat"
+
+
+## Live tile and cave floor for the victory rebuild. No-op when the map is already gone, so a retry keeps the first attempt's tile.
+func _capture_duel_return_position() -> bool:
+	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
+		return false
+	var body: Variant = _exploration_scene.get("player")
+	if body == null or not is_instance_valid(body):
+		return false
+	_player_position = body.position
+	if "current_floor" in _exploration_scene:
+		_current_cave_floor = int(_exploration_scene.current_floor)
+	return true
 
 
 ## statuses cleared via remove_status (not .clear()) so buff bookkeeping stays consistent
@@ -3558,9 +3584,14 @@ func _on_battle_ended(victory: bool) -> void:
 			GameState.game_constants["meta_auto_rewind_pending"] = false
 			if GameState.rewind_to_previous_save():
 				print("[META] temporal_shield auto-rewind consumed — wipe averted")
-				# Skip game-over flow entirely; the save data has been
-				# restored to a pre-wipe state.
-				return
+				# Rewind writes GameState only. Rebuild the wiped party and leave the battle.
+				if "game_constants" in GameState:
+					GameState.game_constants["meta_auto_rewind_pending"] = false
+				if _restore_party_from_save_data():
+					GameState.pending_boss_defeat = {}
+					await _return_to_exploration(true)
+					return
+				push_warning("[META] temporal shield rewound the save but the party could not be rebuilt")
 			else:
 				print("[META] temporal_shield auto-rewind failed — rewind not enabled or no history; falling through to game over")
 
@@ -4132,9 +4163,12 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 	# autosave window respawned the player at the dungeon entrance.
 	if _player_position != Vector2.ZERO:
 		var scene_player = exploration_scene.get("player") if "player" in exploration_scene else null
-		if scene_player:
-			scene_player.position = _player_position
+		var restored_tile: Vector2 = _player_position
 		_player_position = Vector2.ZERO
+		if scene_player:
+			scene_player.position = restored_tile
+			# The stair and the village gate fire on the first overlap. Swallow that one; a later step-on still works.
+			await _swallow_return_tile_triggers(exploration_scene, scene_player)
 
 	# Set player appearance based on party leader (respects party_leader_index)
 	if party.size() > 0:
@@ -4215,6 +4249,55 @@ func _resume_exploration_after_cutscene() -> void:
 	_start_exploration()
 
 
+## The restored tile can be the stair or the gate the fight started on. Those sensors fire with no input, so arm the latches a floor-change already uses and let that one overlap pass.
+func _swallow_return_tile_triggers(scene: Node, body: Node2D) -> void:
+	if scene == null or not is_instance_valid(scene) or body == null or not is_instance_valid(body):
+		return
+	var hold_stairs := false
+	var areas: Array[Area2D] = []
+	_collect_areas(scene, areas)
+	var point: Vector2 = body.global_position
+	for area in areas:
+		if not is_instance_valid(area) or area.is_queued_for_deletion():
+			continue
+		if not _return_point_in_area(area, point):
+			continue
+		if area is AreaTransition and not (area as AreaTransition).require_interaction:
+			(area as AreaTransition)._triggered = true
+		elif str(area.name) == "StairsUp" or str(area.name) == "StairsDown":
+			hold_stairs = true
+	if not hold_stairs or not ("_transitioning" in scene):
+		return
+	scene._transitioning = true
+	var tree := scene.get_tree()
+	if tree == null:
+		scene._transitioning = false
+		return
+	# The enter signal is deferred to idle, after physics_frame. Stay latched through that idle.
+	for _i in 4:
+		await tree.physics_frame
+	await tree.process_frame
+	if is_instance_valid(scene):
+		scene._transitioning = false
+
+
+func _collect_areas(node: Node, into: Array[Area2D]) -> void:
+	for child in node.get_children():
+		if child is Area2D:
+			into.append(child)
+		_collect_areas(child, into)
+
+
+func _return_point_in_area(area: Area2D, point: Vector2) -> bool:
+	for child in area.get_children():
+		if child is CollisionShape2D and child.shape is RectangleShape2D:
+			var half: Vector2 = (child.shape as RectangleShape2D).size * 0.5
+			var centre: Vector2 = area.global_position + (child as Node2D).position
+			var d: Vector2 = point - centre
+			return absf(d.x) < half.x and absf(d.y) < half.y
+	return false
+
+
 func _return_to_exploration(force_battle_teardown: bool = false) -> void:
 	"""Return to exploration after battle"""
 	# Reset engine time scale to normal (battle speed shouldn't affect overworld)
@@ -4223,17 +4306,19 @@ func _return_to_exploration(force_battle_teardown: bool = false) -> void:
 	# Keep same map, restore player to saved position
 	await _start_exploration(force_battle_teardown)
 
-	# Restore player position after scene is fully set up
+	# Restore player position after scene is fully set up. _start_exploration already consumed the latch; this covers a return that still holds one.
 	if _player_position != Vector2.ZERO and _exploration_scene:
 		var player = _exploration_scene.get("player")
+		var restored_tile: Vector2 = _player_position
+		_player_position = Vector2.ZERO
 		if player:
-			player.position = _player_position
-			print("[POSITION] Restored player to: %s" % _player_position)
+			player.position = restored_tile
+			print("[POSITION] Restored player to: %s" % restored_tile)
+			await _swallow_return_tile_triggers(_exploration_scene, player)
 		else:
 			push_warning("[POSITION] Could not get player from scene")
-
-	# Clear saved position after restoring
-	_player_position = Vector2.ZERO
+	else:
+		_player_position = Vector2.ZERO
 
 
 func _prewarm_battle_sprites(enemies: Array) -> void:
@@ -4661,20 +4746,9 @@ func _get_transition_type(map_id: String) -> String:
 	return "generic"
 
 
+## Same lookup the save slot uses, so the banner and the slot cannot disagree.
 func _get_location_display_name(map_id: String) -> String:
-	"""Return the human-readable name from locations.json, or a formatted fallback."""
-	var file = FileAccess.open("res://data/locations.json", FileAccess.READ)
-	if file:
-		var json = JSON.new()
-		if json.parse(file.get_as_text()) == OK:
-			var data = json.data
-			if data is Dictionary:
-				for key in data:
-					var entry = data[key]
-					if entry is Dictionary and entry.get("map_id", key) == map_id:
-						return entry.get("name", map_id.replace("_", " ").capitalize())
-		file.close()
-	return map_id.replace("_", " ").capitalize()
+	return SaveSystem.location_display_name(map_id)
 
 
 func _make_location_label(text: String, layer: CanvasLayer) -> Label:
@@ -5794,6 +5868,7 @@ func _stop_autogrind(reason: String) -> void:
 	## refuses a retry, so an abort between them stranded both with no way back. Both are plain
 	## autoload assignments that depend on nothing, and nothing below reads either.
 	BattleManager.turbo_mode = false
+	BattleManager.defer_victory_payout = false
 	Engine.time_scale = 1.0
 
 	# Capture stats before controller is stopped and freed
@@ -5808,10 +5883,13 @@ func _stop_autogrind(reason: String) -> void:
 	if BattleManager.battle_ended.is_connected(_on_autogrind_battle_ended):
 		BattleManager.battle_ended.disconnect(_on_autogrind_battle_ended)
 
-	# Stop controller
+	# Stop controller. grind_complete runs re-entrantly and nulls this field; queue_free on the null aborts the rest, including the bed restore.
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
-		_autogrind_controller.stop_grind(reason)
-		_autogrind_controller.queue_free()
+		var controller := _autogrind_controller
+		controller.stop_grind(reason)
+		if _autogrind_controller == null or not is_instance_valid(_autogrind_controller):
+			return
+		controller.queue_free()
 		_autogrind_controller = null
 
 	# Update UI state
@@ -5874,6 +5952,28 @@ func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
 	await _start_autogrind_battle(enemies)
 
 
+func _combatant_for_headless(data: Dictionary) -> Combatant:
+	var enemy := Combatant.new()
+	var stats: Dictionary = data.get("stats", {})
+	enemy.initialize({
+		"name": data.get("name", "Enemy"),
+		"max_hp": stats.get("max_hp", 50),
+		"max_mp": stats.get("max_mp", 20),
+		"attack": stats.get("attack", 10),
+		"defense": stats.get("defense", 8),
+		"magic": stats.get("magic", 5),
+		# Codex prints magic_defense; dropping the key makes the fight use defense/2.
+		"magic_defense": stats.get("magic_defense", int(stats.get("defense", 8) * 0.5)),
+		"speed": stats.get("speed", 8)
+	})
+	# Live spawns (BattleEnemySpawner) always set this; its absence here silently
+	# no-opped bestiary defeat-credit AND drop lookup for the whole ludicrous path.
+	var mtype: String = str(data.get("id", ""))
+	if mtype != "":
+		enemy.set_meta("monster_type", mtype)
+	return enemy
+
+
 func _resolve_headless_battle(enemy_data: Array) -> void:
 	var resolver = HeadlessBattleResolver.new()
 	## _on_grind_battle_requested stored the terrain one frame up; only the live branch was reading it.
@@ -5884,23 +5984,7 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 
 	var enemies: Array = []
 	for data in enemy_data:
-		var enemy = Combatant.new()
-		var stats = data.get("stats", {})
-		enemy.initialize({
-			"name": data.get("name", "Enemy"),
-			"max_hp": stats.get("max_hp", 50),
-			"max_mp": stats.get("max_mp", 20),
-			"attack": stats.get("attack", 10),
-			"defense": stats.get("defense", 8),
-			"magic": stats.get("magic", 5),
-			"speed": stats.get("speed", 8)
-		})
-		# Live spawns (BattleEnemySpawner) always set this; its absence here silently
-		# no-opped bestiary defeat-credit AND drop lookup for the whole ludicrous path.
-		var mtype: String = str(data.get("id", ""))
-		if mtype != "":
-			enemy.set_meta("monster_type", mtype)
-		enemies.append(enemy)
+		enemies.append(_combatant_for_headless(data))
 
 	var result = resolver.resolve_battle(party, enemies)
 	## cowir-autogrind: the resolver has set termination_reason since cadence #19 and nothing read it.
@@ -5935,8 +6019,8 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 			if BattleManager.route_drop_to_equipment_pool(item_id):
 				for _extra in range(maxi(0, qty - 1)):
 					BattleManager.route_drop_to_equipment_pool(item_id)
-			elif party.size() > 0 and party[0].is_alive:
-				party[0].add_item(item_id, qty)
+			else:
+				BattleManager.deliver_consumable_drop(party, item_id, qty)
 		for rd in headless_rare_drops:
 			if PartyChatSystem:
 				PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")
@@ -6089,6 +6173,12 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 
 	add_child(battle_scene)
 	current_scene = battle_scene
+	# Connect before the first resumed frame. A one-action turbo fight can end on that frame, and the settler has to be attached or the deferred payout is never paid.
+	if not BattleManager.battle_ended.is_connected(_on_autogrind_battle_ended):
+		BattleManager.battle_ended.connect(_on_autogrind_battle_ended, CONNECT_ONE_SHOT)
+	# Meta-boss battles keep BattleManager's payout; their settler only adds a bonus on top.
+	var meta_boss_battle: bool = _autogrind_controller != null and is_instance_valid(_autogrind_controller) and bool(_autogrind_controller._current_battle_is_meta_boss)
+	BattleManager.defer_victory_payout = not meta_boss_battle
 
 	# Set turbo mode based on tier
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
@@ -6110,10 +6200,6 @@ func _start_autogrind_battle(enemy_data: Array) -> void:
 	# Show current stats block
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		battle_scene.update_autogrind_console_stats(_autogrind_controller.get_grind_stats())
-
-	# Connect to battle end with autogrind handler
-	BattleManager.battle_ended.connect(_on_autogrind_battle_ended, CONNECT_ONE_SHOT)
-
 
 func _on_autogrind_battle_ended(victory: bool) -> void:
 	"""Handle battle end during autogrind"""
@@ -6180,17 +6266,17 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 			if member.is_alive and member.current_mp < member.max_mp * 0.5:
 				_autogrind_restore_mp(member)
 
-	# Track per-character EXP distribution
+	# Track per-character EXP distribution (same earner set as the headless path)
 	if victory and exp_gained > 0:
-		var alive_count = 0
+		## KO'd mourners earn; a living-only divisor skips them and inflates everyone else's share.
+		var earners: Array = []
 		for member in party:
-			if member is Combatant and member.is_alive:
-				alive_count += 1
-		if alive_count > 0:
-			var per_char_exp = exp_gained / alive_count
-			for member in party:
-				if member is Combatant and member.is_alive:
-					AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
+			if member is Combatant and (member.is_alive or BattleManager.earns_exp_while_dead(member)):
+				earners.append(member)
+		if earners.size() > 0:
+			var per_char_exp = exp_gained / earners.size()
+			for member in earners:
+				AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
 
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
@@ -6291,7 +6377,13 @@ func _on_grind_complete(reason: String) -> void:
 	## Same hoist as _stop_autogrind: this entry reaches the identical stranded state by its own
 	## route, so fixing only the other one leaves this one live.
 	BattleManager.turbo_mode = false
+	BattleManager.defer_victory_payout = false
 	Engine.time_scale = 1.0
+	## Hoisted with the globals: stop_grind emits this synchronously, then _stop_autogrind's own restore sits past a null deref and never runs. Natural ends (HP, wipe, collapse) never entered _stop_autogrind at all, so the autogrind bed and its detune stayed up.
+	if SoundManager:
+		SoundManager.reset_corruption()
+		var area_key: String = _derive_current_scene_music_key()
+		SoundManager.play_area_music(area_key if area_key != "" else _current_map_id)
 	current_state = LoopState.EXPLORATION
 	InputLockManager.pop_all()  # Clear any leaked locks
 
