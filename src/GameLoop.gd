@@ -1757,6 +1757,9 @@ func _on_title_new_game() -> void:
 	_init_equipment_pool()
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
+	# Quit to Title keeps the last door and the battle-return tile; exploration would place the new party there.
+	_spawn_point = "default"
+	_player_position = Vector2.ZERO
 	# Go straight to exploration — prologue triggers on first Theron interaction
 	_set_current_map_id("overworld")
 	_start_exploration()
