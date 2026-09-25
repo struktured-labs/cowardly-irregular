@@ -982,6 +982,12 @@ func play_voice(sound_key: String) -> float:
 	return _voice_player.stream.get_length()
 
 
+## The voice player lives on this autoload, so freeing the battle scene does not stop a line.
+func stop_voice() -> void:
+	if _voice_player != null and _voice_player.playing:
+		_voice_player.stop()
+
+
 ## Reward cues (coins, key items) on their OWN player. They are always a CONSEQUENCE of the
 ## action that earned them, so on the shared UI player they landed on a cue still playing: a gold
 ## chest's lid (1.48s) was replaced by its coins (1.00s) in the same frame, on all 15 of them.
