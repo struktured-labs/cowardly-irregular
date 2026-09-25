@@ -367,9 +367,8 @@ func notify_talk(npc_id: String) -> String:
 		var idx := get_objective_index(qid)
 		var obj: Dictionary = _objective(q, idx)
 		if obj.get("type", "") != "talk":
-			# Opportunistic fetch check: a fetch objective completes the
-			# moment its items are in inventory and we're mid-conversation.
-			if obj.get("type", "") == "fetch" and _fetch_satisfied(obj):
+			# A delivery fetch waits for the NPC the next step names. Any other talk used to consume the item.
+			if obj.get("type", "") == "fetch" and _fetch_satisfied(obj) and _fetch_handoff_here(q, idx, npc_id):
 				_complete_objective(qid, idx)
 				# A FINAL fetch completes the quest right here — hand the
 				# id back so the caller presents completion dialogue +
@@ -567,6 +566,20 @@ func _objective(q: Dictionary, index: int) -> Dictionary:
 	if index < 0 or index >= objectives.size():
 		return {}
 	return objectives[index]
+
+
+## A fetch followed by a talk is a trade with that NPC. Holding the items is not the handoff.
+func _fetch_handoff_here(q: Dictionary, index: int, npc_id: String) -> bool:
+	var objectives: Array = q.get("objectives", [])
+	if index + 1 >= objectives.size():
+		return true
+	var nxt: Dictionary = _objective(q, index + 1)
+	if str(nxt.get("type", "")) != "talk":
+		return true
+	if str(nxt.get("target_npc", "")) != npc_id:
+		return false
+	var req: String = str(nxt.get("required_flag", ""))
+	return req == "" or _flag(req)
 
 
 func _fetch_satisfied(obj: Dictionary) -> bool:
