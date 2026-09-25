@@ -417,13 +417,40 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event.is_action_pressed("ui_accept"):
+		# NPCs are a later sibling than doors, so this _input runs first. Consuming confirm while the player is standing in an entry means the door never opens.
+		if _pl is Node2D and _door_owns_confirm(_pl as Node2D):
+			return
 		get_viewport().set_input_as_handled()
 		# Defer conversation start to avoid await inside _input
 		call_deferred("_start_conversation")
 
 
+func _door_owns_confirm(player: Node2D) -> bool:
+	if not is_inside_tree() or player.get_world_2d() == null:
+		return false
+	var query := PhysicsPointQueryParameters2D.new()
+	query.position = player.global_position
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	query.collision_mask = InteractGeometry.LAYER_INTERACTABLE
+	for hit in player.get_world_2d().direct_space_state.intersect_point(query):
+		if _is_entry(hit.get("collider")):
+			return true
+	return false
+
+
+func _is_entry(node: Node) -> bool:
+	if node == null or node == self:
+		return false
+	if node is AreaTransition or node is VillageElevator:
+		return true
+	return node.has_method("interact") and node.has_signal("transition_triggered")
+
+
 func _start_conversation() -> void:
 	"""Open a proper dialogue box for this NPC."""
+	if not is_inside_tree():
+		return
 	_in_conversation = true
 	_label.visible = false
 

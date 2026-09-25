@@ -15,6 +15,7 @@ const BattleSceneScript := preload("res://src/battle/BattleScene.gd")
 class QuietNewGame extends GameLoopScript:
 	var seen_spawn: String = ""
 	var seen_position: Vector2 = Vector2.INF
+	var seen_floor: int = -1
 	func _ready() -> void:
 		pass
 	func _create_party() -> void:
@@ -22,6 +23,7 @@ class QuietNewGame extends GameLoopScript:
 	func _start_exploration(_force_battle_teardown: bool = false) -> void:
 		seen_spawn = _spawn_point
 		seen_position = _player_position
+		seen_floor = _current_cave_floor
 
 
 var _saved_state: Dictionary = {}
@@ -74,11 +76,14 @@ func test_new_game_places_the_party_at_the_start_not_the_last_door() -> void:
 	add_child(gl)
 	gl._spawn_point = "village_entrance"
 	gl._player_position = Vector2(4000, 900)
+	gl._current_cave_floor = 5
 	await gl._on_title_new_game()
 	assert_eq(gl.seen_spawn, "default",
 		"New Game handed _start_exploration the last door (%s) — the overworld teleports there when that name exists" % gl.seen_spawn)
 	assert_eq(gl.seen_position, Vector2.ZERO,
 		"New Game handed _start_exploration last run's coordinates %s — that override wins over the start marker" % str(gl.seen_position))
+	assert_eq(gl.seen_floor, 1,
+		"New Game handed _start_exploration cave floor %d — the next cave opens there" % gl.seen_floor)
 
 
 func test_scene_entry_still_honors_a_door_spawn() -> void:
@@ -93,11 +98,15 @@ func test_scene_entry_still_honors_a_door_spawn() -> void:
 		"New Game is the path that must drop the last door")
 	assert_true(fresh.contains("_player_position = Vector2.ZERO"),
 		"New Game is the path that must drop the last coordinates")
+	assert_true(fresh.contains("_current_cave_floor = 1"),
+		"New Game is the path that must drop the cave floor a duel or battle saved")
 	var spawn_clear: int = fresh.find("_spawn_point = \"default\"")
 	var pos_clear: int = fresh.find("_player_position = Vector2.ZERO")
+	var floor_clear: int = fresh.find("_current_cave_floor = 1")
 	var start_call: int = fresh.find("_start_exploration()")
 	assert_lt(spawn_clear, start_call, "the door latch has to be cleared before exploration reads it")
 	assert_lt(pos_clear, start_call, "the coordinate latch has to be cleared before exploration reads it")
+	assert_lt(floor_clear, start_call, "the floor latch has to be cleared before exploration reads it")
 
 
 func _fn_body(src: String, signature: String) -> String:
