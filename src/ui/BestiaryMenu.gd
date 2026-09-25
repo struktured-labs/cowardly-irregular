@@ -35,6 +35,7 @@ var _detail_epithet: Label = null
 var _detail_level: Label = null
 var _detail_stats: Label = null
 var _detail_weak: Label = null
+var _detail_immune: Label = null
 var _detail_resist: Label = null
 var _detail_rewards: Label = null  # "EXP: N  Gold: G"
 var _detail_drops: Label = null    # "Drops: bone 50%, ether 15%"
@@ -345,6 +346,15 @@ func _build_detail(parent: Control) -> void:
 	_detail_weak.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	parent.add_child(_detail_weak)
 
+	_detail_immune = Label.new()
+	_detail_immune.position = Vector2(text_x, margin + 152)
+	_detail_immune.size = Vector2(text_w, 24)
+	_detail_immune.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	_detail_immune.add_theme_color_override("font_color", Color(0.533, 0.667, 1.0))
+	_detail_immune.clip_text = false
+	_detail_immune.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	parent.add_child(_detail_immune)
+
 	_detail_resist = Label.new()
 	_detail_resist.position = Vector2(text_x, margin + 164)
 	_detail_resist.size = Vector2(text_w, 24)
@@ -402,6 +412,7 @@ func _refresh_detail() -> void:
 		_detail_level.text = ""
 		_detail_stats.text = ""
 		_detail_weak.text = ""
+		_detail_immune.text = ""
 		_detail_resist.text = ""
 		_detail_rewards.text = ""
 		_detail_drops.text = ""
@@ -441,6 +452,9 @@ func _refresh_detail() -> void:
 			stats.get("speed", 0),
 		]
 		_detail_weak.text = "Weak: %s" % (", ".join(_caps(entry.weaknesses)) if not entry.weaknesses.is_empty() else "—")
+		var raw_imm: Variant = entry.get("immunities", [])
+		var immunities: Array = raw_imm if raw_imm is Array else []
+		_detail_immune.text = "Immune: %s" % (", ".join(_caps(immunities)) if not immunities.is_empty() else "—")
 		_detail_resist.text = "Resist: %s" % (", ".join(_caps(entry.resistances)) if not entry.resistances.is_empty() else "—")
 		var exp_r: int = int(entry.get("exp_reward", 0))
 		var gold_r: int = int(entry.get("gold_reward", 0))
@@ -462,6 +476,7 @@ func _refresh_detail() -> void:
 	else:
 		_detail_stats.text = "HP ???   MP ???   ATK ???   DEF ???   MAG ???   M.DEF ???   SPD ???"
 		_detail_weak.text = "Weak: ???"
+		_detail_immune.text = "Immune: ???"
 		_detail_resist.text = "Resist: ???"
 		_detail_rewards.text = "EXP: ???   Gold: ???"
 		_detail_drops.text = "Drops: ???   (defeat to unlock)"
@@ -515,7 +530,7 @@ func _refresh_detail() -> void:
 func _reflow_detail_column() -> void:
 	var gap := 6
 	var y: float = _detail_stats.position.y
-	for label in [_detail_stats, _detail_weak, _detail_resist, _detail_rewards, _detail_drops]:
+	for label in [_detail_stats, _detail_weak, _detail_immune, _detail_resist, _detail_rewards, _detail_drops]:
 		if label == null:
 			continue
 		label.position.y = y

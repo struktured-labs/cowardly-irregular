@@ -333,6 +333,8 @@ static func get_seen_entries_sorted(sort_mode: String = SORT_LEVEL) -> Array:
 			"stats": data.get("stats", {}),
 			"weaknesses": data.get("weaknesses", []),
 			"resistances": data.get("resistances", []),
+			# null_entity's physical immunity. Combat already deals 0 from this field.
+			"immunities": data.get("immunities", []),
 			"flavor": get_flavor(id),
 			"epithet": get_epithet(id),
 			"exp_reward": int(data.get("exp_reward", 0)),
