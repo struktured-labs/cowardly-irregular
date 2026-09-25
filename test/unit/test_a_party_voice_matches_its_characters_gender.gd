@@ -6,18 +6,16 @@ extends GutTest
 ## nothing about who spoke it. So every spoken clip now declares `voice` and `voice_gender` (from
 ## the voice API's own gender label), and this checks the declaration against the canon.
 ##
-## It guards the RECORD, not the waveform — a clip re-cut with a mislabelled voice would pass. The
-## re-voice itself was verified by pitch (median F0 ~207 Hz, against ~115 Hz for the male voice).
+## It guards the RECORD, not the waveform — a clip re-cut with a mislabelled voice would pass. Pitch
+## is NOT a gender check for this pack: the Fighter (labelled male) shouts at a median ~202 Hz.
 
 const MANIFEST := "res://data/sfx_manifest.json"
 const PERSONAS := "res://data/job_personas.json"
 
-## struktured's locked canon: Fighter he · Cleric she · Mage he · Bard she.
-const CANON := {"fighter": "male", "cleric": "female", "mage": "male", "bard": "female"}
-## The Rogue is "unknown for the whole game", and struktured put the voice in scope on 2026-09-24:
-## "doesnt really sound androgenous, might need to revisit". Callum is now pitch/formant-shifted toward
-## ambiguous, a candidate he has not yet judged by ear, so the Rogue declares its casting but is unconstrained.
-const UNRULED := ["rogue"]
+## struktured's locked canon: Fighter he · Cleric she · Mage he · Bard she. The Rogue is "unknown for the
+## whole game"; he picked its voice by ear on 2026-09-25 as "most androgenous", recorded as "ambiguous".
+const CANON := {"fighter": "male", "cleric": "female", "mage": "male", "bard": "female", "rogue": "ambiguous"}
+const UNRULED := []
 
 
 func _sfx() -> Dictionary:

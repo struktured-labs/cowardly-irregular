@@ -2036,35 +2036,35 @@
       "file": "assets/audio/sfx/voice_rogue_big_hit_taken.ogg",
       "description": "Rogue party voice line — big hit taken",
       "source_sha": "23d141bc777d7aa1",
-      "voice": "Callum - Husky Trickster (N2lVS1w4EtoT3dr4eOWO), +6 st with formants shifted (rubberband), for an ambiguous voice",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
       "voice_gender": "ambiguous"
     },
     "voice_rogue_low_hp": {
       "file": "assets/audio/sfx/voice_rogue_low_hp.ogg",
       "description": "Rogue party voice line — low hp",
       "source_sha": "562476471df280e4",
-      "voice": "Callum - Husky Trickster (N2lVS1w4EtoT3dr4eOWO), +6 st with formants shifted (rubberband), for an ambiguous voice",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
       "voice_gender": "ambiguous"
     },
     "voice_rogue_turn_start": {
       "file": "assets/audio/sfx/voice_rogue_turn_start.ogg",
       "description": "Rogue party voice line — turn start",
       "source_sha": "c2ff57a4502337fb",
-      "voice": "Callum - Husky Trickster (N2lVS1w4EtoT3dr4eOWO), +6 st with formants shifted (rubberband), for an ambiguous voice",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
       "voice_gender": "ambiguous"
     },
     "voice_rogue_used_signature_ability": {
       "file": "assets/audio/sfx/voice_rogue_used_signature_ability.ogg",
       "description": "Rogue party voice line — used signature ability",
       "source_sha": "98b107347156da39",
-      "voice": "Callum - Husky Trickster (N2lVS1w4EtoT3dr4eOWO), +6 st with formants shifted (rubberband), for an ambiguous voice",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
       "voice_gender": "ambiguous"
     },
     "voice_rogue_victory": {
       "file": "assets/audio/sfx/voice_rogue_victory.ogg",
       "description": "Rogue party voice line — victory",
       "source_sha": "c69501a71f6e09c1",
-      "voice": "Callum - Husky Trickster (N2lVS1w4EtoT3dr4eOWO), +6 st with formants shifted (rubberband), for an ambiguous voice",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
       "voice_gender": "ambiguous"
     },
     "w2_ability_dark": {
