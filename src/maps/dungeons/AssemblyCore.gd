@@ -16,7 +16,7 @@ func _init() -> void:
 	# the GameLoop gate on cutscene_flag_warden_industrial_defeated in
 	# assembly_core.)
 	total_floors = 4
-	overworld_exit_spawn = "chemical_zone"
+	overworld_exit_spawn = "from_assembly"
 	overworld_exit_map = "industrial_overworld"
 	unlock_story_flag = "w4_dungeon_cleared"
 	# Bridge to game_constants — GameLoop:876 gates world3_chapter4 on

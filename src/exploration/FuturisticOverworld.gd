@@ -557,7 +557,7 @@ func _setup_transitions() -> void:
 	node_prime_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(node_prime_trans)
 
-	# Root Process dungeon entrance (SE glitch sector)
+	# Root Process door. from_root is this position — "glitch_sector" is the sector landmark, not this door.
 	var root_trans = AreaTransitionScript.new()
 	root_trans.name = "RootProcessEntrance"
 	root_trans.target_map = "root_process"
@@ -566,6 +566,7 @@ func _setup_transitions() -> void:
 	root_trans.indicator_text = "Descend into the Root Process"
 	root_trans.position = Vector2(40 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 34 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	root_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	spawn_points["from_root"] = root_trans.position
 	_setup_transition_collision(root_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	root_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(root_trans)

@@ -537,7 +537,7 @@ func _setup_transitions() -> void:
 	rivet_row_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(rivet_row_trans)
 
-	# Assembly Core dungeon entrance (west side, chemical zone)
+	# Assembly Core door. from_assembly is this position — "chemical_zone" is the waste yard, a district away.
 	var assembly_trans = AreaTransitionScript.new()
 	assembly_trans.name = "AssemblyCoreEntrance"
 	assembly_trans.target_map = "assembly_core"
@@ -548,6 +548,7 @@ func _setup_transitions() -> void:
 	# southward shift cleared it. (14,25) is the nearest anchor whose box is standable.
 	assembly_trans.position = Vector2(14 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 25 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	assembly_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	spawn_points["from_assembly"] = assembly_trans.position
 	_setup_transition_collision(assembly_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	assembly_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(assembly_trans)
