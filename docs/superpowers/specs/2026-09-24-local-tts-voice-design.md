@@ -150,8 +150,11 @@ that rate with no resampling.
 
 - Path: `user://voice_cache/<key>.wav`, key = first 32 hex chars of
   `sha256("v1|" + voice + "|" + str(rev) + "|" + text)`.
-- Read touches the file's modification time (LRU). Write evicts oldest-first when the
-  directory exceeds **200 MB**. The bound is part of the design: an unbounded cache is the
+- A read counts as a use for least-recently-used eviction. Write evicts the least recently
+  used line first when the directory exceeds **200 MB**. Recency is kept in memory, seeded
+  from file modification times at startup: Godot has no API to touch a file's mtime, and
+  rewriting the file on every hit would cost a disk write per line spoken. Across sessions,
+  "last used" therefore means "last written". The bound is part of the design: an unbounded cache is the
   defect found in `LLMService._cache` on 2026-09-20.
 - A bytes blob that fails to decode is deleted, never served.
 
@@ -165,11 +168,17 @@ that rate with no resampling.
 ```
 
 - `missing_voices`: cast voice names absent from the server's `/v1/audio/voices`.
+  **That endpoint lists predefined voices only** (devnen `server.py` @ `915ae28`,
+  `utils.get_predefined_voices()`), while `/v1/audio/speech` also accepts reference-audio
+  files. So a cast voice must live in the predefined voices directory, or it is reported
+  missing while still working. An empty server list (not probed yet) flags nothing.
 - `clipping_detected`: set when a returned line has **≥ 2 runs of samples pinned at
   ±32767**. The supported server peak-normalises to −1 dBFS (max 29,196), so correct output
   never reaches the ceiling; a single pinned sample on another server may be a clean peak,
   hence 2 runs. In the spike, stock output produced 7–14 runs per theatrical line and 1–4
-  per neutral line. The threshold is confirmed against cowir-sfx's patched output (negative
+  per neutral line. Negative control measured 2026-09-25 through the shipped client against
+  the patched server: a 1.20 s line peaked at exactly 29,195 (−1.00 dBFS), 24 kHz mono,
+  `clipping_detected: false`. The stock-devnen positive control is still owed. The threshold is confirmed against cowir-sfx's patched output (negative
   control) and stock devnen (positive control) before it ships. Detection **does not modify
   audio**; normalising is the server's job, and a second copy client-side could drift.
 
