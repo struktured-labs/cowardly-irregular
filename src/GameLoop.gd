@@ -3383,7 +3383,11 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	## stayed the lone duelist, and _win_condition kept the duel's terms with end_battle (its only
 	## clearer) unreachable. Undo what this function committed, in reverse, and report unavailable
 	## — a result _step_battle already handles by aborting the scene rather than retrying.
+	# Random battles save this before teardown; a duel freed the map and rebuilt it at the entrance marker.
+	var remember_return: bool = _capture_duel_return_position()
 	if not await _start_battle_async([enemy_id], false):
+		if remember_return:
+			_player_position = Vector2.ZERO
 		if BattleManager:
 			BattleManager._win_condition = {}
 		party = _spotlight_saved_party.duplicate()
@@ -3404,6 +3408,19 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 		_cutscene_cooldown = true  # skip pending-story re-fire from _start_exploration
 		await _return_to_exploration(true)  # force: BattleManager is still VICTORY inside this emit stack
 	return "victory" if result else "defeat"
+
+
+## Live tile and cave floor for the victory rebuild. No-op when the map is already gone, so a retry keeps the first attempt's tile.
+func _capture_duel_return_position() -> bool:
+	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
+		return false
+	var body: Variant = _exploration_scene.get("player")
+	if body == null or not is_instance_valid(body):
+		return false
+	_player_position = body.position
+	if "current_floor" in _exploration_scene:
+		_current_cave_floor = int(_exploration_scene.current_floor)
+	return true
 
 
 ## statuses cleared via remove_status (not .clear()) so buff bookkeeping stays consistent
