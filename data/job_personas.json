@@ -11,11 +11,66 @@
 				"Stand. Swing. Stand."
 			],
 			"trigger_voices": {
-				"turn_start": "My turn. Hand on the stick, not the script. Good.",
-				"low_hp": "Bleeding. Manageable. Shield arm still answers.",
-				"big_hit_taken": "Felt that. Mark it. Return the favor.",
-				"used_signature_ability": "Clean strike. No flourish. The numbers do the bragging.",
-				"victory": "Done. Sheathe. Tell the Bard to keep the song short."
+				"turn_start": [
+					"My turn. Hand on the stick, not the script. Good.",
+					"Step forward. That's the whole plan.",
+					"My turn. Shield up. Sword ready.",
+					"Short turn. Long swing.",
+					"Front of the line. Where I belong.",
+					"They moved. Now I move.",
+					"No speeches. Just the next swing.",
+					"Plant the feet. Pick a target.",
+					"Mage is still counting. I'm not.",
+					"Bard's humming again. Noted. Ignored."
+				],
+				"low_hp": [
+					"Bleeding. Manageable. Shield arm still answers.",
+					"Still standing. That's the job.",
+					"Hurts. Doesn't matter. Hold the line.",
+					"Low. Not out.",
+					"Shield's dented. Arm isn't.",
+					"Cleric. When you're ready. No rush.",
+					"I've stood up from worse. Once.",
+					"Breathe. Grip. Stand.",
+					"Bleeding on the good boots. Fine.",
+					"Not falling. Not today."
+				],
+				"big_hit_taken": [
+					"Felt that. Mark it. Return the favor.",
+					"Noted.",
+					"That one had weight. Good.",
+					"Took it on the shield. Mostly.",
+					"Hit hard. I'll hit harder.",
+					"Rattled the teeth. Not the stance.",
+					"Fair swing. Mine's next.",
+					"Felt that in the boots.",
+					"Heavy. Honest, at least.",
+					"Heard you. Answering soon."
+				],
+				"used_signature_ability": [
+					"Clean strike. No flourish. The numbers do the bragging.",
+					"Everything I've got. Into one swing.",
+					"Both hands. Full weight.",
+					"That's the heavy one.",
+					"Put my shoulder into it.",
+					"No trick. Just more of the same.",
+					"One swing. Half again as hard.",
+					"Hold still. This one's big.",
+					"Plain steel. Extra weight.",
+					"Wind up. Follow through. Done."
+				],
+				"victory": [
+					"Done. Sheathe. Tell the Bard to keep the song short.",
+					"Done. Wipe the blade.",
+					"Clean. Next.",
+					"Stand down. Good work.",
+					"Nobody fell. That's the win.",
+					"Shield's dented. Worth it.",
+					"Quiet again. Good.",
+					"That's the fight. Check the packs.",
+					"Honest work. Honest win.",
+					"Bard. No victory song. ...Fine. One verse."
+				]
 			}
 		},
 		"cleric": {
@@ -27,11 +82,66 @@
 				"Mercy is a stat. Mine is capped."
 			],
 			"trigger_voices": {
-				"turn_start": "Let me see the ledger of injuries. Right. The singed sleeve first, then the new limp.",
-				"low_hp": "My HP bar is asking impolite questions of the engine. I will answer it with a long breath.",
-				"big_hit_taken": "That was a crit. The scripture said it would be. I forgive it because I read ahead.",
-				"used_signature_ability": "Sanatio is just polite negotiation with the damage formula. The formula listens to me.",
-				"victory": "Verse complete. Wounds tallied, breaths counted, all party members returned to maximum. The Loop is pleased."
+				"turn_start": [
+					"Let me see the ledger of injuries. Right. The singed sleeve first, then the new limp.",
+					"A new verse. Let me read it slowly.",
+					"Turn counted. Bead moved. Proceed.",
+					"The bruised shoulder first. Then the rest.",
+					"Who is bleeding? Show me. Don't be brave.",
+					"Hold still, singed sleeve. I see you.",
+					"The Loop turns. So do I.",
+					"Another bead. The prayer continues.",
+					"Staff in both hands. Eyes on the wounded.",
+					"Read the wounds before the enemy does."
+				],
+				"low_hp": [
+					"My HP bar is asking impolite questions of the engine. I will answer it with a long breath.",
+					"My own verse runs short. Unusual.",
+					"Physician, heal thyself. Presently.",
+					"I am wounded. I am not worried.",
+					"Low. The Loop has seen me lower.",
+					"Hold. I tend myself, then you.",
+					"A long breath. A short prayer. Again.",
+					"This is the part of the verse that tests.",
+					"Blood on the vestments. Laundered later.",
+					"Not panicking. Counting."
+				],
+				"big_hit_taken": [
+					"That was a crit. The scripture said it would be. I forgive it because I read ahead.",
+					"That will need a longer prayer.",
+					"Struck. Recorded. Forgiven. Mostly.",
+					"The scripture warned of this chapter.",
+					"Oof. Forgive me. That was not liturgical.",
+					"A heavy verse. I will read it twice.",
+					"I felt that in the rosary.",
+					"Rude. Also forgiven.",
+					"That one earns a name. I'll choose it later.",
+					"Steady. Staff first, grievance second."
+				],
+				"used_signature_ability": [
+					"Sanatio is just polite negotiation with the damage formula. The formula listens to me.",
+					"Sanatio. Hold still. It stings a little.",
+					"Sanatio. The bruise forgets it happened.",
+					"Sanatio. Be more careful. You won't.",
+					"Hold still. The engine is listening.",
+					"Mended. The number goes up. Beautiful.",
+					"There. Whole enough to be foolish again.",
+					"Sanatio, and a small rebuke. Duck next time.",
+					"The Loop provides. I merely deliver.",
+					"Mended. Say thank you. Or don't. Mended."
+				],
+				"victory": [
+					"Verse complete. Wounds tallied, breaths counted, all party members returned to maximum. The Loop is pleased.",
+					"Verse complete. Everyone accounted for.",
+					"Amen. Now, let me see those cuts.",
+					"The Loop closes. Gently, this time.",
+					"Wounds tallied. None of them mortal.",
+					"Rest. The next verse is already written.",
+					"A kind ending. They are rarer than you think.",
+					"Blessed be the turn order.",
+					"The new limp. Sit down. You're next.",
+					"Well fought. Poorly dodged. Forgiven."
+				]
 			}
 		},
 		"mage": {
@@ -43,11 +153,66 @@
 				"Undocumented behavior. Beautiful."
 			],
 			"trigger_voices": {
-				"turn_start": "Initiative resolved. Compiling spell. Stand back roughly... 1.4 tiles, give or take rounding.",
-				"low_hp": "HP at twenty-three percent. Statistically I am one bad d20 from a memorial cutscene. Cleric. Cleric. Please.",
-				"big_hit_taken": "That damage roll exceeded my defense formula by a factor I refuse to acknowledge in writing.",
-				"used_signature_ability": "Three hundred forty-six damage. Within tolerance. The math is, as always, correct.",
-				"victory": "Combat resolved. Filing the encounter under 'predictable outputs.' Someone tell the loot table I'm waiting."
+				"turn_start": [
+					"Initiative resolved. Compiling spell. Stand back roughly... 1.4 tiles, give or take rounding.",
+					"Initiative resolved. Showing my work.",
+					"My turn. Running the numbers. Again.",
+					"Base power, times elemental, minus resist. Ready.",
+					"Allocating this turn to thinking. Then heat.",
+					"Stand clear. Rounding errors are real.",
+					"Consulting the undocumented parts.",
+					"The spec says it's my turn. I trust the spec.",
+					"One moment. Recalculating everyone's mistakes.",
+					"Hypothesis: I cast. Result: they suffer."
+				],
+				"low_hp": [
+					"HP at twenty-three percent. Statistically I am one bad d20 from a memorial cutscene. Cleric. Cleric. Please.",
+					"Health critical. This violates my projections.",
+					"Glass cannon. Emphasis on glass.",
+					"Cleric. The singed sleeve requests a patch.",
+					"Retreat is a valid stat allocation.",
+					"I am one bad roll from a footnote.",
+					"Recalculating. The answer is: ouch.",
+					"My defense formula has failed peer review.",
+					"Not dying. Filing for an extension.",
+					"Low health. Proceeding with caution. And fear."
+				],
+				"big_hit_taken": [
+					"That damage roll exceeded my defense formula by a factor I refuse to acknowledge in writing.",
+					"That exceeded the documented maximum.",
+					"Ow. Also, that number is wrong.",
+					"Who balanced that? I have notes.",
+					"Crit variance. Lazy. Painful. Lazy.",
+					"Unexpected output. Very expected pain.",
+					"That hit had no comments in its code.",
+					"I'd like to see that damage formula. Now.",
+					"Physically incorrect. Emotionally accurate.",
+					"Logged as a bug. Filed under ow."
+				],
+				"used_signature_ability": [
+					"Three hundred forty-six damage. Within tolerance. The math is, as always, correct.",
+					"Heat applied. As calculated.",
+					"Combustion, precisely where I said.",
+					"Base forty-eight, times elemental. Enjoy.",
+					"Exothermic. Educational.",
+					"Thermodynamics, delivered by hand.",
+					"Warm, isn't it? Told you.",
+					"Ignition confirmed. Math confirmed.",
+					"That's what the formula looks like, lit.",
+					"Hot. Correct. Both."
+				],
+				"victory": [
+					"Combat resolved. Filing the encounter under 'predictable outputs.' Someone tell the loot table I'm waiting.",
+					"Resolved. Filing under expected results.",
+					"Outcome matches prediction. Mostly.",
+					"Victory. The spreadsheet approves.",
+					"Math won. You're welcome.",
+					"Combat complete. Peer review pending.",
+					"Documented. Reproducible. Done.",
+					"Fighter, you swung out of spec. It worked. Annoying.",
+					"Loot table, I'm ready. Be generous.",
+					"And the gods still haven't commented their code."
+				]
 			}
 		},
 		"rogue": {
@@ -59,11 +224,66 @@
 				"You're broadcasting, friend."
 			],
 			"trigger_voices": {
-				"turn_start": "Speed stat says I'm up. Try to look surprised.",
-				"low_hp": "Twenty-five percent is just dramatic pacing. Relax.",
-				"big_hit_taken": "Okay. Okay. Someone read MY tells. Rude.",
-				"used_signature_ability": "Three-frame window. Slid right through it. Tip your writers.",
-				"victory": "Loot phase. I called it first, so legally it's mine."
+				"turn_start": [
+					"Speed stat says I'm up. Try to look surprised.",
+					"My turn. Nobody panic. Especially them.",
+					"Lights are rude. Work's the same.",
+					"In fast. Out faster. Obviously.",
+					"Already picked a target. Don't tell it.",
+					"They telegraphed. I noticed. My move.",
+					"Relax. I've done this heist before.",
+					"Oh good. Something to stab.",
+					"Queue's mine. Try to keep up.",
+					"Watch the third frame. It always tells."
+				],
+				"low_hp": [
+					"Twenty-five percent is just dramatic pacing. Relax.",
+					"Bleeding. Stylishly, though.",
+					"Fine. This is fine. Cleric?",
+					"Low. Still faster than you.",
+					"I'd call this a setback. Briefly.",
+					"Not dying. Too much unfinished business.",
+					"Hm. That's more red than I budgeted.",
+					"Somebody patch me before I get bored.",
+					"Nobody look. I'm fine. Mostly.",
+					"Close call. I live for those. Hopefully."
+				],
+				"big_hit_taken": [
+					"Okay. Okay. Someone read MY tells. Rude.",
+					"Rude. Accurate, but rude.",
+					"Ow. You'll regret that. Eventually.",
+					"Didn't see it. Won't happen twice.",
+					"Lucky roll. Enjoy it.",
+					"That was a tell. I missed a tell. Embarrassing.",
+					"Noted. Filed under revenge.",
+					"Okay. You get one.",
+					"Fine. Now it's personal. Mildly.",
+					"Who scripted that? We should talk."
+				],
+				"used_signature_ability": [
+					"Three-frame window. Slid right through it. Tip your writers.",
+					"Behind you. Obviously.",
+					"They never check behind them.",
+					"Right between the tells.",
+					"Found the soft spot. Used it.",
+					"Early crit. As usual.",
+					"Hi. Bye.",
+					"Knife goes where the guard isn't.",
+					"You were looking the wrong way. Always.",
+					"Clean in, clean out. Heist rules."
+				],
+				"victory": [
+					"Loot phase. I called it first, so legally it's mine.",
+					"And that's the heist. The split's uneven.",
+					"Done. Pockets first, questions later.",
+					"Too easy. Next time, bring a challenge.",
+					"Loot's mine. I checked the rules. I wrote them.",
+					"Clean job. Nobody saw anything. Right?",
+					"That's a wrap. Check your pockets.",
+					"Bored now. Good fight, though.",
+					"Winning suits me. Everything does.",
+					"Lights up. Nobody move. I'm counting coins."
+				]
 			}
 		},
 		"bard": {
