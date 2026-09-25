@@ -51,10 +51,11 @@ def write_pck(path, entries, pad=0):
 
 
 def build(root, names, src_size=600_000, ratio=1.06, stage_size=None, stage_scramble=False,
-          skip_stage=None, skip_entry=None, dup=None, one_off=None, table_pad=0, file_pad=0):
+          skip_stage=None, skip_entry=None, dup=None, one_off=None, table_pad=0, file_pad=0,
+          subdir=("assets", "audio", "music")):
     """A tier, a stage that mirrors it, and a pck whose artifacts wrap the tier's files."""
     tier = os.path.join(root, "tier")
-    music = os.path.join(root, "stage", "assets", "audio", "music")
+    music = os.path.join(root, "stage", *subdir)
     os.makedirs(tier, exist_ok=True)
     os.makedirs(music, exist_ok=True)
     entries = []
@@ -190,6 +191,36 @@ def main():
         check("an EMPTY tier is BLOCKED, not vacuously passed", ec, 2, out, "satisfy every ratio")
         ec, out = run(pck, tier, "--stage=/nonexistent/stage")
         check("a --stage that is not a directory is BLOCKED", ec, 2, out, "WEAKER question")
+
+        # ── --subdir: the web VOICE tier lives under assets/audio/sfx and brings its own bands.
+        #    Voice lines are ~16 KB, so the fixed import overhead weighs more than on a 500 KB
+        #    bed; the music bands must not be silently reused for them.
+        SFX = ("assets", "audio", "sfx")
+        VB = ("--ratio-band=0.95,1.60", "--median-band=1.00,1.40")
+        voice = [f"voice_fighter_line{i:03d}" for i in range(40)]
+        pck, tier, stage = build(sub("v1"), voice, src_size=16_000, ratio=1.35, subdir=SFX)
+        ec, out = run(pck, tier, f"--stage={stage}", "--subdir=assets/audio/sfx", *VB)
+        check("a voice tier under sfx passes with its own bands", ec, 0, out, "40/40 byte-identical")
+        # The same fixture judged by the MUSIC bands must fail: 1.35 is outside 1.30 / 1.16. This is
+        # the arm that proves the override is APPLIED, not merely parsed.
+        ec, out = run(pck, tier, f"--stage={stage}", "--subdir=assets/audio/sfx",
+                      "--ratio-band=0.95,1.30", "--median-band=1.00,1.16")
+        check("...and FAILS under the music bands (the override is live)", ec, 5, out, "MEDIAN")
+        # Wrong directory: without --subdir the checker looks in music/, where no voice was staged.
+        ec, out = run(pck, tier, f"--stage={stage}")
+        check("the voice tier checked against music/ FAILS", ec, 5, out, "never swapped in")
+        pck, tier, stage = build(sub("v2"), voice, src_size=16_000, ratio=1.50, subdir=SFX)
+        ec, out = run(pck, tier, f"--stage={stage}", "--subdir=assets/audio/sfx", *VB)
+        check("a voice pck packed 1.50x the tier FAILS its own median band", ec, 5, out, "MEDIAN")
+        ec, out = run(pck, tier, f"--stage={stage}", "--subdir=assets/audio/sfx")
+        check("--subdir WITHOUT its own bands is BLOCKED", ec, 2, out, "wrong yardstick")
+        ec, out = run(pck, tier, f"--stage={stage}", "--subdir=assets/audio/sfx", *VB,
+                      f"--record={os.path.join(root, 'ref.txt')}")
+        check("--subdir with --record is BLOCKED (the music reference)", ec, 2, out, "packed_music_bytes")
+        check("...and wrote no record", 0 if not os.path.exists(os.path.join(root, "ref.txt")) else 1, 0)
+        ec, out = run(pck, tier, f"--stage={stage}", "--subdir=assets/audio/sfx",
+                      "--ratio-band=wide", "--median-band=1.00,1.40")
+        check("a malformed band is BLOCKED", ec, 2, out, "not LO,HI")
 
     print(f"\n{'FAILED: ' + ', '.join(fails) if fails else 'all arms as expected'}")
     return 1 if fails else 0

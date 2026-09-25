@@ -72,17 +72,22 @@ func test_every_line_takes_the_voiced_line_even_with_llm_dialogue_on() -> void:
 	GameState.party_llm_dialogue_enabled = true
 	GameState.game_constants["dev_voice_every_line"] = true
 	var c := _rogue_who_just_spoke()
+	var saved_last: Dictionary = PartyPersonas._last_variant.duplicate()
+	PartyPersonas._last_variant["rogue|turn_start"] = 0   # with 2+ lines, forces a suffixed variant: a key stuck on variant 0 cannot pass
 	var heard: Array = []
 	var cb := func(who, line, trigger): heard.append([line, trigger])
 	BattleManager.party_combat_line.connect(cb)
 	BattleManager._run_party_line_async(c, "turn_start", {})
 	BattleManager.party_combat_line.disconnect(cb)
 	GameState.party_llm_dialogue_enabled = saved_llm
+	PartyPersonas._last_variant = saved_last
 	assert_eq(heard.size(), 1, "the voice test emitted no line with LLM dialogue on — it went to the model")
 	if heard.size() == 1:
-		assert_eq(heard[0][1], "turn_start", "the line must carry its voice trigger, or no clip plays")
-		assert_eq(heard[0][0], str(PartyPersonas.get_trigger_voice("rogue", "turn_start")),
-			"it must be the scripted line the clip was recorded for")
+		var lines: Array = PartyPersonas.get_trigger_lines("rogue", "turn_start")
+		var n: int = lines.find(heard[0][0])
+		assert_gt(n, -1, "it must be a scripted line a clip was recorded for, got: %s" % heard[0][0])
+		assert_eq(heard[0][1], "turn_start" if n == 0 else "turn_start_%d" % n,
+			"the line must carry ITS variant's voice key, or no clip (or the wrong clip) plays")
 
 
 ## The routing decision on its own, independent of whether an LLM is reachable in this environment. The
