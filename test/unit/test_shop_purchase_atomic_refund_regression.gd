@@ -18,13 +18,14 @@ extends GutTest
 ##     yet rehydrated (save load race), or in test paths.
 ##
 ## Fix: _add_item_to_inventory now returns bool. _attempt_purchase
-## checks the result; if false, it refunds via game_state.add_gold(cost)
-## and surfaces a clear failure message instead of the success text.
+## checks the result; if false, it puts back the exact coins spend_gold
+## took (_credit_exact_gold — add_gold would scale the refund by the
+## drop-rate dial) and surfaces a clear failure message.
 ##
 ## Tests:
 ##   • Source pin: _add_item_to_inventory returns bool
 ##   • Source pin: _attempt_purchase captures the return AND refunds
-##     on failure (game_state.add_gold(cost) in the failure branch)
+##     on failure (_credit_exact_gold(cost) in the failure branch)
 ##   • Behavioural: drive _add_item_to_inventory on an empty party,
 ##     assert it returns false (the canary the refund branch depends on)
 ##   • Behavioural: drive _add_item_to_inventory on a real party,
@@ -55,7 +56,7 @@ func test_add_item_to_inventory_returns_bool() -> void:
 
 func test_attempt_purchase_refunds_on_failed_add() -> void:
 	# Pin: _attempt_purchase reads the return of _add_item_to_inventory
-	# AND has a refund branch using game_state.add_gold(cost).
+	# AND refunds the exact coins spend_gold removed.
 	var text := _read(SHOP_SCENE_PATH)
 	var idx := text.find("func _attempt_purchase")
 	assert_gt(idx, -1, "_attempt_purchase must exist")
@@ -65,10 +66,9 @@ func test_attempt_purchase_refunds_on_failed_add() -> void:
 	# The return must be captured (e.g. `var added: bool = _add_item_to_inventory(item_id)`).
 	assert_true(body.contains("= _add_item_to_inventory("),
 		"_attempt_purchase must capture _add_item_to_inventory's return value")
-	# A refund call against game_state.add_gold(cost) must appear in the
-	# function body (the failure-recovery path).
-	assert_true(body.contains("game_state.add_gold(cost)"),
-		"_attempt_purchase must refund the spent gold (game_state.add_gold(cost)) when the add fails")
+	# The refund must be the exact spend. add_gold would multiply it by gold_multiplier.
+	assert_true(body.contains("_credit_exact_gold(cost)"),
+		"_attempt_purchase must refund the spent gold (_credit_exact_gold(cost)) when the add fails")
 
 
 # ── Behavioural ──────────────────────────────────────────────────────────────
