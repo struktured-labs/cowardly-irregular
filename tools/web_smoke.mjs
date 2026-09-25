@@ -37,6 +37,41 @@ const FATAL = /RuntimeError|abort\(|out of memory|failed to (load|instantiate|fe
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+
+// ⛔ HIDE THE HOST'S CONTROLLERS — the web twin of run_tests.sh's /dev/input jail.
+// Chromium's Gamepad API reads REAL pads on this box (/dev/input/js0 is readable by this
+// user). .488's web channel went RED twice while struktured played a playtest on his 8BitDo:
+// the menu footer switched to Ⓐ/Ⓑ glyphs, an overworld "[INTERACT] Nothing found" appeared,
+// and stage 4's cursor landed in LENSES clamped on its last row instead of on Save. The same
+// build then passed 3/3 with the pad idle. His presses were reaching the gate's game.
+// Registered before any page script: a capture-phase listener swallows gamepadconnected and
+// getGamepads() answers [], so godot never sees a pad. Init scripts survive page.reload().
+// WEB_SMOKE_FAKE_PAD=1 injects a synthetic pad that taps SOUTH+EAST (cancel/accept) every
+// ~700ms: the control that proves this block is load-bearing. With WEB_SMOKE_SEE_PADS=1 the
+// hide is skipped, so FAKE_PAD alone must turn the smoke RED, and FAKE_PAD + hide must not.
+const SEE_PADS = process.env.WEB_SMOKE_SEE_PADS === '1';
+if (process.env.WEB_SMOKE_FAKE_PAD === '1') {
+  await page.addInitScript(() => {
+    const t0 = performance.now();
+    const btn = (p) => ({ pressed: p, touched: p, value: p ? 1 : 0 });
+    const pad = () => {
+      const on = Math.floor((performance.now() - t0) / 350) % 2 === 1;
+      return { id: 'smoke-fake-pad (STANDARD GAMEPAD)', index: 0, connected: true, mapping: 'standard',
+        timestamp: performance.now(), axes: [0, 0, 0, 0],
+        buttons: Array.from({ length: 17 }, (_, i) => btn(on && (i === 0 || i === 1))) };
+    };
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [pad()] });
+    setTimeout(() => window.dispatchEvent(Object.assign(new Event('gamepadconnected'), { gamepad: pad() })), 1500);
+  });
+}
+if (!SEE_PADS) {
+  await page.addInitScript(() => {
+    window.addEventListener('gamepadconnected', (e) => e.stopImmediatePropagation(), true);
+    Object.defineProperty(navigator, 'getGamepads', { configurable: true, value: () => [] });
+  });
+}
+console.log(`[WEB-SMOKE] host pads: ${SEE_PADS ? 'VISIBLE (WEB_SMOKE_SEE_PADS=1)' : 'hidden (getGamepads -> [])'}`
+  + (process.env.WEB_SMOKE_FAKE_PAD === '1' ? ' · synthetic pad INJECTED (control)' : ''));
 let booted = false;
 let saved = false;
 let loaded = false;
