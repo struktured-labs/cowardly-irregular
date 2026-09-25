@@ -1497,6 +1497,8 @@ func _apply_strip_buffs_on_round_start() -> void:
 		if not ("active_buffs" in member):
 			continue
 		for i in range(member.active_buffs.size()):
+			if Combatant.is_formation_stance(member.active_buffs[i]):
+				continue
 			candidates.append([member, i])
 	if candidates.is_empty():
 		return
@@ -1522,6 +1524,8 @@ func _apply_strip_buffs_on_round_start() -> void:
 			if not ("active_buffs" in m):
 				continue
 			for i in range(m.active_buffs.size()):
+				if Combatant.is_formation_stance(m.active_buffs[i]):
+					continue
 				candidates.append([m, i])
 
 
@@ -6311,8 +6315,11 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					continue
 				var stripped: int = 0
 				if "active_buffs" in target:
+					var stances: Array = target.detach_formation_stances() if target.has_method("detach_formation_stances") else []
 					stripped = target.active_buffs.size()
 					target.active_buffs.clear()
+					if target.has_method("restore_formation_stances"):
+						target.restore_formation_stances(stances)
 				if target.has_method("recalculate_stats"):
 					target.recalculate_stats()
 				if stripped > 0:
@@ -6437,6 +6444,8 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				var candidates: Array = []  # [{"type": "buff", "index": int} or {"type": "status", "name": String}]
 				if "active_buffs" in target:
 					for i in range(target.active_buffs.size()):
+						if target.active_buffs[i] is Dictionary and Combatant.is_formation_stance(target.active_buffs[i]):
+							continue
 						candidates.append({"type": "buff", "index": i})
 				const _POSITIVE_FOR_DISPEL_ONE := [
 					"barrier", "invisible", "evasion", "reflect",

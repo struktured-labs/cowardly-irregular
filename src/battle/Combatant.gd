@@ -660,10 +660,32 @@ const DISPELLABLE_POSITIVE_STATUSES := [
 ]
 
 
+## Front Line / Back Row: the bonus is a buff and the penalty is a debuff. A strip that takes only the buff leaves the row as a pure penalty.
+static func is_formation_stance(entry: Dictionary) -> bool:
+	return str(entry.get("effect", "")).begins_with("formation_")
+
+
+func detach_formation_stances() -> Array[Dictionary]:
+	var kept: Array[Dictionary] = []
+	for i in range(active_buffs.size() - 1, -1, -1):
+		if is_formation_stance(active_buffs[i]):
+			kept.append(active_buffs[i])
+			active_buffs.remove_at(i)
+	kept.reverse()
+	return kept
+
+
+func restore_formation_stances(kept: Array) -> void:
+	for entry in kept:
+		if entry is Dictionary:
+			active_buffs.append(entry)
+
+
 func dispel() -> int:
-	var cleared: int = 0
-	cleared += active_buffs.size()
+	var stances := detach_formation_stances()
+	var cleared: int = active_buffs.size()
 	active_buffs.clear()
+	restore_formation_stances(stances)
 	for st in DISPELLABLE_POSITIVE_STATUSES:
 		if has_status(st):
 			remove_status(st)
