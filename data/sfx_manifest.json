@@ -1979,7 +1979,7 @@
     "voice_fighter_turn_start": {
       "file": "assets/audio/sfx/voice_fighter_turn_start.ogg",
       "description": "Fighter party voice line — turn start",
-      "source_sha": "4bd005830510c7b9",
+      "source_sha": "e714c261c5ee0793",
       "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
       "voice_gender": "male"
     },
@@ -2347,6 +2347,1266 @@
       "prompt": "PROTOTYPE for struktured's verdict (cowir-main msg 2914) — medium/sword-weight melee windup. Fills the 0.12s EASE_IN approach tween that currently plays SILENT before hitstop (cowir-battle msg 2910), so it adds anticipation without adding latency. Filtered pinknoise air-swell (bandpass 1200/900) + 180->300Hz accelerating-mass tone + faint 2200->3400Hz steel-edge shimmer. Deliberately 2.9 dB UNDER attack_hit_sword so anticipation stays subordinate to impact. INERT — no consumer until struktured rules; if he greenlights, light/heavy variants are trivial follow-ons.",
       "duration_seconds": 0.12,
       "prompt_influence": 0.0
+    },
+    "voice_fighter_turn_start_1": {
+      "description": "Fighter party voice line — turn start (variant 1)",
+      "file": "assets/audio/sfx/voice_fighter_turn_start_1.ogg",
+      "source_sha": "4e4285b7e468a573",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_2": {
+      "description": "Fighter party voice line — turn start (variant 2)",
+      "file": "assets/audio/sfx/voice_fighter_turn_start_2.ogg",
+      "source_sha": "4f2d1c2677be6089",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_3": {
+      "description": "Fighter party voice line — turn start (variant 3)",
+      "file": "assets/audio/sfx/voice_fighter_turn_start_3.ogg",
+      "source_sha": "b8d39690d7d6a8be",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_4": {
+      "description": "Fighter party voice line — turn start (variant 4)",
+      "file": "assets/audio/sfx/voice_fighter_turn_start_4.ogg",
+      "source_sha": "eb4c8b675cc9e23d",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_5": {
+      "description": "Fighter party voice line — turn start (variant 5)",
+      "file": "assets/audio/sfx/voice_fighter_turn_start_5.ogg",
+      "source_sha": "384c83252d1ae3c9",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_6": {
+      "description": "Fighter party voice line — turn start (variant 6)",
+      "file": "assets/audio/sfx/voice_fighter_turn_start_6.ogg",
+      "source_sha": "810b9fd6f1623241",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_7": {
+      "description": "Fighter party voice line — turn start (variant 7)",
+      "file": "assets/audio/sfx/voice_fighter_turn_start_7.ogg",
+      "source_sha": "53de80fba9e645ad",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_8": {
+      "description": "Fighter party voice line — turn start (variant 8)",
+      "file": "assets/audio/sfx/voice_fighter_turn_start_8.ogg",
+      "source_sha": "4a817b78c69cc9e8",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_turn_start_9": {
+      "description": "Fighter party voice line — turn start (variant 9)",
+      "file": "assets/audio/sfx/voice_fighter_turn_start_9.ogg",
+      "source_sha": "da55f99570c71805",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_low_hp_1": {
+      "description": "Fighter party voice line — low hp (variant 1)",
+      "file": "assets/audio/sfx/voice_fighter_low_hp_1.ogg",
+      "source_sha": "5fcfd613c8b5a6db",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_low_hp_2": {
+      "description": "Fighter party voice line — low hp (variant 2)",
+      "file": "assets/audio/sfx/voice_fighter_low_hp_2.ogg",
+      "source_sha": "936821e32413d71a",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_low_hp_3": {
+      "description": "Fighter party voice line — low hp (variant 3)",
+      "file": "assets/audio/sfx/voice_fighter_low_hp_3.ogg",
+      "source_sha": "5a95e3573c493ee2",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_low_hp_4": {
+      "description": "Fighter party voice line — low hp (variant 4)",
+      "file": "assets/audio/sfx/voice_fighter_low_hp_4.ogg",
+      "source_sha": "86ab47c2d72412b3",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_low_hp_5": {
+      "description": "Fighter party voice line — low hp (variant 5)",
+      "file": "assets/audio/sfx/voice_fighter_low_hp_5.ogg",
+      "source_sha": "ca20e8c462938f92",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_low_hp_6": {
+      "description": "Fighter party voice line — low hp (variant 6)",
+      "file": "assets/audio/sfx/voice_fighter_low_hp_6.ogg",
+      "source_sha": "6227f64202fc850e",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_low_hp_7": {
+      "description": "Fighter party voice line — low hp (variant 7)",
+      "file": "assets/audio/sfx/voice_fighter_low_hp_7.ogg",
+      "source_sha": "dd538f4edd0758aa",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_low_hp_8": {
+      "description": "Fighter party voice line — low hp (variant 8)",
+      "file": "assets/audio/sfx/voice_fighter_low_hp_8.ogg",
+      "source_sha": "455fad2575465d7a",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_low_hp_9": {
+      "description": "Fighter party voice line — low hp (variant 9)",
+      "file": "assets/audio/sfx/voice_fighter_low_hp_9.ogg",
+      "source_sha": "3e71eac33b7a4b57",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_big_hit_taken_1": {
+      "description": "Fighter party voice line — big hit taken (variant 1)",
+      "file": "assets/audio/sfx/voice_fighter_big_hit_taken_1.ogg",
+      "source_sha": "ad49d1a5366d1125",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_big_hit_taken_2": {
+      "description": "Fighter party voice line — big hit taken (variant 2)",
+      "file": "assets/audio/sfx/voice_fighter_big_hit_taken_2.ogg",
+      "source_sha": "be6d190862583a2b",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_big_hit_taken_3": {
+      "description": "Fighter party voice line — big hit taken (variant 3)",
+      "file": "assets/audio/sfx/voice_fighter_big_hit_taken_3.ogg",
+      "source_sha": "a13d0fd460c7f8f2",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_big_hit_taken_4": {
+      "description": "Fighter party voice line — big hit taken (variant 4)",
+      "file": "assets/audio/sfx/voice_fighter_big_hit_taken_4.ogg",
+      "source_sha": "3d54b854e15c5cfc",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_big_hit_taken_5": {
+      "description": "Fighter party voice line — big hit taken (variant 5)",
+      "file": "assets/audio/sfx/voice_fighter_big_hit_taken_5.ogg",
+      "source_sha": "2014ef5aa243502a",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_big_hit_taken_6": {
+      "description": "Fighter party voice line — big hit taken (variant 6)",
+      "file": "assets/audio/sfx/voice_fighter_big_hit_taken_6.ogg",
+      "source_sha": "8109ee060e81ef60",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_big_hit_taken_7": {
+      "description": "Fighter party voice line — big hit taken (variant 7)",
+      "file": "assets/audio/sfx/voice_fighter_big_hit_taken_7.ogg",
+      "source_sha": "a8d129c0361be008",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_big_hit_taken_8": {
+      "description": "Fighter party voice line — big hit taken (variant 8)",
+      "file": "assets/audio/sfx/voice_fighter_big_hit_taken_8.ogg",
+      "source_sha": "2c6500c9a0ef1bf8",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_big_hit_taken_9": {
+      "description": "Fighter party voice line — big hit taken (variant 9)",
+      "file": "assets/audio/sfx/voice_fighter_big_hit_taken_9.ogg",
+      "source_sha": "3eac3add468b44d5",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_used_signature_ability_1": {
+      "description": "Fighter party voice line — used signature ability (variant 1)",
+      "file": "assets/audio/sfx/voice_fighter_used_signature_ability_1.ogg",
+      "source_sha": "ef8e566530a0bb5a",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_used_signature_ability_2": {
+      "description": "Fighter party voice line — used signature ability (variant 2)",
+      "file": "assets/audio/sfx/voice_fighter_used_signature_ability_2.ogg",
+      "source_sha": "f1e09c6fa43f9b0a",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_used_signature_ability_3": {
+      "description": "Fighter party voice line — used signature ability (variant 3)",
+      "file": "assets/audio/sfx/voice_fighter_used_signature_ability_3.ogg",
+      "source_sha": "6c100dd6eb3af035",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_used_signature_ability_4": {
+      "description": "Fighter party voice line — used signature ability (variant 4)",
+      "file": "assets/audio/sfx/voice_fighter_used_signature_ability_4.ogg",
+      "source_sha": "6a73c1a24fd4c988",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_used_signature_ability_5": {
+      "description": "Fighter party voice line — used signature ability (variant 5)",
+      "file": "assets/audio/sfx/voice_fighter_used_signature_ability_5.ogg",
+      "source_sha": "b247365453a01838",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_used_signature_ability_6": {
+      "description": "Fighter party voice line — used signature ability (variant 6)",
+      "file": "assets/audio/sfx/voice_fighter_used_signature_ability_6.ogg",
+      "source_sha": "f42e3879330e446d",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_used_signature_ability_7": {
+      "description": "Fighter party voice line — used signature ability (variant 7)",
+      "file": "assets/audio/sfx/voice_fighter_used_signature_ability_7.ogg",
+      "source_sha": "c30c19acd151a55a",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_used_signature_ability_8": {
+      "description": "Fighter party voice line — used signature ability (variant 8)",
+      "file": "assets/audio/sfx/voice_fighter_used_signature_ability_8.ogg",
+      "source_sha": "ecc78a62164c9588",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_used_signature_ability_9": {
+      "description": "Fighter party voice line — used signature ability (variant 9)",
+      "file": "assets/audio/sfx/voice_fighter_used_signature_ability_9.ogg",
+      "source_sha": "5ef932426ce94123",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_1": {
+      "description": "Fighter party voice line — victory (variant 1)",
+      "file": "assets/audio/sfx/voice_fighter_victory_1.ogg",
+      "source_sha": "6153cf2a44fb0a1c",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_2": {
+      "description": "Fighter party voice line — victory (variant 2)",
+      "file": "assets/audio/sfx/voice_fighter_victory_2.ogg",
+      "source_sha": "ae4160c0165e444e",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_3": {
+      "description": "Fighter party voice line — victory (variant 3)",
+      "file": "assets/audio/sfx/voice_fighter_victory_3.ogg",
+      "source_sha": "a90521c1bbf8e36d",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_4": {
+      "description": "Fighter party voice line — victory (variant 4)",
+      "file": "assets/audio/sfx/voice_fighter_victory_4.ogg",
+      "source_sha": "67611dcc7e23c256",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_5": {
+      "description": "Fighter party voice line — victory (variant 5)",
+      "file": "assets/audio/sfx/voice_fighter_victory_5.ogg",
+      "source_sha": "8e1330e802a06715",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_6": {
+      "description": "Fighter party voice line — victory (variant 6)",
+      "file": "assets/audio/sfx/voice_fighter_victory_6.ogg",
+      "source_sha": "6facfaa3745b1b40",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_7": {
+      "description": "Fighter party voice line — victory (variant 7)",
+      "file": "assets/audio/sfx/voice_fighter_victory_7.ogg",
+      "source_sha": "7593be763193da71",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_8": {
+      "description": "Fighter party voice line — victory (variant 8)",
+      "file": "assets/audio/sfx/voice_fighter_victory_8.ogg",
+      "source_sha": "16271ebbcce4088c",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_fighter_victory_9": {
+      "description": "Fighter party voice line — victory (variant 9)",
+      "file": "assets/audio/sfx/voice_fighter_victory_9.ogg",
+      "source_sha": "8c4c0631dfc143dc",
+      "voice": "Harry - Fierce Warrior (SOYHLrjzK2X1ezoPC6cr)",
+      "voice_gender": "male"
+    },
+    "voice_cleric_turn_start_1": {
+      "description": "Cleric party voice line — turn start (variant 1)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_1.ogg",
+      "source_sha": "818f775f1439daec",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_turn_start_2": {
+      "description": "Cleric party voice line — turn start (variant 2)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_2.ogg",
+      "source_sha": "7c8bd9217ec210cc",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_turn_start_3": {
+      "description": "Cleric party voice line — turn start (variant 3)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_3.ogg",
+      "source_sha": "ba7d6566e1a72b0a",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_turn_start_4": {
+      "description": "Cleric party voice line — turn start (variant 4)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_4.ogg",
+      "source_sha": "4727771c5f6046ff",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_turn_start_5": {
+      "description": "Cleric party voice line — turn start (variant 5)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_5.ogg",
+      "source_sha": "312e5ae74423a8ac",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_turn_start_6": {
+      "description": "Cleric party voice line — turn start (variant 6)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_6.ogg",
+      "source_sha": "3a332050ab4452e7",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_turn_start_7": {
+      "description": "Cleric party voice line — turn start (variant 7)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_7.ogg",
+      "source_sha": "a0682d6d5027d9ee",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_turn_start_8": {
+      "description": "Cleric party voice line — turn start (variant 8)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_8.ogg",
+      "source_sha": "a2be99301ff68c91",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_turn_start_9": {
+      "description": "Cleric party voice line — turn start (variant 9)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_9.ogg",
+      "source_sha": "27c79121d5b4abfa",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_low_hp_1": {
+      "description": "Cleric party voice line — low hp (variant 1)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_1.ogg",
+      "source_sha": "bf0401673926e9c8",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_low_hp_2": {
+      "description": "Cleric party voice line — low hp (variant 2)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_2.ogg",
+      "source_sha": "b7b7f5b79822b063",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_low_hp_3": {
+      "description": "Cleric party voice line — low hp (variant 3)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_3.ogg",
+      "source_sha": "9ba2408fe3665e83",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_low_hp_4": {
+      "description": "Cleric party voice line — low hp (variant 4)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_4.ogg",
+      "source_sha": "60d74a4b181064a4",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_low_hp_5": {
+      "description": "Cleric party voice line — low hp (variant 5)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_5.ogg",
+      "source_sha": "a66b0aba687ad227",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_low_hp_6": {
+      "description": "Cleric party voice line — low hp (variant 6)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_6.ogg",
+      "source_sha": "2c2d74dc5fc7b204",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_low_hp_7": {
+      "description": "Cleric party voice line — low hp (variant 7)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_7.ogg",
+      "source_sha": "bc4e25b59dd0c7f2",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_low_hp_8": {
+      "description": "Cleric party voice line — low hp (variant 8)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_8.ogg",
+      "source_sha": "3fe4cc93192d8a46",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_low_hp_9": {
+      "description": "Cleric party voice line — low hp (variant 9)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_9.ogg",
+      "source_sha": "3a1daf4a86b87bc3",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_big_hit_taken_1": {
+      "description": "Cleric party voice line — big hit taken (variant 1)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_1.ogg",
+      "source_sha": "466719237038cece",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_big_hit_taken_2": {
+      "description": "Cleric party voice line — big hit taken (variant 2)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_2.ogg",
+      "source_sha": "43de909826ce6769",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_big_hit_taken_3": {
+      "description": "Cleric party voice line — big hit taken (variant 3)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_3.ogg",
+      "source_sha": "9f752b369d2998c1",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_big_hit_taken_4": {
+      "description": "Cleric party voice line — big hit taken (variant 4)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_4.ogg",
+      "source_sha": "93f722402b46f4c9",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_big_hit_taken_5": {
+      "description": "Cleric party voice line — big hit taken (variant 5)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_5.ogg",
+      "source_sha": "5144bf403e06f040",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_big_hit_taken_6": {
+      "description": "Cleric party voice line — big hit taken (variant 6)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_6.ogg",
+      "source_sha": "4f49778ae16ca4a4",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_big_hit_taken_7": {
+      "description": "Cleric party voice line — big hit taken (variant 7)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_7.ogg",
+      "source_sha": "8d912077d850b5a4",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_big_hit_taken_8": {
+      "description": "Cleric party voice line — big hit taken (variant 8)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_8.ogg",
+      "source_sha": "88a7048aa39c61e0",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_big_hit_taken_9": {
+      "description": "Cleric party voice line — big hit taken (variant 9)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_9.ogg",
+      "source_sha": "38d0179d8e803ec2",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_used_signature_ability_1": {
+      "description": "Cleric party voice line — used signature ability (variant 1)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_1.ogg",
+      "source_sha": "70e00c2cc64927ea",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_used_signature_ability_2": {
+      "description": "Cleric party voice line — used signature ability (variant 2)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_2.ogg",
+      "source_sha": "00b7f68e1c587b04",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_used_signature_ability_3": {
+      "description": "Cleric party voice line — used signature ability (variant 3)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_3.ogg",
+      "source_sha": "1ee4d22395ec1d8d",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_used_signature_ability_4": {
+      "description": "Cleric party voice line — used signature ability (variant 4)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_4.ogg",
+      "source_sha": "5e96961733dee4c1",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_used_signature_ability_5": {
+      "description": "Cleric party voice line — used signature ability (variant 5)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_5.ogg",
+      "source_sha": "f6aabb19227f16f6",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_used_signature_ability_6": {
+      "description": "Cleric party voice line — used signature ability (variant 6)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_6.ogg",
+      "source_sha": "993d8459b1c3ddb1",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_used_signature_ability_7": {
+      "description": "Cleric party voice line — used signature ability (variant 7)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_7.ogg",
+      "source_sha": "b69fdf3be5f1a052",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_used_signature_ability_8": {
+      "description": "Cleric party voice line — used signature ability (variant 8)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_8.ogg",
+      "source_sha": "579127059c96e81d",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_used_signature_ability_9": {
+      "description": "Cleric party voice line — used signature ability (variant 9)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_9.ogg",
+      "source_sha": "ca626e860a85f5c9",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_victory_1": {
+      "description": "Cleric party voice line — victory (variant 1)",
+      "file": "assets/audio/sfx/voice_cleric_victory_1.ogg",
+      "source_sha": "34f5207b68900d4a",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_victory_2": {
+      "description": "Cleric party voice line — victory (variant 2)",
+      "file": "assets/audio/sfx/voice_cleric_victory_2.ogg",
+      "source_sha": "86b5444a383a9079",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_victory_3": {
+      "description": "Cleric party voice line — victory (variant 3)",
+      "file": "assets/audio/sfx/voice_cleric_victory_3.ogg",
+      "source_sha": "9b96ca7ff7253ec2",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_victory_4": {
+      "description": "Cleric party voice line — victory (variant 4)",
+      "file": "assets/audio/sfx/voice_cleric_victory_4.ogg",
+      "source_sha": "ab70918383d86435",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_victory_5": {
+      "description": "Cleric party voice line — victory (variant 5)",
+      "file": "assets/audio/sfx/voice_cleric_victory_5.ogg",
+      "source_sha": "2f6bb14aa1713cd6",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_victory_6": {
+      "description": "Cleric party voice line — victory (variant 6)",
+      "file": "assets/audio/sfx/voice_cleric_victory_6.ogg",
+      "source_sha": "b28952dd51562aeb",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_victory_7": {
+      "description": "Cleric party voice line — victory (variant 7)",
+      "file": "assets/audio/sfx/voice_cleric_victory_7.ogg",
+      "source_sha": "100f82f36e5e17f2",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_victory_8": {
+      "description": "Cleric party voice line — victory (variant 8)",
+      "file": "assets/audio/sfx/voice_cleric_victory_8.ogg",
+      "source_sha": "48276d5e4dffd090",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_cleric_victory_9": {
+      "description": "Cleric party voice line — victory (variant 9)",
+      "file": "assets/audio/sfx/voice_cleric_victory_9.ogg",
+      "source_sha": "53a64b3b8c6f5415",
+      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
+      "voice_gender": "female"
+    },
+    "voice_mage_turn_start_1": {
+      "description": "Mage party voice line — turn start (variant 1)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_1.ogg",
+      "source_sha": "b0b9c76dda2c0fbf",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_turn_start_2": {
+      "description": "Mage party voice line — turn start (variant 2)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_2.ogg",
+      "source_sha": "2b5a689596f36757",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_turn_start_3": {
+      "description": "Mage party voice line — turn start (variant 3)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_3.ogg",
+      "source_sha": "271817ab90348b6f",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_turn_start_4": {
+      "description": "Mage party voice line — turn start (variant 4)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_4.ogg",
+      "source_sha": "72204ac51b87b996",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_turn_start_5": {
+      "description": "Mage party voice line — turn start (variant 5)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_5.ogg",
+      "source_sha": "d73c4e4430b6a401",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_turn_start_6": {
+      "description": "Mage party voice line — turn start (variant 6)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_6.ogg",
+      "source_sha": "cf151615c7dd3930",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_turn_start_7": {
+      "description": "Mage party voice line — turn start (variant 7)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_7.ogg",
+      "source_sha": "9dbe06259b4bacc5",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_turn_start_8": {
+      "description": "Mage party voice line — turn start (variant 8)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_8.ogg",
+      "source_sha": "f035f878e5099dea",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_turn_start_9": {
+      "description": "Mage party voice line — turn start (variant 9)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_9.ogg",
+      "source_sha": "be375a5343ae3e31",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_low_hp_1": {
+      "description": "Mage party voice line — low hp (variant 1)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_1.ogg",
+      "source_sha": "a77612d353606caa",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_low_hp_2": {
+      "description": "Mage party voice line — low hp (variant 2)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_2.ogg",
+      "source_sha": "ecf6a29870b7866c",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_low_hp_3": {
+      "description": "Mage party voice line — low hp (variant 3)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_3.ogg",
+      "source_sha": "904e5239572c0b10",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_low_hp_4": {
+      "description": "Mage party voice line — low hp (variant 4)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_4.ogg",
+      "source_sha": "c8c6d36adcc2c957",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_low_hp_5": {
+      "description": "Mage party voice line — low hp (variant 5)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_5.ogg",
+      "source_sha": "83827b267f7006fd",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_low_hp_6": {
+      "description": "Mage party voice line — low hp (variant 6)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_6.ogg",
+      "source_sha": "8c9099f248d00973",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_low_hp_7": {
+      "description": "Mage party voice line — low hp (variant 7)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_7.ogg",
+      "source_sha": "3535970e2a4b1627",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_low_hp_8": {
+      "description": "Mage party voice line — low hp (variant 8)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_8.ogg",
+      "source_sha": "ee546ed2cd18ee1f",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_low_hp_9": {
+      "description": "Mage party voice line — low hp (variant 9)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_9.ogg",
+      "source_sha": "5c468104df1d1637",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_big_hit_taken_1": {
+      "description": "Mage party voice line — big hit taken (variant 1)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_1.ogg",
+      "source_sha": "7335c3dc0c4b9fb0",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_big_hit_taken_2": {
+      "description": "Mage party voice line — big hit taken (variant 2)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_2.ogg",
+      "source_sha": "d616cf501d3dd5e5",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_big_hit_taken_3": {
+      "description": "Mage party voice line — big hit taken (variant 3)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_3.ogg",
+      "source_sha": "4d27104899e62778",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_big_hit_taken_4": {
+      "description": "Mage party voice line — big hit taken (variant 4)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_4.ogg",
+      "source_sha": "f68749d0892973d1",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_big_hit_taken_5": {
+      "description": "Mage party voice line — big hit taken (variant 5)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_5.ogg",
+      "source_sha": "6b890866bb61c486",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_big_hit_taken_6": {
+      "description": "Mage party voice line — big hit taken (variant 6)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_6.ogg",
+      "source_sha": "49fe58ec618b13bd",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_big_hit_taken_7": {
+      "description": "Mage party voice line — big hit taken (variant 7)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_7.ogg",
+      "source_sha": "827dbe1f91c1e22e",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_big_hit_taken_8": {
+      "description": "Mage party voice line — big hit taken (variant 8)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_8.ogg",
+      "source_sha": "2acbce44bd6f171b",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_big_hit_taken_9": {
+      "description": "Mage party voice line — big hit taken (variant 9)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_9.ogg",
+      "source_sha": "6f31723d984cac6e",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_used_signature_ability_1": {
+      "description": "Mage party voice line — used signature ability (variant 1)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_1.ogg",
+      "source_sha": "d3bd8c9969eb495e",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_used_signature_ability_2": {
+      "description": "Mage party voice line — used signature ability (variant 2)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_2.ogg",
+      "source_sha": "4ea44a2069eb0ae9",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_used_signature_ability_3": {
+      "description": "Mage party voice line — used signature ability (variant 3)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_3.ogg",
+      "source_sha": "e09ca6e3fca4bfad",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_used_signature_ability_4": {
+      "description": "Mage party voice line — used signature ability (variant 4)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_4.ogg",
+      "source_sha": "5f4b78ed787b3753",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_used_signature_ability_5": {
+      "description": "Mage party voice line — used signature ability (variant 5)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_5.ogg",
+      "source_sha": "ed2362cca79cc30b",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_used_signature_ability_6": {
+      "description": "Mage party voice line — used signature ability (variant 6)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_6.ogg",
+      "source_sha": "56fb0b2c4372c23b",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_used_signature_ability_7": {
+      "description": "Mage party voice line — used signature ability (variant 7)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_7.ogg",
+      "source_sha": "38a92751a796d3c3",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_used_signature_ability_8": {
+      "description": "Mage party voice line — used signature ability (variant 8)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_8.ogg",
+      "source_sha": "c0e2d5c2baaacc02",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_used_signature_ability_9": {
+      "description": "Mage party voice line — used signature ability (variant 9)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_9.ogg",
+      "source_sha": "54a080e1195cff20",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_victory_1": {
+      "description": "Mage party voice line — victory (variant 1)",
+      "file": "assets/audio/sfx/voice_mage_victory_1.ogg",
+      "source_sha": "65fc418fe65281fb",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_victory_2": {
+      "description": "Mage party voice line — victory (variant 2)",
+      "file": "assets/audio/sfx/voice_mage_victory_2.ogg",
+      "source_sha": "430379d4f0d1af11",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_victory_3": {
+      "description": "Mage party voice line — victory (variant 3)",
+      "file": "assets/audio/sfx/voice_mage_victory_3.ogg",
+      "source_sha": "384ae761aefed3f3",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_victory_4": {
+      "description": "Mage party voice line — victory (variant 4)",
+      "file": "assets/audio/sfx/voice_mage_victory_4.ogg",
+      "source_sha": "da28a99f5914bd4a",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_victory_5": {
+      "description": "Mage party voice line — victory (variant 5)",
+      "file": "assets/audio/sfx/voice_mage_victory_5.ogg",
+      "source_sha": "cfb05eeb0485d1e3",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_victory_6": {
+      "description": "Mage party voice line — victory (variant 6)",
+      "file": "assets/audio/sfx/voice_mage_victory_6.ogg",
+      "source_sha": "b190c7a227e767ad",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_victory_7": {
+      "description": "Mage party voice line — victory (variant 7)",
+      "file": "assets/audio/sfx/voice_mage_victory_7.ogg",
+      "source_sha": "43339fea70c88660",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_victory_8": {
+      "description": "Mage party voice line — victory (variant 8)",
+      "file": "assets/audio/sfx/voice_mage_victory_8.ogg",
+      "source_sha": "ae059813356216c5",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_mage_victory_9": {
+      "description": "Mage party voice line — victory (variant 9)",
+      "file": "assets/audio/sfx/voice_mage_victory_9.ogg",
+      "source_sha": "3ee5977c81145783",
+      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
+      "voice_gender": "male"
+    },
+    "voice_rogue_turn_start_1": {
+      "description": "Rogue party voice line — turn start (variant 1)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_1.ogg",
+      "source_sha": "c11491957ab7b1e1",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_turn_start_2": {
+      "description": "Rogue party voice line — turn start (variant 2)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_2.ogg",
+      "source_sha": "a756daf0721607b2",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_turn_start_3": {
+      "description": "Rogue party voice line — turn start (variant 3)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_3.ogg",
+      "source_sha": "aa5b802b75a090d8",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_turn_start_4": {
+      "description": "Rogue party voice line — turn start (variant 4)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_4.ogg",
+      "source_sha": "b6bf5ca134f3f3d5",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_turn_start_5": {
+      "description": "Rogue party voice line — turn start (variant 5)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_5.ogg",
+      "source_sha": "ff956fa00726bee8",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_turn_start_6": {
+      "description": "Rogue party voice line — turn start (variant 6)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_6.ogg",
+      "source_sha": "30d958004c7ba544",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_turn_start_7": {
+      "description": "Rogue party voice line — turn start (variant 7)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_7.ogg",
+      "source_sha": "97d2fd5254d3b803",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_turn_start_8": {
+      "description": "Rogue party voice line — turn start (variant 8)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_8.ogg",
+      "source_sha": "ab4867c7add46efa",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_turn_start_9": {
+      "description": "Rogue party voice line — turn start (variant 9)",
+      "file": "assets/audio/sfx/voice_rogue_turn_start_9.ogg",
+      "source_sha": "f731cebc3a1d424f",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_low_hp_1": {
+      "description": "Rogue party voice line — low hp (variant 1)",
+      "file": "assets/audio/sfx/voice_rogue_low_hp_1.ogg",
+      "source_sha": "5491e83eaf885598",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_low_hp_2": {
+      "description": "Rogue party voice line — low hp (variant 2)",
+      "file": "assets/audio/sfx/voice_rogue_low_hp_2.ogg",
+      "source_sha": "45409d92870b905f",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_low_hp_3": {
+      "description": "Rogue party voice line — low hp (variant 3)",
+      "file": "assets/audio/sfx/voice_rogue_low_hp_3.ogg",
+      "source_sha": "e9d2d8f980378953",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_low_hp_4": {
+      "description": "Rogue party voice line — low hp (variant 4)",
+      "file": "assets/audio/sfx/voice_rogue_low_hp_4.ogg",
+      "source_sha": "56a6ab9bc209bafa",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_low_hp_5": {
+      "description": "Rogue party voice line — low hp (variant 5)",
+      "file": "assets/audio/sfx/voice_rogue_low_hp_5.ogg",
+      "source_sha": "1b8c95242fe0e0ba",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_low_hp_6": {
+      "description": "Rogue party voice line — low hp (variant 6)",
+      "file": "assets/audio/sfx/voice_rogue_low_hp_6.ogg",
+      "source_sha": "77051961653f60a4",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_low_hp_7": {
+      "description": "Rogue party voice line — low hp (variant 7)",
+      "file": "assets/audio/sfx/voice_rogue_low_hp_7.ogg",
+      "source_sha": "dfbfbe286ef36bf4",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_low_hp_8": {
+      "description": "Rogue party voice line — low hp (variant 8)",
+      "file": "assets/audio/sfx/voice_rogue_low_hp_8.ogg",
+      "source_sha": "38527bbf18d9f91f",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_low_hp_9": {
+      "description": "Rogue party voice line — low hp (variant 9)",
+      "file": "assets/audio/sfx/voice_rogue_low_hp_9.ogg",
+      "source_sha": "c5189dc9dfb5eeeb",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_big_hit_taken_1": {
+      "description": "Rogue party voice line — big hit taken (variant 1)",
+      "file": "assets/audio/sfx/voice_rogue_big_hit_taken_1.ogg",
+      "source_sha": "b9d2c387218121a1",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_big_hit_taken_2": {
+      "description": "Rogue party voice line — big hit taken (variant 2)",
+      "file": "assets/audio/sfx/voice_rogue_big_hit_taken_2.ogg",
+      "source_sha": "95b558e473e9d365",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_big_hit_taken_3": {
+      "description": "Rogue party voice line — big hit taken (variant 3)",
+      "file": "assets/audio/sfx/voice_rogue_big_hit_taken_3.ogg",
+      "source_sha": "6ff54e3b82ebd28a",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_big_hit_taken_4": {
+      "description": "Rogue party voice line — big hit taken (variant 4)",
+      "file": "assets/audio/sfx/voice_rogue_big_hit_taken_4.ogg",
+      "source_sha": "25579f92cd617dd2",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_big_hit_taken_5": {
+      "description": "Rogue party voice line — big hit taken (variant 5)",
+      "file": "assets/audio/sfx/voice_rogue_big_hit_taken_5.ogg",
+      "source_sha": "724542046dd89ed1",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_big_hit_taken_6": {
+      "description": "Rogue party voice line — big hit taken (variant 6)",
+      "file": "assets/audio/sfx/voice_rogue_big_hit_taken_6.ogg",
+      "source_sha": "6815212112c3ac4c",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_big_hit_taken_7": {
+      "description": "Rogue party voice line — big hit taken (variant 7)",
+      "file": "assets/audio/sfx/voice_rogue_big_hit_taken_7.ogg",
+      "source_sha": "7a914abf389637e8",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_big_hit_taken_8": {
+      "description": "Rogue party voice line — big hit taken (variant 8)",
+      "file": "assets/audio/sfx/voice_rogue_big_hit_taken_8.ogg",
+      "source_sha": "b17104fd65b59c9d",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_big_hit_taken_9": {
+      "description": "Rogue party voice line — big hit taken (variant 9)",
+      "file": "assets/audio/sfx/voice_rogue_big_hit_taken_9.ogg",
+      "source_sha": "e33f66efe992d0b2",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_used_signature_ability_1": {
+      "description": "Rogue party voice line — used signature ability (variant 1)",
+      "file": "assets/audio/sfx/voice_rogue_used_signature_ability_1.ogg",
+      "source_sha": "bdc31a39c87965bb",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_used_signature_ability_2": {
+      "description": "Rogue party voice line — used signature ability (variant 2)",
+      "file": "assets/audio/sfx/voice_rogue_used_signature_ability_2.ogg",
+      "source_sha": "59fd86728a0ff5a1",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_used_signature_ability_3": {
+      "description": "Rogue party voice line — used signature ability (variant 3)",
+      "file": "assets/audio/sfx/voice_rogue_used_signature_ability_3.ogg",
+      "source_sha": "5e648950cf8195e7",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_used_signature_ability_4": {
+      "description": "Rogue party voice line — used signature ability (variant 4)",
+      "file": "assets/audio/sfx/voice_rogue_used_signature_ability_4.ogg",
+      "source_sha": "ed4c22bc99846295",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_used_signature_ability_5": {
+      "description": "Rogue party voice line — used signature ability (variant 5)",
+      "file": "assets/audio/sfx/voice_rogue_used_signature_ability_5.ogg",
+      "source_sha": "9a56cbc9715b6afa",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_used_signature_ability_6": {
+      "description": "Rogue party voice line — used signature ability (variant 6)",
+      "file": "assets/audio/sfx/voice_rogue_used_signature_ability_6.ogg",
+      "source_sha": "41d47d75b0b15c2a",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_used_signature_ability_7": {
+      "description": "Rogue party voice line — used signature ability (variant 7)",
+      "file": "assets/audio/sfx/voice_rogue_used_signature_ability_7.ogg",
+      "source_sha": "86526c1546d1da61",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_used_signature_ability_8": {
+      "description": "Rogue party voice line — used signature ability (variant 8)",
+      "file": "assets/audio/sfx/voice_rogue_used_signature_ability_8.ogg",
+      "source_sha": "77c1ad7988c41000",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_used_signature_ability_9": {
+      "description": "Rogue party voice line — used signature ability (variant 9)",
+      "file": "assets/audio/sfx/voice_rogue_used_signature_ability_9.ogg",
+      "source_sha": "880494b2c401426c",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_victory_1": {
+      "description": "Rogue party voice line — victory (variant 1)",
+      "file": "assets/audio/sfx/voice_rogue_victory_1.ogg",
+      "source_sha": "31fa3cbf139e1ec5",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_victory_2": {
+      "description": "Rogue party voice line — victory (variant 2)",
+      "file": "assets/audio/sfx/voice_rogue_victory_2.ogg",
+      "source_sha": "03a44212dc32e745",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_victory_3": {
+      "description": "Rogue party voice line — victory (variant 3)",
+      "file": "assets/audio/sfx/voice_rogue_victory_3.ogg",
+      "source_sha": "38de2520e4698dcd",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_victory_4": {
+      "description": "Rogue party voice line — victory (variant 4)",
+      "file": "assets/audio/sfx/voice_rogue_victory_4.ogg",
+      "source_sha": "181c40df32b0896a",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_victory_5": {
+      "description": "Rogue party voice line — victory (variant 5)",
+      "file": "assets/audio/sfx/voice_rogue_victory_5.ogg",
+      "source_sha": "bce0d5bbcf157392",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_victory_6": {
+      "description": "Rogue party voice line — victory (variant 6)",
+      "file": "assets/audio/sfx/voice_rogue_victory_6.ogg",
+      "source_sha": "f07188d36ec586ac",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_victory_7": {
+      "description": "Rogue party voice line — victory (variant 7)",
+      "file": "assets/audio/sfx/voice_rogue_victory_7.ogg",
+      "source_sha": "2f9df9ff2e7f0899",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_victory_8": {
+      "description": "Rogue party voice line — victory (variant 8)",
+      "file": "assets/audio/sfx/voice_rogue_victory_8.ogg",
+      "source_sha": "d1aa65dbf179e625",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
+    },
+    "voice_rogue_victory_9": {
+      "description": "Rogue party voice line — victory (variant 9)",
+      "file": "assets/audio/sfx/voice_rogue_victory_9.ogg",
+      "source_sha": "8193246c02e16d71",
+      "voice": "Cowir Rogue B1 (tcIpltB3UbIfjvMwAnM3), ElevenLabs Voice Design: gender-neutral, husky, deadpan charming villain",
+      "voice_gender": "ambiguous"
     }
   }
 }
