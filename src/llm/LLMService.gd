@@ -664,9 +664,9 @@ func _guard_choice(raw: String, valid_options: Array[String], fallback: String) 
 		var pattern: String = opt.to_lower()
 		var idx: int = lower.find(pattern)
 		while idx != -1:
-			var before_ok: bool = (idx == 0) or not lower[idx - 1].unicode_at(0) in range(97, 123)
+			var before_ok: bool = (idx == 0) or not _is_word_char(lower[idx - 1])
 			var after_idx: int = idx + pattern.length()
-			var after_ok: bool = (after_idx >= lower.length()) or not lower[after_idx].unicode_at(0) in range(97, 123)
+			var after_ok: bool = (after_idx >= lower.length()) or not _is_word_char(lower[after_idx])
 			if before_ok and after_ok:
 				if not (opt in matches):
 					matches.append(opt)
@@ -689,6 +689,12 @@ func _guard_choice(raw: String, valid_options: Array[String], fallback: String) 
 					return opt
 
 	return fallback
+
+
+## Letters and digits both continue a word, so option "1" is not found inside "17".
+static func _is_word_char(ch: String) -> bool:
+	var c: int = ch.unicode_at(0)
+	return (c >= 97 and c <= 122) or (c >= 48 and c <= 57)
 
 
 ## JSON guard: extract JSON from raw → parse → schema validate → fallback.

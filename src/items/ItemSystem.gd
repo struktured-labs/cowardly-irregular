@@ -626,14 +626,17 @@ func ineffective_use_reason(item_id: String, targets: Array, in_battle: bool = f
 			return "%s only works in battle" % name
 		return "%s can't be used" % name
 	if revives:
-		# _execute_item keeps only KO'd targets for a revival item, so a living ally fizzles after the turn is queued. Menus that pass in_battle must refuse first. Outside battle the bundled heal still counts below, because use_item applies it.
-		var standing := _living_revive_reason(targets)
-		if standing == "":
-			for t in targets:
-				if _is_item_target(t) and not t.is_alive:
-					return ""
+		# Permakilled revive() does nothing, so that corpse is not a reason to spend the item; a normal KO still is. Outside battle a bundled heal on a living ally in the same list falls through.
+		if _someone_can_be_revived(targets):
+			return ""
+		var blocked := _permakill_block_reason(targets)
+		if blocked != "":
+			if in_battle or not _living_heal_would_land(targets, heals_hp, heals_mp):
+				return blocked
 		elif in_battle:
-			return standing
+			var standing := _living_revive_reason(targets)
+			if standing != "":
+				return standing
 	var seen := 0
 	var living := 0
 	var who := ""
@@ -718,6 +721,46 @@ func _living_revive_reason(targets: Array) -> String:
 	if who == "":
 		who = "They"
 	return "%s isn't knocked out" % who
+
+
+## True when a KO'd target would actually stand back up. Permakilled revive() returns without changing HP.
+func _someone_can_be_revived(targets: Array) -> bool:
+	for t in targets:
+		if _is_item_target(t) and not t.is_alive and not t.has_status("permakilled"):
+			return true
+	return false
+
+
+## "" when no target is a permakilled corpse. Otherwise the sentence for a revive that revive() will refuse.
+func _permakill_block_reason(targets: Array) -> String:
+	var n := 0
+	var who := ""
+	for t in targets:
+		if not _is_item_target(t) or t.is_alive or not t.has_status("permakilled"):
+			continue
+		n += 1
+		who = str(t.combatant_name)
+	if n == 0:
+		return ""
+	if n > 1:
+		return "No one can be revived"
+	if who == "":
+		who = "They"
+	return "%s can't be revived" % who
+
+
+## True when a living ally in this list would gain HP or MP from the bundled heal. use_item still applies that outside battle.
+func _living_heal_would_land(targets: Array, heals_hp: bool, heals_mp: bool) -> bool:
+	if not heals_hp and not heals_mp:
+		return false
+	for t in targets:
+		if not _is_item_target(t) or not t.is_alive:
+			continue
+		if heals_hp and t.current_hp < t.max_hp:
+			return true
+		if heals_mp and t.current_mp < t.max_mp:
+			return true
+	return false
 
 
 func _effect_amount(effects: Dictionary, key: String) -> int:
