@@ -2550,3 +2550,15 @@ func pause() -> void:
 func resume() -> void:
 	if controller and is_instance_valid(controller) and controller.has_method("resume_exploration"):
 		controller.resume_exploration()
+
+
+## GameLoop applies the party leader through this. A room without it keeps the default fighter after a swap or a door.
+func set_player_job(job_name: String) -> void:
+	if player:
+		player.set_job(job_name)
+
+
+## Same call villages and caves already answer. Carries the leader's job and colors, including a KO'd or permakilled leader.
+func set_player_appearance(leader) -> void:
+	if player and player.has_method("set_appearance_from_leader"):
+		player.set_appearance_from_leader(leader)

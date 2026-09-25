@@ -370,6 +370,8 @@ func _play_selected() -> void:
 		## overworld_digital to an arm that does not exist (the W5 area key is
 		## "overworld_futuristic"), so 3 of 165 rows played a different bed.
 		SoundManager.play_music(track_id, true)
+		## Close owns the restore. A stinger row must not hand the bed back when the jingle ends.
+		SoundManager.disarm_stinger_resume()
 		SoundManager.play_ui("menu_select")
 
 	_now_playing_label.add_theme_color_override("font_color", PLAYING_COLOR)

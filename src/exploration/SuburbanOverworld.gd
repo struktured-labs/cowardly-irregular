@@ -550,7 +550,7 @@ func _setup_transitions() -> void:
 	maple_heights_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(maple_heights_trans)
 
-	# Suburban Underground dungeon entrance (park area, storm drain)
+	# Suburban Underground door. from_underground is this position — "entrance" is the W1 arrival, a map away.
 	var underground_trans = AreaTransitionScript.new()
 	underground_trans.name = "SuburbanUndergroundEntrance"
 	underground_trans.target_map = "suburban_underground"
@@ -559,6 +559,7 @@ func _setup_transitions() -> void:
 	underground_trans.indicator_text = "Descend into the Suburban Underground"
 	underground_trans.position = Vector2(10 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	underground_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	spawn_points["from_underground"] = underground_trans.position
 	_setup_transition_collision(underground_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	underground_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(underground_trans)

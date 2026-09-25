@@ -298,6 +298,18 @@ func resume() -> void:
 		controller.resume_exploration()
 
 
+## GameLoop applies the party leader through this. A room without it keeps the default fighter after a swap or a door.
+func set_player_job(job_name: String) -> void:
+	if player:
+		player.set_job(job_name)
+
+
+## Same call villages and caves already answer. Carries the leader's job and colors, including a KO'd or permakilled leader.
+func set_player_appearance(leader) -> void:
+	if player and player.has_method("set_appearance_from_leader"):
+		player.set_appearance_from_leader(leader)
+
+
 ## Suggested night-lighting tint (msg 2643 struktured-ack-pending). Cool
 ## slight-darkening tint composed on top of any subclass ambient — reads
 ## as "lamps are on but the room is quieter." Value awaits struktured's
