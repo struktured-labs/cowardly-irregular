@@ -1260,6 +1260,9 @@ func from_dict(data: Dictionary) -> void:
 		job_level = max(1, int(data["job_level"]))
 	if data.has("job_exp"):
 		job_exp = max(0, int(data["job_exp"]))
+		# Level 99 has no next level. A pre-fix save can still hold the pile past job_level*100.
+		if job_level >= 99:
+			job_exp = mini(job_exp, job_level * 100)
 	# JSON-roundtrip note: JSON.parse returns generic Array, not Array[T].
 	# Assigning to a typed Array[T] field silently fails with a SCRIPT
 	# ERROR — the field keeps its prior value (default []). For each
@@ -1776,6 +1779,10 @@ func gain_job_exp(amount: int) -> void:
 		# deferred: this fires inside the caller's gain print, announcing the level before the EXP that caused it
 		call_deferred("_print_level_up_line", job_level)
 		leveled_up.emit(job_level)
+
+	# Level 99 is the ceiling. EXP past job_level*100 has no next level, so it must not keep growing.
+	if job_level >= 99:
+		job_exp = mini(job_exp, job_level * 100)
 
 	if did_level:
 		recalculate_stats()
