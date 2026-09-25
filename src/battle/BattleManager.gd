@@ -942,9 +942,9 @@ func end_battle(victory: bool) -> void:
 				float(GameState.game_constants.get("gold_multiplier", 1.0)),
 				0.1, 10.0)
 		for enemy in enemy_party:
-			var mt = enemy.get_meta("monster_type", "")
-			if mt in monsters_data:
-				var gold = monsters_data[mt].get("gold_reward", 0)
+			# Field elites carry scaled gold on the combatant. The catalog row is the ordinary species.
+			var gold := _authored_reward(enemy, monsters_data, "gold_reward", 0)
+			if gold > 0:
 				# Tick 338: factor reward_multiplier into gold (was EXP-only).
 				# Pre-fix rare-encounter monsters (Hero Mimics et al with
 				# data.reward_multiplier > 1.0) gave extra EXP but ZERO extra
@@ -1047,8 +1047,8 @@ func end_battle(victory: bool) -> void:
 		for enemy in enemy_party:
 			if not is_instance_valid(enemy):
 				continue
-			var mt: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
-			base_exp += int(monsters_db.get(mt, {}).get("exp_reward", 25))
+			# Same override as gold: a field elite's exp_reward meta is the scaled rare, not the catalog row.
+			base_exp += _authored_reward(enemy, monsters_db, "exp_reward", 25)
 		if base_exp <= 0:
 			base_exp = 50
 		var exp_multiplier: float = 1.0
@@ -1177,6 +1177,18 @@ func end_battle(victory: bool) -> void:
 
 	battle_ended.emit(victory)
 	_cleanup_battle()
+
+
+## Catalog reward, unless the spawn stamped a scaled override (field elites).
+func _authored_reward(enemy, monsters_data: Dictionary, key: String, missing_fallback: int) -> int:
+	if not is_instance_valid(enemy):
+		return missing_fallback
+	if enemy.has_meta(key):
+		return int(enemy.get_meta(key))
+	var mt := str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+	if monsters_data.has(mt):
+		return int((monsters_data[mt] as Dictionary).get(key, missing_fallback))
+	return missing_fallback
 
 
 func _get_battle_reward_multiplier() -> float:
