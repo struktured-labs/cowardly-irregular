@@ -1113,8 +1113,6 @@ func install_backend(b: TTSBackend) -> void:
 		_backend.cancel_all()
 		if _backend.synthesis_finished.is_connected(_on_finished):
 			_backend.synthesis_finished.disconnect(_on_finished)
-		if _backend.get_parent() == self:
-			remove_child(_backend)
 		_backend.queue_free()
 	_backend = b
 	_backend.synthesis_finished.connect(_on_finished)
