@@ -3433,7 +3433,11 @@ static func _restore_duelist(pc: Combatant) -> void:
 		return
 	if not pc.is_alive and pc.has_method("revive"):
 		pc.revive(pc.max_hp)
-	pc.current_hp = pc.max_hp
+	# revive() refuses a permakilled ally, so topping HP off afterwards fills a corpse's bar.
+	if pc.is_alive:
+		pc.current_hp = pc.max_hp
+	else:
+		pc.current_hp = 0
 	pc.current_mp = pc.max_mp
 	if "status_effects" in pc:
 		for s in (pc.status_effects as Array).duplicate():
