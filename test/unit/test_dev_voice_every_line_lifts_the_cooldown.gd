@@ -62,3 +62,24 @@ func test_the_setting_is_offered_in_the_menu() -> void:
 	var src := FileAccess.get_file_as_string("res://src/ui/SettingsMenu.gd")
 	assert_true(src.contains('"Dev: Voice Every Line"'), "the toggle must be reachable from Settings")
 	assert_true(src.contains('GameState.game_constants["dev_voice_every_line"]'), "and must write the flag BattleManager reads")
+
+
+## struktured, same evening: "voice every line enabled still nothing". LLM party dialogue was on, and LLM
+## lines are text-only by design (a recorded clip would not match the model's words). The toggle exists to
+## test the voice pack, so while it is on a line takes the scripted, voiced path even with the LLM enabled.
+func test_every_line_takes_the_voiced_line_even_with_llm_dialogue_on() -> void:
+	var saved_llm: bool = GameState.party_llm_dialogue_enabled
+	GameState.party_llm_dialogue_enabled = true
+	GameState.game_constants["dev_voice_every_line"] = true
+	var c := _rogue_who_just_spoke()
+	var heard: Array = []
+	var cb := func(who, line, trigger): heard.append([line, trigger])
+	BattleManager.party_combat_line.connect(cb)
+	BattleManager._run_party_line_async(c, "turn_start", {})
+	BattleManager.party_combat_line.disconnect(cb)
+	GameState.party_llm_dialogue_enabled = saved_llm
+	assert_eq(heard.size(), 1, "the voice test emitted no line with LLM dialogue on — it went to the model")
+	if heard.size() == 1:
+		assert_eq(heard[0][1], "turn_start", "the line must carry its voice trigger, or no clip plays")
+		assert_eq(heard[0][0], str(PartyPersonas.get_trigger_voice("rogue", "turn_start")),
+			"it must be the scripted line the clip was recorded for")

@@ -3246,6 +3246,8 @@ func _on_battle_ended(victory: bool) -> void:
 			else:
 				SoundManager.play_music("victory")
 			_show_victory_results()
+	elif _lost_battle_is_escape():
+		log_message("\n[color=%s]=== ESCAPED ===[/color]" % AccessibilityPalette.bonus_bbcode())
 	else:
 		# Tick 239: penalty BBCode (defeat header).
 		log_message("\n[color=%s]=== DEFEAT ===[/color]" % AccessibilityPalette.penalty_bbcode())
@@ -3265,6 +3267,11 @@ func _on_battle_ended(victory: bool) -> void:
 	_update_ui()
 	_battle_ended = true
 	_battle_victory = victory
+
+
+## Flee and Smoke Bomb end through end_battle(false) like a wipe; any PC still standing makes it an escape, the same rule GameLoop routes by.
+func _lost_battle_is_escape() -> bool:
+	return party_members.any(func(m): return is_instance_valid(m) and m.is_alive)
 
 
 func _process(delta: float) -> void:

@@ -9025,7 +9025,10 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	# below.
 	var gs = get_node_or_null("/root/GameState")
 	var llm_dialogue_on: bool = gs != null and ("party_llm_dialogue_enabled" in gs) and gs.party_llm_dialogue_enabled
-	if not llm_dialogue_on:
+	## Dev: Voice Every Line tests the voice pack, and only scripted lines carry a clip (LLM lines stay text-only), so it takes the scripted line.
+	var voice_test: bool = GameState != null and "game_constants" in GameState \
+			and bool(GameState.game_constants.get("dev_voice_every_line", false))
+	if not llm_dialogue_on or voice_test:
 		if not fallback.is_empty():
 			_emit_party_line(combatant, fallback, event_kind)
 		return
