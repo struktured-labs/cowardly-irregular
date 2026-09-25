@@ -380,7 +380,7 @@ func play_cutscene(cutscene_id: String, replay: bool = false) -> void:
 		await _execute_step(step)
 		step_index += 1
 
-	# When skipped, still apply all set_flag steps so cutscenes never replay.
+	# When skipped, still apply remaining side effects (flags, items, the branch that would have run) so the scene cannot replay without its rewards.
 	if _skipping and not _aborted:
 		_apply_remaining_set_flag_steps(steps, step_index)
 
@@ -425,7 +425,7 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary, replay: bool
 		await _execute_step(step)
 		step_index += 1
 
-	# When skipped, still apply all set_flag steps so cutscenes never replay.
+	# When skipped, still apply remaining side effects (flags, items, the branch that would have run) so the scene cannot replay without its rewards.
 	# Delegate to the shared helper so this path matches play_cutscene's
 	# behaviour byte-for-byte (the inline loop drifted from the helper).
 	if _skipping and not _aborted:
@@ -935,6 +935,17 @@ func _step_set_flag(step: Dictionary) -> void:
 				var qs = get_node_or_null("/root/QuestSystem")
 				if qs and qs.has_method("notify_flag"):
 					qs.notify_flag("quest_wiring_fool_card_five_marks")
+
+
+## Inventory half of grant_item. The reveal is a pause, and a skip exists to leave that pause behind — the item still has to land.
+func _commit_skipped_grant(step: Dictionary) -> void:
+	var item_id: String = str(step.get("item", ""))
+	if item_id == "":
+		push_warning("CutsceneDirector grant_item: missing 'item' field")
+		return
+	if _replay:
+		return
+	_add_item_to_party_leader(item_id, int(step.get("quantity", 1)))
 
 
 func _step_grant_item(step: Dictionary) -> void:
@@ -1583,15 +1594,42 @@ func _resolve_point_or_actor(value) -> Vector2:
 
 
 func _apply_remaining_set_flag_steps(steps: Array, from_index: int) -> void:
-	## Walk the steps array starting at `from_index` and fire _step_set_flag
-	## for every set_flag entry. Used when a cutscene is skipped — we still
-	## need to set the completion flag so the cutscene doesn't replay on
-	## the next visit / save load. Extracted from _start_cutscene to be
-	## unit-testable without driving the full UI flow. CRITICAL — silent
-	## failure here means skipped cutscenes replay forever.
+	## Walk steps from `from_index` and commit every side effect a full play would have:
+	## set_flag, give_item, grant_item, update_item, a choice's first option, and the
+	## branch arm that would have run (nested the same way). Presentation steps stay skipped.
+	## The completion flag still lands on this path, so a reward left behind here never replays.
 	for i in range(from_index, steps.size()):
-		if steps[i].get("type", "") == "set_flag":
-			_step_set_flag(steps[i])
+		var step = steps[i]
+		if step is Dictionary:
+			_apply_skipped_step_side_effects(step)
+
+
+func _apply_skipped_step_side_effects(step: Dictionary) -> void:
+	match str(step.get("type", "")):
+		"set_flag":
+			_step_set_flag(step)
+		"give_item":
+			_step_give_item(step)
+		"grant_item":
+			_commit_skipped_grant(step)
+		"update_item":
+			_step_update_item(step)
+		"choice":
+			_apply_skipped_choice(step)
+		"branch":
+			# _skipping is already set, so _step_branch commits the arm's side effects and does not play it.
+			_step_branch(step)
+
+
+## Same answer _step_choice gives a skip that lands on the menu: the first option the player would have been shown.
+func _apply_skipped_choice(step: Dictionary) -> void:
+	for opt in step.get("options", []):
+		if not (opt is Dictionary):
+			continue
+		if str((opt as Dictionary).get("text", "")).strip_edges() == "":
+			continue
+		_set_choice_flag(opt)
+		return
 
 
 func _step_chapter_title(step: Dictionary) -> void:
@@ -1779,17 +1817,14 @@ func _step_branch(step: Dictionary) -> void:
 	  "automator": [steps...], "grinder": [steps...], "default": [steps...]
 	}}
 	Or flag-based: {"type": "branch", "flag": "some_flag", "if_true": [steps...], "if_false": [steps...]}"""
+	var branch_steps = []
 	if step.has("flag"):
 		# Flag-based branching
 		var flag = step.get("flag", "")
 		var flag_value = false
 		if GameState and GameState.game_constants.has("cutscene_flag_" + flag):
 			flag_value = GameState.game_constants["cutscene_flag_" + flag]
-		var branch_steps = step.get("if_true", []) if flag_value else step.get("if_false", [])
-		for sub_step in branch_steps:
-			if _skipping:
-				break
-			await _execute_step(sub_step)
+		branch_steps = step.get("if_true", []) if flag_value else step.get("if_false", [])
 	elif step.get("condition", "") == "playstyle":
 		## ⚠️ STEP-level `condition` is the only one read. Five dialogue LINE objects in
 		## world1/world2_transition carry `"_condition": "playstyle_*"` and NOTHING reads it, so
@@ -1799,23 +1834,25 @@ func _step_branch(step: Dictionary) -> void:
 		## would hide 4 of the 5 forever. struktured's + cowir-story's call (measured 2026-09-16).
 		var playstyle = _detect_playstyle()
 		var cases = step.get("cases", {})
-		var branch_steps = cases.get(playstyle, cases.get("default", []))
-		for sub_step in branch_steps:
-			if _skipping:
-				break
-			await _execute_step(sub_step)
+		branch_steps = cases.get(playstyle, cases.get("default", []))
 	elif step.get("condition", "") == "lead_job":
 		# Live job. get_party_leader() is the menu/save snapshot, so a job change that has not been saved still reads as the old lead — the Orrery then grants the charm instead of the chord.
 		var lead_job := _lead_job_id()
 		var cases = step.get("cases", {})
-		var branch_steps = cases.get(lead_job, cases.get("default", []))
-		for sub_step in branch_steps:
-			if _skipping:
-				break
-			await _execute_step(sub_step)
+		branch_steps = cases.get(lead_job, cases.get("default", []))
 	else:
 		# _execute_step warns on an unknown step type; this chain silently ran nothing.
 		push_warning("CutsceneDirector: branch condition '%s' has no handler — no sub-step ran" % str(step.get("condition", "")))
+		return
+	var i := 0
+	for sub_step in branch_steps:
+		if _skipping:
+			break
+		await _execute_step(sub_step)
+		i += 1
+	# The outer skip walker starts AFTER this step, so a skip that lands inside the arm has to finish the arm here.
+	if _skipping and not _aborted:
+		_apply_remaining_set_flag_steps(branch_steps, i)
 
 
 ## The job the player is leading with now. party_for_queries prefers GameLoop.party and falls back to the snapshot when no live roster is in the tree.
