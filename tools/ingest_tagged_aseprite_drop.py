@@ -444,8 +444,13 @@ DROPS_20260903 = {
     "cleric": {
         "src": "Cleric Main design.aseprite",
         "dir": "assets/sprites/jobs/cleric",
-        "backup_anims": {"dead"},
+        # victory joins dead: until the 2026-09-25 drop it was April LoRA art, so it gets the
+        # .pre_artist backup. (dead's backup already exists and backup() never overwrites one.)
+        "backup_anims": {"dead", "victory"},
+        # 2026-09-25 drop added "Celebration" (11 frames) after Idle; Weak/Dead/Cast shifted +11,
+        # byte-identical. Idle frames 5-6 each changed ONE pixel -- an artist touch-up, shipped.
         "map": {"idle": ("Idle", 0, 0), "weak": ("Weak", 0, 0), "dead": ("Dead", 0, 0),
+                "victory": ("Celebration", 0, 0),
                 "cast": ("Cast", 0, 0), "attack": ("Cast", 0, 0)},
     },
 }
