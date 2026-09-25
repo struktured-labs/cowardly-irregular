@@ -123,7 +123,24 @@ def pid_file(d: str) -> str:
     return os.path.join(d, ".cowir_server.pid")
 
 
+def is_our_server(pid: int, d: str):
+    """True if pid is this install's server.py, False if it is some other process, None if unknowable.
+
+    A pid file outlives a crash, and the OS reuses pids, so a live pid proves nothing about WHAT it is.
+    """
+    proc = f"/proc/{pid}"
+    if not os.path.isdir("/proc/self"):
+        return None                            # no /proc (Windows, macOS): identity cannot be verified here
+    try:
+        cmd = open(f"{proc}/cmdline", "rb").read().replace(b"\0", b" ").decode("utf-8", "replace")
+        cwd = os.path.realpath(os.readlink(f"{proc}/cwd"))
+    except OSError:
+        return False
+    return "server.py" in cmd and cwd == os.path.realpath(d)
+
+
 def read_pid(d: str):
+    """The pid in the pid file, only if it is alive AND verifiably this install's server."""
     try:
         pid = int(open(pid_file(d)).read().strip())
     except (OSError, ValueError):
@@ -132,7 +149,7 @@ def read_pid(d: str):
         os.kill(pid, 0)
     except OSError:
         return None
-    return pid
+    return pid if is_our_server(pid, d) else None
 
 
 def voices_listed(port: int):
@@ -175,9 +192,22 @@ def start(a) -> int:
 
 
 def stop(a) -> int:
-    pid = read_pid(a.dir)
-    if pid is None:
+    try:
+        raw = int(open(pid_file(a.dir)).read().strip())
+    except (OSError, ValueError):
         log("not running")
+        return EXIT_OK
+    who = is_our_server(raw, a.dir)
+    if who is None:
+        log(f"cannot verify pid {raw} is this server on this platform; not signalling it. Stop it by hand.")
+        return EXIT_START
+    pid = read_pid(a.dir)
+    if pid is None:                            # dead, or the pid now belongs to an unrelated process
+        log(f"pid file names {raw}, which is not this server (exited, or pid reused); not signalling it")
+        try:
+            os.remove(pid_file(a.dir))
+        except OSError:
+            pass
         return EXIT_OK
     os.kill(pid, signal.SIGTERM)
     for _ in range(30):
