@@ -1,13 +1,34 @@
 extends GutTest
 
-## Interiors added after the original locations.json pass declare _get_display_name()
-## and have no locations.json entry. The area banner, the save toast, and the save
-## slot all share SaveSystem.location_display_name, which title-cased the map key
-## ("Harmonia Cartographer", "Maple Garage Sale") and never asked the script.
+## Later interiors declare _get_display_name() and, until their names were copied
+## into locations.json, the banner, the toast, and the save slot title-cased the
+## map key. The names live in locations.json now. This walk loads every interior
+## that declares a display name and requires locations.json to carry that exact
+## string, so a rename on either side fails here. The runtime lookup only reads
+## the JSON: an export ships .gdc plus .gd.remap and has no script source to scan.
+## BaseInterior.gd is the virtual default ("Interior"), not a room, so it is not
+## a place entry. Its title-cased key is already the same word.
 
 const GdSource = preload("res://test/unit/helpers/gd_source.gd")
 const INTERIOR_DIR := "res://src/maps/interiors"
 const SCRATCH_SLOT := 95
+const LATER_ROOMS: Array[String] = [
+	"blacksmith_interior",
+	"brasston_redundancy_archive",
+	"eldertree_grafting_house",
+	"enrichment_annex",
+	"frosthold_meltwater_clock",
+	"grimhollow_lantern_debt",
+	"harmonia_cartographer",
+	"ironhaven_strike_registry",
+	"maple_community_center",
+	"maple_garage_sale",
+	"node_prime_cache",
+	"rivet_row_incident_board",
+	"sandrift_rain_ledger",
+	"scriptura_bookshop",
+	"scriptura_guild",
+]
 
 var _loop: Node = null
 var _map_before := ""
@@ -46,7 +67,7 @@ func _declares_display_name(path: String) -> bool:
 	return false
 
 
-func _json_map_ids() -> Dictionary:
+func _locations() -> Dictionary:
 	var file := FileAccess.open("res://data/locations.json", FileAccess.READ)
 	assert_not_null(file, "locations.json must be readable")
 	var json := JSON.new()
@@ -54,12 +75,17 @@ func _json_map_ids() -> Dictionary:
 	file.close()
 	var data: Variant = json.data
 	assert_true(data is Dictionary, "locations.json root must be a dict")
-	var ids := {}
+	return data
+
+
+func _json_name_for(data: Dictionary, area: String) -> String:
+	if data.has(area) and data[area] is Dictionary:
+		return str((data[area] as Dictionary).get("name", ""))
 	for key in data:
-		var entry: Variant = (data as Dictionary)[key]
-		if entry is Dictionary:
-			ids[str((entry as Dictionary).get("map_id", key))] = true
-	return ids
+		var entry: Variant = data[key]
+		if entry is Dictionary and str((entry as Dictionary).get("map_id", "")) == area:
+			return str((entry as Dictionary).get("name", ""))
+	return ""
 
 
 func _authored_rooms() -> Array:
@@ -67,6 +93,7 @@ func _authored_rooms() -> Array:
 	assert_not_null(dir, "interior scripts must be listable")
 	var rooms: Array = []
 	var seen := {}
+	var scaffolds := 0
 	for file_name in dir.get_files():
 		if not str(file_name).ends_with(".gd"):
 			continue
@@ -82,9 +109,15 @@ func _authored_rooms() -> Array:
 		node.free()
 		assert_ne(area, "", "%s must declare a map id" % path)
 		assert_ne(label, "", "%s must declare a display name" % path)
+		if str(file_name) == "BaseInterior.gd":
+			scaffolds += 1
+			assert_eq(area, "interior", "BaseInterior is the virtual default, not a room")
+			assert_eq(label, "Interior", "BaseInterior's default label is the title-cased key")
+			continue
 		assert_false(seen.has(area), "two interior scripts claim map id %s" % area)
 		seen[area] = label
 		rooms.append({"path": path, "area": area, "name": label})
+	assert_eq(scaffolds, 1, "the walk must see BaseInterior.gd and not treat it as a place")
 	return rooms
 
 
@@ -136,31 +169,30 @@ func _fn_body(path: String, signature: String) -> String:
 	return code.substr(at, (nxt - at) if nxt > at else 1200)
 
 
-## Every interior that declares a display name. The banner, the toast, and the slot must use it.
+## Every interior that declares a display name. locations.json, the banner, the toast, and the slot must use it.
 func test_banner_toast_and_slot_use_each_interior_scripts_name() -> void:
 	var rooms := _authored_rooms()
 	assert_gt(rooms.size(), 20, "CONTROL: the walk must reach the later interiors, not only the original dozen")
-	var listed := _json_map_ids()
+	var data := _locations()
 	var gl := _gameloop()
-	var changed: Array[String] = []
+	var later_seen := {}
 	var saw_garage := false
 	var saw_attic := false
 	for room in rooms:
 		var area := str(room["area"])
 		var authored := str(room["name"])
 		var titled := area.replace("_", " ").capitalize()
+		var listed := _json_name_for(data, area)
+		assert_eq(listed, authored,
+			"locations.json must name %s exactly what %s declares, not '%s'" % [area, room["path"], listed])
 		var banner := str(gl._get_location_display_name(area))
 		assert_eq(banner, authored,
-			"the area banner for %s title-cases the key as '%s' instead of the script's '%s'" % [area, titled, authored])
-		if area == "interior":
-			assert_ne(str(gl._get_transition_type(area)), "interior",
-				"the base scaffold's id is not a room the player enters")
-		else:
-			assert_eq(str(gl._get_transition_type(area)), "interior",
-				"%s must take the interior banner, which prints this name with no extra words" % area)
+			"the area banner for %s title-cases the key as '%s' instead of '%s'" % [area, titled, authored])
+		assert_eq(str(gl._get_transition_type(area)), "interior",
+			"%s must take the interior banner, which prints this name with no extra words" % area)
 		MapSystem.current_map_id = area
 		assert_eq(SaveSystem._current_location_display_name(), authored,
-			"a save made in %s must bake the script's name" % area)
+			"a save made in %s must bake the authored name" % area)
 		var payload := {
 			"metadata": {"location_name": titled, "save_time": 1},
 			"map": {"current_map_id": area},
@@ -171,7 +203,7 @@ func test_banner_toast_and_slot_use_each_interior_scripts_name() -> void:
 		assert_eq(str(info.get("location_name", "")), authored,
 			"an old save that baked '%s' must show '%s' on the slot" % [titled, authored])
 		assert_eq(_toast_text(banner), "Game Saved ✓ — " + authored,
-			"the save toast in %s must name the room the script declares" % area)
+			"the save toast in %s must name the room" % area)
 		if area == "maple_garage_sale":
 			saw_garage = true
 			assert_eq(authored, "The Perpetual Garage Sale",
@@ -182,30 +214,33 @@ func test_banner_toast_and_slot_use_each_interior_scripts_name() -> void:
 			assert_eq(authored, "Cartographer's Attic",
 				"CONTROL: HarmoniaCartographerInterior must still declare this name")
 			assert_ne(authored, titled, "CONTROL: title-casing the attic key is the bug")
-		if authored != titled and not listed.has(area):
-			changed.append("%s: '%s' → '%s'" % [area, titled, authored])
+		if LATER_ROOMS.has(area):
+			later_seen[area] = true
+			assert_ne(authored, titled, "CONTROL: %s still shows the title-cased key" % area)
+	for area in LATER_ROOMS:
+		assert_true(later_seen.has(area), "the walk must include %s" % area)
 	assert_true(saw_garage, "the walk must include the perpetual garage sale")
 	assert_true(saw_attic, "the walk must include the cartographer's attic")
-	assert_gt(changed.size(), 10,
-		"CONTROL: a title-cased key is still the wrong words for the later rooms: %s" % " | ".join(changed))
-	print("Shown names that change: %s" % " | ".join(changed))
 	# The loop is not in the tree. Leaving it until after_all counts as an orphan.
 	_loop.free()
 	_loop = null
 
 
-func test_the_three_surfaces_read_that_lookup() -> void:
+func test_the_three_surfaces_read_locations_json_only() -> void:
+	var save := str(GdSource.code_of("res://src/save/SaveSystem.gd"))
+	assert_true(save.contains("res://data/locations.json"),
+		"PRECONDITION: the place-name lookup still reads locations.json")
+	assert_false(save.contains("_interior_script_display_name"),
+		"the lookup must not fall back to a script scan")
+	assert_false(save.contains("_source_declares_display_name"),
+		"the lookup must not search script source for display-name declarations")
+	assert_false(save.contains("res://src/maps/interiors"),
+		"the lookup must not enumerate interior scripts at runtime")
 	var lookup := _fn_body("res://src/save/SaveSystem.gd", "static func location_display_name(")
-	var json_at := lookup.find("_locations_json_name(")
-	var script_at := lookup.find("_interior_script_display_name(")
-	assert_gt(json_at, -1, "PRECONDITION: a locations.json miss is what opens the script fallback")
-	assert_gt(script_at, json_at,
-		"the interior script name is the fallback after locations.json, before the title-cased key")
-	assert_true(lookup.contains("if from_json != null:"),
-		"a locations.json entry must win even when an interior script also names the map")
-	var json_fn := _fn_body("res://src/save/SaveSystem.gd", "static func _locations_json_name(")
-	assert_true(json_fn.contains("locations.json"),
-		"PRECONDITION: the first lookup still reads locations.json")
+	assert_true(lookup.contains("locations.json"),
+		"location_display_name must read locations.json")
+	assert_false(lookup.contains("_get_display_name"),
+		"location_display_name must not call or scan _get_display_name")
 	var banner_fn := _fn_body("res://src/GameLoop.gd", "func _get_location_display_name(")
 	assert_true(banner_fn.contains("SaveSystem.location_display_name("),
 		"the area banner must use the shared place-name lookup")
@@ -239,6 +274,8 @@ func test_locations_json_still_wins_and_unnamed_maps_stay_readable() -> void:
 		"an interior that is already listed keeps that entry")
 	assert_eq(SaveSystem.location_display_name("suburban_overworld"), "Suburbia",
 		"overworld places stay on locations.json")
+	assert_eq(SaveSystem.location_display_name("maple_garage_sale"), "The Perpetual Garage Sale",
+		"the garage sale name comes from locations.json")
 	assert_eq(SaveSystem.location_display_name("tavern_interior"), "Tavern Interior",
 		"a room with no authored display name stays a readable key")
 	assert_eq(SaveSystem.location_display_name("inn_interior"), "Inn Interior",

@@ -323,96 +323,25 @@ func _is_cutscene_active() -> bool:
 	return int(gl.current_state) == 4
 
 
-static var _interior_display_names: Dictionary = {}
-static var _interior_display_names_ready: bool = false
-
-
-## locations.json, else the interior script's own display name, else a title-cased map id. Banner, toast, and save slot share this.
+## Place name from locations.json, else a title-cased map id. The area banner uses this too.
 static func location_display_name(map_id: String) -> String:
 	var fallback := map_id.replace("_", " ").capitalize()
 	if map_id == "":
 		return fallback
-	var from_json: Variant = _locations_json_name(map_id, fallback)
-	if from_json != null:
-		return str(from_json)
-	var authored := _interior_script_display_name(map_id)
-	if authored != "":
-		return authored
-	return fallback
-
-
-## null when this map has no locations.json entry. A present entry wins even when its name is empty.
-static func _locations_json_name(map_id: String, fallback: String) -> Variant:
 	var file := FileAccess.open("res://data/locations.json", FileAccess.READ)
 	if file == null:
-		return null
+		return fallback
 	var json := JSON.new()
 	var parsed := json.parse(file.get_as_text())
 	file.close()
 	if parsed != OK or not (json.data is Dictionary):
-		return null
+		return fallback
 	var data: Dictionary = json.data
 	for key in data:
 		var entry: Variant = data[key]
 		if entry is Dictionary and str((entry as Dictionary).get("map_id", key)) == map_id:
 			return str((entry as Dictionary).get("name", fallback))
-	return null
-
-
-## The name a room script declares with _get_display_name(). Empty when no interior authors this map.
-static func _interior_script_display_name(map_id: String) -> String:
-	if not _interior_display_names_ready:
-		var found := _collect_interior_display_names()
-		if found.is_empty() and DirAccess.open("res://src/maps/interiors") == null:
-			return ""
-		_interior_display_names = found
-		_interior_display_names_ready = true
-	return str(_interior_display_names.get(map_id, ""))
-
-
-## Fresh instances, never added to the tree, so _ready (music, tilemap, NPCs) does not run.
-static func _collect_interior_display_names() -> Dictionary:
-	var names := {}
-	var dir := DirAccess.open("res://src/maps/interiors")
-	if dir == null:
-		return names
-	for file_name in dir.get_files():
-		if not str(file_name).ends_with(".gd"):
-			continue
-		var path := "res://src/maps/interiors/%s" % file_name
-		if not _source_declares_display_name(path):
-			continue
-		var script: Variant = load(path)
-		if not (script is Script) or not (script as Script).can_instantiate():
-			continue
-		var node: Variant = (script as Script).new()
-		if node == null:
-			continue
-		var area := ""
-		var label := ""
-		if node.has_method("_get_area_id") and node.has_method("_get_display_name"):
-			area = str(node.call("_get_area_id")).strip_edges()
-			label = str(node.call("_get_display_name")).strip_edges()
-		if node is Object:
-			(node as Object).free()
-		if area == "" or label == "":
-			continue
-		if names.has(area) and str(names[area]) != label:
-			push_warning("Two interior scripts name %s differently: '%s' and '%s'" % [area, names[area], label])
-			continue
-		names[area] = label
-	return names
-
-
-static func _source_declares_display_name(path: String) -> bool:
-	var body := FileAccess.get_file_as_string(path)
-	for raw in body.split("\n"):
-		var line := raw.strip_edges()
-		if line.begins_with("#"):
-			continue
-		if line.begins_with("func _get_display_name("):
-			return true
-	return false
+	return fallback
 
 
 ## Best-effort human-readable name for the currently loaded map, used in the save slot summary.
