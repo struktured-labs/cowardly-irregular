@@ -9009,6 +9009,11 @@ func _dispatch_victory_party_line() -> void:
 
 
 ## Awaitable producer — kicks off the LLM call OR ships the scripted fallback line.
+## LLM lines are text-only, so the voice-pack test (Dev: Voice Every Line) must stay on the scripted, voiced line.
+static func _party_line_wants_llm(llm_dialogue_on: bool, voice_test: bool) -> bool:
+	return llm_dialogue_on and not voice_test
+
+
 func _run_party_line_async(combatant: Combatant, event_kind: String, event_data: Dictionary) -> void:
 	var pp = get_node_or_null("/root/PartyPersonas")
 	var job_id: String = _resolve_party_job_id(combatant)
@@ -9028,7 +9033,7 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 	## Dev: Voice Every Line tests the voice pack, and only scripted lines carry a clip (LLM lines stay text-only), so it takes the scripted line.
 	var voice_test: bool = GameState != null and "game_constants" in GameState \
 			and bool(GameState.game_constants.get("dev_voice_every_line", false))
-	if not llm_dialogue_on or voice_test:
+	if not _party_line_wants_llm(llm_dialogue_on, voice_test):
 		if not fallback.is_empty():
 			_emit_party_line(combatant, fallback, event_kind)
 		return

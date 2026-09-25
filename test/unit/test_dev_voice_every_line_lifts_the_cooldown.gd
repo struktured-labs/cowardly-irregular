@@ -83,3 +83,12 @@ func test_every_line_takes_the_voiced_line_even_with_llm_dialogue_on() -> void:
 		assert_eq(heard[0][1], "turn_start", "the line must carry its voice trigger, or no clip plays")
 		assert_eq(heard[0][0], str(PartyPersonas.get_trigger_voice("rogue", "turn_start")),
 			"it must be the scripted line the clip was recorded for")
+
+
+## The routing decision on its own, independent of whether an LLM is reachable in this environment. The
+## end-to-end arm above cannot tell the override from the model being unavailable; this one can.
+func test_the_voice_test_overrides_llm_dialogue() -> void:
+	assert_false(BattleManager._party_line_wants_llm(true, true),
+		"Dev: Voice Every Line with LLM dialogue on still routed to the model, whose lines carry no clip")
+	assert_true(BattleManager._party_line_wants_llm(true, false), "CONTROL: LLM dialogue on, no test -> the model")
+	assert_false(BattleManager._party_line_wants_llm(false, false), "CONTROL: LLM dialogue off -> scripted")
