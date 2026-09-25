@@ -955,7 +955,8 @@ func end_battle(victory: bool) -> void:
 				# formula where reward_multiplier IS applied.
 				total_gold += int(gold * one_shot_gold_bonus * reward_multiplier * gold_multiplier)
 		if total_gold > 0 and not defer_payout:
-			GameState.add_gold(total_gold)
+			# total_gold already includes gold_multiplier; add_gold would apply the dial again.
+			GameState.party_gold += total_gold
 			print("Party earned %d gold!" % total_gold)
 
 		# Roll item drops from defeated enemies' drop tables.
