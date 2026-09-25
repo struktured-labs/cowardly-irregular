@@ -2925,6 +2925,9 @@ func _restore_party_from_save_data() -> bool:
 				push_warning("[GameLoop] _restore_party_from_save_data: assign_secondary_job('%s') failed for %s — leaving secondary unset" % [sec_id, c.combatant_name])
 		# Re-apply equipment so stat mods attach; tick 189 warns on equip failure (unknown id, removed item). Empty is valid — no fallback.
 		var w = entry.get("equipped_weapon", "")
+		# assign_job gifts a Bard a piano_scythe into an empty hand. That gift is a join; on load the save already said the hand was empty, and leaving the gift on mints a second scythe beside the one in the bag.
+		if w == "":
+			c.equipped_weapon = ""
 		if w != "" and not EquipmentSystem.equip_weapon(c, w):
 			push_warning("[GameLoop] _restore_party_from_save_data: equip_weapon('%s') failed for %s — slot left empty" % [w, c.combatant_name])
 		var a = entry.get("equipped_armor", "")
@@ -7243,13 +7246,13 @@ func _on_any_save_failed(reason: String) -> void:
 
 func _on_any_save_completed(_slot: int) -> void:
 	"""Fire a green 'Game Saved ✓ — <location>' toast whenever SaveSystem
-	completes a save. The location label is pulled live from MapSystem so the
-	player can confirm WHERE the save landed (matters when juggling multiple
-	slots across worlds). Falls back to the legacy short form when no map is
-	loaded (e.g. saving from the title screen via debug paths)."""
+	completes a save. The label is the place name (locations.json), the same
+	words as the area banner and the save slot — not the title-cased map key.
+	Falls back to the legacy short form when no map is loaded (title-screen
+	debug saves) and to a readable key when the map has no authored name."""
 	var location := ""
 	if MapSystem and "current_map_id" in MapSystem and MapSystem.current_map_id:
-		location = str(MapSystem.current_map_id).capitalize()
+		location = _get_location_display_name(str(MapSystem.current_map_id))
 	Toast.show_save(self, location)
 
 
