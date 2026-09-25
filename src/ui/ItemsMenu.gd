@@ -689,11 +689,7 @@ func _handle_item_list_input(event: InputEvent) -> void:
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		if _item_list.size() > 0:
-			# Enter target selection mode
-			mode = 1
-			selected_target_index = 0
-			_build_ui()
-			SoundManager.play_ui("menu_select")
+			_begin_target_select()
 		else:
 			SoundManager.play_ui("menu_error")
 		get_viewport().set_input_as_handled()
@@ -857,16 +853,42 @@ func _item_still_useful(item_data: Dictionary) -> bool:
 	return true
 
 
+## Enter target select on the first ally this item would actually change. A full-HP leader no longer hides a hurt ally one row down. Nobody it can help leaves the cursor on the first member, where confirm still explains the refusal.
+func _begin_target_select() -> void:
+	mode = 1
+	selected_target_index = _first_target_the_item_can_help()
+	_build_ui()
+	SoundManager.play_ui("menu_select")
+
+
+## Index of the first party member a confirm would spend this item on. Revive skips anyone still standing — the field menu refuses that even when the bundled heal would land.
+func _first_target_the_item_can_help() -> int:
+	if selected_item_index < 0 or selected_item_index >= _item_list.size() or party.is_empty() or ItemSystem == null:
+		return 0
+	var item: Dictionary = _item_list[selected_item_index]
+	var item_data: Dictionary = item.get("data", {})
+	if int(item_data.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)) == ItemSystem.TargetType.ALL_ALLIES:
+		return 0
+	var item_id := str(item.get("id", ""))
+	var revives := bool(item_data.get("effects", {}).get("revive", false))
+	for i in range(party.size()):
+		var member = party[i]
+		if member == null or not is_instance_valid(member):
+			continue
+		if revives and bool(member.is_alive):
+			continue
+		if str(ItemSystem.ineffective_use_reason(item_id, [member])) == "":
+			return i
+	return 0
+
+
 func _on_item_click(index: int) -> void:
 	"""Handle mouse click on an item"""
 	if mode != 0:
 		return
 	selected_item_index = index
 	if _item_list.size() > 0:
-		mode = 1
-		selected_target_index = 0
-		_build_ui()
-		SoundManager.play_ui("menu_select")
+		_begin_target_select()
 
 
 func _on_item_hover(index: int) -> void:
