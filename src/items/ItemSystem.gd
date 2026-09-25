@@ -607,7 +607,10 @@ func ineffective_use_reason(item_id: String, targets: Array, in_battle: bool = f
 	for key in effects.keys():
 		if not is_effect_key_handled(str(key)):
 			return ""
-	if effects.has("add_buff") or effects.has("damage") or effects.has("repel_steps"):
+	# Damage and repel do something the moment they are used. A turn-duration buff does not: start_battle clears active_buffs before any turn, so a Power Drink spent from the pause menu never changes a swing. In battle the buff still lands, including at full HP.
+	if effects.has("damage") or effects.has("repel_steps"):
+		return ""
+	if effects.has("add_buff") and in_battle:
 		return ""
 	var heals_hp := _effect_amount(effects, "heal_hp") > 0 or _effect_amount(effects, "heal_hp_percent") > 0
 	var heals_mp := _effect_amount(effects, "heal_mp") > 0 or _effect_amount(effects, "heal_mp_percent") > 0
@@ -616,7 +619,7 @@ func ineffective_use_reason(item_id: String, targets: Array, in_battle: bool = f
 	var cures_listed := not cure_list.is_empty()
 	var revives := bool(effects.get("revive", false))
 	if not heals_hp and not heals_mp and not cures_all and not cures_listed and not revives:
-		if bool(effects.get("escape_battle", false)):
+		if bool(effects.get("escape_battle", false)) or effects.has("add_buff"):
 			if in_battle:
 				return ""
 			return "%s only works in battle" % name

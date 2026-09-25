@@ -126,7 +126,9 @@ func test_mp_status_revive_and_battle_only_items_each_say_why() -> void:
 	assert_eq(sys.ineffective_use_reason("smoke", [full], true), "",
 		"the same Smoke Bomb is a real action once a battle is underway")
 	assert_eq(sys.ineffective_use_reason("coin", [full]), "Shiny Coin can't be used")
-	assert_eq(sys.ineffective_use_reason("drink", [full]), "", "a buff still lands at full HP")
+	assert_eq(sys.ineffective_use_reason("drink", [full], true), "", "a buff still lands at full HP in battle")
+	assert_eq(sys.ineffective_use_reason("drink", [full]), "Drink only works in battle",
+		"the same buff spent from the pause menu is wiped at the next battle's start")
 	sys.free()
 
 
