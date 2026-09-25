@@ -5857,6 +5857,22 @@ func _nudge_macro_volatility(amount: float) -> void:
 		game_state.macro_volatility = clampf(game_state.macro_volatility + amount, 0.0, 1.0)
 
 
+## The caster's half of a heal, with no side effect. The receiver's half — curse, the
+## healing_multiplier dial, the target's passives — belongs to Combatant.heal_preview.
+func heal_cast_amount(caster: Combatant, ability: Dictionary) -> int:
+	var base: int = int(ability.get("heal_amount", 0))
+	if base <= 0 or caster == null:
+		return 0
+	return int(base * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0))
+
+
+## What this heal will add to THIS target, so a menu quotes the number the cast will deliver.
+func estimate_heal_amount(caster: Combatant, target: Combatant, ability: Dictionary) -> int:
+	if target == null or not is_instance_valid(target):
+		return 0
+	return target.heal_preview(heal_cast_amount(caster, ability))
+
+
 func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	## ⛔ A healing ability that heals OVER TIME delivered nothing. This executor reads `heal_amount` and
 	## nothing else, and `regenerate` (the Cleric's Recreatio, 10 MP) authors none — it authors
@@ -5868,10 +5884,9 @@ func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: A
 	if str(ability.get("effect", "")) != "" and int(ability.get("heal_amount", 0)) <= 0:
 		_execute_support_ability(caster, ability, targets)
 		return
-	var heal_amount = ability.get("heal_amount", 0)
-	var multiplier = GameState.get_constant("healing_multiplier")
-	heal_amount = int(heal_amount * multiplier)
-	heal_amount = int(heal_amount * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0))
+	## The dial was read here AND inside heal(), so every spell squared it while a potion applied it
+	## once — and this read was outside the [0.1, 10.0] clamp that exists to stop a runaway.
+	var heal_amount: int = heal_cast_amount(caster, ability)
 
 	var any_healed := false
 	for target in targets:
