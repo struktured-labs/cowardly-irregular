@@ -4403,6 +4403,25 @@ func _prewarm_area_sprites() -> void:
 		_prewarm_battle_sprites(enemy_data)
 
 
+## Mirrors the early returns below, plus the world_transition suppress inside _start_battle_async. MimicChest will not spend itself when this is true.
+func battle_trigger_would_be_dropped() -> bool:
+	if current_state != LoopState.EXPLORATION:
+		return true
+	if _overworld_menu and is_instance_valid(_overworld_menu):
+		return true
+	if _autogrind_ui_open():
+		return true
+	if _autobattle_editor and is_instance_valid(_autobattle_editor):
+		return true
+	if _battle_transition_starting:
+		return true
+	if _transition_in_progress:
+		return true
+	if InputLockManager and InputLockManager.has_lock("world_transition"):
+		return true
+	return false
+
+
 func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> void:
 	"""Handle battle triggered from exploration"""
 	print("[GAMELOOP] _on_exploration_battle_triggered called! state=%s enemies=%s" % [current_state, enemies])
