@@ -163,7 +163,7 @@
 				"victory": [
 					{
 						"line": "Verse complete. Wounds tallied, breaths counted, all party members returned to maximum. The Loop is pleased.",
-						"when": "none_down"
+						"when": "all_full"
 					},
 					{
 						"line": "Verse complete. Everyone accounted for.",
