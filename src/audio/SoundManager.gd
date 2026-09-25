@@ -243,6 +243,8 @@ const _VOICE_DECODE_GRACE_MSEC: int = 200
 var _voice_decode_bound_override_msec: int = 0
 ## 0 = call load_from_buffer. Above 0 the worker sleeps instead, standing in for a decode that does not return.
 var _voice_decode_test_block_msec: int = 0
+## Test hook: the stand-in ignores abandonment the way a real stuck load_from_buffer does, so it stays an orphan.
+var _voice_decode_test_ignore_abandon: bool = false
 var _voice_decode_mutex: Mutex = Mutex.new()
 var _voice_decode_sem: Semaphore = Semaphore.new()
 var _voice_decode_gen: int = 0
@@ -372,6 +374,10 @@ func decode_voice_wav(bytes: PackedByteArray) -> AudioStreamWAV:
 
 func _decode_voice_wav_bounded(bytes: PackedByteArray) -> AudioStreamWAV:
 	_reap_voice_decode_threads()
+	## A self-cleared latch must not start a second worker beside a live orphan: orphans reap only when they finish.
+	if _voice_decode_still_running():
+		push_warning("[AUDIO] %d voice decode thread(s) still inside load_from_buffer — refusing to start another" % _orphaned_voice_decodes.size())
+		return null
 	while _voice_decode_sem.try_wait():
 		pass
 	_voice_decode_mutex.lock()
@@ -417,7 +423,7 @@ func _voice_decode_worker(bytes: PackedByteArray, gen: int, block_msec: int) -> 
 		var t0 := Time.get_ticks_msec()
 		while Time.get_ticks_msec() - t0 < block_msec:
 			_voice_decode_mutex.lock()
-			var stop := _voice_decode_abandoned or _voice_decode_gen != gen
+			var stop := not _voice_decode_test_ignore_abandon and (_voice_decode_abandoned or _voice_decode_gen != gen)
 			_voice_decode_mutex.unlock()
 			if stop:
 				break

@@ -81,6 +81,7 @@ func _ready() -> void:
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 	refresh_device_label()
 	refresh_footer()
+	_refresh_test_close_hint()
 
 
 ## Re-derive the footer when a pad arrives or leaves; deriving it once at open-time is half the job.
@@ -486,8 +487,10 @@ func _build_test_overlay() -> void:
 	box.add_child(raw_label)
 
 	var hint = Label.new()
-	## Frozen Nintendo letter on the CONTROLS screen itself, of all surfaces (2026-09-16).
-	hint.text = "%s / Escape to close" % InputProfileManager.hint_for_action("ui_cancel")
+	## Cancel, not a frozen south-face index. Re-derived in _start_test: toggling the face
+	## convention while this menu is open moves Cancel, and a caption baked here would not.
+	hint.name = "TestCloseHint"
+	hint.text = _test_close_hint()
 	hint.position = Vector2(20, box.size.y - 36)
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -509,10 +512,23 @@ func _needs_a_pad(message: String) -> bool:
 	return true
 
 
+func _test_close_hint(device_name: String = "") -> String:
+	return "%s / Escape to close" % InputProfileManager.hint_for_action("ui_cancel", device_name)
+
+
+func _refresh_test_close_hint() -> void:
+	if _test_overlay == null or not is_instance_valid(_test_overlay):
+		return
+	var hint := _test_overlay.get_node_or_null("TestBox/TestCloseHint")
+	if hint:
+		hint.text = _test_close_hint()
+
+
 func _start_test() -> void:
 	if _needs_a_pad("Connect a controller to test its buttons"):
 		return
 	_testing = true
+	_refresh_test_close_hint()
 	_test_overlay.visible = true
 	var result = _test_overlay.get_node_or_null("TestBox/TestResult")
 	if result:
@@ -532,10 +548,15 @@ func _stop_test() -> void:
 
 
 func _handle_test_input(event: InputEvent) -> void:
+	# Close on Cancel, wherever it is bound. Index 0 is Cancel only in Nintendo mode; with the
+	# Xbox/PlayStation convention, or after a rebind, it is a different button — and the caption
+	# above names ui_cancel, so closing on the south face dismissed Confirm and ignored Cancel.
+	if event.is_action_pressed("ui_cancel") and not event.is_echo():
+		_stop_test()
+		get_viewport().set_input_as_handled()
+		return
+
 	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_X or event.keycode == KEY_ESCAPE:
-			_stop_test()
-			get_viewport().set_input_as_handled()
 		return
 
 	if event is InputEventJoypadButton and event.pressed:
@@ -561,13 +582,6 @@ func _handle_test_input(event: InputEvent) -> void:
 				raw.text = "(no action mapped)"
 			else:
 				raw.text = "Mapped to: %s" % " / ".join(mapped_actions)
-
-		# B (button 0) also closes after showing the result — but only if it
-		# was already shown before (i.e. user presses B intentionally to exit).
-		# We let it display first on press then user presses B again to close.
-		# Actually: if btn == 0, close immediately so it's not confusing.
-		if btn == 0:
-			_stop_test()
 
 		get_viewport().set_input_as_handled()
 		return

@@ -1447,12 +1447,7 @@ func _do_rest() -> void:
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if game_loop and game_loop.party:
 		for member in game_loop.party:
-			# 2026-07-15 playtest: "slept at inn, bard still KO'd" — HP was maxed but is_alive stayed false. Revive KO'd members first so the inn actually raises them, then top off HP/MP.
-			if not member.is_alive and member.has_method("revive"):
-				member.revive(member.max_hp)
-			member.current_hp = member.max_hp
-			member.current_mp = member.max_mp
-			member.current_ap = 0
+			_restore_member_from_rest(member)
 
 	if SoundManager:
 		SoundManager.play_ui("heal")
@@ -1465,6 +1460,41 @@ func _do_rest() -> void:
 	if _rest_dialog and is_instance_valid(_rest_dialog):
 		_rest_dialog.queue_free()
 		_rest_dialog = null
+
+
+## revive() refuses a permakilled ally, so topping HP off afterwards fills a corpse's bar. Ailments and temporary modifiers clear; the marker, injuries, and the formation row stay.
+func _restore_member_from_rest(member) -> void:
+	# 2026-07-15 playtest: "slept at inn, bard still KO'd" — HP was maxed but is_alive stayed false. Revive ordinary KOs first.
+	if not member.is_alive and member.has_method("revive"):
+		member.revive(member.max_hp)
+	if member.is_alive:
+		member.current_hp = member.max_hp
+	else:
+		member.current_hp = 0
+	member.current_mp = member.max_mp
+	member.current_ap = 0
+	if member.has_method("clear_transient_statuses"):
+		member.clear_transient_statuses()
+	_clear_rest_modifiers(member)
+
+
+func _clear_rest_modifiers(member) -> void:
+	if not ("active_buffs" in member):
+		return
+	var kept: Array = []
+	if member.has_method("detach_formation_stances"):
+		kept = member.detach_formation_stances()
+	member.active_buffs.clear()
+	if member.has_method("restore_formation_stances"):
+		member.restore_formation_stances(kept)
+	if not ("active_debuffs" in member):
+		return
+	var debuffs: Array = member.active_debuffs
+	for i in range(debuffs.size() - 1, -1, -1):
+		var entry: Variant = debuffs[i]
+		if entry is Dictionary and Combatant.is_formation_stance(entry):
+			continue
+		debuffs.remove_at(i)
 
 
 ## Deducts REST_COST. False = the rest is refused (message shown, gold untouched); the caller must not restore the party.

@@ -82,6 +82,7 @@ func test_detail_column_labels_never_overlap_at_any_text_size() -> void:
 		await wait_frames(1)
 		var column := [
 			["stats", stats], ["weak", menu.get("_detail_weak")],
+			["immune", menu.get("_detail_immune")],
 			["resist", menu.get("_detail_resist")], ["rewards", menu.get("_detail_rewards")],
 			["drops", menu.get("_detail_drops")],
 		]
