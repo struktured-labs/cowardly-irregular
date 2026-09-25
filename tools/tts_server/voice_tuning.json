@@ -1,0 +1,7 @@
+{
+  "_comment": "cowir-sfx owns this. Per-voice delivery for /v1/audio/speech, keyed by the voice name in data/voice_cast.json. Must match the prerender tuning recorded per clip in sfx_manifest.json.",
+  "voices": {
+    "rogue.wav": {"exaggeration": 0.55, "cfg_weight": 0.4, "seed": 42},
+    "bard.wav":  {"exaggeration": 0.9,  "cfg_weight": 0.3, "seed": 42}
+  }
+}

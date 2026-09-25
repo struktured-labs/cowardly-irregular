@@ -17,6 +17,7 @@ func after_each() -> void:
 		return
 	SoundManager._voice_decode_test_block_msec = 0
 	SoundManager._voice_decode_bound_override_msec = 0
+	SoundManager._voice_decode_test_ignore_abandon = false
 	if SoundManager._voice_decode_still_running():
 		SoundManager._voice_decode_abandoned = true
 		var until := Time.get_ticks_msec() + 500
@@ -450,3 +451,33 @@ func test_a_frozen_preroll_still_latches_under_the_dummy_watch() -> void:
 	var wav := AudioStreamWAV.new()
 	assert_false(SoundManager._commit_wav_pcm(wav, PackedByteArray([0, 1])),
 		"the latched watch still accepted a PCM commit")
+
+
+## A real stuck load_from_buffer ignores abandonment, so it stays in _orphaned_voice_decodes. The latch then
+## self-clears on mixer progress; a second decode must not start another worker beside that live orphan.
+func test_a_cleared_latch_does_not_stack_a_second_orphan() -> void:
+	if SoundManager.mixer_is_wedged():
+		pending("mixer already wedged — not starting another decode on a dead mix")
+		assert_true(SoundManager.mixer_is_wedged(), "the latch that blocked the decode is set")
+		return
+	assert_true(SoundManager._mixer_stall_watch_active(), "CONTROL: headless must arm the watch, or the bound never runs")
+	assert_eq(SoundManager._orphaned_voice_decodes.size(), 0, "CONTROL: no decode thread left over from an earlier arm")
+	SoundManager._voice_decode_bound_override_msec = 200
+	SoundManager._voice_decode_test_block_msec = 1500
+	SoundManager._voice_decode_test_ignore_abandon = true
+	_planted = true
+	assert_null(VoiceAudio.decode(WavFixture.tone(0.05, 1000)), "a stalled decode still produced a stream")
+	assert_eq(SoundManager._orphaned_voice_decodes.size(), 1,
+		"CONTROL: a stand-in that ignores abandonment must stay an orphan, or this arm measures nothing")
+	SoundManager._audio_mixer_wedged = false          # what note_mixer_progress does once the playhead moves
+	var started := Time.get_ticks_msec()
+	assert_null(VoiceAudio.decode(WavFixture.tone(0.05, 1000)), "a decode beside a live orphan produced a stream")
+	var elapsed := Time.get_ticks_msec() - started
+	assert_eq(SoundManager._orphaned_voice_decodes.size(), 1,
+		"a second decode started another worker beside the live orphan — they stack when stalls repeat")
+	assert_lt(elapsed, 150, "the refused decode took %d ms — it started a worker instead of refusing" % elapsed)
+	var until := Time.get_ticks_msec() + 3000         # let this arm's own orphan finish, so it cannot leak into the next
+	while SoundManager._voice_decode_still_running() and Time.get_ticks_msec() < until:
+		OS.delay_msec(20)
+	SoundManager._reap_voice_decode_threads()
+	assert_eq(SoundManager._orphaned_voice_decodes.size(), 0, "CONTROL: the orphan finished and was reaped")
