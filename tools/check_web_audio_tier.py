@@ -72,6 +72,11 @@ import sys
 # that a median over 161 files would absorb.
 RATIO_LO, RATIO_HI = 0.95, 1.30
 MEDIAN_LO, MEDIAN_HI = 1.00, 1.16
+# WHERE the stage holds this tier's files. Music by default; the web voice tier passes
+# --subdir=assets/audio/sfx (make_web_voice.sh). Both bands above were calibrated on MUSIC, so a
+# non-music tier must bring its own measured bands (--ratio-band / --median-band) — this tool does
+# not assume a 16 KB voice line carries the same packing overhead as a 500 KB bed.
+SUBDIR = "assets/audio/music"
 
 
 def die(msg):
@@ -105,7 +110,7 @@ def pck_entries(path):
 
 def import_artifact(stage, name):
     """The artifact a staged source declares, from its own .import sidecar."""
-    sidecar = os.path.join(stage, "assets", "audio", "music", name + ".ogg.import")
+    sidecar = os.path.join(stage, SUBDIR, name + ".ogg.import")
     if not os.path.exists(sidecar):
         return None, f"{name}: no .import sidecar in the stage — the stage never imported it"
     with open(sidecar, encoding="utf-8", errors="replace") as f:
@@ -134,6 +139,26 @@ def main():
         die(f"--stage={stage} is not a directory. Silently falling back to a basename join would "
             f"answer a WEAKER question than the one asked for.")
     cache_line = int(opts.get("cache-line", 160 * 1024 * 1024))
+    global SUBDIR, RATIO_LO, RATIO_HI, MEDIAN_LO, MEDIAN_HI
+    SUBDIR = opts.get("subdir", SUBDIR).rstrip("/")
+    for key in ("ratio-band", "median-band"):
+        if key in opts:
+            try:
+                lo, hi = (float(x) for x in opts[key].split(","))
+            except ValueError:
+                die(f"--{key}={opts[key]} is not LO,HI — refusing to guess a band")
+            if not (0 < lo < hi):
+                die(f"--{key}={opts[key]} is not an increasing positive band")
+            if key == "ratio-band":
+                RATIO_LO, RATIO_HI = lo, hi
+            else:
+                MEDIAN_LO, MEDIAN_HI = lo, hi
+    if SUBDIR != "assets/audio/music" and ("ratio-band" not in opts or "median-band" not in opts):
+        die(f"--subdir={SUBDIR} needs its own --ratio-band and --median-band: the defaults were "
+            f"calibrated on music and would judge another corpus by the wrong yardstick")
+    if SUBDIR != "assets/audio/music" and opts.get("record"):
+        die("--record writes the MUSIC reference that make_web_audio.sh's size projection reads "
+            "(packed_music_bytes); a non-music tier must not overwrite it")
 
     entries = pck_entries(pck_path)
     file_size = os.path.getsize(pck_path)
@@ -160,7 +185,7 @@ def main():
     swapped_bad = []
     if stage:
         for name, src_size in sorted(tracks.items()):
-            staged = os.path.join(stage, "assets", "audio", "music", name + ".ogg")
+            staged = os.path.join(stage, SUBDIR, name + ".ogg")
             if not os.path.exists(staged):
                 swapped_bad.append(f"{name}: in the tier but NOT in the stage — never swapped in")
                 continue
@@ -214,7 +239,7 @@ def main():
     expect = int(opts.get("expect-tracks", len(tracks)))
     print(f"[tier] pck FILE {file_size:,} B = {file_size/1048576:.2f} MiB "
           f"(table entries {table_total:,} B; {file_size-table_total:,} B of header and table)")
-    print(f"[tier] music: {matched}/{len(tracks)} tier tracks resolved "
+    print(f"[tier] {SUBDIR}: {matched}/{len(tracks)} tier tracks resolved "
           f"{'via the stage .import sidecars' if stage else 'by basename'} · "
           f"{packed_total:,} B packed")
     if ratios:
@@ -229,7 +254,7 @@ def main():
                        f"encoded at a DIFFERENT bitrate. This is the tier-identity arm; a "
                        f"per-file band cannot see it (the ranges overlap).")
     if matched != expect:
-        bad.append(f"resolved {matched} music entries, expected {expect} — a TIER CHANGE must "
+        bad.append(f"resolved {matched} entries under {SUBDIR}, expected {expect} — a TIER CHANGE must "
                    f"not remove tracks")
     if file_size >= cache_line:
         msg = (f"pck {file_size/1048576:.2f} MiB is AT OR OVER the {cache_line/1048576:.2f} MiB "
