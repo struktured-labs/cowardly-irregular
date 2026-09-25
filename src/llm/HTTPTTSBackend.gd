@@ -7,12 +7,17 @@ signal availability_changed(available: bool)
 
 @export var base_url: String = "http://127.0.0.1:8004"
 @export var model: String = "chatterbox"
+var max_response_bytes: int = MAX_RESPONSE_BYTES
 
 const PROBE_TIMEOUT_SEC: float = 1.5
 const PROBE_INTERVAL_SEC: float = 30.0
 const REQUEST_TIMEOUT_SEC: float = 8.0
 ## Per-frame reading budget: devnen streams its WAV as io.BytesIO lines, ~2000 chunks for a 5 s line.
 const DRAIN_BUDGET_USEC := 2000
+## Reply ceiling: a 10 s line is ~480 KB, and the URL is player-set, so a server may not stream without bound.
+const MAX_RESPONSE_BYTES := 8 * 1024 * 1024
+## The voice list is a few KB; the probe hits the same player-set URL, so it is bounded too.
+const PROBE_MAX_BYTES := 1024 * 1024
 
 var _inflight: Dictionary = {}
 var _ready_flag: bool = false
@@ -112,6 +117,9 @@ func _step(id: String) -> void:
 				_complete(id, c.get_response_code())
 		HTTPClient.STATUS_BODY:
 			job["code"] = c.get_response_code()
+			if c.get_response_body_length() > max_response_bytes:
+				_finish(id, false, "reply of %d bytes is over the %d-byte cap" % [c.get_response_body_length(), max_response_bytes])
+				return
 			var t0 := Time.get_ticks_usec()
 			var got: PackedByteArray = job["bytes"]
 			var dry := 0
@@ -125,6 +133,9 @@ func _step(id: String) -> void:
 					continue
 				dry = 0
 				got.append_array(chunk)
+				if got.size() > max_response_bytes:
+					_finish(id, false, "reply passed the %d-byte cap mid-stream" % max_response_bytes)
+					return
 			## A packed array read from a Dictionary is a copy: append to a local, then store it back.
 			job["bytes"] = got
 			if c.get_status() != HTTPClient.STATUS_BODY:
@@ -207,6 +218,7 @@ func _start_probe() -> void:
 		return
 	_probe_request = HTTPRequest.new()
 	_probe_request.timeout = PROBE_TIMEOUT_SEC
+	_probe_request.body_size_limit = PROBE_MAX_BYTES
 	add_child(_probe_request)
 	_probe_request.request_completed.connect(_on_probe_completed)
 	if _probe_request.request(contacts_url() + "/v1/audio/voices") != OK:

@@ -1,0 +1,160 @@
+diff --git a/config.yaml b/config.yaml
+index 2a5f0ea..cea6de4 100644
+--- a/config.yaml
++++ b/config.yaml
+@@ -1,5 +1,5 @@
+ server:
+-  host: 0.0.0.0
++  host: 127.0.0.1
+   port: 8004
+   use_ngrok: false
+   use_auth: false
+@@ -9,7 +9,7 @@ server:
+   log_file_max_size_mb: 10
+   log_file_backup_count: 5
+ model:
+-  repo_id: chatterbox-turbo
++  repo_id: chatterbox
+ tts_engine:
+   device: auto
+   predefined_voices_path: voices
+diff --git a/server.py b/server.py
+index e435185..508f1d1 100644
+--- a/server.py
++++ b/server.py
+@@ -35,6 +35,7 @@ from fastapi.responses import (
+     JSONResponse,
+     StreamingResponse,
+     FileResponse,
++    Response,
+ )
+ from fastapi.staticfiles import StaticFiles
+ from fastapi.templating import Jinja2Templates
+@@ -198,6 +199,26 @@ app.add_middleware(
+     allow_headers=["*"],
+ )
+ 
++# --- cowir patch: local-only guard (outermost middleware, runs before CORS) ---
++# Players' servers expose ONLY the two OpenAI-compatible voice endpoints, refuse any request carrying an
++# Origin header (browsers send one cross-origin; Godot's HTTPRequest never does) and any Host that is not
++# loopback (defeats DNS rebinding). COWIR_TTS_DEV=1 re-opens the other routes for local tuning only;
++# the Origin and Host checks apply regardless.
++_COWIR_ALLOWED = {("POST", "/v1/audio/speech"), ("GET", "/v1/audio/voices")}
++
++
++@app.middleware("http")
++async def _cowir_local_guard(request: Request, call_next):
++    if request.headers.get("origin") is not None:
++        return JSONResponse({"detail": "cross-origin requests are refused"}, status_code=403)
++    host = request.headers.get("host", "").rsplit(":", 1)[0].strip("[]").lower()
++    if host not in ("127.0.0.1", "localhost", "::1"):
++        return JSONResponse({"detail": "non-loopback Host refused"}, status_code=403)
++    if os.environ.get("COWIR_TTS_DEV") != "1" and (request.method, request.url.path) not in _COWIR_ALLOWED:
++        return JSONResponse({"detail": "not found"}, status_code=404)
++    return await call_next(request)
++
++
+ # --- Static Files and HTML Templates ---
+ ui_static_path = Path(__file__).parent / "ui"
+ if ui_static_path.is_dir():
+@@ -1375,9 +1396,8 @@ async def custom_tts_endpoint(
+                 status_code=500, detail=f"Failed to save audio file: {e}"
+             )
+ 
+-    return StreamingResponse(
+-        io.BytesIO(encoded_audio_bytes), media_type=media_type, headers=headers
+-    )
++    # cowir patch: send whole with Content-Length; iterating a BytesIO yields one chunk per newline byte.
++    return Response(content=encoded_audio_bytes, media_type=media_type, headers=headers)
+ 
+ @app.get("/v1/audio/voices", tags=["llama-swap Compatible"])
+ # llama-swap, koboldcpp, and probably some more use this
+@@ -1391,6 +1411,17 @@ async def openai_voices_endpoint(model: str = ""):
+             status_code=500, detail="Failed to retrieve predefined voices list."
+         )
+ 
++def _voice_tuning() -> dict:
++    """cowir patch: per-voice exaggeration/cfg_weight/temperature/seed from voice_tuning.json (read per request)."""
++    import json as _json, os as _os
++    _p = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "voice_tuning.json")
++    try:
++        with open(_p, encoding="utf-8") as _f:
++            return _json.load(_f).get("voices", {})
++    except FileNotFoundError:
++        return {}
++
++
+ @app.post("/v1/audio/speech", tags=["OpenAI Compatible"])
+ async def openai_speech_endpoint(request: OpenAISpeechRequest):
+     # Determine the audio prompt path based on the voice parameter
+@@ -1412,6 +1443,8 @@ async def openai_speech_endpoint(request: OpenAISpeechRequest):
+         )
+ 
+     # Check if the TTS model is loaded
++    _tune = _voice_tuning().get(request.voice, {})  # cowir: per-voice delivery, params never cross the wire
++    logger.info(f"voice tuning for {request.voice!r}: {_tune or 'server defaults'}")
+     if not engine.MODEL_LOADED:
+         raise HTTPException(
+             status_code=503,
+@@ -1420,7 +1453,7 @@ async def openai_speech_endpoint(request: OpenAISpeechRequest):
+ 
+     try:
+         seed_to_use = (
+-            request.seed if request.seed is not None else get_gen_default_seed()
++            request.seed if request.seed is not None else _tune.get("seed", get_gen_default_seed())
+         )
+ 
+         # Split long text into chunks for better quality (same as /tts endpoint)
+@@ -1444,9 +1477,9 @@ async def openai_speech_endpoint(request: OpenAISpeechRequest):
+             audio_tensor, sr = engine.synthesize(
+                 text=chunk_text,
+                 audio_prompt_path=str(audio_prompt_path),
+-                temperature=get_gen_default_temperature(),
+-                exaggeration=get_gen_default_exaggeration(),
+-                cfg_weight=get_gen_default_cfg_weight(),
++                temperature=_tune.get("temperature", get_gen_default_temperature()),
++                exaggeration=_tune.get("exaggeration", get_gen_default_exaggeration()),
++                cfg_weight=_tune.get("cfg_weight", get_gen_default_cfg_weight()),
+                 seed=chunk_seed,
+                 language=request.language or get_gen_default_language(),
+             )
+@@ -1537,7 +1570,7 @@ async def openai_speech_endpoint(request: OpenAISpeechRequest):
+                     status_code=500, detail=f"Failed to save audio file: {e}"
+                 )
+ 
+-        return StreamingResponse(io.BytesIO(encoded_audio), media_type=media_type)
++        return Response(content=encoded_audio, media_type=media_type)  # cowir patch: whole body, not newline-split chunks
+ 
+     except Exception as e:
+         logger.error(f"Error in openai_speech_endpoint: {e}", exc_info=True)
+diff --git a/utils.py b/utils.py
+index ec99d5f..d4afeca 100644
+--- a/utils.py
++++ b/utils.py
+@@ -327,7 +327,7 @@ def encode_audio(
+         elif output_format == "wav":
+             # WAV typically uses int16 for broader compatibility.
+             # Clip audio to [-1.0, 1.0] before converting to int16 to prevent overflow.
+-            audio_clipped = np.clip(audio_array, -1.0, 1.0)
++            _peak = float(np.max(np.abs(audio_array))) if audio_array.size else 0.0; audio_array = audio_array * (0.891 / _peak) if _peak > 0.891 else audio_array; audio_clipped = np.clip(audio_array, -1.0, 1.0)
+             audio_int16 = (audio_clipped * 32767).astype(np.int16)
+             audio_to_write = audio_int16  # Use the int16 version for WAV
+             sf.write(
+@@ -339,7 +339,7 @@ def encode_audio(
+             )
+ 
+         elif output_format == "mp3":
+-            audio_clipped = np.clip(audio_array, -1.0, 1.0)
++            _peak = float(np.max(np.abs(audio_array))) if audio_array.size else 0.0; audio_array = audio_array * (0.891 / _peak) if _peak > 0.891 else audio_array; audio_clipped = np.clip(audio_array, -1.0, 1.0)
+             audio_int16 = (audio_clipped * 32767).astype(np.int16)
+             audio_segment = AudioSegment(
+             audio_int16.tobytes(),
+@@ -413,7 +413,7 @@ def save_audio_to_file(
+             else:
+                 audio_array = audio_array.astype(np.float32)
+ 
+-        audio_clipped = np.clip(audio_array, -1.0, 1.0)
++        _peak = float(np.max(np.abs(audio_array))) if audio_array.size else 0.0; audio_array = audio_array * (0.891 / _peak) if _peak > 0.891 else audio_array; audio_clipped = np.clip(audio_array, -1.0, 1.0)
+         audio_int16 = (audio_clipped * 32767).astype(np.int16)
+ 
+         sf.write(
