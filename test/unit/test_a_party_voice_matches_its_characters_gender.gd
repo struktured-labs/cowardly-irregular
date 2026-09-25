@@ -15,8 +15,8 @@ const PERSONAS := "res://data/job_personas.json"
 ## struktured's locked canon: Fighter he · Cleric she · Mage he · Bard she.
 const CANON := {"fighter": "male", "cleric": "female", "mage": "male", "bard": "female"}
 ## The Rogue is "unknown for the whole game", and struktured put the voice in scope on 2026-09-24:
-## "doesnt really sound androgenous, might need to revisit". Callum (male) is still cast, so the Rogue
-## must declare its casting but is unconstrained here until a re-voice defines an ambiguous target.
+## "doesnt really sound androgenous, might need to revisit". Callum is now pitch/formant-shifted toward
+## ambiguous, a candidate he has not yet judged by ear, so the Rogue declares its casting but is unconstrained.
 const UNRULED := ["rogue"]
 
 
