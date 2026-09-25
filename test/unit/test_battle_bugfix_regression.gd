@@ -674,9 +674,15 @@ func test_charm_status_applies_and_expires() -> void:
 	_combatant.add_status("charm", 2)
 	assert_true(_combatant.has_status("charm"), "Should have charm status")
 
+	# Round-start ticks must not spend charm. Puppy Eyes is 1 turn and that tick runs before the action, so it used to fall off without stopping anyone.
 	_combatant.update_buff_durations()
 	_combatant.update_buff_durations()
-	assert_false(_combatant.has_status("charm"), "Charm should expire after 2 ticks")
+	assert_true(_combatant.has_status("charm"), "round-start ticks must leave charm for the action that spends it")
+	assert_eq(int(_combatant.status_durations.get("charm", 0)), 2, "two round-start ticks spend zero charm points")
+	_combatant.spend_action_clock("charm")
+	assert_eq(int(_combatant.status_durations.get("charm", 0)), 1, "one skipped action spends one point")
+	_combatant.spend_action_clock("charm")
+	assert_false(_combatant.has_status("charm"), "the second skipped action spends a 2-turn charm")
 
 
 # ---- Multiple statuses can coexist ----
