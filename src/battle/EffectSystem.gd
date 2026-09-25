@@ -243,13 +243,8 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 	# Environmental reaction: warm orange-red background tint
 	_tint_battle_background(Color(1.3, 0.7, 0.5, 1.0), 0.4)
 
-	# Screen-filling flash (fix: start invisible, add mouse_filter)
-	var flash = ColorRect.new()
-	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
-	flash.color = Color(1.0, 0.5, 0.0, 0.0)
-	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash.z_index = 50
-	effect.add_child(flash)
+	# Screen-filling flash. Reduce Flashes skips the overlay; the eruption still plays.
+	var flash := _make_screen_flash(effect, Color(1.0, 0.5, 0.0, 0.0))
 
 	# Big screen shake
 	var shake_intensity = lerp(6.0, 20.0, power_t)
@@ -281,10 +276,11 @@ func _animate_fire(effect: Node2D, on_complete: Callable, power: float = 1.0) ->
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Screen flash: bright burst then fade
-	var flash_alpha = lerp(0.5, 0.9, power_t)
-	tween.tween_property(flash, "color:a", flash_alpha, 0.04)
-	tween.tween_property(flash, "color:a", 0.0, 0.2).set_delay(0.04)
+	# Screen flash: bright burst then fade. No rect when Reduce Flashes is on.
+	if flash:
+		var flash_alpha = lerp(0.5, 0.9, power_t)
+		tween.tween_property(flash, "color:a", flash_alpha, 0.04)
+		tween.tween_property(flash, "color:a", 0.0, 0.2).set_delay(0.04)
 
 	# Double ring expansion
 	var ring_scale = lerp(3.0, 6.0, power_t)
@@ -335,6 +331,23 @@ func _create_explosion_ring(color: Color) -> Sprite2D:
 
 	sprite.texture = ImageTexture.create_from_image(img)
 	return sprite
+
+
+func _reduce_flashes() -> bool:
+	return GameState != null and ("reduce_flashes" in GameState) and bool(GameState.reduce_flashes)
+
+
+## Full-screen spell flash. Null when Reduce Flashes is on; particles and rings still play.
+func _make_screen_flash(parent: Node, color: Color) -> ColorRect:
+	if _reduce_flashes():
+		return null
+	var flash := ColorRect.new()
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.color = color
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	flash.z_index = 50
+	parent.add_child(flash)
+	return flash
 
 
 func _trigger_screen_shake(intensity: float, duration: float) -> void:
@@ -430,13 +443,8 @@ func _animate_ice(effect: Node2D, on_complete: Callable, power: float = 1.0) -> 
 	# Environmental reaction: cold blue desaturation
 	_tint_battle_background(Color(0.65, 0.75, 1.0, 1.0), 0.4)
 
-	# Screen flash — icy white-blue
-	var flash = ColorRect.new()
-	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
-	flash.color = Color(0.7, 0.85, 1.0, 0.0)
-	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash.z_index = 50
-	effect.add_child(flash)
+	# Screen flash — icy white-blue. Reduce Flashes skips the overlay.
+	var flash := _make_screen_flash(effect, Color(0.7, 0.85, 1.0, 0.0))
 
 	# Screen shake
 	_trigger_screen_shake(lerp(4.0, 16.0, power_t), lerp(0.2, 0.5, power_t))
@@ -471,9 +479,10 @@ func _animate_ice(effect: Node2D, on_complete: Callable, power: float = 1.0) -> 
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Icy screen flash
-	tween.tween_property(flash, "color:a", lerp(0.3, 0.7, power_t), 0.05)
-	tween.tween_property(flash, "color:a", 0.0, 0.25).set_delay(0.05)
+	# Icy screen flash. No rect when Reduce Flashes is on.
+	if flash:
+		tween.tween_property(flash, "color:a", lerp(0.3, 0.7, power_t), 0.05)
+		tween.tween_property(flash, "color:a", 0.0, 0.25).set_delay(0.05)
 
 	# Phase 1: Inner ring converges to center
 	for i in range(shard_count):
@@ -533,16 +542,12 @@ func _animate_lightning(effect: Node2D, on_complete: Callable, power: float = 1.
 	"""Lightning spell — CT-style: strobe flash, multi-bolt strike, electric spark shower"""
 	var power_t = clampf((power - POWER_MIN) / (POWER_MAX - POWER_MIN), 0.0, 1.0)
 
-	# Environmental reaction: blinding white strobe
-	_tint_battle_background(Color(2.0, 2.0, 2.5, 1.0), 0.06)
+	# Blinding white strobe is a full-screen flash, so Reduce Flashes skips it.
+	if not _reduce_flashes():
+		_tint_battle_background(Color(2.0, 2.0, 2.5, 1.0), 0.06)
 
-	# Screen-filling white-yellow flash
-	var flash = ColorRect.new()
-	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
-	flash.color = Color(1.0, 1.0, 0.9, 0.0)
-	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash.z_index = 50
-	effect.add_child(flash)
+	# Screen-filling white-yellow flash. Reduce Flashes skips the overlay.
+	var flash := _make_screen_flash(effect, Color(1.0, 1.0, 0.9, 0.0))
 
 	# Heavy screen shake
 	_trigger_screen_shake(lerp(10.0, 25.0, power_t), lerp(0.2, 0.5, power_t))
@@ -575,11 +580,12 @@ func _animate_lightning(effect: Node2D, on_complete: Callable, power: float = 1.
 	var tween = create_tween()
 	tween.set_parallel(true)
 
-	# Strobe flash — rapid on/off for electric feel
-	tween.tween_property(flash, "color:a", lerp(0.7, 1.0, power_t), 0.02)
-	tween.tween_property(flash, "color:a", 0.1, 0.03).set_delay(0.02)
-	tween.tween_property(flash, "color:a", lerp(0.5, 0.8, power_t), 0.02).set_delay(0.05)
-	tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.07)
+	# Strobe flash — rapid on/off for electric feel. No rect when Reduce Flashes is on.
+	if flash:
+		tween.tween_property(flash, "color:a", lerp(0.7, 1.0, power_t), 0.02)
+		tween.tween_property(flash, "color:a", 0.1, 0.03).set_delay(0.02)
+		tween.tween_property(flash, "color:a", lerp(0.5, 0.8, power_t), 0.02).set_delay(0.05)
+		tween.tween_property(flash, "color:a", 0.0, 0.15).set_delay(0.07)
 
 	# Bolts flash with rapid flicker — staggered strikes
 	var flicker_count = int(lerp(3, 5, power_t))
