@@ -3362,6 +3362,11 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 		# "defeat" would retry forever — "unavailable" tells the cutscene to abort
 		push_warning("GameLoop.start_solo_battle: no party member with job '%s' who can fight (missing or permakilled) — cutscene battle skipped" % job_id)
 		return "unavailable"
+	# the spotlight short-circuit skips post-battle healing, so a retry would re-enter at 0 HP. A holder revive() will not raise must not be fielded — "defeat" retries forever.
+	_restore_duelist(spotlight_pc)
+	if not spotlight_pc.is_alive:
+		push_warning("GameLoop.start_solo_battle: '%s' is still down after restore — duel not started" % job_id)
+		return "unavailable"
 	_spotlight_saved_party = party.duplicate()
 	party = [spotlight_pc]
 	# struktured 2026-07-18: "auto battle should be forced off in spotlight by default" — the duel showcases MANUAL play of that kit; restore the player's setting afterward.
@@ -3370,17 +3375,6 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	AutobattleSystem.set_autobattle_enabled(duel_char_id, false)
 	_pending_spotlight_unlock = job_id
 	_spotlight_duel_active = true
-	# the spotlight short-circuit skips post-battle healing, so a retry would re-enter at 0 HP
-	_restore_duelist(spotlight_pc)
-	# A holder revive() will not raise must not enter the fight: "defeat" retries forever, and skip is inert while the battle step owns the screen.
-	if not spotlight_pc.is_alive:
-		party = _spotlight_saved_party.duplicate()
-		_spotlight_saved_party.clear()
-		AutobattleSystem.set_autobattle_enabled(duel_char_id, _spotlight_saved_autobattle)
-		_pending_spotlight_unlock = ""
-		_spotlight_duel_active = false
-		push_warning("GameLoop.start_solo_battle: '%s' is still down after restore — duel not started" % job_id)
-		return "unavailable"
 	# Progressive death-tiered hint (msg 2472): if prior attempts against this job's duel have accrued past a threshold, fire the matching spotlight_hint_<job>_<tier> before combat starts. Missing content in the TutorialHints catalog logs a push_warning that CI catches — cowir-story owns the copy.
 	_maybe_fire_spotlight_hint(job_id)
 	# step win_condition overrides; monsters.json is the data fallback (agreement ratchet-tested)
