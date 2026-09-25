@@ -658,13 +658,14 @@ func _check_status_skip(combatant) -> String:
 			_log("%s is paralyzed with fear!" % combatant.combatant_name)
 			return "skip"
 
-	## puppy_eyes applies charm; live skips the turn unless randf() < 0.35 breaks it. Fear falls through into this check, matching live's order.
+	## puppy_eyes applies charm; live skips the turn unless randf() < 0.35 breaks it. The skip spends one point; round-start end_turn does not.
 	if combatant.has_status("charm"):
 		if randf() < 0.35:
 			combatant.remove_status("charm")
 			_log("%s broke free from charm!" % combatant.combatant_name)
 		else:
 			_log("%s is charmed and won't act!" % combatant.combatant_name)
+			combatant.spend_action_clock("charm")
 			return "skip"
 
 	return ""
