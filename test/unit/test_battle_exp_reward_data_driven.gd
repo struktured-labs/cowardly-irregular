@@ -9,7 +9,8 @@ extends GutTest
 
 func test_victory_exp_sums_authored_rewards() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
-	assert_true(src.contains("get(\"exp_reward\", 25)"),
+	# Field elites stamp scaled exp_reward; default 25 is only for enemies with neither a stamp nor a catalog row.
+	assert_true(src.contains("_authored_reward(enemy, monsters_db, \"exp_reward\", 25)"),
 		"victory EXP must read per-monster exp_reward (default 25 for meta-less test enemies)")
 	assert_false(src.contains("var base_exp = 50"),
 		"the flat base-50 is the regression — it paid Mordaine like a slime pair")
