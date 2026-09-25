@@ -55,21 +55,21 @@ func get_signature_phrases(job_id: String) -> Array:
 	return arr as Array if arr is Array else []
 
 
-## A trigger's lines: one string (every entry authored so far) or a list. Variant n speaks clip voice_<job>_<trigger>_<n>; variant 0 keeps the unsuffixed clip.
-func get_trigger_lines(job_id: String, event_kind: String) -> Array:
+## A trigger's entries with their ORIGINAL list index: variant n speaks clip voice_<job>_<trigger>_<n>.
+func get_trigger_entries(job_id: String, event_kind: String) -> Array:
 	if not _data.has(job_id):
 		return []
 	var voices: Variant = _data[job_id].get("trigger_voices", {})
 	if not (voices is Dictionary):
 		return []
-	var entry: Variant = (voices as Dictionary).get(event_kind, "")
+	return VoiceLines.entries_of((voices as Dictionary).get(event_kind, null))
+
+
+## A trigger's line texts, in list order.
+func get_trigger_lines(job_id: String, event_kind: String) -> Array:
 	var out: Array = []
-	if entry is Array:
-		for l in entry:
-			if str(l) != "":
-				out.append(str(l))
-	elif str(entry) != "":
-		out.append(str(entry))
+	for e in get_trigger_entries(job_id, event_kind):
+		out.append(str(e["line"]))
 	return out
 
 
@@ -81,17 +81,24 @@ func get_trigger_voice(job_id: String, event_kind: String) -> String:
 
 var _last_variant: Dictionary = {}
 
-## {"line", "voice_key"}: a random variant, never the same one twice running when there are two or more.
+## {"line", "voice_key"}: a random entry, never the same one twice running when there are two or more.
 func pick_trigger_voice(job_id: String, event_kind: String) -> Dictionary:
-	var lines: Array = get_trigger_lines(job_id, event_kind)
-	if lines.is_empty():
+	var entries: Array = get_trigger_entries(job_id, event_kind)
+	if entries.is_empty():
 		return {"line": "", "voice_key": ""}
-	var key: String = job_id + "|" + event_kind
-	var n: int = 0
-	if lines.size() > 1:
-		var last: int = int(_last_variant.get(key, -1))
-		n = randi() % lines.size()
-		if n == last:
-			n = (last + 1 + randi() % (lines.size() - 1)) % lines.size()
-	_last_variant[key] = n
-	return {"line": str(lines[n]), "voice_key": event_kind if n == 0 else "%s_%d" % [event_kind, n]}
+	var e: Dictionary = _pick_no_repeat(job_id + "|" + event_kind, entries)
+	return {"line": str(e["line"]), "voice_key": VoiceLines.variant_key(event_kind, int(e["index"]))}
+
+
+## One entry at random, avoiding the ORIGINAL index spoken last time for this key.
+func _pick_no_repeat(key: String, entries: Array) -> Dictionary:
+	if entries.size() == 1:
+		_last_variant[key] = int(entries[0]["index"])
+		return entries[0]
+	var last: int = int(_last_variant.get(key, -1))
+	var pool: Array = entries.filter(func(x): return int(x["index"]) != last)
+	if pool.is_empty():
+		pool = entries
+	var e: Dictionary = pool[randi() % pool.size()]
+	_last_variant[key] = int(e["index"])
+	return e
