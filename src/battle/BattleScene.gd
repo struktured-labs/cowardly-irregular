@@ -2505,19 +2505,20 @@ func _full_render_storm(color: Color, to: Vector2, power: float) -> void:
 	var core_w: float = 7.0 * clampf(power, 1.0, 1.8)
 	var vp: Vector2 = get_viewport_rect().size
 
-	## The sky drops first so the bolts land on a dark stage rather than a lit one.
-	var sky := ColorRect.new()
-	sky.color = Color(0.05, 0.06, 0.14, 0.0)
-	sky.anchors_preset = Control.PRESET_FULL_RECT
-	sky.size = vp
-	sky.z_index = 3
-	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(sky)
-	var skt := create_tween()
-	skt.tween_property(sky, "color:a", 0.55, 0.10)
-	skt.tween_interval(0.10 + 0.09 * strikes)
-	skt.tween_property(sky, "color:a", 0.0, 0.22)
-	skt.tween_callback(sky.queue_free)
+	## Dark sky so the bolts read. It is a full-screen pulse, so Reduce Flashes skips it; bolts still strike.
+	if not _flashes_suppressed():
+		var sky := ColorRect.new()
+		sky.color = Color(0.05, 0.06, 0.14, 0.0)
+		sky.anchors_preset = Control.PRESET_FULL_RECT
+		sky.size = vp
+		sky.z_index = 3
+		sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(sky)
+		var skt := create_tween()
+		skt.tween_property(sky, "color:a", 0.55, 0.10)
+		skt.tween_interval(0.10 + 0.09 * strikes)
+		skt.tween_property(sky, "color:a", 0.0, 0.22)
+		skt.tween_callback(sky.queue_free)
 
 	for s in range(strikes):
 		var delay: float = 0.06 + s * 0.09
@@ -5758,17 +5759,16 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	flash_container.modulate.a = VICTORY_BANNER_ALPHA
 	add_child(flash_container)
 
-	# Screen flash effect (brief white overlay)
-	var flash_bg = ColorRect.new()
-	flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	flash_bg.color = Color(1.0, 1.0, 0.8, 0.6)
-	flash_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	flash_container.add_child(flash_bg)
-
-	# Flash out quickly
-	var flash_tween = create_tween()
-	flash_tween.tween_property(flash_bg, "color:a", 0.0, 0.4)
-	flash_tween.tween_callback(func(): flash_bg.queue_free())
+	# Pale-yellow full-screen flash. Reduce Flashes skips the overlay; the banner still plays.
+	if not _flashes_suppressed():
+		var flash_bg = ColorRect.new()
+		flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		flash_bg.color = Color(1.0, 1.0, 0.8, 0.6)
+		flash_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		flash_container.add_child(flash_bg)
+		var flash_tween = create_tween()
+		flash_tween.tween_property(flash_bg, "color:a", 0.0, 0.4)
+		flash_tween.tween_callback(func(): flash_bg.queue_free())
 
 	# "ONE-SHOT!" text label
 	var one_shot_label = Label.new()
@@ -5873,8 +5873,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	flash_container.modulate.a = VICTORY_BANNER_ALPHA
 	add_child(flash_container)
 
-	# Screen flash effect (cyan tint) — skip if one-shot already flashing
-	if not has_one_shot:
+	# Cyan full-screen flash. Skip when one-shot is already flashing, or Reduce Flashes is on.
+	if not has_one_shot and not _flashes_suppressed():
 		var flash_bg = ColorRect.new()
 		flash_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		flash_bg.color = Color(0.4, 0.8, 1.0, 0.5)
