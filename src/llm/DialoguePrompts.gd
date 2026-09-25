@@ -941,6 +941,30 @@ static func build_party_line(
 	)
 
 
+## The LLM picks which authored line fits; every option is already true, so it only judges fit.
+static func build_party_line_choice(persona: String, signature_phrases: Array, ctx: Dictionary, lines: Array) -> String:
+	var speaker: String = str(ctx.get("speaker_name", "the character"))
+	var job: String = str(ctx.get("speaker_job_id", ""))
+	var event_kind: String = str(ctx.get("event_kind", "turn_start"))
+	var event_data: Dictionary = ctx.get("event_data", {}) if ctx.get("event_data", {}) is Dictionary else {}
+	var out: String = "You are choosing a combat line for %s, the %s.\n" % [speaker, job]
+	out += "Persona: %s\n" % persona
+	if not signature_phrases.is_empty():
+		out += "Signature phrases: %s\n" % ", ".join(PackedStringArray(signature_phrases.map(func(s): return str(s))))
+	out += "Moment: %s %s is at %d%% HP.\n" % [_party_line_event_hint(event_kind, event_data), speaker, int(float(ctx.get("speaker_hp_pct", 100.0)))]
+	var party: Array = ctx.get("party", [])
+	if not party.is_empty():
+		out += "Party: %s\n" % ", ".join(PackedStringArray(party.map(func(m): return "%s (%s, %s)" % [m.get("name", "?"), m.get("job_id", "?"), "up" if m.get("is_alive", true) else "down"])))
+	var enemies: Array = ctx.get("enemies", [])
+	if not enemies.is_empty():
+		out += "Enemies: %s\n" % ", ".join(PackedStringArray(enemies.map(func(e): return str(e.get("name", "?")))))
+	out += "\nPick the ONE line below this character would say right now:\n"
+	for i in lines.size():
+		out += "%d. %s\n" % [i + 1, str(lines[i])]
+	out += "\nReply with only the number."
+	return out
+
+
 ## Per-event hint string used in build_party_line.
 static func _party_line_event_hint(event_kind: String, event_data: Dictionary) -> String:
 	match event_kind:

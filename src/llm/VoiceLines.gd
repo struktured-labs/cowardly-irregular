@@ -40,3 +40,19 @@ static func entries_of(raw: Variant) -> Array:
 ## Clip key suffix for variant n: voice_<job>_<this>.
 static func variant_key(event_kind: String, n: int) -> String:
 	return event_kind if n == 0 else "%s_%d" % [event_kind, n]
+
+
+## "1".."n": a small model can answer a number exactly, where it would paraphrase a line.
+static func choice_labels(n: int) -> Array[String]:
+	var out: Array[String] = []
+	for i in range(1, n + 1):
+		out.append(str(i))
+	return out
+
+
+## The entry a label names, or {} when the label is not one of them.
+static func entry_for_choice(entries: Array, label: String) -> Dictionary:
+	if not label.is_valid_int():
+		return {}
+	var i: int = int(label) - 1
+	return entries[i] if i >= 0 and i < entries.size() else {}
