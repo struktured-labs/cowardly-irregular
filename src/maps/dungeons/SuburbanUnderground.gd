@@ -20,7 +20,7 @@ func _init() -> void:
 	# scaffold bug fixed in 40c54ae).
 	defeat_cutscene_flags = ["cutscene_flag_warden_suburban_defeated"]
 	total_floors = 4
-	overworld_exit_spawn = "entrance"
+	overworld_exit_spawn = "from_underground"
 	overworld_exit_map = "suburban_overworld"
 	unlock_story_flag = "w2_dungeon_cleared"
 
