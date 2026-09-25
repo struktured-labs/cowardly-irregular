@@ -534,7 +534,7 @@ func _setup_transitions() -> void:
 	brasston_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(brasston_trans)
 
-	# Steampunk Mechanism dungeon entrance (industrial district, east)
+	# Grand Mechanism door. from_mechanism is this position — "plaza" is the fountain, a district away.
 	var mechanism_trans = AreaTransitionScript.new()
 	mechanism_trans.name = "SteampunkMechanismEntrance"
 	mechanism_trans.target_map = "steampunk_mechanism"
@@ -543,6 +543,7 @@ func _setup_transitions() -> void:
 	mechanism_trans.indicator_text = "Descend into the Grand Mechanism"
 	mechanism_trans.position = Vector2(48 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	mechanism_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	spawn_points["from_mechanism"] = mechanism_trans.position
 	_setup_transition_collision(mechanism_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	mechanism_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(mechanism_trans)

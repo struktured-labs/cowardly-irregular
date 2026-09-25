@@ -21,7 +21,7 @@ func _init() -> void:
 	# DragonCave._on_boss_defeated — was deleted in tick 105.)
 	defeat_cutscene_flags = ["cutscene_flag_arbiter_futuristic_defeated"]
 	total_floors = 4
-	overworld_exit_spawn = "glitch_sector"
+	overworld_exit_spawn = "from_root"
 	overworld_exit_map = "futuristic_overworld"
 	unlock_story_flag = "w5_dungeon_cleared"
 
