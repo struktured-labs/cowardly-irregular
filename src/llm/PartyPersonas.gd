@@ -81,9 +81,19 @@ func get_trigger_voice(job_id: String, event_kind: String) -> String:
 
 var _last_variant: Dictionary = {}
 
-## {"line", "voice_key"}: a random entry, never the same one twice running when there are two or more.
-func pick_trigger_voice(job_id: String, event_kind: String) -> Dictionary:
+## The entries to pick among: eligible tagged lines if any hold, else untagged ones; no context means untagged only.
+func eligible_trigger_entries(job_id: String, event_kind: String, ctx: PartyCombatLineContext) -> Array:
 	var entries: Array = get_trigger_entries(job_id, event_kind)
+	var untagged: Array = entries.filter(func(e): return (e["tags"] as Array).is_empty())
+	if ctx == null:
+		return untagged
+	var tagged: Array = entries.filter(func(e): return not (e["tags"] as Array).is_empty() and VoiceLineTags.is_eligible(e["tags"], ctx))
+	return tagged if not tagged.is_empty() else untagged
+
+
+## {"line", "voice_key"}: a random eligible entry, never the same one twice running.
+func pick_trigger_voice(job_id: String, event_kind: String, ctx: PartyCombatLineContext = null) -> Dictionary:
+	var entries: Array = eligible_trigger_entries(job_id, event_kind, ctx)
 	if entries.is_empty():
 		return {"line": "", "voice_key": ""}
 	var e: Dictionary = _pick_no_repeat(job_id + "|" + event_kind, entries)
