@@ -1347,9 +1347,11 @@ extends GutTest
 const Replay := preload("res://tools/replay_tts_backend.gd")
 const MENU := "res://src/ui/SettingsMenu.gd"
 const PANEL := "res://src/ui/LiveVoicePanel.gd"
+const DIR := "user://test_live_voice_panel_cache"
 
 var _saved_gs: Dictionary = {}
 var _saved_cast: Dictionary
+var _saved_cache
 var _replay
 
 
@@ -1357,6 +1359,9 @@ func before_each() -> void:
 	for f in ["tts_live_enabled", "tts_server_url", "tts_model"]:
 		_saved_gs[f] = GameState.get(f)
 	_saved_cast = VoiceService._cast.duplicate(true)
+	_saved_cache = VoiceService.cache
+	_wipe()
+	VoiceService.cache = VoiceCache.new(DIR, 10_000_000)
 	VoiceService._cast = {"bard": {"voice": "bard.wav", "rev": 1}}
 	_replay = Replay.new()
 	_replay.next_wav = WavFixture.tone(0.3, 20000)
@@ -1365,11 +1370,25 @@ func before_each() -> void:
 
 func after_each() -> void:
 	VoiceService.test_backend = null
+	if is_instance_valid(_replay) and not _replay.is_inside_tree():
+		_replay.free()
 	for f in _saved_gs:
 		GameState.set(f, _saved_gs[f])
 	VoiceService._cast = _saved_cast
 	VoiceService.apply_config()
+	VoiceService.cache = _saved_cache
+	_wipe()
 	SoundManager.stop_voice()
+
+
+## A line cached by one run is a hit in the next and never reaches the backend, so every run starts empty.
+func _wipe() -> void:
+	var d := DirAccess.open(DIR)
+	if d == null:
+		return
+	for f in d.get_files():
+		DirAccess.remove_absolute(DIR + "/" + f)
+	DirAccess.remove_absolute(DIR)
 
 
 func test_test_voice_speaks_a_cast_line_through_play_voice_stream() -> void:
