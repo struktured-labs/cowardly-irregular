@@ -195,8 +195,7 @@ func _grant_rewards(q: Dictionary) -> void:
 	var summary_parts: Array = []
 	var gold: int = int(rewards.get("gold", 0))
 	if gold > 0:
-		GameState.add_gold(gold)
-		summary_parts.append("%d gold" % gold)
+		summary_parts.append("%d gold" % int(GameState.add_gold(gold)))
 	var exp_total: int = int(rewards.get("exp", 0))
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if exp_total > 0 and game_loop and "party" in game_loop:

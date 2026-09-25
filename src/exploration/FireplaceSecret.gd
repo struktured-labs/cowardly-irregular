@@ -99,11 +99,12 @@ func _examine() -> void:
 		return
 	# Flag BEFORE the grant so a mid-frame re-entry can't double-pay.
 	gs.set_story_flag(SECRET_FLAG)
+	var credited: int = SECRET_GOLD
 	if gs.has_method("add_gold"):
-		gs.add_gold(SECRET_GOLD)
+		credited = int(gs.add_gold(SECRET_GOLD))
 	if SoundManager:
 		SoundManager.play_ui("secret_found")
-	_toast(FOUND_LINE + "  (+%d G)" % SECRET_GOLD)
+	_toast(FOUND_LINE + "  (+%d G)" % credited)
 
 
 func _toast(text: String) -> void:

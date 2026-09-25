@@ -35,16 +35,21 @@ func test_add_gold_clamps_multiplier_to_sane_band() -> void:
 	# Wider would risk runaway economies; narrower would clip daemon
 	# nudges. Catch a regression to either side.
 	var src := _read(GAME_STATE)
-	# The clamp call must be inside add_gold body. Anchor on the
-	# function and search forward.
+	# The clamp lives in gold_to_credit. add_gold pays that result, so the wallet and every payout line share one scale.
+	var credit_idx: int = src.find("func gold_to_credit(amount: int)")
+	assert_gt(credit_idx, -1, "gold_to_credit must own the drop-rate scale add_gold pays")
+	var credit_next: int = src.find("\nfunc ", credit_idx + 1)
+	var credit_body: String = src.substr(credit_idx, credit_next - credit_idx) if credit_next > -1 else src.substr(credit_idx)
+	assert_true(credit_body.contains("clampf("),
+		"gold_to_credit must clamp the multiplier — protects against debug overrides + post-load corruption")
+	assert_true(credit_body.contains("0.1, 10.0"),
+		"gold_to_credit clamp must use [0.1, 10.0] band — matches tick 109 exp_multiplier + tick 110 encounter_rate")
 	var idx: int = src.find("func add_gold")
 	assert_gt(idx, -1, "add_gold must exist")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
-	assert_true(body.contains("clampf("),
-		"add_gold body must clamp the multiplier — protects against debug overrides + post-load corruption")
-	assert_true(body.contains("0.1, 10.0"),
-		"add_gold clamp must use [0.1, 10.0] band — matches tick 109 exp_multiplier + tick 110 encounter_rate")
+	assert_true(body.contains("gold_to_credit("),
+		"add_gold must pay gold_to_credit — a second copy of the dial would let the wallet and the message drift")
 
 
 func test_add_gold_with_missing_key_returns_unmodified_amount() -> void:

@@ -1057,9 +1057,19 @@ func rewind_to_previous_save() -> bool:
 	return true
 
 
+## Coins a base amount credits after the drop-rate dial. add_gold pays this and returns it, so a payout line can name the wallet.
+func gold_to_credit(amount: int) -> int:
+	if amount <= 0:
+		return 0
+	var multiplier: float = clampf(
+		float(game_constants.get("gold_multiplier", 1.0)),
+		0.1, 10.0)
+	return int(amount * multiplier)
+
+
 ## Economy methods
-func add_gold(amount: int) -> void:
-	"""Add gold to party (applies gold_multiplier).
+func add_gold(amount: int) -> int:
+	"""Add gold to party (applies gold_multiplier) and return the coins actually added.
 	Tick 113: defensive .get() so a future debug path or pathological
 	save that removed the key doesn't crash the entire victory flow.
 	Matches the tick 109/110 defensive read pattern in BattleManager
@@ -1073,13 +1083,11 @@ func add_gold(amount: int) -> void:
 	## party. Use spend_gold for legitimate drain.
 	if amount < 0:
 		push_warning("[GameState] add_gold(%d) — negative amount refused (use spend_gold to drain)" % amount)
-		return
-	var multiplier: float = clampf(
-		float(game_constants.get("gold_multiplier", 1.0)),
-		0.1, 10.0)
-	var multiplied_amount = int(amount * multiplier)
-	party_gold += multiplied_amount
-	print("Gold gained: %d (base: %d)" % [multiplied_amount, amount])
+		return 0
+	var credited: int = gold_to_credit(amount)
+	party_gold += credited
+	print("Gold gained: %d (base: %d)" % [credited, amount])
+	return credited
 
 
 func spend_gold(amount: int) -> bool:

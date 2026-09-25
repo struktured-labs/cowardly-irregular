@@ -178,8 +178,7 @@ static func _grant(gs: Node, entry: Dictionary) -> String:
 	var parts: Array = []
 	var gold: int = int(entry.get("gold", 0))
 	if gold > 0 and gs.has_method("add_gold"):
-		gs.add_gold(gold)
-		parts.append("%d gold" % gold)
+		parts.append("%d gold" % int(gs.add_gold(gold)))
 	for raw in (entry.get("items", []) as Array):
 		var spec: Dictionary = raw as Dictionary
 		var iid: String = str(spec.get("item_id", ""))
