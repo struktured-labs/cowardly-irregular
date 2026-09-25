@@ -26,6 +26,17 @@ func _jobs() -> Dictionary:
 	return p.get("jobs", p)
 
 
+## Every clip a trigger can speak: [key, line] per variant. A trigger's entry is one string or a list;
+## variant 0 keeps the unsuffixed key, variant n>=1 is voice_<job>_<trigger>_<n> (PartyPersonas.pick_trigger_voice).
+func _variants(job_id: String, trig: String, entry: Variant) -> Array:
+	var lines: Array = entry if entry is Array else [entry]
+	var out: Array = []
+	for n in lines.size():
+		var key := "voice_%s_%s" % [job_id, trig] if n == 0 else "voice_%s_%s_%d" % [job_id, trig, n]
+		out.append([key, str(lines[n])])
+	return out
+
+
 func test_every_scripted_trigger_line_has_a_voice_clip() -> void:
 	## FORWARD: a trigger the game can fire must have audio. Adding a line to
 	## job_personas.json without a clip is the silent-miss direction.
@@ -36,10 +47,10 @@ func test_every_scripted_trigger_line_has_a_voice_clip() -> void:
 	for job_id in jobs:
 		var tv: Dictionary = jobs[job_id].get("trigger_voices", {})
 		for trig in tv:
-			checked += 1
-			var key := "voice_%s_%s" % [job_id, trig]
-			if not sfx.has(key):
-				missing.append(key)
+			for v in _variants(job_id, trig, tv[trig]):
+				checked += 1
+				if not sfx.has(v[0]):
+					missing.append(v[0])
 	assert_gt(checked, 0, "the scan found trigger lines at all — a zero here is a dead scan, not a clean result")
 	assert_eq(missing.size(), 0, "scripted trigger lines with no voice clip: %s" % [missing])
 
@@ -51,8 +62,10 @@ func test_every_voice_clip_answers_a_real_trigger_line() -> void:
 	var jobs := _jobs()
 	var expected := {}
 	for job_id in jobs:
-		for trig in jobs[job_id].get("trigger_voices", {}):
-			expected["voice_%s_%s" % [job_id, trig]] = true
+		var tv: Dictionary = jobs[job_id].get("trigger_voices", {})
+		for trig in tv:
+			for v in _variants(job_id, trig, tv[trig]):
+				expected[v[0]] = true
 	var orphans: Array[String] = []
 	for key in sfx:
 		var k := str(key)
@@ -83,7 +96,14 @@ func test_the_clips_exist_on_disk_and_are_not_empty() -> void:
 		var f := str(sfx[k].get("file", ""))
 		assert_ne(f, "", "%s carries a file key" % k)
 		assert_true(FileAccess.file_exists("res://" + f), "%s -> %s exists" % [k, f])
-	assert_eq(checked, 25, "expected the full 5 jobs x 5 triggers pack, found %d" % checked)
+	var lines := 0
+	var jobs := _jobs()
+	for job_id in jobs:
+		var tv: Dictionary = jobs[job_id].get("trigger_voices", {})
+		for trig in tv:
+			lines += _variants(job_id, trig, tv[trig]).size()
+	assert_gte(lines, 25, "the pack shipped as 5 jobs x 5 triggers; fewer lines means a trigger was lost")
+	assert_eq(checked, lines, "one clip per scripted line, found %d clips for %d lines" % [checked, lines])
 
 func test_each_clip_was_generated_from_the_line_that_ships_today() -> void:
 	## THE DRIFT GUARD, and the reason it exists: on 2026-08-22 a spell-rename sweep changed
@@ -101,15 +121,16 @@ func test_each_clip_was_generated_from_the_line_that_ships_today() -> void:
 	for job_id in jobs:
 		var tv: Dictionary = jobs[job_id].get("trigger_voices", {})
 		for trig in tv:
-			var key := "voice_%s_%s" % [job_id, trig]
-			if not sfx.has(key):
-				continue
-			var recorded := str(sfx[key].get("source_sha", ""))
-			assert_ne(recorded, "", "%s must record the text it was generated from" % key)
-			checked += 1
-			var live := str(tv[trig]).sha256_text().substr(0, 16)
-			if recorded != live:
-				stale.append("%s (clip cut from different text than ships today)" % key)
+			for v in _variants(job_id, trig, tv[trig]):
+				var key: String = v[0]
+				if not sfx.has(key):
+					continue
+				var recorded := str(sfx[key].get("source_sha", ""))
+				assert_ne(recorded, "", "%s must record the text it was generated from" % key)
+				checked += 1
+				var live := str(v[1]).sha256_text().substr(0, 16)
+				if recorded != live:
+					stale.append("%s (clip cut from different text than ships today)" % key)
 	assert_gt(checked, 0, "the scan compared something — a zero here is a dead scan")
 	assert_eq(stale.size(), 0,
 		"voice clips whose audio no longer matches the line the player reads: %s" % [stale])

@@ -105,9 +105,9 @@ func test_party_line_handler_derives_voice_key() -> void:
 func test_llm_lines_stay_text_only() -> void:
 	# Deterministic fallback → voice; LLM-generated → text-only (msg 2105).
 	var mgr := _read(BATTLE_MANAGER_PATH)
-	assert_true(mgr.contains("event_kind if (not fallback.is_empty() and line == fallback) else \"\""),
+	assert_true(mgr.contains("fallback_key if (not fallback.is_empty() and line == fallback) else \"\""),
 		"LLM emit site must pass empty voice_trigger unless the line fell back to the deterministic one")
-	# All five deterministic fallback sites must carry event_kind.
-	var count: int = mgr.count("_emit_party_line(combatant, fallback, event_kind)")
+	# All five deterministic fallback sites carry the picked variant's key (event_kind, or event_kind_<n>).
+	var count: int = mgr.count("_emit_party_line(combatant, fallback, fallback_key)")
 	assert_eq(count, 5,
-		"All 5 deterministic fallback emit sites must pass event_kind as voice_trigger (got %d)" % count)
+		"All 5 deterministic fallback emit sites must pass the variant's voice key (got %d)" % count)
