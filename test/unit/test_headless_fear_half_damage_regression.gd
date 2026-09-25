@@ -61,6 +61,7 @@ func test_a_feared_swing_still_lands_at_half() -> void:
 		assert_almost_eq(float(half), float(full) * 0.5, 1.0,
 			"seed %d dealt %d feared against %d plain — live halves the base stat" % [s, half, full])
 		assert_true(feared.has_status("fear"), "a half-damage swing must not consume fear")
+		assert_eq(int(feared.status_durations.get("fear", 0)), 3, "the damage formula must not spend fear — the turn does")
 		break
 	assert_true(saw_hit, "CONTROL: 39 seeds at a 10% miss rate must land at least once")
 
@@ -89,6 +90,7 @@ func test_a_feared_physical_ability_is_halved_and_magic_is_not() -> void:
 	assert_eq(half_strike, int(full_strike / 2),
 		"a feared power_strike dealt %d against %d — live halves the base stat before power" % [half_strike, full_strike])
 	assert_true(feared.has_status("fear"), "the physical hit must not consume fear")
+	assert_eq(int(feared.status_durations.get("fear", 0)), 3, "the ability formula must not spend fear — the turn does")
 	victim_a.current_hp = victim_a.max_hp
 	victim_b.current_hp = victim_b.max_hp
 	before_a = victim_a.current_hp

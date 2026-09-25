@@ -645,10 +645,16 @@ func test_confuse_status_applies_and_expires() -> void:
 	assert_true(_combatant.has_status("confuse"), "Should have confuse status")
 	assert_eq(_combatant.status_durations.get("confuse", 0), 3, "Confuse should have 3 turns")
 
+	# Round-start ticks must not spend confuse. Hallucination Spores is 2 turns, and that tick runs before the action, so it controlled one action fewer.
 	_combatant.update_buff_durations()
 	_combatant.update_buff_durations()
 	_combatant.update_buff_durations()
-	assert_false(_combatant.has_status("confuse"), "Confuse should expire after 3 ticks")
+	assert_true(_combatant.has_status("confuse"), "round-start ticks must leave confuse for the action that spends it")
+	assert_eq(int(_combatant.status_durations.get("confuse", 0)), 3, "three round-start ticks spend zero confuse points")
+	_combatant.spend_action_clock("confuse")
+	_combatant.spend_action_clock("confuse")
+	_combatant.spend_action_clock("confuse")
+	assert_false(_combatant.has_status("confuse"), "three controlled actions spend a 3-turn confuse")
 
 
 # ---- Fear: status tracking + damage reduction ----
