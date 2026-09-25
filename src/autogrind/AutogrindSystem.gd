@@ -1486,6 +1486,7 @@ func _trigger_permadeath() -> void:
 		for member in grind_party:
 			if member is Combatant:
 				member.is_alive = false
+				_stamp_permadeath(member)
 				_persist_permadeath(member.combatant_name)
 		stop_autogrind("PERMADEATH - Full party wipe with staking enabled")
 		return
@@ -1493,9 +1494,30 @@ func _trigger_permadeath() -> void:
 	# Kill only the lowest-HP member
 	victim.is_alive = false
 	victim.current_hp = 0
+	_stamp_permadeath(victim)
 	_persist_permadeath(victim.combatant_name)
 	print("[AUTOGRIND] %s has been permanently lost!" % victim.combatant_name)
 	stop_autogrind("PERMADEATH - %s fell during staked autogrind" % victim.combatant_name)
+
+
+## The revive gate only reads this status. -1 is permanent from this moment; the default 3 is an ailment.
+func _stamp_permadeath(member: Combatant) -> void:
+	if member.has_method("add_status"):
+		member.add_status("permakilled", -1)
+
+
+## Time Mage undo_death stands them back up. Drop the grind's own record or the next session still skips them.
+func release_staked_permadeath(character_name: String) -> void:
+	if character_name == "":
+		return
+	if character_name in permadead_characters:
+		permadead_characters.erase(character_name)
+		_save_permadead_characters()
+	var game_state = get_node_or_null("/root/GameState")
+	if game_state and "player_party" in game_state:
+		for entry in game_state.player_party:
+			if entry is Dictionary and str(entry.get("name", "")) == character_name:
+				entry.erase("permadead")
 
 
 func _persist_permadeath(character_name: String) -> void:
