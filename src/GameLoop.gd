@@ -1756,9 +1756,10 @@ func _on_title_new_game() -> void:
 	_init_equipment_pool()
 	# Skip character creation — use default party (fighter/cleric/rogue/mage)
 	_create_party()
-	# Quit to Title keeps the last door and the battle-return tile; exploration would place the new party there.
+	# Quit to Title keeps the last door, the battle-return tile, and the cave floor; exploration would place the new party there.
 	_spawn_point = "default"
 	_player_position = Vector2.ZERO
+	_current_cave_floor = 1
 	# Go straight to exploration — prologue triggers on first Theron interaction
 	_set_current_map_id("overworld")
 	_start_exploration()
@@ -4162,9 +4163,12 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 	# autosave window respawned the player at the dungeon entrance.
 	if _player_position != Vector2.ZERO:
 		var scene_player = exploration_scene.get("player") if "player" in exploration_scene else null
-		if scene_player:
-			scene_player.position = _player_position
+		var restored_tile: Vector2 = _player_position
 		_player_position = Vector2.ZERO
+		if scene_player:
+			scene_player.position = restored_tile
+			# The stair and the village gate fire on the first overlap. Swallow that one; a later step-on still works.
+			await _swallow_return_tile_triggers(exploration_scene, scene_player)
 
 	# Set player appearance based on party leader (respects party_leader_index)
 	if party.size() > 0:
@@ -4245,6 +4249,54 @@ func _resume_exploration_after_cutscene() -> void:
 	_start_exploration()
 
 
+## The restored tile can be the stair or the gate the fight started on. Those sensors fire with no input, so arm the latches a floor-change already uses and let that one overlap pass.
+func _swallow_return_tile_triggers(scene: Node, body: Node2D) -> void:
+	if scene == null or not is_instance_valid(scene) or body == null or not is_instance_valid(body):
+		return
+	var hold_stairs := false
+	var areas: Array[Area2D] = []
+	_collect_areas(scene, areas)
+	var point: Vector2 = body.global_position
+	for area in areas:
+		if not is_instance_valid(area) or area.is_queued_for_deletion():
+			continue
+		if not _return_point_in_area(area, point):
+			continue
+		if area is AreaTransition and not (area as AreaTransition).require_interaction:
+			(area as AreaTransition)._triggered = true
+		elif str(area.name) == "StairsUp" or str(area.name) == "StairsDown":
+			hold_stairs = true
+	if not hold_stairs or not ("_transitioning" in scene):
+		return
+	scene._transitioning = true
+	var tree := scene.get_tree()
+	if tree == null:
+		scene._transitioning = false
+		return
+	# body_entered is deferred to the idle between physics frames, so the flag has to still be up then.
+	await tree.physics_frame
+	await tree.physics_frame
+	if is_instance_valid(scene):
+		scene._transitioning = false
+
+
+func _collect_areas(node: Node, into: Array[Area2D]) -> void:
+	for child in node.get_children():
+		if child is Area2D:
+			into.append(child)
+		_collect_areas(child, into)
+
+
+func _return_point_in_area(area: Area2D, point: Vector2) -> bool:
+	for child in area.get_children():
+		if child is CollisionShape2D and child.shape is RectangleShape2D:
+			var half: Vector2 = (child.shape as RectangleShape2D).size * 0.5
+			var centre: Vector2 = area.global_position + (child as Node2D).position
+			var d: Vector2 = point - centre
+			return absf(d.x) < half.x and absf(d.y) < half.y
+	return false
+
+
 func _return_to_exploration(force_battle_teardown: bool = false) -> void:
 	"""Return to exploration after battle"""
 	# Reset engine time scale to normal (battle speed shouldn't affect overworld)
@@ -4253,17 +4305,19 @@ func _return_to_exploration(force_battle_teardown: bool = false) -> void:
 	# Keep same map, restore player to saved position
 	await _start_exploration(force_battle_teardown)
 
-	# Restore player position after scene is fully set up
+	# Restore player position after scene is fully set up. _start_exploration already consumed the latch; this covers a return that still holds one.
 	if _player_position != Vector2.ZERO and _exploration_scene:
 		var player = _exploration_scene.get("player")
+		var restored_tile: Vector2 = _player_position
+		_player_position = Vector2.ZERO
 		if player:
-			player.position = _player_position
-			print("[POSITION] Restored player to: %s" % _player_position)
+			player.position = restored_tile
+			print("[POSITION] Restored player to: %s" % restored_tile)
+			await _swallow_return_tile_triggers(_exploration_scene, player)
 		else:
 			push_warning("[POSITION] Could not get player from scene")
-
-	# Clear saved position after restoring
-	_player_position = Vector2.ZERO
+	else:
+		_player_position = Vector2.ZERO
 
 
 func _prewarm_battle_sprites(enemies: Array) -> void:
