@@ -98,7 +98,8 @@ func get_cached(speaker_id: String, text: String) -> AudioStream:
 	if bytes.is_empty():
 		return null
 	var s := VoiceAudio.decode(bytes)
-	if s == null:
+	# A wedged mix refuses the lock and returns null. That blob is still whole, so the key stays.
+	if s == null and (not VoiceAudio.is_complete_wav(bytes) or SoundManager == null or not SoundManager.mixer_is_wedged()):
 		cache.remove(key)
 	return s
 
@@ -130,7 +131,10 @@ func synthesize(speaker_id: String, text: String, timeout_sec: float) -> AudioSt
 		return null
 	var stream := VoiceAudio.decode(box["wav"])
 	if stream == null:
-		_last_error = "the server's reply was not a whole WAV"
+		if SoundManager != null and SoundManager.mixer_is_wedged():
+			_last_error = "headless mixer wedged — voice WAV was not decoded"
+		else:
+			_last_error = "the server's reply was not a whole WAV"
 		return null
 	_last_latency_ms = Time.get_ticks_msec() - t0
 	_last_error = ""

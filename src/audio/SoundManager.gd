@@ -310,6 +310,12 @@ func _pcm_commit_blocked() -> bool:
 	return _audio_mixer_wedged and _mixer_stall_watch_active()
 
 
+## Headless/Dummy only. The next WAV set_data, play, or stop would wait forever on the mix thread (issue #224).
+func wav_commit_refused() -> bool:
+	note_mixer_progress()
+	return _pcm_commit_blocked()
+
+
 func mixer_is_wedged() -> bool:
 	return _audio_mixer_wedged
 
@@ -321,6 +327,9 @@ func _live_bed() -> AudioStreamPlayer:
 		return _music_player_b
 	if _ambient_player and _ambient_player.playing and not _ambient_player.stream_paused:
 		return _ambient_player
+	# Voice is the bed the live-voice tests play; a frozen line is the same preroll stall.
+	if _voice_player and _voice_player.playing and not _voice_player.stream_paused:
+		return _voice_player
 	return null
 
 
@@ -986,6 +995,10 @@ func play_voice(sound_key: String) -> float:
 func play_voice_stream(stream: AudioStream) -> float:
 	if _voice_player == null or stream == null:
 		return 0.0
+	# Assigning the stream and play() take the driver mutex. A wedged mix never returns it (issue #224).
+	if wav_commit_refused():
+		push_warning("[AUDIO] skipped voice stream — mixer is wedged")
+		return 0.0
 	_voice_player.stream = stream
 	_voice_player.volume_db = VOICE_PLAYER_BASE_DB
 	_voice_player.pitch_scale = 1.0
@@ -995,8 +1008,13 @@ func play_voice_stream(stream: AudioStream) -> float:
 
 ## The voice player lives on this autoload, so freeing the battle scene does not stop a line.
 func stop_voice() -> void:
-	if _voice_player != null and _voice_player.playing:
-		_voice_player.stop()
+	if _voice_player == null or not _voice_player.playing:
+		return
+	# stop() takes the same driver mutex as set_data. The live-voice teardown used to wait there forever.
+	if wav_commit_refused():
+		push_warning("[AUDIO] skipped stop_voice — mixer is wedged")
+		return
+	_voice_player.stop()
 
 
 ## Reward cues (coins, key items) on their OWN player. They are always a CONSEQUENCE of the

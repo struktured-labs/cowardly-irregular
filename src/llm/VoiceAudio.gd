@@ -13,6 +13,10 @@ const CLIPPED_RUNS := 2
 static func decode(bytes: PackedByteArray) -> AudioStreamWAV:
 	if not is_complete_wav(bytes):
 		return null
+	# load_from_buffer calls set_data, which waits on the driver mutex until the mix returns (issue #224).
+	if SoundManager != null and SoundManager.wav_commit_refused():
+		push_warning("[AUDIO] skipped voice WAV decode (%d bytes) — mixer is wedged" % bytes.size())
+		return null
 	return AudioStreamWAV.load_from_buffer(bytes)
 
 
