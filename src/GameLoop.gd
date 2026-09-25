@@ -2481,11 +2481,11 @@ func _play_story_cutscene(cutscene_id: String) -> bool:
 	if not _cutscene_director.can_play(cutscene_id):
 		push_warning("[GameLoop] '%s' NOT started — the director refused it; nothing committed, gate left open so it replays on the next check" % cutscene_id)
 		return false
-	## A duel whose PC left the party (the Jobs menu swaps any starter) narrated up to its battle step and aborted — on every floor change once the abort resumed play.
+	## A duel whose PC left the party (the Jobs menu swaps any starter), or whose only holder is permakilled, narrated up to its battle step and aborted — on every floor change once the abort resumed play. The unlock flag stays unset: it means the duel was won.
 	if _cutscene_director.has_method("battle_duelists"):
 		for job_id in _cutscene_director.battle_duelists(cutscene_id):
 			if _party_member_with_job(str(job_id)) == null:
-				push_warning("[GameLoop] '%s' NOT started — no party member is a %s, so its duel cannot run; gate left open until one is" % [cutscene_id, job_id])
+				push_warning("[GameLoop] '%s' NOT started — no living party member is a %s, so its duel cannot run; gate left open until one is" % [cutscene_id, job_id])
 				return false
 	current_state = LoopState.CUTSCENE
 	_cutscene_cooldown = true  # Suppress next check on same map entry
@@ -3331,13 +3331,16 @@ func _check_boot_canaries() -> void:
 	layer.add_child(label)
 
 
-## The duelist lookup, shared by start_solo_battle and the story gate so "can this duel run" and "run it" cannot disagree.
+## The duelist lookup, shared by start_solo_battle and the story gate so "can this duel run" and "run it" cannot disagree. A permakilled holder is skipped — revive() will not raise them, and fielding the corpse retries a loss forever — so a later living holder of the job still fights.
 func _party_member_with_job(job_id: String) -> Combatant:
 	for m in party:
 		if m == null or not is_instance_valid(m):
 			continue
-		if m.job is Dictionary and str((m.job as Dictionary).get("id", "")) == job_id:
-			return m
+		if not (m.job is Dictionary) or str((m.job as Dictionary).get("id", "")) != job_id:
+			continue
+		if m.has_method("has_status") and m.has_status("permakilled"):
+			continue
+		return m
 	return null
 
 
@@ -3357,7 +3360,7 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	var spotlight_pc: Combatant = _party_member_with_job(job_id)
 	if spotlight_pc == null:
 		# "defeat" would retry forever — "unavailable" tells the cutscene to abort
-		push_warning("GameLoop.start_solo_battle: no party member with job '%s' — cutscene battle skipped" % job_id)
+		push_warning("GameLoop.start_solo_battle: no party member with job '%s' who can fight (missing or permakilled) — cutscene battle skipped" % job_id)
 		return "unavailable"
 	_spotlight_saved_party = party.duplicate()
 	party = [spotlight_pc]
@@ -3369,6 +3372,15 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	_spotlight_duel_active = true
 	# the spotlight short-circuit skips post-battle healing, so a retry would re-enter at 0 HP
 	_restore_duelist(spotlight_pc)
+	# A holder revive() will not raise must not enter the fight: "defeat" retries forever, and skip is inert while the battle step owns the screen.
+	if not spotlight_pc.is_alive:
+		party = _spotlight_saved_party.duplicate()
+		_spotlight_saved_party.clear()
+		AutobattleSystem.set_autobattle_enabled(duel_char_id, _spotlight_saved_autobattle)
+		_pending_spotlight_unlock = ""
+		_spotlight_duel_active = false
+		push_warning("GameLoop.start_solo_battle: '%s' is still down after restore — duel not started" % job_id)
+		return "unavailable"
 	# Progressive death-tiered hint (msg 2472): if prior attempts against this job's duel have accrued past a threshold, fire the matching spotlight_hint_<job>_<tier> before combat starts. Missing content in the TutorialHints catalog logs a push_warning that CI catches — cowir-story owns the copy.
 	_maybe_fire_spotlight_hint(job_id)
 	# step win_condition overrides; monsters.json is the data fallback (agreement ratchet-tested)
