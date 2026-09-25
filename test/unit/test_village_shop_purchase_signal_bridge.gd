@@ -77,7 +77,7 @@ func test_shop_scene_emits_only_after_successful_handoff() -> void:
 	# spuriously and gold-spend metrics would diverge from inventory.
 	var src := _read(SHOP_SCENE)
 	var emit_idx: int = src.find("item_purchased.emit(item_id, cost)")
-	var refund_idx: int = src.find("game_state.add_gold(cost)  # Refund")
+	var refund_idx: int = src.find("_credit_exact_gold(cost)  # Refund")
 	assert_gt(emit_idx, -1, "ShopScene must emit item_purchased somewhere")
 	assert_gt(refund_idx, -1, "ShopScene must still have the refund path")
 	assert_gt(emit_idx, refund_idx,
