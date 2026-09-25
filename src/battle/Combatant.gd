@@ -1385,6 +1385,10 @@ func from_dict(data: Dictionary) -> void:
 	## is_alive=true AND current_hp>=1) so derivation is sound and
 	## seals load against save corruption.
 	is_alive = current_hp > 0
+	# Permakill outranks that derivation. A primary job change used to save the corpse at full HP; HP > 0 would stand them up.
+	if "permakilled" in status_effects:
+		is_alive = false
+		current_hp = 0
 	if data.has("learned_abilities"):
 		learned_abilities.clear()
 		for ability_id in data["learned_abilities"]:
