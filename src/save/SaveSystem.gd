@@ -771,6 +771,9 @@ func _apply_save_data(data: Dictionary) -> void:
 	# Apply game state
 	if data.has("game_state") and GameState:
 		GameState.from_dict(data["game_state"])
+		# Pre-history files omit save_history. Clear here, not in GameState: rewind snapshots omit the key on purpose and must keep the live ring.
+		if data["game_state"] is Dictionary and not (data["game_state"] as Dictionary).has("save_history") and "save_history" in GameState:
+			GameState.save_history.clear()
 
 	## Tick 364: type-guard automation/records reads. Pre-fix a save
 	## with automation=null/int/string crashed at automation_data.has()
