@@ -7243,8 +7243,9 @@ func _on_any_save_failed(reason: String) -> void:
 
 func _on_any_save_completed(_slot: int) -> void:
 	"""Fire a green 'Game Saved ✓ — <location>' toast whenever SaveSystem
-	completes a save. The label is the place name (locations.json), the same
-	words as the area banner and the save slot — not the title-cased map key.
+	completes a save. The label is the place name (locations.json, else the
+	interior script's own display name), the same words as the area banner
+	and the save slot — not the title-cased map key.
 	Falls back to the legacy short form when no map is loaded (title-screen
 	debug saves) and to a readable key when the map has no authored name."""
 	var location := ""
