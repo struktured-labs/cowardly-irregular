@@ -853,10 +853,12 @@ func end_battle(victory: bool) -> void:
 		## Tick 146: mark each enemy as defeated in the bestiary.
 		## Pre-fix mark_seen happened at battle start, but there was
 		## no notion of "killed" — encountered ≠ defeated. This loop
-		## iterates the original enemy roster (not just survivors)
-		## because we need to credit each unique monster_type the
-		## party brought down. Routes through BestiarySystem which
-		## auto-mark_seen as well (defeat implies seen invariant).
+		## walks the whole roster (KO does not remove them) and credits
+		## only those who went down. A survive / sway / withhold win
+		## leaves the rest standing — The Grinding Wound cannot be
+		## defeated, only outlasted — and counting them made Monsters
+		## Slain and the bestiary lie. Routes through BestiarySystem
+		## which auto-mark_seen (defeat implies seen).
 		# Tick 260: capture current map id once for the kill loop so
 		# the "Last seen: <location>" hint reflects where the kill
 		# happened (encounter location often matters more to the
@@ -866,6 +868,8 @@ func end_battle(victory: bool) -> void:
 			defeat_loc = str(MapSystem.current_map_id)
 		for enemy in enemy_party:
 			if not is_instance_valid(enemy):
+				continue
+			if enemy.is_alive:
 				continue
 			if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
 				var mtype: String = str(enemy.get_meta("monster_type", ""))
