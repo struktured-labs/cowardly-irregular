@@ -99,6 +99,8 @@ var all_combatants: Array[Combatant] = []
 var selection_order: Array[Combatant] = []  # Order for action selection
 var selection_index: int = 0
 var current_combatant: Combatant = null
+## Y-repeat is filling the party members who have not chosen yet. Enemies still select after them.
+var _filling_repeat: bool = false
 
 ## Action queue for execution
 var pending_actions: Array[Dictionary] = []  # All selected actions before execution
@@ -1229,6 +1231,7 @@ func _cleanup_battle() -> void:
 	execution_order.clear()
 	selection_index = 0
 	current_combatant = null
+	_filling_repeat = false
 	volatility = null
 	# state stuck at VICTORY/DEFEAT forever without this — every != INACTIVE gate (toasts, spotlight reconcile) read "in battle" for the rest of the session
 	current_state = BattleState.INACTIVE
@@ -1756,6 +1759,7 @@ func _process_next_selection() -> void:
 
 	# Check if selection is complete
 	if selection_index >= selection_order.size():
+		_filling_repeat = false
 		_start_execution_phase()
 		return
 
@@ -1779,6 +1783,15 @@ func _process_next_selection() -> void:
 		current_state = BattleState.PLAYER_SELECTING
 	else:
 		current_state = BattleState.ENEMY_SELECTING
+
+	# Later allies get their AP above, then the remembered action; the first enemy clears this and selects.
+	if _filling_repeat:
+		if current_combatant in player_party:
+			_queue_repeated_action(current_combatant)
+			selection_index += 1
+			_process_next_selection()
+			return
+		_filling_repeat = false
 
 	selection_turn_started.emit(current_combatant)
 
@@ -3433,7 +3446,7 @@ func _save_previous_actions() -> void:
 
 
 func repeat_previous_actions() -> bool:
-	"""Queue previous round's actions for all players. Returns true if successful."""
+	"""Fill remembered actions for party members still choosing, then let the rest of the round select. Returns true if successful."""
 	_track_manual_player_turn()  # Repeat is a manual action, not autobattle
 
 	if previous_round_actions.is_empty():
@@ -3444,84 +3457,80 @@ func repeat_previous_actions() -> bool:
 		print("[REPEAT] Can only repeat during selection phase")
 		return false
 
-	print("[REPEAT] Repeating previous round's actions for all players")
+	if current_combatant == null or not (current_combatant in player_party):
+		print("[REPEAT] Can only repeat on a party member's turn")
+		return false
 
-	# Queue actions for all players who haven't selected yet
-	var repeated_any = false
-	for combatant in selection_order:
-		if combatant not in player_party:
-			continue
+	print("[REPEAT] Repeating previous round's actions for players still choosing")
+	# Menu is already open, so this character's AP was granted. Later allies are filled after theirs.
+	_filling_repeat = true
+	_queue_repeated_action(current_combatant)
+	_end_selection_turn()
+	return true
 
-		var combatant_id = combatant.combatant_name.to_lower()
-		if not previous_round_actions.has(combatant_id):
-			var alive = _get_alive_enemies()
-			_queue_action({
-				"combatant": combatant,
-				"type": "attack",
-				"target": alive[0] if alive.size() > 0 else null,
-				"speed": _compute_action_speed(combatant, "attack")
-			})
-			print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
-			repeated_any = true
-			continue
 
-		# Replay all actions for this combatant
-		var actions = previous_round_actions[combatant_id]
-		for saved_action in actions:
-			var action = saved_action.duplicate()
-			action["combatant"] = combatant
+## One combatant's remembered actions, or a basic attack when none were stored.
+func _queue_repeated_action(combatant: Combatant) -> void:
+	var combatant_id = combatant.combatant_name.to_lower()
+	var actions: Array = previous_round_actions.get(combatant_id, [])
+	if actions.is_empty():
+		var alive = _get_alive_enemies()
+		_queue_action({
+			"combatant": combatant,
+			"type": "attack",
+			"target": alive[0] if alive.size() > 0 else null,
+			"speed": _compute_action_speed(combatant, "attack")
+		})
+		print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
+		return
 
-			# Validity check MUST happen before `is Combatant` — a freed
-			# reference makes `is` error with 'Left operand of is is a
-			# previously freed instance' (Godot 4 behaviour, seen in log
-			# during Y-button repeat across battles).
-			if action.has("target"):
-				var target = action["target"]
-				var target_valid: bool = is_instance_valid(target)
-				var is_stale = (target_valid
+	for saved_action in actions:
+		var action = saved_action.duplicate()
+		action["combatant"] = combatant
+
+		# Validity check MUST happen before `is Combatant` — a freed
+		# reference makes `is` error with 'Left operand of is is a
+		# previously freed instance' (Godot 4 behaviour, seen in log
+		# during Y-button repeat across battles).
+		if action.has("target"):
+			var target = action["target"]
+			var target_valid: bool = is_instance_valid(target)
+			var is_stale = (target_valid
+				and target is Combatant
+				and target.is_alive
+				and target not in player_party
+				and target not in enemy_party)
+			var target_dead: bool = target_valid and target is Combatant and not target.is_alive
+			# 2026-07-14: revive-capable actions EXPECT dead targets — don't invalidate them (cowir-music msg 2539). Phoenix Down + revival-type abilities carried this trap.
+			var _revives: bool = _action_revives(action)
+			if not target_valid or is_stale or (target_dead and not _revives):
+				var alive_enemies = _get_alive_enemies()
+				action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
+
+		# Retarget for abilities/items
+		if action.has("targets"):
+			var new_targets = []
+			var revives: bool = _action_revives(action)
+			for target in action["targets"]:
+				var is_alive_in_battle = (is_instance_valid(target)
 					and target is Combatant
 					and target.is_alive
-					and target not in player_party
-					and target not in enemy_party)
-				var target_dead: bool = target_valid and target is Combatant and not target.is_alive
-				# 2026-07-14: revive-capable actions EXPECT dead targets — don't invalidate them (cowir-music msg 2539). Phoenix Down + revival-type abilities carried this trap.
-				var _revives: bool = _action_revives(action)
-				if not target_valid or is_stale or (target_dead and not _revives):
+					and (target in player_party or target in enemy_party))
+				var is_dead_ally_in_battle = (is_instance_valid(target)
+					and target is Combatant
+					and not target.is_alive
+					and target in player_party)
+				if is_alive_in_battle or (revives and is_dead_ally_in_battle):
+					new_targets.append(target)
+				else:
+					# Replace dead/freed/stale targets with first alive enemy
 					var alive_enemies = _get_alive_enemies()
-					action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
+					if alive_enemies.size() > 0:
+						new_targets.append(alive_enemies[0])
+			action["targets"] = new_targets
 
-			# Retarget for abilities/items
-			if action.has("targets"):
-				var new_targets = []
-				var revives: bool = _action_revives(action)
-				for target in action["targets"]:
-					var is_alive_in_battle = (is_instance_valid(target)
-						and target is Combatant
-						and target.is_alive
-						and (target in player_party or target in enemy_party))
-					var is_dead_ally_in_battle = (is_instance_valid(target)
-						and target is Combatant
-						and not target.is_alive
-						and target in player_party)
-					if is_alive_in_battle or (revives and is_dead_ally_in_battle):
-						new_targets.append(target)
-					else:
-						# Replace dead/freed/stale targets with first alive enemy
-						var alive_enemies = _get_alive_enemies()
-						if alive_enemies.size() > 0:
-							new_targets.append(alive_enemies[0])
-				action["targets"] = new_targets
-
-			_queue_action(action)
-			print("[REPEAT] %s: queued %s" % [combatant.combatant_name, action["type"]])
-			repeated_any = true
-
-	if repeated_any:
-		# Skip remaining selections and start execution
-		selection_index = selection_order.size()
-		_process_next_selection()
-
-	return repeated_any
+		_queue_action(action)
+		print("[REPEAT] %s: queued %s" % [combatant.combatant_name, action["type"]])
 
 
 ## 2026-07-14 (cowir-music msg 2539): a repeated action against a KO'd ally was routed to the first alive enemy — Phoenix Down + Raise-family abilities EXPECT dead targets. True when the action revives.
