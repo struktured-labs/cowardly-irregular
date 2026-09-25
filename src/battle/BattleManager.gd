@@ -7062,6 +7062,9 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 				if "permakilled" in target.status_effects:
 					target.remove_status("permakilled")
 				target.revive(int(target.max_hp * 0.5))
+				var grind: Node = get_node_or_null("/root/AutogrindSystem")
+				if grind != null and grind.has_method("release_staked_permadeath"):
+					grind.release_staked_permadeath(target.combatant_name)
 				healing_done.emit(target, target.current_hp)
 				battle_log_message.emit("[color=magenta]✦ %s undoes %s's death![/color]" % [caster.combatant_name, target.combatant_name])
 		## Tick 399: mutual_permadeath (Bossbinder's mutual_destruction
