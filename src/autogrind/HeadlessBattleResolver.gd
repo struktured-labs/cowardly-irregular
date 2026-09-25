@@ -86,8 +86,8 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	## the party stronger than live for battles 2..N, a poison kept ticking into fights the game would
 	## have started clean, and a doom_counter — lethal since cowir-battle's 48a70e4dd — could kill in a
 	## battle live had already disarmed. Enemies are rebuilt per battle, so only the party accumulated.
-	## NOT cleared, because live does not: HP, MP and permanent_injuries. A grind that healed the party
-	## between fights would be a worse bug than the leak it replaced; there is an arm for that.
+	## NOT cleared, because live does not: HP, MP, permanent_injuries, and the permakilled marker.
+	## A grind that healed the party between fights would be a worse bug than the leak it replaced.
 	for combatant in (_player_party + _enemy_party):
 		if combatant == null or not is_instance_valid(combatant):
 			continue
@@ -95,10 +95,8 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 			combatant.active_buffs.clear()
 		if "active_debuffs" in combatant:
 			combatant.active_debuffs.clear()
-		if "status_effects" in combatant:
-			combatant.status_effects.clear()
-		if "status_durations" in combatant:
-			combatant.status_durations.clear()
+		if combatant.has_method("clear_transient_statuses"):
+			combatant.clear_transient_statuses()
 		if "is_defending" in combatant:
 			combatant.is_defending = false
 		## -1 is the "not doomed" sentinel (Combatant.gd:84). 0 is a LIVE counter — live sets -1 here
