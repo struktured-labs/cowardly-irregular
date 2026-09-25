@@ -295,11 +295,66 @@
 				"Verse two, with feeling!"
 			],
 			"trigger_voices": {
-				"turn_start": "Cue the bard — and a one, and a two, and a try not to die on beat.",
-				"low_hp": "Folks, the protagonist is bleeding! Dramatically convenient! Cleric, this is your cue, sweetheart.",
-				"big_hit_taken": "OOF — note to self, work that bridge into the eulogy. Still standing. Still in key.",
-				"used_signature_ability": "And THAT, dear audience, is why they put me in the party. Buff stack, baby. Encore later.",
-				"victory": "Scene! Curtain! And someone get the loot — bards do NOT collect, we DISTRIBUTE the proceeds."
+				"turn_start": [
+					"Cue the bard — and a one, and a two, and a try not to die on beat.",
+					"My turn! Try to keep the beat.",
+					"Ooh, a solo. Don't mind if I do.",
+					"Smile, everyone. This part's going in the book.",
+					"And a one, and a two... eh, let's just go.",
+					"Taking requests. Not from you.",
+					"Stage is mine. Lighting's awful. Love it.",
+					"Places, everyone! Well. Places-ish.",
+					"Strings are tight. Mood is bright. Let's go.",
+					"Big smile. Sharp strings. Here we go."
+				],
+				"low_hp": [
+					"Folks, the protagonist is bleeding! Dramatically convenient! Cleric, this is your cue, sweetheart.",
+					"Still singing. Barely. But in key.",
+					"Ow. Okay. Minor key it is.",
+					"I've played rougher rooms than this.",
+					"Little help? Anyone? Asking musically.",
+					"Low on health. High on spirits. Mostly spirits.",
+					"Don't worry. Tragedies sell better anyway.",
+					"Just a dramatic pause. Stay in your seats.",
+					"Not the ending I wrote. Rewriting.",
+					"Still smiling. Please don't ask how."
+				],
+				"big_hit_taken": [
+					"OOF — note to self, work that bridge into the eulogy. Still standing. Still in key.",
+					"Ow! Rude. I'm writing that down.",
+					"That hit a sour note.",
+					"Oof. Off the beat, but effective.",
+					"Heckler. Noted. Remembered.",
+					"Okay, that gets a verse. Not a nice one.",
+					"Still standing. Still smiling. Mostly standing.",
+					"Ha! Is that all? Kidding. That hurt.",
+					"Great timing. Terrible manners.",
+					"You'll regret that in the second chorus."
+				],
+				"used_signature_ability": [
+					"And THAT, dear audience, is why they put me in the party. Buff stack, baby. Encore later.",
+					"Everybody, on the beat! Feel that?",
+					"This one's a crowd-pleaser.",
+					"Hear that? That's morale. You're welcome.",
+					"Chin up. Shoulders back. One more move.",
+					"A little tune to make you dangerous.",
+					"Extra beat, on the house. Spend it loud.",
+					"Sing along. Or just fight better. Either works.",
+					"I believe in you. Musically.",
+					"Crowd's warmed up. Now go wreck them."
+				],
+				"victory": [
+					"Scene! Curtain! And someone get the loot — bards do NOT collect, we DISTRIBUTE the proceeds.",
+					"And scene! Take a bow, everyone.",
+					"That's going in the book. Chapter: we won.",
+					"Encore? No? Fine. Loot, then.",
+					"Standing ovation. From me. For us.",
+					"Another verse survived. I love this job.",
+					"Happy ending! Don't get used to it.",
+					"Tip your bard. Gold and applause accepted.",
+					"Curtain down. Five stars. Would fight again.",
+					"Well. That was a banger."
+				]
 			}
 		}
 	}
