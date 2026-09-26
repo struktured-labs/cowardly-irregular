@@ -532,6 +532,7 @@ func assign_job(combatant: Combatant, job_id: String) -> bool:
 	learn_abilities_for_level(combatant, combatant.job_level)
 	# The roster's passive_abilities are part of the job the same way its spells are.
 	_grant_roster_passives(combatant, job)
+	_unlock_rewind_for_time_mage(job_id)
 	job_changed.emit(combatant, old_job, job)
 	return true
 
@@ -636,8 +637,18 @@ func assign_secondary_job(combatant: Combatant, job_id: String) -> bool:
 	# looks like a different bug.
 	if combatant.has_method("recalculate_stats"):
 		combatant.recalculate_stats()
+	_unlock_rewind_for_time_mage(job_id)
 	secondary_job_changed.emit(combatant, job_id)
 	return true
+
+
+# Obtaining Time Mage is what unlock_time_mage_features documents; nothing else called it, so Rewind always refused.
+func _unlock_rewind_for_time_mage(job_id: String) -> void:
+	if job_id != "time_mage":
+		return
+	var gs := get_node_or_null("/root/GameState")
+	if gs != null and gs.has_method("unlock_time_mage_features"):
+		gs.unlock_time_mage_features()
 
 
 func _apply_job_stats(combatant: Combatant, job: Dictionary) -> void:

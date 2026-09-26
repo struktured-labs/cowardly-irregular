@@ -3512,7 +3512,7 @@ func _on_battle_ended(victory: bool) -> void:
 			print("[SPOTLIGHT] battle won → set %s + cleared %s" % [flag, loss_key])
 			_pending_spotlight_unlock_toast = _pending_spotlight_unlock
 			_reconcile_spotlight_locks()
-		elif not victory and _pending_spotlight_unlock != "" and GameState and "game_constants" in GameState:
+		elif not victory and _pending_spotlight_unlock != "" and GameState and "game_constants" in GameState and not (BattleManager and BattleManager._rewind_exit):
 			# Death-tier hint counter (msg 2472). Persisted via game_constants so a save+quit between attempts preserves the tier. start_solo_battle reads it on the next attempt and fires the appropriate spotlight_hint_<job>_<tier> via TutorialHints.
 			var loss_key: String = "spotlight_losses_" + _pending_spotlight_unlock
 			var current: int = int(GameState.game_constants.get(loss_key, 0))

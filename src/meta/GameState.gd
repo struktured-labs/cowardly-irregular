@@ -1028,10 +1028,10 @@ func record_history_checkpoint(force: bool = false) -> bool:
 
 
 func _add_to_history(save_data: Dictionary) -> void:
-	"""Add save state to history for rewind"""
-	save_history.append(save_data.duplicate(true))
-
-	# Keep history size limited
+	# Nested save_history would replace the live ring on rewind and skip or drop the earlier points.
+	var snapshot: Dictionary = save_data.duplicate(true)
+	snapshot.erase("save_history")
+	save_history.append(snapshot)
 	while save_history.size() > max_history_size:
 		save_history.pop_front()
 
