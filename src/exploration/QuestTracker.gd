@@ -30,6 +30,11 @@ const OBJECTIVES: Array = [
 	# 2026-09-06: the portal line here predated the spine gate — post-Rat-King the real goal
 	# is the four dragon seals, and the portal only exists after Mordaine anyway.
 	{"flag": "rat_king_defeated", "text": "Break the four dragon seals to open Castle Harmonia"},
+	# Last-match wins, so this sits after the seals line and before Mordaine. Rat King alone
+	# still says "break the seals"; all four dragons (the castle's real gate) replace it.
+	# Same strings the quest log already uses, so the banner and the log name one goal.
+	{"all_flags": ["rat_king_defeated", "fire_dragon_defeated", "ice_dragon_defeated", "lightning_dragon_defeated", "shadow_dragon_defeated"], "text": "Defeat the Chancellor's Warden"},
+	{"flag": "castle_warden_defeated", "text": "Confront Chancellor Mordaine in Castle Harmonia"},
 	# Tick 281: w1_boss_defeated had no writers — Mordaine's real flag.
 	{"flag": "world1_mordaine_defeated", "text": "Enter the portal to the Mundane Sprawl"},
 	# W2 Suburban
@@ -130,10 +135,7 @@ func _update_objective() -> void:
 	var best_text = OBJECTIVES[0]["text"]  # Default objective
 
 	for entry in OBJECTIVES:
-		var flag = entry["flag"]
-		if flag == "":
-			best_text = entry["text"]
-		elif _is_flag_set(flag):
+		if _entry_reached(entry):
 			best_text = entry["text"]
 
 	if best_text != _current_objective:
@@ -196,6 +198,22 @@ func _process(delta: float) -> void:
 
 func update() -> void:
 	_update_objective()
+
+
+## A single flag, or every flag in all_flags. Empty all_flags never matches, so a blank list cannot skip the spine.
+func _entry_reached(entry: Dictionary) -> bool:
+	var all_flags: Variant = entry.get("all_flags", null)
+	if all_flags is Array:
+		if (all_flags as Array).is_empty():
+			return false
+		for flag in all_flags:
+			if not _is_flag_set(str(flag)):
+				return false
+		return true
+	var flag := str(entry.get("flag", ""))
+	if flag == "":
+		return true
+	return _is_flag_set(flag)
 
 
 ## Tick 336: delegate to GameState.is_story_flag_set (canonical
