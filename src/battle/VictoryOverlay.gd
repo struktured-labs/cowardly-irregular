@@ -562,7 +562,8 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 	for chip in chips:
 		var lbl := Label.new()
 		lbl.text = chip[1]
-		lbl.add_theme_font_size_override("font_size", TextScale.scaled(14))
+		var chip_px := TextScale.scaled(14)
+		lbl.add_theme_font_size_override("font_size", chip_px)
 		lbl.add_theme_color_override("font_color", chip[2])
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var icon_id := str(chip[4]) if chip.size() > 4 else ""
@@ -572,7 +573,7 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 			row.add_theme_constant_override("separation", 4)
 			row.alignment = BoxContainer.ALIGNMENT_CENTER
 			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			row.add_child(ItemIcons.make_rect(icon_id, TextScale.scaled(14)))
+			row.add_child(ItemIcons.make_rect(icon_id, chip_px))
 			row.add_child(lbl)
 			h.add_child(row)
 		else:
