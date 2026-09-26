@@ -122,6 +122,8 @@ var previous_round_actions: Dictionary = {}  # {combatant_id: Array[actions]}
 var is_autobattle_enabled: bool = false  # Legacy global flag
 var autobattle_script: Dictionary = {}  # Legacy script
 var escape_allowed: bool = true
+## Set for the battle_ended emit a player Rewind uses, so a spotlight duel does not record that exit as a loss.
+var _rewind_exit: bool = false
 
 ## Tick 472: custom win_condition seam for the Spotlight Duels'
 ## non-HP minibosses. Set by GameLoop.start_solo_battle before
@@ -452,14 +454,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_party_line_last_kind.clear()
 	if not damage_dealt.is_connected(_on_damage_dealt_for_party_dialogue):
 		damage_dealt.connect(_on_damage_dealt_for_party_dialogue)
-	## Tick 414: feed the rewind ring buffer at battle start so
-	## rewind_to_previous_save can "undo this battle". Documented
-	## hook from record_history_checkpoint's docstring. Soft call
-	## (force=false) respects rewind_enabled — pre-Time-Mage battles
-	## skip the deep-duplicate cost.
-	if GameState and GameState.has_method("record_history_checkpoint"):
-		GameState.record_history_checkpoint(false)
-
+	_rewind_exit = false
 	player_party = players.duplicate()
 	enemy_party = enemies.duplicate()
 	## Tick 144: connect each party member's status_tick_damage so
@@ -603,6 +598,12 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 							combatant.remove_meta(str(held))
 				elif combatant.has_meta(meta_key):
 					combatant.remove_meta(meta_key)
+
+	## Checkpoint the cleared opening state so Rewind undoes this fight, not whatever the last menu sync stored.
+	if GameState and GameState.has_method("record_history_checkpoint"):
+		if bool(GameState.meta_features.get("rewind_enabled", false)):
+			_stamp_party_rows_for_rewind()
+		GameState.record_history_checkpoint(false)
 
 	# Connect to combatant signals.
 	# We bind `combatant` because the `died` signal has no args but
@@ -6908,6 +6909,69 @@ func _replay_last_ability(caster: Combatant, targets: Array) -> void:
 	_execute_ability(caster, _last_ability_cast_id, targets)
 
 
+# Write each live party member over the matching save row so the next checkpoint is this moment, not the last menu sync.
+func _stamp_party_rows_for_rewind() -> void:
+	if GameState == null or not ("player_party" in GameState):
+		return
+	for c in player_party:
+		if c == null or not is_instance_valid(c) or not (c is Combatant) or not c.has_method("to_dict"):
+			continue
+		var row: Dictionary = c.to_dict()
+		var placed := false
+		for i in GameState.player_party.size():
+			var existing: Variant = GameState.player_party[i]
+			if existing is Dictionary and str(existing.get("name", "")) == c.combatant_name:
+				GameState.player_party[i] = row
+				placed = true
+				break
+		if not placed:
+			GameState.player_party.append(row)
+
+
+func _clear_rewind_battle_metas(combatant: Combatant) -> void:
+	if not combatant.has_method("remove_meta"):
+		return
+	for meta_key in PER_BATTLE_METAS:
+		if meta_key.ends_with("_"):
+			for held in combatant.get_meta_list():
+				if str(held).begins_with(meta_key):
+					combatant.remove_meta(str(held))
+		elif combatant.has_meta(meta_key):
+			combatant.remove_meta(meta_key)
+
+
+# The save dict rewind already restored is not the Combatant the fight is using. Copy it back, then drop per-fight metas the dict does not store.
+func _restore_live_party_from_rewind() -> void:
+	if GameState == null or not ("player_party" in GameState):
+		return
+	for c in player_party:
+		if c == null or not is_instance_valid(c) or not (c is Combatant):
+			continue
+		_clear_rewind_battle_metas(c)
+		for row in GameState.player_party:
+			if row is Dictionary and str(row.get("name", "")) == c.combatant_name and c.has_method("from_dict"):
+				c.from_dict(row)
+				break
+
+
+# Leave without victory pay or the defeat telemetry that would zero a streak the snapshot just restored.
+func _leave_battle_after_rewind() -> void:
+	if not is_battle_active():
+		return
+	if GameState and "pending_boss_defeat" in GameState:
+		GameState.pending_boss_defeat = {}
+	execution_order.clear()
+	pending_actions.clear()
+	_rewind_exit = true
+	_wd_armed = false
+	current_state = BattleState.DEFEAT
+	if SoundManager:
+		SoundManager.stop_voice()
+	battle_ended.emit(false)
+	_cleanup_battle()
+	_rewind_exit = false
+
+
 func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	var meta_effect = ability.get("meta_effect", "")
 	var corruption_risk = ability.get("corruption_risk", 0.0)
@@ -6963,6 +7027,10 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			if GameState.rewind_to_previous_save():
 				print("  → [META] Time has been rewound!")
 				battle_log_message.emit("[color=magenta]✦ %s rewinds time![/color]" % caster.combatant_name)
+				# An enemy rewind_turn must not walk the player out of the fight.
+				if caster != null and is_instance_valid(caster) and caster in player_party:
+					_restore_live_party_from_rewind()
+					_leave_battle_after_rewind()
 			else:
 				print("  → [META] No previous save state to rewind to")
 				battle_log_message.emit("[color=gray]%s reaches for the timeline... but no rewind point exists.[/color]" % caster.combatant_name)
@@ -7048,6 +7116,8 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 			## becomes the next rewind_to_previous_save target.
 			## Flag is kept for downstream awareness (e.g. UI badges).
 			var checkpointed: bool = false
+			if is_battle_active():
+				_stamp_party_rows_for_rewind()
 			if GameState and GameState.has_method("record_history_checkpoint"):
 				checkpointed = GameState.record_history_checkpoint(true)
 			if GameState and "game_constants" in GameState:
