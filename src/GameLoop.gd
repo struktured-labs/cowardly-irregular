@@ -6121,21 +6121,7 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 			if member.is_alive and member.current_mp < member.max_mp * 0.5:
 				_autogrind_restore_mp(member)
 
-	# Track per-character EXP distribution (headless path)
-	if victory and exp_gained > 0:
-		## A MOURNER EARNS THIS EXP. BattleManager:1023 and AutogrindSystem's two award sites all
-		## check earns_exp_while_dead; these were the sites that fix did not reach, so a Cleric
-		## carrying posthumous_credit was credited nothing here AND shrank the divisor, inflating
-		## everyone else's share. Derived ONCE so the divisor and the award loop cannot disagree —
-		## two loops sharing a predicate is how they drift apart in the first place.
-		var earners: Array = []
-		for member in party:
-			if member is Combatant and (member.is_alive or BattleManager.earns_exp_while_dead(member)):
-				earners.append(member)
-		if earners.size() > 0:
-			var per_char_exp = exp_gained / earners.size()
-			for member in earners:
-				AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
+	# Per-character session EXP is recorded where it is paid, so the bar matches each wallet.
 
 	# Forward to controller with headless-computed EXP + gold (tick 342:
 	# gold was previously dropped — empty items_gained dict meant the
@@ -6352,17 +6338,7 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 			if member.is_alive and member.current_mp < member.max_mp * 0.5:
 				_autogrind_restore_mp(member)
 
-	# Track per-character EXP distribution (same earner set as the headless path)
-	if victory and exp_gained > 0:
-		## KO'd mourners earn; a living-only divisor skips them and inflates everyone else's share.
-		var earners: Array = []
-		for member in party:
-			if member is Combatant and (member.is_alive or BattleManager.earns_exp_while_dead(member)):
-				earners.append(member)
-		if earners.size() > 0:
-			var per_char_exp = exp_gained / earners.size()
-			for member in earners:
-				AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
+	# Per-character session EXP is recorded where it is paid, so the bar matches each wallet.
 
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
