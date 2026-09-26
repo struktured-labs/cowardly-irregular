@@ -373,7 +373,8 @@ func show_boss_intro(boss_name: String, intro_lines: Array) -> void:
 			if entry["speaker"].to_lower().contains("hero"):
 				entry["portrait"] = "hero"
 				entry["theme"] = "hero"
-			elif entry["speaker"].to_lower().contains("rat") or entry["speaker"].to_lower().contains("king"):
+			# "rat" as a substring matches Curator, so those bosses wore the Rat King's face.
+			elif "rat king" in entry["speaker"].to_lower():
 				entry["portrait"] = "rat_king"
 				entry["theme"] = "rat_king"
 			else:
