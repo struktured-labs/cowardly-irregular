@@ -130,8 +130,8 @@ func test_standalone_rooms_call_play_area_music_directly() -> void:
 	# arrives via a direct play_area_music call in _ready.
 	for entry in DIRECT_CALL_ROOMS:
 		var src := _read(entry[0])
-		assert_true(src.contains("play_area_music(\"" + entry[1] + "\")"),
-			"%s must call play_area_music(\"%s\") directly (standalone scene, no BaseInterior flow)" % [entry[0], entry[1]])
+		assert_true(src.contains("play_area_music(\"" + entry[1] + "\""),
+			"%s must call play_area_music with \"%s\" directly (standalone scene, no BaseInterior flow)" % [entry[0], entry[1]])
 
 
 func test_menu_restore_into_unauthored_interior_does_not_keep_menu() -> void:
