@@ -2683,7 +2683,7 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 
 
 ## Foe rows are single_enemy and all_enemies. "all_enemies" does not contain the substring "enemy".
-## self stays on the caster. all_allies is every living ally. Any other row keeps the old rule: the most wounded ally under half HP, else the caster.
+## self stays on the caster. all_allies is every living ally. all_rat_allies is every other living ally whose monster id has "rat" as its own token. Any other row keeps the old rule: the most wounded ally under half HP, else the caster.
 func _utility_targets(combatant: Combatant, ability: Dictionary, alive_allies: Array, alive_enemies: Array) -> Array:
 	var target_type := str(ability.get("target_type", "self"))
 	if target_type == "all_enemies":
@@ -2701,11 +2701,26 @@ func _utility_targets(combatant: Combatant, ability: Dictionary, alive_allies: A
 		if alive_allies.is_empty():
 			return [combatant]
 		return alive_allies.duplicate()
+	if target_type == "all_rat_allies":
+		var rats: Array = []
+		for ally in alive_allies:
+			if ally == null or not is_instance_valid(ally) or not ally.is_alive or ally == combatant:
+				continue
+			if _monster_id_is_rat(ally):
+				rats.append(ally)
+		return rats
 	var low_hp_allies: Array = alive_allies.filter(func(a): return a != null and a.get_hp_percentage() < 50.0)
 	if low_hp_allies.size() > 0:
 		low_hp_allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
 		return [low_hp_allies[0]]
 	return [combatant]
+
+
+## A rat is a monster whose id has "rat" as its own underscore token. "curator" contains those letters and is not one.
+func _monster_id_is_rat(combatant: Combatant) -> bool:
+	if combatant == null or not is_instance_valid(combatant) or not combatant.has_meta("monster_type"):
+		return false
+	return str(combatant.get_meta("monster_type", "")).split("_").has("rat")
 
 
 ## Shared utility slot. _ai_tank had one; assassin, brute and caster did not, so 25 monsters
