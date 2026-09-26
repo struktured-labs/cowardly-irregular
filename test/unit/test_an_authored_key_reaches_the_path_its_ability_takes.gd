@@ -160,7 +160,6 @@ const DECLARED_ORPHANS := {
 	## ── surfaced 2026-09-17 when TYPE_EXECUTOR stopped naming six of the ten authored types ──
 	"penalty:warp_to_boss": "meta; the FIRST finding from a type that had never been routed. `penalty: no_dungeon_loot` has no reader, and the arm handling this ability says so in its own comment (BattleManager:6799 — enforcement 'lives in the warp implementation, a future tick'). The warp is itself a pending flag, so the penalty cannot be enforced before the thing it penalises exists. Declared, not held: there is no decision until the warp lands",
 	"damage_multiplier:absorb_meaning": "support; authored 0.0, so a reader and no reader produce the IDENTICAL battle. Decorative — declared so the next census does not read it as a live zero-damage bug",
-	"damage_multiplier:base_case": "support; ⛔ THE ONE WITH A BROKEN PROMISE. 'Terminates its own recursive loop, dealing moderate damage to all enemies' — and _execute_support_ability has no damage path at all, so Recursive Loop spends 10 MP and its turn on nothing. The ability authors NO support key (no effect, no stat_modifier, no duration), so the remedy is a RE-TYPE to magic rather than a wiring. Caster recursive_loop is POOLED in futuristic_overworld, so it makes W5 roaming encounters harder: struktured's call",
 }
 
 
