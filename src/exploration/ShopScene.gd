@@ -597,7 +597,21 @@ func _get_owned_count(item_id: String) -> int:
 			if _member_knows(i, item_id, learned):
 				count += 1
 		return count
+	elif shop_type == ShopType.BLACKSMITH:
+		# Spares live in the pool. A worn piece is not one of them; the row names that person separately.
+		return _spare_copies_in_pool(item_id)
 	return 0
+
+
+## Unequipped copies across every pool key. A misfiled spare still counts, matching the sell list.
+func _spare_copies_in_pool(item_id: String) -> int:
+	var pool: Dictionary = _live_equipment_pool()
+	var count := 0
+	for key in pool:
+		var slot: Variant = pool[key]
+		if slot is Array:
+			count += (slot as Array).count(item_id)
+	return count
 
 
 func _get_sellable_inventory() -> Array:
@@ -871,13 +885,39 @@ func _update_description_for_item(item_id: String) -> void:
 	description_label.text = desc
 
 
-## Names the party members currently wearing item_id ("" if nobody) — same
-## party access pattern as _compare_equipment below.
-func _equipped_by(item_id: String) -> String:
-	if not game_state or game_state.player_party.is_empty():
-		return ""
-	var wearers: PackedStringArray = []
+## Live equipped slots when a party is in the tree; otherwise the save snapshot. Menu-open and pre-save are the only snapshot writers, and walking into a shop does not save.
+func _party_gear_rows() -> Array:
+	var live: Array = _resolve_live_party()
+	var rows: Array = []
+	var saw_live := false
+	for member in live:
+		if member == null or not is_instance_valid(member):
+			continue
+		if not ("equipped_weapon" in member) and not ("equipped_armor" in member) and not ("equipped_accessory" in member):
+			continue
+		var who := "?"
+		if "combatant_name" in member and str(member.combatant_name) != "":
+			who = str(member.combatant_name)
+		rows.append({
+			"name": who,
+			"equipped_weapon": str(member.equipped_weapon) if "equipped_weapon" in member else "",
+			"equipped_armor": str(member.equipped_armor) if "equipped_armor" in member else "",
+			"equipped_accessory": str(member.equipped_accessory) if "equipped_accessory" in member else "",
+		})
+		saw_live = true
+	if saw_live or game_state == null:
+		return rows
 	for member in game_state.player_party:
+		if typeof(member) != TYPE_DICTIONARY:
+			continue
+		rows.append(member)
+	return rows
+
+
+## Names the party members currently wearing item_id ("" if nobody).
+func _equipped_by(item_id: String) -> String:
+	var wearers: PackedStringArray = []
+	for member in _party_gear_rows():
 		if typeof(member) != TYPE_DICTIONARY:
 			continue
 		if str(member.get("equipped_weapon", "")) == item_id \
@@ -892,9 +932,10 @@ func _compare_equipment(item_id: String, item_data: Dictionary) -> Dictionary:
 	gear in the same slot (weapon vs weapon, armor vs armor). Returns a dict
 	of stat deltas: positive = upgrade, negative = downgrade. Empty if no
 	comparison possible."""
-	if not game_state or game_state.player_party.is_empty():
+	var rows := _party_gear_rows()
+	if rows.is_empty() or typeof(rows[0]) != TYPE_DICTIONARY:
 		return {}
-	var leader: Dictionary = game_state.player_party[0]
+	var leader: Dictionary = rows[0]
 	var new_mods: Dictionary = item_data.get("stat_mods", {})
 
 	# Determine which slot this equipment goes in and what's currently equipped
