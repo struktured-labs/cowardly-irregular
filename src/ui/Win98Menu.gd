@@ -170,6 +170,8 @@ var menu_items: Array = []
 var selected_index: int = 0
 var _scroll_offset: int = 0        # first visible row index
 var _max_visible_rows: int = 0     # 0 = uncapped (menu fits)
+## Pixels of the viewport bottom this menu must not cover. Shops set it so a long shelf stops above the description panel; battle leaves it 0.
+var bottom_clearance: int = 0
 var _items_base_y: float = 0.0
 var submenu: Win98Menu = null
 var parent_menu: Win98Menu = null
@@ -762,6 +764,10 @@ func _build_menu() -> void:
 	if is_inside_tree():
 		viewport_height = int(get_viewport_rect().size.y)
 	var room_for_rows = viewport_height - MENU_SCREEN_MARGIN * 2 - chrome_height
+	if bottom_clearance > 0:
+		var anchor_y := maxi(MENU_SCREEN_MARGIN, int(anchor_position.y))
+		var bottom_limit: int = int(viewport_height) - bottom_clearance
+		room_for_rows = bottom_limit - anchor_y - chrome_height
 	_max_visible_rows = maxi(1, room_for_rows / row_h)
 	if menu_items.size() <= _max_visible_rows:
 		_max_visible_rows = 0  # fits; no scrolling
@@ -1864,6 +1870,29 @@ func _nav_step(dir: int) -> void:
 	_auto_expand_submenu()
 
 
+## Page jump for a menu that is already scrolling. Clamps: a page off the end lands on the last row, it does not wrap.
+func _page_selection(dir: int) -> void:
+	var n := menu_items.size()
+	if n == 0 or dir == 0:
+		return
+	var idx := clampi(selected_index + dir * MenuPaging.PAGE_ROWS, 0, n - 1)
+	if menu_items[idx].get("disabled", false):
+		var walk := -1 if dir > 0 else 1
+		var steps := 0
+		while steps < n and menu_items[idx].get("disabled", false):
+			var nxt := idx + walk
+			if nxt < 0 or nxt >= n:
+				return
+			idx = nxt
+			steps += 1
+	if idx == selected_index:
+		return
+	selected_index = idx
+	_play_move_sound()
+	_update_selection()
+	_auto_expand_submenu()
+
+
 ## Every reason this menu must not act on navigation, in ONE place. _input and the
 ## hold-to-repeat in _process both consult it: they were separate lists, and the repeat
 ## path silently bypassed four of the five guards the press path had.
@@ -1945,6 +1974,14 @@ func _input(event: InputEvent) -> void:
 					# Quick press - do normal defer/undo behavior
 					_handle_defer_input()
 				# If hold_time >= L_HOLD_CONFIRM_TIME, it was already handled in _process
+			get_viewport().set_input_as_handled()
+			return
+
+	# A scrolling shop list pages like every other long menu. Battle keeps L/R as Defer/Advance, and a menu that fits has nothing to page.
+	if not battle_mode and _max_visible_rows > 0:
+		var page := MenuPaging.page_delta(event)
+		if page != 0:
+			_page_selection(page)
 			get_viewport().set_input_as_handled()
 			return
 
