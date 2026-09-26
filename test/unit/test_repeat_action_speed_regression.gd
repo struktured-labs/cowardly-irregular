@@ -34,5 +34,7 @@ func test_repeat_fallback_uses_compute_action_speed() -> void:
 func test_compute_action_speed_is_subtractive() -> void:
 	# Pin the canonical formula shape so the speed semantics can't drift.
 	var text = _read(BATTLE_MANAGER_PATH)
-	assert_true(text.find("var speed_value = base_speed - (combatant.speed * 0.5)") != -1,
+	assert_true(text.find("var speed_value = base_speed - (effective_speed * 0.5)") != -1,
 		"_compute_action_speed must remain subtractive (lower value = executes first).")
+	assert_true(text.find("get_buffed_stat(\"speed\", combatant.speed)") != -1,
+		"_compute_action_speed must read the buffed speed — haste and slow never write the raw field.")
