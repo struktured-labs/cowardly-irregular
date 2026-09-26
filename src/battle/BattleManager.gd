@@ -5703,12 +5703,35 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 		stat_val = attacker.get_buffed_stat("attack", attacker.attack)
 		stat_name = "ATK"
 
-	var raw = int(stat_val * power / 10.0)
+	## Same pre-defense scale _execute_magic_ability bakes from <element>_damage_bonus and the element_boost buff. The "~N dmg" row quoted the unarmed hit while a Flame Sword's Fire landed at 1.5×.
+	var gear_mult := 1.0
+	var buff_mult := 1.0
+	if is_magical:
+		var gear_element := str(ability.get("element", ""))
+		if gear_element != "":
+			var gear_bonus := _sum_equipment_special_effect(attacker, gear_element + "_damage_bonus")
+			if gear_bonus > 0.0:
+				gear_mult = gear_bonus
+			var elem_buff := _element_buff_bonus(attacker, gear_element)
+			if elem_buff > 0.0:
+				buff_mult = elem_buff
+	## Ability, then gear, then the element buff — the same order _execute_magic_ability multiplies, so the preview truncates where the hit does.
+	var multiplier: float = power / 10.0
+	if gear_mult > 0.0:
+		multiplier *= gear_mult
+	if buff_mult > 0.0:
+		multiplier *= buff_mult
+	var raw = int(stat_val * multiplier)
 	var def_val = target.get_buffed_stat("magic_defense", target.magic_defense) if is_magical \
 		else target.get_buffed_stat("defense", target.defense)
 	var def_name: String = "MDEF" if is_magical else "DEF"
 	var mitigated = int((raw * raw) / float(max(1, raw + def_val)))
-	var formula: String = "%s %d ×%.1f = %d; %d² ÷ (%d + %s %d) = %d" % [stat_name, stat_val, power / 10.0, raw, raw, raw, def_name, def_val, mitigated]
+	var scale_clause := ""
+	if not is_equal_approx(gear_mult, 1.0):
+		scale_clause += " ×gear %.2f" % gear_mult
+	if not is_equal_approx(buff_mult, 1.0):
+		scale_clause += " ×elem %.2f" % buff_mult
+	var formula: String = "%s %d ×%.1f%s = %d; %d² ÷ (%d + %s %d) = %d" % [stat_name, stat_val, power / 10.0, scale_clause, raw, raw, raw, def_name, def_val, mitigated]
 
 	# Elemental modifier — reuse the real hit's source of truth so the "~N dmg"
 	# preview matches reality (0.0x immune, 1.5x weak, 0.5x resist). Immunity

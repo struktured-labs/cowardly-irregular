@@ -327,6 +327,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	var job_id = member.job.get("id", "fighter") if member.job else "fighter"
 	var custom = member.get("customization") if "customization" in member else null
 	var portrait = CharacterPortraitClass.new(custom, job_id, CharacterPortraitClass.PortraitSize.MEDIUM)
+	portrait.name = "Portrait"
 	portrait.position = Vector2(4, 4)
 	card.add_child(portrait)
 
@@ -623,6 +624,8 @@ func _update_party_stats() -> void:
 		var job_lbl = card.get_node_or_null("JobLabel")
 		if job_lbl:
 			job_lbl.text = member.job.get("name", "Fighter") if member.job else "Fighter"
+		# Job text refreshes in place; the face was baked at open and kept the previous job.
+		_refresh_card_portrait(card, member)
 
 		var hp_bar = card.get_node_or_null("HPBar")
 		if hp_bar:
@@ -653,6 +656,28 @@ func _update_party_stats() -> void:
 		var dead_label = card.get_node_or_null("DeadLabel")
 		if dead_label:
 			dead_label.visible = not member.is_alive
+
+
+## The card is rebuilt only when the menu opens. A job change closes back onto that card, so the face has to follow the job the label already reads.
+func _refresh_card_portrait(card: Control, member: Combatant) -> void:
+	var job_id := "fighter"
+	if member.job is Dictionary:
+		job_id = str((member.job as Dictionary).get("id", "fighter"))
+	var portrait := card.get_node_or_null("Portrait")
+	if portrait != null and str(portrait.get("job_id")) == job_id:
+		return
+	var at := 0
+	if portrait != null:
+		at = portrait.get_index()
+		card.remove_child(portrait)
+		portrait.free()
+	var custom = member.get("customization") if "customization" in member else null
+	var fresh := CharacterPortraitClass.new(custom, job_id, CharacterPortraitClass.PortraitSize.MEDIUM)
+	fresh.name = "Portrait"
+	fresh.position = Vector2(4, 4)
+	card.add_child(fresh)
+	if at < card.get_child_count():
+		card.move_child(fresh, at)
 
 
 func _update_selection() -> void:
@@ -1153,9 +1178,14 @@ func _open_jobs_menu(target: Combatant) -> void:
 	_hide_main_ui(job_menu)
 
 
-func _on_job_changed(_combatant: Combatant, _job_id: String, _is_secondary: bool) -> void:
-	"""Handle job change"""
-	pass  # UI will refresh when menu closes
+func _on_job_changed(combatant: Combatant, _job_id: String, is_secondary: bool) -> void:
+	# Map avatar updates on leader swaps and area entry. A primary-job change of that same person never went through either.
+	if is_secondary or combatant == null or GameState == null:
+		return
+	var idx := party.find(combatant)
+	if idx < 0 or idx != int(GameState.party_leader_index):
+		return
+	party_leader_changed.emit(idx)
 
 
 func _open_party_status() -> void:
