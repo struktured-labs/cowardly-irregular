@@ -137,8 +137,9 @@ func test_a_room_asks_for_its_own_bed_or_its_villages() -> void:
 	## ⚠️ WAS `> 5`, AND IT FIRED ON A DELIBERATE CHANGE RATHER THAN ON DRIFT — which is the floor doing
 	## its job. Ten single-village rooms moved from a room key to their village id on 2026-09-18,
 	## because an unauthored room key is correct only when WALKED INTO (see the arrival-mode arm
-	## below). The three that remain are Inn/Shop/Tavern, which are reused across villages and have no
-	## single owning village, so a room key is the right answer for them and the branch stays live.
+	## below). The three that remain are Inn, Shop and the tavern. Inn and Shop are reused and have no
+	## single owning village; the tavern is Harmonia-only but still asks for interior_tavern so a
+	## walk-in inherits. A room key stays the right request, and the branch stays live.
 	assert_gt(self_named, 2, "FLOOR: only %d self-named (interior_) requests — the interior_ branch this arm accepts is no longer exercised by anything" % self_named)
 	assert_gt(checked_against_a_door, 10, "FLOOR: only %d requests were judged against a real door" % checked_against_a_door)
 
@@ -157,9 +158,9 @@ func test_a_room_asks_for_its_own_bed_or_its_villages() -> void:
 ## RELATIONSHIP — a coincidental pin on either spelling would red the other correct answer, which is
 ## exactly what the arm above already avoids.
 ##
-## Rooms reused across villages (Inn, Shop, Tavern) are EXCLUDED and the exclusion is the point: they
-## have no single owning village, so the world-level fallback is the best answer available to them.
-## They are excluded by the derivation — no single door — not by name.
+## Inn and Shop are reused and have no single owning village, so the world-level fallback is the
+## best answer available to them. The Dancing Tonberry is Harmonia-only; its door is an emit, so
+## this derivation skips it too — the cold start is pinned in test_tavern_save_keeps_harmonia_theme.
 func test_a_room_sounds_the_same_however_you_arrived() -> void:
 	var base_village_area: String = _first_return(_code(BASE_VILLAGE), "_get_music_area_id")
 	var base_interior_track: String = _first_return(_code(BASE_INTERIOR), "_get_music_track")
