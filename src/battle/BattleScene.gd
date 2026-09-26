@@ -1852,8 +1852,7 @@ func _build_input_hint_bar() -> void:
 	var label := Label.new()
 	label.name = "HintLabel"
 	# Keep the hint text concise; pipe-separated reads quickly.
-	# Use [L]/[R] notation that works for both gamepad (shoulder)
-	# and keyboard (L/R keys per InputMap).
+	# Each key is derived per device (pad shoulders, keyboard keys per InputMap).
 	# One source for the bar; a second literal here drifted from Win98Menu's once already.
 	label.text = Win98Menu.hint_text()
 	# ...and re-derived when the pad arrives or leaves, not only when the bar is first built.
@@ -5163,7 +5162,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	# struktured 2026-09-10, reporting the queue-commit ask: "which is R… or should be R… one should
 	# be L one should be R". He could not remember because THESE TWO WERE INVERTED: raw KEY_R called
 	# player_defer() and raw KEY_L logged "Use R to queue actions", against project.godot
-	# (battle_defer = L, battle_advance = R) and against the hint bar's "[L] Defer · [R] Advance".
+	# (battle_defer / battle_advance) and against the hint bar's Defer · Advance, whose keys it derives.
 	#
 	# Reachable, not dead: Win98Menu._input consumes both actions, but ONLY while a menu exists —
 	# and the branch below this one reopens the menu precisely because "closed while selecting" is a

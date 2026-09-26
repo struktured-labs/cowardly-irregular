@@ -36,8 +36,8 @@ func test_hint_swaps_with_queue_and_restores() -> void:
 	assert_true(label.text.contains("2/"), "queue count must display")
 	# struktured 2026-09-10: hold-L commits the queue as-is and was advertised NOWHERE, while the
 	# advertised [A] submits the queue PLUS the highlighted item — the extra action he was avoiding.
-	assert_true(label.text.contains("HOLD L"),
-		"the queued hint must name the commit-as-is gesture: %s" % label.text)
+	assert_true(label.text.contains("HOLD %s" % InputProfileManager.hint_for_action("battle_defer")),
+		"the queued hint must name the commit-as-is gesture on the Defer key (derived — it moved L -> Q once): %s" % label.text)
 	assert_true(label.text.contains("Add+Commit"),
 		"and must not call the add-one-more path plain 'Confirm': %s" % label.text)
 	menu._queued_actions.clear()
