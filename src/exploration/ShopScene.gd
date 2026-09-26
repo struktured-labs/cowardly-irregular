@@ -357,6 +357,14 @@ func _open_sell_menu() -> void:
 		_update_description_for_item(sellable_items[0]["id"])
 
 
+## Pixels of the viewport bottom the shelf must leave clear so it stops above the description panel.
+func _menu_bottom_clearance() -> int:
+	if description_panel == null or not is_instance_valid(description_panel):
+		return 0
+	var vp_h := get_viewport().get_visible_rect().size.y
+	return int(ceili(vp_h - description_panel.position.y + 8.0))
+
+
 func _show_menu(title: String, items: Array, pos: Vector2) -> void:
 	"""Show a Win98Menu"""
 	_close_current_menu()
@@ -366,6 +374,7 @@ func _show_menu(title: String, items: Array, pos: Vector2) -> void:
 	current_menu.is_root_menu = true
 	current_menu.expand_left = true
 	current_menu.expand_up = false
+	current_menu.bottom_clearance = _menu_bottom_clearance()
 	add_child(current_menu)
 	current_menu.setup(title, items, pos, "fighter")
 
