@@ -293,12 +293,17 @@ func _setup_collision() -> void:
 
 func _process(delta: float) -> void:
 	if not _active:
+		if _cannot_step(_player_ref):
+			return  # do not respawn onto a player who still cannot move
 		_tick_respawn(delta)
 		return
 
 	if _fading:
 		_tick_fade(delta)
 		return
+
+	if _cannot_step(_player_ref):
+		return  # a frozen player cannot dodge; hold the chase until they can
 
 	if elite:
 		_aura_phase += delta
@@ -577,10 +582,21 @@ func _repel_active() -> bool:
 	return es != null and int(es.repel_steps_remaining) > 0
 
 
+## Same predicate the player sprite uses: cutscene state, an input lock, or the dialogue flag.
+func _cannot_step(who: Node) -> bool:
+	if who == null or not is_instance_valid(who):
+		return false
+	if who.has_method("_can_move"):
+		return not bool(who._can_move())
+	return who.get("can_move") == false
+
+
 func _on_body_entered(body: Node2D) -> void:
 	if not _active or _fading:
 		return
 	if body.has_method("set_can_move"):
+		if _cannot_step(body):
+			return  # overlap during a hold must not start the fight
 		if elite:
 			# An elite asks first. Deferred because this runs inside the physics query flush
 			# and the prompt awaits — same reason deactivate() defers its collision change.

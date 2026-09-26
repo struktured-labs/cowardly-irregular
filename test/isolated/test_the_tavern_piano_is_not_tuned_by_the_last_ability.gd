@@ -1,5 +1,7 @@
 extends GutTest
 
+## ISOLATED (2026-09-26): the main suite's audio mix thread spun at this file twice (.511, .515), killing ~2300 files each time; alone it passed 25/25, so it needs suite-built state and runs here under its own bound.
+##
 ## The tavern piano is a MELODY — its pitch is content, not flavour. It plays on `_ability_player`,
 ## which is shared, and `_try_play_sfx_from_manifest` writes a jittered `pitch_scale` on every file
 ## cue it plays there (`pitch_jitter` defaults true, SFX_PITCH_JITTER 0.05).
