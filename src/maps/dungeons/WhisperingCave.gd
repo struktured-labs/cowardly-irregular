@@ -282,8 +282,11 @@ func _generate_map_for_floor(floor_num: int) -> void:
 				spawn_points["boss"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
 	# Set default spawn for this floor
-	var spawn_pos = floor_spawn_points.get(floor_num, {}).get("entrance", Vector2(12, 14))
-	spawn_points["default"] = Vector2(spawn_pos.x * TILE_SIZE, spawn_pos.y * TILE_SIZE)
+	var authored := Vector2(-1, -1)
+	var spec: Dictionary = floor_spawn_points.get(floor_num, {})
+	if spec.has("entrance"):
+		authored = spec["entrance"]
+	spawn_points["default"] = DragonCave.entrance_spawn_px(map_data, authored, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, Vector2(12, 14))
 
 	# Setup transitions for this floor
 	_place_torches()

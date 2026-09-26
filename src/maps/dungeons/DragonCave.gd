@@ -237,6 +237,131 @@ func _setup_scene() -> void:
 	_puzzle_layer.attach(self)
 
 
+## Authored entrances stay at the tile's top-left. An unauthored floor whose fixed fallback tile is a wall or a stair sensor lands on the crystal tile instead (two tiles west of the up stair).
+func _entrance_spawn_px(floor_num: int, rows: Array) -> Vector2:
+	var authored := Vector2(-1, -1)
+	var spec: Dictionary = floor_spawn_points.get(floor_num, {})
+	if spec.has("entrance"):
+		authored = spec["entrance"]
+	return entrance_spawn_px(rows, authored, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, Vector2(10, 12))
+
+
+static func entrance_spawn_px(rows: Array, authored: Vector2, map_w: int, map_h: int, tile: int, fallback: Vector2) -> Vector2:
+	if authored.x >= 0.0:
+		return Vector2(authored.x * tile, authored.y * tile)
+	if _fallback_spawn_is_open(rows, fallback, map_w, map_h, tile):
+		return Vector2(fallback.x * tile, fallback.y * tile)
+	var cell := _open_landing_cell(rows, map_w, map_h, tile)
+	return Vector2(cell.x * tile + tile * 0.5, cell.y * tile + tile * 0.5)
+
+
+static func _fallback_spawn_is_open(rows: Array, fallback: Vector2, map_w: int, map_h: int, tile: int) -> bool:
+	if _layout_blocked(rows, int(fallback.x), int(fallback.y), map_w, map_h):
+		return false
+	return not _point_in_stair(rows, fallback.x * tile, fallback.y * tile, map_w, map_h, tile)
+
+
+static func _open_landing_cell(rows: Array, map_w: int, map_h: int, tile: int) -> Vector2i:
+	var markers := _last_stair_markers(rows, map_w, map_h)
+	var anchors: Array[Vector2i] = []
+	if markers.has("D"):
+		anchors.append(markers["D"])
+	if markers.has("U"):
+		anchors.append(markers["U"])
+	if markers.has("U"):
+		var crystal: Vector2i = (markers["U"] as Vector2i) + Vector2i(-2, 0)
+		if _landing_ok(rows, crystal, map_w, map_h, tile) and _reaches_marker(rows, crystal, anchors, map_w, map_h):
+			return crystal
+	var best := Vector2i(-1, -1)
+	var best_d := 1 << 30
+	for y in range(map_h):
+		for x in range(map_w):
+			var cell := Vector2i(x, y)
+			if not _landing_ok(rows, cell, map_w, map_h, tile):
+				continue
+			if not _reaches_marker(rows, cell, anchors, map_w, map_h):
+				continue
+			var dist := 0 if anchors.is_empty() else _nearest_manhattan(cell, anchors)
+			if dist < best_d:
+				best_d = dist
+				best = cell
+	return best if best.x >= 0 else Vector2i(1, 1)
+
+
+static func _landing_ok(rows: Array, cell: Vector2i, map_w: int, map_h: int, tile: int) -> bool:
+	if _layout_blocked(rows, cell.x, cell.y, map_w, map_h):
+		return false
+	var px := float(cell.x * tile) + float(tile) * 0.5
+	var py := float(cell.y * tile) + float(tile) * 0.5
+	return not _point_in_stair(rows, px, py, map_w, map_h, tile)
+
+
+static func _reaches_marker(rows: Array, start: Vector2i, markers: Array[Vector2i], map_w: int, map_h: int) -> bool:
+	if markers.is_empty():
+		return not _layout_blocked(rows, start.x, start.y, map_w, map_h)
+	var want := {}
+	for m in markers:
+		want[m] = true
+	if want.has(start):
+		return true
+	var seen := {start: true}
+	var stack: Array[Vector2i] = [start]
+	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	while not stack.is_empty():
+		var cur: Vector2i = stack.pop_back()
+		for d in dirs:
+			var n: Vector2i = cur + d
+			if seen.has(n) or _layout_blocked(rows, n.x, n.y, map_w, map_h):
+				continue
+			if want.has(n):
+				return true
+			seen[n] = true
+			stack.append(n)
+	return false
+
+
+static func _nearest_manhattan(cell: Vector2i, anchors: Array[Vector2i]) -> int:
+	var best := 1 << 30
+	for a in anchors:
+		var d := absi(cell.x - a.x) + absi(cell.y - a.y)
+		if d < best:
+			best = d
+	return best
+
+
+static func _point_in_stair(rows: Array, px: float, py: float, map_w: int, map_h: int, tile: int) -> bool:
+	var half := InteractGeometry.STAIRS_BOX.x * 0.5
+	var markers := _last_stair_markers(rows, map_w, map_h)
+	for key in markers:
+		var s: Vector2i = markers[key]
+		var cx := float(s.x * tile) + float(tile) * 0.5
+		var cy := float(s.y * tile) + float(tile) * 0.5
+		if absf(px - cx) < half and absf(py - cy) < half:
+			return true
+	return false
+
+
+static func _last_stair_markers(rows: Array, map_w: int, map_h: int) -> Dictionary:
+	var last := {}
+	for y in range(mini(map_h, rows.size())):
+		var row: String = rows[y]
+		for x in range(mini(map_w, row.length())):
+			var ch := row[x]
+			if ch == "U" or ch == "D":
+				last[ch] = Vector2i(x, y)
+	return last
+
+
+static func _layout_blocked(rows: Array, x: int, y: int, map_w: int, map_h: int) -> bool:
+	if x < 0 or y < 0 or x >= map_w or y >= map_h or y >= rows.size():
+		return true
+	var row: String = rows[y]
+	if x >= row.length():
+		return true
+	var ch := row[x]
+	return ch == "M" or ch == "l"
+
+
 func _generate_map_for_floor(floor_num: int) -> void:
 	spawn_points.clear()
 
@@ -266,8 +391,7 @@ func _generate_map_for_floor(floor_num: int) -> void:
 				var hkey = "secret_%d" % spawn_points.size()
 				spawn_points[hkey] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	var spawn_pos = floor_spawn_points.get(floor_num, {}).get("entrance", Vector2(10, 12))
-	spawn_points["default"] = Vector2(spawn_pos.x * TILE_SIZE, spawn_pos.y * TILE_SIZE)
+	spawn_points["default"] = _entrance_spawn_px(floor_num, map_data)
 	_place_torches()
 
 	_setup_transitions_for_floor(floor_num)
