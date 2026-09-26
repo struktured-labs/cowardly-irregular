@@ -68,6 +68,9 @@ var weather: String = "clear"
 ## BattleManager:230. Steal gold scales with the victim's max HP on both sides of the port.
 const STEAL_GOLD_HP_DIVISOR: float = 500.0
 var _stolen_gold: int = 0
+## Same rule as BattleManager._check_one_shot: every foe died in the round the first hit landed.
+var _one_shot: bool = false
+var _first_damage_round: int = -1
 
 
 func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
@@ -77,6 +80,8 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	_battle_log.clear()
 	_rounds_since_group_attack = 99
 	_stolen_gold = 0
+	_one_shot = false
+	_first_damage_round = -1
 
 	## A BATTLE STARTS CLEAN, mirroring BattleManager.start_battle:519-534 field for field and with
 	## the same scope (all combatants, not just the party). Live's own comment says why: so nothing
@@ -185,9 +190,16 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 		actions.sort_custom(func(a, b): return a.get("speed", 0) < b.get("speed", 0))
 
 		for action in actions:
+			var hp_before: Dictionary = {}
+			for enemy in _enemy_party:
+				if is_instance_valid(enemy):
+					hp_before[enemy] = enemy.current_hp
 			_execute_action(action)
+			_note_first_enemy_hp_loss(hp_before)
 
 			if _all_dead(_enemy_party):
+				## A round-start tick can empty the field before this swing. That is not a one-shot.
+				_one_shot = _first_damage_round == _current_round
 				if bm:
 					_restore_bm(bm, _bm_player_backup, _bm_enemy_backup, _bm_round_backup)
 				return _build_results(true)
@@ -1215,7 +1227,7 @@ func _apply_equipment_on_hit_status(attacker, target) -> void:
 		if chance <= 0.0:
 			continue
 		var resist: float = _sum_equipment_special_effect(target, "status_resistance")
-		var effective: float = clampf(chance - resist, 0.0, 1.0)
+		var effective: float = BattleManager.resisted_status_chance(chance, resist)
 		if effective <= 0.0 or randf() >= effective:
 			continue
 		target.add_status(str(entry["status"]), int(entry["duration"]))
@@ -1585,6 +1597,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						## debuff a single stat and look like it worked.
 						## `modifier` above, not a third local re-read with a third default: this line
 						## spelled the same lookup with 0.75 where live uses its shared 1.0.
+						var down_chance: float = _resisted_support_chance(target, float(ability.get("success_rate", 1.0)))
+						if down_chance < 1.0 and (down_chance <= 0.0 or randf() >= down_chance):
+							continue
 						target.add_debuff("Despair (ATK)", "attack", modifier, duration)
 						target.add_debuff("Despair (DEF)", "defense", modifier, duration)
 						target.add_debuff("Despair (SPD)", "speed", modifier, duration)
@@ -1677,11 +1692,21 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					else:
 						## Live owns a ~40-arm effect table; headless deliberately does NOT mirror
 						## it. An effect we do not model is a NO-OP, never damage.
+						## Harmful names read the ring. Wards that fall through here (barrier, reflect) do not.
+						if BattleManager.support_effect_is_harmful(effect):
+							var ailment_chance: float = _resisted_support_chance(target, float(ability.get("success_rate", 1.0)))
+							if ailment_chance < 1.0 and (ailment_chance <= 0.0 or randf() >= ailment_chance):
+								continue
 						target.add_status(effect, duration)
 						_log("%s uses %s on %s (%s)" % [caster.combatant_name, ability_id, target.combatant_name, effect])
 						continue
 				if stat == "":
 					stat = "attack"
+				## Same predicate as live. A modifier below 1.0 is not a debuff: Hedge Position is 0.5 and a buff.
+				if modifier < 1.0 and BattleManager.support_effect_is_harmful(effect):
+					var debuff_chance: float = _resisted_support_chance(target, float(ability.get("success_rate", 1.0)))
+					if debuff_chance < 1.0 and (debuff_chance <= 0.0 or randf() >= debuff_chance):
+						continue
 				if modifier >= 1.0:
 					target.add_buff(ability_id, stat, modifier, duration)
 				else:
@@ -1823,7 +1848,7 @@ func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: Stri
 	## ceiling the real game does not have. Today's only author is resist_ring at 0.3, so an invented
 	## input cap would be unobservable, which is exactly why it is written down here.
 	var resist: float = _sum_equipment_special_effect(target, "status_resistance")
-	var effective: float = clampf(chance - resist, 0.0, 1.0)
+	var effective: float = BattleManager.resisted_status_chance(chance, resist)
 	if effective <= 0.0 or randf() >= effective:
 		return
 	var status_to_add := effect
@@ -1983,6 +2008,11 @@ func _steal_share(before_base: int, after_base: int) -> int:
 	return after_base - before_base
 
 
+## Live's chance-minus-ring helper. The resist sum stays here; the clamp does not.
+func _resisted_support_chance(target, chance: float) -> float:
+	return BattleManager.resisted_status_chance(chance, _sum_equipment_special_effect(target, "status_resistance"))
+
+
 func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array, ability_id: String) -> void:
 	var sec_effect: String = str(ability.get("secondary_effect", ""))
 	if sec_effect == "":
@@ -2017,7 +2047,11 @@ func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array
 	var sec_modifier: float = float(ability.get("secondary_modifier", 0.7))
 	var sec_duration: int = int(ability.get("duration", 3))
 	for t in sec_targets:
-		if randf() >= sec_chance:
+		## Same predicate as live. A follow-up buff keeps its raw chance.
+		var roll: float = sec_chance
+		if BattleManager.support_effect_is_harmful(sec_effect):
+			roll = _resisted_support_chance(t, sec_chance)
+		if roll <= 0.0 or randf() >= roll:
 			continue
 		if _SECONDARY_STAT_BUFF_MAP.has(sec_effect):
 			var b: Array = _SECONDARY_STAT_BUFF_MAP[sec_effect]
@@ -2233,6 +2267,31 @@ func _resolve_item(user, item_id: String, target) -> void:
 	_log("%s uses %s on %s (fallback path — ItemSystem missing)" % [user.combatant_name, item_id, target.combatant_name])
 
 
+func _note_first_enemy_hp_loss(before: Dictionary) -> void:
+	if _first_damage_round >= 0:
+		return
+	for enemy in _enemy_party:
+		if not is_instance_valid(enemy) or not before.has(enemy):
+			continue
+		if int(enemy.current_hp) < int(before[enemy]):
+			_first_damage_round = _current_round
+			return
+
+
+func _grant_one_shot_trophies(enemy_types: Array, monsters_data: Dictionary, drops: Dictionary) -> void:
+	var item_drops: Dictionary = drops.get("item_drops", {})
+	for mt in enemy_types:
+		var record: Dictionary = monsters_data.get(mt, {})
+		var block: Variant = record.get("one_shot", {})
+		if not (block is Dictionary):
+			continue
+		var trophy := str((block as Dictionary).get("reward_item", ""))
+		if trophy == "":
+			continue
+		item_drops[trophy] = int(item_drops.get(trophy, 0)) + 1
+	drops["item_drops"] = item_drops
+
+
 func _all_dead(party: Array) -> bool:
 	for combatant in party:
 		if combatant.is_alive:
@@ -2350,6 +2409,9 @@ func _build_results(victory: bool, termination_reason: String = "") -> Dictionar
 					float(gs2.game_constants.get("drop_rate_multiplier", 1.0)),
 					0.1, 10.0)
 		drops = _roll_drop_tables(enemy_types, monsters_data, drop_rate_mult)
+		## Watched fights grant one_shot.reward_item. Ludicrous was paying the table only.
+		if _one_shot:
+			_grant_one_shot_trophies(enemy_types, monsters_data, drops)
 
 	return {
 		"victory": victory,

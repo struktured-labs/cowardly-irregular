@@ -147,10 +147,15 @@ func test_both_status_sites_share_one_resistance_formula() -> void:
 	var body: String = src.substr(at, src.find("\nfunc ", at + 1) - at)
 	assert_true(body.contains("_sum_equipment_special_effect(target, \"status_resistance\")"),
 		"the ability status owner must consult the TARGET's status_resistance")
-	assert_true(body.contains("clampf(effect_chance - resist, 0.0, 1.0)"),
-		"and subtract it with the same clamped formula the on-hit site uses")
+	assert_true(body.contains("resisted_status_chance(effect_chance, resist)"),
+		"and subtract it through the shared chance-minus-ring helper")
 	var on_hit: int = src.find("func _apply_equipment_on_hit_status(")
 	assert_gt(on_hit, -1, "CONTROL: the on-hit site survives stripping")
 	var on_hit_body: String = src.substr(on_hit, src.find("\nfunc ", on_hit + 1) - on_hit)
-	assert_true(on_hit_body.contains("clampf(chance - resist, 0.0, 1.0)"),
-		"the on-hit site keeps its formula, or the two have drifted apart again")
+	assert_true(on_hit_body.contains("resisted_status_chance(chance, resist)"),
+		"the on-hit site must call the same helper, or the two have drifted apart again")
+	var helper_at: int = src.find("static func resisted_status_chance(")
+	assert_gt(helper_at, -1, "CONTROL: the shared formula helper survives stripping")
+	var helper_body: String = src.substr(helper_at, src.find("\nfunc ", helper_at + 1) - helper_at)
+	assert_true(helper_body.contains("clampf(chance - resist, 0.0, 1.0)"),
+		"the shared helper must clamp chance minus resist to [0, 1]")
