@@ -6,8 +6,10 @@ extends GutTest
 ## The console now asks the same check BEFORE starting and refuses with the reason, touching nothing.
 
 const AutogrindState := preload("res://test/unit/helpers/autogrind_state.gd")
+const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 
 var _ag_state: Dictionary
+var _bm_guard = BattleStateGuard.new()
 var _saved_rules: Dictionary
 var _gl: Node
 var _ui: Control
@@ -17,6 +19,7 @@ var _closed := 0
 
 func before_each() -> void:
 	_ag_state = AutogrindState.snapshot()
+	_bm_guard.snapshot()
 	AutogrindSystem._test_disable_persistence = true
 	if AutogrindSystem.is_grinding:
 		AutogrindSystem.stop_autogrind("test reset")
@@ -47,6 +50,7 @@ func after_each() -> void:
 	AutogrindSystem.interrupt_rules = _saved_rules
 	Engine.time_scale = 1.0
 	AutogrindState.restore(_ag_state)
+	_bm_guard.restore()
 	SoundManager.stop_music()
 
 
@@ -58,14 +62,16 @@ func _member(name: String, hp: int) -> Combatant:
 	return c
 
 
-func _open_console(party: Array) -> void:
+## wire=false stops at the emit: a healthy start would otherwise launch a real battle on the BattleManager autoload.
+func _open_console(party: Array, wire: bool = true) -> void:
 	var typed: Array[Combatant] = []
 	for m in party:
 		typed.append(m)
 	_gl.party = typed
 	_ui.setup(typed, "Test Plains")
 	_ui.grind_requested.connect(func(_c): _requested += 1)
-	_ui.grind_requested.connect(_gl._start_autogrind)
+	if wire:
+		_ui.grind_requested.connect(_gl._start_autogrind)
 	_ui.closed.connect(func(): _closed += 1)
 	await wait_frames(2)
 
@@ -132,8 +138,7 @@ func test_the_console_still_closes_after_a_refusal() -> void:
 
 
 func test_a_healthy_party_still_starts() -> void:
-	await _open_console([_member("A", 100), _member("B", 100)])
+	await _open_console([_member("A", 100), _member("B", 100)], false)
 	_ui._toggle_grinding()
 	await wait_frames(3)
 	assert_eq(_requested, 1, "CONTROL: a healthy party must still reach GameLoop, or the refusal arms prove nothing")
-	_gl._stop_autogrind("test cleanup")
