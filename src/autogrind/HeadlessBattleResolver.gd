@@ -726,7 +726,9 @@ func _select_enemy_action(enemy) -> Dictionary:
 		if atk_ability != "":
 			var mp_cost = _get_ability_mp_cost(atk_ability)
 			if enemy.current_mp >= mp_cost:
-				return {"type": "ability", "ability_id": atk_ability, "targets": [focus]}
+				## A party-wide spell is not a focus. Taunt still owns the single-target row.
+				var targets: Array = alive_players.duplicate() if _ability_hits_all_enemies(atk_ability) else [focus]
+				return {"type": "ability", "ability_id": atk_ability, "targets": targets}
 
 	return {"type": "attack", "target": focus}
 
@@ -790,6 +792,13 @@ func _find_attack_ability(combatant) -> String:
 				best_power = power
 				best_id = ability_id
 	return best_id
+
+
+func _ability_hits_all_enemies(ability_id: String) -> bool:
+	var js = _get_autoload("JobSystem")
+	if not js or not js.has_method("get_ability"):
+		return false
+	return str(js.get_ability(ability_id).get("target_type", "")) == "all_enemies"
 
 
 func _get_ability_mp_cost(ability_id: String) -> int:
