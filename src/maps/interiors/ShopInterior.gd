@@ -1599,11 +1599,21 @@ func _setup_controller() -> void:
 const VillageShopRes = preload("res://src/exploration/VillageShop.gd")
 
 
+## OverworldController only calls interact(). A callback stored as meta is never dispatched.
+class BrowseServiceZone extends Area2D:
+	var on_interact: Callable = Callable()
+
+	func interact(_player: Node2D) -> void:
+		if on_interact.is_valid():
+			on_interact.call()
+
+
 func _create_browse_interactable() -> void:
-	var area = Area2D.new()
+	var area := BrowseServiceZone.new()
 	area.name = "BrowseService"
 	# In front of counter (counter at y=2, player approach at y=4)
 	area.position = Vector2(8 * TILE_SIZE, 4 * TILE_SIZE)
+	area.on_interact = _on_browse_request
 
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
