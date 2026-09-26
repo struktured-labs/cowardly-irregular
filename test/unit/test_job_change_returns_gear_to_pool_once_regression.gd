@@ -368,6 +368,21 @@ func test_a_bard_whose_profile_names_the_scythe_keeps_the_gift() -> void:
 	assert_eq(_owned(c, SCYTHE), 1)
 
 
+## Profile still names the scythe, hands are empty, bag holds that scythe: the join gift must not mint a second copy.
+func test_returning_to_bard_empty_handed_does_not_mint_a_second_scythe() -> void:
+	var c := _hero()
+	_wear(c, "", "", "")
+	c.save_current_profile()
+	_seed_profile(c, "bard:", SCYTHE, "", "")
+	_bag()["weapons"] = [SCYTHE]
+	assert_eq(_owned(c, SCYTHE), 1, "setup: the scythe this job last wore is in the bag, once")
+	_assign(c, "bard")
+	assert_eq(c.equipped_weapon, SCYTHE, "Bard comes back holding the Piano Scythe")
+	assert_eq(_bag()["weapons"].count(SCYTHE), 0,
+		"the bag copy is the scythe this profile already named — the join gift must not leave a second one beside it")
+	assert_eq(_owned(c, SCYTHE), 1, "empty hands plus a stored scythe must not become two scythes")
+
+
 func _hero() -> Combatant:
 	var c := Combatant.new()
 	add_child_autofree(c)

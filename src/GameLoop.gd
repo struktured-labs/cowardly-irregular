@@ -7174,30 +7174,47 @@ func _on_ui_tier_cycle_requested() -> void:
 		_autogrind_controller.cycle_tier()
 
 
-## Between battles the drink is the item itself. A copied amount here healed a tenth of what the bottle says.
+## The party's one bag, plus this member when a probe calls in before they are on `party`.
+func _autogrind_item_bag(member: Combatant) -> Array:
+	var bag: Array = []
+	for m in party:
+		if m != null and is_instance_valid(m):
+			bag.append(m)
+	if member != null and is_instance_valid(member) and not (member in bag):
+		bag.append(member)
+	return bag
+
+
+## Between battles the drink is the item itself, taken from the shared bag. The leader holds the drops.
 func _autogrind_heal_member(member: Combatant) -> void:
+	var bag: Array = _autogrind_item_bag(member)
 	for item_id in AutogrindSystem.HEAL_PARTY_ITEM_ORDER:
-		if member.get_item_count(item_id) <= 0:
+		if ItemSystem == null or ItemSystem.party_item_count(bag, item_id) <= 0:
 			continue
 		var before := member.current_hp
 		var targets: Array[Combatant] = [member]
-		if ItemSystem == null or not ItemSystem.use_item(member, item_id, targets):
+		if not ItemSystem.use_item(member, item_id, targets):
 			continue
-		member.remove_item(item_id, 1)
+		if not ItemSystem.take_party_item(member, bag, item_id):
+			push_warning("[AUTOGRIND] %s's %s landed but the bag could not pay" % [member.combatant_name, item_id])
+			return
 		AutogrindSystem.track_item_consumed(item_id)
 		print("[AUTOGRIND] %s used %s (healed %d HP)" % [member.combatant_name, item_id, member.current_hp - before])
 		return
 
 
 func _autogrind_restore_mp(member: Combatant) -> void:
+	var bag: Array = _autogrind_item_bag(member)
 	for item_id in AutogrindSystem.RESTORE_MP_ITEM_ORDER:
-		if member.get_item_count(item_id) <= 0:
+		if ItemSystem == null or ItemSystem.party_item_count(bag, item_id) <= 0:
 			continue
 		var before := member.current_mp
 		var targets: Array[Combatant] = [member]
-		if ItemSystem == null or not ItemSystem.use_item(member, item_id, targets):
+		if not ItemSystem.use_item(member, item_id, targets):
 			continue
-		member.remove_item(item_id, 1)
+		if not ItemSystem.take_party_item(member, bag, item_id):
+			push_warning("[AUTOGRIND] %s's %s landed but the bag could not pay" % [member.combatant_name, item_id])
+			return
 		AutogrindSystem.track_item_consumed(item_id)
 		print("[AUTOGRIND] %s used %s (restored %d MP)" % [member.combatant_name, item_id, member.current_mp - before])
 		return
