@@ -557,6 +557,14 @@ func _build_stats_panel() -> void:
 		spd_label.add_theme_color_override("font_color", Color.YELLOW)
 		_stats_panel.add_child(spd_label)
 
+		# Below MAG/SPD. Those rows are 14px apart; this one clears a full line so it does not sit on SPD.
+		var mdf_label = Label.new()
+		mdf_label.text = "MDF: %d" % combatant.magic_defense
+		mdf_label.position = Vector2(4, stats_y + 70)
+		mdf_label.add_theme_font_size_override("font_size", stat_size)
+		mdf_label.add_theme_color_override("font_color", Color(0.65, 0.8, 1.0))
+		_stats_panel.add_child(mdf_label)
+
 
 func _get_job_name() -> String:
 	"""Get display name for character's job"""
