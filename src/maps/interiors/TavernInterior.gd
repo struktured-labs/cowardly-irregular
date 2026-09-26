@@ -2435,9 +2435,19 @@ func _setup_controller() -> void:
 # Piano interaction (unchanged from original)
 # ---------------------------------------------------------------------------
 
+## OverworldController only calls interact(). A callback stored as meta is never dispatched.
+class PianoZone extends Area2D:
+	var on_interact: Callable = Callable()
+
+	func interact(_player: Node2D) -> void:
+		if on_interact.is_valid():
+			on_interact.call()
+
+
 func _create_piano_interactable() -> void:
-	var piano_area = Area2D.new()
+	var piano_area := PianoZone.new()
 	piano_area.name = "PianoInteractable"
+	piano_area.on_interact = _on_piano_interact
 	piano_area.position = Vector2(25 * TILE_SIZE, 15 * TILE_SIZE)
 
 	var collision = CollisionShape2D.new()
