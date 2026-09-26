@@ -404,12 +404,9 @@ const GRIND_PATH_MARKER := {
 	## ── assessed off the axis-2 backlog 2026-09-17 (cowir-battle) ──
 	"stat": "ability.get(\"stat\"",
 	## ⚠️ ALL FOUR secondary_* KEYS, AND THREE OF THEM WERE INVISIBLE TO THIS MAP UNTIL 2026-09-16.
-	## They live in `_apply_secondary_effect`, which `_execute_support_ability` calls — but the old
-	## walk-back skipped past any non-executor function, so a read inside a helper was credited to
-	## whichever executor happened to precede it in the file and the count came out wrong. With the
-	## walk-back fixed (see _executors_for_read) they resolve to the support executor, which is where
-	## live reads them and where the resolver calls the same helper. One marker covers the four:
-	## they are the same call, and a key that travelled alone would be the anomaly.
+	## They live in `_apply_secondary_effect`. Support calls it, and so does the physical executor —
+	## toxic_embrace's speed_down. The magic executor does not (subset_drain's magic_down is a hold).
+	## One marker covers the four: they are the same call.
 	"secondary_effect": "_apply_secondary_effect(",
 	"secondary_chance": "_apply_secondary_effect(",
 	"secondary_target": "_apply_secondary_effect(",
@@ -429,7 +426,7 @@ const GRIND_PATH_MARKER := {
 	"absorb_amount": "ability.has(\"absorb_amount\")",
 	## ⚠️ MAPPED BUT OUT OF AXIS 2'S REACH, and recorded here because this map's contract is to cover
 	## every key both engines read. Live reads `priority` in _compute_action_speed, which is not a
-	## per-type executor, so _live_executor_of returns "" and the arm above `continue`s past it. That
+	## per-type executor, so _executors_for_read returns nothing and the arm above skips it. That
 	## is correct — a selection-time key has no executor arm to sit on the wrong one of — but an
 	## absent entry would read as "nobody wired it" rather than "axis 2 does not apply".
 	"priority": "_ability_has_priority(",
@@ -542,8 +539,8 @@ const CONSUMER_COVERAGE := {
 	],
 }
 
-## The live executor each key must be read from, measured out of BattleManager rather than listed —
-## see _live_executor_of. The grind arm that must match it:
+## The live executors each key must be read from, measured out of BattleManager rather than listed —
+## see _executors_for_read. The grind arm that must match each one:
 const ARM_FOR_EXECUTOR := {
 	"_execute_physical_ability": '"physical":',
 	"_execute_magic_ability": '"magic":',
@@ -590,15 +587,6 @@ func _executors_for_read(at: int, live: String) -> Array:
 	return out
 
 
-## The `func _execute_*` that encloses live's read of this key, or "" if it does not read it.
-func _live_executor_of(key: String, live: String) -> String:
-	var at: int = live.find('ability.get("%s"' % key)
-	if at < 0:
-		return ""
-	var owners: Array = _executors_for_read(at, live)
-	return str(owners[0]) if owners.size() > 0 else ""
-
-
 ## How many DISTINCT per-type executors read this key. Only a key live confines to exactly ONE has a
 ## path to match: `element`, `duration` and `damage_multiplier` are read by several, so "the same arm"
 ## is not a property they have. Getting this wrong made arm 7 demand a declaration for ten keys that
@@ -642,8 +630,12 @@ func test_every_shared_key_is_read_on_the_same_path_in_both_engines() -> void:
 	var checked: Array = []
 	var wrong: Array = []
 	for k in GRIND_PATH_MARKER:
-		var executor: String = _live_executor_of(k, live)
-		if executor == "" or not ARM_FOR_EXECUTOR.has(executor):
+		var at: int = live.find('ability.get("%s"' % k)
+		if at < 0:
+			continue
+		## Every executor that reaches the read, not just the first. secondary_* are support and physical.
+		var owners: Array = _executors_for_read(at, live)
+		if owners.is_empty():
 			continue  # live reads it outside a per-type executor; axis 2 does not apply
 		var marker: String = str(GRIND_PATH_MARKER[k])
 		assert_true(grind.contains(marker),
@@ -653,10 +645,10 @@ func test_every_shared_key_is_read_on_the_same_path_in_both_engines() -> void:
 			var arm: String = _grind_arm(grind, str(ARM_FOR_EXECUTOR[exec_name]))
 			assert_ne(arm, "", "CONTROL: the %s arm must be locatable" % exec_name)
 			var present: bool = arm.contains(marker)
-			var should: bool = exec_name == executor
+			var should: bool = owners.has(exec_name)
 			if present != should:
 				wrong.append("%s: live reads it in %s, grind %s it in the %s arm" % [
-					k, executor, "reads" if present else "does NOT read", exec_name])
+					k, owners, "reads" if present else "does NOT read", exec_name])
 	gut.p("    path-checked: %s" % str(checked))
 	assert_gt(checked.size(), 2, "CONTROL: at least three keys must actually be path-checked")
 	assert_eq(wrong, [],

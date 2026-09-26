@@ -135,8 +135,7 @@ const UNREAD_BY_THE_LIVE_ENGINE := ["bp_cost", "bp_gain", "condition", "damage_r
 ## key -> ability ids whose own executor does not read it, and who holds the call.
 ## Every entry is a BALANCE decision, not an oversight to fix quietly.
 const DECLARED_ORPHANS := {
-	"secondary_effect:subset_drain": "magic; _apply_secondary_effect is called only from _execute_support_ability. Description promises 'reducing magic and attack' and only attack lands. Caster empty_set is POOLED — wiring it makes W6 encounters harder. struktured's call (cowir-autogrind 11595, cowir-battle 11599)",
-	"secondary_effect:toxic_embrace": "physical; same reader. Description promises 'poisoning and slowing' and only poison lands. Caster toxic_sludge is POOLED. struktured's call",
+	"secondary_effect:subset_drain": "magic; _apply_secondary_effect runs from support and physical, not from _execute_magic_ability. Description promises 'reducing magic and attack' and only attack lands. magic_down is a design hold. Caster empty_set is POOLED — wiring it makes W6 encounters harder. struktured's call (cowir-autogrind 11595, cowir-battle 11599)",
 	"scales_with:complement": "magic; scales_with is read only in _execute_physical_ability, and `target_defense` has no reader anywhere — it scales from attack in both engines. Caster empty_set is POOLED (cowir-autogrind 11601)",
 	"scales_with:player_knowledge": "magic; same reader, and `most_used_ability` has no reader anywhere either",
 	"drain_percentage:dark_slash": "physical; drain_percentage is read only in _execute_magic_ability, so the one physical drain heals its caster nothing",
@@ -156,7 +155,6 @@ const DECLARED_ORPHANS := {
 	"evasion_bonus:shadow_step": "support; same shape — the 100%% dodge is wired through the status (`BattleManager._target_dodges_physical` — QUALIFIED: the grind has a twin of that name), not through this key",
 	"reflect_damage_element:frost_armor": "support; the retaliation itself is unwired and HELD for struktured (lane/frost-armor-bites-back). This key only names the element the retaliation would use, so it cannot be assessed before the retaliation is",
 	"secondary_modifier:subset_drain": "magic; travels with secondary_effect and is read in the same helper. Wiring one without the other is meaningless",
-	"secondary_modifier:toxic_embrace": "physical; see secondary_modifier:subset_drain",
 	## ── surfaced 2026-09-17 when TYPE_EXECUTOR stopped naming six of the ten authored types ──
 	"penalty:warp_to_boss": "meta; the FIRST finding from a type that had never been routed. `penalty: no_dungeon_loot` has no reader, and the arm handling this ability says so in its own comment (BattleManager:6799 — enforcement 'lives in the warp implementation, a future tick'). The warp is itself a pending flag, so the penalty cannot be enforced before the thing it penalises exists. Declared, not held: there is no decision until the warp lands",
 	"damage_multiplier:absorb_meaning": "support; authored 0.0, so a reader and no reader produce the IDENTICAL battle. Decorative — declared so the next census does not read it as a live zero-damage bug",
@@ -343,12 +341,15 @@ func test_a_declaration_does_not_outlive_the_thing_it_declares() -> void:
 
 func test_the_set_is_not_empty_and_names_its_worst_case() -> void:
 	## If this ever empties, the guard has outlived its subject and should be deleted rather than kept
-	## as a green nothing. Until then, the two that a player meets in a POOLED fight are named here so
-	## the list cannot quietly become a pile.
+	## as a green nothing. subset_drain is the pooled secondary that still does not land (magic_down
+	## is a design hold). toxic_embrace's speed_down is wired on the physical path.
 	assert_gt(DECLARED_ORPHANS.size(), 0, "an empty set means the class is gone — delete this file rather than keep it green")
-	for pooled in ["secondary_effect:subset_drain", "secondary_effect:toxic_embrace"]:
-		assert_true(DECLARED_ORPHANS.has(pooled), "%s is cast by a pooled monster and stays named" % pooled)
-		assert_true(str(DECLARED_ORPHANS[pooled]).contains("struktured"), "and records whose call it is")
+	assert_true(DECLARED_ORPHANS.has("secondary_effect:subset_drain"),
+		"subset_drain is cast by a pooled monster and its magic_down stays named")
+	assert_true(str(DECLARED_ORPHANS["secondary_effect:subset_drain"]).contains("struktured"),
+		"and records whose call it is")
+	assert_false(DECLARED_ORPHANS.has("secondary_effect:toxic_embrace"),
+		"toxic_embrace's slow is wired — a declaration here would be a lie")
 
 
 func test_every_authored_key_is_either_in_scope_or_explains_itself() -> void:

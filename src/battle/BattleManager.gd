@@ -5058,6 +5058,8 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 	# Shadow Step guarantees the next attack, including a physical ability. A basic swing already does this.
 	if caster != null and caster.has_status("shadow_step"):
 		crit_chance = 1.0
+	# Targets the strike actually reached. A miss, a reflect, or a kill gets no secondary.
+	var struck: Array = []
 
 	for target in targets:
 		if not target or not is_instance_valid(target) or not target.is_alive:
@@ -5193,8 +5195,13 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 
 		# Apply status effect if ability has one — ONE owner, see _apply_ability_status
 		_apply_ability_status(caster, target, ability)
+		if target.is_alive:
+			struck.append(target)
 
 		_trigger_monster_counter(target, caster)
+
+	# toxic_embrace is physical and authors speed_down here. Support was the only caller before.
+	_apply_secondary_effect(caster, ability, struck)
 
 
 ## ⛔ SIXTEEN MONSTER ABILITIES AUTHORED A STAT-DOWN THAT REACHED A DEAD TOKEN. The six stat-down

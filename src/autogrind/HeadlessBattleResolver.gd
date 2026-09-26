@@ -1421,6 +1421,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 
 		"physical":
 			## MP is already spent. Live still rolls mug's steal after the fizzle, because that roll sits outside the executor.
+			var struck: Array = []
 			var pacified_strike: bool = bool(caster.has_status("pacify"))
 			if pacified_strike:
 				_log("%s is pacified and cannot strike!" % caster.combatant_name)
@@ -1502,6 +1503,10 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## grind heal bone_warden and shadow_knight where the game does not (@cowir-battle 2d14d92d).
 					_log("%s uses %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dmg])
 					_maybe_inflict_status(caster, target, ability, ability_id)
+					if target.is_alive:
+						struck.append(target)
+			## Same dispatcher as support, on targets the strike reached. toxic_embrace's slow lives here.
+			_apply_secondary_effect(caster, ability, struck, ability_id)
 			## mug is "attack and steal in one action"; the grind's physical arm read neither `steals`
 			## nor success_rate, so a Rogue's mug was a plain hit. After the damage, exactly as live
 			## (BattleManager:4650) — which also means a target killed by the hit cannot be robbed.
@@ -1889,10 +1894,9 @@ func _missing_hp_multiplier(caster, ability: Dictionary) -> float:
 ##
 ## Mirrors BattleManager:6368 — its target groups, its `secondary_chance` default of 1.0, its
 ## `secondary_modifier` default of 0.7, and its fall-through to add_status for a name that is not a
-## stat. Called from the support arm ONLY, which is where live calls it (_execute_support_ability is
-## its single call site): `subset_drain` (magic) and `toxic_embrace` (physical) therefore keep their
-## secondaries dropped HERE TOO, because live drops them. Applying them only in the grind would make
-## the grind harsher than the game it simulates, which is this file's own failure mode inverted.
+## stat. Called from the support arm and the physical arm, matching live. `subset_drain` (magic,
+## secondary magic_down) stays dropped on both sides: magic_down is a design hold, and applying it
+## only here would make the grind harsher than the game. `toxic_embrace` lands its speed_down here.
 const _SECONDARY_STAT_BUFF_MAP: Dictionary = {
 	"attack_up": ["attack", "Secondary Attack Up"],
 	"defense_up": ["defense", "Secondary Defense Up"],
