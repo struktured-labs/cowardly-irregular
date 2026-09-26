@@ -777,14 +777,9 @@ func _create_stairs_up() -> void:
 	label.add_theme_color_override("font_color", Color(0.90, 0.82, 0.60))
 	node.add_child(label)
 
-	var stair_zone := Area2D.new()
-	stair_zone.name = "StairsRestService"
+	var stair_zone := _make_rest_zone("StairsRestService")
 	stair_zone.position = Vector2(17.5 * TILE_SIZE, 4.0 * TILE_SIZE)
 	InteractGeometry.setup_trigger_collision(stair_zone, Vector2(2.0 * TILE_SIZE, TILE_SIZE))
-	stair_zone.add_to_group("interactables")
-	stair_zone.set_meta("interaction_callback", _on_rest_request)
-	stair_zone.set_meta("parent_scene", self)
-	stair_zone.body_exited.connect(_on_rest_zone_exited)
 	node.add_child(stair_zone)
 
 	decorations.add_child(node)
@@ -1322,9 +1317,29 @@ func _setup_controller() -> void:
 # Rest service — invoked from a service-bell interactable next to the innkeeper
 # ---------------------------------------------------------------------------
 
+## OverworldController only calls interact(). A callback stored as meta is never dispatched.
+class RestServiceZone extends Area2D:
+	var on_interact: Callable = Callable()
+
+	func interact(_player: Node2D) -> void:
+		if on_interact.is_valid():
+			on_interact.call()
+
+
+func _make_rest_zone(zone_name: String) -> RestServiceZone:
+	var area := RestServiceZone.new()
+	area.name = zone_name
+	area.on_interact = _on_rest_request
+	area.add_to_group("interactables")
+	area.set_meta("interaction_callback", _on_rest_request)
+	area.set_meta("parent_scene", self)
+	# The prompt has always said "step away to cancel" — nothing implemented it, so a declined rest stayed armed and the NEXT interact slept instead of prompting.
+	area.body_exited.connect(_on_rest_zone_exited)
+	return area
+
+
 func _create_rest_interactable() -> void:
-	var area = Area2D.new()
-	area.name = "RestService"
+	var area := _make_rest_zone("RestService")
 	area.position = Vector2(3 * TILE_SIZE, 3 * TILE_SIZE)
 
 	var collision = CollisionShape2D.new()
@@ -1337,11 +1352,6 @@ func _create_rest_interactable() -> void:
 	area.collision_mask = 2
 	area.monitoring = true
 	area.monitorable = true
-	area.add_to_group("interactables")
-	area.set_meta("interaction_callback", _on_rest_request)
-	area.set_meta("parent_scene", self)
-	# The prompt has always said "step away to cancel" — nothing implemented it, so a declined rest stayed armed and the NEXT interact slept instead of prompting.
-	area.body_exited.connect(_on_rest_zone_exited)
 	add_child(area)
 
 
