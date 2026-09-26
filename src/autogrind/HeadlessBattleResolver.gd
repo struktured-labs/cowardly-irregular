@@ -51,7 +51,7 @@ const GROUP_ATTACK_COOLDOWN = 3
 ## RETIREMENT CONDITION, so this note cannot quietly become permanent (@cowir-music's form): the day
 ## the two engines' per-battle state is genuinely the same set, these two collapse into one and this
 ## comment goes with them. Until then the lists disagree BY CONSTRUCTION, not by drift.
-const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget"]
+const PER_BATTLE_METAS: Array[String] = ["_next_attack_multiplier", "_regen_per_turn", "_damage_absorb_budget", "_shadow_step_unswung"]
 var _rounds_since_group_attack: int = 99
 
 var _player_party: Array = []
@@ -908,6 +908,10 @@ func _resolve_attack(attacker, target) -> int:
 		_log("%s is pacified and cannot attack!" % attacker.combatant_name)
 		return 0
 
+	## A real swing retires Shadow Step's grace, matching live. The status stays until the next round tick.
+	if attacker.has_method("note_shadow_step_swung"):
+		attacker.note_shadow_step_swung()
+
 	## BLIND: the live engine adds 0.40 to the miss rate (BattleManager's attack miss check) and this
 	## resolver applied the status and then ignored it — the Bard's Riff inflicts blind on a 70% roll,
 	## so his signature disruption did nothing in a grind while doing its job in a live fight.
@@ -1424,6 +1428,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 				if pacified_strike:
 					break
 				if target and target.is_alive:
+					## A real swing retires Shadow Step's grace, matching live. The status stays, so this strike still crits.
+					if caster.has_method("note_shadow_step_swung"):
+						caster.note_shadow_step_swung()
 					## Live gates the dodge on `ignores_evasion` and calls _target_dodges_physical here
 					## (:4853) exactly as it does for a basic swing. Without this the grind's physical
 					## abilities could NEVER be evaded — invisible, shadow_step and an elven_cloak all
@@ -1461,7 +1468,8 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## a grind is evaluated without its passives. Not wired here because it is a port, not
 					## a repair: it changes party strength and therefore the reward economy, which is
 					## struktured's call — the same reasoning that left summon_* declared.
-					if randf() < float(ability.get("crit_chance", 0.0)):
+					## Shadow Step forces a crit on top of the authored roll, matching the basic swing's guarantee.
+					if randf() < float(ability.get("crit_chance", 0.0)) or caster.has_status("shadow_step"):
 						base_dmg = int(base_dmg * 1.5)
 						_log("%s crits with %s" % [caster.combatant_name, ability_id])
 					## One barrier eats the whole ability, including a multi-hit, then breaks. Live checks
