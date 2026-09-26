@@ -31,3 +31,14 @@ static func display(status_name: String) -> String:
 	if DISPLAY_OVERRIDES.has(status_name):
 		return DISPLAY_OVERRIDES[status_name]
 	return status_name.capitalize()
+
+
+## Comma-separated names for a menu line. Empty when nothing is on them.
+static func list_line(effects: Array) -> String:
+	var parts := PackedStringArray()
+	for raw in effects:
+		var name := display(str(raw))
+		if name == "":
+			continue
+		parts.append(name)
+	return ", ".join(parts)
