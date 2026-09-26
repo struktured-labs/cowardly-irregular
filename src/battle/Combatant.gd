@@ -633,6 +633,12 @@ func remove_status(status: String) -> void:
 		status_removed.emit(status)
 
 
+## A swing already happened, so the next round-start tick spends a one-turn step. The status stays until that tick.
+func note_shadow_step_swung() -> void:
+	if has_status("shadow_step") and has_meta("_shadow_step_unswung"):
+		remove_meta("_shadow_step_unswung")
+
+
 ## Drop per-battle ailments. Permadeath stays, at duration -1, so the next fight's Raise still refuses.
 func clear_transient_statuses() -> void:
 	var keep_permadeath := has_status("permakilled")
@@ -978,7 +984,7 @@ func update_buff_durations() -> void:
 	for status in status_durations:
 		if str(status) in ACTION_CLOCK_STATUSES:
 			continue
-		# The first tick after a step is the boundary before the swing, so it does not spend the turn.
+		# The first tick after a fresh step is the boundary before the swing, so it does not spend the turn. A swing clears the flag, so a step-and-strike in one round still ends on the next tick.
 		if str(status) == "shadow_step" and has_meta("_shadow_step_unswung"):
 			remove_meta("_shadow_step_unswung")
 			continue

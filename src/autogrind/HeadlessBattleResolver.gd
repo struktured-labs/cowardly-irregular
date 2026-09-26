@@ -908,6 +908,10 @@ func _resolve_attack(attacker, target) -> int:
 		_log("%s is pacified and cannot attack!" % attacker.combatant_name)
 		return 0
 
+	## A real swing retires Shadow Step's grace, matching live. The status stays until the next round tick.
+	if attacker.has_method("note_shadow_step_swung"):
+		attacker.note_shadow_step_swung()
+
 	## BLIND: the live engine adds 0.40 to the miss rate (BattleManager's attack miss check) and this
 	## resolver applied the status and then ignored it — the Bard's Riff inflicts blind on a 70% roll,
 	## so his signature disruption did nothing in a grind while doing its job in a live fight.
@@ -1424,6 +1428,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 				if pacified_strike:
 					break
 				if target and target.is_alive:
+					## A real swing retires Shadow Step's grace, matching live. The status stays, so this strike still crits.
+					if caster.has_method("note_shadow_step_swung"):
+						caster.note_shadow_step_swung()
 					## Live gates the dodge on `ignores_evasion` and calls _target_dodges_physical here
 					## (:4853) exactly as it does for a basic swing. Without this the grind's physical
 					## abilities could NEVER be evaded — invisible, shadow_step and an elven_cloak all
