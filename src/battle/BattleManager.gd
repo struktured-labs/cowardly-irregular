@@ -322,7 +322,7 @@ const PER_BATTLE_METAS: Array[String] = [
 	"_mind_swap_controller", "_steal_response_consumed", "_swayed_stacks", "_utility_spent",
 	"_signature_fired", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
 	"_learned_adaptation", "_learns_element_counts", "_last_ability_against", "_bark_n",
-	"_in_shared_damage_redirect",
+	"_in_shared_damage_redirect", "_shadow_step_unswung",
 	## ⚠️ TRAILING UNDERSCORE = PREFIX, and these two are why the clear cannot be exact-match only:
 	## the boss-bark trackers are COMPOSED (`"_bark_adv_" + face_key`), so removing the literal string
 	## would remove nothing. My own ratchet caught them on its first run, one minute after I wrote it —
@@ -4573,6 +4573,9 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		battle_log_message.emit("[color=gray]%s's attack fizzles — no valid targets.[/color]" % attacker.combatant_name)
 		return
 
+	# The swing retires Shadow Step's grace. The status stays up until the next round tick.
+	attacker.note_shadow_step_swung()
+
 	# Invisible/evasion give the target untouchable/dodge windows.
 	if _target_dodges_physical(attacker, actual_target):
 		return
@@ -5024,10 +5027,17 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		var missing_factor: float = 1.0 + (1.0 - hp_pct) * (max_mult - 1.0)
 		multiplier *= missing_factor
 	var crit_chance = ability.get("crit_chance", 0.0)
+	# Shadow Step guarantees the next attack, including a physical ability. A basic swing already does this.
+	if caster != null and caster.has_status("shadow_step"):
+		crit_chance = 1.0
 
 	for target in targets:
 		if not target or not is_instance_valid(target) or not target.is_alive:
 			continue
+
+		# Same grace retirement as a basic swing. crit_chance was already forced, so later targets and hits still crit.
+		if caster != null:
+			caster.note_shadow_step_swung()
 
 		# Blind miss check for physical abilities
 		if caster.has_status("blind"):
@@ -5680,9 +5690,9 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 func _calculate_crit_chance(attacker: Combatant) -> float:
 	"""Calculate critical hit chance based on speed and equipment"""
 	## Tick 381: shadow_step status → guaranteed crit. Return 1.0 up
-	## front and skip the rest of the calc. Consumed when the attacker
-	## next attacks (the status removes itself in _target_dodges_physical
-	## OR via the natural duration tick — duration=1 from the ability).
+	## front and skip the rest of the calc. The swing does not remove the
+	## status; a hit on the bearer does, and the duration tick does once
+	## the one-tick grace has been spent (duration 1, one round of swings).
 	if attacker != null and is_instance_valid(attacker) and attacker.has_status("shadow_step"):
 		return 1.0
 
@@ -9425,7 +9435,7 @@ func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
 		return true
 	## Tick 381: shadow_step status grants 100% dodge — same falls-off-
 	## on-hit semantic as invisible. The caster also gets a guaranteed
-	## crit when THEY attack (consumed in _calculate_crit_chance).
+	## crit when THEY attack; that swing leaves this status in place.
 	## Pre-fix the shadow_step ability silently fizzled.
 	if target.has_status("shadow_step"):
 		target.remove_status("shadow_step")
