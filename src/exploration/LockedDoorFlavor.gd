@@ -4,8 +4,9 @@ class_name LockedDoorFlavor
 ## LockedDoorFlavor — a lightweight "this door looks enterable but isn't"
 ## interactable (struktured msg 2780 item 1 general rule: any door-shaped
 ## visual must respond to interact). Player walking into the trigger zone
-## sees the [A] Examine indicator; ui_accept fires a short flavor toast.
-## Save-state-free by design — these are ambient jokes, not quests.
+## sees the Examine indicator; confirm fires a short flavor toast through
+## interact(), the same pick OverworldController uses for every other field
+## target. Save-state-free by design — these are ambient jokes, not quests.
 ##
 ## First consumer: the TavernInterior "locked private quarters" staircase
 ## at the bottom-right (UU tiles). Reusable for any future door-shaped
@@ -24,7 +25,6 @@ const TILE_SIZE: int = 32
 @export var trigger_radius: float = 48.0
 
 var _indicator: Label
-var _player_in_zone: bool = false
 var _busy: bool = false
 
 
@@ -62,30 +62,23 @@ func _setup_indicator() -> void:
 
 func _on_body_entered(body: Node2D) -> void:
 	if body.is_in_group("player") or body.has_method("set_can_move"):
-		_player_in_zone = true
 		_indicator.visible = true
 
 
 func _on_body_exited(body: Node2D) -> void:
 	if body.is_in_group("player") or body.has_method("set_can_move"):
-		_player_in_zone = false
 		_indicator.visible = false
 
 
-func _input(event: InputEvent) -> void:
-	# Zone-listener class fix (subagent 2026-07-12): a cutscene/dialogue A-press must not also fire the interactable, and a tutorial-hint dismiss press must not either.
-	if TutorialHint.is_any_active():
+## Facing and nearest-target selection live in OverworldController. An _input handler here called set_input_as_handled() and ate confirm meant for the tavern piano, whose box overlaps this circle.
+func interact(_player: Node2D) -> void:
+	if _busy:
 		return
-	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
-	if ilm and ilm.is_locked():
-		return
-	if _player_in_zone and not _busy and event.is_action_pressed("ui_accept"):
-		get_viewport().set_input_as_handled()
-		_busy = true
-		_toast(flavor_line)
-		if SoundManager:
-			SoundManager.play_ui("menu_error")
-		_busy = false
+	_busy = true
+	_toast(flavor_line)
+	if SoundManager:
+		SoundManager.play_ui("menu_error")
+	_busy = false
 
 
 func _toast(text: String) -> void:
