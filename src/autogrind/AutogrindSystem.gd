@@ -2117,6 +2117,21 @@ func _resolve_member(party: Array, member_key: String):
 ## A living party member holding a healing ability they can currently afford. Reads `type` with
 ## `category` as fallback and `power` with `damage_multiplier` — both fields are authored one way
 ## and read the other elsewhere in this engine; HeadlessBattleResolver documents the same trap.
+## Silence, stun, sleep and cannot_act stay on after the fight that applied them. Battle refuses the cast; so must both between-battle casters.
+func _between_battle_cast_blocked(caster, ability_id: String) -> String:
+	if not caster.has_method("has_status"):
+		return ""
+	if caster.has_status("silence"):
+		return "%s is silenced — %s won't come out" % [caster.combatant_name, ability_id]
+	if caster.has_status("stun"):
+		return "%s is stunned and cannot act" % caster.combatant_name
+	if caster.has_status("sleep"):
+		return "%s is asleep" % caster.combatant_name
+	if caster.has_status("cannot_act"):
+		return "%s cannot act" % caster.combatant_name
+	return ""
+
+
 func _find_restorative_caster(party: Array) -> Dictionary:
 	var js = _get_autoload_node("JobSystem")
 	if js == null or not js.has_method("get_ability"):
@@ -2134,6 +2149,9 @@ func _find_restorative_caster(party: Array) -> Dictionary:
 				continue
 			var cost := int(ability.get("mp_cost", 0))
 			if m.current_mp < cost:
+				continue
+			## heal_party casts through here, not _member_ability_apply, so a silenced Cleric kept healing between fights.
+			if _between_battle_cast_blocked(m, ability_id) != "":
 				continue
 			return {
 				"caster": m,
@@ -2206,16 +2224,9 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 	## does not abort the whole action.
 	if caster.has_method("knows_ability") and not caster.knows_ability(ability_id):
 		return {"ok": false, "reason": "%s does not know %s" % [caster.combatant_name, ability_id]}
-	## Silence stays on after the fight that applied it. Battle refuses; this cast runs in that gap.
-	if caster.has_method("has_status") and caster.has_status("silence"):
-		return {"ok": false, "reason": "%s is silenced — %s won't come out" % [caster.combatant_name, ability_id]}
-	## Stun, sleep, and cannot_act stay on after the fight too. Battle skips that turn; this cast runs in the gap.
-	if caster.has_method("has_status") and caster.has_status("stun"):
-		return {"ok": false, "reason": "%s is stunned and cannot act" % caster.combatant_name}
-	if caster.has_method("has_status") and caster.has_status("sleep"):
-		return {"ok": false, "reason": "%s is asleep" % caster.combatant_name}
-	if caster.has_method("has_status") and caster.has_status("cannot_act"):
-		return {"ok": false, "reason": "%s cannot act" % caster.combatant_name}
+	var blocked: String = _between_battle_cast_blocked(caster, ability_id)
+	if blocked != "":
+		return {"ok": false, "reason": blocked}
 	var cost := int(ability.get("mp_cost", 0))
 	if caster.current_mp < cost:
 		return {"ok": false, "reason": "%s lacks MP for %s" % [caster.combatant_name, ability_id]}
