@@ -1596,6 +1596,8 @@ func _on_party_leader_changed(new_index: int) -> void:
 func _on_quit_to_title() -> void:
 	"""Handle quit to title from overworld menu settings"""
 	print("[GAME] Returning to title screen")
+	# Doorstep latch is session-only. Quit must drop it or the next load exits through a door from the run you left.
+	_clear_interior_doorstep()
 
 	# Clean up overworld menu
 	if _overworld_menu and is_instance_valid(_overworld_menu):
@@ -2897,6 +2899,8 @@ func _restore_party_from_save_data() -> bool:
 	function closes the gap. Pairs with the expanded Combatant.to_dict /
 	from_dict and the full-state _sync_party_to_game_state.
 	"""
+	# Doorstep latch is not in the save. Drop it on every restore, including a party-less one, so the loaded room exits at the village gate.
+	_clear_interior_doorstep()
 	if not GameState or GameState.player_party.is_empty():
 		return false
 

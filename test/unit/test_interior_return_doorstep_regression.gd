@@ -18,6 +18,10 @@ var _gl: Node = null
 var _saved_flags: Dictionary = {}
 var _saved_world: int = 1
 var _saved_mode7: bool = false
+var _saved_party: Array = []
+var _saved_pool: Dictionary = {}
+var _saved_map: String = ""
+var _saved_pending: Vector2 = Vector2.INF
 
 
 func before_each() -> void:
@@ -25,6 +29,10 @@ func before_each() -> void:
 	_saved_flags = GameState.story_flags.duplicate() if GameState else {}
 	_saved_world = int(GameState.current_world) if GameState else 1
 	_saved_mode7 = Mode7Overlay.is_active
+	_saved_party = GameState.player_party.duplicate(true) if GameState else []
+	_saved_pool = GameState.equipment_pool.duplicate(true) if GameState else {}
+	_saved_map = str(MapSystem.current_map_id) if MapSystem else ""
+	_saved_pending = SaveSystem.pending_player_position if SaveSystem else Vector2.INF
 
 
 func after_each() -> void:
@@ -34,6 +42,15 @@ func after_each() -> void:
 	if GameState:
 		GameState.story_flags = _saved_flags.duplicate()
 		GameState.current_world = _saved_world
+		GameState.player_party.clear()
+		for entry in _saved_party:
+			if entry is Dictionary:
+				GameState.player_party.append(entry)
+		GameState.equipment_pool = _saved_pool.duplicate(true)
+	if MapSystem:
+		MapSystem.current_map_id = _saved_map
+	if SaveSystem:
+		SaveSystem.pending_player_position = _saved_pending
 	Mode7Overlay.is_active = _saved_mode7
 
 
@@ -220,6 +237,117 @@ func test_a_return_with_no_captured_doorstep_still_uses_the_village_gate() -> vo
 	assert_eq(back["position"], Vector2.ZERO,
 		"no captured doorstep must not invent a tile — spawn \"default\" is the landing")
 	assert_eq(int(back["facing"]), -1)
+
+
+## The doorstep is not in the save. Loading another interior must not keep the door you walked in from.
+##
+## Repro, cross-interior: enter the Harmonia inn (latch set), load a save taken inside a different
+## shared interior, walk out. The exit used the Harmonia inn door.
+## Repro, same village: enter the blacksmith, load a save from inside the inn, leave the inn.
+## You landed at the blacksmith door. A loaded room falls back to the village gate.
+func test_loading_another_interior_does_not_keep_the_door_you_entered_from() -> void:
+	var village = await _build("res://src/maps/villages/HarmoniaVillage.gd")
+	var inn := _find_inn(village)
+	var smith := _find_shop(village, VillageShop.ShopType.BLACKSMITH)
+	assert_not_null(inn, "Harmonia builds its inn")
+	assert_not_null(smith, "Harmonia builds its blacksmith")
+	var inn_step := _doorstep(village, inn.position)
+	var smith_step := _doorstep(village, smith.position)
+	assert_ne(inn_step, Vector2.INF, "a walkable cell exists beside the inn")
+	assert_ne(smith_step, Vector2.INF, "a walkable cell exists beside the smith")
+	assert_gt(inn_step.distance_to(smith_step), float(village.TILE_SIZE) * 4.0,
+		"the two doors are far enough apart that one shared return tile cannot be both")
+
+	var inn_face := _facing_toward(inn_step, inn.position)
+	_stand_and_enter(village, "harmonia_village", "inn_interior", inn_step, inn_face)
+	var harmonia_door: Vector2 = _gl._interior_return_position
+	assert_eq(harmonia_door, inn_step)
+	_load_save_from_interior("shop_interior_item")
+	var other_room: Dictionary = _gl._route_area_transition("village_return", "shop_exit")
+	_assert_gate_not_the_old_door(other_room, harmonia_door,
+		"walked out of the loaded interior and appeared at the Harmonia inn door")
+
+	var smith_face := _facing_toward(smith_step, smith.position)
+	_stand_and_enter(village, "harmonia_village", "shop_interior_blacksmith", smith_step, smith_face)
+	var smith_door: Vector2 = _gl._interior_return_position
+	assert_eq(smith_door, smith_step)
+	_load_save_from_interior("inn_interior")
+	var inn_after_smith: Dictionary = _gl._route_area_transition("village_return", "inn_exit")
+	_assert_gate_not_the_old_door(inn_after_smith, smith_door,
+		"left the loaded inn and landed at the blacksmith door")
+
+
+## In-game Load restarts exploration even when the save has no party. That call must still drop the latch.
+func test_a_party_less_restore_still_drops_the_doorstep() -> void:
+	_gl._has_interior_return = true
+	_gl._interior_return_position = Vector2(320, 480)
+	_gl._interior_return_facing = OverworldPlayer.Direction.UP
+	GameState.player_party.clear()
+	assert_false(_gl._restore_party_from_save_data(), "an empty party still refuses to rebuild")
+	_assert_latch_cleared("a restore that rebuilds nobody must still forget the door you entered before the load")
+
+
+## Quit to Title never loads a save. The latch has to die here too, or Continue inherits it.
+func test_quit_to_title_drops_the_captured_doorstep() -> void:
+	_gl._has_interior_return = true
+	_gl._interior_return_position = Vector2(160, 240)
+	_gl._interior_return_facing = OverworldPlayer.Direction.LEFT
+	_gl._village_origin_id = "harmonia_village"
+	_gl._on_quit_to_title()
+	_assert_latch_cleared("Quit to Title left the doorstep latched for whoever loads next")
+	assert_eq(_gl.current_state, _gl.LoopState.TITLE, "Quit to Title still reaches the title screen")
+	assert_eq(str(_gl._village_origin_id), "harmonia_village",
+		"Quit to Title only drops the doorstep latch — the village you came from is a separate field")
+
+
+func _stand_and_enter(village, village_id: String, interior_id: String, doorstep: Vector2, facing: int) -> void:
+	village.player.position = doorstep
+	village.player.current_direction = facing
+	_gl._current_map_id = village_id
+	_gl._exploration_scene = village
+	_gl._clear_interior_doorstep()
+	var entered: Dictionary = _gl._route_area_transition(interior_id, "entrance")
+	assert_eq(entered["position"], Vector2.ZERO)
+	assert_true(_gl._has_interior_return, "the doorstep is captured on the way in — %s" % interior_id)
+	_gl._current_map_id = interior_id
+
+
+func _load_save_from_interior(map_id: String) -> void:
+	GameState.player_party.clear()
+	GameState.player_party.append({
+		"name": "Fighter",
+		"job_id": "fighter",
+		"equipped_weapon": "",
+		"equipped_armor": "",
+		"equipped_accessory": "",
+		"purchased_abilities": [],
+		"current_hp": 100,
+		"max_hp": 100,
+		"current_mp": 10,
+		"max_mp": 10,
+		"is_alive": true,
+	})
+	MapSystem.current_map_id = map_id
+	SaveSystem.pending_player_position = Vector2.INF
+	assert_true(_gl._restore_party_from_save_data(), "the save taken inside %s must restore" % map_id)
+	_assert_latch_cleared("load kept the doorstep from before the save — it is not in the save file")
+	assert_eq(str(_gl._current_map_id), map_id, "restore must land in the interior the save was taken in")
+
+
+func _assert_latch_cleared(why: String) -> void:
+	assert_false(_gl._has_interior_return, why)
+	assert_eq(_gl._interior_return_position, Vector2.ZERO, why)
+	assert_eq(int(_gl._interior_return_facing), -1, why)
+
+
+func _assert_gate_not_the_old_door(back: Dictionary, old_door: Vector2, why: String) -> void:
+	assert_eq(str(back["map"]), "harmonia_village", why)
+	assert_eq(str(back["spawn"]), "default", why)
+	assert_eq(back["position"], Vector2.ZERO,
+		"%s %s — a loaded interior has no remembered tile, so the village gate is the landing" % [why, str(old_door)])
+	assert_eq(int(back["facing"]), -1, why)
+	assert_gt(old_door.distance_to(Vector2.ZERO), 1.0,
+		"the captured door was already the origin, so this check cannot see the leak")
 
 
 func test_the_area_transition_applies_the_routed_tile_and_facing() -> void:
