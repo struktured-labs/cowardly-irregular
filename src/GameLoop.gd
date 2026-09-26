@@ -4188,7 +4188,7 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 		_player_position = Vector2.ZERO
 		if scene_player:
 			scene_player.position = restored_tile
-			# The stair and the village gate fire on the first overlap. Swallow that one; a later step-on still works.
+			# The stair, the village gate, and a puzzle portal fire on the first overlap. Swallow that one; a later step-on still works.
 			await _swallow_return_tile_triggers(exploration_scene, scene_player)
 
 	# Set player appearance based on party leader (respects party_leader_index)
@@ -4270,7 +4270,7 @@ func _resume_exploration_after_cutscene() -> void:
 	_start_exploration()
 
 
-## The restored tile can be the stair or the gate the fight started on. Those sensors fire with no input, so arm the latches a floor-change already uses and let that one overlap pass.
+## The restored tile can be the stair, the gate, or a puzzle portal the fight started on. Those sensors fire with no input, so arm the latches a floor-change already uses and let that one overlap pass.
 func _swallow_return_tile_triggers(scene: Node, body: Node2D) -> void:
 	if scene == null or not is_instance_valid(scene) or body == null or not is_instance_valid(body):
 		return
@@ -4285,7 +4285,7 @@ func _swallow_return_tile_triggers(scene: Node, body: Node2D) -> void:
 			continue
 		if area is AreaTransition and not (area as AreaTransition).require_interaction:
 			(area as AreaTransition)._triggered = true
-		elif str(area.name) == "StairsUp" or str(area.name) == "StairsDown":
+		elif str(area.name) == "StairsUp" or str(area.name) == "StairsDown" or str(area.name).begins_with("Portal_"):
 			hold_stairs = true
 	if not hold_stairs or not ("_transitioning" in scene):
 		return
