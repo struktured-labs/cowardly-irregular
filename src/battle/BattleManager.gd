@@ -255,6 +255,8 @@ var _first_damage_round: int = -1    # Round when first damage was dealt to any 
 var _first_damage_phase: int = -1    # Execution phase when first damage was dealt
 var _execution_phase_count: int = 0  # Number of execution phases so far
 var _one_shot_achieved: bool = false  # Whether all enemies died in same execution phase as first damage
+## Round-start poison/burn/doom/eidolon kills happen before the next execution phase increments, so an unchanged phase counter is not "died on that swing."
+var _casualty_outside_execution: bool = false
 var _setup_turns_used: int = 0       # Turns before first damage (for rating)
 var _all_enemies_initial_count: int = 0  # Total enemies at battle start
 
@@ -478,6 +480,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_first_damage_phase = -1
 	_execution_phase_count = 0
 	_one_shot_achieved = false
+	_casualty_outside_execution = false
 	_setup_turns_used = 0
 	_all_enemies_initial_count = enemies.size()
 
@@ -1461,6 +1464,15 @@ func _start_new_round() -> void:
 
 	# Poison and eidolon ticks above can cross a face. Poll before anyone picks from the old kit.
 	_poll_boss_phase_triggers()
+
+	## A tick can drop the last boss before anyone picks; the menu was opening on a corpse and the win waited on a command.
+	var players_standing := player_party.any(func(p): return is_instance_valid(p) and p.is_alive)
+	var enemies_standing := enemy_party.any(func(e): return is_instance_valid(e) and e.is_alive)
+	if not enemies_standing and players_standing:
+		_casualty_outside_execution = true
+	if _check_victory_conditions():
+		return
+	_casualty_outside_execution = false
 
 	# Calculate selection order (players first, then enemies, sorted by speed)
 	_calculate_selection_order()
@@ -8192,8 +8204,10 @@ func _record_first_damage() -> void:
 
 func _check_one_shot() -> void:
 	"""Check if one-shot was achieved (all enemies killed in same execution phase as first damage)"""
-	if _first_damage_phase == -1:
-		return  # No damage was dealt
+	var outside := _casualty_outside_execution
+	_casualty_outside_execution = false
+	if _first_damage_phase == -1 or outside:
+		return  # No swing yet, or the kill was a round-start tick rather than that swing
 
 	# Check if all enemies died in the same execution phase as first damage
 	var all_dead = true
