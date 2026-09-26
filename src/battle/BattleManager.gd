@@ -3959,7 +3959,14 @@ func _execute_group_action(action: Dictionary) -> void:
 	var group_type: String = action.get("group_type", "all_out_attack")
 	var alive_enemies: Array[Combatant] = enemy_party.filter(func(e): return e.is_alive)
 
-	if alive_enemies.is_empty() or participants.is_empty():
+	if alive_enemies.is_empty():
+		_execute_next_action()
+		return
+	# Nobody could swing, but the action still resolved: a boss already under a phase line must change face.
+	if participants.is_empty():
+		_poll_boss_phase_triggers()
+		if _check_victory_conditions():
+			return
 		_execute_next_action()
 		return
 

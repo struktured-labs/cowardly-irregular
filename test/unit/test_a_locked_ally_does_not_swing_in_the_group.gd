@@ -12,18 +12,21 @@ const HBR := preload("res://src/autogrind/HeadlessBattleResolver.gd")
 const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 
 var _guard = null
+var _prior_state: int = 0
 
 
 func before_each() -> void:
 	_guard = BattleStateGuard.new()
 	_guard.snapshot()
 	BattleManager.turbo_mode = true
+	_prior_state = BattleManager.current_state
 	BattleManager.current_state = BattleManager.BattleState.EXECUTION_PHASE
 	BattleManager.execution_order.clear()
 	BattleManager.pending_actions.clear()
 
 
 func after_each() -> void:
+	BattleManager.current_state = _prior_state
 	if _guard != null:
 		_guard.restore()
 
