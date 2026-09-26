@@ -3673,6 +3673,13 @@ func _execute_next_action() -> void:
 		combatant.gain_ap(1)
 		battle_log_message.emit("[color=cyan]↻ %s moves on borrowed time.[/color]" % combatant.combatant_name)
 
+	# A pooled strike is every participant's turn. The caller's own skip used to throw the whole group away.
+	if str(action.get("type", "")) == "group":
+		_maybe_play_signature_sfx(combatant)
+		_observe_action_for_win_condition(combatant, action)
+		_execute_group_action(action)
+		return
+
 	# Status effect behavioral checks
 	if combatant.has_status("stun"):
 		# One skipped action per authored point. Round-start end_turn does not also spend stun.
@@ -3798,9 +3805,6 @@ func _execute_next_action() -> void:
 		"advance":
 			_execute_advance(combatant, action)
 			return  # Advance handles its own continuation
-		"group":
-			_execute_group_action(action)
-			return  # Group handles its own continuation
 		_:
 			push_warning("BattleManager: Unknown action type '%s'" % action.get("type", ""))
 			# Do NOT return here — fall through to keep the execution chain alive.
@@ -3931,13 +3935,38 @@ func _execute_ally_summon(caster: Combatant, ability: Dictionary) -> void:
 		battle_log_message.emit("[color=gray]%s calls out, but there is no room on the field.[/color]" % caster.combatant_name)
 
 
+## Members whose lock replaces this committed strike. A break roll stays in and swings with the group.
+func _without_locked_participants(participants: Array) -> Array:
+	var acting: Array = []
+	for p in participants:
+		if not (p is Combatant) or not p.is_alive:
+			continue
+		var why := ""
+		for s in Combatant.GROUP_ACTION_LOCKS:
+			if p.has_status(s):
+				why = s
+				break
+		if why != "" and p.forfeit_committed_action():
+			battle_log_message.emit("[color=yellow]%s[/color] is %s and drops out of the group attack!" % [p.combatant_name, Combatant.control_lock_label(why)])
+			continue
+		acting.append(p)
+	return acting
+
+
 func _execute_group_action(action: Dictionary) -> void:
 	"""Execute group attack — all participants strike together"""
-	var participants: Array = action.get("participants", [])
+	var participants: Array = _without_locked_participants(action.get("participants", []))
 	var group_type: String = action.get("group_type", "all_out_attack")
 	var alive_enemies: Array[Combatant] = enemy_party.filter(func(e): return e.is_alive)
 
 	if alive_enemies.is_empty():
+		_execute_next_action()
+		return
+	# Nobody could swing, but the action still resolved: a boss already under a phase line must change face.
+	if participants.is_empty():
+		_poll_boss_phase_triggers()
+		if _check_victory_conditions():
+			return
 		_execute_next_action()
 		return
 
@@ -4015,6 +4044,9 @@ func _group_scale(participants: Array) -> float:
 
 func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant], group_type: String, ap_cost: int) -> void:
 	"""Execute All-Out Attack or Limit Break — physical combined damage"""
+	participants = _without_locked_participants(participants)
+	if participants.is_empty():
+		return
 	var is_limit_break: bool = group_type == "limit_break"
 	## Tick 175: announce the group attack name at the top. Pre-fix
 	## physical group attacks went straight to per-enemy hit lines
@@ -4069,6 +4101,9 @@ func _limit_break_cleanse(participants: Array) -> void:
 
 func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], ap_cost: int) -> void:
 	"""Execute Combo Magic — fuse party elements for massive magic damage"""
+	participants = _without_locked_participants(participants)
+	if participants.is_empty():
+		return
 	# Spend AP and sum magic power
 	var total_magic: float = 0.0
 	for p in participants:
@@ -4137,6 +4172,9 @@ func _formation_ap_cost(formation_id: String) -> int:
 
 func _execute_formation_special(participants: Array, alive_enemies: Array[Combatant], formation_id: String) -> void:
 	"""Execute a Formation Special — unique effect based on party job composition"""
+	participants = _without_locked_participants(participants)
+	if participants.is_empty():
+		return
 	## Tick 175: announce that a formation special is starting.
 	## Tick 176: reworded to NOT name the formation — each of the
 	## six formation branches already emits a descriptor line at
