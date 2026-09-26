@@ -422,6 +422,24 @@ func _ensure_save_directory() -> void:
 		DirAccess.make_dir_absolute(SAVE_DIR)
 
 
+func _read_party_formation() -> int:
+	var script = load("res://src/battle/BattleScene.gd")
+	if script == null:
+		return 0
+	return int(script.current_formation)
+
+
+func _write_party_formation(index: int) -> void:
+	var script = load("res://src/battle/BattleScene.gd")
+	if script == null:
+		return
+	var names: Variant = script.FORMATION_NAMES
+	var last := 0
+	if names is Array and (names as Array).size() > 0:
+		last = (names as Array).size() - 1
+	script.current_formation = clampi(int(index), 0, last)
+
+
 func _create_save_data() -> Dictionary:
 	"""Create save data dictionary.
 	Bug fix (2026-04-30): added macro_volatility and current_save_name —
@@ -439,6 +457,7 @@ func _create_save_data() -> Dictionary:
 		"party_gold": party_gold,
 		"player_party": player_party.duplicate(true),
 		"party_leader_index": party_leader_index,
+		"party_formation": _read_party_formation(),
 		"game_constants": game_constants.duplicate(),
 		"permakilled_monster_types": permakilled_monster_types.duplicate(),
 		"meta_features": meta_features.duplicate(),
@@ -611,6 +630,9 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		var raw_idx: int = int(save_data["party_leader_index"])
 		var max_idx: int = max(0, player_party.size() - 1)
 		party_leader_index = clampi(raw_idx, 0, max_idx)
+	# Absent key keeps the live row: partial applies and pre-key saves must not clear it.
+	if save_data.has("party_formation"):
+		_write_party_formation(int(save_data["party_formation"]))
 	## Tick 363: type-guard Dictionary/Array reads so a corrupted save
 	## with null / int / string in these slots warns + skips instead of
 	## crashing _apply_save_data with `Trying to assign a value of type
@@ -1240,6 +1262,7 @@ func reset_game_state() -> void:
 	worlds_unlocked = 1
 	current_save_name = ""
 	party_leader_index = 0
+	_write_party_formation(0)
 	pending_boss_defeat = {}
 	# QuestSystem v1 + fast travel (2026-07-01): without these clears a
 	# second New Game starts with prior-run quests already complete and
