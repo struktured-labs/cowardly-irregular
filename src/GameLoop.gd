@@ -5221,6 +5221,8 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	_set_current_map_id(target_map)
 	_spawn_point = spawn_point
 	_player_position = Vector2.ZERO
+	# Battle return reads this latch; leaving the map must drop it or the next dungeon (any world) opens on the floor you walked out of.
+	_current_cave_floor = 1
 	_current_terrain = _get_terrain_for_map(target_map)
 
 	var transition_type = _get_transition_type(target_map)

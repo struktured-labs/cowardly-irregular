@@ -5668,15 +5668,18 @@ func estimate_attack_damage(attacker: Combatant, target: Combatant) -> int:
 ## are the same computation — never a second copy of the maths that can drift from it.
 func estimate_attack_breakdown(attacker: Combatant, target: Combatant) -> Dictionary:
 	var atk = attacker.get_buffed_stat("attack", attacker.attack)
-	var def_val = target.get_buffed_stat("defense", target.defense)
-	var raw = int((atk * atk) / float(max(1, atk + def_val)))
-	var dmg: int = max(1, raw)
-	var formula: String = "ATK %d² ÷ (ATK %d + DEF %d) = %d" % [atk, atk, def_val, dmg]
-	## _apply_lens_execute_bonus runs on this path too, and it fires exactly when [KILL] is being read.
+	## Final Word multiplies the swing, then take_damage runs amount²/(amount+DEF).
+	## Scaling after that division is a different integer, and [KILL] follows the quote.
+	var incoming: int = atk
 	var lens: float = lens_execute_multiplier(attacker, target)
 	if not is_equal_approx(lens, 1.0):
-		dmg = max(1, int(dmg * lens))
-		formula += " ×execute %.2f = %d" % [lens, dmg]
+		incoming = int(incoming * lens)
+	var def_val = target.get_buffed_stat("defense", target.defense)
+	var raw = int((incoming * incoming) / float(max(1, incoming + def_val)))
+	var dmg: int = max(1, raw)
+	var formula: String = "ATK %d² ÷ (ATK %d + DEF %d) = %d" % [atk, atk, def_val, dmg]
+	if not is_equal_approx(lens, 1.0):
+		formula = "ATK %d ×execute %.2f = %d; %d² ÷ (%d + DEF %d) = %d" % [atk, lens, incoming, incoming, incoming, def_val, dmg]
 	return {"damage": dmg, "formula": formula + ", then ×variance ×crit"}
 
 
