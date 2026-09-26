@@ -3,6 +3,7 @@
   "voices": {
     "rogue.wav": {"exaggeration": 0.55, "cfg_weight": 0.4, "seed": 42},
     "bard.wav":  {"exaggeration": 0.9,  "cfg_weight": 0.3, "seed": 42},
-    "mage.wav":  {"exaggeration": 0.8,  "cfg_weight": 0.3, "seed": 42}
+    "mage.wav":  {"exaggeration": 0.8,  "cfg_weight": 0.3, "seed": 42},
+    "cleric.wav": {"exaggeration": 0.5, "cfg_weight": 0.5, "seed": 42}
   }
 }

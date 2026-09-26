@@ -1941,36 +1941,46 @@
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken.ogg",
       "description": "Cleric party voice line — big hit taken",
       "source_sha": "ba16ce8ba4b77b68",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1236226985
     },
     "voice_cleric_low_hp": {
       "file": "assets/audio/sfx/voice_cleric_low_hp.ogg",
       "description": "Cleric party voice line — low hp",
       "source_sha": "2eb5406eb4e6d995",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 896747178
     },
     "voice_cleric_turn_start": {
       "file": "assets/audio/sfx/voice_cleric_turn_start.ogg",
       "description": "Cleric party voice line — turn start",
       "source_sha": "9f6001bd1547a136",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1066986893
     },
     "voice_cleric_used_signature_ability": {
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability.ogg",
       "description": "Cleric party voice line — used signature ability",
       "source_sha": "6371613699a57f54",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 32219894
     },
     "voice_cleric_victory": {
       "file": "assets/audio/sfx/voice_cleric_victory.ogg",
       "description": "Cleric party voice line — victory",
       "source_sha": "1754606f50098e8c",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1567563511
     },
     "voice_fighter_big_hit_taken": {
       "file": "assets/audio/sfx/voice_fighter_big_hit_taken.ogg",
@@ -2697,316 +2707,406 @@
       "description": "Cleric party voice line — turn start (variant 1)",
       "file": "assets/audio/sfx/voice_cleric_turn_start_1.ogg",
       "source_sha": "818f775f1439daec",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1347689387
     },
     "voice_cleric_turn_start_2": {
       "description": "Cleric party voice line — turn start (variant 2)",
       "file": "assets/audio/sfx/voice_cleric_turn_start_2.ogg",
       "source_sha": "7c8bd9217ec210cc",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1476430302
     },
     "voice_cleric_turn_start_3": {
       "description": "Cleric party voice line — turn start (variant 3)",
       "file": "assets/audio/sfx/voice_cleric_turn_start_3.ogg",
       "source_sha": "ba7d6566e1a72b0a",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 519510992
     },
     "voice_cleric_turn_start_4": {
       "description": "Cleric party voice line — turn start (variant 4)",
       "file": "assets/audio/sfx/voice_cleric_turn_start_4.ogg",
       "source_sha": "4727771c5f6046ff",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 859382810
     },
     "voice_cleric_turn_start_5": {
       "description": "Cleric party voice line — turn start (variant 5)",
       "file": "assets/audio/sfx/voice_cleric_turn_start_5.ogg",
       "source_sha": "312e5ae74423a8ac",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 490792251
     },
     "voice_cleric_turn_start_6": {
       "description": "Cleric party voice line — turn start (variant 6)",
       "file": "assets/audio/sfx/voice_cleric_turn_start_6.ogg",
       "source_sha": "3a332050ab4452e7",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 216099807
     },
     "voice_cleric_turn_start_7": {
       "description": "Cleric party voice line — turn start (variant 7)",
       "file": "assets/audio/sfx/voice_cleric_turn_start_7.ogg",
       "source_sha": "a0682d6d5027d9ee",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1928181851
     },
     "voice_cleric_turn_start_8": {
       "description": "Cleric party voice line — turn start (variant 8)",
       "file": "assets/audio/sfx/voice_cleric_turn_start_8.ogg",
       "source_sha": "a2be99301ff68c91",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 614473628
     },
     "voice_cleric_turn_start_9": {
       "description": "Cleric party voice line — turn start (variant 9)",
       "file": "assets/audio/sfx/voice_cleric_turn_start_9.ogg",
       "source_sha": "27c79121d5b4abfa",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1355327948
     },
     "voice_cleric_low_hp_1": {
       "description": "Cleric party voice line — low hp (variant 1)",
       "file": "assets/audio/sfx/voice_cleric_low_hp_1.ogg",
       "source_sha": "bf0401673926e9c8",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 650395021
     },
     "voice_cleric_low_hp_2": {
       "description": "Cleric party voice line — low hp (variant 2)",
       "file": "assets/audio/sfx/voice_cleric_low_hp_2.ogg",
       "source_sha": "b7b7f5b79822b063",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 872472054
     },
     "voice_cleric_low_hp_3": {
       "description": "Cleric party voice line — low hp (variant 3)",
       "file": "assets/audio/sfx/voice_cleric_low_hp_3.ogg",
       "source_sha": "9ba2408fe3665e83",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1899191091
     },
     "voice_cleric_low_hp_4": {
       "description": "Cleric party voice line — low hp (variant 4)",
       "file": "assets/audio/sfx/voice_cleric_low_hp_4.ogg",
       "source_sha": "60d74a4b181064a4",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1290951356
     },
     "voice_cleric_low_hp_5": {
       "description": "Cleric party voice line — low hp (variant 5)",
       "file": "assets/audio/sfx/voice_cleric_low_hp_5.ogg",
       "source_sha": "a66b0aba687ad227",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2064260070
     },
     "voice_cleric_low_hp_6": {
       "description": "Cleric party voice line — low hp (variant 6)",
       "file": "assets/audio/sfx/voice_cleric_low_hp_6.ogg",
       "source_sha": "2c2d74dc5fc7b204",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 320847612
     },
     "voice_cleric_low_hp_7": {
       "description": "Cleric party voice line — low hp (variant 7)",
       "file": "assets/audio/sfx/voice_cleric_low_hp_7.ogg",
       "source_sha": "bc4e25b59dd0c7f2",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 11087769
     },
     "voice_cleric_low_hp_8": {
       "description": "Cleric party voice line — low hp (variant 8)",
       "file": "assets/audio/sfx/voice_cleric_low_hp_8.ogg",
       "source_sha": "3fe4cc93192d8a46",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1853126331
     },
     "voice_cleric_low_hp_9": {
       "description": "Cleric party voice line — low hp (variant 9)",
       "file": "assets/audio/sfx/voice_cleric_low_hp_9.ogg",
       "source_sha": "3a1daf4a86b87bc3",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 273821292
     },
     "voice_cleric_big_hit_taken_1": {
       "description": "Cleric party voice line — big hit taken (variant 1)",
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken_1.ogg",
       "source_sha": "466719237038cece",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 840275432
     },
     "voice_cleric_big_hit_taken_2": {
       "description": "Cleric party voice line — big hit taken (variant 2)",
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken_2.ogg",
       "source_sha": "43de909826ce6769",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 536939074
     },
     "voice_cleric_big_hit_taken_3": {
       "description": "Cleric party voice line — big hit taken (variant 3)",
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken_3.ogg",
       "source_sha": "9f752b369d2998c1",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1033959764
     },
     "voice_cleric_big_hit_taken_4": {
       "description": "Cleric party voice line — big hit taken (variant 4)",
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken_4.ogg",
       "source_sha": "93f722402b46f4c9",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2131495152
     },
     "voice_cleric_big_hit_taken_5": {
       "description": "Cleric party voice line — big hit taken (variant 5)",
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken_5.ogg",
       "source_sha": "5144bf403e06f040",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 364635242
     },
     "voice_cleric_big_hit_taken_6": {
       "description": "Cleric party voice line — big hit taken (variant 6)",
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken_6.ogg",
       "source_sha": "4f49778ae16ca4a4",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 352569051
     },
     "voice_cleric_big_hit_taken_7": {
       "description": "Cleric party voice line — big hit taken (variant 7)",
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken_7.ogg",
       "source_sha": "8d912077d850b5a4",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 90919528
     },
     "voice_cleric_big_hit_taken_8": {
       "description": "Cleric party voice line — big hit taken (variant 8)",
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken_8.ogg",
       "source_sha": "88a7048aa39c61e0",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 450660705
     },
     "voice_cleric_big_hit_taken_9": {
       "description": "Cleric party voice line — big hit taken (variant 9)",
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken_9.ogg",
       "source_sha": "38d0179d8e803ec2",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 389577998
     },
     "voice_cleric_used_signature_ability_1": {
       "description": "Cleric party voice line — used signature ability (variant 1)",
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability_1.ogg",
       "source_sha": "70e00c2cc64927ea",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 896725073
     },
     "voice_cleric_used_signature_ability_2": {
       "description": "Cleric party voice line — used signature ability (variant 2)",
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability_2.ogg",
       "source_sha": "00b7f68e1c587b04",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1955814156
     },
     "voice_cleric_used_signature_ability_3": {
       "description": "Cleric party voice line — used signature ability (variant 3)",
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability_3.ogg",
       "source_sha": "1ee4d22395ec1d8d",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 92828888
     },
     "voice_cleric_used_signature_ability_4": {
       "description": "Cleric party voice line — used signature ability (variant 4)",
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability_4.ogg",
       "source_sha": "5e96961733dee4c1",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 512341819
     },
     "voice_cleric_used_signature_ability_5": {
       "description": "Cleric party voice line — used signature ability (variant 5)",
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability_5.ogg",
       "source_sha": "f6aabb19227f16f6",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 213767045
     },
     "voice_cleric_used_signature_ability_6": {
       "description": "Cleric party voice line — used signature ability (variant 6)",
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability_6.ogg",
       "source_sha": "993d8459b1c3ddb1",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 591767505
     },
     "voice_cleric_used_signature_ability_7": {
       "description": "Cleric party voice line — used signature ability (variant 7)",
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability_7.ogg",
       "source_sha": "b69fdf3be5f1a052",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 300364427
     },
     "voice_cleric_used_signature_ability_8": {
       "description": "Cleric party voice line — used signature ability (variant 8)",
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability_8.ogg",
       "source_sha": "579127059c96e81d",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 207678455
     },
     "voice_cleric_used_signature_ability_9": {
       "description": "Cleric party voice line — used signature ability (variant 9)",
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability_9.ogg",
       "source_sha": "ca626e860a85f5c9",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1594955490
     },
     "voice_cleric_victory_1": {
       "description": "Cleric party voice line — victory (variant 1)",
       "file": "assets/audio/sfx/voice_cleric_victory_1.ogg",
       "source_sha": "34f5207b68900d4a",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1740480319
     },
     "voice_cleric_victory_2": {
       "description": "Cleric party voice line — victory (variant 2)",
       "file": "assets/audio/sfx/voice_cleric_victory_2.ogg",
       "source_sha": "86b5444a383a9079",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2073827345
     },
     "voice_cleric_victory_3": {
       "description": "Cleric party voice line — victory (variant 3)",
       "file": "assets/audio/sfx/voice_cleric_victory_3.ogg",
       "source_sha": "9b96ca7ff7253ec2",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 898090273
     },
     "voice_cleric_victory_4": {
       "description": "Cleric party voice line — victory (variant 4)",
       "file": "assets/audio/sfx/voice_cleric_victory_4.ogg",
       "source_sha": "ab70918383d86435",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1575516251
     },
     "voice_cleric_victory_5": {
       "description": "Cleric party voice line — victory (variant 5)",
       "file": "assets/audio/sfx/voice_cleric_victory_5.ogg",
       "source_sha": "2f6bb14aa1713cd6",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 12959134
     },
     "voice_cleric_victory_6": {
       "description": "Cleric party voice line — victory (variant 6)",
       "file": "assets/audio/sfx/voice_cleric_victory_6.ogg",
       "source_sha": "b28952dd51562aeb",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 449565745
     },
     "voice_cleric_victory_7": {
       "description": "Cleric party voice line — victory (variant 7)",
       "file": "assets/audio/sfx/voice_cleric_victory_7.ogg",
       "source_sha": "100f82f36e5e17f2",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 675037566
     },
     "voice_cleric_victory_8": {
       "description": "Cleric party voice line — victory (variant 8)",
       "file": "assets/audio/sfx/voice_cleric_victory_8.ogg",
       "source_sha": "48276d5e4dffd090",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 784314130
     },
     "voice_cleric_victory_9": {
       "description": "Cleric party voice line — victory (variant 9)",
       "file": "assets/audio/sfx/voice_cleric_victory_9.ogg",
       "source_sha": "53a64b3b8c6f5415",
-      "voice": "Alice - Clear, Engaging Educator (Xb7hH8MSUJpSbSDYk0k2)",
-      "voice_gender": "female"
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 273037833
     },
     "voice_mage_turn_start_1": {
       "description": "Mage party voice line — turn start (variant 1)",
@@ -6787,6 +6887,861 @@
       "voice_gender": "male",
       "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
       "seed": 204251086
+    },
+    "voice_cleric_turn_start_10": {
+      "description": "Cleric party voice line — turn start (variant 10)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_10.ogg",
+      "source_sha": "06a158c0e5885b13",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 843784955
+    },
+    "voice_cleric_turn_start_11": {
+      "description": "Cleric party voice line — turn start (variant 11)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_11.ogg",
+      "source_sha": "f201e89791bd4adf",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 313165645
+    },
+    "voice_cleric_turn_start_12": {
+      "description": "Cleric party voice line — turn start (variant 12)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_12.ogg",
+      "source_sha": "34b6eeb34787b14a",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 783007874
+    },
+    "voice_cleric_turn_start_13": {
+      "description": "Cleric party voice line — turn start (variant 13)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_13.ogg",
+      "source_sha": "dd0121bc8af68502",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 544788063
+    },
+    "voice_cleric_turn_start_14": {
+      "description": "Cleric party voice line — turn start (variant 14)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_14.ogg",
+      "source_sha": "28fbad16aa34fc45",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 171650947
+    },
+    "voice_cleric_turn_start_15": {
+      "description": "Cleric party voice line — turn start (variant 15)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_15.ogg",
+      "source_sha": "9b827f748ec27abc",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 310043478
+    },
+    "voice_cleric_turn_start_16": {
+      "description": "Cleric party voice line — turn start (variant 16)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_16.ogg",
+      "source_sha": "e0ef03823f8497ff",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1546060175
+    },
+    "voice_cleric_turn_start_17": {
+      "description": "Cleric party voice line — turn start (variant 17)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_17.ogg",
+      "source_sha": "83fd367a0ada6c27",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 835264795
+    },
+    "voice_cleric_turn_start_18": {
+      "description": "Cleric party voice line — turn start (variant 18)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_18.ogg",
+      "source_sha": "eb45e25059b40baf",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1625689706
+    },
+    "voice_cleric_turn_start_19": {
+      "description": "Cleric party voice line — turn start (variant 19)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_19.ogg",
+      "source_sha": "90941d268ef1b5f5",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 199871897
+    },
+    "voice_cleric_turn_start_20": {
+      "description": "Cleric party voice line — turn start (variant 20)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_20.ogg",
+      "source_sha": "72d341b59453352d",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 8711993
+    },
+    "voice_cleric_turn_start_21": {
+      "description": "Cleric party voice line — turn start (variant 21)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_21.ogg",
+      "source_sha": "84a9b535658e05e3",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 415911569
+    },
+    "voice_cleric_turn_start_22": {
+      "description": "Cleric party voice line — turn start (variant 22)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_22.ogg",
+      "source_sha": "816d4a05bc1320e6",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 515690505
+    },
+    "voice_cleric_turn_start_23": {
+      "description": "Cleric party voice line — turn start (variant 23)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_23.ogg",
+      "source_sha": "c7bcbdb87f9f402f",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 885879174
+    },
+    "voice_cleric_turn_start_24": {
+      "description": "Cleric party voice line — turn start (variant 24)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_24.ogg",
+      "source_sha": "72ff541d4a04d7db",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 867209125
+    },
+    "voice_cleric_turn_start_25": {
+      "description": "Cleric party voice line — turn start (variant 25)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_25.ogg",
+      "source_sha": "a38c14460d0c5f64",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1630702848
+    },
+    "voice_cleric_turn_start_26": {
+      "description": "Cleric party voice line — turn start (variant 26)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_26.ogg",
+      "source_sha": "c87279704f967ab7",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 293879628
+    },
+    "voice_cleric_turn_start_27": {
+      "description": "Cleric party voice line — turn start (variant 27)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_27.ogg",
+      "source_sha": "ba1d4046f106b2ec",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2137405721
+    },
+    "voice_cleric_turn_start_28": {
+      "description": "Cleric party voice line — turn start (variant 28)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_28.ogg",
+      "source_sha": "2bb7b447ad4fe675",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1781941919
+    },
+    "voice_cleric_turn_start_29": {
+      "description": "Cleric party voice line — turn start (variant 29)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_29.ogg",
+      "source_sha": "e3b974ae4d525c1b",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 106963726
+    },
+    "voice_cleric_turn_start_30": {
+      "description": "Cleric party voice line — turn start (variant 30)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_30.ogg",
+      "source_sha": "4553bd6116fd2e0e",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 431790389
+    },
+    "voice_cleric_turn_start_31": {
+      "description": "Cleric party voice line — turn start (variant 31)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_31.ogg",
+      "source_sha": "fe74c8e64b526564",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 944389881
+    },
+    "voice_cleric_turn_start_32": {
+      "description": "Cleric party voice line — turn start (variant 32)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_32.ogg",
+      "source_sha": "1da2010f036139bc",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 125519725
+    },
+    "voice_cleric_turn_start_33": {
+      "description": "Cleric party voice line — turn start (variant 33)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_33.ogg",
+      "source_sha": "8be02e692c398fbe",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1093872555
+    },
+    "voice_cleric_turn_start_34": {
+      "description": "Cleric party voice line — turn start (variant 34)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_34.ogg",
+      "source_sha": "72954d9a025be5f1",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 42045456
+    },
+    "voice_cleric_turn_start_35": {
+      "description": "Cleric party voice line — turn start (variant 35)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_35.ogg",
+      "source_sha": "a77b09282e3902ab",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 55949338
+    },
+    "voice_cleric_turn_start_36": {
+      "description": "Cleric party voice line — turn start (variant 36)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_36.ogg",
+      "source_sha": "0bbbbacf951d4a83",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 916403260
+    },
+    "voice_cleric_turn_start_37": {
+      "description": "Cleric party voice line — turn start (variant 37)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_37.ogg",
+      "source_sha": "9e155f8cc7e04fba",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1620538218
+    },
+    "voice_cleric_turn_start_38": {
+      "description": "Cleric party voice line — turn start (variant 38)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_38.ogg",
+      "source_sha": "a7638c5558b563f7",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 523496803
+    },
+    "voice_cleric_turn_start_39": {
+      "description": "Cleric party voice line — turn start (variant 39)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_39.ogg",
+      "source_sha": "550308dc52f35ef4",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2051875304
+    },
+    "voice_cleric_turn_start_40": {
+      "description": "Cleric party voice line — turn start (variant 40)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_40.ogg",
+      "source_sha": "ad6676f86b12b0bd",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 923142547
+    },
+    "voice_cleric_turn_start_41": {
+      "description": "Cleric party voice line — turn start (variant 41)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_41.ogg",
+      "source_sha": "5515490eb9d24301",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 538113987
+    },
+    "voice_cleric_turn_start_42": {
+      "description": "Cleric party voice line — turn start (variant 42)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_42.ogg",
+      "source_sha": "8a0cb84a76497b1c",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1604637805
+    },
+    "voice_cleric_turn_start_43": {
+      "description": "Cleric party voice line — turn start (variant 43)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_43.ogg",
+      "source_sha": "9d942c3b2155a61f",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 23220582
+    },
+    "voice_cleric_turn_start_44": {
+      "description": "Cleric party voice line — turn start (variant 44)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_44.ogg",
+      "source_sha": "e3893f200b3f428e",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1558359518
+    },
+    "voice_cleric_turn_start_45": {
+      "description": "Cleric party voice line — turn start (variant 45)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_45.ogg",
+      "source_sha": "f59b545a76d3b487",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1781191917
+    },
+    "voice_cleric_turn_start_46": {
+      "description": "Cleric party voice line — turn start (variant 46)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_46.ogg",
+      "source_sha": "23c4df502f3ca1b5",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2145028653
+    },
+    "voice_cleric_turn_start_47": {
+      "description": "Cleric party voice line — turn start (variant 47)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_47.ogg",
+      "source_sha": "e5b5f6000f313e0f",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 358887025
+    },
+    "voice_cleric_turn_start_48": {
+      "description": "Cleric party voice line — turn start (variant 48)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_48.ogg",
+      "source_sha": "db45b6153bf79135",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1297551685
+    },
+    "voice_cleric_turn_start_49": {
+      "description": "Cleric party voice line — turn start (variant 49)",
+      "file": "assets/audio/sfx/voice_cleric_turn_start_49.ogg",
+      "source_sha": "1b1bf47bfc927515",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 603516807
+    },
+    "voice_cleric_low_hp_10": {
+      "description": "Cleric party voice line — low hp (variant 10)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_10.ogg",
+      "source_sha": "afcda2b827056c03",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1110922732
+    },
+    "voice_cleric_low_hp_11": {
+      "description": "Cleric party voice line — low hp (variant 11)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_11.ogg",
+      "source_sha": "9e6bdc2c80c7e79a",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1791106477
+    },
+    "voice_cleric_low_hp_12": {
+      "description": "Cleric party voice line — low hp (variant 12)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_12.ogg",
+      "source_sha": "9b43253a1c3b9dcc",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1258008389
+    },
+    "voice_cleric_low_hp_13": {
+      "description": "Cleric party voice line — low hp (variant 13)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_13.ogg",
+      "source_sha": "e91dfc363cea4b37",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 582414442
+    },
+    "voice_cleric_low_hp_14": {
+      "description": "Cleric party voice line — low hp (variant 14)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_14.ogg",
+      "source_sha": "9b0b3f38ce998f1e",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 979209747
+    },
+    "voice_cleric_low_hp_15": {
+      "description": "Cleric party voice line — low hp (variant 15)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_15.ogg",
+      "source_sha": "775d165ac46a4357",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1102857877
+    },
+    "voice_cleric_low_hp_16": {
+      "description": "Cleric party voice line — low hp (variant 16)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_16.ogg",
+      "source_sha": "24c6a185f756d499",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1297104592
+    },
+    "voice_cleric_low_hp_17": {
+      "description": "Cleric party voice line — low hp (variant 17)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_17.ogg",
+      "source_sha": "ba78cb2a1324ace3",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 976570517
+    },
+    "voice_cleric_low_hp_18": {
+      "description": "Cleric party voice line — low hp (variant 18)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_18.ogg",
+      "source_sha": "ea840bc6883ab94f",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1189298001
+    },
+    "voice_cleric_low_hp_19": {
+      "description": "Cleric party voice line — low hp (variant 19)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_19.ogg",
+      "source_sha": "31389b9c5b168e33",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1973432633
+    },
+    "voice_cleric_low_hp_20": {
+      "description": "Cleric party voice line — low hp (variant 20)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_20.ogg",
+      "source_sha": "85176540affba999",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 158609919
+    },
+    "voice_cleric_low_hp_21": {
+      "description": "Cleric party voice line — low hp (variant 21)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_21.ogg",
+      "source_sha": "23980ca7e3e8cb99",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1249470239
+    },
+    "voice_cleric_low_hp_22": {
+      "description": "Cleric party voice line — low hp (variant 22)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_22.ogg",
+      "source_sha": "4c2f8da84cd62806",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1264225367
+    },
+    "voice_cleric_low_hp_23": {
+      "description": "Cleric party voice line — low hp (variant 23)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_23.ogg",
+      "source_sha": "13e4d0b2f22c5707",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1548921421
+    },
+    "voice_cleric_low_hp_24": {
+      "description": "Cleric party voice line — low hp (variant 24)",
+      "file": "assets/audio/sfx/voice_cleric_low_hp_24.ogg",
+      "source_sha": "ef1e47d763c9a62a",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1841851849
+    },
+    "voice_cleric_big_hit_taken_10": {
+      "description": "Cleric party voice line — big hit taken (variant 10)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_10.ogg",
+      "source_sha": "41a4422346cebde1",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1983222389
+    },
+    "voice_cleric_big_hit_taken_11": {
+      "description": "Cleric party voice line — big hit taken (variant 11)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_11.ogg",
+      "source_sha": "17636d02480e2472",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2068422599
+    },
+    "voice_cleric_big_hit_taken_12": {
+      "description": "Cleric party voice line — big hit taken (variant 12)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_12.ogg",
+      "source_sha": "2f23841f5c4de46c",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 389512755
+    },
+    "voice_cleric_big_hit_taken_13": {
+      "description": "Cleric party voice line — big hit taken (variant 13)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_13.ogg",
+      "source_sha": "b10c41fd8126d2cb",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1310327285
+    },
+    "voice_cleric_big_hit_taken_14": {
+      "description": "Cleric party voice line — big hit taken (variant 14)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_14.ogg",
+      "source_sha": "2b3221e04199ec66",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1967000083
+    },
+    "voice_cleric_big_hit_taken_15": {
+      "description": "Cleric party voice line — big hit taken (variant 15)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_15.ogg",
+      "source_sha": "c08c8caf59094f85",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 397363195
+    },
+    "voice_cleric_big_hit_taken_16": {
+      "description": "Cleric party voice line — big hit taken (variant 16)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_16.ogg",
+      "source_sha": "c998629bf6c3310a",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1967688893
+    },
+    "voice_cleric_big_hit_taken_17": {
+      "description": "Cleric party voice line — big hit taken (variant 17)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_17.ogg",
+      "source_sha": "85c8792ea09ec415",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 609914249
+    },
+    "voice_cleric_big_hit_taken_18": {
+      "description": "Cleric party voice line — big hit taken (variant 18)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_18.ogg",
+      "source_sha": "2da9fe786144a278",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 349250235
+    },
+    "voice_cleric_big_hit_taken_19": {
+      "description": "Cleric party voice line — big hit taken (variant 19)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_19.ogg",
+      "source_sha": "95f2826c327887d4",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1215599454
+    },
+    "voice_cleric_big_hit_taken_20": {
+      "description": "Cleric party voice line — big hit taken (variant 20)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_20.ogg",
+      "source_sha": "9736f510e082bab9",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1112514076
+    },
+    "voice_cleric_big_hit_taken_21": {
+      "description": "Cleric party voice line — big hit taken (variant 21)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_21.ogg",
+      "source_sha": "6b84fecb4a4c86c2",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 126658852
+    },
+    "voice_cleric_big_hit_taken_22": {
+      "description": "Cleric party voice line — big hit taken (variant 22)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_22.ogg",
+      "source_sha": "9ed28db8e495dce2",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1189905950
+    },
+    "voice_cleric_big_hit_taken_23": {
+      "description": "Cleric party voice line — big hit taken (variant 23)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_23.ogg",
+      "source_sha": "0f0de5acaf844f89",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1429388741
+    },
+    "voice_cleric_big_hit_taken_24": {
+      "description": "Cleric party voice line — big hit taken (variant 24)",
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken_24.ogg",
+      "source_sha": "8e81b61d6d07f16b",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 801043723
+    },
+    "voice_cleric_used_signature_ability_10": {
+      "description": "Cleric party voice line — used signature ability (variant 10)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_10.ogg",
+      "source_sha": "7b2d62005035843c",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1663434685
+    },
+    "voice_cleric_used_signature_ability_11": {
+      "description": "Cleric party voice line — used signature ability (variant 11)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_11.ogg",
+      "source_sha": "a89b591ecb6ee097",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1213409823
+    },
+    "voice_cleric_used_signature_ability_12": {
+      "description": "Cleric party voice line — used signature ability (variant 12)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_12.ogg",
+      "source_sha": "440fdb4e6456dd33",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1330048257
+    },
+    "voice_cleric_used_signature_ability_13": {
+      "description": "Cleric party voice line — used signature ability (variant 13)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_13.ogg",
+      "source_sha": "73e26bff0254163c",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 156396077
+    },
+    "voice_cleric_used_signature_ability_14": {
+      "description": "Cleric party voice line — used signature ability (variant 14)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_14.ogg",
+      "source_sha": "fb5c1649cbf663a5",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2080226119
+    },
+    "voice_cleric_used_signature_ability_15": {
+      "description": "Cleric party voice line — used signature ability (variant 15)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_15.ogg",
+      "source_sha": "2c461b9f697af376",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 53603318
+    },
+    "voice_cleric_used_signature_ability_16": {
+      "description": "Cleric party voice line — used signature ability (variant 16)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_16.ogg",
+      "source_sha": "790271c0bbe9cda0",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1673338828
+    },
+    "voice_cleric_used_signature_ability_17": {
+      "description": "Cleric party voice line — used signature ability (variant 17)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_17.ogg",
+      "source_sha": "75ffae2ba55b82cb",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 972464734
+    },
+    "voice_cleric_used_signature_ability_18": {
+      "description": "Cleric party voice line — used signature ability (variant 18)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_18.ogg",
+      "source_sha": "ca2b36407b6f004e",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 522253721
+    },
+    "voice_cleric_used_signature_ability_19": {
+      "description": "Cleric party voice line — used signature ability (variant 19)",
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability_19.ogg",
+      "source_sha": "4f962080a90f216d",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1349943129
+    },
+    "voice_cleric_victory_10": {
+      "description": "Cleric party voice line — victory (variant 10)",
+      "file": "assets/audio/sfx/voice_cleric_victory_10.ogg",
+      "source_sha": "683172f142aab03b",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2082385661
+    },
+    "voice_cleric_victory_11": {
+      "description": "Cleric party voice line — victory (variant 11)",
+      "file": "assets/audio/sfx/voice_cleric_victory_11.ogg",
+      "source_sha": "b22fcdbba6a423ef",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 683013386
+    },
+    "voice_cleric_victory_12": {
+      "description": "Cleric party voice line — victory (variant 12)",
+      "file": "assets/audio/sfx/voice_cleric_victory_12.ogg",
+      "source_sha": "eb70c3ffe9b23444",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 812531253
+    },
+    "voice_cleric_victory_13": {
+      "description": "Cleric party voice line — victory (variant 13)",
+      "file": "assets/audio/sfx/voice_cleric_victory_13.ogg",
+      "source_sha": "6037d2ea92667d34",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 920833292
+    },
+    "voice_cleric_victory_14": {
+      "description": "Cleric party voice line — victory (variant 14)",
+      "file": "assets/audio/sfx/voice_cleric_victory_14.ogg",
+      "source_sha": "705db757a3c2d3e1",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 448878234
+    },
+    "voice_cleric_victory_15": {
+      "description": "Cleric party voice line — victory (variant 15)",
+      "file": "assets/audio/sfx/voice_cleric_victory_15.ogg",
+      "source_sha": "6372c88c0988437f",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 407718721
+    },
+    "voice_cleric_victory_16": {
+      "description": "Cleric party voice line — victory (variant 16)",
+      "file": "assets/audio/sfx/voice_cleric_victory_16.ogg",
+      "source_sha": "9c9118278297e75a",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 2014044821
+    },
+    "voice_cleric_victory_17": {
+      "description": "Cleric party voice line — victory (variant 17)",
+      "file": "assets/audio/sfx/voice_cleric_victory_17.ogg",
+      "source_sha": "37caf3a29808bb0f",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1392100265
+    },
+    "voice_cleric_victory_18": {
+      "description": "Cleric party voice line — victory (variant 18)",
+      "file": "assets/audio/sfx/voice_cleric_victory_18.ogg",
+      "source_sha": "fb9b2f6dd403faf5",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1603747823
+    },
+    "voice_cleric_victory_19": {
+      "description": "Cleric party voice line — victory (variant 19)",
+      "file": "assets/audio/sfx/voice_cleric_victory_19.ogg",
+      "source_sha": "c04b60033c985ea4",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 256967591
+    },
+    "voice_cleric_victory_20": {
+      "description": "Cleric party voice line — victory (variant 20)",
+      "file": "assets/audio/sfx/voice_cleric_victory_20.ogg",
+      "source_sha": "3dc37730438d0190",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1835370921
+    },
+    "voice_cleric_victory_21": {
+      "description": "Cleric party voice line — victory (variant 21)",
+      "file": "assets/audio/sfx/voice_cleric_victory_21.ogg",
+      "source_sha": "b04fb17084e41abe",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 725393682
+    },
+    "voice_cleric_victory_22": {
+      "description": "Cleric party voice line — victory (variant 22)",
+      "file": "assets/audio/sfx/voice_cleric_victory_22.ogg",
+      "source_sha": "9663c04671ef9515",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1130914620
+    },
+    "voice_cleric_victory_23": {
+      "description": "Cleric party voice line — victory (variant 23)",
+      "file": "assets/audio/sfx/voice_cleric_victory_23.ogg",
+      "source_sha": "911fa4709cdb94ee",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 437541806
+    },
+    "voice_cleric_victory_24": {
+      "description": "Cleric party voice line — victory (variant 24)",
+      "file": "assets/audio/sfx/voice_cleric_victory_24.ogg",
+      "source_sha": "a33cfbfd452ef49b",
+      "voice": "Chatterbox clone of VCTK speaker p240 (Southern England, CC BY 4.0), voice_refs/cleric.wav",
+      "voice_gender": "female",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.5 cfg 0.5",
+      "seed": 1946542462
     }
   }
 }
