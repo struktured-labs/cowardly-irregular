@@ -148,7 +148,20 @@ func _present(item: Dictionary) -> void:
 			_panel.add_child(sprite_rect)
 			_icon = sprite_rect
 	if _icon == null:
-		# No sprite (every authored reveal today): an emblem in the slot instead of a blank band under the title.
+		var icon_tex := ItemIcons.tinted(str(item.get("item_id", "")))
+		if icon_tex:
+			var icon_rect := TextureRect.new()
+			icon_rect.name = "ItemIcon"
+			icon_rect.texture = icon_tex
+			icon_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			icon_rect.size = Vector2(64, 64)
+			icon_rect.position = Vector2((PANEL_W - 64) / 2.0, sprite_y + 16)
+			_panel.add_child(icon_rect)
+			_icon = icon_rect
+	if _icon == null:
+		# No sprite and no icon texture: an emblem in the slot instead of a blank band under the title.
 		var emblem := Label.new()
 		emblem.text = emblem_glyph(str(item.get("item_id", "")))
 		emblem.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

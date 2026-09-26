@@ -32,8 +32,13 @@ func test_load_failure_toasts() -> void:
 
 func test_save_failure_toasts() -> void:
 	var src := _read(SAVE_SCREEN)
-	assert_true(src.contains("Save failed"),
-		"save failure must Toast a 'save failed' message (most commonly an in-battle save attempt)")
+	# The menu used to toast "battle in progress or disk write error" for every
+	# refusal. GameLoop already toasts save_failed's real reason; a second
+	# banner that names a battle the player is not in is the bug.
+	assert_false(src.contains("battle in progress or disk write error"),
+		"menu save refusal must not invent a battle/disk banner — save_failed already names the blocker")
+	assert_true(src.contains("play_ui(\"menu_error\")"),
+		"a refused save still plays the error sound so the click does not feel dead")
 
 
 func test_failure_paths_still_play_menu_error_sfx() -> void:
