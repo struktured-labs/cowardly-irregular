@@ -143,7 +143,22 @@ func save_game(slot: int = -1) -> bool:
 	# BEFORE reading them. Listeners (currently GameLoop) sync live
 	# Combatant array → GameState.player_party so post-battle gains
 	# don't disappear on save.
+	# The early gate already ran on the pre-sync snapshot. A game-over autosave
+	# (battle INACTIVE, party still the last healthy copy) flushes the KO'd
+	# combatants here and would write them. Re-check after the flush, including
+	# the meta bypass, and put the snapshot back so Retry can still save.
+	# Quiet on purpose: save_failed toasts, and a refused autosave retries every 30s.
+	var party_before_sync: Array[Dictionary] = _copy_party_snapshot()
 	pre_save_sync.emit()
+	var party_reason := ""
+	if _party_is_absent():
+		party_reason = "No party loaded — nothing to save yet"
+	elif _party_is_wiped():
+		party_reason = "Cannot save with the whole party down"
+	if party_reason != "":
+		_restore_party_snapshot(party_before_sync)
+		push_warning("[SAVE] save_game refused: %s" % party_reason)
+		return false
 
 	save_started.emit()
 
@@ -288,6 +303,41 @@ func _party_is_wiped() -> bool:
 		if m is Dictionary and bool(m.get("is_alive", true)) and int(m.get("current_hp", 1)) > 0:
 			return false
 	return true
+
+
+func _copy_party_snapshot() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	if not (GameState and "player_party" in GameState):
+		return out
+	for m in GameState.player_party:
+		if m is Dictionary:
+			out.append((m as Dictionary).duplicate(true))
+	return out
+
+
+func _restore_party_snapshot(snapshot: Array[Dictionary]) -> void:
+	if not (GameState and "player_party" in GameState):
+		return
+	var restored: Array[Dictionary] = []
+	for m in snapshot:
+		restored.append(m.duplicate(true))
+	GameState.player_party = restored
+
+
+func _revive_wiped_party_snapshot() -> void:
+	if not (GameState and "player_party" in GameState):
+		return
+	var party: Array = GameState.player_party
+	if party.is_empty():
+		return
+	for m in party:
+		if m is Dictionary and bool(m.get("is_alive", true)) and int(m.get("current_hp", 1)) > 0:
+			return
+	push_warning("[SAVE] Loaded a fully-KO'd party — reviving everyone at 1 HP (wipe-rescue floor)")
+	for m in party:
+		if m is Dictionary:
+			m["is_alive"] = true
+			m["current_hp"] = 1
 
 
 func _is_player_inside_interior() -> bool:
@@ -771,6 +821,13 @@ func _apply_save_data(data: Dictionary) -> void:
 	# Apply game state
 	if data.has("game_state") and GameState:
 		GameState.from_dict(data["game_state"])
+		# from_dict copies game_state.player_party over the party rescue above. Revive again when this file carried a party.
+		var carried_party := data.has("party")
+		var gs_variant: Variant = data["game_state"]
+		if gs_variant is Dictionary and (gs_variant as Dictionary).has("player_party"):
+			carried_party = true
+		if carried_party:
+			_revive_wiped_party_snapshot()
 		# Pre-history files omit save_history. Clear here, not in GameState: rewind snapshots omit the key on purpose and must keep the live ring.
 		if data["game_state"] is Dictionary and not (data["game_state"] as Dictionary).has("save_history") and "save_history" in GameState:
 			GameState.save_history.clear()
@@ -881,19 +938,9 @@ func _deserialize_party(party_data: Array) -> void:
 					resolved_profiles[rk] = copy["job_profiles"][key]
 				copy["job_profiles"] = resolved_profiles
 		resolved.append(copy)
-	# Wipe rescue: existing saves poisoned by the game-over autosave hole must still load
-	# PLAYABLE — a fully KO'd party comes back at 1 HP each (alive, still punished).
-	var any_alive := false
-	for m in resolved:
-		if bool(m.get("is_alive", true)) and int(m.get("current_hp", 1)) > 0:
-			any_alive = true
-			break
-	if not any_alive and not resolved.is_empty():
-		push_warning("[SAVE] Loaded a fully-KO'd party — reviving everyone at 1 HP (wipe-rescue floor)")
-		for m in resolved:
-			m["is_alive"] = true
-			m["current_hp"] = 1
 	GameState.player_party = resolved
+	# Existing poisoned saves must still load playable — a full KO comes back at 1 HP.
+	_revive_wiped_party_snapshot()
 
 
 # Tick 265: _deserialize_inventory removed alongside its sibling.
