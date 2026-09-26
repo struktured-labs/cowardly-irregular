@@ -399,7 +399,28 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 	panel.add_child(status_title)
 	y_offset += 18
 
-	if character.status_effects.is_empty():
+	# KO is is_alive, not a status id, so a corpse with an empty list used to read "(none)".
+	var showed_status := false
+	if not character.is_alive:
+		var ko_label := Label.new()
+		ko_label.text = "- KO"
+		ko_label.position = Vector2(16, y_offset)
+		ko_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		ko_label.add_theme_color_override("font_color", STATUS_BAD_COLOR)
+		panel.add_child(ko_label)
+		y_offset += 14
+		showed_status = true
+	for status in character.status_effects:
+		var status_label = Label.new()
+		# Tick 215: shared StatusNames util — single source of truth across 4 sites + override hook for future custom phrasing.
+		status_label.text = "- %s" % StatusNames.display(status)
+		status_label.position = Vector2(16, y_offset)
+		status_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		status_label.add_theme_color_override("font_color", STATUS_BAD_COLOR)
+		panel.add_child(status_label)
+		y_offset += 14
+		showed_status = true
+	if not showed_status:
 		var none_label = Label.new()
 		none_label.text = "(none)"
 		none_label.position = Vector2(16, y_offset)
@@ -407,16 +428,6 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 		none_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(none_label)
 		y_offset += 16
-	else:
-		for status in character.status_effects:
-			var status_label = Label.new()
-			# Tick 215: shared StatusNames util — single source of truth across 4 sites + override hook for future custom phrasing.
-			status_label.text = "- %s" % StatusNames.display(status)
-			status_label.position = Vector2(16, y_offset)
-			status_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
-			status_label.add_theme_color_override("font_color", STATUS_BAD_COLOR)
-			panel.add_child(status_label)
-			y_offset += 14
 
 	y_offset += 8
 
