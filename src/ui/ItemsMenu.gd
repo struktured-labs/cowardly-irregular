@@ -856,7 +856,7 @@ func _use_selected_item() -> void:
 		Toast.show_warning(self, "Item had no effect")
 
 
-## True while at least one party member can still benefit from this item's primary effect — heal items vs a full-HP roster (or revive vs no KO) kick the player back to the list instead of an error-beep loop.
+## True while someone can still benefit. A full bar, no KO, or no matching ailment (permakilled does not count) returns to the item list.
 func _item_still_useful(item_data: Dictionary) -> bool:
 	var fx: Dictionary = item_data.get("effects", {})
 	if fx.get("revive", false):
@@ -873,6 +873,23 @@ func _item_still_useful(item_data: Dictionary) -> bool:
 		for m in party:
 			if m and m.is_alive and m.current_mp < m.max_mp:
 				return true
+		return false
+	if bool(fx.get("cure_all_status", false)):
+		for m in party:
+			if not m:
+				continue
+			for status_id in m.status_effects:
+				if str(status_id) != "permakilled":
+					return true
+		return false
+	var cure_list: Array = fx.get("cure_status", []) if fx.get("cure_status", []) is Array else []
+	if not cure_list.is_empty():
+		for m in party:
+			if not m:
+				continue
+			for status_id in cure_list:
+				if m.has_status(str(status_id)):
+					return true
 		return false
 	return true
 
