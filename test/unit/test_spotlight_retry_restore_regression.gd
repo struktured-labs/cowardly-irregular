@@ -39,6 +39,21 @@ func test_restore_clears_statuses_via_api() -> void:
 	pc.free()
 
 
+func test_permakilled_duelist_stays_at_zero_hp() -> void:
+	# Staking or a reaper leaves them in the party; the duel still selects that job, and every retry calls this restore.
+	var pc := _make_dead_fighter()
+	pc.add_status("permakilled", -1)
+	pc.add_status("poison", 3)
+	assert_eq(pc.current_hp, 0, "precondition: the corpse's bar is empty")
+	GameLoopScript._restore_duelist(pc)
+	assert_false(pc.is_alive, "a permakilled duelist stays down")
+	assert_eq(pc.current_hp, 0, "their HP bar stays empty — revive() refused, so the top-up must not run")
+	assert_true(pc.has_status("permakilled"), "the permadeath marker stays")
+	assert_false(pc.has_status("poison"), "ordinary statuses still clear on that corpse")
+	assert_eq(pc.current_mp, pc.max_mp, "MP restore is unchanged")
+	pc.free()
+
+
 func test_solo_battle_calls_restore_every_attempt() -> void:
 	# Source pin: the restore must live INSIDE start_solo_battle (runs
 	# per retry iteration), not one-time setup.

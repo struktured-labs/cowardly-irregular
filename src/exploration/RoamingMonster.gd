@@ -318,6 +318,11 @@ func _process(delta: float) -> void:
 ## Kept separate because the same CHASE state means different things -- an angry monster
 ## closing and a frightened one bolting are both "moving", and only mood knows which.
 func _tick_mood(delta: float) -> void:
+	if _repel_active():
+		if _mood != Mood.CALM:
+			_mood = Mood.CALM
+			_show_tell()
+		return
 	if _mood == Mood.ALERTED:
 		_mood_timer -= delta
 		if _mood_timer > 0.0:
@@ -429,7 +434,11 @@ func _tick_state(delta: float) -> void:
 		_dir = Vector2.ZERO
 		return
 
-	if _player_ref and is_instance_valid(_player_ref):
+	if _repel_active():
+		if _state == 2:
+			_state = 0
+			_pick_wander_dir()
+	elif _player_ref and is_instance_valid(_player_ref):
 		var dist = global_position.distance_to(_player_ref.global_position)
 		# An afraid monster is still in state 2 -- _move reverses it, so fleeing reuses the
 		# chase plumbing (bounds, animation, row) instead of duplicating it.
@@ -563,6 +572,11 @@ func _respawn() -> void:
 	_pick_wander_dir()
 
 
+func _repel_active() -> bool:
+	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if is_inside_tree() else null
+	return es != null and int(es.repel_steps_remaining) > 0
+
+
 func _on_body_entered(body: Node2D) -> void:
 	if not _active or _fading:
 		return
@@ -573,6 +587,9 @@ func _on_body_entered(body: Node2D) -> void:
 			if not _prompt_open:
 				_prompt_open = true
 				call_deferred("_ask_then_fight")
+			return
+		# Repel keeps ordinary monsters incurious. An elite is a choice, so it still asks.
+		if _repel_active():
 			return
 		_emit_touch_and_maybe_fade()
 

@@ -649,7 +649,14 @@ func _apply_job_stats(combatant: Combatant, job: Dictionary) -> void:
 
 	if mods.has("max_hp"):
 		combatant.max_hp = mods["max_hp"]
-		combatant.current_hp = combatant.max_hp
+		# heal() no-ops while down, and revive() refuses permakilled. Filling this bar leaves a corpse that from_dict stands up, because load treats HP > 0 as alive.
+		var stays_down := not combatant.is_alive or combatant.has_status("permakilled")
+		if stays_down:
+			combatant.current_hp = 0
+			if combatant.has_status("permakilled"):
+				combatant.is_alive = false
+		else:
+			combatant.current_hp = combatant.max_hp
 	# Tick 328: max_mp was missing from this 5-stat copy. Pre-fix a
 	# freshly-assigned job left max_mp at Combatant.base_max_mp (50)
 	# instead of the job's canonical value (Cleric 70, Mage 80, Bard

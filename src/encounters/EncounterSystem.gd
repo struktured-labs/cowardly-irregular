@@ -536,6 +536,12 @@ func use_repel(steps: int) -> void:
 	print("Repel active for %d steps (added %d to %d remaining)" % [repel_steps_remaining, add, prior])
 
 
+## One field step against a Repel charge. The world map does not roll step encounters, so this is the tick that path can call without starting a fight.
+func consume_repel_step() -> void:
+	if repel_steps_remaining > 0:
+		repel_steps_remaining -= 1
+
+
 ## Enemy pool loading
 func _load_enemy_pools() -> void:
 	"""Load enemy pools for different areas"""

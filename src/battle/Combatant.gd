@@ -704,7 +704,13 @@ func has_status(status: String) -> bool:
 	return status in status_effects
 
 
-## One point of a status whose clock is the action it stops. Charm uses this; stun inlines the same arithmetic.
+## These count actions they control, not round-start ticks. The tick runs before anyone acts, so a 1-point hold fell off before it could matter.
+const ACTION_CLOCK_STATUSES: Array[String] = [
+	"stun", "charm", "sleep", "confuse", "fear", "pacify", "silence", "cannot_act",
+]
+
+
+## One point of an action-clock status. Stun inlines the same arithmetic; the rest call this.
 func spend_action_clock(status: String) -> void:
 	if not has_status(status):
 		return
@@ -713,6 +719,13 @@ func spend_action_clock(status: String) -> void:
 		remove_status(status)
 	else:
 		status_durations[status] = remaining - 1
+
+
+## Silence, pacify, and a fear that did not skip: the action already read the status. Spend one point now.
+func spend_restriction_clocks() -> void:
+	spend_action_clock("silence")
+	spend_action_clock("pacify")
+	spend_action_clock("fear")
 
 
 ## Tick 439: sum a passive meta_effect across equipped_passives.
@@ -955,10 +968,10 @@ func update_buff_durations() -> void:
 		if current_hp <= 0:
 			die()
 
-	# Tick down status effect durations. Stun and charm are excluded: the skip spends one point, and this tick runs BEFORE the next action — a 1-turn charm (Puppy Eyes) was gone before it could stop anyone.
+	# Tick down status effect durations. Action-clock statuses are excluded: this tick runs BEFORE the next action, and that action spends the point.
 	var expired_statuses: Array[String] = []
 	for status in status_durations:
-		if status == "stun" or status == "charm":
+		if str(status) in ACTION_CLOCK_STATUSES:
 			continue
 		if status_durations[status] > 0:  # -1 = permanent
 			status_durations[status] -= 1
@@ -1385,6 +1398,10 @@ func from_dict(data: Dictionary) -> void:
 	## is_alive=true AND current_hp>=1) so derivation is sound and
 	## seals load against save corruption.
 	is_alive = current_hp > 0
+	# Permakill outranks that derivation. A primary job change used to save the corpse at full HP; HP > 0 would stand them up.
+	if "permakilled" in status_effects:
+		is_alive = false
+		current_hp = 0
 	if data.has("learned_abilities"):
 		learned_abilities.clear()
 		for ability_id in data["learned_abilities"]:
