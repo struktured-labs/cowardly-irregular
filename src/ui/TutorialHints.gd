@@ -219,8 +219,8 @@ static func resolve_tokens(text: String) -> String:
 	out = out.replace("{move}", "D-pad, left stick or the arrow keys")
 	out = out.replace("{menu}", _control_name(ipm, "ui_menu", "Enter"))
 	out = out.replace("{field_menu}", _field_menu_name(ipm))
-	out = out.replace("{defer}", _control_name(ipm, "battle_defer", "L"))
-	out = out.replace("{advance}", _control_name(ipm, "battle_advance", "R"))
+	out = out.replace("{defer}", _control_name(ipm, "battle_defer", "Q"))
+	out = out.replace("{advance}", _control_name(ipm, "battle_advance", "W"))
 	out = out.replace("{auto}", _control_name(ipm, "battle_toggle_auto", "Tab"))
 	out = out.replace("{options}", _options_name(ipm))
 	return out

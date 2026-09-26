@@ -125,7 +125,7 @@ func _setup_indicator() -> void:
 	add_child(_indicator)
 
 
-## "[R] Warp" appears once another crystal is attuned somewhere else.
+## "<advance> Warp" appears once another crystal is attuned somewhere else.
 func _indicator_text() -> String:
 	var others: int = 0
 	for map_id in GameState.activated_crystals:
