@@ -2584,7 +2584,7 @@ func _ai_healer(combatant: Combatant, abilities: Array, alive_allies: Array, ali
 			"type": "ability",
 			"combatant": combatant,
 			"ability_id": spell.get("id", ""),
-			"targets": [_choose_target(combatant, alive_enemies, spell)],
+			"targets": _offensive_targets(combatant, spell, alive_enemies),
 			"speed": _compute_action_speed(combatant, "ability", spell)
 		}
 
@@ -2623,12 +2623,11 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 		if best_spell.is_empty():
 			best_spell = magic_abilities[0]
 
-		var spell_target = _choose_target(combatant, alive_enemies, best_spell)
 		return {
 			"type": "ability",
 			"combatant": combatant,
 			"ability_id": best_spell.get("id", ""),
-			"targets": [spell_target],
+			"targets": _offensive_targets(combatant, best_spell, alive_enemies),
 			"speed": _compute_action_speed(combatant, "ability", best_spell)
 		}
 
@@ -2661,19 +2660,18 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 			"type": "ability",
 			"combatant": combatant,
 			"ability_id": debuff.get("id", ""),
-			"targets": [target],
+			"targets": _offensive_targets(combatant, debuff, alive_enemies, target),
 			"speed": _compute_action_speed(combatant, "ability", debuff)
 		}
 
 	# Use offensive ability
 	if offensive_abilities.size() > 0 and randf() < 0.4:
 		var spell = offensive_abilities[randi() % offensive_abilities.size()]
-		var target = _choose_target(combatant, alive_enemies, spell)
 		return {
 			"type": "ability",
 			"combatant": combatant,
 			"ability_id": spell.get("id", ""),
-			"targets": [target],
+			"targets": _offensive_targets(combatant, spell, alive_enemies),
 			"speed": _compute_action_speed(combatant, "ability", spell)
 		}
 
@@ -2706,6 +2704,16 @@ func _utility_targets(combatant: Combatant, ability: Dictionary, alive_allies: A
 		low_hp_allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
 		return [low_hp_allies[0]]
 	return [combatant]
+
+
+## all_enemies is the living party. A single row keeps the caller's pick, which is the body a taunt lock rewrites.
+func _offensive_targets(combatant: Combatant, ability: Dictionary, alive_enemies: Array, focus: Combatant = null) -> Array:
+	if str(ability.get("target_type", "single_enemy")) == "all_enemies":
+		return alive_enemies.duplicate()
+	var picked: Combatant = focus if focus != null else _choose_target(combatant, alive_enemies, ability)
+	if picked == null:
+		return []
+	return [picked]
 
 
 ## Shared utility slot. _ai_tank had one; assassin, brute and caster did not, so 25 monsters
@@ -2792,12 +2800,11 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 		# Sorted on damage_multiplier: no ability authors `power`, so the old key was constant 0 and "strongest" was whichever happened to be first.
 		physical_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
 		var ability = _pick_biased_by_power(physical_abilities)
-		var target = _choose_target(combatant, alive_enemies, ability)
 		return {
 			"type": "ability",
 			"combatant": combatant,
 			"ability_id": ability.get("id", ""),
-			"targets": [target],
+			"targets": _offensive_targets(combatant, ability, alive_enemies),
 			"speed": _compute_action_speed(combatant, "ability", ability)
 		}
 
@@ -2837,7 +2844,7 @@ func _ai_assassin(combatant: Combatant, abilities: Array, alive_enemies: Array) 
 			"type": "ability",
 			"combatant": combatant,
 			"ability_id": ability.get("id", ""),
-			"targets": [target],
+			"targets": _offensive_targets(combatant, ability, alive_enemies, target),
 			"speed": _compute_action_speed(combatant, "ability", ability)
 		}
 
@@ -2857,12 +2864,11 @@ func _ai_brute(combatant: Combatant, abilities: Array, alive_enemies: Array) -> 
 		)
 		if offensive_abilities.size() > 0:
 			var ability = offensive_abilities[randi() % offensive_abilities.size()]
-			var target = _choose_target(combatant, alive_enemies, ability)
 			return {
 				"type": "ability",
 				"combatant": combatant,
 				"ability_id": ability.get("id", ""),
-				"targets": [target],
+				"targets": _offensive_targets(combatant, ability, alive_enemies),
 				"speed": _compute_action_speed(combatant, "ability", ability)
 			}
 
