@@ -77,6 +77,8 @@ var current_menu: Win98Menu = null
 ## selected item id each frame and reacts on change (regression: panel was
 ## frozen on item 0 while navigating the buy/sell list).
 var _last_described_item_id: String = ""
+## Confirm force-closes the menu. That close is not Back — the list, the receipt, and the cursor stay.
+var _confirm_pending: bool = false
 
 ## Systems
 @onready var game_state = GameState
@@ -278,6 +280,7 @@ func _affordability_suffix(cost: int, gold: int) -> String:
 
 func _open_buy_menu() -> void:
 	"""Open the buy menu with shop inventory"""
+	var place := _captured_place(ShopMode.BUY)
 	current_mode = ShopMode.BUY
 	_close_current_menu()
 
@@ -328,14 +331,13 @@ func _open_buy_menu() -> void:
 		items.append({"id": "none", "label": "(No items available)", "disabled": true})
 
 	_present_item_list("Buy", items, shop_inventory)
-	# Sync the poll tracker to the menu's actual first row so the description
-	# stays correct as the cursor moves (and isn't double-painted on open).
-	_last_described_item_id = current_menu.get_selected_item_id()
-	_update_description_for_item(shop_inventory[0] if shop_inventory.size() > 0 else "")
+	_apply_place(place)
+	_describe_selected_row(shop_inventory[0] if shop_inventory.size() > 0 else "")
 
 
 func _open_sell_menu() -> void:
 	"""Open the sell menu with party inventory"""
+	var place := _captured_place(ShopMode.SELL)
 	current_mode = ShopMode.SELL
 	_close_current_menu()
 
@@ -368,11 +370,8 @@ func _open_sell_menu() -> void:
 	for entry in sellable_items:
 		sell_ids.append(entry.get("id", ""))
 	_present_item_list("Sell", items, sell_ids)
-	# Sync the poll tracker to the menu's actual first row so the description
-	# stays correct as the cursor moves (and isn't double-painted on open).
-	_last_described_item_id = current_menu.get_selected_item_id()
-	if sellable_items.size() > 0:
-		_update_description_for_item(sellable_items[0]["id"])
+	_apply_place(place)
+	_describe_selected_row(sellable_items[0]["id"] if sellable_items.size() > 0 else "")
 
 
 ## Height of the description block the way the Label lays it out: each line is
@@ -484,6 +483,7 @@ func _show_menu(title: String, items: Array, pos: Vector2) -> void:
 
 func _close_current_menu() -> void:
 	"""Close the current menu"""
+	_confirm_pending = false
 	if current_menu and is_instance_valid(current_menu):
 		# Disconnect signals before freeing to prevent callbacks on freed objects
 		if current_menu.item_selected.is_connected(_on_menu_item_selected):
@@ -496,6 +496,8 @@ func _close_current_menu() -> void:
 
 func _on_menu_item_selected(item_id: String, item_data: Variant) -> void:
 	"""Handle menu selection"""
+	if item_id != "none" and (current_mode == ShopMode.BUY or current_mode == ShopMode.SELL or current_mode == ShopMode.CHAR_SELECT):
+		_confirm_pending = true
 	match current_mode:
 		ShopMode.MAIN:
 			match item_id:
@@ -575,6 +577,8 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 		await get_tree().create_timer(0.5).timeout
 		if not is_instance_valid(self):
 			return
+		if current_mode != ShopMode.BUY:
+			return
 		_open_buy_menu()
 
 
@@ -612,6 +616,8 @@ func _attempt_sell(item_id: String, item_data: Dictionary) -> void:
 	# Refresh sell menu
 	await get_tree().create_timer(0.5).timeout
 	if not is_instance_valid(self):
+		return
+	if current_mode != ShopMode.SELL:
 		return
 	_open_sell_menu()
 
@@ -1216,6 +1222,7 @@ func _job_id_of(job_field) -> String:
 
 func _open_character_select(spell_id: String, spell_data: Dictionary) -> void:
 	"""Open character selection for magic spell purchase"""
+	var place := _captured_place(ShopMode.CHAR_SELECT)
 	current_mode = ShopMode.CHAR_SELECT
 	pending_spell_id = spell_id
 	pending_spell_data = spell_data
@@ -1251,6 +1258,7 @@ func _open_character_select(spell_id: String, spell_data: Dictionary) -> void:
 		items.append({"id": "none", "label": "(No one can learn this!)", "disabled": true})
 
 	_show_menu("Who learns?", items, Vector2(100, 100))
+	_apply_place(place)
 	description_label.text = "Choose who will learn %s." % spell_data.get("name", "???")
 
 
@@ -1430,6 +1438,8 @@ func _attempt_magic_purchase(char_index_str: String) -> void:
 		await get_tree().create_timer(0.5).timeout
 		if not is_instance_valid(self):
 			return
+		if current_mode != ShopMode.CHAR_SELECT:
+			return
 		_open_buy_menu()
 
 
@@ -1442,6 +1452,9 @@ func _close_shop() -> void:
 
 func _on_menu_closed() -> void:
 	"""Handle menu closed (B button)"""
+	if _confirm_pending and _hold_list_after_confirm():
+		return
+	_confirm_pending = false
 	match current_mode:
 		ShopMode.MAIN:
 			_close_shop()
@@ -1449,5 +1462,59 @@ func _on_menu_closed() -> void:
 			_open_main_menu()
 		ShopMode.CHAR_SELECT, ShopMode.EQUIP_SELECT:
 			_open_buy_menu()
+
+
+## Where the cursor was, when this open is a refresh of the same list. Empty when arriving from somewhere else, so a first open still starts at the top.
+func _captured_place(for_mode: ShopMode) -> Dictionary:
+	if current_mode != for_mode or current_menu == null or not is_instance_valid(current_menu):
+		return {}
+	return {"index": current_menu.selected_index, "scroll": current_menu._scroll_offset}
+
+
+func _apply_place(place: Dictionary) -> void:
+	if place.is_empty() or current_menu == null or not is_instance_valid(current_menu):
+		return
+	var n := current_menu.menu_items.size()
+	if n <= 0:
+		return
+	current_menu.selected_index = clampi(int(place.get("index", 0)), 0, n - 1)
+	var visible := int(current_menu._max_visible_rows)
+	if visible > 0:
+		current_menu._scroll_offset = clampi(int(place.get("scroll", 0)), 0, maxi(0, n - visible))
+	current_menu._update_selection()
+
+
+func _describe_selected_row(fallback_id: String) -> void:
+	var shown := ""
+	if current_menu and is_instance_valid(current_menu):
+		shown = current_menu.get_selected_item_id()
+	_last_described_item_id = shown
+	if shown != "" and shown != "none":
+		_update_description_for_item(shown)
+	elif fallback_id != "":
+		_update_description_for_item(fallback_id)
+
+
+## The menu's confirm always force-closes. Put the same list back, with the receipt the handler just wrote, instead of treating it as Back.
+func _hold_list_after_confirm() -> bool:
+	var mode := current_mode
+	if mode != ShopMode.BUY and mode != ShopMode.SELL and mode != ShopMode.CHAR_SELECT:
+		return false
+	_confirm_pending = false
+	var notice := ""
+	if description_label:
+		notice = description_label.text
+	match mode:
+		ShopMode.BUY:
+			_open_buy_menu()
+		ShopMode.SELL:
+			_open_sell_menu()
+		ShopMode.CHAR_SELECT:
+			_open_character_select(pending_spell_id, pending_spell_data)
+	if description_label and notice != "":
+		description_label.text = notice
+	if current_menu and is_instance_valid(current_menu):
+		_last_described_item_id = current_menu.get_selected_item_id()
+	return true
 
 
