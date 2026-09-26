@@ -14,7 +14,7 @@ signal dialogue_advanced()
 var _dialogue_queue: Array = []  # Array of {speaker: String, text: String, portrait: String}
 var _current_index: int = 0
 var _is_typing: bool = false
-var _typing_speed: float = 0.03  # Seconds per character
+var _typing_speed: float = 0.03  # Seconds per character; each line re-reads Settings text speed
 var _current_text: String = ""
 var _displayed_chars: int = 0
 var _typing_timer: Timer
@@ -365,11 +365,18 @@ func _show_current_line() -> void:
 		_text_label.position.x = full_x
 		_text_label.size.x = _dialogue_box.size.x - full_x - TILE_SIZE * 4
 
-	# Start typing effect
+	# Same Text Speed presets as cutscenes, including Instant's full-line reveal.
 	_current_text = entry.get("text", "")
 	_displayed_chars = 0
 	_text_label.text = ""
 	_advance_hint.visible = false
+	_typing_speed = CutsceneDialogue._resolve_typing_speed()
+	if _typing_speed <= 0.0:
+		_displayed_chars = _current_text.length()
+		_text_label.text = _current_text
+		_is_typing = true
+		_finish_typing()
+		return
 	_is_typing = true
 	_typing_timer.start(_typing_speed)
 

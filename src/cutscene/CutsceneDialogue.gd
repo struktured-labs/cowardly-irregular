@@ -1003,7 +1003,7 @@ func _begin_page(text: String) -> void:
 	_typing_timer.start(_typing_speed)
 
 
-func _resolve_typing_speed() -> float:
+static func _resolve_typing_speed() -> float:
 	# Read GameState.text_speed live so changes through SettingsMenu apply on
 	# the very next dialogue line. Falls back to normal cadence when GameState
 	# or the field is missing (which matters in unit-test contexts that don't
