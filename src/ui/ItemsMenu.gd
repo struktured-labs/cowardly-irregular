@@ -369,11 +369,11 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	# Description
 	var desc_label = Label.new()
 	desc_label.text = item_data.get("description", "No description")
-	desc_label.position = Vector2(16, 68)
+	desc_label.position = Vector2(16, 64)
 	desc_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	desc_label.add_theme_color_override("font_color", TEXT_COLOR)
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	desc_label.size = Vector2(panel_size.x - 32, 60)
+	desc_label.size = Vector2(panel_size.x - 32, 36)
 	panel.add_child(desc_label)
 
 	## Tick 430: surface authored item flavor text. 146 items in
@@ -388,7 +388,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	if flavor_text != "":
 		var flavor_label = Label.new()
 		flavor_label.text = flavor_text
-		flavor_label.position = Vector2(16, 128)
+		flavor_label.position = Vector2(16, 104)
 		flavor_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		# Dimmed text — flavor reads as background lore, not gameplay info.
 		flavor_label.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -399,7 +399,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 		effects_y_offset = 60
 
 	# Effects breakdown
-	var effects_y = 116 + effects_y_offset
+	var effects_y = 100 + effects_y_offset
 	if item_data.has("effects"):
 		var effects = item_data["effects"]
 
