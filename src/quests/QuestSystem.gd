@@ -490,6 +490,7 @@ func run_giver_dialogue(npc_id: String, npc: Node) -> void:
 	if completed_qid == qid:
 		await _play_lines(npc, dlg.get("ready_to_turn_in", []))
 		await _play_lines(npc, dlg.get("complete", []))
+		await _play_site_job_beat(qid, npc)
 		await _announce_rewards(npc)
 		await _flush_completion_cutscene()
 		return
@@ -508,13 +509,17 @@ func run_completion_dialogue(quest_id: String, npc: Node) -> void:
 	var dlg: Dictionary = q.get("dialogue", {})
 	await _play_lines(npc, dlg.get("ready_to_turn_in", []))
 	await _play_lines(npc, dlg.get("complete", []))
-	## NPC-sited job beats land here: the site key IS the npc_id, so every present and
-	## future beat authored against a person is delivered without a bespoke wire.
-	var beat: String = job_beat_at(quest_id, str(npc.get_npc_id()) if npc.has_method("get_npc_id") else "")
-	if beat != "":
-		await _play_lines(npc, [{"text": beat, "theme": "villager"}])
+	await _play_site_job_beat(quest_id, npc)
 	await _announce_rewards(npc)
 	await _flush_completion_cutscene()
+
+
+## Site key is the npc_id. Both turn-in paths call this — a giver who is also the final NPC used to skip it.
+func _play_site_job_beat(quest_id: String, npc: Node) -> void:
+	var site := str(npc.get_npc_id()) if npc.has_method("get_npc_id") else ""
+	var beat := job_beat_at(quest_id, site)
+	if beat != "":
+		await _play_lines(npc, [{"text": beat, "theme": "villager"}])
 
 
 func _play_lines(npc: Node, lines: Array) -> void:
