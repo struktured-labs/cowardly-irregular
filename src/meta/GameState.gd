@@ -470,10 +470,7 @@ func _create_save_data() -> Dictionary:
 		"worlds_unlocked": worlds_unlocked,
 		"story_flags": story_flags.duplicate(),
 		"current_save_name": current_save_name,
-		# Wave C: dynamic-dialogue switch is also written into per-save data so
-		# loading an old save doesn't blow away the user's preference. The
-		# settings.json copy in SaveSystem is the primary store; this is the
-		# secondary so per-save imports stay self-contained.
+		# Copy for a machine that has no settings.json yet. When that file exists it wins — see _apply_save_data.
 		"llm_enabled": llm_enabled,
 		"boss_llm_strategy_enabled": boss_llm_strategy_enabled,
 		"party_llm_dialogue_enabled": party_llm_dialogue_enabled,
@@ -523,6 +520,13 @@ func _serialize_save_history() -> Array:
 			stripped.erase("save_history")
 		out.append(stripped)
 	return out
+
+
+## settings.json is the machine's Dynamic Dialogue choice. A save snapshot must not replace it.
+func _settings_file_owns_dialogue_preference() -> bool:
+	if not is_inside_tree():
+		return false
+	return FileAccess.file_exists(SaveSystem.SETTINGS_PATH)
 
 
 ## ⛔ A FIELD WITH A SIGNAL MUST BE RESTORED THROUGH THE SIGNAL. `time_of_day_changed` is fired ONLY
@@ -766,8 +770,13 @@ func _apply_save_data(save_data: Dictionary) -> void:
 			push_warning("[GameState] _apply_save_data: story_flags malformed (type=%s) — keeping current flags" % typeof(raw_sf))
 	if save_data.has("current_save_name"):
 		current_save_name = save_data["current_save_name"]
-	if save_data.has("llm_enabled"):
+	if save_data.has("llm_enabled") and not _settings_file_owns_dialogue_preference():
 		llm_enabled = bool(save_data["llm_enabled"])
+		# Menu reads this field; NPCs read LLMService. A GameState that is not in the tree must not retune the live service.
+		if is_inside_tree():
+			var llm_svc := get_node_or_null("/root/LLMService")
+			if llm_svc != null and "llm_enabled" in llm_svc:
+				llm_svc.llm_enabled = llm_enabled
 	if save_data.has("boss_llm_strategy_enabled"):
 		boss_llm_strategy_enabled = bool(save_data["boss_llm_strategy_enabled"])
 	if save_data.has("party_llm_dialogue_enabled"):

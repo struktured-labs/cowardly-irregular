@@ -1729,9 +1729,9 @@ func _calculate_selection_order() -> void:
 		if is_instance_valid(c) and c.is_alive:
 			alive_enemies.append(c)
 
-	# Sort by speed (faster selects first)
-	alive_players.sort_custom(func(a, b): return a.speed > b.speed)
-	alive_enemies.sort_custom(func(a, b): return a.speed > b.speed)
+	# Faster effective speed selects first — haste and slow live in buffs, not the raw field.
+	alive_players.sort_custom(func(a, b): return a.get_buffed_stat("speed", a.speed) > b.get_buffed_stat("speed", b.speed))
+	alive_enemies.sort_custom(func(a, b): return a.get_buffed_stat("speed", a.speed) > b.get_buffed_stat("speed", b.speed))
 
 	# Players select first, then enemies
 	selection_order.clear()
@@ -2331,8 +2331,9 @@ func _compute_action_speed(combatant: Combatant, action_type: String, ability: D
 	if ability.has("speed_modifier"):
 		base_speed = int(base_speed * ability["speed_modifier"])
 
-	# Subtract combatant speed (higher speed = lower value = faster)
-	var speed_value = base_speed - (combatant.speed * 0.5)
+	# Subtract effective speed (higher = lower value = faster). Buffs never write the raw field.
+	var effective_speed: int = combatant.get_buffed_stat("speed", combatant.speed)
+	var speed_value = base_speed - (effective_speed * 0.5)
 
 	# Add random variance (scaled by volatility)
 	var jitter = volatility.get_ctb_jitter() if volatility else 1.0
