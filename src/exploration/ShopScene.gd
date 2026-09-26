@@ -41,6 +41,11 @@ const BUY_ROW_OWNED_COLOR: Color = Color(0.55, 0.78, 0.6)
 ## struktured 2026-08-20: "make the spells in the store green if they're better than what the player has" — saturated, distinct from the soft owned tint; label also carries ▲ so colour-blind mode still reads it
 const BUY_ROW_UPGRADE_COLOR: Color = Color(0.35, 0.95, 0.45)
 const PURCHASE_TOAST_SEC: float = 1.5
+## Description frame. Text starts DESC_TEXT_PAD down; the block is line-height
+## plus the theme gap, which already ran past a fixed 120px panel.
+const DESC_PANEL_MIN_HEIGHT := 120
+const DESC_TEXT_PAD := 16
+const DESC_SCREEN_MARGIN := 20
 
 ## Shop configuration
 var shop_type: ShopType = ShopType.ITEM
@@ -150,12 +155,13 @@ func _create_description_panel() -> Control:
 	"""Create the description panel at bottom of screen"""
 	var panel = Control.new()
 	panel.name = "DescriptionPanel"
-	var panel_height = 120
-	panel.position = Vector2(20, get_viewport().get_visible_rect().size.y - panel_height - 20)
+	var panel_height = DESC_PANEL_MIN_HEIGHT
+	panel.position = Vector2(20, get_viewport().get_visible_rect().size.y - panel_height - DESC_SCREEN_MARGIN)
 	panel.size = Vector2(get_viewport().get_visible_rect().size.x - 40, panel_height)
 
 	# Background with Win98 style border
 	var bg = ColorRect.new()
+	bg.name = "DescriptionFill"
 	bg.color = Color(0.1, 0.1, 0.15, 0.95)
 	bg.position = Vector2(4, 4)
 	bg.size = Vector2(panel.size.x - 8, panel.size.y - 8)
@@ -167,6 +173,7 @@ func _create_description_panel() -> Control:
 
 	# Top border
 	var top = ColorRect.new()
+	top.name = "DescriptionBorderTop"
 	top.color = border_color
 	top.position = Vector2(4, 0)
 	top.size = Vector2(panel.size.x - 8, 4)
@@ -174,6 +181,7 @@ func _create_description_panel() -> Control:
 
 	# Bottom border
 	var bottom = ColorRect.new()
+	bottom.name = "DescriptionBorderBottom"
 	bottom.color = border_dark
 	bottom.position = Vector2(4, panel.size.y - 4)
 	bottom.size = Vector2(panel.size.x - 8, 4)
@@ -182,12 +190,14 @@ func _create_description_panel() -> Control:
 	# Left border
 	var left = ColorRect.new()
 	left.color = border_color
+	left.name = "DescriptionBorderLeft"
 	left.position = Vector2(0, 4)
 	left.size = Vector2(4, panel.size.y - 8)
 	panel.add_child(left)
 
 	# Right border
 	var right = ColorRect.new()
+	right.name = "DescriptionBorderRight"
 	right.color = border_dark
 	right.position = Vector2(panel.size.x - 4, 4)
 	right.size = Vector2(4, panel.size.y - 8)
@@ -220,8 +230,8 @@ func _create_description_panel() -> Control:
 
 	# Description text
 	description_label = Label.new()
-	description_label.position = Vector2(text_x, 16)
-	description_label.size = Vector2(panel.size.x - text_x - 16, panel.size.y - 32)
+	description_label.position = Vector2(text_x, DESC_TEXT_PAD)
+	description_label.size = Vector2(panel.size.x - text_x - DESC_TEXT_PAD, panel.size.y - DESC_TEXT_PAD * 2)
 	description_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	description_label.add_theme_color_override("font_color", Color.WHITE)
 	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -250,6 +260,9 @@ func _open_main_menu() -> void:
 		items.append({"id": "sell", "label": "Sell"})
 	items.append({"id": "exit", "label": "Exit"})
 
+	if description_label:
+		description_label.remove_theme_constant_override("line_spacing")
+	_set_description_panel_height(DESC_PANEL_MIN_HEIGHT)
 	_show_menu("Shop", items, Vector2(100, 100))
 	description_label.text = "Welcome to %s!\nWhat would you like to do?" % shop_name
 
@@ -314,7 +327,7 @@ func _open_buy_menu() -> void:
 	if items.is_empty():
 		items.append({"id": "none", "label": "(No items available)", "disabled": true})
 
-	_show_menu("Buy", items, Vector2(100, 100))
+	_present_item_list("Buy", items, shop_inventory)
 	# Sync the poll tracker to the menu's actual first row so the description
 	# stays correct as the cursor moves (and isn't double-painted on open).
 	_last_described_item_id = current_menu.get_selected_item_id()
@@ -351,12 +364,94 @@ func _open_sell_menu() -> void:
 	if items.is_empty():
 		items.append({"id": "none", "label": "(No items to sell)", "disabled": true})
 
-	_show_menu("Sell", items, Vector2(100, 100))
+	var sell_ids: Array = []
+	for entry in sellable_items:
+		sell_ids.append(entry.get("id", ""))
+	_present_item_list("Sell", items, sell_ids)
 	# Sync the poll tracker to the menu's actual first row so the description
 	# stays correct as the cursor moves (and isn't double-painted on open).
 	_last_described_item_id = current_menu.get_selected_item_id()
 	if sellable_items.size() > 0:
 		_update_description_for_item(sellable_items[0]["id"])
+
+
+## Height of the description block the way the Label lays it out: each line is
+## get_line_height, and the theme line_spacing sits between lines.
+func _description_block_height() -> float:
+	if description_label == null:
+		return 0.0
+	var lines := description_label.get_line_count()
+	if lines <= 0:
+		return 0.0
+	var line_h := float(description_label.get_line_height())
+	var gap := float(description_label.get_theme_constant("line_spacing"))
+	return line_h * float(lines) + gap * float(lines - 1)
+
+
+## Show the shelf, growing the description frame to the tallest row. If that
+## frame would cover the list, pull line spacing in until the list sits above it.
+func _present_item_list(title: String, items: Array, item_ids: Array) -> void:
+	if description_label:
+		description_label.remove_theme_constant_override("line_spacing")
+	_fit_description_panel(item_ids)
+	for _attempt in 8:
+		_show_menu(title, items, Vector2(100, 100))
+		if current_menu == null or description_panel == null:
+			return
+		if current_menu.position.y + current_menu.size.y <= description_panel.position.y:
+			return
+		var gap_now := int(description_label.get_theme_constant("line_spacing"))
+		if gap_now - 1 < _min_description_line_gap():
+			return
+		description_label.add_theme_constant_override("line_spacing", gap_now - 1)
+		_fit_description_panel(item_ids)
+	_show_menu(title, items, Vector2(100, 100))
+
+
+func _min_description_line_gap() -> int:
+	if description_label == null:
+		return 0
+	var font := description_label.get_theme_font("font")
+	if font == null:
+		return 0
+	var drawn := font.get_string_size("Ag", HORIZONTAL_ALIGNMENT_LEFT, -1, description_label.get_theme_font_size("font_size")).y
+	return int(floor(drawn - float(description_label.get_line_height())))
+
+
+## Grow the frame so the tallest shelf description, including the gold shortfall
+## and a blacksmith comparison, ends inside it. The buy list reads this position.
+func _fit_description_panel(item_ids: Array) -> void:
+	if description_label == null or description_panel == null:
+		return
+	var tallest := 0.0
+	for raw_id in item_ids:
+		var item_id := str(raw_id)
+		if item_id.is_empty() or _get_item_data(item_id).is_empty():
+			continue
+		_update_description_for_item(item_id)
+		tallest = maxf(tallest, _description_block_height())
+	var needed := int(ceili(float(DESC_TEXT_PAD) + tallest + float(DESC_TEXT_PAD)))
+	_set_description_panel_height(maxi(DESC_PANEL_MIN_HEIGHT, needed))
+
+
+func _set_description_panel_height(panel_height: int) -> void:
+	if description_panel == null:
+		return
+	var vp_h := get_viewport().get_visible_rect().size.y
+	description_panel.size.y = panel_height
+	description_panel.position.y = vp_h - float(panel_height) - float(DESC_SCREEN_MARGIN)
+	var fill: ColorRect = description_panel.get_node_or_null("DescriptionFill")
+	if fill:
+		fill.size.y = panel_height - 8
+	var border_bottom: ColorRect = description_panel.get_node_or_null("DescriptionBorderBottom")
+	if border_bottom:
+		border_bottom.position.y = panel_height - 4
+	for side_name in ["DescriptionBorderLeft", "DescriptionBorderRight"]:
+		var side: ColorRect = description_panel.get_node_or_null(side_name)
+		if side:
+			side.size.y = panel_height - 8
+	if description_label:
+		description_label.size.y = panel_height - DESC_TEXT_PAD * 2
 
 
 ## Pixels of the viewport bottom the shelf must leave clear so it stops above the description panel.

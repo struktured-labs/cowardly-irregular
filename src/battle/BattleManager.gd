@@ -9753,14 +9753,35 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 	## surface as "monster counters with raw_snake_id!" in the
 	## log. Standard prettifier as fallback.
 	battle_log_message.emit("[color=%s]%s counters with %s![/color]" % [AccessibilityPalette.penalty_bbcode(), monster.combatant_name, ability.get("name", ability_id.replace("_", " ").capitalize())])
-	# Reuse the existing physical/magic ability path; targets = [attacker].
-	# Skipping AP and MP costs — counters are reactive freebies by design.
+	## Skipping AP and MP — counters are free. Support (Adapt) must not fall through to a physical strike: the log already named the ability, and that path never applies its effect.
+	var targets: Array = _counter_targets(monster, attacker, ability)
 	var atype: String = str(ability.get("type", "physical"))
 	match atype:
 		"magic":
-			_execute_magic_ability(monster, ability, [attacker])
+			_execute_magic_ability(monster, ability, targets)
+		"healing":
+			_execute_healing_ability(monster, ability, targets)
+		"support", "song", "status":
+			_execute_support_ability(monster, ability, targets)
 		_:
-			_execute_physical_ability(monster, ability, [attacker])
+			_execute_physical_ability(monster, ability, targets)
+
+
+## Who a counter actually lands on. Adapt and the duel stances are self/ally buffs; a strike still hits the attacker.
+func _counter_targets(monster: Combatant, attacker: Combatant, ability: Dictionary) -> Array:
+	var target_type := str(ability.get("target_type", "single_enemy"))
+	match target_type:
+		"self", "single_ally":
+			return [monster]
+		"all_allies":
+			var allies: Array = enemy_party.filter(func(e): return e != null and is_instance_valid(e) and e.is_alive)
+			return allies if not allies.is_empty() else [monster]
+		"all_enemies":
+			var foes: Array = player_party.filter(func(p): return p != null and is_instance_valid(p) and p.is_alive)
+			return foes if not foes.is_empty() else [attacker]
+		_:
+			return [attacker]
+
 
 ## Deterministic combat voice for phase_faces bosses (data: boss_dialogue.json phase_barks,
 ## keyed by _boss_face_index). Reactions fire ONCE per face; taunts rotate every 4th player
