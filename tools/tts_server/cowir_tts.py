@@ -6,7 +6,7 @@ Stock devnen is wrong for us three ways (hard-clips theatrical takes, defaults t
 0.0.0.0) and exposes an unauthenticated web API to any page in the player's browser; the patch fixes all
 four. This script is what the first-run setup wizard calls, so it never prompts.
 
-    uv run tools/tts_server/cowir_tts.py install [--device cuda|cpu] [--dir DIR]
+    uv run tools/tts_server/cowir_tts.py install [--device cuda|cpu] [--dir DIR] [--allow-weak-host]
     uv run tools/tts_server/cowir_tts.py start   [--port 8004] [--dir DIR] [--timeout 600]
     uv run tools/tts_server/cowir_tts.py stop    [--dir DIR]
     uv run tools/tts_server/cowir_tts.py check   [--port 8004] [--dir DIR]      -> one JSON object on stdout
@@ -19,6 +19,11 @@ Exit codes (stable; the wizard branches on them):
     5  server failed to start, or is installed but not answering
     6  a prerequisite is missing: git or uv not on PATH
     7  --device cuda requested but no NVIDIA GPU is visible
+    8  this machine cannot host the server (no NVIDIA GPU, or too little free RAM); pass
+       --allow-weak-host to install anyway, or run the server on another machine and tunnel it
+
+`python3 cowir_tts.py --selftest` checks the host verdict against fixed inputs: no file opened,
+no subprocess, no network, nothing written.
 """
 import argparse, json, os, platform, shutil, signal, subprocess, sys, time, urllib.request
 
@@ -32,6 +37,14 @@ TUNING = os.path.join(HERE, "voice_tuning.json")
 VOICE_REFS = os.path.join(REPO, "voice_refs")
 
 EXIT_OK, EXIT_USAGE, EXIT_NOT_INSTALLED, EXIT_INSTALL, EXIT_START, EXIT_PREREQ, EXIT_NO_GPU = 0, 2, 3, 4, 5, 6, 7
+EXIT_WEAK_HOST = 8
+
+# Measured 2026-09-25: on an RTX 3090 box the server holds 2.2 GB of system RAM; on an 8-core Iris Xe laptop
+# (CPU only, 7.6 GB) it held 3.6 GB, filled swap, and a 2.6 s line had not finished after 120 s.
+MIN_FREE_RAM_GB = 4.0
+TUNNEL_RECIPE = ("run the server on a machine with an NVIDIA GPU and forward it to this one as loopback:\n"
+                 "    ssh -N -o ExitOnForwardFailure=yes -R 127.0.0.1:8004:127.0.0.1:8004 <this machine>\n"
+                 "(run that on the GPU machine; the game's default Live Voice URL then needs no change)")
 
 
 def default_dir() -> str:
@@ -63,6 +76,66 @@ def has_nvidia() -> bool:
         subprocess.run(["nvidia-smi", "-L"], capture_output=True).returncode == 0
 
 
+def free_ram_gb():
+    """Available RAM in GB, or None where it cannot be read without extra packages."""
+    if platform.system() == "Linux":
+        try:
+            for line in open("/proc/meminfo"):
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) / (1024 * 1024)
+        except (OSError, ValueError):
+            return None
+    elif platform.system() == "Windows":
+        import ctypes
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [("dwLength", ctypes.c_ulong), ("dwMemoryLoad", ctypes.c_ulong),
+                        ("ullTotalPhys", ctypes.c_ulonglong), ("ullAvailPhys", ctypes.c_ulonglong),
+                        ("ullTotalPageFile", ctypes.c_ulonglong), ("ullAvailPageFile", ctypes.c_ulonglong),
+                        ("ullTotalVirtual", ctypes.c_ulonglong), ("ullAvailVirtual", ctypes.c_ulonglong),
+                        ("ullAvailExtendedVirtual", ctypes.c_ulonglong)]
+        m = MEMORYSTATUSEX()
+        m.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+        if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(m)):
+            return m.ullAvailPhys / (1024 ** 3)
+    return None
+
+
+def host_verdict(gpu: bool, device: str, ram_gb):
+    """Reasons this machine cannot host the server; empty means it can. Pure, so --selftest can pin it."""
+    reasons = []
+    if not gpu or device == "cpu":
+        why = "no NVIDIA GPU is visible" if not gpu else "--device cpu was requested"
+        reasons.append(f"{why}; on CPU alone a 2.6 s line took over 120 s on an 8-core Iris Xe laptop "
+                       f"(the game gives up after 8 s)")
+    if ram_gb is not None and ram_gb < MIN_FREE_RAM_GB:
+        reasons.append(f"only {ram_gb:.1f} GB of RAM is free; the server holds 2.2 GB even on a GPU and needs "
+                       f"{MIN_FREE_RAM_GB:.0f} GB free to leave room for the game")
+    return reasons
+
+
+def selftest() -> int:
+    cases = [
+        ((True, "cuda", 90.0), 0, "3090 box"),
+        ((True, "cuda", None), 0, "RAM unreadable is not a refusal"),
+        ((False, "cpu", 5.0), 1, "no GPU"),
+        ((True, "cpu", 90.0), 1, "GPU present but cpu forced"),
+        ((True, "cuda", 3.9), 1, "GPU but too little RAM"),
+        ((False, "cpu", 2.0), 2, "the moonshot shape: both"),
+    ]
+    bad = 0
+    for args, want, label in cases:
+        got = host_verdict(*args)
+        ok = len(got) == want
+        bad += not ok
+        print(f"{'ok  ' if ok else 'FAIL'} {label}: {len(got)} reason(s), want {want}")
+    moon = " ".join(host_verdict(False, "cpu", 2.0))
+    for fact in ("no NVIDIA GPU", "120 s", "2.0 GB"):
+        ok = fact in moon
+        bad += not ok
+        print(f"{'ok  ' if ok else 'FAIL'} refusal names the measured fact {fact!r}")
+    return EXIT_OK if bad == 0 else 1
+
+
 def voices_wanted() -> dict:
     with open(TUNING, encoding="utf-8") as f:
         return json.load(f).get("voices", {})
@@ -77,6 +150,16 @@ def install(a) -> int:
     if device == "cuda" and not has_nvidia():
         log("--device cuda requested but nvidia-smi sees no GPU")
         return EXIT_NO_GPU
+    weak = host_verdict(has_nvidia(), device, free_ram_gb())
+    if weak and not a.allow_weak_host:
+        log("this machine cannot host the voice server:")
+        for r in weak:
+            log(f"  - {r}")
+        log(TUNNEL_RECIPE)
+        log("to install here anyway, pass --allow-weak-host")
+        return EXIT_WEAK_HOST
+    if weak:
+        log("installing on a weak host because --allow-weak-host was passed: " + "; ".join(weak))
     d = a.dir
     try:
         if not os.path.isdir(os.path.join(d, ".git")):
@@ -236,6 +319,8 @@ def check(a) -> int:
         "supported_commit": meta.get("devnen_commit") == DEVNEN_COMMIT,
         "device": meta.get("device"),
         "gpu_visible": has_nvidia(),
+        "free_ram_gb": None if free_ram_gb() is None else round(free_ram_gb(), 1),
+        "host_problems": host_verdict(has_nvidia(), meta.get("device") or "cuda", free_ram_gb()),
         "pid": read_pid(d),
         "url": f"http://127.0.0.1:{a.port}",
         "healthy": listed is not None,
@@ -249,12 +334,15 @@ def check(a) -> int:
 
 
 def main() -> int:
+    if sys.argv[1:] == ["--selftest"]:
+        return selftest()
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("command", choices=["install", "start", "stop", "check"])
     ap.add_argument("--dir", default=default_dir())
     ap.add_argument("--port", type=int, default=8004)
     ap.add_argument("--device", choices=["cuda", "cpu"])
     ap.add_argument("--timeout", type=int, default=600)
+    ap.add_argument("--allow-weak-host", action="store_true", help="install even where host_verdict refuses")
     try:
         a = ap.parse_args()
     except SystemExit as e:                   # --help exits 0; only a genuine usage error is EXIT_USAGE

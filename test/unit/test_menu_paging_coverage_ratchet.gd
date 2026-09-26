@@ -148,10 +148,12 @@ func _ui_scripts(dir_path: String) -> Array:
 ## @cowir-sfx's split: a floor asking the LIVE OBJECT catches a rename; one deriving from the TEST
 ## file's own source moves both sides together and stays silent; one deriving from the SUBJECT's
 ## source plus a non-empty scope control reds by collapse. Same word "verify", three triggers.
+## Win98Menu used to sit here (`shoulders_are_battle_mechanics`): it is the menu live during battle,
+## where L/R are Defer and Advance. It now pages outside battle — shop shelves call page_delta only
+## when `not battle_mode` — so the ledger drops it. The battle handlers still run first.
 const WINDOWED_WITHOUT_PAGING := [
 	{"path": "res://src/ui/EquipmentMenu.gd", "because": "shoulders_taken"},
 	{"path": "res://src/ui/autobattle/AutobattleGridEditor.gd", "because": "shoulders_taken"},
-	{"path": "res://src/ui/Win98Menu.gd", "because": "shoulders_are_battle_mechanics"},
 ]
 
 
@@ -165,12 +167,6 @@ func _is_windowed(code: String) -> bool:
 ## Is the declared reason still true of the file? Each verb is checked against the source.
 func _reason_holds(because: String, code: String) -> bool:
 	match because:
-		"shoulders_are_battle_mechanics":
-			# The one menu live DURING battle, where these actions ARE Defer and Advance — the case
-			# MenuPaging's own header carves out. Paging here would spend a turn, not scroll a list.
-			return code.contains("event.is_action_pressed(\"battle_defer\")") \
-				and code.contains("event.is_action_pressed(\"battle_advance\")") \
-				and code.contains("_handle_defer_input") and code.contains("_handle_advance_input")
 		"shoulders_taken":
 			# ⛔ `event.`, NOT bare — the bare spelling is ALSO satisfied by the _process self-heal's
 			# `Input.is_action_pressed("battle_advance")`, so the first version of this check stayed

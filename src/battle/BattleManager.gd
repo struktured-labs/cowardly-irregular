@@ -9346,10 +9346,25 @@ func _deliver_item(item_id: String, item_drops: Array) -> void:
 	item_drops.append({"item": item_id, "name": item_name, "qty": 1})
 
 
-## The leader holds the party's bag whether KO'd or not. An alive-gate here dropped every consumable, one-shot key items included, won while the leader was down, and the victory screen still listed it.
+## The leader holds the party's bag whether KO'd or not. An alive-gate here dropped every consumable, one-shot key items included, won while the leader was down, and the victory screen still listed it. A spotlight duel benches that leader and fights as the duelist alone; the drop still belongs in the benched bag.
 func deliver_consumable_drop(party: Array, item_id: String, qty: int = 1) -> void:
-	if party.size() > 0 and party[0] != null and is_instance_valid(party[0]) and qty > 0:
-		party[0].add_item(item_id, qty)
+	var holder: Variant = _drop_bag_holder(party)
+	if holder != null and is_instance_valid(holder) and qty > 0 and holder.has_method("add_item"):
+		holder.add_item(item_id, qty)
+
+
+## During a spotlight the battle party is the duelist. The bag is the benched roster's first member — the same pocket chests, shops, and quest rewards pay.
+func _drop_bag_holder(party: Array) -> Variant:
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl != null and bool(gl.get("_spotlight_duel_active")):
+		var saved: Variant = gl.get("_spotlight_saved_party")
+		if saved is Array and not (saved as Array).is_empty():
+			var lead: Variant = (saved as Array)[0]
+			if lead != null and is_instance_valid(lead) and lead.has_method("add_item"):
+				return lead
+	if party.size() > 0 and party[0] != null and is_instance_valid(party[0]):
+		return party[0]
+	return null
 
 
 func _route_drop_to_equipment_pool(item_id: String) -> bool:
