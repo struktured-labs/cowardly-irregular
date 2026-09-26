@@ -330,7 +330,9 @@ func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: fl
 
 func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> void:
 	var abilities: Array = []
-	if "learned_abilities" in member:
+	if member is Object and (member as Object).has_method("get_known_abilities"):
+		abilities = (member as Object).get_known_abilities()
+	elif member != null and "learned_abilities" in member:
 		abilities = member.learned_abilities
 	var passives: Array = []
 	if "equipped_passives" in member:
