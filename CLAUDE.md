@@ -104,7 +104,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 - Visual: Screen flash, enhanced hit sound, damage number shake
 
 ### Battle UX
-- **Permanent input hint bar** at bottom-center of battle screen. It advertises four controls — **Defer · Advance · Speed · Auto** — and every button in it is **DERIVED per connected pad**, never written out. Do not "restore" a sample rendering here: this line used to read ``[L] Defer · [R] Advance · [+/-] Speed · [Select] Auto``, which was wrong twice over. `+/-` was bound to nothing (dead instruction, removed from the bar 2026-07-28, still documented here until 2026-09-11), and the other three are Nintendo names for buttons the other families call `LB/RB/Back` and `L1/R1/Share` — **`Select` exists on no Xbox, PlayStation or Switch pad.** Defer/Advance/Auto resolve through `InputProfileManager.hint_for_action()`; Speed is raw `JOY_BUTTON_Y`, so it uses `face_glyph_for_index`. Keyboard (no pad connected) gets its own bar: `` [L] Defer · [R] Advance · [`] Speed · [Tab] Auto ``.
+- **Permanent input hint bar** at bottom-center of battle screen. It advertises four controls — **Defer · Advance · Speed · Auto** — and every button in it is **DERIVED per connected pad**, never written out. Do not "restore" a sample rendering here: this line used to read ``[L] Defer · [R] Advance · [+/-] Speed · [Select] Auto``, which was wrong twice over. `+/-` was bound to nothing (dead instruction, removed from the bar 2026-07-28, still documented here until 2026-09-11), and the other three are Nintendo names for buttons the other families call `LB/RB/Back` and `L1/R1/Share` — **`Select` exists on no Xbox, PlayStation or Switch pad.** Defer/Advance/Auto resolve through `InputProfileManager.hint_for_action()`; Speed is raw `JOY_BUTTON_Y`, so it uses `face_glyph_for_index`. Keyboard (no pad connected) gets its own bar, derived the same way: `` [Q] Defer · [W] Advance · [`] Speed · [Tab] Auto `` — the keyboard shoulders are **Q/W** since 2026-09-25 (struktured, on a laptop: L/R under the right hand fought the arrow keys; Q/W is the emulator default), and the grid editors' value nudge moved from W/S to **-/=** so W does one job per screen (`test_a_screen_does_not_give_a_shoulder_key_a_second_job`).
 - Hidden during autogrind console mode
 - Inter-action delays scale with `Engine.time_scale` so 2x/4x speed actually plays faster (regression-tested)
 - Tutorial hints (TutorialHints catalog) fire once per session — the hint bar covers the long-term reference need
@@ -146,8 +146,8 @@ Each starter job has a free 0-cost AP action available in the command menu:
 | Navigate grid | D-pad | Arrow keys |
 | Edit cell | A | Z |
 | Delete cell | Y (off a condition cell) | Delete / Backspace |
-| Add condition | L trigger | L key |
-| Add action | R trigger | R key |
+| Add condition | L trigger | Q key |
+| Add action | R trigger | W key |
 | Close editor | B | X |
 
 ### Future Vision
@@ -534,8 +534,8 @@ named. Never copy a letter out of this table into a caption.**
 | Navigate menu | D-pad | Arrow keys |
 | Confirm/Select | A | Z/Enter |
 | Cancel/Back | B | X/Escape |
-| Queue action (Advance) | R shoulder | R key |
-| Defer | L shoulder | L key |
+| Queue action (Advance) | R shoulder | W key |
+| Defer | L shoulder | Q key |
 | Change battle speed | X (top face button) | ` (backtick) |
 | Repeat last turn's actions | Y (west face button) | Y key |
 | Cycle party formation | command menu row | F key |

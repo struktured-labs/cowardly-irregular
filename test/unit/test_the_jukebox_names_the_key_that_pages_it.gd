@@ -70,7 +70,14 @@ func test_control_the_shoulder_keys_also_page_so_the_choice_is_a_judgement() -> 
 	## Pins the fact that corrected the arm above, so nobody re-derives "L is dead" from
 	## the footer's silence about it. If these stop paging, the comment in JukeboxMenu
 	## explaining why PgUp/PgDn was CHOSEN becomes wrong and should be revisited.
-	for probe in [[KEY_L, -1], [KEY_R, 1]]:
+	var shoulder_keys := []
+	for pair in [["battle_defer", -1], ["battle_advance", 1]]:
+		for ev0 in InputMap.action_get_events(pair[0]):
+			if ev0 is InputEventKey:
+				shoulder_keys.append([ev0.keycode, pair[1]])
+				break
+	assert_eq(shoulder_keys.size(), 2, "PRECONDITION: Defer and Advance each bind a key (derived, not pinned — they moved once)")
+	for probe in shoulder_keys:
 		var ev := InputEventKey.new()
 		ev.keycode = probe[0]
 		ev.pressed = true

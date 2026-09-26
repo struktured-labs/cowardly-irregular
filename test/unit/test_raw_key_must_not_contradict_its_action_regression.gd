@@ -87,7 +87,7 @@ func test_no_raw_key_handler_performs_a_different_actions_job() -> void:
 
 ## The premise. If the bindings ever move, this file is guarding a shape that no longer exists.
 func test_the_actions_still_bind_the_keys_this_rests_on() -> void:
-	assert_has(_keys_of("battle_defer"), "L", "battle_defer must bind L")
-	assert_has(_keys_of("battle_advance"), "R", "battle_advance must bind R")
-	assert_does_not_have(_keys_of("battle_advance"), "L",
-		"CONTROL: advance must not also claim L, or 'a different action's job' is meaningless")
+	assert_has(_keys_of("battle_defer"), "Q", "battle_defer must bind Q (moved from L 2026-09-25)")
+	assert_has(_keys_of("battle_advance"), "W", "battle_advance must bind W (moved from R 2026-09-25)")
+	assert_does_not_have(_keys_of("battle_advance"), "Q",
+		"CONTROL: advance must not also claim Q, or 'a different action's job' is meaningless")
