@@ -604,6 +604,9 @@ func get_quick_slot_abilities(num_slots: int = MRU_SIZE) -> Array[String]:
 
 ## Status effects
 func add_status(status: String, duration: int = 3) -> void:
+	# Round-start ticks before anyone acts, so a fresh Shadow Step must survive that one tick to reach the swing it promised.
+	if status == "shadow_step":
+		set_meta("_shadow_step_unswung", true)
 	# Tick 285: refresh duration when re-applying the same status.
 	# Pre-fix this was a silent no-op when the status already existed —
 	# the player couldn't extend a beneficial DOT (regen) or refresh
@@ -622,6 +625,8 @@ func add_status(status: String, duration: int = 3) -> void:
 
 
 func remove_status(status: String) -> void:
+	if status == "shadow_step" and has_meta("_shadow_step_unswung"):
+		remove_meta("_shadow_step_unswung")
 	if status in status_effects:
 		status_effects.erase(status)
 		status_durations.erase(status)
@@ -972,6 +977,10 @@ func update_buff_durations() -> void:
 	var expired_statuses: Array[String] = []
 	for status in status_durations:
 		if str(status) in ACTION_CLOCK_STATUSES:
+			continue
+		# The first tick after a step is the boundary before the swing, so it does not spend the turn.
+		if str(status) == "shadow_step" and has_meta("_shadow_step_unswung"):
+			remove_meta("_shadow_step_unswung")
 			continue
 		if status_durations[status] > 0:  # -1 = permanent
 			status_durations[status] -= 1

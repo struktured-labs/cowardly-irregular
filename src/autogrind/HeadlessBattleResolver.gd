@@ -1461,7 +1461,8 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					## a grind is evaluated without its passives. Not wired here because it is a port, not
 					## a repair: it changes party strength and therefore the reward economy, which is
 					## struktured's call — the same reasoning that left summon_* declared.
-					if randf() < float(ability.get("crit_chance", 0.0)):
+					## Shadow Step forces a crit on top of the authored roll, matching the basic swing's guarantee.
+					if randf() < float(ability.get("crit_chance", 0.0)) or caster.has_status("shadow_step"):
 						base_dmg = int(base_dmg * 1.5)
 						_log("%s crits with %s" % [caster.combatant_name, ability_id])
 					## One barrier eats the whole ability, including a multi-hit, then breaks. Live checks

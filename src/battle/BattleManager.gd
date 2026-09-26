@@ -5024,6 +5024,9 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		var missing_factor: float = 1.0 + (1.0 - hp_pct) * (max_mult - 1.0)
 		multiplier *= missing_factor
 	var crit_chance = ability.get("crit_chance", 0.0)
+	# Shadow Step guarantees the next attack, including a physical ability. A basic swing already does this.
+	if caster != null and caster.has_status("shadow_step"):
+		crit_chance = 1.0
 
 	for target in targets:
 		if not target or not is_instance_valid(target) or not target.is_alive:
