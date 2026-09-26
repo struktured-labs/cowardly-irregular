@@ -20,9 +20,7 @@ var _saved_order: Array
 var _saved_index: int
 var _saved_current
 var _gl: Node
-var _owned_gl: bool = false
-var _prior_flag: bool = false
-var _prior_saved: Array = []
+var _parked_name: String = ""
 
 
 func before_each() -> void:
@@ -31,20 +29,18 @@ func before_each() -> void:
 	_saved_order = BattleManager.selection_order.duplicate()
 	_saved_index = BattleManager.selection_index
 	_saved_current = BattleManager.current_combatant
-	_gl = get_tree().root.get_node_or_null("GameLoop")
-	_owned_gl = _gl == null
-	if _owned_gl:
-		var stub_script := GDScript.new()
-		stub_script.source_code = _STUB
-		stub_script.reload()
-		_gl = Node.new()
-		_gl.set_script(stub_script)
-		_gl.name = "GameLoop"
-		get_tree().root.add_child(_gl)
-	else:
-		_prior_flag = bool(_gl.get("_spotlight_duel_active"))
-		var raw: Variant = _gl.get("_spotlight_saved_party")
-		_prior_saved = (raw as Array).duplicate() if raw is Array else []
+	# A prior test can leave /root/GameLoop up (queue_free has not flushed). That node may have the duel flag and no saved roster, and get_node returns it ahead of ours.
+	var existing := get_tree().root.get_node_or_null("GameLoop")
+	if existing != null and is_instance_valid(existing):
+		_parked_name = "GameLoop_parked_for_benched_bag"
+		existing.name = _parked_name
+	var stub_script := GDScript.new()
+	stub_script.source_code = _STUB
+	stub_script.reload()
+	_gl = Node.new()
+	_gl.set_script(stub_script)
+	_gl.name = "GameLoop"
+	get_tree().root.add_child(_gl)
 	_gl.set("_spotlight_duel_active", false)
 	_gl.set("_spotlight_saved_party", [])
 
@@ -56,12 +52,13 @@ func after_each() -> void:
 	BattleManager.selection_index = _saved_index
 	BattleManager.current_combatant = _saved_current if is_instance_valid(_saved_current) else null
 	if _gl != null and is_instance_valid(_gl):
-		if _owned_gl:
-			_gl.free()
-		else:
-			_gl.set("_spotlight_duel_active", _prior_flag)
-			_gl.set("_spotlight_saved_party", _prior_saved)
+		_gl.free()
 	_gl = null
+	if _parked_name != "":
+		var parked := get_tree().root.get_node_or_null(_parked_name)
+		if parked != null and is_instance_valid(parked) and not parked.is_queued_for_deletion():
+			parked.name = "GameLoop"
+		_parked_name = ""
 
 
 func _alive(saved: Array) -> Array:
