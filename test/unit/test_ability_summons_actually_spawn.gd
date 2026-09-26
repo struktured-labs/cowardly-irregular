@@ -125,13 +125,9 @@ func test_the_eidolons_still_take_the_magic_path() -> void:
 	assert_lt(victim.current_hp, 4000, "it must still deal its damage — the magic path has to survive the branch")
 
 func test_every_summon_id_names_a_monster_the_spawner_can_build() -> void:
-	## _on_monster_summoned looks up BattleEnemySpawner.MONSTER_TYPES, a HARDCODED array — not
-	## monsters.json. A summon_id present in the json but missing there push_warnings and spawns
-	## nothing, which from the battle log is indistinguishable from a working summon.
-	var buildable: Dictionary = {}
-	for mt in SpawnerScript.MONSTER_TYPES:
-		buildable[str(mt["id"])] = true
-	assert_gt(buildable.size(), 5, "CONTROL: the spawner's hardcoded roster read non-empty")
+	## resolve_summon_record prefers MONSTER_TYPES, then any monsters.json row with stats.
+	## An id in neither push_warnings and spawns nothing, which from the battle log is
+	## indistinguishable from a working summon.
 	var all_abilities: Dictionary = _abilities()
 	var checked: int = 0
 	for aid in all_abilities:
@@ -139,6 +135,7 @@ func test_every_summon_id_names_a_monster_the_spawner_can_build() -> void:
 		if sid == "":
 			continue
 		checked += 1
-		assert_true(buildable.has(sid),
-			"%s summons '%s', which BattleEnemySpawner.MONSTER_TYPES cannot build" % [aid, sid])
+		var row: Dictionary = SpawnerScript.resolve_summon_record(sid)
+		assert_false(row.is_empty(),
+			"%s summons '%s', which resolve_summon_record cannot build" % [aid, sid])
 	assert_eq(checked, 3, "CONTROL: three abilities author a summon_id — if this moves, revisit the list")

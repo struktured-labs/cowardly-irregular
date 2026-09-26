@@ -6041,14 +6041,8 @@ static func pick_summon_name(base_name: String, living_same_type: Array) -> Stri
 
 func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	"""Handle monster summon - spawn new enemy mid-battle"""
-	# Find the monster type data
-	var monster_data = null
-	for mt in BattleEnemySpawnerClass.MONSTER_TYPES:
-		if mt["id"] == monster_type:
-			monster_data = mt
-			break
-
-	if not monster_data:
+	var monster_data: Dictionary = BattleEnemySpawnerClass.resolve_summon_record(monster_type)
+	if monster_data.is_empty():
 		push_warning("Unknown monster type for summon: %s" % monster_type)
 		return
 
@@ -6061,7 +6055,7 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	for e in test_enemies:
 		if is_instance_valid(e) and e.is_alive and e.get_meta("monster_type", "") == monster_type:
 			living_names.append(e.combatant_name)
-	stats["name"] = pick_summon_name(monster_data["name"], living_names)
+	stats["name"] = pick_summon_name(str(monster_data["name"]), living_names)
 
 	enemy.initialize(stats)
 	add_child(enemy)
@@ -6069,9 +6063,13 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 
 	# Add weaknesses/resistances
 	for weakness in monster_data.get("weaknesses", []):
-		enemy.elemental_weaknesses.append(weakness)
+		enemy.elemental_weaknesses.append(str(weakness))
 	for resistance in monster_data.get("resistances", []):
-		enemy.elemental_resistances.append(resistance)
+		enemy.elemental_resistances.append(str(resistance))
+	# Catalog species carry their kit; the hardcoded roster does not, and must not pick one up.
+	var kit: Variant = monster_data.get("abilities", [])
+	if kit is Array and not (kit as Array).is_empty():
+		enemy.job = {"abilities": (kit as Array).duplicate(), "name": str(monster_data.get("name", monster_type))}
 
 	# Bind signals using enemy reference — find index at call time to avoid stale index
 	enemy.hp_changed.connect(func(old_val, new_val): _on_summon_hp_changed(enemy, old_val, new_val))
@@ -6086,6 +6084,10 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	BattleManager.enemy_party.append(enemy)
 	BattleManager.all_combatants.append(enemy)
 
+	_present_summoned_enemy(enemy, monster_type, new_idx, str(stats["name"]))
+
+
+func _present_summoned_enemy(enemy: Combatant, monster_type: String, new_idx: int, display_name: String) -> void:
 	# Create sprite for the new enemy
 	var sprite = AnimatedSprite2D.new()
 	BattleJuice.ensure_flash_material(sprite)
@@ -6148,7 +6150,7 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	EffectSystem.spawn_effect(EffectSystem.EffectType.BUFF, _stable_sprite_anchor(sprite))
 
 	# Log message
-	log_message("[color=%s]%s appears![/color]" % [AccessibilityPalette.penalty_bbcode(), stats["name"]])
+	log_message("[color=%s]%s appears![/color]" % [AccessibilityPalette.penalty_bbcode(), display_name])
 
 	_update_ui()
 

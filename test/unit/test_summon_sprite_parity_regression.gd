@@ -14,8 +14,13 @@ const SCENE_SRC := "res://src/battle/BattleScene.gd"
 
 func _summon_body() -> String:
 	var src: String = FileAccess.get_file_as_string(SCENE_SRC)
-	var idx: int = src.find("func _on_monster_summoned")
-	assert_gt(idx, -1, "_on_monster_summoned must exist")
+	var admit: int = src.find("func _on_monster_summoned")
+	assert_gt(admit, -1, "_on_monster_summoned must exist")
+	var admit_end: int = src.find("\nfunc ", admit + 1)
+	assert_true(src.substr(admit, admit_end - admit).contains("_present_summoned_enemy("),
+		"admitting a summon must still present it — the sprite rules live on that call")
+	var idx: int = src.find("func _present_summoned_enemy")
+	assert_gt(idx, -1, "_present_summoned_enemy must exist")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	return src.substr(idx, next_fn - idx)
 

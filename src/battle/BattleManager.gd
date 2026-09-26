@@ -6726,11 +6726,15 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			# "Forks a copy of itself" delivered zero forks. Reuse the
 			# existing monster_summoned signal (BattleScene handles sprite +
 			# party plumbing) with the caster's stored monster_type.
+			# Once-per-battle is per combatant, and the copy is born with Clone Self, so the field ceiling is what stops the chain.
 			if caster != null and is_instance_valid(caster) and caster.has_meta("monster_type"):
-				var clone_type: String = str(caster.get_meta("monster_type"))
-				monster_summoned.emit(clone_type, caster)
-				battle_log_message.emit("[color=purple]%s forks a copy of itself![/color]" % caster.combatant_name)
-				print("  → %s summons a clone (%s)" % [caster.combatant_name, clone_type])
+				if _alive_enemy_count() >= MAX_FIELD_ENEMIES:
+					battle_log_message.emit("[color=gray]%s tries to fork, but there is no room on the field.[/color]" % caster.combatant_name)
+				else:
+					var clone_type: String = str(caster.get_meta("monster_type"))
+					monster_summoned.emit(clone_type, caster)
+					battle_log_message.emit("[color=purple]%s forks a copy of itself![/color]" % caster.combatant_name)
+					print("  → %s summons a clone (%s)" % [caster.combatant_name, clone_type])
 		## mimic_ability authors type=support, so it routes here — tick 406 put copy_last_ability in _execute_meta_ability's meta_effect match, which a type=support ability never reaches.
 		"copy_last_ability":
 			_replay_last_ability(caster, targets)
