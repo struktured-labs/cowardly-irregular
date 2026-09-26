@@ -427,6 +427,8 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 		AutogrindSystem.apply_post_collapse_penalty()
 		if victory:
 			print("[AUTOGRIND] Collapse boss defeated! Corruption reset, efficiency debuffed for 10 battles.")
+			## This return skips on_battle_victory. Watched fights were already paid; ludicrous fights were paid by nobody.
+			AutogrindSystem.account_boss_fight_rewards(exp_gained, items_gained, headless_mode)
 			AutogrindSystem.on_meta_boss_victory(_current_meta_boss_data)
 		else:
 			print("[AUTOGRIND] Collapse boss won. Corruption reset, penalty still applied.")
@@ -443,6 +445,8 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 	if _current_battle_is_meta_boss:
 		if victory:
 			print("[AUTOGRIND] Meta-boss defeated! Bonus rewards and corruption reduced.")
+			## The bonus is extra. Skipping on_battle_victory here used to drop the fight's own EXP, gold, and drops.
+			AutogrindSystem.account_boss_fight_rewards(exp_gained, items_gained, headless_mode)
 			AutogrindSystem.on_meta_boss_victory(_current_meta_boss_data)
 		else:
 			print("[AUTOGRIND] Party lost to meta-boss! Corruption increased significantly.")

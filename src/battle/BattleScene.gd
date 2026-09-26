@@ -759,6 +759,9 @@ func _toggle_battle_speed() -> void:
 	"""Cycle through battle speeds"""
 	_battle_speed_index = (_battle_speed_index + 1) % BATTLE_SPEEDS.size()
 	var speed = BATTLE_SPEEDS[_battle_speed_index]
+	# Options reads default_battle_speed; battle start applies this index. Same speed.
+	if GameState and "default_battle_speed" in GameState:
+		GameState.default_battle_speed = speed
 	_set_battle_time_scale(speed)
 	_update_speed_indicator()
 	_animate_speed_change()
@@ -2773,7 +2776,7 @@ func _show_item_menu() -> void:
 		var quantity = bag[item_id]
 		var label = "%s x%d" % [item["name"], quantity]
 
-		popup.add_item(label, idx)
+		popup.add_icon_item(ItemIcons.tinted(item_id), label, idx)
 		item_ids.append(item_id)
 		idx += 1
 
