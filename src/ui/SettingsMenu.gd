@@ -266,25 +266,22 @@ func _build_ui() -> void:
 	# Beveled retro border
 	RetroPanel.add_border(panel, panel.size, BORDER_LIGHT, BORDER_SHADOW)
 
-	# Title — pinned above the scroll area
-	const TITLE_H: int = 40
-	# FOOTER_H enlarged from 36 → 52 so "Quit to Title" / "Return to title
-	# screen" action button has full breathing room above the footer label
-	# and no longer clips at the bottom of the scroll region.
-	const FOOTER_H: int = 52
+	# Title — pinned above the scroll area. Height follows the font, not a 40px constant.
 	var title = Label.new()
+	title.name = "ScreenTitle"
 	title.text = "SETTINGS"
-	title.position = Vector2(16, 8)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
+	var title_bottom := MenuChrome.place_header(title, null, panel.size.x, 8.0, false, 16.0)
 
 	# ── ScrollContainer ──────────────────────────────────────────────────
 	# Occupies the space between title and footer; vertical scroll only.
 	# Cached on _scroll so _update_selection can auto-scroll to the selected row.
+	# Height is corrected after the footer is measured.
 	var scroll = ScrollContainer.new()
-	scroll.position = Vector2(0, TITLE_H)
-	scroll.size = Vector2(panel.size.x, panel.size.y - TITLE_H - FOOTER_H)
+	scroll.position = Vector2(0, title_bottom + 4.0)
+	scroll.size = Vector2(panel.size.x, maxf(40.0, panel.size.y - scroll.position.y - 48.0))
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	panel.add_child(scroll)
@@ -702,10 +699,12 @@ func _build_ui() -> void:
 	# …and a pad LEAVING changes the caption without changing a binding, so both signals refresh it.
 	if not InputProfileManager.input_device_changed.is_connected(_refresh_footer.unbind(1)):
 		InputProfileManager.input_device_changed.connect(_refresh_footer.unbind(1))
-	footer.position = Vector2(16, panel.size.y - FOOTER_H + 18)
+	footer.name = "ScreenFooter"
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(footer)
+	var footer_rect := MenuChrome.place_footer(footer, panel.size, 12.0)
+	scroll.size = Vector2(panel.size.x, maxf(40.0, footer_rect.position.y - 6.0 - scroll.position.y))
 
 	_update_selection()
 
@@ -1882,6 +1881,7 @@ func _footer_text() -> String:
 func _refresh_footer() -> void:
 	if _footer and is_instance_valid(_footer):
 		_footer.text = _footer_text()
+		MenuChrome.fit_footer_text(_footer, Rect2(_footer.position, _footer.size))
 
 
 func _on_controls_closed() -> void:

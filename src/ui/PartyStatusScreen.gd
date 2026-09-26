@@ -60,10 +60,9 @@ func _build_ui() -> void:
 		vp = Vector2(1280, 720)
 
 	var title := Label.new()
+	title.name = "ScreenTitle"
 	title.text = "PARTY STATUS"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.position = Vector2(0, 14)
-	title.size = Vector2(vp.x, 24)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	title.add_theme_color_override("font_color", TEXT)
 	add_child(title)
@@ -81,11 +80,20 @@ func _build_ui() -> void:
 	gold_label.name = "GoldLabel"
 	gold_label.text = "Gold: %d G" % gold_amount
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	gold_label.position = Vector2(vp.x - 200, 18)
-	gold_label.size = Vector2(180, 20)
 	gold_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	gold_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	add_child(gold_label)
+	var header_bottom := MenuChrome.place_header(title, gold_label, vp.x, 14.0, true, 24.0)
+
+	var footer := Label.new()
+	footer.name = "ScreenFooter"
+	# "B" named index 1, which on an Xbox pad is ui_accept — Back was telling players to Confirm.
+	footer.text = "←→: Switch member  %s: Back" % InputProfileManager.hint_for_action("ui_cancel")
+	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	footer.add_theme_color_override("font_color", MUTED)
+	add_child(footer)
+	var footer_rect := MenuChrome.place_footer(footer, vp, 16.0)
 
 	# Layout: party cards on top (one per member), detail panel below.
 	# Width divides evenly across party.size() with an 8px gutter between
@@ -95,7 +103,7 @@ func _build_ui() -> void:
 	var total_gutter: float = float(card_count - 1) * 8.0
 	var card_w := (vp.x - 48.0 - total_gutter) / float(card_count)
 	var card_h := 184.0  # Bumped from 160 to fit the EXP bar between MP and stats.
-	var card_y := 48.0
+	var card_y := header_bottom + 12.0
 
 	for i in party.size():
 		var member = party[i]
@@ -106,21 +114,12 @@ func _build_ui() -> void:
 
 	# Detail panel below
 	_detail_panel = Control.new()
-	_detail_panel.position = Vector2(24, card_y + card_h + 16)
-	_detail_panel.size = Vector2(vp.x - 48, vp.y - (card_y + card_h + 32 + 40))
+	var detail_y := card_y + card_h + 12.0
+	_detail_panel.position = Vector2(24, detail_y)
+	_detail_panel.size = Vector2(vp.x - 48, maxf(40.0, footer_rect.position.y - 8.0 - detail_y))
 	add_child(_detail_panel)
 	_rebuild_detail()
-
-	# Footer
-	var footer := Label.new()
-	# "B" named index 1, which on an Xbox pad is ui_accept — Back was telling players to Confirm.
-	footer.text = "←→: Switch member  %s: Back" % InputProfileManager.hint_for_action("ui_cancel")
-	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	footer.position = Vector2(0, vp.y - 28)
-	footer.size = Vector2(vp.x, 18)
-	footer.add_theme_font_size_override("font_size", TextScale.scaled(11))
-	footer.add_theme_color_override("font_color", MUTED)
-	add_child(footer)
+	move_child(footer, get_child_count() - 1)
 
 	_update_focus()
 

@@ -50,6 +50,8 @@ var _detail_scroll: ScrollContainer = null
 var _detail_content: Control = null
 var _footer: Label = null
 var _footer_base: String = ""
+## Reserved after the longest hint is measured, so a scroll suffix cannot grow the footer into the panes.
+var _footer_slot: Rect2 = Rect2()
 var _detail_stick_y: float = 0.0
 
 
@@ -77,9 +79,8 @@ func _build_ui() -> void:
 
 	# Title + count in top bar
 	var header := Label.new()
+	header.name = "ScreenTitle"
 	header.text = "Bestiary"
-	header.position = Vector2(24, 16)
-	header.size = Vector2(300, 32)
 	header.add_theme_font_size_override("font_size", TextScale.scaled(26))
 	header.add_theme_color_override("font_color", ACCENT)
 	header.clip_text = false
@@ -105,11 +106,10 @@ func _build_ui() -> void:
 	# where the seen/defeated split is already collapsed for space.
 	var total_kills: int = BestiarySystem.total_kills()
 	_count_label = Label.new()
+	_count_label.name = "ScreenCounter"
 	var narrow_viewport: bool = viewport.x <= 720
 	if narrow_viewport:
 		_count_label.text = "%d/%d seen" % [counts.x, counts.y]
-		_count_label.size = Vector2(200, 24)
-		_count_label.position = Vector2(viewport.x - 220, 22)
 	else:
 		var base_text: String = "%d/%d seen · %d/%d defeated" % [counts.x, counts.y, defeated_counts.x, defeated_counts.y]
 		if total_kills > 0:
@@ -121,17 +121,35 @@ func _build_ui() -> void:
 		if sort_mode != "level":
 			base_text += " · [Sort: %s]" % sort_mode.capitalize()
 		_count_label.text = base_text
-		_count_label.size = Vector2(540, 24)
-		_count_label.position = Vector2(viewport.x - 560, 22)
 	_count_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	_count_label.add_theme_color_override("font_color", DIM_COLOR)
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_count_label.clip_text = false
 	_count_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	add_child(_count_label)
+	var header_bottom := MenuChrome.place_header(header, _count_label, viewport.x, 16.0, false, 24.0)
+
+	# Footer is measured before the panes so a two-line hint at 200% does not cover them.
+	_footer = Label.new()
+	_footer.name = "ScreenFooter"
+	_footer_base = "↑↓ / Wheel: Select    %s/%s: Page    %s / RClick: Close    (hover to preview)" % [
+		InputProfileManager.hint_for_action("battle_defer"),
+		InputProfileManager.hint_for_action("battle_advance"),
+		InputProfileManager.hint_for_action("ui_cancel")]
+	_footer.text = _footer_base + "    Shift+↑↓ / R-Stick: Scroll"
+	_footer.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	_footer.add_theme_color_override("font_color", DIM_COLOR)
+	_footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	add_child(_footer)
+	_footer_slot = MenuChrome.place_footer(_footer, viewport, 24.0)
+	_footer.text = _footer_base
+	MenuChrome.fit_footer_text(_footer, _footer_slot)
+
+	var panel_top := header_bottom + 12.0
+	var panel_h := maxf(80.0, _footer_slot.position.y - 12.0 - panel_top)
 
 	# Left panel: monster list
-	var list_panel := _make_panel(Vector2(24, 64), Vector2(viewport.x * 0.35, viewport.y - 112))
+	var list_panel := _make_panel(Vector2(24, panel_top), Vector2(viewport.x * 0.35, panel_h))
 	add_child(list_panel)
 
 	_scroll = ScrollContainer.new()
@@ -150,31 +168,14 @@ func _build_ui() -> void:
 	# Right panel: detail view
 	var detail_x: float = viewport.x * 0.38 + 24
 	var detail_panel := _make_panel(
-		Vector2(detail_x, 64),
-		Vector2(viewport.x - detail_x - 24, viewport.y - 112),
+		Vector2(detail_x, panel_top),
+		Vector2(viewport.x - detail_x - 24, panel_h),
 	)
 	add_child(detail_panel)
 
 	_build_detail(detail_panel)
-
-	# Footer — list all input methods so mouse/kb users know what works
-	_footer = Label.new()
-	var footer := _footer
-	## "B" is Nintendo's name for Cancel; that face is Ⓐ on Xbox and ✕ on PlayStation, so the old
-	## literal was wrong on two families out of three. Derived per connected pad (2026-09-16).
-	## A control the footer does not advertise is a control nobody finds. Derived, never a family
-	## letter: battle_defer/battle_advance are L1/R1 · LB/RB · L/R depending on the pad.
-	_footer_base = "↑↓ / Wheel: Select    %s/%s: Page    %s / RClick: Close    (hover to preview)" % [
-		InputProfileManager.hint_for_action("battle_defer"),
-		InputProfileManager.hint_for_action("battle_advance"),
-		InputProfileManager.hint_for_action("ui_cancel")]
-	footer.text = _footer_base
-	footer.position = Vector2(24, viewport.y - 32)
-	footer.size = Vector2(viewport.x - 48, 24)
-	footer.add_theme_font_size_override("font_size", TextScale.scaled(14))
-	footer.add_theme_color_override("font_color", DIM_COLOR)
-	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	add_child(footer)
+	# Panes are built after the hint so they can stop above it; keep the hint in front.
+	move_child(_footer, get_child_count() - 1)
 
 
 func _make_panel(pos: Vector2, sz: Vector2) -> Control:
@@ -681,10 +682,14 @@ func _detail_overflows() -> bool:
 func _sync_scroll_hint() -> void:
 	if _footer == null:
 		return
+	var text := _footer_base
 	if _detail_overflows():
-		_footer.text = _footer_base + "    Shift+↑↓ / R-Stick: Scroll"
-	else:
-		_footer.text = _footer_base
+		text += "    Shift+↑↓ / R-Stick: Scroll"
+	if _footer.text == text:
+		return
+	_footer.text = text
+	if _footer_slot.size.y > 0.0:
+		MenuChrome.fit_footer_text(_footer, _footer_slot)
 
 
 func _detail_scroll_step() -> float:
