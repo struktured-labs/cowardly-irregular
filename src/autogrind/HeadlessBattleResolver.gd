@@ -1561,6 +1561,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						## debuff a single stat and look like it worked.
 						## `modifier` above, not a third local re-read with a third default: this line
 						## spelled the same lookup with 0.75 where live uses its shared 1.0.
+						var down_chance: float = _resisted_support_chance(target, float(ability.get("success_rate", 1.0)))
+						if down_chance < 1.0 and (down_chance <= 0.0 or randf() >= down_chance):
+							continue
 						target.add_debuff("Despair (ATK)", "attack", modifier, duration)
 						target.add_debuff("Despair (DEF)", "defense", modifier, duration)
 						target.add_debuff("Despair (SPD)", "speed", modifier, duration)
@@ -1653,6 +1656,11 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					else:
 						## Live owns a ~40-arm effect table; headless deliberately does NOT mirror
 						## it. An effect we do not model is a NO-OP, never damage.
+						## Ailments subtract the Resist Ring. Wards that fall through here (barrier, reflect) do not.
+						if _support_ailment(effect):
+							var ailment_chance: float = _resisted_support_chance(target, float(ability.get("success_rate", 1.0)))
+							if ailment_chance < 1.0 and (ailment_chance <= 0.0 or randf() >= ailment_chance):
+								continue
 						target.add_status(effect, duration)
 						_log("%s uses %s on %s (%s)" % [caster.combatant_name, ability_id, target.combatant_name, effect])
 						continue
@@ -1661,6 +1669,9 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 				if modifier >= 1.0:
 					target.add_buff(ability_id, stat, modifier, duration)
 				else:
+					var debuff_chance: float = _resisted_support_chance(target, float(ability.get("success_rate", 1.0)))
+					if debuff_chance < 1.0 and (debuff_chance <= 0.0 or randf() >= debuff_chance):
+						continue
 					target.add_debuff(ability_id, stat, modifier, duration)
 				_log("%s uses %s on %s" % [caster.combatant_name, ability_id, target.combatant_name])
 			## ONCE per cast, after the loop — live calls it once with the whole target list, and a
@@ -1959,6 +1970,22 @@ func _steal_share(before_base: int, after_base: int) -> int:
 	return after_base - before_base
 
 
+const _SUPPORT_AILMENTS: Array[String] = [
+	"blind", "charm", "stun", "pacify", "sleep", "poison", "burn", "burning",
+	"static", "confuse", "fear", "silence", "curse",
+]
+
+
+func _support_ailment(effect: String) -> bool:
+	return effect in _SUPPORT_AILMENTS
+
+
+## Twin of BattleManager._resisted_support_chance: chance minus the target's status_resistance.
+func _resisted_support_chance(target, chance: float) -> float:
+	var resist: float = _sum_equipment_special_effect(target, "status_resistance")
+	return clampf(chance - resist, 0.0, 1.0)
+
+
 func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array, ability_id: String) -> void:
 	var sec_effect: String = str(ability.get("secondary_effect", ""))
 	if sec_effect == "":
@@ -1993,7 +2020,11 @@ func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array
 	var sec_modifier: float = float(ability.get("secondary_modifier", 0.7))
 	var sec_duration: int = int(ability.get("duration", 3))
 	for t in sec_targets:
-		if randf() >= sec_chance:
+		## Buffs keep the raw chance. Debuffs and ailments subtract the target's Resist Ring.
+		var roll: float = sec_chance
+		if not _SECONDARY_STAT_BUFF_MAP.has(sec_effect):
+			roll = _resisted_support_chance(t, sec_chance)
+		if roll <= 0.0 or randf() >= roll:
 			continue
 		if _SECONDARY_STAT_BUFF_MAP.has(sec_effect):
 			var b: Array = _SECONDARY_STAT_BUFF_MAP[sec_effect]
