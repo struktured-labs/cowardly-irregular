@@ -245,6 +245,11 @@ func is_inside_interior() -> bool:
 var _spawn_point: String = "default"
 var _exploration_scene: Node = null
 var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
+## Tile and facing captured on the way INTO a shared interior. village_return lands there; -1 facing means leave the new sprite's default.
+var _pending_facing: int = -1
+var _has_interior_return: bool = false
+var _interior_return_position: Vector2 = Vector2.ZERO
+var _interior_return_facing: int = -1
 var _current_cave_floor: int = 1  # Track current floor in multi-floor dungeons
 var _current_terrain: String = "plains"  # Current terrain type for battle backgrounds
 
@@ -1591,6 +1596,8 @@ func _on_party_leader_changed(new_index: int) -> void:
 func _on_quit_to_title() -> void:
 	"""Handle quit to title from overworld menu settings"""
 	print("[GAME] Returning to title screen")
+	# Doorstep latch is session-only. Quit must drop it or the next load exits through a door from the run you left.
+	_clear_interior_doorstep()
 
 	# Clean up overworld menu
 	if _overworld_menu and is_instance_valid(_overworld_menu):
@@ -1760,6 +1767,8 @@ func _on_title_new_game() -> void:
 	# Quit to Title keeps the last door, the battle-return tile, and the cave floor; exploration would place the new party there.
 	_spawn_point = "default"
 	_player_position = Vector2.ZERO
+	_pending_facing = -1
+	_clear_interior_doorstep()
 	_current_cave_floor = 1
 	# Repel, the step gap, and a sprung ambush plate live on the EncounterSystem autoload — Quit to Title does not clear them.
 	if EncounterSystem and EncounterSystem.has_method("reset_for_new_game"):
@@ -2889,6 +2898,8 @@ func _restore_party_from_save_data() -> bool:
 	function closes the gap. Pairs with the expanded Combatant.to_dict /
 	from_dict and the full-state _sync_party_to_game_state.
 	"""
+	# Doorstep latch is not in the save. Drop it on every restore, including a party-less one, so the loaded room exits at the village gate.
+	_clear_interior_doorstep()
 	if not GameState or GameState.player_party.is_empty():
 		return false
 
@@ -4187,8 +4198,13 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 		_player_position = Vector2.ZERO
 		if scene_player:
 			scene_player.position = restored_tile
+			_apply_pending_facing(scene_player)
 			# The stair, the village gate, and a puzzle portal fire on the first overlap. Swallow that one; a later step-on still works.
 			await _swallow_return_tile_triggers(exploration_scene, scene_player)
+		else:
+			_pending_facing = -1
+	else:
+		_pending_facing = -1
 
 	# Set player appearance based on party leader (respects party_leader_index)
 	if party.size() > 0:
@@ -5168,6 +5184,68 @@ func _arm_battle_commence_watchdog() -> void:
 			_battle_transition_starting = false)
 
 
+## Shared inn/shop/forge doors (village_return) put you back on the tile you walked in from. "default" is only the fallback when that tile was never captured.
+func _route_area_transition(target_map: String, spawn_point: String) -> Dictionary:
+	var position := Vector2.ZERO
+	var facing := -1
+	var returning := false
+	if target_map == "village_return":
+		returning = true
+		if _village_origin_id != "":
+			target_map = _village_origin_id
+			# inn_exit / shop_exit / blacksmith_exit are not registered per building, so the named spawn cannot place you. The doorstep captured on the way in can.
+			spawn_point = "default"
+			if _has_interior_return:
+				position = _interior_return_position
+				facing = _interior_return_facing
+		else:
+			target_map = "overworld"
+			spawn_point = "default"
+		_clear_interior_doorstep()
+	# Capture origin if entering an interior so its exit can route back.
+	if target_map in INTERIOR_MAP_IDS:
+		# Don't overwrite if we're already inside an interior (interior→interior isn't a thing today, but if it ever happens, keep the original village).
+		if not (_current_map_id in INTERIOR_MAP_IDS):
+			_village_origin_id = _current_map_id
+			_remember_interior_doorstep()
+	elif not returning:
+		_clear_interior_doorstep()
+	return {"map": target_map, "spawn": spawn_point, "position": position, "facing": facing}
+
+
+func _remember_interior_doorstep() -> void:
+	_has_interior_return = false
+	_interior_return_position = Vector2.ZERO
+	_interior_return_facing = -1
+	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
+		return
+	var body: Variant = _exploration_scene.get("player") if "player" in _exploration_scene else null
+	if body == null or not is_instance_valid(body):
+		return
+	_interior_return_position = body.position
+	_has_interior_return = true
+	if "current_direction" in body:
+		_interior_return_facing = int(body.current_direction)
+
+
+func _clear_interior_doorstep() -> void:
+	_has_interior_return = false
+	_interior_return_position = Vector2.ZERO
+	_interior_return_facing = -1
+
+
+func _apply_pending_facing(body: Node) -> void:
+	var face := _pending_facing
+	_pending_facing = -1
+	if face < 0 or body == null or not is_instance_valid(body):
+		return
+	if "current_direction" not in body:
+		return
+	body.current_direction = face
+	if body.get("_sprite") != null and body.has_method("_update_sprite"):
+		body._update_sprite()
+
+
 func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	"""Handle contextual area transition based on destination type."""
 	# 2026-07-14: struktured playtest — a random encounter can fire the same physics frame the player crosses into an auto-enter AreaTransition; both scene changes race, screen freezes. Bail here if the battle transition already committed.
@@ -5196,30 +5274,15 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	if _llm and _llm.has_method("abort_all_conversations"):
 		_llm.abort_all_conversations()
 
-	# If an interior is asking to "return to the village we came from", resolve
-	# the magic token to the saved origin map. Falls back to overworld if we
-	# somehow never set one (e.g. dev jump).
-	if target_map == "village_return":
-		if _village_origin_id != "":
-			target_map = _village_origin_id
-			# The interior's spawn name (inn_exit / shop_exit) is specific to
-			# interior types, but villages won't have those spawn points
-			# registered. Substitute a name the village does know.
-			spawn_point = "default"
-		else:
-			target_map = "overworld"
-			spawn_point = "default"
-
-	# Capture origin if entering an interior so its exit can route back.
-	if target_map in INTERIOR_MAP_IDS:
-		# Don't overwrite if we're already inside an interior (interior→interior
-		# isn't a thing today, but if it ever happens, keep the original village).
-		if not (_current_map_id in INTERIOR_MAP_IDS):
-			_village_origin_id = _current_map_id
+	# village_return keeps the origin map and, when we watched the player walk in, the tile they left.
+	var routed := _route_area_transition(target_map, spawn_point)
+	target_map = str(routed["map"])
+	spawn_point = str(routed["spawn"])
 
 	_set_current_map_id(target_map)
 	_spawn_point = spawn_point
-	_player_position = Vector2.ZERO
+	_player_position = routed["position"] as Vector2
+	_pending_facing = int(routed["facing"])
 	# Battle return reads this latch; leaving the map must drop it or the next dungeon (any world) opens on the floor you walked out of.
 	_current_cave_floor = 1
 	_current_terrain = _get_terrain_for_map(target_map)
