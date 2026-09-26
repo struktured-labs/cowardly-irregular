@@ -630,7 +630,7 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		var raw_idx: int = int(save_data["party_leader_index"])
 		var max_idx: int = max(0, player_party.size() - 1)
 		party_leader_index = clampi(raw_idx, 0, max_idx)
-	# Absent key keeps the live row: partial applies and pre-key saves must not clear it.
+	# Absent key keeps the live row here. Partial applies omit it; the file load resets old saves.
 	if save_data.has("party_formation"):
 		_write_party_formation(int(save_data["party_formation"]))
 	## Tick 363: type-guard Dictionary/Array reads so a corrupted save

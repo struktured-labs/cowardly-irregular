@@ -831,6 +831,9 @@ func _apply_save_data(data: Dictionary) -> void:
 		# Pre-history files omit save_history. Clear here, not in GameState: rewind snapshots omit the key on purpose and must keep the live ring.
 		if data["game_state"] is Dictionary and not (data["game_state"] as Dictionary).has("save_history") and "save_history" in GameState:
 			GameState.save_history.clear()
+		# Old files omit party_formation. Reset to V-Formation here, not in GameState: partial applies omit the key on purpose and must keep the live row.
+		if data["game_state"] is Dictionary and not (data["game_state"] as Dictionary).has("party_formation") and GameState.has_method("_write_party_formation"):
+			GameState._write_party_formation(0)
 
 	## Tick 364: type-guard automation/records reads. Pre-fix a save
 	## with automation=null/int/string crashed at automation_data.has()
