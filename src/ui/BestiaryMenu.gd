@@ -317,8 +317,11 @@ func _build_detail(parent: Control) -> void:
 	_detail_placeholder.add_theme_color_override("font_color", Color(0.35, 0.4, 0.5))
 	_detail_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_detail_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_detail_placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_detail_placeholder.visible = false
 	host.add_child(_detail_placeholder)
+	_seat_placeholder_glyph()
+	call_deferred("_seat_placeholder_glyph")
 
 	var text_x: float = margin + sprite_size + 20
 	var text_w: float = _detail_scroll.size.x - text_x - margin
@@ -767,6 +770,52 @@ func _format_drops(drops: Array, one_shot) -> String:
 ## shared resolver so future leak fixes touch one file.
 func _resolve_item_display_name(item_id: String) -> String:
 	return ItemNameResolver.resolve(item_id)
+
+
+## The label cannot be shorter than the font, which is taller than the portrait, so control-centering leaves the '?' low. Shift by the drawn glyph instead.
+func _seat_placeholder_glyph() -> void:
+	if _detail_placeholder == null or _detail_sprite_bg == null:
+		return
+	var box := Rect2(_detail_sprite_bg.position, _detail_sprite_bg.size)
+	_detail_placeholder.position = box.position
+	_detail_placeholder.size = box.size
+	var ink := _placeholder_ink_local(_detail_placeholder)
+	if ink.size.x < 1.0 or ink.size.y < 1.0:
+		return
+	_detail_placeholder.position += box.get_center() - (_detail_placeholder.position + ink.get_center())
+
+
+func _placeholder_ink_local(label: Label) -> Rect2:
+	var font: Font = label.get_theme_font("font")
+	if font == null or label.text.is_empty():
+		return Rect2()
+	var fs := label.get_theme_font_size("font_size")
+	var bounds := label.get_character_bounds(0)
+	if bounds.size.x < 1.0 or bounds.size.y < 1.0:
+		return Rect2()
+	var tp := TextParagraph.new()
+	tp.add_string(label.text, font, fs)
+	if tp.get_line_count() < 1:
+		return Rect2()
+	var asc := tp.get_line_ascent(0)
+	var dsc := tp.get_line_descent(0)
+	var font_h := font.get_height(fs)
+	if asc + dsc < font_h:
+		var diff := font_h - (asc + dsc)
+		asc += diff / 2.0
+		dsc += diff - (diff / 2.0)
+	var ts := TextServerManager.get_primary_interface()
+	var ch := label.text.unicode_at(0)
+	for rid in font.get_rids():
+		var idx := ts.font_get_glyph_index(rid, fs, ch, 0)
+		if idx == 0:
+			continue
+		var gsz: Vector2 = ts.font_get_glyph_size(rid, Vector2i(fs, 0), idx)
+		var goff: Vector2 = ts.font_get_glyph_offset(rid, Vector2i(fs, 0), idx)
+		if gsz.x < 1.0 or gsz.y < 1.0:
+			continue
+		return Rect2(Vector2(bounds.position.x, bounds.position.y + asc) + goff, gsz)
+	return Rect2()
 
 
 func _load_sprite(monster_id: String) -> void:
