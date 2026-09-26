@@ -1761,6 +1761,9 @@ func _on_title_new_game() -> void:
 	_spawn_point = "default"
 	_player_position = Vector2.ZERO
 	_current_cave_floor = 1
+	# Repel, the step gap, and a sprung ambush plate live on the EncounterSystem autoload — Quit to Title does not clear them.
+	if EncounterSystem and EncounterSystem.has_method("reset_for_new_game"):
+		EncounterSystem.reset_for_new_game()
 	# Go straight to exploration — prologue triggers on first Theron interaction
 	_set_current_map_id("overworld")
 	_start_exploration()
