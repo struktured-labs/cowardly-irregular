@@ -31,18 +31,12 @@ var cloud_density: float = 0.0
 var cloud_color: Color = Color(1.0, 1.0, 1.0, 1.0)
 var _cloud_time: float = 0.0
 
-## Day/night cycle — tints the entire Mode 7 view
-## Cycle: dawn (warm) → day (neutral) → dusk (warm) → night (cool blue)
-## Set day_night_enabled = false for worlds that don't cycle (W5 digital, W6 abstract)
+## Day/night tint for the Mode 7 view. Cycling worlds read GameState.day_phase (the dial,
+## the village lamps, and the battle backdrop). A private 5-minute phase used to restart
+## at noon every time the map was built, so night did not survive a battle, an inn, or a load.
+## day_night_enabled = false keeps a preset fixed_tint (W3 amber, W5 terminal blue).
 var day_night_enabled: bool = true
-var day_night_speed: float = 1.0 / 300.0  # Full cycle every 300 seconds (5 min)
-var _day_night_phase: float = 0.25  # Start at day (0=dawn, 0.25=day, 0.5=dusk, 0.75=night)
 var _fixed_tint: Color = Color.WHITE  # For worlds with fixed time (empty = cycle)
-
-const TINT_DAWN: Color = Color(1.0, 0.85, 0.7)
-const TINT_DAY: Color = Color(1.0, 1.0, 1.0)
-const TINT_DUSK: Color = Color(1.0, 0.75, 0.6)
-const TINT_NIGHT: Color = Color(0.6, 0.65, 0.9)
 
 ## Per-world Mode 7 visual presets — the shader evolution IS the narrative.
 ## W1 classic SNES → W5 wireframe/data → W6 shader dissolves entirely.
@@ -318,16 +312,29 @@ func _update_compass() -> void:
 		_compass_ring[i].position = pos - Vector2(10, 10)
 
 
-func _get_day_night_tint(phase: float) -> Color:
-	# phase: 0.0=dawn, 0.25=day, 0.5=dusk, 0.75=night, 1.0=dawn again
-	if phase < 0.25:
-		return TINT_DAWN.lerp(TINT_DAY, phase / 0.25)
-	elif phase < 0.5:
-		return TINT_DAY.lerp(TINT_DUSK, (phase - 0.25) / 0.25)
-	elif phase < 0.75:
-		return TINT_DUSK.lerp(TINT_NIGHT, (phase - 0.5) / 0.25)
-	else:
-		return TINT_NIGHT.lerp(TINT_DAWN, (phase - 0.75) / 0.25)
+## White when the fullscreen day/night overlay is already tinting this view. Otherwise the
+## same curve VillageLighting and the dial use, so a rebuilt field matches the clock.
+func _field_time_tint() -> Color:
+	if _clock_overlay_already_tints():
+		return Color.WHITE
+	var tree := get_tree()
+	var gs: Node = tree.root.get_node_or_null("GameState") if tree != null else null
+	if gs == null or not ("day_phase" in gs):
+		return Color.WHITE
+	return DayNightOverlay.tint_for_phase(fposmod(float(gs.day_phase), 1.0))
+
+
+func _clock_overlay_already_tints() -> bool:
+	var tree := get_tree()
+	if tree == null:
+		return false
+	var gl := tree.root.get_node_or_null("GameLoop")
+	if gl == null or not ("_day_night_overlay" in gl):
+		return false
+	var overlay: Variant = gl._day_night_overlay
+	if overlay == null or not ("_outdoor" in overlay):
+		return false
+	return bool(overlay._outdoor)
 
 
 func _auto_dissolve_in() -> void:
@@ -369,12 +376,11 @@ func process_frame() -> void:
 		_cloud_time += delta * 0.5
 		_shader_mat.set_shader_parameter("cloud_scroll", _cloud_time)
 
-	# Day/night tint cycle
+	# Horizon follows the shared clock. W1's fullscreen overlay already paints that curve,
+	# so the shader stays white there and night is not multiplied twice.
 	if _shader_mat:
 		if day_night_enabled:
-			_day_night_phase = fmod(_day_night_phase + day_night_speed * delta, 1.0)
-			var tint = _get_day_night_tint(_day_night_phase)
-			_shader_mat.set_shader_parameter("time_tint", tint)
+			_shader_mat.set_shader_parameter("time_tint", _field_time_tint())
 		elif _fixed_tint != Color.WHITE:
 			_shader_mat.set_shader_parameter("time_tint", _fixed_tint)
 
