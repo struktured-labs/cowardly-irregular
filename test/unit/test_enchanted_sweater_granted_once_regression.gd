@@ -154,7 +154,7 @@ func test_a_second_potion_still_stacks() -> void:
 	assert_eq(_landed([
 		{"type": "give_item", "item": "potion", "quantity": 1},
 		{"type": "give_item", "item": "potion", "quantity": 1},
-	], "potion"), 2, "a consumable granted twice still stacks — the once-only rule is for key items")
+	], "potion"), 2, "a consumable granted twice still stacks — only the Enchanted Sweater is refused a second time")
 
 
 ## Moves the first sweater onto the ally, then grants again. Returns the party total gained.

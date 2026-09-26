@@ -1143,8 +1143,8 @@ func _add_item_to_party_leader(item_id: String, quantity: int) -> void:
 			push_warning("CutsceneDirector: item '%s' not defined in items.json — will be a ghost inventory entry" % item_id)
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if game_loop and "party" in game_loop and game_loop.party.size() > 0:
-		# A key item already in the bag is not granted again — both Oak Street scenes give the Enchanted Sweater.
-		if not data.is_empty() and int(data.get("category", -1)) == ItemSystem.ItemCategory.META and ItemSystem.has_method("party_item_count") and ItemSystem.party_item_count(game_loop.party, item_id) > 0:
+		# Both Oak Street scenes give this sweater. A second copy must not enter the bag. Other key items still stack.
+		if item_id == "enchanted_sweater" and not data.is_empty() and int(data.get("category", -1)) == ItemSystem.ItemCategory.META and ItemSystem.has_method("party_item_count") and ItemSystem.party_item_count(game_loop.party, item_id) > 0:
 			return
 		var leader = game_loop.party[0]
 		if leader and leader.has_method("add_item"):
