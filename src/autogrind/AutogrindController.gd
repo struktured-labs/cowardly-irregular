@@ -139,7 +139,9 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	## per session, so the pair has no other reading, and GameLoop's refusal path never calls stop_grind.
 	if AutogrindSystem.is_grinding:
 		AutogrindSystem.stop_autogrind("Stale session flag from an aborted start")
-	if not AutogrindSystem.start_autogrind(typed_party, {}, config):
+	## The unfiltered party is the item bag: a leader KO'd at start still carries every potion the party owns.
+	var item_bag: Array = party.filter(func(m): return m is Combatant)
+	if not AutogrindSystem.start_autogrind(typed_party, {}, config, item_bag):
 		## The force already happened; without this the player keeps autogrind's defaults (see .422).
 		_restore_autobattle_states()
 		print("[AUTOGRIND] System refused the session — controller stands down")

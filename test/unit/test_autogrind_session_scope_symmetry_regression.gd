@@ -57,6 +57,7 @@ const CLASSIFIED := {
 	"is_grinding": "lifecycle flag, not a tally; a snapshot only exists while it is true",
 	"grind_party": "rebuilt from the LIVE party every start -- AutogrindController:122-127 types _party and passes it in, and resume goes through that same start",
 	"grind_enemy_template": "passed in by the same start_autogrind call that rebuilds grind_party",
+	"grind_item_bag": "the controller passes the whole live party into every start_autogrind, resume included; Combatant refs cannot round-trip JSON",
 	"_automation_paused": "transient controller state (AutogrindController:465/557/569), cleared by BOTH start_autogrind and stop_autogrind; the controller's own restore_from_snapshot carries no pause key either",
 	"injuries_this_session": "DERIVED from _injury_baseline by check_new_injuries; the baseline is the persisted half",
 	"current_region_id": "a place, not a tally; you grind the same region across sessions by design",

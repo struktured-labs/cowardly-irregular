@@ -2501,6 +2501,12 @@ func _toggle_grinding() -> void:
 		if not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
 			_log_message("[color=red]Rules rejected — fix the highlighted rows before grinding.[/color]")
 			return
+		## Refused HERE, before anything is hidden, emitted or re-scored: a start that stopped inside its own call is what stranded struktured 2026-09-25.
+		var would_stop: Dictionary = AutogrindSystem.stop_before_first_battle(_party)
+		if not would_stop.is_empty():
+			_log_message("[color=yellow]Not started — %s[/color]" % _first_battle_refusal_text(would_stop))
+			SoundManager.play_ui("menu_error")
+			return
 		_is_grinding = true
 		_grind_start_pending = true
 		_log_message("[color=%s]Autogrind started![/color]" % AccessibilityPalette.bonus_bbcode())
@@ -2517,6 +2523,22 @@ func _toggle_grinding() -> void:
 
 	_build_ui()
 	SoundManager.play_ui("menu_select")
+
+
+## Names the rule and what clears it, so the refusal reads as advice rather than as the stop it prevented.
+func _first_battle_refusal_text(stop: Dictionary) -> String:
+	var who: String = str(stop.get("member", ""))
+	match str(stop.get("rule", "")):
+		"hp_threshold":
+			return "%s is below your %s HP stop. Heal first, or lower \"Stop at HP\" in Options." % [
+				who if who != "" else "a party member", _safety_label("hp")]
+		"item_depleted":
+			return "the party has no healing items and \"Stop when Out of Items\" is on. Restock, or turn it off in Options."
+		"max_battles":
+			return "\"Stop after\" is %s battles. Raise it in Options." % _safety_label("battles")
+		"party_death":
+			return "%s is down and \"Stop on Death\" is on." % (who if who != "" else "a party member")
+	return str(stop.get("reason", "the grind would stop before its first battle")) + "."
 
 
 func _get_grind_config() -> Dictionary:

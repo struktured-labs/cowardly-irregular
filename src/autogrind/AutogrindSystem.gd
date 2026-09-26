@@ -161,6 +161,8 @@ var learned_patterns: Dictionary = {}
 ## Battle configuration for grinding
 var grind_enemy_template: Dictionary = {}
 var grind_party: Array[Combatant] = []
+## Everyone the player brought, KO'd or not: the bag is theirs even when the leader who holds it starts down.
+var grind_item_bag: Array = []
 
 ## ═══════════════════════════════════════════════════════════════════════
 ## COMBAT SATURATION INDEX (CSI) - Diminishing returns per region
@@ -910,7 +912,7 @@ func _ready() -> void:
 
 ## Autogrind control
 ## Cadence #20: void → bool return so callers can detect refusal. Backward-compat — existing void-return callers still work (GDScript). Two silent-fail branches now push_warning: already-active (caller-bug: double-start) + empty-party (would start a grind with no members).
-func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config: Dictionary = {}) -> bool:
+func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config: Dictionary = {}, item_bag: Array = []) -> bool:
 	if is_grinding:
 		push_warning("[AUTOGRIND] start_autogrind called while grind already active — refusing double-start (caller bug: stop_autogrind first)")
 		return false
@@ -974,6 +976,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	meta_boss_spawn_chance = 0.0
 
 	grind_party = party.duplicate()
+	grind_item_bag = item_bag.duplicate() if not item_bag.is_empty() else Array(party)
 	grind_enemy_template = enemy_template.duplicate()
 
 	# Initialize grind stats tracking
@@ -1210,25 +1213,55 @@ func _increase_efficiency() -> void:
 
 func _check_interrupt_conditions() -> String:
 	"""Check if any interrupt conditions are met, returns reason or empty string"""
+	var party_stop: Dictionary = _party_interrupt(grind_party, _party_bag(null))
+	if not party_stop.is_empty():
+		return str(party_stop["reason"])
+	return _session_interrupt_reason(meta_corruption_level, battles_completed)
+
+
+## Why a grind would stop before its FIRST battle, read with the rules and filtering a real start uses; {} means it would fight.
+## struktured 2026-09-25: a start under the HP stop began and ended inside one call and left him stuck in the console.
+func stop_before_first_battle(party: Array) -> Dictionary:
+	var members: Array = []
+	var bag: Array = []
+	for member in party:
+		if member is Combatant:
+			bag.append(member)
+			if member.is_alive and not is_character_permadead(member.combatant_name):
+				members.append(member)
+	if members.is_empty():
+		return {}
+	var party_stop: Dictionary = _party_interrupt(members, bag)
+	if not party_stop.is_empty():
+		return party_stop
+	## start_autogrind zeroes both counters, so the session half is read at those fresh values.
+	var reason: String = _session_interrupt_reason(0.0, 0)
+	if reason == "":
+		return {}
+	return {"rule": "max_battles" if reason.begins_with("Max battles") else "corruption_limit", "reason": reason}
+
+
+func _party_interrupt(members: Array, bag: Array) -> Dictionary:
 	# Check HP threshold
 	if interrupt_rules.get("hp_threshold", 0) > 0:
-		for member in grind_party:
+		for member in members:
 			## SKIPS THE DEAD. A corpse reads 0% and tripped this before party_death was ever consulted:
 			## a death was reported as an HP stop, and turning "stop on death" OFF could not keep a grind
 			## running. A wiped party is still stopped by the controller's own "No party available" guard.
 			if member is Combatant and member.is_alive and member.get_hp_percentage() < interrupt_rules["hp_threshold"]:
-				return "HP threshold reached (%d%%)" % interrupt_rules["hp_threshold"]
+				return {"rule": "hp_threshold", "reason": "HP threshold reached (%d%%)" % interrupt_rules["hp_threshold"],
+					"member": member.combatant_name}
 
 	# Check party death
 	if interrupt_rules.get("party_death", false):
-		for member in grind_party:
+		for member in members:
 			if member is Combatant and not member.is_alive:
-				return "Party member died"
+				return {"rule": "party_death", "reason": "Party member died", "member": member.combatant_name}
 
 	# Check item depletion
 	if interrupt_rules.get("item_depleted", false):
 		var has_healing_items = false
-		for member in grind_party:
+		for member in bag:
 			if member is Combatant:
 				## Was `potion` and `hi_potion` ONLY, so a party carrying 99 X-Potions and 5 Elixirs
 				## read as "depleted" and the grind refused to run. Five usable HP restoratives were
@@ -1241,15 +1274,19 @@ func _check_interrupt_conditions() -> String:
 			if has_healing_items:
 				break
 		if not has_healing_items:
-			return "Healing items depleted"
+			return {"rule": "item_depleted", "reason": "Healing items depleted"}
 
+	return {}
+
+
+func _session_interrupt_reason(corruption: float, battles: int) -> String:
 	# Check corruption limit
-	if meta_corruption_level >= interrupt_rules.get("corruption_limit", 999.0):
-		return "Corruption limit reached (%.1f)" % meta_corruption_level
+	if corruption >= interrupt_rules.get("corruption_limit", 999.0):
+		return "Corruption limit reached (%.1f)" % corruption
 
 	# Check max battles
-	if battles_completed >= interrupt_rules.get("max_battles", 999):
-		return "Max battles reached (%d)" % battles_completed
+	if battles >= interrupt_rules.get("max_battles", 999):
+		return "Max battles reached (%d)" % battles
 
 	return ""
 
@@ -2080,6 +2117,21 @@ func _resolve_member(party: Array, member_key: String):
 ## A living party member holding a healing ability they can currently afford. Reads `type` with
 ## `category` as fallback and `power` with `damage_multiplier` — both fields are authored one way
 ## and read the other elsewhere in this engine; HeadlessBattleResolver documents the same trap.
+## Silence, stun, sleep and cannot_act stay on after the fight that applied them. Battle refuses the cast; so must both between-battle casters.
+func _between_battle_cast_blocked(caster, ability_id: String) -> String:
+	if not caster.has_method("has_status"):
+		return ""
+	if caster.has_status("silence"):
+		return "%s is silenced — %s won't come out" % [caster.combatant_name, ability_id]
+	if caster.has_status("stun"):
+		return "%s is stunned and cannot act" % caster.combatant_name
+	if caster.has_status("sleep"):
+		return "%s is asleep" % caster.combatant_name
+	if caster.has_status("cannot_act"):
+		return "%s cannot act" % caster.combatant_name
+	return ""
+
+
 func _find_restorative_caster(party: Array) -> Dictionary:
 	var js = _get_autoload_node("JobSystem")
 	if js == null or not js.has_method("get_ability"):
@@ -2097,6 +2149,9 @@ func _find_restorative_caster(party: Array) -> Dictionary:
 				continue
 			var cost := int(ability.get("mp_cost", 0))
 			if m.current_mp < cost:
+				continue
+			## heal_party casts through here, not _member_ability_apply, so a silenced Cleric kept healing between fights.
+			if _between_battle_cast_blocked(m, ability_id) != "":
 				continue
 			return {
 				"caster": m,
@@ -2169,16 +2224,9 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 	## does not abort the whole action.
 	if caster.has_method("knows_ability") and not caster.knows_ability(ability_id):
 		return {"ok": false, "reason": "%s does not know %s" % [caster.combatant_name, ability_id]}
-	## Silence stays on after the fight that applied it. Battle refuses; this cast runs in that gap.
-	if caster.has_method("has_status") and caster.has_status("silence"):
-		return {"ok": false, "reason": "%s is silenced — %s won't come out" % [caster.combatant_name, ability_id]}
-	## Stun, sleep, and cannot_act stay on after the fight too. Battle skips that turn; this cast runs in the gap.
-	if caster.has_method("has_status") and caster.has_status("stun"):
-		return {"ok": false, "reason": "%s is stunned and cannot act" % caster.combatant_name}
-	if caster.has_method("has_status") and caster.has_status("sleep"):
-		return {"ok": false, "reason": "%s is asleep" % caster.combatant_name}
-	if caster.has_method("has_status") and caster.has_status("cannot_act"):
-		return {"ok": false, "reason": "%s cannot act" % caster.combatant_name}
+	var blocked: String = _between_battle_cast_blocked(caster, ability_id)
+	if blocked != "":
+		return {"ok": false, "reason": blocked}
 	var cost := int(ability.get("mp_cost", 0))
 	if caster.current_mp < cost:
 		return {"ok": false, "reason": "%s lacks MP for %s" % [caster.combatant_name, ability_id]}
@@ -2660,7 +2708,7 @@ const _HP_RESTORE_KEYS := ["heal_hp", "heal_hp_percent", "revive"]
 ## The party's one bag. Drops and the starting kit sit on the leader; a wounded ally still drinks from it.
 func _party_bag(member) -> Array:
 	var bag: Array = []
-	for m in grind_party:
+	for m in (grind_item_bag if not grind_item_bag.is_empty() else Array(grind_party)):
 		if m != null and is_instance_valid(m):
 			bag.append(m)
 	if member != null and is_instance_valid(member) and not (member in bag):
