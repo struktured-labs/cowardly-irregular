@@ -1335,6 +1335,9 @@ func to_dict() -> Dictionary:
 		"autobattle_locked": autobattle_locked,
 		"player_trust": player_trust,
 	}
+	# The tavern piano and the portrait read this. It used to live only on the live Combatant.
+	if customization != null and customization.has_method("to_dict"):
+		data["customization"] = customization.to_dict()
 	# Job is a Dictionary; only its id is stable across runs (the full dict
 	# is reconstructed via JobSystem.assign_job in restore).
 	if job and job is Dictionary:
@@ -1357,6 +1360,13 @@ func from_dict(data: Dictionary) -> void:
 	## so the cap-clamp uses the just-loaded max, not the default.
 	if data.has("name"):
 		combatant_name = data["name"]
+	# A saved nature wins. A file that predates the key gets the New Game nature for the five starters only.
+	if data.has("customization") and data["customization"] is Dictionary:
+		customization = CharacterCustomization.from_dict_with_script(data["customization"], CharacterCustomization)
+	elif not data.has("customization") and customization == null:
+		var roster_look = CharacterCustomization.for_roster_name(combatant_name)
+		if roster_look != null:
+			customization = roster_look
 	if data.has("max_hp"):
 		# Floor at 1 — max_hp = 0 would divide-by-zero in
 		# get_hp_percentage and break recalculate_stats's
