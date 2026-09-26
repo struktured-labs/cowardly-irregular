@@ -68,6 +68,9 @@ var weather: String = "clear"
 ## BattleManager:230. Steal gold scales with the victim's max HP on both sides of the port.
 const STEAL_GOLD_HP_DIVISOR: float = 500.0
 var _stolen_gold: int = 0
+## Same rule as BattleManager._check_one_shot: every foe died in the round the first hit landed.
+var _one_shot: bool = false
+var _first_damage_round: int = -1
 
 
 func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
@@ -77,6 +80,8 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	_battle_log.clear()
 	_rounds_since_group_attack = 99
 	_stolen_gold = 0
+	_one_shot = false
+	_first_damage_round = -1
 
 	## A BATTLE STARTS CLEAN, mirroring BattleManager.start_battle:519-534 field for field and with
 	## the same scope (all combatants, not just the party). Live's own comment says why: so nothing
@@ -185,9 +190,16 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 		actions.sort_custom(func(a, b): return a.get("speed", 0) < b.get("speed", 0))
 
 		for action in actions:
+			var hp_before: Dictionary = {}
+			for enemy in _enemy_party:
+				if is_instance_valid(enemy):
+					hp_before[enemy] = enemy.current_hp
 			_execute_action(action)
+			_note_first_enemy_hp_loss(hp_before)
 
 			if _all_dead(_enemy_party):
+				## A round-start tick can empty the field before this swing. That is not a one-shot.
+				_one_shot = _first_damage_round == _current_round
 				if bm:
 					_restore_bm(bm, _bm_player_backup, _bm_enemy_backup, _bm_round_backup)
 				return _build_results(true)
@@ -2255,6 +2267,31 @@ func _resolve_item(user, item_id: String, target) -> void:
 	_log("%s uses %s on %s (fallback path — ItemSystem missing)" % [user.combatant_name, item_id, target.combatant_name])
 
 
+func _note_first_enemy_hp_loss(before: Dictionary) -> void:
+	if _first_damage_round >= 0:
+		return
+	for enemy in _enemy_party:
+		if not is_instance_valid(enemy) or not before.has(enemy):
+			continue
+		if int(enemy.current_hp) < int(before[enemy]):
+			_first_damage_round = _current_round
+			return
+
+
+func _grant_one_shot_trophies(enemy_types: Array, monsters_data: Dictionary, drops: Dictionary) -> void:
+	var item_drops: Dictionary = drops.get("item_drops", {})
+	for mt in enemy_types:
+		var record: Dictionary = monsters_data.get(mt, {})
+		var block: Variant = record.get("one_shot", {})
+		if not (block is Dictionary):
+			continue
+		var trophy := str((block as Dictionary).get("reward_item", ""))
+		if trophy == "":
+			continue
+		item_drops[trophy] = int(item_drops.get(trophy, 0)) + 1
+	drops["item_drops"] = item_drops
+
+
 func _all_dead(party: Array) -> bool:
 	for combatant in party:
 		if combatant.is_alive:
@@ -2372,6 +2409,9 @@ func _build_results(victory: bool, termination_reason: String = "") -> Dictionar
 					float(gs2.game_constants.get("drop_rate_multiplier", 1.0)),
 					0.1, 10.0)
 		drops = _roll_drop_tables(enemy_types, monsters_data, drop_rate_mult)
+		## Watched fights grant one_shot.reward_item. Ludicrous was paying the table only.
+		if _one_shot:
+			_grant_one_shot_trophies(enemy_types, monsters_data, drops)
 
 	return {
 		"victory": victory,
