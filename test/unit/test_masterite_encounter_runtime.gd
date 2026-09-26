@@ -410,6 +410,45 @@ func test_ready_catches_up_a_step_whose_kill_happened_before_the_quest() -> void
 		_reset_quest(qid)
 
 
+## The load catch-up already ran on the way back into town, before the player took the quest.
+## Accepting (or reaching the kill step) in that same visit must still count the fight.
+func test_reaching_the_step_in_the_same_visit_counts_a_kill_that_already_happened() -> void:
+	var qs = _quest_system()
+	assert_not_null(qs, "QuestSystem autoload present")
+	var by_arch := {}
+	for p in _declared_placements():
+		by_arch[p["archetype"]] = p
+	var gold_before: int = GameState.get_gold()
+	var checked := 0
+	for s in _kill_gated_steps():
+		var arch: String = s["archetype"]
+		if not by_arch.has(arch):
+			continue
+		var qid: String = s["quest"]
+		_reset_quest(qid)
+		GameState.set_story_flag("w1_%s_defeated" % arch, true)
+		var trig := MasteriteEncounterScript.new()
+		trig.archetype = arch
+		trig.monster_id = "masterite_%s_medieval" % arch
+		trig.quest_flag = str(by_arch[arch]["flag"])
+		add_child_autofree(trig)
+		await get_tree().process_frame
+		assert_eq(qs.get_objective_index(qid), 0,
+			"%s: the resident catch-up must not invent progress before the step exists" % qid)
+		_advance_to(qid, int(s["index"]))
+		var after: int = qs.get_objective_index(qid)
+		assert_true(after > int(s["index"]) or qs.get_state(qid) == "complete",
+			"%s: beating the %s before this step, then reaching the step without leaving town, left the log on step %d — the fight is already gone" % [qid, arch, after])
+		assert_eq(qs.get_state(qid), "active",
+			"%s: counting the kill must not turn the quest in — the return talk still pays the reward" % qid)
+		checked += 1
+		_reset_quest(qid)
+	assert_eq(checked, _kill_gated_steps().size(),
+		"drove every masterite-gated step — a loop that dies on the first quest is indistinguishable from a list of one")
+	assert_eq(GameState.get_gold(), gold_before,
+		"skipping ahead to the return talk must not pay gold; the turn-in is what pays")
+
+
 ## Source-level, and it has to be: the real _apply_pending_boss_defeat ends in
 ## SaveSystem.auto_save(), which writes user://saves and would eat struktured's
 ## live saves on every suite run. The runtime companion is the notify behaviour
