@@ -4,6 +4,7 @@ class_name BattleDialogue
 ## Battle Dialogue System - Shows character portraits with themed dialogue boxes
 ## Used for boss intros, story moments, and character reactions
 ## Supports custom character portraits via CharacterPortrait widget
+## Text Size uses the same TextScale helper as cutscene dialogue. The panel grows with it so the line stays inside the box.
 
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 
@@ -143,13 +144,82 @@ func _build_ui() -> void:
 	_dialogue_box = Control.new()
 	_dialogue_box.position = Vector2(MARGIN, box_y)
 	_dialogue_box.size = Vector2(box_width, BOX_HEIGHT)
+	_dialogue_box.clip_contents = true
 	add_child(_dialogue_box)
 
 	# Create initial empty state (will be themed when dialogue starts)
 	_create_dialogue_visuals(CHARACTER_THEMES["narrator"])
 
 
+## At 100% this is the historical 120px panel (body at y=28, 74px tall, hint 20px off the bottom). Above that, speaker/body/hint track TextScale and the panel grows by the same ratio so a line that fits at 100% still fits.
+func _dialogue_metrics() -> Dictionary:
+	var speaker_px := TextScale.scaled(14)
+	var body_px := TextScale.scaled(13)
+	var hint_px := TextScale.scaled(10)
+	var font := ThemeDB.fallback_font
+	var speaker_h := 20.0 * float(speaker_px) / 14.0
+	var hint_h := 14.0 * float(hint_px) / 10.0
+	var line_h := 18.0 * float(body_px) / 13.0
+	var line_base := 18.0
+	if font:
+		speaker_h = float(font.get_height(speaker_px))
+		hint_h = float(font.get_height(hint_px))
+		line_h = maxf(1.0, float(font.get_height(body_px)))
+		line_base = maxf(1.0, float(font.get_height(13)))
+	# 100% and 80% keep the authored slots (body at y=28, 74px tall, hint 20px off the bottom). The font's own get_height(14) is taller than that 20px gap, so growing from the glyph would move the default panel.
+	var text_y: float = float(TILE_SIZE * 2 + 20)
+	var body_h: float = float(BOX_HEIGHT - TILE_SIZE * 4 - 30)
+	var box_h: float = float(BOX_HEIGHT)
+	var hint_y: float = box_h - 20.0
+	if speaker_px > 14 or body_px > 13 or hint_px > 10:
+		var hint_block: float = hint_h + 6.0
+		text_y = float(TILE_SIZE * 2) + speaker_h
+		body_h = ceil(74.0 * line_h / line_base)
+		box_h = text_y + body_h + hint_block - 2.0
+		hint_y = box_h - hint_block
+		var screen_cap := get_viewport().get_visible_rect().size.y - float(MARGIN * 2)
+		if screen_cap >= float(BOX_HEIGHT) and box_h > screen_cap:
+			body_h = maxf(line_h, body_h - (box_h - screen_cap))
+			box_h = screen_cap
+			hint_y = box_h - hint_block
+	var screen := get_viewport().get_visible_rect().size
+	var box_w := screen.x - float(MARGIN * 2)
+	if box_w > 32.0:
+		_dialogue_box.position = Vector2(MARGIN, screen.y - box_h - MARGIN)
+		_dialogue_box.size = Vector2(box_w, box_h)
+	return {
+		"speaker_px": speaker_px,
+		"body_px": body_px,
+		"hint_px": hint_px,
+		"text_y": text_y,
+		"body_h": body_h,
+		"hint_y": hint_y,
+	}
+
+
+## Keeps the continue hint's left edge at box_width-150 while the string fits there, and pulls it left once Text Size would draw past the border.
+func _place_advance_hint() -> void:
+	if _advance_hint == null or _dialogue_box == null:
+		return
+	var box_width := _dialogue_box.size.x
+	var font := _advance_hint.get_theme_font("font")
+	var fsz := _advance_hint.get_theme_font_size("font_size")
+	var hint_w := 104.0
+	var hint_h := float(fsz)
+	if font:
+		hint_w = font.get_string_size(_advance_hint.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz).x
+		hint_h = float(font.get_height(fsz))
+	var right := box_width - float(TILE_SIZE * 2)
+	var left := box_width - 150.0
+	if left + hint_w > right:
+		left = right - hint_w
+	left = maxf(left, float(TILE_SIZE * 2))
+	_advance_hint.position = Vector2(left, _advance_hint.position.y)
+	_advance_hint.size = Vector2(maxf(hint_w, 1.0), maxf(hint_h, 1.0))
+
+
 func _create_dialogue_visuals(theme: Dictionary) -> void:
+	var metrics := _dialogue_metrics()
 	# Clear existing children of dialogue box
 	for child in _dialogue_box.get_children():
 		child.queue_free()
@@ -194,28 +264,31 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	# Speaker name
 	_speaker_label = Label.new()
 	_speaker_label.position = Vector2(text_x, TILE_SIZE * 2)
-	_speaker_label.add_theme_font_size_override("font_size", 14)
+	_speaker_label.add_theme_font_size_override("font_size", metrics["speaker_px"])
 	_speaker_label.add_theme_color_override("font_color", theme["name"])
 	_dialogue_box.add_child(_speaker_label)
 
 	# Dialogue text
 	_text_label = RichTextLabel.new()
-	_text_label.position = Vector2(text_x, TILE_SIZE * 2 + 20)
-	_text_label.size = Vector2(text_width, box_height - TILE_SIZE * 4 - 30)
+	_text_label.position = Vector2(text_x, metrics["text_y"])
+	_text_label.size = Vector2(text_width, metrics["body_h"])
 	_text_label.bbcode_enabled = true
 	_text_label.scroll_active = false
-	_text_label.add_theme_font_size_override("normal_font_size", 13)
+	_text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_text_label.clip_contents = true
+	_text_label.add_theme_font_size_override("normal_font_size", metrics["body_px"])
 	_text_label.add_theme_color_override("default_color", theme["text"])
 	_dialogue_box.add_child(_text_label)
 
 	# Advance hint
 	_advance_hint = Label.new()
 	_advance_hint.text = advance_hint_text()
-	_advance_hint.position = Vector2(box_width - 150, box_height - 20)
-	_advance_hint.add_theme_font_size_override("font_size", 10)
+	_advance_hint.position = Vector2(box_width - 150, metrics["hint_y"])
+	_advance_hint.add_theme_font_size_override("font_size", metrics["hint_px"])
 	_advance_hint.add_theme_color_override("font_color", theme["text"].darkened(0.4))
 	_advance_hint.visible = false
 	_dialogue_box.add_child(_advance_hint)
+	_place_advance_hint()
 
 
 func _draw_retro_border(parent: Control, width: float, height: float, color: Color) -> void:
@@ -407,6 +480,7 @@ func _finish_typing() -> void:
 		_text_label.text = _current_text
 	if _advance_hint and is_instance_valid(_advance_hint):
 		_advance_hint.text = advance_hint_text()  # re-resolved per line, same reason as CutsceneDialogue
+		_place_advance_hint()
 		_advance_hint.visible = true
 
 

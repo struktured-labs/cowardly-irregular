@@ -178,12 +178,13 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 	var exp_max: int = exp_lvl * 100
 	_add_bar(card, 12, 102, w - 24, 10, exp_cur, exp_max, EXP_COLOR, "EXP")
 
-	# Stats (compact)
+	# Stats (compact). MDF shares the second line so a 5-member card stays inside 184px.
 	var stats := Label.new()
-	stats.text = "ATK %d  DEF %d\nMAG %d  SPD %d" % [
+	stats.text = "ATK %d  DEF %d\nMAG %d  MDF %d  SPD %d" % [
 		int(member.attack) if "attack" in member else 0,
 		int(member.defense) if "defense" in member else 0,
 		int(member.magic) if "magic" in member else 0,
+		int(member.magic_defense) if "magic_defense" in member else 0,
 		int(member.speed) if "speed" in member else 0,
 	]
 	stats.position = Vector2(12, 124)
