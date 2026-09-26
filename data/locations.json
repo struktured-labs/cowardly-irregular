@@ -267,5 +267,110 @@
 		"description": "The Witness sits on a single bench. She has seen all five prior worlds — and knows what comes next.",
 		"map_id": "vertex_threshold",
 		"npcs": ["the_witness"]
+	},
+
+	"blacksmith_interior": {
+		"id": "blacksmith_interior",
+		"name": "The Forge",
+		"type": "interior",
+		"map_id": "blacksmith_interior"
+	},
+
+	"brasston_redundancy_archive": {
+		"id": "brasston_redundancy_archive",
+		"name": "The Redundancy Archive",
+		"type": "interior",
+		"map_id": "brasston_redundancy_archive"
+	},
+
+	"eldertree_grafting_house": {
+		"id": "eldertree_grafting_house",
+		"name": "The Grafting House",
+		"type": "interior",
+		"map_id": "eldertree_grafting_house"
+	},
+
+	"enrichment_annex": {
+		"id": "enrichment_annex",
+		"name": "Community Enrichment Annex",
+		"type": "interior",
+		"map_id": "enrichment_annex"
+	},
+
+	"frosthold_meltwater_clock": {
+		"id": "frosthold_meltwater_clock",
+		"name": "The Meltwater Clock",
+		"type": "interior",
+		"map_id": "frosthold_meltwater_clock"
+	},
+
+	"grimhollow_lantern_debt": {
+		"id": "grimhollow_lantern_debt",
+		"name": "The Lantern Debt Office",
+		"type": "interior",
+		"map_id": "grimhollow_lantern_debt"
+	},
+
+	"harmonia_cartographer": {
+		"id": "harmonia_cartographer",
+		"name": "Cartographer's Attic",
+		"type": "interior",
+		"map_id": "harmonia_cartographer"
+	},
+
+	"ironhaven_strike_registry": {
+		"id": "ironhaven_strike_registry",
+		"name": "The Strike Registry",
+		"type": "interior",
+		"map_id": "ironhaven_strike_registry"
+	},
+
+	"maple_community_center": {
+		"id": "maple_community_center",
+		"name": "Community Center",
+		"type": "interior",
+		"map_id": "maple_community_center"
+	},
+
+	"maple_garage_sale": {
+		"id": "maple_garage_sale",
+		"name": "The Perpetual Garage Sale",
+		"type": "interior",
+		"map_id": "maple_garage_sale"
+	},
+
+	"node_prime_cache": {
+		"id": "node_prime_cache",
+		"name": "The Cache",
+		"type": "interior",
+		"map_id": "node_prime_cache"
+	},
+
+	"rivet_row_incident_board": {
+		"id": "rivet_row_incident_board",
+		"name": "The Incident Board",
+		"type": "interior",
+		"map_id": "rivet_row_incident_board"
+	},
+
+	"sandrift_rain_ledger": {
+		"id": "sandrift_rain_ledger",
+		"name": "The Rain Ledger",
+		"type": "interior",
+		"map_id": "sandrift_rain_ledger"
+	},
+
+	"scriptura_bookshop": {
+		"id": "scriptura_bookshop",
+		"name": "Aldrin's Books",
+		"type": "interior",
+		"map_id": "scriptura_bookshop"
+	},
+
+	"scriptura_guild": {
+		"id": "scriptura_guild",
+		"name": "Scriptweaver's Guild",
+		"type": "interior",
+		"map_id": "scriptura_guild"
 	}
 }
