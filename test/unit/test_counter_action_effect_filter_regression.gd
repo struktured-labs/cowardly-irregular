@@ -63,8 +63,10 @@ func test_premise_the_caller_actually_uses_the_returned_action() -> void:
 	var call_at: int = src.find("_get_counter_action(combatant, counter_strategy")
 	assert_gt(call_at, -1,
 		"PREMISE BROKEN: _make_ai_decision no longer calls _get_counter_action. Every assertion below this line is vacuous — the function may be perfect and no boss will ever run it.")
-	var window: String = src.substr(call_at, 260)
-	assert_true(window.contains("if not counter_action.is_empty()") and window.contains("return counter_action"),
+	# Provoke's lock wraps the return. The counter dict is still the value
+	# that leaves _make_ai_decision; a self-buff is not retargeted.
+	var window: String = src.substr(call_at, 420)
+	assert_true(window.contains("if not counter_action.is_empty()") and window.contains("return _lock_action_to_taunter(combatant, counter_action, alive_enemies)"),
 		"PREMISE BROKEN: the caller no longer RETURNS the counter action. The asserts below still pass because they call the function directly — they would be proving a value nobody reads. Re-instrument this file against whatever consumes it now; do not delete the premise to make it green.")
 
 
