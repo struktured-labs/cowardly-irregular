@@ -5722,41 +5722,40 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 	if buff_mult > 0.0:
 		multiplier *= buff_mult
 	var raw = int(stat_val * multiplier)
-	var def_val = target.get_buffed_stat("magic_defense", target.magic_defense) if is_magical \
-		else target.get_buffed_stat("defense", target.defense)
-	var def_name: String = "MDEF" if is_magical else "DEF"
-	var mitigated = int((raw * raw) / float(max(1, raw + def_val)))
 	var scale_clause := ""
 	if not is_equal_approx(gear_mult, 1.0):
 		scale_clause += " ×gear %.2f" % gear_mult
 	if not is_equal_approx(buff_mult, 1.0):
 		scale_clause += " ×elem %.2f" % buff_mult
-	var formula: String = "%s %d ×%.1f%s = %d; %d² ÷ (%d + %s %d) = %d" % [stat_name, stat_val, power / 10.0, scale_clause, raw, raw, raw, def_name, def_val, mitigated]
+	## Pre-defense amount. Cast order is lens, terrain/weather, affinity, then take_damage.
+	var incoming: int = raw
+	var formula: String = "%s %d ×%.1f%s = %d" % [stat_name, stat_val, power / 10.0, scale_clause, raw]
 
-	# Elemental modifier — reuse the real hit's source of truth so the "~N dmg"
-	# preview matches reality (0.0x immune, 1.5x weak, 0.5x resist). Immunity
-	# returns a truthful 0, bypassing the min-1 floor, so an "Immune: Ice" enemy
-	# never previews phantom damage the swing won't actually deal.
-	## Both executors apply this before terrain, and it fires exactly when [KILL] is being read.
+	## Lens multiplies before defense on every executor, and it fires exactly when [KILL] is being read.
 	var lens_mod: float = lens_execute_multiplier(attacker, target)
 	if not is_equal_approx(lens_mod, 1.0):
-		mitigated = int(mitigated * lens_mod)
-		formula += " ×execute %.2f = %d" % [lens_mod, mitigated]
+		incoming = int(incoming * lens_mod)
+		formula += " ×execute %.2f = %d" % [lens_mod, incoming]
 
-	## Magic-only and terrain/weather first, both mirroring _execute_magic_ability: its physical twin reads no element at all.
+	## Magic-only. Terrain/weather, then affinity, both before defense — take_elemental_damage multiplies, then take_damage. A physical strike reads no element.
 	var element_val = ability.get("element")
 	if is_magical and element_val != null and str(element_val) != "":
 		var el: String = str(element_val)
 		var env_mod: float = get_terrain_damage_modifier(el) * get_weather_damage_modifier(el)
 		if not is_equal_approx(env_mod, 1.0):
-			mitigated = int(mitigated * env_mod)
-			formula += " ×terrain/weather %.2f = %d" % [env_mod, mitigated]
+			incoming = int(incoming * env_mod)
+			formula += " ×terrain/weather %.2f = %d" % [env_mod, incoming]
 		var elem_mod: float = target.calculate_elemental_modifier(el)
-		mitigated = int(mitigated * elem_mod)
-		formula += " ×%s %.2f = %d" % [el, elem_mod, mitigated]
+		incoming = int(incoming * elem_mod)
+		formula += " ×%s %.2f = %d" % [el, elem_mod, incoming]
 		if elem_mod <= 0.0:
 			return {"damage": 0, "formula": formula + " (immune)"}
 
+	var def_val = target.get_buffed_stat("magic_defense", target.magic_defense) if is_magical \
+		else target.get_buffed_stat("defense", target.defense)
+	var def_name: String = "MDEF" if is_magical else "DEF"
+	var mitigated = int((incoming * incoming) / float(max(1, incoming + def_val)))
+	formula += "; %d² ÷ (%d + %s %d) = %d" % [incoming, incoming, def_name, def_val, mitigated]
 	return {"damage": max(1, mitigated), "formula": formula}
 
 
