@@ -1381,6 +1381,37 @@ func _generate_meta_boss_name() -> String:
 	]
 
 
+## Records a boss fight's own EXP, gold, and drops. grant pays them — ludicrous never runs BattleManager. A watched fight passes grant=false: the battle already paid, and the summary still has to count it.
+func account_boss_fight_rewards(exp_gained: int, items_gained: Dictionary, grant: bool) -> void:
+	if exp_gained > 0:
+		total_exp_gained += exp_gained
+		_grind_stats["total_exp"] += exp_gained
+		if grant:
+			for member in grind_party:
+				if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
+					member.gain_job_exp(exp_gained)
+	var gold: int = int(items_gained.get("gold", 0))
+	if gold > 0:
+		_grind_stats["total_gold"] += gold
+		if grant:
+			var gs: Node = null
+			var tree: SceneTree = Engine.get_main_loop() as SceneTree
+			if tree != null and tree.root != null:
+				gs = tree.root.get_node_or_null("GameState")
+			if gs != null and "party_gold" in gs:
+				gs.party_gold += gold
+	for item_id in items_gained:
+		if str(item_id) == "gold":
+			continue
+		var quantity: int = int(items_gained[item_id])
+		if quantity <= 0:
+			continue
+		if total_items_gained.has(item_id):
+			total_items_gained[item_id] += quantity
+		else:
+			total_items_gained[item_id] = quantity
+
+
 func on_meta_boss_victory(boss_data: Dictionary) -> void:
 	"""Called by AutogrindController after the party defeats a meta-boss.
 	Reduces corruption and awards bonus rewards."""
