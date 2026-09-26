@@ -322,7 +322,7 @@ const PER_BATTLE_METAS: Array[String] = [
 	"_mind_swap_controller", "_steal_response_consumed", "_swayed_stacks", "_utility_spent",
 	"_signature_fired", "_base_speed", "_boss_face_index", "_calibrant_recalibrated",
 	"_learned_adaptation", "_learns_element_counts", "_last_ability_against", "_bark_n",
-	"_in_shared_damage_redirect",
+	"_in_shared_damage_redirect", "_shadow_step_unswung",
 	## ⚠️ TRAILING UNDERSCORE = PREFIX, and these two are why the clear cannot be exact-match only:
 	## the boss-bark trackers are COMPOSED (`"_bark_adv_" + face_key`), so removing the literal string
 	## would remove nothing. My own ratchet caught them on its first run, one minute after I wrote it —
