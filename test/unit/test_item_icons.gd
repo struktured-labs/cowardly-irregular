@@ -175,6 +175,19 @@ func test_equipment_rows_draw_an_icon() -> void:
 	var slot_name := slot.get_node_or_null("EquippedName") as Label
 	assert_not_null(slot_icon, "the equipped weapon row has no icon")
 	assert_true(_shares_a_line(slot_icon, slot_name), "the equipped slot icon is not on the name's line")
+	add_child_autofree(row)
+	add_child_autofree(slot)
+	await get_tree().process_frame
+	var stats := row.get_node_or_null("Stats") as Label
+	var desc := row.get_node_or_null("Description") as Label
+	assert_not_null(stats, "the choice row has no stat line")
+	assert_not_null(desc, "the choice row has no description")
+	assert_lte(stats.position.y + stats.get_line_height(), desc.position.y,
+		"the stat line overlaps the description")
+	var title := slot.get_node_or_null("SlotTitle") as Label
+	assert_not_null(title, "the equipped slot has no title")
+	assert_lte(title.position.y + title.get_line_height(), slot_icon.position.y,
+		"the slot title overlaps the equipped icon")
 
 
 func test_a_chest_and_a_victory_drop_show_an_icon() -> void:

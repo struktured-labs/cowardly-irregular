@@ -218,7 +218,7 @@ func _create_equipment_panel(panel_size: Vector2) -> Control:
 
 	# Equipment slots
 	var y_offset = 32
-	var slot_height = 50
+	var slot_height := _slot_stride()
 
 	for i in range(SLOTS.size()):
 		var slot_row = _create_slot_row(i)
@@ -228,6 +228,36 @@ func _create_equipment_panel(panel_size: Vector2) -> Control:
 		_slot_labels.append(slot_row)
 
 	return panel
+
+
+func _ui_line_height(font_size: int) -> int:
+	return int(ceili(ThemeDB.fallback_font.get_height(font_size)))
+
+
+func _centered_on_icon(font_size: int) -> int:
+	return maxi(0, int((32 - _ui_line_height(font_size)) / 2.0))
+
+
+## Slot title, then the 32px icon. The stride includes the 4px row inset.
+func _slot_body_y() -> int:
+	return _ui_line_height(10) + 4
+
+
+func _slot_stride() -> int:
+	return _slot_body_y() + 32 + 4 + 4
+
+
+## Icon line, then the stat line, then the description, with a gap so they do not share pixels.
+func _choice_stats_y() -> int:
+	return 32 + 4
+
+
+func _choice_desc_y() -> int:
+	return _choice_stats_y() + _ui_line_height(10) + 4
+
+
+func _choice_stride() -> int:
+	return _choice_desc_y() + _ui_line_height(9) + 4 + 4
 
 
 func _create_slot_row(slot_index: int) -> Control:
@@ -242,17 +272,20 @@ func _create_slot_row(slot_index: int) -> Control:
 	highlight.name = "Highlight"
 	row.add_child(highlight)
 
+	var body_y := _slot_body_y()
+
 	# Cursor
 	var cursor = Label.new()
 	cursor.text = ">" if is_selected else " "
-	cursor.position = Vector2(4, 14)
+	cursor.position = Vector2(4, body_y + _centered_on_icon(14))
 	cursor.add_theme_font_size_override("font_size", 14)
 	cursor.add_theme_color_override("font_color", Color.YELLOW)
 	cursor.name = "Cursor"
 	row.add_child(cursor)
 
-	# Slot label
+	# Slot label sits above the icon. Sharing y=12 put "Weapon" on the sword.
 	var slot_label = Label.new()
+	slot_label.name = "SlotTitle"
 	slot_label.text = SLOTS[slot_index]
 	slot_label.position = Vector2(24, 0)
 	slot_label.add_theme_font_size_override("font_size", 10)
@@ -266,13 +299,13 @@ func _create_slot_row(slot_index: int) -> Control:
 	var name_x := 24
 	if equipped_id != "":
 		var icon := ItemIcons.make_rect(equipped_id, 32)
-		icon.position = Vector2(22, 12)
+		icon.position = Vector2(22, body_y)
 		row.add_child(icon)
 		name_x = 58
 	var equip_label = Label.new()
 	equip_label.name = "EquippedName"
 	equip_label.text = equip_name
-	equip_label.position = Vector2(name_x, 12)
+	equip_label.position = Vector2(name_x, body_y)
 	equip_label.size = Vector2(280, 32)
 	equip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	equip_label.add_theme_font_size_override("font_size", 12)
@@ -280,7 +313,7 @@ func _create_slot_row(slot_index: int) -> Control:
 	row.add_child(equip_label)
 
 	# Mouse click overlay
-	MenuMouseHelper.make_clickable(row, slot_index, 200, 46,
+	MenuMouseHelper.make_clickable(row, slot_index, 200, _slot_stride() - 4,
 		_on_slot_click.bind(slot_index), _on_slot_hover.bind(slot_index))
 
 	return row
@@ -464,7 +497,7 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 		return panel
 
 	var y_offset = 32
-	var item_height = 60
+	var item_height := _choice_stride()
 	var max_visible = int((panel_size.y - 50) / item_height)
 
 	# Handle scroll offset so the selection always stays in view
@@ -514,7 +547,7 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	# Cursor
 	var cursor = Label.new()
 	cursor.text = ">" if is_selected else " "
-	cursor.position = Vector2(4, 16)
+	cursor.position = Vector2(4, _centered_on_icon(14))
 	cursor.add_theme_font_size_override("font_size", 14)
 	cursor.add_theme_color_override("font_color", Color.YELLOW)
 	cursor.name = "Cursor"
@@ -572,8 +605,9 @@ func _create_item_row(item_id: String, index: int) -> Control:
 		stat_text = "(no change)"
 
 	var stats_label = Label.new()
+	stats_label.name = "Stats"
 	stats_label.text = stat_text.strip_edges()
-	stats_label.position = Vector2(54, 32)
+	stats_label.position = Vector2(54, _choice_stats_y())
 	stats_label.add_theme_font_size_override("font_size", 10)
 	if positive_count > 0 and negative_count == 0:
 		stats_label.add_theme_color_override("font_color", AccessibilityPalette.bonus())
@@ -583,16 +617,17 @@ func _create_item_row(item_id: String, index: int) -> Control:
 		stats_label.add_theme_color_override("font_color", TEXT_COLOR)
 	row.add_child(stats_label)
 
-	# Description
+	# Description. A 12px gap under a 21px stat line painted "(no change)" through this.
 	var desc_label = Label.new()
+	desc_label.name = "Description"
 	desc_label.text = item_data.get("description", "")
-	desc_label.position = Vector2(54, 44)
+	desc_label.position = Vector2(54, _choice_desc_y())
 	desc_label.add_theme_font_size_override("font_size", 9)
 	desc_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	row.add_child(desc_label)
 
 	# Mouse click overlay
-	MenuMouseHelper.make_clickable(row, index, 300, 56,
+	MenuMouseHelper.make_clickable(row, index, 300, _choice_stride() - 4,
 		_on_equip_item_click.bind(index), _on_equip_item_hover.bind(index))
 
 	return row
