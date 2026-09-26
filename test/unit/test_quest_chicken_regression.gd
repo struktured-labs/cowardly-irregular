@@ -86,6 +86,91 @@ func test_caught_hen_starts_hidden() -> void:
 	assert_false(hen.visible, "already-caught hen starts hidden")
 
 
+func _catch_toast(hen: Node) -> Label:
+	for c in hen.get_children():
+		if c is Label:
+			return c
+	return null
+
+
+## The catch line is a child of the hen. The poof used to set visible=false on the hen at 0.35s, which hid "(n / 7)" before the line's own fade (it starts at 0.5s).
+func test_catch_line_stays_up_after_the_hen_poofs() -> void:
+	_qs.accept(QUEST)
+	var hen = ChickenScript.new()
+	hen.chicken_id = ChickenScript.ALL_CHICKEN_IDS[0]
+	add_child_autofree(hen)
+	await get_tree().process_frame
+	hen._catch()
+	await get_tree().create_timer(0.45).timeout
+	var lbl := _catch_toast(hen)
+	assert_not_null(lbl, "catching a hen must leave a line")
+	assert_true(str(lbl.text).contains("1 / 7"), "the line must say how many are home")
+	assert_false(hen._sprite.visible, "the hen itself still leaves")
+	assert_true(hen.visible, "hiding the hen node is what hid the line")
+	assert_true(lbl.is_visible_in_tree(),
+		"the '(1 / 7)' line must still be on screen after the hen poofs")
+	assert_gt(lbl.modulate.a, 0.5, "the line fades on its own timer, which has not started yet")
+
+
+## The Rogue beat is one sentence wider than the old 192x18 toast, so it drew off the hen as a single line.
+func test_a_long_catch_line_wraps_inside_its_box() -> void:
+	_qs.accept(QUEST)
+	var beat := str(_qs.get_quest(QUEST).get("rewards", {}).get("job_variants", {}).get("rogue", {}).get("dialogue_text", ""))
+	assert_gt(beat.length(), 40, "control: the Rogue beat must still be authored")
+	var hen = ChickenScript.new()
+	hen.chicken_id = ChickenScript.ALL_CHICKEN_IDS[6]
+	hen.catch_line = beat
+	add_child_autofree(hen)
+	await get_tree().process_frame
+	hen._catch()
+	var lbl := _catch_toast(hen)
+	assert_not_null(lbl, "the Rogue beat must be toasted")
+	assert_eq(lbl.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART)
+	var font := lbl.get_theme_font("font")
+	assert_not_null(font, "the toast must have a font or the wrap measurement says nothing")
+	var fsz := lbl.get_theme_font_size("font_size")
+	var single: float = font.get_string_size(lbl.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fsz).x
+	assert_gt(single, lbl.size.x, "control: the beat is wider than the toast")
+	var need: float = font.get_multiline_string_size(lbl.text, HORIZONTAL_ALIGNMENT_CENTER, lbl.size.x, fsz).y
+	assert_gte(lbl.size.y, need - 0.5, "the toast must be tall enough for the wrapped beat")
+
+
+func test_saved_roundup_count_is_zero_until_a_hen_is_caught() -> void:
+	var obj := {"type": "custom", "required_flag": ChickenScript.ALL_CAUGHT_FLAG}
+	assert_eq(ChickenScript.annotate_objective("Corner them.", obj), "[0/7] Corner them.")
+	assert_eq(ChickenScript.annotate_objective("Ask Milo.", {"required_flag": "not_the_roundup"}), "Ask Milo.",
+		"only the roundup objective grows a tally")
+	assert_eq(ChickenScript.annotate_objective("Bring them home.", {"type": "talk", "required_flag": ChickenScript.ALL_CAUGHT_FLAG}),
+		"Bring them home.", "the turn-in step shares the flag and is not the tally")
+
+
+## Save/load keeps chicken_caught_* and drops the toast. The log and the HUD are what the player still has.
+func test_quest_log_and_tracker_show_the_saved_catch_count() -> void:
+	var prior_lp := QuestSystem.last_progressed_quest_id
+	_qs.accept(QUEST)
+	for i in range(3):
+		GameState.set_story_flag("chicken_caught_" + ChickenScript.ALL_CHICKEN_IDS[i])
+	var log := QuestLog.new()
+	add_child_autofree(log)
+	var text := ""
+	for line in log._build_quest_lines():
+		text += str(line.get("text", "")) + "\n"
+	var count_at := text.find("[3/7]")
+	var corner_at := text.find("Corner all seven")
+	assert_gt(count_at, -1, "the quest log must show the saved 3/7")
+	assert_gt(corner_at, count_at, "the count sits in front of the description so a clipped row keeps it")
+	var host := Node.new()
+	add_child_autofree(host)
+	var tracker: Node = (load("res://src/exploration/QuestTracker.gd") as GDScript).new()
+	host.add_child(tracker)
+	tracker.setup(host)
+	var hud := str(tracker._side_label.text)
+	assert_true(hud.contains("[3/7]"), "the tracker must show the same saved count: %s" % hud)
+	assert_lt(hud.find("[3/7]"), hud.find("Corner all seven"),
+		"the HUD count must come before the long description")
+	QuestSystem.last_progressed_quest_id = prior_lp
+
+
 func test_placement_sites_across_four_scenes() -> void:
 	var harmonia: String = FileAccess.get_file_as_string("res://src/maps/villages/HarmoniaVillage.gd")
 	for cid in ["chicken_harmonia_market", "chicken_harmonia_flowerbed",

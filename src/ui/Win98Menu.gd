@@ -289,6 +289,13 @@ func _process(delta: float) -> void:
 		Win98Menu._defer_axis_held = false
 	if Win98Menu._advance_axis_held and not Input.is_action_pressed("battle_advance"):
 		Win98Menu._advance_axis_held = false
+	# Hold-to-commit reads BEFORE the nav guard below: a submenu arms the ROOT's timer, and with one open the guard returned first.
+	if _l_button_pressed and battle_mode:
+		var hold_time = Time.get_ticks_msec() / 1000.0 - _l_button_press_time
+		if hold_time >= L_HOLD_CONFIRM_TIME:
+			_l_button_pressed = false
+			_confirm_turn_with_queue()
+			return
 	# Hold-to-repeat. Only up/down: left/right enter and exit submenus here, so repeating
 	# them would thrash the player in and out on a single hold.
 	# ⛔ SAME GUARDS AS THE PRESS PATH. This polls Input directly, so it reaches none of
@@ -302,12 +309,6 @@ func _process(delta: float) -> void:
 		_nav_step(-1)
 	elif repeat_action == "ui_down":
 		_nav_step(1)
-	# Check for L button hold-to-confirm
-	if _l_button_pressed and battle_mode:
-		var hold_time = Time.get_ticks_msec() / 1000.0 - _l_button_press_time
-		if hold_time >= L_HOLD_CONFIRM_TIME:
-			_l_button_pressed = false
-			_confirm_turn_with_queue()
 
 
 func _exit_tree() -> void:
