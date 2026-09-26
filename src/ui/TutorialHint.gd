@@ -22,6 +22,17 @@ static var _active_count: int = 0
 static func is_any_active() -> bool:
 	return _active_count > 0
 
+
+## Session cache is not a save. It may hide a hint only when this file agrees, or when no file is loaded to disagree.
+static func save_still_says_shown(hint_id: String) -> bool:
+	var ml := Engine.get_main_loop()
+	if ml == null or not (ml is SceneTree):
+		return true
+	var gs := (ml as SceneTree).root.get_node_or_null("GameState")
+	if gs == null or not ("game_constants" in gs):
+		return true
+	return bool(gs.game_constants.get("tutorial_" + hint_id, false))
+
 var _panel: PanelContainer
 var _title_label: Label
 var _body_label: Label
@@ -89,7 +100,7 @@ func show_hint(hint_id: String, title: String, body: String, min_dismiss: float 
 	"""Show a tutorial hint if it hasn't been shown before."""
 	# Belt-and-suspenders queue_free on early-return: hint_dismissed will not fire
 	# (since _active stays false) so callers that depend on it for cleanup leak.
-	if _shown_hints.get(hint_id, false):
+	if _shown_hints.get(hint_id, false) and save_still_says_shown(hint_id):
 		queue_free()
 		return
 	if GameState and GameState.game_constants.get("tutorial_" + hint_id, false):

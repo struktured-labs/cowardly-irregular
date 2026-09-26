@@ -464,8 +464,29 @@ func _living(participants: Array) -> Array:
 	return participants.filter(func(p): return p is Combatant and p.is_alive)
 
 
+## Same lock rule as BattleManager: a stunned ally does not add power or pay AP for a pooled strike.
+func _without_locked_participants(participants: Array) -> Array:
+	var acting: Array = []
+	for p in participants:
+		if not (p is Combatant) or not p.is_alive:
+			continue
+		var why := ""
+		for s in Combatant.GROUP_ACTION_LOCKS:
+			if p.has_status(s):
+				why = s
+				break
+		if why != "" and p.forfeit_committed_action():
+			_log("%s is %s and drops out of the group attack" % [p.combatant_name, Combatant.control_lock_label(why)])
+			continue
+		acting.append(p)
+	return acting
+
+
 func _execute_group_physical(participants: Array, group_type: String) -> Dictionary:
 	"""Execute all-out attack — AoE physical damage to all enemies."""
+	participants = _without_locked_participants(participants)
+	if participants.is_empty():
+		return {"type": "group_done", "combatant": null, "speed": -99}
 	var total_power = 0.0
 	for p in participants:
 		if p is Combatant and p.is_alive:
@@ -487,6 +508,9 @@ func _execute_group_physical(participants: Array, group_type: String) -> Diction
 
 func _execute_group_formation(participants: Array, formation: Dictionary) -> Dictionary:
 	"""Execute a formation special based on party composition."""
+	participants = _without_locked_participants(participants)
+	if participants.is_empty():
+		return {"type": "group_done", "combatant": null, "speed": -99}
 	var formation_id = formation["id"]
 	var ap_cost = formation["ap_cost"]
 	var alive_enemies = _enemy_party.filter(func(e): return e.is_alive)
