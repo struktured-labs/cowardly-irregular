@@ -53,9 +53,22 @@ func _selectable(mid: String) -> Dictionary:
 	var hero := Combatant.new()
 	autofree(hero)
 	hero.max_hp = 900000; hero.current_hp = 900000
+	## Crown Authority rallies other rats. Alone, the king has nobody to rally and correctly skips it.
+	var allies: Array = [c]
+	for a in avail:
+		if str(a.get("target_type", "")) == "all_rat_allies":
+			var rat := Combatant.new()
+			autofree(rat)
+			rat.combatant_name = "cave_rat"
+			rat.max_hp = 100
+			rat.current_hp = 100
+			rat.is_alive = true
+			rat.set_meta("monster_type", "cave_rat")
+			allies.append(rat)
+			break
 	var seen: Dictionary = {"_archetype": arch, "_kit": avail.size()}
 	for _i in ROLLS:
-		var action: Dictionary = _bm._execute_archetype_ai(c, arch, avail, [c], [hero])
+		var action: Dictionary = _bm._execute_archetype_ai(c, arch, avail, allies, [hero])
 		if str(action.get("type", "")) == "ability":
 			seen[str(action.get("ability_id", ""))] = true
 	return seen
