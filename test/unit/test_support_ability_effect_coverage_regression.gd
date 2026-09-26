@@ -62,7 +62,6 @@ const KNOWN_BESPOKE_EFFECTS := [
 	"ability_weaken", "adapt_resistance", "brave_actions",
 	"break_mind_swap", "counter_next_action", "damage_absorb",
 	"default_stance", "random_stat_change", "shadow_step",
-	"",  # base_case: a deliberately empty template ability
 ]
 
 

@@ -1412,7 +1412,7 @@
   "base_case": {
     "id": "base_case",
     "name": "Base Case",
-    "type": "support",
+    "type": "magic",
     "animation": "buff",
     "mp_cost": 10,
     "description": "Terminates its own recursive loop, dealing moderate damage to all enemies.",
