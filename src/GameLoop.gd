@@ -245,6 +245,7 @@ func is_inside_interior() -> bool:
 var _spawn_point: String = "default"
 var _exploration_scene: Node = null
 var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
+var _position_floor: int = 0  # Floor that tile was saved on; 0 means apply it on whatever opens (load, overworld)
 var _current_cave_floor: int = 1  # Track current floor in multi-floor dungeons
 var _current_terrain: String = "plains"  # Current terrain type for battle backgrounds
 
@@ -1760,6 +1761,7 @@ func _on_title_new_game() -> void:
 	# Quit to Title keeps the last door, the battle-return tile, and the cave floor; exploration would place the new party there.
 	_spawn_point = "default"
 	_player_position = Vector2.ZERO
+	_position_floor = 0
 	_current_cave_floor = 1
 	# Repel, the step gap, and a sprung ambush plate live on the EncounterSystem autoload — Quit to Title does not clear them.
 	if EncounterSystem and EncounterSystem.has_method("reset_for_new_game"):
@@ -3000,6 +3002,7 @@ func _restore_party_from_save_data() -> bool:
 		var pending: Vector2 = SaveSystem.pending_player_position
 		if pending != Vector2.INF:
 			_player_position = pending
+			_position_floor = 0  # A save has no floor tag — Continue must not be dropped as a deep-floor tile
 			SaveSystem.pending_player_position = Vector2.INF
 	return true
 
@@ -3405,6 +3408,7 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	if not await _start_battle_async([enemy_id], false):
 		if remember_return:
 			_player_position = Vector2.ZERO
+			_position_floor = 0
 		if BattleManager:
 			BattleManager._win_condition = {}
 		party = _spotlight_saved_party.duplicate()
@@ -3435,6 +3439,7 @@ func _capture_duel_return_position() -> bool:
 	if body == null or not is_instance_valid(body):
 		return false
 	_player_position = body.position
+	_stamp_return_floor(_exploration_scene)
 	if "current_floor" in _exploration_scene:
 		_current_cave_floor = int(_exploration_scene.current_floor)
 	return true
@@ -4183,9 +4188,9 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 	# autosave window respawned the player at the dungeon entrance.
 	if _player_position != Vector2.ZERO:
 		var scene_player = exploration_scene.get("player") if "player" in exploration_scene else null
-		var restored_tile: Vector2 = _player_position
+		var restored_tile: Vector2 = _consume_return_tile(exploration_scene)
 		_player_position = Vector2.ZERO
-		if scene_player:
+		if scene_player and restored_tile != Vector2.ZERO:
 			scene_player.position = restored_tile
 			# The stair, the village gate, and a puzzle portal fire on the first overlap. Swallow that one; a later step-on still works.
 			await _swallow_return_tile_triggers(exploration_scene, scene_player)
@@ -4318,6 +4323,35 @@ func _return_point_in_area(area: Area2D, point: Vector2) -> bool:
 	return false
 
 
+## A deep-floor fight's tile is only valid on that floor. Boss-clear rebuilds open floor 1 and must keep the entrance.
+func _saved_tile_is_on_opened_floor(scene: Node) -> bool:
+	if _position_floor <= 1:
+		return true
+	if scene == null or not ("current_floor" in scene):
+		return true
+	return int(scene.current_floor) == _position_floor
+
+
+func _stamp_return_floor(scene: Node) -> void:
+	if scene != null and ("current_floor" in scene):
+		_position_floor = int(scene.current_floor)
+	else:
+		_position_floor = 0
+
+
+## Returns the tile to apply, or ZERO when it belongs to a floor this rebuild did not open. Either way the latch is spent.
+func _consume_return_tile(scene: Node) -> Vector2:
+	var restored: Vector2 = _player_position
+	var on_floor: bool = _saved_tile_is_on_opened_floor(scene)
+	_player_position = Vector2.ZERO
+	_position_floor = 0
+	if restored == Vector2.ZERO or not on_floor:
+		if not on_floor:
+			print("[POSITION] Dropped return tile %s — the cave opened on a different floor" % restored)
+		return Vector2.ZERO
+	return restored
+
+
 func _return_to_exploration(force_battle_teardown: bool = false) -> void:
 	"""Return to exploration after battle"""
 	# Reset engine time scale to normal (battle speed shouldn't affect overworld)
@@ -4329,16 +4363,17 @@ func _return_to_exploration(force_battle_teardown: bool = false) -> void:
 	# Restore player position after scene is fully set up. _start_exploration already consumed the latch; this covers a return that still holds one.
 	if _player_position != Vector2.ZERO and _exploration_scene:
 		var player = _exploration_scene.get("player")
-		var restored_tile: Vector2 = _player_position
+		var restored_tile: Vector2 = _consume_return_tile(_exploration_scene)
 		_player_position = Vector2.ZERO
-		if player:
+		if player == null:
+			push_warning("[POSITION] Could not get player from scene")
+		elif restored_tile != Vector2.ZERO:
 			player.position = restored_tile
 			print("[POSITION] Restored player to: %s" % restored_tile)
 			await _swallow_return_tile_triggers(_exploration_scene, player)
-		else:
-			push_warning("[POSITION] Could not get player from scene")
 	else:
 		_player_position = Vector2.ZERO
+		_position_floor = 0
 
 
 func _prewarm_battle_sprites(enemies: Array) -> void:
@@ -4501,6 +4536,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		var player = _exploration_scene.get("player")
 		if player:
 			_player_position = player.position
+			_stamp_return_floor(_exploration_scene)
 			print("[POSITION] Saved player at: %s" % _player_position)
 			# Movement blocked by LoopState.BATTLE — no manual freeze needed
 
@@ -5220,6 +5256,7 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	_set_current_map_id(target_map)
 	_spawn_point = spawn_point
 	_player_position = Vector2.ZERO
+	_position_floor = 0
 	# Battle return reads this latch; leaving the map must drop it or the next dungeon (any world) opens on the floor you walked out of.
 	_current_cave_floor = 1
 	_current_terrain = _get_terrain_for_map(target_map)
@@ -6024,6 +6061,7 @@ func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
 		var player = _exploration_scene.get("player")
 		if player:
 			_player_position = player.position
+			_stamp_return_floor(_exploration_scene)
 
 	# Set terrain
 	_current_terrain = terrain
