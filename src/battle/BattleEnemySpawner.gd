@@ -188,6 +188,42 @@ func _init(scene) -> void:
 	_scene = scene
 
 
+## Mid-battle summon row. MONSTER_TYPES wins when it lists the id; otherwise monsters.json, so a species outside the early-game roster can still join the fight.
+static func resolve_summon_record(monster_type: String) -> Dictionary:
+	if monster_type == "":
+		return {}
+	for mt in MONSTER_TYPES:
+		if str(mt.get("id", "")) == monster_type:
+			return (mt as Dictionary).duplicate(true)
+	var catalog: Dictionary = BattleEnemySpawner.new(null).load_monsters_data()
+	if not catalog.has(monster_type):
+		return {}
+	var row: Variant = catalog[monster_type]
+	if not (row is Dictionary):
+		return {}
+	var stats_in: Variant = (row as Dictionary).get("stats", {})
+	if not (stats_in is Dictionary) or (stats_in as Dictionary).is_empty():
+		return {}
+	var defense: int = int((stats_in as Dictionary).get("defense", 5))
+	var abilities: Variant = (row as Dictionary).get("abilities", [])
+	return {
+		"id": monster_type,
+		"name": str((row as Dictionary).get("name", monster_type.replace("_", " ").capitalize())),
+		"stats": {
+			"max_hp": int((stats_in as Dictionary).get("max_hp", 100)),
+			"max_mp": int((stats_in as Dictionary).get("max_mp", 0)),
+			"attack": int((stats_in as Dictionary).get("attack", 10)),
+			"defense": defense,
+			"magic": int((stats_in as Dictionary).get("magic", 5)),
+			"magic_defense": int((stats_in as Dictionary).get("magic_defense", int(defense * 0.5))),
+			"speed": int((stats_in as Dictionary).get("speed", 10)),
+		},
+		"weaknesses": (row as Dictionary).get("weaknesses", []),
+		"resistances": (row as Dictionary).get("resistances", []),
+		"abilities": (abilities as Array).duplicate() if abilities is Array else [],
+	}
+
+
 func spawn_enemies() -> void:
 	"""Spawn 1-3 random enemies for the battle - sometimes mixed groups"""
 	# Clear any existing enemies. Disconnect known signals before freeing to

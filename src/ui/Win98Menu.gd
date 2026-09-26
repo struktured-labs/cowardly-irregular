@@ -715,8 +715,36 @@ func _drawn_line_height(font_size: int) -> int:
 	return ceili(font.get_string_size("Ag", HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).y)
 
 
+## 16px art at 2x. Rows that carry an icon grow to this so the glyph matches the line.
+const ICON_PX := 32
+
+
+func _menu_has_icons() -> bool:
+	for item in menu_items:
+		if str(item.get("icon_id", "")) != "":
+			return true
+	return false
+
+
 func _row_height() -> int:
-	return maxi(ITEM_HEIGHT, _drawn_line_height(_row_label_font_size()))
+	var text_h := maxi(ITEM_HEIGHT, _drawn_line_height(_row_label_font_size()))
+	if _menu_has_icons():
+		return maxi(text_h, ICON_PX)
+	return text_h
+
+
+## 2x when the row can hold it. The slot is reserved in the width measure so the name does not lose pixels.
+func _icon_side() -> int:
+	var room := _row_height()
+	if room >= ICON_PX:
+		return ICON_PX
+	return mini(room, maxi(_drawn_line_height(_row_label_font_size()), 16))
+
+
+func _icon_advance(item: Dictionary) -> int:
+	if str(item.get("icon_id", "")) == "":
+		return 0
+	return _icon_side() + 4
 
 
 func _effective_width_cap(viewport_width: int) -> int:
@@ -749,7 +777,7 @@ func _build_menu() -> void:
 		var label_text := str(item.get("label", "Item"))
 		if item.has("submenu"):
 			label_text += " >"
-		var text_width := _text_px(label_text, row_font)
+		var text_width := _text_px(label_text, row_font) + _icon_advance(item)
 		if item.has("cost"):
 			text_width += cost_column
 		max_label_width = maxi(max_label_width, text_width)
@@ -794,13 +822,22 @@ func _build_menu() -> void:
 	# Store content width for item rows
 	var item_content_width = menu_width - MENU_PADDING * 2 - TILE_SIZE * 2
 
-	# Items container (offset by AP label if present)
+	# Clip to whole rows. The panel's own padding used to show the top of the next row under the frame.
+	var item_clip := Control.new()
+	item_clip.name = "ItemClip"
+	item_clip.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE + ap_label_height)
+	item_clip.size = Vector2(item_content_width, shown_rows * row_h)
+	item_clip.clip_contents = true
+	item_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	menu_panel.add_child(item_clip)
+
 	var items_container = VBoxContainer.new()
-	items_container.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE + ap_label_height)
-	_items_base_y = items_container.position.y
+	items_container.name = "Items"
+	items_container.position = Vector2.ZERO
+	_items_base_y = 0.0
 	_scroll_offset = 0
 	items_container.add_theme_constant_override("separation", 0)
-	menu_panel.add_child(items_container)
+	item_clip.add_child(items_container)
 
 	# Create menu items
 	for i in range(menu_items.size()):
@@ -948,6 +985,8 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	cursor.name = "Cursor"
 	cursor.text = "▶"  # Filled triangle for better visibility
 	cursor.position = Vector2(-4, 0)
+	cursor.size = Vector2(18, row_h)
+	cursor.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cursor.add_theme_color_override("font_color", style.cursor)
 	cursor.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	cursor.visible = false
@@ -957,14 +996,21 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	var label = item.get("label", "Item")
 	var has_submenu = item.has("submenu")
 
-	var label_w := content_width - 14
+	var icon_advance := _icon_advance(item)
+	var label_w := content_width - 14 - icon_advance
 	if item.has("cost"):
 		label_w -= _cost_column_width
+	if icon_advance > 0:
+		var icon := ItemIcons.make_rect(str(item.get("icon_id", "")), _icon_side())
+		icon.position = Vector2(8, (row_h - _icon_side()) * 0.5)
+		if _row_unavailable(item):
+			icon.modulate = Color(0.45, 0.45, 0.45)
+		row.add_child(icon)
 	var text_label = Label.new()
 	text_label.name = "Label"
 	text_label.clip_text = true
 	text_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	text_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	text_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER if icon_advance > 0 else VERTICAL_ALIGNMENT_TOP
 	text_label.add_theme_font_size_override("font_size", _row_label_font_size())
 	text_label.size = Vector2(label_w, row_h)
 	if has_submenu:
@@ -974,7 +1020,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	# A Label will not shrink below font.get_height(), which includes leading the glyph does not use. The clip is the visible row.
 	var label_clip := Control.new()
 	label_clip.name = "LabelClip"
-	label_clip.position = Vector2(10, 0)
+	label_clip.position = Vector2(10 + icon_advance, 0)
 	label_clip.size = Vector2(label_w, row_h)
 	label_clip.clip_contents = true
 	label_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -988,14 +1034,14 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 		cost_label.name = "Cost"
 		cost_label.text = "%d MP" % int(item["cost"])
 		cost_label.add_theme_font_size_override("font_size", _cost_label_font_size())
-		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER if icon_advance > 0 else VERTICAL_ALIGNMENT_TOP
 		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		cost_label.size = Vector2(_cost_column_width - 4, row_h)
 		var affordable: bool = bool(item.get("cost_affordable", true))
 		cost_label.add_theme_color_override("font_color", COST_COLOR if affordable else COST_COLOR_UNAFFORDABLE)
 		var cost_clip := Control.new()
 		cost_clip.name = "CostClip"
-		cost_clip.position = Vector2(10 + label_w, 0)
+		cost_clip.position = Vector2(10 + icon_advance + label_w, 0)
 		cost_clip.size = Vector2(_cost_column_width - 4, row_h)
 		cost_clip.clip_contents = true
 		cost_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1149,14 +1195,18 @@ func _scroll_selection_into_view(container: VBoxContainer) -> void:
 
 func _get_items_container() -> VBoxContainer:
 	"""Get the items container node"""
-	var container = get_node_or_null("Control/VBoxContainer")
-	if not container:
-		for child in get_children():
-			if child is Control:
-				for subchild in child.get_children():
-					if subchild is VBoxContainer:
-						return subchild
-	return container
+	for child in get_children():
+		if not (child is Control):
+			continue
+		var direct := child.get_node_or_null("Items")
+		if direct is VBoxContainer:
+			return direct
+		var clip := child.get_node_or_null("ItemClip")
+		if clip:
+			var nested := clip.get_node_or_null("Items")
+			if nested is VBoxContainer:
+				return nested
+	return null
 
 
 func _do_open_submenu(parent_index: int, item: Dictionary) -> void:

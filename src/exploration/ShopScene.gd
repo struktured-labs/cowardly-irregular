@@ -298,7 +298,8 @@ func _open_buy_menu() -> void:
 			var row := {
 				"id": item_id,
 				"label": label,
-				"data": item_data
+				"data": item_data,
+				"icon_id": item_id,
 			}
 			var already_owned: bool = (_is_magic_shop() and owned > 0) or wearers != ""
 			if already_owned:
@@ -343,7 +344,8 @@ func _open_sell_menu() -> void:
 			items.append({
 				"id": item_id,
 				"label": label,
-				"data": item_data
+				"data": item_data,
+				"icon_id": item_id,
 			})
 
 	if items.is_empty():
