@@ -876,6 +876,31 @@ func _targets_for_item_without_picker(item: Dictionary, combatant, alive_enemies
 	return targets
 
 
+## Advance kept only rows with a target_idx, so Cleave, Channel, and a party potion queued then committed were dropped and a lone one deferred.
+func _targets_for_ability_without_picker(ability_id: String, combatant, alive_enemies: Array) -> Array:
+	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
+	var target_type: String = str(ability.get("target_type", "single_enemy"))
+	var focus = null
+	var hit_all := false
+	match target_type:
+		"all_enemies":
+			if alive_enemies.is_empty():
+				return []
+			focus = alive_enemies[0]
+			hit_all = true
+		"single_ally", "all_allies", "self":
+			focus = combatant if combatant else (_scene.party_members[0] if _scene.party_members.size() > 0 else null)
+			if focus == null:
+				return []
+		_:
+			if alive_enemies.is_empty():
+				return []
+			focus = alive_enemies[0]
+	if not _scene.has_method("_targets_for_queued_ability"):
+		return []
+	return (_scene._targets_for_queued_ability(ability_id, focus, hit_all) as Array).duplicate()
+
+
 func _with_item_reject(row: Dictionary, item_id: String, targets: Array) -> Dictionary:
 	if ItemSystem == null:
 		return row
@@ -1217,7 +1242,8 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 					current.last_item_selection = mem_action_id
 			print("[CMD MEM] %s -> item_menu / %s (advance)" % [current.combatant_name, current.last_item_selection])
 
-	# Convert menu actions to battle actions
+	# Convert menu actions to battle actions. Rows with no picker (Cleave, Channel, Mega Potion) resolve here the same way a single confirm does.
+	var alive_enemies := get_alive_enemies()
 	var battle_actions: Array[Dictionary] = []
 	for action in actions:
 		var action_id: String = action.get("id", "")
@@ -1248,6 +1274,10 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 
 				if is_instance_valid(target):
 					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": [target]})
+			elif str(ability_id) != "":
+				var resolved: Array = _targets_for_ability_without_picker(str(ability_id), current, alive_enemies)
+				if not resolved.is_empty():
+					battle_actions.append({"type": "ability", "ability_id": ability_id, "targets": resolved})
 
 		# Handle item actions (enemy or ally targets)
 		elif action_id.begins_with("item_") and action_data is Dictionary:
@@ -1264,6 +1294,11 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 
 				if is_instance_valid(target):
 					battle_actions.append({"type": "item", "item_id": item_id, "targets": [target]})
+			elif str(item_id) != "":
+				var item: Dictionary = ItemSystem.get_item(str(item_id)) if ItemSystem else {}
+				var resolved_item: Array = _targets_for_item_without_picker(item, current, alive_enemies).duplicate()
+				if not resolved_item.is_empty():
+					battle_actions.append({"type": "item", "item_id": item_id, "targets": resolved_item})
 
 	if battle_actions.size() > 0:
 		_scene.log_message("[color=yellow]%s advances with %d actions![/color]" % [current.combatant_name, battle_actions.size()])
