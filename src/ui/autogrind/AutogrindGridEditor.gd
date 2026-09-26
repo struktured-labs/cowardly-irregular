@@ -13,10 +13,10 @@ class_name AutogrindGridEditor
 ## - D-Pad: Navigate grid
 ## - A (Z): Edit selected cell (cycle type/character)
 ## - B (X): Delete current cell
-## - L: Add AND condition
-## - R: Add action (profile assignment)
+## - L (Q): Add AND condition
+## - R (W): Add action (profile assignment)
 ## - C: Cycle operator (conditions) or cycle character (actions)
-## - W/S: Adjust value (conditions) or cycle profile (actions)
+## - -/=: Adjust value (conditions) or cycle profile (actions)
 ## - Tab: Toggle row enabled/disabled
 ## - Shift+Tab: Cycle autogrind profiles
 ## - Shift+D: Restore shipped profiles (confirms first)
@@ -257,7 +257,7 @@ func _build_ui() -> void:
 	## @cowir-battle's resolution, matched so the two editors do not disagree: a pad-only affordance
 	## GOES with no pad rather than borrowing someone else's key. help1 already names Esc for Back,
 	## and ui_cancel's arm is what saves here (it calls _save_rules), so no way to save is lost.
-	help2.text = "C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose%s" % _pad_only_token("ui_menu", "Save")
+	help2.text = "C:Cycle  -/= or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose%s" % _pad_only_token("ui_menu", "Save")
 	help2.position = Vector2(16, size.y - 28)
 	help2.add_theme_font_size_override("font_size", 10)
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1227,8 +1227,8 @@ func _input(event: InputEvent) -> void:
 			SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
 
-	# W/S - Adjust values
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_W:
+	# -/= - Adjust values (W/S until Advance moved to W — the editor reads Advance as Add Action)
+	elif event is InputEventKey and event.pressed and event.keycode in [KEY_EQUAL, KEY_PLUS, KEY_KP_ADD]:
 		if _is_on_condition_cell():
 			_adjust_condition_value(1)
 			SoundManager.play_ui("menu_move")
@@ -1237,7 +1237,7 @@ func _input(event: InputEvent) -> void:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_S:
+	elif event is InputEventKey and event.pressed and event.keycode in [KEY_MINUS, KEY_KP_SUBTRACT]:
 		if _is_on_condition_cell():
 			_adjust_condition_value(-1)
 			SoundManager.play_ui("menu_move")
@@ -1377,7 +1377,7 @@ func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
 
 
 func _adjust_condition_value(delta: int) -> void:
-	"""Adjust condition value (W/S keys)"""
+	"""Adjust condition value (-/= keys)"""
 	var rule = rules[cursor_row] if cursor_row >= 0 and cursor_row < rules.size() else {}
 	var conditions = rule.get("conditions", [])
 	if cursor_col >= conditions.size():
@@ -1502,7 +1502,7 @@ func _cycle_action_character() -> void:
 
 
 func _cycle_action_profile(direction: int) -> void:
-	"""Cycle the profile index on an action cell (W/S keys)"""
+	"""Cycle the profile index on an action cell (-/= keys)"""
 	var rule = rules[cursor_row]
 	var actions = rule.get("actions", [])
 	var action_idx = _get_current_action_index()

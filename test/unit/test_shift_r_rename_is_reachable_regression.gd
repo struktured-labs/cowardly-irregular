@@ -21,24 +21,38 @@ const EDITORS := {
 }
 
 
-## The premise, measured rather than reasoned. If Godot ever stops matching actions under extra
-## modifiers this whole file is about a bug that no longer exists, and it should say so loudly.
+## The premise, measured rather than reasoned: Godot matches an action with EXTRA modifiers held, which
+## is how Shift+<key> gets eaten by the action on <key>. Measured on the CURRENT advance key, because
+## the keyboard shoulders moved to Q/W on 2026-09-25: Advance is W now, so Shift+R can no longer be
+## shadowed at all. The ordering ratchet below stays, for the day R is bound to an action again.
 func test_an_action_still_matches_with_a_modifier_held() -> void:
+	var adv_key: Key = KEY_NONE
+	for ev in InputMap.action_get_events("battle_advance"):
+		if ev is InputEventKey:
+			adv_key = ev.keycode
+			break
+	assert_ne(adv_key, KEY_NONE, "PRECONDITION: battle_advance binds a key")
 	var e := InputEventKey.new()
-	e.keycode = KEY_R
+	e.keycode = adv_key
 	e.pressed = true
 	e.shift_pressed = true
 	assert_true(e.is_action_pressed("battle_advance"),
-		"PREMISE: Shift+R must still match battle_advance — the shadowing this file guards depends on it")
+		"PREMISE: Shift+<advance key> still matches battle_advance — a modifier does not block an action")
 	var plain := InputEventKey.new()
-	plain.keycode = KEY_R
+	plain.keycode = adv_key
 	plain.pressed = true
-	assert_true(plain.is_action_pressed("battle_advance"), "CONTROL: plain R matches too")
+	assert_true(plain.is_action_pressed("battle_advance"), "CONTROL: the plain advance key matches too")
 	var other := InputEventKey.new()
 	other.keycode = KEY_J
 	other.pressed = true
 	assert_false(other.is_action_pressed("battle_advance"),
 		"CONTROL: an unrelated key must NOT match, or the premise arm proves nothing")
+	var shift_r := InputEventKey.new()
+	shift_r.keycode = KEY_R
+	shift_r.pressed = true
+	shift_r.shift_pressed = true
+	assert_false(shift_r.is_action_pressed("battle_advance"),
+		"Shift+R no longer matches Advance (Q/W since 2026-09-25) — rename is not shadowed; if this reds, R was rebound and the ratchet below is load-bearing again")
 
 
 ## THE RATCHET: the specific branch must sit above the general one that would eat its key.
