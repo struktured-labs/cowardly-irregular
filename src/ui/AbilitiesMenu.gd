@@ -59,18 +59,18 @@ func setup(target: Combatant) -> void:
 
 
 func _build_abilities_list() -> void:
-	"""Build list of learned abilities"""
+	"""Same list battle shows: kit, level unlocks, learned, purchased, secondary kit."""
 	_abilities_list.clear()
 
 	if not character:
 		return
 
-	# Get abilities from learned_abilities
-	for ability_id in character.learned_abilities:
-		var ability_data = _get_ability_data(ability_id)
+	var ids: Array = character.get_known_abilities()
+	for ability_id in ids:
+		var ability_data = _get_ability_data(str(ability_id))
 		if not ability_data.is_empty():
 			_abilities_list.append({
-				"id": ability_id,
+				"id": str(ability_id),
 				"data": ability_data
 			})
 
