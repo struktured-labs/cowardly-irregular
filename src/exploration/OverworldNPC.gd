@@ -204,9 +204,10 @@ func _ready() -> void:
 	_setup_quest_marker()
 	_setup_dialogue_box()
 
-	# Pre-generate animation frames for dancer
+	# Pre-generate animation frames for dancer. Idle shows frame 0, not _draw_npc.
 	if npc_type == "dancer":
 		_generate_dance_frames()
+		_apply_dance_rest_pose()
 
 	# Add to interactables group for reliable interaction detection
 	if interactable:
@@ -897,14 +898,22 @@ func start_dancing() -> void:
 
 
 func stop_dancing() -> void:
-	"""Stop the dance animation and return to normal pose"""
+	"""Stop the dance animation and return to the authored rest pose"""
 	_is_dancing = false
 	_dance_frame = 0
-	# Regenerate normal sprite
+	_apply_dance_rest_pose()
+
+
+## Frame 0 is the rest pose. Procedural _draw_npc only when the frame cache is empty.
+func _apply_dance_rest_pose() -> void:
+	if sprite == null:
+		return
+	if _sprite_cache.has(0):
+		sprite.texture = _sprite_cache[0]
+		return
 	var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
 	_draw_npc(image)
-	var texture = ImageTexture.create_from_image(image)
-	sprite.texture = texture
+	sprite.texture = ImageTexture.create_from_image(image)
 
 
 func _get_clothes_color() -> Color:
