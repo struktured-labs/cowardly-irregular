@@ -43,24 +43,13 @@ func test_count_label_reads_both_systems() -> void:
 
 
 func test_count_label_width_accommodates_longer_text() -> void:
-	# The new label is longer than the old "12 / 88 discovered".
-	# Width must be ≥ 320 (rough fit at 16pt font) to avoid truncation.
-	# Tick 263: expanded to 440 to accommodate the trailing
-	# "· <N> kills" suffix. Accept either tick-148 (340) or tick-263
-	# (440) shape.
+	# A fixed 540×24 box clipped the kills/sort suffix once Text Size grew the font.
+	# MenuChrome measures the string and keeps it on screen beside the title.
 	var src := _read(BESTIARY_MENU)
-	# Tick 267: bumped again to 540 to fit "(Sort: Kills)" suffix.
-	var has_148: bool = src.contains("_count_label.size = Vector2(340, 24)")
-	var has_263: bool = src.contains("_count_label.size = Vector2(440, 24)")
-	var has_267: bool = src.contains("_count_label.size = Vector2(540, 24)")
-	assert_true(has_148 or has_263 or has_267,
-		"count label (wide viewport) must be 340/440/540 — accommodates seen+defeated (tick 148), +kills (263), or +sort (267)")
-	# Position is mirrored to the width — viewport.x - (width + 20).
-	var pos_148: bool = src.contains("Vector2(viewport.x - 360, 22)")
-	var pos_263: bool = src.contains("Vector2(viewport.x - 460, 22)")
-	var pos_267: bool = src.contains("Vector2(viewport.x - 560, 22)")
-	assert_true(pos_148 or pos_263 or pos_267,
-		"count label position must fit the wider text without clipping viewport edge")
+	assert_true(src.contains("MenuChrome.place_header(header, _count_label, viewport.x, 16.0, false, 24.0)"),
+		"the seen/defeated counter must be placed by MenuChrome so a longer suffix stays on screen")
+	assert_false(src.contains("_count_label.size = Vector2("),
+		"a fixed count-label box clips the suffix once text size grows")
 
 
 func test_narrow_viewport_collapses_to_short_form() -> void:
@@ -75,12 +64,8 @@ func test_narrow_viewport_collapses_to_short_form() -> void:
 	# Narrow branch uses the shorter format string.
 	assert_true(src.contains("_count_label.text = \"%d/%d seen\" % [counts.x, counts.y]"),
 		"narrow branch must use the seen-only format string")
-	# Narrow branch uses a smaller label width (200) and tighter
-	# position (viewport.x - 220).
-	assert_true(src.contains("_count_label.size = Vector2(200, 24)"),
-		"narrow branch must use the smaller label width")
-	assert_true(src.contains("Vector2(viewport.x - 220, 22)"),
-		"narrow branch must use the tighter position offset")
+	assert_false(src.contains("_count_label.size = Vector2(200, 24)"),
+		"narrow branch must not pin a 200px box — MenuChrome measures the short string")
 
 
 func test_dual_count_text_only_in_wide_branch() -> void:

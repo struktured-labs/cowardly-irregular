@@ -97,24 +97,43 @@ func _build_ui() -> void:
 	if viewport_size.x == 0:
 		viewport_size = Vector2(640, 480)
 
+	var _ok: String = InputProfileManager.hint_for_action("ui_accept")
+	var _no: String = InputProfileManager.hint_for_action("ui_cancel")
+	# The west face with a pad, the X KEY without — "X: Unequip" read as a face button to a pad
+	# player, and named the one route they did not have.
+	var _pad_un: String = InputProfileManager.button_name_for_index(JOY_BUTTON_X)
+	var _un: String = "%s/X" % _pad_un if _pad_un != "" else "X"
+	var footer_text = ("↑↓: Select Slot  %s/Click: Change  %s/RClick: Back" % [_ok, _no]) if mode == Mode.SLOT_SELECT else ("↑↓: Select  %s/Click: Equip  %s/RClick: Cancel  %s: Unequip" % [_ok, _no, _un])
+	var footer = Label.new()
+	footer.name = "ScreenFooter"
+	footer.text = footer_text
+	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_color_override("font_color", DISABLED_COLOR)
+	add_child(footer)
+	var footer_rect := MenuChrome.place_footer(footer, viewport_size, 16.0)
+
 	# Character info panel (top left)
 	var char_panel = _create_character_panel(Vector2(viewport_size.x * 0.35 - 16, 100))
 	char_panel.position = Vector2(16, 16)
 	add_child(char_panel)
 
+	var equip_top := char_panel.position.y + char_panel.size.y + 8.0
+	var equip_h := maxf(80.0, footer_rect.position.y - 8.0 - equip_top)
 	# Current equipment panel (left, below character)
-	var equip_panel = _create_equipment_panel(Vector2(viewport_size.x * 0.35 - 16, viewport_size.y - 200))
-	equip_panel.position = Vector2(16, 124)
+	var equip_panel = _create_equipment_panel(Vector2(viewport_size.x * 0.35 - 16, equip_h))
+	equip_panel.position = Vector2(16, equip_top)
 	add_child(equip_panel)
 
 	# Available items / Stats panel (right)
+	var right_h := maxf(80.0, footer_rect.position.y - 8.0 - 16.0)
 	var right_panel: Control
 	if mode == Mode.SLOT_SELECT:
-		right_panel = _create_stats_panel(Vector2(viewport_size.x * 0.65 - 24, viewport_size.y - 80))
+		right_panel = _create_stats_panel(Vector2(viewport_size.x * 0.65 - 24, right_h))
 	else:
-		right_panel = _create_items_panel(Vector2(viewport_size.x * 0.65 - 24, viewport_size.y - 80))
+		right_panel = _create_items_panel(Vector2(viewport_size.x * 0.65 - 24, right_h))
 	right_panel.position = Vector2(viewport_size.x * 0.35 + 8, 16)
 	add_child(right_panel)
+	move_child(footer, get_child_count() - 1)
 
 	# Right-click cancel
 	MenuMouseHelper.add_right_click_cancel(bg, func() -> void:
@@ -126,20 +145,6 @@ func _build_ui() -> void:
 			_close_menu()
 	)
 
-	# Footer
-	var _ok: String = InputProfileManager.hint_for_action("ui_accept")
-	var _no: String = InputProfileManager.hint_for_action("ui_cancel")
-	# The west face with a pad, the X KEY without — "X: Unequip" read as a face button to a pad
-	# player, and named the one route they did not have.
-	var _pad_un: String = InputProfileManager.button_name_for_index(JOY_BUTTON_X)
-	var _un: String = "%s/X" % _pad_un if _pad_un != "" else "X"
-	var footer_text = ("↑↓: Select Slot  %s/Click: Change  %s/RClick: Back" % [_ok, _no]) if mode == Mode.SLOT_SELECT else ("↑↓: Select  %s/Click: Equip  %s/RClick: Cancel  %s: Unequip" % [_ok, _no, _un])
-	var footer = Label.new()
-	footer.text = footer_text
-	footer.position = Vector2(16, viewport_size.y - 32)
-	footer.add_theme_font_size_override("font_size", 12)
-	footer.add_theme_color_override("font_color", DISABLED_COLOR)
-	add_child(footer)
 
 
 func _create_character_panel(panel_size: Vector2) -> Control:
@@ -152,43 +157,48 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	RetroPanel.add_border(panel, panel_size, BORDER_LIGHT, BORDER_SHADOW)
-
 	if not character:
+		RetroPanel.add_border(panel, panel.size, BORDER_LIGHT, BORDER_SHADOW)
 		return panel
 
 	# Character name
 	var name_label = Label.new()
+	name_label.name = "ScreenTitle"
 	name_label.text = character.combatant_name
-	name_label.position = Vector2(8, 8)
 	name_label.add_theme_font_size_override("font_size", 16)
 	name_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(name_label)
+
+	# Level is the counter on the name row. Fonts here stay literal — this screen does not follow Text Size.
+	var level_label = Label.new()
+	level_label.name = "ScreenCounter"
+	level_label.text = "Lv %d" % character.job_level
+	level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	level_label.add_theme_font_size_override("font_size", 12)
+	level_label.add_theme_color_override("font_color", TEXT_COLOR)
+	panel.add_child(level_label)
+	var row_bottom := MenuChrome.place_header(name_label, level_label, panel.size.x, 8.0, false, 8.0)
 
 	# Job
 	var job_name = character.job.get("name", "Fighter") if character.job else "Fighter"
 	var job_label = Label.new()
 	job_label.text = job_name
-	job_label.position = Vector2(8, 28)
 	job_label.add_theme_font_size_override("font_size", 11)
 	job_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(job_label)
-
-	# Level
-	var level_label = Label.new()
-	level_label.text = "Lv %d" % character.job_level
-	level_label.position = Vector2(panel_size.x - 50, 8)
-	level_label.add_theme_font_size_override("font_size", 12)
-	level_label.add_theme_color_override("font_color", TEXT_COLOR)
-	panel.add_child(level_label)
+	var job_sz := MenuChrome.lock(job_label)
+	job_label.position = Vector2(8, row_bottom + 4.0)
 
 	# HP/MP compact
 	var hp_label = Label.new()
 	hp_label.text = "HP %d/%d  MP %d/%d" % [character.current_hp, character.max_hp, character.current_mp, character.max_mp]
-	hp_label.position = Vector2(8, 50)
 	hp_label.add_theme_font_size_override("font_size", 10)
 	hp_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(hp_label)
+	var hp_sz := MenuChrome.lock(hp_label)
+	hp_label.position = Vector2(8, job_label.position.y + job_sz.y + 4.0)
+	panel.size.y = maxf(panel_size.y, hp_label.position.y + hp_sz.y + 8.0)
+	RetroPanel.add_border(panel, panel.size, BORDER_LIGHT, BORDER_SHADOW)
 
 	return panel
 

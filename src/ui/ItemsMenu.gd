@@ -127,15 +127,32 @@ func _build_ui() -> void:
 	if viewport_size.x == 0:
 		viewport_size = Vector2(640, 480)
 
+	var footer = Label.new()
+	footer.name = "ScreenFooter"
+	var _ok: String = InputProfileManager.hint_for_action("ui_accept")
+	var _no: String = InputProfileManager.hint_for_action("ui_cancel")
+	## Paging is advertised only in list mode, because only the item list pages — a party of five
+	## needs no page jump, and a footer promising one there would be a caption for nothing.
+	var _pg: String = "%s/%s" % [InputProfileManager.hint_for_action("battle_defer"),
+		InputProfileManager.hint_for_action("battle_advance")]
+	footer.text = ("↑↓: Select  %s: Page  %s/Click: Use  %s/RClick: Back" % [_pg, _ok, _no]) if mode == 0 \
+		else ("↑↓: Select Target  %s/Click: Confirm  %s/RClick: Cancel" % [_ok, _no])
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	footer.add_theme_color_override("font_color", DISABLED_COLOR)
+	add_child(footer)
+	var footer_rect := MenuChrome.place_footer(footer, viewport_size, 16.0)
+	var panel_h := maxf(80.0, footer_rect.position.y - 16.0 - 16.0)
+
 	# Items panel (left 50%)
-	var items_panel = _create_items_panel(Vector2(viewport_size.x * 0.5 - 24, viewport_size.y - 80))
+	var items_panel = _create_items_panel(Vector2(viewport_size.x * 0.5 - 24, panel_h))
 	items_panel.position = Vector2(16, 16)
 	add_child(items_panel)
 
 	# Details/Target panel (right 50%)
-	var details_panel = _create_details_panel(Vector2(viewport_size.x * 0.5 - 24, viewport_size.y - 80))
+	var details_panel = _create_details_panel(Vector2(viewport_size.x * 0.5 - 24, panel_h))
 	details_panel.position = Vector2(viewport_size.x * 0.5 + 8, 16)
 	add_child(details_panel)
+	move_child(footer, get_child_count() - 1)
 
 	# Right-click cancel
 	MenuMouseHelper.add_right_click_cancel(bg, func() -> void:
@@ -146,22 +163,6 @@ func _build_ui() -> void:
 		else:
 			_close_menu()
 	)
-
-	# Footer
-	var footer = Label.new()
-	var _ok: String = InputProfileManager.hint_for_action("ui_accept")
-	var _no: String = InputProfileManager.hint_for_action("ui_cancel")
-	## Paging is advertised only in list mode, because only the item list pages — a party of five
-	## needs no page jump, and a footer promising one there would be a caption for nothing.
-	var _pg: String = "%s/%s" % [InputProfileManager.hint_for_action("battle_defer"),
-		InputProfileManager.hint_for_action("battle_advance")]
-	footer.text = ("↑↓: Select  %s: Page  %s/Click: Use  %s/RClick: Back" % [_pg, _ok, _no]) if mode == 0 \
-		else ("↑↓: Select Target  %s/Click: Confirm  %s/RClick: Cancel" % [_ok, _no])
-	footer.position = Vector2(16, viewport_size.y - 32)
-	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
-	footer.add_theme_color_override("font_color", DISABLED_COLOR)
-	footer.name = "Footer"
-	add_child(footer)
 
 	_update_selection()
 
@@ -180,16 +181,18 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 
 	# Title
 	var title = Label.new()
+	title.name = "ScreenTitle"
 	title.text = "ITEMS"
-	title.position = Vector2(8, 4)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
+	var title_sz := MenuChrome.lock(title)
+	title.position = Vector2(8, 4)
 
-	# Item list
-	var y_offset = 28
+	# Item list starts under the title. A fixed 28px row ran through the enlarged title.
+	var y_offset = int(title.position.y + title_sz.y + 6.0)
 	var item_height = 32
-	var max_visible = int((panel_size.y - 40) / item_height)
+	var max_visible = int((panel_size.y - y_offset - 8) / item_height)
 
 	if _item_list.is_empty():
 		var empty_label = Label.new()
@@ -335,15 +338,17 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	"""Show details for selected item"""
 	var title = Label.new()
 	title.text = "DETAILS"
-	title.position = Vector2(8, 4)
 	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
+	var title_sz := MenuChrome.lock(title)
+	title.position = Vector2(8, 4)
+	var content_shift := maxf(0.0, title.position.y + title_sz.y + 6.0 - 28.0)
 
 	if _item_list.is_empty() or selected_item_index >= _item_list.size():
 		var empty = Label.new()
 		empty.text = "Select an item"
-		empty.position = Vector2(16, 32)
+		empty.position = Vector2(16, 32 + content_shift)
 		empty.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		empty.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(empty)
@@ -485,6 +490,12 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	target_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	target_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(target_label)
+	if content_shift > 0.0:
+		for child in panel.get_children():
+			if child == title or child is ColorRect:
+				continue
+			if child is Control:
+				(child as Control).position.y += content_shift
 
 
 func _get_target_type_text(target_type: int) -> String:
