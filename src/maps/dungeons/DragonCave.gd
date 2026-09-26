@@ -552,6 +552,9 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 		player.teleport(spawn_points.get("default", Vector2(320, 384)))
 
 	player.reset_step_count()
+	# The camera is already current, so a stair teleport otherwise keeps smoothing in from the stair you left.
+	if camera:
+		camera.reset_smoothing()
 
 	await get_tree().create_timer(0.3).timeout
 	if player and player.has_method("set_can_move"):
