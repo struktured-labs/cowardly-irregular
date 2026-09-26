@@ -2571,12 +2571,13 @@ func apply_autogrind_actions(actions: Array) -> void:
 						## ("route through ItemSystem.use_item so autogrind item use matches live
 						## battle exactly") and this second site was missed. Same ruling, applied here.
 						for item_id in HEAL_PARTY_ITEM_ORDER:
-							if member.get_item_count(item_id) > 0:
-								if not _apply_item_to(member, item_id):
-									continue
-								_track_item_consumed(item_id)
-								healed_count += 1
-								break
+							if _party_bag_count(member, item_id) <= 0:
+								continue
+							if not _apply_item_to(member, item_id):
+								continue
+							_track_item_consumed(item_id)
+							healed_count += 1
+							break
 				if healed_count > 0:
 					print("[AUTOGRIND] heal_party: used potions on %d members" % healed_count)
 				elif eligible_count == 0:
@@ -2595,12 +2596,13 @@ func apply_autogrind_actions(actions: Array) -> void:
 						## only reason nothing was wrong — the identical copy on the HP side drifted to a TENTH
 						## of the authored heal. Routed through ItemSystem so there is one source, per that ruling.
 						for item_id in RESTORE_MP_ITEM_ORDER:
-							if member.get_item_count(item_id) > 0:
-								if not _apply_item_to(member, item_id, "restore_mp"):
-									continue
-								_track_item_consumed(item_id)
-								restored_count += 1
-								break
+							if _party_bag_count(member, item_id) <= 0:
+								continue
+							if not _apply_item_to(member, item_id, "restore_mp"):
+								continue
+							_track_item_consumed(item_id)
+							restored_count += 1
+							break
 				if restored_count > 0:
 					print("[AUTOGRIND] restore_mp: used ethers on %d members" % restored_count)
 				elif eligible_count == 0:
@@ -2655,9 +2657,29 @@ const RESTORE_MP_ITEM_ORDER := ["hi_ether", "ether"]
 const _HP_RESTORE_KEYS := ["heal_hp", "heal_hp_percent", "revive"]
 
 
-## Consumes one `item_id` from `member` and applies its REAL effects. Returns false having consumed
-## nothing when the item cannot be applied, so a caller can try the next one.
-## Mirrors _resolve_item: inventory removal is ours, effects are ItemSystem's.
+## The party's one bag. Drops and the starting kit sit on the leader; a wounded ally still drinks from it.
+func _party_bag(member) -> Array:
+	var bag: Array = []
+	for m in grind_party:
+		if m != null and is_instance_valid(m):
+			bag.append(m)
+	if member != null and is_instance_valid(member) and not (member in bag):
+		bag.append(member)
+	return bag
+
+
+func _party_bag_count(member, item_id: String) -> int:
+	var item_system: Node = _get_autoload_node("ItemSystem")
+	if item_system != null and item_system.has_method("party_item_count"):
+		return int(item_system.party_item_count(_party_bag(member), item_id))
+	if member != null and is_instance_valid(member) and member.has_method("get_item_count"):
+		return int(member.get_item_count(item_id))
+	return 0
+
+
+## Spends one `item_id` from the shared bag (the drinker's own stock first) and applies its real effects.
+## Returns false having consumed nothing when the bag cannot pay, so a caller can try the next item.
+## A refused id is the exception: it is taken and then ItemSystem declines, same as before.
 func _apply_item_to(member, item_id: String, caller: String = "heal_party") -> bool:
 	var item_system: Node = _get_autoload_node("ItemSystem")
 	if item_system == null or not item_system.has_method("use_item"):
@@ -2665,7 +2687,12 @@ func _apply_item_to(member, item_id: String, caller: String = "heal_party") -> b
 		## divergence; items.json is the one source. Fail loud rather than silently heal a wrong number.
 		push_warning("[AUTOGRIND] %s: ItemSystem unavailable — '%s' NOT consumed, nothing applied" % [caller, item_id])
 		return false
-	member.remove_item(item_id, 1)
+	var bag: Array = _party_bag(member)
+	if item_system.has_method("take_party_item"):
+		if not item_system.take_party_item(member, bag, item_id):
+			return false
+	elif not member.remove_item(item_id, 1):
+		return false
 	var targets: Array[Combatant] = [member]
 	if not item_system.use_item(member, item_id, targets):
 		push_warning("[AUTOGRIND] %s: ItemSystem refused '%s' (unknown id or no effects block) — item was consumed" % [caller, item_id])
