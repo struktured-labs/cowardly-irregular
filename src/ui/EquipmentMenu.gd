@@ -262,9 +262,14 @@ func _create_slot_row(slot_index: int) -> Control:
 	# Current equipment
 	var equip_name = _get_equipped_name(slot_index)
 	var equip_color = _get_slot_color(slot_index)
+	var equipped_id := _equipped_id(slot_index)
+	if equipped_id != "":
+		var icon := ItemIcons.make_rect(equipped_id, 16)
+		icon.position = Vector2(22, 16)
+		row.add_child(icon)
 	var equip_label = Label.new()
 	equip_label.text = equip_name
-	equip_label.position = Vector2(24, 18)
+	equip_label.position = Vector2(42 if equipped_id != "" else 24, 18)
 	equip_label.add_theme_font_size_override("font_size", 12)
 	equip_label.add_theme_color_override("font_color", equip_color if equip_name != "(empty)" else DISABLED_COLOR)
 	row.add_child(equip_label)
@@ -274,6 +279,19 @@ func _create_slot_row(slot_index: int) -> Control:
 		_on_slot_click.bind(slot_index), _on_slot_hover.bind(slot_index))
 
 	return row
+
+
+func _equipped_id(slot_index: int) -> String:
+	if not character:
+		return ""
+	match slot_index:
+		0:
+			return str(character.equipped_weapon)
+		1:
+			return str(character.equipped_armor)
+		2:
+			return str(character.equipped_accessory)
+	return ""
 
 
 func _get_equipped_name(slot_index: int) -> String:
@@ -497,6 +515,10 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	cursor.name = "Cursor"
 	row.add_child(cursor)
 
+	var icon := ItemIcons.make_rect(item_id, 16)
+	icon.position = Vector2(20, 2)
+	row.add_child(icon)
+
 	# Item name
 	## Tick 140: prefer canonical name from item_data when available;
 	## fall back to ItemNameResolver (canonical from any data source)
@@ -506,7 +528,7 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	## "iron_sword" instead of "Iron Sword".
 	var name_label = Label.new()
 	name_label.text = item_data.get("name", ItemNameResolver.resolve(item_id))
-	name_label.position = Vector2(24, 4)
+	name_label.position = Vector2(40, 4)
 	name_label.add_theme_font_size_override("font_size", 12)
 	name_label.add_theme_color_override("font_color", _get_slot_color(selected_slot))
 	row.add_child(name_label)

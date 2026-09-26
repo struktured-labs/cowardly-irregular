@@ -482,10 +482,11 @@ func _open_chest(player: Node2D) -> void:
 					game_loop.equipment_pool[pool_key] = []
 				game_loop.equipment_pool[pool_key].append(contents_id)
 
-	# Show dialogue
+	# Show dialogue. The icon sits above the pinned 240x60 panel so the label geometry stays put.
 	_clamp_dialogue_box_to_viewport()
 	dialogue_box.visible = true
 	dialogue_label.text = contents_text
+	_set_loot_icon(contents_id if contents_type == "item" or contents_type == "equipment" else "")
 
 	chest_opened.emit({"type": contents_type, "id": contents_id, "amount": contents_amount})
 	# Content-aware "loot received" cue. Pre-fix this also played
@@ -516,6 +517,20 @@ func _open_chest(player: Node2D) -> void:
 
 ## Tick 135: thin wrapper around ItemNameResolver. Local helper
 ## stays so call sites don't change shape.
+func _set_loot_icon(item_id: String) -> void:
+	if dialogue_box == null:
+		return
+	var old := dialogue_box.get_node_or_null("LootIcon")
+	if old:
+		old.queue_free()
+	if item_id == "":
+		return
+	var icon := ItemIcons.make_rect(item_id, 16)
+	icon.name = "LootIcon"
+	icon.position = Vector2(-8, -130)
+	dialogue_box.add_child(icon)
+
+
 func _resolve_display_name(contents_id: String) -> String:
 	return ItemNameResolver.resolve(contents_id)
 

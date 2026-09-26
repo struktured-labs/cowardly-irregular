@@ -235,19 +235,35 @@ func _create_item_row(item: Dictionary, index: int) -> Control:
 	cursor.name = "Cursor"
 	row.add_child(cursor)
 
-	# Item name with category color
+	var icon := ItemIcons.make_rect(str(item.get("id", "")), 16)
+	icon.position = Vector2(16, 4)
+	row.add_child(icon)
+
+	# Item name with category color. Anchored so a long name stops before the count.
 	var name_label = Label.new()
 	name_label.text = item["data"]["name"]
-	name_label.position = Vector2(20, 2)
+	name_label.anchor_right = 1.0
+	name_label.offset_left = 36
+	name_label.offset_top = 2
+	name_label.offset_right = -52
+	name_label.offset_bottom = 22
+	name_label.clip_text = true
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	name_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	name_label.add_theme_color_override("font_color", _get_item_color(item["data"]))
 	name_label.name = "Name"
 	row.add_child(name_label)
 
-	# Quantity
+	# Quantity sits on the right edge of the row, not a fixed x that long names run into.
 	var qty_label = Label.new()
 	qty_label.text = "x%d" % item["quantity"]
-	qty_label.position = Vector2(180, 2)
+	qty_label.anchor_left = 1.0
+	qty_label.anchor_right = 1.0
+	qty_label.offset_left = -48
+	qty_label.offset_top = 2
+	qty_label.offset_right = -6
+	qty_label.offset_bottom = 22
+	qty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	qty_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	qty_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	qty_label.name = "Quantity"
@@ -334,10 +350,14 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	var item = _item_list[selected_item_index]
 	var item_data = item["data"]
 
+	var detail_icon := ItemIcons.make_rect(str(item.get("id", "")), 16)
+	detail_icon.position = Vector2(16, 32)
+	panel.add_child(detail_icon)
+
 	# Item name
 	var name_label = Label.new()
 	name_label.text = item_data["name"]
-	name_label.position = Vector2(16, 32)
+	name_label.position = Vector2(36, 32)
 	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	name_label.add_theme_color_override("font_color", _get_item_color(item_data))
 	panel.add_child(name_label)

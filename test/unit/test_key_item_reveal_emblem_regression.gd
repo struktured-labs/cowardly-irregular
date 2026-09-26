@@ -1,10 +1,9 @@
 extends GutTest
 
-## All 21 authored grant_item reveals omit sprite_path (measured 2026-09-11), and items.json
-## carries no icon data, so every Zelda-style "You obtained" panel showed a blank 96px band
-## under its title — reads as a missing asset. With no sprite the popup now draws an emblem in
-## the slot, keyed on the item's ItemSystem category and drawn only with glyphs the font
-## fallback chain already proves. The Director passes the item id so the emblem can key on it.
+## All 21 authored grant_item reveals omit sprite_path (measured 2026-09-11). The slot used to
+## be a blank band, then a category emblem. It now draws that item's pixel icon. The emblem
+## remains the fallback when no texture can be built, and emblem_glyph is still what the font
+## chain proves. The Director passes the item id so the icon can key on it.
 
 const DirectorScript = preload("res://src/cutscene/CutsceneDirector.gd")
 const FontChainTest = preload("res://test/unit/test_font_fallback_chain.gd")
@@ -20,8 +19,11 @@ func before_each() -> void:
 func test_a_reveal_without_a_sprite_shows_an_emblem_not_a_blank_band() -> void:
 	var popup := KeyItemPopup.show_item(_host, {"item_id": "untested_shield", "name": "The Untested Shield", "description": "Bram's gift."})
 	assert_not_null(popup._icon, "the slot is filled")
-	assert_true(popup._icon is Label, "with an emblem label when there is no sprite")
-	assert_eq((popup._icon as Label).text, "✦", "a META-category key item gets the star-of-four emblem")
+	assert_true(popup._icon is TextureRect, "the item icon fills the slot when there is no authored sprite")
+	assert_eq((popup._icon as TextureRect).texture, ItemIcons.tinted("untested_shield"),
+		"the icon is the one for the granted id, so the id reached the popup")
+	assert_eq((popup._icon as TextureRect).texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST,
+		"the icon stays crisp at the slot size")
 
 
 func test_the_emblem_follows_the_item_category() -> void:
@@ -89,7 +91,8 @@ func test_the_director_hands_the_item_id_to_the_reveal() -> void:
 	var popup: Node = d._key_item_popup
 	assert_not_null(popup, "control: the reveal is up")
 	if popup:
-		assert_true(popup._icon is Label and (popup._icon as Label).text == "✦", "the emblem keyed on the granted item's category, so the id reached the popup")
+		assert_true(popup._icon is TextureRect and (popup._icon as TextureRect).texture == ItemIcons.tinted("untested_shield"),
+			"the item icon keyed on the granted id, so the id reached the popup")
 	d._trigger_skip()
 	for i in 20:
 		await get_tree().process_frame

@@ -719,6 +719,17 @@ func _row_height() -> int:
 	return maxi(ITEM_HEIGHT, _drawn_line_height(_row_label_font_size()))
 
 
+## Icon sits at the row's text height. The slot is reserved in the width measure so the name does not lose pixels to it.
+func _icon_side() -> int:
+	return mini(_row_label_font_size(), maxi(12, _row_height() - 8))
+
+
+func _icon_advance(item: Dictionary) -> int:
+	if str(item.get("icon_id", "")) == "":
+		return 0
+	return _icon_side() + 4
+
+
 func _effective_width_cap(viewport_width: int) -> int:
 	var half := maxi(210, int(viewport_width / 2.0))
 	if _width_cap <= 0:
@@ -749,7 +760,7 @@ func _build_menu() -> void:
 		var label_text := str(item.get("label", "Item"))
 		if item.has("submenu"):
 			label_text += " >"
-		var text_width := _text_px(label_text, row_font)
+		var text_width := _text_px(label_text, row_font) + _icon_advance(item)
 		if item.has("cost"):
 			text_width += cost_column
 		max_label_width = maxi(max_label_width, text_width)
@@ -957,9 +968,16 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	var label = item.get("label", "Item")
 	var has_submenu = item.has("submenu")
 
-	var label_w := content_width - 14
+	var icon_advance := _icon_advance(item)
+	var label_w := content_width - 14 - icon_advance
 	if item.has("cost"):
 		label_w -= _cost_column_width
+	if icon_advance > 0:
+		var icon := ItemIcons.make_rect(str(item.get("icon_id", "")), _icon_side())
+		icon.position = Vector2(8, (row_h - _icon_side()) * 0.5)
+		if _row_unavailable(item):
+			icon.modulate = Color(0.45, 0.45, 0.45)
+		row.add_child(icon)
 	var text_label = Label.new()
 	text_label.name = "Label"
 	text_label.clip_text = true
@@ -974,7 +992,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	# A Label will not shrink below font.get_height(), which includes leading the glyph does not use. The clip is the visible row.
 	var label_clip := Control.new()
 	label_clip.name = "LabelClip"
-	label_clip.position = Vector2(10, 0)
+	label_clip.position = Vector2(10 + icon_advance, 0)
 	label_clip.size = Vector2(label_w, row_h)
 	label_clip.clip_contents = true
 	label_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -995,7 +1013,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 		cost_label.add_theme_color_override("font_color", COST_COLOR if affordable else COST_COLOR_UNAFFORDABLE)
 		var cost_clip := Control.new()
 		cost_clip.name = "CostClip"
-		cost_clip.position = Vector2(10 + label_w, 0)
+		cost_clip.position = Vector2(10 + icon_advance + label_w, 0)
 		cost_clip.size = Vector2(_cost_column_width - 4, row_h)
 		cost_clip.clip_contents = true
 		cost_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE

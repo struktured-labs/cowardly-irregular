@@ -452,6 +452,7 @@ func _show_equipment_view() -> void:
 		var item_name = _get_equipment_name(slot_info.current, slot_info.slot)
 		var item_btn = Button.new()
 		item_btn.text = item_name
+		ItemIcons.apply_button(item_btn, str(slot_info.current))
 		item_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		item_btn.pressed.connect(_on_equipment_slot_pressed.bind(slot_info.slot))
 		row.add_child(item_btn)
@@ -524,6 +525,7 @@ func _show_equipment_selection(slot: String) -> void:
 	if current_id and current_id != "":
 		var keep_btn = Button.new()
 		keep_btn.text = "[E] %s (Keep)" % _get_equipment_name(current_id, slot)
+		ItemIcons.apply_button(keep_btn, str(current_id))
 		keep_btn.pressed.connect(_on_equipment_keep_pressed)
 		vbox.add_child(keep_btn)
 		buttons.append(keep_btn)
@@ -555,6 +557,7 @@ func _show_equipment_selection(slot: String) -> void:
 
 		var btn = Button.new()
 		btn.text = item_name + stat_text
+		ItemIcons.apply_button(btn, str(item_id))
 		btn.pressed.connect(_on_equipment_selected.bind(item_id))
 		vbox.add_child(btn)
 		buttons.append(btn)
@@ -994,6 +997,7 @@ func _show_items_view() -> void:
 
 			var row = HBoxContainer.new()
 			vbox.add_child(row)
+			row.add_child(ItemIcons.make_rect(str(item_id), 16))
 
 			var name_lbl = Label.new()
 			name_lbl.text = item_name
