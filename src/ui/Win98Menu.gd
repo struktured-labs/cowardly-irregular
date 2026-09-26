@@ -849,6 +849,8 @@ func _build_menu() -> void:
 	custom_minimum_size = Vector2(menu_width, menu_height)
 	size = Vector2(menu_width, menu_height)
 	position = anchor_position
+	## Clamp NOW as well: callers read `position` as soon as setup() returns (the open tween records it as its rest point), so a clamp one frame later gets undone.
+	_clamp_to_screen()
 
 	# Ensure menu stays on screen
 	await get_tree().process_frame
