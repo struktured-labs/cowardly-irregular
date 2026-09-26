@@ -56,6 +56,8 @@ func _ready() -> void:
 	collision_mask = 2
 	monitoring = true
 	monitorable = true
+	# _ready's catch-up has already fired by the time the player accepts. Listen for the step.
+	_listen_for_the_step()
 
 	if _defeat_flag_set() or not _prereq_met():
 		# Catch-up: killed BEFORE the quest reached this step, so the victory
@@ -73,6 +75,24 @@ func _ready() -> void:
 
 func defeat_flag() -> String:
 	return "w1_%s_defeated" % archetype
+
+
+## Re-notify when the quest moves onto this step. The load catch-up already ran, and a one-shot fight will not.
+func _listen_for_the_step() -> void:
+	if quest_flag == "":
+		return
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs == null:
+		return
+	if not qs.quest_state_changed.is_connected(_on_quest_progress):
+		qs.quest_state_changed.connect(_on_quest_progress)
+	if not qs.objective_advanced.is_connected(_on_quest_progress):
+		qs.objective_advanced.connect(_on_quest_progress)
+
+
+func _on_quest_progress(_a = null, _b = null) -> void:
+	if _defeat_flag_set():
+		_notify_quest()
 
 
 ## notify_flag advances only a CURRENT custom objective whose required_flag
