@@ -720,6 +720,9 @@ const ACTION_CLOCK_STATUSES: Array[String] = [
 	"stun", "charm", "sleep", "confuse", "fear", "pacify", "silence", "cannot_act",
 ]
 
+## Locks that replace a committed pooled strike. Fear still swings; pacify and silence are not strikes.
+const GROUP_ACTION_LOCKS: Array[String] = ["stun", "cannot_act", "sleep", "confuse", "charm"]
+
 
 ## One point of an action-clock status. Stun inlines the same arithmetic; the rest call this.
 func spend_action_clock(status: String) -> void:
@@ -730,6 +733,51 @@ func spend_action_clock(status: String) -> void:
 		remove_status(status)
 	else:
 		status_durations[status] = remaining - 1
+
+
+## True when this combatant cannot join a strike the party already committed. Break rolls match the personal skip.
+func forfeit_committed_action() -> bool:
+	if has_status("stun"):
+		spend_action_clock("stun")
+		return true
+	if has_status("cannot_act"):
+		spend_action_clock("cannot_act")
+		return true
+	if has_status("sleep"):
+		if randf() < 0.3:
+			remove_status("sleep")
+			return false
+		spend_action_clock("sleep")
+		return true
+	if has_status("confuse"):
+		if randf() < 0.4:
+			remove_status("confuse")
+			return false
+		spend_action_clock("confuse")
+		return true
+	if has_status("charm"):
+		if randf() < 0.35:
+			remove_status("charm")
+			return false
+		spend_action_clock("charm")
+		return true
+	return false
+
+
+static func control_lock_label(status: String) -> String:
+	match status:
+		"stun":
+			return "stunned"
+		"cannot_act":
+			return "unable to act"
+		"sleep":
+			return "asleep"
+		"confuse":
+			return "confused"
+		"charm":
+			return "charmed"
+		_:
+			return status
 
 
 ## Silence, pacify, and a fear that did not skip: the action already read the status. Spend one point now.
