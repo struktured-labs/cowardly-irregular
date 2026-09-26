@@ -115,6 +115,9 @@ var _row_nodes:   Array         = []   # Label nodes, one per choice
 var _hint_label:  Label         = null
 var _active:      bool          = false
 var _result:      String        = CHOICE_CANCELLED
+## Same field lock as the dialogue box. The prompt appears after the line closes, and Enter is also Settings.
+var _field_lock_id: String = ""
+var _holds_field_lock: bool = false
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -143,11 +146,14 @@ func present(choices: Array) -> String:
 
 	_build_ui()
 	_highlight()
+	_hold_field_lock()
 
 	# Wait for the player to make a choice or cancel.
 	await _wait_for_resolution()
 
 	_active = false
+	# The confirming press was an earlier frame. Release before the caller continues, or the next line inherits a stale lock.
+	_drop_field_lock()
 	return _result
 
 
@@ -161,6 +167,46 @@ func dismiss() -> void:
 
 
 # ── UI construction ───────────────────────────────────────────────────────────
+
+func _exit_tree() -> void:
+	_drop_field_lock()
+
+
+func _process(_delta: float) -> void:
+	if _active:
+		_hold_field_lock()
+	else:
+		_drop_field_lock()
+
+
+func _field_lock_id_for() -> String:
+	if _field_lock_id == "":
+		_field_lock_id = "dialogue_choice_%d" % get_instance_id()
+	return _field_lock_id
+
+
+func _field_lock_node() -> Node:
+	if not is_inside_tree():
+		return null
+	return get_tree().root.get_node_or_null("InputLockManager")
+
+
+func _hold_field_lock() -> void:
+	var ilm := _field_lock_node()
+	if ilm == null or not ilm.has_method("push_lock"):
+		return
+	ilm.push_lock(_field_lock_id_for())
+	_holds_field_lock = true
+
+
+func _drop_field_lock() -> void:
+	if not _holds_field_lock:
+		return
+	_holds_field_lock = false
+	var ilm := _field_lock_node()
+	if ilm and ilm.has_method("pop_lock"):
+		ilm.pop_lock(_field_lock_id_for())
+
 
 func _ready() -> void:
 	# R4 — keep this menu's _input() handling and async resolution loop alive

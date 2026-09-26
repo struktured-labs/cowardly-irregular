@@ -58,6 +58,9 @@ var _backlog_scroll: ScrollContainer = null
 var _typing_timer: Timer
 ## Does THIS panel own the music duck? Freeing mid-line must unduck, but only its own.
 var _ducked_music: bool = false
+## Field menus key off InputLockManager, and this box used to freeze movement only — Enter opened Settings over the line.
+var _field_lock_id: String = ""
+var _holds_field_lock: bool = false
 
 ## Typewriter speed per GameState.text_speed setting. "instant" returns 0.0
 ## which the dialogue start path interprets as "skip the typewriter entirely
@@ -402,11 +405,51 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
+	_drop_field_lock()
 	if _typing_timer and is_instance_valid(_typing_timer):
 		_typing_timer.stop()
 	# The duck lives on the SoundManager AUTOLOAD, which outlives this node — freeing mid-line otherwise strands music at DUCK_TARGET_DB for the rest of the session.
 	if _ducked_music:
 		_duck_music_for_dialogue(false)
+
+
+func _field_lock_id_for() -> String:
+	if _field_lock_id == "":
+		_field_lock_id = "dialogue_box_%d" % get_instance_id()
+	return _field_lock_id
+
+
+func _field_lock_node() -> Node:
+	if not is_inside_tree():
+		return null
+	return get_tree().root.get_node_or_null("InputLockManager")
+
+
+## True while this box is actually on screen. An empty hidden panel must not keep the field frozen.
+func _conversation_blocks_field() -> bool:
+	if not visible:
+		return false
+	if is_backlog_open() or is_thinking():
+		return true
+	return not _dialogue_queue.is_empty()
+
+
+func _hold_field_lock() -> void:
+	var ilm := _field_lock_node()
+	if ilm == null or not ilm.has_method("push_lock"):
+		return
+	ilm.push_lock(_field_lock_id_for())
+	_holds_field_lock = true
+
+
+## Pop is deferred to _process so the press that closes the box cannot also open a field menu.
+func _drop_field_lock() -> void:
+	if not _holds_field_lock:
+		return
+	_holds_field_lock = false
+	var ilm := _field_lock_node()
+	if ilm and ilm.has_method("pop_lock"):
+		ilm.pop_lock(_field_lock_id_for())
 
 
 func _setup_typing_timer() -> void:
@@ -818,6 +861,8 @@ func show_dialogue(dialogue_lines: Array) -> void:
 	# Music duck for modal dialogue — thinking indicator lives inside this panel so it composes safely (idempotent same-state). Forward-compat: no-op until cowir-music's SoundManager fold lands (feature/cowardly-irregular-music, msg 2707).
 	_duck_music_for_dialogue(true)
 	_show_current_line()
+	if _conversation_blocks_field():
+		_hold_field_lock()
 
 
 func skip_all() -> void:
@@ -864,6 +909,7 @@ func set_thinking(active: bool) -> void:
 		if _thinking_timer and is_instance_valid(_thinking_timer):
 			_thinking_timer.start()
 		visible = true  # Make sure the dialogue panel is on-screen.
+		_hold_field_lock()
 		thinking_started.emit()
 	else:
 		_thinking_label.visible = false
@@ -1103,6 +1149,11 @@ func _duck_music_for_dialogue(active: bool) -> void:
 
 
 func _process(delta: float) -> void:
+	# Heartbeat while the box is up: the stale reaper drops a lock after 10s, and reading a line takes longer than that.
+	if _conversation_blocks_field():
+		_hold_field_lock()
+	else:
+		_drop_field_lock()
 	if not visible or _dialogue_queue.is_empty() or (_thinking_label != null and _thinking_label.visible):
 		_accept_hold = 0.0
 		return
