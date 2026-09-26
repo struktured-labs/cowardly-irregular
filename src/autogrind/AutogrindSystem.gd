@@ -2172,6 +2172,13 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 	## Silence stays on after the fight that applied it. Battle refuses; this cast runs in that gap.
 	if caster.has_method("has_status") and caster.has_status("silence"):
 		return {"ok": false, "reason": "%s is silenced — %s won't come out" % [caster.combatant_name, ability_id]}
+	## Stun, sleep, and cannot_act stay on after the fight too. Battle skips that turn; this cast runs in the gap.
+	if caster.has_method("has_status") and caster.has_status("stun"):
+		return {"ok": false, "reason": "%s is stunned and cannot act" % caster.combatant_name}
+	if caster.has_method("has_status") and caster.has_status("sleep"):
+		return {"ok": false, "reason": "%s is asleep" % caster.combatant_name}
+	if caster.has_method("has_status") and caster.has_status("cannot_act"):
+		return {"ok": false, "reason": "%s cannot act" % caster.combatant_name}
 	var cost := int(ability.get("mp_cost", 0))
 	if caster.current_mp < cost:
 		return {"ok": false, "reason": "%s lacks MP for %s" % [caster.combatant_name, ability_id]}
