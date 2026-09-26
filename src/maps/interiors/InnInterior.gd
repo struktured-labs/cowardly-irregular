@@ -1132,7 +1132,9 @@ func _setup_npcs() -> void:
 	# Local innkeeper at the registration desk — identity follows the world.
 	# 2026-07-14 playtest: user talked to innkeeper repeatedly but couldn't find how to rest — the RegistrationDesk tile was the only rest gate; now the greeting-line close opens the rest dialog automatically.
 	var keeper := _innkeeper()
-	_create_npc(keeper["name"], "innkeeper", Vector2(2, 3), _keeper_lines_for(_origin_map_id(), keeper))
+	# Cancel, a paid rest, and a short purse all put _keeper_greeting back, so it has to be the lines just handed to her.
+	var greeting: Array = _keeper_lines_for(_origin_map_id(), keeper)
+	_create_npc(keeper["name"], "innkeeper", Vector2(2, 3), greeting)
 	var keeper_npc: Node = null
 	for child in npcs.get_children():
 		if child.get("npc_name") == keeper["name"]:
@@ -1140,7 +1142,7 @@ func _setup_npcs() -> void:
 			break
 	if keeper_npc and keeper_npc.has_signal("dialogue_ended"):
 		_keeper_npc = keeper_npc
-		_keeper_greeting = (keeper["lines"] as Array).duplicate()
+		_keeper_greeting = greeting.duplicate()
 		keeper_npc.dialogue_ended.connect(func(_n): _on_rest_request())
 
 	# Sleeping merchant in armchair

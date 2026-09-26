@@ -1994,12 +1994,9 @@ func _input(event: InputEvent) -> void:
 		_open_rule_composer_overlay()
 		get_viewport().set_input_as_handled()
 
-	# T - Open target picker for the action under the cursor
+	# T opens the target picker for whatever action is under the cursor. _is_on_action_group is the split check (a repeat only), so using it here left every one-action cell — the legend's T:Target — on the error sound.
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_T and not event.shift_pressed and not event.is_echo():
-		if _is_on_action_group():
-			_open_target_picker()
-		else:
-			SoundManager.play_ui("menu_error")
+		_open_target_picker()
 		get_viewport().set_input_as_handled()
 
 	# Tab / Y - Toggle current row enabled/disabled
