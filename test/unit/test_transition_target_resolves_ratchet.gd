@@ -33,9 +33,11 @@ func _sentinel_targets() -> Array:
 	var body: String = src.substr(start, end - start) if end > start else src.substr(start)
 	# One call down counts. village_return is rewritten in the helper the entry
 	# point calls before the dispatch; scanning only the entry point reported
-	# zero sentinels and then treated that real token as a typo.
+	# zero sentinels and then treated that real token as a typo. The name keeps
+	# its underscores — a class that stops at the first one matches only the
+	# last segment and then finds no function.
 	var seen := {"_on_area_transition": true}
-	for m in RegEx.create_from_string("\\b(_[A-Za-z0-9]+)\\(").search_all(body):
+	for m in RegEx.create_from_string("\\b(_[A-Za-z0-9_]+)\\(").search_all(body):
 		var name := m.get_string(1)
 		if seen.has(name):
 			continue
