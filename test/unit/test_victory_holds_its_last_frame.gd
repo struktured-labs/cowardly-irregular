@@ -72,12 +72,12 @@ func test_victory_ends_on_its_last_frame_and_stays_there() -> void:
 			continue
 		var sprite := AnimatedSprite2D.new()
 		sprite.sprite_frames = sf
-		sprite.speed_scale = 100.0  # the real fps is ~2.4 s per play; the ruling is about the END, not the pace
 		add_child_autofree(sprite)
 		var animator := BattleAnimator.new()
 		add_child_autofree(animator)
 		animator.setup(sprite)
 		animator.play_victory()
+		sprite.set_frame_and_progress(sf.get_frame_count(&"victory") - 1, 0.0)  # victory runs in real time; the ruling is about the END
 		await wait_for_signal(sprite.animation_finished, 3.0, "%s victory must FINISH, which a looping one never does" % job)
 		await wait_frames(20)  # long enough for a replay or an idle fallback to show up
 		var last := sf.get_frame_count(&"victory") - 1
