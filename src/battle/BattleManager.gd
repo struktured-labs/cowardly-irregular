@@ -6349,7 +6349,8 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		"taunt":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
-					target.add_status("taunted_%s" % caster.combatant_name)
+					# duration is already the authored value; omitting it stored add_status's default of 3, so Provoke's "2 turns" lasted 3.
+					target.add_status("taunted_%s" % caster.combatant_name, duration)
 					battle_log_message.emit("[color=yellow]%s taunts %s into focusing on them![/color]" % [caster.combatant_name, target.combatant_name])
 		"defense_up":
 			for target in targets:
