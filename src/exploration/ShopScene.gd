@@ -689,10 +689,11 @@ func _inventory_sources() -> Array:
 func _get_owned_count(item_id: String) -> int:
 	"""Get how many of this item the party owns"""
 	if shop_type == ShopType.ITEM:
-		var sources: Array = _inventory_sources()
-		if sources.is_empty():
-			return 0
-		return int(sources[0].get(item_id, 0))
+		# Every bag, same total the sell list and the pause menu already show.
+		var total := 0
+		for source in _inventory_sources():
+			total += int(source.get(item_id, 0))
+		return total
 	elif _is_magic_shop():
 		# Members who already have this spell — same rule as character select, not the snapshot list alone.
 		if game_state == null:
