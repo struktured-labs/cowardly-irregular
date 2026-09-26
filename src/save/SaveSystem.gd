@@ -833,6 +833,10 @@ func _apply_save_data(data: Dictionary) -> void:
 		else:
 			push_warning("[SaveSystem] _apply_save_data: encounter_state malformed (type=%s) — keeping current" % typeof(raw_es))
 
+	# The sprung plate is not in the file. Quit to Title leaves it armed; every load must drop it or the next step is a fight.
+	if EncounterSystem:
+		EncounterSystem.forced_encounter_next_step = false
+
 
 func _deserialize_party(party_data: Array) -> void:
 	"""Deserialize party members.
