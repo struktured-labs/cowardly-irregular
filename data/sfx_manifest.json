@@ -2011,36 +2011,46 @@
       "file": "assets/audio/sfx/voice_mage_big_hit_taken.ogg",
       "description": "Mage party voice line — big hit taken",
       "source_sha": "49716e85f18bf0d6",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1546435352
     },
     "voice_mage_low_hp": {
       "file": "assets/audio/sfx/voice_mage_low_hp.ogg",
       "description": "Mage party voice line — low hp",
       "source_sha": "073cadc3d500c7fd",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 822990535
     },
     "voice_mage_turn_start": {
       "file": "assets/audio/sfx/voice_mage_turn_start.ogg",
       "description": "Mage party voice line — turn start",
       "source_sha": "da783b6178f3a3dd",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1211377444
     },
     "voice_mage_used_signature_ability": {
       "file": "assets/audio/sfx/voice_mage_used_signature_ability.ogg",
       "description": "Mage party voice line — used signature ability",
       "source_sha": "fa2932d059b1d69e",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1159011172
     },
     "voice_mage_victory": {
       "file": "assets/audio/sfx/voice_mage_victory.ogg",
       "description": "Mage party voice line — victory",
       "source_sha": "9c1745aa55f79fb8",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 799634616
     },
     "voice_rogue_big_hit_taken": {
       "file": "assets/audio/sfx/voice_rogue_big_hit_taken.ogg",
@@ -3002,316 +3012,406 @@
       "description": "Mage party voice line — turn start (variant 1)",
       "file": "assets/audio/sfx/voice_mage_turn_start_1.ogg",
       "source_sha": "b0b9c76dda2c0fbf",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1258567972
     },
     "voice_mage_turn_start_2": {
       "description": "Mage party voice line — turn start (variant 2)",
       "file": "assets/audio/sfx/voice_mage_turn_start_2.ogg",
       "source_sha": "2b5a689596f36757",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1842354700
     },
     "voice_mage_turn_start_3": {
       "description": "Mage party voice line — turn start (variant 3)",
       "file": "assets/audio/sfx/voice_mage_turn_start_3.ogg",
       "source_sha": "271817ab90348b6f",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 889301928
     },
     "voice_mage_turn_start_4": {
       "description": "Mage party voice line — turn start (variant 4)",
       "file": "assets/audio/sfx/voice_mage_turn_start_4.ogg",
       "source_sha": "72204ac51b87b996",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1490602253
     },
     "voice_mage_turn_start_5": {
       "description": "Mage party voice line — turn start (variant 5)",
       "file": "assets/audio/sfx/voice_mage_turn_start_5.ogg",
       "source_sha": "d73c4e4430b6a401",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1655388057
     },
     "voice_mage_turn_start_6": {
       "description": "Mage party voice line — turn start (variant 6)",
       "file": "assets/audio/sfx/voice_mage_turn_start_6.ogg",
       "source_sha": "cf151615c7dd3930",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 223765273
     },
     "voice_mage_turn_start_7": {
       "description": "Mage party voice line — turn start (variant 7)",
       "file": "assets/audio/sfx/voice_mage_turn_start_7.ogg",
       "source_sha": "9dbe06259b4bacc5",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 870937752
     },
     "voice_mage_turn_start_8": {
       "description": "Mage party voice line — turn start (variant 8)",
       "file": "assets/audio/sfx/voice_mage_turn_start_8.ogg",
       "source_sha": "f035f878e5099dea",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1449808663
     },
     "voice_mage_turn_start_9": {
       "description": "Mage party voice line — turn start (variant 9)",
       "file": "assets/audio/sfx/voice_mage_turn_start_9.ogg",
       "source_sha": "be375a5343ae3e31",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 836613939
     },
     "voice_mage_low_hp_1": {
       "description": "Mage party voice line — low hp (variant 1)",
       "file": "assets/audio/sfx/voice_mage_low_hp_1.ogg",
       "source_sha": "a77612d353606caa",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 470795996
     },
     "voice_mage_low_hp_2": {
       "description": "Mage party voice line — low hp (variant 2)",
       "file": "assets/audio/sfx/voice_mage_low_hp_2.ogg",
       "source_sha": "ecf6a29870b7866c",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1066412683
     },
     "voice_mage_low_hp_3": {
       "description": "Mage party voice line — low hp (variant 3)",
       "file": "assets/audio/sfx/voice_mage_low_hp_3.ogg",
       "source_sha": "904e5239572c0b10",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 711134706
     },
     "voice_mage_low_hp_4": {
       "description": "Mage party voice line — low hp (variant 4)",
       "file": "assets/audio/sfx/voice_mage_low_hp_4.ogg",
       "source_sha": "c8c6d36adcc2c957",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 369152975
     },
     "voice_mage_low_hp_5": {
       "description": "Mage party voice line — low hp (variant 5)",
       "file": "assets/audio/sfx/voice_mage_low_hp_5.ogg",
       "source_sha": "83827b267f7006fd",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1558100605
     },
     "voice_mage_low_hp_6": {
       "description": "Mage party voice line — low hp (variant 6)",
       "file": "assets/audio/sfx/voice_mage_low_hp_6.ogg",
       "source_sha": "8c9099f248d00973",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 346138586
     },
     "voice_mage_low_hp_7": {
       "description": "Mage party voice line — low hp (variant 7)",
       "file": "assets/audio/sfx/voice_mage_low_hp_7.ogg",
       "source_sha": "3535970e2a4b1627",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1689148044
     },
     "voice_mage_low_hp_8": {
       "description": "Mage party voice line — low hp (variant 8)",
       "file": "assets/audio/sfx/voice_mage_low_hp_8.ogg",
       "source_sha": "ee546ed2cd18ee1f",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1973143722
     },
     "voice_mage_low_hp_9": {
       "description": "Mage party voice line — low hp (variant 9)",
       "file": "assets/audio/sfx/voice_mage_low_hp_9.ogg",
       "source_sha": "5c468104df1d1637",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 368992823
     },
     "voice_mage_big_hit_taken_1": {
       "description": "Mage party voice line — big hit taken (variant 1)",
       "file": "assets/audio/sfx/voice_mage_big_hit_taken_1.ogg",
       "source_sha": "7335c3dc0c4b9fb0",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 986768468
     },
     "voice_mage_big_hit_taken_2": {
       "description": "Mage party voice line — big hit taken (variant 2)",
       "file": "assets/audio/sfx/voice_mage_big_hit_taken_2.ogg",
       "source_sha": "d616cf501d3dd5e5",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 77309800
     },
     "voice_mage_big_hit_taken_3": {
       "description": "Mage party voice line — big hit taken (variant 3)",
       "file": "assets/audio/sfx/voice_mage_big_hit_taken_3.ogg",
       "source_sha": "4d27104899e62778",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1775835085
     },
     "voice_mage_big_hit_taken_4": {
       "description": "Mage party voice line — big hit taken (variant 4)",
       "file": "assets/audio/sfx/voice_mage_big_hit_taken_4.ogg",
       "source_sha": "f68749d0892973d1",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 107601878
     },
     "voice_mage_big_hit_taken_5": {
       "description": "Mage party voice line — big hit taken (variant 5)",
       "file": "assets/audio/sfx/voice_mage_big_hit_taken_5.ogg",
       "source_sha": "6b890866bb61c486",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1141366546
     },
     "voice_mage_big_hit_taken_6": {
       "description": "Mage party voice line — big hit taken (variant 6)",
       "file": "assets/audio/sfx/voice_mage_big_hit_taken_6.ogg",
       "source_sha": "49fe58ec618b13bd",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 859021030
     },
     "voice_mage_big_hit_taken_7": {
       "description": "Mage party voice line — big hit taken (variant 7)",
       "file": "assets/audio/sfx/voice_mage_big_hit_taken_7.ogg",
       "source_sha": "827dbe1f91c1e22e",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 715826699
     },
     "voice_mage_big_hit_taken_8": {
       "description": "Mage party voice line — big hit taken (variant 8)",
       "file": "assets/audio/sfx/voice_mage_big_hit_taken_8.ogg",
       "source_sha": "2acbce44bd6f171b",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 178175350
     },
     "voice_mage_big_hit_taken_9": {
       "description": "Mage party voice line — big hit taken (variant 9)",
       "file": "assets/audio/sfx/voice_mage_big_hit_taken_9.ogg",
       "source_sha": "6f31723d984cac6e",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 947256720
     },
     "voice_mage_used_signature_ability_1": {
       "description": "Mage party voice line — used signature ability (variant 1)",
       "file": "assets/audio/sfx/voice_mage_used_signature_ability_1.ogg",
       "source_sha": "d3bd8c9969eb495e",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 8272457
     },
     "voice_mage_used_signature_ability_2": {
       "description": "Mage party voice line — used signature ability (variant 2)",
       "file": "assets/audio/sfx/voice_mage_used_signature_ability_2.ogg",
       "source_sha": "4ea44a2069eb0ae9",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 484774657
     },
     "voice_mage_used_signature_ability_3": {
       "description": "Mage party voice line — used signature ability (variant 3)",
       "file": "assets/audio/sfx/voice_mage_used_signature_ability_3.ogg",
       "source_sha": "e09ca6e3fca4bfad",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1955130751
     },
     "voice_mage_used_signature_ability_4": {
       "description": "Mage party voice line — used signature ability (variant 4)",
       "file": "assets/audio/sfx/voice_mage_used_signature_ability_4.ogg",
       "source_sha": "5f4b78ed787b3753",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1757286122
     },
     "voice_mage_used_signature_ability_5": {
       "description": "Mage party voice line — used signature ability (variant 5)",
       "file": "assets/audio/sfx/voice_mage_used_signature_ability_5.ogg",
       "source_sha": "ed2362cca79cc30b",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1101765471
     },
     "voice_mage_used_signature_ability_6": {
       "description": "Mage party voice line — used signature ability (variant 6)",
       "file": "assets/audio/sfx/voice_mage_used_signature_ability_6.ogg",
       "source_sha": "56fb0b2c4372c23b",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1652704142
     },
     "voice_mage_used_signature_ability_7": {
       "description": "Mage party voice line — used signature ability (variant 7)",
       "file": "assets/audio/sfx/voice_mage_used_signature_ability_7.ogg",
       "source_sha": "38a92751a796d3c3",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 283463042
     },
     "voice_mage_used_signature_ability_8": {
       "description": "Mage party voice line — used signature ability (variant 8)",
       "file": "assets/audio/sfx/voice_mage_used_signature_ability_8.ogg",
       "source_sha": "c0e2d5c2baaacc02",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1095183218
     },
     "voice_mage_used_signature_ability_9": {
       "description": "Mage party voice line — used signature ability (variant 9)",
       "file": "assets/audio/sfx/voice_mage_used_signature_ability_9.ogg",
       "source_sha": "54a080e1195cff20",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 114264694
     },
     "voice_mage_victory_1": {
       "description": "Mage party voice line — victory (variant 1)",
       "file": "assets/audio/sfx/voice_mage_victory_1.ogg",
       "source_sha": "65fc418fe65281fb",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1078092184
     },
     "voice_mage_victory_2": {
       "description": "Mage party voice line — victory (variant 2)",
       "file": "assets/audio/sfx/voice_mage_victory_2.ogg",
       "source_sha": "430379d4f0d1af11",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 448025607
     },
     "voice_mage_victory_3": {
       "description": "Mage party voice line — victory (variant 3)",
       "file": "assets/audio/sfx/voice_mage_victory_3.ogg",
       "source_sha": "384ae761aefed3f3",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1386847367
     },
     "voice_mage_victory_4": {
       "description": "Mage party voice line — victory (variant 4)",
       "file": "assets/audio/sfx/voice_mage_victory_4.ogg",
       "source_sha": "da28a99f5914bd4a",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 850830149
     },
     "voice_mage_victory_5": {
       "description": "Mage party voice line — victory (variant 5)",
       "file": "assets/audio/sfx/voice_mage_victory_5.ogg",
       "source_sha": "cfb05eeb0485d1e3",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 794403275
     },
     "voice_mage_victory_6": {
       "description": "Mage party voice line — victory (variant 6)",
       "file": "assets/audio/sfx/voice_mage_victory_6.ogg",
       "source_sha": "b190c7a227e767ad",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 566734058
     },
     "voice_mage_victory_7": {
       "description": "Mage party voice line — victory (variant 7)",
       "file": "assets/audio/sfx/voice_mage_victory_7.ogg",
       "source_sha": "43339fea70c88660",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1245384846
     },
     "voice_mage_victory_8": {
       "description": "Mage party voice line — victory (variant 8)",
       "file": "assets/audio/sfx/voice_mage_victory_8.ogg",
       "source_sha": "ae059813356216c5",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1994879754
     },
     "voice_mage_victory_9": {
       "description": "Mage party voice line — victory (variant 9)",
       "file": "assets/audio/sfx/voice_mage_victory_9.ogg",
       "source_sha": "3ee5977c81145783",
-      "voice": "Daniel - Steady Broadcaster (onwK4e9ZLuTAKqWW03F9)",
-      "voice_gender": "male"
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1702316839
     },
     "voice_rogue_turn_start_1": {
       "description": "Rogue party voice line — turn start (variant 1)",
@@ -5832,6 +5932,861 @@
       "voice_gender": "female",
       "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.9 cfg 0.3",
       "seed": 538260475
+    },
+    "voice_mage_turn_start_10": {
+      "description": "Mage party voice line — turn start (variant 10)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_10.ogg",
+      "source_sha": "59cfb4f1fcec089d",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 379712037
+    },
+    "voice_mage_turn_start_11": {
+      "description": "Mage party voice line — turn start (variant 11)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_11.ogg",
+      "source_sha": "2c2efab0707f72cc",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 982343549
+    },
+    "voice_mage_turn_start_12": {
+      "description": "Mage party voice line — turn start (variant 12)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_12.ogg",
+      "source_sha": "0d052e1240e7c4ce",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1460609682
+    },
+    "voice_mage_turn_start_13": {
+      "description": "Mage party voice line — turn start (variant 13)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_13.ogg",
+      "source_sha": "4bb892f5bc287176",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 2104797845
+    },
+    "voice_mage_turn_start_14": {
+      "description": "Mage party voice line — turn start (variant 14)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_14.ogg",
+      "source_sha": "bca1e2bf3035b5ca",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 468102171
+    },
+    "voice_mage_turn_start_15": {
+      "description": "Mage party voice line — turn start (variant 15)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_15.ogg",
+      "source_sha": "48bd9bfe167e1eed",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 116437242
+    },
+    "voice_mage_turn_start_16": {
+      "description": "Mage party voice line — turn start (variant 16)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_16.ogg",
+      "source_sha": "4bbc18073ce892d9",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 485834457
+    },
+    "voice_mage_turn_start_17": {
+      "description": "Mage party voice line — turn start (variant 17)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_17.ogg",
+      "source_sha": "5cd17762cf8b5ae5",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1987916242
+    },
+    "voice_mage_turn_start_18": {
+      "description": "Mage party voice line — turn start (variant 18)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_18.ogg",
+      "source_sha": "cf22dae12831a552",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1273722736
+    },
+    "voice_mage_turn_start_19": {
+      "description": "Mage party voice line — turn start (variant 19)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_19.ogg",
+      "source_sha": "375dfdf3042866ca",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1163322985
+    },
+    "voice_mage_turn_start_20": {
+      "description": "Mage party voice line — turn start (variant 20)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_20.ogg",
+      "source_sha": "6749a09c111422cf",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 2003458721
+    },
+    "voice_mage_turn_start_21": {
+      "description": "Mage party voice line — turn start (variant 21)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_21.ogg",
+      "source_sha": "ef936444a5570a85",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 13072850
+    },
+    "voice_mage_turn_start_22": {
+      "description": "Mage party voice line — turn start (variant 22)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_22.ogg",
+      "source_sha": "fe0b08f2776a5417",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 768721356
+    },
+    "voice_mage_turn_start_23": {
+      "description": "Mage party voice line — turn start (variant 23)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_23.ogg",
+      "source_sha": "7c32fce70a02a752",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 819693505
+    },
+    "voice_mage_turn_start_24": {
+      "description": "Mage party voice line — turn start (variant 24)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_24.ogg",
+      "source_sha": "f8a3184bcea8a175",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1466958244
+    },
+    "voice_mage_turn_start_25": {
+      "description": "Mage party voice line — turn start (variant 25)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_25.ogg",
+      "source_sha": "297cf58c7d089f38",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 460729301
+    },
+    "voice_mage_turn_start_26": {
+      "description": "Mage party voice line — turn start (variant 26)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_26.ogg",
+      "source_sha": "9b00267e7d3df620",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1229467496
+    },
+    "voice_mage_turn_start_27": {
+      "description": "Mage party voice line — turn start (variant 27)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_27.ogg",
+      "source_sha": "97175e284e551f33",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 238229298
+    },
+    "voice_mage_turn_start_28": {
+      "description": "Mage party voice line — turn start (variant 28)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_28.ogg",
+      "source_sha": "c954f733099831ec",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 720580104
+    },
+    "voice_mage_turn_start_29": {
+      "description": "Mage party voice line — turn start (variant 29)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_29.ogg",
+      "source_sha": "94a5dc2f6df9285e",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 980143329
+    },
+    "voice_mage_turn_start_30": {
+      "description": "Mage party voice line — turn start (variant 30)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_30.ogg",
+      "source_sha": "6bf5a430eaf230f2",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1866977868
+    },
+    "voice_mage_turn_start_31": {
+      "description": "Mage party voice line — turn start (variant 31)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_31.ogg",
+      "source_sha": "699fa54f750300ee",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 273479567
+    },
+    "voice_mage_turn_start_32": {
+      "description": "Mage party voice line — turn start (variant 32)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_32.ogg",
+      "source_sha": "793a8595b7445525",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 659564208
+    },
+    "voice_mage_turn_start_33": {
+      "description": "Mage party voice line — turn start (variant 33)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_33.ogg",
+      "source_sha": "75a503416976e527",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 329222160
+    },
+    "voice_mage_turn_start_34": {
+      "description": "Mage party voice line — turn start (variant 34)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_34.ogg",
+      "source_sha": "cd518f5b8bbcd2c4",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 807562311
+    },
+    "voice_mage_turn_start_35": {
+      "description": "Mage party voice line — turn start (variant 35)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_35.ogg",
+      "source_sha": "0804b45d56a4130c",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1684454156
+    },
+    "voice_mage_turn_start_36": {
+      "description": "Mage party voice line — turn start (variant 36)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_36.ogg",
+      "source_sha": "e46fccfc7af228c4",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1390316272
+    },
+    "voice_mage_turn_start_37": {
+      "description": "Mage party voice line — turn start (variant 37)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_37.ogg",
+      "source_sha": "4c191da565fc2ea6",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1016518851
+    },
+    "voice_mage_turn_start_38": {
+      "description": "Mage party voice line — turn start (variant 38)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_38.ogg",
+      "source_sha": "9c7d088b3afe184d",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 58720684
+    },
+    "voice_mage_turn_start_39": {
+      "description": "Mage party voice line — turn start (variant 39)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_39.ogg",
+      "source_sha": "a779d6a2cb2ce53f",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 512408816
+    },
+    "voice_mage_turn_start_40": {
+      "description": "Mage party voice line — turn start (variant 40)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_40.ogg",
+      "source_sha": "ac1b3f0ebe137f23",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1948350592
+    },
+    "voice_mage_turn_start_41": {
+      "description": "Mage party voice line — turn start (variant 41)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_41.ogg",
+      "source_sha": "1d550b4931d01a18",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1184815277
+    },
+    "voice_mage_turn_start_42": {
+      "description": "Mage party voice line — turn start (variant 42)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_42.ogg",
+      "source_sha": "1412dcfbabde0848",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1146302899
+    },
+    "voice_mage_turn_start_43": {
+      "description": "Mage party voice line — turn start (variant 43)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_43.ogg",
+      "source_sha": "7a23f2f0bc285efa",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1042189095
+    },
+    "voice_mage_turn_start_44": {
+      "description": "Mage party voice line — turn start (variant 44)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_44.ogg",
+      "source_sha": "a224f84210d54296",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 868819902
+    },
+    "voice_mage_turn_start_45": {
+      "description": "Mage party voice line — turn start (variant 45)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_45.ogg",
+      "source_sha": "c42e8e73b5ac7800",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 240083026
+    },
+    "voice_mage_turn_start_46": {
+      "description": "Mage party voice line — turn start (variant 46)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_46.ogg",
+      "source_sha": "f231c802fed83ba2",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 2083112005
+    },
+    "voice_mage_turn_start_47": {
+      "description": "Mage party voice line — turn start (variant 47)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_47.ogg",
+      "source_sha": "59911551cd795188",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1073119807
+    },
+    "voice_mage_turn_start_48": {
+      "description": "Mage party voice line — turn start (variant 48)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_48.ogg",
+      "source_sha": "6c5d544c772e3cf0",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1798315276
+    },
+    "voice_mage_turn_start_49": {
+      "description": "Mage party voice line — turn start (variant 49)",
+      "file": "assets/audio/sfx/voice_mage_turn_start_49.ogg",
+      "source_sha": "95f38938ffc53664",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1407989190
+    },
+    "voice_mage_low_hp_10": {
+      "description": "Mage party voice line — low hp (variant 10)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_10.ogg",
+      "source_sha": "8c8c8b07c771a929",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 156283062
+    },
+    "voice_mage_low_hp_11": {
+      "description": "Mage party voice line — low hp (variant 11)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_11.ogg",
+      "source_sha": "065057b474f0eb40",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1579597409
+    },
+    "voice_mage_low_hp_12": {
+      "description": "Mage party voice line — low hp (variant 12)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_12.ogg",
+      "source_sha": "e98fdd00e4190aba",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1615193962
+    },
+    "voice_mage_low_hp_13": {
+      "description": "Mage party voice line — low hp (variant 13)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_13.ogg",
+      "source_sha": "9221d90eebc645e2",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 2139873979
+    },
+    "voice_mage_low_hp_14": {
+      "description": "Mage party voice line — low hp (variant 14)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_14.ogg",
+      "source_sha": "68ff6cf1877e8a97",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 898523248
+    },
+    "voice_mage_low_hp_15": {
+      "description": "Mage party voice line — low hp (variant 15)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_15.ogg",
+      "source_sha": "691b07add3704c2c",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1241614749
+    },
+    "voice_mage_low_hp_16": {
+      "description": "Mage party voice line — low hp (variant 16)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_16.ogg",
+      "source_sha": "27376e7918330ed6",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 354555109
+    },
+    "voice_mage_low_hp_17": {
+      "description": "Mage party voice line — low hp (variant 17)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_17.ogg",
+      "source_sha": "615c3bac98c39956",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1514652031
+    },
+    "voice_mage_low_hp_18": {
+      "description": "Mage party voice line — low hp (variant 18)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_18.ogg",
+      "source_sha": "0f31dc600d046454",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 409560487
+    },
+    "voice_mage_low_hp_19": {
+      "description": "Mage party voice line — low hp (variant 19)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_19.ogg",
+      "source_sha": "bb1e49b72cb77325",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 244828325
+    },
+    "voice_mage_low_hp_20": {
+      "description": "Mage party voice line — low hp (variant 20)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_20.ogg",
+      "source_sha": "2e0ae7f8f6f3e42c",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 293769023
+    },
+    "voice_mage_low_hp_21": {
+      "description": "Mage party voice line — low hp (variant 21)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_21.ogg",
+      "source_sha": "1daec3238667faea",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1693023919
+    },
+    "voice_mage_low_hp_22": {
+      "description": "Mage party voice line — low hp (variant 22)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_22.ogg",
+      "source_sha": "1fb424fe8dbce11c",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1371359075
+    },
+    "voice_mage_low_hp_23": {
+      "description": "Mage party voice line — low hp (variant 23)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_23.ogg",
+      "source_sha": "f0ec06a44a4f055f",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1058881375
+    },
+    "voice_mage_low_hp_24": {
+      "description": "Mage party voice line — low hp (variant 24)",
+      "file": "assets/audio/sfx/voice_mage_low_hp_24.ogg",
+      "source_sha": "d3750032c9dba6b0",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 769580580
+    },
+    "voice_mage_big_hit_taken_10": {
+      "description": "Mage party voice line — big hit taken (variant 10)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_10.ogg",
+      "source_sha": "c38787a8957aaf5d",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 360236968
+    },
+    "voice_mage_big_hit_taken_11": {
+      "description": "Mage party voice line — big hit taken (variant 11)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_11.ogg",
+      "source_sha": "0b1e25fa7b027a0e",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1075398513
+    },
+    "voice_mage_big_hit_taken_12": {
+      "description": "Mage party voice line — big hit taken (variant 12)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_12.ogg",
+      "source_sha": "146ddd990a2229af",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1598281929
+    },
+    "voice_mage_big_hit_taken_13": {
+      "description": "Mage party voice line — big hit taken (variant 13)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_13.ogg",
+      "source_sha": "bf143925f3d4dba7",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 302756038
+    },
+    "voice_mage_big_hit_taken_14": {
+      "description": "Mage party voice line — big hit taken (variant 14)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_14.ogg",
+      "source_sha": "505276e849bbebe5",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 732301898
+    },
+    "voice_mage_big_hit_taken_15": {
+      "description": "Mage party voice line — big hit taken (variant 15)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_15.ogg",
+      "source_sha": "e2df6ec0d6317230",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1980290451
+    },
+    "voice_mage_big_hit_taken_16": {
+      "description": "Mage party voice line — big hit taken (variant 16)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_16.ogg",
+      "source_sha": "a20c9aa9724fa5c5",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 723291497
+    },
+    "voice_mage_big_hit_taken_17": {
+      "description": "Mage party voice line — big hit taken (variant 17)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_17.ogg",
+      "source_sha": "9868be67ff8e918f",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 274480087
+    },
+    "voice_mage_big_hit_taken_18": {
+      "description": "Mage party voice line — big hit taken (variant 18)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_18.ogg",
+      "source_sha": "20734a9c237cc326",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 126503641
+    },
+    "voice_mage_big_hit_taken_19": {
+      "description": "Mage party voice line — big hit taken (variant 19)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_19.ogg",
+      "source_sha": "0f7c84b0a786d5bc",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1542924918
+    },
+    "voice_mage_big_hit_taken_20": {
+      "description": "Mage party voice line — big hit taken (variant 20)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_20.ogg",
+      "source_sha": "45a164a7ea0ab8db",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 973341217
+    },
+    "voice_mage_big_hit_taken_21": {
+      "description": "Mage party voice line — big hit taken (variant 21)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_21.ogg",
+      "source_sha": "e55de4d8d70bc66f",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1119359182
+    },
+    "voice_mage_big_hit_taken_22": {
+      "description": "Mage party voice line — big hit taken (variant 22)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_22.ogg",
+      "source_sha": "127b47757788e8fc",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1278106061
+    },
+    "voice_mage_big_hit_taken_23": {
+      "description": "Mage party voice line — big hit taken (variant 23)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_23.ogg",
+      "source_sha": "c67f4bfede5bc95e",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1657084868
+    },
+    "voice_mage_big_hit_taken_24": {
+      "description": "Mage party voice line — big hit taken (variant 24)",
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken_24.ogg",
+      "source_sha": "097f38bec685b26e",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 2130475058
+    },
+    "voice_mage_used_signature_ability_10": {
+      "description": "Mage party voice line — used signature ability (variant 10)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_10.ogg",
+      "source_sha": "0012a45d147feb47",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1822328786
+    },
+    "voice_mage_used_signature_ability_11": {
+      "description": "Mage party voice line — used signature ability (variant 11)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_11.ogg",
+      "source_sha": "ed15d87d0903b1f6",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1924462960
+    },
+    "voice_mage_used_signature_ability_12": {
+      "description": "Mage party voice line — used signature ability (variant 12)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_12.ogg",
+      "source_sha": "e7eefb4cdd378d59",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 474514749
+    },
+    "voice_mage_used_signature_ability_13": {
+      "description": "Mage party voice line — used signature ability (variant 13)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_13.ogg",
+      "source_sha": "a87ae1228547bf65",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1495098104
+    },
+    "voice_mage_used_signature_ability_14": {
+      "description": "Mage party voice line — used signature ability (variant 14)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_14.ogg",
+      "source_sha": "0972cffa9041d9ed",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 2062480132
+    },
+    "voice_mage_used_signature_ability_15": {
+      "description": "Mage party voice line — used signature ability (variant 15)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_15.ogg",
+      "source_sha": "f77fa3d92deea05c",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 2052378626
+    },
+    "voice_mage_used_signature_ability_16": {
+      "description": "Mage party voice line — used signature ability (variant 16)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_16.ogg",
+      "source_sha": "f18c4395e0470e56",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1934355077
+    },
+    "voice_mage_used_signature_ability_17": {
+      "description": "Mage party voice line — used signature ability (variant 17)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_17.ogg",
+      "source_sha": "79d358900832d633",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1520293766
+    },
+    "voice_mage_used_signature_ability_18": {
+      "description": "Mage party voice line — used signature ability (variant 18)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_18.ogg",
+      "source_sha": "93c8577f2c60c2ab",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1413398915
+    },
+    "voice_mage_used_signature_ability_19": {
+      "description": "Mage party voice line — used signature ability (variant 19)",
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability_19.ogg",
+      "source_sha": "a53c5040669e4822",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 825692500
+    },
+    "voice_mage_victory_10": {
+      "description": "Mage party voice line — victory (variant 10)",
+      "file": "assets/audio/sfx/voice_mage_victory_10.ogg",
+      "source_sha": "f8e01648dead7ebc",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 715804720
+    },
+    "voice_mage_victory_11": {
+      "description": "Mage party voice line — victory (variant 11)",
+      "file": "assets/audio/sfx/voice_mage_victory_11.ogg",
+      "source_sha": "8fea124d2a66eae7",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 922758949
+    },
+    "voice_mage_victory_12": {
+      "description": "Mage party voice line — victory (variant 12)",
+      "file": "assets/audio/sfx/voice_mage_victory_12.ogg",
+      "source_sha": "295c3b9350a809e6",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1778090677
+    },
+    "voice_mage_victory_13": {
+      "description": "Mage party voice line — victory (variant 13)",
+      "file": "assets/audio/sfx/voice_mage_victory_13.ogg",
+      "source_sha": "0de7c2903e683252",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1050530757
+    },
+    "voice_mage_victory_14": {
+      "description": "Mage party voice line — victory (variant 14)",
+      "file": "assets/audio/sfx/voice_mage_victory_14.ogg",
+      "source_sha": "33d3fdf33ebda133",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1515843818
+    },
+    "voice_mage_victory_15": {
+      "description": "Mage party voice line — victory (variant 15)",
+      "file": "assets/audio/sfx/voice_mage_victory_15.ogg",
+      "source_sha": "999441a788cbbf1c",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 79851769
+    },
+    "voice_mage_victory_16": {
+      "description": "Mage party voice line — victory (variant 16)",
+      "file": "assets/audio/sfx/voice_mage_victory_16.ogg",
+      "source_sha": "9b78066339927d87",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 469936622
+    },
+    "voice_mage_victory_17": {
+      "description": "Mage party voice line — victory (variant 17)",
+      "file": "assets/audio/sfx/voice_mage_victory_17.ogg",
+      "source_sha": "aa057302c926788e",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1267425238
+    },
+    "voice_mage_victory_18": {
+      "description": "Mage party voice line — victory (variant 18)",
+      "file": "assets/audio/sfx/voice_mage_victory_18.ogg",
+      "source_sha": "6788aa9ee38f429c",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1594742473
+    },
+    "voice_mage_victory_19": {
+      "description": "Mage party voice line — victory (variant 19)",
+      "file": "assets/audio/sfx/voice_mage_victory_19.ogg",
+      "source_sha": "59a833f15ce616a3",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1443700773
+    },
+    "voice_mage_victory_20": {
+      "description": "Mage party voice line — victory (variant 20)",
+      "file": "assets/audio/sfx/voice_mage_victory_20.ogg",
+      "source_sha": "b8e848ab02927296",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 477143531
+    },
+    "voice_mage_victory_21": {
+      "description": "Mage party voice line — victory (variant 21)",
+      "file": "assets/audio/sfx/voice_mage_victory_21.ogg",
+      "source_sha": "feba5a4149488864",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 178316136
+    },
+    "voice_mage_victory_22": {
+      "description": "Mage party voice line — victory (variant 22)",
+      "file": "assets/audio/sfx/voice_mage_victory_22.ogg",
+      "source_sha": "00088a6f91013f49",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 1256075652
+    },
+    "voice_mage_victory_23": {
+      "description": "Mage party voice line — victory (variant 23)",
+      "file": "assets/audio/sfx/voice_mage_victory_23.ogg",
+      "source_sha": "0a157a9725767dce",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 2035120259
+    },
+    "voice_mage_victory_24": {
+      "description": "Mage party voice line — victory (variant 24)",
+      "file": "assets/audio/sfx/voice_mage_victory_24.ogg",
+      "source_sha": "5f2e7ac09120d5c1",
+      "voice": "Chatterbox clone of VCTK speaker p254 (Surrey, CC BY 4.0), voice_refs/mage.wav",
+      "voice_gender": "male",
+      "model": "chatterbox (original) via devnen 915ae28 + cowir patch · exaggeration 0.8 cfg 0.3",
+      "seed": 204251086
     }
   }
 }
