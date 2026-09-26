@@ -568,6 +568,10 @@ static func retimed_fps(base_fps: float, frames: int, base_frames: int) -> float
 ## Returns the base fps unchanged whenever there is nothing to match against — an undressed
 ## sheet, an equal frame count, or a base sheet that is not on disk.
 ## Long Celebration strips (11 frames at sheet 8 fps = 1.375s) must take ≥2.4s so the flourish is readable.
+## Victory runs at the artist's authored timing, half speed (struktured 2026-09-26, option B of three previews).
+const VICTORY_PACE := 2.0
+
+
 static func victory_fps(frame_count: int, base_fps: float) -> float:
 	const MIN_SEC := 2.4
 	if frame_count < 8:
@@ -618,17 +622,25 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 
 		sprite_frames.add_animation(anim_name)
 		var fps: float = dressed_fps(float(sheet_data.get("fps", 8)), sheet_path, base_sheet, int(frame_count), int(frame_width))
+		var durations: Array = []
 		if anim_name == "victory":
-			fps = victory_fps(int(frame_count), fps)
+			var declared = sheet_data.get("frame_durations_ms", {})
+			var authored = declared.get("victory", []) if declared is Dictionary else []
+			if authored is Array and authored.size() == frame_count:
+				durations = authored
+				fps = 1.0  # with fps 1, each frame's duration below is in SECONDS
+			else:
+				fps = victory_fps(int(frame_count), fps) / VICTORY_PACE
 		sprite_frames.set_animation_speed(anim_name, fps)
-		# Rest poses loop (weak breathes like idle); action anims play once so animation_finished fires
-		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "victory", "weak"])
+		# Rest poses loop (weak breathes like idle); victory plays ONCE and holds its last frame (artist ruling 2026-09-26)
+		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "weak"])
 
 		for i in range(frame_count):
 			var atlas = AtlasTexture.new()
 			atlas.atlas = texture
 			atlas.region = Rect2(i * frame_width, 0, frame_width, frame_height)
-			sprite_frames.add_frame(anim_name, atlas)
+			var d: float = float(durations[i]) * VICTORY_PACE / 1000.0 if not durations.is_empty() else 1.0
+			sprite_frames.add_frame(anim_name, atlas, d)
 
 		loaded_any = true
 

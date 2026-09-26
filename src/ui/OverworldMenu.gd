@@ -383,6 +383,18 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	dead_label.visible = not member.is_alive
 	card.add_child(dead_label)
 
+	# Poison and silence stay on the combatant after the fight. The card already says KO; this names the rest.
+	var ailment_label := Label.new()
+	ailment_label.name = "AilmentLabel"
+	ailment_label.text = StatusNames.list_line(member.status_effects)
+	ailment_label.visible = ailment_label.text != ""
+	ailment_label.position = Vector2(58, 84)
+	ailment_label.size = Vector2(180, 14)
+	ailment_label.clip_text = true
+	ailment_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	ailment_label.add_theme_color_override("font_color", Color(0.85, 0.45, 0.9))
+	card.add_child(ailment_label)
+
 	return card
 
 
@@ -656,6 +668,10 @@ func _update_party_stats() -> void:
 		var dead_label = card.get_node_or_null("DeadLabel")
 		if dead_label:
 			dead_label.visible = not member.is_alive
+		var ailment_label = card.get_node_or_null("AilmentLabel")
+		if ailment_label:
+			ailment_label.text = StatusNames.list_line(member.status_effects)
+			ailment_label.visible = ailment_label.text != ""
 
 
 ## The card is rebuilt only when the menu opens. A job change closes back onto that card, so the face has to follow the job the label already reads.

@@ -640,8 +640,8 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 					target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
 			var heal_preview: String = ""
 			if ability.get("type", "") == "healing" and ability.has("heal_amount"):
-				var est_heal: int = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
-				heal_preview = " ~+%d" % est_heal
+				## Quoted per ALLY: the dial, this member's passives and a curse on them all move it.
+				heal_preview = " ~+%d" % BattleManager.estimate_heal_amount(combatant, member, ability)
 			ally_targets.append({
 				"id": "ability_" + ability_id + "_ally_" + str(i),
 				"label": "%s (%d/%d HP)%s" % [member.combatant_name, member.current_hp, member.max_hp, heal_preview],
@@ -716,8 +716,20 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 	if target_type == "all_allies" and can_afford:
 		var all_label: String = "%s [All]" % ability["name"]
 		if ability.has("heal_amount"):
-			var est_heal: int = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
-			all_label = "%s [All] ~+%d each" % [ability["name"], est_heal]
+			## "each" is one number for N receivers, and a curse or a passive on one of them makes it a
+			## lie for that row. Quote the span when the party does not agree.
+			var lo: int = -1
+			var hi: int = -1
+			for member in _scene.party_members:
+				if not is_instance_valid(member) or not member.is_alive:
+					continue
+				var est: int = BattleManager.estimate_heal_amount(combatant, member, ability)
+				lo = est if lo < 0 else mini(lo, est)
+				hi = maxi(hi, est)
+			if lo >= 0 and lo == hi:
+				all_label = "%s [All] ~+%d each" % [ability["name"], lo]
+			elif lo >= 0:
+				all_label = "%s [All] ~+%d-%d each" % [ability["name"], lo, hi]
 		return {
 			"id": "ability_" + ability_id,
 			"label": all_label,
