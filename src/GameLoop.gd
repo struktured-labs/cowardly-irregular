@@ -2963,6 +2963,10 @@ func _restore_party_from_save_data() -> bool:
 			c.current_ap = clampi(saved["current_ap"], -4, 4)
 		if saved.has("is_alive"):
 			c.is_alive = saved["is_alive"]
+		# The lines above write the saved bar back over from_dict. A permakilled corpse stays down even when that bar was full.
+		if c.has_status("permakilled"):
+			c.is_alive = false
+			c.current_hp = 0
 	# Spotlight reconcile after load — flags persist in game_constants
 	# so a save mid-W1 may carry already-unlocked PCs even though the
 	# Combatant.autobattle_locked field is freshly set by from_dict.
