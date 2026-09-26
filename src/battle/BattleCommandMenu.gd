@@ -299,8 +299,8 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			})
 
 	# Items submenu
-	## The party's one bag, read from the same party _execute_item spends from.
-	var bag: Dictionary = ItemSystem.party_inventory(BattleManager.player_party if combatant in BattleManager.player_party else [combatant])
+	## The party's one bag, including the bench a spotlight duel is holding off the field.
+	var bag: Dictionary = ItemSystem.party_inventory(BattleManager.consumable_bag(combatant))
 	if not bag.is_empty():
 		var item_items = []
 		for item_id in bag.keys():

@@ -7472,8 +7472,8 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	"""Execute item use (costs 1 AP)"""
 	if user in player_party:
 		_c3_nonbasic_used = true
-	## A PC draws on the party's one bag, an enemy on its own inventory.
-	var bag: Array = player_party if user in player_party else [user]
+	## A PC draws on the party's one bag (the benched roster during a spotlight), an enemy on its own inventory.
+	var bag: Array = consumable_bag(user)
 	if ItemSystem.party_item_count(bag, item_id) <= 0:
 		## Tick 184: surface to battle_log when user doesn't have
 		## the item. Common scenarios: autobattle script targets a
@@ -8222,7 +8222,7 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			if item_id.is_empty():
 				print("[AUTOBATTLE] No item_id found in action: %s" % action_data)
 				return {}
-			if ItemSystem.party_item_count(player_party if combatant in player_party else [combatant], item_id) <= 0:
+			if ItemSystem.party_item_count(consumable_bag(combatant), item_id) <= 0:
 				## Routine (the player ran out), but the ability arm logs its routine MP case too.
 				print("[AUTOBATTLE] Item not held: %s" % item_id)
 				return {}
@@ -9562,6 +9562,20 @@ func deliver_consumable_drop(party: Array, item_id: String, qty: int = 1) -> voi
 	var holder: Variant = _drop_bag_holder(party)
 	if holder != null and is_instance_valid(holder) and qty > 0 and holder.has_method("add_item"):
 		holder.add_item(item_id, qty)
+
+
+## A spotlight benches the bag-holder. Drops already pay that roster; a use has to spend it too.
+func consumable_bag(user: Combatant) -> Array:
+	if user == null or not is_instance_valid(user):
+		return []
+	if not (user in player_party):
+		return [user]
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl != null and bool(gl.get("_spotlight_duel_active")):
+		var saved: Variant = gl.get("_spotlight_saved_party")
+		if saved is Array and not (saved as Array).is_empty():
+			return saved
+	return player_party
 
 
 ## During a spotlight the battle party is the duelist. The bag is the benched roster's first member — the same pocket chests, shops, and quest rewards pay.
