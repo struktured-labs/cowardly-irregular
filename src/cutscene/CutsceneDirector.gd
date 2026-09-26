@@ -1136,12 +1136,16 @@ func _add_item_to_party_leader(item_id: String, quantity: int) -> void:
 	## the warning, devs see the orphan loud at runtime; the regression
 	## test (test_cutscene_grant_give_item_orphans) catches new orphans
 	## at test time before they reach the player.
+	var data: Dictionary = {}
 	if ItemSystem and ItemSystem.has_method("get_item"):
-		var existing: Dictionary = ItemSystem.get_item(item_id)
-		if existing.is_empty():
+		data = ItemSystem.get_item(item_id)
+		if data.is_empty():
 			push_warning("CutsceneDirector: item '%s' not defined in items.json — will be a ghost inventory entry" % item_id)
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if game_loop and "party" in game_loop and game_loop.party.size() > 0:
+		# A key item already in the bag is not granted again — both Oak Street scenes give the Enchanted Sweater.
+		if not data.is_empty() and int(data.get("category", -1)) == ItemSystem.ItemCategory.META and ItemSystem.has_method("party_item_count") and ItemSystem.party_item_count(game_loop.party, item_id) > 0:
+			return
 		var leader = game_loop.party[0]
 		if leader and leader.has_method("add_item"):
 			leader.add_item(item_id, quantity)
