@@ -1666,29 +1666,8 @@
       "job_id": "ninja",
       "stance": "defensive",
       "name": "Defensive",
-      "description": "Blind the whole room on turn 1, vanish when it gets dangerous, drink before it gets worse, then cut whatever is left.",
+      "description": "Vanish when it gets dangerous, drink before it gets worse, then cut whatever is left.",
       "rules": [
-        {
-          "conditions": [
-            {
-              "type": "not_enemy_has_status",
-              "status": "blind"
-            },
-            {
-              "type": "mp_percent",
-              "op": ">=",
-              "value": 14
-            }
-          ],
-          "actions": [
-            {
-              "type": "ability",
-              "id": "smoke_bomb",
-              "target": "lowest_hp_enemy"
-            }
-          ],
-          "enabled": true
-        },
         {
           "conditions": [
             {
