@@ -433,25 +433,13 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 	return actual_damage
 
 
-func heal(amount: int) -> int:
-	"""Heal HP, returns actual amount healed. Curse reduces healing by 50%.
-	Tick 114: applies the global healing_multiplier from game_constants
-	so Scriptweaver edits actually scale healing across the entire
-	game. Pre-fix the constant was a cosmetic flag flip — no consumer."""
-	if not is_alive:
+## What heal(amount) will add before the max-HP clamp, with no side effect, so a menu can quote it.
+func heal_preview(amount: int) -> int:
+	"""The whole multiplier chain a heal passes through on the RECEIVER: curse, the
+	healing_multiplier dial (tick 114 — Scriptweaver edits scale healing game-wide), and the
+	receiver's own passives. One owner, because an item and a spell both arrive here."""
+	if not is_alive or amount < 0:
 		return 0
-
-	## Tick 368: reject negative amounts. Pre-fix heal(-30) would
-	## silently DRAIN 30 HP via the current_hp = min(max, hp + -30)
-	## arithmetic, bypass the damage path entirely (no die() check,
-	## no damage_dealt signal, no shake/popup), then return -30 — the
-	## caller would emit healing_done(target, -30) producing a misleading
-	## "+(-30) HP!" popup. A typo'd ability/item or Scriptweaver edit
-	## with negative heal would silently exploit this.
-	if amount < 0:
-		push_warning("[Combatant] heal() called with negative amount %d on %s — refused, returning 0 (use take_damage for HP loss)" % [amount, combatant_name])
-		return 0
-
 	var heal_amount = amount
 	if has_status("curse"):
 		heal_amount = int(heal_amount * 0.5)
@@ -480,6 +468,28 @@ func heal(amount: int) -> int:
 			float(passive_mods.get("healing_multiplier", 1.0)),
 			0.1, 10.0)
 		heal_amount = int(heal_amount * passive_heal_mult)
+	return heal_amount
+
+
+func heal(amount: int) -> int:
+	"""Heal HP, returns actual amount healed. Every multiplier lives in heal_preview, which is
+	also what the command menu quotes — the number shown and the number added are one computation."""
+	if not is_alive:
+		return 0
+
+	## Tick 368: reject negative amounts. Pre-fix heal(-30) would
+	## silently DRAIN 30 HP via the current_hp = min(max, hp + -30)
+	## arithmetic, bypass the damage path entirely (no die() check,
+	## no damage_dealt signal, no shake/popup), then return -30 — the
+	## caller would emit healing_done(target, -30) producing a misleading
+	## "+(-30) HP!" popup. A typo'd ability/item or Scriptweaver edit
+	## with negative heal would silently exploit this.
+	if amount < 0:
+		push_warning("[Combatant] heal() called with negative amount %d on %s — refused, returning 0 (use take_damage for HP loss)" % [amount, combatant_name])
+		return 0
+
+	## One owner for every factor: BattleManager quotes this instead of replicating it.
+	var heal_amount: int = heal_preview(amount)
 
 	var old_hp = current_hp
 	current_hp = min(max_hp, current_hp + heal_amount)
