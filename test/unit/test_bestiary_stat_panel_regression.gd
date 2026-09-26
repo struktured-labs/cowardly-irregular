@@ -101,23 +101,39 @@ func test_detail_column_labels_never_overlap_at_any_text_size() -> void:
 
 
 func test_detail_column_stays_inside_the_panel_at_max_text_size() -> void:
-	# Reflowing pushes labels down; make sure the cure isn't an overflow.
-	# 2.0 is the largest preset, so it is the binding case.
+	# Reflowing pushes labels down. At 2.0x the column is taller than the pane;
+	# the cure is a scroll viewport that stays inside the panel, with the rows
+	# in the scroll content so they can be brought back on screen.
 	GameState.text_size_scale = 2.0
 	var menu = await _build_menu()
 	var stats = menu.get("_detail_stats")
 	var drops = menu.get("_detail_drops")
+	var scroll = menu.get("_detail_scroll")
 	assert_ne(stats, null, "detail labels must exist")
-	if stats == null or drops == null:
+	assert_ne(scroll, null, "detail scroll must exist")
+	if stats == null or drops == null or scroll == null:
 		return
 	stats.text = WORST_CASE
 	await wait_frames(2)
 	menu.call("_reflow_detail_column")
 	await wait_frames(1)
-	var panel = stats.get_parent()
+	var content := stats.get_parent() as Control
+	var panel := scroll.get_parent() as Control
+	assert_ne(content, null, "stats live in the scroll content")
+	assert_ne(panel, null, "the scroll lives in the detail panel")
+	if content == null or panel == null:
+		return
+	assert_lte(scroll.position.y + scroll.size.y, panel.size.y + 1.0,
+		"the detail scroll viewport must stay inside the panel at 2.0x — viewport ends at %s, panel is %s tall" % [scroll.position.y + scroll.size.y, panel.size.y])
 	var bottom: float = drops.position.y + drops.size.y
-	assert_lte(bottom, panel.size.y,
-		"the reflowed detail column must stay inside the panel at 2.0x text — column ends at %d, panel is %d tall" % [bottom, panel.size.y])
+	assert_lte(bottom, content.custom_minimum_size.y + 1.0,
+		"the drop row must sit inside the scroll content — row ends at %s, content is %s" % [bottom, content.custom_minimum_size.y])
+	scroll.scroll_vertical = 1000000
+	var max_offset := float(scroll.scroll_vertical)
+	scroll.scroll_vertical = 0
+	var needed := maxf(0.0, bottom - scroll.size.y)
+	assert_gte(max_offset + 1.0, needed,
+		"the drop row must be scrollable into view at 2.0x — need offset %s, scroll reaches %s" % [needed, max_offset])
 
 
 func test_magic_defense_is_shown_and_matches_what_combat_uses() -> void:
@@ -157,6 +173,60 @@ func test_magic_defense_is_shown_and_matches_what_combat_uses() -> void:
 	await wait_frames(2)
 	assert_true(stats_label.text.contains("M.DEF %d" % expected),
 		"rendered stat line must show M.DEF %d for %s (the value Combatant divides magic damage by) — got '%s'" % [expected, id, stats_label.text])
+
+
+func test_intel_column_does_not_print_on_top_of_the_flavor() -> void:
+	# Immune, the kill tally, and the one-shot hint were added under the stat
+	# column while flavor stayed pinned under the sprite at a fixed y, full
+	# width. At the default text size that puts Resist, EXP/Gold, the drop
+	# rates, and the one-shot tactic on top of the paragraph — the rows a
+	# player opens the bestiary to read.
+	GameState.text_size_scale = 1.0
+	var menu = await _build_menu()
+	menu.set("_entries", [{
+		"id": "slime", "name": "Slime", "level": 1, "epithet": "Wobbling Nuisance",
+		"stats": {"max_hp": 680, "max_mp": 20, "attack": 210, "defense": 80, "magic": 120, "magic_defense": 40, "speed": 8},
+		"weaknesses": ["fire"], "resistances": ["physical"], "immunities": [],
+		"flavor": "The first thing you fight in every JRPG ever made, updated with 21 percent more gelatin. Bouncing serves no evolutionary purpose.",
+		"defeated": true,
+		"drops": [{"item": "potion", "chance": 0.3}, {"item": "ether", "chance": 0.15}, {"item": "hi_potion", "chance": 0.05}],
+		"one_shot_reward": "boss_trophy",
+		"one_shot_hint": "Stack attack buffs, defer for max AP, then unleash all at once.",
+		"pools": ["Cave Floor 1", "Overworld Plains"],
+		"last_location": "Cave Floor 1",
+		"exp_reward": 15, "gold_reward": 10, "defeat_count": 3,
+	}])
+	menu.set("_selected", 0)
+	menu.call("_refresh_detail")
+	await wait_frames(2)
+	var flavor = menu.get("_detail_flavor")
+	var drops = menu.get("_detail_drops")
+	var tactic = menu.get("_detail_tactic")
+	assert_ne(flavor, null, "flavor label must exist")
+	assert_ne(drops, null, "drops label must exist")
+	assert_ne(tactic, null, "one-shot tactic label must exist")
+	if flavor == null or drops == null or tactic == null:
+		return
+	var flavor_rect := Rect2(flavor.position, flavor.size)
+	var collisions: Array = []
+	for pair in [
+		["resist", menu.get("_detail_resist")],
+		["rewards", menu.get("_detail_rewards")],
+		["drops", drops],
+		["tactic", tactic],
+	]:
+		var lab = pair[1]
+		if lab == null or str(lab.text) == "":
+			continue
+		var rect := Rect2(lab.position, lab.size)
+		if rect.intersects(flavor_rect):
+			collisions.append("%s overlaps the flavor paragraph (%s vs %s)" % [pair[0], rect, flavor_rect])
+	assert_gt(flavor.size.y, 40.0,
+		"the flavor paragraph must keep a readable block under the intel column — hiding it is not a fix (height %s)" % flavor.size.y)
+	assert_eq(collisions, [],
+		"bestiary intel must stay readable — the flavor paragraph was painting over Resist, rewards, drops, and the one-shot hint: %s" % [collisions])
+	assert_gte(tactic.position.y, drops.position.y + drops.size.y,
+		"the one-shot hint must sit below the drop line, not on top of it (tactic y=%s, drops end at %s)" % [tactic.position.y, drops.position.y + drops.size.y])
 
 
 ## ⛔ THE SILENT-PASS FLOOR. This guard drives its subject BY NAME; rename the member and every

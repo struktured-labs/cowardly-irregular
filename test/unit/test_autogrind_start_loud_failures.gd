@@ -79,7 +79,8 @@ func test_source_ratchet_signature_returns_bool() -> void:
 	# so callers can detect refusal. A refactor that reverts to void loses
 	# both silent-fail detectors (double-start + empty-party).
 	var src: String = load("res://src/autogrind/AutogrindSystem.gd").source_code
-	assert_true(src.contains("func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config: Dictionary = {}) -> bool:"),
+	var sig := RegEx.create_from_string("(?m)^func start_autogrind\\(party: Array\\[Combatant\\], enemy_template: Dictionary, config: Dictionary = \\{\\}[^)]*\\) -> bool:$")
+	assert_not_null(sig.search(src),
 		"start_autogrind must return bool (cadence #20 promotion — void revert reintroduces silent-double-start + silent-empty-party)")
 
 
