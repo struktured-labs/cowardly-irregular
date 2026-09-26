@@ -41,6 +41,7 @@ func setup(target: Combatant) -> void:
 func _build_ui() -> void:
 	"""Build the menu UI"""
 	for child in get_children():
+		remove_child(child)
 		child.queue_free()
 
 	# Full screen background
@@ -52,70 +53,87 @@ func _build_ui() -> void:
 	# Mouse: right-click to close
 	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
 
-	var viewport_size = get_viewport().get_visible_rect().size
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	if viewport_size.x == 0:
 		viewport_size = Vector2(640, 480)
 
-	# Character header panel
-	var header_panel = _create_header_panel(Vector2(viewport_size.x - 32, 80))
-	header_panel.position = Vector2(16, 16)
-	add_child(header_panel)
-
-	# Stats panel (left)
-	var stats_panel = _create_stats_panel(Vector2(viewport_size.x * 0.5 - 24, viewport_size.y - 180))
-	stats_panel.position = Vector2(16, 104)
-	add_child(stats_panel)
-
-	# Equipment & Status panel (right)
-	var equip_panel = _create_equipment_status_panel(Vector2(viewport_size.x * 0.5 - 24, viewport_size.y - 180))
-	equip_panel.position = Vector2(viewport_size.x * 0.5 + 8, 104)
-	add_child(equip_panel)
-
-	# Footer
 	var footer = Label.new()
+	footer.name = "ScreenFooter"
 	footer.text = "%s/RClick: Back" % InputProfileManager.hint_for_action("ui_cancel")
-	footer.position = Vector2(16, viewport_size.y - 32)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
+	var footer_rect := MenuChrome.place_footer(footer, viewport_size, 16.0)
+
+	# Header is parented before its labels exist so TextScale measures the live font.
+	var header_panel = _create_header_panel(Vector2(viewport_size.x - 32, 80), Vector2(16, 16))
+
+	var body_top: float = header_panel.position.y + header_panel.size.y + 8.0
+	var body_h := maxf(40.0, footer_rect.position.y - 8.0 - body_top)
+	var body_w: float = viewport_size.x * 0.5 - 24.0
+
+	# Stats panel (left)
+	var stats_panel = _create_stats_panel(Vector2(body_w, body_h))
+	stats_panel.position = Vector2(16, body_top)
+	add_child(stats_panel)
+
+	# Equipment & Status panel (right)
+	var equip_panel = _create_equipment_status_panel(Vector2(body_w, body_h))
+	equip_panel.position = Vector2(viewport_size.x * 0.5 + 8, body_top)
+	add_child(equip_panel)
+	move_child(footer, get_child_count() - 1)
 
 
-func _create_header_panel(panel_size: Vector2) -> Control:
+func _create_header_panel(panel_size: Vector2, at: Vector2) -> Control:
 	"""Create the character header panel"""
 	var panel = Control.new()
 	panel.size = panel_size
+	panel.position = at
+	add_child(panel)
 
 	var panel_bg = ColorRect.new()
 	panel_bg.color = PANEL_COLOR
 	panel_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.add_child(panel_bg)
 
-	_create_border(panel, panel_size)
-
 	if not character:
+		_create_border(panel, panel.size)
 		return panel
 
 	# Character name
 	var name_label = Label.new()
+	name_label.name = "ScreenTitle"
 	name_label.text = character.combatant_name
-	name_label.position = Vector2(16, 8)
 	name_label.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	name_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(name_label)
+
+	# EXP sits on the name row. A fixed x used to land it on the enlarged name.
+	var exp_label = Label.new()
+	exp_label.name = "ScreenCounter"
+	exp_label.text = _exp_display(character.job_level, character.job_exp)
+	exp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	exp_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	exp_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	panel.add_child(exp_label)
+	var row_bottom := MenuChrome.place_header(name_label, exp_label, panel.size.x, 8.0, false, 16.0)
 
 	# Job and level
 	var job_name = character.job.get("name", "Fighter") if character.job else "Fighter"
 	var job_label = Label.new()
 	job_label.text = "%s  Lv %d" % [job_name, character.job_level]
-	job_label.position = Vector2(16, 34)
 	job_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	job_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(job_label)
+	var job_sz := MenuChrome.lock(job_label)
+	job_label.position = Vector2(16, row_bottom + 4.0)
+
+	var bars_y: float = job_label.position.y + job_sz.y + 8.0
 
 	# HP Bar
 	var hp_bar_bg = ColorRect.new()
 	hp_bar_bg.color = Color(0.2, 0.2, 0.2)
-	hp_bar_bg.position = Vector2(16, 54)
+	hp_bar_bg.position = Vector2(16, bars_y)
 	hp_bar_bg.size = Vector2(200, 12)
 	panel.add_child(hp_bar_bg)
 
@@ -123,45 +141,42 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 	var hp_bar = ColorRect.new()
 	# Tick 229: HP bar fill color via AccessibilityPalette — color-blind mode swaps green/red to cyan/magenta.
 	hp_bar.color = AccessibilityPalette.hp_high() if hp_pct > 0.3 else AccessibilityPalette.hp_low()
-	hp_bar.position = Vector2(16, 54)
+	hp_bar.position = Vector2(16, bars_y)
 	hp_bar.size = Vector2(200 * hp_pct, 12)
 	panel.add_child(hp_bar)
 
 	var hp_text = Label.new()
 	hp_text.text = "HP: %d / %d" % [character.current_hp, character.max_hp]
-	hp_text.position = Vector2(224, 52)
 	hp_text.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	hp_text.add_theme_color_override("font_color", HP_COLOR)
 	panel.add_child(hp_text)
+	var hp_sz := MenuChrome.lock(hp_text)
+	hp_text.position = Vector2(224, bars_y)
 
 	# MP Bar
 	var mp_bar_bg = ColorRect.new()
 	mp_bar_bg.color = Color(0.2, 0.2, 0.2)
-	mp_bar_bg.position = Vector2(350, 54)
+	mp_bar_bg.position = Vector2(224 + hp_sz.x + 16, bars_y)
 	mp_bar_bg.size = Vector2(150, 12)
 	panel.add_child(mp_bar_bg)
 
 	var mp_pct = float(character.current_mp) / max(1, character.max_mp)
 	var mp_bar = ColorRect.new()
 	mp_bar.color = MP_COLOR
-	mp_bar.position = Vector2(350, 54)
+	mp_bar.position = mp_bar_bg.position
 	mp_bar.size = Vector2(150 * mp_pct, 12)
 	panel.add_child(mp_bar)
 
 	var mp_text = Label.new()
 	mp_text.text = "MP: %d / %d" % [character.current_mp, character.max_mp]
-	mp_text.position = Vector2(508, 52)
 	mp_text.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	mp_text.add_theme_color_override("font_color", MP_COLOR)
 	panel.add_child(mp_text)
+	var mp_sz := MenuChrome.lock(mp_text)
+	mp_text.position = Vector2(mp_bar_bg.position.x + 158, bars_y)
 
-	# EXP (if applicable)
-	var exp_label = Label.new()
-	exp_label.text = _exp_display(character.job_level, character.job_exp)
-	exp_label.position = Vector2(panel_size.x - 130, 8)
-	exp_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
-	exp_label.add_theme_color_override("font_color", DISABLED_COLOR)
-	panel.add_child(exp_label)
+	panel.size.y = maxf(panel_size.y, bars_y + maxf(12.0, maxf(hp_sz.y, mp_sz.y)) + 12.0)
+	_create_border(panel, panel.size)
 
 	return panel
 

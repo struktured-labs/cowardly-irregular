@@ -140,8 +140,6 @@ func _setup_ui() -> void:
 	# Gold display (top-right)
 	gold_label = Label.new()
 	gold_label.name = "GoldLabel"
-	gold_label.position = Vector2(get_viewport().get_visible_rect().size.x - 200, 20)
-	gold_label.size = Vector2(180, 30)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	gold_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	gold_label.add_theme_color_override("font_color", GOLD_LABEL_COLOR)
@@ -247,6 +245,16 @@ func _update_gold_display() -> void:
 	"""Update the gold label"""
 	if gold_label and game_state:
 		gold_label.text = "%d G" % game_state.get_gold()
+		_place_gold_counter()
+
+
+func _place_gold_counter() -> void:
+	if not is_instance_valid(gold_label):
+		return
+	var shop_vp := get_viewport().get_visible_rect().size
+	if shop_vp.x <= 0.0:
+		shop_vp = Vector2(1280, 720)
+	MenuChrome.place_counter(gold_label, shop_vp.x, 16.0, 20.0)
 
 
 func _open_main_menu() -> void:
@@ -1108,6 +1116,7 @@ func _flash_gold_spend(cost: int) -> void:
 	if _gold_flash_tween and _gold_flash_tween.is_valid():
 		_gold_flash_tween.kill()
 	gold_label.text = _gold_spend_flash_text(cost)
+	_place_gold_counter()
 	gold_label.add_theme_color_override("font_color", GOLD_SPEND_FLASH_COLOR)
 	# Pivot at the label's own centre so the pulse doesn't drift the text.
 	gold_label.pivot_offset = gold_label.size * 0.5
