@@ -3594,8 +3594,11 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 					and target in player_party)
 				if is_alive_in_battle or (revives and is_dead_ally_in_battle):
 					new_targets.append(target)
+				elif not revives and is_dead_ally_in_battle and _repeat_item_targets_all_allies(action):
+					# An all-allies list is party order. Replacing an earlier KO with a living ally still ahead in that list appended them again.
+					continue
 				elif not revives and _repeat_item_stays_on_allies(action):
-					# A KO'd potion target is not an enemy. Swapping in the first living foe made Y-repeat heal the monster and spend the item.
+					# A KO'd single-target potion is not an enemy. Swapping in the first living foe made Y-repeat heal the monster and spend the item.
 					var ally := _living_ally_for_repeat(combatant, target)
 					if ally != null and not new_targets.has(ally):
 						new_targets.append(ally)
@@ -3610,7 +3613,7 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 		print("[REPEAT] %s: queued %s" % [combatant.combatant_name, action["type"]])
 
 
-## Ally consumables (potion, mega potion, antidote) repeat onto a living ally. Enemy items and revives do not — those keep the enemy fallback and the dead-ally admit above.
+## Single-ally and self consumables repeat onto one living ally. All-allies items are handled above: a KO'd slot is dropped, because the living names already in the list still receive it. Enemy items and revives do not — those keep the enemy fallback and the dead-ally admit above.
 func _repeat_item_stays_on_allies(action: Dictionary) -> bool:
 	if str(action.get("type", "")) != "item" or ItemSystem == null:
 		return false
@@ -3619,6 +3622,16 @@ func _repeat_item_stays_on_allies(action: Dictionary) -> bool:
 		return false
 	var tt := int(item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY))
 	return tt == ItemSystem.TargetType.SINGLE_ALLY or tt == ItemSystem.TargetType.ALL_ALLIES or tt == ItemSystem.TargetType.SELF
+
+
+## Mega Potion, Mega Ether, Tent, Megalixir: the saved target list is already the party.
+func _repeat_item_targets_all_allies(action: Dictionary) -> bool:
+	if str(action.get("type", "")) != "item" or ItemSystem == null:
+		return false
+	var item := ItemSystem.get_item(str(action.get("item_id", "")))
+	if item.is_empty():
+		return false
+	return int(item.get("target_type", -1)) == ItemSystem.TargetType.ALL_ALLIES
 
 
 ## Lowest living ally, ignoring a stale body from another battle. A dead ally in this party is only a seed _retarget_ally will replace.
