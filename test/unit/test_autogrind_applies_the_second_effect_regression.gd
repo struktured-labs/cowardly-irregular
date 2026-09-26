@@ -13,13 +13,9 @@ extends GutTest
 ## autobattle rule conditioned on a status the party SHOULD be suffering never fired — which is the
 ## half that matters for a mode whose whole point is testing rules.
 ##
-## ⛔ SCOPED TO SUPPORT, DELIBERATELY, AND THE TWO EXCLUSIONS ARE DECLARED RATHER THAN OVERLOOKED.
-## Live's only call site is _execute_support_ability (BattleManager:6318, verified as the single one),
-## so `subset_drain` (type magic) and `toxic_embrace` (type physical) have their secondaries dropped
-## BY LIVE TOO. They stay dropped here. Applying them only in the grind would make the grind harsher
-## than the game it simulates — this file's own failure mode inverted, and a worse bug than the one
-## being fixed. Whether LIVE should apply them is a BattleManager question; raised with @cowir-battle,
-## and arm 4 reds if either ability's type changes so the exclusion cannot go stale.
+## Support secondaries were the original gap. `toxic_embrace` is physical, and both engines now apply
+## its speed_down from the physical arm. `subset_drain` stays magic, so its magic_down stays dropped
+## on both sides — a design hold, and applying it only here would make the grind harsher than live.
 ##
 ## Fifth instance of this resolver's documented class: heal_amount, mp_amount, hits, drain_percentage.
 
@@ -119,9 +115,9 @@ func test_an_ability_with_no_secondary_applies_nothing_extra() -> void:
 		"a support ability authoring no secondary gained %s — the dispatcher fired on nothing" % str(hero.status_effects))
 
 
-func test_the_two_non_support_secondaries_stay_dropped_because_live_drops_them() -> void:
-	## DECLARED, not overlooked. If either changes type, live starts applying its secondary and this
-	## arm reds so the exclusion is revisited rather than silently outliving its reason.
+func test_subset_drain_stays_magic_and_toxic_embrace_stays_physical() -> void:
+	## subset_drain's magic_down is a design hold: the magic arm must not grow a secondary call just
+	## because the ability changed type. toxic_embrace stays physical, and the physical arm applies it.
 	for pair in [["subset_drain", "magic"], ["toxic_embrace", "physical"]]:
 		var ab: Dictionary = _authored(pair[0])
 		if ab.is_empty():
@@ -129,7 +125,7 @@ func test_the_two_non_support_secondaries_stay_dropped_because_live_drops_them()
 			return
 		assert_true(ab.has("secondary_effect"), "CONTROL: %s must still author a secondary" % pair[0])
 		assert_eq(str(ab.get("type", "")), pair[1],
-			"%s is no longer %s — live's support-only dispatcher now reaches it, so the grind must follow" % [pair[0], pair[1]])
+			"%s changed type — the secondary dispatch has to be revisited with it" % pair[0])
 	## ⚠️ BOUNDED TO THE ARM, not a fixed window. A 4000-char slice from the arm's start ran PAST it
 	## and matched the helper's own `func _apply_secondary_effect(` declaration, so deleting the CALL
 	## left this green — mention read as invocation, in the arm meant to pin the invocation.
@@ -188,16 +184,10 @@ func test_the_dispatcher_mirrors_the_live_defaults() -> void:
 ## top of the drain and scales_with fixes, and all four mechanisms edit `_resolve_ability`. The
 ## question was whether a secondary fires on a drained or stat-scaled hit.
 ##
-## It cannot, and the reason is structural rather than lucky: `_apply_secondary_effect` is called ONLY
-## from the `"support", "song", "status"` arm, while `hits`, `drain_percentage` and `scales_with` are
-## read by the `"physical"` and `"magic"` arms. One ability has ONE type, so `match category` makes the
-## two sets mutually exclusive. Measured on the corpus as well: of the 9 abilities authoring a
-## secondary, the 7 support-typed ones author none of the three damage keys, and the 2 that are
-## magic/physical never reach the dispatcher (live does not reach them either — see arm 4).
-##
-## The arm exists because that is a property of TODAY'S DATA on one side and of the code on the other.
-## An ability authoring both would be the first to exercise an interaction nobody has designed, and
-## @cowir-battle's cfd0df43 is the precedent: a merge decided a rate last time and nothing pinned it.
+## The physical arm now calls the dispatcher too, because toxic_embrace is a strike with a secondary.
+## `hits`, `drain_percentage` and `scales_with` still belong to the damage step. No ability that
+## reaches the dispatcher authors one of those beside a secondary. subset_drain is magic, so it does
+## not reach the dispatcher — magic_down stays a hold — and is excluded from that pairing check.
 func test_no_ability_exercises_both_the_support_and_the_damage_mechanisms() -> void:
 	var abilities: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
 	var damage_keys: Array = ["hits", "drain_percentage", "scales_with"]
@@ -208,25 +198,27 @@ func test_no_ability_exercises_both_the_support_and_the_damage_mechanisms() -> v
 		if str(a.get("secondary_effect", "")) == "":
 			continue
 		checked += 1
-		if str(a.get("type", "")) != "support":
-			continue  # never reaches the dispatcher, in either engine
+		var typ := str(a.get("type", ""))
+		if typ != "support" and typ != "physical":
+			continue  # magic (subset_drain) still does not reach the dispatcher
 		for k in damage_keys:
 			if a.has(k):
 				both.append("%s (%s)" % [aid, k])
 	assert_gt(checked, 5, "CONTROL: the corpus must still hold abilities authoring a secondary")
 	assert_eq(both, [],
 		"%s authors a secondary AND a damage-arm key — the first ability to exercise an interaction nobody designed. Decide the order deliberately rather than letting the next merge pick it" % str(both))
-	## And the structural half: the dispatcher must stay OUT of the damage arms, or the exclusion above
-	## stops being a property of the code and becomes a property of the data alone.
+	## Physical applies secondaries (toxic_embrace). Magic does not (subset_drain / magic_down).
 	var code: String = GdSource.code_of(SRC)
 	var phys: int = code.find('"physical":')
 	var magic: int = code.find('"magic":')
 	assert_gt(phys, 0, "CONTROL: the physical arm must be locatable")
 	assert_gt(magic, 0, "CONTROL: the magic arm must be locatable")
-	for start in [phys, magic]:
-		var arm: String = code.substr(start, code.find("\n\t\t\"", start + 12) - start)
-		assert_false(arm.contains("_apply_secondary_effect("),
-			"a damage arm now calls the secondary dispatcher — live calls it only from the support path")
+	var phys_arm: String = code.substr(phys, code.find("\n\t\t\"", phys + 12) - phys)
+	var magic_arm: String = code.substr(magic, code.find("\n\t\t\"", magic + 12) - magic)
+	assert_true(phys_arm.contains("_apply_secondary_effect("),
+		"the physical arm must call the secondary dispatcher — toxic_embrace's slow is a physical strike")
+	assert_false(magic_arm.contains("_apply_secondary_effect("),
+		"the magic arm must not call it — subset_drain's magic_down is a design hold")
 
 
 ## ⛔ `seed()` SETS THE PROCESS-WIDE RNG AND GUT RUNS EVERY FILE IN ONE PROCESS, so a file that
