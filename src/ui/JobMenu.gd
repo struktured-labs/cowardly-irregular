@@ -317,10 +317,12 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		return panel
 
 	# Stats display
+	# MDF is the magic-hit divisor. The comparison row already prints its delta; this panel has to show the total.
 	var stats = [
 		["ATK", character.attack],
 		["DEF", character.defense],
 		["MAG", character.magic],
+		["MDF", character.magic_defense],
 		["SPD", character.speed],
 		["HP", character.max_hp],
 		["MP", character.max_mp]
@@ -342,8 +344,9 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		stat_label.add_theme_color_override("font_color", TEXT_COLOR)
 		panel.add_child(stat_label)
 
-	# Abilities from current job
-	var abilities_y = y_offset + 3 * row_height + 16
+	# Abilities from current job. Row count follows the stat list so an added stat cannot land on this header.
+	var stat_rows := int((stats.size() + 1) / 2)
+	var abilities_y = y_offset + stat_rows * row_height + 16
 	var abilities_title = Label.new()
 	abilities_title.text = "Job Abilities:"
 	abilities_title.position = Vector2(8, abilities_y)
