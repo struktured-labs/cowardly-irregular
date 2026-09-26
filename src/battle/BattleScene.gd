@@ -2776,7 +2776,7 @@ func _show_item_menu() -> void:
 		var quantity = bag[item_id]
 		var label = "%s x%d" % [item["name"], quantity]
 
-		popup.add_item(label, idx)
+		popup.add_icon_item(ItemIcons.tinted(item_id), label, idx)
 		item_ids.append(item_id)
 		idx += 1
 

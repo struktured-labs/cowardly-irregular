@@ -346,6 +346,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 					item_items.append({
 						"id": "item_menu_" + item_id,
 						"label": "%s x%d" % [item["name"], quantity],
+						"icon_id": item_id,
 						"submenu": ally_targets
 					})
 			# For SINGLE_ENEMY items, add enemy target submenu
@@ -366,6 +367,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				item_items.append({
 					"id": "item_menu_" + item_id,
 					"label": "%s x%d" % [item["name"], quantity],
+					"icon_id": item_id,
 					"submenu": enemy_targets
 				})
 			else:
@@ -373,6 +375,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				item_items.append(_with_item_reject({
 					"id": "item_" + item_id,
 					"label": "%s x%d" % [item["name"], quantity],
+					"icon_id": item_id,
 					"data": {"item_id": item_id}
 				}, item_id, _targets_for_item_without_picker(item, combatant, alive_enemies)))
 		if item_items.size() > 0:
