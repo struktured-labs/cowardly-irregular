@@ -101,11 +101,13 @@ func test_a_resist_that_exceeds_the_chance_blocks_the_status_entirely() -> void:
 func test_the_resist_is_not_clamped_the_way_its_neighbours_are() -> void:
 	## Structural, because it is unobservable: resist_ring's 0.3 is the only authored value, so an
 	## invented 0.50 input cap would change no outcome today and no behavioural arm could see it.
-	## Live clamps the RESULT (clampf(chance - resist, 0.0, 1.0)) and caps the key nowhere.
+	## Live clamps the RESULT inside resisted_status_chance and caps the key nowhere.
 	var grind: String = GdSource.code_of(GRIND)
 	assert_gt(grind.length(), 10000, "CONTROL: the resolver was actually read")
-	assert_true(grind.contains('clampf(chance - resist, 0.0, 1.0)'),
-		"the resolver no longer clamps the RESULT of chance minus resist, which is live's formula at :5002 and :4592")
+	assert_true(grind.contains("BattleManager.resisted_status_chance("),
+		"the resolver must call live's chance-minus-ring helper")
+	assert_false(grind.contains("clampf(chance - resist"),
+		"the resolver grew a private copy of chance minus resist; both engines must call resisted_status_chance")
 	var capped: Array = []
 	for line in grind.split("\n"):
 		var t: String = line.strip_edges()

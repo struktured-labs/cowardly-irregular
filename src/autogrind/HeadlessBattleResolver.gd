@@ -1215,7 +1215,7 @@ func _apply_equipment_on_hit_status(attacker, target) -> void:
 		if chance <= 0.0:
 			continue
 		var resist: float = _sum_equipment_special_effect(target, "status_resistance")
-		var effective: float = clampf(chance - resist, 0.0, 1.0)
+		var effective: float = BattleManager.resisted_status_chance(chance, resist)
 		if effective <= 0.0 or randf() >= effective:
 			continue
 		target.add_status(str(entry["status"]), int(entry["duration"]))
@@ -1680,8 +1680,8 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					else:
 						## Live owns a ~40-arm effect table; headless deliberately does NOT mirror
 						## it. An effect we do not model is a NO-OP, never damage.
-						## Ailments subtract the Resist Ring. Wards that fall through here (barrier, reflect) do not.
-						if _support_ailment(effect):
+						## Harmful names read the ring. Wards that fall through here (barrier, reflect) do not.
+						if BattleManager.support_effect_is_harmful(effect):
 							var ailment_chance: float = _resisted_support_chance(target, float(ability.get("success_rate", 1.0)))
 							if ailment_chance < 1.0 and (ailment_chance <= 0.0 or randf() >= ailment_chance):
 								continue
@@ -1690,12 +1690,14 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						continue
 				if stat == "":
 					stat = "attack"
-				if modifier >= 1.0:
-					target.add_buff(ability_id, stat, modifier, duration)
-				else:
+				## Same predicate as live. A modifier below 1.0 is not a debuff: Hedge Position is 0.5 and a buff.
+				if modifier < 1.0 and BattleManager.support_effect_is_harmful(effect):
 					var debuff_chance: float = _resisted_support_chance(target, float(ability.get("success_rate", 1.0)))
 					if debuff_chance < 1.0 and (debuff_chance <= 0.0 or randf() >= debuff_chance):
 						continue
+				if modifier >= 1.0:
+					target.add_buff(ability_id, stat, modifier, duration)
+				else:
 					target.add_debuff(ability_id, stat, modifier, duration)
 				_log("%s uses %s on %s" % [caster.combatant_name, ability_id, target.combatant_name])
 			## ONCE per cast, after the loop — live calls it once with the whole target list, and a
@@ -1834,7 +1836,7 @@ func _maybe_inflict_status(caster, target, ability: Dictionary, ability_id: Stri
 	## ceiling the real game does not have. Today's only author is resist_ring at 0.3, so an invented
 	## input cap would be unobservable, which is exactly why it is written down here.
 	var resist: float = _sum_equipment_special_effect(target, "status_resistance")
-	var effective: float = clampf(chance - resist, 0.0, 1.0)
+	var effective: float = BattleManager.resisted_status_chance(chance, resist)
 	if effective <= 0.0 or randf() >= effective:
 		return
 	var status_to_add := effect
@@ -1994,20 +1996,9 @@ func _steal_share(before_base: int, after_base: int) -> int:
 	return after_base - before_base
 
 
-const _SUPPORT_AILMENTS: Array[String] = [
-	"blind", "charm", "stun", "pacify", "sleep", "poison", "burn", "burning",
-	"static", "confuse", "fear", "silence", "curse",
-]
-
-
-func _support_ailment(effect: String) -> bool:
-	return effect in _SUPPORT_AILMENTS
-
-
-## Twin of BattleManager._resisted_support_chance: chance minus the target's status_resistance.
+## Live's chance-minus-ring helper. The resist sum stays here; the clamp does not.
 func _resisted_support_chance(target, chance: float) -> float:
-	var resist: float = _sum_equipment_special_effect(target, "status_resistance")
-	return clampf(chance - resist, 0.0, 1.0)
+	return BattleManager.resisted_status_chance(chance, _sum_equipment_special_effect(target, "status_resistance"))
 
 
 func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array, ability_id: String) -> void:
@@ -2044,9 +2035,9 @@ func _apply_secondary_effect(caster, ability: Dictionary, primary_targets: Array
 	var sec_modifier: float = float(ability.get("secondary_modifier", 0.7))
 	var sec_duration: int = int(ability.get("duration", 3))
 	for t in sec_targets:
-		## Buffs keep the raw chance. Debuffs and ailments subtract the target's Resist Ring.
+		## Same predicate as live. A follow-up buff keeps its raw chance.
 		var roll: float = sec_chance
-		if not _SECONDARY_STAT_BUFF_MAP.has(sec_effect):
+		if BattleManager.support_effect_is_harmful(sec_effect):
 			roll = _resisted_support_chance(t, sec_chance)
 		if roll <= 0.0 or randf() >= roll:
 			continue

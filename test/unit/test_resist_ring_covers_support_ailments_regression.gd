@@ -123,6 +123,24 @@ func test_a_grind_web_slow_is_reduced_by_the_ring() -> void:
 	assert_lt(guarded, RUNS, "a certain slow must no longer be certain once the ring is worn")
 
 
+func test_a_grind_hedge_on_a_ringed_ally_lands_at_its_raw_chance() -> void:
+	## Hedge Position is volatility_down at 0.5, cast on an ally. Live applies it as a buff.
+	## The grind used to resist every modifier below 1.0, so the ring shrugged a friendly hedge.
+	var hedge: Dictionary = JobSystem.get_ability("hedge_position")
+	assert_eq(str(hedge.get("effect", "")), "volatility_down")
+	assert_eq(str(hedge.get("target_type", "")), "single_ally")
+	assert_almost_eq(float(hedge.get("stat_modifier", -1.0)), 0.5, 0.001,
+		"Hedge Position must still author 0.5, the modifier a magnitude check mistakes for a debuff")
+	var raw: float = float(hedge.get("success_rate", 1.0))
+	assert_almost_eq(raw, 1.0, 0.001,
+		"Hedge Position authors no success_rate, so its raw chance is certain")
+	var bare: int = _grind_hedges("")
+	assert_eq(bare, RUNS, "CONTROL: an unringed ally is hedged on every cast")
+	var guarded: int = _grind_hedges(RING)
+	assert_eq(guarded, bare,
+		"a ring-wearing ally must be hedged at the raw chance, not chance minus the ring")
+
+
 func _secondary_hits(accessory: String, ability: Dictionary, status: String) -> int:
 	var pair: Array = _pair(accessory)
 	var monster: Combatant = pair[0]
@@ -194,3 +212,29 @@ func _grind_web_slows(accessory: String) -> int:
 		if victim.active_debuffs.size() > 0:
 			slowed += 1
 	return slowed
+
+
+func _grind_hedges(accessory: String) -> int:
+	var caster := _combatant("Speculator")
+	var ally := _combatant("Mira")
+	ally.equipped_accessory = accessory
+	var hedged := 0
+	for _i in range(RUNS):
+		ally.active_buffs.clear()
+		ally.active_debuffs.clear()
+		caster.current_mp = caster.max_mp
+		var resolver := HeadlessBattleResolver.new()
+		resolver._player_party = [caster, ally]
+		resolver._enemy_party = []
+		resolver._resolve_ability(caster, "hedge_position", [ally])
+		if _has_named_mod(ally, "hedge_position"):
+			hedged += 1
+	return hedged
+
+
+func _has_named_mod(combatant: Combatant, effect_name: String) -> bool:
+	for pool in [combatant.active_buffs, combatant.active_debuffs]:
+		for entry in pool:
+			if str(entry.get("effect", "")) == effect_name:
+				return true
+	return false
