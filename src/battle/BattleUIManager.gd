@@ -1069,7 +1069,7 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 
 	# Speed value (smaller, right-aligned)
 	var spd_label = Label.new()
-	spd_label.text = "%d" % combatant.speed
+	spd_label.text = "%d" % combatant.get_buffed_stat("speed", combatant.speed)
 	spd_label.add_theme_font_size_override("font_size", TextScale.scaled(9))
 	spd_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	spd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE

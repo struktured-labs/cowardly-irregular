@@ -170,14 +170,15 @@ func _apply_world_flavor() -> void:
 		pool = SUBTITLES_BY_WORLD[0]
 	_subtitle_label.text = pool[randi() % pool.size()]
 
-	# Fade in
+	# Wall clock. The battle scene is still alive, so Engine.time_scale is the fight's
+	# speed (default "1x" is 0.25). A bare tween makes this 2s gate 8s, and confirm
+	# does nothing while the log already says press to restart.
 	_container.modulate.a = 0.0
 	var tween = create_tween()
+	tween.set_ignore_time_scale(true)
 	tween.tween_property(_container, "modulate:a", 1.0, 1.5)
+	tween.tween_interval(0.5)
 	await tween.finished
-
-	# Brief pause before accepting input
-	await get_tree().create_timer(0.5).timeout
 	_active = true
 	_update_selection()
 
@@ -222,6 +223,7 @@ func _input(event: InputEvent) -> void:
 func _confirm_selection() -> void:
 	"""Fade out and emit selection signal (separated from _input to avoid await issues)."""
 	var tween = create_tween()
+	tween.set_ignore_time_scale(true)
 	tween.tween_property(_container, "modulate:a", 0.0, 0.5)
 	await tween.finished
 	visible = false
