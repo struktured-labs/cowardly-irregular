@@ -20,6 +20,7 @@ const _DIRECTIONS := ["ui_up", "ui_down", "ui_left", "ui_right"]
 
 var _viewport: SubViewport
 var _held_floors: Dictionary = {}
+var _floor_was_present: Dictionary = {}
 
 
 func before_each() -> void:
@@ -42,10 +43,14 @@ func after_each() -> void:
 
 func _hold_floor_keys() -> void:
 	_held_floors = {}
+	_floor_was_present = {}
 	if GameState == null:
 		return
+	# The stair writes this key; leaving it set makes the next map test load floor 2.
 	for key in ["whispering_cave_floor", "fire_dragon_cave_floor"]:
-		if GameState.game_constants.has(key):
+		var present: bool = GameState.game_constants.has(key)
+		_floor_was_present[key] = present
+		if present:
 			_held_floors[key] = GameState.game_constants[key]
 			GameState.game_constants.erase(key)
 
@@ -53,8 +58,11 @@ func _hold_floor_keys() -> void:
 func _restore_floor_keys() -> void:
 	if GameState == null:
 		return
-	for key in _held_floors:
-		GameState.game_constants[key] = _held_floors[key]
+	for key in _floor_was_present:
+		if _floor_was_present[key]:
+			GameState.game_constants[key] = _held_floors[key]
+		else:
+			GameState.game_constants.erase(key)
 
 
 func _clamped_view_center(cam: Camera2D, landing: Vector2) -> Vector2:
