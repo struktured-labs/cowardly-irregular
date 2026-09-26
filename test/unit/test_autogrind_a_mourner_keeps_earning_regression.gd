@@ -144,13 +144,9 @@ func test_the_grind_asks_live_rather_than_carrying_its_own_copy() -> void:
 		"CONTROL: live must still own the predicate this file delegates to")
 
 
-## ⛔ MY CORPUS WAS ONE FILE, AND THAT IS HOW A FOURTH AWARD SITE SURVIVED THIS GUARD.
-## Every arm above reads AutogrindSystem. The per-character EXP attribution for a HEADLESS grind
-## lives in GameLoop._resolve_headless_battle, so it kept a bare `is_alive` while this file reported
-## the class closed and its own declaration arm named a THIRD site as the last one.
-##
-## It failed twice over: a mourner was credited nothing, AND the same bare predicate shrank the
-## divisor, inflating every living member's share of the same pot.
+## The session bar used to be a second ledger in GameLoop: battle EXP divided by the earner count,
+## written before the payer applied yield and the time bonus. A party of four who each gained 100
+## was shown +25. Putting that ledger back double-counts, because the payer now records the grant.
 func test_the_headless_path_credits_a_mourner_too() -> void:
 	## Reachability as a CHECK rather than prose — if nothing rosters the passive this is latent and
 	## the arm's urgency is stale. `cleric` is a STARTER job, so an ordinary W1 party can carry it.
@@ -160,42 +156,78 @@ func test_the_headless_path_credits_a_mourner_too() -> void:
 	assert_true(cleric_passives.contains("posthumous_credit"),
 		"CONTROL: no starter job rosters posthumous_credit any more — this defect is latent, not live, and this arm's framing needs revisiting")
 
-	var gl: String = GdSource.code_of("res://src/GameLoop.gd")
-	assert_ne(gl, "", "CONTROL: GameLoop source must survive the comment strip")
-	var at: int = gl.find("func _resolve_headless_battle")
-	assert_gt(at, -1, "CONTROL: _resolve_headless_battle must exist")
-	var stop: int = gl.find("\nfunc ", at + 20)
-	var body: String = gl.substr(at, (stop - at) if stop > 0 else -1)
-	assert_true(body.contains("track_character_exp"),
-		"CONTROL: the per-character attribution must be inside the extracted range, or this arm reads the wrong function")
+	var body := _fn_body("res://src/GameLoop.gd", "func _resolve_headless_battle")
+	assert_false(body.is_empty(), "CONTROL: _resolve_headless_battle must exist")
+	assert_false(body.contains("exp_gained / earners.size()"),
+		"the headless grind divides battle EXP by the earner count. Each earner is paid the full amount.")
+	assert_false(body.contains("track_character_exp"),
+		"the headless path records per-character EXP itself, so the bar is a second ledger beside the amount paid")
 
-	assert_true(body.contains("earns_exp_while_dead"),
-		("the headless grind attributes EXP by a bare is_alive. A Cleric carrying posthumous_credit " +
-		"EARNS that exp — AutogrindSystem's two award sites and BattleManager.earns_exp_while_dead all say so — and " +
-		"is credited none here, while the shrunken divisor inflates everyone else's share."))
+	var pay := _fn_body(GRIND, "func on_battle_victory")
+	assert_true(pay.contains("gain_job_exp(adjusted_exp)"),
+		"CONTROL: on_battle_victory must still pay adjusted_exp, or this arm is reading the wrong function")
+	assert_true(pay.contains("_earns_exp_while_dead(member)"),
+		"the victory payout dropped the mourner predicate, so a KO'd Cleric with posthumous_credit is paid nothing")
+	assert_true(pay.contains("track_character_exp(member.combatant_name, adjusted_exp)"),
+		"the session bar must record the EXP each earner was paid, yield and time bonus included")
 
 
-## The visual grind is a different function. _resolve_headless_battle was the site this file
-## closed; _on_autogrind_battle_ended still divided by the standing count. A KO'd Cleric with
-## posthumous_credit still gains the job EXP, and the session bar and Summary both read
-## per_character_exp — so the mourner shows no share and everyone else is shown a larger one.
+## The visual grind is a different function from the headless one, and it kept its own copy of the
+## divided ledger. A watched boss fight never reaches on_battle_victory, so its bar has to be
+## written where that fight's EXP and its bonus are accounted.
 func test_the_live_visual_path_credits_a_mourner_too() -> void:
-	var gl: String = GdSource.code_of("res://src/GameLoop.gd")
-	assert_ne(gl, "", "CONTROL: GameLoop source must survive the comment strip")
-	var at: int = gl.find("func _on_autogrind_battle_ended")
-	assert_gt(at, -1, "CONTROL: _on_autogrind_battle_ended must exist")
-	var stop: int = gl.find("\nfunc ", at + 20)
-	var body: String = gl.substr(at, (stop - at) if stop > 0 else -1)
-	assert_true(body.contains("track_character_exp"),
-		"CONTROL: the per-character attribution must be inside the extracted range, or this arm reads the wrong function")
+	var body := _fn_body("res://src/GameLoop.gd", "func _on_autogrind_battle_ended")
+	assert_false(body.is_empty(), "CONTROL: _on_autogrind_battle_ended must exist")
 	assert_false(body.contains("func _resolve_headless_battle"),
 		"CONTROL: the slice must not include the headless function, or a fixed sibling greens a live bug")
-	assert_true(body.contains("BattleManager.earns_exp_while_dead("),
-		("the visual autogrind attributes session EXP by a bare is_alive. A KO'd Cleric carrying " +
-		"posthumous_credit still gains that job EXP, but the live bar and the Summary omit them " +
-		"and divide the pot by the standing count, so everyone else is shown a larger share."))
+	assert_false(body.contains("exp_gained / earners.size()"),
+		"the visual grind divides battle EXP by the earner count. The portrait line and the Summary both read that share.")
+	assert_false(body.contains("track_character_exp"),
+		"the visual path records per-character EXP itself, so the bar is a second ledger beside the amount paid")
 	assert_false(body.contains("alive_count"),
 		"the visual path still sizes the EXP divisor from the living count alone")
+	var boss := _fn_body(GRIND, "func account_boss_fight_rewards")
+	assert_true(boss.contains("_earns_exp_while_dead(member)"),
+		"CONTROL: the boss-fight ledger must use the same mourner predicate as the payout")
+	assert_true(boss.contains("track_character_exp(member.combatant_name, exp_gained)"),
+		"a boss fight's own EXP never reached the session bar, or reached it as a share of the pot")
+	var bonus := _fn_body(GRIND, "func on_meta_boss_victory")
+	assert_true(bonus.contains("track_character_exp(member.combatant_name, bonus_exp)"),
+		"the meta-boss bonus is paid to each earner and was missing from the session bar")
+
+
+## The session bar and the Summary read per_character_exp. on_battle_victory pays every earner the
+## FULL battle amount (yield and time bonus included). The bar used to store that amount divided by
+## the earner count, so a party of four who each gained 100 job EXP was shown +25, and a mourner
+## who was left out of the count made everyone else's line larger still.
+func test_the_nameplate_shows_the_exp_each_character_was_paid() -> void:
+	AutogrindSystem.current_region_id = ""
+	AutogrindSystem.is_grinding = false
+	AutogrindSystem._grind_stats["elapsed_seconds"] = 0.0
+	AutogrindSystem._grind_stats["start_time"] = 0.0
+	AutogrindSystem.per_character_exp.clear()
+	var living := _member("Living", true)
+	var wearer := _member("Wearer", false)
+	wearer.equipped_accessory = "mourners_ledger"
+	var corpse := _member("Corpse", false)
+	AutogrindSystem.grind_party = [living, wearer, corpse]
+	AutogrindSystem.on_battle_victory(100, {})
+	gut.p("    paid living %d · mourner %d · corpse %d · bar %s" % [
+		living.job_exp, wearer.job_exp, corpse.job_exp, str(AutogrindSystem.per_character_exp)])
+	assert_eq(living.job_exp, 100,
+		"CONTROL: with no region yield and no time bonus the grant is the battle's 100 EXP")
+	assert_eq(wearer.job_exp, living.job_exp,
+		"CONTROL: a KO'd mourner is paid the same full amount, not a share")
+	assert_eq(corpse.job_exp, 0,
+		"CONTROL: a KO'd member with no ledger still earns nothing")
+	assert_eq(int(AutogrindSystem.per_character_exp.get("Living", -1)), living.job_exp,
+		"the session bar showed %s for Living, who gained %d job EXP" % [
+			str(AutogrindSystem.per_character_exp.get("Living", 0)), living.job_exp])
+	assert_eq(int(AutogrindSystem.per_character_exp.get("Wearer", -1)), wearer.job_exp,
+		"the session bar showed %s for the mourner, who gained %d job EXP" % [
+			str(AutogrindSystem.per_character_exp.get("Wearer", 0)), wearer.job_exp])
+	assert_false(AutogrindSystem.per_character_exp.has("Corpse"),
+		"a corpse who was paid nothing must not appear on the EXP line")
 
 
 func test_the_third_award_site_is_still_unreachable() -> void:
@@ -221,6 +253,16 @@ func test_the_third_award_site_is_still_unreachable() -> void:
 	gut.p("    _run_automated_battle callers — in-file %d · across %d other src files %d" % [callers, scanned, elsewhere])
 	assert_eq(callers + elsewhere, 0,
 		"_run_automated_battle has a caller now, so its award site is live and still reads a bare is_alive — give it the exception the other two carry")
+
+
+## Code of one function, comments stripped. Empty when the signature is absent.
+func _fn_body(path: String, signature: String) -> String:
+	var src: String = GdSource.code_of(path)
+	var at: int = src.find(signature)
+	if at < 0:
+		return ""
+	var stop: int = src.find("\nfunc ", at + signature.length())
+	return src.substr(at, (stop - at) if stop > 0 else -1)
 
 
 ## Every .gd under res://src, recursively. Same walk as
