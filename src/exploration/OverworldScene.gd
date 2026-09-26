@@ -164,9 +164,7 @@ func _ready() -> void:
 	if sm:
 		sm.play_area_music(_get_music_area_id())
 
-	# First-time tutorial hints. Both are idempotent (TutorialHint tracks
-	# _shown_hints statically) so calling them on every overworld load is
-	# safe — only the very first visit per session actually surfaces a hint.
+	# Opening hints. The save stamp is the authority, so a New Game in this same session sees them again.
 	TutorialHints.show(self, "movement")
 	TutorialHints.show(self, "quest_log")
 

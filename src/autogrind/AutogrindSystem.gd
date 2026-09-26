@@ -2169,6 +2169,9 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 	## does not abort the whole action.
 	if caster.has_method("knows_ability") and not caster.knows_ability(ability_id):
 		return {"ok": false, "reason": "%s does not know %s" % [caster.combatant_name, ability_id]}
+	## Silence stays on after the fight that applied it. Battle refuses; this cast runs in that gap.
+	if caster.has_method("has_status") and caster.has_status("silence"):
+		return {"ok": false, "reason": "%s is silenced — %s won't come out" % [caster.combatant_name, ability_id]}
 	var cost := int(ability.get("mp_cost", 0))
 	if caster.current_mp < cost:
 		return {"ok": false, "reason": "%s lacks MP for %s" % [caster.combatant_name, ability_id]}
