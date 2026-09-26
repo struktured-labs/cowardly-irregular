@@ -1617,7 +1617,7 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 						## _select_enemy_action reads this key back through _find_taunter, the grind's twin of
 						## live's _choose_target lock. Player scripts do not retarget: live's autobattle
 						## resolver does not consult taunt either.
-						target.add_status("taunted_%s" % caster.combatant_name)
+						target.add_status("taunted_%s" % caster.combatant_name, duration)
 						_log("%s taunts %s into focusing on them!" % [caster.combatant_name, target.combatant_name])
 						continue
 					elif effect == "cleanse":
