@@ -996,8 +996,9 @@ func _show_items_view() -> void:
 			var quantity = combined[item_id]
 
 			var row = HBoxContainer.new()
+			row.alignment = BoxContainer.ALIGNMENT_CENTER
 			vbox.add_child(row)
-			row.add_child(ItemIcons.make_rect(str(item_id), 16))
+			row.add_child(ItemIcons.make_rect(str(item_id), 32))
 
 			var name_lbl = Label.new()
 			name_lbl.text = item_name

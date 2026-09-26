@@ -254,22 +254,27 @@ func _create_slot_row(slot_index: int) -> Control:
 	# Slot label
 	var slot_label = Label.new()
 	slot_label.text = SLOTS[slot_index]
-	slot_label.position = Vector2(24, 4)
+	slot_label.position = Vector2(24, 0)
 	slot_label.add_theme_font_size_override("font_size", 10)
 	slot_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	row.add_child(slot_label)
 
-	# Current equipment
+	# Current equipment, icon and name on one line under the slot title
 	var equip_name = _get_equipped_name(slot_index)
 	var equip_color = _get_slot_color(slot_index)
 	var equipped_id := _equipped_id(slot_index)
+	var name_x := 24
 	if equipped_id != "":
-		var icon := ItemIcons.make_rect(equipped_id, 16)
-		icon.position = Vector2(22, 16)
+		var icon := ItemIcons.make_rect(equipped_id, 32)
+		icon.position = Vector2(22, 12)
 		row.add_child(icon)
+		name_x = 58
 	var equip_label = Label.new()
+	equip_label.name = "EquippedName"
 	equip_label.text = equip_name
-	equip_label.position = Vector2(42 if equipped_id != "" else 24, 18)
+	equip_label.position = Vector2(name_x, 12)
+	equip_label.size = Vector2(280, 32)
+	equip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	equip_label.add_theme_font_size_override("font_size", 12)
 	equip_label.add_theme_color_override("font_color", equip_color if equip_name != "(empty)" else DISABLED_COLOR)
 	row.add_child(equip_label)
@@ -515,11 +520,11 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	cursor.name = "Cursor"
 	row.add_child(cursor)
 
-	var icon := ItemIcons.make_rect(item_id, 16)
-	icon.position = Vector2(20, 2)
+	var icon := ItemIcons.make_rect(item_id, 32)
+	icon.position = Vector2(18, 0)
 	row.add_child(icon)
 
-	# Item name
+	# Item name, same line as the icon
 	## Tick 140: prefer canonical name from item_data when available;
 	## fall back to ItemNameResolver (canonical from any data source)
 	## before raw snake_case id. Affects equipment pool entries that
@@ -527,8 +532,11 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	## Scriptweaver custom items) — pre-fix those rendered as e.g.
 	## "iron_sword" instead of "Iron Sword".
 	var name_label = Label.new()
+	name_label.name = "Name"
 	name_label.text = item_data.get("name", ItemNameResolver.resolve(item_id))
-	name_label.position = Vector2(40, 4)
+	name_label.position = Vector2(54, 0)
+	name_label.size = Vector2(420, 32)
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_label.add_theme_font_size_override("font_size", 12)
 	name_label.add_theme_color_override("font_color", _get_slot_color(selected_slot))
 	row.add_child(name_label)
@@ -565,7 +573,7 @@ func _create_item_row(item_id: String, index: int) -> Control:
 
 	var stats_label = Label.new()
 	stats_label.text = stat_text.strip_edges()
-	stats_label.position = Vector2(24, 20)
+	stats_label.position = Vector2(54, 32)
 	stats_label.add_theme_font_size_override("font_size", 10)
 	if positive_count > 0 and negative_count == 0:
 		stats_label.add_theme_color_override("font_color", AccessibilityPalette.bonus())
@@ -578,7 +586,7 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	# Description
 	var desc_label = Label.new()
 	desc_label.text = item_data.get("description", "")
-	desc_label.position = Vector2(24, 36)
+	desc_label.position = Vector2(54, 44)
 	desc_label.add_theme_font_size_override("font_size", 9)
 	desc_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	row.add_child(desc_label)

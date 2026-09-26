@@ -525,10 +525,15 @@ func _set_loot_icon(item_id: String) -> void:
 		old.queue_free()
 	if item_id == "":
 		return
-	var icon := ItemIcons.make_rect(item_id, 16)
+	var icon := ItemIcons.make_rect(item_id, 32)
 	icon.name = "LootIcon"
-	icon.position = Vector2(-8, -130)
+	icon.position = Vector2(-112, -102 + (44 - 32) * 0.5)
 	dialogue_box.add_child(icon)
+	# Slide the pinned label right of the icon. The setup assignment stays so the geometry pin holds.
+	dialogue_label.position = Vector2(-76, -102)
+	dialogue_label.size = Vector2(184, 44)
+	dialogue_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	dialogue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 
 
 func _resolve_display_name(contents_id: String) -> String:

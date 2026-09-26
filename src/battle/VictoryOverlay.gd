@@ -573,7 +573,7 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 			row.add_theme_constant_override("separation", 4)
 			row.alignment = BoxContainer.ALIGNMENT_CENTER
 			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			row.add_child(ItemIcons.make_rect(icon_id, chip_px))
+			row.add_child(ItemIcons.make_rect(icon_id, 32))
 			row.add_child(lbl)
 			h.add_child(row)
 		else:

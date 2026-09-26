@@ -51,6 +51,31 @@ func _init() -> void:
 	for _i in 8:
 		await process_frame
 	await _save(out_dir + "/equipment_item_icons.png")
+	equip.queue_free()
+	pc.queue_free()
+	await process_frame
+
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.04, 0.05, 0.09)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(backdrop)
+	var rows: Array = []
+	var items_node := root.get_node_or_null("ItemSystem")
+	for id in ["potion", "hi_potion", "ether", "elixir", "phoenix_down", "antidote", "smoke_bomb", "remedy"]:
+		var data: Dictionary = {}
+		if items_node and items_node.has_method("get_item"):
+			var got = items_node.call("get_item", id)
+			if got is Dictionary:
+				data = got
+		rows.append({"id": id, "label": "%s x2" % str(data.get("name", id)), "icon_id": id})
+	var battle = load("res://src/ui/Win98Menu.gd").new()
+	battle.battle_mode = true
+	battle.is_root_menu = false
+	root.add_child(battle)
+	battle.setup("Item", rows, Vector2(460, 180), "fighter")
+	for _i in 8:
+		await process_frame
+	await _save(out_dir + "/battle_item_icons.png")
 	quit(0)
 
 

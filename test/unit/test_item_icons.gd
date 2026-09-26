@@ -87,6 +87,10 @@ func test_shop_buy_and_sell_rows_draw_an_icon() -> void:
 	shop._open_sell_menu()
 	_assert_menu_icons(shop.current_menu, "Sell")
 	assert_gte(shop.current_menu.menu_items.size(), 2, "CONTROL: the sell list had the stocked potions")
+	var clip := shop.current_menu.find_child("ItemClip", true, false) as Control
+	assert_not_null(clip, "the shelf has no row window")
+	assert_eq(int(clip.size.y) % shop.current_menu._row_height(), 0, "the window height must be a whole number of rows")
+	assert_true(clip.clip_contents, "a partial row can paint into the frame padding")
 	GameState.player_party.clear()
 	for entry in saved:
 		GameState.player_party.append(entry)
@@ -103,9 +107,11 @@ func test_the_bag_draws_an_icon_on_every_row() -> void:
 		assert_not_null(icon, "a bag row has no icon")
 		assert_ne(icon.texture, null)
 		assert_eq(icon.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+		assert_eq(int(icon.size.y), 32, "the bag icon should be the 16px art at 2x")
 		var name_label := row.get_node_or_null("Name") as Label
 		assert_not_null(name_label)
 		assert_gt(name_label.text.length(), 0, "the name is still there beside the icon")
+		assert_true(_shares_a_line(icon, name_label), "the bag icon is not on the name's line")
 
 
 func test_battle_item_rows_draw_an_icon() -> void:
@@ -161,8 +167,14 @@ func test_equipment_rows_draw_an_icon() -> void:
 	assert_not_null(icon, "an equipment choice has no icon")
 	assert_ne(icon.texture, null)
 	assert_eq(icon.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST)
+	assert_eq(int(icon.size.y), 32)
+	var choice_name := row.get_node_or_null("Name") as Label
+	assert_true(_shares_a_line(icon, choice_name), "the weapon choice icon is not on the name's line")
 	var slot := menu._create_slot_row(0)
-	assert_not_null(slot.get_node_or_null("ItemIcon"), "the equipped weapon row has no icon")
+	var slot_icon := slot.get_node_or_null("ItemIcon") as TextureRect
+	var slot_name := slot.get_node_or_null("EquippedName") as Label
+	assert_not_null(slot_icon, "the equipped weapon row has no icon")
+	assert_true(_shares_a_line(slot_icon, slot_name), "the equipped slot icon is not on the name's line")
 
 
 func test_a_chest_and_a_victory_drop_show_an_icon() -> void:
@@ -205,9 +217,21 @@ func _assert_menu_icons(menu: Win98Menu, where: String) -> void:
 		assert_not_null(icon, "%s row '%s' has no icon" % [where, menu.menu_items[i].get("label", "")])
 		assert_ne(icon.texture, null, "%s row '%s' icon has no texture" % [where, menu.menu_items[i].get("label", "")])
 		assert_eq(icon.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, "%s icon is filtered soft" % where)
+		assert_eq(int(icon.size.y), 32, "%s icon should be the 16px art at 2x" % where)
 		var label := row.find_child("Label", true, false) as Label
 		assert_not_null(label, "%s row lost its name label" % where)
 		assert_gt(label.text.length(), 0)
+		assert_true(_shares_a_line(icon, label), "%s icon sits off the name's line" % where)
+
+
+func _shares_a_line(icon: Control, label: Control) -> bool:
+	if icon == null or label == null:
+		return false
+	var icon_top := icon.position.y
+	var icon_bot := icon_top + icon.size.y
+	var text_top := label.position.y
+	var text_bot := text_top + maxf(label.size.y, 12.0)
+	return icon_top < text_bot and text_top < icon_bot
 
 
 func _has_ink(img: Image) -> bool:

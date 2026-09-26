@@ -280,7 +280,9 @@ static func apply_button(btn: Button, item_id: String) -> void:
 	if item_id == "":
 		return
 	btn.icon = tinted(item_id)
-	btn.expand_icon = false
+	btn.expand_icon = true
+	btn.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	btn.add_theme_constant_override("icon_max_width", 32)
 
 
 static func png_path(key: String) -> String:
