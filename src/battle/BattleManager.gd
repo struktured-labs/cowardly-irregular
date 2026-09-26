@@ -4934,8 +4934,10 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	# Auto-retarget dead targets based on ability type
 	var retargeted: Array = []
 	var ability_type = ability.get("type", "")
+	var target_type := str(ability.get("target_type", ""))
+	## A party-facing support row is not a heal: a KO'd hero must follow onto the party, not the caster's side.
+	var aims_at_foes := target_type in ["single_enemy", "all_enemies"]
 	## Eidolon summons deal damage, but they were not in this list, so a foe who died before the cast resolved was replaced by the most wounded ally. Queued Ifrit then burned the party.
-	var aims_at_foes: bool = str(ability.get("target_type", "")) in ["single_enemy", "all_enemies"]
 	var is_offensive = ability_type in ["physical", "magic"] or (ability_type == "summon" and aims_at_foes)
 	var is_revival = ability_type == "revival"
 
@@ -4948,6 +4950,10 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 			# Revival targets dead allies, don't retarget
 			if target:
 				retargeted.append(target)
+		elif aims_at_foes:
+			var new_foe = _retarget_enemy(caster, target)
+			if new_foe and not retargeted.has(new_foe):
+				retargeted.append(new_foe)
 		else:
 			# Healing/support targets allies
 			var new_target = _retarget_ally(caster, target, is_revival)
