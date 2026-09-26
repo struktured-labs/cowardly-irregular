@@ -77,19 +77,10 @@ func _ready() -> void:
 
 
 func _detect_current_world() -> int:
-	"""Determine current world from story flags — last world with prologue complete."""
-	if not GameState:
+	# Where the player is standing. A prologue scan named the furthest world reached, so a return portal left YOU ARE HERE on a world they had left.
+	if not GameState or not ("current_world" in GameState):
 		return 1
-	var flags: Dictionary = GameState.game_constants
-	var w := 1
-	for world_id in range(6, 0, -1):
-		var prologue_flag := "cutscene_flag_world%d_prologue_complete" % world_id
-		if world_id == 1:
-			prologue_flag = "cutscene_flag_prologue_complete"
-		if flags.get(prologue_flag, false):
-			w = world_id
-			break
-	return w
+	return clampi(int(GameState.current_world), 1, 6)
 
 
 func _is_world_unlocked(world_id: int) -> bool:
