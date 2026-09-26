@@ -121,6 +121,37 @@ func test_contrarian_depths_lever_opens_the_vault_wall() -> void:
 		"both door cells flip together")
 
 
+## sw2 flips (14,3) and (14,4): the vault door in front of portal b, on floor 3.
+## Floor 1 uses those same coordinates for the sealed wing's west wall. A thrown
+## lever was painting that wall into floor on the way back upstairs, so the wing
+## the portal exists to reach could be walked into from the hall.
+func test_the_vault_lever_does_not_unseal_the_wing_upstairs() -> void:
+	var cave := _build_cave()
+	await get_tree().process_frame
+	var wing := Vector2i(14, 3)
+	var wing_b := Vector2i(14, 4)
+	cave._generate_map_for_floor(1)
+	var wall_atlas: Vector2i = cave._get_atlas_coords(cave._char_to_tile_type("M"))
+	assert_eq(cave.tile_map.get_cell_atlas_coords(wing), wall_atlas,
+		"control: the sealed wing's west wall starts as a wall")
+	cave._generate_map_for_floor(3)
+	cave._puzzle_layer.activate_switch("sw2")
+	assert_true(bool(cave._puzzle_layer._active.get("sw2", false)), "control: the lever threw")
+	assert_true(DungeonPuzzleLayer.is_walkable(cave.floor_layouts, cave.switch_effects, 3, wing, cave._puzzle_layer._active),
+		"control: the floor 3 vault door must still open")
+	# Leaving floor 3 and coming back to floor 1 rebuilds that floor from the persisted switches.
+	cave._generate_map_for_floor(1)
+	assert_eq(cave.tile_map.get_cell_atlas_coords(wing), wall_atlas,
+		"returning to floor 1 after the floor 3 lever must leave the sealed wing walled off")
+	assert_eq(cave.tile_map.get_cell_atlas_coords(wing_b), wall_atlas,
+		"the second sealed-wing cell must stay a wall too")
+	var active: Dictionary = cave._puzzle_layer._active
+	assert_false(DungeonPuzzleLayer.is_walkable(cave.floor_layouts, cave.switch_effects, 1, wing, active),
+		"the sealed wing cell must stay unwalkable on floor 1")
+	assert_false(DungeonPuzzleLayer.is_walkable(cave.floor_layouts, cave.switch_effects, 1, wing_b, active),
+		"the other sealed-wing cell must stay unwalkable on floor 1")
+
+
 func test_flip_switch_activation_repaints_the_live_tilemap() -> void:
 	var cave := _build_cave()
 	await get_tree().process_frame
