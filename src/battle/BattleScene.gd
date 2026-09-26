@@ -2751,7 +2751,7 @@ func _on_item_pressed() -> void:
 
 ## The party's one bag, the same stock BattleCommandMenu lists and _execute_item spends.
 func _item_bag(current) -> Dictionary:
-	return ItemSystem.party_inventory(BattleManager.player_party if current in BattleManager.player_party else [current])
+	return ItemSystem.party_inventory(BattleManager.consumable_bag(current))
 
 
 func _show_item_menu() -> void:
