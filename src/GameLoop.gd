@@ -7152,30 +7152,33 @@ func _on_ui_tier_cycle_requested() -> void:
 		_autogrind_controller.cycle_tier()
 
 
+## Between battles the drink is the item itself. A copied amount here healed a tenth of what the bottle says.
 func _autogrind_heal_member(member: Combatant) -> void:
-	var heal_items = [["hi_potion", 200], ["potion", 50]]
-	for item_pair in heal_items:
-		var item_id = item_pair[0]
-		var heal_amount = item_pair[1]
-		if member.get_item_count(item_id) > 0:
-			member.remove_item(item_id, 1)
-			member.heal(heal_amount)
-			AutogrindSystem.track_item_consumed(item_id)
-			print("[AUTOGRIND] %s used %s (healed %d HP)" % [member.combatant_name, item_id, heal_amount])
-			return
+	for item_id in AutogrindSystem.HEAL_PARTY_ITEM_ORDER:
+		if member.get_item_count(item_id) <= 0:
+			continue
+		var before := member.current_hp
+		var targets: Array[Combatant] = [member]
+		if ItemSystem == null or not ItemSystem.use_item(member, item_id, targets):
+			continue
+		member.remove_item(item_id, 1)
+		AutogrindSystem.track_item_consumed(item_id)
+		print("[AUTOGRIND] %s used %s (healed %d HP)" % [member.combatant_name, item_id, member.current_hp - before])
+		return
 
 
 func _autogrind_restore_mp(member: Combatant) -> void:
-	var mp_items = [["hi_ether", 100], ["ether", 30]]
-	for item_pair in mp_items:
-		var item_id = item_pair[0]
-		var restore = item_pair[1]
-		if member.get_item_count(item_id) > 0:
-			member.remove_item(item_id, 1)
-			member.restore_mp(restore)
-			AutogrindSystem.track_item_consumed(item_id)
-			print("[AUTOGRIND] %s used %s (restored %d MP)" % [member.combatant_name, item_id, restore])
-			return
+	for item_id in AutogrindSystem.RESTORE_MP_ITEM_ORDER:
+		if member.get_item_count(item_id) <= 0:
+			continue
+		var before := member.current_mp
+		var targets: Array[Combatant] = [member]
+		if ItemSystem == null or not ItemSystem.use_item(member, item_id, targets):
+			continue
+		member.remove_item(item_id, 1)
+		AutogrindSystem.track_item_consumed(item_id)
+		print("[AUTOGRIND] %s used %s (restored %d MP)" % [member.combatant_name, item_id, member.current_mp - before])
+		return
 
 
 func _autogrind_save_snapshot() -> void:
