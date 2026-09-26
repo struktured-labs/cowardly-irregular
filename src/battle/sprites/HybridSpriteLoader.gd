@@ -621,8 +621,8 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 		if anim_name == "victory":
 			fps = victory_fps(int(frame_count), fps)
 		sprite_frames.set_animation_speed(anim_name, fps)
-		# Rest poses loop (weak breathes like idle); action anims play once so animation_finished fires
-		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "victory", "weak"])
+		# Rest poses loop (weak breathes like idle); victory plays ONCE and holds its last frame (artist ruling 2026-09-26)
+		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "weak"])
 
 		for i in range(frame_count):
 			var atlas = AtlasTexture.new()
