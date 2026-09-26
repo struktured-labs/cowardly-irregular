@@ -598,17 +598,21 @@ func record_ability_use(ability_id: String) -> void:
 
 ## Returns the abilities to show in the top-level quick-access slots:
 ## pins first (in pin order), then MRU fills any remaining slots.
+## A job change keeps the lists, but a shortcut the character can no longer cast is skipped so the bar does not offer a turn that fizzles. Switching back surfaces it again.
 func get_quick_slot_abilities(num_slots: int = MRU_SIZE) -> Array[String]:
 	var result: Array[String] = []
 	for ability_id in pinned_abilities:
 		if result.size() >= num_slots:
 			break
+		if not knows_ability(ability_id):
+			continue
 		result.append(ability_id)
 	for ability_id in recent_abilities:
 		if result.size() >= num_slots:
 			break
-		if ability_id not in result:
-			result.append(ability_id)
+		if ability_id in result or not knows_ability(ability_id):
+			continue
+		result.append(ability_id)
 	return result
 
 
