@@ -42,12 +42,14 @@ func _round_trip(member_dict: Dictionary) -> Combatant:
 	var party: Variant = (loaded.get("game_state", {}) as Dictionary).get("player_party", [])
 	assert_true(party is Array and (party as Array).size() == 1, "the save must carry the party member")
 	var restored := Combatant.new()
+	add_child_autofree(restored)
 	restored.from_dict((party as Array)[0])
 	return restored
 
 
 func test_a_chosen_nature_survives_the_save_file() -> void:
 	var member := Combatant.new()
+	add_child_autofree(member)
 	member.combatant_name = "Lute"
 	var look := CharacterCustomization.new("Lute")
 	look.personality = CharacterCustomization.Personality.SCHOLARLY
@@ -64,12 +66,11 @@ func test_a_chosen_nature_survives_the_save_file() -> void:
 	assert_almost_eq(restored.customization.hair_color.r, 0.11, 0.001, "hair color must survive the file")
 	assert_eq(restored.customization.hair_style, CharacterCustomization.HairStyle.MOHAWK,
 			"hair style must survive the file")
-	member.queue_free()
-	restored.queue_free()
 
 
 func test_an_old_save_keeps_the_starter_natures() -> void:
 	var mage := Combatant.new()
+	add_child_autofree(mage)
 	mage.combatant_name = "Mage"
 	var mage_dict: Dictionary = mage.to_dict()
 	mage_dict.erase("customization")
@@ -80,6 +81,7 @@ func test_an_old_save_keeps_the_starter_natures() -> void:
 	assert_true(_piano_allows(restored_mage), "the starter Mage must still be allowed to play after Continue")
 
 	var cleric := Combatant.new()
+	add_child_autofree(cleric)
 	cleric.combatant_name = "Cleric"
 	var cleric_dict: Dictionary = cleric.to_dict()
 	cleric_dict.erase("customization")
@@ -91,17 +93,13 @@ func test_an_old_save_keeps_the_starter_natures() -> void:
 	var loaded: Dictionary = SaveSystem._read_save_file(SLOT)
 	var party: Array = (loaded["game_state"] as Dictionary)["player_party"]
 	var restored_cleric := Combatant.new()
+	add_child_autofree(restored_cleric)
 	restored_cleric.from_dict(party[0])
 	assert_eq(restored_cleric.customization.personality, CharacterCustomization.Personality.CAUTIOUS,
 			"the starter Cleric is Cautious, not a second Scholar")
 	assert_false(_piano_allows(restored_cleric), "Cautious is the fail-line nature, not a piano nature")
 
 	var stranger := Combatant.new()
+	add_child_autofree(stranger)
 	stranger.from_dict({"name": "Slime"})
 	assert_null(stranger.customization, "only the five starters get a nature when the file omitted one")
-
-	mage.queue_free()
-	restored_mage.queue_free()
-	cleric.queue_free()
-	restored_cleric.queue_free()
-	stranger.queue_free()
