@@ -104,6 +104,9 @@ func _build_ui() -> void:
 	# player, and named the one route they did not have.
 	var _pad_un: String = InputProfileManager.button_name_for_index(JOY_BUTTON_X)
 	var _un: String = "%s/X" % _pad_un if _pad_un != "" else "X"
+	# Item select spends X on unequip, so Cancel must name a binding that still goes back.
+	if mode != Mode.SLOT_SELECT and _no == "X":
+		_no = _back_key_besides_unequip()
 	var footer_text = ("↑↓: Select Slot  %s/Click: Change  %s/RClick: Back" % [_ok, _no]) if mode == Mode.SLOT_SELECT else ("↑↓: Select  %s/Click: Equip  %s/RClick: Cancel  %s: Unequip" % [_ok, _no, _un])
 	var footer = Label.new()
 	footer.name = "ScreenFooter"
@@ -143,7 +146,6 @@ func _build_ui() -> void:
 		else:
 			_close_menu()
 	)
-
 
 
 func _create_character_panel(panel_size: Vector2, at: Vector2) -> Control:
@@ -800,19 +802,18 @@ func _handle_item_input(event: InputEvent) -> void:
 		_equip_selected_item()
 		get_viewport().set_input_as_handled()
 
+	# X is also ui_cancel, so it has to be read first or the key the footer calls Unequip only goes back.
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_X:
+		_unequip_slot()
+		get_viewport().set_input_as_handled()
+
 	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		mode = Mode.SLOT_SELECT
 		_build_ui()
 		SoundManager.play_ui("menu_close")
 		get_viewport().set_input_as_handled()
 
-	# Unequip. KEY_X was the ONLY route — a pad player could not unequip at all, on a screen in a
-	# game whose first design principle is that everything works on gamepad. The west face is free
-	# here (ui_accept/ui_cancel take east/south, both shoulders are taken) and is what
-	# AutogrindGridEditor already uses for its remove action.
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_X:
-		_unequip_slot()
-		get_viewport().set_input_as_handled()
+	# Unequip on a pad. The west face is free here (ui_accept/ui_cancel take east/south).
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
 		_unequip_slot()
 		get_viewport().set_input_as_handled()
@@ -879,6 +880,15 @@ func _equip_selected_item() -> void:
 		_build_ui()
 	else:
 		SoundManager.play_ui("menu_error")
+
+
+## Item select spends the X key on unequip. The other ui_cancel binding (Escape) is what still goes back.
+func _back_key_besides_unequip() -> String:
+	for part in InputProfileManager.get_action_key_label("ui_cancel").split(" / "):
+		var key := str(part)
+		if key != "" and key != "X":
+			return key
+	return "Escape"
 
 
 func _unequip_slot() -> void:
