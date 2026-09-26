@@ -143,9 +143,9 @@ func _ready() -> void:
 	_setup_camera()
 	_setup_controller()
 
-	# Play tavern music
+	# Cold start has nothing to inherit; this room exists only in Harmonia.
 	if SoundManager:
-		SoundManager.play_area_music("interior_tavern")
+		SoundManager.play_area_music("interior_tavern", 0.0, "harmonia_village")
 
 
 func _process(delta: float) -> void:

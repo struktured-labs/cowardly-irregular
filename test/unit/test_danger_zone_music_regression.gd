@@ -94,8 +94,9 @@ func test_every_area_key_the_game_asks_for_has_an_arm() -> void:
 		"CONTROL FAILED: 'overworld' missing from the parsed arms %s — the parse found something, but not the area keys" % [arms])
 
 	var asked: Dictionary = {}
+	## First argument only. A cold-start home after the key is still a request for that key.
 	var call_re := RegEx.new()
-	call_re.compile("play_area_music\\(\\s*\"([a-z_0-9]+)\"\\s*\\)")
+	call_re.compile("play_area_music\\(\\s*\"([a-z_0-9]+)\"")
 	for f in _gd_files("res://src"):
 		var body: String = FileAccess.get_file_as_string(f)
 		for m in call_re.search_all(body):
