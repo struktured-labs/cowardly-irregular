@@ -706,10 +706,12 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 		else:
 			total_items_gained[item_id] = quantity
 
-	# Award EXP to party — the dead earn nothing without the gear or passive that says otherwise
+	# Award EXP to party — the dead earn nothing without the gear or passive that says otherwise, and the bar records that same full amount.
 	for member in grind_party:
 		if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
 			member.gain_job_exp(adjusted_exp)
+			if adjusted_exp > 0:
+				track_character_exp(member.combatant_name, adjusted_exp)
 
 	# Derive JP: 1 base JP per battle, scaled by yield and efficiency
 	var jp_gained: int = maxi(1, int(1.0 * reward_scale * efficiency_multiplier))
@@ -1386,10 +1388,12 @@ func account_boss_fight_rewards(exp_gained: int, items_gained: Dictionary, grant
 	if exp_gained > 0:
 		total_exp_gained += exp_gained
 		_grind_stats["total_exp"] += exp_gained
-		if grant:
-			for member in grind_party:
-				if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
+		for member in grind_party:
+			if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
+				if grant:
 					member.gain_job_exp(exp_gained)
+				# Watched fights already paid this in battle. The bar still has to show it.
+				track_character_exp(member.combatant_name, exp_gained)
 	var gold: int = int(items_gained.get("gold", 0))
 	if gold > 0:
 		_grind_stats["total_gold"] += gold
@@ -1426,6 +1430,8 @@ func on_meta_boss_victory(boss_data: Dictionary) -> void:
 	for member in grind_party:
 		if member is Combatant and (member.is_alive or _earns_exp_while_dead(member)):
 			member.gain_job_exp(bonus_exp)
+			if bonus_exp > 0:
+				track_character_exp(member.combatant_name, bonus_exp)
 	total_exp_gained += bonus_exp
 	_grind_stats["total_exp"] += bonus_exp
 	battle_completed.emit(battles_completed, {
