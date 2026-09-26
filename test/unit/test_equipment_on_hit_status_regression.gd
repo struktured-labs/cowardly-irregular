@@ -69,7 +69,7 @@ func test_status_resistance_reduces_effective_chance() -> void:
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
 	assert_true(body.contains("_sum_equipment_special_effect(target, \"status_resistance\")"),
 		"helper must consult target's status_resistance equipment")
-	assert_true(body.contains("clampf(chance - resist, 0.0, 1.0)"),
+	assert_true(body.contains("resisted_status_chance(chance, resist)"),
 		"effective chance must be (attacker chance - target resist), clamped [0, 1]")
 
 
