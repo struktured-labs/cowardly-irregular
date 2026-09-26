@@ -98,14 +98,26 @@ static func gated_portal_chars(switch_effects: Dictionary) -> Dictionary:
 	return out
 
 
+## Floor each scanned switch lives on. An id with no S/L glyph (a one-floor fixture) is absent.
+static func switch_home_floors(floor_layouts: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	for sw in scan_switches(floor_layouts):
+		out[str(sw["id"])] = int(sw["floor"])
+	return out
+
+
+## A flip list is coordinates on the switch's own floor. The same x,y on another floor is a different wall.
 static func is_walkable(floor_layouts: Dictionary, switch_effects: Dictionary, floor_num: int, cell: Vector2i, active: Dictionary) -> bool:
 	var ch := _char_at(floor_layouts, floor_num, cell)
 	if ch == "":
 		return false
 	if ch != "M" and ch != "l":
 		return true
+	var homes := switch_home_floors(floor_layouts)
 	for sw_id in switch_effects:
 		if not bool(active.get(sw_id, false)):
+			continue
+		if homes.has(sw_id) and int(homes[sw_id]) != floor_num:
 			continue
 		for pair in (switch_effects[sw_id] as Dictionary).get("flip", []):
 			if int(pair[0]) == cell.x and int(pair[1]) == cell.y:
@@ -233,9 +245,12 @@ func _consume_bypass_puzzle() -> void:
 
 func _apply_flip_tiles(floor_num: int) -> void:
 	var effects: Dictionary = _cave.switch_effects
+	var homes := switch_home_floors(_cave.floor_layouts)
 	var floor_atlas: Vector2i = _cave._get_atlas_coords(TileGeneratorScript.TileType.CAVE_FLOOR)
 	for sw_id in effects:
 		if not bool(_active.get(sw_id, false)):
+			continue
+		if homes.has(sw_id) and int(homes[sw_id]) != floor_num:
 			continue
 		for pair in (effects[sw_id] as Dictionary).get("flip", []):
 			_cave.tile_map.set_cell(Vector2i(int(pair[0]), int(pair[1])), 0, floor_atlas)
