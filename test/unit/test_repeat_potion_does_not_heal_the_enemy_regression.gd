@@ -7,7 +7,11 @@ extends GutTest
 ## slot. Phoenix Down still wants the corpse. A bomb still wants a living enemy.
 ## An all-allies list is party order. Replacing an EARLIER KO with a living ally who is
 ## still ahead in that list appended them again when their own slot arrived, so one
-## Mega Potion healed that ally twice. Drop the KO; the living slots already get it.
+## Mega Potion healed that ally twice. Drop that KO when another living ally is already
+## listed. A saved list that is ONLY the KO — the shape autobattle writes for every item,
+## including a lowest-HP-ally Mega Potion — must not become empty: an empty list skips the
+## fizzle path, prints the use, heals nobody, and still spends the item. Aim it at one
+## living ally instead. A single-target list [KO, Ada] must name Ada once.
 
 const BattleStateGuard := preload("res://test/unit/helpers/battle_state.gd")
 
@@ -167,6 +171,62 @@ func test_a_repeated_party_potion_heals_the_only_living_user_once() -> void:
 	_bm._execute_item(ada, "mega_potion", targets)
 	assert_eq(ada.current_hp - ada_before, one, "the only living ally is healed once")
 	assert_eq(ada.get_item_count("mega_potion"), 0, "one party potion is spent")
+
+
+## Autobattle stores one target for every item. A lowest-HP-ally Mega Potion whose target has since fallen is a saved list of ONLY that KO. Dropping the slot leaves [], execution prints the use, heals nobody, and still spends the item.
+func test_a_repeated_party_potion_aimed_only_at_the_ko_heals_one_living_ally() -> void:
+	assert_not_null(_bm, "BattleManager autoload required")
+	if _bm == null:
+		return
+	var bo := _make("Bo", 0, 10000)
+	var ada := _make("Ada", 400, 10000)
+	var cy := _make("Cy", 7000, 10000)
+	var slime := _make("Slime", 40, 200)
+	ada.add_item("mega_potion", 1)
+	_stage([bo, ada, cy], [slime])
+	_remember(ada, {"type": "item", "item_id": "mega_potion", "targets": [bo], "speed": 1.0})
+	_bm._queue_repeated_action(ada)
+	var targets: Array = _queued_targets()
+	assert_eq(targets.count(bo), 0, "a non-revive party item does not keep the KO'd ally")
+	assert_eq(targets.count(ada), 1, "the KO-only list retargets onto the lowest-HP living ally, once")
+	assert_eq(targets.count(cy), 0, "a KO-only all-allies repeat heals one living ally, not the whole party")
+	assert_false(targets.has(slime), "a KO'd slot must not be filled with the enemy")
+	assert_eq(targets.size(), 1, "one living ally")
+	var ada_before := ada.current_hp
+	var cy_before := cy.current_hp
+	var slime_before := slime.current_hp
+	var one := ada.heal_preview(_flat_heal("mega_potion"))
+	assert_gt(ada.max_hp - ada_before, one * 2, "Ada has room to show a second heal")
+	_bm._execute_item(ada, "mega_potion", targets)
+	assert_eq(ada.current_hp - ada_before, one, "the lowest-HP living ally is healed once")
+	assert_eq(cy.current_hp, cy_before, "the other living ally is not also healed")
+	assert_eq(slime.current_hp, slime_before, "the party potion must not heal the enemy")
+	assert_eq(ada.get_item_count("mega_potion"), 0, "one party potion is spent")
+
+
+## Not built by play today. The single-target retarget still appended the living ally the KO slot had already chosen, so [KO, Ada] queued Ada twice.
+func test_a_repeated_single_target_list_of_the_ko_and_ada_heals_ada_once() -> void:
+	assert_not_null(_bm, "BattleManager autoload required")
+	if _bm == null:
+		return
+	var bo := _make("Bo", 0, 10000)
+	var ada := _make("Ada", 400, 10000)
+	var slime := _make("Slime", 40, 200)
+	ada.add_item("potion", 1)
+	_stage([bo, ada], [slime])
+	_remember(ada, {"type": "item", "item_id": "potion", "targets": [bo, ada], "speed": 1.0})
+	_bm._queue_repeated_action(ada)
+	var targets: Array = _queued_targets()
+	assert_eq(targets.count(bo), 0, "a non-revive potion does not keep the KO'd ally")
+	assert_eq(targets.count(ada), 1, "Ada is already in the saved list and must appear once")
+	assert_false(targets.has(slime), "a KO'd slot must not be filled with the enemy")
+	assert_eq(targets.size(), 1, "one potion, one target")
+	var ada_before := ada.current_hp
+	var one := ada.heal_preview(_flat_heal("potion"))
+	assert_gt(ada.max_hp - ada_before, one * 2, "Ada has room to show a second heal")
+	_bm._execute_item(ada, "potion", targets)
+	assert_eq(ada.current_hp - ada_before, one, "Ada receives the potion once")
+	assert_eq(ada.get_item_count("potion"), 0, "one potion is spent")
 
 
 func test_a_repeated_bomb_still_finds_a_living_enemy() -> void:
