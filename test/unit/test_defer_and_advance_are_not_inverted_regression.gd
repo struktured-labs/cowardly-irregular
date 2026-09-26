@@ -21,7 +21,9 @@ const BS := "res://src/battle/BattleScene.gd"
 
 
 ## The premise, read from the InputMap the engine actually loaded — not from project.godot text.
-func test_the_bindings_say_l_defers_and_r_advances() -> void:
+## The keyboard shoulders moved L/R -> Q/W on 2026-09-25 (struktured, on a laptop: "L/R on keyboard is
+## BAD"). Q/W is the emulator default for L/R and sits beside Z/X; left still defers, right advances.
+func test_the_keyboard_shoulders_are_q_defer_and_w_advance() -> void:
 	var defer_keys := []
 	var adv_keys := []
 	for ev in InputMap.action_get_events("battle_defer"):
@@ -30,9 +32,9 @@ func test_the_bindings_say_l_defers_and_r_advances() -> void:
 	for ev in InputMap.action_get_events("battle_advance"):
 		if ev is InputEventKey:
 			adv_keys.append(OS.get_keycode_string(ev.keycode))
-	assert_has(defer_keys, "L", "battle_defer must bind L — the hint bar says '[L] Defer'")
-	assert_has(adv_keys, "R", "battle_advance must bind R — the hint bar says '[R] Advance'")
-	assert_does_not_have(defer_keys, "R", "CONTROL: defer must NOT also claim R, or the arms below prove nothing")
+	assert_has(defer_keys, "Q", "battle_defer must bind Q — the keyboard's LEFT shoulder")
+	assert_has(adv_keys, "W", "battle_advance must bind W — the keyboard's RIGHT shoulder")
+	assert_does_not_have(defer_keys, "W", "CONTROL: defer must NOT also claim W, or the arms below prove nothing")
 
 
 ## THE DEFECT: no raw keycode branch may contradict those bindings.
