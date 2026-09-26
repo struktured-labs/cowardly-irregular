@@ -151,5 +151,5 @@ func test_the_instrument_resolves_keys_and_claims() -> void:
 	assert_eq(_keycode_of("ZZQ"), 0, "a fabricated token must resolve to 0 and be skipped")
 	var claims := _claims()
 	assert_true(claims.has("battle_advance"), "the runtime InputMap must expose the project's actions")
-	assert_true((claims["battle_advance"] as Array).has(OS.find_keycode_from_string("R")),
-		"battle_advance must still claim R — the defect this file was written for depends on it")
+	assert_true((claims["battle_advance"] as Array).has(OS.find_keycode_from_string("W")),
+		"battle_advance must claim W (the keyboard's right shoulder since 2026-09-25) — proves _claims() reads the live InputMap")

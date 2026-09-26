@@ -272,6 +272,11 @@ func _setup_controller() -> void:
 		controller.set_area_config(_get_area_id(), true, 0.0, [])
 
 
+## Interior scripted fights parent-walk for this relay. The signal alone never started the battle.
+func _on_battle_triggered(enemies: Array) -> void:
+	battle_triggered.emit(enemies)
+
+
 ## Shared helper for transition_triggered → both signals. Subclasses
 ## connect their AreaTransition's transition_triggered to this.
 func _on_exit_triggered(target_map: String, target_spawn: String) -> void:

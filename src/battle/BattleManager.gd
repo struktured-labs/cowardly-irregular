@@ -1403,6 +1403,12 @@ func _maybe_trigger_mordaine_recalibrate() -> void:
 			battle_log_message.emit("[color=cyan]%s: \"%s\"[/color]" % [enemy.combatant_name, line])
 
 
+## Advance, group attacks, and the round-start tick never reached the ordinary-action phase poll, so an overkill crossing kept the old face.
+func _poll_boss_phase_triggers() -> void:
+	_maybe_trigger_mordaine_recalibrate()
+	_maybe_advance_boss_face()
+
+
 func _start_new_round() -> void:
 	"""Start a new round of combat"""
 	current_round += 1
@@ -1452,6 +1458,9 @@ func _start_new_round() -> void:
 	## Pre-fix nothing read these — the "buffs are unnecessary
 	## overhead to be eliminated" gimmick was pure flavor.
 	_apply_strip_buffs_on_round_start()
+
+	# Poison and eidolon ticks above can cross a face. Poll before anyone picks from the old kit.
+	_poll_boss_phase_triggers()
 
 	# Calculate selection order (players first, then enemies, sorted by speed)
 	_calculate_selection_order()
@@ -3751,9 +3760,7 @@ func _execute_next_action() -> void:
 	# Log player action for adaptive AI pattern detection
 	_log_player_action(combatant, action)
 	# msg 2805 cycle 18: check Mordaine phase 2 recalibrate BEFORE emitting action_executed. Fires once per fight when she crosses 50% HP. Silent no-op for any other enemy — free polling.
-	_maybe_trigger_mordaine_recalibrate()
-	# Same polling seam: silent no-op for any enemy without phase_faces authored.
-	_maybe_advance_boss_face()
+	_poll_boss_phase_triggers()
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
 	# Delay between actions — scale with battle speed for snappy feel.
@@ -3913,6 +3920,8 @@ func _execute_group_action(action: Dictionary) -> void:
 	)
 	_wd_bump()
 
+	# One poll for the whole group action: an overkill Limit Break lands on the last face crossed, not none.
+	_poll_boss_phase_triggers()
 	if _check_victory_conditions():
 		return
 
@@ -4427,6 +4436,9 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	## An earlier KO breaks the loop, so unplayed swings are not refunded.
 	if full_bank and executed == actions.size() and is_instance_valid(combatant):
 		combatant.gain_ap(1)
+
+	# One poll for the whole Advance, so a queue that crosses several thresholds lands on the last face.
+	_poll_boss_phase_triggers()
 
 	# Continue to next action — same double-scaling fix as the inner loop above.
 	if turbo_mode:
