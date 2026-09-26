@@ -192,18 +192,28 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	var y_offset = 32
 	var row_height = 28
 
-	# Core stats with breakdown
+	# Core stats with breakdown. Magic Defense is the magical-hit divisor; equipment and job screens already print it.
 	var stats = [
 		{"name": "Attack", "current": character.attack, "base": character.base_attack},
 		{"name": "Defense", "current": character.defense, "base": character.base_defense},
 		{"name": "Magic", "current": character.magic, "base": character.base_magic},
+		{"name": "Magic Defense", "current": character.magic_defense, "base": character.base_magic_defense},
 		{"name": "Speed", "current": character.speed, "base": character.base_speed},
 		{"name": "Max HP", "current": character.max_hp, "base": character.base_max_hp},
 		{"name": "Max MP", "current": character.max_mp, "base": character.base_max_mp},
 	]
 
+	# "Magic Defense" is wider than Attack/Defense. The number used to sit at x=100, which is where that label ends.
+	var name_size := TextScale.scaled(12)
+	var font := ThemeDB.fallback_font
+	var widest_name := 0.0
 	for stat in stats:
-		var stat_row = _create_stat_row(stat, y_offset)
+		widest_name = maxf(widest_name, font.get_string_size(str(stat["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, name_size).x)
+	var value_x := maxf(100.0, 16.0 + widest_name + 12.0)
+	var breakdown_x := value_x + 48.0
+
+	for stat in stats:
+		var stat_row = _create_stat_row(stat, y_offset, value_x, breakdown_x)
 		panel.add_child(stat_row)
 		y_offset += row_height
 
@@ -248,7 +258,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	return panel
 
 
-func _create_stat_row(stat: Dictionary, y_pos: int) -> Control:
+func _create_stat_row(stat: Dictionary, y_pos: int, value_x: float = 100.0, breakdown_x: float = 140.0) -> Control:
 	"""Create a stat row with base + bonus breakdown"""
 	var row = Control.new()
 
@@ -263,7 +273,7 @@ func _create_stat_row(stat: Dictionary, y_pos: int) -> Control:
 	# Current value
 	var value_label = Label.new()
 	value_label.text = str(stat["current"])
-	value_label.position = Vector2(100, y_pos)
+	value_label.position = Vector2(value_x, y_pos)
 	value_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	value_label.add_theme_color_override("font_color", TEXT_COLOR)
 	row.add_child(value_label)
@@ -273,7 +283,7 @@ func _create_stat_row(stat: Dictionary, y_pos: int) -> Control:
 	if diff != 0:
 		var breakdown_label = Label.new()
 		breakdown_label.text = "(%d %s%d)" % [stat["base"], "+" if diff > 0 else "", diff]
-		breakdown_label.position = Vector2(140, y_pos)
+		breakdown_label.position = Vector2(breakdown_x, y_pos)
 		breakdown_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		# Tick 236: AccessibilityPalette so bonus/penalty colors swap to cyan/magenta in color-blind mode.
 		breakdown_label.add_theme_color_override("font_color", AccessibilityPalette.bonus() if diff > 0 else AccessibilityPalette.penalty())
