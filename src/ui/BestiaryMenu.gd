@@ -45,6 +45,12 @@ var _detail_sprite: AnimatedSprite2D = null
 var _detail_sprite_bg: ColorRect = null
 var _detail_placeholder: Label = null
 var _count_label: Label = null
+## Detail body scrolls when enlarged text (or a wrapping one-shot hint) is taller than the pane.
+var _detail_scroll: ScrollContainer = null
+var _detail_content: Control = null
+var _footer: Label = null
+var _footer_base: String = ""
+var _detail_stick_y: float = 0.0
 
 
 func _ready() -> void:
@@ -152,15 +158,17 @@ func _build_ui() -> void:
 	_build_detail(detail_panel)
 
 	# Footer — list all input methods so mouse/kb users know what works
-	var footer := Label.new()
+	_footer = Label.new()
+	var footer := _footer
 	## "B" is Nintendo's name for Cancel; that face is Ⓐ on Xbox and ✕ on PlayStation, so the old
 	## literal was wrong on two families out of three. Derived per connected pad (2026-09-16).
 	## A control the footer does not advertise is a control nobody finds. Derived, never a family
 	## letter: battle_defer/battle_advance are L1/R1 · LB/RB · L/R depending on the pad.
-	footer.text = "↑↓ / Wheel: Select    %s/%s: Page    %s / RClick: Close    (hover to preview)" % [
+	_footer_base = "↑↓ / Wheel: Select    %s/%s: Page    %s / RClick: Close    (hover to preview)" % [
 		InputProfileManager.hint_for_action("battle_defer"),
 		InputProfileManager.hint_for_action("battle_advance"),
 		InputProfileManager.hint_for_action("ui_cancel")]
+	footer.text = _footer_base
 	footer.position = Vector2(24, viewport.y - 32)
 	footer.size = Vector2(viewport.x - 48, 24)
 	footer.add_theme_font_size_override("font_size", TextScale.scaled(14))
@@ -274,6 +282,18 @@ func _scroll_to_selected() -> void:
 
 
 func _build_detail(parent: Control) -> void:
+	# Inset past the 2px bevel so the scrollbar does not paint over the frame.
+	_detail_scroll = ScrollContainer.new()
+	_detail_scroll.position = Vector2(2, 2)
+	_detail_scroll.size = parent.size - Vector2(4, 4)
+	_detail_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_detail_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	parent.add_child(_detail_scroll)
+	_detail_content = Control.new()
+	_detail_content.custom_minimum_size = _detail_scroll.size
+	_detail_content.size = _detail_scroll.size
+	_detail_scroll.add_child(_detail_content)
+	var host := _detail_content
 	var margin := 20
 	var sprite_size := 180
 
@@ -282,11 +302,11 @@ func _build_detail(parent: Control) -> void:
 	_detail_sprite_bg.color = Color(0.02, 0.03, 0.08, 0.8)
 	_detail_sprite_bg.position = Vector2(margin, margin)
 	_detail_sprite_bg.size = Vector2(sprite_size, sprite_size)
-	parent.add_child(_detail_sprite_bg)
+	host.add_child(_detail_sprite_bg)
 
 	_detail_sprite = AnimatedSprite2D.new()
 	_detail_sprite.position = _detail_sprite_bg.position + _detail_sprite_bg.size * 0.5
-	parent.add_child(_detail_sprite)
+	host.add_child(_detail_sprite)
 
 	_detail_placeholder = Label.new()
 	_detail_placeholder.text = "?"
@@ -297,37 +317,40 @@ func _build_detail(parent: Control) -> void:
 	_detail_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_detail_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_detail_placeholder.visible = false
-	parent.add_child(_detail_placeholder)
+	host.add_child(_detail_placeholder)
 
 	var text_x: float = margin + sprite_size + 20
-	var text_w: float = parent.size.x - text_x - margin
+	var text_w: float = _detail_scroll.size.x - text_x - margin
 
 	_detail_name = Label.new()
 	_detail_name.position = Vector2(text_x, margin)
 	_detail_name.size = Vector2(text_w, 32)
 	_detail_name.add_theme_font_size_override("font_size", TextScale.scaled(24))
 	_detail_name.add_theme_color_override("font_color", ACCENT)
+	_detail_name.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_name.clip_text = false
 	_detail_name.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	parent.add_child(_detail_name)
+	host.add_child(_detail_name)
 
 	_detail_epithet = Label.new()
 	_detail_epithet.position = Vector2(text_x, margin + 32)
 	_detail_epithet.size = Vector2(text_w, 22)
 	_detail_epithet.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	_detail_epithet.add_theme_color_override("font_color", DIM_COLOR)
+	_detail_epithet.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_epithet.clip_text = false
 	_detail_epithet.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	parent.add_child(_detail_epithet)
+	host.add_child(_detail_epithet)
 
 	_detail_level = Label.new()
 	_detail_level.position = Vector2(text_x, margin + 58)
 	_detail_level.size = Vector2(text_w, 22)
 	_detail_level.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_level.add_theme_color_override("font_color", TEXT_COLOR)
+	_detail_level.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_level.clip_text = false
 	_detail_level.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	parent.add_child(_detail_level)
+	host.add_child(_detail_level)
 
 	_detail_stats = Label.new()
 	_detail_stats.position = Vector2(text_x, margin + 86)
@@ -335,34 +358,37 @@ func _build_detail(parent: Control) -> void:
 	_detail_stats.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_stats.add_theme_color_override("font_color", TEXT_COLOR)
 	_detail_stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	parent.add_child(_detail_stats)
+	host.add_child(_detail_stats)
 
 	_detail_weak = Label.new()
 	_detail_weak.position = Vector2(text_x, margin + 140)
 	_detail_weak.size = Vector2(text_w, 24)
 	_detail_weak.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_weak.add_theme_color_override("font_color", Color(1.0, 0.6, 0.6))
+	_detail_weak.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_weak.clip_text = false
 	_detail_weak.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	parent.add_child(_detail_weak)
+	host.add_child(_detail_weak)
 
 	_detail_immune = Label.new()
 	_detail_immune.position = Vector2(text_x, margin + 152)
 	_detail_immune.size = Vector2(text_w, 24)
 	_detail_immune.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_immune.add_theme_color_override("font_color", Color(0.533, 0.667, 1.0))
+	_detail_immune.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_immune.clip_text = false
 	_detail_immune.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	parent.add_child(_detail_immune)
+	host.add_child(_detail_immune)
 
 	_detail_resist = Label.new()
 	_detail_resist.position = Vector2(text_x, margin + 164)
 	_detail_resist.size = Vector2(text_w, 24)
 	_detail_resist.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_resist.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0))
+	_detail_resist.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_resist.clip_text = false
 	_detail_resist.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	parent.add_child(_detail_resist)
+	host.add_child(_detail_resist)
 
 	# Rewards (EXP + Gold) — high-priority autobattle/autogrind intel so
 	# players can plan farming runs. Amber color matches gold counter in
@@ -372,9 +398,10 @@ func _build_detail(parent: Control) -> void:
 	_detail_rewards.size = Vector2(text_w, 22)
 	_detail_rewards.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_rewards.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
+	_detail_rewards.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_rewards.clip_text = false
 	_detail_rewards.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	parent.add_child(_detail_rewards)
+	host.add_child(_detail_rewards)
 
 	# Drop table with chance percentages, autowrap so a long droplist
 	# wraps below the sprite area instead of overflowing the panel.
@@ -384,7 +411,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_drops.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_detail_drops.add_theme_color_override("font_color", Color(0.85, 0.9, 0.75))
 	_detail_drops.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	parent.add_child(_detail_drops)
+	host.add_child(_detail_drops)
 
 	_detail_tactic = Label.new()
 	_detail_tactic.position = Vector2(text_x, margin + 244)
@@ -392,17 +419,17 @@ func _build_detail(parent: Control) -> void:
 	_detail_tactic.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_detail_tactic.add_theme_color_override("font_color", Color(0.95, 0.85, 0.6))
 	_detail_tactic.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	parent.add_child(_detail_tactic)
+	host.add_child(_detail_tactic)
 
 	# Flavor text sits below the sprite & stats, full width
 	_detail_flavor = Label.new()
 	_detail_flavor.position = Vector2(margin, margin + sprite_size + 20)
-	_detail_flavor.size = Vector2(parent.size.x - margin * 2, parent.size.y - sprite_size - margin * 3 - 12)
+	_detail_flavor.size = Vector2(_detail_scroll.size.x - margin * 2, _detail_scroll.size.y - sprite_size - margin * 3 - 12)
 	_detail_flavor.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	_detail_flavor.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
 	_detail_flavor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_flavor.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	parent.add_child(_detail_flavor)
+	host.add_child(_detail_flavor)
 
 
 func _refresh_detail() -> void:
@@ -500,6 +527,8 @@ func _refresh_detail() -> void:
 	_detail_flavor.text = "\n\n".join(blocks)
 
 	_reflow_detail_column()
+	if _detail_scroll != null:
+		_detail_scroll.scroll_vertical = 0
 	_load_sprite(entry.id)
 	# Tick 194: silhouette undefeated entries so the visual gate matches the text intel gate (tick 147 docstring said "silhouette" but sprite shipped full-color).
 	_detail_sprite.modulate = Color.WHITE if defeated else SILHOUETTE_COLOR
@@ -524,9 +553,9 @@ func _refresh_detail() -> void:
 ##
 ## So a player who enlarged the text — the players who most need to read it
 ## — lost half of every monster's stats, and the overflow ran under Weak and
-## Resist. Reflowing from get_line_count() * get_line_height() is exact at
-## every scale and needs no per-scale constants, which is the point: a
-## threshold tuned for 2.0 would just break again at the next preset.
+## Resist. Stacking from the measured text height needs no per-scale constants,
+## which is the point: a threshold tuned for 2.0 would just break again at
+## the next preset.
 ##
 ## Flavor is full width, so it has to start BELOW this column. It used to sit
 ## at a fixed y under the sprite (margin + 180 + 20). Immune, the kill tally,
@@ -534,33 +563,150 @@ func _refresh_detail() -> void:
 ## text size Resist, EXP/Gold, the drop rates, and the tactic drew on top of
 ## the paragraph. The tactic's own y was a literal too, so a wrapping drop
 ## line landed on the hint.
+##
+## Height is lines * line_height PLUS the theme line_spacing between lines.
+## `lines * line_height` alone is short by spacing * (lines - 1). Measured on
+## Mordaine at 125%: the hint wraps to 4 lines, that product is 128px, and the
+## label's real minimum is 137px. The extra 9px eats the 6px gap and overlaps
+## the lore, whose remaining box is already shorter than one line (0 visible
+## lines). A second reflow does not heal it — the formula is stably short.
+## At 150% and 200% the correctly sized column is taller than the pane, so
+## the lore lives in _detail_scroll instead of being clipped to nothing.
 func _reflow_detail_column() -> void:
+	_layout_detail_column(0.0)
+	if _detail_scroll == null or _detail_flavor == null:
+		_sync_scroll_hint()
+		return
+	var bottom := _detail_flavor.position.y + _detail_flavor.size.y + 12.0
+	if bottom > _detail_scroll.size.y + 0.5:
+		var gutter := _detail_scroll.get_v_scroll_bar().size.x
+		if gutter < 1.0:
+			gutter = 12.0
+		_layout_detail_column(gutter)
+	_fit_detail_content()
+	_sync_scroll_hint()
+
+
+## Stack name through lore. `gutter` is the scrollbar width reserved once the
+## body is taller than the pane, so the second pass wraps against the width
+## the player will actually have.
+func _layout_detail_column(gutter: float) -> void:
 	var gap := 6.0
-	var y: float = _detail_stats.position.y
+	var margin := 20.0
+	var view_w := _detail_scroll.size.x if _detail_scroll != null else 0.0
+	if view_w <= 1.0 and _detail_flavor != null and _detail_flavor.get_parent() != null:
+		view_w = (_detail_flavor.get_parent() as Control).size.x
+	var content_w := maxf(1.0, view_w - gutter)
+	var text_x := _detail_name.position.x if _detail_name != null else margin
+	var text_w := maxf(1.0, content_w - text_x - margin)
+	var full_w := maxf(1.0, content_w - margin * 2.0)
+	var y: float = _detail_name.position.y if _detail_name != null else margin
 	# Empty rows still take a line. A Label clamps size.y back up to its
 	# font height, so collapsing them to 0 leaves the next row underneath.
-	for label in [_detail_stats, _detail_weak, _detail_immune, _detail_resist, _detail_rewards, _detail_drops, _detail_tactic]:
+	for label in [_detail_name, _detail_epithet, _detail_level, _detail_stats, _detail_weak, _detail_immune, _detail_resist, _detail_rewards, _detail_drops, _detail_tactic]:
 		if label == null:
 			continue
 		label.position.y = y
-		var lines: int = maxi(1, label.get_line_count())
-		var h: float = lines * label.get_line_height()
+		label.custom_minimum_size = Vector2.ZERO
+		label.size.x = text_w
+		var h := _text_block_height(label, text_w)
+		label.custom_minimum_size = Vector2(0, h)
 		label.size.y = h
 		y += h + gap
 	if _detail_flavor == null:
 		return
-	var parent := _detail_flavor.get_parent() as Control
-	if parent == null:
-		return
-	var margin := 20.0
 	var flavor_y := y
 	if _detail_sprite_bg != null:
 		var under_sprite := _detail_sprite_bg.position.y + _detail_sprite_bg.size.y + margin
 		if flavor_y < under_sprite:
 			flavor_y = under_sprite
 	_detail_flavor.position = Vector2(margin, flavor_y)
-	_detail_flavor.size = Vector2(parent.size.x - margin * 2.0, maxf(0.0, parent.size.y - flavor_y - 12.0))
+	_detail_flavor.custom_minimum_size = Vector2.ZERO
+	_detail_flavor.size.x = full_w
+	var flavor_h := _text_block_height(_detail_flavor, full_w)
+	_detail_flavor.custom_minimum_size = Vector2(0, flavor_h)
+	_detail_flavor.size.y = flavor_h
 	_detail_flavor.clip_text = true
+
+
+## Lines times line height, plus the theme's line_spacing between them.
+## The shaper's line count does not depend on the label's current height.
+## `lines * line_height` alone is short by spacing * (lines - 1), and the
+## label then grows into the next row. Take the label minimum too, read
+## from a tall box so a short rect cannot hide wrapped lines.
+func _text_block_height(label: Label, width: float) -> float:
+	var line_h := label.get_line_height()
+	var spacing := float(label.get_theme_constant("line_spacing"))
+	var lines := 1
+	var text := label.text
+	if text != "" and width > 1.0:
+		var font: Font = label.get_theme_font("font")
+		var font_size := label.get_theme_font_size("font_size")
+		if font != null and font_size > 0:
+			var tp := TextParagraph.new()
+			tp.break_flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE
+			tp.width = width
+			tp.add_string(text, font, font_size)
+			lines = maxi(1, tp.get_line_count())
+	label.size.x = width
+	label.size.y = 4000.0
+	lines = maxi(lines, label.get_line_count())
+	var h := line_h * float(lines) + spacing * float(maxi(0, lines - 1))
+	var wanted := label.get_minimum_size().y
+	if wanted > h:
+		h = wanted
+	return h
+
+
+func _fit_detail_content() -> void:
+	if _detail_scroll == null or _detail_content == null or _detail_flavor == null:
+		return
+	var bottom := _detail_flavor.position.y + _detail_flavor.size.y + 12.0
+	var gutter := 0.0
+	if bottom > _detail_scroll.size.y + 0.5:
+		gutter = _detail_scroll.get_v_scroll_bar().size.x
+		if gutter < 1.0:
+			gutter = 12.0
+	var w := maxf(1.0, _detail_scroll.size.x - gutter)
+	_detail_content.custom_minimum_size = Vector2(w, bottom)
+	_detail_content.size = Vector2(w, bottom)
+
+
+func _detail_overflows() -> bool:
+	if _detail_scroll == null or _detail_content == null:
+		return false
+	return _detail_content.custom_minimum_size.y > _detail_scroll.size.y + 1.0
+
+
+func _sync_scroll_hint() -> void:
+	if _footer == null:
+		return
+	if _detail_overflows():
+		_footer.text = _footer_base + "    Shift+↑↓ / R-Stick: Scroll"
+	else:
+		_footer.text = _footer_base
+
+
+func _detail_scroll_step() -> float:
+	if _detail_flavor != null:
+		return maxf(24.0, _detail_flavor.get_line_height())
+	return 32.0
+
+
+func _scroll_detail_by(dy: float) -> void:
+	if _detail_scroll == null:
+		return
+	var bar := _detail_scroll.get_v_scroll_bar()
+	var max_offset := 0.0
+	if bar != null:
+		max_offset = maxf(0.0, bar.max_value - bar.page)
+	_detail_scroll.scroll_vertical = int(clampf(_detail_scroll.scroll_vertical + dy, 0.0, max_offset))
+
+
+func _process(delta: float) -> void:
+	if absf(_detail_stick_y) < 0.5 or not _detail_overflows():
+		return
+	_scroll_detail_by(_detail_stick_y * 360.0 * delta)
 
 
 func _format_drops(drops: Array, one_shot) -> String:
@@ -666,6 +812,19 @@ func _input(event: InputEvent) -> void:
 		return
 	# MenuNav, not a raw read: ui_up/ui_down bind the left stick's Y axis as well as the d-pad, and
 	# an axis carries no echo flag — so one stick push used to step the cursor five rows.
+	# Shift+arrows and the right stick scroll the detail. Up/down stay on the list —
+	# shoulders already page it — so enlarged lore stays reachable without a second focus.
+	if event is InputEventKey and event.pressed and (event as InputEventKey).shift_pressed and _detail_overflows():
+		var keycode := (event as InputEventKey).keycode
+		if keycode == KEY_UP or keycode == KEY_DOWN:
+			_scroll_detail_by(_detail_scroll_step() * (-1.0 if keycode == KEY_UP else 1.0))
+			get_viewport().set_input_as_handled()
+			return
+	if event is InputEventJoypadMotion and (event as InputEventJoypadMotion).axis == JOY_AXIS_RIGHT_Y:
+		var axis_value := (event as InputEventJoypadMotion).axis_value
+		_detail_stick_y = 0.0 if absf(axis_value) < 0.5 else axis_value
+		get_viewport().set_input_as_handled()
+		return
 	var nav := MenuNav.step(event)
 	# page_delta CONSUMES the trigger axis, so a second read in the branch paged nothing on L2/R2.
 	var page := MenuPaging.page_delta(event)
@@ -696,6 +855,12 @@ func _input(event: InputEvent) -> void:
 		# Wheel scroll moves selection; right-click closes
 		# Through the owner, not a third copy of its body: this duplicated the modulo AND the three
 		# refresh calls, so it carried neither the empty guard nor the cue.
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			if _detail_overflows() and _detail_scroll != null and _detail_scroll.get_global_rect().has_point(event.position):
+				var wheel_dir := -1.0 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0
+				_scroll_detail_by(_detail_scroll_step() * 3.0 * wheel_dir)
+				get_viewport().set_input_as_handled()
+				return
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_nav_step(-1)
 			get_viewport().set_input_as_handled()

@@ -101,23 +101,39 @@ func test_detail_column_labels_never_overlap_at_any_text_size() -> void:
 
 
 func test_detail_column_stays_inside_the_panel_at_max_text_size() -> void:
-	# Reflowing pushes labels down; make sure the cure isn't an overflow.
-	# 2.0 is the largest preset, so it is the binding case.
+	# Reflowing pushes labels down. At 2.0x the column is taller than the pane;
+	# the cure is a scroll viewport that stays inside the panel, with the rows
+	# in the scroll content so they can be brought back on screen.
 	GameState.text_size_scale = 2.0
 	var menu = await _build_menu()
 	var stats = menu.get("_detail_stats")
 	var drops = menu.get("_detail_drops")
+	var scroll = menu.get("_detail_scroll")
 	assert_ne(stats, null, "detail labels must exist")
-	if stats == null or drops == null:
+	assert_ne(scroll, null, "detail scroll must exist")
+	if stats == null or drops == null or scroll == null:
 		return
 	stats.text = WORST_CASE
 	await wait_frames(2)
 	menu.call("_reflow_detail_column")
 	await wait_frames(1)
-	var panel = stats.get_parent()
+	var content := stats.get_parent() as Control
+	var panel := scroll.get_parent() as Control
+	assert_ne(content, null, "stats live in the scroll content")
+	assert_ne(panel, null, "the scroll lives in the detail panel")
+	if content == null or panel == null:
+		return
+	assert_lte(scroll.position.y + scroll.size.y, panel.size.y + 1.0,
+		"the detail scroll viewport must stay inside the panel at 2.0x — viewport ends at %s, panel is %s tall" % [scroll.position.y + scroll.size.y, panel.size.y])
 	var bottom: float = drops.position.y + drops.size.y
-	assert_lte(bottom, panel.size.y,
-		"the reflowed detail column must stay inside the panel at 2.0x text — column ends at %d, panel is %d tall" % [bottom, panel.size.y])
+	assert_lte(bottom, content.custom_minimum_size.y + 1.0,
+		"the drop row must sit inside the scroll content — row ends at %s, content is %s" % [bottom, content.custom_minimum_size.y])
+	scroll.scroll_vertical = 1000000
+	var max_offset := float(scroll.scroll_vertical)
+	scroll.scroll_vertical = 0
+	var needed := maxf(0.0, bottom - scroll.size.y)
+	assert_gte(max_offset + 1.0, needed,
+		"the drop row must be scrollable into view at 2.0x — need offset %s, scroll reaches %s" % [needed, max_offset])
 
 
 func test_magic_defense_is_shown_and_matches_what_combat_uses() -> void:
