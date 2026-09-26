@@ -377,13 +377,15 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	var top := Label.new()
 	top.name = "TopLine"
 	var alive: bool = cr.get("is_alive", true)
+	# A KO who was paid still needs the bar. A KO with +0 stays bar-less so the card keeps reading "KO".
+	var earned_down: bool = not alive and (int(cr.get("exp_gained", 0)) > 0 or bool(cr.get("leveled_up", false)))
 	top.text = "%s  %s" % [cr.get("name", "?"), "+0 EXP" if alive else "KO"]
 	top.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	top.add_theme_color_override("font_color", Color.WHITE if alive else Color(0.6, 0.45, 0.45))
 	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	v.add_child(top)
 
-	if alive:
+	if alive or earned_down:
 		var bar_bg := ColorRect.new()
 		bar_bg.name = "BarBg"
 		bar_bg.color = Color(0.15, 0.12, 0.25)
@@ -409,17 +411,19 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 
 
 func _animate_card_content(card: PanelContainer, cr: Dictionary, idx: int, delay: float, flourish: bool) -> void:
-	if not cr.get("is_alive", true):
+	var alive: bool = bool(cr.get("is_alive", true))
+	var exp_gained: int = int(cr.get("exp_gained", 0))
+	var leveled: bool = bool(cr.get("leveled_up", false))
+	# Posthumous Credit pays this while KO. Show the grant; do not play the victory pose on a corpse.
+	if not alive and exp_gained <= 0 and not leveled:
 		return
 	var top: Label = card.find_child("TopLine", true, false)
 	var bar_bg: ColorRect = card.find_child("BarBg", true, false)
 	var fill: ColorRect = card.find_child("BarFill", true, false)
 	var gains: Label = card.find_child("GainsLine", true, false)
 
-	var exp_gained: int = int(cr.get("exp_gained", 0))
 	var exp_before: int = int(cr.get("job_exp_before", 0))
 	var exp_to_next: int = maxi(1, int(cr.get("exp_to_next", 100)))
-	var leveled: bool = cr.get("leveled_up", false)
 	var bar_w := CARD_W - 76.0
 	var start_ratio := clampf(float(exp_before) / float(exp_to_next), 0.0, 1.0)
 	var end_ratio: float
@@ -431,7 +435,8 @@ func _animate_card_content(card: PanelContainer, cr: Dictionary, idx: int, delay
 	fill.size = Vector2(bar_w * start_ratio, 8)
 
 	var gains_text := _gains_line(cr)
-	var final_top := "%s  +%d EXP%s" % [cr.get("name", "?"), exp_gained, "  ★ Lv.%d" % int(cr.get("job_level", 1)) if leveled else ""]
+	var ko_mark := "" if alive else "  KO"
+	var final_top := "%s  +%d EXP%s%s" % [cr.get("name", "?"), exp_gained, "  ★ Lv.%d" % int(cr.get("job_level", 1)) if leveled else "", ko_mark]
 	_snaps.append(func() -> void:
 		if is_instance_valid(fill):
 			fill.size = Vector2(bar_w * end_ratio, 8)
@@ -455,11 +460,12 @@ func _animate_card_content(card: PanelContainer, cr: Dictionary, idx: int, delay
 		var shown := int(float(exp_gained) * s / steps)
 		tw.tween_callback(func() -> void:
 			if is_instance_valid(top):
-				top.text = "%s  +%d EXP" % [cr.get("name", "?"), shown]).set_delay(0.04)
+				top.text = "%s  +%d EXP%s" % [cr.get("name", "?"), shown, ko_mark]).set_delay(0.04)
 	if leveled:
 		tw.tween_property(fill, "size:x", bar_w, 0.35).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		tw.tween_callback(func() -> void:
-			_level_up_flare(card, fill, idx)
+			if alive:
+				_level_up_flare(card, fill, idx)
 			if is_instance_valid(top):
 				top.text = final_top
 			if is_instance_valid(gains) and gains_text != "":
