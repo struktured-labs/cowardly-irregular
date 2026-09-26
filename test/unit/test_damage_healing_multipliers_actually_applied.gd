@@ -28,10 +28,12 @@ func _take_damage_body() -> String:
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
 
+## heal()'s multiplier chain moved into heal_preview so the command menu could quote the number it
+## will deliver instead of replicating the formula. The delegation arm below pins the hand-off.
 func _heal_body() -> String:
 	var src := _read(COMBATANT)
-	var idx: int = src.find("func heal(amount: int)")
-	assert_gt(idx, -1, "heal must exist")
+	var idx: int = src.find("func heal_preview(amount: int)")
+	assert_gt(idx, -1, "heal_preview must exist — it owns the healing_multiplier read")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
@@ -57,17 +59,29 @@ func test_take_damage_clamps_damage_multiplier() -> void:
 func test_heal_reads_healing_multiplier_defensively() -> void:
 	var body := _heal_body()
 	assert_true(body.contains("game_constants.get(\"healing_multiplier\", 1.0)"),
-		"heal must read game_constants['healing_multiplier'] with .get(default=1.0)")
+		"heal_preview must read game_constants['healing_multiplier'] with .get(default=1.0)")
 	assert_true(body.contains("heal_amount = int(heal_amount * heal_mult)"),
-		"heal must apply heal_mult to heal_amount")
+		"heal_preview must apply heal_mult to heal_amount")
 
 
 func test_heal_clamps_healing_multiplier() -> void:
 	var body := _heal_body()
 	assert_true(body.contains("clampf("),
-		"heal must clampf the multiplier")
+		"heal_preview must clampf the multiplier")
 	assert_true(body.contains("0.1, 10.0"),
-		"heal healing_multiplier clamp must be [0.1, 10.0] — uniform band")
+		"heal_preview healing_multiplier clamp must be [0.1, 10.0] — uniform band")
+
+
+func test_heal_delegates_to_heal_preview() -> void:
+	## Every pin in this file reads heal_preview. If heal() stopped calling it they would all stay
+	## green while the constant reached no player — the dead-constant defect this file exists for.
+	var src := _read(COMBATANT)
+	var idx: int = src.find("func heal(amount: int)")
+	assert_gt(idx, -1, "heal must exist")
+	var next_fn: int = src.find("\nfunc ", idx + 1)
+	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
+	assert_true(body.contains("heal_preview(amount)"),
+		"heal() must add what heal_preview reports, or the multiplier is wired into nothing")
 
 
 func test_both_use_runtime_gamestate_lookup() -> void:

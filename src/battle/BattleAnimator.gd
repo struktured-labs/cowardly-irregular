@@ -140,6 +140,7 @@ var current_frame: int = 0
 var frame_timer: float = 0.0
 var is_playing: bool = false
 var loop_animation: bool = true
+var _real_time_victory: bool = false
 var on_animation_complete: Callable
 
 ## Reference to the sprite node
@@ -196,6 +197,7 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 	# Map state to animation name, degrading through the fallback chain if the sheet lacks it
 	var anim_name = _resolve_animation(_get_animation_name(state))
 
+	_sync_victory_rate()
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(anim_name):
 		sprite.play(anim_name)
 		animation_started.emit(state)
@@ -231,6 +233,7 @@ func set_idle() -> void:
 		play_animation(AnimState.IDLE, true)
 		return
 	current_state = AnimState.DEAD if want == "dead" else AnimState.IDLE
+	_sync_victory_rate()
 	loop_animation = want != "dead"
 	is_playing = false
 	if sprite:
@@ -592,6 +595,23 @@ func _resolve_animation(anim_name: String) -> String:
 		if sprite.sprite_frames.has_animation(name):
 			return name
 	return anim_name  # no chain entry resolved — caller warns + fires on_complete
+
+
+func _process(_delta: float) -> void:
+	_sync_victory_rate()
+
+
+## Victory plays in REAL time; battle speed is Engine.time_scale and the pose must not follow it (struktured 2026-09-26).
+func _sync_victory_rate() -> void:
+	if not sprite or not is_instance_valid(sprite):
+		return
+	if current_state == AnimState.VICTORY:
+		if Engine.time_scale > 0.0:
+			sprite.speed_scale = 1.0 / Engine.time_scale
+		_real_time_victory = true
+	elif _real_time_victory:
+		sprite.speed_scale = 1.0
+		_real_time_victory = false
 
 
 func _on_sprite_animation_finished() -> void:

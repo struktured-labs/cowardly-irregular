@@ -31,21 +31,35 @@ func _make_combatant(name_str: String) -> Combatant:
 	return c
 
 
-# ── Source pin: heal() reads PassiveSystem's healing_multiplier ─────
+# ── Source pin: heal_preview() reads PassiveSystem's healing_multiplier ─────
 
 func test_heal_reads_passive_healing_multiplier() -> void:
+	var src: String = FileAccess.get_file_as_string(COMBATANT_PATH)
+	## The chain moved into heal_preview so BattleCommandMenu could QUOTE it without replicating it;
+	## heal() adds what it reports. The arm below pins that hand-off.
+	var fn_idx: int = src.find("func heal_preview(amount: int)")
+	assert_gt(fn_idx, -1, "heal_preview must exist — it owns every multiplier a heal passes through")
+	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
+	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
+	assert_true(body.contains("PassiveSystem"),
+		"heal_preview() must consult PassiveSystem for the healing_multiplier")
+	assert_true(body.contains("passive_mods.get(\"healing_multiplier\""),
+		"heal_preview() must read healing_multiplier from passive_mods (was unused pre-fix)")
+	# Defensive clamp must match the game_constants band.
+	assert_true(body.contains("0.1, 10.0)"),
+		"passive healing_multiplier must clamp to [0.1, 10.0] (parity with game_constants read)")
+
+
+## The hand-off the pins above depend on: heal_preview owns the arithmetic, heal() is what every
+## caller reaches. Green up there with this red is a correct function nothing calls.
+func test_heal_delegates_to_heal_preview() -> void:
 	var src: String = FileAccess.get_file_as_string(COMBATANT_PATH)
 	var fn_idx: int = src.find("func heal(amount: int)")
 	assert_gt(fn_idx, -1, "heal must exist")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
-	assert_true(body.contains("PassiveSystem"),
-		"heal() must consult PassiveSystem for the healing_multiplier")
-	assert_true(body.contains("passive_mods.get(\"healing_multiplier\""),
-		"heal() must read healing_multiplier from passive_mods (was unused pre-fix)")
-	# Defensive clamp must match the game_constants band.
-	assert_true(body.contains("0.1, 10.0)"),
-		"passive healing_multiplier must clamp to [0.1, 10.0] (parity with game_constants read)")
+	assert_true(body.contains("heal_preview(amount)"),
+		"heal() must add what heal_preview reports, or the passive is wired into a function nothing calls")
 
 
 # ── Behavioral: heal(50) with healing_boost equipped scales up ──────
