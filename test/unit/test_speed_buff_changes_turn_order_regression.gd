@@ -101,3 +101,4 @@ func test_the_turn_order_strip_prints_the_buffed_speed() -> void:
 	var spd := row.get_child(row.get_child_count() - 1) as Label
 	assert_eq(spd.text, "30",
 		"the TURN ORDER number is what the player reads as speed — haste must change it")
+	row.free()
