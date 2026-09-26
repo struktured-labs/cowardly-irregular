@@ -2451,7 +2451,7 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 
 	# Masterite bosses use specialized AI
 	if combatant.has_meta("masterite") and combatant.get_meta("masterite"):
-		return _make_masterite_decision(combatant, alive_allies, alive_enemies, available_abilities)
+		return _lock_action_to_taunter(combatant, _make_masterite_decision(combatant, alive_allies, alive_enemies, available_abilities), alive_enemies)
 
 	# Check for adaptive behavior (enemy AI learns from player patterns)
 	var adaptation_level = _get_current_adaptation_level()
@@ -2482,7 +2482,7 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 			var counter_action = _get_counter_action(combatant, counter_strategy, alive_allies, alive_enemies, available_abilities)
 			if not counter_action.is_empty():
 				battle_log_message.emit("The enemy anticipates your strategy...")
-				return counter_action
+				return _lock_action_to_taunter(combatant, counter_action, alive_enemies)
 
 	# Determine AI archetype from stats and abilities
 	var archetype = _get_ai_archetype(combatant, available_abilities)
@@ -2525,20 +2525,21 @@ func _get_ai_archetype(combatant: Combatant, available_abilities: Array) -> Stri
 
 func _execute_archetype_ai(combatant: Combatant, archetype: String, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
 	"""Execute AI logic based on archetype"""
-
+	var action := {}
 	match archetype:
 		"healer":
-			return _ai_healer(combatant, abilities, alive_allies, alive_enemies)
+			action = _ai_healer(combatant, abilities, alive_allies, alive_enemies)
 		"caster":
-			return _ai_caster(combatant, abilities, alive_enemies)
+			action = _ai_caster(combatant, abilities, alive_enemies)
 		"debuffer":
-			return _ai_debuffer(combatant, abilities, alive_allies, alive_enemies)
+			action = _ai_debuffer(combatant, abilities, alive_allies, alive_enemies)
 		"tank":
-			return _ai_tank(combatant, abilities, alive_allies, alive_enemies)
+			action = _ai_tank(combatant, abilities, alive_allies, alive_enemies)
 		"assassin":
-			return _ai_assassin(combatant, abilities, alive_enemies)
+			action = _ai_assassin(combatant, abilities, alive_enemies)
 		_:
-			return _ai_brute(combatant, abilities, alive_enemies)
+			action = _ai_brute(combatant, abilities, alive_enemies)
+	return _lock_action_to_taunter(combatant, action, alive_enemies)
 
 
 func _ai_healer(combatant: Combatant, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
@@ -3109,6 +3110,33 @@ func _find_taunter(attacker: Combatant, targets: Array) -> Combatant:
 			if is_instance_valid(t) and t is Combatant and t.is_alive and t.combatant_name == taunter_name:
 				return t
 	return null
+
+
+## Assassin bites and a tank's plain swing never call _choose_target, so Provoke did not move them. Single-target hits aimed at the party retarget; self, allies, and multi-target rows stay.
+func _lock_action_to_taunter(combatant: Combatant, action: Dictionary, alive_enemies: Array) -> Dictionary:
+	if action.is_empty() or combatant == null:
+		return action
+	var kind := str(action.get("type", ""))
+	if kind == "advance":
+		var steps: Array = action.get("actions", [])
+		for i in steps.size():
+			if typeof(steps[i]) == TYPE_DICTIONARY:
+				steps[i] = _lock_action_to_taunter(combatant, steps[i], alive_enemies)
+		return action
+	var taunter := _find_taunter(combatant, alive_enemies)
+	if taunter == null:
+		return action
+	if kind == "attack":
+		var target = action.get("target")
+		if is_instance_valid(target) and alive_enemies.has(target):
+			action["target"] = taunter
+		return action
+	if kind == "ability":
+		var targets: Array = action.get("targets", [])
+		if targets.size() == 1 and is_instance_valid(targets[0]) and alive_enemies.has(targets[0]):
+			action["targets"] = [taunter]
+		return action
+	return action
 
 
 ## Execution Phase

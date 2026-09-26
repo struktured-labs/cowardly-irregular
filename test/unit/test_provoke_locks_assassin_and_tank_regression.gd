@@ -102,3 +102,39 @@ func test_a_taunted_tank_still_buffs_itself() -> void:
 	assert_eq(str(action.get("ability_id", "")), "frost_armor", "CONTROL: the utility roll fired")
 	assert_eq(action.get("targets"), [king],
 		"a self buff must stay on the caster when Provoke is up")
+
+
+func test_a_taunted_tank_still_hits_the_whole_party_with_an_aoe() -> void:
+	var fighter := _body("Fighter", 400, 400, 10, 20, 10, 8)
+	var bard := _body("Bard", 200, 200, 10, 10, 10, 10)
+	var king := _body("Supervisor", 500, 2000, 40, 280, 10, 8)
+	king.add_status("taunted_Fighter", 2)
+	var review := {"id": "performance_review", "type": "support", "target_type": "all_enemies"}
+	var action := {}
+	for _i in 80:
+		var rolled: Dictionary = _bm._execute_archetype_ai(king, "tank", [review], [king], [fighter, bard])
+		if str(rolled.get("ability_id", "")) == "performance_review":
+			action = rolled
+			break
+	assert_eq(str(action.get("ability_id", "")), "performance_review", "CONTROL: the utility roll fired")
+	var targets: Array = action.get("targets", [])
+	assert_eq(targets.size(), 2, "an all-enemies row stays the whole party under Provoke")
+	assert_true(fighter in targets and bard in targets, "both heroes stay in the AoE")
+
+
+func test_an_advance_keeps_the_self_guard_and_moves_the_swing() -> void:
+	var fighter := _body("Fighter", 400, 400, 10, 20, 10, 8)
+	var bard := _body("Bard", 40, 200, 90, 10, 90, 8)
+	var king := _body("Warden", 6500, 6500, 40, 280, 10, 8)
+	king.add_status("taunted_Fighter", 2)
+	var action := {
+		"type": "advance",
+		"actions": [
+			{"type": "ability", "ability_id": "masterite_iron_guard", "targets": [king]},
+			{"type": "ability", "ability_id": "masterite_crushing_blow", "targets": [bard]},
+		],
+	}
+	var locked: Dictionary = _bm._lock_action_to_taunter(king, action, [fighter, bard])
+	var steps: Array = locked.get("actions", [])
+	assert_eq(steps[0].get("targets"), [king], "the guard stays on the warden")
+	assert_eq(steps[1].get("targets"), [fighter], "the swing moves onto the provoker")
