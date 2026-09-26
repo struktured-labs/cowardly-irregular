@@ -11,7 +11,7 @@ const SceneScript = preload("res://src/battle/BattleScene.gd")
 const _STUB := """
 extends Node
 var _spotlight_duel_active: bool = false
-var _spotlight_saved_party: Array = []
+var _spotlight_saved_party: Array[Combatant] = []
 """
 
 var _saved_party: Array
@@ -42,7 +42,8 @@ func before_each() -> void:
 	_gl.name = "GameLoop"
 	get_tree().root.add_child(_gl)
 	_gl.set("_spotlight_duel_active", false)
-	_gl.set("_spotlight_saved_party", [])
+	var empty: Array[Combatant] = []
+	_gl.set("_spotlight_saved_party", empty)
 
 
 func after_each() -> void:
@@ -87,9 +88,16 @@ func _enemy() -> Combatant:
 	return e
 
 
+func _typed_roster(roster: Array) -> Array[Combatant]:
+	var saved: Array[Combatant] = []
+	for member in roster:
+		saved.append(member)
+	return saved
+
+
 func _bench(duelist: Combatant, roster: Array) -> void:
 	_gl.set("_spotlight_duel_active", true)
-	_gl.set("_spotlight_saved_party", roster)
+	_gl.set("_spotlight_saved_party", _typed_roster(roster))
 	var field: Array[Combatant] = [duelist]
 	BattleManager.player_party.assign(field)
 	BattleManager.selection_order.assign(field)
@@ -112,6 +120,28 @@ func _menu_ids(duelist: Combatant) -> Array:
 	add_child_autofree(scene)
 	var rows: Array = MenuScript.new(scene).build_command_menu_items_with_targets(duelist)
 	return rows.map(func(r): return str(r.get("id", "")))
+
+
+func _item_row_ids(duelist: Combatant) -> Array:
+	var scene = autofree(SceneScript.new())
+	var field: Array[Combatant] = [duelist]
+	scene.party_members.assign(field)
+	var foe := _enemy()
+	scene.test_enemies.assign([foe] as Array[Combatant])
+	var s := AnimatedSprite2D.new()
+	add_child_autofree(s)
+	scene.party_sprite_nodes.append(s)
+	var es := AnimatedSprite2D.new()
+	add_child_autofree(es)
+	scene.enemy_sprite_nodes.append(es)
+	add_child_autofree(scene)
+	var rows: Array = MenuScript.new(scene).build_command_menu_items_with_targets(duelist)
+	for row in rows:
+		if str(row.get("id", "")) != "item_menu":
+			continue
+		var sub: Array = row.get("submenu", [])
+		return sub.map(func(item): return str(item.get("id", "")))
+	return []
 
 
 func test_the_clerics_duel_lists_the_fighters_potion() -> void:
@@ -153,7 +183,7 @@ func test_the_bench_stays_closed_when_this_is_not_a_duel() -> void:
 	var cleric := _pc("Cleric", "cleric")
 	fighter.add_item("potion", 1)
 	_gl.set("_spotlight_duel_active", false)
-	_gl.set("_spotlight_saved_party", [fighter, cleric])
+	_gl.set("_spotlight_saved_party", _typed_roster([fighter, cleric]))
 	var field: Array[Combatant] = [cleric]
 	BattleManager.player_party.assign(field)
 	var before := cleric.current_hp
@@ -172,3 +202,27 @@ func test_an_enemy_in_a_duel_does_not_drink_the_bench() -> void:
 	BattleManager._execute_item(goblin, "potion", [goblin])
 	assert_eq(fighter.get_item_count("potion"), 1, "the duel enemy reached into the benched bag")
 	assert_eq(goblin.current_hp, 900, "the goblin healed itself from the party's potion")
+
+
+func test_the_clerics_duel_lists_the_fighters_phoenix_down() -> void:
+	var fighter := _pc("Fighter", "fighter")
+	var cleric := _pc("Cleric", "cleric")
+	fighter.add_item("phoenix_down", 1)
+	assert_eq(cleric.get_item_count("phoenix_down"), 0, "CONTROL: the duelist is not holding the feather")
+	_bench(cleric, [fighter, cleric])
+	assert_true(_item_row_ids(cleric).has("item_menu_phoenix_down"),
+		"Phoenix Down stayed in the benched Fighter's pockets, so the Item list never offered it")
+
+
+func test_a_downed_duelist_spends_the_benched_phoenix_down() -> void:
+	var fighter := _pc("Fighter", "fighter")
+	var cleric := _pc("Cleric", "cleric")
+	fighter.add_item("phoenix_down", 1)
+	cleric.current_hp = 0
+	cleric.is_alive = false
+	_bench(cleric, [fighter, cleric])
+	BattleManager._execute_item(cleric, "phoenix_down", [cleric])
+	assert_true(cleric.is_alive, "the feather never landed — the duel only searched the Cleric")
+	assert_gt(cleric.current_hp, 0, "Phoenix Down revived the duelist with no HP")
+	assert_eq(fighter.get_item_count("phoenix_down"), 0, "the feather must come out of the benched Fighter's bag")
+	assert_eq(cleric.get_item_count("phoenix_down"), 0, "the duel must not mint a feather onto the Cleric")
