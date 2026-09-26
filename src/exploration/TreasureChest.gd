@@ -26,6 +26,10 @@ const FLAT_NAME_FONT: int = 10
 ## State
 var _is_opened: bool = false
 var _player_nearby: bool = false
+## Found-line is still on screen. A second confirm must not swap it for "empty".
+var _showing_loot: bool = false
+## Bumped when a popup is replaced or the player steps away, so a stale timer cannot hide the new one.
+var _popup_gen: int = 0
 
 const TILE_SIZE: int = 32
 
@@ -345,20 +349,47 @@ func _on_body_exited(body: Node2D) -> void:
 		_player_nearby = false
 		name_label.visible = false
 		dialogue_box.visible = false
+		_showing_loot = false
+		_popup_gen += 1
 
 
 func interact(player: Node2D) -> void:
+	if _showing_loot:
+		return
 	if _is_opened:
-		_clamp_dialogue_box_to_viewport()
-		dialogue_box.visible = true
-		dialogue_label.text = "The chest is empty."
-		await get_tree().create_timer(1.0).timeout
-		if not is_instance_valid(self) or not is_instance_valid(dialogue_box):
-			return
-		dialogue_box.visible = false
+		_clamp_dialogue_box_to_viewport() # opened re-interact clips at the wall unless this runs before the notice
+		_show_empty_notice()
 		return
 
 	_open_chest(player)
+
+
+func _next_popup() -> int:
+	_popup_gen += 1
+	return _popup_gen
+
+
+## The found line slides the label aside for the icon. The empty reread must not keep either.
+func _clear_loot_presentation() -> void:
+	_set_loot_icon("")
+	if dialogue_label == null:
+		return
+	dialogue_label.position = Vector2(-112, -102)
+	dialogue_label.size = Vector2(224, 44)
+	dialogue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dialogue_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+
+
+func _show_empty_notice() -> void:
+	var gen := _next_popup()
+	_clear_loot_presentation()
+	_clamp_dialogue_box_to_viewport()
+	dialogue_box.visible = true
+	dialogue_label.text = "The chest is empty."
+	await get_tree().create_timer(1.0).timeout
+	if gen != _popup_gen or not is_instance_valid(self) or not is_instance_valid(dialogue_box):
+		return
+	dialogue_box.visible = false
 
 
 ## Chest popup at (-120, -110) relative to the chest world position clips at dungeon-room edges when the chest sits close to a wall (struktured playtest msg 2802). Same class as the old local-panel cutoff bug that NPCDialogue was created to fix. Clamp the panel's world position inside the visible viewport with a 16px margin by shifting dialogue_box.position.
@@ -421,6 +452,8 @@ func _clamp_dialogue_box_to_viewport() -> void:
 
 func _open_chest(player: Node2D) -> void:
 	_is_opened = true
+	_showing_loot = true
+	var gen := _next_popup()
 	GameState.set_story_flag("chest_" + chest_id)
 
 	# Play sound
@@ -508,10 +541,13 @@ func _open_chest(player: Node2D) -> void:
 			"equipment":
 				SoundManager.play_music("stinger_item_found")
 
-	# Hide after delay
+	# Hide after delay. A step-away or a later empty reread bumps _popup_gen, so this must not dismiss that line.
 	await get_tree().create_timer(2.0).timeout
 	if not is_instance_valid(self) or not is_instance_valid(dialogue_box):
 		return
+	if gen != _popup_gen:
+		return
+	_showing_loot = false
 	dialogue_box.visible = false
 
 
