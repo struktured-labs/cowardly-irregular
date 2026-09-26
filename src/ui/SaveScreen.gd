@@ -505,12 +505,7 @@ func _do_save(slot: int) -> void:
 		_close()
 	else:
 		SoundManager.play_ui("menu_error")
-		# SaveSystem refuses to save during battle (transient queued state,
-		# mid-animation HP). That's the most common failure mode by far —
-		# default the message to it. Other failures (disk full, permissions)
-		# are vanishingly rare in practice but still get the same visible
-		# notification rather than a silent SFX.
-		Toast.show_warning(self, "Save failed (battle in progress or disk write error)")
+		# save_failed already toasts the real blocker. A second banner here blamed a battle for every refusal, including a save opened inside a room.
 
 
 func _show_overwrite_confirmation(slot: int) -> void:

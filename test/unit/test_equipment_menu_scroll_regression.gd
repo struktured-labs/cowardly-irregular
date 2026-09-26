@@ -4,7 +4,7 @@ extends GutTest
 ##
 ## Bug: _create_items_panel rendered `for i in range(min(items.size(), max_visible))`
 ## with NO scroll offset, while _handle_item_input wraps selected_item_index modulo
-## the FULL items list. With >max_visible (~9 at 720p) items in a slot, selecting
+## the FULL items list. With more items than the panel can show, selecting
 ## item 10+ rendered no matching row and the cursor (keyed on index == selected_item_index)
 ## vanished — items beyond the visible window were invisible and unequippable via
 ## gamepad/keyboard. This is the project's silent-failure class: no crash, content
@@ -71,7 +71,7 @@ func test_panel_caps_rows_at_max_visible() -> void:
 	var panel = menu._create_items_panel(PANEL_SIZE)
 	add_child_autofree(panel)
 
-	var max_visible = int((PANEL_SIZE.y - 50) / 60)
+	var max_visible = int((PANEL_SIZE.y - 50) / menu._choice_stride())
 	var visible = _visible_indices(panel)
 	assert_eq(visible.size(), max_visible,
 		"Should render exactly max_visible rows, not all %d items" % 20)
@@ -82,9 +82,9 @@ func test_panel_caps_rows_at_max_visible() -> void:
 func test_selection_past_window_stays_rendered() -> void:
 	"""Core regression: a selection beyond max_visible must still render its row."""
 	var menu = _make_menu(20)
-	var max_visible = int((PANEL_SIZE.y - 50) / 60)
+	var max_visible = int((PANEL_SIZE.y - 50) / menu._choice_stride())
 
-	# Selecting item index 15 (well past the ~9 visible rows) must keep it on-screen.
+	# Selecting item index 15 (past the visible window) must keep it on-screen.
 	menu.selected_item_index = 15
 	var panel = menu._create_items_panel(PANEL_SIZE)
 	add_child_autofree(panel)
@@ -113,7 +113,7 @@ func test_scroll_window_follows_selection() -> void:
 	"""A forward jump past the window lands the selection on its bottom row — still true under
 	the sticky window, because there is nothing below it yet to show."""
 	var menu = _make_menu(20)
-	var max_visible = int((PANEL_SIZE.y - 50) / 60)
+	var max_visible = int((PANEL_SIZE.y - 50) / menu._choice_stride())
 
 	menu.selected_item_index = 12
 	var panel = menu._create_items_panel(PANEL_SIZE)

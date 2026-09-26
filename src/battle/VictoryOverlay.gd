@@ -547,7 +547,7 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 	for drop in item_drops:
 		var qty: int = int(drop.get("qty", 1))
 		var txt: String = "+ %s%s" % [drop.get("name", "?"), " x%d" % qty if qty > 1 else ""]
-		chips.append([txt, txt, Color(0.6, 0.9, 1.0), "item"])
+		chips.append([txt, txt, Color(0.6, 0.9, 1.0), "item", str(drop.get("item", ""))])
 	for bonus in bonuses:
 		if bonus.get("type", "") == "one_shot":
 			chips.append(["ONE-SHOT x%.1f" % bonus.get("multiplier", 1.0), "ONE-SHOT x%.1f" % bonus.get("multiplier", 1.0), Color(1.0, 0.9, 0.0), "bonus"])
@@ -562,10 +562,22 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 	for chip in chips:
 		var lbl := Label.new()
 		lbl.text = chip[1]
-		lbl.add_theme_font_size_override("font_size", TextScale.scaled(14))
+		var chip_px := TextScale.scaled(14)
+		lbl.add_theme_font_size_override("font_size", chip_px)
 		lbl.add_theme_color_override("font_color", chip[2])
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		h.add_child(lbl)
+		var icon_id := str(chip[4]) if chip.size() > 4 else ""
+		if icon_id != "":
+			var row := HBoxContainer.new()
+			row.name = "LootItem"
+			row.add_theme_constant_override("separation", 4)
+			row.alignment = BoxContainer.ALIGNMENT_CENTER
+			row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			row.add_child(ItemIcons.make_rect(icon_id, 32))
+			row.add_child(lbl)
+			h.add_child(row)
+		else:
+			h.add_child(lbl)
 		labels.append(lbl)
 
 	# center-bottom, above the hint bar
@@ -582,7 +594,10 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 		for li in range(labels.size()):
 			if is_instance_valid(labels[li]):
 				labels[li].text = chips[li][1]
-				labels[li].modulate.a = 1.0)
+				labels[li].modulate.a = 1.0
+				var holder := labels[li].get_parent() as CanvasItem
+				if holder != null and str(holder.name) == "LootItem":
+					holder.modulate.a = 1.0)
 	if not flourish:
 		return
 
@@ -594,10 +609,14 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 	for li in range(labels.size()):
 		var lbl: Label = labels[li]
 		var kind: String = chips[li][3]
-		lbl.modulate.a = 0.0
+		var fade: CanvasItem = lbl
+		var holder := lbl.get_parent() as CanvasItem
+		if holder != null and str(holder.name) == "LootItem":
+			fade = holder
+		fade.modulate.a = 0.0
 		var ctw := _track(create_tween())
 		ctw.tween_interval(base_delay + 0.25 + li * 0.22)
-		ctw.tween_property(lbl, "modulate:a", 1.0, 0.12)
+		ctw.tween_property(fade, "modulate:a", 1.0, 0.12)
 		if kind == "gold":
 			ctw.tween_callback(func() -> void: SoundManager.play_pickup("gold_pickup"))
 			var gold_final: String = chips[li][1]
