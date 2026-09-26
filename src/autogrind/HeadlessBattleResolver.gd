@@ -379,7 +379,9 @@ func _selection_phase() -> Array[Dictionary]:
 
 func _speed_for(action: Dictionary, combatant) -> int:
 	var base = ACTION_SPEEDS.get(action.get("type", "attack"), 5)
-	var speed_value: int = base - combatant.speed
+	## Haste and slow live in buffs. Reading the raw field made a grind ignore them.
+	var spd: int = int(combatant.get_buffed_stat("speed", int(combatant.speed)))
+	var speed_value: int = base - spd
 	## quick_strike is the only author, is described "always goes first", and the grind sorted it by
 	## ordinary speed — so a grinding Ninja's signature move landed mid-queue.
 	if _ability_has_priority(str(action.get("ability_id", ""))):
