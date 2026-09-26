@@ -3581,28 +3581,139 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 
 		# Retarget for abilities/items
 		if action.has("targets"):
-			var new_targets = []
-			var revives: bool = _action_revives(action)
-			for target in action["targets"]:
-				var is_alive_in_battle = (is_instance_valid(target)
-					and target is Combatant
-					and target.is_alive
-					and (target in player_party or target in enemy_party))
-				var is_dead_ally_in_battle = (is_instance_valid(target)
-					and target is Combatant
-					and not target.is_alive
-					and target in player_party)
-				if is_alive_in_battle or (revives and is_dead_ally_in_battle):
-					new_targets.append(target)
-				else:
-					# Replace dead/freed/stale targets with first alive enemy
-					var alive_enemies = _get_alive_enemies()
-					if alive_enemies.size() > 0:
-						new_targets.append(alive_enemies[0])
-			action["targets"] = new_targets
+			if str(action.get("type", "")) == "item":
+				action["targets"] = _retarget_repeated_item_targets(combatant, action)
+			else:
+				var new_targets = []
+				var revives: bool = _action_revives(action)
+				for target in action["targets"]:
+					var is_alive_in_battle = (is_instance_valid(target)
+						and target is Combatant
+						and target.is_alive
+						and (target in player_party or target in enemy_party))
+					var is_dead_ally_in_battle = (is_instance_valid(target)
+						and target is Combatant
+						and not target.is_alive
+						and target in player_party)
+					if is_alive_in_battle or (revives and is_dead_ally_in_battle):
+						new_targets.append(target)
+					else:
+						# Replace dead/freed/stale targets with first alive enemy
+						var alive_enemies = _get_alive_enemies()
+						if alive_enemies.size() > 0:
+							new_targets.append(alive_enemies[0])
+				action["targets"] = new_targets
 
 		_queue_action(action)
 		print("[REPEAT] %s: queued %s" % [combatant.combatant_name, action["type"]])
+
+
+## Y-repeat item targets. Living bodies stay (a revive also keeps its corpse). A KO'd non-revive ally slot moves to a living ally who is in neither the saved list nor the rebuilt list; an all-allies item that already names another living ally drops that slot. The same combatant is never queued twice. An empty ally-item result with someone still standing becomes that lowest-HP ally. Nobody valid at all stays empty so _execute_item fizzles without spending.
+func _retarget_repeated_item_targets(combatant: Combatant, action: Dictionary) -> Array:
+	var saved: Array = (action.get("targets", []) as Array).duplicate()
+	var revives: bool = _action_revives(action)
+	var ally_item: bool = _repeat_item_stays_on_allies(action)
+	var all_allies: bool = _repeat_item_targets_all_allies(action)
+	var rebuilt: Array = []
+	for target in saved:
+		var living: bool = _repeat_body_is_living(target)
+		var dead_ally: bool = _repeat_body_is_dead_ally(target)
+		if living or (revives and dead_ally):
+			_append_repeat_target(rebuilt, target)
+			continue
+		if not revives and dead_ally and ally_item:
+			if all_allies and _saved_lists_another_living_ally(saved, target):
+				continue
+			var blocked: Array = _repeat_listed_bodies(saved)
+			for already in rebuilt:
+				if not blocked.has(already):
+					blocked.append(already)
+			_append_repeat_target(rebuilt, _lowest_living_ally_except(combatant, blocked))
+			continue
+		var alive_enemies := _get_alive_enemies()
+		if alive_enemies.size() > 0:
+			_append_repeat_target(rebuilt, alive_enemies[0])
+	if rebuilt.is_empty() and ally_item and not revives:
+		_append_repeat_target(rebuilt, _living_ally_for_repeat(combatant, null))
+	return rebuilt
+
+
+func _repeat_body_is_living(target: Variant) -> bool:
+	return is_instance_valid(target) and target is Combatant and (target as Combatant).is_alive and (target in player_party or target in enemy_party)
+
+
+func _repeat_body_is_dead_ally(target: Variant) -> bool:
+	return is_instance_valid(target) and target is Combatant and not (target as Combatant).is_alive and target in player_party
+
+
+func _saved_lists_another_living_ally(saved: Array, slot: Variant) -> bool:
+	for target in saved:
+		if target == slot:
+			continue
+		if _repeat_body_is_living(target) and target in player_party:
+			return true
+	return false
+
+
+func _repeat_listed_bodies(saved: Array) -> Array:
+	var bodies: Array = []
+	for target in saved:
+		if is_instance_valid(target) and target is Combatant and not bodies.has(target):
+			bodies.append(target)
+	return bodies
+
+
+func _append_repeat_target(into: Array, body: Variant) -> void:
+	if body == null or not is_instance_valid(body) or not (body is Combatant):
+		return
+	if into.has(body):
+		return
+	into.append(body)
+
+
+## Lowest living ally by the same HP% order as _retarget_ally, skipping anyone already saved or rebuilt.
+func _lowest_living_ally_except(caster: Combatant, blocked: Array) -> Combatant:
+	var ally_party: Array = player_party if caster in player_party else enemy_party
+	var valid: Array = []
+	for t in ally_party:
+		if t == null or not is_instance_valid(t) or not (t is Combatant) or not (t as Combatant).is_alive:
+			continue
+		if blocked.has(t):
+			continue
+		valid.append(t)
+	if valid.is_empty():
+		return null
+	valid.sort_custom(func(a, b): return (a as Combatant).get_hp_percentage() < (b as Combatant).get_hp_percentage())
+	return valid[0]
+
+
+## Single-ally, all-allies, and self consumables repeat onto allies. Enemy items and revives do not — those keep the enemy fallback and the dead-ally admit above.
+func _repeat_item_stays_on_allies(action: Dictionary) -> bool:
+	if str(action.get("type", "")) != "item" or ItemSystem == null:
+		return false
+	var item := ItemSystem.get_item(str(action.get("item_id", "")))
+	if item.is_empty():
+		return false
+	var tt := int(item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY))
+	return tt == ItemSystem.TargetType.SINGLE_ALLY or tt == ItemSystem.TargetType.ALL_ALLIES or tt == ItemSystem.TargetType.SELF
+
+
+## Mega Potion, Mega Ether, Tent, Megalixir: the saved target list is already the party.
+func _repeat_item_targets_all_allies(action: Dictionary) -> bool:
+	if str(action.get("type", "")) != "item" or ItemSystem == null:
+		return false
+	var item := ItemSystem.get_item(str(action.get("item_id", "")))
+	if item.is_empty():
+		return false
+	return int(item.get("target_type", -1)) == ItemSystem.TargetType.ALL_ALLIES
+
+
+## Lowest living ally, ignoring a stale body from another battle. A dead ally in this party is only a seed _retarget_ally will replace.
+func _living_ally_for_repeat(caster: Combatant, original: Variant) -> Combatant:
+	var seed: Combatant = null
+	if is_instance_valid(original) and original is Combatant and (original as Combatant) in player_party:
+		seed = original
+	return _retarget_ally(caster, seed, false)
 
 
 ## 2026-07-14 (cowir-music msg 2539): a repeated action against a KO'd ally was routed to the first alive enemy — Phoenix Down + Raise-family abilities EXPECT dead targets. True when the action revives.
@@ -7531,8 +7642,8 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 				if new_target:
 					retargeted.append(new_target)
 
-	if retargeted.size() == 0 and targets.size() > 0:
-		# Tick 221: symmetric battle-log surface with _execute_ability's fizzle path (line ~2690). Item targets all died between selection and execution — player needs to know why nothing happened.
+	# An empty list used to miss this check, so use_item still printed and the bag still lost the item. Escape does not need a body.
+	if retargeted.is_empty() and not wants_escape:
 		print("%s's item fizzles - no valid targets!" % user.combatant_name)
 		var item_display: String = item_id.replace("_", " ").capitalize()
 		battle_log_message.emit("[color=gray]%s's %s fizzles — no valid targets.[/color]" % [user.combatant_name, item_display])
