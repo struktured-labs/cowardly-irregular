@@ -1666,7 +1666,7 @@ func _apply_command_memory() -> void:
 ## The real toggle is JOY_BUTTON_Y — north/top face, physically X on the Nintendo-layout pads this
 ## game targets — plus the ` key. BattleScene.gd carries the same string; keep them in step.
 const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select/Back/Share] Auto"
-const HINT_KEYBOARD_TEXT := "[L] Defer  ·  [R] Advance  ·  [`] Speed  ·  [Tab] Auto"
+const HINT_KEYBOARD_TEXT := "[Q] Defer  ·  [W] Advance  ·  [`] Speed  ·  [Tab] Auto"
 
 
 ## The bar is on screen for the whole game and named Nintendo face letters unconditionally. Speed
@@ -1683,13 +1683,26 @@ static func speed_hint() -> String:
 	return "X" if g == "?" else g
 
 
+## The keyboard bar, derived like the pad bar: it read a frozen "[L] … [R]" and went stale the day the
+## shoulders moved to Q/W. Speed is the raw ` key (no action), so it stays written.
+static func _keyboard_hint_text() -> String:
+	if not InputProfileManager:
+		return HINT_KEYBOARD_TEXT
+	var defer: String = InputProfileManager.hint_for_action("battle_defer")
+	var adv: String = InputProfileManager.hint_for_action("battle_advance")
+	var auto: String = InputProfileManager.hint_for_action("battle_toggle_auto")
+	if defer == "" or adv == "" or auto == "":
+		return HINT_KEYBOARD_TEXT
+	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [%s] Auto" % [defer, adv, auto]
+
+
 static func hint_text() -> String:
 	# NO PAD = KEYBOARD VOCABULARY. Measured 2026-09-11: with zero pads this returned
 	# "Ⓨ Speed · [Select] Auto" — a pad glyph and a pad button, neither of which exists on a
 	# keyboard. The real keys are ` and Tab. face_glyph_for_index falls back to the xbox family
 	# rather than "?", so the HINT_DEFAULT_TEXT path never ran and the [X] literal was moot.
 	if Input.get_connected_joypads().is_empty():
-		return HINT_KEYBOARD_TEXT
+		return _keyboard_hint_text()
 	if not InputProfileManager:
 		return HINT_DEFAULT_TEXT
 	var speed: String = InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y)
@@ -1785,7 +1798,7 @@ func _update_hint_bar() -> void:
 		# hint_for_action names the pad's own button when there IS one and the KEY when there is not.
 		var g_ok: String = InputProfileManager.hint_for_action("ui_accept")
 		var g_no: String = InputProfileManager.hint_for_action("ui_cancel")
-		# HOLD/tap use battle_defer — "L" is the keyboard key AND Nintendo's shoulder; Xbox calls it
+		# HOLD/tap use battle_defer — derived, since a bare letter names one input only; Xbox calls it
 		# LB and PlayStation L1, so the bare letter was right on one family only.
 		var g_l: String = InputProfileManager.hint_for_action("battle_defer")
 		if n >= root._max_queue_size:
