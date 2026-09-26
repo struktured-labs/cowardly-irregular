@@ -31,9 +31,25 @@ func _sentinel_targets() -> Array:
 	assert_gt(start, 0, "the transition entry point still exists — every target_map arrives through it")
 	var end := src.find("\nfunc ", start + 1)
 	var body: String = src.substr(start, end - start) if end > start else src.substr(start)
+	# One call down counts. village_return is rewritten in the helper the entry
+	# point calls before the dispatch; scanning only the entry point reported
+	# zero sentinels and then treated that real token as a typo.
+	var seen := {"_on_area_transition": true}
+	for m in RegEx.create_from_string("\\b(_[A-Za-z0-9]+)\\(").search_all(body):
+		var name := m.get_string(1)
+		if seen.has(name):
+			continue
+		seen[name] = true
+		var fstart := src.find("func %s(" % name)
+		if fstart < 0:
+			continue
+		var fend := src.find("\nfunc ", fstart + 1)
+		body += "\n" + (src.substr(fstart, fend - fstart) if fend > fstart else src.substr(fstart))
 	var out: Array = []
-	for m in RegEx.create_from_string("target_map\\s*==\\s*\"([a-z0-9_]+)\"").search_all(body):
-		out.append(m.get_string(1))
+	for m2 in RegEx.create_from_string("target_map\\s*==\\s*\"([a-z0-9_]+)\"").search_all(body):
+		var id := m2.get_string(1)
+		if id not in out:
+			out.append(id)
 	return out
 
 
