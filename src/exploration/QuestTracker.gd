@@ -171,6 +171,8 @@ func _update_side_quest_line() -> void:
 			var fp: Vector2i = qs.fetch_progress(objectives[idx])
 			if fp.y > 0:
 				desc += "  [%d/%d]" % [fp.x, fp.y]
+		# Same saved tally as the quest log, in front of the description so the fixed-width HUD keeps it.
+		desc = QuestChicken.annotate_objective(desc, objectives[idx])
 	_side_label.text = "* %s — %s" % [q.get("title", qid), desc]
 	_side_label.visible = true
 	_bg.offset_bottom = 58
