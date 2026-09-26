@@ -5556,13 +5556,42 @@ func _on_cave_floor_changed(new_floor: int) -> void:
 	check_pending_cutscene()
 
 
+## Maps whose story gates read depth. The key, the cap, and the boss flag are what that cave's _ready uses to decide the floor it opens on.
+const _DEPTH_GATED_CAVE_FLOORS := {
+	"whispering_cave": {"key": "whispering_cave_floor", "max": 6, "boss": "cave_rat_king_defeated"},
+	"castle_harmonia": {"key": "castle_harmonia_floor", "max": 4, "boss": "world1_mordaine_defeated"},
+}
+
+
 func _get_current_cave_floor() -> int:
-	# Live-read from the exploration scene when the cave is loaded;
-	# fall back to the battle-synced _current_cave_floor otherwise.
-	# Default 1 lets rogue's floor-1 gate fire on first entry.
+	# Live scene, then a battle latch above 1, then the floor this cave will open on. A map change leaves the latch at 1 while the per-cave key still holds the crystal warp.
 	if _exploration_scene and "current_floor" in _exploration_scene:
 		return int(_exploration_scene.current_floor)
+	if _current_cave_floor > 1:
+		return _current_cave_floor
+	var opened := _opening_floor_for_map(_current_map_id)
+	if opened > 0:
+		return opened
 	return _current_cave_floor
+
+
+func _opening_floor_for_map(map_id: String) -> int:
+	if GameState == null or not _DEPTH_GATED_CAVE_FLOORS.has(map_id):
+		return 0
+	var spec: Dictionary = _DEPTH_GATED_CAVE_FLOORS[map_id]
+	var dungeon_flags: Variant = GameState.game_constants.get("dungeon_flags", {})
+	if dungeon_flags is Dictionary and bool((dungeon_flags as Dictionary).get(str(spec["boss"]), false)):
+		return 1
+	var max_floor := int(spec["max"])
+	if bool(GameState.game_constants.get("meta_dungeon_skip_pending", false)):
+		return max_floor
+	var key := str(spec["key"])
+	if not GameState.game_constants.has(key):
+		return 0
+	var saved := int(GameState.game_constants[key])
+	if saved < 1 or saved > max_floor:
+		return 0
+	return saved
 
 
 func _create_script_scene(script_path: String) -> Node:
