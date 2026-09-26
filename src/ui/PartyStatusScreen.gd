@@ -166,7 +166,8 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 	var hp_max: int = int(member.max_hp) if "max_hp" in member else 1
 	var mp_cur: int = int(member.current_mp) if "current_mp" in member else 0
 	var mp_max: int = int(member.max_mp) if "max_mp" in member else 0
-	_add_bar(card, 12, 54, w - 24, 10, hp_cur, hp_max, HP_COLOR, "HP")
+	var hp_caption := "— KO —" if ("is_alive" in member and not bool(member.is_alive)) else ""
+	_add_bar(card, 12, 54, w - 24, 10, hp_cur, hp_max, HP_COLOR, "HP", hp_caption)
 	_add_bar(card, 12, 78, w - 24, 10, mp_cur, mp_max, MP_COLOR, "MP")
 
 	# EXP bar — Combatant.gain_job_exp formula tops out at `job_level * 100`
@@ -228,7 +229,7 @@ func _is_member_auto_locked(member) -> bool:
 	return true
 
 
-func _add_bar(parent: Control, x: float, y: float, w: float, h: float, cur: int, max_v: int, color: Color, label: String) -> void:
+func _add_bar(parent: Control, x: float, y: float, w: float, h: float, cur: int, max_v: int, color: Color, label: String, caption: String = "") -> void:
 	var bg := ColorRect.new()
 	bg.color = Color(0.05, 0.05, 0.1)
 	bg.position = Vector2(x, y)
@@ -243,12 +244,12 @@ func _add_bar(parent: Control, x: float, y: float, w: float, h: float, cur: int,
 	fill.size = Vector2(w * pct, h)
 	parent.add_child(fill)
 	var txt := Label.new()
-	txt.text = "%s %d/%d" % [label, cur, max_v]
+	txt.text = caption if caption != "" else "%s %d/%d" % [label, cur, max_v]
 	txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	txt.position = Vector2(x, y - 2)
 	txt.size = Vector2(w, h + 4)
 	txt.add_theme_font_size_override("font_size", TextScale.scaled(10))
-	txt.add_theme_color_override("font_color", TEXT)
+	txt.add_theme_color_override("font_color", Color(0.85, 0.35, 0.35) if caption != "" else TEXT)
 	parent.add_child(txt)
 
 
@@ -270,6 +271,18 @@ func _rebuild_detail() -> void:
 	bg.set_anchors_preset(PRESET_FULL_RECT)
 	_detail_panel.add_child(bg)
 	RetroPanel.add_border(_detail_panel, _detail_panel.size, BORDER_LIGHT, BORDER_SHADOW)
+
+	var ailment := Label.new()
+	ailment.name = "AilmentLine"
+	var effects: Array = member.status_effects if "status_effects" in member else []
+	ailment.text = StatusNames.list_line(effects)
+	ailment.visible = ailment.text != ""
+	ailment.position = Vector2(16, maxf(8.0, _detail_panel.size.y - 22.0))
+	ailment.size = Vector2(maxf(32.0, _detail_panel.size.x - 32.0), 16)
+	ailment.clip_text = true
+	ailment.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	ailment.add_theme_color_override("font_color", Color(0.85, 0.45, 0.9))
+	_detail_panel.add_child(ailment)
 
 	# Two columns: Equipment (left) | Abilities + Passives (right)
 	var col_w := (_detail_panel.size.x - 48.0) / 2.0
