@@ -703,6 +703,12 @@ func _scroll_detail_by(dy: float) -> void:
 	_detail_scroll.scroll_vertical = int(clampf(_detail_scroll.scroll_vertical + dy, 0.0, max_offset))
 
 
+func _pointer_scrolls_detail(event: InputEventMouseButton) -> bool:
+	if not _detail_overflows() or _detail_scroll == null:
+		return false
+	return _detail_scroll.get_global_rect().has_point(event.position)
+
+
 func _process(delta: float) -> void:
 	if absf(_detail_stick_y) < 0.5 or not _detail_overflows():
 		return
@@ -852,20 +858,13 @@ func _input(event: InputEvent) -> void:
 		_close()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.pressed:
-		# Wheel scroll moves selection; right-click closes
-		# Through the owner, not a third copy of its body: this duplicated the modulo AND the three
-		# refresh calls, so it carried neither the empty guard nor the cue.
+		# Wheel over the overflowing detail scrolls lore; everywhere else the owner steps the list.
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			if _detail_overflows() and _detail_scroll != null and _detail_scroll.get_global_rect().has_point(event.position):
+			if _pointer_scrolls_detail(event):
 				var wheel_dir := -1.0 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0
 				_scroll_detail_by(_detail_scroll_step() * 3.0 * wheel_dir)
-				get_viewport().set_input_as_handled()
-				return
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_nav_step(-1)
-			get_viewport().set_input_as_handled()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_nav_step(1)
+			else:
+				_nav_step(-1 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 1)
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			_close()
