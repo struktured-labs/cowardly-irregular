@@ -4880,7 +4880,7 @@ func _apply_equipment_on_hit_status(attacker: Combatant, target: Combatant) -> v
 		## from the chance so a poison_dagger swing against a
 		## resist_ring wearer drops from 0.25 → 0.175.
 		var resist: float = _sum_equipment_special_effect(target, "status_resistance")
-		var effective: float = clampf(chance - resist, 0.0, 1.0)
+		var effective: float = resisted_status_chance(chance, resist)
 		if effective <= 0.0 or randf() >= effective:
 			continue
 		target.add_status(entry["status"], entry["duration"])
@@ -5373,7 +5373,7 @@ func _apply_ability_status(caster: Combatant, target: Combatant, ability: Dictio
 	## daggers. Every status a player actually suffers (65 monster abilities author an effect on the
 	## physical/magic routes) arrives here instead. Same formula as that site so there is ONE.
 	var resist: float = _sum_equipment_special_effect(target, "status_resistance")
-	var effective_chance: float = clampf(effect_chance - resist, 0.0, 1.0)
+	var effective_chance: float = resisted_status_chance(effect_chance, resist)
 	if effective_chance <= 0.0 or randf() >= effective_chance:
 		return
 	var status_to_add: String = effect
@@ -6223,6 +6223,49 @@ func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: A
 		print("  → %s is revived with %d HP!" % [target.combatant_name, target.current_hp])
 
 
+## Named debuffs. A stat modifier below 1.0 is not enough: volatility_down is 0.5 and lands as a buff.
+const SUPPORT_DEBUFFS: Array[String] = [
+	"attack_down", "defense_down", "magic_down", "speed_down", "magic_defense_down",
+	"all_stats_down", "debuff", "ability_weaken", "amplify_poison", "memory_leak_status",
+]
+const SUPPORT_SILENCES: Array[String] = ["silence", "ability_silence"]
+const SUPPORT_AILMENTS: Array[String] = [
+	"blind", "charm", "stun", "pacify", "sleep", "poison", "burn", "burning",
+	"static", "confuse", "fear", "silence", "curse",
+]
+
+
+## Harmful support: named debuffs, silences, and the ailment list. The grind calls this too.
+static func support_effect_is_harmful(effect: String) -> bool:
+	return effect in SUPPORT_DEBUFFS or effect in SUPPORT_SILENCES or effect in SUPPORT_AILMENTS
+
+
+## Chance minus status_resistance, clamped to [0, 1]. Hit procs and support rolls both call this.
+static func resisted_status_chance(chance: float, resist: float) -> float:
+	return clampf(chance - resist, 0.0, 1.0)
+
+
+func _resisted_support_chance(target: Combatant, chance: float) -> float:
+	return resisted_status_chance(chance, _sum_equipment_special_effect(target, "status_resistance"))
+
+
+func _support_harm_lands(target: Combatant, chance: float) -> bool:
+	var effective: float = _resisted_support_chance(target, chance)
+	return effective > 0.0 and randf() < effective
+
+
+## The predicate decides. Wards and ally buffs keep the raw roll.
+func _support_roll_lands(target: Combatant, effect: String, chance: float) -> bool:
+	if support_effect_is_harmful(effect):
+		return _support_harm_lands(target, chance)
+	return randf() < chance
+
+
+## The simple-status arm mixes wards and ailments. Only the ailments read the ring.
+func _status_arm_lands(target: Combatant, effect: String, chance: float) -> bool:
+	return _support_roll_lands(target, effect, chance)
+
+
 func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	var effect = ability.get("effect", "")
 	var duration = ability.get("duration", 3)
@@ -6325,13 +6368,13 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					battle_log_message.emit("[color=orange]%s enters Berserk![/color] (ATK +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
 		"defense_down":
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _support_roll_lands(target, "defense_down", float(success_rate)):
 					target.add_debuff("Armor Break", "defense", stat_modifier, duration)
 					battle_log_message.emit("[color=%s]%s's armor is broken![/color] (DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		## Tick 378: soul_wail's magic_defense_down fell through to the `_:` default and fizzled. The old note here claimed magic and physical share one `defense` stat — untrue since magic_defense became real, and it contradicted the "magic_defense" this very handler passes.
 		"magic_defense_down":
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _support_roll_lands(target, "magic_defense_down", float(success_rate)):
 					target.add_debuff("Soul Sap", "magic_defense", stat_modifier, duration)
 					battle_log_message.emit("[color=%s]%s's magic defense is sapped![/color] (M.DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		## Tick 380: amplify_poison handler. Pre-fix fester
@@ -6356,7 +6399,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		"amplify_poison":
 			var amp_duration: int = int(ability.get("duration", 3))
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _support_roll_lands(target, "amplify_poison", float(success_rate)):
 					target.add_status("festered", amp_duration)
 					battle_log_message.emit("[color=%s]%s festers![/color] (poison damage doubled for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, amp_duration])
 		## Tick 382: ability_silence handler — aliases to the existing
@@ -6369,7 +6412,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		## "ability_silence" status with new consumers.
 		"ability_silence":
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _support_roll_lands(target, "ability_silence", float(success_rate)):
 					target.add_status("silence", duration)
 					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
 		## Tick 391: counter_next_action handler — aliases to the
@@ -6436,7 +6479,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		"ability_weaken":
 			var weaken_mod: float = float(ability.get("stat_modifier", 0.7))
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _support_roll_lands(target, "ability_weaken", float(success_rate)):
 					target.add_debuff("Deprecated (Atk)", "attack", weaken_mod, duration)
 					target.add_debuff("Deprecated (Mag)", "magic", weaken_mod, duration)
 					battle_log_message.emit("[color=%s]%s is deprecated![/color] (ATK/MAG -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - weaken_mod) * 100), duration])
@@ -6522,7 +6565,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		## since the ability also lands upfront damage and runs longer).
 		"memory_leak_status":
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _support_roll_lands(target, "memory_leak_status", float(success_rate)):
 					target.add_status("memory_leak", duration)
 					battle_log_message.emit("[color=%s]%s starts leaking memory![/color] (HP drain for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
 		## Tick 381: shadow_step handler. Pre-fix the shadow_step
@@ -6779,13 +6822,13 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					battle_log_message.emit("[color=%s]%s gains Regen![/color] (HP restore for %d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])
 		"attack_down":
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _support_roll_lands(target, "attack_down", float(success_rate)):
 					target.add_debuff("Weaken", "attack", stat_modifier, duration)
 					# Tick 238: penalty BBCode (ATK debuff).
 					battle_log_message.emit("[color=%s]%s is weakened![/color] (ATK -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		"speed_down":
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _support_roll_lands(target, "speed_down", float(success_rate)):
 					target.add_debuff("Slow", "speed", stat_modifier, duration)
 					# Tick 238: penalty BBCode (SPD debuff).
 					battle_log_message.emit("[color=%s]%s slows down![/color] (SPD -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
@@ -6794,7 +6837,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			# name and refreshes-in-place, so reusing one name would only
 			# debuff a single stat.
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _support_roll_lands(target, "all_stats_down", float(success_rate)):
 					target.add_debuff("Despair (ATK)", "attack", stat_modifier, duration)
 					target.add_debuff("Despair (DEF)", "defense", stat_modifier, duration)
 					target.add_debuff("Despair (SPD)", "speed", stat_modifier, duration)
@@ -6821,7 +6864,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			# from the ability dict; defaults to attack if unspecified.
 			var debuff_stat = str(ability.get("stat", "attack"))
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _support_roll_lands(target, "debuff", float(success_rate)):
 					## Per ABILITY, same reason as the buff arm above: add_debuff dedupes on the effect
 					## name, so one shared "Sap" collapsed slow, time_tax and resource_cut into a
 					## single entry keeping the first one's stat.
@@ -6853,7 +6896,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			# the battle engine can read via has_status(). Maps the data
 			# effect string directly to the status name.
 			for target in targets:
-				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+				if target and is_instance_valid(target) and target.is_alive and _status_arm_lands(target, str(effect), float(success_rate)):
 					target.add_status(effect, duration)
 					## Tick 186: prettify the effect name. Pre-fix the
 					## multi-word ones (physical_reflect / prismatic_
@@ -6994,7 +7037,11 @@ func _apply_secondary_effect(caster: Combatant, ability: Dictionary, primary_tar
 	var sec_modifier: float = float(ability.get("secondary_modifier", 0.7))
 	var sec_duration: int = int(ability.get("duration", 3))
 	for t in sec_targets:
-		if randf() >= sec_chance:
+		## Buffs keep the raw chance. Named debuffs, silences, and ailments read the ring.
+		var roll: float = sec_chance
+		if support_effect_is_harmful(sec_effect):
+			roll = _resisted_support_chance(t, sec_chance)
+		if roll <= 0.0 or randf() >= roll:
 			continue
 		if _SECONDARY_STAT_BUFF_MAP.has(sec_effect):
 			var bentry: Array = _SECONDARY_STAT_BUFF_MAP[sec_effect]
