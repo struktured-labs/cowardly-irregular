@@ -9,7 +9,7 @@ class_name AutobattleGridEditor
 ## - D-Pad: Navigate grid
 ## - A (Z): Edit selected cell (add action when on action area)
 ## - B (X): Delete current cell
-## - L: Split action group OR add AND condition
+## - L (Q): Split action group OR add AND condition
 ## - D-pad Left (at col 0): Enter portrait panel to switch characters
 ## - Start: Save and exit
 ## - Select: Toggle autobattle ON/OFF
@@ -385,7 +385,7 @@ func _build_ui() -> void:
 	var help_label1 = Label.new()
 	## Pad halves derived, keyboard halves kept — this row sits six lines above help_label2 and both
 	## are on screen at once, so a half-derived pair reads as two contradicting legends in one glance.
-	help_label1.text = "\u2191\u2193\u2190\u2192/D-pad:Navigate  %s:Edit  %s/Esc:Back  %s:Delete  W/S/RStick:Value  %s:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [
+	help_label1.text = "\u2191\u2193\u2190\u2192/D-pad:Navigate  %s:Edit  %s/Esc:Back  %s:Delete  -/=/RStick:Value  %s:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close" % [
 		InputProfileManager.hint_for_action("ui_accept"),
 		InputProfileManager.hint_for_action("ui_cancel"),
 		## ⛔ WAS hint_for_action("ui_menu") — the WRONG ACTION, not a shadowed one. Delete is raw
@@ -2016,14 +2016,14 @@ func _input(event: InputEvent) -> void:
 			_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
-	# W/S keys - Adjust condition value when on condition cell
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_W:
+	# -/= keys - Adjust condition value (W/S until Advance moved to W — the editor reads Advance as Add Action)
+	elif event is InputEventKey and event.pressed and event.keycode in [KEY_EQUAL, KEY_PLUS, KEY_KP_ADD]:
 		if _is_on_condition_cell():
 			_adjust_condition_value(1)
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_S:
+	elif event is InputEventKey and event.pressed and event.keycode in [KEY_MINUS, KEY_KP_SUBTRACT]:
 		if _is_on_condition_cell():
 			_adjust_condition_value(-1)
 			SoundManager.play_ui("menu_move")
