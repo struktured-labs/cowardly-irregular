@@ -10,11 +10,13 @@ const BattleState := preload("res://test/unit/helpers/battle_state.gd")
 const CALIBRANT := "the_calibrant"
 
 var _guard: RefCounted = null
+var _saved_state: int = 0
 
 
 func before_each() -> void:
 	_guard = BattleState.new()
 	_guard.snapshot()
+	_saved_state = BattleManager.current_state
 	BattleManager.is_autobattle_enabled = false
 	BattleManager.turbo_mode = true
 	BattleManager.current_state = BattleManager.BattleState.EXECUTION_PHASE
@@ -31,6 +33,7 @@ func before_each() -> void:
 func after_each() -> void:
 	if _guard != null:
 		_guard.restore()
+	BattleManager.current_state = _saved_state
 
 
 func _fighter(name_str: String) -> Combatant:

@@ -480,7 +480,6 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_first_damage_phase = -1
 	_execution_phase_count = 0
 	_one_shot_achieved = false
-	_casualty_outside_execution = false
 	_setup_turns_used = 0
 	_all_enemies_initial_count = enemies.size()
 
@@ -612,6 +611,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# _on_combatant_died takes one. is_connected() can't see bound listeners
 	# the same way as unbound ones, so we cache the bound Callable to
 	# allow proper disconnect in _cleanup_battle (preventing listener leak).
+	_casualty_outside_execution = false
 	_died_callbacks.clear()
 	_doom_callbacks.clear()
 	for combatant in all_combatants:
