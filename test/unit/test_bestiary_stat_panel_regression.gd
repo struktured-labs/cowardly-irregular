@@ -159,6 +159,60 @@ func test_magic_defense_is_shown_and_matches_what_combat_uses() -> void:
 		"rendered stat line must show M.DEF %d for %s (the value Combatant divides magic damage by) — got '%s'" % [expected, id, stats_label.text])
 
 
+func test_intel_column_does_not_print_on_top_of_the_flavor() -> void:
+	# Immune, the kill tally, and the one-shot hint were added under the stat
+	# column while flavor stayed pinned under the sprite at a fixed y, full
+	# width. At the default text size that puts Resist, EXP/Gold, the drop
+	# rates, and the one-shot tactic on top of the paragraph — the rows a
+	# player opens the bestiary to read.
+	GameState.text_size_scale = 1.0
+	var menu = await _build_menu()
+	menu.set("_entries", [{
+		"id": "slime", "name": "Slime", "level": 1, "epithet": "Wobbling Nuisance",
+		"stats": {"max_hp": 680, "max_mp": 20, "attack": 210, "defense": 80, "magic": 120, "magic_defense": 40, "speed": 8},
+		"weaknesses": ["fire"], "resistances": ["physical"], "immunities": [],
+		"flavor": "The first thing you fight in every JRPG ever made, updated with 21 percent more gelatin. Bouncing serves no evolutionary purpose.",
+		"defeated": true,
+		"drops": [{"item": "potion", "chance": 0.3}, {"item": "ether", "chance": 0.15}, {"item": "hi_potion", "chance": 0.05}],
+		"one_shot_reward": "boss_trophy",
+		"one_shot_hint": "Stack attack buffs, defer for max AP, then unleash all at once.",
+		"pools": ["Cave Floor 1", "Overworld Plains"],
+		"last_location": "Cave Floor 1",
+		"exp_reward": 15, "gold_reward": 10, "defeat_count": 3,
+	}])
+	menu.set("_selected", 0)
+	menu.call("_refresh_detail")
+	await wait_frames(2)
+	var flavor = menu.get("_detail_flavor")
+	var drops = menu.get("_detail_drops")
+	var tactic = menu.get("_detail_tactic")
+	assert_ne(flavor, null, "flavor label must exist")
+	assert_ne(drops, null, "drops label must exist")
+	assert_ne(tactic, null, "one-shot tactic label must exist")
+	if flavor == null or drops == null or tactic == null:
+		return
+	var flavor_rect := Rect2(flavor.position, flavor.size)
+	var collisions: Array = []
+	for pair in [
+		["resist", menu.get("_detail_resist")],
+		["rewards", menu.get("_detail_rewards")],
+		["drops", drops],
+		["tactic", tactic],
+	]:
+		var lab = pair[1]
+		if lab == null or str(lab.text) == "":
+			continue
+		var rect := Rect2(lab.position, lab.size)
+		if rect.intersects(flavor_rect):
+			collisions.append("%s overlaps the flavor paragraph (%s vs %s)" % [pair[0], rect, flavor_rect])
+	assert_gt(flavor.size.y, 40.0,
+		"the flavor paragraph must keep a readable block under the intel column — hiding it is not a fix (height %s)" % flavor.size.y)
+	assert_eq(collisions, [],
+		"bestiary intel must stay readable — the flavor paragraph was painting over Resist, rewards, drops, and the one-shot hint: %s" % [collisions])
+	assert_gte(tactic.position.y, drops.position.y + drops.size.y,
+		"the one-shot hint must sit below the drop line, not on top of it (tactic y=%s, drops end at %s)" % [tactic.position.y, drops.position.y + drops.size.y])
+
+
 ## ⛔ THE SILENT-PASS FLOOR. This guard drives its subject BY NAME; rename the member and every
 ## cardinal stays clean — see test/unit/helpers/guard_subject.gd for the four measurements and why
 ## run_tests.sh's exit 4 cannot see this rung. Names are DERIVED from this file's own text, so a

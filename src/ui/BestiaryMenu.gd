@@ -527,10 +527,19 @@ func _refresh_detail() -> void:
 ## Resist. Reflowing from get_line_count() * get_line_height() is exact at
 ## every scale and needs no per-scale constants, which is the point: a
 ## threshold tuned for 2.0 would just break again at the next preset.
+##
+## Flavor is full width, so it has to start BELOW this column. It used to sit
+## at a fixed y under the sprite (margin + 180 + 20). Immune, the kill tally,
+## and the one-shot hint grew the column past that line, and at the default
+## text size Resist, EXP/Gold, the drop rates, and the tactic drew on top of
+## the paragraph. The tactic's own y was a literal too, so a wrapping drop
+## line landed on the hint.
 func _reflow_detail_column() -> void:
-	var gap := 6
+	var gap := 6.0
 	var y: float = _detail_stats.position.y
-	for label in [_detail_stats, _detail_weak, _detail_immune, _detail_resist, _detail_rewards, _detail_drops]:
+	# Empty rows still take a line. A Label clamps size.y back up to its
+	# font height, so collapsing them to 0 leaves the next row underneath.
+	for label in [_detail_stats, _detail_weak, _detail_immune, _detail_resist, _detail_rewards, _detail_drops, _detail_tactic]:
 		if label == null:
 			continue
 		label.position.y = y
@@ -538,6 +547,20 @@ func _reflow_detail_column() -> void:
 		var h: float = lines * label.get_line_height()
 		label.size.y = h
 		y += h + gap
+	if _detail_flavor == null:
+		return
+	var parent := _detail_flavor.get_parent() as Control
+	if parent == null:
+		return
+	var margin := 20.0
+	var flavor_y := y
+	if _detail_sprite_bg != null:
+		var under_sprite := _detail_sprite_bg.position.y + _detail_sprite_bg.size.y + margin
+		if flavor_y < under_sprite:
+			flavor_y = under_sprite
+	_detail_flavor.position = Vector2(margin, flavor_y)
+	_detail_flavor.size = Vector2(parent.size.x - margin * 2.0, maxf(0.0, parent.size.y - flavor_y - 12.0))
+	_detail_flavor.clip_text = true
 
 
 func _format_drops(drops: Array, one_shot) -> String:
