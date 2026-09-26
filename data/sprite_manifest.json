@@ -6755,11 +6755,42 @@
     "_why": "Whole SECTIONS with no runtime reader. A FIELD census cannot see these: every key in an unconsumed section is individually dead, and a section whose fields are all read ELSEWHERE is invisible entirely — `frame_width` is read by the battle sheet loader, so a field census passes over a section nothing opens. Derived, not listed: a section is READ when its quoted name appears in comment-stripped src/.",
     "weapon_sheets": "4 weapon sheets — ONE tagged T2_artist_draft (iron_sword), THREE tagged T1 (bronze_sword, flame_sword, ice_blade) — (10 PNGs, 44 KB of art / 52 KB with .import sidecars, all present and imported) for a compositing feature that does not exist: no file in src/ names weapon_sheets or assets/sprites/weapons. The note on each entry says \"Compose over body animations\" — the art is ready and the code was never written. DECLARED rather than excluded from export, because CLAUDE.md's artist-first rule makes what ships a visible decision and quietly dropping artist work from the build is the opposite of it. Wire it or retire it is struktured's call; 44 KB is not a payload argument. CORRECTED 2026-09-18: this note said all FOUR were tagged T2_artist_draft; only iron_sword is. The error direction is attribution INFLATION — it credits the artist for three AI-generated sheets, which is the opposite of the usual artist-first concern and is the half CLAUDE.md principle 5 cares about (the artist always knows what is AI vs hand-drawn). The DATA is right and the note was wrong: tools/audit_sprite_tiers.py now walks weapon_sheets (it read three hardcoded sections until 2026-09-18) and examined all three T1 entries against git, finding no provable artist pixels in any. Note also that T2_artist_draft is not a value in CLAUDE.md's tier table; artist_guard.tier_refusal refuses any tier it does not recognise, so the spelling is safe rather than a fail-open. This note had been audited twice for SIZE and never once for TIER. CORRECTED 2026-09-16: this note said 132 KB twice; the real figure is 44 KB of PNG (52 KB counting .import sidecars, 20 files). The 132 was never a different basis, just wrong, and it had been repeated to struktured several times as the size of the decision. Re-verified the same day with `command grep -raF -f <the 10 declared paths>` (real GNU, not the session shim that silently skips gitignored subtrees) plus a data/ control returning 10: the zero-reference claim HOLDS in both forms, by section name and by exact asset path, and `weapons` appears in no export exclude_filter, so they do ship.",
     "npc_sheets": "SIX conversational NPC sheets, 1326 KB, tier T1, all present and imported: 2048x256, EIGHT 256px frames animating idle / talk / gesture / react. Nothing in src/ builds `assets/sprites/npcs/<name>.png` — the only path forms are `<archetype>/overworld.png` and `<archetype>_<world>/overworld.png`, which are DIRECTORIES. bram, marta, scholar_milo and elder_theron have a live twin there, so those CHARACTERS ship and the talking art does not; elder_theron's is the largest of the six and he is the first NPC in the game. ⛔ ONE DIRECTORY, TWO MEANINGS: a flat `<name>.png` is a talking sheet and `<name>/overworld.png` is a walk sheet, and nothing in the tree says which is which — CutsceneDialogue:1271 records a lane having to correct a portrait registered against the directory form believing it was portrait art. Declared rather than dropped from the export: wire it or retire it is struktured's, and 1.3 MB is not the argument either way.",
-    "party_sheets": "EMPTY — zero entries, and no reader. It has never held anything in this tree. Kept rather than deleted because an empty authored section is a decision someone may have been part-way through, and deleting authored structure is not a guard's call; recorded so the next reader knows it is empty on purpose rather than by accident."
+    "party_sheets": "EMPTY — zero entries, and no reader. It has never held anything in this tree. Kept rather than deleted because an empty authored section is a decision someone may have been part-way through, and deleting authored structure is not a guard's call; recorded so the next reader knows it is empty on purpose rather than by accident.",
+    "ability_icons": "A LEDGER, NOT A ROUTE: AbilityIcons resolves an icon by path convention (DIR + key + .png) and never opens the manifest, exactly like overworld_npc_sheets. The entry exists so the artist-first tooling and the artist can see these 22 icons are T1 procedural placeholders, replaceable file by file. A zero reader here does NOT mean unreachable art."
   },
   "_field_indirect_readers": {
     "_why": "Fields the census cannot see as READ because the key is supplied by a VARIABLE rather than a literal, so no get(\"key\") appears anywhere. Recorded so a zero here is never mistaken for an unwired promise — the opposite error to _field_provenance's.",
     "cliff": "READ. TileSheetManifest.region(key, section, name) takes the section as a PARAMETER; EnvironmentTileSets passes \"cliff\" at its _art_or call sites for the edge and face tiles. The literal lives in the caller, which is not a file that parses the manifest.",
     "overlay": "READ, same path: EnvironmentTileSets passes \"overlay\" to TileSheetManifest.region(key, section, name) for the fringe tiles, so the literal lives in the caller rather than in a file that parses the manifest."
+  },
+  "ability_icons": {
+    "tier": "T1",
+    "source": "procedural 16x16 grayscale masks drawn by tools/gen_ability_icons.py (python drawing code, not AI); four shapes shared with the item set (sword, bolt, phoenix, ether). PLACEHOLDERS: the artist may replace any icon - keep the filename and keep it 16x16 grayscale with a black outline, because the game tints it per ability.",
+    "dir": "assets/sprites/ui/ability_icons",
+    "icons": [
+      "arcane",
+      "buff",
+      "cure",
+      "dark",
+      "debuff",
+      "dispel",
+      "earth",
+      "escape",
+      "ether",
+      "fire",
+      "holy",
+      "ice",
+      "lightning",
+      "meta",
+      "phoenix",
+      "poison",
+      "song",
+      "status",
+      "strike",
+      "summon",
+      "unknown",
+      "wind"
+    ],
+    "added": "2026-09-26, struktured after the item icons shipped: \"cool to add it for abilities and spells as well\""
   }
 }

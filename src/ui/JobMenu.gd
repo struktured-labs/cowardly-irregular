@@ -358,9 +358,13 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	if character.job and character.job.has("abilities"):
 		for ability_id in character.job["abilities"]:
 			var ability = JobSystem.get_ability(ability_id)
+			var icon := AbilityIcons.make_rect(str(ability_id), 16)
+			icon.name = "AbilityIcon_%s" % ability_id  # siblings on one panel: a shared name would be auto-renamed
+			icon.position = Vector2(14, abilities_y)
+			panel.add_child(icon)
 			var ability_label = Label.new()
 			ability_label.text = ability.get("name", ability_id.replace("_", " ").capitalize())
-			ability_label.position = Vector2(16, abilities_y)
+			ability_label.position = Vector2(34, abilities_y)
 			ability_label.add_theme_font_size_override("font_size", 10)
 			ability_label.add_theme_color_override("font_color", TEXT_COLOR)
 			panel.add_child(ability_label)
