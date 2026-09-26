@@ -633,7 +633,7 @@
 			"cost": 900,
 			"stat_mods": {
 				"defense": 80,
-				"magic": 50
+				"magic_defense": 50
 			},
 			"flavor": "A plain silver band with a faint hum. The hum is the ring holding back the air in front of you. Do not stop wearing it suddenly."
 		},

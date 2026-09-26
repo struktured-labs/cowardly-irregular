@@ -127,8 +127,8 @@ func _get_music_track() -> String:
 ## nothing to inherit, so SoundManager degraded by WORLD and the same room had two beds. This is the
 ## fact SoundManager cannot derive: it receives `interior_chapel`, never `harmonia_chapel`.
 ##
-## "" is right for Inn/Shop/Tavern, which are reused across villages and genuinely have no single
-## owner — the world-level bed is the best answer available to them.
+## "" is right for Inn and Shop, which are reused across villages and have no single owner.
+## The Dancing Tonberry is Harmonia-only and names its home from TavernInterior, not this hook.
 func _get_music_home_area() -> String:
 	return ""
 
