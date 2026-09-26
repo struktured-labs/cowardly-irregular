@@ -358,10 +358,8 @@ func _add_row(index: int, y: float, label_text: String, value_text: String, is_p
 		highlight.add_child(value)
 		highlight.set_meta("value_label", value)
 
-		# Read-only keyboard binding column (sourced from InputMap)
-		# Look up by InputProfileManager.REMAPPABLE_ACTIONS index — `index`
-		# arg is 1-based for action rows (0 is profile selector).
-		var action_idx: int = index - 1
+		# Profile, Nintendo Mode and How to Play sit above the actions, so the offset is ROW_ACTION_FIRST.
+		var action_idx: int = index - ROW_ACTION_FIRST
 		if action_idx >= 0 and action_idx < InputProfileManager.REMAPPABLE_ACTIONS.size():
 			var action_id: String = InputProfileManager.REMAPPABLE_ACTIONS[action_idx]
 			var kb_label_text := InputProfileManager.get_action_key_label(action_id)

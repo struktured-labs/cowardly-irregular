@@ -1784,6 +1784,14 @@ func _default_character_id() -> String:
 
 
 func _default_member_id() -> String:
+	## First living member who can actually cast between battles, else the first living member.
+	for m in _party:
+		if m == null or not ("is_alive" in m) or not m.is_alive:
+			continue
+		if m.job == null or not ("id" in m.job):
+			continue
+		if not _applicable_abilities_for(str(m.job.id)).is_empty():
+			return str(m.job.id)
 	for m in _party:
 		if m != null and "is_alive" in m and m.is_alive and m.job != null and "id" in m.job:
 			return str(m.job.id)
@@ -1797,21 +1805,16 @@ func _default_member_id() -> String:
 ## member cannot cast still SAVES and the executor refuses it by name at runtime — which is a
 ## debuggable rule, unlike one that cannot be stored at all.
 func _default_ability_for(member_id: String) -> String:
-	for m in _party:
-		if m == null or m.job == null or not ("id" in m.job) or str(m.job.id) != member_id:
-			continue
-		if not ("learned_abilities" in m):
-			break
-		var js = get_tree().root.get_node_or_null("JobSystem") if is_inside_tree() else null
-		if js != null and js.has_method("get_ability"):
-			for aid in m.learned_abilities:
-				var a: Dictionary = js.get_ability(str(aid))
-				if str(a.get("type", "")) == "healing":
-					return str(aid)
-		for aid in m.learned_abilities:
-			if _can_apply_between_battles(str(aid)):
+	var known: Array = _known_abilities_for(member_id)
+	var js = get_tree().root.get_node_or_null("JobSystem") if is_inside_tree() else null
+	if js != null and js.has_method("get_ability"):
+		for aid in known:
+			var a: Dictionary = js.get_ability(str(aid))
+			if str(a.get("type", "")) == "healing":
 				return str(aid)
-		break
+	for aid in known:
+		if _can_apply_between_battles(str(aid)):
+			return str(aid)
 	return "cure"
 
 
@@ -2007,9 +2010,17 @@ func _known_abilities_for(member_id: String) -> Array:
 	for m in _party:
 		if m == null or m.job == null or not ("id" in m.job) or str(m.job.id) != member_id:
 			continue
-		if "learned_abilities" in m and m.learned_abilities.size() > 0:
-			return Array(m.learned_abilities)
-		break
+		var out: Array = []
+		if m.has_method("get_known_abilities"):
+			out.assign(m.get_known_abilities())
+		elif "learned_abilities" in m:
+			out.assign(m.learned_abilities)
+		## Free move is known but omitted from get_known_abilities; this picker has no other row for it.
+		if m.job is Dictionary:
+			var fm_id := str((m.job as Dictionary).get("free_move", {}).get("ability_id", ""))
+			if fm_id != "" and not out.has(fm_id):
+				out.append(fm_id)
+		return out
 	return []
 
 
