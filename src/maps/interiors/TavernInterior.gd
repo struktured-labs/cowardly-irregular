@@ -2074,12 +2074,39 @@ func _setup_dancer() -> void:
 
 func _generate_dancer_sprites() -> void:
 	_dancer_frames.clear()
+	# Same four PNGs VillageBar and Aria already share. All-or-nothing, then the 32x48 draw.
+	if _try_load_artist_dancer_frames():
+		if _dancer_frames.size() > 0 and dancer_sprite != null:
+			dancer_sprite.texture = _dancer_frames[0]
+		return
 	for frame in range(4):
 		var image = Image.create(32, 48, false, Image.FORMAT_RGBA8)
 		_draw_dancer(image, frame)
 		_dancer_frames.append(ImageTexture.create_from_image(image))
-	if _dancer_frames.size() > 0:
+	if _dancer_frames.size() > 0 and dancer_sprite != null:
 		dancer_sprite.texture = _dancer_frames[0]
+
+
+## `paths` empty means OverworldNPC.DANCER_FRAME_PATHS. A short or missing set loads nothing.
+func _try_load_artist_dancer_frames(paths: Array = []) -> bool:
+	if paths.is_empty():
+		paths = OverworldNPC.DANCER_FRAME_PATHS
+	if paths.size() != 4:
+		return false
+	var loaded: Array[ImageTexture] = []
+	for path in paths:
+		if not ResourceLoader.exists(str(path)):
+			return false
+		var tex: Texture2D = load(str(path))
+		if tex == null:
+			return false
+		var img: Image = tex.get_image()
+		if img == null:
+			return false
+		loaded.append(ImageTexture.create_from_image(img))
+	for tex in loaded:
+		_dancer_frames.append(tex)
+	return true
 
 
 func _draw_dancer(image: Image, frame: int) -> void:
