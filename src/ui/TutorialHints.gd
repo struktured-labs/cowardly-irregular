@@ -174,7 +174,7 @@ static func show(parent: Node, hint_id: String, dedupe_key: String = "") -> void
 	# Guard BEFORE instancing/add_child — prior code leaked a node every call
 	# for an already-seen hint (TutorialHint.show_hint short-circuited but the
 	# CanvasLayer had already been parented and nothing freed it).
-	if TutorialHint._shown_hints.get(key, false):
+	if TutorialHint._shown_hints.get(key, false) and TutorialHint.save_still_says_shown(key):
 		return
 	var ml := Engine.get_main_loop()
 	if ml and ml is SceneTree:
@@ -308,7 +308,11 @@ static func _drain() -> void:
 		if not is_instance_valid(parent) or not parent.is_inside_tree() or parent.is_queued_for_deletion():
 			continue
 		var key: String = str(q.get("key", ""))
-		if TutorialHint._shown_hints.get(key, false):
+		if TutorialHint._shown_hints.get(key, false) and TutorialHint.save_still_says_shown(key):
+			continue
+		var ml := Engine.get_main_loop()
+		var gs := (ml as SceneTree).root.get_node_or_null("GameState") if ml is SceneTree else null
+		if gs and bool(gs.game_constants.get("tutorial_" + key, false)):
 			continue
 		_present(parent, str(q.get("hint_id", "")), key)
 		return
