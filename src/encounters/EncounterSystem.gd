@@ -651,6 +651,13 @@ func reset_encounter_counter() -> void:
 	steps_since_last_encounter = 0
 
 
+## Quit to Title does not restart the process. These three are this run's: a Repel charge, the grace steps since the last fight, and an ambush plate that already sprung. A New Game must not inherit them.
+func reset_for_new_game() -> void:
+	repel_steps_remaining = 0
+	steps_since_last_encounter = 0
+	forced_encounter_next_step = false
+
+
 ## An id suffix marking THIS SPAWN as a field elite. Elite-ness belongs to the spawn, not the
 ## species: five of six worlds promote an ordinary monster to elite duty, so flagging the
 ## species would make every routine encounter with it an elite fight. The marker rides in the
