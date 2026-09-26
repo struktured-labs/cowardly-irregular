@@ -113,6 +113,7 @@ func _sort_items(a: Dictionary, b: Dictionary) -> bool:
 func _build_ui() -> void:
 	"""Build the menu UI"""
 	for child in get_children():
+		remove_child(child)
 		child.queue_free()
 	_item_labels.clear()
 	_target_labels.clear()
@@ -123,7 +124,7 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	var viewport_size = get_viewport().get_visible_rect().size
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	if viewport_size.x == 0:
 		viewport_size = Vector2(640, 480)
 
@@ -143,15 +144,9 @@ func _build_ui() -> void:
 	var footer_rect := MenuChrome.place_footer(footer, viewport_size, 16.0)
 	var panel_h := maxf(80.0, footer_rect.position.y - 16.0 - 16.0)
 
-	# Items panel (left 50%)
-	var items_panel = _create_items_panel(Vector2(viewport_size.x * 0.5 - 24, panel_h))
-	items_panel.position = Vector2(16, 16)
-	add_child(items_panel)
-
-	# Details/Target panel (right 50%)
-	var details_panel = _create_details_panel(Vector2(viewport_size.x * 0.5 - 24, panel_h))
-	details_panel.position = Vector2(viewport_size.x * 0.5 + 8, 16)
-	add_child(details_panel)
+	# Panels are parented before their titles so TextScale measures the live font.
+	var items_panel = _create_items_panel(Vector2(viewport_size.x * 0.5 - 24, panel_h), Vector2(16, 16))
+	var details_panel = _create_details_panel(Vector2(viewport_size.x * 0.5 - 24, panel_h), Vector2(viewport_size.x * 0.5 + 8, 16))
 	move_child(footer, get_child_count() - 1)
 
 	# Right-click cancel
@@ -167,10 +162,12 @@ func _build_ui() -> void:
 	_update_selection()
 
 
-func _create_items_panel(panel_size: Vector2) -> Control:
+func _create_items_panel(panel_size: Vector2, at: Vector2) -> Control:
 	"""Create the items list panel"""
 	var panel = Control.new()
 	panel.size = panel_size
+	panel.position = at
+	add_child(panel)
 
 	var panel_bg = ColorRect.new()
 	panel_bg.color = PANEL_COLOR
@@ -311,11 +308,13 @@ func _get_item_color(item_data: Dictionary) -> Color:
 			return TEXT_COLOR
 
 
-func _create_details_panel(panel_size: Vector2) -> Control:
+func _create_details_panel(panel_size: Vector2, at: Vector2) -> Control:
 	"""Create the item details / target selection panel"""
 	var panel = Control.new()
 	panel.size = panel_size
+	panel.position = at
 	panel.name = "DetailsPanel"
+	add_child(panel)
 
 	var panel_bg = ColorRect.new()
 	panel_bg.color = PANEL_COLOR

@@ -83,6 +83,7 @@ func _all_catalog_ids(catalog: Dictionary) -> Array:
 func _build_ui() -> void:
 	"""Build the menu UI"""
 	for child in get_children():
+		remove_child(child)
 		child.queue_free()
 	_slot_labels.clear()
 	_item_labels.clear()
@@ -93,7 +94,7 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
-	var viewport_size = get_viewport().get_visible_rect().size
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	if viewport_size.x == 0:
 		viewport_size = Vector2(640, 480)
 
@@ -112,12 +113,10 @@ func _build_ui() -> void:
 	add_child(footer)
 	var footer_rect := MenuChrome.place_footer(footer, viewport_size, 16.0)
 
-	# Character info panel (top left)
-	var char_panel = _create_character_panel(Vector2(viewport_size.x * 0.35 - 16, 100))
-	char_panel.position = Vector2(16, 16)
-	add_child(char_panel)
+	# Character info panel (top left). Parented first so the name row measures the live font.
+	var char_panel = _create_character_panel(Vector2(viewport_size.x * 0.35 - 16, 100), Vector2(16, 16))
 
-	var equip_top := char_panel.position.y + char_panel.size.y + 8.0
+	var equip_top: float = char_panel.position.y + char_panel.size.y + 8.0
 	var equip_h := maxf(80.0, footer_rect.position.y - 8.0 - equip_top)
 	# Current equipment panel (left, below character)
 	var equip_panel = _create_equipment_panel(Vector2(viewport_size.x * 0.35 - 16, equip_h))
@@ -147,10 +146,12 @@ func _build_ui() -> void:
 
 
 
-func _create_character_panel(panel_size: Vector2) -> Control:
+func _create_character_panel(panel_size: Vector2, at: Vector2) -> Control:
 	"""Create the character info panel"""
 	var panel = Control.new()
 	panel.size = panel_size
+	panel.position = at
+	add_child(panel)
 
 	var panel_bg = ColorRect.new()
 	panel_bg.color = PANEL_COLOR

@@ -41,6 +41,7 @@ func setup(target: Combatant) -> void:
 func _build_ui() -> void:
 	"""Build the menu UI"""
 	for child in get_children():
+		remove_child(child)
 		child.queue_free()
 
 	# Full screen background
@@ -52,7 +53,7 @@ func _build_ui() -> void:
 	# Mouse: right-click to close
 	MenuMouseHelper.add_right_click_cancel(bg, _close_menu)
 
-	var viewport_size = get_viewport().get_visible_rect().size
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	if viewport_size.x == 0:
 		viewport_size = Vector2(640, 480)
 
@@ -64,14 +65,12 @@ func _build_ui() -> void:
 	add_child(footer)
 	var footer_rect := MenuChrome.place_footer(footer, viewport_size, 16.0)
 
-	# Character header panel
-	var header_panel = _create_header_panel(Vector2(viewport_size.x - 32, 80))
-	header_panel.position = Vector2(16, 16)
-	add_child(header_panel)
+	# Header is parented before its labels exist so TextScale measures the live font.
+	var header_panel = _create_header_panel(Vector2(viewport_size.x - 32, 80), Vector2(16, 16))
 
-	var body_top := header_panel.position.y + header_panel.size.y + 8.0
+	var body_top: float = header_panel.position.y + header_panel.size.y + 8.0
 	var body_h := maxf(40.0, footer_rect.position.y - 8.0 - body_top)
-	var body_w := viewport_size.x * 0.5 - 24
+	var body_w: float = viewport_size.x * 0.5 - 24.0
 
 	# Stats panel (left)
 	var stats_panel = _create_stats_panel(Vector2(body_w, body_h))
@@ -85,10 +84,12 @@ func _build_ui() -> void:
 	move_child(footer, get_child_count() - 1)
 
 
-func _create_header_panel(panel_size: Vector2) -> Control:
+func _create_header_panel(panel_size: Vector2, at: Vector2) -> Control:
 	"""Create the character header panel"""
 	var panel = Control.new()
 	panel.size = panel_size
+	panel.position = at
+	add_child(panel)
 
 	var panel_bg = ColorRect.new()
 	panel_bg.color = PANEL_COLOR
@@ -127,7 +128,7 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 	var job_sz := MenuChrome.lock(job_label)
 	job_label.position = Vector2(16, row_bottom + 4.0)
 
-	var bars_y := job_label.position.y + job_sz.y + 8.0
+	var bars_y: float = job_label.position.y + job_sz.y + 8.0
 
 	# HP Bar
 	var hp_bar_bg = ColorRect.new()
