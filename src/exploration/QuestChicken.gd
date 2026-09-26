@@ -20,6 +20,7 @@ class_name QuestChicken
 const TILE_SIZE: int = 32
 const QUEST_ID := "world1_one_chicken_problem"
 const ALL_CAUGHT_FLAG := "quest_world1_one_chicken_problem_all_chickens"
+const _TOAST_WIDTH := 240.0
 
 ## The canonical seven — tally reads these. Placement lives in the scenes;
 ## this list is the source of truth for "how many total".
@@ -28,6 +29,17 @@ const ALL_CHICKEN_IDS := [
 	"chicken_harmonia_market", "chicken_harmonia_flowerbed",
 	"chicken_harmonia_backlot", "chicken_phil_well",
 ]
+
+
+## Saved catch tally for the log and the HUD. A reload keeps the flags and loses the toast, so this is the count the player still sees.
+static func annotate_objective(desc: String, obj: Dictionary) -> String:
+	if str(obj.get("type", "")) != "custom" or str(obj.get("required_flag", "")) != ALL_CAUGHT_FLAG:
+		return desc
+	var caught := 0
+	for cid in ALL_CHICKEN_IDS:
+		if GameState.get_story_flag("chicken_caught_" + str(cid)):
+			caught += 1
+	return "[%d/%d] %s" % [caught, ALL_CHICKEN_IDS.size(), desc]
 
 var _sprite: Sprite2D
 var _bob_t: float = 0.0
@@ -163,19 +175,33 @@ func _poof() -> void:
 	tw.set_parallel(true)
 	tw.tween_property(_sprite, "position:y", _sprite.position.y - 18.0, 0.35)
 	tw.tween_property(_sprite, "modulate:a", 0.0, 0.35)
-	tw.chain().tween_callback(func(): visible = false)
+	# Hide the sprite only. visible=false on this node hid the catch line at 0.35s, before that line's fade (0.5s).
+	tw.chain().tween_callback(func():
+		if is_instance_valid(_sprite):
+			_sprite.visible = false)
 
 
 func _toast(text: String) -> void:
 	var lbl := Label.new()
+	lbl.name = "CatchToast"
 	lbl.text = text
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lbl.position = Vector2(-96, -44)
-	lbl.size = Vector2(192, 18)
 	lbl.add_theme_font_size_override("font_size", 11)
 	lbl.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(lbl)
+	var font := lbl.get_theme_font("font")
+	var fsz := lbl.get_theme_font_size("font_size")
+	var h := 18.0
+	if font != null:
+		h = maxf(18.0, font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, _TOAST_WIDTH, fsz).y)
+	lbl.size = Vector2(_TOAST_WIDTH, h)
+	var stack := 0.0
+	for c in get_children():
+		if c is Label and c != lbl:
+			stack += (c as Label).size.y + 4.0
+	lbl.position = Vector2(-_TOAST_WIDTH * 0.5, -48.0 - h - stack)
 	var tw := create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(lbl, "position:y", lbl.position.y - 22.0, 1.5)
