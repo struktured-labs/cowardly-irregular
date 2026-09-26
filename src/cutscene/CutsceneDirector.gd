@@ -1597,6 +1597,23 @@ func _resolve_point_or_actor(value) -> Vector2:
 	return Vector2.INF
 
 
+## A scene the meta-skip will not play still has to hand over its items and flags. Hold-to-skip already walks these steps; this is that walk with nothing in flight.
+func commit_unplayed_side_effects(cutscene_id: String) -> void:
+	var data: Dictionary = _load_cutscene_data(cutscene_id)
+	if data.is_empty():
+		return
+	var was_skipping := _skipping
+	var was_replay := _replay
+	var was_aborted := _aborted
+	_skipping = true
+	_replay = false
+	_aborted = false
+	_apply_remaining_set_flag_steps(data.get("steps", []), 0)
+	_skipping = was_skipping
+	_replay = was_replay
+	_aborted = was_aborted
+
+
 func _apply_remaining_set_flag_steps(steps: Array, from_index: int) -> void:
 	## Walk steps from `from_index` and commit every side effect a full play would have:
 	## set_flag, give_item, grant_item, update_item, a choice's first option, and the
