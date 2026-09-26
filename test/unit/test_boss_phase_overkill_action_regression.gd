@@ -11,6 +11,7 @@ const CALIBRANT := "the_calibrant"
 var _guard: RefCounted = null
 var _face_cb: Callable = Callable()
 var _had_group_flag: bool = false
+var _prior_state: int = 0
 
 
 func before_each() -> void:
@@ -18,6 +19,8 @@ func before_each() -> void:
 	_guard.snapshot()
 	_had_group_flag = bool(GameState.game_constants.get("event_flag_first_group_attack", false))
 	BattleManager.turbo_mode = true
+	# Save then assign back: a literal-only write leaks, and the helper's set() is invisible to the sweep.
+	_prior_state = BattleManager.current_state
 	BattleManager.current_state = BattleManager.BattleState.INACTIVE
 	BattleManager._win_condition = {}
 	BattleManager.execution_order.clear()
@@ -29,6 +32,7 @@ func after_each() -> void:
 	_face_cb = Callable()
 	if not _had_group_flag:
 		GameState.game_constants.erase("event_flag_first_group_attack")
+	BattleManager.current_state = _prior_state
 	if _guard != null:
 		_guard.restore()
 
