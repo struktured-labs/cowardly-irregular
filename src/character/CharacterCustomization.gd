@@ -219,21 +219,43 @@ func to_dict() -> Dictionary:
 	}
 
 
-## Deserialize from dictionary - requires passing the script as parameter
+## JSON.parse returns enum fields as float. Assigning that float to a typed enum aborts this function and the caller stores null.
 static func from_dict_with_script(data: Dictionary, script: GDScript):
-	var custom = script.new(data.get("name", "Hero"))
-	custom.eye_shape = data.get("eye_shape", EyeShape.NORMAL)
-	custom.eyebrow_style = data.get("eyebrow_style", EyebrowStyle.NORMAL)
-	custom.nose_shape = data.get("nose_shape", NoseShape.NORMAL)
-	custom.mouth_style = data.get("mouth_style", MouthStyle.NEUTRAL)
-	custom.hair_style = data.get("hair_style", HairStyle.SHORT)
+	var custom = script.new(str(data.get("name", "Hero")))
+	custom.eye_shape = _enum_or(data.get("eye_shape", EyeShape.NORMAL), EyeShape.size())
+	custom.eyebrow_style = _enum_or(data.get("eyebrow_style", EyebrowStyle.NORMAL), EyebrowStyle.size())
+	custom.nose_shape = _enum_or(data.get("nose_shape", NoseShape.NORMAL), NoseShape.size())
+	custom.mouth_style = _enum_or(data.get("mouth_style", MouthStyle.NEUTRAL), MouthStyle.size())
+	custom.hair_style = _enum_or(data.get("hair_style", HairStyle.SHORT), HairStyle.size())
 	var hair_arr = data.get("hair_color", [0.45, 0.30, 0.18])
-	custom.hair_color = Color(hair_arr[0], hair_arr[1], hair_arr[2])
+	if hair_arr is Array and hair_arr.size() >= 3:
+		custom.hair_color = Color(float(hair_arr[0]), float(hair_arr[1]), float(hair_arr[2]))
 	var skin_arr = data.get("skin_tone", [0.91, 0.78, 0.65])
-	custom.skin_tone = Color(skin_arr[0], skin_arr[1], skin_arr[2])
-	custom.personality = data.get("personality", Personality.BRAVE)
-	custom.starting_jobs = data.get("starting_jobs", ["fighter", "cleric"])
+	if skin_arr is Array and skin_arr.size() >= 3:
+		custom.skin_tone = Color(float(skin_arr[0]), float(skin_arr[1]), float(skin_arr[2]))
+	custom.personality = _enum_or(data.get("personality", Personality.BRAVE), Personality.size())
+	var jobs = data.get("starting_jobs", ["fighter", "cleric"])
+	if jobs is Array:
+		var typed_jobs: Array = []
+		for job_id in jobs:
+			typed_jobs.append(str(job_id))
+		custom.starting_jobs = typed_jobs
 	return custom
+
+
+static func _enum_or(raw, count: int) -> int:
+	return clampi(int(raw), 0, maxi(0, count - 1))
+
+
+## Saves written before natures were stored omit the key. New Game's five starters still have one.
+static func for_roster_name(roster_name: String):
+	var index: int = {"Fighter": 0, "Cleric": 1, "Rogue": 2, "Mage": 3, "Bard": 4}.get(roster_name, -1)
+	if index < 0:
+		return null
+	var defaults: Array = create_default_party_with_script(CharacterCustomization)
+	if index >= defaults.size():
+		return null
+	return defaults[index]
 
 
 ## Create default party customizations - requires passing the script as parameter
