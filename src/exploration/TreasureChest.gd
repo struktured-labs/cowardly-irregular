@@ -357,6 +357,7 @@ func interact(player: Node2D) -> void:
 	if _showing_loot:
 		return
 	if _is_opened:
+		_clamp_dialogue_box_to_viewport() # opened re-interact clips at the wall unless this runs before the notice
 		_show_empty_notice()
 		return
 
