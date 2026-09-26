@@ -53,7 +53,11 @@ func test_combatant_mru_skips_pinned_abilities() -> void:
 
 func test_combatant_quick_slots_pin_priority() -> void:
 	# Pins fill slots first, MRU fills the remainder.
+	# Slots only show abilities the character can cast; these ids are learned so the order check is about pins, not a job kit.
 	var c = CombatantClass.new()
+	c.learn_ability("fire")
+	c.learn_ability("blizzard")
+	c.learn_ability("thunder")
 	c.pinned_abilities.append("fire")
 	c.recent_abilities.append("blizzard")
 	c.recent_abilities.append("thunder")
@@ -67,6 +71,8 @@ func test_combatant_quick_slots_dedupe_pin_in_mru() -> void:
 	# If an ability is both pinned AND in MRU (shouldn't happen but defensively),
 	# it should appear once.
 	var c = CombatantClass.new()
+	c.learn_ability("fire")
+	c.learn_ability("blizzard")
 	c.pinned_abilities.append("fire")
 	c.recent_abilities.append("fire")  # technically pinned
 	c.recent_abilities.append("blizzard")
