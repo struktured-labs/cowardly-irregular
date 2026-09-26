@@ -17,10 +17,10 @@ const ENCOUNTER_LABELS = ["0", "25", "50", "75", "100", "150", "200"]  # % shown
 const VOLUME_PRESETS = [0, 25, 50, 75, 100]
 const VOLUME_LABELS = ["0", "25", "50", "75", "100"]
 
-## Battle speed presets
-const BATTLE_SPEED_PRESETS = [0.25, 0.5, 1.0, 2.0, 4.0]
-# labels MUST match the in-battle scale (BattleScene.BATTLE_SPEED_LABELS head) — the old raw-engine labels made Settings "1x" mean twice the battle's "1x"
-const BATTLE_SPEED_LABELS = ["1x", "2x", "4x", "8x", "16x"]
+## Same ladder as the in-battle button (preload, not load() — a failed load used to drop the index write).
+const BATTLE_SCENE_SCRIPT := preload("res://src/battle/BattleScene.gd")
+const BATTLE_SPEED_PRESETS: Array[float] = BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS
+const BATTLE_SPEED_LABELS: Array[String] = BATTLE_SCENE_SCRIPT.BATTLE_SPEED_LABELS
 
 ## Text speed presets
 const TEXT_SPEED_PRESETS = ["slow", "normal", "fast", "instant"]
@@ -125,14 +125,6 @@ const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const OPTION_BG = Color(0.15, 0.15, 0.2)
 const OPTION_SELECTED = Color(0.3, 0.5, 0.8)
-
-## Preloaded for the battle-speed write path. Promoted from the runtime
-## load("res://src/battle/BattleScene.gd") in _save_battle_speed (matches
-## the SaveSystem.BATTLE_SCENE_SCRIPT pattern). Preload errors at compile
-## time instead of silently at runtime, so a transient load failure
-## mid-session can no longer drop the battle_speed_index write into the
-## `if BattleSceneScript:` defensive else branch.
-const BATTLE_SCENE_SCRIPT := preload("res://src/battle/BattleScene.gd")
 
 
 func _ready() -> void:
@@ -375,7 +367,8 @@ func _build_ui() -> void:
 		"Default battle animation speed",
 		BATTLE_SPEED_LABELS,
 		battle_speed_index,
-		5
+		5,
+		_battle_speed_chip_width()
 	)
 	vbox.add_child(speed_item)
 	_settings_items.append({"control": speed_item, "type": "battle_speed", "id": "battle_speed"})
@@ -837,7 +830,14 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 	return container
 
 
-func _create_option_setting_small(label_text: String, description: String, options: Array, current_index: int, index: int) -> Control:
+## 60px chips fit five labels in the 400px row. The battle ladder is seven (through 64x).
+func _battle_speed_chip_width() -> int:
+	var n: int = maxi(BATTLE_SPEED_LABELS.size(), 1)
+	var gaps: int = maxi(n - 1, 0) * 2
+	return int((384 - gaps) / n)
+
+
+func _create_option_setting_small(label_text: String, description: String, options: Array, current_index: int, index: int, chip_w: int = 60) -> Control:
 	"""Create a smaller option selector setting control"""
 	var container = Control.new()
 	container.custom_minimum_size = Vector2(400, 60)
@@ -873,7 +873,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 
 	for i in range(options.size()):
 		var option_bg = ColorRect.new()
-		option_bg.custom_minimum_size = Vector2(60, 20)
+		option_bg.custom_minimum_size = Vector2(chip_w, 20)
 		option_bg.color = OPTION_SELECTED if i == current_index else OPTION_BG
 		option_bg.name = "OptionBG_%d" % i
 		options_container.add_child(option_bg)
@@ -882,7 +882,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 		option_label.text = options[i]
 		option_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		option_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		option_label.size = Vector2(60, 20)
+		option_label.size = Vector2(chip_w, 20)
 		option_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		option_label.add_theme_color_override("font_color", Color.YELLOW if i == current_index else TEXT_COLOR)
 		option_label.name = "OptionLabel_%d" % i

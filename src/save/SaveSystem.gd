@@ -1158,6 +1158,8 @@ func load_settings() -> void:
 	# old "0.5x" pacing IS the correct default, relabeled "1x" = engine
 	# 0.25). Pre-v3 files one-time reset to the new default; users re-pick
 	# if they want fast. Same pattern as the v2 raw-engine-label reset.
+	# applied_speed_index stays -1 unless this file's index was actually stored.
+	var applied_speed_index := -1
 	if not settings.get("speed_scale_v3", false):
 		BATTLE_SCENE_SCRIPT._battle_speed_index = 0
 		if GameState:
@@ -1166,6 +1168,7 @@ func load_settings() -> void:
 		var idx = int(settings["battle_speed_index"])
 		if idx >= 0 and idx < BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS.size():
 			BATTLE_SCENE_SCRIPT._battle_speed_index = idx
+			applied_speed_index = idx
 
 	## Autogrind safety limits. Through set_interrupt_rules, which MERGES and CLAMPS — so an old or
 	## hand-edited settings.json cannot inject an out-of-range stop (a net that never fires looks
@@ -1227,6 +1230,9 @@ func load_settings() -> void:
 			# Validate against actual BATTLE_SPEEDS — fall back to the 0.25 default if drift.
 			var raw_speed = float(settings["default_battle_speed"])
 			GameState.default_battle_speed = raw_speed if (raw_speed in BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS) else 0.25
+		# Index is what the next battle applies; a stale default lit the wrong chip after save.
+		if applied_speed_index >= 0:
+			GameState.default_battle_speed = BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS[applied_speed_index]
 		if settings.has("debug_log_enabled"):
 			GameState.debug_log_enabled = bool(settings["debug_log_enabled"])
 			if DebugLogOverlay and DebugLogOverlay.has_method("set_enabled"):
