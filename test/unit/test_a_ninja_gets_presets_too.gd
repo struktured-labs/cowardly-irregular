@@ -4,11 +4,10 @@ extends GutTest
 ## ship three stances each, the Ninja shipped zero, in a game whose stated pillar is that autobattle
 ## IS the game. Its unlock has worked since .298 (clear a dungeon in under five minutes).
 ##
-## It was empty for a reason, not by oversight. Three of its five abilities — smoke_bomb,
-## shadow_step, vanish — are SETUP moves that apply a status, and until `not_has_status` shipped in
-## .307 the grammar could not say "only if it is not already up". A preset using them would have
-## re-cast forever and the rules beneath it would never have run. So these are authored on top of
-## that condition, and the arm that matters here is the one saying none of them can pin.
+## It was empty for a reason, not by oversight. shadow_step and vanish are SETUP moves that apply a
+## status, and until `not_has_status` shipped in .307 the grammar could not say "only if it is not
+## already up". A preset using them would have re-cast forever. They are authored on top of that
+## condition. Smoke Bomb is not: it guarantees escape, so a preset that opens on it leaves the fight.
 ##
 ## Authored against the real kit and the engine's own fizzle arithmetic rather than against what
 ## sounds like a ninja move: the Guardian's DEFAULT script is the warning next door, where three of
@@ -298,11 +297,8 @@ func test_the_balanced_preset_really_rotates_in_the_executor() -> void:
 	assert_eq(pick.call(), "shadow_step", "turn 3: it lapsed, so set up again")
 
 
-func test_the_defensive_opener_watches_the_room_not_the_clock() -> void:
-	## Shipped gated on `turn == 1`, because when these presets were authored the grammar had no
-	## negation for an ENEMY status — so "blind them while they can still see" was unsayable and the
-	## opener could only fire once per fight, never re-arming when the blind lapsed. That limit was
-	## flagged in the commit rather than designed around; `not_enemy_has_status` (.313) closed it.
+func test_the_defensive_stance_vanishes_when_hurt_and_fights_otherwise() -> void:
+	## Smoke Bomb guarantees escape, so it cannot be this stance's opener — a healthy room is a swing.
 	if _bm == null or _abs == null:
 		pass_test("no battle autoloads in this harness")
 		return
@@ -335,10 +331,6 @@ func test_the_defensive_opener_watches_the_room_not_the_clock() -> void:
 		var a: Dictionary = _abs.execute_grid_autobattle(c)[0]
 		return str(a.get("ability_id", "")) if str(a.get("type", "")) == "ability" else str(a.get("type", ""))
 
-	assert_eq(pick.call(), "smoke_bomb", "nobody is blinded yet, so blind the room")
-	foe.add_status("blind", 2)
-	assert_eq(pick.call(), "attack", "the room is blind — do not spend the turn re-blinding it")
-	foe.remove_status("blind")
-	assert_eq(pick.call(), "smoke_bomb",
-		"and it RE-ARMS when the blind lapses, which a `turn == 1` gate could never do — that is "
-		+ "the whole difference between watching the room and watching the clock")
+	assert_eq(pick.call(), "attack", "full HP, healthy foe — fight, do not leave")
+	c.current_hp = int(c.max_hp * 0.30)
+	assert_eq(pick.call(), "vanish", "under 35% HP the stance vanishes instead of swinging")

@@ -1709,8 +1709,7 @@ func _create_guardian_default_script(character_id: String) -> Dictionary:
 
 
 func _create_ninja_default_script(character_id: String) -> Dictionary:
-	"""Ninja script - speed/burst role. Steal opener, Backstab on healthy targets,
-	Quick Strike cleanup, potion safety net, basic attack fallback."""
+	"""Ninja script - potion when hurt, Quick Strike on a wounded foe, otherwise attack."""
 	return {
 		"character_id": character_id,
 		"name": "Ninja Default",
@@ -1722,17 +1721,6 @@ func _create_ninja_default_script(character_id: String) -> Dictionary:
 					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
 				],
 				"actions": [{"type": "item", "id": "potion", "target": "self"}]
-			},
-			# Smoke Bomb opener: blind the room while they can still see. Replaces backstab and
-			# steal, both ROGUE abilities a Ninja cannot know — two of this script's four rules did
-			# nothing. Guarded on the blind itself, so it re-arms when the blind lapses instead of
-			# firing once or forever.
-			{
-				"conditions": [
-					{"type": "not_enemy_has_status", "status": "blind"},
-					{"type": "mp_percent", "op": ">=", "value": 14}
-				],
-				"actions": [{"type": "ability", "id": "smoke_bomb", "target": "lowest_hp_enemy"}]
 			},
 			# Quick Strike: fast follow-up on a wounded target to finish them before they act
 			{
