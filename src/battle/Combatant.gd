@@ -1782,7 +1782,10 @@ func recalculate_stats() -> void:
 	magic_defense = base_magic_defense
 	speed = base_speed
 
-	# Apply job modifiers (if JobSystem is available)
+	# Job mods replace base_*, which is where a confirmed nature was stored. Add those flats back onto the job total so the status screen and hits include the "+2 ATK" the creation line promised.
+	var nature: Dictionary = {}
+	if customization != null and customization.has_method("nature_flats_if_live"):
+		nature = customization.nature_flats_if_live()
 	if job and job.has("stat_modifiers"):
 		var job_mods = job["stat_modifiers"]
 		if job_mods.has("max_hp"):
@@ -1790,17 +1793,17 @@ func recalculate_stats() -> void:
 		if job_mods.has("max_mp"):
 			max_mp = job_mods["max_mp"]
 		if job_mods.has("attack"):
-			attack = job_mods["attack"]
+			attack = int(job_mods["attack"]) + int(nature.get("attack", 0))
 		if job_mods.has("defense"):
-			defense = job_mods["defense"]
+			defense = int(job_mods["defense"]) + int(nature.get("defense", 0))
 		if job_mods.has("magic"):
-			magic = job_mods["magic"]
+			magic = int(job_mods["magic"]) + int(nature.get("magic", 0))
 		if job_mods.has("magic_defense"):
 			magic_defense = job_mods["magic_defense"]
 		elif job_mods.has("defense"):
-			magic_defense = int(job_mods["defense"] * 0.5)
+			magic_defense = int(defense * 0.5)
 		if job_mods.has("speed"):
-			speed = job_mods["speed"]
+			speed = int(job_mods["speed"]) + int(nature.get("speed", 0))
 
 	# struktured 2026-09-06 "2ndary job does nothing apparently". The ABILITY
 	# half landed that day (knows_ability / get_known_abilities lend the

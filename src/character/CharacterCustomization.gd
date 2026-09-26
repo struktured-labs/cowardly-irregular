@@ -85,6 +85,8 @@ var hair_style: HairStyle = HairStyle.SHORT
 var hair_color: Color = HAIR_COLORS[1]  # Brown
 var skin_tone: Color = SKIN_TONES[1]    # Fair
 var personality: Personality = Personality.BRAVE
+## Set by apply_stat_bonus. Roster customizations carry a personality for portraits and do not set this, so a default-party Brave is not a secret +2 ATK.
+var nature_bonus_live: bool = false
 var starting_jobs: Array = ["fighter", "cleric"]  # Array of job IDs
 
 
@@ -160,6 +162,24 @@ static func get_personality_description(p: Personality) -> String:
 	return ""
 
 
+## The stat half of the creation line. Items stay in get_starting_items.
+static func nature_flats(p: Personality) -> Dictionary:
+	match p:
+		Personality.BRAVE: return {"attack": 2}
+		Personality.CAUTIOUS: return {"defense": 2}
+		Personality.SCHOLARLY: return {"magic": 2}
+		Personality.QUICK: return {"speed": 2}
+		Personality.CHARISMATIC: return {"magic": 2, "speed": 1}
+	return {}
+
+
+## Empty unless the player confirmed this nature via apply_stat_bonus.
+func nature_flats_if_live() -> Dictionary:
+	if not nature_bonus_live:
+		return {}
+	return nature_flats(personality)
+
+
 ## Apply personality stat bonus to a combatant.
 ##
 ## Pre-fix this mutated the DERIVED stat (combatant.attack += 2) then
@@ -168,22 +188,20 @@ static func get_personality_description(p: Personality) -> String:
 ## personality bonus in the UI ("+2 ATK" / "+2 DEF" / "+2 MAG" / "+2 SPD"
 ## / "+2 MAG +1 SPD") was effectively dead at character creation.
 ##
-## Fix: modify the BASE stat so recalculate_stats picks the bonus up
-## like any other source (job mods, level multiplier, passives). The
-## bonus persists across stat recalcs and is intrinsic to the character.
+## Fix: modify the BASE stat so a jobless recalc keeps the bonus, and mark
+## the nature live so recalculate_stats can add the same flats back when a
+## job's stat_modifiers replace base entirely (every created character).
 func apply_stat_bonus(combatant: Combatant) -> void:
-	match personality:
-		Personality.BRAVE:
-			combatant.base_attack += 2
-		Personality.CAUTIOUS:
-			combatant.base_defense += 2
-		Personality.SCHOLARLY:
-			combatant.base_magic += 2
-		Personality.QUICK:
-			combatant.base_speed += 2
-		Personality.CHARISMATIC:
-			combatant.base_magic += 2
-			combatant.base_speed += 1
+	nature_bonus_live = true
+	var flats: Dictionary = nature_flats(personality)
+	if flats.has("attack"):
+		combatant.base_attack += int(flats["attack"])
+	if flats.has("defense"):
+		combatant.base_defense += int(flats["defense"])
+	if flats.has("magic"):
+		combatant.base_magic += int(flats["magic"])
+	if flats.has("speed"):
+		combatant.base_speed += int(flats["speed"])
 	combatant.recalculate_stats()
 
 
@@ -215,6 +233,7 @@ func to_dict() -> Dictionary:
 		"hair_color": [hair_color.r, hair_color.g, hair_color.b],
 		"skin_tone": [skin_tone.r, skin_tone.g, skin_tone.b],
 		"personality": personality,
+		"nature_bonus_live": nature_bonus_live,
 		"starting_jobs": starting_jobs.duplicate()
 	}
 
@@ -234,6 +253,7 @@ static func from_dict_with_script(data: Dictionary, script: GDScript):
 	if skin_arr is Array and skin_arr.size() >= 3:
 		custom.skin_tone = Color(float(skin_arr[0]), float(skin_arr[1]), float(skin_arr[2]))
 	custom.personality = _enum_or(data.get("personality", Personality.BRAVE), Personality.size())
+	custom.nature_bonus_live = bool(data.get("nature_bonus_live", false))
 	var jobs = data.get("starting_jobs", ["fighter", "cleric"])
 	if jobs is Array:
 		var typed_jobs: Array = []
