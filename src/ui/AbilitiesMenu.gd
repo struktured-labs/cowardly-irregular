@@ -346,13 +346,18 @@ func _create_ability_row(ability: Dictionary, index: int) -> Control:
 	cursor.name = "Cursor"
 	row.add_child(cursor)
 
+	# The ability's icon at 1x — the 24px row is too short for the 2x the battle menu uses
+	var icon := AbilityIcons.make_rect(str(ability["id"]), 16)
+	icon.position = Vector2(18, 4)
+	row.add_child(icon)
+
 	# Ability name
 	## Tick 141: prettify the fallback id when JobSystem doesn't
 	## know the ability. Pre-fix unknown ability ids leaked as raw
 	## snake_case ("power_strike" not "Power Strike").
 	var name_label = Label.new()
 	name_label.text = data.get("name", str(ability["id"]).replace("_", " ").capitalize())
-	name_label.position = Vector2(20, 2)
+	name_label.position = Vector2(38, 2)
 	name_label.add_theme_font_size_override("font_size", 11)
 	name_label.add_theme_color_override("font_color", _get_ability_color(data))
 	row.add_child(name_label)
@@ -362,7 +367,7 @@ func _create_ability_row(ability: Dictionary, index: int) -> Control:
 	if mp_cost > 0:
 		var mp_label = Label.new()
 		mp_label.text = "%d MP" % mp_cost
-		mp_label.position = Vector2(160, 2)
+		mp_label.position = Vector2(184, 2)  # clears the longest name now the icon moved names 18px right
 		mp_label.add_theme_font_size_override("font_size", 10)
 		mp_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		row.add_child(mp_label)

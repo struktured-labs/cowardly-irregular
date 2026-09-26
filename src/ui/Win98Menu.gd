@@ -1003,7 +1003,9 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	if item.has("cost"):
 		label_w -= _cost_column_width
 	if icon_advance > 0:
-		var icon := ItemIcons.make_rect(str(item.get("icon_id", "")), _icon_side())
+		var icon_id := str(item.get("icon_id", ""))
+		# icon_kind picks the resolver: an ability id through ItemIcons would draw the generic item scroll.
+		var icon := AbilityIcons.make_rect(icon_id, _icon_side()) if str(item.get("icon_kind", "")) == "ability" else ItemIcons.make_rect(icon_id, _icon_side())
 		icon.position = Vector2(8, (row_h - _icon_side()) * 0.5)
 		if _row_unavailable(item):
 			icon.modulate = Color(0.45, 0.45, 0.45)

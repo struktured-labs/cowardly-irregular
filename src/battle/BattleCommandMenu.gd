@@ -289,6 +289,9 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		for ability_id in abilities:
 			var ability_item = _build_ability_menu_item(ability_id, combatant, alive_enemies, canvas_transform)
 			if not ability_item.is_empty():
+				# Icons on the Ability SUBMENU only: an icon on a top-level quick slot would grow every command row to 32px.
+				ability_item["icon_id"] = ability_id
+				ability_item["icon_kind"] = "ability"
 				ability_items.append(ability_item)
 
 		if ability_items.size() > 0:
@@ -299,8 +302,8 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			})
 
 	# Items submenu
-	## The party's one bag, read from the same party _execute_item spends from.
-	var bag: Dictionary = ItemSystem.party_inventory(BattleManager.player_party if combatant in BattleManager.player_party else [combatant])
+	## The party's one bag, including the bench a spotlight duel is holding off the field.
+	var bag: Dictionary = ItemSystem.party_inventory(BattleManager.consumable_bag(combatant))
 	if not bag.is_empty():
 		var item_items = []
 		for item_id in bag.keys():
