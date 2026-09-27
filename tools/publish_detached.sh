@@ -37,7 +37,7 @@ cd "$(cd "$(dirname "$0")/.." && pwd)"
 # playing an internet-radio source after an 11h38m recording ended at 18:48, and this gate held
 # v3.33.349-alpha off the store for hours more -- until it was launched by hand with the gate
 # narrowed. `obs-ffmpeg-mux` is the recording muxer: it exists only while a file is written.
-OWNER_PROCS="${PUBLISH_OWNER_PROCS:-quartus obs-ffmpeg-mux}"
+OWNER_PROCS="${PUBLISH_OWNER_PROCS:-quartus}"   # + obs-ffmpeg-mux only when PUBLISH_OBS_HOLD=1 (below)
 MUX_PROC="${PUBLISH_MUX_PROC:-obs-ffmpeg-mux}"
 
 # Is OBS LIVE? Recording, streaming and the replay buffer all run an encoder, and only the first
@@ -54,6 +54,17 @@ MUX_PROC="${PUBLISH_MUX_PROC:-obs-ffmpeg-mux}"
 # running and its state cannot be read, that is a refusal, never a launch.
 OBS_PROC="${PUBLISH_OBS_PROC:-obs}"
 OBS_LOG_DIR="${PUBLISH_OBS_LOG_DIR:-$HOME/.config/obs-studio/logs}"
+
+# ⛔ OBS DOES NOT HOLD A DEPLOY BY DEFAULT — struktured, 2026-09-27, verbatim: "Obs is irrelevant".
+# The OBS gate held .517-.530 off the store for ~22 h behind one recording that ran from 07:42 to
+# past midnight (and, 09-25, a Replay Buffer left on overnight). He had already said, of the Replay
+# Buffer, "what does obs replay buffer have to do with deploys" and "dont care, ship to itch plz".
+# Everything above still works and is still selftested; it now runs only when PUBLISH_OBS_HOLD=1.
+# Quartus is NOT part of this ruling and still holds: a publish competes with his FPGA fit.
+OBS_HOLD="${PUBLISH_OBS_HOLD:-0}"
+if [ "$OBS_HOLD" = 1 ] && [ -z "${PUBLISH_OWNER_PROCS:-}" ]; then
+    OWNER_PROCS="quartus obs-ffmpeg-mux"
+fi
 
 # Outputs whose LAST marker in the log is a Start. Prints e.g. "Recording, Replay Buffer".
 _obs_live_outputs() {
@@ -117,6 +128,7 @@ _capture_growth() {
 }
 
 _obs_busy() {
+    [ "$OBS_HOLD" = 1 ] || return 0                        # OBS is irrelevant (see OBS_HOLD above)
     local pid; pid=$(pgrep -x "$OBS_PROC" 2>/dev/null | head -1)
     [ -n "$pid" ] || return 0                               # not running: nothing to protect
     local log; log=$(ls -t "$OBS_LOG_DIR"/*.txt 2>/dev/null | head -1)
@@ -240,8 +252,13 @@ case "${1:-}" in
                     echo "[check] own machine; re-run when it is done. Nothing here launches anything."
                     exit 2
                 fi
-                [ -n "$(pgrep -x "$OBS_PROC" 2>/dev/null)" ] && \
-                    echo "[check] OBS is open but not recording, streaming or holding a replay buffer."
+                if [ -n "$(pgrep -x "$OBS_PROC" 2>/dev/null)" ]; then
+                    if [ "$OBS_HOLD" = 1 ]; then
+                        echo "[check] OBS is open but not recording, streaming or holding a replay buffer."
+                    else
+                        echo "[check] OBS is running and its state is ignored — \"Obs is irrelevant\" (PUBLISH_OBS_HOLD=1 restores the hold)."
+                    fi
+                fi
                 echo "[check] CLEAR: a publish would start now. Nothing is holding it."
                 exit 0 ;;
     "" |-*)     echo "usage: $0 <tag> [args...] | --check | --status <logdir> | --selftest" >&2; exit 2 ;;
@@ -258,8 +275,13 @@ if [ "${1:-}" != "--selftest" ]; then
         echo "[detached] I/O I should not add to it. Re-run when they are done." >&2
         exit 2
     fi
-    [ -n "$(pgrep -x "$OBS_PROC" 2>/dev/null)" ] && \
-        echo "[detached] OBS is open but not recording, streaming or holding a replay buffer — not a reason to wait"
+    if [ -n "$(pgrep -x "$OBS_PROC" 2>/dev/null)" ]; then
+        if [ "$OBS_HOLD" = 1 ]; then
+            echo "[detached] OBS is open but not recording, streaming or holding a replay buffer — not a reason to wait"
+        else
+            echo "[detached] OBS is running and its state is ignored — \"Obs is irrelevant\" (PUBLISH_OBS_HOLD=1 restores the hold)"
+        fi
+    fi
     LOGDIR="$(_logdir "$TAG")"
     mkdir -p "$LOGDIR"
     rm -f "$LOGDIR/publish.ec"
@@ -373,7 +395,7 @@ _obslog() { rm -f "$O"/*.txt; printf '%s\n' "$@" > "$O/2026-01-01 00-00-00.txt";
 _try() {  # label want_ec want_text  (runs with bash standing in for obs)
     local out ec
     out=$(PUBLISH_CMD="$T/ok.sh" PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="bash" \
-          PUBLISH_OBS_LOG_DIR="$O" ./tools/publish_detached.sh "ZZ-obs" 2>&1); ec=$?
+          PUBLISH_OBS_HOLD="${_OBS_HOLD_ARM-1}" PUBLISH_OBS_LOG_DIR="$O" ./tools/publish_detached.sh "ZZ-obs" 2>&1); ec=$?
     chk "$1" "$ec" "$2"
     case "$out" in *"$3"*) chk "  ...and says why" yes yes ;; *) chk "  ...and says why ($3)" "no" "yes" ;; esac
 }
@@ -392,12 +414,36 @@ _obslog "$S_START" "$S_STOP";                     _try "stream ended -> launch" 
 rm -f "$O"/*.txt;                                 _try "obs running, NO log -> refuse (fail closed)" 2 "output state is unknown"
 _obslog "$R_STOP"; touch -d '2000-01-01' "$O"/*.txt
                                                   _try "log older than obs -> refuse (fail closed)"  2 "predates it"
+# ── THE DEFAULT: "Obs is irrelevant" (struktured, 2026-09-27). Every arm above runs with
+#    PUBLISH_OBS_HOLD=1; these run with it UNSET, both directions, so a default that still held
+#    OBS, or a switch that no longer restored it, cannot pass.
+_obslog "$R_START" "$B_START"
+_OBS_HOLD_ARM="" _try "DEFAULT: OBS recording + replay buffer -> LAUNCH" 0 "state is ignored"
+_obslog "$R_START"
+_try "PUBLISH_OBS_HOLD=1 still refuses a recording"                        2 "OBS is live: Recording"
+# The recording MUXER, by name, in the owner list: a stand-in process literally named
+# obs-ffmpeg-mux. Default: not an owner process -> launch. OBS_HOLD=1: it holds -> refuse.
+cp "$(command -v bash)" "$T/obs-ffmpeg-mux"
+"$T/obs-ffmpeg-mux" -c 'sleep 30' & _MUX=$!
+_mux_try() {  # label want_ec   (no PUBLISH_OWNER_PROCS: the DEFAULT owner list is under test)
+    local ec=0
+    env -u PUBLISH_OWNER_PROCS PUBLISH_CMD="$T/ok.sh" PUBLISH_OBS_PROC="__absent__" \
+        PUBLISH_OBS_HOLD="$3" ./tools/publish_detached.sh "ZZ-mux" >/dev/null 2>&1 || ec=$?
+    chk "$1" "$ec" "$2"
+}
+if pgrep quartus >/dev/null 2>&1; then
+    printf '  skip  %-50s %s\n' "muxer arms" "(a real quartus is running; the default owner list would hold)"
+else
+    _mux_try "DEFAULT: a running obs-ffmpeg-mux does NOT hold"  0 ""
+    _mux_try "PUBLISH_OBS_HOLD=1: obs-ffmpeg-mux DOES hold"     2 1
+fi
+kill "$_MUX" 2>/dev/null; wait "$_MUX" 2>/dev/null
 # ── --check answers the same question WITHOUT launching ──────────────────────────────────
 # Both directions, and a third arm proving it has no side effects: the whole point is that a
 # reader can ask the gate instead of attempting a publish to find out.
 _chk_mode() {  # label want_ec want_text
     local out ec
-    out=$(PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="bash" \
+    out=$(PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="bash" PUBLISH_OBS_HOLD="${_OBS_HOLD_ARM-1}" \
           PUBLISH_OBS_LOG_DIR="$O" ./tools/publish_detached.sh --check 2>&1); ec=$?
     chk "$1" "$ec" "$2"
     case "$out" in *"$3"*) chk "  ...and says why" yes yes ;; *) chk "  ...and says why ($3)" "no" "yes" ;; esac
@@ -408,7 +454,7 @@ _chk_mode() {  # label want_ec want_text
 _grow="$T/cap.mkv"; : > "$_grow"
 _chk_cap() {  # label want_ec want_text   (file prepared by the caller)
     local out ec
-    out=$(PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="bash" PUBLISH_OBS_LOG_DIR="$O" \
+    out=$(PUBLISH_OWNER_PROCS="__absent__" PUBLISH_OBS_PROC="bash" PUBLISH_OBS_LOG_DIR="$O" PUBLISH_OBS_HOLD=1 \
           PUBLISH_CAPTURE_FILE="$_grow" CAPTURE_SAMPLE_SECS="${_CAP_BUDGET:-7}" \
           ./tools/publish_detached.sh --check 2>&1); ec=$?
     chk "$1" "$ec" "$2"
@@ -435,6 +481,11 @@ _chk_cap "no capture file at all -> no corroboration line" 2 "OBS is live: Strea
 
 _obslog "$S_START";           _chk_mode "--check while streaming -> HELD"        2 "OBS is live: Streaming"
 _obslog "$S_START" "$S_STOP"; _chk_mode "--check with nothing live -> CLEAR"     0 "CLEAR: a publish would start now"
+# DEFAULT (PUBLISH_OBS_HOLD unset): a live recording does not hold --check either. Placed AFTER
+# _chk_mode's definition — the first draft called it above, "command not found", and the arm
+# silently never ran while the selftest still reported 0 failed.
+_obslog "$R_START" "$B_START"
+_OBS_HOLD_ARM="" _chk_mode "DEFAULT: --check while recording -> CLEAR"   0 "CLEAR: a publish would start now"
 # ⛔ AND IT MUST NOT HAVE LAUNCHED ANYTHING ON THE WAY TO THAT ANSWER — a check that publishes
 # is worse than no check.
 #
