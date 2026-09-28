@@ -7289,7 +7289,7 @@ func _autogrind_item_bag(member: Combatant) -> Array:
 ## Between battles the drink is the item itself, taken from the shared bag. The leader holds the drops.
 func _autogrind_heal_member(member: Combatant) -> void:
 	var bag: Array = _autogrind_item_bag(member)
-	for item_id in AutogrindSystem.HEAL_PARTY_ITEM_ORDER:
+	for item_id in AutogrindSystem.heal_items_by_preference(member, bag):
 		if ItemSystem == null or ItemSystem.party_item_count(bag, item_id) <= 0:
 			continue
 		var before := member.current_hp
