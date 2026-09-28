@@ -2643,7 +2643,7 @@ func apply_autogrind_actions(actions: Array) -> void:
 						## promises. Tick 394 fixed exactly this in HeadlessBattleResolver._resolve_item
 						## ("route through ItemSystem.use_item so autogrind item use matches live
 						## battle exactly") and this second site was missed. Same ruling, applied here.
-						for item_id in HEAL_PARTY_ITEM_ORDER:
+						for item_id in heal_items_by_preference(member, _party_bag(member)):
 							if _party_bag_count(member, item_id) <= 0:
 								continue
 							if not _apply_item_to(member, item_id):
@@ -2711,12 +2711,28 @@ func _track_item_consumed(item_id: String) -> void:
 
 const _HEAL_EFFECT_KEYS := ["heal_hp", "heal_mp", "heal_hp_percent", "heal_mp_percent", "revive"]
 
-## ⚠️ UNCHANGED ORDER, ON PURPOSE. heal_party has always tried hi_potion before potion, and five
-## other restoratives (mega_potion, x_potion, elixir, megalixir, phoenix_down) have never been
-## eligible at all. Widening this is a BALANCE ruling, not a bug fix: strongest-first burns a
-## Megalixir on a scratch, weakest-first changes how long a player's hi_potions last. Handed to
-## struktured with the measurement; this commit fixes only the AMOUNTS, which were plainly wrong.
+## The ELIGIBLE set, not a drinking order: heal_items_by_preference picks among these. Widening it (x_potion, elixir...) is still struktured's balance call.
 const HEAL_PARTY_ITEM_ORDER := ["hi_potion", "potion"]
+
+
+## Smallest eligible item that covers the missing HP, then the rest strongest-first; the fixed order drank a 2000-HP Hi-Potion on a 35-HP gap.
+func heal_items_by_preference(member, bag: Array) -> Array:
+	var its: Node = _get_autoload_node("ItemSystem")
+	if its == null or not its.has_method("estimate_item_heal") or member == null or not is_instance_valid(member):
+		return HEAL_PARTY_ITEM_ORDER.duplicate()
+	var deficit: int = int(member.max_hp) - int(member.current_hp)
+	var covers: Array = []
+	var short: Array = []
+	for item_id in HEAL_PARTY_ITEM_ORDER:
+		if int(its.party_item_count(bag, item_id)) <= 0:
+			continue
+		var heal: int = int(its.estimate_item_heal(item_id, member))
+		if heal <= 0:
+			continue
+		(covers if heal >= deficit else short).append([heal, item_id])
+	covers.sort_custom(func(a, b): return a[0] < b[0])
+	short.sort_custom(func(a, b): return a[0] > b[0])
+	return (covers + short).map(func(pair): return pair[1])
 
 
 ## The MP twin of HEAL_PARTY_ITEM_ORDER, and UNCHANGED for the same reason: elixir and megalixir
