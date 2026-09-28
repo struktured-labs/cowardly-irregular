@@ -535,6 +535,9 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 
 	# Fade out
 	controller.pause_exploration()
+	# A stair's body_entered runs inside the physics step, where the new floor's areas are refused.
+	if Engine.is_in_physics_frame():
+		await get_tree().process_frame
 
 	# Update floor
 	current_floor = target_floor

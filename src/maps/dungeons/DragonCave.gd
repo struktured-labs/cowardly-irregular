@@ -649,6 +649,9 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 		player.set_can_move(false)
 
 	controller.pause_exploration()
+	# A stair or portal's body_entered runs inside the physics step, where the new floor's areas are refused.
+	if Engine.is_in_physics_frame():
+		await get_tree().process_frame
 
 	current_floor = target_floor
 	# Persist floor across save/load. Scoped by cave_id so each dungeon
@@ -703,6 +706,9 @@ func puzzle_warp_to(target_floor: int, landing_px: Vector2) -> void:
 	controller.pause_exploration()
 	if SoundManager:
 		SoundManager.play_ui("portal_enter")
+	# A stair or portal's body_entered runs inside the physics step, where the new floor's areas are refused.
+	if Engine.is_in_physics_frame():
+		await get_tree().process_frame
 	if target_floor != current_floor:
 		current_floor = target_floor
 		if GameState and cave_id != "":
