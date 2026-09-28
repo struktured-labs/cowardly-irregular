@@ -6721,10 +6721,11 @@ func _on_autogrind_paused() -> void:
 	# Update overlay to show paused state
 	var summary = _autogrind_overlay.get_node_or_null("SummaryLabel") if _autogrind_overlay and is_instance_valid(_autogrind_overlay) else null
 	if summary:
-		summary.text = "|| PAUSED — Press P to Resume"
+		## Was "Press P" for everyone; a pad resumes on battle_toggle_auto and has no P.
+		summary.text = "|| PAUSED — Press %s to Resume" % AutogrindInputHelper.pause_hint()
 		summary.add_theme_color_override("font_color", Color(1.0, 0.7, 0.3))
 
-	_show_autogrind_toast("Autogrind paused. Press P to resume.")
+	_show_autogrind_toast("Autogrind paused. Press %s to resume." % AutogrindInputHelper.pause_hint())
 	SoundManager.play_ui("grind_stop_manual")
 	print("[AUTOGRIND] Session paused")
 

@@ -157,6 +157,10 @@ func test_pause_is_read_from_the_action_in_source() -> void:
 	assert_ne(code, "", "CONTROL: helper source must survive the comment strip")
 	var body: String = code.split("static func grind_hud_strip")[-1].split("static func ")[0]
 	assert_ne(body, "", "CONTROL: grind_hud_strip's body must be found, or this arm is vacuous")
+	## The strip reads pause_hint, shared with GameLoop's paused captions, so the ACTION lookup is checked there.
+	assert_true(body.contains("pause_hint("), "grind_hud_strip must take its pause token from pause_hint")
+	body = code.split("static func pause_hint")[-1].split("static func ")[0]
+	assert_ne(body, "", "CONTROL: pause_hint's body must be found, or this arm is vacuous")
 	assert_true(body.contains('hint_for_action("battle_toggle_auto"'),
 		"pause must resolve through the ACTION so a Controls rebind moves the label with the handler")
 	assert_false(body.contains('hint_for("pause"'),
