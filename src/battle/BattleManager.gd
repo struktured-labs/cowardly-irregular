@@ -1219,6 +1219,13 @@ func _get_battle_reward_multiplier() -> float:
 	return max_multiplier
 
 
+## The party a battle UI should draw: this battle's own members, else the scene's; freed members skipped (a scene freed before end_battle leaves player_party stale).
+func live_party_or(fallback: Array) -> Array:
+	var live: Array = player_party.filter(func(m): return is_instance_valid(m))
+	if not live.is_empty():
+		return live
+	return fallback.filter(func(m): return is_instance_valid(m))
+
 func _cleanup_battle() -> void:
 	"""Clean up battle state"""
 	# Disconnect using the cached bound Callables — see _died_callbacks

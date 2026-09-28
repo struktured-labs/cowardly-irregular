@@ -1732,7 +1732,7 @@ func _update_ui() -> void:
 
 func _update_danger_music() -> void:
 	"""Update music danger intensity based on party HP"""
-	var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else party_members
+	var members = BattleManager.live_party_or(party_members)
 	if members.size() == 0:
 		return
 

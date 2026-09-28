@@ -125,7 +125,7 @@ func _update_auto_toggle_button() -> void:
 	if not _auto_toggle_button:
 		return
 	var any_on := false
-	var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else _scene.party_members
+	var members = BattleManager.live_party_or(_scene.party_members)
 	for member in members:
 		var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
 		if AutobattleSystem.is_autobattle_enabled(char_id):
@@ -171,7 +171,7 @@ func _on_auto_toggle_pressed() -> void:
 func update_character_status() -> void:
 	"""Update character status display for all party members"""
 	# Use BattleManager's player_party for accurate current state
-	var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else _scene.party_members
+	var members = BattleManager.live_party_or(_scene.party_members)
 	if members.size() == 0:
 		return
 
@@ -187,7 +187,7 @@ func update_character_status() -> void:
 
 func _ensure_party_status_boxes() -> void:
 	"""Ensure we have status boxes for all party members (only creates once)"""
-	var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else _scene.party_members
+	var members = BattleManager.live_party_or(_scene.party_members)
 
 	# Skip if already created for this party
 	if _party_status_boxes.size() == members.size():
