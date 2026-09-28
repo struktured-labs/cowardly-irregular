@@ -127,6 +127,8 @@ static var _sfx_manifest_loaded: bool = false
 static var _sfx_stream_cache: Dictionary = {}
 # Per-key cooldown timestamps to prevent SFX pileup at high battle speeds
 var _sfx_cooldowns: Dictionary = {}
+## One AudioStreamGenerator per player, kept for the process: 4.4's generator playback holds a RAW pointer to its stream, so a fading playback outlived a freed generator and the mix thread spun on garbage.
+var _procedural_generators: Dictionary = {}
 const SFX_MIN_INTERVAL_MS: int = 80  # Minimum ms between same sound plays
 
 # Sound definitions - procedural parameters.
@@ -1712,6 +1714,17 @@ func play_status_if_authored(sound_key: String) -> bool:
 
 ## Sound Generation
 
+## The player's own generator, created once and never released while the process lives. Each play() still gets a fresh playback and ring buffer.
+func _procedural_generator_for(player: AudioStreamPlayer, sample_rate: int) -> AudioStreamGenerator:
+	var key: int = player.get_instance_id()
+	var generator: AudioStreamGenerator = _procedural_generators.get(key, null)
+	if generator == null:
+		generator = AudioStreamGenerator.new()
+		_procedural_generators[key] = generator
+	generator.mix_rate = sample_rate
+	return generator
+
+
 func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 	"""Generate and play a procedural sound"""
 	var sample_rate = 22050
@@ -1725,8 +1738,7 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 	## and a later file cue passing NAN ("preserve the channel base") inherited 0.0 instead.
 	var volume_db = params.get("volume_db", player.volume_db)
 
-	var generator = AudioStreamGenerator.new()
-	generator.mix_rate = sample_rate
+	var generator: AudioStreamGenerator = _procedural_generator_for(player, sample_rate)
 
 	player.stream = generator
 	player.volume_db = volume_db
