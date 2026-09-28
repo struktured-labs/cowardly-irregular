@@ -262,6 +262,48 @@ func execute_defer() -> void:
 
 
 ## Combat actions
+## What take_damage will remove for this incoming amount, before a damage_absorb ward and the HP floor, with no side effect.
+func damage_preview(amount: int, is_magical: bool = false) -> int:
+	"""The target's side of every hit: vulnerability, defense, defending, exposed, and the
+	damage_multiplier dial. take_damage and BattleManager's estimators both call this."""
+	amount = max(0, amount)
+	# Vulnerability multiplier (msg 2485 Warden's Key crescendo): applied to raw incoming amount BEFORE the defense formula so the crack semantically amplifies incoming damage rather than reducing defense (avoids the base×0.25 stat-clamp in _get_effective_stat). Stacked additively across debuffs with stat="incoming_damage" — each stack's modifier is a percentage bonus, unclamped, so multi-hit crescendos scale smoothly.
+	if amount > 0:
+		var vuln: float = get_incoming_damage_multiplier()
+		if vuln != 1.0:
+			amount = int(round(amount * vuln))
+			amount = max(0, amount)
+
+	var def_value = get_buffed_stat("magic_defense", magic_defense) if is_magical else get_buffed_stat("defense", defense)
+	var denom = max(1, amount + def_value)
+	var actual_damage = int((amount * amount) / float(denom))
+	actual_damage = max(1, actual_damage)  # Always at least 1 damage
+
+	# Defending reduces damage by 50%
+	if is_defending:
+		actual_damage = int(actual_damage * 0.5)
+
+	# Exposed status (from group attacks) increases damage taken by 50%
+	if has_status("exposed"):
+		actual_damage = int(actual_damage * 1.5)
+
+	# Tick 114: apply the global damage_multiplier from game_constants.
+	# Scriptweaver writes this knob to nudge incoming damage globally
+	# (player + enemy alike). Pre-fix the constant was set in defaults
+	# but no code path read it, so Scriptweaver edits were cosmetic.
+	# Defensive pattern matches the tick 109/110/113 multipliers:
+	# .get(key, 1.0) + clampf [0.1, 10.0]. Runtime lookup keeps this
+	# function preload-safe for unit tests (GameState autoload may
+	# not be present in pure-class tests).
+	var gs_node: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
+	if gs_node and "game_constants" in gs_node:
+		var dmg_mult: float = clampf(
+			float(gs_node.game_constants.get("damage_multiplier", 1.0)),
+			0.1, 10.0)
+		actual_damage = int(actual_damage * dmg_mult)
+	return actual_damage
+
+
 func take_damage(amount: int, is_magical: bool = false) -> int:
 	"""Apply damage considering defense/magic defense and defending state"""
 	if not is_alive:
@@ -303,40 +345,8 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 					amount = max(0, amount - redirect_amount)
 					print("[SHARED_DAMAGE] %d redirected to controller %s" % [redirect_amount, ctrl.combatant_name])
 
-	# Vulnerability multiplier (msg 2485 Warden's Key crescendo): applied to raw incoming amount BEFORE the defense formula so the crack semantically amplifies incoming damage rather than reducing defense (avoids the base×0.25 stat-clamp in _get_effective_stat). Stacked additively across debuffs with stat="incoming_damage" — each stack's modifier is a percentage bonus, unclamped, so multi-hit crescendos scale smoothly.
-	if amount > 0:
-		var vuln: float = get_incoming_damage_multiplier()
-		if vuln != 1.0:
-			amount = int(round(amount * vuln))
-			amount = max(0, amount)
-
-	var def_value = get_buffed_stat("magic_defense", magic_defense) if is_magical else get_buffed_stat("defense", defense)
-	var denom = max(1, amount + def_value)
-	var actual_damage = int((amount * amount) / float(denom))
-	actual_damage = max(1, actual_damage)  # Always at least 1 damage
-
-	# Defending reduces damage by 50%
-	if is_defending:
-		actual_damage = int(actual_damage * 0.5)
-
-	# Exposed status (from group attacks) increases damage taken by 50%
-	if has_status("exposed"):
-		actual_damage = int(actual_damage * 1.5)
-
-	# Tick 114: apply the global damage_multiplier from game_constants.
-	# Scriptweaver writes this knob to nudge incoming damage globally
-	# (player + enemy alike). Pre-fix the constant was set in defaults
-	# but no code path read it, so Scriptweaver edits were cosmetic.
-	# Defensive pattern matches the tick 109/110/113 multipliers:
-	# .get(key, 1.0) + clampf [0.1, 10.0]. Runtime lookup keeps this
-	# function preload-safe for unit tests (GameState autoload may
-	# not be present in pure-class tests).
-	var gs_node: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
-	if gs_node and "game_constants" in gs_node:
-		var dmg_mult: float = clampf(
-			float(gs_node.game_constants.get("damage_multiplier", 1.0)),
-			0.1, 10.0)
-		actual_damage = int(actual_damage * dmg_mult)
+	## One owner for the target's side of a hit, so the command menu quotes this instead of stopping at defense.
+	var actual_damage: int = damage_preview(amount, is_magical)
 
 	## Tick 386: damage_absorb status converts incoming damage to
 	## healing 1:1 while active. Applied by the fill_the_void ability

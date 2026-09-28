@@ -20,10 +20,12 @@ func _read(p: String) -> String:
 	return t
 
 
+## take_damage's target-side arithmetic moved into damage_preview so the command menu could quote
+## the hit instead of stopping at defense. The delegation arm below pins the hand-off.
 func _take_damage_body() -> String:
 	var src := _read(COMBATANT)
-	var idx: int = src.find("func take_damage")
-	assert_gt(idx, -1, "take_damage must exist")
+	var idx: int = src.find("func damage_preview(")
+	assert_gt(idx, -1, "damage_preview must exist — it owns the damage_multiplier read")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
@@ -70,6 +72,18 @@ func test_heal_clamps_healing_multiplier() -> void:
 		"heal_preview must clampf the multiplier")
 	assert_true(body.contains("0.1, 10.0"),
 		"heal_preview healing_multiplier clamp must be [0.1, 10.0] — uniform band")
+
+
+func test_take_damage_delegates_to_damage_preview() -> void:
+	## The damage pins read damage_preview. If take_damage stopped calling it they would stay green
+	## while the dial reached no hit.
+	var src := _read(COMBATANT)
+	var idx: int = src.find("func take_damage(")
+	assert_gt(idx, -1, "take_damage must exist")
+	var next_fn: int = src.find("\nfunc ", idx + 1)
+	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
+	assert_true(body.contains("damage_preview(amount, is_magical)"),
+		"take_damage() must remove what damage_preview reports, or the dial is wired into nothing")
 
 
 func test_heal_delegates_to_heal_preview() -> void:
