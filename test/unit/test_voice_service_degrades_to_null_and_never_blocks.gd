@@ -40,6 +40,14 @@ func after_each() -> void:
 	VoiceService.cache = _saved_cache
 
 
+## A decode refused because the headless mixer is wedged fails LOUD and names why (issue #224), never as a bare null.
+func _wedged_refusal(stream: AudioStream) -> bool:
+	if stream == null and SoundManager != null and SoundManager.mixer_is_wedged():
+		fail_test("headless mixer wedged: the voice WAV decode was refused so AudioServer.lock cannot hang the suite (issue #224); re-run before debugging")
+		return true
+	return false
+
+
 func test_an_uncast_speaker_never_asks_the_server() -> void:
 	assert_null(await VoiceService.synthesize("goblin", "Hi.", 2.0))
 	assert_eq(_replay.requests.size(), 0)
@@ -47,6 +55,8 @@ func test_an_uncast_speaker_never_asks_the_server() -> void:
 
 func test_a_fresh_line_is_synthesized_cached_and_then_served_from_cache() -> void:
 	var s: AudioStream = await VoiceService.synthesize("bard", "A song.", 2.0)
+	if _wedged_refusal(s):
+		return
 	assert_not_null(s)
 	assert_eq(_replay.requests.size(), 1)
 	assert_eq(_replay.requests[0]["voice"], "bard.wav", "the cast's server voice name is what is sent")
@@ -56,7 +66,11 @@ func test_a_fresh_line_is_synthesized_cached_and_then_served_from_cache() -> voi
 
 
 func test_a_recast_misses_the_old_audio() -> void:
-	await VoiceService.synthesize("bard", "A song.", 2.0)
+	var first: AudioStream = await VoiceService.synthesize("bard", "A song.", 2.0)
+	if _wedged_refusal(first):
+		return
+	assert_not_null(first, "VOID unless the line was synthesized, or the miss below proves nothing")
+	assert_not_null(VoiceService.get_cached("bard", "A song."), "served from cache at the old rev")
 	VoiceService._cast["bard"]["rev"] = 4
 	assert_null(VoiceService.get_cached("bard", "A song."), "rev is in the key")
 
@@ -91,7 +105,10 @@ func test_clipping_is_flagged_in_status() -> void:
 	for i in s.size():
 		s[i] = 32767 if (i % 1000) < 5 else 1000
 	_replay.next_wav = WavFixture.pcm16(s)
-	await VoiceService.synthesize("bard", "Loud.", 2.0)
+	var loud: AudioStream = await VoiceService.synthesize("bard", "Loud.", 2.0)
+	if _wedged_refusal(loud):
+		return
+	assert_not_null(loud, "VOID unless the clipped line was decoded")
 	assert_true(VoiceService.status()["clipping_detected"])
 
 

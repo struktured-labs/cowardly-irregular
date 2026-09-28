@@ -67,6 +67,8 @@ func test_test_voice_speaks_a_cast_line_through_play_voice_stream() -> void:
 	assert_eq(_replay.requests.size(), 1, "the TYPED enable is what the test uses: %s" % p._status_label.text)
 	assert_eq(_replay.requests[0]["voice"], "bard.wav")
 	assert_not_null(SoundManager._voice_player.stream, "the synthesized line reached the voice player")
+	if SoundManager._voice_player.stream != null:
+		assert_almost_eq(SoundManager._voice_player.stream.get_length(), 0.3, 0.01, "the line THIS test synthesized, not one left on the player")
 	assert_string_contains(p._status_label.text, "ms")
 
 
