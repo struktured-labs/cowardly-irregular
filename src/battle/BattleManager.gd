@@ -8286,6 +8286,8 @@ func _process_grid_autobattle(combatant: Combatant) -> void:
 				sub_action["item_id"] = converted["item_id"]
 			advance_actions.append(sub_action)
 
+	advance_actions = _affordable_advance(combatant, advance_actions)
+
 	if advance_actions.size() == 0:
 		# All actions failed, defer
 		var defer_action = {
@@ -8317,6 +8319,33 @@ func _process_grid_autobattle(combatant: Combatant) -> void:
 		print("%s (autobattle) advances with %d actions" % [combatant.combatant_name, (ruled["actions"] as Array).size()])
 
 	_end_selection_turn()
+
+
+## Each rule action converts on its own against the full MP and bag, so a script could queue three
+## Fires on MP for one. Walk the queue in order as the executor will spend it (restores that reach the
+## caster credit MP, capped at max) and drop what the turn cannot pay for, rather than burn its AP.
+func _affordable_advance(combatant: Combatant, actions: Array[Dictionary]) -> Array[Dictionary]:
+	var kept: Array[Dictionary] = []
+	var mp: int = combatant.current_mp
+	var bag: Array = consumable_bag(combatant)
+	var used: Dictionary = {}
+	for a in actions:
+		var aid: String = str(a.get("ability_id", ""))
+		var iid: String = str(a.get("item_id", ""))
+		if aid != "":
+			var cost: int = JobSystem.get_ability_mp_cost(combatant, aid)
+			if cost > mp:
+				continue
+			mp -= cost
+			var ability: Dictionary = JobSystem.get_ability(aid)
+			if str(ability.get("type", "")) == "mp_restore" and str(ability.get("target_type", "self")) in ["self", "all_allies"]:
+				mp = mini(combatant.max_mp, mp + _mp_restore_amount(ability))
+		elif iid != "":
+			if int(used.get(iid, 0)) >= ItemSystem.party_item_count(bag, iid):
+				continue
+			used[iid] = int(used.get(iid, 0)) + 1
+		kept.append(a)
+	return kept
 
 
 func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, allies: Array, enemies: Array) -> Dictionary:
