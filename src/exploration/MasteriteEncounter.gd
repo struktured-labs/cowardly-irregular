@@ -245,7 +245,8 @@ func _on_body_entered(body: Node2D) -> void:
 			"dungeon_flag": "",
 			"quest_flags": [quest_flag] if quest_flag != "" else [],
 		}
-	monitoring = false
+	# Deferred: this runs inside body_entered, where the engine refuses a direct write.
+	set_deferred("monitoring", false)
 	await _play_encounter_beat()
 	_fire_battle()
 
