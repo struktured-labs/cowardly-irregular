@@ -170,7 +170,8 @@ func _poof() -> void:
 	# Flee + fade: the hen darts up-screen and vanishes (caught → going home).
 	if _sprite == null:
 		return
-	monitoring = false
+	# Deferred: _poof runs inside body_entered (via _catch), where the engine refuses a direct write.
+	set_deferred("monitoring", false)
 	var tw := create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(_sprite, "position:y", _sprite.position.y - 18.0, 0.35)
