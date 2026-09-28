@@ -364,12 +364,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				})
 			else:
 				# Other target types (ALL_ALLIES, ALL_ENEMIES, SELF) don't need submenu
-				item_items.append(_with_item_reject({
-					"id": "item_" + item_id,
-					"label": "%s x%d" % [item["name"], quantity],
-					"icon_id": item_id,
-					"data": {"item_id": item_id}
-				}, item_id, _targets_for_item_without_picker(item, combatant, alive_enemies)))
+				item_items.append(_item_flat_row(item_id, item, quantity, _targets_for_item_without_picker(item, combatant, alive_enemies)))
 		if item_items.size() > 0:
 			items.append({
 				"id": "item_menu",
@@ -710,18 +705,11 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 		if ability.has("heal_amount"):
 			## "each" is one number for N receivers, and a curse or a passive on one of them makes it a
 			## lie for that row. Quote the span when the party does not agree.
-			var lo: int = -1
-			var hi: int = -1
+			var ests: Array = []
 			for member in _scene.party_members:
-				if not is_instance_valid(member) or not member.is_alive:
-					continue
-				var est: int = BattleManager.estimate_heal_amount(combatant, member, ability)
-				lo = est if lo < 0 else mini(lo, est)
-				hi = maxi(hi, est)
-			if lo >= 0 and lo == hi:
-				all_label = "%s [All] ~+%d each" % [ability["name"], lo]
-			elif lo >= 0:
-				all_label = "%s [All] ~+%d-%d each" % [ability["name"], lo, hi]
+				if is_instance_valid(member) and member.is_alive:
+					ests.append(BattleManager.estimate_heal_amount(combatant, member, ability))
+			all_label = "%s [All]%s" % [ability["name"], _heal_span_suffix(ests)]
 		return {
 			"id": "ability_" + ability_id,
 			"label": all_label,
@@ -833,6 +821,31 @@ static func combo_elements_for(members: Array) -> Array[String]:
 			if elem != "" and not out.has(elem):
 				out.append(elem)
 	return out
+
+
+## " ~+N each", or " ~+lo-hi each" when members would receive different amounts; "" when nothing heals.
+func _heal_span_suffix(amounts: Array) -> String:
+	if amounts.is_empty():
+		return ""
+	var lo: int = int(amounts.min())
+	var hi: int = int(amounts.max())
+	if hi <= 0:
+		return ""
+	return " ~+%d each" % lo if lo == hi else " ~+%d-%d each" % [lo, hi]
+
+
+## The row for an item with no target picker (party-wide, all enemies, self).
+func _item_flat_row(item_id: String, item: Dictionary, quantity: int, targets: Array) -> Dictionary:
+	var ests: Array = []
+	for t in targets:
+		if t is Combatant and is_instance_valid(t) and t.is_alive and _scene.party_members.has(t):
+			ests.append(ItemSystem.estimate_item_heal(item_id, t))
+	return _with_item_reject({
+		"id": "item_" + item_id,
+		"label": "%s x%d%s" % [item["name"], quantity, _heal_span_suffix(ests)],
+		"icon_id": item_id,
+		"data": {"item_id": item_id}
+	}, item_id, targets)
 
 
 ## One ally row of an item's target list. Landable even when the item would do nothing, so confirm can say why instead of spending it.
