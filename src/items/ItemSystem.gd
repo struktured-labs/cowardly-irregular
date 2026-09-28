@@ -331,6 +331,20 @@ func _apply_global_item_effects(item: Dictionary) -> void:
 			push_warning("ItemSystem: repel_steps used but EncounterSystem unavailable")
 
 
+## HP this item's heal effects will add to a LIVING target, before the max-HP clamp, with no side
+## effect. Same per-key amounts _apply_item_effects hands to heal(), so the menu can quote them.
+func estimate_item_heal(item_id: String, target: Combatant) -> int:
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return 0
+	var effects: Dictionary = get_item(item_id).get("effects", {})
+	var total: int = 0
+	if effects.has("heal_hp"):
+		total += target.heal_preview(int(effects["heal_hp"]))
+	if effects.has("heal_hp_percent"):
+		total += target.heal_preview(int(target.max_hp * effects["heal_hp_percent"] / 100.0))
+	return total
+
+
 func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -> void:
 	"""Apply item effects to a target"""
 	var effects = item["effects"]
