@@ -1681,6 +1681,10 @@ static func _format_memory(memory_lines: Array) -> String:
 
 
 ## Live party state as prose — an NPC that can't see a downed PC isn't in the world.
+## A pronoun belongs to a character and a row names only a job, which the player can reassign, so name them instead.
+const PARTY_GENDER_RULE := "Their genders are not given: never call a party member he or she; use their name or job.\n"
+
+
 static func _format_party_state(party_state: Dictionary) -> String:
 	if party_state.is_empty():
 		return ""
@@ -1697,7 +1701,7 @@ static func _format_party_state(party_state: Dictionary) -> String:
 				str(m.get("condition", "unhurt")),
 			])
 		if not rows.is_empty():
-			out += "\nThe party standing in front of you:\n" + "\n".join(rows) + "\n"
+			out += "\nThe party standing in front of you:\n" + "\n".join(rows) + "\n" + PARTY_GENDER_RULE
 	if party_state.has("gold"):
 		out += "They are carrying %d gold.\n" % int(party_state["gold"])
 	var items: Array = party_state.get("notable_items", []) as Array
