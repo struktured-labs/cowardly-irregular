@@ -661,8 +661,7 @@ func _build_status_panel(panel_size: Vector2) -> Control:
 	_battle_log.add_theme_color_override("default_color", TEXT_COLOR)
 	panel.add_child(_battle_log)
 	if not _battle_log_lines.is_empty():
-		_battle_log.append_text("\n".join(_battle_log_lines) + "\n")
-		_trim_battle_log()
+		_battle_log.text = "\n".join(_battle_log_lines) + "\n"
 
 	return panel
 
@@ -3063,10 +3062,8 @@ func _trim_battle_log() -> void:
 		return
 	if _battle_log.get_line_count() <= BATTLE_LOG_MAX_LINES:
 		return
-	var kept: PackedStringArray = _battle_log.get_parsed_text().split("\n")
-	var start: int = maxi(0, kept.size() - BATTLE_LOG_MAX_LINES)
-	_battle_log.clear()
-	_battle_log.append_text("\n".join(Array(kept).slice(start)) + "\n")
+	## From the kept record, markup and all: re-inserting get_parsed_text() stripped every line's colour past the cap.
+	_battle_log.text = "\n".join(_battle_log_lines) + "\n"
 
 
 ## HeadlessBattleResolver returns its narration in result["log"] — every attack, heal, formation
