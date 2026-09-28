@@ -2056,6 +2056,15 @@ func get_rule_action_noops() -> Dictionary:
 	return _rule_action_noops.duplicate()
 
 
+## Autobattle's character ids for everyone the player brought, KO'd included: AutobattleSystem._get_character_id's form.
+func _party_character_ids() -> Array:
+	var ids: Array = []
+	for m in _party_bag(null):
+		if m is Combatant:
+			ids.append(m.combatant_name.to_lower().replace(" ", "_"))
+	return ids
+
+
 func _note_rule_noop(reason: String) -> void:
 	_rule_action_noops[reason] = int(_rule_action_noops.get(reason, 0)) + 1
 
@@ -2587,7 +2596,11 @@ func apply_autogrind_actions(actions: Array) -> void:
 			"switch_profile":
 				var char_id = action.get("character_id", "")
 				var profile_idx = action.get("profile_index", 0)
-				if char_id != "":
+				## The shipped defaults name "hero" and "mira", who are in no party. set_active_profile created and SAVED a profile for them.
+				if char_id != "" and not _party_character_ids().has(str(char_id)):
+					print("[AUTOGRIND] switch_profile skipped: no party member '%s'" % char_id)
+					_note_rule_noop("Switch Profile: no party member \"%s\"" % char_id)
+				elif char_id != "":
 					var autobattle = get_node_or_null("/root/AutobattleSystem")
 					if autobattle:
 						autobattle.set_active_profile(char_id, profile_idx)

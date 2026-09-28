@@ -140,14 +140,15 @@ func test_an_empty_character_id_is_dropped_too() -> void:
 
 
 func test_what_the_drop_prevents() -> void:
-	## THE CONSEQUENCE ARM, and the reason dropping beats leaving it to the engine:
-	## set_active_profile does not reject an unknown character, it CREATES one.
+	## THE CONSEQUENCE ARM. set_active_profile still CREATES an unknown character; since
+	## lane/a-profile-switch-names-a-real-member the grind refuses a switch for anyone outside the
+	## party before it gets there, so the drop above is now defence in depth rather than the only wall.
 	assert_false(AutobattleSystem.character_profiles.has("captain_nobody"),
 		"CONTROL: the phantom must not exist before this runs")
 	AutogrindSystem.apply_autogrind_actions([
 		{"type": "switch_profile", "character_id": "captain_nobody", "profile_index": 1}])
-	assert_true(AutobattleSystem.character_profiles.has("captain_nobody"),
-		"an invented id creates a profile block — this is what the repair keeps out of the save")
+	assert_false(AutobattleSystem.character_profiles.has("captain_nobody"),
+		"an invented id reached set_active_profile and created a profile block bound for the save")
 
 
 # ── it must not invent, and must not act blind ────────────────────────────────
