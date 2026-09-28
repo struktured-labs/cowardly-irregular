@@ -6231,6 +6231,9 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 		for item_id in headless_item_drops:
 			items_gained[item_id] = int(headless_item_drops[item_id])
 		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
+		## A defeat or a stop rule ends the session INSIDE on_battle_ended, and grind_complete nulls the controller.
+		if not _is_autogrinding or _autogrind_controller == null or not is_instance_valid(_autogrind_controller):
+			return
 
 		var stats = _autogrind_controller.get_grind_stats()
 
@@ -6443,6 +6446,9 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
+		## A defeat or a stop rule ends the session INSIDE on_battle_ended, and grind_complete nulls the controller.
+		if not _is_autogrinding or _autogrind_controller == null or not is_instance_valid(_autogrind_controller):
+			return
 
 		var stats = _autogrind_controller.get_grind_stats()
 
