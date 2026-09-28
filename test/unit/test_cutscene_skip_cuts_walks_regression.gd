@@ -10,15 +10,23 @@ const DIRECTOR_PATH := "res://src/cutscene/CutsceneDirector.gd"
 
 var _d: Node
 var _stage: Node2D
+var _saved_map: Node = null
 
 
 func before_each() -> void:
+	_saved_map = MapSystem.current_map
 	_stage = Node2D.new()
 	add_child_autofree(_stage)
 	MapSystem.current_map = _stage
 	_d = load(DIRECTOR_PATH).new()
 	add_child_autofree(_d)
 	_d._skipping = false
+
+
+
+## The stage is autofreed; leaving it in MapSystem.current_map handed later files a freed map.
+func after_each() -> void:
+	MapSystem.current_map = _saved_map if is_instance_valid(_saved_map) else null
 
 
 func _run_move(done: Array) -> void:
