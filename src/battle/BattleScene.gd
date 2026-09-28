@@ -359,7 +359,8 @@ func _ready() -> void:
 	_create_battle_background()
 
 	# Apply retro font styling
-	RetroFontClass.configure_battle_log(battle_log)
+	if battle_log:
+		RetroFontClass.configure_battle_log(battle_log)
 	# 2026-07-15 playtest: log viewport was ~4.8 lines tall so the top visible line was permanently half-clipped — snap the panel to a whole line count once layout settles.
 	call_deferred("_snap_battle_log_height")
 	# 2026-07-16 smoke: the deferred call can still land before PanelContainer layout settles (size 0 → no-op) — the top log line stayed half-clipped. resized fires after REAL layout; re-snap then. Guard flag keeps it one-shot.
@@ -452,6 +453,10 @@ func _ready() -> void:
 	# Wave G — end-of-fight boss gloat line (victory / defeat).
 	if BattleManager.has_signal("boss_gloat_line"):
 		BattleManager.boss_gloat_line.connect(_on_boss_gloat_line)
+
+	# Only BattleScene.tscn has these nodes; the bare script (unit tests) stops here, so it never starts a battle.
+	if btn_attack == null:
+		return
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
