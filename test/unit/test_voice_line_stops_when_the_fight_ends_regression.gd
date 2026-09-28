@@ -33,6 +33,13 @@ func after_each() -> void:
 		_guard.restore()
 
 
+## stop_voice refuses under the stall latch by design, so a dead mixer reds these arms without judging the stop.
+func _unjudged() -> String:
+	if not SoundManager.wav_commit_refused():
+		return ""
+	return " — UNJUDGED: the mixer stall latch is set, so stop_voice refused by design (engine mix thread wedged); this run cannot tell whether the stop works"
+
+
 func _silence_parties() -> void:
 	var nobody: Array[Combatant] = []
 	BattleManager.player_party = nobody
@@ -47,7 +54,7 @@ func test_a_line_in_progress_stops_when_the_fight_ends() -> void:
 	_silence_parties()
 	BattleManager.end_battle(false)
 	assert_false(SoundManager._voice_player.playing,
-		"the fighter was still talking after the fight ended, so that line plays over the result screen")
+		"the fighter was still talking after the fight ended, so that line plays over the result screen" + _unjudged())
 
 
 func test_the_fight_line_is_quiet_before_the_victory_bark_is_chosen() -> void:
@@ -81,7 +88,7 @@ func test_the_fight_line_is_quiet_before_the_victory_bark_is_chosen() -> void:
 	assert_eq(playing_when_victory_spoke.size(), 1,
 		"CONTROL: the victory line must be chosen, or this never watched the handoff")
 	assert_false(bool(playing_when_victory_spoke[0]),
-		"the in-fight bark was still playing when the victory line was chosen, so the two overlap on the results")
+		"the in-fight bark was still playing when the victory line was chosen, so the two overlap on the results" + _unjudged())
 
 
 func test_leaving_the_battle_scene_stops_a_line_still_playing() -> void:
@@ -92,7 +99,7 @@ func test_leaving_the_battle_scene_stops_a_line_still_playing() -> void:
 	scene._exit_tree()
 	scene.free()
 	assert_false(SoundManager._voice_player.playing,
-		"the victory line kept playing after the battle scene was gone, so it follows you onto the map")
+		"the victory line kept playing after the battle scene was gone, so it follows you onto the map" + _unjudged())
 
 
 func test_a_stopped_player_can_start_the_next_line() -> void:
