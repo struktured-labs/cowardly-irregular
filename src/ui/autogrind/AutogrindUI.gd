@@ -917,6 +917,8 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary) -> Cont
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
+	if action.get("type", "") == "member_ability" and str(action.get("ability", "")) != "":
+		AbilityIcons.attach_to_cell(cell, str(action.get("ability", "")))
 
 	# Mouse: click to edit, hover to highlight
 	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, CELL_HEIGHT,
@@ -1158,7 +1160,7 @@ func _format_action(action: Dictionary) -> String:
 			var target = action.get("target", "all")
 			return "Switch\nProfile (%s)" % target
 		"member_ability":
-			return "%s casts\n%s" % [str(action.get("member", "Any")).capitalize(), str(action.get("ability", "?"))]
+			return "%s casts\n%s" % [str(action.get("member", "Any")).capitalize(), AbilityIcons.name_of(str(action.get("ability", "?")))]
 		"heal_party":
 			return "Use\nPotions"
 		"restore_mp":
@@ -1909,7 +1911,7 @@ func _cursor_ability_label() -> String:
 	var d := _cursor_cell_dict()
 	if d.is_empty() or str(d.get("type", "")) != "member_ability":
 		return "n/a"
-	return str(d.get("ability", "?"))
+	return AbilityIcons.name_of(str(d.get("ability", "?")))
 
 
 ## What _member_ability_apply can ACTUALLY do between battles: apply an authored heal_amount /

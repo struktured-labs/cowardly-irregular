@@ -369,9 +369,13 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 	else:
 		for ability_id in abilities:
 			var row := Label.new()
+			var icon := AbilityIcons.make_rect(str(ability_id), 16)
+			icon.name = "AbilityIcon_%s" % ability_id
+			icon.position = Vector2(x, cy)
+			_detail_panel.add_child(icon)
 			row.text = "• " + _resolve_ability_name(str(ability_id))
-			row.position = Vector2(x, cy)
-			row.size = Vector2(w, 16)
+			row.position = Vector2(x + 20, cy)
+			row.size = Vector2(w - 20, 16)
 			row.add_theme_font_size_override("font_size", TextScale.scaled(12))
 			row.add_theme_color_override("font_color", TEXT)
 			_detail_panel.add_child(row)

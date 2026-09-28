@@ -529,6 +529,8 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary) -> Cont
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	cell.add_child(label)
+	if action.get("type", "") == "member_ability" and str(action.get("ability", "")) != "":
+		AbilityIcons.attach_to_cell(cell, str(action.get("ability", "")))
 
 	# Mouse: click to edit, hover to highlight
 	MenuMouseHelper.make_clickable(cell, act_idx, CELL_WIDTH, CELL_HEIGHT,
@@ -825,7 +827,8 @@ func _format_action(action: Dictionary) -> String:
 			return "STOP\nGRINDING"
 
 		"member_ability":
-			return "%s casts %s" % [str(action.get("member", "Any")).capitalize(), str(action.get("ability", "?"))]
+			# Two lines, like the console: one line overran the cell even before the names got longer.
+			return "%s casts\n%s" % [str(action.get("member", "Any")).capitalize(), AbilityIcons.name_of(str(action.get("ability", "?")))]
 		"heal_party":
 			return "Use\nPotions"
 
