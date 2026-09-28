@@ -5215,22 +5215,9 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 			push_warning("BattleManager._execute_ability: unhandled ability_type '%s' (ability '%s') — no execution branch matched" % [ability_type, ability.get("id", "?")])
 
 
-func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
-	# Pacify silences offensive abilities entirely.
-	if caster.has_status("pacify"):
-		battle_log_message.emit("[color=cyan]%s is pacified and cannot strike![/color]" % caster.combatant_name)
-		return
-
-	## Tick 437: scales_with field swaps the base stat. abilities.json
-	## authors:
-	##   guard_strike: scales_with=defense
-	##   throw_shuriken: scales_with=speed
-	##   last_stand_ability: scales_with=missing_hp (special — adds a
-	##     multiplier scaling with caster's missing HP)
-	## Pre-fix the field was never read — all three abilities used
-	## the default attack stat as base, so guard_strike on a high-
-	## defense tank dealt poverty damage instead of leveraging the
-	## tank's signature stat.
+## A physical ability's amount before crit and variance: the scales_with stat (fear halves it),
+## times damage_multiplier and the missing_hp factor. The executor and the preview both call this.
+func _physical_ability_amount(caster: Combatant, ability: Dictionary) -> int:
 	var scales_with: String = str(ability.get("scales_with", ""))
 	var base_damage: int
 	match scales_with:
@@ -5254,6 +5241,27 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		var max_mult: float = float(ability.get("max_multiplier", 5.0))
 		var missing_factor: float = 1.0 + (1.0 - hp_pct) * (max_mult - 1.0)
 		multiplier *= missing_factor
+	return int(base_damage * multiplier)
+
+
+func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	# Pacify silences offensive abilities entirely.
+	if caster.has_status("pacify"):
+		battle_log_message.emit("[color=cyan]%s is pacified and cannot strike![/color]" % caster.combatant_name)
+		return
+
+	## Tick 437: scales_with field swaps the base stat. abilities.json
+	## authors:
+	##   guard_strike: scales_with=defense
+	##   throw_shuriken: scales_with=speed
+	##   last_stand_ability: scales_with=missing_hp (special — adds a
+	##     multiplier scaling with caster's missing HP)
+	## Pre-fix the field was never read — all three abilities used
+	## the default attack stat as base, so guard_strike on a high-
+	## defense tank dealt poverty damage instead of leveraging the
+	## tank's signature stat.
+	## One owner for the pre-crit amount, so estimate_ability_breakdown quotes the stat this strike uses.
+	var pre_crit: int = _physical_ability_amount(caster, ability)
 	var crit_chance = ability.get("crit_chance", 0.0)
 	# Shadow Step guarantees the next attack, including a physical ability. A basic swing already does this.
 	if caster != null and caster.has_status("shadow_step"):
@@ -5296,7 +5304,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			battle_log_message.emit("[color=cyan]%s is IMMUNE to physical — %s's strike passes through nothing![/color]" % [target.combatant_name, caster.combatant_name])
 			continue
 
-		var damage = int(base_damage * multiplier)
+		var damage = pre_crit
 		var is_crit = false
 
 		if randf() < crit_chance:
@@ -5907,8 +5915,11 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 		stat_val = attacker.get_buffed_stat("magic", attacker.magic)
 		stat_name = "MAG"
 	else:
-		stat_val = attacker.get_buffed_stat("attack", attacker.attack)
-		stat_name = "ATK"
+		## The executor's own base: the scales_with stat, fear, missing HP. `stat_val` is then its amount at x1.0.
+		stat_val = _physical_ability_amount(attacker, ability.merged({"damage_multiplier": 1.0}, true))
+		stat_name = str(ability.get("scales_with", "attack")).to_upper().replace("_", " ")
+		if stat_name == "ATTACK":
+			stat_name = "ATK"
 
 	## Same pre-defense scale _execute_magic_ability bakes from <element>_damage_bonus and the element_boost buff. The "~N dmg" row quoted the unarmed hit while a Flame Sword's Fire landed at 1.5×.
 	var gear_mult := 1.0
@@ -5965,7 +5976,11 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 	formula += "; %d² ÷ (%d + %s %d) = %d" % [incoming, incoming, def_name, def_val, mitigated]
 	var landed: int = target.damage_preview(incoming, is_magical)
 	formula += _target_side_clause(target, max(1, mitigated), landed)
-	return {"damage": landed, "formula": formula}
+	## Only the physical executor reads `hits`: one take_damage per hit, same amount each.
+	var hits: int = 1 if is_magical else max(1, int(ability.get("hits", 1)))
+	if hits > 1:
+		formula += " ×%d hits = %d" % [hits, landed * hits]
+	return {"damage": landed * hits, "formula": formula}
 
 
 func _calculate_crit_chance(attacker: Combatant) -> float:

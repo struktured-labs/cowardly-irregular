@@ -23,7 +23,10 @@ func _read(p: String) -> String:
 
 func test_physical_path_reads_scales_with() -> void:
 	var src := _read(BATTLE_MANAGER_PATH)
-	var fn_idx: int = src.find("func _execute_physical_ability")
+	## The scales_with match moved into _physical_ability_amount so the damage preview could call it
+	## instead of reading ATK for every physical ability. The arm below pins the executor's call.
+	var fn_idx: int = src.find("func _physical_ability_amount(")
+	assert_gt(fn_idx, -1, "_physical_ability_amount must exist — it owns the scales_with read")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
 	assert_true(body.contains("ability.get(\"scales_with\", \"\")"),
@@ -35,6 +38,18 @@ func test_physical_path_reads_scales_with() -> void:
 	# missing_hp uses a multiplier scaling, not base_damage swap.
 	assert_true(body.contains("scales_with == \"missing_hp\""),
 		"scales_with must handle 'missing_hp' as a multiplier scaling")
+
+
+func test_the_executor_takes_its_amount_from_the_shared_helper() -> void:
+	## The pins above read _physical_ability_amount. If the executor stopped calling it they would stay
+	## green while guard_strike went back to attacking with ATK.
+	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var fn_idx: int = src.find("func _execute_physical_ability(")
+	assert_gt(fn_idx, -1, "_execute_physical_ability must exist")
+	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
+	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
+	assert_true(body.contains("_physical_ability_amount(caster, ability)"),
+		"the physical executor must take its pre-crit amount from _physical_ability_amount")
 
 
 func test_missing_hp_uses_max_multiplier() -> void:
