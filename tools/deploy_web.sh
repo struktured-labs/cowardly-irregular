@@ -743,7 +743,10 @@ else
     exit 5
   else
     cp tmp/deploy_web_smoke.log tmp/deploy_web_smoke.attempt1.log
-    echo "[deploy] web smoke attempt 1 failed (chromium flake?) — retrying once"
+    # NAME THE STAGE. Every failure used to read "failed to boot" -- .488 booted fine and failed at
+    # stage 4, and the label sent diagnosis to boot first. The smoke's own log says which stage.
+    echo "[deploy] web smoke attempt 1 failed: $(bash tools/web_smoke_reason.sh tmp/deploy_web_smoke.attempt1.log)"
+    echo "[deploy]   retrying once (a busy box can kill headless chromium mid-run)"
     if ./tools/web_smoke.sh > tmp/deploy_web_smoke.log 2>&1; then
       grep "WEB-SMOKE" tmp/deploy_web_smoke.log
     else
@@ -755,7 +758,11 @@ else
         echo "[deploy] BLOCKED: the web boot smoke could not RUN on the retry either." >&2
         exit 5
       else
-        echo "[deploy] BLOCKED: web build failed to boot in chromium TWICE — see tmp/deploy_web_smoke.log (+ attempt1)" >&2; exit 5
+        echo "[deploy] BLOCKED: the web smoke failed TWICE." >&2
+        echo "  attempt 1: $(bash tools/web_smoke_reason.sh tmp/deploy_web_smoke.attempt1.log)" >&2
+        echo "  attempt 2: $(bash tools/web_smoke_reason.sh tmp/deploy_web_smoke.log)" >&2
+        echo "  logs: tmp/deploy_web_smoke.log (+ .attempt1.log) and the tmp/web_smoke_*.png screenshots" >&2
+        exit 5
       fi
     fi
   fi
