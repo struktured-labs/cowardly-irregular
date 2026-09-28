@@ -325,6 +325,9 @@ func _open_buy_menu() -> void:
 				"data": item_data,
 				"icon_id": item_id,
 			}
+			# A spell id through ItemIcons draws the generic scroll; magic shelves take the ability icon.
+			if _is_magic_shop():
+				row["icon_kind"] = "ability"
 			var already_owned: bool = (_is_magic_shop() and owned > 0) or wearers != ""
 			if already_owned:
 				row["text_color"] = BUY_ROW_OWNED_COLOR

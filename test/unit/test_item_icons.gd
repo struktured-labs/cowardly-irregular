@@ -226,7 +226,9 @@ func _assert_menu_icons(menu: Win98Menu, where: String) -> void:
 	assert_eq(container.get_child_count(), menu.menu_items.size(), "%s did not draw every row" % where)
 	for i in menu.menu_items.size():
 		var row: Control = container.get_child(i)
-		var icon := row.get_node_or_null("ItemIcon") as TextureRect
+		# A magic shelf's spell rows are ability rows (icon_kind), drawn by AbilityIcons, not ItemIcons' scroll.
+		var node_name := "AbilityIcon" if str(menu.menu_items[i].get("icon_kind", "")) == "ability" else "ItemIcon"
+		var icon := row.get_node_or_null(node_name) as TextureRect
 		assert_not_null(icon, "%s row '%s' has no icon" % [where, menu.menu_items[i].get("label", "")])
 		assert_ne(icon.texture, null, "%s row '%s' icon has no texture" % [where, menu.menu_items[i].get("label", "")])
 		assert_eq(icon.texture_filter, CanvasItem.TEXTURE_FILTER_NEAREST, "%s icon is filtered soft" % where)
