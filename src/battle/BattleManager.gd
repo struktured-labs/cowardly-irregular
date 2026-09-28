@@ -5850,7 +5850,26 @@ func estimate_attack_breakdown(attacker: Combatant, target: Combatant) -> Dictio
 	var formula: String = "ATK %d² ÷ (ATK %d + DEF %d) = %d" % [atk, atk, def_val, dmg]
 	if not is_equal_approx(lens, 1.0):
 		formula = "ATK %d ×execute %.2f = %d; %d² ÷ (%d + DEF %d) = %d" % [atk, lens, incoming, incoming, incoming, def_val, dmg]
-	return {"damage": dmg, "formula": formula + ", then ×variance ×crit"}
+	## The number is take_damage's own; the formula above is its defense step, the suffix the rest.
+	var landed: int = target.damage_preview(incoming, false)
+	formula += _target_side_clause(target, dmg, landed)
+	return {"damage": landed, "formula": formula + ", then ×variance ×crit"}
+
+
+## Names the target-side factors damage_preview applied after defense, for Formula Sight.
+func _target_side_clause(target: Combatant, after_defense: int, landed: int) -> String:
+	if landed == after_defense:
+		return ""
+	var tags: PackedStringArray = []
+	if target.get_incoming_damage_multiplier() != 1.0:
+		tags.append("vulnerable")
+	if target.is_defending:
+		tags.append("defending ×0.5")
+	if target.has_status("exposed"):
+		tags.append("exposed ×1.5")
+	if not is_equal_approx(float(GameState.game_constants.get("damage_multiplier", 1.0)), 1.0):
+		tags.append("damage dial")
+	return "; %s = %d" % [", ".join(tags), landed]
 
 
 func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Dictionary) -> int:
@@ -5929,7 +5948,9 @@ func estimate_ability_breakdown(attacker: Combatant, target: Combatant, ability:
 	var def_name: String = "MDEF" if is_magical else "DEF"
 	var mitigated = int((incoming * incoming) / float(max(1, incoming + def_val)))
 	formula += "; %d² ÷ (%d + %s %d) = %d" % [incoming, incoming, def_name, def_val, mitigated]
-	return {"damage": max(1, mitigated), "formula": formula}
+	var landed: int = target.damage_preview(incoming, is_magical)
+	formula += _target_side_clause(target, max(1, mitigated), landed)
+	return {"damage": landed, "formula": formula}
 
 
 func _calculate_crit_chance(attacker: Combatant) -> float:
