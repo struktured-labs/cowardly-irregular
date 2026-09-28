@@ -42,3 +42,24 @@ static func _u32(v: int) -> PackedByteArray:
 	b.resize(4)
 	b.encode_u32(0, v)
 	return b
+
+
+## Why a null voice decode was refused BY DESIGN (issue #224), or "" when the null is a real failure.
+## Two refusals, not one: the latch clears on mixer progress while an abandoned decode worker can still be alive.
+static func decode_refusal_reason(stream: Variant) -> String:
+	if stream != null:
+		return ""
+	var tree := Engine.get_main_loop() as SceneTree
+	var sm: Node = tree.root.get_node_or_null("SoundManager") if tree != null else null
+	if sm == null:
+		return ""
+	if sm.mixer_is_wedged():
+		return "the headless mixer latch is set"
+	if sm.has_method("_voice_decode_still_running") and sm._voice_decode_still_running():
+		return "an earlier voice decode is still stuck inside load_from_buffer, so a new one is refused"
+	return ""
+
+
+## The failure text for a by-design refusal: loud, named, and not mistaken for a defect.
+static func refusal_note(why: String) -> String:
+	return "voice WAV decode refused because %s; the AudioServer.lock guard (issue #224) is working, re-run before debugging" % why
