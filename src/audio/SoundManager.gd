@@ -223,6 +223,13 @@ func _ready() -> void:
 
 ## 2026-08-14 silent-death class (struktured: music+SFX stopped mid-battle, zero errors, YT fine): frozen playback position while playing == game mixer dead; advancing position while silent == stream corked below the game
 var _liveness_last_pos: float = -1.0
+## The playback the baseline came from. A new play() is a new baseline: its entry is play()'s seek on the caller, not the mixer.
+var _liveness_playback_id: int = 0
+var _liveness_last_msec: int = 0
+## Test hook. Negative reads the live player.
+var _liveness_pos_override: float = -1.0
+## Well past one mix on any driver (Dummy mixes every ~93ms). Two samples closer than this prove nothing about the mixer.
+const _LIVENESS_MIN_MSEC: int = 500
 ## Latched while a playing bed sits still longer than a slow start. Cleared when a later sample moves.
 ## A thread stuck inside an unbounded mix never moves, so that latch stays set.
 var _audio_mixer_wedged: bool = false
@@ -263,16 +270,32 @@ var _voice_decode_abandoned: bool = false
 var _voice_decode_stream: AudioStreamWAV
 var _orphaned_voice_decodes: Array[Thread] = []
 
-func audio_liveness_check() -> void:
+## True when it judged the mixer dead: the SAME playback sat still across two samples at least _LIVENESS_MIN_MSEC apart.
+func audio_liveness_check() -> bool:
+	var frozen := false
 	var p: AudioStreamPlayer = _music_player_b if (_music_player_b and _music_player_b.playing and not _music_player.playing) else _music_player
-	if p and p.playing and not p.stream_paused:
+	if p and p.playing and not p.stream_paused and p.has_stream_playback():
 		var pos := p.get_playback_position()
-		if _liveness_last_pos >= 0.0 and absf(pos - _liveness_last_pos) < 0.001:
-			push_warning("[AUDIO] playback position frozen at %.2fs while playing — game audio mixer is dead (2026-08-14 class); restart recovers" % pos)
-		_liveness_last_pos = pos
+		if _liveness_pos_override >= 0.0:
+			pos = _liveness_pos_override
+		var pb_id: int = p.get_stream_playback().get_instance_id()
+		var now: int = Time.get_ticks_msec()
+		# 2026-09-28: a one-round battle's bed sampled at its 4.0 entry, then the next battle's bed at the same entry, read as dead.
+		if pb_id != _liveness_playback_id or _liveness_last_pos < 0.0:
+			_liveness_playback_id = pb_id
+			_liveness_last_pos = pos
+			_liveness_last_msec = now
+		elif now - _liveness_last_msec >= _LIVENESS_MIN_MSEC:
+			frozen = absf(pos - _liveness_last_pos) < 0.001
+			if frozen:
+				push_warning("[AUDIO] playback position frozen at %.2fs while playing — game audio mixer is dead (2026-08-14 class); restart recovers" % pos)
+			_liveness_last_pos = pos
+			_liveness_last_msec = now
 	else:
 		_liveness_last_pos = -1.0
+		_liveness_playback_id = 0
 	note_mixer_progress()
+	return frozen
 
 
 func _process(_delta: float) -> void:
