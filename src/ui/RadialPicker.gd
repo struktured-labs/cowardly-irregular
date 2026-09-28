@@ -49,6 +49,8 @@ func setup(picker_spec: Dictionary) -> void:
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# The option icons are 16px pixel art drawn at 2x; linear filtering would smear them.
+	texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	# Right-click closes the ring, matching the 33 other screens. SAFE because of the line above:
 	# STOP means the ring CONSUMES the click, so it cannot leak to the editor's own background
 	# right-click-cancel underneath and close the whole editor. Derived from the filter, the child
@@ -209,6 +211,9 @@ func _draw() -> void:
 		draw_circle(p, NODE_RADIUS + (3.0 if is_sel else 0.0), NODE_SEL if is_sel else NODE_BG)
 		draw_arc(p, NODE_RADIUS + (3.0 if is_sel else 0.0), 0.0, TAU, 32,
 			ACCENT if is_sel else RING_COLOR, 2.0, true)
+		var tex := icon_for(slice[i])
+		if tex:
+			draw_texture_rect(tex, Rect2(p - Vector2(16, 16), Vector2(32, 32)), false)
 
 		var label := _label_of(slice[i])
 		var font := ThemeDB.fallback_font
@@ -253,6 +258,19 @@ func _draw_center() -> void:
 	var hw := font.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
 	draw_string(font, Vector2(_center.x - hw * 0.5, size.y - 24), hint,
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 10, DIM_TEXT)
+
+
+## The icon an option draws inside its node: abilities and items have one, every other ring kind none.
+func icon_for(opt) -> Texture2D:
+	var id := str(opt.get("id", "")) if opt is Dictionary else str(opt)
+	if id == "":
+		return null
+	match str(spec.get("kind", "")):
+		"ability_id":
+			return AbilityIcons.tinted(id)
+		"item_id":
+			return ItemIcons.tinted(id)
+	return null
 
 
 func _label_of(opt) -> String:

@@ -135,6 +135,22 @@ static func make_rect(ability_id: String, px: int) -> TextureRect:
 	return rect
 
 
+## The name every menu shows. A raw `id.capitalize()` prints "Fire" for the spell the menus call "Ignis".
+static func name_of(ability_id: String) -> String:
+	var name := str(_ability(ability_id).get("name", ""))
+	return name if name != "" else ability_id.capitalize()
+
+
+## Icon at a grid cell's left edge, vertically centred. The cell's label is left alone: an autowrapped Label
+## will not shrink below its measured width, so moving it only pushes a centred name out the right side.
+static func attach_to_cell(cell: Control, ability_id: String, px: int = 16) -> TextureRect:
+	var icon := make_rect(ability_id, px)
+	var h: float = maxf(cell.custom_minimum_size.y, cell.size.y)
+	icon.position = Vector2(4, floorf((h - px) / 2.0))
+	cell.add_child(icon)
+	return icon
+
+
 static func apply_button(btn: Button, ability_id: String) -> void:
 	if ability_id == "":
 		return

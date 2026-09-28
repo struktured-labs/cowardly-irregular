@@ -830,6 +830,8 @@ func _create_action_cell(row_idx: int, act_idx: int, action: Dictionary, count: 
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	cell.add_child(label)
+	if action.get("type", "") == "ability" and str(action.get("id", "")) != "":
+		AbilityIcons.attach_to_cell(cell, str(action.get("id", "")))
 
 	# Cycle badge if count > 1
 	if count > 1:
@@ -871,7 +873,7 @@ func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total
 	var first_type = first_action.get("type", "attack")
 	var type_text = first_type.capitalize()
 	if first_type == "ability":
-		type_text = first_action.get("id", "Ability").capitalize()
+		type_text = AbilityIcons.name_of(str(first_action.get("id", "Ability")))
 	label.text = "%s... ×%d" % [type_text, total_count]
 	label.position = Vector2(6, 4)
 	label.size = Vector2(CELL_WIDTH - 12, CELL_HEIGHT - 8)
@@ -880,6 +882,8 @@ func _create_collapsed_action_cell(row_idx: int, first_action: Dictionary, total
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	cell.add_child(label)
+	if first_type == "ability" and str(first_action.get("id", "")) != "":
+		AbilityIcons.attach_to_cell(cell, str(first_action.get("id", "")))
 
 	# Stack indicator badge
 	var badge = Label.new()
@@ -1225,7 +1229,7 @@ func _format_action(action: Dictionary) -> String:
 			return "Attack\n%s" % _short_target(target)
 		"ability":
 			var ability_id = action.get("id", "")
-			return "%s\n%s" % [ability_id.capitalize(), _short_target(target)]
+			return "%s\n%s" % [AbilityIcons.name_of(ability_id), _short_target(target)]
 		"item":
 			var item_id = action.get("id", "")
 			return "Use %s" % item_id.capitalize()
