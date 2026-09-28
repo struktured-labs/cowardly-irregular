@@ -735,6 +735,7 @@ func _on_dialogue_finished() -> void:
 ## Boss speech owns the screen: hide the command menu so A unambiguously advances the dialogue (struktured 2026-08-15, mage duel vs Prismatic Construct).
 func _show_boss_dialogue(speaker: String, lines: Array) -> void:
 	set_command_menu_visible(false)
+	_battle_dialogue.set_party(party_members)
 	_battle_dialogue.show_boss_intro(speaker, lines)
 
 
@@ -742,6 +743,7 @@ func _show_boss_intro_dialogue() -> void:
 	"""Show boss intro dialogue if available"""
 	if _boss_dialogue_data.has("intro") and _boss_dialogue_data["intro"].size() > 0:
 		_waiting_for_dialogue = true
+		_battle_dialogue.set_party(party_members)
 		_battle_dialogue.show_boss_intro(_get_boss_intro_speaker(), _boss_dialogue_data["intro"])
 
 

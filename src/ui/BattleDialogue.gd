@@ -371,8 +371,12 @@ func show_boss_intro(boss_name: String, intro_lines: Array) -> void:
 			entry["text"] = parts[1].strip_edges() if parts.size() > 1 else ""
 			# Determine theme from speaker
 			if entry["speaker"].to_lower().contains("hero"):
-				entry["portrait"] = "hero"
-				entry["theme"] = "hero"
+				var lead: Combatant = _lead_member()
+				var look: String = str(JOB_LOOK.get(_job_of(lead), "hero"))
+				if lead != null:
+					entry["speaker"] = lead.combatant_name
+				entry["portrait"] = look
+				entry["theme"] = look if CHARACTER_THEMES.has(look) else "hero"
 			# "rat" as a substring matches Curator, so those bosses wore the Rat King's face.
 			elif "rat king" in entry["speaker"].to_lower():
 				entry["portrait"] = "rat_king"
@@ -523,6 +527,33 @@ func _input(event: InputEvent) -> void:
 
 
 ## Portrait Generation
+
+## A job's drawn portrait and theme; no party member is named "Hero", so authored "Hero:" lines take the leader's look.
+const JOB_LOOK := {"fighter": "hero", "cleric": "healer", "rogue": "rogue", "mage": "mage"}
+
+
+## "Hero" in authored boss lines means whoever leads: the party leader if alive, else the first member still standing.
+func _lead_member() -> Combatant:
+	var alive: Array = []
+	for m in _party:
+		if m is Combatant and m.is_alive:
+			alive.append(m)
+	if alive.is_empty():
+		return null
+	var lead_name: String = ""
+	if GameState and GameState.has_method("get_party_leader"):
+		lead_name = str(GameState.get_party_leader().get("name", ""))
+	for m in alive:
+		if m.combatant_name == lead_name:
+			return m
+	return alive[0]
+
+
+func _job_of(member: Combatant) -> String:
+	if member == null or not (member.job is Dictionary):
+		return ""
+	return str((member.job as Dictionary).get("id", ""))
+
 
 func _get_party_member_portrait(portrait_type: String) -> Control:
 	"""Try to get a CharacterPortrait for a party member"""
