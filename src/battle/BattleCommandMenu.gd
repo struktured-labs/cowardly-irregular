@@ -154,6 +154,12 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	var max_queue = BattleManager.FULL_BANK_ACTIONS if combatant.current_ap >= BattleManager.FULL_BANK_AP else mini(BattleManager.ADVANCE_CAP, maxi(1, ap_limit))
 	_scene.active_win98_menu.set_max_queue_size(max_queue)
 	_scene.active_win98_menu.set_current_ap(combatant.current_ap)
+	## The queue checks its total against these, at the prices the engine will charge.
+	var budget: Dictionary = {"mp": combatant.current_mp, "mp_max": combatant.max_mp}
+	var bag: Dictionary = ItemSystem.party_inventory(BattleManager.consumable_bag(combatant))
+	for item_id in bag:
+		budget["item:" + str(item_id)] = int(bag[item_id])
+	_scene.active_win98_menu.set_queue_budget(budget, _queued_cost.bind(combatant))
 
 	# Allow going back if not the first player in selection order
 	var can_go_back = BattleManager.selection_index > 0
@@ -178,6 +184,39 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 		print("[CMD MEM] Submenu memory: %s" % str(submenu_memory))
 		_scene.active_win98_menu.set_command_memory(combatant.last_menu_selection, submenu_memory)
 
+
+
+## What one queued action spends, in the queue budget's keys: MP at the engine's price, or one of an item.
+func _queued_cost(data, combatant: Combatant) -> Dictionary:
+	if not (data is Dictionary):
+		return {}
+	if data.has("ability_id"):
+		var aid := str(data["ability_id"])
+		var out: Dictionary = {}
+		var mp: int = JobSystem.get_ability_mp_cost(combatant, aid)
+		if mp > 0:
+			out["mp"] = mp
+		## A restore that reaches the caster pays for what is queued after it: Channel (self), a party
+		## restore, and Pray only when it targets the caster.
+		var ability: Dictionary = JobSystem.get_ability(aid)
+		if str(ability.get("type", "")) == "mp_restore" and _restore_reaches(ability, data, combatant):
+			out["mp_gain"] = BattleManager._mp_restore_amount(ability)
+		return out
+	if data.has("item_id"):
+		return {"item:" + str(data["item_id"]): 1}
+	return {}
+
+
+func _restore_reaches(ability: Dictionary, data: Dictionary, combatant: Combatant) -> bool:
+	match str(ability.get("target_type", "self")):
+		"self", "all_allies":
+			return true
+		"single_ally":
+			var idx: int = int(data.get("target_idx", -1))
+			if idx < 0:
+				return true  # the executor falls back to the caster when no target resolves
+			return _scene != null and idx < _scene.party_members.size() and _scene.party_members[idx] == combatant
+	return false
 
 
 ## Menus that move make CHOOSING feel good — most of a turn-based game's runtime is spent here. Open only: the CLOSE path stays synchronous (msg-2503 two-menus identity bug — a deferred free would let a stale instance answer for the live one).

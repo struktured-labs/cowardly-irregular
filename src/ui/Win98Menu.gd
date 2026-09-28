@@ -192,6 +192,10 @@ var _target_pulse_tween: Tween = null
 var _pending_target_pos: Vector2 = Vector2.ZERO  # Target position for line
 var _queued_actions: Array = []  # Actions queued via Advance mode
 var _max_queue_size: int = 4  # Max actions (limited by AP)
+## What the actor can spend across the queue ({"mp": N, "item:<id>": count}) and what one action costs.
+## Empty = no budget, the old size-only rule, for every caller that never sets one.
+var _queue_budget: Dictionary = {}
+var _queue_cost_fn: Callable = Callable()
 var _last_queue_emit: int = 0  # last count sent on queue_changed — close only owes a 0 if this is not 0
 var _readout_shake: Tween = null
 var _readout_base_x: float = 0.0
@@ -1496,6 +1500,12 @@ func _queue_current_action(item: Dictionary) -> void:
 		# Queue full - play error sound or ignore
 		return
 
+	## Advance used to queue a cast the turn could not pay for; it then failed at execution and the AP was lost.
+	var shortfall: String = root._queue_shortfall(item.get("data", null))
+	if shortfall != "":
+		_reject_selection({"reject_reason": shortfall})
+		return
+
 	var action = {
 		"id": item.get("id", ""),
 		"data": item.get("data", null),
@@ -1684,6 +1694,46 @@ func get_queue_count() -> int:
 func set_max_queue_size(max_size: int) -> void:
 	"""Set max queue size based on available AP"""
 	_max_queue_size = max_size
+
+
+## BattleCommandMenu supplies the actor's budget and a cost function, so the queue refuses what the turn cannot pay.
+func set_queue_budget(budget: Dictionary, cost_fn: Callable) -> void:
+	_queue_budget = budget
+	_queue_cost_fn = cost_fn
+
+
+## "" if the queue plus this action fits the budget, else the reason to show. MP is walked IN ORDER,
+## because a queued restore (Channel's "mp_gain") pays for what comes after it, never before;
+## items are totals. "mp_max" in the budget caps a restore the way the executor does.
+func _queue_shortfall(data) -> String:
+	if _queue_budget.is_empty() or not _queue_cost_fn.is_valid():
+		return ""
+	var pending: Array = []
+	for a in _queued_actions:
+		pending.append(a.get("data", null))
+	pending.append(data)
+	var has_mp: bool = _queue_budget.has("mp")
+	var mp: int = int(_queue_budget.get("mp", 0))
+	var mp_max: int = int(_queue_budget.get("mp_max", 1 << 30))
+	var spent: Dictionary = {}
+	for d in pending:
+		var cost = _queue_cost_fn.call(d)
+		if not (cost is Dictionary):
+			continue
+		if has_mp and cost.has("mp"):
+			mp -= int(cost["mp"])
+			if mp < 0:
+				return "Not enough MP for the queue (%d short)" % -mp
+		if has_mp and cost.has("mp_gain"):
+			mp = mini(mp_max, mp + int(cost["mp_gain"]))
+		for k in cost:
+			if k == "mp" or k == "mp_gain":
+				continue
+			spent[k] = int(spent.get(k, 0)) + int(cost[k])
+	for k in spent:
+		if _queue_budget.has(k) and spent[k] > int(_queue_budget[k]):
+			return "Only %d of that item to queue" % int(_queue_budget[k])
+	return ""
 
 
 func set_current_ap(ap: int) -> void:
