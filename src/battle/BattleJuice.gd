@@ -113,7 +113,9 @@ func flash_sprite(sprite: Node2D, color: Color = Color.WHITE, hold: float = 0.0,
 	if mat:
 		mat.set_shader_parameter("flash_color", color)
 		mat.set_shader_parameter("flash_amount", 1.0)
-		var t := create_tween()
+		## On the sprite, not this autoload: a grind restart frees the sprite mid-flash, and an autoload tween
+		## then called this lambda every frame with its capture freed ("Lambda capture at index 0 was freed").
+		var t := sprite.create_tween()
 		if hold > 0.0:
 			t.tween_interval(hold)
 		t.tween_method(func(v: float) -> void:
@@ -122,7 +124,7 @@ func flash_sprite(sprite: Node2D, color: Color = Color.WHITE, hold: float = 0.0,
 	else:
 		# Fallback for sprites without the flash material: legacy HDR-modulate flash
 		sprite.modulate = Color(3.0, 3.0, 3.0, 1.0) if color.is_equal_approx(Color.WHITE) else color
-		var t := create_tween()
+		var t := sprite.create_tween()
 		if hold > 0.0:
 			t.tween_interval(hold)
 		t.tween_property(sprite, "modulate", Color.WHITE, fade)
@@ -132,7 +134,7 @@ func knockback(sprite: Node2D, dir: float, mag_x: float = 6.0, pop_y: float = 0.
 	if not is_instance_valid(sprite):
 		return
 	var home: Vector2 = sprite.get_meta("home_position", sprite.position)
-	var t := create_tween()
+	var t := sprite.create_tween()  # dies with the sprite, like flash_sprite
 	t.tween_property(sprite, "position:x", home.x + dir * mag_x, 0.05)
 	if pop_y != 0.0:
 		t.parallel().tween_property(sprite, "position:y", home.y - pop_y, 0.05)
@@ -144,7 +146,7 @@ func squash(sprite: Node2D, x: float = 1.12, y: float = 0.88, snap: float = 0.03
 		return
 	# Multiply the stored base scale, never assign absolutes — sprite base scales are heterogeneous
 	var base: Vector2 = sprite.get_meta("base_scale", sprite.scale)
-	var t := create_tween()
+	var t := sprite.create_tween()  # dies with the sprite, like flash_sprite
 	t.tween_property(sprite, "scale", Vector2(base.x * x, base.y * y), snap)
 	t.tween_property(sprite, "scale", base, settle).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 

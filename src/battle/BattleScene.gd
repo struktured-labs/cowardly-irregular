@@ -4056,7 +4056,7 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 				var home = sprite.get_meta("home_position")
 				var step_pos = home + Vector2(-30, 0)  # Step toward enemies
 
-				var cast_tween = create_tween()
+				var cast_tween = sprite.create_tween()  # dies with the caster; see _animate_melee_attack
 				sprite.set_meta("attack_tween", cast_tween)
 
 				# Staggered step forward
@@ -4110,7 +4110,7 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			var direction = (enemy_center - home).normalized()
 			var rush_pos = enemy_center - direction * (50 + idx * 15)  # Stagger depth
 
-			var rush_tween = create_tween()
+			var rush_tween = sprite.create_tween()  # dies with the attacker; see _animate_melee_attack
 			sprite.set_meta("attack_tween", rush_tween)
 
 			# Staggered start (0-0.1s per member)
@@ -4330,7 +4330,9 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	var attack_pos = target_pos - direction * contact_gap
 
 	# Create movement tween — Fable pass (struktured: "timing and emphasis... should be nonlinear — the attack slows down slightly during impact"). Shape: ACCELERATING approach → HITSTOP at contact → eased settle home.
-	var tween = create_tween()
+	## On the attacker, not the scene: the scene outlives a grind restart that frees this sprite, and a
+	## scene-owned tween then ran its contact callback with freed captures ("Lambda capture ... was freed").
+	var tween = attacker_sprite.create_tween()
 	attacker_sprite.set_meta("attack_tween", tween)
 	## The stagger, as an interval on the tween rather than an await in the caller's loop —
 	## CLAUDE.md: "`await` in a loop SERIALIZES what should be simultaneous", and the same trap
@@ -5034,7 +5036,7 @@ func _on_enemy_died(enemy_idx: int) -> void:
 					BattleJuice.spawn_burst(_stable_sprite_anchor(sprite), Vector2(0, -0.5), 14, Color(1.0, 0.82, 0.45))
 					BattleJuice.hitstop([sprite], 0.12)
 					BattleJuice.punch_zoom(_stable_sprite_anchor(sprite), 0.03, 0.2)
-				var tween = create_tween()
+				var tween = sprite.create_tween()  # dies with the sprite a grind restart frees
 				tween.tween_property(sprite, "modulate", Color(3.0, 3.0, 3.0, 1.0), 0.1)
 				tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
 				# The burned-away scorch starts WITH the fade — after the killing blow's hit sound, not under it.
