@@ -963,6 +963,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	## rule edit, so a second grind with unchanged rules carried the first one's numbers into the
 	## Summary's "Your Rules" row — last session's answer, presented as this session's.
 	reset_rule_fire_counts()
+	_rule_action_noops.clear()
 	## Same class as the rule counts above, found by censusing all three sets at once. Both are
 	## SESSION tallies by every consumer: the Summary rows, _record_session, and the dashboard's
 	## win_rate, whose numerator battles_completed resets here while its denominator did not.
@@ -2043,10 +2044,20 @@ func delete_autogrind_profile(index: int) -> bool:
 ## them. Never persisted — the question is "did this fire in the grind I just ran".
 var _rule_fire_counts: Dictionary = {}
 var _rule_eval_count: int = 0
+## Rule actions that ran and changed nothing, reason -> times. The reason went only to print(), so a fired rule read as working.
+var _rule_action_noops: Dictionary = {}
 
 
 func get_rule_fire_counts() -> Dictionary:
 	return _rule_fire_counts.duplicate()
+
+
+func get_rule_action_noops() -> Dictionary:
+	return _rule_action_noops.duplicate()
+
+
+func _note_rule_noop(reason: String) -> void:
+	_rule_action_noops[reason] = int(_rule_action_noops.get(reason, 0)) + 1
 
 
 ## Evaluations since the counts were last reset — the denominator for a zero.
@@ -2596,6 +2607,7 @@ func apply_autogrind_actions(actions: Array) -> void:
 					print("[AUTOGRIND] %s used %s on %s" % [info["caster"], ability_id, info["target"]])
 				else:
 					print("[AUTOGRIND] member_ability skipped: %s" % str(info.get("reason", "unknown")))
+					_note_rule_noop("Member Casts: %s" % str(info.get("reason", "unknown")))
 
 			"heal_party":
 				# Use potions from inventory to heal party (no free heals). Cadence #18: distinguish "no eligible member" from "no consumable" so a player debugging why their heal_party rule doesn't seem to fire can tell rule-design-mismatch from empty-inventory.
@@ -2632,6 +2644,7 @@ func apply_autogrind_actions(actions: Array) -> void:
 					print("[AUTOGRIND] heal_party: no members needed healing (all ≥80%% HP) — no-op")
 				else:
 					print("[AUTOGRIND] heal_party: %d members needed healing but no potions in party inventory" % eligible_count)
+					_note_rule_noop("Heal Party: no free healer, no potions" if prefer_restoratives else "Heal Party: out of potions")
 
 			"restore_mp":
 				# Use ethers from inventory to restore MP (no free restores). Cadence #18: same eligibility/consumable split as heal_party above.
@@ -2657,6 +2670,7 @@ func apply_autogrind_actions(actions: Array) -> void:
 					print("[AUTOGRIND] restore_mp: no members needed MP (all ≥50%% MP) — no-op")
 				else:
 					print("[AUTOGRIND] restore_mp: %d members needed MP but no ethers in party inventory" % eligible_count)
+					_note_rule_noop("Restore MP: out of ethers")
 
 			"flee_battle":
 				# flee_battle is handled by AutogrindController (_skip_next_battle flag). Reaching this branch means the controller filter was bypassed — a real code-path regression. push_warning surfaces it in the editor warnings panel + CI (cadence #18).
@@ -3039,6 +3053,7 @@ func build_snapshot_system_block(elapsed: float = 0.0) -> Dictionary:
 		## must not inherit it. Both behaviours need the reset on start AND the restore below.
 		"rule_eval_count": _rule_eval_count,
 		"rule_fire_counts": _rule_fire_counts.duplicate(),
+		"rule_action_noops": _rule_action_noops.duplicate(),
 		"meta_bosses_spawned": meta_bosses_spawned,
 		"meta_bosses_defeated": meta_bosses_defeated,
 		## The BASELINE, not injuries_this_session: check_new_injuries recomputes the count from
@@ -3178,6 +3193,10 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	var restored_counts: Dictionary = system_data.get("rule_fire_counts", {})
 	for k in restored_counts.keys():
 		_rule_fire_counts[int(str(k))] = int(restored_counts[k])
+	_rule_action_noops = {}
+	var restored_noops: Dictionary = system_data.get("rule_action_noops", {})
+	for reason in restored_noops.keys():
+		_rule_action_noops[str(reason)] = int(restored_noops[reason])
 	meta_bosses_spawned = system_data.get("meta_bosses_spawned", 0)
 	meta_bosses_defeated = system_data.get("meta_bosses_defeated", 0)
 	fatigue_events_triggered = system_data.get("fatigue_events_triggered", 0)

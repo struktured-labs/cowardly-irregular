@@ -95,6 +95,14 @@ func _build_ui() -> void:
 		{"label": "Meta-Bosses", "value": "%d beaten / %d met" % [_stats.get("meta_bosses_defeated", 0), _stats.get("meta_bosses_spawned", 0)], "color": VALUE_COLOR},
 	]
 
+	var rules_at: int = 0
+	for i in stats_data.size():
+		if stats_data[i]["label"] == "Your Rules":
+			rules_at = i + 1
+	for row in _rule_noop_rows():
+		stats_data.insert(rules_at, row)
+		rules_at += 1
+
 	# Per-character EXP breakdown
 	var char_exp = _stats.get("per_character_exp", {})
 	if not char_exp.is_empty():
@@ -271,6 +279,24 @@ func _rules_summary() -> String:
 	if checks <= 0:
 		return "%d authored, never evaluated" % authored
 	return "%d of %d fired (%d checks)" % [fired, authored, checks]
+
+
+const RULE_NOOP_ROWS_MAX := 3
+const RULE_NOOP_REASON_CHARS := 36
+
+
+## A rule that fired and changed nothing (no potions, a silenced healer) counted as fired above; these rows say what stopped it.
+func _rule_noop_rows() -> Array:
+	var noops: Dictionary = _stats.get("rule_noops", {})
+	var reasons: Array = noops.keys()
+	reasons.sort_custom(func(a, b): return int(noops[a]) > int(noops[b]))
+	var rows: Array = []
+	for reason in reasons.slice(0, RULE_NOOP_ROWS_MAX):
+		var text: String = str(reason)
+		if text.length() > RULE_NOOP_REASON_CHARS:
+			text = text.substr(0, RULE_NOOP_REASON_CHARS - 1) + "…"
+		rows.append({"label": "  " + text, "value": "did nothing ×%d" % int(noops[reason]), "color": BAD_COLOR})
+	return rows
 
 
 ## Only flag the case that is actually a problem: rules exist, they were evaluated many times, and
