@@ -42,6 +42,8 @@ var _row_reset: int = 0
 var _row_test: int = 0
 var _row_map_pad: int = 0
 var _item_count: int = 0
+# How to Play, while open; it owns input then, as it does over the title screen and F1.
+var _help_overlay: Control = null
 
 ## SDL-mapping capture state. Separate from _capturing, which remaps ONE action to a button
 ## the player picks; this walks the whole pad to build a mapping SDL doesn't have.
@@ -899,6 +901,9 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
+	if _help_overlay != null and is_instance_valid(_help_overlay):
+		return
+
 	if _mapping != null:
 		_handle_mapping_input(event)
 		get_viewport().set_input_as_handled()
@@ -959,8 +964,12 @@ func _cycle_profile(delta: int) -> void:
 
 
 func _open_how_to_play() -> void:
+	if _help_overlay != null and is_instance_valid(_help_overlay):
+		return
 	var overlay := HowToPlayOverlay.new()
+	overlay.closed.connect(func(): _help_overlay = null)
 	add_child(overlay)
+	_help_overlay = overlay
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
 

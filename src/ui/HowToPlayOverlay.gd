@@ -120,8 +120,7 @@ func _ready() -> void:
 	## whose entire job is telling them which button to press. Reachable from the title screen,
 	## ControlsMenu and GameLoop's F1.
 	Input.joy_connection_changed.connect(_on_pad_changed)
-
-	grab_focus()
+	# No grab_focus(): this Control is FOCUS_NONE so it was always refused; input arrives via _input.
 
 
 ## The whole body, in ONE place, so the build and the rebuild cannot print different things.
