@@ -67,9 +67,12 @@ signal boss_jailbreak_landed(boss: Combatant, vulnerability_id: String, conseque
 ## is_victory=true means the PARTY won (the boss concedes/gloats in defeat);
 ## is_victory=false means the boss WIPED the party (the boss gloats in triumph).
 ## The line is LLM-narrated when available, otherwise a scripted-pool fallback
-## from BossDialogue.get_victory_line / get_defeat_line. NON-BLOCKING: the
-## deterministic battle-end flow never awaits the LLM — the fallback ships
-## immediately and an LLM re-narration (when available) replaces it on arrival.
+## from BossDialogue.get_victory_line / get_defeat_line. NON-BLOCKING and EMITTED
+## EXACTLY ONCE: the battle-end flow never awaits the LLM; the model's line is used
+## if it lands within GLOAT_WAIT_SEC, else the scripted line speaks at the deadline
+## and a late reply is dropped (the battle log only appends, so a second emit would
+## print the boss twice). Turbo, with no results screen to read it on, ships the
+## scripted line synchronously and asks no model.
 signal boss_gloat_line(text: String, is_victory: bool)
 
 enum BattleState {
@@ -143,6 +146,8 @@ var _wc_phase_index: int = 0
 var _lens_ap_echo_charges: int = 0
 ## Turbo mode - minimize delays between actions for fastest execution
 var turbo_mode: bool = false
+## Wall-clock wait for the LLM's gloat before the scripted line speaks instead; a results screen can close soon after.
+const GLOAT_WAIT_SEC: float = 1.2
 
 # wall-clock (not time_scale'd) so 32x battle speed can't distort the stall threshold
 const _WD_STALL_MS: int = 10000
@@ -1173,7 +1178,7 @@ func end_battle(victory: bool) -> void:
 	# _summarize_battle_actions() and feeds it directly into
 	# AutogrindSystem.update_learned_patterns.
 
-	# Boss gloat — fire-and-forget; scripted ships now, async LLM re-narration may replace it.
+	# Boss gloat — fire-and-forget, exactly one line: the LLM's if in time, else the scripted one (GLOAT_WAIT_SEC).
 	_dispatch_boss_gloat(victory)
 
 	## An in-fight bark would keep talking over the results. Stop it before the victory line starts.
@@ -9136,12 +9141,13 @@ func _resolved_boss_had_key_stolen(persona_id: String) -> bool:
 
 ## Fire-and-forget gloat dispatcher called from end_battle. Resolves the boss
 ## persona, computes the DETERMINISTIC scripted fallback synchronously, and:
-##   - LLM unavailable → emits boss_gloat_line immediately with the fallback.
+##   - LLM unavailable, or turbo → emits boss_gloat_line immediately with the fallback.
 ##   - LLM available    → kicks off an async coroutine (NOT awaited here, so the
-##                        battle-end flow never blocks) that re-narrates the line
-##                        and emits boss_gloat_line on arrival. The coroutine's
-##                        own fallback is the same scripted pool line, so even an
-##                        LLM failure mid-flight yields a non-empty line.
+##                        battle-end flow never blocks) that emits ONE line: the
+##                        re-narration if it lands within GLOAT_WAIT_SEC, else the
+##                        scripted line at that deadline. A slow backend (cloud BYOK,
+##                        a cold model) used to emit nothing until it answered, so a
+##                        results screen closed first lost the gloat entirely.
 ## No-op (no signal) when there is no qualifying boss or no scripted line exists
 ## for the resolved persona — graceful degradation, never an empty gloat.
 func _dispatch_boss_gloat(victory: bool) -> void:
@@ -9175,7 +9181,7 @@ func _dispatch_boss_gloat(victory: bool) -> void:
 	if llm_node and llm_node.has_method("is_available"):
 		llm_available = llm_node.is_available()
 
-	if not llm_available:
+	if not llm_available or turbo_mode:
 		# Deterministic path — ship the scripted pool line immediately.
 		boss_gloat_line.emit(fallback, victory)
 		return
@@ -9188,17 +9194,22 @@ func _dispatch_boss_gloat(victory: bool) -> void:
 	_produce_boss_gloat_async(prompt, fallback, victory)
 
 
-## Async LLM producer. Awaits LLMService.complete with the scripted line as the
-## guaranteed fallback, then emits boss_gloat_line. Detached from end_battle so
-## the main thread is never blocked. If the LLM is cancelled (scene change) or
-## times out, complete() returns the fallback — so the emitted line is ALWAYS
-## non-empty and ALWAYS personality-appropriate.
+## Detached from end_battle; emits EXACTLY ONE line: the model's within GLOAT_WAIT_SEC (wall clock), else the scripted one then.
 func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) -> void:
 	var llm_node = get_node_or_null("/root/LLMService")
 	if llm_node == null or not llm_node.has_method("complete"):
 		boss_gloat_line.emit(fallback, victory)
 		return
+	var spoken := {"done": false}
+	## ignore_time_scale: the default battle pace runs the engine at 0.25, which would stretch a scaled wait fourfold.
+	get_tree().create_timer(GLOAT_WAIT_SEC, true, false, true).timeout.connect(func() -> void:
+		if not spoken["done"]:
+			spoken["done"] = true
+			boss_gloat_line.emit(fallback, victory))
 	var line: Variant = await llm_node.complete(prompt, fallback)
+	if spoken["done"]:
+		return
+	spoken["done"] = true
 	var text: String = str(line).strip_edges()
 	if text == "":
 		text = fallback
