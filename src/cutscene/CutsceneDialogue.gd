@@ -1414,6 +1414,11 @@ const PORTRAIT_PROCEDURAL_FALLBACK := {
 var _portrait_cache: Dictionary = {}
 
 
+## The face this dialogue would show for `portrait_type`, for other screens that must show the same one.
+func portrait_texture(portrait_type: String) -> Texture2D:
+	return _create_portrait(portrait_type)
+
+
 func _create_portrait(portrait_type: String) -> Texture2D:
 	# Try loading artist sprite portrait first (hand-crafted bust art)
 	var sprite_path = PORTRAIT_SPRITES.get(portrait_type, "")
