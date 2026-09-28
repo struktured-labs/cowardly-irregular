@@ -2,17 +2,19 @@ extends GutTest
 
 ## A slime fight opened on two parts of battle_slime at once.
 ##
-## tools/crossfade_loop.py (94000af3d) folds a bed's tail over its own head.
-## The shipped file's first 4.0 s are that mix — measured against the pre-fold
-## master, correlation 0.997 — and play() started at 0, so the opening phrase
-## was the ending and the beginning together. The blend stays in the file
-## because the LOOP seeks to 0 and needs it. Entry must start after it.
+## tools/crossfade_loop.py folds a bed's tail over its own head, and play() started
+## at 0, so the opening phrase was the ending and the beginning together. The blend
+## stays in the file because the LOOP seeks to 0 and needs it. Entry starts after it.
+## The fold was 4.0 s and 74 ms off the beat (every hit a flam, "overlaps a little too
+## much"); re-folded 2026-09-28 on the beat grid: body cut at 54.162 s, a 3.186 s
+## (8-beat) fold, 128 beats in. BLEND is the fold baked into the ogg, which GDScript
+## cannot measure, so it is pinned here and in the manifest together.
 ##
 ## BattleScene plays one track for a slime: monsters.json music_track
 ## "battle_slime". The field bed crossfades out on the other music player for
 ## CROSSFADE_DURATION; once that handoff ends, only the slime stream is up.
 
-const BLEND := 4.0
+const BLEND := 3.186
 const HANDOFF_S := 0.7
 
 
@@ -109,6 +111,10 @@ func test_a_bed_without_a_fold_still_starts_at_its_head() -> void:
 ## Each was checked against its pre-rebuild master: the first 4s match that equal-power mix
 ## and the rest of the file is the body with the blend region removed. Beds the tool refused
 ## (overworld_industrial, ambient_steampunk, boss_warden_abstract) are not in this list.
+const DEFAULT_FOLD := 4.0
+## Beds re-folded on their own beat grid since, with the fold each now bakes in.
+const REFOLDED := {"battle_slime": BLEND}
+
 const FOLDED: Array[String] = [
 	"ambient_digital", "battle_cranky_lady", "battle_digital", "battle_imp",
 	"battle_medieval", "battle_rogue_mailbox", "battle_slime", "battle_suburban",
@@ -138,13 +144,14 @@ func test_every_rebuilt_bed_names_the_same_fold() -> void:
 			"%s declares a fold but was not part of the crossfade rebuild" % key)
 		assert_true(bool(entry.get("loop", false)),
 			"%s declares a fold but does not loop — the wrap would never play the blend" % key)
-		assert_almost_eq(float(entry["loop_blend_seconds"]), BLEND, 0.01,
-			"%s fold length is not the 4.0s the rebuild wrote" % key)
+		var want: float = float(REFOLDED.get(str(key), DEFAULT_FOLD))
+		assert_almost_eq(float(entry["loop_blend_seconds"]), want, 0.01,
+			"%s fold length is not the %.3fs its rebuild wrote" % [key, want])
 	assert_eq(declared.size(), FOLDED.size(),
 		"the manifest names %d folds and the rebuild list has %d" % [declared.size(), FOLDED.size()])
 	for key in FOLDED:
 		assert_true((tracks[key] as Dictionary).has("loop_blend_seconds"),
-			"%s was rebuilt with a 4.0s fold and does not name it" % key)
+			"%s was rebuilt with a fold and does not name it" % key)
 	for plain in ["title", "battle_bat", "boss_mordaine", "stinger_level_up", "victory_medieval", "menu"]:
 		assert_false((tracks[plain] as Dictionary).has("loop_blend_seconds"),
 			"%s was not rebuilt and must still start at its head" % plain)

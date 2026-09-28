@@ -496,9 +496,9 @@
       "prompt": "Starter-monster battle theme for a green snake-slime predator with sharp fangs that rears and strikes from a coiled position. Mid-tempo F minor JRPG battle in 16-bit SNES voicing. Slithering synth bass weaves underneath rather than bouncing. Wet drip percussion (like slime hitting stone) gives the rhythm a damp, hunting quality. A muted brass or pungi/cobra-flute lick threads through the hook, slightly dissonant, suggesting venom. Brief tension-build every 8 bars before reset. Energetic enough to feel like combat, but unsettling — you're fighting something that wants to eat you, not a goofy blob. Instrumental, loops cleanly.",
       "style": "16-bit JRPG battle, tense and predatory, F minor, mid-tempo 110 BPM, slithering synth bass, wet drip percussion, dissonant cobra-flute lick suggesting venom, slick and unsettling, NOT comedic, instrumental, loopable",
       "model": "suno-v4",
-      "duration": 56.2,
+      "duration": 51.0,
       "loop": true,
-      "loop_blend_seconds": 4.0,
+      "loop_blend_seconds": 3.186,
       "generated_at": "2026-05-05",
       "pinned": true
     },
