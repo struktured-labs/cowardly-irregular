@@ -1702,26 +1702,37 @@ func set_queue_budget(budget: Dictionary, cost_fn: Callable) -> void:
 	_queue_cost_fn = cost_fn
 
 
-## "" if the queue plus this action fits the budget, else the reason to show.
+## "" if the queue plus this action fits the budget, else the reason to show. MP is walked IN ORDER,
+## because a queued restore (Channel's "mp_gain") pays for what comes after it, never before;
+## items are totals. "mp_max" in the budget caps a restore the way the executor does.
 func _queue_shortfall(data) -> String:
 	if _queue_budget.is_empty() or not _queue_cost_fn.is_valid():
 		return ""
-	var spent: Dictionary = {}
 	var pending: Array = []
 	for a in _queued_actions:
 		pending.append(a.get("data", null))
 	pending.append(data)
+	var has_mp: bool = _queue_budget.has("mp")
+	var mp: int = int(_queue_budget.get("mp", 0))
+	var mp_max: int = int(_queue_budget.get("mp_max", 1 << 30))
+	var spent: Dictionary = {}
 	for d in pending:
 		var cost = _queue_cost_fn.call(d)
-		if cost is Dictionary:
-			for k in cost:
-				spent[k] = int(spent.get(k, 0)) + int(cost[k])
-	for k in spent:
-		if not _queue_budget.has(k) or spent[k] <= int(_queue_budget[k]):
+		if not (cost is Dictionary):
 			continue
-		if k == "mp":
-			return "Not enough MP for the queue (%d needed, %d held)" % [spent[k], int(_queue_budget[k])]
-		return "Only %d of that item to queue" % int(_queue_budget[k])
+		if has_mp and cost.has("mp"):
+			mp -= int(cost["mp"])
+			if mp < 0:
+				return "Not enough MP for the queue (%d short)" % -mp
+		if has_mp and cost.has("mp_gain"):
+			mp = mini(mp_max, mp + int(cost["mp_gain"]))
+		for k in cost:
+			if k == "mp" or k == "mp_gain":
+				continue
+			spent[k] = int(spent.get(k, 0)) + int(cost[k])
+	for k in spent:
+		if _queue_budget.has(k) and spent[k] > int(_queue_budget[k]):
+			return "Only %d of that item to queue" % int(_queue_budget[k])
 	return ""
 
 

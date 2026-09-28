@@ -7598,9 +7598,15 @@ func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
 		battle_log_message.emit("[color=gray]%s failed to escape.[/color]" % caster.combatant_name)
 
 
+## MP a restore ability gives each recipient before the max-MP clamp. The executor and the Advance
+## queue's budget both read this, so a queued Channel credits exactly what it will restore.
+func _mp_restore_amount(ability: Dictionary) -> int:
+	return int(ability.get("mp_amount", 5))
+
+
 func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets: Array = []) -> void:
 	"""Free-Move MP restore: honors ability.target_type (self / single_ally / all_allies)."""
-	var amount: int = ability.get("mp_amount", 5)
+	var amount: int = _mp_restore_amount(ability)
 	var target_type: String = ability.get("target_type", "self")
 	var recipients: Array[Combatant] = []
 	match target_type:
