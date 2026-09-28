@@ -714,6 +714,7 @@ func get_grind_stats() -> Dictionary:
 		"collapse_count": AutogrindSystem.collapse_count,
 		"rule_checks": AutogrindSystem.get_rule_eval_count(),
 		"rules_that_fired": AutogrindSystem.get_rule_fire_counts().size(),
+		"rule_noops": AutogrindSystem.get_rule_action_noops(),
 		"rules_authored": AutogrindSystem.get_autogrind_rules().size(),
 		"meta_bosses_spawned": AutogrindSystem.meta_bosses_spawned,
 		"meta_bosses_defeated": AutogrindSystem.meta_bosses_defeated,
