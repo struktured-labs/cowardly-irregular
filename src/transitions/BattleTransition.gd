@@ -54,7 +54,8 @@ const MONSTER_TRANSITIONS: Dictionary = {
 ## Visual elements
 var _overlay: ColorRect
 var _effect_container: Control
-var _fragments: Array[Control] = []
+# CanvasItem, not Control: RADIAL_WIPE segments and SHOCKWAVE rings are Polygon2D.
+var _fragments: Array[CanvasItem] = []
 var _is_transitioning: bool = false
 
 ## Screen capture for effects
