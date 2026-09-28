@@ -1,6 +1,6 @@
 extends GutTest
 
-## Approaching a boss area must play the danger bed, not peaceful overworld music.
+## The `danger` area key must resolve to a danger bed. Since 2026-09-28 DangerZone no longer asks for it (it is the near-death track): see test_danger_zone_is_not_low_hp_regression.
 ##
 ## DangerZone ("pulsing red vignette + danger music near boss areas") calls
 ## SoundManager.play_area_music("danger") at :65. _start_area_music_deferred's
@@ -101,8 +101,8 @@ func test_every_area_key_the_game_asks_for_has_an_arm() -> void:
 		var body: String = FileAccess.get_file_as_string(f)
 		for m in call_re.search_all(body):
 			asked[m.get_string(1)] = f
-	assert_gt(asked.size(), 5,
-		"SCOPE control: found only %d literal play_area_music keys" % asked.size())
+	assert_true(asked.has("cave"),
+		"SCOPE control: WhisperingCave's literal play_area_music(\"cave\") was not found among %s — the call regex is broken" % [asked.keys()])
 
 	var unwired: Array[String] = []
 	for k in asked.keys():

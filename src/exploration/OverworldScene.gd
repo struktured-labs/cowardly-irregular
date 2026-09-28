@@ -93,13 +93,15 @@ func _ready() -> void:
 
 	# Danger zone warnings near boss caves
 	var danger_pts: Array[Vector2] = []
-	for key in ["cave_entrance", "ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave", "backwards_warren_cave"]:
+	var danger_flags: Array[String] = []
+	for key in DANGER_CAVE_BOSS_FLAGS:
 		if spawn_points.has(key):
 			danger_pts.append(spawn_points[key])
+			danger_flags.append(DANGER_CAVE_BOSS_FLAGS[key])
 	if not danger_pts.is_empty():
 		_danger_zone = DangerZone.new()
 		add_child(_danger_zone)
-		_danger_zone.setup(self, player, danger_pts)
+		_danger_zone.setup(self, player, danger_pts, danger_flags)
 
 	# Minimap with transition dots
 	_minimap = OverworldMinimap.new()
@@ -345,6 +347,17 @@ func _char_to_tile_type(char: String) -> int:
 func _get_atlas_coords(tile_type: int) -> Vector2i:
 	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
 	return Vector2i(tile_id % 5, tile_id / 5)
+
+
+## Each boss cave's spawn key -> the flag its boss's defeat sets; a cleared cave stops warning.
+const DANGER_CAVE_BOSS_FLAGS := {
+	"cave_entrance": "rat_king_defeated",
+	"ice_dragon_cave": "ice_dragon_defeated",
+	"shadow_dragon_cave": "shadow_dragon_defeated",
+	"lightning_dragon_cave": "lightning_dragon_defeated",
+	"fire_dragon_cave": "fire_dragon_defeated",
+	"backwards_warren_cave": "cartographer_wraith_defeated",
+}
 
 
 const W1_SPINE_FLAGS: Array[String] = [

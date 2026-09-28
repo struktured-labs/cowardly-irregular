@@ -1,8 +1,8 @@
 extends Node
 class_name DangerZone
 
-## DangerZone — pulsing red vignette + danger music near boss areas.
-## Intensity scales with proximity to danger points.
+## DangerZone — pulsing red vignette near boss areas whose boss still stands.
+## Intensity scales with proximity to danger points. Visual only: the `danger` bed is the near-death track, so the field never plays it.
 
 const DANGER_RADIUS: float = 256.0  # Pixels — start showing warning
 const FULL_DANGER_RADIUS: float = 96.0  # Full intensity at this distance
@@ -11,15 +11,16 @@ const PULSE_SPEED: float = 3.0
 var _canvas: CanvasLayer
 var _vignette: ColorRect
 var _danger_points: Array[Vector2] = []
+var _clear_flags: Array[String] = []
 var _player_ref: Node2D
 var _pulse_timer: float = 0.0
 var _current_intensity: float = 0.0
-var _danger_music_playing: bool = false
 
 
-func setup(parent: Node, player: Node2D, points: Array[Vector2]) -> void:
+func setup(parent: Node, player: Node2D, points: Array[Vector2], clear_flags: Array[String] = []) -> void:
 	_player_ref = player
 	_danger_points = points
+	_clear_flags = clear_flags
 
 	_canvas = CanvasLayer.new()
 	_canvas.name = "DangerOverlay"
@@ -35,17 +36,28 @@ func setup(parent: Node, player: Node2D, points: Array[Vector2]) -> void:
 	_canvas.add_child(_vignette)
 
 
+## A point stops warning once its boss falls; read live so a cleared cave goes quiet without a scene rebuild.
+func is_point_cleared(i: int) -> bool:
+	if i >= _clear_flags.size() or _clear_flags[i] == "":
+		return false
+	var gs: Node = get_node_or_null("/root/GameState") if is_inside_tree() else null
+	return gs != null and gs.has_method("is_story_flag_set") and gs.is_story_flag_set(_clear_flags[i])
+
+
+func nearest_live_distance(player_pos: Vector2) -> float:
+	var min_dist: float = INF
+	for i in _danger_points.size():
+		if is_point_cleared(i):
+			continue
+		min_dist = minf(min_dist, player_pos.distance_to(_danger_points[i]))
+	return min_dist
+
+
 func process(delta: float) -> void:
 	if not _player_ref or _danger_points.is_empty():
 		return
 
-	# Find closest danger point
-	var player_pos = _player_ref.global_position
-	var min_dist = DANGER_RADIUS + 1.0
-	for pt in _danger_points:
-		var d = player_pos.distance_to(pt)
-		if d < min_dist:
-			min_dist = d
+	var min_dist: float = nearest_live_distance(_player_ref.global_position)
 
 	# Calculate intensity (0 at DANGER_RADIUS, 1 at FULL_DANGER_RADIUS)
 	var target_intensity = 0.0
@@ -58,18 +70,6 @@ func process(delta: float) -> void:
 		_pulse_timer += delta * PULSE_SPEED
 		var pulse = (sin(_pulse_timer) * 0.5 + 0.5) * _current_intensity
 		_vignette.color.a = pulse * 0.25  # Max 25% opacity
-
-		# Trigger danger music
-		if not _danger_music_playing and _current_intensity > 0.3:
-			if SoundManager and SoundManager.has_method("play_area_music"):
-				SoundManager.play_area_music("danger")
-			_danger_music_playing = true
 	else:
 		_vignette.color.a = 0.0
 		_pulse_timer = 0.0
-
-		# Return to normal music
-		if _danger_music_playing:
-			if SoundManager and SoundManager.has_method("play_area_music"):
-				SoundManager.play_area_music("overworld")
-			_danger_music_playing = false
