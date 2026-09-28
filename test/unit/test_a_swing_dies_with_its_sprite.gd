@@ -46,3 +46,22 @@ func test_every_attack_tween_is_bound_to_its_sprite() -> void:
 			scene_bound += 1
 	assert_eq(scene_bound, 0,
 		"the cast and rush tweens capture the caster's animator; created on the scene they outlive a grind restart")
+
+
+func test_a_hit_flash_dies_with_its_sprite() -> void:
+	## cowir-autogrind's rerun: the errors survive the swing fix and fire on ENEMY hits too. Every hit
+	## flashes its target through BattleJuice.flash_sprite, whose tween_method lambda captures the
+	## sprite and runs every frame; created on the autoload, it outlived a sprite the restart freed.
+	var s := _sprite(0)
+	add_child(s)
+	BattleJuice.ensure_flash_material(s)
+	BattleJuice.flash_sprite(s, Color.WHITE, 0.5)
+	var tweens: Array = get_tree().get_processed_tweens()
+	assert_gt(tweens.size(), 0, "CONTROL: the flash must start a tween")
+	s.queue_free()
+	await wait_seconds(0.2)
+	var live := 0
+	for tw in get_tree().get_processed_tweens():
+		if tw in tweens and tw.is_valid():
+			live += 1
+	assert_eq(live, 0, "the flash's tween must die with the sprite it flashes, before its lambda runs on a freed capture")
