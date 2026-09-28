@@ -333,18 +333,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 						continue
 					if not member.is_alive and not can_target_dead:
 						continue
-					var target_pos = Vector2.ZERO
-					if i < _scene.party_sprite_nodes.size():
-						var s = _scene.party_sprite_nodes[i]
-						if is_instance_valid(s):
-							target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
-					var hp_label: String = "KO'd" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
-					# Landable even when the item would do nothing, so confirm can say why instead of spending it.
-					ally_targets.append(_with_item_reject({
-						"id": "item_" + item_id + "_ally_" + str(i),
-						"label": "%s (%s)" % [member.combatant_name, hp_label],
-						"data": {"item_id": item_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
-					}, item_id, [member]))
+					ally_targets.append(_item_ally_row(item_id, member, i))
 				if ally_targets.size() > 0:
 					item_items.append({
 						"id": "item_menu_" + item_id,
@@ -844,6 +833,24 @@ static func combo_elements_for(members: Array) -> Array[String]:
 			if elem != "" and not out.has(elem):
 				out.append(elem)
 	return out
+
+
+## One ally row of an item's target list. Landable even when the item would do nothing, so confirm can say why instead of spending it.
+func _item_ally_row(item_id: String, member: Combatant, i: int) -> Dictionary:
+	var target_pos = Vector2.ZERO
+	if i < _scene.party_sprite_nodes.size():
+		var s = _scene.party_sprite_nodes[i]
+		if is_instance_valid(s):
+			target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
+	var hp_label: String = "KO'd" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
+	## Same "~+N" an ability heal's row carries, from the heal() chain the item will run.
+	var quote: int = ItemSystem.estimate_item_heal(item_id, member)
+	var heal_quote: String = " ~+%d" % quote if quote > 0 else ""
+	return _with_item_reject({
+		"id": "item_" + item_id + "_ally_" + str(i),
+		"label": "%s (%s)%s" % [member.combatant_name, hp_label, heal_quote],
+		"data": {"item_id": item_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
+	}, item_id, [member])
 
 
 # Tick 192: derive a compact effect+scope hint from ability data so per-job Free Move labels self-document. Returns "" for unknown shapes (label stays bare).

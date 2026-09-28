@@ -20,7 +20,13 @@ func test_ally_filter_includes_dead_when_item_has_revive_effect() -> void:
 	assert_true("not member.is_alive and not can_target_dead" in body,
 		"filter must be conditional on revive capability — the whole point of a revive item is to target dead allies")
 	# UX: KO'd allies should display as "KO'd" not "0/HP" so the target menu reads correctly.
-	assert_true("\"KO'd\"" in body,
+	## Each ally row is built by _item_ally_row (it also carries the ~+N heal quote), so the label lives there.
+	assert_true("_item_ally_row(item_id, member, i)" in body,
+		"the SINGLE_ALLY branch must build each row through _item_ally_row")
+	var r := src.find("func _item_ally_row(")
+	assert_gt(r, -1, "_item_ally_row must exist")
+	var row_body := src.substr(r, maxi(0, src.find("\nfunc ", r + 1) - r))
+	assert_true("\"KO'd\"" in row_body,
 		"KO'd targets need a clear label (not '0/N HP') so the target picker is legible")
 
 
