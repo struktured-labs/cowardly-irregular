@@ -15,7 +15,7 @@ func test_death_cry_fires_inside_the_fade_tween_not_before_the_hit_sound() -> vo
 	var next_fn := src.find("\nfunc ", fn_idx + 1)
 	var body := src.substr(fn_idx, (next_fn - fn_idx) if next_fn > -1 else -1)
 
-	var tween_start := body.find("var tween = create_tween()")
+	var tween_start := body.find("var tween = sprite.create_tween()")  # on the sprite so it dies with it (lambda-capture fix)
 	assert_gt(tween_start, -1, "death tween present")
 	var cry := body.find('play_death("enemy_death")', tween_start)
 	assert_gt(cry, tween_start, "the scorch fires INSIDE the death tween (after the flash) — immediately-on-died gets stomped by the killing blow's hit sound on the shared battle player")
