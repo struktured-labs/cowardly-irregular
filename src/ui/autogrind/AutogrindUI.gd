@@ -660,6 +660,9 @@ func _build_status_panel(panel_size: Vector2) -> Control:
 	_battle_log.add_theme_font_size_override("normal_font_size", 10)
 	_battle_log.add_theme_color_override("default_color", TEXT_COLOR)
 	panel.add_child(_battle_log)
+	if not _battle_log_lines.is_empty():
+		_battle_log.append_text("\n".join(_battle_log_lines) + "\n")
+		_trim_battle_log()
 
 	return panel
 
@@ -3041,9 +3044,15 @@ func _close_ui() -> void:
 ## reads between battles. Lowering it for readability is a separate, deliberate call.
 const BATTLE_LOG_MAX_LINES: int = 400
 
+## The log's own record. _build_ui recreates the label empty, and the grind's end, an interrupt and a stop all rebuild.
+var _battle_log_lines: Array[String] = []
+
 
 func _log_message(text: String) -> void:
 	"""Log message to battle log"""
+	_battle_log_lines.append(text)
+	if _battle_log_lines.size() > BATTLE_LOG_MAX_LINES:
+		_battle_log_lines = _battle_log_lines.slice(_battle_log_lines.size() - BATTLE_LOG_MAX_LINES)
 	if _battle_log and is_instance_valid(_battle_log):
 		_battle_log.append_text(text + "\n")
 		_trim_battle_log()
