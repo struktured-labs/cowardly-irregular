@@ -249,11 +249,14 @@ func _ready() -> void:
 	call_deferred("_init_passive_hooks")
 
 
-func _setup_sprite() -> void:
+func _init() -> void:
+	# Built here, not in _ready: every scene's _setup_player calls set_job before add_child.
 	_sprite = Sprite2D.new()
 	_sprite.name = "Sprite"
 	add_child(_sprite)
 
+
+func _setup_sprite() -> void:
 	# Setup collision shape — CircleShape2D for direction-neutral collision
 	var collision = CollisionShape2D.new()
 	collision.name = "Collision"
