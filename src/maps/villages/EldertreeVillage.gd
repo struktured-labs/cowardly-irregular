@@ -314,7 +314,7 @@ func _setup_npcs() -> void:
 	var _ivy_pre := [
 		"Watch for wolves. They hunt in packs.",
 		"And they've learned your autobattle patterns.",
-		"I've seen one dodge a scripted Fire spell.",
+		"I've seen one dodge a scripted Ignis.",
 		"Nature adapts. Your scripts should too."
 	]
 	var _ivy_post := [

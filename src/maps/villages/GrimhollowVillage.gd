@@ -306,7 +306,7 @@ func _setup_npcs() -> void:
 
 	# Nervous Gravedigger Earl (anxious)
 	var earl = _create_npc("Gravedigger Earl", "villager", Vector2(5 * TILE_SIZE,14 * TILE_SIZE), [
-		"Please don't use Raise on the graves.",
+		"Please don't cast Anima Reddita on the graves.",
 		"Last time someone did that, we had a UNION issue.",
 		"The undead demanded dental coverage.",
 		"Do you know how much dental costs for someone with NO TEETH?!"
