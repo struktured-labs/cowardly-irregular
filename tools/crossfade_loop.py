@@ -206,6 +206,73 @@ def body_end_candidates(y, body_db):
         end -= step
 
 
+## A fold whose layers sit this far apart on the beat grid plays every hit as a flam for the whole blend.
+FOLD_OFFBEAT_MS = 30.0
+
+
+def onset_env(y, hop):
+    """Positive log-energy flux per hop: where notes and hits start."""
+    frames = len(y) // hop
+    if frames < 3:
+        return np.zeros(0)
+    trimmed = y[:frames * hop].reshape(frames, hop)
+    le = 10.0 * np.log10(np.sum(trimmed * trimmed, axis=1) + 1e-10)
+    d = np.diff(le, prepend=le[0])
+    d[d < 0] = 0.0
+    return d
+
+
+def beat_period(y, sr):
+    """The track's beat period in seconds, fitted to its onsets; None when it has no steady pulse.
+
+    Autocorrelation gives a coarse period at 10 ms resolution, which is +-4 BPM at
+    150 BPM and drifts several beats over a minute, so it is refined by how much
+    onset energy a grid of that period captures across the whole body.
+    """
+    hop = max(1, sr // 500)
+    env = onset_env(y, hop)
+    if len(env) < 50 or not np.any(env):
+        return None
+    coarse_hop = 5
+    c = env[: len(env) // coarse_hop * coarse_hop].reshape(-1, coarse_hop).sum(axis=1)
+    ac = np.correlate(c - c.mean(), c - c.mean(), "full")[len(c) - 1:]
+    lags = np.arange(len(ac))
+    bpm = 60.0 * (sr / (hop * coarse_hop)) / np.maximum(lags, 1)
+    mask = (bpm >= 70) & (bpm <= 190)
+    if not np.any(mask):
+        return None
+    p0 = lags[mask][np.argmax(ac[mask])] * hop * coarse_hop / sr
+    t = np.arange(len(env)) * hop / sr
+    phases = np.linspace(0.0, 1.0, 64, endpoint=False)
+
+    def score(p):
+        d = (t[None, :] / p - phases[:, None]) % 1.0
+        d = np.minimum(d, 1.0 - d) * p
+        return float(np.max(np.sum(env[None, :] * np.exp(-(d / 0.010) ** 2), axis=1)))
+
+    grid = np.linspace(p0 * 0.975, p0 * 1.025, 101)
+    best = max(grid, key=score)
+    fine = np.linspace(best - (grid[1] - grid[0]), best + (grid[1] - grid[0]), 21)
+    return float(max(fine, key=score))
+
+
+def fold_offset_ms(y, end, xfade_n, sr):
+    """How far the fold's TAIL layer sits off the HEAD layer's beat, in ms (signed), or None.
+
+    The fold plays tail[end-X:end] over head[0:X]. Two passages at one tempo blend
+    cleanly only when their hits coincide, i.e. when (end - X) is a whole number of
+    beats. battle_slime shipped 141.17 beats (about 68 ms off): every hit in the 4 s
+    blend was a flam, heard as "overlaps a little too much" on every loop. Only the
+    UNFOLDED master can be measured this way; the shipped mix cannot.
+    """
+    p = beat_period(y[:end], sr)
+    if p is None:
+        return None
+    beats = (end - xfade_n) / sr / p
+    frac = beats - round(beats)
+    return frac * p * 1000.0
+
+
 def crossfade_loop(body, xfade_n):
     """Equal-power fold of the body's tail over its own head."""
     n = len(body)
@@ -242,13 +309,15 @@ def wrap_sample(y, seconds=3.0):
     return np.concatenate([one, one])
 
 
-def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
+def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0, source=None, body_end_s=None):
     ## Adopt this file's own format before any analysis: every window size below
     ## is derived from SR, so reading it wrong mis-sizes the seam as well as the
     ## output.
     global SR, CH
-    SR, CH = probe(path)
-    y = decode(path)
+    ## --source re-folds from the UNFOLDED master: the manifest's file is already folded, and folding it again stacks two blends.
+    src = source or path
+    SR, CH = probe(src)
+    y = decode(src)
     if len(y) < SR * 10:
         return key, "unreadable or too short", None
     dur = len(y) / SR
@@ -270,7 +339,9 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
     # trim against a 3.0 bound.
     clipped = 0
     worst_gain = 0.0
-    for end in body_end_candidates(y, body_db):
+    ## --body-end pins the cut (e.g. a bar line); the default search steps back 0.5 s at a time and ignores the beat.
+    ends = [int(body_end_s * SR)] if body_end_s else body_end_candidates(y, body_db)
+    for end in ends:
         body = y[:end]
         if len(body) < xfade_n * 3:
             break
@@ -308,6 +379,15 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
         return key, "no cut point in %d tries gave a seam within %.0f dB of body (%d also over the trim bound)" % (
             attempts, SEAM_TOLERANCE_DB, clipped), None
     end, out = chosen
+    ## The level and click checks above pass a fold whose two layers disagree on the beat; this one does not.
+    off_ms = fold_offset_ms(y, end, xfade_n, SR)
+    if off_ms is not None and abs(off_ms) > FOLD_OFFBEAT_MS:
+        p = beat_period(y[:end], SR)
+        suggest = end / SR - off_ms / 1000.0
+        if suggest > end / SR:
+            suggest -= p
+        return key, ("fold is %+.0f ms off the beat (%.1f BPM): every hit in the %.1f s blend would flam. "
+                     "Cut on the beat grid: --body-end %.3f" % (off_ms, 60.0 / p, xfade_s, suggest)), None
     body = y[:end]
     peak = float(np.max(np.abs(out)))
     # These beds are mastered near full scale, so summing head over tail
@@ -405,7 +485,42 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
     return key, None, info
 
 
+def selftest():
+    """Pure: click tracks synthesised in memory. No file opened, no subprocess, nothing written."""
+    sr = 24000
+    period = 0.5
+    n = int(16.0 * sr)
+    y = np.zeros(n)
+    burst_n = int(0.03 * sr)
+    burst = np.random.default_rng(7).standard_normal(burst_n) * np.exp(-np.linspace(0, 8, burst_n))
+    t = 0.1
+    while t + 0.03 < 16.0:
+        i = int(t * sr)
+        y[i:i + burst_n] += burst
+        t += period
+    y += 0.05 * np.sin(2 * np.pi * 110 * np.arange(n) / sr)
+    fails = []
+    p = beat_period(y, sr)
+    if p is None or abs(p - period) > 0.002:
+        fails.append("beat_period read %s s on a 0.500 s click track" % p)
+    xf = int(2.0 * sr)
+    on = fold_offset_ms(y, int(14.0 * sr), xf, sr)
+    off = fold_offset_ms(y, int(14.1 * sr), xf, sr)
+    if on is None or abs(on) > FOLD_OFFBEAT_MS:
+        fails.append("a fold 24 beats in read %s ms off (must be on the beat)" % on)
+    if off is None or abs(off) <= FOLD_OFFBEAT_MS:
+        fails.append("a fold 24.2 beats in read %s ms off (must be refused: ~100 ms)" % off)
+    for f in fails:
+        print("SELFTEST FAIL:", f)
+    print("selftest: beat %.4f s, on-grid fold %+.1f ms, off-grid fold %+.1f ms -> %s"
+          % (p or -1, on if on is not None else float("nan"), off if off is not None else float("nan"),
+             "ok" if not fails else "FAILED"))
+    return 0 if not fails else 1
+
+
 def main():
+    if "--selftest" in sys.argv:
+        sys.exit(selftest())
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", action="append", default=[],
                     help="track key; repeatable. Default: every looping bed that needs it.")
@@ -415,6 +530,10 @@ def main():
                          "A hot master whose head and tail sum constructively can need more; "
                          "raising this makes the WHOLE track quieter, so it is a mix decision.")
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--source", metavar="PATH", default=None,
+                    help="decode this UNFOLDED master instead of the manifest's file (one --only)")
+    ap.add_argument("--body-end", type=float, default=None, metavar="S",
+                    help="cut the body exactly here, in seconds; pick a bar line so the fold is on the beat")
     ap.add_argument("--preview", metavar="DIR", nargs="?", const="tmp/loop_preview",
                     default=None, help="write before/after wrap audio for listening")
     args = ap.parse_args()
@@ -426,6 +545,8 @@ def main():
     tracks = doc["tracks"]
 
     keys = args.only or [k for k, v in tracks.items() if v.get("loop") and v.get("file")]
+    if (args.source or args.body_end) and len(args.only) != 1:
+        sys.exit("--source and --body-end describe ONE track: pass exactly one --only")
     missing = [k for k in keys if k not in tracks]
     if missing:
         sys.exit("not in the manifest: %s" % ", ".join(missing))
@@ -436,7 +557,8 @@ def main():
         path = tracks[key].get("file", "")
         if not path or not os.path.exists(path):
             continue
-        k, why, info = process(key, path, args.xfade, args.apply, args.preview, args.max_trim)
+        k, why, info = process(key, path, args.xfade, args.apply, args.preview, args.max_trim,
+                               args.source, args.body_end)
         if why:
             if why.startswith("SKIP "):
                 skipped.append(key)
