@@ -7346,6 +7346,10 @@ func _resume_autogrind() -> void:
 
 	# Start autogrind first (this resets system state to zero)
 	_start_autogrind(config)
+	## A party under a stop rule ends the session inside that call. Restoring onto it and clearing the snapshot deleted the paused session.
+	if not _is_autogrinding or _autogrind_controller == null or not is_instance_valid(_autogrind_controller):
+		print("[AUTOGRIND] Resume ended during start — snapshot kept")
+		return
 
 	# THEN restore system state on top (overrides the zeros from start_autogrind)
 	AutogrindSystem.restore_system_from_snapshot(sys_data)

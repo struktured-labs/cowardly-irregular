@@ -253,9 +253,14 @@ func test_resume_is_reachable_without_a_mouse() -> void:
 		"no keyboard binding for Resume — the strip advertises it and the button is mouse-only")
 	var idx: int = src.find("KEY_R")
 	var window: String = src.substr(idx, 320)
-	assert_true(window.contains("grind_resume_requested"),
-		"KEY_R exists but does not emit grind_resume_requested")
-	assert_true(window.contains("is_snapshot_loadable"),
+	## Both keys call _request_resume, the one owner of the gate and the emit, so the pin follows the call.
+	assert_true(window.contains("_request_resume()"),
+		"KEY_R exists but does not go through _request_resume, the one Resume entry point")
+	var body_at: int = src.find("func _request_resume(")
+	assert_gt(body_at, -1, "_request_resume is gone — the Resume keys have nothing to route through")
+	var body: String = src.substr(body_at, 700)
+	assert_true(body.contains("grind_resume_requested.emit()"), "_request_resume no longer emits grind_resume_requested")
+	assert_true(body.contains("is_snapshot_loadable"),
 		"the keyboard Resume path must carry the same snapshot guard as the pad path")
 	## Shift+R renames in both grid editors (their KEY_R + shift_pressed arms).
 	## The editor is add_child'd by this console, so a bare KEY_R would be shadowed only by tree

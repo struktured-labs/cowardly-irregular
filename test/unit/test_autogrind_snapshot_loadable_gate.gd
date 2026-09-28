@@ -100,7 +100,10 @@ func test_ui_call_sites_route_through_loadable_gate() -> void:
 		"tutorial hint gate must route through is_snapshot_loadable — else corrupted-snapshot users get a misleading 'you can resume' hint (cadence #11)")
 	assert_true(src.contains("if not _is_grinding and AutogrindSystem.is_snapshot_loadable():\n\t\tvar resume_btn"),
 		"Resume button render gate must route through is_snapshot_loadable — the ghost-button bug (cadence #11)")
-	assert_true(src.contains("if not _is_grinding and AutogrindSystem.is_snapshot_loadable():\n\t\t\tgrind_resume_requested"),
+	## The Y, R and click paths now share _request_resume, so the gate is pinned there and the Y arm pinned to it.
+	assert_true(src.contains("event.button_index == JOY_BUTTON_Y:\n\t\tif _request_resume():"),
+		"Y-button gamepad shortcut must route through _request_resume and its is_snapshot_loadable gate")
+	assert_true(src.contains("if _is_grinding or not AutogrindSystem.is_snapshot_loadable():\n\t\treturn false"),
 		"Y-button gamepad shortcut must route through is_snapshot_loadable — pre-fix pressing Y on a corrupted-snapshot menu fell through silently")
 
 
