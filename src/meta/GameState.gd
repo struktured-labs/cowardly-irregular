@@ -109,6 +109,11 @@ var llm_rebalance_enabled: bool = false
 var rebalance_daemon: RebalanceDaemon = null
 
 
+## BYOK can reach an endpoint only with both of these. The Settings toggle and LLMService share this one test.
+func byok_config_complete() -> bool:
+	return llm_custom_base_url.strip_edges() != "" and llm_custom_model.strip_edges() != ""
+
+
 ## Mask the API key for UI display: 'sk-abcd…WXYZ' style. The full key
 ## stays in llm_custom_api_key. This helper is the ONLY safe way to
 ## surface the key value in logs, settings panels, or telemetry.

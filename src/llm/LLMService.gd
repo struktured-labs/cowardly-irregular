@@ -178,9 +178,7 @@ func apply_byok_config() -> bool:
 			break
 	if http == null:
 		return false
-	if gs.llm_custom_backend_enabled \
-			and str(gs.llm_custom_base_url) != "" \
-			and str(gs.llm_custom_model) != "":
+	if gs.llm_custom_backend_enabled and gs.byok_config_complete():
 		http.base_url = str(gs.llm_custom_base_url)
 		http.api_format = str(gs.llm_custom_api_format)
 		http.model = str(gs.llm_custom_model)
@@ -190,7 +188,9 @@ func apply_byok_config() -> bool:
 		# Enabled-but-incomplete is the silent-fallback trap: the toggle reads ON,
 		# the fields are blank, and Ollama answers every probe as if BYOK worked.
 		if gs.llm_custom_backend_enabled:
-			push_warning("[LLMService] BYOK is ON but base_url/model are empty — falling back to local Ollama. Your custom endpoint and key are NOT in use.")
+			push_warning("[LLMService] BYOK is ON but base_url/model are empty — falling back to local Ollama. Your custom endpoint and key are NOT in use. Switched BYOK OFF so Settings stops reading ON; Configure BYOK to add an endpoint.")
+			# 2026-09-28: his settings sat ON-and-empty for days; the row read ON while every call went to Ollama.
+			gs.llm_custom_backend_enabled = false
 		http.base_url = "http://localhost:11434"
 		http.api_format = "ollama"
 		http.model = "llama3"

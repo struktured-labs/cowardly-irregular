@@ -1301,11 +1301,14 @@ func _adjust_setting(delta: int) -> void:
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 	elif item["id"] == "llm_custom_backend_enabled":
-		llm_custom_backend_enabled = not llm_custom_backend_enabled
-		_update_toggle_display(selected_index, llm_custom_backend_enabled)
-		_save_llm_custom_backend_setting()
-		if SoundManager:
-			SoundManager.play_ui("menu_move")
+		if llm_custom_backend_enabled or _byok_configured():
+			llm_custom_backend_enabled = not llm_custom_backend_enabled
+			_update_toggle_display(selected_index, llm_custom_backend_enabled)
+			_save_llm_custom_backend_setting()
+			if SoundManager:
+				SoundManager.play_ui("menu_move")
+		else:
+			_refuse_unconfigured_byok()
 	elif item["id"] == "llm_rebalance_enabled":
 		llm_rebalance_enabled = not llm_rebalance_enabled
 		_update_toggle_display(selected_index, llm_rebalance_enabled)
@@ -1794,6 +1797,28 @@ func _open_byok_config() -> void:
 
 func _on_byok_config_closed() -> void:
 	_byok_config_open = false
+	_resync_byok_toggle()
+
+
+## ON with no endpoint read as working while every call went to local Ollama, so switching it on waits for a configured endpoint.
+func _byok_configured() -> bool:
+	return GameState != null and GameState.has_method("byok_config_complete") and GameState.byok_config_complete()
+
+
+func _refuse_unconfigured_byok() -> void:
+	if SoundManager:
+		SoundManager.play_ui("menu_error")
+	Toast.show_warning(self, "BYOK needs an endpoint first — open Configure BYOK, pick a provider and model, then Save")
+
+
+## The panel's Save can turn BYOK OFF (fields cleared), and this row must not keep reading ON behind it.
+func _resync_byok_toggle() -> void:
+	if GameState == null or not ("llm_custom_backend_enabled" in GameState):
+		return
+	llm_custom_backend_enabled = bool(GameState.llm_custom_backend_enabled)
+	for i in range(_settings_items.size()):
+		if str(_settings_items[i].get("id", "")) == "llm_custom_backend_enabled":
+			_update_toggle_display(i, llm_custom_backend_enabled)
 
 
 func _open_live_voice_config() -> void:
