@@ -169,10 +169,18 @@ static func grind_hud_strip(device_name: String = "") -> String:
 	# button_name_for_index returns "" with no pad BY DESIGN — naming one family's button to a
 	# keyboard player is the defect this file exists to remove, so the key is the honest answer.
 	var turbo: String = str(ipm.button_name_for_index(JOY_BUTTON_Y, device_name)) if pad_ok else str(BRANCH_KEYS["turbo"])
-	var pause: String = str(ipm.hint_for_action("battle_toggle_auto", device_name)) if pad_ok else str(ACTION_KEYS["pause"])
+	var pause: String = pause_hint(device_name)
 	var tier: String = hint_for("tier_cycle", device_name)
 	var exit_tok: String = hint_for("exit", device_name)
 	return "%s: Turbo    %s: Dashboard    %s: Pause    %s: Exit" % [turbo, tier, pause, exit_tok]
+
+
+## The grind's pause/resume button: the pad's battle_toggle_auto when a pad is in hand, else the P key GameLoop binds.
+static func pause_hint(device_name: String = "") -> String:
+	var ipm := _profile_manager()
+	var pad_ok: bool = ipm != null and (device_name != "" or not Input.get_connected_joypads().is_empty())
+	var pad: String = str(ipm.hint_for_action("battle_toggle_auto", device_name)) if pad_ok else ""
+	return pad if pad != "" else str(ACTION_KEYS["pause"])
 
 
 static func _reference_cell(token: String) -> String:
