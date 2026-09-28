@@ -53,6 +53,15 @@ func test_a_downed_leader_hands_the_line_to_someone_standing() -> void:
 	assert_eq(str(e.get("theme", "")), "healer", "the Cleric's drawn look")
 
 
+func test_a_job_with_no_drawn_face_is_not_given_the_fighters() -> void:
+	GameState.player_party = [{"name": "Bard", "job_id": "bard"}]
+	GameState.party_leader_index = 0
+	var e := _first_line([_member("Bard", "bard"), _member("Fighter", "fighter")], "Hero: Oh come ON.")
+	assert_eq(str(e.get("speaker", "")), "Bard", "CONTROL: the Bard leads")
+	assert_ne(str(e.get("portrait", "")), "hero", "the Bard must not wear the Fighter's drawn face (cowir-battle's review)")
+	assert_eq(str(e.get("portrait", "")), "narrator", "a job with no drawn look takes the neutral face")
+
+
 func test_no_party_keeps_the_old_label() -> void:
 	var e := _first_line([], "Hero: Did... did that rat just talk?")
 	assert_eq(str(e.get("speaker", "")), "Hero", "with no party to read, degrade to the authored label rather than blank")

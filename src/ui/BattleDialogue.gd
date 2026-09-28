@@ -372,11 +372,11 @@ func show_boss_intro(boss_name: String, intro_lines: Array) -> void:
 			# Determine theme from speaker
 			if entry["speaker"].to_lower().contains("hero"):
 				var lead: Combatant = _lead_member()
-				var look: String = str(JOB_LOOK.get(_job_of(lead), "hero"))
+				var look: String = str(JOB_LOOK.get(_job_of(lead), "narrator" if lead != null else "hero"))
 				if lead != null:
 					entry["speaker"] = lead.combatant_name
 				entry["portrait"] = look
-				entry["theme"] = look if CHARACTER_THEMES.has(look) else "hero"
+				entry["theme"] = look if CHARACTER_THEMES.has(look) else "narrator"
 			# "rat" as a substring matches Curator, so those bosses wore the Rat King's face.
 			elif "rat king" in entry["speaker"].to_lower():
 				entry["portrait"] = "rat_king"
@@ -528,7 +528,7 @@ func _input(event: InputEvent) -> void:
 
 ## Portrait Generation
 
-## A job's drawn portrait and theme; no party member is named "Hero", so authored "Hero:" lines take the leader's look.
+## A job's drawn portrait and theme; a job with none (the Bard, advanced jobs) takes the neutral narrator face, never another job's.
 const JOB_LOOK := {"fighter": "hero", "cleric": "healer", "rogue": "rogue", "mage": "mage"}
 
 
