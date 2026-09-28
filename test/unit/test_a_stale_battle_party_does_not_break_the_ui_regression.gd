@@ -1,9 +1,25 @@
 extends GutTest
 
+const SoundState := preload("res://test/unit/helpers/sound_state.gd")
+const BattleState := preload("res://test/unit/helpers/battle_state.gd")
+
 ## Regression: a BattleScene freed before end_battle left BattleManager.player_party holding freed Combatants (load a save and GameLoop frees the old party too).
 ## The next battle's UI picked that list because size() > 0 and aborted in BattleUIManager (_ensure_party_status_boxes:218, _update_auto_toggle_button:130).
 
 var _saved_party: Array = []
+var _bm_guard: RefCounted = null
+
+
+## The real BattleScene arm auto-starts a battle; without this the autoload stays mid-battle for every later file.
+func before_all() -> void:
+	_bm_guard = BattleState.new()
+	_bm_guard.snapshot()
+
+
+func after_all() -> void:
+	if _bm_guard != null:
+		_bm_guard.restore()
+	SoundState.restore()
 
 
 func before_each() -> void:
