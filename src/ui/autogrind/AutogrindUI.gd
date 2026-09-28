@@ -544,9 +544,7 @@ func _create_resume_button(panel_size: Vector2) -> Control:
 
 	MenuMouseHelper.make_clickable(btn, 0, btn.size.x, btn.size.y,
 		func() -> void:
-			_log_message("[color=cyan]Resuming saved grind session...[/color]")
-			grind_resume_requested.emit()
-			visible = false,
+			_request_resume(),
 		func() -> void: pass)
 
 	return btn
@@ -1416,9 +1414,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
-		if not _is_grinding and AutogrindSystem.is_snapshot_loadable():
-			grind_resume_requested.emit()
-			visible = false
+		if _request_resume():
 			get_viewport().set_input_as_handled()
 
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
@@ -1428,9 +1424,7 @@ func _input(event: InputEvent) -> void:
 	## Shift+R is the grid editors' RENAME chord; not excluding it would leave this depending on the
 	## editor being a CHILD node, which is tree ordering, not an asserted property.
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and not event.shift_pressed and not event.is_echo():
-		if not _is_grinding and AutogrindSystem.is_snapshot_loadable():
-			grind_resume_requested.emit()
-			visible = false
+		if _request_resume():
 			get_viewport().set_input_as_handled()
 
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_H and not event.is_echo():
@@ -2525,6 +2519,21 @@ func _toggle_grinding() -> void:
 
 	_build_ui()
 	SoundManager.play_ui("menu_select")
+
+
+## Resume runs the same pre-check as Start: a resumed session that stops at once used to delete the saved one. Returns whether the press was used.
+func _request_resume() -> bool:
+	if _is_grinding or not AutogrindSystem.is_snapshot_loadable():
+		return false
+	var would_stop: Dictionary = AutogrindSystem.stop_before_first_battle(_party)
+	if not would_stop.is_empty():
+		_log_message("[color=yellow]Not resumed — %s Your saved session is kept.[/color]" % _first_battle_refusal_text(would_stop))
+		SoundManager.play_ui("menu_error")
+		return true
+	_log_message("[color=cyan]Resuming saved grind session...[/color]")
+	grind_resume_requested.emit()
+	visible = false
+	return true
 
 
 ## Names the rule and what clears it, so the refusal reads as advice rather than as the stop it prevented.
