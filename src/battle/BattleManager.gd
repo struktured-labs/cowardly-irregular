@@ -148,6 +148,8 @@ var _lens_ap_echo_charges: int = 0
 var turbo_mode: bool = false
 ## Wall-clock wait for the LLM's gloat before the scripted line speaks instead; a results screen can close soon after.
 const GLOAT_WAIT_SEC: float = 1.2
+## Bumped by start_battle: a line awaited in one battle can tell it is no longer that battle's.
+var battle_serial: int = 0
 
 # wall-clock (not time_scale'd) so 32x battle speed can't distort the stall threshold
 const _WD_STALL_MS: int = 10000
@@ -451,6 +453,7 @@ func _current_weather() -> String:
 ## Battle initialization
 func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	"""Initialize and start a new battle"""
+	battle_serial += 1
 	current_state = BattleState.STARTING
 	current_round = 0
 	_wd_armed = true
@@ -8707,9 +8710,13 @@ func _refine_boss_intent_async(
 	var ctx := _build_boss_intent_context(combatant, persona_id, phase, boss_dlg)
 	if ctx == null:
 		return
+	var serial: int = battle_serial
+	var asked_live: bool = _battle_is_live()
 	var refined: Dictionary = await boss_dlg.pick_intent_async(ctx)
 	if not is_instance_valid(combatant):
 		return  # Boss died / battle ended while the LLM was thinking.
+	if _line_moment_passed(serial, "boss_intent", asked_live):
+		return
 	# Tick 123: also drop the refined taunt if the boss died during
 	# the await. is_instance_valid above only catches the freed-node
 	# case (battle scene tore down); a boss that's dead but not yet
@@ -9403,7 +9410,22 @@ static func _party_line_wants_llm(llm_dialogue_on: bool, voice_test: bool) -> bo
 	return llm_dialogue_on and not voice_test
 
 
+func _battle_is_live() -> bool:
+	return not (current_state in [BattleState.VICTORY, BattleState.DEFEAT, BattleState.INACTIVE])
+
+
+## A line awaited in a battle that has since ended or been replaced: end_battle stops the voice so it cannot talk over the results.
+func _line_moment_passed(serial: int, event_kind: String, asked_live: bool) -> bool:
+	if serial != battle_serial:
+		return true
+	if event_kind == "victory" or not asked_live:
+		return false
+	return not _battle_is_live()
+
+
 func _run_party_line_async(combatant: Combatant, event_kind: String, event_data: Dictionary) -> void:
+	var serial: int = battle_serial
+	var asked_live: bool = _battle_is_live()
 	var pp = get_node_or_null("/root/PartyPersonas")
 	var job_id: String = _resolve_party_job_id(combatant)
 	## Built first: tag eligibility needs it on every branch, LLM off included.
@@ -9464,6 +9486,8 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 		var label: String = await llm.choose(choice_prompt, labels, fb_label, {"cache": false})
 		if not is_instance_valid(combatant) or not combatant.is_alive:
 			return
+		if _line_moment_passed(serial, event_kind, asked_live):
+			return
 		var chosen: Dictionary = VoiceLines.entry_for_choice(options, label)
 		if chosen.is_empty():
 			chosen = VoiceLines.entry_for_choice(options, fb_label)
@@ -9484,6 +9508,8 @@ func _run_party_line_async(combatant: Combatant, event_kind: String, event_data:
 		DialoguePromptsScript.FALLBACK_PARTY_LINE,
 	)
 	if not is_instance_valid(combatant):
+		return
+	if _line_moment_passed(serial, event_kind, asked_live):
 		return
 	# Tick 121: if the PC died during the LLM await, suppress the line.
 	# Pre-fix, a Cleric crit-killed mid-cast could surface "Mira: 'Cure
