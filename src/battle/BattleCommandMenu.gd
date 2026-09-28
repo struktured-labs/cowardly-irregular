@@ -838,7 +838,7 @@ func _heal_span_suffix(amounts: Array) -> String:
 func _item_flat_row(item_id: String, item: Dictionary, quantity: int, targets: Array) -> Dictionary:
 	var ests: Array = []
 	for t in targets:
-		if t is Combatant and is_instance_valid(t) and t.is_alive and _scene.party_members.has(t):
+		if is_instance_valid(t) and t is Combatant and t.is_alive and _scene.party_members.has(t):
 			ests.append(ItemSystem.estimate_item_heal(item_id, t))
 	return _with_item_reject({
 		"id": "item_" + item_id,
