@@ -60,9 +60,9 @@ func test_test_voice_speaks_a_cast_line_through_play_voice_stream() -> void:
 	add_child_autofree(p)
 	p._enabled_toggle.button_pressed = true
 	await p._on_test_pressed()
-	if SoundManager != null and SoundManager.mixer_is_wedged():
-		assert_false(SoundManager.mixer_is_wedged(),
-			"headless mixer wedged during Test Voice — the WAV decode was refused so AudioServer.lock cannot hang the suite (issue #224).")
+	var why := WavFixture.decode_refusal_reason(null) if VoiceService.status()["last_error"] != "" else ""
+	if why != "":
+		fail_test(WavFixture.refusal_note(why))
 		return
 	assert_eq(_replay.requests.size(), 1, "the TYPED enable is what the test uses: %s" % p._status_label.text)
 	assert_eq(_replay.requests[0]["voice"], "bard.wav")

@@ -13,8 +13,19 @@ func _clip_runs(runs: int) -> PackedByteArray:
 	return WavFixture.pcm16(s)
 
 
+## A by-design refusal (issue #224) fails loud with its cause instead of reading as a broken decoder.
+func _refused(w: AudioStreamWAV) -> bool:
+	var why := WavFixture.decode_refusal_reason(w)
+	if why == "":
+		return false
+	fail_test(WavFixture.refusal_note(why))
+	return true
+
+
 func test_a_whole_wav_decodes_at_its_own_rate_and_length() -> void:
 	var w := VoiceAudio.decode(WavFixture.tone(0.5, 20000))
+	if _refused(w):
+		return
 	assert_not_null(w)
 	assert_eq(w.mix_rate, 24000, "24 kHz plays at 24 kHz, no resampling")
 	assert_eq(w.stereo, false)
@@ -36,16 +47,18 @@ func test_garbage_and_empty_are_refused() -> void:
 
 
 func test_two_pinned_runs_are_clipping_and_one_is_a_peak() -> void:
-	assert_eq(VoiceAudio.pinned_runs(VoiceAudio.decode(_clip_runs(2))), 2)
-	assert_true(VoiceAudio.is_clipped(VoiceAudio.decode(_clip_runs(2))), "2 runs at the rail: clipped")
-	assert_false(VoiceAudio.is_clipped(VoiceAudio.decode(_clip_runs(1))), "1 pinned run can be a clean peak")
+	var two := VoiceAudio.decode(_clip_runs(2))
+	var one := VoiceAudio.decode(_clip_runs(1))
+	if _refused(two) or _refused(one):
+		return
+	assert_eq(VoiceAudio.pinned_runs(two), 2)
+	assert_true(VoiceAudio.is_clipped(two), "2 runs at the rail: clipped")
+	assert_false(VoiceAudio.is_clipped(one), "1 pinned run can be a clean peak")
 
 
 func test_the_supported_servers_minus_1_dbfs_output_is_not_clipping() -> void:
 	var w := VoiceAudio.decode(WavFixture.tone(1.0, 29196))
-	if SoundManager != null and SoundManager.mixer_is_wedged():
-		assert_false(SoundManager.mixer_is_wedged(),
-			"headless mixer wedged — voice WAV decode was refused so AudioServer.lock cannot hang the suite (issue #224).")
+	if _refused(w):
 		return
 	assert_not_null(w, "a whole -1 dBFS line must decode")
 	assert_eq(VoiceAudio.pinned_runs(w), 0, "peak-normalised to -1 dBFS never reaches the rail")

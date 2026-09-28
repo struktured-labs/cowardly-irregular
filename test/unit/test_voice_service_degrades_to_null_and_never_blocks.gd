@@ -12,6 +12,9 @@ var _saved_gs: Dictionary = {}
 var _replay
 
 
+var _planted: bool = false
+
+
 func before_each() -> void:
 	_saved_cast = VoiceService._cast.duplicate(true)
 	_saved_cache = VoiceService.cache
@@ -26,6 +29,22 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	if _planted:
+		SoundManager._voice_decode_test_block_msec = 0
+		SoundManager._voice_decode_bound_override_msec = 0
+		SoundManager._voice_decode_test_ignore_abandon = false
+		if SoundManager._voice_decode_still_running():
+			SoundManager._voice_decode_abandoned = true
+			var until := Time.get_ticks_msec() + 2000
+			while Time.get_ticks_msec() < until and SoundManager._voice_decode_still_running():
+				OS.delay_msec(10)
+		SoundManager._reap_voice_decode_threads()
+		SoundManager._voice_decode_abandoned = false
+		## Only a latch this arm planted is cleared; a real stall must stay latched (issue #224).
+		SoundManager._audio_mixer_wedged = false
+		SoundManager._mixer_watch_pos = -1.0
+		SoundManager._mixer_watch_msec = 0
+		_planted = false
 	VoiceService.test_backend = null
 	VoiceService.is_web = _saved_web
 	for f in _saved_gs:
@@ -40,12 +59,13 @@ func after_each() -> void:
 	VoiceService.cache = _saved_cache
 
 
-## A decode refused because the headless mixer is wedged fails LOUD and names why (issue #224), never as a bare null.
+## A decode refused by design (issue #224) fails LOUD and names which refusal, never as a bare null.
 func _wedged_refusal(stream: AudioStream) -> bool:
-	if stream == null and SoundManager != null and SoundManager.mixer_is_wedged():
-		fail_test("headless mixer wedged: the voice WAV decode was refused so AudioServer.lock cannot hang the suite (issue #224); re-run before debugging")
-		return true
-	return false
+	var why := WavFixture.decode_refusal_reason(stream)
+	if why == "":
+		return false
+	fail_test(WavFixture.refusal_note(why))
+	return true
 
 
 func test_an_uncast_speaker_never_asks_the_server() -> void:
@@ -147,3 +167,23 @@ func test_live_off_selects_a_backend_that_contacts_nothing() -> void:
 	VoiceService.apply_config()
 	assert_eq(VoiceService.status()["url"], "")
 	assert_false(VoiceService.is_live_ready())
+
+
+## .538: the latch had cleared while an abandoned decode worker was still alive; three arms failed as a bare null.
+func test_a_refusal_by_a_stuck_decode_names_that_cause() -> void:
+	if SoundManager.mixer_is_wedged():
+		pending("the mixer is already wedged, so no stand-in decode is started on a dead mix")
+		return
+	assert_eq(SoundManager._orphaned_voice_decodes.size(), 0, "CONTROL: no decode thread left over from an earlier arm")
+	SoundManager._voice_decode_bound_override_msec = 200
+	SoundManager._voice_decode_test_block_msec = 1500
+	SoundManager._voice_decode_test_ignore_abandon = true
+	_planted = true
+	VoiceAudio.decode(WavFixture.tone(0.05, 1000))
+	assert_eq(SoundManager._orphaned_voice_decodes.size(), 1, "CONTROL: the stand-in must stay running as an orphan")
+	SoundManager._audio_mixer_wedged = false
+	var refused := VoiceAudio.decode(WavFixture.tone(0.05, 1000))
+	assert_null(refused, "CONTROL: a decode beside a live orphan is refused")
+	assert_false(SoundManager.mixer_is_wedged(), "CONTROL: the latch is clear, exactly the .538 state")
+	assert_string_contains(WavFixture.decode_refusal_reason(refused), "still stuck",
+		"a refusal by the stuck worker must name that cause, not read as a bare null")
