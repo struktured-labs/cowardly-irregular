@@ -53,6 +53,8 @@ const REGISTRY := {
 		"title": "The Capital",
 		"world": 1,
 		"unlock": ["cutscene_flag_chapter4_complete"],
+		# Stages the Tempo alive and un-fought; the Eldertree fight has no prereq, so it can already be won.
+		"lock": ["w1_tempo_defeated"],
 	},
 	"world1_chapter8": {
 		"title": "Scholar's Reckoning",
@@ -309,7 +311,30 @@ func available_count() -> int:
 
 
 func is_available(id: String) -> bool:
-	return _is_unlocked(id) and not _is_viewed(id)
+	return _is_unlocked(id) and not _is_viewed(id) and not _is_locked(id)
+
+
+## A chat whose events a `lock` flag has overtaken (the boss it stages is already beaten) stops being offered.
+func _is_locked(id: String) -> bool:
+	var entry: Dictionary = REGISTRY.get(id, {})
+	for flag in entry.get("lock", []):
+		if _story_flag_set(str(flag)):
+			return true
+	return false
+
+
+## Through GameState.is_story_flag_set, which reads all four flag namespaces, so a lock cannot miss a defeat.
+func _story_flag_set(flag: String) -> bool:
+	var gs: Object = game_state_override
+	if gs == null:
+		var root := Engine.get_main_loop()
+		if root is SceneTree and root.root.has_node("GameState"):
+			gs = root.root.get_node("GameState")
+	if gs == null:
+		return false
+	if gs.has_method("is_story_flag_set"):
+		return bool(gs.is_story_flag_set(flag))
+	return bool(gs.game_constants.get(flag, false))
 
 
 ## Tick 254: centralized helper for ratcheting one-shot event flags.
@@ -344,7 +369,7 @@ func fire_event_flag(flag: String) -> String:
 		var unlock: Array = entry.get("unlock", [])
 		if not (flag in unlock):
 			continue
-		if _is_viewed(id):
+		if _is_viewed(id) or _is_locked(id):
 			continue
 		var all_other_set := true
 		for f in unlock:
