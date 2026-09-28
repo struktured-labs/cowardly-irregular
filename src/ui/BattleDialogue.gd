@@ -22,6 +22,8 @@ var _typing_timer: Timer
 
 ## Party reference for custom portrait lookups
 var _party: Array = []
+## CutsceneDialogue, never added to the tree: the one resolver for a character's face, so battle and cutscene agree.
+var _art_source: Node = null
 
 ## Speaker name to party member mapping
 const SPEAKER_TO_CHAR_ID = {
@@ -255,6 +257,8 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_portrait_image.position = Vector2(4, 4)
 	_portrait_image.size = Vector2(PORTRAIT_SIZE - 8, PORTRAIT_SIZE - 8)
 	_portrait_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	# Portrait art is 256px; without this the rect grows to the texture instead of scaling it into the frame.
+	_portrait_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait_frame.add_child(_portrait_image)
 
 	# Text area (right of portrait)
@@ -375,6 +379,7 @@ func show_boss_intro(boss_name: String, intro_lines: Array) -> void:
 				var look: String = str(JOB_LOOK.get(_job_of(lead), "narrator" if lead != null else "hero"))
 				if lead != null:
 					entry["speaker"] = lead.combatant_name
+					entry["art"] = _job_of(lead)
 				entry["portrait"] = look
 				entry["theme"] = look if CHARACTER_THEMES.has(look) else "narrator"
 			# "rat" as a substring matches Curator, so those bosses wore the Rat King's face.
@@ -413,9 +418,10 @@ func _show_current_line() -> void:
 	# Set speaker name
 	_speaker_label.text = entry.get("speaker", "")
 
-	# Set portrait - check for party member custom portraits first
+	# Set portrait - the face cutscenes give this character first, then party custom portraits
 	var portrait_type = entry.get("portrait", "narrator")
-	var custom_portrait = _get_party_member_portrait(portrait_type)
+	var art: Texture2D = _art_for(str(entry.get("art", "")))
+	var custom_portrait = null if art else _get_party_member_portrait(portrait_type)
 	if custom_portrait:
 		# Remove the default portrait_image and add custom portrait widget
 		_portrait_image.visible = false
@@ -429,14 +435,14 @@ func _show_current_line() -> void:
 	else:
 		# Use procedural portrait
 		_portrait_image.visible = true
-		_portrait_image.texture = _create_portrait(portrait_type)
+		_portrait_image.texture = art if art else _create_portrait(portrait_type)
 		# Remove any existing custom portrait
 		for child in _portrait_frame.get_children():
 			if child.has_meta("custom_portrait"):
 				child.queue_free()
 
 	# narrator/enemy have no drawn face — hide the frame and reclaim its width rather than show the fallback blob
-	if custom_portrait == null and portrait_type in ["narrator", "enemy"]:
+	if art == null and custom_portrait == null and portrait_type in ["narrator", "enemy"]:
 		_portrait_frame.visible = false
 		var full_x: float = TILE_SIZE * 4
 		_speaker_label.position.x = full_x
@@ -528,7 +534,7 @@ func _input(event: InputEvent) -> void:
 
 ## Portrait Generation
 
-## A job's drawn portrait and theme; a job with none (the Bard, advanced jobs) takes the neutral narrator face, never another job's.
+## A job's drawn procedural look and theme — the fallback when no portrait art resolves; a job with none takes the neutral narrator look, never another job's.
 const JOB_LOOK := {"fighter": "hero", "cleric": "healer", "rogue": "rogue", "mage": "mage"}
 
 
@@ -547,6 +553,19 @@ func _lead_member() -> Combatant:
 		if m.combatant_name == lead_name:
 			return m
 	return alive[0]
+
+
+func _art_for(job_id: String) -> Texture2D:
+	if job_id == "":
+		return null
+	if _art_source == null:
+		_art_source = load("res://src/cutscene/CutsceneDialogue.gd").new()
+	return _art_source.portrait_texture(job_id)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and _art_source != null and is_instance_valid(_art_source):
+		_art_source.free()
 
 
 func _job_of(member: Combatant) -> String:
