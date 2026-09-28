@@ -154,6 +154,12 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	var max_queue = BattleManager.FULL_BANK_ACTIONS if combatant.current_ap >= BattleManager.FULL_BANK_AP else mini(BattleManager.ADVANCE_CAP, maxi(1, ap_limit))
 	_scene.active_win98_menu.set_max_queue_size(max_queue)
 	_scene.active_win98_menu.set_current_ap(combatant.current_ap)
+	## The queue checks its total against these, at the prices the engine will charge.
+	var budget: Dictionary = {"mp": combatant.current_mp}
+	var bag: Dictionary = ItemSystem.party_inventory(BattleManager.consumable_bag(combatant))
+	for item_id in bag:
+		budget["item:" + str(item_id)] = int(bag[item_id])
+	_scene.active_win98_menu.set_queue_budget(budget, _queued_cost.bind(combatant))
 
 	# Allow going back if not the first player in selection order
 	var can_go_back = BattleManager.selection_index > 0
@@ -178,6 +184,18 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 		print("[CMD MEM] Submenu memory: %s" % str(submenu_memory))
 		_scene.active_win98_menu.set_command_memory(combatant.last_menu_selection, submenu_memory)
 
+
+
+## What one queued action spends, in the queue budget's keys: MP at the engine's price, or one of an item.
+func _queued_cost(data, combatant: Combatant) -> Dictionary:
+	if not (data is Dictionary):
+		return {}
+	if data.has("ability_id"):
+		var mp: int = JobSystem.get_ability_mp_cost(combatant, str(data["ability_id"]))
+		return {"mp": mp} if mp > 0 else {}
+	if data.has("item_id"):
+		return {"item:" + str(data["item_id"]): 1}
+	return {}
 
 
 ## Menus that move make CHOOSING feel good — most of a turn-based game's runtime is spent here. Open only: the CLOSE path stays synchronous (msg-2503 two-menus identity bug — a deferred free would let a stale instance answer for the live one).
