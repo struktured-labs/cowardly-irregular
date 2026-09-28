@@ -142,6 +142,7 @@ func test_a_frozen_voice_preroll_refuses_stop_and_decode() -> void:
 	assert_eq(SoundManager._live_bed(), SoundManager._voice_player,
 		"the watch does not sample the voice player — a frozen line never arms the latch")
 	SoundManager._mixer_pos_override = 0.0026666666
+	SoundManager.note_mixer_progress()
 	SoundManager._mixer_watch_pos = 0.0026666666
 	SoundManager._mixer_watch_msec = Time.get_ticks_msec() - 5000
 	SoundManager._audio_mixer_wedged = false
@@ -275,22 +276,53 @@ func _require_bed(track: String) -> void:
 		"CONTROL: %s did not start — a later 'not latched' would be true because nothing is playing" % track)
 
 
-func test_a_jump_to_the_four_second_entry_counts_as_motion() -> void:
+## play(4.0) seeks on the CALLING thread, so the jump proves nothing about the mixer. 2026-09-28: seven such "resumes" while it never woke.
+func test_a_seek_to_the_four_second_entry_is_not_the_mixer_moving() -> void:
 	if SoundManager.mixer_is_wedged():
-		pending("mixer already wedged — not clearing it to sample a 4s entry")
+		pending("mixer already wedged — not planting a latch over a real one")
+		assert_true(SoundManager.mixer_is_wedged(), "the latch that blocked the plant is set")
 		return
 	await _require_bed("battle_medieval")
 	var blend: float = float((SoundManager._music_manifest["battle_medieval"] as Dictionary).get("loop_blend_seconds", 0.0))
 	assert_gte(blend, 4.0, "CONTROL: this bed's fold entry is the 4s offset from the loop rebuild")
+	_planted = true
+	SoundManager._mixer_pos_override = 0.0026666666
+	SoundManager.note_mixer_progress()
 	SoundManager._mixer_watch_pos = 0.0026666666
 	SoundManager._mixer_watch_msec = Time.get_ticks_msec() - 5000
 	SoundManager._audio_mixer_wedged = true
-	_planted = true
-	SoundManager._mixer_pos_override = blend
+	SoundManager._mixer_pos_override = blend + 0.0026666666
+	SoundManager.note_mixer_progress()
+	assert_true(SoundManager.mixer_is_wedged(),
+		"a jump from the preroll to the %.1f s entry cleared the latch — that is play()'s seek, and a PCM commit after it waits forever on a dead mix" % blend)
+	await get_tree().process_frame
+	SoundManager._mixer_pos_override = blend + 0.05
 	SoundManager.note_mixer_progress()
 	assert_false(SoundManager.mixer_is_wedged(),
-		"a bed sitting at its %.1f s fold was still latched — that entry has to count as the mix moving, not as the preroll stall" % blend)
-	_planted = false
+		"CONTROL: the bed moved 0.05 s past its entry across a frame, which only a mixing mixer does, and the latch stayed set")
+
+
+## A new bed on a dead mixer reads a position the old one never had. Only its OWN later motion proves the mix is alive.
+func test_a_new_bed_on_a_dead_mixer_does_not_clear_the_latch() -> void:
+	if SoundManager.mixer_is_wedged():
+		pending("mixer already wedged — not planting a latch over a real one")
+		assert_true(SoundManager.mixer_is_wedged(), "the latch that blocked the plant is set")
+		return
+	await _require_bed("battle_medieval")
+	_planted = true
+	SoundManager._mixer_pos_override = 0.5
+	SoundManager.note_mixer_progress()
+	SoundManager._mixer_watch_stream_id = -1
+	SoundManager._audio_mixer_wedged = true
+	SoundManager._mixer_pos_override = 0.52
+	SoundManager.note_mixer_progress()
+	assert_true(SoundManager.mixer_is_wedged(),
+		"the watch was keyed to another stream and a new bed's position cleared the latch — the seven false resumes of 2026-09-28")
+	await get_tree().process_frame
+	SoundManager._mixer_pos_override = 0.57
+	SoundManager.note_mixer_progress()
+	assert_false(SoundManager.mixer_is_wedged(),
+		"CONTROL: the same bed then moved 0.05 s across a frame and the latch stayed set")
 
 
 func test_a_fold_entry_that_advances_is_not_a_stall() -> void:

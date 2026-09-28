@@ -226,6 +226,14 @@ var _liveness_last_pos: float = -1.0
 var _audio_mixer_wedged: bool = false
 var _mixer_watch_pos: float = -1.0
 var _mixer_watch_msec: int = 0
+## The bed the baseline belongs to. A different player or stream is a new baseline, never motion.
+var _mixer_watch_player_id: int = 0
+var _mixer_watch_stream_id: int = 0
+## When the previous sample was taken. A step larger than any mix could make since then is a seek.
+var _mixer_watch_last_msec: int = 0
+## Pitch headroom plus one Dummy mix (4096 frames ~ 0.093 s) and scheduling slack. play(4.0) jumps 4 s in one call.
+const _MIXER_MAX_RATE: float = 4.0
+const _MIXER_MOTION_SLACK_S: float = 0.25
 ## -1 follows the runtime, 0 never arms, 1 always arms. Tests pin both sides.
 var _mixer_stall_watch_force: int = -1
 ## Whether this runtime is headless or Dummy: fixed at boot, so it is decided once, not scanned every frame. -1 = not yet decided.
@@ -284,12 +292,21 @@ func note_mixer_progress() -> void:
 	if _mixer_pos_override >= 0.0:
 		pos = _mixer_pos_override
 	var now: int = Time.get_ticks_msec()
-	# First sample after silence is a baseline. A bed opening at loop_blend_seconds (4s) is that sample, not a stall.
-	if _mixer_watch_pos < 0.0:
+	var pid: int = p.get_instance_id()
+	var sid: int = p.stream.get_instance_id() if p.stream else 0
+	var since_last: float = maxf(0.0, (now - _mixer_watch_last_msec) / 1000.0)
+	_mixer_watch_last_msec = now
+	var step: float = pos - _mixer_watch_pos
+	var new_bed: bool = pid != _mixer_watch_player_id or sid != _mixer_watch_stream_id
+	var seek: bool = absf(step) >= 0.01 and (step < 0.0 or step > since_last * _MIXER_MAX_RATE + _MIXER_MOTION_SLACK_S)
+	# First sample after silence, a new bed, or a seek (play(4.0) on the caller) is a baseline: it never clears the latch.
+	if _mixer_watch_pos < 0.0 or new_bed or seek:
 		_mixer_watch_pos = pos
 		_mixer_watch_msec = now
+		_mixer_watch_player_id = pid
+		_mixer_watch_stream_id = sid
 		return
-	if absf(pos - _mixer_watch_pos) >= 0.01:
+	if step >= 0.01:
 		_mixer_watch_pos = pos
 		_mixer_watch_msec = now
 		if _audio_mixer_wedged:
