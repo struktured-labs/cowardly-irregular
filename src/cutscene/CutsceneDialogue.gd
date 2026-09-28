@@ -1419,6 +1419,21 @@ func portrait_texture(portrait_type: String) -> Texture2D:
 	return _create_portrait(portrait_type)
 
 
+## A monster's face: its registered portrait, else the bust from its own battle sheet. Never the job or mood rungs —
+## `bard_hostile_courtier` is a monster, and the mood rung would read it as the Bard.
+func monster_art(monster_id: String) -> Texture2D:
+	var path := str(PORTRAIT_SPRITES.get(monster_id, ""))
+	if path != "" and ResourceLoader.exists(path):
+		return load(path)
+	return _create_bust_from_monster_sheet(monster_id)
+
+
+## Art only: null where the resolver would fall back to a drawn face — for a speaker who must never wear a generic one.
+func portrait_art(portrait_type: String) -> Texture2D:
+	var tex := _create_portrait(portrait_type)
+	return null if tex == null or tex is ImageTexture else tex
+
+
 func _create_portrait(portrait_type: String) -> Texture2D:
 	# Try loading artist sprite portrait first (hand-crafted bust art)
 	var sprite_path = PORTRAIT_SPRITES.get(portrait_type, "")

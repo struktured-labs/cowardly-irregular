@@ -356,7 +356,7 @@ func show_dialogue(dialogue_lines: Array) -> void:
 	_show_current_line()
 
 
-func show_boss_intro(boss_name: String, intro_lines: Array) -> void:
+func show_boss_intro(boss_name: String, intro_lines: Array, boss_id: String = "") -> void:
 	"""Show boss intro dialogue with automatic speaker assignment"""
 	var dialogue = []
 
@@ -374,6 +374,7 @@ func show_boss_intro(boss_name: String, intro_lines: Array) -> void:
 			entry["speaker"] = parts[0].strip_edges()
 			entry["text"] = parts[1].strip_edges() if parts.size() > 1 else ""
 			# Determine theme from speaker
+			var member: Combatant = _member_named(entry["speaker"])
 			if entry["speaker"].to_lower().contains("hero"):
 				var lead: Combatant = _lead_member()
 				var look: String = str(JOB_LOOK.get(_job_of(lead), "narrator" if lead != null else "hero"))
@@ -382,6 +383,12 @@ func show_boss_intro(boss_name: String, intro_lines: Array) -> void:
 					entry["art"] = _job_of(lead)
 				entry["portrait"] = look
 				entry["theme"] = look if CHARACTER_THEMES.has(look) else "narrator"
+			elif member != null:
+				# A party member named in the line speaks as themselves, not in the boss's colours.
+				var m_look: String = str(JOB_LOOK.get(_job_of(member), "narrator"))
+				entry["portrait"] = m_look
+				entry["theme"] = m_look if CHARACTER_THEMES.has(m_look) else "narrator"
+				entry["art"] = _job_of(member)
 			# "rat" as a substring matches Curator, so those bosses wore the Rat King's face.
 			elif "rat king" in entry["speaker"].to_lower():
 				entry["portrait"] = "rat_king"
@@ -390,6 +397,9 @@ func show_boss_intro(boss_name: String, intro_lines: Array) -> void:
 				# monsters.json intro speakers are the boss — the hero-face fallback had the skeleton speaking as the hero
 				entry["portrait"] = "enemy"
 				entry["theme"] = "enemy"
+			# The boss speaking wears the bust cut from its own sheet; a bystander stays faceless.
+			if member == null and boss_id != "" and _speaks_as_boss(entry["speaker"], boss_name):
+				entry["boss_art"] = boss_id
 		else:
 			# Plain narration
 			entry["speaker"] = ""
@@ -420,7 +430,7 @@ func _show_current_line() -> void:
 
 	# Set portrait - the face cutscenes give this character first, then party custom portraits
 	var portrait_type = entry.get("portrait", "narrator")
-	var art: Texture2D = _art_for(str(entry.get("art", "")))
+	var art: Texture2D = _boss_art_for(str(entry.get("boss_art", ""))) if entry.has("boss_art") else _art_for(str(entry.get("art", "")))
 	var custom_portrait = null if art else _get_party_member_portrait(portrait_type)
 	if custom_portrait:
 		# Remove the default portrait_image and add custom portrait widget
@@ -560,12 +570,37 @@ func _art_for(job_id: String) -> Texture2D:
 		return null
 	if _art_source == null:
 		_art_source = load("res://src/cutscene/CutsceneDialogue.gd").new()
-	return _art_source.portrait_texture(job_id)
+	return _art_source.portrait_art(job_id)
+
+
+func _boss_art_for(monster_id: String) -> Texture2D:
+	if monster_id == "":
+		return null
+	if _art_source == null:
+		_art_source = load("res://src/cutscene/CutsceneDialogue.gd").new()
+	return _art_source.monster_art(monster_id)
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE and _art_source != null and is_instance_valid(_art_source):
 		_art_source.free()
+
+
+## True when `speaker` is the boss itself ("Rat King" in "Cave Rat King", "Glacius" in "Glacius, the Frozen Sovereign").
+func _speaks_as_boss(speaker: String, boss_name: String) -> bool:
+	var s := speaker.to_lower().strip_edges()
+	var b := boss_name.to_lower().strip_edges()
+	if s == "" or b == "":
+		return false
+	return s in b or b in s or s.get_slice(",", 0).strip_edges() in b
+
+
+func _member_named(speaker: String) -> Combatant:
+	var s := speaker.to_lower().strip_edges()
+	for m in _party:
+		if m is Combatant and m.combatant_name.to_lower() == s:
+			return m
+	return null
 
 
 func _job_of(member: Combatant) -> String:
