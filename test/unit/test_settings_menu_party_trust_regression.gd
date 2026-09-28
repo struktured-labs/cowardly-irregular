@@ -53,10 +53,11 @@ func test_party_snapshot_is_empty_when_no_party() -> void:
 
 func test_toggle_flips_player_trust_on_gamestate_mirror() -> void:
 	_seed_gs_party([{"combatant_name": "Hero", "player_trust": false}])
-	# selected_index is only used to route to _update_toggle_display; we
-	# pre-seed the settings-items list with a matching entry so the display
-	# call doesn't NPE.
-	_menu._settings_items = [{"control": null, "type": "toggle", "id": "party_trust:hero"}]
+	# selected_index is only used to route to _update_toggle_display; the seeded row needs a REAL
+	# control — a null one made that call abort with a SCRIPT ERROR every run (the asserts still passed).
+	var row := Control.new()
+	add_child_autofree(row)
+	_menu._settings_items = [{"control": row, "type": "toggle", "id": "party_trust:hero"}]
 	_menu._toggle_party_trust("hero", 0)
 	assert_true(bool(GameState.player_party[0].get("player_trust", false)),
 		"toggling flips OFF → ON on the GameState mirror")
