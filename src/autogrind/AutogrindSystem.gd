@@ -1782,8 +1782,10 @@ func _get_region_crack_penalty() -> float:
 
 func get_current_world_index() -> int:
 	"""Get the WORLD_REGIONS index for the current region."""
+	## The console sets a DISPLAY name ("Suburban Overworld"); matching it raw fell through to W1, so W2 "advanced" into W2.
+	var region: String = current_region_id.to_lower().replace(" ", "_")
 	for i in range(WORLD_REGIONS.size()):
-		if WORLD_REGIONS[i]["region"] == current_region_id:
+		if WORLD_REGIONS[i]["region"] == region:
 			return i
 	return 0
 
