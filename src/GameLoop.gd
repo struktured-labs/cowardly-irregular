@@ -6731,6 +6731,8 @@ func _on_autogrind_paused() -> void:
 		summary.text = "|| PAUSED — Press %s to Resume" % AutogrindInputHelper.pause_hint()
 		summary.add_theme_color_override("font_color", Color(1.0, 0.7, 0.3))
 
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard) and _autogrind_dashboard.has_method("set_paused"):
+		_autogrind_dashboard.set_paused(true)
 	_show_autogrind_toast("Autogrind paused. Press %s to resume." % AutogrindInputHelper.pause_hint())
 	SoundManager.play_ui("grind_stop_manual")
 	print("[AUTOGRIND] Session paused")
@@ -6738,6 +6740,8 @@ func _on_autogrind_paused() -> void:
 
 func _on_autogrind_resumed() -> void:
 	"""Handle autogrind session resume."""
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard) and _autogrind_dashboard.has_method("set_paused"):
+		_autogrind_dashboard.set_paused(false)
 	var summary = _autogrind_overlay.get_node_or_null("SummaryLabel") if _autogrind_overlay and is_instance_valid(_autogrind_overlay) else null
 	if summary:
 		summary.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
@@ -7240,6 +7244,9 @@ func _show_autogrind_dashboard() -> void:
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
 		if _autogrind_dashboard.has_method("set_ludicrous_mode"):
 			_autogrind_dashboard.set_ludicrous_mode(_autogrind_controller.headless_mode)
+		## A dashboard opened mid-pause (tier cycle) must say so too.
+		if _autogrind_dashboard.has_method("set_paused"):
+			_autogrind_dashboard.set_paused(_autogrind_controller.is_paused())
 
 	print("[AUTOGRIND] Dashboard shown (Tier 2)")
 
