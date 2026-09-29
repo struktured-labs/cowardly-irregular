@@ -3574,6 +3574,24 @@ func _queue_repeated_action(combatant: Combatant) -> void:
 	for saved_action in actions:
 		var action = saved_action.duplicate()
 		action["combatant"] = combatant
+		## A repeated Advance pays at today's MP and bag, like the menu queue and autobattle: last turn's
+		## "Fire x3" re-queued in full, and every cast past the MP failed at execution and cost its AP.
+		if str(action.get("type", "")) == "advance":
+			var subs: Array[Dictionary] = []
+			for sub in action.get("actions", []):
+				subs.append(sub)
+			var kept: Array[Dictionary] = _affordable_advance(combatant, subs)
+			if kept.is_empty():
+				var alive_foes = _get_alive_enemies()
+				action = {"combatant": combatant, "type": "attack",
+					"target": alive_foes[0] if alive_foes.size() > 0 else null,
+					"speed": _compute_action_speed(combatant, "attack")}
+				print("[REPEAT] %s: nothing in the saved Advance is affordable, using attack" % combatant.combatant_name)
+			elif kept.size() < subs.size():
+				## Trimmed, so the saved full_bank flag no longer describes it; re-derive as autobattle does.
+				var ruled: Dictionary = _apply_full_bank_rule(combatant, kept)
+				action["actions"] = ruled["actions"]
+				action["full_bank"] = ruled["full_bank"]
 
 		# Validity check MUST happen before `is Combatant` — a freed
 		# reference makes `is` error with 'Left operand of is is a
