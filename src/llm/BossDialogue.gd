@@ -94,6 +94,19 @@ func get_phase_barks(boss_id: String) -> Dictionary:
 	return e.get("phase_barks", {}) if e is Dictionary else {}
 
 
+## The authored `bias` of one scripted intent: {ability_id: multiplier} over the boss's own kit. {} when none is authored.
+func intent_bias(boss_id: String, intent_id: String) -> Dictionary:
+	if not _loaded:
+		_load_data()
+	var entry = _data.get(boss_id, {})
+	if not (entry is Dictionary):
+		return {}
+	for it in entry.get("scripted_intents", []):
+		if it is Dictionary and str(it.get("id", "")) == intent_id and it.get("bias") is Dictionary:
+			return it["bias"]
+	return {}
+
+
 func has_entry(boss_id: String) -> bool:
 	"""True iff data/boss_dialogue.json declares a section for this boss."""
 	if not _loaded:

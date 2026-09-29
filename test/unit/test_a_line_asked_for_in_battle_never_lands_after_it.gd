@@ -2,7 +2,8 @@ extends GutTest
 
 ## end_battle stops the voice so an in-fight bark cannot talk over the results; a turn_start line still in the LLM landed AFTER that stop.
 
-const DELAY_MS := 300
+## The model answers only when the test releases it, AFTER `mid` ran. A 300ms timer raced the first frame after a heavy file and answered early.
+const SETTLE_FRAMES := 5
 
 var _llm: Node
 var _be = null
@@ -23,10 +24,15 @@ class SlowModel extends LLMBackend:
 	func backend_id() -> String: return "slow_choice"
 	func is_ready() -> bool: return true
 	func supports_json() -> bool: return true
+	var pending: Array = []
 	func submit(id: String, _p: String, _o: Dictionary = {}) -> void:
 		submitted += 1
-		var reply := answer
-		get_tree().create_timer(DELAY_MS / 1000.0, true, false, true).timeout.connect(func(): request_finished.emit(id, true, reply, ""))
+		pending.append([id, answer])
+	func release() -> void:
+		var due := pending.duplicate()
+		pending.clear()
+		for p in due:
+			request_finished.emit(p[0], true, p[1], "")
 
 
 func before_each() -> void:
@@ -100,8 +106,8 @@ func _refine_boss(mid: Callable) -> void:
 	BattleManager._refine_boss_intent_async(boss, "pyrroth", 1, get_tree().root.get_node("BossDialogue"))
 	await get_tree().process_frame
 	mid.call()
-	var t0 := Time.get_ticks_msec()
-	while Time.get_ticks_msec() - t0 < DELAY_MS + 400:
+	_be.release()
+	for _i in SETTLE_FRAMES:
 		await get_tree().process_frame
 
 
@@ -123,8 +129,8 @@ func _ask(event_kind: String, mid: Callable) -> void:
 	BattleManager._run_party_line_async(_rogue(), event_kind, {})
 	await get_tree().process_frame
 	mid.call()
-	var t0 := Time.get_ticks_msec()
-	while Time.get_ticks_msec() - t0 < DELAY_MS + 400:
+	_be.release()
+	for _i in SETTLE_FRAMES:
 		await get_tree().process_frame
 
 

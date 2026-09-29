@@ -38,7 +38,7 @@ const VOICE_CAST := "res://data/voice_cast.json"
 const AUTHORED_FILES := [BOSS_DATA, JOB_PERSONAS, NPC_PERSONAS, CONVERSATION_REWARDS, VOICE_CAST]
 
 ## Keys whose CHILDREN are entry ids rather than fields, at any depth.
-const ID_MAP_KEYS := ["bosses", "jobs", "npcs", "by_npc", "voices"]
+const ID_MAP_KEYS := ["bosses", "jobs", "npcs", "by_npc", "voices", "bias"]
 
 ## Files whose ROOT is itself an id map — boss ids and npc display names sit at the top
 ## level, beside prose keys. Measured from the four files rather than assumed: the other
