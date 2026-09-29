@@ -43,6 +43,8 @@ const REGISTRY := {
 		"title": "Into the Forest",
 		"world": 1,
 		"unlock": ["cutscene_flag_chapter4_complete"],
+		# Stages the Tempo hunting you and Mordaine ruling; both can already be beaten.
+		"lock": ["w1_tempo_defeated", "world1_mordaine_defeated"],
 	},
 	"world1_chapter5_forest": {
 		"title": "Tempo's Chase",
@@ -53,13 +55,15 @@ const REGISTRY := {
 		"title": "The Capital",
 		"world": 1,
 		"unlock": ["cutscene_flag_chapter4_complete"],
-		# Stages the Tempo alive and un-fought; the Eldertree fight has no prereq, so it can already be won.
-		"lock": ["w1_tempo_defeated"],
+		# Stages the Tempo alive and Mordaine scripting the king; both can already be beaten.
+		"lock": ["w1_tempo_defeated", "world1_mordaine_defeated"],
 	},
 	"world1_chapter8": {
 		"title": "Scholar's Reckoning",
 		"world": 1,
 		"unlock": ["cutscene_flag_chapter4_complete"],
+		# The Scholar's reveal treats Mordaine as the living author of the journey.
+		"lock": ["world1_mordaine_defeated"],
 	},
 	"world1_chapter9": {
 		"title": "The Throne",
@@ -80,6 +84,8 @@ const REGISTRY := {
 		"title": "Where Next? (Capital)",
 		"world": 1,
 		"unlock": ["cutscene_flag_chapter5_complete"],
+		# Theron warns of Mordaine's growing influence on the road south.
+		"lock": ["world1_mordaine_defeated"],
 	},
 
 	# ===== WORLD 2 =====
