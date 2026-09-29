@@ -1,3 +1,4 @@
+itch-assets/.gdignore 4294967295 0
 itch-assets/CAPTIONS.md 3454320392 29468
 itch-assets/PROVENANCE.md 2419617903 15522
 itch-assets/capture-history/shoot-prep/backwards_warren.png 3215387116 248241
