@@ -620,8 +620,8 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# the same way as unbound ones, so we cache the bound Callable to
 	# allow proper disconnect in _cleanup_battle (preventing listener leak).
 	_casualty_outside_execution = false
-	_died_callbacks.clear()
-	_doom_callbacks.clear()
+	## A battle abandoned before end_battle (a scene freed mid-fight) left these connected; reconnecting errored.
+	_disconnect_combatant_signals()
 	for combatant in all_combatants:
 		var cb = _on_combatant_died.bind(combatant)
 		_died_callbacks[combatant] = cb
@@ -1226,23 +1226,28 @@ func live_party_or(fallback: Array) -> Array:
 		return live
 	return fallback.filter(func(m): return is_instance_valid(m))
 
-func _cleanup_battle() -> void:
-	"""Clean up battle state"""
-	# Disconnect using the cached bound Callables — see _died_callbacks
-	# comment for why is_connected/disconnect with the unbound method
-	# silently no-ops here.
-	for combatant in all_combatants:
-		## A freed combatant aborts this loop, skipping the clears AND the INACTIVE reset below
+## Disconnect every died/doom_ticked listener start_battle connected, via the cached bound Callables (is_connected with the unbound method silently no-ops). Walks the maps, not all_combatants, so it also finds a previous battle's combatants.
+func _disconnect_combatant_signals() -> void:
+	for combatant in _died_callbacks.keys():
+		## A freed combatant would abort this loop, skipping the clears below
 		if not is_instance_valid(combatant):
 			continue
-		var cb = _died_callbacks.get(combatant, null)
+		var cb = _died_callbacks[combatant]
 		if cb and combatant.died.is_connected(cb):
 			combatant.died.disconnect(cb)
-		var dcb = _doom_callbacks.get(combatant, null)
+	for combatant in _doom_callbacks.keys():
+		if not is_instance_valid(combatant):
+			continue
+		var dcb = _doom_callbacks[combatant]
 		if dcb and combatant.has_signal("doom_ticked") and combatant.doom_ticked.is_connected(dcb):
 			combatant.doom_ticked.disconnect(dcb)
 	_died_callbacks.clear()
 	_doom_callbacks.clear()
+
+
+func _cleanup_battle() -> void:
+	"""Clean up battle state"""
+	_disconnect_combatant_signals()
 
 	player_party.clear()
 	enemy_party.clear()

@@ -3045,8 +3045,8 @@ func _create_party() -> void:
 	EquipmentSystem.equip_accessory(hero, "power_ring")
 	hero.learn_passive("weapon_mastery")
 	hero.learn_passive("hp_boost")
-	PassiveSystem.equip_passive(hero, "weapon_mastery")
-	PassiveSystem.equip_passive(hero, "hp_boost")
+	PassiveSystem.ensure_equipped(hero, "weapon_mastery")
+	PassiveSystem.ensure_equipped(hero, "hp_boost")
 	hero.add_item("potion", 5)
 	hero.add_item("hi_potion", 2)
 	hero.add_item("ether", 3)
@@ -3081,8 +3081,8 @@ func _create_party() -> void:
 	EquipmentSystem.equip_accessory(mira, "magic_ring")
 	mira.learn_passive("magic_boost")
 	mira.learn_passive("mp_boost")
-	PassiveSystem.equip_passive(mira, "magic_boost")
-	PassiveSystem.equip_passive(mira, "mp_boost")
+	PassiveSystem.ensure_equipped(mira, "magic_boost")
+	PassiveSystem.ensure_equipped(mira, "mp_boost")
 	mira.autobattle_locked = true  # spotlight unlock via world1_spotlight_cleric_ch1
 	party.append(mira)
 
@@ -3106,8 +3106,8 @@ func _create_party() -> void:
 	EquipmentSystem.equip_accessory(rogue, "speed_boots")
 	rogue.learn_passive("critical_strike")
 	rogue.learn_passive("speed_boost")
-	PassiveSystem.equip_passive(rogue, "critical_strike")
-	PassiveSystem.equip_passive(rogue, "speed_boost")
+	PassiveSystem.ensure_equipped(rogue, "critical_strike")
+	PassiveSystem.ensure_equipped(rogue, "speed_boost")
 	rogue.autobattle_locked = true  # spotlight unlock via world1_spotlight_rogue_ch3
 	party.append(rogue)
 
@@ -3131,8 +3131,8 @@ func _create_party() -> void:
 	EquipmentSystem.equip_accessory(vex, "mp_amulet")
 	vex.learn_passive("magic_boost")
 	vex.learn_passive("mp_efficiency")
-	PassiveSystem.equip_passive(vex, "magic_boost")
-	PassiveSystem.equip_passive(vex, "mp_efficiency")
+	PassiveSystem.ensure_equipped(vex, "magic_boost")
+	PassiveSystem.ensure_equipped(vex, "mp_efficiency")
 	vex.autobattle_locked = true  # spotlight unlock via world1_spotlight_mage_ch3
 	party.append(vex)
 
@@ -3158,8 +3158,8 @@ func _create_party() -> void:
 	EquipmentSystem.equip_accessory(bard, "magic_ring")
 	bard.learn_passive("magic_boost")
 	bard.learn_passive("mp_boost")
-	PassiveSystem.equip_passive(bard, "magic_boost")
-	PassiveSystem.equip_passive(bard, "mp_boost")
+	PassiveSystem.ensure_equipped(bard, "magic_boost")
+	PassiveSystem.ensure_equipped(bard, "mp_boost")
 	bard.autobattle_locked = true  # spotlight unlock via world1_spotlight_bard_ch7
 	party.append(bard)
 	# Fresh party starts at FULL: passives/equipment raise max_hp AFTER initialize set current=max, so Fighter spawned visibly damaged at 132/181 (web-smoke shot, 2026-07-11).

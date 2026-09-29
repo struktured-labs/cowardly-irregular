@@ -286,6 +286,13 @@ func _create_default_passives() -> void:
 
 
 ## Passive management
+## For a caller that wants the passive ON rather than a toggle: JobSystem.assign_job already equips a job's roster passives, and a second equip_passive logged "equip failed".
+func ensure_equipped(combatant: Combatant, passive_id: String) -> bool:
+	if combatant != null and is_instance_valid(combatant) and passive_id in combatant.equipped_passives:
+		return true
+	return equip_passive(combatant, passive_id)
+
+
 func equip_passive(combatant: Combatant, passive_id: String) -> bool:
 	"""Equip a passive to a combatant."""
 	if not combatant or not is_instance_valid(combatant):

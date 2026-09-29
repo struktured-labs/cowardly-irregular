@@ -880,8 +880,8 @@ func _create_default_party() -> void:
 	EquipmentSystem.equip_accessory(hero, "power_ring")
 	hero.learn_passive("weapon_mastery")
 	hero.learn_passive("hp_boost")
-	PassiveSystem.equip_passive(hero, "weapon_mastery")
-	PassiveSystem.equip_passive(hero, "hp_boost")
+	PassiveSystem.ensure_equipped(hero, "weapon_mastery")
+	PassiveSystem.ensure_equipped(hero, "hp_boost")
 	hero.add_item("potion", 5)
 	hero.add_item("hi_potion", 2)
 	hero.add_item("ether", 3)
@@ -906,8 +906,8 @@ func _create_default_party() -> void:
 	EquipmentSystem.equip_accessory(mira, "magic_ring")
 	mira.learn_passive("magic_boost")
 	mira.learn_passive("mp_boost")
-	PassiveSystem.equip_passive(mira, "magic_boost")
-	PassiveSystem.equip_passive(mira, "mp_boost")
+	PassiveSystem.ensure_equipped(mira, "magic_boost")
+	PassiveSystem.ensure_equipped(mira, "mp_boost")
 	mira.autobattle_locked = true
 	party_members.append(mira)
 
@@ -929,8 +929,8 @@ func _create_default_party() -> void:
 	EquipmentSystem.equip_accessory(zack, "speed_boots")
 	zack.learn_passive("critical_strike")
 	zack.learn_passive("speed_boost")
-	PassiveSystem.equip_passive(zack, "critical_strike")
-	PassiveSystem.equip_passive(zack, "speed_boost")
+	PassiveSystem.ensure_equipped(zack, "critical_strike")
+	PassiveSystem.ensure_equipped(zack, "speed_boost")
 	zack.autobattle_locked = true
 	party_members.append(zack)
 
@@ -952,8 +952,8 @@ func _create_default_party() -> void:
 	EquipmentSystem.equip_accessory(vex, "mp_amulet")
 	vex.learn_passive("magic_boost")
 	vex.learn_passive("mp_efficiency")
-	PassiveSystem.equip_passive(vex, "magic_boost")
-	PassiveSystem.equip_passive(vex, "mp_efficiency")
+	PassiveSystem.ensure_equipped(vex, "magic_boost")
+	PassiveSystem.ensure_equipped(vex, "mp_efficiency")
 	vex.autobattle_locked = true
 	party_members.append(vex)
 
@@ -974,8 +974,8 @@ func _create_default_party() -> void:
 	EquipmentSystem.equip_accessory(bard, "magic_ring")
 	bard.learn_passive("magic_boost")
 	bard.learn_passive("mp_boost")
-	PassiveSystem.equip_passive(bard, "magic_boost")
-	PassiveSystem.equip_passive(bard, "mp_boost")
+	PassiveSystem.ensure_equipped(bard, "magic_boost")
+	PassiveSystem.ensure_equipped(bard, "mp_boost")
 	bard.autobattle_locked = true
 	party_members.append(bard)
 

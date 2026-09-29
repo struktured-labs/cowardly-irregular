@@ -310,7 +310,12 @@ func test_the_listener_is_cached_and_released_like_died_is() -> void:
 		"THE LOAD-BEARING LINE: start_battle must actually connect the handler, or the countdown is emitted to nobody in a real fight")
 	assert_true(code.contains("_doom_callbacks[combatant] = dcb"), "the bound Callable is cached at connect")
 	assert_true(code.contains("combatant.doom_ticked.disconnect(dcb)"), "and disconnected from that cache at cleanup")
-	assert_eq(code.count("_doom_callbacks.clear()"), 2, "cleared where _died_callbacks is — at setup and at cleanup")
+	## Setup and cleanup share one disconnect helper, so the clear lives there and both must call it.
+	var helper: String = _func_body(code, "func _disconnect_combatant_signals(")
+	assert_true(helper.contains("_doom_callbacks.clear()") and helper.contains("_died_callbacks.clear()"),
+		"cleared where _died_callbacks is, in the shared disconnect helper")
+	for fn in ["func start_battle(", "func _cleanup_battle("]:
+		assert_true(_func_body(code, fn).contains("_disconnect_combatant_signals()"), "%s runs the disconnect helper" % fn)
 	## The handler is reached from the SAME loop that wires `died`, not from some other pass that a
 	## later refactor could drop independently.
 	var at: int = code.find("_died_callbacks[combatant] = cb")
@@ -351,3 +356,12 @@ func test_the_grind_round_leaves_the_undoomed_alone() -> void:
 		resolver._tick_round_start()
 	assert_true(bystander.is_alive, "six rounds and an undoomed combatant is untouched")
 	assert_eq(bystander.doom_counter, -1, "with the sentinel intact")
+
+
+## One function's text: from its `func` line to the next top-level `func`, so a check cannot be satisfied by a neighbour.
+func _func_body(code: String, head: String) -> String:
+	var at: int = code.find(head)
+	if at < 0:
+		return ""
+	var end: int = code.find("\nfunc ", at + 1)
+	return code.substr(at) if end < 0 else code.substr(at, end - at)
