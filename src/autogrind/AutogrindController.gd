@@ -504,6 +504,8 @@ func _on_region_cracked(region_id: String, crack_level: int) -> void:
 	var next = AutogrindSystem.advance_to_next_region()
 	if next.is_empty():
 		print("[AUTOGRIND] Region cracked but no next world available (end of progression or locked)")
+		## Staying put is the same outcome as Auto-Advance OFF, so it gets the same announcement; this branch only printed.
+		region_cracked_in_place.emit(region_id, crack_level, AutogrindSystem._get_region_crack_penalty())
 		return
 
 	_terrain = next["region"]
