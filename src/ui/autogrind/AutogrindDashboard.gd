@@ -56,6 +56,9 @@ var _stats_strip: AutogrindStatsStrip = null
 
 ## Ludicrous speed indicator
 var _ludicrous_label: Label = null
+## Paused froze every number and the clock (it updates per battle), so a paused fast grind read as hung.
+var _paused_label: Label = null
+var _paused: bool = false
 
 ## Tracking for projections
 var _session_start_time: float = 0.0
@@ -273,6 +276,13 @@ func _build_header(vp_size: Vector2) -> void:
 	_ludicrous_label.add_theme_color_override("font_color", Color(0.8, 0.4, 1.0))
 	_ludicrous_label.visible = false
 	add_child(_ludicrous_label)
+
+	_paused_label = Label.new()
+	_paused_label.position = Vector2(240, 14)
+	_paused_label.add_theme_font_size_override("font_size", 13)
+	_paused_label.add_theme_color_override("font_color", Color(1.0, 0.7, 0.3))
+	add_child(_paused_label)
+	set_paused(_paused)
 
 	_elapsed_label = Label.new()
 	_elapsed_label.text = "00:00:00"
@@ -801,6 +811,14 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 		_stats_strip.refresh(stats, region_id)
 
 	_update_corruption_tint(stats)
+
+
+## Names this screen's own pause binding, the one its footer and _input use.
+func set_paused(paused: bool) -> void:
+	_paused = paused
+	if _paused_label and is_instance_valid(_paused_label):
+		_paused_label.text = "|| PAUSED — %s to resume" % AutogrindInputHelper.hint_for("pause") if paused else ""
+		_paused_label.visible = paused
 
 
 func set_ludicrous_mode(enabled: bool) -> void:
