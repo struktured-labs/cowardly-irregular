@@ -114,9 +114,10 @@ func test_menu_handler_nulls_only_on_success() -> void:
 	var at: int = src.find("func _on_win98_defer_requested")
 	assert_gt(at, -1, "the defer handler must exist")
 	var window: String = src.substr(at, 1400)
-	assert_true(window.contains("if BattleManager.player_defer():"),
+	## The branch also carries the identity guard now (test_a_defer_keeps_the_next_menu), so match its head.
+	assert_true(window.contains("if BattleManager.player_defer()"),
 		"the handler must branch on the return value before discarding its menu reference")
 	var null_at: int = window.find("active_win98_menu = null")
-	var call_at: int = window.find("if BattleManager.player_defer():")
+	var call_at: int = window.find("if BattleManager.player_defer()")
 	assert_gt(null_at, call_at,
 		"the null must come AFTER the call — nulling first is the defect, and ordering is the whole fix")
