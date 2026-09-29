@@ -1426,7 +1426,7 @@ func _create_sister_concord(NPCScript) -> void:
 	var sister = NPCScript.new()
 	sister.npc_name = "Sister Concord"
 	sister.npc_type = "scholar"
-	sister.position = Vector2(8 * TILE_SIZE, 2 * TILE_SIZE)
+	sister.position = Vector2(6.5 * TILE_SIZE, 1.5 * TILE_SIZE)
 	sister.dialogue_lines = [
 		"Welcome, traveler. Rest your soul a moment.",
 		"This chapel used to be full on the holy days.",
@@ -1441,7 +1441,7 @@ func _create_worshiper_elowen(NPCScript) -> void:
 	var elowen = NPCScript.new()
 	elowen.npc_name = "Elowen Dray"
 	elowen.npc_type = "villager"
-	elowen.position = Vector2(3 * TILE_SIZE, 4 * TILE_SIZE)
+	elowen.position = Vector2(1.5 * TILE_SIZE, 2.5 * TILE_SIZE)
 	elowen.dialogue_lines = [
 		"*whispering* Shh. I'm in the middle of something.",
 		"*whispering* I asked for good weather for the harvest. And for my knees to forgive me for all this kneeling.",
@@ -1455,7 +1455,7 @@ func _create_worshiper_bram(NPCScript) -> void:
 	var bram = NPCScript.new()
 	bram.npc_name = "Bram Coll"
 	bram.npc_type = "villager"
-	bram.position = Vector2(14 * TILE_SIZE, 8 * TILE_SIZE)
+	bram.position = Vector2(13.5 * TILE_SIZE, 9.5 * TILE_SIZE)
 	bram.dialogue_lines = [
 		"*whispering* Third pew from the back. Same as always.",
 		"*whispering* I'm not praying for anything in particular. Just sitting with it. Whatever it is.",
@@ -1483,7 +1483,7 @@ func _create_repentant_fenn(NPCScript) -> void:
 	var fenn = NPCScript.new()
 	fenn.npc_name = "Fenn Marrow"
 	fenn.npc_type = "mysterious"
-	fenn.position = Vector2(10 * TILE_SIZE, 2 * TILE_SIZE)
+	fenn.position = Vector2(10.5 * TILE_SIZE, 1.5 * TILE_SIZE)
 	fenn.dialogue_lines = [
 		"Don't look at me like that. I'm ALLOWED to be here.",
 		"One candle. That's the going rate for lifting a merchant's coin purse, apparently.",

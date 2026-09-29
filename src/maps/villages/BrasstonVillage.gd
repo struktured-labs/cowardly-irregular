@@ -356,23 +356,23 @@ func _setup_npcs() -> void:
 	_add_quest_route_point("world3_lamplighters_logic",
 		"quest_world3_lamplighters_logic_route_documented", 1, 5, "Document the mill lamp",
 		"The mill lamp. Its base is warm — warmer than burning gas explains, and warmest on the side facing AWAY from the flame.",
-		_lamp_idle, Vector2(5 * TILE_SIZE,3 * TILE_SIZE))
+		_lamp_idle, Vector2(4.5 * TILE_SIZE,3.5 * TILE_SIZE))
 	_add_quest_route_point("world3_lamplighters_logic",
 		"quest_world3_lamplighters_logic_route_documented", 2, 5, "Document the Copper Street lamp",
 		"Copper Street, east side. The grate at the lamp's foot exhales on a slow count, like something upstream of it is breathing.",
-		_lamp_idle, Vector2(20 * TILE_SIZE,4 * TILE_SIZE))
+		_lamp_idle, Vector2(20.5 * TILE_SIZE,3.5 * TILE_SIZE))
 	_add_quest_route_point("world3_lamplighters_logic",
 		"quest_world3_lamplighters_logic_route_documented", 3, 5, "Document the second Copper Street lamp",
 		"Copper Street again, further down, on the side you started from. The same slow count — offset by exactly the walk between the two.",
-		_lamp_idle, Vector2(20 * TILE_SIZE,17 * TILE_SIZE))
+		_lamp_idle, Vector2(20.5 * TILE_SIZE,16.5 * TILE_SIZE))
 	_add_quest_route_point("world3_lamplighters_logic",
 		"quest_world3_lamplighters_logic_route_documented", 4, 5, "Document the bridge lamp",
 		"The bridge lamp, reached after the arcade is skipped entirely. This base is cold. Cold enough to bead water out of dry air.",
-		_lamp_idle, Vector2(5 * TILE_SIZE,8 * TILE_SIZE))
+		_lamp_idle, Vector2(4.5 * TILE_SIZE,7.5 * TILE_SIZE))
 	_add_quest_route_point("world3_lamplighters_logic",
 		"quest_world3_lamplighters_logic_route_documented", 5, 5, "Document the arcade lamp",
 		"The arcade lamp, come back to last, exactly as Clem said. Warm again — the same warmth as the mill, at the opposite end of town.",
-		_lamp_idle, Vector2(5 * TILE_SIZE,18 * TILE_SIZE))
+		_lamp_idle, Vector2(4.5 * TILE_SIZE,17.5 * TILE_SIZE))
 
 	# Clockwork Cat (mechanical pet, responds with sound effects)
 	var clockcat = _create_npc("Cogsworth", "villager", Vector2(7 * TILE_SIZE,15 * TILE_SIZE), [
