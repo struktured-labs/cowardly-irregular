@@ -1454,6 +1454,13 @@ func account_boss_fight_rewards(exp_gained: int, items_gained: Dictionary, grant
 			total_items_gained[item_id] = quantity
 
 
+## A collapse boss is a meta-boss and its win counts as one, so it must be MET too; it has its own announcement, so no meta_boss_spawned.
+func _spawn_collapse_boss() -> Dictionary:
+	var boss_data := build_meta_boss_enemy_data(true)
+	meta_bosses_spawned += 1
+	return boss_data
+
+
 func on_meta_boss_victory(boss_data: Dictionary) -> void:
 	"""Called by AutogrindController after the party defeats a meta-boss.
 	Reduces corruption and awards bonus rewards."""
