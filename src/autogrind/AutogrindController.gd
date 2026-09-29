@@ -310,7 +310,7 @@ func _launch_meta_boss_battle() -> void:
 ## Launch a system collapse boss battle
 func _launch_collapse_boss_battle() -> void:
 	AutogrindSystem._trigger_system_collapse()
-	var boss_data := AutogrindSystem.build_meta_boss_enemy_data(true)
+	var boss_data := AutogrindSystem._spawn_collapse_boss()
 
 	_current_battle_is_meta_boss = true
 	_current_battle_is_collapse_boss = true
