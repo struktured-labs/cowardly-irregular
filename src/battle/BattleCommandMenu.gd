@@ -1399,7 +1399,11 @@ func _on_win98_defer_requested() -> void:
 	# (cannot_defer, from `exposed`) returns false, queues nothing and leaves the turn open —
 	# nulling first destroyed the reference for an action that never happened, so every press
 	# lost the menu and achieved nothing. Measured: 5 presses, 0 actions queued, 0 turn advance.
-	if BattleManager.player_defer():
+	## player_defer() ends the turn synchronously, so the NEXT character's menu can already be stored
+	## by the time it returns. Null only the menu that deferred (the msg 2529 identity guard): nulling
+	## the new one left it live but unknown, and the watchdog swept it mid-navigation.
+	var deferring_menu = _scene.active_win98_menu
+	if BattleManager.player_defer() and _scene.active_win98_menu == deferring_menu:
 		_scene.active_win98_menu = null
 	_scene._update_ui()
 
