@@ -5867,6 +5867,7 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	# Animate: scale up from 0, hold, then fade out
 	one_shot_label.scale = Vector2(0.1, 0.1)
 	await get_tree().process_frame
+	_place_victory_banner([one_shot_label, rank_label, bonus_label], get_node_or_null("AutobattleFlash"))
 	one_shot_label.pivot_offset = one_shot_label.size / 2
 	rank_label.modulate.a = 0.0
 	bonus_label.modulate.a = 0.0
@@ -5980,6 +5981,7 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	# Animate: scale-in, hold, fade out (no delay — shows simultaneously with one-shot)
 	auto_label.scale = Vector2(0.1, 0.1)
 	await get_tree().process_frame
+	_place_victory_banner([auto_label, turns_label, bonus_label], get_node_or_null("OneShotFlash"))
 	auto_label.pivot_offset = auto_label.size / 2
 	turns_label.modulate.a = 0.0
 	bonus_label.modulate.a = 0.0
@@ -5997,6 +5999,56 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	tween.tween_property(flash_container, "modulate:a", 0.0, 0.5)
 	# Clean up
 	tween.tween_callback(func(): flash_container.queue_free())
+
+
+## The EXP-boost banners go on the emptied enemy side: below the enemy panel, above the battle log, left of everything the
+## victory overlay occupies, shrunk only if that column is too tight. 7fc9431d8's fixed shift cleared the poses and
+## landed on the cards the 08-18 revamp hangs left of them. `other` is the banner already up, which this one stacks under.
+func _place_victory_banner(labels: Array, other: Node = null) -> void:
+	var vp := get_viewport_rect().size
+	var left := 16.0
+	var top := vp.y * 0.42
+	var bottom := vp.y - 130.0
+	var enemy_panel := find_child("EnemyStatusPanel", true, false) as Control
+	if enemy_panel and enemy_panel.is_visible_in_tree():
+		top = enemy_panel.get_global_rect().end.y + 16.0
+	var log_panel := find_child("BattleLogPanel", true, false) as Control
+	if log_panel and log_panel.is_visible_in_tree():
+		bottom = log_panel.get_global_rect().position.y - 12.0
+	if other and is_instance_valid(other):
+		for c in other.get_children():
+			if c is Label:
+				top = maxf(top, _banner_rect(c as Label, vp).end.y + 12.0)
+	var right := vp.x * 0.5
+	var results := get_node_or_null("VictoryResults")
+	if results and results.has_method("occupied_rects"):
+		for r in results.occupied_rects():
+			if r.intersects(Rect2(left, top, right - left, bottom - top)):
+				right = minf(right, r.position.x - 12.0)
+	var block := Rect2()
+	var need_w := 0.0
+	for i in labels.size():
+		var l := labels[i] as Label
+		block = _banner_rect(l, vp) if i == 0 else block.merge(_banner_rect(l, vp))
+		need_w = maxf(need_w, l.get_minimum_size().x)
+	if need_w <= 0.0 or block.size.y <= 0.0:
+		return
+	var s := clampf(minf((right - left) / need_w, (bottom - top) / block.size.y), 0.55, 1.0)
+	var cx := (left + right) / 2.0
+	for l in labels:
+		var r: Rect2 = _banner_rect(l as Label, vp)
+		if s < 1.0:
+			l.add_theme_font_size_override("font_size", maxi(8, int(l.get_theme_font_size("font_size") * s)))
+		var y := top + (r.position.y - block.position.y) * s
+		l.offset_left = cx - r.size.x / 2.0 - vp.x / 2.0
+		l.offset_right = cx + r.size.x / 2.0 - vp.x / 2.0
+		l.offset_top = y - vp.y / 2.0
+		l.offset_bottom = y + r.size.y * s - vp.y / 2.0
+
+
+## A banner label's box from its centre-anchored offsets: get_global_rect folds in the 0.1 scale-in the label is mid-way through.
+func _banner_rect(l: Label, vp: Vector2) -> Rect2:
+	return Rect2(vp.x / 2.0 + l.offset_left, vp.y / 2.0 + l.offset_top, l.offset_right - l.offset_left, l.offset_bottom - l.offset_top)
 
 
 func _play_staggered_victory_animations() -> void:
