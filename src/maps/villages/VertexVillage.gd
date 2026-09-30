@@ -78,6 +78,10 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
+	# Vertex builds no derived layers, so centre its exit here (BaseVillage.exit_centre_of).
+	var exit_at := exit_centre_of(map_data, TILE_SIZE)
+	if exit_at != Vector2.INF:
+		spawn_points["exit"] = exit_at
 	spawn_points["entrance"] = Vector2(9 * TILE_SIZE, 8 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["vertex_entrance"] = spawn_points["entrance"]

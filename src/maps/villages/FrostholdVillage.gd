@@ -259,7 +259,8 @@ func _setup_npcs() -> void:
 		"Don't let it go to your head. Plenty out there I would still turn you back from.",
 		"Turn back from THOSE. Not this one. This one you earned."
 	]
-	var ingrid = _create_npc("Guard Ingrid", "guard", Vector2(10 * TILE_SIZE,16 * TILE_SIZE), _ingrid_post if _after_cave_done else _ingrid_pre)
+	# Beside the exit, not on it: (10,16) stood on the gate once the gate sat on its X tiles (BaseVillage.exit_centre_of).
+	var ingrid = _create_npc("Guard Ingrid", "guard", Vector2(7 * TILE_SIZE,16 * TILE_SIZE), _ingrid_post if _after_cave_done else _ingrid_pre)
 	npcs.add_child(ingrid)
 
 	# Hermit Kael (autobattle)

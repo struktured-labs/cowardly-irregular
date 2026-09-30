@@ -77,6 +77,10 @@ func _generate_map() -> void:
 			if ch == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
+	# No derived layers here, so centre the exit on its block (BaseVillage.exit_centre_of).
+	var exit_at := exit_centre_of(map_data, TILE_SIZE)
+	if exit_at != Vector2.INF:
+		spawn_points["exit"] = exit_at
 	spawn_points["entrance"] = Vector2(15 * TILE_SIZE,17 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	# Interiors return here (guild_exit / bookshop_exit) just below their doors.
