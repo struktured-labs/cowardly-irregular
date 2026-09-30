@@ -1264,10 +1264,15 @@ func _add_enemy_click_target(sprite: AnimatedSprite2D, enemy_idx: int) -> void:
 
 func _create_enemy_hp_bar(enemy: Combatant, sprite: AnimatedSprite2D) -> void:
 	"""Create a small HP bar below the enemy sprite name label"""
+	# Placed FROM the name, which sits on the figure: a fixed (-20, 52) floated on any body whose feet were elsewhere.
+	var at := Vector2(-20, 52)
+	var name_label := sprite.get_node_or_null("NameLabel") as Label
+	if name_label:
+		at = Vector2(name_label.position.x + name_label.size.x * 0.5 - 20.0, name_label.position.y + name_label.get_minimum_size().y + 2.0)
 	var bar_bg = ColorRect.new()
 	bar_bg.color = Color(0.2, 0.1, 0.1, 0.7)
 	bar_bg.size = Vector2(40, 4)
-	bar_bg.position = Vector2(-20, 52)  # Below the name label
+	bar_bg.position = at
 	bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sprite.add_child(bar_bg)
 
@@ -1275,14 +1280,14 @@ func _create_enemy_hp_bar(enemy: Combatant, sprite: AnimatedSprite2D) -> void:
 	var bar_trail = ColorRect.new()
 	bar_trail.color = Color(1.0, 0.72, 0.5, 0.65)
 	bar_trail.size = Vector2(40, 4)
-	bar_trail.position = Vector2(-20, 52)
+	bar_trail.position = at
 	bar_trail.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sprite.add_child(bar_trail)
 
 	var bar_fill = ColorRect.new()
 	bar_fill.color = Color(0.8, 0.2, 0.2)  # Red for enemies
 	bar_fill.size = Vector2(40, 4)
-	bar_fill.position = Vector2(-20, 52)
+	bar_fill.position = at
 	bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sprite.add_child(bar_fill)
 
@@ -1461,6 +1466,7 @@ func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 func _add_sprite_label(sprite: AnimatedSprite2D, text: String, fallback_drop: float) -> void:
 	"""Add a name label under a sprite's figure, centred on its body"""
 	var label = Label.new()
+	label.name = "NameLabel"
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.clip_text = false
