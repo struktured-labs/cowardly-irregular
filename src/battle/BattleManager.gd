@@ -8389,6 +8389,21 @@ func _process_grid_autobattle(combatant: Combatant) -> void:
 ## Each rule action converts on its own against the full MP and bag, so a script could queue three
 ## Fires on MP for one. Walk the queue in order as the executor will spend it (restores that reach the
 ## caster credit MP, capped at max) and drop what the turn cannot pay for, rather than burn its AP.
+## Whether a queued MP restore lands on its own caster: self and party restores always do; a
+## single-ally one (Pray) only when aimed at the caster, or with no target (the executor's fallback).
+func _restore_reaches_caster(ability: Dictionary, action: Dictionary, caster: Combatant) -> bool:
+	match str(ability.get("target_type", "self")):
+		"self", "all_allies":
+			return true
+		"single_ally":
+			var targets: Array = action.get("targets", [])
+			var target = action.get("target", null)
+			if targets.is_empty() and target == null:
+				return true
+			return target == caster or targets.has(caster)
+	return false
+
+
 func _affordable_advance(combatant: Combatant, actions: Array[Dictionary]) -> Array[Dictionary]:
 	var kept: Array[Dictionary] = []
 	var mp: int = combatant.current_mp
@@ -8403,7 +8418,7 @@ func _affordable_advance(combatant: Combatant, actions: Array[Dictionary]) -> Ar
 				continue
 			mp -= cost
 			var ability: Dictionary = JobSystem.get_ability(aid)
-			if str(ability.get("type", "")) == "mp_restore" and str(ability.get("target_type", "self")) in ["self", "all_allies"]:
+			if str(ability.get("type", "")) == "mp_restore" and _restore_reaches_caster(ability, a, combatant):
 				mp = mini(combatant.max_mp, mp + _mp_restore_amount(ability))
 		elif iid != "":
 			if int(used.get(iid, 0)) >= ItemSystem.party_item_count(bag, iid):
