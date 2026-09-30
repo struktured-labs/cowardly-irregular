@@ -827,6 +827,21 @@ func _defer_victory_payout() -> bool:
 	return true
 
 
+## Leave a battle WITHOUT resolving it (a stopped grind, a quit): no battle_ended, no rewards. Bumping
+## battle_serial makes every awaiting execution coroutine of this battle return on resume instead of
+## acting on freed combatants or on the next battle's world (cowir-autogrind's 4/4 SEGFAULT).
+func abort_battle() -> void:
+	battle_serial += 1
+	_wd_armed = false
+	_trust_window_pc = null
+	defer_victory_payout = false
+	_win_condition = {}
+	_wc_withhold_rounds = 0
+	_wc_struck_this_round = false
+	_wc_phase_index = 0
+	_cleanup_battle()
+
+
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
 	_wd_armed = false
@@ -1917,8 +1932,12 @@ func _run_trust_interrupt_window(pc: Combatant) -> void:
 	trust_interrupt_window_opened.emit(pc, TRUST_INTERRUPT_WINDOW_SECONDS)
 	battle_log_message.emit("[color=cyan]%s: Trusted — press %s to take this turn[/color]" % [pc.combatant_name, _trust_interrupt_token()])
 	var tree: SceneTree = get_tree()
+	var _serial: int = battle_serial
 	if tree:
 		await tree.create_timer(TRUST_INTERRUPT_WINDOW_SECONDS).timeout
+	## Aborted or replaced during the window: it belongs to a battle that is gone.
+	if _serial != battle_serial:
+		return
 	# Untrust intervened → early out (state / menu are handled there).
 	if _trust_window_pc != pc:
 		trust_interrupt_window_closed.emit(pc, true)
@@ -3762,6 +3781,8 @@ func _get_alive_enemies() -> Array[Combatant]:
 
 func _execute_next_action() -> void:
 	"""Execute the next action in the queue"""
+	## Which battle this run belongs to: an abort or a new battle moves it, and every resume below returns.
+	var _serial: int = battle_serial
 	## An awaited continuation can resume AFTER end_battle and resurrect the battle: with a
 	## stale action it sets PROCESSING_ACTION, with an empty queue it falls into _start_new_round.
 	if not is_battle_active():
@@ -3874,7 +3895,7 @@ func _execute_next_action() -> void:
 				else:
 					# 2026-07-12: was 0.1/speed_scale which DOUBLE-scaled (create_timer already applies Engine.time_scale) → wall clock 1.6s at 1x. Constant 0.025 gives the intended 0.1s at 1x (time_scale=0.25).
 					await get_tree().create_timer(_consume_presentation_hold(0.025)).timeout
-				if not is_instance_valid(self):
+				if not is_instance_valid(self) or _serial != battle_serial:
 					return
 				_execute_next_action()
 				return
@@ -3958,7 +3979,7 @@ func _execute_next_action() -> void:
 		await get_tree().process_frame
 	else:
 		await get_tree().create_timer(_consume_presentation_hold(0.025)).timeout
-	if not is_instance_valid(self):
+	if not is_instance_valid(self) or _serial != battle_serial:
 		return
 	_execute_next_action()
 
@@ -4082,6 +4103,8 @@ func _without_locked_participants(participants: Array) -> Array:
 
 func _execute_group_action(action: Dictionary) -> void:
 	"""Execute group attack — all participants strike together"""
+	## Which battle this run belongs to: an abort or a new battle moves it, and every resume below returns.
+	var _serial: int = battle_serial
 	var participants: Array = _without_locked_participants(action.get("participants", []))
 	var group_type: String = action.get("group_type", "all_out_attack")
 	var alive_enemies: Array[Combatant] = enemy_party.filter(func(e): return e.is_alive)
@@ -4141,7 +4164,7 @@ func _execute_group_action(action: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		await get_tree().create_timer(_consume_presentation_hold(0.025)).timeout
-	if not is_instance_valid(self):
+	if not is_instance_valid(self) or _serial != battle_serial:
 		return
 	_execute_next_action()
 
@@ -4557,6 +4580,8 @@ const ADVANCE_TRASH_TALK = {
 
 func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	"""Execute advance action - all queued actions in sequence (each costs 1 AP)"""
+	## Which battle this run belongs to: an abort or a new battle moves it, and every resume below returns.
+	var _serial: int = battle_serial
 	var actions = advance_action.get("actions", []) as Array
 	if actions.is_empty():
 		## Live playtest freeze 2026-07-01 ("EXECUTE: Bard" hung forever):
@@ -4609,7 +4634,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	## every path that sets none — turbo, the console, 2x+, headless tests — is unchanged.
 	if not turbo_mode and presentation_hold > 0.0:
 		await get_tree().create_timer(_consume_presentation_hold(0.0)).timeout
-		if not is_instance_valid(self):
+		if not is_instance_valid(self) or _serial != battle_serial:
 			return
 
 	# Execute all actions in sequence (each will spend 1 AP)
@@ -4647,7 +4672,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		else:
 			# 2026-07-12: was 0.3/speed_scale — the DIVISION double-scaled because create_timer already applies Engine.time_scale. At 1x (time_scale=0.25) that was create_timer(1.2) → 4.8s wall clock instead of the intended 0.3s. Constant 0.075 gives the correct 0.3s at 1x, scaling proportionally with battle speed.
 			await get_tree().create_timer(_consume_presentation_hold(0.075)).timeout
-		if not is_instance_valid(self):
+		if not is_instance_valid(self) or _serial != battle_serial:
 			return
 
 	## The fifth action was spent like the other four (each executor charges 1); refund it here
@@ -4665,7 +4690,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		await get_tree().process_frame
 	else:
 		await get_tree().create_timer(_consume_presentation_hold(0.075)).timeout
-	if not is_instance_valid(self):
+	if not is_instance_valid(self) or _serial != battle_serial:
 		return
 	if _check_victory_conditions():
 		return
