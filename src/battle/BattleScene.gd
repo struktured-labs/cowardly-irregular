@@ -6161,6 +6161,8 @@ func _present_summoned_enemy(enemy: Combatant, monster_type: String, new_idx: in
 
 	# Setup status icons for summoned enemy
 	_setup_status_icons(enemy, sprite)
+	# Same bar as every other enemy, under its name: without it a summon's health was invisible.
+	_create_enemy_hp_bar(enemy, sprite)
 
 	# Spawn animation - pop in with flash (overshoot and settle at the computed size, not 1.0)
 	var tween = create_tween()
