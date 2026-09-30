@@ -84,3 +84,45 @@ func test_every_village_exit_trigger_covers_its_exit_tiles() -> void:
 			bad.append("%s: trigger centred %.1f tiles off the exit" % [path.get_file(), (left + right) / 2.0 - (lo + hi) / 2.0])
 		vp.queue_free()
 	assert_eq(bad, [], "exit triggers that miss their exit tiles: %s" % str(bad))
+
+
+func _all(n: Node, out: Array) -> void:
+	out.append(n)
+	for c in n.get_children():
+		_all(c, out)
+
+
+## Centring the exits moved every gate, and Frosthold's Guard Ingrid had been authored beside the OLD, off-road one:
+## the gate landed on her and her name sat on the "Exit" board. Nothing a player bumps into or reads may stand in
+## the gate's drawing (48px arch + pillars, 56px tall) or its board at (-40, -72).
+func test_nothing_stands_in_a_village_gate() -> void:
+	var villages := _villages()
+	var bad: Array = []
+	var judged := 0
+	for path in villages:
+		var vp := SubViewport.new()
+		vp.world_2d = World2D.new()
+		add_child_autofree(vp)
+		var village: Node = load(path).new()
+		vp.add_child(village)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var exit := village.find_child("Exit", true, false) as Node2D
+		if exit == null:
+			continue
+		judged += 1
+		var p := exit.global_position
+		var zone := Rect2(p.x - 44.0, p.y - 76.0, 88.0, 80.0)
+		var nodes: Array = []
+		_all(village, nodes)
+		for n in nodes:
+			if n == exit or not (n is Node2D) or exit.is_ancestor_of(n) or n.get_script() == null:
+				continue
+			var scr: String = n.get_script().resource_path.get_file()
+			if not (scr.contains("NPC") or scr.contains("VillageProp") or scr.contains("Chicken") or scr.contains("Signpost") or scr.contains("Lamp")):
+				continue
+			if zone.has_point((n as Node2D).global_position):
+				bad.append("%s: %s (%s) stands in the gate" % [path.get_file(), n.name, scr])
+		vp.queue_free()
+	assert_gt(judged, 8, "CONTROL: the village gates were judged (%d)" % judged)
+	assert_eq(bad, [], "things standing in a village gate: %s" % str(bad))
