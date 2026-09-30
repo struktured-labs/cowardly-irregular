@@ -11,14 +11,14 @@ var _saved: Dictionary = {}
 
 func before_each() -> void:
 	var bm = BattleManager
-	_saved = {"player_party": bm.player_party.duplicate(), "enemy_party": bm.enemy_party.duplicate(),
+	_saved = {"player_party": bm.player_party.duplicate(), "enemies": bm.enemy_party.duplicate(),
 		"pending": bm.pending_actions.duplicate(), "prev": bm.previous_round_actions.duplicate(true)}
 
 
 func after_each() -> void:
 	var bm = BattleManager
 	bm.player_party.assign(_saved["player_party"].filter(func(x): return is_instance_valid(x)))
-	bm.enemy_party.assign(_saved["enemy_party"].filter(func(x): return is_instance_valid(x)))
+	bm.enemy_party.assign(_saved["enemies"].filter(func(x): return is_instance_valid(x)))
 	bm.pending_actions.assign(_saved["pending"])
 	bm.previous_round_actions = _saved["prev"]
 
