@@ -126,3 +126,47 @@ func test_nothing_stands_in_a_village_gate() -> void:
 		vp.queue_free()
 	assert_gt(judged, 8, "CONTROL: the village gates were judged (%d)" % judged)
 	assert_eq(bad, [], "things standing in a village gate: %s" % str(bad))
+
+
+## Props are drawn up from their base cell, so a stall can cover a door its origin never touches: Brasston's stall at
+## (7,12) drew its awning and counter across the Clockwork Loft door at (9,12), and before the exits were centred
+## Harmonia's covered its own gate. Every village, every drawn door (exit and interior), every prop's drawn sprite.
+func test_no_prop_is_drawn_across_a_door() -> void:
+	var villages := _villages()
+	var bad: Array = []
+	var doors_judged := 0
+	for path in villages:
+		var vp := SubViewport.new()
+		vp.world_2d = World2D.new()
+		add_child_autofree(vp)
+		var village: Node = load(path).new()
+		vp.add_child(village)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		var nodes: Array = []
+		_all(village, nodes)
+		var doors: Array = []
+		var props: Array = []
+		for n in nodes:
+			if n.get_script() == null:
+				continue
+			var rp: String = n.get_script().resource_path
+			if rp.ends_with("AreaTransition.gd") and bool(n.get("show_gate_visual")):
+				doors.append(n)
+			elif rp.ends_with("VillageProp.gd"):
+				props.append(n)
+		for d in doors:
+			doors_judged += 1
+			var p: Vector2 = (d as Node2D).global_position
+			# The arch and pillars as AreaTransition draws them. The sign label draws ON TOP of props, so it is not judged.
+			var shapes: Array = [Rect2(p.x - 30.0, p.y - 60.0, 60.0, 60.0).grow(-2.0)]
+			for prop in props:
+				for c in prop.get_children():
+					if c is Sprite2D and (c as Sprite2D).texture:
+						var spr := c as Sprite2D
+						var drawn := Rect2((prop as Node2D).global_position + spr.position, spr.texture.get_size())
+						if shapes.any(func(r: Rect2) -> bool: return drawn.intersects(r)):
+							bad.append("%s: a %s prop at %s is drawn across %s" % [path.get_file(), VillageProp.Kind.keys()[int(prop.get("kind"))] if prop.get("kind") != null else "?", (prop as Node2D).global_position, d.name])
+		vp.queue_free()
+	assert_gt(doors_judged, 20, "CONTROL: the village doors were judged (%d)" % doors_judged)
+	assert_eq(bad, [], "props drawn across a door: %s" % str(bad))
