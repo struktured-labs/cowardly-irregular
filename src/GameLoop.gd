@@ -6038,6 +6038,12 @@ func _start_autogrind(config: Dictionary) -> void:
 	print("[AUTOGRIND] Session started%s" % (" (LUDICROUS SPEED)" if _autogrind_controller.headless_mode else ""))
 
 
+## A stop mid-battle freed the scene under BattleManager's running turn, which resumed in the next grind battle and segfaulted; natural ends are already VICTORY/DEFEAT here.
+func _abort_live_autogrind_battle() -> void:
+	if BattleManager.has_method("abort_battle") and BattleManager.is_battle_active():
+		BattleManager.abort_battle()
+
+
 func _on_autogrind_stop_requested() -> void:
 	"""Handle stop request from UI"""
 	_stop_autogrind("Manual stop")
@@ -6047,6 +6053,7 @@ func _stop_autogrind(reason: String) -> void:
 	"""Stop the autogrind session"""
 	if not _is_autogrinding:
 		return
+	_abort_live_autogrind_battle()
 
 	_is_autogrinding = false
 	## RESTORED HERE, NOT AT THE BOTTOM: these two are GLOBAL and the line above is the gate that
@@ -6541,6 +6548,7 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 
 func _on_grind_complete(reason: String) -> void:
 	"""Handle autogrind session completion"""
+	_abort_live_autogrind_battle()
 	_is_autogrinding = false
 	## Same hoist as _stop_autogrind: this entry reaches the identical stranded state by its own
 	## route, so fixing only the other one leaves this one live.
