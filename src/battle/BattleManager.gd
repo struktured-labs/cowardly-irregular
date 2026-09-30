@@ -8788,10 +8788,10 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 	# moment instead of only an intent taunt.
 	var transition_line: String = boss_dlg.get_phase_transition_line(persona_id, new_phase)
 	if transition_line != "" and last_phase > 0:
-		battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, transition_line])
+		_log_boss_line(combatant, transition_line)
 		boss_taunt.emit(combatant, transition_line)
 	if taunt != "":
-		battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, taunt])
+		_log_boss_line(combatant, taunt)
 		boss_taunt.emit(combatant, taunt)
 
 	# The boss notices nobody is deciding. ONCE per battle by design — an
@@ -8803,7 +8803,7 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 			var auto_line: String = boss_dlg.get_automation_line(persona_id, auto_tier)
 			if auto_line != "":
 				combatant.set_meta("boss_noticed_automation", true)
-				battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, auto_line])
+				_log_boss_line(combatant, auto_line)
 				boss_taunt.emit(combatant, auto_line)
 
 	# Phase 1: strategic-intent refinement. The deterministic pick above
@@ -8816,6 +8816,11 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 	# isn't blocked by a 1–5s HTTP round-trip.
 	if llm_available and _should_use_llm_strategy(persona_id):
 		_refine_boss_intent_async(combatant, persona_id, new_phase, boss_dlg)
+
+
+## A boss line in the battle log under the boss's name, with the authored "Name: '...'" wrapper removed so it is not signed twice.
+func _log_boss_line(combatant: Combatant, line: String) -> void:
+	battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, DialoguePrompts.spoken_line(line)])
 
 
 ## Returns true when LLM strategy is opt-in AND the persona is on the
@@ -8897,7 +8902,7 @@ func _refine_boss_intent_async(
 	var refined_taunt: String = str(refined.get("taunt_line", ""))
 	if refined_taunt.is_empty():
 		return
-	battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, refined_taunt])
+	_log_boss_line(combatant, refined_taunt)
 	boss_taunt.emit(combatant, refined_taunt)
 
 

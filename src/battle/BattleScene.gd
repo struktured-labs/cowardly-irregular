@@ -5639,7 +5639,7 @@ func _on_boss_taunt(boss: Combatant, line: String) -> void:
 	if sprite == null or not is_instance_valid(sprite):
 		return
 	# Crimson border distinguishes boss taunts from party quips.
-	_spawn_quip_bubble(sprite, boss.combatant_name, line, Color(0.95, 0.25, 0.25), 2.5)
+	_spawn_quip_bubble(sprite, boss.combatant_name, DialoguePrompts.spoken_line(line), Color(0.95, 0.25, 0.25), 2.5)
 
 
 func _on_boss_jailbreak_landed(_boss: Combatant, _vulnerability_id: String, _consequence: Dictionary) -> void:
@@ -5661,7 +5661,7 @@ func _on_boss_gloat_line(text: String, is_victory: bool) -> void:
 	# conceding in defeat (party won). Both are tagged so the line reads as the
 	# boss speaking, not narration.
 	var color: String = "#cc4444" if not is_victory else "#d8b860"
-	log_message('[color=%s]%s: "%s"[/color]' % [color, _gloat_speaker_name(is_victory), text])
+	log_message('[color=%s]%s: "%s"[/color]' % [color, _gloat_speaker_name(is_victory), DialoguePrompts.spoken_line(text)])
 
 
 func _gloat_speaker_name(_is_victory: bool) -> String:
