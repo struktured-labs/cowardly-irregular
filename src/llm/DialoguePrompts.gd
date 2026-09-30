@@ -1503,6 +1503,18 @@ static func validate_combined_reply(raw: Variant, expected_count: int, cycle_ind
 ## returns an intent the boss can't actually execute.
 ##
 ## Clamps reason to MAX_BOSS_REASON_CHARS and taunt to MAX_BOSS_TAUNT_CHARS.
+## boss_dialogue.json writes lines as "Name: 'text'" (BattleDialogue reads that speaker). Shown under the boss's own name, the text alone.
+static func spoken_line(line: String) -> String:
+	var s: String = line.strip_edges()
+	var colon: int = s.find(": ")
+	if colon <= 0 or colon > 40:
+		return s
+	var body: String = s.substr(colon + 2).strip_edges()
+	if body.length() >= 2 and ((body.begins_with("'") and body.ends_with("'")) or (body.begins_with("\"") and body.ends_with("\""))):
+		return body.substr(1, body.length() - 2)
+	return s
+
+
 static func validate_boss_intent(raw: Variant, available_intents: Array) -> Dictionary:
 	if not (raw is Dictionary):
 		return FALLBACK_BOSS_INTENT.duplicate()
