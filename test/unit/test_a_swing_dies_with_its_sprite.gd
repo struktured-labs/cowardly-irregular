@@ -55,8 +55,10 @@ func test_a_hit_flash_dies_with_its_sprite() -> void:
 	var s := _sprite(0)
 	add_child(s)
 	BattleJuice.ensure_flash_material(s)
+	## Only the tweens flash_sprite starts: a longer tween an earlier file left running is not this sprite's.
+	var before: Array = get_tree().get_processed_tweens()
 	BattleJuice.flash_sprite(s, Color.WHITE, 0.5)
-	var tweens: Array = get_tree().get_processed_tweens()
+	var tweens: Array = get_tree().get_processed_tweens().filter(func(t): return not (t in before))
 	assert_gt(tweens.size(), 0, "CONTROL: the flash must start a tween")
 	s.queue_free()
 	await wait_seconds(0.2)
