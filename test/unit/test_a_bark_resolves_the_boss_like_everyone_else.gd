@@ -59,7 +59,7 @@ func test_both_sites_derive_the_key_the_same_way() -> void:
 	## ⚠️ THE SIBLING LIST IS MEASURED, NOT GUESSED. My first version named `_maybe_emit_boss_insight`
 	## from memory and this arm red on it — that function reads neither key. These six are every
 	## function in BattleManager that reads `llm_persona_id`, derived rather than recalled.
-	for fn in ["_maybe_boss_phase_bark", "_update_boss_dialogue_phase", "_on_boss_jailbreak_succeeded",
+	for fn in ["_maybe_boss_phase_bark", "_boss_persona_id", "_on_boss_jailbreak_succeeded",
 			"try_player_jailbreak_directive", "_resolve_gloat_boss_persona", "_resolve_boss_display_name"]:
 		var body: String = _body(fn)
 		var persona_at: int = body.find("llm_persona_id")
@@ -68,3 +68,10 @@ func test_both_sites_derive_the_key_the_same_way() -> void:
 		assert_gt(type_at, -1, "%s must read monster_type" % fn)
 		assert_lt(persona_at, type_at,
 			"%s must read the OVERRIDE FIRST and monster_type as the fallback — the reverse order makes the override dead" % fn)
+
+
+## The phase path and the intent bias reach the key through _boss_persona_id (2026-09-29), so they must still call it.
+func test_the_phase_and_intent_paths_resolve_through_the_shared_reader() -> void:
+	for fn in ["_update_boss_dialogue_phase", "_intent_ability_bias"]:
+		assert_true(_body(fn).contains("_boss_persona_id("),
+			"%s no longer resolves the boss through _boss_persona_id, so it can drop the persona override" % fn)

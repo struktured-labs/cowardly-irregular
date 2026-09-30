@@ -2760,7 +2760,7 @@ func _monster_id_is_rat(combatant: Combatant) -> bool:
 ## carried support abilities no archetype they reach could ever select — including Voltharion's
 ## storm_gathering, whose own comment says "without this the telegraph never lands", and two
 ## Spotlight Duel minibosses. Returns {} when the roll declines, so callers fall through unchanged.
-func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: Array, chance: float) -> Dictionary:
+func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: Array, chance: float, bias: Dictionary = {}) -> Dictionary:
 	var utility: Array = abilities.filter(func(a): return a.get("type", "") in UTILITY_ABILITY_TYPES)
 	## These are OPENERS, not spam. As a flat per-turn roll the slot cost the common roster ~21% of
 	## its damage output — measured as party HP lost over 25 rounds — because a howl or a web_shot
@@ -2771,7 +2771,7 @@ func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: A
 	utility = utility.filter(func(a): return not spent.has(str(a.get("id", ""))))
 	if utility.is_empty() or randf() >= chance:
 		return {}
-	var pick: Dictionary = utility[randi() % utility.size()]
+	var pick: Dictionary = _pick_uniform(utility, bias)
 	## These three archetypes are handed enemies, not allies. A foe row goes to the party;
 	## a self-buff stays on the caster. Passing alive_enemies in as allies aimed a self-buff at the party.
 	var targets: Array = _utility_targets(combatant, pick, [combatant], alive_enemies)
@@ -2804,13 +2804,53 @@ func _caster_spell_score(spell: Dictionary, alive_enemies: Array) -> float:
 ## Prefers the strongest, without being ONLY the strongest. Three archetypes sorted by power and
 ## took [0] unconditionally, so a 5-ability boss fought with 1 move: Pyrroth showed magma_eruption
 ## and nothing else, Voltharion one spell, dark_knight's life_drain lost a 1.5 tie to the sort.
-func _pick_biased_by_power(sorted_desc: Array) -> Dictionary:
+func _pick_biased_by_power(sorted_desc: Array, bias: Dictionary = {}) -> Dictionary:
 	if sorted_desc.is_empty():
 		return {}
+	if sorted_desc.size() > 1 and _bias_touches(sorted_desc, bias):
+		var base: Array = [0.5]
+		for i in range(1, sorted_desc.size()):
+			base.append(0.5 / (sorted_desc.size() - 1))
+		return _pick_weighted(sorted_desc, base, bias)
 	if sorted_desc.size() == 1 or randf() < 0.5:
 		return sorted_desc[0]
 	return sorted_desc[1 + randi() % (sorted_desc.size() - 1)]
 
+
+
+## Uniform over the pool, scaled by the intent's bias. With no bias naming this pool, the original draw runs unchanged.
+func _pick_uniform(pool: Array, bias: Dictionary = {}) -> Dictionary:
+	if pool.size() > 1 and _bias_touches(pool, bias):
+		var base: Array = []
+		for i in pool.size():
+			base.append(1.0)
+		return _pick_weighted(pool, base, bias)
+	return pool[randi() % pool.size()]
+
+
+func _bias_touches(pool: Array, bias: Dictionary) -> bool:
+	if bias.is_empty():
+		return false
+	for a in pool:
+		if bias.has(str(a.get("id", ""))):
+			return true
+	return false
+
+
+## The ladder's own odds (`base`) times each ability's authored multiplier, so an intent tilts the pick and never replaces it.
+func _pick_weighted(pool: Array, base: Array, bias: Dictionary) -> Dictionary:
+	var weights: Array[float] = []
+	var total: float = 0.0
+	for i in pool.size():
+		var w: float = float(base[i]) * float(bias.get(str(pool[i].get("id", "")), 1.0))
+		weights.append(w)
+		total += w
+	var r: float = randf() * total
+	for i in pool.size():
+		r -= weights[i]
+		if r < 0.0:
+			return pool[i]
+	return pool[pool.size() - 1]
 
 func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
 	"""Tank AI: use defensive abilities, protect allies, heavy single hits"""
@@ -2821,9 +2861,10 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 	var defensive_abilities = abilities.filter(func(a): return a.get("type", "") in UTILITY_ABILITY_TYPES)
 	var physical_abilities = abilities.filter(func(a): return a.get("type", "") in ["physical", "magic"])
 
+	var bias: Dictionary = _intent_ability_bias(combatant)
 	# Use defensive/buff ability if available (40% chance)
 	if defensive_abilities.size() > 0 and randf() < 0.4:
-		var buff = defensive_abilities[randi() % defensive_abilities.size()]
+		var buff = _pick_uniform(defensive_abilities, bias)
 		## Lure, Infinite Loop, and Performance Review were aimed at the caster or a wounded ally.
 		var targets: Array = _utility_targets(combatant, buff, alive_allies, alive_enemies)
 		if not targets.is_empty():
@@ -2839,7 +2880,7 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 	if physical_abilities.size() > 0 and randf() < 0.5:
 		# Sorted on damage_multiplier: no ability authors `power`, so the old key was constant 0 and "strongest" was whichever happened to be first.
 		physical_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
-		var ability = _pick_biased_by_power(physical_abilities)
+		var ability = _pick_biased_by_power(physical_abilities, bias)
 		var target = _choose_target(combatant, alive_enemies, ability)
 		return {
 			"type": "ability",
@@ -2873,14 +2914,15 @@ func _ai_assassin(combatant: Combatant, abilities: Array, alive_enemies: Array) 
 			lowest_hp_pct = hp_pct
 			target = enemy
 
-	var assassin_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.25)
+	var bias: Dictionary = _intent_ability_bias(combatant)
+	var assassin_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.25, bias)
 	if not assassin_utility.is_empty():
 		return assassin_utility
 
 	# Use strongest offensive ability on wounded target (60% chance)
 	if offensive_abilities.size() > 0 and randf() < 0.6:
 		offensive_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
-		var ability = _pick_biased_by_power(offensive_abilities)
+		var ability = _pick_biased_by_power(offensive_abilities, bias)
 		return {
 			"type": "ability",
 			"combatant": combatant,
@@ -8690,15 +8732,28 @@ func _resolve_party_automation_tier() -> String:
 	return "autobattle" if living > 0 and scripted == living else ""
 
 
+## Persona lookup: explicit override first (set by dungeon subclass via llm_persona_id meta), else monster_type.
+func _boss_persona_id(combatant: Combatant) -> String:
+	var persona_id: String = str(combatant.get_meta("llm_persona_id", ""))
+	if persona_id == "":
+		persona_id = str(combatant.get_meta("monster_type", ""))
+	return persona_id
+
+
+## The current intent's authored bias over this boss's own abilities (boss_dialogue.json). {} for no intent or none authored.
+func _intent_ability_bias(combatant: Combatant) -> Dictionary:
+	var intent: String = str(combatant.get_meta("llm_intent", ""))
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if intent == "" or boss_dlg == null or not boss_dlg.has_method("intent_bias"):
+		return {}
+	return boss_dlg.intent_bias(_boss_persona_id(combatant), intent)
+
+
 func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 	var boss_dlg = get_node_or_null("/root/BossDialogue")
 	if boss_dlg == null:
 		return
-	# Persona lookup: explicit override first (set by dungeon subclass via
-	# llm_persona_id meta), else monster_type, else combatant_name.
-	var persona_id: String = combatant.get_meta("llm_persona_id", "")
-	if persona_id == "":
-		persona_id = combatant.get_meta("monster_type", "")
+	var persona_id: String = _boss_persona_id(combatant)
 	if persona_id == "":
 		return
 	if not boss_dlg.has_entry(persona_id):
