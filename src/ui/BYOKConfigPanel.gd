@@ -10,7 +10,7 @@ class_name BYOKConfigPanel
 ##   - api_key       (LineEdit, secret=true so it renders as dots)
 ##
 ## On Save:
-##   1. Mirror local fields → GameState.llm_custom_*
+##   1. Mirror local fields → GameState.llm_custom_*, and switch BYOK ON when base URL and model are set
 ##   2. Persist via SaveSystem.save_settings
 ##   3. Call LLMService.apply_byok_config so the HTTPBackend swap is
 ##      immediate
@@ -383,6 +383,9 @@ func _on_save_pressed() -> void:
 	GameState.llm_custom_api_format = "ollama" if _format_picker.selected == 1 else "openai"
 	GameState.llm_custom_model = _model_field.text
 	GameState.llm_custom_api_key = _api_key_field.text
+	# "Save & Apply": a usable endpoint turns BYOK on; the Settings toggle refuses ON until one exists.
+	if GameState.has_method("byok_config_complete") and GameState.byok_config_complete():
+		GameState.llm_custom_backend_enabled = true
 	# Persist via SaveSystem (settings.json, per-machine, gated off
 	# on web — see tick 38).
 	if SaveSystem and SaveSystem.has_method("save_settings"):
@@ -397,13 +400,15 @@ func _on_save_pressed() -> void:
 	# An incomplete config silently falls back to local Ollama — say so at save time.
 	var problem: String = _config_problem(_typed_config())
 	if Toast:
-		if problem != "":
+		if problem != "" and not bool(GameState.llm_custom_backend_enabled):
 			Toast.show(self, "BYOK INCOMPLETE — %s" % problem, STATUS_FAIL_COLOR)
+		elif problem != "":
+			Toast.show(self, "BYOK saved and ON — but %s" % problem, Toast.WARNING_COLOR)
 		else:
 			var masked: String = ""
 			if GameState.has_method("get_llm_custom_api_key_masked"):
 				masked = GameState.get_llm_custom_api_key_masked()
-			Toast.show(self, "BYOK saved (key=%s)" % (masked if masked != "" else "<empty>"),
+			Toast.show(self, "BYOK saved and ON (key=%s)" % (masked if masked != "" else "<empty>"),
 				Toast.SUCCESS_COLOR)
 	closed.emit()
 	queue_free()
@@ -475,10 +480,8 @@ func _typed_config() -> Dictionary:
 
 ## Why this config cannot be tested, or "" when it can. Also drives the save-time warning.
 ## Refusing here is the point: an instant reason beats an HTTP timeout the user has to sit through.
+## The toggle is not a problem: Test probes the typed fields, and since .547 the toggle waits for a saved endpoint, so refusing on it was a dead end.
 func _config_problem(cfg: Dictionary) -> String:
-	if GameState and "llm_custom_backend_enabled" in GameState \
-			and not bool(GameState.llm_custom_backend_enabled):
-		return "BYOK is toggled OFF in Settings — these fields are not in use, so there is nothing to test."
 	if str(cfg.get("base_url", "")) == "":
 		return "Base URL is empty. BYOK stays OFF and the game falls back to local Ollama."
 	if str(cfg.get("model", "")) == "":

@@ -199,15 +199,15 @@ func test_test_handler_short_circuits_on_unavailable() -> void:
 	# instead of making the user wait out an HTTP timeout.
 	# CONTRACT CHANGED: is_available() described the APPLIED backend, which is
 	# the wrong subject once the test probes typed fields. The guard now refuses
-	# on the typed config itself: BYOK toggled off, or empty base_url/model.
+	# on the typed config itself: empty base_url/model. NOT on the toggle (2026-09-29): Test probes the typed fields, and since .547 the toggle waits for a saved endpoint.
 	var body := _body_of(PANEL, "_on_test_pressed")
 	assert_true(body.contains("_config_problem("),
 		"the handler must consult the typed-config validator before probing")
 	assert_true(body.contains("Status: not tested"),
 		"a refused test must say it was NOT tested — silence would read as a pass")
 	var problem := _body_of(PANEL, "_config_problem")
-	assert_true(problem.contains("toggled OFF"),
-		"BYOK switched off must refuse — the typed fields are not in use, so there is nothing to test")
+	assert_false(problem.contains("toggled OFF"),
+		"Test must not refuse on the toggle — it probes the typed fields, and refusing made first-time setup a dead end (.547 made the toggle wait for an endpoint)")
 	assert_true(problem.contains("Base URL is empty") and problem.contains("Model is empty"),
 		"an unfillable config must refuse instantly rather than time out at the HTTP layer")
 
