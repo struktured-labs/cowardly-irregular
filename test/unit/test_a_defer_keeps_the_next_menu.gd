@@ -25,7 +25,7 @@ var _cmd
 func before_each() -> void:
 	var bm = BattleManager
 	_saved = {
-		"player_party": bm.player_party.duplicate(), "enemy_party": bm.enemy_party.duplicate(),
+		"player_party": bm.player_party.duplicate(), "enemies": bm.enemy_party.duplicate(),
 		"selection_order": bm.selection_order.duplicate(), "selection_index": bm.selection_index,
 		"current_combatant": bm.current_combatant, "current_state": bm.current_state,
 		"pending_actions": bm.pending_actions.duplicate(),
@@ -37,7 +37,7 @@ func after_each() -> void:
 	if bm.selection_turn_started.is_connected(_install_next_menu):
 		bm.selection_turn_started.disconnect(_install_next_menu)
 	bm.player_party.assign(_valid(_saved["player_party"]))
-	bm.enemy_party.assign(_valid(_saved["enemy_party"]))
+	bm.enemy_party.assign(_valid(_saved["enemies"]))
 	bm.selection_order.assign(_valid(_saved["selection_order"]))
 	bm.selection_index = _saved["selection_index"]
 	bm.current_combatant = _saved["current_combatant"] if is_instance_valid(_saved["current_combatant"]) else null
