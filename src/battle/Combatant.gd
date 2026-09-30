@@ -572,6 +572,15 @@ func die() -> void:
 	died.emit()
 
 
+## HP revive(hp_amount) would land, with no side effect; 0 when revive() refuses (permakilled). The menu quotes this.
+func revive_preview(hp_amount: int = 0) -> int:
+	if "permakilled" in status_effects:
+		return 0
+	if hp_amount > 0:
+		return min(hp_amount, max(1, max_hp))
+	return max(1, max_hp / 2)  # Ensure minimum 1 HP
+
+
 func revive(hp_amount: int = 0) -> void:
 	"""Revive with specified HP (or 50% max if not specified)"""
 	## Tick 421: refuse revive when permakilled. The permakilled status
@@ -585,10 +594,7 @@ func revive(hp_amount: int = 0) -> void:
 		print("[REVIVE] refused — %s is permakilled" % combatant_name)
 		return
 	is_alive = true
-	if hp_amount > 0:
-		current_hp = min(hp_amount, max(1, max_hp))
-	else:
-		current_hp = max(1, max_hp / 2)  # Ensure minimum 1 HP
+	current_hp = revive_preview(hp_amount)
 	hp_changed.emit(0, current_hp)
 
 

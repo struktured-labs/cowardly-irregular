@@ -345,6 +345,26 @@ func estimate_item_heal(item_id: String, target: Combatant) -> int:
 	return total
 
 
+## The HP argument a revive item hands to Combatant.revive(): its heal_hp_percent, else heal_hp,
+## else 0 (revive()'s 50% default). The item effect and the menu's quote both read this.
+func _item_revive_hp(effects: Dictionary, target: Combatant) -> int:
+	if effects.has("heal_hp_percent"):
+		return max(1, int(target.max_hp * effects["heal_hp_percent"] / 100.0))
+	if effects.has("heal_hp"):
+		return max(1, int(effects["heal_hp"]))
+	return 0
+
+
+## HP a revive item will bring a KO'd target back with; 0 if the item does not revive or the target cannot be.
+func estimate_item_revive(item_id: String, target: Combatant) -> int:
+	if target == null or not is_instance_valid(target) or target.is_alive:
+		return 0
+	var effects: Dictionary = get_item(item_id).get("effects", {})
+	if not bool(effects.get("revive", false)):
+		return 0
+	return target.revive_preview(_item_revive_hp(effects, target))
+
+
 func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -> void:
 	"""Apply item effects to a target"""
 	var effects = item["effects"]
@@ -362,13 +382,8 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 	# Revive
 	if effects.has("revive") and effects["revive"]:
 		if not target.is_alive:
-			var revive_hp: int = 0  # 0 = revive() default of 50% max_hp
-			if effects.has("heal_hp_percent"):
-				revive_hp = max(1, int(target.max_hp * effects["heal_hp_percent"] / 100.0))
-				_heal_consumed_by_revive = true
-			elif effects.has("heal_hp"):
-				revive_hp = max(1, int(effects["heal_hp"]))
-				_heal_consumed_by_revive = true
+			var revive_hp: int = _item_revive_hp(effects, target)  # 0 = revive() default of 50% max_hp
+			_heal_consumed_by_revive = effects.has("heal_hp_percent") or effects.has("heal_hp")
 			var hp_before_revive: int = target.current_hp
 			target.revive(revive_hp)
 			# Emit healing_done so the revived HP shows up as a popup + glow,

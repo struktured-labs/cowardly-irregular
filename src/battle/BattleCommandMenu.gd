@@ -896,7 +896,7 @@ func _item_ally_row(item_id: String, member: Combatant, i: int) -> Dictionary:
 			target_pos = s.get_meta("home_position", s.global_position)  # 2026-07-15: prefer home_position (stamped at spawn) so a mid-animation sprite doesn't misalign the highlight box
 	var hp_label: String = "KO'd" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
 	## Same "~+N" an ability heal's row carries, from the heal() chain the item will run.
-	var quote: int = ItemSystem.estimate_item_heal(item_id, member)
+	var quote: int = ItemSystem.estimate_item_heal(item_id, member) if member.is_alive else ItemSystem.estimate_item_revive(item_id, member)
 	var heal_quote: String = " ~+%d" % quote if quote > 0 else ""
 	return _with_item_reject({
 		"id": "item_" + item_id + "_ally_" + str(i),
