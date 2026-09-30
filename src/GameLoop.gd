@@ -1086,6 +1086,10 @@ func _input(event: InputEvent) -> void:
 	var x_pressed := OverworldMenu.is_toggle_event(event)
 
 	if x_pressed:
+		## The console leaves Y unhandled when there is nothing to resume, and the menu opened on top of it; its siblings above already gate.
+		if _autogrind_ui_open():
+			get_viewport().set_input_as_handled()
+			return
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
 			# Same race as the Start→settings guard above: an
 			# encounter-transition holds the lock but current_state is
