@@ -319,7 +319,31 @@ func _ground_type(cell: Vector2i) -> int:
 
 
 ## Derive cliffs/stairs from the height grid and paint them; call at the end of _generate_map. Empty height rows = flat village, nothing painted.
+## The exit trigger is centred on spawn_points["exit"], and every map loop set that to the FIRST 'X' — the block's
+## top-left — so a 6-wide trigger missed the exit's right third, fired on the path beside it, and drew the gate off the road.
+static func exit_centre_of(map_rows: Array, tile: int) -> Vector2:
+	var x0 := -1
+	var x1 := -1
+	var y0 := -1
+	for y in map_rows.size():
+		var row := str(map_rows[y])
+		for x in row.length():
+			if row[x] != "X":
+				continue
+			if y0 < 0:
+				y0 = y
+			if y == y0:
+				x0 = x if x0 < 0 else mini(x0, x)
+				x1 = maxi(x1, x)
+	if y0 < 0:
+		return Vector2.INF
+	return Vector2((x0 + x1 + 1) * tile / 2.0, y0 * tile + tile / 2.0)
+
+
 func _build_derived_layers(map_rows: Array, height_rows: Array) -> void:
+	var exit_at := exit_centre_of(map_rows, TILE_SIZE)
+	if exit_at != Vector2.INF:
+		spawn_points["exit"] = exit_at
 	_stair_cells = HeightGridScript.stair_cells(map_rows)
 	_height_grid = HeightGridScript.parse(height_rows)
 	for c in _stair_cells:
