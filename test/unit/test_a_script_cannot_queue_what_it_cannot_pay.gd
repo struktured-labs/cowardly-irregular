@@ -87,3 +87,23 @@ func test_the_grid_path_filters_its_advance() -> void:
 	var body := src.substr(at, src.find("\nfunc ", at + 1) - at)
 	assert_true(body.contains("_affordable_advance(combatant, advance_actions)"),
 		"the grid path must filter its converted actions through the budget before queuing an Advance")
+
+
+func test_a_pray_aimed_at_the_caster_pays_for_the_cast_after_it() -> void:
+	## Pray is single_ally; the executor restores whomever it targets. Aimed at the caster it is a
+	## Channel, and "Pray self, then Fire" must not be trimmed on MP the Pray is about to give.
+	var c := _caster(2)
+	var kept: Array = BattleManager._affordable_advance(c, [
+		{"type": "ability", "ability_id": "pray", "target": c}, {"type": "ability", "ability_id": "fire"},
+	])
+	assert_eq(_ids(kept), ["pray", "fire"], "2 MP + a self-aimed Pray covers a Fire queued after it")
+
+
+func test_a_pray_aimed_at_someone_else_pays_for_nothing() -> void:
+	var c := _caster(2)
+	var ally := _caster(0)
+	BattleManager.player_party.assign([c, ally] as Array[Combatant])
+	var kept: Array = BattleManager._affordable_advance(c, [
+		{"type": "ability", "ability_id": "pray", "target": ally}, {"type": "ability", "ability_id": "fire"},
+	])
+	assert_eq(_ids(kept), ["pray"], "a Pray on an ally restores THEIR MP, so the caster's Fire is still unaffordable")
