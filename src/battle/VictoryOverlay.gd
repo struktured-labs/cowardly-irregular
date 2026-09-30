@@ -50,6 +50,11 @@ func occupied_rects() -> Array[Rect2]:
 	return _occupied.duplicate()
 
 
+## Where the title rests and sweeps to its dock, and when it has docked: a card that would land there waits (slam -> cards, as documented).
+var _title_rest := Rect2()
+var _title_clear_at := 0.0
+
+
 func build(results: Dictionary, scene) -> void:
 	_scene = scene
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -177,6 +182,11 @@ func _build_slam(flourish: bool) -> void:
 	if not flourish:
 		return
 
+	# Slam in (0.20 + 0.09 + 0.11), hold, dock (0.3). The footprint is the rest spot, a boss subtitle beneath it, and the path up to the dock.
+	_title_rest = Rect2(center, title.size).merge(Rect2(docked + title.pivot_offset * 0.45, title.size * 0.55))
+	if sub != null:
+		_title_rest = _title_rest.merge(Rect2(sub.position, sub.size))
+	_title_clear_at = 0.40 + float(GRADE_HOLD[grade]) + 0.3
 	title.position = center
 	title.scale = Vector2(2.6 if grade >= Grade.BOSS else 2.2, 2.6 if grade >= Grade.BOSS else 2.2)
 	title.modulate.a = 0.0
@@ -307,6 +317,8 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 		add_child(card)
 		card.position = _card_position(i, char_results.size(), vp)
 		var delay := 0.5 + i * 0.15
+		if _title_rest.has_area() and Rect2(card.position, Vector2(CARD_W, CARD_H)).intersects(_title_rest):
+			delay = maxf(delay, _title_clear_at)
 		var final_pos := card.position
 		_occupied.append(Rect2(final_pos, Vector2(CARD_W, CARD_H)))
 		_snaps.append(func() -> void:
