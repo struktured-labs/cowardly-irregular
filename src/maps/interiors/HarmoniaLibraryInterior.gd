@@ -1427,7 +1427,7 @@ func _create_cantor_vell(NPCScript) -> void:
 	var cantor = NPCScript.new()
 	cantor.npc_name = "Cantor Vell"
 	cantor.npc_type = "scholar"
-	cantor.position = Vector2(9 * TILE_SIZE, 10 * TILE_SIZE)
+	cantor.position = Vector2(10.5 * TILE_SIZE, 10.5 * TILE_SIZE)
 	cantor.dialogue_lines = [
 		"Quiet, please. The pages are old and they hear everything.",
 		"I keep the names of the dragons here. Four of them. Maybe more.",
@@ -1443,7 +1443,7 @@ func _create_scholar_yorick(NPCScript) -> void:
 	var yorick = NPCScript.new()
 	yorick.npc_name = "Yorick Pell"
 	yorick.npc_type = "scholar"
-	yorick.position = Vector2(9 * TILE_SIZE, 9 * TILE_SIZE)
+	yorick.position = Vector2(7.5 * TILE_SIZE, 7.5 * TILE_SIZE)
 	yorick.dialogue_lines = [
 		"Fascinating. Absolutely fascinating. This passage describes a hero's journey that loops back on itself.",
 		"Recursion is the pattern of everything, you know. Rivers, family trees, the way a kingdom repeats its own mistakes.",
@@ -1458,7 +1458,7 @@ func _create_student_pip(NPCScript) -> void:
 	var pip = NPCScript.new()
 	pip.npc_name = "Pip"
 	pip.npc_type = "villager"
-	pip.position = Vector2(4 * TILE_SIZE, 9 * TILE_SIZE)
+	pip.position = Vector2(3.5 * TILE_SIZE, 10.5 * TILE_SIZE)
 	pip.dialogue_lines = [
 		"*snoring softly*",
 		"Zzz... five more minutes... the exam isn't until... zzz...",
@@ -1473,7 +1473,7 @@ func _create_historian_reeve(NPCScript) -> void:
 	var reeve = NPCScript.new()
 	reeve.npc_name = "Dr. Absalom Reeve"
 	reeve.npc_type = "scholar"
-	reeve.position = Vector2(2 * TILE_SIZE, 5 * TILE_SIZE)
+	reeve.position = Vector2(2.5 * TILE_SIZE, 4.5 * TILE_SIZE)
 	reeve.dialogue_lines = [
 		"The stars don't lie, but they do exaggerate. Every constellation was named by someone trying to seem important.",
 		"I've charted the sky's drift for a decade now. It moves faster than the old records say it should.",

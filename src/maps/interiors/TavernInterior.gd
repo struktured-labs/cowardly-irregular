@@ -2198,7 +2198,7 @@ func _setup_npcs() -> void:
 	add_child(npcs)
 
 	# --- Bar zone ---
-	_create_npc("Osric", "bartender", Vector2(2.5, 4), [
+	_create_npc("Osric", "bartender", Vector2(1.5, 3.5), [
 		"Osric: Welcome to The Dancing Tonberry!",
 		"Osric: What'll it be? Mead? Ale? Liquid courage?",
 		"Osric: *polishes glass* The cave's been... hungry lately.",
@@ -2207,7 +2207,7 @@ func _setup_npcs() -> void:
 		"Osric: But push too hard... and it pushes back. *chuckles darkly*"
 	])
 
-	_create_npc("Old Mack", "villager", Vector2(4, 5), [
+	_create_npc("Old Mack", "villager", Vector2(5.5, 4.5), [
 		"Old Mack: *slurring* Hic... another one bites the cave...",
 		"Old Mack: You know what's funny? I was an adventurer once.",
 		"Old Mack: Spent WEEKS grinding those rats. Weeks!",
@@ -2229,7 +2229,7 @@ func _setup_npcs() -> void:
 	])
 
 	# --- Main dining hall ---
-	_create_npc("Sir Reginald", "knight", Vector2(5, 7), [
+	_create_npc("Sir Reginald", "knight", Vector2(6.5, 6.5), [
 		"Sir Reginald: *hiccup* Brave Sir Reginald, they called me!",
 		"Sir Reginald: I once MANUALLY fought every battle. Every. One.",
 		"Sir Reginald: No scripts! No automation! Pure skill!",
@@ -2240,7 +2240,7 @@ func _setup_npcs() -> void:
 		"Sir Reginald: *stares into mug* The cave learns, friend. It learns."
 	])
 
-	_create_npc("Martha", "villager", Vector2(15, 7), [
+	_create_npc("Martha", "villager", Vector2(16.5, 6.5), [
 		"Martha: Did you hear about the Time Mage?",
 		"Martha: They say he can UNDO death itself!",
 		"Martha: Rewinding saves, erasing mistakes...",
@@ -2252,7 +2252,7 @@ func _setup_npcs() -> void:
 	])
 
 	# Traveling minstrel with lute at table
-	_create_npc("Melody", "bard", Vector2(11, 13), [
+	_create_npc("Melody", "bard", Vector2(10.5, 13.5), [
 		"Melody: *strumming lute* Care for a song, traveler?",
 		"Melody: I compose ballads of brave autobattlers~",
 		"Melody: 'The Hero Who Slept Through Victory'...",
@@ -2264,7 +2264,7 @@ func _setup_npcs() -> void:
 	])
 
 	# Drunk patron slumped at table
-	_create_npc("Barfton", "villager", Vector2(15, 13), [
+	_create_npc("Barfton", "villager", Vector2(16.5, 12.5), [
 		"Barfton: *face down* zzzz...",
 		"Barfton: ...",
 		"Barfton: hm? oh. you. *blinks*",
@@ -2273,7 +2273,7 @@ func _setup_npcs() -> void:
 	])
 
 	# Two-person gambling / dice game
-	_create_npc("Knuckles", "rogue", Vector2(5, 13), [
+	_create_npc("Knuckles", "rogue", Vector2(6.5, 12.5), [
 		"Knuckles: Eyes on the dice, friend. Eyes on the dice.",
 		"Knuckles: Ten gold says the next roll is a double.",
 		"Knuckles: I've been tracking the RNG for three hours.",
@@ -2288,7 +2288,7 @@ func _setup_npcs() -> void:
 	])
 
 	# Off-duty guard nursing a drink
-	_create_npc("Guard Henryk", "knight", Vector2(11, 7), [
+	_create_npc("Guard Henryk", "knight", Vector2(12.5, 6.5), [
 		"Guard Henryk: Off duty. Don't look at me.",
 		"Guard Henryk: ...fine. You want to know why I drink?",
 		"Guard Henryk: I've guarded this village for six YEARS.",
@@ -2299,7 +2299,7 @@ func _setup_npcs() -> void:
 	])
 
 	# Mysterious patron
-	_create_npc("???", "mysterious", Vector2(24, 13), [
+	_create_npc("???", "mysterious", Vector2(24.5, 12.5), [
 		"???: ...",
 		"???: You can see me?",
 		"???: Most walk right past. Too busy grinding.",

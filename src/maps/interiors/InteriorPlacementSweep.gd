@@ -22,6 +22,10 @@ const TILE_SIZE: int = 32
 ## a tile; bells, quills, and other tiny decor don't block NPCs.
 const MIN_FURNITURE_SIZE_PX: int = 24
 
+## Every relocation and every sweep since the last reset; a test reads these to prove authored spots needed no moving.
+static var relocations: int = 0
+static var sweeps: int = 0
+
 
 ## Entry point. Callers pass their npcs container, decorations container,
 ## the authored layout, and an area_id for diagnostic messages. The
@@ -31,6 +35,7 @@ const MIN_FURNITURE_SIZE_PX: int = 24
 static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array, area_id: String) -> void:
 	if npcs == null:
 		return
+	sweeps += 1
 	var furniture := _collect_furniture_rects(scene_root, decorations)
 	## Reserve every stationary NPC's cell BEFORE moving anyone. Two NPCs whose authored spots are
 	## both blocked ring-search independently and can land on the SAME nearest clear cell — measured
@@ -54,6 +59,7 @@ static func sweep(scene_root: Node, npcs: Node, decorations: Node, layout: Array
 		if fixed != origin:
 			push_warning("[%s] relocated '%s' off wall/furniture %s -> %s" % [
 				area_id, n.name, origin, fixed])
+			relocations += 1
 			(n as Node2D).position = fixed
 		# Reserved either way — a failed relocation leaves the NPC standing at its origin.
 		taken[_cell_of((n as Node2D).position)] = true

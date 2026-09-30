@@ -1129,7 +1129,7 @@ func _setup_npcs() -> void:
 	var keeper := _innkeeper()
 	# Cancel, a paid rest, and a short purse all put _keeper_greeting back, so it has to be the lines just handed to her.
 	var greeting: Array = _keeper_lines_for(_origin_map_id(), keeper)
-	_create_npc(keeper["name"], "innkeeper", Vector2(2, 3), greeting)
+	_create_npc(keeper["name"], "innkeeper", Vector2(1.5, 3.5), greeting)
 	var keeper_npc: Node = null
 	for child in npcs.get_children():
 		if child.get("npc_name") == keeper["name"]:
@@ -1141,7 +1141,7 @@ func _setup_npcs() -> void:
 		keeper_npc.dialogue_ended.connect(func(_n): _on_rest_request())
 
 	# Sleeping merchant in armchair
-	_create_npc("Dorian", "merchant", Vector2(3, 8), [
+	_create_npc("Dorian", "merchant", Vector2(4.5, 7.5), [
 		"Dorian: *snore* ..profitable... *snore*... margins...",
 		"Dorian: Zzzz... buy low... *wheeze*... sell high...",
 		"Dorian: ...*snort*... THE EXCHANGE RATE—",
@@ -1149,7 +1149,7 @@ func _setup_npcs() -> void:
 	])
 
 	# Traveling scholar at table
-	_create_npc("Scholar Fen", "scholarly", Vector2(8, 9), [
+	_create_npc("Scholar Fen", "scholarly", Vector2(7.5, 10.5), [
 		"Scholar Fen: Ah, a fellow traveler! I've been studying the local ruins.",
 		"Scholar Fen: The ancient scripts pre-date the current world by eons.",
 		"Scholar Fen: They spoke of a 'loop' — an endless repetition of events.",
@@ -1164,7 +1164,7 @@ func _setup_npcs() -> void:
 	# so the duo doesn't render as two identical hooded travelers in adjacent
 	# chairs. Brix's "FEEL the tension" persona fits the disciplined-warrior
 	# silhouette (cowir-main msg 2770).
-	_create_npc("Kael", "adventurer", Vector2(10, 10), [
+	_create_npc("Kael", "adventurer", Vector2(10.5, 9.5), [
 		"Kael: Dude, you're still doing it MANUALLY?",
 		"Kael: My autobattle script cleared the whole dungeon while I slept.",
 		"Kael: Woke up to a victory fanfare and 3 level-ups.",
@@ -1190,7 +1190,7 @@ func _setup_npcs() -> void:
 	if ChickenScript:
 		var hen = ChickenScript.new()
 		hen.chicken_id = "chicken_inn_kitchen"
-		hen.position = Vector2(17, 10) * TILE_SIZE
+		hen.position = Vector2(18.5, 9.5) * TILE_SIZE
 		npcs.add_child(hen)
 
 

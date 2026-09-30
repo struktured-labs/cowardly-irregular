@@ -355,5 +355,5 @@ func _place_masterite_arbiter() -> void:
 	arbiter.display_name = "Arbiter of Steel"
 	arbiter.cutscene_id = "world1_arbiter_encounter"
 	arbiter.quest_flag = "quest_w1_grimhollow_ledger_read"
-	arbiter.position = Vector2(16 * TILE_SIZE,12 * TILE_SIZE)
+	arbiter.position = Vector2(15.5 * TILE_SIZE,11.5 * TILE_SIZE)
 	npcs.add_child(arbiter)

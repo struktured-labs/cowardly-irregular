@@ -393,9 +393,15 @@ func _find_walkable_near(pos: Vector2) -> Vector2:
 	return pos
 
 
+## Placements this village had to move; authored spots should never need it.
+var relocated_count: int = 0
+var placements_validated: bool = false
+
+
 func _validate_placements() -> void:
 	if npcs == null:
 		return
+	placements_validated = true
 	for n in npcs.get_children():
 		if not (n is Node2D):
 			continue
@@ -405,6 +411,7 @@ func _validate_placements() -> void:
 			var fixed := _find_walkable_near(n.position)
 			if fixed != n.position:
 				push_warning("[%s] relocated '%s' off impassable tile %s -> %s" % [_get_area_id(), n.name, n.position, fixed])
+				relocated_count += 1
 				n.position = fixed
 
 
@@ -437,6 +444,7 @@ func _validate_patrol(w: Node2D) -> void:
 			last_cell = cell
 	if changed:
 		push_warning("[%s] adjusted patrol for '%s' around impassable tiles" % [_get_area_id(), w.name])
+		relocated_count += 1
 		w.set_patrol(pts)
 
 

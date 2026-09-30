@@ -1203,7 +1203,7 @@ func _create_scholar_quill(NPCScript) -> void:
 	quill.npc_name = "Scholar-Adept Quill"
 	quill.npc_type = "scholar"
 	quill.npc_id = "guild_scholar_scriptura"
-	quill.position = Vector2(9 * TILE_SIZE, 8 * TILE_SIZE)
+	quill.position = Vector2(7.5 * TILE_SIZE, 6.5 * TILE_SIZE)
 	quill.dialogue_lines = [
 		"Every book in this room used to say something else. We just haven't gotten around to all of them.",
 		"Translation work, mostly. Dead notation into something the current century can use. It never stays translated for long.",
