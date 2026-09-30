@@ -240,7 +240,8 @@ func _setup_buildings() -> void:
 	# gas lamp at (20,4). Found by test_village_props_never_block_the_village, bisected prop by prop.
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(18, 5))
 	_add_prop(VillagePropScript.Kind.CART, Vector2i(9, 4))
-	_add_prop(VillagePropScript.Kind.STALL, Vector2i(7, 12))
+	# (7,12) drew its awning and counter across the Clockwork Loft door at (9,12); (4,12) keeps the market clear of it.
+	_add_prop(VillagePropScript.Kind.STALL, Vector2i(4, 12))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(14, 16))
 
 

@@ -201,7 +201,8 @@ func _setup_buildings() -> void:
 
 
 	# Forest village: herb beds by the garden, gear outside the Training Hollow, lamps at the road head.
-	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(8, 10))
+	# (8,10) was drawn into the Grafting House arch at (10,11.5); one cell out keeps it flanking the door.
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(7, 10))
 	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(12, 10))
 	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(17, 7))
 	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(21, 7))

@@ -245,7 +245,8 @@ func _setup_buildings() -> void:
 	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(5, 12))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(24, 14))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(24, 15))
-	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(22, 12))
+	# (22,12) was drawn into the strip-mall road's arch at (23,14); two cells out clears it.
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(20, 12))
 	_add_lamp_post(Vector2i(12, 3))
 
 func _setup_treasures() -> void:
