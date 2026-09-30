@@ -1,14 +1,14 @@
 # Store screenshot captions — Cowardly Irregular
 
-Shot against **`v3.33.262-alpha`** (`3c96bcc2`) unless noted, sandboxed profile, debug overlay
-and all 34 tutorial hints suppressed at runtime. Nothing here was persisted and no game file
-was edited.
+**2026-09-29: the ten villages, interiors, cave and `battle` are re-shot at `v3.33.549-alpha`**
+(`dc4284506`), the build the store serves on all three channels. Sandboxed profile, debug overlay
+and tutorial hints suppressed at runtime, nothing persisted, no game file edited. Why, and the
+pixel measurement behind it, is the last section of this file.
 
-⚠️ **Mixed vintage, stated so nobody assumes otherwise.** The ten villages, interiors, cave and
-battle were re-shot at `.262` on 2026-09-09. The Warren floors, Infernal Grotto, the two field
-elites, `grimhollow_spiral` and `battle_storm` are still `.225`/`.239` captures — the scenes
-themselves have not changed materially, but they are older frames and `battle_storm` in
-particular carries the caveat below.
+⚠️ **Mixed vintage, stated so nobody assumes otherwise.** The Warren floors, Infernal Grotto,
+`field_elite_steampunk`, `grimhollow_spiral` and `battle_storm` are still `.225` captures (each
+matches `capture-history/shots-225/` byte for byte), and `battle_storm` in particular carries the
+caveat below. The two medieval field-elite frames are `.293` (their sections say so).
 
 **`title_screen` is the exception and is NEWER than everything else: captured from the
 EXPORTED `v3.33.483-alpha` binary, fetched from the store with `butler fetch`, on 2026-09-24.**
@@ -59,9 +59,14 @@ mechanically than the frame shows.
 
 ### `battle.png`
 The same five-job battle with the weather off and the command menu open on **`Auto >`**, tooltip
-legible: *"Run this character's autobattle script, edit it, or delegate every turn."* Turn order
-bottom-left, full party stats right, and the banter running underneath — Cleric on the ledger of
-injuries, Fighter answering *"My turn. Hand on the stick, not the script."*
+legible: *"Run this character's autobattle script, edit it, or delegate every turn."* The menu
+now ends in **`Formation: V-Formation`**. Turn order bottom-left, full party stats right, and the
+banter running underneath — Bard *"Taking requests. Not from you."*, Cleric *"Steady on. The
+verse is long."*, Fighter *"Step forward. That's the whole plan."*
+
+📌 The hint bar reads `` [Q] Defer · [W] Advance · [`] Speed · [Tab] Auto `` because no gamepad was
+connected to the capture box. Earlier frames read `[L] Defer · [R] Advance`; a pad plugged into
+the host changes the glyphs in the shot.
 
 📌 **For whoever picks the final set: this may be the stronger LEAD.** `battle_storm` leads today
 and carries my own caveat that its weather "reads only as that text tag" over a bright sky. This
@@ -135,7 +140,7 @@ choice, Fight or Leave it, so the encounter is always yours to decline.
 has weak contrast on tan ground. It is a correct capture of the feature, not a flattering
 one. See "Not in this set" for the related sprite bug.
 
-### Baseline set (shot 2026-08-30, still current)
+### Baseline set (first shot 2026-08-30; all ten re-shot at `.549` on 2026-09-29)
 `harmonia_village` · `ironhaven_village` · `frosthold_village` · `sandrift_village` ·
 `eldertree_village` · `grimhollow_village` · `inn_interior` · `tavern_interior` ·
 `shop_interior` · `whispering_cave` — villages and interiors across the first world.
@@ -415,3 +420,65 @@ have been the one MOVED result in the set, and it would have been wrong. The oth
 
 **So: nothing in the shipped set needs replacing at `.356`.** The nine unmapped shots (battle
 surfaces, field elites, data-driven dungeon floors) remain **unexamined, not current**.
+
+## 2026-09-29 — re-shot at `v3.33.549-alpha`: 11 replaced, and the `.356` "do not re-shoot" was wrong
+
+Two sandboxed captures of the whole `marketing_shots.gd` set at `.549`, 12 frames each, both
+`[SHOT] done: 12 captured, 0 failed`. The era is stored whole in `capture-history/shots-549/`.
+Every frame replaced here was already byte-identical in `capture-history/` before it was
+overwritten (checked per file by cksum; the swap refuses to run otherwise).
+
+**Measured in PIXELS this time, not bytes:** the share of the frame where any channel moved by
+more than 8, shipped frame against capture A, with capture A against capture B as the noise floor.
+
+```
+shot                 shipped -> .549   run-to-run   what moved
+battle                    6.81%          0.36%       Formation row in the menu, keyboard hint bar, new banter
+frosthold_village        98.00%          0.09%       the whole frame is ~20% brighter (see below)
+sandrift_village          1.52%          0.00%       a well, a cart, two lamp posts
+ironhaven_village         1.14%          0.02%       crates, two lamp posts, a well
+grimhollow_village        0.80%          0.00%       crates, and props by the Lantern Debt Office door
+eldertree_village         0.25%          0.00%       two lamp posts at the exit
+whispering_cave           0.13%          0.00%       a small change down the centre, not identified by eye
+tavern_interior           0.10%          0.00%       the "Enter Village" label now draws OVER the hero
+inn_interior              0.07%          0.00%       same label change
+shop_interior             0.07%          0.00%       same label change
+harmonia_village          0.08%          0.00%       the exit sign now carries its "Exit" label
+```
+
+All eleven sit above their own run-to-run floor, and the side-by-side crops agree with the numbers:
+the villages have new set dressing that the store did not show.
+
+⛔ **Correction to the `.356` section above.** It said "all 11 comparable shots read SAME" and
+"nothing in the shipped set needs replacing". Its frame axis was `store_shot_staleness.py
+--compare`, which compares **file sizes**. Replayed against the `.356` frames today it still says
+`same frosthold_village 101,696 -> 100,659 B (-1.0%)`. In pixels, the shipped `frosthold_village`
+(a `.345` capture, mean RGB 132/126/116) is about 20% darker than what the game has rendered since
+`.356` (159/150/135; `.356` and `.549` match exactly). The `battle` change above also reads
+`same` by size (+1.5%). A size comparison can tell you two frames differ; it cannot tell you they
+are the same. The 0.50% / 0.01% / 3.37% figures in that section are byte-size percentages.
+
+`unshipped-captures/battle_advance.png` is now the `.549` frame too (the `.356` one is in
+`capture-history/shots-356/`). It still shares `battle.png`'s framing, so placing it in the
+gallery is still @struktured's call. Its hint bar now reads `[W] Advance`, not `[R] Advance`.
+
+**Capture conditions:**
+
+```
+worktree   <lane>/tmp/pub549, the publish's own worktree at v3.33.549-alpha, already imported
+command    XDG_DATA_HOME=$PWD/tmp/shot_xdg xvfb-run -a -s "-screen 0 1280x720x24" godot \
+           --rendering-driver opengl3 --audio-driver Dummy --resolution 1280x720 -s tools/marketing_shots.gd
+sandbox    his saves checksum 575677167 before and after the second run; the profile is in tmp/shot_xdg
+pads       none connected to the host, hence the keyboard glyphs
+```
+
+Not re-shot: `battle_storm`, the field elites, the dungeon floors, `grimhollow_spiral`. The storm
+tool (`store_shot_storm.gd`) produces a broken frame at `.549`: the cast lands as "Fighter can't use
+Fulmen Maximum", the Mage casts Glacies instead, and the MP top-up shows as `MP: 999/34`. None of
+its frames were used.
+
+📌 **Three shipped frames had no copy anywhere in `capture-history/`:** `field_elite_medieval` and
+`field_elite_prompt_medieval` (the `.293` captures) and `title_screen` (the `.483` export). The next
+re-shoot of any of them would have destroyed the only copy. They are now in
+`capture-history/shots-293/` and `capture-history/shots-483-export/`. Every shipped frame now has an
+archived twin, so the check before each swap can find one.

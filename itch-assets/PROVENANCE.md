@@ -253,3 +253,22 @@ frame change; only a pixel diff answers "does this image need re-taking".** So t
 "11 of 20 depict a scene script that changed" is a candidate list, not a work list, and
 anyone planning a re-shoot should diff the frames first — the method is one `ImageChops`
 call and it cost minutes here.
+
+## 2026-09-29 — `capture-history/shots-549/`, a full era at `v3.33.549-alpha`, and two rescues
+
+Twelve captures, the whole `marketing_shots.gd` set, from `<lane>/tmp/pub549` (the publish's own
+worktree at the tag, which the store served on all three channels at the time). Same command as
+`.356` but `-s "-screen 0 1280x720x24" ... --resolution 1280x720`; XDG prefix on both runs, his saves
+checksum `575677167` before and after. No gamepad was connected to the host.
+
+Eleven of them replaced the shipped frame; `CAPTIONS.md`'s last section has the per-shot PIXEL
+deltas and why the byte-size comparison could not be used to decide. Every replaced frame was
+already in `capture-history/` byte for byte before the swap (checked per file by cksum).
+
+Two directories hold frames that were shipped but never archived, found by searching
+`capture-history/` for each shipped frame's cksum:
+
+```
+shots-293/          field_elite_medieval, field_elite_prompt_medieval   (the .293 re-shoot)
+shots-483-export/   title_screen                                        (the exported .483 binary)
+```

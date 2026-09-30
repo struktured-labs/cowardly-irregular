@@ -40,6 +40,9 @@ Godot already writes down what it owes, per file:
   * every non-excluded `.gd` compiles to exactly one `.gdc`
   * every non-excluded `.tscn` exports to exactly one `.scn`
 
+"Non-excluded" means: not matched by the preset's exclude_filter, and not under a directory
+holding a .gdignore (godot never scans those at all).
+
 So the question "did the build come out whole" has an exact answer with no dial in it, and a
 missing artifact is named rather than inferred from a number moving.
 
@@ -135,6 +138,21 @@ def _is_excluded(rel, pats):
     return any(fnmatch.fnmatch(rel, p) or rel.startswith(p.rstrip('*')) for p in pats)
 
 
+def _walk(stage):
+    """os.walk over what godot itself scans: never .git or .godot, and never a directory that
+    holds a .gdignore — godot skips it and everything under it, so it owes nothing.
+
+    Without this, keeping itch-assets/ out of the pack with a .gdignore (25 MB of store
+    screenshots, measured in the v3.33.549 builds) BLOCKED the build that fixed it: four archived
+    capture scripts under itch-assets/capture-history/*/tools/ still counted as owed, and the log
+    read ".gd -> .gdc: 302 on disk, 298 packed". The exclude_filter is not the only exclusion.
+    """
+    for root, dirs, files in os.walk(stage):
+        dirs[:] = [d for d in dirs if d not in ('.git', '.godot')
+                   and not os.path.exists(os.path.join(root, d, '.gdignore'))]
+        yield root, files
+
+
 def evaluate(stage, logpath, preset="Web"):
     pats = _exclusions(stage, preset)
     if not os.path.isfile(logpath):
@@ -149,8 +167,7 @@ def evaluate(stage, logpath, preset="Web"):
     owed, missing = 0, []
 
     # 1. imported assets — godot's own per-source declaration
-    for root, dirs, files in os.walk(stage):
-        dirs[:] = [d for d in dirs if d not in ('.git', '.godot')]
+    for root, files in _walk(stage):
         for f in files:
             if not f.endswith('.import'):
                 continue
@@ -172,8 +189,7 @@ def evaluate(stage, logpath, preset="Web"):
     counts = {}
     for ext, packed_ext in (('.gd', '.gdc'), ('.tscn', '.scn')):
         on_disk = []
-        for root, dirs, files in os.walk(stage):
-            dirs[:] = [d for d in dirs if d not in ('.git', '.godot')]
+        for root, files in _walk(stage):
             for f in files:
                 if f.endswith(ext):
                     rel = os.path.relpath(os.path.join(root, f), stage)
@@ -301,6 +317,37 @@ def selftest():
         else:
             failed += 1
             print(f"  FAIL  {'CONTROL: empty filter owes all 4':52} owed {got_all} (wanted 4)")
+
+        # A .gdignore'd directory owes nothing: godot never imports or compiles under it. Assert
+        # the owed COUNT (same reason as above), then remove the .gdignore and require the same
+        # files to be owed and to BLOCK — the control that proves the prune, not the filter,
+        # is what excluded them.
+        os.makedirs(os.path.join(stage, "store", "tools"))
+        open(os.path.join(stage, "store/shot.png.import"), "w").write(
+            '[remap]\ndest_files=["res://.godot/imported/shot.png-ccc.ctex"]\n')
+        open(os.path.join(stage, "store/tools/probe.gd"), "w").write("extends Node\n")
+        open(os.path.join(stage, "store/.gdignore"), "w").write("")
+        got_gd = _owed(write_log(COMPLETE))
+        if got_gd == 2:
+            passed += 1
+            print(f"  ok    {'a .gdignore dir owes nothing (2 owed)':52} owed {got_gd}")
+        else:
+            failed += 1
+            print(f"  FAIL  {'a .gdignore dir owes nothing (2 owed)':52} owed {got_gd} (wanted 2)")
+        arm("a .gdignore dir: complete pck still passes", 0,
+            lambda: evaluate(stage, write_log(COMPLETE)))
+        os.remove(os.path.join(stage, "store/.gdignore"))
+        got_nogd = _owed(write_log(COMPLETE))
+        if got_nogd == 4:
+            passed += 1
+            print(f"  ok    {'CONTROL: without .gdignore it owes 2 more':52} owed {got_nogd}")
+        else:
+            failed += 1
+            print(f"  FAIL  {'CONTROL: without .gdignore it owes 2 more':52} owed {got_nogd} (wanted 4)")
+        arm("CONTROL: without .gdignore the same pck BLOCKS", 4,
+            lambda: evaluate(stage, write_log(COMPLETE)))
+        import shutil as _sh
+        _sh.rmtree(os.path.join(stage, "store"))
 
         arm("empty export log", 2, lambda: evaluate(stage, write_log([])))
         arm("export log missing", 2, lambda: evaluate(stage, os.path.join(d, "nope.log")))
