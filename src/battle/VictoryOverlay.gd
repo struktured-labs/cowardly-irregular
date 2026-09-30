@@ -42,6 +42,14 @@ var _tweens: Array[Tween] = []
 var _complete := false
 
 
+## Where this overlay settles: the title at rest and docked, every card, the loot strip. Other victory chrome reads it to stay clear.
+var _occupied: Array[Rect2] = []
+
+
+func occupied_rects() -> Array[Rect2]:
+	return _occupied.duplicate()
+
+
 func build(results: Dictionary, scene) -> void:
 	_scene = scene
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -150,6 +158,8 @@ func _build_slam(flourish: bool) -> void:
 	title.reset_size()
 	var center := Vector2((vp.x - title.size.x) / 2.0 - 120.0, vp.y * 0.30)
 	var docked := Vector2(center.x, 28.0)
+	_occupied.append(Rect2(center, title.size))
+	_occupied.append(Rect2(docked, title.size * 0.55))
 	title.pivot_offset = title.size / 2.0
 	_snaps.append(func() -> void:
 		if is_instance_valid(title):
@@ -298,6 +308,7 @@ func _build_cards(char_results: Array, flourish: bool) -> void:
 		card.position = _card_position(i, char_results.size(), vp)
 		var delay := 0.5 + i * 0.15
 		var final_pos := card.position
+		_occupied.append(Rect2(final_pos, Vector2(CARD_W, CARD_H)))
 		_snaps.append(func() -> void:
 			if is_instance_valid(card):
 				card.position = final_pos
@@ -591,6 +602,7 @@ func _build_loot_strip(results: Dictionary, flourish: bool) -> void:
 	if not is_instance_valid(strip):
 		return
 	strip.position = Vector2((vp.x - strip.size.x) / 2.0, vp.y - STRIP_BOTTOM_MARGIN - strip.size.y)
+	_occupied.append(Rect2(strip.position, strip.size))
 	if _complete:
 		return  # snapped mid-layout-frame — labels already carry final text, stay visible
 
