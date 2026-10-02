@@ -289,8 +289,9 @@ static func png_path(key: String) -> String:
 	return DIR + key + ".png"
 
 
+## ResourceLoader, not FileAccess: an export packs the imported icon, not the png, so file_exists drew the pouch for every item.
 static func _png_exists(key: String) -> bool:
-	return key != "" and FileAccess.file_exists(png_path(key))
+	return key != "" and ResourceLoader.exists(png_path(key))
 
 
 static func _placeholder() -> Texture2D:
