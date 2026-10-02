@@ -25,11 +25,28 @@ func _body_after(text: String, anchor: String, span: int) -> String:
 	return text.substr(idx, span)
 
 
+## The whole branch the anchor opens: every line until one indented no deeper than the anchor's own.
+func _branch_body(text: String, anchor: String) -> String:
+	var idx := text.find(anchor)
+	if idx < 0:
+		return ""
+	var line_start := text.rfind("\n", idx) + 1
+	var depth := idx - line_start
+	var lines := text.substr(idx).split("\n")
+	var out: PackedStringArray = [lines[0]]
+	for i in range(1, lines.size()):
+		var ln: String = lines[i]
+		if ln.strip_edges() != "" and ln.length() - ln.lstrip("\t").length() <= depth:
+			break
+		out.append(ln)
+	return "\n".join(out)
+
+
 func test_x_to_overworld_menu_checks_lock() -> void:
 	var src := _read(GAME_LOOP_PATH)
 	# Scope to the x_pressed branch, not the original menu code or
 	# the unrelated x key handler somewhere else in the file.
-	var block := _body_after(src, "if x_pressed:", 800)
+	var block := _branch_body(src, "if x_pressed:")
 	assert_ne(block, "", "x_pressed branch must exist")
 	assert_true(block.contains("InputLockManager.is_locked()"),
 		"X → overworld menu must consult InputLockManager.is_locked() before opening")
