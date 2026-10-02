@@ -22,6 +22,14 @@ const MAPPINGS: Array[String] = [
 	# only the product id differs, which is why the bundled DB misses it.
 	"03000000c82d00000b31000014010000,8BitDo Ultimate 2 Wireless Controller,a:b0,b:b1,x:b2,y:b3,leftshoulder:b4,rightshoulder:b5,back:b6,start:b7,guide:b8,leftstick:b9,rightstick:b10,lefttrigger:a2,righttrigger:a5,leftx:a0,lefty:a1,rightx:a3,righty:a4,dpup:h0.1,dpright:h0.2,dpdown:h0.4,dpleft:h0.8,platform:Linux",
 
+	# PowerA Xbox Series X Advantage HE wired (20d6:2079) - struktured's second pad, on moonshot.
+	# xpad binds it as "Generic X-Box pad", version 0x0105, and it is NOT in Godot's bundled DB, so
+	# Godot reported raw indices: Start (raw 7) missed the game's 6, LB/RB (raw 4/5) read as Back/Guide.
+	# Measured 2026-10-01 from /sys/class/input/event14/device/capabilities: key bits 0x130 0x131 0x133
+	# 0x134 0x136 0x137 0x13a 0x13b 0x13c 0x13d 0x13e (A B X Y LB RB View Menu Guide L3 R3 -> raw 0..10),
+	# abs X Y Z RX RY RZ (raw a0..a5; LT=Z a2, RT=RZ a5) plus HAT0X/HAT0Y (the D-pad, h0).
+	"03000000d62000007920000005010000,PowerA Xbox Series X Advantage HE Wired Controller,a:b0,b:b1,x:b2,y:b3,leftshoulder:b4,rightshoulder:b5,back:b6,start:b7,guide:b8,leftstick:b9,rightstick:b10,lefttrigger:a2,righttrigger:a5,leftx:a0,lefty:a1,rightx:a3,righty:a4,dpup:h0.1,dpright:h0.2,dpdown:h0.4,dpleft:h0.8,platform:Linux",
+
 	# SAME PHYSICAL PAD, D-input mode (2dc8:6012). A mode switch changes the product id, so it is a
 	# DIFFERENT GUID with a DIFFERENT layout - mapping one mode does nothing for the other.
 	# This mode reports 24 buttons and inserts BTN_C (0x132) and BTN_Z (0x135) among the faces, which

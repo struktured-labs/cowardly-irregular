@@ -255,3 +255,33 @@ func test_web_rationale_is_pinned_to_the_godot_version_it_was_verified_against()
 	var minor: int = int(info["minor"])
 	assert_eq("%d.%d" % [major, minor], "4.4",
 		"Godot is now %d.%d. ControllerMappings.gd states platform:Linux is deliberate because web pads are normalized by the browser and Godot ships standard,Standard Gamepad Mapping,...,platform:Web. Re-verify against the NEW web template (strings its wasm for 'platform:Web'), then move this pin. Stale, that comment tells the next reader web is covered when it may not be." % [major, minor])
+
+
+## PowerA Xbox Series X Advantage HE wired (20d6:2079), struktured's pad on moonshot (2026-10-01).
+## Unmapped, Start (raw 7) missed the game's 6 and LB/RB read as Back/Guide ("start doesnt seem to work").
+## The layout below was read off its evdev capabilities, not assumed from Xbox convention.
+const POWERA_GUID := "03000000d62000007920000005010000"
+
+
+func test_powera_mapping_matches_measured_hardware_layout() -> void:
+	var mapping := ""
+	for candidate in _mappings.MAPPINGS:
+		if _mappings.guid_of(candidate) == POWERA_GUID:
+			mapping = candidate
+	assert_ne(mapping, "", "the PowerA (20d6:2079) must have a shipped mapping")
+	var got := {}
+	for part in mapping.split(",").slice(2):
+		var kv: PackedStringArray = part.split(":")
+		if kv.size() == 2:
+			got[kv[0]] = kv[1]
+	var expected := {
+		"a": "b0", "b": "b1", "x": "b2", "y": "b3",
+		"leftshoulder": "b4", "rightshoulder": "b5",
+		"back": "b6", "start": "b7", "guide": "b8",
+		"leftstick": "b9", "rightstick": "b10",
+		"lefttrigger": "a2", "righttrigger": "a5",
+		"leftx": "a0", "lefty": "a1", "rightx": "a3", "righty": "a4",
+		"dpup": "h0.1", "dpright": "h0.2", "dpdown": "h0.4", "dpleft": "h0.8",
+	}
+	for key in expected:
+		assert_eq(got.get(key, "<absent>"), expected[key], "%s must map to %s (measured on the device)" % [key, expected[key]])
