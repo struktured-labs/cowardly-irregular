@@ -170,7 +170,7 @@ func _input(event: InputEvent) -> void:
 		_update_selection()
 		SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_cancel") or (event is InputEventKey and event.pressed and event.keycode == KEY_X):
+	elif event.is_action_pressed("ui_cancel"):
 		SoundManager.play_ui("menu_close")
 		closed.emit()
 		queue_free()

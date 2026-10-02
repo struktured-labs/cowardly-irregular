@@ -177,6 +177,10 @@ func _captions_in(raw: String, whole_line := false) -> Array[String]:
 
 ## THE MEASUREMENT that licenses the {A, B} alphabet. If A or B ever gains a game binding, this
 ## guard starts reporting true keyboard captions and must be re-scoped rather than suppressed.
+## 📌 RE-SCOPED 2026-10-02: A GAINED ONE. The emulator keyboard layout (struktured 2026-09-29) binds A
+## to Dash and reads it raw as Equipment's unequip key. A stays in the alphabet on purpose: a LITERAL
+## "A" in a caption is now wrong EITHER way — frozen as a pad letter, or underived as a key (the key
+## must come from its binding, as EquipmentMenu's UNEQUIP_KEY caption does). B still binds nothing.
 func test_a_and_b_are_never_keyboard_bindings_in_this_game() -> void:
 	var by_key := {}
 	for action in InputMap.get_actions():
@@ -186,15 +190,14 @@ func test_a_and_b_are_never_keyboard_bindings_in_this_game() -> void:
 				if not by_key.has(k):
 					by_key[k] = []
 				by_key[k].append(str(action))
-	# B binds nothing; A binds only Godot's built-in text editing, never a game action.
+	# B binds nothing. A binds Dash since the emulator layout — see the re-scope note above.
 	assert_false(by_key.has("B"), "KEY B must bind nothing — that is what makes a bare 'B' a pad letter")
-	for a in by_key.get("A", []):
-		assert_true(str(a).begins_with("ui_text"),
-			"KEY A may only carry Godot text-editing built-ins, got a game action: %s" % a)
+	assert_true(by_key.has("A") and by_key["A"].has("dash"),
+		"KEY A is Dash in the emulator layout — if this reds, A lost its binding and the re-scope note is stale")
 	# The CONTRAST, and the reason X and Y are excluded from the alphabet.
-	assert_true(by_key.has("X") and by_key["X"].has("ui_cancel"),
-		"KEY X really is Cancel — flagging 'X/Esc' as frozen would be a false positive")
-	assert_true(by_key.has("Z") and by_key["Z"].has("ui_accept"), "KEY Z really is Confirm")
+	assert_true(by_key.has("X") and by_key["X"].has("ui_accept"),
+		"KEY X really is Confirm — flagging an 'X' key caption as frozen would be a false positive")
+	assert_true(by_key.has("Z") and by_key["Z"].has("ui_cancel"), "KEY Z really is Back")
 
 	## ⛔ THE THIRD CHANNEL, and it is the one that actually justifies excluding Y. A key can be
 	## read by RAW KEYCODE without any InputMap action, and neither an InputMap scan (this arm's
@@ -213,7 +216,7 @@ func test_a_and_b_are_never_keyboard_bindings_in_this_game() -> void:
 			var src := FileAccess.get_file_as_string(path)
 			if rx.search(src) != null:
 				raw[k] += 1
-	assert_eq(raw["KEY_A"], 0, "KEY_A must be read nowhere in src/ — any hit means A became a key")
+	assert_gt(raw["KEY_A"], 0, "KEY_A is read raw now (EquipmentMenu.UNEQUIP_KEY) — the re-scope above depends on it")
 	assert_eq(raw["KEY_B"], 0, "KEY_B must be read nowhere in src/")
 	assert_gt(raw["KEY_Y"], 0,
 		"CONTROL: KEY_Y must still be read by raw keycode, or this arm proves nothing about the " +
@@ -243,8 +246,8 @@ func test_no_caption_in_src_freezes_a_face_letter() -> void:
 func test_the_derived_captions_vary_by_device() -> void:
 	var kb_ok: String = _ipm().hint_for_action("ui_accept")
 	var kb_no: String = _ipm().hint_for_action("ui_cancel")
-	assert_eq(kb_ok, "Z", "with no pad Confirm must name the keyboard key")
-	assert_eq(kb_no, "X", "with no pad Cancel must name the keyboard key")
+	assert_eq(kb_ok, "X", "with no pad Confirm must name the keyboard key")
+	assert_eq(kb_no, "Z", "with no pad Cancel must name the keyboard key")
 	var seen := {}
 	for dev in ["Xbox 360 Controller", "Nintendo Switch Pro Controller", "PS5 Controller"]:
 		seen[_ipm().hint_for_action("ui_accept", dev)] = true

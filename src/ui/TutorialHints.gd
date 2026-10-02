@@ -214,8 +214,8 @@ static func resolve_tokens(text: String) -> String:
 	if ml and ml is SceneTree:
 		ipm = (ml as SceneTree).root.get_node_or_null("/root/InputProfileManager")
 	var out := text
-	out = out.replace("{confirm}", _control_name(ipm, "ui_accept", "Z"))
-	out = out.replace("{cancel}", _control_name(ipm, "ui_cancel", "X"))
+	out = out.replace("{confirm}", _control_name(ipm, "ui_accept", "X"))
+	out = out.replace("{cancel}", _control_name(ipm, "ui_cancel", "Z"))
 	out = out.replace("{move}", "D-pad, left stick or the arrow keys")
 	out = out.replace("{menu}", _control_name(ipm, "ui_menu", "Enter"))
 	out = out.replace("{field_menu}", _field_menu_name(ipm))
@@ -258,7 +258,7 @@ static func _options_name(ipm) -> String:
 ## The opener reads a raw index, so it is named by index like {options}; `device_name` is the same
 ## test seam hint_for_action has.
 static func _field_menu_name(ipm, device_name: String = "") -> String:
-	var key := "X"
+	var key := OS.get_keycode_string(OverworldMenu.TOGGLE_KEY)
 	if ipm == null or not ipm.has_method("face_glyph_for_index"):
 		return key
 	if device_name == "" and Input.get_connected_joypads().is_empty():

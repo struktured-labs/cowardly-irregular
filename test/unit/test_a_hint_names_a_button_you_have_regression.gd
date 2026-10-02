@@ -99,8 +99,8 @@ func test_an_empty_device_name_silently_answers_as_xbox() -> void:
 
 ## The guard must not over-correct: a keyboard player still needs to be told a KEY.
 func test_the_keyboard_player_is_still_told_which_key() -> void:
-	assert_string_contains(Hints.resolve_tokens("{confirm}"), "Z", "confirm names its key")
-	assert_string_contains(Hints.resolve_tokens("{cancel}"), "X", "cancel names its key")
+	assert_string_contains(Hints.resolve_tokens("{confirm}"), InputProfileManager.first_key_label("ui_accept", "X"), "confirm names its key")
+	assert_string_contains(Hints.resolve_tokens("{cancel}"), InputProfileManager.first_key_label("ui_cancel", "Z"), "cancel names its key")
 	assert_string_contains(Hints.resolve_tokens("{menu}"), "Enter", "menu names its key")
 
 

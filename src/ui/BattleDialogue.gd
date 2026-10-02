@@ -105,7 +105,7 @@ const CHARACTER_THEMES = {
 
 ## Same physical-cap rule as CutsceneDialogue.advance_hint_text — one source for the confirm glyph, and for dropping it with no pad.
 static func advance_hint_text(device_name: String = "") -> String:
-	return "Z / %sClick to continue..." % CutsceneDialogue.confirm_pad_segment(device_name)
+	return "%s / %sClick to continue..." % [CutsceneDialogue.confirm_key(), CutsceneDialogue.confirm_pad_segment(device_name)]
 
 
 func _ready() -> void:

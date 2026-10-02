@@ -82,9 +82,9 @@ func test_the_helper_answers_for_the_live_device() -> void:
 	var accept: String = InputProfileManager.hint_for_action("ui_accept")
 	assert_ne(accept, "", "the helper must return something for a bound action")
 	if Input.get_connected_joypads().is_empty():
-		assert_eq(accept, "Z",
+		assert_eq(accept, "X",
 			"with NO pad the legend must name the KEYBOARD key — Z, not a face-button letter")
-		assert_eq(InputProfileManager.hint_for_action("ui_cancel"), "X", "and Cancel is X")
+		assert_eq(InputProfileManager.hint_for_action("ui_cancel"), "Z", "and Cancel is Z")
 	else:
 		assert_eq(accept, InputProfileManager.glyph_for_action("ui_accept"),
 			"with a pad it must be the live family's glyph")
@@ -160,10 +160,10 @@ func test_x_does_not_claim_to_dismiss_when_it_closes() -> void:
 	assert_gt(src.length(), 100, "PRECONDITION: the panel must be readable")
 	# ui_cancel binds X — that is WHY the dismiss arm was unreachable.
 	var x := InputEventKey.new()
-	x.keycode = KEY_X
+	x.keycode = KEY_Z  # the Back key since the emulator layout (it was X)
 	x.pressed = true
 	assert_true(InputMap.event_is_action(x, "ui_cancel"),
-		"PRECONDITION: X fires ui_cancel, which is what made the dismiss arm dead")
+		"PRECONDITION: Z (Back) fires ui_cancel, which is what makes a Back-key dismiss arm dead")
 	assert_false(src.contains("k == KEY_S or k == KEY_X"),
 		"the dismiss check must not accept X — ui_cancel claims it and closes the panel first")
 	assert_true(src.contains("k == KEY_S"),

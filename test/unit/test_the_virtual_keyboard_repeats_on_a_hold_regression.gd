@@ -126,7 +126,7 @@ func test_releasing_drops_the_ramp() -> void:
 ## guard restored. Pinned as a measurement so the old comment cannot come back as a "fix".
 func test_an_echo_event_does_not_read_as_a_press() -> void:
 	var ev := InputEventKey.new()
-	ev.keycode = KEY_X
+	ev.keycode = KEY_Z  # the Back key (X before the emulator layout)
 	ev.pressed = true
 	ev.echo = true
 	assert_false(ev.is_action_pressed("ui_cancel"),

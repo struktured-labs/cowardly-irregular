@@ -32,14 +32,14 @@ func _key(code: Key) -> InputEventKey:
 	return e
 
 
-func test_pressing_x_unequips_instead_of_only_going_back() -> void:
+func test_pressing_the_unequip_key_unequips_instead_of_only_going_back() -> void:
 	var weapon_id := _weapon_id()
 	assert_ne(weapon_id, "", "PRECONDITION: EquipmentSystem must know at least one weapon")
 	var menu := _menu_with(weapon_id)
 	assert_eq(menu.character.equipped_weapon, weapon_id, "PRECONDITION: the weapon is on before the press")
-	menu._input(_key(KEY_X))
+	menu._input(_key(menu.UNEQUIP_KEY))
 	assert_eq(menu.character.equipped_weapon, "",
-		"X on the item list must take the weapon off. ui_cancel matches that key and used to win, so the press only returned to the slot list")
+		"the unequip key (A since the emulator layout; X before) on the item list must take the weapon off")
 	assert_eq(menu.mode, menu.Mode.SLOT_SELECT,
 		"a successful unequip returns to the slot list, the same place the pad route leaves you")
 
@@ -65,7 +65,8 @@ func test_item_list_cancel_hint_is_not_the_unequip_key() -> void:
 		if child is Label and str(child.text).contains("Unequip"):
 			footer = str(child.text)
 	assert_ne(footer, "", "PRECONDITION: the item-list footer must be on screen")
-	assert_true(footer.contains("X: Unequip") or footer.ends_with("X: Unequip") or footer.contains("/X: Unequip") or footer.contains(" X: Unequip"),
-		"the footer must still name X as unequip: %s" % footer)
-	assert_false(footer.contains("X/RClick: Cancel") or footer.contains("X/RClick: Back"),
-		"Cancel must not name X on this screen — that key unequips, and Escape is the press that goes back. Footer: %s" % footer)
+	var k := OS.get_keycode_string(menu.UNEQUIP_KEY)
+	assert_true(footer.contains("%s: Unequip" % k),
+		"the footer must name the unequip key (%s): %s" % [k, footer])
+	assert_false(footer.contains("%s/RClick: Cancel" % k) or footer.contains("%s/RClick: Back" % k),
+		"Cancel must not name the unequip key on this screen. Footer: %s" % footer)

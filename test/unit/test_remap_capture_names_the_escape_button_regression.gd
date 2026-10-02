@@ -70,10 +70,10 @@ func test_the_hint_names_keys_the_handler_actually_accepts() -> void:
 	var m = _menu()
 	var hint: String = m._capture_cancel_hint()
 	var src := _src()
-	assert_true(src.contains("event.keycode == KEY_X or event.keycode == KEY_ESCAPE"),
+	assert_true(src.contains('if event.is_action_pressed("ui_cancel"):\n\t\t\t_cancel_capture()'),
 		"PRECONDITION: capture cancels on X or Escape")
-	assert_true(hint.contains("X") and hint.contains("Esc"),
-		"with no pad the hint must name X/Esc — the keys that really work: %s" % hint)
+	assert_true(hint.contains(InputProfileManager.first_key_label("ui_cancel", "Z")) and hint.contains("Esc"),
+		"with no pad the hint must name the Back key and Esc — the keys that really work: %s" % hint)
 	assert_false(hint.contains("Ⓐ"),
 		"and must NOT show an xbox glyph to a player with no pad: %s" % hint)
 

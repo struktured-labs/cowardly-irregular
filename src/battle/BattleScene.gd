@@ -2052,15 +2052,15 @@ func _accept_token() -> String:
 
 ## The grind console's own control line. Every token was frozen in Nintendo spelling and two named
 ## the wrong button outright: turbo is raw JOY_BUTTON_Y (north — Ⓧ on a Switch pad, not Ⓨ), exit is
-## ui_cancel (south — Ⓐ on Xbox, ✕ on PlayStation, and X/Esc on a keyboard, never B), and tier is
+## ui_cancel (south — Ⓐ on Xbox, ✕ on PlayStation, and Z/Esc on a keyboard, never B), and tier is
 ## L+R together on a pad, which the line never mentioned. Pause exists (P) and was omitted entirely.
 func _grind_console_controls() -> String:
 	var ipm = Engine.get_main_loop().root.get_node_or_null("InputProfileManager")
 	if ipm == null:
-		return "Y:Turbo T:Tier X/Esc:Exit P:Pause"
+		return "Y:Turbo T:Tier Z/Esc:Exit P:Pause"
 	if Input.get_connected_joypads().is_empty():
 		## Keyboard-only: name the keys the AUTOGRIND arms actually test.
-		return "Y:Turbo T:Tier X/Esc:Exit P:Pause"
+		return "Y:Turbo T:Tier %s/Esc:Exit P:Pause" % ipm.first_key_label("ui_cancel", "Z")
 	var turbo: String = ipm.button_name_for_index(JOY_BUTTON_Y)
 	var lb: String = ipm.button_name_for_index(JOY_BUTTON_LEFT_SHOULDER)
 	var rb: String = ipm.button_name_for_index(JOY_BUTTON_RIGHT_SHOULDER)
@@ -2068,7 +2068,7 @@ func _grind_console_controls() -> String:
 	var out: String = ""
 	out += ("%s:Turbo " % turbo) if turbo != "" else "Y:Turbo "
 	out += ("%s+%s:Tier " % [lb, rb]) if lb != "" and rb != "" else "T:Tier "
-	out += ("%s:Exit" % quit_tok) if quit_tok != "" else "X/Esc:Exit"
+	out += ("%s:Exit" % quit_tok) if quit_tok != "" else "Z/Esc:Exit"
 	## Pause USED to be KEY_P only, so this token was dropped for pad players on purpose — "a pad
 	## player cannot press it, so do not advertise it". .328 bound it to battle_toggle_auto in
 	## GameLoop's AUTOGRIND branch, and that comment silently became false: the control existed and
@@ -5224,9 +5224,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventKey and event.pressed and not event.echo:
 
-		# Reopen menu on Space/Enter/Z if menu is closed
+		# Reopen menu on a Confirm key if menu is closed (the action, so it follows the X-confirm layout)
 		if use_win98_menus and is_player_selecting and current:
-			if event.keycode in [KEY_SPACE, KEY_ENTER, KEY_Z]:
+			if event.is_action_pressed("ui_accept"):
 				if not active_win98_menu or not is_instance_valid(active_win98_menu):
 					_show_win98_command_menu(current)
 					get_viewport().set_input_as_handled()

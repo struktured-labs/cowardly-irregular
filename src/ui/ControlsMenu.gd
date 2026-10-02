@@ -1028,7 +1028,7 @@ func _activate_row() -> void:
 ## action they were remapping. button_name_for_index returns "" with no pad; face_glyph_for_index
 ## would hand a keyboard player an xbox glyph instead.
 func _capture_cancel_hint(device_name: String = "") -> String:
-	var keys := "X/Esc"
+	var keys := "%s/Esc" % (InputProfileManager.first_key_label("ui_cancel", "Z") if InputProfileManager else "Z")
 	var secs := "%ds" % int(CAPTURE_TIMEOUT)
 	var pad: String = InputProfileManager.button_name_for_index(0, device_name) if InputProfileManager else ""
 	if pad == "":
@@ -1061,7 +1061,7 @@ func _cancel_capture() -> void:
 func _handle_capture_input(event: InputEvent) -> void:
 	# Cancel on B/ui_cancel key press
 	if event is InputEventKey and event.pressed:
-		if event.keycode == KEY_X or event.keycode == KEY_ESCAPE:
+		if event.is_action_pressed("ui_cancel"):
 			_cancel_capture()
 			get_viewport().set_input_as_handled()
 			return

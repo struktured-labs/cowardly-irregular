@@ -74,8 +74,12 @@ func test_a_keyboard_player_is_given_a_key_they_have() -> void:
 		return
 	var hint: String = ipm.hint_for_action("ui_accept")
 	assert_ne(hint, "", "with no pad the hint must name a KEY, not render empty")
-	assert_false(hint in ["A", "B", "X", "Y"],
-		"with no pad the prompt must not render a face letter, got '%s'" % hint)
+	## X IS a key since the emulator layout, so "not a face letter" no longer separates a key from a
+	## pad letter. The truth test: the hint names a key actually bound to Confirm.
+	var e := InputEventKey.new()
+	e.keycode = OS.find_keycode_from_string(hint)
+	assert_true(e.keycode != KEY_NONE and InputMap.event_is_action(e, "ui_accept"),
+		"with no pad the prompt must name a key bound to Confirm, got '%s'" % hint)
 
 ## ⛔ HERMETIC ABOUT THE PROFILE. This file asks InputProfileManager for a name or glyph, so it
 ## inherits whatever `user://input/controls.json` holds; a remap test writes a "Custom" profile there

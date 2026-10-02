@@ -97,12 +97,16 @@ const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 ## face was accepted too and is `dash`, so every dash opened the menu.
 const TOGGLE_PAD_BUTTON := JOY_BUTTON_Y
 
+## The keyboard key for that button: S, the north face of the emulator (RetroArch) keyboard layout
+## (struktured 2026-09-29) — X is Confirm in that layout, so X can no longer open the menu.
+const TOGGLE_KEY := KEY_S
+
 
 ## The input that opens the overworld menu from exploration. One definition, so the
 ## opener in GameLoop and the pad close path in _input read the same button.
 static func is_toggle_event(event: InputEvent) -> bool:
 	if event is InputEventKey and event.pressed:
-		return event.keycode == KEY_X or event.keycode == KEY_ESCAPE
+		return event.keycode == TOGGLE_KEY or event.keycode == KEY_ESCAPE
 	if event is InputEventJoypadButton and event.pressed:
 		return event.button_index == TOGGLE_PAD_BUTTON
 	if event is InputEventMouseButton and event.pressed:
@@ -830,12 +834,12 @@ func _input(event: InputEvent) -> void:
 		_close_menu()
 		get_viewport().set_input_as_handled()
 
-	# X button also closes
-	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_X:
+	# The toggle key closes too, as the pad's north face does
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == TOGGLE_KEY:
 		_close_menu()
 		get_viewport().set_input_as_handled()
 
-	# The pad button that opened the menu closes it, as keyboard X does
+	# The pad button that opened the menu closes it, as the toggle key does
 	elif event is InputEventJoypadButton and is_toggle_event(event):
 		_close_menu()
 		get_viewport().set_input_as_handled()

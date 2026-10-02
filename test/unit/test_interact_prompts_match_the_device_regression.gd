@@ -101,7 +101,7 @@ func test_the_prompt_glyph_varies_by_device() -> void:
 	var kb: String = InputProfileManager.hint_for_action("ui_accept")
 	var xb: String = InputProfileManager.hint_for_action("ui_accept", "Xbox Wireless Controller")
 	var nin: String = InputProfileManager.hint_for_action("ui_accept", "Nintendo Switch Pro Controller")
-	assert_eq(kb, "Z", "with no pad the prompt must name the keyboard key")
+	assert_eq(kb, "X", "with no pad the prompt must name the keyboard key (X confirms in the emulator layout)")
 	assert_ne(xb, nin, "Xbox and Nintendo must disagree, or the old literal was never wrong")
 	assert_eq(nin, str(InputProfileManager.FACE_GLYPHS["nintendo"][1]),
 		"Nintendo is the ONE family the frozen [A] matched — which is how it survived")

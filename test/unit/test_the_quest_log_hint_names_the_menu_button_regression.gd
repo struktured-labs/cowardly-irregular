@@ -76,7 +76,7 @@ func test_the_pad_glyph_is_the_face_the_opener_accepts() -> void:
 	for dev in [XBOX, NINTENDO, PLAYSTATION]:
 		var rendered: String = TH._field_menu_name(ipm, dev)
 		var glyph: String = ipm.face_glyph_for_index(idx, dev)
-		assert_eq(rendered, "%s / X" % glyph,
+		assert_eq(rendered, "%s / %s" % [glyph, OS.get_keycode_string(OverworldMenu.TOGGLE_KEY)],
 			"on a '%s' the hint must print the glyph of the face that opens the menu" % dev)
-	assert_eq(TH._field_menu_name(ipm, NINTENDO), "Ⓧ / X",
-		"his 8BitDo is Nintendo-family: the menu button is printed Ⓧ — the 'X' he expects")
+	assert_eq(TH._field_menu_name(ipm, NINTENDO), "Ⓧ / S",
+		"his 8BitDo prints Ⓧ on the top face; the keyboard key for it is S (emulator layout)")

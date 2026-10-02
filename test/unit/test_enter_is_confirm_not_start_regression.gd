@@ -129,8 +129,8 @@ func test_the_collision_the_guard_defends_still_exists() -> void:
 func test_the_probe_can_tell_the_two_actions_apart() -> void:
 	var accept := _keys_for("ui_accept")
 	var menu := _keys_for("ui_menu")
-	assert_true(accept.has("Z"), "Z must bind ui_accept")
-	assert_false(menu.has("Z"),
+	assert_true(accept.has("X"), "X must bind ui_accept (the emulator layout's Confirm)")
+	assert_false(menu.has("X"),
 		"Z must NOT bind ui_menu — if it did, the probe cannot distinguish the actions at all")
 	assert_true(menu.has("Escape"), "Escape must bind ui_menu — the known-present member")
 	assert_false(accept.has("Escape"), "Escape must not bind ui_accept")
@@ -141,9 +141,16 @@ func test_the_probe_can_tell_the_two_actions_apart() -> void:
 ## defending a door nobody walks through and this file needs re-reading.
 func test_battlescene_still_claims_enter_reopens_the_menu() -> void:
 	var src := FileAccess.get_file_as_string(BS_PATH)
-	var idx := src.find("KEY_SPACE, KEY_ENTER, KEY_Z")
-	assert_gt(idx, -1,
-		"BattleScene must still list Enter among the keys that reopen the command menu — " +
+	## The reopen branch reads the ui_accept ACTION since the emulator layout (it listed Space/Enter/Z),
+	## so the claim is now: that branch exists, and Enter is bound to ui_accept.
+	var idx := src.find("# Reopen menu on a Confirm key if menu is closed")
+	assert_gt(idx, -1, "PRECONDITION: the reopen branch is still there")
+	idx = src.find('if event.is_action_pressed("ui_accept"):', idx) if idx > -1 else -1
+	var enter := InputEventKey.new()
+	enter.keycode = KEY_ENTER
+	enter.pressed = true
+	assert_true(idx > -1 and InputMap.event_is_action(enter, "ui_accept"),
+		"BattleScene must still reopen the command menu on Confirm, and Enter must be Confirm — " +
 		"that claim is what makes GameLoop eating Enter a defect rather than a preference")
 
 

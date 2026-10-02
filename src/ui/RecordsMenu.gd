@@ -134,7 +134,7 @@ func _build_ui() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel") or (event is InputEventKey and event.pressed and event.keycode == KEY_X):
+	if event.is_action_pressed("ui_cancel"):
 		SoundManager.play_ui("menu_close")
 		closed.emit()
 		queue_free()

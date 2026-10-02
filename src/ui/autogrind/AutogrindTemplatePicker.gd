@@ -192,6 +192,6 @@ func _input(event: InputEvent) -> void:
 		closed.emit()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode in [KEY_X, KEY_ESCAPE]:
+		if event.is_action_pressed("ui_cancel"):
 			closed.emit()
 			get_viewport().set_input_as_handled()

@@ -45,11 +45,11 @@ func dismiss() -> void:
 ## family they may not own. Same guard as `DialogueChoiceMenu.pad_token` one file over.
 static func continue_hint_text(device_name: String = "") -> String:
 	if device_name == "" and Input.get_connected_joypads().is_empty():
-		return "Press Z to continue"
+		return "Press %s to continue" % CutsceneDialogue.confirm_key()
 	var cap := "A"
 	if InputProfileManager:
 		cap = InputProfileManager.glyph_for_action("ui_accept", device_name)
-	return "Press %s / Z to continue" % cap
+	return "Press %s / %s to continue" % [cap, CutsceneDialogue.confirm_key()]
 
 
 ## The name the INVENTORY will show for this id, or "" when the id is unknown or ItemSystem is absent

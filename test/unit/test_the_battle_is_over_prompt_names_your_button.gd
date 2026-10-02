@@ -23,7 +23,7 @@ func test_the_token_is_the_keyboard_key_when_no_pad_is_connected() -> void:
 		return
 	var scene = load(BS).new()
 	autofree(scene)
-	assert_eq(scene._accept_token(), "Z",
+	assert_eq(scene._accept_token(), "X",
 		"with no pad the prompt must name the keyboard key that actually continues")
 
 
@@ -108,7 +108,7 @@ func test_the_trusted_turn_prompt_names_the_button_that_claims_it() -> void:
 	assert_true(indices.has(JOY_BUTTON_A),
 		"CONTROL: the claim action really is the SOUTH face, so 'B' really was wrong: %s" % str(indices))
 	if Input.get_connected_joypads().is_empty():
-		assert_eq(bm._trust_interrupt_token(), "X",
+		assert_eq(bm._trust_interrupt_token(), "Z",
 			"with no pad it must name the key that actually claims the turn")
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	var i: int = src.find("Trusted — press")

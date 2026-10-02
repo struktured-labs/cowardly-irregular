@@ -414,7 +414,7 @@ func _build_ui() -> void:
 	var dash_idx: int = _settings_items.size()
 	var dash_item = _create_toggle_setting(
 		"Dash: Always On",
-		"Move at dash speed without holding the dash button (Shift / X)",
+		"Move at dash speed without holding the dash button (Shift or A; the left face button on a pad)",
 		dash_always_on,
 		dash_idx
 	)

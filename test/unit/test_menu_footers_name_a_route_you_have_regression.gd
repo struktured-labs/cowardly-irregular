@@ -133,7 +133,7 @@ func test_no_footer_names_a_pad_letter_without_a_key() -> void:
 func test_unequip_is_reachable_from_a_pad() -> void:
 	var src := FileAccess.get_file_as_string(EQUIPMENT)
 	assert_gt(src.length(), 1000, "PRECONDITION: EquipmentMenu must be readable")
-	assert_true(src.contains("event.keycode == KEY_X"),
+	assert_true(src.contains("event.keycode == UNEQUIP_KEY"),
 		"PRECONDITION: the keyboard route must still exist — this guard defends ADDING the pad one")
 	assert_true(src.contains("event.button_index == JOY_BUTTON_X"),
 		"unequip must have a PAD route. It had none: the only call site was KEY_X, so a pad player " +

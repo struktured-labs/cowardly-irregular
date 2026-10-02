@@ -537,6 +537,15 @@ func get_action_button_label(action: String) -> String:
 	return " / ".join(labels)
 
 
+## The FIRST keyboard key bound to an action ("X" for ui_accept in the emulator layout), or `fallback`
+## when it has none. Captions that name one key read it here, so a rebind moves them with it.
+func first_key_label(action: String, fallback: String) -> String:
+	var label := get_action_key_label(action)
+	if label == "" or label == "—":
+		return fallback
+	return label.split(" / ")[0]
+
+
 ## Read-only: derive a human-readable keyboard label for an action by
 ## scanning its current InputMap events. Used by ControlsMenu to surface
 ## kb bindings alongside gamepad bindings (per user request 2026-05-03:

@@ -45,6 +45,11 @@ const ACCESSORY_COLOR = Color(0.9, 0.5, 0.9)
 # Tick 211: stat display maps extracted to StatNames (src/ui/StatNames.gd) — same surfaces should display the same names. Local helpers below now delegate.
 
 
+## Unequip on a keyboard: A, the west face of the emulator (RetroArch) layout, matching the pad's
+## west face (JOY_BUTTON_X) below. It was X until X became Confirm (struktured 2026-09-29).
+const UNEQUIP_KEY := KEY_A
+
+
 func _ready() -> void:
 	call_deferred("_build_ui")
 
@@ -100,12 +105,13 @@ func _build_ui() -> void:
 
 	var _ok: String = InputProfileManager.hint_for_action("ui_accept")
 	var _no: String = InputProfileManager.hint_for_action("ui_cancel")
-	# The west face with a pad, the X KEY without — "X: Unequip" read as a face button to a pad
+	# The west face with a pad, UNEQUIP_KEY without — "X: Unequip" read as a face button to a pad
 	# player, and named the one route they did not have.
+	var _key_un: String = OS.get_keycode_string(UNEQUIP_KEY)
 	var _pad_un: String = InputProfileManager.button_name_for_index(JOY_BUTTON_X)
-	var _un: String = "%s/X" % _pad_un if _pad_un != "" else "X"
-	# Item select spends X on unequip, so Cancel must name a binding that still goes back.
-	if mode != Mode.SLOT_SELECT and _no == "X":
+	var _un: String = "%s/%s" % [_pad_un, _key_un] if _pad_un != "" else _key_un
+	# Item select spends UNEQUIP_KEY on unequip, so Cancel must name a binding that still goes back.
+	if mode != Mode.SLOT_SELECT and _no == _key_un:
 		_no = _back_key_besides_unequip()
 	var footer_text = ("↑↓: Select Slot  %s/Click: Change  %s/RClick: Back" % [_ok, _no]) if mode == Mode.SLOT_SELECT else ("↑↓: Select  %s/Click: Equip  %s/RClick: Cancel  %s: Unequip" % [_ok, _no, _un])
 	var footer = Label.new()
@@ -802,8 +808,8 @@ func _handle_item_input(event: InputEvent) -> void:
 		_equip_selected_item()
 		get_viewport().set_input_as_handled()
 
-	# X is also ui_cancel, so it has to be read first or the key the footer calls Unequip only goes back.
-	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_X:
+	# The keyboard's west-face key unequips, as the pad's west face does (X is Confirm, read above).
+	elif event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == UNEQUIP_KEY:
 		_unequip_slot()
 		get_viewport().set_input_as_handled()
 

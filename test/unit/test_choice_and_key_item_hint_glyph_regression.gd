@@ -37,8 +37,8 @@ func test_choice_menu_hint_names_the_physical_caps_per_pad_family() -> void:
 
 func test_key_item_hint_names_the_physical_cap_per_pad_family() -> void:
 	var ok := _confirm_caps()
-	assert_eq(KeyItemPopup.continue_hint_text(XBOX), "Press %s / Z to continue" % ok[XBOX])
-	assert_eq(KeyItemPopup.continue_hint_text(NINTENDO), "Press %s / Z to continue" % ok[NINTENDO])
+	assert_eq(KeyItemPopup.continue_hint_text(XBOX), "Press %s / X to continue" % ok[XBOX])
+	assert_eq(KeyItemPopup.continue_hint_text(NINTENDO), "Press %s / X to continue" % ok[NINTENDO])
 
 
 func test_choice_menu_builds_its_hint_from_the_helper() -> void:
@@ -84,9 +84,9 @@ func test_the_popup_names_no_cap_when_no_pad_is_attached() -> void:
 	if not Input.get_connected_joypads().is_empty():
 		pass_test("a pad is attached here, so the no-pad case is unreachable — not evidence either way")
 		return
-	assert_eq(KeyItemPopup.continue_hint_text(), "Press Z to continue",
+	assert_eq(KeyItemPopup.continue_hint_text(), "Press X to continue",
 		"with no pad the popup must name the KEY alone; a family glyph is hardware the player does not have")
-	assert_eq(KeyItemPopup.continue_hint_text(XBOX), "Press %s / Z to continue" % _confirm_caps()[XBOX],
+	assert_eq(KeyItemPopup.continue_hint_text(XBOX), "Press %s / X to continue" % _confirm_caps()[XBOX],
 		"control: the POPUP still gets its cap for an explicitly NAMED device, so the guard is keyed to pad ABSENCE and not to the argument being omitted")
 	assert_eq(DialogueChoiceMenu.hint_text(true), "[Enter/Click] Confirm    [Esc/RClick] Cancel    (↑↓/D-pad)",
 		"control: the choice menu beside it already drops its cap with no pad — this is the shape the popup now matches")

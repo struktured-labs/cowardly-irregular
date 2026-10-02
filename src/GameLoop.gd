@@ -288,6 +288,8 @@ var _menu_hidden_hud: Array = []
 
 ## Party Chat (opt-in flavor cutscenes)
 var _party_chat_menu: Control = null
+## Settings opened from the field (Start). Tracked so the overworld-menu opener can refuse while it is up.
+var _field_settings_menu: Control = null
 var _party_chat_menu_layer: CanvasLayer = null
 var _party_chat_indicator: Control = null
 var _party_chat_indicator_layer: CanvasLayer = null
@@ -512,7 +514,7 @@ func _maybe_run_battle_smoke() -> void:
 		await _smoke_shot("settings")
 		_smoke_tap("ui_cancel")
 		await get_tree().create_timer(0.5).timeout
-		_smoke_key(KEY_X)
+		_smoke_key(OverworldMenu.TOGGLE_KEY)
 		await get_tree().create_timer(1.0).timeout
 		await _smoke_shot("overworld_menu")
 		# cursor rests on Quest Log — one confirm renders the QuestSystem UI
@@ -1088,6 +1090,10 @@ func _input(event: InputEvent) -> void:
 	if x_pressed:
 		## The console leaves Y unhandled when there is nothing to resume, and the menu opened on top of it; its siblings above already gate.
 		if _autogrind_ui_open():
+			get_viewport().set_input_as_handled()
+			return
+		# A field screen that leaves the toggle unhandled must not get the menu opened on top of it (measured: Settings, Party Chat).
+		if _field_modal_open():
 			get_viewport().set_input_as_handled()
 			return
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
@@ -2626,6 +2632,7 @@ func _open_settings_menu() -> void:
 		var settings_menu = SettingsMenuClass.new()
 		settings_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 		settings_layer.add_child(settings_menu)
+		_field_settings_menu = settings_menu
 		if _exploration_scene and _exploration_scene.has_method("pause"):
 			_exploration_scene.pause()
 		settings_menu.closed.connect(func():
@@ -5913,6 +5920,14 @@ func _open_autogrind_ui() -> void:
 ## console that outlives its grind must not count as open (the 2026-09-06 Suburbia encounter wedge).
 func _autogrind_ui_open() -> bool:
 	return _ui_is_showing(_autogrind_ui)
+
+
+## A screen GameLoop opens over the field that does not consume the overworld-menu toggle. Settings and
+## Party Chat leave the north face (and S) unhandled, so it reached the opener and the menu opened ON
+## TOP of them (measured 2026-10-02 on main). The autobattle editor is NOT listed: measured, neither its
+## pad north face nor S ever reaches this opener while it is up, so a term here could never fire.
+func _field_modal_open() -> bool:
+	return _ui_is_showing(_field_settings_menu) or _ui_is_showing(_party_chat_menu)
 
 
 static func _ui_is_showing(ui: Node) -> bool:

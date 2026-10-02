@@ -144,11 +144,11 @@ Each starter job has a free 0-cost AP action available in the command menu:
 | Open editor | **In battle:** Start — and only when NO character has autobattle on (if any is on, Start disables all instead). **In exploration:** menu → Autobattle row. Start does NOT open it outside battle; there it opens Settings | F5 (any state) |
 | Toggle ALL autobattle | Select | F6 |
 | Navigate grid | D-pad | Arrow keys |
-| Edit cell | A | Z |
+| Edit cell | A | X |
 | Delete cell | Y (off a condition cell) | Delete / Backspace |
 | Add condition | L trigger | Q key |
 | Add action | R trigger | W key |
-| Close editor | B | X |
+| Close editor | B | Z |
 
 ### Future Vision
 - Jobs add new condition types and action verbs
@@ -532,13 +532,20 @@ named. Never copy a letter out of this table into a caption.**
 | Action | Gamepad | Keyboard |
 |--------|---------|----------|
 | Navigate menu | D-pad | Arrow keys |
-| Confirm/Select | A | Z/Enter |
-| Cancel/Back | B | X/Escape |
+| Confirm/Select | A | X/Enter |
+| Cancel/Back | B | Z/Escape |
 | Queue action (Advance) | R shoulder | W key |
 | Defer | L shoulder | Q key |
 | Change battle speed | X (top face button) | ` (backtick) |
 | Repeat last turn's actions | Y (west face button) | Y key |
 | Cycle party formation | command menu row | F key |
+
+**The keyboard is a SNES pad in the emulator (RetroArch) layout** (struktured 2026-09-29, after Q/W):
+**X** = A (Confirm, east) · **Z** = B (Back, south) · **S** = X (top: the field menu) · **A** = Y (left: Dash,
+and Unequip in Equipment) · **Q/W** = L/R · Enter and Esc keep working. Before this, Z confirmed and X both went back
+and opened the field menu — the reverse of every emulator. A field screen GameLoop opens (Settings, Party Chat, the
+autobattle editor) now blocks the field-menu toggle: Settings and Party Chat let the pad's top button through and
+the menu opened ON TOP of them (measured on main before the fix).
 
 ### Menu Navigation
 - All menus expand LEFT (tree-style, like classic JRPGs)

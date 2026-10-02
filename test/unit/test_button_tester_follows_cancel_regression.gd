@@ -99,8 +99,8 @@ func test_stock_cancel_closes_and_confirm_stays_on_screen() -> void:
 
 	_press_key(cm, KEY_ESCAPE)
 	assert_false(cm._testing, "CONTROL: Escape must still close the tester")
-	_press_key(cm, KEY_X)
-	assert_false(cm._testing, "CONTROL: X must still close the tester")
+	_press_key(cm, KEY_Z)
+	assert_false(cm._testing, "CONTROL: Z (Back) must still close the tester")
 
 
 ## Rebind Cancel off the south face. The tester must follow the action, not index 0.

@@ -21,8 +21,8 @@ func test_confirm_glyph_names_the_physical_cap_per_pad_family() -> void:
 	var caps := _expected_confirm_caps()
 	assert_eq(CutsceneDialogue.confirm_glyph(XBOX), caps[XBOX])
 	assert_eq(CutsceneDialogue.confirm_glyph(NINTENDO), caps[NINTENDO])
-	assert_eq(CutsceneDialogue.advance_hint_text(NINTENDO), "Z / %s / Click ▶" % caps[NINTENDO])
-	assert_eq(BattleDialogue.advance_hint_text(NINTENDO), "Z / %s / Click to continue..." % caps[NINTENDO])
+	assert_eq(CutsceneDialogue.advance_hint_text(NINTENDO), "X / %s / Click ▶" % caps[NINTENDO])
+	assert_eq(BattleDialogue.advance_hint_text(NINTENDO), "X / %s / Click to continue..." % caps[NINTENDO])
 
 
 func test_cutscene_box_hint_is_built_from_the_helper() -> void:
@@ -53,9 +53,9 @@ func test_advance_hints_drop_the_pad_cap_when_no_pad_is_connected() -> void:
 	if not Input.get_connected_joypads().is_empty():
 		pass_test("a pad is connected on this machine — the no-pad path is not exercisable here")
 		return
-	assert_eq(CutsceneDialogue.advance_hint_text(), "Z / Click ▶",
+	assert_eq(CutsceneDialogue.advance_hint_text(), "X / Click ▶",
 		"with no pad the cutscene hint must name only the key and the click")
-	assert_eq(BattleDialogue.advance_hint_text(), "Z / Click to continue...",
+	assert_eq(BattleDialogue.advance_hint_text(), "X / Click to continue...",
 		"BattleDialogue shares the same source, so it must drop the cap too")
 	assert_eq(CutsceneDialogue.confirm_pad_segment(), "",
 		"the shared segment is what both hints depend on")
@@ -63,7 +63,7 @@ func test_advance_hints_drop_the_pad_cap_when_no_pad_is_connected() -> void:
 
 func test_an_explicit_pad_still_prints_its_cap_in_both_boxes() -> void:
 	var caps := _expected_confirm_caps()
-	assert_eq(CutsceneDialogue.advance_hint_text(NINTENDO), "Z / %s / Click ▶" % caps[NINTENDO],
+	assert_eq(CutsceneDialogue.advance_hint_text(NINTENDO), "X / %s / Click ▶" % caps[NINTENDO],
 		"CONTROL: naming a device must be unchanged by the no-pad branch")
-	assert_eq(BattleDialogue.advance_hint_text(NINTENDO), "Z / %s / Click to continue..." % caps[NINTENDO],
+	assert_eq(BattleDialogue.advance_hint_text(NINTENDO), "X / %s / Click to continue..." % caps[NINTENDO],
 		"CONTROL: the battle box too")

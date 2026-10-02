@@ -38,8 +38,13 @@ static func confirm_pad_segment(device_name: String = "") -> String:
 	return "%s / " % confirm_glyph(device_name)
 
 
+## The Confirm KEY, from the binding — it was a literal "Z" until Confirm moved to X (emulator layout).
+static func confirm_key() -> String:
+	return InputProfileManager.first_key_label("ui_accept", "X") if InputProfileManager else "X"
+
+
 static func advance_hint_text(device_name: String = "") -> String:
-	return "Z / %sClick ▶" % confirm_pad_segment(device_name)
+	return "%s / %sClick ▶" % [confirm_key(), confirm_pad_segment(device_name)]
 var _typing_speed: float = 0.03
 var _current_text: String = ""
 var _displayed_chars: int = 0
