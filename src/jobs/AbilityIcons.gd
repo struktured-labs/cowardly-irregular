@@ -91,7 +91,8 @@ static func png_path(key: String) -> String:
 
 
 static func texture_for_key(key: String) -> Texture2D:
-	var use := key if key != "" and FileAccess.file_exists(png_path(key)) else DEFAULT_KEY
+	## ResourceLoader, not FileAccess: an export packs the imported icon, not the png, so file_exists drew "?" for every ability.
+	var use := key if key != "" and ResourceLoader.exists(png_path(key)) else DEFAULT_KEY
 	if _base.has(use):
 		return _base[use]
 	# load() so the export packs the icon; Image.load on the png is dropped from the pck.
