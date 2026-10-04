@@ -15,6 +15,7 @@ const CLAIM_TO_ACTION := {
 	"Defer": "battle_defer",
 	"Advance": "battle_advance",
 	"Auto": "battle_toggle_auto",
+	"Rules": "ui_menu",
 }
 
 ## Claims with no input action at all — the button is compared raw in an `if`, so nothing

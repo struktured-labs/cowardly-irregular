@@ -62,23 +62,25 @@ func test_quest_log_has_scroll_wheel() -> void:
 		"QuestLog must handle wheel-down for scrolling")
 
 
-func test_battle_command_menu_has_autobattle_edit_entry() -> void:
+## Superseded 2026-10-03 (struktured): "Auto Rules is definitely a button and not a menu item."
+## The mouse-accessible menu row this pair used to require is gone by design — Start/F5 (and the
+## permanent hint bar that advertises them) are the only path now, in or out of battle. See
+## test_auto_is_one_press_regression.test_auto_rules_has_no_menu_row for the row's absence and
+## test_hint_bar_names_auto_rules_derived_per_pad for the button's advertisement.
+func test_battle_command_menu_no_longer_has_an_autobattle_edit_row() -> void:
 	var src = _read_file("res://src/battle/BattleCommandMenu.gd")
-	# Entry must exist in the command builder
-	assert_string_contains(src, "autobattle_edit",
-		"BattleCommandMenu must offer 'autobattle_edit' so mouse users can " +
-		"open the rule editor without F5/Start/L+R hotkeys")
-	assert_string_contains(src, "Auto Rules",
-		"BattleCommandMenu's autobattle_edit entry should be labeled 'Auto Rules'")
+	assert_string_contains(src, "\"id\": \"autobattle\"",
+		"the Auto row itself must still exist, just without a submenu hosting Auto Rules")
+	assert_true(not src.contains("\"id\": \"autobattle_edit\""),
+		"Auto Rules must not be built as a menu row id anywhere in the command menu")
 
 
-func test_battle_command_menu_autobattle_edit_invokes_editor() -> void:
-	var src = _read_file("res://src/battle/BattleCommandMenu.gd")
-	# Handler must call into GameLoop's editor toggle
-	assert_string_contains(src, "_toggle_autobattle_editor",
-		"BattleCommandMenu's autobattle_edit handler must call " +
-		"GameLoop._toggle_autobattle_editor() so the existing entry/exit " +
-		"wiring (pause exploration, hide menu, etc.) is reused")
+func test_the_editor_still_opens_through_gameloops_toggle() -> void:
+	# The button path (Start/F5) was never routed through BattleCommandMenu — GameLoop's
+	# ui_menu/KEY_F5 handling calls this directly. Still true after the row's removal.
+	var src = _read_file("res://src/GameLoop.gd")
+	assert_string_contains(src, "func _toggle_autobattle_editor",
+		"GameLoop must still own opening the rule editor for the Start/F5 button path")
 
 
 func test_overworld_menu_already_has_autobattle_entry() -> void:

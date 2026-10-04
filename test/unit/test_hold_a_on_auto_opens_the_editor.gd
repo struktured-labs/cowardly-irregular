@@ -1,18 +1,10 @@
 extends GutTest
 
-## Hold ui_accept on the battle command menu's "Auto" row for 1.5s and the autobattle editor
-## opens. That is what BattleScene._process_hold_a is for, it runs every frame, and it could
-## never fire.
-##
-## The hold resolves its target from get_selected_item_data() on the ROOT menu — and the root's
-## "auto_menu" row carried a submenu, a label and a tooltip but NO `data` key. So selected_data
-## was null, `_auto_combatant` was never assigned, and `if _hold_timer >= HOLD_DURATION and
-## _auto_combatant` was false forever. Every submenu row under it carries its own combatant; the
-## row hosting them did not. The editor stayed reachable via the "Auto Rules" row and the Start
-## button, so the failure was a dead shortcut rather than a lockout — which is why nothing caught it.
-##
-## This asserts against the REAL built menu, not the source text: the neighbouring guard on this
-## file pins strings, and a string pin cannot tell a row with a data key from one without.
+## Superseded (struktured ruling 2026-10-03): "auto -> run auto kind of sucks... auto should
+## immediately do Run auto again without a submenu... Auto Rules is definitely a button and
+## not a menu item." The hold-A-to-open-editor shortcut this file used to pin went dead the
+## same day: confirm on the Auto row now runs auto and closes the menu on the SAME press, so a
+## hold can never be observed. This file now pins the NEW menu shape instead of the hold.
 
 const MenuBuilder := preload("res://src/battle/BattleCommandMenu.gd")
 
@@ -51,57 +43,42 @@ func _row(items: Array, id: String) -> Dictionary:
 			return it
 	return {}
 
-func test_the_auto_row_carries_the_combatant_the_hold_needs() -> void:
-	var row := _row(_items(), "auto_menu")
+func test_the_auto_row_has_no_submenu() -> void:
+	var row := _row(_items(), "autobattle")
 	assert_false(row.is_empty(), "CONTROL: the Auto row exists at the menu root")
+	assert_false(row.has("submenu"), "Auto must not open a submenu — one press runs auto")
+
+func test_the_auto_row_still_carries_the_combatant() -> void:
+	## The row's data still needs the combatant: on_menu_item_selected's "autobattle" handler
+	## reads item_data.get("combatant") to run that character's turn.
+	var row := _row(_items(), "autobattle")
 	var data = row.get("data", null)
-	assert_true(data is Dictionary,
-		"the Auto row has no `data` key — get_selected_item_data() returns null and the hold can never resolve a combatant")
+	assert_true(data is Dictionary, "the Auto row needs a data dict to resolve a combatant")
 	assert_true((data as Dictionary).get("combatant", null) is Combatant,
-		"the Auto row's data must carry the combatant the editor is opened for")
+		"the Auto row's data must carry the combatant autobattle runs for")
 
-func test_the_submenu_rows_still_carry_theirs() -> void:
-	## CONTROL against a fix that moves the data instead of adding it: the rows under Auto each
-	## need their own combatant, because that is how their actions resolve a target today.
+func test_trust_is_a_sibling_row_not_nested_under_auto() -> void:
+	## Trust lived inside Auto's submenu; that submenu is gone, so Trust must still be reachable
+	## as its OWN top-level row (struktured: "if it lived in the Auto submenu, keep it reachable").
+	var row := _row(_items(), "trust_toggle")
+	assert_false(row.is_empty(), "Trust must survive as a top-level row: %s" % str(row))
+	assert_false(row.has("submenu"), "CONTROL: Trust was never a submenu host")
+
+func test_auto_rules_has_no_menu_row() -> void:
+	## "Auto Rules is definitely a button and not a menu item" (struktured 2026-10-03).
 	var items := _items()
-	var auto_row := _row(items, "auto_menu")
-	var subs: Array = auto_row.get("submenu", []) as Array
-	assert_gt(subs.size(), 2, "CONTROL: the Auto row still hosts its submenu (%d rows)" % subs.size())
-	var missing: Array = []
-	for s in subs:
-		var d = (s as Dictionary).get("data", null)
-		if not (d is Dictionary) or not ((d as Dictionary).get("combatant", null) is Combatant):
-			missing.append(str((s as Dictionary).get("id", "?")))
-	assert_eq(missing.size(), 0, "a submenu row lost its combatant: " + str(missing))
+	for it in items:
+		assert_ne(str((it as Dictionary).get("id", "")), "autobattle_edit",
+			"Auto Rules must not appear as a menu row — it is the Start/F5 button")
+		var sub: Array = (it as Dictionary).get("submenu", []) as Array
+		for s in sub:
+			assert_ne(str((s as Dictionary).get("id", "")), "autobattle_edit",
+				"Auto Rules must not appear nested in any submenu either")
 
-func test_a_polled_hold_refuses_while_a_submenu_is_open() -> void:
-	## _process_hold_a polls Input from _process, so it inherits NONE of _input's refusals —
-	## cowir-controller's MenuRepeat shape, same file family. With a submenu open the player is
-	## confirming a row THERE, while the root's selected row is still auto_menu. Without this
-	## refusal, giving the row its data key turns a dead hold into an editor that opens on top of
-	## an open submenu. Source-read because the poll needs a live Win98Menu graph; the behavioural
-	## half above is what defends the data contract.
+func test_the_dead_hold_shortcut_is_gone() -> void:
+	## The hold-to-open mechanism this file used to pin is unreachable now (confirm executes and
+	## closes the menu on the same press) and was removed rather than left as dead code.
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	assert_gt(src.length(), 1000, "CONTROL: BattleScene reads")
-	var at: int = src.find("func _process_hold_a")
-	assert_gt(at, -1, "CONTROL: the hold handler still exists")
-	var body: String = src.substr(at, 1200)
-	var code: String = ""
-	for line in body.split("\n"):
-		var stripped := line.strip_edges()
-		if stripped.begins_with("#"):
-			continue
-		code += line + "\n"
-	assert_true(code.contains("Input.is_action_pressed"),
-		"CONTROL: the stripper left the polled read intact")
-	assert_true(code.contains("active_win98_menu.submenu"),
-		"the polled hold does not consult the open submenu — it fires while the player is in one")
-
-func test_the_editor_stays_reachable_from_the_submenu() -> void:
-	## Scope note and anti-overreach: the hold is a SHORTCUT. The Auto Rules row is the route a
-	## mouse-only player uses and it must not be what a fix to the shortcut disturbs.
-	var auto_row := _row(_items(), "auto_menu")
-	var ids: Array = []
-	for s in (auto_row.get("submenu", []) as Array):
-		ids.append(str((s as Dictionary).get("id", "")))
-	assert_true(ids.has("autobattle_edit"), "the Auto Rules row must survive: %s" % str(ids))
+	assert_eq(src.find("func _process_hold_a"), -1,
+		"_process_hold_a should have been removed with the submenu it depended on")
