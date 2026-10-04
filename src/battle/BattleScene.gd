@@ -5116,7 +5116,7 @@ func _input(event: InputEvent) -> void:
 	# Full log overlay owns input while it's up — cancel closes it, nothing else should leak through.
 	if _log_overlay and is_instance_valid(_log_overlay):
 		if (event.is_action_pressed("ui_cancel") and not event.is_echo()) \
-				or (event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_L):
+				or (event.is_action_pressed("battle_open_log") and not event.is_echo()):
 			_toggle_log_overlay()
 			get_viewport().set_input_as_handled()
 		return
@@ -5182,6 +5182,12 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
+	# Full battle log: battle_open_log (L / L3; struktured 2026-10-04 "reuse L3"), a remappable action rather than raw keys.
+	if event.is_action_pressed("battle_open_log") and not event.is_echo():
+		_toggle_log_overlay()
+		get_viewport().set_input_as_handled()
+		return
+
 	# Battle speed toggle — ` key only. (Was documented as "Tab or `"; Tab is battle_toggle_auto.)
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_QUOTELEFT:
@@ -5196,11 +5202,6 @@ func _input(event: InputEvent) -> void:
 		# F key to cycle party formation
 		elif event.keycode == KEY_F:
 			cycle_formation()
-			get_viewport().set_input_as_handled()
-			return
-		# L key to open the full battle log
-		elif event.keycode == KEY_L:
-			_toggle_log_overlay()
 			get_viewport().set_input_as_handled()
 			return
 

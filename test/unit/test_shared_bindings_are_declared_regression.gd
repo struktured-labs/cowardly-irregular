@@ -30,6 +30,9 @@ const PROJECT := "res://project.godot"
 
 ## key/button signature -> the reason the collision is safe. Keep the reason, not just the pair.
 const DECLARED := {
+	"battle_open_log+party_chat":
+		"L key. party_chat is gated on LoopState.EXPLORATION in GameLoop; battle_open_log is read only by " +
+		"BattleScene._input, which exists only in battle. Never both live.",
 	"battle_defer+party_chat":
 		"L / pad 9. party_chat is gated on LoopState.EXPLORATION in GameLoop; battle_defer's " +
 		"consumers are battle-only or consume first. Never both live.",

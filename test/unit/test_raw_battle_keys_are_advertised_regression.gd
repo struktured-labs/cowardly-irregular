@@ -22,7 +22,6 @@ const MUST_BE_NAMED := {
 	"KEY_QUOTELEFT": "Battle speed",
 	"KEY_Y": "Repeat last turn",
 	"KEY_F": "Cycle party formation",
-	"KEY_L": "Battle log",
 	"JOY_BUTTON_Y": "Battle speed",
 	"JOY_BUTTON_X": "Repeat last turn",
 }
