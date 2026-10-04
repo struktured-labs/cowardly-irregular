@@ -4771,6 +4771,13 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	battle_scene.managed_by_game_loop = true
 	battle_scene.set_party(party)
 
+	## The rare Hero Mimics carry their stats INLINE (copied from the party) and have no monsters.json id, so routed as ids they were
+	## dropped ("Unknown encounter enemy ID: hero_mimic") and the fight fell back to default monsters. Hand the data itself over.
+	if is_encounter and has_enemies and specific_enemies.all(func(e): return e is Dictionary and bool(e.get("is_mimic", false))):
+		battle_scene.autogrind_enemy_data = specific_enemies.duplicate(true)
+		for k in battle_scene.autogrind_enemy_data.size():
+			battle_scene.autogrind_enemy_data[k]["id"] = "hero_mimic_%d" % k  # each is its own copy: no "A/B/C" duplicate suffix
+
 	# Route enemies to the correct BattleScene property
 	if has_enemies and is_encounter:
 		# Random encounter from exploration — use encounter_enemies path
