@@ -723,10 +723,16 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 	if target_type == "all_enemies" and can_afford:
 		var aoe_label: String = "%s [AoE]" % ability["name"]
 		if alive_enemies.size() > 0:
+			## Each foe counts at most what it has left: summing full estimates read two 5-HP slimes as
+			## ~720 damage. The KO count is the AoE's [KILL] tag.
 			var total_est: int = 0
+			var kos: int = 0
 			for enemy in alive_enemies:
-				total_est += BattleManager.estimate_ability_damage(combatant, enemy, ability)
-			aoe_label = "%s [AoE] ~%d total" % [ability["name"], total_est]
+				var est: int = BattleManager.estimate_ability_damage(combatant, enemy, ability)
+				total_est += mini(est, enemy.current_hp)
+				if est >= enemy.current_hp:
+					kos += 1
+			aoe_label = "%s [AoE] ~%d total%s" % [ability["name"], total_est, ", %d KO" % kos if kos > 0 else ""]
 		return {
 			"id": "ability_" + ability_id,
 			"label": aoe_label,
