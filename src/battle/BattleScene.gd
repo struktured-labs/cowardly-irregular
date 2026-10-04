@@ -619,13 +619,6 @@ func set_command_menu_visible(visible: bool) -> void:
 		active_win98_menu.visible = false
 
 
-## Hold-A detection for autobattle editor
-var _hold_timer: float = 0.0
-var _holding_auto: bool = false
-var _auto_combatant: Combatant = null
-const HOLD_DURATION: float = 1.5  # Seconds to hold for editor (1.5s feels responsive)
-
-
 func _create_speed_indicator() -> void:
 	"""Create battle speed indicator — bottom-left above the turn-order box (struktured 2026-07-17: top-left buried it under the ENEMIES panel)"""
 	# Background panel for readability
@@ -3305,10 +3298,7 @@ func _lost_battle_is_escape() -> bool:
 
 
 func _process(delta: float) -> void:
-	"""Handle post-battle input, hold-A detection, and danger music"""
-	# Handle hold-A for autobattle editor
-	_process_hold_a(delta)
-
+	"""Handle post-battle input and danger music"""
 	# Check for danger music (player about to die)
 	_check_danger_music()
 
@@ -3420,45 +3410,9 @@ func _reset_menu_watchdog() -> void:
 	_menu_wd_retries = 0
 
 
-func _process_hold_a(delta: float) -> void:
-	"""Track hold-A on Auto menu item to open editor"""
-	# Check if menu is active and we're on "autobattle" item
-	if active_win98_menu and is_instance_valid(active_win98_menu) and active_win98_menu.visible:
-		var selected_id = active_win98_menu.get_selected_item_id()
-		var selected_data = active_win98_menu.get_selected_item_data()
-
-		## A polled hold inherits none of _input's refusals, so it must repeat the one that matters:
-		## with a submenu open the player is confirming a row THERE, and the root's selected row is
-		## still auto_menu. Without this, giving the row its data key turns a dead hold into an
-		## editor that opens under an open submenu.
-		if active_win98_menu.submenu and is_instance_valid(active_win98_menu.submenu):
-			_holding_auto = false
-			_hold_timer = 0.0
-			return
-		## "auto_menu" is the collapsed root row; "autobattle" kept for the pre-collapse shape
-		if selected_id in ["autobattle", "auto_menu"] and Input.is_action_pressed("ui_accept"):
-			if not _holding_auto:
-				# Start tracking hold
-				_holding_auto = true
-				_hold_timer = 0.0
-				if selected_data is Dictionary:
-					_auto_combatant = selected_data.get("combatant", null)
-
-			_hold_timer += delta
-
-			# Check if held long enough
-			if _hold_timer >= HOLD_DURATION and _auto_combatant:
-				_open_autobattle_editor_for(_auto_combatant)
-				_holding_auto = false
-				_hold_timer = 0.0
-				_auto_combatant = null
-		else:
-			# Reset hold tracking
-			_holding_auto = false
-			_hold_timer = 0.0
-	else:
-		_holding_auto = false
-		_hold_timer = 0.0
+## Removed (struktured 2026-10-03): confirm on the Auto row now runs auto immediately and
+## closes the menu on the SAME press, so a hold could never be observed — this was dead the
+## moment Auto stopped having a submenu. Auto Rules opens only via the Start/F5 button now.
 
 
 ## The draw scale for a party sheet: frame-height target, per-job override, uniform bump. Extracted so a

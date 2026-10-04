@@ -98,16 +98,27 @@ func test_the_builder_returns_a_real_menu() -> void:
 	assert_gt(rows.size(), 3, "CONTROL: the builder produced a real menu")
 
 
-func test_auto_block_is_one_top_level_row_with_all_three_actions_inside() -> void:
+## Superseded 2026-10-03: struktured — "auto -> run auto kind of sucks... auto should
+## immediately do Run auto again without a submenu... Auto Rules is definitely a button and
+## not a menu item." Auto is now one top-level row with no submenu; Trust is its own sibling
+## top-level row; Auto Rules has no row at all (Start/F5 button only).
+func test_auto_is_one_top_level_row_with_no_submenu_and_trust_is_a_sibling() -> void:
 	var rows: Array = await _rows("bard")
 	var ids := _ids(rows)
-	assert_true("auto_menu" in ids, "the collapsed Auto row exists at top level")
-	for buried in ["autobattle", "autobattle_edit", "trust_toggle"]:
-		assert_false(buried in ids, "%s must NOT be a top-level row any more" % buried)
-	var sub: Array = _find(rows, "auto_menu").get("submenu", [])
-	var sub_ids := _ids(sub)
-	for needed in ["autobattle", "autobattle_edit", "trust_toggle"]:
-		assert_true(needed in sub_ids, "%s is still REACHABLE inside Auto (buried, not deleted)" % needed)
+	assert_false("auto_menu" in ids, "the collapsed submenu-hosting row is gone")
+	assert_true("autobattle" in ids, "Auto is a top-level row, selectable directly")
+	assert_true("trust_toggle" in ids, "Trust is a top-level row, not nested under Auto")
+	assert_false("autobattle_edit" in ids, "Auto Rules must not be a menu row anywhere")
+	var auto_row := _find(rows, "autobattle")
+	assert_false(auto_row.has("submenu"), "Auto must not open a submenu — one press runs auto")
+	var trust_row := _find(rows, "trust_toggle")
+	assert_false(trust_row.has("submenu"), "CONTROL: Trust was never a submenu host")
+	# No submenu anywhere in the menu should carry autobattle_edit either.
+	for r in rows:
+		var sub: Array = (r as Dictionary).get("submenu", []) as Array
+		for s in sub:
+			assert_ne(str((s as Dictionary).get("id", "")), "autobattle_edit",
+				"Auto Rules must not be buried in any submenu")
 
 
 func test_scan_is_not_an_intrinsic_menu_row_for_any_job() -> void:

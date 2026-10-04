@@ -124,9 +124,10 @@ func test_every_bracketed_hint_in_the_bar_is_accounted_for() -> void:
 	var tokens := _bracketed_tokens(bar)
 	assert_gt(tokens.size(), 3, "positive control: the bar must yield its bracketed hints")
 
-	# [L]/[R]/[Select] are InputMap actions, checked by test_hint_bar_actions_have_real_joypad_bindings.
-	# [X] is a raw button check, covered by test_speed_toggle_is_actually_wired_to_the_advertised_button.
-	var accounted := {"[L]": true, "[R]": true, "[Select/Back/Share]": true, "[X]": true}
+	# [L]/[R]/[Select]/[Start/Plus/Options] are InputMap actions, checked by
+	# test_hint_bar_actions_have_real_joypad_bindings. [X] is a raw button check, covered by
+	# test_speed_toggle_is_actually_wired_to_the_advertised_button.
+	var accounted := {"[L]": true, "[R]": true, "[Select/Back/Share]": true, "[X]": true, "[Start/Plus/Options]": true}
 	var unaccounted: Array[String] = []
 	for t in tokens:
 		if not accounted.has(t):
@@ -138,7 +139,7 @@ func test_every_bracketed_hint_in_the_bar_is_accounted_for() -> void:
 ## [L], [R] and [Select] are InputMap actions and must actually carry a joypad binding, or the hint
 ## names a button that does nothing on a controller.
 func test_hint_bar_actions_have_real_joypad_bindings() -> void:
-	var named := {"[L] Defer": "battle_defer", "[R] Advance": "battle_advance", "[Select/Back/Share] Auto": "battle_toggle_auto"}
+	var named := {"[L] Defer": "battle_defer", "[R] Advance": "battle_advance", "[Select/Back/Share] Auto": "battle_toggle_auto", "[Start/Plus/Options] Rules": "ui_menu"}
 	for label in named:
 		var action: String = named[label]
 		assert_true(InputMap.has_action(action), "%s names action '%s' which must exist" % [label, action])

@@ -1415,14 +1415,33 @@ func _set_chain_dim(dimmed: bool) -> void:
 
 ## Advance Mode Functions
 
+## Auto's action dict is {"action": "autobattle", "combatant": ...} (BattleCommandMenu). Advance
+## and Confirm must treat it identically (struktured 2026-10-03: "any confirm style button is
+## just run auto") — it is never a queueable action, since the rules decide the action count.
+func _is_autobattle_row(item: Dictionary) -> bool:
+	var data = item.get("data", null)
+	return data is Dictionary and str((data as Dictionary).get("action", "")) == "autobattle"
+
+
 func _handle_advance_input() -> void:
-	"""Handle R button / Shift+Enter - queue current action or confirm if at limit"""
+	"""Handle R button / Shift+Enter - run Auto, queue current action, or confirm if at limit"""
 	var root = _get_root_menu()
 	# Debounce: one R squeeze emits BOTH a button and a trigger-axis event, and a drifting trigger jitters across the deadzone — ignore a duplicate advance within ADVANCE_DEBOUNCE_MS so one press queues one action. Static so it survives menu rebuilds.
 	var now_ms := Time.get_ticks_msec()
 	if now_ms - Win98Menu._last_advance_ms < ADVANCE_DEBOUNCE_MS:
 		return
 	Win98Menu._last_advance_ms = now_ms
+
+	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
+
+	# Auto can't advance — pressing Advance on it just runs auto, same as Confirm.
+	if _is_autobattle_row(current_item):
+		if _row_unavailable(current_item):
+			_reject_selection(current_item)
+		else:
+			_play_select_sound()
+			_submit_actions()
+		return
 
 	## ⛔ ADVANCE ONLY QUEUES (work order 2026-09-14). It used to commit on the press that reached
 	## max-1, so R on the last slot queued AND ended the turn. Now a full queue REFUSES, with a deny
@@ -1431,8 +1450,6 @@ func _handle_advance_input() -> void:
 	if not commits_at_limit and _queue_is_full():
 		_refuse_advance_full()
 		return
-
-	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
 	if current_item.has("submenu"):
 		# Has submenu - expand it to select target
@@ -1517,6 +1534,7 @@ func _queue_current_action(item: Dictionary) -> void:
 	# Update AP display to show pending cost
 	root._update_ap_label()
 	root._emit_queue_changed()
+	root._sync_auto_row_disabled()
 
 	# DON'T close menus or clear highlights - keep everything visible for more selections
 	# The highlight stays on the current target until player moves to another
@@ -1559,6 +1577,7 @@ func _undo_last_action() -> void:
 		_play_undo_sound()
 		root._update_ap_label()
 		root._emit_queue_changed()
+		root._sync_auto_row_disabled()
 
 
 func _cancel_all_queued() -> void:
@@ -1568,6 +1587,26 @@ func _cancel_all_queued() -> void:
 	_play_cancel_sound()
 	root._update_ap_label()
 	root._emit_queue_changed()
+	root._sync_auto_row_disabled()
+
+
+## Auto's action count is decided by the rules, not the player (struktured 2026-10-03), so it is
+## disabled the instant anything is queued and re-enabled once the queue empties. Mutates the
+## row's `disabled` flag live — `_row_unavailable`/`_step_selection`/`_opening_index` all read it
+## straight off menu_items, so this is the one place that needs to touch it.
+func _sync_auto_row_disabled() -> void:
+	var auto_idx := -1
+	for i in range(menu_items.size()):
+		if _is_autobattle_row(menu_items[i]):
+			auto_idx = i
+			break
+	if auto_idx < 0:
+		return
+	var disabled: bool = _queued_actions.size() > 0
+	menu_items[auto_idx]["disabled"] = disabled
+	if disabled and selected_index == auto_idx:
+		_step_selection(1)
+	_update_selection()
 
 
 ## Send the root's queue count to battle. The single emit point, so the contract cannot drift per site.
@@ -1776,8 +1815,10 @@ func _apply_command_memory() -> void:
 ## "[+/-] Speed" was a dead instruction: nothing in src/ binds +/- to battle speed (2026-07-28).
 ## The real toggle is JOY_BUTTON_Y — north/top face, physically X on the Nintendo-layout pads this
 ## game targets — plus the ` key. BattleScene.gd carries the same string; keep them in step.
-const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select/Back/Share] Auto"
-const HINT_KEYBOARD_TEXT := "[Q] Defer  ·  [W] Advance  ·  [`] Speed  ·  [Tab] Auto"
+## Rules (struktured 2026-10-03): Auto Rules is a BUTTON, not a menu row — Start/Plus/Options in
+## battle opens the rule editor (ui_menu), F5 on keyboard (a raw key, no action, like Speed).
+const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select/Back/Share] Auto  ·  [Start/Plus/Options] Rules"
+const HINT_KEYBOARD_TEXT := "[Q] Defer  ·  [W] Advance  ·  [`] Speed  ·  [Tab] Auto  ·  [F5] Rules"
 
 
 ## The bar is on screen for the whole game and named Nintendo face letters unconditionally. Speed
@@ -1804,7 +1845,9 @@ static func _keyboard_hint_text() -> String:
 	var auto: String = InputProfileManager.hint_for_action("battle_toggle_auto")
 	if defer == "" or adv == "" or auto == "":
 		return HINT_KEYBOARD_TEXT
-	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [%s] Auto" % [defer, adv, auto]
+	# F5 is a raw keycode with no InputMap action (GameLoop checks event.keycode directly), same
+	# as the backtick Speed key above — literal, not derived, because there is nothing to derive.
+	return "[%s] Defer  ·  [%s] Advance  ·  [`] Speed  ·  [%s] Auto  ·  [F5] Rules" % [defer, adv, auto]
 
 
 static func hint_text() -> String:
@@ -1819,14 +1862,17 @@ static func hint_text() -> String:
 	var speed: String = InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y)
 	if speed == "?":
 		return HINT_DEFAULT_TEXT
-	# The other three are ACTIONS, so they follow the active profile: L/LB/L1, R/RB/R1,
-	# Minus/Back/Share. "[Select]" is a button no Xbox, PlayStation or Switch pad has.
+	# The other FOUR are ACTIONS, so they follow the active profile: L/LB/L1, R/RB/R1,
+	# Minus/Back/Share, Start/Plus/Options. "[Select]" is a button no Xbox, PlayStation or
+	# Switch pad has. Rules reuses ui_menu — the same action Start/F5 already opens the editor
+	# through in battle (struktured 2026-10-03: "Auto Rules is definitely a button").
 	var defer: String = InputProfileManager.hint_for_action("battle_defer")
 	var adv: String = InputProfileManager.hint_for_action("battle_advance")
 	var auto: String = InputProfileManager.hint_for_action("battle_toggle_auto")
-	if defer == "" or adv == "" or auto == "":
+	var rules: String = InputProfileManager.hint_for_action("ui_menu")
+	if defer == "" or adv == "" or auto == "" or rules == "":
 		return HINT_DEFAULT_TEXT
-	return "%s Defer  ·  %s Advance  ·  %s Speed  ·  %s Auto" % [defer, adv, speed, auto]
+	return "%s Defer  ·  %s Advance  ·  %s Speed  ·  %s Auto  ·  %s Rules" % [defer, adv, speed, auto, rules]
 
 var _hint_label_cache: Label = null
 var _hint_showing_reason: bool = false

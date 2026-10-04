@@ -238,8 +238,8 @@ func _animate_menu_open(menu: Node) -> void:
 func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	"""Build command menu with enemy targets as submenus.
 
-	   New menu shape (2026-04 redesign):
-	     Auto ▸ / [MRU/Pin slot 1] / [MRU/Pin slot 2] / Attack / Free Move / Ability ▸ / Item ▸ / Group ▸ / Defer
+	   New menu shape (struktured ruling 2026-10-03, "auto -> run auto kind of sucks"):
+	     Auto / Trust / [MRU/Pin slot 1] / [MRU/Pin slot 2] / Attack / Free Move / Ability ▸ / Item ▸ / Group ▸ / Defer
 
 	   Per-job 'Free Move' replaces the legacy top-level 'Attack' for everyone.
 	   Fighter/Rogue: basic attack with custom label (Attack / Strike).
@@ -249,45 +249,29 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	var alive_enemies = get_alive_enemies()
 	var canvas_transform = _scene.get_viewport().get_canvas_transform()
 
-	# Auto block collapsed to ONE row (struktured playtest 2026-08-22: "the menu is too
-	# busy"). Buried, not deleted — Auto Rules is the mouse-only path to the editor
-	# (F5/L+R are kb/pad only) and Trust keeps its Settings->Party Trust clear-path.
-	var auto_rows: Array = []
-	auto_rows.append({
+	# Auto is ONE PRESS now (struktured 2026-10-03): no submenu, confirm/Advance both just run
+	# auto for this turn. "Auto Rules" is a BUTTON (Start in battle / F5 on keyboard), not a row —
+	# see the hint bar. Win98Menu disables this row once >=1 action is queued via Advance, because
+	# the rules decide the action count, not the player (re-enabled when the queue empties).
+	items.append({
 		"id": "autobattle",
-		"label": "Run Auto",
+		"label": "Auto",
+		"tooltip": "Run this character's autobattle script for this turn",
 		"data": {"action": "autobattle", "combatant": combatant}
-	})
-	# Edit Autobattle rules — opens the rule grid editor for THIS character.
-	# Mouse-only users need this entry because F5/L+R is keyboard/gamepad only.
-	auto_rows.append({
-		"id": "autobattle_edit",
-		"label": "Auto Rules",
-		"data": {"action": "autobattle_edit", "combatant": combatant}
 	})
 	# Trust — per-PC delegation. Toggling ON sets player_trust=true so the
 	# PC's stock script handles every future turn (not just this one, like
 	# Auto). Kept SEPARATE from autobattle_locked (spotlight) so the story
 	# reconciler can't wipe a player-set trust on cutscene completion or
-	# save-load. Off-surface for setting = this menu. Off-surface for
+	# save-load. Off-surface for setting = this menu (now a top-level row, not
+	# nested under Auto — the submenu it lived in is gone). Off-surface for
 	# CLEARING (queue #4): Settings → Party Trust per-PC row (added same
 	# ticket) so the toggle isn't one-way once ON.
 	var trust_label: String = "Trust: ON" if combatant.player_trust else "Trust: OFF"
-	auto_rows.append({
+	items.append({
 		"id": "trust_toggle",
 		"label": trust_label,
 		"data": {"action": "trust_toggle", "combatant": combatant}
-	})
-	## `data` carries the combatant for BattleScene._process_hold_a — hold-to-open-editor reads
-	## get_selected_item_data() on the ROOT menu, and this row had no data key at all, so the hold
-	## could never resolve a combatant and silently never fired. The submenu rows each carry their
-	## own copy; the row that hosts them did not.
-	items.append({
-		"id": "auto_menu",
-		"label": "Auto",
-		"tooltip": "Run this character's autobattle script, edit it, or delegate every turn",
-		"data": {"action": "auto_menu", "combatant": combatant},
-		"submenu": auto_rows
 	})
 
 	# MRU/Pin quick-access ability slots — most-recently-used or player-pinned.
@@ -1080,9 +1064,9 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			call_deferred("show_win98_command_menu", current)
 		return
 
-	# Edit Autobattle rules - open the rule grid editor (mouse-friendly path,
-	# parallel to F5 / Start / L+R hotkeys). GameLoop._toggle_autobattle_editor()
-	# picks the currently-selecting player automatically when in battle.
+	# Unreachable via the menu since struktured's 2026-10-03 ruling removed the Auto Rules
+	# row — the editor opens only via the Start/F5 BUTTON now (GameLoop handles those
+	# directly). Left in case some other caller still emits this id.
 	if item_id == "autobattle_edit":
 		# Runtime lookup — GameLoop is autoloaded at /root/GameLoop
 		var game_loop = _scene.get_tree().root.get_node_or_null("GameLoop") if _scene and _scene.get_tree() else null
